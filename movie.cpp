@@ -583,7 +583,6 @@ size_t movie::restore_state(const std::vector<uint8_t>& state, bool ro) throw(st
 	}
 	//debuglog << std::endl;
 	{
-		uint64_t v = lag_frames;
 		//debuglog << "Lag frame count: " << lag_frames << std::endl;
 	}
 

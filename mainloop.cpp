@@ -92,8 +92,6 @@ namespace
 	window* win;
 	//The SNES screen.
 	struct screen scr;
-	//True if user is holding advance, otherwise false.
-	bool advance_hold;
 	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
 	enum advance_mode amode;
 	//Mode and filename of pending load, one of LOAD_* constants.
@@ -1259,7 +1257,6 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 			continue;
 		}
 		long resetcycles = -1;
-		bool delayed_reset = false;
 		ack_frame_tick(get_ticks_msec());
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;

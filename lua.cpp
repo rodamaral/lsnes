@@ -361,6 +361,7 @@ namespace
 			first = false;
 		}
 		tmp_win->message(toprint);
+		return 0;
 	}
 
 	int lua_gui_resolution(lua_State* LS)
@@ -383,26 +384,27 @@ namespace
 		if(g > 8192)
 			return 0;	//Ignore ridiculous gap.
 		rctx->*gap = g;
+		return 0;
 	}
 
 	int lua_gui_set_left_gap(lua_State* LS)
 	{
-		lua_gui_set_gap(LS, &lua_render_context::left_gap);
+		return lua_gui_set_gap(LS, &lua_render_context::left_gap);
 	}
 
 	int lua_gui_set_right_gap(lua_State* LS)
 	{
-		lua_gui_set_gap(LS, &lua_render_context::right_gap);
+		return lua_gui_set_gap(LS, &lua_render_context::right_gap);
 	}
 
 	int lua_gui_set_top_gap(lua_State* LS)
 	{
-		lua_gui_set_gap(LS, &lua_render_context::top_gap);
+		return lua_gui_set_gap(LS, &lua_render_context::top_gap);
 	}
 
 	int lua_gui_set_bottom_gap(lua_State* LS)
 	{
-		lua_gui_set_gap(LS, &lua_render_context::bottom_gap);
+		return lua_gui_set_gap(LS, &lua_render_context::bottom_gap);
 	}
 
 	int lua_gui_text(lua_State* LS)

@@ -63,6 +63,7 @@ const struct rrdata::instance& rrdata::instance::operator++() throw()
 		bytes[i] += carry;
 		carry = newcarry;
 	}
+	return *this;
 }
 
 namespace
@@ -171,7 +172,6 @@ uint64_t rrdata::write(std::ostream& strm) throw(std::bad_alloc)
 	instance predicted;
 	instance encode_base;
 	unsigned encode_count = 0;
-	bool first = true;
 	for(auto i = rrset.begin(); i != rrset.end(); i++) {
 		//std::cerr << "Considering " << *i << std::endl;
 		count++;

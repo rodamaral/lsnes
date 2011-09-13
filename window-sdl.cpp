@@ -1365,21 +1365,24 @@ namespace
 				int32_t yc = e.button.y;
 				xc = (xc - 6 - vc_xoffset) / vc_hscl;
 				yc = (yc - 6 - vc_yoffset) / vc_vscl;
-				if(e.button.button == SDL_BUTTON_LEFT)
+				if(e.button.button == SDL_BUTTON_LEFT) {
 					if(e.button.state == SDL_PRESSED)
 						mouse_mask |= 1;
 					else
 						mouse_mask &= ~1;
-				if(e.button.button == SDL_BUTTON_MIDDLE)
+				}
+				if(e.button.button == SDL_BUTTON_MIDDLE) {
 					if(e.button.state == SDL_PRESSED)
 						mouse_mask |= 2;
 					else
 						mouse_mask &= ~2;
-				if(e.button.button == SDL_BUTTON_RIGHT)
+				}
+				if(e.button.button == SDL_BUTTON_RIGHT) {
 					if(e.button.state == SDL_PRESSED)
 						mouse_mask |= 4;
 					else
 						mouse_mask &= ~4;
+				}
 				if(commandh) {
 					std::ostringstream x;
 					x << "mouse_button " << xc << " " << yc << " " << mouse_mask;

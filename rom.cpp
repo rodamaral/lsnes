@@ -70,7 +70,7 @@ std::string gtype::tostring(rom_type rtype, rom_region region) throw(std::bad_al
 	case ROMTYPE_BSX:		return "bsx";
 	case ROMTYPE_BSXSLOTTED:	return "bsxslotted";
 	case ROMTYPE_SUFAMITURBO:	return "sufamiturbo";
-	case ROMTYPE_NONE:		throw std::runtime_error("tostring: ROMTYPE_NONE");
+	default:			throw std::runtime_error("tostring: ROMTYPE_NONE");
 	};
 }
 
@@ -84,7 +84,7 @@ std::string gtype::tostring(gametype_t gametype) throw(std::bad_alloc, std::runt
 	case GT_BSX:			return "bsx";
 	case GT_BSX_SLOTTED:		return "bsxslotted";
 	case GT_SUFAMITURBO:		return "sufamiturbo";
-	case GT_INVALID:		throw std::runtime_error("tostring: GT_INVALID");
+	default:			throw std::runtime_error("tostring: GT_INVALID");
 	};
 }
 
@@ -106,7 +106,7 @@ gametype_t gtype::togametype(rom_type rtype, rom_region region) throw(std::bad_a
 	case ROMTYPE_BSX:		return GT_BSX;
 	case ROMTYPE_BSXSLOTTED:	return GT_BSX_SLOTTED;
 	case ROMTYPE_SUFAMITURBO:	return GT_SUFAMITURBO;
-	case ROMTYPE_NONE:		throw std::runtime_error("togametype: ROMTYPE_NONE");
+	default:			throw std::runtime_error("togametype: ROMTYPE_NONE");
 	};
 }
 
