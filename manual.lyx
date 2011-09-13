@@ -2519,5 +2519,21 @@ No autofire
 Joysticks don't work.
 \end_layout
 
+\begin_layout Section
+Changelog:
+\end_layout
+
+\begin_layout Subsection
+rr0-β1
+\end_layout
+
+\begin_layout Itemize
+Fix -Wall warnings
+\end_layout
+
+\begin_layout Itemize
+Fix dumper video corruption with levels 10-18.
+\end_layout
+
 \end_body
 \end_document

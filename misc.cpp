@@ -301,4 +301,4 @@ void OOM_panic(window* win)
 }
 
 std::string bsnes_core_version;
-std::string lsnes_version = "0-β0";
+std::string lsnes_version = "0-β1";
