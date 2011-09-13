@@ -438,7 +438,11 @@ Dump video to prefix <prefix> at level <level> (0-18).
 \end_layout
 
 \begin_layout Itemize
-The codec is Camstudio Codec.
+The codec is Camstudio Codec in gzip mode.
+\end_layout
+
+\begin_layout Itemize
+Encoder and muxer are internal, available on all platforms.
 \end_layout
 
 \begin_layout Itemize
@@ -446,12 +450,20 @@ Audio enable/disable and framerate has no effect.
 \end_layout
 
 \begin_layout Itemize
-Warning: Levels 10-18 are not compatible with AVISource (and don't seem
- to be compatible with some ffmpeg versions either).
+Warning: Levels 10-18 are not compatible with AVISource.
 \end_layout
 
 \begin_layout Itemize
-Recomended level is 7.
+Recomended level is 7 if decoded by AVISource.
+\end_layout
+
+\begin_layout Itemize
+Recomended level is 16 if decoded by ffmpeg, mencoder or FFMpegSource.
+\end_layout
+
+\begin_layout Standard
+Note: The audio dumped to .avi is low-quality version.
+ The high-quality version is dumped to .sox file.
 \end_layout
 
 \begin_layout Subsubsection

@@ -97,6 +97,7 @@ void dump_frame(lcscreen& ls, render_queue* rq, uint32_t left, uint32_t right, u
 {
 	if(vid_dumper)
 		try {
+			vid_dumper->wait_idle();
 			uint32_t _magic = 403703808;
 			uint8_t* magic = reinterpret_cast<uint8_t*>(&_magic);
 			dscr.reallocate(left + ls.width + right, top + ls.height + bottom, left, top, true);
