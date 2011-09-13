@@ -1,0 +1,37 @@
+bind /rctrl q quit
+bind rctrl/rctrl q quit /y
+bind pause pause
+alias +speed set targetfps infinite
+alias -speed unset targetfps
+bind f12 +speed
+bind pageup scrollup
+bind pagedown scrolldown
+bind home scrollfullup
+bind end scrollfulldown
+bind key121 toggleconsole
+
+bind left +controller1left
+bind up +controller1up
+bind right +controller1right
+bind down +controller1down
+bind rctrl +controller1A
+bind ralt +controller1B
+bind rshift +controller1X
+bind l +controller1Y
+bind o +controller1L
+bind p +controller1R
+bind return +controller1start
+bind backspace +controller1select
+
+bind a +controller2left
+bind w +controller2up
+bind d +controller2right
+bind s +controller2down
+bind lctrl +controller2A
+bind lalt +controller2B
+bind lshift +controller2X
+bind z +controller2Y
+bind 1 +controller2L
+bind 3 +controller2R
+bind tab +controller2start
+bind x +controller2select

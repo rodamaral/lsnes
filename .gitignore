@@ -1,0 +1,8 @@
+*.o
+*.a
+*.lib
+*.obj
+*.exe
+docs
+rom
+core
