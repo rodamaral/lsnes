@@ -107,11 +107,89 @@ render_object::~render_object() throw()
 {
 }
 
-void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg,
-	uint16_t _fgalpha, uint32_t _bg, uint16_t _bgalpha) throw(std::bad_alloc)
+void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, uint32_t fg,
+	uint16_t fgalpha, uint32_t bg, uint16_t bgalpha) throw(std::bad_alloc)
 {
-	render_object_text tmp(_x, _y, _text, _fg, _fgalpha, _bg, _bgalpha);
-	tmp(scr);
+	uint32_t pfgl = (fg & 0xFF00FF) * fgalpha;
+	uint32_t pfgh = ((fg >> 8) & 0xFF00FF) * fgalpha;
+	uint32_t pbgl = (bg & 0xFF00FF) * bgalpha;
+	uint32_t pbgh = ((bg >> 8) & 0xFF00FF) * bgalpha;
+	uint16_t ifga = 256 - fgalpha;
+	uint16_t ibga = 256 - bgalpha;
+	int32_t orig_x = x;
+	uint32_t unicode_code = 0;
+	uint8_t unicode_left = 0;
+	for(size_t i = 0; i < text.length(); i++) {
+		uint8_t ch = text[i];
+		if(ch < 128)
+			unicode_code = text[i];
+		else if(ch < 192) {
+				if(!unicode_left)
+					continue;
+				unicode_code = 64 * unicode_code + ch - 128;
+				if(--unicode_left)
+					continue;
+		} else if(ch < 224) {
+			unicode_code = ch - 192;
+			unicode_left = 1;
+			continue;
+		} else if(ch < 240) {
+			unicode_code = ch - 224;
+			unicode_left = 2;
+			continue;
+		} else if(ch < 248) {
+			unicode_code = ch - 240;
+			unicode_left = 3;
+			continue;
+		} else
+			continue;
+		int32_t next_x, next_y;
+		auto p = find_glyph(unicode_code, x, y, orig_x, next_x, next_y);
+		uint32_t dx = 0;
+		uint32_t dw = p.first;
+		uint32_t dy = 0;
+		uint32_t dh = 16;
+		uint32_t cx = static_cast<uint32_t>(static_cast<int32_t>(scr.originx) + x);
+		uint32_t cy = static_cast<uint32_t>(static_cast<int32_t>(scr.originy) + y);
+		while(cx > scr.width && dw > 0) {
+			dx++;
+			dw--;
+			cx++;
+		}
+		while(cy > scr.height && dh > 0) {
+			dy++;
+			dh--;
+			cy++;
+		}
+		while(cx + dw > scr.width && dw > 0)
+			dw--;
+		while(cy + dh > scr.height && dh > 0)
+			dh--;
+		if(!dw || !dh)
+			continue;	//Outside screen.
+
+		if(p.second == 0) {
+			//Blank glyph.
+			for(uint32_t j = 0; j < dh; j++) {
+				uint32_t* base = scr.rowptr(cy + j) + cx;
+				for(uint32_t i = 0; i < dw; i++)
+					base[i] = blend(base[i], ibga, pbgl, pbgh);
+			}
+		} else {
+			//narrow/wide glyph.
+			for(uint32_t j = 0; j < dh; j++) {
+				uint32_t dataword = fontdata[p.second + (dy + j) / (32 / p.first)];
+				uint32_t* base = scr.rowptr(cy + j) + cx;
+				for(uint32_t i = 0; i < dw; i++)
+					if(((dataword >> (31 - ((dy + j) % (32 / p.first)) * p.first - (dx + i))) & 1))
+						base[i] = blend(base[i], ifga, pfgl, pfgh);
+					else
+						base[i] = blend(base[i], ibga, pbgl, pbgh);
+			}
+		}
+		x = next_x;
+		y = next_y;
+	}
 }
 
 render_object_text::render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg,
@@ -294,86 +372,7 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 
 void render_object_text::operator()(struct screen& scr) throw()
 {
-	uint32_t pfgl = (fg & 0xFF00FF) * fgalpha;
-	uint32_t pfgh = ((fg >> 8) & 0xFF00FF) * fgalpha;
-	uint32_t pbgl = (bg & 0xFF00FF) * bgalpha;
-	uint32_t pbgh = ((bg >> 8) & 0xFF00FF) * bgalpha;
-	uint16_t ifga = 256 - fgalpha;
-	uint16_t ibga = 256 - bgalpha;
-	int32_t orig_x = x;
-	uint32_t unicode_code = 0;
-	uint8_t unicode_left = 0;
-	for(size_t i = 0; i < text.length(); i++) {
-		uint8_t ch = text[i];
-		if(ch < 128)
-			unicode_code = text[i];
-		else if(ch < 192) {
-				if(!unicode_left)
-					continue;
-				unicode_code = 64 * unicode_code + ch - 128;
-				if(--unicode_left)
-					continue;
-		} else if(ch < 224) {
-			unicode_code = ch - 192;
-			unicode_left = 1;
-			continue;
-		} else if(ch < 240) {
-			unicode_code = ch - 224;
-			unicode_left = 2;
-			continue;
-		} else if(ch < 248) {
-			unicode_code = ch - 240;
-			unicode_left = 3;
-			continue;
-		} else
-			continue;
-		int32_t next_x, next_y;
-		auto p = find_glyph(unicode_code, x, y, orig_x, next_x, next_y);
-		uint32_t dx = 0;
-		uint32_t dw = p.first;
-		uint32_t dy = 0;
-		uint32_t dh = 16;
-		uint32_t cx = static_cast<uint32_t>(static_cast<int32_t>(scr.originx) + x);
-		uint32_t cy = static_cast<uint32_t>(static_cast<int32_t>(scr.originy) + y);
-		while(cx > scr.width && dw > 0) {
-			dx++;
-			dw--;
-			cx++;
-		}
-		while(cy > scr.height && dh > 0) {
-			dy++;
-			dh--;
-			cy++;
-		}
-		while(cx + dw > scr.width && dw > 0)
-			dw--;
-		while(cy + dh > scr.height && dh > 0)
-			dh--;
-		if(!dw || !dh)
-			continue;	//Outside screen.
-
-		if(p.second == 0) {
-			//Blank glyph.
-			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t* base = scr.rowptr(cy + j) + cx;
-				for(uint32_t i = 0; i < dw; i++)
-					base[i] = blend(base[i], ibga, pbgl, pbgh);
-			}
-		} else {
-			//narrow/wide glyph.
-			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t dataword = fontdata[p.second + (dy + j) / (32 / p.first)];
-				uint32_t* base = scr.rowptr(cy + j) + cx;
-				for(uint32_t i = 0; i < dw; i++)
-					if(((dataword >> (31 - ((dy + j) % (32 / p.first)) * p.first - (dx + i))) & 1))
-						base[i] = blend(base[i], ifga, pfgl, pfgh);
-					else
-						base[i] = blend(base[i], ibga, pbgl, pbgh);
-			}
-		}
-		x = next_x;
-		y = next_y;
-	}
+	render_text(scr, x, y, text, fg, fgalpha, bg, bgalpha);
 }
 
 void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
