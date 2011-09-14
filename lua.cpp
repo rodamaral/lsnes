@@ -304,83 +304,6 @@ namespace
 		return 0;
 	}
 
-	template<typename T, typename U>
-	int lua_read_memory(lua_State* LS, U (*rfun)(uint32_t addr))
-	{
-		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, "memory.read<type>");
-		lua_pushnumber(LS, static_cast<T>(rfun(addr)));
-		return 1;
-	}
-
-	template<typename T>
-	int lua_write_memory(lua_State* LS, bool (*wfun)(uint32_t addr, T value))
-	{
-		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, "memory.write<type>");
-		T value = get_numeric_argument<T>(LS, 2, "memory.write<type>");
-		wfun(addr, value);
-		return 0;
-	}
-
-	int lua_memory_readbyte(lua_State* LS)
-	{
-		return lua_read_memory<uint8_t, uint8_t>(LS, memory_read_byte);
-	}
-
-	int lua_memory_readsbyte(lua_State* LS)
-	{
-		return lua_read_memory<int8_t, uint8_t>(LS, memory_read_byte);
-	}
-
-	int lua_memory_readword(lua_State* LS)
-	{
-		return lua_read_memory<uint16_t, uint16_t>(LS, memory_read_word);
-	}
-
-	int lua_memory_readsword(lua_State* LS)
-	{
-		return lua_read_memory<int16_t, uint16_t>(LS, memory_read_word);
-	}
-
-	int lua_memory_readdword(lua_State* LS)
-	{
-		return lua_read_memory<uint32_t, uint32_t>(LS, memory_read_dword);
-	}
-
-	int lua_memory_readsdword(lua_State* LS)
-	{
-		return lua_read_memory<int32_t, uint32_t>(LS, memory_read_dword);
-	}
-
-	int lua_memory_readqword(lua_State* LS)
-	{
-		return lua_read_memory<uint64_t, uint64_t>(LS, memory_read_qword);
-	}
-
-	int lua_memory_readsqword(lua_State* LS)
-	{
-		return lua_read_memory<int64_t, uint64_t>(LS, memory_read_qword);
-	}
-
-	int lua_memory_writebyte(lua_State* LS)
-	{
-		return lua_write_memory(LS, memory_write_byte);
-	}
-
-	int lua_memory_writeword(lua_State* LS)
-	{
-		return lua_write_memory(LS, memory_write_word);
-	}
-
-	int lua_memory_writedword(lua_State* LS)
-	{
-		return lua_write_memory(LS, memory_write_dword);
-	}
-
-	int lua_memory_writeqword(lua_State* LS)
-	{
-		return lua_write_memory(LS, memory_write_qword);
-	}
-
 	int lua_input_set(lua_State* LS)
 	{
 		if(!lua_input_controllerdata)
@@ -496,7 +419,6 @@ namespace
 		return 1;
 		
 	}
-
 }
 
 void lua_callback_do_paint(struct lua_render_context* ctx, window* win) throw()
@@ -659,22 +581,6 @@ void init_lua(window* win) throw()
 	lua_setglobal(L, "print");
 	lua_pushcfunction(L, lua_exec);
 	lua_setglobal(L, "exec");
-
-	//Memory table.
-	lua_newtable(L);
-	SETFIELDFUN(L, -1, "readbyte", lua_memory_readbyte);
-	SETFIELDFUN(L, -1, "readsbyte", lua_memory_readsbyte);
-	SETFIELDFUN(L, -1, "writebyte", lua_memory_writebyte);
-	SETFIELDFUN(L, -1, "readword", lua_memory_readword);
-	SETFIELDFUN(L, -1, "readsword", lua_memory_readsword);
-	SETFIELDFUN(L, -1, "writeword", lua_memory_writeword);
-	SETFIELDFUN(L, -1, "readdword", lua_memory_readdword);
-	SETFIELDFUN(L, -1, "readsdword", lua_memory_readsdword);
-	SETFIELDFUN(L, -1, "writedword", lua_memory_writedword);
-	SETFIELDFUN(L, -1, "readqword", lua_memory_readqword);
-	SETFIELDFUN(L, -1, "readsqword", lua_memory_readsqword);
-	SETFIELDFUN(L, -1, "writeqword", lua_memory_writeqword);
-	lua_setglobal(L, "memory");
 
 	//Input table
 	lua_newtable(L);
