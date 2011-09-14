@@ -1,7 +1,7 @@
 FONT_SRC := unifontfull-5.1.20080820.hex
 CC := g++-4.5
 HOSTCC = $(CC)
-OBJECTS = controllerdata.o fieldsplit.o memorymanip.o misc.o movie.o moviefile.o render.o rom.o zip.o fonts/font.o videodumper.o videodumper2.o keymapper.o window.o window-sdl.o settings.o framerate.o mainloop.o rrdata.o specialframes.o png.o lsnesrc.o memorywatch.o
+OBJECTS = controllerdata.o fieldsplit.o memorymanip.o misc.o movie.o moviefile.o render.o rom.o zip.o fonts/font.o videodumper.o videodumper2.o keymapper.o window.o window-sdl.o settings.o framerate.o mainloop.o rrdata.o specialframes.o png.o lsnesrc.o memorywatch.o command.o
 PROGRAMS = lsnes.exe movietrunctest.exe
 
 CFLAGS = $(shell sdl-config --cflags) $(USER_CFLAGS)

@@ -425,9 +425,4 @@ private:
 	uint32_t candidates;
 };
 
-/**
- * \brief Commands for memory manipulation 
- */
-bool memorymanip_command(const std::string& command, window* win) throw(std::bad_alloc, std::runtime_error);
-
 #endif

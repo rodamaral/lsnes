@@ -43,21 +43,4 @@ private:
 	size_t position;
 };
 
-/**
- * \brief Class for splitting string to fields.
- *
- * Splits string to fields on ' ' and '\t', with multiple whitespace collapsed into one.
- */
-class tokensplitter
-{
-public:
-	tokensplitter(const std::string& _line) throw(std::bad_alloc);
-	operator bool() throw();
-	operator std::string() throw(std::bad_alloc);
-	std::string tail() throw(std::bad_alloc);
-private:
-	std::string line;
-	size_t position;
-};
-
 #endif

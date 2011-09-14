@@ -1,5 +1,6 @@
 #include <sstream>
 #include "mainloop.hpp"
+#include "command.hpp"
 #include "lua.hpp"
 #include "rrdata.hpp"
 #include "lsnes.hpp"
@@ -20,16 +21,6 @@ class my_interfaced : public SNES::Interface
 	string path(SNES::Cartridge::Slot slot, const string &hint)
 	{
 		return "./";
-	}
-};
-
-class mycommandhandlerd : public aliasexpand_commandhandler
-{
-public:
-	void docommand2(std::string& cmd, window* win) throw(std::bad_alloc, std::runtime_error)
-	{
-		if(cmd != "")
-			win->message("Unrecognized command: " + cmd);
 	}
 };
 
@@ -77,7 +68,6 @@ int main(int argc, char** argv)
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
-	mycommandhandlerd handler;
 	my_interfaced intrf;
 	SNES::system.interface = &intrf;
 
@@ -90,7 +80,6 @@ int main(int argc, char** argv)
 	}
 	window win;
 	init_lua(&win);
-	lua_set_commandhandler(handler);
 	
 	win.out() << "BSNES version: " << bsnes_core_version << std::endl;
 	win.out() << "lsnes version: lsnes rr" << lsnes_version << std::endl;
@@ -103,8 +92,7 @@ int main(int argc, char** argv)
 	create_lsnesrc(&win);
 	out(&win) << "Saving per-user data to: " << get_config_path(&win) << std::endl;
 	out(&win) << "--- Running lsnesrc --- " << std::endl;
-	std::string rc = "run-script " + cfgpath + "/lsnes.rc";
-	handler.docommand(rc, &win);
+	command::invokeC("run-script " + cfgpath + "/lsnes.rc", &win);
 	out(&win) << "--- End running lsnesrc --- " << std::endl;
 
 	out(&win) << "--- Loading ROM ---" << std::endl;

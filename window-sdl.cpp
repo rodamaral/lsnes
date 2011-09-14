@@ -1,7 +1,9 @@
 #include "window.hpp"
 #include "render.hpp"
+#include "command.hpp"
 #include "misc.hpp"
 #include "lsnes.hpp"
+#include "settings.hpp"
 #include <vector>
 #include <iostream>
 #include <csignal>
@@ -878,7 +880,7 @@ namespace
 	bool modal_return_flag;
 	bool delayed_close_flag;
 	std::string modmsg;
-	std::string command;
+	std::string command_buf;
 	bool command_overwrite;
 	size_t command_cursor;
 	unsigned old_screen_w;
@@ -895,7 +897,6 @@ namespace
 	std::list<std::string>::iterator commandhistory_itr;
 	screen* current_screen;
 	keymapper<keymapper_helper_sdl> mapper;
-	commandhandler* commandh;
 	SDL_Surface* hwsurf;
 	bool pause_active;
 	uint64_t last_ui_update;
@@ -904,18 +905,10 @@ namespace
 	SDL_keysym autorepeating_key;
 	unsigned autorepeat_phase = 0;
 	unsigned autorepeat_timecounter = 0;
-	unsigned autorepeat_first = 15;
-	unsigned autorepeat_subsequent = 6;
+	numeric_setting autorepeat_first("autorepeat-first-delay", 1, 999999999, 15);
+	numeric_setting autorepeat_subsequent("autorepeat-subsequent-delay", 1, 999999999, 4);
 };
 
-
-commandhandler::commandhandler()
-{
-}
-
-commandhandler::~commandhandler()
-{
-}
 
 namespace
 {
@@ -1244,16 +1237,16 @@ namespace
 			win->notify_screen_update();
 			return;
 		case SDLK_END:
-			command_cursor = command.length();
+			command_cursor = command_buf.length();
 			win->notify_screen_update();
 			return;
 		case SDLK_DOWN:
 		case SDLK_PAGEDOWN:
 			if(commandhistory_itr != commandhistory.begin()) {
 				commandhistory_itr--;
-				command = *commandhistory_itr;
-				if(command_cursor > command.length())
-					command_cursor = command.length();
+				command_buf = *commandhistory_itr;
+				if(command_cursor > command_buf.length())
+					command_cursor = command_buf.length();
 			}
 			win->notify_screen_update();
 			return;
@@ -1262,7 +1255,8 @@ namespace
 			win->notify_screen_update();
 			return;
 		case SDLK_RIGHT:
-			command_cursor = (command_cursor < command.length()) ? (command_cursor + 4) : command.length();
+			command_cursor = (command_cursor < command_buf.length()) ? (command_cursor + 4) :
+				command_buf.length();
 			win->notify_screen_update();
 			return;
 		case SDLK_HOME:
@@ -1274,26 +1268,28 @@ namespace
 			auto tmp = commandhistory_itr;
 			if(++tmp != commandhistory.end()) {
 				commandhistory_itr++;
-				command = *commandhistory_itr;
-				if(command_cursor > command.length())
-					command_cursor = command.length();
+				command_buf = *commandhistory_itr;
+				if(command_cursor > command_buf.length())
+					command_cursor = command_buf.length();
 			}
 			win->notify_screen_update();
 			return;
 		}
 		case SDLK_DELETE:
-			if(command_cursor < command.length())
-				command = command.substr(0, command_cursor) + command.substr(command_cursor + 4);
+			if(command_cursor < command_buf.length())
+				command_buf = command_buf.substr(0, command_cursor) +
+					command_buf.substr(command_cursor + 4);
 			win->notify_screen_update();
-			*commandhistory_itr = command;
+			*commandhistory_itr = command_buf;
 			return;
 		case SDLK_BACKSPACE:
 			if(command_cursor > 0) {
-				command = command.substr(0, command_cursor - 4) + command.substr(command_cursor);
+				command_buf = command_buf.substr(0, command_cursor - 4) +
+					command_buf.substr(command_cursor);
 				command_cursor -= 4;
 			}
 			win->notify_screen_update();
-			*commandhistory_itr = command;
+			*commandhistory_itr = command_buf;
 			return;
 		default:
 			break;
@@ -1307,11 +1303,11 @@ namespace
 		uint8_t c2 = 33 + ((code >> 12) & 0x3F);
 		uint8_t c3 = 33 + ((code >> 6) & 0x3F);
 		uint8_t c4 = 33 + (code & 0x3F);
-		if(command_overwrite && command_cursor < command.length()) {
-			command[command_cursor] = c1;
-			command[command_cursor + 1] = c2;
-			command[command_cursor + 2] = c3;
-			command[command_cursor + 3] = c4;
+		if(command_overwrite && command_cursor < command_buf.length()) {
+			command_buf[command_cursor] = c1;
+			command_buf[command_cursor + 1] = c2;
+			command_buf[command_cursor + 2] = c3;
+			command_buf[command_cursor + 3] = c4;
 			command_cursor += 4;
 		} else {
 			std::string foo = "    ";
@@ -1319,10 +1315,10 @@ namespace
 			foo[1] = c2;
 			foo[2] = c3;
 			foo[3] = c4;
-			command = command.substr(0, command_cursor) + foo + command.substr(command_cursor);
+			command_buf = command_buf.substr(0, command_cursor) + foo + command_buf.substr(command_cursor);
 			command_cursor += 4;
 		}
-		*commandhistory_itr = command;
+		*commandhistory_itr = command_buf;
 		win->notify_screen_update();
 	}
 
@@ -1351,9 +1347,8 @@ namespace
 			delayed_close_flag = true;
 			return;
 		}
-		if(e.type == SDL_QUIT && commandh) {
-			std::string q = "quit-emulator";
-			commandh->docommand(q, win);
+		if(e.type == SDL_QUIT) {
+			command::invokeC("quit-emulator", win);
 			state = WINSTATE_NORMAL;
 			return;
 		}
@@ -1383,18 +1378,17 @@ namespace
 					else
 						mouse_mask &= ~4;
 				}
-				if(commandh) {
+				{
 					std::ostringstream x;
 					x << "mouse_button " << xc << " " << yc << " " << mouse_mask;
-					std::string c = x.str();
-					commandh->docommand(c, win);
+					command::invokeC(x.str(), win);
 				}
 			}
 			if(e.type == SDL_KEYDOWN && key == SDLK_ESCAPE)
 				return;
 			if(e.type == SDL_KEYUP && key == SDLK_ESCAPE) {
 				state = WINSTATE_COMMAND;
-				command = "";
+				command_buf = "";
 				command_cursor = 0;
 				commandhistory.push_front("");
 				if(commandhistory.size() > MAXHISTORY)
@@ -1410,8 +1404,8 @@ namespace
 					std::string cmd;
 					if(i.symbol.device != SDL_DEV_NONE)
 						cmd = mapper.map(i.symbol, i.polarity);
-					if(cmd != "" && commandh)
-						commandh->docommand(cmd, win);
+					if(cmd != "")
+						command::invokeC(cmd, win);
 					more = i.more;
 				}
 				return;
@@ -1437,7 +1431,7 @@ namespace
 		case WINSTATE_COMMAND:
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
-				command = "";
+				command_buf = "";
 				win->notify_screen_update();
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
@@ -1448,11 +1442,8 @@ namespace
 				state = WINSTATE_NORMAL;
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
-				if(commandh) {
-					std::string cmd = decode_string(command);
-					commandh->docommand(cmd, win);
-				}
-				command = "";
+				command::invokeC(decode_string(command_buf), win);
+				command_buf = "";
 				win->notify_screen_update();
 				autorepeat_phase = 0;
 				return;
@@ -1486,8 +1477,6 @@ namespace
 	}
 }
 
-void debug_push_event(std::string cmd);
-
 window::window()
 {
 	signal(SIGALRM, sigalrm_handler);
@@ -1511,7 +1500,6 @@ window::window()
 	state = WINSTATE_NORMAL;
 	current_screen = NULL;
 	pause_active = false;
-	commandh = NULL;
 	hwsurf = NULL;
 	command_overwrite = false;
 	old_screen_h = 0;
@@ -1576,10 +1564,9 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	notify_screen_update();
 	poll_inputs();
 	bool ret = modconfirm;
-	if(delayed_close_flag && commandh) {
+	if(delayed_close_flag) {
 		delayed_close_flag = false;
-		std::string c = "quit";
-		commandh->docommand(c, this);
+		command::invokeC("quit-emulator", win);
 	}
 	return ret;
 }
@@ -1636,7 +1623,7 @@ void window::notify_screen_update(bool full) throw()
 	} catch(...) {
 	}
 
-	std::string command_showas = decode_string(command);
+	std::string command_showas = decode_string(command_buf);
 	uint32_t screen_w = 512;
 	uint32_t screen_h = 448;
 	if(current_screen && current_screen->width >= 512 && current_screen->height >= 448) {
@@ -1740,7 +1727,7 @@ void window::notify_screen_update(bool full) throw()
 		} catch(...) {
 		}
 
-	//Draw command.
+	//Draw command_buf.
 	uint32_t command_y = win_h - 22;
 	try {
 		if(state == WINSTATE_COMMAND)
@@ -1778,14 +1765,14 @@ void window::poll_inputs() throw(std::bad_alloc)
 	}
 }
 
-void window::bind(std::string mod, std::string modmask, std::string keyname, std::string command) throw(std::bad_alloc,
+void window::bind(std::string mod, std::string modmask, std::string keyname, std::string cmd) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	mapper.bind(mod, modmask, keyname, command);
+	mapper.bind(mod, modmask, keyname, cmd);
 	if(modmask == "")
-		message("Key " + keyname + " bound to '" + command + "'");
+		message("Key " + keyname + " bound to '" + cmd + "'");
 	else
-		message("Key " + mod + "/" + modmask + " " + keyname + " bound to '" + command + "'");
+		message("Key " + mod + "/" + modmask + " " + keyname + " bound to '" + cmd + "'");
 }
 
 void window::unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
@@ -1796,11 +1783,6 @@ void window::unbind(std::string mod, std::string modmask, std::string keyname) t
 		message("Key " + keyname + " unbound");
 	else
 		message("Key " + mod + "/" + modmask + " " + keyname + " unbound");
-}
-
-void window::set_commandhandler(commandhandler& cmdh) throw()
-{
-	commandh = &cmdh;
 }
 
 std::map<std::string, std::string>& window::get_emustatus() throw()
@@ -1819,92 +1801,169 @@ void window::paused(bool enable) throw()
 	notify_screen_update();
 }
 
-bool window::exec_command(std::string cmd) throw(std::bad_alloc, std::runtime_error)
+void window::sound_enable(bool enable) throw()
 {
-	if(is_cmd_prefix(cmd, "enable-sound")) {
-		std::string syntax = "sound <on/off>";
-		tokensplitter t(cmd);
-		std::string dummy = t;
-		std::string s = t;
-		if(t.tail() != "")
-			throw std::runtime_error(syntax);
-		if(s == "on")
-			sound_enable(true);
-		else if(s == "off")
-			sound_enable(false);
-		else
-			throw std::runtime_error(syntax);
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "identify-key")) {
-		identify();
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "set-autorepeat")) {
-		tokensplitter t(cmd);
-		std::string dummy = t;
-		std::string first = t;
-		std::string subsequent = t;
-		if(first == "" || subsequent == "" || t.tail() != "")
-			throw std::runtime_error("Syntax: set-autorepeat <first> <subsequent>");
-		unsigned x = parse_value<uint32_t>(first);
-		unsigned y = parse_value<uint32_t>(subsequent);
-		if(!x || !y)
-			throw std::runtime_error("0 is not legal autorepeat timeout");
-		autorepeat_first = x;
-		autorepeat_subsequent = y;
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "toggle-console")) {
-		console_mode = !console_mode;
-		if(console_mode)
-			maxmessages = hwsurf ? (hwsurf->h - 38) / 16 : 36;
-		else
-			maxmessages = MAXMESSAGES;
-		if(messagebuffer_next_seq < maxmessages)
-			messagebuffer_first_show = 0;
-		else
-			messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-		notify_screen_update(true);
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "scroll-fullup")) {
-		messagebuffer_first_show = messagebuffer_first_seq;
-		notify_screen_update();
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "scroll-fulldown")) {
-		if(messagebuffer_next_seq < maxmessages)
-			messagebuffer_first_show = 0;
-		else
-			messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-		notify_screen_update();
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "scroll-up")) {
-		if(messagebuffer_first_show > maxmessages)
-			messagebuffer_first_show -= maxmessages;
-		else
-			messagebuffer_first_show = 0;
-		if(messagebuffer_first_show < messagebuffer_first_seq)
+	sound_enabled = enable;
+	SDL_PauseAudio(enable ? 0 : 1);
+}
+
+namespace
+{
+	class enable_sound_cmd : public command
+	{
+	public:
+		enable_sound_cmd() throw(std::bad_alloc) : command("enable-sound") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			std::string s = args;
+			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled")
+				win->sound_enable(true);
+			else if(s == "off" || s == "false" || s == "0" || s == "disable" || s == "disabled")
+				win->sound_enable(false);
+			else
+				throw std::runtime_error("Bad sound setting");
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Enable/Disable sound"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: enable-sound <on/off>\n"
+				"Enable or disable sound.\n";
+		}
+	} enable_sound_o;
+
+	class identify_cmd : public command
+	{
+	public:
+		identify_cmd() throw(std::bad_alloc) : command("identify-key") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			identify();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Identify a key"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: identify-key\n"
+				"Identifies a (pseudo-)key.\n";
+		}
+	} identify_o;
+
+	class scrollup_cmd : public command
+	{
+	public:
+		scrollup_cmd() throw(std::bad_alloc) : command("scroll-up") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			if(messagebuffer_first_show > maxmessages)
+				messagebuffer_first_show -= maxmessages;
+			else
+				messagebuffer_first_show = 0;
+			if(messagebuffer_first_show < messagebuffer_first_seq)
+				messagebuffer_first_show = messagebuffer_first_seq;
+			win->notify_screen_update();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console back one page"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: scroll-up\n"
+				"Scrolls message console backward one page.\n";
+		}
+	} scrollup_o;
+
+	class scrollfullup_cmd : public command
+	{
+	public:
+		scrollfullup_cmd() throw(std::bad_alloc) : command("scroll-fullup") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
 			messagebuffer_first_show = messagebuffer_first_seq;
-		notify_screen_update();
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "scroll-down")) {
-		messagebuffer_first_show += maxmessages;
-		if(messagebuffer_next_seq < maxmessages)
-			messagebuffer_first_show = 0;
-		else if(messagebuffer_next_seq < messagebuffer_first_show + maxmessages)
-			messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-		notify_screen_update();
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "push-event")) {
-		debug_push_event(cmd);
-		return true;
-	}
-	return false;
+			win->notify_screen_update();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to beginning"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: scroll-fullup\n"
+				"Scrolls message console to beginning.\n";
+		}
+	} scrollfullup_o;
+
+	class scrollfulldown_cmd : public command
+	{
+	public:
+		scrollfulldown_cmd() throw(std::bad_alloc) : command("scroll-fulldown") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			if(messagebuffer_next_seq < maxmessages)
+				messagebuffer_first_show = 0;
+			else
+				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
+			win->notify_screen_update();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to end"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: scroll-fulldown\n"
+				"Scrolls message console to end.\n";
+		}
+	} scrollfulldown_o;
+
+	class scrolldown_cmd : public command
+	{
+	public:
+		scrolldown_cmd() throw(std::bad_alloc) : command("scroll-down") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			messagebuffer_first_show += maxmessages;
+			if(messagebuffer_next_seq < maxmessages)
+				messagebuffer_first_show = 0;
+			else if(messagebuffer_next_seq < messagebuffer_first_show + maxmessages)
+				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
+			win->notify_screen_update();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console one page forward"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: scroll-down\n"
+				"Scrolls message console forward one page.\n";
+		}
+	} scrolldown_o;
+
+	class toggleconsole_cmd : public command
+	{
+	public:
+		toggleconsole_cmd() throw(std::bad_alloc) : command("toggle-console") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			console_mode = !console_mode;
+			if(console_mode)
+				maxmessages = hwsurf ? (hwsurf->h - 38) / 16 : 36;
+			else
+				maxmessages = MAXMESSAGES;
+			if(messagebuffer_next_seq < maxmessages)
+				messagebuffer_first_show = 0;
+			else
+				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
+			win->notify_screen_update(true);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Toggle console between small and full "
+			"window"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: toggle-console\n"
+				"Toggles console between small and large.\n";
+		}
+	} toggleconsole_o;
 }
 
 void window::wait_msec(uint64_t msec) throw(std::bad_alloc)
@@ -1970,12 +2029,6 @@ void window::cancel_wait() throw()
 	wait_canceled = true;
 }
 
-void window::sound_enable(bool enable) throw()
-{
-	sound_enabled = enable;
-	SDL_PauseAudio(enable ? 0 : 1);
-}
-
 void window::play_audio_sample(uint16_t left, uint16_t right) throw()
 {
 	sampledup_ctr += sampledup_inc;
@@ -1995,10 +2048,5 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_yoffset = yoffset;
 	vc_hscl = hscl;
 	vc_vscl = vscl;
-}
-
-void debug_push_event(std::string cmd)
-{
-	
 }
 

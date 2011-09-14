@@ -1,6 +1,8 @@
 #include "lsnes.hpp"
 #include "window.hpp"
+#include "command.hpp"
 #include <iostream>
+#include <limits>
 #include <snes/snes.hpp>
 #include "rom.hpp"
 #include "memorymanip.hpp"
@@ -750,294 +752,279 @@ namespace
 		throw std::runtime_error("Bad hex character");
 	}
 
-}
+	class memorymanip_command : public command
+	{
+	public:
+		memorymanip_command(const std::string& cmd) throw(std::bad_alloc)
+			: command(cmd)
+		{
+			_command = cmd;
+		}
+		~memorymanip_command() throw() {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
+			firstword = static_cast<std::string>(t);
+			secondword = static_cast<std::string>(t);
+			has_tail = t;
+			address_bad = true;
+			value_bad = true;
+			has_value = (secondword != "");
+			try {
+				if(firstword.length() >= 2 && firstword.substr(0, 2) == "0x") {
+					if(firstword.length() > 10)
+						throw 42;
+					address = 0;
+					for(unsigned i = 2; i < firstword.length(); i++)
+						address = 16 * address + hex(firstword[i]);
+				} else {
+					address = parse_value<uint32_t>(firstword);
+				}
+				address_bad = false;
+			} catch(...) {
+			}
+			try {
+				if(secondword.length() >= 2 && secondword.substr(0, 2) == "0x") {
+					if(secondword.length() > 18)
+						throw 42;
+					value = 0;
+					for(unsigned i = 2; i < secondword.length(); i++)
+						value = 16 * value + hex(secondword[i]);
+				} else if(secondword.length() > 0 && secondword[0] == '-') {
+					value = static_cast<uint64_t>(parse_value<int64_t>(secondword));
+				} else {
+					value = parse_value<uint64_t>(secondword);
+				}
+				value_bad = false;
+			} catch(...) {
+			}
+			invoke2(win);
+		}
+		virtual void invoke2(window* win) throw(std::bad_alloc, std::runtime_error) = 0;
+		std::string firstword;
+		std::string secondword;
+		uint32_t address;
+		uint64_t value;
+		bool has_tail;
+		bool address_bad;
+		bool value_bad;
+		bool has_value;
+		std::string _command;
+	};
 
-bool memorymanip_command(const std::string& cmd, window* win) throw(std::bad_alloc, std::runtime_error)
-{
-	tokensplitter t(cmd);
-	std::string command = t;
-	std::string firstword = t;
-	std::string secondword = t;
-	uint32_t address;
-	uint64_t value;
-	bool has_tail = (t.tail() != "");
-	bool address_bad = true;
-	bool value_bad = true;
-	bool has_value = (secondword != "");
-	try {
-		if(firstword.length() >= 2 && firstword.substr(0, 2) == "0x") {
-			if(firstword.length() > 10)
-				throw 42;
-			address = 0;
-			for(unsigned i = 2; i < firstword.length(); i++)
-				address = 16 * address + hex(firstword[i]);
-		} else {
-			address = parse_value<uint32_t>(firstword);
-		}
-		address_bad = false;
-	} catch(...) {
-	}
-	try {
-		if(secondword.length() >= 2 && secondword.substr(0, 2) == "0x") {
-			if(secondword.length() > 18)
-				throw 42;
-			value = 0;
-			for(unsigned i = 2; i < secondword.length(); i++)
-				value = 16 * value + hex(secondword[i]);
-		} else if(secondword.length() > 0 && secondword[0] == '-') {
-			value = static_cast<uint64_t>(parse_value<int64_t>(secondword));
-		} else {
-			value = parse_value<uint64_t>(secondword);
-		}
-		value_bad = false;
-	} catch(...) {
-	}
-	if(command == "read-byte") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
+	template<typename outer, typename inner, typename ret>
+	class read_command : public memorymanip_command
+	{
+	public:
+		read_command(const std::string& cmd, ret (*_rfn)(uint32_t addr)) throw(std::bad_alloc)
+			: memorymanip_command(cmd)
 		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<uint64_t>(memory_read_byte(address));
-			out(win) << x.str() << std::endl;
+			rfn = _rfn;
 		}
-		return true;
-	}
-	if(command == "read-word") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
+		~read_command() throw() {}
+		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
 		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<uint64_t>(memory_read_word(address));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-dword") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<uint64_t>(memory_read_dword(address));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-qword") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<uint64_t>(memory_read_qword(address));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-sbyte") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<int64_t>(static_cast<int8_t>(memory_read_byte(address)));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-sword") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<int64_t>(static_cast<int16_t>(memory_read_word(address)));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-sdword") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<int64_t>(static_cast<int32_t>(memory_read_dword(address)));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "read-sqword") {
-		if(address_bad || has_value || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address>");
-		{
-			std::ostringstream x;
-			x << "0x" << std::hex << address << " -> " << std::dec
-				<< static_cast<int64_t>(static_cast<int64_t>(memory_read_qword(address)));
-			out(win) << x.str() << std::endl;
-		}
-		return true;
-	}
-	if(command == "write-byte") {
-		if(address_bad || value_bad || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address> <value>");
-		if(static_cast<int64_t>(value) < -128 || value > 255)
-			throw std::runtime_error("Value to write out of range");
-		memory_write_byte(address, value & 0xFF);
-		return true;
-	}
-	if(command == "write-word") {
-		if(address_bad || value_bad || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address> <value>");
-		if(static_cast<int64_t>(value) < -32768 || value > 65535)
-			throw std::runtime_error("Value to write out of range");
-		memory_write_word(address, value & 0xFFFF);
-		return true;
-	}
-	if(command == "write-dword") {
-		if(address_bad || value_bad || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address> <value>");
-		if(static_cast<int64_t>(value) < -2147483648 || value > 4294967295ULL)
-			throw std::runtime_error("Value to write out of range");
-		memory_write_dword(address, value & 0xFFFF);
-		return true;
-	}
-	if(command == "write-qword") {
-		if(address_bad || value_bad || has_tail)
-			throw std::runtime_error("Syntax: " + command + " <address> <value>");
-		memory_write_dword(address, value & 0xFFFF);
-		return true;
-	}
-	if(command == "search-memory") {
-		if(!isrch)
-			isrch = new memorysearch();
-		if(firstword == "sblt" && !has_value)
-			isrch->byte_slt();
-		else if(firstword == "sble" && !has_value)
-			isrch->byte_sle();
-		else if(firstword == "sbeq" && !has_value)
-			isrch->byte_seq();
-		else if(firstword == "sbne" && !has_value)
-			isrch->byte_sne();
-		else if(firstword == "sbge" && !has_value)
-			isrch->byte_sge();
-		else if(firstword == "sbgt" && !has_value)
-			isrch->byte_sgt();
-		else if(firstword == "ublt" && !has_value)
-			isrch->byte_ult();
-		else if(firstword == "uble" && !has_value)
-			isrch->byte_ule();
-		else if(firstword == "ubeq" && !has_value)
-			isrch->byte_ueq();
-		else if(firstword == "ubne" && !has_value)
-			isrch->byte_une();
-		else if(firstword == "ubge" && !has_value)
-			isrch->byte_uge();
-		else if(firstword == "ubgt" && !has_value)
-			isrch->byte_ugt();
-		else if(firstword == "b" && has_value) {
-			if(static_cast<int64_t>(value) < -128 || value > 255)
-				throw std::runtime_error("Value to compare out of range");
-			isrch->byte_value(value & 0xFF);
-		} else if(firstword == "swlt" && !has_value)
-			isrch->word_slt();
-		else if(firstword == "swle" && !has_value)
-			isrch->word_sle();
-		else if(firstword == "sweq" && !has_value)
-			isrch->word_seq();
-		else if(firstword == "swne" && !has_value)
-			isrch->word_sne();
-		else if(firstword == "swge" && !has_value)
-			isrch->word_sge();
-		else if(firstword == "swgt" && !has_value)
-			isrch->word_sgt();
-		else if(firstword == "uwlt" && !has_value)
-			isrch->word_ult();
-		else if(firstword == "uwle" && !has_value)
-			isrch->word_ule();
-		else if(firstword == "uweq" && !has_value)
-			isrch->word_ueq();
-		else if(firstword == "uwne" && !has_value)
-			isrch->word_une();
-		else if(firstword == "uwge" && !has_value)
-			isrch->word_uge();
-		else if(firstword == "uwgt" && !has_value)
-			isrch->word_ugt();
-		else if(firstword == "w" && has_value) {
-			if(static_cast<int64_t>(value) < -32768 || value > 65535)
-				throw std::runtime_error("Value to compare out of range");
-			isrch->word_value(value & 0xFF);
-		} else if(firstword == "sdlt" && !has_value)
-			isrch->dword_slt();
-		else if(firstword == "sdle" && !has_value)
-			isrch->dword_sle();
-		else if(firstword == "sdeq" && !has_value)
-			isrch->dword_seq();
-		else if(firstword == "sdne" && !has_value)
-			isrch->dword_sne();
-		else if(firstword == "sdge" && !has_value)
-			isrch->dword_sge();
-		else if(firstword == "sdgt" && !has_value)
-			isrch->dword_sgt();
-		else if(firstword == "udlt" && !has_value)
-			isrch->dword_ult();
-		else if(firstword == "udle" && !has_value)
-			isrch->dword_ule();
-		else if(firstword == "udeq" && !has_value)
-			isrch->dword_ueq();
-		else if(firstword == "udne" && !has_value)
-			isrch->dword_une();
-		else if(firstword == "udge" && !has_value)
-			isrch->dword_uge();
-		else if(firstword == "udgt" && !has_value)
-			isrch->dword_ugt();
-		else if(firstword == "d" && has_value) {
-			if(static_cast<int64_t>(value) < -2147483648 || value > 4294967295ULL)
-				throw std::runtime_error("Value to compare out of range");
-			isrch->dword_value(value & 0xFF);
-		} else if(firstword == "sqlt" && !has_value)
-			isrch->qword_slt();
-		else if(firstword == "sqle" && !has_value)
-			isrch->qword_sle();
-		else if(firstword == "sqeq" && !has_value)
-			isrch->qword_seq();
-		else if(firstword == "sqne" && !has_value)
-			isrch->qword_sne();
-		else if(firstword == "sqge" && !has_value)
-			isrch->qword_sge();
-		else if(firstword == "sqgt" && !has_value)
-			isrch->qword_sgt();
-		else if(firstword == "uqlt" && !has_value)
-			isrch->qword_ult();
-		else if(firstword == "uqle" && !has_value)
-			isrch->qword_ule();
-		else if(firstword == "uqeq" && !has_value)
-			isrch->qword_ueq();
-		else if(firstword == "uqne" && !has_value)
-			isrch->qword_une();
-		else if(firstword == "uqge" && !has_value)
-			isrch->qword_uge();
-		else if(firstword == "uqgt" && !has_value)
-			isrch->qword_ugt();
-		else if(firstword == "q" && has_value) {
-			isrch->qword_value(value & 0xFF);
-		} else if(firstword == "reset" && !has_value)
-			isrch->reset();
-		else if(firstword == "count" && !has_value)
-			;
-		else if(firstword == "print" && !has_value) {
-			auto c = isrch->get_candidates();
-			for(auto ci = c.begin(); ci != c.end(); ci++) {
+			if(address_bad || has_value || has_tail)
+				throw std::runtime_error("Syntax: " + _command + " <address>");
+			{
 				std::ostringstream x;
-				x << "0x" << std::hex << std::setw(8) << std::setfill('0') << *ci;
+				x << "0x" << std::hex << address << " -> " << std::dec
+					<< static_cast<outer>(static_cast<inner>(rfn(address)));
 				out(win) << x.str() << std::endl;
 			}
-		} else
-			throw std::runtime_error("Unknown memorysearch subcommand '" + firstword + "'");
-		out(win) << isrch->get_candidate_count() << " candidates remain." << std::endl;
-		return true;
-	}
-	return false;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Read memory"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: " + _command + " <address>\n"
+				"Reads data from memory.\n";
+		}
+
+		ret (*rfn)(uint32_t addr);
+	};
+
+	template<typename arg, int64_t low, uint64_t high>
+	class write_command : public memorymanip_command
+	{
+	public:
+		write_command(const std::string& cmd, bool (*_wfn)(uint32_t addr, arg a)) throw(std::bad_alloc)
+			: memorymanip_command(cmd)
+		{
+			wfn = _wfn;
+		}
+		~write_command() throw() {}
+		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(address_bad || value_bad || has_tail)
+				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
+			if(static_cast<int64_t>(value) < low || value > high)
+				throw std::runtime_error("Value to write out of range");
+			wfn(address, value & high);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: " + _command + " <address> <value>\n"
+				"Writes data to memory.\n";
+		}
+		bool (*wfn)(uint32_t addr, arg a);
+	};
+
+	class memorysearch_command : public memorymanip_command
+	{
+	public:
+		memorysearch_command() throw(std::bad_alloc) : memorymanip_command("search-memory") {}
+		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(!isrch)
+				isrch = new memorysearch();
+			if(firstword == "sblt" && !has_value)
+				isrch->byte_slt();
+			else if(firstword == "sble" && !has_value)
+				isrch->byte_sle();
+			else if(firstword == "sbeq" && !has_value)
+			isrch->byte_seq();
+			else if(firstword == "sbne" && !has_value)
+				isrch->byte_sne();
+			else if(firstword == "sbge" && !has_value)
+				isrch->byte_sge();
+			else if(firstword == "sbgt" && !has_value)
+				isrch->byte_sgt();
+			else if(firstword == "ublt" && !has_value)
+				isrch->byte_ult();
+			else if(firstword == "uble" && !has_value)
+				isrch->byte_ule();
+			else if(firstword == "ubeq" && !has_value)
+				isrch->byte_ueq();
+			else if(firstword == "ubne" && !has_value)
+				isrch->byte_une();
+			else if(firstword == "ubge" && !has_value)
+				isrch->byte_uge();
+			else if(firstword == "ubgt" && !has_value)
+				isrch->byte_ugt();
+			else if(firstword == "b" && has_value) {
+				if(static_cast<int64_t>(value) < -128 || value > 255)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->byte_value(value & 0xFF);
+			} else if(firstword == "swlt" && !has_value)
+				isrch->word_slt();
+			else if(firstword == "swle" && !has_value)
+				isrch->word_sle();
+			else if(firstword == "sweq" && !has_value)
+				isrch->word_seq();
+			else if(firstword == "swne" && !has_value)
+				isrch->word_sne();
+			else if(firstword == "swge" && !has_value)
+				isrch->word_sge();
+			else if(firstword == "swgt" && !has_value)
+				isrch->word_sgt();
+			else if(firstword == "uwlt" && !has_value)
+				isrch->word_ult();
+			else if(firstword == "uwle" && !has_value)
+				isrch->word_ule();
+			else if(firstword == "uweq" && !has_value)
+				isrch->word_ueq();
+			else if(firstword == "uwne" && !has_value)
+				isrch->word_une();
+			else if(firstword == "uwge" && !has_value)
+				isrch->word_uge();
+			else if(firstword == "uwgt" && !has_value)
+				isrch->word_ugt();
+			else if(firstword == "w" && has_value) {
+				if(static_cast<int64_t>(value) < -32768 || value > 65535)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->word_value(value & 0xFF);
+			} else if(firstword == "sdlt" && !has_value)
+				isrch->dword_slt();
+			else if(firstword == "sdle" && !has_value)
+				isrch->dword_sle();
+			else if(firstword == "sdeq" && !has_value)
+				isrch->dword_seq();
+			else if(firstword == "sdne" && !has_value)
+				isrch->dword_sne();
+			else if(firstword == "sdge" && !has_value)
+				isrch->dword_sge();
+			else if(firstword == "sdgt" && !has_value)
+				isrch->dword_sgt();
+			else if(firstword == "udlt" && !has_value)
+				isrch->dword_ult();
+			else if(firstword == "udle" && !has_value)
+				isrch->dword_ule();
+			else if(firstword == "udeq" && !has_value)
+				isrch->dword_ueq();
+			else if(firstword == "udne" && !has_value)
+				isrch->dword_une();
+			else if(firstword == "udge" && !has_value)
+				isrch->dword_uge();
+			else if(firstword == "udgt" && !has_value)
+				isrch->dword_ugt();
+			else if(firstword == "d" && has_value) {
+				if(static_cast<int64_t>(value) < -2147483648 || value > 4294967295ULL)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->dword_value(value & 0xFF);
+			} else if(firstword == "sqlt" && !has_value)
+				isrch->qword_slt();
+			else if(firstword == "sqle" && !has_value)
+				isrch->qword_sle();
+			else if(firstword == "sqeq" && !has_value)
+				isrch->qword_seq();
+			else if(firstword == "sqne" && !has_value)
+				isrch->qword_sne();
+			else if(firstword == "sqge" && !has_value)
+				isrch->qword_sge();
+			else if(firstword == "sqgt" && !has_value)
+				isrch->qword_sgt();
+			else if(firstword == "uqlt" && !has_value)
+				isrch->qword_ult();
+			else if(firstword == "uqle" && !has_value)
+				isrch->qword_ule();
+			else if(firstword == "uqeq" && !has_value)
+				isrch->qword_ueq();
+			else if(firstword == "uqne" && !has_value)
+				isrch->qword_une();
+			else if(firstword == "uqge" && !has_value)
+				isrch->qword_uge();
+			else if(firstword == "uqgt" && !has_value)
+				isrch->qword_ugt();
+			else if(firstword == "q" && has_value) {
+				isrch->qword_value(value & 0xFF);
+			} else if(firstword == "reset" && !has_value)
+				isrch->reset();
+			else if(firstword == "count" && !has_value)
+				;
+			else if(firstword == "print" && !has_value) {
+				auto c = isrch->get_candidates();
+				for(auto ci = c.begin(); ci != c.end(); ci++) {
+					std::ostringstream x;
+					x << "0x" << std::hex << std::setw(8) << std::setfill('0') << *ci;
+					out(win) << x.str() << std::endl;
+				}
+			} else
+				throw std::runtime_error("Unknown memorysearch subcommand '" + firstword + "'");
+			out(win) << isrch->get_candidate_count() << " candidates remain." << std::endl;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Search memory addresses"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: " + _command + " {s,u}{b,w,d,q}{lt,le,eq,ne,ge,gt}\n"
+				"Syntax: " + _command + " {b,w,d,q} <value>\n"
+				"Syntax: " + _command + " reset\n"
+				"Syntax: " + _command + " count\n"
+				"Syntax: " + _command + " print\n"
+				"Searches addresses from memory.\n";
+		}
+	} memorysearch_o;
+
+	read_command<uint64_t, uint8_t, uint8_t> ru1("read-byte", memory_read_byte);
+	read_command<uint64_t, uint16_t, uint16_t> ru2("read-word", memory_read_word);
+	read_command<uint64_t, uint32_t, uint32_t> ru4("read-dword", memory_read_dword);
+	read_command<uint64_t, uint64_t, uint64_t> ru8("read-qword", memory_read_qword);
+	read_command<uint64_t, int8_t, uint8_t> rs1("read-sbyte", memory_read_byte);
+	read_command<uint64_t, int16_t, uint16_t> rs2("read-sword", memory_read_word);
+	read_command<uint64_t, int32_t, uint32_t> rs4("read-sdword", memory_read_dword);
+	read_command<uint64_t, int64_t, uint64_t> rs8("read-sqword", memory_read_qword);
+	write_command<uint8_t, -128, 0xFF> w1("write-byte", memory_write_byte);
+	write_command<uint16_t, -32768, 0xFFFF> w2("write-word", memory_write_word);
+	write_command<uint32_t, -2147483648, 0xFFFFFFFFU> w4("write-dword", memory_write_dword);
+	write_command<uint64_t, -9223372036854775808LL, 0xFFFFFFFFFFFFFFFFULL> w8("write-qword", memory_write_qword);
 }

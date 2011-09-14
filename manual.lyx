@@ -1441,16 +1441,6 @@ Asks to press a key and then identifies that key.
 \end_layout
 
 \begin_layout Subsubsection
-set-autorepeat <delay> <repeat>
-\end_layout
-
-\begin_layout Standard
-Set keyboard autorepeat.
- <delay> is before first autorepeat, <repeat> is between autorepeats.
- 
-\end_layout
-
-\begin_layout Subsubsection
 toggle-console
 \end_layout
 
@@ -1488,6 +1478,26 @@ scroll-down
 
 \begin_layout Standard
 Scroll messages window forward one screenful.
+\end_layout
+
+\begin_layout Subsection
+Settings
+\end_layout
+
+\begin_layout Subsubsection
+autorepeat-first-delay
+\end_layout
+
+\begin_layout Standard
+Sets the delay for first character in typematic autorepeat.
+\end_layout
+
+\begin_layout Subsubsection
+autorepeat-subsequent-delay
+\end_layout
+
+\begin_layout Standard
+Sets the delay for subsequent characters in typematic autorepeat.
 \end_layout
 
 \begin_layout Subsection

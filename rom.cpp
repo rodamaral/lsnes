@@ -15,6 +15,7 @@ using SNES::cartridge;
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 #include "rom.hpp"
+#include "command.hpp"
 #include "fieldsplit.hpp"
 #include "zip.hpp"
 #include "misc.hpp"

@@ -21,19 +21,6 @@
 void end_vid_dump() throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Send control command.
- * 
- * Sends command for dumping.
- * 
- * \param cmd Command.
- * \param win Graphics system handle.
- * \return True if command was recognized, false if not.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Failed to start dump or invalid syntax.
- */
-bool vid_dumper_command(std::string& cmd, window* win) throw(std::bad_alloc, std::runtime_error);
-
-/**
  * \brief Dump a frame.
  * 
  * Dumps a frame. Does nothing if dumping is not in progress.

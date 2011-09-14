@@ -3,11 +3,99 @@
 #include <map>
 #include <sstream>
 #include "misc.hpp"
+#include "command.hpp"
 #include <iostream>
 
 namespace
 {
 	std::map<std::string, setting*>* settings;
+
+	class set_command : public command
+	{
+	public:
+		set_command() throw(std::bad_alloc) : command("set-setting") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			std::string syntax = "Syntax: set-setting <setting> [<value>]";
+			tokensplitter t(args);
+			std::string settingname = t;
+			std::string settingvalue = t.tail();
+			if(settingname == "")
+				throw std::runtime_error("Setting name required.");
+			setting_set(settingname, settingvalue);
+			out(win) << "Setting '" << settingname << "' set to '" << settingvalue << "'" << std::endl;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "set a setting"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: set-setting <setting> [<value>]\n"
+				"Set setting to a new value. Omit <value> to set to ''\n";
+		}
+	} set_setting;
+	
+	class unset_command : public command
+	{
+	public:
+		unset_command() throw(std::bad_alloc) : command("unset-setting") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			std::string syntax = "Syntax: unset-setting <setting>";
+			tokensplitter t(args);
+			std::string settingname = t;
+			if(settingname == "" || t)
+				throw std::runtime_error("Expected setting name and nothing else");
+			setting_blank(settingname);
+			out(win) << "Setting '" << settingname << "' unset" << std::endl;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "unset a setting"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: unset-setting <setting>\n"
+				"Try to unset a setting. Note that not all settings can be unset\n";
+		}
+	} unset_setting;
+
+	class get_command : public command
+	{
+	public:
+		get_command() throw(std::bad_alloc) : command("get-setting") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
+			std::string settingname = t;
+			if(settingname == "" || t.tail() != "")
+				throw std::runtime_error("Expected setting name and nothing else");
+			if(!setting_isblank(settingname))
+				out(win) << "Setting '" << settingname << "' has value '" << setting_get(settingname)
+					<< "'" << std::endl;
+			else
+				out(win) << "Setting '" << settingname << "' unset" << std::endl;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "get value of a setting"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: get-setting <setting>\n"
+				"Show value of setting\n";
+		}
+	} get_setting;
+	
+	class shsettings_command : public command
+	{
+	public:
+		shsettings_command() throw(std::bad_alloc) : command("show-settings") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take arguments");
+			setting_print_all(win);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Show value of all settings"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: show-settigns\n"
+				"Show value of all settings\n";
+		}
+	} sh_setting;
 }
 
 setting::setting(const std::string& name) throw(std::bad_alloc)

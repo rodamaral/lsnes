@@ -1,4 +1,5 @@
 #include "mainloop.hpp"
+#include "command.hpp"
 #include <iomanip>
 #include "framerate.hpp"
 #include "memorywatch.hpp"
@@ -426,23 +427,6 @@ namespace
 			autoheld_controls((x & 4) ? 1 : 0, x & 3, bid) ^= newstate;
 		else
 			curcontrols((x & 4) ? 1 : 0, x & 3, bid) = newstate;
-	}
-
-	//Recognize and react to [+-]controller commands.
-	bool do_button_action(std::string cmd)
-	{
-		init_buttonmap();
-		if(cmd.length() < 12)
-			return false;
-		std::string prefix = cmd.substr(0, 11);
-		if(prefix != "+controller" && prefix != "-controller" && prefix != "controllerh")
-			return false;
-		std::string button = cmd.substr(11);
-		if(!buttonmap.count(button))
-			return false;
-		auto i = buttonmap[button];
-		do_button_action(i.first, i.second, (cmd[0] != '-') ? 1 : 0, (cmd[0] == 'c'));
-		return true;
 	}
 
 	//Save state.
@@ -889,21 +873,36 @@ class my_interface : public SNES::Interface
 	}
 };
 
-class mycommandhandler : public aliasexpand_commandhandler
+namespace
 {
-public:
-	void docommand2(std::string& cmd, window* win) throw(std::bad_alloc, std::runtime_error)
+	class quit_emulator_cmd : public command
 	{
-		if(is_cmd_prefix(cmd, "quit-emulator")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			std::string tail = t.tail();
-			if(tail == "/y" || win->modal_message("Really quit?", true)) {
+	public:
+		quit_emulator_cmd() throw(std::bad_alloc) : command("quit-emulator") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "/y" || win->modal_message("Really quit?", true)) {
 				amode = ADVANCE_QUIT;
 				win->paused(false);
 				win->cancel_wait();
 			}
-		} else if(is_cmd_prefix(cmd, "pause-emulator")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Quit the emulator"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: quit-emulator [/y]\n"
+				"Quits emulator (/y => don't ask for confirmation).\n";
+		}
+	} quitemu;
+
+	class pause_emulator_cmd : public command
+	{
+	public:
+		pause_emulator_cmd() throw(std::bad_alloc) : command("pause-emulator") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			if(amode != ADVANCE_AUTO) {
 				amode = ADVANCE_AUTO;
 				win->paused(false);
@@ -915,117 +914,386 @@ public:
 				amode = ADVANCE_PAUSE;
 				win->message("Paused");
 			}
-		} else if(is_cmd_prefix(cmd, "+advance-frame")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "(Un)pause the emulator"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: pause-emulator\n"
+				"(Un)pauses the emulator.\n";
+		}
+	} pauseemu;
+
+	class padvance_frame_cmd : public command
+	{
+	public:
+		padvance_frame_cmd() throw(std::bad_alloc) : command("+advance-frame") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
 			win->cancel_wait();
 			win->paused(false);
-		} else if(is_cmd_prefix(cmd, "-advance-frame")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Advance one frame"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: +advance-frame\n"
+				"Advances the emulation by one frame.\n";
+		}
+	} padvancef;
+
+	class nadvance_frame_cmd : public command
+	{
+	public:
+		nadvance_frame_cmd() throw(std::bad_alloc) : command("-advance-frame") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			cancel_advance = true;
 			win->cancel_wait();
 			win->paused(false);
-		} else if(is_cmd_prefix(cmd, "+advance-poll")) {
+		}
+	} nadvancef;
+
+	class padvance_poll_cmd : public command
+	{
+	public:
+		padvance_poll_cmd() throw(std::bad_alloc) : command("+advance-poll") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
 			win->cancel_wait();
 			win->paused(false);
-		} else if(is_cmd_prefix(cmd, "-advance-poll")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Advance one subframe"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: +advance-poll\n"
+				"Advances the emulation by one subframe.\n";
+		}
+	} padvancep;
+
+	class nadvance_poll_cmd : public command
+	{
+	public:
+		nadvance_poll_cmd() throw(std::bad_alloc) : command("-advance-poll") {}
+
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			cancel_advance = true;
 			win->cancel_wait();
 			win->paused(false);
-		} else if(is_cmd_prefix(cmd, "advance-skiplag")) {
+		}
+	} nadvancep;
+
+	class advance_skiplag_cmd : public command
+	{
+	public:
+		advance_skiplag_cmd() throw(std::bad_alloc) : command("advance-skiplag") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_SKIPLAG;
 			win->cancel_wait();
 			win->paused(false);
-		} else if(is_cmd_prefix(cmd, "reset")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Skip to next poll"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: advance-skiplag\n"
+				"Advances the emulation to the next poll.\n";
+		}
+	} skiplagc;
+
+	class reset_cmd : public command
+	{
+	public:
+		reset_cmd() throw(std::bad_alloc) : command("reset") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			pending_reset_cycles = 0;
-		} else if(is_cmd_prefix(cmd, "load-state")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_load(t.tail(), LOAD_STATE_RW);
-		} else if(is_cmd_prefix(cmd, "load-readonly")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_load(t.tail(), LOAD_STATE_RO);
-		} else if(is_cmd_prefix(cmd, "load-preserve")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_load(t.tail(), LOAD_STATE_PRESERVE);
-		} else if(is_cmd_prefix(cmd, "load-movie")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_load(t.tail(), LOAD_STATE_MOVIE);
-		} else if(is_cmd_prefix(cmd, "save-state")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_save(t.tail(), SAVE_STATE);
-		} else if(is_cmd_prefix(cmd, "save-movie")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			mark_pending_save(t.tail(), SAVE_MOVIE);
-		} else if(is_cmd_prefix(cmd, "set-rwmode")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Reset the SNES"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: reset\n"
+				"Resets the SNES in beginning of the next frame.\n";
+		}
+	} resetc;
+
+	class load_state_cmd : public command
+	{
+	public:
+		load_state_cmd() throw(std::bad_alloc) : command("load-state") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_load(args, LOAD_STATE_RW);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Load state"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: load-state <file>\n"
+				"Loads SNES state from <file> in Read/Write mode\n";
+		}
+	} loadstatec;
+
+	class load_readonly_cmd : public command
+	{
+	public:
+		load_readonly_cmd() throw(std::bad_alloc) : command("load-readonly") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_load(args, LOAD_STATE_RO);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Load state"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: load-readonly <file>\n"
+				"Loads SNES state from <file> in Read-only mode\n";
+		}
+	} loadreadonlyc;
+
+	class load_preserve_cmd : public command
+	{
+	public:
+		load_preserve_cmd() throw(std::bad_alloc) : command("load-preserve") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_load(args, LOAD_STATE_PRESERVE);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Load state"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: load-preserve <file>\n"
+				"Loads SNES state from <file> preserving input\n";
+		}
+	} loadpreservec;
+
+	class load_movie_cmd : public command
+	{
+	public:
+		load_movie_cmd() throw(std::bad_alloc) : command("load-movie") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_load(args, LOAD_STATE_MOVIE);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Load movie"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: load-movie <file>\n"
+				"Loads movie from <file>\n";
+		}
+	} loadmoviec;
+
+	class save_state_cmd : public command
+	{
+	public:
+		save_state_cmd() throw(std::bad_alloc) : command("save-state") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_save(args, SAVE_STATE);
+		}
+	
+		std::string get_short_help() throw(std::bad_alloc) { return "Save state"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: save-state <file>\n"
+				"Saves SNES state to <file>\n";
+		}
+	} savestatec;
+
+	class save_movie_cmd : public command
+	{
+	public:
+		save_movie_cmd() throw(std::bad_alloc) : command("save-movie") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			mark_pending_save(args, SAVE_MOVIE);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Save movie"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: save-movie <file>\n"
+				"Saves movie to <file>\n";
+		}
+	} savemoviec;
+
+	class set_rwmode_cmd : public command
+	{
+	public:
+		set_rwmode_cmd() throw(std::bad_alloc) : command("set-rwmode") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			movb.get_movie().readonly_mode(false);
 			lua_callback_do_readwrite(win);
 			update_movie_state();
 			win->notify_screen_update();
-		} else if(is_cmd_prefix(cmd, "set-gamename")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			our_movie.gamename = t.tail();
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Switch to read/write mode"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: set-rwmode\n"
+				"Switches to read/write mode\n";
+		}
+	} setrwc;
+
+	class set_gamename_cmd : public command
+	{
+	public:
+		set_gamename_cmd() throw(std::bad_alloc) : command("set-gamename") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			our_movie.gamename = args;
 			out(win) << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
-		} else if(is_cmd_prefix(cmd, "get-gamename")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Set the game name"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: set-gamename <name>\n"
+				"Sets the game name to <name>\n";
+		}
+	} setnamec;
+
+	class get_gamename_cmd : public command
+	{
+	public:
+		get_gamename_cmd() throw(std::bad_alloc) : command("get-gamename") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			out(win) << "Game name is '" << our_movie.gamename << "'" << std::endl;
-		} else if(is_cmd_prefix(cmd, "print-authors")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Get the game name"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: get-gamename\n"
+				"Prints the game name\n";
+		}
+	} getnamec;
+
+	class print_authors_cmd : public command
+	{
+	public:
+		print_authors_cmd() throw(std::bad_alloc) : command("show-authors") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			size_t idx = 0;
 			for(auto i = our_movie.authors.begin(); i != our_movie.authors.end(); i++) {
 				out(win) << (idx++) << ": " << i->first << "|" << i->second << std::endl;
 			}
 			out(win) << "End of authors list" << std::endl;
-		} else if(is_cmd_prefix(cmd, "repaint")) {
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Show the run authors"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: show-authors\n"
+				"Shows the run authors\n";
+		}
+	} getauthorc;
+	
+	class repainter : public command
+	{
+	public:
+		repainter() throw(std::bad_alloc) : command("repaint") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
 			redraw_framebuffer();
-		} else if(is_cmd_prefix(cmd, "add-author")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Redraw the screen"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: repaint\n"
+				"Redraws the screen\n";
+		}
+	} repaintc;
+
+	class add_author_command : public command
+	{
+	public:
+		add_author_command() throw(std::bad_alloc) : command("add-author") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
 			fieldsplitter f(t.tail());
 			std::string full = f;
 			std::string nick = f;
-			if(full == "" && nick == "") {
-				out(win) << "syntax: add-author <author>" << std::endl;
-				return;
-			}
+			if(full == "" && nick == "")
+				throw std::runtime_error("Bad author name");
 			our_movie.authors.push_back(std::make_pair(full, nick));
 			out(win) << (our_movie.authors.size() - 1) << ": " << full << "|" << nick << std::endl;
-		} else if(is_cmd_prefix(cmd, "remove-author")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			uint64_t index;
-			try {
-				index = parse_value<uint64_t>(t.tail());
-			} catch(std::exception& e) {
-				out(win) << "syntax: remove-author <authornum>" << std::endl;
-				return;
-			}
-			if(index >= our_movie.authors.size()) {
-				out(win) << "No such author" << std::endl;
-				return;
-			}
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Add an author"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: add-author <fullname>\n"
+				"Syntax: add-author |<nickname>\n"
+				"Syntax: add-author <fullname>|<nickname>\n"
+				"Adds a new author\n";
+		}
+	} addauthorc;
+
+	class remove_author_command : public command
+	{
+	public:
+		remove_author_command() throw(std::bad_alloc) : command("remove-author") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
+			uint64_t index = parse_value<uint64_t>(t.tail());
+			if(index >= our_movie.authors.size())
+				throw std::runtime_error("No such author");
 			our_movie.authors.erase(our_movie.authors.begin() + index);
-		} else if(is_cmd_prefix(cmd, "edit-author")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
-			uint64_t index;
-			try {
-				index = parse_value<uint64_t>(t);
-			} catch(std::exception& e) {
-				out(win) << "syntax: edit-author <authornum> <author>" << std::endl;
-				return;
-			}
-			if(index >= our_movie.authors.size()) {
-				out(win) << "No such author" << std::endl;
-				return;
-			}
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Remove an author"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: remove-author <id>\n"
+				"Removes author with ID <id>\n";
+		}
+	} removeauthorc;
+
+	class edit_author_command : public command
+	{
+	public:
+		edit_author_command() throw(std::bad_alloc) : command("edit-author") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
+			uint64_t index = parse_value<uint64_t>(t);
+			if(index >= our_movie.authors.size())
+				throw std::runtime_error("No such author");
 			fieldsplitter f(t.tail());
 			std::string full = f;
 			std::string nick = f;
@@ -1033,21 +1301,47 @@ public:
 				out(win) << "syntax: edit-author <authornum> <author>" << std::endl;
 				return;
 			}
-			our_movie.authors[index] = std::make_pair(full, nick);;
-		} else if(is_cmd_prefix(cmd, "add-watch")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
+			our_movie.authors[index] = std::make_pair(full, nick);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Edit an author"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: edit-author <authorid> <fullname>\n"
+				"Syntax: edit-author <authorid> |<nickname>\n"
+				"Syntax: edit-author <authorid> <fullname>|<nickname>\n"
+				"Edits author name\n";
+		}
+	} editauthorc;
+
+	class add_watch_command : public command
+	{
+	public:
+		add_watch_command() throw(std::bad_alloc) : command("add-watch") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
 			std::string name = t;
-			if(name == "" || t.tail() == "") {
-				out(win) << "syntax: add-watch <name> <expr>" << std::endl;
-				return;
-			}
+			if(name == "" || t.tail() == "")
+				throw std::runtime_error("syntax: add-watch <name> <expr>");
 			std::cerr << "Add watch: '" << name << "'" << std::endl;
 			memory_watches[name] = t.tail();
 			update_movie_state();
-		} else if(is_cmd_prefix(cmd, "remove-watch")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Add a memory watch"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: add-watch <name> <expression>\n"
+				"Adds a new memory watch\n";
+		}
+	} addwatchc;
+
+	class remove_watch_command : public command
+	{
+	public:
+		remove_watch_command() throw(std::bad_alloc) : command("remove-watch") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
 			std::string name = t;
 			if(name == "" || t.tail() != "") {
 				out(win) << "syntax: remove-watch <name>" << std::endl;
@@ -1057,29 +1351,73 @@ public:
 			memory_watches.erase(name);
 			auto& _status = win->get_emustatus();
 			_status.erase("M[" + name + "]");
-			update_movie_state();
-		} else if(is_cmd_prefix(cmd, "test-1")) {
+			update_movie_state();		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Remove a memory watch"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: remove-watch <name>\n"
+				"Removes a memory watch\n";
+		}
+	} removewatchc;
+
+	class test_1 : public command
+	{
+	public:
+		test_1() throw(std::bad_alloc) : command("test-1") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
 			framebuffer = nosignal_screen;
 			redraw_framebuffer();
-		} else if(is_cmd_prefix(cmd, "test-2")) {
+		}
+	} test1c;
+
+	class test_2 : public command
+	{
+	public:
+		test_2() throw(std::bad_alloc) : command("test-2") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
 			framebuffer = corrupt_screen;
 			redraw_framebuffer();
-		} else if(is_cmd_prefix(cmd, "test-3")) {
+		}
+	} test2c;
+
+	class test_3 : public command
+	{
+	public:
+		test_3() throw(std::bad_alloc) : command("test-3") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
 			while(1);
-		} else if(is_cmd_prefix(cmd, "take-screenshot")) {
-			try {
-				tokensplitter t(cmd);
-				std::string dummy = t;
-				framebuffer.save_png(t.tail());
-				out(win) << "Saved PNG screenshot" << std::endl;
-			} catch(std::bad_alloc& e) {
-				OOM_panic(win);
-			} catch(std::exception& e) {
-				out(win) << "Can't save PNG: " << e.what() << std::endl;
-			}
-		} else if(is_cmd_prefix(cmd, "mouse_button")) {
-			tokensplitter t(cmd);
-			std::string dummy = t;
+		}
+	} test3c;
+
+	class screenshot_command : public command
+	{
+	public:
+		screenshot_command() throw(std::bad_alloc) : command("take-screenshot") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Filename required");
+			framebuffer.save_png(args);
+			out(win) << "Saved PNG screenshot" << std::endl;
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Takes a screenshot"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: take-screenshot <file>\n"
+				"Saves screenshot to PNG file <file>\n";
+		}
+	} screenshotc;
+
+	class mouse_button_handler : public command
+	{
+	public:
+		mouse_button_handler() throw(std::bad_alloc) : command("mouse_button") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			tokensplitter t(args);
 			std::string x = t;
 			std::string y = t;
 			std::string b = t;
@@ -1093,20 +1431,78 @@ public:
 			if(_b & ~prev_mouse_mask & 4)
 				send_analog_input(_x, _y, 2);
 			prev_mouse_mask = _b;
-		} else if(do_button_action(cmd)) {
+		}
+	} mousebuttonh;
+	
+	class button_action : public command
+	{
+	public:
+		button_action(const std::string& cmd, int _type, unsigned _controller, std::string _button)
+			throw(std::bad_alloc)
+			: command(cmd)
+		{
+			commandn = cmd;
+			type = _type;
+			controller = _controller;
+			button = _button;
+		}
+		~button_action() throw() {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
+			init_buttonmap();
+			if(!buttonmap.count(button))
+				return;
+			auto i = buttonmap[button];
+			do_button_action(i.first, i.second, (type != 1) ? 1 : 0, (type == 2));
 			update_movie_state();
 			win->notify_screen_update();
-			return;
 		}
-		else if(cmd == "")
-			;
-		else
-			win->message("Unrecognized command: " + cmd);
-	}
-};
+		std::string get_short_help() throw(std::bad_alloc)
+		{
+			return "Press/Unpress button";
+		}
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: " + commandn + "\n"
+				"Presses/Unpresses button\n";
+		}
+		std::string commandn;
+		unsigned controller;
+		int type;
+		std::string button;
+	};
 
-namespace
-{
+	class button_action_helper
+	{
+	public:
+		button_action_helper()
+		{
+			for(size_t i = 0; i < sizeof(buttonnames) / sizeof(buttonnames[0]); ++i)
+				for(int j = 0; j < 3; ++j)
+					for(unsigned k = 0; k < 8; ++k) {
+						std::ostringstream x, y;
+						switch(j) {
+						case 0:
+							x << "+controller";
+							break;
+						case 1:
+							x << "-controller";
+							break;
+						case 2:
+							x << "controllerh";
+							break;
+						};
+						x << (k + 1);
+						x << buttonnames[i];
+						y << (k + 1);
+						y << buttonnames[i];
+						new button_action(x.str(), j, k, y.str());
+					}
+		}
+	} bah;
+
 	//If there is a pending load, perform it.
 	bool handle_load()
 	{
@@ -1221,8 +1617,6 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 	my_interface intrf;
 	auto old_inteface = SNES::system.interface;
 	SNES::system.interface = &intrf;
-	mycommandhandler handler;
-	win->set_commandhandler(handler);
 	status = &win->get_emustatus();
 	fill_special_frames();
 
@@ -1241,7 +1635,6 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 		return;
 	}
 
-	lua_set_commandhandler(handler);
 	lua_callback_startup(win);
 
 	//print_controller_mappings();

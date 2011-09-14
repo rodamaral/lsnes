@@ -1,4 +1,5 @@
 #include "lua.hpp"
+#include "command.hpp"
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "mainloop.hpp"
@@ -20,7 +21,6 @@ namespace
 	lua_State* L;
 	lua_render_context* rctx = NULL;
 	bool recursive_flag = false;
-	commandhandler* cmdhnd;
 	const char* luareader_fragment = NULL;
 	controls_t* controllerdata = NULL;
 
@@ -103,10 +103,9 @@ namespace
 			out(win) << "Error running Lua hunk: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
-		if(lua_requests_repaint && cmdhnd) {
-			std::string c = "repaint";
+		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			cmdhnd->docommand(c, win);
+			command::invokeC("repaint", win);
 		}
 	}
 
@@ -190,10 +189,9 @@ namespace
 			out(win) << "Error running Lua callback: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
-		if(lua_requests_repaint && cmdhnd) {
-			std::string c = "repaint";
+		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			cmdhnd->docommand(c, win);
+			command::invokeC("repaint", win);
 		}
 	}
 
@@ -442,7 +440,7 @@ namespace
 	int lua_exec(lua_State* LS)
 	{
 		std::string text = get_string_argument(LS, 1, "exec");
-		cmdhnd->docommand(text, tmp_win);
+		command::invokeC(text, tmp_win);
 		return 0;
 	}
 
@@ -741,22 +739,43 @@ void lua_callback_do_input(controls_t& data, bool subframe, window* win) throw()
 	controllerdata = NULL;
 }
 
-
-bool lua_command(const std::string& cmd, window* win) throw(std::bad_alloc)
+namespace
 {
-	if(is_cmd_prefix(cmd, "eval-lua")) {
-		tokensplitter t(cmd);
-		std::string dummy = t;
-		do_eval_lua(t.tail(), win);
-		return true;
-	}
-	if(is_cmd_prefix(cmd, "run-lua")) {
-		tokensplitter t(cmd);
-		std::string dummy = t;
-		do_run_lua(t.tail(), win);
-		return true;
-	}
-	return false;
+	class evallua : public command
+	{
+	public:
+		evallua() throw(std::bad_alloc) : command("evaluate-lua") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Expected expression to evaluate");
+			do_eval_lua(args, win);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Evaluate expression in Lua VM"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: evaluate-lua <expression>\n"
+				"Evaluates <expression> in Lua VM.\n";
+		}
+	} evallua_o;
+
+	class runlua : public command
+	{
+	public:
+		runlua() throw(std::bad_alloc) : command("run-lua") {}
+		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args == "")
+				throw std::runtime_error("Expected script to run");
+			do_run_lua(args, win);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Run Lua script in Lua VM"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: run-lua <file>\n"
+				"Runs <file> in Lua VM.\n";
+		}
+	} runlua_o;
 }
 
 void lua_callback_quit(window* win) throw()
@@ -764,11 +783,6 @@ void lua_callback_quit(window* win) throw()
 	if(!callback_exists("on_quit"))
 		return;
 	run_lua_cb(0, win);
-}
-
-void lua_set_commandhandler(commandhandler& cmdh) throw()
-{
-	cmdhnd = &cmdh;
 }
 
 void init_lua(window* win) throw()
@@ -853,8 +867,6 @@ void init_lua(window* win) throw()
 	SETFIELDFUN(L, -1, "readonly", lua_movie_readonly);
 	SETFIELDFUN(L, -1, "set_readwrite", lua_movie_set_readwrite);
 	lua_setglobal(L, "movie");
-
-	//TODO: Add some functions into the Lua state.
 }
 
 bool lua_requests_repaint = false;

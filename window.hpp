@@ -16,17 +16,6 @@
 class window_internal;
 class window;
 
-class commandhandler
-{
-public:
-	commandhandler();
-	~commandhandler();
-	virtual void docommand(std::string& cmd, window* win) = 0;
-private:
-	commandhandler(const commandhandler&);
-	commandhandler& operator=(const commandhandler&);
-};
-
 /**
  * \brief Handle to the graphics system.
  * 
@@ -127,13 +116,6 @@ public:
 	std::map<std::string, std::string>& get_emustatus() throw();
 
 /**
- * \brief Set command handler.
- * 
- * \param cmdh New command handler.
- */
-	void set_commandhandler(commandhandler& cmdh) throw();
-
-/**
  * \brief Notify that the screen has been updated.
  * 
  * \param full Do full refresh.
@@ -153,16 +135,6 @@ public:
  * \param enable Enable pause if true, disable otherwise.
  */
 	void paused(bool enable) throw();
-
-/**
- * \brief Execute platform-specific commands.
- * 
- * \param cmd The command.
- * \return True if command was recognized, false otherwise.
- * \throw std::bad_alloc Not enough memory.
- * \throw std::runtime_error Can't execute command.
- */
-	bool exec_command(std::string cmd) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * \brief Wait specified number of milliseconds (polling for input).

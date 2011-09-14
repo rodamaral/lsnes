@@ -5,6 +5,30 @@
 #include "window.hpp"
 #include "controllerdata.hpp"
 
+struct lua_State;
+
+/**
+ * Function implemented in C++ exported to Lua.
+ */
+class lua_function
+{
+/**
+ * Register function.
+ */
+	lua_function(const std::string& name) throw(std::bad_alloc);
+/**
+ * Unregister function.
+ */
+	virtual ~lua_function() throw();
+
+/**
+ * Invoke function.
+ */
+	virtual int invoke(lua_State* L, window* win) = 0;
+private:
+	std::string fname;
+};
+
 struct lua_render_context
 {
 	uint32_t left_gap;
@@ -33,8 +57,6 @@ void lua_callback_pre_save(const std::string& name, bool is_state, window* win) 
 void lua_callback_err_save(const std::string& name, window* win) throw();
 void lua_callback_post_save(const std::string& name, bool is_state, window* win) throw();
 void lua_callback_quit(window* win) throw();
-bool lua_command(const std::string& cmd, window* win) throw(std::bad_alloc);
-void lua_set_commandhandler(commandhandler& cmdh) throw();
 
 extern bool lua_requests_repaint;
 extern bool lua_requests_subframe_paint;

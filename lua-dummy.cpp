@@ -1,5 +1,18 @@
 #include "lua.hpp"
 
+struct lua_State
+{
+	int x;
+};
+
+lua_function::lua_function(const std::string& name) throw(std::bad_alloc)
+{
+}
+
+lua_function::~lua_function() throw()
+{
+}
+
 void lua_callback_do_paint(struct lua_render_context* ctx, window* win) throw()
 {
 }
@@ -48,16 +61,7 @@ void lua_callback_post_save(const std::string& name, bool is_state, window* win)
 {
 }
 
-bool lua_command(const std::string& cmd, window* win) throw(std::bad_alloc)
-{
-	return false;
-}
-
 void lua_callback_quit(window* win) throw()
-{
-}
-
-void lua_set_commandhandler(commandhandler& cmdh) throw()
 {
 }
 
