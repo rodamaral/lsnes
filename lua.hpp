@@ -12,6 +12,7 @@ struct lua_State;
  */
 class lua_function
 {
+public:
 /**
  * Register function.
  */
@@ -25,7 +26,7 @@ class lua_function
  * Invoke function.
  */
 	virtual int invoke(lua_State* L, window* win) = 0;
-private:
+protected:
 	std::string fname;
 };
 

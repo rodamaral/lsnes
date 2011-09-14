@@ -1,23 +1,108 @@
 #include "lua.hpp"
+#include "lua-int.hpp"
 #include "command.hpp"
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "mainloop.hpp"
+#include <map>
+#include <string>
 extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
 #include <iostream>
 #include "fieldsplit.hpp"
-#define BITWISE_BITS 48
-#define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)
 
 #define SETFIELDFUN(LSS, idx, name, fun) do { lua_pushcfunction(LSS, fun); lua_setfield(LSS, (idx) - 1, name); \
 	} while(0)
 
+namespace
+{
+	std::map<std::string, lua_function*>* functions;
+	lua_State* lua_initialized;
+	window* tmp_win;
+
+	int lua_trampoline_function(lua_State* L)
+	{
+		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
+		lua_function* f = reinterpret_cast<lua_function*>(ptr);
+		return f->invoke(L, tmp_win);
+	}
+
+	//Pushes given table to top of stack, creating if needed.
+	void recursive_lookup_table(lua_State* L, const std::string& tab)
+	{
+		if(tab == "") {
+			lua_pushvalue(L, LUA_GLOBALSINDEX);
+			return;
+		}
+		std::string u = tab;
+		size_t split = u.find_last_of(".");
+		std::string u1;
+		std::string u2 = u;
+		if(split < u.length()) {
+			u1 = u.substr(0, split);
+			u2 = u.substr(split + 1);
+		}
+		recursive_lookup_table(L, u1);
+		lua_getfield(L, -1, u2.c_str());
+		if(lua_type(L, -1) != LUA_TTABLE) {
+			//Not a table, create a table.
+			lua_pop(L, 1);
+			lua_newtable(L);
+			lua_setfield(L, -2, u2.c_str());
+			lua_getfield(L, -1, u2.c_str());
+		}
+		//Get rid of previous table.
+		lua_insert(L, -2);
+		lua_pop(L, 1);
+	}
+
+	void register_lua_function(lua_State* L, const std::string& fun)
+	{
+		std::string u = fun;
+		size_t split = u.find_last_of(".");
+		std::string u1;
+		std::string u2 = u;
+		if(split < u.length()) {
+			u1 = u.substr(0, split);
+			u2 = u.substr(split + 1);
+		}
+		recursive_lookup_table(L, u1);
+		void* ptr = reinterpret_cast<void*>((*functions)[fun]);
+		lua_pushlightuserdata(L, ptr);
+		lua_pushcclosure(L, lua_trampoline_function, 1);
+		lua_setfield(L, -2, u2.c_str());
+		lua_pop(L, 1);
+	}
+
+	void register_lua_functions(lua_State* L)
+	{
+		if(functions)
+			for(auto i = functions->begin(); i != functions->end(); i++)
+				register_lua_function(L, i->first);
+		lua_initialized = L;
+	}
+}
+
+lua_function::lua_function(const std::string& name) throw(std::bad_alloc)
+{
+	if(!functions)
+		functions = new std::map<std::string, lua_function*>();
+	(*functions)[fname = name] = this;
+	if(lua_initialized)
+		register_lua_function(lua_initialized, fname);
+}
+
+lua_function::~lua_function() throw()
+{
+	if(!functions)
+		return;
+	functions->erase(fname);
+}
+
 namespace 
 {
-	window* tmp_win;
 	lua_State* L;
 	lua_render_context* rctx = NULL;
 	bool recursive_flag = false;
@@ -109,16 +194,6 @@ namespace
 		}
 	}
 
-	template<typename T>
-	T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)
-	{
-		if(lua_isnone(LS, argindex) || !lua_isnumber(LS, argindex)) {
-			lua_pushfstring(L, "argument #%i to %s must be numeric", argindex, fname);
-			lua_error(LS);
-		}
-		return static_cast<T>(lua_tonumber(LS, argindex));
-	}
-
 	std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)
 	{
 		if(lua_isnone(LS, argindex)) {
@@ -141,18 +216,6 @@ namespace
 			lua_error(LS);
 		}
 		return (lua_toboolean(LS, argindex) != 0);
-	}
-
-	template<typename T>
-	void get_numeric_argument(lua_State* LS, unsigned argindex, T& value, const char* fname)
-	{
-		if(lua_isnoneornil(LS, argindex))
-			return;
-		if(lua_isnone(LS, argindex) || !lua_isnumber(LS, argindex)) {
-			lua_pushfstring(L, "argument #%i to %s must be numeric if present", argindex, fname);
-			lua_error(LS);
-		}
-		value = static_cast<T>(lua_tonumber(LS, argindex));
 	}
 
 	void do_eval_lua(const std::string& c, window* win) throw(std::bad_alloc)
@@ -193,136 +256,6 @@ namespace
 			lua_requests_repaint = false;
 			command::invokeC("repaint", win);
 		}
-	}
-
-	int lua_symmetric_bitwise(lua_State* LS, uint64_t (*combine)(uint64_t chain, uint64_t arg), uint64_t init)
-	{
-		int stacksize = 0;
-		while(!lua_isnone(LS, stacksize + 1))
-			stacksize++;
-		uint64_t ret = init;
-		for(int i = 0; i < stacksize; i++)
-			ret = combine(ret, get_numeric_argument<uint64_t>(LS, i + 1, "<bitwise function>"));
-		lua_pushnumber(LS, ret);
-		return 1;
-	}
-
-	int lua_shifter(lua_State* LS, uint64_t (*shift)(uint64_t base, uint64_t amount, uint64_t bits))
-	{
-		uint64_t base;
-		uint64_t amount = 1;
-		uint64_t bits = BITWISE_BITS;
-		base = get_numeric_argument<uint64_t>(LS, 1, "<shift function>");
-		get_numeric_argument(LS, 2, amount, "<shift function>");
-		get_numeric_argument(LS, 3, bits, "<shift function>");
-		lua_pushnumber(LS, shift(base, amount, bits));
-		return 1;
-	}
-
-	uint64_t combine_none(uint64_t chain, uint64_t arg)
-	{
-		return (chain & ~arg) & BITWISE_MASK;
-	}
-
-	uint64_t combine_any(uint64_t chain, uint64_t arg)
-	{
-		return (chain | arg) & BITWISE_MASK;
-	}
-
-	uint64_t combine_all(uint64_t chain, uint64_t arg)
-	{
-		return (chain & arg) & BITWISE_MASK;
-	}
-
-	uint64_t combine_parity(uint64_t chain, uint64_t arg)
-	{
-		return (chain ^ arg) & BITWISE_MASK;
-	}
-
-	uint64_t shift_lrotate(uint64_t base, uint64_t amount, uint64_t bits)
-	{
-		uint64_t mask = ((1ULL << bits) - 1);
-		base &= mask;
-		base = (base << amount) | (base >> (bits - amount));
-		return base & mask & BITWISE_MASK;
-	}
-
-	uint64_t shift_rrotate(uint64_t base, uint64_t amount, uint64_t bits)
-	{
-		uint64_t mask = ((1ULL << bits) - 1);
-		base &= mask;
-		base = (base >> amount) | (base << (bits - amount));
-		return base & mask & BITWISE_MASK;
-	}
-
-	uint64_t shift_lshift(uint64_t base, uint64_t amount, uint64_t bits)
-	{
-		uint64_t mask = ((1ULL << bits) - 1);
-		base <<= amount;
-		return base & mask & BITWISE_MASK;
-	}
-
-	uint64_t shift_lrshift(uint64_t base, uint64_t amount, uint64_t bits)
-	{
-		uint64_t mask = ((1ULL << bits) - 1);
-		base &= mask;
-		base >>= amount;
-		return base & BITWISE_MASK;
-	}
-
-	uint64_t shift_arshift(uint64_t base, uint64_t amount, uint64_t bits)
-	{
-		uint64_t mask = ((1ULL << bits) - 1);
-		base &= mask;
-		bool negative = ((base >> (bits - 1)) != 0);
-		base >>= amount;
-		base |= ((negative ? BITWISE_MASK : 0) << (bits - amount));
-		return base & mask & BITWISE_MASK;
-	}
-
-	int lua_bit_none(lua_State* LS)
-	{
-		return lua_symmetric_bitwise(LS, combine_none, BITWISE_MASK);
-	}
-
-	int lua_bit_any(lua_State* LS)
-	{
-		return lua_symmetric_bitwise(LS, combine_any, 0);
-	}
-
-	int lua_bit_all(lua_State* LS)
-	{
-		return lua_symmetric_bitwise(LS, combine_all, BITWISE_MASK);
-	}
-
-	int lua_bit_parity(lua_State* LS)
-	{
-		return lua_symmetric_bitwise(LS, combine_parity, 0);
-	}
-
-	int lua_bit_lrotate(lua_State* LS)
-	{
-		return lua_shifter(LS, shift_lrotate);
-	}
-
-	int lua_bit_rrotate(lua_State* LS)
-	{
-		return lua_shifter(LS, shift_rrotate);
-	}
-
-	int lua_bit_lshift(lua_State* LS)
-	{
-		return lua_shifter(LS, shift_lshift);
-	}
-
-	int lua_bit_arshift(lua_State* LS)
-	{
-		return lua_shifter(LS, shift_arshift);
-	}
-
-	int lua_bit_lrshift(lua_State* LS)
-	{
-		return lua_shifter(LS, shift_lrshift);
 	}
 
 	int lua_print(lua_State* LS)
@@ -800,23 +733,6 @@ void init_lua(window* win) throw()
 	lua_pushcfunction(L, lua_exec);
 	lua_setglobal(L, "exec");
 
-	//Bit table.
-	lua_newtable(L);
-	SETFIELDFUN(L, -1, "none", lua_bit_none);
-	SETFIELDFUN(L, -1, "bnot", lua_bit_none);
-	SETFIELDFUN(L, -1, "any", lua_bit_any);
-	SETFIELDFUN(L, -1, "bor", lua_bit_any);
-	SETFIELDFUN(L, -1, "all", lua_bit_all);
-	SETFIELDFUN(L, -1, "band", lua_bit_all);
-	SETFIELDFUN(L, -1, "parity", lua_bit_parity);
-	SETFIELDFUN(L, -1, "bxor", lua_bit_parity);
-	SETFIELDFUN(L, -1, "lrotate", lua_bit_lrotate);
-	SETFIELDFUN(L, -1, "rrotate", lua_bit_rrotate);
-	SETFIELDFUN(L, -1, "lshift", lua_bit_lshift);
-	SETFIELDFUN(L, -1, "arshift", lua_bit_arshift);
-	SETFIELDFUN(L, -1, "lrshift", lua_bit_lrshift);
-	lua_setglobal(L, "bit");
-
 	//Gui table.
 	lua_newtable(L);
 	SETFIELDFUN(L, -1, "resolution", lua_gui_resolution);
@@ -867,6 +783,8 @@ void init_lua(window* win) throw()
 	SETFIELDFUN(L, -1, "readonly", lua_movie_readonly);
 	SETFIELDFUN(L, -1, "set_readwrite", lua_movie_set_readwrite);
 	lua_setglobal(L, "movie");
+
+	register_lua_functions(L);
 }
 
 bool lua_requests_repaint = false;

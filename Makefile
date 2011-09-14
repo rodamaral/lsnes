@@ -11,7 +11,7 @@ LDFLAGS = $(shell sdl-config --libs) $(USER_LDFLAGS)
 ifdef NO_LUA
 OBJECTS += lua-dummy.o
 else
-OBJECTS += lua.o
+OBJECTS += lua.o $(patsubst %.cpp,%.o,$(wildcard lua/*.cpp))
 CFLAGS += $(shell pkg-config lua5.1 --cflags)
 LDFLAGS += $(shell pkg-config lua5.1 --libs)
 endif
