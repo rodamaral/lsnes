@@ -1416,6 +1416,18 @@ set-rwmode
  entry protection).
 \end_layout
 
+\begin_layout Subsection
+Callback: on_snoop(number port, number controller, number index, number
+ value)
+\end_layout
+
+\begin_layout Standard
+Called each time bsnes asks for input.
+ The value is the final value to be sent to bsnes core.
+ Might be useful when translating movies to format suitable for console
+ verification.
+\end_layout
+
 \begin_layout Section
 SDL platform:
 \end_layout
