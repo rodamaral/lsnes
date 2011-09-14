@@ -101,13 +101,38 @@ lua_function::~lua_function() throw()
 	functions->erase(fname);
 }
 
+std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)
+{
+	if(lua_isnone(LS, argindex)) {
+		lua_pushfstring(LS, "argument #%i to %s must be string", argindex, fname);
+		lua_error(LS);
+	}
+	size_t len;
+	const char* f = lua_tolstring(LS, argindex, &len);
+	if(!f) {
+		lua_pushfstring(LS, "argument #%i to %s must be string", argindex, fname);
+		lua_error(LS);
+	}
+	return std::string(f, f + len);
+}
+
+bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
+{
+	if(lua_isnone(LS, argindex) || !lua_isboolean(LS, argindex)) {
+		lua_pushfstring(LS, "argument #%i to %s must be boolean", argindex, fname);
+		lua_error(LS);
+	}
+	return (lua_toboolean(LS, argindex) != 0);
+}
+
+lua_render_context* lua_render_ctx = NULL;
+controls_t* lua_input_controllerdata = NULL;
+
 namespace 
 {
 	lua_State* L;
-	lua_render_context* rctx = NULL;
 	bool recursive_flag = false;
 	const char* luareader_fragment = NULL;
-	controls_t* controllerdata = NULL;
 
 	const char* read_lua_fragment(lua_State* LS, void* dummy, size_t* size)
 	{
@@ -194,30 +219,6 @@ namespace
 		}
 	}
 
-	std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)
-	{
-		if(lua_isnone(LS, argindex)) {
-			lua_pushfstring(L, "argument #%i to %s must be string", argindex, fname);
-			lua_error(LS);
-		}
-		size_t len;
-		const char* f = lua_tolstring(LS, argindex, &len);
-		if(!f) {
-			lua_pushfstring(L, "argument #%i to %s must be string", argindex, fname);
-			lua_error(LS);
-		}
-		return std::string(f, f + len);
-	}
-
-	bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
-	{
-		if(lua_isnone(LS, argindex) || !lua_isboolean(LS, argindex)) {
-			lua_pushfstring(L, "argument #%i to %s must be boolean", argindex, fname);
-			lua_error(LS);
-		}
-		return (lua_toboolean(LS, argindex) != 0);
-	}
-
 	void do_eval_lua(const std::string& c, window* win) throw(std::bad_alloc)
 	{
 		push_string(c);
@@ -295,80 +296,6 @@ namespace
 		return 0;
 	}
 
-	int lua_gui_resolution(lua_State* LS)
-	{
-		if(!rctx)
-			return 0;
-		lua_pushnumber(LS, rctx->width);
-		lua_pushnumber(LS, rctx->height);
-		lua_pushnumber(LS, rctx->rshift);
-		lua_pushnumber(LS, rctx->gshift);
-		lua_pushnumber(LS, rctx->bshift);
-		return 5;
-	}
-
-	int lua_gui_set_gap(lua_State* LS, uint32_t lua_render_context::*gap)
-	{
-		if(!rctx)
-			return 0;
-		uint32_t g = get_numeric_argument<uint32_t>(LS, 1, "gui.<direction>_gap");
-		if(g > 8192)
-			return 0;	//Ignore ridiculous gap.
-		rctx->*gap = g;
-		return 0;
-	}
-
-	int lua_gui_set_left_gap(lua_State* LS)
-	{
-		return lua_gui_set_gap(LS, &lua_render_context::left_gap);
-	}
-
-	int lua_gui_set_right_gap(lua_State* LS)
-	{
-		return lua_gui_set_gap(LS, &lua_render_context::right_gap);
-	}
-
-	int lua_gui_set_top_gap(lua_State* LS)
-	{
-		return lua_gui_set_gap(LS, &lua_render_context::top_gap);
-	}
-
-	int lua_gui_set_bottom_gap(lua_State* LS)
-	{
-		return lua_gui_set_gap(LS, &lua_render_context::bottom_gap);
-	}
-
-	int lua_gui_text(lua_State* LS)
-	{
-		if(!rctx)
-			return 0;
-		uint32_t x255 = 255;
-		uint32_t fgc = (x255 << rctx->rshift) | (x255 << rctx->gshift) | (x255 << rctx->bshift);
-		uint32_t bgc = 0;
-		uint16_t fga = 256;
-		uint16_t bga = 0;
-		int32_t _x = get_numeric_argument<int32_t>(LS, 1, "gui.text");
-		int32_t _y = get_numeric_argument<int32_t>(LS, 2, "gui.text");
-		get_numeric_argument<uint32_t>(LS, 4, fgc, "gui.text");
-		get_numeric_argument<uint16_t>(LS, 5, fga, "gui.text");
-		get_numeric_argument<uint32_t>(LS, 6, bgc, "gui.text");
-		get_numeric_argument<uint16_t>(LS, 7, bga, "gui.text");
-		std::string text = get_string_argument(LS, 3, "gui.text");
-		rctx->queue->add(*new render_object_text(_x, _y, text, fgc, fga, bgc, bga));
-		return 0;
-	}
-
-	int lua_gui_request_repaint(lua_State* LS)
-	{
-		lua_requests_repaint = true;
-		return 0;
-	}
-
-	int lua_gui_update_subframe(lua_State* LS)
-	{
-		lua_requests_subframe_paint = get_boolean_argument(LS, 1, "gui.subframe_update");
-		return 0;
-	}
 
 	int lua_exec(lua_State* LS)
 	{
@@ -456,32 +383,32 @@ namespace
 
 	int lua_input_set(lua_State* LS)
 	{
-		if(!controllerdata)
+		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, "input.set");
 		unsigned index = get_numeric_argument<unsigned>(LS, 2, "input.set");
 		short value = get_numeric_argument<short>(LS, 3, "input.set");
 		if(controller > 7 || index > 11)
 			return 0;
-		(*controllerdata)(controller >> 2, controller & 3, index) = value;
+		(*lua_input_controllerdata)(controller >> 2, controller & 3, index) = value;
 		return 0;
 	}
 
 	int lua_input_get(lua_State* LS)
 	{
-		if(!controllerdata)
+		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, "input.set");
 		unsigned index = get_numeric_argument<unsigned>(LS, 2, "input.set");
 		if(controller > 7 || index > 11)
 			return 0;
-		lua_pushnumber(LS, (*controllerdata)(controller >> 2, controller & 3, index));
+		lua_pushnumber(LS, (*lua_input_controllerdata)(controller >> 2, controller & 3, index));
 		return 1;
 	}
 
 	int lua_input_reset(lua_State* LS)
 	{
-		if(!controllerdata)
+		if(!lua_input_controllerdata)
 			return 0;
 		long cycles = 0;
 		get_numeric_argument(LS, 1, cycles, "input.reset");
@@ -489,9 +416,9 @@ namespace
 			return 0;
 		short lo = cycles % 10000;
 		short hi = cycles / 10000;
-		(*controllerdata)(CONTROL_SYSTEM_RESET) = 1;
-		(*controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_HI) = hi;
-		(*controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_LO) = lo;
+		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET) = 1;
+		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_HI) = hi;
+		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_LO) = lo;
 		return 0;
 	}
 
@@ -576,18 +503,18 @@ void lua_callback_do_paint(struct lua_render_context* ctx, window* win) throw()
 {
 	if(!callback_exists("on_paint"))
 		return;
-	rctx = ctx;
+	lua_render_ctx = ctx;
 	run_lua_cb(0, win);
-	rctx = NULL;
+	lua_render_ctx = NULL;
 }
 
 void lua_callback_do_video(struct lua_render_context* ctx, window* win) throw()
 {
 	if(!callback_exists("on_video"))
 		return;
-	rctx = ctx;
+	lua_render_ctx = ctx;
 	run_lua_cb(0, win);
-	rctx = NULL;
+	lua_render_ctx = NULL;
 }
 
 void lua_callback_do_reset(window* win) throw()
@@ -666,10 +593,10 @@ void lua_callback_do_input(controls_t& data, bool subframe, window* win) throw()
 {
 	if(!callback_exists("on_input"))
 		return;
-	controllerdata = &data;
+	lua_input_controllerdata = &data;
 	push_boolean(subframe);
 	run_lua_cb(1, win);
-	controllerdata = NULL;
+	lua_input_controllerdata = NULL;
 }
 
 namespace
@@ -732,18 +659,6 @@ void init_lua(window* win) throw()
 	lua_setglobal(L, "print");
 	lua_pushcfunction(L, lua_exec);
 	lua_setglobal(L, "exec");
-
-	//Gui table.
-	lua_newtable(L);
-	SETFIELDFUN(L, -1, "resolution", lua_gui_resolution);
-	SETFIELDFUN(L, -1, "left_gap", lua_gui_set_left_gap);
-	SETFIELDFUN(L, -1, "right_gap", lua_gui_set_right_gap);
-	SETFIELDFUN(L, -1, "top_gap", lua_gui_set_top_gap);
-	SETFIELDFUN(L, -1, "bottom_gap", lua_gui_set_bottom_gap);
-	SETFIELDFUN(L, -1, "text", lua_gui_text);
-	SETFIELDFUN(L, -1, "repaint", lua_gui_request_repaint);
-	SETFIELDFUN(L, -1, "subframe_update", lua_gui_update_subframe);
-	lua_setglobal(L, "gui");
 
 	//Memory table.
 	lua_newtable(L);

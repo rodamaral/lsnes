@@ -279,41 +279,6 @@ private:
 };
 
 /**
- * \brief Render object rendering given text.
- */
-struct render_object_text : public render_object
-{
-/**
- * \brief Constructor.
- * 
- * \param _x The x position to render to (relative to origin).
- * \param _y The y position to render to (relative to origin).
- * \param _text The text to render.
- * \param _fg Foreground color.
- * \param _fgalpha Foreground alpha (0-256).
- * \param _bg Background color.
- * \param _bgalpha Background alpha (0-256).
- */
-	render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg = 0xFFFFFFFFU,
-		uint16_t _fgalpha = 255, uint32_t _bg = 0, uint16_t _bgalpha = 0) throw(std::bad_alloc);
-
-
-	~render_object_text() throw();
-/**
- * \brief Draw the text.
- */
-	void operator()(struct screen& scr) throw();
-private:
-	int32_t x;
-	int32_t y;
-	uint32_t fg;
-	uint16_t fgalpha;
-	uint32_t bg;
-	uint16_t bgalpha;
-	std::string text;
-};
-
-/**
  * \brief Read font data for glyph.
  * 
  * \param codepoint Code point of glyph.

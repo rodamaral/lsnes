@@ -7,6 +7,12 @@ extern "C"
 #include <lua.h>
 }
 
+std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname);
+bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname);
+extern lua_render_context* lua_render_ctx;
+extern controls_t* lua_input_controllerdata;
+
+
 template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)
 {

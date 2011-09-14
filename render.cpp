@@ -192,12 +192,6 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 	}
 }
 
-render_object_text::render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg,
-	uint16_t _fgalpha, uint32_t _bg, uint16_t _bgalpha) throw(std::bad_alloc)
-	: x(_x), y(_y), fg(_fg), fgalpha(_fgalpha), bg(_bg), bgalpha(_bgalpha), text(_text)
-{
-}
-
 void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 {
 	q.push_back(&obj);
@@ -370,11 +364,6 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 	}
 }
 
-void render_object_text::operator()(struct screen& scr) throw()
-{
-	render_text(scr, x, y, text, fg, fgalpha, bg, bgalpha);
-}
-
 void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 {
 	uint32_t copyable_width = (width - originx) / hscale;
@@ -498,8 +487,4 @@ void screen::set_palette(uint32_t rshift, uint32_t gshift, uint32_t bshift) thro
 			rp[i] = x;
 		}
 	}
-}
-
-render_object_text::~render_object_text() throw()
-{
 }
