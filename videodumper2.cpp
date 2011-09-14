@@ -1,4 +1,5 @@
 #include "videodumper.hpp"
+#include "settings.hpp"
 #include "videodumper2.hpp"
 #include <iomanip>
 #include <cassert>
@@ -16,6 +17,7 @@ void update_movie_state();
 namespace
 {
 	screen dscr;
+	boolean_setting dump_large("large-video", false);
 
 	class dump_video_command : public command
 	{
@@ -118,11 +120,18 @@ void dump_frame(lcscreen& ls, render_queue* rq, uint32_t left, uint32_t right, u
 	if(vid_dumper)
 		try {
 			vid_dumper->wait_idle();
+			uint32_t hscl = 1;
+			uint32_t vscl = 1;
+			if(dump_large && ls.width < 400)
+				hscl = 2;
+			if(dump_large && ls.height < 400)
+				vscl = 2;
 			uint32_t _magic = 403703808;
 			uint8_t* magic = reinterpret_cast<uint8_t*>(&_magic);
-			dscr.reallocate(left + ls.width + right, top + ls.height + bottom, left, top, true);
+			dscr.reallocate(left + hscl * ls.width + right, top + vscl * ls.height + bottom, left, top,
+				true);
 			dscr.set_palette(magic[2], magic[1], magic[0]);
-			dscr.copy_from(ls, 1, 1);
+			dscr.copy_from(ls, hscl, vscl);
 			if(rq)
 				rq->run(dscr);
 			assert(dscr.memory);

@@ -1013,6 +1013,14 @@ Set the frame advance timeout in milliseconds.
  Default is 500.
 \end_layout
 
+\begin_layout Subsection
+large-video
+\end_layout
+
+\begin_layout Standard
+Always dump at 512x448 or 512x478 regardless of what the console outputs.
+\end_layout
+
 \begin_layout Section
 Lua functions
 \end_layout

@@ -92,7 +92,7 @@ namespace
 		std::string get_short_help() throw(std::bad_alloc) { return "Show value of all settings"; }
 		std::string get_long_help() throw(std::bad_alloc)
 		{
-			return "Syntax: show-settigns\n"
+			return "Syntax: show-settings\n"
 				"Show value of all settings\n";
 		}
 	} sh_setting;
@@ -202,6 +202,43 @@ std::string numeric_setting::get() throw(std::bad_alloc)
 }
 
 numeric_setting::operator int32_t() throw()
+{
+	return value;
+}
+
+boolean_setting::boolean_setting(const std::string& sname, bool dflt) throw(std::bad_alloc)
+	: setting(sname)
+{
+	value = dflt;
+}
+void boolean_setting::blank() throw(std::bad_alloc, std::runtime_error)
+{
+	throw std::runtime_error("This setting can't be unset");
+}
+
+bool boolean_setting::is_set() throw()
+{
+	return true;
+}
+
+void boolean_setting::set(const std::string& v) throw(std::bad_alloc, std::runtime_error)
+{
+	if(v == "true" || v == "yes" || v == "on" || v == "1" || v == "enable" || v == "enabled")
+		value = true;
+	else if(v == "false" || v == "no" || v == "off" || v == "0" || v == "disable" || v == "disabled")
+		value = false;
+	else
+		throw std::runtime_error("Invalid value for boolean setting");
+}
+std::string boolean_setting::get() throw(std::bad_alloc)
+{
+	if(value)
+		return "true";
+	else
+		return "false";
+}
+
+boolean_setting::operator bool() throw()
 {
 	return value;
 }

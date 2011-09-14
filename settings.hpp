@@ -120,4 +120,17 @@ private:
 	int32_t maximum;
 };
 
+class boolean_setting : public setting
+{
+public:
+	boolean_setting(const std::string& sname, bool dflt) throw(std::bad_alloc);
+	void blank() throw(std::bad_alloc, std::runtime_error);
+	bool is_set() throw();
+	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error);
+	std::string get() throw(std::bad_alloc);
+	operator bool() throw();
+private:
+	bool value;
+};
+
 #endif
