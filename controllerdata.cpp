@@ -1,17 +1,10 @@
 #include "lsnes.hpp"
 #include "controllerdata.hpp"
 #include <sstream>
+#include <cctype>
 #include <iostream>
 #include <cstring>
 
-void cdecode::system(fieldsplitter& line, short* controls, unsigned version) throw(std::bad_alloc, std::runtime_error)
-{
-	static controlfield_system p(version);
-	std::string tmp = line;
-	p.set_field(tmp);
-	for(unsigned i = 0; i < MAX_SYSTEM_CONTROLS; i++)
-		controls[i] = p[i];
-}
 
 namespace
 {
@@ -27,146 +20,229 @@ namespace
 				CONTROLLER_CONTROLS * controller + control;
 	}
 
-	template<unsigned components, class cfield>
-	void decode(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
+	bool parse_button_ctrl(const std::string& str, size_t& pos) throw()
 	{
-		static cfield p;
-		for(unsigned j = 0; j < components; j++) {
-			std::string tmp = line;
-			p.set_field(tmp);
-			for(unsigned i = 0; i < p.indices(); i++)
-				controls[MAX_SYSTEM_CONTROLS + port * CONTROLLER_CONTROLS * MAX_CONTROLLERS_PER_PORT +
-					CONTROLLER_CONTROLS * j + i] = p[i];
+		if(pos >= str.length())
+			return false;
+		switch(str[pos]) {
+		case '.':
+		case ' ':
+		case '\t':
+			pos++;
+		case '|':
+			return false;
+		default:
+			pos++;
+			return true;
 		}
 	}
+
+	short parse_number_ctrl(const std::string& str, size_t& pos) throw()
+	{
+		char ch;
+		//Skip ws.
+		while(pos < str.length()) {
+			char ch = str[pos];
+			if(ch != ' ' && ch != '\t')
+				break;
+			pos++;
+		}
+		//Read the sign if any.
+		if(pos >= str.length() || (ch = str[pos]) == '|')
+			return 0;
+		bool negative = false;
+		if(ch == '-') {
+			negative = true;
+			pos++;
+		}
+		if(ch == '+')
+			pos++;
+
+		//Read numeric value.
+		int numval = 0;
+		while(pos < str.length() && isdigit(static_cast<unsigned char>(ch = str[pos]))) {
+			numval = numval * 10 + (ch - '0');
+			pos++;
+		}
+		if(negative)
+			numval = -numval;
+
+		return static_cast<short>(numval);
+	}
+
+	void parse_end_of_field(const std::string& str, size_t& pos) throw()
+	{
+		while(pos < str.length() && str[pos] != '|')
+			pos++;
+	}
 }
+
+size_t cdecode::system(const std::string& line, size_t pos, short* controls, unsigned version) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	controls[0] = parse_button_ctrl(line, pos);	//Frame sync.
+	controls[1] = parse_button_ctrl(line, pos);	//Reset.
+	controls[2] = parse_number_ctrl(line, pos);	//Reset cycles hi.
+	controls[3] = parse_number_ctrl(line, pos);	//Reset cycles lo.
+	parse_end_of_field(line, pos);
+	return pos;
+}
+
+size_t cdecode::none(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	return pos;
+}
+
+size_t cdecode::gamepad(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	for(unsigned i = 0; i < 12; i++)
+		controls[ccindex(port, 0, i)] = parse_button_ctrl(line, pos);
+	parse_end_of_field(line, pos);
+	return pos;
+}
+
+size_t cdecode::multitap(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	for(unsigned j = 0; j < 4; j++) {
+		for(unsigned i = 0; i < 12; i++)
+			controls[ccindex(port, j, i)] = parse_button_ctrl(line, pos);
+		parse_end_of_field(line, pos);
+		pos++;
+	}
+	return pos;
+}
+
+size_t cdecode::mouse(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	controls[ccindex(port, 0, 2)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 3)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 0)] = parse_number_ctrl(line, pos);
+	controls[ccindex(port, 0, 1)] = parse_number_ctrl(line, pos);
+	parse_end_of_field(line, pos);
+	return pos;
+}
+
+size_t cdecode::superscope(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	controls[ccindex(port, 0, 2)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 3)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 4)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 5)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 0)] = parse_number_ctrl(line, pos);
+	controls[ccindex(port, 0, 1)] = parse_number_ctrl(line, pos);
+	parse_end_of_field(line, pos);
+	return pos;
+}
+
+size_t cdecode::justifier(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	controls[ccindex(port, 0, 2)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 3)] = parse_button_ctrl(line, pos);
+	controls[ccindex(port, 0, 0)] = parse_number_ctrl(line, pos);
+	controls[ccindex(port, 0, 1)] = parse_number_ctrl(line, pos);
+	parse_end_of_field(line, pos);
+	return pos;
+}
+
+size_t cdecode::justifiers(unsigned port, const std::string& line, size_t pos, short* controls) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	for(unsigned i = 0; i < 2; i++) {
+		controls[ccindex(port, i, 2)] = parse_button_ctrl(line, pos);
+		controls[ccindex(port, i, 3)] = parse_button_ctrl(line, pos);
+		controls[ccindex(port, i, 0)] = parse_number_ctrl(line, pos);
+		controls[ccindex(port, i, 1)] = parse_number_ctrl(line, pos);
+		parse_end_of_field(line, pos);
+		pos++;
+	}
+	return pos;
+}
+
+size_t cencode::system(char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	buffer[bufferpos++] = controls[0] ? 'F' : '.';
+	buffer[bufferpos++] = controls[1] ? 'R' : '.';
+	if(controls[2] || controls[3]) {
+		bufferpos += sprintf(buffer + bufferpos, " %i %i", static_cast<int>(controls[2]),
+			static_cast<int>(controls[3]));
+	}
+	return bufferpos;
+}
+
+size_t cencode::none(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	return ENCODE_SPECIAL_NO_OUTPUT;
+}
+
+size_t cencode::gamepad(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	static const char* characters = "BYsSudlrAXLR";
+	for(unsigned i = 0; i < 12; i++)
+		buffer[bufferpos++] = controls[ccindex(port, 0, i)] ? characters[i] : '.';
+	return bufferpos;
+}
+
+size_t cencode::multitap(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	static const char* characters = "BYsSudlrAXLR";
+	for(unsigned j = 0; j < 4; j++) {
+		for(unsigned i = 0; i < 12; i++)
+			buffer[bufferpos++] = controls[ccindex(port, j, i)] ? characters[i] : '.';
+		buffer[bufferpos++] = '|';
+	}
+	bufferpos--;	//Eat the last '|', it shouldn't be there.
+	return bufferpos;
+}
+
+size_t cencode::mouse(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	bufferpos += sprintf(buffer + bufferpos, "%c%c %i %i", controls[ccindex(port, 0, 2)] ? 'L' : '.',
+		controls[ccindex(port, 0, 3)] ? 'R' : '.', static_cast<int>(controls[ccindex(port, 0, 0)]),
+		static_cast<int>(controls[ccindex(port, 0, 1)]));
+	return bufferpos;
+}
+
+size_t cencode::superscope(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	bufferpos += sprintf(buffer + bufferpos, "%c%c%c%c %i %i", controls[ccindex(port, 0, 2)] ? 'T' : '.',
+		controls[ccindex(port, 0, 3)] ? 'C' : '.', controls[ccindex(port, 0, 4)] ? 'U' : '.',
+		controls[ccindex(port, 0, 5)] ? 'P' : '.', static_cast<int>(controls[ccindex(port, 0, 0)]),
+		static_cast<int>(controls[ccindex(port, 0, 1)]));
+	return bufferpos;
+}
+
+size_t cencode::justifier(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	bufferpos += sprintf(buffer + bufferpos, "%c%c %i %i", controls[ccindex(port, 0, 2)] ? 'T' : '.',
+		controls[ccindex(port, 0, 3)] ? 'S' : '.', static_cast<int>(controls[ccindex(port, 0, 0)]),
+		static_cast<int>(controls[ccindex(port, 0, 1)]));
+	return bufferpos;
+}
+
+size_t cencode::justifiers(unsigned port, char* buffer, size_t bufferpos, const short* controls) throw(std::bad_alloc)
+{
+	bufferpos += sprintf(buffer + bufferpos, "%c%c %i %i", controls[ccindex(port, 0, 2)] ? 'T' : '.',
+		controls[ccindex(port, 0, 3)] ? 'S' : '.', static_cast<int>(controls[ccindex(port, 0, 0)]),
+		static_cast<int>(controls[ccindex(port, 0, 1)]));
+	buffer[bufferpos++] = '|';
+	bufferpos += sprintf(buffer + bufferpos, "%c%c %i %i", controls[ccindex(port, 0, 2)] ? 'T' : '.',
+		controls[ccindex(port, 0, 3)] ? 'S' : '.', static_cast<int>(controls[ccindex(port, 0, 0)]),
+		static_cast<int>(controls[ccindex(port, 0, 1)]));
+	return bufferpos;
+}
+
 
 unsigned ccindex2(unsigned port, unsigned controller, unsigned control) throw(std::logic_error)
 {
 	return ccindex(port, controller, control);
 }
 
-
-void cdecode::none(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<0, controlfield_gamepad>(port, line, controls);
-}
-
-void cdecode::gamepad(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<1, controlfield_gamepad>(port, line, controls);
-}
-void cdecode::multitap(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<4, controlfield_gamepad>(port, line, controls);
-}
-
-void cdecode::mouse(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<1, controlfield_mousejustifier>(port, line, controls);
-}
-
-void cdecode::superscope(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<1, controlfield_superscope>(port, line, controls);
-}
-
-void cdecode::justifier(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<1, controlfield_mousejustifier>(port, line, controls);
-}
-
-void cdecode::justifiers(unsigned port, fieldsplitter& line, short* controls) throw(std::bad_alloc, std::runtime_error)
-{
-	decode<2, controlfield_mousejustifier>(port, line, controls);
-}
-
-std::string cencode::system(const short* controls) throw(std::bad_alloc)
-{
-	std::string x = "..";
-	if(controls[0])
-		x[0] = 'F';
-	if(controls[1])
-		x[1] = 'R';
-	if(controls[2] || controls[3]) {
-		std::ostringstream out;
-		out << x << " " << controls[2] << " " << controls[3];
-		x = out.str();
-	}
-	return x;
-}
-
-std::string cencode::none(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	return "";
-}
-
-std::string cencode::gamepad(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	const char chars[] = "BYsSudlrAXLR";
-	std::string x = "|............";
-	for(unsigned i = 0; i < 12; i++)
-		if(controls[ccindex(port, 0, i)])
-			x[i + 1] = chars[i];
-	return x;
-}
-
-std::string cencode::multitap(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	const char chars[] = "BYsSudlrAXLR";
-	std::string x = "|............|............|............|............";
-	for(unsigned j = 0; j < 4; j++)
-		for(unsigned i = 0; i < 12; i++)
-			if(controls[ccindex(port, j, i)])
-				x[13 * j + i + 1] = chars[i];
-	return x;
-}
-
-std::string cencode::mouse(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	std::ostringstream s;
-	s << "|";
-	s << (controls[ccindex(port, 0, 2)] ? 'L' : '.');
-	s << (controls[ccindex(port, 0, 3)] ? 'R' : '.');
-	s << " " << controls[ccindex(port, 0, 0)]  << " " << controls[ccindex(port, 0, 1)];
-	return s.str();
-}
-
-std::string cencode::superscope(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	std::ostringstream s;
-	s << "|";
-	s << (controls[ccindex(port, 0, 2)] ? 'T' : '.');
-	s << (controls[ccindex(port, 0, 3)] ? 'C' : '.');
-	s << (controls[ccindex(port, 0, 4)] ? 'U' : '.');
-	s << (controls[ccindex(port, 0, 5)] ? 'P' : '.');
-	s << " " << controls[ccindex(port, 0, 0)]  << " " << controls[ccindex(port, 0, 1)];
-	return s.str();
-}
-
-std::string cencode::justifier(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	std::ostringstream s;
-	s << "|";
-	s << (controls[ccindex(port, 0, 2)] ? 'T' : '.');
-	s << (controls[ccindex(port, 0, 3)] ? 'S' : '.');
-	s << " " << controls[ccindex(port, 0, 0)]  << " " << controls[ccindex(port, 0, 1)];
-	return s.str();
-}
-
-std::string cencode::justifiers(unsigned port, const short* controls) throw(std::bad_alloc)
-{
-	std::ostringstream s;
-	s << "|";
-	s << (controls[ccindex(port, 0, 2)] ? 'T' : '.');
-	s << (controls[ccindex(port, 0, 3)] ? 'S' : '.');
-	s << " " << controls[ccindex(port, 0, 0)]  << " " << controls[ccindex(port, 0, 1)];
-	s << "|";
-	s << (controls[ccindex(port, 1, 2)] ? 'T' : '.');
-	s << (controls[ccindex(port, 1, 3)] ? 'S' : '.');
-	s << " " << controls[ccindex(port, 1, 0)]  << " " << controls[ccindex(port, 1, 1)];
-	return s.str();
-}
 
 controls_t controls_t::operator^(controls_t other) throw()
 {
@@ -211,19 +287,28 @@ controls_t::controls_t(const std::string& line, const std::vector<cdecode::fn_t>
 	throw(std::bad_alloc, std::runtime_error)
 {
 	memset(controls, 0, sizeof(controls));
-	fieldsplitter _line(line);
-	cdecode::system(_line, controls, version);
-	for(unsigned i = 0; i < decoders.size(); i++)
-		decoders[i](i, _line, controls);
+	size_t position = 0;
+	position = cdecode::system(line, position, controls, version);
+	for(unsigned i = 0; i < decoders.size(); i++) {
+		if(position < line.length() && line[position] == '|')
+			position++;
+		position = decoders[i](i, line, position, controls);
+	}
 }
 
 std::string controls_t::tostring(const std::vector<cencode::fn_t>& encoders) const throw(std::bad_alloc)
 {
-	std::string x;
-	x = cencode::system(controls);
-	for(unsigned i = 0; i < encoders.size(); i++)
-		x = x + encoders[i](i, controls);
-	return x;
+	char buffer[1024];
+	size_t linelen = 0, tmp;
+	tmp = cencode::system(buffer, linelen, controls);
+	for(unsigned i = 0; i < encoders.size(); i++) {
+		if(tmp != ENCODE_SPECIAL_NO_OUTPUT)
+			buffer[(linelen = tmp)++] = '|';
+		tmp = encoders[i](i, buffer, linelen, controls);
+	}
+	if(tmp != ENCODE_SPECIAL_NO_OUTPUT)
+		linelen = tmp;
+	return std::string(buffer, buffer + linelen);
 }
 
 bool controls_t::operator==(const controls_t& c) const throw()
@@ -234,142 +319,6 @@ bool controls_t::operator==(const controls_t& c) const throw()
 	return true;
 }
 
-
-controlfield::controlfield(std::vector<control_subfield> _subfields) throw(std::bad_alloc)
-{
-	subfields = _subfields;
-	size_t needed = 0;
-	for(size_t i = 0; i < subfields.size(); i++)
-		if(needed <= subfields[i].index)
-			needed = subfields[i].index + 1;
-	values.resize(needed);
-	for(size_t i = 0; i < needed; i++)
-		values[i] = 0;
-}
-
-short controlfield::operator[](unsigned index) throw(std::logic_error)
-{
-	if(index >= values.size())
-		throw std::logic_error("controlfield::operator[]: Bad subfield index");
-	return values[index];
-}
-
-unsigned controlfield::indices() throw()
-{
-	return values.size();
-}
-
-void controlfield::set_field(const std::string& str) throw(std::bad_alloc)
-{
-	size_t pos = 0;
-	for(unsigned i = 0; i < subfields.size(); i++)
-		//Buttons always come first.
-		if(subfields[i].type == control_subfield::BUTTON) {
-			values[subfields[i].index] = (pos < str.length() && str[pos] != '.' && str[pos] != ' ' &&
-				str[pos] != '\t') ? 1 : 0;
-			pos++;
-		}
-	for(unsigned i = 0; i < subfields.size(); i++)
-		//Then the axis.
-		if(subfields[i].type == control_subfield::AXIS) {
-			short value = 0;
-			//Skip whitespace before subfield.
-			while(pos < str.length() && (str[pos] == ' ' || str[pos] == '\t'))
-				pos++;
-			if(pos < str.length())
-				value = (short)atoi(str.c_str() + pos);
-			values[subfields[i].index] = value;
-		}
-}
-
-namespace
-{
-	std::vector<struct control_subfield> gamepad() throw(std::bad_alloc)
-	{
-		static std::vector<struct control_subfield> g;
-		static bool init = false;
-		if(!init) {
-			for(unsigned i = 0; i < 12; i++)
-				g.push_back(control_subfield(i, control_subfield::BUTTON));
-			init = true;
-		}
-		return g;
-	}
-
-	std::vector<struct control_subfield> mousejustifier() throw(std::bad_alloc)
-	{
-		static std::vector<struct control_subfield> g;
-		static bool init = false;
-		if(!init) {
-			g.push_back(control_subfield(0, control_subfield::AXIS));
-			g.push_back(control_subfield(1, control_subfield::AXIS));
-			g.push_back(control_subfield(2, control_subfield::BUTTON));
-			g.push_back(control_subfield(3, control_subfield::BUTTON));
-			init = true;
-		}
-		return g;
-	}
-
-	std::vector<struct control_subfield> superscope() throw(std::bad_alloc)
-	{
-		static std::vector<struct control_subfield> g;
-		static bool init = false;
-		if(!init) {
-			g.push_back(control_subfield(0, control_subfield::AXIS));
-			g.push_back(control_subfield(1, control_subfield::AXIS));
-			g.push_back(control_subfield(2, control_subfield::BUTTON));
-			g.push_back(control_subfield(3, control_subfield::BUTTON));
-			g.push_back(control_subfield(4, control_subfield::BUTTON));
-			g.push_back(control_subfield(5, control_subfield::BUTTON));
-			init = true;
-		}
-		return g;
-	}
-
-	std::vector<struct control_subfield> csystem(unsigned version) throw(std::bad_alloc, std::runtime_error)
-	{
-		static std::vector<struct control_subfield> g0;
-		static bool init0 = false;
-		if(version == 0) {
-			if(!init0) {
-				g0.push_back(control_subfield(0, control_subfield::BUTTON));
-				g0.push_back(control_subfield(1, control_subfield::BUTTON));
-				g0.push_back(control_subfield(2, control_subfield::AXIS));
-				g0.push_back(control_subfield(3, control_subfield::AXIS));
-				init0 = true;
-			}
-			return g0;
-		} else
-			throw std::runtime_error("csystem: Unknown record version");
-	}
-}
-
-controlfield_system::controlfield_system(unsigned version) throw(std::bad_alloc, std::runtime_error)
-	: controlfield(csystem(version))
-{
-}
-
-controlfield_gamepad::controlfield_gamepad() throw(std::bad_alloc)
-	: controlfield(gamepad())
-{
-}
-
-controlfield_mousejustifier::controlfield_mousejustifier() throw(std::bad_alloc)
-	: controlfield(mousejustifier())
-{
-}
-
-controlfield_superscope::controlfield_superscope() throw(std::bad_alloc)
-	: controlfield(superscope())
-{
-}
-
-
-control_subfield::control_subfield(unsigned _index, enum control_subfield::control_subfield_type _type) throw()
-{
-	index = _index;
-	type = _type;
-}
 
 const port_type& port_type::lookup(const std::string& name, bool port2) throw(std::bad_alloc,
 	std::runtime_error)
