@@ -357,6 +357,17 @@ void lua_callback_do_input(controls_t& data, bool subframe, window* win) throw()
 	lua_input_controllerdata = NULL;
 }
 
+void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value, window* win) throw()
+{
+	if(!callback_exists("on_snoop"))
+		return;
+	lua_pushnumber(L, port);
+	lua_pushnumber(L, controller);
+	lua_pushnumber(L, index);
+	lua_pushnumber(L, value);
+	run_lua_cb(4, win);
+}
+
 namespace
 {
 	class evallua : public command

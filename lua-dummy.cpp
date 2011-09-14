@@ -15,6 +15,7 @@ void lua_callback_post_load(const std::string& name, bool was_state, window* win
 void lua_callback_pre_save(const std::string& name, bool is_state, window* win) throw() {}
 void lua_callback_err_save(const std::string& name, window* win) throw() {}
 void lua_callback_post_save(const std::string& name, bool is_state, window* win) throw() {}
+void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value, window* win) throw() {}
 void lua_callback_quit(window* win) throw() {}
 void init_lua(window* win) throw() {}
 bool lua_requests_repaint = false;

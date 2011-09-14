@@ -869,6 +869,7 @@ class my_interface : public SNES::Interface
 		x = movb.input_poll(port, index, id);
 		//if(id == SNES_DEVICE_ID_JOYPAD_START)
 		//	std::cerr << "bsnes polling for start on (" << port << "," << index << ")=" << x << std::endl;
+		lua_callback_snoop_input(port ? 1 : 0, index, id, x, win);
 		return x;
 	}
 };
