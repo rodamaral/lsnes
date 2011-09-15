@@ -1,5 +1,5 @@
-#ifndef _videodumper__hpp__included__
-#define _videodumper__hpp__included__
+#ifndef _avidump__hpp__included__
+#define _avidump__hpp__included__
 
 #include <cstdint>
 #include <iostream>

@@ -1,4 +1,5 @@
 #include "mainloop.hpp"
+#include "avsnoop.hpp"
 #include "command.hpp"
 #include <iomanip>
 #include "framerate.hpp"
@@ -20,7 +21,6 @@
 #include "memorymanip.hpp"
 #include "keymapper.hpp"
 #include "render.hpp"
-#include "videodumper2.hpp"
 #include <iostream>
 #include "lsnes.hpp"
 #include <sys/time.h>
@@ -710,6 +710,18 @@ namespace
 		queued_saves.insert(filename);
 		win->message("Pending save on '" + filename + "'");
 	}
+
+	class dump_watch : public av_snooper::dump_notification
+	{
+		void dump_starting() throw()
+		{
+			update_movie_state();
+		}
+		void dump_ending() throw()
+		{
+			update_movie_state();
+		}
+	} dumpwatch;
 }
 
 std::vector<char>& get_host_memory()
@@ -745,7 +757,7 @@ void update_movie_state()
 			x << "PLAY ";
 		else
 			x << "REC ";
-		if(dump_in_progress())
+		if(av_snooper::dump_in_progress())
 			x << "CAP ";
 		_status["Flags"] = x.str();
 	}
@@ -833,19 +845,15 @@ class my_interface : public SNES::Interface
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
 		redraw_framebuffer();
-
-		struct lua_render_context lrc;
-		render_queue rq;
-		lrc.left_gap = 0;
-		lrc.right_gap = 0;
-		lrc.bottom_gap = 0;
-		lrc.top_gap = 0;
-		lrc.queue = &rq;
-		lrc.width = framebuffer.width;
-		lrc.height = framebuffer.height;
-		video_fill_shifts(lrc.rshift, lrc.gshift, lrc.bshift);
-		lua_callback_do_video(&lrc, win);
-		dump_frame(framebuffer, &rq, lrc.left_gap, lrc.right_gap, lrc.top_gap, lrc.bottom_gap, region, win);
+		uint32_t fps_n, fps_d;
+		if(region) {
+			fps_n = 322445;
+			fps_d = 6448;
+		} else {
+			fps_n = 10738636;
+			fps_d = 178683;
+		}
+		av_snooper::frame(ls, fps_n, fps_d, win);
 	}
 	
 	void audio_sample(int16_t l_sample, int16_t r_sample)
@@ -853,14 +861,14 @@ class my_interface : public SNES::Interface
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		win->play_audio_sample(_l + 32768, _r + 32768);
-		dump_audio_sample(_l, _r, win);
+		av_snooper::sample(_l, _r, win);
 	}
 
 	void audio_sample(uint16_t l_sample, uint16_t r_sample)
 	{
 		//Yes, this interface is broken. The samples are signed but are passed as unsigned!
 		win->play_audio_sample(l_sample + 32768, r_sample + 32768);
-		dump_audio_sample(l_sample, r_sample, win);
+		av_snooper::sample(l_sample, r_sample, win);
 	}
 
 	int16_t input_poll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
@@ -1639,7 +1647,7 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 	lua_callback_startup(win);
 
 	//print_controller_mappings();
-
+	av_snooper::add_dump_notifier(dumpwatch);
 	win->set_main_surface(scr);
 	redraw_framebuffer();
 	win->paused(false);
@@ -1689,6 +1697,6 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 			win->wait_msec(to_wait_frame(get_ticks_msec()));
 		first_round = false;
 	}
-	end_vid_dump();
+	av_snooper::end(win);
 	SNES::system.interface = old_inteface;
 }

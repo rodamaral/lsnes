@@ -5,7 +5,6 @@
 #include <map>
 #include <set>
 #include "misc.hpp"
-#include "videodumper2.hpp"
 #include "memorymanip.hpp"
 #include "fieldsplit.hpp"
 #include "command.hpp"

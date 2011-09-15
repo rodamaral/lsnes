@@ -1,4 +1,4 @@
-#include "videodumper.hpp"
+#include "avidump.hpp"
 #include <iomanip>
 #include <cassert>
 #include <cstring>
