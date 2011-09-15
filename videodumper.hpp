@@ -15,69 +15,69 @@
 #include <mutex>
 
 /**
- * \brief Class of thread.
+ * Class of thread.
  */
 typedef std::thread thread_class;
 
 /**
- * \brief Class of condition variables.
+ * Class of condition variables.
  */
 typedef std::condition_variable cv_class;
 
 /**
- * \brief Class of mutexes.
+ * Class of mutexes.
  */
 typedef std::mutex mutex_class;
 
 /**
- * \brief Class of unique mutexes (for condition variable waiting).
+ * Class of unique mutexes (for condition variable waiting).
  */
 typedef std::unique_lock<std::mutex> umutex_class;
 
 #else
 
 /**
- * \brief Class of thread.
+ * Class of thread.
  */
 struct thread_class
 {
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	template<typename T, typename... args>
 	thread_class(T obj, args... a) {}
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	void join() {}
 };
 
 /**
- * \brief Class of mutexes.
+ * Class of mutexes.
  */
 typedef struct mutex_class
 {
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	void lock() {}
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	void unlock() {}
 } umutex_class;
 
 /**
- * \brief Class of condition variables.
+ * Class of condition variables.
  */
 struct cv_class
 {
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	void wait(umutex_class& m) {}
 /**
- * \brief Does nothing.
+ * Does nothing.
  */
 	void notify_all() {}
 };
@@ -85,91 +85,91 @@ struct cv_class
 #endif
 
 /**
- * \brief Size of audio buffer (enough to buffer 3 frames).
+ * Size of audio buffer (enough to buffer 3 frames).
  */
 #define AVIDUMPER_AUDIO_BUFFER 4096
 
 /**
- * \brief Information about frame in AVI.
+ * Information about frame in AVI.
  */
 struct avi_frame
 {
 /**
- * \brief Constructor.
+ * Constructor.
  * 
- * \param _flags Flags for frame.
- * \param _type AVI type for frame (big-endian!).
- * \param _offset Offset of frame from start of MOVI.
- * \param _size Size of frame data.
+ * parameter _flags: Flags for frame.
+ * parameter _type: AVI type for frame (big-endian!).
+ * parameter _offset: Offset of frame from start of MOVI.
+ * parameter _size: Size of frame data.
  */
 	avi_frame(uint32_t _flags, uint32_t _type, uint32_t _offset, uint32_t _size);
 
 /**
- * \brief Write the index entry for frame.
+ * Write the index entry for frame.
  * 
- * \param buf Buffer to write to.
+ * parameter buf: Buffer to write to.
  */
 	void write(uint8_t* buf);
 
 /**
- * \brief Flags.
+ * Flags.
  */
 	uint32_t flags;
 
 /**
- * \brief Chunk type.
+ * Chunk type.
  */
 	uint32_t type;
 
 /**
- * \brief Chunk offset.
+ * Chunk offset.
  */
 	uint32_t offset;
 
 /**
- * \brief Chunk size.
+ * Chunk size.
  */
 	uint32_t size;
 };
 
 /**
- * \brief Parameters for AVI dumping.
+ * Parameters for AVI dumping.
  */
 struct avi_info
 {
 /**
- * \brief Zlib compression level (0-9).
+ * Zlib compression level (0-9).
  */
 	unsigned compression_level;
 
 /**
- * \brief Audio drop counter increments by this much every frame.
+ * Audio drop counter increments by this much every frame.
  */
 	uint64_t audio_drop_counter_inc;
 
 /**
- * \brief Audio drop counter modulus (when audio drop counter warps around, sample is dropped).
+ * Audio drop counter modulus (when audio drop counter warps around, sample is dropped).
  */
 	uint64_t audio_drop_counter_max;
 
 /**
- * \brief Audio sampling rate to write to AVI.
+ * Audio sampling rate to write to AVI.
  */
 	uint32_t audio_sampling_rate;
 
 /**
- * \brief Native audio sampling rate to write to auxillary SOX file.
+ * Native audio sampling rate to write to auxillary SOX file.
  */
 	double audio_native_sampling_rate;
 
 /**
- * \brief Interval of keyframes (WARNING: >1 gives non-keyframes which AVISource() doesn't like).
+ * Interval of keyframes (WARNING: >1 gives non-keyframes which AVISource() doesn't like).
  */
 	uint32_t keyframe_interval;
 };
 
 /**
- * \brief The actual AVI dumper.
+ * The actual AVI dumper.
  */
 class avidumper
 {
@@ -178,55 +178,53 @@ public:
 	~avidumper() throw();
 
 /**
- * \brief Wait for encode thread to become idle.
- * 
  * Waits for the encode thread. Not needed: Operations that need to synchronize synchronize themselves.
  */
 	void wait_idle() throw();
 
 /**
- * \brief Dump a frame (new segment starts if needed).
+ * Dump a frame (new segment starts if needed). Pixel byte order is BGRx.
  * 
- * \param data The frame data.
- * \param width Width of frame.
- * \param height Height of frame.
- * \param fps_n Numerator of fps value.
- * \param fps_d Denomerator of fps value.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Error dumping frame.
+ * parameter data: The frame data.
+ * parameter width: Width of frame.
+ * parameter height: Height of frame.
+ * parameter fps_n: Numerator of fps value.
+ * parameter fps_d: Denomerator of fps value.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error dumping frame.
  */
 	void on_frame(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
 		throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Dump an audio sample
+ * Dump an audio sample
  * 
- * \param left Signed sample for left channel (-32768 - 327678).
- * \param right Signed sample for right channel (-32768 - 327678).
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Error dumping sample.
+ * parameter left: Signed sample for left channel (-32768 - 327678).
+ * parameter right: Signed sample for right channel (-32768 - 327678).
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error dumping sample.
  */
 	void on_sample(short left, short right) throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Notify end of dump.
+ * Notify end of dump.
  *
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Error closing dump.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error closing dump.
  */
 void on_end() throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Act as encode thread.
- * 
  * Causes current thread to become encode thread. Do not call this, the code internally uses it.
  * 
- * \return Return status for the thread.
+ * returns: Return status for the thread.
  */
 	int encode_thread();
 	
 /**
- * \brief Set capture errored flag.
+ * Set capture errored flag.
+ * 
+ * parameter err: The error message.
  */
 	void set_capture_error(const char* err) throw();
 private:

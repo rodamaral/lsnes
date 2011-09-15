@@ -11,54 +11,54 @@
 #include "videodumper.hpp"
 
 /**
- * \brief End dumping.
- * 
  * Forcibly ends dumping. Mainly useful for quitting.
  *
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Failed to end dump.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Failed to end dump.
  */
 void end_vid_dump() throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Dump a frame.
- * 
  * Dumps a frame. Does nothing if dumping is not in progress.
  * 
- * \param ls Screen to dump.
- * \param rq Render queue to run.
- * \param left Left border.
- * \param right Right border. 
- * \param top Top border.
- * \param bottom Bottom border.
- * \param region True if PAL, false if NTSC.
- * \param win Graphics system handle.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Failed to dump frame.
+ * parameter ls: Screen to dump.
+ * parameter rq: Render queue to run.
+ * parameter left: Left border.
+ * parameter right: Right border. 
+ * parameter top: Top border.
+ * parameter bottom: Bottom border.
+ * parameter region: True if PAL, false if NTSC.
+ * parameter win: Graphics system handle.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Failed to dump frame.
  */
 void dump_frame(lcscreen& ls, render_queue* rq, uint32_t left, uint32_t right, uint32_t top, uint32_t bottom, 
 	bool region, window* win) throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Dump sample of audio.
- * 
  * Dumps one sample of audio. Does nothing if dumping is not in progress.
  * 
- * \param l_sample Left channel sample (-32768-32767)
- * \param r_sample Right channel sample (-32768-32767)
- * \param win Graphics System handle.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Failed to dump sample.
+ * parameter l_sample Left channel sample (-32768-32767)
+ * parameter r_sample Right channel sample (-32768-32767)
+ * parameter win Graphics System handle.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Failed to dump sample.
  */
 void dump_audio_sample(int16_t l_sample, int16_t r_sample, window* win) throw(std::bad_alloc, std::runtime_error);
 
 /**
- * \brief Is the dump in progress?
+ * Is the dump in progress?
+ * 
+ * returns: True if dump is in progress, false if not.
  */
 bool dump_in_progress() throw();
 
 /**
- * \brief Fill rendering shifts.
+ * Fill rendering shifts.
+ * 
+ * parameter r: Shift for red component is written here.
+ * parameter g: Shift for green component is written here.
+ * parameter b: Shift for blue component is written here.
  */
 void video_fill_shifts(uint32_t& r, uint32_t& g, uint32_t& b);
 

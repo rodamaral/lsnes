@@ -22,7 +22,7 @@ namespace
 			std::string settingvalue = t.tail();
 			if(settingname == "")
 				throw std::runtime_error("Setting name required.");
-			setting_set(settingname, settingvalue);
+			setting::set(settingname, settingvalue);
 			out(win) << "Setting '" << settingname << "' set to '" << settingvalue << "'" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "set a setting"; }
@@ -44,7 +44,7 @@ namespace
 			std::string settingname = t;
 			if(settingname == "" || t)
 				throw std::runtime_error("Expected setting name and nothing else");
-			setting_blank(settingname);
+			setting::blank(settingname);
 			out(win) << "Setting '" << settingname << "' unset" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "unset a setting"; }
@@ -65,8 +65,8 @@ namespace
 			std::string settingname = t;
 			if(settingname == "" || t.tail() != "")
 				throw std::runtime_error("Expected setting name and nothing else");
-			if(!setting_isblank(settingname))
-				out(win) << "Setting '" << settingname << "' has value '" << setting_get(settingname)
+			if(setting::is_set(settingname))
+				out(win) << "Setting '" << settingname << "' has value '" << setting::get(settingname)
 					<< "'" << std::endl;
 			else
 				out(win) << "Setting '" << settingname << "' unset" << std::endl;
@@ -87,7 +87,7 @@ namespace
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
-			setting_print_all(win);
+			setting::print_all(win);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Show value of all settings"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -112,7 +112,7 @@ setting::~setting() throw()
 	settings->erase(settingname);
 }
 
-void setting_set(const std::string& _setting, const std::string& value) throw(std::bad_alloc, std::runtime_error)
+void setting::set(const std::string& _setting, const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!settings || !settings->count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
@@ -125,7 +125,7 @@ void setting_set(const std::string& _setting, const std::string& value) throw(st
 	}
 }
 
-void setting_blank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
+void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!settings || !settings->count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
@@ -138,21 +138,21 @@ void setting_blank(const std::string& _setting) throw(std::bad_alloc, std::runti
 	}
 }
 
-std::string setting_get(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
+std::string setting::get(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!settings || !settings->count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	return (*settings)[_setting]->get();
 }
 
-bool setting_isblank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
+bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!settings || !settings->count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
-	return !((*settings)[_setting]->is_set());
+	return (*settings)[_setting]->is_set();
 }
 
-void setting_print_all(window* win) throw(std::bad_alloc)
+void setting::print_all(window* win) throw(std::bad_alloc)
 {
 	if(!settings)
 		return;
