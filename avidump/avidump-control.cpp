@@ -13,6 +13,10 @@
 namespace
 {
 	boolean_setting dump_large("large-video", false);
+	numeric_setting dtb("default-top-border", 0, 8191, 0);
+	numeric_setting dbb("default-bottom-border", 0, 8191, 0);
+	numeric_setting dlb("default-left-border", 0, 8191, 0);
+	numeric_setting drb("default-right-border", 0, 8191, 0);
 
 	class avi_avsnoop : public av_snooper
 	{
@@ -43,10 +47,10 @@ namespace
 	
 			struct lua_render_context lrc;
 			render_queue rq;
-			lrc.left_gap = 0;
-			lrc.right_gap = 0;
-			lrc.bottom_gap = 0;
-			lrc.top_gap = 0;
+			lrc.left_gap = dlb;
+			lrc.right_gap = drb;
+			lrc.bottom_gap = dbb;
+			lrc.top_gap = dtb;
 			lrc.queue = &rq;
 			lrc.width = _frame.width * hscl;
 			lrc.height = _frame.height * vscl;

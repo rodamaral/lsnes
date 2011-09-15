@@ -1021,6 +1021,46 @@ large-video
 Always dump at 512x448 or 512x478 regardless of what the console outputs.
 \end_layout
 
+\begin_layout Subsection
+default-left-border
+\end_layout
+
+\begin_layout Standard
+Set the default left border thickness (unless lua overrides) for dumps.
+ Range 0-8191.
+ Default is 0.
+\end_layout
+
+\begin_layout Subsection
+default-right-border
+\end_layout
+
+\begin_layout Standard
+Set the default right border thickness (unless lua overrides) for dumps.
+ Range 0-8191.
+ Default is 0.
+\end_layout
+
+\begin_layout Subsection
+default-top-border
+\end_layout
+
+\begin_layout Standard
+Set the default top border thickness (unless lua overrides) for dumps.
+ Range 0-8191.
+ Default is 0.
+\end_layout
+
+\begin_layout Subsection
+default-bottom-border
+\end_layout
+
+\begin_layout Standard
+Set the default bottom border thickness (unless lua overrides) for dumps.
+ Range 0-8191.
+ Default is 0.
+\end_layout
+
 \begin_layout Section
 Lua functions
 \end_layout
