@@ -430,11 +430,11 @@ Following commands control video dumping:
 \end_layout
 
 \begin_layout Subsubsection
-dump-video <level> <prefix>
+dump-avi <level> <prefix>
 \end_layout
 
 \begin_layout Standard
-Dump video to prefix <prefix> at level <level> (0-18).
+Dump AVI video to prefix <prefix> at level <level> (0-18).
 \end_layout
 
 \begin_layout Itemize
@@ -467,11 +467,11 @@ Note: The audio dumped to .avi is low-quality version.
 \end_layout
 
 \begin_layout Subsubsection
-end-video
+end-avi
 \end_layout
 
 \begin_layout Standard
-End current video dump.
+End current AVI video dump.
 \end_layout
 
 \begin_layout Subsection
