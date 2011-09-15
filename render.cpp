@@ -383,7 +383,7 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 				*(ptr++) = c;
 		}
 		for(uint32_t j = 1; j < vscale; j++)
-			memcpy(rowptr(line + j), rowptr(line), 4 * hscale * copyable_width);
+			memcpy(rowptr(line + j) + originx, rowptr(line) + originx, 4 * hscale * copyable_width);
 	}
 }
 
