@@ -32,7 +32,7 @@ namespace
 				"Set setting to a new value. Omit <value> to set to ''\n";
 		}
 	} set_setting;
-	
+
 	class unset_command : public command
 	{
 	public:
@@ -78,7 +78,7 @@ namespace
 				"Show value of setting\n";
 		}
 	} get_setting;
-	
+
 	class shsettings_command : public command
 	{
 	public:

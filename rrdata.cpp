@@ -35,7 +35,7 @@ bool rrdata::instance::operator<(const struct instance& i) const throw()
 	for(unsigned j = 0; j < RRDATA_BYTES; j++)
 		if(bytes[j] < i.bytes[j])
 			return true;
-		else if(bytes[j] > i.bytes[j]) 
+		else if(bytes[j] > i.bytes[j])
 			return false;
 	return false;
 }
@@ -135,7 +135,7 @@ namespace
 		char buf2[3];
 		unsigned bias;
 		if(count == 1) {
-		 	opcode = 0x00;
+			opcode = 0x00;
 			bias = 1;
 		} else if(count < 258) {
 			opcode = 0x20;

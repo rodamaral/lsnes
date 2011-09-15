@@ -39,7 +39,7 @@ namespace
 			return 1;
 		}
 	} movie_readonly;
-	
+
 	class lua_movie_set_readwrite : public lua_function
 	{
 	public:

@@ -154,7 +154,7 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 				rcmd = cmd2.substr(1, split - 1);
 			if(rcmd.length() > 0 && rcmd[0] != '*') {
 				//This may be an alias.
-				std::string aname = cmd2.substr(1); 
+				std::string aname = cmd2.substr(1);
 				if(aliases.count(aname)) {
 					//Yup.
 					out(win) << aname << " is an alias for: " << std::endl;
@@ -226,7 +226,7 @@ std::string command::get_short_help() throw(std::bad_alloc)
 {
 	return "No description available";
 }
-	
+
 std::string command::get_long_help() throw(std::bad_alloc)
 {
 	return "No help available on command " + commandname;

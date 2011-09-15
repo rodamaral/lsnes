@@ -125,7 +125,7 @@ bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
 lua_render_context* lua_render_ctx = NULL;
 controls_t* lua_input_controllerdata = NULL;
 
-namespace 
+namespace
 {
 	lua_State* L;
 	bool recursive_flag = false;

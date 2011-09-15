@@ -226,7 +226,7 @@ public:
 
 /**
  * \brief Get reset status for current frame.
- * 
+ *
  * \return -1 if current frame doesn't have a reset. Otherwise number of cycles to wait for delayed reset (0 is
  *	immediate reset).
  */
@@ -239,7 +239,7 @@ public:
 
 /**
  * \brief Get how manyth poll in the frame next poll would be.
- * 
+ *
  * \return Poll number.
  */
 	unsigned next_poll_number();
@@ -283,7 +283,7 @@ class movie_logic
 public:
 /**
  * \brief Create new bridge.
- * 
+ *
  * \param m The movie to manipulate.
  */
 	movie_logic(movie& m) throw();
@@ -300,21 +300,21 @@ public:
 
 /**
  * \brief Notify about new frame starting.
- * 
+ *
  * \return Reset status for the new frame.
  */
 	long new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * \brief Poll for input.
- * 
+ *
  * \return Value for polled input.
  */
 	short input_poll(bool port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * \brief Called when movie code needs new controls snapshot.
- * 
+ *
  * \param subframe True if this is for subframe update, false if for frame update.
  */
 	virtual controls_t update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error) = 0;

@@ -45,7 +45,7 @@ public:
 
 /**
  * Get name of current member.
- * 
+ *
  * returns: Name of member.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -56,7 +56,7 @@ public:
 
 /**
  * Get name of current member.
- * 
+ *
  * returns: Name of member.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -67,7 +67,7 @@ public:
 
 /**
  * Are these two iterators the same?
- * 
+ *
  * parameter i: The another iterator
  * returns: True if iterators are the same, false otherwise.
  */
@@ -78,7 +78,7 @@ public:
 
 /**
  * Are these two iterators diffrent?
- * 
+ *
  * paramer i: The another iterator
  * returns: True if iterators are diffrent, false otherwise.
  */
@@ -89,7 +89,7 @@ public:
 
 /**
  * Advance iterator one step.
- * 
+ *
  * returns: The old value of iterator.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -102,7 +102,7 @@ public:
 
 /**
  * Regress iterator one step.
- * 
+ *
  * returns: The old value of iterator.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -115,7 +115,7 @@ public:
 
 /**
  * Advance iterator one step.
- * 
+ *
  * returns: Reference to this iterator.
  */
 		iterator_class<T, V>& operator++() throw()
@@ -126,7 +126,7 @@ public:
 
 /**
  * Regress iterator one step.
- * 
+ *
  * returns: Reference to this iterator.
  */
 		iterator_class<T, V>& operator--() throw()
@@ -151,7 +151,7 @@ public:
 
 /**
  * Opens specified ZIP archive for reading.
- * 
+ *
  * parameter zipfile: The name of ZIP file to open.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't open the ZIP file.
@@ -182,7 +182,7 @@ public:
 
 /**
  * Starting iterator
- * 
+ *
  * returns: The iterator pointing to first name.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -190,7 +190,7 @@ public:
 
 /**
  * Ending iterator (one past the end).
- * 
+ *
  * returns: The iterator pointing to one past the last name.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -198,7 +198,7 @@ public:
 
 /**
  * Starting reverse iterator
- * 
+ *
  * returns: The iterator pointing to last name and acting in reverse.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -213,7 +213,7 @@ public:
 
 /**
  * Check if member with specified name exists.
- * 
+ *
  * parameter name: The name of the member to check
  * returns: True if specified member exists, false otherwise.
  */
@@ -268,7 +268,7 @@ std::vector<char> read_file_relative(const std::string& name, const std::string&
 
 /**
  * Resolves the final file path that open_file_relative/read_file_relative would open.
- * 
+ *
  * parameter name: As in open_file_relative
  * parameter referencing_path: As in open_file_relative
  * returns: The file absolute path.

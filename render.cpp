@@ -310,7 +310,7 @@ void lcscreen::load(const std::vector<char>& data) throw(std::bad_alloc, std::ru
 	if(!user_memory)
 		throw std::runtime_error("Can't load to non-user memory");
 	const uint8_t* data2 = reinterpret_cast<const uint8_t*>(&data[0]);
-	if(data.size() < 2) 
+	if(data.size() < 2)
 		throw std::runtime_error("Corrupt saved screenshot data");
 	uint32_t _width = static_cast<uint32_t>(data2[0]) * 256 + static_cast<uint32_t>(data2[1]);
 	if(_width > 1 && data.size() % (2 * _width) != 2)

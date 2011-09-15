@@ -720,7 +720,7 @@ namespace
 void load_index_file(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
 	std::istream& s = open_file_relative(filename, "");
-	
+
 	try {
 		std::list<index_entry> partial_index;
 		std::string line;

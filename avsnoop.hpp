@@ -15,7 +15,7 @@ class av_snooper
 public:
 /**
  * Create new A/V snooper.
- * 
+ *
  * throws std::bad_alloc: Not enough memory.
  */
 	av_snooper() throw(std::bad_alloc);
@@ -27,7 +27,7 @@ public:
 
 /**
  * Dump a frame.
- * 
+ *
  * parameter _frame: The frame to dump.
  * parameter fps_n: Current fps numerator.
  * parameter fps_d: Current fps denomerator.
@@ -39,7 +39,7 @@ public:
 
 /**
  * Dump a frame.
- * 
+ *
  * parameter _frame: The frame to dump.
  * parameter fps_n: Current fps numerator.
  * parameter fps_d: Current fps denomerator.
@@ -49,7 +49,7 @@ public:
 
 /**
  * Dump a sample.
- * 
+ *
  * parameter l: Left channel sample.
  * parameter r: Right channel sample.
  * throws std::bad_alloc: Not enough memory.
@@ -59,7 +59,7 @@ public:
 
 /**
  * Dump a sample.
- * 
+ *
  * parameter l: Left channel sample.
  * parameter r: Right channel sample.
  * parameter win: Graphics system handle.
@@ -68,7 +68,7 @@ public:
 
 /**
  * End dump.
- * 
+ *
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error dumping sample.
  */
@@ -76,14 +76,14 @@ public:
 
 /**
  * End dump.
- * 
+ *
  * parameter win: Graphics system handle.
  */
 	static void end(window* win) throw();
 
 /**
  * Notify game information.
- * 
+ *
  * parameter gamename: Name of the game.
  * parameter authors: Authors of the run.
  * parameter gametime: Game time.
@@ -96,7 +96,7 @@ public:
 
 /**
  * Notify game information.
- * 
+ *
  * parameter gamename: Name of the game.
  * parameter authors: Authors of the run.
  * parameter gametime: Game time.
@@ -114,7 +114,7 @@ public:
 
 /**
  * Is there dump in progress?
- * 
+ *
  * returns: True if dump is in progress, false if not.
  */
 	static bool dump_in_progress() throw();
@@ -141,14 +141,14 @@ public:
 
 /**
  * Add a notifier.
- * 
+ *
  * parameter notifier: New notifier to add.
  */
 	static void add_dump_notifier(dump_notification& notifier) throw(std::bad_alloc);
 
 /**
  * Remove a notifier.
- * 
+ *
  * parameter notifier: Existing notifier to remove.
  */
 	static void remove_dump_notifier(dump_notification& notifier) throw();

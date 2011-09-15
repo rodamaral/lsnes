@@ -96,7 +96,7 @@ struct avi_frame
 {
 /**
  * Constructor.
- * 
+ *
  * parameter _flags: Flags for frame.
  * parameter _type: AVI type for frame (big-endian!).
  * parameter _offset: Offset of frame from start of MOVI.
@@ -106,7 +106,7 @@ struct avi_frame
 
 /**
  * Write the index entry for frame.
- * 
+ *
  * parameter buf: Buffer to write to.
  */
 	void write(uint8_t* buf);
@@ -184,7 +184,7 @@ public:
 
 /**
  * Dump a frame (new segment starts if needed). Pixel byte order is BGRx.
- * 
+ *
  * parameter data: The frame data.
  * parameter width: Width of frame.
  * parameter height: Height of frame.
@@ -198,7 +198,7 @@ public:
 
 /**
  * Dump an audio sample
- * 
+ *
  * parameter left: Signed sample for left channel (-32768 - 327678).
  * parameter right: Signed sample for right channel (-32768 - 327678).
  * throws std::bad_alloc: Not enough memory.
@@ -216,14 +216,14 @@ void on_end() throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Causes current thread to become encode thread. Do not call this, the code internally uses it.
- * 
+ *
  * returns: Return status for the thread.
  */
 	int encode_thread();
-	
+
 /**
  * Set capture errored flag.
- * 
+ *
  * parameter err: The error message.
  */
 	void set_capture_error(const char* err) throw();

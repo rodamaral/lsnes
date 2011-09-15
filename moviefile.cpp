@@ -313,7 +313,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	}
 	write_authors_file(w, authors);
 	write_input(w, input, port1, port2);
-	
+
 	w.commit();
 }
 
@@ -398,4 +398,3 @@ rom_type gametype_romtype(gametype_t type)
 		return ROMTYPE_NONE;
 	};
 }
-

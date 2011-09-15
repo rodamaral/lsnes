@@ -44,7 +44,7 @@ namespace
 			uint32_t _magic = 403703808;
 			uint8_t* magic = reinterpret_cast<uint8_t*>(&_magic);
 			dscr.set_palette(magic[2], magic[1], magic[0]);
-	
+
 			struct lua_render_context lrc;
 			render_queue rq;
 			lrc.left_gap = dlb;
@@ -77,7 +77,7 @@ namespace
 		}
 
 		void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-			authors, double gametime, const std::string& rerecords) throw(std::bad_alloc, 
+			authors, double gametime, const std::string& rerecords) throw(std::bad_alloc,
 			std::runtime_error)
 		{
 			//We don't have place for this info and thus ignore it.

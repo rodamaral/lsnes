@@ -30,7 +30,7 @@ namespace
 			target_infinite = false;
 			target_fps = nominal_rate;
 		}
-		
+
 		bool is_set() throw()
 		{
 			return !target_nominal;
@@ -56,7 +56,7 @@ namespace
 			target_infinite = false;
 			target_nominal = false;
 		}
-	
+
 		virtual std::string get() throw(std::bad_alloc)
 		{
 			if(target_nominal)
@@ -67,7 +67,7 @@ namespace
 				return o.str();
 			}
 		}
-	
+
 	} targetfps;
 }
 

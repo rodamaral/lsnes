@@ -12,9 +12,9 @@
 
 /**
  * \brief Fixup command according to key polarity.
- * 
+ *
  * Takes in a raw command and returns the command that should be actually executed given the key polarity.
- * 
+ *
  * \param cmd Raw command.
  * \param polarity Polarity (True => Being pressed, False => Being released).
  * \return The fixed command, "" if no command should be executed.
@@ -25,10 +25,10 @@ std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::ba
 
 /**
  * \brief Keyboard mapper.
- * 
+ *
  * This class handles internals of mapping events from keyboard buttons and pseudo-buttons. The helper class T has
  * to have the following:
- * 
+ *
  * unsigned T::mod_str(const std::string& mod): Translate modifiers set mod into modifier mask.
  * typedef T::internal_keysymbol: Key symbol to match against. Needs to have == operator available.
  * T::internal_keysymbol key_str(const std::string& keyname): Translate key name to key to match against.
@@ -43,9 +43,9 @@ class keymapper
 public:
 /**
  * \brief Bind a key.
- * 
+ *
  * Binds a key, erroring out if binding would conflict with existing one.
- * 
+ *
  * \param mod Modifier set to require to be pressed.
  * \param modmask Modifier set to take into account.
  * \param keyname Key to bind the action to.
@@ -79,9 +79,9 @@ public:
 
 /**
  * \brief Unbind a key.
- * 
+ *
  * Unbinds a key, erroring out if binding does not exist..
- * 
+ *
  * \param mod Modifier set to require to be pressed.
  * \param modmask Modifier set to take into account.
  * \param keyname Key to bind the action to.
@@ -105,9 +105,9 @@ public:
 
 /**
  * \brief Map key symbol from keyboard + polarity into a command.
- * 
+ *
  * Takes in symbol from keyboard and polarity. Outputs command to run.
- * 
+ *
  * \param sym Symbol from keyboard (with its mods).
  * \param polarity True if key is being pressed, false if being released.
  * \return The command to run. "" if none.
@@ -130,7 +130,7 @@ public:
 
 /**
  * \brief Dump list of bindigns as messages to specified graphics handle.
- * 
+ *
  * \param win The graphics system handle.
  * \throws std::bad_alloc Not enough memory.
  */

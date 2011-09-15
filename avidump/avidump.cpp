@@ -256,9 +256,9 @@ void avidumper::print_summary(std::ostream& str)
 	uint64_t global_a2frames = raw_samples / 2;
 	double global_a2length = raw_samples / (2.0 * audio_native_sampling_rate);
 
-	
+
 	std::ostringstream s2;
-	
+
 	s2 << "Quantity        |This segment         |All segments         |" << std::endl;
 	s2 << "----------------+---------------------+---------------------+" << std::endl;
 	s2 << "Segment number  |           " << fmtint(local_segno, 10) << "|                  N/A|" << std::endl;
@@ -275,7 +275,7 @@ void avidumper::print_summary(std::ostream& str)
 	s2 << "A2/V desync     |                  N/A|           "
 		<< fmtdbl(global_a2length - global_vlength, 10) << "|" << std::endl;
 	s2 << "----------------+---------------------+---------------------+" << std::endl;
-	
+
 	str << s2.str();
 }
 
@@ -314,7 +314,7 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 	}
 
 	this_is_keyframe = (segment_frames == 0 || segment_frames - segment_last_keyframe >= keyframe_interval);
-	
+
 	if(this_is_keyframe) {
 		memcpy(&tframe[0], data, 4 * static_cast<size_t>(width) * height);
 		segment_last_keyframe = segment_frames;
@@ -365,7 +365,7 @@ void avidumper::on_end() throw(std::bad_alloc, std::runtime_error)
 	frame_cond.notify_all();
 	frame_mutex.unlock();
 	frame_thread->join();
-	
+
 	flush_audio_to(audio_put_ptr);
 	fixup_avi_header_and_close();
 	if(sox_open) {
@@ -549,7 +549,7 @@ void avidumper::open_and_write_avi_header(uint16_t width, uint16_t height, uint3
 		throw std::runtime_error("Can't open output AVI file");
 	std::vector<uint8_t> aviheader;
 	uint32_t usecs_per_frame = static_cast<uint32_t>(1000000ULL * fps_d / fps_n);
-	
+
 	/* AVI main chunk header. */
 	/* The tentative AVI header size of 336 doesn't include the video data, so we need to fix it up later. */
 	append(aviheader, str("RIFF"), ptr(fixup_avi_size), u32(336), str("AVI "));

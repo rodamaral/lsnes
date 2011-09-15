@@ -218,7 +218,7 @@ controls_t movie::get_controls() throw()
 		return c;	//End of movie.
 	for(size_t i = 0; i < TOTAL_CONTROLS; i++) {
 		uint32_t polls = pollcounters[i] & 0x7FFFFFFF;
-		uint32_t index = (changes > polls) ? polls : changes - 1; 
+		uint32_t index = (changes > polls) ? polls : changes - 1;
 		c(i) = movie_data[current_frame_first_subframe + index](i);
 	}
 	return c;
@@ -270,7 +270,7 @@ void movie::next_frame() throw(std::bad_alloc)
 	//Increment the current frame counter and subframe counter. Note that first subframe is undefined for
 	//frame 0 and 0 for frame 1.
 	if(current_frame)
-		current_frame_first_subframe = current_frame_first_subframe + 
+		current_frame_first_subframe = current_frame_first_subframe +
 			count_changes(current_frame_first_subframe);
 	else
 		current_frame_first_subframe = 0;
@@ -313,7 +313,7 @@ short movie::next_input(unsigned controlindex) throw(std::bad_alloc, std::logic_
 		//Otherwise find the last valid frame of input.
 		uint32_t changes = count_changes(current_frame_first_subframe);
 		uint32_t polls = (pollcounters[controlindex]++) & 0x7FFFFFFF;
-		uint32_t index = (changes > polls) ? polls : changes - 1; 
+		uint32_t index = (changes > polls) ? polls : changes - 1;
 		//debuglog << "Frame=" << current_frame << " Subframe=" << polls << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe + index](controlindex) << " fetchrow=" << current_frame_first_subframe + index << std::endl << std::flush;
 		return movie_data[current_frame_first_subframe + index](controlindex);
 	} else {

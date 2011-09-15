@@ -363,7 +363,7 @@ namespace
 			}
 		done = 1;
 	}
-	
+
 	//Do button action.
 	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
 	{
@@ -535,7 +535,7 @@ namespace
 				x << "ERROR: Emulator core version mismatch!" << std::endl
 					<< "\tThis version: " << bsnes_core_version << std::endl
 					<< "\tFile is from: " << _movie.coreversion << std::endl;
-				throw std::runtime_error(x.str());	
+				throw std::runtime_error(x.str());
 			} else
 				out(win) << "WARNING: Emulator core version mismatch!" << std::endl
 					<< "\tThis version: " << bsnes_core_version << std::endl
@@ -556,14 +556,14 @@ namespace
 			newmovie = movb.get_movie();
 		else
 			newmovie.load(_movie.rerecords, _movie.projectid, _movie.input);
-		
+
 		if(will_load_state) {
 			std::vector<unsigned char> tmp;
 			tmp.resize(_movie.movie_state.size());
 			memcpy(&tmp[0], &_movie.movie_state[0], tmp.size());
 			newmovie.restore_state(tmp, true);
 		}
-		
+
 		//Negative return.
 		rrdata::read_base(_movie.projectid);
 		rrdata::add_internal();
@@ -589,7 +589,7 @@ namespace
 			system_corrupt = true;
 			throw;
 		}
-		
+
 		//Okay, copy the movie data.
 		our_movie = _movie;
 		if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
@@ -652,7 +652,7 @@ namespace
 			out(win) << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
 				<< _movie.get_frame_count() << " frames)" << std::endl;
 		}
-		
+
 		if(_movie.gamename != "")
 			out(win) << "Game Name: " << _movie.gamename << std::endl;
 		for(size_t i = 0; i < _movie.authors.size(); i++)
@@ -855,7 +855,7 @@ class my_interface : public SNES::Interface
 		}
 		av_snooper::frame(ls, fps_n, fps_d, win);
 	}
-	
+
 	void audio_sample(int16_t l_sample, int16_t r_sample)
 	{
 		uint16_t _l = l_sample;
@@ -1125,7 +1125,7 @@ namespace
 				throw std::runtime_error("Filename required");
 			mark_pending_save(args, SAVE_STATE);
 		}
-	
+
 		std::string get_short_help() throw(std::bad_alloc) { return "Save state"; }
 		std::string get_long_help() throw(std::bad_alloc)
 		{
@@ -1229,7 +1229,7 @@ namespace
 				"Shows the run authors\n";
 		}
 	} getauthorc;
-	
+
 	class repainter : public command
 	{
 	public:
@@ -1442,7 +1442,7 @@ namespace
 			prev_mouse_mask = _b;
 		}
 	} mousebuttonh;
-	
+
 	class button_action : public command
 	{
 	public:

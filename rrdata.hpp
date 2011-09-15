@@ -17,7 +17,7 @@ public:
 		bool operator==(const struct instance& i) const throw();
 		const struct instance operator++(int) throw();
 		const struct instance& operator++() throw();
-		
+
 	};
 
 	static void read_base(const std::string& project) throw(std::bad_alloc);

@@ -21,8 +21,7 @@ void add_glyph(uint32_t codepoint, const std::string& appearence)
 	}
 	if(!glyph_offsets.count(appearence)) {
 		if(appearence.find_first_not_of("0123456789ABCDEFabcdef") < appearence.length()) {
-			std::cerr << "Invalid font representation (invalid hex char)."
-				<< std::endl;
+			std::cerr << "Invalid font representation (invalid hex char)." << std::endl;
 			std::cerr << "Faulty representation: '" << appearence << "'." << std::endl;
 			exit(1);
 		}
@@ -56,7 +55,7 @@ uint32_t keyhash(uint32_t key, uint32_t item, uint32_t mod)
 	uint32_t b = 0;
 	uint32_t c = item;
 	a=a-b;	a=a-c;	a=a^(c >> 13);
-	b=b-c;	b=b-a;	b=b^(a << 8); 
+	b=b-c;	b=b-a;	b=b^(a << 8);
 	c=c-a;	c=c-b;	c=c^(b >> 13);
 	a=a-b;	a=a-c;	a=a^(c >> 12);
 	b=b-c;	b=b-a;	b=b^(a << 16);

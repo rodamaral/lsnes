@@ -13,7 +13,7 @@ class setting
 public:
 /**
  * Create new setting.
- * 
+ *
  * parameter name: Name of the setting.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -26,7 +26,7 @@ public:
 
 /**
  * Set the setting to special blank state. Not all settings can be blanked.
- * 
+ *
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Blanking this setting is not allowed (currently).
  */
@@ -34,7 +34,7 @@ public:
 
 /**
  * Look up setting and try to blank it.
- * 
+ *
  * parameter name: Name of setting to blank.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Blanking this setting is not allowed (currently). Or setting does not exist.
@@ -43,24 +43,24 @@ public:
 
 /**
  * Is this setting set (not blanked)?
- * 
+ *
  * returns: True if setting is not blanked, false if it is blanked.
  */
 	virtual bool is_set() throw() = 0;
 
 /**
  * Look up a setting and see if it is set (not blanked)?
- * 
+ *
  * parameter name: Name of setting to check.
  * returns: True if setting is not blanked, false if it is blanked.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Setting does not exist.
  */
 	static bool is_set(const std::string& name) throw(std::bad_alloc, std::runtime_error);
-	
+
 /**
  * Set value of setting.
- * 
+ *
  * parameter value: New value for setting.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Setting the setting to this value is not allowed (currently).
@@ -69,7 +69,7 @@ public:
 
 /**
  * Look up setting and set it.
- * 
+ *
  * parameter name: Name of the setting.
  * parameter value: New value for setting.
  * throws std::bad_alloc: Not enough memory.
@@ -79,7 +79,7 @@ public:
 
 /**
  * Get the value of setting.
- * 
+ *
  * returns: The setting value.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -87,7 +87,7 @@ public:
 
 /**
  * Look up setting an get value of it.
- * 
+ *
  * returns: The setting value.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Setting does not exist.
@@ -96,7 +96,7 @@ public:
 
 /**
  * Print all settings and values.
- * 
+ *
  * parameter win: The graphics system handle.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -113,7 +113,7 @@ class numeric_setting : public setting
 public:
 /**
  * Create a new numeric setting.
- * 
+ *
  * parameter sname: Name of the setting.
  * parameter minv: Minimum value for the setting.
  * parameter maxv: Maximum value for the setting.
@@ -131,7 +131,7 @@ public:
 	bool is_set() throw();
 /**
  * Set the value of setting. Accepts only numeric values.
- * 
+ *
  * parameter value: New value.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Invalid value.
@@ -139,14 +139,14 @@ public:
 	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error);
 /**
  * Gets the value of the setting.
- * 
+ *
  * returns: Value of setting as string.
  * throws std::bad_alloc: Not enough memory.
  */
 	std::string get() throw(std::bad_alloc);
 /**
  * Get the value of setting as numeric.
- * 
+ *
  * returns: Value of the setting as numeric.
  */
 	operator int32_t() throw();
@@ -164,7 +164,7 @@ class boolean_setting : public setting
 public:
 /**
  * Create a new boolean setting.
- * 
+ *
  * parameter sname: Name of the setting.
  * parameter dflt: Default (initial) value for the setting.
  * throws std::bad_alloc: Not enough memory.
@@ -180,10 +180,10 @@ public:
 	bool is_set() throw();
 /**
  * Set the value of setting.
- * 
+ *
  * The following values are accepted as true: true, yes, on, 1, enable and enabled.
  * The following values are accepted as false: false, no, off, 0, disable and disabled.
- * 
+ *
  * parameter value: New value.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Invalid value.
@@ -191,14 +191,14 @@ public:
 	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error);
 /**
  * Gets the value of the setting.
- * 
+ *
  * returns: Value of setting as string.
  * throws std::bad_alloc: Not enough memory.
  */
 	std::string get() throw(std::bad_alloc);
 /**
  * Get the value of setting as boolean.
- * 
+ *
  * returns: Value of the setting as boolean.
  */
 	operator bool() throw();

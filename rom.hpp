@@ -412,7 +412,7 @@ std::vector<char> save_core_state() throw(std::bad_alloc);
  * \brief Restore core state from buffer.
  *
  * Loads core state from buffer.
- * 
+ *
  * \param buf The buffer containing the state.
  * \throws std::runtime_error Loading state failed.
  */
@@ -420,9 +420,9 @@ void load_core_state(const std::vector<char>& buf) throw(std::runtime_error);
 
 /**
  * \brief Read index file.
- * 
+ *
  * Read index of ROMs and add ROMs found to content-searchable storage.
- * 
+ *
  * \param filename The filename of index file.
  * \throws std::bad_alloc Not enough memory.
  * \throws std::runtime_error Loading index failed.
@@ -431,9 +431,9 @@ void load_index_file(const std::string& filename) throw(std::bad_alloc, std::run
 
 /**
  * \brief Lookup absolute filename by hash.
- * 
+ *
  * Search all indices, looking for file with specified SHA-256 (specifying hash of "" results "").
- * 
+ *
  * \param hash The hash of file.
  * \return Absolute filename.
  * \throws std::bad_alloc Not enough memory.

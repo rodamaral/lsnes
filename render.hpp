@@ -14,7 +14,7 @@ struct lcscreen
 {
 /**
  * \brief Create new screen from bsnes output data.
- * 
+ *
  * \param mem The output buffer from bsnes.
  * \param hires True if in hires mode (512-wide lines instead of 256-wide).
  * \param interlace True if in interlace mode.
@@ -30,7 +30,7 @@ struct lcscreen
 	void load(const std::vector<char>& data) throw(std::bad_alloc, std::runtime_error);
 	void save(std::vector<char>& data) throw(std::bad_alloc);
 	void save_png(const std::string& file) throw(std::bad_alloc, std::runtime_error);
-	
+
 /**
  * \brief Destructor.
  */
@@ -74,7 +74,7 @@ struct screen
 {
 /**
  * \brief Create new screen
- * 
+ *
  * Creates screen. The screen dimensions are initially 0x0.
  */
 	screen() throw();
@@ -83,12 +83,12 @@ struct screen
  * \brief Destructor.
  */
 	~screen() throw();
-	
+
 /**
  * \brief Set the screen to use specified backing memory.
- * 
+ *
  * Sets the backing memory for screen. The specified memory is not freed if screen is reallocated or destroyed.
- * 
+ *
  * \param _memory The memory buffer.
  * \param _width Width of screen.
  * \param _height Height of screen.
@@ -98,12 +98,12 @@ struct screen
  */
 	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
 		uint32_t _pitch) throw();
-	
+
 /**
  * \brief Set new size for screen, reallocating backing memory.
- * 
+ *
  * Sets the size of the screen. The memory is freed if screen is reallocated or destroyed.
- * 
+ *
  * \param _width Width of screen.
  * \param _height Height of screen.
  * \param _originx X coordinate for origin.
@@ -116,10 +116,10 @@ struct screen
 
 /**
  * \brief Paint low-color screen into screen.
- * 
+ *
  * Paints low-color screen into screen. The upper-left of image will be at origin. Scales the image by given factors.
  * If the image does not fit with specified scale factors, it is clipped.
- * 
+ *
  * \param scr The screen to paint.
  * \param hscale Horizontal scale factor.
  * \param vscale Vertical scale factor.
@@ -128,7 +128,7 @@ struct screen
 
 /**
  * \brief Get pointer into specified row.
- * 
+ *
  * \param row Number of row (must be less than height).
  */
 	uint32_t* rowptr(uint32_t row) throw();
@@ -180,9 +180,9 @@ struct screen
 
 /**
  * \brief Set the palette shifts.
- * 
+ *
  * Sets the palette shifts, converting the existing image.
- * 
+ *
  * \param rshift Shift for red component.
  * \param gshift Shift for green component.
  * \param bshift Shift for blue component.
@@ -191,9 +191,9 @@ struct screen
 
 /**
  * \brief Return a color value.
- * 
+ *
  * Returns color value with specified (r,g,b) values (scale 0-255).
- * 
+ *
  * \param r Red component.
  * \param g Green component.
  * \param b Blue component.
@@ -232,7 +232,7 @@ struct render_object
 
 /**
  * \brief Draw the object.
- * 
+ *
  * \param scr The screen to draw it on.
  */
 	virtual void operator()(struct screen& scr) throw() = 0;
@@ -245,9 +245,9 @@ struct render_queue
 {
 /**
  * \brief Add object to render queue.
- * 
+ *
  * Adds new object to render queue. The object must be allocated by new.
- * 
+ *
  * \param obj The object to add
  * \throws std::bad_alloc Not enough memory.
  */
@@ -255,18 +255,18 @@ struct render_queue
 
 /**
  * \brief Apply all objects in order.
- * 
+ *
  * Applies all objects in the queue in order, freeing them in progress.
- * 
+ *
  * \param scr The screen to apply queue to.
  */
 	void run(struct screen& scr) throw();
 
 /**
  * \brief Clear the queue.
- * 
+ *
  * Frees all objects in the queue.
- * 
+ *
  */
 	void clear() throw();
 
@@ -280,7 +280,7 @@ private:
 
 /**
  * \brief Read font data for glyph.
- * 
+ *
  * \param codepoint Code point of glyph.
  * \param x X position to render into.
  * \param y Y position to render into.
@@ -295,7 +295,7 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
 
 /**
  * \brief Render text into screen.
- * 
+ *
  * \param _x The x position to render to (relative to origin).
  * \param _y The y position to render to (relative to origin).
  * \param _text The text to render.

@@ -494,7 +494,7 @@ namespace
 		0x082777777ULL,		//From left.
 		0x844777777ULL		//From up&left.
 	};
-	
+
 	void hat_transition(uint32_t& ov, uint32_t& v, bool& polarity, bool& more)
 	{
 		uint32_t t1 = transpack[ov];
@@ -568,7 +568,7 @@ keymapper_helper_sdl::translated_event keymapper_helper_sdl::translate_event(SDL
 		k.device = SDL_DEV_JOYBUTTON;
 		k.joybutton = static_cast<uint32_t>(e.jbutton.which) * 256 + static_cast<uint32_t>(e.jbutton.button);
 		return translated_event(k, (e.type == SDL_JOYBUTTONDOWN));
-		
+
 	} else if(e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
 		keysymbol k;
 		k.device = SDL_DEV_KEYBOARD;
@@ -929,7 +929,7 @@ namespace
 		sampledup_inc = 64081;
 		sampledup_mod = 2 * real_rate + 64081;
 	}
-	
+
 	void audiocb(void* dummy, Uint8* stream, int len)
 	{
 		static uint16_t lprev = 32768;
@@ -1198,7 +1198,7 @@ namespace
 						ptr[i] = b ? bordercolor : 0;
 					}
 				}
-				
+
 			}
 		}
 	}
@@ -1518,19 +1518,19 @@ window::window()
 
 	SDL_AudioSpec* desired = new SDL_AudioSpec();
 	SDL_AudioSpec* obtained = new SDL_AudioSpec();
-	
+
 	desired->freq = 44100;
 	desired->format = AUDIO_S16SYS;
 	desired->channels = 2;
 	desired->samples = 8192;
 	desired->callback = audiocb;
 	desired->userdata = NULL;
-	
+
 	if(SDL_OpenAudio(desired, obtained) < 0) {
 		message("Audio can't be initialized, audio playback disabled");
 		return;
 	}
-	
+
 	//Fill the parameters.
 	calculate_sampledup(obtained->freq);
 	format = obtained->format;
@@ -1587,7 +1587,7 @@ void window::message(const std::string& msg) throw(std::bad_alloc)
 			system_log << forlog << std::endl;
 			msg2 = msg2.substr(s + 1);
 		}
-		
+
 	}
 	if(locked_mode && messagebuffer_first_show + maxmessages < messagebuffer_next_seq)
 		messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
@@ -1654,7 +1654,7 @@ void window::notify_screen_update(bool full) throw()
 		if(console_mode) {
 			draw_rectangle(reinterpret_cast<uint8_t*>(hwsurf->pixels), hwsurf->pitch, 2, 2, win_w - 2,
 				win_h - 28, bordercolor, 2);
-			draw_rectangle(reinterpret_cast<uint8_t*>(hwsurf->pixels), hwsurf->pitch, 2, win_h - 26, 
+			draw_rectangle(reinterpret_cast<uint8_t*>(hwsurf->pixels), hwsurf->pitch, 2, win_h - 26,
 				win_w - 2, win_h - 2, bordercolor, 2);
 		} else {
 			draw_rectangle(reinterpret_cast<uint8_t*>(hwsurf->pixels), hwsurf->pitch, 2, 2, screen_w + 10,
@@ -1680,7 +1680,7 @@ void window::notify_screen_update(bool full) throw()
 					memset(reinterpret_cast<uint8_t*>(hwsurf->pixels) + i * hwsurf->pitch + 24, 0,
 					       4 * screen_w);
 			for(uint32_t i = 0; i < current_screen->height; i++)
-				memcpy(reinterpret_cast<uint8_t*>(hwsurf->pixels) + (i + 6) * hwsurf->pitch + 24, 
+				memcpy(reinterpret_cast<uint8_t*>(hwsurf->pixels) + (i + 6) * hwsurf->pitch + 24,
 					reinterpret_cast<uint8_t*>(current_screen->memory) + current_screen->pitch * i,
 					4 * current_screen->width);
 		} else {
@@ -2049,4 +2049,3 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_hscl = hscl;
 	vc_vscl = vscl;
 }
-

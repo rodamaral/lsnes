@@ -52,10 +52,10 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 				throw std::runtime_error("Bad author name, one of full or nickname must be present");
 			movie.authors.push_back(std::make_pair(full, nick));
 		}
-		
+
 	}
-	
-	
+
+
 	return movie;
 }
 
@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 	}
 	window win;
 	init_lua(&win);
-	
+
 	win.out() << "BSNES version: " << bsnes_core_version << std::endl;
 	win.out() << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 	win.out() << "Command line is: ";
@@ -112,14 +112,14 @@ int main(int argc, char** argv)
 		set_nominal_framerate(322445.0/6448.0);
 	else if(r.region == REGION_NTSC)
 		set_nominal_framerate(10738636.0/178683.0);
-	
+
 	out(&win) << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map(&win);
 	out(&win) << "--- End of Startup --- " << std::endl;
 	try {
 		moviefile movie;
 		bool loaded = false;
-		for(auto i = cmdline.begin(); i != cmdline.end(); i++) 
+		for(auto i = cmdline.begin(); i != cmdline.end(); i++)
 			if(i->length() > 0 && (*i)[0] != '-') {
 				movie = moviefile(*i);
 				loaded = true;
