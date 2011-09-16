@@ -286,12 +286,7 @@ public:
  *
  * \param m The movie to manipulate.
  */
-	movie_logic(movie& m) throw();
-
-/**
- * \brief Destructor.
- */
-	virtual ~movie_logic() throw();
+	movie_logic() throw();
 
 /**
  * \brief Get the movie instance associated.
@@ -317,9 +312,9 @@ public:
  *
  * \param subframe True if this is for subframe update, false if for frame update.
  */
-	virtual controls_t update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error) = 0;
+	controls_t update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
 private:
-	movie& mov;
+	movie mov;
 };
 
 

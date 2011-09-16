@@ -645,12 +645,7 @@ controls_t movie::read_subframe(uint64_t frame, uint64_t subframe)
 }
 
 
-movie_logic::movie_logic(movie& m) throw()
-	: mov(m)
-{
-}
-
-movie_logic::~movie_logic() throw()
+movie_logic::movie_logic() throw()
 {
 }
 

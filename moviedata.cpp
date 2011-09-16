@@ -1,16 +1,34 @@
 #include "moviedata.hpp"
 #include "command.hpp"
+#include "lua.hpp"
+#include "framebuffer.hpp"
+#include <iomanip>
+#include "lsnes.hpp"
+#include <snes/snes.hpp>
+#include <ui-libsnes/libsnes.hpp>
+#include "rrdata.hpp"
+#include "settings.hpp"
+#include "controller.hpp"
 
 struct moviefile our_movie;
+struct loaded_rom* our_rom;
+bool system_corrupt;
+movie_logic movb;
 
 std::vector<char>& get_host_memory()
 {
 	return our_movie.host_memory;
 }
 
+movie& get_movie()
+{
+	return movb.get_movie();
+}
 
 namespace
 {
+	numeric_setting savecompression("savecompression", 0, 9, 7);
+
 	class get_gamename_cmd : public command
 	{
 	public:
@@ -124,4 +142,230 @@ namespace
 				"Edits author name\n";
 		}
 	} editauthorc;
+
+	void warn_hash_mismatch(window* win, const std::string& mhash, const loaded_slot& slot,
+		const std::string& name)
+	{
+		if(mhash != slot.sha256) {
+			out(win) << "WARNING: " << name << " hash mismatch!" << std::endl
+				<< "\tMovie:   " << mhash << std::endl
+				<< "\tOur ROM: " << slot.sha256 << std::endl;
+		}
+	}
+}
+
+//Save state.
+void do_save_state(window* win, const std::string& filename) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	lua_callback_pre_save(filename, true, win);
+	try {
+		uint64_t origtime = get_ticks_msec();
+		our_movie.is_savestate = true;
+		our_movie.sram = save_sram();
+		our_movie.savestate = save_core_state();
+		framebuffer.save(our_movie.screenshot);
+		auto s = movb.get_movie().save_state();
+		our_movie.movie_state.resize(s.size());
+		memcpy(&our_movie.movie_state[0], &s[0], s.size());
+		our_movie.input = movb.get_movie().save();
+		our_movie.save(filename, savecompression);
+		uint64_t took = get_ticks_msec() - origtime;
+		out(win) << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
+		lua_callback_post_save(filename, true, win);
+	} catch(std::bad_alloc& e) {
+		OOM_panic(win);
+	} catch(std::exception& e) {
+		win->message(std::string("Save failed: ") + e.what());
+		lua_callback_err_save(filename, win);
+	}
+}
+
+//Save movie.
+void do_save_movie(window* win, const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+{
+	lua_callback_pre_save(filename, false, win);
+	try {
+		uint64_t origtime = get_ticks_msec();
+		our_movie.is_savestate = false;
+		our_movie.input = movb.get_movie().save();
+		our_movie.save(filename, savecompression);
+		uint64_t took = get_ticks_msec() - origtime;
+		out(win) << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
+		lua_callback_post_save(filename, false, win);
+	} catch(std::bad_alloc& e) {
+		OOM_panic(win);
+	} catch(std::exception& e) {
+		win->message(std::string("Save failed: ") + e.what());
+		lua_callback_err_save(filename, win);
+	}
+}
+
+//Load state from loaded movie file (does not catch errors).
+void do_load_state(window* win, struct moviefile& _movie, int lmode)
+{
+	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
+	if(gtype::toromtype(_movie.gametype) != our_rom->rtype)
+		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
+	if(gtype::toromregion(_movie.gametype) != our_rom->orig_region && our_rom->orig_region != REGION_AUTO)
+		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
+
+	if(_movie.coreversion != bsnes_core_version) {
+		if(will_load_state) {
+			std::ostringstream x;
+			x << "ERROR: Emulator core version mismatch!" << std::endl
+				<< "\tThis version: " << bsnes_core_version << std::endl
+				<< "\tFile is from: " << _movie.coreversion << std::endl;
+			throw std::runtime_error(x.str());
+		} else
+			out(win) << "WARNING: Emulator core version mismatch!" << std::endl
+				<< "\tThis version: " << bsnes_core_version << std::endl
+				<< "\tFile is from: " << _movie.coreversion << std::endl;
+	}
+	warn_hash_mismatch(win, _movie.rom_sha256, our_rom->rom, "ROM #1");
+	warn_hash_mismatch(win, _movie.romxml_sha256, our_rom->rom_xml, "XML #1");
+	warn_hash_mismatch(win, _movie.slota_sha256, our_rom->slota, "ROM #2");
+	warn_hash_mismatch(win, _movie.slotaxml_sha256, our_rom->slota_xml, "XML #2");
+	warn_hash_mismatch(win, _movie.slotb_sha256, our_rom->slotb, "ROM #3");
+	warn_hash_mismatch(win, _movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3");
+
+	SNES::config.random = false;
+	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
+
+	movie newmovie;
+	if(lmode == LOAD_STATE_PRESERVE)
+		newmovie = movb.get_movie();
+	else
+		newmovie.load(_movie.rerecords, _movie.projectid, _movie.input);
+
+	if(will_load_state) {
+		std::vector<unsigned char> tmp;
+		tmp.resize(_movie.movie_state.size());
+		memcpy(&tmp[0], &_movie.movie_state[0], tmp.size());
+		newmovie.restore_state(tmp, true);
+	}
+
+	//Negative return.
+	rrdata::read_base(_movie.projectid);
+	rrdata::add_internal();
+	try {
+		our_rom->region = gtype::toromregion(_movie.gametype);
+		our_rom->load();
+
+		if(_movie.is_savestate && lmode != LOAD_STATE_MOVIE) {
+			//Load the savestate and movie state.
+			controller_set_port_type(0, _movie.port1);
+			controller_set_port_type(1, _movie.port2);
+			load_core_state(_movie.savestate);
+			framebuffer.load(_movie.screenshot);
+		} else {
+			load_sram(_movie.movie_sram, win);
+			controller_set_port_type(0, _movie.port1);
+			controller_set_port_type(1, _movie.port2);
+			framebuffer = screen_nosignal;
+		}
+	} catch(std::bad_alloc& e) {
+		OOM_panic(win);
+	} catch(std::exception& e) {
+		system_corrupt = true;
+		framebuffer = screen_corrupt;
+		throw;
+	}
+
+	//Okay, copy the movie data.
+	our_movie = _movie;
+	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
+		our_movie.is_savestate = false;
+		our_movie.host_memory.clear();
+	}
+	movb.get_movie() = newmovie;
+	//Activate RW mode if needed.
+	if(lmode == LOAD_STATE_RW)
+		movb.get_movie().readonly_mode(false);
+	if(lmode == LOAD_STATE_DEFAULT && !(movb.get_movie().get_frame_count()))
+		movb.get_movie().readonly_mode(false);
+	out(win) << "ROM Type ";
+	switch(our_rom->rtype) {
+	case ROMTYPE_SNES:
+		out(win) << "SNES";
+		break;
+	case ROMTYPE_BSX:
+		out(win) << "BS-X";
+		break;
+	case ROMTYPE_BSXSLOTTED:
+		out(win) << "BS-X slotted";
+		break;
+	case ROMTYPE_SUFAMITURBO:
+		out(win) << "Sufami Turbo";
+		break;
+	case ROMTYPE_SGB:
+		out(win) << "Super Game Boy";
+		break;
+	default:
+		out(win) << "Unknown";
+		break;
+	}
+	out(win) << " region ";
+	switch(our_rom->region) {
+	case REGION_PAL:
+		out(win) << "PAL";
+		break;
+	case REGION_NTSC:
+		out(win) << "NTSC";
+		break;
+	default:
+		out(win) << "Unknown";
+		break;
+	}
+	out(win) << std::endl;
+	uint64_t mlength = _movie.get_movie_length();
+	{
+		mlength += 999999;
+		std::ostringstream x;
+		if(mlength > 3600000000000) {
+			x << mlength / 3600000000000 << ":";
+			mlength %= 3600000000000;
+		}
+		x << std::setfill('0') << std::setw(2) << mlength / 60000000000 << ":";
+		mlength %= 60000000000;
+		x << std::setfill('0') << std::setw(2) << mlength / 1000000000 << ".";
+		mlength %= 1000000000;
+		x << std::setfill('0') << std::setw(3) << mlength / 1000000;
+		out(win) << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
+			<< _movie.get_frame_count() << " frames)" << std::endl;
+	}
+	if(_movie.gamename != "")
+		out(win) << "Game Name: " << _movie.gamename << std::endl;
+	for(size_t i = 0; i < _movie.authors.size(); i++)
+		out(win) << "Author: " << _movie.authors[i].first << "(" << _movie.authors[i].second << ")"
+			<< std::endl;
+}
+
+//Load state
+void do_load_state(window* win, const std::string& filename, int lmode)
+{
+	uint64_t origtime = get_ticks_msec();
+	lua_callback_pre_load(filename, win);
+	struct moviefile mfile;
+	try {
+		mfile = moviefile(filename);
+	} catch(std::bad_alloc& e) {
+		OOM_panic(win);
+	} catch(std::exception& e) {
+		win->message("Can't read movie/savestate '" + filename + "': " + e.what());
+		lua_callback_err_load(filename, win);
+		return;
+	}
+	try {
+		do_load_state(win, mfile, lmode);
+		uint64_t took = get_ticks_msec() - origtime;
+		out(win) << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
+		lua_callback_post_load(filename, our_movie.is_savestate, win);
+	} catch(std::bad_alloc& e) {
+		OOM_panic(win);
+	} catch(std::exception& e) {
+		win->message("Can't load movie/savestate '" + filename + "': " + e.what());
+		lua_callback_err_load(filename, win);
+		return;
+	}
 }

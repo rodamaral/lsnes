@@ -1,6 +1,8 @@
 #include "mainloop.hpp"
 #include "avsnoop.hpp"
 #include "command.hpp"
+#include "controller.hpp"
+#include "framebuffer.hpp"
 #include "moviedata.hpp"
 #include <iomanip>
 #include "framerate.hpp"
@@ -27,13 +29,6 @@
 #include <ui-libsnes/libsnes.hpp>
 #include "framerate.hpp"
 
-#define LOAD_STATE_RW 0
-#define LOAD_STATE_RO 1
-#define LOAD_STATE_PRESERVE 2
-#define LOAD_STATE_MOVIE 3
-#define LOAD_STATE_DEFAULT 4
-#define SAVE_STATE 0
-#define SAVE_MOVIE 1
 #define SPECIAL_FRAME_START 0
 #define SPECIAL_FRAME_VIDEO 1
 #define SPECIAL_SAVEPOINT 2
@@ -57,9 +52,6 @@
 #define BUTTON_TURBO 15		//Superscope
 
 void update_movie_state();
-void draw_nosignal(uint16_t* target);
-void draw_corrupt(uint16_t* target);
-
 
 namespace
 {
@@ -74,9 +66,6 @@ namespace
 		ADVANCE_PAUSE,			//Unconditional pause.
 	};
 
-	//Analog input physical controller IDs and types.
-	int analog[4] = {-1, -1, -1};
-	bool analog_is_mouse[4] = {false, false, false};
 	//Memory watches.
 	std::map<std::string, std::string> memory_watches;
 	//Previous mouse mask.
@@ -84,12 +73,8 @@ namespace
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;
-	//Our ROM.
-	struct loaded_rom* our_rom;
 	//Handle to the graphics system.
 	window* win;
-	//The SNES screen.
-	struct screen scr;
 	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
 	enum advance_mode amode;
 	//Mode and filename of pending load, one of LOAD_* constants.
@@ -109,73 +94,27 @@ namespace
 	bool video_refresh_done;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
-	//Types of connected controllers.
-	enum porttype_t porttype1 = PT_GAMEPAD;
-	enum porttype_t porttype2 = PT_NONE;
-	//System corrupt flag.
-	bool system_corrupt;
-	//Current screen, no signal screen and corrupt screen.
-	lcscreen framebuffer;
-	lcscreen nosignal_screen;
-	lcscreen corrupt_screen;
 	//Few settings.
 	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
-	numeric_setting savecompression("savecompression", 0, 9, 7);
 
 	void send_analog_input(int32_t x, int32_t y, unsigned index)
 	{
-		if(analog_is_mouse[index]) {
+		if(controller_ismouse_by_analog(index)) {
 			x -= 256;
 			y -= (framebuffer.height / 2);
 		} else {
 			x /= 2;
 			y /= 2;
 		}
-		if(analog[index] < 0) {
+		int aindex = controller_index_by_analog(index);
+		if(aindex < 0) {
 			out(win) << "No analog controller in slot #" << (index + 1) << std::endl;
 			return;
 		}
-		curcontrols(analog[index] >> 2, analog[index] & 3, 0) = x;
-		curcontrols(analog[index] >> 2, analog[index] & 3, 1) = y;
+		curcontrols(aindex >> 2, aindex & 3, 0) = x;
+		curcontrols(aindex >> 2, aindex & 3, 1) = y;
 	}
 
-	void redraw_framebuffer()
-	{
-		uint32_t hscl = 1, vscl = 1;
-		if(framebuffer.width < 512)
-			hscl = 2;
-		if(framebuffer.height < 400)
-			vscl = 2;
-		render_queue rq;
-		struct lua_render_context lrc;
-		lrc.left_gap = 0;
-		lrc.right_gap = 0;
-		lrc.bottom_gap = 0;
-		lrc.top_gap = 0;
-		lrc.queue = &rq;
-		lrc.width = framebuffer.width * hscl;
-		lrc.height = framebuffer.height * vscl;
-		lrc.rshift = scr.active_rshift;
-		lrc.gshift = scr.active_gshift;
-		lrc.bshift = scr.active_bshift;
-		lua_callback_do_paint(&lrc, win);
-		scr.reallocate(framebuffer.width * hscl + lrc.left_gap + lrc.right_gap, framebuffer.height * vscl +
-			lrc.top_gap + lrc.bottom_gap, lrc.left_gap, lrc.top_gap);
-		scr.copy_from(framebuffer, hscl, vscl);
-		//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-		win->set_window_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
-		rq.run(scr);
-		win->notify_screen_update();
-	}
-
-	void fill_special_frames()
-	{
-		uint16_t buf[512*448];
-		draw_nosignal(buf);
-		nosignal_screen = lcscreen(buf, 512, 448);
-		draw_corrupt(buf);
-		corrupt_screen = lcscreen(buf, 512, 448);
-	}
 }
 
 class firmware_path_setting : public setting
@@ -213,133 +152,71 @@ private:
 	bool default_firmware;
 } firmwarepath_setting;
 
-class mymovielogic : public movie_logic
+controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
-public:
-	mymovielogic() : movie_logic(dummy_movie) {}
+	if(lua_requests_subframe_paint)
+		redraw_framebuffer(win);
 
-	controls_t update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
-	{
-		if(lua_requests_subframe_paint)
-			redraw_framebuffer();
-
-		if(subframe) {
-			if(amode == ADVANCE_SUBFRAME) {
-				if(!cancel_advance && !advanced_once) {
-					win->wait_msec(advance_timeout_first);
-					advanced_once = true;
-				}
-				if(cancel_advance) {
-					amode = ADVANCE_PAUSE;
-					cancel_advance = false;
-				}
-				win->paused(amode == ADVANCE_PAUSE);
-			} else if(amode == ADVANCE_FRAME) {
-				;
-			} else {
-				win->paused(amode == ADVANCE_SKIPLAG || amode == ADVANCE_PAUSE);
+	if(subframe) {
+		if(amode == ADVANCE_SUBFRAME) {
+			if(!cancel_advance && !advanced_once) {
+				win->wait_msec(advance_timeout_first);
+				advanced_once = true;
+			}
+			if(cancel_advance) {
+				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			if(amode == ADVANCE_SKIPLAG)
-				amode = ADVANCE_AUTO;
-			location_special = SPECIAL_NONE;
-			update_movie_state();
+			win->paused(amode == ADVANCE_PAUSE);
+		} else if(amode == ADVANCE_FRAME) {
+			;
 		} else {
-			if(amode == ADVANCE_SKIPLAG_PENDING)
-				amode = ADVANCE_SKIPLAG;
-			if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
-				if(!cancel_advance) {
-					win->wait_msec(advanced_once ? to_wait_frame(get_ticks_msec()) :
-						advance_timeout_first);
-					advanced_once = true;
-				}
-				if(cancel_advance) {
-					amode = ADVANCE_PAUSE;
-					cancel_advance = false;
-				}
-				win->paused(amode == ADVANCE_PAUSE);
-			} else {
-				win->paused((amode == ADVANCE_PAUSE));
+			win->paused(amode == ADVANCE_SKIPLAG || amode == ADVANCE_PAUSE);
+			cancel_advance = false;
+		}
+		if(amode == ADVANCE_SKIPLAG)
+			amode = ADVANCE_AUTO;
+		location_special = SPECIAL_NONE;
+		update_movie_state();
+	} else {
+		if(amode == ADVANCE_SKIPLAG_PENDING)
+			amode = ADVANCE_SKIPLAG;
+		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
+			if(!cancel_advance) {
+				win->wait_msec(advanced_once ? to_wait_frame(get_ticks_msec()) :
+					advance_timeout_first);
+				advanced_once = true;
+			}
+			if(cancel_advance) {
+				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			location_special = SPECIAL_FRAME_START;
-			update_movie_state();
+			win->paused(amode == ADVANCE_PAUSE);
+		} else {
+			win->paused((amode == ADVANCE_PAUSE));
+			cancel_advance = false;
 		}
-		win->notify_screen_update();
-		win->poll_inputs();
-		if(!subframe && pending_reset_cycles >= 0) {
-			curcontrols(CONTROL_SYSTEM_RESET) = 1;
-			curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = pending_reset_cycles / 10000;
-			curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = pending_reset_cycles % 10000;
-		} else if(!subframe) {
-			curcontrols(CONTROL_SYSTEM_RESET) = 0;
-			curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
-			curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
-		}
-		controls_t tmp = curcontrols ^ autoheld_controls;
-		lua_callback_do_input(tmp, subframe, win);
-		return tmp;
+		location_special = SPECIAL_FRAME_START;
+		update_movie_state();
 	}
-private:
-	movie dummy_movie;
-};
+	win->notify_screen_update();
+	win->poll_inputs();
+	if(!subframe && pending_reset_cycles >= 0) {
+		curcontrols(CONTROL_SYSTEM_RESET) = 1;
+		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = pending_reset_cycles / 10000;
+		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = pending_reset_cycles % 10000;
+	} else if(!subframe) {
+		curcontrols(CONTROL_SYSTEM_RESET) = 0;
+		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
+		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
+	}
+	controls_t tmp = curcontrols ^ autoheld_controls;
+	lua_callback_do_input(tmp, subframe, win);
+	return tmp;
+}
 
 namespace
 {
-	mymovielogic movb;
-
-	//Lookup physical controller id based on UI controller id and given types (-1 if invalid).
-	int lookup_physical_controller(unsigned ui_id)
-	{
-		bool p1multitap = (porttype1 == PT_MULTITAP);
-		unsigned p1devs = port_types[porttype1].devices;
-		unsigned p2devs = port_types[porttype2].devices;
-		if(ui_id >= p1devs + p2devs)
-			return -1;
-		if(!p1multitap)
-			if(ui_id < p1devs)
-				return ui_id;
-			else
-				return 4 + ui_id - p1devs;
-		else
-			if(ui_id == 0)
-				return 0;
-			else if(ui_id < 5)
-				return ui_id + 3;
-			else
-				return ui_id - 4;
-	}
-
-	//Look up controller type given UI controller id (note: Non-present controllers give PT_NONE, not the type
-	//of port, multitap controllers give PT_GAMEPAD, not PT_MULTITAP, and justifiers give PT_JUSTIFIER, not
-	//PT_JUSTIFIERS).
-	enum devicetype_t lookup_controller_type(unsigned ui_id)
-	{
-		int x = lookup_physical_controller(ui_id);
-		if(x < 0)
-			return DT_NONE;
-		enum porttype_t rawtype = (x & 4) ? porttype2 : porttype1;
-		if((x & 3) < port_types[rawtype].devices)
-			return port_types[rawtype].dtype;
-		else
-			return DT_NONE;
-	}
-
-	void set_analog_controllers()
-	{
-		unsigned index = 0;
-		for(unsigned i = 0; i < 8; i++) {
-			enum devicetype_t t = lookup_controller_type(i);
-			analog_is_mouse[index] = (t == DT_MOUSE);
-			if(t == DT_MOUSE || t == DT_SUPERSCOPE || t == DT_JUSTIFIER) {
-				analog[index++] = lookup_physical_controller(i);
-			} else
-				analog[index] = -1;
-		}
-		for(; index < 3; index++)
-			analog[index] = -1;
-	}
-
 	std::map<std::string, std::pair<unsigned, unsigned>> buttonmap;
 
 	const char* buttonnames[] = {
@@ -364,8 +241,8 @@ namespace
 	//Do button action.
 	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
 	{
-		enum devicetype_t p = lookup_controller_type(ui_id);
-		int x = lookup_physical_controller(ui_id);
+		enum devicetype_t p = controller_type_by_logical(ui_id);
+		int x = controller_index_by_logical(ui_id);
 		int bid = -1;
 		switch(p) {
 		case DT_NONE:
@@ -426,265 +303,6 @@ namespace
 			curcontrols((x & 4) ? 1 : 0, x & 3, bid) = newstate;
 	}
 
-	//Save state.
-	void do_save_state(const std::string& filename) throw(std::bad_alloc,
-		std::runtime_error)
-	{
-		lua_callback_pre_save(filename, true, win);
-		try {
-			uint64_t origtime = get_ticks_msec();
-			our_movie.is_savestate = true;
-			our_movie.sram = save_sram();
-			our_movie.savestate = save_core_state();
-			framebuffer.save(our_movie.screenshot);
-			auto s = movb.get_movie().save_state();
-			our_movie.movie_state.resize(s.size());
-			memcpy(&our_movie.movie_state[0], &s[0], s.size());
-			our_movie.input = movb.get_movie().save();
-			our_movie.save(filename, savecompression);
-			uint64_t took = get_ticks_msec() - origtime;
-			out(win) << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
-			lua_callback_post_save(filename, true, win);
-		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
-		} catch(std::exception& e) {
-			win->message(std::string("Save failed: ") + e.what());
-			lua_callback_err_save(filename, win);
-		}
-	}
-
-	//Save movie.
-	void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
-	{
-		lua_callback_pre_save(filename, false, win);
-		try {
-			uint64_t origtime = get_ticks_msec();
-			our_movie.is_savestate = false;
-			our_movie.input = movb.get_movie().save();
-			our_movie.save(filename, savecompression);
-			uint64_t took = get_ticks_msec() - origtime;
-			out(win) << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
-			lua_callback_post_save(filename, false, win);
-		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
-		} catch(std::exception& e) {
-			win->message(std::string("Save failed: ") + e.what());
-			lua_callback_err_save(filename, win);
-		}
-	}
-
-	void warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot, const std::string& name)
-	{
-		if(mhash != slot.sha256) {
-			out(win) << "WARNING: " << name << " hash mismatch!" << std::endl
-				<< "\tMovie:   " << mhash << std::endl
-				<< "\tOur ROM: " << slot.sha256 << std::endl;
-		}
-	}
-
-	void set_dev(bool port, porttype_t t, bool set_core = true)
-	{
-		//return;
-		switch(set_core ? t : PT_INVALID) {
-		case PT_NONE:
-			snes_set_controller_port_device(port, SNES_DEVICE_NONE);
-			break;
-		case PT_GAMEPAD:
-			snes_set_controller_port_device(port, SNES_DEVICE_JOYPAD);
-			break;
-		case PT_MULTITAP:
-			snes_set_controller_port_device(port, SNES_DEVICE_MULTITAP);
-			break;
-		case PT_MOUSE:
-			snes_set_controller_port_device(port, SNES_DEVICE_MOUSE);
-			break;
-		case PT_SUPERSCOPE:
-			snes_set_controller_port_device(port, SNES_DEVICE_SUPER_SCOPE);
-			break;
-		case PT_JUSTIFIER:
-			snes_set_controller_port_device(port, SNES_DEVICE_JUSTIFIER);
-			break;
-		case PT_JUSTIFIERS:
-			snes_set_controller_port_device(port, SNES_DEVICE_JUSTIFIERS);
-			break;
-		case PT_INVALID:
-			;
-		};
-		if(port)
-			porttype2 = t;
-		else
-			porttype1 = t;
-		set_analog_controllers();
-	}
-
-	//Load state from loaded movie file (does not catch errors).
-	void do_load_state(struct moviefile& _movie, int lmode)
-	{
-		bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
-		if(gtype::toromtype(_movie.gametype) != our_rom->rtype)
-			throw std::runtime_error("ROM types of movie and loaded ROM don't match");
-		if(gtype::toromregion(_movie.gametype) != our_rom->orig_region && our_rom->orig_region != REGION_AUTO)
-			throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
-
-		if(_movie.coreversion != bsnes_core_version) {
-			if(will_load_state) {
-				std::ostringstream x;
-				x << "ERROR: Emulator core version mismatch!" << std::endl
-					<< "\tThis version: " << bsnes_core_version << std::endl
-					<< "\tFile is from: " << _movie.coreversion << std::endl;
-				throw std::runtime_error(x.str());
-			} else
-				out(win) << "WARNING: Emulator core version mismatch!" << std::endl
-					<< "\tThis version: " << bsnes_core_version << std::endl
-					<< "\tFile is from: " << _movie.coreversion << std::endl;
-		}
-		warn_hash_mismatch(_movie.rom_sha256, our_rom->rom, "ROM #1");
-		warn_hash_mismatch(_movie.romxml_sha256, our_rom->rom_xml, "XML #1");
-		warn_hash_mismatch(_movie.slota_sha256, our_rom->slota, "ROM #2");
-		warn_hash_mismatch(_movie.slotaxml_sha256, our_rom->slota_xml, "XML #2");
-		warn_hash_mismatch(_movie.slotb_sha256, our_rom->slotb, "ROM #3");
-		warn_hash_mismatch(_movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3");
-
-		SNES::config.random = false;
-		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
-
-		movie newmovie;
-		if(lmode == LOAD_STATE_PRESERVE)
-			newmovie = movb.get_movie();
-		else
-			newmovie.load(_movie.rerecords, _movie.projectid, _movie.input);
-
-		if(will_load_state) {
-			std::vector<unsigned char> tmp;
-			tmp.resize(_movie.movie_state.size());
-			memcpy(&tmp[0], &_movie.movie_state[0], tmp.size());
-			newmovie.restore_state(tmp, true);
-		}
-
-		//Negative return.
-		rrdata::read_base(_movie.projectid);
-		rrdata::add_internal();
-		try {
-			our_rom->region = gtype::toromregion(_movie.gametype);
-			our_rom->load();
-
-			if(_movie.is_savestate && lmode != LOAD_STATE_MOVIE) {
-				//Load the savestate and movie state.
-				set_dev(false, _movie.port1);
-				set_dev(true, _movie.port2);
-				load_core_state(_movie.savestate);
-				framebuffer.load(_movie.screenshot);
-			} else {
-				load_sram(_movie.movie_sram, win);
-				set_dev(false, _movie.port1);
-				set_dev(true, _movie.port2);
-				framebuffer = nosignal_screen;
-			}
-		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
-		} catch(std::exception& e) {
-			system_corrupt = true;
-			throw;
-		}
-
-		//Okay, copy the movie data.
-		our_movie = _movie;
-		if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
-			our_movie.is_savestate = false;
-			our_movie.host_memory.clear();
-		}
-		movb.get_movie() = newmovie;
-		//Activate RW mode if needed.
-		if(lmode == LOAD_STATE_RW)
-			movb.get_movie().readonly_mode(false);
-		if(lmode == LOAD_STATE_DEFAULT && !(movb.get_movie().get_frame_count()))
-			movb.get_movie().readonly_mode(false);
-		out(win) << "ROM Type ";
-		switch(our_rom->rtype) {
-		case ROMTYPE_SNES:
-			out(win) << "SNES";
-			break;
-		case ROMTYPE_BSX:
-			out(win) << "BS-X";
-			break;
-		case ROMTYPE_BSXSLOTTED:
-			out(win) << "BS-X slotted";
-			break;
-		case ROMTYPE_SUFAMITURBO:
-			out(win) << "Sufami Turbo";
-			break;
-		case ROMTYPE_SGB:
-			out(win) << "Super Game Boy";
-			break;
-		default:
-			out(win) << "Unknown";
-			break;
-		}
-		out(win) << " region ";
-		switch(our_rom->region) {
-		case REGION_PAL:
-			out(win) << "PAL";
-			break;
-		case REGION_NTSC:
-			out(win) << "NTSC";
-			break;
-		default:
-			out(win) << "Unknown";
-			break;
-		}
-		out(win) << std::endl;
-		uint64_t mlength = _movie.get_movie_length();
-		{
-			mlength += 999999;
-			std::ostringstream x;
-			if(mlength > 3600000000000) {
-				x << mlength / 3600000000000 << ":";
-				mlength %= 3600000000000;
-			}
-			x << std::setfill('0') << std::setw(2) << mlength / 60000000000 << ":";
-			mlength %= 60000000000;
-			x << std::setfill('0') << std::setw(2) << mlength / 1000000000 << ".";
-			mlength %= 1000000000;
-			x << std::setfill('0') << std::setw(3) << mlength / 1000000;
-			out(win) << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
-				<< _movie.get_frame_count() << " frames)" << std::endl;
-		}
-
-		if(_movie.gamename != "")
-			out(win) << "Game Name: " << _movie.gamename << std::endl;
-		for(size_t i = 0; i < _movie.authors.size(); i++)
-			out(win) << "Author: " << _movie.authors[i].first << "(" << _movie.authors[i].second << ")"
-				<< std::endl;
-	}
-
-	//Load state
-	void do_load_state(const std::string& filename, int lmode)
-	{
-		uint64_t origtime = get_ticks_msec();
-		lua_callback_pre_load(filename, win);
-		struct moviefile mfile;
-		try {
-			mfile = moviefile(filename);
-		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
-		} catch(std::exception& e) {
-			win->message("Can't read movie/savestate '" + filename + "': " + e.what());
-			lua_callback_err_load(filename, win);
-			return;
-		}
-		try {
-			do_load_state(mfile, lmode);
-			uint64_t took = get_ticks_msec() - origtime;
-			out(win) << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
-			lua_callback_post_load(filename, our_movie.is_savestate, win);
-		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
-		} catch(std::exception& e) {
-			win->message("Can't load movie/savestate '" + filename + "': " + e.what());
-			lua_callback_err_load(filename, win);
-			return;
-		}
-	}
 
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(const std::string& filename, int lmode)
@@ -701,7 +319,7 @@ namespace
 	{
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
-			do_save_movie(filename);
+			do_save_movie(win, filename);
 			return;
 		}
 		queued_saves.insert(filename);
@@ -719,11 +337,6 @@ namespace
 			update_movie_state();
 		}
 	} dumpwatch;
-}
-
-movie& get_movie()
-{
-	return movb.get_movie();
 }
 
 void update_movie_state()
@@ -765,10 +378,10 @@ void update_movie_state()
 	else
 		c = curcontrols ^ autoheld_controls;
 	for(unsigned i = 0; i < 8; i++) {
-		unsigned pindex = lookup_physical_controller(i);
+		unsigned pindex = controller_index_by_logical(i);
 		unsigned port = pindex >> 2;
 		unsigned dev = pindex & 3;
-		auto ctype = lookup_controller_type(i);
+		auto ctype = controller_type_by_logical(i);
 		std::ostringstream x;
 		switch(ctype) {
 		case DT_GAMEPAD:
@@ -836,7 +449,7 @@ class my_interface : public SNES::Interface
 		framebuffer = ls;
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
-		redraw_framebuffer();
+		redraw_framebuffer(win);
 		uint32_t fps_n, fps_d;
 		if(region) {
 			fps_n = 322445;
@@ -1173,7 +786,7 @@ namespace
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
-			redraw_framebuffer();
+			redraw_framebuffer(win);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Redraw the screen"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1253,8 +866,8 @@ namespace
 		test_1() throw(std::bad_alloc) : command("test-1") {}
 		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
 		{
-			framebuffer = nosignal_screen;
-			redraw_framebuffer();
+			framebuffer = screen_nosignal;
+			redraw_framebuffer(win);
 		}
 	} test1c;
 
@@ -1264,8 +877,8 @@ namespace
 		test_2() throw(std::bad_alloc) : command("test-2") {}
 		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
 		{
-			framebuffer = corrupt_screen;
-			redraw_framebuffer();
+			framebuffer = screen_corrupt;
+			redraw_framebuffer(win);
 		}
 	} test2c;
 
@@ -1394,8 +1007,8 @@ namespace
 	bool handle_load()
 	{
 		if(pending_load != "") {
-			do_load_state(pending_load, loadmode);
-			redraw_framebuffer();
+			do_load_state(win, pending_load, loadmode);
+			redraw_framebuffer(win);
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
@@ -1420,7 +1033,7 @@ namespace
 			SNES::system.runtosave();
 			stepping_into_save = false;
 			for(auto i = queued_saves.begin(); i != queued_saves.end(); i++)
-				do_save_state(*i);
+				do_save_state(win, *i);
 		}
 		queued_saves.clear();
 	}
@@ -1431,9 +1044,9 @@ namespace
 		if(cycles == 0) {
 			win->message("SNES reset");
 			SNES::system.reset();
-			framebuffer = nosignal_screen;
+			framebuffer = screen_nosignal;
 			lua_callback_do_reset(win);
-			redraw_framebuffer();
+			redraw_framebuffer(win);
 		} else if(cycles > 0) {
 			video_refresh_done = false;
 			long cycles_executed = 0;
@@ -1447,9 +1060,9 @@ namespace
 			else
 				out(win) << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
 			SNES::system.reset();
-			framebuffer = nosignal_screen;
+			framebuffer = screen_nosignal;
 			lua_callback_do_reset(win);
-			redraw_framebuffer();
+			redraw_framebuffer(win);
 			if(video_refresh_done) {
 				to_wait_frame(get_ticks_msec());
 				return false;
@@ -1463,8 +1076,7 @@ namespace
 		if(!system_corrupt)
 			return false;
 		while(system_corrupt) {
-			framebuffer = corrupt_screen;
-			redraw_framebuffer();
+			redraw_framebuffer(win);
 			win->cancel_wait();
 			win->paused(true);
 			win->poll_inputs();
@@ -1479,18 +1091,18 @@ namespace
 	{
 		for(unsigned i = 0; i < 8; i++) {
 			std::string type = "unknown";
-			if(lookup_controller_type(i) == DT_NONE)
+			if(controller_type_by_logical(i) == DT_NONE)
 				type = "disconnected";
-			if(lookup_controller_type(i) == DT_GAMEPAD)
+			if(controller_type_by_logical(i) == DT_GAMEPAD)
 				type = "gamepad";
-			if(lookup_controller_type(i) == DT_MOUSE)
+			if(controller_type_by_logical(i) == DT_MOUSE)
 				type = "mouse";
-			if(lookup_controller_type(i) == DT_SUPERSCOPE)
+			if(controller_type_by_logical(i) == DT_SUPERSCOPE)
 				type = "superscope";
-			if(lookup_controller_type(i) == DT_JUSTIFIER)
+			if(controller_type_by_logical(i) == DT_JUSTIFIER)
 				type = "justifier";
 			out(win) << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
-				lookup_physical_controller(i) << " (" << type << ")" << std::endl;
+				controller_index_by_logical(i) << " (" << type << ")" << std::endl;
 		}
 	}
 }
@@ -1500,18 +1112,18 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 {
 	//Basic initialization.
 	win = _win;
+	init_special_screens();
 	our_rom = &rom;
 	my_interface intrf;
 	auto old_inteface = SNES::system.interface;
 	SNES::system.interface = &intrf;
 	status = &win->get_emustatus();
-	fill_special_frames();
 
 	//Load our given movie.
 	bool first_round = false;
 	bool just_did_loadstate = false;
 	try {
-		do_load_state(initial, LOAD_STATE_DEFAULT);
+		do_load_state(win, initial, LOAD_STATE_DEFAULT);
 		first_round = our_movie.is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
@@ -1526,8 +1138,8 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 
 	//print_controller_mappings();
 	av_snooper::add_dump_notifier(dumpwatch);
-	win->set_main_surface(scr);
-	redraw_framebuffer();
+	win->set_main_surface(main_screen);
+	redraw_framebuffer(win);
 	win->paused(false);
 	amode = ADVANCE_PAUSE;
 	while(amode != ADVANCE_QUIT) {
@@ -1564,7 +1176,7 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 			if(amode == ADVANCE_QUIT)
 				break;
 			amode = ADVANCE_PAUSE;
-			redraw_framebuffer();
+			redraw_framebuffer(win);
 			win->cancel_wait();
 			win->paused(true);
 			win->poll_inputs();

@@ -4,7 +4,8 @@
 #include <cctype>
 #include <iostream>
 #include <cstring>
-
+#include <snes/snes.hpp>
+#include <ui-libsnes/libsnes.hpp>
 
 namespace
 {
@@ -334,11 +335,14 @@ const port_type& port_type::lookup(const std::string& name, bool port2) throw(st
 }
 
 port_type port_types[] = {
-	{ "none", cdecode::none, cencode::none, PT_NONE, 0, DT_NONE, true },
-	{ "gamepad", cdecode::gamepad, cencode::gamepad, PT_GAMEPAD, 1, DT_GAMEPAD, true },
-	{ "multitap", cdecode::multitap, cencode::multitap, PT_MULTITAP, 4, DT_GAMEPAD, true },
-	{ "mouse", cdecode::mouse, cencode::mouse, PT_MOUSE, 1, DT_MOUSE, true },
-	{ "superscope", cdecode::superscope, cencode::superscope, PT_SUPERSCOPE, 1, DT_SUPERSCOPE, false },
-	{ "justifier", cdecode::justifier, cencode::justifier, PT_JUSTIFIER, 1, DT_JUSTIFIER, false },
-	{ "justifiers", cdecode::justifiers, cencode::justifiers, PT_JUSTIFIERS, 2, DT_JUSTIFIER, false }
+	{ "none", cdecode::none, cencode::none, PT_NONE, 0, DT_NONE, true, SNES_DEVICE_NONE },
+	{ "gamepad", cdecode::gamepad, cencode::gamepad, PT_GAMEPAD, 1, DT_GAMEPAD, true, SNES_DEVICE_JOYPAD },
+	{ "multitap", cdecode::multitap, cencode::multitap, PT_MULTITAP, 4, DT_GAMEPAD, true, SNES_DEVICE_MULTITAP },
+	{ "mouse", cdecode::mouse, cencode::mouse, PT_MOUSE, 1, DT_MOUSE, true, SNES_DEVICE_MOUSE },
+	{ "superscope", cdecode::superscope, cencode::superscope, PT_SUPERSCOPE, 1, DT_SUPERSCOPE, false,
+		SNES_DEVICE_SUPER_SCOPE },
+	{ "justifier", cdecode::justifier, cencode::justifier, PT_JUSTIFIER, 1, DT_JUSTIFIER, false,
+		SNES_DEVICE_JUSTIFIER },
+	{ "justifiers", cdecode::justifiers, cencode::justifiers, PT_JUSTIFIERS, 2, DT_JUSTIFIER, false,
+		SNES_DEVICE_JUSTIFIERS }
 };

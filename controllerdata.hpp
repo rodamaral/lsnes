@@ -391,6 +391,10 @@ struct port_type
  */
 	bool valid_port1;
 /**
+ * BSNES controller type ID.
+ */
+	unsigned bsnes_type;
+/**
  * Lookup port type by name.
  */
 	static const port_type& lookup(const std::string& name, bool port2 = true) throw(std::bad_alloc,
