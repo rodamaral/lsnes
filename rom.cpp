@@ -655,16 +655,6 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	return ret;
 }
 
-void emulate_frame() throw()
-{
-	SNES::system.run();
-}
-
-void reset_snes() throw()
-{
-	SNES::system.reset();
-}
-
 std::vector<char> save_core_state() throw(std::bad_alloc)
 {
 	SNES::system.runtosave();

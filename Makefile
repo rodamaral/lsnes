@@ -6,7 +6,7 @@ OBJECTS = controllerdata.o fieldsplit.o memorymanip.o misc.o movie.o moviefile.o
 #AVI dumper
 OBJECTS += avidump/avidump-control.o avidump/avidump.o avidump/sox.o
 
-PROGRAMS = lsnes.exe movietrunctest.exe
+PROGRAMS = lsnes.exe
 
 CFLAGS = -I. $(shell sdl-config --cflags) $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)

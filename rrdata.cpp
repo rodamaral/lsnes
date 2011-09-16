@@ -55,7 +55,7 @@ const struct rrdata::instance rrdata::instance::operator++(int) throw()
 	return i;
 }
 
-const struct rrdata::instance& rrdata::instance::operator++() throw()
+struct rrdata::instance& rrdata::instance::operator++() throw()
 {
 	unsigned carry = 1;
 	for(unsigned i = 31; i < 32; i--) {

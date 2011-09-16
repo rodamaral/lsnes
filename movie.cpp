@@ -9,7 +9,6 @@
 
 #define FLAG_SYNC CONTROL_FRAME_SYNC
 
-std::string global_rerecord_count = "0";
 //std::ofstream debuglog("movie-debugging-log", std::ios::out | std::ios::app);
 
 namespace
@@ -194,7 +193,7 @@ void movie::set_controls(controls_t controls) throw()
 	current_controls = controls;
 }
 
-uint32_t movie::count_changes(uint64_t first_subframe)
+uint32_t movie::count_changes(uint64_t first_subframe) throw()
 {
 	if(first_subframe >= movie_data.size())
 		return 0;
@@ -609,7 +608,7 @@ long movie::get_reset_status() throw()
 	return hi * 10000 + lo;
 }
 
-uint64_t movie::frame_subframes(uint64_t frame)
+uint64_t movie::frame_subframes(uint64_t frame) throw()
 {
 	if(frame < cached_frame)
 		clear_caches();
@@ -621,13 +620,13 @@ uint64_t movie::frame_subframes(uint64_t frame)
 	return count_changes(p);
 }
 
-void movie::clear_caches()
+void movie::clear_caches() throw()
 {
 	cached_frame = 1;
 	cached_subframe = 0;
 }
 
-controls_t movie::read_subframe(uint64_t frame, uint64_t subframe)
+controls_t movie::read_subframe(uint64_t frame, uint64_t subframe) throw()
 {
 	if(frame < cached_frame)
 		clear_caches();
