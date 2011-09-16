@@ -121,7 +121,7 @@ void redraw_framebuffer(window* win)
 	lrc.rshift = main_screen.active_rshift;
 	lrc.gshift = main_screen.active_gshift;
 	lrc.bshift = main_screen.active_bshift;
-	lua_callback_do_paint(&lrc, win);
+	lua_callback_do_paint(&lrc);
 	main_screen.reallocate(framebuffer.width * hscl + lrc.left_gap + lrc.right_gap, framebuffer.height * vscl +
 		lrc.top_gap + lrc.bottom_gap, lrc.left_gap, lrc.top_gap);
 	main_screen.copy_from(framebuffer, hscl, vscl);

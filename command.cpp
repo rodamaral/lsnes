@@ -11,12 +11,9 @@ namespace
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
 
-	class run_command : public command
-	{
-	public:
-		run_command() throw(std::bad_alloc) : command("run-script") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command run_script("run-script", "run file as a script",
+		"Syntax: run-script <file>\nRuns file <file> just as it would have been entered in the command line\n",
+		[](const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Filename needed");
 			std::istream* o = NULL;
@@ -32,41 +29,21 @@ namespace
 					delete o;
 				throw;
 			}
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "run a file as a script"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: run-script <file>\n"
-				"Runs file <file> just as it would have been entered in the command line\n";
-		}
-	} run;
+		});
 
-	class aliases_command : public command
-	{
-	public:
-		aliases_command() throw(std::bad_alloc) : command("show-aliases") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command show_aliases("show-aliases", "show aliases",
+		"Syntax: show-aliases\nShow expansions of all aliases\n",
+		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			for(auto i = aliases.begin(); i != aliases.end(); i++)
 				for(auto j = i->second.begin(); j != i->second.end(); j++)
-					out(win) << "alias " << i->first << " " << *j << std::endl;
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "show aliases"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: show-aliases\n"
-				"Show expansions of all aliases\n";
-		}
-	} sh_aliases;
+					os << "alias " << i->first << " " << *j << std::endl;
+		});
 
-	class unalias_command : public command
-	{
-	public:
-		unalias_command() throw(std::bad_alloc) : command("unalias-command") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command unalias_command("unalias-command", "unalias a command",
+		"Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n",
+		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string aliasname = t;
 			if(t)
@@ -74,22 +51,13 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].clear();
-			out(win) << "Command '" << aliasname << "' unaliased" << std::endl;
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "unalias a command"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: unalias-command <aliasname>\n"
-				"Clear expansion of alias <aliasname>\n";
-		}
-	} unalias;
+			os << "Command '" << aliasname << "' unaliased" << std::endl;
+		});
 
-	class alias_command : public command
-	{
-	public:
-		alias_command() throw(std::bad_alloc) : command("alias-command") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command alias_command("alias-command", "alias a command",
+		"Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias <aliasname>\n"
+		"Valid alias names can't be empty nor start with '*' or '?'\n",
+		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string aliasname = t;
 			std::string command = t.tail();
@@ -98,16 +66,8 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].push_back(command);
-			out(win) << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "alias a command"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: alias-command <aliasname> <command>\n"
-				"Append <command> to expansion of alias <aliasname>\n"
-				"Valid alias names can't be empty nor start with '*' or '?'\n";
-		}
-	} alias;
+			os << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
+		});
 }
 
 command::command(const std::string& cmd) throw(std::bad_alloc)
@@ -261,4 +221,46 @@ tokensplitter::operator std::string() throw(std::bad_alloc)
 std::string tokensplitter::tail() throw(std::bad_alloc)
 {
 	return line.substr(position);
+}
+
+function_ptr_command::function_ptr_command(const std::string& name, const std::string& _description,
+	const std::string& _help, void (*_fn)(const std::string& arguments, window* win)) throw(std::bad_alloc)
+	: command(name)
+{
+	description = _description;
+	help = _help;
+	fn = _fn;
+	fn2 = NULL;
+}
+
+function_ptr_command::function_ptr_command(const std::string& name, const std::string& _description,
+	const std::string& _help, void (*_fn)(const std::string& arguments, std::ostream& win)) throw(std::bad_alloc)
+	: command(name)
+{
+	description = _description;
+	help = _help;
+	fn = NULL;
+	fn2 = _fn;
+}
+
+void function_ptr_command::invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+{
+	if(fn)
+		fn(args, win);
+	else if(fn2)
+		fn2(args, out(win));
+}
+
+std::string function_ptr_command::get_short_help() throw(std::bad_alloc)
+{
+	return description;
+}
+
+std::string function_ptr_command::get_long_help() throw(std::bad_alloc)
+{
+	return help;
+}
+
+function_ptr_command::~function_ptr_command() throw()
+{
 }

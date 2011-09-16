@@ -4,11 +4,33 @@
 #include "render.hpp"
 #include "window.hpp"
 
+/**
+ * The main framebuffer.
+ */
 extern lcscreen framebuffer;
+/**
+ * Special screen: "NO SIGNAL".
+ */
 extern lcscreen screen_nosignal;
+/**
+ * Special screen: "SYSTEM STATE CORRUPT".
+ */
 extern lcscreen screen_corrupt;
+/**
+ * The main screen to draw on.
+ */
 extern screen main_screen;
+/**
+ * Initialize special screens.
+ * 
+ * throws std::bad_alloc: Not enough memory.
+ */
 void init_special_screens() throw(std::bad_alloc);
+/**
+ * Redraw the framebuffer on screen.
+ * 
+ * parameter win: The graphics system handle.
+ */
 void redraw_framebuffer(window* win);
 
 #endif

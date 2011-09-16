@@ -4,8 +4,8 @@
 #include "render.hpp"
 #include <list>
 #include <string>
+#include <iostream>
 #include <stdexcept>
-#include "window.hpp"
 
 /**
  * A/V snooper.
@@ -34,8 +34,8 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error dumping frame.
  */
-	virtual void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, window* win, bool dummy)
-		throw(std::bad_alloc, std::runtime_error) = 0;
+	virtual void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d) throw(std::bad_alloc,
+		std::runtime_error) = 0;
 
 /**
  * Dump a frame.
@@ -43,9 +43,11 @@ public:
  * parameter _frame: The frame to dump.
  * parameter fps_n: Current fps numerator.
  * parameter fps_d: Current fps denomerator.
- * parameter win: Graphics system handle.
+ * parameter os: Print messages here
+ * throws std::bad_alloc: Not enough memory.
  */
-	static void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, window* win) throw();
+	static void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, std::ostream& os)
+		throw(std::bad_alloc);
 
 /**
  * Dump a sample.
@@ -62,9 +64,10 @@ public:
  *
  * parameter l: Left channel sample.
  * parameter r: Right channel sample.
- * parameter win: Graphics system handle.
+ * parameter os: Print messages here
+ * throws std::bad_alloc: Not enough memory.
  */
-	static void sample(short l, short r, window* win) throw();
+	static void sample(short l, short r, std::ostream& os) throw(std::bad_alloc);
 
 /**
  * End dump.
@@ -77,9 +80,10 @@ public:
 /**
  * End dump.
  *
- * parameter win: Graphics system handle.
+ * parameter os: Print messages here.
+ * throws std::bad_alloc: Not enough memory.
  */
-	static void end(window* win) throw();
+	static void end(std::ostream& os) throw(std::bad_alloc);
 
 /**
  * Notify game information.
@@ -101,11 +105,11 @@ public:
  * parameter authors: Authors of the run.
  * parameter gametime: Game time.
  * parameter rercords: Rerecord count.
- * parameter win: Graphics system handle.
+ * parameter os: Print messages here
  * throws std::bad_alloc Not enough memory.
  */
 	static void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-		authors, double gametime, const std::string& rerecords, window* win) throw(std::bad_alloc);
+		authors, double gametime, const std::string& rerecords, std::ostream& os) throw(std::bad_alloc);
 
 /**
  * Send game info. This causes gameinfo method to be called on object this method is called on.

@@ -211,7 +211,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
 	}
 	controls_t tmp = curcontrols ^ autoheld_controls;
-	lua_callback_do_input(tmp, subframe, win);
+	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
 
@@ -458,7 +458,7 @@ class my_interface : public SNES::Interface
 			fps_n = 10738636;
 			fps_d = 178683;
 		}
-		av_snooper::frame(ls, fps_n, fps_d, win);
+		av_snooper::frame(ls, fps_n, fps_d, out(win));
 	}
 
 	void audio_sample(int16_t l_sample, int16_t r_sample)
@@ -466,14 +466,14 @@ class my_interface : public SNES::Interface
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		win->play_audio_sample(_l + 32768, _r + 32768);
-		av_snooper::sample(_l, _r, win);
+		av_snooper::sample(_l, _r, out(win));
 	}
 
 	void audio_sample(uint16_t l_sample, uint16_t r_sample)
 	{
 		//Yes, this interface is broken. The samples are signed but are passed as unsigned!
 		win->play_audio_sample(l_sample + 32768, r_sample + 32768);
-		av_snooper::sample(l_sample, r_sample, win);
+		av_snooper::sample(l_sample, r_sample, out(win));
 	}
 
 	int16_t input_poll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
@@ -482,7 +482,7 @@ class my_interface : public SNES::Interface
 		x = movb.input_poll(port, index, id);
 		//if(id == SNES_DEVICE_ID_JOYPAD_START)
 		//	std::cerr << "bsnes polling for start on (" << port << "," << index << ")=" << x << std::endl;
-		lua_callback_snoop_input(port ? 1 : 0, index, id, x, win);
+		lua_callback_snoop_input(port ? 1 : 0, index, id, x);
 		return x;
 	}
 };
@@ -766,7 +766,7 @@ namespace
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			movb.get_movie().readonly_mode(false);
-			lua_callback_do_readwrite(win);
+			lua_callback_do_readwrite();
 			update_movie_state();
 			win->notify_screen_update();
 		}
@@ -1045,7 +1045,7 @@ namespace
 			win->message("SNES reset");
 			SNES::system.reset();
 			framebuffer = screen_nosignal;
-			lua_callback_do_reset(win);
+			lua_callback_do_reset();
 			redraw_framebuffer(win);
 		} else if(cycles > 0) {
 			video_refresh_done = false;
@@ -1061,7 +1061,7 @@ namespace
 				out(win) << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
 			SNES::system.reset();
 			framebuffer = screen_nosignal;
-			lua_callback_do_reset(win);
+			lua_callback_do_reset();
 			redraw_framebuffer(win);
 			if(video_refresh_done) {
 				to_wait_frame(get_ticks_msec());
@@ -1134,7 +1134,7 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 		return;
 	}
 
-	lua_callback_startup(win);
+	lua_callback_startup();
 
 	//print_controller_mappings();
 	av_snooper::add_dump_notifier(dumpwatch);
@@ -1187,6 +1187,6 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 			win->wait_msec(to_wait_frame(get_ticks_msec()));
 		first_round = false;
 	}
-	av_snooper::end(win);
+	av_snooper::end(out(win));
 	SNES::system.interface = old_inteface;
 }

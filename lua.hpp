@@ -45,20 +45,20 @@ struct lua_render_context
 };
 
 void init_lua(window* win) throw();
-void lua_callback_do_paint(struct lua_render_context* ctx, window* win) throw();
-void lua_callback_do_video(struct lua_render_context* ctx, window* win) throw();
-void lua_callback_do_input(controls_t& data, bool subframe, window* win) throw();
-void lua_callback_do_reset(window* win) throw();
-void lua_callback_do_readwrite(window* win) throw();
-void lua_callback_startup(window* win) throw();
-void lua_callback_pre_load(const std::string& name, window* win) throw();
-void lua_callback_err_load(const std::string& name, window* win) throw();
-void lua_callback_post_load(const std::string& name, bool was_state, window* win) throw();
-void lua_callback_pre_save(const std::string& name, bool is_state, window* win) throw();
-void lua_callback_err_save(const std::string& name, window* win) throw();
-void lua_callback_post_save(const std::string& name, bool is_state, window* win) throw();
-void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value, window* win) throw();
-void lua_callback_quit(window* win) throw();
+void lua_callback_do_paint(struct lua_render_context* ctx) throw();
+void lua_callback_do_video(struct lua_render_context* ctx) throw();
+void lua_callback_do_input(controls_t& data, bool subframe) throw();
+void lua_callback_do_reset() throw();
+void lua_callback_do_readwrite() throw();
+void lua_callback_startup() throw();
+void lua_callback_pre_load(const std::string& name) throw();
+void lua_callback_err_load(const std::string& name) throw();
+void lua_callback_post_load(const std::string& name, bool was_state) throw();
+void lua_callback_pre_save(const std::string& name, bool is_state) throw();
+void lua_callback_err_save(const std::string& name) throw();
+void lua_callback_post_save(const std::string& name, bool is_state) throw();
+void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw();
+void lua_callback_quit() throw();
 
 extern bool lua_requests_repaint;
 extern bool lua_requests_subframe_paint;

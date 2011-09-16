@@ -36,7 +36,7 @@ namespace
 			delete soxdumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, window* win, bool dummy)
+		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
 			throw(std::bad_alloc, std::runtime_error)
 		{
 			vid_dumper->wait_idle();
@@ -62,7 +62,7 @@ namespace
 			lrc.rshift = magic[2];
 			lrc.gshift = magic[1];
 			lrc.bshift = magic[0];
-			lua_callback_do_video(&lrc, win);
+			lua_callback_do_video(&lrc);
 
 			dscr.reallocate(lrc.left_gap + hscl * _frame.width + lrc.right_gap, lrc.top_gap + vscl *
 				_frame.height + lrc.bottom_gap, lrc.left_gap, lrc.top_gap, true);
@@ -121,7 +121,7 @@ namespace
 				if(level2 > 18)
 					throw std::runtime_error("Level must be 0-18");
 			} catch(std::bad_alloc& e) {
-				OOM_panic(win);
+				throw;
 			} catch(std::runtime_error& e) {
 				throw std::runtime_error("Bad AVI compression level '" + level + "': " + e.what());
 			}
@@ -133,7 +133,7 @@ namespace
 			try {
 				vid_dumper = new avi_avsnoop(prefix, parameters);
 			} catch(std::bad_alloc& e) {
-				OOM_panic(win);
+				throw;
 			} catch(std::exception& e) {
 				std::ostringstream x;
 				x << "Error starting dump: " << e.what();
@@ -164,7 +164,7 @@ namespace
 				vid_dumper->end();
 				out(win) << "Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
-				OOM_panic(win);
+				throw;
 			} catch(std::exception& e) {
 				out(win) << "Error ending dump: " << e.what() << std::endl;
 			}

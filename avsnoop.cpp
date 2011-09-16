@@ -34,24 +34,24 @@ av_snooper::~av_snooper() throw()
 		(*i)->dump_ending();
 }
 
-void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, window* win) throw()
+void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, std::ostream& os) throw(std::bad_alloc)
 {
 	if(!snoopers)
 		return;
 	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
 		try {
-			(*i)->frame(_frame, fps_n, fps_d, win, true);
+			(*i)->frame(_frame, fps_n, fps_d);
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			throw;
 		} catch(std::exception& e) {
 			try {
-				win->message(std::string("Error dumping frame: ") + e.what());
+				os << "Error dumping frame: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}
 }
 
-void av_snooper::sample(short l, short r, window* win) throw()
+void av_snooper::sample(short l, short r, std::ostream& os) throw(std::bad_alloc)
 {
 	if(!snoopers)
 		return;
@@ -59,16 +59,16 @@ void av_snooper::sample(short l, short r, window* win) throw()
 		try {
 			(*i)->sample(l, r);
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			throw;
 		} catch(std::exception& e) {
 			try {
-				win->message(std::string("Error dumping sample: ") + e.what());
+				os << "Error dumping sample: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}
 }
 
-void av_snooper::end(window* win) throw()
+void av_snooper::end(std::ostream& os) throw(std::bad_alloc)
 {
 	if(!snoopers)
 		return;
@@ -76,17 +76,17 @@ void av_snooper::end(window* win) throw()
 		try {
 			(*i)->end();
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			throw;
 		} catch(std::exception& e) {
 			try {
-				win->message(std::string("Error ending dump: ") + e.what());
+				os << "Error ending dump: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}
 }
 
 void av_snooper::gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-		authors, double gametime, const std::string& rerecords, window* win) throw(std::bad_alloc)
+		authors, double gametime, const std::string& rerecords, std::ostream& os) throw(std::bad_alloc)
 {
 	if(!snoopers)
 		return;

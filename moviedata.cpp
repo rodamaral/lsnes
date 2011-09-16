@@ -158,7 +158,7 @@ namespace
 void do_save_state(window* win, const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	lua_callback_pre_save(filename, true, win);
+	lua_callback_pre_save(filename, true);
 	try {
 		uint64_t origtime = get_ticks_msec();
 		our_movie.is_savestate = true;
@@ -172,19 +172,19 @@ void do_save_state(window* win, const std::string& filename) throw(std::bad_allo
 		our_movie.save(filename, savecompression);
 		uint64_t took = get_ticks_msec() - origtime;
 		out(win) << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
-		lua_callback_post_save(filename, true, win);
+		lua_callback_post_save(filename, true);
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		throw;
 	} catch(std::exception& e) {
 		win->message(std::string("Save failed: ") + e.what());
-		lua_callback_err_save(filename, win);
+		lua_callback_err_save(filename);
 	}
 }
 
 //Save movie.
 void do_save_movie(window* win, const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
-	lua_callback_pre_save(filename, false, win);
+	lua_callback_pre_save(filename, false);
 	try {
 		uint64_t origtime = get_ticks_msec();
 		our_movie.is_savestate = false;
@@ -192,12 +192,12 @@ void do_save_movie(window* win, const std::string& filename) throw(std::bad_allo
 		our_movie.save(filename, savecompression);
 		uint64_t took = get_ticks_msec() - origtime;
 		out(win) << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
-		lua_callback_post_save(filename, false, win);
+		lua_callback_post_save(filename, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic(win);
 	} catch(std::exception& e) {
 		win->message(std::string("Save failed: ") + e.what());
-		lua_callback_err_save(filename, win);
+		lua_callback_err_save(filename);
 	}
 }
 
@@ -345,7 +345,7 @@ void do_load_state(window* win, struct moviefile& _movie, int lmode)
 void do_load_state(window* win, const std::string& filename, int lmode)
 {
 	uint64_t origtime = get_ticks_msec();
-	lua_callback_pre_load(filename, win);
+	lua_callback_pre_load(filename);
 	struct moviefile mfile;
 	try {
 		mfile = moviefile(filename);
@@ -353,19 +353,19 @@ void do_load_state(window* win, const std::string& filename, int lmode)
 		OOM_panic(win);
 	} catch(std::exception& e) {
 		win->message("Can't read movie/savestate '" + filename + "': " + e.what());
-		lua_callback_err_load(filename, win);
+		lua_callback_err_load(filename);
 		return;
 	}
 	try {
 		do_load_state(win, mfile, lmode);
 		uint64_t took = get_ticks_msec() - origtime;
 		out(win) << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
-		lua_callback_post_load(filename, our_movie.is_savestate, win);
+		lua_callback_post_load(filename, our_movie.is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic(win);
 	} catch(std::exception& e) {
 		win->message("Can't load movie/savestate '" + filename + "': " + e.what());
-		lua_callback_err_load(filename, win);
+		lua_callback_err_load(filename);
 		return;
 	}
 }

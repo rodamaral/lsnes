@@ -9,7 +9,7 @@ namespace
 	int analog_indices[3] = {-1, -1, -1};
 	bool analog_is_mouse[3];
 
-	void update_analog_indices()
+	void update_analog_indices() throw()
 	{
 		int i = 0;
 		for(unsigned j = 0; j < sizeof(analog_indices) / sizeof(analog_indices[0]); j++)
@@ -34,7 +34,7 @@ namespace
 	}
 }
 
-int controller_index_by_logical(unsigned lid)
+int controller_index_by_logical(unsigned lid) throw()
 {
 	bool p1multitap = (porttypes[0] == PT_MULTITAP);
 	unsigned p1devs = port_types[porttypes[0]].devices;
@@ -55,21 +55,21 @@ int controller_index_by_logical(unsigned lid)
 			return lid - 4;
 }
 
-int controller_index_by_analog(unsigned aid)
+int controller_index_by_analog(unsigned aid) throw()
 {
 	if(aid > 2)
 		return -1;
 	return analog_indices[aid];
 }
 
-bool controller_ismouse_by_analog(unsigned aid)
+bool controller_ismouse_by_analog(unsigned aid) throw()
 {
 	if(aid > 2)
 		return false;
 	return analog_is_mouse[aid];
 }
 
-devicetype_t controller_type_by_logical(unsigned lid)
+devicetype_t controller_type_by_logical(unsigned lid) throw()
 {
 	int x = controller_index_by_logical(lid);
 	if(x < 0)
@@ -81,7 +81,7 @@ devicetype_t controller_type_by_logical(unsigned lid)
 		return DT_NONE;
 }
 
-void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core)
+void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core) throw()
 {
 	if(set_core && ptype != PT_INVALID)
 		snes_set_controller_port_device(port != 0, port_types[ptype].bsnes_type);

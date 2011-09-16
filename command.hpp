@@ -98,5 +98,62 @@ private:
 	size_t position;
 };
 
+/**
+ * Warp function pointer as command.
+ */
+class function_ptr_command : public command
+{
+public:
+/**
+ * Create a new command.
+ * 
+ * parameter name: Name of the command
+ * parameter description Description for the command
+ * parameter help: Help for the command.
+ * parameter fn: Function to call on command.
+ */
+	function_ptr_command(const std::string& name, const std::string& description, const std::string& help,
+		void (*fn)(const std::string& arguments, window* win)) throw(std::bad_alloc);
+/**
+ * Create a new command.
+ * 
+ * parameter name: Name of the command
+ * parameter description Description for the command
+ * parameter help: Help for the command.
+ * parameter fn: Function to call on command.
+ */
+	function_ptr_command(const std::string& name, const std::string& description, const std::string& help,
+		void (*fn)(const std::string& arguments, std::ostream& os)) throw(std::bad_alloc);
+/**
+ * Destroy a commnad.
+ */
+	~function_ptr_command() throw();
+/**
+ * Invoke a command.
+ * 
+ * parameter args: Arguments to function.
+ * parameter win: Handle to graphics context.
+ */
+	void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Get short description.
+ * 
+ * returns: Description.
+ * throw std::bad_alloc: Not enough memory.
+ */
+	std::string get_short_help() throw(std::bad_alloc);
+/**
+ * Get long help.
+ * 
+ * returns: help.
+ * throw std::bad_alloc: Not enough memory.
+ */
+	std::string get_long_help() throw(std::bad_alloc);
+private:
+	void (*fn)(const std::string& arguments, window* win);
+	void (*fn2)(const std::string& arguments, std::ostream& os);
+	std::string description;
+	std::string help;
+};
 
 #endif

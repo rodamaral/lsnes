@@ -17,13 +17,13 @@ namespace
 {
 	std::map<std::string, lua_function*>* functions;
 	lua_State* lua_initialized;
-	window* tmp_win;
+	window* lua_win;
 
 	int lua_trampoline_function(lua_State* L)
 	{
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
 		lua_function* f = reinterpret_cast<lua_function*>(ptr);
-		return f->invoke(L, tmp_win);
+		return f->invoke(L, lua_win);
 	}
 
 	//Pushes given table to top of stack, creating if needed.
@@ -179,185 +179,183 @@ namespace
 	const char* eval_lua_lua = "loadstring(" TEMPORARY ")();";
 	const char* run_lua_lua = "dofile(" TEMPORARY ");";
 
-	void run_lua_fragment(window* win) throw(std::bad_alloc)
+	void run_lua_fragment() throw(std::bad_alloc)
 	{
 		if(recursive_flag)
 			return;
 		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment");
 		if(t == LUA_ERRSYNTAX) {
-			out(win) << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
+			out(lua_win) << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
 		if(t == LUA_ERRMEM) {
-			out(win) << "Can't run Lua: Out of memory" << std::endl;
+			out(lua_win) << "Can't run Lua: Out of memory" << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
 		recursive_flag = true;
-		tmp_win = win;
 		int r = lua_pcall(L, 0, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			out(win) << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
+			out(lua_win) << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			out(win) << "Error running Lua hunk: Out of memory" << std::endl;
+			out(lua_win) << "Error running Lua hunk: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			out(win) << "Error running Lua hunk: Double Fault???" << std::endl;
+			out(lua_win) << "Error running Lua hunk: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint", win);
+			command::invokeC("repaint", lua_win);
 		}
 	}
 
-	void do_eval_lua(const std::string& c, window* win) throw(std::bad_alloc)
+	void do_eval_lua(const std::string& c) throw(std::bad_alloc)
 	{
 		push_string(c);
 		lua_setglobal(L, TEMPORARY);
 		luareader_fragment = eval_lua_lua;
-		run_lua_fragment(win);
+		run_lua_fragment();
 	}
 
-	void do_run_lua(const std::string& c, window* win) throw(std::bad_alloc)
+	void do_run_lua(const std::string& c) throw(std::bad_alloc)
 	{
 		push_string(c);
 		lua_setglobal(L, TEMPORARY);
 		luareader_fragment = run_lua_lua;
-		run_lua_fragment(win);
+		run_lua_fragment();
 	}
 
-	void run_lua_cb(int args, window* win) throw()
+	void run_lua_cb(int args) throw()
 	{
 		recursive_flag = true;
-		tmp_win = win;
 		int r = lua_pcall(L, args, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			out(win) << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
+			out(lua_win) << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			out(win) << "Error running Lua callback: Out of memory" << std::endl;
+			out(lua_win) << "Error running Lua callback: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			out(win) << "Error running Lua callback: Double Fault???" << std::endl;
+			out(lua_win) << "Error running Lua callback: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint", win);
+			command::invokeC("repaint", lua_win);
 		}
 	}
 }
 
-void lua_callback_do_paint(struct lua_render_context* ctx, window* win) throw()
+void lua_callback_do_paint(struct lua_render_context* ctx) throw()
 {
 	if(!callback_exists("on_paint"))
 		return;
 	lua_render_ctx = ctx;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 	lua_render_ctx = NULL;
 }
 
-void lua_callback_do_video(struct lua_render_context* ctx, window* win) throw()
+void lua_callback_do_video(struct lua_render_context* ctx) throw()
 {
 	if(!callback_exists("on_video"))
 		return;
 	lua_render_ctx = ctx;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 	lua_render_ctx = NULL;
 }
 
-void lua_callback_do_reset(window* win) throw()
+void lua_callback_do_reset() throw()
 {
 	if(!callback_exists("on_reset"))
 		return;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 }
 
-void lua_callback_do_readwrite(window* win) throw()
+void lua_callback_do_readwrite() throw()
 {
 	if(!callback_exists("on_readwrite"))
 		return;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 }
 
-void lua_callback_startup(window* win) throw()
+void lua_callback_startup() throw()
 {
 	if(!callback_exists("on_startup"))
 		return;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 }
 
-void lua_callback_pre_load(const std::string& name, window* win) throw()
+void lua_callback_pre_load(const std::string& name) throw()
 {
 	if(!callback_exists("on_pre_load"))
 		return;
 	push_string(name);
-	run_lua_cb(1, win);
+	run_lua_cb(1);
 }
 
-void lua_callback_err_load(const std::string& name, window* win) throw()
+void lua_callback_err_load(const std::string& name) throw()
 {
 	if(!callback_exists("on_err_load"))
 		return;
 	push_string(name);
-	run_lua_cb(1, win);
+	run_lua_cb(1);
 }
 
-void lua_callback_post_load(const std::string& name, bool was_state, window* win) throw()
+void lua_callback_post_load(const std::string& name, bool was_state) throw()
 {
 	if(!callback_exists("on_post_load"))
 		return;
 	push_string(name);
 	push_boolean(was_state);
-	run_lua_cb(2, win);
+	run_lua_cb(2);
 }
 
-void lua_callback_pre_save(const std::string& name, bool is_state, window* win) throw()
+void lua_callback_pre_save(const std::string& name, bool is_state) throw()
 {
 	if(!callback_exists("on_pre_save"))
 		return;
 	push_string(name);
 	push_boolean(is_state);
-	run_lua_cb(2, win);
+	run_lua_cb(2);
 }
 
-void lua_callback_err_save(const std::string& name, window* win) throw()
+void lua_callback_err_save(const std::string& name) throw()
 {
 	if(!callback_exists("on_err_save"))
 		return;
 	push_string(name);
-	run_lua_cb(1, win);
+	run_lua_cb(1);
 }
 
-void lua_callback_post_save(const std::string& name, bool is_state, window* win) throw()
+void lua_callback_post_save(const std::string& name, bool is_state) throw()
 {
 	if(!callback_exists("on_post_save"))
 		return;
 	push_string(name);
 	push_boolean(is_state);
-	run_lua_cb(2, win);
+	run_lua_cb(2);
 }
 
-void lua_callback_do_input(controls_t& data, bool subframe, window* win) throw()
+void lua_callback_do_input(controls_t& data, bool subframe) throw()
 {
 	if(!callback_exists("on_input"))
 		return;
 	lua_input_controllerdata = &data;
 	push_boolean(subframe);
-	run_lua_cb(1, win);
+	run_lua_cb(1);
 	lua_input_controllerdata = NULL;
 }
 
-void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value, window* win) throw()
+void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw()
 {
 	if(!callback_exists("on_snoop"))
 		return;
@@ -365,7 +363,7 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 	lua_pushnumber(L, controller);
 	lua_pushnumber(L, index);
 	lua_pushnumber(L, value);
-	run_lua_cb(4, win);
+	run_lua_cb(4);
 }
 
 namespace
@@ -378,7 +376,7 @@ namespace
 		{
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(args, win);
+			do_eval_lua(args);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Evaluate expression in Lua VM"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -396,7 +394,7 @@ namespace
 		{
 			if(args == "")
 				throw std::runtime_error("Expected script to run");
-			do_run_lua(args, win);
+			do_run_lua(args);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Run Lua script in Lua VM"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -407,19 +405,20 @@ namespace
 	} runlua_o;
 }
 
-void lua_callback_quit(window* win) throw()
+void lua_callback_quit() throw()
 {
 	if(!callback_exists("on_quit"))
 		return;
-	run_lua_cb(0, win);
+	run_lua_cb(0);
 }
 
 void init_lua(window* win) throw()
 {
+	lua_win = win;
 	L = lua_newstate(alloc, NULL);
 	if(!L) {
-		out(win) << "Can't initialize Lua." << std::endl;
-		fatal_error(win);
+		out(lua_win) << "Can't initialize Lua." << std::endl;
+		fatal_error(lua_win);
 	}
 	luaL_openlibs(L);
 
