@@ -1066,6 +1066,10 @@ Lua functions
 \end_layout
 
 \begin_layout Subsection
+Core (in main table)
+\end_layout
+
+\begin_layout Subsubsection
 print
 \end_layout
 
@@ -1073,8 +1077,24 @@ print
 Print line to message console.
 \end_layout
 
+\begin_layout Subsubsection
+exec(string command)
+\end_layout
+
+\begin_layout Standard
+Run command as it was entered on the command line
+\end_layout
+
 \begin_layout Subsection
-bit.none(number...) / bit.bnot(number...)
+Table bit:
+\end_layout
+
+\begin_layout Standard
+Bitwise logical functions and related.
+\end_layout
+
+\begin_layout Subsubsection
+none(number...) / bnot(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1082,16 +1102,16 @@ bit.none(number...) / bit.bnot(number...)
  arguments).
 \end_layout
 
-\begin_layout Subsection
-bit.any(number...) / bit.bor(number...)
+\begin_layout Subsubsection
+any(number...) / bor(number...)
 \end_layout
 
 \begin_layout Standard
 48-bit bitwise OR / ANY function (set bits that are set in any of the arguments).
 \end_layout
 
-\begin_layout Subsection
-bit.all(number...) / bit.band(number...)
+\begin_layout Subsubsection
+all(number...) / band(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1099,8 +1119,8 @@ bit.all(number...) / bit.band(number...)
 ).
 \end_layout
 
-\begin_layout Subsection
-bit.parity(number...) / bit.bxor(number...)
+\begin_layout Subsubsection
+parity(number...) / bxor(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1108,16 +1128,16 @@ bit.parity(number...) / bit.bxor(number...)
  of the arguments).
 \end_layout
 
-\begin_layout Subsection
-bit.lrotate(number base[, number amount[, number bits]])
+\begin_layout Subsubsection
+lrotate(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
 Rotate bits-bit (max 48, default 48) number left by amount (default 1) places.
 \end_layout
 
-\begin_layout Subsection
-bit.rrotate(number base[, number amount[, number bits]])
+\begin_layout Subsubsection
+rrotate(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1125,8 +1145,8 @@ Rotate bits-bit (max 48, default 48) number right by amount (default 1)
  places.
 \end_layout
 
-\begin_layout Subsection
-bit.lshift(number base[, number amount[, number bits]])
+\begin_layout Subsubsection
+lshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1134,8 +1154,8 @@ Shift bits-bit (max 48, default 48) number left by amount (default 1) places.
  The new bits are filled with zeroes.
 \end_layout
 
-\begin_layout Subsection
-bit.lrshift(number base[, number amount[, number bits]])
+\begin_layout Subsubsection
+lrshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1144,8 +1164,8 @@ Shift bits-bit (max 48, default 48) number logically right by amount (default
  The new bits are filled with zeroes.
 \end_layout
 
-\begin_layout Subsection
-bit.arshift(number base[, number amount[, number bits]])
+\begin_layout Subsubsection
+arshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1155,25 +1175,32 @@ Shift bits-bit (max 48, default 48) number arithmetically right by amount
 \end_layout
 
 \begin_layout Subsection
+Table gui:
+\end_layout
+
+\begin_layout Standard
+Most of these functions can only be called in on_paint and on_video callbacks.
+ Exceptions are noted.
+\end_layout
+
+\begin_layout Subsubsection
 gui.resolution()
 \end_layout
 
 \begin_layout Standard
 Returns 5-tuple (hresolution, vresolution, rshift, gshift, bshift).
- Only available in on_paint() and on_video() callbacks.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 gui.<class>_gap(number gap)
 \end_layout
 
 \begin_layout Standard
 Set the <class> (left, right, top, bottom) gap to specified value (max gap
  is 8191).
- Only available in on_paint() and on_video() callbacks.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 gui.text(number x, number y, string text[, number fgc[, number fga[, number
  bgc[, number bga]]]])
 \end_layout
@@ -1201,25 +1228,36 @@ Alpha range is 0(transparent)-256(opaque).
 Only available in on_paint() and on_video() callbacks.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 
 \begin_layout Standard
 Request on_repaint() to happen as soon as possible.
+ Can be used anywhere.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 gui.subframe_update(boolean on)
 \end_layout
 
 \begin_layout Standard
 Request subframe updates (calling on_paint() on subframes) to happen (on=true)
  or not happen (on=false).
+ Can be used anywhere.
 \end_layout
 
 \begin_layout Subsection
-input.get(number controller, number index)
+table input
+\end_layout
+
+\begin_layout Standard
+Input handling.
+ Only available in on_input callback.
+\end_layout
+
+\begin_layout Subsection
+get(number controller, number index)
 \end_layout
 
 \begin_layout Standard
@@ -1232,12 +1270,8 @@ Uses physical controller numbering.
  Gamepad in port 2 is controller 4, not 1!
 \end_layout
 
-\begin_layout Itemize
-Only available in on_input callback.
-\end_layout
-
 \begin_layout Subsection
-input.set(number controller, number index, number value)
+set(number controller, number index, number value)
 \end_layout
 
 \begin_layout Standard
@@ -1251,12 +1285,8 @@ Uses physical controller numbering.
  Gamepad in port 2 is controller 4, not 1!
 \end_layout
 
-\begin_layout Itemize
-Only available in on_input callback.
-\end_layout
-
 \begin_layout Subsection
-input.reset([number cycles])
+reset([number cycles])
 \end_layout
 
 \begin_layout Standard
@@ -1265,11 +1295,20 @@ Execute reset.
 \end_layout
 
 \begin_layout Itemize
-Only available in on_input callback with subframe flag false.
+Only available with subframe flag false.
 \end_layout
 
 \begin_layout Subsection
-hostmemory.read(number address)
+Table hostmemory
+\end_layout
+
+\begin_layout Standard
+Host memory handling (extra memory saved to savestates).
+ Host memory starts empty.
+\end_layout
+
+\begin_layout Subsubsection
+read(number address)
 \end_layout
 
 \begin_layout Standard
@@ -1277,8 +1316,8 @@ Reads hostmemory slot address.
  Slot numbers out of range return false instead of numeric.
 \end_layout
 
-\begin_layout Subsection
-hostmemory.write(number address, number value)
+\begin_layout Subsubsection
+write(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -1287,6 +1326,14 @@ Writes hostmemory slot with 0-255.
 \end_layout
 
 \begin_layout Subsection
+Table movie
+\end_layout
+
+\begin_layout Standard
+Movie handling
+\end_layout
+
+\begin_layout Subsubsection
 movie.currentframe()
 \end_layout
 
@@ -1294,7 +1341,7 @@ movie.currentframe()
 Return number of current frame.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 movie.framecount()
 \end_layout
 
@@ -1302,7 +1349,7 @@ movie.framecount()
 Return number of frames in movie.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 movie.readonly()
 \end_layout
 
@@ -1310,7 +1357,7 @@ movie.readonly()
 Return true if in readonly mode, false if in readwrite.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 movie.set_readwrite()
 \end_layout
 
@@ -1318,7 +1365,7 @@ movie.set_readwrite()
 Set readwrite mode (does not cause on_readwrite callback).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 movie.frame_subframes(number frame)
 \end_layout
 
@@ -1327,7 +1374,7 @@ Count number of subframes in specified frame (frame numbers are 1-based)
  and return that.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 movie.read_subframe(number frame, number subframe)
 \end_layout
 
@@ -1337,6 +1384,59 @@ Read specifed subframe in specified frame and return data as array (100
 \end_layout
 
 \begin_layout Subsection
+Table settings
+\end_layout
+
+\begin_layout Standard
+Routines for settings manipulation
+\end_layout
+
+\begin_layout Subsubsection
+get(string name)
+\end_layout
+
+\begin_layout Standard
+Get value of setting.
+ If setting is blank, returns false.
+ If setting value can't be obtained, returns (nil, error message).
+\end_layout
+
+\begin_layout Subsubsection
+set(string name, string value)
+\end_layout
+
+\begin_layout Standard
+Set value of setting.
+ If setting can't be set, returns (nil, error message).
+\end_layout
+
+\begin_layout Subsubsection
+is_set(string name)
+\end_layout
+
+\begin_layout Standard
+Returns if setting is set.
+ If setting does not exist, returns (nil, error message).
+\end_layout
+
+\begin_layout Subsubsection
+blank(string name)
+\end_layout
+
+\begin_layout Standard
+Blanks a setting and returns true.
+ If setting can't be blanked, returns (nil, error message).
+\end_layout
+
+\begin_layout Subsection
+Callbacks
+\end_layout
+
+\begin_layout Standard
+Various callbacks to Lua that can occur.
+\end_layout
+
+\begin_layout Subsubsection
 Callback: on_paint()
 \end_layout
 
@@ -1345,7 +1445,7 @@ Called when screen is being painted.
  Any gui.* calls requiring graphic context draw on the screen.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_video()
 \end_layout
 
@@ -1354,7 +1454,7 @@ Called when video dump frame is being painted.
  Any gui.* calls requiring graphic context draw on the video.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_startup()
 \end_layout
 
@@ -1362,7 +1462,7 @@ Callback: on_startup()
 Called when the emulator is starting (lsnes.rc has been run).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_pre_load(string name)
 \end_layout
 
@@ -1371,7 +1471,7 @@ Called just before savestate/movie load occurs (note: loads are always delayed,
  so this occurs even when load was initiated by lua).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_err_load(string name)
 \end_layout
 
@@ -1379,7 +1479,7 @@ Callback: on_err_load(string name)
 Called if loadstate goes wrong.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_post_load(string name, boolean was_savestate)
 \end_layout
 
@@ -1388,7 +1488,7 @@ Called on successful loadstate.
  was_savestate gives if this was a savestate or a movie.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_pre_save(string name, boolean is_savestate)
 \end_layout
 
@@ -1397,7 +1497,7 @@ Called just before savestate save occurs (note: movie saves are synchronous
  and won't trigger these callbacks if called from Lua).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_err_save(string name)
 \end_layout
 
@@ -1405,7 +1505,7 @@ Callback: on_err_save(string name)
 Called if savestate goes wrong.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_post_save(string name, boolean is_savestate)
 \end_layout
 
@@ -1414,7 +1514,7 @@ Called on successful savaestate.
  is_savestate gives if this was a savestate or a movie.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_quit()
 \end_layout
 
@@ -1422,7 +1522,7 @@ Callback: on_quit()
 Called when emulator is shutting down.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_input(boolean subframe)
 \end_layout
 
@@ -1431,7 +1531,7 @@ Called when emulator is just sending input to bsnes core.
  Warning: This is called even in readonly mode, but the results are ignored.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_reset()
 \end_layout
 
@@ -1439,7 +1539,7 @@ Callback: on_reset()
 Called when SNES is reset.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_readwrite()
 \end_layout
 
@@ -1456,7 +1556,7 @@ set-rwmode
  entry protection).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Callback: on_snoop(number port, number controller, number index, number
  value)
 \end_layout
