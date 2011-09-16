@@ -18,6 +18,7 @@ namespace
 	numeric_setting dbb("default-bottom-border", 0, 8191, 0);
 	numeric_setting dlb("default-left-border", 0, 8191, 0);
 	numeric_setting drb("default-right-border", 0, 8191, 0);
+	numeric_setting max_frames_per_segment("max-frames-per-segment", 0, 999999999, 0);
 
 	class avi_avsnoop : public av_snooper
 	{
@@ -128,6 +129,7 @@ namespace
 			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
 			parameters.audio_sampling_rate = 32000;
 			parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
+			parameters.max_frames_per_segment = max_frames_per_segment;
 			try {
 				vid_dumper = new avi_avsnoop(prefix, parameters);
 			} catch(std::bad_alloc& e) {

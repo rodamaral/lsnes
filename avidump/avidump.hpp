@@ -151,6 +151,10 @@ struct avi_info
  * Interval of keyframes (WARNING: >1 gives non-keyframes which AVISource() doesn't like).
  */
 	uint32_t keyframe_interval;
+/**
+ * Maximum number of frames per segement (0 => infinite)
+ */
+	uint32_t max_frames_per_segment;
 };
 
 /**
@@ -197,7 +201,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error closing dump.
  */
-void on_end() throw(std::bad_alloc, std::runtime_error);
+	void on_end() throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Causes current thread to become encode thread. Do not call this, the code internally uses it.
@@ -227,6 +231,7 @@ private:
 	unsigned compression_level;
 	uint32_t audio_sampling_rate;
 	uint32_t keyframe_interval;
+	uint32_t maxframes;
 	//Previous frame.
 	uint16_t pwidth;
 	uint16_t pheight;

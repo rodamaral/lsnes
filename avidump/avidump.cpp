@@ -78,6 +78,7 @@ avidumper::avidumper(const std::string& _prefix, struct avi_info parameters)
 	compression_level = parameters.compression_level;
 	audio_sampling_rate = parameters.audio_sampling_rate;
 	keyframe_interval = parameters.keyframe_interval;
+	maxframes = parameters.max_frames_per_segment;
 
 	avi_open = false;
 	capture_error = false;
@@ -215,7 +216,7 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 	else
 		audio_get_ptr = commit_to;
 
-	if(segment_movi_ptr > AVI_CUTOFF - 16 * segment_chunks.size())
+	if(segment_movi_ptr > AVI_CUTOFF - 16 * segment_chunks.size() || (maxframes && segment_frames > maxframes))
 		fixup_avi_header_and_close();
 
 	uint16_t rheight = (height + 3) / 4 * 4;

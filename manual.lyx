@@ -1061,6 +1061,16 @@ Set the default bottom border thickness (unless lua overrides) for dumps.
  Default is 0.
 \end_layout
 
+\begin_layout Subsection
+max-frames-per-segment
+\end_layout
+
+\begin_layout Standard
+Maximum number of frames per dump segment (0 => unlimited).
+ Range 0-999999999.
+ Default is 0.
+\end_layout
+
 \begin_layout Section
 Lua functions
 \end_layout
