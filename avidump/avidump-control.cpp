@@ -1,5 +1,6 @@
 #include "lua.hpp"
 #include "avidump.hpp"
+#include "sox.hpp"
 #include "settings.hpp"
 #include <iomanip>
 #include <cassert>
@@ -24,11 +25,14 @@ namespace
 		avi_avsnoop(const std::string& prefix, struct avi_info parameters) throw(std::bad_alloc)
 		{
 			vid_dumper = new avidumper(prefix, parameters);
+			soxdumper = new sox_dumper(prefix + ".sox", 32040.5, 2);
+			dcounter = 0;
 		}
 
 		~avi_avsnoop() throw()
 		{
 			delete vid_dumper;
+			delete soxdumper;
 		}
 
 		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, window* win, bool dummy)
@@ -68,12 +72,18 @@ namespace
 
 		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
 		{
-			vid_dumper->on_sample(l, r);
+			dcounter += 81;
+			if(dcounter < 64081)
+				vid_dumper->on_sample(l, r);
+			else
+				dcounter -= 64081;
+			soxdumper->sample(l, r);
 		}
 
 		void end() throw(std::bad_alloc, std::runtime_error)
 		{
 			vid_dumper->on_end();
+			soxdumper->close();
 		}
 
 		void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
@@ -84,7 +94,9 @@ namespace
 		}
 	private:
 		avidumper* vid_dumper;
+		sox_dumper* soxdumper;
 		screen dscr;
+		unsigned dcounter;
 	};
 
 	avi_avsnoop* vid_dumper;
@@ -114,10 +126,7 @@ namespace
 			}
 			struct avi_info parameters;
 			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
-			parameters.audio_drop_counter_inc = 81;
-			parameters.audio_drop_counter_max = 64081;
 			parameters.audio_sampling_rate = 32000;
-			parameters.audio_native_sampling_rate = 32040.5;
 			parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
 			try {
 				vid_dumper = new avi_avsnoop(prefix, parameters);

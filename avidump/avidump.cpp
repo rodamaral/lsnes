@@ -55,40 +55,6 @@ namespace
 			return 1;
 		}
 	};
-
-	void write_double(uint8_t* buf, double v)
-	{
-		unsigned mag = 1023;
-		while(v >= 2) {
-			mag++;
-			v /= 2;
-		}
-		while(v < 1) {
-			mag--;
-			v *= 2;
-		}
-		uint64_t v2 = mag;
-		v -= 1;
-		for(unsigned i = 0; i < 52; i++) {
-			v *= 2;
-			v2 = 2 * v2 + ((v >= 1) ? 1 : 0);
-			if(v >= 1)
-				v -= 1;
-		}
-		buf[0] = v2;
-		buf[1] = v2 >> 8;
-		buf[2] = v2 >> 16;
-		buf[3] = v2 >> 24;
-		buf[4] = v2 >> 32;
-		buf[5] = v2 >> 40;
-		buf[6] = v2 >> 48;
-		buf[7] = v2 >> 56;
-	}
-	//	buffer[20] = 0x20;	//Rate.
-	//	buffer[21] = 0x4A;	//Rate.
-	//	buffer[22] = 0xDF;	//Rate.
-	//	buffer[23] = 0x40;	//Rate.
-
 }
 
 int avidumper::encode_thread()
@@ -110,13 +76,9 @@ int avidumper::encode_thread()
 avidumper::avidumper(const std::string& _prefix, struct avi_info parameters)
 {
 	compression_level = parameters.compression_level;
-	audio_drop_counter_inc = parameters.audio_drop_counter_inc;
-	audio_drop_counter_max = parameters.audio_drop_counter_max;
 	audio_sampling_rate = parameters.audio_sampling_rate;
-	audio_native_sampling_rate = parameters.audio_native_sampling_rate;
 	keyframe_interval = parameters.keyframe_interval;
 
-	sox_open = false;
 	avi_open = false;
 	capture_error = false;
 	pwidth = 0xFFFF;
@@ -128,8 +90,6 @@ avidumper::avidumper(const std::string& _prefix, struct avi_info parameters)
 	total_data = 0;
 	total_frames = 0;
 	total_samples = 0;
-	audio_drop_counter = 0;
-	raw_samples = 0;
 	audio_put_ptr = 0;
 	audio_get_ptr = 0;
 	audio_commit_ptr = 0;
@@ -163,37 +123,6 @@ void avidumper::on_sample(short left, short right) throw(std::bad_alloc, std::ru
 	audio_buffer[audio_put_ptr++] = right;
 	if(audio_put_ptr == AVIDUMPER_AUDIO_BUFFER)
 		audio_put_ptr = 0;
-
-	//Don't write secondary audio if primary is of perfect quality.
-	if(!audio_drop_counter_inc)
-		return;
-
-	if(!sox_open) {
-		sox_stream.open(prefix + ".sox", std::ios::out | std::ios::binary);
-		if(!sox_stream)
-			throw std::runtime_error("Can't open audio stream");
-		uint8_t buffer[32] = {0};
-		buffer[0] = 0x2E;	//Magic.
-		buffer[1] = 0x53;	//Magic.
-		buffer[2] = 0x6F;	//Magic.
-		buffer[3] = 0x58;	//Magic.
-		buffer[4] = 0x1C;	//Header size.
-		write_double(buffer + 16, audio_native_sampling_rate);
-		buffer[24] = 0x02;	//Stereo.
-		sox_stream.write(reinterpret_cast<char*>(buffer), 32);
-		if(!sox_stream)
-			throw std::runtime_error("Can't write audio header");
-		sox_open = true;
-	}
-	uint8_t buffer[8] = {0};
-	buffer[2] = static_cast<unsigned short>(left) & 0xFF;
-	buffer[3] = static_cast<unsigned short>(left) >> 8;
-	buffer[6] = static_cast<unsigned short>(right) & 0xFF;
-	buffer[7] = static_cast<unsigned short>(right) >> 8;
-	sox_stream.write(reinterpret_cast<char*>(buffer), 8);
-	if(!sox_stream)
-		throw std::runtime_error("Can't write audio sample");
-	raw_samples += 2;
 }
 
 void avidumper::on_frame(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
@@ -253,9 +182,6 @@ void avidumper::print_summary(std::ostream& str)
 	double global_alength = static_cast<double>(total_samples) / audio_sampling_rate;
 	uint64_t local_size = segment_movi_ptr + 352 + 16 * segment_chunks.size();
 	uint64_t global_size = total_data + 8 + 16 * segment_chunks.size();
-	uint64_t global_a2frames = raw_samples / 2;
-	double global_a2length = raw_samples / (2.0 * audio_native_sampling_rate);
-
 
 	std::ostringstream s2;
 
@@ -270,10 +196,6 @@ void avidumper::print_summary(std::ostream& str)
 		<< fmtdbl(global_alength - global_vlength, 10) << "|" << std::endl;
 	s2 << "Size            |           " << fmtint(local_size, 10) << "|           "
 		<< fmtint(global_size, 10) << "|" << std::endl;
-	s2 << "Audio2 stream   |                  N/A|"
-		<< fmtint(global_a2frames, 10) << "/" << fmtdbl(global_a2length, 10) << "|" << std::endl;
-	s2 << "A2/V desync     |                  N/A|           "
-		<< fmtdbl(global_a2length - global_vlength, 10) << "|" << std::endl;
 	s2 << "----------------+---------------------+---------------------+" << std::endl;
 
 	str << s2.str();
@@ -368,22 +290,6 @@ void avidumper::on_end() throw(std::bad_alloc, std::runtime_error)
 
 	flush_audio_to(audio_put_ptr);
 	fixup_avi_header_and_close();
-	if(sox_open) {
-		sox_stream.seekp(8, std::ios::beg);
-		uint8_t buffer[8];
-		buffer[0] = raw_samples;
-		buffer[1] = raw_samples >> 8;
-		buffer[2] = raw_samples >> 16;
-		buffer[3] = raw_samples >> 24;
-		buffer[4] = raw_samples >> 32;
-		buffer[5] = raw_samples >> 40;
-		buffer[6] = raw_samples >> 48;
-		buffer[7] = raw_samples >> 56;
-		sox_stream.write(reinterpret_cast<char*>(buffer), 8);
-		if(!sox_stream)
-			throw std::runtime_error("Can't fixup audio header");
-		sox_stream.close();
-	}
 }
 
 namespace
@@ -484,14 +390,10 @@ void avidumper::flush_audio_to(unsigned commit_to)
 
 	//Count the number of samples to actually write.
 	unsigned samples_to_write = 0;
-	unsigned adc = audio_drop_counter;
 	unsigned aptr = audio_get_ptr;
 	unsigned idx = 8;
 	while(aptr != commit_to) {
-		if((adc += audio_drop_counter_inc) >= audio_drop_counter_max)
-			adc -= audio_drop_counter_max;
-		else
-			samples_to_write++;
+		samples_to_write++;
 		if((aptr += 2) == AVIDUMPER_AUDIO_BUFFER)
 			aptr = 0;
 	}
@@ -508,20 +410,14 @@ void avidumper::flush_audio_to(unsigned commit_to)
 	buf[7] = (4 * samples_to_write) >> 24;
 
 	while(audio_get_ptr != commit_to) {
-		if((audio_drop_counter += audio_drop_counter_inc) >= audio_drop_counter_max) {
-			//Don't write this sample, reset the counter. This is so that the output is at the correct
-			//rate.
-			audio_drop_counter -= audio_drop_counter_max;
-		} else {
-			//Write sample.
-			buf[idx] = static_cast<unsigned short>(audio_buffer[audio_get_ptr]);
-			buf[idx + 1] = static_cast<unsigned short>(audio_buffer[audio_get_ptr]) >> 8;
-			buf[idx + 2] = static_cast<unsigned short>(audio_buffer[audio_get_ptr + 1]);
-			buf[idx + 3] = static_cast<unsigned short>(audio_buffer[audio_get_ptr + 1]) >> 8;
-			idx += 4;
-			segment_samples++;
-			total_samples++;
-		}
+		//Write sample.
+		buf[idx] = static_cast<unsigned short>(audio_buffer[audio_get_ptr]);
+		buf[idx + 1] = static_cast<unsigned short>(audio_buffer[audio_get_ptr]) >> 8;
+		buf[idx + 2] = static_cast<unsigned short>(audio_buffer[audio_get_ptr + 1]);
+		buf[idx + 3] = static_cast<unsigned short>(audio_buffer[audio_get_ptr + 1]) >> 8;
+		idx += 4;
+		segment_samples++;
+		total_samples++;
 		if((audio_get_ptr += 2) == AVIDUMPER_AUDIO_BUFFER)
 			audio_get_ptr = 0;
 	}

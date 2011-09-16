@@ -143,24 +143,9 @@ struct avi_info
 	unsigned compression_level;
 
 /**
- * Audio drop counter increments by this much every frame.
- */
-	uint64_t audio_drop_counter_inc;
-
-/**
- * Audio drop counter modulus (when audio drop counter warps around, sample is dropped).
- */
-	uint64_t audio_drop_counter_max;
-
-/**
  * Audio sampling rate to write to AVI.
  */
 	uint32_t audio_sampling_rate;
-
-/**
- * Native audio sampling rate to write to auxillary SOX file.
- */
-	double audio_native_sampling_rate;
 
 /**
  * Interval of keyframes (WARNING: >1 gives non-keyframes which AVISource() doesn't like).
@@ -234,18 +219,13 @@ private:
 	void flush_audio_to(unsigned commit_ptr);
 	void open_and_write_avi_header(uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d);
 	void fixup_avi_header_and_close();
-	std::ofstream sox_stream;
 	std::ofstream avi_stream;
 	bool capture_error;
 	std::string capture_error_str;
-	bool sox_open;
 	bool avi_open;
 	//Global settings.
 	unsigned compression_level;
-	uint64_t audio_drop_counter_inc;
-	uint64_t audio_drop_counter_max;
 	uint32_t audio_sampling_rate;
-	double audio_native_sampling_rate;
 	uint32_t keyframe_interval;
 	//Previous frame.
 	uint16_t pwidth;
@@ -269,8 +249,6 @@ private:
 	uint64_t total_data;
 	uint64_t total_frames;
 	uint64_t total_samples;
-	uint64_t raw_samples;
-	uint64_t audio_drop_counter;
 	//Temporary buffers.
 	std::vector<uint8_t> pframe;
 	std::vector<uint8_t> tframe;

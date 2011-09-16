@@ -4,7 +4,7 @@ HOSTCC = $(CC)
 OBJECTS = controllerdata.o fieldsplit.o memorymanip.o misc.o movie.o moviefile.o render.o rom.o zip.o fonts/font.o keymapper.o window.o window-sdl.o settings.o framerate.o mainloop.o rrdata.o png.o lsnesrc.o memorywatch.o command.o avsnoop.o moviedata.o controller.o framebuffer.o
 
 #AVI dumper
-OBJECTS += avidump/avidump-control.o avidump/avidump.o
+OBJECTS += avidump/avidump-control.o avidump/avidump.o avidump/sox.o
 
 PROGRAMS = lsnes.exe movietrunctest.exe
 
