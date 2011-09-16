@@ -3,7 +3,7 @@
 
 #include <string>
 #include <stdexcept>
-#include "window.hpp"
+#include <iostream>
 
 /**
  * A setting.
@@ -97,10 +97,10 @@ public:
 /**
  * Print all settings and values.
  *
- * parameter win: The graphics system handle.
+ * parameter os: Stream to print to.
  * throws std::bad_alloc: Not enough memory.
  */
-	static void print_all(window* win) throw(std::bad_alloc);
+	static void print_all(std::ostream& os) throw(std::bad_alloc);
 protected:
 	std::string settingname;
 };

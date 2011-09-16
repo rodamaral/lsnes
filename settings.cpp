@@ -87,7 +87,7 @@ namespace
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
-			setting::print_all(win);
+			setting::print_all(out(win));
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Show value of all settings"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -152,15 +152,15 @@ bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::run
 	return (*settings)[_setting]->is_set();
 }
 
-void setting::print_all(window* win) throw(std::bad_alloc)
+void setting::print_all(std::ostream& os) throw(std::bad_alloc)
 {
 	if(!settings)
 		return;
 	for(auto i = settings->begin(); i != settings->end(); i++) {
 		if(!i->second->is_set())
-			out(win) << i->first << ": (unset)" << std::endl;
+			os << i->first << ": (unset)" << std::endl;
 		else
-			out(win) << i->first << ": " << i->second->get() << std::endl;
+			os << i->first << ": " << i->second->get() << std::endl;
 	}
 }
 
