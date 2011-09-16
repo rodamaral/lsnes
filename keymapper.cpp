@@ -15,7 +15,7 @@ namespace
 	{
 	public:
 		bind_key() throw(std::bad_alloc) : command("bind-key") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			std::string mod, modmask, keyname, command;
 			tokensplitter t(args);
@@ -33,10 +33,7 @@ namespace
 			command = t.tail();
 			if(command == "")
 				throw std::runtime_error("Expected command");
-			if(!win)
-				throw std::runtime_error("Bindings require graphics context");
-			else
-				win->bind(mod, modmask, keyname, command);
+			window::bind(mod, modmask, keyname, command);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Bind a (pseudo-)key"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -50,7 +47,7 @@ namespace
 	{
 	public:
 		unbind_key() throw(std::bad_alloc) : command("unbind-key") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			std::string mod, modmask, keyname, command;
 			tokensplitter t(args);
@@ -68,10 +65,7 @@ namespace
 			command = t.tail();
 			if(command != "")
 				throw std::runtime_error("Unexpected argument");
-			if(!win)
-				throw std::runtime_error("Bindings require graphics context");
-			else
-				win->unbind(mod, modmask, keyname);
+			window::unbind(mod, modmask, keyname);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Unbind a (pseudo-)key"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -85,14 +79,11 @@ namespace
 	{
 	public:
 		shbind_key() throw(std::bad_alloc) : command("show-bindings") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
-			if(!win)
-				throw std::runtime_error("Bindings require graphics context");
-			else
-				win->dumpbindings();
+			window::dumpbindings();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Show active bindings"; }
 		std::string get_long_help() throw(std::bad_alloc)

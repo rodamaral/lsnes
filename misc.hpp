@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include "window.hpp"
 #include <boost/lexical_cast.hpp>
 
 /**
@@ -52,51 +51,39 @@ void set_random_seed() throw(std::bad_alloc);
  * Given commandline arguments, load a ROM.
  *
  * \param cmdline The command line.
- * \param win Handle to send the messages to.
  * \return The loaded ROM set.
  * \throws std::bad_alloc Not enough memory.
  * \throws std::runtime_error Can't load the ROMset.
  */
-struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline, window* win) throw(std::bad_alloc,
+struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
 	std::runtime_error);
 
 /**
  * \brief Dump listing of regions to graphics system messages.
  *
- * \param win Handle to send the messages to.
  * \throws std::bad_alloc Not enough memory.
  */
-void dump_region_map(window* win) throw(std::bad_alloc);
-
-/**
- * \brief Return printing stream.
- *
- * \param win Handle to graphics system.
- * \return Stream. If win is NULL, this is std::cout. Otherwise it is win->out().
- * \throws std::bad_alloc Not enough memory.
- */
-std::ostream& out(window* win) throw(std::bad_alloc);
+void dump_region_map() throw(std::bad_alloc);
 
 /**
  * \brief Fatal error.
  *
- * Fatal error. If win is non-NULL, it calls win->fatal_error(). Otherwise just immediately quits with error.
+ * Fatal error.
  */
-void fatal_error(window* win) throw();
+void fatal_error() throw();
 
 /**
  * \brief Get path to config directory.
  *
- * \param win Graphics system handle.
  * \return The config directory path.
  * \throw std::bad_alloc Not enough memory.
  */
-std::string get_config_path(window* win) throw(std::bad_alloc);
+std::string get_config_path() throw(std::bad_alloc);
 
 /**
  * \brief Panic on OOM.
  */
-void OOM_panic(window* win);
+void OOM_panic();
 
 /**
  * \brief Typeconvert string.
@@ -119,7 +106,7 @@ template<> inline std::string parse_value(const std::string& value) throw(std::b
 	return value;
 }
 
-void create_lsnesrc(window* win);
+void create_lsnesrc();
 
 /**
  * \brief Opaque internal state of SHA256

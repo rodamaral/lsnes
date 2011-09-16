@@ -761,7 +761,7 @@ namespace
 			_command = cmd;
 		}
 		~memorymanip_command() throw() {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			firstword = static_cast<std::string>(t);
@@ -798,9 +798,9 @@ namespace
 				value_bad = false;
 			} catch(...) {
 			}
-			invoke2(win);
+			invoke2();
 		}
-		virtual void invoke2(window* win) throw(std::bad_alloc, std::runtime_error) = 0;
+		virtual void invoke2() throw(std::bad_alloc, std::runtime_error) = 0;
 		std::string firstword;
 		std::string secondword;
 		uint32_t address;
@@ -822,7 +822,7 @@ namespace
 			rfn = _rfn;
 		}
 		~read_command() throw() {}
-		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke2() throw(std::bad_alloc, std::runtime_error)
 		{
 			if(address_bad || has_value || has_tail)
 				throw std::runtime_error("Syntax: " + _command + " <address>");
@@ -830,7 +830,7 @@ namespace
 				std::ostringstream x;
 				x << "0x" << std::hex << address << " -> " << std::dec
 					<< static_cast<outer>(static_cast<inner>(rfn(address)));
-				out(win) << x.str() << std::endl;
+				window::out() << x.str() << std::endl;
 			}
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Read memory"; }
@@ -853,7 +853,7 @@ namespace
 			wfn = _wfn;
 		}
 		~write_command() throw() {}
-		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke2() throw(std::bad_alloc, std::runtime_error)
 		{
 			if(address_bad || value_bad || has_tail)
 				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
@@ -874,7 +874,7 @@ namespace
 	{
 	public:
 		memorysearch_command() throw(std::bad_alloc) : memorymanip_command("search-memory") {}
-		void invoke2(window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke2() throw(std::bad_alloc, std::runtime_error)
 		{
 			if(!isrch)
 				isrch = new memorysearch();
@@ -997,11 +997,11 @@ namespace
 				for(auto ci = c.begin(); ci != c.end(); ci++) {
 					std::ostringstream x;
 					x << "0x" << std::hex << std::setw(8) << std::setfill('0') << *ci;
-					out(win) << x.str() << std::endl;
+					window::out() << x.str() << std::endl;
 				}
 			} else
 				throw std::runtime_error("Unknown memorysearch subcommand '" + firstword + "'");
-			out(win) << isrch->get_candidate_count() << " candidates remain." << std::endl;
+			window::out() << isrch->get_candidate_count() << " candidates remain." << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Search memory addresses"; }
 		std::string get_long_help() throw(std::bad_alloc)

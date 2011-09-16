@@ -8,7 +8,7 @@ namespace
 	{
 	public:
 		lua_read_memory(const std::string& name) : lua_function(name) {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
 			lua_pushnumber(LS, static_cast<T>(rfun(addr)));
@@ -21,7 +21,7 @@ namespace
 	{
 	public:
 		lua_write_memory(const std::string& name) : lua_function(name) {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
 			T value = get_numeric_argument<T>(LS, 2, fname.c_str());

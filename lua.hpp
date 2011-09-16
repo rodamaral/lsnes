@@ -2,7 +2,6 @@
 #define _lua__hpp__included__
 
 #include "render.hpp"
-#include "window.hpp"
 #include "controllerdata.hpp"
 
 struct lua_State;
@@ -25,7 +24,7 @@ public:
 /**
  * Invoke function.
  */
-	virtual int invoke(lua_State* L, window* win) = 0;
+	virtual int invoke(lua_State* L) = 0;
 protected:
 	std::string fname;
 };
@@ -44,7 +43,7 @@ struct lua_render_context
 	uint32_t bshift;
 };
 
-void init_lua(window* win) throw();
+void init_lua() throw();
 void lua_callback_do_paint(struct lua_render_context* ctx) throw();
 void lua_callback_do_video(struct lua_render_context* ctx) throw();
 void lua_callback_do_input(controls_t& data, bool subframe) throw();

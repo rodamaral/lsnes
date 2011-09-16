@@ -7,7 +7,7 @@ namespace
 	{
 	public:
 		lua_settings_set() : lua_function("settings.set") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			std::string name = get_string_argument(LS, 1, fname.c_str());
 			std::string value = get_string_argument(LS, 2, fname.c_str());
@@ -27,7 +27,7 @@ namespace
 	{
 	public:
 		lua_settings_get() : lua_function("settings.get") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			std::string name = get_string_argument(LS, 1, fname.c_str());
 			try {
@@ -50,7 +50,7 @@ namespace
 	{
 	public:
 		lua_settings_blank() : lua_function("settings.blank") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			std::string name = get_string_argument(LS, 1, fname.c_str());
 			try {
@@ -69,7 +69,7 @@ namespace
 	{
 	public:
 		lua_settings_is_set() : lua_function("settings.is_set") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			std::string name = get_string_argument(LS, 1, fname.c_str());
 			try {

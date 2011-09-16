@@ -14,6 +14,7 @@ using SNES::cartridge;
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#include "window.hpp"
 #include "rom.hpp"
 #include "command.hpp"
 #include "fieldsplit.hpp"
@@ -350,7 +351,7 @@ rom_files::rom_files() throw()
 
 }
 
-rom_files::rom_files(const std::vector<std::string>& cmdline, window* win) throw(std::bad_alloc, std::runtime_error)
+rom_files::rom_files(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error)
 {
 	rom = rom_xml = slota = slota_xml = slotb = slotb_xml = "";
 	std::string arr[sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0])];
@@ -404,7 +405,7 @@ loaded_rom::loaded_rom() throw()
 	region = orig_region = REGION_AUTO;
 }
 
-loaded_rom::loaded_rom(const rom_files& files, window* win) throw(std::bad_alloc, std::runtime_error)
+loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtime_error)
 {
 	std::string _slota = files.slota;
 	std::string _slota_xml = files.slota_xml;
@@ -416,23 +417,23 @@ loaded_rom::loaded_rom(const rom_files& files, window* win) throw(std::bad_alloc
 		return;
 	}
 	if((_slota != "" || _slota_xml != "") && files.rtype == ROMTYPE_SNES) {
-		out(win) << "WARNING: SNES takes only 1 ROM image" << std::endl;
+		window::out() << "WARNING: SNES takes only 1 ROM image" << std::endl;
 		_slota = "";
 		_slota_xml = "";
 	}
 	if((_slotb != "" || _slotb_xml != "") && files.rtype != ROMTYPE_SUFAMITURBO) {
-		out(win) << "WARNING: Only Sufami Turbo takes 3 ROM images" << std::endl;
+		window::out() << "WARNING: Only Sufami Turbo takes 3 ROM images" << std::endl;
 		_slotb = "";
 		_slotb_xml = "";
 	}
 	if(files.rom_xml != "" && files.rom == "")
-		out(win) << "WARNING: " << name_subrom(files.rtype, 0) << " specified without corresponding "
+		window::out() << "WARNING: " << name_subrom(files.rtype, 0) << " specified without corresponding "
 			<< name_subrom(files.rtype, 1) << std::endl;
 	if(_slota_xml != "" && _slota == "")
-		out(win) << "WARNING: " << name_subrom(files.rtype, 2) << " specified without corresponding "
+		window::out() << "WARNING: " << name_subrom(files.rtype, 2) << " specified without corresponding "
 			<< name_subrom(files.rtype, 3) << std::endl;
 	if(_slotb_xml != "" && _slotb == "")
-		out(win) << "WARNING: " << name_subrom(files.rtype, 4) << " specified without corresponding "
+		window::out() << "WARNING: " << name_subrom(files.rtype, 4) << " specified without corresponding "
 			<< name_subrom(files.rtype, 5) << std::endl;
 
 	rtype = files.rtype;
@@ -506,7 +507,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	refresh_cart_mappings();
 }
 
-void loaded_rom::do_patch(const std::vector<std::string>& cmdline, window* win) throw(std::bad_alloc,
+void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	int32_t offset = 0;
@@ -527,12 +528,12 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline, window* win) 
 			throw std::runtime_error("Invalid IPS patch argument '" + opt + "'");
 		std::string kind = opt.substr(6, split - 6);
 		std::string filename = opt.substr(split + 1);
-		out(win) << "Patching " << kind << " using '" << filename << "'" << std::endl;
+		window::out() << "Patching " << kind << " using '" << filename << "'" << std::endl;
 		std::vector<char> ips;
 		try {
 			ips = read_file_relative(filename, "");
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			OOM_panic();
 		} catch(std::exception& e) {
 			throw std::runtime_error("Can't read IPS '" + filename + "': " + e.what());
 		}
@@ -548,7 +549,7 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline, window* win) 
 				throw std::runtime_error("Invalid subROM '" + kind + "' to patch");
 			}
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			OOM_panic();
 		} catch(std::exception& e) {
 			throw std::runtime_error("Can't Patch with IPS '" + filename + "': " + e.what());
 		}
@@ -582,7 +583,7 @@ std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 	return out;
 }
 
-void load_sram(std::map<std::string, std::vector<char>>& sram, window* win) throw(std::bad_alloc)
+void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 {
 	std::set<std::string> used;
 	if(sram.empty())
@@ -593,16 +594,16 @@ void load_sram(std::map<std::string, std::vector<char>>& sram, window* win) thro
 		if(sram.count(savename)) {
 			std::vector<char>& x = sram[savename];
 			if(r.size != x.size())
-				out(win) << "WARNING: SRAM '" << savename << "': Loaded " << x.size() << " bytes, "
-					<< " but the SRAM is " << r.size << "." << std::endl;
+				window::out() << "WARNING: SRAM '" << savename << "': Loaded " << x.size()
+					<< " bytes, but the SRAM is " << r.size << "." << std::endl;
 			memcpy(r.data, &x[0], (r.size < x.size()) ? r.size : x.size());
 			used.insert(savename);
 		} else
-			out(win) << "WARNING: SRAM '" << savename << ": No data." << std::endl;
+			window::out() << "WARNING: SRAM '" << savename << ": No data." << std::endl;
 	}
 	for(auto i = sram.begin(); i != sram.end(); ++i)
 		if(!used.count(i->first))
-			out(win) << "WARNING: SRAM '" << i->first << ": Not found on cartridge." << std::endl;
+			window::out() << "WARNING: SRAM '" << i->first << ": Not found on cartridge." << std::endl;
 }
 
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)

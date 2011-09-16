@@ -9,10 +9,7 @@
 /**
  * \brief Emulator main loop.
  */
-void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& settings) throw(std::bad_alloc,
+void main_loop(struct loaded_rom& rom, struct moviefile& settings) throw(std::bad_alloc,
 	std::runtime_error);
-
-std::vector<char>& get_host_memory();
-movie& get_movie();
 
 #endif

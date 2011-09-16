@@ -4,7 +4,6 @@
 #include "render.hpp"
 #include <list>
 #include <string>
-#include <iostream>
 #include <stdexcept>
 
 /**
@@ -43,10 +42,9 @@ public:
  * parameter _frame: The frame to dump.
  * parameter fps_n: Current fps numerator.
  * parameter fps_d: Current fps denomerator.
- * parameter os: Print messages here
  * throws std::bad_alloc: Not enough memory.
  */
-	static void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, std::ostream& os)
+	static void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, bool dummy)
 		throw(std::bad_alloc);
 
 /**
@@ -64,10 +62,9 @@ public:
  *
  * parameter l: Left channel sample.
  * parameter r: Right channel sample.
- * parameter os: Print messages here
  * throws std::bad_alloc: Not enough memory.
  */
-	static void sample(short l, short r, std::ostream& os) throw(std::bad_alloc);
+	static void sample(short l, short r, bool dummy) throw(std::bad_alloc);
 
 /**
  * End dump.
@@ -80,10 +77,9 @@ public:
 /**
  * End dump.
  *
- * parameter os: Print messages here.
  * throws std::bad_alloc: Not enough memory.
  */
-	static void end(std::ostream& os) throw(std::bad_alloc);
+	static void end(bool dummy) throw(std::bad_alloc);
 
 /**
  * Notify game information.
@@ -105,11 +101,10 @@ public:
  * parameter authors: Authors of the run.
  * parameter gametime: Game time.
  * parameter rercords: Rerecord count.
- * parameter os: Print messages here
  * throws std::bad_alloc Not enough memory.
  */
 	static void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-		authors, double gametime, const std::string& rerecords, std::ostream& os) throw(std::bad_alloc);
+		authors, double gametime, const std::string& rerecords, bool dummy) throw(std::bad_alloc);
 
 /**
  * Send game info. This causes gameinfo method to be called on object this method is called on.

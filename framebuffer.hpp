@@ -2,7 +2,6 @@
 #define _framebuffer__hpp__included__
 
 #include "render.hpp"
-#include "window.hpp"
 
 /**
  * The main framebuffer.
@@ -28,9 +27,7 @@ extern screen main_screen;
 void init_special_screens() throw(std::bad_alloc);
 /**
  * Redraw the framebuffer on screen.
- * 
- * parameter win: The graphics system handle.
  */
-void redraw_framebuffer(window* win);
+void redraw_framebuffer();
 
 #endif

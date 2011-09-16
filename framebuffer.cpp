@@ -1,5 +1,6 @@
 #include "framebuffer.hpp"
 #include "lua.hpp"
+#include "window.hpp"
 #include "render.hpp"
 
 lcscreen framebuffer;
@@ -102,7 +103,7 @@ void init_special_screens() throw(std::bad_alloc)
 	screen_corrupt = lcscreen(buf, 512, 448);
 }
 
-void redraw_framebuffer(window* win)
+void redraw_framebuffer()
 {
 	uint32_t hscl = 1, vscl = 1;
 	if(framebuffer.width < 512)
@@ -126,7 +127,7 @@ void redraw_framebuffer(window* win)
 		lrc.top_gap + lrc.bottom_gap, lrc.left_gap, lrc.top_gap);
 	main_screen.copy_from(framebuffer, hscl, vscl);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	win->set_window_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
+	window::set_window_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
 	rq.run(main_screen);
-	win->notify_screen_update();
+	window::notify_screen_update();
 }

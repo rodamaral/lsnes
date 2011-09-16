@@ -24,7 +24,7 @@ class my_interfaced : public SNES::Interface
 	}
 };
 
-struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r, window* win)
+struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {
 	struct moviefile movie;
 	movie.gametype = gtype::togametype(r.rtype, r.region);
@@ -78,44 +78,44 @@ int main(int argc, char** argv)
 		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
 		bsnes_core_version = x.str();
 	}
-	window win;
-	init_lua(&win);
+	window::init();
+	init_lua();
 
-	win.out() << "BSNES version: " << bsnes_core_version << std::endl;
-	win.out() << "lsnes version: lsnes rr" << lsnes_version << std::endl;
-	win.out() << "Command line is: ";
+	window::out() << "BSNES version: " << bsnes_core_version << std::endl;
+	window::out() << "lsnes version: lsnes rr" << lsnes_version << std::endl;
+	window::out() << "Command line is: ";
 	for(auto k = cmdline.begin(); k != cmdline.end(); k++)
-		win.out() << "\"" << *k << "\" ";
-	win.out() << std::endl;
+		window::out() << "\"" << *k << "\" ";
+	window::out() << std::endl;
 
-	std::string cfgpath = get_config_path(&win);
-	create_lsnesrc(&win);
-	out(&win) << "Saving per-user data to: " << get_config_path(&win) << std::endl;
-	out(&win) << "--- Running lsnesrc --- " << std::endl;
-	command::invokeC("run-script " + cfgpath + "/lsnes.rc", &win);
-	out(&win) << "--- End running lsnesrc --- " << std::endl;
+	std::string cfgpath = get_config_path();
+	create_lsnesrc();
+	window::out() << "Saving per-user data to: " << get_config_path() << std::endl;
+	window::out() << "--- Running lsnesrc --- " << std::endl;
+	command::invokeC("run-script " + cfgpath + "/lsnes.rc");
+	window::out() << "--- End running lsnesrc --- " << std::endl;
 
-	out(&win) << "--- Loading ROM ---" << std::endl;
+	window::out() << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
-		r = load_rom_from_commandline(cmdline, &win);
+		r = load_rom_from_commandline(cmdline);
 		r.load();
 	} catch(std::bad_alloc& e) {
-		OOM_panic(&win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win.out() << "FATAL: Can't load ROM: " << e.what() << std::endl;
-		win.fatal_error();
+		window::out() << "FATAL: Can't load ROM: " << e.what() << std::endl;
+		window::fatal_error();
 		exit(1);
 	}
-	win.out() << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
+	window::out() << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
 	if(r.region == REGION_PAL)
 		set_nominal_framerate(322445.0/6448.0);
 	else if(r.region == REGION_NTSC)
 		set_nominal_framerate(10738636.0/178683.0);
 
-	out(&win) << "--- Internal memory mappings ---" << std::endl;
-	dump_region_map(&win);
-	out(&win) << "--- End of Startup --- " << std::endl;
+	window::out() << "--- Internal memory mappings ---" << std::endl;
+	dump_region_map();
+	window::out() << "--- End of Startup --- " << std::endl;
 	try {
 		moviefile movie;
 		bool loaded = false;
@@ -125,15 +125,16 @@ int main(int argc, char** argv)
 				loaded = true;
 			}
 		if(!loaded)
-			movie = generate_movie_template(cmdline, r, &win);
-		main_loop(&win, r, movie);
+			movie = generate_movie_template(cmdline, r);
+		main_loop(r, movie);
 	} catch(std::bad_alloc& e) {
-		OOM_panic(&win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win.message(std::string("Fatal: ") + e.what());
-		win.fatal_error();
+		window::message(std::string("Fatal: ") + e.what());
+		window::fatal_error();
 		return 1;
 	}
 	rrdata::close();
+	window::quit();
 	return 0;
 }

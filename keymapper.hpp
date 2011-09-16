@@ -131,13 +131,12 @@ public:
 /**
  * \brief Dump list of bindigns as messages to specified graphics handle.
  *
- * \param win The graphics system handle.
  * \throws std::bad_alloc Not enough memory.
  */
-	void dumpbindings(window* win) throw(std::bad_alloc)
+	void dumpbindings() throw(std::bad_alloc)
 	{
 		for(auto i = bindings.begin(); i != bindings.end(); i++)
-			out(win) << "bind " << T::name_key(i->mod, i->modmask, i->symbol) << " " << i->command
+			window::out() << "bind " << T::name_key(i->mod, i->modmask, i->symbol) << " " << i->command
 				<< std::endl;
 	}
 private:

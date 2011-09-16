@@ -2,7 +2,6 @@
 #define _rom__hpp__included__
 
 #include <string>
-#include "window.hpp"
 #include <map>
 #include <vector>
 #include <stdexcept>
@@ -193,11 +192,10 @@ struct rom_files
  * Reads the filenames out of command line arguments given.
  *
  * parameter cmdline: The commmand line
- * parameter win: Window system handle.
  * throws std::bad_alloc: Not enough memory
  * throws std::runtime_error: Failed to load ROM filenames.
  */
-	rom_files(const std::vector<std::string>& cmdline, window* win) throw(std::bad_alloc, std::runtime_error);
+	rom_files(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Resolve relative references.
@@ -338,11 +336,10 @@ struct loaded_rom
  * Takes in collection of ROM filenames and loads them into memory.
  *
  * parameter files: The files to load
- * parameter win: Window system handle.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Loading ROM files failed.
  */
-	loaded_rom(const rom_files& files, window* win) throw(std::bad_alloc, std::runtime_error);
+	loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtime_error);
 /**
  * ROM type
  */
@@ -384,11 +381,10 @@ struct loaded_rom
  * Patch the ROM.
  *
  * parameter cmdline: The command line.
- * parameter win: Graphics system handle.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Failed to patch the ROM.
  */
-	void do_patch(const std::vector<std::string>& cmdline, window* win) throw(std::bad_alloc, std::runtime_error);
+	void do_patch(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Switches the active cartridge to this cartridge. The compatiblity between selected region and original region
@@ -449,10 +445,9 @@ std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
  * Write contents of saved SRAMs into current system SRAMs.
  *
  * parameter sram: Saved SRAM contents.
- * parameter win: Window system handle.
  * throws std::bad_alloc: Out of memory.
  */
-void load_sram(std::map<std::string, std::vector<char>>& sram, window* win) throw(std::bad_alloc);
+void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 
 /**
  * Read SRAMs from command-line and and load the files.

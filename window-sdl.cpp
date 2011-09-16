@@ -875,7 +875,6 @@ namespace
 	uint32_t vc_hscl = 1;
 	uint32_t vc_vscl = 1;
 	bool sdl_init;
-	window* win;
 	bool modconfirm;
 	bool modal_return_flag;
 	bool delayed_close_flag;
@@ -988,9 +987,9 @@ namespace
 	void identify()
 	{
 		state = WINSTATE_IDENTIFY;
-		win->message("Press key to identify.");
-		win->notify_screen_update();
-		win->poll_inputs();
+		window::message("Press key to identify.");
+		window::notify_screen_update();
+		window::poll_inputs();
 	}
 
 	std::string decode_string(std::string e)
@@ -1234,11 +1233,11 @@ namespace
 		switch(k.sym) {
 		case SDLK_INSERT:
 			command_overwrite = !command_overwrite;
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_END:
 			command_cursor = command_buf.length();
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_DOWN:
 		case SDLK_PAGEDOWN:
@@ -1248,20 +1247,20 @@ namespace
 				if(command_cursor > command_buf.length())
 					command_cursor = command_buf.length();
 			}
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_LEFT:
 			command_cursor = (command_cursor > 0) ? (command_cursor - 4) : 0;
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_RIGHT:
 			command_cursor = (command_cursor < command_buf.length()) ? (command_cursor + 4) :
 				command_buf.length();
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_HOME:
 			command_cursor = 0;
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		case SDLK_UP:
 		case SDLK_PAGEUP: {
@@ -1272,14 +1271,14 @@ namespace
 				if(command_cursor > command_buf.length())
 					command_cursor = command_buf.length();
 			}
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		}
 		case SDLK_DELETE:
 			if(command_cursor < command_buf.length())
 				command_buf = command_buf.substr(0, command_cursor) +
 					command_buf.substr(command_cursor + 4);
-			win->notify_screen_update();
+			window::notify_screen_update();
 			*commandhistory_itr = command_buf;
 			return;
 		case SDLK_BACKSPACE:
@@ -1288,7 +1287,7 @@ namespace
 					command_buf.substr(command_cursor);
 				command_cursor -= 4;
 			}
-			win->notify_screen_update();
+			window::notify_screen_update();
 			*commandhistory_itr = command_buf;
 			return;
 		default:
@@ -1319,7 +1318,7 @@ namespace
 			command_cursor += 4;
 		}
 		*commandhistory_itr = command_buf;
-		win->notify_screen_update();
+		window::notify_screen_update();
 	}
 
 	void do_event(SDL_Event& e) throw(std::bad_alloc)
@@ -1330,12 +1329,12 @@ namespace
 			exit(1);
 		if(e.type == SDL_USEREVENT && e.user.code == 0) {
 			if(screen_is_dirty)
-				win->notify_screen_update();
+				window::notify_screen_update();
 		}
 		SDLKey key;
 		get_ticks_msec();
 		if(e.type == SDL_ACTIVEEVENT && e.active.gain && e.active.state == SDL_APPACTIVE) {
-			win->notify_screen_update();
+			window::notify_screen_update();
 			return;
 		}
 		if(e.type == SDL_KEYDOWN || e.type == SDL_KEYUP)
@@ -1348,7 +1347,7 @@ namespace
 			return;
 		}
 		if(e.type == SDL_QUIT) {
-			command::invokeC("quit-emulator", win);
+			command::invokeC("quit-emulator");
 			state = WINSTATE_NORMAL;
 			return;
 		}
@@ -1381,7 +1380,7 @@ namespace
 				{
 					std::ostringstream x;
 					x << "mouse_button " << xc << " " << yc << " " << mouse_mask;
-					command::invokeC(x.str(), win);
+					command::invokeC(x.str());
 				}
 			}
 			if(e.type == SDL_KEYDOWN && key == SDLK_ESCAPE)
@@ -1394,7 +1393,7 @@ namespace
 				if(commandhistory.size() > MAXHISTORY)
 					commandhistory.pop_back();
 				commandhistory_itr = commandhistory.begin();
-				win->notify_screen_update();
+				window::notify_screen_update();
 				return;
 			}
 			{
@@ -1405,7 +1404,7 @@ namespace
 					if(i.symbol.device != SDL_DEV_NONE)
 						cmd = mapper.map(i.symbol, i.polarity);
 					if(cmd != "")
-						command::invokeC(cmd, win);
+						command::invokeC(cmd);
 					more = i.more;
 				}
 				return;
@@ -1417,14 +1416,14 @@ namespace
 				modconfirm = false;
 				modal_return_flag = true;
 				modmsg = "";
-				win->notify_screen_update(true);
+				window::notify_screen_update(true);
 				return;
 			}
 			if(e.type == SDL_KEYUP && (key == SDLK_RETURN || key == SDLK_KP_ENTER)) {
 				state = WINSTATE_NORMAL;
 				modal_return_flag = true;
 				modmsg = "";
-				win->notify_screen_update(true);
+				window::notify_screen_update(true);
 				return;
 			}
 			break;
@@ -1432,7 +1431,7 @@ namespace
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				command_buf = "";
-				win->notify_screen_update();
+				window::notify_screen_update();
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
 				return;
@@ -1442,9 +1441,9 @@ namespace
 				state = WINSTATE_NORMAL;
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
-				command::invokeC(decode_string(command_buf), win);
+				command::invokeC(decode_string(command_buf));
 				command_buf = "";
-				win->notify_screen_update();
+				window::notify_screen_update();
 				autorepeat_phase = 0;
 				return;
 			}
@@ -1471,13 +1470,13 @@ namespace
 		case WINSTATE_IDENTIFY:
 			auto i = keymapper_helper_sdl::translate_event(e);
 			if(!i.polarity && i.symbol.device != SDL_DEV_NONE)
-				win->modal_message(keymapper_helper_sdl::print_key_info(i.symbol), false);
+				window::modal_message(keymapper_helper_sdl::print_key_info(i.symbol), false);
 			break;
 		};
 	}
 }
 
-window::window()
+void window::init()
 {
 	signal(SIGALRM, sigalrm_handler);
 	alarm(WATCHDOG_TIMEOUT);
@@ -1495,8 +1494,6 @@ window::window()
 		sdl_init = true;
 		tid = SDL_AddTimer(MIN_UPDATE_TIME, timer_cb, NULL);
 	}
-	i = NULL;
-	win = this;
 	state = WINSTATE_NORMAL;
 	current_screen = NULL;
 	pause_active = false;
@@ -1539,7 +1536,7 @@ window::window()
 	SDL_PauseAudio(0);
 }
 
-window::~window()
+void window::quit()
 {
 	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
@@ -1566,7 +1563,7 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	bool ret = modconfirm;
 	if(delayed_close_flag) {
 		delayed_close_flag = false;
-		command::invokeC("quit-emulator", win);
+		command::invokeC("quit-emulator");
 	}
 	return ret;
 }
@@ -1792,7 +1789,7 @@ std::map<std::string, std::string>& window::get_emustatus() throw()
 
 void window::dumpbindings() throw(std::bad_alloc)
 {
-	mapper.dumpbindings(this);
+	mapper.dumpbindings();
 }
 
 void window::paused(bool enable) throw()
@@ -1813,13 +1810,13 @@ namespace
 	{
 	public:
 		enable_sound_cmd() throw(std::bad_alloc) : command("enable-sound") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			std::string s = args;
 			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled")
-				win->sound_enable(true);
+				window::sound_enable(true);
 			else if(s == "off" || s == "false" || s == "0" || s == "disable" || s == "disabled")
-				win->sound_enable(false);
+				window::sound_enable(false);
 			else
 				throw std::runtime_error("Bad sound setting");
 		}
@@ -1835,7 +1832,7 @@ namespace
 	{
 	public:
 		identify_cmd() throw(std::bad_alloc) : command("identify-key") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
@@ -1853,7 +1850,7 @@ namespace
 	{
 	public:
 		scrollup_cmd() throw(std::bad_alloc) : command("scroll-up") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
@@ -1863,7 +1860,7 @@ namespace
 				messagebuffer_first_show = 0;
 			if(messagebuffer_first_show < messagebuffer_first_seq)
 				messagebuffer_first_show = messagebuffer_first_seq;
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console back one page"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1877,12 +1874,12 @@ namespace
 	{
 	public:
 		scrollfullup_cmd() throw(std::bad_alloc) : command("scroll-fullup") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			messagebuffer_first_show = messagebuffer_first_seq;
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to beginning"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1896,7 +1893,7 @@ namespace
 	{
 	public:
 		scrollfulldown_cmd() throw(std::bad_alloc) : command("scroll-fulldown") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
@@ -1904,7 +1901,7 @@ namespace
 				messagebuffer_first_show = 0;
 			else
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to end"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1918,7 +1915,7 @@ namespace
 	{
 	public:
 		scrolldown_cmd() throw(std::bad_alloc) : command("scroll-down") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
@@ -1927,7 +1924,7 @@ namespace
 				messagebuffer_first_show = 0;
 			else if(messagebuffer_next_seq < messagebuffer_first_show + maxmessages)
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console one page forward"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1941,7 +1938,7 @@ namespace
 	{
 	public:
 		toggleconsole_cmd() throw(std::bad_alloc) : command("toggle-console") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
@@ -1954,7 +1951,7 @@ namespace
 				messagebuffer_first_show = 0;
 			else
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-			win->notify_screen_update(true);
+			window::notify_screen_update(true);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Toggle console between small and full "
 			"window"; }

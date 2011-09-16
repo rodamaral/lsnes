@@ -1,5 +1,6 @@
 #include "lua-int.hpp"
 #include "command.hpp"
+#include "window.hpp"
 
 namespace
 {
@@ -7,7 +8,7 @@ namespace
 	{
 	public:
 		lua_print() : lua_function("print") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			int stacksize = 0;
 			while(!lua_isnone(LS, stacksize + 1))
@@ -40,7 +41,7 @@ namespace
 					toprint = toprint + "\t" + localmsg;
 				first = false;
 			}
-			win->message(toprint);
+			window::message(toprint);
 			return 0;
 		}
 	} print;
@@ -49,10 +50,10 @@ namespace
 	{
 	public:
 		lua_exec() : lua_function("exec") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			std::string text = get_string_argument(LS, 1, fname.c_str());
-			command::invokeC(text, win);
+			command::invokeC(text);
 			return 0;
 		}
 	} exec;

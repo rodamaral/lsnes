@@ -38,7 +38,7 @@ namespace
 	{
 	public:
 		lua_gui_text() : lua_function("gui.text") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_render_ctx)
 				return 0;

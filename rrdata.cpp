@@ -80,7 +80,7 @@ void rrdata::read_base(const std::string& project) throw(std::bad_alloc)
 	if(project == current_project)
 		return;
 	std::set<rrdata::instance> new_rrset;
-	std::string filename = get_config_path(NULL) + "/" + project + ".rr";
+	std::string filename = get_config_path() + "/" + project + ".rr";
 	if(handle_open) {
 		ohandle.close();
 		handle_open = false;

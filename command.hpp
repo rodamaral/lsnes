@@ -5,8 +5,6 @@
 #include <string>
 
 
-class window;
-
 /**
  * A command.
  */
@@ -30,19 +28,17 @@ public:
  * Invoke a command.
  *
  * parameter arguments: Arguments to command.
- * parameter window: Handle to graphics system.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Command execution failed.
  */
-	virtual void invoke(const std::string& arguments, window* win) throw(std::bad_alloc, std::runtime_error) = 0;
+	virtual void invoke(const std::string& arguments) throw(std::bad_alloc, std::runtime_error) = 0;
 
 /**
  * Look up and invoke a command. The command will undergo alias expansion and recursion checking.
  *
  * parameter cmd: Command to exeucte.
- * parameter window: Handle to graphics system.
  */
-	static void invokeC(const std::string& cmd, window* win) throw();
+	static void invokeC(const std::string& cmd) throw();
 
 /**
  * Get short help for command.
@@ -113,17 +109,7 @@ public:
  * parameter fn: Function to call on command.
  */
 	function_ptr_command(const std::string& name, const std::string& description, const std::string& help,
-		void (*fn)(const std::string& arguments, window* win)) throw(std::bad_alloc);
-/**
- * Create a new command.
- * 
- * parameter name: Name of the command
- * parameter description Description for the command
- * parameter help: Help for the command.
- * parameter fn: Function to call on command.
- */
-	function_ptr_command(const std::string& name, const std::string& description, const std::string& help,
-		void (*fn)(const std::string& arguments, std::ostream& os)) throw(std::bad_alloc);
+		void (*fn)(const std::string& arguments)) throw(std::bad_alloc);
 /**
  * Destroy a commnad.
  */
@@ -132,9 +118,8 @@ public:
  * Invoke a command.
  * 
  * parameter args: Arguments to function.
- * parameter win: Handle to graphics context.
  */
-	void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error);
+	void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get short description.
  * 
@@ -150,8 +135,7 @@ public:
  */
 	std::string get_long_help() throw(std::bad_alloc);
 private:
-	void (*fn)(const std::string& arguments, window* win);
-	void (*fn2)(const std::string& arguments, std::ostream& os);
+	void (*fn)(const std::string& arguments);
 	std::string description;
 	std::string help;
 };

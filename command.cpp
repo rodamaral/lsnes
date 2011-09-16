@@ -13,16 +13,16 @@ namespace
 
 	function_ptr_command run_script("run-script", "run file as a script",
 		"Syntax: run-script <file>\nRuns file <file> just as it would have been entered in the command line\n",
-		[](const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error) {
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Filename needed");
 			std::istream* o = NULL;
 			try {
 				o = &open_file_relative(args, "");
-				out(win) << "Running '" << args << "'" << std::endl;
+				window::out() << "Running '" << args << "'" << std::endl;
 				std::string line;
 				while(std::getline(*o, line))
-					command::invokeC(line, win);
+					command::invokeC(line);
 				delete o;
 			} catch(std::exception& e) {
 				if(o)
@@ -33,17 +33,17 @@ namespace
 
 	function_ptr_command show_aliases("show-aliases", "show aliases",
 		"Syntax: show-aliases\nShow expansions of all aliases\n",
-		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			for(auto i = aliases.begin(); i != aliases.end(); i++)
 				for(auto j = i->second.begin(); j != i->second.end(); j++)
-					os << "alias " << i->first << " " << *j << std::endl;
+					window::out() << "alias " << i->first << " " << *j << std::endl;
 		});
 
 	function_ptr_command unalias_command("unalias-command", "unalias a command",
 		"Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n",
-		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string aliasname = t;
 			if(t)
@@ -51,13 +51,13 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].clear();
-			os << "Command '" << aliasname << "' unaliased" << std::endl;
+			window::out() << "Command '" << aliasname << "' unaliased" << std::endl;
 		});
 
 	function_ptr_command alias_command("alias-command", "alias a command",
 		"Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias <aliasname>\n"
 		"Valid alias names can't be empty nor start with '*' or '?'\n",
-		[](const std::string& args, std::ostream& os) throw(std::bad_alloc, std::runtime_error) {
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string aliasname = t;
 			std::string command = t.tail();
@@ -66,7 +66,7 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].push_back(command);
-			os << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
+			window::out() << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
 		});
 }
 
@@ -86,11 +86,11 @@ command::~command() throw()
 	commands->erase(commandname);
 }
 
-void command::invokeC(const std::string& cmd, window* win) throw()
+void command::invokeC(const std::string& cmd) throw()
 {
 	try {
 		if(command_stack.count(cmd)) {
-			out(win) << "Can not invoke recursively: " << cmd << std::endl;
+			window::out() << "Can not invoke recursively: " << cmd << std::endl;
 			return;
 		}
 		command_stack.insert(cmd);
@@ -99,7 +99,7 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 			//The special ? command.
 			if(commands) {
 				for(auto i = commands->begin(); i != commands->end(); ++i)
-					out(win) << i->first << ": " << i->second->get_short_help() << std::endl;
+					window::out() << i->first << ": " << i->second->get_short_help() << std::endl;
 			}
 			command_stack.erase(cmd);
 			return;
@@ -117,10 +117,10 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 				std::string aname = cmd2.substr(1);
 				if(aliases.count(aname)) {
 					//Yup.
-					out(win) << aname << " is an alias for: " << std::endl;
+					window::out() << aname << " is an alias for: " << std::endl;
 					size_t j = 0;
 					for(auto i = aliases[aname].begin(); i != aliases[aname].end(); ++i, ++j)
-						out(win) << "#" + (j + 1) << ": " << *i << std::endl;
+						window::out() << "#" + (j + 1) << ": " << *i << std::endl;
 					command_stack.erase(cmd);
 					return;
 				}
@@ -129,11 +129,11 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 				rcmd = rcmd.substr(1);
 			if(!commands || !commands->count(rcmd)) {
 				if(rcmd != "")
-					out(win) << "Unknown command '" << rcmd << "'" << std::endl;
+					window::out() << "Unknown command '" << rcmd << "'" << std::endl;
 				command_stack.erase(cmd);
 				return;
 			}
-			out(win) << (*commands)[rcmd]->get_long_help() << std::endl;
+			window::out() << (*commands)[rcmd]->get_long_help() << std::endl;
 			command_stack.erase(cmd);
 			return;
 		}
@@ -144,7 +144,7 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 		}
 		if(may_be_alias_expanded && aliases.count(cmd2)) {
 			for(auto i = aliases[cmd2].begin(); i != aliases[cmd2].end(); ++i)
-				invokeC(*i, win);
+				invokeC(*i);
 			command_stack.erase(cmd);
 			return;
 		}
@@ -163,22 +163,22 @@ void command::invokeC(const std::string& cmd, window* win) throw()
 			if(commands && commands->count(rcmd))
 				cmdh = (*commands)[rcmd];
 			if(!cmdh) {
-				out(win) << "Unknown command '" << rcmd << "'" << std::endl;
+				window::out() << "Unknown command '" << rcmd << "'" << std::endl;
 				command_stack.erase(cmd);
 				return;
 			}
-			cmdh->invoke(args, win);
+			cmdh->invoke(args);
 			command_stack.erase(cmd);
 			return;
 		} catch(std::bad_alloc& e) {
-			OOM_panic(win);
+			OOM_panic();
 		} catch(std::exception& e) {
-			out(win) << "Error: " << e.what() << std::endl;
+			window::out() << "Error: " << e.what() << std::endl;
 			command_stack.erase(cmd);
 			return;
 		}
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	}
 }
 
@@ -224,31 +224,17 @@ std::string tokensplitter::tail() throw(std::bad_alloc)
 }
 
 function_ptr_command::function_ptr_command(const std::string& name, const std::string& _description,
-	const std::string& _help, void (*_fn)(const std::string& arguments, window* win)) throw(std::bad_alloc)
+	const std::string& _help, void (*_fn)(const std::string& arguments)) throw(std::bad_alloc)
 	: command(name)
 {
 	description = _description;
 	help = _help;
 	fn = _fn;
-	fn2 = NULL;
 }
 
-function_ptr_command::function_ptr_command(const std::string& name, const std::string& _description,
-	const std::string& _help, void (*_fn)(const std::string& arguments, std::ostream& win)) throw(std::bad_alloc)
-	: command(name)
+void function_ptr_command::invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 {
-	description = _description;
-	help = _help;
-	fn = NULL;
-	fn2 = _fn;
-}
-
-void function_ptr_command::invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
-{
-	if(fn)
-		fn(args, win);
-	else if(fn2)
-		fn2(args, out(win));
+	fn(args);
 }
 
 std::string function_ptr_command::get_short_help() throw(std::bad_alloc)

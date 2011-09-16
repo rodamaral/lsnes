@@ -18,11 +18,10 @@ extern bool system_corrupt;
 std::vector<char>& get_host_memory();
 movie& get_movie();
 
-void do_save_state(window* win, const std::string& filename) throw(std::bad_alloc, std::runtime_error);
-void do_save_movie(window* win, const std::string& filename) throw(std::bad_alloc, std::runtime_error);
-void do_load_state(window* win, struct moviefile& _movie, int lmode);
-void do_load_state(window* win, const std::string& filename, int lmode);
-
+void do_save_state(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+void do_load_state(struct moviefile& _movie, int lmode);
+void do_load_state(const std::string& filename, int lmode);
 
 extern movie_logic movb;
 

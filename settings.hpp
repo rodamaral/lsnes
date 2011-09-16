@@ -97,10 +97,9 @@ public:
 /**
  * Print all settings and values.
  *
- * parameter os: Stream to print to.
  * throws std::bad_alloc: Not enough memory.
  */
-	static void print_all(std::ostream& os) throw(std::bad_alloc);
+	static void print_all() throw(std::bad_alloc);
 protected:
 	std::string settingname;
 };

@@ -1,5 +1,6 @@
 #include "settings.hpp"
 #include "misc.hpp"
+#include "window.hpp"
 #include <map>
 #include <sstream>
 #include "misc.hpp"
@@ -14,7 +15,7 @@ namespace
 	{
 	public:
 		set_command() throw(std::bad_alloc) : command("set-setting") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			std::string syntax = "Syntax: set-setting <setting> [<value>]";
 			tokensplitter t(args);
@@ -23,7 +24,8 @@ namespace
 			if(settingname == "")
 				throw std::runtime_error("Setting name required.");
 			setting::set(settingname, settingvalue);
-			out(win) << "Setting '" << settingname << "' set to '" << settingvalue << "'" << std::endl;
+			window::out() << "Setting '" << settingname << "' set to '" << settingvalue << "'"
+				<< std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "set a setting"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -37,7 +39,7 @@ namespace
 	{
 	public:
 		unset_command() throw(std::bad_alloc) : command("unset-setting") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			std::string syntax = "Syntax: unset-setting <setting>";
 			tokensplitter t(args);
@@ -45,7 +47,7 @@ namespace
 			if(settingname == "" || t)
 				throw std::runtime_error("Expected setting name and nothing else");
 			setting::blank(settingname);
-			out(win) << "Setting '" << settingname << "' unset" << std::endl;
+			window::out() << "Setting '" << settingname << "' unset" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "unset a setting"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -59,17 +61,17 @@ namespace
 	{
 	public:
 		get_command() throw(std::bad_alloc) : command("get-setting") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			std::string settingname = t;
 			if(settingname == "" || t.tail() != "")
 				throw std::runtime_error("Expected setting name and nothing else");
 			if(setting::is_set(settingname))
-				out(win) << "Setting '" << settingname << "' has value '" << setting::get(settingname)
-					<< "'" << std::endl;
+				window::out() << "Setting '" << settingname << "' has value '"
+					<< setting::get(settingname) << "'" << std::endl;
 			else
-				out(win) << "Setting '" << settingname << "' unset" << std::endl;
+				window::out() << "Setting '" << settingname << "' unset" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "get value of a setting"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -83,11 +85,11 @@ namespace
 	{
 	public:
 		shsettings_command() throw(std::bad_alloc) : command("show-settings") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
-			setting::print_all(out(win));
+			setting::print_all();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Show value of all settings"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -152,15 +154,15 @@ bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::run
 	return (*settings)[_setting]->is_set();
 }
 
-void setting::print_all(std::ostream& os) throw(std::bad_alloc)
+void setting::print_all() throw(std::bad_alloc)
 {
 	if(!settings)
 		return;
 	for(auto i = settings->begin(); i != settings->end(); i++) {
 		if(!i->second->is_set())
-			os << i->first << ": (unset)" << std::endl;
+			window::out() << i->first << ": (unset)" << std::endl;
 		else
-			os << i->first << ": " << i->second->get() << std::endl;
+			window::out() << i->first << ": " << i->second->get() << std::endl;
 	}
 }
 

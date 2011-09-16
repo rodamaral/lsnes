@@ -6,7 +6,7 @@ namespace
 	{
 	public:
 		lua_input_set() : lua_function("input.set") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_input_controllerdata)
 				return 0;
@@ -24,7 +24,7 @@ namespace
 	{
 	public:
 		lua_input_get() : lua_function("input.get") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_input_controllerdata)
 				return 0;
@@ -41,7 +41,7 @@ namespace
 	{
 	public:
 		lua_input_reset() : lua_function("input.reset") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_input_controllerdata)
 				return 0;

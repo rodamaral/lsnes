@@ -1,5 +1,5 @@
 #include "lua-int.hpp"
-#include "mainloop.hpp"
+#include "moviedata.hpp"
 
 namespace
 {
@@ -7,7 +7,7 @@ namespace
 	{
 	public:
 		lua_hostmemory_read() : lua_function("hostmemory.read") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			size_t address = get_numeric_argument<size_t>(LS, 1, fname.c_str());
 			auto& h = get_host_memory();
@@ -24,7 +24,7 @@ namespace
 	{
 	public:
 		lua_hostmemory_write() : lua_function("hostmemory.write") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			size_t address = get_numeric_argument<size_t>(LS, 1, fname.c_str());
 			uint8_t value = get_numeric_argument<uint8_t>(LS, 2, fname.c_str());

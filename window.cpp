@@ -15,8 +15,7 @@ namespace
 	public:
 		typedef char char_type;
 		typedef boost::iostreams::sink_tag category;
-		window_output(window* _win)
-			: win(_win)
+		window_output(window* win)
 		{
 		}
 
@@ -39,7 +38,7 @@ namespace
 				if(lf == stream.size())
 					break;
 				std::string foo(stream.begin(), stream.begin() + lf);
-				win->message(foo);
+				window::message(foo);
 				if(lf + 1 < stream.size())
 					memmove(&stream[0], &stream[lf + 1], stream.size() - lf - 1);
 				stream.resize(stream.size() - lf - 1);
@@ -48,14 +47,14 @@ namespace
 		}
 	protected:
 		std::vector<char> stream;
-		window* win;
 	};
 }
 
 std::ostream& window::out() throw(std::bad_alloc)
 {
 	static std::ostream* cached = NULL;
+	window* win = NULL;
 	if(!cached)
-		cached = new boost::iostreams::stream<window_output>(this);
+		cached = new boost::iostreams::stream<window_output>(win);
 	return *cached;
 }

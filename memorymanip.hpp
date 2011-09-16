@@ -1,7 +1,6 @@
 #ifndef _memorymanip__hpp__included__
 #define _memorymanip__hpp__included__
 
-#include "window.hpp"
 #include <string>
 #include <list>
 #include <vector>

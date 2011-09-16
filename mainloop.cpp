@@ -73,8 +73,6 @@ namespace
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;
-	//Handle to the graphics system.
-	window* win;
 	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
 	enum advance_mode amode;
 	//Mode and filename of pending load, one of LOAD_* constants.
@@ -108,7 +106,7 @@ namespace
 		}
 		int aindex = controller_index_by_analog(index);
 		if(aindex < 0) {
-			out(win) << "No analog controller in slot #" << (index + 1) << std::endl;
+			window::out() << "No analog controller in slot #" << (index + 1) << std::endl;
 			return;
 		}
 		curcontrols(aindex >> 2, aindex & 3, 0) = x;
@@ -155,23 +153,23 @@ private:
 controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
 	if(lua_requests_subframe_paint)
-		redraw_framebuffer(win);
+		redraw_framebuffer();
 
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance && !advanced_once) {
-				win->wait_msec(advance_timeout_first);
+				window::wait_msec(advance_timeout_first);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			win->paused(amode == ADVANCE_PAUSE);
+			window::paused(amode == ADVANCE_PAUSE);
 		} else if(amode == ADVANCE_FRAME) {
 			;
 		} else {
-			win->paused(amode == ADVANCE_SKIPLAG || amode == ADVANCE_PAUSE);
+			window::paused(amode == ADVANCE_SKIPLAG || amode == ADVANCE_PAUSE);
 			cancel_advance = false;
 		}
 		if(amode == ADVANCE_SKIPLAG)
@@ -183,7 +181,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
-				win->wait_msec(advanced_once ? to_wait_frame(get_ticks_msec()) :
+				window::wait_msec(advanced_once ? to_wait_frame(get_ticks_msec()) :
 					advance_timeout_first);
 				advanced_once = true;
 			}
@@ -191,16 +189,16 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			win->paused(amode == ADVANCE_PAUSE);
+			window::paused(amode == ADVANCE_PAUSE);
 		} else {
-			win->paused((amode == ADVANCE_PAUSE));
+			window::paused((amode == ADVANCE_PAUSE));
 			cancel_advance = false;
 		}
 		location_special = SPECIAL_FRAME_START;
 		update_movie_state();
 	}
-	win->notify_screen_update();
-	win->poll_inputs();
+	window::notify_screen_update();
+	window::poll_inputs();
 	if(!subframe && pending_reset_cycles >= 0) {
 		curcontrols(CONTROL_SYSTEM_RESET) = 1;
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = pending_reset_cycles / 10000;
@@ -246,7 +244,7 @@ namespace
 		int bid = -1;
 		switch(p) {
 		case DT_NONE:
-			out(win) << "No such controller #" << (ui_id + 1) << std::endl;
+			window::out() << "No such controller #" << (ui_id + 1) << std::endl;
 			return;
 		case DT_GAMEPAD:
 			switch(button) {
@@ -263,7 +261,7 @@ namespace
 			case BUTTON_SELECT:	bid = SNES_DEVICE_ID_JOYPAD_SELECT; break;
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JOYPAD_START; break;
 			default:
-				out(win) << "Invalid button for gamepad" << std::endl;
+				window::out() << "Invalid button for gamepad" << std::endl;
 				return;
 			};
 			break;
@@ -272,7 +270,7 @@ namespace
 			case BUTTON_L:		bid = SNES_DEVICE_ID_MOUSE_LEFT; break;
 			case BUTTON_R:		bid = SNES_DEVICE_ID_MOUSE_RIGHT; break;
 			default:
-				out(win) << "Invalid button for mouse" << std::endl;
+				window::out() << "Invalid button for mouse" << std::endl;
 				return;
 			};
 			break;
@@ -281,7 +279,7 @@ namespace
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JUSTIFIER_START; break;
 			case BUTTON_TRIGGER:	bid = SNES_DEVICE_ID_JUSTIFIER_TRIGGER; break;
 			default:
-				out(win) << "Invalid button for justifier" << std::endl;
+				window::out() << "Invalid button for justifier" << std::endl;
 				return;
 			};
 			break;
@@ -292,7 +290,7 @@ namespace
 			case BUTTON_PAUSE:	bid = SNES_DEVICE_ID_SUPER_SCOPE_PAUSE; break;
 			case BUTTON_TURBO:	bid = SNES_DEVICE_ID_SUPER_SCOPE_TURBO; break;
 			default:
-				out(win) << "Invalid button for superscope" << std::endl;
+				window::out() << "Invalid button for superscope" << std::endl;
 				return;
 			};
 			break;
@@ -310,8 +308,8 @@ namespace
 		loadmode = lmode;
 		pending_load = filename;
 		amode = ADVANCE_AUTO;
-		win->cancel_wait();
-		win->paused(false);
+		window::cancel_wait();
+		window::paused(false);
 	}
 
 	//Mark pending save (movies save immediately).
@@ -319,11 +317,11 @@ namespace
 	{
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
-			do_save_movie(win, filename);
+			do_save_movie(filename);
 			return;
 		}
 		queued_saves.insert(filename);
-		win->message("Pending save on '" + filename + "'");
+		window::message("Pending save on '" + filename + "'");
 	}
 
 	class dump_watch : public av_snooper::dump_notification
@@ -341,7 +339,7 @@ namespace
 
 void update_movie_state()
 {
-	auto& _status = win->get_emustatus();
+	auto& _status = window::get_emustatus();
 	{
 		std::ostringstream x;
 		x << movb.get_movie().get_current_frame() << "(";
@@ -438,7 +436,7 @@ class my_interface : public SNES::Interface
 	void video_refresh(const uint16_t *data, bool hires, bool interlace, bool overscan)
 	{
 		if(stepping_into_save)
-			win->message("Got video refresh in runtosave, expect desyncs!");
+			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
 		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
@@ -449,7 +447,7 @@ class my_interface : public SNES::Interface
 		framebuffer = ls;
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
-		redraw_framebuffer(win);
+		redraw_framebuffer();
 		uint32_t fps_n, fps_d;
 		if(region) {
 			fps_n = 322445;
@@ -458,22 +456,22 @@ class my_interface : public SNES::Interface
 			fps_n = 10738636;
 			fps_d = 178683;
 		}
-		av_snooper::frame(ls, fps_n, fps_d, out(win));
+		av_snooper::frame(ls, fps_n, fps_d, true);
 	}
 
 	void audio_sample(int16_t l_sample, int16_t r_sample)
 	{
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
-		win->play_audio_sample(_l + 32768, _r + 32768);
-		av_snooper::sample(_l, _r, out(win));
+		window::play_audio_sample(_l + 32768, _r + 32768);
+		av_snooper::sample(_l, _r, true);
 	}
 
 	void audio_sample(uint16_t l_sample, uint16_t r_sample)
 	{
 		//Yes, this interface is broken. The samples are signed but are passed as unsigned!
-		win->play_audio_sample(l_sample + 32768, r_sample + 32768);
-		av_snooper::sample(l_sample, r_sample, out(win));
+		window::play_audio_sample(l_sample + 32768, r_sample + 32768);
+		av_snooper::sample(l_sample, r_sample, true);
 	}
 
 	int16_t input_poll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
@@ -493,12 +491,12 @@ namespace
 	{
 	public:
 		quit_emulator_cmd() throw(std::bad_alloc) : command("quit-emulator") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
-			if(args == "/y" || win->modal_message("Really quit?", true)) {
+			if(args == "/y" || window::modal_message("Really quit?", true)) {
 				amode = ADVANCE_QUIT;
-				win->paused(false);
-				win->cancel_wait();
+				window::paused(false);
+				window::cancel_wait();
 			}
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Quit the emulator"; }
@@ -513,20 +511,20 @@ namespace
 	{
 	public:
 		pause_emulator_cmd() throw(std::bad_alloc) : command("pause-emulator") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			if(amode != ADVANCE_AUTO) {
 				amode = ADVANCE_AUTO;
-				win->paused(false);
-				win->cancel_wait();
-				win->message("Unpaused");
+				window::paused(false);
+				window::cancel_wait();
+				window::message("Unpaused");
 			} else {
-				win->cancel_wait();
+				window::cancel_wait();
 				cancel_advance = false;
 				amode = ADVANCE_PAUSE;
-				win->message("Paused");
+				window::message("Paused");
 			}
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "(Un)pause the emulator"; }
@@ -541,15 +539,15 @@ namespace
 	{
 	public:
 		padvance_frame_cmd() throw(std::bad_alloc) : command("+advance-frame") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Advance one frame"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -563,13 +561,13 @@ namespace
 	{
 	public:
 		nadvance_frame_cmd() throw(std::bad_alloc) : command("-advance-frame") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			cancel_advance = true;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 		}
 	} nadvancef;
 
@@ -577,15 +575,15 @@ namespace
 	{
 	public:
 		padvance_poll_cmd() throw(std::bad_alloc) : command("+advance-poll") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Advance one subframe"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -600,13 +598,13 @@ namespace
 	public:
 		nadvance_poll_cmd() throw(std::bad_alloc) : command("-advance-poll") {}
 
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			cancel_advance = true;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 		}
 	} nadvancep;
 
@@ -614,13 +612,13 @@ namespace
 	{
 	public:
 		advance_skiplag_cmd() throw(std::bad_alloc) : command("advance-skiplag") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			amode = ADVANCE_SKIPLAG;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Skip to next poll"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -634,7 +632,7 @@ namespace
 	{
 	public:
 		reset_cmd() throw(std::bad_alloc) : command("reset") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
@@ -652,7 +650,7 @@ namespace
 	{
 	public:
 		load_state_cmd() throw(std::bad_alloc) : command("load-state") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -670,7 +668,7 @@ namespace
 	{
 	public:
 		load_readonly_cmd() throw(std::bad_alloc) : command("load-readonly") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -688,7 +686,7 @@ namespace
 	{
 	public:
 		load_preserve_cmd() throw(std::bad_alloc) : command("load-preserve") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -706,7 +704,7 @@ namespace
 	{
 	public:
 		load_movie_cmd() throw(std::bad_alloc) : command("load-movie") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -724,7 +722,7 @@ namespace
 	{
 	public:
 		save_state_cmd() throw(std::bad_alloc) : command("save-state") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -743,7 +741,7 @@ namespace
 	{
 	public:
 		save_movie_cmd() throw(std::bad_alloc) : command("save-movie") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
@@ -761,14 +759,14 @@ namespace
 	{
 	public:
 		set_rwmode_cmd() throw(std::bad_alloc) : command("set-rwmode") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			movb.get_movie().readonly_mode(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Switch to read/write mode"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -782,11 +780,11 @@ namespace
 	{
 	public:
 		repainter() throw(std::bad_alloc) : command("repaint") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
-			redraw_framebuffer(win);
+			redraw_framebuffer();
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Redraw the screen"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -800,10 +798,10 @@ namespace
 	{
 	public:
 		set_gamename_cmd() throw(std::bad_alloc) : command("set-gamename") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			our_movie.gamename = args;
-			out(win) << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
+			window::out() << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Set the game name"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -817,7 +815,7 @@ namespace
 	{
 	public:
 		add_watch_command() throw(std::bad_alloc) : command("add-watch") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			std::string name = t;
@@ -839,17 +837,17 @@ namespace
 	{
 	public:
 		remove_watch_command() throw(std::bad_alloc) : command("remove-watch") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			std::string name = t;
 			if(name == "" || t.tail() != "") {
-				out(win) << "syntax: remove-watch <name>" << std::endl;
+				window::out() << "syntax: remove-watch <name>" << std::endl;
 				return;
 			}
 			std::cerr << "Erase watch: '" << name << "'" << std::endl;
 			memory_watches.erase(name);
-			auto& _status = win->get_emustatus();
+			auto& _status = window::get_emustatus();
 			_status.erase("M[" + name + "]");
 			update_movie_state();		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Remove a memory watch"; }
@@ -864,10 +862,10 @@ namespace
 	{
 	public:
 		test_1() throw(std::bad_alloc) : command("test-1") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			framebuffer = screen_nosignal;
-			redraw_framebuffer(win);
+			redraw_framebuffer();
 		}
 	} test1c;
 
@@ -875,10 +873,10 @@ namespace
 	{
 	public:
 		test_2() throw(std::bad_alloc) : command("test-2") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			framebuffer = screen_corrupt;
-			redraw_framebuffer(win);
+			redraw_framebuffer();
 		}
 	} test2c;
 
@@ -886,7 +884,7 @@ namespace
 	{
 	public:
 		test_3() throw(std::bad_alloc) : command("test-3") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			while(1);
 		}
@@ -896,12 +894,12 @@ namespace
 	{
 	public:
 		screenshot_command() throw(std::bad_alloc) : command("take-screenshot") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Filename required");
 			framebuffer.save_png(args);
-			out(win) << "Saved PNG screenshot" << std::endl;
+			window::out() << "Saved PNG screenshot" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Takes a screenshot"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -915,7 +913,7 @@ namespace
 	{
 	public:
 		mouse_button_handler() throw(std::bad_alloc) : command("mouse_button") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			std::string x = t;
@@ -947,7 +945,7 @@ namespace
 			button = _button;
 		}
 		~button_action() throw() {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
@@ -957,7 +955,7 @@ namespace
 			auto i = buttonmap[button];
 			do_button_action(i.first, i.second, (type != 1) ? 1 : 0, (type == 2));
 			update_movie_state();
-			win->notify_screen_update();
+			window::notify_screen_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc)
 		{
@@ -1007,18 +1005,18 @@ namespace
 	bool handle_load()
 	{
 		if(pending_load != "") {
-			do_load_state(win, pending_load, loadmode);
-			redraw_framebuffer(win);
+			do_load_state(pending_load, loadmode);
+			redraw_framebuffer();
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
-			win->cancel_wait();
-			win->paused(false);
+			window::cancel_wait();
+			window::paused(false);
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
-				win->notify_screen_update();
-				win->poll_inputs();
+				window::notify_screen_update();
+				window::poll_inputs();
 			}
 			return true;
 		}
@@ -1033,7 +1031,7 @@ namespace
 			SNES::system.runtosave();
 			stepping_into_save = false;
 			for(auto i = queued_saves.begin(); i != queued_saves.end(); i++)
-				do_save_state(win, *i);
+				do_save_state(*i);
 		}
 		queued_saves.clear();
 	}
@@ -1042,27 +1040,27 @@ namespace
 	bool handle_reset(long cycles)
 	{
 		if(cycles == 0) {
-			win->message("SNES reset");
+			window::message("SNES reset");
 			SNES::system.reset();
 			framebuffer = screen_nosignal;
 			lua_callback_do_reset();
-			redraw_framebuffer(win);
+			redraw_framebuffer();
 		} else if(cycles > 0) {
 			video_refresh_done = false;
 			long cycles_executed = 0;
-			out(win) << "Executing delayed reset... This can take some time!" << std::endl;
+			window::out() << "Executing delayed reset... This can take some time!" << std::endl;
 			while(cycles_executed < cycles && !video_refresh_done) {
 				SNES::cpu.op_step();
 				cycles_executed++;
 			}
 			if(!video_refresh_done)
-				out(win) << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
+				window::out() << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
 			else
-				out(win) << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
+				window::out() << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
 			SNES::system.reset();
 			framebuffer = screen_nosignal;
 			lua_callback_do_reset();
-			redraw_framebuffer(win);
+			redraw_framebuffer();
 			if(video_refresh_done) {
 				to_wait_frame(get_ticks_msec());
 				return false;
@@ -1076,10 +1074,10 @@ namespace
 		if(!system_corrupt)
 			return false;
 		while(system_corrupt) {
-			redraw_framebuffer(win);
-			win->cancel_wait();
-			win->paused(true);
-			win->poll_inputs();
+			redraw_framebuffer();
+			window::cancel_wait();
+			window::paused(true);
+			window::poll_inputs();
 			handle_load();
 			if(amode == ADVANCE_QUIT)
 				return true;
@@ -1101,36 +1099,35 @@ namespace
 				type = "superscope";
 			if(controller_type_by_logical(i) == DT_JUSTIFIER)
 				type = "justifier";
-			out(win) << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
+			window::out() << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
 				controller_index_by_logical(i) << " (" << type << ")" << std::endl;
 		}
 	}
 }
 
-void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) throw(std::bad_alloc,
+void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	//Basic initialization.
-	win = _win;
 	init_special_screens();
 	our_rom = &rom;
 	my_interface intrf;
 	auto old_inteface = SNES::system.interface;
 	SNES::system.interface = &intrf;
-	status = &win->get_emustatus();
+	status = &window::get_emustatus();
 
 	//Load our given movie.
 	bool first_round = false;
 	bool just_did_loadstate = false;
 	try {
-		do_load_state(win, initial, LOAD_STATE_DEFAULT);
+		do_load_state(initial, LOAD_STATE_DEFAULT);
 		first_round = our_movie.is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win->message(std::string("FATAL: Can't load initial state: ") + e.what());
-		win->fatal_error();
+		window::message(std::string("FATAL: Can't load initial state: ") + e.what());
+		window::fatal_error();
 		return;
 	}
 
@@ -1138,9 +1135,9 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 
 	//print_controller_mappings();
 	av_snooper::add_dump_notifier(dumpwatch);
-	win->set_main_surface(main_screen);
-	redraw_framebuffer(win);
-	win->paused(false);
+	window::set_main_surface(main_screen);
+	redraw_framebuffer();
+	window::paused(false);
 	amode = ADVANCE_PAUSE;
 	while(amode != ADVANCE_QUIT) {
 		if(handle_corrupt()) {
@@ -1176,17 +1173,17 @@ void main_loop(window* _win, struct loaded_rom& rom, struct moviefile& initial) 
 			if(amode == ADVANCE_QUIT)
 				break;
 			amode = ADVANCE_PAUSE;
-			redraw_framebuffer(win);
-			win->cancel_wait();
-			win->paused(true);
-			win->poll_inputs();
+			redraw_framebuffer();
+			window::cancel_wait();
+			window::paused(true);
+			window::poll_inputs();
 			just_did_loadstate = false;
 		}
 		SNES::system.run();
 		if(amode == ADVANCE_AUTO)
-			win->wait_msec(to_wait_frame(get_ticks_msec()));
+			window::wait_msec(to_wait_frame(get_ticks_msec()));
 		first_round = false;
 	}
-	av_snooper::end(out(win));
+	av_snooper::end(true);
 	SNES::system.interface = old_inteface;
 }

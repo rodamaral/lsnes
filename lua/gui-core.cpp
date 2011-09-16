@@ -6,7 +6,7 @@ namespace
 	{
 	public:
 		lua_gui_resolution() : lua_function("gui.resolution") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_render_ctx)
 				return 0;
@@ -24,7 +24,7 @@ namespace
 	{
 	public:
 		lua_gui_set_gap(const std::string& name) : lua_function(name) {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			if(!lua_render_ctx)
 				return 0;
@@ -45,7 +45,7 @@ namespace
 	{
 	public:
 		lua_gui_repaint() : lua_function("gui.repaint") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			lua_requests_repaint = true;
 			return 0;
@@ -56,7 +56,7 @@ namespace
 	{
 	public:
 		lua_gui_update_subframe() : lua_function("gui.subframe_update") {}
-		int invoke(lua_State* LS, window* win)
+		int invoke(lua_State* LS)
 		{
 			lua_requests_subframe_paint = get_boolean_argument(LS, 1, "gui.subframe_update");
 			return 0;

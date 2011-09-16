@@ -2,6 +2,7 @@
 #include "avidump.hpp"
 #include "sox.hpp"
 #include "settings.hpp"
+#include "window.hpp"
 #include <iomanip>
 #include <cassert>
 #include <cstring>
@@ -106,7 +107,7 @@ namespace
 	{
 	public:
 		dump_video_command() throw(std::bad_alloc) : command("dump-avi") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			std::string level = t;
@@ -139,7 +140,7 @@ namespace
 				x << "Error starting dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			out(win) << "Dumping to " << prefix << " at level " << level2 << std::endl;
+			window::out() << "Dumping to " << prefix << " at level " << level2 << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Start AVI capture"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -154,7 +155,7 @@ namespace
 	{
 	public:
 		end_video_command() throw(std::bad_alloc) : command("end-avi") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
@@ -162,11 +163,11 @@ namespace
 				throw std::runtime_error("No video dump in progress");
 			try {
 				vid_dumper->end();
-				out(win) << "Dump finished" << std::endl;
+				window::out() << "Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
-				out(win) << "Error ending dump: " << e.what() << std::endl;
+				window::out() << "Error ending dump: " << e.what() << std::endl;
 			}
 			delete vid_dumper;
 			vid_dumper = NULL;

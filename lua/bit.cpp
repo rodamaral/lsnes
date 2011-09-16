@@ -71,7 +71,7 @@ namespace
 	{
 	public:
 		lua_symmetric_bitwise(const std::string& s) : lua_function(s) {};
-		int invoke(lua_State* L, window* win)
+		int invoke(lua_State* L)
 		{
 			int stacksize = 0;
 			while(!lua_isnone(L, stacksize + 1))
@@ -89,7 +89,7 @@ namespace
 	{
 	public:
 		lua_shifter(const std::string& s) : lua_function(s) {};
-		int invoke(lua_State* L, window* win)
+		int invoke(lua_State* L)
 		{
 			uint64_t base;
 			uint64_t amount = 1;

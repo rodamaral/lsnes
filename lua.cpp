@@ -4,6 +4,7 @@
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "mainloop.hpp"
+#include "window.hpp"
 #include <map>
 #include <string>
 extern "C" {
@@ -11,19 +12,16 @@ extern "C" {
 #include <lualib.h>
 }
 #include <iostream>
-#include "fieldsplit.hpp"
 
 namespace
 {
 	std::map<std::string, lua_function*>* functions;
 	lua_State* lua_initialized;
-	window* lua_win;
-
 	int lua_trampoline_function(lua_State* L)
 	{
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
 		lua_function* f = reinterpret_cast<lua_function*>(ptr);
-		return f->invoke(L, lua_win);
+		return f->invoke(L);
 	}
 
 	//Pushes given table to top of stack, creating if needed.
@@ -185,12 +183,12 @@ namespace
 			return;
 		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment");
 		if(t == LUA_ERRSYNTAX) {
-			out(lua_win) << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
+			window::out() << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
 		if(t == LUA_ERRMEM) {
-			out(lua_win) << "Can't run Lua: Out of memory" << std::endl;
+			window::out() << "Can't run Lua: Out of memory" << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
@@ -198,20 +196,20 @@ namespace
 		int r = lua_pcall(L, 0, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			out(lua_win) << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
+			window::out() << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			out(lua_win) << "Error running Lua hunk: Out of memory" << std::endl;
+			window::out() << "Error running Lua hunk: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			out(lua_win) << "Error running Lua hunk: Double Fault???" << std::endl;
+			window::out() << "Error running Lua hunk: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint", lua_win);
+			command::invokeC("repaint");
 		}
 	}
 
@@ -237,20 +235,20 @@ namespace
 		int r = lua_pcall(L, args, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			out(lua_win) << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
+			window::out() << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			out(lua_win) << "Error running Lua callback: Out of memory" << std::endl;
+			window::out() << "Error running Lua callback: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			out(lua_win) << "Error running Lua callback: Double Fault???" << std::endl;
+			window::out() << "Error running Lua callback: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint", lua_win);
+			command::invokeC("repaint");
 		}
 	}
 }
@@ -372,7 +370,7 @@ namespace
 	{
 	public:
 		evallua() throw(std::bad_alloc) : command("evaluate-lua") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
@@ -390,7 +388,7 @@ namespace
 	{
 	public:
 		runlua() throw(std::bad_alloc) : command("run-lua") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Expected script to run");
@@ -412,13 +410,12 @@ void lua_callback_quit() throw()
 	run_lua_cb(0);
 }
 
-void init_lua(window* win) throw()
+void init_lua() throw()
 {
-	lua_win = win;
 	L = lua_newstate(alloc, NULL);
 	if(!L) {
-		out(lua_win) << "Can't initialize Lua." << std::endl;
-		fatal_error(lua_win);
+		window::out() << "Can't initialize Lua." << std::endl;
+		window::fatal_error();
 	}
 	luaL_openlibs(L);
 

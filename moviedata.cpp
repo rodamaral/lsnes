@@ -1,4 +1,5 @@
 #include "moviedata.hpp"
+#include "window.hpp"
 #include "command.hpp"
 #include "lua.hpp"
 #include "framebuffer.hpp"
@@ -33,11 +34,11 @@ namespace
 	{
 	public:
 		get_gamename_cmd() throw(std::bad_alloc) : command("get-gamename") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
-			out(win) << "Game name is '" << our_movie.gamename << "'" << std::endl;
+			window::out() << "Game name is '" << our_movie.gamename << "'" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Get the game name"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -51,15 +52,15 @@ namespace
 	{
 	public:
 		print_authors_cmd() throw(std::bad_alloc) : command("show-authors") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			size_t idx = 0;
 			for(auto i = our_movie.authors.begin(); i != our_movie.authors.end(); i++) {
-				out(win) << (idx++) << ": " << i->first << "|" << i->second << std::endl;
+				window::out() << (idx++) << ": " << i->first << "|" << i->second << std::endl;
 			}
-			out(win) << "End of authors list" << std::endl;
+			window::out() << "End of authors list" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Show the run authors"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -73,7 +74,7 @@ namespace
 	{
 	public:
 		add_author_command() throw(std::bad_alloc) : command("add-author") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			fieldsplitter f(t.tail());
@@ -82,7 +83,7 @@ namespace
 			if(full == "" && nick == "")
 				throw std::runtime_error("Bad author name");
 			our_movie.authors.push_back(std::make_pair(full, nick));
-			out(win) << (our_movie.authors.size() - 1) << ": " << full << "|" << nick << std::endl;
+			window::out() << (our_movie.authors.size() - 1) << ": " << full << "|" << nick << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Add an author"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -98,7 +99,7 @@ namespace
 	{
 	public:
 		remove_author_command() throw(std::bad_alloc) : command("remove-author") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			uint64_t index = parse_value<uint64_t>(t.tail());
@@ -118,7 +119,7 @@ namespace
 	{
 	public:
 		edit_author_command() throw(std::bad_alloc) : command("edit-author") {}
-		void invoke(const std::string& args, window* win) throw(std::bad_alloc, std::runtime_error)
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			tokensplitter t(args);
 			uint64_t index = parse_value<uint64_t>(t);
@@ -128,7 +129,7 @@ namespace
 			std::string full = f;
 			std::string nick = f;
 			if(full == "" && nick == "") {
-				out(win) << "syntax: edit-author <authornum> <author>" << std::endl;
+				window::out() << "syntax: edit-author <authornum> <author>" << std::endl;
 				return;
 			}
 			our_movie.authors[index] = std::make_pair(full, nick);
@@ -143,11 +144,11 @@ namespace
 		}
 	} editauthorc;
 
-	void warn_hash_mismatch(window* win, const std::string& mhash, const loaded_slot& slot,
+	void warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot,
 		const std::string& name)
 	{
 		if(mhash != slot.sha256) {
-			out(win) << "WARNING: " << name << " hash mismatch!" << std::endl
+			window::out() << "WARNING: " << name << " hash mismatch!" << std::endl
 				<< "\tMovie:   " << mhash << std::endl
 				<< "\tOur ROM: " << slot.sha256 << std::endl;
 		}
@@ -155,7 +156,7 @@ namespace
 }
 
 //Save state.
-void do_save_state(window* win, const std::string& filename) throw(std::bad_alloc,
+void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	lua_callback_pre_save(filename, true);
@@ -171,18 +172,18 @@ void do_save_state(window* win, const std::string& filename) throw(std::bad_allo
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename, savecompression);
 		uint64_t took = get_ticks_msec() - origtime;
-		out(win) << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
+		window::out() << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
 		lua_callback_post_save(filename, true);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
-		win->message(std::string("Save failed: ") + e.what());
+		window::message(std::string("Save failed: ") + e.what());
 		lua_callback_err_save(filename);
 	}
 }
 
 //Save movie.
-void do_save_movie(window* win, const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
 	lua_callback_pre_save(filename, false);
 	try {
@@ -191,18 +192,18 @@ void do_save_movie(window* win, const std::string& filename) throw(std::bad_allo
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename, savecompression);
 		uint64_t took = get_ticks_msec() - origtime;
-		out(win) << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
+		window::out() << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
 		lua_callback_post_save(filename, false);
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win->message(std::string("Save failed: ") + e.what());
+		window::message(std::string("Save failed: ") + e.what());
 		lua_callback_err_save(filename);
 	}
 }
 
 //Load state from loaded movie file (does not catch errors).
-void do_load_state(window* win, struct moviefile& _movie, int lmode)
+void do_load_state(struct moviefile& _movie, int lmode)
 {
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
 	if(gtype::toromtype(_movie.gametype) != our_rom->rtype)
@@ -218,16 +219,16 @@ void do_load_state(window* win, struct moviefile& _movie, int lmode)
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 			throw std::runtime_error(x.str());
 		} else
-			out(win) << "WARNING: Emulator core version mismatch!" << std::endl
+			window::out() << "WARNING: Emulator core version mismatch!" << std::endl
 				<< "\tThis version: " << bsnes_core_version << std::endl
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
-	warn_hash_mismatch(win, _movie.rom_sha256, our_rom->rom, "ROM #1");
-	warn_hash_mismatch(win, _movie.romxml_sha256, our_rom->rom_xml, "XML #1");
-	warn_hash_mismatch(win, _movie.slota_sha256, our_rom->slota, "ROM #2");
-	warn_hash_mismatch(win, _movie.slotaxml_sha256, our_rom->slota_xml, "XML #2");
-	warn_hash_mismatch(win, _movie.slotb_sha256, our_rom->slotb, "ROM #3");
-	warn_hash_mismatch(win, _movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3");
+	warn_hash_mismatch(_movie.rom_sha256, our_rom->rom, "ROM #1");
+	warn_hash_mismatch(_movie.romxml_sha256, our_rom->rom_xml, "XML #1");
+	warn_hash_mismatch(_movie.slota_sha256, our_rom->slota, "ROM #2");
+	warn_hash_mismatch(_movie.slotaxml_sha256, our_rom->slota_xml, "XML #2");
+	warn_hash_mismatch(_movie.slotb_sha256, our_rom->slotb, "ROM #3");
+	warn_hash_mismatch(_movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3");
 
 	SNES::config.random = false;
 	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
@@ -259,13 +260,13 @@ void do_load_state(window* win, struct moviefile& _movie, int lmode)
 			load_core_state(_movie.savestate);
 			framebuffer.load(_movie.screenshot);
 		} else {
-			load_sram(_movie.movie_sram, win);
+			load_sram(_movie.movie_sram);
 			controller_set_port_type(0, _movie.port1);
 			controller_set_port_type(1, _movie.port2);
 			framebuffer = screen_nosignal;
 		}
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	} catch(std::exception& e) {
 		system_corrupt = true;
 		framebuffer = screen_corrupt;
@@ -284,40 +285,40 @@ void do_load_state(window* win, struct moviefile& _movie, int lmode)
 		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_DEFAULT && !(movb.get_movie().get_frame_count()))
 		movb.get_movie().readonly_mode(false);
-	out(win) << "ROM Type ";
+	window::out() << "ROM Type ";
 	switch(our_rom->rtype) {
 	case ROMTYPE_SNES:
-		out(win) << "SNES";
+		window::out() << "SNES";
 		break;
 	case ROMTYPE_BSX:
-		out(win) << "BS-X";
+		window::out() << "BS-X";
 		break;
 	case ROMTYPE_BSXSLOTTED:
-		out(win) << "BS-X slotted";
+		window::out() << "BS-X slotted";
 		break;
 	case ROMTYPE_SUFAMITURBO:
-		out(win) << "Sufami Turbo";
+		window::out() << "Sufami Turbo";
 		break;
 	case ROMTYPE_SGB:
-		out(win) << "Super Game Boy";
+		window::out() << "Super Game Boy";
 		break;
 	default:
-		out(win) << "Unknown";
+		window::out() << "Unknown";
 		break;
 	}
-	out(win) << " region ";
+	window::out() << " region ";
 	switch(our_rom->region) {
 	case REGION_PAL:
-		out(win) << "PAL";
+		window::out() << "PAL";
 		break;
 	case REGION_NTSC:
-		out(win) << "NTSC";
+		window::out() << "NTSC";
 		break;
 	default:
-		out(win) << "Unknown";
+		window::out() << "Unknown";
 		break;
 	}
-	out(win) << std::endl;
+	window::out() << std::endl;
 	uint64_t mlength = _movie.get_movie_length();
 	{
 		mlength += 999999;
@@ -331,18 +332,18 @@ void do_load_state(window* win, struct moviefile& _movie, int lmode)
 		x << std::setfill('0') << std::setw(2) << mlength / 1000000000 << ".";
 		mlength %= 1000000000;
 		x << std::setfill('0') << std::setw(3) << mlength / 1000000;
-		out(win) << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
+		window::out() << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
 			<< _movie.get_frame_count() << " frames)" << std::endl;
 	}
 	if(_movie.gamename != "")
-		out(win) << "Game Name: " << _movie.gamename << std::endl;
+		window::out() << "Game Name: " << _movie.gamename << std::endl;
 	for(size_t i = 0; i < _movie.authors.size(); i++)
-		out(win) << "Author: " << _movie.authors[i].first << "(" << _movie.authors[i].second << ")"
+		window::out() << "Author: " << _movie.authors[i].first << "(" << _movie.authors[i].second << ")"
 			<< std::endl;
 }
 
 //Load state
-void do_load_state(window* win, const std::string& filename, int lmode)
+void do_load_state(const std::string& filename, int lmode)
 {
 	uint64_t origtime = get_ticks_msec();
 	lua_callback_pre_load(filename);
@@ -350,21 +351,21 @@ void do_load_state(window* win, const std::string& filename, int lmode)
 	try {
 		mfile = moviefile(filename);
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win->message("Can't read movie/savestate '" + filename + "': " + e.what());
+		window::message("Can't read movie/savestate '" + filename + "': " + e.what());
 		lua_callback_err_load(filename);
 		return;
 	}
 	try {
-		do_load_state(win, mfile, lmode);
+		do_load_state(mfile, lmode);
 		uint64_t took = get_ticks_msec() - origtime;
-		out(win) << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
+		window::out() << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
 		lua_callback_post_load(filename, our_movie.is_savestate);
 	} catch(std::bad_alloc& e) {
-		OOM_panic(win);
+		OOM_panic();
 	} catch(std::exception& e) {
-		win->message("Can't load movie/savestate '" + filename + "': " + e.what());
+		window::message("Can't load movie/savestate '" + filename + "': " + e.what());
 		lua_callback_err_load(filename);
 		return;
 	}
