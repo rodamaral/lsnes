@@ -85,6 +85,9 @@ namespace
 	controls_t autoheld_controls;
 	std::vector<controls_t> autofire_pattern;
 	size_t autofire_position;
+	//Save jukebox.
+	std::vector<std::string> save_jukebox;
+	size_t save_jukebox_pointer;
 	//Emulator status area.
 	std::map<std::string, std::string>* status;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
@@ -376,6 +379,10 @@ void update_movie_state()
 			x << "CAP ";
 		_status["Flags"] = x.str();
 	}
+	if(save_jukebox.size() > 0)
+		_status["Saveslot"] = save_jukebox[save_jukebox_pointer];
+	else
+		_status.erase("Saveslot");
 	for(auto i = memory_watches.begin(); i != memory_watches.end(); i++) {
 		try {
 			_status["M[" + i->first + "]"] = evaluate_watch(i->second);
@@ -523,6 +530,56 @@ namespace
 				amode = ADVANCE_PAUSE;
 				window::message("Paused");
 			}
+		});
+
+	function_ptr_command<> save_jukebox_prev("cycle-jukebox-backward", "Cycle save jukebox backwards",
+		"Syntax: cycle-jukebox-backwards\nCycle save jukebox backwards\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(save_jukebox_pointer == 0)
+				save_jukebox_pointer = save_jukebox.size() - 1;
+			else
+				save_jukebox_pointer--;
+			if(save_jukebox_pointer >= save_jukebox.size())
+				save_jukebox_pointer = 0;
+			update_movie_state();
+			window::notify_screen_update();
+		});
+
+	function_ptr_command<> save_jukebox_next("cycle-jukebox-forward", "Cycle save jukebox forwards",
+		"Syntax: cycle-jukebox-forwards\nCycle save jukebox forwards\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(save_jukebox_pointer == save_jukebox.size() - 1)
+				save_jukebox_pointer = 0;
+			else
+				save_jukebox_pointer++;
+			if(save_jukebox_pointer >= save_jukebox.size())
+				save_jukebox_pointer = 0;
+			update_movie_state();
+			window::notify_screen_update();
+		});
+
+	function_ptr_command<arg_filename> add_jukebox("add-jukebox-save", "Add save to jukebox",
+		"Syntax: add-jukebox-save\nAdd save to jukebox\n",
+		[](arg_filename filename) throw(std::bad_alloc, std::runtime_error) {
+			save_jukebox.push_back(filename);
+			update_movie_state();
+			window::notify_screen_update();
+		});
+
+	function_ptr_command<> load_jukebox("load-jukebox", "Load save from jukebox",
+		"Syntax: load-jukebox\nLoad save from jukebox\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(!save_jukebox.size())
+				throw std::runtime_error("No saves in jukebox");
+			mark_pending_load(save_jukebox[save_jukebox_pointer], LOAD_STATE_RW);
+		});
+
+	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
+		"Syntax: save-jukebox\nSave save to jukebox\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(!save_jukebox.size())
+				throw std::runtime_error("No saves in jukebox");
+			mark_pending_save(save_jukebox[save_jukebox_pointer], SAVE_STATE);
 		});
 
 	function_ptr_command<> padvance_frame("+advance-frame", "Advance one frame",
