@@ -689,15 +689,6 @@ namespace
 			while(1);
 		});
 
-	function_ptr_command take_screenshot("take-screenshot", "Takes a screenshot",
-		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
-			framebuffer.save_png(args);
-			messages << "Saved PNG screenshot" << std::endl;
-		});
-
 	function_ptr_command mouse_button_handler("mouse_button", "no description available", "No help available\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
