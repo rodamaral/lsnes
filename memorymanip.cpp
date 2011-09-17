@@ -5,7 +5,6 @@
 #include <snes/snes.hpp>
 #include "rom.hpp"
 #include "memorymanip.hpp"
-#include "fieldsplit.hpp"
 #include "misc.hpp"
 #include <sstream>
 #include <iomanip>

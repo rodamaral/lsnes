@@ -1,7 +1,6 @@
 #ifndef _controllerdata__hpp__included__
 #define _controllerdata__hpp__included__
 
-#include "fieldsplit.hpp"
 #include <vector>
 #include <stdexcept>
 

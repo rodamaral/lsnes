@@ -5,6 +5,7 @@
 #include "zip.hpp"
 #include "misc.hpp"
 #include "rrdata.hpp"
+#include "moviedata.hpp"
 #include <sstream>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
@@ -88,10 +89,8 @@ void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::st
 		std::string x;
 		while(std::getline(m, x)) {
 			strip_CR(x);
-			fieldsplitter fields(x);
-			std::string y = static_cast<std::string>(fields);
-			std::string z = static_cast<std::string>(fields);
-			authors.push_back(std::make_pair(y, z));
+			auto g = split_author(x);
+			authors.push_back(g);
 		}
 		delete &m;
 	} catch(...) {

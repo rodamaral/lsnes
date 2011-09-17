@@ -2,6 +2,7 @@
 #include "mainloop.hpp"
 #include "command.hpp"
 #include "lua.hpp"
+#include "moviedata.hpp"
 #include "rrdata.hpp"
 #include "lsnes.hpp"
 #include "rom.hpp"
@@ -46,12 +47,8 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 			movie.gamename = o.substr(11);
 		if(o.length() >= 9 && o.substr(0, 9) == "--author=") {
 			std::string line = o.substr(9);
-			fieldsplitter f(line);
-			std::string full = f;
-			std::string nick = f;
-			if(full == "" && nick == "")
-				throw std::runtime_error("Bad author name, one of full or nickname must be present");
-			movie.authors.push_back(std::make_pair(full, nick));
+			auto g = split_author(line);
+			movie.authors.push_back(g);
 		}
 
 	}

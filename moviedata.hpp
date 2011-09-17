@@ -18,6 +18,9 @@ extern bool system_corrupt;
 std::vector<char>& get_host_memory();
 movie& get_movie();
 
+std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
+	std::runtime_error);
+
 void do_save_state(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
 void do_load_state(struct moviefile& _movie, int lmode);

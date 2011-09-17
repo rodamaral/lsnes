@@ -7,7 +7,6 @@
 #include <set>
 #include "misc.hpp"
 #include "memorymanip.hpp"
-#include "fieldsplit.hpp"
 #include "command.hpp"
 
 namespace

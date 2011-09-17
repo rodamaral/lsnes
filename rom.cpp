@@ -16,7 +16,6 @@ using SNES::cartridge;
 #include <boost/iostreams/device/back_inserter.hpp>
 #include "rom.hpp"
 #include "command.hpp"
-#include "fieldsplit.hpp"
 #include "zip.hpp"
 #include "misc.hpp"
 #include "memorymanip.hpp"

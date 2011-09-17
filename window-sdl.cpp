@@ -9,7 +9,6 @@
 #include <csignal>
 #include "keymapper.hpp"
 #include "framerate.hpp"
-#include "fieldsplit.hpp"
 #include <sstream>
 #include <fstream>
 
