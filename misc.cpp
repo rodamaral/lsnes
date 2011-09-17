@@ -290,4 +290,4 @@ std::ostream& _messages()
 
 
 std::string bsnes_core_version;
-std::string lsnes_version = "0-β2";
+std::string lsnes_version = "0-β3";
