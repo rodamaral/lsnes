@@ -29,6 +29,31 @@ protected:
 	std::string fname;
 };
 
+/**
+ * Register function pointer as lua function.
+ */
+class function_ptr_luafun : public lua_function
+{
+public:
+/**
+ * Register.
+ */
+	function_ptr_luafun(const std::string& name, int (*_fn)(lua_State* L, const std::string& fname))
+		: lua_function(name)
+	{
+		fn = _fn;
+	}
+/**
+ * Invoke function.
+ */
+	int invoke(lua_State* L)
+	{
+		return fn(L, fname);
+	}
+private:
+	int (*fn)(lua_State* L, const std::string& fname);
+};
+
 struct lua_render_context
 {
 	uint32_t left_gap;

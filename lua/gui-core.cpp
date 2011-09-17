@@ -41,25 +41,13 @@ namespace
 	lua_gui_set_gap<&lua_render_context::top_gap> tg("gui.top_gap");
 	lua_gui_set_gap<&lua_render_context::bottom_gap> bg("gui.bottom_gap");
 
-	class lua_gui_repaint : public lua_function
-	{
-	public:
-		lua_gui_repaint() : lua_function("gui.repaint") {}
-		int invoke(lua_State* LS)
-		{
-			lua_requests_repaint = true;
-			return 0;
-		}
-	} gui_repaint;
+	function_ptr_luafun gui_repaint("gui.repaint", [](lua_State* LS, const std::string& fname) -> int {
+		lua_requests_repaint = true;
+		return 0;
+	});
 
-	class lua_gui_update_subframe : public lua_function
-	{
-	public:
-		lua_gui_update_subframe() : lua_function("gui.subframe_update") {}
-		int invoke(lua_State* LS)
-		{
-			lua_requests_subframe_paint = get_boolean_argument(LS, 1, "gui.subframe_update");
-			return 0;
-		}
-	} gui_update_subframe;
+	function_ptr_luafun gui_sfupd("gui.subframe_update", [](lua_State* LS, const std::string& fname) -> int {
+		lua_requests_subframe_paint = get_boolean_argument(LS, 1, fname.c_str());
+		return 0;
+	});
 }

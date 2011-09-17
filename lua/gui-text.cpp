@@ -34,29 +34,23 @@ namespace
 	{
 	}
 
-	class lua_gui_text : public lua_function
-	{
-	public:
-		lua_gui_text() : lua_function("gui.text") {}
-		int invoke(lua_State* LS)
-		{
-			if(!lua_render_ctx)
-				return 0;
-			uint32_t x255 = 255;
-			uint32_t fgc = (x255 << lua_render_ctx->rshift) | (x255 << lua_render_ctx->gshift) |
-				(x255 << lua_render_ctx->bshift);
-			uint32_t bgc = 0;
-			uint16_t fga = 256;
-			uint16_t bga = 0;
-			int32_t _x = get_numeric_argument<int32_t>(LS, 1, "gui.text");
-			int32_t _y = get_numeric_argument<int32_t>(LS, 2, "gui.text");
-			get_numeric_argument<uint32_t>(LS, 4, fgc, "gui.text");
-			get_numeric_argument<uint16_t>(LS, 5, fga, "gui.text");
-			get_numeric_argument<uint32_t>(LS, 6, bgc, "gui.text");
-			get_numeric_argument<uint16_t>(LS, 7, bga, "gui.text");
-			std::string text = get_string_argument(LS, 3, "gui.text");
-			lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fgc, fga, bgc, bga));
+	function_ptr_luafun gui_text("gui.text", [](lua_State* LS, const std::string& fname) -> int {
+		if(!lua_render_ctx)
 			return 0;
-		}
-	} gui_text;
+		uint32_t x255 = 255;
+		uint32_t fgc = (x255 << lua_render_ctx->rshift) | (x255 << lua_render_ctx->gshift) |
+			(x255 << lua_render_ctx->bshift);
+		uint32_t bgc = 0;
+		uint16_t fga = 256;
+		uint16_t bga = 0;
+		int32_t _x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
+		int32_t _y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
+		get_numeric_argument<uint32_t>(LS, 4, fgc, fname.c_str());
+		get_numeric_argument<uint16_t>(LS, 5, fga, fname.c_str());
+		get_numeric_argument<uint32_t>(LS, 6, bgc, fname.c_str());
+		get_numeric_argument<uint16_t>(LS, 7, bga, fname.c_str());
+		std::string text = get_string_argument(LS, 3, fname.c_str());
+		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fgc, fga, bgc, bga));
+		return 0;
+	});
 }
