@@ -448,10 +448,12 @@ namespace
 		keygroup* group;
 		unsigned subkey;
 		std::string command;
-		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey, bool polarity,
+		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned _subkey, bool polarity,
 			const std::string& name)
 		{
 			if(!modifier_set::triggers(modifiers, mod, modmask))
+				return;
+			if(subkey != _subkey)
 				return;
 			std::string cmd = fixup_command_polarity(command, polarity);
 			if(cmd == "")
