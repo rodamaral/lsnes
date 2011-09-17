@@ -99,13 +99,17 @@ lua_function::~lua_function() throw()
 std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)
 {
 	if(lua_isnone(LS, argindex)) {
-		lua_pushfstring(LS, "argument #%i to %s must be string", argindex, fname);
+		char buffer[1024];
+		sprintf(buffer, "argument #%i to %s must be string", argindex, fname);
+		lua_pushstring(LS, buffer);
 		lua_error(LS);
 	}
 	size_t len;
 	const char* f = lua_tolstring(LS, argindex, &len);
 	if(!f) {
-		lua_pushfstring(LS, "argument #%i to %s must be string", argindex, fname);
+		char buffer[1024];
+		sprintf(buffer, "argument #%i to %s must be string", argindex, fname);
+		lua_pushstring(LS, buffer);
 		lua_error(LS);
 	}
 	return std::string(f, f + len);
@@ -114,7 +118,9 @@ std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fn
 bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
 {
 	if(lua_isnone(LS, argindex) || !lua_isboolean(LS, argindex)) {
-		lua_pushfstring(LS, "argument #%i to %s must be boolean", argindex, fname);
+		char buffer[1024];
+		sprintf(buffer, "argument #%i to %s must be boolean", argindex, fname);
+		lua_pushstring(LS, buffer);
 		lua_error(LS);
 	}
 	return (lua_toboolean(LS, argindex) != 0);
