@@ -2897,5 +2897,17 @@ rr0-β3
 Joystick support
 \end_layout
 
+\begin_layout Subsection
+rr0-β4
+\end_layout
+
+\begin_layout Itemize
+Fix multi-buttons
+\end_layout
+
+\begin_layout Itemize
+Save jukebox functionality.
+\end_layout
+
 \end_body
 \end_document
