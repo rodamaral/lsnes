@@ -103,7 +103,7 @@ namespace
 
 	avi_avsnoop* vid_dumper;
 
-	function_ptr_command avi_dump("dump-avi", "Start AVI capture",
+	function_ptr_command<const std::string&> avi_dump("dump-avi", "Start AVI capture",
 		"Syntax: dump-avi <level> <prefix>\nStart AVI capture to <prefix> using compression\n"
 		"level <level> (0-18).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -141,11 +141,9 @@ namespace
 			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
 		});
 
-	function_ptr_command end_avi("end-avi", "End AVI capture",
+	function_ptr_command<> end_avi("end-avi", "End AVI capture",
 		"Syntax: end-avi\nEnd a AVI capture.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(!vid_dumper)
 				throw std::runtime_error("No video dump in progress");
 			try {

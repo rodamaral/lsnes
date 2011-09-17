@@ -10,15 +10,13 @@ namespace
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
 
-	function_ptr_command run_script("run-script", "run file as a script",
+	function_ptr_command<arg_filename> run_script("run-script", "run file as a script",
 		"Syntax: run-script <file>\nRuns file <file> just as it would have been entered in the command line\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename needed");
+		[](arg_filename filename) throw(std::bad_alloc, std::runtime_error) {
 			std::istream* o = NULL;
 			try {
-				o = &open_file_relative(args, "");
-				messages << "Running '" << args << "'" << std::endl;
+				o = &open_file_relative(filename, "");
+				messages << "Running '" << std::string(filename) << "'" << std::endl;
 				std::string line;
 				while(std::getline(*o, line))
 					command::invokeC(line);
@@ -30,17 +28,15 @@ namespace
 			}
 		});
 
-	function_ptr_command show_aliases("show-aliases", "show aliases",
+	function_ptr_command<> show_aliases("show-aliases", "show aliases",
 		"Syntax: show-aliases\nShow expansions of all aliases\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i = aliases.begin(); i != aliases.end(); i++)
 				for(auto j = i->second.begin(); j != i->second.end(); j++)
 					messages << "alias " << i->first << " " << *j << std::endl;
 		});
 
-	function_ptr_command unalias_command("unalias-command", "unalias a command",
+	function_ptr_command<const std::string&> unalias_command("unalias-command", "unalias a command",
 		"Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
@@ -53,7 +49,7 @@ namespace
 			messages << "Command '" << aliasname << "' unaliased" << std::endl;
 		});
 
-	function_ptr_command alias_command("alias-command", "alias a command",
+	function_ptr_command<const std::string&> alias_command("alias-command", "alias a command",
 		"Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias <aliasname>\n"
 		"Valid alias names can't be empty nor start with '*' or '?'\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -222,30 +218,26 @@ std::string tokensplitter::tail() throw(std::bad_alloc)
 	return line.substr(position);
 }
 
-function_ptr_command::function_ptr_command(const std::string& name, const std::string& _description,
-	const std::string& _help, void (*_fn)(const std::string& arguments)) throw(std::bad_alloc)
-	: command(name)
-{
-	description = _description;
-	help = _help;
-	fn = _fn;
-}
-
-void function_ptr_command::invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
+template<>
+void invoke_command_fn(void (*fn)(const std::string& args), const std::string& args)
 {
 	fn(args);
 }
 
-std::string function_ptr_command::get_short_help() throw(std::bad_alloc)
+template<>
+void invoke_command_fn(void (*fn)(), const std::string& args)
 {
-	return description;
+	if(args != "")
+		throw std::runtime_error("This command does not take arguments");
+	fn();
 }
 
-std::string function_ptr_command::get_long_help() throw(std::bad_alloc)
+template<>
+void invoke_command_fn(void (*fn)(struct arg_filename a), const std::string& args)
 {
-	return help;
-}
-
-function_ptr_command::~function_ptr_command() throw()
-{
+	if(args == "")
+		throw std::runtime_error("Filename required");
+	arg_filename b;
+	b.v = args;
+	fn(b);
 }

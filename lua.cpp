@@ -366,7 +366,7 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 
 namespace
 {
-	function_ptr_command evaluate_lua("evaluate-lua", "Evaluate expression in Lua VM",
+	function_ptr_command<const std::string&> evaluate_lua("evaluate-lua", "Evaluate expression in Lua VM",
 		"Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
@@ -374,12 +374,10 @@ namespace
 			do_eval_lua(args);
 		});
 
-	function_ptr_command run_lua("run-lua", "Run Lua script in Lua VM",
+	function_ptr_command<arg_filename> run_lua("run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error)
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
-			if(args == "")
-				throw std::runtime_error("Expected script to run");
 			do_run_lua(args);
 		});
 }

@@ -10,7 +10,7 @@ namespace
 {
 	std::map<std::string, setting*>* settings;
 
-	function_ptr_command set_setting("set-setting", "set a setting",
+	function_ptr_command<const std::string&> set_setting("set-setting", "set a setting",
 		"Syntax: set-setting <setting> [<value>]\nSet setting to a new value. Omit <value> to set to ''\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::string syntax = "Syntax: set-setting <setting> [<value>]";
@@ -24,7 +24,7 @@ namespace
 				<< std::endl;
 		});
 
-	function_ptr_command unset_setting("unset-setting", "unset a setting",
+	function_ptr_command<const std::string&> unset_setting("unset-setting", "unset a setting",
 		"Syntax: unset-setting <setting>\nTry to unset a setting. Note that not all settings can be unset\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::string syntax = "Syntax: unset-setting <setting>";
@@ -36,7 +36,7 @@ namespace
 			messages << "Setting '" << settingname << "' unset" << std::endl;
 		});
 
-	function_ptr_command get_command("get-setting", "get value of a setting",
+	function_ptr_command<const std::string&> get_command("get-setting", "get value of a setting",
 		"Syntax: get-setting <setting>\nShow value of setting\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
@@ -50,11 +50,9 @@ namespace
 				messages << "Setting '" << settingname << "' unset" << std::endl;
 		});
 
-	function_ptr_command show_settings("show-settings", "Show values of all settings",
+	function_ptr_command<> show_settings("show-settings", "Show values of all settings",
 		"Syntax: show-settings\nShow value of all settings\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take arguments");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			setting::print_all();
 		});
 }

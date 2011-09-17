@@ -486,7 +486,7 @@ class my_interface : public SNES::Interface
 
 namespace
 {
-	function_ptr_command quit_emulator("quit-emulator", "Quit the emulator",
+	function_ptr_command<const std::string&> quit_emulator("quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "/y" || window::modal_message("Really quit?", true)) {
@@ -496,11 +496,9 @@ namespace
 			}
 		});
 
-	function_ptr_command pause_emulator("pause-emulator", "(Un)pause the emulator",
+	function_ptr_command<> pause_emulator("pause-emulator", "(Un)pause the emulator",
 		"Syntax: pause-emulator\n(Un)pauses the emulator.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(amode != ADVANCE_AUTO) {
 				amode = ADVANCE_AUTO;
 				window::paused(false);
@@ -514,11 +512,9 @@ namespace
 			}
 		});
 
-	function_ptr_command padvance_frame("+advance-frame", "Advance one frame",
+	function_ptr_command<> padvance_frame("+advance-frame", "Advance one frame",
 		"Syntax: +advance-frame\nAdvances the emulation by one frame.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -526,21 +522,17 @@ namespace
 			window::paused(false);
 		});
 
-	function_ptr_command nadvance_frame("-advance-frame", "Advance one frame",
+	function_ptr_command<> nadvance_frame("-advance-frame", "Advance one frame",
 		"No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
 			window::cancel_wait();
 			window::paused(false);
 		});
 
-	function_ptr_command padvance_poll("+advance-poll", "Advance one subframe",
+	function_ptr_command<> padvance_poll("+advance-poll", "Advance one subframe",
 		"Syntax: +advance-poll\nAdvances the emulation by one subframe.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
@@ -548,103 +540,81 @@ namespace
 			window::paused(false);
 		});
 
-	function_ptr_command nadvance_poll("-advance-poll", "Advance one subframe",
+	function_ptr_command<> nadvance_poll("-advance-poll", "Advance one subframe",
 		"No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
 			window::cancel_wait();
 			window::paused(false);
 		});
 
-	function_ptr_command advance_skiplag("advance-skiplag", "Skip to next poll",
+	function_ptr_command<> advance_skiplag("advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_SKIPLAG;
 			window::cancel_wait();
 			window::paused(false);
 		});
 
-	function_ptr_command reset_c("reset", "Reset the SNES",
+	function_ptr_command<> reset_c("reset", "Reset the SNES",
 		"Syntax: reset\nResets the SNES in beginning of the next frame.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			pending_reset_cycles = 0;
 		});
 
-	function_ptr_command load_state_c("load-state", "Load savestate (R/W)",
+	function_ptr_command<arg_filename> load_state_c("load-state", "Load savestate (R/W)",
 		"Syntax: load-state <file>\nLoads SNES state from <file> in Read/Write mode\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RW);
 		});
 
-	function_ptr_command load_readonly("load-readonly", "Load savestate (RO)",
+	function_ptr_command<arg_filename> load_readonly("load-readonly", "Load savestate (RO)",
 		"Syntax: load-readonly <file>\nLoads SNES state from <file> in read-only mode\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RO);
 		});
 
-	function_ptr_command load_preserve("load-preserve", "Load savestate (preserve input)",
+	function_ptr_command<arg_filename> load_preserve("load-preserve", "Load savestate (preserve input)",
 		"Syntax: load-preserve <file>\nLoads SNES state from <file> preserving input\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_PRESERVE);
 		});
 
-	function_ptr_command load_movie_c("load-movie", "Load movie",
+	function_ptr_command<arg_filename> load_movie_c("load-movie", "Load movie",
 		"Syntax: load-movie <file>\nLoads SNES movie from <file>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_MOVIE);
 		});
 
 
-	function_ptr_command save_state("save-state", "Save state",
+	function_ptr_command<arg_filename> save_state("save-state", "Save state",
 		"Syntax: save-state <file>\nSaves SNES state to <file>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE);
 		});
 
-	function_ptr_command save_movie("save-movie", "Save movie",
+	function_ptr_command<arg_filename> save_movie("save-movie", "Save movie",
 		"Syntax: save-movie <file>\nSaves SNES movie to <file>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_MOVIE);
 		});
 
-	function_ptr_command set_rwmode("set-rwmode", "Switch to read/write mode",
+	function_ptr_command<> set_rwmode("set-rwmode", "Switch to read/write mode",
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
 			window::notify_screen_update();
 		});
 
-	function_ptr_command repaint("repaint", "Redraw the screen",
+	function_ptr_command<> repaint("repaint", "Redraw the screen",
 		"Syntax: repaint\nRedraws the screen\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer();
 		});
 
-	function_ptr_command add_watch("add-watch", "Add a memory watch",
+	function_ptr_command<const std::string&> add_watch("add-watch", "Add a memory watch",
 		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
@@ -656,7 +626,7 @@ namespace
 			update_movie_state();
 		});
 
-	function_ptr_command remove_watch("remove-watch", "Remove a memory watch",
+	function_ptr_command<const std::string&> remove_watch("remove-watch", "Remove a memory watch",
 		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
@@ -672,24 +642,25 @@ namespace
 			update_movie_state();
 		});
 
-	function_ptr_command test1("test-1", "no description available", "No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			framebuffer = screen_nosignal;
 			redraw_framebuffer();
 		});
 
-	function_ptr_command test2("test-2", "no description available", "No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	function_ptr_command<> test2("test-2", "no description available", "No help available\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			framebuffer = screen_corrupt;
 			redraw_framebuffer();
 		});
 
-	function_ptr_command test3("test-3", "no description available", "No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+	function_ptr_command<> test3("test-3", "no description available", "No help available\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			while(1);
 		});
 
-	function_ptr_command mouse_button_handler("mouse_button", "no description available", "No help available\n",
+	function_ptr_command<const std::string&> mouse_button_handler("mouse_button", "no description available",
+		"No help available\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string x = t;

@@ -32,27 +32,23 @@ namespace
 	numeric_setting savecompression("savecompression", 0, 9, 7);
 
 
-	function_ptr_command get_gamename("get-gamename", "Get the game name",
+	function_ptr_command<> get_gamename("get-gamename", "Get the game name",
 		"Syntax: get-gamename\nPrints the game name\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Game name is '" << our_movie.gamename << "'" << std::endl;
 		});
 
-	function_ptr_command set_gamename("set-gamename", "Set the game name",
+	function_ptr_command<const std::string&> set_gamename("set-gamename", "Set the game name",
 		"Syntax: set-gamename <name>\nSets the game name to <name>\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			our_movie.gamename = args;
 			messages << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
 		});
 
-	function_ptr_command show_authors("show-authors", "Show the run authors",
+	function_ptr_command<> show_authors("show-authors", "Show the run authors",
 		"Syntax: show-authors\nShows the run authors\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error)
+		[]() throw(std::bad_alloc, std::runtime_error)
 		{
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
 			size_t idx = 0;
 			for(auto i = our_movie.authors.begin(); i != our_movie.authors.end(); i++) {
 				messages << (idx++) << ": " << i->first << "|" << i->second << std::endl;
@@ -60,7 +56,7 @@ namespace
 			messages << "End of authors list" << std::endl;
 		});
 
-	function_ptr_command add_author("add-author", "Add an author",
+	function_ptr_command<const std::string&> add_author("add-author", "Add an author",
 		"Syntax: add-author <fullname>\nSyntax: add-author |<nickname>\n"
 		"Syntax: add-author <fullname>|<nickname>\nAdds a new author\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -70,7 +66,7 @@ namespace
 			messages << (our_movie.authors.size() - 1) << ": " << g.first << "|" << g.second << std::endl;
 		});
 
-	function_ptr_command remove_author("remove-author", "Remove an author",
+	function_ptr_command<const std::string&> remove_author("remove-author", "Remove an author",
 		"Syntax: remove-author <id>\nRemoves author with ID <id>\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
@@ -80,7 +76,7 @@ namespace
 			our_movie.authors.erase(our_movie.authors.begin() + index);
 		});
 
-	function_ptr_command edit_author("edit-author", "Edit an author",
+	function_ptr_command<const std::string&> edit_author("edit-author", "Edit an author",
 		"Syntax: edit-author <authorid> <fullname>\nSyntax: edit-author <authorid> |<nickname>\n"
 		"Syntax: edit-author <authorid> <fullname>|<nickname>\nEdits author name\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {

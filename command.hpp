@@ -95,8 +95,24 @@ private:
 };
 
 /**
+ * Mandatory filename
+ */
+struct arg_filename
+{
+	std::string v;
+	operator std::string() { return v; }
+};
+
+/**
+ * Run command function.
+ */
+template<typename... args>
+void invoke_command_fn(void (*fn)(args... arguments), const std::string& a);
+
+/**
  * Warp function pointer as command.
  */
+template<typename... args>
 class function_ptr_command : public command
 {
 public:
@@ -108,34 +124,51 @@ public:
  * parameter help: Help for the command.
  * parameter fn: Function to call on command.
  */
-	function_ptr_command(const std::string& name, const std::string& description, const std::string& help,
-		void (*fn)(const std::string& arguments)) throw(std::bad_alloc);
+	function_ptr_command(const std::string& name, const std::string& _description, const std::string& _help,
+		void (*_fn)(args... arguments)) throw(std::bad_alloc)
+		: command(name)
+	{
+		description = _description;
+		help = _help;
+		fn = _fn;
+	}
 /**
  * Destroy a commnad.
  */
-	~function_ptr_command() throw();
+	~function_ptr_command() throw()
+	{
+	}
 /**
  * Invoke a command.
  * 
- * parameter args: Arguments to function.
+ * parameter a: Arguments to function.
  */
-	void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error);
+	void invoke(const std::string& a) throw(std::bad_alloc, std::runtime_error)
+	{
+		invoke_command_fn(fn, a);
+	}
 /**
  * Get short description.
  * 
  * returns: Description.
  * throw std::bad_alloc: Not enough memory.
  */
-	std::string get_short_help() throw(std::bad_alloc);
+	std::string get_short_help() throw(std::bad_alloc)
+	{
+		return description;
+	}
 /**
  * Get long help.
  * 
  * returns: help.
  * throw std::bad_alloc: Not enough memory.
  */
-	std::string get_long_help() throw(std::bad_alloc);
+	std::string get_long_help() throw(std::bad_alloc)
+	{
+		return help;
+	}
 private:
-	void (*fn)(const std::string& arguments);
+	void (*fn)(args... arguments);
 	std::string description;
 	std::string help;
 };

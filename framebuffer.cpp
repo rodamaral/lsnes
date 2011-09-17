@@ -92,12 +92,10 @@ namespace
 		draw_special_screen(target, rl_corrupt);
 	}
 
-	function_ptr_command take_screenshot("take-screenshot", "Takes a screenshot",
+	function_ptr_command<arg_filename> take_screenshot("take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "")
-				throw std::runtime_error("Filename required");
-			framebuffer.save_png(args);
+		[](arg_filename file) throw(std::bad_alloc, std::runtime_error) {
+			framebuffer.save_png(file);
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 }

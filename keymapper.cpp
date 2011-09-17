@@ -11,7 +11,7 @@
 
 namespace
 {
-	function_ptr_command bind_key("bind-key", "Bind a (pseudo-)key",
+	function_ptr_command<const std::string&> bind_key("bind-key", "Bind a (pseudo-)key",
 		"Syntax: bind-key [<mod>/<modmask>] <key> <command>\nBind command to specified key (with specified "
 		" modifiers)\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
@@ -34,7 +34,7 @@ namespace
 			window::bind(mod, modmask, keyname, command);
 		});
 
-	function_ptr_command unbind_key("unbind-key", "Unbind a (pseudo-)key",
+	function_ptr_command<const std::string&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
 		"Syntax: unbind-key [<mod>/<modmask>] <key>\nUnbind specified key (with specified modifiers)\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::string mod, modmask, keyname, command;
@@ -56,11 +56,9 @@ namespace
 			window::unbind(mod, modmask, keyname);
 		});
 
-	function_ptr_command show_bindings("show-bindings", "Show active bindings",
+	function_ptr_command<> show_bindings("show-bindings", "Show active bindings",
 		"Syntax: show-bindings\nShow bindings that are currently active.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		[]() throw(std::bad_alloc, std::runtime_error) {
 			window::dumpbindings();
 		});
 }
