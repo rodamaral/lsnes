@@ -904,6 +904,17 @@ Hold/unhold button <button> on controller <num> (1-8).
 \end_layout
 
 \begin_layout Subsubsection
+autofire (<pattern>|-)...
+\end_layout
+
+\begin_layout Standard
+Set autofire pattern.
+ Each parameter is comma-separated list of button names (in form of 1start,
+ 1A, 2B, etc..) to hold on that frame.
+ After reaching the end of pattern, the pattern restarts from the beginning.
+\end_layout
+
+\begin_layout Subsubsection
 repaint
 \end_layout
 

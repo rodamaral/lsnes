@@ -83,6 +83,8 @@ namespace
 	//Current controls.
 	controls_t curcontrols;
 	controls_t autoheld_controls;
+	std::vector<controls_t> autofire_pattern;
+	size_t autofire_position;
 	//Emulator status area.
 	std::map<std::string, std::string>* status;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
@@ -176,6 +178,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		location_special = SPECIAL_NONE;
 		update_movie_state();
 	} else {
+		autofire_position = (autofire_position + 1) % autofire_pattern.size();
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
@@ -195,6 +198,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		}
 		location_special = SPECIAL_FRAME_START;
 		update_movie_state();
+		
 	}
 	window::notify_screen_update();
 	window::poll_inputs();
@@ -207,7 +211,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
 	}
-	controls_t tmp = curcontrols ^ autoheld_controls;
+	controls_t tmp = curcontrols ^ autoheld_controls ^ autofire_pattern[autofire_position];
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
@@ -236,7 +240,7 @@ namespace
 	}
 
 	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
+	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor, controls_t& c)
 	{
 		enum devicetype_t p = controller_type_by_logical(ui_id);
 		int x = controller_index_by_logical(ui_id);
@@ -295,9 +299,18 @@ namespace
 			break;
 		};
 		if(do_xor)
-			autoheld_controls((x & 4) ? 1 : 0, x & 3, bid) ^= newstate;
+			c((x & 4) ? 1 : 0, x & 3, bid) ^= newstate;
 		else
-			curcontrols((x & 4) ? 1 : 0, x & 3, bid) = newstate;
+			c((x & 4) ? 1 : 0, x & 3, bid) = newstate;
+	}
+
+	//Do button action.
+	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
+	{
+		if(do_xor)
+			do_button_action(ui_id, button, newstate, do_xor, autoheld_controls);
+		else
+			do_button_action(ui_id, button, newstate, do_xor, curcontrols);
 	}
 
 
@@ -640,6 +653,43 @@ namespace
 			update_movie_state();
 		});
 
+	function_ptr_command<tokensplitter&> autofire("autofire", "Set autofire pattern",
+		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
+			if(!t)
+				throw std::runtime_error("Need at least one frame for autofire");
+			std::vector<controls_t> new_autofire_pattern;
+			init_buttonmap();
+			while(t) {
+				std::string fpattern = t;
+				if(fpattern == "-")
+					new_autofire_pattern.push_back(controls_t());
+				else {
+					controls_t c;
+					while(fpattern != "") {
+						size_t split = fpattern.find_first_of(",");
+						std::string button = fpattern;
+						std::string rest;
+						if(split < fpattern.length()) {
+							button = fpattern.substr(0, split);
+							rest = fpattern.substr(split + 1);
+						}
+						if(!buttonmap.count(button)) {
+							std::ostringstream x;
+							x << "Invalid button '" << button << "'";
+							throw std::runtime_error(x.str());
+						}
+						auto g = buttonmap[button];
+						do_button_action(g.first, g.second, 1, false, c);
+						fpattern = rest;
+					}
+					new_autofire_pattern.push_back(c);
+				}
+			}
+			autofire_pattern = new_autofire_pattern;
+			autofire_position = 0;
+		});
+
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			framebuffer = screen_nosignal;
@@ -858,6 +908,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 	auto old_inteface = SNES::system.interface;
 	SNES::system.interface = &intrf;
 	status = &window::get_emustatus();
+	autofire_pattern.push_back(controls_t());
 
 	//Load our given movie.
 	bool first_round = false;
