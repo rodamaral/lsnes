@@ -6,15 +6,6 @@
 #include <boost/lexical_cast.hpp>
 
 /**
- * \brief Recognize "foo", "foo (anything)" and "foo\t(anything)".
- *
- * \param haystack The string to search.
- * \param needle The string to find.
- * \return True if found, false if not.
- */
-bool is_cmd_prefix(const std::string& haystack, const std::string& needle) throw();
-
-/**
  * \brief Get random hexes
  *
  * Get string of random hex characters of specified length.
@@ -84,6 +75,12 @@ std::string get_config_path() throw(std::bad_alloc);
  * \brief Panic on OOM.
  */
 void OOM_panic();
+
+/**
+ * messages -> window::out().
+ */
+std::ostream& _messages();
+#define messages _messages()
 
 /**
  * \brief Typeconvert string.

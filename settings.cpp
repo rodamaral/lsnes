@@ -1,6 +1,5 @@
 #include "settings.hpp"
 #include "misc.hpp"
-#include "window.hpp"
 #include <map>
 #include <sstream>
 #include "misc.hpp"
@@ -21,7 +20,7 @@ namespace
 			if(settingname == "")
 				throw std::runtime_error("Setting name required.");
 			setting::set(settingname, settingvalue);
-			window::out() << "Setting '" << settingname << "' set to '" << settingvalue << "'"
+			messages << "Setting '" << settingname << "' set to '" << settingvalue << "'"
 				<< std::endl;
 		});
 
@@ -34,7 +33,7 @@ namespace
 			if(settingname == "" || t)
 				throw std::runtime_error("Expected setting name and nothing else");
 			setting::blank(settingname);
-			window::out() << "Setting '" << settingname << "' unset" << std::endl;
+			messages << "Setting '" << settingname << "' unset" << std::endl;
 		});
 
 	function_ptr_command get_command("get-setting", "get value of a setting",
@@ -45,10 +44,10 @@ namespace
 			if(settingname == "" || t.tail() != "")
 				throw std::runtime_error("Expected setting name and nothing else");
 			if(setting::is_set(settingname))
-				window::out() << "Setting '" << settingname << "' has value '"
+				messages << "Setting '" << settingname << "' has value '"
 					<< setting::get(settingname) << "'" << std::endl;
 			else
-				window::out() << "Setting '" << settingname << "' unset" << std::endl;
+				messages << "Setting '" << settingname << "' unset" << std::endl;
 		});
 
 	function_ptr_command show_settings("show-settings", "Show values of all settings",
@@ -120,9 +119,9 @@ void setting::print_all() throw(std::bad_alloc)
 		return;
 	for(auto i = settings->begin(); i != settings->end(); i++) {
 		if(!i->second->is_set())
-			window::out() << i->first << ": (unset)" << std::endl;
+			messages << i->first << ": (unset)" << std::endl;
 		else
-			window::out() << i->first << ": " << i->second->get() << std::endl;
+			messages << i->first << ": " << i->second->get() << std::endl;
 	}
 }
 

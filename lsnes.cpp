@@ -7,6 +7,7 @@
 #include "rom.hpp"
 #include "keymapper.hpp"
 #include "misc.hpp"
+#include "window.hpp"
 #include <sys/time.h>
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
@@ -81,21 +82,21 @@ int main(int argc, char** argv)
 	window::init();
 	init_lua();
 
-	window::out() << "BSNES version: " << bsnes_core_version << std::endl;
-	window::out() << "lsnes version: lsnes rr" << lsnes_version << std::endl;
-	window::out() << "Command line is: ";
+	messages << "BSNES version: " << bsnes_core_version << std::endl;
+	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
+	messages << "Command line is: ";
 	for(auto k = cmdline.begin(); k != cmdline.end(); k++)
-		window::out() << "\"" << *k << "\" ";
-	window::out() << std::endl;
+		messages << "\"" << *k << "\" ";
+	messages << std::endl;
 
 	std::string cfgpath = get_config_path();
 	create_lsnesrc();
-	window::out() << "Saving per-user data to: " << get_config_path() << std::endl;
-	window::out() << "--- Running lsnesrc --- " << std::endl;
+	messages << "Saving per-user data to: " << get_config_path() << std::endl;
+	messages << "--- Running lsnesrc --- " << std::endl;
 	command::invokeC("run-script " + cfgpath + "/lsnes.rc");
-	window::out() << "--- End running lsnesrc --- " << std::endl;
+	messages << "--- End running lsnesrc --- " << std::endl;
 
-	window::out() << "--- Loading ROM ---" << std::endl;
+	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
 		r = load_rom_from_commandline(cmdline);
@@ -103,19 +104,19 @@ int main(int argc, char** argv)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		window::out() << "FATAL: Can't load ROM: " << e.what() << std::endl;
-		window::fatal_error();
+		messages << "FATAL: Can't load ROM: " << e.what() << std::endl;
+		fatal_error();
 		exit(1);
 	}
-	window::out() << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
+	messages << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
 	if(r.region == REGION_PAL)
 		set_nominal_framerate(322445.0/6448.0);
 	else if(r.region == REGION_NTSC)
 		set_nominal_framerate(10738636.0/178683.0);
 
-	window::out() << "--- Internal memory mappings ---" << std::endl;
+	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
-	window::out() << "--- End of Startup --- " << std::endl;
+	messages << "--- End of Startup --- " << std::endl;
 	try {
 		moviefile movie;
 		bool loaded = false;
@@ -130,8 +131,8 @@ int main(int argc, char** argv)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		window::message(std::string("Fatal: ") + e.what());
-		window::fatal_error();
+		messages << "Fatal: " << e.what() << std::endl;
+		fatal_error();
 		return 1;
 	}
 	rrdata::close();

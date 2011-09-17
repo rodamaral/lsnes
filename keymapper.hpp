@@ -7,7 +7,6 @@
 #include <list>
 #include <set>
 #include <iostream>
-#include "window.hpp"
 #include "misc.hpp"
 
 /**
@@ -136,7 +135,7 @@ public:
 	void dumpbindings() throw(std::bad_alloc)
 	{
 		for(auto i = bindings.begin(); i != bindings.end(); i++)
-			window::out() << "bind " << T::name_key(i->mod, i->modmask, i->symbol) << " " << i->command
+			messages << "bind " << T::name_key(i->mod, i->modmask, i->symbol) << " " << i->command
 				<< std::endl;
 	}
 private:

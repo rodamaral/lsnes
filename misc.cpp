@@ -54,20 +54,6 @@ namespace
 	}
 }
 
-bool is_cmd_prefix(const std::string& haystack, const std::string& needle) throw()
-{
-	size_t hlen = haystack.length();
-	size_t nlen = needle.length();
-	if(hlen < nlen)
-		return false;
-	for(size_t i = 0; i < nlen; i++)
-		if(haystack[i] != needle[i])
-			return false;
-	if(hlen == nlen)
-		return true;
-	return (haystack[nlen] == ' ' || haystack[nlen] == '\t');
-}
-
 std::string get_random_hexstring(size_t length) throw(std::bad_alloc)
 {
 	std::string out;
@@ -183,15 +169,15 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 	} catch(std::exception& e) {
 		throw std::runtime_error(std::string("Can't resolve ROM files: ") + e.what());
 	}
-	window::out() << "ROM type: " << gtype::tostring(f.rtype, f.region) << std::endl;
-	if(f.rom != "")		window::out() << name_subrom(f.rtype, 0) << " file: '" << f.rom << "'" << std::endl;
-	if(f.rom_xml != "")	window::out() << name_subrom(f.rtype, 1) << " file: '" << f.rom_xml << "'"
+	messages << "ROM type: " << gtype::tostring(f.rtype, f.region) << std::endl;
+	if(f.rom != "")		messages << name_subrom(f.rtype, 0) << " file: '" << f.rom << "'" << std::endl;
+	if(f.rom_xml != "")	messages << name_subrom(f.rtype, 1) << " file: '" << f.rom_xml << "'"
 		<< std::endl;
-	if(f.slota != "")	window::out() << name_subrom(f.rtype, 2) << " file: '" << f.slota << "'" << std::endl;
-	if(f.slota_xml != "")	window::out() << name_subrom(f.rtype, 3) << " file: '" << f.slota_xml << "'"
+	if(f.slota != "")	messages << name_subrom(f.rtype, 2) << " file: '" << f.slota << "'" << std::endl;
+	if(f.slota_xml != "")	messages << name_subrom(f.rtype, 3) << " file: '" << f.slota_xml << "'"
 		<< std::endl;
-	if(f.slotb != "")	window::out() << name_subrom(f.rtype, 4) << " file: '" << f.slotb << "'" << std::endl;
-	if(f.slotb_xml != "")	window::out() << name_subrom(f.rtype, 5) << " file: '" << f.slotb_xml << "'"
+	if(f.slotb != "")	messages << name_subrom(f.rtype, 4) << " file: '" << f.slotb << "'" << std::endl;
+	if(f.slotb_xml != "")	messages << name_subrom(f.rtype, 5) << " file: '" << f.slotb_xml << "'"
 		<< std::endl;
 
 	struct loaded_rom r;
@@ -205,13 +191,13 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 	}
 
 	std::string not_present = "N/A";
-	if(r.rom.valid)		window::out() << name_subrom(f.rtype, 0) << " hash: " << r.rom.sha256 << std::endl;
-	if(r.rom_xml.valid)	window::out() << name_subrom(f.rtype, 1) << " hash: " << r.rom_xml.sha256 << std::endl;
-	if(r.slota.valid)	window::out() << name_subrom(f.rtype, 2) << " hash: " << r.slota.sha256 << std::endl;
-	if(r.slota_xml.valid)	window::out() << name_subrom(f.rtype, 3) << " hash: " << r.slota_xml.sha256
+	if(r.rom.valid)		messages << name_subrom(f.rtype, 0) << " hash: " << r.rom.sha256 << std::endl;
+	if(r.rom_xml.valid)	messages << name_subrom(f.rtype, 1) << " hash: " << r.rom_xml.sha256 << std::endl;
+	if(r.slota.valid)	messages << name_subrom(f.rtype, 2) << " hash: " << r.slota.sha256 << std::endl;
+	if(r.slota_xml.valid)	messages << name_subrom(f.rtype, 3) << " hash: " << r.slota_xml.sha256
 		<< std::endl;
-	if(r.slotb.valid)	window::out() << name_subrom(f.rtype, 4) << " hash: " << r.slotb.sha256 << std::endl;
-	if(r.slotb_xml.valid)	window::out() << name_subrom(f.rtype, 5) << " hash: " << r.slotb_xml.sha256
+	if(r.slotb.valid)	messages << name_subrom(f.rtype, 4) << " hash: " << r.slotb.sha256 << std::endl;
+	if(r.slotb_xml.valid)	messages << name_subrom(f.rtype, 5) << " hash: " << r.slotb_xml.sha256
 		<< std::endl;
 	return r;
 }
@@ -223,7 +209,7 @@ void dump_region_map() throw(std::bad_alloc)
 		char buf[256];
 		sprintf(buf, "Region: %08X-%08X %08X %s%c %s", i->baseaddr, i->lastaddr, i->size,
 			i->readonly ? "R-" : "RW", i->native_endian ? 'N' : 'B', i->region_name.c_str());
-		window::out() << buf << std::endl;
+		messages << buf << std::endl;
 	}
 }
 
@@ -255,7 +241,7 @@ std::string get_config_path() throw(std::bad_alloc)
 	std::string lsnes_path = basedir + "/lsnes";
 	boost::filesystem::path p(lsnes_path);
 	if(!boost::filesystem::create_directories(p) && !boost::filesystem::is_directory(p)) {
-		window::out() << "FATAL: Can't create configuration directory '" << lsnes_path << "'" << std::endl;
+		messages << "FATAL: Can't create configuration directory '" << lsnes_path << "'" << std::endl;
 		fatal_error();
 	}
 	//Yes, this is racy, but portability is more important than being absolutely correct...
@@ -263,7 +249,7 @@ std::string get_config_path() throw(std::bad_alloc)
 	remove(tfile.c_str());
 	FILE* x;
 	if(!(x = fopen(tfile.c_str(), "w+"))) {
-		window::out() << "FATAL: Configuration directory '" << lsnes_path << "' is not writable" << std::endl;
+		messages << "FATAL: Configuration directory '" << lsnes_path << "' is not writable" << std::endl;
 		fatal_error();
 	}
 	fclose(x);
@@ -283,7 +269,7 @@ void create_lsnesrc()
 	}
 	std::ofstream y(rcfile.c_str());
 	if(!y) {
-		window::out() << "FATAL: lsnes.rc (" << rcfile << ") doesn't exist nor it can be created" << std::endl;
+		messages << "FATAL: lsnes.rc (" << rcfile << ") doesn't exist nor it can be created" << std::endl;
 		fatal_error();
 	}
 	y.write(lsnesrc_file, strlen(lsnesrc_file));
@@ -293,9 +279,15 @@ void create_lsnesrc()
 
 void OOM_panic()
 {
-	window::out() << "FATAL: Out of memory!" << std::endl;
+	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }
+
+std::ostream& _messages()
+{
+	return window::out();
+}
+
 
 std::string bsnes_core_version;
 std::string lsnes_version = "0-β1";

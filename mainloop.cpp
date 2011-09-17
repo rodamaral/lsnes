@@ -17,7 +17,6 @@
 #include "settings.hpp"
 #include "rom.hpp"
 #include "movie.hpp"
-#include "window.hpp"
 #include <cassert>
 #include <sstream>
 #include "memorymanip.hpp"
@@ -106,7 +105,7 @@ namespace
 		}
 		int aindex = controller_index_by_analog(index);
 		if(aindex < 0) {
-			window::out() << "No analog controller in slot #" << (index + 1) << std::endl;
+			messages << "No analog controller in slot #" << (index + 1) << std::endl;
 			return;
 		}
 		curcontrols(aindex >> 2, aindex & 3, 0) = x;
@@ -244,7 +243,7 @@ namespace
 		int bid = -1;
 		switch(p) {
 		case DT_NONE:
-			window::out() << "No such controller #" << (ui_id + 1) << std::endl;
+			messages << "No such controller #" << (ui_id + 1) << std::endl;
 			return;
 		case DT_GAMEPAD:
 			switch(button) {
@@ -261,7 +260,7 @@ namespace
 			case BUTTON_SELECT:	bid = SNES_DEVICE_ID_JOYPAD_SELECT; break;
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JOYPAD_START; break;
 			default:
-				window::out() << "Invalid button for gamepad" << std::endl;
+				messages << "Invalid button for gamepad" << std::endl;
 				return;
 			};
 			break;
@@ -270,7 +269,7 @@ namespace
 			case BUTTON_L:		bid = SNES_DEVICE_ID_MOUSE_LEFT; break;
 			case BUTTON_R:		bid = SNES_DEVICE_ID_MOUSE_RIGHT; break;
 			default:
-				window::out() << "Invalid button for mouse" << std::endl;
+				messages << "Invalid button for mouse" << std::endl;
 				return;
 			};
 			break;
@@ -279,7 +278,7 @@ namespace
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JUSTIFIER_START; break;
 			case BUTTON_TRIGGER:	bid = SNES_DEVICE_ID_JUSTIFIER_TRIGGER; break;
 			default:
-				window::out() << "Invalid button for justifier" << std::endl;
+				messages << "Invalid button for justifier" << std::endl;
 				return;
 			};
 			break;
@@ -290,7 +289,7 @@ namespace
 			case BUTTON_PAUSE:	bid = SNES_DEVICE_ID_SUPER_SCOPE_PAUSE; break;
 			case BUTTON_TURBO:	bid = SNES_DEVICE_ID_SUPER_SCOPE_TURBO; break;
 			default:
-				window::out() << "Invalid button for superscope" << std::endl;
+				messages << "Invalid button for superscope" << std::endl;
 				return;
 			};
 			break;
@@ -801,7 +800,7 @@ namespace
 		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			our_movie.gamename = args;
-			window::out() << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
+			messages << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Set the game name"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -842,7 +841,7 @@ namespace
 			tokensplitter t(args);
 			std::string name = t;
 			if(name == "" || t.tail() != "") {
-				window::out() << "syntax: remove-watch <name>" << std::endl;
+				messages << "syntax: remove-watch <name>" << std::endl;
 				return;
 			}
 			std::cerr << "Erase watch: '" << name << "'" << std::endl;
@@ -899,7 +898,7 @@ namespace
 			if(args == "")
 				throw std::runtime_error("Filename required");
 			framebuffer.save_png(args);
-			window::out() << "Saved PNG screenshot" << std::endl;
+			messages << "Saved PNG screenshot" << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Takes a screenshot"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -1048,15 +1047,15 @@ namespace
 		} else if(cycles > 0) {
 			video_refresh_done = false;
 			long cycles_executed = 0;
-			window::out() << "Executing delayed reset... This can take some time!" << std::endl;
+			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			while(cycles_executed < cycles && !video_refresh_done) {
 				SNES::cpu.op_step();
 				cycles_executed++;
 			}
 			if(!video_refresh_done)
-				window::out() << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
+				messages << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
 			else
-				window::out() << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
+				messages << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
 			SNES::system.reset();
 			framebuffer = screen_nosignal;
 			lua_callback_do_reset();
@@ -1099,7 +1098,7 @@ namespace
 				type = "superscope";
 			if(controller_type_by_logical(i) == DT_JUSTIFIER)
 				type = "justifier";
-			window::out() << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
+			messages << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
 				controller_index_by_logical(i) << " (" << type << ")" << std::endl;
 		}
 	}
@@ -1126,8 +1125,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		window::message(std::string("FATAL: Can't load initial state: ") + e.what());
-		window::fatal_error();
+		messages << "FATAL: Can't load initial state: " << e.what() << std::endl;
+		fatal_error();
 		return;
 	}
 

@@ -1,6 +1,5 @@
 #include "avsnoop.hpp"
 #include "misc.hpp"
-#include "window.hpp"
 
 namespace
 {
@@ -46,7 +45,7 @@ void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, 
 			throw;
 		} catch(std::exception& e) {
 			try {
-				window::out() << "Error dumping frame: " << e.what() << std::endl;
+				messages << "Error dumping frame: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}
@@ -63,7 +62,7 @@ void av_snooper::sample(short l, short r, bool dummy) throw(std::bad_alloc)
 			throw;
 		} catch(std::exception& e) {
 			try {
-				window::out() << "Error dumping sample: " << e.what() << std::endl;
+				messages << "Error dumping sample: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}
@@ -80,7 +79,7 @@ void av_snooper::end(bool dummy) throw(std::bad_alloc)
 			throw;
 		} catch(std::exception& e) {
 			try {
-				window::out() << "Error ending dump: " << e.what() << std::endl;
+				messages << "Error ending dump: " << e.what() << std::endl;
 			} catch(...) {
 			}
 		}

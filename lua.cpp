@@ -4,8 +4,8 @@
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "mainloop.hpp"
-#include "window.hpp"
 #include <map>
+#include <cstring>
 #include <string>
 extern "C" {
 #include <lua.h>
@@ -183,12 +183,12 @@ namespace
 			return;
 		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment");
 		if(t == LUA_ERRSYNTAX) {
-			window::out() << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
+			messages << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
 		if(t == LUA_ERRMEM) {
-			window::out() << "Can't run Lua: Out of memory" << std::endl;
+			messages << "Can't run Lua: Out of memory" << std::endl;
 			lua_pop(L, 1);
 			return;
 		}
@@ -196,15 +196,15 @@ namespace
 		int r = lua_pcall(L, 0, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			window::out() << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
+			messages << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			window::out() << "Error running Lua hunk: Out of memory" << std::endl;
+			messages << "Error running Lua hunk: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			window::out() << "Error running Lua hunk: Double Fault???" << std::endl;
+			messages << "Error running Lua hunk: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
@@ -235,15 +235,15 @@ namespace
 		int r = lua_pcall(L, args, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			window::out() << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
+			messages << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRMEM) {
-			window::out() << "Error running Lua callback: Out of memory" << std::endl;
+			messages << "Error running Lua callback: Out of memory" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(r == LUA_ERRERR) {
-			window::out() << "Error running Lua callback: Double Fault???" << std::endl;
+			messages << "Error running Lua callback: Double Fault???" << std::endl;
 			lua_pop(L, 1);
 		}
 		if(lua_requests_repaint) {
@@ -414,8 +414,8 @@ void init_lua() throw()
 {
 	L = lua_newstate(alloc, NULL);
 	if(!L) {
-		window::out() << "Can't initialize Lua." << std::endl;
-		window::fatal_error();
+		messages << "Can't initialize Lua." << std::endl;
+		fatal_error();
 	}
 	luaL_openlibs(L);
 

@@ -1,7 +1,6 @@
 #ifndef _mainloop__hpp__included__
 #define _mainloop__hpp__included__
 
-#include "window.hpp"
 #include "rom.hpp"
 #include "moviefile.hpp"
 #include "movie.hpp"

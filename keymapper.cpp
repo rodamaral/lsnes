@@ -1,6 +1,7 @@
 #include "keymapper.hpp"
 #include <stdexcept>
 #include "lua.hpp"
+#include "window.hpp"
 #include <list>
 #include <map>
 #include <set>

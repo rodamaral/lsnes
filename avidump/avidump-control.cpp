@@ -2,7 +2,7 @@
 #include "avidump.hpp"
 #include "sox.hpp"
 #include "settings.hpp"
-#include "window.hpp"
+#include "misc.hpp"
 #include <iomanip>
 #include <cassert>
 #include <cstring>
@@ -140,7 +140,7 @@ namespace
 				x << "Error starting dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			window::out() << "Dumping to " << prefix << " at level " << level2 << std::endl;
+			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Start AVI capture"; }
 		std::string get_long_help() throw(std::bad_alloc)
@@ -163,11 +163,11 @@ namespace
 				throw std::runtime_error("No video dump in progress");
 			try {
 				vid_dumper->end();
-				window::out() << "Dump finished" << std::endl;
+				messages << "Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
-				window::out() << "Error ending dump: " << e.what() << std::endl;
+				messages << "Error ending dump: " << e.what() << std::endl;
 			}
 			delete vid_dumper;
 			vid_dumper = NULL;

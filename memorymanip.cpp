@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include "window.hpp"
 #include "command.hpp"
 #include <iostream>
 #include <limits>
@@ -7,6 +6,7 @@
 #include "rom.hpp"
 #include "memorymanip.hpp"
 #include "fieldsplit.hpp"
+#include "misc.hpp"
 #include <sstream>
 #include <iomanip>
 #include <cstdint>
@@ -830,7 +830,7 @@ namespace
 				std::ostringstream x;
 				x << "0x" << std::hex << address << " -> " << std::dec
 					<< static_cast<outer>(static_cast<inner>(rfn(address)));
-				window::out() << x.str() << std::endl;
+				messages << x.str() << std::endl;
 			}
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Read memory"; }
@@ -997,11 +997,11 @@ namespace
 				for(auto ci = c.begin(); ci != c.end(); ci++) {
 					std::ostringstream x;
 					x << "0x" << std::hex << std::setw(8) << std::setfill('0') << *ci;
-					window::out() << x.str() << std::endl;
+					messages << x.str() << std::endl;
 				}
 			} else
 				throw std::runtime_error("Unknown memorysearch subcommand '" + firstword + "'");
-			window::out() << isrch->get_candidate_count() << " candidates remain." << std::endl;
+			messages << isrch->get_candidate_count() << " candidates remain." << std::endl;
 		}
 		std::string get_short_help() throw(std::bad_alloc) { return "Search memory addresses"; }
 		std::string get_long_help() throw(std::bad_alloc)

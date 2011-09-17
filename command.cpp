@@ -1,7 +1,6 @@
 #include "command.hpp"
 #include "misc.hpp"
 #include "zip.hpp"
-#include "window.hpp"
 #include <set>
 #include <map>
 
@@ -19,7 +18,7 @@ namespace
 			std::istream* o = NULL;
 			try {
 				o = &open_file_relative(args, "");
-				window::out() << "Running '" << args << "'" << std::endl;
+				messages << "Running '" << args << "'" << std::endl;
 				std::string line;
 				while(std::getline(*o, line))
 					command::invokeC(line);
@@ -38,7 +37,7 @@ namespace
 				throw std::runtime_error("This command does not take parameters");
 			for(auto i = aliases.begin(); i != aliases.end(); i++)
 				for(auto j = i->second.begin(); j != i->second.end(); j++)
-					window::out() << "alias " << i->first << " " << *j << std::endl;
+					messages << "alias " << i->first << " " << *j << std::endl;
 		});
 
 	function_ptr_command unalias_command("unalias-command", "unalias a command",
@@ -51,7 +50,7 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].clear();
-			window::out() << "Command '" << aliasname << "' unaliased" << std::endl;
+			messages << "Command '" << aliasname << "' unaliased" << std::endl;
 		});
 
 	function_ptr_command alias_command("alias-command", "alias a command",
@@ -66,7 +65,7 @@ namespace
 			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].push_back(command);
-			window::out() << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
+			messages << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
 		});
 }
 
@@ -90,7 +89,7 @@ void command::invokeC(const std::string& cmd) throw()
 {
 	try {
 		if(command_stack.count(cmd)) {
-			window::out() << "Can not invoke recursively: " << cmd << std::endl;
+			messages << "Can not invoke recursively: " << cmd << std::endl;
 			return;
 		}
 		command_stack.insert(cmd);
@@ -99,7 +98,7 @@ void command::invokeC(const std::string& cmd) throw()
 			//The special ? command.
 			if(commands) {
 				for(auto i = commands->begin(); i != commands->end(); ++i)
-					window::out() << i->first << ": " << i->second->get_short_help() << std::endl;
+					messages << i->first << ": " << i->second->get_short_help() << std::endl;
 			}
 			command_stack.erase(cmd);
 			return;
@@ -117,10 +116,10 @@ void command::invokeC(const std::string& cmd) throw()
 				std::string aname = cmd2.substr(1);
 				if(aliases.count(aname)) {
 					//Yup.
-					window::out() << aname << " is an alias for: " << std::endl;
+					messages << aname << " is an alias for: " << std::endl;
 					size_t j = 0;
 					for(auto i = aliases[aname].begin(); i != aliases[aname].end(); ++i, ++j)
-						window::out() << "#" + (j + 1) << ": " << *i << std::endl;
+						messages << "#" + (j + 1) << ": " << *i << std::endl;
 					command_stack.erase(cmd);
 					return;
 				}
@@ -129,11 +128,11 @@ void command::invokeC(const std::string& cmd) throw()
 				rcmd = rcmd.substr(1);
 			if(!commands || !commands->count(rcmd)) {
 				if(rcmd != "")
-					window::out() << "Unknown command '" << rcmd << "'" << std::endl;
+					messages << "Unknown command '" << rcmd << "'" << std::endl;
 				command_stack.erase(cmd);
 				return;
 			}
-			window::out() << (*commands)[rcmd]->get_long_help() << std::endl;
+			messages << (*commands)[rcmd]->get_long_help() << std::endl;
 			command_stack.erase(cmd);
 			return;
 		}
@@ -163,7 +162,7 @@ void command::invokeC(const std::string& cmd) throw()
 			if(commands && commands->count(rcmd))
 				cmdh = (*commands)[rcmd];
 			if(!cmdh) {
-				window::out() << "Unknown command '" << rcmd << "'" << std::endl;
+				messages << "Unknown command '" << rcmd << "'" << std::endl;
 				command_stack.erase(cmd);
 				return;
 			}
@@ -173,7 +172,7 @@ void command::invokeC(const std::string& cmd) throw()
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
-			window::out() << "Error: " << e.what() << std::endl;
+			messages << "Error: " << e.what() << std::endl;
 			command_stack.erase(cmd);
 			return;
 		}
