@@ -10,11 +10,10 @@ namespace
 {
 	std::map<std::string, setting*>* settings;
 
-	function_ptr_command<const std::string&> set_setting("set-setting", "set a setting",
+	function_ptr_command<tokensplitter&> set_setting("set-setting", "set a setting",
 		"Syntax: set-setting <setting> [<value>]\nSet setting to a new value. Omit <value> to set to ''\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string syntax = "Syntax: set-setting <setting> [<value>]";
-			tokensplitter t(args);
 			std::string settingname = t;
 			std::string settingvalue = t.tail();
 			if(settingname == "")
@@ -24,11 +23,10 @@ namespace
 				<< std::endl;
 		});
 
-	function_ptr_command<const std::string&> unset_setting("unset-setting", "unset a setting",
+	function_ptr_command<tokensplitter&> unset_setting("unset-setting", "unset a setting",
 		"Syntax: unset-setting <setting>\nTry to unset a setting. Note that not all settings can be unset\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string syntax = "Syntax: unset-setting <setting>";
-			tokensplitter t(args);
 			std::string settingname = t;
 			if(settingname == "" || t)
 				throw std::runtime_error("Expected setting name and nothing else");
@@ -36,10 +34,9 @@ namespace
 			messages << "Setting '" << settingname << "' unset" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> get_command("get-setting", "get value of a setting",
+	function_ptr_command<tokensplitter&> get_command("get-setting", "get value of a setting",
 		"Syntax: get-setting <setting>\nShow value of setting\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string settingname = t;
 			if(settingname == "" || t.tail() != "")
 				throw std::runtime_error("Expected setting name and nothing else");

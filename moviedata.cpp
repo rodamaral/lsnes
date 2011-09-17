@@ -56,31 +56,28 @@ namespace
 			messages << "End of authors list" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> add_author("add-author", "Add an author",
+	function_ptr_command<tokensplitter&> add_author("add-author", "Add an author",
 		"Syntax: add-author <fullname>\nSyntax: add-author |<nickname>\n"
 		"Syntax: add-author <fullname>|<nickname>\nAdds a new author\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			auto g = split_author(t.tail());
 			our_movie.authors.push_back(g);
 			messages << (our_movie.authors.size() - 1) << ": " << g.first << "|" << g.second << std::endl;
 		});
 
-	function_ptr_command<const std::string&> remove_author("remove-author", "Remove an author",
+	function_ptr_command<tokensplitter&> remove_author("remove-author", "Remove an author",
 		"Syntax: remove-author <id>\nRemoves author with ID <id>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			uint64_t index = parse_value<uint64_t>(t.tail());
 			if(index >= our_movie.authors.size())
 				throw std::runtime_error("No such author");
 			our_movie.authors.erase(our_movie.authors.begin() + index);
 		});
 
-	function_ptr_command<const std::string&> edit_author("edit-author", "Edit an author",
+	function_ptr_command<tokensplitter&> edit_author("edit-author", "Edit an author",
 		"Syntax: edit-author <authorid> <fullname>\nSyntax: edit-author <authorid> |<nickname>\n"
 		"Syntax: edit-author <authorid> <fullname>|<nickname>\nEdits author name\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			uint64_t index = parse_value<uint64_t>(t);
 			if(index >= our_movie.authors.size())
 				throw std::runtime_error("No such author");

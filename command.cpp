@@ -36,10 +36,9 @@ namespace
 					messages << "alias " << i->first << " " << *j << std::endl;
 		});
 
-	function_ptr_command<const std::string&> unalias_command("unalias-command", "unalias a command",
+	function_ptr_command<tokensplitter&> unalias_command("unalias-command", "unalias a command",
 		"Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string aliasname = t;
 			if(t)
 				throw std::runtime_error("This command only takes one argument");
@@ -49,11 +48,10 @@ namespace
 			messages << "Command '" << aliasname << "' unaliased" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> alias_command("alias-command", "alias a command",
+	function_ptr_command<tokensplitter&> alias_command("alias-command", "alias a command",
 		"Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias <aliasname>\n"
 		"Valid alias names can't be empty nor start with '*' or '?'\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string aliasname = t;
 			std::string command = t.tail();
 			if(command == "")
@@ -240,4 +238,11 @@ void invoke_command_fn(void (*fn)(struct arg_filename a), const std::string& arg
 	arg_filename b;
 	b.v = args;
 	fn(b);
+}
+
+template<>
+void invoke_command_fn(void (*fn)(tokensplitter& a), const std::string& args)
+{
+	tokensplitter t(args);
+	fn(t);
 }

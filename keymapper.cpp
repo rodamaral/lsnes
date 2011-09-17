@@ -11,12 +11,11 @@
 
 namespace
 {
-	function_ptr_command<const std::string&> bind_key("bind-key", "Bind a (pseudo-)key",
+	function_ptr_command<tokensplitter&> bind_key("bind-key", "Bind a (pseudo-)key",
 		"Syntax: bind-key [<mod>/<modmask>] <key> <command>\nBind command to specified key (with specified "
 		" modifiers)\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string mod, modmask, keyname, command;
-			tokensplitter t(args);
 			std::string mod_or_key = t;
 			if(mod_or_key.find_first_of("/") < mod_or_key.length()) {
 				//Mod field.
@@ -34,11 +33,10 @@ namespace
 			window::bind(mod, modmask, keyname, command);
 		});
 
-	function_ptr_command<const std::string&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
+	function_ptr_command<tokensplitter&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
 		"Syntax: unbind-key [<mod>/<modmask>] <key>\nUnbind specified key (with specified modifiers)\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string mod, modmask, keyname, command;
-			tokensplitter t(args);
 			std::string mod_or_key = t;
 			if(mod_or_key.find_first_of("/") < mod_or_key.length()) {
 				//Mod field.

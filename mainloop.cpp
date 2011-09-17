@@ -614,10 +614,9 @@ namespace
 			redraw_framebuffer();
 		});
 
-	function_ptr_command<const std::string&> add_watch("add-watch", "Add a memory watch",
+	function_ptr_command<tokensplitter&> add_watch("add-watch", "Add a memory watch",
 		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string name = t;
 			if(name == "" || t.tail() == "")
 				throw std::runtime_error("syntax: add-watch <name> <expr>");
@@ -626,10 +625,9 @@ namespace
 			update_movie_state();
 		});
 
-	function_ptr_command<const std::string&> remove_watch("remove-watch", "Remove a memory watch",
+	function_ptr_command<tokensplitter&> remove_watch("remove-watch", "Remove a memory watch",
 		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string name = t;
 			if(name == "" || t.tail() != "") {
 				messages << "syntax: remove-watch <name>" << std::endl;
@@ -659,10 +657,9 @@ namespace
 			while(1);
 		});
 
-	function_ptr_command<const std::string&> mouse_button_handler("mouse_button", "no description available",
+	function_ptr_command<tokensplitter&> mouse_button_handler("mouse_button", "no description available",
 		"No help available\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			std::string x = t;
 			std::string y = t;
 			std::string b = t;
