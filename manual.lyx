@@ -1666,6 +1666,88 @@ scroll-down
 Scroll messages window forward one screenful.
 \end_layout
 
+\begin_layout Subsubsection
+axismode <axis> <mode>
+\end_layout
+
+\begin_layout Standard
+Set joystick axis mode.
+ <axis> is of form 
+\begin_inset Quotes eld
+\end_inset
+
+joystick<num>axis<axis>
+\begin_inset Quotes erd
+\end_inset
+
+, e.g.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+joystick0axis5
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Mode is one of:
+\end_layout
+
+\begin_layout Itemize
+axis: Normal axis mode
+\end_layout
+
+\begin_layout Itemize
+axis_inverse: Inverse axis mode.
+\end_layout
+
+\begin_layout Itemize
+pressure_0m: Pressure sensitive.
+ Released at 0, pressed at full negative.
+\end_layout
+
+\begin_layout Itemize
+pressure_0p: Pressure sensitive.
+ Released at 0, pressed at full positive.
+\end_layout
+
+\begin_layout Itemize
+pressure_m0: Pressure sensitive.
+ Released at full negative, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure_mp: Pressure sensitive.
+ Released at full negative, pressed at full positive.
+\end_layout
+
+\begin_layout Itemize
+pressure_p0: Pressure sensitive.
+ Released at full positive, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure_pm: Pressure sensitive.
+ Released at full positive, pressed at full negative.
+\end_layout
+
+\begin_layout Standard
+Note that if you have Wired Microsoft XBox 360 controller (works great in
+ Linux, BTW), you might want to do the following:
+\end_layout
+
+\begin_layout Itemize
+axismode joystick0axis2 pressure_mp
+\end_layout
+
+\begin_layout Itemize
+axismode joystick0axis5 pressure_mp
+\end_layout
+
+\begin_layout Standard
+Since axes 2 and 5 are LT/RT, which are pressure sensitive.
+\end_layout
+
 \begin_layout Subsection
 Settings
 \end_layout

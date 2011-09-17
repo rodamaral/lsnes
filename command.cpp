@@ -82,11 +82,6 @@ command::~command() throw()
 void command::invokeC(const std::string& cmd) throw()
 {
 	try {
-		if(command_stack.count(cmd)) {
-			messages << "Can not invoke recursively: " << cmd << std::endl;
-			return;
-		}
-		command_stack.insert(cmd);
 		std::string cmd2 = cmd;
 		if(cmd2 == "?") {
 			//The special ? command.
@@ -94,7 +89,6 @@ void command::invokeC(const std::string& cmd) throw()
 				for(auto i = commands->begin(); i != commands->end(); ++i)
 					messages << i->first << ": " << i->second->get_short_help() << std::endl;
 			}
-			command_stack.erase(cmd);
 			return;
 		}
 		if(cmd2.length() > 1 && cmd2[0] == '?') {
@@ -114,7 +108,6 @@ void command::invokeC(const std::string& cmd) throw()
 					size_t j = 0;
 					for(auto i = aliases[aname].begin(); i != aliases[aname].end(); ++i, ++j)
 						messages << "#" + (j + 1) << ": " << *i << std::endl;
-					command_stack.erase(cmd);
 					return;
 				}
 			}
@@ -123,11 +116,9 @@ void command::invokeC(const std::string& cmd) throw()
 			if(!commands || !commands->count(rcmd)) {
 				if(rcmd != "")
 					messages << "Unknown command '" << rcmd << "'" << std::endl;
-				command_stack.erase(cmd);
 				return;
 			}
 			messages << (*commands)[rcmd]->get_long_help() << std::endl;
-			command_stack.erase(cmd);
 			return;
 		}
 		bool may_be_alias_expanded = true;
@@ -138,7 +129,6 @@ void command::invokeC(const std::string& cmd) throw()
 		if(may_be_alias_expanded && aliases.count(cmd2)) {
 			for(auto i = aliases[cmd2].begin(); i != aliases[cmd2].end(); ++i)
 				invokeC(*i);
-			command_stack.erase(cmd);
 			return;
 		}
 		try {
@@ -157,9 +147,11 @@ void command::invokeC(const std::string& cmd) throw()
 				cmdh = (*commands)[rcmd];
 			if(!cmdh) {
 				messages << "Unknown command '" << rcmd << "'" << std::endl;
-				command_stack.erase(cmd);
 				return;
 			}
+			if(command_stack.count(cmd))
+				throw std::runtime_error("Recursive command invocation");
+			command_stack.insert(cmd);
 			cmdh->invoke(args);
 			command_stack.erase(cmd);
 			return;

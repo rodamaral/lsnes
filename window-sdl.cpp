@@ -11,6 +11,7 @@
 #include "framerate.hpp"
 #include <sstream>
 #include <fstream>
+#include <cassert>
 
 #define WATCHDOG_TIMEOUT 15
 #define MAXMESSAGES 6
@@ -31,162 +32,11 @@
 // Limit the emulator to ~30fps.
 #define MIN_UPDATE_TIME 33
 
-class keymapper_helper_sdl
-{
-public:
-	typedef struct {
-		int device;
-		SDL_keysym keyboard;
-		uint32_t joyaxis;
-		uint32_t joybutton;
-		uint32_t joyhat;
-	} keysymbol;
-	struct internal_keysymbol
-	{
-		int mode;
-		unsigned scan;
-		unsigned symbolic;
-		unsigned joyaxis;
-		unsigned joyhat;
-		unsigned joybutton;
-		bool operator==(const internal_keysymbol& k) const;
-	};
-	struct translated_event
-	{
-		translated_event(keysymbol _symbol, bool _polarity, bool _more = false);
-		keysymbol symbol;
-		bool polarity;
-		bool more;
-	};
-	static translated_event translate_event(SDL_Event& e) throw(std::bad_alloc, std::runtime_error);
-	static unsigned mod_str(std::string mod) throw(std::bad_alloc, std::runtime_error);
-	static unsigned mod_key(keysymbol key) throw(std::bad_alloc);
-	static internal_keysymbol key_str(std::string key) throw(std::bad_alloc, std::runtime_error);
-	static internal_keysymbol key_key(keysymbol key) throw(std::bad_alloc);
-	static std::string name_key(unsigned mod, unsigned modmask, struct internal_keysymbol key)
-		throw(std::bad_alloc);
-	static std::string print_key_info(keysymbol key) throw(std::bad_alloc);
-};
-
-#define KEYTYPE_SCAN_SYMBOL 0
-#define KEYTYPE_SCAN 1
-#define KEYTYPE_SYMBOL 2
-#define KEYTYPE_JOYAXIS 3
-#define KEYTYPE_JOYHAT 4
-#define KEYTYPE_JOYBUTTON 5
-#define KEYTYPE_NONE 6
-
-#define BARE_CTRL	0x0001
-#define BARE_LCTRL	0x0002
-#define BARE_RCTRL	0x0004
-#define BARE_NUM	0x0008
-#define BARE_SHIFT	0x0010
-#define BARE_LSHIFT	0x0020
-#define BARE_RSHIFT	0x0040
-#define BARE_CAPS	0x0080
-#define BARE_ALT	0x0100
-#define BARE_LALT	0x0200
-#define BARE_RALT	0x0400
-#define BARE_MODE	0x0800
-#define BARE_META	0x1000
-#define BARE_LMETA	0x2000
-#define BARE_RMETA	0x4000
-
-#define LCTRL_VALUE	(BARE_CTRL | BARE_LCTRL)
-#define RCTRL_VALUE	(BARE_CTRL | BARE_RCTRL)
-#define LALT_VALUE	(BARE_ALT | BARE_LALT)
-#define RALT_VALUE	(BARE_ALT | BARE_RALT)
-#define LSHIFT_VALUE	(BARE_SHIFT | BARE_LSHIFT)
-#define RSHIFT_VALUE	(BARE_SHIFT | BARE_RSHIFT)
-#define LMETA_VALUE	(BARE_META | BARE_LMETA)
-#define RMETA_VALUE	(BARE_META | BARE_RMETA)
-
-struct calibration
-{
-	calibration();
-	short left;
-	short center;
-	short right;
-	short temp;
-	bool known;
-	void update(short val) throw();
-	void centered() throw();
-	short analog(short val) throw();
-	short digital(short val) throw();
-};
-
-calibration::calibration()
-{
-	known = false;
-}
-
-void calibration::update(short val) throw()
-{
-	if(!known) {
-		temp = val;
-		left = val;
-		center = val;
-		right = val;
-		known = true;
-		return;
-	}
-	temp = val;
-	if(temp > right)
-		right = temp;
-	if(temp < left)
-		left = temp;
-}
-
-void calibration::centered() throw()
-{
-	center = temp;
-}
-
-short calibration::analog(short val) throw()
-{
-	if(!known)
-		return 0;
-	if(val <= left)
-		return -32768;
-	if(val >= right)
-		return 32767;
-	if(val < center)
-		return static_cast<short>(-32768.0 * (val - left) / (center - left));
-	if(val > center)
-		return static_cast<short>(32767.0 * (val - center) / (right - center));
-	return 0;
-}
-
-short calibration::digital(short val) throw()
-{
-	short a = analog(val);
-	if(a < -JOYTHRESHOLD)
-		return -1;
-	if(a > JOYTHRESHOLD)
-		return 1;
-	return 0;
-}
-
-std::map<unsigned short, calibration> calibrations;
-
-void handle_calibration_event(SDL_JoyAxisEvent& e)
-{
-	unsigned short num = static_cast<unsigned short>(e.which) * 256 + static_cast<unsigned short>(e.axis);
-	calibrations[num].update(e.value);
-}
-
-void exit_calibration()
-{
-	for(auto i = calibrations.begin(); i != calibrations.end(); i++)
-		i->second.centered();
-}
 
 namespace
 {
 	bool wait_canceled;
 	SDL_TimerID tid;
-	std::map<unsigned short, int> axis_current_state;	//-1, 0 or 1.
-	std::map<unsigned short, unsigned> hat_current_state;	//1 for up, 2 for right, 4 for down, 8 for left.
 
 	void sigalrm_handler(int s)
 	{
@@ -202,666 +52,415 @@ namespace
 		return interval;
 	}
 
-	struct modifier
+	struct sdl_modifier
 	{
 		const char* name;
-		bool synthethic;
+		const char* linkname;
 		unsigned sdlvalue;
-		unsigned asrealkey;
-		unsigned asmodifier;
 	} modifiers_table[] = {
-		{ "ctrl",	true,	0,		0,		0x0001	},
-		{ "lctrl",	false,	KMOD_LCTRL,	0x0003,		0x0002	},
-		{ "rctrl",	false,	KMOD_RCTRL,	0x0005,		0x0004	},
-		{ "alt",	true,	0,		0,		0x0008	},
-		{ "lalt",	false,	KMOD_LALT,	0x0018,		0x0010	},
-		{ "ralt",	false,	KMOD_RALT,	0x0028,		0x0020	},
-		{ "shift",	true,	0,		0,		0x0040	},
-		{ "lshift",	false,	KMOD_LSHIFT,	0x00C0,		0x0080	},
-		{ "rshift",	false,	KMOD_RSHIFT,	0x0140,		0x0100	},
-		{ "meta",	true,	0,		0,		0x0200	},
-		{ "lmeta",	false,	KMOD_LMETA,	0x0600,		0x0400	},
-		{ "rmeta",	false,	KMOD_RMETA,	0x0A00,		0x0800	},
-		{ "num",	false,	KMOD_NUM,	0x1000,		0x1000	},
-		{ "caps",	false,	KMOD_CAPS,	0x2000,		0x2000	},
-		{ "mode",	false,	KMOD_MODE,	0x4000,		0x4000	},
-		{ NULL,		false,	0,		0,		0	}
+		{ "ctrl",	NULL,		0		},
+		{ "lctrl",	"ctrl",		KMOD_LCTRL	},
+		{ "rctrl",	"ctrl",		KMOD_RCTRL	},
+		{ "alt",	NULL,		0		},
+		{ "lalt",	"alt",		KMOD_LALT	},
+		{ "ralt",	"alt",		KMOD_RALT	},
+		{ "shift",	NULL,		0		},
+		{ "lshift",	"shift",	KMOD_LSHIFT	},
+		{ "rshift",	"shift",	KMOD_RSHIFT	},
+		{ "meta",	NULL,		0		},
+		{ "lmeta",	"meta",		KMOD_LMETA	},
+		{ "rmeta",	"meta",		KMOD_RMETA	},
+		{ "num",	NULL,		KMOD_NUM	},
+		{ "caps",	NULL,		KMOD_CAPS	},
+		{ "mode",	NULL,		KMOD_MODE	},
+		{ NULL,		NULL,		0		}
 	};
 
-	struct key
+	struct sdl_key
 	{
 		const char* name;
 		unsigned symbol;
 	} keys_table[] = {
-		{"backspace",		SDLK_BACKSPACE},
-		{"tab",			SDLK_TAB},
-		{"clear",		SDLK_CLEAR},
-		{"return",		SDLK_RETURN},
-		{"pause",		SDLK_PAUSE},
-		{"escape",		SDLK_ESCAPE},
-		{"space",		SDLK_SPACE},
-		{"exclaim",		SDLK_EXCLAIM},
-		{"quotedbl",		SDLK_QUOTEDBL},
-		{"hash",		SDLK_HASH},
-		{"dollar",		SDLK_DOLLAR},
-		{"ampersand",		SDLK_AMPERSAND},
-		{"quote",		SDLK_QUOTE},
-		{"leftparen",		SDLK_LEFTPAREN},
-		{"rightparen",		SDLK_RIGHTPAREN},
-		{"asterisk",		SDLK_ASTERISK},
-		{"plus",		SDLK_PLUS},
-		{"comma",		SDLK_COMMA},
-		{"minus",		SDLK_MINUS},
-		{"period",		SDLK_PERIOD},
-		{"slash",		SDLK_SLASH},
-		{"0",			SDLK_0},
-		{"1",			SDLK_1},
-		{"2",			SDLK_2},
-		{"3",			SDLK_3},
-		{"4",			SDLK_4},
-		{"5",			SDLK_5},
-		{"6",			SDLK_6},
-		{"7",			SDLK_7},
-		{"8",			SDLK_8},
-		{"9",			SDLK_9},
-		{"colon",		SDLK_COLON},
-		{"semicolon",		SDLK_SEMICOLON},
-		{"less",		SDLK_LESS},
-		{"equals",		SDLK_EQUALS},
-		{"greater",		SDLK_GREATER},
-		{"question",		SDLK_QUESTION},
-		{"at",			SDLK_AT},
-		{"leftbracket",		SDLK_LEFTBRACKET},
-		{"backslash",		SDLK_BACKSLASH},
-		{"rightbracket",	SDLK_RIGHTBRACKET},
-		{"caret",		SDLK_CARET},
-		{"underscore",		SDLK_UNDERSCORE},
-		{"backquote",		SDLK_BACKQUOTE},
-		{"a",			SDLK_a},
-		{"b",			SDLK_b},
-		{"c",			SDLK_c},
-		{"d",			SDLK_d},
-		{"e",			SDLK_e},
-		{"f",			SDLK_f},
-		{"g",			SDLK_g},
-		{"h",			SDLK_h},
-		{"i",			SDLK_i},
-		{"j",			SDLK_j},
-		{"k",			SDLK_k},
-		{"l",			SDLK_l},
-		{"m",			SDLK_m},
-		{"n",			SDLK_n},
-		{"o",			SDLK_o},
-		{"p",			SDLK_p},
-		{"q",			SDLK_q},
-		{"r",			SDLK_r},
-		{"s",			SDLK_s},
-		{"t",			SDLK_t},
-		{"u",			SDLK_u},
-		{"v",			SDLK_v},
-		{"w",			SDLK_w},
-		{"x",			SDLK_x},
-		{"y",			SDLK_y},
-		{"z",			SDLK_z},
-		{"delete",		SDLK_DELETE},
-		{"world_0",		SDLK_WORLD_0},
-		{"world_1",		SDLK_WORLD_1},
-		{"world_2",		SDLK_WORLD_2},
-		{"world_3",		SDLK_WORLD_3},
-		{"world_4",		SDLK_WORLD_4},
-		{"world_5",		SDLK_WORLD_5},
-		{"world_6",		SDLK_WORLD_6},
-		{"world_7",		SDLK_WORLD_7},
-		{"world_8",		SDLK_WORLD_8},
-		{"world_9",		SDLK_WORLD_9},
-		{"world_10",		SDLK_WORLD_10},
-		{"world_11",		SDLK_WORLD_11},
-		{"world_12",		SDLK_WORLD_12},
-		{"world_13",		SDLK_WORLD_13},
-		{"world_14",		SDLK_WORLD_14},
-		{"world_15",		SDLK_WORLD_15},
-		{"world_16",		SDLK_WORLD_16},
-		{"world_17",		SDLK_WORLD_17},
-		{"world_18",		SDLK_WORLD_18},
-		{"world_19",		SDLK_WORLD_19},
-		{"world_20",		SDLK_WORLD_20},
-		{"world_21",		SDLK_WORLD_21},
-		{"world_22",		SDLK_WORLD_22},
-		{"world_23",		SDLK_WORLD_23},
-		{"world_24",		SDLK_WORLD_24},
-		{"world_25",		SDLK_WORLD_25},
-		{"world_26",		SDLK_WORLD_26},
-		{"world_27",		SDLK_WORLD_27},
-		{"world_28",		SDLK_WORLD_28},
-		{"world_29",		SDLK_WORLD_29},
-		{"world_30",		SDLK_WORLD_30},
-		{"world_31",		SDLK_WORLD_31},
-		{"world_32",		SDLK_WORLD_32},
-		{"world_33",		SDLK_WORLD_33},
-		{"world_34",		SDLK_WORLD_34},
-		{"world_35",		SDLK_WORLD_35},
-		{"world_36",		SDLK_WORLD_36},
-		{"world_37",		SDLK_WORLD_37},
-		{"world_38",		SDLK_WORLD_38},
-		{"world_39",		SDLK_WORLD_39},
-		{"world_40",		SDLK_WORLD_40},
-		{"world_41",		SDLK_WORLD_41},
-		{"world_42",		SDLK_WORLD_42},
-		{"world_43",		SDLK_WORLD_43},
-		{"world_44",		SDLK_WORLD_44},
-		{"world_45",		SDLK_WORLD_45},
-		{"world_46",		SDLK_WORLD_46},
-		{"world_47",		SDLK_WORLD_47},
-		{"world_48",		SDLK_WORLD_48},
-		{"world_49",		SDLK_WORLD_49},
-		{"world_50",		SDLK_WORLD_50},
-		{"world_51",		SDLK_WORLD_51},
-		{"world_52",		SDLK_WORLD_52},
-		{"world_53",		SDLK_WORLD_53},
-		{"world_54",		SDLK_WORLD_54},
-		{"world_55",		SDLK_WORLD_55},
-		{"world_56",		SDLK_WORLD_56},
-		{"world_57",		SDLK_WORLD_57},
-		{"world_58",		SDLK_WORLD_58},
-		{"world_59",		SDLK_WORLD_59},
-		{"world_60",		SDLK_WORLD_60},
-		{"world_61",		SDLK_WORLD_61},
-		{"world_62",		SDLK_WORLD_62},
-		{"world_63",		SDLK_WORLD_63},
-		{"world_64",		SDLK_WORLD_64},
-		{"world_65",		SDLK_WORLD_65},
-		{"world_66",		SDLK_WORLD_66},
-		{"world_67",		SDLK_WORLD_67},
-		{"world_68",		SDLK_WORLD_68},
-		{"world_69",		SDLK_WORLD_69},
-		{"world_70",		SDLK_WORLD_70},
-		{"world_71",		SDLK_WORLD_71},
-		{"world_72",		SDLK_WORLD_72},
-		{"world_73",		SDLK_WORLD_73},
-		{"world_74",		SDLK_WORLD_74},
-		{"world_75",		SDLK_WORLD_75},
-		{"world_76",		SDLK_WORLD_76},
-		{"world_77",		SDLK_WORLD_77},
-		{"world_78",		SDLK_WORLD_78},
-		{"world_79",		SDLK_WORLD_79},
-		{"world_80",		SDLK_WORLD_80},
-		{"world_81",		SDLK_WORLD_81},
-		{"world_82",		SDLK_WORLD_82},
-		{"world_83",		SDLK_WORLD_83},
-		{"world_84",		SDLK_WORLD_84},
-		{"world_85",		SDLK_WORLD_85},
-		{"world_86",		SDLK_WORLD_86},
-		{"world_87",		SDLK_WORLD_87},
-		{"world_88",		SDLK_WORLD_88},
-		{"world_89",		SDLK_WORLD_89},
-		{"world_90",		SDLK_WORLD_90},
-		{"world_91",		SDLK_WORLD_91},
-		{"world_92",		SDLK_WORLD_92},
-		{"world_93",		SDLK_WORLD_93},
-		{"world_94",		SDLK_WORLD_94},
-		{"world_95",		SDLK_WORLD_95},
-		{"kp0",			SDLK_KP0},
-		{"kp1",			SDLK_KP1},
-		{"kp2",			SDLK_KP2},
-		{"kp3",			SDLK_KP3},
-		{"kp4",			SDLK_KP4},
-		{"kp5",			SDLK_KP5},
-		{"kp6",			SDLK_KP6},
-		{"kp7",			SDLK_KP7},
-		{"kp8",			SDLK_KP8},
-		{"kp9",			SDLK_KP9},
-		{"kp_period",		SDLK_KP_PERIOD},
-		{"kp_divide",		SDLK_KP_DIVIDE},
-		{"kp_multiply",		SDLK_KP_MULTIPLY},
-		{"kp_minus",		SDLK_KP_MINUS},
-		{"kp_plus",		SDLK_KP_PLUS},
-		{"kp_enter",		SDLK_KP_ENTER},
-		{"kp_equals",		SDLK_KP_EQUALS},
-		{"up",			SDLK_UP},
-		{"down",		SDLK_DOWN},
-		{"right",		SDLK_RIGHT},
-		{"left",		SDLK_LEFT},
-		{"insert",		SDLK_INSERT},
-		{"home",		SDLK_HOME},
-		{"end",			SDLK_END},
-		{"pageup",		SDLK_PAGEUP},
-		{"pagedown",		SDLK_PAGEDOWN},
-		{"f1",			SDLK_F1},
-		{"f2",			SDLK_F2},
-		{"f3",			SDLK_F3},
-		{"f4",			SDLK_F4},
-		{"f5",			SDLK_F5},
-		{"f6",			SDLK_F6},
-		{"f7",			SDLK_F7},
-		{"f8",			SDLK_F8},
-		{"f9",			SDLK_F9},
-		{"f10",			SDLK_F10},
-		{"f11",			SDLK_F11},
-		{"f12",			SDLK_F12},
-		{"f13",			SDLK_F13},
-		{"f14",			SDLK_F14},
-		{"f15",			SDLK_F15},
-		{"numlock",		SDLK_NUMLOCK},
-		{"capslock",		SDLK_CAPSLOCK},
-		{"scrollock",		SDLK_SCROLLOCK},
-		{"rshift",		SDLK_RSHIFT},
-		{"lshift",		SDLK_LSHIFT},
-		{"rctrl",		SDLK_RCTRL},
-		{"lctrl",		SDLK_LCTRL},
-		{"ralt",		SDLK_RALT},
-		{"lalt",		SDLK_LALT},
-		{"rmeta",		SDLK_RMETA},
-		{"lmeta",		SDLK_LMETA},
-		{"lsuper",		SDLK_LSUPER},
-		{"rsuper",		SDLK_RSUPER},
-		{"mode",		SDLK_MODE},
-		{"compose",		SDLK_COMPOSE},
-		{"help",		SDLK_HELP},
-		{"print",		SDLK_PRINT},
-		{"sysreq",		SDLK_SYSREQ},
-		{"break",		SDLK_BREAK},
-		{"menu",		SDLK_MENU},
-		{"power",		SDLK_POWER},
-		{"euro",		SDLK_EURO},
-		{"undo",		SDLK_UNDO},
-		{NULL,			0}
+		{"backspace",		SDLK_BACKSPACE		}, 
+		{"tab",			SDLK_TAB		},
+		{"clear",		SDLK_CLEAR		},
+		{"return",		SDLK_RETURN		},
+		{"pause",		SDLK_PAUSE		},
+		{"escape",		SDLK_ESCAPE		},
+		{"space",		SDLK_SPACE		},
+		{"exclaim",		SDLK_EXCLAIM		},
+		{"quotedbl",		SDLK_QUOTEDBL		},
+		{"hash",		SDLK_HASH		},
+		{"dollar",		SDLK_DOLLAR		},
+		{"ampersand",		SDLK_AMPERSAND		},
+		{"quote",		SDLK_QUOTE		},
+		{"leftparen",		SDLK_LEFTPAREN		},
+		{"rightparen",		SDLK_RIGHTPAREN		},
+		{"asterisk",		SDLK_ASTERISK		},
+		{"plus",		SDLK_PLUS		},
+		{"comma",		SDLK_COMMA		},
+		{"minus",		SDLK_MINUS		},
+		{"period",		SDLK_PERIOD		},
+		{"slash",		SDLK_SLASH		},
+		{"0",			SDLK_0			},
+		{"1",			SDLK_1			},
+		{"2",			SDLK_2			},
+		{"3",			SDLK_3			},
+		{"4",			SDLK_4			},
+		{"5",			SDLK_5			},
+		{"6",			SDLK_6			},
+		{"7",			SDLK_7			},
+		{"8",			SDLK_8			},
+		{"9",			SDLK_9			},
+		{"colon",		SDLK_COLON		},
+		{"semicolon",		SDLK_SEMICOLON		},
+		{"less",		SDLK_LESS		},
+		{"equals",		SDLK_EQUALS		},
+		{"greater",		SDLK_GREATER		},
+		{"question",		SDLK_QUESTION		},
+		{"at",			SDLK_AT			},
+		{"leftbracket",		SDLK_LEFTBRACKET	},
+		{"backslash",		SDLK_BACKSLASH		},
+		{"rightbracket",	SDLK_RIGHTBRACKET	},
+		{"caret",		SDLK_CARET		},
+		{"underscore",		SDLK_UNDERSCORE		},
+		{"backquote",		SDLK_BACKQUOTE		},
+		{"a",			SDLK_a			},
+		{"b",			SDLK_b			},
+		{"c",			SDLK_c			},
+		{"d",			SDLK_d			},
+		{"e",			SDLK_e			},
+		{"f",			SDLK_f			},
+		{"g",			SDLK_g			},
+		{"h",			SDLK_h			},
+		{"i",			SDLK_i			},
+		{"j",			SDLK_j			},
+		{"k",			SDLK_k			},
+		{"l",			SDLK_l			},
+		{"m",			SDLK_m			},
+		{"n",			SDLK_n			},
+		{"o",			SDLK_o			},
+		{"p",			SDLK_p			},
+		{"q",			SDLK_q			},
+		{"r",			SDLK_r			},
+		{"s",			SDLK_s			},
+		{"t",			SDLK_t			},
+		{"u",			SDLK_u			},
+		{"v",			SDLK_v			},
+		{"w",			SDLK_w			},
+		{"x",			SDLK_x			},
+		{"y",			SDLK_y			},
+		{"z",			SDLK_z			},
+		{"delete",		SDLK_DELETE		},
+		{"world_0",		SDLK_WORLD_0		},
+		{"world_1",		SDLK_WORLD_1		},
+		{"world_2",		SDLK_WORLD_2		},
+		{"world_3",		SDLK_WORLD_3		},
+		{"world_4",		SDLK_WORLD_4		},
+		{"world_5",		SDLK_WORLD_5		},
+		{"world_6",		SDLK_WORLD_6		},
+		{"world_7",		SDLK_WORLD_7		},
+		{"world_8",		SDLK_WORLD_8		},
+		{"world_9",		SDLK_WORLD_9		},
+		{"world_10",		SDLK_WORLD_10		},
+		{"world_11",		SDLK_WORLD_11		},
+		{"world_12",		SDLK_WORLD_12		},
+		{"world_13",		SDLK_WORLD_13		},
+		{"world_14",		SDLK_WORLD_14		},
+		{"world_15",		SDLK_WORLD_15		},
+		{"world_16",		SDLK_WORLD_16		},
+		{"world_17",		SDLK_WORLD_17		},
+		{"world_18",		SDLK_WORLD_18		},
+		{"world_19",		SDLK_WORLD_19		},
+		{"world_20",		SDLK_WORLD_20		},
+		{"world_21",		SDLK_WORLD_21		},
+		{"world_22",		SDLK_WORLD_22		},
+		{"world_23",		SDLK_WORLD_23		},
+		{"world_24",		SDLK_WORLD_24		},
+		{"world_25",		SDLK_WORLD_25		},
+		{"world_26",		SDLK_WORLD_26		},
+		{"world_27",		SDLK_WORLD_27		},
+		{"world_28",		SDLK_WORLD_28		},
+		{"world_29",		SDLK_WORLD_29		},
+		{"world_30",		SDLK_WORLD_30		},
+		{"world_31",		SDLK_WORLD_31		},
+		{"world_32",		SDLK_WORLD_32		},
+		{"world_33",		SDLK_WORLD_33		},
+		{"world_34",		SDLK_WORLD_34		},
+		{"world_35",		SDLK_WORLD_35		},
+		{"world_36",		SDLK_WORLD_36		},
+		{"world_37",		SDLK_WORLD_37		},
+		{"world_38",		SDLK_WORLD_38		},
+		{"world_39",		SDLK_WORLD_39		},
+		{"world_40",		SDLK_WORLD_40		},
+		{"world_41",		SDLK_WORLD_41		},
+		{"world_42",		SDLK_WORLD_42		},
+		{"world_43",		SDLK_WORLD_43		},
+		{"world_44",		SDLK_WORLD_44		},
+		{"world_45",		SDLK_WORLD_45		},
+		{"world_46",		SDLK_WORLD_46		},
+		{"world_47",		SDLK_WORLD_47		},
+		{"world_48",		SDLK_WORLD_48		},
+		{"world_49",		SDLK_WORLD_49		},
+		{"world_50",		SDLK_WORLD_50		},
+		{"world_51",		SDLK_WORLD_51		},
+		{"world_52",		SDLK_WORLD_52		},
+		{"world_53",		SDLK_WORLD_53		},
+		{"world_54",		SDLK_WORLD_54		},
+		{"world_55",		SDLK_WORLD_55		},
+		{"world_56",		SDLK_WORLD_56		},
+		{"world_57",		SDLK_WORLD_57		},
+		{"world_58",		SDLK_WORLD_58		},
+		{"world_59",		SDLK_WORLD_59		},
+		{"world_60",		SDLK_WORLD_60		},
+		{"world_61",		SDLK_WORLD_61		},
+		{"world_62",		SDLK_WORLD_62		},
+		{"world_63",		SDLK_WORLD_63		},
+		{"world_64",		SDLK_WORLD_64		},
+		{"world_65",		SDLK_WORLD_65		},
+		{"world_66",		SDLK_WORLD_66		},
+		{"world_67",		SDLK_WORLD_67		},
+		{"world_68",		SDLK_WORLD_68		},
+		{"world_69",		SDLK_WORLD_69		},
+		{"world_70",		SDLK_WORLD_70		},
+		{"world_71",		SDLK_WORLD_71		},
+		{"world_72",		SDLK_WORLD_72		},
+		{"world_73",		SDLK_WORLD_73		},
+		{"world_74",		SDLK_WORLD_74		},
+		{"world_75",		SDLK_WORLD_75		},
+		{"world_76",		SDLK_WORLD_76		},
+		{"world_77",		SDLK_WORLD_77		},
+		{"world_78",		SDLK_WORLD_78		},
+		{"world_79",		SDLK_WORLD_79		},
+		{"world_80",		SDLK_WORLD_80		},
+		{"world_81",		SDLK_WORLD_81		},
+		{"world_82",		SDLK_WORLD_82		},
+		{"world_83",		SDLK_WORLD_83		},
+		{"world_84",		SDLK_WORLD_84		},
+		{"world_85",		SDLK_WORLD_85		},
+		{"world_86",		SDLK_WORLD_86		},
+		{"world_87",		SDLK_WORLD_87		},
+		{"world_88",		SDLK_WORLD_88		},
+		{"world_89",		SDLK_WORLD_89		},
+		{"world_90",		SDLK_WORLD_90		},
+		{"world_91",		SDLK_WORLD_91		},
+		{"world_92",		SDLK_WORLD_92		},
+		{"world_93",		SDLK_WORLD_93		},
+		{"world_94",		SDLK_WORLD_94		},
+		{"world_95",		SDLK_WORLD_95		},
+		{"kp0",			SDLK_KP0		},
+		{"kp1",			SDLK_KP1		},
+		{"kp2",			SDLK_KP2		},
+		{"kp3",			SDLK_KP3		},
+		{"kp4",			SDLK_KP4		},
+		{"kp5",			SDLK_KP5		},
+		{"kp6",			SDLK_KP6		},
+		{"kp7",			SDLK_KP7		},
+		{"kp8",			SDLK_KP8		},
+		{"kp9",			SDLK_KP9		},
+		{"kp_period",		SDLK_KP_PERIOD		},
+		{"kp_divide",		SDLK_KP_DIVIDE		},
+		{"kp_multiply",		SDLK_KP_MULTIPLY	},
+		{"kp_minus",		SDLK_KP_MINUS		},
+		{"kp_plus",		SDLK_KP_PLUS		},
+		{"kp_enter",		SDLK_KP_ENTER		},
+		{"kp_equals",		SDLK_KP_EQUALS		},
+		{"up",			SDLK_UP			},
+		{"down",		SDLK_DOWN		},
+		{"right",		SDLK_RIGHT		},
+		{"left",		SDLK_LEFT		},
+		{"insert",		SDLK_INSERT		},
+		{"home",		SDLK_HOME		},
+		{"end",			SDLK_END		},
+		{"pageup",		SDLK_PAGEUP		},
+		{"pagedown",		SDLK_PAGEDOWN		},
+		{"f1",			SDLK_F1			},
+		{"f2",			SDLK_F2			},
+		{"f3",			SDLK_F3			},
+		{"f4",			SDLK_F4			},
+		{"f5",			SDLK_F5			},
+		{"f6",			SDLK_F6			},
+		{"f7",			SDLK_F7			},
+		{"f8",			SDLK_F8			},
+		{"f9",			SDLK_F9			},
+		{"f10",			SDLK_F10		},
+		{"f11",			SDLK_F11		},
+		{"f12",			SDLK_F12		},
+		{"f13",			SDLK_F13		},
+		{"f14",			SDLK_F14		},
+		{"f15",			SDLK_F15		},
+		{"numlock",		SDLK_NUMLOCK		},
+		{"capslock",		SDLK_CAPSLOCK		},
+		{"scrollock",		SDLK_SCROLLOCK		},
+		{"rshift",		SDLK_RSHIFT		},
+		{"lshift",		SDLK_LSHIFT		},
+		{"rctrl",		SDLK_RCTRL		},
+		{"lctrl",		SDLK_LCTRL		},
+		{"ralt",		SDLK_RALT		},
+		{"lalt",		SDLK_LALT		},
+		{"rmeta",		SDLK_RMETA		},
+		{"lmeta",		SDLK_LMETA		},
+		{"lsuper",		SDLK_LSUPER		},
+		{"rsuper",		SDLK_RSUPER		},
+		{"mode",		SDLK_MODE		},
+		{"compose",		SDLK_COMPOSE		},
+		{"help",		SDLK_HELP		},
+		{"print",		SDLK_PRINT		},
+		{"sysreq",		SDLK_SYSREQ		},
+		{"break",		SDLK_BREAK		},
+		{"menu",		SDLK_MENU		},
+		{"power",		SDLK_POWER		},
+		{"euro",		SDLK_EURO		},
+		{"undo",		SDLK_UNDO		},
+		{NULL,			0			}
 	};
 
-	unsigned recognize_one_modifier(std::string mod)
+	std::map<unsigned, modifier*> supported_modifiers;
+	std::map<unsigned, keygroup*> scancodekeys;
+	std::map<unsigned, keygroup*> symbolkeys;
+	std::map<unsigned, keygroup*> joyaxis;
+	std::map<unsigned, keygroup*> joybutton;
+	std::map<unsigned, keygroup*> joyhat;
+
+	void init_keys()
 	{
-		struct modifier* m = modifiers_table;
+		struct sdl_modifier* m = modifiers_table;
 		while(m->name) {
-			if(mod == std::string(m->name))
-				return m->asmodifier;
-			m++;
-		}
-		throw std::runtime_error("Unknown modifier '" + mod + "'");
-	}
-
-	uint32_t transpack[16] = {0, 1, 3, 2, 5, 4, 0, 7, 8, 0, 0, 6, 0, 0, 0};
-	uint32_t polarities[9] = {1, 1, 1, 1, 0, 0, 0, 0, 0};
-	uint32_t directions[9] = {1, 2, 4, 8, 1, 2, 4, 8, 0};
-
-	uint64_t X[] = {
-		0x032221008ULL,		//From center.
-		0x344444184ULL,		//From up.
-		0x555544855ULL,		//From up&right.
-		0x555528055ULL,		//From right.
-		0x555586655ULL,		//From down&right.
-		0x663816666ULL,		//From down.
-		0x668777777ULL,		//From down&left.
-		0x082777777ULL,		//From left.
-		0x844777777ULL		//From up&left.
-	};
-
-	void hat_transition(uint32_t& ov, uint32_t& v, bool& polarity, bool& more)
-	{
-		uint32_t t1 = transpack[ov];
-		uint32_t t2 = transpack[v];
-		more = (v != ((X[t1] >> 4 * t2) & 0xF));
-		polarity = polarities[(X[t1] >> 4 * t2) & 0xF];
-		ov ^= directions[(X[t1] >> 4 * t2) & 0xF];
-		v = directions[(X[t1] >> 4 * t2) & 0xF];
-	}
-}
-
-keymapper_helper_sdl::translated_event::translated_event(keysymbol _symbol, bool _polarity, bool _more)
-{
-	symbol = _symbol;
-	polarity = _polarity;
-	more = _more;
-}
-
-keymapper_helper_sdl::translated_event keymapper_helper_sdl::translate_event(SDL_Event& e)
-	throw(std::bad_alloc, std::runtime_error)
-{
-	if(e.type == SDL_JOYHATMOTION) {
-		uint32_t axis = static_cast<uint32_t>(e.jhat.which) * 256 + static_cast<uint32_t>(e.jhat.hat);
-		uint32_t v = 0;
-		if(e.jhat.value & SDL_HAT_UP)		v |= 1;
-		if(e.jhat.value & SDL_HAT_RIGHT)	v |= 2;
-		if(e.jhat.value & SDL_HAT_DOWN)		v |= 4;
-		if(e.jhat.value & SDL_HAT_LEFT)		v |= 8;
-		unsigned ov = hat_current_state[axis];
-		bool more = false;
-		bool polarity = false;
-		if(ov == v) {
-			keysymbol k;
-			k.device = SDL_DEV_NONE;
-			return translated_event(k, false);
-		}
-		hat_transition(ov, v, polarity, more);
-		hat_current_state[axis] = ov;
-		axis |= (v << 16);
-		keysymbol k;
-		k.device = SDL_DEV_JOYHAT;
-		k.joyhat = axis;
-		return translated_event(k, polarity, more);
-	} else if(e.type == SDL_JOYAXISMOTION) {
-		uint32_t axis = static_cast<uint32_t>(e.jaxis.which) * 256 + static_cast<uint32_t>(e.jaxis.axis);
-		int v = calibrations[axis].digital(e.jaxis.value);
-		int ov = axis_current_state[axis];
-		bool more = false;
-		bool polarity = false;
-		if(ov == v) {
-			keysymbol k;
-			k.device = SDL_DEV_NONE;
-			return translated_event(k, false);
-		} else if(ov == -1) {
-			more = (v == 1);
-			polarity = false;
-		} else if(ov == 0) {
-			polarity = true;
-			axis |= ((v == 1) ? 0x10000 : 0);
-		} else if(ov == 1) {
-			more = (v == -1);
-			polarity = false;
-			axis |= 0x10000;
-		}
-		keysymbol k;
-		k.device = SDL_DEV_JOYAXIS;
-		k.joyaxis = axis;
-		return translated_event(k, polarity, more);
-	} else if(e.type == SDL_JOYBUTTONUP || e.type == SDL_JOYBUTTONDOWN) {
-		keysymbol k;
-		k.device = SDL_DEV_JOYBUTTON;
-		k.joybutton = static_cast<uint32_t>(e.jbutton.which) * 256 + static_cast<uint32_t>(e.jbutton.button);
-		return translated_event(k, (e.type == SDL_JOYBUTTONDOWN));
-
-	} else if(e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
-		keysymbol k;
-		k.device = SDL_DEV_KEYBOARD;
-		k.keyboard = e.key.keysym;
-		return translated_event(k, (e.type == SDL_KEYDOWN));
-	} else {
-		keysymbol k;
-		k.device = SDL_DEV_NONE;
-		return translated_event(k, false);
-	}
-}
-
-bool keymapper_helper_sdl::internal_keysymbol::operator==(const internal_keysymbol& k) const
-{
-	if(mode == KEYTYPE_SCAN_SYMBOL && k.mode == KEYTYPE_SCAN_SYMBOL)
-		return (scan == k.scan || symbolic == k.symbolic);
-	if((mode == KEYTYPE_SCAN_SYMBOL && k.mode == KEYTYPE_SCAN) || (k.mode == KEYTYPE_SCAN_SYMBOL &&
-		mode == KEYTYPE_SCAN) || (k.mode == KEYTYPE_SCAN && mode == KEYTYPE_SCAN))
-		return (scan == k.scan);
-	if((mode == KEYTYPE_SCAN_SYMBOL && k.mode == KEYTYPE_SYMBOL) || (k.mode == KEYTYPE_SCAN_SYMBOL &&
-		mode == KEYTYPE_SYMBOL) || (k.mode == KEYTYPE_SYMBOL && mode == KEYTYPE_SYMBOL))
-		return (symbolic == k.symbolic);
-	if(mode == KEYTYPE_JOYAXIS && k.mode == KEYTYPE_JOYAXIS)
-		return (joyaxis == k.joyaxis);
-	if(mode == KEYTYPE_JOYHAT && k.mode == KEYTYPE_JOYHAT) {
-		//Joystick hats are handled specially. Diffrent hats never compare equal.
-		if((joyhat & 0xFFFF) != (k.joyhat & 0xFFFF))
-			return false;
-		//For the same hat, if there is overlap, then they compare equal.
-		return (((joyhat & k.joyhat) >> 16) != 0);
-	}
-	return false;
-}
-
-unsigned keymapper_helper_sdl::mod_str(std::string mod) throw(std::bad_alloc, std::runtime_error)
-{
-	unsigned ret = 0;
-	while(mod != "") {
-		size_t split = mod.find_first_of(",");
-		std::string omod;
-		if(split < mod.length()) {
-			omod = mod.substr(0, split);
-			mod = mod.substr(split + 1);
-			if(mod == "")
-				throw std::runtime_error("Invalid modifier specification (trailing comma)");
-		} else {
-			omod = mod;
-			mod = "";
-		}
-		ret |= recognize_one_modifier(omod);
-	}
-	return ret;
-}
-
-unsigned keymapper_helper_sdl::mod_key(keymapper_helper_sdl::keysymbol key) throw(std::bad_alloc)
-{
-	if(key.device != SDL_DEV_KEYBOARD)
-		return 0;
-	struct modifier* m = modifiers_table;
-	unsigned ret = 0;
-	while(m->name) {
-		if(!m->synthethic && (key.keyboard.mod & m->sdlvalue))
-			ret |= m->asrealkey;
-		m++;
-	}
-	return ret;
-}
-
-keymapper_helper_sdl::internal_keysymbol keymapper_helper_sdl::key_str(std::string key) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	if(key.length() > 8 && key.substr(0, 8) == "joystick") {
-		const char* rest = key.c_str() + 8;
-		char* end;
-		unsigned subtype = 0;
-		unsigned x;
-		unsigned long value = strtoul(rest, &end, 10);
-		if(value > 255)
-			throw std::runtime_error("Bad joystick number '" + key + "'");
-		x = value * 256;
-		if(!strncmp(end, "button", 6)) {
-			subtype = 1;
-			rest = end + 6;
-		} else if(!strncmp(end, "axis", 4)) {
-			subtype = 2;
-			rest = end + 4;
-		} else if(!strncmp(end, "hat", 3)) {
-			subtype = 3;
-			rest = end + 3;
-		} else
-			throw std::runtime_error("Bad joystick subtype '" + key + "'");
-		value = strtoul(rest, &end, 10);
-		x += value;
-		if(subtype == 1) {
-			if(value > 255 || *end)
-				throw std::runtime_error("Bad joystick button '" + key + "'");
-			internal_keysymbol k;
-			k.mode = KEYTYPE_JOYBUTTON;
-			k.joybutton = x;
-			return k;
-		} else if(subtype == 2) {
-			if(!strncmp(end, "+", 1) && value <= 255)
-				x |= 0x10000;
-			else if(!strncmp(end, "-", 1) && value <= 255)
-				;
+			modifier* m2;
+			if(m->linkname)
+				m2 = new modifier(m->name, m->linkname);
 			else
-				throw std::runtime_error("Bad joystick axis '" + key + "'");
-			internal_keysymbol k;
-			k.mode = KEYTYPE_JOYAXIS;
-			k.joyaxis = x;
-			return k;
-		}  else if(subtype == 3) {
-			if(!strncmp(end, "n", 1) && value <= 255)
-				x |= 0x10000;
-			else if(!strncmp(end, "e", 1) && value <= 255)
-				x |= 0x20000;
-			else if(!strncmp(end, "s", 1) && value <= 255)
-				x |= 0x40000;
-			else if(!strncmp(end, "w", 1) && value <= 255)
-				x |= 0x80000;
-			else
-				throw std::runtime_error("Bad joystick hat '" + key + "'");
-			internal_keysymbol k;
-			k.mode = KEYTYPE_JOYHAT;
-			k.joyhat = x;
-			return k;
-		}
-	} if(key.length() > 3 && key.substr(0, 3) == "key") {
-		const char* rest = key.c_str() + 3;
-		char* end;
-		unsigned long value = strtoul(rest, &end, 10);
-		if(*end || value > 255)
-			throw std::runtime_error("Bad scancode keysymbol '" + key + "'");
-		internal_keysymbol k;
-		k.mode = KEYTYPE_SCAN;
-		k.scan = value;
-		k.symbolic = 0;
-		return k;
-	}
-	struct key* k = keys_table;
-	while(k->name) {
-		if(key == std::string(k->name)) {
-			internal_keysymbol k2;
-			k2.mode = KEYTYPE_SYMBOL;
-			k2.scan = 0;
-			k2.symbolic = k->symbol;
-			return k2;
-		}
-		k++;
-	}
-	throw std::runtime_error("Unknown key '" + key + "'");
-}
-
-keymapper_helper_sdl::internal_keysymbol keymapper_helper_sdl::key_key(keymapper_helper_sdl::keysymbol key)
-	throw(std::bad_alloc)
-{
-	internal_keysymbol k;
-	if(key.device == SDL_DEV_KEYBOARD) {
-		k.mode = KEYTYPE_SCAN_SYMBOL;
-		k.scan = key.keyboard.scancode;
-		k.symbolic = key.keyboard.sym;
-	} else if(key.device == SDL_DEV_JOYAXIS) {
-		k.mode = KEYTYPE_JOYAXIS;
-		k.joyaxis = key.joyaxis;
-	} else if(key.device == SDL_DEV_JOYBUTTON) {
-		k.mode = KEYTYPE_JOYBUTTON;
-		k.joybutton = key.joybutton;
-	} else if(key.device == SDL_DEV_JOYHAT) {
-		k.mode = KEYTYPE_JOYHAT;
-		k.joyhat = key.joyhat;
-	} else {
-		k.mode = KEYTYPE_NONE;
-	}
-	return k;
-}
-
-std::string keymapper_helper_sdl::name_key(unsigned mod, unsigned modmask, struct internal_keysymbol key)
-	throw(std::bad_alloc)
-{
-	std::string ret = "";
-	if(mod != 0 || modmask != 0) {
-		struct modifier* m = modifiers_table;
-		while(m->name) {
-			if((mod & m->asmodifier) == m->asmodifier) {
-				ret = ret + m->name + ",";
-			}
+				m2 = new modifier(m->name);
+			if(m->sdlvalue)
+				supported_modifiers[m->sdlvalue] = m2;
 			m++;
 		}
-		ret = ret.substr(0, ret.length() - 1);
-		ret = ret + "/";
-		m = modifiers_table;
-		while(m->name) {
-			if((modmask & m->asmodifier) == m->asmodifier) {
-				ret = ret + m->name + ",";
-			}
-			m++;
-		}
-		ret = ret.substr(0, ret.length() - 1);
-		ret = ret + " ";
-	}
-	if(key.mode == KEYTYPE_SCAN_SYMBOL || key.mode == KEYTYPE_SYMBOL) {
-		struct key* k = keys_table;
+		struct sdl_key* k = keys_table;
 		while(k->name) {
-			if(key.symbolic == k->symbol) {
-				ret = ret + k->name;
-				break;
-			}
+			symbolkeys[k->symbol] = new keygroup(k->name, keygroup::KT_KEY);
 			k++;
 		}
-	} else if(key.mode == KEYTYPE_SCAN) {
-		std::ostringstream x;
-		x << key.scan;
-		ret = ret + "key" + x.str();
-	} else if(key.mode == KEYTYPE_JOYAXIS) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joyaxis >> 8) & 0xFF) << "axis" << (key.joyaxis & 0xFF);
-		x << ((key.joyaxis & 0x10000) ? '+' : '-');
-		ret = ret + x.str();
-	} else if(key.mode == KEYTYPE_JOYBUTTON) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joybutton >> 8) & 0xFF) << "button" << (key.joybutton & 0xFF);
-		ret = ret + x.str();
-	} else if(key.mode == KEYTYPE_JOYHAT) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joyhat >> 8) & 0xFF) << "hat" << (key.joyhat & 0xFF);
-		if(key.joyhat & 0x10000)
-			x << "n";
-		if(key.joyhat & 0x40000)
-			x << "s";
-		if(key.joyhat & 0x20000)
-			x << "e";
-		if(key.joyhat & 0x80000)
-			x << "w";
-		ret = ret + x.str();
-	} else {
-		ret = ret + "<invalid>";
-	}
-	return ret;
-}
-
-std::string keymapper_helper_sdl::print_key_info(keymapper_helper_sdl::keysymbol key) throw(std::bad_alloc)
-{
-	std::string ret;
-	if(key.device == SDL_DEV_KEYBOARD && key.keyboard.mod) {
-		ret = ret + "Modifiers: ";
-		unsigned mod = mod_key(key);
-		struct modifier* m = modifiers_table;
-		while(m->name) {
-			if((mod & m->asmodifier) == m->asmodifier) {
-				ret = ret + m->name + " ";
-			}
-			m++;
-		}
-		ret = ret + "\n";
-	}
-	if(key.device == SDL_DEV_KEYBOARD) {
-		{
+		for(unsigned i = 0; i < 256; i++) {
 			std::ostringstream x;
-			x << static_cast<unsigned>(key.keyboard.scancode);
-			ret = ret + "Name: key" + x.str() + "\n";
+			x << "key" << i;
+			scancodekeys[i] = new keygroup(x.str(), keygroup::KT_KEY);
 		}
-		struct key* k = keys_table;
-		while(k->name) {
-			if(key.keyboard.sym == k->symbol) {
-				ret = ret + "Name: " + k->name + "\n";
-				break;
-			}
-			k++;
-		}
-	} else if(key.device == SDL_DEV_JOYAXIS) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joyaxis >> 8) & 0xFF) << "axis" << (key.joyaxis & 0xFF);
-		x << ((key.joyaxis & 0x10000) ? '+' : '-');
-		ret + ret + "Name: " + x.str() + "\n";
-	} else if(key.device == SDL_DEV_JOYBUTTON) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joybutton >> 8) & 0xFF) << "button" << (key.joybutton & 0xFF);
-		ret + ret + "Name: " + x.str() + "\n";
-	} else if(key.device == SDL_DEV_JOYHAT) {
-		std::ostringstream x;
-		x << "joystick" << ((key.joyhat >> 8) & 0xFF) << "hat" << (key.joyhat & 0xFF);
-		if(key.joyhat & 0x10000)
-			x << "n";
-		if(key.joyhat & 0x20000)
-			x << "e";
-		if(key.joyhat & 0x40000)
-			x << "s";
-		if(key.joyhat & 0x80000)
-			x << "w";
-		ret + ret + "Name: " + x.str() + "\n";
 	}
-	return ret;
-}
 
+	void init_joysticks()
+	{
+		int joysticks = SDL_NumJoysticks();
+		if(!joysticks) {
+			window::out() << "No joysticks detected." << std::endl;
+		} else {
+			window::out() << joysticks << " joystick(s) detected." << std::endl;
+			for(int i = 0; i < joysticks; i++) {
+				SDL_Joystick* j = SDL_JoystickOpen(i);
+				if(!j) {
+					window::out() << "Joystick #" << i << ": Can't open!" << std::endl;
+					continue;
+				}
+				window::out() << "Joystick #" << i << ": " << SDL_JoystickName(i) << "("
+					<< SDL_JoystickNumAxes(j) << " axes, " << SDL_JoystickNumButtons(j)
+					<< " 	buttons, " << SDL_JoystickNumHats(j) << " hats)." << std::endl;
+				for(int k = 0; k < SDL_JoystickNumAxes(j); k++) {
+					unsigned num = 256 * i + k;
+					std::ostringstream x;
+					x << "joystick" << i << "axis" << k;
+					joyaxis[num] = new keygroup(x.str(), keygroup::KT_AXIS_PAIR);
+				}
+				for(int k = 0; k < SDL_JoystickNumButtons(j); k++) {
+					unsigned num = 256 * i + k;
+					std::ostringstream x;
+					x << "joystick" << i << "button" << k;
+					joybutton[num] = new keygroup(x.str(), keygroup::KT_KEY);
+				}
+				for(int k = 0; k < SDL_JoystickNumHats(j); k++) {
+					unsigned num = 256 * i + k;
+					std::ostringstream x;
+					x << "joystick" << i << "hat" << k;
+					joyhat[num] = new keygroup(x.str(), keygroup::KT_HAT);
+				}
+			}
+		}
+	}
+
+	struct identify_helper : public keygroup::key_listener
+	{
+		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+			bool polarity, const std::string& name)
+		{
+			if(!polarity)
+				_keys = _keys + "Name: " + name + "\n";
+		}
+		bool got_it()
+		{
+			return (_keys != "");
+		}
+		std::string keys()
+		{
+			return _keys;
+		}
+		std::string _keys;
+	};
+
+	struct key_eater : public keygroup::key_listener
+	{
+		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+			bool polarity, const std::string& name)
+		{
+			//Just eat it.
+		}
+	} keyeater;
+
+	void process_input_event(SDL_Event* e, bool identify)
+	{
+		identify_helper h;
+		if(identify)
+			keygroup::set_exclusive_key_listener(&h);
+		modifier_set modifiers;
+		if(e->type == SDL_KEYDOWN || e->type == SDL_KEYUP) {
+			SDL_keysym sym = e->key.keysym;
+			uint8_t scancode = sym.scancode;
+			unsigned symbol = sym.sym;
+			for(auto k = supported_modifiers.begin(); k != supported_modifiers.end(); ++k)
+				if(sym.mod & k->first)
+					modifiers.add(*k->second);
+			scancodekeys[scancode]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
+			if(symbolkeys.count(symbol))
+				symbolkeys[symbol]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
+		} else if(e->type == SDL_JOYAXISMOTION) {
+			unsigned num = static_cast<unsigned>(e->jaxis.which) * 256 +
+				static_cast<unsigned>(e->jaxis.axis);
+			if(joyaxis.count(num))
+				joyaxis[num]->set_position(e->jaxis.value, modifiers);
+		} else if(e->type == SDL_JOYHATMOTION) {
+			unsigned num = static_cast<unsigned>(e->jhat.which) * 256 +
+				static_cast<unsigned>(e->jhat.hat);
+			short v = 0;
+			if(e->jhat.value & SDL_HAT_UP)
+				v |= 1;
+			if(e->jhat.value & SDL_HAT_RIGHT)
+				v |= 2;
+			if(e->jhat.value & SDL_HAT_DOWN)
+				v |= 4;
+			if(e->jhat.value & SDL_HAT_LEFT)
+				v |= 8;
+			if(joyhat.count(num))
+				joyhat[num]->set_position(v, modifiers);
+		} else if(e->type == SDL_JOYBUTTONDOWN || e->type == SDL_JOYBUTTONUP) {
+			unsigned num = static_cast<unsigned>(e->jbutton.which) * 256 +
+				static_cast<unsigned>(e->jbutton.button);
+			if(joybutton.count(num))
+				joybutton[num]->set_position((e->type == SDL_JOYBUTTONDOWN), modifiers);
+		}
+		if(identify) {
+			if(h.got_it())
+				window::modal_message(h.keys(), false);
+			keygroup::set_exclusive_key_listener(NULL);
+		}
+	}
+}
 
 extern uint32_t fontdata[];
 
@@ -894,7 +493,6 @@ namespace
 	std::list<std::string> commandhistory;
 	std::list<std::string>::iterator commandhistory_itr;
 	screen* current_screen;
-	keymapper<keymapper_helper_sdl> mapper;
 	SDL_Surface* hwsurf;
 	bool pause_active;
 	uint64_t last_ui_update;
@@ -907,6 +505,7 @@ namespace
 	numeric_setting autorepeat_subsequent("autorepeat-subsequent-delay", 1, 999999999, 4);
 };
 
+void poll_inputs_internal() throw(std::bad_alloc);
 
 namespace
 {
@@ -988,7 +587,7 @@ namespace
 		state = WINSTATE_IDENTIFY;
 		window::message("Press key to identify.");
 		window::notify_screen_update();
-		window::poll_inputs();
+		poll_inputs_internal();
 	}
 
 	std::string decode_string(std::string e)
@@ -1393,23 +992,16 @@ namespace
 					commandhistory.pop_back();
 				commandhistory_itr = commandhistory.begin();
 				window::notify_screen_update();
+				poll_inputs_internal();
 				return;
 			}
-			{
-				bool more = true;
-				{
-					auto i = keymapper_helper_sdl::translate_event(e);
-					std::string cmd;
-					if(i.symbol.device != SDL_DEV_NONE)
-						cmd = mapper.map(i.symbol, i.polarity);
-					if(cmd != "")
-						command::invokeC(cmd);
-					more = i.more;
-				}
-				return;
-			}
+			process_input_event(&e, false);
 			break;
 		case WINSTATE_MODAL:
+			//Send the key and eat it (prevent input from getting confused).
+			keygroup::set_exclusive_key_listener(&keyeater);
+			process_input_event(&e, false),
+			keygroup::set_exclusive_key_listener(NULL);
 			if(e.type == SDL_KEYUP && key == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				modconfirm = false;
@@ -1427,6 +1019,10 @@ namespace
 			}
 			break;
 		case WINSTATE_COMMAND:
+			//Send the key and eat it (prevent input from getting confused).
+			keygroup::set_exclusive_key_listener(&keyeater);
+			process_input_event(&e, false),
+			keygroup::set_exclusive_key_listener(NULL);
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				command_buf = "";
@@ -1467,9 +1063,7 @@ namespace
 			}
 			break;
 		case WINSTATE_IDENTIFY:
-			auto i = keymapper_helper_sdl::translate_event(e);
-			if(!i.polarity && i.symbol.device != SDL_DEV_NONE)
-				window::modal_message(keymapper_helper_sdl::print_key_info(i.symbol), false);
+			process_input_event(&e, true);
 			break;
 		};
 	}
@@ -1479,6 +1073,7 @@ void window::init()
 {
 	signal(SIGALRM, sigalrm_handler);
 	alarm(WATCHDOG_TIMEOUT);
+	init_keys();
 	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
 	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
@@ -1512,6 +1107,8 @@ void window::init()
 	std::string windowname = "lsnes-" + lsnes_version + "[" + bsnes_core_version + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 
+	init_joysticks();
+	
 	SDL_AudioSpec* desired = new SDL_AudioSpec();
 	SDL_AudioSpec* obtained = new SDL_AudioSpec();
 
@@ -1558,7 +1155,7 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	modmsg = msg;
 	state = WINSTATE_MODAL;
 	notify_screen_update();
-	poll_inputs();
+	poll_inputs_internal();
 	bool ret = modconfirm;
 	if(delayed_close_flag) {
 		delayed_close_flag = false;
@@ -1744,51 +1341,32 @@ void window::notify_screen_update(bool full) throw()
 	SDL_Flip(hwsurf);
 }
 
+void poll_inputs_internal() throw(std::bad_alloc)
+{
+	SDL_Event e;
+	while(state != WINSTATE_NORMAL) {
+		if(SDL_WaitEvent(&e))
+			do_event(e);
+	}
+}
+
 void window::poll_inputs() throw(std::bad_alloc)
 {
 	SDL_Event e;
 	while(1) {
-		if(modal_return_flag) {
-			modal_return_flag = false;
-			return;
-		}
-		if(state == WINSTATE_NORMAL && !pause_active && !SDL_PollEvent(&e))
+		assert(state == WINSTATE_NORMAL);
+		if(!pause_active && !SDL_PollEvent(&e))
 			break;
-		else if(state == WINSTATE_NORMAL && !pause_active)
+		else if(!pause_active)
 			do_event(e);
 		else if(SDL_WaitEvent(&e))
 			do_event(e);
 	}
 }
 
-void window::bind(std::string mod, std::string modmask, std::string keyname, std::string cmd) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	mapper.bind(mod, modmask, keyname, cmd);
-	if(modmask == "")
-		message("Key " + keyname + " bound to '" + cmd + "'");
-	else
-		message("Key " + mod + "/" + modmask + " " + keyname + " bound to '" + cmd + "'");
-}
-
-void window::unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	mapper.unbind(mod, modmask, keyname);
-	if(modmask == "")
-		message("Key " + keyname + " unbound");
-	else
-		message("Key " + mod + "/" + modmask + " " + keyname + " unbound");
-}
-
 std::map<std::string, std::string>& window::get_emustatus() throw()
 {
 	return emustatus;
-}
-
-void window::dumpbindings() throw(std::bad_alloc)
-{
-	mapper.dumpbindings();
 }
 
 void window::paused(bool enable) throw()
@@ -1877,6 +1455,43 @@ namespace
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
 			window::notify_screen_update(true);
 		});
+
+	function_ptr_command<tokensplitter&> joystickmode("axismode", "Set joystick axis mode",
+		"Syntax: axismode joystick<num>axis<axis> <mode>\nSet joystick axis mode.\n",
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
+			std::string axis = t;
+			std::string mode = t;
+			unsigned i = 0;
+			if(mode == "" || t)
+				throw std::runtime_error("Expected exactly 2 parameters");
+			keygroup* tomod = NULL;
+			for(auto i = joyaxis.begin(); i != joyaxis.end(); ++i)
+				if(i->second->name() == axis)
+					tomod = i->second;
+			if(!tomod)
+				throw std::runtime_error("Invalid axis");
+			if(mode == "axis")
+				tomod->change_type(keygroup::KT_AXIS_PAIR);
+			else if(mode == "axis_inverse")
+				tomod->change_type(keygroup::KT_AXIS_PAIR_INVERSE);
+			else if(mode == "pressure_0m")
+				tomod->change_type(keygroup::KT_PRESSURE_0M);
+			else if(mode == "pressure_0p")
+				tomod->change_type(keygroup::KT_PRESSURE_0P);
+			else if(mode == "pressure_m0")
+				tomod->change_type(keygroup::KT_PRESSURE_M0);
+			else if(mode == "pressure_mp")
+				tomod->change_type(keygroup::KT_PRESSURE_MP);
+			else if(mode == "pressure_p0")
+				tomod->change_type(keygroup::KT_PRESSURE_P0);
+			else if(mode == "pressure_pm")
+				tomod->change_type(keygroup::KT_PRESSURE_PM);
+			else if(mode == "disabled")
+				tomod->change_type(keygroup::KT_DISABLED);
+			else
+				throw std::runtime_error("Bad axis mode");
+		});
+
 }
 
 void window::wait_msec(uint64_t msec) throw(std::bad_alloc)

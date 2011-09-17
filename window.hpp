@@ -68,38 +68,6 @@ public:
 	static void fatal_error() throw();
 
 /**
- * Bind a key.
- *
- * parameter mod: Set of modifiers.
- * parameter modmask: Modifier mask (set of modifiers).
- * parameter keyname: Name of key or pseudo-key.
- * parameter command: Command to run.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid key or modifier name, or conflict.
- */
-	static void bind(std::string mod, std::string modmask, std::string keyname, std::string command)
-		throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Unbind a key.
- *
- * parameter mod: Set of modifiers.
- * parameter modmask: Modifier mask (set of modifiers).
- * parameter keyname: Name of key or pseudo-key.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid key or modifier name, or not bound.
- */
-	static void unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
-		std::runtime_error);
-
-/**
- * Dump bindings into this window.
- *
- * throws std::bad_alloc: Not enough memory.
- */
-	static void dumpbindings() throw(std::bad_alloc);
-
-/**
  * Processes inputs. If in non-modal mode (normal mode without pause), this returns quickly. Otherwise it waits
  * for modal mode to exit.
  *

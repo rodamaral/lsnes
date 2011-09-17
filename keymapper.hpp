@@ -10,143 +10,225 @@
 #include "misc.hpp"
 
 /**
- * \brief Fixup command according to key polarity.
- *
  * Takes in a raw command and returns the command that should be actually executed given the key polarity.
  *
- * \param cmd Raw command.
- * \param polarity Polarity (True => Being pressed, False => Being released).
- * \return The fixed command, "" if no command should be executed.
- * \throws std::bad_alloc Not enough memory.
+ * parameter cmd: Raw command.
+ * parameter polarity: Polarity (True => Being pressed, False => Being released).
+ * returns: The fixed command, "" if no command should be executed.
+ * throws std::bad_alloc: Not enough memory.
  */
 std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc);
 
 
+
 /**
- * \brief Keyboard mapper.
- *
- * This class handles internals of mapping events from keyboard buttons and pseudo-buttons. The helper class T has
- * to have the following:
- *
- * unsigned T::mod_str(const std::string& mod): Translate modifiers set mod into modifier mask.
- * typedef T::internal_keysymbol: Key symbol to match against. Needs to have == operator available.
- * T::internal_keysymbol key_str(const std::string& keyname): Translate key name to key to match against.
- * typedef T::keysymbol: Key symbol from keyboard (or pseudo-button). Carries modifiers too.
- * unsigned mod_key(T::keysymbol key): Get modifier mask for keyboard key.
- * T::internal_keysymbol key_key(T::keysymbol key): Get key symbol to match against for given keyboard key.
- * std::string T::name_key(unsigned mod, unsigned modmask, T::internal_keysymbol key): Print name of key with mods.
+ * Modifier.
  */
-template<class T>
+class modifier
+{
+public:
+/**
+ * Create modifier.
+ */
+	modifier(const std::string& name) throw(std::bad_alloc);
+/**
+ * Create linked modifier.
+ */
+	modifier(const std::string& name, const std::string& linkgroup) throw(std::bad_alloc);
+/**
+ * Look up a modifier.
+ */
+	static modifier& lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Get name of modifier.
+ */
+	std::string name() const throw(std::bad_alloc);
+private:
+	
+	modifier(const modifier&);
+	modifier& operator=(const modifier&);
+	std::string modname;
+};
+
+/**
+ * Set of modifiers.
+ */
+class modifier_set
+{
+public:
+/**
+ * Add a modifier.
+ */
+	void add(const modifier& mod, bool really = true) throw(std::bad_alloc);
+/**
+ * Remove a modifier.
+ */
+	void remove(const modifier& mod, bool really = true) throw(std::bad_alloc);
+/**
+ * Construct set from string.
+ */
+	static modifier_set construct(const std::string& modifiers) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Check modifier against its mask for validity.
+ */
+	static bool valid(const modifier_set& set, const modifier_set& mask) throw(std::bad_alloc);
+/**
+ * Check if this modifier set triggers the action.
+ */
+	static bool triggers(const modifier_set& set, const modifier_set& trigger, const modifier_set& mask)
+		throw(std::bad_alloc);
+/**
+ * Equality.
+ */
+	bool operator==(const modifier_set& m) const throw();
+
+private:
+	std::set<const modifier*> set;
+};
+
+/**
+ * Key or key group.
+ */
+class keygroup
+{
+public:
+/**
+ * Key group type.
+ */
+	enum type
+	{
+/**
+ * Disabled.
+ */
+		KT_DISABLED,
+/**
+ * Singular button.
+ */
+		KT_KEY,
+/**
+ * Pressure-sensitive button
+ */
+		KT_PRESSURE_PM,
+		KT_PRESSURE_MP,
+		KT_PRESSURE_0P,
+		KT_PRESSURE_0M,
+		KT_PRESSURE_P0,
+		KT_PRESSURE_M0,
+/**
+ * Axis key pair.
+ */
+		KT_AXIS_PAIR,
+		KT_AXIS_PAIR_INVERSE,
+/**
+ * Hat.
+ */
+		KT_HAT
+	};
+/**
+ * Create new key group.
+ */
+	keygroup(const std::string& name, enum type t) throw(std::bad_alloc);
+/**
+ * Change type of key group.
+ */
+	void change_type(enum type t);
+/**
+ * Change calibration (Axis pairs and pressure buttons only).
+ */
+	void change_calibration(short left, short center, short right, double tolerance);
+/**
+ * Change state of this key group.
+ * 
+ * For KT_KEY, value is zero/nonzero.
+ * For KT_PRESSURE_* and KT_AXIS_PAIR*, value is -32768...32767.
+ * For KT_HAT, 1 is up, 2 is right, 4 is down, 8 is left (may be ORed).
+ */
+	void set_position(short pos, const modifier_set& modifiers) throw();
+/**
+ * Look up key by name.
+ */
+	static std::pair<keygroup*, unsigned> lookup(const std::string& name) throw(std::bad_alloc,
+		std::runtime_error);
+/**
+ * Look up key name.
+ */
+	std::string name() throw(std::bad_alloc);
+/**
+ * Keyboard key listener.
+ */
+	struct key_listener
+	{
+/**
+ * Invoked on key.
+ */
+		virtual void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+			bool polarity, const std::string& name) = 0;
+	};
+/**
+ * Add key listener.
+ */
+	void add_key_listener(key_listener& l) throw(std::bad_alloc);
+/**
+ * Remove key listener.
+ */
+	void remove_key_listener(key_listener& l) throw(std::bad_alloc);
+/**
+ * Excelusive key listener.
+ */
+	static void set_exclusive_key_listener(key_listener* l) throw();
+private:
+	unsigned state;
+	enum type ktype;
+	short cal_left;
+	short cal_center;
+	short cal_right;
+	double cal_tolerance;
+	double compensate(short value);
+	double compensate2(double value);
+	void run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x);
+	std::list<key_listener*> listeners;
+	std::string keyname;
+	static key_listener* exclusive;
+};
+
+/**
+ * This class handles internals of mapping events from keyboard buttons and pseudo-buttons.
+ *
+ */
 class keymapper
 {
 public:
 /**
- * \brief Bind a key.
- *
  * Binds a key, erroring out if binding would conflict with existing one.
  *
- * \param mod Modifier set to require to be pressed.
- * \param modmask Modifier set to take into account.
- * \param keyname Key to bind the action to.
- * \param command The command to bind.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error The binding would conflict with existing one.
+ * parameter mod: Modifier set to require to be pressed.
+ * parameter modmask: Modifier set to take into account.
+ * parameter keyname: Key to bind the action to.
+ * parameter command: The command to bind.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: The binding would conflict with existing one or invalid modifier/key.
  */
-	void bind(std::string mod, std::string modmask, std::string keyname, std::string command) throw(std::bad_alloc,
-		std::runtime_error)
-	{
-		unsigned _mod = T::mod_str(mod);
-		unsigned _modmask = T::mod_str(modmask);
-		if(_mod & ~_modmask)
-			throw std::runtime_error("Mod must be subset of modmask");
-		typename T::internal_keysymbol _keyname = T::key_str(keyname);
-		/* Check for collisions. */
-		for(auto i = bindings.begin(); i != bindings.end(); i++) {
-			if(!(_keyname == i->symbol))
-				continue;
-			if((_mod & _modmask & i->modmask) != (i->mod & _modmask & i->modmask))
-				continue;
-			throw std::runtime_error("Would conflict with " + T::name_key(i->mod, i->modmask, i->symbol));
-		}
-		struct kdata k;
-		k.mod = _mod;
-		k.modmask = _modmask;
-		k.symbol = _keyname;
-		k.command = command;
-		bindings.push_back(k);
-	}
-
+	static void bind(std::string mod, std::string modmask, std::string keyname, std::string command)
+		throw(std::bad_alloc, std::runtime_error);
 /**
- * \brief Unbind a key.
- *
  * Unbinds a key, erroring out if binding does not exist..
  *
- * \param mod Modifier set to require to be pressed.
- * \param modmask Modifier set to take into account.
- * \param keyname Key to bind the action to.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error The binding does not exist.
+ * parameter mod: Modifier set to require to be pressed.
+ * parameter modmask: Modifier set to take into account.
+ * parameter keyname: Key to bind the action to.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: The binding does not exist.
  */
-	void unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
-		std::runtime_error)
-	{
-		unsigned _mod = T::mod_str(mod);
-		unsigned _modmask = T::mod_str(modmask);
-		typename T::internal_keysymbol _keyname = T::key_str(keyname);
-		for(auto i = bindings.begin(); i != bindings.end(); i++) {
-			if(!(_keyname == i->symbol) || _mod != i->mod || _modmask != i->modmask)
-				continue;
-			bindings.erase(i);
-			return;
-		}
-		throw std::runtime_error("No such binding");
-	}
+	static void unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
+		std::runtime_error);
 
 /**
- * \brief Map key symbol from keyboard + polarity into a command.
+ * Dump list of bindigns as message to console.
  *
- * Takes in symbol from keyboard and polarity. Outputs command to run.
- *
- * \param sym Symbol from keyboard (with its mods).
- * \param polarity True if key is being pressed, false if being released.
- * \return The command to run. "" if none.
- * \throws std::bad_alloc Not enough memory.
+ * throws std::bad_alloc: Not enough memory.
  */
-	std::string map(typename T::keysymbol sym, bool polarity) throw(std::bad_alloc)
-	{
-		unsigned _mod = T::mod_key(sym);
-		typename T::internal_keysymbol _keyname = T::key_key(sym);
-		for(auto i = bindings.begin(); i != bindings.end(); i++) {
-			if((!(_keyname == i->symbol)) || ((_mod & i->modmask) != (i->mod & i->modmask)))
-				continue;
-			std::string x = fixup_command_polarity(i->command, polarity);
-			if(x == "")
-				continue;
-			return x;
-		}
-		return "";
-	}
-
-/**
- * \brief Dump list of bindigns as messages to specified graphics handle.
- *
- * \throws std::bad_alloc Not enough memory.
- */
-	void dumpbindings() throw(std::bad_alloc)
-	{
-		for(auto i = bindings.begin(); i != bindings.end(); i++)
-			messages << "bind " << T::name_key(i->mod, i->modmask, i->symbol) << " " << i->command
-				<< std::endl;
-	}
-private:
-	struct kdata
-	{
-		unsigned mod;
-		unsigned modmask;
-		typename T::internal_keysymbol symbol;
-		std::string command;
-	};
-	std::list<kdata> bindings;
+	static void dumpbindings() throw(std::bad_alloc);
 };
 
 #endif
+
