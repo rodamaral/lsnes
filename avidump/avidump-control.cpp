@@ -14,12 +14,12 @@
 
 namespace
 {
-	boolean_setting dump_large("large-video", false);
-	numeric_setting dtb("default-top-border", 0, 8191, 0);
-	numeric_setting dbb("default-bottom-border", 0, 8191, 0);
-	numeric_setting dlb("default-left-border", 0, 8191, 0);
-	numeric_setting drb("default-right-border", 0, 8191, 0);
-	numeric_setting max_frames_per_segment("max-frames-per-segment", 0, 999999999, 0);
+	boolean_setting dump_large("avi-large", false);
+	numeric_setting dtb("avi-top-border", 0, 8191, 0);
+	numeric_setting dbb("avi-bottom-border", 0, 8191, 0);
+	numeric_setting dlb("avi-left-border", 0, 8191, 0);
+	numeric_setting drb("avi-right-border", 0, 8191, 0);
+	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 
 	class avi_avsnoop : public av_snooper
 	{

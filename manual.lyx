@@ -1014,59 +1014,64 @@ Set the frame advance timeout in milliseconds.
 \end_layout
 
 \begin_layout Subsection
-large-video
+avi-large
 \end_layout
 
 \begin_layout Standard
-Always dump at 512x448 or 512x478 regardless of what the console outputs.
+AVI dumper: Always dump at 512x448 or 512x478 regardless of what the console
+ outputs.
 \end_layout
 
 \begin_layout Subsection
-default-left-border
+avi-left-border
 \end_layout
 
 \begin_layout Standard
-Set the default left border thickness (unless lua overrides) for dumps.
+AVI dumper: Set the default left border thickness (unless lua overrides)
+ for dumps.
  Range 0-8191.
  Default is 0.
 \end_layout
 
 \begin_layout Subsection
-default-right-border
+avi-right-border
 \end_layout
 
 \begin_layout Standard
-Set the default right border thickness (unless lua overrides) for dumps.
+AVI dumper: Set the default right border thickness (unless lua overrides)
+ for dumps.
  Range 0-8191.
  Default is 0.
 \end_layout
 
 \begin_layout Subsection
-default-top-border
+avi-top-border
 \end_layout
 
 \begin_layout Standard
-Set the default top border thickness (unless lua overrides) for dumps.
+AVI dumper: Set the default top border thickness (unless lua overrides)
+ for dumps.
  Range 0-8191.
  Default is 0.
 \end_layout
 
 \begin_layout Subsection
-default-bottom-border
+avi-bottom-border
 \end_layout
 
 \begin_layout Standard
-Set the default bottom border thickness (unless lua overrides) for dumps.
+AVI dumper: Set the default bottom border thickness (unless lua overrides)
+ for dumps.
  Range 0-8191.
  Default is 0.
 \end_layout
 
 \begin_layout Subsection
-max-frames-per-segment
+avi-maxframes
 \end_layout
 
 \begin_layout Standard
-Maximum number of frames per dump segment (0 => unlimited).
+AVI dumper: Maximum number of frames per dump segment (0 => unlimited).
  Range 0-999999999.
  Default is 0.
 \end_layout
