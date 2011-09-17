@@ -2813,5 +2813,45 @@ Fix -Wall warnings
 Fix dumper video corruption with levels 10-18.
 \end_layout
 
+\begin_layout Subsection
+rr0-β2
+\end_layout
+
+\begin_layout Itemize
+Autofire
+\end_layout
+
+\begin_layout Itemize
+Lots of code cleanups
+\end_layout
+
+\begin_layout Itemize
+Lua interface to settings
+\end_layout
+
+\begin_layout Itemize
+Allow specifying AVI borders without Lua
+\end_layout
+
+\begin_layout Itemize
+Fix scaling if vscale > 1 and originx > 0 (left border exists)
+\end_layout
+
+\begin_layout Itemize
+on_snoop lua callback
+\end_layout
+
+\begin_layout Itemize
+Faster movie loading and saving.
+\end_layout
+
+\begin_layout Subsection
+rr0-β3
+\end_layout
+
+\begin_layout Itemize
+Joystick support
+\end_layout
+
 \end_body
 \end_document
