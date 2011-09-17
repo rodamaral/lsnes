@@ -366,41 +366,22 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 
 namespace
 {
-	class evallua : public command
-	{
-	public:
-		evallua() throw(std::bad_alloc) : command("evaluate-lua") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command evaluate_lua("evaluate-lua", "Evaluate expression in Lua VM",
+		"Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
 			do_eval_lua(args);
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Evaluate expression in Lua VM"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: evaluate-lua <expression>\n"
-				"Evaluates <expression> in Lua VM.\n";
-		}
-	} evallua_o;
+		});
 
-	class runlua : public command
-	{
-	public:
-		runlua() throw(std::bad_alloc) : command("run-lua") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
+	function_ptr_command run_lua("run-lua", "Run Lua script in Lua VM",
+		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(args == "")
 				throw std::runtime_error("Expected script to run");
 			do_run_lua(args);
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Run Lua script in Lua VM"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: run-lua <file>\n"
-				"Runs <file> in Lua VM.\n";
-		}
-	} runlua_o;
+		});
 }
 
 void lua_callback_quit() throw()

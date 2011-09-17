@@ -40,6 +40,13 @@ namespace
 			messages << "Game name is '" << our_movie.gamename << "'" << std::endl;
 		});
 
+	function_ptr_command set_gamename("set-gamename", "Set the game name",
+		"Syntax: set-gamename <name>\nSets the game name to <name>\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			our_movie.gamename = args;
+			messages << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
+		});
+
 	function_ptr_command show_authors("show-authors", "Show the run authors",
 		"Syntax: show-authors\nShows the run authors\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error)

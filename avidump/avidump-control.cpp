@@ -103,12 +103,10 @@ namespace
 
 	avi_avsnoop* vid_dumper;
 
-	class dump_video_command : public command
-	{
-	public:
-		dump_video_command() throw(std::bad_alloc) : command("dump-avi") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command avi_dump("dump-avi", "Start AVI capture",
+		"Syntax: dump-avi <level> <prefix>\nStart AVI capture to <prefix> using compression\n"
+		"level <level> (0-18).\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string level = t;
 			std::string prefix = t.tail();
@@ -141,22 +139,11 @@ namespace
 				throw std::runtime_error(x.str());
 			}
 			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Start AVI capture"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: dump-avi <level> <prefix>\n"
-				"Start AVI capture to <prefix> using compression\n"
-				"level <level> (0-18).\n";
-		}
-	} dump_video;
+		});
 
-	class end_video_command : public command
-	{
-	public:
-		end_video_command() throw(std::bad_alloc) : command("end-avi") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command end_avi("end-avi", "End AVI capture",
+		"Syntax: end-avi\nEnd a AVI capture.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
 			if(!vid_dumper)
@@ -171,12 +158,5 @@ namespace
 			}
 			delete vid_dumper;
 			vid_dumper = NULL;
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "End AVI capture"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: end-avi\n"
-				"End a AVI capture.\n";
-		}
-	} end_vieo;
+		});
 }

@@ -1805,12 +1805,9 @@ void window::sound_enable(bool enable) throw()
 
 namespace
 {
-	class enable_sound_cmd : public command
-	{
-	public:
-		enable_sound_cmd() throw(std::bad_alloc) : command("enable-sound") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command enable_sound("enable-sound", "Enable/Disable sound",
+		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::string s = args;
 			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled")
 				window::sound_enable(true);
@@ -1818,39 +1815,19 @@ namespace
 				window::sound_enable(false);
 			else
 				throw std::runtime_error("Bad sound setting");
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Enable/Disable sound"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: enable-sound <on/off>\n"
-				"Enable or disable sound.\n";
-		}
-	} enable_sound_o;
+		});
 
-	class identify_cmd : public command
-	{
-	public:
-		identify_cmd() throw(std::bad_alloc) : command("identify-key") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command identify_key("identify-key", "Identify a key",
+		"Syntax: identify-key\nIdentifies a (pseudo-)key.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			identify();
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Identify a key"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: identify-key\n"
-				"Identifies a (pseudo-)key.\n";
-		}
-	} identify_o;
+		});
 
-	class scrollup_cmd : public command
-	{
-	public:
-		scrollup_cmd() throw(std::bad_alloc) : command("scroll-up") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command scroll_up("scroll-up", "Scroll messages a page up",
+		"Syntax: scroll-up\nScrolls message console backward one page.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			if(messagebuffer_first_show > maxmessages)
@@ -1860,40 +1837,20 @@ namespace
 			if(messagebuffer_first_show < messagebuffer_first_seq)
 				messagebuffer_first_show = messagebuffer_first_seq;
 			window::notify_screen_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console back one page"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: scroll-up\n"
-				"Scrolls message console backward one page.\n";
-		}
-	} scrollup_o;
+		});
 
-	class scrollfullup_cmd : public command
-	{
-	public:
-		scrollfullup_cmd() throw(std::bad_alloc) : command("scroll-fullup") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command scroll_fullup("scroll-fullup", "Scroll messages to beginning",
+		"Syntax: scroll-fullup\nScrolls message console to its beginning.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			messagebuffer_first_show = messagebuffer_first_seq;
 			window::notify_screen_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to beginning"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: scroll-fullup\n"
-				"Scrolls message console to beginning.\n";
-		}
-	} scrollfullup_o;
+		});
 
-	class scrollfulldown_cmd : public command
-	{
-	public:
-		scrollfulldown_cmd() throw(std::bad_alloc) : command("scroll-fulldown") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command scroll_fulldown("scroll-fulldown", "Scroll messages to end",
+		"Syntax: scroll-fulldown\nScrolls message console to its end.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			if(messagebuffer_next_seq < maxmessages)
@@ -1901,21 +1858,11 @@ namespace
 			else
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
 			window::notify_screen_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console to end"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: scroll-fulldown\n"
-				"Scrolls message console to end.\n";
-		}
-	} scrollfulldown_o;
+		});
 
-	class scrolldown_cmd : public command
-	{
-	public:
-		scrolldown_cmd() throw(std::bad_alloc) : command("scroll-down") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command scrolldown("scroll-down", "Scroll messages a page down",
+		"Syntax: scroll-up\nScrolls message console forward one page.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			messagebuffer_first_show += maxmessages;
@@ -1924,21 +1871,11 @@ namespace
 			else if(messagebuffer_next_seq < messagebuffer_first_show + maxmessages)
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
 			window::notify_screen_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Scroll console one page forward"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: scroll-down\n"
-				"Scrolls message console forward one page.\n";
-		}
-	} scrolldown_o;
+		});
 
-	class toggleconsole_cmd : public command
-	{
-	public:
-		toggleconsole_cmd() throw(std::bad_alloc) : command("toggle-console") {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
+	function_ptr_command toggle_console("toggle-console", "Toggle console between small and full window",
+		"Syntax: toggle-console\nToggles console between small and large.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args != "")
 				throw std::runtime_error("This command does not take arguments");
 			console_mode = !console_mode;
@@ -1951,15 +1888,7 @@ namespace
 			else
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
 			window::notify_screen_update(true);
-		}
-		std::string get_short_help() throw(std::bad_alloc) { return "Toggle console between small and full "
-			"window"; }
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: toggle-console\n"
-				"Toggles console between small and large.\n";
-		}
-	} toggleconsole_o;
+		});
 }
 
 void window::wait_msec(uint64_t msec) throw(std::bad_alloc)
