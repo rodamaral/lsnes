@@ -438,10 +438,12 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 	if(!zipstream)
 		throw std::runtime_error("Failed to write central directory end marker to output file");
 	zipstream.close();
+	std::string backup = zipfile_path + ".backup";
 #if defined(_WIN32) || defined(_WIN64)
 	//Grumble, Windows seemingly can't do this atomically.
-	remove(zipfile_path.c_str());
+	remove(backup.c_str());
 #endif
+	rename(zipfile_path.c_str(), backup.c_str());
 	if(rename(temp_path.c_str(), zipfile_path.c_str()) < 0)
 		throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
 	committed = true;
