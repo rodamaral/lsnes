@@ -2931,5 +2931,21 @@ Try to fix some nasty failing movie load edge cases
 Allow specifying scripts to run on command line.
 \end_layout
 
+\begin_layout Subsection
+rr0-β6
+\end_layout
+
+\begin_layout Itemize
+Major source code reorganization.
+\end_layout
+
+\begin_layout Itemize
+Backup savestates before overwriting.
+\end_layout
+
+\begin_layout Itemize
+Don't crash if loading initial state fails.
+\end_layout
+
 \end_body
 \end_document
