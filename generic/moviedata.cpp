@@ -165,6 +165,8 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 //Load state from loaded movie file (does not catch errors).
 void do_load_state(struct moviefile& _movie, int lmode)
 {
+	if(_movie.force_corrupt)
+		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
 	if(gtype::toromtype(_movie.gametype) != our_rom->rtype)
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");

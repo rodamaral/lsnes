@@ -216,6 +216,7 @@ porttype_t parse_controller_type(const std::string& type, bool port) throw(std::
 
 moviefile::moviefile() throw(std::bad_alloc)
 {
+	force_corrupt = false;
 	gametype = GT_INVALID;
 	port1 = PT_GAMEPAD;
 	port2 = PT_NONE;
@@ -227,6 +228,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
 {
+	force_corrupt = false;
 	is_savestate = false;
 	std::string tmp;
 	zip_reader r(movie);

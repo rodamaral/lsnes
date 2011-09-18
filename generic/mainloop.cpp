@@ -355,7 +355,7 @@ namespace
 void update_movie_state()
 {
 	auto& _status = window::get_emustatus();
-	{
+	if(!system_corrupt) {
 		std::ostringstream x;
 		x << movb.get_movie().get_current_frame() << "(";
 		if(location_special == SPECIAL_FRAME_START)
@@ -368,10 +368,14 @@ void update_movie_state()
 			x << movb.get_movie().next_poll_number();
 		x << ";" << movb.get_movie().get_lag_frames() << ")/" << movb.get_movie().get_frame_count();
 		_status["Frame"] = x.str();
+	} else {
+		_status["Frame"] = "N/A";
 	}
 	{
 		std::ostringstream x;
-		if(movb.get_movie().readonly_mode())
+		if(system_corrupt)
+			x << "CORRUPT ";
+		else if(movb.get_movie().readonly_mode())
 			x << "PLAY ";
 		else
 			x << "REC ";
@@ -856,6 +860,7 @@ namespace
 	int handle_load()
 	{
 		if(pending_load != "") {
+			system_corrupt = false;
 			if(!do_load_state(pending_load, loadmode)) {
 				pending_load = "";
 				return -1;
@@ -976,14 +981,18 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 	bool just_did_loadstate = false;
 	try {
 		do_load_state(initial, LOAD_STATE_DEFAULT);
+		location_special = SPECIAL_SAVEPOINT;
+		update_movie_state();
 		first_round = our_movie.is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		messages << "FATAL: Can't load initial state: " << e.what() << std::endl;
-		fatal_error();
-		return;
+		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
+		system_corrupt = true;
+		update_movie_state();
+		framebuffer = screen_corrupt;
+		redraw_framebuffer();
 	}
 
 	lua_callback_startup();

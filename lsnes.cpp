@@ -133,21 +133,30 @@ int main(int argc, char** argv)
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
 	messages << "--- End of Startup --- " << std::endl;
+	moviefile movie;
+	movie.force_corrupt = true;
 	try {
-		moviefile movie;
 		bool loaded = false;
+		bool tried = false;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++)
 			if(i->length() > 0 && (*i)[0] != '-') {
-				movie = moviefile(*i);
-				loaded = true;
+				try {
+					tried = true;
+					movie = moviefile(*i);
+					loaded = true;
+				} catch(std::bad_alloc& e) {
+					OOM_panic();
+				} catch(std::exception& e) {
+					messages << "Error loading '" << *i << "': " << e.what() << std::endl;
+				}
 			}
-		if(!loaded)
+		if(!tried)
 			movie = generate_movie_template(cmdline, r);
 		main_loop(r, movie);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		messages << "Fatal: " << e.what() << std::endl;
+		messages << "FATAL: " << e.what() << std::endl;
 		fatal_error();
 		return 1;
 	}

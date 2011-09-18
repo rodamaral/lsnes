@@ -41,6 +41,10 @@ struct moviefile
 	void save(const std::string& filename, unsigned compression) throw(std::bad_alloc, std::runtime_error);
 
 /**
+ * Force loading as corrupt.
+ */
+	bool force_corrupt;
+/**
  * What is the ROM type and region?
  */
 	gametype_t gametype;
