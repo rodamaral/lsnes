@@ -57,6 +57,22 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	return movie;
 }
 
+namespace
+{
+	void run_extra_scripts(const std::vector<std::string>& cmdline)
+	{
+		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
+			std::string o = *i;
+			if(o.length() >= 6 && o.substr(0, 6) == "--run=") {
+				std::string file = o.substr(6);
+				messages << "--- Running " << file << " --- " << std::endl;
+				command::invokeC("run-script " + file);
+				messages << "--- End running " << file << " --- " << std::endl;
+			}
+		}
+	}
+}
+
 #if defined(_WIN32) || defined(_WIN64)
 int SDL_main(int argc, char** argv)
 #else
@@ -92,6 +108,8 @@ int main(int argc, char** argv)
 	messages << "--- Running lsnesrc --- " << std::endl;
 	command::invokeC("run-script " + cfgpath + "/lsnes.rc");
 	messages << "--- End running lsnesrc --- " << std::endl;
+
+	run_extra_scripts(cmdline);
 
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
