@@ -303,7 +303,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 }
 
 //Load state
-void do_load_state(const std::string& filename, int lmode)
+bool do_load_state(const std::string& filename, int lmode)
 {
 	uint64_t origtime = get_ticks_msec();
 	lua_callback_pre_load(filename);
@@ -315,7 +315,7 @@ void do_load_state(const std::string& filename, int lmode)
 	} catch(std::exception& e) {
 		messages << "Can't read movie/savestate '" << filename << "': " << e.what() << std::endl;
 		lua_callback_err_load(filename);
-		return;
+		return false;
 	}
 	try {
 		do_load_state(mfile, lmode);
@@ -327,6 +327,7 @@ void do_load_state(const std::string& filename, int lmode)
 	} catch(std::exception& e) {
 		messages << "Can't load movie/savestate '" << filename << "': " << e.what() << std::endl;
 		lua_callback_err_load(filename);
-		return;
+		return false;
 	}
+	return true;
 }

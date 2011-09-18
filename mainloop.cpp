@@ -851,11 +851,15 @@ namespace
 		}
 	} bah;
 
-	//If there is a pending load, perform it.
-	bool handle_load()
+	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
+	//failing.
+	int handle_load()
 	{
 		if(pending_load != "") {
-			do_load_state(pending_load, loadmode);
+			if(!do_load_state(pending_load, loadmode)) {
+				pending_load = "";
+				return -1;
+			}
 			redraw_framebuffer();
 			pending_load = "";
 			pending_reset_cycles = -1;
@@ -868,9 +872,9 @@ namespace
 				window::notify_screen_update();
 				window::poll_inputs();
 			}
-			return true;
+			return 1;
 		}
-		return false;
+		return 0;
 	}
 
 	//If there are pending saves, perform them.
@@ -993,7 +997,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 	while(amode != ADVANCE_QUIT) {
 		if(handle_corrupt()) {
 			first_round = our_movie.is_savestate;
-			just_did_loadstate = true;
+			just_did_loadstate = first_round;
 			continue;
 		}
 		long resetcycles = -1;
@@ -1013,11 +1017,15 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 			if(!delayed_reset) {
 				handle_saves();
 			}
-			if(handle_load()) {
+			int r = handle_load();
+			if(r > 0 || system_corrupt) {
 				first_round = our_movie.is_savestate;
 				amode = ADVANCE_PAUSE;
 				just_did_loadstate = first_round;
 				continue;
+			} else if(r < 0) {
+				//Not exactly desriable, but this at least won't desync.
+				amode = ADVANCE_PAUSE;
 			}
 		}
 		if(just_did_loadstate) {
