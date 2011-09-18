@@ -1,3 +1,4 @@
+#ifndef PLATFORM_STARTUP
 #include <sstream>
 #include "mainloop.hpp"
 #include "command.hpp"
@@ -154,3 +155,4 @@ int main(int argc, char** argv)
 	window::quit();
 	return 0;
 }
+#endif
