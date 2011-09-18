@@ -260,6 +260,16 @@ All: ./lsnes.rc (fallback default).
 If leading directories do not exist, attempt to create them is made.
 \end_layout
 
+\begin_layout Subsection
+--run=<file>
+\end_layout
+
+\begin_layout Standard
+If command line parameter --run=<file> is specified, that file is run after
+ lsnes.rc has executed.
+ If multiple such options are present, the files are run in order specified.
+\end_layout
+
 \begin_layout Section
 Game internal commands
 \end_layout
@@ -2907,6 +2917,18 @@ Fix multi-buttons
 
 \begin_layout Itemize
 Save jukebox functionality.
+\end_layout
+
+\begin_layout Subsection
+rr0-β5
+\end_layout
+
+\begin_layout Itemize
+Try to fix some nasty failing movie load edge cases
+\end_layout
+
+\begin_layout Itemize
+Allow specifying scripts to run on command line.
 \end_layout
 
 \end_body
