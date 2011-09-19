@@ -2947,5 +2947,29 @@ Backup savestates before overwriting.
 Don't crash if loading initial state fails.
 \end_layout
 
+\begin_layout Subsection
+rr0-β7
+\end_layout
+
+\begin_layout Itemize
+Fix firmware lookup
+\end_layout
+
+\begin_layout Itemize
+Fix author name parsing
+\end_layout
+
+\begin_layout Itemize
+Fix rerecord counting
+\end_layout
+
+\begin_layout Itemize
+(SDL) Print messages to console if SDL is uninitialized
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
 \end_body
 \end_document
