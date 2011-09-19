@@ -261,7 +261,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	std::string name = r.find_first();
 	for(auto name = r.begin(); name != r.end(); ++name)
 		if((*name).length() >= 10 && (*name).substr(0, 10) == "moviesram.")
-			sram[(*name).substr(10)] = read_raw_file(r, *name);
+			movie_sram[(*name).substr(10)] = read_raw_file(r, *name);
 	read_authors_file(r, authors);
 	read_input(r, input, port1, port2, 0);
 }
