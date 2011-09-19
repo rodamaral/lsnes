@@ -4,7 +4,7 @@ HOSTCC = $(CC)
 OBJECTS = $(patsubst %.cpp,%.o,$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.o,$(wildcard avidump/*.cpp)) fonts/font.o 
 GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
 
-PROGRAMS = lsnes.exe
+PROGRAMS = lsnes.exe movieinfo.exe
 
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)

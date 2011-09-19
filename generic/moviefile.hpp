@@ -147,9 +147,10 @@ struct moviefile
 /**
  * Get length of the movie
  *
+ * parameter framebias: Number of frames to subtract.
  * returns: Length of the movie in nanoseconds.
  */
-	uint64_t get_movie_length() throw();
+	uint64_t get_movie_length(uint64_t framebias = 0) throw();
 };
 
 #endif

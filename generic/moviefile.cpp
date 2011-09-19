@@ -326,9 +326,13 @@ namespace
 	};
 }
 
-uint64_t moviefile::get_movie_length() throw()
+uint64_t moviefile::get_movie_length(uint64_t framebias) throw()
 {
 	uint64_t frames = get_frame_count();
+	if(frames > framebias)
+		frames -= framebias;
+	else
+		frames = 0;
 	uint64_t* _magic = magic[(gametype == GT_SNES_PAL || gametype == GT_SGB_PAL) ? 1 : 0];
 	uint64_t t = _magic[BLOCK_SECONDS] * 1000000000ULL * (frames / _magic[BLOCK_FRAMES]);
 	frames %= _magic[BLOCK_FRAMES];
