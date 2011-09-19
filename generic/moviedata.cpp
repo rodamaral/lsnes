@@ -103,7 +103,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 	std::string fullname;
 	std::string nickname;
 	size_t split = _author.find_first_of("|");
-	if(!split) {
+	if(split >= _author.length()) {
 		fullname = _author;
 	} else {
 		fullname = _author.substr(0, split);
