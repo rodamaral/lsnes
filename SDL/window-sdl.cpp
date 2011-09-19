@@ -467,6 +467,7 @@ extern uint32_t fontdata[];
 
 namespace
 {
+	bool SDL_initialized = false;
 	uint32_t mouse_mask = 0;
 	uint32_t vc_xoffset;
 	uint32_t vc_yoffset;
@@ -1071,6 +1072,7 @@ namespace
 
 void window::init()
 {
+	SDL_initialized = true;
 	signal(SIGALRM, sigalrm_handler);
 	alarm(WATCHDOG_TIMEOUT);
 	init_keys();
@@ -1147,6 +1149,7 @@ void window::quit()
 		SDL_Quit();
 		sdl_init = false;
 	}
+	SDL_initialized = false;
 }
 
 bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_alloc)
@@ -1172,12 +1175,18 @@ void window::message(const std::string& msg) throw(std::bad_alloc)
 		size_t s = msg2.find_first_of("\n");
 		std::string forlog;
 		if(s >= msg2.length()) {
-			messagebuffer[messagebuffer_next_seq++] = (forlog = msg2);
-			system_log << forlog << std::endl;
+			if(SDL_initialized) {
+				messagebuffer[messagebuffer_next_seq++] = (forlog = msg2);
+				system_log << forlog << std::endl;
+			} else
+				std::cerr << msg2 << std::endl;
 			break;
 		} else {
-			messagebuffer[messagebuffer_next_seq++] = (forlog = msg2.substr(0, s));
-			system_log << forlog << std::endl;
+			if(SDL_initialized) {
+				messagebuffer[messagebuffer_next_seq++] = (forlog = msg2.substr(0, s));
+				system_log << forlog << std::endl;
+			} else
+				std::cerr << msg2.substr(0, s) << std::endl;
 			msg2 = msg2.substr(s + 1);
 		}
 
