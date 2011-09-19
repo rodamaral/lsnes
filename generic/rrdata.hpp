@@ -4,6 +4,7 @@
 #define RRDATA_BYTES 32
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 
 /**
  * Set of load IDs
@@ -90,17 +91,27 @@ public:
  * Write compressed representation of current load ID set to stream.
  *
  * parameter strm: The stream to write to.
+ * returns: Rerecord count.
  * throws std::bad_alloc: Not enough memory.
  */
-	static uint64_t write(std::ostream& strm) throw(std::bad_alloc);
+	static uint64_t write(std::vector<char>& strm) throw(std::bad_alloc);
 /**
  * Load compressed representation of load ID set from stream and union it with current set to form new current
  * set.
  *
  * parameter strm: The stream to read from.
+ * returns: Rerecord count.
  * throws std::bad_alloc: Not enough memory.
  */
-	static uint64_t read(std::istream& strm) throw(std::bad_alloc);
+	static uint64_t read(std::vector<char>& strm, bool dummy = false) throw(std::bad_alloc);
+/**
+ * Load compressed representation of load ID set from stream, but don't do anything to it.
+ *
+ * parameter strm: The stream to read from.
+ * returns: Rerecord count.
+ * throws std::bad_alloc: Not enough memory.
+ */
+	static uint64_t count(std::vector<char>& strm) throw(std::bad_alloc);
 /**
  * Internal pointer used by add_internal.
  */

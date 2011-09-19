@@ -111,7 +111,7 @@ void rrdata::close() throw()
 
 void rrdata::add(const struct rrdata::instance& i) throw(std::bad_alloc)
 {
-	if(rrset.insert(i).second) {
+	if(rrset.insert(i).second && handle_open) {
 		//std::cerr << "New symbol: " << i << std::endl;
 		ohandle.write(reinterpret_cast<const char*>(i.bytes), RRDATA_BYTES);
 		ohandle.flush();
@@ -127,7 +127,7 @@ void rrdata::add_internal() throw(std::bad_alloc)
 
 namespace
 {
-	void flush_symbol(std::ostream& strm, const rrdata::instance& base, const rrdata::instance& predicted,
+	void flush_symbol(std::vector<char>& strm, const rrdata::instance& base, const rrdata::instance& predicted,
 		unsigned count)
 	{
 		char opcode;
@@ -158,13 +158,15 @@ namespace
 		buf2[1] = (count - bias) >> 8;
 		buf2[2] = (count - bias);
 		memcpy(buf1 + (RRDATA_BYTES - j + 1), buf2 + (3 - (opcode >> 5)), opcode >> 5);
-		strm.write(buf1, (RRDATA_BYTES - j + 1) + (opcode >> 5));
+		for(size_t s = 0; s < (RRDATA_BYTES - j + 1) + (opcode >> 5); s++)
+			strm.push_back(buf1[s]);
 		//std::cerr << "Encoding " << count << " symbols starting from " << base << std::endl;
 	}
 }
 
-uint64_t rrdata::write(std::ostream& strm) throw(std::bad_alloc)
+uint64_t rrdata::write(std::vector<char>& strm) throw(std::bad_alloc)
 {
+	strm.clear();
 	uint64_t count = 0;
 	instance last_encode_end;
 	memset(last_encode_end.bytes, 0, RRDATA_BYTES);
@@ -194,28 +196,33 @@ uint64_t rrdata::write(std::ostream& strm) throw(std::bad_alloc)
 	}
 	if(encode_count > 0)
 		flush_symbol(strm, encode_base, last_encode_end, encode_count);
-	return count;
+	if(count)
+		return count - 1;
+	else
+		return 0;
 }
 
-uint64_t rrdata::read(std::istream& strm) throw(std::bad_alloc)
+uint64_t rrdata::read(std::vector<char>& strm, bool dummy) throw(std::bad_alloc)
 {
 	uint64_t count = 0;
 	instance decoding;
+	uint64_t ptr = 0;
 	memset(decoding.bytes, 0, RRDATA_BYTES);
-	while(strm) {
+	while(ptr < strm.size()) {
 		char opcode;
 		char buf1[RRDATA_BYTES];
 		char buf2[3];
-		strm.read(&opcode, 1);
-		if(!strm)
-			continue;
+		opcode = strm[ptr++];
 		unsigned validbytes = (opcode & 0x1F);
 		unsigned lengthbytes = (opcode & 0x60) >> 5;
 		unsigned repeat = 1;
-		strm.read(buf1, RRDATA_BYTES - validbytes);
+		memcpy(buf1, &strm[ptr], RRDATA_BYTES - validbytes);
+		ptr += (RRDATA_BYTES - validbytes);
 		memcpy(decoding.bytes + validbytes, buf1, RRDATA_BYTES - validbytes);
-		if(lengthbytes > 0)
-			strm.read(buf2, lengthbytes);
+		if(lengthbytes > 0) {
+			memcpy(buf2, &strm[ptr], lengthbytes);
+			ptr += lengthbytes;
+		}
 		if(lengthbytes == 1)
 			repeat = 2 + buf2[0];
 		if(lengthbytes == 2)
@@ -224,11 +231,20 @@ uint64_t rrdata::read(std::istream& strm) throw(std::bad_alloc)
 			repeat = 65794 + static_cast<unsigned>(buf2[0]) * 65536 + static_cast<unsigned>(buf2[1]) *
 				256 + buf2[2];
 		//std::cerr << "Decoding " << count << " symbols starting from " << decoding << std::endl;
-		for(unsigned i = 0; i < repeat; i++)
-			rrdata::add(decoding++);
+		if(!dummy)
+			for(unsigned i = 0; i < repeat; i++)
+				rrdata::add(decoding++);
 		count += repeat;
 	}
-	return count;
+	if(count)
+		return count - 1;
+	else
+		return 0;
+}
+
+uint64_t rrdata::count(std::vector<char>& strm) throw(std::bad_alloc)
+{
+	return read(strm, true);
 }
 
 const char* hexes = "0123456789ABCDEF";

@@ -514,6 +514,14 @@ class my_interface : public SNES::Interface
 
 namespace
 {
+	function_ptr_command<> count_rerecords("count-rerecords", "Count rerecords",
+		"Syntax: count-rerecords\nCounts rerecords.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			std::vector<char> tmp;
+			uint64_t x = rrdata::write(tmp);
+			messages << x << " rerecord(s)" << std::endl;
+		});
+
 	function_ptr_command<const std::string&> quit_emulator("quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {

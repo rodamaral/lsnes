@@ -99,18 +99,10 @@ void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::st
 	}
 }
 
-std::string read_rrdata(zip_reader& r, const std::string& projectid) throw(std::bad_alloc, std::runtime_error)
+std::string read_rrdata(zip_reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 {
-	std::istream& m = r["rrdata"];
-	uint64_t count;
-	try {
-		rrdata::read_base(projectid);
-		count = rrdata::read(m);
-		delete &m;
-	} catch(...) {
-		delete &m;
-		throw;
-	}
+	out = read_raw_file(r, "rrdata");
+	uint64_t count = rrdata::count(out);
 	std::ostringstream x;
 	x << count;
 	return x.str();
@@ -118,17 +110,10 @@ std::string read_rrdata(zip_reader& r, const std::string& projectid) throw(std::
 
 void write_rrdata(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
 {
-	std::ostream& m = w.create_file("rrdata");
 	uint64_t count;
-	try {
-		count = rrdata::write(m);
-		if(!m)
-			throw std::runtime_error("Can't write ZIP file member");
-		w.close_file();
-	} catch(...) {
-		w.close_file();
-		throw;
-	}
+	std::vector<char> out;
+	count = rrdata::write(out);
+	write_raw_file(w, "rrdata", out);
 	std::ostream& m2 = w.create_file("rerecords");
 	try {
 		m2 << count << std::endl;
@@ -254,7 +239,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	port2 = port_type::lookup(tmp, true).ptype;
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
-	rerecords = read_rrdata(r, projectid);
+	rerecords = read_rrdata(r, c_rrdata);
 	read_linefile(r, "coreversion", coreversion);
 	read_linefile(r, "rom.sha256", rom_sha256, true);
 	read_linefile(r, "romxml.sha256", romxml_sha256, true);

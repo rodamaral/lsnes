@@ -210,6 +210,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 
 	//Negative return.
 	rrdata::read_base(_movie.projectid);
+	rrdata::read(_movie.c_rrdata);
 	rrdata::add_internal();
 	try {
 		our_rom->region = gtype::toromregion(_movie.gametype);

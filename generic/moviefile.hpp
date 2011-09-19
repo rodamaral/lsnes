@@ -129,6 +129,10 @@ struct moviefile
  */
 	std::vector<char> movie_state;
 /**
+ * Compressed rrdata.
+ */
+	std::vector<char> c_rrdata;
+/**
  * Input for each (sub)frame.
  */
 	std::vector<controls_t> input;		//Input for each frame.
