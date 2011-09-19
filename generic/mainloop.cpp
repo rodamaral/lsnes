@@ -122,10 +122,10 @@ namespace
 class firmware_path_setting : public setting
 {
 public:
-	firmware_path_setting() : setting("firmwarepath") { _firmwarepath = "./"; default_firmware = true; }
+	firmware_path_setting() : setting("firmwarepath") { _firmwarepath = "."; default_firmware = true; }
 	void blank() throw(std::bad_alloc, std::runtime_error)
 	{
-		_firmwarepath = "./";
+		_firmwarepath = ".";
 		default_firmware = true;
 	}
 
@@ -453,7 +453,11 @@ class my_interface : public SNES::Interface
 {
 	string path(SNES::Cartridge::Slot slot, const string &hint)
 	{
-		return static_cast<std::string>(firmwarepath_setting).c_str();
+		const char* _hint = hint;
+		std::string _hint2 = _hint;
+		std::string fwp = firmwarepath_setting;
+		std::string finalpath = fwp + "/" + _hint2;
+		return finalpath.c_str();
 	}
 
 	void video_refresh(const uint16_t *data, bool hires, bool interlace, bool overscan)
