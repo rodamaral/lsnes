@@ -2796,8 +2796,15 @@ NO_THREADS=1
 \end_layout
 
 \begin_layout Standard
-Don't use threads (makes dumping slower, but threads probably only work
- on Linux).
+Don't use threads on Linux.
+\end_layout
+
+\begin_layout Subsubsection
+USE_THREADS=1
+\end_layout
+
+\begin_layout Standard
+Try to use threads even on non-Linux systems.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2805,8 +2812,12 @@ CC=<compiler>
 \end_layout
 
 \begin_layout Standard
-(cross) C++ compiler to use.
- Defaults to g++-4.5
+Target C++ compiler to use.
+ Defaults to g++-4.5.
+\end_layout
+
+\begin_layout Standard
+Note: If crosscompiling, this has to be crosscompiler.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2814,8 +2825,13 @@ HOSTCC=<compiler>
 \end_layout
 
 \begin_layout Standard
-(host) C++ compiler to use.
+Host C++ compiler to use.
  Defaults to the same as CC.
+\end_layout
+
+\begin_layout Standard
+Note: If crosscompiling, that has to be host compiler (the files produced
+ will be run in the build process!)
 \end_layout
 
 \begin_layout Subsubsection

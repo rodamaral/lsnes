@@ -1,7 +1,12 @@
+EXCEUTABLE_SUFFIX = exe
+OBJECT_SUFFIX = o
+ARCHIVE_SUFFIX = a
 FONT_SRC := unifontfull-5.1.20080820.hex
 CC := g++-4.5
 HOSTCC = $(CC)
-OBJECTS = $(patsubst %.cpp,%.o,$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.o,$(wildcard avidump/*.cpp)) fonts/font.o 
+
+
+OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avidump/*.cpp)) fonts/font.$(OBJECT_SUFFIX) 
 GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)
@@ -10,14 +15,14 @@ PLATFORM = SDL
 PLATFORM_CFLAGS = $(CFLAGS)
 PLATFORM_LDFLAGS = $(LDFLAGS)
 
-PROGRAMS = lsnes.exe movieinfo.exe lsnes-dumpavi.exe
+PROGRAMS = lsnes.$(EXECUTABLE_SUFFIX) movieinfo.$(EXECUTABLE_SUFFIX) lsnes-dumpavi.$(EXECUTABLE_SUFFIX)
 
 
 #Lua.
 ifdef NO_LUA
 CFLAGS += -DNO_LUA
 else
-OBJECTS += $(patsubst %.cpp,%.o,$(wildcard lua/*.cpp))
+OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard lua/*.cpp))
 CFLAGS += $(shell pkg-config lua5.1 --cflags)
 LDFLAGS += $(shell pkg-config lua5.1 --libs)
 endif
@@ -37,45 +42,45 @@ CFLAGS += -DBSNES_IS_COMPAT
 endif
 
 all: $(PROGRAMS)
-.PRECIOUS: %.exe %.o
+.PRECIOUS: %.$(EXECUTABLE_SUFFIX) %.$(OBJECT_SUFFIX)
 
 
 #Platform stuff.
 ifeq ($(PLATFORM), SDL)
-LSNES_MAIN = lsnes.o
-PLATFORM_OBJECTS += $(patsubst %.cpp,%.o,$(wildcard SDL/*.cpp))
+LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard SDL/*.cpp))
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell sdl-config --libs)
 ifdef TEST_WIN32
 PLATFORM_LDFLAGS += -lSDLmain
 endif
-SDL/%.o: SDL/%.cpp
+SDL/%.$(OBJECT_SUFFIX): SDL/%.cpp
 	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
-lsnes.o: lsnes.cpp
+lsnes.$(OBJECT_SUFFIX): lsnes.cpp
 	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
-lsnes.exe: lsnes.o $(OBJECTS) $(PLATFORM_OBJECTS)
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.a $(LDFLAGS) $(PLATFORM_LDFLAGS)
+lsnes.$(EXECUTABLE_SUFFIX): lsnes.$(OBJECT_SUFFIX) $(OBJECTS) $(PLATFORM_OBJECTS)
+	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS) $(PLATFORM_LDFLAGS)
 else
-lsnes.o:
+lsnes.$(OBJECT_SUFFIX):
 	echo "Unsupported platform" $(PLATFORM)
 	false
 endif
 
 
-%.exe: %.o $(OBJECTS) dummy/window-dummy.o
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.a $(LDFLAGS)
+%.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) dummy/window-dummy.$(OBJECT_SUFFIX)
+	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
 
-%.o: %.cpp
+%.$(OBJECT_SUFFIX): %.cpp
 	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS)
 
-fonts/font.o: fonts/$(FONT_SRC) fonts/parsehexfont.exe
-	fonts/parsehexfont.exe <fonts/$(FONT_SRC) >fonts/font.cpp
-	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -c -o fonts/font.o fonts/font.cpp
-	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -o fonts/verifyhexfont.exe fonts/verifyhexfont.cpp fonts/font.o
-	fonts/verifyhexfont.exe
+fonts/font.$(OBJECT_SUFFIX): fonts/$(FONT_SRC) fonts/parsehexfont.$(EXECUTABLE_SUFFIX)
+	fonts/parsehexfont.$(EXECUTABLE_SUFFIX) <fonts/$(FONT_SRC) >fonts/font.cpp
+	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -c -o fonts/font.$(OBJECT_SUFFIX) fonts/font.cpp
+	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -o fonts/verifyhexfont.$(EXECUTABLE_SUFFIX) fonts/verifyhexfont.cpp fonts/font.$(OBJECT_SUFFIX)
+	fonts/verifyhexfont.$(EXECUTABLE_SUFFIX)
 
-fonts/parsehexfont.exe: fonts/parsehexfont.cpp
+fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
 	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS) $(patsubst %.exe,%.o,$(PROGRAMS)) SDL/*.o avidump/*.o generic/*.o
+	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) SDL/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX)
