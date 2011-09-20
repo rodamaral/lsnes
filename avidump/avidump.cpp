@@ -246,7 +246,7 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 		for(size_t i = 0; i < 4 * static_cast<size_t>(width) * height; i++)
 			tframe[i] -= pframe[i];
 	}
-	size_t l = cframe.size() - 10;
+	uLongf l = cframe.size() - 10;
 	if(compress2(&cframe[10], &l, &tframe[0], tframe.size(), compression_level) != Z_OK)
 		throw std::runtime_error("Error compressing frame");
 	//Pad the frame.

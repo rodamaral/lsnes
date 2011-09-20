@@ -522,9 +522,17 @@ namespace
 	bool drives_allowed = false;
 #endif
 
+	const char* str_index(const char* str, int ch)
+	{
+		while(*str)
+			if(*str == ch)
+				return str;
+		return NULL;
+	}
+
 	bool ispathsep(char ch)
 	{
-		return (index(path_splitters, static_cast<int>(static_cast<unsigned char>(ch))) != NULL);
+		return (str_index(path_splitters, static_cast<int>(static_cast<unsigned char>(ch))) != NULL);
 	}
 
 	bool isroot(const std::string& path)

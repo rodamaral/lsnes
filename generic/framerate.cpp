@@ -1,4 +1,5 @@
 #include "framerate.hpp"
+#include <cstdlib>
 #include "settings.hpp"
 #include <string>
 #include <sstream>

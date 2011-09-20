@@ -1,5 +1,7 @@
 #include "memorywatch.hpp"
 #include "memorymanip.hpp"
+#include <cstdio>
+#include <cstdlib>
 #include <list>
 #include <iomanip>
 #include <stack>

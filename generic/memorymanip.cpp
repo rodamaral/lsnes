@@ -958,7 +958,7 @@ namespace
 			else if(firstword == "udgt" && !has_value)
 				isrch->dword_ugt();
 			else if(firstword == "d" && has_value) {
-				if(static_cast<int64_t>(value) < -2147483648 || value > 4294967295ULL)
+				if(static_cast<int64_t>(value) < -2147483648LL || value > 4294967295ULL)
 					throw std::runtime_error("Value to compare out of range");
 				isrch->dword_value(value & 0xFF);
 			} else if(firstword == "sqlt" && !has_value)
@@ -1024,6 +1024,6 @@ namespace
 	read_command<uint64_t, int64_t, uint64_t> rs8("read-sqword", memory_read_qword);
 	write_command<uint8_t, -128, 0xFF> w1("write-byte", memory_write_byte);
 	write_command<uint16_t, -32768, 0xFFFF> w2("write-word", memory_write_word);
-	write_command<uint32_t, -2147483648, 0xFFFFFFFFU> w4("write-dword", memory_write_dword);
+	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL> w4("write-dword", memory_write_dword);
 	write_command<uint64_t, -9223372036854775808LL, 0xFFFFFFFFFFFFFFFFULL> w8("write-qword", memory_write_qword);
 }

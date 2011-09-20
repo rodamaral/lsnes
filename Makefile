@@ -1,4 +1,4 @@
-EXCEUTABLE_SUFFIX = exe
+EXECUTABLE_SUFFIX = exe
 OBJECT_SUFFIX = o
 ARCHIVE_SUFFIX = a
 FONT_SRC := unifontfull-5.1.20080820.hex
@@ -55,9 +55,9 @@ ifdef TEST_WIN32
 PLATFORM_LDFLAGS += -lSDLmain
 endif
 SDL/%.$(OBJECT_SUFFIX): SDL/%.cpp
-	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
+	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
 lsnes.$(OBJECT_SUFFIX): lsnes.cpp
-	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
+	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
 lsnes.$(EXECUTABLE_SUFFIX): lsnes.$(OBJECT_SUFFIX) $(OBJECTS) $(PLATFORM_OBJECTS)
 	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS) $(PLATFORM_LDFLAGS)
 else
@@ -71,16 +71,16 @@ endif
 	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(CC) -I. -Igeneric -g -std=c++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS)
+	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS)
 
 fonts/font.$(OBJECT_SUFFIX): fonts/$(FONT_SRC) fonts/parsehexfont.$(EXECUTABLE_SUFFIX)
 	fonts/parsehexfont.$(EXECUTABLE_SUFFIX) <fonts/$(FONT_SRC) >fonts/font.cpp
-	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -c -o fonts/font.$(OBJECT_SUFFIX) fonts/font.cpp
-	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -o fonts/verifyhexfont.$(EXECUTABLE_SUFFIX) fonts/verifyhexfont.cpp fonts/font.$(OBJECT_SUFFIX)
+	$(CC) -std=gnu++0x $(HOSTCCFLAGS) -c -o fonts/font.$(OBJECT_SUFFIX) fonts/font.cpp
+	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o fonts/verifyhexfont.$(EXECUTABLE_SUFFIX) fonts/verifyhexfont.cpp fonts/font.cpp
 	fonts/verifyhexfont.$(EXECUTABLE_SUFFIX)
 
 fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
-	$(HOSTCC) -std=c++0x $(HOSTCCFLAGS) -o $@ $^
+	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o $@ $^
 
 clean:
 	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) SDL/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX)

@@ -922,7 +922,9 @@ namespace
 
 	void do_event(SDL_Event& e) throw(std::bad_alloc)
 	{
+#ifdef SIGALRM
 		alarm(WATCHDOG_TIMEOUT);
+#endif
 		if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE && e.key.keysym.mod == (KMOD_LCTRL |
 			KMOD_LALT))
 			exit(1);
@@ -1073,8 +1075,10 @@ namespace
 void window::init()
 {
 	SDL_initialized = true;
+#ifdef SIGALRM
 	signal(SIGALRM, sigalrm_handler);
 	alarm(WATCHDOG_TIMEOUT);
+#endif
 	init_keys();
 	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
 	time_t curtime = time(NULL);

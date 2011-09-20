@@ -2,6 +2,8 @@
 #define _lua_int__hpp__included__
 
 #include "lua.hpp"
+#include <cstdio>
+#include <cstdlib>
 extern "C"
 {
 #include <lua.h>
