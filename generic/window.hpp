@@ -1,7 +1,6 @@
 #ifndef _window__hpp__included__
 #define _window__hpp__included__
 
-#include "SDL.h"
 #include "render.hpp"
 #include <string>
 #include <map>

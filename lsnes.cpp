@@ -1,4 +1,3 @@
-#ifndef PLATFORM_STARTUP
 #include <sstream>
 #include "mainloop.hpp"
 #include "command.hpp"
@@ -14,7 +13,7 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 #include "framerate.hpp"
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 #include "SDL_main.h"
 #endif
 
@@ -74,11 +73,7 @@ namespace
 	}
 }
 
-#if defined(_WIN32) || defined(_WIN64)
-int SDL_main(int argc, char** argv)
-#else
 int main(int argc, char** argv)
-#endif
 {
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
@@ -164,4 +159,3 @@ int main(int argc, char** argv)
 	window::quit();
 	return 0;
 }
-#endif

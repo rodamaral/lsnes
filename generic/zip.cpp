@@ -439,7 +439,7 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		throw std::runtime_error("Failed to write central directory end marker to output file");
 	zipstream.close();
 	std::string backup = zipfile_path + ".backup";
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 	//Grumble, Windows seemingly can't do this atomically.
 	remove(backup.c_str());
 #endif
@@ -513,7 +513,7 @@ void zip_writer::close_file() throw(std::bad_alloc, std::logic_error, std::runti
 
 namespace
 {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 	const char* path_splitters = "\\/";
 	bool drives_allowed = true;
 #else

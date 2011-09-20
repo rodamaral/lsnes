@@ -8,8 +8,16 @@
 #include <list>
 #include <stdexcept>
 
-
+#ifdef USE_THREADS
+#define REALLY_USE_THREADS 1
+#endif
 #ifndef NO_THREADS
+#ifdef __linux__
+#define REALLY_USE_THREADS 1
+#endif
+#endif
+
+#ifdef REALLY_USE_THREADS
 #include <thread>
 #include <condition_variable>
 #include <mutex>

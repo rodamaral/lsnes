@@ -976,7 +976,7 @@ namespace
 	}
 }
 
-void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad_alloc,
+void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	//Basic initialization.
@@ -1001,6 +1001,10 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial) throw(std::bad
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
+		if(load_has_to_succeed) {
+			messages << "FATAL: Can't load movie" << std::endl;
+			window::fatal_error();
+		}
 		system_corrupt = true;
 		update_movie_state();
 		framebuffer = screen_corrupt;

@@ -158,7 +158,7 @@ Force ROM to be considered NTSC-only (default for everything except SNES
 \end_layout
 
 \begin_layout Subsection
-New session options
+New session options (not for lsnes-avidump.exe)
 \end_layout
 
 \begin_layout Standard
@@ -225,6 +225,70 @@ Add author with full name of <fullname> and nickname of <nickname>.
 \begin_layout Standard
 If filename is specified on command line, it is loaded as initial state
  (instead of constructing one).
+\end_layout
+
+\begin_layout Standard
+Mandatory for lsnes-avidump.exe
+\end_layout
+
+\begin_layout Subsection
+lsnes-avidump.exe options
+\end_layout
+
+\begin_layout Subsubsection
+--prefix=<prefix>
+\end_layout
+
+\begin_layout Standard
+Set dump prefix.
+ Default is 
+\begin_inset Quotes eld
+\end_inset
+
+avidump
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+--level=<level>
+\end_layout
+
+\begin_layout Standard
+Set compression level (0-18).
+ Default is 7.
+\end_layout
+
+\begin_layout Subsubsection
+--length=<length>
+\end_layout
+
+\begin_layout Standard
+Set number of frames to dump.
+ Mandatory.
+\end_layout
+
+\begin_layout Subsubsection
+--lua=<script>
+\end_layout
+
+\begin_layout Standard
+Run specified lua script.
+\end_layout
+
+\begin_layout Section
+Movieinfo.exe
+\end_layout
+
+\begin_layout Itemize
+Syntax: Movieinfo.exe <file>
+\end_layout
+
+\begin_layout Standard
+Opens <file> and parses it as a movie, giving all sorts of information about
+ it.
 \end_layout
 
 \begin_layout Section
@@ -2968,7 +3032,11 @@ Fix rerecord counting
 \end_layout
 
 \begin_layout Itemize
+Add movieinfo program
+\end_layout
 
+\begin_layout Itemize
+Fix loading movies starting from SRAM.
 \end_layout
 
 \end_body
