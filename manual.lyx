@@ -2106,7 +2106,7 @@ Member: gametype
 \end_layout
 
 \begin_layout Standard
-Type of game ROM and region.
+Type of game ROM and region (as one line).
  Valid values are:
 \end_layout
 
@@ -2380,7 +2380,7 @@ Region
 \begin_inset Text
 
 \begin_layout Plain Layout
-Framerate
+Framerate (fps)
 \end_layout
 
 \end_inset
@@ -2438,7 +2438,7 @@ Member: port1
 \end_layout
 
 \begin_layout Standard
-Contains type of port #1.
+Contains type of port #1 (as one line).
  Valid values are 'none', 'gamepad', 'multitap' and 'mouse'.
  If not present, defaults to 'gamepad'.
 \end_layout
@@ -2448,7 +2448,7 @@ Member: port2
 \end_layout
 
 \begin_layout Standard
-Contains type of port #2.
+Contains type of port #2 (as one line).
  Valid values are 'none', 'gamepad', 'multitap', 'mouse', 'superscope',
  'justifier' and 'justifiers'.
  If not present, defaults to 'none'.
@@ -2459,7 +2459,7 @@ Member: gamename
 \end_layout
 
 \begin_layout Standard
-Contains name of the game.
+Contains name of the game (as one line).
 \end_layout
 
 \begin_layout Subsection
@@ -2484,7 +2484,7 @@ lsnes-rr1
 \begin_inset Quotes erd
 \end_inset
 
-.
+ (one line).
  Used to reject other saves.
 \end_layout
 
@@ -2501,7 +2501,7 @@ Always
 \begin_inset Quotes erd
 \end_inset
 
-.
+ (one line).
  Used to identify what controls are there.
 \end_layout
 
@@ -2518,7 +2518,7 @@ coreversion
 \end_layout
 
 \begin_layout Standard
-Contains bsnes core version number.
+Contains bsnes core version number (as one line).
 \end_layout
 
 \begin_layout Subsection
@@ -2526,7 +2526,7 @@ Member: projectid
 \end_layout
 
 \begin_layout Standard
-Contains project ID.
+Contains project ID (as one line).
  Used to identify if two movies are part of the same project.
 \end_layout
 
@@ -2535,7 +2535,7 @@ Member: {rom,slota,slotb}{,xml}.sha256
 \end_layout
 
 \begin_layout Standard
-Contains SHA-256 of said ROM or ROM mapping file.
+Contains SHA-256 of said ROM or ROM mapping file (as one line).
  Absent if corresponding file is absent.
 \end_layout
 
@@ -2593,6 +2593,10 @@ data ready
 32 bytes: SHA-256 of previous.
 \end_layout
 
+\begin_layout Itemize
+(total of 512 bytes)
+\end_layout
+
 \begin_layout Subsection
 Member: hostmemory
 \end_layout
@@ -2607,7 +2611,7 @@ Member: savestate
 \end_layout
 
 \begin_layout Standard
-The savestate itself.
+The raw binary savestate itself.
  Savestate detection uses this file, only present in savestates.
 \end_layout
 
@@ -2618,6 +2622,9 @@ Member: screenshot
 \begin_layout Standard
 Screenshot of current frame.
  Only present in savestates.
+ First 2 bytes are big-endian width of image, rest are big-endian 15-bit
+ image data (5 bits per channel*pixel, the MSB is unused).
+ Height of image is inferred from the width and size of data.
 \end_layout
 
 \begin_layout Subsection
@@ -2656,8 +2663,8 @@ Member: rerecords
 \end_layout
 
 \begin_layout Standard
-Contains textual base-10 rerecord count (emulator just writes this, it doesn't
- read it) + 1.
+Contains textual base-10 rerecord count (as one line; emulator just writes
+ this, it doesn't read it) + 1.
 \end_layout
 
 \begin_layout Subsection
@@ -2768,6 +2775,10 @@ SDL (SDL platform)
 \end_layout
 
 \begin_layout Itemize
+SDLmain (Windows only)
+\end_layout
+
+\begin_layout Itemize
 boost_iostreams
 \end_layout
 
@@ -2776,7 +2787,7 @@ boost_filesystem
 \end_layout
 
 \begin_layout Itemize
-boost (conversion)
+boost (conversion, header only)
 \end_layout
 
 \begin_layout Subsection
@@ -2884,15 +2895,6 @@ Firmwares can't be loaded from ZIP archives.
 
 \begin_layout Itemize
 Manual polls can be corrupted if savestate occurs during those.
-\end_layout
-
-\begin_layout Subsection
-TODO For rr0:
-\end_layout
-
-\begin_layout Itemize
-Make it build on Windows (and build binaries).
- Not todo for rr0-β0.
 \end_layout
 
 \begin_layout Subsection
