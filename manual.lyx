@@ -2923,14 +2923,6 @@ No menus, command based interface (SDL).
 Long commands don't scroll.
 \end_layout
 
-\begin_layout Itemize
-No autofire
-\end_layout
-
-\begin_layout Itemize
-Joysticks don't work.
-\end_layout
-
 \begin_layout Section
 Changelog:
 \end_layout
@@ -3053,6 +3045,30 @@ Add movieinfo program
 
 \begin_layout Itemize
 Fix loading movies starting from SRAM.
+\end_layout
+
+\begin_layout Subsection
+rr0-β8
+\end_layout
+
+\begin_layout Itemize
+Add support for unattended dumping
+\end_layout
+
+\begin_layout Itemize
+Fix compiling for Win32
+\end_layout
+
+\begin_layout Itemize
+Don't lock up if sound can't be initialized
+\end_layout
+
+\begin_layout Itemize
+Strip trailing CR from commands
+\end_layout
+
+\begin_layout Itemize
+Don't try to do dubious things in global ctors (fix crash on startup)
 \end_layout
 
 \end_body
