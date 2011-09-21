@@ -83,6 +83,8 @@ void command::invokeC(const std::string& cmd) throw()
 {
 	try {
 		std::string cmd2 = cmd;
+		if(cmd2[cmd2.length() - 1] == '\r')
+			cmd2 = cmd2.substr(0, cmd2.length() - 1);
 		if(cmd2 == "?") {
 			//The special ? command.
 			if(commands) {
@@ -149,17 +151,17 @@ void command::invokeC(const std::string& cmd) throw()
 				messages << "Unknown command '" << rcmd << "'" << std::endl;
 				return;
 			}
-			if(command_stack.count(cmd))
+			if(command_stack.count(cmd2))
 				throw std::runtime_error("Recursive command invocation");
-			command_stack.insert(cmd);
+			command_stack.insert(cmd2);
 			cmdh->invoke(args);
-			command_stack.erase(cmd);
+			command_stack.erase(cmd2);
 			return;
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
 			messages << "Error: " << e.what() << std::endl;
-			command_stack.erase(cmd);
+			command_stack.erase(cmd2);
 			return;
 		}
 	} catch(std::bad_alloc& e) {
