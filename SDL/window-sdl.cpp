@@ -1127,6 +1127,10 @@ void window::init()
 
 	if(SDL_OpenAudio(desired, obtained) < 0) {
 		message("Audio can't be initialized, audio playback disabled");
+		//Disable audio.
+		sampledup_ctr = 0;
+		sampledup_inc = 0;
+		sampledup_mod = 0;
 		return;
 	}
 
