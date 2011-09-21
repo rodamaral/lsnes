@@ -29,6 +29,8 @@ class my_interfaced : public SNES::Interface
 struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {
 	struct moviefile movie;
+	movie.coreversion = bsnes_core_version;
+	movie.projectid = get_random_hexstring(40);
 	movie.gametype = gtype::togametype(r.rtype, r.region);
 	movie.rom_sha256 = r.rom.sha256;
 	movie.romxml_sha256 = r.rom_xml.sha256;

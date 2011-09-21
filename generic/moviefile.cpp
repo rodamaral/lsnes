@@ -205,8 +205,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 	gametype = GT_INVALID;
 	port1 = PT_GAMEPAD;
 	port2 = PT_NONE;
-	coreversion = bsnes_core_version;
-	projectid = get_random_hexstring(40);
+	coreversion = "";
+	projectid = "";
 	rerecords = "0";
 	is_savestate = false;
 }
