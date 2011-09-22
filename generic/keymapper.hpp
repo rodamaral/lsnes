@@ -81,10 +81,15 @@ public:
  * Equality.
  */
 	bool operator==(const modifier_set& m) const throw();
-
+/**
+ * Debugging print
+ */
+	friend std::ostream& operator<<(std::ostream& os, const modifier_set& m);
 private:
 	std::set<const modifier*> set;
 };
+
+std::ostream&  operator<<(std::ostream& os, const modifier_set& m);
 
 /**
  * Key or key group.

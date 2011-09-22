@@ -192,21 +192,56 @@ bool modifier_set::operator==(const modifier_set& m) const throw()
 	return true;
 }
 
+std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
+{
+	os << "<modset:";
+	for(auto i = m.set.begin(); i != m.set.end(); ++i)
+		os << (*i)->name() << " ";
+	os << ">";
+	return os;
+}
+
 bool modifier_set::triggers(const modifier_set& set, const modifier_set& trigger, const modifier_set& mask)
 	throw(std::bad_alloc)
 {
-	modifier_set unmet = trigger;
-	modifier_set blank;
-	for(auto i = set.set.begin(); i != set.set.end(); i++) {
-		auto linked = get_linked_modifier(*i);
-		if(mask.set.count(linked) && trigger.set.count(linked))
-			unmet.remove(*linked);
-		if(mask.set.count(linked) && trigger.set.count(*i))
-			unmet.remove(**i);
-		if(mask.set.count(*i) && trigger.set.count(*i))
-			unmet.remove(**i);
+	for(auto i = mask.set.begin(); i != mask.set.end(); i++) {
+		bool ok = false;
+		//OK iff at least one of:
+		//Key itself appears in both set and trigger.
+		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
+			if(!trigger.set.count(*j))
+				continue;
+			ok = true;
+		}
+		//Key with this linkage group appears in both set and trigger.
+		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
+			auto linked = get_linked_modifier(*j);
+			if(linked != *i)
+				continue;
+			if(!trigger.set.count(*j))
+				continue;
+			ok = true;
+		}
+		//Key with this linkage appears in set and the key itself appears in trigger.
+		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
+			auto linked = get_linked_modifier(*j);
+			if(linked != *i)
+				continue;
+			if(!trigger.set.count(*i))
+				continue;
+			ok = true;
+		}
+		//Nothing linked is found from neither set nor trigger.
+		bool found = false;
+		for(auto j = set.set.begin(); j != set.set.end(); ++j)
+			found = found || (*j == *i || get_linked_modifier(*j) == *i);
+		for(auto j = trigger.set.begin(); j != trigger.set.end(); ++j)
+			found = found || (*j == *i || get_linked_modifier(*j) == *i);
+		ok = ok || !found;
+		if(!ok)
+			return false;
 	}
-	return (unmet == blank);
+	return true;
 }
 
 std::string keygroup::name() throw(std::bad_alloc)
