@@ -1866,6 +1866,20 @@ axismode joystick0axis5 pressure_mp
 Since axes 2 and 5 are LT/RT, which are pressure sensitive.
 \end_layout
 
+\begin_layout Standard
+For PS3 
+\begin_inset Quotes eld
+\end_inset
+
+sixaxis
+\begin_inset Quotes erd
+\end_inset
+
+ controller, disable (axismode joystick0axis<n> disabled) joystick axes
+ 8-19, since otherwise the pressure sensors generate weird events (those
+ buttons have digital component as well).
+\end_layout
+
 \begin_layout Subsection
 Settings
 \end_layout
@@ -1960,8 +1974,8 @@ Names of form 'key<n>' where <n> is 0-255 are interpretted as key having
 \end_layout
 
 \begin_layout Standard
-In addition, following pseudo-keys are known (note: these do not work yet,
- and especially do not work in conjunction with modifers):
+In addition, following pseudo-keys are known (note: these do not work in
+ conjunction with modifers):
 \end_layout
 
 \begin_layout Itemize
