@@ -3073,5 +3073,21 @@ Strip trailing CR from commands
 Don't try to do dubious things in global ctors (fix crash on startup)
 \end_layout
 
+\begin_layout Subsection
+rr0-β9
+\end_layout
+
+\begin_layout Itemize
+Small documentation tweaking
+\end_layout
+
+\begin_layout Itemize
+Fix make clean
+\end_layout
+
+\begin_layout Itemize
+Fix major bug in modifier matching
+\end_layout
+
 \end_body
 \end_document
