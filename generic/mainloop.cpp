@@ -939,6 +939,9 @@ namespace
 			long cycles_executed = 0;
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			while(cycles_executed < cycles && !video_refresh_done) {
+				//Poll inputs once in a while to prevent activating watchdog.
+				if(cycles_executed % 100 == 0)
+					window::poll_inputs();
 				SNES::cpu.op_step();
 				cycles_executed++;
 			}
