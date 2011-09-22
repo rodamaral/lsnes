@@ -948,7 +948,7 @@ namespace
 			return;
 		}
 		if(e.type == SDL_QUIT) {
-			command::invokeC("quit-emulator");
+			window_callback::do_close();
 			state = WINSTATE_NORMAL;
 			return;
 		}
@@ -978,11 +978,7 @@ namespace
 					else
 						mouse_mask &= ~4;
 				}
-				{
-					std::ostringstream x;
-					x << "mouse_button " << xc << " " << yc << " " << mouse_mask;
-					command::invokeC(x.str());
-				}
+				window_callback::do_click(xc, yc, mouse_mask);
 			}
 			if(e.type == SDL_KEYDOWN && key == SDLK_ESCAPE)
 				return;
@@ -1170,7 +1166,7 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	bool ret = modconfirm;
 	if(delayed_close_flag) {
 		delayed_close_flag = false;
-		command::invokeC("quit-emulator");
+		window_callback::do_close();
 	}
 	return ret;
 }
@@ -1364,6 +1360,10 @@ void poll_inputs_internal() throw(std::bad_alloc)
 	while(state != WINSTATE_NORMAL) {
 		if(SDL_WaitEvent(&e))
 			do_event(e);
+		if(delayed_close_flag) {
+			state = WINSTATE_NORMAL;
+			return;
+		}
 	}
 }
 

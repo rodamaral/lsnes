@@ -48,6 +48,8 @@ namespace
 	protected:
 		std::vector<char> stream;
 	};
+
+	window_callback* wcb = NULL;
 }
 
 std::ostream& window::out() throw(std::bad_alloc)
@@ -57,4 +59,33 @@ std::ostream& window::out() throw(std::bad_alloc)
 	if(!cached)
 		cached = new boost::iostreams::stream<window_output>(win);
 	return *cached;
+}
+
+window_callback::~window_callback() throw()
+{
+}
+
+void window_callback::on_close() throw()
+{
+}
+
+void window_callback::on_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
+{
+}
+
+void window_callback::do_close() throw()
+{
+	if(wcb)
+		wcb->on_close();
+}
+
+void window_callback::do_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
+{
+	if(wcb)
+		wcb->on_click(x, y, buttonmask);
+}
+
+void window_callback::set_callback_handler(window_callback& cb) throw()
+{
+	wcb = &cb;
 }

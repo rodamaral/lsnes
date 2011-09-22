@@ -15,6 +15,35 @@
 class window;
 
 /**
+ * Some backnotifications.
+ */
+class window_callback
+{
+public:
+	virtual ~window_callback() throw();
+/**
+ * Called when user tries to close the window.
+ */
+	virtual void on_close() throw();
+/**
+ * Called when user clicks on the screen.
+ */
+	virtual void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
+/**
+ * Do try to close the window.
+ */
+	static void do_close() throw();
+/**
+ * Do click on the screen.
+ */
+	static void do_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
+/**
+ * Set the callback handler.
+ */
+	static void set_callback_handler(window_callback& cb) throw();
+};
+
+/**
  * This is a handle to graphics system. Note that creating multiple contexts produces undefined results.
  */
 class window

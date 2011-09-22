@@ -780,24 +780,6 @@ namespace
 			while(1);
 		});
 
-	function_ptr_command<tokensplitter&> mouse_button_handler("mouse_button", "no description available",
-		"No help available\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string x = t;
-			std::string y = t;
-			std::string b = t;
-			int _x = atoi(x.c_str());
-			int _y = atoi(y.c_str());
-			int _b = atoi(b.c_str());
-			if(_b & ~prev_mouse_mask & 1)
-				send_analog_input(_x, _y, 0);
-			if(_b & ~prev_mouse_mask & 2)
-				send_analog_input(_x, _y, 1);
-			if(_b & ~prev_mouse_mask & 4)
-				send_analog_input(_x, _y, 2);
-			prev_mouse_mask = _b;
-		});
-
 	class button_action : public command
 	{
 	public:
@@ -867,6 +849,42 @@ namespace
 		}
 	} bah;
 
+	bool on_quit_prompt = false;
+	class mywindowcallbacks : public window_callback
+	{
+	public:
+		void on_close() throw()
+		{
+			if(on_quit_prompt) {
+				amode = ADVANCE_QUIT;
+				window::paused(false);
+				window::cancel_wait();
+				return;
+			}
+			on_quit_prompt = true;
+			try {
+				if(window::modal_message("Really quit?", true)) {
+					amode = ADVANCE_QUIT;
+					window::paused(false);
+					window::cancel_wait();
+				}
+			} catch(...) {
+			}
+			on_quit_prompt = false;
+		}
+
+		void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
+		{
+			if(buttonmask & ~prev_mouse_mask & 1)
+				send_analog_input(x, y, 0);
+			if(buttonmask & ~prev_mouse_mask & 2)
+				send_analog_input(x, y, 1);
+			if(buttonmask & ~prev_mouse_mask & 4)
+				send_analog_input(x, y, 2);
+			prev_mouse_mask = buttonmask;
+		}
+	} mywcb;
+	
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
 	//failing.
 	int handle_load()
@@ -987,6 +1005,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	SNES::system.interface = &intrf;
 	status = &window::get_emustatus();
 	autofire_pattern.push_back(controls_t());
+	window_callback::set_callback_handler(mywcb);
 
 	//Load our given movie.
 	bool first_round = false;
