@@ -3402,5 +3402,25 @@ Fix make clean
 Fix major bug in modifier matching
 \end_layout
 
+\begin_layout Subsection
+rr0-beta10
+\end_layout
+
+\begin_layout Itemize
+Lots of documentation fixes
+\end_layout
+
+\begin_layout Itemize
+Use dedicated callbacks for event backcomm., not commands.
+\end_layout
+
+\begin_layout Itemize
+Ensure that the watchdog is not hit when executing delayed reset.
+\end_layout
+
+\begin_layout Itemize
+Remove errant tab from joystick message.
+\end_layout
+
 \end_body
 \end_document
