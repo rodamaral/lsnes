@@ -60,7 +60,27 @@
 \begin_body
 
 \begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Standard
+lsnes is SNES rerecording emulator based on bsnes core.
+\end_layout
+
+\begin_layout Section
 Command line options
+\end_layout
+
+\begin_layout Itemize
+Syntax: lsnes.exe <rom-options> <misc-options> (<new-session-options>|<filename>)
+\end_layout
+
+\begin_layout Itemize
+Syntax: lsnes-avidump <dump-options> <misc-options> <rom-options> <filename>
+\end_layout
+
+\begin_layout Itemize
+Syntax: movieinfo.exe <filename>
 \end_layout
 
 \begin_layout Subsection
@@ -69,64 +89,233 @@ ROM options
 
 \begin_layout Standard
 These options control loading the ROM.
- <kind> can be one of following:
-\end_layout
-
-\begin_layout Itemize
-rom: main cart ROM.
-\end_layout
-
-\begin_layout Itemize
-bsx: BS-X flash ROM in non-slotted mode.
-\end_layout
-
-\begin_layout Itemize
-bsxslotted: BS-X flash ROM in slotted mode.
-\end_layout
-
-\begin_layout Itemize
-dmg: Game Boy ROM
-\end_layout
-
-\begin_layout Itemize
-slot-a: Sufami Turbo Slot A.
-\end_layout
-
-\begin_layout Itemize
-slot-b: Sufami Turbo Slot B.
 \end_layout
 
 \begin_layout Subsubsection
---<kind>=<file>
+--rom=<file>
 \end_layout
 
 \begin_layout Standard
-Set the <file> to use as ROM of <kind>.
+Load <file> (SFC file format) as main SNES cartridge ROM.
+ This is the game ROM for SNES and cartridge BIOS for other types.
+ Required option.
 \end_layout
 
 \begin_layout Subsubsection
---ips-<kind>=<file>
+--rom-xml=<file>
 \end_layout
 
 \begin_layout Standard
-Apply IPS patch <file> to ROM of <kind>
+Set the mapping XML file for main cartridge ROM.
+ If not specified, defaults are used.
 \end_layout
 
 \begin_layout Subsubsection
---<kind>-xml=<file>
+--bsx=<file>
 \end_layout
 
 \begin_layout Standard
-Set the <file> to use as ROM mapping for <kind>.
- If no mapping file is specified, defaults are used.
+Load <file> (BS file format) as BS-X non-slotted flash memory.
+ Also sets system type to BS-X non-slotted (not compatible with --bsxslotted=<fi
+le>, --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
 \end_layout
 
 \begin_layout Subsubsection
---ips-<kind>-xml=<file>
+--bsx-xml=<file>
 \end_layout
 
 \begin_layout Standard
-Apply IPS patch <file> to ROM mapping for <kind>.
+Set mapping XML file for BS-X non-slotted flash memory.
+ If not specified, defaults are used.
+ Only can be used together with --bsx=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--bsxslotted=<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> (BS file format) as BS-X slotted flash memory.
+ Also sets system type to BS-X slotted (not compatible with --bsx=<file>,
+ --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--bsxslotted-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Set mapping XML file for BS-X slotted flash memory.
+ If not specified, defaults are used.
+ Only can be used together with --bsxslotted=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--dmg=<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> (GB file format) as Game Boy ROM.
+ Also sets system type to SGB (not compatible with --bsx=<file>, --bsxslotted=<f
+ile>, --slot-a=<file> nor --slot-b=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--dmg-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Set mapping XML file for Game Boy ROM.
+ If not specified, defaults are used.
+ Only can be used together with --dmg=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--slot-a=<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> (ST file format) as Sufami turbo cartridge A ROM.
+ Also sets system type to Sufami Turbo (not compatible with --bsx=<file>,
+ --bsxslotted=<file> nor --dmg=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--slot-a-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Set mapping XML file for Sufami turbo cartridge A ROM.
+ If not specified, defaults are used.
+ Only can be used together with --slot-a=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--slot-b=<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> (ST file format) as Sufami turbo cartridge B ROM.
+ Also sets system type to Sufami Turbo (not compatible with --bsx=<file>,
+ --bsxslotted=<file> nor --dmg=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--slot-b-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Set mapping XML file for Sufami turbo cartridge B ROM.
+ If not specified, defaults are used.
+ Only can be used together with --slot-b=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-rom=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to main cartridge ROM.
+ Requires --rom=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-rom-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to main cartridge ROM mapping XML.
+ Requires --rom-xml=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-bsx=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to BS-X non-slotted flash.
+ Requires --bsx=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-bsx-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to BS-X non-slotted flash mapping XML.
+ Requires --bsx-xml=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-bsxslotted=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to BS-X slotted flash.
+ Requires --bsxslotted=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-bsxslotted-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to BS-X slotted flash mapping XML.
+ Requires --bsxslotted-xml=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-dmg=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Game Boy ROM.
+ Requires --dmg=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-dmg-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Game Boy ROM mapping XML.
+ Requires --dmg-xml=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-slot-a=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Sufami turbo cartridge A ROM.
+ Requires --slot-a=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-slot-a-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Sufami turbo cartridge A ROM mapping XML.
+ Requires --slot-a-xml=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-slot-b=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Sufami turbo cartridge B ROM.
+ Requires --slot-b=<file>.
+\end_layout
+
+\begin_layout Subsubsection
+--ips-slot-b-xml=<file>
+\end_layout
+
+\begin_layout Standard
+Apply IPS patch <file> to Sufami turbo cartridge B ROM mapping XML.
+ Requires --slot-b-xml=<file>.
 \end_layout
 
 \begin_layout Subsubsection
@@ -135,8 +324,9 @@ Apply IPS patch <file> to ROM mapping for <kind>.
 
 \begin_layout Standard
 Set IPS apply offset to <offset> (can be negative).
- In practicular, <offset> of -512 might be handy for applying headered IPS
- patches.
+ IPS apply offset is added to all addresses inside IPS file before applying.
+ If the resulting address is negative, write is ignored (with a warning).
+ If resulting address exceeds ROM size, the ROM is extended.
 \end_layout
 
 \begin_layout Subsubsection
@@ -158,12 +348,12 @@ Force ROM to be considered NTSC-only (default for everything except SNES
 \end_layout
 
 \begin_layout Subsection
-New session options (not for lsnes-avidump.exe)
+New session options (lsnes.exe only)
 \end_layout
 
 \begin_layout Standard
 If filename is not specified, new session is started.
- These options control properties of that:
+ These options control the properties of new session:
 \end_layout
 
 \begin_layout Subsubsection
@@ -171,9 +361,24 @@ If filename is not specified, new session is started.
 \end_layout
 
 \begin_layout Standard
-Set type of port1 (default is 'gamepad').
- Valid values are 'none', 'gamepad', 'multitap' (warning: makes most games
- refuse to start) and 'mouse'.
+Set type of port1.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+none: No device connected
+\end_layout
+
+\begin_layout Itemize
+gamepad: One gamepad (the default)
+\end_layout
+
+\begin_layout Itemize
+multitap: Four gamepads (warning: makes most games refuse to start)
+\end_layout
+
+\begin_layout Itemize
+mouse: Mouse.
 \end_layout
 
 \begin_layout Subsubsection
@@ -181,9 +386,36 @@ Set type of port1 (default is 'gamepad').
 \end_layout
 
 \begin_layout Standard
-Set type of port2 (default is 'none').
- Valid values are 'none', 'gamepad', 'multitap', 'mouse', 'superscope',
- 'justifier' and 'justifiers'.
+Set type of port2.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+none: No device connected (the default)
+\end_layout
+
+\begin_layout Itemize
+gamepad: One gamepad
+\end_layout
+
+\begin_layout Itemize
+multitap: Four gamepads.
+\end_layout
+
+\begin_layout Itemize
+mouse: Mouse
+\end_layout
+
+\begin_layout Itemize
+superscope: Super Scope
+\end_layout
+
+\begin_layout Itemize
+justifier: One justifier
+\end_layout
+
+\begin_layout Itemize
+justifiers: Two justifiers
 \end_layout
 
 \begin_layout Subsubsection
@@ -225,14 +457,25 @@ Add author with full name of <fullname> and nickname of <nickname>.
 \begin_layout Standard
 If filename is specified on command line, it is loaded as initial state
  (instead of constructing one).
-\end_layout
-
-\begin_layout Standard
-Mandatory for lsnes-avidump.exe
+ Mandatory for lsnes-avidump.exe and movieinfo.exe.
 \end_layout
 
 \begin_layout Subsection
-lsnes-avidump.exe options
+Misc.
+ options
+\end_layout
+
+\begin_layout Subsubsection
+--run=<file> (lsnes.exe only)
+\end_layout
+
+\begin_layout Standard
+After running main RC file, run this file.
+ If multiple are specified, these execute in order specified.
+\end_layout
+
+\begin_layout Subsection
+dump options (lsnes-avidump.exe only)
 \end_layout
 
 \begin_layout Subsubsection
@@ -275,20 +518,8 @@ Set number of frames to dump.
 \end_layout
 
 \begin_layout Standard
-Run specified lua script.
-\end_layout
-
-\begin_layout Section
-Movieinfo.exe
-\end_layout
-
-\begin_layout Itemize
-Syntax: Movieinfo.exe <file>
-\end_layout
-
-\begin_layout Standard
-Opens <file> and parses it as a movie, giving all sorts of information about
- it.
+Run specified lua script (lsnes-avidump.exe does not have initialization
+ files).
 \end_layout
 
 \begin_layout Section
@@ -296,7 +527,7 @@ Startup file lsnes.rc
 \end_layout
 
 \begin_layout Standard
-Upon startup, lsnes executes file lsnes.rc as commands.
+Upon startup, lsnes (lsnes.exe only) executes file lsnes.rc as commands.
  This file is located in:
 \end_layout
 
@@ -322,16 +553,6 @@ All: ./lsnes.rc (fallback default).
 
 \begin_layout Standard
 If leading directories do not exist, attempt to create them is made.
-\end_layout
-
-\begin_layout Subsection
---run=<file>
-\end_layout
-
-\begin_layout Standard
-If command line parameter --run=<file> is specified, that file is run after
- lsnes.rc has executed.
- If multiple such options are present, the files are run in order specified.
 \end_layout
 
 \begin_layout Section
@@ -411,6 +632,12 @@ Do not bind edge active (+/-) commands to keys with modifiers, that won't
 Names of keys and modifiers are platform-dependent.
 \end_layout
 
+\begin_layout Itemize
+Be careful before binding pseudo-keys (such as joystick axes, buttons or
+ hats) with modifiers.
+ That may or may not work right.
+\end_layout
+
 \begin_layout Subsubsection
 bind-key [<mod>/<modmask>] <key> <command>
 \end_layout
@@ -418,7 +645,10 @@ bind-key [<mod>/<modmask>] <key> <command>
 \begin_layout Standard
 Bind <command> to key <key> (activating if modifiers in <modmask> (comma-seperat
 ed list) are set as <mod> (comma-seperated list).
- 
+\end_layout
+
+\begin_layout Standard
+The names of keys and modifiers are platform-dependent.
 \end_layout
 
 \begin_layout Subsubsection
@@ -469,6 +699,7 @@ alias-command <command> <expansion>
 
 \begin_layout Standard
 Append <expansion> to alias <command>.
+ If alias does not already exist, it is created.
 \end_layout
 
 \begin_layout Subsubsection
@@ -492,15 +723,15 @@ run-script <script>
 \end_layout
 
 \begin_layout Standard
-Run <script> as if commands were entered on command line.
+Run <script> as if commands were entered on the command line.
 \end_layout
 
 \begin_layout Subsection
-Video dumping
+AVI Video dumping
 \end_layout
 
 \begin_layout Standard
-Following commands control video dumping:
+Following commands control AVI video dumping:
 \end_layout
 
 \begin_layout Subsubsection
@@ -509,6 +740,7 @@ dump-avi <level> <prefix>
 
 \begin_layout Standard
 Dump AVI video to prefix <prefix> at level <level> (0-18).
+ Notes:
 \end_layout
 
 \begin_layout Itemize
@@ -524,7 +756,7 @@ Audio enable/disable and framerate has no effect.
 \end_layout
 
 \begin_layout Itemize
-Warning: Levels 10-18 are not compatible with AVISource.
+Levels 10-18 are not compatible with AVISource.
 \end_layout
 
 \begin_layout Itemize
@@ -535,8 +767,13 @@ Recomended level is 7 if decoded by AVISource.
 Recomended level is 16 if decoded by ffmpeg, mencoder or FFMpegSource.
 \end_layout
 
-\begin_layout Standard
-Note: The audio dumped to .avi is low-quality version.
+\begin_layout Itemize
+Dumps of low-res PAL games are 256x239 (with all the consequences odd height
+ carries).
+\end_layout
+
+\begin_layout Itemize
+The audio dumped to .avi is low-quality version.
  The high-quality version is dumped to .sox file.
 \end_layout
 
@@ -545,7 +782,7 @@ end-avi
 \end_layout
 
 \begin_layout Standard
-End current AVI video dump.
+End current AVI video dump (closing the emulator also closes the dump).
 \end_layout
 
 \begin_layout Subsection
@@ -884,7 +1121,8 @@ test-1, test-2, test-3
 \end_layout
 
 \begin_layout Standard
-Internal test commands
+Internal test commands.
+ Don't use.
 \end_layout
 
 \begin_layout Subsubsection
@@ -1084,11 +1322,160 @@ remove-watch <name>
 Remove a watch.
 \end_layout
 
+\begin_layout Subsection
+SDL Platform commands
+\end_layout
+
+\begin_layout Standard
+The following are valid on SDL platform.
+\end_layout
+
+\begin_layout Subsubsection
+enable-sound on
+\end_layout
+
+\begin_layout Standard
+Enable sounds in GUI (has no effect on video dumping).
+\end_layout
+
+\begin_layout Subsubsection
+enable-sound off
+\end_layout
+
+\begin_layout Standard
+Disable sounds in GUI (has no effect on video dumping).
+\end_layout
+
+\begin_layout Subsubsection
+identify-key
+\end_layout
+
+\begin_layout Standard
+Asks to press a key and then identifies that (pseudo-)key.
+\end_layout
+
+\begin_layout Subsubsection
+toggle-console
+\end_layout
+
+\begin_layout Standard
+Toggle between windowed/fullscreen console.
+\end_layout
+
+\begin_layout Subsubsection
+scroll-fullup
+\end_layout
+
+\begin_layout Standard
+Scroll messages window as far back as it goes.
+\end_layout
+
+\begin_layout Subsubsection
+scroll-fulldown
+\end_layout
+
+\begin_layout Standard
+Scroll messages window as far forward as it goes.
+\end_layout
+
+\begin_layout Subsubsection
+scroll-up
+\end_layout
+
+\begin_layout Standard
+Scroll messages window back one screenful.
+\end_layout
+
+\begin_layout Subsubsection
+scroll-down
+\end_layout
+
+\begin_layout Standard
+Scroll messages window forward one screenful.
+\end_layout
+
+\begin_layout Subsubsection
+axismode <axis> <mode>
+\end_layout
+
+\begin_layout Standard
+Set joystick axis mode.
+ <axis> is of form 
+\begin_inset Quotes eld
+\end_inset
+
+joystick<num>axis<axis>
+\begin_inset Quotes erd
+\end_inset
+
+, e.g.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+joystick0axis5
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Mode is one of:
+\end_layout
+
+\begin_layout Itemize
+axis: Normal axis mode
+\end_layout
+
+\begin_layout Itemize
+axis_inverse: Inverse axis mode.
+\end_layout
+
+\begin_layout Itemize
+pressure_0m: Pressure sensitive.
+ Released at 0, pressed at full negative.
+\end_layout
+
+\begin_layout Itemize
+pressure_0p: Pressure sensitive.
+ Released at 0, pressed at full positive.
+\end_layout
+
+\begin_layout Itemize
+pressure_m0: Pressure sensitive.
+ Released at full negative, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure_mp: Pressure sensitive.
+ Released at full negative, pressed at full positive.
+ E.g.
+ XBox360 Pad axes 2 and 5.
+\end_layout
+
+\begin_layout Itemize
+pressure_p0: Pressure sensitive.
+ Released at full positive, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure_pm: Pressure sensitive.
+ Released at full positive, pressed at full negative.
+\end_layout
+
+\begin_layout Itemize
+disabled: Disable the axis.
+ On PS3 controller, axes 8-19 should be disabled since those controls are
+ digital buttons as well.
+\end_layout
+
 \begin_layout Section
 Settings
 \end_layout
 
 \begin_layout Subsection
+Core settings
+\end_layout
+
+\begin_layout Subsubsection
 firmwarepath
 \end_layout
 
@@ -1105,7 +1492,7 @@ Set where bsnes looks for firmware files.
 .
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 targetfps
 \end_layout
 
@@ -1123,7 +1510,7 @@ infinite
  Default is native framerate.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 savecompression
 \end_layout
 
@@ -1132,7 +1519,7 @@ Set save compression level (integer 0-9).
  Default is 7 (0 is no compression).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 advance-timeout
 \end_layout
 
@@ -1143,6 +1530,10 @@ Set the frame advance timeout in milliseconds.
 \end_layout
 
 \begin_layout Subsection
+AVI dumper settings
+\end_layout
+
+\begin_layout Subsubsection
 avi-large
 \end_layout
 
@@ -1151,7 +1542,7 @@ AVI dumper: Always dump at 512x448 or 512x478 regardless of what the console
  outputs.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 avi-left-border
 \end_layout
 
@@ -1162,7 +1553,7 @@ AVI dumper: Set the default left border thickness (unless lua overrides)
  Default is 0.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 avi-right-border
 \end_layout
 
@@ -1173,7 +1564,7 @@ AVI dumper: Set the default right border thickness (unless lua overrides)
  Default is 0.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 avi-top-border
 \end_layout
 
@@ -1184,7 +1575,7 @@ AVI dumper: Set the default top border thickness (unless lua overrides)
  Default is 0.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 avi-bottom-border
 \end_layout
 
@@ -1195,7 +1586,7 @@ AVI dumper: Set the default bottom border thickness (unless lua overrides)
  Default is 0.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 avi-maxframes
 \end_layout
 
@@ -1203,6 +1594,26 @@ avi-maxframes
 AVI dumper: Maximum number of frames per dump segment (0 => unlimited).
  Range 0-999999999.
  Default is 0.
+\end_layout
+
+\begin_layout Subsection
+SDL platform settings
+\end_layout
+
+\begin_layout Subsubsection
+autorepeat-first-delay
+\end_layout
+
+\begin_layout Standard
+Sets the delay for first character in typematic autorepeat.
+\end_layout
+
+\begin_layout Subsubsection
+autorepeat-subsequent-delay
+\end_layout
+
+\begin_layout Standard
+Sets the delay for subsequent characters in typematic autorepeat.
 \end_layout
 
 \begin_layout Section
@@ -1351,7 +1762,7 @@ gui.text(number x, number y, string text[, number fgc[, number fga[, number
 
 \begin_layout Standard
 Draw text on the GUI.
- Font size is 8(or 16) by 16.
+ Font size is 8 (or 16) by 16.
  Notes:
 \end_layout
 
@@ -1436,6 +1847,7 @@ reset([number cycles])
 \begin_layout Standard
 Execute reset.
  If cycles is greater than zero, do delayed reset.
+ 0 (or no value) causes immediate reset.
 \end_layout
 
 \begin_layout Itemize
@@ -1603,7 +2015,7 @@ Callback: on_startup()
 \end_layout
 
 \begin_layout Standard
-Called when the emulator is starting (lsnes.rc has been run).
+Called when the emulator is starting (lsnes.rc and --run files has been run).
 \end_layout
 
 \begin_layout Subsubsection
@@ -1707,200 +2119,22 @@ Callback: on_snoop(number port, number controller, number index, number
 
 \begin_layout Standard
 Called each time bsnes asks for input.
- The value is the final value to be sent to bsnes core.
+ The value is the final value to be sent to bsnes core (readonly mode, autohold
+ and autofire have been taken into account).
  Might be useful when translating movies to format suitable for console
  verification.
+ Note: There is no way to modify the value to be sent.
 \end_layout
 
 \begin_layout Section
-SDL platform:
+Modifier and key names:
 \end_layout
 
 \begin_layout Subsection
-Platform-specific commands:
+SDL Platform
 \end_layout
 
 \begin_layout Subsubsection
-enable-sound on
-\end_layout
-
-\begin_layout Standard
-Enable sounds in GUI (has no effect on video dumping).
-\end_layout
-
-\begin_layout Subsubsection
-enable-sound off
-\end_layout
-
-\begin_layout Standard
-Disable sounds in GUI (has no effect on video dumping).
-\end_layout
-
-\begin_layout Subsubsection
-identify-key
-\end_layout
-
-\begin_layout Standard
-Asks to press a key and then identifies that key.
-\end_layout
-
-\begin_layout Subsubsection
-toggle-console
-\end_layout
-
-\begin_layout Standard
-Toggle between windowed/fullscreen console.
-\end_layout
-
-\begin_layout Subsubsection
-scroll-fullup
-\end_layout
-
-\begin_layout Standard
-Scroll messages window as far back as it goes.
-\end_layout
-
-\begin_layout Subsubsection
-scroll-fulldown
-\end_layout
-
-\begin_layout Standard
-Scroll messages window as far forward as it goes.
-\end_layout
-
-\begin_layout Subsubsection
-scroll-up
-\end_layout
-
-\begin_layout Standard
-Scroll messages window back one screenful.
-\end_layout
-
-\begin_layout Subsubsection
-scroll-down
-\end_layout
-
-\begin_layout Standard
-Scroll messages window forward one screenful.
-\end_layout
-
-\begin_layout Subsubsection
-axismode <axis> <mode>
-\end_layout
-
-\begin_layout Standard
-Set joystick axis mode.
- <axis> is of form 
-\begin_inset Quotes eld
-\end_inset
-
-joystick<num>axis<axis>
-\begin_inset Quotes erd
-\end_inset
-
-, e.g.
- 
-\begin_inset Quotes eld
-\end_inset
-
-joystick0axis5
-\begin_inset Quotes erd
-\end_inset
-
-.
- Mode is one of:
-\end_layout
-
-\begin_layout Itemize
-axis: Normal axis mode
-\end_layout
-
-\begin_layout Itemize
-axis_inverse: Inverse axis mode.
-\end_layout
-
-\begin_layout Itemize
-pressure_0m: Pressure sensitive.
- Released at 0, pressed at full negative.
-\end_layout
-
-\begin_layout Itemize
-pressure_0p: Pressure sensitive.
- Released at 0, pressed at full positive.
-\end_layout
-
-\begin_layout Itemize
-pressure_m0: Pressure sensitive.
- Released at full negative, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure_mp: Pressure sensitive.
- Released at full negative, pressed at full positive.
-\end_layout
-
-\begin_layout Itemize
-pressure_p0: Pressure sensitive.
- Released at full positive, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure_pm: Pressure sensitive.
- Released at full positive, pressed at full negative.
-\end_layout
-
-\begin_layout Standard
-Note that if you have Wired Microsoft XBox 360 controller (works great in
- Linux, BTW), you might want to do the following:
-\end_layout
-
-\begin_layout Itemize
-axismode joystick0axis2 pressure_mp
-\end_layout
-
-\begin_layout Itemize
-axismode joystick0axis5 pressure_mp
-\end_layout
-
-\begin_layout Standard
-Since axes 2 and 5 are LT/RT, which are pressure sensitive.
-\end_layout
-
-\begin_layout Standard
-For PS3 
-\begin_inset Quotes eld
-\end_inset
-
-sixaxis
-\begin_inset Quotes erd
-\end_inset
-
- controller, disable (axismode joystick0axis<n> disabled) joystick axes
- 8-19, since otherwise the pressure sensors generate weird events (those
- buttons have digital component as well).
-\end_layout
-
-\begin_layout Subsection
-Settings
-\end_layout
-
-\begin_layout Subsubsection
-autorepeat-first-delay
-\end_layout
-
-\begin_layout Standard
-Sets the delay for first character in typematic autorepeat.
-\end_layout
-
-\begin_layout Subsubsection
-autorepeat-subsequent-delay
-\end_layout
-
-\begin_layout Standard
-Sets the delay for subsequent characters in typematic autorepeat.
-\end_layout
-
-\begin_layout Subsection
 Modifier names
 \end_layout
 
@@ -1932,7 +2166,7 @@ num, caps: Numlock/Capslock (these are sticky!)
 mode: Mode select.
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Key names
 \end_layout
 
@@ -2000,15 +2234,20 @@ joystick<num>hat<hat>e: Joystick <num> (0-based) hat <hat> (0-based) right.
 
 \begin_layout Itemize
 joystick<num>axis<axis>-: Joystick <num> (0-based) axis <axis> negative
- position.
+ position (axis modes axis and axis_inverse).
 \end_layout
 
 \begin_layout Itemize
 joystick<num>axis<axis>+: Joystick <num> (0-based) axis <axis> positive
- position.
+ position (axis modes axis and axis_inverse).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Itemize
+joystick<num>axis<axis>: Joystick <num> (0-based) axis <axis> pressure (axis
+ modes pressure_*).
+\end_layout
+
+\begin_layout Subsubsection
 Special buttons:
 \end_layout
 
@@ -2064,7 +2303,7 @@ Backspace (command mode): Delete character to left of cursor.
 LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump corrupted!).
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Subsubsection
 Watchdog timer:
 \end_layout
 
@@ -2789,7 +3028,7 @@ SDL (SDL platform)
 \end_layout
 
 \begin_layout Itemize
-SDLmain (Windows only)
+SDLmain (Windows only; Note you may have to extract the object out of archive)
 \end_layout
 
 \begin_layout Itemize
@@ -2801,7 +3040,7 @@ boost_filesystem
 \end_layout
 
 \begin_layout Itemize
-boost (conversion, header only)
+boost conversion (header only)
 \end_layout
 
 \begin_layout Subsection
@@ -2876,6 +3115,62 @@ Don't compile in Lua support.
 \end_layout
 
 \begin_layout Section
+Quick'n'dirty encode guide
+\end_layout
+
+\begin_layout Enumerate
+Start the emulator and load the movie file.
+\end_layout
+
+\begin_layout Enumerate
+Set large AVI option 'set-setting avi-large on'
+\end_layout
+
+\begin_layout Enumerate
+If dumping PAL, set bottom border to 2 'set-setting avi-bottom-border 2'
+\end_layout
+
+\begin_layout Enumerate
+Enable dumping 'dump-avi 12 tmpdump' (note: Normally 10 and above are 
+\begin_inset Quotes eld
+\end_inset
+
+use only if you know what you are doing.
+\begin_inset Quotes erd
+\end_inset
+
+.
+ In this case, these can be safely used because of how x264 internally works.
+\end_layout
+
+\begin_layout Enumerate
+Unpause and let it run until you want to end dumping.
+\end_layout
+
+\begin_layout Enumerate
+Close the emulator (closing the window is the easiest way)
+\end_layout
+
+\begin_layout Enumerate
+For each tmpdump*.avi file created, on command prompt, do 'x264 --crf 10
+ -o tmpdump_<numbers>.mkv tmpdump_<numbers>.avi'.
+\end_layout
+
+\begin_layout Enumerate
+Do 'sox tmpdump.sox tmpdump.ogg rate -v 32000'
+\end_layout
+
+\begin_layout Enumerate
+Do 'mkvmerge -o tmpdump_video.mkv tmpdump_0000000.mkv + tmpdump_0000001.mkv
+ + tmpdump_0000002.mkv' (list every tmpdump_<numbers>.mkv, with + in between).
+\end_layout
+
+\begin_layout Enumerate
+Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'.
+ Now final.mkv contains quick'n'dirty encode.
+\end_layout
+
+\begin_layout Section
 Errata:
 \end_layout
 
@@ -2916,6 +3211,10 @@ Other problems:
 \end_layout
 
 \begin_layout Itemize
+Modifiers don't work with pseudo-keys (SDL).
+\end_layout
+
+\begin_layout Itemize
 Audio for last dumped frame is not itself dumped.
 \end_layout
 
@@ -2944,7 +3243,7 @@ Changelog:
 \end_layout
 
 \begin_layout Subsection
-rr0-β1
+rr0-beta1
 \end_layout
 
 \begin_layout Itemize
@@ -2956,7 +3255,7 @@ Fix dumper video corruption with levels 10-18.
 \end_layout
 
 \begin_layout Subsection
-rr0-β2
+rr0-beta2
 \end_layout
 
 \begin_layout Itemize
@@ -2988,7 +3287,7 @@ Faster movie loading and saving.
 \end_layout
 
 \begin_layout Subsection
-rr0-β3
+rr0-beta3
 \end_layout
 
 \begin_layout Itemize
@@ -2996,7 +3295,7 @@ Joystick support
 \end_layout
 
 \begin_layout Subsection
-rr0-β4
+rr0-beta4
 \end_layout
 
 \begin_layout Itemize
@@ -3008,7 +3307,7 @@ Save jukebox functionality.
 \end_layout
 
 \begin_layout Subsection
-rr0-β5
+rr0-beta5
 \end_layout
 
 \begin_layout Itemize
@@ -3020,7 +3319,7 @@ Allow specifying scripts to run on command line.
 \end_layout
 
 \begin_layout Subsection
-rr0-β6
+rr0-beta6
 \end_layout
 
 \begin_layout Itemize
@@ -3036,7 +3335,7 @@ Don't crash if loading initial state fails.
 \end_layout
 
 \begin_layout Subsection
-rr0-β7
+rr0-beta7
 \end_layout
 
 \begin_layout Itemize
@@ -3064,7 +3363,7 @@ Fix loading movies starting from SRAM.
 \end_layout
 
 \begin_layout Subsection
-rr0-β8
+rr0-beta8
 \end_layout
 
 \begin_layout Itemize
@@ -3088,7 +3387,7 @@ Don't try to do dubious things in global ctors (fix crash on startup)
 \end_layout
 
 \begin_layout Subsection
-rr0-β9
+rr0-beta9
 \end_layout
 
 \begin_layout Itemize
