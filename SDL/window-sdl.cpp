@@ -362,7 +362,7 @@ namespace
 				}
 				window::out() << "Joystick #" << i << ": " << SDL_JoystickName(i) << "("
 					<< SDL_JoystickNumAxes(j) << " axes, " << SDL_JoystickNumButtons(j)
-					<< " 	buttons, " << SDL_JoystickNumHats(j) << " hats)." << std::endl;
+					<< " buttons, " << SDL_JoystickNumHats(j) << " hats)." << std::endl;
 				for(int k = 0; k < SDL_JoystickNumAxes(j); k++) {
 					unsigned num = 256 * i + k;
 					std::ostringstream x;
