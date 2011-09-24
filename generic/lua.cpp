@@ -169,9 +169,12 @@ namespace
 
 	void* alloc(void* user, void* old, size_t olds, size_t news)
 	{
-		if(news)
-			return realloc(old, news);
-		else
+		if(news) {
+			void* m = realloc(old, news);
+			if(!m)
+				OOM_panic();
+			return m;
+		} else
 			free(old);
 		return NULL;
 	}
