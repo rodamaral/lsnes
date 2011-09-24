@@ -1077,7 +1077,7 @@ void window::init()
 #endif
 	init_keys();
 	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
-	time_t curtime = time(NULL);
+	time_t curtime = __real_time(NULL);
 	struct tm* tm = localtime(&curtime);
 	char buffer[1024];
 	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);

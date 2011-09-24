@@ -5,6 +5,11 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 
+extern "C"
+{
+	time_t __real_time(time_t* t);
+}
+
 /**
  * \brief Get random hexes
  *

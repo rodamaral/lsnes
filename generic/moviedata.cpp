@@ -17,6 +17,17 @@ struct loaded_rom* our_rom;
 bool system_corrupt;
 movie_logic movb;
 
+extern "C"
+{
+	time_t __wrap_time(time_t* t)
+	{
+		time_t v = static_cast<time_t>(our_movie.rtc_second);
+		if(t)
+			*t = v;
+		return v;
+	}
+}
+
 std::vector<char>& get_host_memory()
 {
 	return our_movie.host_memory;

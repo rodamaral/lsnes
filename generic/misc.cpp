@@ -23,7 +23,7 @@ namespace
 	std::string get_random_hexstring_64(size_t index)
 	{
 		std::ostringstream str;
-		str << rseed << " " << time(NULL) << " " << (rcounter++) << " " << index;
+		str << rseed << " " << __real_time(NULL) << " " << (rcounter++) << " " << index;
 		std::string s = str.str();
 		std::vector<char> x;
 		x.resize(s.length());
@@ -35,13 +35,13 @@ namespace
 	{
 		//TODO: Collect as much identifying information as possible.
 		std::ostringstream str;
-		time_t told = time(NULL);
+		time_t told = __real_time(NULL);
 		time_t tnew;
 		uint64_t loops = 0;
 		uint64_t base = 0;
 		int cnt = 0;
 		while(cnt < 3) {
-			tnew = time(NULL);
+			tnew = __real_time(NULL);
 			if(tnew > told) {
 				told = tnew;
 				cnt++;
@@ -84,7 +84,7 @@ void set_random_seed() throw(std::bad_alloc)
 	}
 	//Fall back to time.
 	std::ostringstream str;
-	str << collect_identifying_information() << " " << time(NULL);
+	str << collect_identifying_information() << " " << __real_time(NULL);
 	set_random_seed(str.str());
 }
 
