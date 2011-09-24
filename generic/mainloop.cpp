@@ -84,7 +84,6 @@ namespace
 	controls_t curcontrols;
 	controls_t autoheld_controls;
 	std::vector<controls_t> autofire_pattern;
-	size_t autofire_position;
 	//Save jukebox.
 	std::vector<std::string> save_jukebox;
 	size_t save_jukebox_pointer;
@@ -181,7 +180,6 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		location_special = SPECIAL_NONE;
 		update_movie_state();
 	} else {
-		autofire_position = (autofire_position + 1) % autofire_pattern.size();
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
@@ -214,7 +212,8 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
 	}
-	controls_t tmp = curcontrols ^ autoheld_controls ^ autofire_pattern[autofire_position];
+	controls_t tmp = curcontrols ^ autoheld_controls ^ autofire_pattern[movb.get_movie().get_current_frame() %
+		autofire_pattern.size()];
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
@@ -393,11 +392,17 @@ void update_movie_state()
 		} catch(...) {
 		}
 	}
+
+	//This routine can get called frickin' early.
+	if(!autofire_pattern.size())
+		autofire_pattern.push_back(controls_t());
+
 	controls_t c;
 	if(movb.get_movie().readonly_mode())
 		c = movb.get_movie().get_controls();
 	else
-		c = curcontrols ^ autoheld_controls;
+		c = curcontrols ^ autoheld_controls ^ autofire_pattern[movb.get_movie().get_current_frame() %
+			autofire_pattern.size()];
 	for(unsigned i = 0; i < 8; i++) {
 		unsigned pindex = controller_index_by_logical(i);
 		unsigned port = pindex >> 2;
@@ -760,7 +765,6 @@ namespace
 				}
 			}
 			autofire_pattern = new_autofire_pattern;
-			autofire_position = 0;
 		});
 
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
@@ -1001,13 +1005,14 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	//Basic initialization.
+	if(!autofire_pattern.size())
+		autofire_pattern.push_back(controls_t());
 	init_special_screens();
 	our_rom = &rom;
 	my_interface intrf;
 	auto old_inteface = SNES::system.interface;
 	SNES::system.interface = &intrf;
 	status = &window::get_emustatus();
-	autofire_pattern.push_back(controls_t());
 	window_callback::set_callback_handler(mywcb);
 
 	//Load our given movie.
