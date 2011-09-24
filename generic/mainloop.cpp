@@ -33,6 +33,11 @@
 #define SPECIAL_SAVEPOINT 2
 #define SPECIAL_NONE 3
 
+#define RTC_SUBSECOND_INCREMENT_PAL 69242724928ULL
+#define RTC_SUBSECOND_INCREMENT_NTSC 57615439935ULL
+#define RTC_SUBSECOND_INCREMENT_NTSC_I 57615762380ULL
+#define RTC_SUBSECONDS_PER_SECOND 3462619485020ULL
+
 #define BUTTON_LEFT 0		//Gamepad
 #define BUTTON_RIGHT 1		//Gamepad
 #define BUTTON_UP 2		//Gamepad
@@ -367,8 +372,18 @@ void update_movie_state()
 			x << movb.get_movie().next_poll_number();
 		x << ";" << movb.get_movie().get_lag_frames() << ")/" << movb.get_movie().get_frame_count();
 		_status["Frame"] = x.str();
+		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
+		struct tm* time_decompose = gmtime(&timevalue);
+		char datebuffer[512];
+		char timebuffer[512];
+		strftime(datebuffer, 511, "%a %d %b %Y", time_decompose);
+		strftime(timebuffer, 511, "%H:%M:%S", time_decompose);
+		_status["RTCdate"] = datebuffer;
+		_status["RTCtime"] = timebuffer;
 	} else {
 		_status["Frame"] = "N/A";
+		_status["RTCdate"] = "N/A";
+		_status["RTCtime"] = "N/A";
 	}
 	{
 		std::ostringstream x;
@@ -484,13 +499,20 @@ class my_interface : public SNES::Interface
 		if(region) {
 			fps_n = 322445;
 			fps_d = 6448;
+			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_PAL;
 		} else if(!interlace) {
 			fps_n = 10738636;
 			fps_d = 178683;
+			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_NTSC;
 		} else {
 			//Yes, interlace makes difference with NTSC but not on PAL.
 			fps_n = 2684659;
 			fps_d = 44671;
+			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_NTSC_I;
+		}
+		if(our_movie.rtc_subsecond >= RTC_SUBSECONDS_PER_SECOND) {
+			our_movie.rtc_second++;
+			our_movie.rtc_subsecond -= RTC_SUBSECONDS_PER_SECOND;
 		}
 		av_snooper::frame(ls, fps_n, fps_d, true);
 	}

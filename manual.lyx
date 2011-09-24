@@ -450,6 +450,23 @@ Add author with nickname of <name> (no full name).
 Add author with full name of <fullname> and nickname of <nickname>.
 \end_layout
 
+\begin_layout Subsubsection
+--rtc-second=<value>
+\end_layout
+
+\begin_layout Standard
+Set RTC second (0 is 1st January 1970 00:00:00Z).
+\end_layout
+
+\begin_layout Subsubsection
+--rtc-subsecond=<value>
+\end_layout
+
+\begin_layout Standard
+Set RTC subsecond.
+ Range is 0-3,462,619,485,019.
+\end_layout
+
 \begin_layout Subsection
 <filename>
 \end_layout

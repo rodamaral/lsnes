@@ -10,6 +10,10 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
+#define MAX_RTC_SUBSECOND 3462619485019ULL
+#define DEFAULT_RTC_SECOND 1000000000ULL
+#define DEFAULT_RTC_SUBSECOND 0ULL
+
 void strip_CR(std::string& x) throw(std::bad_alloc)
 {
 	if(x.length() > 0 && x[x.length() - 1] == '\r') {
@@ -36,6 +40,16 @@ void read_linefile(zip_reader& r, const std::string& member, std::string& out, b
 	}
 }
 
+void read_numeric_file(zip_reader& r, const std::string& member, int64_t& out, bool conditional = false)
+	throw(std::bad_alloc, std::runtime_error)
+{
+	std::string _out;
+	read_linefile(r, member, _out, conditional);
+	if(conditional && _out == "")
+		return;
+	out = parse_value<int64_t>(_out);
+}
+
 void write_linefile(zip_writer& w, const std::string& member, const std::string& value, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -49,6 +63,14 @@ void write_linefile(zip_writer& w, const std::string& member, const std::string&
 		w.close_file();
 		throw;
 	}
+}
+
+void write_numeric_file(zip_writer& w, const std::string& member, int64_t value) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	std::ostringstream x;
+	x << value;
+	write_linefile(w, member, x.str());
 }
 
 void write_raw_file(zip_writer& w, const std::string& member, std::vector<char>& content) throw(std::bad_alloc,
@@ -209,6 +231,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 	projectid = "";
 	rerecords = "0";
 	is_savestate = false;
+	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
+	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
@@ -247,6 +271,12 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_linefile(r, "slotaxml.sha256", slotaxml_sha256, true);
 	read_linefile(r, "slotb.sha256", slotb_sha256, true);
 	read_linefile(r, "slotbxml.sha256", slotbxml_sha256, true);
+	movie_rtc_second = DEFAULT_RTC_SECOND;
+	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
+	read_numeric_file(r, "starttime.second", movie_rtc_second, true);
+	read_numeric_file(r, "starttime.subsecond", movie_rtc_subsecond, true);
+	rtc_second = movie_rtc_second;
+	rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate")) {
 		is_savestate = true;
 		movie_state = read_raw_file(r, "moviestate");
@@ -257,7 +287,13 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 			if((*name).length() >= 5 && (*name).substr(0, 5) == "sram.")
 				sram[(*name).substr(5)] = read_raw_file(r, *name);
 		screenshot = read_raw_file(r, "screenshot");
+		//If these can't be read, just use some (wrong) values.
+		read_numeric_file(r, "savetime.second", rtc_second, true);
+		read_numeric_file(r, "savetime.subsecond", rtc_subsecond, true);
 	}
+	if(rtc_subsecond < 0 || rtc_subsecond > MAX_RTC_SUBSECOND || movie_rtc_subsecond < 0 ||
+		movie_rtc_subsecond >= MAX_RTC_SUBSECOND)
+		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
 	for(auto name = r.begin(); name != r.end(); ++name)
 		if((*name).length() >= 10 && (*name).substr(0, 10) == "moviesram.")
@@ -289,6 +325,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "slotbxml.sha256", slotbxml_sha256, true);
 	for(auto i = movie_sram.begin(); i != movie_sram.end(); ++i)
 		write_raw_file(w, "moviesram." + i->first, i->second);
+	write_numeric_file(w, "starttime.second", movie_rtc_second);
+	write_numeric_file(w, "starttime.subsecond", movie_rtc_subsecond);
 	if(is_savestate) {
 		write_raw_file(w, "moviestate", movie_state);
 		write_raw_file(w, "hostmemory", host_memory);
@@ -296,6 +334,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_raw_file(w, "screenshot", screenshot);
 		for(auto i = sram.begin(); i != sram.end(); ++i)
 			write_raw_file(w, "sram." + i->first, i->second);
+	write_numeric_file(w, "savetime.second", rtc_second);
+	write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
 	}
 	write_authors_file(w, authors);
 	write_input(w, input, port1, port2);

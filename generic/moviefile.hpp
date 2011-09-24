@@ -136,6 +136,22 @@ struct moviefile
  * Input for each (sub)frame.
  */
 	std::vector<controls_t> input;		//Input for each frame.
+/**
+ * Current RTC second.
+ */
+	int64_t rtc_second;
+/**
+ * Current RTC subsecond.
+ */
+	int64_t rtc_subsecond;
+/**
+ * Movie starting RTC second.
+ */
+	int64_t movie_rtc_second;
+/**
+ * Movie starting RTC subsecond.
+ */
+	int64_t movie_rtc_subsecond;
 
 /**
  * Get number of frames in movie.

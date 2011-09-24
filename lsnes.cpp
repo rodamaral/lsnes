@@ -52,7 +52,15 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 			auto g = split_author(line);
 			movie.authors.push_back(g);
 		}
-
+		if(o.length() >= 13 && o.substr(0, 13) == "--rtc-second=") {
+			movie.rtc_second = movie.movie_rtc_second = parse_value<int64_t>(o.substr(13));
+		}
+		if(o.length() >= 16 && o.substr(0, 16) == "--rtc-subsecond=") {
+			movie.rtc_subsecond = movie.movie_rtc_subsecond = parse_value<int64_t>(o.substr(16));
+			if(movie.rtc_subsecond < 0 || movie.rtc_subsecond > 3462619485019ULL)
+				throw std::runtime_error("Bad RTC subsecond value (range is 0-3462619485019)");
+		}
+		
 	}
 
 
