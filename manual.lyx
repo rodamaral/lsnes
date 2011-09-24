@@ -3663,5 +3663,17 @@ Actually include the complete source code
 Keep track of RTC
 \end_layout
 
+\begin_layout Subsection
+rr0-beta13
+\end_layout
+
+\begin_layout Itemize
+Document {save,start}time.{,sub}second.
+\end_layout
+
+\begin_layout Itemize
+Intercept time() from bsnes core.
+\end_layout
+
 \end_body
 \end_document
