@@ -3611,5 +3611,17 @@ Byte/word/dword/qword sized host memory write/read functions.
 Dump at correct framerate if dumping interlaced NTSC (height=448).
 \end_layout
 
+\begin_layout Subsection
+rr0-beta12
+\end_layout
+
+\begin_layout Itemize
+Actually include the complete source code
+\end_layout
+
+\begin_layout Itemize
+Keep track of RTC
+\end_layout
+
 \end_body
 \end_document
