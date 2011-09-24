@@ -3566,5 +3566,33 @@ Ensure that the watchdog is not hit when executing delayed reset.
 Remove errant tab from joystick message.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta11
+\end_layout
+
+\begin_layout Itemize
+Make autofire operate in absolute time, not linear time
+\end_layout
+
+\begin_layout Itemize
+Reinitialize controls when resuming from loadstate
+\end_layout
+
+\begin_layout Itemize
+Some more code cleanups
+\end_layout
+
+\begin_layout Itemize
+If Lua allocator fails, call OOM_panic()
+\end_layout
+
+\begin_layout Itemize
+Byte/word/dword/qword sized host memory write/read functions.
+\end_layout
+
+\begin_layout Itemize
+Dump at correct framerate if dumping interlaced NTSC (height=448).
+\end_layout
+
 \end_body
 \end_document
