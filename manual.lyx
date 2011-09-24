@@ -1881,6 +1881,150 @@ Writes hostmemory slot with 0-255.
  Slot numbers out of range cause extension of host memory slot space.
 \end_layout
 
+\begin_layout Subsubsection
+readbyte(number address)
+\end_layout
+
+\begin_layout Standard
+Read unsigned byte (1 element) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writebyte(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write unsigned byte (1 element) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readsbyte(number address)
+\end_layout
+
+\begin_layout Standard
+Read signed byte (1 element) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writesbyte(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write signed byte (1 element) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readword(number address)
+\end_layout
+
+\begin_layout Standard
+Read unsigned word (2 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writeword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write unsigned word (2 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readsword(number address)
+\end_layout
+
+\begin_layout Standard
+Read signed word (2 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writesword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write signed word (2 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readdword(number address)
+\end_layout
+
+\begin_layout Standard
+Read unsigned doubleword (4 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writedword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write unsigned doubleword (4 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readsdword(number address)
+\end_layout
+
+\begin_layout Standard
+Read signed doubleword (4 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writesdword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write signed doubleword (4 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readqword(number address)
+\end_layout
+
+\begin_layout Standard
+Read unsigned quadword (8 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writeqword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write unsigned quadword (4 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
+\begin_layout Subsubsection
+readsqword(number address)
+\end_layout
+
+\begin_layout Standard
+Read signed quadword (8 elements) from given address.
+ Slots out of range return false.
+\end_layout
+
+\begin_layout Subsubsection
+writesqword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write signed quadword (8 elements) to given slot.
+ Slot numbers out of range cause extension.
+\end_layout
+
 \begin_layout Subsection
 Table movie
 \end_layout
