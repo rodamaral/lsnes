@@ -9,6 +9,7 @@
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "command.hpp"
+#include "globalwrap.hpp"
 
 namespace
 {
@@ -82,45 +83,39 @@ std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::ba
 
 namespace
 {
-	std::map<std::string, modifier*>* known_modifiers;
-	std::map<std::string, std::string>* modifier_linkages;
-	std::map<std::string, keygroup*>* keygroups;
+	globalwrap<std::map<std::string, modifier*>> known_modifiers;
+	globalwrap<std::map<std::string, std::string>> modifier_linkages;
+	globalwrap<std::map<std::string, keygroup*>> keygroups;
 
 	//Returns orig if not linked.
 	const modifier* get_linked_modifier(const modifier* orig)
 	{
-		if(!modifier_linkages || !modifier_linkages->count(orig->name()))
+		if(!modifier_linkages().count(orig->name()))
 			return orig;
-		std::string l = (*modifier_linkages)[orig->name()];
-		return (*known_modifiers)[l];
+		std::string l = modifier_linkages()[orig->name()];
+		return known_modifiers()[l];
 	}
 }
 
 modifier::modifier(const std::string& name) throw(std::bad_alloc)
 {
-	if(!known_modifiers)
-		known_modifiers = new std::map<std::string, modifier*>();
-	(*known_modifiers)[modname = name] = this;
+	known_modifiers()[modname = name] = this;
 }
 
 modifier::modifier(const std::string& name, const std::string& linkgroup) throw(std::bad_alloc)
 {
-	if(!known_modifiers)
-		known_modifiers = new std::map<std::string, modifier*>();
-	if(!modifier_linkages)
-		modifier_linkages = new std::map<std::string, std::string>();
-	(*known_modifiers)[modname = name] = this;
-	(*modifier_linkages)[name] = linkgroup;
+	known_modifiers()[modname = name] = this;
+	modifier_linkages()[name] = linkgroup;
 }
 
 modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!known_modifiers || !known_modifiers->count(name)) {
+	if(!known_modifiers().count(name)) {
 		std::ostringstream x;
 		x << "Invalid modifier '" << name << "'";
 		throw std::runtime_error(x.str());
 	}
-	return *(*known_modifiers)[name];
+	return *known_modifiers()[name];
 }
 
 std::string modifier::name() const throw(std::bad_alloc)
@@ -252,9 +247,7 @@ std::string keygroup::name() throw(std::bad_alloc)
 
 keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 {
-	if(!keygroups)
-		keygroups = new std::map<std::string, keygroup*>();
-	(*keygroups)[keyname = name] = this;
+	keygroups()[keyname = name] = this;
 	ktype = t;
 	state = 0;
 	cal_left = -32768;
@@ -272,16 +265,14 @@ void keygroup::change_type(enum type t)
 std::pair<keygroup*, unsigned> keygroup::lookup(const std::string& name) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	if(!keygroups)
-		throw std::runtime_error("Invalid key");
-	if(keygroups->count(name))
-		return std::make_pair((*keygroups)[name], 0);
+	if(keygroups().count(name))
+		return std::make_pair(keygroups()[name], 0);
 	std::string prefix = name;
 	char letter = prefix[prefix.length() - 1];
 	prefix = prefix.substr(0, prefix.length() - 1);
-	if(!keygroups->count(prefix))
+	if(!keygroups().count(prefix))
 		throw std::runtime_error("Invalid key");
-	keygroup* g = (*keygroups)[prefix];
+	keygroup* g = keygroups()[prefix];
 	switch(letter) {
 	case '+':
 	case 'n':

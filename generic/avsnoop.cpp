@@ -1,9 +1,10 @@
 #include "avsnoop.hpp"
 #include "misc.hpp"
+#include "globalwrap.hpp"
 
 namespace
 {
-	std::list<av_snooper*>* snoopers;
+	globalwrap<std::list<av_snooper*>> snoopers;
 	std::list<av_snooper::dump_notification*> notifiers;
 	std::string s_gamename;
 	std::string s_rerecords;
@@ -14,20 +15,16 @@ namespace
 
 av_snooper::av_snooper() throw(std::bad_alloc)
 {
-	if(!snoopers)
-		snoopers = new std::list<av_snooper*>();
-	snoopers->push_back(this);
+	snoopers().push_back(this);
 	for(auto i = notifiers.begin(); i != notifiers.end(); i++)
 		(*i)->dump_starting();
 }
 
 av_snooper::~av_snooper() throw()
 {
-	if(!snoopers)
-		return;
-	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
+	for(auto i = snoopers().begin(); i != snoopers().end(); i++)
 		if(*i == this) {
-			snoopers->erase(i);
+			snoopers().erase(i);
 			break;
 		}
 	for(auto i = notifiers.begin(); i != notifiers.end(); i++)
@@ -36,9 +33,7 @@ av_snooper::~av_snooper() throw()
 
 void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, bool dummy) throw(std::bad_alloc)
 {
-	if(!snoopers)
-		return;
-	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
+	for(auto i = snoopers().begin(); i != snoopers().end(); i++)
 		try {
 			(*i)->frame(_frame, fps_n, fps_d);
 		} catch(std::bad_alloc& e) {
@@ -53,9 +48,7 @@ void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, 
 
 void av_snooper::sample(short l, short r, bool dummy) throw(std::bad_alloc)
 {
-	if(!snoopers)
-		return;
-	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
+	for(auto i = snoopers().begin(); i != snoopers().end(); i++)
 		try {
 			(*i)->sample(l, r);
 		} catch(std::bad_alloc& e) {
@@ -70,9 +63,7 @@ void av_snooper::sample(short l, short r, bool dummy) throw(std::bad_alloc)
 
 void av_snooper::end(bool dummy) throw(std::bad_alloc)
 {
-	if(!snoopers)
-		return;
-	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
+	for(auto i = snoopers().begin(); i != snoopers().end(); i++)
 		try {
 			(*i)->end();
 		} catch(std::bad_alloc& e) {
@@ -88,14 +79,12 @@ void av_snooper::end(bool dummy) throw(std::bad_alloc)
 void av_snooper::gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
 		authors, double gametime, const std::string& rerecords, bool dummy) throw(std::bad_alloc)
 {
-	if(!snoopers)
-		return;
 	s_gamename = gamename;
 	s_authors = authors;
 	s_gametime = gametime;
 	s_rerecords = rerecords;
 	gameinfo_set = true;
-	for(auto i = snoopers->begin(); i != snoopers->end(); i++)
+	for(auto i = snoopers().begin(); i != snoopers().end(); i++)
 		(*i)->send_gameinfo();
 }
 
@@ -110,7 +99,7 @@ void av_snooper::send_gameinfo() throw()
 
 bool av_snooper::dump_in_progress() throw()
 {
-	return (snoopers && !snoopers->empty());
+	return !snoopers().empty();
 }
 
 av_snooper::dump_notification::~dump_notification() throw()

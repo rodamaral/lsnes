@@ -4,11 +4,12 @@
 #include <sstream>
 #include "misc.hpp"
 #include "command.hpp"
+#include "globalwrap.hpp"
 #include <iostream>
 
 namespace
 {
-	std::map<std::string, setting*>* settings;
+	globalwrap<std::map<std::string, setting*>> settings;
 
 	function_ptr_command<tokensplitter&> set_setting("set-setting", "set a setting",
 		"Syntax: set-setting <setting> [<value>]\nSet setting to a new value. Omit <value> to set to ''\n",
@@ -56,24 +57,20 @@ namespace
 
 setting::setting(const std::string& name) throw(std::bad_alloc)
 {
-	if(!settings)
-		settings = new std::map<std::string, setting*>();
-	(*settings)[settingname = name] = this;
+	settings()[settingname = name] = this;
 }
 
 setting::~setting() throw()
 {
-	if(!settings)
-		return;
-	settings->erase(settingname);
+	settings().erase(settingname);
 }
 
 void setting::set(const std::string& _setting, const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings || !settings->count(_setting))
+	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
-		(*settings)[_setting]->set(value);
+		settings()[_setting]->set(value);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
@@ -83,10 +80,10 @@ void setting::set(const std::string& _setting, const std::string& value) throw(s
 
 void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings || !settings->count(_setting))
+	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
-		(*settings)[_setting]->blank();
+		settings()[_setting]->blank();
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
@@ -96,23 +93,21 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 
 std::string setting::get(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings || !settings->count(_setting))
+	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
-	return (*settings)[_setting]->get();
+	return settings()[_setting]->get();
 }
 
 bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings || !settings->count(_setting))
+	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
-	return (*settings)[_setting]->is_set();
+	return settings()[_setting]->is_set();
 }
 
 void setting::print_all() throw(std::bad_alloc)
 {
-	if(!settings)
-		return;
-	for(auto i = settings->begin(); i != settings->end(); i++) {
+	for(auto i = settings().begin(); i != settings().end(); i++) {
 		if(!i->second->is_set())
 			messages << i->first << ": (unset)" << std::endl;
 		else

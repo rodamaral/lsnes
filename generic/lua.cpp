@@ -27,6 +27,7 @@ bool lua_requests_subframe_paint = false;
 #include "misc.hpp"
 #include "memorymanip.hpp"
 #include "mainloop.hpp"
+#include "globalwrap.hpp"
 #include <map>
 #include <cstring>
 #include <string>
@@ -38,7 +39,7 @@ extern "C" {
 
 namespace
 {
-	std::map<std::string, lua_function*>* functions;
+	globalwrap<std::map<std::string, lua_function*>> functions;
 	lua_State* lua_initialized;
 	int lua_trampoline_function(lua_State* L)
 	{
@@ -87,7 +88,7 @@ namespace
 			u2 = u.substr(split + 1);
 		}
 		recursive_lookup_table(L, u1);
-		void* ptr = reinterpret_cast<void*>((*functions)[fun]);
+		void* ptr = reinterpret_cast<void*>(functions()[fun]);
 		lua_pushlightuserdata(L, ptr);
 		lua_pushcclosure(L, lua_trampoline_function, 1);
 		lua_setfield(L, -2, u2.c_str());
@@ -96,27 +97,22 @@ namespace
 
 	void register_lua_functions(lua_State* L)
 	{
-		if(functions)
-			for(auto i = functions->begin(); i != functions->end(); i++)
-				register_lua_function(L, i->first);
+		for(auto i = functions().begin(); i != functions().end(); i++)
+			register_lua_function(L, i->first);
 		lua_initialized = L;
 	}
 }
 
 lua_function::lua_function(const std::string& name) throw(std::bad_alloc)
 {
-	if(!functions)
-		functions = new std::map<std::string, lua_function*>();
-	(*functions)[fname = name] = this;
+	functions()[fname = name] = this;
 	if(lua_initialized)
 		register_lua_function(lua_initialized, fname);
 }
 
 lua_function::~lua_function() throw()
 {
-	if(!functions)
-		return;
-	functions->erase(fname);
+	functions().erase(fname);
 }
 
 std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)

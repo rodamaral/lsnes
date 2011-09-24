@@ -1,12 +1,13 @@
 #include "command.hpp"
 #include "misc.hpp"
 #include "zip.hpp"
+#include "globalwrap.hpp"
 #include <set>
 #include <map>
 
 namespace
 {
-	std::map<std::string, command*>* commands;
+	globalwrap<std::map<std::string, command*>> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
 
@@ -65,18 +66,14 @@ namespace
 
 command::command(const std::string& cmd) throw(std::bad_alloc)
 {
-	if(!commands)
-		commands = new std::map<std::string, command*>();
-	if(commands->count(cmd))
+	if(commands().count(cmd))
 		std::cerr << "WARNING: Command collision for " << cmd << "!" << std::endl;
-	(*commands)[commandname = cmd] = this;
+	commands()[commandname = cmd] = this;
 }
 
 command::~command() throw()
 {
-	if(!commands)
-		return;
-	commands->erase(commandname);
+	commands().erase(commandname);
 }
 
 void command::invokeC(const std::string& cmd) throw()
@@ -87,10 +84,8 @@ void command::invokeC(const std::string& cmd) throw()
 			cmd2 = cmd2.substr(0, cmd2.length() - 1);
 		if(cmd2 == "?") {
 			//The special ? command.
-			if(commands) {
-				for(auto i = commands->begin(); i != commands->end(); ++i)
-					messages << i->first << ": " << i->second->get_short_help() << std::endl;
-			}
+			for(auto i = commands().begin(); i != commands().end(); ++i)
+				messages << i->first << ": " << i->second->get_short_help() << std::endl;
 			return;
 		}
 		if(cmd2.length() > 1 && cmd2[0] == '?') {
@@ -115,12 +110,12 @@ void command::invokeC(const std::string& cmd) throw()
 			}
 			if(rcmd.length() > 0 && rcmd[0] == '*')
 				rcmd = rcmd.substr(1);
-			if(!commands || !commands->count(rcmd)) {
+			if(!commands().count(rcmd)) {
 				if(rcmd != "")
 					messages << "Unknown command '" << rcmd << "'" << std::endl;
 				return;
 			}
-			messages << (*commands)[rcmd]->get_long_help() << std::endl;
+			messages << commands()[rcmd]->get_long_help() << std::endl;
 			return;
 		}
 		bool may_be_alias_expanded = true;
@@ -145,8 +140,8 @@ void command::invokeC(const std::string& cmd) throw()
 			if(split < cmd2.length())
 				args = cmd2.substr(split);
 			command* cmdh = NULL;
-			if(commands && commands->count(rcmd))
-				cmdh = (*commands)[rcmd];
+			if(commands().count(rcmd))
+				cmdh = commands()[rcmd];
 			if(!cmdh) {
 				messages << "Unknown command '" << rcmd << "'" << std::endl;
 				return;
