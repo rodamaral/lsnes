@@ -3160,6 +3160,44 @@ The number of rerecords + 1 is equal to the sum of number of IDs encoded
  by all records.
 \end_layout
 
+\begin_layout Subsection
+Member: starttime.second
+\end_layout
+
+\begin_layout Standard
+Movie starting time, second part.
+ Epoch is Unix epoch.
+ Default is 1,000,000,000.
+\end_layout
+
+\begin_layout Subsection
+Member: starttime.subsecond
+\end_layout
+
+\begin_layout Standard
+Movie starting time, subsecond part.
+ Unit is 1/3,462,619,485,020 s.
+ Default is 0.
+\end_layout
+
+\begin_layout Subsection
+Member: savetime.second
+\end_layout
+
+\begin_layout Standard
+Movie saving time, second part.
+ Default is starttime.second.
+\end_layout
+
+\begin_layout Subsection
+Member: savetime.subsecond
+\end_layout
+
+\begin_layout Standard
+Movie saving time, subsecond part.
+ Default is starttime.subsecond.
+\end_layout
+
 \begin_layout Section
 Compiling:
 \end_layout
