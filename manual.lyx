@@ -3187,6 +3187,7 @@ Member: savetime.second
 \begin_layout Standard
 Movie saving time, second part.
  Default is starttime.second.
+ Only present in savestates.
 \end_layout
 
 \begin_layout Subsection
@@ -3196,6 +3197,7 @@ Member: savetime.subsecond
 \begin_layout Standard
 Movie saving time, subsecond part.
  Default is starttime.subsecond.
+ Only present in savestates.
 \end_layout
 
 \begin_layout Section
