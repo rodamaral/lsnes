@@ -1088,6 +1088,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			window::cancel_wait();
 			window::paused(true);
 			window::poll_inputs();
+			//We already have done the reset this frame if we are going to do one at all.
+			movb.get_movie().set_controls(curcontrols ^ autoheld_controls ^
+				autofire_pattern[movb.get_movie().get_current_frame() % autofire_pattern.size()]);
 			just_did_loadstate = false;
 		}
 		SNES::system.run();
