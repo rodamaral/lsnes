@@ -484,9 +484,13 @@ class my_interface : public SNES::Interface
 		if(region) {
 			fps_n = 322445;
 			fps_d = 6448;
-		} else {
+		} else if(!interlace) {
 			fps_n = 10738636;
 			fps_d = 178683;
+		} else {
+			//Yes, interlace makes difference with NTSC but not on PAL.
+			fps_n = 2684659;
+			fps_d = 44671;
 		}
 		av_snooper::frame(ls, fps_n, fps_d, true);
 	}
