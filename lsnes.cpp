@@ -13,7 +13,7 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 #include "framerate.hpp"
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE) || defined(__APPLE__)
 #include "SDL_main.h"
 #endif
 
