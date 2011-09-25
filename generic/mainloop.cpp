@@ -962,14 +962,14 @@ namespace
 	//Do (delayed) reset. Return true if proper, false if forced at frame boundary.
 	bool handle_reset(long cycles)
 	{
-		if(cycles == 0) {
+		if(cycles < 0)
+			return true;
+		video_refresh_done = false;
+		if(cycles == 0)
 			window::message("SNES reset");
-			SNES::system.reset();
-			framebuffer = screen_nosignal;
-			lua_callback_do_reset();
-			redraw_framebuffer();
-		} else if(cycles > 0) {
-			video_refresh_done = false;
+		else if(cycles > 0) {
+			window::message("SNES delayed reset not implemented (doing immediate reset)");
+			/* ... This code is just too buggy.
 			long cycles_executed = 0;
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			while(cycles_executed < cycles && !video_refresh_done) {
@@ -983,14 +983,15 @@ namespace
 				messages << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
 			else
 				messages << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
-			SNES::system.reset();
-			framebuffer = screen_nosignal;
-			lua_callback_do_reset();
-			redraw_framebuffer();
-			if(video_refresh_done) {
-				to_wait_frame(get_ticks_msec());
-				return false;
-			}
+			*/
+		}
+		SNES::system.reset();
+		framebuffer = screen_nosignal;
+		lua_callback_do_reset();
+		redraw_framebuffer();
+		if(video_refresh_done) {
+			to_wait_frame(get_ticks_msec());
+			return false;
 		}
 		return true;
 	}
