@@ -372,6 +372,10 @@ void update_movie_state()
 			x << movb.get_movie().next_poll_number();
 		x << ";" << movb.get_movie().get_lag_frames() << ")/" << movb.get_movie().get_frame_count();
 		_status["Frame"] = x.str();
+	} else
+		_status["Frame"] = "N/A";
+#ifndef NO_TIME_INTERCEPT
+	if(!system_corrupt) {
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
 		char datebuffer[512];
@@ -381,10 +385,10 @@ void update_movie_state()
 		_status["RTCdate"] = datebuffer;
 		_status["RTCtime"] = timebuffer;
 	} else {
-		_status["Frame"] = "N/A";
 		_status["RTCdate"] = "N/A";
 		_status["RTCtime"] = "N/A";
 	}
+#endif
 	{
 		std::ostringstream x;
 		if(system_corrupt)

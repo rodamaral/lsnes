@@ -15,6 +15,13 @@
 #include <cstring>
 #include <boost/filesystem.hpp>
 
+#ifdef NO_TIME_INTERCEPT
+time_t __real_time(time_t* t)
+{
+	return time(t);
+}
+#endif
+
 namespace
 {
 	std::string rseed;

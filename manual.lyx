@@ -3315,6 +3315,16 @@ NO_LUA=1
 Don't compile in Lua support.
 \end_layout
 
+\begin_layout Subsubsection
+NO_TIME_INTERCEPT=1
+\end_layout
+
+\begin_layout Standard
+Disable time() interception.
+ Prevents recording games using RTC but allows building on some platforms,
+ notably Mac OS X.
+\end_layout
+
 \begin_layout Section
 Quick'n'dirty encode guide
 \end_layout

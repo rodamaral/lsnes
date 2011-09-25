@@ -10,7 +10,7 @@ OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard generic/*.cpp)) $(patsu
 GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)
-LDFLAGS = -Wl,--wrap,time $(GENERIC_LIBS) $(USER_LDFLAGS)
+LDFLAGS = $(GENERIC_LIBS) $(USER_LDFLAGS)
 PLATFORM = SDL
 PLATFORM_CFLAGS = $(CFLAGS)
 PLATFORM_LDFLAGS = $(LDFLAGS)
@@ -28,6 +28,11 @@ LDFLAGS += $(shell pkg-config lua5.1 --libs)
 endif
 
 #Some misc defines.
+ifdef NO_TIME_INTERCEPT
+CFLAGS += -DNO_TIME_INTERCEPT
+else
+LDFLAGS += -Wl,--wrap,time
+endif
 ifdef NO_THREADS
 CFLAGS += -DNO_THREADS
 endif
