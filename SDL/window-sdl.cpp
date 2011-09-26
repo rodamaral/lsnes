@@ -17,18 +17,12 @@
 #define MAXMESSAGES 6
 #define MSGHISTORY 1000
 #define MAXHISTORY 1000
-#define JOYTHRESHOLD 3200
 
 #include <SDL.h>
 #include <string>
 #include <map>
 #include <stdexcept>
 
-#define SDL_DEV_NONE 0
-#define SDL_DEV_KEYBOARD 1
-#define SDL_DEV_JOYAXIS 2
-#define SDL_DEV_JOYBUTTON 3
-#define SDL_DEV_JOYHAT 4
 // Limit the emulator to ~30fps.
 #define MIN_UPDATE_TIME 33
 
@@ -463,7 +457,6 @@ namespace
 }
 
 extern uint32_t fontdata[];
-
 
 namespace
 {
