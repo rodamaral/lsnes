@@ -126,7 +126,7 @@ void avidumper::on_sample(short left, short right) throw(std::bad_alloc, std::ru
 		audio_put_ptr = 0;
 }
 
-void avidumper::on_frame(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
+void avidumper::on_frame(const uint16_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(capture_error)
@@ -202,8 +202,8 @@ void avidumper::print_summary(std::ostream& str)
 	str << s2.str();
 }
 
-void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
-	throw(std::bad_alloc, std::runtime_error)
+void avidumper::on_frame_threaded(const uint16_t* data, uint16_t width, uint16_t height, uint32_t fps_n,
+	uint32_t fps_d) throw(std::bad_alloc, std::runtime_error)
 {
 	//The AVI part of sound to write is [audio_get, audio_commit). We don't write part [audio_commit,audio_put)
 	//yet, as it is being concurrently written. Also grab lock to read the commit value. Also, if global frame
@@ -219,31 +219,49 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 	if(segment_movi_ptr > AVI_CUTOFF - 16 * segment_chunks.size() || (maxframes && segment_frames > maxframes))
 		fixup_avi_header_and_close();
 
+	uint16_t rwidth = (width + 3) / 4 * 4;
 	uint16_t rheight = (height + 3) / 4 * 4;
 	bool this_is_keyframe;
-	if(width != pwidth || height != pheight || fps_n != pfps_n || fps_d != pfps_d || !avi_open) {
+	if(rwidth != pwidth || rheight != pheight || fps_n != pfps_n || fps_d != pfps_d || !avi_open) {
 		std::cerr << "Starting segment # " << current_segment << ": " << width << "x" << height << "."
 			<< std::endl;
 		fixup_avi_header_and_close();
-		pwidth = width;
-		pheight = height;
+		pwidth = rwidth;
+		pheight = rheight;
 		pfps_n = fps_n;
 		pfps_d = fps_d;
-		pframe.resize(4 * static_cast<size_t>(width) * height);
-		tframe.resize(4 * static_cast<size_t>(width) * rheight);
-		cframe.resize(compressBound(4 * static_cast<size_t>(width) * rheight) + 13);
-		memset(&tframe[0], 0, 4 * static_cast<size_t>(width) * rheight);
-		open_and_write_avi_header(width, rheight, fps_n, fps_d);
+		pframe.resize(2 * static_cast<size_t>(rwidth) * rheight);
+		tframe.resize(2 * static_cast<size_t>(rwidth) * rheight);
+		cframe.resize(compressBound(tframe.size()) + 13);
+		memset(&tframe[0], 0, tframe.size());
+		memset(&pframe[0], 0, pframe.size());
+		open_and_write_avi_header(rwidth, rheight, fps_n, fps_d);
 	}
 
 	this_is_keyframe = (segment_frames == 0 || segment_frames - segment_last_keyframe >= keyframe_interval);
-
+	uint8_t _magic[2] = {2, 1};
+	uint16_t magic = *reinterpret_cast<uint16_t*>(_magic);
+	
 	if(this_is_keyframe) {
-		memcpy(&tframe[0], data, 4 * static_cast<size_t>(width) * height);
+		for(size_t i = 0; i < height; i++)
+			memcpy(&tframe[2 * i * rwidth], data + (i * width), 2 * width);
+		if(magic != 258)
+			for(size_t i = 0; i < tframe.size(); i += 2) {
+				tframe[i] ^= tframe[i + 1];
+				tframe[i + 1] ^= tframe[i];
+				tframe[i] ^= tframe[i + 1];
+			}
 		segment_last_keyframe = segment_frames;
 	} else {
-		memcpy(&tframe[0], data, 4 * static_cast<size_t>(width) * height);
-		for(size_t i = 0; i < 4 * static_cast<size_t>(width) * height; i++)
+		for(size_t i = 0; i < height; i++)
+			memcpy(&tframe[2 * i * rwidth], data + (i * width), 2 * width);
+		if(magic != 258)
+			for(size_t i = 0; i < tframe.size(); i += 2) {
+				tframe[i] ^= tframe[i + 1];
+				tframe[i + 1] ^= tframe[i];
+				tframe[i] ^= tframe[i + 1];
+			}
+		for(size_t i = 0; i < tframe.size(); i++)
 			tframe[i] -= pframe[i];
 	}
 	uLongf l = cframe.size() - 10;
@@ -261,7 +279,7 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 	cframe[6] = (l + 2) >> 16;
 	cframe[7] = (l + 2) >> 24;
 	cframe[8] = (this_is_keyframe ? 0x3 : 0x2) | (compression_level << 4);
-	cframe[9] = 12;
+	cframe[9] = 4;
 	avi_stream.write(reinterpret_cast<char*>(&cframe[0]), l + 10);
 	if(!avi_stream)
 		throw std::runtime_error("Error writing video frame");
@@ -276,7 +294,14 @@ void avidumper::on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t
 	if((segment_frames % 1200) == 0)
 		print_summary(std::cerr);
 
-	memcpy(&pframe[0], data, 4 * static_cast<size_t>(width) * height);
+	for(size_t i = 0; i < height; i++)
+		memcpy(&pframe[2 * i * rwidth], data + (i * width), 2 * width);
+	if(magic != 258)
+		for(size_t i = 0; i < pframe.size(); i += 2) {
+			pframe[i] ^= pframe[i + 1];
+			pframe[i + 1] ^= pframe[i];
+			pframe[i] ^= pframe[i + 1];
+		}
 }
 
 void avidumper::on_end() throw(std::bad_alloc, std::runtime_error)
@@ -477,16 +502,16 @@ void avidumper::open_and_write_avi_header(uint16_t width, uint16_t height, uint3
 		ptr(fixup_avi_length), u32(0),		/* Video length (to be fixed later). */
 		u32(1000000),				/* Suggested buffer size... Just give some random value. */
 		u32(9999),				/* Quality... Doesn't matter. */
-		u32(4),					/* Video sample size... 32bpp. */
+		u32(2),					/* Video sample size... 16bpp. */
 		u32(0), u32(0),				/* Bounding box upper left. */
 		u32(width), u32(height));		/* Bounding box lower right. */
 	/* BITMAPINFO header for the video stream. */
 	append(aviheader, str("strf"), u32(40), 	/* 40 byte header of type strf. */
 		u32(40),				/* BITMAPINFOHEADER is 40 bytes. */
 		u32(width), u32(height),		/* Image size. */
-		u16(1), u16(32),			/* 1 plane, 32 bits (RGB32). */
+		u16(1), u16(16),			/* 1 plane, 16 bits (RGB16). */
 		str("CSCD"),				/* Compressed with Camstudio codec. */
-		u32(4 * width * height),		/* Image size. */
+		u32(2 * width * height),		/* Image size. */
 		u32(4000), u32(4000),			/* Resolution... Give some random values. */
 		u32(0), u32(0));			/* Colors used values (0 => All colors used). */
 	/* Stream list header For stream #2, 104 bytes of data. */

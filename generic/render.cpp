@@ -29,12 +29,20 @@ extern uint32_t fontdata[];
 
 namespace
 {
-	inline uint32_t blend(uint32_t orig, uint16_t ialpha, uint32_t pl, uint32_t ph) throw()
+	std::pair<uint32_t, uint32_t> premultipy_color(uint16_t color, uint8_t alpha)
 	{
-		const uint32_t X = 0xFF00FFU;
-		const uint32_t Y = 0xFF00FF00U;
-		return ((ialpha * ((orig >> 8) & X) + ph) & Y) | (((ialpha * (orig & X) + pl)
-			>> 8) & X);
+		uint32_t a, b;
+		a = color & 0x7C1F;
+		b = color & 0x03E0;
+		return std::make_pair(a * alpha, b * alpha);
+	}
+
+	inline uint16_t blend(uint16_t orig, uint8_t ialpha, std::pair<uint32_t, uint32_t> with) throw()
+	{
+		uint32_t a, b;
+		a = orig & 0x7C1F;
+		b = orig & 0x03E0;
+		return (((a * ialpha + with.first) >> 5) & 0x7C1F) | (((b * ialpha + with.second) >> 5) & 0x03E0);
 	}
 
 	//This is Jenkin's MIX function.
@@ -107,15 +115,13 @@ render_object::~render_object() throw()
 {
 }
 
-void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, uint32_t fg,
-	uint16_t fgalpha, uint32_t bg, uint16_t bgalpha) throw(std::bad_alloc)
+void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, uint16_t fg,
+	uint8_t fgalpha, uint16_t bg, uint8_t bgalpha) throw(std::bad_alloc)
 {
-	uint32_t pfgl = (fg & 0xFF00FF) * fgalpha;
-	uint32_t pfgh = ((fg >> 8) & 0xFF00FF) * fgalpha;
-	uint32_t pbgl = (bg & 0xFF00FF) * bgalpha;
-	uint32_t pbgh = ((bg >> 8) & 0xFF00FF) * bgalpha;
-	uint16_t ifga = 256 - fgalpha;
-	uint16_t ibga = 256 - bgalpha;
+	auto pfg = premultipy_color(fg, fgalpha);
+	auto pbg = premultipy_color(bg, bgalpha);
+	uint8_t ifga = 32 - fgalpha;
+	uint8_t ibga = 32 - bgalpha;
 	int32_t orig_x = x;
 	uint32_t unicode_code = 0;
 	uint8_t unicode_left = 0;
@@ -171,20 +177,20 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 		if(p.second == 0) {
 			//Blank glyph.
 			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t* base = scr.rowptr(cy + j) + cx;
+				uint16_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
-					base[i] = blend(base[i], ibga, pbgl, pbgh);
+					base[i] = blend(base[i], ibga, pbg);
 			}
 		} else {
 			//narrow/wide glyph.
 			for(uint32_t j = 0; j < dh; j++) {
 				uint32_t dataword = fontdata[p.second + (dy + j) / (32 / p.first)];
-				uint32_t* base = scr.rowptr(cy + j) + cx;
+				uint16_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
 					if(((dataword >> (31 - ((dy + j) % (32 / p.first)) * p.first - (dx + i))) & 1))
-						base[i] = blend(base[i], ifga, pfgl, pfgh);
+						base[i] = blend(base[i], ifga, pfg);
 					else
-						base[i] = blend(base[i], ibga, pbgl, pbgh);
+						base[i] = blend(base[i], ibga, pbg);
 			}
 		}
 		x = next_x;
@@ -221,11 +227,12 @@ render_queue::~render_queue() throw()
 	clear();
 }
 
-uint32_t screen::make_color(uint8_t r, uint8_t g, uint8_t b) throw()
+uint16_t screen::make_color(uint8_t r, uint8_t g, uint8_t b) throw()
 {
-	return (static_cast<uint32_t>(r) << active_rshift) |
-		(static_cast<uint32_t>(g) << active_gshift) |
-		(static_cast<uint32_t>(b) << active_bshift);
+	uint16_t _r = r / 8;
+	uint16_t _g = g / 8;
+	uint16_t _b = b / 8;
+	return (_r << 10) + (_g << 5) + _b;
 }
 
 lcscreen::lcscreen(const uint16_t* mem, bool hires, bool interlace, bool overscan, bool region) throw()
@@ -371,19 +378,19 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 	copyable_width = (copyable_width > scr.width) ? scr.width : copyable_width;
 	copyable_height = (copyable_height > scr.height) ? scr.height : copyable_height;
 	for(uint32_t y = 0; y < height; y++) {
-		memset(rowptr(y), 0, 4 * width);
+		memset(rowptr(y), 0, 2 * width);
 	}
 	for(uint32_t y = 0; y < copyable_height; y++) {
 		uint32_t line = y * vscale + originy;
-		uint32_t* ptr = rowptr(line) + originx;
+		uint16_t* ptr = rowptr(line) + originx;
 		const uint16_t* sbase = scr.memory + y * scr.pitch;
 		for(uint32_t x = 0; x < copyable_width; x++) {
-			uint32_t c = palette[sbase[x] % 32768];
+			uint16_t c = sbase[x] % 32768;
 			for(uint32_t i = 0; i < hscale; i++)
 				*(ptr++) = c;
 		}
 		for(uint32_t j = 1; j < vscale; j++)
-			memcpy(rowptr(line + j) + originx, rowptr(line) + originx, 4 * hscale * copyable_width);
+			memcpy(rowptr(line + j) + originx, rowptr(line) + originx, 2 * hscale * copyable_width);
 	}
 }
 
@@ -404,12 +411,12 @@ void screen::reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, ui
 		flipped = upside_down;
 		return;
 	}
-	uint32_t* newmem = new uint32_t[_width * _height];
+	uint16_t* newmem = new uint16_t[_width * _height];
 	width = _width;
 	height = _height;
 	originx = _originx;
 	originy = _originy;
-	pitch = 4 * _width;
+	pitch = 2 * _width;
 	if(memory && !user_memory)
 		delete[] memory;
 	memory = newmem;
@@ -417,7 +424,7 @@ void screen::reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, ui
 	flipped = upside_down;
 }
 
-void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
+void screen::set(uint16_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
 	uint32_t _pitch) throw()
 {
 	if(memory && !user_memory)
@@ -432,59 +439,23 @@ void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t 
 	flipped = false;
 }
 
-uint32_t* screen::rowptr(uint32_t row) throw()
+uint16_t* screen::rowptr(uint32_t row) throw()
 {
 	if(flipped)
 		row = height - row - 1;
-	return reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(memory) + row * pitch);
+	return reinterpret_cast<uint16_t*>(reinterpret_cast<uint8_t*>(memory) + row * pitch);
 }
 
 screen::screen() throw()
 {
-	uint32_t _magic = 403703808;
-	uint8_t* magic = reinterpret_cast<uint8_t*>(&_magic);
 	memory = NULL;
 	width = height = originx = originy = pitch = 0;
 	user_memory = false;
 	flipped = false;
-	active_rshift = active_gshift = active_bshift = 255;
-	set_palette(magic[0], magic[1], magic[2]);
 }
 
 screen::~screen() throw()
 {
 	if(memory && !user_memory)
 		delete[] memory;
-}
-
-void screen::set_palette(uint32_t rshift, uint32_t gshift, uint32_t bshift) throw()
-{
-	if(rshift == active_rshift && gshift == active_gshift && bshift == active_bshift)
-		return;
-	uint32_t old_rshift = active_rshift;
-	uint32_t old_gshift = active_gshift;
-	uint32_t old_bshift = active_bshift;
-	uint32_t xpalette[32];
-	for(unsigned i = 0; i < 32; i++)
-		xpalette[i] = (i * 255 / 31);
-	for(unsigned i = 0; i < 32768; i++) {
-		palette[i] = (xpalette[(i >> 10) & 31] << rshift) +
-			(xpalette[(i >> 5) & 31] << gshift) +
-			(xpalette[i & 31] << bshift);
-	}
-	active_rshift = rshift;
-	active_gshift = gshift;
-	active_bshift = bshift;
-	//Convert the data.
-	for(uint32_t j = 0; j < height; j++) {
-		uint32_t* rp = rowptr(j);
-		for(uint32_t i = 0; i < width; i++) {
-			uint32_t x = rp[i];
-			uint32_t r = (x >> old_rshift) & 0xFF;
-			uint32_t g = (x >> old_gshift) & 0xFF;
-			uint32_t b = (x >> old_bshift) & 0xFF;
-			x = (r << active_rshift) | (g << active_gshift) | (b << active_bshift);
-			rp[i] = x;
-		}
-	}
 }

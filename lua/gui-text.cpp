@@ -5,22 +5,22 @@ namespace
 {
 	struct render_object_text : public render_object
 	{
-		render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg = 0xFFFFFFFFU,
-			uint16_t _fgalpha = 255, uint32_t _bg = 0, uint16_t _bgalpha = 0) throw(std::bad_alloc);
+		render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg = 0x7FFFU,
+			uint8_t _fgalpha = 32, uint16_t _bg = 0, uint8_t _bgalpha = 0) throw(std::bad_alloc);
 		~render_object_text() throw();
 		void operator()(struct screen& scr) throw();
 	private:
 		int32_t x;
 		int32_t y;
-		uint32_t fg;
-		uint16_t fgalpha;
-		uint32_t bg;
-		uint16_t bgalpha;
+		uint16_t fg;
+		uint8_t fgalpha;
+		uint16_t bg;
+		uint8_t bgalpha;
 		std::string text;
 	};
 
-	render_object_text::render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg,
-		uint16_t _fgalpha, uint32_t _bg, uint16_t _bgalpha) throw(std::bad_alloc)
+	render_object_text::render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg,
+		uint8_t _fgalpha, uint16_t _bg, uint8_t _bgalpha) throw(std::bad_alloc)
 		: x(_x), y(_y), fg(_fg), fgalpha(_fgalpha), bg(_bg), bgalpha(_bgalpha), text(_text)
 	{
 	}
@@ -37,11 +37,9 @@ namespace
 	function_ptr_luafun gui_text("gui.text", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint32_t x255 = 255;
-		uint32_t fgc = (x255 << lua_render_ctx->rshift) | (x255 << lua_render_ctx->gshift) |
-			(x255 << lua_render_ctx->bshift);
+		uint32_t fgc = 0x7FFFU;
 		uint32_t bgc = 0;
-		uint16_t fga = 256;
+		uint16_t fga = 32;
 		uint16_t bga = 0;
 		int32_t _x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
 		int32_t _y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());

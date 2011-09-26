@@ -47,9 +47,6 @@ namespace
 				hscl = 2;
 			if(dump_large && _frame.height < 400)
 				vscl = 2;
-			uint32_t _magic = 403703808;
-			uint8_t* magic = reinterpret_cast<uint8_t*>(&_magic);
-			dscr.set_palette(magic[2], magic[1], magic[0]);
 
 			struct lua_render_context lrc;
 			render_queue rq;
@@ -60,9 +57,6 @@ namespace
 			lrc.queue = &rq;
 			lrc.width = _frame.width * hscl;
 			lrc.height = _frame.height * vscl;
-			lrc.rshift = magic[2];
-			lrc.gshift = magic[1];
-			lrc.bshift = magic[0];
 			lua_callback_do_video(&lrc);
 
 			dscr.reallocate(lrc.left_gap + hscl * _frame.width + lrc.right_gap, lrc.top_gap + vscl *

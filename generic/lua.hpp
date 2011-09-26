@@ -63,9 +63,6 @@ struct lua_render_context
 	struct render_queue* queue;
 	uint32_t width;
 	uint32_t height;
-	uint32_t rshift;
-	uint32_t gshift;
-	uint32_t bshift;
 };
 
 void init_lua() throw();

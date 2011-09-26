@@ -1760,7 +1760,7 @@ gui.resolution()
 \end_layout
 
 \begin_layout Standard
-Returns 5-tuple (hresolution, vresolution, rshift, gshift, bshift).
+Returns 2-tuple (hresolution, vresolution).
 \end_layout
 
 \begin_layout Subsubsection
@@ -1793,11 +1793,15 @@ Use gui.resolution() to discover how to layout colors.
 \end_layout
 
 \begin_layout Itemize
-Alpha range is 0(transparent)-256(opaque).
+Alpha range is 0(transparent)-32(opaque).
 \end_layout
 
 \begin_layout Itemize
 Only available in on_paint() and on_video() callbacks.
+\end_layout
+
+\begin_layout Itemize
+Colors are 15 bits (1024 * r + 32 * g + b).
 \end_layout
 
 \begin_layout Subsubsection

@@ -12,10 +12,7 @@ namespace
 				return 0;
 			lua_pushnumber(LS, lua_render_ctx->width);
 			lua_pushnumber(LS, lua_render_ctx->height);
-			lua_pushnumber(LS, lua_render_ctx->rshift);
-			lua_pushnumber(LS, lua_render_ctx->gshift);
-			lua_pushnumber(LS, lua_render_ctx->bshift);
-			return 5;
+			return 2;
 		}
 	} gui_resolution;
 

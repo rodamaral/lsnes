@@ -190,7 +190,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error dumping frame.
  */
-	void on_frame(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
+	void on_frame(const uint16_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
 		throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -226,7 +226,7 @@ public:
 	void set_capture_error(const char* err) throw();
 private:
 	void print_summary(std::ostream& str);
-	void on_frame_threaded(const uint32_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
+	void on_frame_threaded(const uint16_t* data, uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d)
 		throw(std::bad_alloc, std::runtime_error);
 	void flush_audio_to(unsigned commit_ptr);
 	void open_and_write_avi_header(uint16_t width, uint16_t height, uint32_t fps_n, uint32_t fps_d);
@@ -274,7 +274,7 @@ private:
 	thread_class* frame_thread;
 	cv_class frame_cond;
 	mutex_class frame_mutex;
-	const uint32_t* mt_data;
+	const uint16_t* mt_data;
 	volatile uint16_t mt_width;
 	volatile uint16_t mt_height;
 	volatile uint32_t mt_fps_n;

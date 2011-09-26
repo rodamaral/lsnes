@@ -115,7 +115,7 @@ struct lcscreen
 };
 
 /**
- * Truecolor modifiable screen.
+ * Hicolor modifiable screen.
  */
 struct screen
 {
@@ -139,7 +139,7 @@ struct screen
  * parameter _originy: Y coordinate for origin.
  * parameter _pitch: Distance in bytes between successive scanlines.
  */
-	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
+	void set(uint16_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
 		uint32_t _pitch) throw();
 
 /**
@@ -170,12 +170,12 @@ struct screen
  *
  * parameter row: Number of row (must be less than height).
  */
-	uint32_t* rowptr(uint32_t row) throw();
+	uint16_t* rowptr(uint32_t row) throw();
 
 /**
  * Backing memory for this screen.
  */
-	uint32_t* memory;
+	uint16_t* memory;
 
 /**
  * True if memory is given by user and must not be freed.
@@ -213,20 +213,6 @@ struct screen
 	uint32_t originy;
 
 /**
- * Palette.
- */
-	uint32_t palette[32768];
-
-/**
- * Sets the palette shifts, converting the existing image.
- *
- * parameter rshift Shift for red component.
- * parameter gshift Shift for green component.
- * parameter bshift Shift for blue component.
- */
-	void set_palette(uint32_t rshift, uint32_t gshift, uint32_t bshift) throw();
-
-/**
  * Returns color value with specified (r,g,b) values (scale 0-255).
  *
  * parameter r: Red component.
@@ -234,22 +220,7 @@ struct screen
  * parameter b: Blue component.
  * returns: color element value.
  */
-	uint32_t make_color(uint8_t r, uint8_t g, uint8_t b) throw();
-
-/**
- * Current red component shift.
- */
-	uint32_t active_rshift;
-
-/**
- * Current green component shift.
- */
-	uint32_t active_gshift;
-
-/**
- * Current blue component shift.
- */
-	uint32_t active_bshift;
+	uint16_t make_color(uint8_t r, uint8_t g, uint8_t b) throw();
 private:
 	screen(const screen&);
 	screen& operator=(const screen&);
@@ -327,12 +298,12 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
  * parameter _y: The y position to render to (relative to origin).
  * parameter _text: The text to render (UTF-8).
  * parameter _fg: Foreground color.
- * parameter _fgalpha: Foreground alpha (0-256).
+ * parameter _fgalpha: Foreground alpha (0-32).
  * parameter _bg: Background color.
- * parameter _bgalpha: Background alpha (0-256).
+ * parameter _bgalpha: Background alpha (0-32).
  * throws std::bad_alloc: Not enough memory.
  */
-void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, uint32_t _fg = 0xFFFFFFFFU,
-		uint16_t _fgalpha = 255, uint32_t _bg = 0, uint16_t _bgalpha = 0) throw(std::bad_alloc);
+void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg = 0xFFFFFFFFU,
+		uint8_t _fgalpha = 255, uint16_t _bg = 0, uint8_t _bgalpha = 0) throw(std::bad_alloc);
 
 #endif
