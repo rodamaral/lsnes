@@ -21,7 +21,7 @@ extern lcscreen screen_corrupt;
 extern screen main_screen;
 /**
  * Initialize special screens.
- * 
+ *
  * throws std::bad_alloc: Not enough memory.
  */
 void init_special_screens() throw(std::bad_alloc);

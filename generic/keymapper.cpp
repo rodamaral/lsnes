@@ -36,7 +36,7 @@ namespace
 			if(mod != "" || modmask != "")
 				messages << mod << "/" << modmask << " ";
 			messages << keyname << " bound to '" << command << "'" << std::endl;
-			
+
 		});
 
 	function_ptr_command<tokensplitter&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
@@ -256,7 +256,7 @@ keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 	cal_tolerance = 0.5;
 }
 
-void keygroup::change_type(enum type t)
+void keygroup::change_type(enum type t) throw()
 {
 	ktype = t;
 	state = 0;
@@ -487,7 +487,7 @@ namespace
 			command::invokeC(cmd);
 		}
 	};
-	
+
 	std::map<triple, keybind_data> keybindings;
 }
 

@@ -48,7 +48,7 @@ namespace
 		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
 		{
 		}
-		
+
 		void end() throw(std::bad_alloc, std::runtime_error)
 		{
 			std::cout << "Finished!" << std::endl;

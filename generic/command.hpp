@@ -69,21 +69,20 @@ public:
  */
 	tokensplitter(const std::string& _line) throw(std::bad_alloc);
 /**
- * Is there more coming?
+ * Are there more tokens coming?
  *
- * returns: True if there is more, false otherwise.
- * throws std::bad_alloc: Not enough memory.
+ * returns: True if there is at least one token coming, false otherwise.
  */
 	operator bool() throw();
 /**
  * Get the next token.
  *
- * returns: The next token from line. If there is no more tokens, returns "".
+ * returns: The next token from line. If there are no more tokens, returns "".
  * throws std::bad_alloc: Not enough memory.
  */
 	operator std::string() throw(std::bad_alloc);
 /**
- * Get all that is remaining.
+ * Get all remaining line in one go.
  *
  * returns: All remaining parts of line as-is.
  * throws std::bad_alloc: Not enough memory.
@@ -99,12 +98,23 @@ private:
  */
 struct arg_filename
 {
+/**
+ * The filename itself.
+ */
 	std::string v;
+/**
+ * Return the filename.
+ *
+ * returns: The filename.
+ */
 	operator std::string() { return v; }
 };
 
 /**
- * Run command function.
+ * Run command function helper.
+ *
+ * parameter fn: Function pointer to invoke.
+ * parameter a: The arguments to pass.
  */
 template<typename... args>
 void invoke_command_fn(void (*fn)(args... arguments), const std::string& a);
@@ -118,7 +128,7 @@ class function_ptr_command : public command
 public:
 /**
  * Create a new command.
- * 
+ *
  * parameter name: Name of the command
  * parameter description Description for the command
  * parameter help: Help for the command.
@@ -140,7 +150,7 @@ public:
 	}
 /**
  * Invoke a command.
- * 
+ *
  * parameter a: Arguments to function.
  */
 	void invoke(const std::string& a) throw(std::bad_alloc, std::runtime_error)
@@ -149,7 +159,7 @@ public:
 	}
 /**
  * Get short description.
- * 
+ *
  * returns: Description.
  * throw std::bad_alloc: Not enough memory.
  */
@@ -159,7 +169,7 @@ public:
 	}
 /**
  * Get long help.
- * 
+ *
  * returns: help.
  * throw std::bad_alloc: Not enough memory.
  */

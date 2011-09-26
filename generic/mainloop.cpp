@@ -204,7 +204,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		}
 		location_special = SPECIAL_FRAME_START;
 		update_movie_state();
-		
+
 	}
 	window::notify_screen_update();
 	window::poll_inputs();
@@ -918,7 +918,7 @@ namespace
 			prev_mouse_mask = buttonmask;
 		}
 	} mywcb;
-	
+
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
 	//failing.
 	int handle_load()

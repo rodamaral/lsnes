@@ -40,7 +40,7 @@ public:
 
 /**
  * Dump a sample
- * 
+ *
  * parameters a: Sample channel values.
  */
 	template<typename... args>

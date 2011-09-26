@@ -7,7 +7,8 @@
 #include <stdexcept>
 
 /**
- * A/V snooper.
+ * A/V snooper. A/V snoopers allow code to snoop on audio samples and video frames, usually for purpose of dumping
+ * them to video file.
  */
 class av_snooper
 {
@@ -37,7 +38,7 @@ public:
 		std::runtime_error) = 0;
 
 /**
- * Dump a frame.
+ * Call frame() on all known A/V snoopers.
  *
  * parameter _frame: The frame to dump.
  * parameter fps_n: Current fps numerator.
@@ -58,7 +59,7 @@ public:
 	virtual void sample(short l, short r) throw(std::bad_alloc, std::runtime_error) = 0;
 
 /**
- * Dump a sample.
+ * Call sample() on all known A/V snoopers.
  *
  * parameter l: Left channel sample.
  * parameter r: Right channel sample.
@@ -75,7 +76,7 @@ public:
 	virtual void end() throw(std::bad_alloc, std::runtime_error) = 0;
 
 /**
- * End dump.
+ * Call end() on all known A/V snoopers.
  *
  * throws std::bad_alloc: Not enough memory.
  */
@@ -95,7 +96,7 @@ public:
 		authors, double gametime, const std::string& rerecords) throw(std::bad_alloc, std::runtime_error) = 0;
 
 /**
- * Notify game information.
+ * Call gameinfo() on all known A/V snoopers. Also records the gameinfo.
  *
  * parameter gamename: Name of the game.
  * parameter authors: Authors of the run.
@@ -107,14 +108,15 @@ public:
 		authors, double gametime, const std::string& rerecords, bool dummy) throw(std::bad_alloc);
 
 /**
- * Send game info. This causes gameinfo method to be called on object this method is called on.
+ * Send game info. If av_snooper::gameinfo() has been called, this causes gameinfo() method of this object to be
+ * called with previously recorded information.
  */
 	void send_gameinfo() throw();
 
 /**
- * Is there dump in progress?
+ * Is there at least one known A/V snooper?
  *
- * returns: True if dump is in progress, false if not.
+ * returns: True if there is at least one known A/V snooper, false if there are none.
  */
 	static bool dump_in_progress() throw();
 
@@ -129,24 +131,24 @@ public:
  */
 		virtual ~dump_notification() throw();
 /**
- * New dump starting.
+ * Called on new dump starting.
  */
 		virtual void dump_starting() throw();
 /**
- * Dump ending.
+ * Called on dump ending.
  */
 		virtual void dump_ending() throw();
 	};
 
 /**
- * Add a notifier.
+ * Add a notifier for dumps starting/ending.
  *
  * parameter notifier: New notifier to add.
  */
 	static void add_dump_notifier(dump_notification& notifier) throw(std::bad_alloc);
 
 /**
- * Remove a notifier.
+ * Remove a notifier for dumps starting/ending.
  *
  * parameter notifier: Existing notifier to remove.
  */

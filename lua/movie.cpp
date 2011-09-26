@@ -15,7 +15,7 @@ namespace
 		lua_pushnumber(LS, m.get_frame_count());
 		return 1;
 	});
-	
+
 	function_ptr_luafun mro("movie.readonly", [](lua_State* LS, const std::string& fname) -> int {
 		auto& m = get_movie();
 		lua_pushboolean(LS, m.readonly_mode() ? 1 : 0);

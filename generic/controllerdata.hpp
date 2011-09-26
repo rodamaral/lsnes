@@ -395,6 +395,12 @@ struct port_type
 	unsigned bsnes_type;
 /**
  * Lookup port type by name.
+ *
+ * parameter name: Name of the port type to look up.
+ * parameter port2: True if controller is for port 2, false if for port 1.
+ * returns: The port type structure
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Invalid port type.
  */
 	static const port_type& lookup(const std::string& name, bool port2 = true) throw(std::bad_alloc,
 		std::runtime_error);

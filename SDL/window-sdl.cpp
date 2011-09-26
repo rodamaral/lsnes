@@ -81,7 +81,7 @@ namespace
 		const char* name;
 		unsigned symbol;
 	} keys_table[] = {
-		{"backspace",		SDLK_BACKSPACE		}, 
+		{"backspace",		SDLK_BACKSPACE		},
 		{"tab",			SDLK_TAB		},
 		{"clear",		SDLK_CLEAR		},
 		{"return",		SDLK_RETURN		},
@@ -1110,7 +1110,7 @@ void window::init()
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 
 	init_joysticks();
-	
+
 	SDL_AudioSpec* desired = new SDL_AudioSpec();
 	SDL_AudioSpec* obtained = new SDL_AudioSpec();
 

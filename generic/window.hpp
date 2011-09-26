@@ -50,7 +50,7 @@ class window
 {
 public:
 	window() throw() {}
-	
+
 /**
  * Initialize the graphics system.
  */
