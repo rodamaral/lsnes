@@ -1805,6 +1805,25 @@ Colors are 15 bits (1024 * r + 32 * g + b).
 \end_layout
 
 \begin_layout Subsubsection
+gui.rectangle(number x, number y, number width, number height[, number thickness[
+, number outline[, number outlinealpha[, number fill[, number fillalpha]]]]])
+\end_layout
+
+\begin_layout Standard
+Draw rectangle on the GUI.
+ All notes of gui.text apply.
+\end_layout
+
+\begin_layout Subsubsection
+gui.pixel(number x, number y[, number color[, number alpha]])
+\end_layout
+
+\begin_layout Standard
+Draw one pixel on the GUI.
+ All notes of gui.text apply.
+\end_layout
+
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 
