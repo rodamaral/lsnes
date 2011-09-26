@@ -245,6 +245,35 @@ struct render_object
 };
 
 /**
+ * Premultiplied color.
+ */
+struct premultiplied_color
+{
+	uint32_t hi;
+	uint32_t lo;
+	uint16_t inv;
+	premultiplied_color(uint16_t color, uint8_t alpha) throw()
+	{
+		hi = (color & 0x7C1F);
+		lo = (color & 0x03E0);
+		hi *= alpha;
+		lo *= alpha;
+		inv = 32 - alpha;
+	}
+	uint16_t blend(uint16_t color) throw()
+	{
+		uint32_t a, b;
+		a = color & 0x7C1F;
+		b = color & 0x03E0;
+		return (((a * inv + hi) >> 5) & 0x7C1F) | (((b * inv + lo) >> 5) & 0x03E0);
+	}
+	void apply(uint16_t& x) throw()
+	{
+		x = blend(x);
+	}
+};
+
+/**
  * Queue of render operations.
  */
 struct render_queue
@@ -298,12 +327,10 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
  * parameter _y: The y position to render to (relative to origin).
  * parameter _text: The text to render (UTF-8).
  * parameter _fg: Foreground color.
- * parameter _fgalpha: Foreground alpha (0-32).
  * parameter _bg: Background color.
- * parameter _bgalpha: Background alpha (0-32).
  * throws std::bad_alloc: Not enough memory.
  */
-void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg = 0xFFFFFFFFU,
-		uint8_t _fgalpha = 255, uint16_t _bg = 0, uint8_t _bgalpha = 0) throw(std::bad_alloc);
+void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
+	premultiplied_color _bg) throw(std::bad_alloc);
 
 #endif

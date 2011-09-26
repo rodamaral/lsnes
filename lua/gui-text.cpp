@@ -5,34 +5,21 @@ namespace
 {
 	struct render_object_text : public render_object
 	{
-		render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg = 0x7FFFU,
-			uint8_t _fgalpha = 32, uint16_t _bg = 0, uint8_t _bgalpha = 0) throw(std::bad_alloc);
-		~render_object_text() throw();
-		void operator()(struct screen& scr) throw();
+		render_object_text(int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
+			premultiplied_color _bg) throw()
+			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg) {}
+		~render_object_text() throw() {}
+		void operator()(struct screen& scr) throw()
+		{
+			render_text(scr, x, y, text, fg, bg);
+		}
 	private:
 		int32_t x;
 		int32_t y;
-		uint16_t fg;
-		uint8_t fgalpha;
-		uint16_t bg;
-		uint8_t bgalpha;
+		premultiplied_color fg;
+		premultiplied_color bg;
 		std::string text;
 	};
-
-	render_object_text::render_object_text(int32_t _x, int32_t _y, const std::string& _text, uint16_t _fg,
-		uint8_t _fgalpha, uint16_t _bg, uint8_t _bgalpha) throw(std::bad_alloc)
-		: x(_x), y(_y), fg(_fg), fgalpha(_fgalpha), bg(_bg), bgalpha(_bgalpha), text(_text)
-	{
-	}
-
-	void render_object_text::operator()(struct screen& scr) throw()
-	{
-		render_text(scr, x, y, text, fg, fgalpha, bg, bgalpha);
-	}
-
-	render_object_text::~render_object_text() throw()
-	{
-	}
 
 	function_ptr_luafun gui_text("gui.text", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_render_ctx)
@@ -48,7 +35,9 @@ namespace
 		get_numeric_argument<uint32_t>(LS, 6, bgc, fname.c_str());
 		get_numeric_argument<uint16_t>(LS, 7, bga, fname.c_str());
 		std::string text = get_string_argument(LS, 3, fname.c_str());
-		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fgc, fga, bgc, bga));
+		premultiplied_color fg(fgc, fga);
+		premultiplied_color bg(fgc, fga);
+		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fg, bg));
 		return 0;
 	});
 }

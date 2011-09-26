@@ -29,22 +29,6 @@ extern uint32_t fontdata[];
 
 namespace
 {
-	std::pair<uint32_t, uint32_t> premultipy_color(uint16_t color, uint8_t alpha)
-	{
-		uint32_t a, b;
-		a = color & 0x7C1F;
-		b = color & 0x03E0;
-		return std::make_pair(a * alpha, b * alpha);
-	}
-
-	inline uint16_t blend(uint16_t orig, uint8_t ialpha, std::pair<uint32_t, uint32_t> with) throw()
-	{
-		uint32_t a, b;
-		a = orig & 0x7C1F;
-		b = orig & 0x03E0;
-		return (((a * ialpha + with.first) >> 5) & 0x7C1F) | (((b * ialpha + with.second) >> 5) & 0x03E0);
-	}
-
 	//This is Jenkin's MIX function.
 	uint32_t keyhash(uint32_t key, uint32_t item, uint32_t mod) throw()
 	{
@@ -115,13 +99,9 @@ render_object::~render_object() throw()
 {
 }
 
-void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, uint16_t fg,
-	uint8_t fgalpha, uint16_t bg, uint8_t bgalpha) throw(std::bad_alloc)
+void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, premultiplied_color fg,
+	premultiplied_color bg) throw(std::bad_alloc)
 {
-	auto pfg = premultipy_color(fg, fgalpha);
-	auto pbg = premultipy_color(bg, bgalpha);
-	uint8_t ifga = 32 - fgalpha;
-	uint8_t ibga = 32 - bgalpha;
 	int32_t orig_x = x;
 	uint32_t unicode_code = 0;
 	uint8_t unicode_left = 0;
@@ -179,7 +159,7 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 			for(uint32_t j = 0; j < dh; j++) {
 				uint16_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
-					base[i] = blend(base[i], ibga, pbg);
+					bg.apply(base[i]);
 			}
 		} else {
 			//narrow/wide glyph.
@@ -188,9 +168,9 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 				uint16_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
 					if(((dataword >> (31 - ((dy + j) % (32 / p.first)) * p.first - (dx + i))) & 1))
-						base[i] = blend(base[i], ifga, pfg);
+						fg.apply(base[i]);
 					else
-						base[i] = blend(base[i], ibga, pbg);
+						bg.apply(base[i]);
 			}
 		}
 		x = next_x;
