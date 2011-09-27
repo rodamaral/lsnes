@@ -1755,6 +1755,18 @@ Most of these functions can only be called in on_paint and on_video callbacks.
  Exceptions are noted.
 \end_layout
 
+\begin_layout Standard
+Colors are 15-bit.
+ Each red, green and blue values are in range 0-31 and the final color value
+ is 1024*r+32*g+b.
+ Alpha range is 0 (fully transparent) to 32 (sic! fully opaque).
+\end_layout
+
+\begin_layout Standard
+Origin of coordinates is at top left corner of game display area.
+ Left and top gaps correspond to negative coordinates.
+\end_layout
+
 \begin_layout Subsubsection
 gui.resolution()
 \end_layout
@@ -1778,30 +1790,38 @@ gui.text(number x, number y, string text[, number fgc[, number fga[, number
 \end_layout
 
 \begin_layout Standard
-Draw text on the GUI.
- Font size is 8 (or 16) by 16.
- Notes:
+Draw specified text on the GUI (each character cell is 8 or 16 wide and
+ 16 high).
+ Parameters:
 \end_layout
 
 \begin_layout Itemize
-Coordinate origin is at top-left of the game area.
- Left and top gaps have negative coordinates.
+x: X-coordinate to start the drawing from (and x-coordinate at begining
+ of the lines).
 \end_layout
 
 \begin_layout Itemize
-Use gui.resolution() to discover how to layout colors.
+y: Y-coordinate to start the drawing from.
 \end_layout
 
 \begin_layout Itemize
-Alpha range is 0(transparent)-32(opaque).
+text: The text to draw.
 \end_layout
 
 \begin_layout Itemize
-Only available in on_paint() and on_video() callbacks.
+fgc: Text color (default is 0x7FFF (white))
 \end_layout
 
 \begin_layout Itemize
-Colors are 15 bits (1024 * r + 32 * g + b).
+fga: Text alpha (default is 32 (opaque))
+\end_layout
+
+\begin_layout Itemize
+bgc: Background color (default is 0 (black))
+\end_layout
+
+\begin_layout Itemize
+bga: Background alpha (default is 0 (transparent))
 \end_layout
 
 \begin_layout Subsubsection
@@ -1811,7 +1831,43 @@ gui.rectangle(number x, number y, number width, number height[, number thickness
 
 \begin_layout Standard
 Draw rectangle on the GUI.
- All notes of gui.text apply.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of upper edge.
+\end_layout
+
+\begin_layout Itemize
+width: Width of rectangle.
+\end_layout
+
+\begin_layout Itemize
+height: Height of rectangle.
+\end_layout
+
+\begin_layout Itemize
+thickness: Thickness of outline (default is 1).
+\end_layout
+
+\begin_layout Itemize
+outline: Color of outline (default is 0x7FFF (white))
+\end_layout
+
+\begin_layout Itemize
+outlinealpha: Outline alpha (default is 32 (opaque))
+\end_layout
+
+\begin_layout Itemize
+fill: Color of fil (default is 0 (black))
+\end_layout
+
+\begin_layout Itemize
+fillalpha: Fill alpha (default is 0 (transparent))
 \end_layout
 
 \begin_layout Subsubsection
@@ -1820,7 +1876,53 @@ gui.pixel(number x, number y[, number color[, number alpha]])
 
 \begin_layout Standard
 Draw one pixel on the GUI.
- All notes of gui.text apply.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the pixel
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the pixel
+\end_layout
+
+\begin_layout Itemize
+color: Color of the pixel (default is 0x7FFF (white))
+\end_layout
+
+\begin_layout Itemize
+alpha: Alpha for the pixel (default is 32 (opaque))
+\end_layout
+
+\begin_layout Subsubsection
+gui.crosshair(number x, number y[, number length[, number color[, number
+ alpha]]]
+\end_layout
+
+\begin_layout Standard
+Draw a crosshair.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the crosshair
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the crosshair
+\end_layout
+
+\begin_layout Itemize
+length: Length of the crosshair lines (default 10).
+\end_layout
+
+\begin_layout Itemize
+color: Color of the crosshair (default is 0x7FFF (white))
+\end_layout
+
+\begin_layout Itemize
+alpha: Alpha for the crosshair (default is 32 (opaque))
 \end_layout
 
 \begin_layout Subsubsection
