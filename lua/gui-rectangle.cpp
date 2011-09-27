@@ -12,31 +12,21 @@ namespace
 		~render_object_rectangle() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
-			int32_t _x = x + scr.originx;
-			int32_t _y = y + scr.originy;
-			uint32_t xmin = 0;
-			uint32_t xmax = width;
-			if(_x < 0)
-				xmin = static_cast<uint32_t>(-_x);
-			if(xmin >= width)
-				return;
-			if(_x >= 0 && static_cast<uint32_t>(_x) >= scr.width)
-				return;
-			if(_x + width >= 0 && static_cast<uint32_t>(_x + width) >= scr.width)
-				xmax = static_cast<uint32_t>(scr.width - _x);
-			for(uint32_t i = 0; i < height; i++) {
-				int32_t _y2 = i + _y;
-				if(_y2 < 0 || _y2 >= scr.height)
-					continue;
-				uint16_t* rowbase = scr.rowptr(_y2) + (_x + xmin);
-				for(uint32_t j = xmin; j < xmax; j++) {
-					uint16_t& pix = rowbase[j - xmin];
-					if(i < thickness || j < thickness || i >= height - thickness ||
-						j >= width - thickness)
-						outline.apply(pix);
+			int32_t xmin = 0;
+			int32_t xmax = width;
+			int32_t ymin = 0;
+			int32_t ymax = height;
+			clip_range(scr.originx, scr.width, x, xmin, xmax);
+			clip_range(scr.originy, scr.height, y, ymin, ymax);
+			for(int32_t r = ymin; r < ymax; r++) {
+				uint16_t* rptr = scr.rowptr(y + r + scr.originy);
+				size_t eptr = x + xmin + scr.originx;
+				for(int32_t c = xmin; c < xmax; c++, eptr++)
+					if(r < thickness || c < thickness || r >= height - thickness ||
+						c >= width - thickness)
+						outline.apply(rptr[eptr]);
 					else
-						fill.apply(pix);
-				}
+						fill.apply(rptr[eptr]);
 			}
 		}
 	private:

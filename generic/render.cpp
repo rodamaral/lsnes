@@ -439,3 +439,25 @@ screen::~screen() throw()
 	if(memory && !user_memory)
 		delete[] memory;
 }
+
+void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw()
+{
+	int64_t _origin = origin;
+	int64_t _size = size;
+	int64_t _base = base;
+	int64_t _minc = minc;
+	int64_t _maxc = maxc;
+	int64_t mincoordinate = _base + _origin + _minc;
+	int64_t maxcoordinate = _base + _origin + _maxc;
+	if(mincoordinate < 0)
+		_minc = _minc - mincoordinate;
+	if(maxcoordinate > _size)
+		_maxc = _maxc - (maxcoordinate - _size);
+	if(_minc >= maxc) {
+		minc = 0;
+		maxc = 0;
+	} else {
+		minc = _minc;
+		maxc = _maxc;
+	}
+}

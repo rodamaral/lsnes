@@ -244,6 +244,8 @@ struct render_object
 	virtual void operator()(struct screen& scr) throw() = 0;
 };
 
+
+
 /**
  * Premultiplied color.
  */
@@ -305,6 +307,18 @@ struct render_queue
 private:
 	std::list<struct render_object*> q;
 };
+
+
+/**
+ * Clip range inside another.
+ * 
+ * parameter origin: Origin coordinate.
+ * parameter size: Dimension size.
+ * parameter base: Base coordinate.
+ * parameter minc: Minimum coordinate relative to base. Updated.
+ * parameter maxc: Maximum coordinate relative to base. Updated.
+ */
+void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw();
 
 /**
  * Read font data for glyph.
