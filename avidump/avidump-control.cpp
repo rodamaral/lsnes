@@ -1,5 +1,5 @@
 #include "lua.hpp"
-#include "avidump.hpp"
+#include "cscd.hpp"
 #include "sox.hpp"
 #include "settings.hpp"
 #include "misc.hpp"
@@ -14,6 +14,14 @@
 
 namespace
 {
+	struct avi_info
+	{
+		unsigned compression_level;
+		uint32_t audio_sampling_rate;
+		uint32_t keyframe_interval;
+		uint32_t max_frames_per_segment;
+	};
+
 	boolean_setting dump_large("avi-large", false);
 	numeric_setting dtb("avi-top-border", 0, 8191, 0);
 	numeric_setting dbb("avi-bottom-border", 0, 8191, 0);
@@ -26,9 +34,26 @@ namespace
 	public:
 		avi_avsnoop(const std::string& prefix, struct avi_info parameters) throw(std::bad_alloc)
 		{
-			vid_dumper = new avidumper(prefix, parameters);
+			_parameters = parameters;
+			avi_cscd_dumper::global_parameters gp;
+			avi_cscd_dumper::segment_parameters sp;
+			gp.sampling_rate = parameters.audio_sampling_rate;
+			gp.channel_count = 2;
+			gp.audio_16bit = true;
+			sp.fps_n = 60;
+			sp.fps_d = 1;
+			sp.dataformat = avi_cscd_dumper::PIXFMT_RGB15_NE;
+			sp.width = 256;
+			sp.height = 224;
+			sp.default_stride = true;
+			sp.stride = 512;
+			sp.keyframe_distance = parameters.keyframe_interval;
+			sp.deflate_level = parameters.compression_level;
+			sp.max_segment_frames = parameters.max_frames_per_segment;
+			vid_dumper = new avi_cscd_dumper(prefix, gp, sp);
 			soxdumper = new sox_dumper(prefix + ".sox", 32040.5, 2);
 			dcounter = 0;
+			have_dumped_frame = false;
 		}
 
 		~avi_avsnoop() throw()
@@ -40,7 +65,6 @@ namespace
 		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
 			throw(std::bad_alloc, std::runtime_error)
 		{
-			vid_dumper->wait_idle();
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
 			if(dump_large && _frame.width < 400)
@@ -59,26 +83,42 @@ namespace
 			lrc.height = _frame.height * vscl;
 			lua_callback_do_video(&lrc);
 
+			vid_dumper->wait_frame_processing();
+			avi_cscd_dumper::segment_parameters sp;
+			sp.fps_n = fps_n;
+			sp.fps_d = fps_d;
+			sp.dataformat = avi_cscd_dumper::PIXFMT_RGB15_NE;
+			sp.width = lrc.left_gap + hscl * _frame.width + lrc.right_gap;
+			sp.height = lrc.top_gap + vscl * _frame.height + lrc.bottom_gap;
+			sp.default_stride = true;
+			sp.stride = 1024;
+			sp.keyframe_distance = _parameters.keyframe_interval;
+			sp.deflate_level = _parameters.compression_level;
+			sp.max_segment_frames = _parameters.max_frames_per_segment;
+			vid_dumper->set_segment_parameters(sp);
 			dscr.reallocate(lrc.left_gap + hscl * _frame.width + lrc.right_gap, lrc.top_gap + vscl *
-				_frame.height + lrc.bottom_gap, lrc.left_gap, lrc.top_gap, true);
+				_frame.height + lrc.bottom_gap, lrc.left_gap, lrc.top_gap, false);
 			dscr.copy_from(_frame, hscl, vscl);
 			rq.run(dscr);
-			vid_dumper->on_frame(dscr.memory, dscr.width, dscr.height, fps_n, fps_d);
+			vid_dumper->video(dscr.memory);
+			have_dumped_frame = true;
+			vid_dumper->wait_frame_processing();
 		}
 
 		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
 		{
 			dcounter += 81;
-			if(dcounter < 64081)
-				vid_dumper->on_sample(l, r);
-			else
+			if(dcounter < 64081) {
+				if(have_dumped_frame)
+					vid_dumper->audio(&l, &r, 1, avi_cscd_dumper::SNDFMT_SIGNED_16NE);
+			} else
 				dcounter -= 64081;
 			soxdumper->sample(l, r);
 		}
 
 		void end() throw(std::bad_alloc, std::runtime_error)
 		{
-			vid_dumper->on_end();
+			vid_dumper->end();
 			soxdumper->close();
 		}
 
@@ -89,10 +129,12 @@ namespace
 			//We don't have place for this info and thus ignore it.
 		}
 	private:
-		avidumper* vid_dumper;
+		avi_cscd_dumper* vid_dumper;
 		sox_dumper* soxdumper;
 		screen dscr;
 		unsigned dcounter;
+		struct avi_info _parameters;
+		bool have_dumped_frame;
 	};
 
 	avi_avsnoop* vid_dumper;
