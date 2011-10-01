@@ -72,12 +72,19 @@ namespace
 
 std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc)
 {
-	if(cmd == "")
+	if(cmd == "" || cmd == "*")
 		return "";
-	if(cmd[0] != '+' && polarity)
-		return "";
-	if(cmd[0] == '+' && !polarity)
-		cmd[0] = '-';
+	if(cmd[0] != '*') {
+		if(cmd[0] != '+' && polarity)
+			return "";
+		if(cmd[0] == '+' && !polarity)
+			cmd[0] = '-';
+	} else {
+		if(cmd[1] != '+' && polarity)
+			return "";
+		if(cmd[1] == '+' && !polarity)
+			cmd[1] = '-';
+	}
 	return cmd;
 }
 
