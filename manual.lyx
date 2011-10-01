@@ -582,9 +582,9 @@ Commands beginning with '*' invoke the corresponding command without alias
 \end_layout
 
 \begin_layout Itemize
-If command starts with '+', the command is executed as-is when button is
- pressed, and when button is released, it is executed with '+' replaced
- by '-'.
+If command starts with '+' (after possible '*'), the command is executed
+ as-is when button is pressed, and when button is released, it is executed
+ with '+' replaced by '-'.
 \end_layout
 
 \begin_layout Subsection
@@ -3334,11 +3334,7 @@ Building BSNES
 \end_layout
 
 \begin_layout Standard
-make ui=ui-libsnes options=debugger profile=accuracy
-\end_layout
-
-\begin_layout Itemize
-Yes, debugger is needed.
+make ui=ui-libsnes profile=accuracy
 \end_layout
 
 \begin_layout Subsection
@@ -3354,7 +3350,8 @@ SDL (SDL platform)
 \end_layout
 
 \begin_layout Itemize
-SDLmain (Windows only; Note you may have to extract the object out of archive)
+SDLmain (Windows/Mac OS X only; Note you may have to extract the object
+ out of archive)
 \end_layout
 
 \begin_layout Itemize
