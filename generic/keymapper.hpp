@@ -280,6 +280,37 @@ public:
  * parameter l: The new exclusive key listener or NULL if exclusive key listener is to be removed.
  */
 	static void set_exclusive_key_listener(key_listener* l) throw();
+
+/**
+ * Key group parameters.
+ */
+	struct parameters
+	{
+/**
+ * Type
+ */
+		enum type ktype;
+/**
+ * Calibration left.
+ */
+		short cal_left;
+/**
+ * Calibration center.
+ */
+		short cal_center;
+/**
+ * Calibration right.
+ */
+		short cal_right;
+/**
+ * Calibration tolerance.
+ */
+		double cal_tolerance;
+	};
+/**
+ * Get parameters.
+ */
+	struct parameters get_parameters();
 private:
 	unsigned state;
 	enum type ktype;

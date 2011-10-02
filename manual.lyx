@@ -620,7 +620,7 @@ Read value of setting <setting>
 \end_layout
 
 \begin_layout Subsubsection
-print-settings
+show-settings
 \end_layout
 
 \begin_layout Standard
@@ -676,8 +676,77 @@ unbind-key [<mod>/<modmask>] <key>
 Unbind command from <key> (with specified <mod> and <modmask>).
 \end_layout
 
+\begin_layout Subsection
+set-axis <axis> [disabled | axis | axis-inverse | pressure0- | pressure0+
+ | pressure-0 | pressure-+ | pressure+0 | pressure+-] [minus=<val>] [zero=<val>]
+ [plus=<val>] [tolerance=<val>]
+\end_layout
+
+\begin_layout Standard
+Set axis parameters for axis <axis>.
+\end_layout
+
+\begin_layout Itemize
+disabled: Disable axis
+\end_layout
+
+\begin_layout Itemize
+axis: Normal axis
+\end_layout
+
+\begin_layout Itemize
+axis-inverse: Inverse axis
+\end_layout
+
+\begin_layout Itemize
+pressure0-: Pressure sensitive.
+ Released at 0, pressed at -.
+\end_layout
+
+\begin_layout Itemize
+pressure0+: Pressure sensitive.
+ Released at 0, pressed at +.
+\end_layout
+
+\begin_layout Itemize
+pressure-0: Pressure sensitive.
+ Released at -, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure-+: Pressure sensitive.
+ Released at -, pressed at +.
+\end_layout
+
+\begin_layout Itemize
+pressure+0: Pressure sensitive.
+ Released at +, pressed at 0.
+\end_layout
+
+\begin_layout Itemize
+pressure+-: Pressure sensitive.
+ Released at +, pressed at -.
+\end_layout
+
+\begin_layout Itemize
+minus=<val>: Calibration at extreme minus position (-32768-32767)
+\end_layout
+
+\begin_layout Itemize
+zero=<val>: Calibration at neutral position (-32768-32767)
+\end_layout
+
+\begin_layout Itemize
+plus=<val>: Calibration at extreme plus position (-32768-32767)
+\end_layout
+
+\begin_layout Itemize
+tolerance=<value>: Center band tolerance (0<x<1).
+ The smaller the value, the more sensitive the control is.
+\end_layout
+
 \begin_layout Subsubsection
-print-keybindings
+show-bindings
 \end_layout
 
 \begin_layout Standard
@@ -728,7 +797,7 @@ Clear alias expansion for <command>.
 \end_layout
 
 \begin_layout Subsubsection
-print-aliases
+show-aliases
 \end_layout
 
 \begin_layout Standard
@@ -1409,79 +1478,6 @@ scroll-down
 
 \begin_layout Standard
 Scroll messages window forward one screenful.
-\end_layout
-
-\begin_layout Subsubsection
-axismode <axis> <mode>
-\end_layout
-
-\begin_layout Standard
-Set joystick axis mode.
- <axis> is of form 
-\begin_inset Quotes eld
-\end_inset
-
-joystick<num>axis<axis>
-\begin_inset Quotes erd
-\end_inset
-
-, e.g.
- 
-\begin_inset Quotes eld
-\end_inset
-
-joystick0axis5
-\begin_inset Quotes erd
-\end_inset
-
-.
- Mode is one of:
-\end_layout
-
-\begin_layout Itemize
-axis: Normal axis mode
-\end_layout
-
-\begin_layout Itemize
-axis_inverse: Inverse axis mode.
-\end_layout
-
-\begin_layout Itemize
-pressure_0m: Pressure sensitive.
- Released at 0, pressed at full negative.
-\end_layout
-
-\begin_layout Itemize
-pressure_0p: Pressure sensitive.
- Released at 0, pressed at full positive.
-\end_layout
-
-\begin_layout Itemize
-pressure_m0: Pressure sensitive.
- Released at full negative, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure_mp: Pressure sensitive.
- Released at full negative, pressed at full positive.
- E.g.
- XBox360 Pad axes 2 and 5.
-\end_layout
-
-\begin_layout Itemize
-pressure_p0: Pressure sensitive.
- Released at full positive, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure_pm: Pressure sensitive.
- Released at full positive, pressed at full negative.
-\end_layout
-
-\begin_layout Itemize
-disabled: Disable the axis.
- On PS3 controller, axes 8-19 should be disabled since those controls are
- digital buttons as well.
 \end_layout
 
 \begin_layout Section
@@ -3501,6 +3497,90 @@ Do 'mkvmerge -o tmpdump_video.mkv tmpdump_0000000.mkv + tmpdump_0000001.mkv
 \begin_layout Enumerate
 Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'.
  Now final.mkv contains quick'n'dirty encode.
+\end_layout
+
+\begin_layout Section
+Axis configurations for some gamepad types:
+\end_layout
+
+\begin_layout Subsection
+XBox360 controller:
+\end_layout
+
+\begin_layout Standard
+Axes 2 and 5 (joystick<n>axis2 and joystick<n>axis5) should be set to pressure-+.
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis2 pressure-+
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis5 pressure-+
+\end_layout
+
+\begin_layout Subsection
+PS3 
+\begin_inset Quotes eld
+\end_inset
+
+sixaxis
+\begin_inset Quotes erd
+\end_inset
+
+ controller:
+\end_layout
+
+\begin_layout Standard
+Axes 8-19 should be disabled.
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis8 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis9 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis10 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis11 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis12 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis13 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis14 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis15 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis16 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis17 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis18 disabled
+\end_layout
+
+\begin_layout LyX-Code
+set-axis joystick0axis19 disabled
 \end_layout
 
 \begin_layout Section

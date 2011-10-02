@@ -1,5 +1,6 @@
 #include "keymapper.hpp"
 #include <stdexcept>
+#include "window.hpp"
 #include "lua.hpp"
 #include <iostream>
 #include <list>
@@ -251,6 +252,17 @@ std::string keygroup::name() throw(std::bad_alloc)
 	return keyname;
 }
 
+struct keygroup::parameters keygroup::get_parameters()
+{
+	parameters p;
+	p.ktype = ktype;
+	p.cal_left = cal_left;
+	p.cal_center = cal_center;
+	p.cal_right = cal_right;
+	p.cal_tolerance = cal_tolerance;
+	return p;
+}
+
 
 keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 {
@@ -452,6 +464,153 @@ void keygroup::set_exclusive_key_listener(key_listener* l) throw()
 
 namespace
 {
+
+	function_ptr_command<tokensplitter&> set_axis("set-axis", "Set mode of Joystick axis",
+		"Syntax: set-axis <axis> <options>...\nKnown options: disabled, axis, axis-inverse, pressure0-\n"
+		"pressure0+, pressure-0, pressure-+, pressure+0, pressure+-\nminus=<val>, zero=<val>, plus=<val>\n"
+		"tolerance=<val>\n",
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
+			struct keygroup::parameters p;
+			std::string axis = t;
+			if(axis == "")
+				throw std::runtime_error("Axis name required");
+			if(!keygroups().count(axis))
+				throw std::runtime_error("Unknown axis name");
+			p = keygroups()[axis]->get_parameters();
+			switch(p.ktype) {
+			case keygroup::KT_DISABLED:
+			case keygroup::KT_AXIS_PAIR:
+			case keygroup::KT_AXIS_PAIR_INVERSE:
+			case keygroup::KT_PRESSURE_0M:
+			case keygroup::KT_PRESSURE_0P:
+			case keygroup::KT_PRESSURE_M0:
+			case keygroup::KT_PRESSURE_MP:
+			case keygroup::KT_PRESSURE_P0:
+			case keygroup::KT_PRESSURE_PM:
+				break;
+			default:
+				throw std::runtime_error("Not an axis");
+			}
+			bool found_axismode = false;
+			bool found_minus = false;
+			bool found_zero = false;
+			bool found_plus = false;
+			bool found_tolerance = false;
+			while(!!t) {
+				std::string spec = t;
+				if(spec == "disabled") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_DISABLED;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "axis") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_AXIS_PAIR;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "axis-inverse") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_AXIS_PAIR_INVERSE;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure0-") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_0M;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure0+") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_0P;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure-0") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_M0;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure-+") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_MP;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure+0") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_P0;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec == "pressure+-") {
+					if(!found_axismode)
+						p.ktype = keygroup::KT_PRESSURE_PM;
+					else
+						throw std::runtime_error("Conflicting axis modes");
+					found_axismode = true;
+				} else if(spec.substr(0, 6) == "minus=") {
+					if(!found_minus)
+						p.cal_left = parse_value<int16_t>(spec.substr(6));
+					else
+						throw std::runtime_error("Conflicting minus value");
+					found_minus = true;
+				} else if(spec.substr(0, 5) == "zero=") {
+					if(!found_zero)
+						p.cal_center = parse_value<int16_t>(spec.substr(5));
+					else
+						throw std::runtime_error("Conflicting zero value");
+					found_zero = true;
+				} else if(spec.substr(0, 5) == "plus=") {
+					if(!found_plus)
+						p.cal_right = parse_value<int16_t>(spec.substr(5));
+					else
+						throw std::runtime_error("Conflicting plus value");
+					found_plus = true;
+				} else if(spec.substr(0, 10) == "tolerance=") {
+					if(!found_tolerance) {
+						p.cal_tolerance = parse_value<double>(spec.substr(10));
+						if(p.cal_tolerance <= 0 || p.cal_tolerance > 1)
+							throw std::runtime_error("Tolerance out of range");
+					} else
+						throw std::runtime_error("Conflicting tolerance value");
+					found_tolerance = true;
+				} else
+					throw std::runtime_error("Unknown axis modifier");
+			}
+			if(found_axismode)
+				keygroups()[axis]->change_type(p.ktype);
+			keygroups()[axis]->change_calibration(p.cal_left, p.cal_center, p.cal_right, p.cal_tolerance);
+		});
+
+	function_ptr_command<> set_axismode("show-axes", "Show all joystick axes",
+		"Syntax: show-axes\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			for(auto i = keygroups().begin(); i != keygroups().end(); ++i) {
+				keygroup::parameters p = i->second->get_parameters();
+				std::string type = "";
+				switch(p.ktype) {
+				case keygroup::KT_DISABLED: type = "disabled"; break;
+				case keygroup::KT_AXIS_PAIR: type = "axis"; break;
+				case keygroup::KT_AXIS_PAIR_INVERSE: type = "axis-inverse"; break;
+				case keygroup::KT_PRESSURE_0M: type = "pressure0-"; break;
+				case keygroup::KT_PRESSURE_0P: type = "pressure0+"; break;
+				case keygroup::KT_PRESSURE_M0: type = "pressure-0"; break;
+				case keygroup::KT_PRESSURE_MP: type = "pressure-+"; break;
+				case keygroup::KT_PRESSURE_P0: type = "pressure+0"; break;
+				case keygroup::KT_PRESSURE_PM: type = "pressure+-"; break;
+				default: continue;
+				}
+				window::out() << i->first << " " << type << " -:" << p.cal_left << " 0:"
+					<< p.cal_center << " +:" << p.cal_right << " t:" << p.cal_tolerance
+					<< std::endl;
+			}
+		});
+	
+
 	struct triple
 	{
 		triple(const std::string& _a, const std::string& _b, const std::string& _c)

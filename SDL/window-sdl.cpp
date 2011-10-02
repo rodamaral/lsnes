@@ -1530,43 +1530,6 @@ namespace
 				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
 			window::notify_screen_update(true);
 		});
-
-	function_ptr_command<tokensplitter&> joystickmode("axismode", "Set joystick axis mode",
-		"Syntax: axismode joystick<num>axis<axis> <mode>\nSet joystick axis mode.\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string axis = t;
-			std::string mode = t;
-			unsigned i = 0;
-			if(mode == "" || t)
-				throw std::runtime_error("Expected exactly 2 parameters");
-			keygroup* tomod = NULL;
-			for(auto i = joyaxis.begin(); i != joyaxis.end(); ++i)
-				if(i->second->name() == axis)
-					tomod = i->second;
-			if(!tomod)
-				throw std::runtime_error("Invalid axis");
-			if(mode == "axis")
-				tomod->change_type(keygroup::KT_AXIS_PAIR);
-			else if(mode == "axis_inverse")
-				tomod->change_type(keygroup::KT_AXIS_PAIR_INVERSE);
-			else if(mode == "pressure_0m")
-				tomod->change_type(keygroup::KT_PRESSURE_0M);
-			else if(mode == "pressure_0p")
-				tomod->change_type(keygroup::KT_PRESSURE_0P);
-			else if(mode == "pressure_m0")
-				tomod->change_type(keygroup::KT_PRESSURE_M0);
-			else if(mode == "pressure_mp")
-				tomod->change_type(keygroup::KT_PRESSURE_MP);
-			else if(mode == "pressure_p0")
-				tomod->change_type(keygroup::KT_PRESSURE_P0);
-			else if(mode == "pressure_pm")
-				tomod->change_type(keygroup::KT_PRESSURE_PM);
-			else if(mode == "disabled")
-				tomod->change_type(keygroup::KT_DISABLED);
-			else
-				throw std::runtime_error("Bad axis mode");
-		});
-
 }
 
 void window::wait_usec(uint64_t usec) throw(std::bad_alloc)
