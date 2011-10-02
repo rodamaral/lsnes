@@ -13,7 +13,7 @@ void window::poll_inputs() throw(std::bad_alloc) {}
 void window::notify_screen_update(bool full) throw() {}
 void window::set_main_surface(screen& scr) throw() {}
 void window::paused(bool enable) throw() {}
-void window::wait_msec(uint64_t msec) throw(std::bad_alloc) {}
+void window::wait_usec(uint64_t usec) throw(std::bad_alloc) {}
 void window::cancel_wait() throw() {}
 void window::sound_enable(bool enable) throw() {}
 void window::play_audio_sample(uint16_t left, uint16_t right) throw() {}

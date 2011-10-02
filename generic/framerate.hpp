@@ -28,16 +28,26 @@ double get_framerate() throw();
 /**
  * Acknowledge frame start for timing purposes.
  *
- * parameter msec: Current time (relative to some unknown epoch) in milliseconds.
+ * parameter usec: Current time (relative to some unknown epoch) in microseconds.
  */
-void ack_frame_tick(uint64_t msec) throw();
+void ack_frame_tick(uint64_t usec) throw();
 
 /**
- * Computes the number of milliseconds to wait for next frame.
+ * Computes the number of microseconds to wait for next frame.
  *
- * parameter msec: Current time (relative to some unknown epoch) in milliseconds.
- * returns: Number of more milliseconds to wait.
+ * parameter usec: Current time (relative to some unknown epoch) in microseconds.
+ * returns: Number of more microseconds to wait.
  */
-uint64_t to_wait_frame(uint64_t msec) throw();
+uint64_t to_wait_frame(uint64_t usec) throw();
+
+/**
+ * Return microsecond-resolution time since unix epoch.
+ */
+uint64_t get_utime();
+
+/**
+ * Wait specified number of microseconds.
+ */
+void wait_usec(uint64_t usec);
 
 #endif

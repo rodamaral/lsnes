@@ -1,5 +1,6 @@
 #include "moviedata.hpp"
 #include "command.hpp"
+#include "framerate.hpp"
 #include "lua.hpp"
 #include "misc.hpp"
 #include "framebuffer.hpp"
@@ -132,7 +133,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 {
 	lua_callback_pre_save(filename, true);
 	try {
-		uint64_t origtime = get_ticks_msec();
+		uint64_t origtime = get_utime();
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
 		our_movie.savestate = save_core_state();
@@ -142,8 +143,8 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		memcpy(&our_movie.movie_state[0], &s[0], s.size());
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename, savecompression);
-		uint64_t took = get_ticks_msec() - origtime;
-		messages << "Saved state '" << filename << "' in " << took << "ms." << std::endl;
+		uint64_t took = get_utime() - origtime;
+		messages << "Saved state '" << filename << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_save(filename, true);
 	} catch(std::bad_alloc& e) {
 		throw;
@@ -158,12 +159,12 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 {
 	lua_callback_pre_save(filename, false);
 	try {
-		uint64_t origtime = get_ticks_msec();
+		uint64_t origtime = get_utime();
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename, savecompression);
-		uint64_t took = get_ticks_msec() - origtime;
-		messages << "Saved movie '" << filename << "' in " << took << "ms." << std::endl;
+		uint64_t took = get_utime() - origtime;
+		messages << "Saved movie '" << filename << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_save(filename, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -319,7 +320,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
-	uint64_t origtime = get_ticks_msec();
+	uint64_t origtime = get_utime();
 	lua_callback_pre_load(filename);
 	struct moviefile mfile;
 	try {
@@ -333,8 +334,8 @@ bool do_load_state(const std::string& filename, int lmode)
 	}
 	try {
 		do_load_state(mfile, lmode);
-		uint64_t took = get_ticks_msec() - origtime;
-		messages << "Loaded '" << filename << "' in " << took << "ms." << std::endl;
+		uint64_t took = get_utime() - origtime;
+		messages << "Loaded '" << filename << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_load(filename, our_movie.is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

@@ -132,15 +132,15 @@ public:
 	static void paused(bool enable) throw();
 
 /**
- * Wait specified number of milliseconds (polling for input).
+ * Wait specified number of microseconds (polling for input).
  *
- * parameter msec: Number of ms to wait.
+ * parameter usec: Number of us to wait.
  * throws std::bad_alloc: Not enough memory.
  */
-	static void wait_msec(uint64_t msec) throw(std::bad_alloc);
+	static void wait_usec(uint64_t usec) throw(std::bad_alloc);
 
 /**
- * Cancel pending wait_msec, making it return now.
+ * Cancel pending wait_usec, making it return now.
  */
 	static void cancel_wait() throw();
 
@@ -172,12 +172,5 @@ private:
 	window(const window&);
 	window& operator==(const window&);
 };
-
-/**
- * Get number of msec since some undetermined epoch.
- *
- * returns: The number of milliseconds.
- */
-uint64_t get_ticks_msec() throw();
 
 #endif

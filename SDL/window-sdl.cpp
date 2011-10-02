@@ -1,6 +1,7 @@
 #include "window.hpp"
 #include "render.hpp"
 #include "command.hpp"
+#include "framerate.hpp"
 #include "misc.hpp"
 #include "lsnes.hpp"
 #include "settings.hpp"
@@ -24,7 +25,7 @@
 #include <stdexcept>
 
 // Limit the emulator to ~30fps.
-#define MIN_UPDATE_TIME 33
+#define MIN_UPDATE_TIME 33333
 
 
 namespace
@@ -925,7 +926,6 @@ namespace
 				window::notify_screen_update();
 		}
 		SDLKey key;
-		get_ticks_msec();
 		if(e.type == SDL_ACTIVEEVENT && e.active.gain && e.active.state == SDL_APPACTIVE) {
 			window::notify_screen_update();
 			return;
@@ -1080,7 +1080,7 @@ void window::init()
 		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		SDL_EnableUNICODE(true);
 		sdl_init = true;
-		tid = SDL_AddTimer(MIN_UPDATE_TIME, timer_cb, NULL);
+		tid = SDL_AddTimer(MIN_UPDATE_TIME / 1000 + 1, timer_cb, NULL);
 	}
 	state = WINSTATE_NORMAL;
 	current_screen = NULL;
@@ -1209,7 +1209,7 @@ namespace
 {
 	bool is_time_for_screen_update(bool full)
 	{
-		uint64_t curtime = get_ticks_msec();
+		uint64_t curtime = get_utime();
 		//Always do full updates.
 		if(!full && last_ui_update < curtime && last_ui_update + MIN_UPDATE_TIME > curtime) {
 			screen_is_dirty = true;
@@ -1569,22 +1569,23 @@ namespace
 
 }
 
-void window::wait_msec(uint64_t msec) throw(std::bad_alloc)
+void window::wait_usec(uint64_t usec) throw(std::bad_alloc)
 {
 	wait_canceled = false;
-	uint64_t basetime =  get_ticks_msec();
+	uint64_t end_at = get_utime() + usec;
 	while(!wait_canceled) {
-		if(msec > 10)
-			SDL_Delay(10);
-		else
-			SDL_Delay(msec);
 		SDL_Event e;
 		while(SDL_PollEvent(&e))
 			do_event(e);
-		uint64_t passed = get_ticks_msec() - basetime;
-		if(passed > msec)
+		uint64_t curtime = get_utime();
+		if(curtime > end_at || wait_canceled)
 			break;
+		if(end_at > curtime + 10000)
+			::wait_usec(10000);
+		else
+			::wait_usec(end_at - curtime);
 	}
+	wait_canceled = false;
 }
 
 void window::fatal_error() throw()
@@ -1614,17 +1615,6 @@ void window::fatal_error() throw()
 				exit(1);
 		}
 	}
-}
-
-uint64_t get_ticks_msec() throw()
-{
-	static uint64_t tickbase = 0;
-	static Uint32 last_ticks = 0;
-	Uint32 cur_ticks = SDL_GetTicks();
-	if(last_ticks > cur_ticks)
-		tickbase += 0x100000000ULL;
-	last_ticks = cur_ticks;
-	return tickbase + cur_ticks;
 }
 
 void window::cancel_wait() throw()

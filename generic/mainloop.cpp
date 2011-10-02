@@ -166,7 +166,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance && !advanced_once) {
-				window::wait_msec(advance_timeout_first);
+				window::wait_usec(advance_timeout_first * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -189,8 +189,8 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
-				window::wait_msec(advanced_once ? to_wait_frame(get_ticks_msec()) :
-					advance_timeout_first);
+				window::wait_usec(advanced_once ? to_wait_frame(get_utime()) :
+					(advance_timeout_first * 1000));
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -990,7 +990,7 @@ namespace
 		lua_callback_do_reset();
 		redraw_framebuffer();
 		if(video_refresh_done) {
-			to_wait_frame(get_ticks_msec());
+			to_wait_frame(get_utime());
 			return false;
 		}
 		return true;
@@ -1084,7 +1084,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			continue;
 		}
 		long resetcycles = -1;
-		ack_frame_tick(get_ticks_msec());
+		ack_frame_tick(get_utime());
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 
@@ -1126,7 +1126,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		}
 		SNES::system.run();
 		if(amode == ADVANCE_AUTO)
-			window::wait_msec(to_wait_frame(get_ticks_msec()));
+			window::wait_usec(to_wait_frame(get_utime()));
 		first_round = false;
 	}
 	av_snooper::end(true);

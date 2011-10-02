@@ -5,14 +5,16 @@
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
+#include <sys/time.h>
+#include <unistd.h>
 
 namespace
 {
 	double nominal_rate = 60;
 	double fps_value = 0;
 	const double exp_factor = 0.97;
-	uint64_t last_frame_msec = 0;
-	bool last_frame_msec_valid = false;
+	uint64_t last_frame_usec = 0;
+	bool last_frame_usec_valid = false;
 	bool target_nominal = true;
 	double target_fps = 60;
 	bool target_infinite = false;
@@ -86,26 +88,50 @@ double get_framerate() throw()
 	return fps_value;
 }
 
-void ack_frame_tick(uint64_t msec) throw()
+void ack_frame_tick(uint64_t usec) throw()
 {
-	if(!last_frame_msec_valid) {
-		last_frame_msec = msec;
-		last_frame_msec_valid = true;
+	if(!last_frame_usec_valid) {
+		last_frame_usec = usec;
+		last_frame_usec_valid = true;
 		return;
 	}
-	uint64_t frame_msec = msec - last_frame_msec;
-	fps_value = exp_factor * fps_value + (1 - exp_factor) * (1000.0 / frame_msec);
-	last_frame_msec = msec;
+	uint64_t frame_usec = usec - last_frame_usec;
+	fps_value = exp_factor * fps_value + (1 - exp_factor) * (1000000.0 / frame_usec);
+	last_frame_usec = usec;
 }
 
-uint64_t to_wait_frame(uint64_t msec) throw()
+uint64_t to_wait_frame(uint64_t usec) throw()
 {
 	//Very simple algorithm. TODO: Make better one.
-	if(!last_frame_msec_valid || target_infinite)
+	if(!last_frame_usec_valid || target_infinite)
 		return 0;
 	if(get_framerate() < target_fps && wait_duration > 0)
-		wait_duration--;
+		wait_duration -= 1000;
 	else if(get_framerate() > target_fps)
-		wait_duration++;
+		wait_duration += 1000;
 	return wait_duration;
+}
+
+
+uint64_t get_utime()
+{
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
+}
+
+#define MAXSLEEP 500000
+
+void wait_usec(uint64_t usec)
+{
+	uint64_t sleep_end = get_utime() + usec;
+	while(1) {
+		uint64_t time_now = get_utime();
+		if(time_now >= sleep_end)
+			break;
+		if(sleep_end < time_now + MAXSLEEP)
+			usleep(sleep_end - time_now);
+		else
+			usleep(MAXSLEEP);
+	}
 }
