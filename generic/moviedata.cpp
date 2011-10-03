@@ -177,6 +177,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 //Load state from loaded movie file (does not catch errors).
 void do_load_state(struct moviefile& _movie, int lmode)
 {
+	bool current_mode = movb.get_movie().readonly_mode();
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
@@ -258,7 +259,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
 		movb.get_movie().readonly_mode(false);
-	if(lmode == LOAD_STATE_DEFAULT && !(movb.get_movie().get_frame_count()))
+	if(lmode == LOAD_STATE_DEFAULT && movb.get_movie().get_frame_count() <= movb.get_movie().get_current_frame())
+		movb.get_movie().readonly_mode(false);
+	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
 	messages << "ROM Type ";
 	switch(our_rom->rtype) {

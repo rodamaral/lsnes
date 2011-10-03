@@ -622,7 +622,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(!save_jukebox.size())
 				throw std::runtime_error("No saves in jukebox");
-			mark_pending_load(save_jukebox[save_jukebox_pointer], LOAD_STATE_RW);
+			mark_pending_load(save_jukebox[save_jukebox_pointer], LOAD_STATE_CURRENT);
 		});
 
 	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
@@ -683,6 +683,12 @@ namespace
 			pending_reset_cycles = 0;
 		});
 
+	function_ptr_command<arg_filename> load_c("load", "Load savestate (current mode)",
+		"Syntax: load <file>\nLoads SNES state from <file> in current mode\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_load(args, LOAD_STATE_CURRENT);
+		});
+
 	function_ptr_command<arg_filename> load_state_c("load-state", "Load savestate (R/W)",
 		"Syntax: load-state <file>\nLoads SNES state from <file> in Read/Write mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
@@ -725,6 +731,25 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
 			lua_callback_do_readwrite();
+			update_movie_state();
+			window::notify_screen_update();
+		});
+
+	function_ptr_command<> set_romode("set-romode", "Switch to read-only mode",
+		"Syntax: set-romode\nSwitches to read-only mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			movb.get_movie().readonly_mode(true);
+			update_movie_state();
+			window::notify_screen_update();
+		});
+
+	function_ptr_command<> toggle_rwmode("toggle-rwmode", "Toggle read/write mode",
+		"Syntax: toggle-rwmode\nToggles read/write mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			bool c = movb.get_movie().readonly_mode();
+			movb.get_movie().readonly_mode(!c);
+			if(c)
+				lua_callback_do_readwrite();
 			update_movie_state();
 			window::notify_screen_update();
 		});

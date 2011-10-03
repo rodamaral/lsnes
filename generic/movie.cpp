@@ -450,6 +450,7 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 		//Transitioning to readwrite mode, we have to adjust the length of the movie data.
 		if(current_frame == 0) {
 			//WTF... At before first frame. Blank the entiere movie.
+			frames_in_movie = 0;
 			movie_data.clear();
 			return;
 		}

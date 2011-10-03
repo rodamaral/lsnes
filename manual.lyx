@@ -1096,6 +1096,14 @@ Reset the SNES after this frame.
 \end_layout
 
 \begin_layout Subsubsection
+load <filename>
+\end_layout
+
+\begin_layout Standard
+Load savestate <filename> in current mode.
+\end_layout
+
+\begin_layout Subsubsection
 load-state <filename>
 \end_layout
 
@@ -1149,6 +1157,22 @@ set-rwmode
 
 \begin_layout Standard
 Set read-write mode.
+\end_layout
+
+\begin_layout Subsubsection
+set-romode
+\end_layout
+
+\begin_layout Standard
+Set read-only mode
+\end_layout
+
+\begin_layout Subsubsection
+toggle-rwmode
+\end_layout
+
+\begin_layout Standard
+Toggle between read-only and read-write modes.
 \end_layout
 
 \begin_layout Subsubsection
@@ -1353,7 +1377,7 @@ load-jukebox
 \end_layout
 
 \begin_layout Standard
-Do R/W load from jukebox.
+Do load from jukebox (current mode).
 \end_layout
 
 \begin_layout Subsubsection
