@@ -11,4 +11,6 @@
 void main_loop(struct loaded_rom& rom, struct moviefile& settings, bool load_has_to_succeed = false)
 	throw(std::bad_alloc, std::runtime_error);
 
+void update_movie_state();
+
 #endif

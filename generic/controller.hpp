@@ -40,4 +40,28 @@ devicetype_t controller_type_by_logical(unsigned lid) throw();
  */
 void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core = true) throw();
 
+/**
+ * Get current controls, assuming given frame.
+ *
+ * Parameter frame: Current frame number.
+ * Returns: Current controls, taking autohold and autofire into account.
+ */
+controls_t get_current_controls(uint64_t frame);
+
+/**
+ * Send analog input.
+ *
+ * Parameter x: X position of click.
+ * Parameter y: Y position of click.
+ * Parameter index: Index of button (0-2).
+ */
+void send_analog_input(int32_t x, int32_t y, unsigned index);
+
+/**
+ * Manipulate the reset flag in current controls.
+ *
+ * Parameter delay: Delay for reset (-1 for no reset)
+ */
+void set_curcontrols_reset(int32_t delay);
+
 #endif

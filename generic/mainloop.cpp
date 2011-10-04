@@ -38,22 +38,6 @@
 #define RTC_SUBSECOND_INCREMENT_NTSC_I 57615762380ULL
 #define RTC_SUBSECONDS_PER_SECOND 3462619485020ULL
 
-#define BUTTON_LEFT 0		//Gamepad
-#define BUTTON_RIGHT 1		//Gamepad
-#define BUTTON_UP 2		//Gamepad
-#define BUTTON_DOWN 3		//Gamepad
-#define BUTTON_A 4		//Gamepad
-#define BUTTON_B 5		//Gamepad
-#define BUTTON_X 6		//Gamepad
-#define BUTTON_Y 7		//Gamepad
-#define BUTTON_L 8		//Gamepad & Mouse
-#define BUTTON_R 9		//Gamepad & Mouse
-#define BUTTON_SELECT 10	//Gamepad
-#define BUTTON_START 11		//Gamepad & Justifier
-#define BUTTON_TRIGGER 12	//Superscope.
-#define BUTTON_CURSOR 13	//Superscope & Justifier
-#define BUTTON_PAUSE 14		//Superscope
-#define BUTTON_TURBO 15		//Superscope
 
 void update_movie_state();
 
@@ -85,10 +69,6 @@ namespace
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
 	bool stepping_into_save;
-	//Current controls.
-	controls_t curcontrols;
-	controls_t autoheld_controls;
-	std::vector<controls_t> autofire_pattern;
 	//Save jukebox.
 	std::vector<std::string> save_jukebox;
 	size_t save_jukebox_pointer;
@@ -103,23 +83,6 @@ namespace
 	//Few settings.
 	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
 
-	void send_analog_input(int32_t x, int32_t y, unsigned index)
-	{
-		if(controller_ismouse_by_analog(index)) {
-			x -= 256;
-			y -= (framebuffer.height / 2);
-		} else {
-			x /= 2;
-			y /= 2;
-		}
-		int aindex = controller_index_by_analog(index);
-		if(aindex < 0) {
-			messages << "No analog controller in slot #" << (index + 1) << std::endl;
-			return;
-		}
-		curcontrols(aindex >> 2, aindex & 3, 0) = x;
-		curcontrols(aindex >> 2, aindex & 3, 1) = y;
-	}
 
 }
 
@@ -208,117 +171,17 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 	}
 	window::notify_screen_update();
 	window::poll_inputs();
-	if(!subframe && pending_reset_cycles >= 0) {
-		curcontrols(CONTROL_SYSTEM_RESET) = 1;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = pending_reset_cycles / 10000;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = pending_reset_cycles % 10000;
-	} else if(!subframe) {
-		curcontrols(CONTROL_SYSTEM_RESET) = 0;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
-	}
-	controls_t tmp = curcontrols ^ autoheld_controls ^ autofire_pattern[movb.get_movie().get_current_frame() %
-		autofire_pattern.size()];
+	if(!subframe && pending_reset_cycles >= 0)
+		set_curcontrols_reset(pending_reset_cycles);
+	else if(!subframe)
+		set_curcontrols_reset(-1);
+	controls_t tmp = get_current_controls(movb.get_movie().get_current_frame());
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
 
 namespace
 {
-	std::map<std::string, std::pair<unsigned, unsigned>> buttonmap;
-
-	const char* buttonnames[] = {
-		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger", "cursor",
-		"pause", "turbo"
-	};
-
-	void init_buttonmap()
-	{
-		static int done = 0;
-		if(done)
-			return;
-		for(unsigned i = 0; i < 8; i++)
-			for(unsigned j = 0; j < sizeof(buttonnames) / sizeof(buttonnames[0]); j++) {
-				std::ostringstream x;
-				x << (i + 1) << buttonnames[j];
-				buttonmap[x.str()] = std::make_pair(i, j);
-			}
-		done = 1;
-	}
-
-	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor, controls_t& c)
-	{
-		enum devicetype_t p = controller_type_by_logical(ui_id);
-		int x = controller_index_by_logical(ui_id);
-		int bid = -1;
-		switch(p) {
-		case DT_NONE:
-			messages << "No such controller #" << (ui_id + 1) << std::endl;
-			return;
-		case DT_GAMEPAD:
-			switch(button) {
-			case BUTTON_UP: 	bid = SNES_DEVICE_ID_JOYPAD_UP; break;
-			case BUTTON_DOWN:	bid = SNES_DEVICE_ID_JOYPAD_DOWN; break;
-			case BUTTON_LEFT:	bid = SNES_DEVICE_ID_JOYPAD_LEFT; break;
-			case BUTTON_RIGHT:	bid = SNES_DEVICE_ID_JOYPAD_RIGHT; break;
-			case BUTTON_A:		bid = SNES_DEVICE_ID_JOYPAD_A; break;
-			case BUTTON_B:		bid = SNES_DEVICE_ID_JOYPAD_B; break;
-			case BUTTON_X:		bid = SNES_DEVICE_ID_JOYPAD_X; break;
-			case BUTTON_Y:		bid = SNES_DEVICE_ID_JOYPAD_Y; break;
-			case BUTTON_L:		bid = SNES_DEVICE_ID_JOYPAD_L; break;
-			case BUTTON_R:		bid = SNES_DEVICE_ID_JOYPAD_R; break;
-			case BUTTON_SELECT:	bid = SNES_DEVICE_ID_JOYPAD_SELECT; break;
-			case BUTTON_START:	bid = SNES_DEVICE_ID_JOYPAD_START; break;
-			default:
-				messages << "Invalid button for gamepad" << std::endl;
-				return;
-			};
-			break;
-		case DT_MOUSE:
-			switch(button) {
-			case BUTTON_L:		bid = SNES_DEVICE_ID_MOUSE_LEFT; break;
-			case BUTTON_R:		bid = SNES_DEVICE_ID_MOUSE_RIGHT; break;
-			default:
-				messages << "Invalid button for mouse" << std::endl;
-				return;
-			};
-			break;
-		case DT_JUSTIFIER:
-			switch(button) {
-			case BUTTON_START:	bid = SNES_DEVICE_ID_JUSTIFIER_START; break;
-			case BUTTON_TRIGGER:	bid = SNES_DEVICE_ID_JUSTIFIER_TRIGGER; break;
-			default:
-				messages << "Invalid button for justifier" << std::endl;
-				return;
-			};
-			break;
-		case DT_SUPERSCOPE:
-			switch(button) {
-			case BUTTON_TRIGGER:	bid = SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER; break;
-			case BUTTON_CURSOR:	bid = SNES_DEVICE_ID_SUPER_SCOPE_CURSOR; break;
-			case BUTTON_PAUSE:	bid = SNES_DEVICE_ID_SUPER_SCOPE_PAUSE; break;
-			case BUTTON_TURBO:	bid = SNES_DEVICE_ID_SUPER_SCOPE_TURBO; break;
-			default:
-				messages << "Invalid button for superscope" << std::endl;
-				return;
-			};
-			break;
-		};
-		if(do_xor)
-			c((x & 4) ? 1 : 0, x & 3, bid) ^= newstate;
-		else
-			c((x & 4) ? 1 : 0, x & 3, bid) = newstate;
-	}
-
-	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
-	{
-		if(do_xor)
-			do_button_action(ui_id, button, newstate, do_xor, autoheld_controls);
-		else
-			do_button_action(ui_id, button, newstate, do_xor, curcontrols);
-	}
 
 
 	//Do pending load (automatically unpauses).
@@ -331,7 +194,6 @@ namespace
 		window::paused(false);
 	}
 
-	//Mark pending save (movies save immediately).
 	void mark_pending_save(const std::string& filename, int smode)
 	{
 		if(smode == SAVE_MOVIE) {
@@ -412,16 +274,11 @@ void update_movie_state()
 		}
 	}
 
-	//This routine can get called frickin' early.
-	if(!autofire_pattern.size())
-		autofire_pattern.push_back(controls_t());
-
 	controls_t c;
 	if(movb.get_movie().readonly_mode())
 		c = movb.get_movie().get_controls();
 	else
-		c = curcontrols ^ autoheld_controls ^ autofire_pattern[movb.get_movie().get_current_frame() %
-			autofire_pattern.size()];
+		c = get_current_controls(movb.get_movie().get_current_frame());
 	for(unsigned i = 0; i < 8; i++) {
 		unsigned pindex = controller_index_by_logical(i);
 		unsigned port = pindex >> 2;
@@ -786,41 +643,6 @@ namespace
 			update_movie_state();
 		});
 
-	function_ptr_command<tokensplitter&> autofire("autofire", "Set autofire pattern",
-		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			if(!t)
-				throw std::runtime_error("Need at least one frame for autofire");
-			std::vector<controls_t> new_autofire_pattern;
-			init_buttonmap();
-			while(t) {
-				std::string fpattern = t;
-				if(fpattern == "-")
-					new_autofire_pattern.push_back(controls_t());
-				else {
-					controls_t c;
-					while(fpattern != "") {
-						size_t split = fpattern.find_first_of(",");
-						std::string button = fpattern;
-						std::string rest;
-						if(split < fpattern.length()) {
-							button = fpattern.substr(0, split);
-							rest = fpattern.substr(split + 1);
-						}
-						if(!buttonmap.count(button)) {
-							std::ostringstream x;
-							x << "Invalid button '" << button << "'";
-							throw std::runtime_error(x.str());
-						}
-						auto g = buttonmap[button];
-						do_button_action(g.first, g.second, 1, false, c);
-						fpattern = rest;
-					}
-					new_autofire_pattern.push_back(c);
-				}
-			}
-			autofire_pattern = new_autofire_pattern;
-		});
 
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -839,74 +661,6 @@ namespace
 			while(1);
 		});
 
-	class button_action : public command
-	{
-	public:
-		button_action(const std::string& cmd, int _type, unsigned _controller, std::string _button)
-			throw(std::bad_alloc)
-			: command(cmd)
-		{
-			commandn = cmd;
-			type = _type;
-			controller = _controller;
-			button = _button;
-		}
-		~button_action() throw() {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
-			init_buttonmap();
-			if(!buttonmap.count(button))
-				return;
-			auto i = buttonmap[button];
-			do_button_action(i.first, i.second, (type != 1) ? 1 : 0, (type == 2));
-			update_movie_state();
-			window::notify_screen_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc)
-		{
-			return "Press/Unpress button";
-		}
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: " + commandn + "\n"
-				"Presses/Unpresses button\n";
-		}
-		std::string commandn;
-		unsigned controller;
-		int type;
-		std::string button;
-	};
-
-	class button_action_helper
-	{
-	public:
-		button_action_helper()
-		{
-			for(size_t i = 0; i < sizeof(buttonnames) / sizeof(buttonnames[0]); ++i)
-				for(int j = 0; j < 3; ++j)
-					for(unsigned k = 0; k < 8; ++k) {
-						std::ostringstream x, y;
-						switch(j) {
-						case 0:
-							x << "+controller";
-							break;
-						case 1:
-							x << "-controller";
-							break;
-						case 2:
-							x << "controllerh";
-							break;
-						};
-						x << (k + 1);
-						x << buttonnames[i];
-						y << (k + 1);
-						y << buttonnames[i];
-						new button_action(x.str(), j, k, y.str());
-					}
-		}
-	} bah;
 
 	bool on_quit_prompt = false;
 	class mywindowcallbacks : public window_callback
@@ -1061,8 +815,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	//Basic initialization.
-	if(!autofire_pattern.size())
-		autofire_pattern.push_back(controls_t());
 	init_special_screens();
 	our_rom = &rom;
 	my_interface intrf;
@@ -1145,8 +897,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			window::paused(true);
 			window::poll_inputs();
 			//We already have done the reset this frame if we are going to do one at all.
-			movb.get_movie().set_controls(curcontrols ^ autoheld_controls ^
-				autofire_pattern[movb.get_movie().get_current_frame() % autofire_pattern.size()]);
+			movb.get_movie().set_controls(get_current_controls(movb.get_movie().get_current_frame()));
 			just_did_loadstate = false;
 		}
 		SNES::system.run();
