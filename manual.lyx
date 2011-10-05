@@ -3947,5 +3947,33 @@ gui.crosshair
 New CSCD writer implementation.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta15
+\end_layout
+
+\begin_layout Itemize
+Fix interaction of * and +.
+\end_layout
+
+\begin_layout Itemize
+Manual improvements
+\end_layout
+
+\begin_layout Itemize
+Use gettimeofday()/usleep(), these seem portable enough.
+\end_layout
+
+\begin_layout Itemize
+Move joystick axis manipulation to keymapper code.
+\end_layout
+
+\begin_layout Itemize
+Changes to how read-only works.
+\end_layout
+
+\begin_layout Itemize
+Refactor controller input code.
+\end_layout
+
 \end_body
 \end_document
