@@ -1270,7 +1270,7 @@ namespace
 			uint32_t stsbox_max_x = windowsize.first - 2;
 			uint32_t stsbox_min_y = 2;
 			uint32_t stsbox_max_y = screensize.second + 10;
-			uint32_t msgbox_min_y = screensize.second + 12;
+			msgbox_min_y = screensize.second + 12;
 			draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, scrbox_min_x,
 				scrbox_min_y, scrbox_max_x, scrbox_max_y, bordercolor, 2);
 			draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, stsbox_min_x,
