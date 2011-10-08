@@ -1964,6 +1964,15 @@ Request subframe updates (calling on_paint() on subframes) to happen (on=true)
  Can be used anywhere.
 \end_layout
 
+\begin_layout Subsubsection
+gui.screenshot(string filename)
+\end_layout
+
+\begin_layout Standard
+Write PNG screenshot of the current frame (no drawings) to specified file.
+ Can be used anywhere.s
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
