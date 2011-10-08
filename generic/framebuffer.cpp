@@ -114,11 +114,10 @@ void init_special_screens() throw(std::bad_alloc)
 
 void redraw_framebuffer()
 {
-	uint32_t hscl = 1, vscl = 1;
-	if(framebuffer.width < 512)
-		hscl = 2;
-	if(framebuffer.height < 400)
-		vscl = 2;
+	uint32_t hscl, vscl;
+	auto g = get_scale_factors(framebuffer.width, framebuffer.height);
+	hscl = g.first;
+	vscl = g.second;
 	render_queue rq;
 	struct lua_render_context lrc;
 	lrc.left_gap = 0;
@@ -136,4 +135,15 @@ void redraw_framebuffer()
 	window::set_window_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
 	rq.run(main_screen);
 	window::notify_screen_update();
+}
+
+std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
+{
+	uint32_t v = 1;
+	uint32_t h = 1;
+	if(width < 512)
+		h = 2;
+	if(height < 400)
+		v = 2;
+	return std::make_pair(h, v);
 }

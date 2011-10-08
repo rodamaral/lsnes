@@ -328,11 +328,12 @@ controls_t get_current_controls(uint64_t frame)
 void send_analog_input(int32_t x, int32_t y, unsigned index)
 {
 	if(controller_ismouse_by_analog(index)) {
-		x -= 256;
+		x -= (framebuffer.width / 2);
 		y -= (framebuffer.height / 2);
 	} else {
-		x /= (framebuffer.width / 256);
-		y /= (framebuffer.height / 224);
+		auto g = get_scale_factors(framebuffer.width, framebuffer.height);
+		x /= g.first;
+		y /= g.second;
 	}
 	int aindex = controller_index_by_analog(index);
 	if(aindex < 0) {

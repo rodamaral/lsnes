@@ -29,5 +29,9 @@ void init_special_screens() throw(std::bad_alloc);
  * Redraw the framebuffer on screen.
  */
 void redraw_framebuffer();
+/**
+ * Get scale factors.
+ */
+std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 #endif
