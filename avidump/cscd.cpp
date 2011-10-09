@@ -8,8 +8,6 @@
 #include <iostream>
 #include <list>
 
-
-
 #define AVI_CUTOFF_SIZE 2100000000
 
 namespace
@@ -102,7 +100,7 @@ namespace
 			write32(&buf[32], resolution_x);
 			write32(&buf[36], resolution_y);
 			write32(&buf[40], clr_used);
-			write32(&buf[40], clr_important);
+			write32(&buf[44], clr_important);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write strf (video)");
@@ -254,7 +252,7 @@ namespace
 			write32(&buf[48], 0);
 			write32(&buf[52], 0);
 			write32(&buf[56], 0);
-			write32(&buf[64], 0);
+			write32(&buf[60], 0);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write avih");
@@ -663,6 +661,7 @@ avi_cscd_dumper::~avi_cscd_dumper() throw()
 		end();
 	} catch(...) {
 	}
+	delete frame_thread;
 }
 
 avi_cscd_dumper::segment_parameters avi_cscd_dumper::get_segment_parameters() throw()
@@ -851,7 +850,7 @@ void avi_cscd_dumper::_video(const void* framedata)
 
 void avi_cscd_dumper::end() throw(std::bad_alloc, std::runtime_error)
 {
-	flush_buffers(true);
+	request_flush_buffers(true);
 	//std::cerr << "Locking lock." << std::endl;
 	frame_mutex.lock();
 	//std::cerr << "Locked lock." << std::endl;
@@ -1010,7 +1009,7 @@ void avi_cscd_dumper::write_frame_av(size_t samples)
 	size = emit_sound(samples);
 	emit_sound_stream(size, samples);
 	current_major_segment_frames++;
-	frame_buffer.pop_front();
+	frame_buffer.erase(frame_buffer.begin());
 }
 
 void avi_cscd_dumper::emit_frame_stream(size_t size, bool keyframe)
