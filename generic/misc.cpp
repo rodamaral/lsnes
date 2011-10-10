@@ -297,4 +297,4 @@ std::ostream& _messages()
 
 
 std::string bsnes_core_version;
-std::string lsnes_version = "0-β15";
+std::string lsnes_version = "0-β16";

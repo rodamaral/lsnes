@@ -3984,5 +3984,25 @@ Changes to how read-only works.
 Refactor controller input code.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta16
+\end_layout
+
+\begin_layout Itemize
+Fix mouseclick scale compensation.
+\end_layout
+
+\begin_layout Itemize
+Draw area boundaries correctly in SDL code.
+\end_layout
+
+\begin_layout Itemize
+gui.screenshot.
+\end_layout
+
+\begin_layout Itemize
+Fix CSCD output (buffer overrun and race condition).
+\end_layout
+
 \end_body
 \end_document
