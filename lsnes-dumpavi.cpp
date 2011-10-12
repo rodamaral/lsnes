@@ -69,8 +69,11 @@ namespace
 		unsigned level = 7;
 		std::string prefix = "avidump";
 		uint64_t length = 0;
+		bool jmd = false;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
+			if(a == "--jmd")
+				jmd = true;
 			if(a.length() > 9 && a.substr(0, 9) == "--prefix=")
 				prefix = a.substr(9);
 			if(a.length() > 8 && a.substr(0, 8) == "--level=")
@@ -98,7 +101,10 @@ namespace
 		}
 		std::cout << "Invoking dumper" << std::endl;
 		std::ostringstream cmd;
-		cmd << "dump-avi " << level << " " << prefix;
+		if(jmd)
+			cmd << "dump-jmd " << level << " " << prefix;
+		else
+			cmd << "dump-avi " << level << " " << prefix;
 		command::invokeC(cmd.str());
 		if(av_snooper::dump_in_progress()) {
 			std::cout << "Dumper attach confirmed" << std::endl;
