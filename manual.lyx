@@ -872,6 +872,30 @@ End current AVI video dump (closing the emulator also closes the dump).
 \end_layout
 
 \begin_layout Subsection
+JMD video dumping
+\end_layout
+
+\begin_layout Standard
+Following commands control JMD video dumping:
+\end_layout
+
+\begin_layout Subsubsection
+dump-jmd <level> <file>
+\end_layout
+
+\begin_layout Standard
+Dump JMD video to file <file> at level <level> (0-9).
+\end_layout
+
+\begin_layout Subsubsection
+end-jmd
+\end_layout
+
+\begin_layout Standard
+End the current JMD dump in progress.
+\end_layout
+
+\begin_layout Subsection
 Memory manipulation
 \end_layout
 
