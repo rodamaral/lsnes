@@ -2,7 +2,7 @@ EXECUTABLE_SUFFIX = exe
 OBJECT_SUFFIX = o
 ARCHIVE_SUFFIX = a
 FONT_SRC := unifontfull-5.1.20080820.hex
-CC := g++-4.5
+CC := g++-4.6
 HOSTCC = $(CC)
 
 

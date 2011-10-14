@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
 	my_interfaced intrf;
-	SNES::system.interface = &intrf;
+	SNES::interface = &intrf;
 
 	set_random_seed();
 

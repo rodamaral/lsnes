@@ -216,6 +216,26 @@ namespace
 			update_movie_state();
 		}
 	} dumpwatch;
+
+	uint16_t lpalette[0x80000];
+	void init_palette()
+	{
+		static bool palette_init = false;
+		if(palette_init)
+			return;
+		palette_init = true;
+		for(unsigned i = 0; i < 0x80000; i++) {
+			unsigned l = (i >> 15) & 0xF;
+			unsigned b = (i >> 10) & 0x1F;
+			unsigned g = (i >> 5) & 0x1F;
+			unsigned r = (i >> 0) & 0x1F;
+			double _l = static_cast<double>(l) / 15;
+			r = (r * _l + 0.5);
+			g = (g * _l + 0.5);
+			b = (b * _l + 0.5);
+			lpalette[i] = (r << 10) | (g << 5) | b;
+		}
+	}
 }
 
 void update_movie_state()
@@ -341,8 +361,10 @@ class my_interface : public SNES::Interface
 		return finalpath.c_str();
 	}
 
-	void video_refresh(const uint16_t *data, bool hires, bool interlace, bool overscan)
+	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
 	{
+		init_palette();
+		static uint16_t _data[512 * 512];
 		if(stepping_into_save)
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
@@ -351,7 +373,9 @@ class my_interface : public SNES::Interface
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
-		lcscreen ls(data, hires, interlace, overscan, region);
+		for(size_t i = 0; i < 512 * 512; i++)
+			_data[i] = lpalette[data[i] & 0x7FFFF];
+		lcscreen ls(_data, hires, interlace, overscan, region);
 		framebuffer = ls;
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
@@ -378,7 +402,7 @@ class my_interface : public SNES::Interface
 		av_snooper::frame(ls, fps_n, fps_d, true);
 	}
 
-	void audio_sample(int16_t l_sample, int16_t r_sample)
+	void audioSample(int16_t l_sample, int16_t r_sample)
 	{
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
@@ -386,14 +410,7 @@ class my_interface : public SNES::Interface
 		av_snooper::sample(_l, _r, true);
 	}
 
-	void audio_sample(uint16_t l_sample, uint16_t r_sample)
-	{
-		//Yes, this interface is broken. The samples are signed but are passed as unsigned!
-		window::play_audio_sample(l_sample + 32768, r_sample + 32768);
-		av_snooper::sample(l_sample, r_sample, true);
-	}
-
-	int16_t input_poll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
+	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 	{
 		int16_t x;
 		x = movb.input_poll(port, index, id);
@@ -818,8 +835,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	init_special_screens();
 	our_rom = &rom;
 	my_interface intrf;
-	auto old_inteface = SNES::system.interface;
-	SNES::system.interface = &intrf;
+	auto old_inteface = SNES::interface;
+	SNES::interface = &intrf;
+	intrf.initialize(&intrf);
 	status = &window::get_emustatus();
 	window_callback::set_callback_handler(mywcb);
 
@@ -906,5 +924,5 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		first_round = false;
 	}
 	av_snooper::end(true);
-	SNES::system.interface = old_inteface;
+	SNES::interface = old_inteface;
 }
