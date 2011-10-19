@@ -705,7 +705,7 @@ namespace
 			if(c == hilite_pos && hilite_mode == 2)
 				curstart = 0;
 			for(uint32_t i = pos_x; i < maxwidth; i++)
-				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFU : 0;
+				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFFU : 0;
 		}
 	}
 
