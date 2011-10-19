@@ -2002,7 +2002,16 @@ gui.screenshot(string filename)
 
 \begin_layout Standard
 Write PNG screenshot of the current frame (no drawings) to specified file.
- Can be used anywhere.s
+ Can be used anywhere.
+\end_layout
+
+\begin_layout Subsubsection
+gui.color(number r, number g, number b)
+\end_layout
+
+\begin_layout Standard
+Returns color (in 16-bit notation Lua scripts use) corresponding to color
+ (r,g,b), each component in scale 0-255.
 \end_layout
 
 \begin_layout Subsection

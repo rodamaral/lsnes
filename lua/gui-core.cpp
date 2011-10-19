@@ -47,4 +47,12 @@ namespace
 		lua_requests_subframe_paint = get_boolean_argument(LS, 1, fname.c_str());
 		return 0;
 	});
+
+	function_ptr_luafun gui_color("gui.color", [](lua_State* LS, const std::string& fname) -> int {
+		uint32_t r = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		uint32_t g = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
+		uint32_t b = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
+		lua_pushnumber(LS, ((r << 7) & 0x7C00) | ((g << 2) & 0x3E0) | ((b >> 3) & 0x1F));
+		return 1;
+	});
 }
