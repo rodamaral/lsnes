@@ -13,26 +13,9 @@ namespace
 		x[2] = (v >> 8);
 		x[3] = v;
 	}
-
-	uint32_t palette[32768];
-	void init_palette()
-	{
-		static bool i = false;
-		if(i)
-			return;
-		i = true;
-		uint8_t rpalette[131072];
-		for(unsigned j = 0; j < 32768; j++) {
-			rpalette[4 * j + 0] = ((j >> 10) & 31) << 3;
-			rpalette[4 * j + 1] = ((j >> 5) & 31) << 3;
-			rpalette[4 * j + 2] = (j & 31) << 3;
-			rpalette[4 * j + 3] = 0;
-		}
-		memcpy(palette, rpalette, 131072);
-	}
 }
 
-void jmd_dumper::video(uint64_t ts, uint16_t* memory, uint32_t width, uint32_t height)
+void jmd_dumper::video(uint64_t ts, uint32_t* memory, uint32_t width, uint32_t height)
 {
 	frame_buffer f;
 	f.ts = ts;
@@ -195,7 +178,7 @@ void jmd_dumper::flush_sample(sample_buffer& s)
 #define INBUF_PIXELS 4096
 #define OUTBUF_ADVANCE 4096
 
-std::vector<char> jmd_dumper::compress_frame(uint16_t* memory, uint32_t width, uint32_t height)
+std::vector<char> jmd_dumper::compress_frame(uint32_t* memory, uint32_t width, uint32_t height)
 {
 	std::vector<char> ret;
 	z_stream stream;
@@ -209,19 +192,23 @@ std::vector<char> jmd_dumper::compress_frame(uint16_t* memory, uint32_t width, u
 	ret[1] = width;
 	ret[2] = (height >> 8);
 	ret[3] = height;
-	uint32_t input_buffer[INBUF_PIXELS];
-	init_palette();
+	uint8_t input_buffer[4 * INBUF_PIXELS];
 	size_t ptr = 0;
 	size_t pixels = static_cast<size_t>(width) * height;
 	bool input_clear = true;
 	bool flushed = false;
 	size_t bsize = 0;
+	uint32_t _magic = 0x18100800;
+	const uint8_t* magic = reinterpret_cast<const uint8_t*>(&magic);
 	while(1) {
-		
 		if(input_clear) {
 			size_t pixel = ptr;
-			for(unsigned i = 0; i < INBUF_PIXELS && pixel < pixels; i++, pixel++)
-				input_buffer[i] = palette[memory[pixel]];
+			for(unsigned i = 0; i < INBUF_PIXELS && pixel < pixels; i++, pixel++) {
+				input_buffer[4 * i + 0] = memory[pixel];
+				input_buffer[4 * i + 1] = memory[pixel] >> 8;
+				input_buffer[4 * i + 2] = memory[pixel] >> 16;
+				input_buffer[4 * i + 3] = 0;
+			}
 			bsize = pixel - ptr;
 			ptr = pixel;
 			input_clear = false;

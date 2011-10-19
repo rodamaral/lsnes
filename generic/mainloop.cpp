@@ -217,7 +217,7 @@ namespace
 		}
 	} dumpwatch;
 
-	uint16_t lpalette[0x80000];
+	uint32_t lpalette[0x80000];
 	void init_palette()
 	{
 		static bool palette_init = false;
@@ -226,14 +226,15 @@ namespace
 		palette_init = true;
 		for(unsigned i = 0; i < 0x80000; i++) {
 			unsigned l = (i >> 15) & 0xF;
-			unsigned b = (i >> 10) & 0x1F;
+			unsigned r = (i >> 10) & 0x1F;
 			unsigned g = (i >> 5) & 0x1F;
-			unsigned r = (i >> 0) & 0x1F;
-			double _l = static_cast<double>(l) / 15;
-			r = (r * _l + 0.5);
-			g = (g * _l + 0.5);
-			b = (b * _l + 0.5);
-			lpalette[i] = (r << 10) | (g << 5) | b;
+			unsigned b = (i >> 0) & 0x1F;
+			double _l = static_cast<double>(l);
+			double m = 17.0 / 31.0;
+			r = floor(m * r * _l + 0.5);
+			g = floor(m * g * _l + 0.5);
+			b = floor(m * b * _l + 0.5);
+			lpalette[i] = r * 65536 + g * 256 + b;
 		}
 	}
 }
@@ -364,7 +365,7 @@ class my_interface : public SNES::Interface
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
 	{
 		init_palette();
-		static uint16_t _data[512 * 512];
+		static uint32_t _data[512 * 512];
 		if(stepping_into_save)
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;

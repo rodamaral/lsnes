@@ -54,7 +54,7 @@ namespace
 		{0, 0, 0, 0}
 	};
 
-	void draw_special_screen(uint16_t* target, struct render_list_entry* rlist)
+	void draw_special_screen(uint32_t* target, struct render_list_entry* rlist)
 	{
 		while(rlist->scale) {
 			int32_t x;
@@ -70,7 +70,7 @@ namespace
 						uint32_t basey = rlist->y + rlist->scale * j;
 						for(uint32_t j2 = 0; j2 < rlist->scale; j2++)
 							for(uint32_t i2 = 0; i2 < rlist->scale; i2++)
-								target[(basey + j2) * 512 + (basex + i2)] = 0x7FFF;
+								target[(basey + j2) * 512 + (basex + i2)] = 0xFFFFFF;
 					}
 				}
 			}
@@ -78,17 +78,17 @@ namespace
 		}
 	}
 
-	void draw_nosignal(uint16_t* target)
+	void draw_nosignal(uint32_t* target)
 	{
 		for(unsigned i = 0; i < 512 * 448; i++)
-			target[i] = 0x1F;
+			target[i] = 0xFF;
 		draw_special_screen(target, rl_nosignal);
 	}
 
-	void draw_corrupt(uint16_t* target)
+	void draw_corrupt(uint32_t* target)
 	{
 		for(unsigned i = 0; i < 512 * 448; i++)
-			target[i] = 0x1F;
+			target[i] = 0xFF;
 		draw_special_screen(target, rl_corrupt);
 	}
 
@@ -105,7 +105,7 @@ screen main_screen;
 
 void init_special_screens() throw(std::bad_alloc)
 {
-	uint16_t buf[512*448];
+	uint32_t buf[512*448];
 	draw_nosignal(buf);
 	screen_nosignal = lcscreen(buf, 512, 448);
 	draw_corrupt(buf);

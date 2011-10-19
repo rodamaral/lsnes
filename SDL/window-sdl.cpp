@@ -618,17 +618,17 @@ namespace
 	}
 
 	void draw_rectangle(uint8_t* data, uint32_t pitch, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2,
-		uint16_t color, uint32_t thickness)
+		uint32_t color, uint32_t thickness)
 	{
 		for(uint32_t i = x1; i < x2; i++)
 			for(uint32_t j = 0; j < thickness; j++) {
-				reinterpret_cast<uint16_t*>(data + pitch * (y1 + j))[i] = color;
-				reinterpret_cast<uint16_t*>(data + pitch * (y2 - 1 - j))[i] = color;
+				reinterpret_cast<uint32_t*>(data + pitch * (y1 + j))[i] = color;
+				reinterpret_cast<uint32_t*>(data + pitch * (y2 - 1 - j))[i] = color;
 			}
 		for(uint32_t i = y1; i < y2; i++)
 			for(uint32_t j = 0; j < thickness; j++) {
-				reinterpret_cast<uint16_t*>(data + pitch * i)[x1 + j] = color;
-				reinterpret_cast<uint16_t*>(data + pitch * i)[x2 - 1 - j] = color;
+				reinterpret_cast<uint32_t*>(data + pitch * i)[x1 + j] = color;
+				reinterpret_cast<uint32_t*>(data + pitch * i)[x2 - 1 - j] = color;
 			}
 	}
 
@@ -661,7 +661,7 @@ namespace
 	void draw_string(uint8_t* base, uint32_t pitch, std::vector<uint32_t> s, uint32_t x, uint32_t y,
 		uint32_t maxwidth, uint32_t hilite_mode = 0, uint32_t hilite_pos = 0)
 	{
-		base += y * static_cast<size_t>(pitch) + 2 * x;
+		base += y * static_cast<size_t>(pitch) + 4 * x;
 		int32_t pos_x = 0;
 		int32_t pos_y = 0;
 		unsigned c = 0;
@@ -678,34 +678,34 @@ namespace
 			if(g.second == 0) {
 				//Empty glyph.
 				for(unsigned j = 0; j < 16; j++) {
-					uint16_t* ptr = reinterpret_cast<uint16_t*>(base + pitch * j);
+					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
 					for(unsigned i = 0; i < g.first && old_x + i < maxwidth; i++)
-						ptr[old_x + i] = (j >= curstart) ? 0x7FFFU : 0;
+						ptr[old_x + i] = (j >= curstart) ? 0xFFFFFFU : 0;
 				}
 			} else {
 				//Narrow/Wide glyph.
 				for(unsigned j = 0; j < 16; j++) {
-					uint16_t* ptr = reinterpret_cast<uint16_t*>(base + pitch * j);
+					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
 					uint32_t dataword = fontdata[g.second + j / 4];
 					for(uint32_t i = 0; i < g.first && old_x + i < maxwidth; i++) {
 						bool b = (((dataword >> (31 - (j % (32 / g.first)) * g.first - i)) &
 							1));
 						b ^= (j >= curstart);
-						ptr[old_x + i] = b ? 0x7FFFU : 0;
+						ptr[old_x + i] = b ? 0xFFFFFFU : 0;
 					}
 				}
 			}
 			c++;
 		}
 		for(unsigned j = 0; j < 16; j++) {
-			uint16_t* ptr = reinterpret_cast<uint16_t*>(base + pitch * j);
+			uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
 			uint32_t curstart = 16;
 			if(c == hilite_pos && hilite_mode == 1)
 				curstart = 14;
 			if(c == hilite_pos && hilite_mode == 2)
 				curstart = 0;
 			for(uint32_t i = pos_x; i < maxwidth; i++)
-				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0x7FFFU : 0;
+				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFU : 0;
 		}
 	}
 
@@ -763,9 +763,9 @@ namespace
 			y2 = y1 + height;
 		}
 		for(uint32_t j = y1 - 6; j < y2 + 6; j++)
-			memset(reinterpret_cast<uint8_t*>(surf->pixels) + j * surf->pitch + 2 * (x1 - 6), 0,
-				2 * (x2 - x1 + 12));
-		uint16_t bordercolor = 0x7E00;
+			memset(reinterpret_cast<uint8_t*>(surf->pixels) + j * surf->pitch + 4 * (x1 - 6), 0,
+				4 * (x2 - x1 + 12));
+		uint32_t bordercolor = 0x0080FF;
 		draw_rectangle(reinterpret_cast<uint8_t*>(surf->pixels), surf->pitch, x1 - 4, y1 - 4, x2 + 4, y2 + 4,
 			bordercolor, 2);
 
@@ -778,11 +778,11 @@ namespace
 			if(static_cast<uint32_t>(pos_y) > height)
 				break;
 			uint8_t* base = reinterpret_cast<uint8_t*>(surf->pixels) + (y1 + oy) * surf->pitch +
-				2 * (x1 + ox);
+				4 * (x1 + ox);
 			if(g.second) {
 				//Narrow/Wide glyph.
 				for(unsigned j = 0; j < 16; j++) {
-					uint16_t* ptr = reinterpret_cast<uint16_t*>(base + surf->pitch * j);
+					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + surf->pitch * j);
 					uint32_t dataword = fontdata[g.second + j / 4];
 					for(uint32_t i = 0; i < g.first && (ox + i) < width; i++) {
 						bool b = (((dataword >> (31 - (j % (32 / g.first)) * g.first - i)) &
@@ -1252,7 +1252,7 @@ namespace
 	{
 		//Blank the screen and draw borders.
 		memset(swsurf->pixels, 0, windowsize.second * swsurf->pitch);
-		uint32_t bordercolor = 0x03E0;
+		uint32_t bordercolor = 0x00FF00;
 		uint32_t msgbox_min_x = 2;
 		uint32_t msgbox_min_y = 2;
 		uint32_t msgbox_max_x = windowsize.first - 2;
@@ -1288,16 +1288,16 @@ namespace
 		uint32_t ch = current_screen ? current_screen->height : 0;
 		//Blank parts not drawn.
 		for(uint32_t i = 6; i < ch + 6; i++)
-			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 12 + 2 * cw, 0,
-				2 * (screensize.first - cw));
+			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 12 + 4 * cw, 0,
+				4 * (screensize.first - cw));
 		for(uint32_t i = ch + 6; i < screensize.second + 6; i++)
 			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 12, 0,
-				2 * screensize.first);
+				4 * screensize.first);
 		if(current_screen) {
 			for(uint32_t i = 0; i < ch; i++)
 				memcpy(reinterpret_cast<uint8_t*>(swsurf->pixels) + (i + 6) * swsurf->pitch + 12,
 					reinterpret_cast<uint8_t*>(current_screen->memory) + current_screen->pitch * i,
-					2 * cw);
+					4 * cw);
 		}
 	}
 
@@ -1376,8 +1376,8 @@ void window::notify_screen_update(bool full) throw()
 		//Create/Resize the window.
 		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 0, SDL_SWSURFACE |
 			SDL_ANYFORMAT);
-		SDL_Surface* swsurf2 = SDL_CreateRGBSurface(SDL_SWSURFACE, windowsize.first, windowsize.second, 16,
-			0x7E00, 0x03E0, 0x001F, 0);
+		SDL_Surface* swsurf2 = SDL_CreateRGBSurface(SDL_SWSURFACE, windowsize.first, windowsize.second, 32,
+			0x0000FF, 0x00FF00, 0xFF0000, 0);
 		if(!hwsurf2 || !swsurf2) {
 			//We are in too fucked up state to even print error as message.
 			std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;

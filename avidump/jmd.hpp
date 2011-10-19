@@ -13,7 +13,7 @@ class jmd_dumper
 public:
 	jmd_dumper(const std::string& filename, unsigned level);
 	~jmd_dumper();
-	void video(uint64_t ts, uint16_t* memory, uint32_t width, uint32_t height);
+	void video(uint64_t ts, uint32_t* memory, uint32_t width, uint32_t height);
 	void audio(uint64_t ts, short l, short r);
 	void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
 		authors, double gametime, const std::string& rerecords);
@@ -34,7 +34,7 @@ private:
 	std::deque<frame_buffer> frames;
 	std::deque<sample_buffer> samples;
 
-	std::vector<char> compress_frame(uint16_t* memory, uint32_t width, uint32_t height);
+	std::vector<char> compress_frame(uint32_t* memory, uint32_t width, uint32_t height);
 	void flush_buffers(bool force);
 	void flush_frame(frame_buffer& f);
 	void flush_sample(sample_buffer& s);

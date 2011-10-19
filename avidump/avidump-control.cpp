@@ -87,7 +87,11 @@ namespace
 			avi_cscd_dumper::segment_parameters sp;
 			sp.fps_n = fps_n;
 			sp.fps_d = fps_d;
-			sp.dataformat = avi_cscd_dumper::PIXFMT_RGB15_NE;
+			uint32_t x = 0x18100800;
+			if(*reinterpret_cast<const uint8_t*>(&x) == 0x18)
+				sp.dataformat = avi_cscd_dumper::PIXFMT_XBGR;
+			else
+				sp.dataformat = avi_cscd_dumper::PIXFMT_RGBX;
 			sp.width = lrc.left_gap + hscl * _frame.width + lrc.right_gap;
 			sp.height = lrc.top_gap + vscl * _frame.height + lrc.bottom_gap;
 			sp.default_stride = true;

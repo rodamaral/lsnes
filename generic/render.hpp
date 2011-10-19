@@ -21,7 +21,7 @@ struct lcscreen
  * parameter overscan True if overscan is enabled.
  * parameter region True if PAL, false if NTSC.
  */
-	lcscreen(const uint16_t* mem, bool hires, bool interlace, bool overscan, bool region) throw();
+	lcscreen(const uint32_t* mem, bool hires, bool interlace, bool overscan, bool region) throw();
 
 /**
  * Create new memory-backed screen. The resulting screen can be written to.
@@ -34,7 +34,7 @@ struct lcscreen
  * parameter _width: Width of the screen to create.
  * parameter _height: Height of the screen to create.
  */
-	lcscreen(const uint16_t* mem, uint32_t _width, uint32_t _height) throw();
+	lcscreen(const uint32_t* mem, uint32_t _width, uint32_t _height) throw();
 /**
  * Copy the screen.
  *
@@ -91,7 +91,7 @@ struct lcscreen
 /**
  * Memory, 1 element per pixel in left-to-right, top-to-bottom order, 15 low bits of each element used.
  */
-	const uint16_t* memory;
+	const uint32_t* memory;
 
 /**
  * Number of elements (not bytes) between two successive scanlines.
@@ -139,7 +139,7 @@ struct screen
  * parameter _originy: Y coordinate for origin.
  * parameter _pitch: Distance in bytes between successive scanlines.
  */
-	void set(uint16_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
+	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
 		uint32_t _pitch) throw();
 
 /**
@@ -170,12 +170,12 @@ struct screen
  *
  * parameter row: Number of row (must be less than height).
  */
-	uint16_t* rowptr(uint32_t row) throw();
+	uint32_t* rowptr(uint32_t row) throw();
 
 /**
  * Backing memory for this screen.
  */
-	uint16_t* memory;
+	uint32_t* memory;
 
 /**
  * True if memory is given by user and must not be freed.
@@ -220,7 +220,7 @@ struct screen
  * parameter b: Blue component.
  * returns: color element value.
  */
-	uint16_t make_color(uint8_t r, uint8_t g, uint8_t b) throw();
+	uint32_t make_color(uint8_t r, uint8_t g, uint8_t b) throw();
 private:
 	screen(const screen&);
 	screen& operator=(const screen&);
@@ -256,20 +256,21 @@ struct premultiplied_color
 	uint16_t inv;
 	premultiplied_color(uint16_t color, uint8_t alpha) throw()
 	{
-		hi = (color & 0x7C1F);
-		lo = (color & 0x03E0);
-		hi *= alpha;
-		lo *= alpha;
-		inv = 32 - alpha;
+		uint32_t c = color;
+		hi = ((color & 0x7C00) << 9) | ((color & 0x1F) << 3);
+		lo = ((color & 0x3E0) << 6);
+		hi *= (alpha << 3);
+		lo *= (alpha << 3);
+		inv = 256 - alpha;
 	}
-	uint16_t blend(uint16_t color) throw()
+	uint32_t blend(uint32_t color) throw()
 	{
 		uint32_t a, b;
-		a = color & 0x7C1F;
-		b = color & 0x03E0;
-		return (((a * inv + hi) >> 5) & 0x7C1F) | (((b * inv + lo) >> 5) & 0x03E0);
+		a = color & 0xFF00FF;
+		b = color & 0x00FF00;
+		return (((a * inv + hi) >> 8) & 0xFF00FF) | (((b * inv + lo) >> 8) & 0x00FF00);
 	}
-	void apply(uint16_t& x) throw()
+	void apply(uint32_t& x) throw()
 	{
 		x = blend(x);
 	}
