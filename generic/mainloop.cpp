@@ -226,9 +226,9 @@ namespace
 		palette_init = true;
 		for(unsigned i = 0; i < 0x80000; i++) {
 			unsigned l = (i >> 15) & 0xF;
-			unsigned r = (i >> 10) & 0x1F;
+			unsigned r = (i >> 0) & 0x1F;
 			unsigned g = (i >> 5) & 0x1F;
-			unsigned b = (i >> 0) & 0x1F;
+			unsigned b = (i >> 10) & 0x1F;
 			double _l = static_cast<double>(l);
 			double m = 17.0 / 31.0;
 			r = floor(m * r * _l + 0.5);

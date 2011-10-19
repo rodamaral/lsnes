@@ -36,7 +36,7 @@ namespace
 		get_numeric_argument<uint16_t>(LS, 7, bga, fname.c_str());
 		std::string text = get_string_argument(LS, 3, fname.c_str());
 		premultiplied_color fg(fgc, fga);
-		premultiplied_color bg(fgc, fga);
+		premultiplied_color bg(bgc, bga);
 		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fg, bg));
 		return 0;
 	});

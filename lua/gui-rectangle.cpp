@@ -19,7 +19,7 @@ namespace
 			clip_range(scr.originx, scr.width, x, xmin, xmax);
 			clip_range(scr.originy, scr.height, y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				uint16_t* rptr = scr.rowptr(y + r + scr.originy);
+				uint32_t* rptr = scr.rowptr(y + r + scr.originy);
 				size_t eptr = x + xmin + scr.originx;
 				for(int32_t c = xmin; c < xmax; c++, eptr++)
 					if(r < thickness || c < thickness || r >= height - thickness ||

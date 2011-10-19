@@ -765,7 +765,7 @@ namespace
 		for(uint32_t j = y1 - 6; j < y2 + 6; j++)
 			memset(reinterpret_cast<uint8_t*>(surf->pixels) + j * surf->pitch + 4 * (x1 - 6), 0,
 				4 * (x2 - x1 + 12));
-		uint32_t bordercolor = 0x0080FF;
+		uint32_t bordercolor = 0xFF8000;
 		draw_rectangle(reinterpret_cast<uint8_t*>(surf->pixels), surf->pitch, x1 - 4, y1 - 4, x2 + 4, y2 + 4,
 			bordercolor, 2);
 
@@ -1377,7 +1377,7 @@ void window::notify_screen_update(bool full) throw()
 		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 0, SDL_SWSURFACE |
 			SDL_ANYFORMAT);
 		SDL_Surface* swsurf2 = SDL_CreateRGBSurface(SDL_SWSURFACE, windowsize.first, windowsize.second, 32,
-			0x0000FF, 0x00FF00, 0xFF0000, 0);
+			0xFF0000, 0x00FF00, 0x0000FF, 0);
 		if(!hwsurf2 || !swsurf2) {
 			//We are in too fucked up state to even print error as message.
 			std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;

@@ -1,6 +1,7 @@
 #ifndef _render__hpp__included__
 #define _render__hpp__included__
 
+
 #include <cstdint>
 #include <string>
 #include <list>
@@ -257,11 +258,12 @@ struct premultiplied_color
 	premultiplied_color(uint16_t color, uint8_t alpha) throw()
 	{
 		uint32_t c = color;
-		hi = ((color & 0x7C00) << 9) | ((color & 0x1F) << 3);
-		lo = ((color & 0x3E0) << 6);
-		hi *= (alpha << 3);
-		lo *= (alpha << 3);
-		inv = 256 - alpha;
+		uint16_t a = alpha;
+		hi = ((c & 0x7C00) << 9) | ((c & 0x1F) << 3);
+		lo = ((c & 0x3E0) << 6);
+		hi *= (a << 3);
+		lo *= (a << 3);
+		inv = 256 - (a << 3);
 	}
 	uint32_t blend(uint32_t color) throw()
 	{
