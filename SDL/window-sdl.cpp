@@ -1288,14 +1288,14 @@ namespace
 		uint32_t ch = current_screen ? current_screen->height : 0;
 		//Blank parts not drawn.
 		for(uint32_t i = 6; i < ch + 6; i++)
-			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 12 + 4 * cw, 0,
+			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 24 + 4 * cw, 0,
 				4 * (screensize.first - cw));
 		for(uint32_t i = ch + 6; i < screensize.second + 6; i++)
-			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 12, 0,
+			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 24, 0,
 				4 * screensize.first);
 		if(current_screen) {
 			for(uint32_t i = 0; i < ch; i++)
-				memcpy(reinterpret_cast<uint8_t*>(swsurf->pixels) + (i + 6) * swsurf->pitch + 12,
+				memcpy(reinterpret_cast<uint8_t*>(swsurf->pixels) + (i + 6) * swsurf->pitch + 24,
 					reinterpret_cast<uint8_t*>(current_screen->memory) + current_screen->pitch * i,
 					4 * cw);
 		}
