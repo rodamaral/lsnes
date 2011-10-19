@@ -208,8 +208,8 @@ namespace
 {
 	bool option_set(const std::vector<std::string>& cmdline, const std::string& option)
 	{
-		for(auto i = cmdline.begin(); i != cmdline.end(); i++)
-			if(*i == option)
+		for(auto i : cmdline)
+			if(i == option)
 				return true;
 		return false;
 	}
@@ -235,8 +235,8 @@ namespace
 	std::string findoption(const std::vector<std::string>& cmdline, const std::string& option)
 	{
 		std::string value;
-		for(auto i = cmdline.begin(); i != cmdline.end(); ++i) {
-			std::string arg = *i;
+		for(auto i : cmdline) {
+			std::string arg = i;
 			if(arg.length() < 3 + option.length())
 				continue;
 			if(arg[0] != '-' || arg[1] != '-' || arg.substr(2, option.length()) != option ||
@@ -509,8 +509,8 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::ba
 	std::runtime_error)
 {
 	int32_t offset = 0;
-	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
-		std::string opt = *i;
+	for(auto i : cmdline) {
+		std::string opt = i;
 		if(opt.length() >= 13 && opt.substr(0, 13) == "--ips-offset=") {
 			try {
 				offset = parse_value<int32_t>(opt.substr(13));
@@ -599,25 +599,25 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 		} else
 			messages << "WARNING: SRAM '" << savename << ": No data." << std::endl;
 	}
-	for(auto i = sram.begin(); i != sram.end(); ++i)
-		if(!used.count(i->first))
-			messages << "WARNING: SRAM '" << i->first << ": Not found on cartridge." << std::endl;
+	for(auto i : sram)
+		if(!used.count(i.first))
+			messages << "WARNING: SRAM '" << i.first << ": Not found on cartridge." << std::endl;
 }
 
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::map<std::string, std::vector<char>> ret;
-	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
-		std::string opt = *i;
+	for(auto i : cmdline) {
+		std::string opt = i;
 		if(opt.length() >= 11 && opt.substr(0, 11) == "--continue=") {
 			size_t split = opt.find_first_of("=");
 			if(split > opt.length() - 1)
 				throw std::runtime_error("Bad SRAM option '" + opt + "'");
 			std::string file = opt.substr(split + 1);
 			zip_reader r(file);
-			for(auto j = r.begin(); j != r.end(); j++) {
-				std::string fname = *j;
+			for(auto j : r) {
+				std::string fname = j;
 				if(fname.length() < 6 || fname.substr(0, 5) != "sram.")
 					continue;
 				std::istream& x = r[fname];
@@ -695,12 +695,12 @@ namespace
 	void replace_index(std::list<index_entry> new_index, const std::string& source)
 	{
 		std::list<index_entry> tmp_index;
-		for(auto i = rom_index.begin(); i != rom_index.end(); i++) {
-			if(i->from != source)
-				tmp_index.push_back(*i);
+		for(auto i : rom_index) {
+			if(i.from != source)
+				tmp_index.push_back(i);
 		}
-		for(auto i = new_index.begin(); i != new_index.end(); i++) {
-			tmp_index.push_back(*i);
+		for(auto i : new_index) {
+			tmp_index.push_back(i);
 		}
 		rom_index = new_index;
 	}
@@ -737,13 +737,13 @@ std::string lookup_file_by_sha256(const std::string& hash) throw(std::bad_alloc,
 {
 	if(hash == "")
 		return "";
-	for(auto i = rom_index.begin(); i != rom_index.end(); i++) {
-		if(i->hash != hash)
+	for(auto i : rom_index) {
+		if(i.hash != hash)
 			continue;
 		try {
-			std::istream& o = open_file_relative(i->relpath, i->from);
+			std::istream& o = open_file_relative(i.relpath, i.from);
 			delete &o;
-			return resolve_file_relative(i->relpath, i->from);
+			return resolve_file_relative(i.relpath, i.from);
 		} catch(...) {
 			continue;
 		}

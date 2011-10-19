@@ -383,8 +383,8 @@ void movie::load(const std::string& rerecs, const std::string& project_id, const
 		throw std::runtime_error("First subframe MUST have frame sync flag set");
 	clear_caches();
 	frames_in_movie = 0;
-	for(auto i = input.begin(); i != input.end(); i++)
-		if((*i)(CONTROL_FRAME_SYNC))
+	for(auto i : input)
+		if(i(CONTROL_FRAME_SYNC))
 			frames_in_movie++;
 	readonly = true;
 	rerecords = rerecs;

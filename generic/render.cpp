@@ -185,20 +185,20 @@ void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 
 void render_queue::run(struct screen& scr) throw()
 {
-	for(auto i = q.begin(); i != q.end(); i++) {
+	for(auto i : q) {
 		try {
-			(**i)(scr);
+			(*i)(scr);
 		} catch(...) {
 		}
-		delete *i;
+		delete i;
 	}
 	q.clear();
 }
 
 void render_queue::clear() throw()
 {
-	for(auto i = q.begin(); i != q.end(); i++)
-		delete *i;
+	for(auto i : q)
+		delete i;
 	q.clear();
 }
 

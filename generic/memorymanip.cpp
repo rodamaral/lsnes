@@ -60,15 +60,15 @@ namespace
 		t.memory = NULL;
 		t.memory_size = 0;
 		t.not_writable = true;
-		for(auto i = memory_regions.begin(); i != memory_regions.end(); ++i) {
-			if(i->base > rawaddr || i->base + i->size <= rawaddr)
+		for(auto i : memory_regions) {
+			if(i.base > rawaddr || i.base + i.size <= rawaddr)
 				continue;
-			t.rel_addr = rawaddr - i->base;
+			t.rel_addr = rawaddr - i.base;
 			t.raw_addr = rawaddr;
-			t.memory = i->memory;
-			t.memory_size = i->size;
-			t.not_writable = i->not_writable;
-			t.native_endian = i->native_endian;
+			t.memory = i.memory;
+			t.memory_size = i.size;
+			t.not_writable = i.not_writable;
+			t.native_endian = i.native_endian;
 			break;
 		}
 		return t;
@@ -82,19 +82,19 @@ namespace
 		t.memory = NULL;
 		t.memory_size = 0;
 		t.not_writable = true;
-		for(auto i = memory_regions.begin(); i != memory_regions.end(); ++i) {
-			if(i->not_writable)
+		for(auto i : memory_regions) {
+			if(i.not_writable)
 				continue;
-			if(ramlinaddr >= i->size) {
-				ramlinaddr -= i->size;
+			if(ramlinaddr >= i.size) {
+				ramlinaddr -= i.size;
 				continue;
 			}
 			t.rel_addr = ramlinaddr;
-			t.raw_addr = i->base + ramlinaddr;
-			t.memory = i->memory;
-			t.memory_size = i->size;
-			t.not_writable = i->not_writable;
-			t.native_endian = i->native_endian;
+			t.raw_addr = i.base + ramlinaddr;
+			t.memory = i.memory;
+			t.memory_size = i.size;
+			t.not_writable = i.not_writable;
+			t.native_endian = i.native_endian;
 			break;
 		}
 		return t;
@@ -206,14 +206,14 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 std::vector<struct memory_region> get_regions() throw(std::bad_alloc)
 {
 	std::vector<struct memory_region> out;
-	for(auto i = memory_regions.begin(); i != memory_regions.end(); ++i) {
+	for(auto i : memory_regions) {
 		struct memory_region r;
-		r.region_name = i->name;
-		r.baseaddr = i->base;
-		r.size = i->size;
-		r.lastaddr = i->base + i->size - 1;
-		r.readonly = i->not_writable;
-		r.native_endian = i->native_endian;
+		r.region_name = i.name;
+		r.baseaddr = i.base;
+		r.size = i.size;
+		r.lastaddr = i.base + i.size - 1;
+		r.readonly = i.not_writable;
+		r.native_endian = i.native_endian;
 		out.push_back(r);
 	}
 	return out;
@@ -993,9 +993,9 @@ namespace
 				;
 			else if(firstword == "print" && !has_value) {
 				auto c = isrch->get_candidates();
-				for(auto ci = c.begin(); ci != c.end(); ci++) {
+				for(auto ci : c) {
 					std::ostringstream x;
-					x << "0x" << std::hex << std::setw(8) << std::setfill('0') << *ci;
+					x << "0x" << std::hex << std::setw(8) << std::setfill('0') << ci;
 					messages << x.str() << std::endl;
 				}
 			} else

@@ -153,11 +153,11 @@ void write_authors_file(zip_writer& w, std::vector<std::pair<std::string, std::s
 {
 	std::ostream& m = w.create_file("authors");
 	try {
-		for(auto i = authors.begin(); i != authors.end(); ++i)
-			if(i->second == "")
-				m << i->first << std::endl;
+		for(auto i : authors)
+			if(i.second == "")
+				m << i.first << std::endl;
 			else
-				m << i->first << "|" << i->second << std::endl;
+				m << i.first << "|" << i.second << std::endl;
 		if(!m)
 			throw std::runtime_error("Can't write ZIP file member");
 		w.close_file();
@@ -175,8 +175,8 @@ void write_input(zip_writer& w, std::vector<controls_t>& input, porttype_t port1
 	encoders.push_back(port_types[port2].encoder);
 	std::ostream& m = w.create_file("input");
 	try {
-		for(auto i = input.begin(); i != input.end(); ++i)
-			m << i->tostring(encoders) << std::endl;
+		for(auto i : input)
+			m << i.tostring(encoders) << std::endl;
 		if(!m)
 			throw std::runtime_error("Can't write ZIP file member");
 		w.close_file();
@@ -283,9 +283,9 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		if(r.has_member("hostmemory"))
 			host_memory = read_raw_file(r, "hostmemory");
 		savestate = read_raw_file(r, "savestate");
-		for(auto name = r.begin(); name != r.end(); ++name)
-			if((*name).length() >= 5 && (*name).substr(0, 5) == "sram.")
-				sram[(*name).substr(5)] = read_raw_file(r, *name);
+		for(auto name : r)
+			if(name.length() >= 5 && name.substr(0, 5) == "sram.")
+				sram[name.substr(5)] = read_raw_file(r, name);
 		screenshot = read_raw_file(r, "screenshot");
 		//If these can't be read, just use some (wrong) values.
 		read_numeric_file(r, "savetime.second", rtc_second, true);
@@ -295,9 +295,9 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		movie_rtc_subsecond >= MAX_RTC_SUBSECOND)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
-	for(auto name = r.begin(); name != r.end(); ++name)
-		if((*name).length() >= 10 && (*name).substr(0, 10) == "moviesram.")
-			movie_sram[(*name).substr(10)] = read_raw_file(r, *name);
+	for(auto name : r)
+		if(name.length() >= 10 && name.substr(0, 10) == "moviesram.")
+			movie_sram[name.substr(10)] = read_raw_file(r, name);
 	read_authors_file(r, authors);
 	read_input(r, input, port1, port2, 0);
 }
@@ -323,8 +323,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "slotaxml.sha256", slotaxml_sha256, true);
 	write_linefile(w, "slotb.sha256", slotb_sha256, true);
 	write_linefile(w, "slotbxml.sha256", slotbxml_sha256, true);
-	for(auto i = movie_sram.begin(); i != movie_sram.end(); ++i)
-		write_raw_file(w, "moviesram." + i->first, i->second);
+	for(auto i : movie_sram)
+		write_raw_file(w, "moviesram." + i.first, i.second);
 	write_numeric_file(w, "starttime.second", movie_rtc_second);
 	write_numeric_file(w, "starttime.subsecond", movie_rtc_subsecond);
 	if(is_savestate) {
@@ -332,8 +332,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_raw_file(w, "hostmemory", host_memory);
 		write_raw_file(w, "savestate", savestate);
 		write_raw_file(w, "screenshot", screenshot);
-		for(auto i = sram.begin(); i != sram.end(); ++i)
-			write_raw_file(w, "sram." + i->first, i->second);
+		for(auto i : sram)
+			write_raw_file(w, "sram." + i.first, i.second);
 	write_numeric_file(w, "savetime.second", rtc_second);
 	write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
 	}

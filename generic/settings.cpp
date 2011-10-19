@@ -107,11 +107,11 @@ bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::run
 
 void setting::print_all() throw(std::bad_alloc)
 {
-	for(auto i = settings().begin(); i != settings().end(); i++) {
-		if(!i->second->is_set())
-			messages << i->first << ": (unset)" << std::endl;
+	for(auto i : settings()) {
+		if(!i.second->is_set())
+			messages << i.first << ": (unset)" << std::endl;
 		else
-			messages << i->first << ": " << i->second->get() << std::endl;
+			messages << i.first << ": " << i.second->get() << std::endl;
 	}
 }
 

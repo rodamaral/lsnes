@@ -174,24 +174,24 @@ uint64_t rrdata::write(std::vector<char>& strm) throw(std::bad_alloc)
 	instance predicted;
 	instance encode_base;
 	unsigned encode_count = 0;
-	for(auto i = rrset.begin(); i != rrset.end(); i++) {
+	for(auto i : rrset) {
 		//std::cerr << "Considering " << *i << std::endl;
 		count++;
 		if(encode_count == 0) {
 			//This is the first symbol.
-			encode_base = *i;
+			encode_base = i;
 			encode_count = 1;
-		} else if(predicted == *i && encode_count < 16843009) {
+		} else if(predicted == i && encode_count < 16843009) {
 			//Correct prediction.
 			encode_count++;
 		} else {
 			//Failed prediction
 			flush_symbol(strm, encode_base, last_encode_end, encode_count);
 			last_encode_end = predicted;
-			encode_base = *i;
+			encode_base = i;
 			encode_count = 1;
 		}
-		predicted = *i;
+		predicted = i;
 		++predicted;
 	}
 	if(encode_count > 0)

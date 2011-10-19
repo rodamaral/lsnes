@@ -288,9 +288,9 @@ void update_movie_state()
 		_status["Saveslot"] = save_jukebox[save_jukebox_pointer];
 	else
 		_status.erase("Saveslot");
-	for(auto i = memory_watches.begin(); i != memory_watches.end(); i++) {
+	for(auto i : memory_watches) {
 		try {
-			_status["M[" + i->first + "]"] = evaluate_watch(i->second);
+			_status["M[" + i.first + "]"] = evaluate_watch(i.second);
 		} catch(...) {
 		}
 	}
@@ -750,8 +750,8 @@ namespace
 			stepping_into_save = true;
 			SNES::system.runtosave();
 			stepping_into_save = false;
-			for(auto i = queued_saves.begin(); i != queued_saves.end(); i++)
-				do_save_state(*i);
+			for(auto i : queued_saves)
+				do_save_state(i);
 		}
 		queued_saves.clear();
 	}

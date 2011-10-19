@@ -400,9 +400,9 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 	uint32_t cdiroff = zipstream.tellp();
 	if(cdiroff == (uint32_t)-1)
 		throw std::runtime_error("Can't read current ZIP stream position");
-	for(auto i = files.begin(); i != files.end(); ++i) {
-		cdirsize += (46 + i->first.length());
-		directory_entry.resize(46 + i->first.length());
+	for(auto i : files) {
+		cdirsize += (46 + i.first.length());
+		directory_entry.resize(46 + i.first.length());
 		write32(&directory_entry[0], 0x02014b50);
 		write16(&directory_entry[4], 3);
 		write16(&directory_entry[6], 20);
@@ -410,17 +410,17 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		write16(&directory_entry[10], compression ? 8 : 0);
 		write16(&directory_entry[12], 0);
 		write16(&directory_entry[14], 10273);
-		write32(&directory_entry[16], i->second.crc);
-		write32(&directory_entry[20], i->second.compressed_size);
-		write32(&directory_entry[24], i->second.uncompressed_size);
-		write16(&directory_entry[28], i->first.length());
+		write32(&directory_entry[16], i.second.crc);
+		write32(&directory_entry[20], i.second.compressed_size);
+		write32(&directory_entry[24], i.second.uncompressed_size);
+		write16(&directory_entry[28], i.first.length());
 		write16(&directory_entry[30], 0);
 		write16(&directory_entry[32], 0);
 		write16(&directory_entry[34], 0);
 		write16(&directory_entry[36], 0);
 		write32(&directory_entry[38], 0);
-		write32(&directory_entry[42], i->second.offset);
-		memcpy(&directory_entry[46], i->first.c_str(), i->first.length());
+		write32(&directory_entry[42], i.second.offset);
+		memcpy(&directory_entry[46], i.first.c_str(), i.first.length());
 		zipstream.write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
 		if(!zipstream)
 			throw std::runtime_error("Failed to write central directory entry to output file");

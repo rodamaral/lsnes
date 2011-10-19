@@ -62,8 +62,8 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
 			size_t idx = 0;
-			for(auto i = our_movie.authors.begin(); i != our_movie.authors.end(); i++) {
-				messages << (idx++) << ": " << i->first << "|" << i->second << std::endl;
+			for(auto i : our_movie.authors) {
+				messages << (idx++) << ": " << i.first << "|" << i.second << std::endl;
 			}
 			messages << "End of authors list" << std::endl;
 		});

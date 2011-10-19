@@ -418,9 +418,9 @@ namespace
 			SDL_keysym sym = e->key.keysym;
 			uint8_t scancode = sym.scancode;
 			unsigned symbol = sym.sym;
-			for(auto k = supported_modifiers.begin(); k != supported_modifiers.end(); ++k)
-				if(sym.mod & k->first)
-					modifiers.add(*k->second);
+			for(auto k : supported_modifiers)
+				if(sym.mod & k.first)
+					modifiers.add(*k.second);
 			scancodekeys[scancode]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
 			if(symbolkeys.count(symbol))
 				symbolkeys[symbol]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
@@ -665,14 +665,14 @@ namespace
 		int32_t pos_x = 0;
 		int32_t pos_y = 0;
 		unsigned c = 0;
-		for(auto si = s.begin(); si != s.end(); si++) {
+		for(auto si : s) {
 			uint32_t old_x = pos_x;
 			uint32_t curstart = 16;
 			if(c == hilite_pos && hilite_mode == 1)
 				curstart = 14;
 			if(c == hilite_pos && hilite_mode == 2)
 				curstart = 0;
-			auto g = find_glyph(*si, pos_x, pos_y, 0, pos_x, pos_y);
+			auto g = find_glyph(si, pos_x, pos_y, 0, pos_x, pos_y);
 			if(pos_y)
 				pos_x = old_x;
 			if(g.second == 0) {
@@ -735,8 +735,8 @@ namespace
 		else
 			msg = msg + "\n\nHit Enter or Esc to dismiss";
 		auto s2 = decode_utf8(msg);
-		for(auto i = s2.begin(); i != s2.end(); i++) {
-			auto g = find_glyph(*i, pos_x, pos_y, 0, pos_x, pos_y);
+		for(auto i : s2) {
+			auto g = find_glyph(i, pos_x, pos_y, 0, pos_x, pos_y);
 			if(pos_x + g.first > width)
 				width = static_cast<uint32_t>(pos_x + g.first);
 			if(pos_y + 16 > static_cast<int32_t>(height))
@@ -771,10 +771,10 @@ namespace
 
 		pos_x = 0;
 		pos_y = 0;
-		for(auto i = s2.begin(); i != s2.end(); i++) {
+		for(auto i : s2) {
 			uint32_t ox = pos_x;
 			uint32_t oy = pos_y;
-			auto g = find_glyph(*i, pos_x, pos_y, 0, pos_x, pos_y);
+			auto g = find_glyph(i, pos_x, pos_y, 0, pos_x, pos_y);
 			if(static_cast<uint32_t>(pos_y) > height)
 				break;
 			uint8_t* base = reinterpret_cast<uint8_t*>(surf->pixels) + (y1 + oy) * surf->pitch +
@@ -1305,8 +1305,8 @@ namespace
 	{
 		uint32_t status_x = screensize.first + 16;
 		uint32_t status_y = 6;
-		for(auto i = emustatus.begin(); i != emustatus.end(); i++) {
-			std::string msg = i->first + " " + i->second;
+		for(auto i : emustatus) {
+			std::string msg = i.first + " " + i.second;
 			draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, msg, status_x, status_y,
 				256);
 			status_y += 16;

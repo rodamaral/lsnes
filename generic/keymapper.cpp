@@ -165,20 +165,20 @@ modifier_set modifier_set::construct(const std::string& _modifiers) throw(std::b
 bool modifier_set::valid(const modifier_set& set, const modifier_set& mask) throw(std::bad_alloc)
 {
 	//No element can be together with its linkage group.
-	for(auto i = set.set.begin(); i != set.set.end(); ++i) {
-		const modifier* j = get_linked_modifier(*i);
-		if(*i != j && set.set.count(j))
+	for(auto i : set.set) {
+		const modifier* j = get_linked_modifier(i);
+		if(i != j && set.set.count(j))
 			return false;
 	}
-	for(auto i = mask.set.begin(); i != mask.set.end(); ++i) {
-		const modifier* j = get_linked_modifier(*i);
-		if(*i != j && mask.set.count(j))
+	for(auto i : mask.set) {
+		const modifier* j = get_linked_modifier(i);
+		if(i != j && mask.set.count(j))
 			return false;
 	}
 	//For every element of set, it or its linkage group must be in mask.
-	for(auto i = set.set.begin(); i != set.set.end(); ++i) {
-		const modifier* j = get_linked_modifier(*i);
-		if(!mask.set.count(*i) && !mask.set.count(j))
+	for(auto i : set.set) {
+		const modifier* j = get_linked_modifier(i);
+		if(!mask.set.count(i) && !mask.set.count(j))
 			return false;
 	}
 	return true;
@@ -186,11 +186,11 @@ bool modifier_set::valid(const modifier_set& set, const modifier_set& mask) thro
 
 bool modifier_set::operator==(const modifier_set& m) const throw()
 {
-	for(auto i = set.begin(); i != set.end(); ++i)
-		if(!m.set.count(*i))
+	for(auto i : set)
+		if(!m.set.count(i))
 			return false;
-	for(auto i = m.set.begin(); i != m.set.end(); ++i)
-		if(!set.count(*i))
+	for(auto i : m.set)
+		if(!set.count(i))
 			return false;
 	return true;
 }
@@ -198,8 +198,8 @@ bool modifier_set::operator==(const modifier_set& m) const throw()
 std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
 {
 	os << "<modset:";
-	for(auto i = m.set.begin(); i != m.set.end(); ++i)
-		os << (*i)->name() << " ";
+	for(auto i : m.set)
+		os << i->name() << " ";
 	os << ">";
 	return os;
 }
@@ -207,39 +207,39 @@ std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
 bool modifier_set::triggers(const modifier_set& set, const modifier_set& trigger, const modifier_set& mask)
 	throw(std::bad_alloc)
 {
-	for(auto i = mask.set.begin(); i != mask.set.end(); i++) {
+	for(auto i : mask.set) {
 		bool ok = false;
 		//OK iff at least one of:
 		//Key itself appears in both set and trigger.
-		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
-			if(!trigger.set.count(*j))
+		for(auto j : set.set) {
+			if(!trigger.set.count(j))
 				continue;
 			ok = true;
 		}
 		//Key with this linkage group appears in both set and trigger.
-		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
-			auto linked = get_linked_modifier(*j);
-			if(linked != *i)
+		for(auto j : set.set) {
+			auto linked = get_linked_modifier(j);
+			if(linked != i)
 				continue;
-			if(!trigger.set.count(*j))
+			if(!trigger.set.count(j))
 				continue;
 			ok = true;
 		}
 		//Key with this linkage appears in set and the key itself appears in trigger.
-		for(auto j = set.set.begin(); j != set.set.end(); ++j) {
-			auto linked = get_linked_modifier(*j);
-			if(linked != *i)
+		for(auto j : set.set) {
+			auto linked = get_linked_modifier(j);
+			if(linked != i)
 				continue;
-			if(!trigger.set.count(*i))
+			if(!trigger.set.count(i))
 				continue;
 			ok = true;
 		}
 		//Nothing linked is found from neither set nor trigger.
 		bool found = false;
-		for(auto j = set.set.begin(); j != set.set.end(); ++j)
-			found = found || (*j == *i || get_linked_modifier(*j) == *i);
-		for(auto j = trigger.set.begin(); j != trigger.set.end(); ++j)
-			found = found || (*j == *i || get_linked_modifier(*j) == *i);
+		for(auto j : set.set)
+			found = found || (j == i || get_linked_modifier(j) == i);
+		for(auto j : trigger.set)
+			found = found || (j == i || get_linked_modifier(j) == i);
 		ok = ok || !found;
 		if(!ok)
 			return false;
@@ -451,8 +451,8 @@ void keygroup::run_listeners(const modifier_set& modifiers, unsigned subkey, boo
 		exclusive->key_event(modifiers, *this, subkey, polarity, name);
 		return;
 	}
-	for(auto i = listeners.begin(); i != listeners.end(); ++i)
-		(*i)->key_event(modifiers, *this, subkey, polarity, name);
+	for(auto i : listeners)
+		i->key_event(modifiers, *this, subkey, polarity, name);
 }
 
 keygroup::key_listener* keygroup::exclusive;
@@ -687,10 +687,10 @@ void keymapper::unbind(std::string mod, std::string modmask, std::string keyname
 
 void keymapper::dumpbindings() throw(std::bad_alloc)
 {
-	for(auto i = keybindings.begin(); i != keybindings.end(); ++i) {
+	for(auto i : keybindings) {
 		messages << "bind-key ";
-		if(i->first.a != "" || i->first.b != "")
-			messages << i->first.a << "/" << i->first.b << " ";
-		messages << i->first.c << std::endl;
+		if(i.first.a != "" || i.first.b != "")
+			messages << i.first.a << "/" << i.first.b << " ";
+		messages << i.first.c << std::endl;
 	}
 }

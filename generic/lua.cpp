@@ -97,8 +97,8 @@ namespace
 
 	void register_lua_functions(lua_State* L)
 	{
-		for(auto i = functions().begin(); i != functions().end(); i++)
-			register_lua_function(L, i->first);
+		for(auto i : functions())
+			register_lua_function(L, i.first);
 		lua_initialized = L;
 	}
 }

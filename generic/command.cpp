@@ -32,9 +32,9 @@ namespace
 	function_ptr_command<> show_aliases("show-aliases", "show aliases",
 		"Syntax: show-aliases\nShow expansions of all aliases\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i = aliases.begin(); i != aliases.end(); i++)
-				for(auto j = i->second.begin(); j != i->second.end(); j++)
-					messages << "alias " << i->first << " " << *j << std::endl;
+			for(auto i : aliases)
+				for(auto j = i.second.begin(); j != i.second.end(); j++)
+					messages << "alias " << i.first << " " << *j << std::endl;
 		});
 
 	function_ptr_command<tokensplitter&> unalias_command("unalias-command", "unalias a command",
@@ -84,8 +84,8 @@ void command::invokeC(const std::string& cmd) throw()
 			cmd2 = cmd2.substr(0, cmd2.length() - 1);
 		if(cmd2 == "?") {
 			//The special ? command.
-			for(auto i = commands().begin(); i != commands().end(); ++i)
-				messages << i->first << ": " << i->second->get_short_help() << std::endl;
+			for(auto i : commands())
+				messages << i.first << ": " << i.second->get_short_help() << std::endl;
 			return;
 		}
 		if(cmd2.length() > 1 && cmd2[0] == '?') {
@@ -103,8 +103,8 @@ void command::invokeC(const std::string& cmd) throw()
 					//Yup.
 					messages << aname << " is an alias for: " << std::endl;
 					size_t j = 0;
-					for(auto i = aliases[aname].begin(); i != aliases[aname].end(); ++i, ++j)
-						messages << "#" + (j + 1) << ": " << *i << std::endl;
+					for(auto i : aliases[aname])
+						messages << "#" + (++j) << ": " << i << std::endl;
 					return;
 				}
 			}
@@ -124,8 +124,8 @@ void command::invokeC(const std::string& cmd) throw()
 			cmd2 = cmd2.substr(1);
 		}
 		if(may_be_alias_expanded && aliases.count(cmd2)) {
-			for(auto i = aliases[cmd2].begin(); i != aliases[cmd2].end(); ++i)
-				invokeC(*i);
+			for(auto i : aliases[cmd2])
+				invokeC(i);
 			return;
 		}
 		try {
