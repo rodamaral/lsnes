@@ -56,6 +56,7 @@ sox_dumper::sox_dumper(const std::string& filename, double samplerate, uint32_t 
 			throw std::runtime_error("Can't write audio header");
 		samplebuffer.resize(channels);
 		databuf.resize(channels << 2);
+		samples_dumped = 0;
 	} catch(...) {
 		sox_file.close();
 		throw;

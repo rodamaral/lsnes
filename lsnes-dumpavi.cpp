@@ -183,8 +183,6 @@ int main(int argc, char** argv)
 	dump_region_map();
 	messages << "--- End of Startup --- " << std::endl;
 
-	dumper_startup(cmdline);
-	startup_lua_scripts(cmdline);
 
 	moviefile movie;
 	try {
@@ -206,6 +204,12 @@ int main(int argc, char** argv)
 			throw std::runtime_error("Specifying movie is required");
 		if(!loaded)
 			throw std::runtime_error("Can't load any of the movies specified");
+		//Load ROM before starting the dumper.
+		our_rom = &r;
+		our_rom->region = gtype::toromregion(movie.gametype);
+		our_rom->load();
+		dumper_startup(cmdline);
+		startup_lua_scripts(cmdline);
 		main_loop(r, movie, true);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

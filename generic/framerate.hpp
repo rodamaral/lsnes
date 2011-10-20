@@ -4,13 +4,12 @@
 #include <cstdint>
 
 /**
- * Nominal framerate of NTSC SNES.
+ * Number clocks per field/frame on NTSC/PAL
  */
-#define FRAMERATE_SNES_NTSC (10738636.0/178683.0)
-/**
- * Nominal framerate of PAL SNES.
- */
-#define FRAMERATE_SNES_PAL (322445.0/6448.0)
+#define DURATION_NTSC_FRAME 357366
+#define DURATION_NTSC_FIELD 357368
+#define DURATION_PAL_FRAME 425568
+#define DURATION_PAL_FIELD 425568
 
 /**
  * Sets the nominal frame rate. Framerate limiting tries to maintain the nominal framerate when there is no other

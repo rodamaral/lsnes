@@ -30,6 +30,7 @@
 
 namespace
 {
+	uint32_t audio_playback_freq = 0;
 	bool wait_canceled;
 	SDL_TimerID tid;
 
@@ -517,11 +518,18 @@ namespace
 	bool stereo = true;
 	bool sound_enabled = true;
 
-	void calculate_sampledup(uint32_t real_rate)
+	void calculate_sampledup(uint32_t rate_n, uint32_t rate_d)
 	{
-		sampledup_ctr = 0;
-		sampledup_inc = 64081;
-		sampledup_mod = 2 * real_rate + 64081;
+		if(!audio_playback_freq) {
+			//Sound disabled.
+			sampledup_ctr = 0;
+			sampledup_inc = 0;
+			sampledup_mod = 0;
+		} else {
+			sampledup_ctr = 0;
+			sampledup_inc = rate_n;
+			sampledup_mod = rate_d * audio_playback_freq + rate_n;
+		}
 	}
 
 	void audiocb(void* dummy, Uint8* stream, int len)
@@ -1117,14 +1125,14 @@ void window::init()
 	if(SDL_OpenAudio(desired, obtained) < 0) {
 		message("Audio can't be initialized, audio playback disabled");
 		//Disable audio.
-		sampledup_ctr = 0;
-		sampledup_inc = 0;
-		sampledup_mod = 0;
+		audio_playback_freq = 0;
+		calculate_sampledup(32000, 1);
 		return;
 	}
 
 	//Fill the parameters.
-	calculate_sampledup(obtained->freq);
+	audio_playback_freq = obtained->freq;
+	calculate_sampledup(32000, 1);
 	format = obtained->format;
 	stereo = (obtained->channels == 2);
 	//GO!!!
@@ -1604,4 +1612,10 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_yoffset = yoffset;
 	vc_hscl = hscl;
 	vc_vscl = vscl;
+}
+
+void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
+{
+	uint32_t g = gcd(rate_n, rate_d);
+	calculate_sampledup(rate_n / g, rate_d / g);
 }

@@ -295,6 +295,13 @@ std::ostream& _messages()
 	return window::out();
 }
 
+uint32_t gcd(uint32_t a, uint32_t b) throw()
+{
+	if(b == 0)
+		return a;
+	else
+		return gcd(b, a % b);
+}
 
 std::string bsnes_core_version;
 std::string lsnes_version = "0-β16";

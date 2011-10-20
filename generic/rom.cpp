@@ -16,6 +16,9 @@ using SNES::cartridge;
 #include <boost/iostreams/device/back_inserter.hpp>
 #include "rom.hpp"
 #include "command.hpp"
+#include "framerate.hpp"
+#include "window.hpp"
+#include "avsnoop.hpp"
 #include "zip.hpp"
 #include "misc.hpp"
 #include "memorymanip.hpp"
@@ -500,6 +503,12 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	if(region == REGION_AUTO)
 		region = snes_get_region() ? REGION_PAL : REGION_NTSC;
 	snes_power();
+	if(region == REGION_PAL)
+		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_PAL_FRAME);
+	else
+		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_NTSC_FRAME);
+	window::set_sound_rate(SNES::system.apu_frequency(), 768);
+	av_snooper::set_sound_rate(SNES::system.apu_frequency(), 768);
 	current_rom_type = rtype;
 	current_region = region;
 	refresh_cart_mappings();

@@ -8,15 +8,17 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#define DEFAULT_NOMINAL_RATE 60
+
 namespace
 {
-	double nominal_rate = 60;
+	double nominal_rate = DEFAULT_NOMINAL_RATE;
 	double fps_value = 0;
 	const double exp_factor = 0.97;
 	uint64_t last_frame_usec = 0;
 	bool last_frame_usec_valid = false;
 	bool target_nominal = true;
-	double target_fps = 60;
+	double target_fps = DEFAULT_NOMINAL_RATE;
 	bool target_infinite = false;
 	uint64_t wait_duration = 0;
 

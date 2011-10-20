@@ -11,6 +11,8 @@ namespace
 	double s_gametime;
 	std::list<std::pair<std::string, std::string>> s_authors;
 	bool gameinfo_set;
+	uint32_t srate_n;
+	uint32_t srate_d;
 }
 
 av_snooper::av_snooper() throw(std::bad_alloc)
@@ -29,6 +31,20 @@ av_snooper::~av_snooper() throw()
 		}
 	for(auto i : notifiers)
 		i->dump_ending();
+}
+
+void av_snooper::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
+{
+	srate_n = rate_n;
+	srate_d = rate_d;
+	uint32_t g = gcd(srate_n, srate_d);
+	srate_n /= g;
+	srate_d /= g;
+}
+
+std::pair<uint32_t, uint32_t> av_snooper::get_sound_rate()
+{
+	return std::make_pair(srate_n, srate_d);
 }
 
 void av_snooper::frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, bool dummy) throw(std::bad_alloc)

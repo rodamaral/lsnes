@@ -168,6 +168,14 @@ public:
  * parameter vscl: Vertical scaling factor.
  */
 	static void set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
+
+/**
+ * Set sound sampling rate.
+ *
+ * parameter rate_n: Numerator of sampling rate.
+ * parameter rate_d: Denomerator of sampling rate.
+ */
+	static void set_sound_rate(uint32_t rate_n, uint32_t rate_d);
 private:
 	window(const window&);
 	window& operator==(const window&);

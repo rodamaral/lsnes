@@ -1037,7 +1037,7 @@ size_t avi_cscd_dumper::samples_for_next_frame()
 	struct buffered_frame& f = *frame_buffer.begin();
 	unsigned long critical = static_cast<Uint64>(gp_sampling_rate) * f.fps_d % f.fps_n;
 	unsigned long ret = static_cast<Uint64>(gp_sampling_rate) * f.fps_d / f.fps_n;
-	if(frame_period_counter % f.fps_n < critical)
+	if(static_cast<Uint64>(frame_period_counter) * critical % f.fps_n < critical)
 		ret++;
 	return ret;
 }

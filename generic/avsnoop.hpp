@@ -76,11 +76,28 @@ public:
 	virtual void end() throw(std::bad_alloc, std::runtime_error) = 0;
 
 /**
+ * Set sound rate.
+ */
+
+/**
  * Call end() on all known A/V snoopers.
  *
  * throws std::bad_alloc: Not enough memory.
  */
 	static void end(bool dummy) throw(std::bad_alloc);
+
+/**
+ * Set sound sampling rate.
+ *
+ * parameter rate_n: Numerator of sampling rate.
+ * parameter rate_d: Denomerator of sampling rate.
+ */
+	static void set_sound_rate(uint32_t rate_n, uint32_t rate_d);
+
+/**
+ * Get sound sampling rate.
+ */
+	std::pair<uint32_t, uint32_t> get_sound_rate();
 
 /**
  * Notify game information.

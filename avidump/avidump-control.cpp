@@ -51,7 +51,10 @@ namespace
 			sp.deflate_level = parameters.compression_level;
 			sp.max_segment_frames = parameters.max_frames_per_segment;
 			vid_dumper = new avi_cscd_dumper(prefix, gp, sp);
-			soxdumper = new sox_dumper(prefix + ".sox", 32040.5, 2);
+			soundrate = av_snooper::get_sound_rate();
+			audio_record_rate = parameters.audio_sampling_rate;
+			soxdumper = new sox_dumper(prefix + ".sox", static_cast<double>(soundrate.first) /
+				soundrate.second, 2);
 			dcounter = 0;
 			have_dumped_frame = false;
 		}
@@ -89,9 +92,9 @@ namespace
 			sp.fps_d = fps_d;
 			uint32_t x = 0x18100800;
 			if(*reinterpret_cast<const uint8_t*>(&x) == 0x18)
-				sp.dataformat = avi_cscd_dumper::PIXFMT_XBGR;
+				sp.dataformat = avi_cscd_dumper::PIXFMT_XRGB;
 			else
-				sp.dataformat = avi_cscd_dumper::PIXFMT_RGBX;
+				sp.dataformat = avi_cscd_dumper::PIXFMT_BGRX;
 			sp.width = lrc.left_gap + hscl * _frame.width + lrc.right_gap;
 			sp.height = lrc.top_gap + vscl * _frame.height + lrc.bottom_gap;
 			sp.default_stride = true;
@@ -111,13 +114,15 @@ namespace
 
 		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
 		{
-			dcounter += 81;
-			if(dcounter < 64081) {
+			dcounter += soundrate.first;
+			while(dcounter < soundrate.second * audio_record_rate + soundrate.first) {
 				if(have_dumped_frame)
 					vid_dumper->audio(&l, &r, 1, avi_cscd_dumper::SNDFMT_SIGNED_16NE);
-			} else
-				dcounter -= 64081;
-			soxdumper->sample(l, r);
+				dcounter += soundrate.first;
+			}
+			dcounter -= (soundrate.second * audio_record_rate + soundrate.first);
+			if(have_dumped_frame)
+				soxdumper->sample(l, r);
 		}
 
 		void end() throw(std::bad_alloc, std::runtime_error)
@@ -139,6 +144,8 @@ namespace
 		unsigned dcounter;
 		struct avi_info _parameters;
 		bool have_dumped_frame;
+		std::pair<uint32_t, uint32_t> soundrate;
+		uint32_t audio_record_rate;
 	};
 
 	avi_avsnoop* vid_dumper;

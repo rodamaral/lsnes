@@ -10,7 +10,6 @@
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
-#define MAX_RTC_SUBSECOND 3462619485019ULL
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
 
@@ -291,8 +290,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		read_numeric_file(r, "savetime.second", rtc_second, true);
 		read_numeric_file(r, "savetime.subsecond", rtc_subsecond, true);
 	}
-	if(rtc_subsecond < 0 || rtc_subsecond > MAX_RTC_SUBSECOND || movie_rtc_subsecond < 0 ||
-		movie_rtc_subsecond >= MAX_RTC_SUBSECOND)
+	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
 	for(auto name : r)

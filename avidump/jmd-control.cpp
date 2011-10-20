@@ -25,6 +25,7 @@ namespace
 			video_w = 0;
 			video_n = 0;
 			maxtc = 0;
+			soundrate = av_snooper::get_sound_rate();
 		}
 
 		~jmd_avsnoop() throw()
@@ -89,10 +90,10 @@ namespace
 		uint64_t get_next_audio_ts()
 		{
 			uint64_t ret = audio_w;
-			audio_w += 31210;
-			audio_n += 31990;
-			if(audio_n >= 64081) {
-				audio_n -= 64081;
+			audio_w += (1000000000ULL * soundrate.second) / soundrate.first;
+			audio_n += (1000000000ULL * soundrate.second) % soundrate.first;
+			if(audio_n >= soundrate.first) {
+				audio_n -= soundrate.first;
 				audio_w++;
 			}
 			maxtc = (ret > maxtc) ? ret : maxtc;
@@ -108,6 +109,7 @@ namespace
 		uint64_t video_w;
 		uint64_t video_n;
 		uint64_t maxtc;
+		std::pair<uint32_t, uint32_t> soundrate;
 	};
 
 	jmd_avsnoop* vid_dumper;

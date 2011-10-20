@@ -33,12 +33,6 @@
 #define SPECIAL_SAVEPOINT 2
 #define SPECIAL_NONE 3
 
-#define RTC_SUBSECOND_INCREMENT_PAL 69242724928ULL
-#define RTC_SUBSECOND_INCREMENT_NTSC 57615439935ULL
-#define RTC_SUBSECOND_INCREMENT_NTSC_I 57615762380ULL
-#define RTC_SUBSECONDS_PER_SECOND 3462619485020ULL
-
-
 void update_movie_state();
 
 namespace
@@ -182,8 +176,6 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 
 namespace
 {
-
-
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(const std::string& filename, int lmode)
 	{
@@ -382,24 +374,16 @@ class my_interface : public SNES::Interface
 		update_movie_state();
 		redraw_framebuffer();
 		uint32_t fps_n, fps_d;
-		if(region) {
-			fps_n = 322445;
-			fps_d = 6448;
-			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_PAL;
-		} else if(!interlace) {
-			fps_n = 10738636;
-			fps_d = 178683;
-			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_NTSC;
-		} else {
-			//Yes, interlace makes difference with NTSC but not on PAL.
-			fps_n = 2684659;
-			fps_d = 44671;
-			our_movie.rtc_subsecond += RTC_SUBSECOND_INCREMENT_NTSC_I;
-		}
-		if(our_movie.rtc_subsecond >= RTC_SUBSECONDS_PER_SECOND) {
-			our_movie.rtc_second++;
-			our_movie.rtc_subsecond -= RTC_SUBSECONDS_PER_SECOND;
-		}
+		uint32_t fclocks;
+		if(region)
+			fclocks = interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
+		else
+			fclocks = interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
+		fps_n = SNES::system.cpu_frequency();
+		fps_d = fclocks;
+		uint32_t g = gcd(fps_n, fps_d);
+		fps_n /= g;
+		fps_d /= g;
 		av_snooper::frame(ls, fps_n, fps_d, true);
 	}
 
@@ -409,6 +393,12 @@ class my_interface : public SNES::Interface
 		uint16_t _r = r_sample;
 		window::play_audio_sample(_l + 32768, _r + 32768);
 		av_snooper::sample(_l, _r, true);
+		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
+		our_movie.rtc_subsecond += 768;
+		while(our_movie.rtc_subsecond >= SNES::system.apu_frequency()) {
+			our_movie.rtc_second++;
+			our_movie.rtc_subsecond -= SNES::system.apu_frequency();
+		}
 	}
 
 	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)

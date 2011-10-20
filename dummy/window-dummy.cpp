@@ -49,3 +49,7 @@ uint64_t get_ticks_msec() throw()
 	static uint64_t c = 0;
 	return c++;
 }
+
+void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
+{
+}

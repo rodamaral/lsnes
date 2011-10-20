@@ -88,4 +88,4 @@ fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
 	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) SDL/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp
+	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) SDL/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) lua/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp

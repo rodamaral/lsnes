@@ -108,6 +108,8 @@ template<> inline std::string parse_value(const std::string& value) throw(std::b
 	return value;
 }
 
+uint32_t gcd(uint32_t a, uint32_t b) throw();
+
 void create_lsnesrc();
 
 /**
