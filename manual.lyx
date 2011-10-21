@@ -4022,5 +4022,41 @@ gui.screenshot.
 Fix CSCD output (buffer overrun and race condition).
 \end_layout
 
+\begin_layout Subsection
+rr0-beta17
+\end_layout
+
+\begin_layout Itemize
+JMD dumping support.
+\end_layout
+
+\begin_layout Itemize
+Allow unattended dumping to JMD.
+\end_layout
+
+\begin_layout Itemize
+Move to BSNES v083.
+\end_layout
+
+\begin_layout Itemize
+Switch back to 32-bit colors.
+\end_layout
+
+\begin_layout Itemize
+Add Lua function gui.color.
+\end_layout
+
+\begin_layout Itemize
+Use some new C++11 features in GCC 4.6.
+\end_layout
+
+\begin_layout Itemize
+Be prepared for core frequency changes.
+\end_layout
+
+\begin_layout Itemize
+Pass colors in one chunk from Lua.
+\end_layout
+
 \end_body
 \end_document
