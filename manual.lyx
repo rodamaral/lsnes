@@ -1837,8 +1837,7 @@ Set the <class> (left, right, top, bottom) gap to specified value (max gap
 \end_layout
 
 \begin_layout Subsubsection
-gui.text(number x, number y, string text[, number fgc[, number fga[, number
- bgc[, number bga]]]])
+gui.text(number x, number y, string text[, number fgc[, number bgc]])
 \end_layout
 
 \begin_layout Standard
@@ -1861,24 +1860,16 @@ text: The text to draw.
 \end_layout
 
 \begin_layout Itemize
-fgc: Text color (default is 0x7FFF (white))
+fgc: Text color (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Itemize
-fga: Text alpha (default is 32 (opaque))
-\end_layout
-
-\begin_layout Itemize
-bgc: Background color (default is 0 (black))
-\end_layout
-
-\begin_layout Itemize
-bga: Background alpha (default is 0 (transparent))
+bgc: Background color (default is -1 (transparent))
 \end_layout
 
 \begin_layout Subsubsection
 gui.rectangle(number x, number y, number width, number height[, number thickness[
-, number outline[, number outlinealpha[, number fill[, number fillalpha]]]]])
+, number outline[, number fill]]])
 \end_layout
 
 \begin_layout Standard
@@ -1907,23 +1898,15 @@ thickness: Thickness of outline (default is 1).
 \end_layout
 
 \begin_layout Itemize
-outline: Color of outline (default is 0x7FFF (white))
+outline: Color of outline (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Itemize
-outlinealpha: Outline alpha (default is 32 (opaque))
-\end_layout
-
-\begin_layout Itemize
-fill: Color of fil (default is 0 (black))
-\end_layout
-
-\begin_layout Itemize
-fillalpha: Fill alpha (default is 0 (transparent))
+fill: Color of fil (default is -1 (transparent))
 \end_layout
 
 \begin_layout Subsubsection
-gui.pixel(number x, number y[, number color[, number alpha]])
+gui.pixel(number x, number y[, number color])
 \end_layout
 
 \begin_layout Standard
@@ -1940,16 +1923,11 @@ y: Y-coordinate of the pixel
 \end_layout
 
 \begin_layout Itemize
-color: Color of the pixel (default is 0x7FFF (white))
-\end_layout
-
-\begin_layout Itemize
-alpha: Alpha for the pixel (default is 32 (opaque))
+color: Color of the pixel (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Subsubsection
-gui.crosshair(number x, number y[, number length[, number color[, number
- alpha]]]
+gui.crosshair(number x, number y[, number length[, number color]]
 \end_layout
 
 \begin_layout Standard
@@ -1970,11 +1948,7 @@ length: Length of the crosshair lines (default 10).
 \end_layout
 
 \begin_layout Itemize
-color: Color of the crosshair (default is 0x7FFF (white))
-\end_layout
-
-\begin_layout Itemize
-alpha: Alpha for the crosshair (default is 32 (opaque))
+color: Color of the crosshair (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Subsubsection
@@ -2006,12 +1980,15 @@ Write PNG screenshot of the current frame (no drawings) to specified file.
 \end_layout
 
 \begin_layout Subsubsection
-gui.color(number r, number g, number b)
+gui.color(number r, number g, number b[, number a])
 \end_layout
 
 \begin_layout Standard
-Returns color (in 16-bit notation Lua scripts use) corresponding to color
- (r,g,b), each component in scale 0-255.
+Returns color (in notation Lua scripts use) corresponding to color (r,g,b),
+ each component in scale 0-255.
+ If a is specified, that is alpha (0 is fully transparent, 256(sic) is fully
+ opaque).
+ The default alpha is 256.
 \end_layout
 
 \begin_layout Subsection

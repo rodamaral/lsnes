@@ -42,22 +42,18 @@ namespace
 	function_ptr_luafun gui_rectangle("gui.rectangle", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint16_t outline = 0x7FFFU;
-		uint8_t outlinealpha = 32;
-		uint16_t fill = 0;
-		uint8_t fillalpha = 0;
+		int64_t outline = 0xFFFFFFU;
+		int64_t fill = -1;
 		uint32_t thickness = 1;
 		int32_t x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
 		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
 		uint32_t width = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
 		uint32_t height = get_numeric_argument<uint32_t>(LS, 4, fname.c_str());
 		get_numeric_argument<uint32_t>(LS, 5, thickness, fname.c_str());
-		get_numeric_argument<uint16_t>(LS, 6, outline, fname.c_str());
-		get_numeric_argument<uint8_t>(LS, 7, outlinealpha, fname.c_str());
-		get_numeric_argument<uint16_t>(LS, 8, fill, fname.c_str());
-		get_numeric_argument<uint8_t>(LS, 9, fillalpha, fname.c_str());
-		premultiplied_color poutline(outline, outlinealpha);
-		premultiplied_color pfill(fill, fillalpha);
+		get_numeric_argument<int64_t>(LS, 6, outline, fname.c_str());
+		get_numeric_argument<int64_t>(LS, 7, fill, fname.c_str());
+		premultiplied_color poutline(outline);
+		premultiplied_color pfill(fill);
 		lua_render_ctx->queue->add(*new render_object_rectangle(x, y, width, height, poutline, pfill,
 			thickness));
 		return 0;

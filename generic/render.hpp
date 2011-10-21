@@ -7,6 +7,7 @@
 #include <list>
 #include <vector>
 #include <stdexcept>
+#include <iostream>
 
 /**
  * Low color (32768 colors) screen from buffer.
@@ -255,15 +256,23 @@ struct premultiplied_color
 	uint32_t hi;
 	uint32_t lo;
 	uint16_t inv;
-	premultiplied_color(uint16_t color, uint8_t alpha) throw()
+	premultiplied_color(int64_t color) throw()
 	{
-		uint32_t c = color;
-		uint16_t a = alpha;
-		hi = ((c & 0x7C00) << 9) | ((c & 0x1F) << 3);
-		lo = ((c & 0x3E0) << 6);
-		hi *= (a << 3);
-		lo *= (a << 3);
-		inv = 256 - (a << 3);
+		if(color < 0) {
+			//Transparent.
+			hi = 0;
+			lo = 0;
+			inv = 256;
+		} else {
+			uint32_t c = (color & 0xFFFFFF);
+			uint16_t a = 256 - ((color >> 24) & 0xFF);
+			hi = c & 0xFF00FF;
+			lo = c & 0x00FF00;
+			hi *= a;
+			lo *= a;
+			inv = 256 - a;
+		}
+		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
 	uint32_t blend(uint32_t color) throw()
 	{

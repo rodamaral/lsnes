@@ -33,15 +33,13 @@ namespace
 	function_ptr_luafun gui_crosshair("gui.crosshair", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint16_t color = 0x7FFFU;
-		uint8_t alpha = 32;
+		int64_t color = 0xFFFFFFU;
 		uint32_t length = 10;
 		int32_t x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
 		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
 		get_numeric_argument<uint32_t>(LS, 3, length, fname.c_str());
-		get_numeric_argument<uint16_t>(LS, 4, color, fname.c_str());
-		get_numeric_argument<uint8_t>(LS, 5, alpha, fname.c_str());
-		premultiplied_color pcolor(color, alpha);
+		get_numeric_argument<int64_t>(LS, 4, color, fname.c_str());
+		premultiplied_color pcolor(color);
 		lua_render_ctx->queue->add(*new render_object_crosshair(x, y, pcolor, length));
 		return 0;
 	});

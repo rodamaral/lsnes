@@ -24,19 +24,15 @@ namespace
 	function_ptr_luafun gui_text("gui.text", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint32_t fgc = 0x7FFFU;
-		uint32_t bgc = 0;
-		uint16_t fga = 32;
-		uint16_t bga = 0;
+		int64_t fgc = 0xFFFFFFU;
+		int64_t bgc = -1;
 		int32_t _x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
 		int32_t _y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		get_numeric_argument<uint32_t>(LS, 4, fgc, fname.c_str());
-		get_numeric_argument<uint16_t>(LS, 5, fga, fname.c_str());
-		get_numeric_argument<uint32_t>(LS, 6, bgc, fname.c_str());
-		get_numeric_argument<uint16_t>(LS, 7, bga, fname.c_str());
+		get_numeric_argument<int64_t>(LS, 4, fgc, fname.c_str());
+		get_numeric_argument<int64_t>(LS, 5, bgc, fname.c_str());
 		std::string text = get_string_argument(LS, 3, fname.c_str());
-		premultiplied_color fg(fgc, fga);
-		premultiplied_color bg(bgc, bga);
+		premultiplied_color fg(fgc);
+		premultiplied_color bg(bgc);
 		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fg, bg));
 		return 0;
 	});

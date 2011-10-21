@@ -49,10 +49,15 @@ namespace
 	});
 
 	function_ptr_luafun gui_color("gui.color", [](lua_State* LS, const std::string& fname) -> int {
-		uint32_t r = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
-		uint32_t g = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
-		uint32_t b = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
-		lua_pushnumber(LS, ((r << 7) & 0x7C00) | ((g << 2) & 0x3E0) | ((b >> 3) & 0x1F));
+		int64_t a = 256;
+		int64_t r = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		int64_t g = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
+		int64_t b = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
+		get_numeric_argument<int64_t>(LS, 4, a, fname.c_str());
+		if(a > 0)
+			lua_pushnumber(LS, ((256 - a) << 24) | (r << 16) | (g << 8) | b);
+		else
+			lua_pushnumber(LS, -1);
 		return 1;
 	});
 }
