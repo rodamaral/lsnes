@@ -1983,6 +1983,40 @@ color: Color of the line (default is 0xFFFFFF (white)).
 \end_layout
 
 \begin_layout Subsubsection
+gui.circle(number x, number y, number r[, number thick[, number border[,
+ number fil]]])
+\end_layout
+
+\begin_layout Standard
+Draw a circle.
+ Parameters.
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the center
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the center
+\end_layout
+
+\begin_layout Itemize
+r: The radius of the circle
+\end_layout
+
+\begin_layout Itemize
+thick: Border thickness
+\end_layout
+
+\begin_layout Itemize
+border: Border color (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+fill: Fill color (default is -1 (transparent)).
+\end_layout
+
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 
