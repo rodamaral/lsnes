@@ -3767,6 +3767,10 @@ No menus, command based interface (SDL).
 Long commands don't scroll.
 \end_layout
 
+\begin_layout Itemize
+The SDL screen drawing is slow.
+\end_layout
+
 \begin_layout Section
 Changelog:
 \end_layout
