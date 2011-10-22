@@ -2056,6 +2056,23 @@ Returns color (in notation Lua scripts use) corresponding to color (r,g,b),
  The default alpha is 256.
 \end_layout
 
+\begin_layout Subsubsection
+gui.status(string name, string value)
+\end_layout
+
+\begin_layout Standard
+Set status field 
+\begin_inset Quotes eld
+\end_inset
+
+L[<name>]
+\begin_inset Quotes erd
+\end_inset
+
+ to <value> in status area.
+ Can be used anywhere.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
