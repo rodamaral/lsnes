@@ -254,14 +254,10 @@ void update_movie_state()
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
 		char datebuffer[512];
-		char timebuffer[512];
-		strftime(datebuffer, 511, "%a %d %b %Y", time_decompose);
-		strftime(timebuffer, 511, "%H:%M:%S", time_decompose);
-		_status["RTCdate"] = datebuffer;
-		_status["RTCtime"] = timebuffer;
+		strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
+		_status["RTC"] = datebuffer;
 	} else {
-		_status["RTCdate"] = "N/A";
-		_status["RTCtime"] = "N/A";
+		_status["RTC"] = "N/A";
 	}
 #endif
 	{
