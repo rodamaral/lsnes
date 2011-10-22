@@ -1808,10 +1808,12 @@ Most of these functions can only be called in on_paint and on_video callbacks.
 \end_layout
 
 \begin_layout Standard
-Colors are 15-bit.
- Each red, green and blue values are in range 0-31 and the final color value
- is 1024*r+32*g+b.
- Alpha range is 0 (fully transparent) to 32 (sic! fully opaque).
+Colors are 32-bit.
+ Bits 0-7 are the blue component, bits 8-15 are the green component, bits
+ 16-23 are the red component, bits 24-31 are alpha component (0 is fully
+ opaque, 255 is almost transparent).
+ -1 is the fully transparent color.
+ Alpha values greater than 127 do work.
 \end_layout
 
 \begin_layout Standard
@@ -1927,7 +1929,7 @@ color: Color of the pixel (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Subsubsection
-gui.crosshair(number x, number y[, number length[, number color]]
+gui.crosshair(number x, number y[, number length[, number color]])
 \end_layout
 
 \begin_layout Standard
@@ -1949,6 +1951,35 @@ length: Length of the crosshair lines (default 10).
 
 \begin_layout Itemize
 color: Color of the crosshair (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Subsubsection
+gui.line(number x1, number y1, number x2, number y2[, number color])
+\end_layout
+
+\begin_layout Standard
+Draw a thin line.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x1: X-coordinate of one end.
+\end_layout
+
+\begin_layout Itemize
+y1: Y-coordinate of one end.
+\end_layout
+
+\begin_layout Itemize
+x2: X-coordinate of the other end.
+\end_layout
+
+\begin_layout Itemize
+y2: Y-coordinate of the other end.
+\end_layout
+
+\begin_layout Itemize
+color: Color of the line (default is 0xFFFFFF (white)).
 \end_layout
 
 \begin_layout Subsubsection
