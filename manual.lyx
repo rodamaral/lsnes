@@ -3273,8 +3273,8 @@ Member: screenshot
 \begin_layout Standard
 Screenshot of current frame.
  Only present in savestates.
- First 2 bytes are big-endian width of image, rest are big-endian 15-bit
- image data (5 bits per channel*pixel, the MSB is unused).
+ First 2 bytes are big-endian width of image, rest are 24-bit RGB image
+ data.
  Height of image is inferred from the width and size of data.
 \end_layout
 
