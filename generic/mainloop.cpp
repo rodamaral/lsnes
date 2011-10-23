@@ -76,8 +76,9 @@ namespace
 	int location_special;
 	//Few settings.
 	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
-
-
+	//Last frame params.
+	bool last_hires = false;
+	bool last_interlace = false;
 }
 
 class firmware_path_setting : public setting
@@ -262,14 +263,14 @@ void update_movie_state()
 #endif
 	{
 		std::ostringstream x;
-		if(system_corrupt)
-			x << "CORRUPT ";
-		else if(movb.get_movie().readonly_mode())
-			x << "PLAY ";
+		x << (system_corrupt ? "C" : "-");
+		x << (av_snooper::dump_in_progress() ? "D" : "-");
+		x << (last_hires ? "H" : "-");
+		x << (last_interlace ? "I" : "-");
+		if(!system_corrupt)
+			x << (movb.get_movie().readonly_mode() ? "P" : "R");
 		else
-			x << "REC ";
-		if(av_snooper::dump_in_progress())
-			x << "CAP ";
+			x << "-";
 		_status["Flags"] = x.str();
 	}
 	if(save_jukebox.size() > 0)
@@ -352,6 +353,8 @@ class my_interface : public SNES::Interface
 
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
 	{
+		last_hires = hires;
+		last_interlace = interlace;
 		init_palette();
 		static uint32_t _data[512 * 512];
 		if(stepping_into_save)
