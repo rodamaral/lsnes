@@ -4,7 +4,7 @@ ARCHIVE_SUFFIX = a
 FONT_SRC := unifontfull-5.1.20080820.hex
 CC := g++-4.6
 HOSTCC = $(CC)
-
+LUAPACKAGE=lua5.1
 
 OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avidump/*.cpp)) fonts/font.$(OBJECT_SUFFIX)
 GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
@@ -23,8 +23,8 @@ ifdef NO_LUA
 CFLAGS += -DNO_LUA
 else
 OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard lua/*.cpp))
-CFLAGS += $(shell pkg-config lua5.1 --cflags)
-LDFLAGS += $(shell pkg-config lua5.1 --libs)
+CFLAGS += $(shell pkg-config $(LUAPACKAGE) --cflags)
+LDFLAGS += $(shell pkg-config $(LUAPACKAGE) --libs)
 endif
 
 #Some misc defines.
