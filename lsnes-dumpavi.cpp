@@ -70,10 +70,16 @@ namespace
 		std::string prefix = "avidump";
 		uint64_t length = 0;
 		bool jmd = false;
+		bool sdmp = false;
+		bool ssflag = false;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
 			if(a == "--jmd")
 				jmd = true;
+			if(a == "--sdmp")
+				sdmp = true;
+			if(a == "--ss")
+				ssflag = true;
 			if(a.length() > 9 && a.substr(0, 9) == "--prefix=")
 				prefix = a.substr(9);
 			if(a.length() > 8 && a.substr(0, 8) == "--level=")
@@ -99,9 +105,17 @@ namespace
 			std::cerr << "--length=<frames> has to be specified" << std::endl;
 			exit(1);
 		}
+		if(jmd && sdmp) {
+			std::cerr << "--jmd and --sdmp are mutually exclusive" << std::endl;
+			exit(1);
+		}
 		std::cout << "Invoking dumper" << std::endl;
 		std::ostringstream cmd;
-		if(jmd)
+		if(sdmp && ssflag)
+			cmd << "dump-sdmpss " << prefix;
+		else if(sdmp)
+			cmd << "dump-sdmp " << prefix;
+		else if(jmd)
 			cmd << "dump-jmd " << level << " " << prefix;
 		else
 			cmd << "dump-avi " << level << " " << prefix;

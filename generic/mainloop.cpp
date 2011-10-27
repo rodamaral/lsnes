@@ -4,6 +4,7 @@
 #include "controller.hpp"
 #include "framebuffer.hpp"
 #include "moviedata.hpp"
+#include "sdump.hpp"
 #include <iomanip>
 #include "framerate.hpp"
 #include "memorywatch.hpp"
@@ -361,6 +362,12 @@ class my_interface : public SNES::Interface
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
+		try {
+			sdump_frame(data, (hires ? SDUMP_FLAG_HIRES : 0) | (interlace ? SDUMP_FLAG_INTERLACED : 0) |
+				(overscan ? SDUMP_FLAG_OVERSCAN : 0) | (region ? SDUMP_FLAG_PAL : 0));
+		} catch(std::exception& e) {
+			messages << "Error dumping frame: " << e.what() << std::endl;
+		}
 		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
@@ -388,6 +395,12 @@ class my_interface : public SNES::Interface
 
 	void audioSample(int16_t l_sample, int16_t r_sample)
 	{
+		try {
+			sdump_sample(l_sample, r_sample);
+		} catch(std::exception& e) {
+			messages << "Error dumping sample: " << e.what() << std::endl;
+		}
+		
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		window::play_audio_sample(_l + 32768, _r + 32768);
