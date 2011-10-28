@@ -44,6 +44,14 @@ public:
 };
 
 /**
+ * Sound/Graphics init/quit functions. Sound init is called after graphics init, and vice versa for quit.
+ */
+void graphics_init();
+void sound_init();
+void sound_quit();
+void graphics_quit();
+
+/**
  * This is a handle to graphics system. Note that creating multiple contexts produces undefined results.
  */
 class window

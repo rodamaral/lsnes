@@ -52,6 +52,18 @@ namespace
 	window_callback* wcb = NULL;
 }
 
+void window::init()
+{
+	graphics_init();
+	sound_init();
+}
+
+void window::quit()
+{
+	sound_quit();
+	graphics_quit();
+}
+
 std::ostream& window::out() throw(std::bad_alloc)
 {
 	static std::ostream* cached = NULL;

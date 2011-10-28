@@ -72,7 +72,7 @@ lsnes.$(OBJECT_SUFFIX):
 endif
 
 
-%.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) dummy/window-dummy.$(OBJECT_SUFFIX)
+%.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard dummy/*.cpp))
 	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
 
 %.$(OBJECT_SUFFIX): %.cpp

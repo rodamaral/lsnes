@@ -30,7 +30,6 @@
 
 namespace
 {
-	uint32_t audio_playback_freq = 0;
 	bool wait_canceled;
 	SDL_TimerID tid;
 
@@ -507,86 +506,6 @@ void poll_inputs_internal() throw(std::bad_alloc);
 
 namespace
 {
-	const size_t audiobuf_size = 8192;
-	uint16_t audiobuf[audiobuf_size];
-	volatile size_t audiobuf_get = 0;
-	volatile size_t audiobuf_put = 0;
-	uint64_t sampledup_ctr = 0;
-	uint64_t sampledup_inc = 0;
-	uint64_t sampledup_mod = 1;
-	Uint16 format = AUDIO_S16SYS;
-	bool stereo = true;
-	bool sound_enabled = true;
-
-	void calculate_sampledup(uint32_t rate_n, uint32_t rate_d)
-	{
-		if(!audio_playback_freq) {
-			//Sound disabled.
-			sampledup_ctr = 0;
-			sampledup_inc = 0;
-			sampledup_mod = 0;
-		} else {
-			sampledup_ctr = 0;
-			sampledup_inc = rate_n;
-			sampledup_mod = rate_d * audio_playback_freq + rate_n;
-		}
-	}
-
-	void audiocb(void* dummy, Uint8* stream, int len)
-	{
-		static uint16_t lprev = 32768;
-		static uint16_t rprev = 32768;
-		if(!sound_enabled)
-			lprev = rprev = 32768;
-		uint16_t bias = (format == AUDIO_S8 || format == AUDIO_S16LSB || format == AUDIO_S16MSB || format ==
-			AUDIO_S16SYS) ? 32768 : 0;
-		while(len > 0) {
-			uint16_t l, r;
-			if(audiobuf_get == audiobuf_put) {
-				l = lprev;
-				r = rprev;
-			} else {
-				l = lprev = audiobuf[audiobuf_get++];
-				r = rprev = audiobuf[audiobuf_get++];
-				if(audiobuf_get == audiobuf_size)
-					audiobuf_get = 0;
-			}
-			if(!stereo)
-				l = l / 2 + r / 2;
-			if(format == AUDIO_U8 || format == AUDIO_S8) {
-				stream[0] = (l - bias) >> 8;
-				if(stereo)
-					stream[1] = (r - bias) >> 8;
-				stream += (stereo ? 2 : 1);
-				len -= (stereo ? 2 : 1);
-			} else if(format == AUDIO_S16SYS || format == AUDIO_U16SYS) {
-				reinterpret_cast<uint16_t*>(stream)[0] = (l - bias);
-				if(stereo)
-					reinterpret_cast<int16_t*>(stream)[1] = (r - bias);
-				stream += (stereo ? 4 : 2);
-				len -= (stereo ? 4 : 2);
-			} else if(format == AUDIO_S16LSB || format == AUDIO_U16LSB) {
-				stream[0] = (l - bias);
-				stream[1] = (l - bias) >> 8;
-				if(stereo) {
-					stream[2] = (r - bias);
-					stream[3] = (r - bias) >> 8;
-				}
-				stream += (stereo ? 4 : 2);
-				len -= (stereo ? 4 : 2);
-			} else if(format == AUDIO_S16MSB || format == AUDIO_U16MSB) {
-				stream[1] = (l - bias);
-				stream[0] = (l - bias) >> 8;
-				if(stereo) {
-					stream[3] = (r - bias);
-					stream[2] = (r - bias) >> 8;
-				}
-				stream += (stereo ? 4 : 2);
-				len -= (stereo ? 4 : 2);
-			}
-		}
-	}
-
 	void identify()
 	{
 		state = WINSTATE_IDENTIFY;
@@ -1068,7 +987,7 @@ namespace
 	}
 }
 
-void window::init()
+void graphics_init()
 {
 	SDL_initialized = true;
 #ifdef SIGALRM
@@ -1106,40 +1025,14 @@ void window::init()
 	console_mode = false;
 	maxmessages = MAXMESSAGES;
 
-	notify_screen_update();
+	window::notify_screen_update();
 	std::string windowname = "lsnes-" + lsnes_version + "[" + bsnes_core_version + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 
 	init_joysticks();
-
-	SDL_AudioSpec* desired = new SDL_AudioSpec();
-	SDL_AudioSpec* obtained = new SDL_AudioSpec();
-
-	desired->freq = 44100;
-	desired->format = AUDIO_S16SYS;
-	desired->channels = 2;
-	desired->samples = 8192;
-	desired->callback = audiocb;
-	desired->userdata = NULL;
-
-	if(SDL_OpenAudio(desired, obtained) < 0) {
-		message("Audio can't be initialized, audio playback disabled");
-		//Disable audio.
-		audio_playback_freq = 0;
-		calculate_sampledup(32000, 1);
-		return;
-	}
-
-	//Fill the parameters.
-	audio_playback_freq = obtained->freq;
-	calculate_sampledup(32000, 1);
-	format = obtained->format;
-	stereo = (obtained->channels == 2);
-	//GO!!!
-	SDL_PauseAudio(0);
 }
 
-void window::quit()
+void graphics_quit()
 {
 	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
@@ -1458,26 +1351,8 @@ void window::paused(bool enable) throw()
 	notify_screen_update();
 }
 
-void window::sound_enable(bool enable) throw()
-{
-	sound_enabled = enable;
-	SDL_PauseAudio(enable ? 0 : 1);
-}
-
 namespace
 {
-	function_ptr_command<const std::string&> enable_sound("enable-sound", "Enable/Disable sound",
-		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			std::string s = args;
-			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled")
-				window::sound_enable(true);
-			else if(s == "off" || s == "false" || s == "0" || s == "disable" || s == "disabled")
-				window::sound_enable(false);
-			else
-				throw std::runtime_error("Bad sound setting");
-		});
-
 	function_ptr_command<> identify_key("identify-key", "Identify a key",
 		"Syntax: identify-key\nIdentifies a (pseudo-)key.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -1593,29 +1468,10 @@ void window::cancel_wait() throw()
 	wait_canceled = true;
 }
 
-void window::play_audio_sample(uint16_t left, uint16_t right) throw()
-{
-	sampledup_ctr += sampledup_inc;
-	while(sampledup_ctr < sampledup_mod) {
-		audiobuf[audiobuf_put++] = left;
-		audiobuf[audiobuf_put++] = right;
-		if(audiobuf_put == audiobuf_size)
-			audiobuf_put = 0;
-		sampledup_ctr += sampledup_inc;
-	}
-	sampledup_ctr -= sampledup_mod;
-}
-
 void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl)
 {
 	vc_xoffset = xoffset;
 	vc_yoffset = yoffset;
 	vc_hscl = hscl;
 	vc_vscl = vscl;
-}
-
-void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
-{
-	uint32_t g = gcd(rate_n, rate_d);
-	calculate_sampledup(rate_n / g, rate_d / g);
 }
