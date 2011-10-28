@@ -105,7 +105,7 @@ public:
 
 /**
  * Processes inputs. If in non-modal mode (normal mode without pause), this returns quickly. Otherwise it waits
- * for modal mode to exit.
+ * for modal mode to exit. Also needs to call poll_joysticks().
  *
  * throws std::bad_alloc: Not enough memory.
  */
@@ -188,5 +188,11 @@ private:
 	window(const window&);
 	window& operator==(const window&);
 };
+
+void poll_joysticks();
+
+extern const char* sound_plugin_name;
+extern const char* graphics_plugin_name;
+extern const char* joystick_plugin_name;
 
 #endif

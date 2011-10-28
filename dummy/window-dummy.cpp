@@ -47,3 +47,5 @@ uint64_t get_ticks_msec() throw()
 	static uint64_t c = 0;
 	return c++;
 }
+
+const char* graphics_plugin_name = "Dummy graphics plugin";

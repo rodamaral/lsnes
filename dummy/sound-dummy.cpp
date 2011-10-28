@@ -23,3 +23,5 @@ void sound_quit() {}
 void window::sound_enable(bool enable) throw() {}
 void window::play_audio_sample(uint16_t left, uint16_t right) throw() {}
 void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d) {}
+
+const char* sound_plugin_name = "Dummy sound plugin";

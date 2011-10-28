@@ -1317,8 +1317,10 @@ void poll_inputs_internal() throw(std::bad_alloc)
 {
 	SDL_Event e;
 	while(state != WINSTATE_NORMAL) {
-		if(SDL_WaitEvent(&e))
+		poll_joysticks();
+		if(SDL_PollEvent(&e))
 			do_event(e);
+		::wait_usec(10000);
 		if(delayed_close_flag) {
 			state = WINSTATE_NORMAL;
 			return;
@@ -1331,12 +1333,15 @@ void window::poll_inputs() throw(std::bad_alloc)
 	SDL_Event e;
 	while(1) {
 		assert(state == WINSTATE_NORMAL);
+		poll_joysticks();
 		if(!pause_active && !SDL_PollEvent(&e))
 			break;
 		else if(!pause_active)
 			do_event(e);
-		else if(SDL_WaitEvent(&e))
+		else if(SDL_PollEvent(&e))
 			do_event(e);
+		else
+			::wait_usec(10000);
 	}
 }
 
@@ -1421,6 +1426,7 @@ void window::wait_usec(uint64_t usec) throw(std::bad_alloc)
 	uint64_t end_at = get_utime() + usec;
 	while(!wait_canceled) {
 		SDL_Event e;
+		poll_joysticks();
 		while(SDL_PollEvent(&e))
 			do_event(e);
 		uint64_t curtime = get_utime();
@@ -1475,3 +1481,11 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_hscl = hscl;
 	vc_vscl = vscl;
 }
+
+void poll_joysticks()
+{
+	//We poll it in event loop for SDL.
+}
+
+const char* graphics_plugin_name = "SDL graphics plugin";
+const char* joystick_plugin_name = "SDL joystick plugin";

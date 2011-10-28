@@ -1,4 +1,5 @@
 #include "window.hpp"
+#include "command.hpp"
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -10,6 +11,14 @@
 
 namespace
 {
+	function_ptr_command<> identify_key("show-plugins", "Show plugins in use",
+		"Syntax: show-plugins\nShows plugins in use.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			window::message(std::string("Graphics:\t") + graphics_plugin_name);
+			window::message(std::string("Sound:\t") + sound_plugin_name);
+			window::message(std::string("Joystick:\t") + joystick_plugin_name);
+		});
+
 	class window_output
 	{
 	public:

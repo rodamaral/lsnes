@@ -179,3 +179,5 @@ void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
 	uint32_t g = gcd(rate_n, rate_d);
 	calculate_sampledup(rate_n / g, rate_d / g);
 }
+
+const char* sound_plugin_name = "SDL sound plugin";
