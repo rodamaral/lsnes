@@ -60,10 +60,15 @@ endif
 ifeq ($(SOUND), SDL)
 PLATFORM_OBJECTS += SDL/sound-sdl.$(OBJECT_SUFFIX)
 else
+ifeq ($(SOUND), PORTAUDIO)
+PLATFORM_OBJECTS += portaudio/sound-portaudio.$(OBJECT_SUFFIX)
+PLATFORM_LDFLAGS += -lportaudio
+else
 ifeq ($(SOUND), DUMMY)
 PLATFORM_OBJECTS += dummy/sound-dummy.$(OBJECT_SUFFIX)
 else
 $(error "Unsupported sound type")
+endif
 endif
 endif
 
