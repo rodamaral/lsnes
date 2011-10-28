@@ -11,12 +11,14 @@ GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)
 LDFLAGS = $(GENERIC_LIBS) $(USER_LDFLAGS)
-PLATFORM = SDL
+GRAPHICS = SDL
+SOUND = SDL
+JOYSTICK = SDL
 PLATFORM_CFLAGS = $(CFLAGS)
 PLATFORM_LDFLAGS = $(LDFLAGS)
 
 PROGRAMS = lsnes.$(EXECUTABLE_SUFFIX) movieinfo.$(EXECUTABLE_SUFFIX) lsnes-dumpavi.$(EXECUTABLE_SUFFIX) sdmp2sox.$(EXECUTABLE_SUFFIX)
-
+all: $(PROGRAMS)
 
 #Lua.
 ifdef NO_LUA
@@ -45,15 +47,32 @@ endif
 ifdef BSNES_IS_COMPAT
 CFLAGS += -DBSNES_IS_COMPAT
 endif
+ifeq ($(JOYSTICK), SDL)
+PLATFORM_OBJECTS += SDL/joystick-sdl.$(OBJECT_SUFFIX)
+else
+ifeq ($(JOYSTICK), DUMMY)
+PLATFORM_OBJECTS += dummy/joystick-dummy.$(OBJECT_SUFFIX)
+else
+$(error "Unsupported joystick type")
+endif
+endif
 
-all: $(PROGRAMS)
-.PRECIOUS: %.$(EXECUTABLE_SUFFIX) %.$(OBJECT_SUFFIX)
+ifeq ($(SOUND), SDL)
+PLATFORM_OBJECTS += SDL/sound-sdl.$(OBJECT_SUFFIX)
+else
+ifeq ($(SOUND), DUMMY)
+PLATFORM_OBJECTS += dummy/sound-dummy.$(OBJECT_SUFFIX)
+else
+$(error "Unsupported sound type")
+endif
+endif
 
-
-#Platform stuff.
-ifeq ($(PLATFORM), SDL)
+ifeq ($(GRAPHICS), SDL)
+ifneq ($(JOYSTICK), SDL)
+$(error "SDL graphics requires SDL joystick)
+endif
 LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
-PLATFORM_OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard SDL/*.cpp))
+PLATFORM_OBJECTS += SDL/window-sdl.$(OBJECT_SUFFIX)
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell sdl-config --libs)
 ifdef TEST_WIN32
@@ -66,10 +85,15 @@ lsnes.$(OBJECT_SUFFIX): lsnes.cpp
 lsnes.$(EXECUTABLE_SUFFIX): lsnes.$(OBJECT_SUFFIX) $(OBJECTS) $(PLATFORM_OBJECTS)
 	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS) $(PLATFORM_LDFLAGS)
 else
-lsnes.$(OBJECT_SUFFIX):
-	echo "Unsupported platform" $(PLATFORM)
-	false
+$(error "Unsupported graphics type")
 endif
+
+
+
+
+
+.PRECIOUS: %.$(EXECUTABLE_SUFFIX) %.$(OBJECT_SUFFIX)
+
 
 
 %.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard dummy/*.cpp))
