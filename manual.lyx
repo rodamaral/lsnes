@@ -3671,6 +3671,22 @@ DUMMY
 .
 \end_layout
 
+\begin_layout Subsubsection
+NO_LUA_SEARCH=1
+\end_layout
+
+\begin_layout Standard
+Disable searching for Lua.
+\end_layout
+
+\begin_layout Subsubsection
+NO_SDL_SEARCH=1
+\end_layout
+
+\begin_layout Standard
+Disable searching for SDL.
+\end_layout
+
 \begin_layout Section
 Quick'n'dirty encode guide
 \end_layout

@@ -25,8 +25,10 @@ ifdef NO_LUA
 CFLAGS += -DNO_LUA
 else
 OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard lua/*.cpp))
+ifndef NO_LUA_SEARCH
 CFLAGS += $(shell pkg-config $(LUAPACKAGE) --cflags)
 LDFLAGS += $(shell pkg-config $(LUAPACKAGE) --libs)
+endif
 endif
 
 #Some misc defines.
@@ -82,8 +84,10 @@ endif
 ifeq ($(GRAPHICS), SDL)
 LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
 PLATFORM_OBJECTS += SDL/window-sdl.$(OBJECT_SUFFIX)
+ifndef NO_SDL_SEARCH
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell sdl-config --libs)
+endif
 ifdef TEST_WIN32
 PLATFORM_LDFLAGS += -lSDLmain
 endif
