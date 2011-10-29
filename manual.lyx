@@ -3596,6 +3596,81 @@ Disable time() interception.
  notably Mac OS X.
 \end_layout
 
+\begin_layout Subsubsection
+GRAPHICS=<plat>
+\end_layout
+
+\begin_layout Standard
+Set graphics platform.
+ Currently available choice is 
+\begin_inset Quotes eld
+\end_inset
+
+SDL
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+SOUND=<plat>
+\end_layout
+
+\begin_layout Standard
+Set sound platform.
+ Currently available choices are 
+\begin_inset Quotes eld
+\end_inset
+
+SDL
+\begin_inset Quotes erd
+\end_inset
+
+ (requires SDL graphics), 
+\begin_inset Quotes eld
+\end_inset
+
+PORTAUDIO
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+DUMMY
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+JOYSTICK=<plat>
+\end_layout
+
+\begin_layout Standard
+Set joystick platform.
+ Currently available choices are 
+\begin_inset Quotes eld
+\end_inset
+
+SDL
+\begin_inset Quotes erd
+\end_inset
+
+ (requires SDL graphics) and 
+\begin_inset Quotes eld
+\end_inset
+
+DUMMY
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Section
 Quick'n'dirty encode guide
 \end_layout

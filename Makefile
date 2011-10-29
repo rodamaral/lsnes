@@ -48,9 +48,13 @@ ifdef BSNES_IS_COMPAT
 CFLAGS += -DBSNES_IS_COMPAT
 endif
 ifeq ($(JOYSTICK), SDL)
+ifneq ($(GRAPHICS), SDL)
+$(error "SDL Joystick requires SDL graphics")
+endif
 PLATFORM_OBJECTS += SDL/joystick-sdl.$(OBJECT_SUFFIX)
 else
 ifeq ($(JOYSTICK), DUMMY)
+CFLAGS += -DSDL_NO_JOYSTICK
 PLATFORM_OBJECTS += dummy/joystick-dummy.$(OBJECT_SUFFIX)
 else
 $(error "Unsupported joystick type")
@@ -58,6 +62,9 @@ endif
 endif
 
 ifeq ($(SOUND), SDL)
+ifneq ($(GRAPHICS), SDL)
+$(error "SDL Sound requires SDL graphics")
+endif
 PLATFORM_OBJECTS += SDL/sound-sdl.$(OBJECT_SUFFIX)
 else
 ifeq ($(SOUND), PORTAUDIO)
@@ -73,9 +80,6 @@ endif
 endif
 
 ifeq ($(GRAPHICS), SDL)
-ifneq ($(JOYSTICK), SDL)
-$(error "SDL graphics requires SDL joystick)
-endif
 LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
 PLATFORM_OBJECTS += SDL/window-sdl.$(OBJECT_SUFFIX)
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)

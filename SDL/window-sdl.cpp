@@ -313,9 +313,11 @@ namespace
 	std::map<unsigned, modifier*> supported_modifiers;
 	std::map<unsigned, keygroup*> scancodekeys;
 	std::map<unsigned, keygroup*> symbolkeys;
+#ifndef SDL_NO_JOYSTICK
 	std::map<unsigned, keygroup*> joyaxis;
 	std::map<unsigned, keygroup*> joybutton;
 	std::map<unsigned, keygroup*> joyhat;
+#endif
 
 	void init_keys()
 	{
@@ -344,6 +346,7 @@ namespace
 
 	void init_joysticks()
 	{
+#ifndef SDL_NO_JOYSTICK
 		int joysticks = SDL_NumJoysticks();
 		if(!joysticks) {
 			window::out() << "No joysticks detected." << std::endl;
@@ -378,6 +381,7 @@ namespace
 				}
 			}
 		}
+#endif
 	}
 
 	struct identify_helper : public keygroup::key_listener
@@ -424,6 +428,7 @@ namespace
 			scancodekeys[scancode]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
 			if(symbolkeys.count(symbol))
 				symbolkeys[symbol]->set_position((e->type == SDL_KEYDOWN) ? 1 : 0, modifiers);
+#ifndef SDL_NO_JOYSTICK
 		} else if(e->type == SDL_JOYAXISMOTION) {
 			unsigned num = static_cast<unsigned>(e->jaxis.which) * 256 +
 				static_cast<unsigned>(e->jaxis.axis);
@@ -448,6 +453,7 @@ namespace
 				static_cast<unsigned>(e->jbutton.button);
 			if(joybutton.count(num))
 				joybutton[num]->set_position((e->type == SDL_JOYBUTTONDOWN), modifiers);
+#endif
 		}
 		if(identify) {
 			if(h.got_it())
@@ -1482,10 +1488,13 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_vscl = vscl;
 }
 
+#ifndef SDL_NO_JOYSTICK
 void poll_joysticks()
 {
 	//We poll it in event loop for SDL.
 }
 
-const char* graphics_plugin_name = "SDL graphics plugin";
 const char* joystick_plugin_name = "SDL joystick plugin";
+#endif
+
+const char* graphics_plugin_name = "SDL graphics plugin";
