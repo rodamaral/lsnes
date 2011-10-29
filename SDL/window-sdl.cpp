@@ -27,6 +27,7 @@
 // Limit the emulator to ~30fps.
 #define MIN_UPDATE_TIME 33333
 
+extern uint64_t in_paint_time;
 
 namespace
 {
@@ -495,7 +496,6 @@ namespace
 	std::list<std::string>::iterator commandhistory_itr;
 	screen* current_screen;
 	SDL_Surface* hwsurf;
-	SDL_Surface* swsurf;
 	std::pair<uint32_t, uint32_t> current_windowsize;
 	bool pause_active;
 	uint64_t last_ui_update;
@@ -613,7 +613,7 @@ namespace
 				for(unsigned j = 0; j < 16; j++) {
 					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
 					for(unsigned i = 0; i < g.first && old_x + i < maxwidth; i++)
-						ptr[old_x + i] = (j >= curstart) ? 0xFFFFFFU : 0;
+						ptr[old_x + i] = (j >= curstart) ? 0xFFFFFFFFU : 0;
 				}
 			} else {
 				//Narrow/Wide glyph.
@@ -624,7 +624,7 @@ namespace
 						bool b = (((dataword >> (31 - (j % (32 / g.first)) * g.first - i)) &
 							1));
 						b ^= (j >= curstart);
-						ptr[old_x + i] = b ? 0xFFFFFFU : 0;
+						ptr[old_x + i] = b ? 0xFFFFFFFFU : 0;
 					}
 				}
 			}
@@ -638,7 +638,7 @@ namespace
 			if(c == hilite_pos && hilite_mode == 2)
 				curstart = 0;
 			for(uint32_t i = pos_x; i < maxwidth; i++)
-				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFFU : 0;
+				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFFFFU : 0;
 		}
 	}
 
@@ -698,7 +698,7 @@ namespace
 		for(uint32_t j = y1 - 6; j < y2 + 6; j++)
 			memset(reinterpret_cast<uint8_t*>(surf->pixels) + j * surf->pitch + 4 * (x1 - 6), 0,
 				4 * (x2 - x1 + 12));
-		uint32_t bordercolor = 0xFF8000;
+		uint32_t bordercolor = (0xFF << surf->format->Rshift) | (0x80 << surf->format->Gshift);
 		draw_rectangle(reinterpret_cast<uint8_t*>(surf->pixels), surf->pitch, x1 - 4, y1 - 4, x2 + 4, y2 + 4,
 			bordercolor, 2);
 
@@ -1019,7 +1019,6 @@ void graphics_init()
 	current_screen = NULL;
 	pause_active = false;
 	hwsurf = NULL;
-	swsurf = NULL;
 	command_overwrite = false;
 	old_screen_h = 0;
 	old_screen_w = 0;
@@ -1159,7 +1158,7 @@ namespace
 	{
 		//Blank the screen and draw borders.
 		memset(swsurf->pixels, 0, windowsize.second * swsurf->pitch);
-		uint32_t bordercolor = 0x00FF00;
+		uint32_t bordercolor = 0xFF << (swsurf->format->Gshift);
 		uint32_t msgbox_min_x = 2;
 		uint32_t msgbox_min_y = 2;
 		uint32_t msgbox_max_x = windowsize.first - 2;
@@ -1269,9 +1268,11 @@ namespace
 
 void window::notify_screen_update(bool full) throw()
 {
+	uint64_t tnow = get_utime();
 	bool resize_screen = false;
-	if(!is_time_for_screen_update(full))
+	if(!is_time_for_screen_update(full)) {
 		return;
+	}
 	auto windowsize = compute_window_size(current_screen ? current_screen->width : 0, current_screen ? 
 		current_screen->height : 0);
 	auto screensize = compute_screen_size(current_screen ? current_screen->width : 0, current_screen ? 
@@ -1281,42 +1282,38 @@ void window::notify_screen_update(bool full) throw()
 	
 	if(!hwsurf || windowsize != current_windowsize) {
 		//Create/Resize the window.
-		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 0, SDL_SWSURFACE |
-			SDL_ANYFORMAT);
-		SDL_Surface* swsurf2 = SDL_CreateRGBSurface(SDL_SWSURFACE, windowsize.first, windowsize.second, 32,
-			0xFF0000, 0x00FF00, 0x0000FF, 0);
-		if(!hwsurf2 || !swsurf2) {
+		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 32, SDL_SWSURFACE);
+		if(!hwsurf2) {
 			//We are in too fucked up state to even print error as message.
 			std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;
 			exit(1);
 		}
-		if(swsurf)
-			SDL_FreeSurface(swsurf);
 		hwsurf = hwsurf2;
-		swsurf = swsurf2;
 		full = true;
 		current_windowsize = windowsize;
 	}
-	
-	SDL_LockSurface(swsurf);
+	if(current_screen)
+		current_screen->set_palette(hwsurf->format->Rshift, hwsurf->format->Gshift, hwsurf->format->Bshift);
+	SDL_LockSurface(hwsurf);
 	if(full)
-		redraw_borders(swsurf, screensize, windowsize);
+		redraw_borders(hwsurf, screensize, windowsize);
 	if(!console_mode) {
-		draw_main_screen(swsurf, screensize);
-		draw_status_area(swsurf, screensize);
+		draw_main_screen(hwsurf, screensize);
+		draw_status_area(hwsurf, screensize);
 	}
-	draw_messages(swsurf, screensize, windowsize);
-	draw_command(swsurf, windowsize);
+	draw_messages(hwsurf, screensize, windowsize);
+	draw_command(hwsurf, windowsize);
 
 	//Draw modal dialog.
 	if(state == WINSTATE_MODAL)
 		try {
-			draw_modal_dialog(swsurf, modmsg, modconfirm);
+			draw_modal_dialog(hwsurf, modmsg, modconfirm);
 		} catch(...) {
 		}
-	SDL_UnlockSurface(swsurf);
-	SDL_BlitSurface(swsurf, NULL, hwsurf, NULL);
+	SDL_UnlockSurface(hwsurf);
+	//SDL_BlitSurface(swsurf, NULL, hwsurf, NULL);
 	SDL_UpdateRect(hwsurf, 0, 0, 0, 0);
+	in_paint_time += (get_utime() - tnow);
 }
 
 void poll_inputs_internal() throw(std::bad_alloc)
@@ -1415,7 +1412,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			console_mode = !console_mode;
 			if(console_mode)
-				maxmessages = swsurf ? (swsurf->h - 38) / 16 : 36;
+				maxmessages = hwsurf ? (hwsurf->h - 38) / 16 : 36;
 			else
 				maxmessages = MAXMESSAGES;
 			if(messagebuffer_next_seq < maxmessages)

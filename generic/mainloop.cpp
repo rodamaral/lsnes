@@ -36,6 +36,9 @@
 
 void update_movie_state();
 
+uint64_t in_paint_time;
+uint64_t frames = 0;
+
 namespace
 {
 	enum advance_mode
@@ -166,6 +169,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 
 	}
 	window::notify_screen_update();
+	std::cerr << "Average time in redraw: " << (in_paint_time / (++frames)) << std::endl;
 	window::poll_inputs();
 	if(!subframe && pending_reset_cycles >= 0)
 		set_curcontrols_reset(pending_reset_cycles);
@@ -357,7 +361,6 @@ class my_interface : public SNES::Interface
 		last_hires = hires;
 		last_interlace = interlace;
 		init_palette();
-		static uint32_t _data[512 * 512];
 		if(stepping_into_save)
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
@@ -372,9 +375,7 @@ class my_interface : public SNES::Interface
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
-		for(size_t i = 0; i < 512 * 512; i++)
-			_data[i] = lpalette[data[i] & 0x7FFFF];
-		lcscreen ls(_data, hires, interlace, overscan, region);
+		lcscreen ls(data, hires, interlace, overscan, region);
 		framebuffer = ls;
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();

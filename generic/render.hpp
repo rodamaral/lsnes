@@ -175,6 +175,23 @@ struct screen
 	uint32_t* rowptr(uint32_t row) throw();
 
 /**
+ * Set palette. Also converts the image data.
+ *
+ * parameter r Shift for red component
+ * parameter g Shift for green component
+ * parameter b Shift for blue component
+ */
+	void set_palette(uint32_t r, uint32_t g, uint32_t b);
+
+/**
+ * Active palette
+ */
+	uint32_t* palette;
+	uint32_t palette_r;
+	uint32_t palette_g;
+	uint32_t palette_b;
+
+/**
  * Backing memory for this screen.
  */
 	uint32_t* memory;

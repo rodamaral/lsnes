@@ -70,7 +70,7 @@ namespace
 						uint32_t basey = rlist->y + rlist->scale * j;
 						for(uint32_t j2 = 0; j2 < rlist->scale; j2++)
 							for(uint32_t i2 = 0; i2 < rlist->scale; i2++)
-								target[(basey + j2) * 512 + (basex + i2)] = 0xFFFFFF;
+								target[(basey + j2) * 512 + (basex + i2)] = 0x7FFFF;
 					}
 				}
 			}
@@ -81,14 +81,14 @@ namespace
 	void draw_nosignal(uint32_t* target)
 	{
 		for(unsigned i = 0; i < 512 * 448; i++)
-			target[i] = 0xFF;
+			target[i] = 0x7FC00;
 		draw_special_screen(target, rl_nosignal);
 	}
 
 	void draw_corrupt(uint32_t* target)
 	{
 		for(unsigned i = 0; i < 512 * 448; i++)
-			target[i] = 0xFF;
+			target[i] = 0x7FC00;
 		draw_special_screen(target, rl_corrupt);
 	}
 

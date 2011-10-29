@@ -337,9 +337,13 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 	for(uint32_t j = 0; j < height; j++)
 		for(uint32_t i = 0; i < width; i++) {
 			uint32_t word = memory[pitch * j + i];
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 0] = word >> 16;
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 1] = word >> 8;
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 2] = word;
+			uint32_t l = (word >> 15) & 0xF;
+			uint32_t r = l * ((word >> 0) & 0x1F);
+			uint32_t g = l * ((word >> 5) & 0x1F);
+			uint32_t b = l * ((word >> 10) & 0x1F);
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 0] = r * 255 / 465;
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 1] = g * 255 / 465;
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 2] = b * 255 / 465;
 		}
 	try {
 		save_png_data(file, buffer, width, height);
@@ -364,7 +368,7 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 		uint32_t* ptr = rowptr(line) + originx;
 		const uint32_t* sbase = scr.memory + y * scr.pitch;
 		for(uint32_t x = 0; x < copyable_width; x++) {
-			uint32_t c = sbase[x];
+			uint32_t c = palette[sbase[x] & 0x7FFFF];
 			for(uint32_t i = 0; i < hscale; i++)
 				*(ptr++) = c;
 		}
@@ -431,6 +435,8 @@ screen::screen() throw()
 	width = height = originx = originy = pitch = 0;
 	user_memory = false;
 	flipped = false;
+	palette = NULL;
+	set_palette(16, 8, 0);
 }
 
 screen::~screen() throw()
@@ -459,4 +465,34 @@ void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int
 		minc = _minc;
 		maxc = _maxc;
 	}
+}
+
+void screen::set_palette(uint32_t r, uint32_t g, uint32_t b)
+{
+	if(!palette)
+		palette = new uint32_t[0x80000];
+	else if(r == palette_r && g == palette_g && b == palette_b)
+		return;
+	for(size_t i = 0; i < static_cast<size_t>(width) * height; i++) {
+		uint32_t word = memory[i];
+		uint32_t R = (word >> palette_r) & 0xFF;
+		uint32_t G = (word >> palette_g) & 0xFF;
+		uint32_t B = (word >> palette_b) & 0xFF;
+		memory[i] = (R << r) | (G << g) | (B << b);
+	}
+	for(unsigned i = 0; i < 0x80000; i++) {
+		unsigned l = (i >> 15) & 0xF;
+		unsigned R = (i >> 0) & 0x1F;
+		unsigned G = (i >> 5) & 0x1F;
+		unsigned B = (i >> 10) & 0x1F;
+		double _l = static_cast<double>(l);
+		double m = 17.0 / 31.0;
+		R = floor(m * R * _l + 0.5);
+		G = floor(m * G * _l + 0.5);
+		B = floor(m * B * _l + 0.5);
+		palette[i] = (R << r) | (G << g) | (B << b);
+	}
+	palette_r = r;
+	palette_g = g;
+	palette_b = b;
 }
