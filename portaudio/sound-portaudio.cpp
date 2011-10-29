@@ -68,6 +68,8 @@ namespace
 				if(audiobuf_get == audiobuf_size)
 					audiobuf_get = 0;
 			}
+			if(!stereo)
+				l = l / 2 + r / 2;
 			*(_output++) = l - 32768;
 			if(stereo)
 				*(_output++) = r - 32768;
