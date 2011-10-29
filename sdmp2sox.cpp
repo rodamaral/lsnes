@@ -14,6 +14,7 @@
 #define FLAG_SMPTE240M 32
 #define FLAG_CS_MASK 48
 #define FLAG_8BIT 64
+#define FLAG_FAKENLARGE 128
 
 //Heh, this happens to be exact hardware capacity of 1.44MB 90mm floppy. :-)
 unsigned char yuv_buffer[1474560];
@@ -278,6 +279,8 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		c |= 8;
 	if(flags & FLAG_8BIT)
 		c |= 16;
+	if(flags & FLAG_FAKENLARGE)
+		c |= 35;
 	switch(c) {
 	case 0: {		//256 x 224/240 -> 256 x 224/240 16 bit.
 		convert_line<convert_11<store_11<store16<14>>>, 256>::convert(buffer, psep, src);
@@ -291,7 +294,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store16<14>, 256>>, 256>::convert(buffer, psep, src);
 		break;
 	}
-	case 3: {		//256 x 224/240 -> 512 x 448/480 16 bit.
+	case 3: case 35: {		//256 x 224/240 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_22<store16<14>, 256>>, 256>::convert(buffer, psep, src);
 		break;
 	}
@@ -311,6 +314,10 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store16<14>, 512>>, 512>::convert(buffer, psep, src);
 		break;
 	}
+	case 39: {		//512 x 224/240 -> 512 x 448/480 16 bit. FE
+		convert_line<convert_12<store_22<store16<15>, 512>>, 256>::convert(buffer, psep, src);
+		break;
+	}
 	case 8: {		//256 x 448x480 -> 256 x 224/240 16 bit.
 		convert_line<convert_21<store_11<store16<15>>>, 256>::convert(buffer, psep, src);
 		break;
@@ -324,7 +331,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_11<store16<14>>>, 256>::convert(buffer + 512, psep, src + 2048);
 		break;
 	}
-	case 11: {		//256 x 448x480 -> 512 x 448/480 16 bit.
+	case 11: case 43: {		//256 x 448x480 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_12<store16<14>>>, 256>::convert(buffer, psep, src);
 		convert_line<convert_11<store_12<store16<14>>>, 256>::convert(buffer + 1024, psep, src + 2048);
 		break;
@@ -342,7 +349,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store16<14>, 256>>, 256>::convert(buffer + 512, psep, src + 2048);
 		break;
 	}
-	case 15: {		//512 x 448x480 -> 512 x 448/480 16 bit.
+	case 15: case 47: {		//512 x 448x480 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_11<store16<14>>>, 512>::convert(buffer, psep, src);
 		convert_line<convert_11<store_11<store16<14>>>, 512>::convert(buffer + 1024, psep, src + 2048);
 		break;
@@ -359,7 +366,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store8<14>, 256>>, 256>::convert(buffer, psep, src);
 		break;
 	}
-	case 19: {		//256 x 224/240 -> 512 x 448/480 16 bit.
+	case 19: case 51: {		//256 x 224/240 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_22<store8<14>, 256>>, 256>::convert(buffer, psep, src);
 		break;
 	}
@@ -379,6 +386,10 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store8<14>, 512>>, 512>::convert(buffer, psep, src);
 		break;
 	}
+	case 55: {		//512 x 224/240 -> 512 x 448/480 16 bit. FE
+		convert_line<convert_12<store_22<store8<14>, 256>>, 256>::convert(buffer, psep, src);
+		break;
+	}
 	case 24: {		//256 x 448x480 -> 256 x 224/240 16 bit.
 		convert_line<convert_21<store_11<store8<15>>>, 256>::convert(buffer, psep, src);
 		break;
@@ -392,7 +403,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_11<store8<14>>>, 256>::convert(buffer + 256, psep, src + 2048);
 		break;
 	}
-	case 27: {		//256 x 448x480 -> 512 x 448/480 16 bit.
+	case 27: case 59: {		//256 x 448x480 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_12<store8<14>>>, 256>::convert(buffer, psep, src);
 		convert_line<convert_11<store_12<store8<14>>>, 256>::convert(buffer + 512, psep, src + 2048);
 		break;
@@ -410,7 +421,7 @@ void render_yuv(unsigned char* buffer, const unsigned char* src, size_t psep, ui
 		convert_line<convert_11<store_21<store8<14>, 256>>, 256>::convert(buffer + 256, psep, src + 2048);
 		break;
 	}
-	case 31: {		//512 x 448x480 -> 512 x 448/480 16 bit.
+	case 31: case 63: {		//512 x 448x480 -> 512 x 448/480 16 bit.
 		convert_line<convert_11<store_11<store8<14>>>, 512>::convert(buffer, psep, src);
 		convert_line<convert_11<store_11<store8<14>>>, 512>::convert(buffer + 512, psep, src + 2048);
 		break;
@@ -614,6 +625,7 @@ void syntax()
 	std::cerr << "Syntax: sdump2sox [<options>] <input-file> <yuv-output-file> <sox-output-file>" << std::endl;
 	std::cerr << "-W\tDump 512-wide instead of 256-wide." << std::endl;
 	std::cerr << "-H\tDump 448/480-high instead of 224/240-high." << std::endl;
+	std::cerr << "-h\tDump 512x448/480, doing blending for 512x224/240." << std::endl;
 	std::cerr << "-F\tDump at interlaced framerate instead of non-interlaced." << std::endl;
 	std::cerr << "-f\tDump using full range instead of TV range." << std::endl;
 	std::cerr << "-7\tDump using ITU.709 instead of ITU.601." << std::endl;
@@ -646,6 +658,9 @@ int main(int argc, char** argv)
 					break;
 				case 'f':
 					flags |= FLAG_FULLRANGE;
+					break;
+				case 'h':
+					flags |= (FLAG_FAKENLARGE | FLAG_WIDTH | FLAG_HEIGHT);
 					break;
 				case '7':
 					if(flags & FLAG_CS_MASK) {
