@@ -3687,6 +3687,14 @@ NO_SDL_SEARCH=1
 Disable searching for SDL.
 \end_layout
 
+\begin_layout Subsubsection
+NO_LIBDL=1
+\end_layout
+
+\begin_layout Standard
+Don't link against libdl.
+\end_layout
+
 \begin_layout Section
 Quick'n'dirty encode guide
 \end_layout

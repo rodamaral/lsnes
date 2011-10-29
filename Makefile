@@ -7,7 +7,10 @@ HOSTCC = $(CC)
 LUAPACKAGE=lua5.1
 
 OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avidump/*.cpp)) fonts/font.$(OBJECT_SUFFIX)
-GENERIC_LIBS = -ldl -lboost_iostreams -lboost_filesystem -lboost_system -lz
+ifndef NO_LIBDL
+GENERIC_LIBS += -ldl
+endif
+GENERIC_LIBS += -lboost_iostreams -lboost_filesystem -lboost_system -lz
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)
 LDFLAGS = $(GENERIC_LIBS) $(USER_LDFLAGS)
@@ -96,7 +99,7 @@ SDL/%.$(OBJECT_SUFFIX): SDL/%.cpp
 lsnes.$(OBJECT_SUFFIX): lsnes.cpp
 	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
 lsnes.$(EXECUTABLE_SUFFIX): lsnes.$(OBJECT_SUFFIX) $(OBJECTS) $(PLATFORM_OBJECTS)
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS) $(PLATFORM_LDFLAGS)
+	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(PLATFORM_LDFLAGS)
 else
 $(error "Unsupported graphics type")
 endif
