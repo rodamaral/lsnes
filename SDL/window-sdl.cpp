@@ -27,8 +27,6 @@
 // Limit the emulator to ~30fps.
 #define MIN_UPDATE_TIME 33333
 
-extern uint64_t in_paint_time;
-
 namespace
 {
 	bool wait_canceled;
@@ -1268,7 +1266,6 @@ namespace
 
 void window::notify_screen_update(bool full) throw()
 {
-	uint64_t tnow = get_utime();
 	bool resize_screen = false;
 	if(!is_time_for_screen_update(full)) {
 		return;
@@ -1313,7 +1310,6 @@ void window::notify_screen_update(bool full) throw()
 	SDL_UnlockSurface(hwsurf);
 	//SDL_BlitSurface(swsurf, NULL, hwsurf, NULL);
 	SDL_UpdateRect(hwsurf, 0, 0, 0, 0);
-	in_paint_time += (get_utime() - tnow);
 }
 
 void poll_inputs_internal() throw(std::bad_alloc)

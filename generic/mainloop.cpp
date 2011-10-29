@@ -36,9 +36,6 @@
 
 void update_movie_state();
 
-uint64_t in_paint_time;
-uint64_t frames = 0;
-
 namespace
 {
 	enum advance_mode
@@ -169,7 +166,6 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 
 	}
 	window::notify_screen_update();
-	std::cerr << "Average time in redraw: " << (in_paint_time / (++frames)) << std::endl;
 	window::poll_inputs();
 	if(!subframe && pending_reset_cycles >= 0)
 		set_curcontrols_reset(pending_reset_cycles);
