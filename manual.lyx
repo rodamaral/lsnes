@@ -1465,27 +1465,47 @@ Remove a watch.
 \end_layout
 
 \begin_layout Subsection
+Sound
+\end_layout
+
+\begin_layout Subsubsection
+enable-sound <on/off>
+\end_layout
+
+\begin_layout Standard
+Enable/Disable sound.
+\end_layout
+
+\begin_layout Subsubsection
+set-sound-device <device>
+\end_layout
+
+\begin_layout Standard
+Set sound device to <device>
+\end_layout
+
+\begin_layout Subsubsection
+show-sound-status
+\end_layout
+
+\begin_layout Standard
+Show status of sound system.
+\end_layout
+
+\begin_layout Subsubsection
+show-sound-devices
+\end_layout
+
+\begin_layout Standard
+Show all available devices.
+\end_layout
+
+\begin_layout Subsection
 SDL Platform commands
 \end_layout
 
 \begin_layout Standard
 The following are valid on SDL platform.
-\end_layout
-
-\begin_layout Subsubsection
-enable-sound on
-\end_layout
-
-\begin_layout Standard
-Enable sounds in GUI (has no effect on video dumping).
-\end_layout
-
-\begin_layout Subsubsection
-enable-sound off
-\end_layout
-
-\begin_layout Standard
-Disable sounds in GUI (has no effect on video dumping).
 \end_layout
 
 \begin_layout Subsubsection

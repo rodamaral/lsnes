@@ -52,18 +52,6 @@ namespace
 		}
 	}
 
-	function_ptr_command<const std::string&> enable_sound("enable-sound", "Enable/Disable sound",
-		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			std::string s = args;
-			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled")
-				window::sound_enable(true);
-			else if(s == "off" || s == "false" || s == "0" || s == "disable" || s == "disabled")
-				window::sound_enable(false);
-			else
-				throw std::runtime_error("Bad sound setting");
-		});
-
 	void audiocb(void* dummy, Uint8* stream, int len)
 	{
 		static uint16_t lprev = 32768;
@@ -178,6 +166,29 @@ void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
 {
 	uint32_t g = gcd(rate_n, rate_d);
 	calculate_sampledup(rate_n / g, rate_d / g);
+}
+
+bool window::sound_initialized()
+{
+	return (audio_playback_freq != 0);
+}
+
+void window::set_sound_device(const std::string& dev)
+{
+	if(dev != "default")
+		throw std::runtime_error("Bad sound device '" + dev + "'");
+}
+
+std::string window::get_current_sound_device()
+{
+	return "default";
+}
+
+std::map<std::string, std::string> window::get_sound_devices()
+{
+	std::map<std::string, std::string> ret;
+	ret["default"] = "default sound output";
+	return ret;
 }
 
 const char* sound_plugin_name = "SDL sound plugin";

@@ -184,6 +184,26 @@ public:
  * parameter rate_d: Denomerator of sampling rate.
  */
 	static void set_sound_rate(uint32_t rate_n, uint32_t rate_d);
+
+/**
+ * Has the sound system been successfully initialized?
+ */
+	static bool sound_initialized();
+
+/**
+ * Set sound device.
+ */
+	static void set_sound_device(const std::string& dev);
+
+/**
+ * Get current sound device.
+ */
+	static std::string get_current_sound_device();
+
+/**
+ * Get available sound devices.
+ */
+	static std::map<std::string, std::string> get_sound_devices();
 private:
 	window(const window&);
 	window& operator==(const window&);
