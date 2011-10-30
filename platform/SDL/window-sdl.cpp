@@ -411,11 +411,8 @@ namespace
 		}
 	} keyeater;
 
-	void process_input_event(SDL_Event* e, bool identify)
+	void process_input_event(SDL_Event* e)
 	{
-		identify_helper h;
-		if(identify)
-			keygroup::set_exclusive_key_listener(&h);
 		modifier_set modifiers;
 		if(e->type == SDL_KEYDOWN || e->type == SDL_KEYUP) {
 			SDL_keysym sym = e->key.keysym;
@@ -453,11 +450,6 @@ namespace
 			if(joybutton.count(num))
 				joybutton[num]->set_position((e->type == SDL_JOYBUTTONDOWN), modifiers);
 #endif
-		}
-		if(identify) {
-			if(h.got_it())
-				window::modal_message(h.keys(), false);
-			keygroup::set_exclusive_key_listener(NULL);
 		}
 	}
 }
@@ -917,12 +909,12 @@ namespace
 				poll_inputs_internal();
 				return;
 			}
-			process_input_event(&e, false);
+			process_input_event(&e);
 			break;
 		case WINSTATE_MODAL:
 			//Send the key and eat it (prevent input from getting confused).
 			keygroup::set_exclusive_key_listener(&keyeater);
-			process_input_event(&e, false),
+			process_input_event(&e),
 			keygroup::set_exclusive_key_listener(NULL);
 			if(e.type == SDL_KEYUP && key == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
@@ -943,7 +935,7 @@ namespace
 		case WINSTATE_COMMAND:
 			//Send the key and eat it (prevent input from getting confused).
 			keygroup::set_exclusive_key_listener(&keyeater);
-			process_input_event(&e, false),
+			process_input_event(&e),
 			keygroup::set_exclusive_key_listener(NULL);
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
@@ -985,7 +977,7 @@ namespace
 			}
 			break;
 		case WINSTATE_IDENTIFY:
-			process_input_event(&e, true);
+			process_input_event(&e);
 			break;
 		};
 	}
@@ -1315,7 +1307,11 @@ void window::notify_screen_update(bool full) throw()
 void poll_inputs_internal() throw(std::bad_alloc)
 {
 	SDL_Event e;
+	identify_helper h;
+	if(state == WINSTATE_IDENTIFY)
+		keygroup::set_exclusive_key_listener(&h);
 	while(state != WINSTATE_NORMAL) {
+			
 		poll_joysticks();
 		if(SDL_PollEvent(&e))
 			do_event(e);
@@ -1323,6 +1319,10 @@ void poll_inputs_internal() throw(std::bad_alloc)
 		if(delayed_close_flag) {
 			state = WINSTATE_NORMAL;
 			return;
+		}
+		if(h.got_it()) {
+			window::modal_message(h.keys(), false);
+			keygroup::set_exclusive_key_listener(NULL);
 		}
 	}
 }
