@@ -151,14 +151,18 @@ template<class store>
 void render_yuv_256_480(unsigned char* buffer, const unsigned char* src, size_t psep, bool hires, bool interlaced)
 {
 	if(hires)
-		if(interlaced)
+		if(interlaced) {
 			loop<loadstore<store, 1, 0, 0, 0, 0, 0>, 256, 2, 1>::f(buffer, src, psep);
-		else
+			loop<loadstore<store, 1, 0, 0, 0, 0, 0>, 256, 2, 1>::f(buffer + 256 * store::esize,
+				src + 2048, psep);
+		} else
 			loop<loadstore<store, 1, 0, 0, 256, 0, 0>, 256, 2, 1>::f(buffer, src, psep);
 	else
-		if(interlaced)
+		if(interlaced) {
 			loop<loadstore<store, 0, 0, 0, 0, 0, 0>, 256, 1, 1>::f(buffer, src, psep);
-		else
+			loop<loadstore<store, 0, 0, 0, 0, 0, 0>, 256, 1, 1>::f(buffer + 256 * store::esize,
+				src + 2048, psep);
+		} else
 			loop<loadstore<store, 0, 0, 0, 256, 0, 0>, 256, 1, 1>::f(buffer, src, psep);
 }
 
@@ -167,14 +171,18 @@ template<class store>
 void render_yuv_512_480(unsigned char* buffer, const unsigned char* src, size_t psep, bool hires, bool interlaced)
 {
 	if(hires)
-		if(interlaced)
+		if(interlaced) {
 			loop<loadstore<store, 0, 0, 0, 0, 0, 0>, 512, 1, 1>::f(buffer, src, psep);
-		else
+			loop<loadstore<store, 0, 0, 0, 0, 0, 0>, 512, 1, 1>::f(buffer + 512 * store::esize,
+				src + 2048, psep);
+		} else
 			loop<loadstore<store, 0, 0, 0, 512, 0, 0>, 512, 1, 1>::f(buffer, src, psep);
 	else
-		if(interlaced)
+		if(interlaced) {
 			loop<loadstore<store, 0, 0, 0, 1, 0, 0>, 256, 1, 2>::f(buffer, src, psep);
-		else
+			loop<loadstore<store, 0, 0, 0, 1, 0, 0>, 256, 1, 2>::f(buffer + 512 * store::esize,
+				src + 2048, psep);
+		} else
 			loop<loadstore<store, 0, 0, 0, 1, 512, 513>, 256, 1, 2>::f(buffer, src, psep);
 }
 
