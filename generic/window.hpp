@@ -50,6 +50,8 @@ void graphics_init();
 void sound_init();
 void sound_quit();
 void graphics_quit();
+void joystick_init();
+void joystick_quit();
 
 /**
  * This is a handle to graphics system. Note that creating multiple contexts produces undefined results.

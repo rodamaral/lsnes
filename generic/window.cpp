@@ -122,10 +122,12 @@ void window::init()
 {
 	graphics_init();
 	sound_init();
+	joystick_init();
 }
 
 void window::quit()
 {
+	joystick_quit();
 	sound_quit();
 	graphics_quit();
 }

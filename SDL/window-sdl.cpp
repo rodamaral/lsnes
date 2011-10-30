@@ -1481,13 +1481,5 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_vscl = vscl;
 }
 
-#ifndef SDL_NO_JOYSTICK
-void poll_joysticks()
-{
-	//We poll it in event loop for SDL.
-}
-
-const char* joystick_plugin_name = "SDL joystick plugin";
-#endif
 
 const char* graphics_plugin_name = "SDL graphics plugin";
