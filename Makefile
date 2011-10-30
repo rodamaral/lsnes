@@ -56,11 +56,11 @@ ifeq ($(JOYSTICK), SDL)
 ifneq ($(GRAPHICS), SDL)
 $(error "SDL Joystick requires SDL graphics")
 endif
-PLATFORM_OBJECTS += SDL/joystick-sdl.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/SDL/joystick-sdl.$(OBJECT_SUFFIX)
 else
 ifeq ($(JOYSTICK), DUMMY)
 CFLAGS += -DSDL_NO_JOYSTICK
-PLATFORM_OBJECTS += dummy/joystick-dummy.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/dummy/joystick-dummy.$(OBJECT_SUFFIX)
 else
 $(error "Unsupported joystick type")
 endif
@@ -70,14 +70,14 @@ ifeq ($(SOUND), SDL)
 ifneq ($(GRAPHICS), SDL)
 $(error "SDL Sound requires SDL graphics")
 endif
-PLATFORM_OBJECTS += SDL/sound-sdl.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/SDL/sound-sdl.$(OBJECT_SUFFIX)
 else
 ifeq ($(SOUND), PORTAUDIO)
-PLATFORM_OBJECTS += portaudio/sound-portaudio.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/portaudio/sound-portaudio.$(OBJECT_SUFFIX)
 PLATFORM_LDFLAGS += -lportaudio
 else
 ifeq ($(SOUND), DUMMY)
-PLATFORM_OBJECTS += dummy/sound-dummy.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/dummy/sound-dummy.$(OBJECT_SUFFIX)
 else
 $(error "Unsupported sound type")
 endif
@@ -86,7 +86,7 @@ endif
 
 ifeq ($(GRAPHICS), SDL)
 LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
-PLATFORM_OBJECTS += SDL/window-sdl.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/SDL/main-sdl.$(OBJECT_SUFFIX) platform/SDL/window-sdl.$(OBJECT_SUFFIX)
 ifndef NO_SDL_SEARCH
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell sdl-config --libs)
@@ -94,25 +94,19 @@ endif
 ifdef TEST_WIN32
 PLATFORM_LDFLAGS += -lSDLmain
 endif
-SDL/%.$(OBJECT_SUFFIX): SDL/%.cpp
+platform/SDL/%.$(OBJECT_SUFFIX): platform/SDL/%.cpp
 	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
-lsnes.$(OBJECT_SUFFIX): lsnes.cpp
-	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
-lsnes.$(EXECUTABLE_SUFFIX): lsnes.$(OBJECT_SUFFIX) $(OBJECTS) $(PLATFORM_OBJECTS)
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(PLATFORM_LDFLAGS)
 else
 $(error "Unsupported graphics type")
 endif
 
-
-
-
-
 .PRECIOUS: %.$(EXECUTABLE_SUFFIX) %.$(OBJECT_SUFFIX)
 
 
+lsnes.$(EXECUTABLE_SUFFIX): $(OBJECTS) $(PLATFORM_OBJECTS)
+	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(PLATFORM_LDFLAGS)
 
-%.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard dummy/*.cpp))
+%.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard platform/dummy/*.cpp))
 	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -128,4 +122,4 @@ fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
 	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) SDL/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) lua/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp
+	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) platform/*/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) lua/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp
