@@ -62,7 +62,12 @@ ifeq ($(JOYSTICK), DUMMY)
 CFLAGS += -DSDL_NO_JOYSTICK
 PLATFORM_OBJECTS += platform/dummy/joystick-dummy.$(OBJECT_SUFFIX)
 else
+ifeq ($(JOYSTICK), EVDEV)
+CFLAGS += -DSDL_NO_JOYSTICK
+PLATFORM_OBJECTS += platform/evdev/joystick-evdev.$(OBJECT_SUFFIX)
+else
 $(error "Unsupported joystick type")
+endif
 endif
 endif
 
