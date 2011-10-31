@@ -387,7 +387,7 @@ namespace
 		});
 }
 
-void poll_joysticks()
+void window::poll_joysticks()
 {
 	for(int fd : joysticks) {
 		while(read_one_input_event(fd));

@@ -2,11 +2,6 @@
 #include <cstdlib>
 #include <iostream>
 
-namespace
-{
-	std::map<std::string, std::string> status;
-}
-
 void graphics_init() {}
 void graphics_quit() {}
 void window::poll_inputs() throw(std::bad_alloc) {}
@@ -35,11 +30,6 @@ void window::message(const std::string& msg) throw(std::bad_alloc)
 		std::cout << msg;
 	else
 		std::cout << msg << std::endl;
-}
-
-std::map<std::string, std::string>& window::get_emustatus() throw()
-{
-	return status;
 }
 
 uint64_t get_ticks_msec() throw()

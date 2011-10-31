@@ -1,6 +1,6 @@
 //Empty
 
-void poll_joysticks()
+void window::poll_joysticks()
 {
 	//We poll it in event loop for SDL.
 }

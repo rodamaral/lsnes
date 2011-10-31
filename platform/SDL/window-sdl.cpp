@@ -475,7 +475,6 @@ namespace
 	unsigned old_screen_w;
 	unsigned old_screen_h;
 	unsigned state;
-	std::map<std::string, std::string> emustatus;
 	std::map<uint64_t, std::string> messagebuffer;
 	uint64_t messagebuffer_next_seq;
 	uint64_t messagebuffer_first_seq;
@@ -1135,6 +1134,7 @@ namespace
 
 	void show_fps()
 	{
+		auto& emustatus = window::get_emustatus();
 		try {
 			std::ostringstream y;
 			y << get_framerate();
@@ -1201,6 +1201,7 @@ namespace
 	{
 		uint32_t status_x = screensize.first + 16;
 		uint32_t status_y = 6;
+		auto& emustatus = window::get_emustatus();
 		for(auto i : emustatus) {
 			std::string msg = i.first + " " + i.second;
 			draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, msg, status_x, status_y,
@@ -1311,8 +1312,7 @@ void poll_inputs_internal() throw(std::bad_alloc)
 	if(state == WINSTATE_IDENTIFY)
 		keygroup::set_exclusive_key_listener(&h);
 	while(state != WINSTATE_NORMAL) {
-			
-		poll_joysticks();
+		window::poll_joysticks();
 		if(SDL_PollEvent(&e))
 			do_event(e);
 		::wait_usec(10000);
@@ -1342,11 +1342,6 @@ void window::poll_inputs() throw(std::bad_alloc)
 		else
 			::wait_usec(10000);
 	}
-}
-
-std::map<std::string, std::string>& window::get_emustatus() throw()
-{
-	return emustatus;
 }
 
 void window::paused(bool enable) throw()

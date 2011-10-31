@@ -1,6 +1,6 @@
 #include "window.hpp"
 
-void poll_joysticks()
+void window::poll_joysticks()
 {
 }
 

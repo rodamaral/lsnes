@@ -76,6 +76,8 @@ namespace
 			}
 		});
 
+	std::map<std::string, std::string> emustatus;
+
 	class window_output
 	{
 	public:
@@ -116,6 +118,11 @@ namespace
 	};
 
 	window_callback* wcb = NULL;
+}
+
+std::map<std::string, std::string>& window::get_emustatus() throw()
+{
+	return emustatus;
 }
 
 void window::init()
