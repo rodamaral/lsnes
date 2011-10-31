@@ -4424,5 +4424,66 @@ Be prepared for core frequency changes.
 Pass colors in one chunk from Lua.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta18
+\end_layout
+
+\begin_layout Itemize
+New lua functions gui.line(), gui.status() and gui.circle(), memory.vma_count(),
+ memory.read_vma() and memory.find_vma().
+\end_layout
+
+\begin_layout Itemize
+Numerious documentation fixups
+\end_layout
+
+\begin_layout Itemize
+RTC time format changed
+\end_layout
+
+\begin_layout Itemize
+Reformat flags display
+\end_layout
+
+\begin_layout Itemize
+Allow lua package name to be overridden
+\end_layout
+
+\begin_layout Itemize
+SDUMP (high-quality dumping).
+\end_layout
+
+\begin_layout Itemize
+Split platform support to plugins.
+\end_layout
+
+\begin_layout Itemize
+Make all sound plugins support basic sound commands
+\end_layout
+
+\begin_layout Itemize
+Support portaudio for sound.
+\end_layout
+
+\begin_layout Itemize
+Allow disable Lua/SDL searching.
+\end_layout
+
+\begin_layout Itemize
+Upconvert colors when copying lcscreen to screen.
+\end_layout
+
+\begin_layout Itemize
+Reorganize source tree.
+\end_layout
+
+\begin_layout Itemize
+Evdev joystick support.
+\end_layout
+
+\begin_layout Itemize
+Refactor more code into generic window code.
+\end_layout
+
 \end_body
 \end_document

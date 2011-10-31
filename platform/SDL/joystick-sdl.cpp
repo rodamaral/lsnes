@@ -1,4 +1,4 @@
-//Empty
+#include "window.hpp"
 
 void window::poll_joysticks()
 {
