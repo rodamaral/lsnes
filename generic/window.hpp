@@ -102,6 +102,19 @@ public:
 	static std::map<std::string, std::string>& get_emustatus() throw();
 
 /**
+ * Set window main screen compensation parameters. This is used for mouse click reporting.
+ *
+ * Implemented by the generic window code.
+ *
+ * parameter xoffset: X coordinate of origin.
+ * parameter yoffset: Y coordinate of origin.
+ * parameter hscl: Horizontal scaling factor.
+ * parameter vscl: Vertical scaling factor.
+ */
+	static void set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
+
+/******************************** GRAPHICS PLUGIN **********************************/
+/**
  * Adds a messages to mesage queue to be shown.
  *
  * Needs to be implemented by the graphics plugin.
@@ -133,7 +146,7 @@ public:
 
 /**
  * Processes inputs. If in non-modal mode (normal mode without pause), this returns quickly. Otherwise it waits
- * for modal mode to exit. Also needs to call poll_joysticks().
+ * for modal mode to exit. Also needs to call window::poll_joysticks().
  *
  * Needs to be implemented by the graphics plugin.
  * 
@@ -185,18 +198,7 @@ public:
  */
 	static void cancel_wait() throw();
 
-/**
- * Set window main screen compensation parameters. This is used for mouse click reporting.
- *
- * Needs to be implemented by the graphics plugin.
- *
- * parameter xoffset: X coordinate of origin.
- * parameter yoffset: Y coordinate of origin.
- * parameter hscl: Horizontal scaling factor.
- * parameter vscl: Vertical scaling factor.
- */
-	static void set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
-
+/******************************** SOUND PLUGIN **********************************/
 /**
  * Enable or disable sound.
  *
@@ -253,6 +255,8 @@ public:
  * Needs to be implemented by the sound plugin. 
  */
 	static std::map<std::string, std::string> get_sound_devices();
+
+/******************************** JOYSTICK PLUGIN **********************************/
 /**
  * Poll joysticks.
  *

@@ -460,10 +460,6 @@ namespace
 {
 	bool SDL_initialized = false;
 	uint32_t mouse_mask = 0;
-	uint32_t vc_xoffset;
-	uint32_t vc_yoffset;
-	uint32_t vc_hscl = 1;
-	uint32_t vc_vscl = 1;
 	bool sdl_init;
 	bool modconfirm;
 	bool modal_return_flag;
@@ -872,8 +868,8 @@ namespace
 			if(e.type == SDL_MOUSEBUTTONDOWN || e.type == SDL_MOUSEBUTTONUP) {
 				int32_t xc = e.button.x;
 				int32_t yc = e.button.y;
-				xc = (xc - 6 - vc_xoffset) / vc_hscl;
-				yc = (yc - 6 - vc_yoffset) / vc_vscl;
+				xc -= 6;
+				yc -= 6;
 				if(e.button.button == SDL_BUTTON_LEFT) {
 					if(e.button.state == SDL_PRESSED)
 						mouse_mask |= 1;
@@ -1467,14 +1463,5 @@ void window::cancel_wait() throw()
 {
 	wait_canceled = true;
 }
-
-void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl)
-{
-	vc_xoffset = xoffset;
-	vc_yoffset = yoffset;
-	vc_hscl = hscl;
-	vc_vscl = vscl;
-}
-
 
 const char* graphics_plugin_name = "SDL graphics plugin";

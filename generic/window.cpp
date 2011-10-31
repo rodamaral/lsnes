@@ -118,6 +118,10 @@ namespace
 	};
 
 	window_callback* wcb = NULL;
+	uint32_t vc_xoffset;
+	uint32_t vc_yoffset;
+	uint32_t vc_hscl = 1;
+	uint32_t vc_vscl = 1;
 }
 
 std::map<std::string, std::string>& window::get_emustatus() throw()
@@ -148,6 +152,14 @@ std::ostream& window::out() throw(std::bad_alloc)
 	return *cached;
 }
 
+void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl)
+{
+	vc_xoffset = xoffset;
+	vc_yoffset = yoffset;
+	vc_hscl = hscl;
+	vc_vscl = vscl;
+}
+
 window_callback::~window_callback() throw()
 {
 }
@@ -168,6 +180,8 @@ void window_callback::do_close() throw()
 
 void window_callback::do_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
 {
+	x = (x - vc_xoffset) / vc_hscl;
+	y = (y - vc_yoffset) / vc_vscl;
 	if(wcb)
 		wcb->on_click(x, y, buttonmask);
 }
