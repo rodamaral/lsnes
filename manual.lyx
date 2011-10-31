@@ -464,7 +464,8 @@ Set RTC second (0 is 1st January 1970 00:00:00Z).
 
 \begin_layout Standard
 Set RTC subsecond.
- Range is 0-3,462,619,485,019.
+ Range is 0-.
+ Unit is CPU cycle.
 \end_layout
 
 \begin_layout Subsection
