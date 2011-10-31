@@ -2383,7 +2383,7 @@ Routines for settings manipulation
 \end_layout
 
 \begin_layout Subsubsection
-get(string name)
+settings.get(string name)
 \end_layout
 
 \begin_layout Standard
@@ -2393,7 +2393,7 @@ Get value of setting.
 \end_layout
 
 \begin_layout Subsubsection
-set(string name, string value)
+settings.set(string name, string value)
 \end_layout
 
 \begin_layout Standard
@@ -2402,7 +2402,7 @@ Set value of setting.
 \end_layout
 
 \begin_layout Subsubsection
-is_set(string name)
+settings.is_set(string name)
 \end_layout
 
 \begin_layout Standard
@@ -2411,7 +2411,7 @@ Returns if setting is set.
 \end_layout
 
 \begin_layout Subsubsection
-blank(string name)
+settings.blank(string name)
 \end_layout
 
 \begin_layout Standard
@@ -2428,7 +2428,7 @@ Contains various functions for managing memory
 \end_layout
 
 \begin_layout Subsubsection
-vma_count()
+memory.vma_count()
 \end_layout
 
 \begin_layout Standard
@@ -2436,7 +2436,7 @@ Returns the number of VMAs
 \end_layout
 
 \begin_layout Subsubsection
-read_vma(number index)
+memory.read_vma(number index)
 \end_layout
 
 \begin_layout Standard
@@ -2471,7 +2471,7 @@ native_endian (boolean): True if the VMA has native endian as opposed to
 \end_layout
 
 \begin_layout Subsubsection
-find_vma(number address)
+memory.find_vma(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2480,7 +2480,7 @@ Finds the VMA containing specified address.
 \end_layout
 
 \begin_layout Subsubsection
-readbyte(number address)
+memory.readbyte(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2488,7 +2488,7 @@ Reads the specified address as unsigned byte and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-readsbyte(number address)
+memory.readsbyte(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2496,7 +2496,7 @@ Reads the specified address as signed byte and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-writebyte(number address, number value)
+memory.writebyte(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2505,7 +2505,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-readword(number address)
+memory.readword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2513,7 +2513,7 @@ Reads the specified address as unsigned word and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-readsword(number address)
+memory.readsword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2521,7 +2521,7 @@ Reads the specified address as signed word and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-writeword(number address, number value)
+memory.writeword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2530,7 +2530,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-readdword(number address)
+memory.readdword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2538,7 +2538,7 @@ Reads the specified address as unsigned doubleword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-readsdword(number address)
+memory.readsdword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2546,7 +2546,7 @@ Reads the specified address as signed doubleword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-writedword(number address, number value)
+memory.writedword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2555,7 +2555,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-readqword(number address)
+memory.readqword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2563,7 +2563,7 @@ Reads the specified address as unsigned quadword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-readsqword(number address)
+memory.readsqword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2571,7 +2571,7 @@ Reads the specified address as signed quadword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-writeqword(number address, number value)
+memory.writeqword(number address, number value)
 \end_layout
 
 \begin_layout Standard
