@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <map>
+#include "command.hpp"
 #include <dirent.h>
 #include <set>
 #include <string>
@@ -18,6 +19,9 @@ extern "C"
 
 namespace
 {
+	const char* axisnames[ABS_MAX + 1] = {0};
+	const char* buttonnames[KEY_MAX + 1] = {0};
+
 	enum event_type
 	{
 		ET_BUTTON,
@@ -54,6 +58,7 @@ namespace
 	std::map<uint64_t, struct event_mapping> event_map;
 	std::map<int, uint16_t> joystick_map;
 	std::set<int> joysticks;
+	std::map<uint16_t, std::string> joystick_names;
 	uint16_t connected_joysticks = 0;
 
 	uint16_t get_joystick_number(int fd)
@@ -132,7 +137,8 @@ namespace
 		evmap1.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcodeX);
 		evmap1.type = ET_HAT_X;
 		evmap1.controlnum = hatnum;
-		evmap1.axis_min = evmap1.axis_max = 0;
+		evmap1.axis_min = -1;
+		evmap1.axis_max = 1;
 		evmap1.current_status = 0;
 		evmap1.group = grp;
 		struct event_mapping evmap2;
@@ -140,7 +146,8 @@ namespace
 		evmap2.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcodeY);
 		evmap2.type = ET_HAT_Y;
 		evmap2.controlnum = hatnum;
-		evmap2.axis_min = evmap1.axis_max = 0;
+		evmap2.axis_min = -1;
+		evmap1.axis_max = 1;
 		evmap2.current_status = 0;
 		evmap2.group = grp;
 		evmap1.paired_mapping = get_ev_id(joynum, evmap2.tevcode);
@@ -292,6 +299,8 @@ namespace
 				}
 			}
 		}
+		uint16_t joynum = get_joystick_number(fd);
+		joystick_names[joynum] = namebuffer;
 		window::out() << "Found '" << namebuffer << "' (" << button_count << " buttons, " << axis_count
 			<< " axes, " << hat_count << " hats)" << std::endl;
 		joysticks.insert(fd);
@@ -331,6 +340,51 @@ namespace
 		}
 		closedir(d);
 	}
+
+	std::string get_button_name(uint16_t code)
+	{
+		if(code <= KEY_MAX && buttonnames[code])
+			return buttonnames[code];
+		else {
+			std::ostringstream str;
+			str << "Unknown button #" << code << std::endl;
+			return str.str();
+		}
+	}
+
+	std::string get_axis_name(uint16_t code)
+	{
+		if(code <= ABS_MAX && axisnames[code])
+			return axisnames[code];
+		else {
+			std::ostringstream str;
+			str << "Unknown axis #" << code << std::endl;
+			return str.str();
+		}
+	}
+
+	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
+		"Syntax: show-joysticks\nShow joystick data.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			for(auto i : joystick_names) {
+				window::out() << "Joystick #" << i.first << ": " << i.second << std::endl;
+				for(auto j : event_map) {
+					if(j.second.joystick != i.first)
+						continue;
+					if(j.second.type == ET_BUTTON)
+						window::out() << j.second.group->name() << ": "
+							<< get_button_name(j.second.tevcode & 0xFFFF) << std::endl;
+					if(j.second.type == ET_AXIS)
+						window::out() << j.second.group->name() << ": "
+							<< get_axis_name(j.second.tevcode & 0xFFFF)
+							<< "[" << j.second.axis_min << "," << j.second.axis_max
+							<< "]" << std::endl;
+					if(j.second.type == ET_HAT_X || j.second.type == ET_HAT_Y)
+						window::out() << j.second.group->name() << ": "
+							<< get_axis_name(j.second.tevcode & 0xFFFF) << std::endl;
+				}
+			}
+		});
 }
 
 void poll_joysticks()
@@ -340,9 +394,14 @@ void poll_joysticks()
 	}
 }
 
+extern void evdev_init_buttons(const char** x);
+extern void evdev_init_axes(const char** x);
+
 void joystick_init()
 {
 	probe_all_joysticks();
+	evdev_init_buttons(buttonnames);
+	evdev_init_axes(axisnames);
 }
 
 void joystick_quit()

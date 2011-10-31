@@ -64,7 +64,7 @@ PLATFORM_OBJECTS += platform/dummy/joystick-dummy.$(OBJECT_SUFFIX)
 else
 ifeq ($(JOYSTICK), EVDEV)
 CFLAGS += -DSDL_NO_JOYSTICK
-PLATFORM_OBJECTS += platform/evdev/joystick-evdev.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += platform/evdev/joystick-evdev.$(OBJECT_SUFFIX) platform/evdev/axes.$(OBJECT_SUFFIX) platform/evdev/buttons.$(OBJECT_SUFFIX)
 else
 $(error "Unsupported joystick type")
 endif
