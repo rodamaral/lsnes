@@ -1738,7 +1738,7 @@ Bitwise logical functions and related.
 \end_layout
 
 \begin_layout Subsubsection
-none(number...) / bnot(number...)
+bit.none(number...) / bit.bnot(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1747,7 +1747,7 @@ none(number...) / bnot(number...)
 \end_layout
 
 \begin_layout Subsubsection
-any(number...) / bor(number...)
+bit.any(number...) / bit.bor(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1755,7 +1755,7 @@ any(number...) / bor(number...)
 \end_layout
 
 \begin_layout Subsubsection
-all(number...) / band(number...)
+bit.all(number...) / bit.band(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1764,7 +1764,7 @@ all(number...) / band(number...)
 \end_layout
 
 \begin_layout Subsubsection
-parity(number...) / bxor(number...)
+bit.parity(number...) / bit.bxor(number...)
 \end_layout
 
 \begin_layout Standard
@@ -1773,7 +1773,7 @@ parity(number...) / bxor(number...)
 \end_layout
 
 \begin_layout Subsubsection
-lrotate(number base[, number amount[, number bits]])
+bit.lrotate(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1781,7 +1781,7 @@ Rotate bits-bit (max 48, default 48) number left by amount (default 1) places.
 \end_layout
 
 \begin_layout Subsubsection
-rrotate(number base[, number amount[, number bits]])
+bit.rrotate(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1790,7 +1790,7 @@ Rotate bits-bit (max 48, default 48) number right by amount (default 1)
 \end_layout
 
 \begin_layout Subsubsection
-lshift(number base[, number amount[, number bits]])
+bit.lshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1799,7 +1799,7 @@ Shift bits-bit (max 48, default 48) number left by amount (default 1) places.
 \end_layout
 
 \begin_layout Subsubsection
-lrshift(number base[, number amount[, number bits]])
+bit.lrshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -1809,7 +1809,7 @@ Shift bits-bit (max 48, default 48) number logically right by amount (default
 \end_layout
 
 \begin_layout Subsubsection
-arshift(number base[, number amount[, number bits]])
+bit.arshift(number base[, number amount[, number bits]])
 \end_layout
 
 \begin_layout Standard
@@ -2102,8 +2102,8 @@ Input handling.
  Only available in on_input callback.
 \end_layout
 
-\begin_layout Subsection
-get(number controller, number index)
+\begin_layout Subsubsection
+input.get(number controller, number index)
 \end_layout
 
 \begin_layout Standard
@@ -2116,8 +2116,8 @@ Uses physical controller numbering.
  Gamepad in port 2 is controller 4, not 1!
 \end_layout
 
-\begin_layout Subsection
-set(number controller, number index, number value)
+\begin_layout Subsubsection
+input.set(number controller, number index, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2131,8 +2131,8 @@ Uses physical controller numbering.
  Gamepad in port 2 is controller 4, not 1!
 \end_layout
 
-\begin_layout Subsection
-reset([number cycles])
+\begin_layout Subsubsection
+input.reset([number cycles])
 \end_layout
 
 \begin_layout Standard
@@ -2155,7 +2155,7 @@ Host memory handling (extra memory saved to savestates).
 \end_layout
 
 \begin_layout Subsubsection
-read(number address)
+hostmemory.read(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2164,7 +2164,7 @@ Reads hostmemory slot address.
 \end_layout
 
 \begin_layout Subsubsection
-write(number address, number value)
+hostmemory.write(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2173,7 +2173,7 @@ Writes hostmemory slot with 0-255.
 \end_layout
 
 \begin_layout Subsubsection
-readbyte(number address)
+hostmemory.readbyte(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2182,7 +2182,7 @@ Read unsigned byte (1 element) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writebyte(number address, number value)
+hostmemory.writebyte(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2191,7 +2191,7 @@ Write unsigned byte (1 element) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readsbyte(number address)
+hostmemory.readsbyte(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2200,7 +2200,7 @@ Read signed byte (1 element) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writesbyte(number address, number value)
+hostmemory.writesbyte(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2209,7 +2209,7 @@ Write signed byte (1 element) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readword(number address)
+hostmemory.readword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2218,7 +2218,7 @@ Read unsigned word (2 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writeword(number address, number value)
+hostmemory.writeword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2227,7 +2227,7 @@ Write unsigned word (2 elements) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readsword(number address)
+hostmemory.readsword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2236,7 +2236,7 @@ Read signed word (2 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writesword(number address, number value)
+hostmemory.writesword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2245,7 +2245,7 @@ Write signed word (2 elements) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readdword(number address)
+hostmemory.readdword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2254,7 +2254,7 @@ Read unsigned doubleword (4 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writedword(number address, number value)
+hostmemory.writedword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2263,7 +2263,7 @@ Write unsigned doubleword (4 elements) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readsdword(number address)
+hostmemory.readsdword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2272,7 +2272,7 @@ Read signed doubleword (4 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writesdword(number address, number value)
+hostmemory.writesdword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2281,7 +2281,7 @@ Write signed doubleword (4 elements) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readqword(number address)
+hostmemory.readqword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2290,7 +2290,7 @@ Read unsigned quadword (8 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writeqword(number address, number value)
+hostmemory.writeqword(number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2299,7 +2299,7 @@ Write unsigned quadword (4 elements) to given slot.
 \end_layout
 
 \begin_layout Subsubsection
-readsqword(number address)
+hostmemory.readsqword(number address)
 \end_layout
 
 \begin_layout Standard
@@ -2308,7 +2308,7 @@ Read signed quadword (8 elements) from given address.
 \end_layout
 
 \begin_layout Subsubsection
-writesqword(number address, number value)
+hostmemory.writesqword(number address, number value)
 \end_layout
 
 \begin_layout Standard
