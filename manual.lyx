@@ -2420,6 +2420,166 @@ Blanks a setting and returns true.
 \end_layout
 
 \begin_layout Subsection
+Table memory
+\end_layout
+
+\begin_layout Standard
+Contains various functions for managing memory
+\end_layout
+
+\begin_layout Subsubsection
+vma_count()
+\end_layout
+
+\begin_layout Standard
+Returns the number of VMAs
+\end_layout
+
+\begin_layout Subsubsection
+read_vma(number index)
+\end_layout
+
+\begin_layout Standard
+Reads the specified VMA (indices start from zero).
+ Trying to read invalid VMA gives nil.
+ The read VMA is table with the following fields:
+\end_layout
+
+\begin_layout Itemize
+region_name (string): The readable name of the VMA
+\end_layout
+
+\begin_layout Itemize
+baseaddr (number): Base address of the VMA
+\end_layout
+
+\begin_layout Itemize
+lastaddr (number): Last address in the VMA.
+\end_layout
+
+\begin_layout Itemize
+size (number): The size of VMA in bytes.
+\end_layout
+
+\begin_layout Itemize
+readonly (boolean): True of the VMA corresponds to ROM.
+\end_layout
+
+\begin_layout Itemize
+native_endian (boolean): True if the VMA has native endian as opposed to
+ big endian.
+\end_layout
+
+\begin_layout Subsubsection
+find_vma(number address)
+\end_layout
+
+\begin_layout Standard
+Finds the VMA containing specified address.
+ Returns table in the same format as read_vma or nil if not found.
+\end_layout
+
+\begin_layout Subsubsection
+readbyte(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as unsigned byte and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+readsbyte(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as signed byte and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+writebyte(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes the specified value (negative values undergo 2's complement) to specified
+ address (as a byte).
+\end_layout
+
+\begin_layout Subsubsection
+readword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as unsigned word and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+readsword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as signed word and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+writeword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes the specified value (negative values undergo 2's complement) to specified
+ address (as a word).
+\end_layout
+
+\begin_layout Subsubsection
+readdword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as unsigned doubleword and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+readsdword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as signed doubleword and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+writedword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes the specified value (negative values undergo 2's complement) to specified
+ address (as a doubleword).
+\end_layout
+
+\begin_layout Subsubsection
+readqword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as unsigned quadword and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+readsqword(number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address as signed quadword and returns the result.
+\end_layout
+
+\begin_layout Subsubsection
+writeqword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes the specified value (negative values undergo 2's complement) to specified
+ address (as a quadword).
+\end_layout
+
+\begin_layout Subsection
 Callbacks
 \end_layout
 
