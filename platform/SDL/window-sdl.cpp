@@ -14,10 +14,9 @@
 #include <fstream>
 #include <cassert>
 
-#define WATCHDOG_TIMEOUT 15
-#define MAXMESSAGES 6
-#define MSGHISTORY 1000
 #define MAXHISTORY 1000
+#define MAXMESSAGES 6
+#define WATCHDOG_TIMEOUT 15
 
 #include <SDL.h>
 #include <string>
@@ -471,12 +470,7 @@ namespace
 	unsigned old_screen_w;
 	unsigned old_screen_h;
 	unsigned state;
-	std::map<uint64_t, std::string> messagebuffer;
-	uint64_t messagebuffer_next_seq;
-	uint64_t messagebuffer_first_seq;
-	uint64_t messagebuffer_first_show;
 	bool console_mode;
-	uint32_t maxmessages;
 	std::list<std::string> commandhistory;
 	std::list<std::string>::iterator commandhistory_itr;
 	screen* current_screen;
@@ -986,14 +980,6 @@ void graphics_init()
 	alarm(WATCHDOG_TIMEOUT);
 #endif
 	init_keys();
-	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
-	time_t curtime = __real_time(NULL);
-	struct tm* tm = localtime(&curtime);
-	char buffer[1024];
-	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
-	system_log << "-----------------------------------------------------------------------" << std::endl;
-	system_log << "lsnes started at " << buffer << std::endl;
-	system_log << "-----------------------------------------------------------------------" << std::endl;
 	if(!sdl_init) {
 		SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK | SDL_INIT_TIMER);
 		SDL_EnableUNICODE(true);
@@ -1009,11 +995,7 @@ void graphics_init()
 	old_screen_w = 0;
 	modal_return_flag = false;
 	delayed_close_flag = false;
-	messagebuffer_next_seq = 0;
-	messagebuffer_first_seq = 0;
-	messagebuffer_first_show = 0;
 	console_mode = false;
-	maxmessages = MAXMESSAGES;
 
 	window::notify_screen_update();
 	std::string windowname = "lsnes-" + lsnes_version + "[" + bsnes_core_version + "]";
@@ -1024,14 +1006,6 @@ void graphics_init()
 
 void graphics_quit()
 {
-	time_t curtime = time(NULL);
-	struct tm* tm = localtime(&curtime);
-	char buffer[1024];
-	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
-	system_log << "-----------------------------------------------------------------------" << std::endl;
-	system_log << "lsnes shutting down at " << buffer << std::endl;
-	system_log << "-----------------------------------------------------------------------" << std::endl;
-	system_log.close();
 	if(sdl_init) {
 		SDL_RemoveTimer(tid);
 		SDL_Quit();
@@ -1055,38 +1029,8 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	return ret;
 }
 
-void window::message(const std::string& msg) throw(std::bad_alloc)
+void window::notify_message() throw(std::bad_alloc, std::runtime_error)
 {
-	std::string msg2 = msg;
-	bool locked_mode = (messagebuffer_next_seq - messagebuffer_first_show <= maxmessages) ;
-	while(msg2 != "") {
-		size_t s = msg2.find_first_of("\n");
-		std::string forlog;
-		if(s >= msg2.length()) {
-			if(SDL_initialized) {
-				messagebuffer[messagebuffer_next_seq++] = (forlog = msg2);
-				system_log << forlog << std::endl;
-			} else
-				std::cerr << msg2 << std::endl;
-			break;
-		} else {
-			if(SDL_initialized) {
-				messagebuffer[messagebuffer_next_seq++] = (forlog = msg2.substr(0, s));
-				system_log << forlog << std::endl;
-			} else
-				std::cerr << msg2.substr(0, s) << std::endl;
-			msg2 = msg2.substr(s + 1);
-		}
-
-	}
-	if(locked_mode && messagebuffer_first_show + maxmessages < messagebuffer_next_seq)
-		messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-
-	while(messagebuffer.size() > MSGHISTORY) {
-		messagebuffer.erase(messagebuffer_first_seq++);
-		if(messagebuffer_first_show < messagebuffer_first_seq)
-			messagebuffer_first_show = messagebuffer_first_seq;
-	}
 	notify_screen_update();
 }
 
@@ -1219,17 +1163,19 @@ namespace
 			message_y = screensize.second + 16;
 		else
 			message_y = 6;
+		size_t maxmessages = window::msgbuf.get_max_window_size();
+		size_t msgnum = window::msgbuf.get_visible_first();
+		size_t visible = window::msgbuf.get_visible_count();
 		for(size_t j = 0; j < maxmessages; j++)
 			try {
 				std::ostringstream o;
-				if(messagebuffer_first_show + j < messagebuffer_next_seq)
-					o << (messagebuffer_first_show + j + 1) << ": "
-						<< messagebuffer[messagebuffer_first_show + j];
+				if(j < visible)
+					o << (msgnum + j + 1) << ": " << window::msgbuf.get_message(msgnum + j);
 				draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, o.str(), 6,
 					message_y + 16 * j, windowsize.first - 12);
 			} catch(...) {
 			}
-		if(messagebuffer_next_seq - messagebuffer_first_show > maxmessages)
+		if(window::msgbuf.is_more_messages())
 			try {
 				draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, "--More--",
 					windowsize.first - 76, message_y + 16 * maxmessages - 16, 64);
@@ -1357,41 +1303,25 @@ namespace
 	function_ptr_command<> scroll_up("scroll-up", "Scroll messages a page up",
 		"Syntax: scroll-up\nScrolls message console backward one page.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(messagebuffer_first_show > maxmessages)
-				messagebuffer_first_show -= maxmessages;
-			else
-				messagebuffer_first_show = 0;
-			if(messagebuffer_first_show < messagebuffer_first_seq)
-				messagebuffer_first_show = messagebuffer_first_seq;
-			window::notify_screen_update();
+			window::msgbuf.scroll_up_page();
 		});
 
 	function_ptr_command<> scroll_fullup("scroll-fullup", "Scroll messages to beginning",
 		"Syntax: scroll-fullup\nScrolls message console to its beginning.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messagebuffer_first_show = messagebuffer_first_seq;
-			window::notify_screen_update();
+			window::msgbuf.scroll_beginning();
 		});
 
 	function_ptr_command<> scroll_fulldown("scroll-fulldown", "Scroll messages to end",
 		"Syntax: scroll-fulldown\nScrolls message console to its end.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(messagebuffer_next_seq < maxmessages)
-				messagebuffer_first_show = 0;
-			else
-				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-			window::notify_screen_update();
+			window::msgbuf.scroll_end();
 		});
 
 	function_ptr_command<> scrolldown("scroll-down", "Scroll messages a page down",
 		"Syntax: scroll-up\nScrolls message console forward one page.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messagebuffer_first_show += maxmessages;
-			if(messagebuffer_next_seq < maxmessages)
-				messagebuffer_first_show = 0;
-			else if(messagebuffer_next_seq < messagebuffer_first_show + maxmessages)
-				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
-			window::notify_screen_update();
+			window::msgbuf.scroll_down_page();
 		});
 
 	function_ptr_command<> toggle_console("toggle-console", "Toggle console between small and full window",
@@ -1399,13 +1329,9 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			console_mode = !console_mode;
 			if(console_mode)
-				maxmessages = hwsurf ? (hwsurf->h - 38) / 16 : 36;
+				window::msgbuf.set_max_window_size(hwsurf ? (hwsurf->h - 38) / 16 : 36);
 			else
-				maxmessages = MAXMESSAGES;
-			if(messagebuffer_next_seq < maxmessages)
-				messagebuffer_first_show = 0;
-			else
-				messagebuffer_first_show = messagebuffer_next_seq - maxmessages;
+				window::msgbuf.set_max_window_size(MAXMESSAGES);
 			window::notify_screen_update(true);
 		});
 }
@@ -1430,7 +1356,7 @@ void window::wait_usec(uint64_t usec) throw(std::bad_alloc)
 	wait_canceled = false;
 }
 
-void window::fatal_error() throw()
+void window::fatal_error2() throw()
 {
 	try {
 		message("PANIC: Cannot continue, press ESC or close window to exit.");
@@ -1440,14 +1366,6 @@ void window::fatal_error() throw()
 		//Just crash.
 		exit(1);
 	}
-	time_t curtime = time(NULL);
-	struct tm* tm = localtime(&curtime);
-	char buffer[1024];
-	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
-	system_log << "-----------------------------------------------------------------------" << std::endl;
-	system_log << "lsnes paniced at " << buffer << std::endl;
-	system_log << "-----------------------------------------------------------------------" << std::endl;
-	system_log.close();
 	while(true) {
 		SDL_Event e;
 		if(SDL_WaitEvent(&e)) {

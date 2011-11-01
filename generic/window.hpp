@@ -2,6 +2,7 @@
 #define _window__hpp__included__
 
 #include "render.hpp"
+#include "messagebuffer.hpp"
 #include <string>
 #include <map>
 #include <list>
@@ -113,16 +114,37 @@ public:
  */
 	static void set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
 
-/******************************** GRAPHICS PLUGIN **********************************/
+/**
+ * Message buffer.
+ *
+ * Implemented by the generic window code.
+ */
+	static messagebuffer msgbuf;
+
 /**
  * Adds a messages to mesage queue to be shown.
  *
- * Needs to be implemented by the graphics plugin.
+ * Implemented by the generic window code.
  *
  * parameter msg: The messages to add (split by '\n').
  * throws std::bad_alloc: Not enough memory.
  */
 	static void message(const std::string& msg) throw(std::bad_alloc);
+
+/**
+ * Displays fatal error message, quitting after the user acks it (called by fatal_error()).
+ *
+ * Needs to be implemented by the graphics plugin.
+ */
+	static void fatal_error() throw();
+
+/******************************** GRAPHICS PLUGIN **********************************/
+/**
+ * Notification when messages get updated.
+ *
+ * Needs to be implemented by the graphics plugin.
+ */
+	static void notify_message() throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Displays a modal message, not returning until the message is acknowledged. Keybindings are not available, but
@@ -138,11 +160,11 @@ public:
 	static bool modal_message(const std::string& msg, bool confirm = false) throw(std::bad_alloc);
 
 /**
- * Displays fatal error message, quitting after the user acks it.
+ * Displays fatal error message, quitting after the user acks it (called by fatal_error()).
  *
  * Needs to be implemented by the graphics plugin.
  */
-	static void fatal_error() throw();
+	static void fatal_error2() throw();
 
 /**
  * Processes inputs. If in non-modal mode (normal mode without pause), this returns quickly. Otherwise it waits
@@ -267,6 +289,7 @@ private:
 	window(const window&);
 	window& operator==(const window&);
 };
+
 
 /**
  * Names of plugins.

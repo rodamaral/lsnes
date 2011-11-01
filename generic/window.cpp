@@ -1,5 +1,7 @@
 #include "window.hpp"
 #include "command.hpp"
+#include "misc.hpp"
+#include <fstream>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -8,6 +10,10 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+
+#define MAXMESSAGES 5000
+#define INIT_WIN_SIZE 6
+
 
 namespace
 {
@@ -117,6 +123,17 @@ namespace
 		std::vector<char> stream;
 	};
 
+	class msgcallback : public messagebuffer::update_handler
+	{
+	public:
+		~msgcallback() throw() {};
+		void messagebuffer_update() throw(std::bad_alloc, std::runtime_error)
+		{
+			window::notify_message();
+		}
+	} msg_callback_obj;
+
+	std::ofstream system_log;
 	window_callback* wcb = NULL;
 	uint32_t vc_xoffset;
 	uint32_t vc_yoffset;
@@ -131,6 +148,15 @@ std::map<std::string, std::string>& window::get_emustatus() throw()
 
 void window::init()
 {
+	msgbuf.register_handler(msg_callback_obj);
+	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
+	time_t curtime = __real_time(NULL);
+	struct tm* tm = localtime(&curtime);
+	char buffer[1024];
+	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
+	system_log << "-----------------------------------------------------------------------" << std::endl;
+	system_log << "lsnes started at " << buffer << std::endl;
+	system_log << "-----------------------------------------------------------------------" << std::endl;
 	graphics_init();
 	sound_init();
 	joystick_init();
@@ -141,6 +167,15 @@ void window::quit()
 	joystick_quit();
 	sound_quit();
 	graphics_quit();
+	msgbuf.unregister_handler(msg_callback_obj);
+	time_t curtime = __real_time(NULL);
+	struct tm* tm = localtime(&curtime);
+	char buffer[1024];
+	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
+	system_log << "-----------------------------------------------------------------------" << std::endl;
+	system_log << "lsnes shutting down at " << buffer << std::endl;
+	system_log << "-----------------------------------------------------------------------" << std::endl;
+	system_log.close();
 }
 
 std::ostream& window::out() throw(std::bad_alloc)
@@ -158,6 +193,43 @@ void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_
 	vc_yoffset = yoffset;
 	vc_hscl = hscl;
 	vc_vscl = vscl;
+}
+
+messagebuffer window::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
+
+
+void window::message(const std::string& msg) throw(std::bad_alloc)
+{
+	std::string msg2 = msg;
+	while(msg2 != "") {
+		size_t s = msg2.find_first_of("\n");
+		std::string forlog;
+		if(s >= msg2.length()) {
+			msgbuf.add_message(forlog = msg2);
+			if(system_log)
+				system_log << forlog << std::endl;
+			break;
+		} else {
+			msgbuf.add_message(forlog = msg2.substr(0, s));
+			if(system_log)
+				system_log << forlog << std::endl;
+			msg2 = msg2.substr(s + 1);
+		}
+	}
+}
+
+void window::fatal_error() throw()
+{
+	time_t curtime = __real_time(NULL);
+	struct tm* tm = localtime(&curtime);
+	char buffer[1024];
+	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
+	system_log << "-----------------------------------------------------------------------" << std::endl;
+	system_log << "lsnes paniced at " << buffer << std::endl;
+	system_log << "-----------------------------------------------------------------------" << std::endl;
+	system_log.close();
+	fatal_error2();
+	exit(1);
 }
 
 window_callback::~window_callback() throw()

@@ -2,6 +2,11 @@
 #include <cstdlib>
 #include <iostream>
 
+namespace
+{
+	uint64_t next_message_to_print = 0;
+}
+
 void graphics_init() {}
 void graphics_quit() {}
 void window::poll_inputs() throw(std::bad_alloc) {}
@@ -17,18 +22,20 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	return confirm;
 }
 
-void window::fatal_error() throw()
+void window::fatal_error2() throw()
 {
 	std::cerr << "Exiting on fatal error." << std::endl;
 	exit(1);
 }
 
-void window::message(const std::string& msg) throw(std::bad_alloc)
+void window::notify_message() throw(std::bad_alloc, std::runtime_error)
 {
-	if(msg[msg.length() - 1] == '\n')
-		std::cout << msg;
-	else
-		std::cout << msg << std::endl;
+	while(msgbuf.get_msg_first() + msgbuf.get_msg_count() > next_message_to_print) {
+		if(msgbuf.get_msg_first() > next_message_to_print)
+			next_message_to_print = msgbuf.get_msg_first();
+		else
+			std::cout << msgbuf.get_message(next_message_to_print++) << std::endl;
+	}
 }
 
 const char* graphics_plugin_name = "Dummy graphics plugin";
