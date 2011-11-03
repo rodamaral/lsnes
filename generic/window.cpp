@@ -139,12 +139,40 @@ namespace
 	uint32_t vc_yoffset;
 	uint32_t vc_hscl = 1;
 	uint32_t vc_vscl = 1;
+	bool sounds_enabled = true;
 }
 
 std::map<std::string, std::string>& window::get_emustatus() throw()
 {
 	return emustatus;
 }
+
+void window::sound_enable(bool enable) throw()
+{
+	_sound_enable(enable);
+	sounds_enabled = enable;
+	window_callback::do_sound_unmute(enable);
+}
+
+void window::set_sound_device(const std::string& dev) throw()
+{
+	try {
+		_set_sound_device(dev);
+	} catch(std::exception& e) {
+		out() << "Error changing sound device: " << e.what() << std::endl;
+	}
+	try {
+		//After failed change, we don't know what is selected.
+		window_callback::do_sound_change(get_current_sound_device());
+	} catch(...) {
+	}
+}
+
+bool window::is_sound_enabled() throw()
+{
+	return sounds_enabled;
+}
+
 
 void window::init()
 {
@@ -232,8 +260,23 @@ void window::fatal_error() throw()
 	exit(1);
 }
 
+namespace
+{
+	static std::set<window_callback*>& wcbs()
+	{
+		static std::set<window_callback*> s;
+		return s;
+	}
+}
+
+window_callback::window_callback() throw()
+{
+	wcbs().insert(this);
+}
+
 window_callback::~window_callback() throw()
 {
+	wcbs().erase(this);
 }
 
 void window_callback::on_close() throw()
@@ -244,21 +287,37 @@ void window_callback::on_click(int32_t x, int32_t y, uint32_t buttonmask) throw(
 {
 }
 
+void window_callback::on_sound_unmute(bool unmute) throw()
+{
+}
+
+void window_callback::on_sound_change(const std::string& dev) throw()
+{
+}
+
 void window_callback::do_close() throw()
 {
-	if(wcb)
-		wcb->on_close();
+	for(auto i : wcbs())
+		i->on_close();
 }
 
 void window_callback::do_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
 {
 	x = (x - vc_xoffset) / vc_hscl;
 	y = (y - vc_yoffset) / vc_vscl;
-	if(wcb)
-		wcb->on_click(x, y, buttonmask);
+	for(auto i : wcbs())
+		i->on_click(x, y, buttonmask);
 }
 
-void window_callback::set_callback_handler(window_callback& cb) throw()
+void window_callback::do_sound_unmute(bool unmute) throw()
 {
-	wcb = &cb;
+	for(auto i : wcbs())
+		i->on_sound_unmute(unmute);
+}
+
+void window_callback::do_sound_change(const std::string& dev) throw()
+{
+	std::cerr << "do_sound_change(" << dev << ")" << std::endl;
+	for(auto i : wcbs())
+		i->on_sound_change(dev);
 }

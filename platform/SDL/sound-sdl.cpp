@@ -108,7 +108,7 @@ namespace
 	}
 }
 
-void window::sound_enable(bool enable) throw()
+void window::_sound_enable(bool enable) throw()
 {
 	sound_enabled = enable;
 	SDL_PauseAudio(enable ? 0 : 1);
@@ -173,7 +173,7 @@ bool window::sound_initialized()
 	return (audio_playback_freq != 0);
 }
 
-void window::set_sound_device(const std::string& dev)
+void window::_set_sound_device(const std::string& dev)
 {
 	if(dev != "default")
 		throw std::runtime_error("Bad sound device '" + dev + "'");

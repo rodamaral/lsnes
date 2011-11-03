@@ -21,6 +21,13 @@ class window;
 class window_callback
 {
 public:
+/**
+ * Register a callback
+ */
+	window_callback() throw();
+/**
+ * Unregister a callback.
+ */
 	virtual ~window_callback() throw();
 /**
  * Called when user tries to close the window.
@@ -31,6 +38,14 @@ public:
  */
 	virtual void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
 /**
+ * Called when sound mute/unmute gets (possibly) changed.
+ */
+	virtual void on_sound_unmute(bool unmuted) throw();
+/**
+ * Called when sound device gets (possibly) changed.
+ */
+	virtual void on_sound_change(const std::string& dev) throw();
+/**
  * Do try to close the window.
  */
 	static void do_close() throw();
@@ -39,9 +54,16 @@ public:
  */
 	static void do_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
 /**
- * Set the callback handler.
+ * Do on_sound_unmute.
  */
-	static void set_callback_handler(window_callback& cb) throw();
+	static void do_sound_unmute(bool unmuted) throw();
+/**
+ * Do on_sound_change
+ */
+	static void do_sound_change(const std::string& dev) throw();
+private:
+	window_callback(window_callback&);
+	window_callback& operator=(window_callback&);
 };
 
 /**
@@ -138,6 +160,27 @@ public:
  */
 	static void fatal_error() throw();
 
+/**
+ * Enable or disable sound.
+ *
+ * Implemented by the generic window code.
+ *
+ * parameter enable: Enable sounds if true, otherwise disable sounds.
+ */
+	static void sound_enable(bool enable) throw();
+
+/**
+ * Are sounds enabled?
+ */
+	static bool is_sound_enabled() throw();
+
+/**
+ * Set sound device.
+ *
+ * Implemented by the generic window code.
+ */
+	static void set_sound_device(const std::string& dev) throw();
+
 /******************************** GRAPHICS PLUGIN **********************************/
 /**
  * Notification when messages get updated.
@@ -228,7 +271,7 @@ public:
  *
  * parameter enable: Enable sounds if true, otherwise disable sounds.
  */
-	static void sound_enable(bool enable) throw();
+	static void _sound_enable(bool enable) throw();
 
 /**
  * Input audio sample (at specified rate).
@@ -262,7 +305,7 @@ public:
  *
  * Needs to be implemented by the sound plugin. 
  */
-	static void set_sound_device(const std::string& dev);
+	static void _set_sound_device(const std::string& dev);
 
 /**
  * Get current sound device.

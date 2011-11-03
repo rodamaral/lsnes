@@ -90,7 +90,6 @@ endif
 endif
 
 ifeq ($(GRAPHICS), SDL)
-LSNES_MAIN = lsnes.$(OBJECT_SUFFIX)
 PLATFORM_OBJECTS += platform/SDL/main-sdl.$(OBJECT_SUFFIX) platform/SDL/window-sdl.$(OBJECT_SUFFIX)
 ifndef NO_SDL_SEARCH
 PLATFORM_CFLAGS += $(shell sdl-config --cflags)

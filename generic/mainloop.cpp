@@ -839,7 +839,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	SNES::interface = &intrf;
 	intrf.initialize(&intrf);
 	status = &window::get_emustatus();
-	window_callback::set_callback_handler(mywcb);
 
 	//Load our given movie.
 	bool first_round = false;

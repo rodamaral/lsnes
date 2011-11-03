@@ -37,6 +37,7 @@ namespace
 	bool stereo = false;
 	PaStream* s = NULL;
 	bool init_flag = false;
+	bool was_enabled = false;
 
 	void calculate_sampledup(uint32_t rate_n, uint32_t rate_d)
 	{
@@ -91,10 +92,14 @@ namespace
 		}
 		//If audio is open somewhere, close it.
 		if(current_device != paNoDevice) {
-			PaError err = Pa_StopStream(s);
-			if(err != paNoError) {
-				window::out() << "Portaudio error (stop): " << Pa_GetErrorText(err) << std::endl;
-				return false;
+			PaError err;
+			if(was_enabled) {
+				err = Pa_StopStream(s);
+				if(err != paNoError) {
+					window::out() << "Portaudio error (stop): " << Pa_GetErrorText(err)
+						<< std::endl;
+					return false;
+				}
 			}
 			err = Pa_CloseStream(s);
 			if(err != paNoError) {
@@ -125,11 +130,13 @@ namespace
 			}
 
 			stereo = (output.channelCount == 2);
-			err = Pa_StartStream(s);
-			if(err != paNoError) {
-				window::out() << "Portaudio error (start): " << Pa_GetErrorText(err) << std::endl
-					<< "\tOn device: '" << inf->name << "'" << std::endl;
-				return false;
+			if(was_enabled) {
+				err = Pa_StartStream(s);
+				if(err != paNoError) {
+					window::out() << "Portaudio error (start): " << Pa_GetErrorText(err)
+						<< std::endl << "\tOn device: '" << inf->name << "'" << std::endl;
+					return false;
+				}
 			}
 			audio_playback_freq = inf->defaultSampleRate;
 			calculate_sampledup(use_rate_n, use_rate_d);
@@ -144,15 +151,19 @@ namespace
 
 }
 
-void window::sound_enable(bool enable) throw()
+void window::_sound_enable(bool enable) throw()
 {
 	PaError err;
+	if(enable == was_enabled)
+		return;
 	if(enable)
 		err = Pa_StartStream(s);
 	else
 		err = Pa_StopStream(s);
 	if(err != paNoError)
 		window::out() << "Portaudio error (start/stop): " << Pa_GetErrorText(err) << std::endl;
+	else
+		was_enabled = enable;
 }
 
 void sound_init()
@@ -174,6 +185,7 @@ void sound_init()
 	for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++)
 		window::out() << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
 	bool any_success = false;
+	was_enabled = true;
 	if(forcedevice == paNoDevice) {
 		for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
 			any_success |= switch_devices(j);
@@ -225,7 +237,7 @@ bool window::sound_initialized()
 	return init_flag;
 }
 
-void window::set_sound_device(const std::string& dev)
+void window::_set_sound_device(const std::string& dev)
 {
 	if(dev == "null") {
 		if(!switch_devices(paNoDevice))
