@@ -50,7 +50,7 @@ namespace
 				lrc.bottom_gap, lrc.left_gap, lrc.top_gap, false);
 			dscr.copy_from(_frame, 1, 1);
 			rq.run(dscr);
-			
+
 			vid_dumper->video(get_next_video_ts(fps_n, fps_d), dscr.memory, dscr.width, dscr.height);
 			have_dumped_frame = true;
 		}

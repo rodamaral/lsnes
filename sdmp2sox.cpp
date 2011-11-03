@@ -327,7 +327,7 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 	in.read(reinterpret_cast<char*>(header), 12);
 	if(!in)
 		throw std::runtime_error("Can't read sdump header");
-	if(header[0] != 'S' || header[1] != 'D' || header[2] != 'M' || header[3] != 'P') 
+	if(header[0] != 'S' || header[1] != 'D' || header[2] != 'M' || header[3] != 'P')
 		throw std::runtime_error("Bad sdump magic");
 	uint32_t apurate;
 	uint32_t cpurate;

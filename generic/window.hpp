@@ -119,7 +119,7 @@ public:
  * Get emulator status area
  *
  * Implemented by the generic window code.
- * 
+ *
  * returns: Emulator status area.
  */
 	static std::map<std::string, std::string>& get_emustatus() throw();
@@ -214,7 +214,7 @@ public:
  * for modal mode to exit. Also needs to call window::poll_joysticks().
  *
  * Needs to be implemented by the graphics plugin.
- * 
+ *
  * throws std::bad_alloc: Not enough memory.
  */
 	static void poll_inputs() throw(std::bad_alloc);
@@ -250,7 +250,7 @@ public:
  * Wait specified number of microseconds (polling for input).
  *
  * Needs to be implemented by the graphics plugin.
- * 
+ *
  * parameter usec: Number of us to wait.
  * throws std::bad_alloc: Not enough memory.
  */
@@ -267,7 +267,7 @@ public:
 /**
  * Enable or disable sound.
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  *
  * parameter enable: Enable sounds if true, otherwise disable sounds.
  */
@@ -276,7 +276,7 @@ public:
 /**
  * Input audio sample (at specified rate).
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  *
  * parameter left: Left sample.
  * parameter right: Right sample.
@@ -286,7 +286,7 @@ public:
 /**
  * Set sound sampling rate.
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  *
  * parameter rate_n: Numerator of sampling rate.
  * parameter rate_d: Denomerator of sampling rate.
@@ -296,28 +296,28 @@ public:
 /**
  * Has the sound system been successfully initialized?
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  */
 	static bool sound_initialized();
 
 /**
  * Set sound device.
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  */
 	static void _set_sound_device(const std::string& dev);
 
 /**
  * Get current sound device.
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  */
 	static std::string get_current_sound_device();
 
 /**
  * Get available sound devices.
  *
- * Needs to be implemented by the sound plugin. 
+ * Needs to be implemented by the sound plugin.
  */
 	static std::map<std::string, std::string> get_sound_devices();
 

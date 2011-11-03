@@ -1137,5 +1137,3 @@ void avi_cscd_dumper::set_capture_error(const std::string& err)
 	frame_mutex.unlock();
 	exception_error_present = true;
 }
-
-

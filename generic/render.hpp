@@ -340,7 +340,7 @@ private:
 
 /**
  * Clip range inside another.
- * 
+ *
  * parameter origin: Origin coordinate.
  * parameter size: Dimension size.
  * parameter base: Base coordinate.

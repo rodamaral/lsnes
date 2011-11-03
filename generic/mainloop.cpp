@@ -397,7 +397,7 @@ class my_interface : public SNES::Interface
 		} catch(std::exception& e) {
 			messages << "Error dumping sample: " << e.what() << std::endl;
 		}
-		
+
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		window::play_audio_sample(_l + 32768, _r + 32768);

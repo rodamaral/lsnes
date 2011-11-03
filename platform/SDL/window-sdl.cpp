@@ -1205,13 +1205,13 @@ void window::notify_screen_update(bool full) throw()
 	if(!is_time_for_screen_update(full)) {
 		return;
 	}
-	auto windowsize = compute_window_size(current_screen ? current_screen->width : 0, current_screen ? 
+	auto windowsize = compute_window_size(current_screen ? current_screen->width : 0, current_screen ?
 		current_screen->height : 0);
-	auto screensize = compute_screen_size(current_screen ? current_screen->width : 0, current_screen ? 
+	auto screensize = compute_screen_size(current_screen ? current_screen->width : 0, current_screen ?
 		current_screen->height : 0);
 	show_fps();
 
-	
+
 	if(!hwsurf || windowsize != current_windowsize) {
 		//Create/Resize the window.
 		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 32, SDL_SWSURFACE);

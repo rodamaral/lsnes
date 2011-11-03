@@ -609,7 +609,7 @@ namespace
 					<< std::endl;
 			}
 		});
-	
+
 
 	struct triple
 	{

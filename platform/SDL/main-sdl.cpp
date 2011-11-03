@@ -60,7 +60,7 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 			if(movie.rtc_subsecond < 0 || movie.rtc_subsecond > 3462619485019ULL)
 				throw std::runtime_error("Bad RTC subsecond value (range is 0-3462619485019)");
 		}
-		
+
 	}
 
 
