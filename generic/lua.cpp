@@ -20,6 +20,7 @@ void lua_callback_quit() throw() {}
 void init_lua() throw() {}
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
+bool lua_supported = false;
 #else
 
 #include "lua-int.hpp"
@@ -431,4 +432,5 @@ void init_lua() throw()
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
+bool lua_supported = true;
 #endif

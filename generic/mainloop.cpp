@@ -604,6 +604,7 @@ namespace
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
+			window_callback::do_mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
 			window::notify_screen_update();
@@ -613,6 +614,7 @@ namespace
 		"Syntax: set-romode\nSwitches to read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(true);
+			window_callback::do_mode_change(true);
 			update_movie_state();
 			window::notify_screen_update();
 		});
@@ -622,6 +624,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = movb.get_movie().readonly_mode();
 			movb.get_movie().readonly_mode(!c);
+			window_callback::do_mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();

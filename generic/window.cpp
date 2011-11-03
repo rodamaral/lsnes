@@ -291,6 +291,10 @@ void window_callback::on_sound_unmute(bool unmute) throw()
 {
 }
 
+void window_callback::on_mode_change(bool readonly) throw()
+{
+}
+
 void window_callback::on_sound_change(const std::string& dev) throw()
 {
 }
@@ -317,7 +321,12 @@ void window_callback::do_sound_unmute(bool unmute) throw()
 
 void window_callback::do_sound_change(const std::string& dev) throw()
 {
-	std::cerr << "do_sound_change(" << dev << ")" << std::endl;
 	for(auto i : wcbs())
 		i->on_sound_change(dev);
+}
+
+void window_callback::do_mode_change(bool readonly) throw()
+{
+	for(auto i : wcbs())
+		i->on_mode_change(readonly);
 }

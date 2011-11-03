@@ -12,6 +12,7 @@
 #include "rrdata.hpp"
 #include "settings.hpp"
 #include "controller.hpp"
+#include "window.hpp"
 
 struct moviefile our_movie;
 struct loaded_rom* our_rom;
@@ -263,6 +264,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
+	window_callback::do_mode_change(movb.get_movie().readonly_mode());
 	messages << "ROM Type ";
 	switch(our_rom->rtype) {
 	case ROMTYPE_SNES:

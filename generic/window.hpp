@@ -46,6 +46,10 @@ public:
  */
 	virtual void on_sound_change(const std::string& dev) throw();
 /**
+ * Called when mode gets (possibly) changed.
+ */
+	virtual void on_mode_change(bool readonly) throw();
+/**
  * Do try to close the window.
  */
 	static void do_close() throw();
@@ -61,6 +65,10 @@ public:
  * Do on_sound_change
  */
 	static void do_sound_change(const std::string& dev) throw();
+/**
+ * Do on_mode_change
+ */
+	static void do_mode_change(bool readonly) throw();
 private:
 	window_callback(window_callback&);
 	window_callback& operator=(window_callback&);
