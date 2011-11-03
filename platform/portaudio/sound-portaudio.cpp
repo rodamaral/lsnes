@@ -1,6 +1,7 @@
 #include "window.hpp"
 #include "render.hpp"
 #include <cstring>
+#include <cstdlib>
 #include "command.hpp"
 #include "framerate.hpp"
 #include "misc.hpp"

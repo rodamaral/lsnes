@@ -1,15 +1,13 @@
+CROSS_PREFIX=
 EXECUTABLE_SUFFIX = exe
 OBJECT_SUFFIX = o
 ARCHIVE_SUFFIX = a
 FONT_SRC := unifontfull-5.1.20080820.hex
-CC := g++-4.6
+CC := g++
 HOSTCC = $(CC)
-LUAPACKAGE=lua5.1
+REALCC = $(CROSS_PREFIX)$(CC)
 
 OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard generic/*.cpp)) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avidump/*.cpp)) fonts/font.$(OBJECT_SUFFIX)
-ifndef NO_LIBDL
-GENERIC_LIBS += -ldl
-endif
 GENERIC_LIBS += -lboost_iostreams -lboost_filesystem -lboost_system -lz
 CFLAGS = $(USER_CFLAGS)
 HOSTCCFLAGS = $(USER_HOSTCCFLAGS)
@@ -24,27 +22,33 @@ PROGRAMS = lsnes.$(EXECUTABLE_SUFFIX) movieinfo.$(EXECUTABLE_SUFFIX) lsnes-dumpa
 all: $(PROGRAMS)
 
 #Lua.
-ifdef NO_LUA
+ifndef LUA
 CFLAGS += -DNO_LUA
 else
 OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard lua/*.cpp))
-ifndef NO_LUA_SEARCH
-CFLAGS += $(shell pkg-config $(LUAPACKAGE) --cflags)
-LDFLAGS += $(shell pkg-config $(LUAPACKAGE) --libs)
+CFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --cflags)
+LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --libs)
+endif
+
+#Threads
+ifdef THREADS
+ifeq ($(THREADS), YES)
+CFLAGS += -DUSE_THREADS
+else
+ifeq ($(THREADS), NO)
+CFLAGS += -DNO_THREADS
+else
+$(error "Bad value for THREADS (expected YES or NO)")
 endif
 endif
+endif
+
 
 #Some misc defines.
 ifdef NO_TIME_INTERCEPT
 CFLAGS += -DNO_TIME_INTERCEPT
 else
 LDFLAGS += -Wl,--wrap,time
-endif
-ifdef NO_THREADS
-CFLAGS += -DNO_THREADS
-endif
-ifdef USE_THREADS
-CFLAGS += -DUSE_THREADS
 endif
 ifdef TEST_WIN32
 CFLAGS += -DTEST_WIN32_CODE
@@ -79,7 +83,8 @@ PLATFORM_OBJECTS += platform/SDL/sound-sdl.$(OBJECT_SUFFIX)
 else
 ifeq ($(SOUND), PORTAUDIO)
 PLATFORM_OBJECTS += platform/portaudio/sound-portaudio.$(OBJECT_SUFFIX)
-PLATFORM_LDFLAGS += -lportaudio
+PLATFORM_CFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --cflags)
+PLATFORM_LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --libs)
 else
 ifeq ($(SOUND), DUMMY)
 PLATFORM_OBJECTS += platform/dummy/sound-dummy.$(OBJECT_SUFFIX)
@@ -91,15 +96,13 @@ endif
 
 ifeq ($(GRAPHICS), SDL)
 PLATFORM_OBJECTS += platform/SDL/main-sdl.$(OBJECT_SUFFIX) platform/SDL/window-sdl.$(OBJECT_SUFFIX)
-ifndef NO_SDL_SEARCH
-PLATFORM_CFLAGS += $(shell sdl-config --cflags)
-PLATFORM_LDFLAGS += $(shell sdl-config --libs)
-endif
+PLATFORM_CFLAGS += $(shell $(CROSS_PREFIX)sdl-config --cflags)
+PLATFORM_LDFLAGS += $(shell $(CROSS_PREFIX)sdl-config --libs)
 ifdef TEST_WIN32
 PLATFORM_LDFLAGS += -lSDLmain
 endif
 platform/SDL/%.$(OBJECT_SUFFIX): platform/SDL/%.cpp
-	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
+	$(REALCC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
 else
 $(error "Unsupported graphics type")
 endif
@@ -108,17 +111,17 @@ endif
 
 
 lsnes.$(EXECUTABLE_SUFFIX): $(OBJECTS) $(PLATFORM_OBJECTS)
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(PLATFORM_LDFLAGS)
+	$(REALCC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(PLATFORM_LDFLAGS)
 
 %.$(EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(OBJECTS) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard platform/dummy/*.cpp))
-	$(CC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
+	$(REALCC) -o $@ $^ $(BSNES_PATH)/out/libsnes.$(ARCHIVE_SUFFIX) $(LDFLAGS)
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(CC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS)
+	$(REALCC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS)
 
 fonts/font.$(OBJECT_SUFFIX): fonts/$(FONT_SRC) fonts/parsehexfont.$(EXECUTABLE_SUFFIX)
 	fonts/parsehexfont.$(EXECUTABLE_SUFFIX) <fonts/$(FONT_SRC) >fonts/font.cpp
-	$(CC) -std=gnu++0x $(HOSTCCFLAGS) -c -o fonts/font.$(OBJECT_SUFFIX) fonts/font.cpp
+	$(REALCC) -std=gnu++0x $(CFLAGS) -c -o fonts/font.$(OBJECT_SUFFIX) fonts/font.cpp
 	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o fonts/verifyhexfont.$(EXECUTABLE_SUFFIX) fonts/verifyhexfont.cpp fonts/font.cpp
 	fonts/verifyhexfont.$(EXECUTABLE_SUFFIX)
 
