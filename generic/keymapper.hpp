@@ -52,6 +52,10 @@ public:
  */
 	modifier(const std::string& name, const std::string& linkgroup) throw(std::bad_alloc);
 /**
+ * Destructor
+ */
+	~modifier() throw();
+/**
  * Look up a modifier.
  *
  * parameter name: The name of the modifier to look up.
@@ -198,6 +202,10 @@ public:
  * throws std::bad_alloc: Not enough memory.
  */
 	keygroup(const std::string& name, enum type t) throw(std::bad_alloc);
+/**
+ * Destructor
+ */
+	~keygroup() throw();
 /**
  * Change type of key group.
  *

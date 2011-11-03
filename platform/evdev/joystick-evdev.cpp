@@ -55,6 +55,7 @@ namespace
 		NULL		//No associated key group.
 	};
 
+	std::set<keygroup*> keygroups;
 	std::map<uint64_t, struct event_mapping> event_map;
 	std::map<int, uint16_t> joystick_map;
 	std::set<int> joysticks;
@@ -89,6 +90,7 @@ namespace
 		_name << "joystick" << joynum << "button" << buttonnum;
 		std::string name = _name.str();
 		keygroup* grp = new keygroup(name, keygroup::KT_KEY);
+		keygroups.insert(grp);
 		struct event_mapping evmap;
 		evmap.joystick = joynum;
 		evmap.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcode);
@@ -112,6 +114,7 @@ namespace
 			grp = new keygroup(name, keygroup::KT_AXIS_PAIR);
 		else
 			grp = new keygroup(name, keygroup::KT_PRESSURE_MP);
+		keygroups.insert(grp);
 		struct event_mapping evmap;
 		evmap.joystick = joynum;
 		evmap.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcode);
@@ -132,6 +135,7 @@ namespace
 		_name << "joystick" << joynum << "hat" << hatnum;
 		std::string name = _name.str();
 		keygroup* grp = new keygroup(name, keygroup::KT_HAT);
+		keygroups.insert(grp);
 		struct event_mapping evmap1;
 		evmap1.joystick = joynum;
 		evmap1.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcodeX);
@@ -408,6 +412,17 @@ void joystick_quit()
 {
 	for(int fd : joysticks)
 		close(fd);
+	for(auto i : keygroups)
+		delete i;
+	keygroups.clear();
+	joystick_map.clear();
+	joysticks.clear();
+	joystick_names.clear();
+	std::map<uint64_t, struct event_mapping> event_map;
+	std::map<int, uint16_t> joystick_map;
+	std::set<int> joysticks;
+	std::map<uint16_t, std::string> joystick_names;
+
 }
 
 const char* joystick_plugin_name = "Evdev joystick plugin";

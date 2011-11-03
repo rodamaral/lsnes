@@ -116,6 +116,12 @@ modifier::modifier(const std::string& name, const std::string& linkgroup) throw(
 	modifier_linkages()[name] = linkgroup;
 }
 
+modifier::~modifier() throw()
+{
+	known_modifiers().erase(modname);
+	modifier_linkages().erase(modname);
+}
+
 modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!known_modifiers().count(name)) {
@@ -273,6 +279,11 @@ keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 	cal_center = 0;
 	cal_right = 32767;
 	cal_tolerance = 0.5;
+}
+
+keygroup::~keygroup() throw()
+{
+	keygroups().erase(keyname);
 }
 
 void keygroup::change_type(enum type t) throw()
