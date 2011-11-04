@@ -4,7 +4,6 @@
 #include "controller.hpp"
 #include "framebuffer.hpp"
 #include "moviedata.hpp"
-#include "sdump.hpp"
 #include <iomanip>
 #include "framerate.hpp"
 #include "memorywatch.hpp"
@@ -201,11 +200,11 @@ namespace
 
 	class dump_watch : public av_snooper::dump_notification
 	{
-		void dump_starting() throw()
+		void dump_starting(const std::string& n) throw()
 		{
 			update_movie_state();
 		}
-		void dump_ending() throw()
+		void dump_ending(const std::string& n) throw()
 		{
 			update_movie_state();
 		}
@@ -361,12 +360,6 @@ class my_interface : public SNES::Interface
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
-		try {
-			sdump_frame(data, (hires ? SDUMP_FLAG_HIRES : 0) | (interlace ? SDUMP_FLAG_INTERLACED : 0) |
-				(overscan ? SDUMP_FLAG_OVERSCAN : 0) | (region ? SDUMP_FLAG_PAL : 0));
-		} catch(std::exception& e) {
-			messages << "Error dumping frame: " << e.what() << std::endl;
-		}
 		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
@@ -387,21 +380,16 @@ class my_interface : public SNES::Interface
 		uint32_t g = gcd(fps_n, fps_d);
 		fps_n /= g;
 		fps_d /= g;
-		av_snooper::frame(ls, fps_n, fps_d, true);
+		av_snooper::_frame(ls, fps_n, fps_d, data, hires, interlace, overscan, region ? SNOOP_REGION_PAL :
+			SNOOP_REGION_NTSC);
 	}
 
 	void audioSample(int16_t l_sample, int16_t r_sample)
 	{
-		try {
-			sdump_sample(l_sample, r_sample);
-		} catch(std::exception& e) {
-			messages << "Error dumping sample: " << e.what() << std::endl;
-		}
-
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		window::play_audio_sample(_l + 32768, _r + 32768);
-		av_snooper::sample(_l, _r, true);
+		av_snooper::_sample(l_sample, r_sample);
 		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
 		our_movie.rtc_subsecond += 768;
 		while(our_movie.rtc_subsecond >= SNES::system.apu_frequency()) {
@@ -869,7 +857,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	lua_callback_startup();
 
 	//print_controller_mappings();
-	av_snooper::add_dump_notifier(dumpwatch);
 	window::set_main_surface(main_screen);
 	redraw_framebuffer();
 	window::paused(false);
@@ -925,6 +912,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			window::wait_usec(to_wait_frame(get_utime()));
 		first_round = false;
 	}
-	av_snooper::end(true);
+	av_snooper::_end();
 	SNES::interface = old_inteface;
 }

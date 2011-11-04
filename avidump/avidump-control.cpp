@@ -33,6 +33,7 @@ namespace
 	{
 	public:
 		avi_avsnoop(const std::string& prefix, struct avi_info parameters) throw(std::bad_alloc)
+			: av_snooper("AVI")
 		{
 			_parameters = parameters;
 			avi_cscd_dumper::global_parameters gp;
@@ -65,8 +66,8 @@ namespace
 			delete soxdumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
-			throw(std::bad_alloc, std::runtime_error)
+		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
+			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
@@ -130,13 +131,6 @@ namespace
 			vid_dumper->end();
 			soxdumper->close();
 		}
-
-		void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-			authors, double gametime, const std::string& rerecords) throw(std::bad_alloc,
-			std::runtime_error)
-		{
-			//We don't have place for this info and thus ignore it.
-		}
 	private:
 		avi_cscd_dumper* vid_dumper;
 		sox_dumper* soxdumper;
@@ -160,16 +154,17 @@ namespace
 			if(prefix == "")
 				throw std::runtime_error("Expected prefix");
 			if(vid_dumper)
-				throw std::runtime_error("AVI dumping already in progress");
+				throw std::runtime_error("AVI(CSCD) dumping already in progress");
 			unsigned long level2;
 			try {
 				level2 = parse_value<unsigned long>(level);
 				if(level2 > 18)
-					throw std::runtime_error("Level must be 0-18");
+					throw std::runtime_error("AVI(CSCD) level must be 0-18");
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::runtime_error& e) {
-				throw std::runtime_error("Bad AVI compression level '" + level + "': " + e.what());
+				throw std::runtime_error("Bad AVI(CSCD) compression level '" + level + "': " +
+					e.what());
 			}
 			struct avi_info parameters;
 			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
@@ -182,24 +177,24 @@ namespace
 				throw;
 			} catch(std::exception& e) {
 				std::ostringstream x;
-				x << "Error starting dump: " << e.what();
+				x << "Error starting AVI(CSCD) dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
-			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
+			messages << "Dumping AVI(CSCD) to " << prefix << " at level " << level2 << std::endl;
 		});
 
 	function_ptr_command<> end_avi("end-avi", "End AVI capture",
 		"Syntax: end-avi\nEnd a AVI capture.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(!vid_dumper)
-				throw std::runtime_error("No video dump in progress");
+				throw std::runtime_error("No AVI(CSCD) video dump in progress");
 			try {
 				vid_dumper->end();
-				messages << "Dump finished" << std::endl;
+				messages << "AVI(CSCD) Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
-				messages << "Error ending dump: " << e.what() << std::endl;
+				messages << "Error ending AVI(CSCD) dump: " << e.what() << std::endl;
 			}
 			delete vid_dumper;
 			vid_dumper = NULL;

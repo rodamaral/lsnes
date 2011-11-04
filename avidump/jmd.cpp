@@ -91,8 +91,8 @@ void jmd_dumper::end(uint64_t ts)
 	jmd.close();
 }
 
-void jmd_dumper::gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-	authors, double gametime, const std::string& rerecords)
+void jmd_dumper::gameinfo(const std::string& gamename, const std::string& authors, uint64_t gametime,
+	uint64_t rerecords)
 {
 	//FIXME: Implement this.
 }

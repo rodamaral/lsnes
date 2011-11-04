@@ -149,9 +149,14 @@ namespace
 	//Do button action.
 	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor = false)
 	{
-		if(do_xor)
+		if(do_xor) {
 			do_button_action(ui_id, button, newstate, do_xor, autoheld_controls);
-		else
+			int x = controller_index_by_logical(ui_id);
+			enum devicetype_t p = controller_type_by_logical(ui_id);
+			int y = get_physcial_id_for_control(p, button);
+			if(x >= 0 && y >= 0)
+				window_callback::do_autohold_update(x, y, get_autohold(x, y));
+		} else
 			do_button_action(ui_id, button, newstate, do_xor, curcontrols);
 	}
 
@@ -315,6 +320,7 @@ void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core) th
 		snes_set_controller_port_device(port != 0, port_types[ptype].bsnes_type);
 	porttypes[port] = ptype;
 	update_analog_indices();
+	window_callback::do_autohold_reconfigure();
 }
 
 controls_t get_current_controls(uint64_t frame)
@@ -356,4 +362,73 @@ void set_curcontrols_reset(int32_t delay)
 		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
 	}
 
+}
+
+void change_autohold(unsigned pid, unsigned idx, bool newstate)
+{
+	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= CONTROLLER_CONTROLS)
+		return;
+	autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) = (newstate ? 1 : 0);
+	window_callback::do_autohold_update(pid, idx, newstate);
+	update_movie_state();
+	window::notify_screen_update();
+}
+
+bool get_autohold(unsigned pid, unsigned idx)
+{
+	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= CONTROLLER_CONTROLS)
+		return false;
+	return (autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) != 0);
+}
+
+std::string get_button_name(unsigned lidx)
+{
+	if(lidx < 16)
+		return buttonnames[lidx];
+	else
+		return "";
+}
+
+int get_physcial_id_for_control(devicetype_t dtype, unsigned lidx)
+{
+	switch(dtype) {
+	case DT_NONE:	return -1;
+	case DT_GAMEPAD:
+		switch(lidx) {
+		case BUTTON_UP: 	return SNES_DEVICE_ID_JOYPAD_UP;
+		case BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+		case BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+		case BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+		case BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+		case BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+		case BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+		case BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+		case BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+		case BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+		case BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+		case BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+		default:		return -1;
+		};
+	case DT_MOUSE:
+		switch(lidx) {
+		case BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
+		case BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
+		default:		return -1;
+		};
+	case DT_SUPERSCOPE:
+		switch(lidx) {
+		case BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
+		case BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
+		case BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
+		case BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
+		default:		return -1;
+		};
+	case DT_JUSTIFIER:
+		switch(lidx) {
+		case BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+		case BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+		default:		return -1;
+		};
+	default:	return -1;
+	}
 }

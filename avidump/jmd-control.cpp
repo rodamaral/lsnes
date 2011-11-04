@@ -17,6 +17,7 @@ namespace
 	{
 	public:
 		jmd_avsnoop(const std::string& filename, unsigned level) throw(std::bad_alloc)
+			: av_snooper("JMD")
 		{
 			vid_dumper = new jmd_dumper(filename, level);
 			have_dumped_frame = false;
@@ -26,6 +27,11 @@ namespace
 			video_n = 0;
 			maxtc = 0;
 			soundrate = av_snooper::get_sound_rate();
+			try {
+				gameinfo(av_snooper::get_gameinfo());
+			} catch(std::exception& e) {
+				messages << "Can't write gameinfo: " << e.what() << std::endl;
+			}
 		}
 
 		~jmd_avsnoop() throw()
@@ -33,8 +39,8 @@ namespace
 			delete vid_dumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
-			throw(std::bad_alloc, std::runtime_error)
+		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
+			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
 		{
 			struct lua_render_context lrc;
 			render_queue rq;
@@ -46,6 +52,7 @@ namespace
 			lrc.width = _frame.width;
 			lrc.height = _frame.height;
 			lua_callback_do_video(&lrc);
+			dscr.set_palette(0, 8, 16);
 			dscr.reallocate(lrc.left_gap + _frame.width + lrc.right_gap, lrc.top_gap + _frame.height +
 				lrc.bottom_gap, lrc.left_gap, lrc.top_gap, false);
 			dscr.copy_from(_frame, 1, 1);
@@ -67,11 +74,15 @@ namespace
 			vid_dumper->end(maxtc);
 		}
 
-		void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-			authors, double gametime, const std::string& rerecords) throw(std::bad_alloc,
-			std::runtime_error)
+		void gameinfo(const struct gameinfo_struct& gi) throw(std::bad_alloc, std::runtime_error)
 		{
-			vid_dumper->gameinfo(gamename, authors, gametime, rerecords);
+			std::string authstr;
+			for(size_t i = 0; i < gi.get_author_count(); i++) {
+				if(i != 0)
+					authstr = authstr + ", ";
+				authstr = authstr + gi.get_author_short(i);
+			}
+			vid_dumper->gameinfo(gi.gamename, authstr, 1000000000ULL * gi.length, gi.get_rerecords());
 		}
 	private:
 		uint64_t get_next_video_ts(uint32_t fps_n, uint32_t fps_d)
@@ -129,7 +140,7 @@ namespace
 			try {
 				level2 = parse_value<unsigned long>(level);
 				if(level2 > 9)
-					throw std::runtime_error("Level must be 0-9");
+					throw std::runtime_error("JMD Level must be 0-9");
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::runtime_error& e) {
@@ -141,7 +152,7 @@ namespace
 				throw;
 			} catch(std::exception& e) {
 				std::ostringstream x;
-				x << "Error starting dump: " << e.what();
+				x << "Error starting JMD dump: " << e.what();
 				throw std::runtime_error(x.str());
 			}
 			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
@@ -151,14 +162,14 @@ namespace
 		"Syntax: end-jmd\nEnd a JMD capture.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(!vid_dumper)
-				throw std::runtime_error("No video dump in progress");
+				throw std::runtime_error("No JMD video dump in progress");
 			try {
 				vid_dumper->end();
-				messages << "Dump finished" << std::endl;
+				messages << "JMD Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
-				messages << "Error ending dump: " << e.what() << std::endl;
+				messages << "Error ending JMD dump: " << e.what() << std::endl;
 			}
 			delete vid_dumper;
 			vid_dumper = NULL;

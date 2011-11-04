@@ -64,4 +64,39 @@ void send_analog_input(int32_t x, int32_t y, unsigned index);
  */
 void set_curcontrols_reset(int32_t delay);
 
+/**
+ * Change the state of autohold.
+ *
+ * Parameter pid: The physical ID of controller.
+ * Parameter idx: The physical Index of the control.
+ * Parameter newstate: New state for autohold.
+ */
+void change_autohold(unsigned pid, unsigned idx, bool newstate);
+
+/**
+ * Read the state of autohold.
+ *
+ * Parameter pid: The physical ID of controller.
+ * Parameter idx: The physical Index of the control.
+ * Returns: True if autohold is in progress, false otherwise.
+ */
+bool get_autohold(unsigned pid, unsigned idx);
+
+/**
+ * Get the name of button.
+ *
+ * Parameter lidx: The logical index of the controller.
+ * Returns:
+ */
+std::string get_button_name(unsigned lidx);
+
+/**
+ * Logical to physical control ID transition.
+ *
+ * Parameter dtype: The device type.
+ * Parameter lidx: The logical index.
+ * Returns: The physical index or -1 if the logical index is invalid for type.
+ */
+int get_physcial_id_for_control(devicetype_t dtype, unsigned lidx);
+
 #endif

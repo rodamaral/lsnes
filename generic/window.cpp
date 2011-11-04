@@ -295,6 +295,14 @@ void window_callback::on_mode_change(bool readonly) throw()
 {
 }
 
+void window_callback::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
+{
+}
+
+void window_callback::on_autohold_reconfigure()
+{
+}
+
 void window_callback::on_sound_change(const std::string& dev) throw()
 {
 }
@@ -329,4 +337,16 @@ void window_callback::do_mode_change(bool readonly) throw()
 {
 	for(auto i : wcbs())
 		i->on_mode_change(readonly);
+}
+
+void window_callback::do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
+{
+	for(auto i : wcbs())
+		i->on_autohold_update(pid, ctrlnum, newstate);
+}
+
+void window_callback::do_autohold_reconfigure()
+{
+	for(auto i : wcbs())
+		i->on_autohold_reconfigure();
 }

@@ -15,8 +15,7 @@ public:
 	~jmd_dumper();
 	void video(uint64_t ts, uint32_t* memory, uint32_t width, uint32_t height);
 	void audio(uint64_t ts, short l, short r);
-	void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-		authors, double gametime, const std::string& rerecords);
+	void gameinfo(const std::string& gamename, const std::string& authors, uint64_t gametime, uint64_t rerecords);
 	void end(uint64_t ts);
 private:
 	struct frame_buffer

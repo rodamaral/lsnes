@@ -21,6 +21,7 @@ namespace
 	{
 	public:
 		myavsnoop(uint64_t frames_to_dump)
+			: av_snooper("myavsnoop-monitor")
 		{
 			frames_dumped = 0;
 			total = frames_to_dump;
@@ -30,8 +31,8 @@ namespace
 		{
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d) throw(std::bad_alloc,
-			std::runtime_error)
+		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
+			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
 		{
 			frames_dumped++;
 			if(frames_dumped % 100 == 0) {
@@ -40,24 +41,14 @@ namespace
 			}
 			if(frames_dumped == total) {
 				//Rough way to end it.
-				av_snooper::end(true);
+				av_snooper::_end();
 				exit(1);
 			}
-		}
-
-		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
-		{
 		}
 
 		void end() throw(std::bad_alloc, std::runtime_error)
 		{
 			std::cout << "Finished!" << std::endl;
-		}
-
-		void gameinfo(const std::string& gamename, const std::list<std::pair<std::string, std::string>>&
-			authors, double gametime, const std::string& rerecords) throw(std::bad_alloc,
-			std::runtime_error)
-		{
 		}
 	private:
 		uint64_t frames_dumped;

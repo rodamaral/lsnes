@@ -50,6 +50,14 @@ public:
  */
 	virtual void on_mode_change(bool readonly) throw();
 /**
+ * Called when autohold (possibly) changes.
+ */
+	virtual void on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
+/**
+ * Called when controllers (possibly) change.
+ */
+	virtual void on_autohold_reconfigure();
+/**
  * Do try to close the window.
  */
 	static void do_close() throw();
@@ -69,6 +77,14 @@ public:
  * Do on_mode_change
  */
 	static void do_mode_change(bool readonly) throw();
+/**
+ * Do on_autohold_update
+ */
+	static void do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
+/**
+ * Do on_autohold_reconfigure
+ */
+	static void do_autohold_reconfigure();
 private:
 	window_callback(window_callback&);
 	window_callback& operator=(window_callback&);
