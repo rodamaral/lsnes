@@ -41,6 +41,7 @@ namespace
 	{
 		ADVANCE_QUIT,			//Quit the emulator.
 		ADVANCE_AUTO,			//Normal (possibly slowed down play).
+		ADVANCE_LOAD,			//Loading a state.
 		ADVANCE_FRAME,			//Frame advance.
 		ADVANCE_SUBFRAME,		//Subframe advance.
 		ADVANCE_SKIPLAG,		//Skip lag (oneshot, reverts to normal).
@@ -182,7 +183,7 @@ namespace
 	{
 		loadmode = lmode;
 		pending_load = filename;
-		amode = ADVANCE_AUTO;
+		amode = ADVANCE_LOAD;
 		window::cancel_wait();
 		window::paused(false);
 	}
@@ -861,7 +862,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	redraw_framebuffer();
 	window::paused(false);
 	amode = ADVANCE_PAUSE;
-	while(amode != ADVANCE_QUIT) {
+	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
 			first_round = our_movie.is_savestate;
 			just_did_loadstate = first_round;
@@ -874,7 +875,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 		if(!first_round) {
 			resetcycles = movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
-			if(amode == ADVANCE_QUIT)
+			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
 			bool delayed_reset = (resetcycles > 0);
 			pending_reset_cycles = -1;
@@ -884,7 +885,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(!delayed_reset) {
 				handle_saves();
 			}
-			int r = handle_load();
+			int r = 0;
+			if(queued_saves.empty())
+				r = handle_load();
 			if(r > 0 || system_corrupt) {
 				first_round = our_movie.is_savestate;
 				amode = ADVANCE_PAUSE;
@@ -896,6 +899,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			}
 		}
 		if(just_did_loadstate) {
+			//If we just loadstated, we are up to date.
 			if(amode == ADVANCE_QUIT)
 				break;
 			amode = ADVANCE_PAUSE;
