@@ -15,9 +15,9 @@
 #include "misc.hpp"
 #include "window.hpp"
 #include "lua.hpp"
-#include "src/rom_select_window.hpp"
-#include "src/messages_window.hpp"
-#include "src/status_window.hpp"
+#include "rom_select_window.hpp"
+#include "messages_window.hpp"
+#include "status_window.hpp"
 
 class lsnes_app : public wxApp
 {

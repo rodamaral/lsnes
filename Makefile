@@ -105,7 +105,7 @@ platform/SDL/%.$(OBJECT_SUFFIX): platform/SDL/%.cpp
 	$(REALCC) -I. -Igeneric -g -std=gnu++0x -I$(BSNES_PATH) -c -o $@ $< $(CFLAGS) $(PLATFORM_CFLAGS)
 else
 ifeq ($(GRAPHICS), WXWIDGETS)
-PLATFORM_OBJECTS += platform/wxwidgets/main-wxwidgets.$(OBJECT_SUFFIX) $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard platform/wxwidgets/src/*.cpp))
+PLATFORM_OBJECTS += $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard platform/wxwidgets/*.cpp))
 PLATFORM_CFLAGS += $(shell $(CROSS_PREFIX)wx-config --cxxflags) $(shell $(CROSS_PREFIX)pkg-config libswscale --cflags)
 PLATFORM_LDFLAGS += $(shell $(CROSS_PREFIX)wx-config --libs) $(shell $(CROSS_PREFIX)pkg-config libswscale --libs)
 platform/wxwidgets/%.$(OBJECT_SUFFIX): platform/wxwidgets/%.cpp
@@ -137,4 +137,4 @@ fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
 	$(HOSTCC) -std=gnu++0x $(HOSTCCFLAGS) -o $@ $^
 
 clean:
-	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) platform/*/*.$(OBJECT_SUFFIX) platform/*/src/*.$(OBJECT_SUFFIX) avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) lua/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp
+	rm -f $(PROGRAMS) $(patsubst %.$(EXECUTABLE_SUFFIX),%.$(OBJECT_SUFFIX),$(PROGRAMS)) platform/*/*.$(OBJECT_SUFFIX)  avidump/*.$(OBJECT_SUFFIX) generic/*.$(OBJECT_SUFFIX) lua/*.$(OBJECT_SUFFIX) fonts/font.o fonts/font.cpp
