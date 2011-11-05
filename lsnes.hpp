@@ -2,7 +2,6 @@
 #define lsnes__hpp__included__
 
 #include <iostream>
-#include "win32-crap.hpp"
 
 #define STILL_HERE do { std::cerr << "Still here at file " << __FILE__ << " line " << __LINE__ << "." << std::endl; } \
 	while(0)
