@@ -1319,7 +1319,6 @@ void emulator_main_window::menu_handle_dump(wxCommandEvent& e)
 		return;
 	}
 	int choice = d->GetSelection();
-	std::cerr << "choice=" << choice << std::endl;
 	if(e.GetId() == wxID_DUMP_SDMP && choice == 0) {
 		cmd = "dump-sdmp";
 		is_prefix = true;
