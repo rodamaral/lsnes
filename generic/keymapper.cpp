@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include "window.hpp"
 #include "lua.hpp"
+#include <stdexcept>
 #include <iostream>
 #include <list>
 #include <map>
@@ -122,6 +123,14 @@ modifier::~modifier() throw()
 	modifier_linkages().erase(modname);
 }
 
+std::set<std::string> modifier::get_set() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : known_modifiers())
+		r.insert(i.first);
+	return r;
+}
+
 modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!known_modifiers().count(name)) {
@@ -135,6 +144,14 @@ modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::r
 std::string modifier::name() const throw(std::bad_alloc)
 {
 	return modname;
+}
+
+std::string modifier::linked_name() const throw(std::bad_alloc)
+{
+	const modifier* p = get_linked_modifier(this);
+	if(p == this)
+		return "";
+	return p->modname;
 }
 
 
@@ -473,6 +490,72 @@ void keygroup::set_exclusive_key_listener(key_listener* l) throw()
 	exclusive = l;
 }
 
+keygroup* keygroup::lookup_by_name(const std::string& name) throw()
+{
+	if(keygroups().count(name))
+		return keygroups()[name];
+	else
+		return NULL;
+}
+
+std::set<std::string> keygroup::get_axis_set() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : keygroups()) {
+		keygroup::parameters p = i.second->get_parameters();
+		std::string type = "";
+		switch(p.ktype) {
+		case keygroup::KT_DISABLED:
+		case keygroup::KT_AXIS_PAIR:
+		case keygroup::KT_AXIS_PAIR_INVERSE:
+		case keygroup::KT_PRESSURE_0M:
+		case keygroup::KT_PRESSURE_0P:
+		case keygroup::KT_PRESSURE_M0:
+		case keygroup::KT_PRESSURE_MP:
+		case keygroup::KT_PRESSURE_P0:
+		case keygroup::KT_PRESSURE_PM:
+			r.insert(i.first);
+			break;
+		default:
+			break;
+		};
+	}
+	return r;
+}
+
+std::set<std::string> keygroup::get_keys() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : keygroups()) {
+		switch(i.second->ktype) {
+		case KT_KEY:
+		case KT_PRESSURE_M0:
+		case KT_PRESSURE_MP:
+		case KT_PRESSURE_0M:
+		case KT_PRESSURE_0P:
+		case KT_PRESSURE_PM:
+		case KT_PRESSURE_P0:
+			r.insert(i.first);
+			break;
+		case KT_AXIS_PAIR:
+		case KT_AXIS_PAIR_INVERSE:
+			r.insert(i.first + "+");
+			r.insert(i.first + "-");
+			break;
+		case KT_HAT:
+			r.insert(i.first + "n");
+			r.insert(i.first + "e");
+			r.insert(i.first + "s");
+			r.insert(i.first + "w");
+			break;
+		default:
+			break;
+		};
+	}
+	return r;
+}
+
+
 namespace
 {
 
@@ -665,6 +748,20 @@ namespace
 		}
 	};
 
+	triple parse_to_triple(const std::string& keyspec)
+	{
+		triple k("", "", "");
+		std::string _keyspec = keyspec;
+		size_t split1 = _keyspec.find_first_of("/");
+		size_t split2 = _keyspec.find_first_of("|");
+		if(split1 >= keyspec.length() || split2 >= keyspec.length() || split1 > split2)
+			throw std::runtime_error("Bad keyspec " + keyspec);
+		k.a = _keyspec.substr(0, split1);
+		k.b = _keyspec.substr(split1 + 1, split2 - split1 - 1);
+		k.c = _keyspec.substr(split2 + 1);
+		return k;
+	}
+
 	std::map<triple, keybind_data> keybindings;
 }
 
@@ -704,4 +801,35 @@ void keymapper::dumpbindings() throw(std::bad_alloc)
 			messages << i.first.a << "/" << i.first.b << " ";
 		messages << i.first.c << std::endl;
 	}
+}
+
+std::set<std::string> keymapper::get_bindings() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : keybindings)
+		r.insert(i.first.a + "/" + i.first.b + "|" + i.first.c);
+	return r;
+}
+
+std::string keymapper::get_command_for(const std::string& keyspec) throw(std::bad_alloc)
+{
+	triple k("", "", "");
+	try {
+		k = parse_to_triple(keyspec);
+	} catch(std::exception& e) {
+		return "";
+	}
+	if(!keybindings.count(k))
+		return "";
+	return keybindings[k].command;
+}
+
+void keymapper::bind_for(const std::string& keyspec, const std::string& cmd) throw(std::bad_alloc, std::runtime_error)
+{
+	triple k("", "", "");
+	k = parse_to_triple(keyspec);
+	if(cmd != "")
+		bind(k.a, k.b, k.c, cmd);
+	else
+		unbind(k.a, k.b, k.c);
 }

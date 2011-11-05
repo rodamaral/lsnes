@@ -5,6 +5,7 @@
 #include "misc.hpp"
 #include "command.hpp"
 #include "globalwrap.hpp"
+#include "window.hpp"
 #include <iostream>
 
 namespace
@@ -71,6 +72,7 @@ void setting::set(const std::string& _setting, const std::string& value) throw(s
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
 		settings()[_setting]->set(value);
+		window_callback::do_setting_change(_setting, value);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
@@ -84,6 +86,8 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
 		settings()[_setting]->blank();
+		window_callback::do_setting_clear(_setting);
+		
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
@@ -114,6 +118,15 @@ void setting::print_all() throw(std::bad_alloc)
 			messages << i.first << ": " << i.second->get() << std::endl;
 	}
 }
+
+std::set<std::string> setting::get_settings_set() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : settings())
+		r.insert(i.first);
+	return r;
+}
+
 
 numeric_setting::numeric_setting(const std::string& sname, int32_t minv, int32_t maxv, int32_t dflt)
 	throw(std::bad_alloc)

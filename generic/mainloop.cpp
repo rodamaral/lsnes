@@ -49,8 +49,6 @@ namespace
 		ADVANCE_PAUSE,			//Unconditional pause.
 	};
 
-	//Memory watches.
-	std::map<std::string, std::string> memory_watches;
 	//Previous mouse mask.
 	int prev_mouse_mask = 0;
 	//Flags related to repeating advance.
@@ -278,12 +276,7 @@ void update_movie_state()
 		_status["Saveslot"] = save_jukebox[save_jukebox_pointer];
 	else
 		_status.erase("Saveslot");
-	for(auto i : memory_watches) {
-		try {
-			_status["M[" + i.first + "]"] = evaluate_watch(i.second);
-		} catch(...) {
-		}
-	}
+	do_watch_memory();
 
 	controls_t c;
 	if(movb.get_movie().readonly_mode())
@@ -626,31 +619,6 @@ namespace
 			redraw_framebuffer();
 		});
 
-	function_ptr_command<tokensplitter&> add_watch("add-watch", "Add a memory watch",
-		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string name = t;
-			if(name == "" || t.tail() == "")
-				throw std::runtime_error("syntax: add-watch <name> <expr>");
-			std::cerr << "Add watch: '" << name << "'" << std::endl;
-			memory_watches[name] = t.tail();
-			update_movie_state();
-		});
-
-	function_ptr_command<tokensplitter&> remove_watch("remove-watch", "Remove a memory watch",
-		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string name = t;
-			if(name == "" || t.tail() != "") {
-				messages << "syntax: remove-watch <name>" << std::endl;
-				return;
-			}
-			std::cerr << "Erase watch: '" << name << "'" << std::endl;
-			memory_watches.erase(name);
-			auto& _status = window::get_emustatus();
-			_status.erase("M[" + name + "]");
-			update_movie_state();
-		});
 
 
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",

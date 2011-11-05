@@ -2,6 +2,7 @@
 #define _settings__hpp__included__
 
 #include <string>
+#include <set>
 #include <stdexcept>
 #include <iostream>
 
@@ -100,6 +101,11 @@ public:
  * throws std::bad_alloc: Not enough memory.
  */
 	static void print_all() throw(std::bad_alloc);
+
+/**
+ * Get set of all settings.
+ */
+	static std::set<std::string> get_settings_set() throw(std::bad_alloc);
 protected:
 	std::string settingname;
 };

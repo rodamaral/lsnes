@@ -1,5 +1,7 @@
 #include "memorywatch.hpp"
 #include "memorymanip.hpp"
+#include "window.hpp"
+#include "command.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <list>
@@ -7,6 +9,12 @@
 #include <stack>
 #include <cmath>
 #include <sstream>
+#include <map>
+
+namespace
+{
+	std::map<std::string, std::string> watches;
+}
 
 std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 {
@@ -219,4 +227,63 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 		sprintf(buffer, "%f", s.top());
 		return buffer;
 	}
+}
+
+std::set<std::string> get_watches() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : watches)
+		r.insert(i.first);
+	return r;
+}
+
+std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc)
+{
+	if(watches.count(w))
+		return watches[w];
+	else
+		return "";
+}
+
+void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std::bad_alloc)
+{
+	auto& status = window::get_emustatus();
+	if(expr != "") {
+		watches[w] = expr;
+		status["M[" + w + "]"] = evaluate_watch(expr);
+	} else {
+		watches.erase(w);
+		status.erase("M[" + w + "]");
+	}
+	window::notify_screen_update();
+}
+
+void do_watch_memory()
+{
+	auto& status = window::get_emustatus();
+	for(auto i : watches)
+		status["M[" + i.first + "]"] = evaluate_watch(i.second);
+}
+
+namespace
+{
+	function_ptr_command<tokensplitter&> add_watch("add-watch", "Add a memory watch",
+		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
+			std::string name = t;
+			if(name == "" || t.tail() == "")
+				throw std::runtime_error("syntax: add-watch <name> <expr>");
+			set_watchexpr_for(name, t.tail());
+		});
+
+	function_ptr_command<tokensplitter&> remove_watch("remove-watch", "Remove a memory watch",
+		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
+		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
+			std::string name = t;
+			if(name == "" || t.tail() != "") {
+				throw std::runtime_error("syntax: remove-watch <name>");
+				return;
+			}
+			set_watchexpr_for(name, "");
+		});
 }

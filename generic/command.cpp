@@ -174,6 +174,60 @@ std::string command::get_long_help() throw(std::bad_alloc)
 	return "No help available on command " + commandname;
 }
 
+std::set<std::string> command::get_aliases() throw(std::bad_alloc)
+{
+	std::set<std::string> r;
+	for(auto i : aliases)
+		r.insert(i.first);
+	return r;
+}
+
+std::string command::get_alias_for(const std::string& aname) throw(std::bad_alloc)
+{
+	if(!valid_alias_name(aname))
+		return "";
+	if(aliases.count(aname)) {
+		std::string x;
+		for(auto i : aliases[aname])
+			x = x + i + "\n";
+		return x;
+	} else
+		return "";
+}
+
+void command::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
+{
+	if(!valid_alias_name(aname))
+		return;
+	std::list<std::string> newlist;
+	size_t avitr = 0;
+	while(avitr < avalue.length()) {
+		size_t nextsplit = avalue.find_first_of("\n");
+		if(nextsplit >= avalue.length())
+			nextsplit = avalue.length();
+		std::string x = avalue.substr(avitr, nextsplit - avitr);
+		if(x.length() > 0 && x[x.length() - 1] == '\r')
+			x = x.substr(0, x.length() - 1);
+		if(x.length() > 0)
+			newlist.push_back(x);
+		avitr = nextsplit + 1;
+	}
+	if(newlist.empty())
+		aliases.erase(aname);
+	else
+		aliases[aname] = newlist;
+}
+
+bool command::valid_alias_name(const std::string& aliasname) throw(std::bad_alloc)
+{
+	if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
+		return false;
+	if(aliasname.find_first_of(" \t") < aliasname.length())
+		return false;
+	return true;
+}
+
+
 tokensplitter::tokensplitter(const std::string& _line) throw(std::bad_alloc)
 {
 	line = _line;

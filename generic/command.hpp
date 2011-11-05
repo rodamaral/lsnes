@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <set>
 
 
 /**
@@ -39,7 +40,22 @@ public:
  * parameter cmd: Command to exeucte.
  */
 	static void invokeC(const std::string& cmd) throw();
-
+/**
+ * Get set of aliases.
+ */
+	static std::set<std::string> get_aliases() throw(std::bad_alloc);
+/**
+ * Get alias
+ */
+	static std::string get_alias_for(const std::string& aname) throw(std::bad_alloc);
+/**
+ * Set alias
+ */
+	static void set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc);
+/**
+ * Is alias name valid.
+ */
+	static bool valid_alias_name(const std::string& aname) throw(std::bad_alloc);
 /**
  * Get short help for command.
  */

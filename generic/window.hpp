@@ -58,6 +58,14 @@ public:
  */
 	virtual void on_autohold_reconfigure();
 /**
+ * Called when setting is changed.
+ */
+	virtual void on_setting_change(const std::string& setting, const std::string& value);
+/**
+ * Called when setting is cleared.
+ */
+	virtual void on_setting_clear(const std::string& setting);
+/**
  * Do try to close the window.
  */
 	static void do_close() throw();
@@ -85,6 +93,14 @@ public:
  * Do on_autohold_reconfigure
  */
 	static void do_autohold_reconfigure();
+/**
+ * Do on_setting_change
+ */
+	static void do_setting_change(const std::string& setting, const std::string& value);
+/**
+ * Do on_setting_clear
+ */
+	static void do_setting_clear(const std::string& setting);
 private:
 	window_callback(window_callback&);
 	window_callback& operator=(window_callback&);

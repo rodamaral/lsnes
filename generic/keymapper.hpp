@@ -71,6 +71,17 @@ public:
  * throws: std::bad_alloc: Not enough memory.
  */
 	std::string name() const throw(std::bad_alloc);
+/**
+ * Get name of linked modifier.
+ *
+ * returns: The name of linked modifier, "" if none.
+ * throws: std::bad_alloc: Not enough memory.
+ */
+	std::string linked_name() const throw(std::bad_alloc);
+/**
+ * Get set of all modifiers.
+ */
+	static std::set<std::string> get_set() throw(std::bad_alloc);
 private:
 	modifier(const modifier&);
 	modifier& operator=(const modifier&);
@@ -207,6 +218,20 @@ public:
  */
 	~keygroup() throw();
 /**
+ * Lookup key group by name.
+ *
+ * Parameter name: The key group name.
+ * Returns: The looked up key group, or NULL if not found.
+ */
+	static keygroup* lookup_by_name(const std::string& name) throw();
+/**
+ * Get the set of axes.
+ *
+ * Returns: The axis set (all axes).
+ * Throws std::bad_alloc: Not enough memory.
+ */
+	static std::set<std::string> get_axis_set() throw(std::bad_alloc);
+/**
  * Change type of key group.
  *
  * parameter t: New type for the key group.
@@ -249,6 +274,10 @@ public:
  * throws std::bad_alloc: Not enough memory.
  */
 	std::string name() throw(std::bad_alloc);
+/**
+ * Get set of all keys (including subkeys).
+ */
+	static std::set<std::string> get_keys() throw(std::bad_alloc);
 /**
  * Keyboard key listener.
  */
@@ -363,13 +392,25 @@ public:
  */
 	static void unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
 		std::runtime_error);
-
 /**
  * Dump list of bindigns as message to console.
  *
  * throws std::bad_alloc: Not enough memory.
  */
 	static void dumpbindings() throw(std::bad_alloc);
+/**
+ * Get keys bound.
+ */
+	static std::set<std::string> get_bindings() throw(std::bad_alloc);
+/**
+ * Get command for key.
+ */
+	static std::string get_command_for(const std::string& keyspec) throw(std::bad_alloc);
+/**
+ * Bind command for key.
+ */
+	static void bind_for(const std::string& keyspec, const std::string& cmd) throw(std::bad_alloc,
+		std::runtime_error);
 };
 
 #endif

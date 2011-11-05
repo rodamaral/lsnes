@@ -350,3 +350,24 @@ void window_callback::do_autohold_reconfigure()
 	for(auto i : wcbs())
 		i->on_autohold_reconfigure();
 }
+
+void window_callback::do_setting_change(const std::string& _setting, const std::string& value)
+{
+	for(auto i : wcbs())
+		i->on_setting_change(_setting, value);
+}
+
+void window_callback::do_setting_clear(const std::string& _setting)
+{
+	for(auto i : wcbs())
+		i->on_setting_clear(_setting);
+}
+
+void window_callback::on_setting_change(const std::string& setting, const std::string& value)
+{
+}
+
+void window_callback::on_setting_clear(const std::string& setting)
+{
+}
+
