@@ -4489,5 +4489,29 @@ Evdev joystick support.
 Refactor more code into generic window code.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta19
+\end_layout
+
+\begin_layout Itemize
+Refactor message handling.
+\end_layout
+
+\begin_layout Itemize
+Rework makefile
+\end_layout
+
+\begin_layout Itemize
+Documentation fixes
+\end_layout
+
+\begin_layout Itemize
+Finish pending saves before load/quit.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets graphics plugin.
+\end_layout
+
 \end_body
 \end_document
