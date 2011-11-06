@@ -358,9 +358,9 @@ void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int
  * parameter orig_x: X position at start of row.
  * parameter next_x: X position for next glyph is written here.
  * parameter next_y: Y position for next glyph is written here.
- * returns: Two components: First is width of character, second is its offset in font data (0 if blank glyph).
+ * returns: Two components: First is width of character, second is pointer to font data (NULL if blank glyph).
  */
-std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
+std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
 	int32_t& next_x, int32_t& next_y) throw();
 
 /**

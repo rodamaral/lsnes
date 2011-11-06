@@ -454,8 +454,6 @@ namespace
 	}
 }
 
-extern uint32_t fontdata[];
-
 namespace
 {
 	bool SDL_initialized = false;
@@ -588,21 +586,36 @@ namespace
 			auto g = find_glyph(si, pos_x, pos_y, 0, pos_x, pos_y);
 			if(pos_y)
 				pos_x = old_x;
-			if(g.second == 0) {
+			uint32_t mw = maxwidth - old_x;
+			if(mw > g.first)
+				mw = g.first;
+			if(g.second == NULL) {
 				//Empty glyph.
 				for(unsigned j = 0; j < 16; j++) {
 					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
-					for(unsigned i = 0; i < g.first && old_x + i < maxwidth; i++)
+					for(unsigned i = 0; i < mw; i++)
 						ptr[old_x + i] = (j >= curstart) ? 0xFFFFFFFFU : 0;
 				}
+			} else if(g.first == 16) {
+				//Wide glyph.
+				for(unsigned j = 0; j < 16; j++) {
+					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j) + old_x;
+					uint32_t dataword = g.second[j >> 1];
+					unsigned rbit = ~((j << 4) & 0x1F);
+					for(uint32_t i = 0; i < mw; i++) {
+						bool b = (((dataword >> (rbit - i)) & 1));
+						b ^= (j >= curstart);
+						ptr[i] = b ? 0xFFFFFFFFU : 0;
+					}
+				}
 			} else {
-				//Narrow/Wide glyph.
+				//Narrow glyph.
 				for(unsigned j = 0; j < 16; j++) {
 					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
-					uint32_t dataword = fontdata[g.second + j / 4];
-					for(uint32_t i = 0; i < g.first && old_x + i < maxwidth; i++) {
-						bool b = (((dataword >> (31 - (j % (32 / g.first)) * g.first - i)) &
-							1));
+					uint32_t dataword = g.second[j >> 2];
+					unsigned rbit = ~((j << 3) & 0x1F);
+					for(uint32_t i = 0; i < mw; i++) {
+						bool b = (((dataword >> (rbit - i)) & 1));
 						b ^= (j >= curstart);
 						ptr[old_x + i] = b ? 0xFFFFFFFFU : 0;
 					}
@@ -692,14 +705,28 @@ namespace
 				break;
 			uint8_t* base = reinterpret_cast<uint8_t*>(surf->pixels) + (y1 + oy) * surf->pitch +
 				4 * (x1 + ox);
-			if(g.second) {
-				//Narrow/Wide glyph.
+			uint32_t mw = width - ox;
+			if(mw > g.first)
+				mw = g.first;
+			if(g.second && g.first == 16) {
+				//Wide glyph.
 				for(unsigned j = 0; j < 16; j++) {
 					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + surf->pitch * j);
-					uint32_t dataword = fontdata[g.second + j / 4];
-					for(uint32_t i = 0; i < g.first && (ox + i) < width; i++) {
-						bool b = (((dataword >> (31 - (j % (32 / g.first)) * g.first - i)) &
-							1));
+					uint32_t dataword = g.second[j >> 1];
+					uint32_t rbit = ~(j << 4) & 0x1F;
+					for(uint32_t i = 0; i < mw; i++) {
+						bool b = (dataword >> (rbit - i) & 1);
+						ptr[i] = b ? bordercolor : 0;
+					}
+				}
+			} else if(g.second) {
+				//Narrow glyph.
+				for(unsigned j = 0; j < 16; j++) {
+					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + surf->pitch * j);
+					uint32_t dataword = g.second[j >> 2];
+					uint32_t rbit = ~(j << 3) & 0x1F;
+					for(uint32_t i = 0; i < mw; i++) {
+						bool b = (dataword >> (rbit - i) & 1);
 						ptr[i] = b ? bordercolor : 0;
 					}
 				}

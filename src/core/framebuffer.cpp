@@ -8,7 +8,6 @@
 lcscreen framebuffer;
 lcscreen screen_nosignal;
 lcscreen screen_corrupt;
-extern uint32_t fontdata[];
 
 namespace
 {
@@ -62,9 +61,9 @@ namespace
 			auto g = find_glyph(rlist->codepoint, 0, 0, 0, x, y);
 			for(uint32_t j = 0; j < 16; j++) {
 				for(uint32_t i = 0; i < 8; i++) {
-					uint32_t slice = g.second + j / 4;
+					uint32_t slice = g.second[j / 4];
 					uint32_t bit = 31 - ((j % 4) * 8 + i);
-					uint32_t value = (fontdata[slice] >> bit) & 1;
+					uint32_t value = (slice >> bit) & 1;
 					if(value) {
 						uint32_t basex = rlist->x + rlist->scale * i;
 						uint32_t basey = rlist->y + rlist->scale * j;

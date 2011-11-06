@@ -33,9 +33,9 @@ namespace
 	}
 }
 
-//Locate glyph in font. Returns <width, offset> pair. Zero offset should be interpretted as an empty
+//Locate glyph in font. Returns <width, pointer> pair. NULL pointer should be interpretted as an empty
 //glyph.
-std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
+std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
 	int32_t& next_x, int32_t& next_y) throw()
 {
 	uint32_t cwidth = 0;
@@ -43,15 +43,15 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
 		cwidth = 64 - (x - orig_x) % 64;
 		next_x = x + cwidth;
 		next_y = y;
-		return std::make_pair(cwidth, 0);
+		return std::pair<uint32_t, const uint32_t*>(cwidth, NULL);
 	} else if(codepoint == 10) {
 		next_x = orig_x;
 		next_y = y + 16;
-		return std::make_pair(0, 0);
+		return std::pair<uint32_t, const uint32_t*>(0, NULL);
 	} else if(codepoint == 32) {
 		next_x = x + 8;
 		next_y = y;
-		return std::make_pair(8, 0);
+		return std::pair<uint32_t, const uint32_t*>(8, NULL);
 	} else {
 		uint32_t mdir = fontdata[0];
 		uint32_t mseed = fontdata[mdir];
@@ -62,7 +62,7 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
 			//Character not found.
 			next_x = x + 8;
 			next_y = y;
-			return std::make_pair(8, 0);
+			return std::pair<uint32_t, const uint32_t*>(8, NULL);
 		}
 		uint32_t sseed = fontdata[sdir];
 		uint32_t ssize = fontdata[sdir + 1];
@@ -71,12 +71,12 @@ std::pair<uint32_t, size_t> find_glyph(uint32_t codepoint, int32_t x, int32_t y,
 			//Character not found.
 			next_x = x + 8;
 			next_y = y;
-			return std::make_pair(8, 0);
+			return std::pair<uint32_t, const uint32_t*>(8, NULL);
 		}
 		bool wide = (fontdata[fontdata[sdir + 2 + 2 * sidx + 1]] != 0);
 		next_x = x + (wide ? 16 : 8);
 		next_y = y;
-		return std::make_pair(wide ? 16 : 8, fontdata[sdir + 2 + 2 * sidx + 1] + 1);
+		return std::make_pair(wide ? 16 : 8, fontdata + fontdata[sdir + 2 + 2 * sidx + 1] + 1);
 	}
 }
 
@@ -139,20 +139,33 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 		if(!dw || !dh)
 			continue;	//Outside screen.
 
-		if(p.second == 0) {
+		if(p.second == NULL) {
 			//Blank glyph.
 			for(uint32_t j = 0; j < dh; j++) {
 				uint32_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
 					bg.apply(base[i]);
 			}
-		} else {
-			//narrow/wide glyph.
+		} else if(p.first == 16) {
+			//Wide glyph.
 			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t dataword = fontdata[p.second + (dy + j) / (32 / p.first)];
+				uint32_t dataword = p.second[(dy + j) >> 1];
 				uint32_t* base = scr.rowptr(cy + j) + cx;
+				uint32_t rbit = (~((dy + j) << 4) & 0x1F) - dx;
 				for(uint32_t i = 0; i < dw; i++)
-					if(((dataword >> (31 - ((dy + j) % (32 / p.first)) * p.first - (dx + i))) & 1))
+					if((dataword >> (rbit - i)) & 1)
+						fg.apply(base[i]);
+					else
+						bg.apply(base[i]);
+			}
+		} else {
+			//narrow glyph.
+			for(uint32_t j = 0; j < dh; j++) {
+				uint32_t dataword = p.second[(dy + j) >> 2];
+				uint32_t* base = scr.rowptr(cy + j) + cx;
+				uint32_t rbit = (~((dy + j) << 3) & 0x1F) - dx;
+				for(uint32_t i = 0; i < dw; i++)
+					if((dataword >> (rbit - i)) & 1)
 						fg.apply(base[i]);
 					else
 						bg.apply(base[i]);
