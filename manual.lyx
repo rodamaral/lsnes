@@ -3730,20 +3730,6 @@ Note: If crosscompiling, this has to be crosscompiler, and CROSS_PREFIX
 \end_layout
 
 \begin_layout Subsubsection
-HOSTCC=<compiler>
-\end_layout
-
-\begin_layout Standard
-Host C++ compiler to use.
- Defaults to the same as CC.
-\end_layout
-
-\begin_layout Standard
-Note: If crosscompiling, that has to be host compiler (the files produced
- will be run in the build process!)
-\end_layout
-
-\begin_layout Subsubsection
 BSNES_IS_COMPAT=1
 \end_layout
 

@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/misc.hpp"
+#include "core/render.hpp"
 #include "core/window.hpp"
 
 #include <fstream>
@@ -186,6 +187,7 @@ void window::init()
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	system_log << "lsnes started at " << buffer << std::endl;
 	system_log << "-----------------------------------------------------------------------" << std::endl;
+	do_init_font();
 	graphics_init();
 	sound_init();
 	joystick_init();

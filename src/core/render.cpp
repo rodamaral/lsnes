@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 #include <snes/snes.hpp>
 
+#include "core/misc.hpp"
 #include "core/png.hpp"
 #include "core/render.hpp"
 
@@ -9,75 +10,180 @@
 #include <iomanip>
 #include <cstdint>
 #include <string>
+#include <map>
+#include <vector>
 
-extern uint32_t fontdata[];
+#define TAG_ZEROWIDTH 0
+#define TAG_NARROW 1
+#define TAG_WIDE 2
+#define TAG_TABULATION 3
+#define TAG_WIDTH_MASK 3
+#define TAG_LINECHANGE 4
+
+extern const char* font_hex_data;
 
 namespace
 {
-	//This is Jenkin's MIX function.
-	uint32_t keyhash(uint32_t key, uint32_t item, uint32_t mod) throw()
+	std::vector<uint32_t> font_glyph_data;
+	std::map<uint32_t, uint32_t> font_glyph_offsets;
+
+	uint32_t parse_word(const char* x)
 	{
-		uint32_t a = key;
-		uint32_t b = 0;
-		uint32_t c = item;
-		a=a-b;	a=a-c;	a=a^(c >> 13);
-		b=b-c;	b=b-a;	b=b^(a << 8);
-		c=c-a;	c=c-b;	c=c^(b >> 13);
-		a=a-b;	a=a-c;	a=a^(c >> 12);
-		b=b-c;	b=b-a;	b=b^(a << 16);
-		c=c-a;	c=c-b;	c=c^(b >> 5);
-		a=a-b;	a=a-c;	a=a^(c >> 3);
-		b=b-c;	b=b-a;	b=b^(a << 10);
-		c=c-a;	c=c-b;	c=c^(b >> 15);
-		return c % mod;
+		char buf[9] = {0};
+		char* end;
+		memcpy(buf, x, 8);
+		unsigned long v = strtoul(buf, &end, 16);
+		if(end != buf + 8)
+			v = 0xFFFFFFFFUL;
+		//std::cerr << "Parse word " << buf << std::endl;
+		return v;
+	}
+
+	void init_font()
+	{
+		static bool iflag = false;
+		if(iflag)
+			return;
+		//Special glyph data.
+		font_glyph_data.resize(7);
+		//Space & Unknown.
+		font_glyph_data[0] = TAG_NARROW;
+		font_glyph_data[1] = 0;
+		font_glyph_data[2] = 0;
+		font_glyph_data[3] = 0;
+		font_glyph_data[4] = 0;
+		//Tabulation.
+		font_glyph_data[5] = TAG_TABULATION;
+		//Linefeed.
+		font_glyph_data[6] = TAG_ZEROWIDTH | TAG_LINECHANGE;
+
+		size_t lsptr = 0;
+		uint32_t lc = 1;
+		for(size_t i = 0;; i++) {
+			//Skip spaces.
+			switch(font_hex_data[i]) {
+			case ' ':
+			case '\t':
+				//Skip spaces at start of line.
+				if(lsptr == i)
+					lsptr++;
+			case '\r':
+			case '\n':
+			case '\0': {
+				char* end;
+				uint32_t cp;
+				size_t fdatastart;
+				//Is this a comment?
+				if(lsptr == i || font_hex_data[lsptr] == '#')
+					goto skip_line;
+				cp = strtoul(font_hex_data + lsptr, &end, 16);
+				if(*end != ':') {
+					messages << "Malformed line " << lc << " in font data" << std::endl;
+					goto skip_line;
+				}
+				fdatastart = end - font_hex_data + 1;
+				if(i - fdatastart == 32) {
+					//Narrow glyph.
+					font_glyph_offsets[cp] = font_glyph_data.size();
+					font_glyph_data.push_back(TAG_NARROW);
+					for(uint32_t k = 0; k < 4; k++)
+						font_glyph_data.push_back(parse_word(end + 1 + 8 * k));
+				} else if(i - fdatastart == 64) {
+					//Wide glyph.
+					font_glyph_offsets[cp] = font_glyph_data.size();
+					font_glyph_data.push_back(TAG_WIDE);
+					for(uint32_t k = 0; k < 8; k++)
+						font_glyph_data.push_back(parse_word(end + 1 + 8 * k));
+				} else {
+					messages << "Malformed line " << lc << " in font data" << std::endl;
+					goto skip_line;
+				}
+skip_line:
+				if(font_hex_data[i] != '\r' || font_hex_data[i + 1] != '\n')
+					lc++;
+				lsptr = i + 1;
+			}
+			};
+			if(!font_hex_data[i])
+				break;
+		}
+
+		//Special characters.
+		font_glyph_offsets[9] = 5;
+		font_glyph_offsets[10] = 6;
+		font_glyph_offsets[32] = 0;
+
+		uint32_t glyphs = 0;
+		uint32_t glyphs_narrow = 0;
+		uint32_t glyphs_wide = 0;
+		uint32_t glyphs_special = 0;
+		for(auto i : font_glyph_offsets) {
+			if(font_glyph_data[i.second] == TAG_NARROW)
+				glyphs_narrow++;
+			else if(font_glyph_data[i.second] == TAG_WIDE)
+				glyphs_wide++;
+			else
+				glyphs_special++;
+			glyphs++;
+		}
+		messages << "Loaded font data: " << glyphs << " glyphs (" << glyphs_narrow << " narrow, " <<
+			glyphs_wide << " wide, " << glyphs_special << " special)." << std::endl;
+		iflag = true;
+	}
+
+	inline uint32_t find_font_glyph_offset(uint32_t cp)
+	{
+		return font_glyph_offsets.count(cp) ?  font_glyph_offsets[cp] : 0; 
+	}
+
+	inline uint32_t process_tag(uint32_t tag, int32_t& x, int32_t& y, int32_t orig_x)
+	{
+		uint32_t dwidth;
+		switch(tag & TAG_WIDTH_MASK) {
+		case TAG_ZEROWIDTH:
+			dwidth = 0;
+			break;
+		case TAG_NARROW:
+			dwidth = 8;
+			break;
+		case TAG_WIDE:
+			dwidth = 16;
+			break;
+		case TAG_TABULATION:
+			dwidth = 0x40 - (x & 0x3F);
+			break;
+		}
+		x += dwidth;
+		if(tag & TAG_LINECHANGE) {
+			y += 16;
+			x = orig_x;
+		}
+		return dwidth;
+	}
+
+	inline bool is_visible(uint32_t tag)
+	{
+		return ((tag & TAG_WIDTH_MASK) == TAG_NARROW || (tag & TAG_WIDTH_MASK) == TAG_WIDE);
 	}
 }
 
-//Locate glyph in font. Returns <width, pointer> pair. NULL pointer should be interpretted as an empty
-//glyph.
+
+void do_init_font()
+{
+	init_font();
+}
+
 std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
 	int32_t& next_x, int32_t& next_y) throw()
 {
-	uint32_t cwidth = 0;
-	if(codepoint == 9) {
-		cwidth = 64 - (x - orig_x) % 64;
-		next_x = x + cwidth;
-		next_y = y;
-		return std::pair<uint32_t, const uint32_t*>(cwidth, NULL);
-	} else if(codepoint == 10) {
-		next_x = orig_x;
-		next_y = y + 16;
-		return std::pair<uint32_t, const uint32_t*>(0, NULL);
-	} else if(codepoint == 32) {
-		next_x = x + 8;
-		next_y = y;
-		return std::pair<uint32_t, const uint32_t*>(8, NULL);
-	} else {
-		uint32_t mdir = fontdata[0];
-		uint32_t mseed = fontdata[mdir];
-		uint32_t msize = fontdata[mdir + 1];
-		uint32_t midx = keyhash(mseed, codepoint, msize);
-		uint32_t sdir = fontdata[mdir + 2 + midx];
-		if(!fontdata[sdir + 1]) {
-			//Character not found.
-			next_x = x + 8;
-			next_y = y;
-			return std::pair<uint32_t, const uint32_t*>(8, NULL);
-		}
-		uint32_t sseed = fontdata[sdir];
-		uint32_t ssize = fontdata[sdir + 1];
-		uint32_t sidx = keyhash(sseed, codepoint, ssize);
-		if(fontdata[sdir + 2 + 2 * sidx] != codepoint) {
-			//Character not found.
-			next_x = x + 8;
-			next_y = y;
-			return std::pair<uint32_t, const uint32_t*>(8, NULL);
-		}
-		bool wide = (fontdata[fontdata[sdir + 2 + 2 * sidx + 1]] != 0);
-		next_x = x + (wide ? 16 : 8);
-		next_y = y;
-		return std::make_pair(wide ? 16 : 8, fontdata + fontdata[sdir + 2 + 2 * sidx + 1] + 1);
-	}
+	init_font();
+	next_x = x;
+	next_y = y;
+	uint32_t offset = find_font_glyph_offset(codepoint);
+	uint32_t tag = font_glyph_data[offset];
+	uint32_t dwidth = process_tag(tag, next_x, next_y, orig_x);
+	bool visible = is_visible(tag);
+	return std::pair<uint32_t, const uint32_t*>(dwidth, visible ? &font_glyph_data[offset + 1] : NULL);
 }
 
 render_object::~render_object() throw()

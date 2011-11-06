@@ -6,7 +6,6 @@ FONT_SRC := unifontfull-5.1.20080820.hex
 
 #Compilers.
 CC := g++
-HOSTCC = $(CC)
 REALCC = $(CROSS_PREFIX)$(CC)
 
 #Flags.
@@ -160,18 +159,11 @@ lsnes.$(EXECUTABLE_SUFFIX): $(CORE_OBJECTS) $(PLATFORM_OBJECTS)
 	$(REALCC) -o $@ $^ $(CORE_LDFLAGS)
 
 #Fonts.
-src/fonts/parsehexfont.$(OBJECT_SUFFIX): src/fonts/parsehexfont.cpp
-	$(HOSTCC) $(HOST_CFLAGS) -c -o $@ $^
-src/fonts/parsehexfont.$(EXECUTABLE_SUFFIX): src/fonts/parsehexfont.$(OBJECT_SUFFIX)
-	$(HOSTCC) $(HOST_LDFLAGS) -o $@ $^
-src/fonts/font.$(OBJECT_SUFFIX): src/fonts/$(FONT_SRC) src/fonts/parsehexfont.$(EXECUTABLE_SUFFIX)
-	src/fonts/parsehexfont.$(EXECUTABLE_SUFFIX) <src/fonts/$(FONT_SRC) >src/fonts/font.cpp
+src/fonts/font.$(OBJECT_SUFFIX): src/fonts/$(FONT_SRC)
+	echo "extern const char* font_hex_data = " >src/fonts/font.cpp
+	sed -r -f src/fonts/fonttransform.sed <$^ >>src/fonts/font.cpp
+	echo ";" >>src/fonts/font.cpp
 	$(REALCC) $(CORE_CFLAGS) -c -o $@ src/fonts/font.cpp
-	$(HOSTCC) $(HOST_CFLAGS) -o src/fonts/verifyhexfont.$(EXECUTABLE_SUFFIX) src/fonts/verifyhexfont.cpp src/fonts/font.cpp
-	src/fonts/verifyhexfont.$(EXECUTABLE_SUFFIX)
-fonts/parsehexfont.$(EXECUTABLE_SUFFIX): fonts/parsehexfont.cpp
-	$(HOSTCC) $(HOST_CFLAGS) -o $@ $^
-
 
 clean:
 	rm -f $(PROGRAMS) src/*.$(OBJECT_SUFFIX) src/*/*.$(OBJECT_SUFFIX)  avi/*.$(OBJECT_SUFFIX) src/fonts/font.o src/fonts/font.cpp
