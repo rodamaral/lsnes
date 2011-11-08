@@ -203,7 +203,7 @@ void command::set_alias_for(const std::string& aname, const std::string& avalue)
 	std::list<std::string> newlist;
 	size_t avitr = 0;
 	while(avitr < avalue.length()) {
-		size_t nextsplit = avalue.find_first_of("\n");
+		size_t nextsplit = avalue.find_first_of("\n", avitr);
 		if(nextsplit >= avalue.length())
 			nextsplit = avalue.length();
 		std::string x = avalue.substr(avitr, nextsplit - avitr);
