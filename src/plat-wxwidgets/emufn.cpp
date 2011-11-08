@@ -567,6 +567,7 @@ namespace
 	{
 		try {
 			struct emulator_boot_state* boot_state = reinterpret_cast<struct emulator_boot_state*>(state);
+			load_settings();
 			main_loop(*boot_state->rom, *boot_state->movie);
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -642,6 +643,7 @@ loop:
 		emu_cr->resume();
 		if(emu_cr->is_dead()) {
 			//Bye!
+			save_settings();
 			if(window1)
 				window1->Destroy();
 			if(window2)

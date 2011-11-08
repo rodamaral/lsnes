@@ -55,4 +55,7 @@ private:
 	wxButton* close;
 };
 
+void load_settings();
+void save_settings();
+
 #endif
