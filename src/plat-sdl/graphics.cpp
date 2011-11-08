@@ -2,6 +2,7 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/misc.hpp"
@@ -383,9 +384,10 @@ namespace
 #endif
 	}
 
-	struct identify_helper : public keygroup::key_listener
+	struct identify_helper : public information_dispatch
 	{
-		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+		identify_helper() : information_dispatch("sdl-identify-helper") {}
+		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 			bool polarity, const std::string& name)
 		{
 			if(!polarity)
@@ -402,9 +404,10 @@ namespace
 		std::string _keys;
 	};
 
-	struct key_eater : public keygroup::key_listener
+	struct key_eater : public information_dispatch
 	{
-		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+		key_eater() : information_dispatch("sdl-key-eater") {}
+		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 			bool polarity, const std::string& name)
 		{
 			//Just eat it.
@@ -880,7 +883,7 @@ namespace
 			return;
 		}
 		if(e.type == SDL_QUIT) {
-			window_callback::do_close();
+			information_dispatch::do_close();
 			state = WINSTATE_NORMAL;
 			return;
 		}
@@ -910,7 +913,7 @@ namespace
 					else
 						mouse_mask &= ~4;
 				}
-				window_callback::do_click(xc, yc, mouse_mask);
+				information_dispatch::do_click(xc, yc, mouse_mask);
 			}
 			if(e.type == SDL_KEYDOWN && key == SDLK_ESCAPE)
 				return;
@@ -930,9 +933,9 @@ namespace
 			break;
 		case WINSTATE_MODAL:
 			//Send the key and eat it (prevent input from getting confused).
-			keygroup::set_exclusive_key_listener(&keyeater);
-			process_input_event(&e),
-			keygroup::set_exclusive_key_listener(NULL);
+			keyeater.grab_keys();
+			process_input_event(&e);
+			keyeater.ungrab_keys();
 			if(e.type == SDL_KEYUP && key == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				modconfirm = false;
@@ -951,9 +954,9 @@ namespace
 			break;
 		case WINSTATE_COMMAND:
 			//Send the key and eat it (prevent input from getting confused).
-			keygroup::set_exclusive_key_listener(&keyeater);
-			process_input_event(&e),
-			keygroup::set_exclusive_key_listener(NULL);
+			keyeater.grab_keys();
+			process_input_event(&e);
+			keyeater.ungrab_keys();
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				command_buf = "";
@@ -1052,7 +1055,7 @@ bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_
 	bool ret = modconfirm;
 	if(delayed_close_flag) {
 		delayed_close_flag = false;
-		window_callback::do_close();
+		information_dispatch::do_close();
 	}
 	return ret;
 }
@@ -1280,7 +1283,7 @@ void poll_inputs_internal() throw(std::bad_alloc)
 	SDL_Event e;
 	identify_helper h;
 	if(state == WINSTATE_IDENTIFY)
-		keygroup::set_exclusive_key_listener(&h);
+		h.grab_keys();
 	while(state != WINSTATE_NORMAL) {
 		window::poll_joysticks();
 		if(SDL_PollEvent(&e))
@@ -1288,11 +1291,12 @@ void poll_inputs_internal() throw(std::bad_alloc)
 		::wait_usec(10000);
 		if(delayed_close_flag) {
 			state = WINSTATE_NORMAL;
+			h.ungrab_keys();
 			return;
 		}
 		if(h.got_it()) {
 			window::modal_message(h.keys(), false);
-			keygroup::set_exclusive_key_listener(NULL);
+			h.ungrab_keys();
 		}
 	}
 }

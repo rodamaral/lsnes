@@ -212,7 +212,7 @@ void autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
 
 class emulator_main_window;
 
-class sound_listener : public window_callback
+class sound_listener : public information_dispatch
 {
 public:
 	sound_listener(emulator_main_window* w);
@@ -718,7 +718,7 @@ loop:
 			mask |= 4;
 		if(e.RightUp())
 			mask &= ~4;
-		window_callback::do_click(e.GetX(), e.GetY(), mask);
+		information_dispatch::do_click(e.GetX(), e.GetY(), mask);
 	}
 }
 
@@ -1427,6 +1427,7 @@ void emulator_main_window::menu_scripting(wxCommandEvent& e)
 }
 
 sound_listener::sound_listener(emulator_main_window* w)
+	: information_dispatch("wx-emufn-sound-listener")
 {
 	win = w;
 }

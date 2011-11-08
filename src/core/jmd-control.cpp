@@ -1,7 +1,7 @@
 #include "jmd.hpp"
 
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
@@ -14,11 +14,11 @@
 
 namespace
 {
-	class jmd_avsnoop : public av_snooper
+	class jmd_avsnoop : public information_dispatch
 	{
 	public:
 		jmd_avsnoop(const std::string& filename, unsigned level) throw(std::bad_alloc)
-			: av_snooper("JMD")
+			: information_dispatch("dump-jmd")
 		{
 			vid_dumper = new jmd_dumper(filename, level);
 			have_dumped_frame = false;
@@ -27,9 +27,9 @@ namespace
 			video_w = 0;
 			video_n = 0;
 			maxtc = 0;
-			soundrate = av_snooper::get_sound_rate();
+			soundrate = get_sound_rate();
 			try {
-				gameinfo(av_snooper::get_gameinfo());
+				on_gameinfo(get_gameinfo());
 			} catch(std::exception& e) {
 				messages << "Can't write gameinfo: " << e.what() << std::endl;
 			}
@@ -40,8 +40,7 @@ namespace
 			delete vid_dumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
-			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
+		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			struct lua_render_context lrc;
 			render_queue rq;
@@ -63,19 +62,19 @@ namespace
 			have_dumped_frame = true;
 		}
 
-		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
+		void on_sample(short l, short r)
 		{
 			uint64_t ts = get_next_audio_ts();
 			if(have_dumped_frame)
 				vid_dumper->audio(ts, l, r);
 		}
 
-		void end() throw(std::bad_alloc, std::runtime_error)
+		void on_dump_end()
 		{
 			vid_dumper->end(maxtc);
 		}
 
-		void gameinfo(const struct gameinfo_struct& gi) throw(std::bad_alloc, std::runtime_error)
+		void on_gameinfo(const struct gameinfo_struct& gi)
 		{
 			std::string authstr;
 			for(size_t i = 0; i < gi.get_author_count(); i++) {
@@ -84,6 +83,11 @@ namespace
 				authstr = authstr + gi.get_author_short(i);
 			}
 			vid_dumper->gameinfo(gi.gamename, authstr, 1000000000ULL * gi.length, gi.get_rerecords());
+		}
+
+		bool get_dumper_flag() throw()
+		{
+			return true;
 		}
 	private:
 		uint64_t get_next_video_ts(uint32_t fps_n, uint32_t fps_d)
@@ -165,7 +169,7 @@ namespace
 			if(!vid_dumper)
 				throw std::runtime_error("No JMD video dump in progress");
 			try {
-				vid_dumper->end();
+				vid_dumper->on_dump_end();
 				messages << "JMD Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;

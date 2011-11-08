@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/misc.hpp"
@@ -131,13 +132,15 @@ void sound_init()
 		window::message("Audio can't be initialized, audio playback disabled");
 		//Disable audio.
 		audio_playback_freq = 0;
-		calculate_sampledup(32000, 1);
+		auto g = information_dispatch::get_sound_rate();
+		calculate_sampledup(g.first, g.second);
 		return;
 	}
 
 	//Fill the parameters.
 	audio_playback_freq = obtained->freq;
-	calculate_sampledup(32000, 1);
+	auto g = information_dispatch::get_sound_rate();
+	calculate_sampledup(g.first, g.second);
 	format = obtained->format;
 	stereo = (obtained->channels == 2);
 	//GO!!!
@@ -163,11 +166,16 @@ void window::play_audio_sample(uint16_t left, uint16_t right) throw()
 	sampledup_ctr -= sampledup_mod;
 }
 
-void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
+class sound_change_listener : public information_dispatch
 {
-	uint32_t g = gcd(rate_n, rate_d);
-	calculate_sampledup(rate_n / g, rate_d / g);
-}
+public:
+	sound_change_listener() : information_dispatch("sdl-sound-change-listener") {}
+	void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
+	{
+		uint32_t g = gcd(rate_n, rate_d);
+		calculate_sampledup(rate_n / g, rate_d / g);
+	}
+} sndchgl;
 
 bool window::sound_initialized()
 {

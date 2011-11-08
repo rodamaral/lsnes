@@ -2,9 +2,9 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
+#include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/lua.hpp"
@@ -196,18 +196,6 @@ namespace
 		window::message("Pending save on '" + filename + "'");
 	}
 
-	class dump_watch : public av_snooper::dump_notification
-	{
-		void dump_starting(const std::string& n) throw()
-		{
-			update_movie_state();
-		}
-		void dump_ending(const std::string& n) throw()
-		{
-			update_movie_state();
-		}
-	} dumpwatch;
-
 	uint32_t lpalette[0x80000];
 	void init_palette()
 	{
@@ -262,7 +250,7 @@ void update_movie_state()
 	{
 		std::ostringstream x;
 		x << (system_corrupt ? "C" : "-");
-		x << (av_snooper::dump_in_progress() ? "D" : "-");
+		x << (information_dispatch::get_dumper_count() ? "D" : "-");
 		x << (last_hires ? "H" : "-");
 		x << (last_interlace ? "I" : "-");
 		if(!system_corrupt)
@@ -353,6 +341,8 @@ class my_interface : public SNES::Interface
 			window::message("Got video refresh in runtosave, expect desyncs!");
 		video_refresh_done = true;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
+		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ? VIDEO_REGION_PAL :
+			VIDEO_REGION_NTSC);
 		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
@@ -373,8 +363,7 @@ class my_interface : public SNES::Interface
 		uint32_t g = gcd(fps_n, fps_d);
 		fps_n /= g;
 		fps_d /= g;
-		av_snooper::_frame(ls, fps_n, fps_d, data, hires, interlace, overscan, region ? SNOOP_REGION_PAL :
-			SNOOP_REGION_NTSC);
+		information_dispatch::do_frame(ls, fps_n, fps_d);
 	}
 
 	void audioSample(int16_t l_sample, int16_t r_sample)
@@ -382,7 +371,7 @@ class my_interface : public SNES::Interface
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		window::play_audio_sample(_l + 32768, _r + 32768);
-		av_snooper::_sample(l_sample, r_sample);
+		information_dispatch::do_sample(l_sample, r_sample);
 		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
 		our_movie.rtc_subsecond += 768;
 		while(our_movie.rtc_subsecond >= SNES::system.apu_frequency()) {
@@ -585,7 +574,7 @@ namespace
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
-			window_callback::do_mode_change(false);
+			information_dispatch::do_mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
 			window::notify_screen_update();
@@ -595,7 +584,7 @@ namespace
 		"Syntax: set-romode\nSwitches to read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(true);
-			window_callback::do_mode_change(true);
+			information_dispatch::do_mode_change(true);
 			update_movie_state();
 			window::notify_screen_update();
 		});
@@ -605,7 +594,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = movb.get_movie().readonly_mode();
 			movb.get_movie().readonly_mode(!c);
-			window_callback::do_mode_change(!c);
+			information_dispatch::do_mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();
@@ -639,9 +628,18 @@ namespace
 
 
 	bool on_quit_prompt = false;
-	class mywindowcallbacks : public window_callback
+	class mywindowcallbacks : public information_dispatch
 	{
 	public:
+		mywindowcallbacks() : information_dispatch("mainloop-window-callbacks") {}
+		void on_new_dumper(const std::string& n)
+		{
+			update_movie_state();
+		}
+		void on_destroy_dumper(const std::string& n)
+		{
+			update_movie_state();
+		}
 		void on_close() throw()
 		{
 			if(on_quit_prompt) {
@@ -883,6 +881,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			window::wait_usec(to_wait_frame(get_utime()));
 		first_round = false;
 	}
-	av_snooper::_end();
+	information_dispatch::do_dump_end();
 	SNES::interface = old_inteface;
 }

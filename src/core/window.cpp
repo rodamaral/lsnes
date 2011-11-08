@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/misc.hpp"
 #include "core/render.hpp"
 #include "core/window.hpp"
@@ -136,11 +137,6 @@ namespace
 	} msg_callback_obj;
 
 	std::ofstream system_log;
-	window_callback* wcb = NULL;
-	uint32_t vc_xoffset;
-	uint32_t vc_yoffset;
-	uint32_t vc_hscl = 1;
-	uint32_t vc_vscl = 1;
 	bool sounds_enabled = true;
 }
 
@@ -153,7 +149,7 @@ void window::sound_enable(bool enable) throw()
 {
 	_sound_enable(enable);
 	sounds_enabled = enable;
-	window_callback::do_sound_unmute(enable);
+	information_dispatch::do_sound_unmute(enable);
 }
 
 void window::set_sound_device(const std::string& dev) throw()
@@ -163,11 +159,8 @@ void window::set_sound_device(const std::string& dev) throw()
 	} catch(std::exception& e) {
 		out() << "Error changing sound device: " << e.what() << std::endl;
 	}
-	try {
-		//After failed change, we don't know what is selected.
-		window_callback::do_sound_change(get_current_sound_device());
-	} catch(...) {
-	}
+	//After failed change, we don't know what is selected.
+	information_dispatch::do_sound_change(get_current_sound_device());
 }
 
 bool window::is_sound_enabled() throw()
@@ -218,14 +211,6 @@ std::ostream& window::out() throw(std::bad_alloc)
 	return *cached;
 }
 
-void window::set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl)
-{
-	vc_xoffset = xoffset;
-	vc_yoffset = yoffset;
-	vc_hscl = hscl;
-	vc_vscl = vscl;
-}
-
 messagebuffer window::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 
 
@@ -262,115 +247,3 @@ void window::fatal_error() throw()
 	fatal_error2();
 	exit(1);
 }
-
-namespace
-{
-	static std::set<window_callback*>& wcbs()
-	{
-		static std::set<window_callback*> s;
-		return s;
-	}
-}
-
-window_callback::window_callback() throw()
-{
-	wcbs().insert(this);
-}
-
-window_callback::~window_callback() throw()
-{
-	wcbs().erase(this);
-}
-
-void window_callback::on_close() throw()
-{
-}
-
-void window_callback::on_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
-{
-}
-
-void window_callback::on_sound_unmute(bool unmute) throw()
-{
-}
-
-void window_callback::on_mode_change(bool readonly) throw()
-{
-}
-
-void window_callback::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
-{
-}
-
-void window_callback::on_autohold_reconfigure()
-{
-}
-
-void window_callback::on_sound_change(const std::string& dev) throw()
-{
-}
-
-void window_callback::do_close() throw()
-{
-	for(auto i : wcbs())
-		i->on_close();
-}
-
-void window_callback::do_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
-{
-	x = (x - vc_xoffset) / vc_hscl;
-	y = (y - vc_yoffset) / vc_vscl;
-	for(auto i : wcbs())
-		i->on_click(x, y, buttonmask);
-}
-
-void window_callback::do_sound_unmute(bool unmute) throw()
-{
-	for(auto i : wcbs())
-		i->on_sound_unmute(unmute);
-}
-
-void window_callback::do_sound_change(const std::string& dev) throw()
-{
-	for(auto i : wcbs())
-		i->on_sound_change(dev);
-}
-
-void window_callback::do_mode_change(bool readonly) throw()
-{
-	for(auto i : wcbs())
-		i->on_mode_change(readonly);
-}
-
-void window_callback::do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
-{
-	for(auto i : wcbs())
-		i->on_autohold_update(pid, ctrlnum, newstate);
-}
-
-void window_callback::do_autohold_reconfigure()
-{
-	for(auto i : wcbs())
-		i->on_autohold_reconfigure();
-}
-
-void window_callback::do_setting_change(const std::string& _setting, const std::string& value)
-{
-	for(auto i : wcbs())
-		i->on_setting_change(_setting, value);
-}
-
-void window_callback::do_setting_clear(const std::string& _setting)
-{
-	for(auto i : wcbs())
-		i->on_setting_clear(_setting);
-}
-
-void window_callback::on_setting_change(const std::string& setting, const std::string& value)
-{
-}
-
-void window_callback::on_setting_clear(const std::string& setting)
-{
-}
-

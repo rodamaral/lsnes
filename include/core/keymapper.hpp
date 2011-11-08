@@ -278,45 +278,6 @@ public:
  * Get set of all keys (including subkeys).
  */
 	static std::set<std::string> get_keys() throw(std::bad_alloc);
-/**
- * Keyboard key listener.
- */
-	struct key_listener
-	{
-/**
- * Invoked on key.
- *
- * parameter modifiers: The modifiers pressed during the transition.
- * parameter keygroup: The key group key is in.
- * parameter subkey: Key index within the key group (identifies individual key).
- * parameter polarity: True if key is going down, false if going up.
- * parameter name: The name of the individual key.
- */
-		virtual void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-			bool polarity, const std::string& name) = 0;
-	};
-/**
- * Add key listener.
- *
- * parameter l: The new key listener.
- * throw std::bad_alloc: Not enough memory.
- */
-	void add_key_listener(key_listener& l) throw(std::bad_alloc);
-/**
- * Remove key listener.
- *
- * parameter l: The key listener to remove.
- * throw std::bad_alloc: Not enough memory.
- */
-	void remove_key_listener(key_listener& l) throw(std::bad_alloc);
-/**
- * Set exclusive key listener.
- *
- * When exclusive key listener is active, all keys are sent to it and not to normal key listeners.
- *
- * parameter l: The new exclusive key listener or NULL if exclusive key listener is to be removed.
- */
-	static void set_exclusive_key_listener(key_listener* l) throw();
 
 /**
  * Key group parameters.
@@ -358,9 +319,7 @@ private:
 	double compensate(short value);
 	double compensate2(double value);
 	void run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x);
-	std::list<key_listener*> listeners;
 	std::string keyname;
-	static key_listener* exclusive;
 };
 
 /**

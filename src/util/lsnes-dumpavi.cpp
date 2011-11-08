@@ -2,8 +2,8 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/lua.hpp"
@@ -19,11 +19,11 @@
 
 namespace
 {
-	class myavsnoop : public av_snooper
+	class myavsnoop : public information_dispatch
 	{
 	public:
 		myavsnoop(uint64_t frames_to_dump)
-			: av_snooper("myavsnoop-monitor")
+			: information_dispatch("myavsnoop-monitor")
 		{
 			frames_dumped = 0;
 			total = frames_to_dump;
@@ -33,8 +33,7 @@ namespace
 		{
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
-			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
+		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			frames_dumped++;
 			if(frames_dumped % 100 == 0) {
@@ -43,12 +42,12 @@ namespace
 			}
 			if(frames_dumped == total) {
 				//Rough way to end it.
-				av_snooper::_end();
-				exit(1);
+				information_dispatch::do_dump_end();
+				exit(0);
 			}
 		}
 
-		void end() throw(std::bad_alloc, std::runtime_error)
+		void on_dump_end()
 		{
 			std::cout << "Finished!" << std::endl;
 		}
@@ -113,7 +112,7 @@ namespace
 		else
 			cmd << "dump-avi " << level << " " << prefix;
 		command::invokeC(cmd.str());
-		if(av_snooper::dump_in_progress()) {
+		if(information_dispatch::get_dumper_count()) {
 			std::cout << "Dumper attach confirmed" << std::endl;
 		} else {
 			std::cout << "Can't start dumper!" << std::endl;

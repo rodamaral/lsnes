@@ -1,6 +1,6 @@
 #include "sdmp.hpp"
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
@@ -13,11 +13,11 @@
 
 namespace
 {
-	class sdmp_avsnoop : public av_snooper
+	class sdmp_avsnoop : public information_dispatch
 	{
 	public:
 		sdmp_avsnoop(const std::string& prefix, bool ssflag) throw(std::bad_alloc)
-			: av_snooper("SDMP")
+			: information_dispatch("dump-sdmp")
 		{
 			dumper = new sdump_dumper(prefix, ssflag);
 		}
@@ -27,23 +27,27 @@ namespace
 			delete dumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
-			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
+		void on_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan, unsigned region)
 		{
 			unsigned flags = 0;
 			dumper->frame(raw, (hires ? SDUMP_FLAG_HIRES : 0) | (interlaced ? SDUMP_FLAG_INTERLACED : 0) |
-				(overscan ? SDUMP_FLAG_OVERSCAN : 0) | (region == SNOOP_REGION_PAL ? SDUMP_FLAG_PAL :
+				(overscan ? SDUMP_FLAG_OVERSCAN : 0) | (region == VIDEO_REGION_PAL ? SDUMP_FLAG_PAL :
 				0));
 		}
 
-		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
+		void on_sample(short l, short r)
 		{
 			dumper->sample(l, r);
 		}
 
-		void end() throw(std::bad_alloc, std::runtime_error)
+		void on_dump_end()
 		{
 			dumper->end();
+		}
+
+		bool get_dumper_flag() throw()
+		{
+			return true;
 		}
 	private:
 		sdump_dumper* dumper;
@@ -95,7 +99,7 @@ namespace
 			if(!vid_dumper)
 				throw std::runtime_error("No SDMP video dump in progress");
 			try {
-				vid_dumper->end();
+				vid_dumper->on_dump_end();
 				messages << "SDMP Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;

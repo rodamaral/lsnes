@@ -16,97 +16,6 @@
 class window;
 
 /**
- * Some backnotifications.
- */
-class window_callback
-{
-public:
-/**
- * Register a callback
- */
-	window_callback() throw();
-/**
- * Unregister a callback.
- */
-	virtual ~window_callback() throw();
-/**
- * Called when user tries to close the window.
- */
-	virtual void on_close() throw();
-/**
- * Called when user clicks on the screen.
- */
-	virtual void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
-/**
- * Called when sound mute/unmute gets (possibly) changed.
- */
-	virtual void on_sound_unmute(bool unmuted) throw();
-/**
- * Called when sound device gets (possibly) changed.
- */
-	virtual void on_sound_change(const std::string& dev) throw();
-/**
- * Called when mode gets (possibly) changed.
- */
-	virtual void on_mode_change(bool readonly) throw();
-/**
- * Called when autohold (possibly) changes.
- */
-	virtual void on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
-/**
- * Called when controllers (possibly) change.
- */
-	virtual void on_autohold_reconfigure();
-/**
- * Called when setting is changed.
- */
-	virtual void on_setting_change(const std::string& setting, const std::string& value);
-/**
- * Called when setting is cleared.
- */
-	virtual void on_setting_clear(const std::string& setting);
-/**
- * Do try to close the window.
- */
-	static void do_close() throw();
-/**
- * Do click on the screen.
- */
-	static void do_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
-/**
- * Do on_sound_unmute.
- */
-	static void do_sound_unmute(bool unmuted) throw();
-/**
- * Do on_sound_change
- */
-	static void do_sound_change(const std::string& dev) throw();
-/**
- * Do on_mode_change
- */
-	static void do_mode_change(bool readonly) throw();
-/**
- * Do on_autohold_update
- */
-	static void do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
-/**
- * Do on_autohold_reconfigure
- */
-	static void do_autohold_reconfigure();
-/**
- * Do on_setting_change
- */
-	static void do_setting_change(const std::string& setting, const std::string& value);
-/**
- * Do on_setting_clear
- */
-	static void do_setting_clear(const std::string& setting);
-private:
-	window_callback(window_callback&);
-	window_callback& operator=(window_callback&);
-};
-
-/**
  * Sound/Graphics init/quit functions. Sound init is called after graphics init, and vice versa for quit.
  *
  * These need to be implemented by the corresponding plugins.
@@ -163,18 +72,6 @@ public:
  * returns: Emulator status area.
  */
 	static std::map<std::string, std::string>& get_emustatus() throw();
-
-/**
- * Set window main screen compensation parameters. This is used for mouse click reporting.
- *
- * Implemented by the generic window code.
- *
- * parameter xoffset: X coordinate of origin.
- * parameter yoffset: Y coordinate of origin.
- * parameter hscl: Horizontal scaling factor.
- * parameter vscl: Vertical scaling factor.
- */
-	static void set_window_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
 
 /**
  * Message buffer.
@@ -322,16 +219,6 @@ public:
  * parameter right: Right sample.
  */
 	static void play_audio_sample(uint16_t left, uint16_t right) throw();
-
-/**
- * Set sound sampling rate.
- *
- * Needs to be implemented by the sound plugin.
- *
- * parameter rate_n: Numerator of sampling rate.
- * parameter rate_d: Denomerator of sampling rate.
- */
-	static void set_sound_rate(uint32_t rate_n, uint32_t rate_d);
 
 /**
  * Has the sound system been successfully initialized?

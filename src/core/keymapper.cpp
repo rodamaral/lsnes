@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/globalwrap.hpp"
 #include "core/keymapper.hpp"
 #include "core/lua.hpp"
@@ -445,20 +446,6 @@ void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 	}
 }
 
-void keygroup::add_key_listener(key_listener& l) throw(std::bad_alloc)
-{
-	listeners.push_back(&l);
-}
-
-void keygroup::remove_key_listener(key_listener& l) throw(std::bad_alloc)
-{
-	for(auto i = listeners.begin(); i != listeners.end(); ++i)
-		if(*i == &l) {
-			listeners.erase(i);
-			return;
-		}
-}
-
 void keygroup::run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x)
 {
 	if(!really)
@@ -476,19 +463,7 @@ void keygroup::run_listeners(const modifier_set& modifiers, unsigned subkey, boo
 		name = name + "s";
 	if(ktype == KT_HAT && subkey == 3)
 		name = name + "w";
-	if(exclusive) {
-		exclusive->key_event(modifiers, *this, subkey, polarity, name);
-		return;
-	}
-	for(auto i : listeners)
-		i->key_event(modifiers, *this, subkey, polarity, name);
-}
-
-keygroup::key_listener* keygroup::exclusive;
-
-void keygroup::set_exclusive_key_listener(key_listener* l) throw()
-{
-	exclusive = l;
+	information_dispatch::do_key_event(modifiers, *this, subkey, polarity, name);
 }
 
 keygroup* keygroup::lookup_by_name(const std::string& name) throw()
@@ -728,19 +703,24 @@ namespace
 			return x;
 		}
 	};
-	struct keybind_data : public keygroup::key_listener
+	struct keybind_data : public information_dispatch
 	{
 		modifier_set mod;
 		modifier_set modmask;
 		keygroup* group;
 		unsigned subkey;
 		std::string command;
-		void key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned _subkey, bool polarity,
+
+		keybind_data() : information_dispatch("keybind-listener") {}
+
+		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned _subkey, bool polarity,
 			const std::string& name)
 		{
 			if(!modifier_set::triggers(modifiers, mod, modmask))
 				return;
 			if(subkey != _subkey)
+				return;
+			if(&keygroup != group)
 				return;
 			std::string cmd = fixup_command_polarity(command, polarity);
 			if(cmd == "")
@@ -763,7 +743,7 @@ namespace
 		return k;
 	}
 
-	std::map<triple, keybind_data> keybindings;
+	std::map<triple, keybind_data*> keybindings;
 }
 
 void keymapper::bind(std::string mod, std::string modmask, std::string keyname, std::string command)
@@ -776,13 +756,13 @@ void keymapper::bind(std::string mod, std::string modmask, std::string keyname, 
 		throw std::runtime_error("Invalid modifiers");
 	auto g = keygroup::lookup(keyname);
 	if(!keybindings.count(k)) {
-		keybindings[k].mod = _mod;
-		keybindings[k].modmask = _modmask;
-		keybindings[k].group = g.first;
-		keybindings[k].subkey = g.second;
-		g.first->add_key_listener(keybindings[k]);
+		keybindings[k] = new keybind_data;
+		keybindings[k]->mod = _mod;
+		keybindings[k]->modmask = _modmask;
+		keybindings[k]->group = g.first;
+		keybindings[k]->subkey = g.second;
 	}
-	keybindings[k].command = command;
+	keybindings[k]->command = command;
 }
 void keymapper::unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
 		std::runtime_error)
@@ -790,7 +770,7 @@ void keymapper::unbind(std::string mod, std::string modmask, std::string keyname
 	triple k(mod, modmask, keyname);
 	if(!keybindings.count(k))
 		throw std::runtime_error("Key is not bound");
-	keybindings[k].group->remove_key_listener(keybindings[k]);
+	delete keybindings[k];
 	keybindings.erase(k);
 }
 
@@ -822,7 +802,7 @@ std::string keymapper::get_command_for(const std::string& keyspec) throw(std::ba
 	}
 	if(!keybindings.count(k))
 		return "";
-	return keybindings[k].command;
+	return keybindings[k]->command;
 }
 
 void keymapper::bind_for(const std::string& keyspec, const std::string& cmd) throw(std::bad_alloc, std::runtime_error)

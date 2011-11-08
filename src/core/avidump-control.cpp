@@ -1,8 +1,8 @@
 #include "cscd.hpp"
 #include "sox.hpp"
 
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
@@ -30,11 +30,11 @@ namespace
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 
-	class avi_avsnoop : public av_snooper
+	class avi_avsnoop : public information_dispatch
 	{
 	public:
 		avi_avsnoop(const std::string& prefix, struct avi_info parameters) throw(std::bad_alloc)
-			: av_snooper("AVI")
+			: information_dispatch("dump-avi-cscd")
 		{
 			_parameters = parameters;
 			avi_cscd_dumper::global_parameters gp;
@@ -53,7 +53,7 @@ namespace
 			sp.deflate_level = parameters.compression_level;
 			sp.max_segment_frames = parameters.max_frames_per_segment;
 			vid_dumper = new avi_cscd_dumper(prefix, gp, sp);
-			soundrate = av_snooper::get_sound_rate();
+			soundrate = get_sound_rate();
 			audio_record_rate = parameters.audio_sampling_rate;
 			soxdumper = new sox_dumper(prefix + ".sox", static_cast<double>(soundrate.first) /
 				soundrate.second, 2);
@@ -67,8 +67,7 @@ namespace
 			delete soxdumper;
 		}
 
-		void frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d, const uint32_t* raw, bool hires,
-			bool interlaced, bool overscan, unsigned region) throw(std::bad_alloc, std::runtime_error)
+		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
@@ -114,7 +113,7 @@ namespace
 			vid_dumper->wait_frame_processing();
 		}
 
-		void sample(short l, short r) throw(std::bad_alloc, std::runtime_error)
+		void on_sample(short l, short r)
 		{
 			dcounter += soundrate.first;
 			while(dcounter < soundrate.second * audio_record_rate + soundrate.first) {
@@ -127,10 +126,15 @@ namespace
 				soxdumper->sample(l, r);
 		}
 
-		void end() throw(std::bad_alloc, std::runtime_error)
+		void on_dump_end()
 		{
 			vid_dumper->end();
 			soxdumper->close();
+		}
+
+		bool get_dumper_flag() throw()
+		{
+			return true;
 		}
 	private:
 		avi_cscd_dumper* vid_dumper;
@@ -190,7 +194,7 @@ namespace
 			if(!vid_dumper)
 				throw std::runtime_error("No AVI(CSCD) video dump in progress");
 			try {
-				vid_dumper->end();
+				vid_dumper->on_dump_end();
 				messages << "AVI(CSCD) Dump finished" << std::endl;
 			} catch(std::bad_alloc& e) {
 				throw;

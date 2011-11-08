@@ -1,10 +1,13 @@
 #include "lsnes.hpp"
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
+
 #include "core/command.hpp"
 #include "core/controller.hpp"
+#include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/mainloop.hpp"
+#include "core/misc.hpp"
 #include "core/window.hpp"
 
 #include <map>
@@ -90,7 +93,7 @@ namespace
 		int bid = -1;
 		switch(p) {
 		case DT_NONE:
-			window::out() << "No such controller #" << (ui_id + 1) << std::endl;
+			messages << "No such controller #" << (ui_id + 1) << std::endl;
 			return;
 		case DT_GAMEPAD:
 			switch(button) {
@@ -107,7 +110,7 @@ namespace
 			case BUTTON_SELECT:	bid = SNES_DEVICE_ID_JOYPAD_SELECT; break;
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JOYPAD_START; break;
 			default:
-				window::out() << "Invalid button for gamepad" << std::endl;
+				messages << "Invalid button for gamepad" << std::endl;
 				return;
 			};
 			break;
@@ -116,7 +119,7 @@ namespace
 			case BUTTON_L:		bid = SNES_DEVICE_ID_MOUSE_LEFT; break;
 			case BUTTON_R:		bid = SNES_DEVICE_ID_MOUSE_RIGHT; break;
 			default:
-				window::out() << "Invalid button for mouse" << std::endl;
+				messages << "Invalid button for mouse" << std::endl;
 				return;
 			};
 			break;
@@ -125,7 +128,7 @@ namespace
 			case BUTTON_START:	bid = SNES_DEVICE_ID_JUSTIFIER_START; break;
 			case BUTTON_TRIGGER:	bid = SNES_DEVICE_ID_JUSTIFIER_TRIGGER; break;
 			default:
-				window::out() << "Invalid button for justifier" << std::endl;
+				messages << "Invalid button for justifier" << std::endl;
 				return;
 			};
 			break;
@@ -136,7 +139,7 @@ namespace
 			case BUTTON_PAUSE:	bid = SNES_DEVICE_ID_SUPER_SCOPE_PAUSE; break;
 			case BUTTON_TURBO:	bid = SNES_DEVICE_ID_SUPER_SCOPE_TURBO; break;
 			default:
-				window::out() << "Invalid button for superscope" << std::endl;
+				messages << "Invalid button for superscope" << std::endl;
 				return;
 			};
 			break;
@@ -156,7 +159,7 @@ namespace
 			enum devicetype_t p = controller_type_by_logical(ui_id);
 			int y = get_physcial_id_for_control(p, button);
 			if(x >= 0 && y >= 0)
-				window_callback::do_autohold_update(x, y, get_autohold(x, y));
+				information_dispatch::do_autohold_update(x, y, get_autohold(x, y));
 		} else
 			do_button_action(ui_id, button, newstate, do_xor, curcontrols);
 	}
@@ -321,7 +324,7 @@ void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core) th
 		snes_set_controller_port_device(port != 0, port_types[ptype].bsnes_type);
 	porttypes[port] = ptype;
 	update_analog_indices();
-	window_callback::do_autohold_reconfigure();
+	information_dispatch::do_autohold_reconfigure();
 }
 
 controls_t get_current_controls(uint64_t frame)
@@ -344,7 +347,7 @@ void send_analog_input(int32_t x, int32_t y, unsigned index)
 	}
 	int aindex = controller_index_by_analog(index);
 	if(aindex < 0) {
-		window::out() << "No analog controller in slot #" << (index + 1) << std::endl;
+		messages << "No analog controller in slot #" << (index + 1) << std::endl;
 		return;
 	}
 	curcontrols(aindex >> 2, aindex & 3, 0) = x;
@@ -370,7 +373,7 @@ void change_autohold(unsigned pid, unsigned idx, bool newstate)
 	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= CONTROLLER_CONTROLS)
 		return;
 	autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) = (newstate ? 1 : 0);
-	window_callback::do_autohold_update(pid, idx, newstate);
+	information_dispatch::do_autohold_update(pid, idx, newstate);
 	update_movie_state();
 	window::notify_screen_update();
 }

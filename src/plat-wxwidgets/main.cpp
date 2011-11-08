@@ -2,7 +2,7 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
-#include "core/avsnoop.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
@@ -63,7 +63,7 @@ bool lsnes_app::OnInit()
 
 int lsnes_app::OnExit()
 {
-	av_snooper::_end();
+	information_dispatch::do_dump_end();
 	rrdata::close();
 	window::quit();
 	return 0;

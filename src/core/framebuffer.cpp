@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
@@ -131,7 +132,7 @@ void redraw_framebuffer()
 		lrc.top_gap + lrc.bottom_gap, lrc.left_gap, lrc.top_gap);
 	main_screen.copy_from(framebuffer, hscl, vscl);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	window::set_window_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
+	information_dispatch::do_click_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
 	rq.run(main_screen);
 	window::notify_screen_update();
 }

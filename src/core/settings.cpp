@@ -1,8 +1,8 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/globalwrap.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
-#include "core/window.hpp"
 
 #include <map>
 #include <sstream>
@@ -72,7 +72,7 @@ void setting::set(const std::string& _setting, const std::string& value) throw(s
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
 		settings()[_setting]->set(value);
-		window_callback::do_setting_change(_setting, value);
+		information_dispatch::do_setting_change(_setting, value);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
@@ -86,7 +86,7 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
 		settings()[_setting]->blank();
-		window_callback::do_setting_clear(_setting);
+		information_dispatch::do_setting_clear(_setting);
 		
 	} catch(std::bad_alloc& e) {
 		throw;

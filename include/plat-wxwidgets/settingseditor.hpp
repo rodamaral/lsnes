@@ -1,7 +1,7 @@
 #ifndef _wxwidgets_settingseditor__hpp__included__
 #define _wxwidgets_settingseditor__hpp__included__
 
-#include "core/window.hpp"
+#include "core/dispatch.hpp"
 
 #include <vector>
 #include <string>
@@ -29,7 +29,7 @@ private:
 
 class wx_settings_editor;
 
-class wx_settings_editor_listener : public window_callback
+class wx_settings_editor_listener : public information_dispatch
 {
 public:
 	wx_settings_editor_listener(wx_settings_editor* _editor);

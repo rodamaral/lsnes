@@ -130,6 +130,7 @@ void wx_settings_editor::clear_setting(const std::string& _setting)
 }
 
 wx_settings_editor_listener::wx_settings_editor_listener(wx_settings_editor* _editor)
+	: information_dispatch("wx-settings-editor-listener")
 {
 	editor = _editor;
 }

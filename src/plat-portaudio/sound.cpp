@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/misc.hpp"
 #include "core/framerate.hpp"
@@ -224,15 +225,20 @@ void window::play_audio_sample(uint16_t left, uint16_t right) throw()
 	sampledup_ctr -= sampledup_mod;
 }
 
-void window::set_sound_rate(uint32_t rate_n, uint32_t rate_d)
+class sound_change_listener : public information_dispatch
 {
-	if(!init_flag)
-		return;
-	uint32_t g = gcd(rate_n, rate_d);
-	use_rate_n = rate_n / g;
-	use_rate_d = rate_d / g;
-	calculate_sampledup(use_rate_n, use_rate_d);
-}
+public:
+	sound_change_listener() : information_dispatch("portaudio-sound-change-listener") {}
+	void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
+	{
+		if(!init_flag)
+			return;
+		uint32_t g = gcd(rate_n, rate_d);
+		use_rate_n = rate_n / g;
+		use_rate_d = rate_d / g;
+		calculate_sampledup(use_rate_n, use_rate_d);
+	}
+} sndchgl;
 
 bool window::sound_initialized()
 {

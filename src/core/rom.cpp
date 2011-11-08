@@ -2,8 +2,8 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
-#include "core/avsnoop.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
@@ -497,8 +497,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_PAL_FRAME);
 	else
 		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_NTSC_FRAME);
-	window::set_sound_rate(SNES::system.apu_frequency(), 768);
-	av_snooper::_sound_rate(SNES::system.apu_frequency(), 768);
+	information_dispatch::do_sound_rate(SNES::system.apu_frequency(), 768);
 	current_rom_type = rtype;
 	current_region = region;
 	refresh_cart_mappings();

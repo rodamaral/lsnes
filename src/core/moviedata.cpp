@@ -4,6 +4,7 @@
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
+#include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/lua.hpp"
@@ -11,7 +12,6 @@
 #include "core/moviedata.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
-#include "core/window.hpp"
 
 #include <iomanip>
 
@@ -265,7 +265,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
-	window_callback::do_mode_change(movb.get_movie().readonly_mode());
+	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
 	messages << "ROM Type ";
 	switch(our_rom->rtype) {
 	case ROMTYPE_SNES:
