@@ -1,5 +1,6 @@
 #include "libsnes.hpp"
 #include <snes/snes.hpp>
+#include <gameboy/gameboy.hpp>
 
 #include <nall/snes/cartridge.hpp>
 #include <nall/gameboy/cartridge.hpp>
@@ -45,6 +46,38 @@ struct Interface : public SNES::Interface {
   void message(const string &text) {
     print(text, "\n");
   }
+
+  void setCheats(const lstring &list = lstring{}) {
+    if(SNES::cartridge.mode() == SNES::Cartridge::Mode::SuperGameBoy) {
+      GameBoy::cheat.reset();
+      for(auto &code : list) {
+        lstring codelist;
+        codelist.split("+", code);
+        for(auto &part : codelist) {
+          unsigned addr, data, comp;
+          if(GameBoy::Cheat::decode(part, addr, data, comp)) {
+            GameBoy::cheat.append({ addr, data, comp });
+          }
+        }
+      }
+      GameBoy::cheat.synchronize();
+      return;
+    }
+
+    SNES::cheat.reset();
+    for(auto &code : list) {
+      lstring codelist;
+      codelist.split("+", code);
+      for(auto &part : codelist) {
+        unsigned addr, data;
+        if(SNES::Cheat::decode(part, addr, data)) {
+          SNES::cheat.append({ addr, data });
+        }
+      }
+    }
+    SNES::cheat.synchronize();
+  }
+
 
   string path(SNES::Cartridge::Slot slot, const string &hint) {
     return { basename, hint };
@@ -115,7 +148,7 @@ void snes_set_cartridge_basename(const char *basename) {
 }
 
 void snes_init(void) {
-  interface.initialize(&interface);
+  SNES::system.init();
   SNES::input.connect(SNES::Controller::Port1, SNES::Input::Device::Joypad);
   SNES::input.connect(SNES::Controller::Port2, SNES::Input::Device::Joypad);
 }
@@ -244,7 +277,7 @@ bool snes_load_cartridge_super_game_boy(
     uint8_t *data = new uint8_t[dmg_size];
     memcpy(data, dmg_data, dmg_size);
     string xmldmg = (dmg_xml && *dmg_xml) ? string(dmg_xml) : GameBoyCartridge(data, dmg_size).markup;
-    GameBoy::cartridge.load(xmldmg, data, dmg_size);
+    GameBoy::cartridge.load(GameBoy::System::Revision::SuperGameBoy, xmldmg, data, dmg_size);
     delete[] data;
   }
   SNES::cartridge.load(SNES::Cartridge::Mode::SuperGameBoy, xmlrom);
