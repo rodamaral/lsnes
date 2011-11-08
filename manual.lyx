@@ -4499,5 +4499,41 @@ Finish pending saves before load/quit.
 Wxwidgets graphics plugin.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta20
+\end_layout
+
+\begin_layout Itemize
+Get rid of win32-crap.[ch]pp.
+\end_layout
+
+\begin_layout Itemize
+Move files around a lot.
+\end_layout
+
+\begin_layout Itemize
+Get rid of need for host C++ compiler.
+\end_layout
+
+\begin_layout Itemize
+Bsnes v084 core.
+\end_layout
+
+\begin_layout Itemize
+Refactor inter-component communication.
+\end_layout
+
+\begin_layout Itemize
+Fix zero luma.
+\end_layout
+
+\begin_layout Itemize
+Fix crash on multiline aliases.
+\end_layout
+
+\begin_layout Itemize
+Load/Save settings in wxwidgets gui.
+\end_layout
+
 \end_body
 \end_document

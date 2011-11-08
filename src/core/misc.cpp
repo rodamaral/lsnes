@@ -306,4 +306,4 @@ uint32_t gcd(uint32_t a, uint32_t b) throw()
 }
 
 std::string bsnes_core_version;
-std::string lsnes_version = "0-β19";
+std::string lsnes_version = "0-β20";
