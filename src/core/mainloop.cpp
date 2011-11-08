@@ -796,7 +796,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	my_interface intrf;
 	auto old_inteface = SNES::interface;
 	SNES::interface = &intrf;
-	intrf.initialize(&intrf);
+	SNES::system.init();
 	status = &window::get_emustatus();
 
 	//Load our given movie.
