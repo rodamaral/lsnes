@@ -218,14 +218,14 @@ void init_matrix(double Kb, double Kr, bool fullrange)
 	double GPr = -0.5 * (1 - Kr - Kb) / (1 - Kr);
 	double BPr = -0.5 * Kb / (1 - Kr);
 	for(uint32_t i = 0; i < 0x80000; i++) {
-		uint32_t l = (i >> 15) & 0xF;
-		//Range of (r,g,b) is 0...465.
+		uint32_t l = 1 + ((i >> 15) & 0xF);
+		//Range of (r,g,b) is 0...496.
 		uint32_t r = (l * ((i >> 0) & 0x1F));
 		uint32_t g = (l * ((i >> 5) & 0x1F));
 		uint32_t b = (l * ((i >> 10) & 0x1F));
-		double Y = (RY * r + GY * g + BY * b) / 465 * (fullrange ? 255 : 219) + (fullrange ? 0 : 16);
-		double Cb = (RPb * r + GPb * g + BPb * b) / 465 * (fullrange ? 255 : 224) + 128;
-		double Cr = (RPr * r + GPr * g + BPr * b) / 465 * (fullrange ? 255 : 224) + 128;
+		double Y = (RY * r + GY * g + BY * b) / 496 * (fullrange ? 255 : 219) + (fullrange ? 0 : 16);
+		double Cb = (RPb * r + GPb * g + BPb * b) / 496 * (fullrange ? 255 : 224) + 128;
+		double Cr = (RPr * r + GPr * g + BPr * b) / 496 * (fullrange ? 255 : 224) + 128;
 		ymatrix[i] = static_cast<uint32_t>(Y * 4194304 + 0.5);
 		cbmatrix[i] = static_cast<uint32_t>(Cb * 4194304 + 0.5);
 		crmatrix[i] = static_cast<uint32_t>(Cr * 4194304 + 0.5);

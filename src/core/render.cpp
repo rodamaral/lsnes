@@ -441,13 +441,13 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 	for(uint32_t j = 0; j < height; j++)
 		for(uint32_t i = 0; i < width; i++) {
 			uint32_t word = memory[pitch * j + i];
-			uint32_t l = (word >> 15) & 0xF;
+			uint32_t l = 1 + ((word >> 15) & 0xF);
 			uint32_t r = l * ((word >> 0) & 0x1F);
 			uint32_t g = l * ((word >> 5) & 0x1F);
 			uint32_t b = l * ((word >> 10) & 0x1F);
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 0] = r * 255 / 465;
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 1] = g * 255 / 465;
-			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 2] = b * 255 / 465;
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 0] = r * 255 / 496;
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 1] = g * 255 / 496;
+			buffer[3 * static_cast<size_t>(width) * j + 3 * i + 2] = b * 255 / 496;
 		}
 	try {
 		save_png_data(file, buffer, width, height);
@@ -585,12 +585,12 @@ void screen::set_palette(uint32_t r, uint32_t g, uint32_t b)
 		memory[i] = (R << r) | (G << g) | (B << b);
 	}
 	for(unsigned i = 0; i < 0x80000; i++) {
-		unsigned l = (i >> 15) & 0xF;
+		unsigned l = 1 + ((i >> 15) & 0xF);
 		unsigned R = (i >> 0) & 0x1F;
 		unsigned G = (i >> 5) & 0x1F;
 		unsigned B = (i >> 10) & 0x1F;
 		double _l = static_cast<double>(l);
-		double m = 17.0 / 31.0;
+		double m = 255.0 / 496.0;
 		R = floor(m * R * _l + 0.5);
 		G = floor(m * G * _l + 0.5);
 		B = floor(m * B * _l + 0.5);
