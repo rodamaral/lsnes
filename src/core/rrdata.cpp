@@ -211,8 +211,8 @@ uint64_t rrdata::read(std::vector<char>& strm, bool dummy) throw(std::bad_alloc)
 	memset(decoding.bytes, 0, RRDATA_BYTES);
 	while(ptr < strm.size()) {
 		char opcode;
-		char buf1[RRDATA_BYTES];
-		char buf2[3];
+		unsigned char buf1[RRDATA_BYTES];
+		unsigned char buf2[3];
 		opcode = strm[ptr++];
 		unsigned validbytes = (opcode & 0x1F);
 		unsigned lengthbytes = (opcode & 0x60) >> 5;
