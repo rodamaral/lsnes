@@ -225,7 +225,7 @@ uint64_t rrdata::read(std::vector<char>& strm, bool dummy) throw(std::bad_alloc)
 			ptr += lengthbytes;
 		}
 		if(lengthbytes == 1)
-			repeat = 2 + buf2[0];
+			repeat = 2 + static_cast<unsigned>(buf2[0]);
 		if(lengthbytes == 2)
 			repeat = 258 + static_cast<unsigned>(buf2[0]) * 256 + buf2[1];
 		if(lengthbytes == 3)
