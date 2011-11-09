@@ -54,11 +54,6 @@ endif
 
 
 #Some misc defines.
-ifdef NO_TIME_INTERCEPT
-CFLAGS += -DNO_TIME_INTERCEPT
-else
-LDFLAGS += -Wl,--wrap,time
-endif
 ifdef BSNES_IS_COMPAT
 CFLAGS += -DBSNES_IS_COMPAT
 endif

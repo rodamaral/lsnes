@@ -1,0 +1,25 @@
+From a523fa5974a1b3542fbee4b081001b06a70c06bc Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Wed, 9 Nov 2011 00:31:59 +0200
+Subject: [PATCH 2/4] Fix bsnes version number in libsnes to be v084, not v083
+
+---
+ ui-libsnes/libsnes.cpp |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/ui-libsnes/libsnes.cpp b/ui-libsnes/libsnes.cpp
+index 5f5ded6..6b4ef12 100755
+--- a/ui-libsnes/libsnes.cpp
++++ b/ui-libsnes/libsnes.cpp
+@@ -112,7 +112,7 @@ struct Interface : public SNES::Interface {
+ static Interface interface;
+ 
+ const char* snes_library_id(void) {
+-  return "bsnes v083";
++  return "bsnes v084";
+ }
+ 
+ unsigned snes_library_revision_major(void) {
+-- 
+1.7.8.rc0.38.g761c4
+

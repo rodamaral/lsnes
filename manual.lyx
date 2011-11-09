@@ -3649,6 +3649,27 @@ Building BSNES
 make ui=ui-libsnes profile=accuracy
 \end_layout
 
+\begin_layout Standard
+For Bsnes v084 You need to apply the four patches in bsnes-patches/.
+ These fix the following:
+\end_layout
+
+\begin_layout Enumerate
+Make libsnes actually compile
+\end_layout
+
+\begin_layout Enumerate
+Bump the version number to be correct
+\end_layout
+
+\begin_layout Enumerate
+Make RTC emulation time cleanly overridable
+\end_layout
+
+\begin_layout Enumerate
+Save/Load controller state on savestate/loadstate.
+\end_layout
+
 \begin_layout Subsection
 Prerequisite libraries:
 \end_layout
@@ -3743,16 +3764,6 @@ LUA=<package>
 
 \begin_layout Standard
 Compile lua support, using package <package>
-\end_layout
-
-\begin_layout Subsubsection
-NO_TIME_INTERCEPT=1
-\end_layout
-
-\begin_layout Standard
-Disable time() interception.
- Prevents recording games using RTC but allows building on some platforms,
- notably Mac OS X.
 \end_layout
 
 \begin_layout Subsubsection

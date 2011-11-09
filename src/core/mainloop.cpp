@@ -236,7 +236,6 @@ void update_movie_state()
 		_status["Frame"] = x.str();
 	} else
 		_status["Frame"] = "N/A";
-#ifndef NO_TIME_INTERCEPT
 	if(!system_corrupt) {
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
@@ -246,7 +245,6 @@ void update_movie_state()
 	} else {
 		_status["RTC"] = "N/A";
 	}
-#endif
 	{
 		std::ostringstream x;
 		x << (system_corrupt ? "C" : "-");
@@ -330,6 +328,11 @@ class my_interface : public SNES::Interface
 		std::string fwp = firmwarepath_setting;
 		std::string finalpath = fwp + "/" + _hint2;
 		return finalpath.c_str();
+	}
+
+	time_t currentTime()
+	{
+		return our_movie.rtc_second;
 	}
 
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)

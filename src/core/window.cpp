@@ -173,7 +173,7 @@ void window::init()
 {
 	msgbuf.register_handler(msg_callback_obj);
 	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
-	time_t curtime = __real_time(NULL);
+	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
 	char buffer[1024];
 	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
@@ -192,7 +192,7 @@ void window::quit()
 	sound_quit();
 	graphics_quit();
 	msgbuf.unregister_handler(msg_callback_obj);
-	time_t curtime = __real_time(NULL);
+	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
 	char buffer[1024];
 	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
@@ -236,7 +236,7 @@ void window::message(const std::string& msg) throw(std::bad_alloc)
 
 void window::fatal_error() throw()
 {
-	time_t curtime = __real_time(NULL);
+	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
 	char buffer[1024];
 	strftime(buffer, 1023, "%Y-%m-%d %H:%M:%S %Z", tm);
