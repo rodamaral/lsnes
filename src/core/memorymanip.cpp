@@ -132,26 +132,26 @@ namespace
 		return create_region(name, base, memory.data(), memory.size(), readonly, native_endian);
 	}
 
-	uint16_t native_bigendian_convert(uint16_t x) throw()
+	uint16_t native_littleendian_convert(uint16_t x) throw()
 	{
-		if(system_little_endian)
+		if(!system_little_endian)
 			return (((x >> 8) & 0xFF) | ((x << 8) & 0xFF00));
 		else
 			return x;
 	}
 
-	uint32_t native_bigendian_convert(uint32_t x) throw()
+	uint32_t native_littleendian_convert(uint32_t x) throw()
 	{
-		if(system_little_endian)
+		if(!system_little_endian)
 			return (((x >> 24) & 0xFF) | ((x >> 8) & 0xFF00) |
 				((x << 8) & 0xFF0000) | ((x << 24) & 0xFF000000));
 		else
 			return x;
 	}
 
-	uint64_t native_bigendian_convert(uint64_t x) throw()
+	uint64_t native_littleendian_convert(uint64_t x) throw()
 	{
-		if(system_little_endian)
+		if(!system_little_endian)
 			return (((x >> 56) & 0xFF) | ((x >> 40) & 0xFF00) |
 				((x >> 24) & 0xFF0000) | ((x >> 8) & 0xFF000000) |
 				((x << 8) & 0xFF00000000ULL) | ((x << 24) & 0xFF0000000000ULL) |
@@ -159,7 +159,6 @@ namespace
 		else
 			return x;
 	}
-
 }
 
 void refresh_cart_mappings() throw(std::bad_alloc)
@@ -238,11 +237,11 @@ uint16_t memory_read_word(uint32_t addr) throw()
 	struct translated_address laddr = translate_address(addr);
 	uint16_t value = 0;
 	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint16_t>(laddr.memory[laddr.rel_addr++]) << 8);
-	if(laddr.rel_addr < laddr.memory_size)
 		value |= (static_cast<uint16_t>(laddr.memory[laddr.rel_addr++]));
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint16_t>(laddr.memory[laddr.rel_addr++]) << 8);
 	if(laddr.native_endian)
-		value = native_bigendian_convert(value);
+		value = native_littleendian_convert(value);
 	return value;
 }
 
@@ -251,15 +250,15 @@ uint32_t memory_read_dword(uint32_t addr) throw()
 	struct translated_address laddr = translate_address(addr);
 	uint32_t value = 0;
 	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 24);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 16);
+		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]));
 	if(laddr.rel_addr < laddr.memory_size)
 		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 8);
 	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]));
+		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 16);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 24);
 	if(laddr.native_endian)
-		value = native_bigendian_convert(value);
+		value = native_littleendian_convert(value);
 	return value;
 }
 
@@ -268,23 +267,23 @@ uint64_t memory_read_qword(uint32_t addr) throw()
 	struct translated_address laddr = translate_address(addr);
 	uint64_t value = 0;
 	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 56);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 48);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 40);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 32);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 24);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 16);
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]));
 	if(laddr.rel_addr < laddr.memory_size)
 		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 8);
 	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]));
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 16);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 24);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 32);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 40);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 48);
+	if(laddr.rel_addr < laddr.memory_size)
+		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 56);
 	if(laddr.native_endian)
-		value = native_bigendian_convert(value);
+		value = native_littleendian_convert(value);
 	return value;
 }
 
@@ -302,11 +301,11 @@ bool memory_write_word(uint32_t addr, uint16_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
-		data = native_bigendian_convert(data);
+		data = native_littleendian_convert(data);
 	if(laddr.rel_addr >= laddr.memory_size - 1 || laddr.not_writable)
 		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
 	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
 	return true;
 }
 
@@ -314,13 +313,13 @@ bool memory_write_dword(uint32_t addr, uint32_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
-		data = native_bigendian_convert(data);
+		data = native_littleendian_convert(data);
 	if(laddr.rel_addr >= laddr.memory_size - 3 || laddr.not_writable)
 		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
 	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
 	return true;
 }
 
@@ -328,17 +327,17 @@ bool memory_write_qword(uint32_t addr, uint64_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
-		data = native_bigendian_convert(data);
+		data = native_littleendian_convert(data);
 	if(laddr.rel_addr >= laddr.memory_size - 7 || laddr.not_writable)
 		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 56);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 48);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 40);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 32);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
 	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 32);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 40);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 48);
+	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 56);
 	return true;
 }
 
@@ -584,8 +583,8 @@ struct search_value_helper
 			v2 = *reinterpret_cast<const value_type*>(newv);
 		} else
 			for(size_t i = 0; i < sizeof(value_type); i++) {
-				v1 |= static_cast<value_type>(oldv[i]) << (8 * (sizeof(value_type) - i));
-				v2 |= static_cast<value_type>(newv[i]) << (8 * (sizeof(value_type) - i));
+				v1 |= static_cast<value_type>(oldv[i]) << (8 * i);
+				v2 |= static_cast<value_type>(newv[i]) << (8 * i);
 			}
 		return val(v1, v2);
 	}

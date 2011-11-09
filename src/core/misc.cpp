@@ -210,7 +210,7 @@ void dump_region_map() throw(std::bad_alloc)
 	for(auto i : regions) {
 		char buf[256];
 		sprintf(buf, "Region: %08X-%08X %08X %s%c %s", i.baseaddr, i.lastaddr, i.size,
-			i.readonly ? "R-" : "RW", i.native_endian ? 'N' : 'B', i.region_name.c_str());
+			i.readonly ? "R-" : "RW", i.native_endian ? 'N' : 'L', i.region_name.c_str());
 		messages << buf << std::endl;
 	}
 }

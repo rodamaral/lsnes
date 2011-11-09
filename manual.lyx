@@ -2470,7 +2470,7 @@ readonly (boolean): True of the VMA corresponds to ROM.
 
 \begin_layout Itemize
 native_endian (boolean): True if the VMA has native endian as opposed to
- big endian.
+ little endian.
 \end_layout
 
 \begin_layout Subsubsection
