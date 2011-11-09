@@ -4546,5 +4546,21 @@ Fix crash on multiline aliases.
 Load/Save settings in wxwidgets gui.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta21
+\end_layout
+
+\begin_layout Itemize
+Patch problems in bsnes core
+\end_layout
+
+\begin_layout Itemize
+SNES is little-endian, not big-endian!
+\end_layout
+
+\begin_layout Itemize
+Fix memory corruption in lcscreen::load()
+\end_layout
+
 \end_body
 \end_document
