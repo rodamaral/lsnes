@@ -416,7 +416,7 @@ void lcscreen::load(const std::vector<char>& data) throw(std::bad_alloc, std::ru
 	width = _width;
 	height = _height;
 	pitch = width;
-	for(size_t i = 0; i < (data.size() - 2) / 2; i++)
+	for(size_t i = 0; i < (data.size() - 2) / 3; i++)
 		mem[i] = static_cast<uint32_t>(data2[2 + 3 * i]) * 65536 +
 			static_cast<uint32_t>(data2[2 + 3 * i + 1]) * 256 +
 			static_cast<uint32_t>(data2[2 + 3 * i + 2]);
