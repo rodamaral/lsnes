@@ -883,6 +883,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		if(amode == ADVANCE_AUTO)
 			window::wait_usec(to_wait_frame(get_utime()));
 		first_round = false;
+		lua_callback_do_frame();
 	}
 	information_dispatch::do_dump_end();
 	SNES::interface = old_inteface;

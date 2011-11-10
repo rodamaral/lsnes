@@ -2609,6 +2609,14 @@ Called when video dump frame is being painted.
 \end_layout
 
 \begin_layout Subsubsection
+Callback: on_frame()
+\end_layout
+
+\begin_layout Standard
+Called on each starting whole frame.
+\end_layout
+
+\begin_layout Subsubsection
 Callback: on_startup()
 \end_layout
 
