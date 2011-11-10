@@ -8,6 +8,7 @@ void lua_callback_do_paint(struct lua_render_context* ctx) throw() {}
 void lua_callback_do_video(struct lua_render_context* ctx) throw() {}
 void lua_callback_do_input(controls_t& data, bool subframe) throw() {}
 void lua_callback_do_reset() throw() {}
+void lua_callback_do_frame() throw() {}
 void lua_callback_do_readwrite() throw() {}
 void lua_callback_startup() throw() {}
 void lua_callback_pre_load(const std::string& name) throw() {}
@@ -305,6 +306,13 @@ void lua_callback_do_video(struct lua_render_context* ctx) throw()
 void lua_callback_do_reset() throw()
 {
 	if(!callback_exists("on_reset"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_frame() throw()
+{
+	if(!callback_exists("on_frame"))
 		return;
 	run_lua_cb(0);
 }
