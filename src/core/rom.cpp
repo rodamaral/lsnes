@@ -654,7 +654,6 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 
 std::vector<char> save_core_state() throw(std::bad_alloc)
 {
-	SNES::system.runtosave();
 	std::vector<char> ret;
 	serializer s = SNES::system.serialize();
 	ret.resize(s.size());
