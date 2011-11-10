@@ -231,7 +231,7 @@ uint64_t rrdata::read(std::vector<char>& strm, bool dummy) throw(std::bad_alloc)
 		if(lengthbytes == 3)
 			repeat = 65794 + static_cast<unsigned>(buf2[0]) * 65536 + static_cast<unsigned>(buf2[1]) *
 				256 + buf2[2];
-		//std::cerr << "Decoding " << count << " symbols starting from " << decoding << std::endl;
+		//std::cerr << "Decoding " << repeat << " symbols starting from " << decoding << std::endl;
 		if(!dummy)
 			for(unsigned i = 0; i < repeat; i++)
 				rrdata::add(decoding++);
