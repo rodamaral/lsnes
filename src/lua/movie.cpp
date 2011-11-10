@@ -48,4 +48,10 @@ namespace
 		}
 		return 1;
 	});
+
+	function_ptr_luafun rrc("movie.read_rtc", [](lua_State* LS, const std::string& fname) -> int {
+		lua_pushnumber(LS, our_movie.rtc_second);
+		lua_pushnumber(LS, our_movie.rtc_subsecond);
+		return 2;
+	});
 }
