@@ -3658,28 +3658,32 @@ make ui=ui-libsnes profile=accuracy
 \end_layout
 
 \begin_layout Standard
-For Bsnes v084 You need to apply the four patches in bsnes-patches/.
+For Bsnes v084 You need to apply the six patches in bsnes-patches/.
  These fix the following:
 \end_layout
 
 \begin_layout Enumerate
-Make libsnes actually compile
+Make libsnes actually compile (it won't compile without!)
 \end_layout
 
 \begin_layout Enumerate
-Bump the version number to be correct
+Bump the version number to be correct (nice to have)
 \end_layout
 
 \begin_layout Enumerate
-Make RTC emulation time cleanly overridable
+Make RTC emulation time cleanly overridable (needed by games using RTC)
 \end_layout
 
 \begin_layout Enumerate
-Save/Load controller state on savestate/loadstate.
+Save/Load controller state on savestate/loadstate (many games screw up without)
 \end_layout
 
 \begin_layout Enumerate
-Fix unserialization of 64-bit integers.
+Fix unserialization of 64-bit integers (needed)
+\end_layout
+
+\begin_layout Enumerate
+Allow frontend to control random number seed (just nice to have)
 \end_layout
 
 \begin_layout Subsection

@@ -176,6 +176,8 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 	}
 }
 
+extern time_t random_seed_value;
+
 //Load state from loaded movie file (does not catch errors).
 void do_load_state(struct moviefile& _movie, int lmode)
 {
@@ -229,6 +231,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	rrdata::add_internal();
 	try {
 		our_rom->region = gtype::toromregion(_movie.gametype);
+		random_seed_value = _movie.rtc_second;
 		our_rom->load();
 
 		if(_movie.is_savestate && lmode != LOAD_STATE_MOVIE) {

@@ -33,6 +33,7 @@
 #define SPECIAL_NONE 3
 
 void update_movie_state();
+time_t random_seed_value = 0;
 
 namespace
 {
@@ -333,6 +334,11 @@ class my_interface : public SNES::Interface
 	time_t currentTime()
 	{
 		return our_movie.rtc_second;
+	}
+
+	time_t randomSeed()
+	{
+		return random_seed_value;
 	}
 
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
