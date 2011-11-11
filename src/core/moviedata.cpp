@@ -14,6 +14,7 @@
 #include "core/settings.hpp"
 
 #include <iomanip>
+#include <fstream>
 
 struct moviefile our_movie;
 struct loaded_rom* our_rom;
@@ -97,6 +98,17 @@ namespace
 				throw std::runtime_error("No such author");
 			auto g = split_author(t.tail());
 			our_movie.authors[index] = g;
+		});
+
+	function_ptr_command<const std::string&> dump_coresave("dump-coresave", "Dump bsnes core state",
+		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
+		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
+			auto x = save_core_state();
+			x.resize(x.size() - 32);
+			std::ofstream y(name.c_str(), std::ios::out | std::ios::binary);
+			y.write(&x[0], x.size());
+			y.close();
+			messages << "Saved core state to " << name << std::endl;
 		});
 
 	void warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot,

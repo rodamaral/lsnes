@@ -1,5 +1,6 @@
 #include "core/lua-int.hpp"
 #include "core/memorymanip.hpp"
+#include "core/rom.hpp"
 
 namespace
 {
@@ -80,6 +81,19 @@ namespace
 		return handle_push_vma(LS, regions, i);
 	});
 
+	const char* hexes = "0123456789ABCDEF";
+
+	function_ptr_luafun hashstate("memory.hash_state", [](lua_State* LS, const std::string& fname) -> int {
+		char hash[64];
+		auto x = save_core_state();
+		size_t offset = x.size() - 32;
+		for(unsigned i = 0; i < 32; i++) {
+			hash[2 * i + 0] = hexes[static_cast<unsigned char>(x[offset + i]) >> 4];
+			hash[2 * i + 1] = hexes[static_cast<unsigned char>(x[offset + i]) & 0xF];
+		}
+		lua_pushlstring(LS, hash, 64);
+		return 1;
+	});
 
 	lua_read_memory<uint8_t, uint8_t, memory_read_byte> rub("memory.readbyte");
 	lua_read_memory<int8_t, uint8_t, memory_read_byte> rsb("memory.readsbyte");
