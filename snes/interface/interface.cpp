@@ -23,4 +23,9 @@ time_t Interface::currentTime()
   return time(0);
 }
 
+time_t Interface::randomSeed()
+{
+  return time(0);
+}
+
 }
