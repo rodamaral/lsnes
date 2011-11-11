@@ -4578,5 +4578,50 @@ SNES is little-endian, not big-endian!
 Fix memory corruption in lcscreen::load()
 \end_layout
 
+\begin_layout Subsection
+rr0-beta22
+\end_layout
+
+\begin_layout Itemize
+Fix interpretting repeat counts in rrdata loading.
+\end_layout
+
+\begin_layout Itemize
+New lua callback: on_frame()
+\end_layout
+
+\begin_layout Itemize
+Remove calls to runtosave() that aren't supposed to be there
+\end_layout
+
+\begin_layout Itemize
+Lua function: movie.read_rtc()
+\end_layout
+
+\begin_layout Itemize
+Ignore src/fonts/font.cpp
+\end_layout
+
+\begin_layout Itemize
+Fix more bsnes core problems
+\end_layout
+
+\begin_layout Itemize
+Control bsnes random seeding
+\end_layout
+
+\begin_layout Itemize
+Pause-on-end
+\end_layout
+
+\begin_layout Itemize
+Some bsnes core debugging features (state dump and state hash)
+\end_layout
+
+\begin_layout Itemize
+Fix titlebar version number (no, the last version wasn't 'lsnes-0-beta21',
+ it was 'lsnes rr0-beta21').
+\end_layout
+
 \end_body
 \end_document
