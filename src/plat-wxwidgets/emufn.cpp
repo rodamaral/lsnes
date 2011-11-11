@@ -1481,7 +1481,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 	wx_status_window* status = new wx_status_window();
 	window2 = status;
 	status->Show();
-	std::string windowname = "lsnes-" + lsnes_version + "[" + bsnes_core_version + "]";
+	std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
 	main_window = new emulator_main_window(windowname);
 	struct emulator_boot_state s;
 	s.rom = &rom;

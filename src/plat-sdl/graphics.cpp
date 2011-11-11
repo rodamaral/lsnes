@@ -1029,7 +1029,7 @@ void graphics_init()
 	console_mode = false;
 
 	window::notify_screen_update();
-	std::string windowname = "lsnes-" + lsnes_version + "[" + bsnes_core_version + "]";
+	std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 
 	init_joysticks();
