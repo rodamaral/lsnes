@@ -3678,6 +3678,10 @@ Make RTC emulation time cleanly overridable
 Save/Load controller state on savestate/loadstate.
 \end_layout
 
+\begin_layout Enumerate
+Fix unserialization of 64-bit integers.
+\end_layout
+
 \begin_layout Subsection
 Prerequisite libraries:
 \end_layout
