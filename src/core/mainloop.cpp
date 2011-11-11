@@ -75,6 +75,7 @@ namespace
 	int location_special;
 	//Few settings.
 	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
+	boolean_setting pause_on_end("pause-on-end", false);
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
@@ -155,6 +156,11 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 				cancel_advance = false;
 			}
 			window::paused(amode == ADVANCE_PAUSE);
+		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode()) {
+			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count() + 1) {
+				amode = ADVANCE_PAUSE;
+				window::paused(true);
+			}
 		} else {
 			window::paused((amode == ADVANCE_PAUSE));
 			cancel_advance = false;
@@ -616,7 +622,12 @@ namespace
 			redraw_framebuffer();
 		});
 
-
+	function_ptr_command<> tpon("toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			bool newstate = !static_cast<bool>(pause_on_end);
+			pause_on_end.set(newstate ? "1" : "0");
+			messages << "Pause-on-end is now " << (newstate ? "ON" : "OFF") << std::endl;
+		});
 
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
