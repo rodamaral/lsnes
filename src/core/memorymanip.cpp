@@ -365,6 +365,28 @@ void memorysearch::reset() throw(std::bad_alloc)
 }
 
 /**
+ * \brief Native-value search function for trivial true function
+ */
+struct search_update
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef uint8_t value_type;
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(uint8_t oldv, uint8_t newv) const throw()
+	{
+		return true;
+	}
+};
+
+/**
  * \brief Native-value search function for specific value
  */
 template<typename T>
@@ -691,6 +713,8 @@ void memorysearch::qword_une() throw() { search(search_ne<uint64_t>()); }
 void memorysearch::qword_uge() throw() { search(search_ge<uint64_t>()); }
 void memorysearch::qword_ugt() throw() { search(search_gt<uint64_t>()); }
 
+void memorysearch::update() throw() { search(search_update()); }
+
 uint32_t memorysearch::get_candidate_count() throw()
 {
 	return candidates;
@@ -989,9 +1013,11 @@ namespace
 				isrch->qword_uge();
 			else if(firstword == "uqgt" && !has_value)
 				isrch->qword_ugt();
-			else if(firstword == "q" && has_value) {
+			else if(firstword == "q" && has_value)
 				isrch->qword_value(value & 0xFF);
-			} else if(firstword == "reset" && !has_value)
+			else if(firstword == "update" && !has_value)
+				isrch->update();
+			else if(firstword == "reset" && !has_value)
 				isrch->reset();
 			else if(firstword == "count" && !has_value)
 				;
@@ -1011,6 +1037,7 @@ namespace
 		{
 			return "Syntax: " + _command + " {s,u}{b,w,d,q}{lt,le,eq,ne,ge,gt}\n"
 				"Syntax: " + _command + " {b,w,d,q} <value>\n"
+				"Syntax: " + _command + " update\n"
 				"Syntax: " + _command + " reset\n"
 				"Syntax: " + _command + " count\n"
 				"Syntax: " + _command + " print\n"

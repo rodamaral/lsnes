@@ -401,6 +401,11 @@ public:
 	void qword_ugt() throw();
 
 /**
+ * \brief Search for all bytes (update values)
+ */
+	void update() throw();
+
+/**
  * \brief Get number of memory addresses that are still candidates
  *
  * This returns the number of memory addresses satisfying constraints so far.
