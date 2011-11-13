@@ -190,7 +190,7 @@ public:
 	size_t get_max_window_size() throw();
 private:
 	void send_notifications();
-	std::map<uint64_t, std::string> messages;
+	std::map<uint64_t, std::string> messages_buf;
 	uint64_t first_present_message;
 	uint64_t next_message_number;
 	uint64_t window_start;

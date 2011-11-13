@@ -24,10 +24,10 @@ messagebuffer::messagebuffer(size_t maxmessages, size_t windowsize) throw(std::b
 
 void messagebuffer::add_message(const std::string& msg) throw(std::bad_alloc, std::runtime_error)
 {
-	messages[next_message_number++] = msg;
+	messages_buf[next_message_number++] = msg;
 	//If too many messages, erase one.
-	if(messages.size() > max_messages)
-		messages.erase(first_present_message++);
+	if(messages_buf.size() > max_messages)
+		messages_buf.erase(first_present_message++);
 	//Force scrolling if message in window got erased.
 	if(window_start < first_present_message) {
 		window_start = first_present_message;
@@ -42,9 +42,9 @@ void messagebuffer::add_message(const std::string& msg) throw(std::bad_alloc, st
 
 const std::string& messagebuffer::get_message(size_t msgnum) throw(std::bad_alloc, std::logic_error)
 {
-	if(!messages.count(msgnum))
+	if(!messages_buf.count(msgnum))
 		throw std::logic_error("Invalid message number");
-	return messages[msgnum];
+	return messages_buf[msgnum];
 }
 
 size_t messagebuffer::get_msg_first() throw()
