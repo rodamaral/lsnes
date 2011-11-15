@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/window.hpp"
@@ -256,7 +257,7 @@ void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std:
 		watches.erase(w);
 		status.erase("M[" + w + "]");
 	}
-	window::notify_screen_update();
+	information_dispatch::do_status_update();
 }
 
 void do_watch_memory()

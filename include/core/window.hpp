@@ -157,24 +157,6 @@ public:
 	static void poll_inputs() throw(std::bad_alloc);
 
 /**
- * Notify that the screen has been updated.
- *
- * Needs to be implemented by the graphics plugin.
- *
- * parameter full: Do full refresh if true.
- */
-	static void notify_screen_update(bool full = false) throw();
-
-/**
- * Set the screen to use as main surface.
- *
- * Needs to be implemented by the graphics plugin.
- *
- * parameter scr: The screen to use.
- */
-	static void set_main_surface(screen& scr) throw();
-
-/**
  * Enable/Disable pause mode.
  *
  * Needs to be implemented by the graphics plugin.

@@ -128,13 +128,17 @@ void redraw_framebuffer()
 	lrc.width = framebuffer.width * hscl;
 	lrc.height = framebuffer.height * vscl;
 	lua_callback_do_paint(&lrc);
-	main_screen.reallocate(framebuffer.width * hscl + lrc.left_gap + lrc.right_gap, framebuffer.height * vscl +
-		lrc.top_gap + lrc.bottom_gap, lrc.left_gap, lrc.top_gap);
+	information_dispatch::do_screen_resize(main_screen, framebuffer.width * hscl + lrc.left_gap + lrc.right_gap,
+		framebuffer.height * vscl + lrc.top_gap + lrc.bottom_gap);
+
+	information_dispatch::do_render_update_start();
+	main_screen.set_origin(lrc.left_gap, lrc.top_gap);
 	main_screen.copy_from(framebuffer, hscl, vscl);
+	rq.run(main_screen);
+	information_dispatch::do_render_update_end();
+
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
 	information_dispatch::do_click_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
-	rq.run(main_screen);
-	window::notify_screen_update();
 }
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)

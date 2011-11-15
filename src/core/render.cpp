@@ -460,13 +460,18 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 
 void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 {
+	if(width < originx || height < originy) {
+		//Just clear the screen.
+		for(uint32_t y = 0; y < height; y++)
+			memset(rowptr(y), 0, 4 * width);
+		return;
+	}
 	uint32_t copyable_width = (width - originx) / hscale;
 	uint32_t copyable_height = (height - originy) / vscale;
 	copyable_width = (copyable_width > scr.width) ? scr.width : copyable_width;
 	copyable_height = (copyable_height > scr.height) ? scr.height : copyable_height;
-	for(uint32_t y = 0; y < height; y++) {
+	for(uint32_t y = 0; y < height; y++)
 		memset(rowptr(y), 0, 4 * width);
-	}
 	for(uint32_t y = 0; y < copyable_height; y++) {
 		uint32_t line = y * vscale + originy;
 		uint32_t* ptr = rowptr(line) + originx;
@@ -481,14 +486,10 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 	}
 }
 
-void screen::reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy, bool upside_down)
-	throw(std::bad_alloc)
+void screen::reallocate(uint32_t _width, uint32_t _height, bool upside_down) throw(std::bad_alloc)
 {
-	if(_width == width && _height == height) {
-		originx = _originx;
-		originy = _originy;
+	if(_width == width && _height == height)
 		return;
-	}
 	if(!_width || !_height) {
 		width = height = originx = originy = pitch = 0;
 		if(memory && !user_memory)
@@ -501,8 +502,6 @@ void screen::reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, ui
 	uint32_t* newmem = new uint32_t[_width * _height];
 	width = _width;
 	height = _height;
-	originx = _originx;
-	originy = _originy;
 	pitch = 4 * _width;
 	if(memory && !user_memory)
 		delete[] memory;
@@ -511,20 +510,24 @@ void screen::reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, ui
 	flipped = upside_down;
 }
 
-void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
-	uint32_t _pitch) throw()
+void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _pitch) throw()
 {
 	if(memory && !user_memory)
 		delete[] memory;
 	width = _width;
 	height = _height;
-	originx = _originx;
-	originy = _originy;
 	pitch = _pitch;
 	user_memory = true;
 	memory = _memory;
 	flipped = false;
 }
+
+void screen::set_origin(uint32_t _originx, uint32_t _originy) throw()
+{
+	originx = _originx;
+	originy = _originy;
+}
+
 
 uint32_t* screen::rowptr(uint32_t row) throw()
 {

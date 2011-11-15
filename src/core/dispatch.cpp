@@ -492,3 +492,59 @@ void information_dispatch::do_click_compensation(uint32_t xoffset, uint32_t yoff
 	vc_hscl = hscl;
 	vc_vscl = vscl;
 }
+
+void information_dispatch::on_screen_resize(screen& scr, uint32_t w, uint32_t h)
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_screen_resize(screen& scr, uint32_t w, uint32_t h) throw()
+{
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_screen_resize(scr, w, h);
+		END_EH_BLOCK(i, "on_screen_resize");
+	}
+}
+
+void information_dispatch::on_render_update_start()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_render_update_start() throw()
+{
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_render_update_start();
+		END_EH_BLOCK(i, "on_render_update_start");
+	}
+}
+
+void information_dispatch::on_render_update_end()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_render_update_end() throw()
+{
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_render_update_end();
+		END_EH_BLOCK(i, "on_render_update_end");
+	}
+}
+
+void information_dispatch::on_status_update()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_status_update() throw()
+{
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_status_update();
+		END_EH_BLOCK(i, "on_status_update");
+	}
+}

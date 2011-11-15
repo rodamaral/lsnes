@@ -9,6 +9,8 @@
 #include "core/render.hpp"
 #include "core/settings.hpp"
 
+#include "plat-sdl/paint.hpp"
+
 #include <vector>
 #include <iostream>
 #include <csignal>
@@ -465,7 +467,6 @@ namespace
 	bool modconfirm;
 	bool modal_return_flag;
 	bool delayed_close_flag;
-	std::string modmsg;
 	std::string command_buf;
 	bool command_overwrite;
 	size_t command_cursor;
@@ -497,245 +498,9 @@ namespace
 	{
 		state = WINSTATE_IDENTIFY;
 		window::message("Press key to identify.");
-		window::notify_screen_update();
 		poll_inputs_internal();
 	}
 
-	std::string decode_string(std::string e)
-	{
-		std::string x;
-		for(size_t i = 0; i < e.length(); i += 4) {
-			char tmp[5] = {0};
-			uint32_t c1 = e[i] - 33;
-			uint32_t c2 = e[i + 1] - 33;
-			uint32_t c3 = e[i + 2] - 33;
-			uint32_t c4 = e[i + 3] - 33;
-			uint32_t c = (c1 << 18) | (c2 << 12) | (c3 << 6) | c4;
-			if(c < 0x80) {
-				tmp[0] = c;
-			} else if(c < 0x800) {
-				tmp[0] = 0xC0 | (c >> 6);
-				tmp[1] = 0x80 | (c & 0x3F);
-			} else if(c < 0x10000) {
-				tmp[0] = 0xE0 | (c >> 12);
-				tmp[1] = 0x80 | ((c >> 6) & 0x3F);
-				tmp[2] = 0x80 | (c & 0x3F);
-			} else {
-				tmp[0] = 0xF0 | (c >> 18);
-				tmp[1] = 0x80 | ((c >> 12) & 0x3F);
-				tmp[2] = 0x80 | ((c >> 6) & 0x3F);
-				tmp[3] = 0x80 | (c & 0x3F);
-			}
-			x = x + tmp;
-		}
-		return x;
-	}
-
-	void draw_rectangle(uint8_t* data, uint32_t pitch, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2,
-		uint32_t color, uint32_t thickness)
-	{
-		for(uint32_t i = x1; i < x2; i++)
-			for(uint32_t j = 0; j < thickness; j++) {
-				reinterpret_cast<uint32_t*>(data + pitch * (y1 + j))[i] = color;
-				reinterpret_cast<uint32_t*>(data + pitch * (y2 - 1 - j))[i] = color;
-			}
-		for(uint32_t i = y1; i < y2; i++)
-			for(uint32_t j = 0; j < thickness; j++) {
-				reinterpret_cast<uint32_t*>(data + pitch * i)[x1 + j] = color;
-				reinterpret_cast<uint32_t*>(data + pitch * i)[x2 - 1 - j] = color;
-			}
-	}
-
-	std::vector<uint32_t> decode_utf8(std::string s)
-	{
-		std::vector<uint32_t> ret;
-		for(auto i = s.begin(); i != s.end(); i++) {
-			uint32_t j = static_cast<uint8_t>(*i);
-			if(j < 128)
-				ret.push_back(j);
-			else if(j < 192)
-				continue;
-			else if(j < 224) {
-				uint32_t j2 = static_cast<uint8_t>(*(++i));
-				ret.push_back((j - 192) * 64 + (j2 - 128));
-			} else if(j < 240) {
-				uint32_t j2 = static_cast<uint8_t>(*(++i));
-				uint32_t j3 = static_cast<uint8_t>(*(++i));
-				ret.push_back((j - 224) * 4096 + (j2 - 128) * 64 + (j3 - 128));
-			} else {
-				uint32_t j2 = static_cast<uint8_t>(*(++i));
-				uint32_t j3 = static_cast<uint8_t>(*(++i));
-				uint32_t j4 = static_cast<uint8_t>(*(++i));
-				ret.push_back((j - 240) * 262144 + (j2 - 128) * 4096 + (j3 - 128) * 64 + (j4 - 128));
-			}
-		}
-		return ret;
-	}
-
-	void draw_string(uint8_t* base, uint32_t pitch, std::vector<uint32_t> s, uint32_t x, uint32_t y,
-		uint32_t maxwidth, uint32_t hilite_mode = 0, uint32_t hilite_pos = 0)
-	{
-		base += y * static_cast<size_t>(pitch) + 4 * x;
-		int32_t pos_x = 0;
-		int32_t pos_y = 0;
-		unsigned c = 0;
-		for(auto si : s) {
-			uint32_t old_x = pos_x;
-			uint32_t curstart = 16;
-			if(c == hilite_pos && hilite_mode == 1)
-				curstart = 14;
-			if(c == hilite_pos && hilite_mode == 2)
-				curstart = 0;
-			auto g = find_glyph(si, pos_x, pos_y, 0, pos_x, pos_y);
-			if(pos_y)
-				pos_x = old_x;
-			uint32_t mw = maxwidth - old_x;
-			if(mw > g.first)
-				mw = g.first;
-			if(g.second == NULL) {
-				//Empty glyph.
-				for(unsigned j = 0; j < 16; j++) {
-					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
-					for(unsigned i = 0; i < mw; i++)
-						ptr[old_x + i] = (j >= curstart) ? 0xFFFFFFFFU : 0;
-				}
-			} else if(g.first == 16) {
-				//Wide glyph.
-				for(unsigned j = 0; j < 16; j++) {
-					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j) + old_x;
-					uint32_t dataword = g.second[j >> 1];
-					unsigned rbit = ~((j << 4) & 0x1F);
-					for(uint32_t i = 0; i < mw; i++) {
-						bool b = (((dataword >> (rbit - i)) & 1));
-						b ^= (j >= curstart);
-						ptr[i] = b ? 0xFFFFFFFFU : 0;
-					}
-				}
-			} else {
-				//Narrow glyph.
-				for(unsigned j = 0; j < 16; j++) {
-					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
-					uint32_t dataword = g.second[j >> 2];
-					unsigned rbit = ~((j << 3) & 0x1F);
-					for(uint32_t i = 0; i < mw; i++) {
-						bool b = (((dataword >> (rbit - i)) & 1));
-						b ^= (j >= curstart);
-						ptr[old_x + i] = b ? 0xFFFFFFFFU : 0;
-					}
-				}
-			}
-			c++;
-		}
-		for(unsigned j = 0; j < 16; j++) {
-			uint32_t* ptr = reinterpret_cast<uint32_t*>(base + pitch * j);
-			uint32_t curstart = 16;
-			if(c == hilite_pos && hilite_mode == 1)
-				curstart = 14;
-			if(c == hilite_pos && hilite_mode == 2)
-				curstart = 0;
-			for(uint32_t i = pos_x; i < maxwidth; i++)
-				ptr[i] = ((i - pos_x) < 8 && j >= curstart) ? 0xFFFFFFFFU : 0;
-		}
-	}
-
-	void draw_string(uint8_t* base, uint32_t pitch, std::string s, uint32_t x, uint32_t y, uint32_t maxwidth,
-		uint32_t hilite_mode = 0, uint32_t hilite_pos = 0)
-	{
-		draw_string(base, pitch, decode_utf8(s), x, y, maxwidth, hilite_mode, hilite_pos);
-	}
-
-	void draw_command(uint8_t* base, uint32_t pitch, std::string s, size_t cursor, uint32_t x, uint32_t y,
-		uint32_t maxwidth, bool overwrite)
-	{
-		//FIXME, scroll text if too long.
-		uint32_t hilite_mode = overwrite ? 2 : 1;
-		auto s2 = decode_utf8(s);
-		draw_string(base, pitch, s2, x, y, maxwidth, hilite_mode, cursor);
-	}
-
-	void draw_modal_dialog(SDL_Surface* surf, std::string msg, bool confirm)
-	{
-		int32_t pos_x = 0;
-		int32_t pos_y = 0;
-		uint32_t width = 0;
-		uint32_t height = 0;
-		if(confirm)
-			msg = msg + "\n\nHit Enter to confirm, Esc to cancel";
-		else
-			msg = msg + "\n\nHit Enter or Esc to dismiss";
-		auto s2 = decode_utf8(msg);
-		for(auto i : s2) {
-			auto g = find_glyph(i, pos_x, pos_y, 0, pos_x, pos_y);
-			if(pos_x + g.first > width)
-				width = static_cast<uint32_t>(pos_x + g.first);
-			if(pos_y + 16 > static_cast<int32_t>(height))
-				height = static_cast<uint32_t>(pos_y + 16);
-		}
-		uint32_t x1;
-		uint32_t x2;
-		uint32_t y1;
-		uint32_t y2;
-		if(width + 12 >= static_cast<uint32_t>(surf->w)) {
-			x1 = 6;
-			x2 = surf->w - 6;
-			width = x2 - x1;
-		} else {
-			x1 = (surf->w - width) / 2;
-			x2 = x1 + width;
-		}
-		if(height + 12 >= static_cast<uint32_t>(surf->h)) {
-			y1 = 6;
-			y2 = surf->h - 6;
-			height = y2 - y1;
-		} else {
-			y1 = (surf->h - height) / 2;
-			y2 = y1 + height;
-		}
-		for(uint32_t j = y1 - 6; j < y2 + 6; j++)
-			memset(reinterpret_cast<uint8_t*>(surf->pixels) + j * surf->pitch + 4 * (x1 - 6), 0,
-				4 * (x2 - x1 + 12));
-		uint32_t bordercolor = (0xFF << surf->format->Rshift) | (0x80 << surf->format->Gshift);
-		draw_rectangle(reinterpret_cast<uint8_t*>(surf->pixels), surf->pitch, x1 - 4, y1 - 4, x2 + 4, y2 + 4,
-			bordercolor, 2);
-
-		pos_x = 0;
-		pos_y = 0;
-		for(auto i : s2) {
-			uint32_t ox = pos_x;
-			uint32_t oy = pos_y;
-			auto g = find_glyph(i, pos_x, pos_y, 0, pos_x, pos_y);
-			if(static_cast<uint32_t>(pos_y) > height)
-				break;
-			uint8_t* base = reinterpret_cast<uint8_t*>(surf->pixels) + (y1 + oy) * surf->pitch +
-				4 * (x1 + ox);
-			uint32_t mw = width - ox;
-			if(mw > g.first)
-				mw = g.first;
-			if(g.second && g.first == 16) {
-				//Wide glyph.
-				for(unsigned j = 0; j < 16; j++) {
-					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + surf->pitch * j);
-					uint32_t dataword = g.second[j >> 1];
-					uint32_t rbit = ~(j << 4) & 0x1F;
-					for(uint32_t i = 0; i < mw; i++) {
-						bool b = (dataword >> (rbit - i) & 1);
-						ptr[i] = b ? bordercolor : 0;
-					}
-				}
-			} else if(g.second) {
-				//Narrow glyph.
-				for(unsigned j = 0; j < 16; j++) {
-					uint32_t* ptr = reinterpret_cast<uint32_t*>(base + surf->pitch * j);
-					uint32_t dataword = g.second[j >> 2];
-					uint32_t rbit = ~(j << 3) & 0x1F;
-					for(uint32_t i = 0; i < mw; i++) {
-						bool b = (dataword >> (rbit - i) & 1);
-						ptr[i] = b ? bordercolor : 0;
-					}
-				}
-			}
-		}
-	}
 
 	void do_keyboard_command_edit(SDL_keysym k)
 	{
@@ -768,11 +533,11 @@ namespace
 		switch(k.sym) {
 		case SDLK_INSERT:
 			command_overwrite = !command_overwrite;
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_END:
 			command_cursor = command_buf.length();
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_DOWN:
 		case SDLK_PAGEDOWN:
@@ -782,20 +547,20 @@ namespace
 				if(command_cursor > command_buf.length())
 					command_cursor = command_buf.length();
 			}
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_LEFT:
 			command_cursor = (command_cursor > 0) ? (command_cursor - 4) : 0;
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_RIGHT:
 			command_cursor = (command_cursor < command_buf.length()) ? (command_cursor + 4) :
 				command_buf.length();
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_HOME:
 			command_cursor = 0;
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		case SDLK_UP:
 		case SDLK_PAGEUP: {
@@ -806,14 +571,14 @@ namespace
 				if(command_cursor > command_buf.length())
 					command_cursor = command_buf.length();
 			}
-			window::notify_screen_update();
+			sdlw_command_updated();
 			return;
 		}
 		case SDLK_DELETE:
 			if(command_cursor < command_buf.length())
 				command_buf = command_buf.substr(0, command_cursor) +
 					command_buf.substr(command_cursor + 4);
-			window::notify_screen_update();
+			sdlw_command_updated();
 			*commandhistory_itr = command_buf;
 			return;
 		case SDLK_BACKSPACE:
@@ -822,7 +587,7 @@ namespace
 					command_buf.substr(command_cursor);
 				command_cursor -= 4;
 			}
-			window::notify_screen_update();
+			sdlw_command_updated();
 			*commandhistory_itr = command_buf;
 			return;
 		default:
@@ -853,24 +618,23 @@ namespace
 			command_cursor += 4;
 		}
 		*commandhistory_itr = command_buf;
-		window::notify_screen_update();
+		sdlw_command_updated();
 	}
 
 	void do_event(SDL_Event& e) throw(std::bad_alloc)
 	{
 #ifdef SIGALRM
-		alarm(WATCHDOG_TIMEOUT);
+		//alarm(WATCHDOG_TIMEOUT);
 #endif
 		if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE && e.key.keysym.mod == (KMOD_LCTRL |
 			KMOD_LALT))
 			exit(1);
 		if(e.type == SDL_USEREVENT && e.user.code == 0) {
-			if(screen_is_dirty)
-				window::notify_screen_update();
+			sdlw_screen_paintable();
 		}
 		SDLKey key;
-		if(e.type == SDL_ACTIVEEVENT && e.active.gain && e.active.state == SDL_APPACTIVE) {
-			window::notify_screen_update();
+		if(e.type == SDL_ACTIVEEVENT && e.active.gain) {
+			sdlw_force_paint();
 			return;
 		}
 		if(e.type == SDL_KEYDOWN || e.type == SDL_KEYUP)
@@ -925,7 +689,7 @@ namespace
 				if(commandhistory.size() > MAXHISTORY)
 					commandhistory.pop_back();
 				commandhistory_itr = commandhistory.begin();
-				window::notify_screen_update();
+				sdlw_command_updated();
 				poll_inputs_internal();
 				return;
 			}
@@ -940,15 +704,13 @@ namespace
 				state = WINSTATE_NORMAL;
 				modconfirm = false;
 				modal_return_flag = true;
-				modmsg = "";
-				window::notify_screen_update(true);
+				sdlw_clear_modal_dialog();
 				return;
 			}
 			if(e.type == SDL_KEYUP && (key == SDLK_RETURN || key == SDLK_KP_ENTER)) {
 				state = WINSTATE_NORMAL;
 				modal_return_flag = true;
-				modmsg = "";
-				window::notify_screen_update(true);
+				sdlw_clear_modal_dialog();
 				return;
 			}
 			break;
@@ -960,7 +722,7 @@ namespace
 			if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE) {
 				state = WINSTATE_NORMAL;
 				command_buf = "";
-				window::notify_screen_update();
+				sdlw_command_updated();
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
 				return;
@@ -970,9 +732,9 @@ namespace
 				state = WINSTATE_NORMAL;
 				if(commandhistory.front() == "")
 					commandhistory.pop_front();
-				command::invokeC(decode_string(command_buf));
+				command::invokeC(sdlw_decode_string(command_buf));
 				command_buf = "";
-				window::notify_screen_update();
+				sdlw_command_updated();
 				autorepeat_phase = 0;
 				return;
 			}
@@ -1008,7 +770,7 @@ void graphics_init()
 	SDL_initialized = true;
 #ifdef SIGALRM
 	signal(SIGALRM, sigalrm_handler);
-	alarm(WATCHDOG_TIMEOUT);
+	//alarm(WATCHDOG_TIMEOUT);
 #endif
 	init_keys();
 	if(!sdl_init) {
@@ -1028,7 +790,7 @@ void graphics_init()
 	delayed_close_flag = false;
 	console_mode = false;
 
-	window::notify_screen_update();
+	sdlw_force_paint();
 	std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 
@@ -1048,234 +810,16 @@ void graphics_quit()
 bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_alloc)
 {
 	modconfirm = confirm;
-	modmsg = msg;
 	state = WINSTATE_MODAL;
-	notify_screen_update();
+	sdlw_paint_modal_dialog(msg, confirm);
 	poll_inputs_internal();
 	bool ret = modconfirm;
 	if(delayed_close_flag) {
 		delayed_close_flag = false;
 		information_dispatch::do_close();
 	}
+	sdlw_force_paint();
 	return ret;
-}
-
-void window::notify_message() throw(std::bad_alloc, std::runtime_error)
-{
-	notify_screen_update();
-}
-
-void window::set_main_surface(screen& scr) throw()
-{
-	current_screen = &scr;
-	notify_screen_update(true);
-}
-
-namespace
-{
-	bool is_time_for_screen_update(bool full)
-	{
-		uint64_t curtime = get_utime();
-		//Always do full updates.
-		if(!full && last_ui_update < curtime && last_ui_update + MIN_UPDATE_TIME > curtime) {
-			screen_is_dirty = true;
-			return false;
-		}
-		last_ui_update = curtime;
-		screen_is_dirty = false;
-		return true;
-	}
-
-	std::pair<uint32_t, uint32_t> compute_screen_size(uint32_t width, uint32_t height)
-	{
-		if(width < 512)
-			width = 512;
-		if(height < 448)
-			height = 448;
-		return std::make_pair(width, height);
-	}
-
-	std::pair<uint32_t, uint32_t> compute_window_size(uint32_t width, uint32_t height)
-	{
-		auto g = compute_screen_size(width, height);
-		uint32_t win_w = ((g.first + 15) >> 4 << 4) + 278;
-		uint32_t win_h = g.second + MAXMESSAGES * 16 + 48;
-		return std::make_pair(win_w, win_h);
-	}
-
-	void show_fps()
-	{
-		auto& emustatus = window::get_emustatus();
-		try {
-			std::ostringstream y;
-			y << get_framerate();
-			emustatus["FPS"] = y.str();
-		} catch(...) {
-		}
-	}
-
-	void redraw_borders(SDL_Surface* swsurf, std::pair<uint32_t, uint32_t> screensize,
-		std::pair<uint32_t, uint32_t> windowsize)
-	{
-		//Blank the screen and draw borders.
-		memset(swsurf->pixels, 0, windowsize.second * swsurf->pitch);
-		uint32_t bordercolor = 0xFF << (swsurf->format->Gshift);
-		uint32_t msgbox_min_x = 2;
-		uint32_t msgbox_min_y = 2;
-		uint32_t msgbox_max_x = windowsize.first - 2;
-		uint32_t msgbox_max_y = windowsize.second - 28;
-		uint32_t cmdbox_min_x = 2;
-		uint32_t cmdbox_max_x = windowsize.first - 2;
-		uint32_t cmdbox_min_y = windowsize.second - 26;
-		uint32_t cmdbox_max_y = windowsize.second - 2;
-		if(!console_mode) {
-			uint32_t scrbox_min_x = 2;
-			uint32_t scrbox_max_x = screensize.first + 10;
-			uint32_t scrbox_min_y = 2;
-			uint32_t scrbox_max_y = screensize.second + 10;
-			uint32_t stsbox_min_x = screensize.first + 12;
-			uint32_t stsbox_max_x = windowsize.first - 2;
-			uint32_t stsbox_min_y = 2;
-			uint32_t stsbox_max_y = screensize.second + 10;
-			msgbox_min_y = screensize.second + 12;
-			draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, scrbox_min_x,
-				scrbox_min_y, scrbox_max_x, scrbox_max_y, bordercolor, 2);
-			draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, stsbox_min_x,
-				stsbox_min_y, stsbox_max_x, stsbox_max_y, bordercolor, 2);
-		}
-		draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, msgbox_min_x,
-			msgbox_min_y, msgbox_max_x, msgbox_max_y, bordercolor, 2);
-		draw_rectangle(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, cmdbox_min_x,
-			cmdbox_min_y, cmdbox_max_x, cmdbox_max_y, bordercolor, 2);
-	}
-
-	void draw_main_screen(SDL_Surface* swsurf, std::pair<uint32_t, uint32_t> screensize)
-	{
-		uint32_t cw = current_screen ? current_screen->width : 0;
-		uint32_t ch = current_screen ? current_screen->height : 0;
-		//Blank parts not drawn.
-		for(uint32_t i = 6; i < ch + 6; i++)
-			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 24 + 4 * cw, 0,
-				4 * (screensize.first - cw));
-		for(uint32_t i = ch + 6; i < screensize.second + 6; i++)
-			memset(reinterpret_cast<uint8_t*>(swsurf->pixels) + i * swsurf->pitch + 24, 0,
-				4 * screensize.first);
-		if(current_screen) {
-			for(uint32_t i = 0; i < ch; i++)
-				memcpy(reinterpret_cast<uint8_t*>(swsurf->pixels) + (i + 6) * swsurf->pitch + 24,
-					reinterpret_cast<uint8_t*>(current_screen->memory) + current_screen->pitch * i,
-					4 * cw);
-		}
-	}
-
-	void draw_status_area(SDL_Surface* swsurf, std::pair<uint32_t, uint32_t> screensize)
-	{
-		uint32_t status_x = screensize.first + 16;
-		uint32_t status_y = 6;
-		auto& emustatus = window::get_emustatus();
-		for(auto i : emustatus) {
-			std::string msg = i.first + " " + i.second;
-			draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, msg, status_x, status_y,
-				256);
-			status_y += 16;
-		}
-		while(status_y - 6 < screensize.second / 16 * 16) {
-			draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, "", status_x, status_y,
-				256);
-			status_y += 16;
-		}
-	}
-
-	void draw_messages(SDL_Surface* swsurf, std::pair<uint32_t, uint32_t> screensize,
-		std::pair<uint32_t, uint32_t> windowsize)
-	{
-		uint32_t message_y;
-		if(!console_mode)
-			message_y = screensize.second + 16;
-		else
-			message_y = 6;
-		size_t maxmessages = window::msgbuf.get_max_window_size();
-		size_t msgnum = window::msgbuf.get_visible_first();
-		size_t visible = window::msgbuf.get_visible_count();
-		for(size_t j = 0; j < maxmessages; j++)
-			try {
-				std::ostringstream o;
-				if(j < visible)
-					o << (msgnum + j + 1) << ": " << window::msgbuf.get_message(msgnum + j);
-				draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, o.str(), 6,
-					message_y + 16 * j, windowsize.first - 12);
-			} catch(...) {
-			}
-		if(window::msgbuf.is_more_messages())
-			try {
-				draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, "--More--",
-					windowsize.first - 76, message_y + 16 * maxmessages - 16, 64);
-		} catch(...) {
-		}
-	}
-
-	void draw_command(SDL_Surface* swsurf, std::pair<uint32_t, uint32_t> windowsize)
-	{
-		uint32_t command_y = windowsize.second - 22;
-		try {
-			std::string command_showas = decode_string(command_buf);
-			if(state == WINSTATE_COMMAND)
-				draw_command(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, command_showas,
-					command_cursor / 4, 6, command_y, windowsize.first - 12, command_overwrite);
-			else
-				draw_string(reinterpret_cast<uint8_t*>(swsurf->pixels), swsurf->pitch, "", 6,
-					command_y, windowsize.first - 12);
-		} catch(...) {
-		}
-	}
-}
-
-void window::notify_screen_update(bool full) throw()
-{
-	bool resize_screen = false;
-	if(!is_time_for_screen_update(full)) {
-		return;
-	}
-	auto windowsize = compute_window_size(current_screen ? current_screen->width : 0, current_screen ?
-		current_screen->height : 0);
-	auto screensize = compute_screen_size(current_screen ? current_screen->width : 0, current_screen ?
-		current_screen->height : 0);
-	show_fps();
-
-
-	if(!hwsurf || windowsize != current_windowsize) {
-		//Create/Resize the window.
-		SDL_Surface* hwsurf2 = SDL_SetVideoMode(windowsize.first, windowsize.second, 32, SDL_SWSURFACE);
-		if(!hwsurf2) {
-			//We are in too fucked up state to even print error as message.
-			std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;
-			exit(1);
-		}
-		hwsurf = hwsurf2;
-		full = true;
-		current_windowsize = windowsize;
-	}
-	if(current_screen)
-		current_screen->set_palette(hwsurf->format->Rshift, hwsurf->format->Gshift, hwsurf->format->Bshift);
-	SDL_LockSurface(hwsurf);
-	if(full)
-		redraw_borders(hwsurf, screensize, windowsize);
-	if(!console_mode) {
-		draw_main_screen(hwsurf, screensize);
-		draw_status_area(hwsurf, screensize);
-	}
-	draw_messages(hwsurf, screensize, windowsize);
-	draw_command(hwsurf, windowsize);
-
-	//Draw modal dialog.
-	if(state == WINSTATE_MODAL)
-		try {
-			draw_modal_dialog(hwsurf, modmsg, modconfirm);
-		} catch(...) {
-		}
-	SDL_UnlockSurface(hwsurf);
-	//SDL_BlitSurface(swsurf, NULL, hwsurf, NULL);
-	SDL_UpdateRect(hwsurf, 0, 0, 0, 0);
 }
 
 void poll_inputs_internal() throw(std::bad_alloc)
@@ -1318,10 +862,19 @@ void window::poll_inputs() throw(std::bad_alloc)
 	}
 }
 
+struct command_status get_current_command()
+{
+	struct command_status s;
+	s.active = (state == WINSTATE_COMMAND);
+	s.overwrite = command_overwrite;
+	s.rawpos = command_cursor;
+	s.encoded = command_buf;
+	return s;
+}
+
 void window::paused(bool enable) throw()
 {
 	pause_active = enable;
-	notify_screen_update();
 }
 
 namespace
@@ -1360,11 +913,7 @@ namespace
 		"Syntax: toggle-console\nToggles console between small and large.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			console_mode = !console_mode;
-			if(console_mode)
-				window::msgbuf.set_max_window_size(hwsurf ? (hwsurf->h - 38) / 16 : 36);
-			else
-				window::msgbuf.set_max_window_size(MAXMESSAGES);
-			window::notify_screen_update(true);
+			sdlw_fullscreen_console(console_mode);
 		});
 }
 
@@ -1392,8 +941,7 @@ void window::fatal_error2() throw()
 {
 	try {
 		message("PANIC: Cannot continue, press ESC or close window to exit.");
-		//Force redraw.
-		notify_screen_update(true);
+		sdlw_force_paint();
 	} catch(...) {
 		//Just crash.
 		exit(1);

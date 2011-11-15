@@ -780,6 +780,7 @@ void emulator_main_panel::on_paint(wxPaintEvent& e)
 		if(h < 448)
 			h = 448;
 		SetMinSize(wxSize(w, h));
+		main_window->Fit();
 	}
 	srcs[0] = 4 * main_screen->width;
 	dsts[0] = 3 * main_screen->width;
@@ -1013,7 +1014,6 @@ void emulator_main_window::menu_readonly(wxCommandEvent& e)
 	if(!s)
 		lua_callback_do_readwrite();
 	update_movie_state();
-	window::notify_screen_update();
 }
 
 void emulator_main_window::menu_edit_authors(wxCommandEvent& e)
@@ -1520,24 +1520,51 @@ void window::poll_inputs() throw(std::bad_alloc)
 	} while(1);
 }
 
-void window::notify_screen_update(bool full) throw()
+namespace
 {
-	screen_updated_full = true;
-	screen_updated = true;
-	if(main_window && !main_window_dirty) {
-		main_window_dirty = true;
-		main_window->request_paint();
+	class painter_listener : public information_dispatch
+	{
+	public:
+		painter_listener();
+		void on_screen_resize(screen& scr, uint32_t w, uint32_t h);
+		void on_render_update_start();
+		void on_render_update_end();
+		void on_status_update();
+	} plistener;
+
+	painter_listener::painter_listener() : information_dispatch("wx-painter-listener") {}
+
+	void painter_listener::on_screen_resize(screen& scr, uint32_t w, uint32_t h)
+	{
+		main_screen = &scr;
+		scr.reallocate(w, h, false);
+		screen_updated_full = true;
+		screen_updated = true;
 	}
-	if(wx_status_window::ptr)
-		wx_status_window::ptr->notify_status_change();
+
+	void painter_listener::on_render_update_start()
+	{
+	}
+
+	void painter_listener::on_render_update_end()
+	{
+		screen_updated_full = true;
+		screen_updated = true;
+		if(main_window && !main_window_dirty) {
+			main_window_dirty = true;
+			main_window->request_paint();
+		}
+		if(wx_status_window::ptr)
+			wx_status_window::ptr->notify_status_change();
+	}
+
+	void painter_listener::on_status_update()
+	{
+		if(wx_status_window::ptr)
+			wx_status_window::ptr->notify_status_change();
+	}
 }
 
-void window::set_main_surface(screen& scr) throw()
-{
-	main_screen = &scr;
-	screen_updated_full = true;
-	screen_updated = true;
-}
 
 void window::paused(bool enable) throw()
 {

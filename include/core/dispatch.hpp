@@ -397,6 +397,50 @@ public:
  * parameter vscl: Vertical scaling factor.
  */
 	static void do_click_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
+/**
+ * Render buffer needs to be (possibly) resized, so that graphics plugin can update the mappings.
+ *
+ * Default implementation does nothing.
+ *
+ * parameter scr: The render buffer object.
+ * parameter w: The width needed.
+ * parameter h: The height needed.
+ */
+	virtual void on_screen_resize(screen& scr, uint32_t w, uint32_t h);
+/**
+ * Call on_screen_resize on all objects.
+ */
+	static void do_screen_resize(screen& scr, uint32_t w, uint32_t h) throw();
+/**
+ * Notify that render buffer updating starts.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_render_update_start();
+/**
+ * Call on_render_update_start() in all objects.
+ */
+	static void do_render_update_start() throw();
+/**
+ * Notify that render buffer updating ends.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_render_update_end();
+/**
+ * Call on_render_update_end() in all objects.
+ */
+	static void do_render_update_end() throw();
+/**
+ * Notify that status buffer has been updated.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_status_update();
+/**
+ * Call on_status_update() in all objects.
+ */
+	static void do_status_update() throw();
 private:
 	static void update_dumpers(bool nocalls = false) throw();
 	bool known_if_dumper;

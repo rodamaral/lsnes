@@ -223,7 +223,7 @@ namespace
 			auto i = buttonmap[button];
 			do_button_action(i.first, i.second, (type != 1) ? 1 : 0, (type == 2));
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		}
 		std::string get_short_help() throw(std::bad_alloc)
 		{
@@ -375,7 +375,7 @@ void change_autohold(unsigned pid, unsigned idx, bool newstate)
 	autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) = (newstate ? 1 : 0);
 	information_dispatch::do_autohold_update(pid, idx, newstate);
 	update_movie_state();
-	window::notify_screen_update();
+	information_dispatch::do_status_update();
 }
 
 bool get_autohold(unsigned pid, unsigned idx)

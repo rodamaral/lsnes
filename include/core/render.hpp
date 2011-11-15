@@ -137,25 +137,27 @@ struct screen
  * parameter _memory: The memory buffer.
  * parameter _width: Width of screen.
  * parameter _height: Height of screen.
- * parameter _originx: X coordinate for origin.
- * parameter _originy: Y coordinate for origin.
  * parameter _pitch: Distance in bytes between successive scanlines.
  */
-	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
-		uint32_t _pitch) throw();
+	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _pitch) throw();
 
 /**
  * Sets the size of the screen. The memory is freed if screen is reallocated or destroyed.
  *
  * parameter _width: Width of screen.
  * parameter _height: Height of screen.
- * parameter _originx: X coordinate for origin.
- * parameter _originy: Y coordinate for origin.
  * parameter upside_down: If true, image is upside down in memory.
  * throws std::bad_alloc: Not enough memory.
  */
-	void reallocate(uint32_t _width, uint32_t _height, uint32_t _originx, uint32_t _originy,
-		bool upside_down = false) throw(std::bad_alloc);
+	void reallocate(uint32_t _width, uint32_t _height, bool upside_down = false) throw(std::bad_alloc);
+
+/**
+ * Set origin
+ *
+ * parameter _originx: X coordinate for origin.
+ * parameter _originy: Y coordinate for origin.
+ */
+	void set_origin(uint32_t _originx, uint32_t _originy) throw();
 
 /**
  * Paints low-color screen into screen. The upper-left of image will be at origin. Scales the image by given factors.

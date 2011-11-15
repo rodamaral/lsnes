@@ -100,7 +100,7 @@ endif
 
 #Graphics stuff.
 ifeq ($(GRAPHICS), SDL)
-PLATFORM_OBJECTS += src/plat-sdl/main.$(OBJECT_SUFFIX) src/plat-sdl/graphics.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += src/plat-sdl/main.$(OBJECT_SUFFIX) src/plat-sdl/graphics.$(OBJECT_SUFFIX) src/plat-sdl/paint.$(OBJECT_SUFFIX)
 PLATFORM_CFLAGS += $(shell $(CROSS_PREFIX)sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell $(CROSS_PREFIX)sdl-config --libs)
 else
@@ -121,7 +121,7 @@ PLAT_DUMMY_OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard src/plat-dummy
 HOST_CFLAGS=$(HOSTCCFLAGS) $(USER_HOSTCCFLAGS)
 HOST_LDFLAGS=$(HOSTLDFLAGS) $(USER_HOSTLDFLAGS)
 
-.PRECIOUS: %.$(EXECUTABLE_SUFFIX) %.$(OBJECT_SUFFIX)
+.PRECIOUS: %
 
 #Stuff compiled with core CFLAGS.
 avi/%.$(OBJECT_SUFFIX): avi/%.cpp

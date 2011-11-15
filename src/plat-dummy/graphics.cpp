@@ -11,8 +11,6 @@ namespace
 void graphics_init() {}
 void graphics_quit() {}
 void window::poll_inputs() throw(std::bad_alloc) {}
-void window::notify_screen_update(bool full) throw() {}
-void window::set_main_surface(screen& scr) throw() {}
 void window::paused(bool enable) throw() {}
 void window::wait_usec(uint64_t usec) throw(std::bad_alloc) {}
 void window::cancel_wait() throw() {}

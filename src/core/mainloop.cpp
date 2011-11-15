@@ -169,7 +169,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		update_movie_state();
 
 	}
-	window::notify_screen_update();
+	information_dispatch::do_status_update();
 	window::poll_inputs();
 	if(!subframe && pending_reset_cycles >= 0)
 		set_curcontrols_reset(pending_reset_cycles);
@@ -452,7 +452,7 @@ namespace
 			if(save_jukebox_pointer >= save_jukebox.size())
 				save_jukebox_pointer = 0;
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> save_jukebox_next("cycle-jukebox-forward", "Cycle save jukebox forwards",
@@ -465,7 +465,7 @@ namespace
 			if(save_jukebox_pointer >= save_jukebox.size())
 				save_jukebox_pointer = 0;
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<arg_filename> add_jukebox("add-jukebox-save", "Add save to jukebox",
@@ -473,7 +473,7 @@ namespace
 		[](arg_filename filename) throw(std::bad_alloc, std::runtime_error) {
 			save_jukebox.push_back(filename);
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> load_jukebox("load-jukebox", "Load save from jukebox",
@@ -592,7 +592,7 @@ namespace
 			information_dispatch::do_mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> set_romode("set-romode", "Switch to read-only mode",
@@ -601,7 +601,7 @@ namespace
 			movb.get_movie().readonly_mode(true);
 			information_dispatch::do_mode_change(true);
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> toggle_rwmode("toggle-rwmode", "Toggle read/write mode",
@@ -613,7 +613,7 @@ namespace
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();
-			window::notify_screen_update();
+			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> repaint("repaint", "Redraw the screen",
@@ -711,7 +711,7 @@ namespace
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
-				window::notify_screen_update();
+				information_dispatch::do_status_update();
 				window::poll_inputs();
 			}
 			return 1;
@@ -843,7 +843,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	lua_callback_startup();
 
 	//print_controller_mappings();
-	window::set_main_surface(main_screen);
 	redraw_framebuffer();
 	window::paused(false);
 	amode = ADVANCE_PAUSE;

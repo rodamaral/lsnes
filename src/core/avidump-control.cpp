@@ -105,7 +105,8 @@ namespace
 			sp.max_segment_frames = _parameters.max_frames_per_segment;
 			vid_dumper->set_segment_parameters(sp);
 			dscr.reallocate(lrc.left_gap + hscl * _frame.width + lrc.right_gap, lrc.top_gap + vscl *
-				_frame.height + lrc.bottom_gap, lrc.left_gap, lrc.top_gap, false);
+				_frame.height + lrc.bottom_gap, false);
+			dscr.set_origin(lrc.left_gap, lrc.top_gap);
 			dscr.copy_from(_frame, hscl, vscl);
 			rq.run(dscr);
 			vid_dumper->video(dscr.memory);
