@@ -599,7 +599,10 @@ namespace
 		if(w != dp.real_screen_w || h != dp.real_screen_h || !hwsurf ||
 			fullscreen_console_active != dp.fullscreen_console) {
 			dp = sdlw_display_parameters(w, h, fullscreen_console_active);
-			SDL_Surface* hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 32, SDL_SWSURFACE);
+			SDL_Surface* hwsurf2;
+			hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 0, SDL_SWSURFACE | SDL_ANYFORMAT);
+			if(!hwsurf2 || hwsurf2->format->BytesPerPixel != 4)
+				hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 32, SDL_SWSURFACE);
 			if(!hwsurf2) {
 				//We are in too fucked up state to even print error as message.
 				std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;
@@ -692,7 +695,9 @@ void sdlw_force_paint()
 	if(!hwsurf) {
 		//Initialize video.
 		dp = sdlw_display_parameters(0, 0, fullscreen_console_active);
-		SDL_Surface* hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 32, SDL_SWSURFACE);
+		SDL_Surface* hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 0, SDL_SWSURFACE | SDL_ANYFORMAT);
+		if(!hwsurf2 || hwsurf2->format->BytesPerPixel != 4)
+			hwsurf2 = SDL_SetVideoMode(dp.display_w, dp.display_h, 32, SDL_SWSURFACE);
 		if(!hwsurf2) {
 			//We are in too fucked up state to even print error as message.
 			std::cout << "PANIC: Can't create/resize window: " << SDL_GetError() << std::endl;
