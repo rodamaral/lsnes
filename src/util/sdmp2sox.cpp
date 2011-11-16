@@ -16,7 +16,8 @@
 #define FLAG_8BIT 64
 #define FLAG_FAKENLARGE 128
 #define FLAG_DEDUP 256
-
+#define FLAG_OFFSET2 512
+#define FLAG_10FRAMES 1024
 
 #define MAX_DEDUP 9
 
@@ -288,8 +289,13 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 	unsigned elided = 0;
 	uint64_t ftcw = 0;
 	uint64_t ftcn = 0;
-	if(flags & FLAG_DEDUP)
+	if(flags & FLAG_OFFSET2)
+		ftcw += 2000;
+	if(flags & FLAG_DEDUP) {
 		tout << "# timecode format v2" << std::endl;
+		if(flags & FLAG_10FRAMES)
+			tout << "0\n200\n400\n600\n800\n1000\n1200\n1400\n1600\n1800" << std::endl;
+	}
 	void (*render_yuv)(unsigned char* buffer, const unsigned char* src, size_t psep, bool hires, bool interlaced);
 	switch(flags & (FLAG_WIDTH | FLAG_HEIGHT | FLAG_8BIT | FLAG_FAKENLARGE)) {
 	case 0:
@@ -518,6 +524,8 @@ void syntax()
 	std::cerr << "-D\tDedup the output (also uses exact timecodes)." << std::endl;
 	std::cerr << "-h\tDump 512x448/480, doing blending for 512x224/240." << std::endl;
 	std::cerr << "-F\tDump at interlaced framerate instead of non-interlaced (no effect if dedup)." << std::endl;
+	std::cerr << "-l\tOffset timecodes by inserting 10 frames spanning 2 seconds (dedup only)." << std::endl;
+	std::cerr << "-L\tOffset timecodes by 2 seconds (dedup only)." << std::endl;
 	std::cerr << "-f\tDump using full range instead of TV range." << std::endl;
 	std::cerr << "-7\tDump using ITU.709 instead of ITU.601." << std::endl;
 	std::cerr << "-2\tDump using SMPTE-240M instead of ITU.601." << std::endl;
@@ -556,6 +564,12 @@ int main(int argc, char** argv)
 					break;
 				case 'h':
 					flags |= (FLAG_FAKENLARGE | FLAG_WIDTH | FLAG_HEIGHT);
+					break;
+				case 'l':
+					flags |= (FLAG_10FRAMES | FLAG_OFFSET2);
+					break;
+				case 'L':
+					flags |= FLAG_OFFSET2;
 					break;
 				case '7':
 					if(flags & FLAG_CS_MASK) {
