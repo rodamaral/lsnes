@@ -173,48 +173,27 @@ namespace
 	{
 		//Axes
 		try {
+			std::map<keygroup::type, std::string> axistypes;
+			axistypes[keygroup::KT_DISABLED] = "disabled";
+			axistypes[keygroup::KT_AXIS_PAIR] = "axis";
+			axistypes[keygroup::KT_AXIS_PAIR_INVERSE] = "axis-inverse";
+			axistypes[keygroup::KT_PRESSURE_0M] = "pressure0-";
+			axistypes[keygroup::KT_PRESSURE_0P] = "pressure0+";
+			axistypes[keygroup::KT_PRESSURE_M0] = "pressure-0";
+			axistypes[keygroup::KT_PRESSURE_MP] = "pressure-+";
+			axistypes[keygroup::KT_PRESSURE_P0] = "pressure+0";
+			axistypes[keygroup::KT_PRESSURE_PM] = "pressure+-";
 			std::set<std::string> axisnames = keygroup::get_axis_set();
 			for(auto i : axisnames) {
 				try {
 					keygroup* k = keygroup::lookup_by_name(i);
-					std::ostringstream str;
-					str << "axismode " << i << " ";
 					enum keygroup::type ctype = k->get_parameters().ktype;
 					int16_t low = k->get_parameters().cal_left;
 					int16_t mid = k->get_parameters().cal_center;
 					int16_t high = k->get_parameters().cal_right;
 					double tol = k->get_parameters().cal_tolerance;
-					switch(ctype) {
-					case keygroup::KT_DISABLED:
-						str << "disabled ";
-						break;
-					case keygroup::KT_AXIS_PAIR:
-						str << "axis ";
-						break;
-					case keygroup::KT_AXIS_PAIR_INVERSE:
-						str << "axis-inverse ";
-						break;
-					case keygroup::KT_PRESSURE_0M:
-						str << "pressure0- ";
-						break;
-					case keygroup::KT_PRESSURE_0P:
-						str << "pressure0+ ";
-						break;
-					case keygroup::KT_PRESSURE_M0:
-						str << "pressure-0 ";
-						break;
-					case keygroup::KT_PRESSURE_MP:
-						str << "pressure-+ ";
-						break;
-					case keygroup::KT_PRESSURE_P0:
-						str << "pressure+0 ";
-						break;
-					case keygroup::KT_PRESSURE_PM:
-						str << "pressure+- ";
-						break;
-					};
-					str << "minus=" << low << " zero=" << mid << " plus=" << high;
-					out << str.str() << std::endl;
+					out << "axismode " << i << " " << axistypes[ctype] << " minus=" << low
+						<< " zero=" << mid << " plus=" << high << std::endl;
 				} catch(std::exception& e) {
 					messages << "Error saving axis " << i << ": " << e.what();
 				}
