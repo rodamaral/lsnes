@@ -156,7 +156,7 @@ lsnes.$(EXECUTABLE_SUFFIX): $(CORE_OBJECTS) $(PLATFORM_OBJECTS)
 #Fonts.
 src/fonts/font.$(OBJECT_SUFFIX): src/fonts/$(FONT_SRC)
 	echo "extern const char* font_hex_data = " >src/fonts/font.cpp
-	sed -r -f src/fonts/fonttransform.sed <$^ >>src/fonts/font.cpp
+	sed -E -f src/fonts/fonttransform.sed <$^ >>src/fonts/font.cpp
 	echo ";" >>src/fonts/font.cpp
 	$(REALCC) $(CORE_CFLAGS) -c -o $@ src/fonts/font.cpp
 
