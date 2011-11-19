@@ -805,6 +805,11 @@ namespace
 	}
 }
 
+std::vector<std::string> get_jukebox_names()
+{
+	return save_jukebox;
+}
+
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {

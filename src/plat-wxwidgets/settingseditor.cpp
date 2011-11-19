@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/moviefile.hpp"
 #include "core/settings.hpp"
@@ -269,6 +270,19 @@ namespace
 			}
 		} catch(std::exception& e) {
 			messages << "Error saving settings: " << e.what();
+		}
+		//Jukebox.
+		try {
+			std::vector<std::string> jukebox = get_jukebox_names();
+			for(auto i : jukebox) {
+				try {
+					out << "add-jukebox-save " << i << std::endl;
+				} catch(std::exception& e) {
+					messages << "Error saving setting " << i << ": " << e.what();
+				}
+			}
+		} catch(std::exception& e) {
+			messages << "Error saving jukebox: " << e.what();
 		}
 	}
 }

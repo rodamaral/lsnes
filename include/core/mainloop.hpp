@@ -10,7 +10,7 @@
  */
 void main_loop(struct loaded_rom& rom, struct moviefile& settings, bool load_has_to_succeed = false)
 	throw(std::bad_alloc, std::runtime_error);
-
+std::vector<std::string> get_jukebox_names();
 void update_movie_state();
 
 #endif
