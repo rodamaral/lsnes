@@ -256,6 +256,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			load_sram(_movie.movie_sram);
 			controller_set_port_type(0, _movie.port1);
 			controller_set_port_type(1, _movie.port2);
+			_movie.rtc_second = _movie.movie_rtc_second;
+			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			framebuffer = screen_nosignal;
 		}
 	} catch(std::bad_alloc& e) {
