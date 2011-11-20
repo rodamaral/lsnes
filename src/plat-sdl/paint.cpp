@@ -686,6 +686,7 @@ void window::notify_message() throw(std::bad_alloc, std::runtime_error)
 void sdlw_fullscreen_console(bool enable)
 {
 	fullscreen_console_active = enable;
+	dp = sdlw_display_parameters(dp.real_screen_w, dp.real_screen_h, fullscreen_console_active);
 	window::msgbuf.set_max_window_size(dp.messagearea_lines);
 	sdlw_force_paint();
 }
