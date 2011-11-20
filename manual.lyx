@@ -4623,5 +4623,50 @@ Fix titlebar version number (no, the last version wasn't 'lsnes-0-beta21',
  it was 'lsnes rr0-beta21').
 \end_layout
 
+\begin_layout Subsection
+rr0-beta23
+\end_layout
+
+\begin_layout Itemize
+Fix memory corruption due to macro/field mixup
+\end_layout
+
+\begin_layout Itemize
+search-memory update
+\end_layout
+
+\begin_layout Itemize
+Allow direct-mapped framebuffer
+\end_layout
+
+\begin_layout Itemize
+SDL: Use SDL_ANYFORMAT if possible
+\end_layout
+
+\begin_layout Itemize
+SDMP2SOX: 2s delay modes.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Cleanups
+\end_layout
+
+\begin_layout Itemize
+Use sed -E, not sed -r.
+ Fixes building on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Save jukebox on exit
+\end_layout
+
+\begin_layout Itemize
+Fix RTC if using load-movie on savestate.
+\end_layout
+
+\begin_layout Itemize
+Fix crash related to full console mode.
+\end_layout
+
 \end_body
 \end_document
