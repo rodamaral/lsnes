@@ -6,6 +6,7 @@
 
 wxString towxstring(const std::string& str);
 std::string tostdstring(const wxString& str);
+void foreground_application();
 extern long primary_window_style;
 extern long secondary_window_style;
 typedef wxStaticText* wxStaticText_ptr;

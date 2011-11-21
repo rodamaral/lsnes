@@ -36,6 +36,7 @@ IMPLEMENT_APP(lsnes_app)
 bool lsnes_app::OnInit()
 {
 	set_random_seed();
+	foreground_application();
 
 	{
 		std::ostringstream x;
