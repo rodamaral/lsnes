@@ -1,6 +1,8 @@
 #ifndef _wxwidgets_common__hpp__included__
 #define _wxwidgets_common__hpp__included__
 
+#include <string>
+
 #include <wx/string.h>
 #include <wx/wx.h>
 
