@@ -152,9 +152,8 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		our_movie.sram = save_sram();
 		our_movie.savestate = save_core_state();
 		framebuffer.save(our_movie.screenshot);
-		auto s = movb.get_movie().save_state();
-		our_movie.movie_state.resize(s.size());
-		memcpy(&our_movie.movie_state[0], &s[0], s.size());
+		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
+			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename, savecompression);
 		uint64_t took = get_utime() - origtime;
@@ -230,12 +229,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	else
 		newmovie.load(_movie.rerecords, _movie.projectid, _movie.input);
 
-	if(will_load_state) {
-		std::vector<unsigned char> tmp;
-		tmp.resize(_movie.movie_state.size());
-		memcpy(&tmp[0], &_movie.movie_state[0], tmp.size());
-		newmovie.restore_state(tmp, true);
-	}
+	if(will_load_state)
+		newmovie.restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
+			(lmode == LOAD_STATE_PRESERVE) ? &_movie.input : NULL, _movie.projectid);
 
 	//Negative return.
 	rrdata::read_base(_movie.projectid);

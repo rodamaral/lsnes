@@ -128,18 +128,12 @@ int main(int argc, char** argv)
 				uint16_t a = static_cast<uint8_t>(m.screenshot[0]);
 				uint16_t b = static_cast<uint8_t>(m.screenshot[1]);
 				std::cout << "Screenshot size: " << (a * 256 + b) << "*" << (m.screenshot.size() - 2)
-					/ (a * 256  + b) / 2 << std::endl;
+					/ (a * 256  + b) / 3 << std::endl;
 			} else
 				std::cout << "Screenshot is corrupt" << std::endl;
-			std::cout << "Movie state: [" << m.movie_state.size() << " bytes of binary data]" << std::endl;
-			if(m.movie_state.size() == 512) {
-				uint64_t x = 0;
-				for(unsigned i = 32; i < 40; i++)
-					x = 256 * x + static_cast<uint64_t>(static_cast<uint8_t>(m.movie_state[i]));
-				starting_point = x;
-				std::cout << "Starting frame: " << x << std::endl;
-			} else
-				std::cout << "Movie state is corrupt" << std::endl;
+			starting_point = m.save_frame;
+			std::cout << "Starting frame: " << starting_point << std::endl;
+			std::cout << "Lag frames so far: " << m.lagged_frames << std::endl;
 		} else if(m.movie_sram.size() > 0) {
 			std::cout << "Movie starts from SRAM" << std::endl;
 			for(auto i = m.movie_sram.begin(); i != m.movie_sram.end(); i++)

@@ -186,20 +186,31 @@ public:
 /**
  * This method serializes the state of movie code.
  *
- * returns: The serialized state.
+ * Parameter proj_id: The project ID is written here.
+ * Parameter curframe: Current frame is written here.
+ * Parameter lagframes: Lag counter is written here.
+ * Parameter pcounters: Poll counters are written here.
  * throws std::bad_alloc: Not enough memory.
  */
-	std::vector<uint8_t> save_state() throw(std::bad_alloc);
+	void save_state(std::string& proj_id, uint64_t& curframe, uint64_t& lagframes,
+		std::vector<uint32_t>& pcounters) throw(std::bad_alloc);
 
 /**
  * Given previous serialized state from this movie, restore the state.
  *
- * parameter state: The state to restore.
- * parameter ro: If true, restore in readonly mode, otherwise in readwrite mode.
- * throw std::bad_alloc: Not enough memory.
- * throw std::runtime_error: State is not from this movie or states is corrupt.
+ * Parameter curframe: Current frame.
+ * Parameter lagframe: Lag counter.
+ * Parameter pcounters: Poll counters.
+ * Parameter ro: If true, restore in readonly mode.
+ * Parameter old_movie: Old movie to check for compatiblity against.
+ * Parameter old_projectid: Old project ID to check against.
+ * Returns: ???
+ * Throws std::bad_alloc: Not enough memory.
+ * Throws std::runtime_error: Movie check failure.
  */
-	size_t restore_state(const std::vector<uint8_t>& state, bool ro) throw(std::bad_alloc, std::runtime_error);
+	size_t restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
+		std::vector<controls_t>* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+		std::runtime_error);
 
 /**
  * Get reset status for current frame.

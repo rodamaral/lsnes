@@ -125,9 +125,17 @@ struct moviefile
  */
 	std::vector<char> screenshot;
 /**
- * State of movie code (if is_savestate is true).
+ * Current frame (if is_savestate is true).
  */
-	std::vector<char> movie_state;
+	uint64_t save_frame;
+/**
+ * Number of lagged frames (if is_savestate is true).
+ */
+	uint64_t lagged_frames;
+/**
+ * Poll counters (if is_savestate is true).
+ */
+	std::vector<uint32_t> pollcounters;
 /**
  * Compressed rrdata.
  */

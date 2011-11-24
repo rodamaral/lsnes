@@ -15,142 +15,54 @@
 
 namespace
 {
-	void hash_string(uint8_t* res, const std::string& s) throw(std::bad_alloc)
+	bool movies_compatible(const std::vector<controls_t>& old_movie, const std::vector<controls_t>& new_movie,
+		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
+		const std::string& new_projectid)
 	{
-		std::vector<char> t;
-		t.resize(s.length());
-		std::copy(s.begin(), s.end(), t.begin());
-		sha256::hash(res, t);
-	}
-
-	uint8_t* enlarge(std::vector<uint8_t>& v, size_t amount) throw(std::bad_alloc)
-	{
-		size_t i = v.size();
-		v.resize(i + amount);
-		return &v[i];
-	}
-
-	inline void write64(uint8_t* buffer, uint64_t value) throw()
-	{
-		buffer[0] = value >> 56;
-		buffer[1] = value >> 48;
-		buffer[2] = value >> 40;
-		buffer[3] = value >> 32;
-		buffer[4] = value >> 24;
-		buffer[5] = value >> 16;
-		buffer[6] = value >> 8;
-		buffer[7] = value;
-	}
-
-	inline void write32(uint8_t* buffer, uint32_t value) throw()
-	{
-		buffer[0] = value >> 24;
-		buffer[1] = value >> 16;
-		buffer[2] = value >> 8;
-		buffer[3] = value;
-	}
-
-	inline uint32_t read32(const uint8_t* buffer) throw()
-	{
-		return (static_cast<uint32_t>(buffer[0]) << 24) |
-			(static_cast<uint32_t>(buffer[1]) << 16) |
-			(static_cast<uint32_t>(buffer[2]) << 8) |
-			(static_cast<uint32_t>(buffer[3]));
-	}
-
-	inline uint64_t read64(const uint8_t* buffer) throw()
-	{
-		return (static_cast<uint64_t>(buffer[0]) << 56) |
-			(static_cast<uint64_t>(buffer[1]) << 48) |
-			(static_cast<uint64_t>(buffer[2]) << 40) |
-			(static_cast<uint64_t>(buffer[3]) << 32) |
-			(static_cast<uint64_t>(buffer[4]) << 24) |
-			(static_cast<uint64_t>(buffer[5]) << 16) |
-			(static_cast<uint64_t>(buffer[6]) << 8) |
-			(static_cast<uint64_t>(buffer[7]));
-	}
-
-	inline void write16s(uint8_t* buffer, int16_t x) throw()
-	{
-		uint16_t y = static_cast<uint16_t>(x);
-		buffer[0] = y >> 8;
-		buffer[1] = y;
-	}
-
-	void hash_subframe(sha256& ctx, const controls_t& ctrl) throw()
-	{
-		uint8_t buf[2 * TOTAL_CONTROLS];
-		for(unsigned i = 0; i < TOTAL_CONTROLS; i++)
-			write16s(buf + 2 * i, ctrl(i));
-		ctx.write(buf, 2 * TOTAL_CONTROLS);
-	}
-
-	//Hashes frame and returns starting subframe of next frame.
-	uint64_t hash_frame(sha256& ctx, std::vector<controls_t>& input, uint64_t first_subframe,
-		uint32_t bound) throw()
-	{
-		if(!bound) {
-			//Ignore this frame completely.
-			if(first_subframe >= input.size())
-				return first_subframe;
-			first_subframe++;
-			while(first_subframe < input.size() && !input[first_subframe](CONTROL_FRAME_SYNC))
-				first_subframe++;
-			return first_subframe;
+		//Project IDs have to match.
+		if(old_projectid != new_projectid)
+			return false;
+		//If new movie is before first frame, anything with same project_id is compatible.
+		if(frame == 0)
+			return true;
+		//Scan both movies until frame syncs are seen. Out of bounds reads behave as all neutral but frame
+		//sync done.
+		uint64_t syncs_seen = 0;
+		uint64_t frames_read = 0;
+		while(syncs_seen < frame) {
+			controls_t oldc(true), newc(true);
+			//Due to way subframes are stored, we can ignore syncing when comparing.
+			if(frames_read < old_movie.size())
+				oldc = old_movie[frames_read];
+			if(frames_read < new_movie.size())
+				newc = new_movie[frames_read];
+			if(memcmp(oldc.controls, newc.controls, sizeof(oldc.controls)))
+				return false;	//Mismatch.
+			frames_read++;
+			if(newc(CONTROL_FRAME_SYNC))
+				syncs_seen++;
 		}
-		if(first_subframe >= input.size()) {
-			//Hash an empty frame.
-			hash_subframe(ctx, controls_t(true));
-			return first_subframe;
-		}
-
-		uint64_t subframes_to_hash = 1;
-		uint64_t last_differing = 1;
-		uint64_t next;
-		controls_t prev = input[first_subframe];
-		prev(CONTROL_FRAME_SYNC) = 0;
-
-		while(first_subframe + subframes_to_hash < input.size() && !input[first_subframe + subframes_to_hash]
-			(CONTROL_FRAME_SYNC)) {
-			if(!(input[first_subframe + subframes_to_hash] == prev))
-				last_differing = subframes_to_hash + 1;
-			prev = input[first_subframe + subframes_to_hash];
-			subframes_to_hash++;
-		}
-		next = first_subframe + subframes_to_hash;
-		subframes_to_hash = last_differing;
-		for(uint64_t i = 0; i < subframes_to_hash && i < bound; i++)
-			hash_subframe(ctx, input[first_subframe + i]);
-		return next;
-	}
-
-	void hash_movie(uint8_t* res, uint64_t current_frame, uint32_t* pollcounters,
-		std::vector<controls_t>& input) throw(std::bad_alloc)
-	{
-		sha256 ctx;
-		//If current_frame == 0, hash is empty.
-		if(!current_frame) {
-			ctx.read(res);
-			return;
-		}
-		//Hash past frames.
-		uint64_t current_subframe = 0;
-		for(uint64_t i = 1; i < current_frame; i++)
-			current_subframe = hash_frame(ctx, input, current_subframe, 0x7FFFFFFF);
-		//Current frame is special.
-		for(size_t i = 0; i < TOTAL_CONTROLS; i++) {
-			uint32_t polls = pollcounters[i] & 0x7FFFFFFF;
-			uint32_t last_seen = 0;
-			for(size_t j = 0; j < polls; j++) {
-				if(current_subframe + j < input.size() && !input[current_subframe + j]
-					(CONTROL_FRAME_SYNC))
-					last_seen = input[current_subframe + j](i);
-				uint8_t buf[2];
-				write16s(buf, last_seen);
-				ctx.write(buf, 2);
+		//We increment the counter one time too many.
+		frames_read--;
+		//Current frame. We need to compare each control up to poll counter.
+		uint64_t readable_old_subframes = 0, readable_new_subframes = 0;
+		if(frames_read < old_movie.size())
+			readable_old_subframes = old_movie.size() - frames_read;
+		if(frames_read < new_movie.size())
+			readable_new_subframes = new_movie.size() - frames_read;
+		for(unsigned i = 0; i < TOTAL_CONTROLS; i++) {
+			uint32_t p = polls[i] & 0x7FFFFFFFUL;
+			short ov = 0, nv = 0;
+			for(uint32_t i = 0; i < p; i++) {
+				if(i < readable_old_subframes)
+					ov = old_movie[i + frames_read](i);
+				if(i < readable_new_subframes)
+					nv = new_movie[i + frames_read](i);
+				if(ov != nv)
+					return false;
 			}
 		}
-		ctx.read(res);
+		return true;
 	}
 }
 
@@ -494,104 +406,35 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 }
 
 //Save state of movie code.
-std::vector<uint8_t> movie::save_state() throw(std::bad_alloc)
+void movie::save_state(std::string& proj_id, uint64_t& curframe, uint64_t& lagframes, std::vector<uint32_t>& pcounters)
+	throw(std::bad_alloc)
 {
-	//debuglog << "--------------------------------------------" << std::endl;
-	//debuglog << "SAVING STATE:" << std::endl;
-	std::vector<uint8_t> ret;
-	hash_string(enlarge(ret, 32), _project_id);
-	write64(enlarge(ret, 8), current_frame);
-	//debuglog << "Current frame is " << current_frame << std::endl;
-	//debuglog << "Poll counters: ";
-	for(unsigned i = 0; i < TOTAL_CONTROLS; i++) {
-		uint32_t v = pollcounters[i];
-		//debuglog << v;
-		if(v & 0x80000000UL) {
-			//debuglog << "R ";
-		} else
-			;//debuglog << " ";
-		write32(enlarge(ret, 4), v);
-	}
-	//debuglog << std::endl;
-	{
-		uint64_t v = lag_frames;
-		//debuglog << "Lag frame count: " << lag_frames << std::endl;
-		write64(enlarge(ret, 8), v);
-	}
-	hash_movie(enlarge(ret, 32), current_frame, pollcounters, movie_data);
-	uint8_t hash[32];
-	sha256::hash(hash, ret);
-	memcpy(enlarge(ret, 32), hash, 32);
-	//debuglog << "--------------------------------------------" << std::endl;
-	//debuglog.flush();
-	return ret;
+	pcounters.resize(TOTAL_CONTROLS);
+	proj_id = _project_id;
+	curframe = current_frame;
+	lagframes = lag_frames;
+	memcpy(&pcounters[0], pollcounters, TOTAL_CONTROLS * sizeof(uint32_t));
 }
 
 //Restore state of movie code. Throws if state is invalid. Flag gives new state of readonly flag.
-size_t movie::restore_state(const std::vector<uint8_t>& state, bool ro) throw(std::bad_alloc, std::runtime_error)
+size_t movie::restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
+	std::vector<controls_t>* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+	std::runtime_error)
 {
-	//Check the whole-data checksum.
-	size_t ptr = 0;
-	uint8_t tmp[32];
-	if(state.size() != 112+4*TOTAL_CONTROLS)
-		throw std::runtime_error("Movie save data corrupt: Wrong length");
-	sha256::hash(tmp, &state[0], state.size() - 32);
-	if(memcmp(tmp, &state[state.size() - 32], 32))
-		throw std::runtime_error("Movie save data corrupt: Checksum does not match");
-	//debuglog << "--------------------------------------------" << std::endl;
-	//debuglog << "RESTORING STATE:" << std::endl;
-	//Check project id.
-	hash_string(tmp, _project_id);
-	if(memcmp(tmp, &state[ptr], 32))
+	if(pcounters.size() != TOTAL_CONTROLS)
+		throw std::runtime_error("Wrong number of poll counters");
+	if(old_movie && !movies_compatible(*old_movie, movie_data, curframe, &pcounters[0], old_projectid,
+		_project_id))
 		throw std::runtime_error("Save is not from this movie");
-	ptr += 32;
-	//Read current frame.
-	uint64_t tmp_curframe = read64(&state[ptr]);
 	uint64_t tmp_firstsubframe = 0;
-	for(uint64_t i = 1; i < tmp_curframe; i++)
+	for(uint64_t i = 1; i < curframe; i++)
 		tmp_firstsubframe = tmp_firstsubframe + count_changes(tmp_firstsubframe);
-	ptr += 8;
-	//Read poll counters and drdy flags.
-	uint32_t tmp_pollcount[TOTAL_CONTROLS];
-	for(unsigned i = 0; i < TOTAL_CONTROLS; i++) {
-		uint32_t v = read32(&state[ptr]);
-		ptr += 4;
-		tmp_pollcount[i] = v;
-	}
-	uint64_t tmp_lagframes = read64(&state[ptr]);
-	tmp_lagframes &= 0x7FFFFFFFFFFFFFFFULL;
-	ptr += 8;
-	hash_movie(tmp, tmp_curframe, tmp_pollcount, movie_data);
-	if(memcmp(tmp, &state[ptr], 32))
-		throw std::runtime_error("Save is not from this movie");
-
-	//Ok, all checks pass. Copy the state. Do this in readonly mode so we can use normal routine to switch
-	//to readwrite mode.
+	//Checks have passed, copy the data.
 	readonly = true;
-	current_frame = tmp_curframe;
+	current_frame = curframe;
 	current_frame_first_subframe = tmp_firstsubframe;
-	memcpy(pollcounters, tmp_pollcount, sizeof(tmp_pollcount));
-	lag_frames = tmp_lagframes;
-
-	//debuglog << "Current frame is " << current_frame << std::endl;
-	//debuglog << "Poll counters: ";
-	for(unsigned i = 0; i < TOTAL_CONTROLS; i++) {
-		uint32_t v = pollcounters[i];
-		//debuglog << v;
-		if(v & 0x80000000UL) {
-			//debuglog << "R ";
-		} else
-			;//debuglog << " ";
-	}
-	//debuglog << std::endl;
-	{
-		//debuglog << "Lag frame count: " << lag_frames << std::endl;
-	}
-
-	//debuglog << "--------------------------------------------" << std::endl;
-	//debuglog.flush();
-
-	//Move to readwrite mode if needed.
+	lag_frames = lagframe;
+	memcpy(pollcounters, &pcounters[0], TOTAL_CONTROLS * sizeof(uint32_t));
 	readonly_mode(ro);
 	return 0;
 }

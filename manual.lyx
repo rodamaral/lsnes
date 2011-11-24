@@ -3408,52 +3408,32 @@ Raw binary startup SRAM of kind <name>.
 \end_layout
 
 \begin_layout Subsection
-Member: moviestate
+Member: saveframe
 \end_layout
 
 \begin_layout Standard
-Raw binary movie state data.
+Contains frame number (as one line) of frame movie was saved on.
  Only present in savestates.
 \end_layout
 
+\begin_layout Subsection
+Member: lagcounter
+\end_layout
+
 \begin_layout Standard
-for version 0:
+Current value of lag counter (as one line).
+ Only present in savestates.
 \end_layout
 
-\begin_layout Itemize
-32 bytes: SHA-256 of project ID.
+\begin_layout Subsection
+Member: pollcounters
 \end_layout
 
-\begin_layout Itemize
-8 bytes: Big-endian current frame.
-\end_layout
-
-\begin_layout Itemize
-100x4 bytes: Poll counters for each control (bit31 of each is 
-\begin_inset Quotes eld
-\end_inset
-
-data ready
-\begin_inset Quotes erd
-\end_inset
-
- bit), big-endian.
-\end_layout
-
-\begin_layout Itemize
-8 bytes: Big-endian lag frame count.
-\end_layout
-
-\begin_layout Itemize
-32 bytes: SHA-256 of past input
-\end_layout
-
-\begin_layout Itemize
-32 bytes: SHA-256 of previous.
-\end_layout
-
-\begin_layout Itemize
-(total of 512 bytes)
+\begin_layout Standard
+Contains poll counters (currently 100 of them), one per line.
+ Each line is raw poll count if DRDY is set for it.
+ Otherwise it is negative poll count minus one.
+ Only present in savestates.
 \end_layout
 
 \begin_layout Subsection
@@ -3886,10 +3866,6 @@ Set large AVI option 'set-setting avi-large on'
 \end_layout
 
 \begin_layout Enumerate
-If dumping PAL, set bottom border to 2 'set-setting avi-bottom-border 2'
-\end_layout
-
-\begin_layout Enumerate
 Enable dumping 'dump-avi 12 tmpdump' (note: Normally 10 and above are 
 \begin_inset Quotes eld
 \end_inset
@@ -3899,7 +3875,7 @@ use only if you know what you are doing.
 \end_inset
 
 .
- In this case, these can be safely used because of how x264 internally works.
+ In this case, these can be safely used because of how x264 internally works).
 \end_layout
 
 \begin_layout Enumerate
@@ -3907,7 +3883,8 @@ Unpause and let it run until you want to end dumping.
 \end_layout
 
 \begin_layout Enumerate
-Close the emulator (closing the window is the easiest way)
+Close the emulator (closing the window is the easiest way).
+ Or use 'end-avi'.
 \end_layout
 
 \begin_layout Enumerate

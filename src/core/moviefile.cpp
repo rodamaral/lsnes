@@ -41,7 +41,8 @@ void read_linefile(zip_reader& r, const std::string& member, std::string& out, b
 	}
 }
 
-void read_numeric_file(zip_reader& r, const std::string& member, int64_t& out, bool conditional = false)
+template<typename T>
+void read_numeric_file(zip_reader& r, const std::string& member, T& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::string _out;
@@ -66,7 +67,8 @@ void write_linefile(zip_writer& w, const std::string& member, const std::string&
 	}
 }
 
-void write_numeric_file(zip_writer& w, const std::string& member, int64_t value) throw(std::bad_alloc,
+template<typename T>
+void write_numeric_file(zip_writer& w, const std::string& member, T value) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	std::ostringstream x;
@@ -207,7 +209,51 @@ void read_input(zip_reader& r, std::vector<controls_t>& input, porttype_t port1,
 		delete &m;
 		throw;
 	}
+}
 
+void read_pollcounters(zip_reader& r, const std::string& file, std::vector<uint32_t>& pctr)
+{
+	std::istream& m = r[file];
+	try {
+		std::string x;
+		while(std::getline(m, x)) {
+			strip_CR(x);
+			if(x != "") {
+				int32_t y = parse_value<int32_t>(x);
+				uint32_t z = 0;
+				if(y < 0)
+					z = -(y + 1);
+				else {
+					z = y;
+					z |= 0x80000000UL;
+				}
+				pctr.push_back(z);
+			}
+		}
+		delete &m;
+	} catch(...) {
+		delete &m;
+		throw;
+	}
+}
+
+void write_pollcounters(zip_writer& w, const std::string& file, const std::vector<uint32_t>& pctr)
+{
+	std::ostream& m = w.create_file(file);
+	try {
+		for(auto i : pctr) {
+			int32_t x = i & 0x7FFFFFFFUL;
+			if((i & 0x80000000UL) == 0)
+				x = -x - 1;
+			m << x << std::endl;
+		}
+		if(!m)
+			throw std::runtime_error("Can't write ZIP file member");
+		w.close_file();
+	} catch(...) {
+		w.close_file();
+		throw;
+	}
 }
 
 porttype_t parse_controller_type(const std::string& type, bool port) throw(std::bad_alloc, std::runtime_error)
@@ -280,7 +326,9 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate")) {
 		is_savestate = true;
-		movie_state = read_raw_file(r, "moviestate");
+		read_numeric_file(r, "saveframe", save_frame, true);
+		read_numeric_file(r, "lagcounter", lagged_frames, true);
+		read_pollcounters(r, "pollcounters", pollcounters);
 		if(r.has_member("hostmemory"))
 			host_memory = read_raw_file(r, "hostmemory");
 		savestate = read_raw_file(r, "savestate");
@@ -328,7 +376,9 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_numeric_file(w, "starttime.second", movie_rtc_second);
 	write_numeric_file(w, "starttime.subsecond", movie_rtc_subsecond);
 	if(is_savestate) {
-		write_raw_file(w, "moviestate", movie_state);
+		write_numeric_file(w, "saveframe", save_frame);
+		write_numeric_file(w, "lagcounter", lagged_frames);
+		write_pollcounters(w, "pollcounters", pollcounters);
 		write_raw_file(w, "hostmemory", host_memory);
 		write_raw_file(w, "savestate", savestate);
 		write_raw_file(w, "screenshot", screenshot);
