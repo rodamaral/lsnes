@@ -106,6 +106,43 @@ std::vector<char> read_raw_file(zip_reader& r, const std::string& member) throw(
 	return out;
 }
 
+uint64_t decode_uint64(unsigned char* buf)
+{
+	return ((uint64_t)buf[0] << 56) |
+		((uint64_t)buf[1] << 48) |
+		((uint64_t)buf[2] << 40) |
+		((uint64_t)buf[3] << 32) |
+		((uint64_t)buf[4] << 24) |
+		((uint64_t)buf[5] << 16) |
+		((uint64_t)buf[6] << 8) |
+		((uint64_t)buf[7]);
+}
+
+uint32_t decode_uint32(unsigned char* buf)
+{
+	return ((uint32_t)buf[0] << 24) |
+		((uint32_t)buf[1] << 16) |
+		((uint32_t)buf[2] << 8) |
+		((uint32_t)buf[3]);
+}
+
+
+void read_moviestate_file(zip_reader& r, const std::string& file, uint64_t& save_frame, uint64_t& lagged_frames,
+	std::vector<uint32_t>& pollcounters) throw(std::bad_alloc, std::runtime_error)
+{
+	unsigned char buf[512];
+	auto s = read_raw_file(r, file);
+	if(s.size() != sizeof(buf))
+		throw std::runtime_error("Invalid moviestate file");
+	memcpy(buf, &s[0], sizeof(buf));
+	//Interesting offsets: 32-39: Current frame, 40-47: Lagged frames, 48-447: Poll counters. All bigendian.
+	save_frame = decode_uint64(buf + 32);
+	lagged_frames = decode_uint64(buf + 40);
+	pollcounters.resize(100);
+	for(unsigned i = 0; i < 100; i++)
+		pollcounters[i] = decode_uint32(buf + 48 + 4 * i);
+}
+
 void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::string>>& authors) throw(std::bad_alloc,
 	std::runtime_error)
 {
@@ -326,9 +363,14 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate")) {
 		is_savestate = true;
-		read_numeric_file(r, "saveframe", save_frame, true);
-		read_numeric_file(r, "lagcounter", lagged_frames, true);
-		read_pollcounters(r, "pollcounters", pollcounters);
+		if(r.has_member("moviestate"))
+			//Backwards compat stuff.
+			read_moviestate_file(r, "moviestate", save_frame, lagged_frames, pollcounters);
+		else {
+			read_numeric_file(r, "saveframe", save_frame, true);
+			read_numeric_file(r, "lagcounter", lagged_frames, true);
+			read_pollcounters(r, "pollcounters", pollcounters);
+		}
 		if(r.has_member("hostmemory"))
 			host_memory = read_raw_file(r, "hostmemory");
 		savestate = read_raw_file(r, "savestate");
