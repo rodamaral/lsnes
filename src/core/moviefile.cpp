@@ -135,12 +135,12 @@ void read_moviestate_file(zip_reader& r, const std::string& file, uint64_t& save
 	if(s.size() != sizeof(buf))
 		throw std::runtime_error("Invalid moviestate file");
 	memcpy(buf, &s[0], sizeof(buf));
-	//Interesting offsets: 32-39: Current frame, 40-47: Lagged frames, 48-447: Poll counters. All bigendian.
+	//Interesting offsets: 32-39: Current frame, 40-439: Poll counters, 440-447 lagged frames. All bigendian.
 	save_frame = decode_uint64(buf + 32);
-	lagged_frames = decode_uint64(buf + 40);
+	lagged_frames = decode_uint64(buf + 440);
 	pollcounters.resize(100);
 	for(unsigned i = 0; i < 100; i++)
-		pollcounters[i] = decode_uint32(buf + 48 + 4 * i);
+		pollcounters[i] = decode_uint32(buf + 40 + 4 * i);
 }
 
 void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::string>>& authors) throw(std::bad_alloc,

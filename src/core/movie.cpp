@@ -29,7 +29,7 @@ namespace
 		//sync done.
 		uint64_t syncs_seen = 0;
 		uint64_t frames_read = 0;
-		while(syncs_seen < frame) {
+		while(syncs_seen < frame - 1) {
 			controls_t oldc(true), newc(true);
 			//Due to way subframes are stored, we can ignore syncing when comparing.
 			if(frames_read < old_movie.size())
@@ -53,11 +53,11 @@ namespace
 		for(unsigned i = 0; i < TOTAL_CONTROLS; i++) {
 			uint32_t p = polls[i] & 0x7FFFFFFFUL;
 			short ov = 0, nv = 0;
-			for(uint32_t i = 0; i < p; i++) {
-				if(i < readable_old_subframes)
-					ov = old_movie[i + frames_read](i);
-				if(i < readable_new_subframes)
-					nv = new_movie[i + frames_read](i);
+			for(uint32_t j = 0; j < p; j++) {
+				if(j < readable_old_subframes)
+					ov = old_movie[j + frames_read](i);
+				if(j < readable_new_subframes)
+					nv = new_movie[j + frames_read](i);
 				if(ov != nv)
 					return false;
 			}
