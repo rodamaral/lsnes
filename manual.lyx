@@ -2583,6 +2583,15 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsection
+Table _SYSTEM
+\end_layout
+
+\begin_layout Standard
+Contains copy of global variables from time of Lua initialization.
+ Non-writeable.
+\end_layout
+
+\begin_layout Subsection
 Callbacks
 \end_layout
 

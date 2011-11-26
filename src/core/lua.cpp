@@ -283,6 +283,34 @@ namespace
 			command::invokeC("repaint");
 		}
 	}
+
+	int system_write_error(lua_State* L)
+	{
+		lua_pushstring(L, "_SYSTEM is write-protected");
+		lua_error(L);
+		return 0;
+	}
+
+	void copy_system_tables(lua_State* L)
+	{
+		lua_newtable(L);
+		lua_pushnil(L);
+		while(lua_next(L, LUA_GLOBALSINDEX)) {
+			//Stack: _SYSTEM, KEY, VALUE
+			lua_pushvalue(L, -2);
+			lua_pushvalue(L, -2);
+			//Stack: _SYSTEM, KEY, VALUE, KEY, VALUE
+			lua_rawset(L, -5);
+			//Stack: _SYSTEM, KEY, VALUE
+			lua_pop(L, 1);
+			//Stack: _SYSTEM, KEY
+		}
+		lua_newtable(L);
+		lua_pushcfunction(L, system_write_error);
+		lua_setfield(L, -2, "__newindex");
+		lua_setmetatable(L, -2);
+		lua_setglobal(L, "_SYSTEM");
+	}
 }
 
 void lua_callback_do_paint(struct lua_render_context* ctx) throw()
@@ -438,6 +466,7 @@ void init_lua() throw()
 	luaL_openlibs(L);
 
 	register_lua_functions(L);
+	copy_system_tables(L);
 }
 
 bool lua_requests_repaint = false;
