@@ -406,9 +406,13 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 				if(!in)
 					throw std::runtime_error("Can't read picture payload");
 				is_pal = is_pal || pal;
-				if(overscan && i < 9)
+				if(overscan && !pal && i < 16)
 					continue;
-				if(!overscan && i < 1)
+				if(!overscan && !pal && i < 9)
+					continue;
+				if(overscan && pal && i < 9)
+					continue;
+				if(!overscan && pal && i < 1)
 					continue;
 				if(pal & physline >= 239)
 					continue;
