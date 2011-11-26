@@ -4012,14 +4012,6 @@ The whole pending save stuff.
 \end_layout
 
 \begin_layout Itemize
-Delay resets are slow.
-\end_layout
-
-\begin_layout Itemize
-RTC is not emulated in sync-stable manner.
-\end_layout
-
-\begin_layout Itemize
 Lack of layer hiding.
 \end_layout
 
@@ -4029,10 +4021,6 @@ It is slow.
 
 \begin_layout Itemize
 Firmwares can't be loaded from ZIP archives.
-\end_layout
-
-\begin_layout Itemize
-Manual polls can be corrupted if savestate occurs during those.
 \end_layout
 
 \begin_layout Subsection
@@ -4652,6 +4640,26 @@ Fix RTC if using load-movie on savestate.
 
 \begin_layout Itemize
 Fix crash related to full console mode.
+\end_layout
+
+\begin_layout Subsection
+rr0-beta24
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Allow bringing application to foreground on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Allow compiling on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Use movie compare instead of movie hashing (faster save/load).
+\end_layout
+
+\begin_layout Itemize
+Lua: _SYSTEM table.
 \end_layout
 
 \end_body
