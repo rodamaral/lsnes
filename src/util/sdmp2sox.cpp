@@ -364,6 +364,18 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 	sout.write(reinterpret_cast<char*>(sox_header), 32);
 	if(!sout)
 		throw std::runtime_error("Can't write audio header");
+	if(flags & FLAG_OFFSET2) {
+		uint64_t nullsamples = apurate / 384;
+		const size_t bufsz = 512;
+		char nbuffer[8 * bufsz] = {0};
+		while(nullsamples > bufsz) {
+			sout.write(nbuffer, 8 * bufsz);
+			nullsamples -= bufsz;
+		}
+		sout.write(nbuffer, 8 * nullsamples);
+		if(!sout)
+			throw std::runtime_error("Can't write 2 second silence");
+	}
 	uint64_t samples = 0;
 	uint64_t frames = 0;
 	unsigned wrongrate = 0;
