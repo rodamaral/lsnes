@@ -18,13 +18,19 @@
 #define FLAG_DEDUP 256
 #define FLAG_OFFSET2 512
 #define FLAG_10FRAMES 1024
+#define FLAG_AR_CORRECT 2048
+
+#define CMD_HIRES 1
+#define CMD_INTERLACED 2
+#define CMD_OVERSCAN 4
+#define CMD_PAL 8
 
 #define MAX_DEDUP 9
 
-//Heh, this happens to be exact hardware capacity of 1.44MB 90mm floppy. :-)
-//This buffer needs to be big enough to store 512x480 16-bit YCbCr 4:4:4 (6 bytes per pixel) image.
-unsigned char yuv_buffer[1474560];
-unsigned char old_yuv_buffer[1474560];
+//This buffer needs to be big enough to store 640x480 16-bit YCbCr 4:4:4 (6 bytes per pixel) image.
+#define MAXYUVSIZE (640 * 480 * 6)
+unsigned char yuv_buffer[MAXYUVSIZE];
+unsigned char old_yuv_buffer[MAXYUVSIZE];
 
 //30 bit values.
 uint32_t ymatrix[0x80000];
@@ -43,6 +49,58 @@ uint32_t crmatrix[0x80000];
 	} while(0)
 
 #define RGB2YUV_SHIFT 14
+
+class sox_output
+{
+public:
+	sox_output(std::ostream& soxs, uint32_t apurate, bool silence2);
+	void close();
+	void add_sample(unsigned char* buf);
+	uint64_t get_samples();
+private:
+	std::ostream& strm;
+	uint64_t samples;
+};
+
+class sdmp_input_stream
+{
+public:
+	sdmp_input_stream(std::istream& sdmp);
+	uint32_t get_cpurate();
+	uint32_t get_apurate();
+	int read_command();
+	void read_linepair(unsigned char* buffer);
+	void copy_audio_sample(sox_output& audio_out);
+private:
+	std::istream& strm;
+	uint32_t cpurate;
+	uint32_t apurate;
+};
+
+class time_tracker
+{
+public:
+	time_tracker(uint32_t _cpurate);
+	void add_2s();
+	void advance(bool pal, bool interlaced);
+	uint64_t get_ts();
+private:
+	uint32_t cpurate;
+	uint64_t w;
+	uint64_t n;
+};
+
+class dup_tracker
+{
+public:
+	dup_tracker(std::ostream& _tcfile, uint32_t _flags);
+	uint32_t process(unsigned char* buffer, size_t bufsize, int pkt_type, time_tracker& ts);
+private:
+	std::ostream& tcfile;
+	uint32_t flags;
+	uint32_t counter;
+};
+
 
 struct store16
 {
@@ -207,6 +265,35 @@ void render_yuv_fe(unsigned char* buffer, const unsigned char* src, size_t psep,
 			loop<loadstore<store, 0, 0, 0, 1, 256, 257>, 256, 1, 2>::f(buffer, src, psep);
 }
 
+typedef void (*render_yuv_t)(unsigned char* buffer, const unsigned char* src, size_t psep, bool hires,
+	bool interlaced);
+
+render_yuv_t get_renderer_for(int32_t flags)
+{
+	int32_t mode = flags & (FLAG_WIDTH | FLAG_HEIGHT | FLAG_8BIT | FLAG_FAKENLARGE);
+	if(mode == 0)
+		return render_yuv_256_240<store16>;
+	if(mode == FLAG_WIDTH)
+		return render_yuv_512_240<store16>;
+	if(mode == FLAG_HEIGHT)
+		return render_yuv_256_480<store16>;
+	if(mode == (FLAG_WIDTH | FLAG_HEIGHT))
+		return render_yuv_512_480<store16>;
+	if(mode == (FLAG_WIDTH | FLAG_HEIGHT | FLAG_FAKENLARGE))
+		return render_yuv_fe<store16>;
+	if(mode == FLAG_8BIT)
+		return render_yuv_256_240<store8>;
+	if(mode == (FLAG_WIDTH | FLAG_8BIT))
+		return render_yuv_512_240<store8>;
+	if(mode == (FLAG_HEIGHT | FLAG_8BIT))
+		return render_yuv_256_480<store8>;
+	if(mode == (FLAG_WIDTH | FLAG_HEIGHT | FLAG_8BIT))
+		return render_yuv_512_480<store8>;
+	if(mode == (FLAG_WIDTH | FLAG_HEIGHT | FLAG_FAKENLARGE | FLAG_8BIT))
+		return render_yuv_fe<store8>;
+	throw std::runtime_error("get_renderer_for: Unknown flags combination");
+}
+
 void init_matrix(double Kb, double Kr, bool fullrange)
 {
 	double RY = Kr;
@@ -236,28 +323,19 @@ void init_matrix(double Kb, double Kr, bool fullrange)
 //Load RGB to YUV conversion matrix.
 void load_rgb2yuv_matrix(uint32_t flags)
 {
-	switch(flags & (FLAG_CS_MASK | FLAG_FULLRANGE))
+	switch(flags & (FLAG_CS_MASK))
 	{
 	case FLAG_ITU601:
-		init_matrix(0.114, 0.229, false);
-		break;
-	case FLAG_ITU601 | FLAG_FULLRANGE:
-		init_matrix(0.114, 0.229, true);
+		init_matrix(0.114, 0.229, flags & FLAG_FULLRANGE);
 		break;
 	case FLAG_ITU709:
-		init_matrix(0.0722, 0.2126, false);
-		break;
-	case FLAG_ITU709 | FLAG_FULLRANGE:
-		init_matrix(0.0722, 0.2126, true);
+		init_matrix(0.0722, 0.2126, flags & FLAG_FULLRANGE);
 		break;
 	case FLAG_SMPTE240M:
-		init_matrix(0.087, 0.212, false);
-		break;
-	case FLAG_SMPTE240M | FLAG_FULLRANGE:
-		init_matrix(0.087, 0.212, true);
+		init_matrix(0.087, 0.212, flags & FLAG_FULLRANGE);
 		break;
 	default:
-		init_matrix(0.114, 0.229, false);
+		init_matrix(0.114, 0.229, flags & FLAG_FULLRANGE);
 		break;
 	}
 }
@@ -284,67 +362,10 @@ uint64_t double_to_ieeefp(double v)
 	return v2;
 }
 
-void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::ostream& tout, int32_t flags)
+
+sox_output::sox_output(std::ostream& soxs, uint32_t apurate, bool silence2)
+	: strm(soxs)
 {
-	unsigned elided = 0;
-	uint64_t ftcw = 0;
-	uint64_t ftcn = 0;
-	if(flags & FLAG_OFFSET2)
-		ftcw += 2000;
-	if(flags & FLAG_DEDUP) {
-		tout << "# timecode format v2" << std::endl;
-		if(flags & FLAG_10FRAMES)
-			tout << "0\n200\n400\n600\n800\n1000\n1200\n1400\n1600\n1800" << std::endl;
-	}
-	void (*render_yuv)(unsigned char* buffer, const unsigned char* src, size_t psep, bool hires, bool interlaced);
-	switch(flags & (FLAG_WIDTH | FLAG_HEIGHT | FLAG_8BIT | FLAG_FAKENLARGE)) {
-	case 0:
-		render_yuv = render_yuv_256_240<store16>;
-		break;
-	case FLAG_WIDTH:
-		render_yuv = render_yuv_512_240<store16>;
-		break;
-	case FLAG_HEIGHT:
-		render_yuv = render_yuv_256_480<store16>;
-		break;
-	case FLAG_WIDTH | FLAG_HEIGHT:
-		render_yuv = render_yuv_512_480<store16>;
-		break;
-	case FLAG_WIDTH | FLAG_HEIGHT | FLAG_FAKENLARGE:
-		render_yuv = render_yuv_fe<store16>;
-		break;
-	case FLAG_8BIT:
-		render_yuv = render_yuv_256_240<store8>;
-		break;
-	case FLAG_WIDTH | FLAG_8BIT:
-		render_yuv = render_yuv_512_240<store8>;
-		break;
-	case FLAG_HEIGHT | FLAG_8BIT:
-		render_yuv = render_yuv_256_480<store8>;
-		break;
-	case FLAG_WIDTH | FLAG_HEIGHT | FLAG_8BIT:
-		render_yuv = render_yuv_512_480<store8>;
-		break;
-	case FLAG_WIDTH | FLAG_HEIGHT | FLAG_FAKENLARGE | FLAG_8BIT:
-		render_yuv = render_yuv_fe<store8>;
-		break;
-	}
-	unsigned char header[12];
-	in.read(reinterpret_cast<char*>(header), 12);
-	if(!in)
-		throw std::runtime_error("Can't read sdump header");
-	if(header[0] != 'S' || header[1] != 'D' || header[2] != 'M' || header[3] != 'P')
-		throw std::runtime_error("Bad sdump magic");
-	uint32_t apurate;
-	uint32_t cpurate;
-	cpurate = (static_cast<uint32_t>(header[4]) << 24) |
-		(static_cast<uint32_t>(header[5]) << 16) |
-		(static_cast<uint32_t>(header[6]) << 8) |
-		static_cast<uint32_t>(header[7]);
-	apurate = (static_cast<uint32_t>(header[8]) << 24) |
-		(static_cast<uint32_t>(header[9]) << 16) |
-		(static_cast<uint32_t>(header[10]) << 8) |
-		static_cast<uint32_t>(header[11]);
 	uint64_t sndrateR = double_to_ieeefp(static_cast<double>(apurate) / 768.0);
 	unsigned char sox_header[32] = {0};
 	sox_header[0] = 0x2E;		//Magic
@@ -361,162 +382,387 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 	sox_header[22] = sndrateR >> 48;
 	sox_header[23] = sndrateR >> 56;
 	sox_header[24] = 2;
-	sout.write(reinterpret_cast<char*>(sox_header), 32);
-	if(!sout)
+	strm.write(reinterpret_cast<char*>(sox_header), 32);
+	if(!strm)
 		throw std::runtime_error("Can't write audio header");
-	if(flags & FLAG_OFFSET2) {
+	samples = 0;
+	if(silence2) {
 		uint64_t nullsamples = apurate / 384;
+		samples = nullsamples;
 		const size_t bufsz = 512;
 		char nbuffer[8 * bufsz] = {0};
 		while(nullsamples > bufsz) {
-			sout.write(nbuffer, 8 * bufsz);
+			strm.write(nbuffer, 8 * bufsz);
 			nullsamples -= bufsz;
 		}
-		sout.write(nbuffer, 8 * nullsamples);
-		if(!sout)
+		strm.write(nbuffer, 8 * nullsamples);
+		if(!strm)
 			throw std::runtime_error("Can't write 2 second silence");
 	}
-	uint64_t samples = 0;
-	uint64_t frames = 0;
-	unsigned wrongrate = 0;
-	bool is_pal = false;
+}
+
+void sox_output::close()
+{
+	//Sox internally multiplies sample count by channel count.
+	unsigned char sox_header[8];
+	sox_header[0] = samples << 1;
+	sox_header[1] = samples >> 7;
+	sox_header[2] = samples >> 15;
+	sox_header[3] = samples >> 23;
+	sox_header[4] = samples >> 31;
+	sox_header[5] = samples >> 39;
+	sox_header[6] = samples >> 47;
+	sox_header[7] = samples >> 55;
+	strm.seekp(8, std::ios::beg);
+	if(!strm)
+		throw std::runtime_error("Can't seek to fix .sox header");
+	strm.write(reinterpret_cast<char*>(sox_header), 8);
+	if(!strm)
+		throw std::runtime_error("Can't fix audio header");
+}
+
+void sox_output::add_sample(unsigned char* buf)
+{
+	strm.write(reinterpret_cast<char*>(buf), 8);
+	if(!strm)
+		throw std::runtime_error("Can't write audio sample");
+	samples++;
+}
+
+uint64_t sox_output::get_samples()
+{
+	return samples;
+}
+
+sdmp_input_stream::sdmp_input_stream(std::istream& sdmp)
+	: strm(sdmp)
+{
+	unsigned char header[12];
+	strm.read(reinterpret_cast<char*>(header), 12);
+	if(!strm)
+		throw std::runtime_error("Can't read sdump header");
+	if(header[0] != 'S' || header[1] != 'D' || header[2] != 'M' || header[3] != 'P')
+		throw std::runtime_error("Bad sdump magic");
+	cpurate = (static_cast<uint32_t>(header[4]) << 24) |
+		(static_cast<uint32_t>(header[5]) << 16) |
+		(static_cast<uint32_t>(header[6]) << 8) |
+		static_cast<uint32_t>(header[7]);
+	apurate = (static_cast<uint32_t>(header[8]) << 24) |
+		(static_cast<uint32_t>(header[9]) << 16) |
+		(static_cast<uint32_t>(header[10]) << 8) |
+		static_cast<uint32_t>(header[11]);
+}
+
+uint32_t sdmp_input_stream::get_cpurate()
+{
+	return cpurate;
+}
+
+uint32_t sdmp_input_stream::get_apurate()
+{
+	return apurate;
+}
+
+int sdmp_input_stream::read_command()
+{
+	unsigned char cmd;
+	strm >> cmd;
+	if(!strm)
+		return -1;
+	return cmd;
+}
+
+void sdmp_input_stream::read_linepair(unsigned char* buffer)
+{
+	strm.read(reinterpret_cast<char*>(buffer), 4096);
+	if(!strm)
+		throw std::runtime_error("Can't read picture payload");
+}
+
+void sdmp_input_stream::copy_audio_sample(sox_output& audio_out)
+{
+	unsigned char ibuf[4];
+	unsigned char obuf[8];
+	strm.read(reinterpret_cast<char*>(ibuf), 4);
+	if(!strm)
+		throw std::runtime_error("Can't read sound packet payload");
+	obuf[0] = 0;
+	obuf[1] = 0;
+	obuf[2] = ibuf[1];
+	obuf[3] = ibuf[0];
+	obuf[4] = 0;
+	obuf[5] = 0;
+	obuf[6] = ibuf[3];
+	obuf[7] = ibuf[2];
+	audio_out.add_sample(obuf);
+}
+
+time_tracker::time_tracker(uint32_t _cpurate)
+{
+	cpurate = _cpurate;
+	w = n = 0;
+}
+
+void time_tracker::add_2s()
+{
+	w += 2000;
+}
+
+void time_tracker::advance(bool pal, bool interlaced)
+{
+	uint64_t tcc = pal ? 425568000 : (interlaced ? 357368000 : 357366000);
+	w += tcc / cpurate;
+	n += tcc % cpurate;
+	w += n / cpurate;
+	n %= cpurate;
+}
+
+uint64_t time_tracker::get_ts()
+{
+	return w;
+}
+
+dup_tracker::dup_tracker(std::ostream& _tcfile, uint32_t _flags)
+	: tcfile(_tcfile)
+{
+	flags = _flags;
+	counter = 0;
+}
+
+uint32_t dup_tracker::process(unsigned char* buffer, size_t bufsize, int pkt_type, time_tracker& ts)
+{
+	if(flags & FLAG_DEDUP) {
+		if(memcmp(buffer, old_yuv_buffer, bufsize)) {
+			memcpy(old_yuv_buffer, buffer, bufsize);
+			counter = 0;
+		} else
+			counter = (counter + 1) % MAX_DEDUP;
+		if(counter)
+			return 0;
+		else {
+			tcfile << ts.get_ts() << std::endl;
+			if(!tcfile)
+				throw std::runtime_error("Can't write frame timestamp");
+			return 1;
+		}
+	}
+	if(pkt_type & CMD_PAL)
+		return 1;		//No wrong framerate correction in PAL mode.
+	bool framerate_flag = (flags & FLAG_FRAMERATE);
+	bool interlaced = (pkt_type & CMD_INTERLACED);
+	if(!framerate_flag && interlaced) {
+		//This uses 357368 TU instead of 357366 TU.
+		//-> Every 178683rd frame is duplicated.
+		counter = (counter + 1) % 178683;
+		if(counter)
+			return 2;
+	}
+	if(framerate_flag && !interlaced) {
+		//This uses 357366 TU instead of 357368 TU.
+		//-> Every 178684th frame is dropped.
+		counter = (counter + 1) % 178684;
+		if(!counter)
+			return 0;
+	}
+	return 1;
+}
+
+size_t calculate_line_separation(int32_t flags, int pkt_type)
+{
+	size_t s = 256;
+	if(flags & FLAG_AR_CORRECT)
+		if(pkt_type & CMD_PAL)
+			s = (flags & FLAG_WIDTH) ? 640 : 320;
+		else
+			s = (flags & FLAG_WIDTH) ? 598 : 298;
+	else if(flags & FLAG_WIDTH)
+			s *= 2;
+	if(flags & FLAG_HEIGHT)
+		s *= 2;
+	if(!(flags & FLAG_8BIT))
+		s *= 2;
+	return s;
+}
+
+size_t calculate_plane_separation(int32_t flags, int pkt_type)
+{
+	size_t s = calculate_line_separation(flags, pkt_type);
+	if(pkt_type & CMD_PAL)
+		s *= 240;
+	else
+		s *= 224;
+	return s;
+}
+
+bool is_renderable_line(int pkt_type, unsigned line_pair, unsigned rendered)
+{
+	switch(pkt_type & (CMD_OVERSCAN | CMD_PAL)) {
+	case 0:
+		return (line_pair >= 9 && rendered < 224);
+	case CMD_OVERSCAN:
+		return (line_pair >= 16 && rendered < 224);
+	case CMD_PAL:
+		return (line_pair >= 1 && rendered < 239);
+	case CMD_PAL | CMD_INTERLACED:
+		return (line_pair >= 9 && rendered < 239);
+	};
+	return false;
+}
+
+void lanczos_256_298_16(unsigned short* dst, unsigned short* src);
+void lanczos_256_320_16(unsigned short* dst, unsigned short* src);
+void lanczos_512_598_16(unsigned short* dst, unsigned short* src);
+void lanczos_512_640_16(unsigned short* dst, unsigned short* src);
+void lanczos_256_298_8(unsigned char* dst, unsigned char* src);
+void lanczos_256_320_8(unsigned char* dst, unsigned char* src);
+void lanczos_512_598_8(unsigned char* dst, unsigned char* src);
+void lanczos_512_640_8(unsigned char* dst, unsigned char* src);
+
+void do_lanczos(unsigned char* dst, unsigned char* src, bool xhi, bool yhi, bool pal, bool lc, size_t psep)
+{
+	unsigned char* dstN[3];
+	unsigned short* dstW[3];
+	unsigned char* srcN[3];
+	unsigned short* srcW[3];
+	dstN[0] = dst;
+	dstN[1] = dst + psep;
+	dstN[2] = dst + 2 * psep;
+	dstW[0] = reinterpret_cast<unsigned short*>(dst);
+	dstW[1] = reinterpret_cast<unsigned short*>(dst + psep);
+	dstW[2] = reinterpret_cast<unsigned short*>(dst + 2 * psep);
+	srcN[0] = src;
+	srcN[1] = src + 2048;
+	srcN[2] = src + 4096;
+	srcW[0] = reinterpret_cast<unsigned short*>(src);
+	srcW[1] = reinterpret_cast<unsigned short*>(src + 2048);
+	srcW[2] = reinterpret_cast<unsigned short*>(src + 4096);
+	unsigned doffset = pal ? (xhi ? 640 : 320) : (xhi ? 598 : 298);
+	unsigned soffset = xhi ? 512 : 256;
+	void (*fn8)(unsigned char* dst, unsigned char* src);
+	void (*fn16)(unsigned short* dst, unsigned short* src);
+	if(xhi && pal) {
+		fn8 = lanczos_512_640_8;
+		fn16 = lanczos_512_640_16;
+	} else if(xhi && !pal) {
+		fn8 = lanczos_512_598_8;
+		fn16 = lanczos_512_598_16;
+	} else if(!xhi && pal) {
+		fn8 = lanczos_256_320_8;
+		fn16 = lanczos_256_320_16;
+	} else if(!xhi && !pal) {
+		fn8 = lanczos_256_298_8;
+		fn16 = lanczos_256_298_16;
+	}
+	if(lc) {
+		for(unsigned i = 0; i < 3; i++)
+			fn8(dstN[i], srcN[i]);
+		if(yhi)
+			for(unsigned i = 0; i < 3; i++)
+				fn8(dstN[i] + doffset, srcN[i] + soffset);
+	} else {
+		for(unsigned i = 0; i < 3; i++)
+			fn16(dstW[i], srcW[i]);
+		if(yhi)
+			for(unsigned i = 0; i < 3; i++)
+				fn16(dstW[i] + doffset, srcW[i] + soffset);
+	}
+}
+
+void call_render_yuv(unsigned char* buffer, unsigned char* buf, size_t psep, int pkt_type, int32_t flags)
+{
+	render_yuv_t render_yuv = get_renderer_for(flags);
+	unsigned char tmp[6144];
+	if(flags & FLAG_AR_CORRECT) {
+		render_yuv(tmp, buf, 2048, pkt_type & CMD_HIRES, pkt_type & CMD_INTERLACED);
+		bool xhi = (flags & FLAG_WIDTH);
+		bool yhi = (flags & FLAG_HEIGHT);
+		bool pal = (pkt_type & CMD_PAL);
+		bool lc = (flags & FLAG_8BIT);
+		do_lanczos(buffer, tmp, xhi, yhi, pal, lc, psep);
+	} else
+		render_yuv(buffer, buf, psep, pkt_type & CMD_HIRES, pkt_type & CMD_INTERLACED);
+}
+
+size_t render_frame(sdmp_input_stream& in, int pkt_type, int32_t flags, unsigned char* buffer)
+{
+	unsigned char buf[4096];
+	unsigned physline = 0;
+	size_t psep = calculate_plane_separation(flags, pkt_type);
+	size_t lsep = calculate_line_separation(flags, pkt_type);
+	for(unsigned i = 0; i < 256; i++) {
+		in.read_linepair(buf);
+		if(!is_renderable_line(pkt_type, i, physline))
+			continue;
+		call_render_yuv(buffer + physline * lsep, buf, psep, pkt_type, flags);
+		physline++;
+	}
+	if(pkt_type & CMD_PAL) {
+		//Render a black line to pad the image.
+		memset(buf, 0, 4096);
+		call_render_yuv(buffer + physline * lsep, buf, psep, pkt_type, flags);
+	}
+	return 3 * psep;
+}
+
+void write_frame(std::ostream& yout, unsigned char* buffer, size_t bufsize, unsigned times_ctr, uint64_t& frames)
+{
+	for(unsigned k = 0; k < times_ctr; k++)
+		yout.write(reinterpret_cast<char*>(buffer), bufsize);
+	if(!yout)
+		throw std::runtime_error("Can't write frame");
+	frames += times_ctr;
+}
+
+void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::ostream& tout, int32_t flags)
+{
+	sdmp_input_stream sdmp_in(in);
+	sox_output sox_out(sout, sdmp_in.get_apurate(), flags & FLAG_OFFSET2);
+	time_tracker ts(sdmp_in.get_cpurate());
+	dup_tracker dupt(tout, flags);
+
 	load_rgb2yuv_matrix(flags);
+
+	if(flags & FLAG_OFFSET2)
+		ts.add_2s();
+	if(flags & FLAG_DEDUP) {
+		tout << "# timecode format v2" << std::endl;
+		if(flags & FLAG_10FRAMES)
+			tout << "0\n200\n400\n600\n800\n1000\n1200\n1400\n1600\n1800" << std::endl;
+	}
+
+	uint64_t frames = 0;
+	bool is_pal = false;
+	
 	while(true) {
-		unsigned char cmd;
 		bool lf = false;
-		in >> cmd;
-		if(!in)
+		int pkttype = sdmp_in.read_command();
+		if(pkttype < 0)
 			break;	//End of stream.
-		if((cmd & 0xF0) == 0) {
-			//Pictrue. Read the 1MiB of picture data one line pair at a time.
-			unsigned char buf[4096];
-			unsigned physline = 0;
-			bool hires = (cmd & 1);
-			bool interlaced = (cmd & 2);
-			bool overscan = (cmd & 4);
-			bool pal = (cmd & 8);
-			bool ohires = (flags & FLAG_WIDTH);
-			bool ointerlaced = (flags & FLAG_HEIGHT);
-			bool bits8 = (flags & FLAG_8BIT);
-			size_t psep = (ohires ? 512 : 256) * (ointerlaced ? 2 : 1) * (pal ? 240 : 224) *
-				(bits8 ? 1 : 2);
-			size_t lsep = (ohires ? 512 : 256) * (ointerlaced ? 2 : 1) * (bits8 ? 1 : 2);
-			for(unsigned i = 0; i < 256; i++) {
-				in.read(reinterpret_cast<char*>(buf), 4096);
-				if(!in)
-					throw std::runtime_error("Can't read picture payload");
-				is_pal = is_pal || pal;
-				if(overscan && !pal && i < 16)
-					continue;
-				if(!overscan && !pal && i < 9)
-					continue;
-				if(overscan && pal && i < 9)
-					continue;
-				if(!overscan && pal && i < 1)
-					continue;
-				if(pal & physline >= 239)
-					continue;
-				if(!pal & physline >= 224)
-					continue;
-				render_yuv(yuv_buffer + physline * lsep, buf, psep, hires, interlaced);
-				physline++;
-			}
-			if(pal) {
-				//Render a black line to pad the image.
-				memset(buf, 0, 4096);
-				render_yuv(yuv_buffer + 239 * lsep, buf, psep, hires, interlaced);
-			}
-			size_t yuvsize = 3 * psep;
-			unsigned times = 1;
-			//If FLAG_DEDUP is set, no frames are added or dropped to match timecodes.
-			if((flags & (FLAG_FRAMERATE | FLAG_DEDUP)) == 0 && !is_pal && interlaced) {
-				//This uses 357368 TU instead of 357366 TU.
-				//-> Every 178683rd frame is duplicated.
-				if(wrongrate == 178682) {
-					times = 2;
-					wrongrate = 0;
-				} else
-					wrongrate++;
-			}
-			if((flags & (FLAG_FRAMERATE | FLAG_DEDUP)) == FLAG_FRAMERATE && !is_pal && !interlaced) {
-				//This uses 357366 TU instead of 357368 TU.
-				//-> Every 178684th frame is dropped.
-				if(wrongrate == 178683) {
-					times = 0;
-					wrongrate = 0;
-				} else
-					wrongrate++;
-			}
-			if(flags & FLAG_DEDUP) {
-				if(memcmp(old_yuv_buffer, yuv_buffer, yuvsize)) {
-					memcpy(old_yuv_buffer, yuv_buffer, yuvsize);
-					elided = 0;
-				} else
-					elided = (++elided) % MAX_DEDUP;
-				if(elided)
-					times = 0;
-				else
-					tout << ftcw << std::endl;
-			}
-			for(unsigned k = 0; k < times; k++)
-				yout.write(reinterpret_cast<char*>(yuv_buffer), yuvsize);
-			if(!yout)
-				throw std::runtime_error("Can't write frame");
-			frames += times;
+		if((pkttype & 0xF0) == 0) {
+			//Picture. Read the 1MiB of picture data one line pair at a time.
+			size_t fsize = render_frame(sdmp_in, pkttype, flags, yuv_buffer);
+			is_pal = is_pal || (pkttype & CMD_PAL);
+			uint32_t times = dupt.process(yuv_buffer, fsize, pkttype, ts);
+			write_frame(yout, yuv_buffer, fsize, times, frames);
+			ts.advance(pkttype & CMD_PAL, pkttype & CMD_INTERLACED);
 			lf = true;
-			uint64_t tcc = is_pal ? 425568000 : (interlaced ? 357368000 : 357366000);
-			ftcw = ftcw + tcc / cpurate;
-			ftcn = ftcn + tcc % cpurate;
-			if(ftcn >= cpurate) {
-				ftcw++;
-				ftcn -= cpurate;
-			}
-		} else if(cmd == 16) {
-			//Sound packet. Interesting.
-			unsigned char ibuf[4];
-			unsigned char obuf[8];
-			in.read(reinterpret_cast<char*>(ibuf), 4);
-			if(!in)
-				throw std::runtime_error("Can't read sound packet payload");
-			obuf[0] = 0;
-			obuf[1] = 0;
-			obuf[2] = ibuf[1];
-			obuf[3] = ibuf[0];
-			obuf[4] = 0;
-			obuf[5] = 0;
-			obuf[6] = ibuf[3];
-			obuf[7] = ibuf[2];
-			sout.write(reinterpret_cast<char*>(obuf), 8);
-			if(!sout)
-				throw std::runtime_error("Can't write audio sample");
-			samples++;
+		} else if(pkttype == 16) {
+			sdmp_in.copy_audio_sample(sox_out);
 		} else {
 			std::ostringstream str;
-			str << "Unknown command byte " << static_cast<unsigned>(cmd);
+			str << "Unknown command byte " << static_cast<unsigned>(pkttype);
 			throw std::runtime_error(str.str());
 		}
 		if(lf && frames % 100 == 0) {
-			std::cout << "\e[1G" << frames << " frames, " << samples << " samples." << std::flush;
+			std::cout << "\e[1G" << frames << " frames, " << sox_out.get_samples() << " samples."
+				<< std::flush;
 		}
 	}
-	//Sox internally multiplies sample count by channel count.
-	sox_header[8] = samples << 1;
-	sox_header[9] = samples >> 7;
-	sox_header[10] = samples >> 15;
-	sox_header[11] = samples >> 23;
-	sox_header[12] = samples >> 31;
-	sox_header[13] = samples >> 39;
-	sox_header[14] = samples >> 47;
-	sox_header[15] = samples >> 55;
-	sout.seekp(0, std::ios::beg);
-	if(!sout)
-		throw std::runtime_error("Can't seek to fix .sox header");
-	sout.write(reinterpret_cast<char*>(sox_header), 32);
-	if(!sout)
-		throw std::runtime_error("Can't fix audio header");
-	std::cout << "Sound sampling rate is " << static_cast<double>(apurate) / 768.0 << "Hz" << std::endl;
-	std::cout << "Wrote " << samples << " samples." << std::endl;
-	std::cout << "Audio length is " << 768.0 * samples / apurate << "s." << std::endl;
+	sox_out.close();
+	std::cout << "Sound sampling rate is " << static_cast<double>(sdmp_in.get_apurate()) / 768.0 << "Hz"
+		<< std::endl;
+	std::cout << "Wrote " << sox_out.get_samples() << " samples." << std::endl;
+	std::cout << "Audio length is " << 768.0 * sox_out.get_samples() / sdmp_in.get_apurate() << "s." << std::endl;
 	double vrate = 0;
 	double vrate2 = 0;
 	if(is_pal)
@@ -525,8 +771,8 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 		vrate2 = 357368.0;
 	else
 		vrate2 = 357366.0;
-	vrate = cpurate / vrate2;
-	std::cout << "Video frame rate is " << cpurate << "/" << vrate2 << "Hz" << std::endl;
+	vrate = sdmp_in.get_cpurate() / vrate2;
+	std::cout << "Video frame rate is " << sdmp_in.get_cpurate() << "/" << vrate2 << "Hz" << std::endl;
 	std::cout << "Wrote " << frames << " frames." << std::endl;
 	std::cout << "Video length is " << frames / vrate << "s." << std::endl;
 }
@@ -542,6 +788,7 @@ void syntax()
 	std::cerr << "-F\tDump at interlaced framerate instead of non-interlaced (no effect if dedup)." << std::endl;
 	std::cerr << "-l\tOffset timecodes by inserting 10 frames spanning 2 seconds (dedup only)." << std::endl;
 	std::cerr << "-L\tOffset timecodes by 2 seconds (dedup only)." << std::endl;
+	std::cerr << "-A\tDo output AR correction." << std::endl;
 	std::cerr << "-f\tDump using full range instead of TV range." << std::endl;
 	std::cerr << "-7\tDump using ITU.709 instead of ITU.601." << std::endl;
 	std::cerr << "-2\tDump using SMPTE-240M instead of ITU.601." << std::endl;
@@ -586,6 +833,9 @@ int main(int argc, char** argv)
 					break;
 				case 'L':
 					flags |= FLAG_OFFSET2;
+					break;
+				case 'A':
+					flags |= FLAG_AR_CORRECT;
 					break;
 				case '7':
 					if(flags & FLAG_CS_MASK) {
@@ -667,3 +917,4 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
+
