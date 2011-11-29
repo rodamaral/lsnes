@@ -170,5 +170,6 @@ int main(int argc, char** argv)
 	}
 	rrdata::close();
 	window::quit();
+	quit_lua();
 	return 0;
 }

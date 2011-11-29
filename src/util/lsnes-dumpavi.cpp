@@ -225,5 +225,6 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	rrdata::close();
+	quit_lua();
 	return 0;
 }

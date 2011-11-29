@@ -66,6 +66,7 @@ struct lua_render_context
 };
 
 void init_lua() throw();
+void quit_lua() throw();
 void lua_callback_do_paint(struct lua_render_context* ctx) throw();
 void lua_callback_do_video(struct lua_render_context* ctx) throw();
 void lua_callback_do_input(controls_t& data, bool subframe) throw();
