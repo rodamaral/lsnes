@@ -4662,5 +4662,29 @@ Use movie compare instead of movie hashing (faster save/load).
 Lua: _SYSTEM table.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta25
+\end_layout
+
+\begin_layout Itemize
+sdmp2sox: Pad soundtrack if using -l or -L.
+\end_layout
+
+\begin_layout Itemize
+sdmp2sox: Fix NTSC overscan.
+\end_layout
+
+\begin_layout Itemize
+sdmp2sox: Add AR correction mode.
+\end_layout
+
+\begin_layout Itemize
+call lua_close() when exiting.
+\end_layout
+
+\begin_layout Itemize
+Fix zip_writer bug causing warnings from info-zip and error from advzip.
+\end_layout
+
 \end_body
 \end_document
