@@ -408,7 +408,7 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		write32(&directory_entry[0], 0x02014b50);
 		write16(&directory_entry[4], 3);
 		write16(&directory_entry[6], 20);
-		write16(&directory_entry[8], 8);
+		write16(&directory_entry[8], 0);
 		write16(&directory_entry[10], compression ? 8 : 0);
 		write16(&directory_entry[12], 0);
 		write16(&directory_entry[14], 10273);
