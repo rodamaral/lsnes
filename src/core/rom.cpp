@@ -7,6 +7,7 @@
 #include "core/framerate.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
+#include "core/patchrom.hpp"
 #include "core/rom.hpp"
 #include "core/window.hpp"
 #include "core/zip.hpp"
@@ -208,16 +209,6 @@ namespace
 	enum rom_type current_rom_type = ROMTYPE_NONE;
 	enum rom_region current_region = REGION_NTSC;
 
-	uint64_t readval(const std::vector<char>& patch, size_t offset, size_t vsize) throw(std::runtime_error)
-	{
-		if(offset >= patch.size() || offset + vsize > patch.size())
-			throw std::runtime_error("IPS file corrupt");
-		uint64_t val = 0;
-		for(size_t i = 0; i < vsize; i++)
-			val = (val << 8) | static_cast<uint8_t>(patch[offset + i]);
-		return val;
-	}
-
 	std::string findoption(const std::vector<std::string>& cmdline, const std::string& option)
 	{
 		std::string value;
@@ -267,59 +258,10 @@ void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(st
 {
 	try {
 		std::vector<char> data2 = data;
-		bool warned_extend = false;
-		bool warned_negative = false;
 		size_t poffset = 0;
 		if(xml && valid)
 			data2.resize(data2.size() - 1);
-		if(readval(patch, poffset, 5) != 0x5041544348)
-			throw std::runtime_error("Bad IPS file magic");
-		poffset += 5;
-		while(1) {
-			uint64_t addr = readval(patch, poffset, 3);
-			if(addr == 0x454F46)
-				break;
-			uint64_t len = readval(patch, poffset + 3, 2);
-			size_t readstride;
-			size_t roffset;
-			size_t opsize;
-			if(len) {
-				//Verbatim block.
-				readstride = 1;
-				roffset = poffset + 5;
-				opsize = 5 + len;
-			} else {
-				//RLE block. Read real size first.
-				len = readval(patch, poffset + 5, 2);
-				readstride = 0;
-				roffset = poffset + 7;
-				opsize = 8;
-			}
-			for(uint64_t i = 0; i < len; i++) {
-				int64_t baddr = addr + i + offset;
-				if(baddr < 0) {
-					if(!warned_negative)
-						std::cerr << "WARNING: IPS patch tries to modify negative offset. "
-							<< "Bad patch or offset?" << std::endl;
-					warned_negative = true;
-					continue;
-				} else if(baddr >= static_cast<int64_t>(data2.size())) {
-					if(!warned_extend)
-						std::cerr << "WARNING: IPS patch tries to extend the ROM. "
-							<< "Bad patch or offset? " << std::endl;
-					warned_extend = true;
-					size_t oldsize = data2.size();
-					data2.resize(baddr + 1);
-					for(size_t j = oldsize; j <= static_cast<uint64_t>(baddr); j++)
-						data2[j] = 0;
-				}
-				size_t srcoff = roffset + readstride * i;
-				if(srcoff >= patch.size())
-					throw std::runtime_error("Corrupt IPS patch");
-				data2[baddr] = static_cast<uint8_t>(patch[srcoff]);
-			}
-			poffset += opsize;
-		}
+		data2 = do_patch_file(data2, patch, offset);
 		//Mark the slot as valid and update hash.
 		valid = true;
 		std::string new_sha256 = sha256::hash(data2);
