@@ -80,9 +80,9 @@ namespace
 		if(patch.size() < roffset + 3)
 			throw std::runtime_error("Patch incomplete");
 		uint32_t a, b, c;
-		a = patch[roffset + 0];
-		b = patch[roffset + 1];
-		c = patch[roffset + 2];
+		a = static_cast<uint8_t>(patch[roffset + 0]);
+		b = static_cast<uint8_t>(patch[roffset + 1]);
+		c = static_cast<uint8_t>(patch[roffset + 2]);
 		uint32_t rec_off = a * 65536 + b * 256 + c;
 		if(rec_off == 0x454F46) {
 			//EOF.
@@ -91,16 +91,16 @@ namespace
 		}
 		if(patch.size() < roffset + 5)
 			throw std::runtime_error("Patch incomplete");
-		a = patch[roffset + 3];
-		b = patch[roffset + 4];
+		a = static_cast<uint8_t>(patch[roffset + 3]);
+		b = static_cast<uint8_t>(patch[roffset + 4]);
 		uint32_t rec_size = a * 256 + b;
 		uint32_t rec_rlesize = 0;
 		uint32_t rec_rawsize = 0;
 		if(!rec_size) {
 			if(patch.size() < roffset + 8)
 				throw std::runtime_error("Patch incomplete");
-			a = patch[roffset + 5];
-			b = patch[roffset + 6];
+			a = static_cast<uint8_t>(patch[roffset + 5]);
+			b = static_cast<uint8_t>(patch[roffset + 6]);
 			rec_rlesize = a * 256 + b;
 			rec_rawsize = 8;
 		} else
@@ -110,15 +110,21 @@ namespace
 			throw std::runtime_error("Offset exceeds IPS 16MiB limit");
 		if(rec_noff < 0) {
 			//This operation needs to clip the start as it is out of bounds.
-			while(rec_size > 0 && rec_noff + rec_size <= 0) {
-				rec_noff++;
-				rec_size--;
+			if(rec_size) {
+				if(rec_size > -rec_noff) {
+					rec_noff = 0;
+					rec_size -= -rec_noff;
+				} else
+					rec_size = 0;
 			}
-			while(rec_rlesize > 0 && rec_noff + rec_rlesize <= 0) {
-				rec_noff++;
-				rec_rlesize--;
+			if(rec_rlesize) {
+				if(rec_rlesize > -rec_noff) {
+					rec_noff = 0;
+					rec_rlesize -= -rec_noff;
+				} else
+					rec_rlesize = 0;
 			}
-			if(rec_noff + rec_size + rec_rlesize <= 0)
+			if(!rec_size && !rec_rlesize)
 				return std::make_pair(0, rec_rawsize);		//Completely out of bounds.
 		}
 		//Write the modified record.
@@ -172,6 +178,9 @@ namespace
 		std::vector<char> ret;
 		ret.resize(p.size);
 		memcpy(&ret[0], p.data, p.size);
+		//No, these can't be freed.
+		p.source(NULL, 0);
+		p.modify(NULL, 0);
 		return ret;
 	}
 }
