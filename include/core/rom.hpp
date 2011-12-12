@@ -222,6 +222,10 @@ struct rom_files
  */
 	std::string rom;
 /**
+ * Main ROM is headered.
+ */
+	bool rom_headered;
+/**
  * Relative filename of main ROM XML file.
  */
 	std::string rom_xml;
@@ -230,6 +234,10 @@ struct rom_files
  */
 	std::string slota;
 /**
+ * SLOT A ROM is headered.
+ */
+	bool slota_headered;
+/**
  * Relative filename of slot A XML file (non-SNES only).
  */
 	std::string slota_xml;
@@ -237,6 +245,10 @@ struct rom_files
  * Relative filename of slot B ROM file (Sufami Turbo only).
  */
 	std::string slotb;
+/**
+ * SLOT B ROM is headered.
+ */
+	bool slotb_headered;
 /**
  * Relative filename of slot B XML file (Sufami Turbo only).
  */
@@ -261,11 +273,12 @@ struct loaded_slot
  * parameter filename: The filename to read. If "", empty slot is constructed.
  * parameter base: Base filename to interpret the filename against. If "", no base filename is used.
  * parameter xml_flag: If set, always keep trailing NUL.
+ * parameter headered: If set and xml_flag is not set, strip the first 512 bytes.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't load the data.
  */
-	loaded_slot(const std::string& filename, const std::string& base, bool xml_flag = false) throw(std::bad_alloc,
-		std::runtime_error);
+	loaded_slot(const std::string& filename, const std::string& base, bool xml_flag = false, bool headered = false)
+		throw(std::bad_alloc, std::runtime_error);
 
 /**
  * This method patches this slot using specified IPS patch.

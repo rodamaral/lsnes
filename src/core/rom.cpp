@@ -236,8 +236,8 @@ loaded_slot::loaded_slot() throw(std::bad_alloc)
 	valid = false;
 }
 
-loaded_slot::loaded_slot(const std::string& filename, const std::string& base, bool xml_flag) throw(std::bad_alloc,
-	std::runtime_error)
+loaded_slot::loaded_slot(const std::string& filename, const std::string& base, bool xml_flag, bool headered)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	xml = xml_flag;
 	if(filename == "") {
@@ -246,6 +246,15 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base, b
 	}
 	valid = true;
 	data = read_file_relative(filename, base);
+	if(headered && !xml) {
+		if(data.size() >= 512) {
+			memmove(&data[0], &data[512], data.size() - 512);
+			data.resize(data.size() - 512);
+		} else {
+			data.resize(0);
+		}
+		
+	}
 	sha256 = sha256::hash(data);
 	if(xml) {
 		size_t osize = data.size();
@@ -289,21 +298,29 @@ rom_files::rom_files(const std::vector<std::string>& cmdline) throw(std::bad_all
 	rom = rom_xml = slota = slota_xml = slotb = slotb_xml = "";
 	std::string arr[sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0])];
 	unsigned long flags = 0;
+	unsigned long headered_flags = 0;
 	for(size_t i = 0; i < sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0]); i++) {
 		arr[i] = findoption(cmdline, romtypes_to_recognize[i]);
 		if(arr[i] != "")
 			flags |= (1L << i);
+		else {
+			arr[i] = findoption(cmdline, std::string("headered-") + romtypes_to_recognize[i]);
+			if(arr[i] != "") {
+				flags |= (1L << i);
+				headered_flags |= (1L << i);
+			}
+		}
 	}
 	rtype = recognize_platform(flags);
 	for(size_t i = 0; i < sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0]); i++) {
 		if(arr[i] != "")
 			switch(recognize_commandline_rom(rtype, romtypes_to_recognize[i])) {
-			case 0:		rom = arr[i];			break;
-			case 1:		rom_xml = arr[i];		break;
-			case 2:		slota = arr[i];			break;
-			case 3:		slota_xml = arr[i];		break;
-			case 4:		slotb = arr[i];			break;
-			case 5:		slotb_xml = arr[i];		break;
+			case 0:		rom = arr[i];		rom_headered = ((headered_flags >> i) & 1);	break;
+			case 1:		rom_xml = arr[i];	break;
+			case 2:		slota = arr[i];		slota_headered = ((headered_flags >> i) & 1);	break;
+			case 3:		slota_xml = arr[i];	break;
+			case 4:		slotb = arr[i];		slotb_headered = ((headered_flags >> i) & 1);	break;
+			case 5:		slotb_xml = arr[i];	break;
 			};
 	}
 	region = (rtype == ROMTYPE_SGB || rtype == ROMTYPE_SNES) ? REGION_AUTO : REGION_NTSC;
@@ -370,11 +387,11 @@ loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtim
 			<< name_subrom(files.rtype, 5) << std::endl;
 
 	rtype = files.rtype;
-	rom = loaded_slot(files.rom, files.base_file);
+	rom = loaded_slot(files.rom, files.base_file, false, files.rom_headered);
 	rom_xml = loaded_slot(files.rom_xml, files.base_file, true);
-	slota = loaded_slot(_slota, files.base_file);
+	slota = loaded_slot(_slota, files.base_file, false, files.slota_headered);
 	slota_xml = loaded_slot(_slota_xml, files.base_file, true);
-	slotb = loaded_slot(_slotb, files.base_file);
+	slotb = loaded_slot(_slotb, files.base_file, false, files.slotb_headered);
 	slotb_xml = loaded_slot(_slotb_xml, files.base_file, true);
 	orig_region = region = files.region;
 }

@@ -102,6 +102,15 @@ Load <file> (SFC file format) as main SNES cartridge ROM.
 \end_layout
 
 \begin_layout Subsubsection
+--headered-rom=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --rom, but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
+\end_layout
+
+\begin_layout Subsubsection
 --rom-xml=<file>
 \end_layout
 
@@ -118,6 +127,15 @@ Set the mapping XML file for main cartridge ROM.
 Load <file> (BS file format) as BS-X non-slotted flash memory.
  Also sets system type to BS-X non-slotted (not compatible with --bsxslotted=<fi
 le>, --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--headered-bsx=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --bsx but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
 \end_layout
 
 \begin_layout Subsubsection
@@ -141,6 +159,15 @@ Load <file> (BS file format) as BS-X slotted flash memory.
 \end_layout
 
 \begin_layout Subsubsection
+--headered-bsxslotted=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --bsxslotted but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
+\end_layout
+
+\begin_layout Subsubsection
 --bsxslotted-xml=<file>
 \end_layout
 
@@ -158,6 +185,15 @@ Set mapping XML file for BS-X slotted flash memory.
 Load <file> (GB file format) as Game Boy ROM.
  Also sets system type to SGB (not compatible with --bsx=<file>, --bsxslotted=<f
 ile>, --slot-a=<file> nor --slot-b=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--headered-dmg=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --dmg but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
 \end_layout
 
 \begin_layout Subsubsection
@@ -181,6 +217,15 @@ Load <file> (ST file format) as Sufami turbo cartridge A ROM.
 \end_layout
 
 \begin_layout Subsubsection
+--headered-slot-a=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --slot-a but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
+\end_layout
+
+\begin_layout Subsubsection
 --slot-a-xml=<file>
 \end_layout
 
@@ -198,6 +243,15 @@ Set mapping XML file for Sufami turbo cartridge A ROM.
 Load <file> (ST file format) as Sufami turbo cartridge B ROM.
  Also sets system type to Sufami Turbo (not compatible with --bsx=<file>,
  --bsxslotted=<file> nor --dmg=<file>).
+\end_layout
+
+\begin_layout Subsubsection
+--headered-slot-b=<file>
+\end_layout
+
+\begin_layout Standard
+Same as --slot-b but strips first 512 bytes off the file as copier header.
+ Handy for loading .smc and .fig (also some others) files.
 \end_layout
 
 \begin_layout Subsubsection
@@ -327,6 +381,11 @@ Set IPS apply offset to <offset> (can be negative).
  IPS apply offset is added to all addresses inside IPS file before applying.
  If the resulting address is negative, write is ignored (with a warning).
  If resulting address exceeds ROM size, the ROM is extended.
+\end_layout
+
+\begin_layout Standard
+Using offset of -512 is handy for applying IPS patches meant for SMC/FIG
+ or such files.
 \end_layout
 
 \begin_layout Subsubsection
