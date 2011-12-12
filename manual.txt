@@ -2297,3 +2297,11 @@ set-axis joystick0axis19 disabled
 • Fix zip_writer bug causing warnings from info-zip and error 
   from advzip.
 
+13.26 rr0-beta26
+
+• Fix IPS patching code (use bsnes core IPS patcher).
+
+• Implement BPS patching (using bsnes core IPS patcher).
+
+• Add feature to load headered ROMs.
+

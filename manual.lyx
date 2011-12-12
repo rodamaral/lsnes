@@ -4745,5 +4745,21 @@ call lua_close() when exiting.
 Fix zip_writer bug causing warnings from info-zip and error from advzip.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta26
+\end_layout
+
+\begin_layout Itemize
+Fix IPS patching code (use bsnes core IPS patcher).
+\end_layout
+
+\begin_layout Itemize
+Implement BPS patching (using bsnes core IPS patcher).
+\end_layout
+
+\begin_layout Itemize
+Add feature to load headered ROMs.
+\end_layout
+
 \end_body
 \end_document
