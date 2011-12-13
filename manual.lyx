@@ -4761,5 +4761,13 @@ Implement BPS patching (using bsnes core IPS patcher).
 Add feature to load headered ROMs.
 \end_layout
 
+\begin_layout Subsection
+rr0-beta27
+\end_layout
+
+\begin_layout Itemize
+Show command names when showing keybindings
+\end_layout
+
 \end_body
 \end_document

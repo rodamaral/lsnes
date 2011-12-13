@@ -2305,3 +2305,7 @@ set-axis joystick0axis19 disabled
 
 • Add feature to load headered ROMs.
 
+13.27 rr0-beta27
+
+• Show command names when showing keybindings
+

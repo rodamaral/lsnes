@@ -780,7 +780,7 @@ void keymapper::dumpbindings() throw(std::bad_alloc)
 		messages << "bind-key ";
 		if(i.first.a != "" || i.first.b != "")
 			messages << i.first.a << "/" << i.first.b << " ";
-		messages << i.first.c << std::endl;
+		messages << i.first.c << " " << i.second->command << std::endl;
 	}
 }
 
