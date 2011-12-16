@@ -156,7 +156,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 				cancel_advance = false;
 			}
 			window::paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode()) {
+		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end) {
 			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count() + 1) {
 				amode = ADVANCE_PAUSE;
 				window::paused(true);
