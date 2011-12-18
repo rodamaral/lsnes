@@ -830,7 +830,7 @@ void poll_inputs_internal() throw(std::bad_alloc)
 		h.grab_keys();
 	while(state != WINSTATE_NORMAL) {
 		window::poll_joysticks();
-		if(SDL_PollEvent(&e))
+		while(SDL_PollEvent(&e))
 			do_event(e);
 		::wait_usec(10000);
 		if(delayed_close_flag) {
