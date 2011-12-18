@@ -1961,13 +1961,13 @@ set-axis joystick0axis19 disabled
 
 12.2 Other problems:
 
-• Modifiers don't work with pseudo-keys (SDL).
+• Modifiers don't work with pseudo-keys (SDL, EVDEV).
 
 • Audio for last dumped frame is not itself dumped.
 
 • Audio in UI is pretty bad in quality.
 
-• UI itself is 30fps max.
+• UI itself is 30fps max (SDL).
 
 • AVI compression levels 10-18 are not compatible with AVISynth 
   AVISource.
@@ -1977,6 +1977,11 @@ set-axis joystick0axis19 disabled
 • Long commands don't scroll.
 
 • The SDL screen drawing is slow.
+
+• Wxwidgets UI slows down with time.
+
+• Movies use way too much (like at least 10x what would be 
+  needed) memory.
 
 13 Changelog:
 
@@ -2308,4 +2313,13 @@ set-axis joystick0axis19 disabled
 13.27 rr0-beta27
 
 • Show command names when showing keybindings
+
+13.28 rr0
+
+• Fix pause-on-end to be actually controllable
+
+• SDL: Poll all events in queue, not just first one (fixes 
+  slowness in command typing)
+
+• Wxwidgets: Fix ROM loading.
 

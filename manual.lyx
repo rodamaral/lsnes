@@ -4087,7 +4087,7 @@ Other problems:
 \end_layout
 
 \begin_layout Itemize
-Modifiers don't work with pseudo-keys (SDL).
+Modifiers don't work with pseudo-keys (SDL, EVDEV).
 \end_layout
 
 \begin_layout Itemize
@@ -4099,7 +4099,7 @@ Audio in UI is pretty bad in quality.
 \end_layout
 
 \begin_layout Itemize
-UI itself is 30fps max.
+UI itself is 30fps max (SDL).
 \end_layout
 
 \begin_layout Itemize
@@ -4116,6 +4116,14 @@ Long commands don't scroll.
 
 \begin_layout Itemize
 The SDL screen drawing is slow.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets UI slows down with time.
+\end_layout
+
+\begin_layout Itemize
+Movies use way too much (like at least 10x what would be needed) memory.
 \end_layout
 
 \begin_layout Section
@@ -4767,6 +4775,23 @@ rr0-beta27
 
 \begin_layout Itemize
 Show command names when showing keybindings
+\end_layout
+
+\begin_layout Subsection
+rr0
+\end_layout
+
+\begin_layout Itemize
+Fix pause-on-end to be actually controllable
+\end_layout
+
+\begin_layout Itemize
+SDL: Poll all events in queue, not just first one (fixes slowness in command
+ typing)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix ROM loading.
 \end_layout
 
 \end_body
