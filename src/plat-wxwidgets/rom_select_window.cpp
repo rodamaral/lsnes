@@ -126,6 +126,9 @@ void wx_rom_select_window::on_open_rom(wxCommandEvent& e)
 	rfiles.slota_xml = slota_xml->get_file();
 	rfiles.slotb = slotb_rom->get_file();
 	rfiles.slotb_xml = slotb_xml->get_file();
+	rfiles.rom_headered = false;
+	rfiles.slota_headered = false;
+	rfiles.slotb_headered = false;
 	try {
 		our_rom = new loaded_rom(rfiles);
 	} catch(std::exception& e) {
