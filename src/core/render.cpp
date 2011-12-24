@@ -136,7 +136,7 @@ skip_line:
 		return font_glyph_offsets.count(cp) ?  font_glyph_offsets[cp] : 0; 
 	}
 
-	inline uint32_t process_tag(uint32_t tag, int32_t& x, int32_t& y, int32_t orig_x)
+	inline uint32_t process_tag(uint32_t tag, int32_t& x, int32_t& y, int32_t orig_x, bool hdbl, bool vdbl)
 	{
 		uint32_t dwidth;
 		switch(tag & TAG_WIDTH_MASK) {
@@ -153,9 +153,9 @@ skip_line:
 			dwidth = 0x40 - (x & 0x3F);
 			break;
 		}
-		x += dwidth;
+		x += dwidth * (hdbl ? 2 : 1);
 		if(tag & TAG_LINECHANGE) {
-			y += 16;
+			y += 16 * (vdbl ? 2 : 1);
 			x = orig_x;
 		}
 		return dwidth;
@@ -174,14 +174,14 @@ void do_init_font()
 }
 
 std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
-	int32_t& next_x, int32_t& next_y) throw()
+	int32_t& next_x, int32_t& next_y, bool hdbl, bool vdbl) throw()
 {
 	init_font();
 	next_x = x;
 	next_y = y;
 	uint32_t offset = find_font_glyph_offset(codepoint);
 	uint32_t tag = font_glyph_data[offset];
-	uint32_t dwidth = process_tag(tag, next_x, next_y, orig_x);
+	uint32_t dwidth = process_tag(tag, next_x, next_y, orig_x, hdbl, vdbl);
 	bool visible = is_visible(tag);
 	return std::pair<uint32_t, const uint32_t*>(dwidth, visible ? &font_glyph_data[offset + 1] : NULL);
 }
@@ -191,7 +191,7 @@ render_object::~render_object() throw()
 }
 
 void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, premultiplied_color fg,
-	premultiplied_color bg) throw(std::bad_alloc)
+	premultiplied_color bg, bool hdbl, bool vdbl) throw(std::bad_alloc)
 {
 	int32_t orig_x = x;
 	uint32_t unicode_code = 0;
@@ -221,11 +221,11 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 		} else
 			continue;
 		int32_t next_x, next_y;
-		auto p = find_glyph(unicode_code, x, y, orig_x, next_x, next_y);
+		auto p = find_glyph(unicode_code, x, y, orig_x, next_x, next_y, hdbl, vdbl);
 		uint32_t dx = 0;
-		uint32_t dw = p.first;
+		uint32_t dw = p.first * (hdbl ? 2 : 1);
 		uint32_t dy = 0;
-		uint32_t dh = 16;
+		uint32_t dh = 16 * (vdbl ? 2 : 1);
 		uint32_t cx = static_cast<uint32_t>(static_cast<int32_t>(scr.originx) + x);
 		uint32_t cy = static_cast<uint32_t>(static_cast<int32_t>(scr.originy) + y);
 		while(cx > scr.width && dw > 0) {
@@ -245,6 +245,12 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 		if(!dw || !dh)
 			continue;	//Outside screen.
 
+		uint32_t rshift = (p.first == 16) ? (vdbl ? 2 : 1) : (vdbl ? 3 : 2);
+		uint32_t rishift = (p.first == 16) ? 4 : 3;
+		uint32_t xshift = hdbl ? 1 : 0;
+		uint32_t yshift = vdbl ? 1 : 0;
+		uint32_t b = dx & 1;
+
 		if(p.second == NULL) {
 			//Blank glyph.
 			for(uint32_t j = 0; j < dh; j++) {
@@ -252,29 +258,24 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 				for(uint32_t i = 0; i < dw; i++)
 					bg.apply(base[i]);
 			}
-		} else if(p.first == 16) {
-			//Wide glyph.
-			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t dataword = p.second[(dy + j) >> 1];
-				uint32_t* base = scr.rowptr(cy + j) + cx;
-				uint32_t rbit = (~((dy + j) << 4) & 0x1F) - dx;
-				for(uint32_t i = 0; i < dw; i++)
-					if((dataword >> (rbit - i)) & 1)
-						fg.apply(base[i]);
-					else
-						bg.apply(base[i]);
-			}
 		} else {
-			//narrow glyph.
 			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t dataword = p.second[(dy + j) >> 2];
+				uint32_t dataword = p.second[(dy + j) >> rshift];
 				uint32_t* base = scr.rowptr(cy + j) + cx;
-				uint32_t rbit = (~((dy + j) << 3) & 0x1F) - dx;
-				for(uint32_t i = 0; i < dw; i++)
-					if((dataword >> (rbit - i)) & 1)
-						fg.apply(base[i]);
-					else
-						bg.apply(base[i]);
+				uint32_t rbit = (~((dy + j) >> yshift << rishift) & 31) - (dx >> xshift);
+				if(hdbl) {
+					for(uint32_t i = 0; i < dw; i++)
+						if((dataword >> (rbit - ((i + b) >> 1))) & 1)
+							fg.apply(base[i]);
+						else
+							bg.apply(base[i]);
+				} else {
+					for(uint32_t i = 0; i < dw; i++)
+						if((dataword >> (rbit - i)) & 1)
+							fg.apply(base[i]);
+						else
+							bg.apply(base[i]);
+				}
 			}
 		}
 		x = next_x;

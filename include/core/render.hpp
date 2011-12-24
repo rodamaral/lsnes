@@ -368,7 +368,7 @@ void do_init_font();
  * returns: Two components: First is width of character, second is pointer to font data (NULL if blank glyph).
  */
 std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
-	int32_t& next_x, int32_t& next_y) throw();
+	int32_t& next_x, int32_t& next_y, bool hdbl = false, bool vdbl = false) throw();
 
 /**
  * Render text into screen.
@@ -378,9 +378,11 @@ std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, i
  * parameter _text: The text to render (UTF-8).
  * parameter _fg: Foreground color.
  * parameter _bg: Background color.
+ * parameter _hdbl: If true, draw text using double width.
+ * parameter _vdbl: If true, draw text using double height.
  * throws std::bad_alloc: Not enough memory.
  */
 void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
-	premultiplied_color _bg) throw(std::bad_alloc);
+	premultiplied_color _bg, bool _hdbl = false, bool _vdbl = false) throw(std::bad_alloc);
 
 #endif
