@@ -274,6 +274,8 @@ struct premultiplied_color
 {
 	uint32_t hi;
 	uint32_t lo;
+	uint32_t orig;
+	uint16_t origa;
 	uint16_t inv;
 	premultiplied_color(int64_t color) throw()
 	{
@@ -281,24 +283,33 @@ struct premultiplied_color
 			//Transparent.
 			hi = 0;
 			lo = 0;
+			orig = 0;
+			origa = 0;
 			inv = 256;
 		} else {
 			uint32_t c = (color & 0xFFFFFF);
 			uint16_t a = 256 - ((color >> 24) & 0xFF);
 			hi = c & 0xFF00FF;
-			lo = c & 0x00FF00;
+			lo = (c & 0x00FF00) >> 8;
 			hi *= a;
 			lo *= a;
+			orig = color & 0xFFFFFF;
+			origa = a;
 			inv = 256 - a;
 		}
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
+	}
+	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw();
+	void set_palette(struct screen& s) throw()
+	{
+		set_palette(s.palette_r, s.palette_g, s.palette_b);
 	}
 	uint32_t blend(uint32_t color) throw()
 	{
 		uint32_t a, b;
 		a = color & 0xFF00FF;
-		b = color & 0x00FF00;
-		return (((a * inv + hi) >> 8) & 0xFF00FF) | (((b * inv + lo) >> 8) & 0x00FF00);
+		b = (color & 0xFF00FF00) >> 8;
+		return (((a * inv + hi) >> 8) & 0xFF00FF) | ((b * inv + lo) & 0xFF00FF00);
 	}
 	void apply(uint32_t& x) throw()
 	{

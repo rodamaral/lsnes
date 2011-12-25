@@ -20,6 +20,8 @@ namespace
 		~render_object_circle() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			outline.set_palette(scr);
+			fill.set_palette(scr);
 			int32_t xmin = -radius;
 			int32_t xmax = radius;
 			int32_t ymin = -radius;

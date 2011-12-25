@@ -11,6 +11,7 @@ namespace
 		~render_object_line() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			color.set_palette(scr);
 			int32_t xdiff = x2 - x1;
 			int32_t ydiff = y2 - y1;
 			if(xdiff < 0)

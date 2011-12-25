@@ -604,3 +604,15 @@ void screen::set_palette(uint32_t r, uint32_t g, uint32_t b)
 	palette_g = g;
 	palette_b = b;
 }
+
+void premultiplied_color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw()
+{
+	uint32_t r = (orig >> 16) & 0xFF;
+	uint32_t g = (orig >> 8) & 0xFF;
+	uint32_t b = orig & 0xFF;
+	uint32_t color = (r << rshift) | (g << gshift) | (b << bshift);
+	hi = color & 0xFF00FF;
+	lo = (color & 0xFF00FF00) >> 8;
+	hi *= origa;
+	lo *= origa;
+}

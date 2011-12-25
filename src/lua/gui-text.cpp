@@ -11,6 +11,8 @@ namespace
 		~render_object_text() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			fg.set_palette(scr);
+			bg.set_palette(scr);
 			render_text(scr, x, y, text, fg, bg, hdbl, vdbl);
 		}
 	private:
