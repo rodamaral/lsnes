@@ -10,6 +10,7 @@ namespace
 		~render_object_pixel() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			color.set_palette(scr);
 			int32_t _x = x + scr.originx;
 			int32_t _y = y + scr.originy;
 			if(_x < 0 || static_cast<uint32_t>(_x) >= scr.width)

@@ -10,6 +10,7 @@ namespace
 		~render_object_crosshair() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			color.set_palette(scr);
 			int32_t xmin = -static_cast<int32_t>(length);
 			int32_t xmax = static_cast<int32_t>(length + 1);
 			int32_t ymin = -static_cast<int32_t>(length);

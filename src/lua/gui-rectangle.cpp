@@ -12,6 +12,8 @@ namespace
 		~render_object_rectangle() throw() {}
 		void operator()(struct screen& scr) throw()
 		{
+			outline.set_palette(scr);
+			fill.set_palette(scr);
 			int32_t xmin = 0;
 			int32_t xmax = width;
 			int32_t ymin = 0;

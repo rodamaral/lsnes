@@ -274,6 +274,8 @@ struct premultiplied_color
 {
 	uint32_t hi;
 	uint32_t lo;
+	uint32_t orig;
+	uint16_t origa;
 	uint16_t inv;
 	premultiplied_color(int64_t color) throw()
 	{
@@ -281,24 +283,33 @@ struct premultiplied_color
 			//Transparent.
 			hi = 0;
 			lo = 0;
+			orig = 0;
+			origa = 0;
 			inv = 256;
 		} else {
 			uint32_t c = (color & 0xFFFFFF);
 			uint16_t a = 256 - ((color >> 24) & 0xFF);
 			hi = c & 0xFF00FF;
-			lo = c & 0x00FF00;
+			lo = (c & 0x00FF00) >> 8;
 			hi *= a;
 			lo *= a;
+			orig = color & 0xFFFFFF;
+			origa = a;
 			inv = 256 - a;
 		}
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
+	}
+	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw();
+	void set_palette(struct screen& s) throw()
+	{
+		set_palette(s.palette_r, s.palette_g, s.palette_b);
 	}
 	uint32_t blend(uint32_t color) throw()
 	{
 		uint32_t a, b;
 		a = color & 0xFF00FF;
-		b = color & 0x00FF00;
-		return (((a * inv + hi) >> 8) & 0xFF00FF) | (((b * inv + lo) >> 8) & 0x00FF00);
+		b = (color & 0xFF00FF00) >> 8;
+		return (((a * inv + hi) >> 8) & 0xFF00FF) | ((b * inv + lo) & 0xFF00FF00);
 	}
 	void apply(uint32_t& x) throw()
 	{
@@ -368,7 +379,7 @@ void do_init_font();
  * returns: Two components: First is width of character, second is pointer to font data (NULL if blank glyph).
  */
 std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, int32_t y, int32_t orig_x,
-	int32_t& next_x, int32_t& next_y) throw();
+	int32_t& next_x, int32_t& next_y, bool hdbl = false, bool vdbl = false) throw();
 
 /**
  * Render text into screen.
@@ -378,9 +389,11 @@ std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, i
  * parameter _text: The text to render (UTF-8).
  * parameter _fg: Foreground color.
  * parameter _bg: Background color.
+ * parameter _hdbl: If true, draw text using double width.
+ * parameter _vdbl: If true, draw text using double height.
  * throws std::bad_alloc: Not enough memory.
  */
 void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
-	premultiplied_color _bg) throw(std::bad_alloc);
+	premultiplied_color _bg, bool _hdbl = false, bool _vdbl = false) throw(std::bad_alloc);
 
 #endif
