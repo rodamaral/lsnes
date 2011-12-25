@@ -1952,6 +1952,30 @@ bgc: Background color (default is -1 (transparent))
 \end_layout
 
 \begin_layout Subsubsection
+gui.textH(number x, number y, string text[, number fgc[, number bgc]])
+\end_layout
+
+\begin_layout Standard
+Like gui.text, but draw using double-width.
+\end_layout
+
+\begin_layout Subsubsection
+gui.textV(number x, number y, string text[, number fgc[, number bgc]])
+\end_layout
+
+\begin_layout Standard
+Like gui.text, but draw using double-height.
+\end_layout
+
+\begin_layout Subsubsection
+gui.textHV(number x, number y, string text[, number fgc[, number bgc]])
+\end_layout
+
+\begin_layout Standard
+Like gui.text, but draw using double-width/double-height.
+\end_layout
+
+\begin_layout Subsubsection
 gui.rectangle(number x, number y, number width, number height[, number thickness[
 , number outline[, number fill]]])
 \end_layout
