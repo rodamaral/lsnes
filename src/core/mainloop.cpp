@@ -254,14 +254,18 @@ void update_movie_state()
 	}
 	{
 		std::ostringstream x;
-		x << (system_corrupt ? "C" : "-");
+		auto& mo = movb.get_movie();
 		x << (information_dispatch::get_dumper_count() ? "D" : "-");
 		x << (last_hires ? "H" : "-");
 		x << (last_interlace ? "I" : "-");
-		if(!system_corrupt)
-			x << (movb.get_movie().readonly_mode() ? "P" : "R");
+		if(system_corrupt)
+			x << "C";
+		else if(!mo.readonly_mode())
+			x << "R";
+		else if(mo.get_frame_count() >= mo.get_current_frame())
+			x << "P";
 		else
-			x << "-";
+			x << "F";
 		_status["Flags"] = x.str();
 	}
 	if(save_jukebox.size() > 0)
