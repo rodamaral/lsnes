@@ -87,7 +87,6 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 	try {
 		settings()[_setting]->blank();
 		information_dispatch::do_setting_clear(_setting);
-		
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {

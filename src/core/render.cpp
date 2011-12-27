@@ -133,7 +133,7 @@ skip_line:
 
 	inline uint32_t find_font_glyph_offset(uint32_t cp)
 	{
-		return font_glyph_offsets.count(cp) ?  font_glyph_offsets[cp] : 0; 
+		return font_glyph_offsets.count(cp) ?  font_glyph_offsets[cp] : 0;
 	}
 
 	inline uint32_t process_tag(uint32_t tag, int32_t& x, int32_t& y, int32_t orig_x, bool hdbl, bool vdbl)

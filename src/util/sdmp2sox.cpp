@@ -732,7 +732,7 @@ void sdump2sox(std::istream& in, std::ostream& yout, std::ostream& sout, std::os
 
 	uint64_t frames = 0;
 	bool is_pal = false;
-	
+
 	while(true) {
 		bool lf = false;
 		int pkttype = sdmp_in.read_command();
@@ -917,4 +917,3 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
-

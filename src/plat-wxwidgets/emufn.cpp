@@ -1399,7 +1399,7 @@ void emulator_main_window::menu_scripting(wxCommandEvent& e)
 	int id = e.GetId();
 	bool file = (id == wxID_RUN_LUA || id == wxID_RUN_SCRIPT);
 	std::string name;
-	
+
 	if(file) {
 		wxFileDialog* d = new wxFileDialog(this, wxT("Select Script"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
@@ -1414,7 +1414,7 @@ void emulator_main_window::menu_scripting(wxCommandEvent& e)
 	}
 	if(name == "")
 		return;
-	
+
 	switch(id) {
 	case wxID_RUN_SCRIPT:
 		exec_command("run-script " + name);

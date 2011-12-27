@@ -19,7 +19,7 @@ wx_settings_editor_setting::wx_settings_editor_setting(wxSizer* sizer, wxWindow*
 	try {
 		if(!setting::is_set(a_name))
 			pvalue = "<unset>";
-		else 
+		else
 			pvalue = setting::get(a_name);
 	} catch(...) {
 	}
@@ -88,7 +88,7 @@ wx_settings_editor::wx_settings_editor(wxWindow* parent)
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
-	
+
 	wxFlexGridSizer* t_s = new wxFlexGridSizer(settings_set.size(), 4, 0, 0);
 	for(auto i : settings_set)
 		esettings.push_back(new wx_settings_editor_setting(t_s, this, i));
@@ -309,5 +309,4 @@ void save_settings()
 	}
 	save_settings(cfg);
 	cfg.close();
-	
 }

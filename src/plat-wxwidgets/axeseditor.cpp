@@ -165,7 +165,7 @@ wx_axes_editor::wx_axes_editor(wxWindow* parent)
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
-	
+
 	wxFlexGridSizer* t_s = new wxFlexGridSizer(axisnames.size() + 1, 6, 0, 0);
 	t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Name")), 0, wxGROW);
 	t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Type")), 0, wxGROW);

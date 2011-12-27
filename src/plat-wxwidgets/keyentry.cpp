@@ -17,7 +17,7 @@ wx_key_entry::wx_key_entry(wxWindow* parent)
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
-	
+
 	wxFlexGridSizer* t_s = new wxFlexGridSizer(mods.size() + 1, 3, 0, 0);
 	for(auto i : mods) {
 		t_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);

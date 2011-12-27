@@ -166,7 +166,7 @@ public:
 	static void do_mode_change(bool readonly) throw();
 /**
  * Autohold on button might have been changed.
- * 
+ *
  * The default handler does nothing.
  *
  * Parameter pid: The physical ID of controller (0-7).
@@ -215,7 +215,7 @@ public:
 	static void do_setting_clear(const std::string& setting) throw();
 /**
  * A raw frame has been received.
- * 
+ *
  * The default handler does nothing.
  *
  * Parameter raw: The raw frame data. 512*512 element array.
@@ -254,7 +254,7 @@ public:
  * The default handler does nothing.
  *
  * Parameter l: The left channel sample (16 bit signed).
- * Parameter r: The right channel sample (16 bit signed). 
+ * Parameter r: The right channel sample (16 bit signed).
  */
 	virtual void on_sample(short l, short r);
 /**
@@ -298,7 +298,7 @@ public:
 	static std::pair<uint32_t, uint32_t> get_sound_rate() throw();
 /**
  * Game information is changing.
- * 
+ *
  * The default handler does nothing.
  *
  * Parameter gi: The new game info.

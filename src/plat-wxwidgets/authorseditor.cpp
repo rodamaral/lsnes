@@ -14,7 +14,7 @@ wx_authors_editor::wx_authors_editor(wxWindow* parent)
 	c_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game name:")), 0, wxGROW);
 	c_s->Add(projectname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1, wxGROW);
 	top_s->Add(c_s);
-	
+
 	top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
 	top_s->Add(authors = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE), 0, wxGROW);

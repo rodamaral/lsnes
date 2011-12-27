@@ -253,7 +253,6 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base, b
 		} else {
 			data.resize(0);
 		}
-		
 	}
 	sha256 = sha256::hash(data);
 	if(xml) {
