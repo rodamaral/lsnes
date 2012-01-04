@@ -135,7 +135,9 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		} else if(amode == ADVANCE_FRAME) {
 			;
 		} else {
-			window::paused(amode == ADVANCE_SKIPLAG || amode == ADVANCE_PAUSE);
+			if(amode == ADVANCE_SKIPLAG)
+				amode = ADVANCE_PAUSE;
+			window::paused(amode == ADVANCE_PAUSE);
 			cancel_advance = false;
 		}
 		if(amode == ADVANCE_SKIPLAG)
