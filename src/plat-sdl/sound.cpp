@@ -28,6 +28,8 @@
 
 namespace
 {
+	SDL_AudioSpec* desired;
+	SDL_AudioSpec* obtained;
 	uint32_t audio_playback_freq = 0;
 	const size_t audiobuf_size = 8192;
 	uint16_t audiobuf[audiobuf_size];
@@ -110,16 +112,16 @@ namespace
 	}
 }
 
-void window::_sound_enable(bool enable) throw()
+void sound_plugin::enable(bool enable) throw()
 {
 	sound_enabled = enable;
 	SDL_PauseAudio(enable ? 0 : 1);
 }
 
-void sound_init()
+void sound_plugin::init() throw()
 {
-	SDL_AudioSpec* desired = new SDL_AudioSpec();
-	SDL_AudioSpec* obtained = new SDL_AudioSpec();
+	desired = new SDL_AudioSpec();
+	obtained = new SDL_AudioSpec();
 
 	desired->freq = 44100;
 	desired->format = AUDIO_S16SYS;
@@ -129,7 +131,7 @@ void sound_init()
 	desired->userdata = NULL;
 
 	if(SDL_OpenAudio(desired, obtained) < 0) {
-		window::message("Audio can't be initialized, audio playback disabled");
+		platform::message("Audio can't be initialized, audio playback disabled");
 		//Disable audio.
 		audio_playback_freq = 0;
 		auto g = information_dispatch::get_sound_rate();
@@ -147,13 +149,15 @@ void sound_init()
 	SDL_PauseAudio(0);
 }
 
-void sound_quit()
+void sound_plugin::quit() throw()
 {
 	SDL_PauseAudio(1);
 	SDL_Delay(100);
+	delete desired;
+	delete obtained;
 }
 
-void window::play_audio_sample(uint16_t left, uint16_t right) throw()
+void sound_plugin::sample(uint16_t left, uint16_t right) throw()
 {
 	sampledup_ctr += sampledup_inc;
 	while(sampledup_ctr < sampledup_mod) {
@@ -177,27 +181,27 @@ public:
 	}
 } sndchgl;
 
-bool window::sound_initialized()
+bool sound_plugin::initialized()
 {
 	return (audio_playback_freq != 0);
 }
 
-void window::_set_sound_device(const std::string& dev)
+void sound_plugin::set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
 {
 	if(dev != "default")
 		throw std::runtime_error("Bad sound device '" + dev + "'");
 }
 
-std::string window::get_current_sound_device()
+std::string sound_plugin::get_device() throw(std::bad_alloc)
 {
 	return "default";
 }
 
-std::map<std::string, std::string> window::get_sound_devices()
+std::map<std::string, std::string> sound_plugin::get_devices() throw(std::bad_alloc)
 {
 	std::map<std::string, std::string> ret;
 	ret["default"] = "default sound output";
 	return ret;
 }
 
-const char* sound_plugin_name = "SDL sound plugin";
+const char* sound_plugin::name = "SDL sound plugin";

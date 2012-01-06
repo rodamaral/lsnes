@@ -295,9 +295,7 @@ void render_queue::run(struct screen& scr) throw()
 			(*i)(scr);
 		} catch(...) {
 		}
-		delete i;
 	}
-	q.clear();
 }
 
 void render_queue::clear() throw()
@@ -467,8 +465,11 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 			memset(rowptr(y), 0, 4 * width);
 		return;
 	}
-	uint32_t copyable_width = (width - originx) / hscale;
-	uint32_t copyable_height = (height - originy) / vscale;
+	uint32_t copyable_width = 0, copyable_height = 0;
+	if(hscale)
+		copyable_width = (width - originx) / hscale;
+	if(vscale)
+		copyable_height = (height - originy) / vscale;
 	copyable_width = (copyable_width > scr.width) ? scr.width : copyable_width;
 	copyable_height = (copyable_height > scr.height) ? scr.height : copyable_height;
 	for(uint32_t y = 0; y < height; y++)

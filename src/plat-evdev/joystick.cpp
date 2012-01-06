@@ -18,6 +18,9 @@ extern "C"
 #include <linux/input.h>
 }
 
+extern void evdev_init_buttons(const char** x);
+extern void evdev_init_axes(const char** x);
+
 namespace
 {
 	const char* axisnames[ABS_MAX + 1] = {0};
@@ -233,7 +236,7 @@ namespace
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
 			return false;
 		if(r < 0) {
-			window::out() << "Error reading from joystick (fd=" << fd << "): " << strerror(errno)
+			messages << "Error reading from joystick (fd=" << fd << "): " << strerror(errno)
 				<< std::endl;
 			return false;
 		}
@@ -253,29 +256,29 @@ namespace
 		unsigned hat_count = 0;
 		if(ioctl(fd, EVIOCGBIT(0, sizeof(evtypes)), evtypes) < 0) {
 			int merrno = errno;
-			window::out() << "Error probing joystick (evmap; " << filename << "): " << strerror(merrno)
+			messages << "Error probing joystick (evmap; " << filename << "): " << strerror(merrno)
 				<< std::endl;
 			return false;
 		}
 		if(!(evtypes[EV_KEY / div] & (1 << EV_KEY % div)) || !(evtypes[EV_ABS / div] & (1 << EV_ABS % div))) {
-			window::out() << "Input (" << filename << ") doesn't look like joystick" << std::endl;
+			messages << "Input (" << filename << ") doesn't look like joystick" << std::endl;
 			return false;
 		}
 		if(ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0) {
 			int merrno = errno;
-			window::out() << "Error probing joystick (keymap; " <<filename << "): " << strerror(merrno)
+			messages << "Error probing joystick (keymap; " <<filename << "): " << strerror(merrno)
 				<< std::endl;
 			return false;
 		}
 		if(ioctl(fd, EVIOCGBIT(EV_ABS, sizeof(axes)), axes) < 0) {
 			int merrno = errno;
-			window::out() << "Error probing joystick (axismap; " << filename << "): " << strerror(merrno)
+			messages << "Error probing joystick (axismap; " << filename << "): " << strerror(merrno)
 				<< std::endl;
 			return false;
 		}
 		if(ioctl(fd, EVIOCGNAME(sizeof(namebuffer)), namebuffer) <= 0) {
 			int merrno = errno;
-			window::out() << "Error probing joystick (name; " << filename << "): " << strerror(merrno)
+			messages << "Error probing joystick (name; " << filename << "): " << strerror(merrno)
 				<< std::endl;
 			return false;
 		}
@@ -292,7 +295,7 @@ namespace
 					int32_t V[5];
 					if(ioctl(fd, EVIOCGABS(i), V) < 0) {
 						int merrno = errno;
-						window::out() << "Error getting parameters for axis " << i << " (fd="
+						messages << "Error getting parameters for axis " << i << " (fd="
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
@@ -306,7 +309,7 @@ namespace
 		}
 		uint16_t joynum = get_joystick_number(fd);
 		joystick_names[joynum] = namebuffer;
-		window::out() << "Found '" << namebuffer << "' (" << button_count << " buttons, " << axis_count
+		messages << "Found '" << namebuffer << "' (" << button_count << " buttons, " << axis_count
 			<< " axes, " << hat_count << " hats)" << std::endl;
 		joysticks.insert(fd);
 		return true;
@@ -330,7 +333,7 @@ namespace
 		struct dirent* dentry;
 		if(!d) {
 			int merrno = errno;
-			window::out() << "Can't list /dev/input: " << strerror(merrno) << std::endl;
+			messages << "Can't list /dev/input: " << strerror(merrno) << std::endl;
 			return;
 		}
 		while((dentry = readdir(d)) != NULL) {
@@ -372,45 +375,41 @@ namespace
 		"Syntax: show-joysticks\nShow joystick data.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i : joystick_names) {
-				window::out() << "Joystick #" << i.first << ": " << i.second << std::endl;
+				messages << "Joystick #" << i.first << ": " << i.second << std::endl;
 				for(auto j : event_map) {
 					if(j.second.joystick != i.first)
 						continue;
 					if(j.second.type == ET_BUTTON)
-						window::out() << j.second.group->name() << ": "
+						messages << j.second.group->name() << ": "
 							<< get_button_name(j.second.tevcode & 0xFFFF) << std::endl;
 					if(j.second.type == ET_AXIS)
-						window::out() << j.second.group->name() << ": "
+						messages << j.second.group->name() << ": "
 							<< get_axis_name(j.second.tevcode & 0xFFFF)
 							<< "[" << j.second.axis_min << "," << j.second.axis_max
 							<< "]" << std::endl;
 					if(j.second.type == ET_HAT_X || j.second.type == ET_HAT_Y)
-						window::out() << j.second.group->name() << ": "
+						messages << j.second.group->name() << ": "
 							<< get_axis_name(j.second.tevcode & 0xFFFF) << std::endl;
 				}
 			}
 		});
+
+	volatile bool quit_signaled = false;
+	volatile bool quit_ack = false;
 }
 
-void window::poll_joysticks()
-{
-	for(int fd : joysticks) {
-		while(read_one_input_event(fd));
-	}
-}
-
-extern void evdev_init_buttons(const char** x);
-extern void evdev_init_axes(const char** x);
-
-void joystick_init()
+void joystick_plugin::init() throw()
 {
 	probe_all_joysticks();
 	evdev_init_buttons(buttonnames);
 	evdev_init_axes(axisnames);
+	quit_ack = quit_signaled = false;
 }
 
-void joystick_quit()
+void joystick_plugin::quit() throw()
 {
+	quit_signaled = true;
+	while(!quit_ack);
 	for(int fd : joysticks)
 		close(fd);
 	for(auto i : keygroups)
@@ -423,7 +422,23 @@ void joystick_quit()
 	std::map<int, uint16_t> joystick_map;
 	std::set<int> joysticks;
 	std::map<uint16_t, std::string> joystick_names;
-
 }
 
-const char* joystick_plugin_name = "Evdev joystick plugin";
+#define POLL_WAIT 20000
+
+void joystick_plugin::thread_fn() throw()
+{
+	while(!quit_signaled) {
+		for(int fd : joysticks)
+			while(read_one_input_event(fd));
+		usleep(POLL_WAIT);
+	}
+	quit_ack = true;
+}
+
+void joystick_plugin::signal() throw()
+{
+	quit_signaled = true;
+}
+
+const char* joystick_plugin::name = "Evdev joystick plugin";

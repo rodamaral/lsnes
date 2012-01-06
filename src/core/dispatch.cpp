@@ -88,6 +88,7 @@ uint64_t gameinfo_struct::get_rerecords() const throw()
 namespace
 {
 	globalwrap<std::list<information_dispatch*>> dispatch;
+	globalwrap<std::list<information_dispatch*>> dispatch_audio;
 	uint32_t srate_n = 32000;
 	uint32_t srate_d = 1;
 	struct gameinfo_struct sgi;
@@ -114,6 +115,12 @@ information_dispatch::~information_dispatch() throw()
 	for(auto i = dispatch().begin(); i != dispatch().end(); ++i) {
 		if(*i == this) {
 			dispatch().erase(i);
+			break;
+		}
+	}
+	for(auto i = dispatch_audio().begin(); i != dispatch_audio().end(); ++i) {
+		if(*i == this) {
+			dispatch_audio().erase(i);
 			break;
 		}
 	}
@@ -294,7 +301,7 @@ void information_dispatch::on_sample(short l, short r)
 void information_dispatch::do_sample(short l, short r) throw()
 {
 	update_dumpers();
-	for(auto& i : dispatch()) {
+	for(auto& i : dispatch_audio()) {
 		START_EH_BLOCK
 		i->on_sample(l, r);
 		END_EH_BLOCK(i, "on_sample");
@@ -493,45 +500,31 @@ void information_dispatch::do_click_compensation(uint32_t xoffset, uint32_t yoff
 	vc_vscl = vscl;
 }
 
-void information_dispatch::on_screen_resize(screen& scr, uint32_t w, uint32_t h)
+void information_dispatch::on_set_screen(screen& scr)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_screen_resize(screen& scr, uint32_t w, uint32_t h) throw()
+void information_dispatch::do_set_screen(screen& scr) throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK
-		i->on_screen_resize(scr, w, h);
-		END_EH_BLOCK(i, "on_screen_resize");
+		i->on_set_screen(scr);
+		END_EH_BLOCK(i, "on_set_screen");
 	}
 }
 
-void information_dispatch::on_render_update_start()
+void information_dispatch::on_screen_update()
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_render_update_start() throw()
+void information_dispatch::do_screen_update() throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK
-		i->on_render_update_start();
-		END_EH_BLOCK(i, "on_render_update_start");
-	}
-}
-
-void information_dispatch::on_render_update_end()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_render_update_end() throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_render_update_end();
-		END_EH_BLOCK(i, "on_render_update_end");
+		i->on_screen_update();
+		END_EH_BLOCK(i, "on_screen_update");
 	}
 }
 
@@ -547,4 +540,9 @@ void information_dispatch::do_status_update() throw()
 		i->on_status_update();
 		END_EH_BLOCK(i, "on_status_update");
 	}
+}
+
+void information_dispatch::enable_send_sound() throw(std::bad_alloc)
+{
+	dispatch_audio().push_back(this);
 }

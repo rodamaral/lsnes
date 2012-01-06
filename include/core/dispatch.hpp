@@ -403,34 +403,22 @@ public:
  * Default implementation does nothing.
  *
  * parameter scr: The render buffer object.
- * parameter w: The width needed.
- * parameter h: The height needed.
  */
-	virtual void on_screen_resize(screen& scr, uint32_t w, uint32_t h);
+	virtual void on_set_screen(screen& scr);
 /**
- * Call on_screen_resize on all objects.
+ * Call on_set_screen on all objects.
  */
-	static void do_screen_resize(screen& scr, uint32_t w, uint32_t h) throw();
+	static void do_set_screen(screen& scr) throw();
 /**
- * Notify that render buffer updating starts.
+ * Notify that new frame is available.
  *
  * Default implementation does nothing.
  */
-	virtual void on_render_update_start();
+	virtual void on_screen_update();
 /**
- * Call on_render_update_start() in all objects.
+ * Call on_screen_update() in all objects.
  */
-	static void do_render_update_start() throw();
-/**
- * Notify that render buffer updating ends.
- *
- * Default implementation does nothing.
- */
-	virtual void on_render_update_end();
-/**
- * Call on_render_update_end() in all objects.
- */
-	static void do_render_update_end() throw();
+	static void do_screen_update() throw();
 /**
  * Notify that status buffer has been updated.
  *
@@ -441,6 +429,11 @@ public:
  * Call on_status_update() in all objects.
  */
 	static void do_status_update() throw();
+protected:
+/**
+ * Call to indicate this target is interested in sound sample data.
+ */
+	void enable_send_sound() throw(std::bad_alloc);
 private:
 	static void update_dumpers(bool nocalls = false) throw();
 	bool known_if_dumper;

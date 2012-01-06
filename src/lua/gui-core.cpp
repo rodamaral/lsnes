@@ -65,11 +65,11 @@ namespace
 	function_ptr_luafun gui_status("gui.status", [](lua_State* LS, const std::string& fname) -> int {
 		std::string name = get_string_argument(LS, 1, fname.c_str());
 		std::string value = get_string_argument(LS, 2, fname.c_str());
-		auto& w = window::get_emustatus();
+		auto& w = platform::get_emustatus();
 		if(value == "")
 			w.erase("L[" + name + "]");
 		else
-			w["L[" + name + "]"] = value;
+			w.set("L[" + name + "]", value);
 		return 1;
 	});
 

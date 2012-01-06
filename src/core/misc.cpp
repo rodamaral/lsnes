@@ -217,7 +217,7 @@ void dump_region_map() throw(std::bad_alloc)
 
 void fatal_error() throw()
 {
-	window::fatal_error();
+	platform::fatal_error();
 	std::cout << "PANIC: Fatal error, can't continue." << std::endl;
 	exit(1);
 }
@@ -287,7 +287,7 @@ void OOM_panic()
 
 std::ostream& _messages()
 {
-	return window::out();
+	return platform::out();
 }
 
 uint32_t gcd(uint32_t a, uint32_t b) throw()
@@ -298,5 +298,13 @@ uint32_t gcd(uint32_t a, uint32_t b) throw()
 		return gcd(b, a % b);
 }
 
+std::string format_address(void* addr)
+{
+	unsigned long x = (unsigned long)addr;
+	std::ostringstream y;
+	y << "0x" << std::hex << std::setfill('0') << std::setw(2 * sizeof(unsigned long)) << x;
+	return y.str();
+}
+
 std::string bsnes_core_version;
-std::string lsnes_version = "0";
+std::string lsnes_version = "1-β0";

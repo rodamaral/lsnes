@@ -1,7 +1,6 @@
 #include "core/keymapper.hpp"
 
-#include "plat-wxwidgets/axeseditor.hpp"
-#include "plat-wxwidgets/common.hpp"
+#include "plat-wxwidgets/platform.hpp"
 
 #include <boost/lexical_cast.hpp>
 #include <sstream>
@@ -16,7 +15,46 @@
 #define AMODE_PRESSURE_PM "Pressure + to -"
 #define AMODE_PRESSURE_P0 "Pressure + to 0"
 
-wx_axes_editor_axis::wx_axes_editor_axis(wxSizer* sizer, wxWindow* window, const std::string& name)
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+#include <vector>
+#include <string>
+
+class wxeditor_axes_axis
+{
+public:
+	wxeditor_axes_axis(wxSizer* sizer, wxWindow* window, const std::string& name);
+	bool is_ok();
+	void apply();
+private:
+	std::string a_name;
+	wxComboBox* a_type;
+	wxTextCtrl* a_low;
+	wxTextCtrl* a_mid;
+	wxTextCtrl* a_high;
+	wxTextCtrl* a_tolerance;
+};
+
+class wxeditor_axes : public wxDialog
+{
+public:
+	wxeditor_axes(wxWindow* parent);
+	~wxeditor_axes();
+	bool ShouldPreventAppExit() const;
+	void on_value_change(wxCommandEvent& e);
+	void on_cancel(wxCommandEvent& e);
+	void on_ok(wxCommandEvent& e);
+	bool has_axes();
+private:
+	std::vector<wxeditor_axes_axis*> axes;
+	wxButton* okbutton;
+	wxButton* cancel;
+};
+
+//Should be called in modal pause mode.
+wxeditor_axes_axis::wxeditor_axes_axis(wxSizer* sizer, wxWindow* window, const std::string& name)
 {
 	wxString choices[9];
 	choices[0] = wxT(AMODE_DISABLED);
@@ -33,9 +71,11 @@ wx_axes_editor_axis::wx_axes_editor_axis(wxSizer* sizer, wxWindow* window, const
 	std::string mid;
 	std::string high;
 	std::string tolerance;
-	keygroup* k = keygroup::lookup_by_name(name);
-	if(!k)
+	keygroup* k;
+	runemufn([&k, name]() { k = keygroup::lookup_by_name(name); });
+	if(!k) {
 		return;
+	}
 	struct keygroup::parameters p = k->get_parameters();
 	{
 		switch(p.ktype) {
@@ -71,17 +111,17 @@ wx_axes_editor_axis::wx_axes_editor_axis(wxSizer* sizer, wxWindow* window, const
 	sizer->Add(a_mid = new wxTextCtrl(window, wxID_ANY, towxstring(mid)), 0, wxGROW);
 	sizer->Add(a_high = new wxTextCtrl(window, wxID_ANY, towxstring(high)), 0, wxGROW);
 	sizer->Add(a_tolerance = new wxTextCtrl(window, wxID_ANY, towxstring(tolerance)), 0, wxGROW);
-	a_low->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wx_axes_editor::on_value_change), NULL,
+	a_low->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxeditor_axes::on_value_change), NULL,
 		window);
-	a_mid->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wx_axes_editor::on_value_change), NULL,
+	a_mid->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxeditor_axes::on_value_change), NULL,
 		window);
-	a_high->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wx_axes_editor::on_value_change), NULL,
+	a_high->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxeditor_axes::on_value_change), NULL,
 		window);
-	a_tolerance->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wx_axes_editor::on_value_change), NULL,
+	a_tolerance->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxeditor_axes::on_value_change), NULL,
 		window);
 }
 
-bool wx_axes_editor_axis::is_ok()
+bool wxeditor_axes_axis::is_ok()
 {
 	int32_t low, mid, high;
 	double tolerance;
@@ -106,16 +146,19 @@ bool wx_axes_editor_axis::is_ok()
 	return true;
 }
 
-void wx_axes_editor_axis::apply()
+//Should be called in modal pause mode.
+void wxeditor_axes_axis::apply()
 {
-	keygroup* k = keygroup::lookup_by_name(a_name);
+	keygroup* k;
+	runemufn([&k, a_name]() { k = keygroup::lookup_by_name(a_name); });
 	if(!k)
 		return;
 
 	int32_t low, mid, high;
 	double tolerance;
 	enum keygroup::type ntype;
-	enum keygroup::type ctype = k->get_parameters().ktype;;
+	enum keygroup::type ctype;
+	runemufn([&ctype, k]() { ctype = k->get_parameters().ktype; });
 
 	std::string amode = tostdstring(a_type->GetValue());
 	if(amode == AMODE_AXIS_PAIR)
@@ -152,15 +195,18 @@ void wx_axes_editor_axis::apply()
 		return;
 	if(tolerance <= 0 || tolerance >= 1)
 		return;
-	if(ctype != ntype)
-		k->change_type(ntype);
-	k->change_calibration(low, mid, high, tolerance);
+	runemufn([k, ctype, ntype, low, mid, high, tolerance]() {
+		if(ctype != ntype)
+			k->change_type(ntype);
+		k->change_calibration(low, mid, high, tolerance);
+		});
 }
 
-wx_axes_editor::wx_axes_editor(wxWindow* parent)
+wxeditor_axes::wxeditor_axes(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit axes"), wxDefaultPosition, wxSize(-1, -1))
 {
-	std::set<std::string> axisnames = keygroup::get_axis_set();
+	std::set<std::string> axisnames;
+	runemufn([&axisnames]() { axisnames = keygroup::get_axis_set(); });
 
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -174,7 +220,7 @@ wx_axes_editor::wx_axes_editor(wxWindow* parent)
 	t_s->Add(new wxStaticText(this, wxID_ANY, wxT("High")), 0, wxGROW);
 	t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Tolerance")), 0, wxGROW);
 	for(auto i : axisnames)
-		axes.push_back(new wx_axes_editor_axis(t_s, this, i));
+		axes.push_back(new wxeditor_axes_axis(t_s, this, i));
 	top_s->Add(t_s);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -182,9 +228,9 @@ wx_axes_editor::wx_axes_editor(wxWindow* parent)
 	pbutton_s->Add(okbutton = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
 	pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
 	okbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wx_axes_editor::on_ok), NULL, this);
+		wxCommandEventHandler(wxeditor_axes::on_ok), NULL, this);
 	cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wx_axes_editor::on_cancel), NULL, this);
+		wxCommandEventHandler(wxeditor_axes::on_cancel), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	t_s->SetSizeHints(this);
@@ -192,18 +238,23 @@ wx_axes_editor::wx_axes_editor(wxWindow* parent)
 	Fit();
 }
 
-wx_axes_editor::~wx_axes_editor()
+wxeditor_axes::~wxeditor_axes()
 {
 	for(auto i : axes)
 		delete i;
 }
 
-bool wx_axes_editor::ShouldPreventAppExit() const
+bool wxeditor_axes::has_axes()
+{
+	return (axes.size() != 0);
+}
+
+bool wxeditor_axes::ShouldPreventAppExit() const
 {
 	return false;
 }
 
-void wx_axes_editor::on_value_change(wxCommandEvent& e)
+void wxeditor_axes::on_value_change(wxCommandEvent& e)
 {
 	bool all_ok = true;
 	for(auto i : axes)
@@ -211,14 +262,32 @@ void wx_axes_editor::on_value_change(wxCommandEvent& e)
 	okbutton->Enable(all_ok);
 }
 
-void wx_axes_editor::on_cancel(wxCommandEvent& e)
+void wxeditor_axes::on_cancel(wxCommandEvent& e)
 {
 	EndModal(wxID_CANCEL);
 }
 
-void wx_axes_editor::on_ok(wxCommandEvent& e)
+void wxeditor_axes::on_ok(wxCommandEvent& e)
 {
 	for(auto i : axes)
 		i->apply();
 	EndModal(wxID_OK);
+}
+
+void wxeditor_axes_display(wxWindow* parent)
+{
+	platform::set_modal_pause(true);
+	wxDialog* editor;
+	try {
+		editor = new wxeditor_axes(parent);
+		if(dynamic_cast<wxeditor_axes*>(editor)->has_axes())
+			editor->ShowModal();
+		else {
+			wxMessageBox(_T("You don't have joysticks to configure!"), _T("Warning"), wxICON_WARNING |
+				wxOK);
+		}
+	} catch(...) {
+	}
+	platform::set_modal_pause(false);
+	editor->Destroy();
 }

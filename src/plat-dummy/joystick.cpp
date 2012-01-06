@@ -1,15 +1,19 @@
 #include "core/window.hpp"
 
-void window::poll_joysticks()
+void joystick_plugin::init() throw()
 {
 }
 
-void joystick_init()
+void joystick_plugin::quit() throw()
 {
 }
 
-void joystick_quit()
+void joystick_plugin::thread_fn() throw()
 {
 }
 
-const char* joystick_plugin_name = "Dummy joystick plugin";
+void joystick_plugin::signal() throw()
+{
+}
+
+const char* joystick_plugin::name = "Dummy joystick plugin";

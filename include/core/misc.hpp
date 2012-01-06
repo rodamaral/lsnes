@@ -263,4 +263,9 @@ private:
 	bool finished;
 };
 
+/**
+ * Return hexadecimal representation of address
+ */
+std::string format_address(void* addr);
+
 #endif

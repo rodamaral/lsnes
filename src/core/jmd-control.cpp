@@ -14,12 +14,15 @@
 
 namespace
 {
+	numeric_setting clevel("jmd-compression", 0, 9, 7);
+
 	class jmd_avsnoop : public information_dispatch
 	{
 	public:
 		jmd_avsnoop(const std::string& filename, unsigned level) throw(std::bad_alloc)
 			: information_dispatch("dump-jmd")
 		{
+			enable_send_sound();
 			vid_dumper = new jmd_dumper(filename, level);
 			have_dumped_frame = false;
 			audio_w = 0;
@@ -132,26 +135,15 @@ namespace
 	jmd_avsnoop* vid_dumper;
 
 	function_ptr_command<const std::string&> jmd_dump("dump-jmd", "Start JMD capture",
-		"Syntax: dump-jmd <level> <file>\nStart JMD capture to <file> using compression\n"
-		"level <level> (0-9).\n",
+		"Syntax: dump-jmd <file>\nStart JMD capture to <file>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
-			std::string level = t;
 			std::string prefix = t.tail();
 			if(prefix == "")
 				throw std::runtime_error("Expected filename");
 			if(vid_dumper)
 				throw std::runtime_error("JMD dumping already in progress");
-			unsigned long level2;
-			try {
-				level2 = parse_value<unsigned long>(level);
-				if(level2 > 9)
-					throw std::runtime_error("JMD Level must be 0-9");
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::runtime_error& e) {
-				throw std::runtime_error("Bad JMD compression level '" + level + "': " + e.what());
-			}
+			unsigned long level2 = (unsigned long)level2;
 			try {
 				vid_dumper = new jmd_avsnoop(prefix, level2);
 			} catch(std::bad_alloc& e) {

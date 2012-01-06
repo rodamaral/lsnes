@@ -19,6 +19,7 @@ namespace
 		sdmp_avsnoop(const std::string& prefix, bool ssflag) throw(std::bad_alloc)
 			: information_dispatch("dump-sdmp")
 		{
+			enable_send_sound();
 			dumper = new sdump_dumper(prefix, ssflag);
 		}
 

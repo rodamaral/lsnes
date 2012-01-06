@@ -249,10 +249,10 @@ std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc)
 
 void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std::bad_alloc)
 {
-	auto& status = window::get_emustatus();
+	auto& status = platform::get_emustatus();
 	if(expr != "") {
 		watches[w] = expr;
-		status["M[" + w + "]"] = evaluate_watch(expr);
+		status.set("M[" + w + "]", evaluate_watch(expr));
 	} else {
 		watches.erase(w);
 		status.erase("M[" + w + "]");
@@ -262,9 +262,9 @@ void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std:
 
 void do_watch_memory()
 {
-	auto& status = window::get_emustatus();
+	auto& status = platform::get_emustatus();
 	for(auto i : watches)
-		status["M[" + i.first + "]"] = evaluate_watch(i.second);
+		status.set("M[" + i.first + "]", evaluate_watch(i.second));
 }
 
 namespace

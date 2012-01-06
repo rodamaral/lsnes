@@ -151,7 +151,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
 		our_movie.savestate = save_core_state();
-		framebuffer.save(our_movie.screenshot);
+		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
@@ -196,8 +196,12 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
-	if(gtype::toromtype(_movie.gametype) != our_rom->rtype)
+	if(gtype::toromtype(_movie.gametype) != our_rom->rtype) {
+		messages << "_movie.gametype = " << _movie.gametype << std::endl;
+		messages << "gtype::toromtype(_movie.gametype) = " << gtype::toromtype(_movie.gametype) << std::endl;
+		messages << "our_rom->rtype = " << our_rom->rtype << std::endl;
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
+	}
 	if(gtype::toromregion(_movie.gametype) != our_rom->orig_region && our_rom->orig_region != REGION_AUTO)
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
 
@@ -247,20 +251,22 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			controller_set_port_type(0, _movie.port1);
 			controller_set_port_type(1, _movie.port2);
 			load_core_state(_movie.savestate);
-			framebuffer.load(_movie.screenshot);
+			lcscreen tmp;
+			tmp.load(_movie.screenshot);
+			redraw_framebuffer(tmp);
 		} else {
 			load_sram(_movie.movie_sram);
 			controller_set_port_type(0, _movie.port1);
 			controller_set_port_type(1, _movie.port2);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
-			framebuffer = screen_nosignal;
+			redraw_framebuffer(screen_nosignal);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
 		system_corrupt = true;
-		framebuffer = screen_corrupt;
+		redraw_framebuffer(screen_corrupt, true);
 		throw;
 	}
 

@@ -100,7 +100,7 @@ endif
 
 #Graphics stuff.
 ifeq ($(GRAPHICS), SDL)
-PLATFORM_OBJECTS += src/plat-sdl/main.$(OBJECT_SUFFIX) src/plat-sdl/graphics.$(OBJECT_SUFFIX) src/plat-sdl/paint.$(OBJECT_SUFFIX)
+PLATFORM_OBJECTS += src/plat-sdl/commandline.$(OBJECT_SUFFIX) src/plat-sdl/drawprim.$(OBJECT_SUFFIX) src/plat-sdl/graphicsfn.$(OBJECT_SUFFIX) src/plat-sdl/keyboard.$(OBJECT_SUFFIX) src/plat-sdl/main.$(OBJECT_SUFFIX) src/plat-sdl/thread.$(OBJECT_SUFFIX) src/plat-sdl/status.$(OBJECT_SUFFIX) src/plat-sdl/thread.$(OBJECT_SUFFIX)
 PLATFORM_CFLAGS += $(shell $(CROSS_PREFIX)sdl-config --cflags)
 PLATFORM_LDFLAGS += $(shell $(CROSS_PREFIX)sdl-config --libs)
 else

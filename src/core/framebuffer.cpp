@@ -4,14 +4,61 @@
 #include "core/lua.hpp"
 #include "core/misc.hpp"
 #include "core/render.hpp"
+#include "core/triplebuffer.hpp"
 #include "core/window.hpp"
 
-lcscreen framebuffer;
 lcscreen screen_nosignal;
 lcscreen screen_corrupt;
 
 namespace
 {
+	struct render_info
+	{
+		lcscreen fbuf;
+		render_queue rq;
+		uint32_t hscl;
+		uint32_t vscl;
+		uint32_t lgap;
+		uint32_t rgap;
+		uint32_t tgap;
+		uint32_t bgap;
+	};
+
+	triplebuffer_logic buffering;
+	render_info buffer1;
+	render_info buffer2;
+	render_info buffer3;
+
+	render_info& get_write_buffer()
+	{
+		unsigned i = buffering.start_write();
+		switch(i) {
+		case 0:
+			return buffer1;
+		case 1:
+			return buffer2;
+		case 2:
+			return buffer3;
+		default:
+			return buffer1;
+		};
+	}
+
+	render_info& get_read_buffer()
+	{
+		unsigned i = buffering.start_read();
+		switch(i) {
+		case 0:
+			return buffer1;
+		case 1:
+			return buffer2;
+		case 2:
+			return buffer3;
+		default:
+			return buffer1;
+		};
+	}
+
 	struct render_list_entry
 	{
 		uint32_t codepoint;
@@ -92,54 +139,107 @@ namespace
 		draw_special_screen(target, rl_corrupt);
 	}
 
-	function_ptr_command<arg_filename> take_screenshot("take-screenshot", "Takes a screenshot",
+	function_ptr_command<arg_filename> take_screenshot_cmd("take-screenshot", "Takes a screenshot",
 		"Syntax: take-screenshot <file>\nSaves screenshot to PNG file <file>\n",
 		[](arg_filename file) throw(std::bad_alloc, std::runtime_error) {
-			framebuffer.save_png(file);
+			take_screenshot(file);
 			messages << "Saved PNG screenshot" << std::endl;
 		});
+
+	bool last_redraw_no_lua = true;
 }
 
 screen main_screen;
 
+void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
+{
+	render_info& ri = get_read_buffer();
+	ri.fbuf.save_png(file);
+	buffering.end_read();
+}
+
 
 void init_special_screens() throw(std::bad_alloc)
 {
-	uint32_t buf[512*448];
-	draw_nosignal(buf);
-	screen_nosignal = lcscreen(buf, 512, 448);
-	draw_corrupt(buf);
-	screen_corrupt = lcscreen(buf, 512, 448);
+	std::vector<uint32_t> buf;
+	buf.resize(512*448);
+	draw_nosignal(&buf[0]);
+	screen_nosignal = lcscreen(&buf[0], 512, 448);
+	draw_corrupt(&buf[0]);
+	screen_corrupt = lcscreen(&buf[0], 512, 448);
 }
 
-void redraw_framebuffer()
+void redraw_framebuffer(lcscreen& todraw, bool no_lua)
 {
 	uint32_t hscl, vscl;
-	auto g = get_scale_factors(framebuffer.width, framebuffer.height);
+	auto g = get_scale_factors(todraw.width, todraw.height);
 	hscl = g.first;
 	vscl = g.second;
-	render_queue rq;
+	render_info& ri = get_write_buffer();
+	ri.rq.clear();
 	struct lua_render_context lrc;
 	lrc.left_gap = 0;
 	lrc.right_gap = 0;
 	lrc.bottom_gap = 0;
 	lrc.top_gap = 0;
-	lrc.queue = &rq;
-	lrc.width = framebuffer.width * hscl;
-	lrc.height = framebuffer.height * vscl;
-	lua_callback_do_paint(&lrc);
-	information_dispatch::do_screen_resize(main_screen, framebuffer.width * hscl + lrc.left_gap + lrc.right_gap,
-		framebuffer.height * vscl + lrc.top_gap + lrc.bottom_gap);
-
-	information_dispatch::do_render_update_start();
-	main_screen.set_origin(lrc.left_gap, lrc.top_gap);
-	main_screen.copy_from(framebuffer, hscl, vscl);
-	rq.run(main_screen);
-	information_dispatch::do_render_update_end();
-
-	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	information_dispatch::do_click_compensation(lrc.left_gap, lrc.top_gap, 1, 1);
+	lrc.queue = &ri.rq;
+	lrc.width = todraw.width * hscl;
+	lrc.height = todraw.height * vscl;
+	if(!no_lua)
+		lua_callback_do_paint(&lrc);
+	ri.fbuf = todraw;
+	ri.hscl = hscl;
+	ri.vscl = vscl;
+	ri.lgap = lrc.left_gap;
+	ri.rgap = lrc.right_gap;
+	ri.tgap = lrc.top_gap;
+	ri.bgap = lrc.bottom_gap;
+	buffering.end_write();
+	information_dispatch::do_screen_update();
+	last_redraw_no_lua = no_lua;
 }
+
+void redraw_framebuffer()
+{
+	render_info& ri = get_read_buffer();
+	lcscreen copy = ri.fbuf;
+	buffering.end_read();
+	redraw_framebuffer(copy, last_redraw_no_lua);
+}
+
+
+void render_framebuffer()
+{
+	render_info& ri = get_read_buffer();
+	main_screen.reallocate(ri.fbuf.width * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.height * ri.vscl + ri.tgap +
+		ri.bgap);
+	main_screen.set_origin(ri.lgap, ri.tgap);
+	main_screen.copy_from(ri.fbuf, ri.hscl, ri.vscl);
+	ri.rq.run(main_screen);
+	information_dispatch::do_set_screen(main_screen);
+	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
+	information_dispatch::do_click_compensation(ri.lgap, ri.tgap, 1, 1);
+	buffering.end_read();
+}
+
+std::pair<uint32_t, uint32_t> get_framebuffer_size()
+{
+	uint32_t v, h;
+	render_info& ri = get_read_buffer();
+	v = ri.fbuf.width;
+	h = ri.fbuf.height;
+	buffering.end_read();
+	return std::make_pair(h, v);
+}
+
+lcscreen get_framebuffer() throw(std::bad_alloc)
+{
+	render_info& ri = get_read_buffer();
+	lcscreen copy = ri.fbuf;
+	buffering.end_read();
+	return copy;
+}
+
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 {

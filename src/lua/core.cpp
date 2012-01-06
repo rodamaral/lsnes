@@ -36,7 +36,7 @@ namespace
 				toprint = toprint + "\t" + localmsg;
 			first = false;
 		}
-		window::message(toprint);
+		platform::message(toprint);
 		return 0;
 	});
 

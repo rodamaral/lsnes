@@ -28,6 +28,7 @@ namespace
 	numeric_setting dbb("avi-bottom-border", 0, 8191, 0);
 	numeric_setting dlb("avi-left-border", 0, 8191, 0);
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
+	numeric_setting clevel("avi-compression", 0, 18, 7);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 
 	class avi_avsnoop : public information_dispatch
@@ -36,6 +37,7 @@ namespace
 		avi_avsnoop(const std::string& prefix, struct avi_info parameters) throw(std::bad_alloc)
 			: information_dispatch("dump-avi-cscd")
 		{
+			enable_send_sound();
 			_parameters = parameters;
 			avi_cscd_dumper::global_parameters gp;
 			avi_cscd_dumper::segment_parameters sp;
@@ -111,7 +113,7 @@ namespace
 			rq.run(dscr);
 			vid_dumper->video(dscr.memory);
 			have_dumped_frame = true;
-			vid_dumper->wait_frame_processing();
+			//vid_dumper->wait_frame_processing();
 		}
 
 		void on_sample(short l, short r)
@@ -129,6 +131,7 @@ namespace
 
 		void on_dump_end()
 		{
+			vid_dumper->wait_frame_processing();
 			vid_dumper->end();
 			soxdumper->close();
 		}
@@ -151,27 +154,15 @@ namespace
 	avi_avsnoop* vid_dumper;
 
 	function_ptr_command<const std::string&> avi_dump("dump-avi", "Start AVI capture",
-		"Syntax: dump-avi <level> <prefix>\nStart AVI capture to <prefix> using compression\n"
-		"level <level> (0-18).\n",
+		"Syntax: dump-avi <prefix>\nStart AVI capture to <prefix>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
-			std::string level = t;
 			std::string prefix = t.tail();
 			if(prefix == "")
 				throw std::runtime_error("Expected prefix");
 			if(vid_dumper)
 				throw std::runtime_error("AVI(CSCD) dumping already in progress");
-			unsigned long level2;
-			try {
-				level2 = parse_value<unsigned long>(level);
-				if(level2 > 18)
-					throw std::runtime_error("AVI(CSCD) level must be 0-18");
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::runtime_error& e) {
-				throw std::runtime_error("Bad AVI(CSCD) compression level '" + level + "': " +
-					e.what());
-			}
+			unsigned long level2 = (unsigned long)clevel;
 			struct avi_info parameters;
 			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
 			parameters.audio_sampling_rate = 32000;

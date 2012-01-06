@@ -1,3 +1,6 @@
+//Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
+#include <wx/wx.h>
+
 #include "lsnes.hpp"
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
@@ -11,9 +14,11 @@
 #include "core/window.hpp"
 #include "core/zip.hpp"
 
-#include "plat-wxwidgets/messages_window.hpp"
-#include "plat-wxwidgets/rom_select_window.hpp"
-#include "plat-wxwidgets/status_window.hpp"
+#include "plat-wxwidgets/platform.hpp"
+#include "plat-wxwidgets/window_messages.hpp"
+#include "plat-wxwidgets/window_status.hpp"
+#include "plat-wxwidgets/window_mainwindow.hpp"
+#include "plat-wxwidgets/window_romselect.hpp"
 
 #include <cassert>
 #include <boost/lexical_cast.hpp>
@@ -22,6 +27,180 @@
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
+
+#define UISERV_UIFUN 9992
+//#define UISERV_UI_IRQ 9993	Not in use anymore, can be recycled.
+#define UISERV_EXIT 9994
+#define UISERV_UPDATE_STATUS 9995
+#define UISERV_UPDATE_MESSAGES 9996
+#define UISERV_UPDATE_SCREEN 9997
+#define UISERV_PANIC 9998
+#define UISERV_MODAL 9999
+
+wxwin_messages* msg_window;
+wxwin_status* status_window;
+wxwin_mainwindow* main_window;
+
+namespace
+{
+	thread_id* ui_thread;
+	volatile bool panic_ack = false;
+	std::string modal_dialog_text;
+	volatile bool modal_dialog_confirm;
+	volatile bool modal_dialog_active;
+	mutex* ui_mutex;
+	condition* ui_condition;
+	thread* joystick_thread_handle;
+
+	void* joystick_thread(void* _args)
+	{
+		joystick_plugin::thread_fn();
+	}
+
+	struct uiserv_event : public wxEvent
+	{
+		uiserv_event(int code)
+		{
+			SetId(code);
+		}
+
+		wxEvent* Clone() const
+		{
+			return new uiserv_event(*this);
+		}
+	};
+
+	class ui_services_type : public wxEvtHandler
+	{
+		bool ProcessEvent(wxEvent& event);
+	};
+
+	struct ui_queue_entry
+	{
+		void(*fn)(void*);
+		void* arg;
+	};
+
+	std::list<ui_queue_entry> ui_queue;
+
+	bool ui_services_type::ProcessEvent(wxEvent& event)
+	{
+		int c = event.GetId();
+		if(c == UISERV_PANIC) {
+			//We need to panic.
+			wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR |
+				wxOK);
+			panic_ack = true;
+		} else if(c == UISERV_MODAL) {
+			std::string text;
+			bool confirm;
+			{
+				mutex::holder h(*ui_mutex);
+				text = modal_dialog_text;
+				confirm = modal_dialog_confirm;
+			}
+			if(confirm) {
+				int ans = wxMessageBox(towxstring(text), _T("Question"), wxICON_QUESTION | wxOK |
+					wxCANCEL, main_window);
+				confirm = (ans == wxOK);
+			} else {
+				wxMessageBox(towxstring(text), _T("Notification"), wxICON_INFORMATION | wxOK,
+					main_window);
+			}
+			{
+				mutex::holder h(*ui_mutex);
+				modal_dialog_confirm = confirm;
+				modal_dialog_active = false;
+				ui_condition->signal();
+			}
+		} else if(c == UISERV_UPDATE_MESSAGES) {
+			if(msg_window)
+				msg_window->notify_update();
+		} else if(c == UISERV_UPDATE_STATUS) {
+			if(status_window)
+				status_window->notify_update();
+		} else if(c == UISERV_UPDATE_SCREEN) {
+			if(main_window)
+				main_window->notify_update();
+		} else if(c == UISERV_EXIT) {
+			if(main_window)
+				main_window->notify_exit();
+		} else if(c == UISERV_UIFUN) {
+			std::list<ui_queue_entry>::iterator i;
+back:
+			{
+				mutex::holder h(*ui_mutex);
+				if(ui_queue.empty())
+					goto end;
+				i = ui_queue.begin();
+			}
+			i->fn(i->arg);
+			{
+				mutex::holder h(*ui_mutex);
+				ui_queue.erase(i);
+			}
+			goto back;
+end:
+			;
+		}
+		return true;
+	}
+
+	ui_services_type* ui_services;
+
+	void post_ui_event(int code)
+	{
+		uiserv_event uic(code);
+		wxPostEvent(ui_services, uic);
+	}
+}
+
+wxString towxstring(const std::string& str) throw(std::bad_alloc)
+{
+	return wxString(str.c_str(), wxConvUTF8);
+}
+
+std::string tostdstring(const wxString& str) throw(std::bad_alloc)
+{
+	return std::string(str.mb_str(wxConvUTF8));
+}
+
+std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc)
+{
+	//Did we pick a .zip file?
+	std::string f;
+	try {
+		zip_reader zr(filename);
+		std::vector<wxString> files;
+		for(auto i : zr)
+			files.push_back(towxstring(i));
+		wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(parent, wxT("Select file within .zip"),
+			wxT("Select member"), files.size(), &files[0]);
+		if(d2->ShowModal() == wxID_CANCEL) {
+			d2->Destroy();
+			return "";
+		}
+		f = filename + "/" + tostdstring(d2->GetStringSelection());
+		d2->Destroy();
+	} catch(...) {
+		//Ignore error.
+		f = filename;
+	}
+	return f;
+}
+
+void signal_program_exit()
+{
+	post_ui_event(UISERV_EXIT);
+}
+
+void graphics_plugin::init() throw()
+{
+}
+
+void graphics_plugin::quit() throw()
+{
+}
 
 
 class lsnes_app : public wxApp
@@ -36,14 +215,20 @@ IMPLEMENT_APP(lsnes_app)
 bool lsnes_app::OnInit()
 {
 	set_random_seed();
-	foreground_application();
+	bring_app_foreground();
+
+	ui_services = new ui_services_type();
+	ui_mutex = &mutex::aquire();
+	ui_condition = &condition::aquire(*ui_mutex);
 
 	{
 		std::ostringstream x;
 		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
 		bsnes_core_version = x.str();
 	}
-	window::init();
+	
+	ui_thread = &thread_id::me();
+	platform::init();
 	init_lua();
 
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
@@ -52,11 +237,15 @@ bool lsnes_app::OnInit()
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 
-	wx_messages_window* msgs = new wx_messages_window();
-	window1 = msgs;
-	msgs->Show();
+	joystick_thread_handle = &thread::create(joystick_thread, NULL);
+	
+	msg_window = new wxwin_messages();
+	msg_window->Show();
 
-	wx_rom_select_window* romwin = new wx_rom_select_window();
+	status_window = new wxwin_status();
+	status_window->Show();
+
+	wxwin_romselect* romwin = new wxwin_romselect();
 	romwin->Show();
 
 	return true;
@@ -66,12 +255,63 @@ int lsnes_app::OnExit()
 {
 	information_dispatch::do_dump_end();
 	rrdata::close();
-	window::quit();
+	joystick_plugin::signal();
+	delete joystick_thread_handle;
+	platform::quit();
 	return 0;
 }
 
-void window::notify_message() throw(std::bad_alloc, std::runtime_error)
+void graphics_plugin::notify_message() throw()
 {
-	if(wx_messages_window::ptr)
-		wx_messages_window::ptr->notify_message();
+	post_ui_event(UISERV_UPDATE_MESSAGES);
 }
+
+void graphics_plugin::notify_status() throw()
+{
+	post_ui_event(UISERV_UPDATE_STATUS);
+}
+
+void graphics_plugin::notify_screen() throw()
+{
+	post_ui_event(UISERV_UPDATE_SCREEN);
+}
+
+bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw()
+{
+	mutex::holder h(*ui_mutex);
+	modal_dialog_active = true;
+	modal_dialog_confirm = confirm;
+	modal_dialog_text = text;
+	post_ui_event(UISERV_MODAL);
+	while(modal_dialog_active)
+		ui_condition->wait(10000);
+	return modal_dialog_confirm;
+}
+
+void graphics_plugin::fatal_error() throw()
+{
+	//Fun: This can be called from any thread!
+	if(ui_thread->is_me()) {
+		//UI thread.
+		platform::set_modal_pause(true);
+		wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR | wxOK);
+	} else {
+		//Emulation thread panic. Signal the UI thread.
+		post_ui_event(UISERV_PANIC);
+		while(!panic_ack);
+	}
+}
+
+void _runuifun_async(void (*fn)(void*), void* arg)
+{
+	mutex::holder h(*ui_mutex);
+	ui_queue_entry e;
+	e.fn = fn;
+	e.arg = arg;
+	ui_queue.push_back(e);
+	auto i = ui_queue.insert(ui_queue.end(), e);
+	post_ui_event(UISERV_UIFUN);
+}
+
+
+const char* graphics_plugin::name = "wxwidgets graphics plugin";

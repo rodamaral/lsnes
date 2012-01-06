@@ -13,6 +13,8 @@
 #include "core/rrdata.hpp"
 #include "core/window.hpp"
 
+#include "plat-sdl/platform.hpp"
+
 #include <sys/time.h>
 #include <sstream>
 
@@ -84,6 +86,58 @@ namespace
 			}
 		}
 	}
+
+	void sdl_main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed = false)
+		throw(std::bad_alloc, std::runtime_error);
+
+	struct emu_args
+	{
+		struct loaded_rom* rom;
+		struct moviefile* initial;
+		bool load_has_to_succeed;
+	};
+
+	void* emulator_thread(void* _args)
+	{
+		struct emu_args* args = reinterpret_cast<struct emu_args*>(_args);
+		try {
+			main_loop(*args->rom, *args->initial, args->load_has_to_succeed);
+			notify_emulator_exit();
+		} catch(std::bad_alloc& e) {
+			OOM_panic();
+		} catch(std::exception& e) {
+			messages << "FATAL: " << e.what() << std::endl;
+			platform::fatal_error();
+		}
+	}
+
+	void* joystick_thread(void* _args)
+	{
+		joystick_plugin::thread_fn();
+	}
+
+	void sdl_main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed)
+		throw(std::bad_alloc, std::runtime_error)
+	{
+		try {
+			struct emu_args args;
+			args.rom = &rom;
+			args.initial = &initial;
+			args.load_has_to_succeed = load_has_to_succeed;
+			thread* t;
+			thread* t2;
+			t = &thread::create(emulator_thread, &args);
+			t2 = &thread::create(joystick_thread, &args);
+			ui_loop();
+			joystick_plugin::signal();
+			t2->join();
+			t->join();
+			delete t;
+			delete t2;
+		} catch(std::bad_alloc& e) {
+			OOM_panic();
+		}
+	}
 }
 
 int main(int argc, char** argv)
@@ -101,7 +155,7 @@ int main(int argc, char** argv)
 		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
 		bsnes_core_version = x.str();
 	}
-	window::init();
+	platform::init();
 	init_lua();
 
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
@@ -160,7 +214,7 @@ int main(int argc, char** argv)
 			}
 		if(!tried)
 			movie = generate_movie_template(cmdline, r);
-		main_loop(r, movie);
+		sdl_main_loop(r, movie);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -169,7 +223,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	rrdata::close();
-	window::quit();
+	platform::quit();
 	quit_lua();
 	return 0;
 }

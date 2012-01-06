@@ -4,32 +4,43 @@
 #include <cstdlib>
 #include <iostream>
 
-void sound_init() {}
-void sound_quit() {}
-void window::_sound_enable(bool enable) throw() {}
-void window::play_audio_sample(uint16_t left, uint16_t right) throw() {}
+void sound_plugin::init() throw()
+{
+}
 
-bool window::sound_initialized()
+void sound_plugin::quit() throw()
+{
+}
+
+void sound_plugin::enable(bool enable) throw()
+{
+}
+
+void sound_plugin::sample(uint16_t left, uint16_t right) throw()
+{
+}
+
+bool sound_plugin::initialized()
 {
 	return true;
 }
 
-void window::_set_sound_device(const std::string& dev)
+void sound_plugin::set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
 {
 	if(dev != "null")
 		throw std::runtime_error("Bad sound device '" + dev + "'");
 }
 
-std::string window::get_current_sound_device()
+std::string sound_plugin::get_device() throw(std::bad_alloc)
 {
 	return "null";
 }
 
-std::map<std::string, std::string> window::get_sound_devices()
+std::map<std::string, std::string> sound_plugin::get_devices() throw(std::bad_alloc)
 {
 	std::map<std::string, std::string> ret;
 	ret["null"] = "NULL sound output";
 	return ret;
 }
 
-const char* sound_plugin_name = "Dummy sound plugin";
+const char* sound_plugin::name = "Dummy sound plugin";

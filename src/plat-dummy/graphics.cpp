@@ -8,33 +8,42 @@ namespace
 	uint64_t next_message_to_print = 0;
 }
 
-void graphics_init() {}
-void graphics_quit() {}
-void window::poll_inputs() throw(std::bad_alloc) {}
-void window::paused(bool enable) throw() {}
-void window::wait_usec(uint64_t usec) throw(std::bad_alloc) {}
-void window::cancel_wait() throw() {}
-
-bool window::modal_message(const std::string& msg, bool confirm) throw(std::bad_alloc)
+void graphics_plugin::init() throw()
 {
-	std::cerr << "Modal message: " << msg << std::endl;
-	return confirm;
 }
 
-void window::fatal_error2() throw()
+void graphics_plugin::quit() throw()
 {
-	std::cerr << "Exiting on fatal error." << std::endl;
-	exit(1);
 }
 
-void window::notify_message() throw(std::bad_alloc, std::runtime_error)
+void graphics_plugin::notify_message() throw()
 {
-	while(msgbuf.get_msg_first() + msgbuf.get_msg_count() > next_message_to_print) {
-		if(msgbuf.get_msg_first() > next_message_to_print)
-			next_message_to_print = msgbuf.get_msg_first();
+	//Read without lock becase we run in the same thread.
+	while(platform::msgbuf.get_msg_first() + platform::msgbuf.get_msg_count() > next_message_to_print) {
+		if(platform::msgbuf.get_msg_first() > next_message_to_print)
+			next_message_to_print = platform::msgbuf.get_msg_first();
 		else
-			std::cout << msgbuf.get_message(next_message_to_print++) << std::endl;
+			std::cout << platform::msgbuf.get_message(next_message_to_print++) << std::endl;
 	}
 }
 
-const char* graphics_plugin_name = "Dummy graphics plugin";
+void graphics_plugin::notify_status() throw()
+{
+	std::cerr << "Exiting on fatal error." << std::endl;
+}
+
+void graphics_plugin::notify_screen() throw()
+{
+}
+
+bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw()
+{
+	std::cerr << "Modal message: " << text << std::endl;
+	return confirm;
+}
+
+void graphics_plugin::fatal_error() throw()
+{
+}
+
+const char* graphics_plugin::name = "Dummy graphics plugin";

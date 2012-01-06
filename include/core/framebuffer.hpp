@@ -1,7 +1,7 @@
 #ifndef _framebuffer__hpp__included__
 #define _framebuffer__hpp__included__
 
-#include "render.hpp"
+#include "core/render.hpp"
 
 /**
  * The main framebuffer.
@@ -26,9 +26,29 @@ extern screen main_screen;
  */
 void init_special_screens() throw(std::bad_alloc);
 /**
- * Redraw the framebuffer on screen.
+ * Copy framebuffer to backing store, running Lua hooks if any.
+ */
+void redraw_framebuffer(lcscreen& torender, bool no_lua = false);
+/**
+ * Redraw the framebuffer, reusing contents from last redraw. Runs lua hooks if last redraw ran them.
  */
 void redraw_framebuffer();
+/**
+ * Return last complete framebuffer.
+ */
+lcscreen get_framebuffer() throw(std::bad_alloc);
+/**
+ * Render framebuffer to main screen.
+ */
+void render_framebuffer();
+/**
+ * Get the size of current framebuffer.
+ */
+std::pair<uint32_t, uint32_t> get_framebuffer_size();
+/**
+ * Take a screenshot to specified file.
+ */
+void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get scale factors.
  */

@@ -85,11 +85,11 @@ namespace
 	{
 		//Check that the new device index is valid at all.
 		if((newdevice >= 0 && !Pa_GetDeviceInfo(newdevice)) || (newdevice < 0 && newdevice != paNoDevice)) {
-			window::out() << "Invalid device " << newdevice << std::endl;
+			messages << "Invalid device " << newdevice << std::endl;
 			return false;
 		}
 		if(newdevice != paNoDevice && Pa_GetDeviceInfo(newdevice)->maxOutputChannels < 1) {
-			window::out() << "Portaudio: Device " << newdevice << " is not capable of playing sound."
+			messages << "Portaudio: Device " << newdevice << " is not capable of playing sound."
 				<< std::endl;
 			return false;
 		}
@@ -99,14 +99,14 @@ namespace
 			if(was_enabled) {
 				err = Pa_StopStream(s);
 				if(err != paNoError) {
-					window::out() << "Portaudio error (stop): " << Pa_GetErrorText(err)
+					messages << "Portaudio error (stop): " << Pa_GetErrorText(err)
 						<< std::endl;
 					return false;
 				}
 			}
 			err = Pa_CloseStream(s);
 			if(err != paNoError) {
-				window::out() << "Portaudio error (close): " << Pa_GetErrorText(err) << std::endl;
+				messages << "Portaudio error (close): " << Pa_GetErrorText(err) << std::endl;
 				return false;
 			}
 			current_device = paNoDevice;
@@ -127,7 +127,7 @@ namespace
 			output.hostApiSpecificStreamInfo = NULL;
 			PaError err = Pa_OpenStream(&s, NULL, &output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
 			if(err != paNoError) {
-				window::out() << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl
+				messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl
 					<< "\tOn device: '" << inf->name << "'" << std::endl;
 				return false;
 			}
@@ -136,25 +136,25 @@ namespace
 			if(was_enabled) {
 				err = Pa_StartStream(s);
 				if(err != paNoError) {
-					window::out() << "Portaudio error (start): " << Pa_GetErrorText(err)
+					messages << "Portaudio error (start): " << Pa_GetErrorText(err)
 						<< std::endl << "\tOn device: '" << inf->name << "'" << std::endl;
 					return false;
 				}
 			}
 			audio_playback_freq = inf->defaultSampleRate;
 			calculate_sampledup(use_rate_n, use_rate_d);
-			window::out() << "Portaudio: Opened " << inf->defaultSampleRate << "Hz "
+			messages << "Portaudio: Opened " << inf->defaultSampleRate << "Hz "
 				<< (stereo ? "Stereo" : "Mono") << " sound on '" << inf->name << "'" << std::endl;
-			window::out() << "Switched to sound device '" << inf->name << "'" << std::endl;
+			messages << "Switched to sound device '" << inf->name << "'" << std::endl;
 		} else
-			window::out() << "Switched to sound device NULL" << std::endl;
+			messages << "Switched to sound device NULL" << std::endl;
 		current_device = newdevice;
 		return true;
 	}
 
 }
 
-void window::_sound_enable(bool enable) throw()
+void sound_plugin::enable(bool enable) throw()
 {
 	PaError err;
 	if(enable == was_enabled)
@@ -164,17 +164,17 @@ void window::_sound_enable(bool enable) throw()
 	else
 		err = Pa_StopStream(s);
 	if(err != paNoError)
-		window::out() << "Portaudio error (start/stop): " << Pa_GetErrorText(err) << std::endl;
+		messages << "Portaudio error (start/stop): " << Pa_GetErrorText(err) << std::endl;
 	else
 		was_enabled = enable;
 }
 
-void sound_init()
+void sound_plugin::init() throw()
 {
 	PaError err = Pa_Initialize();
 	if(err != paNoError) {
-		window::out() << "Portaudio error (init): " << Pa_GetErrorText(err) << std::endl;
-		window::out() << "Audio can't be initialized, audio playback disabled" << std::endl;
+		messages << "Portaudio error (init): " << Pa_GetErrorText(err) << std::endl;
+		messages << "Audio can't be initialized, audio playback disabled" << std::endl;
 		return;
 	}
 	init_flag = true;
@@ -182,11 +182,11 @@ void sound_init()
 	PaDeviceIndex forcedevice = paNoDevice;
 	if(getenv("LSNES_FORCE_AUDIO_OUT")) {
 		forcedevice = atoi(getenv("LSNES_FORCE_AUDIO_OUT"));
-		window::out() << "Attempting to force sound output " << forcedevice << std::endl;
+		messages << "Attempting to force sound output " << forcedevice << std::endl;
 	}
-	window::out() << "Detected " << Pa_GetDeviceCount() << " sound output devices." << std::endl;
+	messages << "Detected " << Pa_GetDeviceCount() << " sound output devices." << std::endl;
 	for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++)
-		window::out() << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
+		messages << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
 	bool any_success = false;
 	was_enabled = true;
 	if(forcedevice == paNoDevice) {
@@ -198,10 +198,10 @@ void sound_init()
 	} else
 		any_success |= switch_devices(forcedevice);
 	if(!any_success)
-		window::out() << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
+		messages << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
 }
 
-void sound_quit()
+void sound_plugin::quit() throw()
 {
 	if(!init_flag)
 		return;
@@ -210,7 +210,7 @@ void sound_quit()
 	init_flag = false;
 }
 
-void window::play_audio_sample(uint16_t left, uint16_t right) throw()
+void sound_plugin::sample(uint16_t left, uint16_t right) throw()
 {
 	if(!init_flag)
 		return;
@@ -240,12 +240,12 @@ public:
 	}
 } sndchgl;
 
-bool window::sound_initialized()
+bool sound_plugin::initialized()
 {
 	return init_flag;
 }
 
-void window::_set_sound_device(const std::string& dev)
+void sound_plugin::set_device(const std::string& dev) throw (std::bad_alloc, std::runtime_error)
 {
 	if(dev == "null") {
 		if(!switch_devices(paNoDevice))
@@ -264,7 +264,7 @@ void window::_set_sound_device(const std::string& dev)
 	}
 }
 
-std::string window::get_current_sound_device()
+std::string sound_plugin::get_device() throw(std::bad_alloc)
 {
 	if(current_device == paNoDevice)
 		return "null";
@@ -275,7 +275,7 @@ std::string window::get_current_sound_device()
 	}
 }
 
-std::map<std::string, std::string> window::get_sound_devices()
+std::map<std::string, std::string> sound_plugin::get_devices() throw (std::bad_alloc)
 {
 	std::map<std::string, std::string> ret;
 	ret["null"] = "null sound output";
@@ -287,4 +287,4 @@ std::map<std::string, std::string> window::get_sound_devices()
 	return ret;
 }
 
-const char* sound_plugin_name = "Portaudio sound plugin";
+const char* sound_plugin::name = "Portaudio sound plugin";

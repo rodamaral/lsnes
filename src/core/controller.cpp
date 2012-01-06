@@ -337,11 +337,12 @@ controls_t get_current_controls(uint64_t frame)
 
 void send_analog_input(int32_t x, int32_t y, unsigned index)
 {
+	auto g2 = get_framebuffer_size();
 	if(controller_ismouse_by_analog(index)) {
-		x -= (framebuffer.width / 2);
-		y -= (framebuffer.height / 2);
+		x -= (g2.first / 2);
+		y -= (g2.second / 2);
 	} else {
-		auto g = get_scale_factors(framebuffer.width, framebuffer.height);
+		auto g = get_scale_factors(g2.first, g2.second);
 		x /= g.first;
 		y /= g.second;
 	}

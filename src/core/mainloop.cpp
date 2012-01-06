@@ -65,8 +65,6 @@ namespace
 	//Save jukebox.
 	std::vector<std::string> save_jukebox;
 	size_t save_jukebox_pointer;
-	//Emulator status area.
-	std::map<std::string, std::string>* status;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
 	long pending_reset_cycles = -1;
 	//Set by every video refresh.
@@ -124,20 +122,20 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance && !advanced_once) {
-				window::wait_usec(advance_timeout_first * 1000);
+				platform::wait(advance_timeout_first * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			window::paused(amode == ADVANCE_PAUSE);
+			platform::set_paused(amode == ADVANCE_PAUSE);
 		} else if(amode == ADVANCE_FRAME) {
 			;
 		} else {
 			if(amode == ADVANCE_SKIPLAG)
 				amode = ADVANCE_PAUSE;
-			window::paused(amode == ADVANCE_PAUSE);
+			platform::set_paused(amode == ADVANCE_PAUSE);
 			cancel_advance = false;
 		}
 		if(amode == ADVANCE_SKIPLAG)
@@ -149,7 +147,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
-				window::wait_usec(advanced_once ? to_wait_frame(get_utime()) :
+				platform::wait(advanced_once ? to_wait_frame(get_utime()) :
 					(advance_timeout_first * 1000));
 				advanced_once = true;
 			}
@@ -157,14 +155,14 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
-			window::paused(amode == ADVANCE_PAUSE);
+			platform::set_paused(amode == ADVANCE_PAUSE);
 		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end) {
 			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count() + 1) {
 				amode = ADVANCE_PAUSE;
-				window::paused(true);
+				platform::set_paused(true);
 			}
 		} else {
-			window::paused((amode == ADVANCE_PAUSE));
+			platform::set_paused((amode == ADVANCE_PAUSE));
 			cancel_advance = false;
 		}
 		location_special = SPECIAL_FRAME_START;
@@ -172,7 +170,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 
 	}
 	information_dispatch::do_status_update();
-	window::poll_inputs();
+	platform::flush_command_queue();
 	if(!subframe && pending_reset_cycles >= 0)
 		set_curcontrols_reset(pending_reset_cycles);
 	else if(!subframe)
@@ -190,8 +188,8 @@ namespace
 		loadmode = lmode;
 		pending_load = filename;
 		amode = ADVANCE_LOAD;
-		window::cancel_wait();
-		window::paused(false);
+		platform::cancel_wait();
+		platform::set_paused(false);
 	}
 
 	void mark_pending_save(const std::string& filename, int smode)
@@ -202,7 +200,7 @@ namespace
 			return;
 		}
 		queued_saves.insert(filename);
-		window::message("Pending save on '" + filename + "'");
+		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
 
 	uint32_t lpalette[0x80000];
@@ -229,7 +227,7 @@ namespace
 
 void update_movie_state()
 {
-	auto& _status = window::get_emustatus();
+	auto& _status = platform::get_emustatus();
 	if(!system_corrupt) {
 		std::ostringstream x;
 		x << movb.get_movie().get_current_frame() << "(";
@@ -242,17 +240,17 @@ void update_movie_state()
 		else
 			x << movb.get_movie().next_poll_number();
 		x << ";" << movb.get_movie().get_lag_frames() << ")/" << movb.get_movie().get_frame_count();
-		_status["Frame"] = x.str();
+		_status.set("Frame", x.str());
 	} else
-		_status["Frame"] = "N/A";
+		_status.set("Frame", "N/A");
 	if(!system_corrupt) {
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
 		char datebuffer[512];
 		strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
-		_status["RTC"] = datebuffer;
+		_status.set("RTC", datebuffer);
 	} else {
-		_status["RTC"] = "N/A";
+		_status.set("RTC", "N/A");
 	}
 	{
 		std::ostringstream x;
@@ -268,12 +266,17 @@ void update_movie_state()
 			x << "P";
 		else
 			x << "F";
-		_status["Flags"] = x.str();
+		_status.set("Flags", x.str());
 	}
 	if(save_jukebox.size() > 0)
-		_status["Saveslot"] = save_jukebox[save_jukebox_pointer];
+		_status.set("Saveslot", save_jukebox[save_jukebox_pointer]);
 	else
 		_status.erase("Saveslot");
+	{
+		std::ostringstream x;
+		x << get_framerate();
+		_status.set("FPS", x.str());
+	}
 	do_watch_memory();
 
 	controls_t c;
@@ -327,9 +330,13 @@ void update_movie_state()
 		}
 		char y[3] = {'P', 0, 0};
 		y[1] = 49 + i;
-		_status[std::string(y)] = x.str();
+		_status.set(y, x.str());
 	}
 }
+
+uint64_t audio_irq_time;
+uint64_t controller_irq_time;
+uint64_t frame_irq_time;
 
 
 class my_interface : public SNES::Interface
@@ -355,11 +362,12 @@ class my_interface : public SNES::Interface
 
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
 	{
+//		uint64_t time_x = get_utime();
 		last_hires = hires;
 		last_interlace = interlace;
 		init_palette();
 		if(stepping_into_save)
-			window::message("Got video refresh in runtosave, expect desyncs!");
+			messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 		video_refresh_done = true;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
 		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ? VIDEO_REGION_PAL :
@@ -369,10 +377,9 @@ class my_interface : public SNES::Interface
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
 		lcscreen ls(data, hires, interlace, overscan, region);
-		framebuffer = ls;
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
-		redraw_framebuffer();
+		redraw_framebuffer(ls);
 		uint32_t fps_n, fps_d;
 		uint32_t fclocks;
 		if(region)
@@ -385,13 +392,22 @@ class my_interface : public SNES::Interface
 		fps_n /= g;
 		fps_d /= g;
 		information_dispatch::do_frame(ls, fps_n, fps_d);
+//		time_x = get_utime() - time_x;
+//		std::cerr << "IRQ TIMINGS (microseconds): "
+//			<< "V: " << time_x << " "
+//			<< "A: " << audio_irq_time << " "
+//			<< "C: " << controller_irq_time << " "
+//			<< "F: " << frame_irq_time << " "
+//			<< "Total: " << (time_x + audio_irq_time + controller_irq_time + frame_irq_time) << std::endl;
+		audio_irq_time = controller_irq_time = 0;
 	}
 
 	void audioSample(int16_t l_sample, int16_t r_sample)
 	{
+//		uint64_t time_x = get_utime();
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
-		window::play_audio_sample(_l + 32768, _r + 32768);
+		platform::audio_sample(_l + 32768, _r + 32768);
 		information_dispatch::do_sample(l_sample, r_sample);
 		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
 		our_movie.rtc_subsecond += 768;
@@ -399,15 +415,16 @@ class my_interface : public SNES::Interface
 			our_movie.rtc_second++;
 			our_movie.rtc_subsecond -= SNES::system.apu_frequency();
 		}
+//		audio_irq_time += get_utime() - time_x;
 	}
 
 	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 	{
+//		uint64_t time_x = get_utime();
 		int16_t x;
 		x = movb.input_poll(port, index, id);
-		//if(id == SNES_DEVICE_ID_JOYPAD_START)
-		//	std::cerr << "bsnes polling for start on (" << port << "," << index << ")=" << x << std::endl;
 		lua_callback_snoop_input(port ? 1 : 0, index, id, x);
+//		controller_irq_time += get_utime() - time_x;
 		return x;
 	}
 };
@@ -425,10 +442,10 @@ namespace
 	function_ptr_command<const std::string&> quit_emulator("quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "/y" || window::modal_message("Really quit?", true)) {
+			if(args == "/y" || platform::modal_message("Really quit?", true)) {
 				amode = ADVANCE_QUIT;
-				window::paused(false);
-				window::cancel_wait();
+				platform::set_paused(false);
+				platform::cancel_wait();
 			}
 		});
 
@@ -437,14 +454,14 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(amode != ADVANCE_AUTO) {
 				amode = ADVANCE_AUTO;
-				window::paused(false);
-				window::cancel_wait();
-				window::message("Unpaused");
+				platform::set_paused(false);
+				platform::cancel_wait();
+				messages << "Unpaused" << std::endl;
 			} else {
-				window::cancel_wait();
+				platform::cancel_wait();
 				cancel_advance = false;
 				amode = ADVANCE_PAUSE;
-				window::message("Paused");
+				messages << "Paused" << std::endl;
 			}
 		});
 
@@ -504,16 +521,16 @@ namespace
 			amode = ADVANCE_FRAME;
 			cancel_advance = false;
 			advanced_once = false;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 		});
 
 	function_ptr_command<> nadvance_frame("-advance-frame", "Advance one frame",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 		});
 
 	function_ptr_command<> padvance_poll("+advance-poll", "Advance one subframe",
@@ -522,24 +539,24 @@ namespace
 			amode = ADVANCE_SUBFRAME;
 			cancel_advance = false;
 			advanced_once = false;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 		});
 
 	function_ptr_command<> nadvance_poll("-advance-poll", "Advance one subframe",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 		});
 
 	function_ptr_command<> advance_skiplag("advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_SKIPLAG;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 		});
 
 	function_ptr_command<> reset_c("reset", "Reset the SNES",
@@ -637,14 +654,12 @@ namespace
 
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			framebuffer = screen_nosignal;
-			redraw_framebuffer();
+			redraw_framebuffer(screen_nosignal);
 		});
 
 	function_ptr_command<> test2("test-2", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			framebuffer = screen_corrupt;
-			redraw_framebuffer();
+			redraw_framebuffer(screen_corrupt);
 		});
 
 	function_ptr_command<> test3("test-3", "no description available", "No help available\n",
@@ -670,16 +685,16 @@ namespace
 		{
 			if(on_quit_prompt) {
 				amode = ADVANCE_QUIT;
-				window::paused(false);
-				window::cancel_wait();
+				platform::set_paused(false);
+				platform::cancel_wait();
 				return;
 			}
 			on_quit_prompt = true;
 			try {
-				if(window::modal_message("Really quit?", true)) {
+				if(platform::modal_message("Really quit?", true)) {
 					amode = ADVANCE_QUIT;
-					window::paused(false);
-					window::cancel_wait();
+					platform::set_paused(false);
+					platform::cancel_wait();
 				}
 			} catch(...) {
 			}
@@ -708,17 +723,16 @@ namespace
 				pending_load = "";
 				return -1;
 			}
-			redraw_framebuffer();
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
-			window::cancel_wait();
-			window::paused(false);
+			platform::cancel_wait();
+			platform::set_paused(false);
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
 				information_dispatch::do_status_update();
-				window::poll_inputs();
+				platform::flush_command_queue();
 			}
 			return 1;
 		}
@@ -745,16 +759,16 @@ namespace
 			return true;
 		video_refresh_done = false;
 		if(cycles == 0)
-			window::message("SNES reset");
+			messages << "SNES reset" << std::endl;
 		else if(cycles > 0) {
-			window::message("SNES delayed reset not implemented (doing immediate reset)");
+			messages << "SNES delayed reset not implemented (doing immediate reset)" << std::endl;
 			/* ... This code is just too buggy.
 			long cycles_executed = 0;
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			while(cycles_executed < cycles && !video_refresh_done) {
 				//Poll inputs once in a while to prevent activating watchdog.
 				if(cycles_executed % 100 == 0)
-					window::poll_inputs();
+					platform::flush_command_queue();
 				SNES::cpu.op_step();
 				cycles_executed++;
 			}
@@ -765,9 +779,8 @@ namespace
 			*/
 		}
 		SNES::system.reset();
-		framebuffer = screen_nosignal;
 		lua_callback_do_reset();
-		redraw_framebuffer();
+		redraw_framebuffer(screen_nosignal);
 		if(video_refresh_done) {
 			to_wait_frame(get_utime());
 			return false;
@@ -780,10 +793,9 @@ namespace
 		if(!system_corrupt)
 			return false;
 		while(system_corrupt) {
-			redraw_framebuffer();
-			window::cancel_wait();
-			window::paused(true);
-			window::poll_inputs();
+			platform::cancel_wait();
+			platform::set_paused(true);
+			platform::flush_command_queue();
 			handle_load();
 			if(amode == ADVANCE_QUIT)
 				return true;
@@ -826,7 +838,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	auto old_inteface = SNES::interface;
 	SNES::interface = &intrf;
 	SNES::system.init();
-	status = &window::get_emustatus();
 
 	//Load our given movie.
 	bool first_round = false;
@@ -843,20 +854,19 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
 		if(load_has_to_succeed) {
 			messages << "FATAL: Can't load movie" << std::endl;
-			window::fatal_error();
+			platform::fatal_error();
 		}
 		system_corrupt = true;
 		update_movie_state();
-		framebuffer = screen_corrupt;
-		redraw_framebuffer();
+		redraw_framebuffer(screen_corrupt);
 	}
 
 	lua_callback_startup();
 
 	//print_controller_mappings();
-	redraw_framebuffer();
-	window::paused(false);
+	platform::set_paused(false);
 	amode = ADVANCE_PAUSE;
+	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
 			first_round = our_movie.is_savestate;
@@ -898,17 +908,18 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(amode == ADVANCE_QUIT)
 				break;
 			amode = ADVANCE_PAUSE;
-			redraw_framebuffer();
-			window::cancel_wait();
-			window::paused(true);
-			window::poll_inputs();
+			platform::cancel_wait();
+			platform::set_paused(true);
+			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
 			movb.get_movie().set_controls(get_current_controls(movb.get_movie().get_current_frame()));
 			just_did_loadstate = false;
 		}
+		frame_irq_time = get_utime() - time_x;
 		SNES::system.run();
+		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
-			window::wait_usec(to_wait_frame(get_utime()));
+			platform::wait(to_wait_frame(get_utime()));
 		first_round = false;
 		lua_callback_do_frame();
 	}

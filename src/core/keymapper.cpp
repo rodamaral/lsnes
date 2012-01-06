@@ -674,7 +674,7 @@ namespace
 				case keygroup::KT_PRESSURE_PM: type = "pressure+-"; break;
 				default: continue;
 				}
-				window::out() << i->first << " " << type << " -:" << p.cal_left << " 0:"
+				messages << i->first << " " << type << " -:" << p.cal_left << " 0:"
 					<< p.cal_center << " +:" << p.cal_right << " t:" << p.cal_tolerance
 					<< std::endl;
 			}

@@ -1,9 +1,29 @@
 #include "core/moviedata.hpp"
 
-#include "plat-wxwidgets/authorseditor.hpp"
-#include "plat-wxwidgets/common.hpp"
+#include "plat-wxwidgets/platform.hpp"
 
-wx_authors_editor::wx_authors_editor(wxWindow* parent)
+#include <wx/wx.h>
+#include <wx/event.h>
+#include <wx/control.h>
+#include <wx/combobox.h>
+
+class wxeditor_authors : public wxDialog
+{
+public:
+	wxeditor_authors(wxWindow* parent);
+	bool ShouldPreventAppExit() const;
+	void on_authors_change(wxCommandEvent& e);
+	void on_cancel(wxCommandEvent& e);
+	void on_ok(wxCommandEvent& e);
+private:
+	wxTextCtrl* projectname;
+	wxTextCtrl* authors;
+	wxButton* okbutton;
+	wxButton* cancel;
+};
+
+
+wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
 {
 	Centre();
@@ -19,35 +39,39 @@ wx_authors_editor::wx_authors_editor(wxWindow* parent)
 	top_s->Add(authors = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE), 0, wxGROW);
 	authors->Connect(wxEVT_COMMAND_TEXT_UPDATED,
-		wxCommandEventHandler(wx_authors_editor::on_authors_change), NULL, this);
+		wxCommandEventHandler(wxeditor_authors::on_authors_change), NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(okbutton = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
 	pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
 	okbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wx_authors_editor::on_ok), NULL, this);
+		wxCommandEventHandler(wxeditor_authors::on_ok), NULL, this);
 	cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wx_authors_editor::on_cancel), NULL, this);
+		wxCommandEventHandler(wxeditor_authors::on_cancel), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	c_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
 	Fit();
 
-	projectname->SetValue(towxstring(our_movie.gamename));
+	std::string gamename;
+	runemufn([&gamename]() { gamename = our_movie.gamename; });
+	projectname->SetValue(towxstring(gamename));
 	std::string x;
-	for(auto i : our_movie.authors)
-		x = x + i.first + "|" + i.second + "\n";
+	runemufn([&x]() {
+			for(auto i : our_movie.authors)
+				x = x + i.first + "|" + i.second + "\n";
+		});
 	authors->SetValue(towxstring(x));
 }
 
-bool wx_authors_editor::ShouldPreventAppExit() const
+bool wxeditor_authors::ShouldPreventAppExit() const
 {
 	return false;
 }
 
-void wx_authors_editor::on_authors_change(wxCommandEvent& e)
+void wxeditor_authors::on_authors_change(wxCommandEvent& e)
 {
 	try {
 		size_t lines = authors->GetNumberOfLines();
@@ -62,14 +86,15 @@ void wx_authors_editor::on_authors_change(wxCommandEvent& e)
 	}
 }
 
-void wx_authors_editor::on_cancel(wxCommandEvent& e)
+void wxeditor_authors::on_cancel(wxCommandEvent& e)
 {
 	EndModal(wxID_CANCEL);
 }
 
-void wx_authors_editor::on_ok(wxCommandEvent& e)
+void wxeditor_authors::on_ok(wxCommandEvent& e)
 {
-	our_movie.gamename = tostdstring(projectname->GetValue());
+	std::string gamename = tostdstring(projectname->GetValue());
+	runemufn([gamename]() { our_movie.gamename = gamename; });
 	std::vector<std::pair<std::string, std::string>> newauthors;
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {
@@ -77,6 +102,19 @@ void wx_authors_editor::on_ok(wxCommandEvent& e)
 		if(l != "" && l != "|")
 			newauthors.push_back(split_author(l));
 	}
-	our_movie.authors = newauthors;
+	runemufn([newauthors]() { our_movie.authors = newauthors; });
 	EndModal(wxID_OK);
+}
+
+void wxeditor_authors_display(wxWindow* parent)
+{
+	platform::set_modal_pause(true);
+	wxDialog* editor;
+	try {
+		editor = new wxeditor_authors(parent);
+		editor->ShowModal();
+	} catch(...) {
+	}
+	platform::set_modal_pause(false);
+	editor->Destroy();
 }
