@@ -2352,3 +2352,7 @@ set-axis joystick0axis19 disabled
 
 • Fix controller logical numbers
 
+13.30 rr0-delta1epsilon1
+
+• Add BSNES patches for v085.
+

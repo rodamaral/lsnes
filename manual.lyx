@@ -4846,5 +4846,13 @@ Reliably pause after skip poll
 Fix controller logical numbers
 \end_layout
 
+\begin_layout Subsection
+rr0-delta1epsilon1
+\end_layout
+
+\begin_layout Itemize
+Add BSNES patches for v085.
+\end_layout
+
 \end_body
 \end_document
