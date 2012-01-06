@@ -836,7 +836,6 @@ std::set<std::string> wxwin_project::get_sram_set()
 		SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
 		r.insert(sram_name(s.id, s.slot));
 	}
-	r.insert("test");
 	return r;
 }
 
