@@ -273,23 +273,22 @@ namespace
 
 int controller_index_by_logical(unsigned lid) throw()
 {
-	bool p1multitap = (porttypes[0] == PT_MULTITAP);
 	unsigned p1devs = port_types[porttypes[0]].devices;
 	unsigned p2devs = port_types[porttypes[1]].devices;
 	if(lid >= p1devs + p2devs)
 		return -1;
-	if(!p1multitap)
-		if(lid < p1devs)
-			return lid;
-		else
-			return 4 + lid - p1devs;
+	//Exceptional: If p1 is none, map all to p2.
+	if(!p1devs)
+		return lid + MAX_CONTROLLERS_PER_PORT;
+	//LID 0 Is always PID 0 unless out of range.
+	if(lid == 0)
+		return 0;
+	//LID 1-n are on port 2.
+	else if(lid < 1 + p2devs)
+		return lid - 1 + MAX_CONTROLLERS_PER_PORT;
+	//From there, those are on port 1 (except for the first).
 	else
-		if(lid == 0)
-			return 0;
-		else if(lid < 5)
-			return lid + 3;
-		else
-			return lid - 4;
+		return lid - p2devs;
 }
 
 int controller_index_by_analog(unsigned aid) throw()
