@@ -443,9 +443,9 @@ Run <script> as if commands were entered on the command line.
 
 Following commands control AVI video dumping:
 
-4.5.1 dump-avi <level> <prefix>
+4.5.1 dump-avi <prefix>
 
-Dump AVI video to prefix <prefix> at level <level> (0-18). Notes:
+Dump AVI video to prefix <prefix> Notes:
 
 • The codec is Camstudio Codec in gzip mode.
 
@@ -475,9 +475,9 @@ dump).
 
 Following commands control JMD video dumping:
 
-4.6.1 dump-jmd <level> <file>
+4.6.1 dump-jmd <file>
 
-Dump JMD video to file <file> at level <level> (0-9).
+Dump JMD video to file <file>.
 
 4.6.2 end-jmd
 
@@ -1901,10 +1901,7 @@ Set joystick platform. Currently available choices are “SDL”
 
 2. Set large AVI option 'set-setting avi-large on'
 
-3. Enable dumping 'dump-avi 12 tmpdump' (note: Normally 10 and 
-  above are “use only if you know what you are doing.”. In this 
-  case, these can be safely used because of how x264 internally 
-  works).
+3. Enable dumping 'dump-avi tmpdump' 
 
 4. Unpause and let it run until you want to end dumping.
 
@@ -2337,4 +2334,24 @@ set-axis joystick0axis19 disabled
   slowness in command typing)
 
 • Wxwidgets: Fix ROM loading.
+
+13.29 rr1-beta0
+
+• Lua: Add gui.textH, gui.textV, gui.textHV
+
+• Fix text colors on SDL on Mac OS X
+
+• Mode 'F' for finished in readonly mode.
+
+• Fix some WS errors.
+
+• Reliably pause after skip poll
+
+• Split UI and core into their own threads
+
+13.30 rr1-beta1
+
+• Remove leftover dummy SRAM slot
+
+• Fix controller numbers.
 
