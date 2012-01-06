@@ -12,6 +12,7 @@
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 
 #include <sys/time.h>
@@ -107,10 +108,17 @@ namespace
 			cmd << "dump-sdmpss " << prefix;
 		else if(sdmp)
 			cmd << "dump-sdmp " << prefix;
-		else if(jmd)
-			cmd << "dump-jmd " << level << " " << prefix;
-		else
-			cmd << "dump-avi " << level << " " << prefix;
+		else if(jmd) {
+			std::ostringstream l;
+			l << level;
+			setting::set("avi-level", l.str());
+			cmd << "dump-jmd " << prefix;
+		} else {
+			std::ostringstream l;
+			l << level;
+			setting::set("jmd-level", l.str());
+			cmd << "dump-avi " << prefix;
+		}
 		command::invokeC(cmd.str());
 		if(information_dispatch::get_dumper_count()) {
 			std::cout << "Dumper attach confirmed" << std::endl;
