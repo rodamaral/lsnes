@@ -4818,5 +4818,33 @@ SDL: Poll all events in queue, not just first one (fixes slowness in command
 Wxwidgets: Fix ROM loading.
 \end_layout
 
+\begin_layout Subsection
+rr0-delta1
+\end_layout
+
+\begin_layout Itemize
+Lua: Add gui.textH, gui.textV, gui.textHV
+\end_layout
+
+\begin_layout Itemize
+Fix text colors on SDL on Mac OS X
+\end_layout
+
+\begin_layout Itemize
+Mode 'F' for finished in readonly mode.
+\end_layout
+
+\begin_layout Itemize
+Fix some WS errors.
+\end_layout
+
+\begin_layout Itemize
+Reliably pause after skip poll
+\end_layout
+
+\begin_layout Itemize
+Fix controller logical numbers
+\end_layout
+
 \end_body
 \end_document

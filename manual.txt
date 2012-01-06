@@ -2338,3 +2338,17 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Fix ROM loading.
 
+13.29 rr0-delta1
+
+• Lua: Add gui.textH, gui.textV, gui.textHV
+
+• Fix text colors on SDL on Mac OS X
+
+• Mode 'F' for finished in readonly mode.
+
+• Fix some WS errors.
+
+• Reliably pause after skip poll
+
+• Fix controller logical numbers
+
