@@ -552,6 +552,7 @@ screen::~screen() throw()
 {
 	if(memory && !user_memory)
 		delete[] memory;
+	delete[] palette;
 }
 
 void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw()
