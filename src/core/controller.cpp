@@ -248,25 +248,32 @@ namespace
 			for(size_t i = 0; i < sizeof(buttonnames) / sizeof(buttonnames[0]); ++i)
 				for(int j = 0; j < 3; ++j)
 					for(unsigned k = 0; k < 8; ++k) {
-						std::ostringstream x, y;
+						std::string x, y;
+						char cstr[2] = {0, 0};
+						cstr[0] = 49 + k;
 						switch(j) {
 						case 0:
-							x << "+controller";
+							x = "+controller";
 							break;
 						case 1:
-							x << "-controller";
+							x = "-controller";
 							break;
 						case 2:
-							x << "controllerh";
+							x = "controllerh";
 							break;
 						};
-						x << (k + 1);
-						x << buttonnames[i];
-						y << (k + 1);
-						y << buttonnames[i];
-						new button_action(x.str(), j, k, y.str());
+						x = x + cstr + buttonnames[i];
+						y = std::string(cstr) + buttonnames[i];
+						our_commands.insert(new button_action(x, j, k, y));
 					}
 		}
+		~button_action_helper()
+		{
+			for(auto i : our_commands)
+				delete i;
+			our_commands.clear();
+		}
+		std::set<command*> our_commands;
 	} bah;
 
 }
