@@ -5,7 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include <map>
-#include "controllerdata.hpp"
+#include "controllerframe.hpp"
 #include "rom.hpp"
 
 
@@ -143,7 +143,7 @@ struct moviefile
 /**
  * Input for each (sub)frame.
  */
-	std::vector<controls_t> input;		//Input for each frame.
+	controller_frame_vector input;		//Input for each frame.
 /**
  * Current RTC second.
  */

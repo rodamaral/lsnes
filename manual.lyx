@@ -4848,5 +4848,21 @@ Remove leftover dummy SRAM slot
 Fix controller numbers.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta2
+\end_layout
+
+\begin_layout Itemize
+Fix lsnes-dumpavi after interface change.
+\end_layout
+
+\begin_layout Itemize
+Also give BSNES patches for v085.
+\end_layout
+
+\begin_layout Itemize
+Pack movie data in memory.
+\end_layout
+
 \end_body
 \end_document

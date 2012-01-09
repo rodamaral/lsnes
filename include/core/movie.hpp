@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <stdexcept>
-#include "controllerdata.hpp"
+#include "controllerframe.hpp"
 
 /**
  * Movie being played back or recorded
@@ -101,25 +101,12 @@ public:
  * Reads the data ready flag. On new frame, all data ready flags are unset. On reading control, its data ready
  * flag is unset.
  *
- * parameter controlindex: The index of control to read it for.
+ * parameter pid: Physical controller id.
+ * parameter index: Control ID.
  * returns: The read value.
  * throws std::logic_error: Invalid control index.
  */
-	bool get_DRDY(unsigned controlindex) throw(std::logic_error);
-
-/**
- * Reads the data ready flag. On new frame, all data ready flags are unset. On reading control, its data ready
- * flag is unset.
- *
- * This differs from get_DRDY(unsigned) in that this takes (port, controller,index) tuple.
- *
- * parameter port: The port controller is connected to (0 or 1)
- * parameter controller: The controller number within port (0 to 3)
- * parameter index: The index of control in controller (0 to 11)
- * returns: The read value.
- * throws std::logic_error: Invalid control index.
- */
-	bool get_DRDY(unsigned port, unsigned controller, unsigned index) throw(std::logic_error);
+	bool get_DRDY(unsigned pid, unsigned index) throw(std::logic_error);
 
 /**
  * Set all data ready flags
@@ -127,40 +114,29 @@ public:
 	void set_all_DRDY() throw();
 
 /**
- * Poll a control. Note that index 0 (sync flag) always reads as released.
- *
- * parameter controlindex: The index
- * returns: The read value
- * throws std::bad_alloc: Not enough memory.
- * throws std::logic_error: Invalid control index or before movie start.
- */
-	short next_input(unsigned controlindex) throw(std::bad_alloc, std::logic_error);
-
-/**
  * Poll a control by (port, controller, index) tuple.
  *
- * parameter port: The port controller is connected to (0 or 1)
- * parameter controller: The controller number within port (0 to 3)
+ * parameter pid: Physical controller ID.
  * parameter index: The index of control in controller (0 to 11)
  * returns: The read value
  * throws std::bad_alloc: Not enough memory.
  * throws std::logic_error: Invalid port, controller or index or before movie start.
  */
-	short next_input(unsigned port, unsigned controller, unsigned index) throw(std::bad_alloc, std::logic_error);
+	short next_input(unsigned pid, unsigned index) throw(std::bad_alloc, std::logic_error);
 
 /**
  * Set current control values. These are read in readwrite mode.
  *
  * parameter controls: The new controls.
  */
-	void set_controls(controls_t controls) throw();
+	void set_controls(controller_frame controls) throw();
 
 /**
  * Get current control values in effect.
  *
  * returns: Controls
  */
-	controls_t get_controls() throw();
+	controller_frame get_controls() throw();
 
 /**
  * Loads a movie plus some other parameters. The playback pointer is positioned to start of movie and readonly
@@ -172,7 +148,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Bad movie data.
  */
-	void load(const std::string& rerecs, const std::string& project_id, const std::vector<controls_t>& input)
+	void load(const std::string& rerecs, const std::string& project_id, controller_frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -181,7 +157,7 @@ public:
  * returns: The movie data.
  * throws std::bad_alloc: Not enough memory.
  */
-	std::vector<controls_t> save() throw(std::bad_alloc);
+	controller_frame_vector save() throw(std::bad_alloc);
 
 /**
  * This method serializes the state of movie code.
@@ -209,7 +185,7 @@ public:
  * Throws std::runtime_error: Movie check failure.
  */
 	size_t restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
-		std::vector<controls_t>* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
+		controller_frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
 		std::runtime_error);
 
 /**
@@ -248,7 +224,7 @@ public:
  * returns: The controls for subframe. If subframe is too great, reads last present subframe. If frame is outside
  *	movie, reads all released.
  */
-	controls_t read_subframe(uint64_t frame, uint64_t subframe) throw();
+	controller_frame read_subframe(uint64_t frame, uint64_t subframe) throw();
 private:
 	//TRUE if readonly mode is active.
 	bool readonly;
@@ -257,15 +233,15 @@ private:
 	//Project ID.
 	std::string _project_id;
 	//The actual controller data.
-	std::vector<controls_t> movie_data;
+	controller_frame_vector movie_data;
 	//Current frame + 1 (0 before next_frame() has been called.
 	uint64_t current_frame;
 	//First subframe in current frame (movie_data.size() if no subframes have been stored).
 	uint64_t current_frame_first_subframe;
 	//How many times has each control been polled (bit 31 is data ready bit)?
-	uint32_t pollcounters[TOTAL_CONTROLS];
+	pollcounter_vector pollcounters;
 	//Current state of buttons.
-	controls_t current_controls;
+	controller_frame current_controls;
 	//Number of known lag frames.
 	uint64_t lag_frames;
 	//Number of frames in movie.
@@ -320,7 +296,7 @@ public:
  *
  * parameter subframe: True if this is for subframe update, false if for frame update.
  */
-	controls_t update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
+	controller_frame update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
 private:
 	movie mov;
 };

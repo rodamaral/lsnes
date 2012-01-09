@@ -6,7 +6,7 @@ lua_function::lua_function(const std::string& name) throw(std::bad_alloc) {}
 lua_function::~lua_function() throw() {}
 void lua_callback_do_paint(struct lua_render_context* ctx) throw() {}
 void lua_callback_do_video(struct lua_render_context* ctx) throw() {}
-void lua_callback_do_input(controls_t& data, bool subframe) throw() {}
+void lua_callback_do_input(controller_frame& data, bool subframe) throw() {}
 void lua_callback_do_reset() throw() {}
 void lua_callback_do_frame() throw() {}
 void lua_callback_do_readwrite() throw() {}
@@ -151,7 +151,7 @@ bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
 }
 
 lua_render_context* lua_render_ctx = NULL;
-controls_t* lua_input_controllerdata = NULL;
+controller_frame* lua_input_controllerdata = NULL;
 
 namespace
 {
@@ -411,7 +411,7 @@ void lua_callback_post_save(const std::string& name, bool is_state) throw()
 	run_lua_cb(2);
 }
 
-void lua_callback_do_input(controls_t& data, bool subframe) throw()
+void lua_callback_do_input(controller_frame& data, bool subframe) throw()
 {
 	if(!callback_exists("on_input"))
 		return;

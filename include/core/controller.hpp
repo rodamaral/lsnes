@@ -1,7 +1,7 @@
 #ifndef _controller__hpp__included__
 #define _controller__hpp__included__
 
-#include "controllerdata.hpp"
+#include "controllerframe.hpp"
 
 /**
  * Look up physcial controller ID by logical controller ID.
@@ -46,7 +46,7 @@ void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core = t
  * Parameter frame: Current frame number.
  * Returns: Current controls, taking autohold and autofire into account.
  */
-controls_t get_current_controls(uint64_t frame);
+controller_frame get_current_controls(uint64_t frame);
 
 /**
  * Send analog input.

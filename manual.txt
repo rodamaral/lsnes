@@ -2355,3 +2355,11 @@ set-axis joystick0axis19 disabled
 
 • Fix controller numbers.
 
+13.31 rr1-beta2
+
+• Fix lsnes-dumpavi after interface change.
+
+• Also give BSNES patches for v085.
+
+• Pack movie data in memory.
+

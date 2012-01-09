@@ -8,9 +8,9 @@ namespace
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
 		short value = get_numeric_argument<short>(LS, 3, fname.c_str());
-		if(controller > 7 || index > 11)
+		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
 			return 0;
-		(*lua_input_controllerdata)(controller >> 2, controller & 3, index) = value;
+		lua_input_controllerdata->axis(controller, index, value);
 		return 0;
 	});
 
@@ -19,9 +19,9 @@ namespace
 			return 0;
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
-		if(controller > 7 || index > 11)
+		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
 			return 0;
-		lua_pushnumber(LS, (*lua_input_controllerdata)(controller >> 2, controller & 3, index));
+		lua_pushnumber(LS, lua_input_controllerdata->axis(controller, index));
 		return 1;
 	});
 
@@ -34,9 +34,8 @@ namespace
 			return 0;
 		short lo = cycles % 10000;
 		short hi = cycles / 10000;
-		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET) = 1;
-		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_HI) = hi;
-		(*lua_input_controllerdata)(CONTROL_SYSTEM_RESET_CYCLES_LO) = lo;
+		lua_input_controllerdata->reset(true);
+		lua_input_controllerdata->delay(std::make_pair(hi, lo));
 		return 0;
 	});
 }

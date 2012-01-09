@@ -114,7 +114,7 @@ private:
 	bool default_firmware;
 } firmwarepath_setting;
 
-controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
+controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
 	if(lua_requests_subframe_paint)
 		redraw_framebuffer();
@@ -175,7 +175,7 @@ controls_t movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std
 		set_curcontrols_reset(pending_reset_cycles);
 	else if(!subframe)
 		set_curcontrols_reset(-1);
-	controls_t tmp = get_current_controls(movb.get_movie().get_current_frame());
+	controller_frame tmp = get_current_controls(movb.get_movie().get_current_frame());
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
@@ -279,58 +279,21 @@ void update_movie_state()
 	}
 	do_watch_memory();
 
-	controls_t c;
+	controller_frame c;
 	if(movb.get_movie().readonly_mode())
 		c = movb.get_movie().get_controls();
 	else
 		c = get_current_controls(movb.get_movie().get_current_frame());
 	for(unsigned i = 0; i < 8; i++) {
 		unsigned pindex = controller_index_by_logical(i);
-		unsigned port = pindex >> 2;
-		unsigned dev = pindex & 3;
-		auto ctype = controller_type_by_logical(i);
-		std::ostringstream x;
-		switch(ctype) {
-		case DT_GAMEPAD:
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_LEFT) ? "l" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_RIGHT) ? "r" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_UP) ? "u" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_DOWN) ? "d" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_A) ? "A" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_B) ? "B" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_X) ? "X" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_Y) ? "Y" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_L) ? "L" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_R) ? "R" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_START) ? "S" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JOYPAD_SELECT) ? "s" : " ");
-			break;
-		case DT_MOUSE:
-			x << c(port, dev, SNES_DEVICE_ID_MOUSE_X) << " ";
-			x << c(port, dev, SNES_DEVICE_ID_MOUSE_Y) << " ";
-			x << (c(port, dev, SNES_DEVICE_ID_MOUSE_LEFT) ? "L" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_MOUSE_RIGHT) ? "R" : " ");
-			break;
-		case DT_SUPERSCOPE:
-			x << c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_X) << " ";
-			x << c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_Y) << " ";
-			x << (c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER) ? "T" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_CURSOR) ? "C" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_TURBO) ? "t" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_SUPER_SCOPE_PAUSE) ? "P" : " ");
-			break;
-		case DT_JUSTIFIER:
-			x << c(port, dev, SNES_DEVICE_ID_JUSTIFIER_X) << " ";
-			x << c(port, dev, SNES_DEVICE_ID_JUSTIFIER_Y) << " ";
-			x << (c(port, dev, SNES_DEVICE_ID_JUSTIFIER_START) ? "T" : " ");
-			x << (c(port, dev, SNES_DEVICE_ID_JUSTIFIER_TRIGGER) ? "S" : " ");
-			break;
-		case DT_NONE:
+		devicetype_t dtype = c.devicetype(pindex);
+		if(dtype == DT_NONE)
 			continue;
-		}
+		char buffer[MAX_DISPLAY_LENGTH];
+		c.display(pindex, buffer);
 		char y[3] = {'P', 0, 0};
 		y[1] = 49 + i;
-		_status.set(y, x.str());
+		_status.set(y, buffer);
 	}
 }
 

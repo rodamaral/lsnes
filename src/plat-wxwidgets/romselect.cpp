@@ -872,6 +872,7 @@ struct moviefile wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
+	f.input.clear(f.port1, f.port2);
 	return f;
 }
 

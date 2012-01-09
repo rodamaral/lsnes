@@ -39,11 +39,25 @@ namespace
 		uint64_t frame = get_numeric_argument<uint64_t>(LS, 1, "movie.frame_subframes");
 		uint64_t subframe = get_numeric_argument<uint64_t>(LS, 2, "movie.frame_subframes");
 		auto& m = get_movie();
-		controls_t r = m.read_subframe(frame, subframe);
+		controller_frame r = m.read_subframe(frame, subframe);
 		lua_newtable(LS);
-		for(size_t i = 0; i < TOTAL_CONTROLS; i++) {
-			lua_pushnumber(LS, i);
-			lua_pushnumber(LS, r(i));
+
+		lua_pushnumber(LS, 0);
+		lua_pushnumber(LS, r.sync() ? 1 : 0);
+		lua_settable(LS, -3);
+		lua_pushnumber(LS, 1);
+		lua_pushnumber(LS, r.reset() ? 1 : 0);
+		lua_settable(LS, -3);
+		lua_pushnumber(LS, 2);
+		lua_pushnumber(LS, r.delay().first);
+		lua_settable(LS, -3);
+		lua_pushnumber(LS, 3);
+		lua_pushnumber(LS, r.delay().second);
+		lua_settable(LS, -3);
+
+		for(size_t i = 0; i < MAX_BUTTONS; i++) {
+			lua_pushnumber(LS, i + 4);
+			lua_pushnumber(LS, r.axis2(i));
 			lua_settable(LS, -3);
 		}
 		return 1;

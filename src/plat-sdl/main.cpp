@@ -47,9 +47,9 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 		std::string o = *i;
 		if(o.length() >= 8 && o.substr(0, 8) == "--port1=")
-			movie.port1 = port_type::lookup(o.substr(8), false).ptype;
+			movie.port1 = porttype_info::lookup(o.substr(8)).value;
 		if(o.length() >= 8 && o.substr(0, 8) == "--port2=")
-			movie.port2 = port_type::lookup(o.substr(8), true).ptype;
+			movie.port2 = porttype_info::lookup(o.substr(8)).value;
 		if(o.length() >= 11 && o.substr(0, 11) == "--gamename=")
 			movie.gamename = o.substr(11);
 		if(o.length() >= 9 && o.substr(0, 9) == "--author=") {
@@ -65,9 +65,8 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 			if(movie.rtc_subsecond < 0 || movie.rtc_subsecond > 3462619485019ULL)
 				throw std::runtime_error("Bad RTC subsecond value (range is 0-3462619485019)");
 		}
-
 	}
-
+	movie.input.clear(movie.port1, movie.port2);
 
 	return movie;
 }

@@ -36,9 +36,9 @@ namespace
 	int analog_indices[3] = {-1, -1, -1};
 	bool analog_is_mouse[3];
 	//Current controls.
-	controls_t curcontrols;
-	controls_t autoheld_controls;
-	std::vector<controls_t> autofire_pattern;
+	controller_frame curcontrols;
+	controller_frame autoheld_controls;
+	std::vector<controller_frame> autofire_pattern;
 
 	void update_analog_indices() throw()
 	{
@@ -86,7 +86,7 @@ namespace
 	}
 
 	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor, controls_t& c)
+	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool do_xor, controller_frame& c)
 	{
 		enum devicetype_t p = controller_type_by_logical(ui_id);
 		int x = controller_index_by_logical(ui_id);
@@ -145,9 +145,9 @@ namespace
 			break;
 		};
 		if(do_xor)
-			c((x & 4) ? 1 : 0, x & 3, bid) ^= newstate;
+			c.axis(x, bid, c.axis(x, bid) ^ newstate);
 		else
-			c((x & 4) ? 1 : 0, x & 3, bid) = newstate;
+			c.axis(x, bid, newstate);
 	}
 
 	//Do button action.
@@ -169,14 +169,14 @@ namespace
 		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
 			if(!t)
 				throw std::runtime_error("Need at least one frame for autofire");
-			std::vector<controls_t> new_autofire_pattern;
+			std::vector<controller_frame> new_autofire_pattern;
 			init_buttonmap();
 			while(t) {
 				std::string fpattern = t;
 				if(fpattern == "-")
-					new_autofire_pattern.push_back(controls_t());
+					new_autofire_pattern.push_back(curcontrols.blank_frame());
 				else {
-					controls_t c;
+					controller_frame c(curcontrols.blank_frame());
 					while(fpattern != "") {
 						size_t split = fpattern.find_first_of(",");
 						std::string button = fpattern;
@@ -273,8 +273,8 @@ namespace
 
 int controller_index_by_logical(unsigned lid) throw()
 {
-	unsigned p1devs = port_types[porttypes[0]].devices;
-	unsigned p2devs = port_types[porttypes[1]].devices;
+	unsigned p1devs = porttype_info::lookup(porttypes[0]).controllers();
+	unsigned p2devs = porttype_info::lookup(porttypes[1]).controllers();
 	if(lid >= p1devs + p2devs)
 		return -1;
 	//Exceptional: If p1 is none, map all to p2.
@@ -310,23 +310,27 @@ devicetype_t controller_type_by_logical(unsigned lid) throw()
 	int x = controller_index_by_logical(lid);
 	if(x < 0)
 		return DT_NONE;
-	enum porttype_t rawtype = porttypes[x >> 2];
-	if((x & 3) < port_types[rawtype].devices)
-		return port_types[rawtype].dtype;
-	else
-		return DT_NONE;
+	enum porttype_t rawtype = porttypes[x / MAX_CONTROLLERS_PER_PORT];
+	return porttype_info::lookup(rawtype).devicetype(x % MAX_CONTROLLERS_PER_PORT);
 }
 
 void controller_set_port_type(unsigned port, porttype_t ptype, bool set_core) throw()
 {
 	if(set_core && ptype != PT_INVALID)
-		snes_set_controller_port_device(port != 0, port_types[ptype].bsnes_type);
+		snes_set_controller_port_device(port != 0, porttype_info::lookup(ptype).internal_type());
+	porttype_t oldtype = curcontrols.get_port_type(port);
+	if(oldtype != ptype) {
+		curcontrols.set_port_type(port, ptype);
+		autoheld_controls.set_port_type(port, ptype);
+		//The old autofire pattern no longer applies.
+		autofire_pattern.clear();
+	}
 	porttypes[port] = ptype;
 	update_analog_indices();
 	information_dispatch::do_autohold_reconfigure();
 }
 
-controls_t get_current_controls(uint64_t frame)
+controller_frame get_current_controls(uint64_t frame)
 {
 	if(autofire_pattern.size())
 		return curcontrols ^ autoheld_controls ^ autofire_pattern[frame % autofire_pattern.size()];
@@ -350,29 +354,26 @@ void send_analog_input(int32_t x, int32_t y, unsigned index)
 		messages << "No analog controller in slot #" << (index + 1) << std::endl;
 		return;
 	}
-	curcontrols(aindex >> 2, aindex & 3, 0) = x;
-	curcontrols(aindex >> 2, aindex & 3, 1) = y;
+	curcontrols.axis(aindex, 0, x);
+	curcontrols.axis(aindex, 1, y);
 }
 
 void set_curcontrols_reset(int32_t delay)
 {
 	if(delay >= 0) {
-		curcontrols(CONTROL_SYSTEM_RESET) = 1;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = delay / 10000;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = delay % 10000;
+		curcontrols.reset(true);
+		curcontrols.delay(std::make_pair(delay / 10000, delay % 10000));
 	} else {
-		curcontrols(CONTROL_SYSTEM_RESET) = 0;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_HI) = 0;
-		curcontrols(CONTROL_SYSTEM_RESET_CYCLES_LO) = 0;
+		curcontrols.reset(false);
+		curcontrols.delay(std::make_pair(0, 0));
 	}
-
 }
 
 void change_autohold(unsigned pid, unsigned idx, bool newstate)
 {
-	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= CONTROLLER_CONTROLS)
+	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= MAX_CONTROLS_PER_CONTROLLER)
 		return;
-	autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) = (newstate ? 1 : 0);
+	autoheld_controls.axis(pid, idx, newstate ? 1 : 0);
 	information_dispatch::do_autohold_update(pid, idx, newstate);
 	update_movie_state();
 	information_dispatch::do_status_update();
@@ -380,9 +381,9 @@ void change_autohold(unsigned pid, unsigned idx, bool newstate)
 
 bool get_autohold(unsigned pid, unsigned idx)
 {
-	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= CONTROLLER_CONTROLS)
+	if(pid >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || idx >= MAX_CONTROLS_PER_CONTROLLER)
 		return false;
-	return (autoheld_controls(pid / MAX_CONTROLLERS_PER_PORT, pid % MAX_CONTROLLERS_PER_PORT, idx) != 0);
+	return (autoheld_controls.axis(pid, idx) != 0);
 }
 
 std::string get_button_name(unsigned lidx)

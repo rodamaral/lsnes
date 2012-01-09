@@ -307,4 +307,4 @@ std::string format_address(void* addr)
 }
 
 std::string bsnes_core_version;
-std::string lsnes_version = "1-β1";
+std::string lsnes_version = "1-β2";

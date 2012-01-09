@@ -207,16 +207,16 @@ void write_authors_file(zip_writer& w, std::vector<std::pair<std::string, std::s
 	}
 }
 
-void write_input(zip_writer& w, std::vector<controls_t>& input, porttype_t port1, porttype_t port2)
+void write_input(zip_writer& w, controller_frame_vector& input, porttype_t port1, porttype_t port2)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	std::vector<cencode::fn_t> encoders;
-	encoders.push_back(port_types[port1].encoder);
-	encoders.push_back(port_types[port2].encoder);
 	std::ostream& m = w.create_file("input");
 	try {
-		for(auto i : input)
-			m << i.tostring(encoders) << std::endl;
+		char buffer[MAX_SERIALIZED_SIZE];
+		for(size_t i = 0; i < input.size(); i++) {
+			input[i].serialize(buffer);
+			m << buffer << std::endl;
+		}
 		if(!m)
 			throw std::runtime_error("Can't write ZIP file member");
 		w.close_file();
@@ -226,19 +226,18 @@ void write_input(zip_writer& w, std::vector<controls_t>& input, porttype_t port1
 	}
 }
 
-void read_input(zip_reader& r, std::vector<controls_t>& input, porttype_t port1, porttype_t port2, unsigned version)
+void read_input(zip_reader& r, controller_frame_vector& input, porttype_t port1, porttype_t port2, unsigned version)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	std::vector<cdecode::fn_t> decoders;
-	decoders.push_back(port_types[port1].decoder);
-	decoders.push_back(port_types[port2].decoder);
+	controller_frame tmp = input.blank_frame(false);
 	std::istream& m = r["input"];
 	try {
 		std::string x;
 		while(std::getline(m, x)) {
 			strip_CR(x);
 			if(x != "") {
-				input.push_back(controls_t(x, decoders, version));
+				tmp.deserialize(x.c_str());
+				input.append(tmp);
 			}
 		}
 		delete &m;
@@ -295,13 +294,14 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 
 porttype_t parse_controller_type(const std::string& type, bool port) throw(std::bad_alloc, std::runtime_error)
 {
-	porttype_t port1 = PT_INVALID;
-	for(unsigned i = 0; i <= PT_LAST_CTYPE; i++)
-		if(type == port_types[i].name && (port || port_types[i].valid_port1))
-			port1 = static_cast<porttype_t>(i);
-	if(port1 == PT_INVALID)
+	try {
+		const porttype_info& i = porttype_info::lookup(type);
+		if(!i.legal(port ? 1 : 0))
+			throw 42;
+		return i.value;
+	} catch(...) {
 		throw std::runtime_error(std::string("Illegal port") + (port ? "2" : "1") + " device '" + type + "'");
-	return port1;
+	}
 }
 
 
@@ -339,12 +339,13 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	tmp = port_types[PT_GAMEPAD].name;
+	tmp = "gamepad";
 	read_linefile(r, "port1", tmp, true);
-	port1 = port_type::lookup(tmp, false).ptype;
-	tmp = port_types[PT_NONE].name;
+	port1 = porttype_info::lookup(tmp).value;
+	tmp = "none";
 	read_linefile(r, "port2", tmp, true);
-	port2 = port_type::lookup(tmp, true).ptype;
+	port2 = porttype_info::lookup(tmp).value;
+	input.clear(port1, port2);
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
@@ -397,9 +398,9 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	zip_writer w(movie, compression);
 	write_linefile(w, "gametype", gtype::tostring(gametype));
 	if(port1 != PT_GAMEPAD)
-		write_linefile(w, "port1", port_types[port1].name);
+		write_linefile(w, "port1", porttype_info::lookup(port1).name);
 	if(port2 != PT_NONE)
-		write_linefile(w, "port2", port_types[port2].name);
+		write_linefile(w, "port2", porttype_info::lookup(port2).name);
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
 	write_linefile(w, "controlsversion", "0");
@@ -437,12 +438,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 
 uint64_t moviefile::get_frame_count() throw()
 {
-	uint64_t frames = 0;
-	for(size_t i = 0; i < input.size(); i++) {
-		if(input[i](CONTROL_FRAME_SYNC))
-			frames++;
-	}
-	return frames;
+	return input.count_frames();
 }
 
 namespace
