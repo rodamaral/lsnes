@@ -1,5 +1,7 @@
 #include "core/controllerframe.hpp"
 
+#include <iostream>
+
 #define SYSTEM_BYTES 5
 
 namespace
@@ -229,7 +231,7 @@ size_t controller_frame_vector::count_frames() throw()
 	for(size_t i = 0; i < frames; i++) {
 		if(index == frames_per_page) {
 			cache_page_num++;
-			cache_page = &cache_page[cache_page_num];
+			cache_page = &pages[cache_page_num];
 			index = 0;
 			offset = 0;
 		}
@@ -277,8 +279,10 @@ void controller_frame_vector::append(controller_frame frame) throw(std::bad_allo
 	//Write the entry.
 	size_t page = frames / frames_per_page;
 	size_t offset = frame_size * (frames % frames_per_page);
-	cache_page_num = page;
-	cache_page = &pages[page];
+	if(cache_page_num != page) {
+		cache_page_num = page;
+		cache_page = &pages[page];
+	}
 	controller_frame(cache_page->content + offset, types[0], types[1]) = frame;
 	frames++;
 }
