@@ -2363,3 +2363,11 @@ set-axis joystick0axis19 disabled
 
 • Pack movie data in memory.
 
+13.31.1 rr1-beta3
+
+• Fix framecount/length given when loading movies.
+
+• Controller command memory leak fixes.
+
+• Don't leak palette if freeing screen object.
+

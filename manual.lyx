@@ -4864,5 +4864,21 @@ Also give BSNES patches for v085.
 Pack movie data in memory.
 \end_layout
 
+\begin_layout Subsubsection
+rr1-beta3
+\end_layout
+
+\begin_layout Itemize
+Fix framecount/length given when loading movies.
+\end_layout
+
+\begin_layout Itemize
+Controller command memory leak fixes.
+\end_layout
+
+\begin_layout Itemize
+Don't leak palette if freeing screen object.
+\end_layout
+
 \end_body
 \end_document
