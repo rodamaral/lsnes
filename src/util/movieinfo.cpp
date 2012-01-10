@@ -52,6 +52,7 @@ std::string escape_string(std::string x)
 
 int main(int argc, char** argv)
 {
+	reached_main();
 	if(argc != 2) {
 		std::cerr << "Syntax: " << argv[0] << " <moviefile>" << std::endl;
 		return 1;

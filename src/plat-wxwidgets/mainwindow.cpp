@@ -17,6 +17,7 @@
 #include <vector>
 #include <string>
 
+#include "plat-wxwidgets/menu_dump.hpp"
 #include "plat-wxwidgets/platform.hpp"
 #include "plat-wxwidgets/window_mainwindow.hpp"
 
@@ -64,6 +65,8 @@ enum
 	wxID_EDIT_MEMORYWATCH,
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
+	wxID_DUMP_FIRST,
+	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023
 };
 
 
@@ -777,7 +780,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EXIT, wxT("&Quit"));
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About"));
-	//File menu: (ACFOS)DELMNPRTV
+	//File menu: (ACFOS)DELMNPRTUV
 	menu_start(wxT("&File"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
@@ -793,6 +796,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
 	menu_separator();
+	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 	//Autohold menu: (ACFOS)
 	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));

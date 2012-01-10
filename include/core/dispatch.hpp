@@ -429,6 +429,16 @@ public:
  * Call on_status_update() in all objects.
  */
 	static void do_status_update() throw();
+/**
+ * Notify that some dumper has attached, deattached, popped into existence or disappeared.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_dumper_update();
+/**
+ * Call on_dumper_update on on all objects.
+ */
+	static void do_dumper_update() throw();
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.

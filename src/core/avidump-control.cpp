@@ -1,6 +1,7 @@
 #include "cscd.hpp"
 #include "sox.hpp"
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/lua.hpp"
@@ -153,47 +154,106 @@ namespace
 
 	avi_avsnoop* vid_dumper;
 
+	void startdump(const std::string& prefix)
+	{
+		if(prefix == "")
+			throw std::runtime_error("Expected prefix");
+		if(vid_dumper)
+			throw std::runtime_error("AVI(CSCD) dumping already in progress");
+		unsigned long level2 = (unsigned long)clevel;
+		struct avi_info parameters;
+		parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
+		parameters.audio_sampling_rate = 32000;
+		parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
+		parameters.max_frames_per_segment = max_frames_per_segment;
+		try {
+			vid_dumper = new avi_avsnoop(prefix, parameters);
+		} catch(std::bad_alloc& e) {
+			throw;
+		} catch(std::exception& e) {
+			std::ostringstream x;
+			x << "Error starting AVI(CSCD) dump: " << e.what();
+			throw std::runtime_error(x.str());
+		}
+		messages << "Dumping AVI(CSCD) to " << prefix << " at level " << level2 << std::endl;
+		information_dispatch::do_dumper_update();
+	}
+
+	void enddump()
+	{
+		if(!vid_dumper)
+			throw std::runtime_error("No AVI(CSCD) video dump in progress");
+		try {
+			vid_dumper->on_dump_end();
+			messages << "AVI(CSCD) Dump finished" << std::endl;
+		} catch(std::bad_alloc& e) {
+			throw;
+		} catch(std::exception& e) {
+			messages << "Error ending AVI(CSCD) dump: " << e.what() << std::endl;
+		}
+		delete vid_dumper;
+		vid_dumper = NULL;
+		information_dispatch::do_dumper_update();
+	}
+
 	function_ptr_command<const std::string&> avi_dump("dump-avi", "Start AVI capture",
 		"Syntax: dump-avi <prefix>\nStart AVI capture to <prefix>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string prefix = t.tail();
-			if(prefix == "")
-				throw std::runtime_error("Expected prefix");
-			if(vid_dumper)
-				throw std::runtime_error("AVI(CSCD) dumping already in progress");
-			unsigned long level2 = (unsigned long)clevel;
-			struct avi_info parameters;
-			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
-			parameters.audio_sampling_rate = 32000;
-			parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
-			parameters.max_frames_per_segment = max_frames_per_segment;
-			try {
-				vid_dumper = new avi_avsnoop(prefix, parameters);
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				std::ostringstream x;
-				x << "Error starting AVI(CSCD) dump: " << e.what();
-				throw std::runtime_error(x.str());
-			}
-			messages << "Dumping AVI(CSCD) to " << prefix << " at level " << level2 << std::endl;
+			startdump(prefix);
 		});
 
 	function_ptr_command<> end_avi("end-avi", "End AVI capture",
 		"Syntax: end-avi\nEnd a AVI capture.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!vid_dumper)
-				throw std::runtime_error("No AVI(CSCD) video dump in progress");
-			try {
-				vid_dumper->on_dump_end();
-				messages << "AVI(CSCD) Dump finished" << std::endl;
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				messages << "Error ending AVI(CSCD) dump: " << e.what() << std::endl;
-			}
-			delete vid_dumper;
-			vid_dumper = NULL;
+			enddump();
 		});
+
+	class adv_avi_dumper : public adv_dumper
+	{
+	public:
+		adv_avi_dumper() : adv_dumper("INTERNAL-AVI-CSCD") {information_dispatch::do_dumper_update(); }
+		~adv_avi_dumper() throw();
+		std::set<std::string> list_submodes() throw(std::bad_alloc)
+		{
+			std::set<std::string> x;
+			return x;
+		}
+
+		bool wants_prefix(const std::string& mode) throw()
+		{
+			return true;
+		}
+
+		std::string name() throw(std::bad_alloc)
+		{
+			return "AVI (internal CSCD)";
+		}
+		
+		std::string modename(const std::string& mode) throw(std::bad_alloc)
+		{
+			return "";
+		}
+
+		bool busy()
+		{
+			return (vid_dumper != NULL);
+		}
+
+		void start(const std::string& mode, const std::string& targetname) throw(std::bad_alloc,
+			std::runtime_error)
+		{
+			startdump(targetname);
+		}
+
+		void end() throw()
+		{
+			enddump();
+		}
+	} adv;
+	
+	adv_avi_dumper::~adv_avi_dumper() throw()
+	{
+	}
 }

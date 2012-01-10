@@ -49,6 +49,7 @@ private:
 	std::stack<wxMenu*> upper;
 	void* ahmenu;
 	void* sounddev;
+	void* dmenu;
 };
 
 #endif

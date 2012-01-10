@@ -141,6 +141,7 @@ namespace
 
 int main(int argc, char** argv)
 {
+	reached_main();
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);

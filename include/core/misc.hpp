@@ -268,4 +268,13 @@ private:
  */
 std::string format_address(void* addr);
 
+/**
+ * Get state of running global ctors flag.
+ */
+bool in_global_ctors();
+/**
+ * Clear the global ctors flag.
+ */
+void reached_main();
+
 #endif

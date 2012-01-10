@@ -1,5 +1,6 @@
 #include "jmd.hpp"
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/lua.hpp"
@@ -134,42 +135,101 @@ namespace
 
 	jmd_avsnoop* vid_dumper;
 
+	void startdump(std::string prefix)
+	{
+		if(prefix == "")
+			throw std::runtime_error("Expected filename");
+		if(vid_dumper)
+			throw std::runtime_error("JMD dumping already in progress");
+		unsigned long level2 = (unsigned long)level2;
+		try {
+			vid_dumper = new jmd_avsnoop(prefix, level2);
+		} catch(std::bad_alloc& e) {
+			throw;
+		} catch(std::exception& e) {
+			std::ostringstream x;
+			x << "Error starting JMD dump: " << e.what();
+			throw std::runtime_error(x.str());
+		}
+		messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
+		information_dispatch::do_dumper_update();
+	}
+
+	void enddump()
+	{
+		if(!vid_dumper)
+			throw std::runtime_error("No JMD video dump in progress");
+		try {
+			vid_dumper->on_dump_end();
+			messages << "JMD Dump finished" << std::endl;
+		} catch(std::bad_alloc& e) {
+			throw;
+		} catch(std::exception& e) {
+			messages << "Error ending JMD dump: " << e.what() << std::endl;
+		}
+		delete vid_dumper;
+		vid_dumper = NULL;
+		information_dispatch::do_dumper_update();
+	}
+
 	function_ptr_command<const std::string&> jmd_dump("dump-jmd", "Start JMD capture",
 		"Syntax: dump-jmd <file>\nStart JMD capture to <file>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			tokensplitter t(args);
 			std::string prefix = t.tail();
-			if(prefix == "")
-				throw std::runtime_error("Expected filename");
-			if(vid_dumper)
-				throw std::runtime_error("JMD dumping already in progress");
-			unsigned long level2 = (unsigned long)level2;
-			try {
-				vid_dumper = new jmd_avsnoop(prefix, level2);
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				std::ostringstream x;
-				x << "Error starting JMD dump: " << e.what();
-				throw std::runtime_error(x.str());
-			}
-			messages << "Dumping to " << prefix << " at level " << level2 << std::endl;
+			startdump(prefix);
 		});
 
 	function_ptr_command<> end_avi("end-jmd", "End JMD capture",
 		"Syntax: end-jmd\nEnd a JMD capture.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!vid_dumper)
-				throw std::runtime_error("No JMD video dump in progress");
-			try {
-				vid_dumper->on_dump_end();
-				messages << "JMD Dump finished" << std::endl;
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(std::exception& e) {
-				messages << "Error ending JMD dump: " << e.what() << std::endl;
-			}
-			delete vid_dumper;
-			vid_dumper = NULL;
+			enddump();
 		});
+
+	class adv_jmd_dumper : public adv_dumper
+	{
+	public:
+		adv_jmd_dumper() : adv_dumper("INTERNAL-JMD") {information_dispatch::do_dumper_update(); }
+		~adv_jmd_dumper() throw();
+		std::set<std::string> list_submodes() throw(std::bad_alloc)
+		{
+			std::set<std::string> x;
+			return x;
+		}
+
+		bool wants_prefix(const std::string& mode) throw()
+		{
+			return false;
+		}
+
+		std::string name() throw(std::bad_alloc)
+		{
+			return "JMD";
+		}
+		
+		std::string modename(const std::string& mode) throw(std::bad_alloc)
+		{
+			return "";
+		}
+
+		bool busy()
+		{
+			return (vid_dumper != NULL);
+		}
+
+		void start(const std::string& mode, const std::string& targetname) throw(std::bad_alloc,
+			std::runtime_error)
+		{
+			startdump(targetname);
+		}
+
+		void end() throw()
+		{
+			enddump();
+		}
+	} adv;
+	
+	adv_jmd_dumper::~adv_jmd_dumper() throw()
+	{
+	}
 }

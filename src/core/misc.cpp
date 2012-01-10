@@ -21,6 +21,7 @@ namespace
 {
 	std::string rseed;
 	uint64_t rcounter = 0;
+	bool reached_main_flag;
 
 	std::string get_random_hexstring_64(size_t index)
 	{
@@ -304,6 +305,16 @@ std::string format_address(void* addr)
 	std::ostringstream y;
 	y << "0x" << std::hex << std::setfill('0') << std::setw(2 * sizeof(unsigned long)) << x;
 	return y.str();
+}
+
+bool in_global_ctors()
+{
+	return !reached_main_flag;
+}
+
+void reached_main()
+{
+	reached_main_flag = true;
 }
 
 std::string bsnes_core_version;

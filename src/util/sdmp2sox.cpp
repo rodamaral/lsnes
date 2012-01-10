@@ -795,8 +795,11 @@ void syntax()
 	std::cerr << "-8\tDump using 8 bits instead of 16 bits." << std::endl;
 }
 
+void reached_main();
+
 int main(int argc, char** argv)
 {
+	reached_main();
 	if(argc < 4) {
 		syntax();
 		return 1;

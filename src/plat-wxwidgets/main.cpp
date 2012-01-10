@@ -214,6 +214,7 @@ IMPLEMENT_APP(lsnes_app)
 
 bool lsnes_app::OnInit()
 {
+	reached_main();
 	set_random_seed();
 	bring_app_foreground();
 

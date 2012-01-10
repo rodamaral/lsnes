@@ -546,3 +546,19 @@ void information_dispatch::enable_send_sound() throw(std::bad_alloc)
 {
 	dispatch_audio().push_back(this);
 }
+
+void information_dispatch::on_dumper_update()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_dumper_update() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_dumper_update();
+		END_EH_BLOCK(i, "on_dumper_update");
+	}
+}
