@@ -7,3 +7,4 @@ docs
 rom
 /core
 src/fonts/font.cpp
+src/core/version.cpp

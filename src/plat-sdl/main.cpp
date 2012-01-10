@@ -144,6 +144,11 @@ int main(int argc, char** argv)
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
+	if(cmdline.size() == 1 && cmdline[0] == "--version") {
+		std::cout << "lsnes rr" << lsnes_version << " (" << lsnes_git_revision << ")" << std::endl;
+		std::cout << snes_library_id() << " (" << SNES::Info::Profile << " core)" << std::endl;
+		return 0;
+	}
 	my_interfaced intrf;
 	SNES::interface = &intrf;
 

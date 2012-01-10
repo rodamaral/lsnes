@@ -775,6 +775,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_AUTHORS, wxT("&Edit game name && authors"));
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("&Quit"));
+	menu_separator();
+	menu_entry(wxID_ABOUT, wxT("About"));
 	//File menu: (ACFOS)DELMNPRTV
 	menu_start(wxT("&File"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
@@ -1000,6 +1002,13 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_MEMORYWATCH:
 		menu_load_memorywatch(e);
+		break;
+	case wxID_ABOUT: {
+		std::ostringstream str;
+		str << "lsnes rr" << lsnes_version << " (" << lsnes_git_revision << ")" << std::endl;
+		str << bsnes_core_version << std::endl;
+		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
+	}
 		break;
 	};
 }

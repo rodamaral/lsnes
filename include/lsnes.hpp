@@ -15,5 +15,6 @@
 
 extern std::string bsnes_core_version;
 extern std::string lsnes_version;
+extern std::string lsnes_git_revision;
 
 #endif

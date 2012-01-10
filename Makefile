@@ -7,6 +7,7 @@ FONT_SRC := unifontfull-5.1.20080820.hex
 #Compilers.
 CC := g++
 REALCC = $(CROSS_PREFIX)$(CC)
+HOSTCC = $(CC)
 
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
@@ -23,7 +24,7 @@ JOYSTICK = SDL
 #Core objects and what to build.
 CORE_OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard src/core/*.cpp)) \
 	$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avi/*.cpp)) \
-	src/fonts/font.$(OBJECT_SUFFIX)
+	src/fonts/font.$(OBJECT_SUFFIX) src/core/version.$(OBJECT_SUFFIX)
 PROGRAMS = lsnes.$(EXECUTABLE_SUFFIX) movieinfo.$(EXECUTABLE_SUFFIX) lsnes-dumpavi.$(EXECUTABLE_SUFFIX) sdmp2sox.$(EXECUTABLE_SUFFIX)
 all: $(PROGRAMS)
 
@@ -159,6 +160,14 @@ src/fonts/font.$(OBJECT_SUFFIX): src/fonts/$(FONT_SRC)
 	sed -E -f src/fonts/fonttransform.sed <$^ >>src/fonts/font.cpp
 	echo ";" >>src/fonts/font.cpp
 	$(REALCC) $(CORE_CFLAGS) -c -o $@ src/fonts/font.cpp
+
+#Version info.
+buildaux/version.exe: buildaux/version.cpp VERSION
+	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
+src/core/version.cpp: buildaux/version.exe FORCE
+	buildaux/version.exe >$@
+
+.PHONY: FORCE
 
 clean:
 	rm -f $(PROGRAMS) src/*.$(OBJECT_SUFFIX) src/*/*.$(OBJECT_SUFFIX)  avi/*.$(OBJECT_SUFFIX) src/fonts/font.o src/fonts/font.cpp
