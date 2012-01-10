@@ -1005,8 +1005,9 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		break;
 	case wxID_ABOUT: {
 		std::ostringstream str;
-		str << "lsnes rr" << lsnes_version << " (" << lsnes_git_revision << ")" << std::endl;
-		str << bsnes_core_version << std::endl;
+		str << "Version: lsnes rr" << lsnes_version << std::endl;
+		str << "Revision: " << lsnes_git_revision << std::endl;
+		str << "Core: " << bsnes_core_version << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 	}
 		break;
