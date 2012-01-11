@@ -479,9 +479,9 @@ Print all aliases and their expansions in effect.
 
 Run <script> as if commands were entered on the command line.
 
-6.5 AVI Video dumping
+6.5 Video dumping
 
-Following commands control AVI video dumping:
+Following commands control video dumping:
 
 6.5.1 dump-avi <prefix>
 
@@ -493,16 +493,6 @@ Dump AVI video to prefix <prefix> Notes:
 
 • Audio enable/disable and framerate has no effect.
 
-• Levels 10-18 are not compatible with AVISource.
-
-• Recomended level is 7 if decoded by AVISource.
-
-• Recomended level is 16 if decoded by ffmpeg, mencoder or 
-  FFMpegSource.
-
-• Dumps of low-res PAL games are 256x239 (with all the 
-  consequences odd height carries).
-
 • The audio dumped to .avi is low-quality version. The 
   high-quality version is dumped to .sox file.
 
@@ -511,19 +501,27 @@ Dump AVI video to prefix <prefix> Notes:
 End current AVI video dump (closing the emulator also closes the 
 dump).
 
-6.6 JMD video dumping
-
-Following commands control JMD video dumping:
-
-6.6.1 dump-jmd <file>
+6.5.3 dump-jmd <file>
 
 Dump JMD video to file <file>.
 
-6.6.2 end-jmd
+6.5.4 end-jmd
 
 End the current JMD dump in progress.
 
-6.7 Memory manipulation
+6.5.5 dump-sdmp <prefix>
+
+Dump SDMP to <prefix>, splitting at 2GB.
+
+6.5.6 dump-sdmp-ss <file>
+
+Dump SDMP to <file>, no splitting
+
+6.5.7 end-sdmp
+
+End the current SDMP dump in progress.
+
+6.6 Memory manipulation
 
 <address> may be decimal or hexadecimal (prefixed with '0x'). 
 <value> can be hexadecimal (prefixed with '0x'), unsigned or 
@@ -544,31 +542,31 @@ When dealing with DSP memory, multi-byte reads/writes are
 native-endian (do not use operand sizes exceeding DSP bitness, 
 except dword is OK for 24-bit memory).
 
-6.7.1 read-<size> <address>
+6.6.1 read-<size> <address>
 
 Read the value of byte in <address>.
 
-6.7.2 read-s<size> <address>
+6.6.2 read-s<size> <address>
 
 Read the value of signed byte in <address>.
 
-6.7.3 write-<size> <address> <value>
+6.6.3 write-<size> <address> <value>
 
 Write <value> to byte in address <address>.
 
-6.7.4 search-memory reset
+6.6.4 search-memory reset
 
 Reset the memory search
 
-6.7.5 search-memory count
+6.6.5 search-memory count
 
 Print number of candidates remaining
 
-6.7.6 search-memory print
+6.6.6 search-memory print
 
 Print all candidates remaining
 
-6.7.7 search-memory <usflag><sizeflag><op>
+6.6.7 search-memory <usflag><sizeflag><op>
 
 Searches memory for addresses satisfying criteria.
 
@@ -602,122 +600,122 @@ Searches memory for addresses satisfying criteria.
 
 • gt: > previous value.
 
-6.7.8 search-memory <sizeflag> <value>
+6.6.8 search-memory <sizeflag> <value>
 
 Searches for addresses that currently have value <value>. 
 <sizeflag> is as in previous command.
 
-6.8 Main commands
+6.7 Main commands
 
 These commands are not available in lsnesrc, but are available 
 after ROM has been loaded.
 
-6.8.1 quit-emulator [/y]
+6.7.1 quit-emulator [/y]
 
 Quits the emulator (asking for confirmation). If /y is given, no 
 confirmation is asked.
 
-6.8.2 pause-emulator
+6.7.2 pause-emulator
 
 Toggle paused/unpaused
 
-6.8.3 +advance-frame 
+6.7.3 +advance-frame 
 
 Advance frame. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-6.8.4 +advance-poll 
+6.7.4 +advance-poll 
 
 Advance subframe. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-6.8.5 advance-skiplag 
+6.7.5 advance-skiplag 
 
 Skip to first poll in frame after current.
 
-6.8.6 reset 
+6.7.6 reset 
 
 Reset the SNES after this frame.
 
-6.8.7 load <filename> 
+6.7.7 load <filename> 
 
 Load savestate <filename> in current mode.
 
-6.8.8 load-state <filename> 
+6.7.8 load-state <filename> 
 
 Load savestate <filename> in readwrite mode.
 
-6.8.9 load-readonly <filename> 
+6.7.9 load-readonly <filename> 
 
 Load savestate <filename> in readonly mode.
 
-6.8.10 load-preserve <filename> 
+6.7.10 load-preserve <filename> 
 
 Load savestate <filename> in readonly mode, preserving current 
 events.
 
-6.8.11 load-movie <filename> 
+6.7.11 load-movie <filename> 
 
 Load savestate <filename>, ignoring save part in readonly mode.
 
-6.8.12 save-state <filename> 
+6.7.12 save-state <filename> 
 
 Save system state to <filename> as soon as possible.
 
-6.8.13 save-movie <filename> 
+6.7.13 save-movie <filename> 
 
 Save movie to <filename>.
 
-6.8.14 set-rwmode 
+6.7.14 set-rwmode 
 
 Set read-write mode.
 
-6.8.15 set-romode 
+6.7.15 set-romode 
 
 Set read-only mode
 
-6.8.16 toggle-rwmode 
+6.7.16 toggle-rwmode 
 
 Toggle between read-only and read-write modes.
 
-6.8.17 set-gamename <name> 
+6.7.17 set-gamename <name> 
 
 Set name of the game to <name>
 
-6.8.18 get-gamename 
+6.7.18 get-gamename 
 
 Print the name of the game.
 
-6.8.19 add-author <author> 
+6.7.19 add-author <author> 
 
 Adds new author <author>. If <author> does not contain '|' it is 
 full name. If it contains '|', '|' splits the full name and 
 nickname.
 
-6.8.20 edit-author <num> <author> 
+6.7.20 edit-author <num> <author> 
 
 Edit the author in slot <num> (0-based) to be <author> (see 
 add-author for format)
 
-6.8.21 remove-author <num> 
+6.7.21 remove-author <num> 
 
 Remove author in slot <num>
 
-6.8.22 print-authors 
+6.7.22 print-authors 
 
 Print authors.
 
-6.8.23 test-1, test-2, test-3 (N/A for wxwidgets)
+6.7.23 test-1, test-2, test-3
 
 Internal test commands. Don't use.
 
-6.8.24 take-screenshot <filename> 
+6.7.24 take-screenshot <filename> 
 
 Save screenshot to <filename>.
 
-6.8.25 +controller<num><button> (N/A for wxwidgets)
+6.7.25 +controller<num><button>
 
 Press button <button> on controller <num> (1-8). The following 
 button names are known:
@@ -754,109 +752,109 @@ button names are known:
 
 • turbo
 
-6.8.26 controllerh<num><button>
+6.7.26 controllerh<num><button>
 
 Hold/unhold button <button> on controller <num> (1-8). See 
 +controller for button names.
 
-6.8.27 autofire (<pattern>|-)... (N/A for wxwidgets)
+6.7.27 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
 button names (in form of 1start, 1A, 2B, etc..) to hold on that 
 frame. After reaching the end of pattern, the pattern restarts 
 from the beginning.
 
-6.8.28 repaint (N/A for wxwidgets)
+6.7.28 repaint
 
 Force a repaint.
 
-6.9 Save jukebox 
+6.8 Save jukebox 
 
-6.9.1 cycle-jukebox-backward (N/A for wxwidgets)
+6.8.1 cycle-jukebox-backward
 
 Cycle save jukebox backwards.
 
-6.9.2 cycle-jukebox-forward (N/A for wxwidgets)
+6.8.2 cycle-jukebox-forward
 
 Cycle save jukebox forwards
 
-6.9.3 add-jukebox-save <filename> (N/A for wxwidgets)
+6.8.3 add-jukebox-save <filename>
 
 Add <filename> to jukebox saves.
 
-6.9.4 load-jukebox (N/A for wxwidgets)
+6.8.4 load-jukebox
 
 Do load from jukebox (current mode).
 
-6.9.5 save-jukebox (N/A for wxwidgets)
+6.8.5 save-jukebox
 
 Do state save to jukebox.
 
-6.10 Lua 
+6.9 Lua 
 
 Only available if lua support is compiled in.
 
-6.10.1 evaluate-lua <luacode>
+6.9.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-6.10.2 run-lua <script>
+6.9.2 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-6.11 Memory watch
+6.10 Memory watch
 
-6.11.1 add-watch <name> <expression>
+6.10.1 add-watch <name> <expression>
 
 Adds new watch (or modifies old one).
 
-6.11.2 remove-watch <name>
+6.10.2 remove-watch <name>
 
 Remove a watch.
 
-6.12 Sound 
+6.11 Sound 
 
-6.12.1 enable-sound <on/off> 
+6.11.1 enable-sound <on/off> 
 
 Enable/Disable sound.
 
-6.12.2 set-sound-device <device> 
+6.11.2 set-sound-device <device> 
 
 Set sound device to <device>
 
-6.12.3 show-sound-status 
+6.11.3 show-sound-status 
 
 Show status of sound system.
 
-6.12.4 show-sound-devices (N/A for wxwidgets)
+6.11.4 show-sound-devices
 
 Show all available devices.
 
-6.13 SDL Platform commands 
+6.12 SDL Platform commands 
 
 The following are valid on SDL platform.
 
-6.13.1 identify-key
+6.12.1 identify-key
 
 Asks to press a key and then identifies that (pseudo-)key.
 
-6.13.2 toggle-console 
+6.12.2 toggle-console 
 
 Toggle between windowed/fullscreen console.
 
-6.13.3 scroll-fullup 
+6.12.3 scroll-fullup 
 
 Scroll messages window as far back as it goes.
 
-6.13.4 scroll-fulldown 
+6.12.4 scroll-fulldown 
 
 Scroll messages window as far forward as it goes.
 
-6.13.5 scroll-up 
+6.12.5 scroll-up 
 
 Scroll messages window back one screenful.
 
-6.13.6 scroll-down 
+6.12.6 scroll-down 
 
 Scroll messages window forward one screenful.
 
@@ -915,13 +913,28 @@ overrides) for dumps. Range 0-8191. Default is 0.
 AVI dumper: Maximum number of frames per dump segment (0 => 
 unlimited). Range 0-999999999. Default is 0.
 
-7.3 SDL platform settings
+7.2.7 avi-compresison
 
-7.3.1 autorepeat-first-delay
+AVI dumper: Compression level (0-18).
+
+• Compression levels 10 and above are not compatible with stock 
+  CSCD codec.
+
+• Recomended level is 7.
+
+7.3 JMD options
+
+7.3.1 jmd-copression
+
+JMD dumper: Compression level (0-9).
+
+7.4 SDL platform settings
+
+7.4.1 autorepeat-first-delay
 
 Sets the delay for first character in typematic autorepeat.
 
-7.3.2 autorepeat-subsequent-delay
+7.4.2 autorepeat-subsequent-delay
 
 Sets the delay for subsequent characters in typematic autorepeat.
 
@@ -1557,8 +1570,7 @@ Following key names are known:
   key having hardware-dependent scan code of <n> (useful to bind 
   those keys that don't have symbolic names).
 
-In addition, following pseudo-keys are known (note: these do not 
-work in conjunction with modifers):
+9.1.3 Joystick pseudo-keys:
 
 • joystick<num>button<button>: Joystick <num> (0-based) button 
   <button> (0-based).
@@ -1584,7 +1596,7 @@ work in conjunction with modifers):
 • joystick<num>axis<axis>: Joystick <num> (0-based) axis <axis> 
   pressure (axis modes pressure_*).
 
-9.1.3 Special buttons:
+9.1.4 Special buttons:
 
 • Escape: Enter/Exit Command mode, cancel modal dialogs.
 
@@ -1617,11 +1629,53 @@ work in conjunction with modifers):
 • LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump 
   corrupted!).
 
-9.1.4 Watchdog timer:
+9.2 wxWidgets platform
 
-If emulator does not reach internal polling loop in 15 seconds 
-after leaving it or 15 seconds after starting, the emulator 
-instantly bombs out.
+9.2.1 Modifier names:
+
+Following modifier names are known:
+
+• alt
+
+• ctrl
+
+• shift 
+
+• meta
+
+• cmd (Mac OS X only)
+
+9.2.2 Key names:
+
+Following key names are known:
+
+• back, tab, return, escape, space, exclaim, quotedbl, hash, 
+  dollar, percent, ampersand, quote, leftparen, rightparen, 
+  asterisk, plus, comma, minus, period, slash, 0, 1, 2, 3, 4, 5, 
+  6, 7, 8, 9, colon, semicolon, less, equals, greater, question, 
+  at, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, 
+  u, v, w, x, y, z, leftbracket, backslash, rightbracket, caret, 
+  underscore, backquote, a, b, c, d, e, f, g, h, i, j, k, l, m, 
+  n, o, p, q, r, s, t, u, v, w, x, y, z, leftcurly, pipe, 
+  rightcurly, tilde, delete, start, lbutton, rbutton, cancel, 
+  mbutton, clear, shift, alt, control, menu, pause, capital, end, 
+  home, lefT, up, right, down, select, print, execute, snapshot, 
+  insert, help, numpad0, numpad1, numpad2, numpad3, numpad4, 
+  numpad5, numpad6, numpad7, numpad8, numpad9, multiply, add, 
+  separator, subtract, decimal, divide, f1, f2, f3, f4, f5, f6, 
+  f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, 
+  f20, f21, f22, f23, f24, numlock, scroll, pageup, pagedown, 
+  numpad_space, numpad_tab, numpad_enter, numpad_f1, numpad_f2, 
+  numpad_f3, numpad_f4, numpad_home, numpad_left, numpad_up, 
+  numpad_right, numpad_down, numpad_pageup, numpad_pagedown, 
+  numpad_end, numpad_begin, numpad_insert, numpad_delete, 
+  numpad_equal, numpad_multiply, numpad_add, numpad_separator, 
+  numpad_subtract, numpad_decimal, numpad_divide, windows_left, 
+  windows_right, windows_menu, command, special1, special2, 
+  special3, special4, special5, special6, special7, special8, 
+  special9, special10, special11, special12, special13, 
+  special14, special15, special16, special17, special18, 
+  special19, special20
 
 10 Movie file format
 
@@ -1845,95 +1899,7 @@ present in savestates.
 Movie saving time, subsecond part. Default is 
 starttime.subsecond. Only present in savestates.
 
-11 Compiling:
-
-11.1 Building BSNES
-
-make ui=ui-libsnes profile=accuracy
-
-For Bsnes v084 You need to apply the six patches in 
-bsnes-patches/. These fix the following:
-
-1. Make libsnes actually compile (it won't compile without!)
-
-2. Bump the version number to be correct (nice to have)
-
-3. Make RTC emulation time cleanly overridable (needed by games 
-  using RTC)
-
-4. Save/Load controller state on savestate/loadstate (many games 
-  screw up without)
-
-5. Fix unserialization of 64-bit integers (needed)
-
-6. Allow frontend to control random number seed (just nice to 
-  have)
-
-11.2 Prerequisite libraries:
-
-• zlib
-
-• SDL (SDL platform)
-
-• SDLmain (Windows/Mac OS X only; Note you may have to extract 
-  the object out of archive)
-
-• boost_iostreams
-
-• boost_filesystem
-
-• boost conversion (header only)
-
-11.3 Compile options to make:
-
-11.3.1 BSNES_PATH=<path>
-
-Set path to BSNES bsnes directory to <path>.
-
-11.3.2 THREADS=NO
-
-Don't use threads on Linux.
-
-11.3.3 THREADS=YES
-
-Try to use threads even on non-Linux systems.
-
-11.3.4 CROSS_PREFIX=<prefix>
-
-Prepend this to all commands refering to cross-compiling 
-environment with this.
-
-11.3.5 CC=<compiler>
-
-Target C++ compiler to use. Defaults to g++
-
-Note: If crosscompiling, this has to be crosscompiler, and 
-CROSS_PREFIX is prepended.
-
-11.3.6 BSNES_IS_COMPAT=1
-
-Assume BSNES uses compatiblity core instead of accuracy core.
-
-11.3.7 LUA=<package>
-
-Compile lua support, using package <package>
-
-11.3.8 GRAPHICS=<plat>
-
-Set graphics platform. Currently available choices are “SDL” and “
-WXWIDGETS”.
-
-11.3.9 SOUND=<plat>
-
-Set sound platform. Currently available choices are “SDL” 
-(requires SDL graphics), “PORTAUDIO” and “DUMMY”.
-
-11.3.10 JOYSTICK=<plat>
-
-Set joystick platform. Currently available choices are “SDL” 
-(requires SDL graphics), “EVDEV” and “DUMMY”.
-
-12 Quick'n'dirty encode guide
+11 Quick'n'dirty encode guide
 
 1. Start the emulator and load the movie file.
 
@@ -1958,9 +1924,9 @@ Set joystick platform. Currently available choices are “SDL”
 9. Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'. Now 
   final.mkv contains quick'n'dirty encode.
 
-13 Axis configurations for some gamepad types:
+12 Axis configurations for some gamepad types:
 
-13.1 XBox360 controller:
+12.1 XBox360 controller:
 
 Axes 2 and 5 (joystick<n>axis2 and joystick<n>axis5) should be 
 set to pressure-+.
@@ -1969,7 +1935,9 @@ set-axis joystick0axis2 pressure-+
 
 set-axis joystick0axis5 pressure-+
 
-13.2 PS3 “sixaxis” controller:
+• This is needed for SDL only. EVDEV sets those types correctly.
+
+12.2 PS3 “sixaxis” controller:
 
 Axes 8-19 should be disabled.
 
@@ -1997,27 +1965,26 @@ set-axis joystick0axis18 disabled
 
 set-axis joystick0axis19 disabled
 
-14 Errata:
+13 Errata:
 
-14.1 Problems from BSNES core:
+13.1 Problems from BSNES core:
 
 • The whole pending save stuff.
 
 • Lack of layer hiding.
 
-• It is slow.
+• It is slow (especially accuracy).
 
 • Firmwares can't be loaded from ZIP archives.
 
-14.2 Other problems:
+13.2 Other problems:
 
 • Modifiers don't work with pseudo-keys (SDL, EVDEV).
 
 • Audio for last dumped frame is not itself dumped.
 
-• Audio in UI is pretty bad in quality.
-
-• UI itself is 30fps max (SDL).
+• Audio in UI is pretty bad in quality if game doesn't run at 
+  full speed.
 
 • AVI compression levels 10-18 are not compatible with AVISynth 
   AVISource.
@@ -2028,20 +1995,17 @@ set-axis joystick0axis19 disabled
 
 • The SDL screen drawing is slow.
 
-• Wxwidgets UI slows down with time.
+• Wxwidgets UI is still pretty buggy.
 
-• Movies use way too much (like at least 10x what would be 
-  needed) memory.
+14 Changelog:
 
-15 Changelog:
-
-15.1 rr0-beta1
+14.1 rr0-beta1
 
 • Fix -Wall warnings
 
 • Fix dumper video corruption with levels 10-18.
 
-15.2 rr0-beta2
+14.2 rr0-beta2
 
 • Autofire
 
@@ -2057,23 +2021,23 @@ set-axis joystick0axis19 disabled
 
 • Faster movie loading and saving.
 
-15.3 rr0-beta3
+14.3 rr0-beta3
 
 • Joystick support
 
-15.4 rr0-beta4
+14.4 rr0-beta4
 
 • Fix multi-buttons
 
 • Save jukebox functionality.
 
-15.5 rr0-beta5
+14.5 rr0-beta5
 
 • Try to fix some nasty failing movie load edge cases
 
 • Allow specifying scripts to run on command line.
 
-15.6 rr0-beta6
+14.6 rr0-beta6
 
 • Major source code reorganization.
 
@@ -2081,7 +2045,7 @@ set-axis joystick0axis19 disabled
 
 • Don't crash if loading initial state fails.
 
-15.7 rr0-beta7
+14.7 rr0-beta7
 
 • Fix firmware lookup
 
@@ -2095,7 +2059,7 @@ set-axis joystick0axis19 disabled
 
 • Fix loading movies starting from SRAM.
 
-15.8 rr0-beta8
+14.8 rr0-beta8
 
 • Add support for unattended dumping
 
@@ -2108,7 +2072,7 @@ set-axis joystick0axis19 disabled
 • Don't try to do dubious things in global ctors (fix crash on 
   startup)
 
-15.9 rr0-beta9
+14.9 rr0-beta9
 
 • Small documentation tweaking
 
@@ -2116,7 +2080,7 @@ set-axis joystick0axis19 disabled
 
 • Fix major bug in modifier matching
 
-15.10 rr0-beta10
+14.10 rr0-beta10
 
 • Lots of documentation fixes
 
@@ -2127,7 +2091,7 @@ set-axis joystick0axis19 disabled
 
 • Remove errant tab from joystick message.
 
-15.11 rr0-beta11
+14.11 rr0-beta11
 
 • Make autofire operate in absolute time, not linear time
 
@@ -2142,19 +2106,19 @@ set-axis joystick0axis19 disabled
 • Dump at correct framerate if dumping interlaced NTSC 
   (height=448).
 
-15.12 rr0-beta12
+14.12 rr0-beta12
 
 • Actually include the complete source code
 
 • Keep track of RTC
 
-15.13 rr0-beta13
+14.13 rr0-beta13
 
 • Document {save,start}time.{,sub}second.
 
 • Intercept time() from bsnes core.
 
-15.14 rr0-beta14
+14.14 rr0-beta14
 
 • Allow disabling time() interception (allow build on Mac OS X)
 
@@ -2172,7 +2136,7 @@ set-axis joystick0axis19 disabled
 
 • New CSCD writer implementation.
 
-15.15 rr0-beta15
+14.15 rr0-beta15
 
 • Fix interaction of * and +.
 
@@ -2186,7 +2150,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor controller input code.
 
-15.16 rr0-beta16
+14.16 rr0-beta16
 
 • Fix mouseclick scale compensation.
 
@@ -2196,7 +2160,7 @@ set-axis joystick0axis19 disabled
 
 • Fix CSCD output (buffer overrun and race condition).
 
-15.17 rr0-beta17
+14.17 rr0-beta17
 
 • JMD dumping support.
 
@@ -2214,7 +2178,7 @@ set-axis joystick0axis19 disabled
 
 • Pass colors in one chunk from Lua.
 
-15.18 rr0-beta18
+14.18 rr0-beta18
 
 • New lua functions gui.line(), gui.status() and gui.circle(), 
   memory.vma_count(), memory.read_vma() and memory.find_vma().
@@ -2245,7 +2209,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor more code into generic window code.
 
-15.19 rr0-beta19
+14.19 rr0-beta19
 
 • Refactor message handling.
 
@@ -2257,7 +2221,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets graphics plugin.
 
-15.20 rr0-beta20
+14.20 rr0-beta20
 
 • Get rid of win32-crap.[ch]pp.
 
@@ -2275,7 +2239,7 @@ set-axis joystick0axis19 disabled
 
 • Load/Save settings in wxwidgets gui.
 
-15.21 rr0-beta21
+14.21 rr0-beta21
 
 • Patch problems in bsnes core
 
@@ -2283,7 +2247,7 @@ set-axis joystick0axis19 disabled
 
 • Fix memory corruption in lcscreen::load()
 
-15.22 rr0-beta22
+14.22 rr0-beta22
 
 • Fix interpretting repeat counts in rrdata loading.
 
@@ -2306,7 +2270,7 @@ set-axis joystick0axis19 disabled
 • Fix titlebar version number (no, the last version wasn't 
   'lsnes-0-beta21', it was 'lsnes rr0-beta21').
 
-15.23 rr0-beta23
+14.23 rr0-beta23
 
 • Fix memory corruption due to macro/field mixup
 
@@ -2328,7 +2292,7 @@ set-axis joystick0axis19 disabled
 
 • Fix crash related to full console mode.
 
-15.24 rr0-beta24
+14.24 rr0-beta24
 
 • Wxwidgets: Allow bringing application to foreground on Mac OS 
   X.
@@ -2339,7 +2303,7 @@ set-axis joystick0axis19 disabled
 
 • Lua: _SYSTEM table.
 
-15.25 rr0-beta25
+14.25 rr0-beta25
 
 • sdmp2sox: Pad soundtrack if using -l or -L.
 
@@ -2352,7 +2316,7 @@ set-axis joystick0axis19 disabled
 • Fix zip_writer bug causing warnings from info-zip and error 
   from advzip.
 
-15.26 rr0-beta26
+14.26 rr0-beta26
 
 • Fix IPS patching code (use bsnes core IPS patcher).
 
@@ -2360,11 +2324,11 @@ set-axis joystick0axis19 disabled
 
 • Add feature to load headered ROMs.
 
-15.27 rr0-beta27
+14.27 rr0-beta27
 
 • Show command names when showing keybindings
 
-15.28 rr0
+14.28 rr0
 
 • Fix pause-on-end to be actually controllable
 
@@ -2373,7 +2337,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Fix ROM loading.
 
-15.29 rr1-beta0
+14.29 rr1-beta0
 
 • Lua: Add gui.textH, gui.textV, gui.textHV
 
@@ -2387,13 +2351,13 @@ set-axis joystick0axis19 disabled
 
 • Split UI and core into their own threads
 
-15.30 rr1-beta1
+14.30 rr1-beta1
 
 • Remove leftover dummy SRAM slot
 
 • Fix controller numbers.
 
-15.31 rr1-beta2
+14.31 rr1-beta2
 
 • Fix lsnes-dumpavi after interface change.
 
@@ -2401,7 +2365,7 @@ set-axis joystick0axis19 disabled
 
 • Pack movie data in memory.
 
-15.32 rr1-beta3
+14.32 rr1-beta3
 
 • Fix framecount/length given when loading movies.
 
@@ -2409,7 +2373,7 @@ set-axis joystick0axis19 disabled
 
 • Don't leak palette if freeing screen object.
 
-15.33 rr1-beta4
+14.33 rr1-beta4
 
 • Detect revisions.
 

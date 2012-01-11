@@ -1046,11 +1046,11 @@ Run <script> as if commands were entered on the command line.
 \end_layout
 
 \begin_layout Subsection
-AVI Video dumping
+Video dumping
 \end_layout
 
 \begin_layout Standard
-Following commands control AVI video dumping:
+Following commands control video dumping:
 \end_layout
 
 \begin_layout Subsubsection
@@ -1074,23 +1074,6 @@ Audio enable/disable and framerate has no effect.
 \end_layout
 
 \begin_layout Itemize
-Levels 10-18 are not compatible with AVISource.
-\end_layout
-
-\begin_layout Itemize
-Recomended level is 7 if decoded by AVISource.
-\end_layout
-
-\begin_layout Itemize
-Recomended level is 16 if decoded by ffmpeg, mencoder or FFMpegSource.
-\end_layout
-
-\begin_layout Itemize
-Dumps of low-res PAL games are 256x239 (with all the consequences odd height
- carries).
-\end_layout
-
-\begin_layout Itemize
 The audio dumped to .avi is low-quality version.
  The high-quality version is dumped to .sox file.
 \end_layout
@@ -1101,14 +1084,6 @@ end-avi
 
 \begin_layout Standard
 End current AVI video dump (closing the emulator also closes the dump).
-\end_layout
-
-\begin_layout Subsection
-JMD video dumping
-\end_layout
-
-\begin_layout Standard
-Following commands control JMD video dumping:
 \end_layout
 
 \begin_layout Subsubsection
@@ -1125,6 +1100,30 @@ end-jmd
 
 \begin_layout Standard
 End the current JMD dump in progress.
+\end_layout
+
+\begin_layout Subsubsection
+dump-sdmp <prefix>
+\end_layout
+
+\begin_layout Standard
+Dump SDMP to <prefix>, splitting at 2GB.
+\end_layout
+
+\begin_layout Subsubsection
+dump-sdmp-ss <file>
+\end_layout
+
+\begin_layout Standard
+Dump SDMP to <file>, no splitting
+\end_layout
+
+\begin_layout Subsubsection
+end-sdmp
+\end_layout
+
+\begin_layout Standard
+End the current SDMP dump in progress.
 \end_layout
 
 \begin_layout Subsection
@@ -1483,7 +1482,7 @@ Print authors.
 \end_layout
 
 \begin_layout Subsubsection
-test-1, test-2, test-3 (N/A for wxwidgets)
+test-1, test-2, test-3
 \end_layout
 
 \begin_layout Standard
@@ -1500,7 +1499,7 @@ Save screenshot to <filename>.
 \end_layout
 
 \begin_layout Subsubsection
-+controller<num><button> (N/A for wxwidgets)
++controller<num><button>
 \end_layout
 
 \begin_layout Standard
@@ -1583,7 +1582,6 @@ Hold/unhold button <button> on controller <num> (1-8).
 
 \begin_layout Subsubsection
 autofire (<pattern>|-)...
- (N/A for wxwidgets)
 \end_layout
 
 \begin_layout Standard
@@ -1594,7 +1592,7 @@ Set autofire pattern.
 \end_layout
 
 \begin_layout Subsubsection
-repaint (N/A for wxwidgets)
+repaint
 \end_layout
 
 \begin_layout Standard
@@ -1606,7 +1604,7 @@ Save jukebox
 \end_layout
 
 \begin_layout Subsubsection
-cycle-jukebox-backward (N/A for wxwidgets)
+cycle-jukebox-backward
 \end_layout
 
 \begin_layout Standard
@@ -1614,7 +1612,7 @@ Cycle save jukebox backwards.
 \end_layout
 
 \begin_layout Subsubsection
-cycle-jukebox-forward (N/A for wxwidgets)
+cycle-jukebox-forward
 \end_layout
 
 \begin_layout Standard
@@ -1622,7 +1620,7 @@ Cycle save jukebox forwards
 \end_layout
 
 \begin_layout Subsubsection
-add-jukebox-save <filename> (N/A for wxwidgets)
+add-jukebox-save <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1630,7 +1628,7 @@ Add <filename> to jukebox saves.
 \end_layout
 
 \begin_layout Subsubsection
-load-jukebox (N/A for wxwidgets)
+load-jukebox
 \end_layout
 
 \begin_layout Standard
@@ -1638,7 +1636,7 @@ Do load from jukebox (current mode).
 \end_layout
 
 \begin_layout Subsubsection
-save-jukebox (N/A for wxwidgets)
+save-jukebox
 \end_layout
 
 \begin_layout Standard
@@ -1718,7 +1716,7 @@ Show status of sound system.
 \end_layout
 
 \begin_layout Subsubsection
-show-sound-devices (N/A for wxwidgets)
+show-sound-devices
 \end_layout
 
 \begin_layout Standard
@@ -1908,6 +1906,34 @@ avi-maxframes
 AVI dumper: Maximum number of frames per dump segment (0 => unlimited).
  Range 0-999999999.
  Default is 0.
+\end_layout
+
+\begin_layout Subsubsection
+avi-compresison
+\end_layout
+
+\begin_layout Standard
+AVI dumper: Compression level (0-18).
+\end_layout
+
+\begin_layout Itemize
+Compression levels 10 and above are not compatible with stock CSCD codec.
+\end_layout
+
+\begin_layout Itemize
+Recomended level is 7.
+\end_layout
+
+\begin_layout Subsection
+JMD options
+\end_layout
+
+\begin_layout Subsubsection
+jmd-copression
+\end_layout
+
+\begin_layout Standard
+JMD dumper: Compression level (0-9).
 \end_layout
 
 \begin_layout Subsection
@@ -3068,9 +3094,8 @@ Names of form 'key<n>' where <n> is 0-255 are interpretted as key having
  have symbolic names).
 \end_layout
 
-\begin_layout Standard
-In addition, following pseudo-keys are known (note: these do not work in
- conjunction with modifers):
+\begin_layout Subsubsection
+Joystick pseudo-keys:
 \end_layout
 
 \begin_layout Itemize
@@ -3164,13 +3189,69 @@ Backspace (command mode): Delete character to left of cursor.
 LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump corrupted!).
 \end_layout
 
+\begin_layout Subsection
+wxWidgets platform
+\end_layout
+
 \begin_layout Subsubsection
-Watchdog timer:
+Modifier names:
 \end_layout
 
 \begin_layout Standard
-If emulator does not reach internal polling loop in 15 seconds after leaving
- it or 15 seconds after starting, the emulator instantly bombs out.
+Following modifier names are known:
+\end_layout
+
+\begin_layout Itemize
+alt
+\end_layout
+
+\begin_layout Itemize
+ctrl
+\end_layout
+
+\begin_layout Itemize
+shift 
+\end_layout
+
+\begin_layout Itemize
+meta
+\end_layout
+
+\begin_layout Itemize
+cmd (Mac OS X only)
+\end_layout
+
+\begin_layout Subsubsection
+Key names:
+\end_layout
+
+\begin_layout Standard
+Following key names are known:
+\end_layout
+
+\begin_layout Itemize
+back, tab, return, escape, space, exclaim, quotedbl, hash, dollar, percent,
+ ampersand, quote, leftparen, rightparen, asterisk, plus, comma, minus,
+ period, slash, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, colon, semicolon, less, equals,
+ greater, question, at, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
+ q, r, s, t, u, v, w, x, y, z, leftbracket, backslash, rightbracket, caret,
+ underscore, backquote, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p,
+ q, r, s, t, u, v, w, x, y, z, leftcurly, pipe, rightcurly, tilde, delete,
+ start, lbutton, rbutton, cancel, mbutton, clear, shift, alt, control, menu,
+ pause, capital, end, home, lefT, up, right, down, select, print, execute,
+ snapshot, insert, help, numpad0, numpad1, numpad2, numpad3, numpad4, numpad5,
+ numpad6, numpad7, numpad8, numpad9, multiply, add, separator, subtract,
+ decimal, divide, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13,
+ f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, numlock, scroll,
+ pageup, pagedown, numpad_space, numpad_tab, numpad_enter, numpad_f1, numpad_f2,
+ numpad_f3, numpad_f4, numpad_home, numpad_left, numpad_up, numpad_right,
+ numpad_down, numpad_pageup, numpad_pagedown, numpad_end, numpad_begin,
+ numpad_insert, numpad_delete, numpad_equal, numpad_multiply, numpad_add,
+ numpad_separator, numpad_subtract, numpad_decimal, numpad_divide, windows_left,
+ windows_right, windows_menu, command, special1, special2, special3, special4,
+ special5, special6, special7, special8, special9, special10, special11,
+ special12, special13, special14, special15, special16, special17, special18,
+ special19, special20
 \end_layout
 
 \begin_layout Section
@@ -3881,234 +3962,6 @@ Movie saving time, subsecond part.
 \end_layout
 
 \begin_layout Section
-Compiling:
-\end_layout
-
-\begin_layout Subsection
-Building BSNES
-\end_layout
-
-\begin_layout Standard
-make ui=ui-libsnes profile=accuracy
-\end_layout
-
-\begin_layout Standard
-For Bsnes v084 You need to apply the six patches in bsnes-patches/.
- These fix the following:
-\end_layout
-
-\begin_layout Enumerate
-Make libsnes actually compile (it won't compile without!)
-\end_layout
-
-\begin_layout Enumerate
-Bump the version number to be correct (nice to have)
-\end_layout
-
-\begin_layout Enumerate
-Make RTC emulation time cleanly overridable (needed by games using RTC)
-\end_layout
-
-\begin_layout Enumerate
-Save/Load controller state on savestate/loadstate (many games screw up without)
-\end_layout
-
-\begin_layout Enumerate
-Fix unserialization of 64-bit integers (needed)
-\end_layout
-
-\begin_layout Enumerate
-Allow frontend to control random number seed (just nice to have)
-\end_layout
-
-\begin_layout Subsection
-Prerequisite libraries:
-\end_layout
-
-\begin_layout Itemize
-zlib
-\end_layout
-
-\begin_layout Itemize
-SDL (SDL platform)
-\end_layout
-
-\begin_layout Itemize
-SDLmain (Windows/Mac OS X only; Note you may have to extract the object
- out of archive)
-\end_layout
-
-\begin_layout Itemize
-boost_iostreams
-\end_layout
-
-\begin_layout Itemize
-boost_filesystem
-\end_layout
-
-\begin_layout Itemize
-boost conversion (header only)
-\end_layout
-
-\begin_layout Subsection
-Compile options to make:
-\end_layout
-
-\begin_layout Subsubsection
-BSNES_PATH=<path>
-\end_layout
-
-\begin_layout Standard
-Set path to BSNES bsnes directory to <path>.
-\end_layout
-
-\begin_layout Subsubsection
-THREADS=NO
-\end_layout
-
-\begin_layout Standard
-Don't use threads on Linux.
-\end_layout
-
-\begin_layout Subsubsection
-THREADS=YES
-\end_layout
-
-\begin_layout Standard
-Try to use threads even on non-Linux systems.
-\end_layout
-
-\begin_layout Subsubsection
-CROSS_PREFIX=<prefix>
-\end_layout
-
-\begin_layout Standard
-Prepend this to all commands refering to cross-compiling environment with
- this.
-\end_layout
-
-\begin_layout Subsubsection
-CC=<compiler>
-\end_layout
-
-\begin_layout Standard
-Target C++ compiler to use.
- Defaults to g++
-\end_layout
-
-\begin_layout Standard
-Note: If crosscompiling, this has to be crosscompiler, and CROSS_PREFIX
- is prepended.
-\end_layout
-
-\begin_layout Subsubsection
-BSNES_IS_COMPAT=1
-\end_layout
-
-\begin_layout Standard
-Assume BSNES uses compatiblity core instead of accuracy core.
-\end_layout
-
-\begin_layout Subsubsection
-LUA=<package>
-\end_layout
-
-\begin_layout Standard
-Compile lua support, using package <package>
-\end_layout
-
-\begin_layout Subsubsection
-GRAPHICS=<plat>
-\end_layout
-
-\begin_layout Standard
-Set graphics platform.
- Currently available choices are 
-\begin_inset Quotes eld
-\end_inset
-
-SDL
-\begin_inset Quotes erd
-\end_inset
-
- and 
-\begin_inset Quotes eld
-\end_inset
-
-WXWIDGETS
-\begin_inset Quotes erd
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsubsection
-SOUND=<plat>
-\end_layout
-
-\begin_layout Standard
-Set sound platform.
- Currently available choices are 
-\begin_inset Quotes eld
-\end_inset
-
-SDL
-\begin_inset Quotes erd
-\end_inset
-
- (requires SDL graphics), 
-\begin_inset Quotes eld
-\end_inset
-
-PORTAUDIO
-\begin_inset Quotes erd
-\end_inset
-
- and 
-\begin_inset Quotes eld
-\end_inset
-
-DUMMY
-\begin_inset Quotes erd
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsubsection
-JOYSTICK=<plat>
-\end_layout
-
-\begin_layout Standard
-Set joystick platform.
- Currently available choices are 
-\begin_inset Quotes eld
-\end_inset
-
-SDL
-\begin_inset Quotes erd
-\end_inset
-
- (requires SDL graphics), 
-\begin_inset Quotes eld
-\end_inset
-
-EVDEV
-\begin_inset Quotes erd
-\end_inset
-
- and 
-\begin_inset Quotes eld
-\end_inset
-
-DUMMY
-\begin_inset Quotes erd
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Section
 Quick'n'dirty encode guide
 \end_layout
 
@@ -4170,6 +4023,11 @@ set-axis joystick0axis2 pressure-+
 
 \begin_layout LyX-Code
 set-axis joystick0axis5 pressure-+
+\end_layout
+
+\begin_layout Itemize
+This is needed for SDL only.
+ EVDEV sets those types correctly.
 \end_layout
 
 \begin_layout Subsection
@@ -4253,7 +4111,7 @@ Lack of layer hiding.
 \end_layout
 
 \begin_layout Itemize
-It is slow.
+It is slow (especially accuracy).
 \end_layout
 
 \begin_layout Itemize
@@ -4273,11 +4131,7 @@ Audio for last dumped frame is not itself dumped.
 \end_layout
 
 \begin_layout Itemize
-Audio in UI is pretty bad in quality.
-\end_layout
-
-\begin_layout Itemize
-UI itself is 30fps max (SDL).
+Audio in UI is pretty bad in quality if game doesn't run at full speed.
 \end_layout
 
 \begin_layout Itemize
@@ -4297,11 +4151,7 @@ The SDL screen drawing is slow.
 \end_layout
 
 \begin_layout Itemize
-Wxwidgets UI slows down with time.
-\end_layout
-
-\begin_layout Itemize
-Movies use way too much (like at least 10x what would be needed) memory.
+Wxwidgets UI is still pretty buggy.
 \end_layout
 
 \begin_layout Section
