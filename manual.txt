@@ -2,210 +2,245 @@
 
 lsnes is SNES rerecording emulator based on bsnes core.
 
-2 Command line options
+2 Dependencies
 
-• Syntax: lsnes.exe <rom-options> <misc-options> 
-  (<new-session-options>|<filename>)
+1. bsnes libsnes
 
-• Syntax: lsnes-avidump <dump-options> <misc-options> 
-  <rom-options> <filename>
+  (a) v084 or 085
 
-• Syntax: movieinfo.exe <filename>
+  (b) accuracy or compatiblity core.
 
-2.1 ROM options
+  (c) Patched version (using included 6 patches)
 
-These options control loading the ROM.
+2. Zlib
 
-2.1.1 --rom=<file>
+3. boost_iostreams
 
-Load <file> (SFC file format) as main SNES cartridge ROM. This is 
-the game ROM for SNES and cartridge BIOS for other types. 
-Required option.
+4. boost_filesystem
 
-2.1.2 --headered-rom=<file>
+5. libsdl (SDL only)
 
-Same as --rom, but strips first 512 bytes off the file as copier 
-header. Handy for loading .smc and .fig (also some others) files.
+6. sdlmain (SDL only, part of SDL)
 
-2.1.3 --rom-xml=<file>
+7. boost_conversion (this is header-only library)
 
-Set the mapping XML file for main cartridge ROM. If not 
-specified, defaults are used.
+8. libswscale (wxwidgets graphics only)
 
-2.1.4 --bsx=<file>
+9. Portaudio (portaudio sound only)
 
-Load <file> (BS file format) as BS-X non-slotted flash memory. 
-Also sets system type to BS-X non-slotted (not compatible with 
---bsxslotted=<file>, --dmg=<file>, --slot-a=<file> nor 
---slot-b=<file>).
+10. std::thread and co (for threaded dumper only)
 
-2.1.5 --headered-bsx=<file>
+3 Building
 
-Same as --bsx but strips first 512 bytes off the file as copier 
-header. Handy for loading .smc and .fig (also some others) files.
+Building is via makefile, the following options are available:
 
-2.1.6 --bsx-xml=<file>
+• CROSS_PREFIX=<prefix>
 
-Set mapping XML file for BS-X non-slotted flash memory. If not 
-specified, defaults are used. Only can be used together with 
---bsx=<file>.
+  – Prefix to apply to commands when building executables / 
+    object files for the target architecture. 
 
-2.1.7 --bsxslotted=<file>
+  – Default is blank.
 
-Load <file> (BS file format) as BS-X slotted flash memory. Also 
-sets system type to BS-X slotted (not compatible with 
---bsx=<file>, --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
+• CC=<name>
 
-2.1.8 --headered-bsxslotted=<file>
+  – Name of C++ compiler.
 
-Same as --bsxslotted but strips first 512 bytes off the file as 
-copier header. Handy for loading .smc and .fig (also some others) 
-files.
+  – CROSS_PREFIX is prepended if compiling for target 
+    architecture.
 
-2.1.9 --bsxslotted-xml=<file>
+  – This needs to be at least GCC 4.6.
 
-Set mapping XML file for BS-X slotted flash memory. If not 
-specified, defaults are used. Only can be used together with 
---bsxslotted=<file>.
+  – Set to 'g++-mp-4.6' if compiling on Mac OS X using GCC 4.6 
+    from Macports.
 
-2.1.10 --dmg=<file>
+  – Default is 'g++'.
 
-Load <file> (GB file format) as Game Boy ROM. Also sets system 
-type to SGB (not compatible with --bsx=<file>, 
---bsxslotted=<file>, --slot-a=<file> nor --slot-b=<file>).
+• HOSTCC=<name>
 
-2.1.11 --headered-dmg=<file>
+  – Name of host C++ compiler.
 
-Same as --dmg but strips first 512 bytes off the file as copier 
-header. Handy for loading .smc and .fig (also some others) files.
+  – Default is value of 'CC' option.
 
-2.1.12 --dmg-xml=<file>
+• USER_HOSTCCFLAGS=<flags>:
 
-Set mapping XML file for Game Boy ROM. If not specified, defaults 
-are used. Only can be used together with --dmg=<file>.
+  – Compiler flags to pass when compiling/linking for host 
+    architecture.
 
-2.1.13 --slot-a=<file>
+  – Default is blank.
 
-Load <file> (ST file format) as Sufami turbo cartridge A ROM. 
-Also sets system type to Sufami Turbo (not compatible with 
---bsx=<file>, --bsxslotted=<file> nor --dmg=<file>).
+• USER_CFLAGS=<flags>
 
-2.1.14 --headered-slot-a=<file>
+  – Extra flags to pass when compiling for target architecture
 
-Same as --slot-a but strips first 512 bytes off the file as 
-copier header. Handy for loading .smc and .fig (also some others) 
-files.
+  – Default is blank.
 
-2.1.15 --slot-a-xml=<file>
+• USER_LDFLAGS=<flags>: 
 
-Set mapping XML file for Sufami turbo cartridge A ROM. If not 
-specified, defaults are used. Only can be used together with 
---slot-a=<file>.
+  – Extra flags to pass when linking for target architecture.
 
-2.1.16 --slot-b=<file>
+  – Default is blank.
 
-Load <file> (ST file format) as Sufami turbo cartridge B ROM. 
-Also sets system type to Sufami Turbo (not compatible with 
---bsx=<file>, --bsxslotted=<file> nor --dmg=<file>).
+• USER_PLATFORM_CFLAGS=<flags>
 
-2.1.17 --headered-slot-b=<file>
+  – Extra flags to pass when compiling files using 
+    platform-dependent code for target architecture.
 
-Same as --slot-b but strips first 512 bytes off the file as 
-copier header. Handy for loading .smc and .fig (also some others) 
-files.
+  – Default is blank.
 
-2.1.18 --slot-b-xml=<file>
+• USER_PLATFORM_LDFLAGS=<flags>
 
-Set mapping XML file for Sufami turbo cartridge B ROM. If not 
-specified, defaults are used. Only can be used together with 
---slot-b=<file>.
+  – Extra flags to pass when linking files using 
+    platform-dependent code for target architecture.
 
-2.1.19 --ips-rom=<file>
+  – Default is blank.
 
-Apply IPS patch <file> to main cartridge ROM. Requires 
---rom=<file>.
+• FONT_SRC=<file>
 
-2.1.20 --ips-rom-xml=<file>
+  – Set the font file to use.
 
-Apply IPS patch <file> to main cartridge ROM mapping XML. 
-Requires --rom-xml=<file>.
+  – Currently the valid values are:
 
-2.1.21 --ips-bsx=<file>
+    ∗ cp437.hex: Standard VGA font (256 characters).
 
-Apply IPS patch <file> to BS-X non-slotted flash. Requires 
---bsx=<file>.
+    ∗ unifontfull-5.1.20080820.hex: GNU unifont (covers most of 
+      Unicode BMP)
 
-2.1.22 --ips-bsx-xml=<file>
+  – Default is 'unifontfull-5.1.20080820.hex'
 
-Apply IPS patch <file> to BS-X non-slotted flash mapping XML. 
-Requires --bsx-xml=<file>.
+• LUA=<package>
 
-2.1.23 --ips-bsxslotted=<file>
+  – Package to use for Lua support.
 
-Apply IPS patch <file> to BS-X slotted flash. Requires 
---bsxslotted=<file>.
+  – Needs to be Lua 5.1.x. If Lua 5.2.x works is unknown.
 
-2.1.24 --ips-bsxslotted-xml=<file>
+  – Usually valid value is 'lua' or 'lua5.1'.
 
-Apply IPS patch <file> to BS-X slotted flash mapping XML. 
-Requires --bsxslotted-xml=<file>.
+  – Default is not to build Lua support.
 
-2.1.25 --ips-dmg=<file>
+• THREADS=<bool>
 
-Apply IPS patch <file> to Game Boy ROM. Requires --dmg=<file>.
+  – Override platform default for dumper threading support.
 
-2.1.26 --ips-dmg-xml=<file>
+  – Threading is default on Linux.
 
-Apply IPS patch <file> to Game Boy ROM mapping XML. Requires 
---dmg-xml=<file>.
+  – 'YES' tries to use threading.
 
-2.1.27 --ips-slot-a=<file>
+  – 'NO' disables threading.
 
-Apply IPS patch <file> to Sufami turbo cartridge A ROM. Requires 
---slot-a=<file>.
+  – Note: This has absolutely nothing to do with platform 
+    threading.
 
-2.1.28 --ips-slot-a-xml=<file>
+• BSNES_IS_COMPAT=<anything>
 
-Apply IPS patch <file> to Sufami turbo cartridge A ROM mapping 
-XML. Requires --slot-a-xml=<file>.
+  – Signals that BSNES core used is compatiblity core, not 
+    accuracy core.
 
-2.1.29 --ips-slot-b=<file>
+  – Default is to assume accuracy core.
 
-Apply IPS patch <file> to Sufami turbo cartridge B ROM. Requires 
---slot-b=<file>.
+• JOYSTICK=<implementation>
 
-2.1.30 --ips-slot-b-xml=<file>
+  – Set joystick implementation. Valid values are:
 
-Apply IPS patch <file> to Sufami turbo cartridge B ROM mapping 
-XML. Requires --slot-b-xml=<file>.
+    ∗ SDL: Use SDL for joystick (requires SDL graphics)
 
-2.1.31 --ips-offset=<offset>
+    ∗ EVDEV: Use EVDEV for joystick (Linux only).
 
-Set IPS apply offset to <offset> (can be negative). IPS apply 
-offset is added to all addresses inside IPS file before applying. 
-If the resulting address is negative, write is ignored (with a 
-warning). If resulting address exceeds ROM size, the ROM is 
-extended.
+    ∗ DUMMY: Disable joystick support.
 
-Using offset of -512 is handy for applying IPS patches meant for 
-SMC/FIG or such files.
+  – Default is SDL.
 
-2.1.32 --pal
+• SOUND=<implementation>
 
-Force ROM to be considered PAL-only (warning: Will cause error if 
-used on anything except SNES and SGB).
+  – Set sound implementation. Valid values are:
 
-2.1.33 --ntsc
+    ∗ SDL: Use SDL for sound (requires SDL graphics)
 
-Force ROM to be considered NTSC-only (default for everything 
-except SNES and SGB).
+    ∗ PORTAUDIO: Use Portaudio for sound.
 
-2.2 New session options (lsnes.exe only)
+    ∗ DUMMY: Disable sound support
 
-If filename is not specified, new session is started. These 
-options control the properties of new session:
+  – Default is SDL.
 
-2.2.1 --port1=<type>
+• GRAPHICS=<implementation>
+
+  – Set windowing library to use. Valid values are:
+
+    ∗ SDL: Use SDL for graphics
+
+    ∗ WXWIDGETS: Use wxWidgets for graphics.
+
+  – Default is SDL.
+
+4 Command line options
+
+4.1 ROM options
+
+<kind> in the following can be one of:
+
+• rom: Cartridge ROM (BIOS for special carts). This is required.
+
+• bsx: BS-X (non-slotted) Game flash ROM.
+
+• bsxslotted: BS-X (slotted) Game flash ROM.
+
+• dmg: DMG game ROM
+
+• slot-a: Sufami Turbo Slot A ROM
+
+• slot-b: Sufami Turbo Slot B ROM
+
+4.1.1 --<kind>=<file> (lsnes/SDL, lsnes-avidump)
+
+Load <file> as specified ROM (SFC/BS/DMG/ST file format).
+
+4.1.2 --headered-<kind>=<file> (lsnes/SDL, lsnes-avidump)
+
+Load <file> as specified ROM, stripping first 512 bytes. Handy 
+for loading SMC / FIG and such files.
+
+4.1.3 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
+
+Override hardware detection for ROM, reading the values from 
+<file> (BSNES XML format).
+
+4.1.4 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
+
+Apply BPS/IPS patch <file> to ROM <kind>. If specified multiple 
+times, the patches are applied in order.
+
+4.1.5 --ips-<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
+
+Apply BPS/IPS patch <file> to XML of ROM <kind>. If specified 
+multiple times, the patches are applied in order.
+
+4.1.6 --ips-offset=<offset> (lsnes/SDL, lsnes-avidump)
+
+Set offset to apply to IPS patches. May be negative. Handy for 
+applying headered IPS patches (use offset of -512 for this). The 
+offset must be 0 for BPS patches.
+
+4.1.7 --pal
+
+Force ROM to be considered PAL-only.
+
+• Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
+
+• Attempting to load NTSC movie file will error out.
+
+4.1.8 --ntsc
+
+Force ROM to be considered NTSC-only.
+
+• Attempting to load PAL movie file will error out.
+
+4.2 Session options
+
+4.2.1 <filename> (lsnes/SDL, lsnes-avidump, movieinfo)
+
+Load <filename> as movie or savestate file. All other session 
+options are ignored.
+
+4.2.2 --port1=<device> (lsnes/SDL)
 
 Set type of port1. Valid values are:
 
@@ -218,7 +253,7 @@ Set type of port1. Valid values are:
 
 • mouse: Mouse.
 
-2.2.2 --port2=<type>
+4.2.3 --port2=<type> (lsnes/SDL)
 
 Set type of port2. Valid values are:
 
@@ -236,70 +271,73 @@ Set type of port2. Valid values are:
 
 • justifiers: Two justifiers
 
-2.2.3 --gamename=<name>
+4.2.4 --gamename=<name> (lsnes/SDL)
 
-Set the name of game to <name>
+Set the name of game to <name>. Default is blank.
 
-2.2.4 --author=<name>
+4.2.5 --author=<name> (lsnes/SDL)
 
 Add author with full name of <name> (no nickname).
 
-2.2.5 --author=|<name>
+4.2.6 --author=|<name> (lsnes/SDL)
 
 Add author with nickname of <name> (no full name).
 
-2.2.6 --author=<fullname>|<nickname>
+4.2.7 --author=<fullname>|<nickname> (lsnes/SDL)
 
 Add author with full name of <fullname> and nickname of 
 <nickname>.
 
-2.2.7 --rtc-second=<value>
+4.2.8 --rtc-second=<value> (lsnes/SDL)
 
-Set RTC second (0 is 1st January 1970 00:00:00Z).
+Set RTC second (0 is 1st January 1970 00:00:00Z). Default is 
+1,000,000,000.
 
-2.2.8 --rtc-subsecond=<value>
+4.2.9 --rtc-subsecond=<value> (lsnes/SDL)
 
-Set RTC subsecond. Range is 0-. Unit is CPU cycle.
+Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 
-2.3 <filename>
+4.3 Misc. options:
 
-If filename is specified on command line, it is loaded as initial 
-state (instead of constructing one). Mandatory for 
-lsnes-avidump.exe and movieinfo.exe.
-
-2.4 Misc. options
-
-2.4.1 --run=<file> (lsnes.exe only)
+4.3.1 --run=<file> (lsnes/SDL)
 
 After running main RC file, run this file. If multiple are 
 specified, these execute in order specified.
 
-2.5 dump options (lsnes-avidump.exe only)
+4.4 dump options (lsnes-dumpavi only)
 
-2.5.1 --prefix=<prefix>
+4.4.1 --prefix=<prefix>
 
 Set dump prefix. Default is “avidump”.
 
-2.5.2 --level=<level>
+4.4.2 --level=<level>
 
 Set compression level (0-18). Default is 7.
 
-2.5.3 --length=<length>
+4.4.3 --length=<length>
 
 Set number of frames to dump. Mandatory.
 
-2.5.4 --lua=<script>
+4.4.4 --lua=<script>
 
-Run specified lua script (lsnes-avidump.exe does not have 
+Run specified lua script (lsnes-dumpavi does not have 
 initialization files).
 
-2.5.5 --jmd
+4.4.5 --jmd
 
 Use JMD dumping instead of AVI dumping.
 
-3 Startup file lsnes.rc
+4.4.6 --sdmp
 
-Upon startup, lsnes (lsnes.exe only) executes file lsnes.rc as 
+Use SDMP dumping instead of AVI dumping.
+
+4.4.7 --ss
+
+Dump in single segment (SDMP only).
+
+5 Startup file lsnes.rc
+
+Upon startup, lsnes (lsnes/SDL only) executes file lsnes.rc as 
 commands. This file is located in:
 
 • Windows: %APPDATA%\lsnes\lsnes.rc (if %APPDATA% exists)
@@ -314,7 +352,7 @@ commands. This file is located in:
 If leading directories do not exist, attempt to create them is 
 made.
 
-4 Game internal commands
+6 Internal commands
 
 • Commands beginning with '*' invoke the corresponding command 
   without alias expansion.
@@ -323,27 +361,29 @@ made.
   executed as-is when button is pressed, and when button is 
   released, it is executed with '+' replaced by '-'.
 
-4.1 Settings:
+• Commands without '+' execute only on negative edge (release).
+
+6.1 Settings:
 
 Settings control various aspects of emulator behaviour.
 
-4.1.1 set-setting <setting> <value>
+6.1.1 set-setting <setting> <value>
 
 Sets setting <setting> to value <value> (may be empty).
 
-4.1.2 unset-setting <setting>
+6.1.2 unset-setting <setting>
 
 Try to unset setting <setting> (not all settings can be unset).
 
-4.1.3 get-setting <setting>
+6.1.3 get-setting <setting>
 
 Read value of setting <setting>
 
-4.1.4 show-settings
+6.1.4 show-settings
 
 Print names and values of all settings.
 
-4.2 Keybindings
+6.2 Keybindings
 
 Keybindings bind commands or aliases to keys (or pseudo-keys). 
 
@@ -358,18 +398,18 @@ Notes:
   buttons or hats) with modifiers. That may or may not work 
   right.
 
-4.2.1 bind-key [<mod>/<modmask>] <key> <command>
+6.2.1 bind-key [<mod>/<modmask>] <key> <command>
 
 Bind <command> to key <key> (activating if modifiers in <modmask> 
 (comma-seperated list) are set as <mod> (comma-seperated list).
 
 The names of keys and modifiers are platform-dependent.
 
-4.2.2 unbind-key [<mod>/<modmask>] <key>
+6.2.2 unbind-key [<mod>/<modmask>] <key>
 
 Unbind command from <key> (with specified <mod> and <modmask>).
 
-4.2.3 set-axis <axis> [disabled | axis | axis-inverse | 
+6.2.3 set-axis <axis> [disabled | axis | axis-inverse | 
   pressure0- | pressure0+ | pressure-0 | pressure-+ | pressure+0 
   | pressure+-] [minus=<val>] [zero=<val>] [plus=<val>] 
   [tolerance=<val>]
@@ -404,11 +444,11 @@ Set axis parameters for axis <axis>.
 • tolerance=<value>: Center band tolerance (0<x<1). The smaller 
   the value, the more sensitive the control is.
 
-4.2.4 show-bindings
+6.2.4 show-bindings
 
 Print all key bindings in effect.
 
-4.3 Aliases
+6.3 Aliases
 
 Aliases bind command to sequence of commands. After alias has 
 been defined, it replaces the command it shadows.
@@ -422,28 +462,28 @@ Notes:
 
 • One command can be aliased to multiple commands.
 
-4.3.1 alias-command <command> <expansion>
+6.3.1 alias-command <command> <expansion>
 
 Append <expansion> to alias <command>. If alias does not already 
 exist, it is created.
 
-4.3.2 unalias-command <command>
+6.3.2 unalias-command <command>
 
 Clear alias expansion for <command>.
 
-4.3.3 show-aliases
+6.3.3 show-aliases
 
 Print all aliases and their expansions in effect.
 
-4.4 run-script <script> (implemented for wxwidgets)
+6.4 run-script <script>
 
 Run <script> as if commands were entered on the command line.
 
-4.5 AVI Video dumping
+6.5 AVI Video dumping
 
 Following commands control AVI video dumping:
 
-4.5.1 dump-avi <prefix>
+6.5.1 dump-avi <prefix>
 
 Dump AVI video to prefix <prefix> Notes:
 
@@ -466,24 +506,24 @@ Dump AVI video to prefix <prefix> Notes:
 • The audio dumped to .avi is low-quality version. The 
   high-quality version is dumped to .sox file.
 
-4.5.2 end-avi
+6.5.2 end-avi
 
 End current AVI video dump (closing the emulator also closes the 
 dump).
 
-4.6 JMD video dumping
+6.6 JMD video dumping
 
 Following commands control JMD video dumping:
 
-4.6.1 dump-jmd <file>
+6.6.1 dump-jmd <file>
 
 Dump JMD video to file <file>.
 
-4.6.2 end-jmd
+6.6.2 end-jmd
 
 End the current JMD dump in progress.
 
-4.7 Memory manipulation
+6.7 Memory manipulation
 
 <address> may be decimal or hexadecimal (prefixed with '0x'). 
 <value> can be hexadecimal (prefixed with '0x'), unsigned or 
@@ -504,31 +544,31 @@ When dealing with DSP memory, multi-byte reads/writes are
 native-endian (do not use operand sizes exceeding DSP bitness, 
 except dword is OK for 24-bit memory).
 
-4.7.1 read-<size> <address>
+6.7.1 read-<size> <address>
 
 Read the value of byte in <address>.
 
-4.7.2 read-s<size> <address>
+6.7.2 read-s<size> <address>
 
 Read the value of signed byte in <address>.
 
-4.7.3 write-<size> <address> <value>
+6.7.3 write-<size> <address> <value>
 
 Write <value> to byte in address <address>.
 
-4.7.4 search-memory reset
+6.7.4 search-memory reset
 
 Reset the memory search
 
-4.7.5 search-memory count
+6.7.5 search-memory count
 
 Print number of candidates remaining
 
-4.7.6 search-memory print
+6.7.6 search-memory print
 
 Print all candidates remaining
 
-4.7.7 search-memory <usflag><sizeflag><op>
+6.7.7 search-memory <usflag><sizeflag><op>
 
 Searches memory for addresses satisfying criteria.
 
@@ -562,122 +602,122 @@ Searches memory for addresses satisfying criteria.
 
 • gt: > previous value.
 
-4.7.8 search-memory <sizeflag> <value>
+6.7.8 search-memory <sizeflag> <value>
 
 Searches for addresses that currently have value <value>. 
 <sizeflag> is as in previous command.
 
-4.8 Main commands
+6.8 Main commands
 
 These commands are not available in lsnesrc, but are available 
 after ROM has been loaded.
 
-4.8.1 quit-emulator [/y] (implemented for wxwidgets)
+6.8.1 quit-emulator [/y]
 
 Quits the emulator (asking for confirmation). If /y is given, no 
 confirmation is asked.
 
-4.8.2 pause-emulator (implemented for wxwidgets)
+6.8.2 pause-emulator
 
 Toggle paused/unpaused
 
-4.8.3 +advance-frame (implemented for wxwidgets)
+6.8.3 +advance-frame 
 
 Advance frame. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-4.8.4 +advance-poll (implemented for wxwidgets)
+6.8.4 +advance-poll 
 
 Advance subframe. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-4.8.5 advance-skiplag (implemented for wxwidgets)
+6.8.5 advance-skiplag 
 
 Skip to first poll in frame after current.
 
-4.8.6 reset (implemented for wxwidgets)
+6.8.6 reset 
 
 Reset the SNES after this frame.
 
-4.8.7 load <filename> (implemented for wxwidgets)
+6.8.7 load <filename> 
 
 Load savestate <filename> in current mode.
 
-4.8.8 load-state <filename> (implemented for wxwidgets)
+6.8.8 load-state <filename> 
 
 Load savestate <filename> in readwrite mode.
 
-4.8.9 load-readonly <filename> (implemented for wxwidgets)
+6.8.9 load-readonly <filename> 
 
 Load savestate <filename> in readonly mode.
 
-4.8.10 load-preserve <filename> (implemented for wxwidgets)
+6.8.10 load-preserve <filename> 
 
 Load savestate <filename> in readonly mode, preserving current 
 events.
 
-4.8.11 load-movie <filename> (implemented for wxwidgets)
+6.8.11 load-movie <filename> 
 
 Load savestate <filename>, ignoring save part in readonly mode.
 
-4.8.12 save-state <filename> (implemented for wxwidgets)
+6.8.12 save-state <filename> 
 
 Save system state to <filename> as soon as possible.
 
-4.8.13 save-movie <filename> (implemented for wxwidgets)
+6.8.13 save-movie <filename> 
 
 Save movie to <filename>.
 
-4.8.14 set-rwmode (implemented for wxwidgets)
+6.8.14 set-rwmode 
 
 Set read-write mode.
 
-4.8.15 set-romode (implemented for wxwidgets)
+6.8.15 set-romode 
 
 Set read-only mode
 
-4.8.16 toggle-rwmode (implemented for wxwidgets)
+6.8.16 toggle-rwmode 
 
 Toggle between read-only and read-write modes.
 
-4.8.17 set-gamename <name> (implemented for wxwidgets)
+6.8.17 set-gamename <name> 
 
 Set name of the game to <name>
 
-4.8.18 get-gamename (implemented for wxwidgets)
+6.8.18 get-gamename 
 
 Print the name of the game.
 
-4.8.19 add-author <author> (implemented for wxwidgets)
+6.8.19 add-author <author> 
 
 Adds new author <author>. If <author> does not contain '|' it is 
 full name. If it contains '|', '|' splits the full name and 
 nickname.
 
-4.8.20 edit-author <num> <author> (implemented for wxwidgets)
+6.8.20 edit-author <num> <author> 
 
 Edit the author in slot <num> (0-based) to be <author> (see 
 add-author for format)
 
-4.8.21 remove-author <num> (implemented for wxwidgets)
+6.8.21 remove-author <num> 
 
 Remove author in slot <num>
 
-4.8.22 print-authors (implemented for wxwidgets)
+6.8.22 print-authors 
 
 Print authors.
 
-4.8.23 test-1, test-2, test-3 (N/A for wxwidgets)
+6.8.23 test-1, test-2, test-3 (N/A for wxwidgets)
 
 Internal test commands. Don't use.
 
-4.8.24 take-screenshot <filename> (implemented for wxwidgets)
+6.8.24 take-screenshot <filename> 
 
 Save screenshot to <filename>.
 
-4.8.25 +controller<num><button> (N/A for wxwidgets)
+6.8.25 +controller<num><button> (N/A for wxwidgets)
 
 Press button <button> on controller <num> (1-8). The following 
 button names are known:
@@ -714,242 +754,240 @@ button names are known:
 
 • turbo
 
-4.8.26 controllerh<num><button>
+6.8.26 controllerh<num><button>
 
 Hold/unhold button <button> on controller <num> (1-8). See 
 +controller for button names.
 
-4.8.27 autofire (<pattern>|-)... (N/A for wxwidgets)
+6.8.27 autofire (<pattern>|-)... (N/A for wxwidgets)
 
 Set autofire pattern. Each parameter is comma-separated list of 
 button names (in form of 1start, 1A, 2B, etc..) to hold on that 
 frame. After reaching the end of pattern, the pattern restarts 
 from the beginning.
 
-4.8.28 repaint (N/A for wxwidgets)
+6.8.28 repaint (N/A for wxwidgets)
 
 Force a repaint.
 
-4.9 Save jukebox (implemented for wxwidgets)
+6.9 Save jukebox 
 
-4.9.1 cycle-jukebox-backward (N/A for wxwidgets)
+6.9.1 cycle-jukebox-backward (N/A for wxwidgets)
 
 Cycle save jukebox backwards.
 
-4.9.2 cycle-jukebox-forward (N/A for wxwidgets)
+6.9.2 cycle-jukebox-forward (N/A for wxwidgets)
 
 Cycle save jukebox forwards
 
-4.9.3 add-jukebox-save <filename> (N/A for wxwidgets)
+6.9.3 add-jukebox-save <filename> (N/A for wxwidgets)
 
 Add <filename> to jukebox saves.
 
-4.9.4 load-jukebox (N/A for wxwidgets)
+6.9.4 load-jukebox (N/A for wxwidgets)
 
 Do load from jukebox (current mode).
 
-4.9.5 save-jukebox (N/A for wxwidgets)
+6.9.5 save-jukebox (N/A for wxwidgets)
 
 Do state save to jukebox.
 
-4.10 Lua (implemented for wxwidgets)
+6.10 Lua 
 
 Only available if lua support is compiled in.
 
-4.10.1 <<<<<<< HEADevaluate-lua <luacode>=======eval-lua 
-  <luacode> (implemented for wxwidgets)>>>>>>> Wxwidgets Graphics 
-  plugin WIP
+6.10.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-4.10.2 run-lua <script> (implemented for wxwidgets)
+6.10.2 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-4.11 Memory watch
+6.11 Memory watch
 
-4.11.1 add-watch <name> <expression>
+6.11.1 add-watch <name> <expression>
 
 Adds new watch (or modifies old one).
 
-4.11.2 remove-watch <name>
+6.11.2 remove-watch <name>
 
 Remove a watch.
 
-4.12 Sound (implemented for wxwidgets)
+6.12 Sound 
 
-4.12.1 enable-sound <on/off> (implemented for wxwidgets)
+6.12.1 enable-sound <on/off> 
 
 Enable/Disable sound.
 
-4.12.2 set-sound-device <device> (implemented for wxwidgets)
+6.12.2 set-sound-device <device> 
 
 Set sound device to <device>
 
-4.12.3 show-sound-status (implemented for wxwidgets)
+6.12.3 show-sound-status 
 
 Show status of sound system.
 
-4.12.4 show-sound-devices (N/A for wxwidgets)
+6.12.4 show-sound-devices (N/A for wxwidgets)
 
 Show all available devices.
 
-4.13 SDL Platform commands (implemented for wxwidgets)
+6.13 SDL Platform commands 
 
 The following are valid on SDL platform.
 
-4.13.1 identify-key (N/A for wxwidgets)
+6.13.1 identify-key
 
 Asks to press a key and then identifies that (pseudo-)key.
 
-4.13.2 toggle-console (N/A for wxwidgets)
+6.13.2 toggle-console 
 
 Toggle between windowed/fullscreen console.
 
-4.13.3 scroll-fullup (N/A for wxwidgets)
+6.13.3 scroll-fullup 
 
 Scroll messages window as far back as it goes.
 
-4.13.4 scroll-fulldown (N/A for wxwidgets)
+6.13.4 scroll-fulldown 
 
 Scroll messages window as far forward as it goes.
 
-4.13.5 scroll-up (N/A for wxwidgets)
+6.13.5 scroll-up 
 
 Scroll messages window back one screenful.
 
-4.13.6 scroll-down (N/A for wxwidgets)
+6.13.6 scroll-down 
 
 Scroll messages window forward one screenful.
 
-5 Settings
+7 Settings
 
-5.1 Core settings
+7.1 Core settings
 
-5.1.1 firmwarepath
+7.1.1 firmwarepath
 
 Set where bsnes looks for firmware files. Default is “.”.
 
-5.1.2 targetfps
+7.1.2 targetfps
 
 Set the target fps. Numeric, range is 0.001 to “infinite”. 
 Default is native framerate.
 
-5.1.3 savecompression
+7.1.3 savecompression
 
 Set save compression level (integer 0-9). Default is 7 (0 is no 
 compression).
 
-5.1.4 advance-timeout
+7.1.4 advance-timeout
 
 Set the frame advance timeout in milliseconds. Numeric integer, 
 range is 0-999999999. Default is 500.
 
-5.2 AVI dumper settings
+7.2 AVI dumper settings
 
-5.2.1 avi-large
+7.2.1 avi-large
 
 AVI dumper: Always dump at 512x448 or 512x478 regardless of what 
 the console outputs.
 
-5.2.2 avi-left-border
+7.2.2 avi-left-border
 
 AVI dumper: Set the default left border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-5.2.3 avi-right-border
+7.2.3 avi-right-border
 
 AVI dumper: Set the default right border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-5.2.4 avi-top-border
+7.2.4 avi-top-border
 
 AVI dumper: Set the default top border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-5.2.5 avi-bottom-border
+7.2.5 avi-bottom-border
 
 AVI dumper: Set the default bottom border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-5.2.6 avi-maxframes
+7.2.6 avi-maxframes
 
 AVI dumper: Maximum number of frames per dump segment (0 => 
 unlimited). Range 0-999999999. Default is 0.
 
-5.3 SDL platform settings
+7.3 SDL platform settings
 
-5.3.1 autorepeat-first-delay
+7.3.1 autorepeat-first-delay
 
 Sets the delay for first character in typematic autorepeat.
 
-5.3.2 autorepeat-subsequent-delay
+7.3.2 autorepeat-subsequent-delay
 
 Sets the delay for subsequent characters in typematic autorepeat.
 
-6 Lua functions
+8 Lua functions
 
-6.1 Core (in main table)
+8.1 Core (in main table)
 
-6.1.1 print
+8.1.1 print
 
 Print line to message console.
 
-6.1.2 exec(string command)
+8.1.2 exec(string command)
 
 Run command as it was entered on the command line
 
-6.2 Table bit:
+8.2 Table bit:
 
 Bitwise logical functions and related.
 
-6.2.1 bit.none(number...) / bit.bnot(number...)
+8.2.1 bit.none(number...) / bit.bnot(number...)
 
 48-bit bitwise NOT / NONE function (set bits that are set in none 
 of the arguments).
 
-6.2.2 bit.any(number...) / bit.bor(number...)
+8.2.2 bit.any(number...) / bit.bor(number...)
 
 48-bit bitwise OR / ANY function (set bits that are set in any of 
 the arguments).
 
-6.2.3 bit.all(number...) / bit.band(number...)
+8.2.3 bit.all(number...) / bit.band(number...)
 
 48-bit bitwise AND / ALL function (set bits that are set in all 
 of the arguments).
 
-6.2.4 bit.parity(number...) / bit.bxor(number...)
+8.2.4 bit.parity(number...) / bit.bxor(number...)
 
 48-bit bitwise XOR / PARITY function (set bits that are set in 
 odd number of the arguments).
 
-6.2.5 bit.lrotate(number base[, number amount[, number bits]])
+8.2.5 bit.lrotate(number base[, number amount[, number bits]])
 
 Rotate bits-bit (max 48, default 48) number left by amount 
 (default 1) places.
 
-6.2.6 bit.rrotate(number base[, number amount[, number bits]])
+8.2.6 bit.rrotate(number base[, number amount[, number bits]])
 
 Rotate bits-bit (max 48, default 48) number right by amount 
 (default 1) places.
 
-6.2.7 bit.lshift(number base[, number amount[, number bits]])
+8.2.7 bit.lshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number left by amount 
 (default 1) places. The new bits are filled with zeroes.
 
-6.2.8 bit.lrshift(number base[, number amount[, number bits]])
+8.2.8 bit.lrshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number logically right by 
 amount (default 1) places. The new bits are filled with zeroes.
 
-6.2.9 bit.arshift(number base[, number amount[, number bits]])
+8.2.9 bit.arshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number arithmetically right 
 by amount (default 1) places. The new bits are shifted in with 
 copy of the high bit.
 
-6.3 Table gui:
+8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
 on_video callbacks. Exceptions are noted.
@@ -963,16 +1001,16 @@ greater than 127 do work.
 Origin of coordinates is at top left corner of game display area. 
 Left and top gaps correspond to negative coordinates.
 
-6.3.1 gui.resolution()
+8.3.1 gui.resolution()
 
 Returns 2-tuple (hresolution, vresolution).
 
-6.3.2 gui.<class>_gap(number gap)
+8.3.2 gui.<class>_gap(number gap)
 
 Set the <class> (left, right, top, bottom) gap to specified value 
 (max gap is 8191).
 
-6.3.3 gui.text(number x, number y, string text[, number fgc[, 
+8.3.3 gui.text(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Draw specified text on the GUI (each character cell is 8 or 16 
@@ -989,22 +1027,22 @@ wide and 16 high). Parameters:
 
 • bgc: Background color (default is -1 (transparent))
 
-6.3.4 gui.textH(number x, number y, string text[, number fgc[, 
+8.3.4 gui.textH(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-width.
 
-6.3.5 gui.textV(number x, number y, string text[, number fgc[, 
+8.3.5 gui.textV(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-height.
 
-6.3.6 gui.textHV(number x, number y, string text[, number fgc[, 
+8.3.6 gui.textHV(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-width/double-height.
 
-6.3.7 gui.rectangle(number x, number y, number width, number 
+8.3.7 gui.rectangle(number x, number y, number width, number 
   height[, number thickness[, number outline[, number fill]]])
 
 Draw rectangle on the GUI. Parameters:
@@ -1023,7 +1061,7 @@ Draw rectangle on the GUI. Parameters:
 
 • fill: Color of fil (default is -1 (transparent))
 
-6.3.8 gui.pixel(number x, number y[, number color])
+8.3.8 gui.pixel(number x, number y[, number color])
 
 Draw one pixel on the GUI. Parameters:
 
@@ -1033,7 +1071,7 @@ Draw one pixel on the GUI. Parameters:
 
 • color: Color of the pixel (default is 0xFFFFFF (white))
 
-6.3.9 gui.crosshair(number x, number y[, number length[, number 
+8.3.9 gui.crosshair(number x, number y[, number length[, number 
   color]])
 
 Draw a crosshair. Parameters:
@@ -1046,7 +1084,7 @@ Draw a crosshair. Parameters:
 
 • color: Color of the crosshair (default is 0xFFFFFF (white))
 
-6.3.10 gui.line(number x1, number y1, number x2, number y2[, 
+8.3.10 gui.line(number x1, number y1, number x2, number y2[, 
   number color])
 
 Draw a thin line. Parameters:
@@ -1061,7 +1099,7 @@ Draw a thin line. Parameters:
 
 • color: Color of the line (default is 0xFFFFFF (white)).
 
-6.3.11 gui.circle(number x, number y, number r[, number thick[, 
+8.3.11 gui.circle(number x, number y, number r[, number thick[, 
   number border[, number fil]]])
 
 Draw a circle. Parameters.
@@ -1078,38 +1116,38 @@ Draw a circle. Parameters.
 
 • fill: Fill color (default is -1 (transparent)).
 
-6.3.12 gui.repaint()
+8.3.12 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-6.3.13 gui.subframe_update(boolean on)
+8.3.13 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-6.3.14 gui.screenshot(string filename)
+8.3.14 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-6.3.15 gui.color(number r, number g, number b[, number a])
+8.3.15 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-6.3.16 gui.status(string name, string value)
+8.3.16 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
-6.4 table input
+8.4 table input
 
 Input handling. Only available in on_input callback.
 
-6.4.1 input.get(number controller, number index)
+8.4.1 input.get(number controller, number index)
 
 Read the specified index (0-11) from specified controller (0-7). 
 Notes:
@@ -1117,7 +1155,7 @@ Notes:
 • Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-6.4.2 input.set(number controller, number index, number value)
+8.4.2 input.set(number controller, number index, number value)
 
 Write the specified index (0-11) from specified controller (0-7), 
 storing value. Notes:
@@ -1125,171 +1163,171 @@ storing value. Notes:
 • Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-6.4.3 input.reset([number cycles])
+8.4.3 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-6.5 Table hostmemory
+8.5 Table hostmemory
 
 Host memory handling (extra memory saved to savestates). Host 
 memory starts empty.
 
-6.5.1 hostmemory.read(number address)
+8.5.1 hostmemory.read(number address)
 
 Reads hostmemory slot address. Slot numbers out of range return 
 false instead of numeric.
 
-6.5.2 hostmemory.write(number address, number value)
+8.5.2 hostmemory.write(number address, number value)
 
 Writes hostmemory slot with 0-255. Slot numbers out of range 
 cause extension of host memory slot space.
 
-6.5.3 hostmemory.readbyte(number address)
+8.5.3 hostmemory.readbyte(number address)
 
 Read unsigned byte (1 element) from given address. Slots out of 
 range return false.
 
-6.5.4 hostmemory.writebyte(number address, number value)
+8.5.4 hostmemory.writebyte(number address, number value)
 
 Write unsigned byte (1 element) to given slot. Slot numbers out 
 of range cause extension.
 
-6.5.5 hostmemory.readsbyte(number address)
+8.5.5 hostmemory.readsbyte(number address)
 
 Read signed byte (1 element) from given address. Slots out of 
 range return false.
 
-6.5.6 hostmemory.writesbyte(number address, number value)
+8.5.6 hostmemory.writesbyte(number address, number value)
 
 Write signed byte (1 element) to given slot. Slot numbers out of 
 range cause extension.
 
-6.5.7 hostmemory.readword(number address)
+8.5.7 hostmemory.readword(number address)
 
 Read unsigned word (2 elements) from given address. Slots out of 
 range return false.
 
-6.5.8 hostmemory.writeword(number address, number value)
+8.5.8 hostmemory.writeword(number address, number value)
 
 Write unsigned word (2 elements) to given slot. Slot numbers out 
 of range cause extension.
 
-6.5.9 hostmemory.readsword(number address)
+8.5.9 hostmemory.readsword(number address)
 
 Read signed word (2 elements) from given address. Slots out of 
 range return false.
 
-6.5.10 hostmemory.writesword(number address, number value)
+8.5.10 hostmemory.writesword(number address, number value)
 
 Write signed word (2 elements) to given slot. Slot numbers out of 
 range cause extension.
 
-6.5.11 hostmemory.readdword(number address)
+8.5.11 hostmemory.readdword(number address)
 
 Read unsigned doubleword (4 elements) from given address. Slots 
 out of range return false.
 
-6.5.12 hostmemory.writedword(number address, number value)
+8.5.12 hostmemory.writedword(number address, number value)
 
 Write unsigned doubleword (4 elements) to given slot. Slot 
 numbers out of range cause extension.
 
-6.5.13 hostmemory.readsdword(number address)
+8.5.13 hostmemory.readsdword(number address)
 
 Read signed doubleword (4 elements) from given address. Slots out 
 of range return false.
 
-6.5.14 hostmemory.writesdword(number address, number value)
+8.5.14 hostmemory.writesdword(number address, number value)
 
 Write signed doubleword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-6.5.15 hostmemory.readqword(number address)
+8.5.15 hostmemory.readqword(number address)
 
 Read unsigned quadword (8 elements) from given address. Slots out 
 of range return false.
 
-6.5.16 hostmemory.writeqword(number address, number value)
+8.5.16 hostmemory.writeqword(number address, number value)
 
 Write unsigned quadword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-6.5.17 hostmemory.readsqword(number address)
+8.5.17 hostmemory.readsqword(number address)
 
 Read signed quadword (8 elements) from given address. Slots out 
 of range return false.
 
-6.5.18 hostmemory.writesqword(number address, number value)
+8.5.18 hostmemory.writesqword(number address, number value)
 
 Write signed quadword (8 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-6.6 Table movie
+8.6 Table movie
 
 Movie handling
 
-6.6.1 movie.currentframe()
+8.6.1 movie.currentframe()
 
 Return number of current frame.
 
-6.6.2 movie.framecount()
+8.6.2 movie.framecount()
 
 Return number of frames in movie.
 
-6.6.3 movie.readonly()
+8.6.3 movie.readonly()
 
 Return true if in readonly mode, false if in readwrite.
 
-6.6.4 movie.set_readwrite()
+8.6.4 movie.set_readwrite()
 
 Set readwrite mode (does not cause on_readwrite callback).
 
-6.6.5 movie.frame_subframes(number frame)
+8.6.5 movie.frame_subframes(number frame)
 
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-6.6.6 movie.read_subframe(number frame, number subframe)
+8.6.6 movie.read_subframe(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
 
-6.7 Table settings
+8.7 Table settings
 
 Routines for settings manipulation
 
-6.7.1 settings.get(string name)
+8.7.1 settings.get(string name)
 
 Get value of setting. If setting is blank, returns false. If 
 setting value can't be obtained, returns (nil, error message).
 
-6.7.2 settings.set(string name, string value)
+8.7.2 settings.set(string name, string value)
 
 Set value of setting. If setting can't be set, returns (nil, 
 error message).
 
-6.7.3 settings.is_set(string name)
+8.7.3 settings.is_set(string name)
 
 Returns if setting is set. If setting does not exist, returns 
 (nil, error message).
 
-6.7.4 settings.blank(string name)
+8.7.4 settings.blank(string name)
 
 Blanks a setting and returns true. If setting can't be blanked, 
 returns (nil, error message).
 
-6.8 Table memory
+8.8 Table memory
 
 Contains various functions for managing memory
 
-6.8.1 memory.vma_count()
+8.8.1 memory.vma_count()
 
 Returns the number of VMAs
 
-6.8.2 memory.read_vma(number index)
+8.8.2 memory.read_vma(number index)
 
 Reads the specified VMA (indices start from zero). Trying to read 
 invalid VMA gives nil. The read VMA is table with the following 
@@ -1308,150 +1346,150 @@ fields:
 • native_endian (boolean): True if the VMA has native endian as 
   opposed to little endian.
 
-6.8.3 memory.find_vma(number address)
+8.8.3 memory.find_vma(number address)
 
 Finds the VMA containing specified address. Returns table in the 
 same format as read_vma or nil if not found.
 
-6.8.4 memory.readbyte(number address)
+8.8.4 memory.readbyte(number address)
 
 Reads the specified address as unsigned byte and returns the 
 result.
 
-6.8.5 memory.readsbyte(number address)
+8.8.5 memory.readsbyte(number address)
 
 Reads the specified address as signed byte and returns the 
 result.
 
-6.8.6 memory.writebyte(number address, number value)
+8.8.6 memory.writebyte(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a byte).
 
-6.8.7 memory.readword(number address)
+8.8.7 memory.readword(number address)
 
 Reads the specified address as unsigned word and returns the 
 result.
 
-6.8.8 memory.readsword(number address)
+8.8.8 memory.readsword(number address)
 
 Reads the specified address as signed word and returns the 
 result.
 
-6.8.9 memory.writeword(number address, number value)
+8.8.9 memory.writeword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a word).
 
-6.8.10 memory.readdword(number address)
+8.8.10 memory.readdword(number address)
 
 Reads the specified address as unsigned doubleword and returns 
 the result.
 
-6.8.11 memory.readsdword(number address)
+8.8.11 memory.readsdword(number address)
 
 Reads the specified address as signed doubleword and returns the 
 result.
 
-6.8.12 memory.writedword(number address, number value)
+8.8.12 memory.writedword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a doubleword).
 
-6.8.13 memory.readqword(number address)
+8.8.13 memory.readqword(number address)
 
 Reads the specified address as unsigned quadword and returns the 
 result.
 
-6.8.14 memory.readsqword(number address)
+8.8.14 memory.readsqword(number address)
 
 Reads the specified address as signed quadword and returns the 
 result.
 
-6.8.15 memory.writeqword(number address, number value)
+8.8.15 memory.writeqword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
-6.9 Table _SYSTEM
+8.9 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-6.10 Callbacks
+8.10 Callbacks
 
 Various callbacks to Lua that can occur.
 
-6.10.1 Callback: on_paint()
+8.10.1 Callback: on_paint()
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
 
-6.10.2 Callback: on_video()
+8.10.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-6.10.3 Callback: on_frame()
+8.10.3 Callback: on_frame()
 
 Called on each starting whole frame.
 
-6.10.4 Callback: on_startup()
+8.10.4 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-6.10.5 Callback: on_pre_load(string name)
+8.10.5 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-6.10.6 Callback: on_err_load(string name)
+8.10.6 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-6.10.7 Callback: on_post_load(string name, boolean was_savestate)
+8.10.7 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-6.10.8 Callback: on_pre_save(string name, boolean is_savestate)
+8.10.8 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-6.10.9 Callback: on_err_save(string name)
+8.10.9 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-6.10.10 Callback: on_post_save(string name, boolean is_savestate)
+8.10.10 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-6.10.11 Callback: on_quit()
+8.10.11 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-6.10.12 Callback: on_input(boolean subframe)
+8.10.12 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-6.10.13 Callback: on_reset()
+8.10.13 Callback: on_reset()
 
 Called when SNES is reset.
 
-6.10.14 Callback: on_readwrite()
+8.10.14 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-6.10.15 Callback: on_snoop(number port, number controller, number 
+8.10.15 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1460,11 +1498,11 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-7 Modifier and key names:
+9 Modifier and key names:
 
-7.1 SDL Platform
+9.1 SDL Platform
 
-7.1.1 Modifier names
+9.1.1 Modifier names
 
 Following modifier names are known:
 
@@ -1480,7 +1518,7 @@ Following modifier names are known:
 
 • mode: Mode select.
 
-7.1.2 Key names
+9.1.2 Key names
 
 Following key names are known:
 
@@ -1546,7 +1584,7 @@ work in conjunction with modifers):
 • joystick<num>axis<axis>: Joystick <num> (0-based) axis <axis> 
   pressure (axis modes pressure_*).
 
-7.1.3 Special buttons:
+9.1.3 Special buttons:
 
 • Escape: Enter/Exit Command mode, cancel modal dialogs.
 
@@ -1579,20 +1617,20 @@ work in conjunction with modifers):
 • LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump 
   corrupted!).
 
-7.1.4 Watchdog timer:
+9.1.4 Watchdog timer:
 
 If emulator does not reach internal polling loop in 15 seconds 
 after leaving it or 15 seconds after starting, the emulator 
 instantly bombs out.
 
-8 Movie file format
+10 Movie file format
 
 Movie file is .zip archive in itself, normal ZIP archive tools 
 work on it (note: If you recompress it, do not use compression 
 methods other than store and deflate and especially do not use 
 encryption of any kind).
 
-8.1 Detecting clean start/SRAM/Savestate
+10.1 Detecting clean start/SRAM/Savestate
 
 • If file has member “savestate” it is savestate, otherwise:
 
@@ -1601,7 +1639,7 @@ encryption of any kind).
 
 • It is movie starting from clear state.
 
-8.2 Member: gametype
+10.2 Member: gametype
 
 Type of game ROM and region (as one line). Valid values are:
 
@@ -1639,92 +1677,92 @@ Frame rates are:
 +---------+-----------------+
 
 
-8.3 Member: port1
+10.3 Member: port1
 
 Contains type of port #1 (as one line). Valid values are 'none', 
 'gamepad', 'multitap' and 'mouse'. If not present, defaults to 
 'gamepad'.
 
-8.4 Member: port2
+10.4 Member: port2
 
 Contains type of port #2 (as one line). Valid values are 'none', 
 'gamepad', 'multitap', 'mouse', 'superscope', 'justifier' and 
 'justifiers'. If not present, defaults to 'none'.
 
-8.5 Member: gamename
+10.5 Member: gamename
 
 Contains name of the game (as one line).
 
-8.6 Member: authors
+10.6 Member: authors
 
 Contains authors, one per line. Part before '|' is the full name, 
 part after is the nickname.
 
-8.7 Member: systemid
+10.7 Member: systemid
 
 Always “lsnes-rr1” (one line). Used to reject other saves.
 
-8.8 Member: controlsversion
+10.8 Member: controlsversion
 
 Always “0” (one line). Used to identify what controls are there.
 
-8.9 Member: “coreversion”
+10.9 Member: “coreversion”
 
 Contains bsnes core version number (as one line).
 
-8.10 Member: projectid
+10.10 Member: projectid
 
 Contains project ID (as one line). Used to identify if two movies 
 are part of the same project.
 
-8.11 Member: {rom,slota,slotb}{,xml}.sha256
+10.11 Member: {rom,slota,slotb}{,xml}.sha256
 
 Contains SHA-256 of said ROM or ROM mapping file (as one line). 
 Absent if corresponding file is absent.
 
-8.12 Member: moviesram.<name>
+10.12 Member: moviesram.<name>
 
 Raw binary startup SRAM of kind <name>. Only present in 
 savestates and movies starting from SRAM.
 
-8.13 Member: saveframe
+10.13 Member: saveframe
 
 Contains frame number (as one line) of frame movie was saved on. 
 Only present in savestates.
 
-8.14 Member: lagcounter
+10.14 Member: lagcounter
 
 Current value of lag counter (as one line). Only present in 
 savestates.
 
-8.15 Member: pollcounters
+10.15 Member: pollcounters
 
 Contains poll counters (currently 100 of them), one per line. 
 Each line is raw poll count if DRDY is set for it. Otherwise it 
 is negative poll count minus one. Only present in savestates.
 
-8.16 Member: hostmemory
+10.16 Member: hostmemory
 
 Raw binary dump of host memory. Only present in savestates.
 
-8.17 Member: savestate
+10.17 Member: savestate
 
 The raw binary savestate itself. Savestate detection uses this 
 file, only present in savestates.
 
-8.18 Member: screenshot
+10.18 Member: screenshot
 
 Screenshot of current frame. Only present in savestates. First 2 
 bytes are big-endian width of image, rest are 24-bit RGB image 
 data. Height of image is inferred from the width and size of 
 data.
 
-8.19 Member: sram.<name>
+10.19 Member: sram.<name>
 
 Raw binary SRAM of kind <name> at time of savestate. Only present 
 in savestates.
 
-8.20 Member: input
+10.20 Member: input
 
 The actual input track, one line per subframe (blank lines are 
 skipped).
@@ -1738,12 +1776,12 @@ skipped).
 Length of movie in frames is number of lines in input file that 
 start a new frame.
 
-8.21 Member: rerecords
+10.21 Member: rerecords
 
 Contains textual base-10 rerecord count (as one line; emulator 
 just writes this, it doesn't read it) + 1.
 
-8.22 Member: rrdata
+10.22 Member: rrdata
 
 This member stores set of load IDs. There is one load ID per 
 rerecord (plus one corresponding to start of project).
@@ -1787,29 +1825,29 @@ Records are processed as follows:
 The number of rerecords + 1 is equal to the sum of number of IDs 
 encoded by all records.
 
-8.23 Member: starttime.second
+10.23 Member: starttime.second
 
 Movie starting time, second part. Epoch is Unix epoch. Default is 
 1,000,000,000.
 
-8.24 Member: starttime.subsecond
+10.24 Member: starttime.subsecond
 
 Movie starting time, subsecond part. Unit is CPU clocks. Default 
 is 0.
 
-8.25 Member: savetime.second
+10.25 Member: savetime.second
 
 Movie saving time, second part. Default is starttime.second. Only 
 present in savestates.
 
-8.26 Member: savetime.subsecond
+10.26 Member: savetime.subsecond
 
 Movie saving time, subsecond part. Default is 
 starttime.subsecond. Only present in savestates.
 
-9 Compiling:
+11 Compiling:
 
-9.1 Building BSNES
+11.1 Building BSNES
 
 make ui=ui-libsnes profile=accuracy
 
@@ -1831,7 +1869,7 @@ bsnes-patches/. These fix the following:
 6. Allow frontend to control random number seed (just nice to 
   have)
 
-9.2 Prerequisite libraries:
+11.2 Prerequisite libraries:
 
 • zlib
 
@@ -1846,56 +1884,56 @@ bsnes-patches/. These fix the following:
 
 • boost conversion (header only)
 
-9.3 Compile options to make:
+11.3 Compile options to make:
 
-9.3.1 BSNES_PATH=<path>
+11.3.1 BSNES_PATH=<path>
 
 Set path to BSNES bsnes directory to <path>.
 
-9.3.2 THREADS=NO
+11.3.2 THREADS=NO
 
 Don't use threads on Linux.
 
-9.3.3 THREADS=YES
+11.3.3 THREADS=YES
 
 Try to use threads even on non-Linux systems.
 
-9.3.4 CROSS_PREFIX=<prefix>
+11.3.4 CROSS_PREFIX=<prefix>
 
 Prepend this to all commands refering to cross-compiling 
 environment with this.
 
-9.3.5 CC=<compiler>
+11.3.5 CC=<compiler>
 
 Target C++ compiler to use. Defaults to g++
 
 Note: If crosscompiling, this has to be crosscompiler, and 
 CROSS_PREFIX is prepended.
 
-9.3.6 BSNES_IS_COMPAT=1
+11.3.6 BSNES_IS_COMPAT=1
 
 Assume BSNES uses compatiblity core instead of accuracy core.
 
-9.3.7 LUA=<package>
+11.3.7 LUA=<package>
 
 Compile lua support, using package <package>
 
-9.3.8 GRAPHICS=<plat>
+11.3.8 GRAPHICS=<plat>
 
 Set graphics platform. Currently available choices are “SDL” and “
 WXWIDGETS”.
 
-9.3.9 SOUND=<plat>
+11.3.9 SOUND=<plat>
 
 Set sound platform. Currently available choices are “SDL” 
 (requires SDL graphics), “PORTAUDIO” and “DUMMY”.
 
-9.3.10 JOYSTICK=<plat>
+11.3.10 JOYSTICK=<plat>
 
 Set joystick platform. Currently available choices are “SDL” 
 (requires SDL graphics), “EVDEV” and “DUMMY”.
 
-10 Quick'n'dirty encode guide
+12 Quick'n'dirty encode guide
 
 1. Start the emulator and load the movie file.
 
@@ -1920,9 +1958,9 @@ Set joystick platform. Currently available choices are “SDL”
 9. Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'. Now 
   final.mkv contains quick'n'dirty encode.
 
-11 Axis configurations for some gamepad types:
+13 Axis configurations for some gamepad types:
 
-11.1 XBox360 controller:
+13.1 XBox360 controller:
 
 Axes 2 and 5 (joystick<n>axis2 and joystick<n>axis5) should be 
 set to pressure-+.
@@ -1931,7 +1969,7 @@ set-axis joystick0axis2 pressure-+
 
 set-axis joystick0axis5 pressure-+
 
-11.2 PS3 “sixaxis” controller:
+13.2 PS3 “sixaxis” controller:
 
 Axes 8-19 should be disabled.
 
@@ -1959,9 +1997,9 @@ set-axis joystick0axis18 disabled
 
 set-axis joystick0axis19 disabled
 
-12 Errata:
+14 Errata:
 
-12.1 Problems from BSNES core:
+14.1 Problems from BSNES core:
 
 • The whole pending save stuff.
 
@@ -1971,7 +2009,7 @@ set-axis joystick0axis19 disabled
 
 • Firmwares can't be loaded from ZIP archives.
 
-12.2 Other problems:
+14.2 Other problems:
 
 • Modifiers don't work with pseudo-keys (SDL, EVDEV).
 
@@ -1995,15 +2033,15 @@ set-axis joystick0axis19 disabled
 • Movies use way too much (like at least 10x what would be 
   needed) memory.
 
-13 Changelog:
+15 Changelog:
 
-13.1 rr0-beta1
+15.1 rr0-beta1
 
 • Fix -Wall warnings
 
 • Fix dumper video corruption with levels 10-18.
 
-13.2 rr0-beta2
+15.2 rr0-beta2
 
 • Autofire
 
@@ -2019,23 +2057,23 @@ set-axis joystick0axis19 disabled
 
 • Faster movie loading and saving.
 
-13.3 rr0-beta3
+15.3 rr0-beta3
 
 • Joystick support
 
-13.4 rr0-beta4
+15.4 rr0-beta4
 
 • Fix multi-buttons
 
 • Save jukebox functionality.
 
-13.5 rr0-beta5
+15.5 rr0-beta5
 
 • Try to fix some nasty failing movie load edge cases
 
 • Allow specifying scripts to run on command line.
 
-13.6 rr0-beta6
+15.6 rr0-beta6
 
 • Major source code reorganization.
 
@@ -2043,7 +2081,7 @@ set-axis joystick0axis19 disabled
 
 • Don't crash if loading initial state fails.
 
-13.7 rr0-beta7
+15.7 rr0-beta7
 
 • Fix firmware lookup
 
@@ -2057,7 +2095,7 @@ set-axis joystick0axis19 disabled
 
 • Fix loading movies starting from SRAM.
 
-13.8 rr0-beta8
+15.8 rr0-beta8
 
 • Add support for unattended dumping
 
@@ -2070,7 +2108,7 @@ set-axis joystick0axis19 disabled
 • Don't try to do dubious things in global ctors (fix crash on 
   startup)
 
-13.9 rr0-beta9
+15.9 rr0-beta9
 
 • Small documentation tweaking
 
@@ -2078,7 +2116,7 @@ set-axis joystick0axis19 disabled
 
 • Fix major bug in modifier matching
 
-13.10 rr0-beta10
+15.10 rr0-beta10
 
 • Lots of documentation fixes
 
@@ -2089,7 +2127,7 @@ set-axis joystick0axis19 disabled
 
 • Remove errant tab from joystick message.
 
-13.11 rr0-beta11
+15.11 rr0-beta11
 
 • Make autofire operate in absolute time, not linear time
 
@@ -2104,19 +2142,19 @@ set-axis joystick0axis19 disabled
 • Dump at correct framerate if dumping interlaced NTSC 
   (height=448).
 
-13.12 rr0-beta12
+15.12 rr0-beta12
 
 • Actually include the complete source code
 
 • Keep track of RTC
 
-13.13 rr0-beta13
+15.13 rr0-beta13
 
 • Document {save,start}time.{,sub}second.
 
 • Intercept time() from bsnes core.
 
-13.14 rr0-beta14
+15.14 rr0-beta14
 
 • Allow disabling time() interception (allow build on Mac OS X)
 
@@ -2134,7 +2172,7 @@ set-axis joystick0axis19 disabled
 
 • New CSCD writer implementation.
 
-13.15 rr0-beta15
+15.15 rr0-beta15
 
 • Fix interaction of * and +.
 
@@ -2148,7 +2186,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor controller input code.
 
-13.16 rr0-beta16
+15.16 rr0-beta16
 
 • Fix mouseclick scale compensation.
 
@@ -2158,7 +2196,7 @@ set-axis joystick0axis19 disabled
 
 • Fix CSCD output (buffer overrun and race condition).
 
-13.17 rr0-beta17
+15.17 rr0-beta17
 
 • JMD dumping support.
 
@@ -2176,7 +2214,7 @@ set-axis joystick0axis19 disabled
 
 • Pass colors in one chunk from Lua.
 
-13.18 rr0-beta18
+15.18 rr0-beta18
 
 • New lua functions gui.line(), gui.status() and gui.circle(), 
   memory.vma_count(), memory.read_vma() and memory.find_vma().
@@ -2207,7 +2245,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor more code into generic window code.
 
-13.19 rr0-beta19
+15.19 rr0-beta19
 
 • Refactor message handling.
 
@@ -2219,7 +2257,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets graphics plugin.
 
-13.20 rr0-beta20
+15.20 rr0-beta20
 
 • Get rid of win32-crap.[ch]pp.
 
@@ -2237,7 +2275,7 @@ set-axis joystick0axis19 disabled
 
 • Load/Save settings in wxwidgets gui.
 
-13.21 rr0-beta21
+15.21 rr0-beta21
 
 • Patch problems in bsnes core
 
@@ -2245,7 +2283,7 @@ set-axis joystick0axis19 disabled
 
 • Fix memory corruption in lcscreen::load()
 
-13.22 rr0-beta22
+15.22 rr0-beta22
 
 • Fix interpretting repeat counts in rrdata loading.
 
@@ -2268,7 +2306,7 @@ set-axis joystick0axis19 disabled
 • Fix titlebar version number (no, the last version wasn't 
   'lsnes-0-beta21', it was 'lsnes rr0-beta21').
 
-13.23 rr0-beta23
+15.23 rr0-beta23
 
 • Fix memory corruption due to macro/field mixup
 
@@ -2290,7 +2328,7 @@ set-axis joystick0axis19 disabled
 
 • Fix crash related to full console mode.
 
-13.24 rr0-beta24
+15.24 rr0-beta24
 
 • Wxwidgets: Allow bringing application to foreground on Mac OS 
   X.
@@ -2301,7 +2339,7 @@ set-axis joystick0axis19 disabled
 
 • Lua: _SYSTEM table.
 
-13.25 rr0-beta25
+15.25 rr0-beta25
 
 • sdmp2sox: Pad soundtrack if using -l or -L.
 
@@ -2314,7 +2352,7 @@ set-axis joystick0axis19 disabled
 • Fix zip_writer bug causing warnings from info-zip and error 
   from advzip.
 
-13.26 rr0-beta26
+15.26 rr0-beta26
 
 • Fix IPS patching code (use bsnes core IPS patcher).
 
@@ -2322,11 +2360,11 @@ set-axis joystick0axis19 disabled
 
 • Add feature to load headered ROMs.
 
-13.27 rr0-beta27
+15.27 rr0-beta27
 
 • Show command names when showing keybindings
 
-13.28 rr0
+15.28 rr0
 
 • Fix pause-on-end to be actually controllable
 
@@ -2335,7 +2373,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Fix ROM loading.
 
-13.29 rr1-beta0
+15.29 rr1-beta0
 
 • Lua: Add gui.textH, gui.textV, gui.textHV
 
@@ -2349,13 +2387,13 @@ set-axis joystick0axis19 disabled
 
 • Split UI and core into their own threads
 
-13.30 rr1-beta1
+15.30 rr1-beta1
 
 • Remove leftover dummy SRAM slot
 
 • Fix controller numbers.
 
-13.31 rr1-beta2
+15.31 rr1-beta2
 
 • Fix lsnes-dumpavi after interface change.
 
@@ -2363,11 +2401,17 @@ set-axis joystick0axis19 disabled
 
 • Pack movie data in memory.
 
-13.31.1 rr1-beta3
+15.32 rr1-beta3
 
 • Fix framecount/length given when loading movies.
 
 • Controller command memory leak fixes.
 
 • Don't leak palette if freeing screen object.
+
+15.33 rr1-beta4
+
+• Detect revisions.
+
+• Wxwidgets: Allow controlling dumper from the menu.
 

@@ -68,19 +68,375 @@ lsnes is SNES rerecording emulator based on bsnes core.
 \end_layout
 
 \begin_layout Section
+Dependencies
+\end_layout
+
+\begin_layout Enumerate
+bsnes libsnes
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+v084 or 085
+\end_layout
+
+\begin_layout Enumerate
+accuracy or compatiblity core.
+\end_layout
+
+\begin_layout Enumerate
+Patched version (using included 6 patches)
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Zlib
+\end_layout
+
+\begin_layout Enumerate
+boost_iostreams
+\end_layout
+
+\begin_layout Enumerate
+boost_filesystem
+\end_layout
+
+\begin_layout Enumerate
+libsdl (SDL only)
+\end_layout
+
+\begin_layout Enumerate
+sdlmain (SDL only, part of SDL)
+\end_layout
+
+\begin_layout Enumerate
+boost_conversion (this is header-only library)
+\end_layout
+
+\begin_layout Enumerate
+libswscale (wxwidgets graphics only)
+\end_layout
+
+\begin_layout Enumerate
+Portaudio (portaudio sound only)
+\end_layout
+
+\begin_layout Enumerate
+std::thread and co (for threaded dumper only)
+\end_layout
+
+\begin_layout Section
+Building
+\end_layout
+
+\begin_layout Standard
+Building is via makefile, the following options are available:
+\end_layout
+
+\begin_layout Itemize
+CROSS_PREFIX=<prefix>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Prefix to apply to commands when building executables / object files for
+ the target architecture.
+ 
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+CC=<name>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Name of C++ compiler.
+\end_layout
+
+\begin_layout Itemize
+CROSS_PREFIX is prepended if compiling for target architecture.
+\end_layout
+
+\begin_layout Itemize
+This needs to be at least GCC 4.6.
+\end_layout
+
+\begin_layout Itemize
+Set to 'g++-mp-4.6' if compiling on Mac OS X using GCC 4.6 from Macports.
+\end_layout
+
+\begin_layout Itemize
+Default is 'g++'.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+HOSTCC=<name>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Name of host C++ compiler.
+\end_layout
+
+\begin_layout Itemize
+Default is value of 'CC' option.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+USER_HOSTCCFLAGS=<flags>:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Compiler flags to pass when compiling/linking for host architecture.
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+USER_CFLAGS=<flags>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Extra flags to pass when compiling for target architecture
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+USER_LDFLAGS=<flags>: 
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Extra flags to pass when linking for target architecture.
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+USER_PLATFORM_CFLAGS=<flags>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Extra flags to pass when compiling files using platform-dependent code for
+ target architecture.
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+USER_PLATFORM_LDFLAGS=<flags>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Extra flags to pass when linking files using platform-dependent code for
+ target architecture.
+\end_layout
+
+\begin_layout Itemize
+Default is blank.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+FONT_SRC=<file>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Set the font file to use.
+\end_layout
+
+\begin_layout Itemize
+Currently the valid values are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+cp437.hex: Standard VGA font (256 characters).
+\end_layout
+
+\begin_layout Itemize
+unifontfull-5.1.20080820.hex: GNU unifont (covers most of Unicode BMP)
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Default is 'unifontfull-5.1.20080820.hex'
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+LUA=<package>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Package to use for Lua support.
+\end_layout
+
+\begin_layout Itemize
+Needs to be Lua 5.1.x.
+ If Lua 5.2.x works is unknown.
+\end_layout
+
+\begin_layout Itemize
+Usually valid value is 'lua' or 'lua5.1'.
+\end_layout
+
+\begin_layout Itemize
+Default is not to build Lua support.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+THREADS=<bool>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Override platform default for dumper threading support.
+\end_layout
+
+\begin_layout Itemize
+Threading is default on Linux.
+\end_layout
+
+\begin_layout Itemize
+'YES' tries to use threading.
+\end_layout
+
+\begin_layout Itemize
+'NO' disables threading.
+\end_layout
+
+\begin_layout Itemize
+Note: This has absolutely nothing to do with platform threading.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+BSNES_IS_COMPAT=<anything>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Signals that BSNES core used is compatiblity core, not accuracy core.
+\end_layout
+
+\begin_layout Itemize
+Default is to assume accuracy core.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+JOYSTICK=<implementation>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Set joystick implementation.
+ Valid values are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+SDL: Use SDL for joystick (requires SDL graphics)
+\end_layout
+
+\begin_layout Itemize
+EVDEV: Use EVDEV for joystick (Linux only).
+\end_layout
+
+\begin_layout Itemize
+DUMMY: Disable joystick support.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Default is SDL.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+SOUND=<implementation>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Set sound implementation.
+ Valid values are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+SDL: Use SDL for sound (requires SDL graphics)
+\end_layout
+
+\begin_layout Itemize
+PORTAUDIO: Use Portaudio for sound.
+\end_layout
+
+\begin_layout Itemize
+DUMMY: Disable sound support
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Default is SDL.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+GRAPHICS=<implementation>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Set windowing library to use.
+ Valid values are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+SDL: Use SDL for graphics
+\end_layout
+
+\begin_layout Itemize
+WXWIDGETS: Use wxWidgets for graphics.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Default is SDL.
+\end_layout
+
+\end_deeper
+\begin_layout Section
 Command line options
-\end_layout
-
-\begin_layout Itemize
-Syntax: lsnes.exe <rom-options> <misc-options> (<new-session-options>|<filename>)
-\end_layout
-
-\begin_layout Itemize
-Syntax: lsnes-avidump <dump-options> <misc-options> <rom-options> <filename>
-\end_layout
-
-\begin_layout Itemize
-Syntax: movieinfo.exe <filename>
 \end_layout
 
 \begin_layout Subsection
@@ -88,304 +444,87 @@ ROM options
 \end_layout
 
 \begin_layout Standard
-These options control loading the ROM.
+<kind> in the following can be one of:
+\end_layout
+
+\begin_layout Itemize
+rom: Cartridge ROM (BIOS for special carts).
+ This is required.
+\end_layout
+
+\begin_layout Itemize
+bsx: BS-X (non-slotted) Game flash ROM.
+\end_layout
+
+\begin_layout Itemize
+bsxslotted: BS-X (slotted) Game flash ROM.
+\end_layout
+
+\begin_layout Itemize
+dmg: DMG game ROM
+\end_layout
+
+\begin_layout Itemize
+slot-a: Sufami Turbo Slot A ROM
+\end_layout
+
+\begin_layout Itemize
+slot-b: Sufami Turbo Slot B ROM
 \end_layout
 
 \begin_layout Subsubsection
---rom=<file>
+--<kind>=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Load <file> (SFC file format) as main SNES cartridge ROM.
- This is the game ROM for SNES and cartridge BIOS for other types.
- Required option.
+Load <file> as specified ROM (SFC/BS/DMG/ST file format).
 \end_layout
 
 \begin_layout Subsubsection
---headered-rom=<file>
+--headered-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Same as --rom, but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
+Load <file> as specified ROM, stripping first 512 bytes.
+ Handy for loading SMC / FIG and such files.
 \end_layout
 
 \begin_layout Subsubsection
---rom-xml=<file>
+--<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Set the mapping XML file for main cartridge ROM.
- If not specified, defaults are used.
+Override hardware detection for ROM, reading the values from <file> (BSNES
+ XML format).
 \end_layout
 
 \begin_layout Subsubsection
---bsx=<file>
+--ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Load <file> (BS file format) as BS-X non-slotted flash memory.
- Also sets system type to BS-X non-slotted (not compatible with --bsxslotted=<fi
-le>, --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
+Apply BPS/IPS patch <file> to ROM <kind>.
+ If specified multiple times, the patches are applied in order.
 \end_layout
 
 \begin_layout Subsubsection
---headered-bsx=<file>
+--ips-<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Same as --bsx but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
+Apply BPS/IPS patch <file> to XML of ROM <kind>.
+ If specified multiple times, the patches are applied in order.
 \end_layout
 
 \begin_layout Subsubsection
---bsx-xml=<file>
+--ips-offset=<offset> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Set mapping XML file for BS-X non-slotted flash memory.
- If not specified, defaults are used.
- Only can be used together with --bsx=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---bsxslotted=<file>
-\end_layout
-
-\begin_layout Standard
-Load <file> (BS file format) as BS-X slotted flash memory.
- Also sets system type to BS-X slotted (not compatible with --bsx=<file>,
- --dmg=<file>, --slot-a=<file> nor --slot-b=<file>).
-\end_layout
-
-\begin_layout Subsubsection
---headered-bsxslotted=<file>
-\end_layout
-
-\begin_layout Standard
-Same as --bsxslotted but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
-\end_layout
-
-\begin_layout Subsubsection
---bsxslotted-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Set mapping XML file for BS-X slotted flash memory.
- If not specified, defaults are used.
- Only can be used together with --bsxslotted=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---dmg=<file>
-\end_layout
-
-\begin_layout Standard
-Load <file> (GB file format) as Game Boy ROM.
- Also sets system type to SGB (not compatible with --bsx=<file>, --bsxslotted=<f
-ile>, --slot-a=<file> nor --slot-b=<file>).
-\end_layout
-
-\begin_layout Subsubsection
---headered-dmg=<file>
-\end_layout
-
-\begin_layout Standard
-Same as --dmg but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
-\end_layout
-
-\begin_layout Subsubsection
---dmg-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Set mapping XML file for Game Boy ROM.
- If not specified, defaults are used.
- Only can be used together with --dmg=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---slot-a=<file>
-\end_layout
-
-\begin_layout Standard
-Load <file> (ST file format) as Sufami turbo cartridge A ROM.
- Also sets system type to Sufami Turbo (not compatible with --bsx=<file>,
- --bsxslotted=<file> nor --dmg=<file>).
-\end_layout
-
-\begin_layout Subsubsection
---headered-slot-a=<file>
-\end_layout
-
-\begin_layout Standard
-Same as --slot-a but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
-\end_layout
-
-\begin_layout Subsubsection
---slot-a-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Set mapping XML file for Sufami turbo cartridge A ROM.
- If not specified, defaults are used.
- Only can be used together with --slot-a=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---slot-b=<file>
-\end_layout
-
-\begin_layout Standard
-Load <file> (ST file format) as Sufami turbo cartridge B ROM.
- Also sets system type to Sufami Turbo (not compatible with --bsx=<file>,
- --bsxslotted=<file> nor --dmg=<file>).
-\end_layout
-
-\begin_layout Subsubsection
---headered-slot-b=<file>
-\end_layout
-
-\begin_layout Standard
-Same as --slot-b but strips first 512 bytes off the file as copier header.
- Handy for loading .smc and .fig (also some others) files.
-\end_layout
-
-\begin_layout Subsubsection
---slot-b-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Set mapping XML file for Sufami turbo cartridge B ROM.
- If not specified, defaults are used.
- Only can be used together with --slot-b=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-rom=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to main cartridge ROM.
- Requires --rom=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-rom-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to main cartridge ROM mapping XML.
- Requires --rom-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-bsx=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to BS-X non-slotted flash.
- Requires --bsx=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-bsx-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to BS-X non-slotted flash mapping XML.
- Requires --bsx-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-bsxslotted=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to BS-X slotted flash.
- Requires --bsxslotted=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-bsxslotted-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to BS-X slotted flash mapping XML.
- Requires --bsxslotted-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-dmg=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Game Boy ROM.
- Requires --dmg=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-dmg-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Game Boy ROM mapping XML.
- Requires --dmg-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-slot-a=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Sufami turbo cartridge A ROM.
- Requires --slot-a=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-slot-a-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Sufami turbo cartridge A ROM mapping XML.
- Requires --slot-a-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-slot-b=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Sufami turbo cartridge B ROM.
- Requires --slot-b=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-slot-b-xml=<file>
-\end_layout
-
-\begin_layout Standard
-Apply IPS patch <file> to Sufami turbo cartridge B ROM mapping XML.
- Requires --slot-b-xml=<file>.
-\end_layout
-
-\begin_layout Subsubsection
---ips-offset=<offset>
-\end_layout
-
-\begin_layout Standard
-Set IPS apply offset to <offset> (can be negative).
- IPS apply offset is added to all addresses inside IPS file before applying.
- If the resulting address is negative, write is ignored (with a warning).
- If resulting address exceeds ROM size, the ROM is extended.
-\end_layout
-
-\begin_layout Standard
-Using offset of -512 is handy for applying IPS patches meant for SMC/FIG
- or such files.
+Set offset to apply to IPS patches.
+ May be negative.
+ Handy for applying headered IPS patches (use offset of -512 for this).
+ The offset must be 0 for BPS patches.
 \end_layout
 
 \begin_layout Subsubsection
@@ -393,8 +532,15 @@ Using offset of -512 is handy for applying IPS patches meant for SMC/FIG
 \end_layout
 
 \begin_layout Standard
-Force ROM to be considered PAL-only (warning: Will cause error if used on
- anything except SNES and SGB).
+Force ROM to be considered PAL-only.
+\end_layout
+
+\begin_layout Itemize
+Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
+\end_layout
+
+\begin_layout Itemize
+Attempting to load NTSC movie file will error out.
 \end_layout
 
 \begin_layout Subsubsection
@@ -402,21 +548,28 @@ Force ROM to be considered PAL-only (warning: Will cause error if used on
 \end_layout
 
 \begin_layout Standard
-Force ROM to be considered NTSC-only (default for everything except SNES
- and SGB).
+Force ROM to be considered NTSC-only.
+\end_layout
+
+\begin_layout Itemize
+Attempting to load PAL movie file will error out.
 \end_layout
 
 \begin_layout Subsection
-New session options (lsnes.exe only)
-\end_layout
-
-\begin_layout Standard
-If filename is not specified, new session is started.
- These options control the properties of new session:
+Session options
 \end_layout
 
 \begin_layout Subsubsection
---port1=<type>
+<filename> (lsnes/SDL, lsnes-avidump, movieinfo)
+\end_layout
+
+\begin_layout Standard
+Load <filename> as movie or savestate file.
+ All other session options are ignored.
+\end_layout
+
+\begin_layout Subsubsection
+--port1=<device> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -441,7 +594,7 @@ mouse: Mouse.
 \end_layout
 
 \begin_layout Subsubsection
---port2=<type>
+--port2=<type> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -478,15 +631,16 @@ justifiers: Two justifiers
 \end_layout
 
 \begin_layout Subsubsection
---gamename=<name>
+--gamename=<name> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
-Set the name of game to <name>
+Set the name of game to <name>.
+ Default is blank.
 \end_layout
 
 \begin_layout Subsubsection
---author=<name>
+--author=<name> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -494,7 +648,7 @@ Add author with full name of <name> (no nickname).
 \end_layout
 
 \begin_layout Subsubsection
---author=|<name>
+--author=|<name> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -502,7 +656,7 @@ Add author with nickname of <name> (no full name).
 \end_layout
 
 \begin_layout Subsubsection
---author=<fullname>|<nickname>
+--author=<fullname>|<nickname> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -510,40 +664,32 @@ Add author with full name of <fullname> and nickname of <nickname>.
 \end_layout
 
 \begin_layout Subsubsection
---rtc-second=<value>
+--rtc-second=<value> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
 Set RTC second (0 is 1st January 1970 00:00:00Z).
+ Default is 1,000,000,000.
 \end_layout
 
 \begin_layout Subsubsection
---rtc-subsecond=<value>
+--rtc-subsecond=<value> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
 Set RTC subsecond.
  Range is 0-.
  Unit is CPU cycle.
-\end_layout
-
-\begin_layout Subsection
-<filename>
-\end_layout
-
-\begin_layout Standard
-If filename is specified on command line, it is loaded as initial state
- (instead of constructing one).
- Mandatory for lsnes-avidump.exe and movieinfo.exe.
+ Default is 0.
 \end_layout
 
 \begin_layout Subsection
 Misc.
- options
+ options:
 \end_layout
 
 \begin_layout Subsubsection
---run=<file> (lsnes.exe only)
+--run=<file> (lsnes/SDL)
 \end_layout
 
 \begin_layout Standard
@@ -552,7 +698,7 @@ After running main RC file, run this file.
 \end_layout
 
 \begin_layout Subsection
-dump options (lsnes-avidump.exe only)
+dump options (lsnes-dumpavi only)
 \end_layout
 
 \begin_layout Subsubsection
@@ -595,8 +741,7 @@ Set number of frames to dump.
 \end_layout
 
 \begin_layout Standard
-Run specified lua script (lsnes-avidump.exe does not have initialization
- files).
+Run specified lua script (lsnes-dumpavi does not have initialization files).
 \end_layout
 
 \begin_layout Subsubsection
@@ -607,12 +752,28 @@ Run specified lua script (lsnes-avidump.exe does not have initialization
 Use JMD dumping instead of AVI dumping.
 \end_layout
 
+\begin_layout Subsubsection
+--sdmp
+\end_layout
+
+\begin_layout Standard
+Use SDMP dumping instead of AVI dumping.
+\end_layout
+
+\begin_layout Subsubsection
+--ss
+\end_layout
+
+\begin_layout Standard
+Dump in single segment (SDMP only).
+\end_layout
+
 \begin_layout Section
 Startup file lsnes.rc
 \end_layout
 
 \begin_layout Standard
-Upon startup, lsnes (lsnes.exe only) executes file lsnes.rc as commands.
+Upon startup, lsnes (lsnes/SDL only) executes file lsnes.rc as commands.
  This file is located in:
 \end_layout
 
@@ -641,7 +802,7 @@ If leading directories do not exist, attempt to create them is made.
 \end_layout
 
 \begin_layout Section
-Game internal commands
+Internal commands
 \end_layout
 
 \begin_layout Itemize
@@ -653,6 +814,10 @@ Commands beginning with '*' invoke the corresponding command without alias
 If command starts with '+' (after possible '*'), the command is executed
  as-is when button is pressed, and when button is released, it is executed
  with '+' replaced by '-'.
+\end_layout
+
+\begin_layout Itemize
+Commands without '+' execute only on negative edge (release).
 \end_layout
 
 \begin_layout Subsection
@@ -873,7 +1038,7 @@ Print all aliases and their expansions in effect.
 \end_layout
 
 \begin_layout Subsection
-run-script <script> (implemented for wxwidgets)
+run-script <script>
 \end_layout
 
 \begin_layout Standard
@@ -1134,7 +1299,7 @@ These commands are not available in lsnesrc, but are available after ROM
 \end_layout
 
 \begin_layout Subsubsection
-quit-emulator [/y] (implemented for wxwidgets)
+quit-emulator [/y]
 \end_layout
 
 \begin_layout Standard
@@ -1143,7 +1308,7 @@ Quits the emulator (asking for confirmation).
 \end_layout
 
 \begin_layout Subsubsection
-pause-emulator (implemented for wxwidgets)
+pause-emulator
 \end_layout
 
 \begin_layout Standard
@@ -1151,7 +1316,7 @@ Toggle paused/unpaused
 \end_layout
 
 \begin_layout Subsubsection
-+advance-frame (implemented for wxwidgets)
++advance-frame 
 \end_layout
 
 \begin_layout Standard
@@ -1161,7 +1326,7 @@ Advance frame.
 \end_layout
 
 \begin_layout Subsubsection
-+advance-poll (implemented for wxwidgets)
++advance-poll 
 \end_layout
 
 \begin_layout Standard
@@ -1171,7 +1336,7 @@ Advance subframe.
 \end_layout
 
 \begin_layout Subsubsection
-advance-skiplag (implemented for wxwidgets)
+advance-skiplag 
 \end_layout
 
 \begin_layout Standard
@@ -1179,7 +1344,7 @@ Skip to first poll in frame after current.
 \end_layout
 
 \begin_layout Subsubsection
-reset (implemented for wxwidgets)
+reset 
 \end_layout
 
 \begin_layout Standard
@@ -1187,7 +1352,7 @@ Reset the SNES after this frame.
 \end_layout
 
 \begin_layout Subsubsection
-load <filename> (implemented for wxwidgets)
+load <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1195,7 +1360,7 @@ Load savestate <filename> in current mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-state <filename> (implemented for wxwidgets)
+load-state <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1203,7 +1368,7 @@ Load savestate <filename> in readwrite mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-readonly <filename> (implemented for wxwidgets)
+load-readonly <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1211,7 +1376,7 @@ Load savestate <filename> in readonly mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-preserve <filename> (implemented for wxwidgets)
+load-preserve <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1219,7 +1384,7 @@ Load savestate <filename> in readonly mode, preserving current events.
 \end_layout
 
 \begin_layout Subsubsection
-load-movie <filename> (implemented for wxwidgets)
+load-movie <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1227,7 +1392,7 @@ Load savestate <filename>, ignoring save part in readonly mode.
 \end_layout
 
 \begin_layout Subsubsection
-save-state <filename> (implemented for wxwidgets)
+save-state <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1235,7 +1400,7 @@ Save system state to <filename> as soon as possible.
 \end_layout
 
 \begin_layout Subsubsection
-save-movie <filename> (implemented for wxwidgets)
+save-movie <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1243,7 +1408,7 @@ Save movie to <filename>.
 \end_layout
 
 \begin_layout Subsubsection
-set-rwmode (implemented for wxwidgets)
+set-rwmode 
 \end_layout
 
 \begin_layout Standard
@@ -1251,7 +1416,7 @@ Set read-write mode.
 \end_layout
 
 \begin_layout Subsubsection
-set-romode (implemented for wxwidgets)
+set-romode 
 \end_layout
 
 \begin_layout Standard
@@ -1259,7 +1424,7 @@ Set read-only mode
 \end_layout
 
 \begin_layout Subsubsection
-toggle-rwmode (implemented for wxwidgets)
+toggle-rwmode 
 \end_layout
 
 \begin_layout Standard
@@ -1267,7 +1432,7 @@ Toggle between read-only and read-write modes.
 \end_layout
 
 \begin_layout Subsubsection
-set-gamename <name> (implemented for wxwidgets)
+set-gamename <name> 
 \end_layout
 
 \begin_layout Standard
@@ -1275,7 +1440,7 @@ Set name of the game to <name>
 \end_layout
 
 \begin_layout Subsubsection
-get-gamename (implemented for wxwidgets)
+get-gamename 
 \end_layout
 
 \begin_layout Standard
@@ -1283,7 +1448,7 @@ Print the name of the game.
 \end_layout
 
 \begin_layout Subsubsection
-add-author <author> (implemented for wxwidgets)
+add-author <author> 
 \end_layout
 
 \begin_layout Standard
@@ -1293,7 +1458,7 @@ Adds new author <author>.
 \end_layout
 
 \begin_layout Subsubsection
-edit-author <num> <author> (implemented for wxwidgets)
+edit-author <num> <author> 
 \end_layout
 
 \begin_layout Standard
@@ -1302,7 +1467,7 @@ Edit the author in slot <num> (0-based) to be <author> (see add-author for
 \end_layout
 
 \begin_layout Subsubsection
-remove-author <num> (implemented for wxwidgets)
+remove-author <num> 
 \end_layout
 
 \begin_layout Standard
@@ -1310,7 +1475,7 @@ Remove author in slot <num>
 \end_layout
 
 \begin_layout Subsubsection
-print-authors (implemented for wxwidgets)
+print-authors 
 \end_layout
 
 \begin_layout Standard
@@ -1327,7 +1492,7 @@ Internal test commands.
 \end_layout
 
 \begin_layout Subsubsection
-take-screenshot <filename> (implemented for wxwidgets)
+take-screenshot <filename> 
 \end_layout
 
 \begin_layout Standard
@@ -1437,7 +1602,7 @@ Force a repaint.
 \end_layout
 
 \begin_layout Subsection
-Save jukebox (implemented for wxwidgets)
+Save jukebox 
 \end_layout
 
 \begin_layout Subsubsection
@@ -1481,7 +1646,7 @@ Do state save to jukebox.
 \end_layout
 
 \begin_layout Subsection
-Lua (implemented for wxwidgets)
+Lua 
 \end_layout
 
 \begin_layout Standard
@@ -1489,8 +1654,7 @@ Only available if lua support is compiled in.
 \end_layout
 
 \begin_layout Subsubsection
-<<<<<<< HEADevaluate-lua <luacode>=======eval-lua <luacode> (implemented
- for wxwidgets)>>>>>>> Wxwidgets Graphics plugin WIP
+evaluate-lua <luacode>
 \end_layout
 
 \begin_layout Standard
@@ -1498,7 +1662,7 @@ Run Lua code <luacode> using built-in Lua interpretter.
 \end_layout
 
 \begin_layout Subsubsection
-run-lua <script> (implemented for wxwidgets)
+run-lua <script>
 \end_layout
 
 \begin_layout Standard
@@ -1526,11 +1690,11 @@ Remove a watch.
 \end_layout
 
 \begin_layout Subsection
-Sound (implemented for wxwidgets)
+Sound 
 \end_layout
 
 \begin_layout Subsubsection
-enable-sound <on/off> (implemented for wxwidgets)
+enable-sound <on/off> 
 \end_layout
 
 \begin_layout Standard
@@ -1538,7 +1702,7 @@ Enable/Disable sound.
 \end_layout
 
 \begin_layout Subsubsection
-set-sound-device <device> (implemented for wxwidgets)
+set-sound-device <device> 
 \end_layout
 
 \begin_layout Standard
@@ -1546,7 +1710,7 @@ Set sound device to <device>
 \end_layout
 
 \begin_layout Subsubsection
-show-sound-status (implemented for wxwidgets)
+show-sound-status 
 \end_layout
 
 \begin_layout Standard
@@ -1562,7 +1726,7 @@ Show all available devices.
 \end_layout
 
 \begin_layout Subsection
-SDL Platform commands (implemented for wxwidgets)
+SDL Platform commands 
 \end_layout
 
 \begin_layout Standard
@@ -1570,7 +1734,7 @@ The following are valid on SDL platform.
 \end_layout
 
 \begin_layout Subsubsection
-identify-key (N/A for wxwidgets)
+identify-key
 \end_layout
 
 \begin_layout Standard
@@ -1578,7 +1742,7 @@ Asks to press a key and then identifies that (pseudo-)key.
 \end_layout
 
 \begin_layout Subsubsection
-toggle-console (N/A for wxwidgets)
+toggle-console 
 \end_layout
 
 \begin_layout Standard
@@ -1586,7 +1750,7 @@ Toggle between windowed/fullscreen console.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-fullup (N/A for wxwidgets)
+scroll-fullup 
 \end_layout
 
 \begin_layout Standard
@@ -1594,7 +1758,7 @@ Scroll messages window as far back as it goes.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-fulldown (N/A for wxwidgets)
+scroll-fulldown 
 \end_layout
 
 \begin_layout Standard
@@ -1602,7 +1766,7 @@ Scroll messages window as far forward as it goes.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-up (N/A for wxwidgets)
+scroll-up 
 \end_layout
 
 \begin_layout Standard
@@ -1610,7 +1774,7 @@ Scroll messages window back one screenful.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-down (N/A for wxwidgets)
+scroll-down 
 \end_layout
 
 \begin_layout Standard
@@ -4864,7 +5028,7 @@ Also give BSNES patches for v085.
 Pack movie data in memory.
 \end_layout
 
-\begin_layout Subsubsection
+\begin_layout Subsection
 rr1-beta3
 \end_layout
 
@@ -4878,6 +5042,18 @@ Controller command memory leak fixes.
 
 \begin_layout Itemize
 Don't leak palette if freeing screen object.
+\end_layout
+
+\begin_layout Subsection
+rr1-beta4
+\end_layout
+
+\begin_layout Itemize
+Detect revisions.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Allow controlling dumper from the menu.
 \end_layout
 
 \end_body
