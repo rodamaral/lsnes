@@ -2387,3 +2387,7 @@ set-axis joystick0axis19 disabled
 
 • Lua: Make it work with Lua 5.2.
 
+14.35 rr1-beta6
+
+• Win32: Fix compile errors.
+

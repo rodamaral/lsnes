@@ -6,6 +6,8 @@
 #include "core/window.hpp"
 #include "plat-sdl/platform.hpp"
 
+#include <unistd.h>
+
 screen_model screenmod;
 
 #define USERCODE_TIMER 0

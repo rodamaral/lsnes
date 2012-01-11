@@ -4921,5 +4921,13 @@ Rewrite parts of manual
 Lua: Make it work with Lua 5.2.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta6
+\end_layout
+
+\begin_layout Itemize
+Win32: Fix compile errors.
+\end_layout
+
 \end_body
 \end_document
