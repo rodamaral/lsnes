@@ -125,6 +125,14 @@ Portaudio (portaudio sound only)
 std::thread and co (for threaded dumper only)
 \end_layout
 
+\begin_layout Enumerate
+Lua (if Lua support is needed).
+\end_layout
+
+\begin_layout Itemize
+Version 5.1.X or 5.2X.
+\end_layout
+
 \begin_layout Section
 Building
 \end_layout
@@ -296,11 +304,6 @@ LUA=<package>
 \begin_deeper
 \begin_layout Itemize
 Package to use for Lua support.
-\end_layout
-
-\begin_layout Itemize
-Needs to be Lua 5.1.x.
- If Lua 5.2.x works is unknown.
 \end_layout
 
 \begin_layout Itemize
@@ -4904,6 +4907,18 @@ Detect revisions.
 
 \begin_layout Itemize
 Wxwidgets: Allow controlling dumper from the menu.
+\end_layout
+
+\begin_layout Subsection
+rr1-beta5
+\end_layout
+
+\begin_layout Itemize
+Rewrite parts of manual
+\end_layout
+
+\begin_layout Itemize
+Lua: Make it work with Lua 5.2.
 \end_layout
 
 \end_body

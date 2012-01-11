@@ -30,6 +30,10 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 10. std::thread and co (for threaded dumper only)
 
+11. Lua (if Lua support is needed).
+
+• Version 5.1.X or 5.2X.
+
 3 Building
 
 Building is via makefile, the following options are available:
@@ -110,8 +114,6 @@ Building is via makefile, the following options are available:
 • LUA=<package>
 
   – Package to use for Lua support.
-
-  – Needs to be Lua 5.1.x. If Lua 5.2.x works is unknown.
 
   – Usually valid value is 'lua' or 'lua5.1'.
 
@@ -2378,4 +2380,10 @@ set-axis joystick0axis19 disabled
 • Detect revisions.
 
 • Wxwidgets: Allow controlling dumper from the menu.
+
+14.34 rr1-beta5
+
+• Rewrite parts of manual
+
+• Lua: Make it work with Lua 5.2.
 
