@@ -105,5 +105,25 @@ namespace
 		{
 			return (port > 0);
 		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
+			case LOGICAL_BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
+			case LOGICAL_BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
+			case LOGICAL_BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
+			default:			return -1;
+			}
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			if(port > 1)
+				return;
+			snes_set_controller_port_device(port != 0, SNES_DEVICE_SUPER_SCOPE);
+		}
 	} superscope;
 }

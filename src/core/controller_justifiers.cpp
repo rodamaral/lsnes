@@ -109,5 +109,23 @@ namespace
 		{
 			return (port > 0);
 		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 1)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+			default:			return -1;
+			}
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			if(port > 1)
+				return;
+			snes_set_controller_port_device(port != 0, SNES_DEVICE_JUSTIFIERS);
+		}
 	} justifiers;
 }

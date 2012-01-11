@@ -21,8 +21,7 @@
 #include "plat-wxwidgets/platform.hpp"
 #include "plat-wxwidgets/window_mainwindow.hpp"
 
-#define MAXCONTROLLERS 8
-#define CONTROLS_COUNT 16
+#define MAXCONTROLLERS MAX_PORTS * MAX_CONTROLLERS_PER_PORT
 
 extern "C"
 {
@@ -143,26 +142,26 @@ namespace
 	bool UI_get_autohold(unsigned pid, unsigned idx)
 	{
 		bool ret;
-		runemufn([&ret, pid, idx]() { ret = get_autohold(pid, idx); });
+		runemufn([&ret, pid, idx]() { ret = controls.autohold(pid, idx); });
 		return ret;
 	}
 
 	void UI_change_autohold(unsigned pid, unsigned idx, bool newstate)
 	{
-		runemufn([pid, idx, newstate]() { change_autohold(pid, idx, newstate); });
+		runemufn([pid, idx, newstate]() { controls.autohold(pid, idx, newstate); });
 	}
 
 	int UI_controller_index_by_logical(unsigned lid)
 	{
 		int ret;
-		runemufn([&ret, lid]() { ret = controller_index_by_logical(lid); });
+		runemufn([&ret, lid]() { ret = controls.lcid_to_pcid(lid); });
 		return ret;
 	}
 
-	int UI_get_physcial_id_for_control(devicetype_t dtype, unsigned lidx)
+	int UI_button_id(unsigned pcid, unsigned lidx)
 	{
 		int ret;
-		runemufn([&ret, dtype, lidx]() { ret = get_physcial_id_for_control(dtype, lidx); });
+		runemufn([&ret, pcid, lidx]() { ret = controls.button_id(pcid, lidx); });
 		return ret;
 	}
 
@@ -170,14 +169,14 @@ namespace
 	{
 	public:
 		controller_autohold_menu(unsigned lid, enum devicetype_t dtype);
-		void change_type(enum devicetype_t dtype);
+		void change_type();
 		bool is_dummy();
 		void on_select(wxCommandEvent& e);
 		void update(unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
 		unsigned our_lid;
-		devicetype_t devtype;
-		wxMenuItem* entries[CONTROLS_COUNT];
+		wxMenuItem* entries[MAX_LOGICAL_BUTTONS];
+		unsigned enabled_entries;
 	};
 
 	class autohold_menu : public wxMenu
@@ -226,48 +225,54 @@ namespace
 	{
 		platform::set_modal_pause(true);
 		our_lid = lid;
-		devtype = DT_NONE;
-		for(unsigned i = 0; i < CONTROLS_COUNT; i++) {
-			int id = wxID_AUTOHOLD_FIRST + CONTROLS_COUNT * lid + i;
-			entries[i] = AppendCheckItem(id, towxstring(get_button_name(i)));
+		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
+			int id = wxID_AUTOHOLD_FIRST + MAX_LOGICAL_BUTTONS * lid + i;
+			entries[i] = AppendCheckItem(id, towxstring(get_logical_button_name(i)));
 		}
-		change_type(dtype);
+		change_type();
 		platform::set_modal_pause(false);
 	}
 
-	void controller_autohold_menu::change_type(enum devicetype_t dtype)
+	void controller_autohold_menu::change_type()
 	{
-		int pid = controller_index_by_logical(our_lid);
-		for(unsigned i = 0; i < CONTROLS_COUNT; i++) {
-			int pidx = get_physcial_id_for_control(dtype, i);
+		enabled_entries = 0;
+		int pid = controls.lcid_to_pcid(our_lid);
+		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
+			int pidx = -1;
+			if(pid >= 0)
+				pidx = controls.button_id(pid, i);
 			if(pidx >= 0) {
 				entries[i]->Check(pid > 0 && UI_get_autohold(pid, pidx));
 				entries[i]->Enable();
+				enabled_entries++;
 			} else {
 				entries[i]->Check(false);
 				entries[i]->Enable(false);
 			}
 		}
-		devtype = dtype;
 	}
 
 	bool controller_autohold_menu::is_dummy()
 	{
-		return (devtype == DT_NONE);
+		return !enabled_entries;
 	}
 
 	void controller_autohold_menu::on_select(wxCommandEvent& e)
 	{
 		int x = e.GetId();
-		if(x < wxID_AUTOHOLD_FIRST + our_lid * CONTROLS_COUNT || x >= wxID_AUTOHOLD_FIRST * (our_lid + 1) *
-			CONTROLS_COUNT) {
+		if(x < wxID_AUTOHOLD_FIRST + our_lid * MAX_LOGICAL_BUTTONS || x >= wxID_AUTOHOLD_FIRST * 
+			(our_lid + 1) * MAX_LOGICAL_BUTTONS) {
 			return;
 		}
-		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % CONTROLS_COUNT;
+		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % MAX_LOGICAL_BUTTONS;
 		platform::set_modal_pause(true);
-		int pidx = get_physcial_id_for_control(devtype, lidx);
-		int pid = controller_index_by_logical(our_lid);
-		if(pid < 0 || pidx < 0 || !entries[lidx]) {
+		int pid = controls.lcid_to_pcid(our_lid);
+		if(pid < 0 || !entries[lidx]) {
+			platform::set_modal_pause(false);
+			return;
+		}
+		int pidx = controls.button_id(pid, lidx);
+		if(pidx < 0) {
 			platform::set_modal_pause(false);
 			return;
 		}
@@ -285,8 +290,8 @@ namespace
 			platform::set_modal_pause(false);
 			return;
 		}
-		for(unsigned i = 0; i < CONTROLS_COUNT; i++) {
-			int idx = UI_get_physcial_id_for_control(devtype, i);
+		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
+			int idx = UI_button_id(pid2, i);
 			if(idx < 0 || static_cast<unsigned>(idx) != ctrlnum)
 				continue;
 			entries[i]->Check(newstate);
@@ -304,6 +309,8 @@ namespace
 			entries[i] = AppendSubMenu(menus[i], towxstring(str.str()));
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
+		win->Connect(wxID_AUTOHOLD_FIRST, wxID_AUTOHOLD_LAST, wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(autohold_menu::on_select), NULL, this);
 		reconfigure();
 	}
 
@@ -311,7 +318,7 @@ namespace
 	{
 		platform::set_modal_pause(true);
 		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
-			menus[i]->change_type(controller_type_by_logical(i));
+			menus[i]->change_type();
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
 		platform::set_modal_pause(false);

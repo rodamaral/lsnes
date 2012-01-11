@@ -95,5 +95,23 @@ namespace
 		{
 			return true;
 		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
+			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
+			default:			return -1;
+			}
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			if(port > 1)
+				return;
+			snes_set_controller_port_device(port != 0, SNES_DEVICE_MOUSE);
+		}
 	} mouse;
 }

@@ -51,6 +51,39 @@
  * Special return value for deserialize() indicating no input was taken.
  */
 #define DESERIALIZE_SPECIAL_BLANK 0xFFFFFFFFUL
+/**
+ * Analog indices.
+ */
+#define MAX_ANALOG 3
+/**
+ * Logical button IDs.
+ */
+#define LOGICAL_BUTTON_LEFT 0
+#define LOGICAL_BUTTON_RIGHT 1
+#define LOGICAL_BUTTON_UP 2
+#define LOGICAL_BUTTON_DOWN 3
+#define LOGICAL_BUTTON_A 4
+#define LOGICAL_BUTTON_B 5
+#define LOGICAL_BUTTON_X 6
+#define LOGICAL_BUTTON_Y 7
+#define LOGICAL_BUTTON_L 8
+#define LOGICAL_BUTTON_R 9
+#define LOGICAL_BUTTON_SELECT 10
+#define LOGICAL_BUTTON_START 11
+#define LOGICAL_BUTTON_TRIGGER 12
+#define LOGICAL_BUTTON_CURSOR 13
+#define LOGICAL_BUTTON_TURBO 14
+#define LOGICAL_BUTTON_PAUSE 15
+#define MAX_LOGICAL_BUTTONS 16
+
+/**
+ * Get name of logical button.
+ *
+ * Parameter lbid: ID of logical button.
+ * Returns: The name of button.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc);
 
 /**
  * This enumeration gives the type of port.
@@ -305,6 +338,20 @@ struct porttype_info
  */
 	virtual bool legal(unsigned port) const  throw() = 0;
 /**
+ * Translate controller and logical button id pair into physical button id.
+ *
+ * Parameter controller: The number of controller.
+ * Parameter lbid: Logigal button ID.
+ * Returns: The physical button ID, or -1 if no such button exists.
+ */
+	virtual int button_id(unsigned controller, unsigned lbid) const throw() = 0;
+/**
+ * Set this controller as core controller.
+ *
+ * Parameter port: Port to set to.
+ */
+	virtual void set_core_controller(unsigned port) const throw() = 0;
+/**
  * Port type value.
  */
 	porttype_t value;
@@ -342,18 +389,18 @@ public:
 /**
  * Clear specified DRDY bit.
  *
- * Parameter pid: The physical controller id.
+ * Parameter pcid: The physical controller id.
  * Parameter ctrl: The control id.
  */
-	void clear_DRDY(unsigned pid, unsigned ctrl) throw();
+	void clear_DRDY(unsigned pcid, unsigned ctrl) throw();
 /**
  * Get state of DRDY bit.
  *
- * Parameter pid: The physical controller id.
+ * Parameter pcid: The physical controller id.
  * Parameter ctrl: The control id.
  * Returns: The DRDY state.
  */
-	bool get_DRDY(unsigned pid, unsigned ctrl) throw();
+	bool get_DRDY(unsigned pcid, unsigned ctrl) throw();
 /**
  * Get state of DRDY bit.
  *
@@ -373,11 +420,11 @@ public:
 /**
  * Read the actual poll count on specified control.
  *
- * Parameter pid: The physical controller id.
+ * Parameter pcid: The physical controller id.
  * Parameter ctrl: The control id.
  * Return: The poll count.
  */
-	uint32_t get_polls(unsigned pid, unsigned ctrl) throw();
+	uint32_t get_polls(unsigned pcid, unsigned ctrl) throw();
 /**
  * Read the actual poll count on specified control.
  *
@@ -391,11 +438,11 @@ public:
 /**
  * Increment poll count on specified control.
  *
- * Parameter pid: The physical controller id.
+ * Parameter pcid: The physical controller id.
  * Parameter ctrl: The control id.
  * Return: The poll count pre-increment.
  */
-	uint32_t increment_polls(unsigned pid, unsigned ctrl) throw();
+	uint32_t increment_polls(unsigned pcid, unsigned ctrl) throw();
 /**
  * Set the system flag.
  */
@@ -626,14 +673,14 @@ public:
 /**
  * Set axis/button value.
  *
- * Parameter pid: Physical controller id.
+ * Parameter pcid: Physical controller id.
  * Parameter ctrl: The control id.
  * Parameter x: The new value.
  */
-	void axis(unsigned pid, unsigned ctrl, short x) throw()
+	void axis(unsigned pcid, unsigned ctrl, short x) throw()
 	{
-		unsigned port = (pid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		pinfo[port]->write(backing + offsets[port], pid % MAX_CONTROLLERS_PER_PORT, ctrl, x);
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		pinfo[port]->write(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl, x);
 	}
 /**
  * Set axis/button value.
@@ -648,14 +695,14 @@ public:
 /**
  * Get axis/button value.
  *
- * Parameter pid: Physical controller id.
+ * Parameter pcid: Physical controller id.
  * Parameter ctrl: The control id.
  * Return value: The axis value.
  */
-	short axis(unsigned pid, unsigned ctrl) throw()
+	short axis(unsigned pcid, unsigned ctrl) throw()
 	{
-		unsigned port = (pid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->read(backing + offsets[port], pid % MAX_CONTROLLERS_PER_PORT, ctrl);
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->read(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl);
 	}
 
 /**
@@ -671,24 +718,24 @@ public:
 /**
  * Get controller display.
  *
- * Parameter pid: Physical controller id.
+ * Parameter pcid: Physical controller id.
  * Parameter buf: Buffer to write nul-terminated display to.
  */
-	void display(unsigned pid, char* buf) throw()
+	void display(unsigned pcid, char* buf) throw()
 	{
-		unsigned port = (pid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->display(backing + offsets[port], pid % MAX_CONTROLLERS_PER_PORT, buf);
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->display(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, buf);
 	}
 /**
  * Get device type.
  *
- * Parameter pid: Physical controller id.
+ * Parameter pcid: Physical controller id.
  * Returns: Device type.
  */
-	devicetype_t devicetype(unsigned pid) throw()
+	devicetype_t devicetype(unsigned pcid) throw()
 	{
-		unsigned port = (pid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->devicetype(pid % MAX_CONTROLLERS_PER_PORT);
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->devicetype(pcid % MAX_CONTROLLERS_PER_PORT);
 	}
 /**
  * Deserialize frame from text format.
@@ -758,6 +805,18 @@ public:
 	bool operator!=(const controller_frame& obj) const throw()
 	{
 		return !(*this == obj);
+	}
+/**
+ * Get physical button ID for physical controller ID and logical button ID.
+ *
+ * Parameter pcid: Physical controller id.
+ * Parameter lbid: Logical button id.
+ * Returns: The physical button id, or -1 if no such button.
+ */
+	int button_id(unsigned pcid, unsigned lbid)
+	{
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
 	}
 private:
 	size_t totalsize;
@@ -930,6 +989,141 @@ private:
 		cache_page_num--;
 		cache_page = NULL;
 	}
+};
+
+/**
+ * Controllers state.
+ */
+class controller_state
+{
+public:
+/**
+ * Constructor.
+ */
+	controller_state() throw();
+/**
+ * Convert lcid (Logical Controller ID) into pcid (Physical Controler ID).
+ *
+ * Parameter lcid: The logical controller ID.
+ * Return: The physical controller ID, or -1 if no such controller exists.
+ */
+	int lcid_to_pcid(unsigned lcid) throw();
+/**
+ * Convert lcid (Logical Controller ID) into type string.
+ *
+ * Parameter lcid: The logical controller ID.
+ * Return: The type of controller
+ */
+	std::string lcid_to_typestring(unsigned lcid) throw(std::bad_alloc);
+/**
+ * Convert acid (Analog Controller ID) into pcid.
+ *
+ * Parameter acid: The analog controller ID.
+ * Return: The physical controller ID, or -1 if no such controller exists.
+ */
+	int acid_to_pcid(unsigned acid) throw();
+/**
+ * Is given acid a mouse?
+ *
+ * Parameter acid: The analog controller ID.
+ * Returns: True if given acid is mouse, false otherwise.
+ */
+	bool acid_is_mouse(unsigned acid) throw();
+/**
+ * Look up device type type of given pcid.
+ *
+ * Parameter pcid: The physical controller id.
+ * Returns: The type of device.
+ */
+	devicetype_t pcid_to_type(unsigned pcid) throw();
+/**
+ * Set type of port.
+ *
+ * Parameter port: The port to set.
+ * Parameter ptype: The new type for port.
+ * Parameter set_core: If true, set the core port type too, otherwise don't do that.
+ * Throws std::runtime_error: Illegal port type.
+ */
+	void set_port(unsigned port, porttype_t ptype, bool set_core) throw(std::runtime_error);
+/**
+ * Get status of current controls (with autohold/autofire factored in).
+ *
+ * Parameter framenum: Number of current frame (for evaluating autofire).
+ */
+	controller_frame get(uint64_t framenum) throw();
+/**
+ * Get blank frame.
+ */
+	controller_frame get_blank() throw();
+/**
+ * Send analog input to given acid.
+ *
+ * Parameter acid: The acid to send input to.
+ * Parameter x: The x coordinate to send.
+ * Parameter y: The x coordinate to send.
+ */
+	void analog(unsigned acid, int x, int y) throw();
+/**
+ * Manipulate the reset flag.
+ *
+ * Parameter delay: Delay for reset (-1 for no reset)
+ */
+	void reset(int32_t delay) throw();
+/**
+ * Manipulate autohold.
+ *
+ * Parameter pcid: The physical controller ID to manipulate.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter newstate: The new state for autohold.
+ */
+	void autohold(unsigned pcid, unsigned pbid, bool newstate) throw();
+/**
+ * Query autohold.
+ *
+ * Parameter pcid: The physical controller ID to query.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of autohold.
+ */
+	bool autohold(unsigned pcid, unsigned pbid) throw();
+/**
+ * Manipulate button.
+ *
+ * Parameter pcid: The physical controller ID to manipulate.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter newstate: The new state for button.
+ */
+	void button(unsigned pcid, unsigned pbid, bool newstate) throw();
+/**
+ * Query button.
+ *
+ * Parameter pcid: The physical controller ID to query.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of button.
+ */
+	bool button(unsigned pcid, unsigned pbid) throw();
+/**
+ * Set autofire pattern.
+ *
+ * Parameter pattern: The new pattern.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+	void autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc);
+/**
+ * Get physical button ID for physical controller ID and logical button ID.
+ *
+ * Parameter pcid: Physical controller id.
+ * Parameter lbid: Logical button id.
+ * Returns: The physical button id, or -1 if no such button.
+ */
+	int button_id(unsigned pcid, unsigned lbid) throw();
+private:
+	const porttype_info* porttypeinfo[MAX_PORTS];
+	porttype_t porttypes[MAX_PORTS];
+	int analog_indices[MAX_ANALOG];
+	bool analog_mouse[MAX_ANALOG];
+	controller_frame _input;
+	controller_frame _autohold;
+	std::vector<controller_frame> _autofire;
 };
 
 #endif

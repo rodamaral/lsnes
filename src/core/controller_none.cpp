@@ -52,5 +52,17 @@ namespace
 		{
 			return true;
 		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return -1;
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			if(port > 1)
+				return;
+			snes_set_controller_port_device(port != 0, SNES_DEVICE_NONE);
+		}
 	} none;
 }

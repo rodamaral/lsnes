@@ -248,16 +248,16 @@ void do_load_state(struct moviefile& _movie, int lmode)
 
 		if(_movie.is_savestate && lmode != LOAD_STATE_MOVIE) {
 			//Load the savestate and movie state.
-			controller_set_port_type(0, _movie.port1);
-			controller_set_port_type(1, _movie.port2);
+			controls.set_port(0, _movie.port1, false);
+			controls.set_port(1, _movie.port2, false);
 			load_core_state(_movie.savestate);
 			lcscreen tmp;
 			tmp.load(_movie.screenshot);
 			redraw_framebuffer(tmp);
 		} else {
 			load_sram(_movie.movie_sram);
-			controller_set_port_type(0, _movie.port1);
-			controller_set_port_type(1, _movie.port2);
+			controls.set_port(0, _movie.port1, true);
+			controls.set_port(1, _movie.port2, true);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			redraw_framebuffer(screen_nosignal);

@@ -172,10 +172,10 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	information_dispatch::do_status_update();
 	platform::flush_command_queue();
 	if(!subframe && pending_reset_cycles >= 0)
-		set_curcontrols_reset(pending_reset_cycles);
+		controls.reset(pending_reset_cycles);
 	else if(!subframe)
-		set_curcontrols_reset(-1);
-	controller_frame tmp = get_current_controls(movb.get_movie().get_current_frame());
+		controls.reset(-1);
+	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
@@ -283,10 +283,10 @@ void update_movie_state()
 	if(movb.get_movie().readonly_mode())
 		c = movb.get_movie().get_controls();
 	else
-		c = get_current_controls(movb.get_movie().get_current_frame());
+		c = controls.get(movb.get_movie().get_current_frame());
 	for(unsigned i = 0; i < 8; i++) {
-		unsigned pindex = controller_index_by_logical(i);
-		devicetype_t dtype = c.devicetype(pindex);
+		unsigned pindex = controls.lcid_to_pcid(i);
+		devicetype_t dtype = controls.pcid_to_type(pindex);
 		if(dtype == DT_NONE)
 			continue;
 		char buffer[MAX_DISPLAY_LENGTH];
@@ -664,14 +664,23 @@ namespace
 			on_quit_prompt = false;
 		}
 
+		void send_analog(unsigned acid, int32_t x, int32_t y)
+		{
+			auto g2 = get_framebuffer_size();
+			if(controls.acid_is_mouse(acid)) {
+				controls.analog(acid, x - g2.first / 2, y - g2.second / 2);
+			} else
+				controls.analog(acid, x / 2 , y / 2);
+		}
+
 		void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
 		{
 			if(buttonmask & ~prev_mouse_mask & 1)
-				send_analog_input(x, y, 0);
+				send_analog(0, x, y);
 			if(buttonmask & ~prev_mouse_mask & 2)
-				send_analog_input(x, y, 1);
+				send_analog(1, x, y);
 			if(buttonmask & ~prev_mouse_mask & 4)
-				send_analog_input(x, y, 2);
+				send_analog(2, x, y);
 			prev_mouse_mask = buttonmask;
 		}
 	} mywcb;
@@ -769,19 +778,9 @@ namespace
 	void print_controller_mappings()
 	{
 		for(unsigned i = 0; i < 8; i++) {
-			std::string type = "unknown";
-			if(controller_type_by_logical(i) == DT_NONE)
-				type = "disconnected";
-			if(controller_type_by_logical(i) == DT_GAMEPAD)
-				type = "gamepad";
-			if(controller_type_by_logical(i) == DT_MOUSE)
-				type = "mouse";
-			if(controller_type_by_logical(i) == DT_SUPERSCOPE)
-				type = "superscope";
-			if(controller_type_by_logical(i) == DT_JUSTIFIER)
-				type = "justifier";
+			std::string type = controls.lcid_to_typestring(i);
 			messages << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
-				controller_index_by_logical(i) << " (" << type << ")" << std::endl;
+				controls.lcid_to_pcid(i) << " (" << type << ")" << std::endl;
 		}
 	}
 }
@@ -875,7 +874,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			platform::set_paused(true);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
-			movb.get_movie().set_controls(get_current_controls(movb.get_movie().get_current_frame()));
+			movb.get_movie().set_controls(controls.get(movb.get_movie().get_current_frame()));
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;

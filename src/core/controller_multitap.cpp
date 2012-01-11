@@ -92,5 +92,33 @@ namespace
 		{
 			return true;
 		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 3)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+			case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+			case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
+			case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+			case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+			case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+			case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+			case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+			case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+			default:			return -1;
+			}
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			if(port > 1)
+				return;
+			snes_set_controller_port_device(port != 0, SNES_DEVICE_MULTITAP);
+		}
 	} multitap;
 }

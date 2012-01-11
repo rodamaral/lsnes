@@ -1,4 +1,6 @@
 #include "core/controllerframe.hpp"
+#include "core/dispatch.hpp"
+#include "core/misc.hpp"
 
 #include <cstdio>
 #include <iostream>
@@ -12,6 +14,25 @@ namespace
 		static std::set<porttype_info*> p;
 		return p;
 	}
+
+	const char* buttonnames[MAX_LOGICAL_BUTTONS] = {
+		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
+		"cursor", "turbo", "pause"
+	};
+}
+
+/**
+ * Get name of logical button.
+ *
+ * Parameter lbid: ID of logical button.
+ * Returns: The name of button.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
+{
+	if(lbid >= MAX_LOGICAL_BUTTONS)
+		return "";
+	return buttonnames[lbid];
 }
 
 const porttype_info& porttype_info::lookup(porttype_t p) throw(std::runtime_error)
@@ -60,16 +81,16 @@ void pollcounter_vector::set_all_DRDY() throw()
 		ctrs[i] |= 0x80000000UL;
 }
 
-#define INDEXOF(pid, ctrl) ((pid) * MAX_CONTROLS_PER_CONTROLLER + (ctrl))
+#define INDEXOF(pcid, ctrl) ((pcid) * MAX_CONTROLS_PER_CONTROLLER + (ctrl))
 
-void pollcounter_vector::clear_DRDY(unsigned pid, unsigned ctrl) throw()
+void pollcounter_vector::clear_DRDY(unsigned pcid, unsigned ctrl) throw()
 {
-	ctrs[INDEXOF(pid, ctrl)] &= 0x7FFFFFFFUL;
+	ctrs[INDEXOF(pcid, ctrl)] &= 0x7FFFFFFFUL;
 }
 
-bool pollcounter_vector::get_DRDY(unsigned pid, unsigned ctrl) throw()
+bool pollcounter_vector::get_DRDY(unsigned pcid, unsigned ctrl) throw()
 {
-	return ((ctrs[INDEXOF(pid, ctrl)] & 0x80000000UL) != 0);
+	return ((ctrs[INDEXOF(pcid, ctrl)] & 0x80000000UL) != 0);
 }
 
 bool pollcounter_vector::has_polled() throw()
@@ -80,14 +101,14 @@ bool pollcounter_vector::has_polled() throw()
 	return ((res & 0x7FFFFFFFUL) != 0);
 }
 
-uint32_t pollcounter_vector::get_polls(unsigned pid, unsigned ctrl) throw()
+uint32_t pollcounter_vector::get_polls(unsigned pcid, unsigned ctrl) throw()
 {
-	return ctrs[INDEXOF(pid, ctrl)] & 0x7FFFFFFFUL;
+	return ctrs[INDEXOF(pcid, ctrl)] & 0x7FFFFFFFUL;
 }
 
-uint32_t pollcounter_vector::increment_polls(unsigned pid, unsigned ctrl) throw()
+uint32_t pollcounter_vector::increment_polls(unsigned pcid, unsigned ctrl) throw()
 {
-	size_t i = INDEXOF(pid, ctrl);
+	size_t i = INDEXOF(pcid, ctrl);
 	uint32_t x = ctrs[i] & 0x7FFFFFFFUL;
 	++ctrs[i];
 	return x;
@@ -451,4 +472,193 @@ void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std:
 	memcpy(memory, tmp, MAXIMUM_CONTROLLER_FRAME_SIZE);
 	types[port] = ptype;
 	pinfo[port] = newpinfo[port];
+	for(size_t i = 0; i < MAX_PORTS; i++)
+		offsets[i] = newoffsets[i];
+	totalsize = offset;
+}
+
+controller_state::controller_state() throw()
+{
+	for(size_t i = 0; i < MAX_ANALOG; i++) {
+		analog_indices[i] = -1;
+		analog_mouse[i] = false;
+	}
+	for(size_t i = 0; i < MAX_PORTS; i++) {
+		porttypes[i] = PT_INVALID;
+		porttypeinfo[i] = NULL;
+	}
+}
+
+int controller_state::lcid_to_pcid(unsigned lcid) throw()
+{
+	if(!porttypeinfo[0] || !porttypeinfo[1])
+		return -1;
+	unsigned p1devs = porttypeinfo[0]->controllers();
+	unsigned p2devs = porttypeinfo[1]->controllers();
+	if(lcid >= p1devs + p2devs)
+		return -1;
+	//Exceptional: If p1 is none, map all to p2.
+	if(!p1devs)
+		return lcid + MAX_CONTROLLERS_PER_PORT;
+	//LID 0 Is always PID 0 unless out of range.
+	if(lcid == 0)
+		return 0;
+	//LID 1-n are on port 2.
+	else if(lcid < 1 + p2devs)
+		return lcid - 1 + MAX_CONTROLLERS_PER_PORT;
+	//From there, those are on port 1 (except for the first).
+	else
+		return lcid - p2devs;
+}
+
+int controller_state::acid_to_pcid(unsigned acid) throw()
+{
+	if(acid > MAX_ANALOG)
+		return -1;
+	return analog_indices[acid];
+}
+
+bool controller_state::acid_is_mouse(unsigned acid) throw()
+{
+	if(acid > MAX_ANALOG)
+		return -1;
+	return analog_mouse[acid];
+	
+}
+
+devicetype_t controller_state::pcid_to_type(unsigned pcid) throw()
+{
+	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
+	if(port >= MAX_PORTS)
+		return DT_NONE;
+	return porttypeinfo[port]->devicetype(pcid % MAX_CONTROLLERS_PER_PORT);
+}
+
+controller_frame controller_state::get(uint64_t framenum) throw()
+{
+	if(_autofire.size())
+		return _input ^ _autohold ^ _autofire[framenum % _autofire.size()];
+	else
+		return _input ^ _autohold;
+}
+
+void controller_state::analog(unsigned acid, int x, int y) throw()
+{
+	if(acid >= MAX_ANALOG || analog_indices[acid] < 0) {
+		messages << "No analog controller #" << acid << std::endl;
+		return;
+	}
+	_input.axis(analog_indices[acid], 0, x);
+	_input.axis(analog_indices[acid], 1, y);
+}
+
+void controller_state::reset(int32_t delay) throw()
+{
+	if(delay >= 0) {
+		_input.reset(true);
+		_input.delay(std::make_pair(delay / 10000, delay % 10000));
+	} else {
+		_input.reset(false);
+		_input.delay(std::make_pair(0, 0));
+	}
+}
+
+void controller_state::autohold(unsigned pcid, unsigned pbid, bool newstate) throw()
+{
+	_autohold.axis(pcid, pbid, newstate ? 1 : 0);
+	information_dispatch::do_autohold_update(pcid, pbid, newstate);
+}
+
+bool controller_state::autohold(unsigned pcid, unsigned pbid) throw()
+{
+	return (_autohold.axis(pcid, pbid) != 0);
+}
+
+void controller_state::button(unsigned pcid, unsigned pbid, bool newstate) throw()
+{
+	_input.axis(pcid, pbid, newstate ? 1 : 0);
+}
+
+bool controller_state::button(unsigned pcid, unsigned pbid) throw()
+{
+	return (_input.axis(pcid, pbid) != 0);
+}
+
+void controller_state::autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc)
+{
+	_autofire = pattern;
+}
+
+int controller_state::button_id(unsigned pcid, unsigned lbid) throw()
+{
+	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
+	if(port >= MAX_PORTS)
+		return -1;
+	return porttypeinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
+}
+
+void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) throw(std::runtime_error)
+{
+	if(port >= MAX_PORTS)
+		throw std::runtime_error("Port number invalid");
+	const porttype_info* info = &porttype_info::lookup(ptype);
+	if(!info->legal(port))
+		throw std::runtime_error("Port type not valid for port");
+	if(set_core)
+		info->set_core_controller(port);
+	porttype_t oldtype = porttypes[port];
+	if(oldtype != ptype) {
+		_input.set_port_type(port, ptype);
+		_autohold.set_port_type(port, ptype);
+		//The old autofire pattern no longer applies.
+		_autofire.clear();
+	}
+	porttypes[port] = ptype;
+	porttypeinfo[port] = info;
+	int i = 0;
+	for(unsigned j = 0; j < MAX_ANALOG; j++)
+		analog_indices[j] = -1;
+	for(unsigned j = 0; j < MAX_PORTS * MAX_CONTROLLERS_PER_PORT; j++) {
+		if(!porttypeinfo[j / MAX_CONTROLLERS_PER_PORT])
+			continue;
+		devicetype_t d = porttypeinfo[j / MAX_CONTROLLERS_PER_PORT]->devicetype(j % MAX_CONTROLLERS_PER_PORT);
+		switch(d) {
+		case DT_NONE:
+		case DT_GAMEPAD:
+			break;
+		case DT_MOUSE:
+			analog_mouse[i] = true;
+			analog_indices[i++] = j;
+			break;
+		case DT_SUPERSCOPE:
+		case DT_JUSTIFIER:
+			analog_mouse[i] = false;
+			analog_indices[i++] = j;
+			break;
+		}
+		if(i == MAX_ANALOG)
+			break;
+	}
+	information_dispatch::do_autohold_reconfigure();
+}
+
+controller_frame controller_state::get_blank() throw()
+{
+	return _input.blank_frame();
+}
+
+std::string controller_state::lcid_to_typestring(unsigned lcid) throw(std::bad_alloc)
+{
+	int pcid = lcid_to_pcid(lcid);
+	devicetype_t dtype = DT_NONE;
+	if(pcid >= 0)
+		dtype = pcid_to_type(pcid);
+	switch(dtype) {
+	case DT_NONE:			return "disconnected";
+	case DT_GAMEPAD:		return "gamepad";
+	case DT_MOUSE:			return "mouse";
+	case DT_SUPERSCOPE:		return "superscope";
+	case DT_JUSTIFIER:		return "justifier";
+	default:			return "unknown";
+	};
 }
