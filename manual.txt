@@ -435,7 +435,7 @@ Clear alias expansion for <command>.
 
 Print all aliases and their expansions in effect.
 
-4.4 run-script <script> (implemented for wxwidgets)
+4.4 run-script <script>
 
 Run <script> as if commands were entered on the command line.
 
@@ -572,112 +572,112 @@ Searches for addresses that currently have value <value>.
 These commands are not available in lsnesrc, but are available 
 after ROM has been loaded.
 
-4.8.1 quit-emulator [/y] (implemented for wxwidgets)
+4.8.1 quit-emulator [/y]
 
 Quits the emulator (asking for confirmation). If /y is given, no 
 confirmation is asked.
 
-4.8.2 pause-emulator (implemented for wxwidgets)
+4.8.2 pause-emulator
 
 Toggle paused/unpaused
 
-4.8.3 +advance-frame (implemented for wxwidgets)
+4.8.3 +advance-frame
 
 Advance frame. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-4.8.4 +advance-poll (implemented for wxwidgets)
+4.8.4 +advance-poll
 
 Advance subframe. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-4.8.5 advance-skiplag (implemented for wxwidgets)
+4.8.5 advance-skiplag
 
 Skip to first poll in frame after current.
 
-4.8.6 reset (implemented for wxwidgets)
+4.8.6 reset
 
 Reset the SNES after this frame.
 
-4.8.7 load <filename> (implemented for wxwidgets)
+4.8.7 load <filename>
 
 Load savestate <filename> in current mode.
 
-4.8.8 load-state <filename> (implemented for wxwidgets)
+4.8.8 load-state <filename>
 
 Load savestate <filename> in readwrite mode.
 
-4.8.9 load-readonly <filename> (implemented for wxwidgets)
+4.8.9 load-readonly <filename>
 
 Load savestate <filename> in readonly mode.
 
-4.8.10 load-preserve <filename> (implemented for wxwidgets)
+4.8.10 load-preserve <filename>
 
 Load savestate <filename> in readonly mode, preserving current 
 events.
 
-4.8.11 load-movie <filename> (implemented for wxwidgets)
+4.8.11 load-movie <filename>
 
 Load savestate <filename>, ignoring save part in readonly mode.
 
-4.8.12 save-state <filename> (implemented for wxwidgets)
+4.8.12 save-state <filename>
 
 Save system state to <filename> as soon as possible.
 
-4.8.13 save-movie <filename> (implemented for wxwidgets)
+4.8.13 save-movie <filename>
 
 Save movie to <filename>.
 
-4.8.14 set-rwmode (implemented for wxwidgets)
+4.8.14 set-rwmode
 
 Set read-write mode.
 
-4.8.15 set-romode (implemented for wxwidgets)
+4.8.15 set-romode
 
 Set read-only mode
 
-4.8.16 toggle-rwmode (implemented for wxwidgets)
+4.8.16 toggle-rwmode
 
 Toggle between read-only and read-write modes.
 
-4.8.17 set-gamename <name> (implemented for wxwidgets)
+4.8.17 set-gamename <name>
 
 Set name of the game to <name>
 
-4.8.18 get-gamename (implemented for wxwidgets)
+4.8.18 get-gamename
 
 Print the name of the game.
 
-4.8.19 add-author <author> (implemented for wxwidgets)
+4.8.19 add-author <author>
 
 Adds new author <author>. If <author> does not contain '|' it is 
 full name. If it contains '|', '|' splits the full name and 
 nickname.
 
-4.8.20 edit-author <num> <author> (implemented for wxwidgets)
+4.8.20 edit-author <num> <author>
 
 Edit the author in slot <num> (0-based) to be <author> (see 
 add-author for format)
 
-4.8.21 remove-author <num> (implemented for wxwidgets)
+4.8.21 remove-author <num>
 
 Remove author in slot <num>
 
-4.8.22 print-authors (implemented for wxwidgets)
+4.8.22 print-authors
 
 Print authors.
 
-4.8.23 test-1, test-2, test-3 (N/A for wxwidgets)
+4.8.23 test-1, test-2, test-3
 
 Internal test commands. Don't use.
 
-4.8.24 take-screenshot <filename> (implemented for wxwidgets)
+4.8.24 take-screenshot <filename>
 
 Save screenshot to <filename>.
 
-4.8.25 +controller<num><button> (N/A for wxwidgets)
+4.8.25 +controller<num><button>
 
 Press button <button> on controller <num> (1-8). The following 
 button names are known:
@@ -719,50 +719,48 @@ button names are known:
 Hold/unhold button <button> on controller <num> (1-8). See 
 +controller for button names.
 
-4.8.27 autofire (<pattern>|-)... (N/A for wxwidgets)
+4.8.27 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
 button names (in form of 1start, 1A, 2B, etc..) to hold on that 
 frame. After reaching the end of pattern, the pattern restarts 
 from the beginning.
 
-4.8.28 repaint (N/A for wxwidgets)
+4.8.28 repaint
 
 Force a repaint.
 
-4.9 Save jukebox (implemented for wxwidgets)
+4.9 Save jukebox
 
-4.9.1 cycle-jukebox-backward (N/A for wxwidgets)
+4.9.1 cycle-jukebox-backward
 
 Cycle save jukebox backwards.
 
-4.9.2 cycle-jukebox-forward (N/A for wxwidgets)
+4.9.2 cycle-jukebox-forward
 
 Cycle save jukebox forwards
 
-4.9.3 add-jukebox-save <filename> (N/A for wxwidgets)
+4.9.3 add-jukebox-save <filename>
 
 Add <filename> to jukebox saves.
 
-4.9.4 load-jukebox (N/A for wxwidgets)
+4.9.4 load-jukebox
 
 Do load from jukebox (current mode).
 
-4.9.5 save-jukebox (N/A for wxwidgets)
+4.9.5 save-jukebox
 
 Do state save to jukebox.
 
-4.10 Lua (implemented for wxwidgets)
+4.10 Lua
 
 Only available if lua support is compiled in.
 
-4.10.1 <<<<<<< HEADevaluate-lua <luacode>=======eval-lua 
-  <luacode> (implemented for wxwidgets)>>>>>>> Wxwidgets Graphics 
-  plugin WIP
+4.10.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-4.10.2 run-lua <script> (implemented for wxwidgets)
+4.10.2 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
@@ -776,49 +774,49 @@ Adds new watch (or modifies old one).
 
 Remove a watch.
 
-4.12 Sound (implemented for wxwidgets)
+4.12 Sound
 
-4.12.1 enable-sound <on/off> (implemented for wxwidgets)
+4.12.1 enable-sound <on/off>
 
 Enable/Disable sound.
 
-4.12.2 set-sound-device <device> (implemented for wxwidgets)
+4.12.2 set-sound-device <device>
 
 Set sound device to <device>
 
-4.12.3 show-sound-status (implemented for wxwidgets)
+4.12.3 show-sound-status
 
 Show status of sound system.
 
-4.12.4 show-sound-devices (N/A for wxwidgets)
+4.12.4 show-sound-devices
 
 Show all available devices.
 
-4.13 SDL Platform commands (implemented for wxwidgets)
+4.13 SDL Platform commands
 
 The following are valid on SDL platform.
 
-4.13.1 identify-key (N/A for wxwidgets)
+4.13.1 identify-key
 
 Asks to press a key and then identifies that (pseudo-)key.
 
-4.13.2 toggle-console (N/A for wxwidgets)
+4.13.2 toggle-console
 
 Toggle between windowed/fullscreen console.
 
-4.13.3 scroll-fullup (N/A for wxwidgets)
+4.13.3 scroll-fullup
 
 Scroll messages window as far back as it goes.
 
-4.13.4 scroll-fulldown (N/A for wxwidgets)
+4.13.4 scroll-fulldown
 
 Scroll messages window as far forward as it goes.
 
-4.13.5 scroll-up (N/A for wxwidgets)
+4.13.5 scroll-up
 
 Scroll messages window back one screenful.
 
-4.13.6 scroll-down (N/A for wxwidgets)
+4.13.6 scroll-down
 
 Scroll messages window forward one screenful.
 
@@ -2355,4 +2353,8 @@ set-axis joystick0axis19 disabled
 13.30 rr0-delta1epsilon1
 
 • Add BSNES patches for v085.
+
+13.31 rr0-delta1epsilon2
+
+• Support Lua 5.2
 

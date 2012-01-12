@@ -57,7 +57,7 @@ namespace
 	void recursive_lookup_table(lua_State* L, const std::string& tab)
 	{
 		if(tab == "") {
-			lua_pushvalue(L, LUA_GLOBALSINDEX);
+			lua_getglobal(L, "_G");
 			return;
 		}
 		std::string u = tab;
@@ -214,7 +214,12 @@ namespace
 	{
 		if(recursive_flag)
 			return;
+#if LUA_VERSION_NUM == 501
 		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment");
+#endif
+#if LUA_VERSION_NUM == 502
+		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment", "bt");
+#endif
 		if(t == LUA_ERRSYNTAX) {
 			messages << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
 			lua_pop(L, 1);
@@ -294,9 +299,10 @@ namespace
 
 	void copy_system_tables(lua_State* L)
 	{
+		lua_getglobal(L, "_G");
 		lua_newtable(L);
 		lua_pushnil(L);
-		while(lua_next(L, LUA_GLOBALSINDEX)) {
+		while(lua_next(L, -3)) {
 			//Stack: _SYSTEM, KEY, VALUE
 			lua_pushvalue(L, -2);
 			lua_pushvalue(L, -2);

@@ -873,7 +873,7 @@ Print all aliases and their expansions in effect.
 \end_layout
 
 \begin_layout Subsection
-run-script <script> (implemented for wxwidgets)
+run-script <script>
 \end_layout
 
 \begin_layout Standard
@@ -1135,7 +1135,7 @@ These commands are not available in lsnesrc, but are available after ROM
 \end_layout
 
 \begin_layout Subsubsection
-quit-emulator [/y] (implemented for wxwidgets)
+quit-emulator [/y]
 \end_layout
 
 \begin_layout Standard
@@ -1144,7 +1144,7 @@ Quits the emulator (asking for confirmation).
 \end_layout
 
 \begin_layout Subsubsection
-pause-emulator (implemented for wxwidgets)
+pause-emulator
 \end_layout
 
 \begin_layout Standard
@@ -1152,7 +1152,7 @@ Toggle paused/unpaused
 \end_layout
 
 \begin_layout Subsubsection
-+advance-frame (implemented for wxwidgets)
++advance-frame
 \end_layout
 
 \begin_layout Standard
@@ -1162,7 +1162,7 @@ Advance frame.
 \end_layout
 
 \begin_layout Subsubsection
-+advance-poll (implemented for wxwidgets)
++advance-poll
 \end_layout
 
 \begin_layout Standard
@@ -1172,7 +1172,7 @@ Advance subframe.
 \end_layout
 
 \begin_layout Subsubsection
-advance-skiplag (implemented for wxwidgets)
+advance-skiplag
 \end_layout
 
 \begin_layout Standard
@@ -1180,7 +1180,7 @@ Skip to first poll in frame after current.
 \end_layout
 
 \begin_layout Subsubsection
-reset (implemented for wxwidgets)
+reset
 \end_layout
 
 \begin_layout Standard
@@ -1188,7 +1188,7 @@ Reset the SNES after this frame.
 \end_layout
 
 \begin_layout Subsubsection
-load <filename> (implemented for wxwidgets)
+load <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1196,7 +1196,7 @@ Load savestate <filename> in current mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-state <filename> (implemented for wxwidgets)
+load-state <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1204,7 +1204,7 @@ Load savestate <filename> in readwrite mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-readonly <filename> (implemented for wxwidgets)
+load-readonly <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1212,7 +1212,7 @@ Load savestate <filename> in readonly mode.
 \end_layout
 
 \begin_layout Subsubsection
-load-preserve <filename> (implemented for wxwidgets)
+load-preserve <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1220,7 +1220,7 @@ Load savestate <filename> in readonly mode, preserving current events.
 \end_layout
 
 \begin_layout Subsubsection
-load-movie <filename> (implemented for wxwidgets)
+load-movie <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1228,7 +1228,7 @@ Load savestate <filename>, ignoring save part in readonly mode.
 \end_layout
 
 \begin_layout Subsubsection
-save-state <filename> (implemented for wxwidgets)
+save-state <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1236,7 +1236,7 @@ Save system state to <filename> as soon as possible.
 \end_layout
 
 \begin_layout Subsubsection
-save-movie <filename> (implemented for wxwidgets)
+save-movie <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1244,7 +1244,7 @@ Save movie to <filename>.
 \end_layout
 
 \begin_layout Subsubsection
-set-rwmode (implemented for wxwidgets)
+set-rwmode
 \end_layout
 
 \begin_layout Standard
@@ -1252,7 +1252,7 @@ Set read-write mode.
 \end_layout
 
 \begin_layout Subsubsection
-set-romode (implemented for wxwidgets)
+set-romode
 \end_layout
 
 \begin_layout Standard
@@ -1260,7 +1260,7 @@ Set read-only mode
 \end_layout
 
 \begin_layout Subsubsection
-toggle-rwmode (implemented for wxwidgets)
+toggle-rwmode
 \end_layout
 
 \begin_layout Standard
@@ -1268,7 +1268,7 @@ Toggle between read-only and read-write modes.
 \end_layout
 
 \begin_layout Subsubsection
-set-gamename <name> (implemented for wxwidgets)
+set-gamename <name>
 \end_layout
 
 \begin_layout Standard
@@ -1276,7 +1276,7 @@ Set name of the game to <name>
 \end_layout
 
 \begin_layout Subsubsection
-get-gamename (implemented for wxwidgets)
+get-gamename
 \end_layout
 
 \begin_layout Standard
@@ -1284,7 +1284,7 @@ Print the name of the game.
 \end_layout
 
 \begin_layout Subsubsection
-add-author <author> (implemented for wxwidgets)
+add-author <author>
 \end_layout
 
 \begin_layout Standard
@@ -1294,7 +1294,7 @@ Adds new author <author>.
 \end_layout
 
 \begin_layout Subsubsection
-edit-author <num> <author> (implemented for wxwidgets)
+edit-author <num> <author>
 \end_layout
 
 \begin_layout Standard
@@ -1303,7 +1303,7 @@ Edit the author in slot <num> (0-based) to be <author> (see add-author for
 \end_layout
 
 \begin_layout Subsubsection
-remove-author <num> (implemented for wxwidgets)
+remove-author <num>
 \end_layout
 
 \begin_layout Standard
@@ -1311,7 +1311,7 @@ Remove author in slot <num>
 \end_layout
 
 \begin_layout Subsubsection
-print-authors (implemented for wxwidgets)
+print-authors
 \end_layout
 
 \begin_layout Standard
@@ -1319,7 +1319,7 @@ Print authors.
 \end_layout
 
 \begin_layout Subsubsection
-test-1, test-2, test-3 (N/A for wxwidgets)
+test-1, test-2, test-3
 \end_layout
 
 \begin_layout Standard
@@ -1328,7 +1328,7 @@ Internal test commands.
 \end_layout
 
 \begin_layout Subsubsection
-take-screenshot <filename> (implemented for wxwidgets)
+take-screenshot <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1336,7 +1336,7 @@ Save screenshot to <filename>.
 \end_layout
 
 \begin_layout Subsubsection
-+controller<num><button> (N/A for wxwidgets)
++controller<num><button>
 \end_layout
 
 \begin_layout Standard
@@ -1419,7 +1419,6 @@ Hold/unhold button <button> on controller <num> (1-8).
 
 \begin_layout Subsubsection
 autofire (<pattern>|-)...
- (N/A for wxwidgets)
 \end_layout
 
 \begin_layout Standard
@@ -1430,7 +1429,7 @@ Set autofire pattern.
 \end_layout
 
 \begin_layout Subsubsection
-repaint (N/A for wxwidgets)
+repaint
 \end_layout
 
 \begin_layout Standard
@@ -1438,11 +1437,11 @@ Force a repaint.
 \end_layout
 
 \begin_layout Subsection
-Save jukebox (implemented for wxwidgets)
+Save jukebox
 \end_layout
 
 \begin_layout Subsubsection
-cycle-jukebox-backward (N/A for wxwidgets)
+cycle-jukebox-backward
 \end_layout
 
 \begin_layout Standard
@@ -1450,7 +1449,7 @@ Cycle save jukebox backwards.
 \end_layout
 
 \begin_layout Subsubsection
-cycle-jukebox-forward (N/A for wxwidgets)
+cycle-jukebox-forward
 \end_layout
 
 \begin_layout Standard
@@ -1458,7 +1457,7 @@ Cycle save jukebox forwards
 \end_layout
 
 \begin_layout Subsubsection
-add-jukebox-save <filename> (N/A for wxwidgets)
+add-jukebox-save <filename>
 \end_layout
 
 \begin_layout Standard
@@ -1466,7 +1465,7 @@ Add <filename> to jukebox saves.
 \end_layout
 
 \begin_layout Subsubsection
-load-jukebox (N/A for wxwidgets)
+load-jukebox
 \end_layout
 
 \begin_layout Standard
@@ -1474,7 +1473,7 @@ Do load from jukebox (current mode).
 \end_layout
 
 \begin_layout Subsubsection
-save-jukebox (N/A for wxwidgets)
+save-jukebox
 \end_layout
 
 \begin_layout Standard
@@ -1482,7 +1481,7 @@ Do state save to jukebox.
 \end_layout
 
 \begin_layout Subsection
-Lua (implemented for wxwidgets)
+Lua
 \end_layout
 
 \begin_layout Standard
@@ -1490,8 +1489,7 @@ Only available if lua support is compiled in.
 \end_layout
 
 \begin_layout Subsubsection
-<<<<<<< HEADevaluate-lua <luacode>=======eval-lua <luacode> (implemented
- for wxwidgets)>>>>>>> Wxwidgets Graphics plugin WIP
+evaluate-lua <luacode>
 \end_layout
 
 \begin_layout Standard
@@ -1499,7 +1497,7 @@ Run Lua code <luacode> using built-in Lua interpretter.
 \end_layout
 
 \begin_layout Subsubsection
-run-lua <script> (implemented for wxwidgets)
+run-lua <script>
 \end_layout
 
 \begin_layout Standard
@@ -1527,11 +1525,11 @@ Remove a watch.
 \end_layout
 
 \begin_layout Subsection
-Sound (implemented for wxwidgets)
+Sound
 \end_layout
 
 \begin_layout Subsubsection
-enable-sound <on/off> (implemented for wxwidgets)
+enable-sound <on/off>
 \end_layout
 
 \begin_layout Standard
@@ -1539,7 +1537,7 @@ Enable/Disable sound.
 \end_layout
 
 \begin_layout Subsubsection
-set-sound-device <device> (implemented for wxwidgets)
+set-sound-device <device>
 \end_layout
 
 \begin_layout Standard
@@ -1547,7 +1545,7 @@ Set sound device to <device>
 \end_layout
 
 \begin_layout Subsubsection
-show-sound-status (implemented for wxwidgets)
+show-sound-status
 \end_layout
 
 \begin_layout Standard
@@ -1555,7 +1553,7 @@ Show status of sound system.
 \end_layout
 
 \begin_layout Subsubsection
-show-sound-devices (N/A for wxwidgets)
+show-sound-devices
 \end_layout
 
 \begin_layout Standard
@@ -1563,7 +1561,7 @@ Show all available devices.
 \end_layout
 
 \begin_layout Subsection
-SDL Platform commands (implemented for wxwidgets)
+SDL Platform commands
 \end_layout
 
 \begin_layout Standard
@@ -1571,7 +1569,7 @@ The following are valid on SDL platform.
 \end_layout
 
 \begin_layout Subsubsection
-identify-key (N/A for wxwidgets)
+identify-key
 \end_layout
 
 \begin_layout Standard
@@ -1579,7 +1577,7 @@ Asks to press a key and then identifies that (pseudo-)key.
 \end_layout
 
 \begin_layout Subsubsection
-toggle-console (N/A for wxwidgets)
+toggle-console
 \end_layout
 
 \begin_layout Standard
@@ -1587,7 +1585,7 @@ Toggle between windowed/fullscreen console.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-fullup (N/A for wxwidgets)
+scroll-fullup
 \end_layout
 
 \begin_layout Standard
@@ -1595,7 +1593,7 @@ Scroll messages window as far back as it goes.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-fulldown (N/A for wxwidgets)
+scroll-fulldown
 \end_layout
 
 \begin_layout Standard
@@ -1603,7 +1601,7 @@ Scroll messages window as far forward as it goes.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-up (N/A for wxwidgets)
+scroll-up
 \end_layout
 
 \begin_layout Standard
@@ -1611,7 +1609,7 @@ Scroll messages window back one screenful.
 \end_layout
 
 \begin_layout Subsubsection
-scroll-down (N/A for wxwidgets)
+scroll-down
 \end_layout
 
 \begin_layout Standard
@@ -4852,6 +4850,14 @@ rr0-delta1epsilon1
 
 \begin_layout Itemize
 Add BSNES patches for v085.
+\end_layout
+
+\begin_layout Subsection
+rr0-delta1epsilon2
+\end_layout
+
+\begin_layout Itemize
+Support Lua 5.2
 \end_layout
 
 \end_body
