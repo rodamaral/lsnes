@@ -97,6 +97,7 @@ std::string commandline_model::key(uint32_t k) throw(std::bad_alloc)
 				codepoints[i] = codepoints[i - 1];
 		}
 		codepoints[cursor_pos++] = k & ~PRESSED_MASK;
+		return "";
 	};
 }
 
