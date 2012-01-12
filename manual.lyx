@@ -4929,5 +4929,17 @@ rr1-beta6
 Win32: Fix compile errors.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta7
+\end_layout
+
+\begin_layout Itemize
+Refactor controller input code.
+\end_layout
+
+\begin_layout Itemize
+Fix crash when using command line on SDL / Mac OS X.
+\end_layout
+
 \end_body
 \end_document

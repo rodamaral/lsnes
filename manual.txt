@@ -2391,3 +2391,9 @@ set-axis joystick0axis19 disabled
 
 • Win32: Fix compile errors.
 
+14.36 rr1-beta7
+
+• Refactor controller input code.
+
+• Fix crash when using command line on SDL / Mac OS X.
+
