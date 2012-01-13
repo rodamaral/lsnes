@@ -610,6 +610,7 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 	if(oldtype != ptype) {
 		_input.set_port_type(port, ptype);
 		_autohold.set_port_type(port, ptype);
+		_committed.set_port_type(port, ptype);
 		//The old autofire pattern no longer applies.
 		_autofire.clear();
 	}
@@ -661,4 +662,22 @@ std::string controller_state::lcid_to_typestring(unsigned lcid) throw(std::bad_a
 	case DT_JUSTIFIER:		return "justifier";
 	default:			return "unknown";
 	};
+}
+
+controller_frame controller_state::commit(uint64_t framenum) throw()
+{
+	controller_frame f = get(framenum);
+	_committed = f;
+	return _committed;
+}
+
+controller_frame controller_state::get_committed() throw()
+{
+	return _committed;
+}
+
+controller_frame controller_state::commit(controller_frame controls) throw()
+{
+	_committed = controls;
+	return _committed;
 }

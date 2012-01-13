@@ -1049,8 +1049,28 @@ public:
  * Get status of current controls (with autohold/autofire factored in).
  *
  * Parameter framenum: Number of current frame (for evaluating autofire).
+ * Returns: The current controls.
  */
 	controller_frame get(uint64_t framenum) throw();
+/**
+ * Commit given controls (autohold/autofire is factored in).
+ *
+ * Parameter framenum: Number of current frame (for evaluating autofire).
+ * Returns: The committed controls.
+ */
+	controller_frame commit(uint64_t framenum) throw();
+/**
+ * Commit given controls (autohold/autofire is ignored).
+ *
+ * Parameter controls: The controls to commit
+ * Returns: The committed controls.
+ */
+	controller_frame commit(controller_frame controls) throw();
+/**
+ * Get status of committed controls.
+ * Returns: The committed controls.
+ */
+	controller_frame get_committed() throw();
 /**
  * Get blank frame.
  */
@@ -1123,6 +1143,7 @@ private:
 	bool analog_mouse[MAX_ANALOG];
 	controller_frame _input;
 	controller_frame _autohold;
+	controller_frame _committed;
 	std::vector<controller_frame> _autofire;
 };
 
