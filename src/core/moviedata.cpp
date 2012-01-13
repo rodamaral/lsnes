@@ -212,6 +212,9 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 		redraw_framebuffer(screen_corrupt, true);
 		throw;
 	}
+	our_movie.is_savestate = false;
+	our_movie.host_memory.clear();
+	messages << "Movie rewound to beginning." << std::endl;
 }
 
 //Load state from loaded movie file (does not catch errors).
