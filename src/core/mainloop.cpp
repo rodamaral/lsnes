@@ -798,6 +798,14 @@ std::vector<std::string> get_jukebox_names()
 	return save_jukebox;
 }
 
+void set_jukebox_names(const std::vector<std::string>& newj)
+{
+	save_jukebox = newj;
+	if(save_jukebox_pointer >= save_jukebox.size())
+		save_jukebox_pointer = 0;
+	update_movie_state();
+}
+
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {

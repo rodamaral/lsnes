@@ -20,6 +20,7 @@
 #include "plat-wxwidgets/menu_dump.hpp"
 #include "plat-wxwidgets/platform.hpp"
 #include "plat-wxwidgets/window_mainwindow.hpp"
+#include "plat-wxwidgets/window_status.hpp"
 
 #define MAXCONTROLLERS MAX_PORTS * MAX_CONTROLLERS_PER_PORT
 
@@ -66,7 +67,8 @@ enum
 	wxID_LOAD_MEMORYWATCH,
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
-	wxID_REWIND_MOVIE
+	wxID_REWIND_MOVIE,
+	wxID_EDIT_JUKEBOX
 };
 
 
@@ -829,6 +831,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings"));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
+	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
 		menu_start(wxT("S&ound"));
@@ -1011,6 +1014,9 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 	case wxID_EDIT_ALIAS:
 		menu_edit_aliases(e);
 		break;
+	case wxID_EDIT_JUKEBOX:
+		menu_edit_jukebox(e);
+		break;
 	case wxID_EDIT_MEMORYWATCH:
 		menu_edit_memorywatch(e);
 		break;
@@ -1094,6 +1100,8 @@ void wxwin_mainwindow::menu_edit_keybindings(wxCommandEvent& e)
 	platform::set_modal_pause(false);
 }
 
+void strip_CR(std::string& x) throw(std::bad_alloc);
+
 void wxwin_mainwindow::menu_edit_aliases(wxCommandEvent& e)
 {
 	platform::set_modal_pause(true);
@@ -1145,6 +1153,45 @@ void wxwin_mainwindow::menu_edit_aliases(wxCommandEvent& e)
 	platform::set_modal_pause(false);
 }
 
+void wxwin_mainwindow::menu_edit_jukebox(wxCommandEvent& e)
+{
+	platform::set_modal_pause(true);
+	std::string x;
+	std::vector<std::string> new_jukebox;
+	runemufn([&x]() {
+			for(auto i : get_jukebox_names())
+				x = x + i + "\n";
+		});
+
+	wxTextEntryDialog* dialog = new wxTextEntryDialog(this, wxT("List jukebox entries"), wxT("Configure jukebox"),
+		towxstring(x), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
+	if(dialog->ShowModal() == wxID_CANCEL) {
+		dialog->Destroy();
+		platform::set_modal_pause(false);
+		return;
+	}
+	x = tostdstring(dialog->GetValue());
+	dialog->Destroy();
+
+	while(x != "") {
+		size_t split = x.find_first_of("\n");
+		std::string l;
+		if(split < x.length()) {
+			l = x.substr(0, split);
+			x = x.substr(split + 1);
+		} else {
+			l = x;
+			x = "";
+		}
+		strip_CR(l);
+		if(l != "")
+			new_jukebox.push_back(l);
+	}
+	runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
+	status_window->notify_update();
+	platform::set_modal_pause(false);
+}
+	
 void wxwin_mainwindow::menu_load_memorywatch(wxCommandEvent& e)
 {
 	platform::set_modal_pause(true);

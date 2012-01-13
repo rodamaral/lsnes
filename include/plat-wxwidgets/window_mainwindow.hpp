@@ -38,6 +38,7 @@ public:
 	void handle_menu_click(wxCommandEvent& e);
 	void menu_edit_keybindings(wxCommandEvent& e);
 	void menu_edit_aliases(wxCommandEvent& e);
+	void menu_edit_jukebox(wxCommandEvent& e);
 	void menu_edit_memorywatch(wxCommandEvent& e);
 	void menu_save_memorywatch(wxCommandEvent& e);
 	void menu_load_memorywatch(wxCommandEvent& e);
