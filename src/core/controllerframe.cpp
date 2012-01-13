@@ -19,6 +19,73 @@ namespace
 		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
 		"cursor", "turbo", "pause"
 	};
+
+	struct porttype_invalid : public porttype_info
+	{
+		porttype_invalid() : porttype_info(PT_INVALID, "invalid-port-type", 0) {}
+		void write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) const throw()
+		{
+		}
+
+		short read(const unsigned char* buffer, unsigned idx, unsigned ctrl) const  throw()
+		{
+			return 0;
+		}
+
+		void display(const unsigned char* buffer, unsigned idx, char* buf) const  throw()
+		{
+			buf[0] = '\0';
+		}
+
+		size_t serialize(const unsigned char* buffer, char* textbuf) const  throw()
+		{
+			std::cerr << "Attempt to serialize INVALID port type" << std::endl;
+			exit(1);
+		}
+
+		size_t deserialize(unsigned char* buffer, const char* textbuf) const  throw()
+		{
+			std::cerr << "Attempt to deserialize INVALID port type" << std::endl;
+			exit(1);
+		}
+
+		devicetype_t devicetype(unsigned idx) const  throw()
+		{
+			return DT_NONE;
+		}
+
+		unsigned controllers() const  throw()
+		{
+			return 0;
+		}
+
+		unsigned internal_type() const  throw()
+		{
+			return 0;
+		}
+
+		bool legal(unsigned port) const  throw()
+		{
+			return true;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return -1;
+		}
+
+		void set_core_controller(unsigned port) const throw()
+		{
+			std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
+			exit(1);
+		}
+	};
+
+	porttype_invalid& get_invalid_port_type()
+	{
+		static porttype_invalid inv;
+		return inv;
+	}
 }
 
 /**
@@ -37,6 +104,7 @@ std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
 
 const porttype_info& porttype_info::lookup(porttype_t p) throw(std::runtime_error)
 {
+	get_invalid_port_type();
 	for(auto i : porttypes())
 		if(p == i->value)
 			return *i;
@@ -45,8 +113,9 @@ const porttype_info& porttype_info::lookup(porttype_t p) throw(std::runtime_erro
 
 const porttype_info& porttype_info::lookup(const std::string& p) throw(std::runtime_error)
 {
+	get_invalid_port_type();
 	for(auto i : porttypes())
-		if(p == i->name)
+		if(p == i->name && i->value != PT_INVALID)
 			return *i;
 	throw std::runtime_error("Bad port type");
 }

@@ -309,8 +309,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 {
 	force_corrupt = false;
 	gametype = GT_INVALID;
-	port1 = PT_GAMEPAD;
-	port2 = PT_NONE;
+	port1 = PT_INVALID;
+	port2 = PT_INVALID;
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";

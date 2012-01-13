@@ -843,7 +843,7 @@ public:
  * Parameter p2: Type of port 2.
  * Throws std::runtime_error: Illegal port types.
  */
-	controller_frame_vector(enum porttype_t p1 = PT_GAMEPAD, enum porttype_t p2 = PT_NONE)
+	controller_frame_vector(enum porttype_t p1 = PT_INVALID, enum porttype_t p2 = PT_INVALID)
 		throw(std::runtime_error);
 /**
  * Destroy controller frame vector
