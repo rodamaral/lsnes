@@ -215,6 +215,7 @@ private:
 	uint32_t autorepeating_key;
 	int autorepeat_phase;	//0 => Off, 1 => First, 2 => Subsequent.
 	uint32_t autorepeat_counter;
+	std::vector<uint32_t> saved_codepoints;
 	std::vector<uint32_t> codepoints;
 	size_t cursor_pos;
 	bool overwrite_mode;

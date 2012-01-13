@@ -1,6 +1,7 @@
 #include "plat-sdl/platform.hpp"
 
 #include <sstream>
+#define MAXHISTORY 1000
 
 namespace
 {
@@ -24,7 +25,10 @@ std::string commandline_model::key(uint32_t k) throw(std::bad_alloc)
 	case SPECIAL_NOOP:
 		return "";
 	case SPECIAL_ACK:
-		history.push_front(codepoints);
+		history_itr = history.end();
+		history.push_back(codepoints);
+		if(history.size() > MAXHISTORY)
+			history.pop_front();
 		ret = read_command();
 		enabled_flag = false;
 		return ret;
@@ -186,12 +190,30 @@ void commandline_model::handle_cow()
 
 void commandline_model::scroll_history_up()
 {
-	std::list<std::vector<uint32_t>>::iterator tmp;
+	if(history_itr == history.end())
+		//Save the current commandline.
+		saved_codepoints = codepoints;
+	if(history_itr == history.begin())
+		//At the begnning.
+		return;
+	history_itr--;
+	codepoints = *history_itr;
+	if(cursor_pos > codepoints.size())
+		cursor_pos = codepoints.size();
 }
 
 void commandline_model::scroll_history_down()
 {
-	std::list<std::vector<uint32_t>>::iterator tmp;
+	if(history_itr == history.end())
+		//At the end.
+		return;
+	history_itr++;
+	if(history_itr == history.end())
+		codepoints = saved_codepoints;
+	else
+		codepoints = *history_itr;
+	if(cursor_pos > codepoints.size())
+		cursor_pos = codepoints.size();
 }
 
 void commandline_model::delete_codepoint(size_t idx)
