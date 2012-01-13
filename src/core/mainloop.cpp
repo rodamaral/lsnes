@@ -269,7 +269,7 @@ void update_movie_state()
 		_status.set("Flags", x.str());
 	}
 	if(save_jukebox.size() > 0)
-		_status.set("Saveslot", save_jukebox[save_jukebox_pointer]);
+		_status.set("Saveslot", translate_name_mprefix(save_jukebox[save_jukebox_pointer]));
 	else
 		_status.erase("Saveslot");
 	{

@@ -28,6 +28,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 void do_load_beginning() throw(std::bad_alloc, std::runtime_error);
 void do_load_state(struct moviefile& _movie, int lmode);
 bool do_load_state(const std::string& filename, int lmode);
+std::string translate_name_mprefix(std::string original);
 
 extern movie_logic movb;
 

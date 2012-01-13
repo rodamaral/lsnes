@@ -46,6 +46,41 @@ namespace
 {
 	numeric_setting savecompression("savecompression", 0, 9, 7);
 
+	class projectprefix_setting : public setting
+	{
+		std::string prefix;
+		bool _set;
+	public:
+		projectprefix_setting() throw(std::bad_alloc)
+			: setting("$project")
+		{
+			_set = false;
+		}
+		void blank() throw(std::bad_alloc, std::runtime_error)
+		{
+			_set = false;
+		}
+		bool is_set() throw()
+		{
+			return _set;
+		}
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			prefix = value;
+			_set = true;
+		}
+		std::string get() throw(std::bad_alloc)
+		{
+			return prefix;
+		}
+		operator std::string() throw()
+		{
+			if(_set)
+				return prefix + "-";
+			else
+				return "movieslot";
+		}
+	} mprefix;
 
 	function_ptr_command<> get_gamename("get-gamename", "Get the game name",
 		"Syntax: get-gamename\nPrints the game name\n",
@@ -122,6 +157,16 @@ namespace
 	}
 }
 
+std::string translate_name_mprefix(std::string original)
+{
+	size_t prefixloc = original.find("${project}");
+	if(prefixloc < original.length())
+		return original.substr(0, prefixloc) + static_cast<std::string>(mprefix) +
+			original.substr(prefixloc + 10);
+	else
+		return original;
+}
+
 std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
 	std::runtime_error)
 {
@@ -170,20 +215,21 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 //Save movie.
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
-	lua_callback_pre_save(filename, false);
+	std::string filename2 = translate_name_mprefix(filename);
+	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
-		our_movie.save(filename, savecompression);
+		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
-		messages << "Saved movie '" << filename << "' in " << took << " microseconds." << std::endl;
-		lua_callback_post_save(filename, false);
+		messages << "Saved movie '" << filename2 << "' in " << took << " microseconds." << std::endl;
+		lua_callback_post_save(filename2, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "Save failed: " << e.what() << std::endl;
-		lua_callback_err_save(filename);
+		lua_callback_err_save(filename2);
 	}
 }
 
@@ -378,28 +424,29 @@ void do_load_state(struct moviefile& _movie, int lmode)
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
+	std::string filename2 = translate_name_mprefix(filename);
 	uint64_t origtime = get_utime();
-	lua_callback_pre_load(filename);
+	lua_callback_pre_load(filename2);
 	struct moviefile mfile;
 	try {
-		mfile = moviefile(filename);
+		mfile = moviefile(filename2);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		messages << "Can't read movie/savestate '" << filename << "': " << e.what() << std::endl;
-		lua_callback_err_load(filename);
+		messages << "Can't read movie/savestate '" << filename2 << "': " << e.what() << std::endl;
+		lua_callback_err_load(filename2);
 		return false;
 	}
 	try {
 		do_load_state(mfile, lmode);
 		uint64_t took = get_utime() - origtime;
-		messages << "Loaded '" << filename << "' in " << took << " microseconds." << std::endl;
-		lua_callback_post_load(filename, our_movie.is_savestate);
+		messages << "Loaded '" << filename2 << "' in " << took << " microseconds." << std::endl;
+		lua_callback_post_load(filename2, our_movie.is_savestate);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
-		messages << "Can't load movie/savestate '" << filename << "': " << e.what() << std::endl;
-		lua_callback_err_load(filename);
+		messages << "Can't load movie/savestate '" << filename2 << "': " << e.what() << std::endl;
+		lua_callback_err_load(filename2);
 		return false;
 	}
 	return true;
