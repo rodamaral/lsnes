@@ -187,7 +187,10 @@ public:
 	size_t restore_state(uint64_t curframe, uint64_t lagframe, const std::vector<uint32_t>& pcounters, bool ro,
 		controller_frame_vector* old_movie, const std::string& old_projectid) throw(std::bad_alloc,
 		std::runtime_error);
-
+/**
+ * Reset the state of movie to initial state.
+ */
+	void reset_state() throw();
 /**
  * Get reset status for current frame.
  *

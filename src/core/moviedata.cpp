@@ -189,6 +189,31 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 
 extern time_t random_seed_value;
 
+void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
+{
+	SNES::config.random = false;
+	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
+
+	//Negative return.
+	rrdata::add_internal();
+	try {
+		movb.get_movie().reset_state();
+		random_seed_value = our_movie.movie_rtc_second;
+		our_rom->load();
+
+		load_sram(our_movie.movie_sram);
+		our_movie.rtc_second = our_movie.movie_rtc_second;
+		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
+		redraw_framebuffer(screen_nosignal);
+	} catch(std::bad_alloc& e) {
+		OOM_panic();
+	} catch(std::exception& e) {
+		system_corrupt = true;
+		redraw_framebuffer(screen_corrupt, true);
+		throw;
+	}
+}
+
 //Load state from loaded movie file (does not catch errors).
 void do_load_state(struct moviefile& _movie, int lmode)
 {

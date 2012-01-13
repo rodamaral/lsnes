@@ -65,7 +65,8 @@ enum
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
 	wxID_DUMP_FIRST,
-	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023
+	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
+	wxID_REWIND_MOVIE
 };
 
 
@@ -787,7 +788,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EXIT, wxT("&Quit"));
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About"));
-	//File menu: (ACFOS)DELMNPRTUV
+	//File menu: (ACFOS)DELMNPRTUVW
 	menu_start(wxT("&File"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
@@ -800,6 +801,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)"));
 	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve)"));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
+	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
 	menu_separator();
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
 	menu_separator();
@@ -934,6 +936,9 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		if(filename == "")
 			break;
 		platform::queue("load-state " + filename);
+		break;
+	case wxID_REWIND_MOVIE:
+		platform::queue("rewind-movie");
 		break;
 	case wxID_SAVE_MOVIE:
 		d = new wxFileDialog(this, wxT("Save Movie"), wxT("."));

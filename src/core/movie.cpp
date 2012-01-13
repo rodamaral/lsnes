@@ -445,6 +445,15 @@ controller_frame movie::read_subframe(uint64_t frame, uint64_t subframe) throw()
 	return movie_data[p + subframe];
 }
 
+void movie::reset_state() throw()
+{
+	readonly = true;
+	current_frame = 0;
+	current_frame_first_subframe = 0;
+	pollcounters.clear();
+	lag_frames = 0;
+	clear_caches();
+}
 
 movie_logic::movie_logic() throw()
 {

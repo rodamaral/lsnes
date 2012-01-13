@@ -615,6 +615,12 @@ namespace
 			messages << "Pause-on-end is now " << (newstate ? "ON" : "OFF") << std::endl;
 		});
 
+	function_ptr_command<> rewind_movie("rewind-movie", "Rewind movie to the beginning",
+		"Syntax: rewind-movie\nRewind movie to the beginning\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
+		});
+
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer(screen_nosignal);
@@ -691,10 +697,12 @@ namespace
 	{
 		if(pending_load != "") {
 			system_corrupt = false;
-			if(!do_load_state(pending_load, loadmode)) {
+			if(loadmode != LOAD_STATE_BEGINNING && !do_load_state(pending_load, loadmode)) {
 				pending_load = "";
 				return -1;
 			}
+			if(loadmode == LOAD_STATE_BEGINNING)
+				do_load_beginning();
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
