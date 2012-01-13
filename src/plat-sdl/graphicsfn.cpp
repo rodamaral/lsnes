@@ -8,7 +8,7 @@
 
 #include <unistd.h>
 
-screen_model screenmod;
+screen_model* screenmod;
 
 #define USERCODE_TIMER 0
 #define USERCODE_PAINT 1
@@ -109,8 +109,8 @@ namespace
 		//Be very careful what you use here, as program state can be really unpredictable!
 		try {
 			platform::message("PANIC: Cannot continue, press ESC or close window to exit.");
-			screenmod.repaint_full();
-			screenmod.flip();
+			screenmod->repaint_full();
+			screenmod->flip();
 		} catch(...) {
 			//Just crash.
 			panic_ack = true;
@@ -122,8 +122,8 @@ namespace
 				if(e.type == SDL_QUIT)
 					break;
 				if(e.type == SDL_ACTIVEEVENT) {
-					screenmod.repaint_full();
-					screenmod.flip();
+					screenmod->repaint_full();
+					screenmod->flip();
 				}
 				if(e.type == SDL_KEYUP && e.key.keysym.sym == SDLK_ESCAPE)
 					break;
@@ -377,7 +377,7 @@ void ui_loop()
 		}
 		//Handle entering modal dialog.
 		if(!modal_dialog_was_active && modal_dialog_active) {
-			screenmod.set_modal(modal_dialog_text, modal_dialog_confirm);
+			screenmod->set_modal(modal_dialog_text, modal_dialog_confirm);
 			special_mode = SPECIALMODE_MODAL;
 			modal_dialog_was_active = true;
 			ui_grab_keys_special();
@@ -428,7 +428,7 @@ void ui_loop()
 				//Negative response.
 				modal_dialog_confirm = false;
 				modal_dialog_active = false;
-				screenmod.clear_modal();
+				screenmod->clear_modal();
 				special_mode = SPECIALMODE_NORMAL;
 				//We NAK the command in case modal dialog was somehow entered with command active.
 				cmdline.key(SPECIAL_NAK);
@@ -441,7 +441,7 @@ void ui_loop()
 			if(iskbd && !polarity && (kbdkey == SDLK_RETURN || kbdkey == SDLK_KP_ENTER)) {
 				//Positive response.
 				modal_dialog_active = false;
-				screenmod.clear_modal();
+				screenmod->clear_modal();
 				modal_dialog_was_active = false;
 				special_mode = SPECIALMODE_NORMAL;
 				//We NAK the command in case modal dialog was somehow entered with command active.
@@ -491,38 +491,40 @@ void ui_loop()
 		bool any = status || pmessages || screen || commandline_updated || toggle_fsc || full;
 		if(special_mode == SPECIALMODE_MODAL || full) {
 			//FIXME: Use less intensive paint for SPECIALMODE_MODAL.
-			screenmod.repaint_full();
+			screenmod->repaint_full();
 			any = true;
 		} else {
 			if(status) {
-				screenmod.repaint_status();
+				screenmod->repaint_status();
 			}
 			if(pmessages) {
-				screenmod.repaint_messages();
+				screenmod->repaint_messages();
 			}
 			if(screen) {
-				screenmod.repaint_screen();
+				screenmod->repaint_screen();
 			}
 			if(commandline_updated) {
-				screenmod.repaint_commandline();
+				screenmod->repaint_commandline();
 			}
 			if(toggle_fsc) {
-				screenmod.set_fullscreen_console(new_fsc);
+				screenmod->set_fullscreen_console(new_fsc);
 				fullscreen_console_active = new_fsc;
 			}
 		}
 		if(any)
-			screenmod.flip();
+			screenmod->flip();
 	}
 }
 
 void graphics_plugin::init() throw()
 {
+	if(!screenmod)
+		screenmod = new screen_model;
 	if(!ui_mutex)
 		ui_mutex = &mutex::aquire();
 	if(!ui_condition)
 		ui_condition = &condition::aquire(*ui_mutex);
-	screenmod.set_command_line(&cmdline);
+	screenmod->set_command_line(&cmdline);
 	arm_sigalrm();
 	ui_thread = &thread_id::me();
 	init_sdl_keys();
@@ -533,7 +535,7 @@ void graphics_plugin::init() throw()
 		timer_id = SDL_AddTimer(30, timer_cb, NULL);
 	}
 	//Doing full repaint will open the window.
-	screenmod.repaint_full();
+	screenmod->repaint_full();
 	std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 }
