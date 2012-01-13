@@ -271,21 +271,17 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		random_seed_value = _movie.rtc_second;
 		our_rom->load();
 
-		if(_movie.is_savestate && lmode != LOAD_STATE_MOVIE) {
+		if(will_load_state) {
 			//Load the savestate and movie state.
 			controls.set_port(0, _movie.port1, false);
 			controls.set_port(1, _movie.port2, false);
 			load_core_state(_movie.savestate);
-			lcscreen tmp;
-			tmp.load(_movie.screenshot);
-			redraw_framebuffer(tmp);
 		} else {
 			load_sram(_movie.movie_sram);
 			controls.set_port(0, _movie.port1, true);
 			controls.set_port(1, _movie.port2, true);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
-			redraw_framebuffer(screen_nosignal);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -302,6 +298,15 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		our_movie.host_memory.clear();
 	}
 	movb.get_movie() = newmovie;
+	//Paint the screen.
+	{
+		lcscreen tmp;
+		if(will_load_state) {
+			tmp.load(_movie.screenshot);
+			redraw_framebuffer(tmp);
+		} else
+			redraw_framebuffer(screen_nosignal);
+	}
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
 		movb.get_movie().readonly_mode(false);
