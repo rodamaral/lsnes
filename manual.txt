@@ -2397,3 +2397,26 @@ set-axis joystick0axis19 disabled
 
 • Fix crash when using command line on SDL / Mac OS X.
 
+14.37 rr1-beta8
+
+• Delete core/coroutine (obsolete)
+
+• Lag input display by one frame.
+
+• Rewind movie to beginning function.
+
+• Fix wrong frame number reported to Lua when repainting after 
+  loadstate
+
+• Support UI editing of jukebox
+
+• Wxwidgets: Save settings on exit.
+
+• Support ${project} for filenames
+
+• SDL: Fix command history
+
+14.38 rr1-beta9
+
+• Fix some order-of-global-ctor bugs.
+

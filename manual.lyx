@@ -4941,5 +4941,49 @@ Refactor controller input code.
 Fix crash when using command line on SDL / Mac OS X.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta8
+\end_layout
+
+\begin_layout Itemize
+Delete core/coroutine (obsolete)
+\end_layout
+
+\begin_layout Itemize
+Lag input display by one frame.
+\end_layout
+
+\begin_layout Itemize
+Rewind movie to beginning function.
+\end_layout
+
+\begin_layout Itemize
+Fix wrong frame number reported to Lua when repainting after loadstate
+\end_layout
+
+\begin_layout Itemize
+Support UI editing of jukebox
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Save settings on exit.
+\end_layout
+
+\begin_layout Itemize
+Support ${project} for filenames
+\end_layout
+
+\begin_layout Itemize
+SDL: Fix command history
+\end_layout
+
+\begin_layout Subsection
+rr1-beta9
+\end_layout
+
+\begin_layout Itemize
+Fix some order-of-global-ctor bugs.
+\end_layout
+
 \end_body
 \end_document
