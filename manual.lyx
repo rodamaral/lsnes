@@ -4993,5 +4993,17 @@ rr1-beta10
 Fix crashes when quitting on Win32.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta11
+\end_layout
+
+\begin_layout Itemize
+EVDEV: Queue keypresses from joystick, don't send directly
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Load-Preserve that actually works.
+\end_layout
+
 \end_body
 \end_document

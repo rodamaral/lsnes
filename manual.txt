@@ -2424,3 +2424,9 @@ set-axis joystick0axis19 disabled
 
 • Fix crashes when quitting on Win32.
 
+14.40 rr1-beta11
+
+• EVDEV: Queue keypresses from joystick, don't send directly
+
+• Wxwidgets: Load-Preserve that actually works.
+
