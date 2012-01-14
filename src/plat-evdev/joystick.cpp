@@ -226,7 +226,8 @@ namespace
 			break;
 		}
 		}
-		e.group->set_position(v, modifier_set());
+		platform::queue(keypress(modifier_set(), *e.group, v));
+		//e.group->set_position(v, modifier_set());
 	}
 
 	bool read_one_input_event(int fd)
