@@ -939,6 +939,15 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			break;
 		platform::queue("load-state " + filename);
 		break;
+	case wxID_LOAD_STATE_P:
+		d = new wxFileDialog(this, wxT("Load State (Preserve)"), wxT("."));
+		if(d->ShowModal() == wxID_OK)
+			filename = tostdstring(d->GetPath());
+		d->Destroy();
+		if(filename == "")
+			break;
+		platform::queue("load-preserve " + filename);
+		break;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
 		break;
