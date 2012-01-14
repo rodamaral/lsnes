@@ -333,6 +333,10 @@ bool lsnes_app::OnInit()
 
 int lsnes_app::OnExit()
 {
+	//NULL these so no further messages will be sent.
+	msg_window = NULL;
+	status_window = NULL;
+	main_window = NULL;
 	information_dispatch::do_dump_end();
 	rrdata::close();
 	save_configuration();
