@@ -341,7 +341,7 @@ int lsnes_app::OnExit()
 	rrdata::close();
 	save_configuration();
 	joystick_plugin::signal();
-	delete joystick_thread_handle;
+	joystick_thread_handle->join();
 	platform::quit();
 	return 0;
 }

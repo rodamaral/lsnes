@@ -78,7 +78,8 @@ bool thread::is_alive() throw()
 
 void* thread::join() throw()
 {
-	this->_join();
+	if(!joined)
+		this->_join();
 	joined = true;
 	return returns;
 }

@@ -100,47 +100,72 @@ thread_id& thread_id::me() throw(std::bad_alloc)
 	return *new wxw_thread_id;
 }
 
-struct wxw_thread : public thread, wxThread
+struct wxw_thread;
+
+struct wxw_thread_inner : public wxThread
+{
+	wxw_thread_inner(wxw_thread* _up);
+	void* (*entry)(void* arg);
+	void* entry_arg;
+	wxThread::ExitCode Entry();
+	wxw_thread* up;
+};
+
+struct wxw_thread : public thread
 {
 	wxw_thread(void* (*fn)(void* arg), void* arg) throw(std::bad_alloc, std::runtime_error);
 	~wxw_thread() throw();
 	void _join() throw();
-	void* (*entry)(void* arg);
-	void* entry_arg;
 	bool has_waited;
-	wxThread::ExitCode Entry();
+	wxw_thread_inner* inner;
+	void notify_quit2(void* ret);
 };
 
-wxThread::ExitCode wxw_thread::Entry()
+wxw_thread_inner::wxw_thread_inner(wxw_thread* _up)
+	: wxThread(wxTHREAD_JOINABLE)
 {
-	notify_quit(entry(entry_arg));
-	Exit();
+	up = _up;
+}
+
+void wxw_thread::notify_quit2(void* ret)
+{
+	notify_quit(ret);
+}
+
+wxThread::ExitCode wxw_thread_inner::Entry()
+{
+	up->notify_quit2(entry(entry_arg));
+	return 0;
 }
 
 wxw_thread::wxw_thread(void* (*fn)(void* arg), void* arg) throw(std::bad_alloc, std::runtime_error)
-	: wxThread(wxTHREAD_JOINABLE)
 {
-	entry = fn;
-	entry_arg = arg;
 	has_waited = false;
-	wxThreadError e = Create(8 * 1024 * 1024);
+	inner = new wxw_thread_inner(this);
+	inner->entry = fn;
+	inner->entry_arg = arg;
+	wxThreadError e = inner->Create(8 * 1024 * 1024);
 	if(e != wxTHREAD_NO_ERROR)
 		throw std::bad_alloc();
-	e = Run();
+	e = inner->Run();
 	if(e != wxTHREAD_NO_ERROR)
 		throw std::bad_alloc();
 }
 
 wxw_thread::~wxw_thread() throw()
 {
-	_join();
+	if(inner) {
+		inner->Wait();
+		inner = NULL;
+	}
 }
 
 void wxw_thread::_join() throw()
 {
-	if(!has_waited)
-		Wait();
-	has_waited = true;
+	if(inner) {
+		inner->Wait();
+		inner = NULL;
+	}
 }
 
 thread& thread::create(void* (*entrypoint)(void* arg), void* arg) throw(std::bad_alloc, std::runtime_error)
