@@ -2420,3 +2420,7 @@ set-axis joystick0axis19 disabled
 
 • Fix some order-of-global-ctor bugs.
 
+14.39 rr1-beta10
+
+• Fix crashes when quitting on Win32.
+

@@ -4985,5 +4985,13 @@ rr1-beta9
 Fix some order-of-global-ctor bugs.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta10
+\end_layout
+
+\begin_layout Itemize
+Fix crashes when quitting on Win32.
+\end_layout
+
 \end_body
 \end_document
