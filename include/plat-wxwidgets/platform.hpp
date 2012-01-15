@@ -31,6 +31,8 @@ void wxeditor_axes_display(wxWindow* parent);
 void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_settings_display(wxWindow* parent);
 
+//Auxillary windows.
+void wxwindow_memorysearch_display();
 
 template<typename T>
 void functor_call_helper2(void* args)

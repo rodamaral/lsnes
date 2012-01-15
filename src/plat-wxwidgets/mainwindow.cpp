@@ -68,7 +68,8 @@ enum
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
-	wxID_EDIT_JUKEBOX
+	wxID_EDIT_JUKEBOX,
+	wxID_MEMORY_SEARCH
 };
 
 
@@ -824,6 +825,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_LOAD_MEMORYWATCH, wxT("Load memory watch"));
 	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch"));
+	menu_separator();
+	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search"));
 	//Settings menu: (ACFOS)
 	menu_start(wxT("Settings"));
 	menu_entry(wxID_EDIT_AXES, wxT("Configure axes"));
@@ -1033,6 +1036,9 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_MEMORYWATCH:
 		menu_load_memorywatch(e);
+		break;
+	case wxID_MEMORY_SEARCH:
+		wxwindow_memorysearch_display();
 		break;
 	case wxID_ABOUT: {
 		std::ostringstream str;
