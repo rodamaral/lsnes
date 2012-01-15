@@ -2430,3 +2430,9 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Load-Preserve that actually works.
 
+14.41 rr1-beta12
+
+• Wxwidgets: GUI for memory search.
+
+• Warn about using synchronous queue in UI callback.
+

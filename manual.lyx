@@ -5005,5 +5005,17 @@ EVDEV: Queue keypresses from joystick, don't send directly
 Wxwidgets: Load-Preserve that actually works.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta12
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: GUI for memory search.
+\end_layout
+
+\begin_layout Itemize
+Warn about using synchronous queue in UI callback.
+\end_layout
+
 \end_body
 \end_document
