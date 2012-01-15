@@ -6,6 +6,7 @@
 #include "core/window.hpp"
 
 #include <fstream>
+#include <iostream>
 #include <string>
 #include <deque>
 #include <boost/iostreams/categories.hpp>
@@ -486,6 +487,8 @@ void platform::queue(const std::string& c) throw(std::bad_alloc)
 
 void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
 {
+	if(sync && queue_synchronous_fn_warning)
+		std::cerr << "WARNING: Synchronous queue in callback to UI, this may deadlock!" << std::endl;
 	init_threading();
 	mutex::holder h(*queue_lock);
 	++next_function;
@@ -581,3 +584,5 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 	our_screen->set_palette(rshift, gshift, bshift);
 	trigger_repaint();
 }
+
+volatile bool queue_synchronous_fn_warning;

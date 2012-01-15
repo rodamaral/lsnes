@@ -553,6 +553,9 @@ void runemufn(T fn)
 	platform::queue(functor_call_helper<T>, &fn, true);
 }
 
-
+/**
+ * If set, queueing synchronous function produces a warning.
+ */
+extern volatile bool queue_synchronous_fn_warning;
 
 #endif

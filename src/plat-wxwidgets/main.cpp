@@ -131,6 +131,7 @@ namespace
 				main_window->notify_exit();
 		} else if(c == UISERV_UIFUN) {
 			std::list<ui_queue_entry>::iterator i;
+			queue_synchronous_fn_warning = true;
 back:
 			{
 				mutex::holder h(*ui_mutex);
@@ -145,7 +146,7 @@ back:
 			}
 			goto back;
 end:
-			;
+			queue_synchronous_fn_warning = false;
 		}
 		return true;
 	}
