@@ -47,12 +47,16 @@ CFLAGS += -DSTD_THREADS
 else
 ifeq ($(THREADS), BOOST)
 CFLAGS += -DBOOST_THREADS
+ifdef BOOST_THREAD_LIB
+LDFLAGS += -l$(BOOST_THREAD_LIB)
+else
 LDFLAGS += -lboost_thread-mt
+endif
 else
 ifeq ($(THREADS), NO)
 CFLAGS += -DNO_THREADS
 else
-$(error "Bad value for THREADS (expected YES, BOOST or NO)")
+$(error "Bad value for THREADS (expected YES, BOOST, BOOSTNOMT or NO)")
 endif
 endif
 endif
