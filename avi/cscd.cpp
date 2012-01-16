@@ -798,7 +798,7 @@ void avi_cscd_dumper::video(const void* framedata) throw(std::bad_alloc, std::ru
 	frame_cond.notify_all();
 	//std::cerr << "Requesting processing of frame" << std::endl;
 	frame_mutex.unlock();
-#ifndef REALLY_USE_THREADS
+#ifndef ACTUALLY_USE_THREADS
 	_video(framedata);
 #endif
 }
@@ -1068,7 +1068,7 @@ void avi_cscd_dumper::request_flush_buffers(bool forced)
 	frame_cond.notify_all();
 	//std::cerr << "Requesting buffer flush (" << flush_requested_forced << ")" << std::endl;
 	frame_mutex.unlock();
-#ifndef REALLY_USE_THREADS
+#ifndef ACTUALLY_USE_THREADS
 	flush_buffers(forced);
 #endif
 }

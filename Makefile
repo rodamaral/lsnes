@@ -43,12 +43,17 @@ endif
 #Threads
 ifdef THREADS
 ifeq ($(THREADS), YES)
-CFLAGS += -DUSE_THREADS
+CFLAGS += -DSTD_THREADS
+else
+ifeq ($(THREADS), BOOST)
+CFLAGS += -DBOOST_THREADS
+LDFLAGS += -lboost_thread-mt
 else
 ifeq ($(THREADS), NO)
 CFLAGS += -DNO_THREADS
 else
-$(error "Bad value for THREADS (expected YES or NO)")
+$(error "Bad value for THREADS (expected YES, BOOST or NO)")
+endif
 endif
 endif
 endif

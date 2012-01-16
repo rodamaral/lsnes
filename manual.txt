@@ -18,19 +18,22 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 4. boost_filesystem
 
-5. libsdl (SDL only)
+5. boost_thread
 
-6. sdlmain (SDL only, part of SDL)
+6. libsdl (SDL only)
 
-7. boost_conversion (this is header-only library)
+7. sdlmain (SDL only, part of SDL)
 
-8. libswscale (wxwidgets graphics only)
+8. boost_conversion (this is header-only library)
 
-9. Portaudio (portaudio sound only)
+9. libswscale (wxwidgets graphics only)
 
-10. std::thread and co (for threaded dumper only)
+10. Portaudio (portaudio sound only)
 
-11. Lua (if Lua support is needed).
+11. std::thread and co (for threaded dumper only, not needed if 
+  std::thread is available)
+
+12. Lua (if Lua support is needed).
 
 • Version 5.1.X or 5.2X.
 
@@ -119,13 +122,15 @@ Building is via makefile, the following options are available:
 
   – Default is not to build Lua support.
 
-• THREADS=<bool>
+• THREADS=<value>
 
   – Override platform default for dumper threading support.
 
   – Threading is default on Linux.
 
-  – 'YES' tries to use threading.
+  – 'YES' tries to use threading (std::thread).
+
+  – 'BOOST' tries to use threading (boost::thread).
 
   – 'NO' disables threading.
 

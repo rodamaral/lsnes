@@ -102,6 +102,10 @@ boost_filesystem
 \end_layout
 
 \begin_layout Enumerate
+boost_thread
+\end_layout
+
+\begin_layout Enumerate
 libsdl (SDL only)
 \end_layout
 
@@ -122,7 +126,8 @@ Portaudio (portaudio sound only)
 \end_layout
 
 \begin_layout Enumerate
-std::thread and co (for threaded dumper only)
+std::thread and co (for threaded dumper only, not needed if std::thread
+ is available)
 \end_layout
 
 \begin_layout Enumerate
@@ -316,7 +321,7 @@ Default is not to build Lua support.
 
 \end_deeper
 \begin_layout Itemize
-THREADS=<bool>
+THREADS=<value>
 \end_layout
 
 \begin_deeper
@@ -329,7 +334,11 @@ Threading is default on Linux.
 \end_layout
 
 \begin_layout Itemize
-'YES' tries to use threading.
+'YES' tries to use threading (std::thread).
+\end_layout
+
+\begin_layout Itemize
+'BOOST' tries to use threading (boost::thread).
 \end_layout
 
 \begin_layout Itemize

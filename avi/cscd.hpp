@@ -1,88 +1,56 @@
 #ifndef _output_cscd__hpp__included__
 #define _output_cscd__hpp__included__
 
-#ifdef USE_THREADS
-#define REALLY_USE_THREADS 1
-#endif
-#ifndef NO_THREADS
-#ifdef __linux__
-#define REALLY_USE_THREADS 1
-#endif
+#if defined(__linux__) && !defined(BOOST_THREADS) && !defined(NO_THREADS)
+#define STD_THREADS 1
 #endif
 
-#ifdef REALLY_USE_THREADS
+
+
+#ifdef BOOST_THREADS
+#include <boost/thread.hpp>
+#include <boost/thread/locks.hpp>
+
+#define ACTUALLY_USE_THREADS
+typedef boost::thread thread_class;
+typedef boost::condition_variable cv_class;
+typedef boost::mutex mutex_class;
+typedef boost::unique_lock<boost::mutex> umutex_class;
+
+#else
+#ifdef STD_THREADS
 #include <thread>
 #include <condition_variable>
 #include <mutex>
 
-/**
- * Class of thread.
- */
+#define ACTUALLY_USE_THREADS
 typedef std::thread thread_class;
-
-/**
- * Class of condition variables.
- */
 typedef std::condition_variable cv_class;
-
-/**
- * Class of mutexes.
- */
 typedef std::mutex mutex_class;
-
-/**
- * Class of unique mutexes (for condition variable waiting).
- */
 typedef std::unique_lock<std::mutex> umutex_class;
 
 #else
 
-/**
- * Class of thread.
- */
 struct thread_class
 {
-/**
- * Does nothing.
- */
 	template<typename T, typename args>
 	thread_class(T obj, args a) {}
-/**
- * Does nothing.
- */
 	void join() {}
 };
 
-/**
- * Class of mutexes.
- */
 typedef struct mutex_class
 {
-/**
- * Does nothing.
- */
 	void lock() {}
-/**
- * Does nothing.
- */
 	void unlock() {}
 } umutex_class;
 
-/**
- * Class of condition variables.
- */
 struct cv_class
 {
-/**
- * Does nothing.
- */
 	void wait(umutex_class& m) {}
-/**
- * Does nothing.
- */
 	void notify_all() {}
 };
 
+#endif
 #endif
 
 #ifdef __GNUC__
