@@ -20,6 +20,7 @@ struct moviefile our_movie;
 struct loaded_rom* our_rom;
 bool system_corrupt;
 movie_logic movb;
+std::string last_save;
 
 extern "C"
 {
@@ -190,7 +191,8 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	lua_callback_pre_save(filename, true);
+	std::string filename2 = translate_name_mprefix(filename);
+	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
 		our_movie.is_savestate = true;
@@ -200,16 +202,17 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
-		our_movie.save(filename, savecompression);
+		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
-		messages << "Saved state '" << filename << "' in " << took << " microseconds." << std::endl;
-		lua_callback_post_save(filename, true);
+		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
+		lua_callback_post_save(filename2, true);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
 		messages << "Save failed: " << e.what() << std::endl;
-		lua_callback_err_save(filename);
+		lua_callback_err_save(filename2);
 	}
+	last_save = filename2;
 }
 
 //Save movie.
@@ -231,6 +234,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
+	last_save = filename2;
 }
 
 extern time_t random_seed_value;

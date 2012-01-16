@@ -51,6 +51,6 @@ void runuifun(T fn)
 extern wxwin_messages* msg_window;
 extern wxwin_status* status_window;
 extern wxwin_mainwindow* main_window;
-
+extern std::string our_rom_name;
 
 #endif

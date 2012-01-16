@@ -12,6 +12,7 @@
 #include "core/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
+#include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
@@ -44,6 +45,7 @@
 wxwin_messages* msg_window;
 wxwin_status* status_window;
 wxwin_mainwindow* main_window;
+std::string our_rom_name;
 
 namespace
 {
@@ -225,6 +227,9 @@ end:
 			else
 				cfgfile << "bind-key " << key << " " << old_command_value << std::endl;
 		}
+		//Last save.
+		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
+		lsave << last_save;
 	}
 }
 

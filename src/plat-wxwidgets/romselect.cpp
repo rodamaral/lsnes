@@ -409,6 +409,12 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 	rfiles.slotb_headered = rom_headered[4]->GetValue();
 	try {
 		our_rom = new loaded_rom(rfiles);
+		if(our_rom->slota.valid)
+			our_rom_name = our_rom->slota.sha256;
+		else if(our_rom->slotb.valid)
+			our_rom_name = our_rom->slotb.sha256;
+		else
+			our_rom_name = our_rom->rom.sha256;
 	} catch(std::exception& e) {
 		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
 			wxT("Error loading ROM"), wxOK | wxICON_EXCLAMATION);
@@ -570,6 +576,12 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 {
 	try {
 		SNES::interface = &simple_interface;
+		if(our_rom->slota.valid)
+			our_rom_name = our_rom->slota.sha256;
+		else if(our_rom->slotb.valid)
+			our_rom_name = our_rom->slotb.sha256;
+		else
+			our_rom_name = our_rom->rom.sha256;
 		our_rom->load();
 	} catch(std::exception& e) {
 		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
@@ -697,6 +709,11 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		wxCommandEventHandler(wxwin_project::on_quit), NULL, this);
 	toplevel->Add(buttonbar, 0, wxGROW);
 
+	{
+		std::ifstream s(get_config_path() + "/" + our_rom_name + ".ls");
+		std::getline(s, last_save);
+		savefile->SetValue(towxstring(last_save));
+	}
 
 	wxCommandEvent e;
 	on_file_select(e);
