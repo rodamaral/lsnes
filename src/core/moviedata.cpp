@@ -16,6 +16,8 @@
 #include <iomanip>
 #include <fstream>
 
+#include <boost/filesystem.hpp>
+
 struct moviefile our_movie;
 struct loaded_rom* our_rom;
 bool system_corrupt;
@@ -212,7 +214,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
-	last_save = filename2;
+	last_save = boost::filesystem3::absolute(boost::filesystem3::path(filename2)).native();
 }
 
 //Save movie.
@@ -234,7 +236,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
-	last_save = filename2;
+	last_save = boost::filesystem3::absolute(boost::filesystem3::path(filename2)).native();
 }
 
 extern time_t random_seed_value;
