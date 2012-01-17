@@ -2476,3 +2476,17 @@ set-axis joystick0axis19 disabled
 
 • Warn about using synchronous queue in UI callback.
 
+14.42 rr1-beta13
+
+• Remember last saved file for each ROM
+
+• Support MT dumping via boost.
+
+• Lua: input.raw
+
+• Lua: input.keyhook
+
+• Make mouse be ordinary input instead of special-casing
+
+• SDL: Don't screw up commands with NUL codepoints.
+

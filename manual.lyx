@@ -5084,5 +5084,33 @@ Wxwidgets: GUI for memory search.
 Warn about using synchronous queue in UI callback.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta13
+\end_layout
+
+\begin_layout Itemize
+Remember last saved file for each ROM
+\end_layout
+
+\begin_layout Itemize
+Support MT dumping via boost.
+\end_layout
+
+\begin_layout Itemize
+Lua: input.raw
+\end_layout
+
+\begin_layout Itemize
+Lua: input.keyhook
+\end_layout
+
+\begin_layout Itemize
+Make mouse be ordinary input instead of special-casing
+\end_layout
+
+\begin_layout Itemize
+SDL: Don't screw up commands with NUL codepoints.
+\end_layout
+
 \end_body
 \end_document
