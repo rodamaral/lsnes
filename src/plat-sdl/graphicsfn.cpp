@@ -288,6 +288,12 @@ namespace
 	{
 		platform::queue(emu_handle_quit_signal, NULL, false);
 	}
+
+	keygroup mouse_x("mouse_x", keygroup::KT_MOUSE);
+	keygroup mouse_y("mouse_y", keygroup::KT_MOUSE);
+	keygroup mouse_l("mouse_left", keygroup::KT_KEY);
+	keygroup mouse_m("mouse_center", keygroup::KT_KEY);
+	keygroup mouse_r("mouse_right", keygroup::KT_KEY);
 }
 
 void notify_emulator_exit()
@@ -339,34 +345,40 @@ void ui_loop()
 			ui_panic();
 			while(true);
 		}
-		if(e.type == SDL_MOUSEBUTTONDOWN) {
-			int i;
-			switch(e.button.button) {
-			case SDL_BUTTON_LEFT:
-				mouse_state |= 1;
-				break;
-			case SDL_BUTTON_MIDDLE:
-				mouse_state |= 2;
-				break;
-			case SDL_BUTTON_RIGHT:
-				mouse_state |= 4;
-				break;
-			};
-			send_mouse_click(e.button.x, e.button.y, mouse_state);
+		if(e.type == SDL_MOUSEMOTION && special_mode == SPECIALMODE_NORMAL) {
+			platform::queue(keypress(modifier_set(), mouse_x, e.motion.x - 6));
+			platform::queue(keypress(modifier_set(), mouse_y, e.motion.y - 6));
 		}
-		if(e.type == SDL_MOUSEBUTTONUP) {
+		if(e.type == SDL_MOUSEBUTTONDOWN && special_mode == SPECIALMODE_NORMAL) {
+			int i;
+			platform::queue(keypress(modifier_set(), mouse_x, e.button.x - 6));
+			platform::queue(keypress(modifier_set(), mouse_y, e.button.y - 6));
 			switch(e.button.button) {
 			case SDL_BUTTON_LEFT:
-				mouse_state &= ~1;
+				platform::queue(keypress(modifier_set(), mouse_l, 1));
 				break;
 			case SDL_BUTTON_MIDDLE:
-				mouse_state &= ~2;
+				platform::queue(keypress(modifier_set(), mouse_m, 1));
 				break;
 			case SDL_BUTTON_RIGHT:
-				mouse_state &= ~4;
+				platform::queue(keypress(modifier_set(), mouse_r, 1));
 				break;
 			};
-			send_mouse_click(e.button.x, e.button.y, mouse_state);
+		}
+		if(e.type == SDL_MOUSEBUTTONUP && special_mode == SPECIALMODE_NORMAL) {
+			platform::queue(keypress(modifier_set(), mouse_x, e.button.x - 6));
+			platform::queue(keypress(modifier_set(), mouse_y, e.button.y - 6));
+			switch(e.button.button) {
+			case SDL_BUTTON_LEFT:
+				platform::queue(keypress(modifier_set(), mouse_l, 0));
+				break;
+			case SDL_BUTTON_MIDDLE:
+				platform::queue(keypress(modifier_set(), mouse_m, 0));
+				break;
+			case SDL_BUTTON_RIGHT:
+				platform::queue(keypress(modifier_set(), mouse_r, 0));
+				break;
+			};
 		}
 		//Handle entering identify mode.
 		if(identify_requested) {

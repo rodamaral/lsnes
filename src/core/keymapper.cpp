@@ -417,13 +417,15 @@ void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 	if(requests_hook)
 		lua_callback_keyhook(keyname, get_parameters());
 	double x = compensate2(compensate(pos));
-	unsigned tmp;
+	signed tmp;
 	bool left, right, up, down;
 	bool oleft, oright, oup, odown;
 	switch(ktype) {
 	case KT_DISABLED:
-	case KT_MOUSE:
 		return;
+	case KT_MOUSE:
+		state = pos - cal_center;
+		break;
 	case KT_KEY:
 	case KT_PRESSURE_0M:
 	case KT_PRESSURE_0P:
@@ -557,6 +559,10 @@ std::set<std::string> keygroup::get_keys() throw(std::bad_alloc)
 	return r;
 }
 
+signed keygroup::get_value()
+{
+	return state;
+}
 
 namespace
 {

@@ -120,5 +120,15 @@ namespace
 				return;
 			snes_set_controller_port_device(port != 0, SNES_DEVICE_MULTITAP);
 		}
+
+		bool is_analog(unsigned controller) const throw()
+		{
+			return false;
+		}
+
+		bool is_mouse(unsigned controller) const throw()
+		{
+			return false;
+		}
 	} multitap;
 }

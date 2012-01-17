@@ -327,8 +327,12 @@ public:
  * Set callback requests on/off
  */
 	void request_hook_callback(bool state);
+/**
+ * Get status value.
+ */
+	signed get_value();
 private:
-	unsigned state;
+	signed state;
 	enum type ktype;
 	short last_rawval;
 	short cal_left;

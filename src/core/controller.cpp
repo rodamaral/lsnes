@@ -51,6 +51,24 @@ namespace
 			controls.button(x, bid, newstate);
 	}
 
+	void send_analog(unsigned lcid, int32_t x, int32_t y)
+	{
+		int pcid = controls.lcid_to_pcid(lcid);
+		if(pcid < 0) {
+			messages << "Controller #" << (lcid + 1) << " not present" << std::endl;
+			return;
+		}
+		if(controls.is_analog(pcid) < 0) {
+			messages << "Controller #" << (lcid + 1) << " is not analog" << std::endl;
+			return;
+		}
+		auto g2 = get_framebuffer_size();
+		if(controls.is_mouse(pcid)) {
+			controls.analog(pcid, x - g2.first / 2, y - g2.second / 2);
+		} else
+			controls.analog(pcid, x / 2 , y / 2);
+	}
+
 	function_ptr_command<tokensplitter&> autofire("autofire", "Set autofire pattern",
 		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
 		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
@@ -139,6 +157,32 @@ namespace
 		std::string button;
 	};
 
+	class analog_action : public command
+	{
+	public:
+		analog_action(const std::string& cmd, unsigned _controller)
+			throw(std::bad_alloc)
+			: command(cmd)
+		{
+			controller = _controller;
+		}
+		~analog_action() throw() {}
+		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(args != "")
+				throw std::runtime_error("This command does not take parameters");
+			keygroup* mouse_x = keygroup::lookup_by_name("mouse_x");
+			keygroup* mouse_y = keygroup::lookup_by_name("mouse_y");
+			if(!mouse_x || !mouse_y) {
+				messages << "Controller analog function not available without mouse" << std::endl;
+				return;
+			}
+			send_analog(controller, mouse_x->get_value(), mouse_y->get_value());
+		}
+	private:
+		unsigned controller;
+	};
+
 	class button_action_helper
 	{
 	public:
@@ -165,6 +209,11 @@ namespace
 						y = cstr + get_logical_button_name(i);
 						our_commands.insert(new button_action(x, j, k, y));
 					}
+			for(unsigned k = 0; k < 8; ++k) {
+				std::string x = "controllerXanalog";
+				x[10] = 49 + k;
+				our_commands.insert(new analog_action(x, k));
+			}
 		}
 		~button_action_helper()
 		{

@@ -146,22 +146,6 @@ void information_dispatch::do_close() throw()
 	}
 }
 
-void information_dispatch::on_click(int32_t x, int32_t y, uint32_t buttonmask)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
-{
-	x = (x - vc_xoffset) / vc_hscl;
-	y = (y - vc_yoffset) / vc_vscl;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_click(x, y, buttonmask);
-		END_EH_BLOCK(i, "on_click");
-	}
-}
-
 void information_dispatch::on_sound_unmute(bool unmuted)
 {
 	//Do nothing.
@@ -490,14 +474,6 @@ void information_dispatch::update_dumpers(bool nocalls) throw()
 			i->notified_as_dumper = true;
 		}
 	}
-}
-
-void information_dispatch::do_click_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl)
-{
-	vc_xoffset = xoffset;
-	vc_yoffset = yoffset;
-	vc_hscl = hscl;
-	vc_vscl = vscl;
 }
 
 void information_dispatch::on_set_screen(screen& scr)

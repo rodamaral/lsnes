@@ -118,22 +118,33 @@ namespace
 		emulation_thread->join();
 	}
 
+	keygroup mouse_x("mouse_x", keygroup::KT_MOUSE);
+	keygroup mouse_y("mouse_y", keygroup::KT_MOUSE);
+	keygroup mouse_l("mouse_left", keygroup::KT_KEY);
+	keygroup mouse_m("mouse_center", keygroup::KT_KEY);
+	keygroup mouse_r("mouse_right", keygroup::KT_KEY);
+	keygroup mouse_i("mouse_inwindow", keygroup::KT_KEY);
+
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
-		static uint32_t mask = 0;
+		platform::queue(keypress(modifier_set(), mouse_x, e.GetX()));
+		platform::queue(keypress(modifier_set(), mouse_y, e.GetY()));
+		if(e.Entering())
+			platform::queue(keypress(modifier_set(), mouse_i, 1));
+		if(e.Leaving())
+			platform::queue(keypress(modifier_set(), mouse_i, 0));
 		if(e.LeftDown())
-			mask |= 1;
+			platform::queue(keypress(modifier_set(), mouse_l, 1));
 		if(e.LeftUp())
-			mask &= ~1;
+			platform::queue(keypress(modifier_set(), mouse_l, 0));
 		if(e.MiddleDown())
-			mask |= 2;
+			platform::queue(keypress(modifier_set(), mouse_m, 1));
 		if(e.MiddleUp())
-			mask &= ~2;
+			platform::queue(keypress(modifier_set(), mouse_m, 0));
 		if(e.RightDown())
-			mask |= 4;
+			platform::queue(keypress(modifier_set(), mouse_r, 1));
 		if(e.RightUp())
-			mask &= ~4;
-		send_mouse_click(e.GetX(), e.GetY(), mask);
+			platform::queue(keypress(modifier_set(), mouse_r, 0));
 	}
 
 	bool is_readonly_mode()
@@ -619,6 +630,9 @@ wxwin_mainwindow::panel::panel(wxWindow* win)
 	this->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_MOTION, wxMouseEventHandler(panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_ENTER_WINDOW, wxMouseEventHandler(panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_LEAVE_WINDOW, wxMouseEventHandler(panel::on_mouse), NULL, this);
 	SetMinSize(wxSize(512, 448));
 }
 

@@ -79,6 +79,16 @@ namespace
 			std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
 			exit(1);
 		}
+
+		bool is_analog(unsigned controller) const throw()
+		{
+			return false;
+		}
+
+		bool is_mouse(unsigned controller) const throw()
+		{
+			return false;
+		}
 	};
 
 	porttype_invalid& get_invalid_port_type()
@@ -749,4 +759,14 @@ controller_frame controller_state::commit(controller_frame controls) throw()
 {
 	_committed = controls;
 	return _committed;
+}
+
+bool controller_state::is_analog(unsigned pcid) throw()
+{
+	return _input.is_analog(pcid);
+}
+
+bool controller_state::is_mouse(unsigned pcid) throw()
+{
+	return _input.is_mouse(pcid);
 }

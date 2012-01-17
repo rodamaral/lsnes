@@ -210,6 +210,8 @@ void redraw_framebuffer()
 
 void render_framebuffer()
 {
+	static uint32_t val1, val2, val3, val4;
+	uint32_t nval1, nval2, nval3, nval4;
 	render_info& ri = get_read_buffer();
 	main_screen.reallocate(ri.fbuf.width * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.height * ri.vscl + ri.tgap +
 		ri.bgap);
@@ -218,7 +220,22 @@ void render_framebuffer()
 	ri.rq.run(main_screen);
 	information_dispatch::do_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	information_dispatch::do_click_compensation(ri.lgap, ri.tgap, 1, 1);
+	keygroup* mouse_x = keygroup::lookup_by_name("mouse_x");
+	keygroup* mouse_y = keygroup::lookup_by_name("mouse_y");
+	nval1 = ri.lgap;
+	nval2 = ri.tgap;
+	nval3 = ri.fbuf.width * ri.hscl + ri.rgap;
+	nval4 = ri.fbuf.height * ri.vscl + ri.bgap;
+	if(mouse_x && (nval1 != val1 || nval3 != val3))
+		mouse_x->change_calibration(-static_cast<short>(ri.lgap), ri.lgap, ri.fbuf.width * ri.hscl + ri.rgap,
+			0.5);
+	if(mouse_y && (nval2 != val2 || nval4 != val4))
+		mouse_y->change_calibration(-static_cast<short>(ri.tgap), ri.tgap, ri.fbuf.height * ri.vscl + ri.bgap,
+			0.5);
+	val1 = nval1;
+	val2 = nval2;
+	val3 = nval3;
+	val4 = nval4;
 	buffering.end_read();
 }
 

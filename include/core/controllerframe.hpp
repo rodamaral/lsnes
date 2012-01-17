@@ -352,6 +352,18 @@ struct porttype_info
  */
 	virtual void set_core_controller(unsigned port) const throw() = 0;
 /**
+ * Does the controller have analog function?
+ *
+ * Parameter controller: Controller number.
+ */
+	virtual bool is_analog(unsigned controller) const throw() = 0;
+/**
+ * Does the controller have mouse-type function?
+ *
+ * Parameter controller: Controller number.
+ */
+	virtual bool is_mouse(unsigned controller) const throw() = 0;
+/**
  * Port type value.
  */
 	porttype_t value;
@@ -818,6 +830,26 @@ public:
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
 		return pinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
 	}
+/**
+ * Does the specified controller have analog function.
+ *
+ * Parameter pcid: Physical controller id.
+ */
+	bool is_analog(unsigned pcid)
+	{
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->is_analog(pcid % MAX_CONTROLLERS_PER_PORT);
+	}
+/**
+ * Does the specified controller have mouse-type function.
+ *
+ * Parameter pcid: Physical controller id.
+ */
+	bool is_mouse(unsigned pcid)
+	{
+		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
+		return pinfo[port]->is_mouse(pcid % MAX_CONTROLLERS_PER_PORT);
+	}
 private:
 	size_t totalsize;
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
@@ -1136,6 +1168,14 @@ public:
  * Returns: The physical button id, or -1 if no such button.
  */
 	int button_id(unsigned pcid, unsigned lbid) throw();
+/**
+ * TODO: Document.
+ */
+	bool is_analog(unsigned pcid) throw();
+/**
+ * TODO: Document.
+ */
+	bool is_mouse(unsigned pcid) throw();
 private:
 	const porttype_info* porttypeinfo[MAX_PORTS];
 	porttype_t porttypes[MAX_PORTS];

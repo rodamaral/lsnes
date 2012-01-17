@@ -669,26 +669,6 @@ namespace
 			}
 			on_quit_prompt = false;
 		}
-
-		void send_analog(unsigned acid, int32_t x, int32_t y)
-		{
-			auto g2 = get_framebuffer_size();
-			if(controls.acid_is_mouse(acid)) {
-				controls.analog(acid, x - g2.first / 2, y - g2.second / 2);
-			} else
-				controls.analog(acid, x / 2 , y / 2);
-		}
-
-		void on_click(int32_t x, int32_t y, uint32_t buttonmask) throw()
-		{
-			if(buttonmask & ~prev_mouse_mask & 1)
-				send_analog(0, x, y);
-			if(buttonmask & ~prev_mouse_mask & 2)
-				send_analog(1, x, y);
-			if(buttonmask & ~prev_mouse_mask & 4)
-				send_analog(2, x, y);
-			prev_mouse_mask = buttonmask;
-		}
 	} mywcb;
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load

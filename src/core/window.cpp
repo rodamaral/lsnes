@@ -538,28 +538,6 @@ namespace
 	{
 		graphics_plugin::notify_status();
 	}
-
-	struct handle_mouse_request
-	{
-		long x;
-		long y;
-		uint32_t mask;
-	};
-
-	void _handle_mouse(void* args)
-	{
-		struct handle_mouse_request* x = reinterpret_cast<struct handle_mouse_request*>(args);
-		information_dispatch::do_click(x->x, x->y, x->mask);
-	}
-}
-
-void send_mouse_click(long x, long y, uint32_t buttons)
-{
-	struct handle_mouse_request z;
-	z.x = x;
-	z.y = y;
-	z.mask = buttons;
-	platform::queue(_handle_mouse, &z, true);
 }
 
 mutex& platform::msgbuf_lock() throw()

@@ -534,13 +534,6 @@ struct platform
 	static void run_queues() throw();
 };
 
-/**
- * Send a mouse click.
- *
- * Call from UI thread.
- */
-void send_mouse_click(long x, long y, uint32_t buttons);
-
 template<typename T>
 void functor_call_helper(void* args)
 {

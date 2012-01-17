@@ -125,5 +125,15 @@ namespace
 				return;
 			snes_set_controller_port_device(port != 0, SNES_DEVICE_SUPER_SCOPE);
 		}
+
+		bool is_analog(unsigned controller) const throw()
+		{
+			return (controller == 0);
+		}
+
+		bool is_mouse(unsigned controller) const throw()
+		{
+			return false;
+		}
 	} superscope;
 }

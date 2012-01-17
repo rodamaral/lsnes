@@ -112,23 +112,6 @@ public:
  */
 	static void do_close() throw();
 /**
- * Click or release on window was receivied.
- *
- * The default handler does nothing.
- *
- * Parameter x: The x-coordinate of the click. May be negative or otherwise out of screen.
- * Parameter y: The y-coordinate of the click. May be negative or otherwise out of screen.
- * Parameter buttonmask: Bitfield giving current buttons held:
- *	Bit 0 => Left button is down/held.
- *	Bit 1 => Middle button is down/held.
- *	Bit 2 => Middle button is down/held.
- */
-	virtual void on_click(int32_t x, int32_t y, uint32_t buttonmask);
-/**
- * Call all on_click() handlers.
- */
-	static void do_click(int32_t x, int32_t y, uint32_t buttonmask) throw();
-/**
  * Sound mute/unmute status might have been changed.
  *
  * The default handler does nothing.
@@ -388,15 +371,6 @@ public:
  * Get name of target.
  */
 	const std::string& get_name() throw();
-/**
- * Set window main screen compensation parameters. This is used for mouse click reporting.
- *
- * parameter xoffset: X coordinate of origin.
- * parameter yoffset: Y coordinate of origin.
- * parameter hscl: Horizontal scaling factor.
- * parameter vscl: Vertical scaling factor.
- */
-	static void do_click_compensation(uint32_t xoffset, uint32_t yoffset, uint32_t hscl, uint32_t vscl);
 /**
  * Render buffer needs to be (possibly) resized, so that graphics plugin can update the mappings.
  *
