@@ -91,6 +91,10 @@ std::string commandline_model::key(uint32_t k) throw(std::bad_alloc)
 			return "";
 		delete_codepoint(cursor_pos);
 		return "";
+	case 0:
+	case PRESSED_MASK:
+		//Eh?
+		return "";
 	default:
 		//This can't be NOOP, ACK nor NAK because those were checked above, nor is it special. Therefore
 		//it is a character.
