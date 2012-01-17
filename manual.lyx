@@ -2432,6 +2432,45 @@ Execute reset.
 Only available with subframe flag false.
 \end_layout
 
+\begin_layout Subsubsection
+input.raw()
+\end_layout
+
+\begin_layout Standard
+Returns table of tables of all available keys and axes.
+ The first table is indexed by key name (platform-dependent!), and the inner
+ table has the following fields:
+\end_layout
+
+\begin_layout Itemize
+last_rawval: Last reported raw value for control.
+\end_layout
+
+\begin_layout Itemize
+ktype: Type of key (disabled, key, mouse, axis, axis-inverse, hat, pressure-m0,
+ pressure-mp, pressure-0m, pressure-0p, pressure-pm, pressure-p0).
+\end_layout
+
+\begin_layout Itemize
+cal_left: Minimum calibration value.
+ Only meaningful with axis and pressure types.
+\end_layout
+
+\begin_layout Itemize
+cal_center: Center calibration value.
+ Only meaningful with axis and pressure types.
+\end_layout
+
+\begin_layout Itemize
+cal_right: Maximum calibration value.
+ Only meaningful with axis and pressure types.
+\end_layout
+
+\begin_layout Itemize
+cal_tolerance: Dead zone tolerance.
+ Only meaningful with axis and pressure types.
+\end_layout
+
 \begin_layout Subsection
 Table hostmemory
 \end_layout

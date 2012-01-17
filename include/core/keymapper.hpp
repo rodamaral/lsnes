@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <list>
 #include <set>
+#include <map>
 #include <iostream>
 #include "misc.hpp"
 
@@ -203,7 +204,11 @@ public:
 /**
  * Hat.
  */
-		KT_HAT
+		KT_HAT,
+/**
+ * Mouse axis (this is not a real axis!).
+ */
+		KT_MOUSE
 	};
 /**
  * Create a new key group.
@@ -252,6 +257,7 @@ public:
  * For KT_KEY, value is zero/nonzero.
  * For KT_PRESSURE_* and KT_AXIS_PAIR*, value is -32768...32767.
  * For KT_HAT, 1 is up, 2 is right, 4 is down, 8 is left (may be ORed).
+ * For KT_MOUSE, value is -32768...32767.
  *
  * parameter pos: New position.
  * parameter modifiers: The modifier set that was pressed during the change.
@@ -289,6 +295,10 @@ public:
  */
 		enum type ktype;
 /**
+ * Last known raw value.
+ */
+		short last_rawval;
+/**
  * Calibration left.
  */
 		short cal_left;
@@ -309,9 +319,14 @@ public:
  * Get parameters.
  */
 	struct parameters get_parameters();
+/**
+ * Get all key parameters.
+ */
+	static std::map<std::string, struct parameters> get_all_parameters();
 private:
 	unsigned state;
 	enum type ktype;
+	short last_rawval;
 	short cal_left;
 	short cal_center;
 	short cal_right;

@@ -285,15 +285,24 @@ struct keygroup::parameters keygroup::get_parameters()
 	p.cal_center = cal_center;
 	p.cal_right = cal_right;
 	p.cal_tolerance = cal_tolerance;
+	p.last_rawval = last_rawval;
 	return p;
 }
 
+std::map<std::string, struct keygroup::parameters> keygroup::get_all_parameters()
+{
+	std::map<std::string, struct parameters> ret;
+	for(auto i : keygroups())
+		ret[i.first] = i.second->get_parameters();
+	return ret;
+}
 
 keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 {
 	keygroups()[keyname = name] = this;
 	ktype = t;
 	state = 0;
+	last_rawval = 0;
 	cal_left = -32768;
 	cal_center = 0;
 	cal_right = 32767;
@@ -348,7 +357,7 @@ void keygroup::change_calibration(short left, short center, short right, double 
 
 double keygroup::compensate(short value)
 {
-	if(ktype == KT_HAT || ktype == KT_KEY || ktype == KT_DISABLED)
+	if(ktype == KT_HAT || ktype == KT_KEY || ktype == KT_DISABLED || ktype == KT_MOUSE)
 		return value;	//These can't be calibrated.
 	if(value <= cal_left)
 		return -1.0;
@@ -366,6 +375,7 @@ double keygroup::compensate2(double value)
 {
 	switch(ktype) {
 	case KT_DISABLED:
+	case KT_MOUSE:
 		return 0;	//Always neutral.
 	case KT_KEY:
 	case KT_HAT:
@@ -391,12 +401,14 @@ double keygroup::compensate2(double value)
 
 void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 {
+	last_rawval = pos;
 	double x = compensate2(compensate(pos));
 	unsigned tmp;
 	bool left, right, up, down;
 	bool oleft, oright, oup, odown;
 	switch(ktype) {
 	case KT_DISABLED:
+	case KT_MOUSE:
 		return;
 	case KT_KEY:
 	case KT_PRESSURE_0M:

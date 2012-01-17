@@ -1190,6 +1190,30 @@ Execute reset. If cycles is greater than zero, do delayed reset.
 
 • Only available with subframe flag false.
 
+8.4.4 input.raw()
+
+Returns table of tables of all available keys and axes. The first 
+table is indexed by key name (platform-dependent!), and the inner 
+table has the following fields:
+
+• last_rawval: Last reported raw value for control.
+
+• ktype: Type of key (disabled, key, mouse, axis, axis-inverse, 
+  hat, pressure-m0, pressure-mp, pressure-0m, pressure-0p, 
+  pressure-pm, pressure-p0).
+
+• cal_left: Minimum calibration value. Only meaningful with axis 
+  and pressure types.
+
+• cal_center: Center calibration value. Only meaningful with axis 
+  and pressure types.
+
+• cal_right: Maximum calibration value. Only meaningful with axis 
+  and pressure types.
+
+• cal_tolerance: Dead zone tolerance. Only meaningful with axis 
+  and pressure types.
+
 8.5 Table hostmemory
 
 Host memory handling (extra memory saved to savestates). Host 
