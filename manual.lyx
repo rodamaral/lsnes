@@ -2471,6 +2471,15 @@ cal_tolerance: Dead zone tolerance.
  Only meaningful with axis and pressure types.
 \end_layout
 
+\begin_layout Subsubsection
+input.keyhook(key, state)
+\end_layout
+
+\begin_layout Standard
+Requests that keyhook events to be sent for key (state=true) or not sent
+ (state=false).
+\end_layout
+
 \begin_layout Subsection
 Table hostmemory
 \end_layout
@@ -3062,6 +3071,16 @@ Called each time bsnes asks for input.
  Might be useful when translating movies to format suitable for console
  verification.
  Note: There is no way to modify the value to be sent.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_keyhook(string keyname, table state)
+\end_layout
+
+\begin_layout Standard
+Sent when key that has keyhook events requested changes state.
+ Keyname is name of the key (group) and state is the state (same kind as
+ table values in input.raw).
 \end_layout
 
 \begin_layout Section

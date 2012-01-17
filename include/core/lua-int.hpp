@@ -11,9 +11,9 @@ extern "C"
 
 std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname);
 bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname);
+void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
-
 
 template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)

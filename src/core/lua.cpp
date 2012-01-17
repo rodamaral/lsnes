@@ -19,6 +19,7 @@ void lua_callback_err_save(const std::string& name) throw() {}
 void lua_callback_post_save(const std::string& name, bool is_state) throw() {}
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw() {}
 void lua_callback_quit() throw() {}
+void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw() {}
 void init_lua() throw() {}
 void quit_lua() throw() {}
 bool lua_requests_repaint = false;
@@ -148,6 +149,42 @@ bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
 		lua_error(LS);
 	}
 	return (lua_toboolean(LS, argindex) != 0);
+}
+
+void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& p)
+{
+	lua_newtable(LS);
+	lua_pushstring(LS, "last_rawval");
+	lua_pushnumber(LS, p.last_rawval);
+	lua_settable(LS, -3);
+	lua_pushstring(LS, "cal_left");
+	lua_pushnumber(LS, p.cal_left);
+	lua_settable(LS, -3);
+	lua_pushstring(LS, "cal_center");
+	lua_pushnumber(LS, p.cal_center);
+	lua_settable(LS, -3);
+	lua_pushstring(LS, "cal_right");
+	lua_pushnumber(LS, p.cal_right);
+	lua_settable(LS, -3);
+	lua_pushstring(LS, "cal_tolerance");
+	lua_pushnumber(LS, p.cal_tolerance);
+	lua_settable(LS, -3);
+	lua_pushstring(LS, "ktype");
+	switch(p.ktype) {
+	case keygroup::KT_DISABLED:		lua_pushstring(LS, "disabled");		break;
+	case keygroup::KT_KEY:			lua_pushstring(LS, "key");		break;
+	case keygroup::KT_AXIS_PAIR:		lua_pushstring(LS, "axis");		break;
+	case keygroup::KT_AXIS_PAIR_INVERSE:	lua_pushstring(LS, "axis-inverse");	break;
+	case keygroup::KT_HAT:			lua_pushstring(LS, "hat");		break;
+	case keygroup::KT_MOUSE:		lua_pushstring(LS, "mouse");		break;
+	case keygroup::KT_PRESSURE_PM:		lua_pushstring(LS, "pressure-pm");	break;
+	case keygroup::KT_PRESSURE_P0:		lua_pushstring(LS, "pressure-p0");	break;
+	case keygroup::KT_PRESSURE_0M:		lua_pushstring(LS, "pressure-0m");	break;
+	case keygroup::KT_PRESSURE_0P:		lua_pushstring(LS, "pressure-0p");	break;
+	case keygroup::KT_PRESSURE_M0:		lua_pushstring(LS, "pressure-m0");	break;
+	case keygroup::KT_PRESSURE_MP:		lua_pushstring(LS, "pressure-mp");	break;
+	};
+	lua_settable(LS, -3);
 }
 
 lua_render_context* lua_render_ctx = NULL;
@@ -461,6 +498,15 @@ void lua_callback_quit() throw()
 	if(!callback_exists("on_quit"))
 		return;
 	run_lua_cb(0);
+}
+
+void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw()
+{
+	if(!callback_exists("on_keyhook"))
+		return;
+	lua_pushstring(L, key.c_str());
+	push_keygroup_parameters(L, p);
+	run_lua_cb(2);
 }
 
 void init_lua() throw()

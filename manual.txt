@@ -1214,6 +1214,11 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
+8.4.5 input.keyhook(key, state)
+
+Requests that keyhook events to be sent for key (state=true) or 
+not sent (state=false).
+
 8.5 Table hostmemory
 
 Host memory handling (extra memory saved to savestates). Host 
@@ -1541,6 +1546,12 @@ value to be sent to bsnes core (readonly mode, autohold and
 autofire have been taken into account). Might be useful when 
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
+
+8.10.16 Callback: on_keyhook(string keyname, table state)
+
+Sent when key that has keyhook events requested changes state. 
+Keyname is name of the key (group) and state is the state (same 
+kind as table values in input.raw).
 
 9 Modifier and key names:
 

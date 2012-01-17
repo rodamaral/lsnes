@@ -45,40 +45,24 @@ namespace
 		lua_newtable(LS);
 		for(auto i : s) {
 			lua_pushstring(LS, i.first.c_str());
-			lua_newtable(LS);
-			lua_pushstring(LS, "last_rawval");
-			lua_pushnumber(LS, i.second.last_rawval);
-			lua_settable(LS, -3);
-			lua_pushstring(LS, "cal_left");
-			lua_pushnumber(LS, i.second.cal_left);
-			lua_settable(LS, -3);
-			lua_pushstring(LS, "cal_center");
-			lua_pushnumber(LS, i.second.cal_center);
-			lua_settable(LS, -3);
-			lua_pushstring(LS, "cal_right");
-			lua_pushnumber(LS, i.second.cal_right);
-			lua_settable(LS, -3);
-			lua_pushstring(LS, "cal_tolerance");
-			lua_pushnumber(LS, i.second.cal_tolerance);
-			lua_settable(LS, -3);
-			lua_pushstring(LS, "ktype");
-			switch(i.second.ktype) {
-			case keygroup::KT_DISABLED:		lua_pushstring(LS, "disabled");		break;
-			case keygroup::KT_KEY:			lua_pushstring(LS, "key");		break;
-			case keygroup::KT_AXIS_PAIR:		lua_pushstring(LS, "axis");		break;
-			case keygroup::KT_AXIS_PAIR_INVERSE:	lua_pushstring(LS, "axis-inverse");	break;
-			case keygroup::KT_HAT:			lua_pushstring(LS, "hat");		break;
-			case keygroup::KT_MOUSE:		lua_pushstring(LS, "mouse");		break;
-			case keygroup::KT_PRESSURE_PM:		lua_pushstring(LS, "pressure-pm");	break;
-			case keygroup::KT_PRESSURE_P0:		lua_pushstring(LS, "pressure-p0");	break;
-			case keygroup::KT_PRESSURE_0M:		lua_pushstring(LS, "pressure-0m");	break;
-			case keygroup::KT_PRESSURE_0P:		lua_pushstring(LS, "pressure-0p");	break;
-			case keygroup::KT_PRESSURE_M0:		lua_pushstring(LS, "pressure-m0");	break;
-			case keygroup::KT_PRESSURE_MP:		lua_pushstring(LS, "pressure-mp");	break;
-			};
-			lua_settable(LS, -3);
+			push_keygroup_parameters(LS, i.second);
 			lua_settable(LS, -3);
 		}
 		return 1;
+	});
+
+	function_ptr_luafun ireq("input.keyhook", [](lua_State* LS, const std::string& fname) -> int {
+		struct keygroup* k;
+		bool state;
+		std::string x = get_string_argument(LS, 1, fname.c_str());
+		state = get_boolean_argument(LS, 2, fname.c_str());
+		k = keygroup::lookup_by_name(x);
+		if(!k) {
+			lua_pushstring(LS, "Invalid key name");
+			lua_error(LS);
+			return 0;
+		}
+		k->request_hook_callback(state);
+		return 0;
 	});
 }

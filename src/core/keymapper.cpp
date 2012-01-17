@@ -6,6 +6,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
+#include "core/lua.hpp"
 
 #include <stdexcept>
 #include <stdexcept>
@@ -307,6 +308,7 @@ keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
 	cal_center = 0;
 	cal_right = 32767;
 	cal_tolerance = 0.5;
+	requests_hook = false;
 }
 
 keygroup::~keygroup() throw()
@@ -318,7 +320,15 @@ void keygroup::change_type(enum type t) throw()
 {
 	ktype = t;
 	state = 0;
+	if(requests_hook)
+		lua_callback_keyhook(keyname, get_parameters());
 }
+
+void keygroup::request_hook_callback(bool state)
+{
+	requests_hook = state;
+}
+
 
 std::pair<keygroup*, unsigned> keygroup::lookup(const std::string& name) throw(std::bad_alloc,
 	std::runtime_error)
@@ -353,6 +363,8 @@ void keygroup::change_calibration(short left, short center, short right, double 
 	cal_center = center;
 	cal_right = right;
 	cal_tolerance = tolerance;
+	if(requests_hook)
+		lua_callback_keyhook(keyname, get_parameters());
 }
 
 double keygroup::compensate(short value)
@@ -402,6 +414,8 @@ double keygroup::compensate2(double value)
 void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 {
 	last_rawval = pos;
+	if(requests_hook)
+		lua_callback_keyhook(keyname, get_parameters());
 	double x = compensate2(compensate(pos));
 	unsigned tmp;
 	bool left, right, up, down;

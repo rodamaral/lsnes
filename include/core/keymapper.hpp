@@ -323,6 +323,10 @@ public:
  * Get all key parameters.
  */
 	static std::map<std::string, struct parameters> get_all_parameters();
+/**
+ * Set callback requests on/off
+ */
+	void request_hook_callback(bool state);
 private:
 	unsigned state;
 	enum type ktype;
@@ -335,6 +339,7 @@ private:
 	double compensate2(double value);
 	void run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x);
 	std::string keyname;
+	bool requests_hook;
 };
 
 /**

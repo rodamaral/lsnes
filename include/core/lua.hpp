@@ -1,8 +1,9 @@
 #ifndef _lua__hpp__included__
 #define _lua__hpp__included__
 
-#include "render.hpp"
-#include "controllerframe.hpp"
+#include "core/controllerframe.hpp"
+#include "core/keymapper.hpp"
+#include "core/render.hpp"
 
 struct lua_State;
 
@@ -82,6 +83,7 @@ void lua_callback_err_save(const std::string& name) throw();
 void lua_callback_post_save(const std::string& name, bool is_state) throw();
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw();
 void lua_callback_quit() throw();
+void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw();
 
 extern bool lua_supported;
 extern bool lua_requests_repaint;
