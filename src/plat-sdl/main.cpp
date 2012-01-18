@@ -46,6 +46,8 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	movie.slotb_sha256 = r.slotb.sha256;
 	movie.slotbxml_sha256 = r.slotb_xml.sha256;
 	movie.movie_sram = load_sram_commandline(cmdline);
+	if(o.length() >= 9 && o.substr(0, 9) == "--prefix=")
+		movie.prefix = sanitize_prefix(o.substr(9));
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 		std::string o = *i;
 		if(o.length() >= 8 && o.substr(0, 8) == "--port1=")

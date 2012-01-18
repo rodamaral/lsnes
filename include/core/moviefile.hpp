@@ -160,7 +160,10 @@ struct moviefile
  * Movie starting RTC subsecond.
  */
 	int64_t movie_rtc_subsecond;
-
+/**
+ * Movie prefix.
+ */
+	std::string prefix;
 /**
  * Get number of frames in movie.
  *
@@ -176,5 +179,7 @@ struct moviefile
  */
 	uint64_t get_movie_length(uint64_t framebias = 0) throw();
 };
+
+std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc);
 
 #endif

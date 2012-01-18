@@ -356,6 +356,8 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_linefile(r, "slotaxml.sha256", slotaxml_sha256, true);
 	read_linefile(r, "slotb.sha256", slotb_sha256, true);
 	read_linefile(r, "slotbxml.sha256", slotbxml_sha256, true);
+	read_linefile(r, "prefix", prefix, true);
+	prefix = sanitize_prefix(prefix);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	read_numeric_file(r, "starttime.second", movie_rtc_second, true);
@@ -414,6 +416,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "slotaxml.sha256", slotaxml_sha256, true);
 	write_linefile(w, "slotb.sha256", slotb_sha256, true);
 	write_linefile(w, "slotbxml.sha256", slotbxml_sha256, true);
+	write_linefile(w, "prefix", prefix, true);
 	for(auto i : movie_sram)
 		write_raw_file(w, "moviesram." + i.first, i.second);
 	write_numeric_file(w, "starttime.second", movie_rtc_second);
@@ -515,4 +518,20 @@ rom_type gametype_romtype(gametype_t type)
 	default:
 		return ROMTYPE_NONE;
 	};
+}
+
+std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc)
+{
+	std::ostringstream s;
+	bool any = false;
+	for(size_t i = 0; i < in.length(); i++) {
+		char ch = in[i];
+		if(ch < 33 || ch == '$' || ch == ':' || ch == '/' || ch == '\\')
+			continue;	//Always disallowed.
+		if(ch == '.' && !any)
+			continue;	//Sometimes disallowed.
+		any = true;
+		s << ch;
+	}
+	return s.str();
 }

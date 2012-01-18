@@ -51,9 +51,9 @@ namespace
 
 	class projectprefix_setting : public setting
 	{
-		std::string prefix;
-		bool _set;
 	public:
+		bool _set;
+		std::string prefix;
 		projectprefix_setting() throw(std::bad_alloc)
 			: setting("$project")
 		{
@@ -197,6 +197,8 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
+		if(mprefix._set)
+			our_movie.prefix = sanitize_prefix(mprefix.prefix);
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
 		our_movie.savestate = save_core_state();
@@ -224,6 +226,8 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
+		if(mprefix._set)
+			our_movie.prefix = sanitize_prefix(static_cast<std::string>(mprefix));
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename2, savecompression);
@@ -351,6 +355,10 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
 		our_movie.is_savestate = false;
 		our_movie.host_memory.clear();
+	}
+	if(our_movie.prefix != "") {
+		mprefix.prefix = our_movie.prefix;
+		mprefix._set = true;
 	}
 	movb.get_movie() = newmovie;
 	//Paint the screen.

@@ -646,7 +646,7 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	toplevel->Add(newp, 0, wxGROW);
 
 	//Filename/Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(6 + sram_set.size(), 2, 0, 0);
 	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("File to load:")), 0, wxGROW);
 	wxFlexGridSizer* fileblock = new wxFlexGridSizer(1, 2, 0, 0);
 	fileblock->Add(savefile = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
@@ -673,6 +673,9 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	mainblock->Add(initrtc, 0, wxGROW);
 	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Game name:")), 0, wxGROW);
 	mainblock->Add(projectname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+		wxGROW);
+	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Save prefix:")), 0, wxGROW);
+	mainblock->Add(prefix = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
 		wxGROW);
 	unsigned idx = 0;
 	for(auto i : sram_set) {
@@ -736,6 +739,7 @@ void wxwin_project::on_file_select(wxCommandEvent& e)
 	rtc_sec->Disable();
 	rtc_subsec->Disable();
 	projectname->Disable();
+	prefix->Disable();
 	authors->Disable();
 	load->SetLabel(wxT("Load"));
 	load_file = true;
@@ -755,6 +759,7 @@ void wxwin_project::on_new_select(wxCommandEvent& e)
 	rtc_sec->Enable();
 	rtc_subsec->Enable();
 	projectname->Enable();
+	prefix->Enable();
 	authors->Enable();
 	load->SetLabel(wxT("Start"));
 	on_filename_change(e);
@@ -865,6 +870,7 @@ struct moviefile wxwin_project::make_movie()
 	f.port2 = get_controller_type(tostdstring(controller2type->GetValue()));
 	f.coreversion = bsnes_core_version;
 	f.gamename = tostdstring(projectname->GetValue());
+	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
 	f.projectid = get_random_hexstring(40);
 	f.rerecords = "0";
 	f.rom_sha256 = our_rom->rom.sha256;

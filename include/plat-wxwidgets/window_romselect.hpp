@@ -79,6 +79,7 @@ private:
 	wxComboBox* controller1type;
 	wxComboBox* controller2type;
 	wxTextCtrl* projectname;
+	wxTextCtrl* prefix;
 	wxTextCtrl* rtc_sec;
 	wxTextCtrl* rtc_subsec;
 	wxTextCtrl* authors;
