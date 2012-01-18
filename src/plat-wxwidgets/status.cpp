@@ -4,14 +4,14 @@
 
 #define MAXSTATUS 30
 
-wxwin_status::panel::panel(wxwin_status* _parent, unsigned lines)
+wxwin_status::panel::panel(wxWindow* _parent, unsigned lines)
 	: wxPanel(_parent)
 {
 	parent = _parent;
 	dirty = false;
 	wxMemoryDC d;
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	SetMinSize(wxSize(6 * s.x, lines * s.y));
+	SetMinSize(wxSize(4 * s.x, lines * s.y));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 }
 

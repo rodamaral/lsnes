@@ -43,7 +43,6 @@
 #define UISERV_MODAL 9999
 
 wxwin_messages* msg_window;
-wxwin_status* status_window;
 wxwin_mainwindow* main_window;
 std::string our_rom_name;
 
@@ -123,8 +122,8 @@ namespace
 			if(msg_window)
 				msg_window->notify_update();
 		} else if(c == UISERV_UPDATE_STATUS) {
-			if(status_window)
-				status_window->notify_update();
+			if(main_window)
+				main_window->notify_update_status();
 		} else if(c == UISERV_UPDATE_SCREEN) {
 			if(main_window)
 				main_window->notify_update();
@@ -328,9 +327,6 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
-	status_window = new wxwin_status();
-	status_window->Show();
-
 	wxwin_romselect* romwin = new wxwin_romselect();
 	romwin->Show();
 
@@ -341,7 +337,6 @@ int lsnes_app::OnExit()
 {
 	//NULL these so no further messages will be sent.
 	msg_window = NULL;
-	status_window = NULL;
 	main_window = NULL;
 	information_dispatch::do_dump_end();
 	rrdata::close();

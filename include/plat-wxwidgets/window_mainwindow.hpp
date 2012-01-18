@@ -1,6 +1,8 @@
 #ifndef _plat_wxwidgets__window_mainwindow__hpp__included__
 #define _plat_wxwidgets__window_mainwindow__hpp__included__
 
+#include "plat-wxwidgets/window_status.hpp"
+
 #include <stack>
 
 #include <wx/string.h>
@@ -23,6 +25,7 @@ public:
 	wxwin_mainwindow();
 	void request_paint();
 	void notify_update() throw();
+	void notify_update_status() throw();
 	void notify_exit() throw();
 	void on_close(wxCloseEvent& e);
 	void menu_start(wxString name);
@@ -46,6 +49,7 @@ private:
 	panel* gpanel;
 	wxMenu* current_menu;
 	wxMenuBar* menubar;
+	wxwin_status::panel* spanel;
 	std::map<int, wxMenuItem*> checkitems;
 	std::stack<wxMenu*> upper;
 	void* ahmenu;

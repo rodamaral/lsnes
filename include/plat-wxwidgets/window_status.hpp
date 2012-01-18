@@ -10,10 +10,10 @@ public:
 	class panel : public wxPanel
 	{
 	public:
-		panel(wxwin_status* _parent, unsigned lines);
+		panel(wxWindow* _parent, unsigned lines);
 		void on_paint(wxPaintEvent& e);
 		bool dirty;
-		wxwin_status* parent;
+		wxWindow* parent;
 	};
 	wxwin_status();
 	~wxwin_status();

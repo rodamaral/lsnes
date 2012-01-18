@@ -779,8 +779,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 {
 	broadcast_listener* blistener = new broadcast_listener(this);
 	Centre();
-	wxFlexGridSizer* toplevel = new wxFlexGridSizer(1, 1, 0, 0);
+	wxFlexGridSizer* toplevel = new wxFlexGridSizer(1, 2, 0, 0);
 	toplevel->Add(gpanel = new panel(this), 1, wxGROW);
+	toplevel->Add(spanel = new wxwin_status::panel(this, 20), 1, wxGROW);
 	toplevel->SetSizeHints(this);
 	SetSizer(toplevel);
 	Fit();
@@ -878,6 +879,14 @@ void wxwin_mainwindow::notify_update() throw()
 	if(!main_window_dirty) {
 		main_window_dirty = true;
 		gpanel->Refresh();
+	}
+}
+
+void wxwin_mainwindow::notify_update_status() throw()
+{
+	if(!spanel->dirty) {
+		spanel->dirty = true;
+		spanel->Refresh();
 	}
 }
 
@@ -1216,7 +1225,7 @@ void wxwin_mainwindow::menu_edit_jukebox(wxCommandEvent& e)
 			new_jukebox.push_back(l);
 	}
 	runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
-	status_window->notify_update();
+	notify_update_status();
 	platform::set_modal_pause(false);
 }
 	
