@@ -5112,5 +5112,25 @@ Make mouse be ordinary input instead of special-casing
 SDL: Don't screw up commands with NUL codepoints.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta14
+\end_layout
+
+\begin_layout Itemize
+Merge status panel and main window
+\end_layout
+
+\begin_layout Itemize
+True movie slot support (the rest of it)
+\end_layout
+
+\begin_layout Itemize
+SDL: Fix compilation error
+\end_layout
+
+\begin_layout Itemize
+Elminate cross calls in dump menu code.
+\end_layout
+
 \end_body
 \end_document

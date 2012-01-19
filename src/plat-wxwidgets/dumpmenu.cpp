@@ -4,6 +4,43 @@
 #include "plat-wxwidgets/menu_dump.hpp"
 #include "plat-wxwidgets/platform.hpp"
 
+struct dumper_info
+{
+	adv_dumper* instance;
+	std::string name;
+	bool active;
+	std::map<std::string, std::string> modes;
+};
+
+namespace
+{
+	std::map<std::string, dumper_info> existing_dumpers;
+
+	struct dumper_menu_struct
+	{
+		int end_wxid;
+		wxMenuItem* end_item;
+		std::map<int, std::string> start_wxids;
+		std::map<int, wxMenuItem*> start_items;
+		wxMenuItem* sep;
+	};
+	std::map<std::string, dumper_menu_struct> menustructure;
+	std::string last_processed;
+	bool first;
+
+	void update_dumperinfo(std::map<std::string, dumper_info>& new_dumpers, adv_dumper* d)
+	{
+		struct dumper_info inf;
+		inf.instance = d;
+		inf.name = d->name();
+		std::set<std::string> mset = d->list_submodes();
+		for(auto i : mset)
+			inf.modes[i] = d->modename(i);
+		inf.active = d->busy();
+		new_dumpers[d->id()] = inf;
+	}
+}
+
 class dumper_menu_monitor : public information_dispatch
 {
 public:
@@ -19,57 +56,16 @@ public:
 
 	void on_dumper_update()
 	{
-		runuifun([linked]() { if(linked) linked->update(); });
+		std::map<std::string, dumper_info> new_dumpers;
+		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
+		for(auto i : dset)
+			update_dumperinfo(new_dumpers, i);
+		runuifun([linked, new_dumpers]() { if(linked) linked->update(new_dumpers); });
 	}
 private:
 	dumper_menu* linked;
 };
 
-namespace
-{
-	struct dumper_info
-	{
-		adv_dumper* instance;
-		std::string name;
-		bool active;
-		std::map<std::string, std::string> modes;
-	};
-	std::map<std::string, dumper_info> existing_dumpers;
-	std::map<std::string, dumper_info> new_dumpers;
-
-	struct dumper_menu_struct
-	{
-		int end_wxid;
-		wxMenuItem* end_item;
-		std::map<int, std::string> start_wxids;
-		std::map<int, wxMenuItem*> start_items;
-		wxMenuItem* sep;
-	};
-	std::map<std::string, dumper_menu_struct> menustructure;
-	std::string last_processed;
-	bool first;
-
-	void update_dumperinfo(adv_dumper* d)
-	{
-		struct dumper_info inf;
-		inf.instance = d;
-		inf.name = d->name();
-		std::set<std::string> mset = d->list_submodes();
-		for(auto i : mset)
-			inf.modes[i] = d->modename(i);
-		inf.active = d->busy();
-		new_dumpers[d->id()] = inf;
-	}
-
-	void fetch_dumperinfo()
-	{
-		runemufn([]() {
-			std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
-			for(auto i : dset)
-				update_dumperinfo(i);
-			});
-	}
-}
 
 
 dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
@@ -80,7 +76,13 @@ dumper_menu::dumper_menu(wxWindow* win, int wxid_low, int wxid_high)
 	wxid_range_low = wxid_low;
 	wxid_range_high = wxid_high;
 	monitor = new dumper_menu_monitor(this);
-	update();
+	std::map<std::string, dumper_info> new_dumpers;
+	runemufn([&new_dumpers]() {
+		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
+		for(auto i : dset)
+			update_dumperinfo(new_dumpers, i);
+		});
+	update(new_dumpers);
 }
 
 dumper_menu::~dumper_menu()
@@ -118,9 +120,8 @@ void dumper_menu::on_select(wxCommandEvent& e)
 	}
 }
 
-void dumper_menu::update()
+void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
 {
-	fetch_dumperinfo();
 	//Destroy all old entries.
 	for(auto i : menustructure) {
 		struct dumper_menu_struct& m = i.second;

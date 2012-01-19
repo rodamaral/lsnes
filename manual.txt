@@ -2490,3 +2490,13 @@ set-axis joystick0axis19 disabled
 
 • SDL: Don't screw up commands with NUL codepoints.
 
+14.43 rr1-beta14
+
+• Merge status panel and main window
+
+• True movie slot support (the rest of it)
+
+• SDL: Fix compilation error
+
+• Elminate cross calls in dump menu code.
+
