@@ -899,6 +899,12 @@ void wxwin_mainwindow::notify_exit() throw()
 	Destroy();
 }
 
+#define NEW_KEYBINDING "A new binding..."
+#define NEW_ALIAS "A new alias..."
+#define NEW_WATCH "A new watch..."
+
+void strip_CR(std::string& x) throw(std::bad_alloc);
+
 void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 {
 	wxFileDialog* d;
@@ -941,427 +947,394 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("load-movie " + filename);
-		break;
+		return;
 	case wxID_LOAD_STATE:
 		d = new wxFileDialog(this, wxT("Load State"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("load " + filename);
-		break;
+		return;
 	case wxID_LOAD_STATE_RO:
 		d = new wxFileDialog(this, wxT("Load State (Read-Only)"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("load-readonly " + filename);
-		break;
+		return;
 	case wxID_LOAD_STATE_RW:
 		d = new wxFileDialog(this, wxT("Load State (Read-Write)"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("load-state " + filename);
-		break;
+		return;
 	case wxID_LOAD_STATE_P:
 		d = new wxFileDialog(this, wxT("Load State (Preserve)"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("load-preserve " + filename);
-		break;
+		return;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
-		break;
+		return;
 	case wxID_SAVE_MOVIE:
 		d = new wxFileDialog(this, wxT("Save Movie"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("save-movie " + filename);
-		break;
+		return;
 	case wxID_SAVE_STATE:
 		d = new wxFileDialog(this, wxT("Save State"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("save-state " + filename);
-		break;
+		return;
 	case wxID_SAVE_SCREENSHOT:
 		d = new wxFileDialog(this, wxT("Save Screenshot"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("take-screenshot " + filename);
-		break;
+		return;
 	case wxID_RUN_SCRIPT:
 		d = new wxFileDialog(this, wxT("Select Script"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("run-script " + filename);
-		break;
+		return;
 	case wxID_RUN_LUA:
 		d = new wxFileDialog(this, wxT("Select Lua Script"), wxT("."));
 		if(d->ShowModal() == wxID_OK)
 			filename = tostdstring(d->GetPath());
 		d->Destroy();
 		if(filename == "")
-			break;
+			return;
 		platform::queue("run-lua " + filename);
-		break;
+		return;
 	case wxID_EVAL_LUA:
 		d2 = new wxTextEntryDialog(this, wxT("Enter Lua statement:"), wxT("Evaluate Lua"));
 		if(d2->ShowModal() == wxID_OK)
 			filename = tostdstring(d2->GetValue());
 		d2->Destroy();
 		platform::queue("evaluate-lua " + filename);
-		break;
+		return;
 	case wxID_READONLY_MODE:
 		s = menu_ischecked(wxID_READONLY_MODE);
 		platform::queue(_set_readonly, &s, true);
-		break;
+		return;
 	case wxID_EDIT_AXES:
 		wxeditor_axes_display(this);
-		break;
+		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
-		break;
+		return;
 	case wxID_EDIT_SETTINGS:
 		wxeditor_settings_display(this);
-		break;
-	case wxID_EDIT_KEYBINDINGS:
-		menu_edit_keybindings(e);
-		break;
-	case wxID_EDIT_ALIAS:
-		menu_edit_aliases(e);
-		break;
-	case wxID_EDIT_JUKEBOX:
-		menu_edit_jukebox(e);
-		break;
-	case wxID_EDIT_MEMORYWATCH:
-		menu_edit_memorywatch(e);
-		break;
-	case wxID_SAVE_MEMORYWATCH:
-		menu_save_memorywatch(e);
-		break;
-	case wxID_LOAD_MEMORYWATCH:
-		menu_load_memorywatch(e);
-		break;
+		return;
+	case wxID_EDIT_KEYBINDINGS: {
+		platform::set_modal_pause(true);
+		std::set<std::string> bind;
+		runemufn([&bind]() { bind = keymapper::get_bindings(); });
+		std::vector<wxString> choices;
+		choices.push_back(wxT(NEW_KEYBINDING));
+		for(auto i : bind)
+			choices.push_back(towxstring(i));
+		wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select keybinding to edit"),
+			wxT("Select binding"), choices.size(), &choices[0]);
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		std::string key = tostdstring(d->GetStringSelection());
+		d->Destroy();
+		if(key == NEW_KEYBINDING) {
+			wxdialog_keyentry* d2 = new wxdialog_keyentry(this);
+			if(d2->ShowModal() == wxID_CANCEL) {
+				d2->Destroy();
+				platform::set_modal_pause(false);
+				return;
+			}
+			key = d2->getkey();
+			d2->Destroy();
+		}
+		std::string old_command_value;
+		runemufn([&old_command_value, key]() { old_command_value = keymapper::get_command_for(key); });
+		wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new command for binding:"),
+			wxT("Edit binding"), towxstring(old_command_value));
+		if(d4->ShowModal() == wxID_CANCEL) {
+			d4->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		bool fault = false;
+		std::string faulttext;
+		std::string newcommand = tostdstring(d4->GetValue());
+		runemufn([&fault, &faulttext, key, newcommand]() {
+			try {
+				keymapper::bind_for(key, newcommand);
+			} catch(std::exception& e) {
+			}
+		});
+		if(fault) {
+			wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Can't bind key: ") +
+				faulttext), wxT("Error"), wxOK | wxICON_EXCLAMATION);
+			d3->ShowModal();
+			d3->Destroy();
+		}
+		d4->Destroy();
+		platform::set_modal_pause(false);
+		return;
+	}
+	case wxID_EDIT_ALIAS: {
+		platform::set_modal_pause(true);
+		std::set<std::string> bind;
+		runemufn([&bind]() { bind = command::get_aliases(); });
+		std::vector<wxString> choices;
+		choices.push_back(wxT(NEW_ALIAS));
+		for(auto i : bind)
+			choices.push_back(towxstring(i));
+		wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select alias to edit"),
+			wxT("Select alias"), choices.size(), &choices[0]);
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		std::string alias = tostdstring(d->GetStringSelection());
+		d->Destroy();
+		if(alias == NEW_ALIAS) {
+			wxTextEntryDialog* d2 = new wxTextEntryDialog(this, wxT("Enter name for the new alias:"),
+				wxT("Enter alias name"));
+			if(d2->ShowModal() == wxID_CANCEL) {
+				d2->Destroy();
+				platform::set_modal_pause(false);
+				return;
+			}
+			alias = tostdstring(d2->GetValue());
+			d2->Destroy();
+			if(!command::valid_alias_name(alias)) {
+				wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Not a valid "
+				"alias name: ") + alias), wxT("Error"), wxOK | wxICON_EXCLAMATION);
+				d3->ShowModal();
+				d3->Destroy();
+				platform::set_modal_pause(false);
+				return;
+			}
+		}
+		std::string old_alias_value = command::get_alias_for(alias);
+		wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new commands for alias:"),
+			wxT("Edit alias"), towxstring(old_alias_value), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
+		if(d4->ShowModal() == wxID_CANCEL) {
+			d4->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		std::string newcmd = tostdstring(d4->GetValue());
+		runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
+		d4->Destroy();
+		platform::set_modal_pause(false);
+		return;
+	}
+	case wxID_EDIT_JUKEBOX: {
+		platform::set_modal_pause(true);
+		std::string x;
+		std::vector<std::string> new_jukebox;
+		runemufn([&x]() {
+				for(auto i : get_jukebox_names())
+					x = x + i + "\n";
+		});
+
+		wxTextEntryDialog* dialog = new wxTextEntryDialog(this, wxT("List jukebox entries"),
+			wxT("Configure jukebox"), towxstring(x), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
+		if(dialog->ShowModal() == wxID_CANCEL) {
+			dialog->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		x = tostdstring(dialog->GetValue());
+		dialog->Destroy();
+
+		while(x != "") {
+			size_t split = x.find_first_of("\n");
+			std::string l;
+			if(split < x.length()) {
+				l = x.substr(0, split);
+				x = x.substr(split + 1);
+			} else {
+				l = x;
+				x = "";
+			}
+			strip_CR(l);
+			if(l != "")
+				new_jukebox.push_back(l);
+		}
+		runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
+		notify_update_status();
+		platform::set_modal_pause(false);
+		return;
+	}
+	case wxID_EDIT_MEMORYWATCH: {
+		platform::set_modal_pause(true);
+		std::set<std::string> bind;
+		runemufn([&bind]() { bind = get_watches(); });
+		std::vector<wxString> choices;
+		choices.push_back(wxT(NEW_WATCH));
+		for(auto i : bind)
+			choices.push_back(towxstring(i));
+		wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select watch to edit"),
+			wxT("Select watch"), choices.size(), &choices[0]);
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		std::string watch = tostdstring(d->GetStringSelection());
+		d->Destroy();
+		if(watch == NEW_WATCH) {
+			wxTextEntryDialog* d2 = new wxTextEntryDialog(this, wxT("Enter name for the new watch:"),
+				wxT("Enter watch name"));
+			if(d2->ShowModal() == wxID_CANCEL) {
+				d2->Destroy();
+				platform::set_modal_pause(false);
+				return;
+			}
+			watch = tostdstring(d2->GetValue());
+			d2->Destroy();
+		}
+		std::string old_watch_value = get_watchexpr_for(watch);
+		wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new expression for watch:"),
+			wxT("Edit watch"), towxstring(old_watch_value), wxOK | wxCANCEL | wxCENTRE);
+		if(d4->ShowModal() == wxID_CANCEL) {
+			d4->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		std::string newexpr = tostdstring(d4->GetValue());
+		runemufn([watch, newexpr]() { set_watchexpr_for(watch, newexpr); });
+		platform::set_modal_pause(false);
+		d4->Destroy();
+		return;
+	}
+	case wxID_SAVE_MEMORYWATCH: {
+		platform::set_modal_pause(true);
+		std::set<std::string> old_watches;
+		runemufn([&old_watches]() { old_watches = get_watches(); });
+		std::string filename;
+
+		wxFileDialog* d = new wxFileDialog(this, towxstring("Save watches to file"), wxT("."));
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		filename = tostdstring(d->GetPath());
+		d->Destroy();
+
+		std::ofstream out(filename.c_str());
+		for(auto i : old_watches)
+			out << i << std::endl << get_watchexpr_for(i) << std::endl;
+		out.close();
+		platform::set_modal_pause(false);
+		return;
+	}
+	case wxID_LOAD_MEMORYWATCH: {
+		platform::set_modal_pause(true);
+		std::set<std::string> old_watches;
+		runemufn([&old_watches]() { old_watches = get_watches(); });
+		std::map<std::string, std::string> new_watches;
+		std::string filename;
+
+		wxFileDialog* d = new wxFileDialog(this, towxstring("Choose memory watch file"), wxT("."));
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+		filename = tostdstring(d->GetPath());
+		d->Destroy();
+		//Did we pick a .zip file?
+		try {
+			zip_reader zr(filename);
+			std::vector<wxString> files;
+			for(auto i : zr)
+				files.push_back(towxstring(i));
+			wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this, wxT("Select file within .zip"),
+				wxT("Select member"), files.size(), &files[0]);
+			if(d2->ShowModal() == wxID_CANCEL) {
+				d2->Destroy();
+				platform::set_modal_pause(false);
+				return;
+			}
+			filename = filename + "/" + tostdstring(d2->GetStringSelection());
+			d2->Destroy();
+		} catch(...) {
+			//Ignore error.
+		}
+
+		try {
+			std::istream& in = open_file_relative(filename, "");
+			while(in) {
+				std::string wname;
+				std::string wexpr;
+				std::getline(in, wname);
+				std::getline(in, wexpr);
+				new_watches[wname] = wexpr;
+			}
+			delete &in;
+		} catch(std::exception& e) {
+			wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Can't load memory "
+				"watch: ") + e.what()), wxT("Error"), wxOK | wxICON_EXCLAMATION);
+			d3->ShowModal();
+			d3->Destroy();
+			platform::set_modal_pause(false);
+			return;
+		}
+
+		runemufn([&new_watches, &old_watches]() {
+			for(auto i : new_watches)
+				set_watchexpr_for(i.first, i.second);
+			for(auto i : old_watches)
+				if(!new_watches.count(i))
+					set_watchexpr_for(i, "");
+			});
+		platform::set_modal_pause(false);
+		return;
+	}
 	case wxID_MEMORY_SEARCH:
 		wxwindow_memorysearch_display();
-		break;
+		return;
 	case wxID_ABOUT: {
 		std::ostringstream str;
 		str << "Version: lsnes rr" << lsnes_version << std::endl;
 		str << "Revision: " << lsnes_git_revision << std::endl;
 		str << "Core: " << bsnes_core_version << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
+		return;
 	}
-		break;
 	};
 }
 
-#define NEW_KEYBINDING "A new binding..."
-#define NEW_ALIAS "A new alias..."
-#define NEW_WATCH "A new watch..."
-
-void wxwin_mainwindow::menu_edit_keybindings(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::set<std::string> bind;
-	runemufn([&bind]() { bind = keymapper::get_bindings(); });
-	std::vector<wxString> choices;
-	choices.push_back(wxT(NEW_KEYBINDING));
-	for(auto i : bind)
-		choices.push_back(towxstring(i));
-	wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select keybinding to edit"),
-		wxT("Select binding"), choices.size(), &choices[0]);
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	std::string key = tostdstring(d->GetStringSelection());
-	d->Destroy();
-	if(key == NEW_KEYBINDING) {
-		wxdialog_keyentry* d2 = new wxdialog_keyentry(this);
-		//wxTextEntryDialog* d2 = new wxTextEntryDialog(this, wxT("Enter key for binding:"),
-		//	wxT("Edit binding"), wxT(""));
-		if(d2->ShowModal() == wxID_CANCEL) {
-			d2->Destroy();
-			platform::set_modal_pause(false);
-			return;
-		}
-		key = d2->getkey();
-		//key = tostdstring(d2->GetValue());
-		d2->Destroy();
-	}
-	std::string old_command_value;
-	runemufn([&old_command_value, key]() { old_command_value = keymapper::get_command_for(key); });
-	wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new command for binding:"), wxT("Edit binding"),
-		towxstring(old_command_value));
-	if(d4->ShowModal() == wxID_CANCEL) {
-		d4->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	bool fault = false;
-	std::string faulttext;
-	std::string newcommand = tostdstring(d4->GetValue());
-	runemufn([&fault, &faulttext, key, newcommand]() {
-		try {
-			keymapper::bind_for(key, newcommand);
-		} catch(std::exception& e) {
-		}
-		});
-	if(fault) {
-		wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Can't bind key: ") +
-			faulttext), wxT("Error"), wxOK | wxICON_EXCLAMATION);
-		d3->ShowModal();
-		d3->Destroy();
-	}
-	d4->Destroy();
-	platform::set_modal_pause(false);
-}
-
-void strip_CR(std::string& x) throw(std::bad_alloc);
-
-void wxwin_mainwindow::menu_edit_aliases(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::set<std::string> bind;
-	runemufn([&bind]() { bind = command::get_aliases(); });
-	std::vector<wxString> choices;
-	choices.push_back(wxT(NEW_ALIAS));
-	for(auto i : bind)
-		choices.push_back(towxstring(i));
-	wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select alias to edit"),
-		wxT("Select alias"), choices.size(), &choices[0]);
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	std::string alias = tostdstring(d->GetStringSelection());
-	d->Destroy();
-	if(alias == NEW_ALIAS) {
-		wxTextEntryDialog* d2 = new wxTextEntryDialog(this, wxT("Enter name for the new alias:"),
-			wxT("Enter alias name"));
-		if(d2->ShowModal() == wxID_CANCEL) {
-			d2->Destroy();
-			platform::set_modal_pause(false);
-			return;
-		}
-		alias = tostdstring(d2->GetValue());
-		d2->Destroy();
-		if(!command::valid_alias_name(alias)) {
-			wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Not a valid alias "
-			"name: ") + alias), wxT("Error"), wxOK | wxICON_EXCLAMATION);
-			d3->ShowModal();
-			d3->Destroy();
-			platform::set_modal_pause(false);
-			return;
-		}
-	}
-	std::string old_alias_value = command::get_alias_for(alias);
-	wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new commands for alias:"), wxT("Edit alias"),
-		towxstring(old_alias_value), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
-	if(d4->ShowModal() == wxID_CANCEL) {
-		d4->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	std::string newcmd = tostdstring(d4->GetValue());
-	runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
-	d4->Destroy();
-	platform::set_modal_pause(false);
-}
-
-void wxwin_mainwindow::menu_edit_jukebox(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::string x;
-	std::vector<std::string> new_jukebox;
-	runemufn([&x]() {
-			for(auto i : get_jukebox_names())
-				x = x + i + "\n";
-		});
-
-	wxTextEntryDialog* dialog = new wxTextEntryDialog(this, wxT("List jukebox entries"), wxT("Configure jukebox"),
-		towxstring(x), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
-	if(dialog->ShowModal() == wxID_CANCEL) {
-		dialog->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	x = tostdstring(dialog->GetValue());
-	dialog->Destroy();
-
-	while(x != "") {
-		size_t split = x.find_first_of("\n");
-		std::string l;
-		if(split < x.length()) {
-			l = x.substr(0, split);
-			x = x.substr(split + 1);
-		} else {
-			l = x;
-			x = "";
-		}
-		strip_CR(l);
-		if(l != "")
-			new_jukebox.push_back(l);
-	}
-	runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
-	notify_update_status();
-	platform::set_modal_pause(false);
-}
-	
-void wxwin_mainwindow::menu_load_memorywatch(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::set<std::string> old_watches;
-	runemufn([&old_watches]() { old_watches = get_watches(); });
-	std::map<std::string, std::string> new_watches;
-	std::string filename;
-
-	wxFileDialog* d = new wxFileDialog(this, towxstring("Choose memory watch file"), wxT("."));
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	filename = tostdstring(d->GetPath());
-	d->Destroy();
-	//Did we pick a .zip file?
-	try {
-		zip_reader zr(filename);
-		std::vector<wxString> files;
-		for(auto i : zr)
-			files.push_back(towxstring(i));
-		wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this, wxT("Select file within .zip"),
-			wxT("Select member"), files.size(), &files[0]);
-		if(d2->ShowModal() == wxID_CANCEL) {
-			d2->Destroy();
-			platform::set_modal_pause(false);
-			return;
-		}
-		filename = filename + "/" + tostdstring(d2->GetStringSelection());
-		d2->Destroy();
-	} catch(...) {
-		//Ignore error.
-	}
-
-	try {
-		std::istream& in = open_file_relative(filename, "");
-		while(in) {
-			std::string wname;
-			std::string wexpr;
-			std::getline(in, wname);
-			std::getline(in, wexpr);
-			new_watches[wname] = wexpr;
-		}
-		delete &in;
-	} catch(std::exception& e) {
-		wxMessageDialog* d3 = new wxMessageDialog(this, towxstring(std::string("Can't load memory "
-			"watch: ") + e.what()), wxT("Error"), wxOK | wxICON_EXCLAMATION);
-		d3->ShowModal();
-		d3->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-
-	runemufn([&new_watches, &old_watches]() {
-		for(auto i : new_watches)
-			set_watchexpr_for(i.first, i.second);
-		for(auto i : old_watches)
-			if(!new_watches.count(i))
-				set_watchexpr_for(i, "");
-		});
-	platform::set_modal_pause(false);
-}
-
-void wxwin_mainwindow::menu_save_memorywatch(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::set<std::string> old_watches;
-	runemufn([&old_watches]() { old_watches = get_watches(); });
-	std::string filename;
-
-	wxFileDialog* d = new wxFileDialog(this, towxstring("Save watches to file"), wxT("."));
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	filename = tostdstring(d->GetPath());
-	d->Destroy();
-
-	std::ofstream out(filename.c_str());
-	for(auto i : old_watches)
-		out << i << std::endl << get_watchexpr_for(i) << std::endl;
-	out.close();
-	platform::set_modal_pause(false);
-}
-
-
-void wxwin_mainwindow::menu_edit_memorywatch(wxCommandEvent& e)
-{
-	platform::set_modal_pause(true);
-	std::set<std::string> bind;
-	runemufn([&bind]() { bind = get_watches(); });
-	std::vector<wxString> choices;
-	choices.push_back(wxT(NEW_WATCH));
-	for(auto i : bind)
-		choices.push_back(towxstring(i));
-	wxSingleChoiceDialog* d = new wxSingleChoiceDialog(this, wxT("Select watch to edit"),
-		wxT("Select watch"), choices.size(), &choices[0]);
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	std::string watch = tostdstring(d->GetStringSelection());
-	d->Destroy();
-	if(watch == NEW_WATCH) {
-		wxTextEntryDialog* d2 = new wxTextEntryDialog(this, wxT("Enter name for the new watch:"),
-			wxT("Enter watch name"));
-		if(d2->ShowModal() == wxID_CANCEL) {
-			d2->Destroy();
-			platform::set_modal_pause(false);
-			return;
-		}
-		watch = tostdstring(d2->GetValue());
-		d2->Destroy();
-	}
-	std::string old_watch_value = get_watchexpr_for(watch);
-	wxTextEntryDialog* d4 = new wxTextEntryDialog(this, wxT("Enter new expression for watch:"), wxT("Edit watch"),
-		towxstring(old_watch_value), wxOK | wxCANCEL | wxCENTRE);
-	if(d4->ShowModal() == wxID_CANCEL) {
-		d4->Destroy();
-		platform::set_modal_pause(false);
-		return;
-	}
-	std::string newexpr = tostdstring(d4->GetValue());
-	runemufn([watch, newexpr]() { set_watchexpr_for(watch, newexpr); });
-	platform::set_modal_pause(false);
-	d4->Destroy();
-}

@@ -39,12 +39,6 @@ public:
 	void menu_check(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
-	void menu_edit_keybindings(wxCommandEvent& e);
-	void menu_edit_aliases(wxCommandEvent& e);
-	void menu_edit_jukebox(wxCommandEvent& e);
-	void menu_edit_memorywatch(wxCommandEvent& e);
-	void menu_save_memorywatch(wxCommandEvent& e);
-	void menu_load_memorywatch(wxCommandEvent& e);
 private:
 	panel* gpanel;
 	wxMenu* current_menu;
