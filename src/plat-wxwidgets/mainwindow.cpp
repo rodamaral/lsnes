@@ -1089,8 +1089,11 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([&old_watches]() { old_watches = get_watches(); });
 		std::string filename = pick_file(this, "Save watches to file", ".");
 		std::ofstream out(filename.c_str());
-		for(auto i : old_watches)
-			out << i << std::endl << get_watchexpr_for(i) << std::endl;
+		for(auto i : old_watches) {
+			std::string val;
+			runemufn([i, &val]() { val = get_watchexpr_for(i); });
+			out << i << std::endl << val << std::endl;
+		}
 		out.close();
 		return;
 	}
