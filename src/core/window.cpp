@@ -563,4 +563,15 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 	trigger_repaint();
 }
 
+modal_pause_holder::modal_pause_holder()
+{
+	platform::set_modal_pause(true);
+}
+
+modal_pause_holder::~modal_pause_holder()
+{
+	platform::set_modal_pause(false);
+}
+
+
 volatile bool queue_synchronous_fn_warning;

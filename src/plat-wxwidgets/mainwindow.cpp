@@ -239,14 +239,13 @@ namespace
 
 	controller_autohold_menu::controller_autohold_menu(unsigned lid, enum devicetype_t dtype)
 	{
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		our_lid = lid;
 		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
 			int id = wxID_AUTOHOLD_FIRST + MAX_LOGICAL_BUTTONS * lid + i;
 			entries[i] = AppendCheckItem(id, towxstring(get_logical_button_name(i)));
 		}
 		change_type();
-		platform::set_modal_pause(false);
 	}
 
 	void controller_autohold_menu::change_type()
@@ -281,38 +280,30 @@ namespace
 			return;
 		}
 		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % MAX_LOGICAL_BUTTONS;
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		int pid = controls.lcid_to_pcid(our_lid);
-		if(pid < 0 || !entries[lidx]) {
-			platform::set_modal_pause(false);
+		if(pid < 0 || !entries[lidx])
 			return;
-		}
 		int pidx = controls.button_id(pid, lidx);
-		if(pidx < 0) {
-			platform::set_modal_pause(false);
+		if(pidx < 0)
 			return;
-		}
 		//Autohold change on pid=pid, ctrlindx=idx, state
 		bool newstate = entries[lidx]->IsChecked();
 		UI_change_autohold(pid, pidx, newstate);
-		platform::set_modal_pause(false);
 	}
 
 	void controller_autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		int pid2 = UI_controller_index_by_logical(our_lid);
-		if(pid2 < 0 || static_cast<unsigned>(pid) != pid2) {
-			platform::set_modal_pause(false);
+		if(pid2 < 0 || static_cast<unsigned>(pid) != pid2)
 			return;
-		}
 		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
 			int idx = UI_button_id(pid2, i);
 			if(idx < 0 || static_cast<unsigned>(idx) != ctrlnum)
 				continue;
 			entries[i]->Check(newstate);
 		}
-		platform::set_modal_pause(false);
 	}
 
 
@@ -332,12 +323,11 @@ namespace
 
 	void autohold_menu::reconfigure()
 	{
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
 			menus[i]->change_type();
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
-		platform::set_modal_pause(false);
 	}
 
 	void autohold_menu::on_select(wxCommandEvent& e)
@@ -608,11 +598,10 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 		a->rom = &rom;
 		a->initial = &movie;
 		a->load_has_to_succeed = false;
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		emulation_thread = &thread::create(emulator_main, a);
 		main_window = new wxwin_mainwindow();
 		main_window->Show();
-		platform::set_modal_pause(false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	}
@@ -1055,7 +1044,7 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		wxeditor_settings_display(this);
 		return;
 	case wxID_EDIT_KEYBINDINGS: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::set<std::string> bind;
 		runemufn([&bind]() { bind = keymapper::get_bindings(); });
 		std::vector<wxString> choices;
@@ -1066,7 +1055,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Select binding"), choices.size(), &choices[0]);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		std::string key = tostdstring(d->GetStringSelection());
@@ -1075,7 +1063,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxdialog_keyentry* d2 = new wxdialog_keyentry(this);
 			if(d2->ShowModal() == wxID_CANCEL) {
 				d2->Destroy();
-				platform::set_modal_pause(false);
 				return;
 			}
 			key = d2->getkey();
@@ -1087,7 +1074,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Edit binding"), towxstring(old_command_value));
 		if(d4->ShowModal() == wxID_CANCEL) {
 			d4->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		bool fault = false;
@@ -1106,11 +1092,10 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			d3->Destroy();
 		}
 		d4->Destroy();
-		platform::set_modal_pause(false);
 		return;
 	}
 	case wxID_EDIT_ALIAS: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::set<std::string> bind;
 		runemufn([&bind]() { bind = command::get_aliases(); });
 		std::vector<wxString> choices;
@@ -1121,7 +1106,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Select alias"), choices.size(), &choices[0]);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		std::string alias = tostdstring(d->GetStringSelection());
@@ -1131,7 +1115,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				wxT("Enter alias name"));
 			if(d2->ShowModal() == wxID_CANCEL) {
 				d2->Destroy();
-				platform::set_modal_pause(false);
 				return;
 			}
 			alias = tostdstring(d2->GetValue());
@@ -1141,7 +1124,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				"alias name: ") + alias), wxT("Error"), wxOK | wxICON_EXCLAMATION);
 				d3->ShowModal();
 				d3->Destroy();
-				platform::set_modal_pause(false);
 				return;
 			}
 		}
@@ -1150,17 +1132,15 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Edit alias"), towxstring(old_alias_value), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
 		if(d4->ShowModal() == wxID_CANCEL) {
 			d4->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		std::string newcmd = tostdstring(d4->GetValue());
 		runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
 		d4->Destroy();
-		platform::set_modal_pause(false);
 		return;
 	}
 	case wxID_EDIT_JUKEBOX: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::string x;
 		std::vector<std::string> new_jukebox;
 		runemufn([&x]() {
@@ -1172,7 +1152,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Configure jukebox"), towxstring(x), wxOK | wxCANCEL | wxCENTRE | wxTE_MULTILINE);
 		if(dialog->ShowModal() == wxID_CANCEL) {
 			dialog->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		x = tostdstring(dialog->GetValue());
@@ -1194,11 +1173,10 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		}
 		runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
 		notify_update_status();
-		platform::set_modal_pause(false);
 		return;
 	}
 	case wxID_EDIT_MEMORYWATCH: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::set<std::string> bind;
 		runemufn([&bind]() { bind = get_watches(); });
 		std::vector<wxString> choices;
@@ -1209,7 +1187,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Select watch"), choices.size(), &choices[0]);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		std::string watch = tostdstring(d->GetStringSelection());
@@ -1219,7 +1196,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				wxT("Enter watch name"));
 			if(d2->ShowModal() == wxID_CANCEL) {
 				d2->Destroy();
-				platform::set_modal_pause(false);
 				return;
 			}
 			watch = tostdstring(d2->GetValue());
@@ -1230,17 +1206,15 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 			wxT("Edit watch"), towxstring(old_watch_value), wxOK | wxCANCEL | wxCENTRE);
 		if(d4->ShowModal() == wxID_CANCEL) {
 			d4->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		std::string newexpr = tostdstring(d4->GetValue());
 		runemufn([watch, newexpr]() { set_watchexpr_for(watch, newexpr); });
-		platform::set_modal_pause(false);
 		d4->Destroy();
 		return;
 	}
 	case wxID_SAVE_MEMORYWATCH: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
 		std::string filename;
@@ -1248,7 +1222,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		wxFileDialog* d = new wxFileDialog(this, towxstring("Save watches to file"), wxT("."));
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		filename = tostdstring(d->GetPath());
@@ -1258,11 +1231,10 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		for(auto i : old_watches)
 			out << i << std::endl << get_watchexpr_for(i) << std::endl;
 		out.close();
-		platform::set_modal_pause(false);
 		return;
 	}
 	case wxID_LOAD_MEMORYWATCH: {
-		platform::set_modal_pause(true);
+		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
 		std::map<std::string, std::string> new_watches;
@@ -1271,7 +1243,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		wxFileDialog* d = new wxFileDialog(this, towxstring("Choose memory watch file"), wxT("."));
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 		filename = tostdstring(d->GetPath());
@@ -1286,7 +1257,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				wxT("Select member"), files.size(), &files[0]);
 			if(d2->ShowModal() == wxID_CANCEL) {
 				d2->Destroy();
-				platform::set_modal_pause(false);
 				return;
 			}
 			filename = filename + "/" + tostdstring(d2->GetStringSelection());
@@ -1310,7 +1280,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				"watch: ") + e.what()), wxT("Error"), wxOK | wxICON_EXCLAMATION);
 			d3->ShowModal();
 			d3->Destroy();
-			platform::set_modal_pause(false);
 			return;
 		}
 
@@ -1321,7 +1290,6 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 				if(!new_watches.count(i))
 					set_watchexpr_for(i, "");
 			});
-		platform::set_modal_pause(false);
 		return;
 	}
 	case wxID_MEMORY_SEARCH:

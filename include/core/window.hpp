@@ -534,6 +534,16 @@ struct platform
 	static void run_queues() throw();
 };
 
+class modal_pause_holder
+{
+public:
+	modal_pause_holder();
+	~modal_pause_holder();
+private:
+	modal_pause_holder(const modal_pause_holder&);
+	modal_pause_holder& operator=(const modal_pause_holder&);
+};
+
 template<typename T>
 void functor_call_helper(void* args)
 {
