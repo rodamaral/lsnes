@@ -957,7 +957,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("run-script " + pick_file_member(this, "Select Script", "."));
 		return;
 	case wxID_RUN_LUA:
-		platform::queue("run-lua " + pick_file_member(this, "Select Lua Script", "."));
+		platform::queue("run-lua " + pick_file(this, "Select Lua Script", "."));
 		return;
 	case wxID_EVAL_LUA:
 		platform::queue("evaluate-lua " + pick_text(this, "Evaluate Lua", "Enter Lua Statement:"));
