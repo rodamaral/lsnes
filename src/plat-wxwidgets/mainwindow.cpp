@@ -911,7 +911,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_PAUSE:
 		platform::queue("pause-emulator");
 		return;
-	case wxID_RESET:
+	case wxID_ERESET:
 		platform::queue("reset");
 		return;
 	case wxID_EXIT:
