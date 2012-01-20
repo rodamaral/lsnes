@@ -248,13 +248,12 @@ void wxeditor_settings_listener::on_setting_clear(const std::string& _setting)
 
 void wxeditor_settings_display(wxWindow* parent)
 {
-	platform::set_modal_pause(true);
+	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
 		editor = new wxeditor_settings(parent);
 		editor->ShowModal();
 	} catch(...) {
 	}
-	platform::set_modal_pause(false);
 	editor->Destroy();
 }

@@ -108,13 +108,12 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 
 void wxeditor_authors_display(wxWindow* parent)
 {
-	platform::set_modal_pause(true);
+	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
 		editor = new wxeditor_authors(parent);
 		editor->ShowModal();
 	} catch(...) {
 	}
-	platform::set_modal_pause(false);
 	editor->Destroy();
 }

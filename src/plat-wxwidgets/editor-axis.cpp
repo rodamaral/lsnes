@@ -276,7 +276,7 @@ void wxeditor_axes::on_ok(wxCommandEvent& e)
 
 void wxeditor_axes_display(wxWindow* parent)
 {
-	platform::set_modal_pause(true);
+	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
 		editor = new wxeditor_axes(parent);
@@ -288,6 +288,5 @@ void wxeditor_axes_display(wxWindow* parent)
 		}
 	} catch(...) {
 	}
-	platform::set_modal_pause(false);
 	editor->Destroy();
 }
