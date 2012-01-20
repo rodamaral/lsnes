@@ -353,22 +353,15 @@ void wxwin_romselect::set_rtype(std::string rtype)
 
 void wxwin_romselect::on_ask_rom_filename(wxCommandEvent& e)
 {
-	std::string fname;
-	wxFileDialog* d = new wxFileDialog(this, towxstring(std::string("Choose ") + tostdstring(
-		rom_label[e.GetId() - ROM_SELECTS_BASE]->GetLabel())), wxT("."));
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		return;
+	try {
+		std::string fname = pick_file_member(this, "Choose " + tostdstring(
+			rom_label[e.GetId() - ROM_SELECTS_BASE]->GetLabel()), ".");
+		wxTextCtrl* textbox = rom_name[e.GetId() - ROM_SELECTS_BASE];
+		if(textbox)
+			textbox->SetValue(towxstring(fname));
+		on_filename_change(e);
+	} catch(canceled_exception& e) {
 	}
-	fname = tostdstring(d->GetPath());
-	d->Destroy();
-	fname = pick_archive_member(this, fname);
-	if(fname == "")
-		return;
-	wxTextCtrl* textbox = rom_name[e.GetId() - ROM_SELECTS_BASE];
-	if(textbox)
-		textbox->SetValue(towxstring(fname));
-	on_filename_change(e);
 }
 
 void wxwin_romselect::on_filename_change(wxCommandEvent& e)
@@ -416,9 +409,7 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 		else
 			our_rom_name = our_rom->rom.sha256;
 	} catch(std::exception& e) {
-		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
-			wxT("Error loading ROM"), wxOK | wxICON_EXCLAMATION);
-		d->ShowModal();
+		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 	wxwin_patch* projwin = new wxwin_patch(*our_rom);
@@ -513,19 +504,12 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 
 void wxwin_patch::on_ask_patchfile(wxCommandEvent& e)
 {
-	std::string fname;
-	wxFileDialog* d = new wxFileDialog(this, wxT("Choose patch file"), wxT("."));
-	if(d->ShowModal() == wxID_CANCEL) {
-		d->Destroy();
-		return;
+	try {
+		std::string fname = pick_file_member(this, "Choose patch file", ".");
+		patchfile->SetValue(towxstring(fname));
+		on_patchfile_change(e);
+	} catch(canceled_exception& e) {
 	}
-	fname = tostdstring(d->GetPath());
-	d->Destroy();
-	fname = pick_archive_member(this, fname);
-	if(fname == "")
-		return;
-	patchfile->SetValue(towxstring(fname));
-	on_patchfile_change(e);
 }
 
 wxwin_patch::~wxwin_patch()
@@ -559,9 +543,7 @@ void wxwin_patch::on_do_patch(wxCommandEvent& e)
 		s.patch(patch_contents, offset);
 		checksums[patch_index]->SetLabel(towxstring(s.sha256));
 	} catch(std::exception& e) {
-		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
-			wxT("Error patching ROM"), wxOK | wxICON_EXCLAMATION);
-		d->ShowModal();
+		show_message_ok(this, "Error patching ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 	patchfile->SetValue(wxT(""));
@@ -584,9 +566,7 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 			our_rom_name = our_rom->rom.sha256;
 		our_rom->load();
 	} catch(std::exception& e) {
-		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
-			wxT("Error loading ROM"), wxOK | wxICON_EXCLAMATION);
-		d->ShowModal();
+		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 	messages << "Detected region: " << gtype::tostring(our_rom->rtype, our_rom->region) << std::endl;
@@ -774,37 +754,17 @@ void wxwin_project::on_new_select(wxCommandEvent& e)
 void wxwin_project::on_ask_filename(wxCommandEvent& e)
 {
 	int id = e.GetId();
-	if(id == ASK_FILENAME_BUTTON) {
-		std::string fname;
-		wxFileDialog* d = new wxFileDialog(this, towxstring("Choose " + sram_names[id - ASK_SRAMS_BASE]),
-			wxT("."));
-		if(d->ShowModal() == wxID_CANCEL) {
-			d->Destroy();
-			return;
+	try {
+		if(id == ASK_FILENAME_BUTTON) {
+			std::string fname = pick_file(this, "Choose save/movie", ".");
+			savefile->SetValue(towxstring(fname));
+		} else if(id >= ASK_SRAMS_BASE && id <= ASK_SRAMS_LAST) {
+			std::string fname = pick_file_member(this, "Choose " + sram_names[id - ASK_SRAMS_BASE], ".");
+			sram_files[sram_names[id - ASK_SRAMS_BASE]]->SetValue(towxstring(fname));
 		}
-		fname = tostdstring(d->GetPath());
-		d->Destroy();
-		if(fname == "")
-			return;
-		savefile->SetValue(towxstring(fname));
-	} else if(id >= ASK_SRAMS_BASE && id <= ASK_SRAMS_LAST) {
-		std::string fname;
-		wxFileDialog* d = new wxFileDialog(this, towxstring("Choose " + sram_names[id - ASK_SRAMS_BASE]),
-			wxT("."));
-		if(d->ShowModal() == wxID_CANCEL) {
-			d->Destroy();
-			return;
-		}
-		fname = tostdstring(d->GetPath());
-		d->Destroy();
-		if(fname == "")
-			return;
-		fname = pick_archive_member(this, fname);
-		if(fname == "")
-			return;
-		sram_files[sram_names[id - ASK_SRAMS_BASE]]->SetValue(towxstring(fname));
+		on_filename_change(e);
+	} catch(canceled_exception& e) {
 	}
-	on_filename_change(e);
 }
 
 void wxwin_project::on_filename_change(wxCommandEvent& e)
@@ -844,9 +804,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		}
 		Destroy();
 	} catch(std::exception& e) {
-		wxMessageDialog* d = new wxMessageDialog(this, towxstring(e.what()),
-			wxT("Error loading movie"), wxOK | wxICON_EXCLAMATION);
-		d->ShowModal();
+		show_message_ok(this, "Error loading movie", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 }

@@ -40,6 +40,7 @@ public:
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
 private:
+	void handle_menu_click_cancelable(wxCommandEvent& e);
 	panel* gpanel;
 	wxMenu* current_menu;
 	wxMenuBar* menubar;

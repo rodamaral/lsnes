@@ -400,4 +400,78 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 }
 
 
+canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled") {}
+
+std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir)
+{
+	wxString _title = towxstring(title);
+	wxString _startdir = towxstring(startdir);
+	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir);
+	if(d->ShowModal() == wxID_CANCEL)
+		throw canceled_exception();
+	std::string filename = tostdstring(d->GetPath());
+	d->Destroy();
+	if(filename == "")
+		throw canceled_exception();
+	return filename;
+}
+
+std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir)
+{
+	std::string filename = pick_file(parent, title, startdir);
+	//Did we pick a .zip file?
+	try {
+		zip_reader zr(filename);
+		std::vector<std::string> files;
+		for(auto i : zr)
+			files.push_back(i);
+		filename = filename + "/" + pick_among(parent, "Select member", "Select file within .zip", files);
+	} catch(canceled_exception& e) {
+		//Throw these forward.
+		throw;
+	} catch(...) {
+		//Ignore error.
+	}
+	return filename;
+}
+
+std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
+	const std::vector<std::string>& choices)
+{
+	std::vector<wxString> _choices;
+	for(auto i : choices)
+		_choices.push_back(towxstring(i));
+	wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(parent, towxstring(prompt), towxstring(title),
+		_choices.size(), &_choices[0]);
+	if(d2->ShowModal() == wxID_CANCEL) {
+		d2->Destroy();
+		throw canceled_exception();
+	}
+	std::string out = tostdstring(d2->GetStringSelection());
+	d2->Destroy();
+	return out;
+}
+
+std::string pick_text(wxWindow* parent, const std::string& title, const std::string& prompt, const std::string& dflt,
+	bool multiline)
+{
+	wxTextEntryDialog* d2 = new wxTextEntryDialog(parent, towxstring(prompt), towxstring(title), towxstring(dflt),
+		wxOK | wxCANCEL | wxCENTRE | (multiline ? wxTE_MULTILINE : 0));
+	if(d2->ShowModal() == wxID_CANCEL) {
+		d2->Destroy();
+		throw canceled_exception();
+	}
+	std::string text = tostdstring(d2->GetValue());
+	d2->Destroy();
+	return text;
+}
+
+void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon)
+{
+	wxMessageDialog* d3 = new wxMessageDialog(parent, towxstring(text), towxstring(title), wxOK | icon); 
+	d3->ShowModal();
+	d3->Destroy();
+}
+
+
 const char* graphics_plugin::name = "wxwidgets graphics plugin";

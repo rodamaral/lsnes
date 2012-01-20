@@ -47,9 +47,26 @@ void runuifun(T fn)
 	_runuifun_async(functor_call_helper<T>, new T(fn));
 }
 
+//Thrown by various dialog functions if canceled.
+class canceled_exception : public std::runtime_error
+{
+public:
+	canceled_exception();
+};
+
+//Prompt for stuff. These all can throw canceled_exception.
+std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir);
+std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir);
+std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
+	const std::vector<std::string>& choices);
+std::string pick_text(wxWindow* parent, const std::string& title, const std::string& prompt,
+	const std::string& dflt = "", bool multiline = false);
+//Show message box with OK button.
+void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon);
+
+
 //Some important windows (if open).
 extern wxwin_messages* msg_window;
-extern wxwin_status* status_window;
 extern wxwin_mainwindow* main_window;
 extern std::string our_rom_name;
 
