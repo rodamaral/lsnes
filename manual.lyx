@@ -5132,5 +5132,25 @@ SDL: Fix compilation error
 Elminate cross calls in dump menu code.
 \end_layout
 
+\begin_layout Subsection
+rr1-beta15
+\end_layout
+
+\begin_layout Itemize
+Cancel pending saves command
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Code refactoring
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix system -> reset
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Read watch expressions in the right thread
+\end_layout
+
 \end_body
 \end_document

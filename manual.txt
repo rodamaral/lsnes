@@ -2500,3 +2500,13 @@ set-axis joystick0axis19 disabled
 
 • Elminate cross calls in dump menu code.
 
+14.44 rr1-beta15
+
+• Cancel pending saves command
+
+• Wxwidgets: Code refactoring
+
+• Wxwidgets: Fix system -> reset
+
+• Wxwidgets: Read watch expressions in the right thread
+
