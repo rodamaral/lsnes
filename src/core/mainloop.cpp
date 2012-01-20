@@ -621,6 +621,13 @@ namespace
 			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
 		});
 
+	function_ptr_command<> cancel_save("cancel-saves", "Cancel all pending saves", "Syntax: cancel-save\n"
+		"Cancel pending saves\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			queued_saves.clear();
+			messages << "Pending saves canceled." << std::endl;
+		});
+
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer(screen_nosignal);

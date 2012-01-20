@@ -69,7 +69,8 @@ enum
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
 	wxID_EDIT_JUKEBOX,
-	wxID_MEMORY_SEARCH
+	wxID_MEMORY_SEARCH,
+	wxID_CANCEL_SAVES
 };
 
 
@@ -805,7 +806,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EXIT, wxT("&Quit"));
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About"));
-	//File menu: (ACFOS)DELMNPRTUVW
+	//File menu: (ACFOS)DEILMNPRTUVW
 	menu_start(wxT("&File"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
@@ -819,6 +820,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve)"));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
 	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
+	menu_separator();
+	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves"));
 	menu_separator();
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
 	menu_separator();
@@ -928,6 +931,9 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 		return;
 	case wxID_SHOW_AUDIO_STATUS:
 		platform::queue("show-sound-status");
+		return;
+	case wxID_CANCEL_SAVES:
+		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
 		d = new wxFileDialog(this, wxT("Load Movie"), wxT("."));
