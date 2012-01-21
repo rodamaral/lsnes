@@ -227,7 +227,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 	try {
 		uint64_t origtime = get_utime();
 		if(mprefix._set)
-			our_movie.prefix = sanitize_prefix(static_cast<std::string>(mprefix));
+			our_movie.prefix = sanitize_prefix(static_cast<std::string>(mprefix.prefix));
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename2, savecompression);
