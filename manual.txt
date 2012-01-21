@@ -2510,3 +2510,16 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Read watch expressions in the right thread
 
+14.45 rr1-beta16
+
+• Wxwidgets: Don't prompt for member when running Lua script (Lua 
+  doesn't support that).
+
+• Wxwidgets: 128 -> 1024 Autohold slots (in case more are 
+  needed).
+
+• Don't append trailing '-' to prefix when saving movie.
+
+• Fix ROM/savestate handling (don't let user mismatch ROM and 
+  savestates).
+

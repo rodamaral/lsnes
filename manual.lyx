@@ -5152,5 +5152,26 @@ Wxwidgets: Fix system -> reset
 Wxwidgets: Read watch expressions in the right thread
 \end_layout
 
+\begin_layout Subsection
+rr1-beta16
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Don't prompt for member when running Lua script (Lua doesn't
+ support that).
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: 128 -> 1024 Autohold slots (in case more are needed).
+\end_layout
+
+\begin_layout Itemize
+Don't append trailing '-' to prefix when saving movie.
+\end_layout
+
+\begin_layout Itemize
+Fix ROM/savestate handling (don't let user mismatch ROM and savestates).
+\end_layout
+
 \end_body
 \end_document
