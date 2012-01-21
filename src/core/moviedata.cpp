@@ -149,13 +149,21 @@ namespace
 			messages << "Saved core state to " << name << std::endl;
 		});
 
-	void warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot,
-		const std::string& name)
+	bool warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot,
+		const std::string& name, bool fatal)
 	{
-		if(mhash != slot.sha256) {
+		if(mhash == slot.sha256)
+			return true;
+		if(!fatal) {
 			messages << "WARNING: " << name << " hash mismatch!" << std::endl
 				<< "\tMovie:   " << mhash << std::endl
 				<< "\tOur ROM: " << slot.sha256 << std::endl;
+			return true;
+		} else {
+			messages << "ERROR: " << name << " hash mismatch!" << std::endl
+				<< "\tMovie:   " << mhash << std::endl
+				<< "\tOur ROM: " << slot.sha256 << std::endl;
+			return false;
 		}
 	}
 }
@@ -201,6 +209,12 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.prefix = sanitize_prefix(mprefix.prefix);
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
+		our_movie.rom_sha256 = our_rom->rom.sha256;
+		our_movie.romxml_sha256 = our_rom->rom_xml.sha256;
+		our_movie.slota_sha256 = our_rom->slota.sha256;
+		our_movie.slotaxml_sha256 = our_rom->slota_xml.sha256;
+		our_movie.slotb_sha256 = our_rom->slotb.sha256;
+		our_movie.slotbxml_sha256 = our_rom->slotb_xml.sha256;
 		our_movie.savestate = save_core_state();
 		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
@@ -301,12 +315,15 @@ void do_load_state(struct moviefile& _movie, int lmode)
 				<< "\tThis version: " << bsnes_core_version << std::endl
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
-	warn_hash_mismatch(_movie.rom_sha256, our_rom->rom, "ROM #1");
-	warn_hash_mismatch(_movie.romxml_sha256, our_rom->rom_xml, "XML #1");
-	warn_hash_mismatch(_movie.slota_sha256, our_rom->slota, "ROM #2");
-	warn_hash_mismatch(_movie.slotaxml_sha256, our_rom->slota_xml, "XML #2");
-	warn_hash_mismatch(_movie.slotb_sha256, our_rom->slotb, "ROM #3");
-	warn_hash_mismatch(_movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3");
+	bool rom_ok = true;
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.rom_sha256, our_rom->rom, "ROM #1", will_load_state);
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256, our_rom->rom_xml, "XML #1", will_load_state);
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.slota_sha256, our_rom->slota, "ROM #2", will_load_state);
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotaxml_sha256, our_rom->slota_xml, "XML #2", will_load_state);
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotb_sha256, our_rom->slotb, "ROM #3", will_load_state);
+	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3", will_load_state);
+	if(!rom_ok)
+		throw std::runtime_error("Incorrect ROM");
 
 	SNES::config.random = false;
 	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
