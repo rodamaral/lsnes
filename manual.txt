@@ -2129,9 +2129,7 @@ set-axis joystick0axis19 disabled
 
 • Long commands don't scroll.
 
-• The SDL screen drawing is slow.
-
-• Wxwidgets UI is still pretty buggy.
+• Wxwidgets UI is still buggy.
 
 15 Changelog:
 
@@ -2616,4 +2614,8 @@ set-axis joystick0axis19 disabled
 
 • Fix ROM/savestate handling (don't let user mismatch ROM and 
   savestates).
+
+15.46 rr1
+
+• Document memory watch syntax.
 

@@ -4400,11 +4400,7 @@ Long commands don't scroll.
 \end_layout
 
 \begin_layout Itemize
-The SDL screen drawing is slow.
-\end_layout
-
-\begin_layout Itemize
-Wxwidgets UI is still pretty buggy.
+Wxwidgets UI is still buggy.
 \end_layout
 
 \begin_layout Section
@@ -5354,6 +5350,14 @@ Don't append trailing '-' to prefix when saving movie.
 
 \begin_layout Itemize
 Fix ROM/savestate handling (don't let user mismatch ROM and savestates).
+\end_layout
+
+\begin_layout Subsection
+rr1
+\end_layout
+
+\begin_layout Itemize
+Document memory watch syntax.
 \end_layout
 
 \end_body
