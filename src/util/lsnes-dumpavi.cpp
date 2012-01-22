@@ -20,6 +20,17 @@
 
 namespace
 {
+	size_t count(void)
+	{
+		return 0;
+	}
+
+	template<typename... T>
+	size_t count(bool v, T... args)
+	{
+		return (v ? 1 : 0) + count(args...);
+	}
+	
 	class myavsnoop : public information_dispatch
 	{
 	public:
@@ -64,6 +75,7 @@ namespace
 		uint64_t length = 0;
 		bool jmd = false;
 		bool sdmp = false;
+		bool raw = false;
 		bool ssflag = false;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
@@ -71,6 +83,8 @@ namespace
 				jmd = true;
 			if(a == "--sdmp")
 				sdmp = true;
+			if(a == "--raw")
+				raw = true;
 			if(a == "--ss")
 				ssflag = true;
 			if(a.length() > 9 && a.substr(0, 9) == "--prefix=")
@@ -98,8 +112,8 @@ namespace
 			std::cerr << "--length=<frames> has to be specified" << std::endl;
 			exit(1);
 		}
-		if(jmd && sdmp) {
-			std::cerr << "--jmd and --sdmp are mutually exclusive" << std::endl;
+		if(count(jmd, sdmp, raw) > 1) {
+			std::cerr << "--jmd, --raw and --sdmp are mutually exclusive" << std::endl;
 			exit(1);
 		}
 		std::cout << "Invoking dumper" << std::endl;
@@ -108,6 +122,8 @@ namespace
 			cmd << "dump-sdmpss " << prefix;
 		else if(sdmp)
 			cmd << "dump-sdmp " << prefix;
+		else if(raw)
+			cmd << "dump-raw " << prefix;
 		else if(jmd) {
 			std::ostringstream l;
 			l << level;
