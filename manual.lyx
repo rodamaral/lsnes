@@ -3084,6 +3084,189 @@ Sent when key that has keyhook events requested changes state.
 \end_layout
 
 \begin_layout Section
+Memory watch expression syntax
+\end_layout
+
+\begin_layout Standard
+Memory watch expressions are in RPN (Reverse Polish Notation).
+ At the end of expression, the top entry on stack is taken as the final
+ result.
+\end_layout
+
+\begin_layout Standard
+Notations:
+\end_layout
+
+\begin_layout Itemize
+Evaluation order is strictly left to right.
+\end_layout
+
+\begin_layout Itemize
+a is the entry on top of stack
+\end_layout
+
+\begin_layout Itemize
+b is the entry immediately below top of stack
+\end_layout
+
+\begin_layout Itemize
+; separates values to be pushed (no intermediate pop).
+\end_layout
+
+\begin_layout Itemize
+After end of element, all used stack slots are popped and all results are
+ pushed.
+\end_layout
+
+\begin_layout Itemize
+When pushing multiple values, the pushes occur in order shown.
+\end_layout
+
+\begin_layout Standard
+The following operators are available:
+\end_layout
+
+\begin_layout Itemize
++ : a + b
+\end_layout
+
+\begin_layout Itemize
+- : a - b
+\end_layout
+
+\begin_layout Itemize
+* : a * b
+\end_layout
+
+\begin_layout Itemize
+/ : a / b
+\end_layout
+
+\begin_layout Itemize
+% : a % b
+\end_layout
+
+\begin_layout Itemize
+a : atan(a)
+\end_layout
+
+\begin_layout Itemize
+b : read_signed_byte(a)
+\end_layout
+
+\begin_layout Itemize
+c : cos(a)
+\end_layout
+
+\begin_layout Itemize
+d : read_signed_dword(a)
+\end_layout
+
+\begin_layout Itemize
+i : quotent(a / b)
+\end_layout
+
+\begin_layout Itemize
+p :
+\begin_inset Formula $\pi$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+q : read_signed_qword(a)
+\end_layout
+
+\begin_layout Itemize
+r : sqrt(a)
+\end_layout
+
+\begin_layout Itemize
+s : sin(a)
+\end_layout
+
+\begin_layout Itemize
+t : tan(a)
+\end_layout
+
+\begin_layout Itemize
+u : a; a
+\end_layout
+
+\begin_layout Itemize
+w : read_signed_word(a)
+\end_layout
+
+\begin_layout Itemize
+A : atan2(a, b)
+\end_layout
+
+\begin_layout Itemize
+B : read_unsigned_byte(a)
+\end_layout
+
+\begin_layout Itemize
+C<number>z : Push number <number> to stack.
+\end_layout
+
+\begin_layout Itemize
+D : read_unsigned_dword(a)
+\end_layout
+
+\begin_layout Itemize
+C0x<number>z : Push number <number> (hexadecimal) to stack.
+\end_layout
+
+\begin_layout Itemize
+Q : read_unsigned_qword(a)
+\end_layout
+
+\begin_layout Itemize
+R<digit> : round a to <digit> digits.
+\end_layout
+
+\begin_layout Itemize
+W : read_unsigned_word(a)
+\end_layout
+
+\begin_layout Subsection
+Example:
+\end_layout
+
+\begin_layout Standard
+C0x007e0878zWC0x007e002czW-
+\end_layout
+
+\begin_layout Enumerate
+Push value 0x7e0878 on top of stack (C0x007e0878z).
+\end_layout
+
+\begin_layout Enumerate
+Pop the value on top of stack (0x7e0878), read word value at that address
+ and push the result,call it x1 (W).
+\end_layout
+
+\begin_layout Enumerate
+Push value 0x7e002c on top of stack (C0x007e002cz).
+\end_layout
+
+\begin_layout Enumerate
+Pop the value on top of stack (0x7e002c), read word value at that address
+ and push the result,call it x2 (W).
+\end_layout
+
+\begin_layout Enumerate
+Pop the two top numbers on stack, x1 and x2, substract x1 from x2 and push
+ x2 - x1 (-).
+\end_layout
+
+\begin_layout Enumerate
+Since the expression ends, the final memory watch result is the top one
+ on stack, which is x2 - x1.
+\end_layout
+
+\begin_layout Section
 Modifier and key names:
 \end_layout
 
@@ -4217,11 +4400,7 @@ Long commands don't scroll.
 \end_layout
 
 \begin_layout Itemize
-The SDL screen drawing is slow.
-\end_layout
-
-\begin_layout Itemize
-Wxwidgets UI is still pretty buggy.
+Wxwidgets UI is still buggy.
 \end_layout
 
 \begin_layout Section
@@ -5150,6 +5329,35 @@ Wxwidgets: Fix system -> reset
 
 \begin_layout Itemize
 Wxwidgets: Read watch expressions in the right thread
+\end_layout
+
+\begin_layout Subsection
+rr1-beta16
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Don't prompt for member when running Lua script (Lua doesn't
+ support that).
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: 128 -> 1024 Autohold slots (in case more are needed).
+\end_layout
+
+\begin_layout Itemize
+Don't append trailing '-' to prefix when saving movie.
+\end_layout
+
+\begin_layout Itemize
+Fix ROM/savestate handling (don't let user mismatch ROM and savestates).
+\end_layout
+
+\begin_layout Subsection
+rr1
+\end_layout
+
+\begin_layout Itemize
+Document memory watch syntax.
 \end_layout
 
 \end_body
