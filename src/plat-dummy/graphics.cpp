@@ -10,6 +10,7 @@ namespace
 
 void graphics_plugin::init() throw()
 {
+	platform::pausing_allowed = false;
 }
 
 void graphics_plugin::quit() throw()
@@ -29,7 +30,6 @@ void graphics_plugin::notify_message() throw()
 
 void graphics_plugin::notify_status() throw()
 {
-	std::cerr << "Exiting on fatal error." << std::endl;
 }
 
 void graphics_plugin::notify_screen() throw()
@@ -44,6 +44,7 @@ bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw
 
 void graphics_plugin::fatal_error() throw()
 {
+	std::cerr << "Exiting on fatal error." << std::endl;
 }
 
 const char* graphics_plugin::name = "Dummy graphics plugin";

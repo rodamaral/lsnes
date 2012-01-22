@@ -165,6 +165,7 @@ int main(int argc, char** argv)
 		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
 		bsnes_core_version = x.str();
 	}
+	platform::init();
 	init_lua();
 
 	messages << "BSNES version: " << bsnes_core_version << std::endl;

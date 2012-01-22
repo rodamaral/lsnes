@@ -420,6 +420,8 @@ void platform::flush_command_queue() throw()
 	while(true) {
 		mutex::holder h(*queue_lock);
 		internal_run_queues(true);
+		if(!pausing_allowed)
+			return;
 		uint64_t now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
@@ -573,5 +575,5 @@ modal_pause_holder::~modal_pause_holder()
 	platform::set_modal_pause(false);
 }
 
-
+bool platform::pausing_allowed = true;
 volatile bool queue_synchronous_fn_warning;

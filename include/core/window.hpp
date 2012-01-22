@@ -532,6 +532,8 @@ struct platform
  * Run all queues.
  */
 	static void run_queues() throw();
+
+	static bool pausing_allowed;
 };
 
 class modal_pause_holder
