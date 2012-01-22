@@ -111,12 +111,12 @@ namespace
 		else if(jmd) {
 			std::ostringstream l;
 			l << level;
-			setting::set("avi-level", l.str());
+			setting::set("jmd-level", l.str());
 			cmd << "dump-jmd " << prefix;
 		} else {
 			std::ostringstream l;
 			l << level;
-			setting::set("jmd-level", l.str());
+			setting::set("avi-level", l.str());
 			cmd << "dump-avi " << prefix;
 		}
 		command::invokeC(cmd.str());
