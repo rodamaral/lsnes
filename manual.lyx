@@ -1947,6 +1947,27 @@ Compression levels 10 and above are not compatible with stock CSCD codec.
 Recomended level is 7.
 \end_layout
 
+\begin_layout Subsubsection
+avi-soundrate
+\end_layout
+
+\begin_layout Standard
+AVI dumper: Set method of determining the sound rate.
+\end_layout
+
+\begin_layout Itemize
+0: Pick nearest of 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 64, 88.2, 96,
+ 128, 176.4 and 192 kHz.
+\end_layout
+
+\begin_layout Itemize
+1: Round down to nearest integer.
+\end_layout
+
+\begin_layout Itemize
+2: Round up to nearest ingeter.
+\end_layout
+
 \begin_layout Subsection
 JMD options
 \end_layout

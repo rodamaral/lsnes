@@ -937,6 +937,17 @@ AVI dumper: Compression level (0-18).
 
 • Recomended level is 7.
 
+7.2.8 avi-soundrate
+
+AVI dumper: Set method of determining the sound rate.
+
+• 0: Pick nearest of 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 
+  64, 88.2, 96, 128, 176.4 and 192 kHz.
+
+• 1: Round down to nearest integer.
+
+• 2: Round up to nearest ingeter.
+
 7.3 JMD options
 
 7.3.1 jmd-copression

@@ -11,11 +11,35 @@
 #include <iomanip>
 #include <cassert>
 #include <cstring>
+#include <cmath>
 #include <sstream>
 #include <zlib.h>
 
 namespace
 {
+	uint32_t rates[] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
+		128000, 176400, 192000};
+
+	uint32_t get_rate(uint32_t n, uint32_t d, unsigned mode)
+	{
+		if(mode == 0) {
+			unsigned bestidx = 0;
+			double besterror = 1e99;
+			for(size_t i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
+				double error = fabs(log(static_cast<double>(d) * rates[i] / n));
+				if(error < besterror) {
+					besterror = error;
+					bestidx = i;
+				}
+			}
+			return rates[bestidx];
+		} else if(mode == 1) {
+			return static_cast<uint32_t>(n / d);
+		} else if(mode == 2) {
+			return static_cast<uint32_t>((n + d - 1) / d);
+		}
+	}
+
 	struct avi_info
 	{
 		unsigned compression_level;
@@ -31,6 +55,7 @@ namespace
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
 	numeric_setting clevel("avi-compression", 0, 18, 7);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
+	numeric_setting soundrate_setting("avi-soundrate", 0, 2, 0);
 
 	class avi_avsnoop : public information_dispatch
 	{
@@ -42,7 +67,8 @@ namespace
 			_parameters = parameters;
 			avi_cscd_dumper::global_parameters gp;
 			avi_cscd_dumper::segment_parameters sp;
-			gp.sampling_rate = parameters.audio_sampling_rate;
+			soundrate = get_sound_rate();
+			gp.sampling_rate = get_rate(soundrate.first, soundrate.second, soundrate_setting);
 			gp.channel_count = 2;
 			gp.audio_16bit = true;
 			sp.fps_n = 60;
@@ -56,7 +82,6 @@ namespace
 			sp.deflate_level = parameters.compression_level;
 			sp.max_segment_frames = parameters.max_frames_per_segment;
 			vid_dumper = new avi_cscd_dumper(prefix, gp, sp);
-			soundrate = get_sound_rate();
 			audio_record_rate = parameters.audio_sampling_rate;
 			soxdumper = new sox_dumper(prefix + ".sox", static_cast<double>(soundrate.first) /
 				soundrate.second, 2);
