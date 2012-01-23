@@ -2,6 +2,7 @@
 #include <snes/snes.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
+#include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
@@ -20,22 +21,11 @@
 
 namespace
 {
-	size_t count(void)
-	{
-		return 0;
-	}
-
-	template<typename... T>
-	size_t count(bool v, T... args)
-	{
-		return (v ? 1 : 0) + count(args...);
-	}
-	
 	class myavsnoop : public information_dispatch
 	{
 	public:
-		myavsnoop(uint64_t frames_to_dump)
-			: information_dispatch("myavsnoop-monitor")
+		myavsnoop(adv_dumper& _dumper, uint64_t frames_to_dump)
+			: information_dispatch("myavsnoop-monitor"), dumper(_dumper)
 		{
 			frames_dumped = 0;
 			total = frames_to_dump;
@@ -54,6 +44,7 @@ namespace
 			}
 			if(frames_dumped == total) {
 				//Rough way to end it.
+				dumper.end();
 				information_dispatch::do_dump_end();
 				exit(0);
 			}
@@ -66,83 +57,25 @@ namespace
 	private:
 		uint64_t frames_dumped;
 		uint64_t total;
+		adv_dumper& dumper;
 	};
 
-	void dumper_startup(const std::vector<std::string>& cmdline)
+	void dumper_startup(adv_dumper& dumper, const std::string& mode, const std::string& prefix, uint64_t length)
 	{
-		unsigned level = 7;
-		std::string prefix = "avidump";
-		uint64_t length = 0;
-		bool jmd = false;
-		bool sdmp = false;
-		bool raw = false;
-		bool ssflag = false;
-		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
-			std::string a = *i;
-			if(a == "--jmd")
-				jmd = true;
-			if(a == "--sdmp")
-				sdmp = true;
-			if(a == "--raw")
-				raw = true;
-			if(a == "--ss")
-				ssflag = true;
-			if(a.length() > 9 && a.substr(0, 9) == "--prefix=")
-				prefix = a.substr(9);
-			if(a.length() > 8 && a.substr(0, 8) == "--level=")
-				try {
-					level = boost::lexical_cast<unsigned>(a.substr(8));
-					if(level < 0 || level > 18)
-						throw std::runtime_error("Level out of range (0-18)");
-				} catch(std::exception& e) {
-					std::cerr << "Bad --level: " << e.what() << std::endl;
-					exit(1);
-				}
-			if(a.length() > 9 && a.substr(0, 9) == "--length=")
-				try {
-					length = boost::lexical_cast<uint64_t>(a.substr(9));
-					if(!length)
-						throw std::runtime_error("Length out of range (1-)");
-				} catch(std::exception& e) {
-					std::cerr << "Bad --length: " << e.what() << std::endl;
-					exit(1);
-				}
-		}
-		if(!length) {
-			std::cerr << "--length=<frames> has to be specified" << std::endl;
-			exit(1);
-		}
-		if(count(jmd, sdmp, raw) > 1) {
-			std::cerr << "--jmd, --raw and --sdmp are mutually exclusive" << std::endl;
-			exit(1);
-		}
 		std::cout << "Invoking dumper" << std::endl;
-		std::ostringstream cmd;
-		if(sdmp && ssflag)
-			cmd << "dump-sdmpss " << prefix;
-		else if(sdmp)
-			cmd << "dump-sdmp " << prefix;
-		else if(raw)
-			cmd << "dump-raw " << prefix;
-		else if(jmd) {
-			std::ostringstream l;
-			l << level;
-			setting::set("jmd-level", l.str());
-			cmd << "dump-jmd " << prefix;
-		} else {
-			std::ostringstream l;
-			l << level;
-			setting::set("avi-level", l.str());
-			cmd << "dump-avi " << prefix;
+		try {
+			dumper.start(mode, prefix);
+		} catch(std::exception& e) {
+			std::cerr << "Can't start dumper: " << e.what() << std::endl;
+			exit(1);
 		}
-		command::invokeC(cmd.str());
 		if(information_dispatch::get_dumper_count()) {
 			std::cout << "Dumper attach confirmed" << std::endl;
 		} else {
 			std::cout << "Can't start dumper!" << std::endl;
 			exit(1);
 		}
-		myavsnoop* s = new myavsnoop(length);
+		myavsnoop* s = new myavsnoop(dumper, length);
 	}
 
 	void startup_lua_scripts(const std::vector<std::string>& cmdline)
@@ -153,6 +86,117 @@ namespace
 				command::invokeC("run-lua " + a.substr(6));
 			}
 		}
+	}
+
+	struct adv_dumper& locate_dumper(const std::string& name)
+	{
+		adv_dumper* _dumper = NULL;
+		std::set<adv_dumper*> dumpers = adv_dumper::get_dumper_set();
+		for(auto i : dumpers)
+			if(i->id() == name)
+				_dumper = i;
+		if(!_dumper) {
+			std::cerr << "No such dumper '" << name << "' found (try --dumper=list)" << std::endl;
+			exit(1);
+		}
+		return *_dumper;
+	}
+
+	adv_dumper& get_dumper(const std::vector<std::string>& cmdline, std::string& mode, std::string& prefix,
+		uint64_t& length)
+	{
+		bool dumper_given = false;
+		std::string dumper;
+		bool mode_given = false;
+		bool length_given = false;
+		prefix = "avidump";
+		length = 0;
+		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
+			std::string a = *i;
+			if(a.length() >= 9 && a.substr(0, 9) == "--dumper=") {
+				dumper_given = true;
+				dumper = a.substr(9);
+			} else if(a.length() >= 7 && a.substr(0, 7) == "--mode=") {
+				mode_given = true;
+				mode = a.substr(7);
+			} else if(a.length() >= 9 && a.substr(0, 9) == "--prefix=")
+				prefix = a.substr(9);
+			else if(a.length() >= 9 && a.substr(0, 9) == "--length=")
+				try {
+					length = boost::lexical_cast<uint64_t>(a.substr(9));
+					if(!length)
+						throw std::runtime_error("Length out of range (1-)");
+				} catch(std::exception& e) {
+					std::cerr << "Bad --length: " << e.what() << std::endl;
+					exit(1);
+				}
+			else if(a.length() >= 9 && a.substr(0, 9) == "--option=") {
+				std::string nameval = a.substr(9);
+				size_t s = nameval.find_first_of("=");
+				if(s >= nameval.length()) {
+					std::cerr << "Invalid option syntax (expected --option=foo=bar)" << std::endl;
+					exit(1);
+				}
+				std::string name = nameval.substr(0, s);
+				std::string val = nameval.substr(s + 1);
+				try {
+					setting::set(name, val);
+				} catch(std::exception& e) {
+					std::cerr << "Can't set '" << name << "' to '" << val << "': " << e.what()
+						<< std::endl;
+					exit(1);
+				}
+			}
+		}
+		if(dumper == "list") {
+			//Help on dumpers.
+			std::set<adv_dumper*> dumpers = adv_dumper::get_dumper_set();
+			std::cout << "Dumpers available:" << std::endl;
+			for(auto i : dumpers)
+				std::cout << i->id() << "\t" << i->name() << std::endl;
+			exit(0);
+		}
+		if(!dumper_given) {
+			std::cerr << "Dumper required (--dumper=foo)" << std::endl;
+			exit(1);
+		}
+		if(mode == "list") {
+			//Help on modes.
+			adv_dumper& _dumper = locate_dumper(dumper);
+			std::set<std::string> modes = _dumper.list_submodes();
+			if(modes.empty()) {
+				if(_dumper.wants_prefix(""))
+					std::cout << "No modes available for " << dumper << " (multi)" << std::endl;
+				else
+					std::cout << "No modes available for " << dumper << " (single)" << std::endl;
+				exit(0);
+			}
+			std::cout << "Modes available for " << dumper << ":" << std::endl;
+			for(auto i : modes)
+				if(_dumper.wants_prefix(i))
+					std::cout << i << "\tmulti\t" << _dumper.modename(i) << std::endl;
+				else
+					std::cout << i << "\tsingle\t" << _dumper.modename(i) << std::endl;
+			exit(0);
+		}
+		adv_dumper& _dumper = locate_dumper(dumper);
+		if(!mode_given && !_dumper.list_submodes().empty()) {
+			std::cerr << "Mode required for this dumper" << std::endl;
+			exit(1);
+		}
+		if(mode_given && _dumper.list_submodes().empty()) {
+			std::cerr << "This dumper does not have mode select" << std::endl;
+			exit(1);
+		}
+		if(mode_given && !_dumper.list_submodes().count(mode)) {
+			std::cerr << "'" << mode << "' is not a valid mode for '" << dumper << "'" << std::endl;
+			exit(1);
+		}
+		if(!length) {
+			std::cerr << "--length=<frames> has to be specified" << std::endl;
+			exit(1);
+		}
+		return locate_dumper(dumper);
 	}
 }
 
@@ -172,7 +216,11 @@ int main(int argc, char** argv)
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
 	my_interfaced intrf;
+	uint64_t length;
+	std::string mode, prefix;
 	SNES::interface = &intrf;
+
+	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();
 
@@ -240,7 +288,7 @@ int main(int argc, char** argv)
 		our_rom = &r;
 		our_rom->region = gtype::toromregion(movie.gametype);
 		our_rom->load();
-		dumper_startup(cmdline);
+		dumper_startup(dumper, mode, prefix, length);
 		startup_lua_scripts(cmdline);
 		main_loop(r, movie, true);
 	} catch(std::bad_alloc& e) {
@@ -250,6 +298,7 @@ int main(int argc, char** argv)
 		fatal_error();
 		return 1;
 	}
+	information_dispatch::do_dump_end();
 	rrdata::close();
 	quit_lua();
 	return 0;

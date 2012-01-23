@@ -714,6 +714,25 @@ dump options (lsnes-dumpavi only)
 \end_layout
 
 \begin_layout Subsubsection
+--dumper=<dumper>
+\end_layout
+
+\begin_layout Standard
+Set the dumper to use (required).
+ Use 'list' for listing of known dumpers.
+\end_layout
+
+\begin_layout Subsubsection
+--mode=<mode>
+\end_layout
+
+\begin_layout Standard
+Set the mode to use (required for dumpers with multiple modes, forbidden
+ otherwise).
+ Use 'list' for known modes.
+\end_layout
+
+\begin_layout Subsubsection
 --prefix=<prefix>
 \end_layout
 
@@ -731,12 +750,11 @@ avidump
 \end_layout
 
 \begin_layout Subsubsection
---level=<level>
+--option=<name>=<value>
 \end_layout
 
 \begin_layout Standard
-Set compression level (0-18).
- Default is 7.
+Set option <name> to value <value>.
 \end_layout
 
 \begin_layout Subsubsection
@@ -754,30 +772,6 @@ Set number of frames to dump.
 
 \begin_layout Standard
 Run specified lua script (lsnes-dumpavi does not have initialization files).
-\end_layout
-
-\begin_layout Subsubsection
---jmd
-\end_layout
-
-\begin_layout Standard
-Use JMD dumping instead of AVI dumping.
-\end_layout
-
-\begin_layout Subsubsection
---sdmp
-\end_layout
-
-\begin_layout Standard
-Use SDMP dumping instead of AVI dumping.
-\end_layout
-
-\begin_layout Subsubsection
---ss
-\end_layout
-
-\begin_layout Standard
-Dump in single segment (SDMP only).
 \end_layout
 
 \begin_layout Section

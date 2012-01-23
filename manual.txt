@@ -313,34 +313,32 @@ specified, these execute in order specified.
 
 4.4 dump options (lsnes-dumpavi only)
 
-4.4.1 --prefix=<prefix>
+4.4.1 --dumper=<dumper>
+
+Set the dumper to use (required). Use 'list' for listing of known 
+dumpers.
+
+4.4.2 --mode=<mode>
+
+Set the mode to use (required for dumpers with multiple modes, 
+forbidden otherwise). Use 'list' for known modes.
+
+4.4.3 --prefix=<prefix>
 
 Set dump prefix. Default is “avidump”.
 
-4.4.2 --level=<level>
+4.4.4 --option=<name>=<value>
 
-Set compression level (0-18). Default is 7.
+Set option <name> to value <value>.
 
-4.4.3 --length=<length>
+4.4.5 --length=<length>
 
 Set number of frames to dump. Mandatory.
 
-4.4.4 --lua=<script>
+4.4.6 --lua=<script>
 
 Run specified lua script (lsnes-dumpavi does not have 
 initialization files).
-
-4.4.5 --jmd
-
-Use JMD dumping instead of AVI dumping.
-
-4.4.6 --sdmp
-
-Use SDMP dumping instead of AVI dumping.
-
-4.4.7 --ss
-
-Dump in single segment (SDMP only).
 
 5 Startup file lsnes.rc
 
