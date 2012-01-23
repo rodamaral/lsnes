@@ -1138,6 +1138,23 @@ end-sdmp
 End the current SDMP dump in progress.
 \end_layout
 
+\begin_layout Subsubsection
+dump-raw <prefix>
+\end_layout
+
+\begin_layout Standard
+Dump raw audio (to <prefix>.audio, at 32040.5Hz) and video (to <prefix>.video>,
+ at nominal framerate and 512x448 / 512x478 size).
+\end_layout
+
+\begin_layout Subsubsection
+end-raw
+\end_layout
+
+\begin_layout Standard
+End the current RAW dump in progress.
+\end_layout
+
 \begin_layout Subsection
 Memory manipulation
 \end_layout

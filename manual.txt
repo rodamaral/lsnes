@@ -528,6 +528,16 @@ Dump SDMP to <file>, no splitting
 
 End the current SDMP dump in progress.
 
+6.5.8 dump-raw <prefix>
+
+Dump raw audio (to <prefix>.audio, at 32040.5Hz) and video (to 
+<prefix>.video>, at nominal framerate and 512x448 / 512x478 
+size).
+
+6.5.9 end-raw
+
+End the current RAW dump in progress.
+
 6.6 Memory manipulation
 
 <address> may be decimal or hexadecimal (prefixed with '0x'). 
