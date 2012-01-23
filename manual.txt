@@ -2638,3 +2638,14 @@ set-axis joystick0axis19 disabled
 
 • Document memory watch syntax.
 
+16 rr1-delta1
+
+• Fix unattended dumping (lsnes-dumpavi)
+
+• Support RAW dumping
+
+• Use adv_dumper instead of the old interface in lsnes-dumpavi 
+  (changes syntax)
+
+• Add option to control sample rate preturbation in AVI dumper
+

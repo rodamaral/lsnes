@@ -5392,5 +5392,25 @@ rr1
 Document memory watch syntax.
 \end_layout
 
+\begin_layout Section
+rr1-delta1
+\end_layout
+
+\begin_layout Itemize
+Fix unattended dumping (lsnes-dumpavi)
+\end_layout
+
+\begin_layout Itemize
+Support RAW dumping
+\end_layout
+
+\begin_layout Itemize
+Use adv_dumper instead of the old interface in lsnes-dumpavi (changes syntax)
+\end_layout
+
+\begin_layout Itemize
+Add option to control sample rate preturbation in AVI dumper
+\end_layout
+
 \end_body
 \end_document
