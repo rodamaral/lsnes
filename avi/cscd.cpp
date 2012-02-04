@@ -7,6 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <list>
+#include "library/serialization.hpp"
 
 #define AVI_CUTOFF_SIZE 2100000000
 
@@ -25,25 +26,6 @@ namespace
 			return 1;
 		}
 	};
-
-	void write8(char* out, unsigned char x)
-	{
-		out[0] = x;
-	}
-
-	void write16(char* out, unsigned x)
-	{
-		out[0] = x;
-		out[1] = x >> 8;
-	}
-
-	void write32(char* out, unsigned long x)
-	{
-		out[0] = x;
-		out[1] = x >> 8;
-		out[2] = x >> 16;
-		out[3] = x >> 24;
-	}
 
 	struct stream_format_base
 	{
@@ -88,19 +70,19 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(size());
-			write32(&buf[0], 0x66727473UL);	//Type
-			write32(&buf[4], size() - 8);	//Size.
-			write32(&buf[8], 40);		//BITMAPINFOHEADER size.
-			write32(&buf[12], width);
-			write32(&buf[16], height);
-			write16(&buf[20], planes);
-			write16(&buf[22], bit_count);
-			write32(&buf[24], compression);
-			write32(&buf[28], size_image);
-			write32(&buf[32], resolution_x);
-			write32(&buf[36], resolution_y);
-			write32(&buf[40], clr_used);
-			write32(&buf[44], clr_important);
+			write32ule(&buf[0], 0x66727473UL);	//Type
+			write32ule(&buf[4], size() - 8);	//Size.
+			write32ule(&buf[8], 40);		//BITMAPINFOHEADER size.
+			write32ule(&buf[12], width);
+			write32ule(&buf[16], height);
+			write16ule(&buf[20], planes);
+			write16ule(&buf[22], bit_count);
+			write32ule(&buf[24], compression);
+			write32ule(&buf[28], size_image);
+			write32ule(&buf[32], resolution_x);
+			write32ule(&buf[36], resolution_y);
+			write32ule(&buf[40], clr_used);
+			write32ule(&buf[44], clr_important);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write strf (video)");
@@ -131,16 +113,16 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(size());
-			write32(&buf[0], 0x66727473UL);	//Type
-			write32(&buf[4], size() - 8);	//Size.
-			write16(&buf[8], format_tag);
-			write16(&buf[10], channels);
-			write32(&buf[12], samples_per_second);
-			write32(&buf[16], average_bytes_per_second);
-			write16(&buf[20], block_align);
-			write16(&buf[22], bits_per_sample);
-			write16(&buf[24], 0);		//No extension data.
-			write16(&buf[26], 0);		//Pad
+			write32ule(&buf[0], 0x66727473UL);	//Type
+			write32ule(&buf[4], size() - 8);	//Size.
+			write16ule(&buf[8], format_tag);
+			write16ule(&buf[10], channels);
+			write32ule(&buf[12], samples_per_second);
+			write32ule(&buf[16], average_bytes_per_second);
+			write16ule(&buf[20], block_align);
+			write16ule(&buf[22], bits_per_sample);
+			write16ule(&buf[24], 0);		//No extension data.
+			write16ule(&buf[26], 0);		//Pad
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write strf (audio)");
@@ -177,25 +159,25 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(size());
-			write32(&buf[0], 0x68727473UL);	//Type
-			write32(&buf[4], size() - 8);	//Size.
-			write32(&buf[8], format.type());
-			write32(&buf[12], handler);
-			write32(&buf[16], flags);
-			write16(&buf[20], priority);
-			write16(&buf[22], language);
-			write32(&buf[24], initial_frames);
-			write32(&buf[28], format.scale());
-			write32(&buf[32], format.rate());
-			write32(&buf[36], start);
-			write32(&buf[40], length);
-			write32(&buf[44], suggested_buffer_size);
-			write32(&buf[48], quality);
-			write32(&buf[52], format.sample_size());
-			write32(&buf[56], format.rect_left());
-			write32(&buf[60], format.rect_top());
-			write32(&buf[64], format.rect_right());
-			write32(&buf[68], format.rect_bottom());
+			write32ule(&buf[0], 0x68727473UL);	//Type
+			write32ule(&buf[4], size() - 8);	//Size.
+			write32ule(&buf[8], format.type());
+			write32ule(&buf[12], handler);
+			write32ule(&buf[16], flags);
+			write16ule(&buf[20], priority);
+			write16ule(&buf[22], language);
+			write32ule(&buf[24], initial_frames);
+			write32ule(&buf[28], format.scale());
+			write32ule(&buf[32], format.rate());
+			write32ule(&buf[36], start);
+			write32ule(&buf[40], length);
+			write32ule(&buf[44], suggested_buffer_size);
+			write32ule(&buf[48], quality);
+			write32ule(&buf[52], format.sample_size());
+			write32ule(&buf[56], format.rect_left());
+			write32ule(&buf[60], format.rect_top());
+			write32ule(&buf[64], format.rect_right());
+			write32ule(&buf[68], format.rect_bottom());
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write strh");
@@ -212,9 +194,9 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(12);
-			write32(&buf[0], 0x5453494CUL);		//List.
-			write32(&buf[4], size() - 8);
-			write32(&buf[8], 0x6c727473UL);		//Type.
+			write32ule(&buf[0], 0x5453494CUL);		//List.
+			write32ule(&buf[4], size() - 8);
+			write32ule(&buf[8], 0x6c727473UL);		//Type.
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write strl");
@@ -237,22 +219,22 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(size());
-			write32(&buf[0], 0x68697661);	//Type.
-			write32(&buf[4], size() - 8);
-			write32(&buf[8], microsec_per_frame);
-			write32(&buf[12], max_bytes_per_sec);
-			write32(&buf[16], padding_granularity);
-			write32(&buf[20], flags);
-			write32(&buf[24], videotrack.strh.length);
-			write32(&buf[28], initial_frames);
-			write32(&buf[32], tracks);
-			write32(&buf[36], suggested_buffer_size);
-			write32(&buf[40], videotrack.strf.width);
-			write32(&buf[44], videotrack.strf.height);
-			write32(&buf[48], 0);
-			write32(&buf[52], 0);
-			write32(&buf[56], 0);
-			write32(&buf[60], 0);
+			write32ule(&buf[0], 0x68697661);	//Type.
+			write32ule(&buf[4], size() - 8);
+			write32ule(&buf[8], microsec_per_frame);
+			write32ule(&buf[12], max_bytes_per_sec);
+			write32ule(&buf[16], padding_granularity);
+			write32ule(&buf[20], flags);
+			write32ule(&buf[24], videotrack.strh.length);
+			write32ule(&buf[28], initial_frames);
+			write32ule(&buf[32], tracks);
+			write32ule(&buf[36], suggested_buffer_size);
+			write32ule(&buf[40], videotrack.strf.width);
+			write32ule(&buf[44], videotrack.strf.height);
+			write32ule(&buf[48], 0);
+			write32ule(&buf[52], 0);
+			write32ule(&buf[56], 0);
+			write32ule(&buf[60], 0);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write avih");
@@ -269,9 +251,9 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(12);
-			write32(&buf[0], 0x5453494CUL);		//List.
-			write32(&buf[4], size() - 8);
-			write32(&buf[8], 0x6c726468UL);		//Type.
+			write32ule(&buf[0], 0x5453494CUL);		//List.
+			write32ule(&buf[4], size() - 8);
+			write32ule(&buf[8], 0x6c726468UL);		//Type.
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write hdrl");
@@ -301,9 +283,9 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(12);
-			write32(&buf[0], 0x5453494CUL);		//List.
-			write32(&buf[4], size() - 8);
-			write32(&buf[8], 0x69766f6d);	//Type.
+			write32ule(&buf[0], 0x5453494CUL);		//List.
+			write32ule(&buf[4], size() - 8);
+			write32ule(&buf[8], 0x69766f6d);	//Type.
 			out.write(&buf[0], buf.size());
 			out.seekp(payload_size, std::ios_base::cur);
 			if(!out)
@@ -331,10 +313,10 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(16);
-			write32(&buf[0], chunk_type);
-			write32(&buf[4], flags);
-			write32(&buf[8], offset);
-			write32(&buf[12], length);
+			write32ule(&buf[0], chunk_type);
+			write32ule(&buf[4], flags);
+			write32ule(&buf[8], offset);
+			write32ule(&buf[12], length);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write index entry");
@@ -359,8 +341,8 @@ namespace
 		{
 			std::vector<char> buf;
 			buf.resize(8);
-			write32(&buf[0], 0x31786469UL);	//Type.
-			write32(&buf[4], size() - 8);
+			write32ule(&buf[0], 0x31786469UL);	//Type.
+			write32ule(&buf[4], size() - 8);
 			out.write(&buf[0], buf.size());
 			if(!out)
 				throw std::runtime_error("Can't write idx1");
@@ -369,139 +351,35 @@ namespace
 		}
 	};
 
-	size_t bpp_for_pixtype(enum avi_cscd_dumper::pixelformat pf)
-	{
-		switch(pf) {
-		case avi_cscd_dumper::PIXFMT_RGB15_BE:
-		case avi_cscd_dumper::PIXFMT_RGB15_LE:
-		case avi_cscd_dumper::PIXFMT_RGB15_NE:
-			return 2;
-		case avi_cscd_dumper::PIXFMT_RGB24:
-		case avi_cscd_dumper::PIXFMT_BGR24:
-			return 3;
-		case avi_cscd_dumper::PIXFMT_RGBX:
-		case avi_cscd_dumper::PIXFMT_BGRX:
-		case avi_cscd_dumper::PIXFMT_XRGB:
-		case avi_cscd_dumper::PIXFMT_XBGR:
-			return 4;
-		default:
-			return 0;
-		}
-	}
-
-	size_t bps_for_sndtype(enum avi_cscd_dumper::soundformat sf)
-	{
-		switch(sf) {
-		case avi_cscd_dumper::SNDFMT_SILENCE:
-			return 0;
-		case avi_cscd_dumper::SNDFMT_SIGNED_8:
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_8:
-			return 1;
-		case avi_cscd_dumper::SNDFMT_SIGNED_16BE:
-		case avi_cscd_dumper::SNDFMT_SIGNED_16NE:
-		case avi_cscd_dumper::SNDFMT_SIGNED_16LE:
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16BE:
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16NE:
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16LE:
-			return 2;
-		};
-		return 0;
-	}
-
-	inline unsigned short convert_audio_sample(const char* addr, enum avi_cscd_dumper::soundformat sf)
-	{
-		unsigned short a;
-		unsigned short b;
-		unsigned short magic = 258;
-		bool little_endian = (*reinterpret_cast<char*>(&magic) == 2);
-		switch(sf) {
-		case avi_cscd_dumper::SNDFMT_SILENCE:
-			return 32768;
-		case avi_cscd_dumper::SNDFMT_SIGNED_8:
-			return static_cast<unsigned short>((static_cast<short>(*addr) << 8)) + 32768;
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_8:
-			return static_cast<unsigned short>(static_cast<unsigned char>(*addr)) << 8;
-		case avi_cscd_dumper::SNDFMT_SIGNED_16BE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			return a * 256 + b + 32768;
-		case avi_cscd_dumper::SNDFMT_SIGNED_16NE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			if(little_endian)
-				return b * 256 + a + 32768;
-			else
-				return a * 256 + b + 32768;
-		case avi_cscd_dumper::SNDFMT_SIGNED_16LE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			return b * 256 + a + 32768;
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16BE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			return a * 256 + b;
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16NE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			if(little_endian)
-				return b * 256 + a;
-			else
-				return a * 256 + b;
-		case avi_cscd_dumper::SNDFMT_UNSIGNED_16LE:
-			a = static_cast<unsigned char>(addr[0]);
-			b = static_cast<unsigned char>(addr[1]);
-			return a * 256 + b;
-		};
-		return 32768;
-	}
-
 	void copy_row(unsigned char* target, const unsigned char* src, unsigned width,
 		enum avi_cscd_dumper::pixelformat pf)
 	{
 		unsigned ewidth = (width + 3) >> 2 << 2;
-		size_t sbpp = bpp_for_pixtype(pf);
-		size_t dbpp = (sbpp == 2) ? 2 : 3;
-		unsigned short magic = 258;
-		bool little_endian = (*reinterpret_cast<char*>(&magic) == 2);
 		for(unsigned i = 0; i < width; i++) {
 			switch(pf) {
-			case avi_cscd_dumper::PIXFMT_RGB15_BE:
-				target[dbpp * i + 0] = src[sbpp * i + 1];
-				target[dbpp * i + 1] = src[sbpp * i + 0];
-				break;
-			case avi_cscd_dumper::PIXFMT_RGB15_NE:
-				target[dbpp * i + 0] = src[sbpp * i + (little_endian ? 0 : 1)];
-				target[dbpp * i + 1] = src[sbpp * i + (little_endian ? 1 : 0)];
-				break;
-			case avi_cscd_dumper::PIXFMT_RGB15_LE:
-				target[dbpp * i + 0] = src[sbpp * i + 0];
-				target[dbpp * i + 1] = src[sbpp * i + 1];
-				break;
-			case avi_cscd_dumper::PIXFMT_BGR24:
 			case avi_cscd_dumper::PIXFMT_BGRX:
-				target[dbpp * i + 0] = src[sbpp * i + 0];
-				target[dbpp * i + 1] = src[sbpp * i + 1];
-				target[dbpp * i + 2] = src[sbpp * i + 2];
+				target[3 * i + 0] = src[4 * i + 0];
+				target[3 * i + 1] = src[4 * i + 1];
+				target[3 * i + 2] = src[4 * i + 2];
 				break;
-			case avi_cscd_dumper::PIXFMT_RGB24:
 			case avi_cscd_dumper::PIXFMT_RGBX:
-				target[dbpp * i + 0] = src[sbpp * i + 2];
-				target[dbpp * i + 1] = src[sbpp * i + 1];
-				target[dbpp * i + 2] = src[sbpp * i + 0];
+				target[3 * i + 0] = src[4 * i + 2];
+				target[3 * i + 1] = src[4 * i + 1];
+				target[3 * i + 2] = src[4 * i + 0];
 				break;
 			case avi_cscd_dumper::PIXFMT_XRGB:
-				target[dbpp * i + 0] = src[sbpp * i + 3];
-				target[dbpp * i + 1] = src[sbpp * i + 2];
-				target[dbpp * i + 2] = src[sbpp * i + 1];
+				target[3 * i + 0] = src[4 * i + 3];
+				target[3 * i + 1] = src[4 * i + 2];
+				target[3 * i + 2] = src[4 * i + 1];
 				break;
 			case avi_cscd_dumper::PIXFMT_XBGR:
-				target[dbpp * i + 0] = src[sbpp * i + 1];
-				target[dbpp * i + 1] = src[sbpp * i + 2];
-				target[dbpp * i + 2] = src[sbpp * i + 3];
+				target[3 * i + 0] = src[4 * i + 1];
+				target[3 * i + 1] = src[4 * i + 2];
+				target[3 * i + 2] = src[4 * i + 3];
 				break;
 			}
 		}
-		memset(target + dbpp * width, 0, dbpp * (ewidth - width));
+		memset(target + 3 * width, 0, 3 * (ewidth - width));
 	}
 }
 
@@ -516,9 +394,9 @@ struct avi_file_structure
 	{
 		std::vector<char> buf;
 		buf.resize(12);
-		write32(&buf[0], 0x46464952UL);		//RIFF.
-		write32(&buf[4], size() - 8);
-		write32(&buf[8], 0x20495641UL);		//Type.
+		write32ule(&buf[0], 0x46464952UL);		//RIFF.
+		write32ule(&buf[4], size() - 8);
+		write32ule(&buf[8], 0x20495641UL);		//Type.
 		out.write(&buf[0], buf.size());
 		if(!out)
 			throw std::runtime_error("Can't write AVI header");
@@ -550,9 +428,9 @@ struct avi_file_structure
 namespace
 {
 	void fill_avi_structure(struct avi_file_structure* avis, unsigned width, unsigned height, unsigned long fps_n,
-		unsigned long fps_d, int mode, unsigned channels, unsigned long sampling_rate, bool bits16)
+		unsigned long fps_d, unsigned long sampling_rate)
 	{
-		avis->hdrl.avih.microsec_per_frame = (Uint64)1000000 * fps_d / fps_n;
+		avis->hdrl.avih.microsec_per_frame = (uint64_t)1000000 * fps_d / fps_n;
 		avis->hdrl.avih.max_bytes_per_sec = 1000000;
 		avis->hdrl.avih.padding_granularity = 0;
 		avis->hdrl.avih.flags = 2064;
@@ -569,9 +447,9 @@ namespace
 		avis->hdrl.videotrack.strf.width = width;
 		avis->hdrl.videotrack.strf.height = height;
 		avis->hdrl.videotrack.strf.planes = 1;
-		avis->hdrl.videotrack.strf.bit_count = (mode + 1) << 3;
+		avis->hdrl.videotrack.strf.bit_count = 24;
 		avis->hdrl.videotrack.strf.compression = 0x44435343;
-		avis->hdrl.videotrack.strf.size_image = (1UL * (mode + 1) * width * height);
+		avis->hdrl.videotrack.strf.size_image = (3UL * width * height);
 		avis->hdrl.videotrack.strf.resolution_x = 4000;
 		avis->hdrl.videotrack.strf.resolution_y = 4000;
 		avis->hdrl.videotrack.strf.clr_used = 0;
@@ -587,12 +465,12 @@ namespace
 		avis->hdrl.audiotrack.strh.suggested_buffer_size = 1000000;
 		avis->hdrl.audiotrack.strh.quality = 9999;
 		avis->hdrl.audiotrack.strf.format_tag = 1;
-		avis->hdrl.audiotrack.strf.channels = channels;
+		avis->hdrl.audiotrack.strf.channels = 2;
 		avis->hdrl.audiotrack.strf.samples_per_second = sampling_rate;
-		avis->hdrl.audiotrack.strf.average_bytes_per_second = sampling_rate * channels * (bits16 ? 2 : 1);
-		avis->hdrl.audiotrack.strf.block_align = channels * (bits16 ? 2 : 1);
-		avis->hdrl.audiotrack.strf.bits_per_sample = (bits16 ? 16 : 8);
-		avis->hdrl.audiotrack.strf.blocksize = channels * (bits16 ? 2 : 1);
+		avis->hdrl.audiotrack.strf.average_bytes_per_second = sampling_rate * 4;
+		avis->hdrl.audiotrack.strf.block_align = 4;
+		avis->hdrl.audiotrack.strf.bits_per_sample = 16;
+		avis->hdrl.audiotrack.strf.blocksize = 4;
 	}
 }
 
@@ -602,13 +480,11 @@ avi_cscd_dumper::avi_cscd_dumper(const std::string& prefix, const avi_cscd_dumpe
 	dump_prefix = prefix;
 	if(!global.sampling_rate || global.sampling_rate >= 0xFFFFFFFFUL)
 		throw std::runtime_error("Sound sampling rate invalid");
-	if(!global.channel_count || global.channel_count >= 0xFFFFU)
-		throw std::runtime_error("Sound channel count invalid");
 	if(!segment.fps_n || segment.fps_n >= 0xFFFFFFFFUL)
 		throw std::runtime_error("FPS numerator invalid");
 	if(!segment.fps_d || segment.fps_d >= 0xFFFFFFFFUL)
 		throw std::runtime_error("FPS denominator invalid");
-	if(!bpp_for_pixtype(segment.dataformat))
+	if(segment.dataformat < PIXFMT_RGBX || segment.dataformat > PIXFMT_XBGR)
 		throw std::runtime_error("Pixel format invalid");
 	if(!segment.width || segment.width > 0xFFFCU)
 		throw std::runtime_error("Width invalid");
@@ -617,8 +493,6 @@ avi_cscd_dumper::avi_cscd_dumper(const std::string& prefix, const avi_cscd_dumpe
 	if(segment.deflate_level > 9)
 		throw std::runtime_error("Invalid deflate level");
 	gp_sampling_rate = global.sampling_rate;
-	gp_channel_count = global.channel_count;
-	gp_audio_16bit = global.audio_16bit;
 	sp_fps_n = segment.fps_n;
 	sp_fps_d = segment.fps_d;
 	sp_dataformat = segment.dataformat;
@@ -626,7 +500,7 @@ avi_cscd_dumper::avi_cscd_dumper(const std::string& prefix, const avi_cscd_dumpe
 	sp_height = segment.height;
 	sp_max_segment_frames = segment.max_segment_frames;
 	if(segment.default_stride)
-		sp_stride = bpp_for_pixtype(segment.dataformat) * segment.width;
+		sp_stride = 4 * segment.width;
 	else
 		sp_stride = segment.stride;
 	sp_keyframe_distance = segment.keyframe_distance;
@@ -687,7 +561,7 @@ void avi_cscd_dumper::set_segment_parameters(const avi_cscd_dumper::segment_para
 		throw std::runtime_error("FPS numerator invalid");
 	if(!segment.fps_d || segment.fps_d >= 0xFFFFFFFFUL)
 		throw std::runtime_error("FPS denominator invalid");
-	if(segment.dataformat < PIXFMT_RGB15_LE || segment.dataformat > PIXFMT_XBGR)
+	if(segment.dataformat < PIXFMT_RGBX || segment.dataformat > PIXFMT_XBGR)
 		throw std::runtime_error("Pixel format invalid");
 	if(!segment.width || segment.width > 0xFFFCU)
 		throw std::runtime_error("Width invalid");
@@ -697,7 +571,7 @@ void avi_cscd_dumper::set_segment_parameters(const avi_cscd_dumper::segment_para
 		throw std::runtime_error("Invalid deflate level");
 	//Switch all parameters that can't be incompatible.
 	if(segment.default_stride)
-		sp_stride = bpp_for_pixtype(segment.dataformat) * segment.width;
+		sp_stride = 4 * segment.width;
 	else
 		sp_stride = segment.stride;
 	sp_keyframe_distance = segment.keyframe_distance;
@@ -712,10 +586,6 @@ void avi_cscd_dumper::set_segment_parameters(const avi_cscd_dumper::segment_para
 	if(((sp_width + 3) >> 2) != ((segment.width + 3) >> 2))
 		incompatible = true;
 	if(((sp_height + 3) >> 2) != ((segment.height + 3) >> 2))
-		incompatible = true;
-	if(bpp_for_pixtype(sp_dataformat) == 2 && bpp_for_pixtype(segment.dataformat) != 2)
-		incompatible = true;
-	if(bpp_for_pixtype(sp_dataformat) != 2 && bpp_for_pixtype(segment.dataformat) == 2)
 		incompatible = true;
 
 	if(incompatible) {
@@ -735,23 +605,19 @@ void avi_cscd_dumper::set_segment_parameters(const avi_cscd_dumper::segment_para
 	}
 }
 
-void avi_cscd_dumper::audio(const void* audio, size_t samples, enum avi_cscd_dumper::soundformat format)
-	throw(std::bad_alloc, std::runtime_error)
+void avi_cscd_dumper::audio(const short* audio, size_t samples) throw(std::bad_alloc, std::runtime_error)
 {
 	if(exception_error_present)
 		throw std::runtime_error(exception_error);
-	const char* s = reinterpret_cast<const char*>(audio);
-	size_t stride = bps_for_sndtype(format);
-	size_t mstride = gp_channel_count * stride;
 	//std::cerr << "Locking lock." << std::endl;
 	frame_mutex.lock();
 	//std::cerr << "Locked lock." << std::endl;
 	for(size_t i = 0; i < samples; i++) {
-		for(size_t j = 0; j < gp_channel_count; j++) {
-			unsigned short as = convert_audio_sample(s + mstride * i + stride * j, format);
-			while(buffered_sound_samples * gp_channel_count + j >= sound_buffer.size())
+		for(size_t j = 0; j < 2; j++) {
+			unsigned short as = static_cast<unsigned short>(audio[2 * i + j]) + 32768;
+			while(buffered_sound_samples * 2 + j >= sound_buffer.size())
 				sound_buffer.resize(sound_buffer.size() + 128);
-			sound_buffer[buffered_sound_samples * gp_channel_count + j] = as;
+			sound_buffer[buffered_sound_samples * 2 + j] = as;
 		}
 		buffered_sound_samples++;
 	}
@@ -759,23 +625,18 @@ void avi_cscd_dumper::audio(const void* audio, size_t samples, enum avi_cscd_dum
 	request_flush_buffers(false);
 }
 
-void avi_cscd_dumper::audio(const void* laudio, const void* raudio, size_t samples,
-	enum avi_cscd_dumper::soundformat format) throw(std::bad_alloc, std::runtime_error)
+void avi_cscd_dumper::audio(const short* laudio, const short* raudio, size_t samples) throw(std::bad_alloc,
+	std::runtime_error)
 {
 	if(exception_error_present)
 		throw std::runtime_error(exception_error);
-	if(gp_channel_count != 2)
-		throw std::runtime_error("Split-stereo audio only allowed for stereo output");
-	const char* l = reinterpret_cast<const char*>(laudio);
-	const char* r = reinterpret_cast<const char*>(raudio);
-	size_t stride = bps_for_sndtype(format);
 	//std::cerr << "Locking lock." << std::endl;
 	frame_mutex.lock();
 	//std::cerr << "Locked lock." << std::endl;
 	for(size_t i = 0; i < samples; i++) {
-		unsigned short ls = convert_audio_sample(l + stride * i, format);
-		unsigned short rs = convert_audio_sample(r + stride * i, format);
-		while(buffered_sound_samples * gp_channel_count >= sound_buffer.size())
+		unsigned short ls = static_cast<unsigned short>(laudio[i]) + 32768;
+		unsigned short rs = static_cast<unsigned short>(raudio[i]) + 32768;
+		while(buffered_sound_samples * 2 >= sound_buffer.size())
 			sound_buffer.resize(sound_buffer.size() + 128);
 		sound_buffer[buffered_sound_samples * 2 + 0] = ls;
 		sound_buffer[buffered_sound_samples * 2 + 1] = rs;
@@ -798,9 +659,6 @@ void avi_cscd_dumper::video(const void* framedata) throw(std::bad_alloc, std::ru
 	frame_cond.notify_all();
 	//std::cerr << "Requesting processing of frame" << std::endl;
 	frame_mutex.unlock();
-#ifndef ACTUALLY_USE_THREADS
-	_video(framedata);
-#endif
 }
 
 void avi_cscd_dumper::_video(const void* framedata)
@@ -817,7 +675,6 @@ void avi_cscd_dumper::_video(const void* framedata)
 		switch_segments_on_next_frame = false;
 	}
 	frame.compression_level = sp_deflate_level;
-	frame.mode = (bpp_for_pixtype(sp_dataformat) == 2) ? 1 : 2;
 	frame.fps_d = sp_fps_d;
 	frame.fps_n = sp_fps_n;
 	frame.width = sp_width;
@@ -825,8 +682,8 @@ void avi_cscd_dumper::_video(const void* framedata)
 	frame.keyframe = (++frames_since_last_keyframe >= sp_keyframe_distance);
 	if(frame.keyframe)
 		frames_since_last_keyframe = 0;
-	size_t stride = ((bpp_for_pixtype(sp_dataformat) == 2) ? 2 : 3) * ((sp_width + 3) >> 2 << 2);
-	size_t srcstride = (bpp_for_pixtype(sp_dataformat)) * sp_width;
+	size_t stride = 3 * ((sp_width + 3) >> 2 << 2);
+	size_t srcstride = 4 * sp_width;
 	frame.data.resize(stride * ((sp_height + 3) >> 2 << 2));
 	if(framedata == NULL)
 		memset(&frame.data[0], 0, frame.data.size());
@@ -863,8 +720,7 @@ void avi_cscd_dumper::end() throw(std::bad_alloc, std::runtime_error)
 		end_segment();
 }
 
-size_t avi_cscd_dumper::emit_frame(const std::vector<unsigned char>& data, bool keyframe, unsigned level,
-	unsigned mode)
+size_t avi_cscd_dumper::emit_frame(const std::vector<unsigned char>& data, bool keyframe, unsigned level)
 {
 	size_t nsize = data.size();
 	if(previous_frame.size() != nsize) {
@@ -890,45 +746,35 @@ size_t avi_cscd_dumper::emit_frame(const std::vector<unsigned char>& data, bool 
 	compression_output[1] = '0';
 	compression_output[2] = 'd';
 	compression_output[3] = 'b';	//strictly speaking, this is wrong, but FCEUX does this when dumping.
-	compression_output[4] = (l + 2);
-	compression_output[5] = (l + 2) >> 8;
-	compression_output[6] = (l + 2) >> 16;
-	compression_output[7] = (l + 2) >> 24;
+	write32ule(&compression_output[4], l + 2);
 	compression_output[8] = (keyframe ? 0x3 : 0x2) | (level << 4);
-	compression_output[9] = mode << 2;
+	compression_output[9] = 8;
 	return l + 10;
 }
 
 size_t avi_cscd_dumper::emit_sound(size_t samples)
 {
-	size_t packetsize = 8 + samples * gp_channel_count * (gp_audio_16bit ? 2 : 1);
-	size_t towrite = samples * gp_channel_count;
+	size_t packetsize = 8 + samples * 4;
+	size_t towrite = samples * 2;
 	if(packetsize + 3 > compression_output.size())
 		compression_output.resize(packetsize + 3);
 	compression_output[0] = '0';
 	compression_output[1] = '1';
 	compression_output[2] = 'w';
 	compression_output[3] = 'b';
-	compression_output[4] = (packetsize - 8);
-	compression_output[5] = (packetsize - 8) >> 8;
-	compression_output[6] = (packetsize - 8) >> 16;
-	compression_output[7] = (packetsize - 8) >> 24;
+	write32ule(&compression_output[4], packetsize - 8);
 	size_t itr = 0;
 	umutex_class _frame_mutex(frame_mutex);
 	for(size_t i = 0; i < towrite; i++) {
 		unsigned short sample = 0;
-		if(itr < buffered_sound_samples * gp_channel_count)
+		if(itr < buffered_sound_samples * 2)
 			sample = sound_buffer[itr++];
-		if(gp_audio_16bit) {
-			compression_output[8 + 2 * i + 1] = (sample + 32768) >> 8;
-			compression_output[8 + 2 * i + 0] = (sample + 32768);
-		} else
-			compression_output[8 + i] = (sample + 32768) >> 8;
+		write16ule(&compression_output[8 + 2 * i], sample + 32768);
 	}
-	if(itr < buffered_sound_samples * gp_channel_count) {
-		memmove(&sound_buffer[0], &sound_buffer[itr], sizeof(unsigned short) * (buffered_sound_samples *
-			gp_channel_count - itr));
-		buffered_sound_samples -= itr / gp_channel_count;
+	if(itr < buffered_sound_samples * 2) {
+		memmove(&sound_buffer[0], &sound_buffer[itr], sizeof(unsigned short) * (buffered_sound_samples * 2
+			- itr));
+		buffered_sound_samples -= itr / 2;
 	} else
 		buffered_sound_samples = 0;
 	while(packetsize & 3)
@@ -947,7 +793,7 @@ void avi_cscd_dumper::start_segment(unsigned major_seg, unsigned minor_seg)
 		throw std::runtime_error("Can't open AVI file");
 	avifile_structure = new avi_file_structure;
 	fill_avi_structure(avifile_structure, (f.width + 3) >> 2 << 2, (f.height + 3) >> 2 << 2, f.fps_n,
-		f.fps_d, f.mode, gp_channel_count, gp_sampling_rate, gp_audio_16bit);
+		f.fps_d, gp_sampling_rate);
 	avifile_structure->start_data(avifile);
 	frame_period_counter = 0;
 }
@@ -998,13 +844,12 @@ void avi_cscd_dumper::write_frame_av(size_t samples)
 	std::vector<unsigned char>& data = f.data;
 	bool keyframe = f.keyframe;
 	unsigned level = f.compression_level;
-	unsigned mode = f.mode;
 	bool force_break = f.forcebreak;
 
 	size_t size;
 	bool tmp = restart_segment_if_needed(force_break);
 	keyframe = keyframe || tmp;
-	size = emit_frame(data, keyframe, level, mode);
+	size = emit_frame(data, keyframe, level);
 	emit_frame_stream(size, keyframe);
 	size = emit_sound(samples);
 	emit_sound_stream(size, samples);
@@ -1035,9 +880,9 @@ size_t avi_cscd_dumper::samples_for_next_frame()
 	//The average number of samples per frame needs to be:
 	//samplerate * fps_d / fps_n.
 	struct buffered_frame& f = *frame_buffer.begin();
-	unsigned long critical = static_cast<Uint64>(gp_sampling_rate) * f.fps_d % f.fps_n;
-	unsigned long ret = static_cast<Uint64>(gp_sampling_rate) * f.fps_d / f.fps_n;
-	if(static_cast<Uint64>(frame_period_counter) * critical % f.fps_n < critical)
+	unsigned long critical = static_cast<uint64_t>(gp_sampling_rate) * f.fps_d % f.fps_n;
+	unsigned long ret = static_cast<uint64_t>(gp_sampling_rate) * f.fps_d / f.fps_n;
+	if(static_cast<uint64_t>(frame_period_counter) * critical % f.fps_n < critical)
 		ret++;
 	return ret;
 }
@@ -1068,9 +913,6 @@ void avi_cscd_dumper::request_flush_buffers(bool forced)
 	frame_cond.notify_all();
 	//std::cerr << "Requesting buffer flush (" << flush_requested_forced << ")" << std::endl;
 	frame_mutex.unlock();
-#ifndef ACTUALLY_USE_THREADS
-	flush_buffers(forced);
-#endif
 }
 
 bool avi_cscd_dumper::is_frame_processing() throw()

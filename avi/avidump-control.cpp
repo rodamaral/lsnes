@@ -2,7 +2,6 @@
 #include "sox.hpp"
 
 #include "core/advdumper.hpp"
-#include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/lua.hpp"
 #include "core/misc.hpp"
@@ -57,6 +56,8 @@ namespace
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 	numeric_setting soundrate_setting("avi-soundrate", 0, 2, 0);
 
+	void waitfn();
+
 	class avi_avsnoop : public information_dispatch
 	{
 	public:
@@ -69,11 +70,9 @@ namespace
 			avi_cscd_dumper::segment_parameters sp;
 			soundrate = get_sound_rate();
 			gp.sampling_rate = get_rate(soundrate.first, soundrate.second, soundrate_setting);
-			gp.channel_count = 2;
-			gp.audio_16bit = true;
 			sp.fps_n = 60;
 			sp.fps_d = 1;
-			sp.dataformat = avi_cscd_dumper::PIXFMT_RGB15_NE;
+			sp.dataformat = avi_cscd_dumper::PIXFMT_XRGB;
 			sp.width = 256;
 			sp.height = 224;
 			sp.default_stride = true;
@@ -103,19 +102,8 @@ namespace
 				hscl = 2;
 			if(dump_large && _frame.height < 400)
 				vscl = 2;
+			render_video_hud(dscr, _frame, hscl, vscl, 16, 8, 0, dlb, dtb, drb, dbb, waitfn);
 
-			struct lua_render_context lrc;
-			render_queue rq;
-			lrc.left_gap = dlb;
-			lrc.right_gap = drb;
-			lrc.bottom_gap = dbb;
-			lrc.top_gap = dtb;
-			lrc.queue = &rq;
-			lrc.width = _frame.width * hscl;
-			lrc.height = _frame.height * vscl;
-			lua_callback_do_video(&lrc);
-
-			vid_dumper->wait_frame_processing();
 			avi_cscd_dumper::segment_parameters sp;
 			sp.fps_n = fps_n;
 			sp.fps_d = fps_d;
@@ -124,22 +112,16 @@ namespace
 				sp.dataformat = avi_cscd_dumper::PIXFMT_XRGB;
 			else
 				sp.dataformat = avi_cscd_dumper::PIXFMT_BGRX;
-			sp.width = lrc.left_gap + hscl * _frame.width + lrc.right_gap;
-			sp.height = lrc.top_gap + vscl * _frame.height + lrc.bottom_gap;
+			sp.width = dscr.width;
+			sp.height = dscr.height;
 			sp.default_stride = true;
 			sp.stride = 1024;
 			sp.keyframe_distance = _parameters.keyframe_interval;
 			sp.deflate_level = _parameters.compression_level;
 			sp.max_segment_frames = _parameters.max_frames_per_segment;
 			vid_dumper->set_segment_parameters(sp);
-			dscr.reallocate(lrc.left_gap + hscl * _frame.width + lrc.right_gap, lrc.top_gap + vscl *
-				_frame.height + lrc.bottom_gap, false);
-			dscr.set_origin(lrc.left_gap, lrc.top_gap);
-			dscr.copy_from(_frame, hscl, vscl);
-			rq.run(dscr);
 			vid_dumper->video(dscr.memory);
 			have_dumped_frame = true;
-			//vid_dumper->wait_frame_processing();
 		}
 
 		void on_sample(short l, short r)
@@ -147,7 +129,7 @@ namespace
 			dcounter += soundrate.first;
 			while(dcounter < soundrate.second * audio_record_rate + soundrate.first) {
 				if(have_dumped_frame)
-					vid_dumper->audio(&l, &r, 1, avi_cscd_dumper::SNDFMT_SIGNED_16NE);
+					vid_dumper->audio(&l, &r, 1);
 				dcounter += soundrate.first;
 			}
 			dcounter -= (soundrate.second * audio_record_rate + soundrate.first);
@@ -166,8 +148,9 @@ namespace
 		{
 			return true;
 		}
-	private:
 		avi_cscd_dumper* vid_dumper;
+	private:
+		
 		sox_dumper* soxdumper;
 		screen dscr;
 		unsigned dcounter;
@@ -179,61 +162,10 @@ namespace
 
 	avi_avsnoop* vid_dumper;
 
-	void startdump(const std::string& prefix)
+	void waitfn()
 	{
-		if(prefix == "")
-			throw std::runtime_error("Expected prefix");
-		if(vid_dumper)
-			throw std::runtime_error("AVI(CSCD) dumping already in progress");
-		unsigned long level2 = (unsigned long)clevel;
-		struct avi_info parameters;
-		parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
-		parameters.audio_sampling_rate = 32000;
-		parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
-		parameters.max_frames_per_segment = max_frames_per_segment;
-		try {
-			vid_dumper = new avi_avsnoop(prefix, parameters);
-		} catch(std::bad_alloc& e) {
-			throw;
-		} catch(std::exception& e) {
-			std::ostringstream x;
-			x << "Error starting AVI(CSCD) dump: " << e.what();
-			throw std::runtime_error(x.str());
-		}
-		messages << "Dumping AVI(CSCD) to " << prefix << " at level " << level2 << std::endl;
-		information_dispatch::do_dumper_update();
+		vid_dumper->vid_dumper->wait_frame_processing();
 	}
-
-	void enddump()
-	{
-		if(!vid_dumper)
-			throw std::runtime_error("No AVI(CSCD) video dump in progress");
-		try {
-			vid_dumper->on_dump_end();
-			messages << "AVI(CSCD) Dump finished" << std::endl;
-		} catch(std::bad_alloc& e) {
-			throw;
-		} catch(std::exception& e) {
-			messages << "Error ending AVI(CSCD) dump: " << e.what() << std::endl;
-		}
-		delete vid_dumper;
-		vid_dumper = NULL;
-		information_dispatch::do_dumper_update();
-	}
-
-	function_ptr_command<const std::string&> avi_dump("dump-avi", "Start AVI capture",
-		"Syntax: dump-avi <prefix>\nStart AVI capture to <prefix>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
-			std::string prefix = t.tail();
-			startdump(prefix);
-		});
-
-	function_ptr_command<> end_avi("end-avi", "End AVI capture",
-		"Syntax: end-avi\nEnd a AVI capture.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			enddump();
-		});
 
 	class adv_avi_dumper : public adv_dumper
 	{
@@ -266,15 +198,47 @@ namespace
 			return (vid_dumper != NULL);
 		}
 
-		void start(const std::string& mode, const std::string& targetname) throw(std::bad_alloc,
+		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
 			std::runtime_error)
 		{
-			startdump(targetname);
+			if(prefix == "")
+				throw std::runtime_error("Expected prefix");
+			if(vid_dumper)
+				throw std::runtime_error("AVI(CSCD) dumping already in progress");
+			unsigned long level2 = (unsigned long)clevel;
+			struct avi_info parameters;
+			parameters.compression_level = (level2 > 9) ? (level2 - 9) : level2;
+			parameters.audio_sampling_rate = 32000;
+			parameters.keyframe_interval = (level2 > 9) ? 300 : 1;
+			parameters.max_frames_per_segment = max_frames_per_segment;
+			try {
+				vid_dumper = new avi_avsnoop(prefix, parameters);
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::exception& e) {
+				std::ostringstream x;
+				x << "Error starting AVI(CSCD) dump: " << e.what();
+				throw std::runtime_error(x.str());
+			}
+			messages << "Dumping AVI(CSCD) to " << prefix << " at level " << level2 << std::endl;
+			information_dispatch::do_dumper_update();
 		}
 
 		void end() throw()
 		{
-			enddump();
+			if(!vid_dumper)
+				throw std::runtime_error("No AVI(CSCD) video dump in progress");
+			try {
+				vid_dumper->on_dump_end();
+				messages << "AVI(CSCD) Dump finished" << std::endl;
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::exception& e) {
+				messages << "Error ending AVI(CSCD) dump: " << e.what() << std::endl;
+			}
+			delete vid_dumper;
+			vid_dumper = NULL;
+			information_dispatch::do_dumper_update();
 		}
 	} adv;
 	

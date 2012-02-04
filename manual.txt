@@ -488,53 +488,49 @@ Run <script> as if commands were entered on the command line.
 
 Following commands control video dumping:
 
-6.5.1 dump-avi <prefix>
+6.5.1 start-dump <dumper> [<mode>] <prefix/filename>
 
-Dump AVI video to prefix <prefix> Notes:
+Start dumping using dumper <dumper>. If mode is present or not 
+and if prefix or filename is present depends on the dumper and 
+dumper mode.
 
-• The codec is Camstudio Codec in gzip mode.
+The following dumpers are available:
 
-• Encoder and muxer are internal, available on all platforms.
+• INTERNAL-AVI-CSCD: Internal CSCD in .avi dumper.
 
-• Audio enable/disable and framerate has no effect.
+  – Does not take mode.
 
-• The audio dumped to .avi is low-quality version. The 
-  high-quality version is dumped to .sox file.
+  – Takes a prefix.
 
-6.5.2 end-avi
+• INTERNAL-JMD: Internal .jmd dumper.
 
-End current AVI video dump (closing the emulator also closes the 
-dump).
+  – Does not take mode.
 
-6.5.3 dump-jmd <file>
+  – Takes a filename.
 
-Dump JMD video to file <file>.
+• INTERNAL-RAW: Internal RAW dumper.
 
-6.5.4 end-jmd
+  – Does not take mode.
 
-End the current JMD dump in progress.
+  – Takes a prefix.
 
-6.5.5 dump-sdmp <prefix>
+  – Sound is big-endian signed 16-bit, usually at 32040.5Hz.
 
-Dump SDMP to <prefix>, splitting at 2GB.
+  – Video is always upscaled to double resolution (512x448 / 512 
+    x 478).
 
-6.5.6 dump-sdmp-ss <file>
+  – Video framerate is usually 322445/6448 fps for PAL and 
+    10738636/178683 fps for NTSC.
 
-Dump SDMP to <file>, no splitting
+• INTERNAL-SDMP: Internal SDMP dumper.
 
-6.5.7 end-sdmp
+  – Mode 'ms': Multi-segment. Takes prefix.
 
-End the current SDMP dump in progress.
+  – Mode 'ss': Single-segment. Takes filename.
 
-6.5.8 dump-raw <prefix>
+6.5.2 end-dump <dumper>
 
-Dump raw audio (to <prefix>.audio, at 32040.5Hz) and video (to 
-<prefix>.video>, at nominal framerate and 512x448 / 512x478 
-size).
-
-6.5.9 end-raw
-
-End the current RAW dump in progress.
+End dumping using <dumper>
 
 6.6 Memory manipulation
 

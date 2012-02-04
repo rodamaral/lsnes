@@ -5,6 +5,8 @@
 #include <set>
 #include <stdexcept>
 
+#include "core/render.hpp"
+
 class adv_dumper
 {
 public:
@@ -83,5 +85,25 @@ public:
 private:
 	std::string d_id;
 };
+
+/**
+ * Render Lua HUD on video.
+ *
+ * Parameter target: The target screen to render on.
+ * Parameter source: The source screen to read.
+ * Parameter hscl: The horizontal scale factor.
+ * Parameter vscl: The vertical scale factor.
+ * Parameter roffset: Red offset.
+ * Parameter goffset: Green offset.
+ * Parameter boffset: Blue offset.
+ * Parameter lgap: Left gap.
+ * Parameter tgap: Top gap.
+ * Parameter rgap: Right gap
+ * Parameter bgap: Bottom gap.
+ * Parameter fn: Function to call between running lua hooks and actually rendering.
+ */
+void render_video_hud(struct screen& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
+	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
+	uint32_t bgap, void(*fn)());
 
 #endif

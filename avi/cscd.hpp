@@ -1,68 +1,30 @@
 #ifndef _output_cscd__hpp__included__
 #define _output_cscd__hpp__included__
 
-#if defined(__linux__) && !defined(BOOST_THREADS) && !defined(NO_THREADS)
-#define STD_THREADS 1
+#if defined(__linux__) && !defined(BOOST_THREADS)
+#define NATIVE_THREADS 1
 #endif
 
 
 
-#ifdef BOOST_THREADS
-#include <boost/thread.hpp>
-#include <boost/thread/locks.hpp>
-
-#define ACTUALLY_USE_THREADS
-typedef boost::thread thread_class;
-typedef boost::condition_variable cv_class;
-typedef boost::mutex mutex_class;
-typedef boost::unique_lock<boost::mutex> umutex_class;
-
-#else
-#ifdef STD_THREADS
+#ifdef NATIVE_THREADS
 #include <thread>
 #include <condition_variable>
 #include <mutex>
-
-#define ACTUALLY_USE_THREADS
 typedef std::thread thread_class;
 typedef std::condition_variable cv_class;
 typedef std::mutex mutex_class;
 typedef std::unique_lock<std::mutex> umutex_class;
-
 #else
-
-struct thread_class
-{
-	template<typename T, typename args>
-	thread_class(T obj, args a) {}
-	void join() {}
-};
-
-typedef struct mutex_class
-{
-	void lock() {}
-	void unlock() {}
-} umutex_class;
-
-struct cv_class
-{
-	void wait(umutex_class& m) {}
-	void notify_all() {}
-};
-
-#endif
+#include <boost/thread.hpp>
+#include <boost/thread/locks.hpp>
+typedef boost::thread thread_class;
+typedef boost::condition_variable cv_class;
+typedef boost::mutex mutex_class;
+typedef boost::unique_lock<boost::mutex> umutex_class;
 #endif
 
-#ifdef __GNUC__
-typedef unsigned long long Uint64;
-typedef unsigned long long Sint64;
-#elif defined(_MSC_VER)
-typedef unsigned __int64 Uint64;
-typedef signed __int64 Sint64;
-#else
-#error "Please define 64bit types."
-#endif
-
+#include <cstdint>
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
@@ -86,14 +48,6 @@ public:
  * Sound sampling rate.
  */
 		unsigned long sampling_rate;
-/**
- * Sound channel count.
- */
-		unsigned channel_count;
-/**
- * 16-bit audio flag.
- */
-		bool audio_16bit;
 	};
 
 /**
@@ -101,31 +55,10 @@ public:
  */
 	enum pixelformat
 	{
-		PIXFMT_RGB15_LE,	/* Little-endian 15-bit RGB. */
-		PIXFMT_RGB15_BE,	/* Big-endian 15-bit RGB. */
-		PIXFMT_RGB15_NE,	/* Native-endian 15-bit RGB. */
-		PIXFMT_RGB24,		/* 24-bit RGB, RGB order. */
-		PIXFMT_BGR24,		/* 24-bit RGB, BGR order. */
 		PIXFMT_RGBX,		/* 32-bit RGB, RGBx order. */
 		PIXFMT_BGRX,		/* 32-bit RGB, BGRx order. */
 		PIXFMT_XRGB,		/* 32-bit RGB, BGRx order. */
 		PIXFMT_XBGR		/* 32-bit RGB, xBGR order. */
-	};
-
-/**
- * Sound formats.
- */
-	enum soundformat
-	{
-		SNDFMT_SILENCE,		/* No data, silence. */
-		SNDFMT_SIGNED_8,	/* 8-bit signed. */
-		SNDFMT_UNSIGNED_8,	/* 8-bit unsigned. */
-		SNDFMT_SIGNED_16LE,	/* 16-bit signed little-endian. */
-		SNDFMT_UNSIGNED_16LE,	/* 16-bit unsigned little-endian. */
-		SNDFMT_SIGNED_16BE,	/* 16-bit signed big-endian. */
-		SNDFMT_UNSIGNED_16BE,	/* 16-bit unsigned big-endian. */
-		SNDFMT_SIGNED_16NE,	/* 16-bit signed native-endian. */
-		SNDFMT_UNSIGNED_16NE	/* 16-bit unsigned native-endian. */
 	};
 
 /**
@@ -242,12 +175,10 @@ public:
  *
  * Parameter audio: Audio, first to last channel, first to last sample order.
  * Parameter samples: Number of samples to add. Note: Number of samples, not number of channels*samples.
- * Parameter format: Sound sample format.
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Can't write sound data.
  */
-	void audio(const void* audio, size_t samples, enum soundformat format) throw(std::bad_alloc,
-		std::runtime_error);
+	void audio(const short* audio, size_t samples) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Dump audio (stereo).
@@ -255,12 +186,10 @@ public:
  * Parameter laudio: Audio for left channel.
  * Parameter raudio: Audio for right channel.
  * Parameter samples: Number of samples to add.
- * Parameter format: Sound sample format.
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Can't write sound data or not stereo sound.
  */
-	void audio(const void* laudio, const void* raudio, size_t samples, enum soundformat format)
-		throw(std::bad_alloc, std::runtime_error);
+	void audio(const short* laudio, const short* raudio, size_t samples) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Signal end of dump.
@@ -279,7 +208,6 @@ private:
 		std::vector<unsigned char> data;
 		bool keyframe;
 		unsigned compression_level;
-		unsigned mode;	//1 => 15 bit, 2 => 24 bit, 3 => 32 bit.
 		bool forcebreak;
 		unsigned long fps_n;
 		unsigned long fps_d;
@@ -290,8 +218,6 @@ private:
 	//Global parameters.
 	std::string dump_prefix;
 	unsigned long gp_sampling_rate;
-	unsigned gp_channel_count;
-	bool gp_audio_16bit;
 	//Current segment parameters.
 	unsigned long sp_fps_n;
 	unsigned long sp_fps_d;
@@ -328,7 +254,7 @@ private:
 	std::list<buffered_frame> frame_buffer;
 
 	//Fills compression_output with frame/sound packet and returns the total size.
-	size_t emit_frame(const std::vector<unsigned char>& data, bool keyframe, unsigned level, unsigned mode);
+	size_t emit_frame(const std::vector<unsigned char>& data, bool keyframe, unsigned level);
 	size_t emit_sound(size_t samples);
 	//Write a frame/sound packet in compression_output into stream.
 	void emit_frame_stream(size_t size, bool keyframe);
