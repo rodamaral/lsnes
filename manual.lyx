@@ -5392,7 +5392,7 @@ rr1
 Document memory watch syntax.
 \end_layout
 
-\begin_layout Section
+\begin_layout Subsection
 rr1-delta1
 \end_layout
 
@@ -5410,6 +5410,18 @@ Use adv_dumper instead of the old interface in lsnes-dumpavi (changes syntax)
 
 \begin_layout Itemize
 Add option to control sample rate preturbation in AVI dumper
+\end_layout
+
+\begin_layout Subsection
+rr1-delta2
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix dumper submodes
+\end_layout
+
+\begin_layout Itemize
+Set core controller types before loadstate
 \end_layout
 
 \end_body

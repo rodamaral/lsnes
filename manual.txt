@@ -2638,7 +2638,7 @@ set-axis joystick0axis19 disabled
 
 • Document memory watch syntax.
 
-16 rr1-delta1
+15.47 rr1-delta1
 
 • Fix unattended dumping (lsnes-dumpavi)
 
@@ -2648,4 +2648,10 @@ set-axis joystick0axis19 disabled
   (changes syntax)
 
 • Add option to control sample rate preturbation in AVI dumper
+
+15.48 rr1-delta2
+
+• Wxwidgets: Fix dumper submodes
+
+• Set core controller types before loadstate
 
