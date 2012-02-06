@@ -152,7 +152,7 @@ void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
 			for(auto j : i.second.modes) {
 				menustructure[i.first].start_items[id] = Append(id, towxstring("Dump " +
 					i.second.name + " (" + j.second + ")"));
-				menustructure[i.first].start_wxids[id++] = j.second;
+				menustructure[i.first].start_wxids[id++] = j.first;
 			}
 		} else {
 			menustructure[i.first].end_item = Append(id, towxstring("End " + i.second.name));
