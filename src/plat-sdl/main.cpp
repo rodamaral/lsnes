@@ -5,7 +5,7 @@
 #include "core/command.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"

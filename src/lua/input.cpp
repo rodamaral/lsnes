@@ -1,5 +1,5 @@
 #include "core/keymapper.hpp"
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 
 namespace
 {

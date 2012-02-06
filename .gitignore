@@ -3,8 +3,11 @@
 *.lib
 *.obj
 *.exe
+*.ldflags
 docs
 rom
+lsnes
+*.util
 /core
 src/fonts/font.cpp
 src/core/version.cpp

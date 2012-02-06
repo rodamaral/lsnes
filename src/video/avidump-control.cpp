@@ -1,9 +1,9 @@
-#include "cscd.hpp"
-#include "sox.hpp"
+#include "video/cscd.hpp"
+#include "video/sox.hpp"
 
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
 

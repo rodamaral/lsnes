@@ -2,7 +2,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/globalwrap.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 
 #include <map>
 #include <string>

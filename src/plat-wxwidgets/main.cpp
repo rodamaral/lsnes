@@ -9,7 +9,7 @@
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"

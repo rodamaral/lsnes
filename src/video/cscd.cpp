@@ -1,4 +1,4 @@
-#include "cscd.hpp"
+#include "video/cscd.hpp"
 #include <zlib.h>
 #include <cstring>
 #include <iomanip>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <iostream>
 #include <list>
-#include "avi_structure.hpp"
+#include "video/avi_structure.hpp"
 #include "library/serialization.hpp"
 
 #define AVI_CUTOFF_SIZE 2100000000

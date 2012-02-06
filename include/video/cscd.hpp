@@ -1,12 +1,6 @@
 #ifndef _output_cscd__hpp__included__
 #define _output_cscd__hpp__included__
 
-#if defined(__linux__) && !defined(BOOST_THREADS)
-#define NATIVE_THREADS 1
-#endif
-
-
-
 #ifdef NATIVE_THREADS
 #include <thread>
 #include <condition_variable>

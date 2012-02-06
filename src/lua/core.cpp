@@ -1,5 +1,5 @@
 #include "core/command.hpp"
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 #include "core/window.hpp"
 
 namespace

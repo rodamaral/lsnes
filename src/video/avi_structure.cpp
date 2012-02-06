@@ -1,4 +1,4 @@
-#include "avi_structure.hpp"
+#include "video/avi_structure.hpp"
 #include "library/serialization.hpp"
 #include <cstring>
 
