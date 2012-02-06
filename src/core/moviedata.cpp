@@ -349,8 +349,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 
 		if(will_load_state) {
 			//Load the savestate and movie state.
-			controls.set_port(0, _movie.port1, false);
-			controls.set_port(1, _movie.port2, false);
+			//Set the core ports in order to avoid port state being reinitialized when loading.
+			controls.set_port(0, _movie.port1, true);
+			controls.set_port(1, _movie.port2, true);
 			load_core_state(_movie.savestate);
 		} else {
 			load_sram(_movie.movie_sram);
