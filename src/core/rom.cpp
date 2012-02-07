@@ -11,6 +11,7 @@
 #include "core/rom.hpp"
 #include "core/window.hpp"
 #include "core/zip.hpp"
+#include "library/sha256.hpp"
 
 #include <stdexcept>
 #include <sstream>
