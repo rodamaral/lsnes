@@ -5,7 +5,7 @@ PLATFORMS_OBJS=$(patsubst %,%/$(ALLOBJECT),$(PLATFORMS))
 PLATFORMS_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(PLATFORMS))
 
 $(ALLOBJECT): $(PLATFORMS_OBJS)
-	ld -r -o $@ $^
+	$(REALLD) -r -o $@ $^
 	cat $(PLATFORMS_FLAGS) >$(ALLFLAGS)
 
 dummy/$(ALLOBJECT): forcelook

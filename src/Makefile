@@ -15,17 +15,17 @@ PLATFORM_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(PLATFORM_LIBRARY))
 core/$(ALLOBJECT): forcelook
 	$(MAKE) -C core
 
-fonts/$(ALLOBJECT): forcelook
-	$(MAKE) -C fonts
-
-lua/$(ALLOBJECT): forcelook
-	$(MAKE) -C lua
-
 dummy/$(ALLOBJECT): forcelook
 	$(MAKE) -C dummy
 
+fonts/$(ALLOBJECT): forcelook
+	$(MAKE) -C fonts
+
 library/$(ALLOBJECT): forcelook
 	$(MAKE) -C library
+
+lua/$(ALLOBJECT): forcelook
+	$(MAKE) -C lua
 
 platform/$(ALLOBJECT): forcelook
 	$(MAKE) -C platform
@@ -49,6 +49,8 @@ lsnes$(DOT_EXECUTABLE_SUFFIX): $(PLATFORM_LIBRARY_OBJS)
 
 precheck:
 	$(MAKE) -C core precheck
+	$(MAKE) -C dummy precheck
+	$(MAKE) -C library precheck
 	$(MAKE) -C lua precheck
 	$(MAKE) -C dummy precheck
 	$(MAKE) -C library precheck
@@ -59,6 +61,8 @@ precheck:
 clean:
 	rm -f *.ldflags
 	$(MAKE) -C core clean
+	$(MAKE) -C dummy clean
+	$(MAKE) -C library clean
 	$(MAKE) -C lua clean
 	$(MAKE) -C dummy clean
 	$(MAKE) -C library clean

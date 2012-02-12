@@ -26,3 +26,5 @@ bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 bool lua_supported = false;
 #endif
+
+char SYMBOL_3263572374236473826587375832743243264346;

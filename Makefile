@@ -33,10 +33,16 @@ export DOT_EXECUTABLE_SUFFIX OBJECT_SUFFIX ARCHIVE_SUFFIX FONT_SRC REALCC HOSTCC
 
 all: src/__all_files__
 
-src/__all_files__: forcelook
+src/__all_files__: src/core/version.cpp forcelook
 	$(MAKE) -C src precheck
 	$(MAKE) -C src
 	cp src/lsnes$(DOT_EXECUTABLE_SUFFIX) .
+
+buildaux/version.exe: buildaux/version.cpp VERSION
+	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
+src/core/version.cpp: buildaux/version.exe forcelook
+	buildaux/version.exe >$@
+
 
 clean:
 	$(MAKE) -C src clean
