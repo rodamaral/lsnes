@@ -175,6 +175,10 @@ struct avi_audio_codec
  */
 	virtual void samples(int16_t* data, size_t samples) = 0;
 /**
+ * Flush the audio state. Default implementation does nothing.
+ */
+	virtual void flush();
+/**
  * Is the codec ready to receive a new frame?
  *
  * Returns: True if new frame can be passed. False if packets have to be extracted.
@@ -237,6 +241,10 @@ struct avi_output_stream
  * Parameter samplecount: Count of samples.
  */
 	void samples(int16_t* samples, size_t samplecount);
+/**
+ * Flush audio codec state in preparation to close the AVI.
+ */
+	void flushaudio();
 /**
  * Get number of samples for the next frame.
  *

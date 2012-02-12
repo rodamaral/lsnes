@@ -218,8 +218,18 @@ void avi_output_stream::samples(int16_t* samples, size_t samplecount)
 		audio_timer.increment();
 }
 
+void avi_output_stream::flushaudio()
+{
+	if(!in_segment)
+		throw std::runtime_error("Trying to write to non-open AVI");
+	acodec->flush();
+	while(!acodec->ready())
+		write_pkt(avifile, acodec->getpacket(), 1);
+}
+
 void avi_output_stream::end()
 {
+	flushaudio();	//In case audio codec uses internal buffering...
 	std::ostream& out = *avifile.outstream;
 	avifile.finish_avi();
 	in_segment = false;
@@ -261,6 +271,10 @@ bool avi_output_stream::readqueue(uint32_t* _frame, sample_queue& aqueue, bool f
 	return true;
 }
 
+void avi_audio_codec::flush()
+{
+	//Do nothing.
+}
 
 template<typename T>
 avi_codec_type<T>::avi_codec_type(const char* _iname, const char* _hname, T* (*_instance)())
