@@ -6,6 +6,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorywatch.hpp"
@@ -70,7 +71,8 @@ enum
 	wxID_REWIND_MOVIE,
 	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
-	wxID_CANCEL_SAVES
+	wxID_CANCEL_SAVES,
+	wxID_LOAD_LIBRARY
 };
 
 
@@ -801,6 +803,10 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	if(load_library_supported) {
+		menu_separator();
+		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
+	}
 	//Autohold menu: (ACFOS)
 	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
@@ -1139,6 +1145,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		str << "Core: " << bsnes_core_version << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 		return;
+	}
+	case wxID_LOAD_LIBRARY: {
+		std::string name = std::string("load ") + library_is_called;
+		load_library(pick_file(this, name, "."));
 	}
 	};
 }

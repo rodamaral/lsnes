@@ -2,6 +2,13 @@ __all_files__: util/__all_files__ \
 	lsnes$(DOT_EXECUTABLE_SUFFIX) \
 	$(patsubst %.cpp,%.util$(DOT_EXECUTABLE_SUFFIX),$(wildcard util/*.cpp))
 
+ifndef NO_RDYNAMIC
+LDFLAGS += -rdynamic
+endif
+ifdef NO_DLFCN
+CFLAGS += -DNO_DLFCN
+endif
+
 DUMMY_LIBRARY=core lua fonts library video dummy
 PLATFORM_LIBRARY=core lua fonts library video platform
 ALLOBJECT=__all__.$(OBJECT_SUFFIX)
