@@ -1,4 +1,4 @@
-#include "video/avi_structure.hpp"
+#include "video/avi/structure.hpp"
 #include "library/serialization.hpp"
 #include <cstring>
 
@@ -71,6 +71,7 @@ void stream_format_audio::serialize(std::ostream& out)
 
 size_t stream_header::size() { return 72; }
 stream_header::stream_header() { length = 0; }
+void stream_header::reset() { length = 0; }
 void stream_header::add_frames(size_t count) { length = length + count; }
 
 void stream_header::serialize(std::ostream& out, struct stream_format_base& format)
@@ -119,6 +120,9 @@ void stream_header_list<format>::serialize(std::ostream& out)
 	strf.serialize(out);
 }
 
+template<class format>
+void stream_header_list<format>::reset() { strh.reset(); }
+
 size_t avi_header::size() { return 64; }
 void avi_header::serialize(std::ostream& out, stream_header_list<stream_format_video>& videotrack, uint32_t tracks)
 {
@@ -161,9 +165,16 @@ void header_list::serialize(std::ostream& out)
 	audiotrack.serialize(out);
 }
 
+void header_list::reset()
+{
+	audiotrack.reset();
+	videotrack.reset();
+}
+
 size_t movi_chunk::write_offset() { return 12; }
 size_t movi_chunk::size() { return 12 + payload_size; }
 movi_chunk::movi_chunk() { payload_size = 0; }
+void movi_chunk::reset() { payload_size = 0; }
 void movi_chunk::add_payload(size_t s) { payload_size = payload_size + s; }
 void movi_chunk::serialize(std::ostream& out)
 {
@@ -224,25 +235,32 @@ void idx1_chunk::serialize(std::ostream& out)
 		i->serialize(out);
 }
 
+void idx1_chunk::reset()
+{
+	entries.clear();
+}
+
 size_t avi_file_structure::write_offset() { return 12 + hdrl.size() + movi.write_offset(); }
 size_t avi_file_structure::size() { return 12 + hdrl.size() + movi.size() + idx1.size(); }
-void avi_file_structure::serialize(std::ostream& out)
+void avi_file_structure::serialize()
 {
 	std::vector<char> buf;
 	buf.resize(12);
 	write32ule(&buf[0], 0x46464952UL);		//RIFF.
 	write32ule(&buf[4], size() - 8);
 	write32ule(&buf[8], 0x20495641UL);		//Type.
-	out.write(&buf[0], buf.size());
-	if(!out)
+	outstream->write(&buf[0], buf.size());
+	if(!*outstream)
 		throw std::runtime_error("Can't write AVI header");
-	hdrl.serialize(out);
-	movi.serialize(out);
-	idx1.serialize(out);
+	hdrl.serialize(*outstream);
+	movi.serialize(*outstream);
+	idx1.serialize(*outstream);
 }
 
 void avi_file_structure::start_data(std::ostream& out)
 {
+	movi.reset();
+	idx1.reset();
 	out.seekp(0, std::ios_base::beg);
 	size_t reserved_for_header = write_offset();
 	std::vector<char> tmp;
@@ -250,12 +268,14 @@ void avi_file_structure::start_data(std::ostream& out)
 	out.write(&tmp[0], tmp.size());
 	if(!out)
 		throw std::runtime_error("Can't write dummy header");
+	outstream = &out;
 }
 
-void avi_file_structure::finish_avi(std::ostream& out)
+void avi_file_structure::finish_avi()
 {
-	out.seekp(0, std::ios_base::beg);
-	serialize(out);
-	if(!out)
+	outstream->seekp(0, std::ios_base::beg);
+	serialize();
+	if(!*outstream)
 		throw std::runtime_error("Can't finish AVI");
 }
+

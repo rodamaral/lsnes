@@ -101,6 +101,7 @@ struct stream_header
 	stream_header();
 	void add_frames(size_t count);
 	void serialize(std::ostream& out, struct stream_format_base& format);
+	void reset();
 };
 
 template<class format>
@@ -110,6 +111,7 @@ struct stream_header_list
 	stream_header strh;
 	format strf;
 	void serialize(std::ostream& out);
+	void reset();
 };
 
 struct avi_header
@@ -131,6 +133,7 @@ struct header_list
 	stream_header_list<stream_format_video> videotrack;
 	stream_header_list<stream_format_audio> audiotrack;
 	void serialize(std::ostream& out);
+	void reset();
 };
 
 struct movi_chunk
@@ -141,6 +144,7 @@ struct movi_chunk
 	movi_chunk();
 	void add_payload(size_t s);
 	void serialize(std::ostream& out);
+	void reset();
 };
 
 struct index_entry
@@ -160,6 +164,7 @@ struct idx1_chunk
 	std::list<index_entry> entries;
 	size_t size();
 	void serialize(std::ostream& out);
+	void reset();
 };
 
 struct avi_file_structure
@@ -169,9 +174,10 @@ struct avi_file_structure
 	header_list hdrl;
 	movi_chunk movi;
 	idx1_chunk idx1;
-	void serialize(std::ostream& out);
+	std::ostream* outstream;
+	void serialize();
 	void start_data(std::ostream& out);
-	void finish_avi(std::ostream& out);
+	void finish_avi();
 };
 
 #endif

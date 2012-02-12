@@ -25,6 +25,24 @@ SOUND=SDL
 JOYSTICK=SDL
 THREADS=BOOST
 
+#Threads
+ifdef THREADS
+ifeq ($(THREADS), NATIVE)
+CFLAGS += -DNATIVE_THREADS
+else
+ifeq ($(THREADS), BOOST)
+CFLAGS += -DBOOST_THREADS
+ifdef BOOST_THREAD_LIB
+LDFLAGS += -l$(BOOST_THREAD_LIB)
+else
+LDFLAGS += -lboost_thread-mt
+endif
+else
+$(error "Bad value for THREADS (expected NATIVE or BOOST)")
+endif
+endif
+endif
+
 ifdef BSNES_IS_COMPAT
 CFLAGS += -DBSNES_IS_COMPAT
 endif

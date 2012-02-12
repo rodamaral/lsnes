@@ -1,35 +1,27 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) 
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) avi/__all__.o
 
-#Threads
-ifdef THREADS                                                                                  
-ifeq ($(THREADS), NATIVE)
-VIDEO_CFLAGS += -DNATIVE_THREADS
-else
-ifeq ($(THREADS), BOOST)
-VIDEO_CFLAGS += -DBOOST_THREADS
-ifdef BOOST_THREAD_LIB
-VIDEO_LDFLAGS += -l$(BOOST_THREAD_LIB)
-else
-VIDEO_LDFLAGS += -lboost_thread-mt
-endif
-else
-$(error "Bad value for THREADS (expected NATIVE or BOOST)")
-endif
-endif
-endif
 
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
+export VIDEO_CFLAGS
+
 __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALLD) -r -o $@ $^
-	echo $(VIDEO_LDFLAGS) >__all__.ldflags
+	touch __all__.ldflags
+
+avi/__all__.$(OBJECT_SUFFIX): forcelook
+	$(MAKE) -C avi
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include $(VIDEO_CLFAGS)
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
 
-precheck:
+forcelook:
 	@true
 
+precheck:
+	$(MAKE) -C avi precheck
+
 clean:
+	$(MAKE) -C avi clean
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags
