@@ -5424,5 +5424,13 @@ Wxwidgets: Fix dumper submodes
 Set core controller types before loadstate
 \end_layout
 
+\begin_layout Subsection
+rr1-delta2epsilon1
+\end_layout
+
+\begin_layout Itemize
+Fix compiling with bsnes v086.
+\end_layout
+
 \end_body
 \end_document
