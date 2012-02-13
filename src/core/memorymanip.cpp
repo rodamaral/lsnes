@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 #include <snes/snes.hpp>
+#include <gameboy/gameboy.hpp>
 #include <ui-libsnes/libsnes.hpp>
 
 #include "core/command.hpp"
