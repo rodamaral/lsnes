@@ -2661,3 +2661,7 @@ set-axis joystick0axis19 disabled
 
 • Set core controller types before loadstate
 
+15.49 rr1-delta2epsilon1
+
+• Fix compiling with bsnes v086.
+

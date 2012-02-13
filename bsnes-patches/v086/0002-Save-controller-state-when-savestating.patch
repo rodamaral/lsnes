@@ -1,0 +1,54 @@
+From 9fb6acd73f646d82e4b345292ee4c9156dfb49b3 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Wed, 9 Nov 2011 01:52:08 +0200
+Subject: [PATCH 2/3] Save controller state when savestating
+
+When savestating, save the controller state and restore it upon loadstate.
+Prevents libsnes from mixing up buttons.
+---
+ snes/system/input.cpp |   16 ++++++++++++++++
+ snes/system/input.hpp |    1 +
+ 2 files changed, 17 insertions(+), 0 deletions(-)
+
+diff --git a/snes/system/input.cpp b/snes/system/input.cpp
+index 9050310..ec5559d 100755
+--- a/snes/system/input.cpp
++++ b/snes/system/input.cpp
+@@ -26,6 +26,22 @@ void Input::connect(bool port, Input::Device id) {
+   }
+ }
+ 
++void Input::serialize(serializer &s)
++{
++  int p1, p2;
++  p1 = (int)config.controller_port1;
++  p2 = (int)config.controller_port2;
++  s.integer(p1);
++  s.integer(p2);
++  if(s.mode() == nall::serializer::Load) {
++    connect(Controller::Port1, (Device)p1);
++    connect(Controller::Port2, (Device)p2);
++  }
++  port1->serialize(s);
++  port2->serialize(s);
++}
++
++
+ Input::Input() : port1(nullptr), port2(nullptr) {
+   connect(Controller::Port1, Input::Device::Joypad);
+   connect(Controller::Port2, Input::Device::Joypad);
+diff --git a/snes/system/input.hpp b/snes/system/input.hpp
+index 13ef46e..6832e82 100755
+--- a/snes/system/input.hpp
++++ b/snes/system/input.hpp
+@@ -31,6 +31,7 @@ struct Input {
+   Controller *port1;
+   Controller *port2;
+ 
++  void serialize(serializer &s);
+   void connect(bool port, Input::Device id);
+   Input();
+   ~Input();
+-- 
+1.7.9.48.g85da4d
+
