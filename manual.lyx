@@ -774,6 +774,14 @@ Set number of frames to dump.
 Run specified lua script (lsnes-dumpavi does not have initialization files).
 \end_layout
 
+\begin_layout Subsubsection
+--load-library=<library>
+\end_layout
+
+\begin_layout Standard
+Load the specified shared object / dynamic library / dynamic link library.
+\end_layout
+
 \begin_layout Section
 Startup file lsnes.rc
 \end_layout
@@ -1079,11 +1087,13 @@ INTERNAL-AVI-CSCD: Internal CSCD in .avi dumper.
 
 \begin_deeper
 \begin_layout Itemize
-Does not take mode.
+Mode: uncompressed/pcm: Uncompressed video, PCM audio.
+ Takes prefix.
 \end_layout
 
 \begin_layout Itemize
-Takes a prefix.
+Mode: cscd/pcm: CSCD video, PCM audio.
+ Takes prefix.
 \end_layout
 
 \end_deeper
@@ -1150,6 +1160,14 @@ end-dump <dumper>
 
 \begin_layout Standard
 End dumping using <dumper>
+\end_layout
+
+\begin_layout Subsubsection
+show-dumpers [<dumper>]
+\end_layout
+
+\begin_layout Standard
+Show the list of dumpers or list of modes for <dumper>
 \end_layout
 
 \begin_layout Subsection

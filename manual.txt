@@ -340,6 +340,11 @@ Set number of frames to dump. Mandatory.
 Run specified lua script (lsnes-dumpavi does not have 
 initialization files).
 
+4.4.7 --load-library=<library>
+
+Load the specified shared object / dynamic library / dynamic link 
+library.
+
 5 Startup file lsnes.rc
 
 Upon startup, lsnes (lsnes/SDL only) executes file lsnes.rc as 
@@ -498,9 +503,10 @@ The following dumpers are available:
 
 • INTERNAL-AVI-CSCD: Internal CSCD in .avi dumper.
 
-  – Does not take mode.
+  – Mode: uncompressed/pcm: Uncompressed video, PCM audio. Takes 
+    prefix.
 
-  – Takes a prefix.
+  – Mode: cscd/pcm: CSCD video, PCM audio. Takes prefix.
 
 • INTERNAL-JMD: Internal .jmd dumper.
 
@@ -531,6 +537,10 @@ The following dumpers are available:
 6.5.2 end-dump <dumper>
 
 End dumping using <dumper>
+
+6.5.3 show-dumpers [<dumper>]
+
+Show the list of dumpers or list of modes for <dumper>
 
 6.6 Memory manipulation
 

@@ -46,6 +46,37 @@ namespace
 				throw std::runtime_error("Command syntax error");
 			d.end();
 		});
+
+	function_ptr_command<const std::string&> dumpersc("show-dumpers", "Show dumpers",
+		"Syntax: show-dumpers\nSyntax: show-dumpers <dumper>\nShow dumpers or dumper modes for <dumper>\n",
+		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			auto a = adv_dumper::get_dumper_set();
+			if(x == "") {
+				for(auto i : a)
+					messages << i->id() << "\t" << i->name() << std::endl;
+			} else {
+				for(auto i : a) {
+					if(i->id() == x) {
+						//This dumper.
+						auto b = i->list_submodes();
+						if(b.empty()) {
+							messages << "No submodes for '" << x << "'" << std::endl;
+							return;
+						}
+						for(auto j : b) {
+							if(i->wants_prefix(j))
+								messages << "P " << x << "\t" << j << "\t"
+									<< i->modename(j) << std::endl;
+							else
+								messages << "F " << x << "\t" << j << "\t"
+									<< i->modename(j) << std::endl;
+						}
+						return;
+					}
+				}
+				messages << "No such dumper '" << x << "'" << std::endl;
+			}
+		});
 }
 
 const std::string& adv_dumper::id() throw()
