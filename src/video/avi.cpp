@@ -257,7 +257,7 @@ namespace
 		avi_worker* worker;
 	private:
 		sox_dumper* soxdumper;
-		screen dscr;
+		screen<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		std::pair<uint32_t, uint32_t> soundrate;

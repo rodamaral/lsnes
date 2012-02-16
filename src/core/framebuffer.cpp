@@ -149,7 +149,7 @@ namespace
 	bool last_redraw_no_lua = true;
 }
 
-screen main_screen;
+screen<false> main_screen;
 
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {

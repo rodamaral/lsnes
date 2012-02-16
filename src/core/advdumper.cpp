@@ -104,7 +104,7 @@ adv_dumper::adv_dumper(const std::string& id) throw(std::bad_alloc)
 	dumpers()[d_id] = this;
 }
 
-void render_video_hud(struct screen& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
+template<bool X> void render_video_hud(struct screen<X>& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
 	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
 	uint32_t bgap, void(*fn)())
 {
@@ -127,3 +127,10 @@ void render_video_hud(struct screen& target, struct lcscreen& source, uint32_t h
 	target.copy_from(source, hscl, vscl);
 	rq.run(target);
 }
+
+template void render_video_hud(struct screen<false>& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
+	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
+	uint32_t bgap, void(*fn)());
+template void render_video_hud(struct screen<true>& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
+	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
+	uint32_t bgap, void(*fn)());

@@ -509,7 +509,7 @@ void platform::run_queues() throw()
 namespace
 {
 	mutex* _msgbuf_lock;
-	screen* our_screen;
+	screen<false>* our_screen;
 
 	void trigger_repaint()
 	{
@@ -519,14 +519,14 @@ namespace
 	struct painter_listener : public information_dispatch
 	{
 		painter_listener();
-		void on_set_screen(screen& scr);
+		void on_set_screen(screen<false>& scr);
 		void on_screen_update();
 		void on_status_update();
 	} x;
 
 	painter_listener::painter_listener() : information_dispatch("painter-listener") {}
 
-	void painter_listener::on_set_screen(screen& scr)
+	void painter_listener::on_set_screen(screen<false>& scr)
 	{
 		our_screen = &scr;
 	}

@@ -10,7 +10,7 @@ namespace
 			: x(_x), y(_y), width(_width), height(_height), outline(_outline), fill(_fill),
 			thickness(_thickness) {}
 		~render_object_rectangle() throw() {}
-		void operator()(struct screen& scr) throw()
+		template<bool X> void op(struct screen<X>& scr) throw()
 		{
 			outline.set_palette(scr);
 			fill.set_palette(scr);
@@ -21,7 +21,7 @@ namespace
 			clip_range(scr.originx, scr.width, x, xmin, xmax);
 			clip_range(scr.originy, scr.height, y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				uint32_t* rptr = scr.rowptr(y + r + scr.originy);
+				typename screen<X>::element_t* rptr = scr.rowptr(y + r + scr.originy);
 				size_t eptr = x + xmin + scr.originx;
 				for(int32_t c = xmin; c < xmax; c++, eptr++)
 					if(r < thickness || c < thickness || r >= height - thickness ||
@@ -31,6 +31,8 @@ namespace
 						fill.apply(rptr[eptr]);
 			}
 		}
+		void operator()(struct screen<true>& scr) throw()  { op(scr); }
+		void operator()(struct screen<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

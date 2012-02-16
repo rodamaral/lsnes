@@ -8,7 +8,7 @@ namespace
 		render_object_pixel(int32_t _x, int32_t _y, premultiplied_color _color) throw()
 			: x(_x), y(_y), color(_color) {}
 		~render_object_pixel() throw() {}
-		void operator()(struct screen& scr) throw()
+		template<bool X> void op(struct screen<X>& scr) throw()
 		{
 			color.set_palette(scr);
 			int32_t _x = x + scr.originx;
@@ -19,6 +19,8 @@ namespace
 				return;
 			color.apply(scr.rowptr(_y)[_x]);
 		}
+		void operator()(struct screen<true>& scr) throw()  { op(scr); }
+		void operator()(struct screen<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

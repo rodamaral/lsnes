@@ -159,7 +159,7 @@ namespace
 			return ret;
 		}
 
-		screen dscr;
+		screen<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		uint64_t audio_w;

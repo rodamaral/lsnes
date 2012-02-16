@@ -167,6 +167,28 @@ skip_line:
 	}
 }
 
+void premultiplied_color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()
+{
+	if(X) {
+		uint64_t r = ((orig >> 16) & 0xFF) * 257;
+		uint64_t g = ((orig >> 8) & 0xFF) * 257;
+		uint64_t b = (orig & 0xFF) * 257;
+		uint64_t color = (r << rshift) | (g << gshift) | (b << bshift);
+		hiHI = color & 0xFFFF0000FFFFULL;
+		loHI = (color & 0xFFFF0000FFFF0000ULL) >> 16;
+		hiHI *= (static_cast<uint32_t>(origa) * 256);
+		loHI *= (static_cast<uint32_t>(origa) * 256);
+	} else {
+		uint32_t r = (orig >> 16) & 0xFF;
+		uint32_t g = (orig >> 8) & 0xFF;
+		uint32_t b = orig & 0xFF;
+		uint32_t color = (r << rshift) | (g << gshift) | (b << bshift);
+		hi = color & 0xFF00FF;
+		lo = (color & 0xFF00FF00) >> 8;
+		hi *= origa;
+		lo *= origa;
+	}
+}
 
 void do_init_font()
 {
@@ -190,8 +212,8 @@ render_object::~render_object() throw()
 {
 }
 
-void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& text, premultiplied_color fg,
-	premultiplied_color bg, bool hdbl, bool vdbl) throw(std::bad_alloc)
+template<bool X> void render_text(struct screen<X>& scr, int32_t x, int32_t y, const std::string& text,
+	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw(std::bad_alloc)
 {
 	int32_t orig_x = x;
 	uint32_t unicode_code = 0;
@@ -254,14 +276,14 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 		if(p.second == NULL) {
 			//Blank glyph.
 			for(uint32_t j = 0; j < dh; j++) {
-				uint32_t* base = scr.rowptr(cy + j) + cx;
+				typename screen<X>::element_t* base = scr.rowptr(cy + j) + cx;
 				for(uint32_t i = 0; i < dw; i++)
 					bg.apply(base[i]);
 			}
 		} else {
 			for(uint32_t j = 0; j < dh; j++) {
 				uint32_t dataword = p.second[(dy + j) >> rshift];
-				uint32_t* base = scr.rowptr(cy + j) + cx;
+				typename screen<X>::element_t* base = scr.rowptr(cy + j) + cx;
 				uint32_t rbit = (~((dy + j) >> yshift << rishift) & 31) - (dx >> xshift);
 				if(hdbl) {
 					for(uint32_t i = 0; i < dw; i++)
@@ -288,7 +310,7 @@ void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 	q.push_back(&obj);
 }
 
-void render_queue::run(struct screen& scr) throw()
+template<bool X> void render_queue::run(struct screen<X>& scr) throw()
 {
 	for(auto i : q) {
 		try {
@@ -308,14 +330,6 @@ void render_queue::clear() throw()
 render_queue::~render_queue() throw()
 {
 	clear();
-}
-
-uint32_t screen::make_color(uint8_t r, uint8_t g, uint8_t b) throw()
-{
-	uint32_t _r = r;
-	uint32_t _g = g;
-	uint32_t _b = b;
-	return (_r << 16) + (_g << 8) + _b;
 }
 
 lcscreen::lcscreen(const uint32_t* mem, bool hires, bool interlace, bool overscan, bool region) throw()
@@ -457,12 +471,12 @@ void lcscreen::save_png(const std::string& file) throw(std::bad_alloc, std::runt
 	}
 }
 
-void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
+template<bool X> void screen<X>::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 {
 	if(width < originx || height < originy) {
 		//Just clear the screen.
 		for(uint32_t y = 0; y < height; y++)
-			memset(rowptr(y), 0, 4 * width);
+			memset(rowptr(y), 0, sizeof(typename screen<X>::element_t) * width);
 		return;
 	}
 	uint32_t copyable_width = 0, copyable_height = 0;
@@ -473,22 +487,23 @@ void screen::copy_from(lcscreen& scr, uint32_t hscale, uint32_t vscale) throw()
 	copyable_width = (copyable_width > scr.width) ? scr.width : copyable_width;
 	copyable_height = (copyable_height > scr.height) ? scr.height : copyable_height;
 	for(uint32_t y = 0; y < height; y++)
-		memset(rowptr(y), 0, 4 * width);
+		memset(rowptr(y), 0, sizeof(typename screen<X>::element_t) * width);
 	for(uint32_t y = 0; y < copyable_height; y++) {
 		uint32_t line = y * vscale + originy;
-		uint32_t* ptr = rowptr(line) + originx;
+		typename screen<X>::element_t* ptr = rowptr(line) + originx;
 		const uint32_t* sbase = scr.memory + y * scr.pitch;
 		for(uint32_t x = 0; x < copyable_width; x++) {
-			uint32_t c = palette[sbase[x] & 0x7FFFF];
+			typename screen<X>::element_t c = palette[sbase[x] & 0x7FFFF];
 			for(uint32_t i = 0; i < hscale; i++)
 				*(ptr++) = c;
 		}
 		for(uint32_t j = 1; j < vscale; j++)
-			memcpy(rowptr(line + j) + originx, rowptr(line) + originx, 4 * hscale * copyable_width);
+			memcpy(rowptr(line + j) + originx, rowptr(line) + originx,
+				sizeof(typename screen<X>::element_t) * hscale * copyable_width);
 	}
 }
 
-void screen::reallocate(uint32_t _width, uint32_t _height, bool upside_down) throw(std::bad_alloc)
+template<bool X> void screen<X>::reallocate(uint32_t _width, uint32_t _height, bool upside_down) throw(std::bad_alloc)
 {
 	if(_width == width && _height == height)
 		return;
@@ -501,10 +516,10 @@ void screen::reallocate(uint32_t _width, uint32_t _height, bool upside_down) thr
 		flipped = upside_down;
 		return;
 	}
-	uint32_t* newmem = new uint32_t[_width * _height];
+	typename screen<X>::element_t* newmem = new typename screen<X>::element_t[_width * _height];
 	width = _width;
 	height = _height;
-	pitch = 4 * _width;
+	pitch = sizeof(typename screen<X>::element_t) * _width;
 	if(memory && !user_memory)
 		delete[] memory;
 	memory = newmem;
@@ -512,7 +527,8 @@ void screen::reallocate(uint32_t _width, uint32_t _height, bool upside_down) thr
 	flipped = upside_down;
 }
 
-void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _pitch) throw()
+template<bool X> void screen<X>::set(typename screen<X>::element_t* _memory, uint32_t _width, uint32_t _height,
+	uint32_t _pitch) throw()
 {
 	if(memory && !user_memory)
 		delete[] memory;
@@ -524,21 +540,20 @@ void screen::set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t 
 	flipped = false;
 }
 
-void screen::set_origin(uint32_t _originx, uint32_t _originy) throw()
+template<bool X> void screen<X>::set_origin(uint32_t _originx, uint32_t _originy) throw()
 {
 	originx = _originx;
 	originy = _originy;
 }
 
-
-uint32_t* screen::rowptr(uint32_t row) throw()
+template<bool X> typename screen<X>::element_t* screen<X>::rowptr(uint32_t row) throw()
 {
 	if(flipped)
 		row = height - row - 1;
-	return reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(memory) + row * pitch);
+	return reinterpret_cast<typename screen<X>::element_t*>(reinterpret_cast<uint8_t*>(memory) + row * pitch);
 }
 
-screen::screen() throw()
+template<bool X> screen<X>::screen() throw()
 {
 	memory = NULL;
 	width = height = originx = originy = pitch = 0;
@@ -548,7 +563,7 @@ screen::screen() throw()
 	set_palette(16, 8, 0);
 }
 
-screen::~screen() throw()
+template<bool X> screen<X>::~screen() throw()
 {
 	if(memory && !user_memory)
 		delete[] memory;
@@ -577,26 +592,26 @@ void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int
 	}
 }
 
-void screen::set_palette(uint32_t r, uint32_t g, uint32_t b)
+template<bool X> void screen<X>::set_palette(uint32_t r, uint32_t g, uint32_t b)
 {
 	if(!palette)
-		palette = new uint32_t[0x80000];
+		palette = new element_t[0x80000];
 	else if(r == palette_r && g == palette_g && b == palette_b)
 		return;
 	for(size_t i = 0; i < static_cast<size_t>(width) * height; i++) {
 		uint32_t word = memory[i];
-		uint32_t R = (word >> palette_r) & 0xFF;
-		uint32_t G = (word >> palette_g) & 0xFF;
-		uint32_t B = (word >> palette_b) & 0xFF;
+		uint32_t R = (word >> palette_r) & (X ? 0xFFFF : 0xFF);
+		uint32_t G = (word >> palette_g) & (X ? 0xFFFF : 0xFF);
+		uint32_t B = (word >> palette_b) & (X ? 0xFFFF : 0xFF);
 		memory[i] = (R << r) | (G << g) | (B << b);
 	}
 	for(unsigned i = 0; i < 0x80000; i++) {
 		unsigned l = 1 + ((i >> 15) & 0xF);
-		unsigned R = (i >> 0) & 0x1F;
-		unsigned G = (i >> 5) & 0x1F;
-		unsigned B = (i >> 10) & 0x1F;
+		element_t R = (i >> 0) & 0x1F;
+		element_t G = (i >> 5) & 0x1F;
+		element_t B = (i >> 10) & 0x1F;
 		double _l = static_cast<double>(l);
-		double m = 255.0 / 496.0;
+		double m = (X ? 65535.0 : 255.0) / 496.0;
 		R = floor(m * R * _l + 0.5);
 		G = floor(m * G * _l + 0.5);
 		B = floor(m * B * _l + 0.5);
@@ -607,14 +622,12 @@ void screen::set_palette(uint32_t r, uint32_t g, uint32_t b)
 	palette_b = b;
 }
 
-void premultiplied_color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw()
-{
-	uint32_t r = (orig >> 16) & 0xFF;
-	uint32_t g = (orig >> 8) & 0xFF;
-	uint32_t b = orig & 0xFF;
-	uint32_t color = (r << rshift) | (g << gshift) | (b << bshift);
-	hi = color & 0xFF00FF;
-	lo = (color & 0xFF00FF00) >> 8;
-	hi *= origa;
-	lo *= origa;
-}
+
+template struct screen<false>;
+template struct screen<true>;
+template void render_queue::run(screen<false>&);
+template void render_queue::run(screen<true>&);
+template void render_text(struct screen<false>& scr, int32_t x, int32_t y, const std::string& text,
+	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw(std::bad_alloc);
+template void render_text(struct screen<true>& scr, int32_t x, int32_t y, const std::string& text,
+	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw(std::bad_alloc);

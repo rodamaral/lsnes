@@ -18,7 +18,7 @@ extern lcscreen screen_corrupt;
 /**
  * The main screen to draw on.
  */
-extern screen main_screen;
+extern screen<false> main_screen;
 /**
  * Initialize special screens.
  *

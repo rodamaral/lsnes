@@ -8,7 +8,7 @@ namespace
 		render_object_crosshair(int32_t _x, int32_t _y, premultiplied_color _color, uint32_t _length) throw()
 			: x(_x), y(_y), color(_color), length(_length) {}
 		~render_object_crosshair() throw() {}
-		void operator()(struct screen& scr) throw()
+		template<bool X> void op(struct screen<X>& scr) throw()
 		{
 			color.set_palette(scr);
 			int32_t xmin = -static_cast<int32_t>(length);
@@ -24,6 +24,8 @@ namespace
 				for(int32_t r = xmin; r < xmax; r++)
 					color.apply(scr.rowptr(y + scr.originy)[x + r + scr.originx]);
 		}
+		void operator()(struct screen<true>& scr) throw()  { op(scr); }
+		void operator()(struct screen<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;
