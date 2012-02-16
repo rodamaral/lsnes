@@ -61,6 +61,7 @@ public:
 private:
 	wxeditor_settings_listener listener;
 	std::vector<wxeditor_settings_setting*> esettings;
+	wxScrolledWindow* scrollwin;
 	wxButton* close;
 };
 
@@ -177,14 +178,19 @@ wxeditor_settings::wxeditor_settings(wxWindow* parent)
 	std::set<std::string> settings_set;
 	runemufn([&settings_set]() { settings_set = setting::get_settings_set(); });
 
+	scrollwin = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxSize(-1, -1), wxVSCROLL);
+	scrollwin->SetMinSize(wxSize(-1, 500));
+
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
 
 	wxFlexGridSizer* t_s = new wxFlexGridSizer(settings_set.size(), 4, 0, 0);
 	for(auto i : settings_set)
-		esettings.push_back(new wxeditor_settings_setting(t_s, this, i));
-	top_s->Add(t_s);
+		esettings.push_back(new wxeditor_settings_setting(t_s, scrollwin, i));
+	scrollwin->SetSizer(t_s);
+	top_s->Add(scrollwin);
+	scrollwin->SetScrollRate(0, 20);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
@@ -195,6 +201,8 @@ wxeditor_settings::wxeditor_settings(wxWindow* parent)
 
 	t_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
+	t_s->Layout();
+	top_s->Layout();
 	Fit();
 }
 
