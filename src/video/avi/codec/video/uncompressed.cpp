@@ -42,7 +42,7 @@ namespace
 		ready_flag = true;
 		row.resize(3 * ewidth);
 		memset(&row[0], 0, 3 * ewidth);
-		avi_video_codec::format fmt(0, 24);	//Is 0 correct value for compression?
+		avi_video_codec::format fmt(ewidth, eheight, 0, 24);	//Is 0 correct value for compression?
 		return fmt;
 	}
 
@@ -53,10 +53,10 @@ namespace
 		uint32_t s = 0;
 		for(uint32_t y = 0; y < eheight; y++) {
 			bool done = true;
-			if(y >= iheight)
+			if(y < eheight - iheight)
 				readrow(NULL);
 			else
-				readrow(data + (iheight - y - 1) * iwidth);
+				readrow(data + (eheight - y - 1) * iwidth);
 			memcpy(&out.payload[3 * ewidth * y], &row[0], 3 * ewidth);
 		}
 		out.typecode = 0x6264;

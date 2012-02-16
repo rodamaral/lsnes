@@ -44,7 +44,9 @@ struct avi_video_codec
  */
 	struct format
 	{
-		format(uint32_t compression, uint16_t bitcount);
+		format(uint32_t _width, uint32_t _height, uint32_t compression, uint16_t bitcount);
+		uint32_t width;
+		uint32_t height;
 		uint32_t suggested_buffer_size;
 		uint32_t max_bytes_per_sec;
 		uint16_t planes;

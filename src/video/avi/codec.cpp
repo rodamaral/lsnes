@@ -6,8 +6,10 @@
 avi_video_codec::~avi_video_codec() {};
 avi_audio_codec::~avi_audio_codec() {};
 
-avi_video_codec::format::format(uint32_t _compression, uint16_t bitcount)
+avi_video_codec::format::format(uint32_t _width, uint32_t _height, uint32_t _compression, uint16_t bitcount)
 {
+	width = _width;
+	height = _height;
 	suggested_buffer_size = 1000000;
 	max_bytes_per_sec = 10000000;
 	planes = 1;
@@ -37,55 +39,6 @@ uint32_t get_actual_packet_type(uint8_t trackid, uint16_t typecode)
 	uint32_t t1 = trackid / 10 + 48;
 	uint32_t t2 = trackid % 10 + 48;
 	return t1 | t2 << 8 | static_cast<uint32_t>(typecode) << 16;
-}
-
-void fill_avi_structure(header_list& avih, avi_video_codec& vcodec, avi_audio_codec& acodec, uint32_t width,
-	uint32_t height, uint32_t fps_n, uint32_t fps_d, uint32_t samplerate, uint16_t channels)
-{
-	avi_audio_codec::format afmt = acodec.reset(samplerate, channels);
-	avi_video_codec::format vfmt = vcodec.reset(width, height, fps_n, fps_d);
-
-	avih.avih.microsec_per_frame = (uint64_t)1000000 * fps_d / fps_n;
-	avih.avih.max_bytes_per_sec = afmt.max_bytes_per_sec + vfmt.max_bytes_per_sec;
-	avih.avih.padding_granularity = 0;
-	avih.avih.flags = 2064;		//Trust chunk types, has index.
-	avih.avih.initial_frames = 0;
-	avih.avih.suggested_buffer_size = 1048576;	//Just some value.
-	avih.videotrack.strh.handler = 0;
-	avih.videotrack.strh.flags = 0;
-	avih.videotrack.strh.priority = 0;
-	avih.videotrack.strh.language = 0;
-	avih.videotrack.strh.initial_frames = 0;
-	avih.videotrack.strh.start = 0;
-	avih.videotrack.strh.suggested_buffer_size = vfmt.suggested_buffer_size;
-	avih.videotrack.strh.quality = vfmt.quality;
-	avih.videotrack.strf.width = width;
-	avih.videotrack.strf.height = height;
-	avih.videotrack.strf.planes = vfmt.planes;
-	avih.videotrack.strf.bit_count = vfmt.bit_count;
-	avih.videotrack.strf.compression = vfmt.compression;
-	avih.videotrack.strf.size_image = (vfmt.bit_count + 7) / 8 * width * height;
-	avih.videotrack.strf.resolution_x = vfmt.resolution_x;
-	avih.videotrack.strf.resolution_y = vfmt.resolution_y;
-	avih.videotrack.strf.clr_used = vfmt.clr_used;
-	avih.videotrack.strf.clr_important = vfmt.clr_important;
-	avih.videotrack.strf.fps_n = fps_n;
-	avih.videotrack.strf.fps_d = fps_d;
-	avih.audiotrack.strh.handler = 0;
-	avih.audiotrack.strh.flags = 0;
-	avih.audiotrack.strh.priority = 0;
-	avih.audiotrack.strh.language = 0;
-	avih.audiotrack.strh.initial_frames = 0;
-	avih.audiotrack.strh.start = 0;
-	avih.audiotrack.strh.suggested_buffer_size = afmt.suggested_buffer_size;
-	avih.audiotrack.strh.quality = afmt.quality;
-	avih.audiotrack.strf.format_tag = afmt.format_tag;
-	avih.audiotrack.strf.channels = channels;
-	avih.audiotrack.strf.samples_per_second = samplerate;
-	avih.audiotrack.strf.average_bytes_per_second = afmt.average_rate;
-	avih.audiotrack.strf.block_align = afmt.alignment;
-	avih.audiotrack.strf.bits_per_sample = afmt.bitdepth;
-	avih.audiotrack.strf.blocksize = channels * (afmt.bitdepth + 7) / 8;
 }
 
 #define PADGRANULARITY 2
@@ -153,8 +106,8 @@ void avi_output_stream::start(std::ostream& out, avi_video_codec& _vcodec, avi_a
 	avih.videotrack.strh.start = 0;
 	avih.videotrack.strh.suggested_buffer_size = vfmt.suggested_buffer_size;
 	avih.videotrack.strh.quality = vfmt.quality;
-	avih.videotrack.strf.width = width;
-	avih.videotrack.strf.height = height;
+	avih.videotrack.strf.width = vfmt.width;
+	avih.videotrack.strf.height = vfmt.height;
 	avih.videotrack.strf.planes = vfmt.planes;
 	avih.videotrack.strf.bit_count = vfmt.bit_count;
 	avih.videotrack.strf.compression = vfmt.compression;

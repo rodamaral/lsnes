@@ -62,7 +62,7 @@ namespace
 		prevframe.resize(3 * ewidth * eheight);
 		memset(&row[0], 0, 3 * ewidth);
 		memset(&prevframe[0], 0, 3 * ewidth * eheight);
-		avi_video_codec::format fmt(0x44435343, 24);
+		avi_video_codec::format fmt(ewidth, eheight, 0x44435343, 24);
 		return fmt;
 	}
 
@@ -102,26 +102,25 @@ namespace
 		out.payload[0] = (keyframe ? 0x3 : 0x2) | (level << 4);
 		out.payload[1] = 8;		//RGB24.
 
-		uint32_t iy = 0;
-		for(uint32_t y = eheight - 1; y < eheight; y--, iy++) {
+		for(uint32_t y = 0; y < eheight; y++) {
 			bool done = true;
-			if(y >= iheight)
+			if(y < eheight - iheight)
 				readrow(NULL);
 			else
-				readrow(data + y * iwidth);
+				readrow(data + (eheight - y - 1) * iwidth);
 			if(keyframe) {
-				memcpy(&prevframe[3 * iy * ewidth], &row[0], 3 * ewidth);
+				memcpy(&prevframe[3 * y * ewidth], &row[0], 3 * ewidth);
 			} else {
 				//Ew, we need to have prevframe = row, row = row - prevframe at the same time.
 				for(unsigned i = 0; i < 3 * ewidth; i++) {
 					uint8_t tmp = row[i];
-					row[i] -= prevframe[3 * iy * ewidth + i];
-					prevframe[3 * iy * ewidth + i] = tmp;
+					row[i] -= prevframe[3 * y * ewidth + i];
+					prevframe[3 * y * ewidth + i] = tmp;
 				}
 			}
 			zlib.next_in = &row[0];
 			zlib.avail_in = row.size();
-			if(y == 0)
+			if(y == eheight - 1)
 				done = false;
 			while(zlib.avail_in || !done) {
 				//Make space in output buffer.
@@ -135,7 +134,7 @@ namespace
 					zlib.avail_out = ctmp.size();
 					buffer_loaded = true;
 				}
-				r = deflate(&zlib, (y == 0) ? Z_FINISH : 0);
+				r = deflate(&zlib, (y == eheight - 1) ? Z_FINISH : 0);
 				if(r == Z_STREAM_END)
 					done = true;
 			}

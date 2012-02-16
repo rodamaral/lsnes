@@ -1,4 +1,5 @@
 #include "video/avi/writer.hpp"
+#include "core/misc.hpp"
 #include <sstream>
 #include <iomanip>
 
@@ -72,6 +73,8 @@ void avi_writer::flush(bool force)
 		aviout.start(avifile, vcodec, acodec, curwidth, curheight, curfps_n, curfps_d, samplerate,
 			channels);
 		closed = false;
+		messages << "Start AVI: " << curwidth << "x" << curheight << "@" << curfps_n << "/" << curfps_d
+			<< " to '" << aviname << "'" << std::endl;
 	}
 	if(aviout.readqueue(f.data, aqueue, force))
 		vqueue.pop_front();
