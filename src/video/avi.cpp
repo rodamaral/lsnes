@@ -240,8 +240,14 @@ namespace
 
 		void on_dump_end()
 		{
-			worker->request_quit();
-			soxdumper->close();
+			if(worker)
+				worker->request_quit();
+			if(soxdumper)
+				soxdumper->close();
+			delete worker;
+			delete soxdumper;
+			worker = NULL;
+			soxdumper = NULL;
 		}
 
 		bool get_dumper_flag() throw()
