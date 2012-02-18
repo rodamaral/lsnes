@@ -1,13 +1,16 @@
 #include "video/avi/codec.hpp"
 #include "library/minmax.hpp"
+#include "library/zlibstream.hpp"
 #include "core/settings.hpp"
 #include <limits>
+#include <cassert>
 #include <cstring>
 #include <cerrno>
 #include <stdexcept>
-#include <zlib.h>
 
 #define CBUFFER 65536
+
+const void* check;
 
 namespace
 {
@@ -32,8 +35,8 @@ namespace
 	 * Returns: Amount of data filled. Calls after image is compressed always return 0.
 	 */
 		size_t read(uint8_t* buffer);
-	private:
 		const uint8_t* tframe;
+	private:
 		const uint8_t* pframe;
 		size_t fwidth;
 		size_t fheight;
@@ -108,6 +111,7 @@ namespace
 		size_t height)
 	{
 		tframe = thisframe;
+		check = tframe;
 		pframe = prevframe;
 		fwidth = width;
 		fheight = height;
@@ -170,7 +174,7 @@ namespace
 
 	struct avi_codec_tscc : public avi_video_codec
 	{
-		avi_codec_tscc();
+		avi_codec_tscc(unsigned level);
 		~avi_codec_tscc();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
 		void frame(uint32_t* data);
@@ -188,27 +192,26 @@ namespace
 		unsigned max_pframes;
 		unsigned level;
 		uint64_t frameno;
-		z_stream z;
+		zlibstream z;
 		std::vector<uint8_t> _frame;
 		std::vector<uint8_t> prevframe;
 	};
 
-	avi_codec_tscc::avi_codec_tscc()
+	unsigned getzlevel(uint32_t _level)
 	{
-		memset(&z, 0, sizeof(z));
-		int r = deflateInit(&z, clvl);
-		if(r == Z_MEM_ERROR)
-			throw std::bad_alloc();
-		if(r == Z_STREAM_ERROR)
-			throw std::runtime_error("Bad compression level");
-		if(r == Z_VERSION_ERROR)
-			throw std::runtime_error("Zlib version error");
+		if(_level < 0 || _level > 9)
+			throw std::runtime_error("Invalid compression level");
+		return _level;
+	}
+
+	avi_codec_tscc::avi_codec_tscc(unsigned compression)
+		: z(getzlevel(compression))
+	{
 		frameno = 0;
 	}
 
 	avi_codec_tscc::~avi_codec_tscc()
 	{
-		deflateEnd(&z);
 	}
 
 	avi_video_codec::format avi_codec_tscc::reset(uint32_t width, uint32_t height, uint32_t fps_n,
@@ -237,7 +240,6 @@ namespace
 	void avi_codec_tscc::frame(uint32_t* data)
 	{
 		msrle_compressor c;
-		unsigned char msrle_data[CBUFFER];
 		bool keyframe = false;
 		bool changed = false;
 		if(pframes >= max_pframes) {
@@ -272,38 +274,19 @@ namespace
 		c.setframes(&_frame[0], keyframe ? NULL : &prevframe[0], ewidth, eheight);
 		size_t block;
 		unsigned char buffer[CBUFFER];
-		unsigned char obuffer[CBUFFER];
-		size_t rletotal = 0;
 		size_t blockused = 0;
-		bool final_ack = false;
-		bool final_req = false;
-		out.payload.resize(0);
-		deflateReset(&z);
-		while(!final_ack) {
+		z.reset(NULL, 0);
+		while(!z.get_flag()) {
 			block = c.read(buffer + blockused);
 			if(!block)
-				final_req = true;
+				z.set_flag(true);
 			blockused += block;
-			rletotal += block;
-			if((blockused + 770 > CBUFFER) || final_req) {
-				//Flush to zlib.
-				z.next_in = buffer;
-				z.avail_in = blockused;
+			if((blockused + 770 > CBUFFER) || z.get_flag()) {
+				z.write(buffer, blockused);
 				blockused = 0;
-				while(z.avail_in != 0 || final_req) {
-					z.next_out = obuffer;
-					z.avail_out = CBUFFER;
-					int r = deflate(&z, final_req ? Z_FINISH : 0);
-					if(r == Z_STREAM_END) {
-						final_req = false;
-						final_ack = true;
-					}
-					size_t w = out.payload.size();
-					out.payload.resize(w + (CBUFFER - z.avail_out));
-					memcpy(&out.payload[w], obuffer, CBUFFER - z.avail_out);
-				}
 			}
 		}
+		z.read(out.payload);
 		memcpy(&prevframe[0], &_frame[0], 3 * ewidth * eheight);
 		out.typecode = 0x6264;
 		out.hidden = false;
@@ -323,5 +306,5 @@ namespace
 	}
 
 	avi_video_codec_type rgb("tscc", "TSCC video codec",
-		[]() -> avi_video_codec* { return new avi_codec_tscc;});
+		[]() -> avi_video_codec* { return new avi_codec_tscc(clvl);});
 }

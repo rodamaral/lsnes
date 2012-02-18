@@ -1,10 +1,10 @@
 #include "video/avi/codec.hpp"
 #include "core/settings.hpp"
+#include "library/zlibstream.hpp"
 #include <limits>
 #include <cstring>
 #include <cerrno>
 #include <stdexcept>
-#include <zlib.h>
 
 #define CBUFFER 16384
 
@@ -32,8 +32,8 @@ namespace
 		unsigned pframes;
 		unsigned max_pframes;
 		unsigned level;
+		zlibstream z;
 		std::vector<uint8_t> row;
-		std::vector<uint8_t> ctmp;
 		std::vector<uint8_t> prevframe;
 	};
 
@@ -41,13 +41,18 @@ namespace
 	{
 	}
 
-	avi_codec_cscd::avi_codec_cscd(uint32_t _level, uint32_t maxpframes)
+	unsigned getzlevel(uint32_t _level)
 	{
 		if(_level < 0 || _level > 9)
 			throw std::runtime_error("Invalid compression level");
+		return _level;
+	}
+
+	avi_codec_cscd::avi_codec_cscd(uint32_t _level, uint32_t maxpframes)
+		: z(getzlevel(_level))
+	{
 		level = _level;
 		max_pframes = maxpframes;
-		ctmp.resize(CBUFFER);
 	}
 
 	avi_video_codec::format avi_codec_cscd::reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d)
@@ -68,29 +73,7 @@ namespace
 
 	void avi_codec_cscd::frame(uint32_t* data)
 	{
-		z_stream zlib;
 		bool buffer_loaded = false;
-		memset(&zlib, 0, sizeof(zlib));
-		int r = deflateInit(&zlib, level);
-		switch(r) {
-		case Z_ERRNO:
-			throw std::runtime_error(strerror(errno));
-		case Z_STREAM_ERROR:
-			throw std::runtime_error("Illegal compression level");
-		case Z_DATA_ERROR:
-			throw std::runtime_error("Data error while initializing zlib state?");
-		case Z_MEM_ERROR:
-			throw std::bad_alloc();
-		case Z_BUF_ERROR:
-			throw std::runtime_error("Buffer error while initializing zlib state?");
-		case Z_VERSION_ERROR:
-			throw std::runtime_error("Zlib is FUBAR");
-		case Z_OK:
-			break;
-		default:
-			throw std::runtime_error("Unkonwn error from deflateInit");
-		};
-	
 		bool keyframe = false;
 		if(pframes >= max_pframes) {
 			keyframe = true;
@@ -98,9 +81,10 @@ namespace
 		} else
 			pframes++;
 
-		out.payload.resize(2);
-		out.payload[0] = (keyframe ? 0x3 : 0x2) | (level << 4);
-		out.payload[1] = 8;		//RGB24.
+		unsigned char h[2];
+		h[0] = (keyframe ? 0x3 : 0x2) | (level << 4);
+		h[1] = 8;		//RGB24.
+		z.reset(h, 2);
 
 		for(uint32_t y = 0; y < eheight; y++) {
 			bool done = true;
@@ -118,33 +102,9 @@ namespace
 					prevframe[3 * y * ewidth + i] = tmp;
 				}
 			}
-			zlib.next_in = &row[0];
-			zlib.avail_in = row.size();
-			if(y == eheight - 1)
-				done = false;
-			while(zlib.avail_in || !done) {
-				//Make space in output buffer.
-				if(!zlib.avail_out) {
-					if(buffer_loaded) {
-						size_t p = out.payload.size();
-						out.payload.resize(p + ctmp.size());
-						memcpy(&out.payload[p], &ctmp[0], ctmp.size());
-					}
-					zlib.next_out = &ctmp[0];
-					zlib.avail_out = ctmp.size();
-					buffer_loaded = true;
-				}
-				r = deflate(&zlib, (y == eheight - 1) ? Z_FINISH : 0);
-				if(r == Z_STREAM_END)
-					done = true;
-			}
+			z.write(&row[0], row.size());
 		}
-		if(buffer_loaded) {
-			size_t p = out.payload.size();
-			out.payload.resize(p + (ctmp.size() - zlib.avail_out));
-			memcpy(&out.payload[p], &ctmp[0], ctmp.size() - zlib.avail_out);
-		}
-		deflateEnd(&zlib);
+		z.read(out.payload);
 		out.typecode = 0x6264;		//Not exactly correct according to specs...
 		out.hidden = false;
 		out.indexflags = keyframe ? 0x10 : 0;
