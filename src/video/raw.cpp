@@ -5,21 +5,254 @@
 #include <iomanip>
 #include <cassert>
 #include <cstring>
+#include <cerrno>
+#include <cstring>
 #include <sstream>
 #include <fstream>
 #include <zlib.h>
+#ifndef NO_TCP_SOCKETS
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/stream_buffer.hpp>
+#include <boost/iostreams/filter/symmetric.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
+#include <unistd.h>
+#if defined(_WIN32) || defined(_WIN64)
+//Why the fuck does windows have nonstandard socket API???
+#define _WIN32_WINNT 0x0501
+#include <winsock2.h>
+#include <ws2tcpip.h>
+struct sockaddr_un { int sun_family; char sun_path[108]; };
+#else
+#include <sys/socket.h>
+#include <netdb.h>
+#include <sys/un.h>
+#endif
+#include <sys/types.h>
+#endif
+
+#define IS_RGB(m) (((m) + ((m) >> 3)) & 2)
+#define IS_64(m) (m % 5 < 2)
+#define IS_TCP(m) (((m % 5) * (m % 5)) % 5 == 1)
+
+
 
 namespace
 {
+#ifndef NO_TCP_SOCKETS
+	//Increment port number by 1.
+	void mung_sockaddr(struct sockaddr* addr, socklen_t addrlen)
+	{
+		switch(addr->sa_family) {
+		case AF_INET: {		//IPv4
+			struct sockaddr_in* _addr = (struct sockaddr_in*)addr;
+			_addr->sin_port = htons(htons(_addr->sin_port) + 1);
+			break;
+		}
+		case AF_INET6: {	//IPv6
+			struct sockaddr_in6* _addr = (struct sockaddr_in6*)addr;
+			_addr->sin6_port = htons(htons(_addr->sin6_port) + 1);
+			break;
+		}
+		case AF_UNIX: {		//Unix domain sockets.
+			struct sockaddr_un* _addr = (struct sockaddr_un*)addr;
+			const char* b1 = (char*)_addr;
+			const char* b2 = (char*)&_addr->sun_path;
+			size_t maxpath = addrlen - (b2 - b1);
+			for(size_t i = 0; i < maxpath; i++)
+				if(i && !_addr->sun_path[i]) {
+					maxpath = i;
+					break;
+				}
+			if(!maxpath)
+				throw std::runtime_error("Eh, empty unix domain socket path?");
+			_addr->sun_path[maxpath - 1]++;
+			break;
+		}
+		default:
+			throw std::runtime_error("This address family is not supported, sorry.");
+		}
+	}
+
+	int compat_connect(int fd, struct sockaddr* addr, socklen_t addrlen)
+	{
+#if defined(_WIN32) || defined(_WIN64)
+		return connect(fd, addr, addrlen) ? -1 : 0;
+#else
+		return connect(fd, addr, addrlen);
+#endif
+	}
+
+	std::pair<int, int> establish_connections(struct addrinfo* i)
+	{
+		struct sockaddr* addr = i->ai_addr;
+		socklen_t addrlen = i->ai_addrlen;
+		int a = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
+		if(a < 0) {
+			int err = errno;
+			throw std::runtime_error(std::string("socket: ") + strerror(err));
+		}
+		int b = socket(i->ai_family, i->ai_socktype, i->ai_protocol);
+		if(b < 0) {
+			int err = errno;
+			close(a);
+			throw std::runtime_error(std::string("socket: ") + strerror(err));
+		}
+		if(compat_connect(a, addr, addrlen) < 0) {
+			int err = errno;
+			close(a);
+			close(b);
+			throw std::runtime_error(std::string("connect (video): ") + strerror(err));
+		}
+		mung_sockaddr(addr, addrlen);
+		if(compat_connect(b, addr, addrlen) < 0) {
+			int err = errno;
+			close(a);
+			close(b);
+			throw std::runtime_error(std::string("connect (audio): ") + strerror(err));
+		}
+		std::cerr << "Routing video to socket " << a << std::endl;
+		std::cerr << "Routing audio to socket " << b << std::endl;
+		
+		return std::make_pair(a, b);
+	}
+
+	std::pair<int, int> get_sockets(const std::string& name)
+	{
+		struct addrinfo hints;
+		struct addrinfo* ainfo;
+		bool real = false;
+		int r;
+		std::string node, service, tmp = name;
+		size_t s;
+		struct sockaddr_un uaddr;
+		if(name[0] == '/' || name[0] == '@') {
+			//Fake a unix-domain.
+			if(name.length() >= sizeof(sockaddr_un) - offsetof(sockaddr_un, sun_path) - 1)
+				throw std::runtime_error("Path too long for filesystem socket");
+			size_t namelen = offsetof(struct sockaddr_un, sun_path) + name.length();
+			uaddr.sun_family = AF_UNIX;
+			strcpy(uaddr.sun_path, name.c_str());
+			if(name[0] == '@')
+				uaddr.sun_path[0] = 0;	//Mark as abstract namespace socket.
+			ainfo = &hints;
+			ainfo->ai_flags = 0;
+			ainfo->ai_family = AF_UNIX;
+			ainfo->ai_socktype = SOCK_STREAM;
+			ainfo->ai_protocol = 0;
+			ainfo->ai_addrlen = (name[0] == '@') ? namelen : sizeof(sockaddr_un),
+			ainfo->ai_addr = reinterpret_cast<sockaddr*>(&uaddr);
+			ainfo->ai_canonname = NULL;
+			ainfo->ai_next = NULL;
+			goto establish;
+		}
+		//Split into address and port.
+		s = tmp.find_last_of(":");
+		if(s >= tmp.length())
+			throw std::runtime_error("Port number has to be specified");
+		node = tmp.substr(0, s);
+		service = tmp.substr(s + 1);
+
+		memset(&hints, 0, sizeof(hints));
+		hints.ai_family = AF_UNSPEC;
+		hints.ai_socktype = SOCK_STREAM;
+#ifdef AI_V4MAPPED
+		hints.ai_flags = AI_V4MAPPED;
+#endif
+#ifdef AI_ADDRCONFIG
+		hints.ai_flags = AI_ADDRCONFIG;
+#endif
+		real = true;
+		r = getaddrinfo(node.c_str(), service.c_str(), &hints, &ainfo);
+		if(r < 0)
+			throw std::runtime_error(std::string("getaddrinfo: ") + gai_strerror(r));
+establish:
+		auto x = establish_connections(ainfo);
+		if(real)
+			freeaddrinfo(ainfo);
+		return x;
+	}
+
+	class socket_output
+	{
+	public:
+		typedef char char_type;
+		typedef boost::iostreams::sink_tag category;
+		socket_output(int _fd)
+			: fd(_fd)
+		{
+		}
+
+		void close()
+		{
+			::close(fd);
+		}
+
+		std::streamsize write(const char* s, std::streamsize n)
+		{
+			size_t w = n;
+			while(n > 0) {
+				ssize_t r = ::send(fd, s, n, 0);
+				if(r >= 0) {
+					s += r;
+					n -= r;
+				} else {	//Error.
+					int err = errno;
+					messages << "Socket write error: " << strerror(err) << std::endl;
+					break;
+				}
+			}
+			return w;
+		}
+	protected:
+		int fd;
+	};
+	bool tcp_dump_supported = true;
+#else
+	std::pair<int, int> get_sockets(const std::string& name)
+	{
+		throw std::runtime_error("Dumping over TCP/IP not supported");
+	}
+
+	class socket_output
+	{
+	public:
+		typedef char char_type;
+		typedef boost::iostreams::sink_tag category;
+		socket_output(int _fd) {}
+		void close() {}
+		std::streamsize write(const char* s, std::streamsize n) { return n; }
+	};
+	bool tcp_dump_supported = false;
+#endif
+
+	
+	unsigned strhash(const std::string& str)
+	{
+		unsigned h = 0;
+		for(size_t i = 0; i < str.length(); i++)
+			h = (2 * h + static_cast<unsigned char>(str[i])) % 11;
+		return h;
+	}
+
 	class raw_avsnoop : public information_dispatch
 	{
 	public:
-		raw_avsnoop(const std::string& prefix, bool _swap, bool _bits64) throw(std::bad_alloc)
+		raw_avsnoop(const std::string& prefix, bool _swap, bool _bits64, bool socket_mode)
 			: information_dispatch("dump-raw")
 		{
 			enable_send_sound();
-			video = new std::ofstream(prefix + ".video", std::ios::out | std::ios::binary);
-			audio = new std::ofstream(prefix + ".audio", std::ios::out | std::ios::binary);
+			if(socket_mode) {
+				std::pair<int, int> socks = get_sockets(prefix);
+				video = new boost::iostreams::stream<socket_output>(socks.first);
+				audio = new boost::iostreams::stream<socket_output>(socks.second);
+			} else {
+				video = new std::ofstream(prefix + ".video", std::ios::out | std::ios::binary);
+				audio = new std::ofstream(prefix + ".audio", std::ios::out | std::ios::binary);
+			}
 			if(!*video || !*audio)
 				throw std::runtime_error("Can't open output files");
 			have_dumped_frame = false;
@@ -84,8 +317,8 @@ namespace
 			return true;
 		}
 	private:
-		std::ofstream* audio;
-		std::ofstream* video;
+		std::ostream* audio;
+		std::ostream* video;
 		bool have_dumped_frame;
 		struct screen<false> dscr;
 		struct screen<true> dscr2;
@@ -103,10 +336,11 @@ namespace
 		std::set<std::string> list_submodes() throw(std::bad_alloc)
 		{
 			std::set<std::string> x;
-			x.insert("rgb32");
-			x.insert("rgb64");
-			x.insert("bgr32");
-			x.insert("bgr64");
+			for(size_t i = 0; i < (tcp_dump_supported ? 2 : 1); i++)
+				for(size_t j = 0; j < 2; j++)
+					for(size_t k = 0; k < 2; k++)
+						x.insert(std::string("") + (i ? "tcp" : "") + (j ? "bgr" : "rgb")
+							+ (k ? "64" : "32"));
 			return x;
 		}
 
@@ -122,14 +356,10 @@ namespace
 		
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
-			if(mode == "rgb32")
-				return "RGB 32-bit";
-			if(mode == "bgr32")
-				return "BGR 32-bit";
-			if(mode == "rgb64")
-				return "RGB 64-bit";
-			if(mode == "bgr64")
-				return "BGR 64-bit";
+			unsigned _mode = strhash(mode);
+			std::string x = std::string((IS_RGB(_mode) ? "RGB" : "BGR")) +
+				(IS_64(_mode) ? " 64-bit" : " 32-bit") + (IS_TCP(_mode) ? " over TCP/IP" : "");
+			return x;
 		}
 
 		bool busy()
@@ -140,18 +370,17 @@ namespace
 		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
 			std::runtime_error)
 		{
-			bool bits64 = false;
-			bool swap = false;
-			if(mode == "bgr32" || mode == "bgr64")
-				swap = true;
-			if(mode == "rgb64" || mode == "bgr64")
-				bits64 = true;
+			unsigned _mode = strhash(mode);
+			bool bits64 = IS_64(_mode);
+			bool swap = !IS_RGB(_mode);
+			bool sock = IS_TCP(_mode);
+
 			if(prefix == "")
 				throw std::runtime_error("Expected prefix");
 			if(vid_dumper)
 				throw std::runtime_error("RAW dumping already in progress");
 			try {
-				vid_dumper = new raw_avsnoop(prefix, swap, bits64);
+				vid_dumper = new raw_avsnoop(prefix, swap, bits64, sock);
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
