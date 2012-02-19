@@ -28,7 +28,6 @@ private:
 	wxStaticText* rom_label[ROMSELECT_ROM_COUNT];
 	wxTextCtrl* rom_name[ROMSELECT_ROM_COUNT];
 	wxButton* rom_change[ROMSELECT_ROM_COUNT];
-	wxCheckBox* rom_headered[ROMSELECT_ROM_COUNT];
 	wxButton* open_rom;
 	wxButton* quit_button;
 	std::string current_rtype;

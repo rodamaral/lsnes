@@ -63,22 +63,18 @@ namespace
 		}
 	} simple_interface;
 
-	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, wxCheckBox* hcb,
-		const std::string& newlabel)
+	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, const std::string& newlabel)
 	{
 		label->SetLabel(towxstring(newlabel));
 		filename->Enable();
 		ask->Enable();
-		if(hcb)
-			hcb->Enable();
 	}
 
-	void disable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, wxCheckBox* hcb)
+	void disable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask)
 	{
 		label->SetLabel(wxT(""));
 		filename->Disable();
 		ask->Disable();
-		hcb->Disable();
 	}
 
 	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
@@ -285,18 +281,16 @@ wxwin_romselect::wxwin_romselect()
 	toplevel->Add(selects, 0, wxGROW);
 
 	//ROM filename selects
-	wxFlexGridSizer* romgrid = new wxFlexGridSizer(ROMSELECT_ROM_COUNT, 4, 0, 0);
+	wxFlexGridSizer* romgrid = new wxFlexGridSizer(ROMSELECT_ROM_COUNT, 3, 0, 0);
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
 		romgrid->Add(rom_label[i] = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 		romgrid->Add(rom_name[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 			1, wxGROW);
 		romgrid->Add(rom_change[i] = new wxButton(this, ROM_SELECTS_BASE + i, wxT("...")), 0, wxGROW);
-		romgrid->Add(rom_headered[i] = new wxCheckBox(this, wxID_ANY, wxT("Headered")), 0, wxGROW);
 		rom_name[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_romselect::on_filename_change), NULL, this);
 		rom_change[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_romselect::on_ask_rom_filename), NULL, this);
-		rom_headered[i]->Disable();
 	}
 	toplevel->Add(romgrid, 1, wxGROW);
 
@@ -343,10 +337,9 @@ void wxwin_romselect::set_rtype(std::string rtype)
 	wxString tmp[ROMSELECT_ROM_COUNT];
 	unsigned c = fill_rom_names(romtype_from_string(rtype), tmp);
 	for(unsigned i = 0; i < c; i++)
-		enable_slot(rom_label[i], rom_name[i], rom_change[i], (i & 1) ? NULL : rom_headered[i],
-			tostdstring(tmp[i]));
+		enable_slot(rom_label[i], rom_name[i], rom_change[i], tostdstring(tmp[i]));
 	for(unsigned i = c; i < ROMSELECT_ROM_COUNT; i++)
-		disable_slot(rom_label[i], rom_name[i], rom_change[i], rom_headered[i]);
+		disable_slot(rom_label[i], rom_name[i], rom_change[i]);
 	current_rtype = rtype;
 	Fit();
 }
@@ -397,9 +390,6 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 	rfiles.slota_xml = tostdstring(rom_name[3]->GetValue());
 	rfiles.slotb = tostdstring(rom_name[4]->GetValue());
 	rfiles.slotb_xml = tostdstring(rom_name[5]->GetValue());
-	rfiles.rom_headered = rom_headered[0]->GetValue();
-	rfiles.slota_headered = rom_headered[2]->GetValue();
-	rfiles.slotb_headered = rom_headered[4]->GetValue();
 	try {
 		our_rom = new loaded_rom(rfiles);
 		if(our_rom->slota.valid)
