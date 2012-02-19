@@ -182,11 +182,14 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 
 namespace
 {
+	enum advance_mode old_mode;
+
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(const std::string& filename, int lmode)
 	{
 		loadmode = lmode;
 		pending_load = filename;
+		old_mode = amode;
 		amode = ADVANCE_LOAD;
 		platform::cancel_wait();
 		platform::set_paused(false);
@@ -826,7 +829,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	//print_controller_mappings();
 	platform::set_paused(false);
-	amode = ADVANCE_PAUSE;
+	amode = ADVANCE_AUTO;
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
@@ -856,7 +859,10 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				r = handle_load();
 			if(r > 0 || system_corrupt) {
 				first_round = our_movie.is_savestate;
-				amode = ADVANCE_PAUSE;
+				if(system_corrupt)
+					amode = ADVANCE_PAUSE;
+				else
+					amode = old_mode;
 				just_did_loadstate = first_round;
 				continue;
 			} else if(r < 0) {
@@ -868,9 +874,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			//If we just loadstated, we are up to date.
 			if(amode == ADVANCE_QUIT)
 				break;
-			amode = ADVANCE_PAUSE;
 			platform::cancel_wait();
-			platform::set_paused(true);
+			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
 			movb.get_movie().set_controls(controls.get(movb.get_movie().get_current_frame()));
