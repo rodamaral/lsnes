@@ -53,6 +53,8 @@
 #define WNAME_SGB_SLOTA_XML "BMG XML"
 
 
+void patching_done(struct loaded_rom& rom, wxWindow* modwin);
+
 namespace
 {
 	class my_interfaced : public SNES::Interface
@@ -297,11 +299,15 @@ wxwin_romselect::wxwin_romselect()
 	//Button bar.
 	wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
 	buttons->AddStretchSpacer();
+	buttons->Add(apply_rom = new wxButton(this, wxID_ANY, wxT("Apply patches")), 0, wxALIGN_RIGHT);
 	buttons->Add(open_rom = new wxButton(this, wxID_OPEN, wxT("Open ROM")), 0, wxALIGN_RIGHT);
 	buttons->Add(quit_button = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxALIGN_RIGHT);
+	apply_rom->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxwin_romselect::on_apply_rom), NULL, this);
 	open_rom->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_romselect::on_open_rom), NULL, this);
 	open_rom->Disable();
+	apply_rom->Disable();
 	quit_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_romselect::on_quit), NULL, this);
 	toplevel->Add(buttons, 1, wxGROW);
@@ -365,6 +371,7 @@ void wxwin_romselect::on_filename_change(wxCommandEvent& e)
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
 		flags |= ((rom_name[i]->GetValue().Length() != 0) ? (1 << i) : 0);
 	open_rom->Enable(check_present_roms(rtype, flags));
+	apply_rom->Enable(check_present_roms(rtype, flags));
 }
 
 void wxwin_romselect::on_romtype_change(wxCommandEvent& e)
@@ -379,6 +386,17 @@ void wxwin_romselect::on_quit(wxCommandEvent& e)
 }
 
 void wxwin_romselect::on_open_rom(wxCommandEvent& e)
+{
+	on_openapply_rom(e, false);
+}
+
+void wxwin_romselect::on_apply_rom(wxCommandEvent& e)
+{
+	on_openapply_rom(e, true);
+}
+
+
+void wxwin_romselect::on_openapply_rom(wxCommandEvent& e, bool apply)
 {
 	rom_files rfiles;
 	rfiles.base_file = "";
@@ -402,8 +420,12 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
-	wxwin_patch* projwin = new wxwin_patch(*our_rom);
-	projwin->Show();
+	if(apply) {
+		wxwin_patch* projwin = new wxwin_patch(*our_rom);
+		projwin->Show();
+	} else {
+		patching_done(*our_rom, this);
+	}
 	Destroy();
 }
 //---------------------------------------------------
@@ -544,8 +566,9 @@ void wxwin_patch::on_quit(wxCommandEvent& e)
 	Close(true);
 }
 
-void wxwin_patch::on_done(wxCommandEvent& e)
+void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 {
+	struct loaded_rom* our_rom = &rom;
 	try {
 		SNES::interface = &simple_interface;
 		if(our_rom->slota.valid)
@@ -556,7 +579,7 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 			our_rom_name = our_rom->rom.sha256;
 		our_rom->load();
 	} catch(std::exception& e) {
-		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
+		show_message_ok(modwin, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 	messages << "Detected region: " << gtype::tostring(our_rom->rtype, our_rom->region) << std::endl;
@@ -570,6 +593,11 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 	messages << "--- End of Startup --- " << std::endl;
 	wxwin_project* projwin = new wxwin_project(*our_rom);
 	projwin->Show();
+}
+
+void wxwin_patch::on_done(wxCommandEvent& e)
+{
+	patching_done(*our_rom, this);
 	Destroy();
 }
 //------------------------------------------------------------

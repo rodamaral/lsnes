@@ -20,6 +20,8 @@ public:
 	void on_romtype_change(wxCommandEvent& e);
 	void on_quit(wxCommandEvent& e);
 	void on_open_rom(wxCommandEvent& e);
+	void on_apply_rom(wxCommandEvent& e);
+	void on_openapply_rom(wxCommandEvent& e, bool apply);
 	void on_ask_rom_filename(wxCommandEvent& e);
 	loaded_rom* our_rom;
 private:
@@ -28,6 +30,7 @@ private:
 	wxStaticText* rom_label[ROMSELECT_ROM_COUNT];
 	wxTextCtrl* rom_name[ROMSELECT_ROM_COUNT];
 	wxButton* rom_change[ROMSELECT_ROM_COUNT];
+	wxButton* apply_rom;
 	wxButton* open_rom;
 	wxButton* quit_button;
 	std::string current_rtype;
