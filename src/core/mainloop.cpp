@@ -405,11 +405,9 @@ namespace
 	function_ptr_command<const std::string&> quit_emulator("quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(args == "/y" || platform::modal_message("Really quit?", true)) {
-				amode = ADVANCE_QUIT;
-				platform::set_paused(false);
-				platform::cancel_wait();
-			}
+			amode = ADVANCE_QUIT;
+			platform::set_paused(false);
+			platform::cancel_wait();
 		});
 
 	function_ptr_command<> pause_emulator("pause-emulator", "(Un)pause the emulator",
@@ -667,11 +665,9 @@ namespace
 			}
 			on_quit_prompt = true;
 			try {
-				if(platform::modal_message("Really quit?", true)) {
-					amode = ADVANCE_QUIT;
-					platform::set_paused(false);
-					platform::cancel_wait();
-				}
+				amode = ADVANCE_QUIT;
+				platform::set_paused(false);
+				platform::cancel_wait();
 			} catch(...) {
 			}
 			on_quit_prompt = false;
