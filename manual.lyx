@@ -493,15 +493,6 @@ Load <file> as specified ROM (SFC/BS/DMG/ST file format).
 \end_layout
 
 \begin_layout Subsubsection
---headered-<kind>=<file> (lsnes/SDL, lsnes-avidump)
-\end_layout
-
-\begin_layout Standard
-Load <file> as specified ROM, stripping first 512 bytes.
- Handy for loading SMC / FIG and such files.
-\end_layout
-
-\begin_layout Subsubsection
 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 

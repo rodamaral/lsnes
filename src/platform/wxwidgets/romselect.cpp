@@ -53,6 +53,8 @@
 #define WNAME_SGB_SLOTA_XML "BMG XML"
 
 
+void patching_done(struct loaded_rom& rom, wxWindow* modwin);
+
 namespace
 {
 	class my_interfaced : public SNES::Interface
@@ -63,22 +65,18 @@ namespace
 		}
 	} simple_interface;
 
-	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, wxCheckBox* hcb,
-		const std::string& newlabel)
+	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, const std::string& newlabel)
 	{
 		label->SetLabel(towxstring(newlabel));
 		filename->Enable();
 		ask->Enable();
-		if(hcb)
-			hcb->Enable();
 	}
 
-	void disable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, wxCheckBox* hcb)
+	void disable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask)
 	{
 		label->SetLabel(wxT(""));
 		filename->Disable();
 		ask->Disable();
-		hcb->Disable();
 	}
 
 	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
@@ -285,29 +283,31 @@ wxwin_romselect::wxwin_romselect()
 	toplevel->Add(selects, 0, wxGROW);
 
 	//ROM filename selects
-	wxFlexGridSizer* romgrid = new wxFlexGridSizer(ROMSELECT_ROM_COUNT, 4, 0, 0);
+	wxFlexGridSizer* romgrid = new wxFlexGridSizer(ROMSELECT_ROM_COUNT, 3, 0, 0);
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
 		romgrid->Add(rom_label[i] = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 		romgrid->Add(rom_name[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 			1, wxGROW);
 		romgrid->Add(rom_change[i] = new wxButton(this, ROM_SELECTS_BASE + i, wxT("...")), 0, wxGROW);
-		romgrid->Add(rom_headered[i] = new wxCheckBox(this, wxID_ANY, wxT("Headered")), 0, wxGROW);
 		rom_name[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_romselect::on_filename_change), NULL, this);
 		rom_change[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_romselect::on_ask_rom_filename), NULL, this);
-		rom_headered[i]->Disable();
 	}
 	toplevel->Add(romgrid, 1, wxGROW);
 
 	//Button bar.
 	wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
 	buttons->AddStretchSpacer();
+	buttons->Add(apply_rom = new wxButton(this, wxID_ANY, wxT("Apply patches")), 0, wxALIGN_RIGHT);
 	buttons->Add(open_rom = new wxButton(this, wxID_OPEN, wxT("Open ROM")), 0, wxALIGN_RIGHT);
 	buttons->Add(quit_button = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxALIGN_RIGHT);
+	apply_rom->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxwin_romselect::on_apply_rom), NULL, this);
 	open_rom->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_romselect::on_open_rom), NULL, this);
 	open_rom->Disable();
+	apply_rom->Disable();
 	quit_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_romselect::on_quit), NULL, this);
 	toplevel->Add(buttons, 1, wxGROW);
@@ -343,10 +343,9 @@ void wxwin_romselect::set_rtype(std::string rtype)
 	wxString tmp[ROMSELECT_ROM_COUNT];
 	unsigned c = fill_rom_names(romtype_from_string(rtype), tmp);
 	for(unsigned i = 0; i < c; i++)
-		enable_slot(rom_label[i], rom_name[i], rom_change[i], (i & 1) ? NULL : rom_headered[i],
-			tostdstring(tmp[i]));
+		enable_slot(rom_label[i], rom_name[i], rom_change[i], tostdstring(tmp[i]));
 	for(unsigned i = c; i < ROMSELECT_ROM_COUNT; i++)
-		disable_slot(rom_label[i], rom_name[i], rom_change[i], rom_headered[i]);
+		disable_slot(rom_label[i], rom_name[i], rom_change[i]);
 	current_rtype = rtype;
 	Fit();
 }
@@ -372,6 +371,7 @@ void wxwin_romselect::on_filename_change(wxCommandEvent& e)
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
 		flags |= ((rom_name[i]->GetValue().Length() != 0) ? (1 << i) : 0);
 	open_rom->Enable(check_present_roms(rtype, flags));
+	apply_rom->Enable(check_present_roms(rtype, flags));
 }
 
 void wxwin_romselect::on_romtype_change(wxCommandEvent& e)
@@ -387,6 +387,17 @@ void wxwin_romselect::on_quit(wxCommandEvent& e)
 
 void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 {
+	on_openapply_rom(e, false);
+}
+
+void wxwin_romselect::on_apply_rom(wxCommandEvent& e)
+{
+	on_openapply_rom(e, true);
+}
+
+
+void wxwin_romselect::on_openapply_rom(wxCommandEvent& e, bool apply)
+{
 	rom_files rfiles;
 	rfiles.base_file = "";
 	rfiles.rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
@@ -397,9 +408,6 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 	rfiles.slota_xml = tostdstring(rom_name[3]->GetValue());
 	rfiles.slotb = tostdstring(rom_name[4]->GetValue());
 	rfiles.slotb_xml = tostdstring(rom_name[5]->GetValue());
-	rfiles.rom_headered = rom_headered[0]->GetValue();
-	rfiles.slota_headered = rom_headered[2]->GetValue();
-	rfiles.slotb_headered = rom_headered[4]->GetValue();
 	try {
 		our_rom = new loaded_rom(rfiles);
 		if(our_rom->slota.valid)
@@ -412,8 +420,12 @@ void wxwin_romselect::on_open_rom(wxCommandEvent& e)
 		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
-	wxwin_patch* projwin = new wxwin_patch(*our_rom);
-	projwin->Show();
+	if(apply) {
+		wxwin_patch* projwin = new wxwin_patch(*our_rom);
+		projwin->Show();
+	} else {
+		patching_done(*our_rom, this);
+	}
 	Destroy();
 }
 //---------------------------------------------------
@@ -554,8 +566,9 @@ void wxwin_patch::on_quit(wxCommandEvent& e)
 	Close(true);
 }
 
-void wxwin_patch::on_done(wxCommandEvent& e)
+void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 {
+	struct loaded_rom* our_rom = &rom;
 	try {
 		SNES::interface = &simple_interface;
 		if(our_rom->slota.valid)
@@ -566,7 +579,7 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 			our_rom_name = our_rom->rom.sha256;
 		our_rom->load();
 	} catch(std::exception& e) {
-		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
+		show_message_ok(modwin, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
 	messages << "Detected region: " << gtype::tostring(our_rom->rtype, our_rom->region) << std::endl;
@@ -580,6 +593,11 @@ void wxwin_patch::on_done(wxCommandEvent& e)
 	messages << "--- End of Startup --- " << std::endl;
 	wxwin_project* projwin = new wxwin_project(*our_rom);
 	projwin->Show();
+}
+
+void wxwin_patch::on_done(wxCommandEvent& e)
+{
+	patching_done(*our_rom, this);
 	Destroy();
 }
 //------------------------------------------------------------

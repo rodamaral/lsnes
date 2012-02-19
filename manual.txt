@@ -200,33 +200,28 @@ Building is via makefile, the following options are available:
 
 Load <file> as specified ROM (SFC/BS/DMG/ST file format).
 
-4.1.2 --headered-<kind>=<file> (lsnes/SDL, lsnes-avidump)
-
-Load <file> as specified ROM, stripping first 512 bytes. Handy 
-for loading SMC / FIG and such files.
-
-4.1.3 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
+4.1.2 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 
 Override hardware detection for ROM, reading the values from 
 <file> (BSNES XML format).
 
-4.1.4 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
+4.1.3 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
 Apply BPS/IPS patch <file> to ROM <kind>. If specified multiple 
 times, the patches are applied in order.
 
-4.1.5 --ips-<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
+4.1.4 --ips-<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 
 Apply BPS/IPS patch <file> to XML of ROM <kind>. If specified 
 multiple times, the patches are applied in order.
 
-4.1.6 --ips-offset=<offset> (lsnes/SDL, lsnes-avidump)
+4.1.5 --ips-offset=<offset> (lsnes/SDL, lsnes-avidump)
 
 Set offset to apply to IPS patches. May be negative. Handy for 
 applying headered IPS patches (use offset of -512 for this). The 
 offset must be 0 for BPS patches.
 
-4.1.7 --pal
+4.1.6 --pal
 
 Force ROM to be considered PAL-only.
 
@@ -234,7 +229,7 @@ Force ROM to be considered PAL-only.
 
 • Attempting to load NTSC movie file will error out.
 
-4.1.8 --ntsc
+4.1.7 --ntsc
 
 Force ROM to be considered NTSC-only.
 
