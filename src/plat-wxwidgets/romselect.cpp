@@ -298,9 +298,9 @@ wxwin_romselect::wxwin_romselect()
 
 	//Button bar.
 	wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
-	buttons->AddStretchSpacer();
 	buttons->Add(apply_rom = new wxButton(this, wxID_ANY, wxT("Apply patches")), 0, wxALIGN_RIGHT);
 	buttons->Add(open_rom = new wxButton(this, wxID_OPEN, wxT("Open ROM")), 0, wxALIGN_RIGHT);
+	buttons->AddStretchSpacer();
 	buttons->Add(quit_button = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxALIGN_RIGHT);
 	apply_rom->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_romselect::on_apply_rom), NULL, this);
