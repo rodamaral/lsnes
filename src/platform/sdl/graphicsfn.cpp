@@ -319,9 +319,10 @@ void ui_loop()
 		memset(&e, 0, sizeof(e));
 		{
 			ui_mutex->lock();
-			if(!repaint_in_flight && !timer_triggered && !SDL_PollEvent(&e)) {
+			int r = SDL_PollEvent(&e);
+			if(!repaint_in_flight && !timer_triggered && !r) {
 				ui_mutex->unlock();
-				usleep(5000);
+				usleep(2000);
 				continue;
 			}
 			ui_mutex->unlock();

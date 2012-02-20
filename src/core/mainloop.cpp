@@ -278,7 +278,7 @@ void update_movie_state()
 	{
 		std::ostringstream x;
 		x << get_framerate();
-		_status.set("FPS", x.str());
+		_status.set("SPD%", x.str());
 	}
 	do_watch_memory();
 
