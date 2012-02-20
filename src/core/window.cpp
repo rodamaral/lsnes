@@ -419,12 +419,14 @@ namespace
 
 void platform::flush_command_queue() throw()
 {
+	if(modal_pause || normal_pause)
+		freeze_time(get_utime());
 	init_threading();
 	while(true) {
 		mutex::holder h(*queue_lock);
 		internal_run_queues(true);
 		if(!pausing_allowed)
-			return;
+			break;
 		uint64_t now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
@@ -436,6 +438,8 @@ void platform::flush_command_queue() throw()
 			return;
 		//If we had to wait, check queues at least once more.
 	}
+	if(!modal_pause && !normal_pause)
+		unfreeze_time(get_utime());
 }
 
 void platform::set_paused(bool enable) throw()

@@ -25,7 +25,21 @@ void set_nominal_framerate(double fps) throw();
 double get_framerate() throw();
 
 /**
- * Acknowledge frame start for timing purposes.
+ * Freeze time.
+ *
+ * Parameter usec: Current time in microseconds.
+ */
+void freeze_time(uint64_t usec);
+
+/**
+ * Unfreeze time.
+ *
+ * Parameter usec: Current time in microseconds.
+ */
+void unfreeze_time(uint64_t usec);
+
+/**
+ * Acknowledge frame start for timing purposes. If time is frozen, it is automatically unfrozen.
  *
  * parameter usec: Current time (relative to some unknown epoch) in microseconds.
  */
