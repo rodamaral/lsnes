@@ -396,4 +396,73 @@ public:
 		std::runtime_error);
 };
 
+class inverse_key
+{
+public:
+/**
+ * Create inverse key.
+ *
+ * Parameter command: Command this is for.
+ * Parameter name: Name of inverse key.
+ */
+	inverse_key(const std::string& command, const std::string& name) throw(std::bad_alloc);
+/**
+ * Destructor.
+ */
+	~inverse_key();
+/**
+ * Get set of inverse keys.
+ *
+ * Returns: The set of all inverses.
+ */
+	static std::set<inverse_key*> get_ikeys() throw(std::bad_alloc);
+/**
+ * Find by command.
+ *
+ * Parameter command: The command.
+ * Returns: The instance.
+ */
+	static inverse_key* get_for(const std::string& command) throw(std::bad_alloc);
+/**
+ * Get keyspec.
+ *
+ * Parameter primary: If true, get the primary key, else secondary key.
+ * Returns: The keyspec.
+ */
+	std::string get(bool primary) throw(std::bad_alloc);
+/**
+ * Clear key (if primary is cleared, secondary becomes primary).
+ *
+ * Parameter primary: If true, clear the primary, else the secondary.
+ */
+	void clear(bool primary) throw(std::bad_alloc);
+/**
+ * Set key.
+ *
+ * Parameter keyspec: The new keyspec.
+ * Parameter primary: If true, set the primary, else the secondary.
+ */
+	void set(std::string keyspec, bool primary) throw(std::bad_alloc);
+/**
+ * Notify updated mapping.
+ */
+	static void notify_update(const std::string& keyspec, const std::string& command);
+/**
+ * Get name for command.
+ *
+ * Returns: The name.
+ */
+	std::string getname() throw(std::bad_alloc);
+private:
+	inverse_key(const inverse_key&);
+	inverse_key& operator=(const inverse_key&);
+	static std::set<inverse_key*>& ikeys();
+	static std::map<std::string, inverse_key*>& forkey();
+	void addkey(const std::string& keyspec);
+	std::string cmd;
+	std::string oname;
+	std::string primary_spec;
+	std::string secondary_spec;
+};
+
 #endif

@@ -73,6 +73,13 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			keymapper::dumpbindings();
 		});
+
+	function_ptr_command<> show_inverse("show-inverse", "Show inverse bindings",
+		"Syntax: show-inverse\nShow inversebindings that are currently active.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			for(auto i : inverse_key::get_ikeys())
+				messages << i->getname() << ":" << i->get(true) << ":" << i->get(false) << std::endl;
+		});
 }
 
 std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc)
@@ -775,7 +782,11 @@ namespace
 		return k;
 	}
 
-	std::map<triple, keybind_data*> keybindings;
+	std::map<triple, keybind_data*>& keybindings()
+	{
+		static std::map<triple, keybind_data*> x;
+		return x;
+	}
 }
 
 void keymapper::bind(std::string mod, std::string modmask, std::string keyname, std::string command)
@@ -787,28 +798,30 @@ void keymapper::bind(std::string mod, std::string modmask, std::string keyname, 
 	if(!modifier_set::valid(_mod, _modmask))
 		throw std::runtime_error("Invalid modifiers");
 	auto g = keygroup::lookup(keyname);
-	if(!keybindings.count(k)) {
-		keybindings[k] = new keybind_data;
-		keybindings[k]->mod = _mod;
-		keybindings[k]->modmask = _modmask;
-		keybindings[k]->group = g.first;
-		keybindings[k]->subkey = g.second;
+	if(!keybindings().count(k)) {
+		keybindings()[k] = new keybind_data;
+		keybindings()[k]->mod = _mod;
+		keybindings()[k]->modmask = _modmask;
+		keybindings()[k]->group = g.first;
+		keybindings()[k]->subkey = g.second;
 	}
-	keybindings[k]->command = command;
+	keybindings()[k]->command = command;
+	inverse_key::notify_update(mod + "/" + modmask + "|" + keyname, command);
 }
 void keymapper::unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
 		std::runtime_error)
 {
 	triple k(mod, modmask, keyname);
-	if(!keybindings.count(k))
+	if(!keybindings().count(k))
 		throw std::runtime_error("Key is not bound");
-	delete keybindings[k];
-	keybindings.erase(k);
+	delete keybindings()[k];
+	keybindings().erase(k);
+	inverse_key::notify_update(mod + "/" + modmask + "|" + keyname, "");
 }
 
 void keymapper::dumpbindings() throw(std::bad_alloc)
 {
-	for(auto i : keybindings) {
+	for(auto i : keybindings()) {
 		messages << "bind-key ";
 		if(i.first.a != "" || i.first.b != "")
 			messages << i.first.a << "/" << i.first.b << " ";
@@ -819,7 +832,7 @@ void keymapper::dumpbindings() throw(std::bad_alloc)
 std::set<std::string> keymapper::get_bindings() throw(std::bad_alloc)
 {
 	std::set<std::string> r;
-	for(auto i : keybindings)
+	for(auto i : keybindings())
 		r.insert(i.first.a + "/" + i.first.b + "|" + i.first.c);
 	return r;
 }
@@ -832,9 +845,9 @@ std::string keymapper::get_command_for(const std::string& keyspec) throw(std::ba
 	} catch(std::exception& e) {
 		return "";
 	}
-	if(!keybindings.count(k))
+	if(!keybindings().count(k))
 		return "";
-	return keybindings[k]->command;
+	return keybindings()[k]->command;
 }
 
 void keymapper::bind_for(const std::string& keyspec, const std::string& cmd) throw(std::bad_alloc, std::runtime_error)
@@ -845,4 +858,124 @@ void keymapper::bind_for(const std::string& keyspec, const std::string& cmd) thr
 		bind(k.a, k.b, k.c, cmd);
 	else
 		unbind(k.a, k.b, k.c);
+}
+
+
+inverse_key::inverse_key(const std::string& command, const std::string& name) throw(std::bad_alloc)
+{
+	cmd = command;
+	oname = name;
+	ikeys().insert(this);
+	forkey()[cmd] = this;
+	//Search the keybindings for matches.
+	auto b = keymapper::get_bindings();
+	for(auto c : b)
+		if(keymapper::get_command_for(c) == cmd)
+			addkey(c);
+}
+
+inverse_key::~inverse_key()
+{
+	ikeys().erase(this);
+	forkey().erase(cmd);
+}
+
+std::set<inverse_key*> inverse_key::get_ikeys() throw(std::bad_alloc)
+{
+	return ikeys();
+}
+
+std::string inverse_key::getname() throw(std::bad_alloc)
+{
+	return oname;
+}
+
+inverse_key* inverse_key::get_for(const std::string& command) throw(std::bad_alloc)
+{
+	return forkey().count(command) ? forkey()[command] : NULL;
+}
+
+std::set<inverse_key*>& inverse_key::ikeys()
+{
+	static std::set<inverse_key*> x;
+	return x;
+}
+
+std::map<std::string, inverse_key*>& inverse_key::forkey()
+{
+	static std::map<std::string, inverse_key*> x;
+	return x;
+}
+
+std::string inverse_key::get(bool primary) throw(std::bad_alloc)
+{
+	return primary ? primary_spec : secondary_spec;
+}
+
+void inverse_key::clear(bool primary) throw(std::bad_alloc)
+{
+	if(primary) {
+		keymapper::bind_for(primary_spec, "");
+		primary_spec = secondary_spec;
+		secondary_spec = "";
+	} else {
+		keymapper::bind_for(secondary_spec, "");
+		secondary_spec = "";
+	}
+	//Search the keybindings for matches.
+	auto b = keymapper::get_bindings();
+	for(auto c : b)
+		if(keymapper::get_command_for(c) == cmd)
+			addkey(c);
+}
+
+void inverse_key::set(std::string keyspec, bool primary) throw(std::bad_alloc)
+{
+	if(keyspec == "") {
+		clear(primary);
+		return;
+	}
+	if(!primary && (primary_spec == "" || primary_spec == keyspec))
+		primary = true;
+	if(primary) {
+		if(primary_spec != "")
+			keymapper::bind_for(primary_spec, "");
+		primary_spec = keyspec;
+		keymapper::bind_for(primary_spec, cmd);
+	} else {
+		if(secondary_spec != "")
+			keymapper::bind_for(secondary_spec, "");
+		secondary_spec = keyspec;
+		keymapper::bind_for(secondary_spec, cmd);
+	}
+}
+
+void inverse_key::addkey(const std::string& keyspec)
+{
+	if(primary_spec == "" || primary_spec == keyspec)
+		primary_spec = keyspec;
+	else if(secondary_spec == "")
+		secondary_spec = keyspec;
+}
+
+void inverse_key::notify_update(const std::string& keyspec, const std::string& command)
+{
+	for(auto k : ikeys()) {
+		bool u = false;
+		if(k->primary_spec == keyspec || k->secondary_spec == keyspec) {
+			if(command == "" || command != k->cmd) {
+				//Unbound.
+				k->primary_spec = "";
+				k->secondary_spec = "";
+				u = true;
+			}
+		} else if(command == k->cmd)
+			k->addkey(keyspec);
+		if(u) {
+			auto b = keymapper::get_bindings();
+			for(auto c : b)
+				if(keymapper::get_command_for(c) == k->cmd)
+					k->addkey(c);
+		}
+	}
 }
