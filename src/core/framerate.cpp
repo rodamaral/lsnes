@@ -10,18 +10,48 @@
 #include <unistd.h>
 
 #define DEFAULT_NOMINAL_RATE 60
+#define HISTORY_FRAMES 10
 
 namespace
 {
+	uint64_t last_time_update = 0;
+	uint64_t time_at_last_update = 0;
+	bool time_frozen = true;
+	uint64_t frame_number = 0;
+	uint64_t frame_start_times[HISTORY_FRAMES];
 	double nominal_rate = DEFAULT_NOMINAL_RATE;
-	double fps_value = 0;
-	const double exp_factor = 0.97;
-	uint64_t last_frame_usec = 0;
-	bool last_frame_usec_valid = false;
 	bool target_nominal = true;
 	double target_fps = DEFAULT_NOMINAL_RATE;
 	bool target_infinite = false;
-	uint64_t wait_duration = 0;
+
+	uint64_t get_time(uint64_t curtime, bool update)
+	{
+		if(curtime < last_time_update || time_frozen)
+			return time_at_last_update;
+		if(update) {
+			time_at_last_update += (curtime - last_time_update);
+			last_time_update = curtime;
+			return time_at_last_update; 
+		} else
+			return time_at_last_update + (curtime - last_time_update); 
+	}
+
+	double get_realized_fps()
+	{
+		if(frame_number < 2)
+			return 0;
+		if(frame_number >= HISTORY_FRAMES)
+ 			return (1000000.0 * (HISTORY_FRAMES - 1)) / (frame_start_times[0] - frame_start_times[HISTORY_FRAMES - 1] + 1);
+		return (1000000.0 * (frame_number - 1)) / (frame_start_times[0] - frame_start_times[frame_number - 1] + 1);
+	}
+
+	void add_frame(uint64_t linear_time)
+	{
+		for(size_t i = HISTORY_FRAMES - 2; i < HISTORY_FRAMES; i--)
+			frame_start_times[i + 1] = frame_start_times[i];
+		frame_start_times[0] = linear_time;
+		frame_number++;
+	}
 
 	struct setting_targetfps : public setting
 	{
@@ -67,6 +97,8 @@ namespace
 		{
 			if(target_nominal)
 				return "";
+			else if(target_infinite)
+				return "infinite";
 			else {
 				std::ostringstream o;
 				o << target_fps;
@@ -75,6 +107,19 @@ namespace
 		}
 
 	} targetfps;
+}
+
+void freeze_time(uint64_t curtime)
+{
+	get_time(curtime, true);
+	time_frozen = true;
+}
+
+void unfreeze_time(uint64_t curtime)
+{
+	if(time_frozen)
+		last_time_update = curtime;
+	time_frozen = false;	
 }
 
 void set_nominal_framerate(double fps) throw()
@@ -88,31 +133,34 @@ void set_nominal_framerate(double fps) throw()
 
 double get_framerate() throw()
 {
-	return fps_value;
+	return 100.0 * get_realized_fps() / nominal_rate;
 }
 
 void ack_frame_tick(uint64_t usec) throw()
 {
-	if(!last_frame_usec_valid) {
-		last_frame_usec = usec;
-		last_frame_usec_valid = true;
-		return;
-	}
-	uint64_t frame_usec = usec - last_frame_usec;
-	fps_value = exp_factor * fps_value + (1 - exp_factor) * (1000000.0 / frame_usec);
-	last_frame_usec = usec;
+	unfreeze_time(usec);
+	add_frame(get_time(usec, true));
 }
 
 uint64_t to_wait_frame(uint64_t usec) throw()
 {
-	//Very simple algorithm. TODO: Make better one.
-	if(!last_frame_usec_valid || target_infinite)
+	if(!frame_number || target_infinite)
 		return 0;
-	if(get_framerate() < target_fps && wait_duration > 0)
-		wait_duration -= 1000;
-	else if(get_framerate() > target_fps)
-		wait_duration += 1000;
-	return wait_duration;
+	uint64_t lintime = get_time(usec, true);
+	uint64_t frame_lasted = lintime - frame_start_times[0];
+	uint64_t frame_should_last = 1000000 / target_fps;
+	if(frame_lasted >= frame_should_last)
+		return 0;	//We are late.
+	uint64_t maxwait = frame_should_last - frame_lasted;
+	uint64_t history_frames = (frame_number < HISTORY_FRAMES) ? frame_number : HISTORY_FRAMES;
+	uint64_t history_lasted = lintime - frame_start_times[history_frames - 1];
+	uint64_t history_should_last = history_frames * 1000000 / target_fps;
+	if(history_lasted >= history_should_last)
+		return 0;		
+	uint64_t history_wait = history_should_last - history_lasted;
+	if(history_wait > maxwait)
+		history_wait = maxwait;
+	return history_wait;
 }
 
 
