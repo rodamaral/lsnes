@@ -72,7 +72,8 @@ enum
 	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
-	wxID_LOAD_LIBRARY
+	wxID_LOAD_LIBRARY,
+	wxID_EDIT_HOTKEYS
 };
 
 
@@ -411,171 +412,6 @@ namespace
 	{
 		runuifun([ahmenu]() { ahmenu->reconfigure(); });
 	}
-
-	struct keyentry_mod_data
-	{
-		wxCheckBox* pressed;
-		wxCheckBox* unmasked;
-		unsigned tmpflags;
-	};
-
-	class wxdialog_keyentry : public wxDialog
-	{
-	public:
-		wxdialog_keyentry(wxWindow* parent);
-		void on_change_setting(wxCommandEvent& e);
-		void on_ok(wxCommandEvent& e);
-		void on_cancel(wxCommandEvent& e);
-		std::string getkey();
-	private:
-		std::map<std::string, keyentry_mod_data> modifiers;
-		wxComboBox* mainkey;
-		wxButton* ok;
-		wxButton* cancel;
-	};
-
-	wxdialog_keyentry::wxdialog_keyentry(wxWindow* parent)
-		: wxDialog(parent, wxID_ANY, wxT("Specify key"), wxDefaultPosition, wxSize(-1, -1))
-	{
-		std::vector<wxString> keych;
-		std::set<std::string> mods, keys;
-
-		runemufn([&mods, &keys]() { mods = modifier::get_set(); keys = keygroup::get_keys(); });
-		Centre();
-		wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
-		SetSizer(top_s);
-
-		wxFlexGridSizer* t_s = new wxFlexGridSizer(mods.size() + 1, 3, 0, 0);
-		for(auto i : mods) {
-			t_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
-			keyentry_mod_data m;
-			t_s->Add(m.pressed = new wxCheckBox(this, wxID_ANY, wxT("Pressed")), 0, wxGROW);
-			t_s->Add(m.unmasked = new wxCheckBox(this, wxID_ANY, wxT("Unmasked")), 0, wxGROW);
-			m.pressed->Disable();
-			modifiers[i] = m;
-			m.pressed->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
-				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
-			m.unmasked->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
-				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
-		}
-		for(auto i : keys)
-			keych.push_back(towxstring(i));
-		t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Key")), 0, wxGROW);
-		t_s->Add(mainkey = new wxComboBox(this, wxID_ANY, keych[0], wxDefaultPosition, wxDefaultSize,
-			keych.size(), &keych[0], wxCB_READONLY), 1, wxGROW);
-		mainkey->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
-			wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
-		top_s->Add(t_s);
-
-		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
-		pbutton_s->AddStretchSpacer();
-		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
-		pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
-		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxdialog_keyentry::on_ok), NULL, this);
-		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxdialog_keyentry::on_cancel), NULL, this);
-		top_s->Add(pbutton_s, 0, wxGROW);
-
-		t_s->SetSizeHints(this);
-		top_s->SetSizeHints(this);
-		Fit();
-	}
-
-#define TMPFLAG_UNMASKED 65
-#define TMPFLAG_UNMASKED_LINK_CHILD 2
-#define TMPFLAG_UNMASKED_LINK_PARENT 68
-#define TMPFLAG_PRESSED 8
-#define TMPFLAG_PRESSED_LINK_CHILD 16
-#define TMPFLAG_PRESSED_LINK_PARENT 32
-
-	void wxdialog_keyentry::on_change_setting(wxCommandEvent& e)
-	{
-		for(auto& i : modifiers)
-			i.second.tmpflags = 0;
-		for(auto& i : modifiers) {
-			modifier* m = NULL;
-			try {
-				m = &modifier::lookup(i.first);
-			} catch(...) {
-				i.second.pressed->Disable();
-				i.second.unmasked->Disable();
-				continue;
-			}
-			std::string j = m->linked_name();
-			if(i.second.unmasked->GetValue())
-				i.second.tmpflags |= TMPFLAG_UNMASKED;
-			if(j != "") {
-				if(modifiers[j].unmasked->GetValue())
-					i.second.tmpflags |= TMPFLAG_UNMASKED_LINK_PARENT;
-				if(i.second.unmasked->GetValue())
-					modifiers[j].tmpflags |= TMPFLAG_UNMASKED_LINK_CHILD;
-			}
-			if(i.second.pressed->GetValue())
-				i.second.tmpflags |= TMPFLAG_PRESSED;
-			if(j != "") {
-				if(modifiers[j].pressed->GetValue())
-					i.second.tmpflags |= TMPFLAG_PRESSED_LINK_PARENT;
-				if(i.second.pressed->GetValue())
-					modifiers[j].tmpflags |= TMPFLAG_PRESSED_LINK_CHILD;
-			}
-		}
-		for(auto& i : modifiers) {
-			//Unmasked is to be enabled if neither unmasked link flag is set.
-			if(i.second.tmpflags & ((TMPFLAG_UNMASKED_LINK_CHILD | TMPFLAG_UNMASKED_LINK_PARENT) & ~64)) {
-				i.second.unmasked->SetValue(false);
-				i.second.unmasked->Disable();
-			} else
-				i.second.unmasked->Enable();
-			//Pressed is to be enabled if:
-			//- This modifier is unmasked or parent is unmasked.
-			//- Parent nor child is not pressed.
-			if(((i.second.tmpflags & (TMPFLAG_UNMASKED | TMPFLAG_UNMASKED_LINK_PARENT |
-				TMPFLAG_PRESSED_LINK_CHILD | TMPFLAG_PRESSED_LINK_PARENT)) & 112) == 64)
-				i.second.pressed->Enable();
-			else {
-				i.second.pressed->SetValue(false);
-				i.second.pressed->Disable();
-			}
-		}
-	}
-
-	void wxdialog_keyentry::on_ok(wxCommandEvent& e)
-	{
-		EndModal(wxID_OK);
-	}
-
-	void wxdialog_keyentry::on_cancel(wxCommandEvent& e)
-	{
-		EndModal(wxID_CANCEL);
-	}
-
-	std::string wxdialog_keyentry::getkey()
-	{
-		std::string x;
-		bool f;
-		f = true;
-		for(auto i : modifiers) {
-			if(i.second.pressed->GetValue()) {
-				if(!f)
-					x = x + ",";
-				f = false;
-				x = x + i.first;
-			}
-		}
-		x = x + "/";
-		f = true;
-		for(auto i : modifiers) {
-			if(i.second.unmasked->GetValue()) {
-				if(!f)
-					x = x + ",";
-				f = false;
-				x = x + i.first;
-			}
-		}
-		x = x + "|" + tostdstring(mainkey->GetValue());
-		return x;
-	}
 }
 
 void boot_emulator(loaded_rom& rom, moviefile& movie)
@@ -829,6 +665,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("Settings"));
 	menu_entry(wxID_EDIT_AXES, wxT("Configure axes"));
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings"));
+	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys"));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
@@ -986,6 +823,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_EDIT_SETTINGS:
 		wxeditor_settings_display(this);
 		return;
+	case wxID_EDIT_HOTKEYS:
+		wxeditor_hotkeys_display(this);
+		return;
 	case wxID_EDIT_KEYBINDINGS: {
 		modal_pause_holder hld;
 		std::set<std::string> bind;
@@ -995,15 +835,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		for(auto i : bind)
 			choices.push_back(i);
 		std::string key = pick_among(this, "Select binding", "Select keybinding to edit", choices);
-		if(key == NEW_KEYBINDING) {
-			wxdialog_keyentry* d2 = new wxdialog_keyentry(this);
-			if(d2->ShowModal() == wxID_CANCEL) {
-				d2->Destroy();
-				throw canceled_exception();
-			}
-			key = d2->getkey();
-			d2->Destroy();
-		}
+		if(key == NEW_KEYBINDING)
+			key = wxeditor_keyselect(this, false);
 		std::string old_command_value;
 		runemufn([&old_command_value, key]() { old_command_value = keymapper::get_command_for(key); });
 		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",

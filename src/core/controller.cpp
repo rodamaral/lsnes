@@ -191,7 +191,7 @@ namespace
 			for(size_t i = 0; i < MAX_LOGICAL_BUTTONS; ++i)
 				for(int j = 0; j < 3; ++j)
 					for(unsigned k = 0; k < 8; ++k) {
-						std::string x, y;
+						std::string x, y, expx;
 						char cstr[2] = {0, 0};
 						cstr[0] = 49 + k;
 						switch(j) {
@@ -207,21 +207,32 @@ namespace
 						};
 						x = x + cstr + get_logical_button_name(i);
 						y = cstr + get_logical_button_name(i);
+						expx = std::string("Controller X ") + get_logical_button_name(i);
+						expx[11] = 49 + k;
 						our_commands.insert(new button_action(x, j, k, y));
+						if(j == 0)
+							our_icommands.insert(new inverse_key(x, expx));
 					}
 			for(unsigned k = 0; k < 8; ++k) {
 				std::string x = "controllerXanalog";
+				std::string expx = "Controller X analog function";
 				x[10] = 49 + k;
+				expx[11] = 49 + k;
 				our_commands.insert(new analog_action(x, k));
+				our_icommands.insert(new inverse_key(x, expx));
 			}
 		}
 		~button_action_helper()
 		{
 			for(auto i : our_commands)
 				delete i;
+			for(auto i : our_icommands)
+				delete i;
 			our_commands.clear();
+			our_icommands.clear();
 		}
 		std::set<command*> our_commands;
+		std::set<inverse_key*> our_icommands;
 	} bah;
 }
 

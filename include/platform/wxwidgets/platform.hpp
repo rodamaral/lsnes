@@ -30,6 +30,8 @@ void _runuifun_async(void (*fn)(void*), void* arg);
 void wxeditor_axes_display(wxWindow* parent);
 void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_settings_display(wxWindow* parent);
+void wxeditor_hotkeys_display(wxWindow* parent);
+std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
