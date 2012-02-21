@@ -2654,3 +2654,15 @@ set-axis joystick0axis19 disabled
 
 • Fix compiling with bsnes v086.
 
+15.50 rr1-delta3
+
+• Don't prompt before quitting
+
+• Start unpaused, preserve pause/unpause over load.
+
+• Try to autodetect if ROM is headered.
+
+• Only bring up ROM patching screen if specifically requested.
+
+• Allow configuring some (200+) hotkeys.
+

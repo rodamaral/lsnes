@@ -5423,5 +5423,29 @@ rr1-delta2epsilon1
 Fix compiling with bsnes v086.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta3
+\end_layout
+
+\begin_layout Itemize
+Don't prompt before quitting
+\end_layout
+
+\begin_layout Itemize
+Start unpaused, preserve pause/unpause over load.
+\end_layout
+
+\begin_layout Itemize
+Try to autodetect if ROM is headered.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Only bring up ROM patching screen if specifically requested.
+\end_layout
+
+\begin_layout Itemize
+Allow configuring some hotkeys.
+\end_layout
+
 \end_body
 \end_document
