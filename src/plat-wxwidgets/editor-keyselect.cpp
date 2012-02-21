@@ -15,13 +15,19 @@ namespace
 	class wxdialog_keyentry : public wxDialog
 	{
 	public:
-		wxdialog_keyentry(wxWindow* parent, const std::string& title, bool clearable);
+		wxdialog_keyentry(wxWindow* parent, const std::string& title, const std::string& spec,
+			bool clearable);
 		void on_change_setting(wxCommandEvent& e);
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_clear(wxCommandEvent& e);
 		std::string getkey();
 	private:
+		void set_mask(const std::string& mod);
+		void set_mod(const std::string& mod);
+		void set_set(const std::string& mset,
+			void (wxdialog_keyentry::*fn)(const std::string& mod));
+		void load_spec(const std::string& spec);
 		std::map<std::string, keyentry_mod_data> modifiers;
 		wxComboBox* mainkey;
 		wxButton* ok;
@@ -61,7 +67,8 @@ namespace
 		wxButton* close;
 	};
 
-	wxdialog_keyentry::wxdialog_keyentry(wxWindow* parent, const std::string& title, bool clearable)
+	wxdialog_keyentry::wxdialog_keyentry(wxWindow* parent, const std::string& title, const std::string& spec,
+		bool clearable)
 		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
 	{
 		std::vector<wxString> keych;
@@ -113,6 +120,9 @@ namespace
 		t_s->SetSizeHints(this);
 		top_s->SetSizeHints(this);
 		Fit();
+
+		if(spec != "")
+			load_spec(spec);
 	}
 
 #define TMPFLAG_UNMASKED 65
@@ -121,6 +131,59 @@ namespace
 #define TMPFLAG_PRESSED 8
 #define TMPFLAG_PRESSED_LINK_CHILD 16
 #define TMPFLAG_PRESSED_LINK_PARENT 32
+
+	void wxdialog_keyentry::set_mask(const std::string& mod)
+	{
+		if(!modifiers.count(mod))
+			return;
+		if(modifiers[mod].unmasked->IsEnabled()) {
+			wxCommandEvent e;
+			modifiers[mod].unmasked->SetValue(true);
+			on_change_setting(e);
+		}
+	}	
+
+	void wxdialog_keyentry::set_mod(const std::string& mod)
+	{
+		if(!modifiers.count(mod))
+			return;
+		if(modifiers[mod].pressed->IsEnabled()) {
+			wxCommandEvent e;
+			modifiers[mod].pressed->SetValue(true);
+			on_change_setting(e);
+		}
+	}	
+
+	void wxdialog_keyentry::set_set(const std::string& mset,
+		void (wxdialog_keyentry::*fn)(const std::string& mod))
+	{
+		std::string rem = mset;
+		while(rem != "") {
+			size_t s = rem.find_first_of(",");
+			if(s >= rem.length()) {
+				(this->*fn)(rem);
+				break;
+			} else {
+				(this->*fn)(rem.substr(0, s));
+				rem = rem.substr(s + 1);
+			}
+		}
+	}
+
+	void wxdialog_keyentry::load_spec(const std::string& spec)
+	{
+		std::string _spec = spec;
+		size_t s1 = _spec.find_first_of("/");
+		size_t s2 = _spec.find_first_of("|");
+		if(s1 >= _spec.length() || s2 >= _spec.length())
+			return;		//Bad.
+		std::string mod = _spec.substr(0, s1);
+		std::string mask = _spec.substr(s1 + 1, s2 - s1 - 1);
+		std::string key = _spec.substr(s2 + 1);
+		set_set(mask, &wxdialog_keyentry::set_mask);
+		set_set(mod, &wxdialog_keyentry::set_mod);
+		mainkey->SetValue(towxstring(key));
+	}		
 
 	void wxdialog_keyentry::on_change_setting(wxCommandEvent& e)
 	{
@@ -270,7 +333,7 @@ namespace
 		if(!hotkeys.count(button))
 			return;
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify key for " + hotkeys[button]->
-			get_title(), true);
+			get_title(), hotkeys[button]->get_associated()->get(primflag), true);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
 			return;
@@ -346,7 +409,7 @@ namespace
 
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable)
 {
-	wxdialog_keyentry* d = new wxdialog_keyentry(parent, "Specify key", clearable);
+	wxdialog_keyentry* d = new wxdialog_keyentry(parent, "Specify key", "", clearable);
 	if(d->ShowModal() == wxID_CANCEL) {
 		d->Destroy();
 		throw canceled_exception();
