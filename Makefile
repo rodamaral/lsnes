@@ -23,6 +23,7 @@ JOYSTICK = SDL
 
 #Core objects and what to build.
 CORE_OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard src/core/*.cpp)) \
+	$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard src/library/*.cpp)) \
 	$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard avi/*.cpp)) \
 	src/fonts/font.$(OBJECT_SUFFIX) src/core/version.$(OBJECT_SUFFIX)
 PROGRAMS = lsnes.$(EXECUTABLE_SUFFIX) movieinfo.$(EXECUTABLE_SUFFIX) lsnes-dumpavi.$(EXECUTABLE_SUFFIX) sdmp2sox.$(EXECUTABLE_SUFFIX)
@@ -139,6 +140,8 @@ avi/%.$(OBJECT_SUFFIX): avi/%.cpp
 src/core/%.$(OBJECT_SUFFIX): src/core/%.cpp
 	$(REALCC) -c -o $@ $< $(CORE_CFLAGS)
 src/lua/%.$(OBJECT_SUFFIX): src/lua/%.cpp
+	$(REALCC) -c -o $@ $< $(CORE_CFLAGS)
+src/library/%.$(OBJECT_SUFFIX): src/library/%.cpp
 	$(REALCC) -c -o $@ $< $(CORE_CFLAGS)
 src/plat-dummy/%.$(OBJECT_SUFFIX): src/plat-dummy/%.cpp
 	$(REALCC) -c -o $@ $< $(CORE_CFLAGS)
