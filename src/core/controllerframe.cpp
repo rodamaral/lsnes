@@ -1,3 +1,7 @@
+#include "lsnes.hpp"
+#include <snes/snes.hpp>
+#include <ui-libsnes/libsnes.hpp>
+
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
@@ -20,76 +24,253 @@ namespace
 		"cursor", "turbo", "pause"
 	};
 
+	template<unsigned type>
+	void set_core_controller_bsnes(unsigned port) throw()
+	{
+		if(port > 1)
+			return;
+		snes_set_controller_port_device(port != 0, type);
+	}
+
+	void set_core_controller_illegal(unsigned port) throw()
+	{
+		std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
+		exit(1);
+	}
+
 	struct porttype_invalid : public porttype_info
 	{
-		porttype_invalid() : porttype_info(PT_INVALID, "invalid-port-type", 0) {}
-		void write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) const throw()
+		porttype_invalid() : porttype_info(PT_INVALID, "invalid-port-type", 0)
 		{
-		}
-
-		short read(const unsigned char* buffer, unsigned idx, unsigned ctrl) const  throw()
-		{
-			return 0;
-		}
-
-		void display(const unsigned char* buffer, unsigned idx, char* buf) const  throw()
-		{
-			buf[0] = '\0';
-		}
-
-		size_t serialize(const unsigned char* buffer, char* textbuf) const  throw()
-		{
-			std::cerr << "Attempt to serialize INVALID port type" << std::endl;
-			exit(1);
-		}
-
-		size_t deserialize(unsigned char* buffer, const char* textbuf) const  throw()
-		{
-			std::cerr << "Attempt to deserialize INVALID port type" << std::endl;
-			exit(1);
-		}
-
-		devicetype_t devicetype(unsigned idx) const  throw()
-		{
-			return DT_NONE;
-		}
-
-		unsigned controllers() const  throw()
-		{
-			return 0;
-		}
-
-		unsigned internal_type() const  throw()
-		{
-			return 0;
-		}
-
-		bool legal(unsigned port) const  throw()
-		{
-			return true;
+			write = NULL;
+			read = NULL;
+			display = NULL;
+			serialize = NULL;
+			deserialize = NULL;
+			devicetype = generic_port_devicetype<0, DT_NONE>;
+			controllers = 0;
+			internal_type = 0;
+			legal = generic_port_legal<0xFFFFFFFFU>;
+			set_core_controller = set_core_controller_illegal;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
 			return -1;
 		}
-
-		void set_core_controller(unsigned port) const throw()
-		{
-			std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
-			exit(1);
-		}
-
-		bool is_analog(unsigned controller) const throw()
-		{
-			return false;
-		}
-
-		bool is_mouse(unsigned controller) const throw()
-		{
-			return false;
-		}
 	};
+
+	struct porttype_gamepad : public porttype_info
+	{
+		porttype_gamepad() : porttype_info(PT_GAMEPAD, "gamepad", generic_port_size<1, 0, 12>())
+		{
+			write = generic_port_write<1, 0, 12>;
+			read = generic_port_read<1, 0, 12>;
+			display = generic_port_display<1, 0, 12, 0>;
+			serialize = generic_port_serialize<1, 0, 12, 0>;
+			deserialize = generic_port_deserialize<1, 0, 12>;
+			devicetype = generic_port_devicetype<1, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			controllers = 1;
+			internal_type = SNES_DEVICE_JOYPAD;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JOYPAD>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+			case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+			case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
+			case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+			case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+			case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+			case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+			case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+			case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+			default:			return -1;
+			}
+		}
+	} gamepad;
+
+	struct porttype_justifier : public porttype_info
+	{
+		porttype_justifier() : porttype_info(PT_JUSTIFIER, "justifier", generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 12>;
+			serialize = generic_port_serialize<1, 2, 2, 12>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			controllers = 1;
+			internal_type = SNES_DEVICE_JUSTIFIER;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JUSTIFIER>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+			default:			return -1;
+			}
+		}
+	} justifier;
+
+	struct porttype_justifiers : public porttype_info
+	{
+		porttype_justifiers() : porttype_info(PT_JUSTIFIERS, "justifiers", generic_port_size<2, 2, 2>())
+		{
+			write = generic_port_write<2, 2, 2>;
+			read = generic_port_read<2, 2, 2>;
+			display = generic_port_display<2, 2, 2, 0>;
+			serialize = generic_port_serialize<2, 2, 2, 12>;
+			deserialize = generic_port_deserialize<2, 2, 2>;
+			devicetype = generic_port_devicetype<2, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			controllers = 2;
+			internal_type = SNES_DEVICE_JUSTIFIERS;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JUSTIFIERS>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 1)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+			default:			return -1;
+			}
+		}
+	} justifiers;
+
+	struct porttype_mouse : public porttype_info
+	{
+		porttype_mouse() : porttype_info(PT_MOUSE, "mouse", generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 0>;
+			serialize = generic_port_serialize<1, 2, 2, 12>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			devicetype = generic_port_devicetype<1, DT_MOUSE>;
+			legal = generic_port_legal<3>;
+			controllers = 1;
+			internal_type = SNES_DEVICE_MOUSE;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_MOUSE>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
+			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
+			default:			return -1;
+			}
+		}
+	} mouse;
+
+	struct porttype_multitap : public porttype_info
+	{
+		porttype_multitap() : porttype_info(PT_MULTITAP, "multitap", generic_port_size<4, 0, 12>())
+		{
+			write = generic_port_write<4, 0, 12>;
+			read = generic_port_read<4, 0, 12>;
+			display = generic_port_display<4, 0, 12, 0>;
+			serialize = generic_port_serialize<4, 0, 12, 0>;
+			deserialize = generic_port_deserialize<4, 0, 12>;
+			devicetype = generic_port_devicetype<4, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			controllers = 4;
+			internal_type = SNES_DEVICE_MULTITAP;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_MULTITAP>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 3)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+			case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+			case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
+			case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+			case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+			case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+			case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+			case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+			case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+			default:			return -1;
+			}
+		}
+	} multitap;
+
+	struct porttype_none : public porttype_info
+	{
+		porttype_none() : porttype_info(PT_NONE, "none", generic_port_size<0, 0, 0>())
+		{
+			write = generic_port_write<0, 0, 0>;
+			read = generic_port_read<0, 0, 0>;
+			display = generic_port_display<0, 0, 0, 0>;
+			serialize = generic_port_serialize<0, 0, 0, 0>;
+			deserialize = generic_port_deserialize<0, 0, 0>;
+			devicetype = generic_port_devicetype<0, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			controllers = 0;
+			internal_type = SNES_DEVICE_NONE;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_NONE>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return -1;
+		}
+	} none;
+
+	struct porttype_superscope : public porttype_info
+	{
+		porttype_superscope() : porttype_info(PT_SUPERSCOPE, "superscope", generic_port_size<1, 2, 4>())
+		{
+			write = generic_port_write<1, 2, 4>;
+			read = generic_port_read<1, 2, 4>;
+			display = generic_port_display<1, 2, 4, 0>;
+			serialize = generic_port_serialize<1, 2, 4, 14>;
+			deserialize = generic_port_deserialize<1, 2, 4>;
+			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			controllers = 1;
+			internal_type = SNES_DEVICE_SUPER_SCOPE;
+			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_SUPER_SCOPE>;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			if(controller > 0)
+				return -1;
+			switch(lbid) {
+			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
+			case LOGICAL_BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
+			case LOGICAL_BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
+			case LOGICAL_BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
+			default:			return -1;
+			}
+		}
+	} superscope;
 
 	porttype_invalid& get_invalid_port_type()
 	{
@@ -141,6 +322,17 @@ porttype_info::porttype_info(porttype_t ptype, const std::string& pname, size_t 
 	name = pname;
 	storage_size = psize;
 	porttypes().insert(this);
+}
+
+bool porttype_info::is_analog(unsigned controller) const throw()
+{
+	devicetype_t d = devicetype(controller);
+	return (d == DT_MOUSE || d == DT_LIGHTGUN);
+}
+
+bool porttype_info::is_mouse(unsigned controller) const throw()
+{
+	return (devicetype(controller) == DT_MOUSE);
 }
 
 pollcounter_vector::pollcounter_vector() throw()
@@ -572,8 +764,8 @@ int controller_state::lcid_to_pcid(unsigned lcid) throw()
 {
 	if(!porttypeinfo[0] || !porttypeinfo[1])
 		return -1;
-	unsigned p1devs = porttypeinfo[0]->controllers();
-	unsigned p2devs = porttypeinfo[1]->controllers();
+	unsigned p1devs = porttypeinfo[0]->controllers;
+	unsigned p2devs = porttypeinfo[1]->controllers;
 	if(lcid >= p1devs + p2devs)
 		return -1;
 	//Exceptional: If p1 is none, map all to p2.
@@ -710,8 +902,7 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 			analog_mouse[i] = true;
 			analog_indices[i++] = j;
 			break;
-		case DT_SUPERSCOPE:
-		case DT_JUSTIFIER:
+		case DT_LIGHTGUN:
 			analog_mouse[i] = false;
 			analog_indices[i++] = j;
 			break;
@@ -725,22 +916,6 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 controller_frame controller_state::get_blank() throw()
 {
 	return _input.blank_frame();
-}
-
-std::string controller_state::lcid_to_typestring(unsigned lcid) throw(std::bad_alloc)
-{
-	int pcid = lcid_to_pcid(lcid);
-	devicetype_t dtype = DT_NONE;
-	if(pcid >= 0)
-		dtype = pcid_to_type(pcid);
-	switch(dtype) {
-	case DT_NONE:			return "disconnected";
-	case DT_GAMEPAD:		return "gamepad";
-	case DT_MOUSE:			return "mouse";
-	case DT_SUPERSCOPE:		return "superscope";
-	case DT_JUSTIFIER:		return "justifier";
-	default:			return "unknown";
-	};
 }
 
 controller_frame controller_state::commit(uint64_t framenum) throw()

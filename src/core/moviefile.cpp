@@ -6,7 +6,8 @@
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rrdata.hpp"
-#include "core/zip.hpp"
+#include "library/zip.hpp"
+#include "library/string.hpp"
 
 #include <sstream>
 #include <boost/iostreams/copy.hpp>
@@ -14,16 +15,6 @@
 
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
-
-void strip_CR(std::string& x) throw(std::bad_alloc)
-{
-	if(x.length() > 0 && x[x.length() - 1] == '\r') {
-		if(x.length() > 1)
-			x = x.substr(0, x.length() - 1);
-		else
-			x = "";
-	}
-}
 
 void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
@@ -33,7 +24,7 @@ void read_linefile(zip_reader& r, const std::string& member, std::string& out, b
 	std::istream& m = r[member];
 	try {
 		std::getline(m, out);
-		strip_CR(out);
+		istrip_CR(out);
 		delete &m;
 	} catch(...) {
 		delete &m;
@@ -150,7 +141,7 @@ void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::st
 	try {
 		std::string x;
 		while(std::getline(m, x)) {
-			strip_CR(x);
+			istrip_CR(x);
 			auto g = split_author(x);
 			authors.push_back(g);
 		}
@@ -234,7 +225,7 @@ void read_input(zip_reader& r, controller_frame_vector& input, porttype_t port1,
 	try {
 		std::string x;
 		while(std::getline(m, x)) {
-			strip_CR(x);
+			istrip_CR(x);
 			if(x != "") {
 				tmp.deserialize(x.c_str());
 				input.append(tmp);
@@ -253,7 +244,7 @@ void read_pollcounters(zip_reader& r, const std::string& file, std::vector<uint3
 	try {
 		std::string x;
 		while(std::getline(m, x)) {
-			strip_CR(x);
+			istrip_CR(x);
 			if(x != "") {
 				int32_t y = parse_value<int32_t>(x);
 				uint32_t z = 0;

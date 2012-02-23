@@ -1,7 +1,9 @@
 #include "core/command.hpp"
 #include "core/globalwrap.hpp"
 #include "core/misc.hpp"
-#include "core/zip.hpp"
+#include "library/minmax.hpp"
+#include "library/string.hpp"
+#include "library/zip.hpp"
 
 #include <set>
 #include <map>
@@ -24,8 +26,7 @@ namespace
 					command::invokeC(line);
 				delete o;
 			} catch(std::exception& e) {
-				if(o)
-					delete o;
+				delete o;
 				throw;
 			}
 		});
@@ -34,8 +35,8 @@ namespace
 		"Syntax: show-aliases\nShow expansions of all aliases\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i : aliases)
-				for(auto j = i.second.begin(); j != i.second.end(); j++)
-					messages << "alias " << i.first << " " << *j << std::endl;
+				for(auto j : i.second)
+					messages << "alias " << i.first << " " << j << std::endl;
 		});
 
 	function_ptr_command<tokensplitter&> unalias_command("unalias-command", "unalias a command",
@@ -44,7 +45,7 @@ namespace
 			std::string aliasname = t;
 			if(t)
 				throw std::runtime_error("This command only takes one argument");
-			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
+			if(!command::valid_alias_name(aliasname))
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].clear();
 			messages << "Command '" << aliasname << "' unaliased" << std::endl;
@@ -58,7 +59,7 @@ namespace
 			std::string command = t.tail();
 			if(command == "")
 				throw std::runtime_error("Alias name and command needed");
-			if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
+			if(!command::valid_alias_name(aliasname))
 				throw std::runtime_error("Illegal alias name");
 			aliases[aliasname].push_back(command);
 			messages << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
@@ -80,47 +81,36 @@ command::~command() throw()
 void command::invokeC(const std::string& cmd) throw()
 {
 	try {
-		std::string cmd2 = cmd;
-		if(cmd2[cmd2.length() - 1] == '\r')
-			cmd2 = cmd2.substr(0, cmd2.length() - 1);
+		std::string cmd2 = strip_CR(cmd);
 		if(cmd2 == "?") {
 			//The special ? command.
 			for(auto i : commands())
 				messages << i.first << ": " << i.second->get_short_help() << std::endl;
 			return;
 		}
-		if(cmd2.length() > 1 && cmd2[0] == '?') {
+		if(firstchar(cmd2) == '?') {
 			//?command.
-			size_t split = cmd2.find_first_of(" \t");
-			std::string rcmd;
-			if(split >= cmd2.length())
-				rcmd = cmd2.substr(1);
-			else
-				rcmd = cmd2.substr(1, split - 1);
-			if(rcmd.length() > 0 && rcmd[0] != '*') {
+			std::string rcmd = cmd2.substr(1, min(cmd2.find_first_of(" \t"), cmd2.length()));
+			if(firstchar(rcmd) != '*') {
 				//This may be an alias.
-				std::string aname = cmd2.substr(1);
-				if(aliases.count(aname)) {
+				if(aliases.count(rcmd)) {
 					//Yup.
-					messages << aname << " is an alias for: " << std::endl;
+					messages << rcmd << " is an alias for: " << std::endl;
 					size_t j = 0;
-					for(auto i : aliases[aname])
-						messages << "#" + (++j) << ": " << i << std::endl;
+					for(auto i : aliases[rcmd])
+						messages << "#" << (++j) << ": " << i << std::endl;
 					return;
 				}
-			}
-			if(rcmd.length() > 0 && rcmd[0] == '*')
+			} else
 				rcmd = rcmd.substr(1);
-			if(!commands().count(rcmd)) {
-				if(rcmd != "")
-					messages << "Unknown command '" << rcmd << "'" << std::endl;
-				return;
-			}
-			messages << commands()[rcmd]->get_long_help() << std::endl;
+			if(!commands().count(rcmd))
+				messages << "Unknown command '" << rcmd << "'" << std::endl;
+			else
+				messages << commands()[rcmd]->get_long_help() << std::endl;
 			return;
 		}
 		bool may_be_alias_expanded = true;
-		if(cmd2.length() > 0 && cmd2[0] == '*') {
+		if(firstchar(cmd2) == '*') {
 			may_be_alias_expanded = false;
 			cmd2 = cmd2.substr(1);
 		}
@@ -131,22 +121,14 @@ void command::invokeC(const std::string& cmd) throw()
 		}
 		try {
 			size_t split = cmd2.find_first_of(" \t");
-			std::string rcmd;
-			if(split >= cmd2.length())
-				rcmd = cmd2;
-			else
-				rcmd = cmd2.substr(0, split);
-			split = cmd2.find_first_not_of(" \t", split);
-			std::string args;
-			if(split < cmd2.length())
-				args = cmd2.substr(split);
+			std::string rcmd = cmd2.substr(0, min(split, cmd2.length()));
+			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
 			command* cmdh = NULL;
-			if(commands().count(rcmd))
-				cmdh = commands()[rcmd];
-			if(!cmdh) {
+			if(!commands().count(rcmd)) {
 				messages << "Unknown command '" << rcmd << "'" << std::endl;
 				return;
 			}
+			cmdh = commands()[rcmd];
 			if(command_stack.count(cmd2))
 				throw std::runtime_error("Recursive command invocation");
 			command_stack.insert(cmd2);
@@ -203,12 +185,8 @@ void command::set_alias_for(const std::string& aname, const std::string& avalue)
 	std::list<std::string> newlist;
 	size_t avitr = 0;
 	while(avitr < avalue.length()) {
-		size_t nextsplit = avalue.find_first_of("\n", avitr);
-		if(nextsplit >= avalue.length())
-			nextsplit = avalue.length();
-		std::string x = avalue.substr(avitr, nextsplit - avitr);
-		if(x.length() > 0 && x[x.length() - 1] == '\r')
-			x = x.substr(0, x.length() - 1);
+		size_t nextsplit = min(avalue.find_first_of("\n", avitr), avalue.length());
+		std::string x = strip_CR(avalue.substr(avitr, nextsplit - avitr));
 		if(x.length() > 0)
 			newlist.push_back(x);
 		avitr = nextsplit + 1;
@@ -227,7 +205,6 @@ bool command::valid_alias_name(const std::string& aliasname) throw(std::bad_allo
 		return false;
 	return true;
 }
-
 
 tokensplitter::tokensplitter(const std::string& _line) throw(std::bad_alloc)
 {

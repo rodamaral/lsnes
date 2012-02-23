@@ -1,5 +1,6 @@
 #include "core/framerate.hpp"
 #include "core/settings.hpp"
+#include "library/minmax.hpp"
 
 #include <cstdlib>
 #include <string>
@@ -40,9 +41,8 @@ namespace
 	{
 		if(frame_number < 2)
 			return 0;
-		if(frame_number >= HISTORY_FRAMES)
- 			return (1000000.0 * (HISTORY_FRAMES - 1)) / (frame_start_times[0] - frame_start_times[HISTORY_FRAMES - 1] + 1);
-		return (1000000.0 * (frame_number - 1)) / (frame_start_times[0] - frame_start_times[frame_number - 1] + 1);
+		unsigned loadidx = min(frame_number - 1, static_cast<uint64_t>(HISTORY_FRAMES) - 1);
+		return (1000000.0 * loadidx) / (frame_start_times[0] - frame_start_times[loadidx] + 1);
 	}
 
 	void add_frame(uint64_t linear_time)
@@ -151,16 +151,12 @@ uint64_t to_wait_frame(uint64_t usec) throw()
 	uint64_t frame_should_last = 1000000 / target_fps;
 	if(frame_lasted >= frame_should_last)
 		return 0;	//We are late.
-	uint64_t maxwait = frame_should_last - frame_lasted;
-	uint64_t history_frames = (frame_number < HISTORY_FRAMES) ? frame_number : HISTORY_FRAMES;
+	uint64_t history_frames = min(frame_number, static_cast<uint64_t>(HISTORY_FRAMES));
 	uint64_t history_lasted = lintime - frame_start_times[history_frames - 1];
 	uint64_t history_should_last = history_frames * 1000000 / target_fps;
 	if(history_lasted >= history_should_last)
-		return 0;		
-	uint64_t history_wait = history_should_last - history_lasted;
-	if(history_wait > maxwait)
-		history_wait = maxwait;
-	return history_wait;
+		return 0;
+	return min(history_should_last - history_lasted, frame_should_last - frame_lasted);
 }
 
 

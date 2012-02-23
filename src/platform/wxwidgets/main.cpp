@@ -17,7 +17,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
-#include "core/zip.hpp"
+#include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_messages.hpp"

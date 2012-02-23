@@ -10,8 +10,8 @@
 #include "core/patchrom.hpp"
 #include "core/rom.hpp"
 #include "core/window.hpp"
-#include "core/zip.hpp"
 #include "library/sha256.hpp"
+#include "library/zip.hpp"
 
 #include <stdexcept>
 #include <sstream>
@@ -37,8 +37,6 @@
 #define SGB_TYPE "SGB"
 #define SGB_PAL "sgb_pal"
 #define SGB_NTSC "sgb_ntsc"
-
-void strip_CR(std::string& x);
 
 std::string gtype::tostring(rom_type rtype, rom_region region) throw(std::bad_alloc, std::runtime_error)
 {

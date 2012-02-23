@@ -13,7 +13,8 @@
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/window.hpp"
-#include "core/zip.hpp"
+#include "library/string.hpp"
+#include "library/zip.hpp"
 
 #include <vector>
 #include <string>
@@ -720,8 +721,6 @@ void wxwin_mainwindow::notify_exit() throw()
 #define NEW_ALIAS "A new alias..."
 #define NEW_WATCH "A new watch..."
 
-void strip_CR(std::string& x) throw(std::bad_alloc);
-
 void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 {
 	try {
@@ -898,7 +897,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 				l = x;
 				x = "";
 			}
-			strip_CR(l);
+			istrip_CR(l);
 			if(l != "")
 				new_jukebox.push_back(l);
 		}

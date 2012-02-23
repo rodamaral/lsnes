@@ -849,15 +849,6 @@ namespace
 		}
 		return true;
 	}
-
-	void print_controller_mappings()
-	{
-		for(unsigned i = 0; i < 8; i++) {
-			std::string type = controls.lcid_to_typestring(i);
-			messages << "Physical controller mapping: Logical " << (i + 1) << " is physical " <<
-				controls.lcid_to_pcid(i) << " (" << type << ")" << std::endl;
-		}
-	}
 }
 
 std::vector<std::string> get_jukebox_names()
@@ -908,7 +899,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	lua_callback_startup();
 
-	//print_controller_mappings();
 	platform::set_paused(false);
 	amode = ADVANCE_AUTO;
 	uint64_t time_x = get_utime();

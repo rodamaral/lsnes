@@ -1,6 +1,4 @@
 #include "lsnes.hpp"
-#include <snes/snes.hpp>
-#include <ui-libsnes/libsnes.hpp>
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -9,6 +7,7 @@
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 
 #include <map>
 #include <sstream>
@@ -24,9 +23,8 @@ namespace
 			return;
 		for(unsigned i = 0; i < 8; i++)
 			for(unsigned j = 0; j < MAX_LOGICAL_BUTTONS; j++) {
-				std::ostringstream x;
-				x << (i + 1) << get_logical_button_name(j);
-				buttonmap[x.str()] = std::make_pair(i, j);
+				buttonmap[(stringfmt() << (i + 1) << get_logical_button_name(j)).str()] =
+					std::make_pair(i, j);
 			}
 		done = 1;
 	}
@@ -90,24 +88,17 @@ namespace
 							button = fpattern.substr(0, split);
 							rest = fpattern.substr(split + 1);
 						}
-						if(!buttonmap.count(button)) {
-							std::ostringstream x;
-							x << "Invalid button '" << button << "'";
-							throw std::runtime_error(x.str());
-						}
+						if(!buttonmap.count(button))
+							(stringfmt() << "Invalid button '" << button << "'").throwex();
 						auto g = buttonmap[button];
 						int x = controls.lcid_to_pcid(g.first);
-						if(x < 0) {
-							std::ostringstream x;
-							x << "No such controller #" << (g.first + 1) << std::endl;
-							throw std::runtime_error(x.str());
-						}
+						if(x < 0)
+							(stringfmt() << "No such controller #" << (g.first + 1)).
+								throwex();
 						int bid = controls.button_id(x, g.second);
-						if(bid < 0) {
-							std::ostringstream x;
-							x << "Invalid button for controller type" << std::endl;
-							throw std::runtime_error(x.str());
-						}
+						if(bid < 0)
+							(stringfmt() << "Invalid button for controller type").
+								throwex();
 						c.axis(x, bid, true);
 						fpattern = rest;
 					}
@@ -191,35 +182,31 @@ namespace
 			for(size_t i = 0; i < MAX_LOGICAL_BUTTONS; ++i)
 				for(int j = 0; j < 3; ++j)
 					for(unsigned k = 0; k < 8; ++k) {
-						std::string x, y, expx;
-						char cstr[2] = {0, 0};
-						cstr[0] = 49 + k;
+						stringfmt x, y, expx;
 						switch(j) {
 						case 0:
-							x = "+controller";
+							x << "+controller";
 							break;
 						case 1:
-							x = "-controller";
+							x << "-controller";
 							break;
 						case 2:
-							x = "controllerh";
+							x << "controllerh";
 							break;
 						};
-						x = x + cstr + get_logical_button_name(i);
-						y = cstr + get_logical_button_name(i);
-						expx = std::string("Controller X ") + get_logical_button_name(i);
-						expx[11] = 49 + k;
-						our_commands.insert(new button_action(x, j, k, y));
+						x << (k + 1) << get_logical_button_name(i);
+						y << (k + 1) << get_logical_button_name(i);
+						expx << "Controller " << (k + 1) << " " << get_logical_button_name(i);
+						our_commands.insert(new button_action(x.str(), j, k, y.str()));
 						if(j == 0)
-							our_icommands.insert(new inverse_key(x, expx));
+							our_icommands.insert(new inverse_key(x.str(), expx.str()));
 					}
 			for(unsigned k = 0; k < 8; ++k) {
-				std::string x = "controllerXanalog";
-				std::string expx = "Controller X analog function";
-				x[10] = 49 + k;
-				expx[11] = 49 + k;
-				our_commands.insert(new analog_action(x, k));
-				our_icommands.insert(new inverse_key(x, expx));
+				stringfmt x, expx;
+				x << "controller" << (k + 1) << "analog";
+				expx << "Controller " << (k + 1) << " analog function";
+				our_commands.insert(new analog_action(x.str(), k));
+				our_icommands.insert(new inverse_key(x.str(), expx.str()));
 			}
 		}
 		~button_action_helper()

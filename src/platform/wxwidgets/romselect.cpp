@@ -7,7 +7,7 @@
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
-#include "core/zip.hpp"
+#include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_romselect.hpp"

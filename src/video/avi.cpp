@@ -27,16 +27,10 @@ namespace
 	uint32_t get_rate(uint32_t n, uint32_t d, unsigned mode)
 	{
 		if(mode == 0) {
-			unsigned bestidx = 0;
-			double besterror = 1e99;
-			for(size_t i = 0; i < sizeof(rates) / sizeof(rates[0]); i++) {
-				double error = fabs(log(static_cast<double>(d) * rates[i] / n));
-				if(error < besterror) {
-					besterror = error;
-					bestidx = i;
-				}
-			}
-			return rates[bestidx];
+			auto best = std::make_pair(1e99, static_cast<size_t>(0));
+			for(size_t i = 0; i < sizeof(rates) / sizeof(rates[0]); i++)
+				best = min(best, std::make_pair(fabs(log(static_cast<double>(d) * rates[i] / n)), i));
+			return rates[best.second];
 		} else if(mode == 1) {
 			return static_cast<uint32_t>(n / d);
 		} else if(mode == 2) {
