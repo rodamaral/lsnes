@@ -10,6 +10,7 @@
 #include "core/patchrom.hpp"
 #include "core/rom.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 #include "library/zip.hpp"
 
 #include <stdexcept>
@@ -210,15 +211,12 @@ namespace
 	std::string findoption(const std::vector<std::string>& cmdline, const std::string& option)
 	{
 		std::string value;
+		regex_results optp;
 		for(auto i : cmdline) {
-			std::string arg = i;
-			if(arg.length() < 3 + option.length())
-				continue;
-			if(arg[0] != '-' || arg[1] != '-' || arg.substr(2, option.length()) != option ||
-				arg[2 + option.length()] != '=')
+			if(!(optp = regex("--([^=]+)=(.*)", i)) || optp[1] != option)
 				continue;
 			if(value == "")
-				value = arg.substr(3 + option.length());
+				value = optp[2];
 			else
 				std::cerr << "WARNING: Ignored duplicate option for '" << option << "'." << std::endl;
 			if(value == "")
@@ -459,47 +457,41 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::ba
 	std::runtime_error)
 {
 	int32_t offset = 0;
+	regex_results opt;
 	for(auto i : cmdline) {
-		std::string opt = i;
-		if(opt.length() >= 13 && opt.substr(0, 13) == "--ips-offset=") {
+		if(opt = regex("--ips-offset=(.*)", i)) {
 			try {
-				offset = parse_value<int32_t>(opt.substr(13));
+				offset = parse_value<int32_t>(opt[1]);
 			} catch(std::exception& e) {
-				throw std::runtime_error("Invalid IPS offset option '" + opt + "': " + e.what());
+				throw std::runtime_error("Invalid IPS offset option '" + i + "': " + e.what());
 			}
 			continue;
-		}
-		if(opt.length() < 6 || opt.substr(0, 6) != "--ips-")
-			continue;
-		size_t split = opt.find_first_of("=");
-		if(split > opt.length())
-			throw std::runtime_error("Invalid IPS patch argument '" + opt + "'");
-		std::string kind = opt.substr(6, split - 6);
-		std::string filename = opt.substr(split + 1);
-		messages << "Patching " << kind << " using '" << filename << "'" << std::endl;
-		std::vector<char> ips;
-		try {
-			ips = read_file_relative(filename, "");
-		} catch(std::bad_alloc& e) {
-			OOM_panic();
-		} catch(std::exception& e) {
-			throw std::runtime_error("Can't read IPS '" + filename + "': " + e.what());
-		}
-		try {
-			switch(recognize_commandline_rom(rtype, kind)) {
-			case 0:		rom.patch(ips, offset);			break;
-			case 1:		rom_xml.patch(ips, offset);		break;
-			case 2:		slota.patch(ips, offset);		break;
-			case 3:		slota_xml.patch(ips, offset);		break;
-			case 4:		slotb.patch(ips, offset);		break;
-			case 5:		slotb_xml.patch(ips, offset);		break;
-			default:
-				throw std::runtime_error("Invalid subROM '" + kind + "' to patch");
+		} else if(opt = regex("--ips-([^=]*)=(.+)", i)) {
+			messages << "Patching " << opt[1] << " using '" << opt[2] << "'" << std::endl;
+			std::vector<char> ips;
+			try {
+				ips = read_file_relative(opt[2], "");
+			} catch(std::bad_alloc& e) {
+				OOM_panic();
+			} catch(std::exception& e) {
+				throw std::runtime_error("Can't read IPS '" + opt[2] + "': " + e.what());
 			}
-		} catch(std::bad_alloc& e) {
-			OOM_panic();
-		} catch(std::exception& e) {
-			throw std::runtime_error("Can't Patch with IPS '" + filename + "': " + e.what());
+			try {
+				switch(recognize_commandline_rom(rtype, opt[1])) {
+				case 0:		rom.patch(ips, offset);			break;
+				case 1:		rom_xml.patch(ips, offset);		break;
+				case 2:		slota.patch(ips, offset);		break;
+				case 3:		slota_xml.patch(ips, offset);		break;
+				case 4:		slotb.patch(ips, offset);		break;
+				case 5:		slotb_xml.patch(ips, offset);		break;
+				default:
+					throw std::runtime_error("Invalid subROM '" + opt[1] + "' to patch");
+				}
+			} catch(std::bad_alloc& e) {
+				OOM_panic();
+			} catch(std::exception& e) {
+				throw std::runtime_error("Can't Patch with IPS '" + opt[2] + "': " + e.what());
+			}
 		}
 	}
 }
@@ -558,47 +550,35 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::map<std::string, std::vector<char>> ret;
+	regex_results opt;
 	for(auto i : cmdline) {
-		std::string opt = i;
-		if(opt.length() >= 11 && opt.substr(0, 11) == "--continue=") {
-			size_t split = opt.find_first_of("=");
-			if(split > opt.length() - 1)
-				throw std::runtime_error("Bad SRAM option '" + opt + "'");
-			std::string file = opt.substr(split + 1);
-			zip_reader r(file);
+		if(opt = regex("--continue=(.+)", i)) {
+			zip_reader r(opt[1]);
 			for(auto j : r) {
-				std::string fname = j;
-				if(fname.length() < 6 || fname.substr(0, 5) != "sram.")
+				auto sramname = regex("sram\\.(.*)", j);
+				if(!sram_name)
 					continue;
-				std::istream& x = r[fname];
+				std::istream& x = r[j];
 				try {
 					std::vector<char> out;
 					boost::iostreams::back_insert_device<std::vector<char>> rd(out);
 					boost::iostreams::copy(x, rd);
 					delete &x;
-					ret[fname.substr(5, split - 5)] = out;
+					ret[sramname[1]] = out;
 				} catch(...) {
 					delete &x;
 					throw;
 				}
 			}
 			continue;
-		}
-		if(opt.length() < 8 || opt.substr(0, 7) != "--sram-")
-			continue;
-		size_t split = opt.find_first_of("=");
-		if(split > opt.length() - 1)
-			throw std::runtime_error("Bad SRAM option '" + opt + "'");
-		std::string kind = opt.substr(7, split - 7);
-		std::string file = opt.substr(split + 1);
-		if(kind == "")
-			throw std::runtime_error("Bad SRAM option '" + opt + "'");
-		try {
-			ret[kind] = read_file_relative(file, "");
-		} catch(std::bad_alloc& e) {
-			throw;
-		} catch(std::runtime_error& e) {
-			throw std::runtime_error("Can't load SRAM '" + kind + "': " + e.what());
+		} else if(opt = regex("--sram-([^=]+)=(.+)", i)) {
+			try {
+				ret[opt[1]] = read_file_relative(opt[2], "");
+			} catch(std::bad_alloc& e) {
+				throw;
+			} catch(std::runtime_error& e) {
+				throw std::runtime_error("Can't load SRAM '" + opt[1] + "': " + e.what());
+			}
 		}
 	}
 	return ret;
