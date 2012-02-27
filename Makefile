@@ -12,7 +12,7 @@ HOSTCC = $(CC)
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -Iinclude -Iavi -std=gnu++0x
-LDFLAGS = -lboost_iostreams -lboost_filesystem -lboost_system -lz
+LDFLAGS = -lboost_iostreams -lboost_filesystem -lboost_system -lboost_regex -lz
 PLATFORM_CFLAGS =
 PLATFORM_LDFLAGS =
 
