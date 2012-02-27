@@ -322,19 +322,11 @@ void platform::message(const std::string& msg) throw(std::bad_alloc)
 	mutex::holder h(msgbuf_lock());
 	std::string msg2 = msg;
 	while(msg2 != "") {
-		size_t s = msg2.find_first_of("\n");
 		std::string forlog;
-		if(s >= msg2.length()) {
-			msgbuf.add_message(forlog = msg2);
-			if(system_log)
-				system_log << forlog << std::endl;
-			break;
-		} else {
-			msgbuf.add_message(forlog = msg2.substr(0, s));
-			if(system_log)
-				system_log << forlog << std::endl;
-			msg2 = msg2.substr(s + 1);
-		}
+		extract_token(msg2, forlog, "\n");
+		msgbuf.add_message(forlog);
+		if(system_log)
+			system_log << forlog << std::endl;
 	}
 }
 
@@ -439,7 +431,7 @@ void platform::flush_command_queue() throw()
 		if(waitleft > 0)
 			queue_condition->wait(waitleft);
 		else
-			return;
+			break;
 		//If we had to wait, check queues at least once more.
 	}
 	if(!modal_pause && !normal_pause)
@@ -522,11 +514,6 @@ namespace
 	mutex* _msgbuf_lock;
 	screen* our_screen;
 
-	void trigger_repaint()
-	{
-		graphics_plugin::notify_screen();
-	}
-
 	struct painter_listener : public information_dispatch
 	{
 		painter_listener();
@@ -544,7 +531,7 @@ namespace
 
 	void painter_listener::on_screen_update()
 	{
-		trigger_repaint();
+		graphics_plugin::notify_screen();
 	}
 
 	void painter_listener::on_status_update()
@@ -573,7 +560,7 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 		our_screen->palette_b == bshift)
 		return;
 	our_screen->set_palette(rshift, gshift, bshift);
-	trigger_repaint();
+	graphics_plugin::notify_screen();
 }
 
 modal_pause_holder::modal_pause_holder()
