@@ -1216,8 +1216,8 @@ inline short generic_port_read(const unsigned char* buffer, unsigned idx, unsign
 	} else if(ctrl < analog_axis + buttons) {
 		size_t bit = 16 * controllers * analog_axis + idx * buttons + ctrl - analog_axis;
 		return ((buffer[bit / 8] & (1 << (bit % 8))) != 0);
-	}
-	
+	} else
+		return 0;
 }
 
 /**
