@@ -13,41 +13,31 @@ namespace
 {
 	globalwrap<std::map<std::string, setting*>> settings;
 
-	function_ptr_command<tokensplitter&> set_setting("set-setting", "set a setting",
+	function_ptr_command<const std::string&> set_setting("set-setting", "set a setting",
 		"Syntax: set-setting <setting> [<value>]\nSet setting to a new value. Omit <value> to set to ''\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string syntax = "Syntax: set-setting <setting> [<value>]";
-			std::string settingname = t;
-			std::string settingvalue = t.tail();
-			if(settingname == "")
-				throw std::runtime_error("Setting name required.");
-			setting::set(settingname, settingvalue);
-			messages << "Setting '" << settingname << "' set to '" << settingvalue << "'"
-				<< std::endl;
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)([ \t]+(|[^ \t].*))?", t, "Setting name required.");
+			setting::set(r[1], r[3]);
+			messages << "Setting '" << r[1] << "' set to '" << r[3] << "'" << std::endl;
 		});
 
-	function_ptr_command<tokensplitter&> unset_setting("unset-setting", "unset a setting",
+	function_ptr_command<const std::string&> unset_setting("unset-setting", "unset a setting",
 		"Syntax: unset-setting <setting>\nTry to unset a setting. Note that not all settings can be unset\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string syntax = "Syntax: unset-setting <setting>";
-			std::string settingname = t;
-			if(settingname == "" || t)
-				throw std::runtime_error("Expected setting name and nothing else");
-			setting::blank(settingname);
-			messages << "Setting '" << settingname << "' unset" << std::endl;
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
+			setting::blank(r[1]);
+			messages << "Setting '" << r[1] << "' unset" << std::endl;
 		});
 
-	function_ptr_command<tokensplitter&> get_command("get-setting", "get value of a setting",
+	function_ptr_command<const std::string&> get_command("get-setting", "get value of a setting",
 		"Syntax: get-setting <setting>\nShow value of setting\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string settingname = t;
-			if(settingname == "" || t.tail() != "")
-				throw std::runtime_error("Expected setting name and nothing else");
-			if(setting::is_set(settingname))
-				messages << "Setting '" << settingname << "' has value '"
-					<< setting::get(settingname) << "'" << std::endl;
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
+			if(setting::is_set(r[1]))
+				messages << "Setting '" << r[1] << "' has value '"
+					<< setting::get(r[1]) << "'" << std::endl;
 			else
-				messages << "Setting '" << settingname << "' unset" << std::endl;
+				messages << "Setting '" << r[1] << "' is unset" << std::endl;
 		});
 
 	function_ptr_command<> show_settings("show-settings", "Show values of all settings",
