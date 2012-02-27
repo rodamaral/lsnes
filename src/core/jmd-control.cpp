@@ -175,9 +175,7 @@ namespace
 	function_ptr_command<const std::string&> jmd_dump("dump-jmd", "Start JMD capture",
 		"Syntax: dump-jmd <file>\nStart JMD capture to <file>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
-			std::string prefix = t.tail();
-			startdump(prefix);
+			startdump(args);
 		});
 
 	function_ptr_command<> end_avi("end-jmd", "End JMD capture",

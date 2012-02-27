@@ -218,9 +218,7 @@ namespace
 	function_ptr_command<const std::string&> avi_dump("dump-avi", "Start AVI capture",
 		"Syntax: dump-avi <prefix>\nStart AVI capture to <prefix>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			tokensplitter t(args);
-			std::string prefix = t.tail();
-			startdump(prefix);
+			startdump(args);
 		});
 
 	function_ptr_command<> end_avi("end-avi", "End AVI capture",
