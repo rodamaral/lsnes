@@ -182,13 +182,18 @@ bool boolean_setting::is_set() throw()
 
 void boolean_setting::set(const std::string& v) throw(std::bad_alloc, std::runtime_error)
 {
-	if(v == "true" || v == "yes" || v == "on" || v == "1" || v == "enable" || v == "enabled")
+	switch(string_to_bool(v)) {
+	case 1:
 		value = true;
-	else if(v == "false" || v == "no" || v == "off" || v == "0" || v == "disable" || v == "disabled")
+		break;
+	case 0:
 		value = false;
-	else
+		break;
+	default:
 		throw std::runtime_error("Invalid value for boolean setting");
+	};
 }
+
 std::string boolean_setting::get() throw(std::bad_alloc)
 {
 	if(value)
