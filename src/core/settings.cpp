@@ -3,6 +3,7 @@
 #include "core/globalwrap.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
+#include "library/string.hpp"
 
 #include <map>
 #include <sstream>
@@ -52,7 +53,12 @@ namespace
 	function_ptr_command<> show_settings("show-settings", "Show values of all settings",
 		"Syntax: show-settings\nShow value of all settings\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			setting::print_all();
+			for(auto i : setting::get_settings_set()) {
+				if(!setting::is_set(i))
+					messages << i << ": (unset)" << std::endl;
+				else
+					messages << i << ": " << setting::get(i) << std::endl;
+			}
 		});
 }
 
@@ -106,16 +112,6 @@ bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::run
 	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	return settings()[_setting]->is_set();
-}
-
-void setting::print_all() throw(std::bad_alloc)
-{
-	for(auto i : settings()) {
-		if(!i.second->is_set())
-			messages << i.first << ": (unset)" << std::endl;
-		else
-			messages << i.first << ": " << i.second->get() << std::endl;
-	}
 }
 
 std::set<std::string> setting::get_settings_set() throw(std::bad_alloc)
