@@ -141,7 +141,7 @@ namespace
 			throw std::runtime_error("Expected filename");
 		if(vid_dumper)
 			throw std::runtime_error("JMD dumping already in progress");
-		unsigned long level2 = (unsigned long)level2;
+		unsigned long level2 = (unsigned long)clevel;
 		try {
 			vid_dumper = new jmd_avsnoop(prefix, level2);
 		} catch(std::bad_alloc& e) {
