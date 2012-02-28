@@ -3,6 +3,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/window.hpp"
+#include <library/string.hpp>
 
 #include <cstdio>
 #include <cstdlib>
@@ -269,23 +270,17 @@ void do_watch_memory()
 
 namespace
 {
-	function_ptr_command<tokensplitter&> add_watch("add-watch", "Add a memory watch",
+	function_ptr_command<const std::string&> add_watch("add-watch", "Add a memory watch",
 		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string name = t;
-			if(name == "" || t.tail() == "")
-				throw std::runtime_error("syntax: add-watch <name> <expr>");
-			set_watchexpr_for(name, t.tail());
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]+(|[^ \t].*)", t, "Name and expression required.");
+			set_watchexpr_for(r[1], r[2]);
 		});
 
-	function_ptr_command<tokensplitter&> remove_watch("remove-watch", "Remove a memory watch",
+	function_ptr_command<const std::string&> remove_watch("remove-watch", "Remove a memory watch",
 		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string name = t;
-			if(name == "" || t.tail() != "") {
-				throw std::runtime_error("syntax: remove-watch <name>");
-				return;
-			}
-			set_watchexpr_for(name, "");
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]*", t, "Name required.");
+			set_watchexpr_for(r[1], "");
 		});
 }
