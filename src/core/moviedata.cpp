@@ -12,6 +12,7 @@
 #include "core/moviedata.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
+#include "library/string.hpp"
 
 #include <iomanip>
 #include <fstream>
@@ -127,14 +128,15 @@ namespace
 			our_movie.authors.erase(our_movie.authors.begin() + index);
 		});
 
-	function_ptr_command<tokensplitter&> edit_author("edit-author", "Edit an author",
+	function_ptr_command<const std::string&> edit_author("edit-author", "Edit an author",
 		"Syntax: edit-author <authorid> <fullname>\nSyntax: edit-author <authorid> |<nickname>\n"
 		"Syntax: edit-author <authorid> <fullname>|<nickname>\nEdits author name\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			uint64_t index = parse_value<uint64_t>(t);
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]+(|[^ \t].*)", t, "Index and author required.");
+			uint64_t index = parse_value<uint64_t>(r[1]);
 			if(index >= our_movie.authors.size())
 				throw std::runtime_error("No such author");
-			auto g = split_author(t.tail());
+			auto g = split_author(r[2]);
 			our_movie.authors[index] = g;
 		});
 
