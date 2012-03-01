@@ -7,6 +7,7 @@
 #include "core/misc.hpp"
 #include "core/window.hpp"
 #include "core/lua.hpp"
+#include "library/string.hpp"
 
 #include <stdexcept>
 #include <stdexcept>
@@ -18,54 +19,26 @@
 
 namespace
 {
-	function_ptr_command<tokensplitter&> bind_key("bind-key", "Bind a (pseudo-)key",
+	function_ptr_command<const std::string&> bind_key("bind-key", "Bind a (pseudo-)key",
 		"Syntax: bind-key [<mod>/<modmask>] <key> <command>\nBind command to specified key (with specified "
 		" modifiers)\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string mod, modmask, keyname, command;
-			std::string mod_or_key = t;
-			if(mod_or_key.find_first_of("/") < mod_or_key.length()) {
-				//Mod field.
-				size_t split = mod_or_key.find_first_of("/");
-				mod = mod_or_key.substr(0, split);
-				modmask = mod_or_key.substr(split + 1);
-				mod_or_key = static_cast<std::string>(t);
-			}
-			if(mod_or_key == "")
-				throw std::runtime_error("Expected optional modifiers and key");
-			keyname = mod_or_key;
-			command = t.tail();
-			if(command == "")
-				throw std::runtime_error("Expected command");
-			keymapper::bind(mod, modmask, keyname, command);
-			if(mod != "" || modmask != "")
-				messages << mod << "/" << modmask << " ";
-			messages << keyname << " bound to '" << command << "'" << std::endl;
-
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("(([^ /\t]*)/([^ /\t]*)[ \t]+)?([^ \t]+)[ \t]+([^ \t].*)", t,
+				"Key and command required");
+			keymapper::bind(r[2], r[3], r[4], r[5]);
+			if(r[2] != "" || r[3] != "")
+				messages << r[2] << "/" << r[3] << " ";
+			messages << r[4] << " bound to '" << r[5] << "'" << std::endl;
 		});
 
-	function_ptr_command<tokensplitter&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
+	function_ptr_command<const std::string&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
 		"Syntax: unbind-key [<mod>/<modmask>] <key>\nUnbind specified key (with specified modifiers)\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string mod, modmask, keyname, command;
-			std::string mod_or_key = t;
-			if(mod_or_key.find_first_of("/") < mod_or_key.length()) {
-				//Mod field.
-				size_t split = mod_or_key.find_first_of("/");
-				mod = mod_or_key.substr(0, split);
-				modmask = mod_or_key.substr(split + 1);
-				mod_or_key = static_cast<std::string>(t);
-			}
-			if(mod_or_key == "")
-				throw std::runtime_error("Expected optional modifiers and key");
-			keyname = mod_or_key;
-			command = t.tail();
-			if(command != "")
-				throw std::runtime_error("Unexpected argument");
-			keymapper::unbind(mod, modmask, keyname);
-			if(mod != "" || modmask != "")
-				messages << mod << "/" << modmask << " ";
-			messages << keyname << " unbound" << std::endl;
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("(([^ /\t]*)/([^ /\t]*)[ \t]+)?([^ \t]+)[ \t]*", t, "Key required");
+			keymapper::unbind(r[2], r[3], r[4]);
+			if(r[2] != "" || r[3] != "")
+				messages << r[2] << "/" << r[3] << " ";
+			messages << r[4] << " unbound" << std::endl;
 		});
 
 	function_ptr_command<> show_bindings("show-bindings", "Show active bindings",
@@ -574,18 +547,15 @@ signed keygroup::get_value()
 namespace
 {
 
-	function_ptr_command<tokensplitter&> set_axis("set-axis", "Set mode of Joystick axis",
+	function_ptr_command<const std::string&> set_axis("set-axis", "Set mode of Joystick axis",
 		"Syntax: set-axis <axis> <options>...\nKnown options: disabled, axis, axis-inverse, pressure0-\n"
 		"pressure0+, pressure-0, pressure-+, pressure+0, pressure+-\nminus=<val>, zero=<val>, plus=<val>\n"
 		"tolerance=<val>\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			struct keygroup::parameters p;
-			std::string axis = t;
-			if(axis == "")
-				throw std::runtime_error("Axis name required");
-			if(!keygroups().count(axis))
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]+([^ \t].*)", t, "Axis name and option(s) required");
+			if(!keygroups().count(r[1]))
 				throw std::runtime_error("Unknown axis name");
-			p = keygroups()[axis]->get_parameters();
+			auto p = keygroups()[r[1]]->get_parameters();
 			switch(p.ktype) {
 			case keygroup::KT_DISABLED:
 			case keygroup::KT_AXIS_PAIR:
@@ -600,99 +570,61 @@ namespace
 			default:
 				throw std::runtime_error("Not an axis");
 			}
-			bool found_axismode = false;
-			bool found_minus = false;
-			bool found_zero = false;
-			bool found_plus = false;
-			bool found_tolerance = false;
-			while(!!t) {
-				std::string spec = t;
-				if(spec == "disabled") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_DISABLED;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "axis") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_AXIS_PAIR;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "axis-inverse") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_AXIS_PAIR_INVERSE;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure0-") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_0M;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure0+") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_0P;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure-0") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_M0;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure-+") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_MP;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure+0") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_P0;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec == "pressure+-") {
-					if(!found_axismode)
-						p.ktype = keygroup::KT_PRESSURE_PM;
-					else
-						throw std::runtime_error("Conflicting axis modes");
-					found_axismode = true;
-				} else if(spec.substr(0, 6) == "minus=") {
-					if(!found_minus)
-						p.cal_left = parse_value<int16_t>(spec.substr(6));
-					else
-						throw std::runtime_error("Conflicting minus value");
-					found_minus = true;
-				} else if(spec.substr(0, 5) == "zero=") {
-					if(!found_zero)
-						p.cal_center = parse_value<int16_t>(spec.substr(5));
-					else
-						throw std::runtime_error("Conflicting zero value");
-					found_zero = true;
-				} else if(spec.substr(0, 5) == "plus=") {
-					if(!found_plus)
-						p.cal_right = parse_value<int16_t>(spec.substr(5));
-					else
-						throw std::runtime_error("Conflicting plus value");
-					found_plus = true;
-				} else if(spec.substr(0, 10) == "tolerance=") {
-					if(!found_tolerance) {
-						p.cal_tolerance = parse_value<double>(spec.substr(10));
-						if(p.cal_tolerance <= 0 || p.cal_tolerance > 1)
-							throw std::runtime_error("Tolerance out of range");
-					} else
-						throw std::runtime_error("Conflicting tolerance value");
-					found_tolerance = true;
+			regex_results r2;
+			std::string options = r[2];
+			unsigned found_mask = 0;
+			while(options != "") {
+				std::string option;
+				extract_token(options, option, " \t", true);
+				unsigned optmask = 0;
+				if(option == "disabled") {
+					p.ktype = keygroup::KT_DISABLED;
+					optmask = 1;
+				} else if(option == "axis") {
+					p.ktype = keygroup::KT_AXIS_PAIR;
+					optmask = 1;
+				} else if(option == "axis-inverse") {
+					p.ktype = keygroup::KT_AXIS_PAIR_INVERSE;
+					optmask = 1;
+				} else if(option == "pressure0-") {
+					p.ktype = keygroup::KT_PRESSURE_0M;
+					optmask = 1;
+				} else if(option == "pressure0+") {
+					p.ktype = keygroup::KT_PRESSURE_0P;
+					optmask = 1;
+				} else if(option == "pressure-0") {
+					p.ktype = keygroup::KT_PRESSURE_M0;
+					optmask = 1;
+				} else if(option == "pressure-+") {
+					p.ktype = keygroup::KT_PRESSURE_MP;
+					optmask = 1;
+				} else if(option == "pressure+-") {
+					p.ktype = keygroup::KT_PRESSURE_PM;
+					optmask = 1;
+				} else if(option == "pressure+0") {
+					p.ktype = keygroup::KT_PRESSURE_P0;
+					optmask = 1;
+				} else if(r2 = regex("minus=([+-]?[0-9]+)", option)) {
+					p.cal_left = parse_value<int16_t>(r2[1]);
+					optmask = 2;
+				} else if(r2 = regex("zero=([+-]?[0-9]+)", option)) {
+					p.cal_center = parse_value<int16_t>(r2[1]);
+					optmask = 4;
+				} else if(r2 = regex("plus=([+-]?[0-9]+)", option)) {
+					p.cal_right = parse_value<int16_t>(r2[1]);
+					optmask = 8;
+				} else if(r2 = regex("tolerance=0?(\\.[0-9]+)", option)) {
+					p.cal_tolerance = parse_value<double>(r2[1]);
+					optmask = 16;
 				} else
-					throw std::runtime_error("Unknown axis modifier");
+					throw std::runtime_error("Unknown axis option");
+				if(found_mask & optmask)
+					throw std::runtime_error("Conflicting axis modes");
+				found_mask |= optmask;
 			}
-			if(found_axismode)
-				keygroups()[axis]->change_type(p.ktype);
-			keygroups()[axis]->change_calibration(p.cal_left, p.cal_center, p.cal_right, p.cal_tolerance);
+			if(found_mask & 1)
+				keygroups()[r[1]]->change_type(p.ktype);
+			keygroups()[r[1]]->change_calibration(p.cal_left, p.cal_center, p.cal_right, p.cal_tolerance);
 		});
 
 	function_ptr_command<> set_axismode("show-axes", "Show all joystick axes",
