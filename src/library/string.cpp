@@ -42,7 +42,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool sequ
 	size_t s = str.find_first_of(sep);
 	if(s < str.length()) {
 		int ech = static_cast<unsigned char>(str[s]);
-		size_t t = sequence ? min(str.find_first_not_of(str, s), str.length()) : (s + 1);
+		size_t t = sequence ? min(str.find_first_not_of(sep, s), str.length()) : (s + 1);
 		tok = str.substr(0, s);
 		str = str.substr(t);
 		return ech;
