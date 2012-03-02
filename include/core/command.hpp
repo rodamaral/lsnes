@@ -72,44 +72,6 @@ private:
 };
 
 /**
- * Splits string to fields on ' ' and '\t', with multiple whitespace collapsed into one.
- */
-class tokensplitter
-{
-public:
-/**
- * Create a new splitter.
- *
- * parameter _line: The line to start splitting.
- * throws std::bad_alloc: Not enough memory.
- */
-	tokensplitter(const std::string& _line) throw(std::bad_alloc);
-/**
- * Are there more tokens coming?
- *
- * returns: True if there is at least one token coming, false otherwise.
- */
-	operator bool() throw();
-/**
- * Get the next token.
- *
- * returns: The next token from line. If there are no more tokens, returns "".
- * throws std::bad_alloc: Not enough memory.
- */
-	operator std::string() throw(std::bad_alloc);
-/**
- * Get all remaining line in one go.
- *
- * returns: All remaining parts of line as-is.
- * throws std::bad_alloc: Not enough memory.
- */
-	std::string tail() throw(std::bad_alloc);
-private:
-	std::string line;
-	size_t position;
-};
-
-/**
  * Mandatory filename
  */
 struct arg_filename

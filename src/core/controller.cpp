@@ -67,15 +67,16 @@ namespace
 			controls.analog(pcid, x / 2 , y / 2);
 	}
 
-	function_ptr_command<tokensplitter&> autofire("autofire", "Set autofire pattern",
+	function_ptr_command<const std::string&> autofire("autofire", "Set autofire pattern",
 		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			if(!t)
-				throw std::runtime_error("Need at least one frame for autofire");
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex(".*[^ \t].*", a, "Need at least one frame for autofire");
 			std::vector<controller_frame> new_autofire_pattern;
 			init_buttonmap();
-			while(t) {
-				std::string fpattern = t;
+			std::string pattern = a;
+			while(pattern != "") {
+				std::string fpattern;
+				extract_token(pattern, fpattern, " \t", true);
 				if(fpattern == "-")
 					new_autofire_pattern.push_back(controls.get_blank());
 				else {

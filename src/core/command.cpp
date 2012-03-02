@@ -39,30 +39,25 @@ namespace
 					messages << "alias " << i.first << " " << j << std::endl;
 		});
 
-	function_ptr_command<tokensplitter&> unalias_command("unalias-command", "unalias a command",
+	function_ptr_command<const std::string&> unalias_command("unalias-command", "unalias a command",
 		"Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string aliasname = t;
-			if(t)
-				throw std::runtime_error("This command only takes one argument");
-			if(!command::valid_alias_name(aliasname))
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]*", t, "This command only takes one argument");
+			if(!command::valid_alias_name(r[1]))
 				throw std::runtime_error("Illegal alias name");
-			aliases[aliasname].clear();
-			messages << "Command '" << aliasname << "' unaliased" << std::endl;
+			aliases[r[1]].clear();
+			messages << "Command '" << r[1] << "' unaliased" << std::endl;
 		});
 
-	function_ptr_command<tokensplitter&> alias_command("alias-command", "alias a command",
+	function_ptr_command<const std::string&> alias_command("alias-command", "alias a command",
 		"Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias <aliasname>\n"
 		"Valid alias names can't be empty nor start with '*' or '?'\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			std::string aliasname = t;
-			std::string command = t.tail();
-			if(command == "")
-				throw std::runtime_error("Alias name and command needed");
-			if(!command::valid_alias_name(aliasname))
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]+([^ \t].*)", t, "Alias name and command needed");
+			if(!command::valid_alias_name(r[1]))
 				throw std::runtime_error("Illegal alias name");
-			aliases[aliasname].push_back(command);
-			messages << "Command '" << aliasname << "' aliased to '" << command << "'" << std::endl;
+			aliases[r[1]].push_back(r[2]);
+			messages << "Command '" << r[1] << "' aliased to '" << r[2] << "'" << std::endl;
 		});
 }
 
@@ -206,37 +201,6 @@ bool command::valid_alias_name(const std::string& aliasname) throw(std::bad_allo
 	return true;
 }
 
-tokensplitter::tokensplitter(const std::string& _line) throw(std::bad_alloc)
-{
-	line = _line;
-	position = 0;
-}
-
-tokensplitter::operator bool() throw()
-{
-	return (position < line.length());
-}
-
-tokensplitter::operator std::string() throw(std::bad_alloc)
-{
-	size_t nextp, oldp = position;
-	nextp = line.find_first_of(" \t", position);
-	if(nextp > line.length()) {
-		position = line.length();
-		return line.substr(oldp);
-	} else {
-		position = nextp;
-		while(position < line.length() && (line[position] == ' ' || line[position] == '\t'))
-			position++;
-		return line.substr(oldp, nextp - oldp);
-	}
-}
-
-std::string tokensplitter::tail() throw(std::bad_alloc)
-{
-	return line.substr(position);
-}
-
 template<>
 void invoke_command_fn(void (*fn)(const std::string& args), const std::string& args)
 {
@@ -259,11 +223,4 @@ void invoke_command_fn(void (*fn)(struct arg_filename a), const std::string& arg
 	arg_filename b;
 	b.v = args;
 	fn(b);
-}
-
-template<>
-void invoke_command_fn(void (*fn)(tokensplitter& a), const std::string& args)
-{
-	tokensplitter t(args);
-	fn(t);
 }

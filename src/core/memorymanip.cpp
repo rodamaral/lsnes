@@ -7,6 +7,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "library/string.hpp"
 
 #include <iostream>
 #include <limits>
@@ -791,20 +792,20 @@ namespace
 		~memorymanip_command() throw() {}
 		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
-			tokensplitter t(args);
-			firstword = static_cast<std::string>(t);
-			secondword = static_cast<std::string>(t);
-			has_tail = t;
+			regex_results t = regex("(([^ \t]+)([ \t]+([^ \t]+)([ \t]+([^ \t].*)?)?)?)?", args);
+			firstword = t[2];
+			secondword = t[4];
+			has_tail = (t[6] != "");
 			address_bad = true;
 			value_bad = true;
 			has_value = (secondword != "");
 			try {
-				if(firstword.length() >= 2 && firstword.substr(0, 2) == "0x") {
-					if(firstword.length() > 10)
+				if(t = regex("0x(.+)", firstword)) {
+					if(t[1].length() > 8)
 						throw 42;
 					address = 0;
-					for(unsigned i = 2; i < firstword.length(); i++)
-						address = 16 * address + hex(firstword[i]);
+					for(unsigned i = 0; i < t[1].length(); i++)
+						address = 16 * address + hex(t[1][i]);
 				} else {
 					address = parse_value<uint32_t>(firstword);
 				}
@@ -812,13 +813,13 @@ namespace
 			} catch(...) {
 			}
 			try {
-				if(secondword.length() >= 2 && secondword.substr(0, 2) == "0x") {
-					if(secondword.length() > 18)
+				if(t = regex("0x(.+)", secondword)) {
+					if(t[1].length() > 16)
 						throw 42;
 					value = 0;
-					for(unsigned i = 2; i < secondword.length(); i++)
-						value = 16 * value + hex(secondword[i]);
-				} else if(secondword.length() > 0 && secondword[0] == '-') {
+					for(unsigned i = 0; i < t[1].length(); i++)
+						value = 16 * value + hex(t[1][i]);
+				} else if(regex("-.*", secondword)) {
 					value = static_cast<uint64_t>(parse_value<int64_t>(secondword));
 				} else {
 					value = parse_value<uint64_t>(secondword);
@@ -885,7 +886,8 @@ namespace
 		{
 			if(address_bad || value_bad || has_tail)
 				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
-			if(static_cast<int64_t>(value) < low || value > high)
+			int64_t value2 = static_cast<int64_t>(value);
+			if(value2 < low || (value > high && value2 >= 0))
 				throw std::runtime_error("Value to write out of range");
 			wfn(address, value & high);
 		}
@@ -911,7 +913,7 @@ namespace
 			else if(firstword == "sble" && !has_value)
 				isrch->byte_sle();
 			else if(firstword == "sbeq" && !has_value)
-			isrch->byte_seq();
+				isrch->byte_seq();
 			else if(firstword == "sbne" && !has_value)
 				isrch->byte_sne();
 			else if(firstword == "sbge" && !has_value)
@@ -961,7 +963,7 @@ namespace
 			else if(firstword == "w" && has_value) {
 				if(static_cast<int64_t>(value) < -32768 || value > 65535)
 					throw std::runtime_error("Value to compare out of range");
-				isrch->word_value(value & 0xFF);
+				isrch->word_value(value & 0xFFFF);
 			} else if(firstword == "sdlt" && !has_value)
 				isrch->dword_slt();
 			else if(firstword == "sdle" && !has_value)
@@ -989,7 +991,7 @@ namespace
 			else if(firstword == "d" && has_value) {
 				if(static_cast<int64_t>(value) < -2147483648LL || value > 4294967295ULL)
 					throw std::runtime_error("Value to compare out of range");
-				isrch->dword_value(value & 0xFF);
+				isrch->dword_value(value & 0xFFFFFFFFULL);
 			} else if(firstword == "sqlt" && !has_value)
 				isrch->qword_slt();
 			else if(firstword == "sqle" && !has_value)
@@ -1015,7 +1017,7 @@ namespace
 			else if(firstword == "uqgt" && !has_value)
 				isrch->qword_ugt();
 			else if(firstword == "q" && has_value)
-				isrch->qword_value(value & 0xFF);
+				isrch->qword_value(value);
 			else if(firstword == "update" && !has_value)
 				isrch->update();
 			else if(firstword == "reset" && !has_value)
