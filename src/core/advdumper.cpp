@@ -3,6 +3,7 @@
 #include "core/dispatch.hpp"
 #include "core/globalwrap.hpp"
 #include "lua/lua.hpp"
+#include "library/string.hpp"
 
 #include <map>
 #include <string>
@@ -20,30 +21,32 @@ namespace
 		throw std::runtime_error("Unknown dumper");
 	}
 
-	function_ptr_command<tokensplitter&> start_dump("start-dump", "Start dumping",
+	function_ptr_command<const std::string&> start_dump("start-dump", "Start dumping",
 		"Syntax: start-dump <dumper> <prefix/filename>\nSyntax: start-dump <dumper> <mode> <prefix/filename>\n"
 			"Start dumping using <dumper> in mode <mode> to <prefix/filename>\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			adv_dumper& d = find_by_name(t);
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			std::string t2 = t;
+			std::string dumper;
+			extract_token(t2, dumper, " \t", true);
+			adv_dumper& d = find_by_name(dumper);
 			auto modes = d.list_submodes();
 			std::string mode;
 			if(!modes.empty()) {
+				extract_token(t2, mode, " \t", true);
 				mode = std::string(t);
 				if(!modes.count(mode))
 					throw std::runtime_error("Bad mode for dumper");
 			}
-			std::string target = t.tail();
-			if(target == "")
+			if(t2 == "")
 				throw std::runtime_error("Command syntax error");
-			d.start(mode, target);
+			d.start(mode, t2);
 		});
 
-	function_ptr_command<tokensplitter&> end_dump("end-dump", "End dumping",
+	function_ptr_command<const std::string&> end_dump("end-dump", "End dumping",
 		"Syntax: end-dump <dumper>\nEnd dumping using dumper <dumper>\n",
-		[](tokensplitter& t) throw(std::bad_alloc, std::runtime_error) {
-			adv_dumper& d = find_by_name(t);
-			if(t.tail() != "")
-				throw std::runtime_error("Command syntax error");
+		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
+			auto r = regex("([^ \t]+)[ \t]*", t, "Command syntax error");
+			adv_dumper& d = find_by_name(r[1]);
 			d.end();
 		});
 

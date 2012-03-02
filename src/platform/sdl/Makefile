@@ -18,6 +18,8 @@ ifneq ($(GRAPHICS), SDL)
 $(error "SDL joystick requires SDL graphics")
 endif
 OBJECTS += joystick.$(OBJECT_SUFFIX)
+else
+SDL_CFLAGS += -DSDL_NO_JOYSTICK
 endif
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)

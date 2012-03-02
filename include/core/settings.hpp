@@ -96,13 +96,6 @@ public:
 	static std::string get(const std::string& name) throw(std::bad_alloc, std::runtime_error);
 
 /**
- * Print all settings and values.
- *
- * throws std::bad_alloc: Not enough memory.
- */
-	static void print_all() throw(std::bad_alloc);
-
-/**
  * Get set of all settings.
  */
 	static std::set<std::string> get_settings_set() throw(std::bad_alloc);

@@ -4,6 +4,7 @@
 #include "core/misc.hpp"
 #include "core/render.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -128,16 +129,19 @@ namespace
 	function_ptr_command<const std::string&> enable_sound("enable-sound", "Enable/Disable sound",
 		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			std::string s = args;
-			if(s == "on" || s == "true" || s == "1" || s == "enable" || s == "enabled") {
+			switch(string_to_bool(args)) {
+			case 1:
 				if(!platform::sound_initialized())
 					throw std::runtime_error("Sound failed to initialize and is disabled");
 				platform::sound_enable(true);
-			} else if(s == "off" || s == "false" || s == "0" || s == "disable" || s == "disabled") {
+				break;
+			case 0:
 				if(platform::sound_initialized())
 					platform::sound_enable(false);
-			} else
+				break;
+			default:
 				throw std::runtime_error("Bad sound setting");
+			}
 		});
 
 	inverse_key ienable_sound("enable-sound on", "Enable sound");
@@ -318,19 +322,11 @@ void platform::message(const std::string& msg) throw(std::bad_alloc)
 	mutex::holder h(msgbuf_lock());
 	std::string msg2 = msg;
 	while(msg2 != "") {
-		size_t s = msg2.find_first_of("\n");
 		std::string forlog;
-		if(s >= msg2.length()) {
-			msgbuf.add_message(forlog = msg2);
-			if(system_log)
-				system_log << forlog << std::endl;
-			break;
-		} else {
-			msgbuf.add_message(forlog = msg2.substr(0, s));
-			if(system_log)
-				system_log << forlog << std::endl;
-			msg2 = msg2.substr(s + 1);
-		}
+		extract_token(msg2, forlog, "\n");
+		msgbuf.add_message(forlog);
+		if(system_log)
+			system_log << forlog << std::endl;
 	}
 }
 
@@ -435,7 +431,7 @@ void platform::flush_command_queue() throw()
 		if(waitleft > 0)
 			queue_condition->wait(waitleft);
 		else
-			return;
+			break;
 		//If we had to wait, check queues at least once more.
 	}
 	if(!modal_pause && !normal_pause)
@@ -518,11 +514,6 @@ namespace
 	mutex* _msgbuf_lock;
 	screen<false>* our_screen;
 
-	void trigger_repaint()
-	{
-		graphics_plugin::notify_screen();
-	}
-
 	struct painter_listener : public information_dispatch
 	{
 		painter_listener();
@@ -540,7 +531,7 @@ namespace
 
 	void painter_listener::on_screen_update()
 	{
-		trigger_repaint();
+		graphics_plugin::notify_screen();
 	}
 
 	void painter_listener::on_status_update()
@@ -569,7 +560,7 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 		our_screen->palette_b == bshift)
 		return;
 	our_screen->set_palette(rshift, gshift, bshift);
-	trigger_repaint();
+	graphics_plugin::notify_screen();
 }
 
 modal_pause_holder::modal_pause_holder()
