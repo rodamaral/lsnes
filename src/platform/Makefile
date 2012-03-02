@@ -34,7 +34,7 @@ precheck:
 	$(MAKE) -C wxwidgets precheck
 
 clean:
-	rm -f *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) *.ldflags
 	$(MAKE) -C dummy clean
 	$(MAKE) -C evdev clean
 	$(MAKE) -C portaudio clean

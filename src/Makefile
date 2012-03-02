@@ -66,9 +66,10 @@ precheck:
 	$(MAKE) -C video precheck
 
 clean:
-	rm -f *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) *.ldflags
 	$(MAKE) -C core clean
 	$(MAKE) -C dummy clean
+	$(MAKE) -C fonts clean
 	$(MAKE) -C library clean
 	$(MAKE) -C lua clean
 	$(MAKE) -C dummy clean
