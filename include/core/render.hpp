@@ -277,6 +277,14 @@ struct premultiplied_color
 	uint32_t orig;
 	uint16_t origa;
 	uint16_t inv;
+	premultiplied_color() throw()
+	{
+		hi = lo = 0;
+		orig = 0;
+		origa = 0;
+		inv = 256;
+	}
+
 	premultiplied_color(int64_t color) throw()
 	{
 		if(color < 0) {
