@@ -1150,29 +1150,142 @@ Draw a circle. Parameters.
 
 • fill: Fill color (default is -1 (transparent)).
 
-8.3.12 gui.repaint()
+8.3.12 gui.bitmap_draw(number x, number y, bitmap bitmap, palette 
+  palette)
+
+Draw a bitmap on screen with specified palette. Parameters:
+
+• x: X-coordinate of left edge.
+
+• y: Y-coordinate of top edge.
+
+• bitmap: The bitmap to draw
+
+• palette: The palette to draw the bitmap using.
+
+8.3.13 gui.bitmap_draw(number x, number y, dbitmap bitmap)
+
+Draw a bitmap on screen. Parameters:
+
+• x: X-coordinate of left edge.
+
+• y: Y-coordinate of top edge.
+
+• bitmap: The bitmap to draw
+
+8.3.14 gui.palette_new()
+
+Returns a new palette (initially all transparent). Can be used 
+anywhere.
+
+8.3.15 gui.bitmap_new(number w, number h, boolean direct)
+
+Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
+
+• w: The width of new bitmap
+
+• h: The height of new bitmap
+
+• direct: If true, the returned bitmap is dbitmap, otherwise 
+  bitmap.
+
+8.3.16 gui.bitmap_load(string file)
+
+Returns loaded bitmap/dbitmap (if bitmap, the second return value 
+is palette for bitmap). Can be used anywhere. Parameters:
+
+• file: The name of file to load.
+
+8.3.17 gui.palette_set(palette palette, number index, number 
+  color)
+
+Sets color in palette. Can be used anywhere. Parameters:
+
+• palette: The palette to manipulate
+
+• index: Index of color (0-65535).
+
+• color: The color value.
+
+8.3.18 gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, 
+  number color)
+
+Sets specified pixel in bitmap. Can be used anywhere. Parameters:
+
+• bitmap: The bitmap to manipulate
+
+• x: The x-coordinate of the pixel.
+
+• y: The y-coordinate of the pixel.
+
+• color: If bitmap is a bitmap, color index (0-65535). Otherwise 
+  color value.
+
+8.3.19 gui.bitmap_size(bitmap/dbitmap bitmap)
+
+Get size of bitmap. Can be used anywhere. Parameters:
+
+• bitmap: The bitmap to query.
+
+The first return is the width, the second is the height.
+
+8.3.20 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
+  bitmap/dbitmap src, number sx, number sy, number w, number h[, 
+  number ck])
+
+Blit a part of bitmap to another. Can be used anywhere. 
+Parameters:
+
+• dest: Destination to blit to.
+
+• dx: left edge of target
+
+• dy: Top edge of target
+
+• src: The source to blit from. Must be of the same type as 
+  destination.
+
+• sx: left edge of source
+
+• sy: Top edge of source
+
+• w: Width of region
+
+• h: Height of region.
+
+• ck: Color key. Pixels of this color are not blitted.
+
+  – If bitmaps are bitmaps, this is color index of colorkey. 
+    Values outside range 0-65535 cause no key to be used as 
+    colorkey.
+
+  – If bitmaps are dbitmaps, this color value of colorkey.
+
+  – May be absent or nil for no colorkey blit.
+
+8.3.21 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-8.3.13 gui.subframe_update(boolean on)
+8.3.22 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-8.3.14 gui.screenshot(string filename)
+8.3.23 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-8.3.15 gui.color(number r, number g, number b[, number a])
+8.3.24 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-8.3.16 gui.status(string name, string value)
+8.3.25 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
@@ -2662,7 +2775,8 @@ set-axis joystick0axis19 disabled
 
 • Try to autodetect if ROM is headered.
 
-• Only bring up ROM patching screen if specifically requested.
+• Wxwidgets: Only bring up ROM patching screen if specifically 
+  requested.
 
-• Allow configuring some (200+) hotkeys.
+• Allow configuring some hotkeys.
 
