@@ -23,7 +23,12 @@ namespace
 	{
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
 		lua_function* f = reinterpret_cast<lua_function*>(ptr);
-		return f->invoke(L);
+		try {
+			return f->invoke(L);
+		} catch(std::exception& e) {
+			lua_pushfstring(L, "Error in internal function: %s", e.what());
+			lua_error(L);
+		}
 	}
 
 	//Pushes given table to top of stack, creating if needed.
