@@ -2368,6 +2368,229 @@ fill: Fill color (default is -1 (transparent)).
 \end_layout
 
 \begin_layout Subsubsection
+gui.bitmap_draw(number x, number y, bitmap bitmap, palette palette)
+\end_layout
+
+\begin_layout Standard
+Draw a bitmap on screen with specified palette.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of top edge.
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to draw
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to draw the bitmap using.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_draw(number x, number y, dbitmap bitmap)
+\end_layout
+
+\begin_layout Standard
+Draw a bitmap on screen.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of top edge.
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to draw
+\end_layout
+
+\begin_layout Subsubsection
+gui.palette_new()
+\end_layout
+
+\begin_layout Standard
+Returns a new palette (initially all transparent).
+ Can be used anywhere.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_new(number w, number h, boolean direct)
+\end_layout
+
+\begin_layout Standard
+Returns a new bitmap/dbitmap.
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: The width of new bitmap
+\end_layout
+
+\begin_layout Itemize
+h: The height of new bitmap
+\end_layout
+
+\begin_layout Itemize
+direct: If true, the returned bitmap is dbitmap, otherwise bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_load(string file)
+\end_layout
+
+\begin_layout Standard
+Returns loaded bitmap/dbitmap (if bitmap, the second return value is palette
+ for bitmap).
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+file: The name of file to load.
+\end_layout
+
+\begin_layout Subsubsection
+gui.palette_set(palette palette, number index, number color)
+\end_layout
+
+\begin_layout Standard
+Sets color in palette.
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to manipulate
+\end_layout
+
+\begin_layout Itemize
+index: Index of color (0-65535).
+\end_layout
+
+\begin_layout Itemize
+color: The color value.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, number color)
+\end_layout
+
+\begin_layout Standard
+Sets specified pixel in bitmap.
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to manipulate
+\end_layout
+
+\begin_layout Itemize
+x: The x-coordinate of the pixel.
+\end_layout
+
+\begin_layout Itemize
+y: The y-coordinate of the pixel.
+\end_layout
+
+\begin_layout Itemize
+color: If bitmap is a bitmap, color index (0-65535).
+ Otherwise color value.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_size(bitmap/dbitmap bitmap)
+\end_layout
+
+\begin_layout Standard
+Get size of bitmap.
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to query.
+\end_layout
+
+\begin_layout Standard
+The first return is the width, the second is the height.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, bitmap/dbitmap
+ src, number sx, number sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Standard
+Blit a part of bitmap to another.
+ Can be used anywhere.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: Destination to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: left edge of target
+\end_layout
+
+\begin_layout Itemize
+dy: Top edge of target
+\end_layout
+
+\begin_layout Itemize
+src: The source to blit from.
+ Must be of the same type as destination.
+\end_layout
+
+\begin_layout Itemize
+sx: left edge of source
+\end_layout
+
+\begin_layout Itemize
+sy: Top edge of source
+\end_layout
+
+\begin_layout Itemize
+w: Width of region
+\end_layout
+
+\begin_layout Itemize
+h: Height of region.
+\end_layout
+
+\begin_layout Itemize
+ck: Color key.
+ Pixels of this color are not blitted.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If bitmaps are bitmaps, this is color index of colorkey.
+ Values outside range 0-65535 cause no key to be used as colorkey.
+\end_layout
+
+\begin_layout Itemize
+If bitmaps are dbitmaps, this color value of colorkey.
+\end_layout
+
+\begin_layout Itemize
+May be absent or nil for no colorkey blit.
+\end_layout
+
+\end_deeper
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 
