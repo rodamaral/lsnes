@@ -5698,5 +5698,13 @@ Fix bsnes v085/v086 patches.
 Improve stability on win32.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta4epsilon1
+\end_layout
+
+\begin_layout Itemize
+Don't corrupt movie if movie length is integer multiple of frames per page.
+\end_layout
+
 \end_body
 \end_document
