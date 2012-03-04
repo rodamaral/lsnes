@@ -3,6 +3,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "core/threaddebug.hpp"
 #include "core/window.hpp"
 
 #include <sstream>
@@ -315,6 +316,7 @@ bool in_global_ctors()
 void reached_main()
 {
 	reached_main_flag = true;
+	init_threaded_malloc();
 }
 
 std::string bsnes_core_version;

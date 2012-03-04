@@ -12,7 +12,7 @@ HOSTCC = $(CC)
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -Iinclude -Iavi -std=gnu++0x
-LDFLAGS = -lboost_iostreams -lboost_filesystem -lboost_system -lboost_regex -lz
+LDFLAGS = -lboost_iostreams-mt -lboost_filesystem-mt -lboost_system-mt -lboost_regex-mt -lz
 PLATFORM_CFLAGS =
 PLATFORM_LDFLAGS =
 
@@ -31,6 +31,12 @@ all: $(PROGRAMS)
 
 #Platform objects.
 PLATFORM_OBJECTS=
+
+#malloc threadsafety
+ifdef MAKE_MALLOC_THREADSAFE
+CFLAGS += -DMAKE_MALLOC_THREADSAFE
+LDFLAGS += -Wl,--wrap,malloc,--wrap,calloc,--wrap,realloc,--wrap,free
+endif
 
 #Lua.
 ifndef LUA
