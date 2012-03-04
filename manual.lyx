@@ -5670,5 +5670,33 @@ Wxwidgets: Only bring up ROM patching screen if specifically requested.
 Allow configuring some hotkeys.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta4
+\end_layout
+
+\begin_layout Itemize
+Lots of code cleanups
+\end_layout
+
+\begin_layout Itemize
+Fix JMD compression (JMD dumping was broken)
+\end_layout
+
+\begin_layout Itemize
+Don't crash if Lua C function throws an exception.
+\end_layout
+
+\begin_layout Itemize
+Support bitmap drawing in Lua.
+\end_layout
+
+\begin_layout Itemize
+Fix bsnes v085/v086 patches.
+\end_layout
+
+\begin_layout Itemize
+Improve stability on win32.
+\end_layout
+
 \end_body
 \end_document

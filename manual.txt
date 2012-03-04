@@ -2780,3 +2780,17 @@ set-axis joystick0axis19 disabled
 
 • Allow configuring some hotkeys.
 
+15.51 rr1-delta4
+
+• Lots of code cleanups
+
+• Fix JMD compression (JMD dumping was broken)
+
+• Don't crash if Lua C function throws an exception.
+
+• Support bitmap drawing in Lua.
+
+• Fix bsnes v085/v086 patches.
+
+• Improve stability on win32.
+
