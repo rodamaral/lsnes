@@ -1,4 +1,4 @@
-From 9912e6cc68f8ef1d509b76bf4384482d87deeef4 Mon Sep 17 00:00:00 2001
+From 05feb8f7660d30ee916db1c821912f2b50a221b5 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 19:49:46 +0200
 Subject: [PATCH 6/6] Allow frontend to control random number seed
@@ -49,5 +49,5 @@ index c19a7c5..dbd912d 100755
    region = config.region;
    expansion = config.expansion_port;
 -- 
-1.7.8.3.g027b7
+1.7.9.48.g85da4d
 

@@ -1,4 +1,4 @@
-From 5eb53888f8118d1894730d68fb3863919aaa309f Mon Sep 17 00:00:00 2001
+From ea4099c2c6aaf3ddf6a1deccabecb10c90a8c190 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 19:49:46 +0200
 Subject: [PATCH 3/3] Allow frontend to control random number seed

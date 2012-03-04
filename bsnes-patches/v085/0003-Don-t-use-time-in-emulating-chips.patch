@@ -1,4 +1,4 @@
-From 3c73ac6afaf0a581b5aa75ab958b27b4c976a74f Mon Sep 17 00:00:00 2001
+From daf1339150c214647276b8a2be3701753054ff66 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:37:44 +0200
 Subject: [PATCH 3/6] Don't use time() in emulating chips
@@ -80,5 +80,5 @@ index f1a48c0..df975e8 100755
  
  extern Interface *interface;
 -- 
-1.7.8.3.g027b7
+1.7.9.48.g85da4d
 
