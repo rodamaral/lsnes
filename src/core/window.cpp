@@ -459,7 +459,7 @@ void platform::flush_command_queue() throw()
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
 		waitleft = (modal_pause || normal_pause) ? MAXWAIT : waitleft;
-		waitleft = min(waitleft, MAXWAIT);
+		waitleft = min(waitleft, static_cast<uint64_t>(MAXWAIT));
 		if(waitleft > 0) {
 			if(now >= on_idle_time) {
 				run_idle = true;
@@ -508,7 +508,7 @@ void platform::wait(uint64_t usec) throw()
 		now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
-		waitleft = min(MAXWAIT, waitleft);
+		waitleft = min(static_cast<uint64_t>(MAXWAIT), waitleft);
 		if(waitleft > 0) {
 			if(now >= on_idle_time) {
 				run_idle = true;
