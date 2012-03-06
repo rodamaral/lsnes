@@ -196,6 +196,7 @@ void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& 
 
 lua_render_context* lua_render_ctx = NULL;
 controller_frame* lua_input_controllerdata = NULL;
+bool lua_booted_flag = false;
 
 namespace
 {
@@ -420,6 +421,7 @@ void lua_callback_do_readwrite() throw()
 
 void lua_callback_startup() throw()
 {
+	lua_booted_flag = true;
 	if(!callback_exists("on_startup"))
 		return;
 	run_lua_cb(0);

@@ -45,4 +45,9 @@ namespace
 		command::invokeC(text);
 		return 0;
 	});
+
+	function_ptr_luafun lua_booted("emulator_ready", [](lua_State* LS, const std::string& fname) -> int {
+		lua_pushboolean(LS, lua_booted_flag ? 1 : 0);
+		return 1;
+	});
 }
