@@ -4,11 +4,13 @@
 struct lua_State { int x; };
 lua_function::lua_function(const std::string& name) throw(std::bad_alloc) {}
 lua_function::~lua_function() throw() {}
-void lua_callback_do_paint(struct lua_render_context* ctx) throw() {}
+void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw() {}
 void lua_callback_do_video(struct lua_render_context* ctx) throw() {}
 void lua_callback_do_input(controller_frame& data, bool subframe) throw() {}
 void lua_callback_do_reset() throw() {}
 void lua_callback_do_frame() throw() {}
+void lua_callback_do_rewind() throw() {}
+void lua_callback_do_frame_emulated() throw() {}
 void lua_callback_do_readwrite() throw() {}
 void lua_callback_startup() throw() {}
 void lua_callback_pre_load(const std::string& name) throw() {}
@@ -362,12 +364,13 @@ namespace
 	}
 }
 
-void lua_callback_do_paint(struct lua_render_context* ctx) throw()
+void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
 {
 	if(!callback_exists("on_paint"))
 		return;
 	lua_render_ctx = ctx;
-	run_lua_cb(0);
+	push_boolean(non_synthetic);
+	run_lua_cb(1);
 	lua_render_ctx = NULL;
 }
 
@@ -390,6 +393,20 @@ void lua_callback_do_reset() throw()
 void lua_callback_do_frame() throw()
 {
 	if(!callback_exists("on_frame"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_rewind() throw()
+{
+	if(!callback_exists("on_rewind"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_frame_emulated() throw()
+{
+	if(!callback_exists("on_frame_emulated"))
 		return;
 	run_lua_cb(0);
 }

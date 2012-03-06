@@ -76,7 +76,7 @@ void init_special_screens() throw(std::bad_alloc);
 /**
  * Copy framebuffer to backing store, running Lua hooks if any.
  */
-void redraw_framebuffer(lcscreen& torender, bool no_lua = false);
+void redraw_framebuffer(lcscreen& torender, bool no_lua = false, bool spontaneous = false);
 /**
  * Redraw the framebuffer, reusing contents from last redraw. Runs lua hooks if last redraw ran them.
  */

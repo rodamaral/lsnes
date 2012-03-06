@@ -277,6 +277,7 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
 		redraw_framebuffer(screen_nosignal);
+		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
