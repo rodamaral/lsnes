@@ -11,6 +11,7 @@ public:
 	{
 	public:
 		panel(wxWindow* _parent, unsigned lines);
+		bool AcceptsFocus () const;
 		void on_paint(wxPaintEvent& e);
 		bool dirty;
 		wxWindow* parent;
