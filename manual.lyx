@@ -2034,6 +2034,24 @@ Returns true if emulator has finished booting, false if not (on_startup()
  will be issued later).
 \end_layout
 
+\begin_layout Subsubsection
+set_idle_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block idle for.
+ After this timeout has expired, on_idle() will be called once.
+\end_layout
+
+\begin_layout Subsubsection
+set_timer_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block timer for.
+ After this timeout has expired, on_timer() will be called once.
+\end_layout
+
 \begin_layout Subsection
 Table bit:
 \end_layout
@@ -2681,6 +2699,32 @@ Write the specified index (0-11) from specified controller (0-7), storing
 \begin_layout Itemize
 Uses physical controller numbering.
  Gamepad in port 2 is controller 4, not 1!
+\end_layout
+
+\begin_layout Subsubsection
+input.geta(number controller)
+\end_layout
+
+\begin_layout Standard
+Get input state for entiere controller.
+ Returns 13 return values.
+\end_layout
+
+\begin_layout Itemize
+1st return value: Bitmask: bit i is set if i:th index is nonzero
+\end_layout
+
+\begin_layout Itemize
+2nd-13th return value: value of i:th index.
+\end_layout
+
+\begin_layout Subsubsection
+input.seta(number controller, number bitmask, number args...)
+\end_layout
+
+\begin_layout Standard
+Set state for entiere controller.
+ args is up to 12 values for indices (overriding values in bitmask if specified).
 \end_layout
 
 \begin_layout Subsubsection
@@ -3368,6 +3412,24 @@ Callback: on_keyhook(string keyname, table state)
 Sent when key that has keyhook events requested changes state.
  Keyname is name of the key (group) and state is the state (same kind as
  table values in input.raw).
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_idle()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout(), the timeout has expired and
+ emulator is waiting.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_timer()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout() and the timeout has expired
+ (regardless if emulator is waiting).
 \end_layout
 
 \begin_layout Section

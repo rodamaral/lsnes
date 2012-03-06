@@ -981,6 +981,16 @@ the second is microseconds mod 10^6 since that epoch.
 Returns true if emulator has finished booting, false if not 
 (on_startup() will be issued later).
 
+8.1.5 set_idle_timeout(number timeout)
+
+Set number of microseconds to block idle for. After this timeout 
+has expired, on_idle() will be called once.
+
+8.1.6 set_timer_timeout(number timeout)
+
+Set number of microseconds to block timer for. After this timeout 
+has expired, on_timer() will be called once.
+
 8.2 Table bit:
 
 Bitwise logical functions and related.
@@ -1320,14 +1330,29 @@ storing value. Notes:
 • Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-8.4.3 input.reset([number cycles])
+8.4.3 input.geta(number controller)
+
+Get input state for entiere controller. Returns 13 return values.
+
+• 1st return value: Bitmask: bit i is set if i:th index is 
+  nonzero
+
+• 2nd-13th return value: value of i:th index.
+
+8.4.4 input.seta(number controller, number bitmask, number 
+  args...)
+
+Set state for entiere controller. args is up to 12 values for 
+indices (overriding values in bitmask if specified).
+
+8.4.5 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-8.4.4 input.raw()
+8.4.6 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
@@ -1351,7 +1376,7 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
-8.4.5 input.keyhook(key, state)
+8.4.7 input.keyhook(key, state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
@@ -1701,6 +1726,16 @@ Note: There is no way to modify the value to be sent.
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
+
+8.10.19 Callback: on_idle()
+
+Called when requested by set_idle_timeout(), the timeout has 
+expired and emulator is waiting.
+
+8.10.20 Callback: on_timer()
+
+Called when requested by set_idle_timeout() and the timeout has 
+expired (regardless if emulator is waiting).
 
 9 Memory watch expression syntax
 
