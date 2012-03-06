@@ -971,6 +971,16 @@ Print line to message console.
 
 Run command as it was entered on the command line
 
+8.1.3 utime()
+
+Returns two values. First is time since some epoch in seconds, 
+the second is microseconds mod 10^6 since that epoch.
+
+8.1.4 emulator_ready()
+
+Returns true if emulator has finished booting, false if not 
+(on_startup() will be issued later).
+
 8.2 Table bit:
 
 Bitwise logical functions and related.
@@ -1596,76 +1606,88 @@ initialization. Non-writeable.
 
 Various callbacks to Lua that can occur.
 
-8.10.1 Callback: on_paint()
+8.10.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
+
+not_synth is true if this hook is being called in response to 
+received frame, false otherwise.
 
 8.10.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-8.10.3 Callback: on_frame()
+8.10.3 Callback: on_frame_emulated()
+
+Called when emulating frame has completed and 
+on_paint()/on_video() calls are about to be issued.
+
+8.10.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-8.10.4 Callback: on_startup()
+8.10.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-8.10.5 Callback: on_pre_load(string name)
+8.10.6 Callback: on_rewind()
+
+Called when rewind movie to beginning has completed.
+
+8.10.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-8.10.6 Callback: on_err_load(string name)
+8.10.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-8.10.7 Callback: on_post_load(string name, boolean was_savestate)
+8.10.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-8.10.8 Callback: on_pre_save(string name, boolean is_savestate)
+8.10.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-8.10.9 Callback: on_err_save(string name)
+8.10.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-8.10.10 Callback: on_post_save(string name, boolean is_savestate)
+8.10.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-8.10.11 Callback: on_quit()
+8.10.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-8.10.12 Callback: on_input(boolean subframe)
+8.10.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-8.10.13 Callback: on_reset()
+8.10.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-8.10.14 Callback: on_readwrite()
+8.10.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-8.10.15 Callback: on_snoop(number port, number controller, number 
+8.10.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1674,7 +1696,7 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-8.10.16 Callback: on_keyhook(string keyname, table state)
+8.10.18 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
@@ -2793,4 +2815,9 @@ set-axis joystick0axis19 disabled
 • Fix bsnes v085/v086 patches.
 
 • Improve stability on win32.
+
+15.52 rr1-delta4epsilon1
+
+• Don't corrupt movie if movie length is integer multiple of 
+  frames per page.
 
