@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/framerate.hpp"
 #include "core/lua-int.hpp"
 #include "core/window.hpp"
 
@@ -49,5 +50,12 @@ namespace
 	function_ptr_luafun lua_booted("emulator_ready", [](lua_State* LS, const std::string& fname) -> int {
 		lua_pushboolean(LS, lua_booted_flag ? 1 : 0);
 		return 1;
+	});
+
+	function_ptr_luafun lua_utime("utime", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t t = get_utime();
+		lua_pushnumber(LS, t / 1000000);
+		lua_pushnumber(LS, t % 1000000);
+		return 2;
 	});
 }
