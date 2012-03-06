@@ -470,7 +470,7 @@ long movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::
 	controller_frame c = update_controls(false);
 	if(!mov.readonly_mode()) {
 		mov.set_controls(c);
-		if(dont_poll)
+		if(!dont_poll)
 			mov.set_all_DRDY();
 		if(c.reset()) {
 			auto g = c.delay();
