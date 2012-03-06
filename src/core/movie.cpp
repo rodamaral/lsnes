@@ -477,7 +477,8 @@ long movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::
 			long hi = g.first, lo = g.second;
 			mov.commit_reset(hi * 10000 + lo);
 		}
-	}
+	} else if(!dont_poll)
+		mov.set_all_DRDY();
 	return mov.get_reset_status();
 }
 
