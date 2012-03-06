@@ -289,7 +289,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 	modifier_set mset;
 	modifier_entry* m = modifiers;
 	while(m->name) {
-		if((keyc & m->mod) == m->mod) {
+		if((mods & m->mod) == m->mod) {
 			mset.add(*m->allocated);
 		}
 		m++;
