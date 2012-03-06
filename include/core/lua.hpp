@@ -77,6 +77,8 @@ void lua_callback_do_frame_emulated() throw();
 void lua_callback_do_rewind() throw();
 void lua_callback_do_readwrite() throw();
 void lua_callback_startup() throw();
+void lua_callback_do_idle() throw();
+void lua_callback_do_timer() throw();
 void lua_callback_pre_load(const std::string& name) throw();
 void lua_callback_err_load(const std::string& name) throw();
 void lua_callback_post_load(const std::string& name, bool was_state) throw();
@@ -86,6 +88,11 @@ void lua_callback_post_save(const std::string& name, bool is_state) throw();
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw();
 void lua_callback_quit() throw();
 void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw();
+
+#define LUA_TIMED_HOOK_IDLE 0
+#define LUA_TIMED_HOOK_TIMER 1
+
+uint64_t lua_timed_hook(int timer) throw();
 
 extern bool lua_supported;
 extern bool lua_requests_repaint;

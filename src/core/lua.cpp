@@ -13,6 +13,8 @@ void lua_callback_do_rewind() throw() {}
 void lua_callback_do_frame_emulated() throw() {}
 void lua_callback_do_readwrite() throw() {}
 void lua_callback_startup() throw() {}
+void lua_callback_do_idle() throw() {}
+void lua_callback_do_timer() throw() {}
 void lua_callback_pre_load(const std::string& name) throw() {}
 void lua_callback_err_load(const std::string& name) throw() {}
 void lua_callback_post_load(const std::string& name, bool was_state) throw() {}
@@ -24,6 +26,9 @@ void lua_callback_quit() throw() {}
 void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw() {}
 void init_lua() throw() {}
 void quit_lua() throw() {}
+uint64_t lua_timed_hook(int timer) throw() { return 0x7EFFFFFFFFFFFFFFULL; }
+
+
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 bool lua_supported = false;
@@ -44,6 +49,9 @@ extern "C" {
 #include <lua.h>
 #include <lualib.h>
 }
+
+uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 
 namespace
 {
@@ -405,6 +413,22 @@ void lua_callback_do_rewind() throw()
 	run_lua_cb(0);
 }
 
+void lua_callback_do_idle() throw()
+{
+	lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+	if(!callback_exists("on_idle"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_timer() throw()
+{
+	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;	
+	if(!callback_exists("on_timer"))
+		return;
+	run_lua_cb(0);
+}
+
 void lua_callback_do_frame_emulated() throw()
 {
 	if(!callback_exists("on_frame_emulated"))
@@ -551,6 +575,21 @@ void quit_lua() throw()
 	if(lua_initialized)
 		lua_close(lua_initialized);
 }
+
+
+#define LUA_TIMED_HOOK_IDLE 0
+#define LUA_TIMED_HOOK_TIMER 1
+
+uint64_t lua_timed_hook(int timer) throw()
+{
+	switch(timer) {
+	case LUA_TIMED_HOOK_IDLE:
+		return lua_idle_hook_time;
+	case LUA_TIMED_HOOK_TIMER:
+		return lua_timer_hook_time;
+	}
+}
+
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
