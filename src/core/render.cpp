@@ -305,6 +305,14 @@ void render_queue::clear() throw()
 	q.clear();
 }
 
+void* render_queue::alloc(size_t block) throw(std::bad_alloc)
+{
+	void* ptr = malloc(block);
+	if(!ptr)
+		throw std::bad_alloc();
+	return ptr;
+}
+
 render_queue::~render_queue() throw()
 {
 	clear();

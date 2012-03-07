@@ -41,7 +41,7 @@ namespace
 		get_numeric_argument<uint32_t>(LS, 3, length, fname.c_str());
 		get_numeric_argument<int64_t>(LS, 4, color, fname.c_str());
 		premultiplied_color pcolor(color);
-		lua_render_ctx->queue->add(*new render_object_crosshair(x, y, pcolor, length));
+		lua_render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
 		return 0;
 	});
 }

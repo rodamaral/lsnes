@@ -105,11 +105,11 @@ namespace
 			lua_class<lua_palette>::get(LS, 4, fname.c_str());
 			auto b = lua_class<lua_bitmap>::pin(LS, 3, fname.c_str());
 			auto p = lua_class<lua_palette>::pin(LS, 4, fname.c_str());
-			lua_render_ctx->queue->add(*new render_object_bitmap(x, y, b, p));
+			lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p);
 		} else if(lua_class<lua_dbitmap>::is(LS, 3)) {
 			lua_class<lua_dbitmap>::get(LS, 3, fname.c_str());
 			auto b = lua_class<lua_dbitmap>::pin(LS, 3, fname.c_str());
-			lua_render_ctx->queue->add(*new render_object_bitmap(x, y, b));
+			lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b);
 		} else {
 			lua_pushstring(LS, "Expected BITMAP or DBITMAP as argument 3 for gui.bitmap_draw.");
 			lua_error(LS);

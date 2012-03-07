@@ -331,15 +331,7 @@ struct premultiplied_color
 struct render_queue
 {
 /**
- * Adds new object to render queue. The object must be allocated by new.
- *
- * parameter obj: The object to add
- * throws std::bad_alloc: Not enough memory.
- */
-	void add(struct render_object& obj) throw(std::bad_alloc);
-
-/**
- * Applies all objects in the queue in order, freeing them in progress.
+ * Applies all objects in the queue in order.
  *
  * parameter scr: The screen to apply queue to.
  */
@@ -351,10 +343,24 @@ struct render_queue
 	void clear() throw();
 
 /**
+ * Get memory from internal allocator.
+ */
+	void* alloc(size_t block) throw(std::bad_alloc);
+
+/**
+ * Call object constructor on internal memory.
+ */
+	template<class T, typename... U> void create_add(U... args)
+	{
+		add(*new(alloc(sizeof(T))) T(args...));
+	}
+
+/**
  * Destructor.
  */
 	~render_queue() throw();
 private:
+	void add(struct render_object& obj) throw(std::bad_alloc);
 	std::list<struct render_object*> q;
 };
 

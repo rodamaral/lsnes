@@ -38,7 +38,7 @@ namespace
 		std::string text = get_string_argument(LS, 3, fname.c_str());
 		premultiplied_color fg(fgc);
 		premultiplied_color bg(bgc);
-		lua_render_ctx->queue->add(*new render_object_text(_x, _y, text, fg, bg, hdbl, vdbl));
+		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
 
