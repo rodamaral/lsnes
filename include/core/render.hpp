@@ -3,6 +3,7 @@
 
 
 #include <cstdint>
+#include <map>
 #include <string>
 #include <list>
 #include <vector>
@@ -325,6 +326,8 @@ struct premultiplied_color
 	}
 };
 
+#define RENDER_PAGE_SIZE 65500
+
 /**
  * Queue of render operations.
  */
@@ -356,12 +359,22 @@ struct render_queue
 	}
 
 /**
+ * Constructor.
+ */
+	render_queue() throw();
+/**
  * Destructor.
  */
 	~render_queue() throw();
 private:
 	void add(struct render_object& obj) throw(std::bad_alloc);
-	std::list<struct render_object*> q;
+	struct node { struct render_object* obj; struct node* next; };
+	struct page { char content[RENDER_PAGE_SIZE]; };
+	struct node* queue_head;
+	struct node* queue_tail;
+	size_t memory_allocated;
+	size_t pages;
+	std::map<size_t, page> memory;
 };
 
 

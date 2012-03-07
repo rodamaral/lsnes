@@ -285,14 +285,22 @@ void render_text(struct screen& scr, int32_t x, int32_t y, const std::string& te
 
 void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 {
-	q.push_back(&obj);
+	struct node* n = reinterpret_cast<struct node*>(alloc(sizeof(node)));
+	n->obj = &obj;
+	n->next = NULL;
+	if(queue_tail)
+		queue_tail = queue_tail->next = n;
+	else
+		queue_head = queue_tail = n;
 }
 
 void render_queue::run(struct screen& scr) throw()
 {
-	for(auto i : q) {
+	struct node* tmp = queue_head;
+	while(tmp) {
 		try {
-			(*i)(scr);
+			(*(tmp->obj))(scr);
+			tmp = tmp->next;
 		} catch(...) {
 		}
 	}
@@ -300,23 +308,49 @@ void render_queue::run(struct screen& scr) throw()
 
 void render_queue::clear() throw()
 {
-	for(auto i : q)
-		delete i;
-	q.clear();
+	while(queue_head) {
+		queue_head->obj->~render_object();
+		queue_head = queue_head->next;
+	}
+	//Release all memory for reuse.
+	memory_allocated = 0;
+	pages = 0;
+	queue_tail = NULL;
 }
 
 void* render_queue::alloc(size_t block) throw(std::bad_alloc)
 {
-	void* ptr = malloc(block);
-	if(!ptr)
+	block = (block + 15) / 16 * 16;
+	if(block > RENDER_PAGE_SIZE)
 		throw std::bad_alloc();
-	return ptr;
+	if(pages == 0 || memory_allocated + block > pages * RENDER_PAGE_SIZE) {
+		memory_allocated = pages * RENDER_PAGE_SIZE;
+		memory[pages++];
+	}
+	void* mem = memory[memory_allocated / RENDER_PAGE_SIZE].content + (memory_allocated % RENDER_PAGE_SIZE);
+	memory_allocated += block;
+	return mem;
+}
+
+render_queue::render_queue() throw()
+{
+	queue_head = NULL;
+	queue_tail = NULL;
+	memory_allocated = 0;
+	pages = 0;
 }
 
 render_queue::~render_queue() throw()
 {
 	clear();
 }
+
+/*
+	struct render_object* queue_head;
+	size_t memory_allocated;
+	struct page { char content[RENDER_PAGE_SIZE]; };
+	std::map<size_t, page> memory;
+*/
 
 uint32_t screen::make_color(uint8_t r, uint8_t g, uint8_t b) throw()
 {
