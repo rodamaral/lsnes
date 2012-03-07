@@ -107,11 +107,11 @@ namespace
 			lua_class<lua_palette>::get(LS, 4, fname.c_str());
 			auto b = lua_class<lua_bitmap>::pin(LS, 3, fname.c_str());
 			auto p = lua_class<lua_palette>::pin(LS, 4, fname.c_str());
-			lua_render_ctx->queue->add(*new render_object_bitmap(x, y, b, p));
+			lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p);
 		} else if(lua_class<lua_dbitmap>::is(LS, 3)) {
 			lua_class<lua_dbitmap>::get(LS, 3, fname.c_str());
 			auto b = lua_class<lua_dbitmap>::pin(LS, 3, fname.c_str());
-			lua_render_ctx->queue->add(*new render_object_bitmap(x, y, b));
+			lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b);
 		} else {
 			lua_pushstring(LS, "Expected BITMAP or DBITMAP as argument 3 for gui.bitmap_draw.");
 			lua_error(LS);
@@ -128,10 +128,19 @@ namespace
 		uint32_t w = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
 		uint32_t h = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
 		bool d = get_boolean_argument(LS, 3, fname.c_str());
-		if(d)
-			lua_class<lua_dbitmap>::create(LS, w, h);
-		else
-			lua_class<lua_bitmap>::create(LS, w, h);
+		if(d) {
+			int64_t c = -1;
+			get_numeric_argument<int64_t>(LS, 4, c, fname.c_str());
+			lua_dbitmap* b = lua_class<lua_dbitmap>::create(LS, w, h);
+			for(size_t i = 0; i < b->width * b->height; i++)
+				b->pixels[i] = premultiplied_color(c);
+		} else {
+			uint16_t c = 0;
+			get_numeric_argument<uint16_t>(LS, 4, c, fname.c_str());
+			lua_bitmap* b = lua_class<lua_bitmap>::create(LS, w, h);
+			for(size_t i = 0; i < b->width * b->height; i++)
+				b->pixels[i] = c;
+		}
 		return 1;
 	});
 

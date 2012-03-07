@@ -69,7 +69,7 @@ namespace
 		get_numeric_argument<int64_t>(LS, 6, fill, fname.c_str());
 		premultiplied_color poutline(outline);
 		premultiplied_color pfill(fill);
-		lua_render_ctx->queue->add(*new render_object_circle(x, y, radius, poutline, pfill, thickness));
+		lua_render_ctx->queue->create_add<render_object_circle>(x, y, radius, poutline, pfill, thickness);
 		return 0;
 	});
 }

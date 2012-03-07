@@ -92,7 +92,7 @@ nodraw2:
 		int32_t y2 = get_numeric_argument<int32_t>(LS, 4, fname.c_str());
 		get_numeric_argument<int64_t>(LS, 5, color, fname.c_str());
 		premultiplied_color pcolor(color);
-		lua_render_ctx->queue->add(*new render_object_line(x1, x2, y1, y2, pcolor));
+		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
 	});
 }

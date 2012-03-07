@@ -35,7 +35,7 @@ namespace
 		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
 		get_numeric_argument<int64_t>(LS, 3, color, fname.c_str());
 		premultiplied_color pcolor(color);
-		lua_render_ctx->queue->add(*new render_object_pixel(x, y, pcolor));
+		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	});
 }
