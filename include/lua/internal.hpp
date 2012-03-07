@@ -14,6 +14,9 @@ bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname);
 void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
+extern bool lua_booted_flag;
+extern uint64_t lua_idle_hook_time;
+extern uint64_t lua_timer_hook_time;
 
 template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)

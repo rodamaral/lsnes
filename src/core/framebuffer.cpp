@@ -168,7 +168,7 @@ void init_special_screens() throw(std::bad_alloc)
 	screen_corrupt = lcscreen(&buf[0], 512, 448);
 }
 
-void redraw_framebuffer(lcscreen& todraw, bool no_lua)
+void redraw_framebuffer(lcscreen& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
 	auto g = get_scale_factors(todraw.width, todraw.height);
@@ -185,7 +185,7 @@ void redraw_framebuffer(lcscreen& todraw, bool no_lua)
 	lrc.width = todraw.width * hscl;
 	lrc.height = todraw.height * vscl;
 	if(!no_lua)
-		lua_callback_do_paint(&lrc);
+		lua_callback_do_paint(&lrc, spontaneous);
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;
@@ -203,7 +203,8 @@ void redraw_framebuffer()
 	render_info& ri = get_read_buffer();
 	lcscreen copy = ri.fbuf;
 	buffering.end_read();
-	redraw_framebuffer(copy, last_redraw_no_lua);
+	//Redraws are never spontaneous
+	redraw_framebuffer(copy, last_redraw_no_lua, false);
 }
 
 

@@ -17,7 +17,7 @@ HOSTCC = $(CC)
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -std=gnu++0x $(USER_CFLAGS)
-LDFLAGS = -lboost_iostreams -lboost_filesystem -lboost_system -lboost_regex -lz $(USER_LDFLAGS)
+LDFLAGS = -lboost_iostreams-mt -lboost_filesystem-mt -lboost_system-mt -lboost_regex-mt -lz $(USER_LDFLAGS)
 
 #Platform
 GRAPHICS=SDL

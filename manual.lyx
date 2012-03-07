@@ -2036,6 +2036,43 @@ exec(string command)
 Run command as it was entered on the command line
 \end_layout
 
+\begin_layout Subsubsection
+utime()
+\end_layout
+
+\begin_layout Standard
+Returns two values.
+ First is time since some epoch in seconds, the second is microseconds mod
+ 10^6 since that epoch.
+\end_layout
+
+\begin_layout Subsubsection
+emulator_ready()
+\end_layout
+
+\begin_layout Standard
+Returns true if emulator has finished booting, false if not (on_startup()
+ will be issued later).
+\end_layout
+
+\begin_layout Subsubsection
+set_idle_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block idle for.
+ After this timeout has expired, on_idle() will be called once.
+\end_layout
+
+\begin_layout Subsubsection
+set_timer_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block timer for.
+ After this timeout has expired, on_timer() will be called once.
+\end_layout
+
 \begin_layout Subsection
 Table bit:
 \end_layout
@@ -2686,6 +2723,32 @@ Uses physical controller numbering.
 \end_layout
 
 \begin_layout Subsubsection
+input.geta(number controller)
+\end_layout
+
+\begin_layout Standard
+Get input state for entiere controller.
+ Returns 13 return values.
+\end_layout
+
+\begin_layout Itemize
+1st return value: Bitmask: bit i is set if i:th index is nonzero
+\end_layout
+
+\begin_layout Itemize
+2nd-13th return value: value of i:th index.
+\end_layout
+
+\begin_layout Subsubsection
+input.seta(number controller, number bitmask, number args...)
+\end_layout
+
+\begin_layout Standard
+Set state for entiere controller.
+ args is up to 12 values for indices (overriding values in bitmask if specified).
+\end_layout
+
+\begin_layout Subsubsection
 input.reset([number cycles])
 \end_layout
 
@@ -3199,12 +3262,17 @@ Various callbacks to Lua that can occur.
 \end_layout
 
 \begin_layout Subsubsection
-Callback: on_paint()
+Callback: on_paint(bool not_synth)
 \end_layout
 
 \begin_layout Standard
 Called when screen is being painted.
  Any gui.* calls requiring graphic context draw on the screen.
+\end_layout
+
+\begin_layout Standard
+not_synth is true if this hook is being called in response to received frame,
+ false otherwise.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3214,6 +3282,15 @@ Callback: on_video()
 \begin_layout Standard
 Called when video dump frame is being painted.
  Any gui.* calls requiring graphic context draw on the video.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_frame_emulated()
+\end_layout
+
+\begin_layout Standard
+Called when emulating frame has completed and on_paint()/on_video() calls
+ are about to be issued.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3230,6 +3307,14 @@ Callback: on_startup()
 
 \begin_layout Standard
 Called when the emulator is starting (lsnes.rc and --run files has been run).
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_rewind()
+\end_layout
+
+\begin_layout Standard
+Called when rewind movie to beginning has completed.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3348,6 +3433,24 @@ Callback: on_keyhook(string keyname, table state)
 Sent when key that has keyhook events requested changes state.
  Keyname is name of the key (group) and state is the state (same kind as
  table values in input.raw).
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_idle()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout(), the timeout has expired and
+ emulator is waiting.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_timer()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout() and the timeout has expired
+ (regardless if emulator is waiting).
 \end_layout
 
 \begin_layout Section
@@ -5689,6 +5792,42 @@ Wxwidgets: Only bring up ROM patching screen if specifically requested.
 
 \begin_layout Itemize
 Allow configuring some hotkeys.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta4
+\end_layout
+
+\begin_layout Itemize
+Lots of code cleanups
+\end_layout
+
+\begin_layout Itemize
+Fix JMD compression (JMD dumping was broken)
+\end_layout
+
+\begin_layout Itemize
+Don't crash if Lua C function throws an exception.
+\end_layout
+
+\begin_layout Itemize
+Support bitmap drawing in Lua.
+\end_layout
+
+\begin_layout Itemize
+Fix bsnes v085/v086 patches.
+\end_layout
+
+\begin_layout Itemize
+Improve stability on win32.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta4epsilon1
+\end_layout
+
+\begin_layout Itemize
+Don't corrupt movie if movie length is integer multiple of frames per page.
 \end_layout
 
 \end_body

@@ -335,6 +335,7 @@ class my_interface : public SNES::Interface
 		if(stepping_into_save)
 			messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 		video_refresh_done = true;
+		lua_callback_do_frame_emulated();
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
 		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ? VIDEO_REGION_PAL :
 			VIDEO_REGION_NTSC);
@@ -345,7 +346,7 @@ class my_interface : public SNES::Interface
 		lcscreen ls(data, hires, interlace, overscan, region);
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
-		redraw_framebuffer(ls);
+		redraw_framebuffer(ls, false, true);
 		uint32_t fps_n, fps_d;
 		uint32_t fclocks;
 		if(region)

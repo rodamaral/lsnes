@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "lua/internal.hpp"
+#include "core/framerate.hpp"
 #include "core/window.hpp"
 
 namespace
@@ -45,4 +46,27 @@ namespace
 		command::invokeC(text);
 		return 0;
 	});
+
+	function_ptr_luafun lua_booted("emulator_ready", [](lua_State* LS, const std::string& fname) -> int {
+		lua_pushboolean(LS, lua_booted_flag ? 1 : 0);
+		return 1;
+	});
+
+	function_ptr_luafun lua_utime("utime", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t t = get_utime();
+		lua_pushnumber(LS, t / 1000000);
+		lua_pushnumber(LS, t % 1000000);
+		return 2;
+	});
+	
+	function_ptr_luafun lua_idle_time("set_idle_timeout", [](lua_State* LS, const std::string& fname) -> int {
+		lua_idle_hook_time = get_utime() + get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		return 0;
+	});
+
+	function_ptr_luafun lua_timer_time("set_timer_timeout", [](lua_State* LS, const std::string& fname) -> int {
+		lua_timer_hook_time = get_utime() + get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		return 0;
+	});
+	
 }

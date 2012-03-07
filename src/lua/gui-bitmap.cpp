@@ -1,4 +1,4 @@
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 #include "core/render.hpp"
 #include "lua/bitmap.hpp"
 #include <vector>
@@ -48,7 +48,7 @@ namespace
 			delete p;
 		}
 
-		void operator()(struct screen& scr) throw()
+		template<bool T> void composite_op(struct screen<T>& scr) throw()
 		{
 			size_t pallim = 0;
 			size_t w, h;
@@ -74,7 +74,7 @@ namespace
 			clip_range(scr.originx, scr.width, x, xmin, xmax);
 			clip_range(scr.originy, scr.height, y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				uint32_t* rptr = scr.rowptr(y + r + scr.originy);
+				typename screen<T>::element_t* rptr = scr.rowptr(y + r + scr.originy);
 				size_t eptr = x + xmin + scr.originx;
 				if(b)
 					for(int32_t c = xmin; c < xmax; c++, eptr++) {
@@ -87,6 +87,8 @@ namespace
 						b2->object()->pixels[r * b2->object()->width + c].apply(rptr[eptr]);
 			}
 		}
+		void operator()(struct screen<false>& x) throw() { composite_op(x); }
+		void operator()(struct screen<true>& x) throw() { composite_op(x); }
 	private:
 		int32_t x;
 		int32_t y;

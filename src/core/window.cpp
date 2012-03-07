@@ -1,10 +1,12 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/render.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
+#include "library/minmax.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -118,6 +120,8 @@ keypress::keypress(modifier_set mod, keygroup& _key, keygroup& _key2, short _val
 
 namespace
 {
+	bool queue_function_run = false;
+
 	function_ptr_command<> identify_key("show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -381,6 +385,7 @@ namespace
 				if(k.key2)
 					k.key2->set_position(k.value, k.modifiers);
 				queue_lock->lock();
+				queue_function_run = true;
 			}
 			//Flush commands.
 			while(!commands.empty()) {
@@ -389,6 +394,7 @@ namespace
 				queue_lock->unlock();
 				command::invokeC(c);
 				queue_lock->lock();
+				queue_function_run = true;
 			}
 			//Flush functions.
 			while(!functions.empty()) {
@@ -398,6 +404,7 @@ namespace
 				f.first(f.second);
 				queue_lock->lock();
 				++functions_executed;
+				queue_function_run = true;
 			}
 			queue_condition->signal();
 		} catch(std::bad_alloc& e) {
@@ -409,28 +416,62 @@ namespace
 		if(!unlocked)
 			queue_lock->unlock();
 	}
+
+	uint64_t on_idle_time;
+	uint64_t on_timer_time;
+	void reload_lua_timers()
+	{
+		on_idle_time = lua_timed_hook(LUA_TIMED_HOOK_IDLE);
+		on_timer_time = lua_timed_hook(LUA_TIMED_HOOK_TIMER);
+		queue_function_run = false;
+	}
 }
 
-#define MAXWAIT 10000
+#define MAXWAIT 5000000ULL
+
 
 void platform::flush_command_queue() throw()
 {
+	reload_lua_timers();
+	queue_function_run = false;
 	if(modal_pause || normal_pause)
 		freeze_time(get_utime());
 	init_threading();
+	bool run_idle = false;
 	while(true) {
+		uint64_t now = get_utime();
+		if(now >= on_timer_time) {
+			lua_callback_do_timer();
+			reload_lua_timers();
+		}
+		if(run_idle) {
+			lua_callback_do_idle();
+			reload_lua_timers();
+			run_idle = false;
+		}
 		mutex::holder h(*queue_lock);
 		internal_run_queues(true);
 		if(!pausing_allowed)
 			break;
-		uint64_t now = get_utime();
+		if(queue_function_run)
+			reload_lua_timers();
+		now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
 		waitleft = (modal_pause || normal_pause) ? MAXWAIT : waitleft;
-		waitleft = (waitleft > MAXWAIT) ? MAXWAIT : waitleft;
-		if(waitleft > 0)
-			queue_condition->wait(waitleft);
-		else
+		waitleft = min(waitleft, static_cast<uint64_t>(MAXWAIT));
+		if(waitleft > 0) {
+			if(now >= on_idle_time) {
+				run_idle = true;
+				waitleft = 0;
+			}
+			if(on_idle_time >= now)
+				waitleft = min(waitleft, on_idle_time - now);
+			if(on_timer_time >= now)
+				waitleft = min(waitleft, on_timer_time - now);
+			if(waitleft > 0)
+				queue_condition->wait(waitleft);
+		} else
 			break;
 		//If we had to wait, check queues at least once more.
 	}
@@ -445,18 +486,41 @@ void platform::set_paused(bool enable) throw()
 
 void platform::wait(uint64_t usec) throw()
 {
+	reload_lua_timers();
 	continue_time = get_utime() + usec;
 	init_threading();
+	bool run_idle = false;
 	while(true) {
+		uint64_t now = get_utime();
+		if(now >= on_timer_time) {
+			lua_callback_do_timer();
+			reload_lua_timers();
+		}
+		if(run_idle) {
+			lua_callback_do_idle();
+			run_idle = false;
+			reload_lua_timers();
+		}
 		mutex::holder h(*queue_lock);
 		internal_run_queues(true);
-		uint64_t now = get_utime();
+		if(queue_function_run)
+			reload_lua_timers();
+		now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
-		waitleft = (waitleft > MAXWAIT) ? MAXWAIT : waitleft;
-		if(waitleft > 0)
-			queue_condition->wait(waitleft);
-		else
+		waitleft = min(static_cast<uint64_t>(MAXWAIT), waitleft);
+		if(waitleft > 0) {
+			if(now >= on_idle_time) {
+				run_idle = true;
+				waitleft = 0;
+			}
+			if(on_idle_time >= now)
+				waitleft = min(waitleft, on_idle_time - now);
+			if(on_timer_time >= now)
+				waitleft = min(waitleft, on_timer_time - now);
+			if(waitleft > 0)
+				queue_condition->wait(waitleft);
+		} else
 			return;
 	}
 }

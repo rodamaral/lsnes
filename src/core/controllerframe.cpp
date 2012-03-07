@@ -683,8 +683,10 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 		for(size_t i = pages_needed; i < current_pages; i++)
 			pages.erase(i);
 		//Now zeroize the excess memory.
-		size_t offset = frame_size * (newsize % frames_per_page);
-		memset(pages[pages_needed - 1].content + offset, 0, CONTROLLER_PAGE_SIZE - offset);
+		if(newsize < pages_needed * frames_per_page) {
+			size_t offset = frame_size * (newsize % frames_per_page);
+			memset(pages[pages_needed - 1].content + offset, 0, CONTROLLER_PAGE_SIZE - offset);
+		}
 		frames = newsize;
 	} else if(newsize > frames) {
 		//Enlarge movie.

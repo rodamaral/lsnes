@@ -15,6 +15,10 @@ wxwin_status::panel::panel(wxWindow* _parent, unsigned lines)
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 }
 
+bool wxwin_status::panel::AcceptsFocus () const
+{
+	return false;
+}
 
 wxwin_status::wxwin_status()
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Status"), wxDefaultPosition, wxSize(-1, -1),

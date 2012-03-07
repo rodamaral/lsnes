@@ -15,6 +15,9 @@ extern "C" {
 #include <lualib.h>
 }
 
+uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+
 namespace
 {
 	globalwrap<std::map<std::string, lua_function*>> functions;
@@ -166,6 +169,7 @@ void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& 
 
 lua_render_context* lua_render_ctx = NULL;
 controller_frame* lua_input_controllerdata = NULL;
+bool lua_booted_flag = false;
 
 namespace
 {
@@ -334,12 +338,13 @@ namespace
 	}
 }
 
-void lua_callback_do_paint(struct lua_render_context* ctx) throw()
+void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
 {
 	if(!callback_exists("on_paint"))
 		return;
 	lua_render_ctx = ctx;
-	run_lua_cb(0);
+	push_boolean(non_synthetic);
+	run_lua_cb(1);
 	lua_render_ctx = NULL;
 }
 
@@ -366,6 +371,36 @@ void lua_callback_do_frame() throw()
 	run_lua_cb(0);
 }
 
+void lua_callback_do_rewind() throw()
+{
+	if(!callback_exists("on_rewind"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_idle() throw()
+{
+	lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+	if(!callback_exists("on_idle"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_timer() throw()
+{
+	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;	
+	if(!callback_exists("on_timer"))
+		return;
+	run_lua_cb(0);
+}
+
+void lua_callback_do_frame_emulated() throw()
+{
+	if(!callback_exists("on_frame_emulated"))
+		return;
+	run_lua_cb(0);
+}
+
 void lua_callback_do_readwrite() throw()
 {
 	if(!callback_exists("on_readwrite"))
@@ -375,6 +410,7 @@ void lua_callback_do_readwrite() throw()
 
 void lua_callback_startup() throw()
 {
+	lua_booted_flag = true;
 	if(!callback_exists("on_startup"))
 		return;
 	run_lua_cb(0);
@@ -504,6 +540,21 @@ void quit_lua() throw()
 	if(lua_initialized)
 		lua_close(lua_initialized);
 }
+
+
+#define LUA_TIMED_HOOK_IDLE 0
+#define LUA_TIMED_HOOK_TIMER 1
+
+uint64_t lua_timed_hook(int timer) throw()
+{
+	switch(timer) {
+	case LUA_TIMED_HOOK_IDLE:
+		return lua_idle_hook_time;
+	case LUA_TIMED_HOOK_TIMER:
+		return lua_timer_hook_time;
+	}
+}
+
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
