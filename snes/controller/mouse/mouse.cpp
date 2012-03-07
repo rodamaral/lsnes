@@ -3,9 +3,13 @@
 uint2 Mouse::data() {
   if(counter >= 32) return 1;
 
-  int position_x = interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::X);  //-n = left, 0 = center, +n = right
-  int position_y = interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Y);  //-n = up,   0 = center, +n = down
+  if(counter == 0) {
+    _position_x = interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::X);  //-n = left, 0 = center, +n = right
+    _position_y = interface->inputPoll(port, Input::Device::Mouse, 0, (unsigned)Input::MouseID::Y);  //-n = up,   0 = center, +n = down
+  }
 
+  int position_x = _position_x;
+  int position_y = _position_y;
   bool direction_x = position_x < 0;  //0 = right, 1 = left
   bool direction_y = position_y < 0;  //0 = down,  1 = up
 
@@ -67,10 +71,16 @@ void Mouse::serialize(serializer& s) {
   unsigned char block[Controller::SaveSize] = {0};
   block[0] = latched ? 1 : 0;
   block[1] = counter;
+  block[2] = (unsigned short)_position_x >> 8;
+  block[3] = (unsigned short)_position_x;
+  block[4] = (unsigned short)_position_y >> 8;
+  block[5] = (unsigned short)_position_y;
   s.array(block, Controller::SaveSize);
   if(s.mode() == nall::serializer::Load) {
     latched = (block[0] != 0);
     counter = block[1];
+    _position_x = (short)(((unsigned short)block[2] << 8) | (unsigned short)block[3]);
+    _position_y = (short)(((unsigned short)block[4] << 8) | (unsigned short)block[5]);
   }
 }
 
