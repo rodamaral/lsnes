@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdint>
 #include "core/render.hpp"
+#include "core/window.hpp"
 
 struct lua_bitmap
 {
@@ -25,6 +26,9 @@ struct lua_dbitmap
 struct lua_palette
 {
 	std::vector<premultiplied_color> colors;
+	lua_palette();
+	~lua_palette();
+	mutex* palette_mutex;
 };
 
 struct lua_loaded_bitmap

@@ -18,6 +18,16 @@ lua_dbitmap::lua_dbitmap(uint32_t w, uint32_t h)
 	pixels.resize(width * height);
 }
 
+lua_palette::lua_palette()
+{
+	palette_mutex = &mutex::aquire();
+}
+
+lua_palette::~lua_palette()
+{
+	delete palette_mutex;
+}
+
 namespace
 {
 	struct render_object_bitmap : public render_object
@@ -50,6 +60,8 @@ namespace
 
 		void operator()(struct screen& scr) throw()
 		{
+			if(p)
+				p->object()->palette_mutex->lock();
 			size_t pallim = 0;
 			size_t w, h;
 			premultiplied_color* palette;
@@ -86,6 +98,8 @@ namespace
 					for(int32_t c = xmin; c < xmax; c++, eptr++)
 						b2->object()->pixels[r * b2->object()->width + c].apply(rptr[eptr]);
 			}
+			if(p)
+				p->object()->palette_mutex->unlock();
 		}
 	private:
 		int32_t x;
@@ -147,8 +161,12 @@ namespace
 		uint16_t c = get_numeric_argument<uint16_t>(LS, 2, fname.c_str());
 		int64_t nval = get_numeric_argument<int64_t>(LS, 3, fname.c_str());
 		premultiplied_color nc(nval);
-		if(p->colors.size() <= c);
+		//The mutex lock protects only the internals of colors array.
+		if(p->colors.size() <= c) {
+			p->palette_mutex->lock();
 			p->colors.resize(static_cast<uint32_t>(c) + 1);
+			p->palette_mutex->unlock();
+		}
 		p->colors[c] = nc;
 		return 0;
 	});
