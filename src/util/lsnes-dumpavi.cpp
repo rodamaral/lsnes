@@ -1,6 +1,4 @@
-#include "lsnes.hpp"
-#include <snes/snes.hpp>
-#include <ui-libsnes/libsnes.hpp>
+#include "core/bsnes.hpp"
 
 #include "core/advdumper.hpp"
 #include "core/command.hpp"

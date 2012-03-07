@@ -1,7 +1,7 @@
-From 308ba2d96d3dc0e49821c9db9902882e3919e372 Mon Sep 17 00:00:00 2001
+From 22205d4d339cfa11f6d53e644eae1c859a56d349 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:37:44 +0200
-Subject: [PATCH 3/7] Don't use time() in emulating chips
+Subject: [PATCH 1/4] Don't use time() in emulating chips
 
 Instead of using time() in chip emulation, create new interface method
 currentTime(), defaulting to time(0). This way frontend can cleanly
@@ -15,10 +15,10 @@ override the current time bsnes is using.
  5 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/snes/chip/bsx/satellaview/satellaview.cpp b/snes/chip/bsx/satellaview/satellaview.cpp
-index 7bfd13f..b2565ea 100755
+index 386fb62..3c98019 100755
 --- a/snes/chip/bsx/satellaview/satellaview.cpp
 +++ b/snes/chip/bsx/satellaview/satellaview.cpp
-@@ -39,7 +39,7 @@ uint8 BSXSatellaview::mmio_read(unsigned addr) {
+@@ -38,7 +38,7 @@ uint8 BSXSatellaview::mmio_read(unsigned addr) {
  
        if(counter == 0) {
          time_t rawtime;
@@ -28,10 +28,10 @@ index 7bfd13f..b2565ea 100755
  
          regs.r2192_hour   = t->tm_hour;
 diff --git a/snes/chip/spc7110/spc7110.cpp b/snes/chip/spc7110/spc7110.cpp
-index 835ddbb..f5463e5 100755
+index 27b8b77..061aa5e 100755
 --- a/snes/chip/spc7110/spc7110.cpp
 +++ b/snes/chip/spc7110/spc7110.cpp
-@@ -102,7 +102,7 @@ void SPC7110::set_data_adjust(unsigned addr)  { r4814 = addr; r4815 = addr >> 8;
+@@ -101,7 +101,7 @@ void SPC7110::set_data_adjust(unsigned addr)  { r4814 = addr; r4815 = addr >> 8;
  
  void SPC7110::update_time(int offset) {
    time_t rtc_time = (rtc[16] << 0) | (rtc[17] << 8) | (rtc[18] << 16) | (rtc[19] << 24);
@@ -41,10 +41,10 @@ index 835ddbb..f5463e5 100755
    //sizeof(time_t) is platform-dependent; though rtc[] needs to be platform-agnostic.
    //yet platforms with 32-bit signed time_t will overflow every ~68 years. handle this by
 diff --git a/snes/chip/srtc/srtc.cpp b/snes/chip/srtc/srtc.cpp
-index 1dd8f86..b11b756 100755
+index 0044113..725e891 100755
 --- a/snes/chip/srtc/srtc.cpp
 +++ b/snes/chip/srtc/srtc.cpp
-@@ -32,7 +32,7 @@ void SRTC::reset() {
+@@ -31,7 +31,7 @@ void SRTC::reset() {
  
  void SRTC::update_time() {
    time_t rtc_time = (rtc[16] << 0) | (rtc[17] << 8) | (rtc[18] << 16) | (rtc[19] << 24);
