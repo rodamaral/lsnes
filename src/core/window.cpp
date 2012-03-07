@@ -427,7 +427,7 @@ namespace
 	}
 }
 
-#define MAXWAIT 5000000ULL
+#define MAXWAIT 100000ULL
 
 
 void platform::flush_command_queue() throw()
