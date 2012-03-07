@@ -126,10 +126,19 @@ namespace
 		uint32_t w = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
 		uint32_t h = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
 		bool d = get_boolean_argument(LS, 3, fname.c_str());
-		if(d)
-			lua_class<lua_dbitmap>::create(LS, w, h);
-		else
-			lua_class<lua_bitmap>::create(LS, w, h);
+		if(d) {
+			int64_t c = -1;
+			get_numeric_argument<int64_t>(LS, 4, c, fname.c_str());
+			lua_dbitmap* b = lua_class<lua_dbitmap>::create(LS, w, h);
+			for(size_t i = 0; i < b->width * b->height; i++)
+				b->pixels[i] = premultiplied_color(c);
+		} else {
+			uint16_t c = 0;
+			get_numeric_argument<uint16_t>(LS, 4, c, fname.c_str());
+			lua_bitmap* b = lua_class<lua_bitmap>::create(LS, w, h);
+			for(size_t i = 0; i < b->width * b->height; i++)
+				b->pixels[i] = c;
+		}
 		return 1;
 	});
 
