@@ -2141,6 +2141,28 @@ Shift bits-bit (max 48, default 48) number arithmetically right by amount
  The new bits are shifted in with copy of the high bit.
 \end_layout
 
+\begin_layout Subsubsection
+bit.extract(number base[, number bit0[, number bit1,...]])
+\end_layout
+
+\begin_layout Standard
+Returns number that has bit0-th bit as bit 0, bit1-th bit as 1 and so on.
+\end_layout
+
+\begin_layout Standard
+Notes: 
+\end_layout
+
+\begin_layout Itemize
+Bit numbers up to 51 should work reliably (then things start falling apart
+ due to double precision issues).
+\end_layout
+
+\begin_layout Itemize
+There are two special bit positions, true and false, standing for always
+ set bit and always clear bit.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

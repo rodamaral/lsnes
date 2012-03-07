@@ -102,6 +102,23 @@ namespace
 		}
 	};
 
+	function_ptr_luafun lua_print("bit.extract", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t num = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t ret = 0;
+		for(size_t i = 0;; i++) {
+			if(lua_isnumber(LS, i + 2)) {
+				uint8_t bit = get_numeric_argument<uint8_t>(LS, i + 2, fname.c_str());
+				ret |= (((num >> bit) & 1) << i);
+			} else if(lua_isboolean(LS, i + 2)) {
+				if(lua_toboolean(LS, i + 2))
+					ret |= (1ULL << i);
+			} else
+				break;
+		}
+		lua_pushnumber(LS, ret);
+		return 1;
+	});
+
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_bnot("bit.bnot");
 	lua_symmetric_bitwise<combine_any, 0> bit_any("bit.any");
