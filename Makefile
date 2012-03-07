@@ -38,6 +38,11 @@ CFLAGS += -DMAKE_MALLOC_THREADSAFE
 LDFLAGS += -Wl,--wrap,malloc,--wrap,calloc,--wrap,realloc,--wrap,free
 endif
 
+#bsnes
+ifdef BSNES_VERSION
+CFLAGS += -DBSNES_V$(BSNES_VERSION)
+endif
+
 #Lua.
 ifndef LUA
 CFLAGS += -DNO_LUA

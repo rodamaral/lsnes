@@ -1,9 +1,7 @@
 //Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
 
-#include "lsnes.hpp"
-#include <snes/snes.hpp>
-#include <ui-libsnes/libsnes.hpp>
+#include "core/bsnes.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"

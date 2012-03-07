@@ -1,4 +1,4 @@
-From a47431385fedf705a3c9c1b820c116c230632943 Mon Sep 17 00:00:00 2001
+From 5f76449a70c9a546e18c2fdebe7588bbe90b56d2 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 19:49:46 +0200
 Subject: [PATCH 3/4] Allow frontend to control random number seed
@@ -36,7 +36,7 @@ index df975e8..30ee7fd 100755
  
  extern Interface *interface;
 diff --git a/snes/system/system.cpp b/snes/system/system.cpp
-index 284e389..99901ff 100755
+index 9b70bbf..cbd096c 100755
 --- a/snes/system/system.cpp
 +++ b/snes/system/system.cpp
 @@ -151,7 +151,7 @@ void System::unload() {

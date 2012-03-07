@@ -1,7 +1,7 @@
-From 8d990991d97eb7742c4daa461b158d1aa9f6dce4 Mon Sep 17 00:00:00 2001
+From fe11984ad18561506a7cc874cb7c0421f1e21ad1 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 01:52:08 +0200
-Subject: [PATCH 4/7] Save controller state when savestating
+Subject: [PATCH 2/4] Save controller state when savestating
 
 When savestating, save the controller state and restore it upon loadstate.
 Prevents libsnes from mixing up buttons.
@@ -18,13 +18,13 @@ Prevents libsnes from mixing up buttons.
  snes/controller/multitap/multitap.hpp     |    2 +-
  snes/controller/superscope/superscope.cpp |   31 +++++++++++++++++++++++++
  snes/controller/superscope/superscope.hpp |    1 +
- snes/input/input.cpp                      |   15 ++++++++++++
- snes/input/input.hpp                      |    1 +
+ snes/system/input.cpp                     |   16 +++++++++++++
+ snes/system/input.hpp                     |    1 +
  snes/system/serialization.cpp             |    1 +
- 15 files changed, 141 insertions(+), 3 deletions(-)
+ 15 files changed, 142 insertions(+), 3 deletions(-)
 
 diff --git a/snes/controller/controller.cpp b/snes/controller/controller.cpp
-index 9091b21..f254bed 100755
+index fa8e07d..5f37849 100755
 --- a/snes/controller/controller.cpp
 +++ b/snes/controller/controller.cpp
 @@ -46,8 +46,16 @@ void Controller::iobit(bool data) {
@@ -45,7 +45,7 @@ index 9091b21..f254bed 100755
 +
  }
 diff --git a/snes/controller/controller.hpp b/snes/controller/controller.hpp
-index 7332712..827b2eb 100755
+index dd748a1..46095a8 100755
 --- a/snes/controller/controller.hpp
 +++ b/snes/controller/controller.hpp
 @@ -13,12 +13,14 @@
@@ -101,10 +101,10 @@ index c5ca69c..a2392d1 100755
    bool latched;
    unsigned counter;
 diff --git a/snes/controller/justifier/justifier.cpp b/snes/controller/justifier/justifier.cpp
-index 8b2d3ee..4b8eca8 100755
+index 6207916..ad13a9b 100755
 --- a/snes/controller/justifier/justifier.cpp
 +++ b/snes/controller/justifier/justifier.cpp
-@@ -103,6 +103,42 @@ void Justifier::latch(bool data) {
+@@ -100,6 +100,42 @@ void Justifier::latch(bool data) {
    if(latched == 0) active = !active;  //toggle between both controllers, even when unchained
  }
  
@@ -115,31 +115,31 @@ index 8b2d3ee..4b8eca8 100755
 +  block[0] = latched ? 1 : 0;
 +  block[1] = counter;
 +  block[2] = active ? 1 : 0;
-+  block[3] = trigger1 ? 1 : 0;
-+  block[4] = trigger2 ? 1 : 0;
-+  block[5] = start1 ? 1 : 0;
-+  block[6] = start2 ? 1 : 0;
-+  block[7] = (unsigned short)x1 >> 8;
-+  block[8] = (unsigned short)x1;
-+  block[9] = (unsigned short)x2 >> 8;
-+  block[10] = (unsigned short)x2;
-+  block[11] = (unsigned short)y1 >> 8;
-+  block[12] = (unsigned short)y1;
-+  block[13] = (unsigned short)y2 >> 8;
-+  block[14] = (unsigned short)y2;
++  block[3] = player1.trigger ? 1 : 0;
++  block[4] = player2.trigger ? 1 : 0;
++  block[5] = player1.start ? 1 : 0;
++  block[6] = player2.start ? 1 : 0;
++  block[7] = (unsigned short)player1.x >> 8;
++  block[8] = (unsigned short)player1.x;
++  block[9] = (unsigned short)player2.x >> 8;
++  block[10] = (unsigned short)player2.x;
++  block[11] = (unsigned short)player1.y >> 8;
++  block[12] = (unsigned short)player1.y;
++  block[13] = (unsigned short)player2.y >> 8;
++  block[14] = (unsigned short)player2.y;
 +  s.array(block, Controller::SaveSize);
 +  if(s.mode() == nall::serializer::Load) {
 +    latched = (block[0] != 0);
 +    counter = block[1];
 +    active = (block[2] != 0);
-+    trigger1 = (block[3] != 0);
-+    trigger2 = (block[4] != 0);
-+    start1 = (block[5] != 0);
-+    start2 = (block[6] != 0);
-+    x1 = (short)(((unsigned short)block[7] << 8) | (unsigned short)block[8]);
-+    x2 = (short)(((unsigned short)block[9] << 8) | (unsigned short)block[10]);
-+    y1 = (short)(((unsigned short)block[11] << 8) | (unsigned short)block[12]);
-+    y2 = (short)(((unsigned short)block[13] << 8) | (unsigned short)block[14]);
++    player1.trigger = (block[3] != 0);
++    player2.trigger = (block[4] != 0);
++    player1.start = (block[5] != 0);
++    player2.start = (block[6] != 0);
++    player1.x = (short)(((unsigned short)block[7] << 8) | (unsigned short)block[8]);
++    player2.x = (short)(((unsigned short)block[9] << 8) | (unsigned short)block[10]);
++    player1.y = (short)(((unsigned short)block[11] << 8) | (unsigned short)block[12]);
++    player2.y = (short)(((unsigned short)block[13] << 8) | (unsigned short)block[14]);
 +  }
 +}
 +
@@ -148,7 +148,7 @@ index 8b2d3ee..4b8eca8 100755
    create(Controller::Enter, 21477272);
    latched = 0;
 diff --git a/snes/controller/justifier/justifier.hpp b/snes/controller/justifier/justifier.hpp
-index 8259147..96e09dc 100755
+index f927acf..6b7bba0 100755
 --- a/snes/controller/justifier/justifier.hpp
 +++ b/snes/controller/justifier/justifier.hpp
 @@ -2,6 +2,7 @@ struct Justifier : Controller {
@@ -237,10 +237,10 @@ index 0540af7..e6324ac 100755
    bool latched;
    unsigned counter1;
 diff --git a/snes/controller/superscope/superscope.cpp b/snes/controller/superscope/superscope.cpp
-index e97a2ff..bb260b9 100755
+index 12068f0..1a1dfbf 100755
 --- a/snes/controller/superscope/superscope.cpp
 +++ b/snes/controller/superscope/superscope.cpp
-@@ -104,6 +104,37 @@ void SuperScope::latch(bool data) {
+@@ -100,6 +100,37 @@ void SuperScope::latch(bool data) {
    counter = 0;
  }
  
@@ -290,11 +290,11 @@ index a7a90b7..93509d7 100755
    SuperScope(bool port);
  
  //private:
-diff --git a/snes/input/input.cpp b/snes/input/input.cpp
-index 9050310..7030495 100755
---- a/snes/input/input.cpp
-+++ b/snes/input/input.cpp
-@@ -26,6 +26,21 @@ void Input::connect(bool port, Input::Device id) {
+diff --git a/snes/system/input.cpp b/snes/system/input.cpp
+index 894de0e..4479acc 100755
+--- a/snes/system/input.cpp
++++ b/snes/system/input.cpp
+@@ -26,6 +26,22 @@ void Input::connect(bool port, Input::Device id) {
    }
  }
  
@@ -313,13 +313,14 @@ index 9050310..7030495 100755
 +  port2->serialize(s);
 +}
 +
++
  Input::Input() : port1(nullptr), port2(nullptr) {
    connect(Controller::Port1, Input::Device::Joypad);
    connect(Controller::Port2, Input::Device::Joypad);
-diff --git a/snes/input/input.hpp b/snes/input/input.hpp
-index 13ef46e..6832e82 100755
---- a/snes/input/input.hpp
-+++ b/snes/input/input.hpp
+diff --git a/snes/system/input.hpp b/snes/system/input.hpp
+index 7a6bd9e..d2f5fef 100755
+--- a/snes/system/input.hpp
++++ b/snes/system/input.hpp
 @@ -31,6 +31,7 @@ struct Input {
    Controller *port1;
    Controller *port2;
@@ -329,7 +330,7 @@ index 13ef46e..6832e82 100755
    Input();
    ~Input();
 diff --git a/snes/system/serialization.cpp b/snes/system/serialization.cpp
-index f7d6f3b..08e7051 100755
+index f746c3a..67e08a2 100755
 --- a/snes/system/serialization.cpp
 +++ b/snes/system/serialization.cpp
 @@ -56,6 +56,7 @@ void System::serialize_all(serializer &s) {
@@ -339,7 +340,7 @@ index f7d6f3b..08e7051 100755
 +  input.serialize(s);
  
    if(cartridge.mode() == Cartridge::Mode::SufamiTurbo) sufamiturbo.serialize(s);
-   if(cartridge.mode() == Cartridge::Mode::SuperGameBoy) icd2.serialize(s);
+   #if defined(GAMEBOY)
 -- 
 1.7.9.48.g85da4d
 

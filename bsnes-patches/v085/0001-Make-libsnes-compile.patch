@@ -1,7 +1,7 @@
-From 598c9591aaf71e0013432669ec53369f672b66e1 Mon Sep 17 00:00:00 2001
+From 7c8d537a7be0f9c5883393e0d4a0df76d69bf19c Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:30:36 +0200
-Subject: [PATCH 1/6] Make libsnes compile
+Subject: [PATCH 1/7] Make libsnes compile
 
 Changes between v083 and v084 had broken libsnes. Fix it so it at least
 compiles.
