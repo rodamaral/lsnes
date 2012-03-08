@@ -2163,6 +2163,16 @@ There are two special bit positions, true and false, standing for always
  set bit and always clear bit.
 \end_layout
 
+\begin_layout Subsubsection
+bit.value([number bit1[, number bit2,...]])
+\end_layout
+
+\begin_layout Standard
+Returns bitwise OR of 1 left shifted by bit1 places, 1 left shifted by bit2
+ places and so on.
+ As special value, nil argument is no-op.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout
@@ -2461,7 +2471,7 @@ Returns a new palette (initially all transparent).
 \end_layout
 
 \begin_layout Subsubsection
-gui.bitmap_new(number w, number h, boolean direct)
+gui.bitmap_new(number w, number h, boolean direct[, bool icolor])
 \end_layout
 
 \begin_layout Standard
@@ -2480,6 +2490,10 @@ h: The height of new bitmap
 
 \begin_layout Itemize
 direct: If true, the returned bitmap is dbitmap, otherwise bitmap.
+\end_layout
+
+\begin_layout Itemize
+icolor: Initital fill color (defaults to 0 on BITMAP, -1 on DBITMAP)
 \end_layout
 
 \begin_layout Subsubsection

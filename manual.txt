@@ -1054,6 +1054,12 @@ Notes:
 • There are two special bit positions, true and false, standing 
   for always set bit and always clear bit.
 
+8.2.11 bit.value([number bit1[, number bit2,...]])
+
+Returns bitwise OR of 1 left shifted by bit1 places, 1 left 
+shifted by bit2 places and so on. As special value, nil argument 
+is no-op.
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
@@ -1211,7 +1217,8 @@ Draw a bitmap on screen. Parameters:
 Returns a new palette (initially all transparent). Can be used 
 anywhere.
 
-8.3.15 gui.bitmap_new(number w, number h, boolean direct)
+8.3.15 gui.bitmap_new(number w, number h, boolean direct[, bool 
+  icolor])
 
 Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
 
@@ -1221,6 +1228,9 @@ Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
 
 • direct: If true, the returned bitmap is dbitmap, otherwise 
   bitmap.
+
+• icolor: Initital fill color (defaults to 0 on BITMAP, -1 on 
+  DBITMAP)
 
 8.3.16 gui.bitmap_load(string file)
 

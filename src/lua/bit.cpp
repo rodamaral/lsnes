@@ -102,7 +102,7 @@ namespace
 		}
 	};
 
-	function_ptr_luafun lua_print("bit.extract", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun lua_bextract("bit.extract", [](lua_State* LS, const std::string& fname) -> int {
 		uint64_t num = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
@@ -112,6 +112,20 @@ namespace
 			} else if(lua_isboolean(LS, i + 2)) {
 				if(lua_toboolean(LS, i + 2))
 					ret |= (1ULL << i);
+			} else
+				break;
+		}
+		lua_pushnumber(LS, ret);
+		return 1;
+	});
+
+	function_ptr_luafun lua_bvalue("bit.value", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t ret = 0;
+		for(size_t i = 0;; i++) {
+			if(lua_isnumber(LS, i + 1)) {
+				uint8_t bit = get_numeric_argument<uint8_t>(LS, i + 1, fname.c_str());
+				ret |= (1ULL << bit);
+			} else if(lua_isnil(LS, i + 1)) {
 			} else
 				break;
 		}
