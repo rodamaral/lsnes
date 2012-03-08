@@ -2764,6 +2764,31 @@ Set state for entiere controller.
 \end_layout
 
 \begin_layout Subsubsection
+input.controllertype(number controller)
+\end_layout
+
+\begin_layout Standard
+Get the type of controller as string.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+gamepad
+\end_layout
+
+\begin_layout Itemize
+mouse
+\end_layout
+
+\begin_layout Itemize
+justifier
+\end_layout
+
+\begin_layout Itemize
+superscope
+\end_layout
+
+\begin_layout Subsubsection
 input.reset([number cycles])
 \end_layout
 
@@ -5843,6 +5868,48 @@ rr1-delta4epsilon1
 
 \begin_layout Itemize
 Don't corrupt movie if movie length is integer multiple of frames per page.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta5
+\end_layout
+
+\begin_layout Itemize
+New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
+\end_layout
+
+\begin_layout Itemize
+New Lua functions: emulator_ready(), utime(), set_idle_timeout(), set_timer_time
+out(), bit.extract(), bit.value(), input.geta(), input.seta() and input.controllertyp
+e()
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix internal focus lost (hotkeys stop working)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix broken modifiers
+\end_layout
+
+\begin_layout Itemize
+on_paint has parameter now.
+\end_layout
+
+\begin_layout Itemize
+Optional initital fill for bitmaps
+\end_layout
+
+\begin_layout Itemize
+Fix palette changing.
+\end_layout
+
+\begin_layout Itemize
+Optimize rendering a bit.
+\end_layout
+
+\begin_layout Itemize
+Bsnes v087 support.
 \end_layout
 
 \end_body

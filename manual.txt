@@ -2879,3 +2879,27 @@ set-axis joystick0axis19 disabled
 • Don't corrupt movie if movie length is integer multiple of 
   frames per page.
 
+15.53 rr1-delta5
+
+• New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
+
+• New Lua functions: emulator_ready(), utime(), 
+  set_idle_timeout(), set_timer_timeout(), bit.extract(), 
+  bit.value(), input.geta(), input.seta()
+
+• Wxwidgets: Fix internal focus lost (hotkeys stop working)
+
+• Wxwidgets: Fix broken modifiers
+
+• on_paint has parameter now.
+
+• Optional initital fill for bitmaps
+
+• Fix palette changing.
+
+• Optimize rendering a bit.
+
+• Bsnes v087 support.
+
+• 
+
