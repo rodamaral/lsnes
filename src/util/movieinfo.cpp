@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 		std::cout << "Console: " << name_romtype(rtype) << std::endl;
 		std::cout << "Region: " << name_region(reg) << std::endl;
 		std::cout << "Port #1: " << name_porttype(m.port1) << std::endl;
-		std::cout << "Port #2: " << name_porttype(m.port1) << std::endl;
+		std::cout << "Port #2: " << name_porttype(m.port2) << std::endl;
 		std::cout << "Used emulator core: " << escape_string(m.coreversion) << std::endl;
 		if(m.gamename != "")
 			std::cout << "Game name: " << escape_string(m.gamename) << std::endl;

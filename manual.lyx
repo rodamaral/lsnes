@@ -2184,6 +2184,16 @@ There are two special bit positions, true and false, standing for always
  set bit and always clear bit.
 \end_layout
 
+\begin_layout Subsubsection
+bit.value([number bit1[, number bit2,...]])
+\end_layout
+
+\begin_layout Standard
+Returns bitwise OR of 1 left shifted by bit1 places, 1 left shifted by bit2
+ places and so on.
+ As special value, nil argument is no-op.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout
@@ -2482,7 +2492,7 @@ Returns a new palette (initially all transparent).
 \end_layout
 
 \begin_layout Subsubsection
-gui.bitmap_new(number w, number h, boolean direct)
+gui.bitmap_new(number w, number h, boolean direct[, bool icolor])
 \end_layout
 
 \begin_layout Standard
@@ -2501,6 +2511,10 @@ h: The height of new bitmap
 
 \begin_layout Itemize
 direct: If true, the returned bitmap is dbitmap, otherwise bitmap.
+\end_layout
+
+\begin_layout Itemize
+icolor: Initital fill color (defaults to 0 on BITMAP, -1 on DBITMAP)
 \end_layout
 
 \begin_layout Subsubsection
@@ -2768,6 +2782,31 @@ input.seta(number controller, number bitmask, number args...)
 \begin_layout Standard
 Set state for entiere controller.
  args is up to 12 values for indices (overriding values in bitmask if specified).
+\end_layout
+
+\begin_layout Subsubsection
+input.controllertype(number controller)
+\end_layout
+
+\begin_layout Standard
+Get the type of controller as string.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+gamepad
+\end_layout
+
+\begin_layout Itemize
+mouse
+\end_layout
+
+\begin_layout Itemize
+justifier
+\end_layout
+
+\begin_layout Itemize
+superscope
 \end_layout
 
 \begin_layout Subsubsection
@@ -5850,6 +5889,48 @@ rr1-delta4epsilon1
 
 \begin_layout Itemize
 Don't corrupt movie if movie length is integer multiple of frames per page.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta5
+\end_layout
+
+\begin_layout Itemize
+New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
+\end_layout
+
+\begin_layout Itemize
+New Lua functions: emulator_ready(), utime(), set_idle_timeout(), set_timer_time
+out(), bit.extract(), bit.value(), input.geta(), input.seta() and input.controllertyp
+e()
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix internal focus lost (hotkeys stop working)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix broken modifiers
+\end_layout
+
+\begin_layout Itemize
+on_paint has parameter now.
+\end_layout
+
+\begin_layout Itemize
+Optional initital fill for bitmaps
+\end_layout
+
+\begin_layout Itemize
+Fix palette changing.
+\end_layout
+
+\begin_layout Itemize
+Optimize rendering a bit.
+\end_layout
+
+\begin_layout Itemize
+Bsnes v087 support.
 \end_layout
 
 \end_body
