@@ -5933,5 +5933,17 @@ Optimize rendering a bit.
 Bsnes v087 support.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta5epsilon1
+\end_layout
+
+\begin_layout Itemize
+Movieinfo: Fix display of port #2 type.
+\end_layout
+
+\begin_layout Itemize
+Call on_input() after loadstate.
+\end_layout
+
 \end_body
 \end_document

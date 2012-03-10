@@ -1374,14 +1374,26 @@ Get input state for entiere controller. Returns 13 return values.
 Set state for entiere controller. args is up to 12 values for 
 indices (overriding values in bitmask if specified).
 
-8.4.5 input.reset([number cycles])
+8.4.5 input.controllertype(number controller)
+
+Get the type of controller as string. Valid values are:
+
+• gamepad
+
+• mouse
+
+• justifier
+
+• superscope
+
+8.4.6 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-8.4.6 input.raw()
+8.4.7 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
@@ -1405,7 +1417,7 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
-8.4.7 input.keyhook(key, state)
+8.4.8 input.keyhook(key, state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
@@ -2891,7 +2903,8 @@ set-axis joystick0axis19 disabled
 
 • New Lua functions: emulator_ready(), utime(), 
   set_idle_timeout(), set_timer_timeout(), bit.extract(), 
-  bit.value(), input.geta(), input.seta()
+  bit.value(), input.geta(), input.seta() and 
+  input.controllertype()
 
 • Wxwidgets: Fix internal focus lost (hotkeys stop working)
 
@@ -2907,5 +2920,9 @@ set-axis joystick0axis19 disabled
 
 • Bsnes v087 support.
 
-• 
+15.54 rr1-delta5epsilon1
+
+• Movieinfo: Fix display of port #2 type.
+
+• Call on_input() after loadstate.
 
