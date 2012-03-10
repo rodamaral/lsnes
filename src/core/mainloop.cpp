@@ -934,8 +934,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				else
 					amode = old_mode;
 				just_did_loadstate = first_round;
-				movb.get_movie().set_controls(movb.update_controls(true));
-				movb.get_movie().set_all_DRDY();
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
@@ -950,7 +948,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
-			movb.get_movie().set_controls(controls.get(movb.get_movie().get_current_frame()));
+			movb.get_movie().set_controls(movb.update_controls(true));
+			movb.get_movie().set_all_DRDY();
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
