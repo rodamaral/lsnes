@@ -934,6 +934,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				else
 					amode = old_mode;
 				just_did_loadstate = first_round;
+				movb.get_movie().set_controls(movb.update_controls(true));
+				movb.get_movie().set_all_DRDY();
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
