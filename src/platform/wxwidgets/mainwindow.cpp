@@ -15,6 +15,7 @@
 #include "core/window.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
+#include "interface/core.hpp"
 
 #include <vector>
 #include <string>
@@ -88,7 +89,7 @@ namespace
 
 	wxString getname()
 	{
-		std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
+		std::string windowname = "lsnes rr" + lsnes_version + "[" + emucore_get_version() + "]";
 		return towxstring(windowname);
 	}
 
@@ -974,7 +975,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::ostringstream str;
 		str << "Version: lsnes rr" << lsnes_version << std::endl;
 		str << "Revision: " << lsnes_git_revision << std::endl;
-		str << "Core: " << bsnes_core_version << std::endl;
+		str << "Core: " << emucore_get_version() << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 		return;
 	}

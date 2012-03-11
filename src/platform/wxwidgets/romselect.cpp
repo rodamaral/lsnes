@@ -6,6 +6,7 @@
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
 #include "library/zip.hpp"
+#include "interface/core.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_romselect.hpp"
@@ -842,7 +843,7 @@ struct moviefile wxwin_project::make_movie()
 	f.gametype = gtype::togametype(our_rom->rtype, our_rom->region);
 	f.port1 = get_controller_type(tostdstring(controller1type->GetValue()));
 	f.port2 = get_controller_type(tostdstring(controller2type->GetValue()));
-	f.coreversion = bsnes_core_version;
+	f.coreversion = emucore_get_version();
 	f.gamename = tostdstring(projectname->GetValue());
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
 	f.projectid = get_random_hexstring(40);

@@ -1,8 +1,6 @@
-//Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
 
-#include "core/bsnes.hpp"
-
+#include "lsnes.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
@@ -15,6 +13,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/core.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -298,17 +297,11 @@ bool lsnes_app::OnInit()
 	ui_mutex = &mutex::aquire();
 	ui_condition = &condition::aquire(*ui_mutex);
 
-	{
-		std::ostringstream x;
-		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
-		bsnes_core_version = x.str();
-	}
-	
 	ui_thread = &thread_id::me();
 	platform::init();
 	init_lua();
 
-	messages << "BSNES version: " << bsnes_core_version << std::endl;
+	messages << "BSNES version: " << emucore_get_version() << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 
 	controls.set_port(0, PT_NONE, false);

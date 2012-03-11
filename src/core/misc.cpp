@@ -251,5 +251,3 @@ void reached_main()
 	reached_main_flag = true;
 	init_threaded_malloc();
 }
-
-std::string bsnes_core_version;

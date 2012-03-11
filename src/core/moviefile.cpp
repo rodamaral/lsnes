@@ -1,11 +1,10 @@
-#include "core/bsnes.hpp"
-
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rrdata.hpp"
 #include "library/zip.hpp"
 #include "library/string.hpp"
+#include "interface/core.hpp"
 
 #include <sstream>
 #include <boost/iostreams/copy.hpp>
@@ -395,7 +394,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
 	write_linefile(w, "controlsversion", "0");
-	coreversion = bsnes_core_version;
+	coreversion = emucore_get_version();
 	write_linefile(w, "coreversion", coreversion);
 	write_linefile(w, "projectid", projectid);
 	write_rrdata(w);

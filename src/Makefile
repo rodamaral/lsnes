@@ -28,6 +28,9 @@ dummy/$(ALLOBJECT): forcelook
 fonts/$(ALLOBJECT): forcelook
 	$(MAKE) -C fonts
 
+interface/$(ALLOBJECT): forcelook
+	$(MAKE) -C interface
+
 library/$(ALLOBJECT): forcelook
 	$(MAKE) -C library
 
@@ -57,6 +60,7 @@ lsnes$(DOT_EXECUTABLE_SUFFIX): $(PLATFORM_LIBRARY_OBJS)
 precheck:
 	$(MAKE) -C core precheck
 	$(MAKE) -C dummy precheck
+	$(MAKE) -C interface precheck
 	$(MAKE) -C library precheck
 	$(MAKE) -C lua precheck
 	$(MAKE) -C dummy precheck
@@ -70,6 +74,7 @@ clean:
 	$(MAKE) -C core clean
 	$(MAKE) -C dummy clean
 	$(MAKE) -C fonts clean
+	$(MAKE) -C interface clean
 	$(MAKE) -C library clean
 	$(MAKE) -C lua clean
 	$(MAKE) -C dummy clean

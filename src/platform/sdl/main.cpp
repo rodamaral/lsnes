@@ -34,7 +34,7 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	struct moviefile movie;
 	movie.port1 = PT_GAMEPAD;
 	movie.port2 = PT_NONE;
-	movie.coreversion = bsnes_core_version;
+	movie.coreversion = emucore_get_version();
 	movie.projectid = get_random_hexstring(40);
 	movie.gametype = gtype::togametype(r.rtype, r.region);
 	movie.rom_sha256 = r.rom.sha256;
@@ -157,15 +157,10 @@ int main(int argc, char** argv)
 
 	set_random_seed();
 
-	{
-		std::ostringstream x;
-		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
-		bsnes_core_version = x.str();
-	}
 	platform::init();
 	init_lua();
 
-	messages << "BSNES version: " << bsnes_core_version << std::endl;
+	messages << "BSNES version: " << emucore_get_version() << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 	messages << "Command line is: ";
 	for(auto k = cmdline.begin(); k != cmdline.end(); k++)

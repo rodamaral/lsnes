@@ -535,7 +535,7 @@ void graphics_plugin::init() throw()
 	}
 	//Doing full repaint will open the window.
 	screenmod->repaint_full();
-	std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
+	std::string windowname = "lsnes rr" + lsnes_version + "[" + emucore_get_version() + "]";
 	SDL_WM_SetCaption(windowname.c_str(), "lsnes");
 }
 

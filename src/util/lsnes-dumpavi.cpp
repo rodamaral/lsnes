@@ -14,6 +14,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/core.hpp"
 
 #include <sys/time.h>
 #include <sstream>
@@ -229,15 +230,10 @@ int main(int argc, char** argv)
 
 	set_random_seed();
 
-	{
-		std::ostringstream x;
-		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
-		bsnes_core_version = x.str();
-	}
 	platform::init();
 	init_lua();
 
-	messages << "BSNES version: " << bsnes_core_version << std::endl;
+	messages << "BSNES version: " << emucore_get_version() << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 	messages << "Command line is: ";
 	for(auto k = cmdline.begin(); k != cmdline.end(); k++)
