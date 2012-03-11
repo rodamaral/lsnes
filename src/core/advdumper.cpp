@@ -33,7 +33,6 @@ namespace
 			std::string mode;
 			if(!modes.empty()) {
 				extract_token(t2, mode, " \t", true);
-				mode = std::string(t);
 				if(!modes.count(mode))
 					throw std::runtime_error("Bad mode for dumper");
 			}

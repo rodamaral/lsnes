@@ -74,21 +74,8 @@ namespace
 		_exit(1);
 	}
 
-	void send_sdl_userevent(int code)
-	{
-		SDL_Event e;
-		e.type = SDL_USEREVENT;
-		e.user.code = USERCODE_PAINT;
-		e.user.data1 = NULL;
-		e.user.data2 = NULL;
-		ui_mutex->lock();
-		//SDL_PushEvent(&e);
-		ui_mutex->unlock();
-	}
-
 	Uint32 timer_cb(Uint32 interval, void* param)
 	{
-		//send_sdl_userevent(USERCODE_TIMER);
 		timer_triggered = true;
 		timer_irq_counter = timer_irq_counter + 1;
 		return interval;
@@ -138,7 +125,6 @@ namespace
 		if(!repaint_in_flight) {
 			//Wake the UI.
 			repaint_in_flight = true;
-			//send_sdl_userevent(USERCODE_PAINT);
 		}
 	}
 
