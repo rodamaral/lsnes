@@ -206,26 +206,16 @@ namespace
 	}
 }
 
-class my_interfaced : public SNES::Interface
-{
-	string path(SNES::Cartridge::Slot slot, const string &hint)
-	{
-		return "./";
-	}
-};
-
-
 int main(int argc, char** argv)
 {
 	reached_main();
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
-	my_interfaced intrf;
 	uint64_t length;
 	std::string mode, prefix;
-	SNES::interface = &intrf;
 
+	emucore_basic_init();
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();

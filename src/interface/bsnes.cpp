@@ -10,6 +10,17 @@
 #define DURATION_PAL_FRAME 425568
 #define DURATION_PAL_FIELD 425568
 
+namespace
+{
+	class my_interfaced : public SNES::Interface
+	{
+		string path(SNES::Cartridge::Slot slot, const string &hint)
+		{
+			return "./";
+		}
+	};
+}
+
 std::string emucore_get_version()
 {
 	std::ostringstream x;
@@ -30,4 +41,14 @@ std::pair<uint32_t, uint32_t> emucore_get_video_rate(bool interlace)
 std::pair<uint32_t, uint32_t> emucore_get_audio_rate()
 {
 	return std::make_pair(SNES::system.apu_frequency(), 768);
+}
+
+void emucore_basic_init()
+{
+	static bool done = false;
+	if(done)
+		return;
+	my_interfaced* intrf = new my_interfaced;
+	SNES::interface = intrf;
+	done = true;
 }

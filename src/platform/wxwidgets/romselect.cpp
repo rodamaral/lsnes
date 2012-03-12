@@ -56,14 +56,6 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	class my_interfaced : public SNES::Interface
-	{
-		string path(SNES::Cartridge::Slot slot, const string &hint)
-		{
-			return "./";
-		}
-	} simple_interface;
-
 	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, const std::string& newlabel)
 	{
 		label->SetLabel(towxstring(newlabel));
@@ -569,7 +561,7 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 {
 	struct loaded_rom* our_rom = &rom;
 	try {
-		SNES::interface = &simple_interface;
+		emucore_basic_init();
 		if(our_rom->slota.valid)
 			our_rom_name = our_rom->slota.sha256;
 		else if(our_rom->slotb.valid)

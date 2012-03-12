@@ -21,14 +21,6 @@
 #endif
 
 
-class my_interfaced : public SNES::Interface
-{
-	string path(SNES::Cartridge::Slot slot, const string &hint)
-	{
-		return "./";
-	}
-};
-
 struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {
 	struct moviefile movie;
@@ -152,8 +144,7 @@ int main(int argc, char** argv)
 		std::cout << snes_library_id() << " (" << SNES::Info::Profile << " core)" << std::endl;
 		return 0;
 	}
-	my_interfaced intrf;
-	SNES::interface = &intrf;
+	emucore_basic_init();
 
 	set_random_seed();
 
