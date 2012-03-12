@@ -9,8 +9,8 @@ ifdef NO_DLFCN
 CFLAGS += -DNO_DLFCN
 endif
 
-DUMMY_LIBRARY=core lua fonts library video dummy
-PLATFORM_LIBRARY=core lua fonts library video platform
+DUMMY_LIBRARY=core lua fonts interface library video dummy
+PLATFORM_LIBRARY=core lua fonts interface library video platform
 ALLOBJECT=__all__.$(OBJECT_SUFFIX)
 ALLFLAGS=__all__.ldflags
 DUMMY_LIBRARY_OBJS=$(patsubst %,%/$(ALLOBJECT),$(DUMMY_LIBRARY))

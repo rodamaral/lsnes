@@ -1,7 +1,8 @@
 #include "lsnes.hpp"
-#include <snes/snes.hpp>
+//#include <snes/snes.hpp>
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
+#include "interface/core.hpp"
 #include "library/serialization.hpp"
 
 #include <iomanip>
@@ -68,8 +69,8 @@ namespace
 					throw std::runtime_error("Failed to open '" + str2 + "'");
 				sdump_iopen = true;
 				write32ube(tbuffer, 0x53444D50U);
-				write32ube(tbuffer + 4, SNES::system.cpu_frequency());
-				write32ube(tbuffer + 8, SNES::system.apu_frequency());
+				write32ube(tbuffer + 4, emucore_get_video_rate().first);
+				write32ube(tbuffer + 8, emucore_get_audio_rate().first);
 				out.write(reinterpret_cast<char*>(tbuffer), 12);
 				if(!out)
 					throw std::runtime_error("Failed to write header to '" + str2 + "'");

@@ -8,6 +8,7 @@
 #include "core/patchrom.hpp"
 #include "core/rom.hpp"
 #include "core/window.hpp"
+#include "interface/core.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -442,11 +443,10 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	if(region == REGION_AUTO)
 		region = snes_get_region() ? REGION_PAL : REGION_NTSC;
 	snes_power();
-	if(region == REGION_PAL)
-		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_PAL_FRAME);
-	else
-		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_NTSC_FRAME);
-	information_dispatch::do_sound_rate(SNES::system.apu_frequency(), 768);
+	auto framerate = emucore_get_video_rate();
+	auto soundrate = emucore_get_audio_rate();
+	set_nominal_framerate(1.0 * framerate.first / framerate.second);
+	information_dispatch::do_sound_rate(soundrate.first, soundrate.second);
 	current_rom_type = rtype;
 	current_region = region;
 	refresh_cart_mappings();

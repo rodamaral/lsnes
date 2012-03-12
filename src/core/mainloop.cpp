@@ -17,6 +17,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/core.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -326,7 +327,6 @@ class my_interface : public SNES::Interface
 
 	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
 	{
-//		uint64_t time_x = get_utime();
 		last_hires = hires;
 		last_interlace = interlace;
 		init_palette();
@@ -337,59 +337,38 @@ class my_interface : public SNES::Interface
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
 		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ? VIDEO_REGION_PAL :
 			VIDEO_REGION_NTSC);
-		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
 		lcscreen ls(data, hires, interlace, overscan, region);
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
 		redraw_framebuffer(ls, false, true);
-		uint32_t fps_n, fps_d;
-		uint32_t fclocks;
-		if(region)
-			fclocks = interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
-		else
-			fclocks = interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
-		fps_n = SNES::system.cpu_frequency();
-		fps_d = fclocks;
-		uint32_t g = gcd(fps_n, fps_d);
-		fps_n /= g;
-		fps_d /= g;
-		information_dispatch::do_frame(ls, fps_n, fps_d);
-//		time_x = get_utime() - time_x;
-//		std::cerr << "IRQ TIMINGS (microseconds): "
-//			<< "V: " << time_x << " "
-//			<< "A: " << audio_irq_time << " "
-//			<< "C: " << controller_irq_time << " "
-//			<< "F: " << frame_irq_time << " "
-//			<< "Total: " << (time_x + audio_irq_time + controller_irq_time + frame_irq_time) << std::endl;
+		auto fps = emucore_get_video_rate(interlace);
+		uint32_t div = gcd(fps.first, fps.second);
+		fps.first /= div;
+		fps.second /= div;
+		information_dispatch::do_frame(ls, fps.first, fps.second);
 		audio_irq_time = controller_irq_time = 0;
 	}
 
 	void audioSample(int16_t l_sample, int16_t r_sample)
 	{
-//		uint64_t time_x = get_utime();
 		uint16_t _l = l_sample;
 		uint16_t _r = r_sample;
 		platform::audio_sample(_l + 32768, _r + 32768);
 		information_dispatch::do_sample(l_sample, r_sample);
 		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
-		our_movie.rtc_subsecond += 768;
-		while(our_movie.rtc_subsecond >= SNES::system.apu_frequency()) {
+		auto rate = emucore_get_audio_rate();
+		our_movie.rtc_subsecond += rate.second;
+		while(our_movie.rtc_subsecond >= rate.first) {
 			our_movie.rtc_second++;
-			our_movie.rtc_subsecond -= SNES::system.apu_frequency();
+			our_movie.rtc_subsecond -= rate.first;
 		}
-//		audio_irq_time += get_utime() - time_x;
 	}
 
 	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 	{
-//		uint64_t time_x = get_utime();
 		int16_t x;
 		x = movb.input_poll(port, index, id);
 		lua_callback_snoop_input(port ? 1 : 0, index, id, x);
-//		controller_irq_time += get_utime() - time_x;
 		return x;
 	}
 };
