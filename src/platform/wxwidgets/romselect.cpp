@@ -1,7 +1,4 @@
-//Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
-
-#include "core/bsnes.hpp"
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
@@ -68,16 +65,6 @@ namespace
 		label->SetLabel(wxT(""));
 		filename->Disable();
 		ask->Disable();
-	}
-
-	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
-	{
-		std::string id(_id, _id.length());
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
-			return "slota." + id.substr(1);
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
-			return "slotb." + id.substr(1);
-		return id.substr(1);
 	}
 
 	porttype_t get_controller_type(const std::string& s)
@@ -821,9 +808,9 @@ void wxwin_project::on_load(wxCommandEvent& e)
 std::set<std::string> wxwin_project::get_sram_set()
 {
 	std::set<std::string> r;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
-		r.insert(sram_name(s.id, s.slot));
+	for(size_t i = 0; i < emucore_sram_slots(); i++) {
+		sram_slot_structure* s = emucore_sram_slot(i);
+		r.insert(s->get_name());
 	}
 	return r;
 }

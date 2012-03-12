@@ -449,6 +449,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	information_dispatch::do_sound_rate(soundrate.first, soundrate.second);
 	current_rom_type = rtype;
 	current_region = region;
+	emucore_refresh_cart();
 	refresh_cart_mappings();
 }
 
@@ -495,29 +496,14 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::ba
 	}
 }
 
-namespace
-{
-	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
-	{
-		std::string id(_id, _id.length());
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
-			return "slota." + id.substr(1);
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
-			return "slotb." + id.substr(1);
-		return id.substr(1);
-	}
-}
-
 std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 {
 	std::map<std::string, std::vector<char>> out;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[i];
-		std::string savename = sram_name(r.id, r.slot);
+	for(unsigned i = 0; i < emucore_sram_slots(); i++) {
+		sram_slot_structure* r = emucore_sram_slot(i);
 		std::vector<char> x;
-		x.resize(r.size);
-		memcpy(&x[0], r.data, r.size);
-		out[savename] = x;
+		r->copy_from_core(x);
+		out[r->get_name()] = x;
 	}
 	return out;
 }
@@ -527,18 +513,17 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 	std::set<std::string> used;
 	if(sram.empty())
 		return;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[i];
-		std::string savename = sram_name(r.id, r.slot);
-		if(sram.count(savename)) {
-			std::vector<char>& x = sram[savename];
-			if(r.size != x.size())
-				messages << "WARNING: SRAM '" << savename << "': Loaded " << x.size()
-					<< " bytes, but the SRAM is " << r.size << "." << std::endl;
-			memcpy(r.data, &x[0], (r.size < x.size()) ? r.size : x.size());
-			used.insert(savename);
+	for(unsigned i = 0; i < emucore_sram_slots(); i++) {
+		sram_slot_structure* r = emucore_sram_slot(i);
+		if(sram.count(r->get_name())) {
+			std::vector<char>& x = sram[r->get_name()];
+			if(r->get_size() != x.size() && r->get_size())
+				messages << "WARNING: SRAM '" << r->get_name() << "': Loaded " << x.size()
+					<< " bytes, but the SRAM is " << r->get_size() << "." << std::endl;
+			r->copy_to_core(x);
+			used.insert(r->get_name());
 		} else
-			messages << "WARNING: SRAM '" << savename << ": No data." << std::endl;
+			messages << "WARNING: SRAM '" << r->get_name() << ": No data." << std::endl;
 	}
 	for(auto i : sram)
 		if(!used.count(i.first))
@@ -555,7 +540,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 			zip_reader r(opt[1]);
 			for(auto j : r) {
 				auto sramname = regex("sram\\.(.*)", j);
-				if(!sram_name)
+				if(!sramname)
 					continue;
 				std::istream& x = r[j];
 				try {
