@@ -2920,3 +2920,7 @@ set-axis joystick0axis19 disabled
 
 • Call on_input() after loadstate.
 
+15.55 rr1-delta5epsilon2
+
+• Fix writing port2 data to movie.
+

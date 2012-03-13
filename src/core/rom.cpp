@@ -499,6 +499,17 @@ namespace
 	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
 	{
 		std::string id(_id, _id.length());
+		//Fixup name change by bsnes v087...
+		if(id == "bsx.ram")
+			id = ".bss";
+		if(id == "bsx.psram")
+			id = ".bsp";
+		if(id == "program.rtc")
+			id = ".rtc";
+		if(id == "upd96050.ram")
+			id = ".dsp";
+		if(id == "program.ram")
+			id = ".srm";
 		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
 			return "slota." + id.substr(1);
 		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
