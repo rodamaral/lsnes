@@ -142,7 +142,7 @@ namespace
 	function_ptr_command<const std::string&> dump_coresave("dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
-			auto x = save_core_state();
+			auto x = emucore_serialize();
 			x.resize(x.size() - 32);
 			std::ofstream y(name.c_str(), std::ios::out | std::ios::binary);
 			y.write(&x[0], x.size());
@@ -216,7 +216,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		our_movie.slotaxml_sha256 = our_rom->slota_xml.sha256;
 		our_movie.slotb_sha256 = our_rom->slotb.sha256;
 		our_movie.slotbxml_sha256 = our_rom->slotb_xml.sha256;
-		our_movie.savestate = save_core_state();
+		our_movie.savestate = emucore_serialize();
 		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
@@ -354,7 +354,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			//Set the core ports in order to avoid port state being reinitialized when loading.
 			controls.set_port(0, _movie.port1, true);
 			controls.set_port(1, _movie.port2, true);
-			load_core_state(_movie.savestate);
+			emucore_unserialize(_movie.savestate);
 		} else {
 			load_sram(_movie.movie_sram);
 			controls.set_port(0, _movie.port1, true);

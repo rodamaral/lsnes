@@ -50,5 +50,7 @@ struct sram_slot_structure* emucore_sram_slot(size_t index);
 size_t emucore_vma_slots();
 struct vma_structure* emucore_vma_slot(size_t index);
 void emucore_refresh_cart();
+std::vector<char> emucore_serialize();
+void emucore_unserialize(const std::vector<char>& data);
 
 #endif

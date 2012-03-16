@@ -2,7 +2,9 @@
 #include <gameboy/gameboy.hpp>
 #include "interface/core.hpp"
 #include "library/minmax.hpp"
+#include "library/sha256.hpp"
 #include <sstream>
+#include <stdexcept>
 
 /**
  * Number clocks per field/frame on NTSC/PAL
@@ -266,4 +268,31 @@ void emucore_refresh_cart()
 		delete i;
 	for(auto i : new_vma_slots)
 		delete i;
+}
+
+std::vector<char> emucore_serialize()
+{
+	std::vector<char> ret;
+	serializer s = SNES::system.serialize();
+	ret.resize(s.size());
+	memcpy(&ret[0], s.data(), s.size());
+	size_t offset = ret.size();
+	unsigned char tmp[32];
+	sha256::hash(tmp, ret);
+	ret.resize(offset + 32);
+	memcpy(&ret[offset], tmp, 32);
+	return ret;
+}
+
+void emucore_unserialize(const std::vector<char>& buf)
+{
+	if(buf.size() < 32)
+		throw std::runtime_error("Savestate corrupt");
+	unsigned char tmp[32];
+	sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
+	if(memcmp(tmp, &buf[buf.size() - 32], 32))
+		throw std::runtime_error("Savestate corrupt");
+	serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
+	if(!SNES::system.unserialize(s))
+		throw std::runtime_error("SNES core rejected savestate");
 }
