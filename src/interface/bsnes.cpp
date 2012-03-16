@@ -1,5 +1,7 @@
 #include "core/bsnes.hpp"
+#include <gameboy/gameboy.hpp>
 #include "interface/core.hpp"
+#include "library/minmax.hpp"
 #include <sstream>
 
 /**
@@ -114,7 +116,42 @@ namespace
 		}
 	};
 
+	struct bsnes_vma_slot : public vma_structure
+	{
+		bsnes_vma_slot(const std::string& _name, unsigned char* _memory, uint64_t _base, uint64_t _size,
+			endian _rendian, bool _readonly)
+			: vma_structure(_name, _base, _size, _rendian, _readonly)
+		{
+			memory = _memory;
+		}
+
+		void copy_from_core(uint64_t start, char* buffer, uint64_t _size)
+		{
+			uint64_t inrange = _size;
+			if(start >= size)
+				inrange = 0;
+			inrange = min(inrange, size - start);
+			if(inrange)
+				memcpy(buffer, memory + start, inrange);
+			if(inrange < _size)
+				memset(buffer + inrange, 0, _size - inrange);
+		}
+
+		void copy_to_core(uint64_t start, const char* buffer, uint64_t _size)
+		{
+			uint64_t inrange = _size;
+			if(start >= size)
+				inrange = 0;
+			inrange = min(inrange, size - start);
+			if(inrange && !readonly)
+				memcpy(memory + start, buffer, inrange);
+		}
+	private:
+		unsigned char* memory;
+	};
+
 	std::vector<bsnes_sram_slot*> sram_slots;
+	std::vector<bsnes_vma_slot*> vma_slots;
 }
 
 size_t emucore_sram_slots()
@@ -129,9 +166,22 @@ struct sram_slot_structure* emucore_sram_slot(size_t index)
 	return sram_slots[index];
 }
 
+size_t emucore_vma_slots()
+{
+	return vma_slots.size();
+}
+
+struct vma_structure* emucore_vma_slot(size_t index)
+{
+	if(index >= vma_slots.size())
+		return NULL;
+	return vma_slots[index];
+}
+
 void emucore_refresh_cart()
 {
 	std::vector<bsnes_sram_slot*> new_sram_slots;
+	std::vector<bsnes_vma_slot*> new_vma_slots;
 	size_t slots = SNES::cartridge.nvram.size();
 	new_sram_slots.resize(slots);
 	for(size_t i = 0; i < slots; i++)
@@ -142,13 +192,78 @@ void emucore_refresh_cart()
 			SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
 			new_sram_slots[i] = new bsnes_sram_slot(s.id, s.slot, s.data, s.size);
 		}
+		new_vma_slots.push_back(new bsnes_vma_slot("WRAM", SNES::cpu.wram, 0x007E0000, 131072,
+			vma_structure::E_LITTLE, false));
+		new_vma_slots.push_back(new bsnes_vma_slot("APURAM", SNES::smp.apuram, 0x00000000, 65536,
+			vma_structure::E_LITTLE, false));
+		new_vma_slots.push_back(new bsnes_vma_slot("VRAM", SNES::ppu.vram, 0x00010000, 65536,
+			vma_structure::E_LITTLE, false));
+		new_vma_slots.push_back(new bsnes_vma_slot("OAM", SNES::ppu.oam, 0x00020000, 544,
+			vma_structure::E_LITTLE, false));
+		new_vma_slots.push_back(new bsnes_vma_slot("CGRAM", SNES::ppu.cgram, 0x00021000, 512,
+			vma_structure::E_LITTLE, false));
+		if(SNES::cartridge.ram.size() > 0)
+			new_vma_slots.push_back(new bsnes_vma_slot("SRAM", SNES::cartridge.ram.data(), 0x10000000,
+				SNES::cartridge.ram.size(), vma_structure::E_LITTLE, false));
+		new_vma_slots.push_back(new bsnes_vma_slot("ROM", SNES::cartridge.rom.data(), 0x80000000,
+			SNES::cartridge.rom.size(), vma_structure::E_LITTLE, true));
+		if(SNES::cartridge.has_srtc())
+			new_vma_slots.push_back(new bsnes_vma_slot("RTC", SNES::srtc.rtc, 0x00022000, 20,
+				vma_structure::E_LITTLE, false));
+		if(SNES::cartridge.has_spc7110rtc())
+			new_vma_slots.push_back(new bsnes_vma_slot("RTC", SNES::spc7110.rtc, 0x00022000, 20,
+				vma_structure::E_LITTLE, false));
+		if(SNES::cartridge.has_necdsp()) {
+			new_vma_slots.push_back(new bsnes_vma_slot("DSPRAM",
+				reinterpret_cast<uint8_t*>(SNES::necdsp.dataRAM), 0x00023000, 4096,
+				vma_structure::E_HOST, false));
+			new_vma_slots.push_back(new bsnes_vma_slot("DSPPROM",
+				reinterpret_cast<uint8_t*>(SNES::necdsp.programROM), 0xF0000000, 65536,
+				vma_structure::E_HOST, true));
+			new_vma_slots.push_back(new bsnes_vma_slot("DSPDROMM",
+				reinterpret_cast<uint8_t*>(SNES::necdsp.dataROM), 0xF0010000, 4096,
+				vma_structure::E_HOST, true));
+		}
+		if(SNES::cartridge.mode() == SNES::Cartridge::Mode::Bsx ||
+			SNES::cartridge.mode() == SNES::Cartridge::Mode::BsxSlotted) {
+			new_vma_slots.push_back(new bsnes_vma_slot("BSXFLASH",
+				SNES::bsxflash.memory.data(), 0x90000000, SNES::bsxflash.memory.size(),
+				vma_structure::E_LITTLE, true));
+			new_vma_slots.push_back(new bsnes_vma_slot("BSX_RAM",
+				SNES::bsxcartridge.sram.data(), 0x20000000, SNES::bsxcartridge.sram.size(),
+				vma_structure::E_LITTLE, false));
+			new_vma_slots.push_back(new bsnes_vma_slot("BSX_PRAM",
+				SNES::bsxcartridge.psram.data(), 0x30000000, SNES::bsxcartridge.psram.size(),
+				vma_structure::E_LITTLE, false));
+		}
+		if(SNES::cartridge.mode() == SNES::Cartridge::Mode::SufamiTurbo) {
+			new_vma_slots.push_back(new bsnes_vma_slot("SLOTA_ROM", SNES::sufamiturbo.slotA.rom.data(),
+				0x90000000, SNES::sufamiturbo.slotA.rom.size(), vma_structure::E_LITTLE, true));
+			new_vma_slots.push_back(new bsnes_vma_slot("SLOTB_ROM", SNES::sufamiturbo.slotB.rom.data(),
+				0xA0000000, SNES::sufamiturbo.slotB.rom.size(), vma_structure::E_LITTLE, true));
+			new_vma_slots.push_back(new bsnes_vma_slot("SLOTA_RAM", SNES::sufamiturbo.slotA.ram.data(),
+				0x20000000, SNES::sufamiturbo.slotA.ram.size(), vma_structure::E_LITTLE, false));
+			new_vma_slots.push_back(new bsnes_vma_slot("SLOTB_RAM", SNES::sufamiturbo.slotB.ram.data(),
+				0x30000000, SNES::sufamiturbo.slotB.ram.size(), vma_structure::E_LITTLE, false));
+		}
+		if(SNES::cartridge.mode() == SNES::Cartridge::Mode::SuperGameBoy) {
+			new_vma_slots.push_back(new bsnes_vma_slot("GBROM", GameBoy::cartridge.romdata,
+				0x90000000, GameBoy::cartridge.romsize, vma_structure::E_LITTLE, true));
+			new_vma_slots.push_back(new bsnes_vma_slot("GBRAM", GameBoy::cartridge.ramdata,
+				0x20000000, GameBoy::cartridge.ramsize, vma_structure::E_LITTLE, false));
+		}
 	} catch(...) {
 		for(auto i : new_sram_slots)
+			delete i;
+		for(auto i : new_vma_slots)
 			delete i;
 		throw;
 	}
 
 	std::swap(sram_slots, new_sram_slots);
+	std::swap(vma_slots, new_vma_slots);
 	for(auto i : new_sram_slots)
+		delete i;
+	for(auto i : new_vma_slots)
 		delete i;
 }

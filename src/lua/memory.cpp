@@ -4,27 +4,27 @@
 
 namespace
 {
-	template<typename T, typename U, U (*rfun)(uint32_t addr)>
+	template<typename T, typename U, U (*rfun)(uint64_t addr)>
 	class lua_read_memory : public lua_function
 	{
 	public:
 		lua_read_memory(const std::string& name) : lua_function(name) {}
 		int invoke(lua_State* LS)
 		{
-			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 			lua_pushnumber(LS, static_cast<T>(rfun(addr)));
 			return 1;
 		}
 	};
 
-	template<typename T, bool (*wfun)(uint32_t addr, T value)>
+	template<typename T, bool (*wfun)(uint64_t addr, T value)>
 	class lua_write_memory : public lua_function
 	{
 	public:
 		lua_write_memory(const std::string& name) : lua_function(name) {}
 		int invoke(lua_State* LS)
 		{
-			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 			T value = get_numeric_argument<T>(LS, 2, fname.c_str());
 			wfun(addr, value);
 			return 0;
@@ -36,47 +36,47 @@ namespace
 		return 1;
 	});
 
-	int handle_push_vma(lua_State* LS, std::vector<memory_region>& regions, size_t idx)
+	int handle_push_vma(lua_State* LS, std::vector<vma_structure*>& regions, size_t idx)
 	{
 		if(idx >= regions.size()) {
 			lua_pushnil(LS);
 			return 1;
 		}
-		memory_region& r = regions[idx];
+		vma_structure* r = regions[idx];
 		lua_newtable(LS);
 		lua_pushstring(LS, "region_name");
-		lua_pushlstring(LS, r.region_name.c_str(), r.region_name.size());
+		lua_pushlstring(LS, r->get_name().c_str(), r->get_name().size());
 		lua_settable(LS, -3);
 		lua_pushstring(LS, "baseaddr");
-		lua_pushnumber(LS, r.baseaddr);
+		lua_pushnumber(LS, r->get_base());
 		lua_settable(LS, -3);
 		lua_pushstring(LS, "size");
-		lua_pushnumber(LS, r.size);
+		lua_pushnumber(LS, r->get_size());
 		lua_settable(LS, -3);
 		lua_pushstring(LS, "lastaddr");
-		lua_pushnumber(LS, r.lastaddr);
+		lua_pushnumber(LS, r->get_base() + r->get_size() - 1);
 		lua_settable(LS, -3);
 		lua_pushstring(LS, "readonly");
-		lua_pushboolean(LS, r.readonly);
+		lua_pushboolean(LS, r->is_readonly());
 		lua_settable(LS, -3);
-		lua_pushstring(LS, "native_endian");
-		lua_pushboolean(LS, r.native_endian);
+		lua_pushstring(LS, "endian");
+		lua_pushinteger(LS, r->get_endian());
 		lua_settable(LS, -3);
 		return 1;
 	}
 
 	function_ptr_luafun readvma("memory.read_vma", [](lua_State* LS, const std::string& fname) -> int {
-		std::vector<memory_region> regions = get_regions();
-		uint32_t num = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		std::vector<vma_structure*> regions = get_regions();
+		size_t num = get_numeric_argument<size_t>(LS, 1, fname.c_str());
 		return handle_push_vma(LS, regions, num);
 	});
 
 	function_ptr_luafun findvma("memory.find_vma", [](lua_State* LS, const std::string& fname) -> int {
-		std::vector<memory_region> regions = get_regions();
-		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		std::vector<vma_structure*> regions = get_regions();
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		size_t i;
 		for(i = 0; i < regions.size(); i++)
-			if(addr >= regions[i].baseaddr && addr <= regions[i].lastaddr)
+			if(addr >= regions[i]->get_base() && addr < regions[i]->get_base() + regions[i]->get_size())
 				break;
 		return handle_push_vma(LS, regions, i);
 	});

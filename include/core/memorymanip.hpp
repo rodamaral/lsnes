@@ -1,49 +1,12 @@
 #ifndef _memorymanip__hpp__included__
 #define _memorymanip__hpp__included__
 
+#include "interface/core.hpp"
 #include <string>
 #include <list>
 #include <vector>
 #include <cstdint>
 #include <stdexcept>
-
-/**
- * \brief Information about region of memory
- *
- * This structure contains information about memory region.
- */
-struct memory_region
-{
-/**
- * \brief Name of region.
- *
- * This is name of region, mainly for debugging and showing to the user.
- */
-	std::string region_name;
-/**
- * \brief Base address of region.
- */
-	uint32_t baseaddr;
-/**
- * \brief Size of region in bytes.
- */
-	uint32_t size;
-/**
- * \brief Last valid address in this region.
- */
-	uint32_t lastaddr;
-/**
- * \brief True for ROM, false for RAM.
- */
-	bool readonly;
-/**
- * \brief Endianess of the region.
- *
- * If true, region uses host endian.
- * If false, region uses SNES (big) endian.
- */
-	bool native_endian;
-};
 
 /**
  * \brief Refresh cart memory mappings
@@ -62,7 +25,7 @@ void refresh_cart_mappings() throw(std::bad_alloc);
  * \return All regions
  * \throws std::bad_alloc Not enough memory.
  */
-std::vector<struct memory_region> get_regions() throw(std::bad_alloc);
+std::vector<vma_structure*> get_regions() throw(std::bad_alloc);
 
 /**
  * \brief Read byte from memory
@@ -72,7 +35,7 @@ std::vector<struct memory_region> get_regions() throw(std::bad_alloc);
  * \param addr The address to read.
  * \return The byte read.
  */
-uint8_t memory_read_byte(uint32_t addr) throw();
+uint8_t memory_read_byte(uint64_t addr) throw();
 
 /**
  * \brief Read word from memory
@@ -82,7 +45,7 @@ uint8_t memory_read_byte(uint32_t addr) throw();
  * \param addr The address to read.
  * \return The word read.
  */
-uint16_t memory_read_word(uint32_t addr) throw();
+uint16_t memory_read_word(uint64_t addr) throw();
 
 /**
  * \brief Read dword from memory
@@ -92,7 +55,7 @@ uint16_t memory_read_word(uint32_t addr) throw();
  * \param addr The address to read.
  * \return The dword read.
  */
-uint32_t memory_read_dword(uint32_t addr) throw();
+uint32_t memory_read_dword(uint64_t addr) throw();
 
 /**
  * \brief Read qword from memory
@@ -102,7 +65,7 @@ uint32_t memory_read_dword(uint32_t addr) throw();
  * \param addr The address to read.
  * \return The qword read.
  */
-uint64_t memory_read_qword(uint32_t addr) throw();
+uint64_t memory_read_qword(uint64_t addr) throw();
 
 /**
  * \brief Write byte to memory
@@ -113,7 +76,7 @@ uint64_t memory_read_qword(uint32_t addr) throw();
  * \param data The value to write.
  * \return true if the write succeeded.
  */
-bool memory_write_byte(uint32_t addr, uint8_t data) throw();
+bool memory_write_byte(uint64_t addr, uint8_t data) throw();
 
 /**
  * \brief Write word to memory
@@ -124,7 +87,7 @@ bool memory_write_byte(uint32_t addr, uint8_t data) throw();
  * \param data The value to write.
  * \return true if the write succeeded.
  */
-bool memory_write_word(uint32_t addr, uint16_t data) throw();
+bool memory_write_word(uint64_t addr, uint16_t data) throw();
 
 /**
  * \brief Write dword to memory
@@ -135,7 +98,7 @@ bool memory_write_word(uint32_t addr, uint16_t data) throw();
  * \param data The value to write.
  * \return true if the write succeeded.
  */
-bool memory_write_dword(uint32_t addr, uint32_t data) throw();
+bool memory_write_dword(uint64_t addr, uint32_t data) throw();
 
 /**
  * \brief Write qword to memory
@@ -146,7 +109,7 @@ bool memory_write_dword(uint32_t addr, uint32_t data) throw();
  * \param data The value to write.
  * \return true if the write succeeded.
  */
-bool memory_write_qword(uint32_t addr, uint64_t data) throw();
+bool memory_write_qword(uint64_t addr, uint64_t data) throw();
 
 /**
  * \brief Memory search context
@@ -412,7 +375,7 @@ public:
  *
  * \return The number of candidates
  */
-	uint32_t get_candidate_count() throw();
+	uint64_t get_candidate_count() throw();
 
 /**
  * \brief Get List of all candidate addresses
@@ -422,11 +385,11 @@ public:
  * \return Candidate address list
  * \throws std::bad_alloc Not enough memory.
  */
-	std::list<uint32_t> get_candidates() throw(std::bad_alloc);
+	std::list<uint64_t> get_candidates() throw(std::bad_alloc);
 private:
 	std::vector<uint8_t> previous_content;
 	std::vector<uint64_t> still_in;
-	uint32_t candidates;
+	uint64_t candidates;
 };
 
 #endif

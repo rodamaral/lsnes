@@ -141,11 +141,18 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 void dump_region_map() throw(std::bad_alloc)
 {
-	std::vector<struct memory_region> regions = get_regions();
+	std::vector<vma_structure*> regions = get_regions();
 	for(auto i : regions) {
 		char buf[256];
-		sprintf(buf, "Region: %08X-%08X %08X %s%c %s", i.baseaddr, i.lastaddr, i.size,
-			i.readonly ? "R-" : "RW", i.native_endian ? 'N' : 'L', i.region_name.c_str());
+		char echar;
+		if(i->get_endian() == vma_structure::E_LITTLE)
+			echar = 'L';
+		if(i->get_endian() == vma_structure::E_BIG)
+			echar = 'B';
+		if(i->get_endian() == vma_structure::E_HOST)
+			echar = 'N';
+		sprintf(buf, "Region: %016X-%016X %016X %s%c %s", i->get_base(), i->get_base() + i->get_size() - 1,
+			i->get_size(), i->is_readonly() ? "R-" : "RW", echar, i->get_name().c_str());
 		messages << buf << std::endl;
 	}
 }
