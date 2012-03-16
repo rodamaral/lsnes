@@ -1,13 +1,12 @@
-#include "core/bsnes.hpp"
-#include <gameboy/gameboy.hpp>
-
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "interface/core.hpp"
+#include "library/minmax.hpp"
 #include "library/string.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <sstream>
