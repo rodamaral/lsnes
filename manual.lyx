@@ -5945,5 +5945,17 @@ Movieinfo: Fix display of port #2 type.
 Call on_input() after loadstate.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta5epsilon2
+\end_layout
+
+\begin_layout Itemize
+Fix writing port2 data to movie.
+\end_layout
+
+\begin_layout Itemize
+Fix SRAM handling with Bsnes v087.
+\end_layout
+
 \end_body
 \end_document

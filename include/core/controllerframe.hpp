@@ -781,10 +781,9 @@ public:
 	{
 		size_t offset = 0;
 		offset += system_serialize(backing, buf);
-		for(size_t i = 0; i < MAX_PORTS; i++) {
+		for(size_t i = 0; i < MAX_PORTS; i++)
 			offset += pinfo[i]->serialize(backing + offsets[i], buf + offset);
-			buf[offset++] = (i < MAX_PORTS - 1) ? '|' : '\0';
-		}
+		buf[offset++] = '\0';
 	}
 /**
  * Return copy with dedicated memory.
