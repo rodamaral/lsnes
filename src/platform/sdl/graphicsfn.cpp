@@ -4,6 +4,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/window.hpp"
+#include "interface/core.hpp"
 #include "platform/sdl/platform.hpp"
 
 #include <unistd.h>

@@ -1,3 +1,4 @@
+#include "lsnes.hpp"
 #include "core/command.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"

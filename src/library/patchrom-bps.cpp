@@ -74,7 +74,7 @@ namespace
 		if(patch.size() < 19)
 			(stringfmt() << "Patch is too masll to be valid BPS patch (" << patch.size()
 				<< " < 19).").throwex();
-		size_t ioffset = 4;
+		uint64_t ioffset = 4;
 		const char* _patch = &patch[0];
 		size_t psize = patch.size() - 12;
 		uint32_t crc_init = crc32(0, NULL, 0);
