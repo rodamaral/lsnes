@@ -72,7 +72,8 @@ enum
 	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
-	wxID_EDIT_HOTKEYS
+	wxID_EDIT_HOTKEYS,
+	wxID_SHOW_STATUS
 };
 
 
@@ -591,9 +592,10 @@ wxwin_mainwindow::wxwin_mainwindow()
 {
 	broadcast_listener* blistener = new broadcast_listener(this);
 	Centre();
-	wxFlexGridSizer* toplevel = new wxFlexGridSizer(1, 2, 0, 0);
+	toplevel = new wxFlexGridSizer(1, 2, 0, 0);
 	toplevel->Add(gpanel = new panel(this), 1, wxGROW);
 	toplevel->Add(spanel = new wxwin_status::panel(this, 20), 1, wxGROW);
+	spanel_shown = true;
 	toplevel->SetSizeHints(this);
 	SetSizer(toplevel);
 	Fit();
@@ -664,6 +666,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
+	menu_separator();
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
+	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
 		menu_start(wxT("S&ound"));
@@ -970,6 +975,18 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		str << "Revision: " << lsnes_git_revision << std::endl;
 		str << "Core: " << bsnes_core_version << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
+		return;
+	}
+	case wxID_SHOW_STATUS: {
+		bool newstate = menu_ischecked(wxID_SHOW_STATUS);
+		if(newstate && !spanel_shown)
+			toplevel->Add(spanel);
+		else if(!newstate && spanel_shown)
+			toplevel->Detach(spanel);
+		spanel_shown = newstate;
+		toplevel->Layout();
+		toplevel->SetSizeHints(this);
+		Fit();
 		return;
 	}
 	};
