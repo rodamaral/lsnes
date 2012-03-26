@@ -638,4 +638,5 @@ modal_pause_holder::~modal_pause_holder()
 }
 
 bool platform::pausing_allowed = true;
+double platform::global_volume = 1.0;
 volatile bool queue_synchronous_fn_warning;

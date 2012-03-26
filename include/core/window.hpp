@@ -492,7 +492,7 @@ struct platform
  */
 	static void audio_sample(uint16_t left, uint16_t right) throw()
 	{
-		sound_plugin::sample(left, right);
+		sound_plugin::sample(global_volume * left, global_volume * right);
 	}
 /**
  * Set modal pause mode.
@@ -534,6 +534,7 @@ struct platform
 	static void run_queues() throw();
 
 	static bool pausing_allowed;
+	static double global_volume;
 };
 
 class modal_pause_holder

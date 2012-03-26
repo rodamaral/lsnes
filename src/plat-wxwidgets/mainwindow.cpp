@@ -11,10 +11,12 @@
 #include "core/memorywatch.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
+#include <cmath>
 #include <vector>
 #include <string>
 
@@ -73,12 +75,15 @@ enum
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
 	wxID_EDIT_HOTKEYS,
-	wxID_SHOW_STATUS
+	wxID_SHOW_STATUS,
+	wxID_SET_SPEED,
+	wxID_SET_VOLUME
 };
 
 
 namespace
 {
+	std::string last_volume = "0dB";
 	unsigned char* screen_buffer;
 	uint32_t old_width;
 	uint32_t old_height;
@@ -668,12 +673,14 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
 	menu_separator();
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
+	menu_entry(wxID_SET_SPEED, wxT("Set Speed"));
 	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
 		menu_start(wxT("S&ound"));
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("So&unds enabled"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
+		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
 		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("S&how audio status"));
 		menu_separator();
 		menu_special_sub(wxT("S&elect sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
@@ -988,6 +995,34 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		toplevel->SetSizeHints(this);
 		Fit();
 		return;
+	}
+	case wxID_SET_SPEED: {
+		std::string value;
+		bool bad = false;
+		runemufn([&value]() { value = setting::is_set("targetfps") ? setting::get("targetfps") : ""; });
+		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
+		runemufn([&bad, &value]() { try { setting::set("targetfps", value); } catch(...) { bad = true; } });
+		if(bad)
+			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
+	}
+	case wxID_SET_VOLUME: {
+		std::string value;
+		regex_results r;
+		double parsed = 1;
+		value = pick_text(this, "Set volume", "Enter volume in absolute units, percentage (%) or dB:",
+			last_volume);
+		if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
+			parsed = strtod(r[1].c_str(), NULL);
+		else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
+			parsed = strtod(r[1].c_str(), NULL) / 100;
+		else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
+			parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
+		else {
+			wxMessageBox(wxT("Invalid volume"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
+			return;
+		}
+		last_volume = value;
+		runemufn([parsed]() { platform::global_volume = parsed; });
 	}
 	};
 }
