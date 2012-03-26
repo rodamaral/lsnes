@@ -24,7 +24,7 @@ namespace
 	uint64_t frame_start_times[HISTORY_FRAMES];
 	double nominal_rate = DEFAULT_NOMINAL_RATE;
 	bool target_nominal = true;
-	double target_fps = DEFAULT_NOMINAL_RATE;
+	double target_fps = 100.0;
 	bool target_infinite = false;
 
 	uint64_t get_time(uint64_t curtime, bool update)
@@ -66,7 +66,7 @@ namespace
 		{
 			target_nominal = true;
 			target_infinite = false;
-			target_fps = nominal_rate;
+			target_fps = 100.0;
 		}
 
 		bool is_set() throw()
@@ -173,12 +173,12 @@ uint64_t to_wait_frame(uint64_t usec) throw()
 		return 0;
 	uint64_t lintime = get_time(usec, true);
 	uint64_t frame_lasted = lintime - frame_start_times[0];
-	uint64_t frame_should_last = 1000000 / target_fps;
+	uint64_t frame_should_last = 1000000 / (target_fps * nominal_rate / 100);
 	if(frame_lasted >= frame_should_last)
 		return 0;	//We are late.
 	uint64_t history_frames = min(frame_number, static_cast<uint64_t>(HISTORY_FRAMES));
 	uint64_t history_lasted = lintime - frame_start_times[history_frames - 1];
-	uint64_t history_should_last = history_frames * 1000000 / target_fps;
+	uint64_t history_should_last = history_frames * 1000000 / (target_fps * nominal_rate / 100);
 	if(history_lasted >= history_should_last)
 		return 0;
 	return min(history_should_last - history_lasted, frame_should_last - frame_lasted);
