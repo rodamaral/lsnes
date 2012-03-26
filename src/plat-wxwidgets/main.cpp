@@ -31,6 +31,7 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 
+#define UISERV_RESIZED 9991
 #define UISERV_UIFUN 9992
 //#define UISERV_UI_IRQ 9993	Not in use anymore, can be recycled.
 #define UISERV_EXIT 9994
@@ -94,6 +95,9 @@ namespace
 			wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR |
 				wxOK);
 			panic_ack = true;
+		} else if(c == UISERV_RESIZED) {
+			if(main_window)
+				main_window->notify_resized();
 		} else if(c == UISERV_MODAL) {
 			std::string text;
 			bool confirm;
@@ -267,6 +271,11 @@ std::string pick_archive_member(wxWindow* parent, const std::string& filename) t
 void signal_program_exit()
 {
 	post_ui_event(UISERV_EXIT);
+}
+
+void signal_resize_needed()
+{
+	post_ui_event(UISERV_RESIZED);
 }
 
 void graphics_plugin::init() throw()

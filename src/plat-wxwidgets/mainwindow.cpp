@@ -13,6 +13,7 @@
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/minmax.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
@@ -77,16 +78,21 @@ enum
 	wxID_EDIT_HOTKEYS,
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
-	wxID_SET_VOLUME
+	wxID_SET_VOLUME,
+	wxID_SET_SCREEN
 };
 
 
 namespace
 {
+	double horizontal_multiplier = 1.0;
+	double vertical_multiplier = 1.0;
+	int libswscale_flags = SWS_POINT;
 	std::string last_volume = "0dB";
 	unsigned char* screen_buffer;
 	uint32_t old_width;
 	uint32_t old_height;
+	int old_flags = SWS_POINT;
 	bool main_window_dirty;
 	struct thread* emulation_thread;
 
@@ -538,35 +544,33 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	uint8_t* dstp[1];
 	int dsts[1];
 	wxPaintDC dc(this);
-	if(!screen_buffer || main_screen.width != old_width || main_screen.height != old_height) {
+	uint32_t tw = main_screen.width * horizontal_multiplier + 0.5;
+	uint32_t th = main_screen.height * vertical_multiplier + 0.5;
+	if(!screen_buffer || tw != old_width || th != old_height || libswscale_flags != old_flags) {
 		if(screen_buffer)
 			delete[] screen_buffer;
-		screen_buffer = new unsigned char[main_screen.width * main_screen.height * 3];
-		old_height = main_screen.height;
-		old_width = main_screen.width;
+		old_height = th;
+		old_width = tw;
+		old_flags = libswscale_flags;
 		uint32_t w = main_screen.width;
 		uint32_t h = main_screen.height;
 		if(w && h)
-			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, w, h, PIX_FMT_BGR24, SWS_POINT |
-				SWS_CPU_CAPS_MMX2, NULL, NULL, NULL);
-		if(w < 512)
-			w = 512;
-		if(h < 448)
-			h = 448;
-		SetMinSize(wxSize(w, h));
-		main_window->Fit();
+			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, libswscale_flags,
+				NULL, NULL, NULL);
+		tw = max(tw, static_cast<uint32_t>(128));
+		th = max(th, static_cast<uint32_t>(112));
+		screen_buffer = new unsigned char[tw * th * 3];
+		SetMinSize(wxSize(tw, th));
+		signal_resize_needed();
 	}
 	srcs[0] = 4 * main_screen.width;
-	dsts[0] = 3 * main_screen.width;
+	dsts[0] = 3 * tw;
 	srcp[0] = reinterpret_cast<unsigned char*>(main_screen.memory);
 	dstp[0] = screen_buffer;
-	memset(screen_buffer, 0, main_screen.width * main_screen.height * 3);
-	uint64_t t1 = get_utime();
+	memset(screen_buffer, 0, tw * th * 3);
 	if(main_screen.width && main_screen.height)
 		sws_scale(ctx, srcp, srcs, 0, main_screen.height, dstp, dsts);
-	uint64_t t2 = get_utime();
-	wxBitmap bmp(wxImage(main_screen.width, main_screen.height, screen_buffer, true));
-	uint64_t t3 = get_utime();
+	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	main_window_dirty = false;
 }
@@ -673,7 +677,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
 	menu_separator();
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
-	menu_entry(wxID_SET_SPEED, wxT("Set Speed"));
+	menu_entry(wxID_SET_SPEED, wxT("Set speed"));
+	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling"));
 	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
@@ -707,6 +712,13 @@ void wxwin_mainwindow::notify_update() throw()
 		main_window_dirty = true;
 		gpanel->Refresh();
 	}
+}
+
+void wxwin_mainwindow::notify_resized() throw()
+{
+	toplevel->Layout();
+	toplevel->SetSizeHints(this);
+	Fit();
 }
 
 void wxwin_mainwindow::notify_update_status() throw()
@@ -986,10 +998,14 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SHOW_STATUS: {
 		bool newstate = menu_ischecked(wxID_SHOW_STATUS);
+		if(newstate)
+			spanel->Show();
 		if(newstate && !spanel_shown)
 			toplevel->Add(spanel);
 		else if(!newstate && spanel_shown)
 			toplevel->Detach(spanel);
+		if(!newstate)
+			spanel->Hide();
 		spanel_shown = newstate;
 		toplevel->Layout();
 		toplevel->SetSizeHints(this);
@@ -1024,5 +1040,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		last_volume = value;
 		runemufn([parsed]() { platform::global_volume = parsed; });
 	}
+	case wxID_SET_SCREEN:
+		wxeditor_screen_display(this, horizontal_multiplier, vertical_multiplier, libswscale_flags);
+		return;
 	};
 }

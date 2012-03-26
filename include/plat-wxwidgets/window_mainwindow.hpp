@@ -26,6 +26,7 @@ public:
 	void request_paint();
 	void notify_update() throw();
 	void notify_update_status() throw();
+	void notify_resized() throw();
 	void notify_exit() throw();
 	void on_close(wxCloseEvent& e);
 	void menu_start(wxString name);
