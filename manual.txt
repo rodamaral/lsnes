@@ -840,6 +840,21 @@ Show status of sound system.
 
 Show all available devices.
 
+6.11.5 set-volume <multiplier>
+
+Set the volume multiplier to <multiplier>. 1 is normal volume, 
+and higher numbers are louder.
+
+6.11.6 set-volume <multiplier>%
+
+Set the volume multiplier to <multiplier> percent. 100 is normal 
+volume, and higher numbers are louder.
+
+6.11.7 set-volume <multiplier>dB
+
+Set the volume multiplier to <multiplier> dB. 0 is normal volume, 
+and higher numbers are louder. The value may be negative.
+
 6.12 SDL Platform commands 
 
 The following are valid on SDL platform.
@@ -2923,4 +2938,6 @@ set-axis joystick0axis19 disabled
 15.55 rr1-delta5epsilon2
 
 • Fix writing port2 data to movie.
+
+• Fix SRAM handling with Bsnes v087.
 
