@@ -1,4 +1,6 @@
+#include "core/command.hpp"
 #include "core/framerate.hpp"
+#include "core/keymapper.hpp"
 #include "core/settings.hpp"
 #include "library/minmax.hpp"
 
@@ -107,6 +109,59 @@ namespace
 		}
 
 	} targetfps;
+
+	bool turboed = false;
+	bool turbo_saved_nominal;
+	bool turbo_saved_infinite;
+	double turbo_saved_fps;
+	void turbo_emulator()
+	{
+		if(turboed)
+			return;
+		turbo_saved_nominal = target_nominal;
+		turbo_saved_infinite = target_infinite;
+		turbo_saved_fps = target_fps;
+		target_infinite = true;
+		target_nominal = false;
+		turboed = true;
+	}
+
+	void unturbo_emulator()
+	{
+		if(!turboed)
+			return;
+		if(target_infinite) {
+			target_nominal = turbo_saved_nominal;
+			target_infinite = turbo_saved_infinite;
+			target_fps = turbo_saved_fps;
+		}
+		turboed = false;
+		return;
+	}
+
+	function_ptr_command<> tturbo("toggle-turbo", "Toggle turbo",
+		"Syntax: toggle-turbo\nToggle turbo mode.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(turboed)
+				unturbo_emulator();
+			else
+				turbo_emulator();
+		});
+
+	function_ptr_command<> pturbo("+turbo", "Activate turbo",
+		"Syntax: +turbo\nActivate turbo mode.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			turbo_emulator();
+		});
+
+	function_ptr_command<> nturbo("-turbo", "Deactivate turbo",
+		"Syntax: -turbo\nDeactivate turbo mode.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			unturbo_emulator();
+		});
+
+	inverse_key turboh("+turbo", "Turbo on hold");
+	inverse_key turbot("toggle-turbo", "Toggle turbo");
 }
 
 void freeze_time(uint64_t curtime)
