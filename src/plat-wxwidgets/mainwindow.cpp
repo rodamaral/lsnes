@@ -79,7 +79,8 @@ enum
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
-	wxID_SET_SCREEN
+	wxID_SET_SCREEN,
+	wxID_SET_PATHS
 };
 
 
@@ -423,6 +424,52 @@ namespace
 	{
 		runuifun([ahmenu]() { ahmenu->reconfigure(); });
 	}
+
+
+	class movie_path_setting : public setting
+	{
+	public:
+		movie_path_setting() : setting("moviepath") { _moviepath = "."; default_movie = true; }
+		void blank() throw(std::bad_alloc, std::runtime_error)
+		{
+			_moviepath = ".";
+			default_movie = true;
+		}
+
+		bool is_set() throw()
+		{
+			return !default_movie;
+		}
+
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(value != "") {
+				_moviepath = value;
+				default_movie = false;
+			} else
+				blank();
+		}
+
+		std::string get() throw(std::bad_alloc)
+		{
+			return _moviepath;
+		}
+
+		operator std::string() throw(std::bad_alloc)
+		{
+			return _moviepath;
+		}
+	private:
+		std::string _moviepath;
+		bool default_movie;
+	} moviepath_setting;
+
+	std::string movie_path()
+	{
+		std::string x;
+		runemufn([&x]() { x = setting::get("moviepath"); });
+		return x;
+	}
 }
 
 void boot_emulator(loaded_rom& rom, moviefile& movie)
@@ -671,7 +718,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("Settings"));
 	menu_entry(wxID_EDIT_AXES, wxT("Configure axes"));
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings"));
-	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys"));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
@@ -679,6 +725,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
 	menu_entry(wxID_SET_SPEED, wxT("Set speed"));
 	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling"));
+	menu_entry(wxID_SET_PATHS, wxT("Set paths"));
+	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys"));
 	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
@@ -787,31 +835,31 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		platform::queue("load-movie " + pick_file(this, "Load Movie", "."));
+		platform::queue("load-movie " + pick_file(this, "Load Movie", movie_path()));
 		return;
 	case wxID_LOAD_STATE:
-		platform::queue("load " + pick_file(this, "Load State", "."));
+		platform::queue("load " + pick_file(this, "Load State", movie_path()));
 		return;
 	case wxID_LOAD_STATE_RO:
-		platform::queue("load-readonly " + pick_file(this, "Load State (Read-Only)", "."));
+		platform::queue("load-readonly " + pick_file(this, "Load State (Read-Only)", movie_path()));
 		return;
 	case wxID_LOAD_STATE_RW:
-		platform::queue("load-state " + pick_file(this, "Load State (Read-Write)", "."));
+		platform::queue("load-state " + pick_file(this, "Load State (Read-Write)", movie_path()));
 		return;
 	case wxID_LOAD_STATE_P:
-		platform::queue("load-preserve " + pick_file(this, "Load State (Preserve)", "."));
+		platform::queue("load-preserve " + pick_file(this, "Load State (Preserve)", movie_path()));
 		return;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		platform::queue("save-movie " + pick_file(this, "Save Movie", "."));
+		platform::queue("save-movie " + pick_file(this, "Save Movie", movie_path()));
 		return;
 	case wxID_SAVE_STATE:
-		platform::queue("save-state " + pick_file(this, "Save State", "."));
+		platform::queue("save-state " + pick_file(this, "Save State", movie_path()));
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		platform::queue("take-screenshot " + pick_file(this, "Save State", "."));
+		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path()));
 		return;
 	case wxID_RUN_SCRIPT:
 		platform::queue("run-script " + pick_file_member(this, "Select Script", "."));
@@ -1042,6 +1090,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SET_SCREEN:
 		wxeditor_screen_display(this, horizontal_multiplier, vertical_multiplier, libswscale_flags);
+		return;
+	case wxID_SET_PATHS:
+		wxeditor_paths_display(this);
 		return;
 	};
 }

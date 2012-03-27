@@ -6,6 +6,7 @@
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
+#include "core/settings.hpp"
 #include "library/zip.hpp"
 
 #include "plat-wxwidgets/platform.hpp"
@@ -276,6 +277,50 @@ namespace
 	private:
 		wxTextCtrl* ctrl;
 	};
+
+	class rom_path_setting : public setting
+	{
+	public:
+		rom_path_setting() : setting("rompath") { _rompath = "."; default_rom = true; }
+		void blank() throw(std::bad_alloc, std::runtime_error)
+		{
+			_rompath = ".";
+			default_rom = true;
+		}
+
+		bool is_set() throw()
+		{
+			return !default_rom;
+		}
+
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(value != "") {
+				_rompath = value;
+				default_rom = false;
+			} else
+				blank();
+		}
+
+		std::string get() throw(std::bad_alloc)
+		{
+			return _rompath;
+		}
+
+		operator std::string() throw(std::bad_alloc)
+		{
+			return _rompath;
+		}
+	private:
+		std::string _rompath;
+		bool default_rom;
+	} rompath_setting;
+
+	std::string rom_path()
+	{
+		//This is pre-boot, so read directly.
+		return setting::get("rompath");
+	}
 }
 
 
@@ -317,7 +362,7 @@ wxwin_romselect::wxwin_romselect()
 		romgrid->Add(rom_label[i] = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 		romgrid->Add(rom_name[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 			1, wxGROW);
-		romgrid->Add(rom_change[i] = new wxButton(this, ROM_SELECTS_BASE + i, wxT("...")), 0, wxGROW);
+		romgrid->Add(rom_change[i] = new wxButton(this, ROM_SELECTS_BASE + i, wxT("Pick")), 0, wxGROW);
 		rom_name[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_romselect::on_filename_change), NULL, this);
 		rom_change[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -384,7 +429,7 @@ void wxwin_romselect::on_ask_rom_filename(wxCommandEvent& e)
 {
 	try {
 		std::string fname = pick_file_member(this, "Choose " + tostdstring(
-			rom_label[e.GetId() - ROM_SELECTS_BASE]->GetLabel()), ".");
+			rom_label[e.GetId() - ROM_SELECTS_BASE]->GetLabel()), rom_path());
 		wxTextCtrl* textbox = rom_name[e.GetId() - ROM_SELECTS_BASE];
 		if(textbox)
 			textbox->SetValue(towxstring(fname));
@@ -502,7 +547,7 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 	patchsel->Add(new wxStaticText(this, wxID_ANY, wxT("File:")), 0, wxGROW);
 	patchsel->Add(patchfile = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 		1, wxGROW);
-	patchsel->Add(choosefile = new wxButton(this, wxID_ANY, wxT("...")), 0, wxGROW);
+	patchsel->Add(choosefile = new wxButton(this, wxID_ANY, wxT("Pick")), 0, wxGROW);
 	patchfile->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxwin_patch::on_patchfile_change), NULL, this);
 	choosefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -548,7 +593,7 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 void wxwin_patch::on_ask_patchfile(wxCommandEvent& e)
 {
 	try {
-		std::string fname = pick_file_member(this, "Choose patch file", ".");
+		std::string fname = pick_file_member(this, "Choose patch file", rom_path());
 		patchfile->SetValue(towxstring(fname));
 		on_patchfile_change(e);
 	} catch(canceled_exception& e) {
@@ -680,7 +725,9 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	wxFlexGridSizer* fileblock = new wxFlexGridSizer(1, 2, 0, 0);
 	fileblock->Add(savefile = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 		1, wxGROW);
-	fileblock->Add(ask_savefile = new wxButton(this, ASK_FILENAME_BUTTON, wxT("...")), 0, wxGROW);
+	savefile->SetDropTarget(new textboxloadfilename(savefile));
+
+	fileblock->Add(ask_savefile = new wxButton(this, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
 	savefile->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 	ask_savefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -712,7 +759,8 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		wxFlexGridSizer* fileblock2 = new wxFlexGridSizer(1, 2, 0, 0);
 		fileblock2->Add(sram_files[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition,
 			wxSize(500, -1)), 1, wxGROW);
-		fileblock2->Add(sram_choosers[i] = new wxButton(this, ASK_SRAMS_BASE + idx, wxT("...")), 0, wxGROW);
+		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
+		fileblock2->Add(sram_choosers[i] = new wxButton(this, ASK_SRAMS_BASE + idx, wxT("Pick")), 0, wxGROW);
 		sram_files[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 		sram_choosers[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,

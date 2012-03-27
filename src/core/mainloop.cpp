@@ -94,8 +94,11 @@ public:
 
 	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
 	{
+		if(value != "") {
 		_firmwarepath = value;
 		default_firmware = false;
+		} else
+			blank();
 	}
 
 	std::string get() throw(std::bad_alloc)

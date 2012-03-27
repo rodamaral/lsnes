@@ -32,6 +32,7 @@ void wxeditor_axes_display(wxWindow* parent);
 void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_settings_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
+void wxeditor_paths_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void wxeditor_screen_display(wxWindow* parent, double& horiz, double& vert, int& flags);
 
