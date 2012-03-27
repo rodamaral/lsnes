@@ -26,6 +26,7 @@ public:
 	void request_paint();
 	void notify_update() throw();
 	void notify_update_status() throw();
+	void notify_resized() throw();
 	void notify_exit() throw();
 	void on_close(wxCloseEvent& e);
 	void menu_start(wxString name);
@@ -45,6 +46,8 @@ private:
 	wxMenu* current_menu;
 	wxMenuBar* menubar;
 	wxwin_status::panel* spanel;
+	bool spanel_shown;
+	wxFlexGridSizer* toplevel;
 	std::map<int, wxMenuItem*> checkitems;
 	std::stack<wxMenu*> upper;
 	void* ahmenu;

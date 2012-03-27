@@ -192,6 +192,25 @@ namespace
 			}
 		});
 
+	function_ptr_command<const std::string&> set_volume("set-volume", "Set sound volume",
+		"Syntax: set-volume <scale>\nset-volume <scale>%\nset-volume <scale>dB\nSet sound volume\n",
+		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r;
+			double parsed = 1;
+			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
+				parsed = strtod(r[1].c_str(), NULL);
+			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
+				parsed = strtod(r[1].c_str(), NULL) / 100;
+			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
+				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
+			else {
+				messages << "Invalid volume" << std::endl;
+				return;
+			}
+			platform::global_volume = parsed;
+		});
+
+
 	emulator_status emustatus;
 
 	class window_output
@@ -638,4 +657,5 @@ modal_pause_holder::~modal_pause_holder()
 }
 
 bool platform::pausing_allowed = true;
+double platform::global_volume = 1.0;
 volatile bool queue_synchronous_fn_warning;

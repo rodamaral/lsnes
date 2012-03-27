@@ -1758,6 +1758,34 @@ show-sound-devices
 Show all available devices.
 \end_layout
 
+\begin_layout Subsubsection
+set-volume <multiplier>
+\end_layout
+
+\begin_layout Standard
+Set the volume multiplier to <multiplier>.
+ 1 is normal volume, and higher numbers are louder.
+\end_layout
+
+\begin_layout Subsubsection
+set-volume <multiplier>%
+\end_layout
+
+\begin_layout Standard
+Set the volume multiplier to <multiplier> percent.
+ 100 is normal volume, and higher numbers are louder.
+\end_layout
+
+\begin_layout Subsubsection
+set-volume <multiplier>dB
+\end_layout
+
+\begin_layout Standard
+Set the volume multiplier to <multiplier> dB.
+ 0 is normal volume, and higher numbers are louder.
+ The value may be negative.
+\end_layout
+
 \begin_layout Subsection
 SDL Platform commands 
 \end_layout

@@ -24,6 +24,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie);
 void handle_wx_keyboard(wxKeyEvent& e, bool polarity);
 void initialize_wx_keyboard();
 void signal_program_exit();
+void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);
 
 //Editor dialogs.
@@ -32,6 +33,7 @@ void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_settings_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
+void wxeditor_screen_display(wxWindow* parent, double& horiz, double& vert, int& flags);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
