@@ -1,5 +1,6 @@
 //Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
+#include <wx/dnd.h>
 
 #include "core/bsnes.hpp"
 
@@ -256,6 +257,25 @@ namespace
 		enum rom_type rtype = romtype_from_string(str);
 		return (rtype != ROMTYPE_SNES && rtype != ROMTYPE_SGB);
 	}
+
+	class textboxloadfilename : public wxFileDropTarget
+	{
+	public:
+		textboxloadfilename(wxTextCtrl* _ctrl)
+		{
+			ctrl = _ctrl;
+		}
+
+		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
+		{
+			if(filenames.Count() != 1)
+				return false;
+			ctrl->SetValue(filenames[0]);
+			return true;
+		}
+	private:
+		wxTextCtrl* ctrl;
+	};
 }
 
 
@@ -302,6 +322,7 @@ wxwin_romselect::wxwin_romselect()
 			wxCommandEventHandler(wxwin_romselect::on_filename_change), NULL, this);
 		rom_change[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_romselect::on_ask_rom_filename), NULL, this);
+		rom_name[i]->SetDropTarget(new textboxloadfilename(rom_name[i]));
 	}
 	toplevel->Add(romgrid, 1, wxGROW);
 
@@ -486,6 +507,7 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 		wxCommandEventHandler(wxwin_patch::on_patchfile_change), NULL, this);
 	choosefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_patch::on_ask_patchfile), NULL, this);
+	patchfile->SetDropTarget(new textboxloadfilename(patchfile));
 	toplevel->Add(patchsel, 0, wxGROW);
 
 	//Patch offset.
