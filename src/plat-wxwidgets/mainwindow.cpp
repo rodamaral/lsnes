@@ -1001,7 +1001,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		if(newstate)
 			spanel->Show();
 		if(newstate && !spanel_shown)
-			toplevel->Add(spanel);
+			toplevel->Add(spanel, 1, wxGROW);
 		else if(!newstate && spanel_shown)
 			toplevel->Detach(spanel);
 		if(!newstate)
