@@ -2727,6 +2727,19 @@ L[<name>]
  Can be used anywhere.
 \end_layout
 
+\begin_layout Subsubsection
+gui.rainbow(number step, number steps[, number color])
+\end_layout
+
+\begin_layout Standard
+Perform hue rotation of color <color> (default bright red), by <step> steps.
+ The number of steps per full rotation is given by absolute value of <steps>.
+\end_layout
+
+\begin_layout Standard
+If <steps> is negative, the rotation will be counterclockwise.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
