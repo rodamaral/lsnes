@@ -550,7 +550,7 @@ void wxwin_mainwindow::menu_start_sub(wxString name)
 	old->AppendSubMenu(current_menu, name);
 }
 
-void wxwin_mainwindow::menu_end_sub(wxString name)
+void wxwin_mainwindow::menu_end_sub()
 {
 	current_menu = upper.top();
 	upper.pop();
@@ -661,45 +661,46 @@ wxwin_mainwindow::wxwin_mainwindow()
 	SetMenuBar(menubar);
 
 	//TOP-level accels: ACFOS.
-	//System menu: (ACFOS)EMNPQRU
+	//System menu: (ACOS)ELNPQTV
 	menu_start(wxT("&System"));
-	menu_entry(wxID_FRAMEADVANCE, wxT("Fra&me advance"));
-	menu_entry(wxID_SUBFRAMEADVANCE, wxT("S&ubframe advance"));
-	menu_entry(wxID_NEXTPOLL, wxT("&Next poll"));
+	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
+	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_separator();
+	menu_start_sub(wxT("&Load"));
+	menu_entry(wxID_LOAD_STATE, wxT("&Load state"));
+	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)"));
+	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)"));
+	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve input)"));
+	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
+	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
+	menu_end_sub();
+	menu_start_sub(wxT("Sa&ve"));
+	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e"));
+	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie"));
+	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
+	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves"));
+	menu_end_sub();
+	menu_separator();
 	menu_entry(wxID_PAUSE, wxT("&Pause/Unpause"));
+	menu_entry(wxID_FRAMEADVANCE, wxT("S&tep frame"));
+	menu_entry(wxID_SUBFRAMEADVANCE, wxT("St&ep subframe"));
+	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
 	menu_separator();
 	menu_entry(wxID_ERESET, wxT("&Reset"));
 	menu_separator();
-	menu_entry(wxID_EDIT_AUTHORS, wxT("&Edit game name && authors"));
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors"));
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
+	menu_separator();
+	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("&Quit"));
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About"));
-	//File menu: (ACFOS)DEILMNPRTUVW
-	menu_start(wxT("&File"));
-	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
-	menu_check(wxID_READONLY_MODE, is_readonly_mode());
-	menu_separator();
-	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e"));
-	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie"));
-	menu_separator();
-	menu_entry(wxID_LOAD_STATE, wxT("&Load state"));
-	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)"));
-	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)"));
-	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve)"));
-	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
-	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
-	menu_separator();
-	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves"));
-	menu_separator();
-	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
-	menu_separator();
-	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
-		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
-	//Autohold menu: (ACFOS)
+	//Autohold menu: (ACOS)
 	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
-	//Scripting menu: (ACFOS)ERU
+	//Scripting menu: (ACOS)ERU
 	menu_start(wxT("S&cripting"));
 	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script"));
 	if(lua_supported) {
@@ -722,7 +723,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
 	menu_separator();
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
 	menu_entry(wxID_SET_SPEED, wxT("Set speed"));
 	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling"));
 	menu_entry(wxID_SET_PATHS, wxT("Set paths"));
