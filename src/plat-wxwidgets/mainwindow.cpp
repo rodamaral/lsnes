@@ -80,7 +80,19 @@ enum
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
 	wxID_SET_SCREEN,
-	wxID_SET_PATHS
+	wxID_SET_PATHS,
+	wxID_SPEED_5,
+	wxID_SPEED_10,
+	wxID_SPEED_17,
+	wxID_SPEED_20,
+	wxID_SPEED_25,
+	wxID_SPEED_33,
+	wxID_SPEED_50,
+	wxID_SPEED_100,
+	wxID_SPEED_150,
+	wxID_SPEED_200,
+	wxID_SPEED_300,
+	wxID_SPEED_TURBO
 };
 
 
@@ -194,6 +206,15 @@ namespace
 		int ret;
 		runemufn([&ret, pcid, lidx]() { ret = controls.button_id(pcid, lidx); });
 		return ret;
+	}
+
+	void set_speed(double target)
+	{
+		std::string v = (stringfmt() << target).str();
+		if(target < 0)
+			runemufn([]() { setting::set("targetfps", "infinite"); });
+		else
+			runemufn([v]() { setting::set("targetfps", v); });
 	}
 
 	class controller_autohold_menu : public wxMenu
@@ -665,6 +686,21 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("&System"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors"));
+	menu_start_sub(wxT("Spee&d"));
+	menu_entry(wxID_SPEED_5, wxT("1/20x"));
+	menu_entry(wxID_SPEED_10, wxT("1/10x"));
+	menu_entry(wxID_SPEED_17, wxT("1/6x"));
+	menu_entry(wxID_SPEED_20, wxT("1/5x"));
+	menu_entry(wxID_SPEED_25, wxT("1/4x"));
+	menu_entry(wxID_SPEED_33, wxT("1/3x"));
+	menu_entry(wxID_SPEED_50, wxT("1/2x"));
+	menu_entry(wxID_SPEED_100, wxT("1x"));
+	menu_entry(wxID_SPEED_150, wxT("1.5x"));
+	menu_entry(wxID_SPEED_200, wxT("2x"));
+	menu_entry(wxID_SPEED_300, wxT("3x"));
+	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
+	menu_end_sub();
 	menu_separator();
 	menu_start_sub(wxT("&Load"));
 	menu_entry(wxID_LOAD_STATE, wxT("&Load state"));
@@ -688,7 +724,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_ERESET, wxT("&Reset"));
 	menu_separator();
-	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors"));
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
 	menu_separator();
 	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
@@ -1094,5 +1129,41 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SET_PATHS:
 		wxeditor_paths_display(this);
 		return;
+	case wxID_SPEED_5:
+		set_speed(5);
+		break;
+	case wxID_SPEED_10:
+		set_speed(10);
+		break;
+	case wxID_SPEED_17:
+		set_speed(16.66666666666);
+		break;
+	case wxID_SPEED_20:
+		set_speed(20);
+		break;
+	case wxID_SPEED_25:
+		set_speed(25);
+		break;
+	case wxID_SPEED_33:
+		set_speed(33.3333333333333);
+		break;
+	case wxID_SPEED_50:
+		set_speed(50);
+		break;
+	case wxID_SPEED_100:
+		set_speed(100);
+		break;
+	case wxID_SPEED_150:
+		set_speed(150);
+		break;
+	case wxID_SPEED_200:
+		set_speed(200);
+		break;
+	case wxID_SPEED_300:
+		set_speed(300);
+		break;
+	case wxID_SPEED_TURBO:
+		set_speed(-1);
+		break;
 	};
 }
