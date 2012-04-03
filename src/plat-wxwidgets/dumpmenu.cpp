@@ -146,12 +146,12 @@ void dumper_menu::update(const std::map<std::string, dumper_info>& new_dumpers)
 		if(!i.second.active) {
 			if(i.second.modes.empty()) {
 				menustructure[i.first].start_items[id] = Append(id, towxstring("Dump " +
-					i.second.name));
+					i.second.name + "..."));
 				menustructure[i.first].start_wxids[id++] = "";
 			}
 			for(auto j : i.second.modes) {
 				menustructure[i.first].start_items[id] = Append(id, towxstring("Dump " +
-					i.second.name + " (" + j.second + ")"));
+					i.second.name + " (" + j.second + ")..."));
 				menustructure[i.first].start_wxids[id++] = j.first;
 			}
 		} else {

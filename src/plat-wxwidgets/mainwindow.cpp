@@ -686,7 +686,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("&System"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
-	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors"));
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
 	menu_start_sub(wxT("Spee&d"));
 	menu_entry(wxID_SPEED_5, wxT("1/20x"));
 	menu_entry(wxID_SPEED_10, wxT("1/10x"));
@@ -700,21 +700,22 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SPEED_200, wxT("2x"));
 	menu_entry(wxID_SPEED_300, wxT("3x"));
 	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
+	menu_entry(wxID_SET_SPEED, wxT("Set..."));
 	menu_end_sub();
 	menu_separator();
 	menu_start_sub(wxT("&Load"));
-	menu_entry(wxID_LOAD_STATE, wxT("&Load state"));
-	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)"));
-	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)"));
-	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve input)"));
-	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
-	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
+	menu_entry(wxID_LOAD_STATE, wxT("&Load state..."));
+	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)..."));
+	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)..."));
+	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve input)..."));
+	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie..."));
+	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie..."));
 	menu_end_sub();
 	menu_start_sub(wxT("Sa&ve"));
-	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e"));
-	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie"));
-	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
-	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves"));
+	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e..."));
+	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie..."));
+	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot..."));
+	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves..."));
 	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_PAUSE, wxT("&Pause/Unpause"));
@@ -724,44 +725,43 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_ERESET, wxT("&Reset"));
 	menu_separator();
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
 	menu_separator();
 	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("&Quit"));
 	menu_separator();
-	menu_entry(wxID_ABOUT, wxT("About"));
+	menu_entry(wxID_ABOUT, wxT("About..."));
 	//Autohold menu: (ACOS)
 	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
 	//Scripting menu: (ACOS)ERU
 	menu_start(wxT("S&cripting"));
-	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script"));
+	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script..."));
 	if(lua_supported) {
 		menu_separator();
-		menu_entry(wxID_EVAL_LUA, wxT("&Evaluate Lua statement"));
-		menu_entry(wxID_RUN_LUA, wxT("R&un Lua script"));
+		menu_entry(wxID_EVAL_LUA, wxT("&Evaluate Lua statement..."));
+		menu_entry(wxID_RUN_LUA, wxT("R&un Lua script..."));
 	}
 	menu_separator();
-	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch"));
+	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
-	menu_entry(wxID_LOAD_MEMORYWATCH, wxT("Load memory watch"));
-	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch"));
+	menu_entry(wxID_LOAD_MEMORYWATCH, wxT("Load memory watch..."));
+	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
-	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search"));
+	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	//Settings menu: (ACFOS)
 	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_AXES, wxT("Configure axes"));
-	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings"));
-	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
-	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
-	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
+	menu_entry(wxID_EDIT_AXES, wxT("Configure axes..."));
+	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
+	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
+	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
+	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
-	menu_entry(wxID_SET_SPEED, wxT("Set speed"));
-	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling"));
-	menu_entry(wxID_SET_PATHS, wxT("Set paths"));
-	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys"));
+	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
+	menu_entry(wxID_SET_PATHS, wxT("Set paths..."));
+	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
