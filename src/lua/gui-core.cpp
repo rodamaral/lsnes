@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "core/window.hpp"
+#include "library/minmax.hpp"
 
 namespace
 {
@@ -73,4 +74,61 @@ namespace
 		return 1;
 	});
 
+
+	//0: m
+	//1: M
+	//2: m + phue
+	//3: M - phue
+	uint8_t hsl2rgb_flags[] = {24, 52, 6, 13, 33, 19};
+
+	uint32_t shifthue(uint32_t color, double shift)
+	{
+		int16_t R = (color >> 16) & 0xFF;
+		int16_t G = (color >> 8) & 0xFF;
+		int16_t B = color & 0xFF;
+		int16_t m = min(R, min(G, B));
+		int16_t M = max(R, max(G, B));
+		int16_t S = M - m;
+		if(!S)
+			return color;	//Grey.
+		int16_t hue;
+		if(R == M)
+			hue = G - B + 6 * S;
+		else if(G == M)
+			hue = B - R + 2 * S;
+		else
+			hue = R - G + 4 * S;
+		int16_t ohue = hue % (6 * S);
+		hue = (hue + static_cast<uint32_t>(shift * S)) % (6 * S);
+		uint32_t V[4];
+		V[0] = m;
+		V[1] = M;
+		V[2] = m + hue % S;
+		V[3] = M - hue % S;
+		uint8_t flag = hsl2rgb_flags[hue / S];
+		return (V[(flag >> 4) & 3] << 16) | (V[(flag >> 2) & 3] << 8) | (V[flag & 3]);
+	}
+
+	function_ptr_luafun gui_rainbow("gui.rainbow", [](lua_State* LS, const std::string& fname) -> int {
+		int64_t basecolor = 0x00FF0000;
+		uint64_t step = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		int32_t steps = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
+		get_numeric_argument<int64_t>(LS, 3, basecolor, fname.c_str());
+		if(!steps) {
+			lua_pushstring(LS, "Expected nonzero steps for gui.rainbow");
+			lua_error(LS);
+		}
+		if(basecolor < 0) {
+			//Special: Any rotation of transparent is transparent.
+			lua_pushnumber(LS, -1);
+			return 1;
+		}
+		uint32_t asteps = std::abs(steps);
+		if(steps < 0)
+			step = asteps - step % asteps;	//Reverse order.
+		double hueshift = 6.0 * (step % asteps) / asteps;
+		basecolor = shifthue(basecolor & 0xFFFFFF, hueshift) | (basecolor & 0xFF000000);
+		lua_pushnumber(LS, basecolor);
+		return 1;
+	});
 }

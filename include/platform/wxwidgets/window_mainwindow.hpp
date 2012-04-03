@@ -35,7 +35,7 @@ public:
 	void menu_entry(int id, wxString name);
 	void menu_entry_check(int id, wxString name);
 	void menu_start_sub(wxString name);
-	void menu_end_sub(wxString name);
+	void menu_end_sub();
 	bool menu_ischecked(int id);
 	void menu_check(int id, bool newstate);
 	void menu_separator();

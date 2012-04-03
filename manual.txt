@@ -1354,6 +1354,14 @@ The default alpha is 256.
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
+8.3.26 gui.rainbow(number step, number steps[, number color])
+
+Perform hue rotation of color <color> (default bright red), by 
+<step> steps. The number of steps per full rotation is given by 
+absolute value of <steps>.
+
+If <steps> is negative, the rotation will be counterclockwise.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.
@@ -1746,7 +1754,7 @@ Called if savestate goes wrong.
 8.10.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
-savestate or a movie.
+savestate or a 
 
 8.10.13 Callback: on_quit()
 
@@ -2629,7 +2637,7 @@ set-axis joystick0axis19 disabled
 
 • Remove calls to runtosave() that aren't supposed to be there
 
-• Lua function: movie.read_rtc()
+• Lua function: read_rtc()
 
 • Ignore src/fonts/font.cpp
 
@@ -2850,7 +2858,7 @@ set-axis joystick0axis19 disabled
 • Wxwidgets: 128 -> 1024 Autohold slots (in case more are 
   needed).
 
-• Don't append trailing '-' to prefix when saving movie.
+• Don't append trailing '-' to prefix when saving 
 
 • Fix ROM/savestate handling (don't let user mismatch ROM and 
   savestates).

@@ -82,7 +82,20 @@ enum
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
-	wxID_SET_SCREEN
+	wxID_SET_SCREEN,
+	wxID_SET_PATHS,
+	wxID_SPEED_5,
+	wxID_SPEED_10,
+	wxID_SPEED_17,
+	wxID_SPEED_20,
+	wxID_SPEED_25,
+	wxID_SPEED_33,
+	wxID_SPEED_50,
+	wxID_SPEED_100,
+	wxID_SPEED_150,
+	wxID_SPEED_200,
+	wxID_SPEED_300,
+	wxID_SPEED_TURBO
 };
 
 
@@ -196,6 +209,15 @@ namespace
 		int ret;
 		runemufn([&ret, pcid, lidx]() { ret = controls.button_id(pcid, lidx); });
 		return ret;
+	}
+
+	void set_speed(double target)
+	{
+		std::string v = (stringfmt() << target).str();
+		if(target < 0)
+			runemufn([]() { setting::set("targetfps", "infinite"); });
+		else
+			runemufn([v]() { setting::set("targetfps", v); });
 	}
 
 	class controller_autohold_menu : public wxMenu
@@ -426,6 +448,52 @@ namespace
 	{
 		runuifun([ahmenu]() { ahmenu->reconfigure(); });
 	}
+
+
+	class movie_path_setting : public setting
+	{
+	public:
+		movie_path_setting() : setting("moviepath") { _moviepath = "."; default_movie = true; }
+		void blank() throw(std::bad_alloc, std::runtime_error)
+		{
+			_moviepath = ".";
+			default_movie = true;
+		}
+
+		bool is_set() throw()
+		{
+			return !default_movie;
+		}
+
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			if(value != "") {
+				_moviepath = value;
+				default_movie = false;
+			} else
+				blank();
+		}
+
+		std::string get() throw(std::bad_alloc)
+		{
+			return _moviepath;
+		}
+
+		operator std::string() throw(std::bad_alloc)
+		{
+			return _moviepath;
+		}
+	private:
+		std::string _moviepath;
+		bool default_movie;
+	} moviepath_setting;
+
+	std::string movie_path()
+	{
+		std::string x;
+		runemufn([&x]() { x = setting::get("moviepath"); });
+		return x;
+	}
 }
 
 void boot_emulator(loaded_rom& rom, moviefile& movie)
@@ -506,7 +574,7 @@ void wxwin_mainwindow::menu_start_sub(wxString name)
 	old->AppendSubMenu(current_menu, name);
 }
 
-void wxwin_mainwindow::menu_end_sub(wxString name)
+void wxwin_mainwindow::menu_end_sub()
 {
 	current_menu = upper.top();
 	upper.pop();
@@ -617,75 +685,90 @@ wxwin_mainwindow::wxwin_mainwindow()
 	SetMenuBar(menubar);
 
 	//TOP-level accels: ACFOS.
-	//System menu: (ACFOS)EMNPQRU
+	//System menu: (ACOS)ELNPQTV
 	menu_start(wxT("&System"));
-	menu_entry(wxID_FRAMEADVANCE, wxT("Fra&me advance"));
-	menu_entry(wxID_SUBFRAMEADVANCE, wxT("S&ubframe advance"));
-	menu_entry(wxID_NEXTPOLL, wxT("&Next poll"));
-	menu_entry(wxID_PAUSE, wxT("&Pause/Unpause"));
-	menu_separator();
-	menu_entry(wxID_ERESET, wxT("&Reset"));
-	menu_separator();
-	menu_entry(wxID_EDIT_AUTHORS, wxT("&Edit game name && authors"));
-	menu_separator();
-	menu_entry(wxID_EXIT, wxT("&Quit"));
-	menu_separator();
-	menu_entry(wxID_ABOUT, wxT("About"));
-	//File menu: (ACFOS)DEILMNPRTUVW
-	menu_start(wxT("&File"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
+	menu_start_sub(wxT("Spee&d"));
+	menu_entry(wxID_SPEED_5, wxT("1/20x"));
+	menu_entry(wxID_SPEED_10, wxT("1/10x"));
+	menu_entry(wxID_SPEED_17, wxT("1/6x"));
+	menu_entry(wxID_SPEED_20, wxT("1/5x"));
+	menu_entry(wxID_SPEED_25, wxT("1/4x"));
+	menu_entry(wxID_SPEED_33, wxT("1/3x"));
+	menu_entry(wxID_SPEED_50, wxT("1/2x"));
+	menu_entry(wxID_SPEED_100, wxT("1x"));
+	menu_entry(wxID_SPEED_150, wxT("1.5x"));
+	menu_entry(wxID_SPEED_200, wxT("2x"));
+	menu_entry(wxID_SPEED_300, wxT("3x"));
+	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
+	menu_entry(wxID_SET_SPEED, wxT("Set..."));
+	menu_end_sub();
 	menu_separator();
-	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e"));
-	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie"));
-	menu_separator();
-	menu_entry(wxID_LOAD_STATE, wxT("&Load state"));
-	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)"));
-	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)"));
-	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve)"));
-	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie"));
-	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie"));
-	menu_separator();
-	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves"));
-	menu_separator();
-	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot"));
-	menu_separator();
-	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
-		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	menu_start_sub(wxT("&Load"));
+	menu_entry(wxID_LOAD_STATE, wxT("&Load state..."));
+	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)..."));
+	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)..."));
+	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve input)..."));
+	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie..."));
+	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie..."));
 	if(load_library_supported) {
 		menu_separator();
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
 	}
-	//Autohold menu: (ACFOS)
+	menu_end_sub();
+	menu_start_sub(wxT("Sa&ve"));
+	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e..."));
+	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie..."));
+	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot..."));
+	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves..."));
+	menu_end_sub();
+	menu_separator();
+	menu_entry(wxID_PAUSE, wxT("&Pause/Unpause"));
+	menu_entry(wxID_FRAMEADVANCE, wxT("S&tep frame"));
+	menu_entry(wxID_SUBFRAMEADVANCE, wxT("St&ep subframe"));
+	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
+	menu_separator();
+	menu_entry(wxID_ERESET, wxT("&Reset"));
+	menu_separator();
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
+	menu_separator();
+	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	menu_separator();
+	menu_entry(wxID_EXIT, wxT("&Quit"));
+	menu_separator();
+	menu_entry(wxID_ABOUT, wxT("About..."));
+	//Autohold menu: (ACOS)
 	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
-	//Scripting menu: (ACFOS)ERU
+	//Scripting menu: (ACOS)ERU
 	menu_start(wxT("S&cripting"));
-	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script"));
+	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script..."));
 	if(lua_supported) {
 		menu_separator();
-		menu_entry(wxID_EVAL_LUA, wxT("&Evaluate Lua statement"));
-		menu_entry(wxID_RUN_LUA, wxT("R&un Lua script"));
+		menu_entry(wxID_EVAL_LUA, wxT("&Evaluate Lua statement..."));
+		menu_entry(wxID_RUN_LUA, wxT("R&un Lua script..."));
 	}
 	menu_separator();
-	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch"));
+	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
-	menu_entry(wxID_LOAD_MEMORYWATCH, wxT("Load memory watch"));
-	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch"));
+	menu_entry(wxID_LOAD_MEMORYWATCH, wxT("Load memory watch..."));
+	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
-	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search"));
+	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	//Settings menu: (ACFOS)
 	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_AXES, wxT("Configure axes"));
-	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings"));
-	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys"));
-	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings"));
-	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases"));
-	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox"));
+	menu_entry(wxID_EDIT_AXES, wxT("Configure axes..."));
+	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
+	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
+	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
+	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
-	menu_entry(wxID_SET_SPEED, wxT("Set speed"));
-	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling"));
+	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
+	menu_entry(wxID_SET_PATHS, wxT("Set paths..."));
+	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 	menu_check(wxID_SHOW_STATUS, true);
 	if(platform::sound_initialized()) {
 		//Sound menu: (ACFOS)EHU
@@ -794,31 +877,31 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		platform::queue("load-movie " + pick_file(this, "Load Movie", "."));
+		platform::queue("load-movie " + pick_file(this, "Load Movie", movie_path()));
 		return;
 	case wxID_LOAD_STATE:
-		platform::queue("load " + pick_file(this, "Load State", "."));
+		platform::queue("load " + pick_file(this, "Load State", movie_path()));
 		return;
 	case wxID_LOAD_STATE_RO:
-		platform::queue("load-readonly " + pick_file(this, "Load State (Read-Only)", "."));
+		platform::queue("load-readonly " + pick_file(this, "Load State (Read-Only)", movie_path()));
 		return;
 	case wxID_LOAD_STATE_RW:
-		platform::queue("load-state " + pick_file(this, "Load State (Read-Write)", "."));
+		platform::queue("load-state " + pick_file(this, "Load State (Read-Write)", movie_path()));
 		return;
 	case wxID_LOAD_STATE_P:
-		platform::queue("load-preserve " + pick_file(this, "Load State (Preserve)", "."));
+		platform::queue("load-preserve " + pick_file(this, "Load State (Preserve)", movie_path()));
 		return;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		platform::queue("save-movie " + pick_file(this, "Save Movie", "."));
+		platform::queue("save-movie " + pick_file(this, "Save Movie", movie_path()));
 		return;
 	case wxID_SAVE_STATE:
-		platform::queue("save-state " + pick_file(this, "Save State", "."));
+		platform::queue("save-state " + pick_file(this, "Save State", movie_path()));
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		platform::queue("take-screenshot " + pick_file(this, "Save State", "."));
+		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path()));
 		return;
 	case wxID_RUN_SCRIPT:
 		platform::queue("run-script " + pick_file_member(this, "Select Script", "."));
@@ -1054,5 +1137,44 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SET_SCREEN:
 		wxeditor_screen_display(this, horizontal_multiplier, vertical_multiplier, libswscale_flags);
 		return;
+	case wxID_SET_PATHS:
+		wxeditor_paths_display(this);
+		return;
+	case wxID_SPEED_5:
+		set_speed(5);
+		break;
+	case wxID_SPEED_10:
+		set_speed(10);
+		break;
+	case wxID_SPEED_17:
+		set_speed(16.66666666666);
+		break;
+	case wxID_SPEED_20:
+		set_speed(20);
+		break;
+	case wxID_SPEED_25:
+		set_speed(25);
+		break;
+	case wxID_SPEED_33:
+		set_speed(33.3333333333333);
+		break;
+	case wxID_SPEED_50:
+		set_speed(50);
+		break;
+	case wxID_SPEED_100:
+		set_speed(100);
+		break;
+	case wxID_SPEED_150:
+		set_speed(150);
+		break;
+	case wxID_SPEED_200:
+		set_speed(200);
+		break;
+	case wxID_SPEED_300:
+		set_speed(300);
+		break;
+	case wxID_SPEED_TURBO:
+		set_speed(-1);
+		break;
 	};
 }

@@ -59,7 +59,7 @@ namespace
 	int audiocb(const void *input, void *output, unsigned long frame_count,
 		const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags flags, void* user)
 	{
-		static uint16_t lprev, rprev;
+		static uint16_t lprev = 32768, rprev = 32768;
 		int16_t* _output = reinterpret_cast<int16_t*>(output);
 		for(unsigned long i = 0; i < frame_count; i++) {
 			uint16_t l, r;
