@@ -77,7 +77,6 @@ enum
 	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
-	wxID_LOAD_LIBRARY,
 	wxID_EDIT_HOTKEYS,
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
@@ -95,7 +94,8 @@ enum
 	wxID_SPEED_150,
 	wxID_SPEED_200,
 	wxID_SPEED_300,
-	wxID_SPEED_TURBO
+	wxID_SPEED_TURBO,
+	wxID_LOAD_LIBRARY
 };
 
 
@@ -1086,10 +1086,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 		return;
 	}
-	case wxID_LOAD_LIBRARY: {
-		std::string name = std::string("load ") + library_is_called;
-		load_library(pick_file(this, name, "."));
-	}
 	case wxID_SHOW_STATUS: {
 		bool newstate = menu_ischecked(wxID_SHOW_STATUS);
 		if(newstate)
@@ -1176,5 +1172,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SPEED_TURBO:
 		set_speed(-1);
 		break;
+	case wxID_LOAD_LIBRARY: {
+		std::string name = std::string("load ") + library_is_called;
+		load_library(pick_file(this, name, "."));
+	}
 	};
 }
