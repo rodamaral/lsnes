@@ -1,4 +1,4 @@
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 
 #define BITWISE_BITS 48
 #define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)

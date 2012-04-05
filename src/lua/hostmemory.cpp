@@ -1,4 +1,4 @@
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 #include "core/moviedata.hpp"
 
 namespace

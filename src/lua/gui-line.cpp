@@ -1,4 +1,4 @@
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 #include "core/render.hpp"
 
 namespace
@@ -9,7 +9,7 @@ namespace
 			throw()
 			: x1(_x1), y1(_y1), x2(_x2), y2(_y2), color(_color) {}
 		~render_object_line() throw() {}
-		void operator()(struct screen& scr) throw()
+		template<bool X> void op(struct screen<X>& scr) throw()
 		{
 			color.set_palette(scr);
 			int32_t xdiff = x2 - x1;
@@ -72,6 +72,8 @@ nodraw2:
 				}
 			}
 		}
+		void operator()(struct screen<true>& scr) throw()  { op(scr); }
+		void operator()(struct screen<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x1;
 		int32_t y1;

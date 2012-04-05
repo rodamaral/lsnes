@@ -8,6 +8,7 @@
 #include "core/patchrom.hpp"
 #include "core/rom.hpp"
 #include "core/window.hpp"
+#include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 

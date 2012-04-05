@@ -2,11 +2,10 @@
 #include "core/dispatch.hpp"
 #include "core/globalwrap.hpp"
 #include "core/keymapper.hpp"
-#include "core/lua.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "library/string.hpp"
 
 #include <stdexcept>

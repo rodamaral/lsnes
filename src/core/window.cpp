@@ -1,7 +1,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/render.hpp"
 #include "core/window.hpp"
@@ -595,19 +595,19 @@ void platform::run_queues() throw()
 namespace
 {
 	mutex* _msgbuf_lock;
-	screen* our_screen;
+	screen<false>* our_screen;
 
 	struct painter_listener : public information_dispatch
 	{
 		painter_listener();
-		void on_set_screen(screen& scr);
+		void on_set_screen(screen<false>& scr);
 		void on_screen_update();
 		void on_status_update();
 	} x;
 
 	painter_listener::painter_listener() : information_dispatch("painter-listener") {}
 
-	void painter_listener::on_set_screen(screen& scr)
+	void painter_listener::on_set_screen(screen<false>& scr)
 	{
 		our_screen = &scr;
 	}

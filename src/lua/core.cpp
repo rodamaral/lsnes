@@ -1,6 +1,6 @@
 #include "core/command.hpp"
+#include "lua/internal.hpp"
 #include "core/framerate.hpp"
-#include "core/lua-int.hpp"
 #include "core/window.hpp"
 
 namespace

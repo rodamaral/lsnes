@@ -117,11 +117,17 @@ struct lcscreen
 	size_t allocated;
 };
 
+template<bool X> struct screenelem {};
+template<> struct screenelem<false> { typedef uint32_t t; };
+template<> struct screenelem<true> { typedef uint64_t t; };
+
 /**
  * Hicolor modifiable screen.
  */
+template<bool X>
 struct screen
 {
+	typedef typename screenelem<X>::t element_t;
 /**
  * Creates screen. The screen dimensions are initially 0x0.
  */
@@ -140,7 +146,7 @@ struct screen
  * parameter _height: Height of screen.
  * parameter _pitch: Distance in bytes between successive scanlines.
  */
-	void set(uint32_t* _memory, uint32_t _width, uint32_t _height, uint32_t _pitch) throw();
+	void set(element_t* _memory, uint32_t _width, uint32_t _height, uint32_t _pitch) throw();
 
 /**
  * Sets the size of the screen. The memory is freed if screen is reallocated or destroyed.
@@ -175,7 +181,7 @@ struct screen
  *
  * parameter row: Number of row (must be less than height).
  */
-	uint32_t* rowptr(uint32_t row) throw();
+	element_t* rowptr(uint32_t row) throw();
 
 /**
  * Set palette. Also converts the image data.
@@ -189,7 +195,7 @@ struct screen
 /**
  * Active palette
  */
-	uint32_t* palette;
+	element_t* palette;
 	uint32_t palette_r;
 	uint32_t palette_g;
 	uint32_t palette_b;
@@ -197,7 +203,7 @@ struct screen
 /**
  * Backing memory for this screen.
  */
-	uint32_t* memory;
+	element_t* memory;
 
 /**
  * True if memory is given by user and must not be freed.
@@ -233,19 +239,9 @@ struct screen
  * Y-coordinate of origin.
  */
 	uint32_t originy;
-
-/**
- * Returns color value with specified (r,g,b) values (scale 0-255).
- *
- * parameter r: Red component.
- * parameter g: Green component.
- * parameter b: Blue component.
- * returns: color element value.
- */
-	uint32_t make_color(uint8_t r, uint8_t g, uint8_t b) throw();
 private:
-	screen(const screen&);
-	screen& operator=(const screen&);
+	screen(const screen<X>&);
+	screen& operator=(const screen<X>&);
 };
 
 /**
@@ -263,7 +259,8 @@ struct render_object
  *
  * parameter scr: The screen to draw it on.
  */
-	virtual void operator()(struct screen& scr) throw() = 0;
+	virtual void operator()(struct screen<false>& scr) throw() = 0;
+	virtual void operator()(struct screen<true>& scr) throw() = 0;
 };
 
 
@@ -275,43 +272,44 @@ struct premultiplied_color
 {
 	uint32_t hi;
 	uint32_t lo;
+	uint64_t hiHI;
+	uint64_t loHI;
 	uint32_t orig;
 	uint16_t origa;
 	uint16_t inv;
+	uint32_t invHI;
+
 	premultiplied_color() throw()
 	{
 		hi = lo = 0;
+		hiHI = loHI = 0;
 		orig = 0;
 		origa = 0;
 		inv = 256;
+		invHI = 65536;
 	}
 
 	premultiplied_color(int64_t color) throw()
 	{
 		if(color < 0) {
 			//Transparent.
-			hi = 0;
-			lo = 0;
 			orig = 0;
 			origa = 0;
 			inv = 256;
 		} else {
-			uint32_t c = (color & 0xFFFFFF);
-			uint16_t a = 256 - ((color >> 24) & 0xFF);
-			hi = c & 0xFF00FF;
-			lo = (c & 0x00FF00) >> 8;
-			hi *= a;
-			lo *= a;
 			orig = color & 0xFFFFFF;
-			origa = a;
-			inv = 256 - a;
+			origa = 256 - ((color >> 24) & 0xFF);;
+			inv = 256 - origa;
 		}
+		invHI = 256 * static_cast<uint32_t>(inv);
+		set_palette(16, 8, 0, false);
+		set_palette(32, 16, 0, true);
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
-	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw();
-	void set_palette(struct screen& s) throw()
+	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw();
+	template<bool X> void set_palette(struct screen<X>& s) throw()
 	{
-		set_palette(s.palette_r, s.palette_g, s.palette_b);
+		set_palette(s.palette_r, s.palette_g, s.palette_b, X);
 	}
 	uint32_t blend(uint32_t color) throw()
 	{
@@ -321,6 +319,17 @@ struct premultiplied_color
 		return (((a * inv + hi) >> 8) & 0xFF00FF) | ((b * inv + lo) & 0xFF00FF00);
 	}
 	void apply(uint32_t& x) throw()
+	{
+		x = blend(x);
+	}
+	uint64_t blend(uint64_t color) throw()
+	{
+		uint64_t a, b;
+		a = color & 0xFFFF0000FFFFULL;
+		b = (color & 0xFFFF0000FFFF0000ULL) >> 16;
+		return (((a * invHI + hiHI) >> 16) & 0xFFFF0000FFFFULL) | ((b * invHI + loHI) & 0xFFFF0000FFFF0000ULL);
+	}
+	void apply(uint64_t& x) throw()
 	{
 		x = blend(x);
 	}
@@ -338,7 +347,7 @@ struct render_queue
  *
  * parameter scr: The screen to apply queue to.
  */
-	void run(struct screen& scr) throw();
+	template<bool X> void run(struct screen<X>& scr) throw();
 
 /**
  * Frees all objects in the queue without applying them.
@@ -420,7 +429,8 @@ std::pair<uint32_t, const uint32_t*> find_glyph(uint32_t codepoint, int32_t x, i
  * parameter _vdbl: If true, draw text using double height.
  * throws std::bad_alloc: Not enough memory.
  */
-void render_text(struct screen& scr, int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
-	premultiplied_color _bg, bool _hdbl = false, bool _vdbl = false) throw(std::bad_alloc);
+template<bool X> void render_text(struct screen<X>& scr, int32_t _x, int32_t _y, const std::string& _text,
+	premultiplied_color _fg, premultiplied_color _bg, bool _hdbl = false, bool _vdbl = false)
+	throw(std::bad_alloc);
 
 #endif

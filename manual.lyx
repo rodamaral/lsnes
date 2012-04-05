@@ -765,6 +765,14 @@ Set number of frames to dump.
 Run specified lua script (lsnes-dumpavi does not have initialization files).
 \end_layout
 
+\begin_layout Subsubsection
+--load-library=<library>
+\end_layout
+
+\begin_layout Standard
+Load the specified shared object / dynamic library / dynamic link library.
+\end_layout
+
 \begin_layout Section
 Startup file lsnes.rc
 \end_layout
@@ -1051,93 +1059,106 @@ Following commands control video dumping:
 \end_layout
 
 \begin_layout Subsubsection
-dump-avi <prefix>
+start-dump <dumper> [<mode>] <prefix/filename>
 \end_layout
 
 \begin_layout Standard
-Dump AVI video to prefix <prefix> Notes:
+Start dumping using dumper <dumper>.
+ If mode is present or not and if prefix or filename is present depends
+ on the dumper and dumper mode.
+\end_layout
+
+\begin_layout Standard
+The following dumpers are available:
 \end_layout
 
 \begin_layout Itemize
-The codec is Camstudio Codec in gzip mode.
+INTERNAL-AVI-CSCD: Internal CSCD in .avi dumper.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Mode: uncompressed/pcm: Uncompressed video, PCM audio.
+ Takes prefix.
 \end_layout
 
 \begin_layout Itemize
-Encoder and muxer are internal, available on all platforms.
+Mode: cscd/pcm: CSCD video, PCM audio.
+ Takes prefix.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+INTERNAL-JMD: Internal .jmd dumper.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Does not take mode.
 \end_layout
 
 \begin_layout Itemize
-Audio enable/disable and framerate has no effect.
+Takes a filename.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+INTERNAL-RAW: Internal RAW dumper.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Does not take mode.
 \end_layout
 
 \begin_layout Itemize
-The audio dumped to .avi is low-quality version.
- The high-quality version is dumped to .sox file.
+Takes a prefix.
 \end_layout
 
+\begin_layout Itemize
+Sound is big-endian signed 16-bit, usually at 32040.5Hz.
+\end_layout
+
+\begin_layout Itemize
+Video is always upscaled to double resolution (512x448 / 512 x 478).
+\end_layout
+
+\begin_layout Itemize
+Video framerate is usually 322445/6448 fps for PAL and 10738636/178683 fps
+ for NTSC.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+INTERNAL-SDMP: Internal SDMP dumper.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Mode 'ms': Multi-segment.
+ Takes prefix.
+\end_layout
+
+\begin_layout Itemize
+Mode 'ss': Single-segment.
+ Takes filename.
+\end_layout
+
+\end_deeper
 \begin_layout Subsubsection
-end-avi
+end-dump <dumper>
 \end_layout
 
 \begin_layout Standard
-End current AVI video dump (closing the emulator also closes the dump).
+End dumping using <dumper>
 \end_layout
 
 \begin_layout Subsubsection
-dump-jmd <file>
+show-dumpers [<dumper>]
 \end_layout
 
 \begin_layout Standard
-Dump JMD video to file <file>.
-\end_layout
-
-\begin_layout Subsubsection
-end-jmd
-\end_layout
-
-\begin_layout Standard
-End the current JMD dump in progress.
-\end_layout
-
-\begin_layout Subsubsection
-dump-sdmp <prefix>
-\end_layout
-
-\begin_layout Standard
-Dump SDMP to <prefix>, splitting at 2GB.
-\end_layout
-
-\begin_layout Subsubsection
-dump-sdmp-ss <file>
-\end_layout
-
-\begin_layout Standard
-Dump SDMP to <file>, no splitting
-\end_layout
-
-\begin_layout Subsubsection
-end-sdmp
-\end_layout
-
-\begin_layout Standard
-End the current SDMP dump in progress.
-\end_layout
-
-\begin_layout Subsubsection
-dump-raw <prefix>
-\end_layout
-
-\begin_layout Standard
-Dump raw audio (to <prefix>.audio, at 32040.5Hz) and video (to <prefix>.video>,
- at nominal framerate and 512x448 / 512x478 size).
-\end_layout
-
-\begin_layout Subsubsection
-end-raw
-\end_layout
-
-\begin_layout Standard
-End the current RAW dump in progress.
+Show the list of dumpers or list of modes for <dumper>
 \end_layout
 
 \begin_layout Subsection

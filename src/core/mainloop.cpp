@@ -5,7 +5,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
-#include "core/lua.hpp"
+#include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"

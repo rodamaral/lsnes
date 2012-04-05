@@ -476,12 +476,12 @@ void information_dispatch::update_dumpers(bool nocalls) throw()
 	}
 }
 
-void information_dispatch::on_set_screen(screen& scr)
+void information_dispatch::on_set_screen(screen<false>& scr)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_set_screen(screen& scr) throw()
+void information_dispatch::do_set_screen(screen<false>& scr) throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK

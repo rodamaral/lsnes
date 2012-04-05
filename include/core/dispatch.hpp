@@ -378,11 +378,11 @@ public:
  *
  * parameter scr: The render buffer object.
  */
-	virtual void on_set_screen(screen& scr);
+	virtual void on_set_screen(screen<false>& scr);
 /**
  * Call on_set_screen on all objects.
  */
-	static void do_set_screen(screen& scr) throw();
+	static void do_set_screen(screen<false>& scr) throw();
 /**
  * Notify that new frame is available.
  *

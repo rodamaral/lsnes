@@ -1,4 +1,4 @@
-#include "core/lua-int.hpp"
+#include "lua/internal.hpp"
 #include "core/render.hpp"
 
 namespace
@@ -9,12 +9,14 @@ namespace
 			premultiplied_color _bg, bool _hdbl = false, bool _vdbl = false) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hdbl(_hdbl), vdbl(_vdbl) {}
 		~render_object_text() throw() {}
-		void operator()(struct screen& scr) throw()
+		template<bool X> void op(struct screen<X>& scr) throw()
 		{
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			render_text(scr, x, y, text, fg, bg, hdbl, vdbl);
 		}
+		void operator()(struct screen<true>& scr) throw()  { op(scr); }
+		void operator()(struct screen<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

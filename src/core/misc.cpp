@@ -5,6 +5,7 @@
 #include "core/rom.hpp"
 #include "core/threaddebug.hpp"
 #include "core/window.hpp"
+#include "library/sha256.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -92,74 +93,6 @@ void set_random_seed() throw(std::bad_alloc)
 	set_random_seed(str.str());
 }
 
-//VERY dirty hack.
-namespace foobar
-{
-#include <nall/sha256.hpp>
-}
-using foobar::nall::sha256_ctx;
-using foobar::nall::sha256_init;
-using foobar::nall::sha256_final;
-using foobar::nall::sha256_hash;
-using foobar::nall::sha256_chunk;
-
-/**
- * \brief Opaque internal state of SHA256
- */
-struct sha256_opaque
-{
-/**
- * \brief Opaque internal state structure of SHA256
- */
-	sha256_ctx shactx;
-};
-
-sha256::sha256() throw(std::bad_alloc)
-{
-	opaque = new sha256_opaque();
-	finished = false;
-	sha256_init(&opaque->shactx);
-}
-
-sha256::~sha256() throw()
-{
-	delete opaque;
-}
-
-void sha256::write(const uint8_t* data, size_t datalen) throw()
-{
-	sha256_chunk(&opaque->shactx, data, datalen);
-}
-
-void sha256::read(uint8_t* hashout) throw()
-{
-	if(!finished)
-		sha256_final(&opaque->shactx);
-	finished = true;
-	sha256_hash(&opaque->shactx, hashout);
-}
-
-std::string sha256::read() throw(std::bad_alloc)
-{
-	uint8_t b[32];
-	read(b);
-	return sha256::tostring(b);
-}
-
-void sha256::hash(uint8_t* hashout, const uint8_t* data, size_t datalen) throw()
-{
-	sha256 s;
-	s.write(data, datalen);
-	s.read(hashout);
-}
-
-std::string sha256::tostring(const uint8_t* hashout) throw(std::bad_alloc)
-{
-	std::ostringstream str;
-	for(unsigned i = 0; i < 32; i++)
-		str << std::hex << std::setw(2) << std::setfill('0') << (unsigned)hashout[i];
-	return str.str();
-}
 
 struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
 	std::runtime_error)
