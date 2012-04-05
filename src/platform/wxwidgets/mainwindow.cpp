@@ -684,13 +684,13 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menubar = new wxMenuBar;
 	SetMenuBar(menubar);
 
-	//TOP-level accels: ACFOS.
-	//System menu: (ACOS)ELNPQTV
-	menu_start(wxT("&System"));
-	menu_entry_check(wxID_READONLY_MODE, wxT("Reado&nly mode"));
+	menu_start(wxT("lsnes"));
+	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
 	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
-	menu_start_sub(wxT("Spee&d"));
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
+	menu_check(wxID_SHOW_STATUS, true);
+	menu_start_sub(wxT("Speed"));
 	menu_entry(wxID_SPEED_5, wxT("1/20x"));
 	menu_entry(wxID_SPEED_10, wxT("1/10x"));
 	menu_entry(wxID_SPEED_17, wxT("1/6x"));
@@ -705,51 +705,57 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
 	menu_entry(wxID_SET_SPEED, wxT("Set..."));
 	menu_end_sub();
-	menu_separator();
-	menu_start_sub(wxT("&Load"));
-	menu_entry(wxID_LOAD_STATE, wxT("&Load state..."));
-	menu_entry(wxID_LOAD_STATE_RO, wxT("Loa&d state (readonly)..."));
-	menu_entry(wxID_LOAD_STATE_RW, wxT("Load s&tate (read-write)..."));
-	menu_entry(wxID_LOAD_STATE_P, wxT("Load state (&preserve input)..."));
-	menu_entry(wxID_LOAD_MOVIE, wxT("Load &movie..."));
-	menu_entry(wxID_REWIND_MOVIE, wxT("Re&wind movie..."));
 	if(load_library_supported) {
-		menu_separator();
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
 	}
-	menu_end_sub();
-	menu_start_sub(wxT("Sa&ve"));
-	menu_entry(wxID_SAVE_STATE, wxT("Save stat&e..."));
-	menu_entry(wxID_SAVE_MOVIE, wxT("Sa&ve movie..."));
-	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Save sc&reenshot..."));
-	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pend&ing saves..."));
-	menu_end_sub();
-	menu_separator();
-	menu_entry(wxID_PAUSE, wxT("&Pause/Unpause"));
-	menu_entry(wxID_FRAMEADVANCE, wxT("S&tep frame"));
-	menu_entry(wxID_SUBFRAMEADVANCE, wxT("St&ep subframe"));
-	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
-	menu_separator();
-	menu_entry(wxID_ERESET, wxT("&Reset"));
-	menu_separator();
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
-	menu_separator();
-	menu_special_sub(wxT("D&ump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+	menu_special_sub(wxT("Dump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	if(platform::sound_initialized()) {
+		menu_separator();
+		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
+		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
+		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
+		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("Show audio status"));
+		menu_special_sub(wxT("Select sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
+			new sound_select_menu(this)));
+		blistener->set_sound_select(reinterpret_cast<sound_select_menu*>(sounddev));
+	}
 	menu_separator();
-	menu_entry(wxID_EXIT, wxT("&Quit"));
+	menu_entry(wxID_EXIT, wxT("Quit"));
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About..."));
+	menu_start(wxT("System"));
+	menu_start_sub(wxT("Load"));
+	menu_entry(wxID_LOAD_STATE, wxT("State..."));
+	menu_entry(wxID_LOAD_STATE_RO, wxT("State (readonly)..."));
+	menu_entry(wxID_LOAD_STATE_RW, wxT("State (read-write)..."));
+	menu_entry(wxID_LOAD_STATE_P, wxT("State (preserve input)..."));
+	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
+	menu_end_sub();
+	menu_start_sub(wxT("Save"));
+	menu_entry(wxID_SAVE_STATE, wxT("State..."));
+	menu_entry(wxID_SAVE_MOVIE, wxT("Movie..."));
+	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Screenshot..."));
+	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
+	menu_end_sub();
+	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
+	menu_separator();
+	menu_entry(wxID_PAUSE, wxT("Pause/Unpause"));
+	menu_entry(wxID_FRAMEADVANCE, wxT("Step frame"));
+	menu_entry(wxID_SUBFRAMEADVANCE, wxT("Step subframe"));
+	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
+	menu_separator();
+	menu_entry(wxID_ERESET, wxT("Reset"));
 	//Autohold menu: (ACOS)
-	menu_special(wxT("&Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
+	menu_special(wxT("Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
 	//Scripting menu: (ACOS)ERU
-	menu_start(wxT("S&cripting"));
-	menu_entry(wxID_RUN_SCRIPT, wxT("&Run script..."));
+	menu_start(wxT("Scripting"));
+	menu_entry(wxID_RUN_SCRIPT, wxT("Run script..."));
 	if(lua_supported) {
 		menu_separator();
-		menu_entry(wxID_EVAL_LUA, wxT("&Evaluate Lua statement..."));
-		menu_entry(wxID_RUN_LUA, wxT("R&un Lua script..."));
+		menu_entry(wxID_EVAL_LUA, wxT("Evaluate Lua statement..."));
+		menu_entry(wxID_RUN_LUA, wxT("Run Lua script..."));
 	}
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
@@ -769,19 +775,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
 	menu_entry(wxID_SET_PATHS, wxT("Set paths..."));
 	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
-	menu_check(wxID_SHOW_STATUS, true);
-	if(platform::sound_initialized()) {
-		//Sound menu: (ACFOS)EHU
-		menu_start(wxT("S&ound"));
-		menu_entry_check(wxID_AUDIO_ENABLED, wxT("So&unds enabled"));
-		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
-		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
-		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("S&how audio status"));
-		menu_separator();
-		menu_special_sub(wxT("S&elect sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
-			new sound_select_menu(this)));
-		blistener->set_sound_select(reinterpret_cast<sound_select_menu*>(sounddev));
-	}
 }
 
 void wxwin_mainwindow::request_paint()
