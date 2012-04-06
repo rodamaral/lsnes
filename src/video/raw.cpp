@@ -28,6 +28,11 @@ namespace
 		return h;
 	}
 
+	void deleter_fn(void* f)
+	{
+		delete reinterpret_cast<std::ofstream*>(f);
+	}
+
 	class raw_avsnoop : public information_dispatch
 	{
 	public:
@@ -38,18 +43,20 @@ namespace
 			if(socket_mode) {
 				socket_address videoaddr = socket_address(prefix);
 				socket_address audioaddr = videoaddr.next();
+				deleter = socket_address::deleter();
 				video = audio = NULL;
 				try {
 					video = &videoaddr.connect();
 					audio = &audioaddr.connect();
 				} catch(...) {
-					delete video;
-					delete audio;
+					deleter(video);
+					deleter(audio);
 					throw;
 				}
 			} else {
 				video = new std::ofstream(prefix + ".video", std::ios::out | std::ios::binary);
 				audio = new std::ofstream(prefix + ".audio", std::ios::out | std::ios::binary);
+				deleter = deleter_fn;
 			}
 			if(!*video || !*audio)
 				throw std::runtime_error("Can't open output files");
@@ -60,8 +67,10 @@ namespace
 
 		~raw_avsnoop() throw()
 		{
-			delete video;
-			delete audio;
+			if(video)
+				deleter(video);
+			if(audio)
+				deleter(audio);
 		}
 
 		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
@@ -104,8 +113,8 @@ namespace
 
 		void on_dump_end()
 		{
-			delete video;
-			delete audio;
+			deleter(video);
+			deleter(audio);
 			video = NULL;
 			audio = NULL;
 		}
@@ -117,6 +126,7 @@ namespace
 	private:
 		std::ostream* audio;
 		std::ostream* video;
+		void (*deleter)(void* f);
 		bool have_dumped_frame;
 		struct screen<false> dscr;
 		struct screen<true> dscr2;

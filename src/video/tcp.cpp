@@ -2,6 +2,13 @@
 
 #ifdef NO_TCP_SOCKETS
 
+namespace
+{
+	void deleter_fn(void* f)
+	{
+	}
+}
+
 socket_address::socket_address(const std::string& spec)
 {
 	throw std::runtime_error("TCP/IP support not compiled in");
@@ -19,11 +26,6 @@ std::ostream& socket_address::connect()
 bool socket_address::supported()
 {
 	return false;
-}
-
-socket_address::socket_address(int f, int st, int p)
-{
-	throw std::runtime_error("TCP/IP support not compiled in");
 }
 
 #else
@@ -59,6 +61,7 @@ namespace
 		socket_output(int _fd)
 			: fd(_fd)
 		{
+			broken = false;
 		}
 
 		void close()
@@ -68,15 +71,23 @@ namespace
 
 		std::streamsize write(const char* s, std::streamsize n)
 		{
+			if(broken)
+				return n;
 			size_t w = n;
 			while(n > 0) {
 				ssize_t r = ::send(fd, s, n, 0);
 				if(r >= 0) {
 					s += r;
 					n -= r;
+				} else if(errno == EPIPE) {
+					std::cerr << "The other end of socket went away" << std::endl;
+					broken = true;
+					n = 0;
+					break;
 				} else {	//Error.
 					int err = errno;
 					std::cerr << "Socket write error: " << strerror(err) << std::endl;
+					n = 0;
 					break;
 				}
 			}
@@ -84,7 +95,13 @@ namespace
 		}
 		protected:
 			int fd;
+			bool broken;
 	};
+
+	void deleter_fn(void* f)
+	{
+		delete reinterpret_cast<boost::iostreams::stream<socket_output>*>(f);
+	}
 }
 
 socket_address::socket_address(const std::string& name)
@@ -218,11 +235,17 @@ bool socket_address::supported()
 	return true;
 }
 
+#endif
+
+deleter_fn_t socket_address::deleter()
+{
+	return deleter_fn;
+}
+
+
 socket_address::socket_address(int f, int st, int p)
 {
 	family = f;
 	socktype = st;
 	protocol = p;
 }
-
-#endif

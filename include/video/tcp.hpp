@@ -5,12 +5,15 @@
 #include <string>
 #include <vector>
 
+typedef void (*deleter_fn_t)(void*);
+
 class socket_address
 {
 public:
 	socket_address(const std::string& spec);
 	socket_address next();
 	std::ostream& connect();
+	static deleter_fn_t deleter();
 	static bool supported();
 private:
 	socket_address(int f, int st, int p);
