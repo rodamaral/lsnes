@@ -11,6 +11,13 @@ class adv_dumper
 {
 public:
 /**
+ * Detail flags.
+ */
+	static unsigned target_type_mask;
+	static unsigned target_type_file;
+	static unsigned target_type_prefix;
+	static unsigned target_type_special;
+/**
  * Register a dumper.
  *
  * Parameter id: The ID of dumper.
@@ -42,11 +49,12 @@ public:
  */
 	virtual std::set<std::string> list_submodes() throw(std::bad_alloc) = 0;
 /**
- * Does this dumper want a prefix?
+ * Get mode details
  *
  * parameter mode: The submode.
+ * Returns: Mode details flags
  */
-	virtual bool wants_prefix(const std::string& mode) throw() = 0;
+	virtual unsigned mode_details(const std::string& mode) throw() = 0;
 /**
  * Get human-readable name for this dumper.
  *

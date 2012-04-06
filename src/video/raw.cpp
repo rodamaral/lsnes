@@ -142,9 +142,9 @@ namespace
 			return x;
 		}
 
-		bool wants_prefix(const std::string& mode) throw()
+		unsigned mode_details(const std::string& mode) throw()
 		{
-			return true;
+			return IS_TCP(strhash(mode)) ? target_type_special : target_type_prefix;
 		}
 
 		std::string name() throw(std::bad_alloc)

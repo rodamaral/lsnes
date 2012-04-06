@@ -134,9 +134,9 @@ namespace
 			return x;
 		}
 
-		bool wants_prefix(const std::string& mode) throw()
+		unsigned mode_details(const std::string& mode) throw()
 		{
-			return (mode != "ss");
+			return (mode != "ss") ? target_type_prefix : target_type_file;
 		}
 
 		std::string name() throw(std::bad_alloc)

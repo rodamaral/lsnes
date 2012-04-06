@@ -114,13 +114,29 @@ void dumper_menu::on_select(wxCommandEvent& e)
 		if(i.second.start_wxids.count(id)) {
 			//Execute start of dump operation.
 			std::string mode = i.second.start_wxids[id];
-			bool prefixed = t->wants_prefix(mode);
+			unsigned d = t->mode_details(mode);
 			std::string prefix;
-			wxFileDialog* d = new wxFileDialog(pwin, towxstring(prefixed ? std::string("Choose prefix") :
-				std::string("Choose file")), wxT("."));
-			if(d->ShowModal() == wxID_OK)
-				prefix = tostdstring(d->GetFilename());
-			d->Destroy();
+			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"), wxT("."));
+				if(d->ShowModal() == wxID_OK)
+					prefix = tostdstring(d->GetPath());
+				d->Destroy();
+			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix) {
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"), wxT("."));
+				if(d->ShowModal() == wxID_OK)
+					prefix = tostdstring(d->GetPath());
+				d->Destroy();
+			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_special) {
+				try {
+					prefix = pick_text(pwin, "Choose target", "Enter target to dump to", "");
+				} catch(...) {
+					return;
+				}
+			} else {
+				wxMessageBox(wxT("Unsupported target type"), _T("Dumper error"), wxICON_EXCLAMATION |
+					wxOK, pwin);
+				return;
+			}
 			if(prefix == "")
 				return;
 			runemufn([t, mode, prefix, &error_str]() {
