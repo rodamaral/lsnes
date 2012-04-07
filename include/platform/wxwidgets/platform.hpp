@@ -37,7 +37,6 @@ void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_settings_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
-void wxeditor_screen_display(wxWindow* parent);
 void wxsetingsdialog_display(wxWindow* parent);
 
 //Auxillary windows.

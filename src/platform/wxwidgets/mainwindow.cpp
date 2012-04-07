@@ -79,7 +79,6 @@ enum
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
-	wxID_SET_SCREEN,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -774,7 +773,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
-	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
 	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
 
@@ -1123,9 +1121,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([parsed]() { platform::global_volume = parsed; });
 		return;
 	}
-	case wxID_SET_SCREEN:
-		wxeditor_screen_display(this);
-		return;
 	case wxID_SPEED_5:
 		set_speed(5);
 		break;

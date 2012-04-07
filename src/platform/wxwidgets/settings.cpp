@@ -240,6 +240,14 @@ namespace
 		return (stringfmt() << name << ": " << formattype(s.ktype) << " low:" << s.cal_left << " mid:"
 			<< s.cal_center << " high:" << s.cal_right << " tolerance:" << s.cal_tolerance).str();
 	}
+
+	std::string getalgo(int flags)
+	{
+		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
+			if(flags & (1 << i))
+				return scalealgo_choices[i];
+		return "unknown";
+	}
 }
 
 wxeditor_esettings_joystick::wxeditor_esettings_joystick(wxWindow* parent)
@@ -389,6 +397,110 @@ void wxeditor_esettings_paths::refresh()
 	Fit();
 }
 
+class wxeditor_esettings_screen : public wxPanel
+{
+public:
+	wxeditor_esettings_screen(wxWindow* parent);
+	~wxeditor_esettings_screen();
+	void on_configure(wxCommandEvent& e);
+private:
+	void refresh();
+	wxStaticText* xscale;
+	wxStaticText* yscale;
+	wxStaticText* algo;
+	wxFlexGridSizer* top_s;
+};
+
+wxeditor_esettings_screen::wxeditor_esettings_screen(wxWindow* parent)
+	: wxPanel(parent, -1)
+{
+	wxButton* tmp;
+	top_s = new wxFlexGridSizer(3, 3, 0, 0);
+	SetSizer(top_s);
+	top_s->Add(new wxStaticText(this, -1, wxT("X scale factor: ")), 0, wxGROW);
+	top_s->Add(xscale = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 1, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+		NULL, this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Y scale factor: ")), 0, wxGROW);
+	top_s->Add(yscale = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 2, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+		NULL, this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Scaling type: ")), 0, wxGROW);
+	top_s->Add(algo = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 3, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+		NULL, this);
+	refresh();
+	top_s->SetSizeHints(this);
+	Fit();
+}
+wxeditor_esettings_screen::~wxeditor_esettings_screen()
+{
+}
+
+void wxeditor_esettings_screen::on_configure(wxCommandEvent& e)
+{
+	if(e.GetId() == wxID_HIGHEST + 1) {
+		std::string v = (stringfmt() << horizontal_scale_factor).str();
+		v = pick_text(this, "Set X scaling factor", "Enter new horizontal scale factor:", v);
+		double x;
+		try {
+			x = parse_value<double>(v);
+			if(x < 0.25 || x > 10)
+				throw 42;
+		} catch(...) {
+			wxMessageBox(wxT("Bad horizontal scale factor (0.25-10)"), wxT("Input error"),
+				wxICON_EXCLAMATION | wxOK);
+			refresh();
+			return;
+		}
+		horizontal_scale_factor = x;
+	} else if(e.GetId() == wxID_HIGHEST + 2) {
+		std::string v = (stringfmt() << vertical_scale_factor).str();
+		v = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor:", v);
+		double x;
+		try {
+			x = parse_value<double>(v);
+			if(x < 0.25 || x > 10)
+				throw 42;
+		} catch(...) {
+			wxMessageBox(wxT("Bad vertical scale factor (0.25-10)"), wxT("Input error"),
+				wxICON_EXCLAMATION | wxOK);
+			refresh();
+			return;
+		}
+		vertical_scale_factor = x;
+	} else if(e.GetId() == wxID_HIGHEST + 3) {
+		std::vector<std::string> choices;
+		std::string v;
+		int newflags = 1;
+		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
+			choices.push_back(scalealgo_choices[i]);
+		try {
+			v = pick_among(this, "Select algorithm", "Select scaling algorithm", choices);
+		} catch(...) {
+			refresh();
+			return;
+		}
+		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
+			if(v == scalealgo_choices[i])
+				newflags = 1 << i;
+		scaling_flags = newflags;
+	}
+	refresh();
+}
+
+void wxeditor_esettings_screen::refresh()
+{
+	xscale->SetLabel(towxstring((stringfmt() << horizontal_scale_factor).str()));
+	yscale->SetLabel(towxstring((stringfmt() << vertical_scale_factor).str()));
+	algo->SetLabel(towxstring(getalgo(scaling_flags)));
+	top_s->Layout();
+	Fit();
+}
+
 class wxeditor_esettings : public wxDialog
 {
 public:
@@ -412,6 +524,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 	tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 	tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
+	tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
 	top_s->Add(tabset, 1, wxGROW);
 	
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
