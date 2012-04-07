@@ -21,6 +21,7 @@ namespace
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_clear(wxCommandEvent& e);
+		void on_classchange(wxCommandEvent& e);
 		std::string getkey();
 	private:
 		void set_mask(const std::string& mod);
@@ -29,6 +30,7 @@ namespace
 			void (wxdialog_keyentry::*fn)(const std::string& mod));
 		void load_spec(const std::string& spec);
 		std::map<std::string, keyentry_mod_data> modifiers;
+		wxComboBox* mainclass;
 		wxComboBox* mainkey;
 		wxButton* ok;
 		wxButton* cancel;

@@ -147,12 +147,12 @@ namespace
 		emulation_thread->join();
 	}
 
-	keygroup mouse_x("mouse_x", keygroup::KT_MOUSE);
-	keygroup mouse_y("mouse_y", keygroup::KT_MOUSE);
-	keygroup mouse_l("mouse_left", keygroup::KT_KEY);
-	keygroup mouse_m("mouse_center", keygroup::KT_KEY);
-	keygroup mouse_r("mouse_right", keygroup::KT_KEY);
-	keygroup mouse_i("mouse_inwindow", keygroup::KT_KEY);
+	keygroup mouse_x("mouse_x", "mouse", keygroup::KT_MOUSE);
+	keygroup mouse_y("mouse_y", "mouse", keygroup::KT_MOUSE);
+	keygroup mouse_l("mouse_left", "mouse", keygroup::KT_KEY);
+	keygroup mouse_m("mouse_center", "mouse", keygroup::KT_KEY);
+	keygroup mouse_r("mouse_right", "mouse", keygroup::KT_KEY);
+	keygroup mouse_i("mouse_inwindow", "mouse", keygroup::KT_KEY);
 
 	void handle_wx_mouse(wxMouseEvent& e)
 	{

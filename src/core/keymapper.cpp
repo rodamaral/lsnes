@@ -257,6 +257,11 @@ std::string keygroup::name() throw(std::bad_alloc)
 	return keyname;
 }
 
+const std::string& keygroup::get_class()
+{
+	return clazz;
+}
+
 struct keygroup::parameters keygroup::get_parameters()
 {
 	parameters p;
@@ -277,9 +282,10 @@ std::map<std::string, struct keygroup::parameters> keygroup::get_all_parameters(
 	return ret;
 }
 
-keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
+keygroup::keygroup(const std::string& name, const std::string& _clazz, enum type t) throw(std::bad_alloc)
 {
 	keygroups()[keyname = name] = this;
+	clazz = _clazz;
 	ktype = t;
 	state = 0;
 	last_rawval = 0;
