@@ -16,6 +16,11 @@ class wxwin_status;
 class wxWindow;
 class wxKeyEvent;
 
+//Scaling
+extern double horizontal_scale_factor;
+extern double vertical_scale_factor;
+extern int scaling_flags;
+
 wxString towxstring(const std::string& str) throw(std::bad_alloc);
 std::string tostdstring(const wxString& str) throw(std::bad_alloc);
 void bring_app_foreground();
@@ -34,7 +39,7 @@ void wxeditor_settings_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
 void wxeditor_paths_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
-void wxeditor_screen_display(wxWindow* parent, double& horiz, double& vert, int& flags);
+void wxeditor_screen_display(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();

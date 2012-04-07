@@ -98,11 +98,12 @@ enum
 };
 
 
+double horizontal_scale_factor = 1.0;
+double vertical_scale_factor = 1.0;
+int scaling_flags = SWS_POINT;
+
 namespace
 {
-	double horizontal_multiplier = 1.0;
-	double vertical_multiplier = 1.0;
-	int libswscale_flags = SWS_POINT;
 	std::string last_volume = "0dB";
 	unsigned char* screen_buffer;
 	uint32_t old_width;
@@ -614,18 +615,18 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	uint8_t* dstp[1];
 	int dsts[1];
 	wxPaintDC dc(this);
-	uint32_t tw = main_screen.width * horizontal_multiplier + 0.5;
-	uint32_t th = main_screen.height * vertical_multiplier + 0.5;
-	if(!screen_buffer || tw != old_width || th != old_height || libswscale_flags != old_flags) {
+	uint32_t tw = main_screen.width * horizontal_scale_factor + 0.5;
+	uint32_t th = main_screen.height * vertical_scale_factor + 0.5;
+	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags) {
 		if(screen_buffer)
 			delete[] screen_buffer;
 		old_height = th;
 		old_width = tw;
-		old_flags = libswscale_flags;
+		old_flags = scaling_flags;
 		uint32_t w = main_screen.width;
 		uint32_t h = main_screen.height;
 		if(w && h)
-			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, libswscale_flags,
+			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags,
 				NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
@@ -1123,7 +1124,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([parsed]() { platform::global_volume = parsed; });
 	}
 	case wxID_SET_SCREEN:
-		wxeditor_screen_display(this, horizontal_multiplier, vertical_multiplier, libswscale_flags);
+		wxeditor_screen_display(this);
 		return;
 	case wxID_SET_PATHS:
 		wxeditor_paths_display(this);
