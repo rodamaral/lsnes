@@ -1102,7 +1102,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([&bad, &value]() { try { setting::set("targetfps", value); } catch(...) { bad = true; } });
 		if(bad)
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
-		return
+		return;
 	}
 	case wxID_SET_VOLUME: {
 		std::string value;
