@@ -102,6 +102,20 @@ namespace
 		return *_dumper;
 	}
 
+	std::string format_details(unsigned detail)
+	{
+		std::string r;
+		if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_file)
+			r = r + "TARGET_FILE";
+		else if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix)
+			r = r + "TARGET_PREFIX";
+		else if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_special)
+			r = r + "TARGET_SPECIAL";
+		else 
+			r = r + "TARGET_UNKNOWN";
+		return r;
+	}
+	
 	adv_dumper& get_dumper(const std::vector<std::string>& cmdline, std::string& mode, std::string& prefix,
 		uint64_t& length)
 	{
@@ -171,18 +185,17 @@ namespace
 			adv_dumper& _dumper = locate_dumper(dumper);
 			std::set<std::string> modes = _dumper.list_submodes();
 			if(modes.empty()) {
-				if(_dumper.wants_prefix(""))
-					std::cout << "No modes available for " << dumper << " (multi)" << std::endl;
-				else
-					std::cout << "No modes available for " << dumper << " (single)" << std::endl;
+				unsigned d = _dumper.mode_details("");
+				std::cout << "No modes available for " << dumper << " (" << format_details(d) << ")"
+					<< std::endl;
 				exit(0);
 			}
 			std::cout << "Modes available for " << dumper << ":" << std::endl;
-			for(auto i : modes)
-				if(_dumper.wants_prefix(i))
-					std::cout << i << "\tmulti\t" << _dumper.modename(i) << std::endl;
-				else
-					std::cout << i << "\tsingle\t" << _dumper.modename(i) << std::endl;
+			for(auto i : modes) {
+				unsigned d = _dumper.mode_details(i);
+				std::cout << i << "\t" << _dumper.modename(i) << "\t(" << format_details(d) << ")"
+					<< std::endl;
+			}
 			exit(0);
 		}
 		adv_dumper& _dumper = locate_dumper(dumper);

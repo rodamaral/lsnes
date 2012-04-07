@@ -2,6 +2,7 @@
 #include "core/dispatch.hpp"
 #include "core/settings.hpp"
 #include "library/serialization.hpp"
+#include "video/tcp.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -18,16 +19,27 @@ namespace
 {
 	numeric_setting clevel("jmd-compression", 0, 9, 7);
 
+	void deleter_fn(void* f)
+	{
+		delete reinterpret_cast<std::ofstream*>(f);
+	}
+
 	class jmd_avsnoop : public information_dispatch
 	{
 	public:
-		jmd_avsnoop(const std::string& filename) throw(std::bad_alloc)
+		jmd_avsnoop(const std::string& filename, bool tcp_flag) throw(std::bad_alloc)
 			: information_dispatch("dump-jmd")
 		{
 			enable_send_sound();
 			complevel = clevel;
-			jmd.open(filename.c_str(), std::ios::out | std::ios::binary);
-			if(!jmd)
+			if(tcp_flag) {
+				jmd = &(socket_address(filename).connect());
+				deleter = socket_address::deleter();
+			} else {
+				jmd = new std::ofstream(filename.c_str(), std::ios::out | std::ios::binary);
+				deleter = deleter_fn;
+			}
+			if(!*jmd)
 				throw std::runtime_error("Can't open output JMD file.");
 			last_written_ts = 0;
 			//Write the segment tables.
@@ -50,8 +62,8 @@ namespace
 				/* Dummy channel header. */
 				0x00, 0x03, 0x00, 0x03, 0x00, 0x02, 'd', 'u'
 			};
-			jmd.write(header, sizeof(header));
-			if(!jmd)
+			jmd->write(header, sizeof(header));
+			if(!*jmd)
 				throw std::runtime_error("Can't write JMD header and segment table");
 			have_dumped_frame = false;
 			audio_w = 0;
@@ -103,18 +115,22 @@ namespace
 
 		void on_dump_end()
 		{
+			if(!jmd)
+				return;
 			flush_buffers(true);
 			if(last_written_ts > maxtc) {
-				jmd.close();
+				deleter(jmd);
+				jmd = NULL;
 				return;
 			}
 			char dummypacket[8] = {0x00, 0x03};
 			write32ube(dummypacket + 2, maxtc - last_written_ts);
 			last_written_ts = maxtc;
-			jmd.write(dummypacket, sizeof(dummypacket));
-			if(!jmd)
+			jmd->write(dummypacket, sizeof(dummypacket));
+			if(!*jmd)
 				throw std::runtime_error("Can't write JMD ending dummy packet");
-			jmd.close();
+			deleter(jmd);
+			jmd = NULL;
 		}
 
 		void on_gameinfo(const struct gameinfo_struct& gi)
@@ -278,12 +294,12 @@ namespace
 					videopacketh[7 + lneed++] = 0x80 | ((datasize >> shift) & 0x7F);
 			videopacketh[7 + lneed++] = (datasize & 0x7F);
 
-			jmd.write(videopacketh, 7 + lneed);
-			if(!jmd)
+			jmd->write(videopacketh, 7 + lneed);
+			if(!*jmd)
 				throw std::runtime_error("Can't write JMD video packet header");
 			if(datasize > 0)
-				jmd.write(&f.data[0], datasize);
-			if(!jmd)
+				jmd->write(&f.data[0], datasize);
+			if(!*jmd)
 				throw std::runtime_error("Can't write JMD video packet body");
 		}
 
@@ -295,12 +311,13 @@ namespace
 			last_written_ts = s.ts;
 			write16sbe(soundpacket + 8, s.l);
 			write16sbe(soundpacket + 10, s.r);
-			jmd.write(soundpacket, sizeof(soundpacket));
-			if(!jmd)
+			jmd->write(soundpacket, sizeof(soundpacket));
+			if(!*jmd)
 				throw std::runtime_error("Can't write JMD sound packet");
 		}
 
-		std::ofstream jmd;
+		std::ostream* jmd;
+		void (*deleter)(void* f);
 		uint64_t last_written_ts;
 		unsigned complevel;
 	};
@@ -315,12 +332,14 @@ namespace
 		std::set<std::string> list_submodes() throw(std::bad_alloc)
 		{
 			std::set<std::string> x;
+			x.insert("file");
+			x.insert("tcp");
 			return x;
 		}
 
-		bool wants_prefix(const std::string& mode) throw()
+		unsigned mode_details(const std::string& mode) throw()
 		{
-			return false;
+			return (mode == "tcp") ? target_type_special : target_type_file;
 		}
 
 		std::string name() throw(std::bad_alloc)
@@ -330,7 +349,7 @@ namespace
 		
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
-			return "";
+			return (mode == "tcp") ? "over TCP/IP" : "to file";
 		}
 
 		bool busy()
@@ -342,11 +361,11 @@ namespace
 			std::runtime_error)
 		{
 			if(prefix == "")
-				throw std::runtime_error("Expected filename");
+				throw std::runtime_error("Expected target");
 			if(vid_dumper)
 				throw std::runtime_error("JMD dumping already in progress");
 			try {
-				vid_dumper = new jmd_avsnoop(prefix);
+				vid_dumper = new jmd_avsnoop(prefix, mode == "tcp");
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {

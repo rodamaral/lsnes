@@ -69,6 +69,8 @@ struct avi_video_codec
  * Parameter fps_n: fps numerator.
  * Parameter fps_d: fps denominator.
  * Returns: Stream format.
+ *
+ * Note: The next frame emitted MUST be a keyframe.
  */
 	virtual format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d) = 0;
 /**

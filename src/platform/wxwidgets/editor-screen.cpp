@@ -25,16 +25,13 @@ const char* algo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Experimen
 class wxeditor_screen : public wxDialog
 {
 public:
-	wxeditor_screen(wxWindow* parent, double& _horiz, double& _vert, int& _flags);
+	wxeditor_screen(wxWindow* parent);
 	~wxeditor_screen();
 	bool ShouldPreventAppExit() const;
 	void on_value_change(wxCommandEvent& e);
 	void on_cancel(wxCommandEvent& e);
 	void on_ok(wxCommandEvent& e);
 private:
-	double& horiz;
-	double& vert;
-	int& flags;
 	wxButton* okbutton;
 	wxButton* cancel;
 	wxTextCtrl* horizbox;
@@ -42,9 +39,8 @@ private:
 	wxComboBox* algo;
 };
 
-wxeditor_screen::wxeditor_screen(wxWindow* parent, double& _horiz, double& _vert, int& _flags)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Screen scaling"), wxDefaultPosition, wxSize(-1, -1)),
-	horiz(_horiz), vert(_vert), flags(_flags)
+wxeditor_screen::wxeditor_screen(wxWindow* parent)
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Screen scaling"), wxDefaultPosition, wxSize(-1, -1))
 {
 	std::set<std::string> axisnames;
 	std::string h_x, v_x;
@@ -54,11 +50,11 @@ wxeditor_screen::wxeditor_screen(wxWindow* parent, double& _horiz, double& _vert
 	for(size_t i = 0; i < sizeof(_algo_choices) / sizeof(_algo_choices[0]); i++)
 		_algo_choices[i] = towxstring(algo_choices[i]);
 
-	h_x = (stringfmt() << _horiz).str();
-	v_x = (stringfmt() << _vert).str();
+	h_x = (stringfmt() << horizontal_scale_factor).str();
+	v_x = (stringfmt() << vertical_scale_factor).str();
 	algoidx = 0;
 	for(size_t i = 0; i < sizeof(algo_choices) / sizeof(_algo_choices[0]); i++)
-		if(_flags & (1 << i)) {
+		if(scaling_flags & (1 << i)) {
 			algoidx = i;
 			break;
 		}
@@ -164,20 +160,18 @@ void wxeditor_screen::on_ok(wxCommandEvent& e)
 		return;
 	}
 
-	horiz = hscale;
-	vert = vscale;
-	flags = newflags;
+	horizontal_scale_factor = hscale;
+	vertical_scale_factor = vscale;
+	scaling_flags = newflags;
 	EndModal(wxID_OK);
 }
 
-
-
-void wxeditor_screen_display(wxWindow* parent, double& horiz, double& vert, int& flags)
+void wxeditor_screen_display(wxWindow* parent)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_screen(parent, horiz, vert, flags);
+		editor = new wxeditor_screen(parent);
 		editor->ShowModal();
 	} catch(...) {
 	}

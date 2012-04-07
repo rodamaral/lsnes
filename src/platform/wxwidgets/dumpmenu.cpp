@@ -96,25 +96,58 @@ void dumper_menu::on_select(wxCommandEvent& e)
 	if(id < wxid_range_low || id > wxid_range_high)
 		return;
 	for(auto i : menustructure) {
+		std::string error_str;
 		adv_dumper* t = existing_dumpers[i.first].instance;
 		if(i.second.end_wxid == id) {
 			//Execute end of dump operation.
-			runemufn([t]() { t->end(); });
+			runemufn([t, &error_str]() {
+				try {
+					t->end();
+				} catch(std::exception& e) {
+					error_str = e.what();
+				}});
+			if(error_str != "")
+				wxMessageBox(towxstring(error_str), _T("Error ending dump"), wxICON_EXCLAMATION | wxOK,
+					pwin);
 			return;
 		}
 		if(i.second.start_wxids.count(id)) {
 			//Execute start of dump operation.
 			std::string mode = i.second.start_wxids[id];
-			bool prefixed = t->wants_prefix(mode);
+			unsigned d = t->mode_details(mode);
 			std::string prefix;
-			wxFileDialog* d = new wxFileDialog(pwin, towxstring(prefixed ? std::string("Choose prefix") :
-				std::string("Choose file")), wxT("."));
-			if(d->ShowModal() == wxID_OK)
-				prefix = tostdstring(d->GetPath());
-			d->Destroy();
+			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"), wxT("."));
+				if(d->ShowModal() == wxID_OK)
+					prefix = tostdstring(d->GetPath());
+				d->Destroy();
+			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix) {
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"), wxT("."));
+				if(d->ShowModal() == wxID_OK)
+					prefix = tostdstring(d->GetPath());
+				d->Destroy();
+			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_special) {
+				try {
+					prefix = pick_text(pwin, "Choose target", "Enter target to dump to", "");
+				} catch(...) {
+					return;
+				}
+			} else {
+				wxMessageBox(wxT("Unsupported target type"), _T("Dumper error"), wxICON_EXCLAMATION |
+					wxOK, pwin);
+				return;
+			}
 			if(prefix == "")
 				return;
-			runemufn([t, mode, prefix]() { t->start(mode, prefix); });
+			runemufn([t, mode, prefix, &error_str]() {
+				try {
+					t->start(mode, prefix);
+				} catch(std::exception& e) {
+					error_str = e.what();
+				}});
+			if(error_str != "")
+				wxMessageBox(towxstring(error_str), _T("Error starting dump"), wxICON_EXCLAMATION |
+					wxOK, pwin);
 			return;
 		}
 	}

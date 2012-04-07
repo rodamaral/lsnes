@@ -64,7 +64,6 @@ enum
 	wxID_EDIT_AUTHORS,
 	wxID_AUTOHOLD_FIRST,
 	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
-	wxID_EDIT_AXES,
 	wxID_EDIT_SETTINGS,
 	wxID_EDIT_KEYBINDINGS,
 	wxID_EDIT_ALIAS,
@@ -82,7 +81,6 @@ enum
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
 	wxID_SET_SCREEN,
-	wxID_SET_PATHS,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -95,15 +93,17 @@ enum
 	wxID_SPEED_200,
 	wxID_SPEED_300,
 	wxID_SPEED_TURBO,
-	wxID_LOAD_LIBRARY
+	wxID_LOAD_LIBRARY,
+	wxID_SETTINGS,
 };
 
 
+double horizontal_scale_factor = 1.0;
+double vertical_scale_factor = 1.0;
+int scaling_flags = SWS_POINT;
+
 namespace
 {
-	double horizontal_multiplier = 1.0;
-	double vertical_multiplier = 1.0;
-	int libswscale_flags = SWS_POINT;
 	std::string last_volume = "0dB";
 	unsigned char* screen_buffer;
 	uint32_t old_width;
@@ -615,18 +615,18 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	uint8_t* dstp[1];
 	int dsts[1];
 	wxPaintDC dc(this);
-	uint32_t tw = main_screen.width * horizontal_multiplier + 0.5;
-	uint32_t th = main_screen.height * vertical_multiplier + 0.5;
-	if(!screen_buffer || tw != old_width || th != old_height || libswscale_flags != old_flags) {
+	uint32_t tw = main_screen.width * horizontal_scale_factor + 0.5;
+	uint32_t th = main_screen.height * vertical_scale_factor + 0.5;
+	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags) {
 		if(screen_buffer)
 			delete[] screen_buffer;
 		old_height = th;
 		old_width = tw;
-		old_flags = libswscale_flags;
+		old_flags = scaling_flags;
 		uint32_t w = main_screen.width;
 		uint32_t h = main_screen.height;
 		if(w && h)
-			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, libswscale_flags,
+			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags,
 				NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
@@ -685,31 +685,12 @@ wxwin_mainwindow::wxwin_mainwindow()
 	SetMenuBar(menubar);
 
 	menu_start(wxT("lsnes"));
-	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
-	menu_check(wxID_READONLY_MODE, is_readonly_mode());
-	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
 	menu_check(wxID_SHOW_STATUS, true);
-	menu_start_sub(wxT("Speed"));
-	menu_entry(wxID_SPEED_5, wxT("1/20x"));
-	menu_entry(wxID_SPEED_10, wxT("1/10x"));
-	menu_entry(wxID_SPEED_17, wxT("1/6x"));
-	menu_entry(wxID_SPEED_20, wxT("1/5x"));
-	menu_entry(wxID_SPEED_25, wxT("1/4x"));
-	menu_entry(wxID_SPEED_33, wxT("1/3x"));
-	menu_entry(wxID_SPEED_50, wxT("1/2x"));
-	menu_entry(wxID_SPEED_100, wxT("1x"));
-	menu_entry(wxID_SPEED_150, wxT("1.5x"));
-	menu_entry(wxID_SPEED_200, wxT("2x"));
-	menu_entry(wxID_SPEED_300, wxT("3x"));
-	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
-	menu_entry(wxID_SET_SPEED, wxT("Set..."));
-	menu_end_sub();
 	if(load_library_supported) {
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
 	}
-	menu_special_sub(wxT("Dump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
-		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	if(platform::sound_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
@@ -749,7 +730,22 @@ wxwin_mainwindow::wxwin_mainwindow()
 	//Autohold menu: (ACOS)
 	menu_special(wxT("Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
-	//Scripting menu: (ACOS)ERU
+
+	menu_start(wxT("Speed"));
+	menu_entry(wxID_SPEED_5, wxT("1/20x"));
+	menu_entry(wxID_SPEED_10, wxT("1/10x"));
+	menu_entry(wxID_SPEED_17, wxT("1/6x"));
+	menu_entry(wxID_SPEED_20, wxT("1/5x"));
+	menu_entry(wxID_SPEED_25, wxT("1/4x"));
+	menu_entry(wxID_SPEED_33, wxT("1/3x"));
+	menu_entry(wxID_SPEED_50, wxT("1/2x"));
+	menu_entry(wxID_SPEED_100, wxT("1x"));
+	menu_entry(wxID_SPEED_150, wxT("1.5x"));
+	menu_entry(wxID_SPEED_200, wxT("2x"));
+	menu_entry(wxID_SPEED_300, wxT("3x"));
+	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
+	menu_entry(wxID_SET_SPEED, wxT("Set..."));
+
 	menu_start(wxT("Scripting"));
 	menu_entry(wxID_RUN_SCRIPT, wxT("Run script..."));
 	if(lua_supported) {
@@ -764,16 +760,22 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
-	//Settings menu: (ACFOS)
+
+	menu_start(wxT("Movie"));
+	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
+	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
+
+	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+
 	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_AXES, wxT("Configure axes..."));
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
 	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
-	menu_entry(wxID_SET_PATHS, wxT("Set paths..."));
 	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
 
@@ -913,9 +915,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 				lua_callback_do_readwrite();
 			update_movie_state();
 		});
-		return;
-	case wxID_EDIT_AXES:
-		wxeditor_axes_display(this);
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
@@ -1103,6 +1102,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([&bad, &value]() { try { setting::set("targetfps", value); } catch(...) { bad = true; } });
 		if(bad)
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
+		return
 	}
 	case wxID_SET_VOLUME: {
 		std::string value;
@@ -1122,12 +1122,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 		last_volume = value;
 		runemufn([parsed]() { platform::global_volume = parsed; });
+		return;
 	}
 	case wxID_SET_SCREEN:
-		wxeditor_screen_display(this, horizontal_multiplier, vertical_multiplier, libswscale_flags);
-		return;
-	case wxID_SET_PATHS:
-		wxeditor_paths_display(this);
+		wxeditor_screen_display(this);
 		return;
 	case wxID_SPEED_5:
 		set_speed(5);
@@ -1168,6 +1166,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + library_is_called;
 		load_library(pick_file(this, name, "."));
+		break;
 	}
+	case wxID_SETTINGS:
+		wxsetingsdialog_display(this);
+		break;
 	};
 }

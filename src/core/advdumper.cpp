@@ -66,11 +66,21 @@ namespace
 							return;
 						}
 						for(auto j : b) {
-							if(i->wants_prefix(j))
+							unsigned d = i->mode_details(j);
+							if((d & adv_dumper::target_type_mask) ==
+								adv_dumper::target_type_prefix)
 								messages << "P " << x << "\t" << j << "\t"
 									<< i->modename(j) << std::endl;
-							else
+							else if((d & adv_dumper::target_type_mask) ==
+								adv_dumper::target_type_file)
 								messages << "F " << x << "\t" << j << "\t"
+									<< i->modename(j) << std::endl;
+							else if((d & adv_dumper::target_type_mask) ==
+								adv_dumper::target_type_special)
+								messages << "S " << x << "\t" << j << "\t"
+									<< i->modename(j) << std::endl;
+							else
+								messages << "U " << x << "\t" << j << "\t"
 									<< i->modename(j) << std::endl;
 						}
 						return;
@@ -105,6 +115,11 @@ adv_dumper::adv_dumper(const std::string& id) throw(std::bad_alloc)
 	d_id = id;
 	dumpers()[d_id] = this;
 }
+
+unsigned adv_dumper::target_type_mask = 3;
+unsigned adv_dumper::target_type_file = 0;
+unsigned adv_dumper::target_type_prefix = 1;
+unsigned adv_dumper::target_type_special = 2;
 
 template<bool X> void render_video_hud(struct screen<X>& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
 	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
