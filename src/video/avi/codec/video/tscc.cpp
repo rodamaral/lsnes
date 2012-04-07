@@ -15,7 +15,7 @@ const void* check;
 namespace
 {
 	numeric_setting clvl("avi-tscc-compression", 0, 9, 7);
-	numeric_setting kint("avi-tscc-keyint", 1, 999999999, 0);
+	numeric_setting kint("avi-tscc-keyint", 0, 999999999, 0);
 
 	struct msrle_compressor
 	{
