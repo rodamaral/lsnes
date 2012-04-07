@@ -63,7 +63,6 @@ enum
 	wxID_EDIT_AUTHORS,
 	wxID_AUTOHOLD_FIRST,
 	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
-	wxID_EDIT_AXES,
 	wxID_EDIT_SETTINGS,
 	wxID_EDIT_KEYBINDINGS,
 	wxID_EDIT_ALIAS,
@@ -81,7 +80,6 @@ enum
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
 	wxID_SET_SCREEN,
-	wxID_SET_PATHS,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -94,7 +92,8 @@ enum
 	wxID_SPEED_200,
 	wxID_SPEED_300,
 	wxID_SPEED_TURBO,
-	wxID_LOAD_LIBRARY
+	wxID_LOAD_LIBRARY,
+	wxID_SETTINGS,
 };
 
 
@@ -710,6 +709,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	}
 	menu_special_sub(wxT("Dump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	if(platform::sound_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
@@ -766,14 +766,12 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	//Settings menu: (ACFOS)
 	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_AXES, wxT("Configure axes..."));
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
 	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
 	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
-	menu_entry(wxID_SET_PATHS, wxT("Set paths..."));
 	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
 
@@ -913,9 +911,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 				lua_callback_do_readwrite();
 			update_movie_state();
 		});
-		return;
-	case wxID_EDIT_AXES:
-		wxeditor_axes_display(this);
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
@@ -1126,9 +1121,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SET_SCREEN:
 		wxeditor_screen_display(this);
 		return;
-	case wxID_SET_PATHS:
-		wxeditor_paths_display(this);
-		return;
 	case wxID_SPEED_5:
 		set_speed(5);
 		break;
@@ -1168,6 +1160,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + library_is_called;
 		load_library(pick_file(this, name, "."));
+		break;
 	}
+	case wxID_SETTINGS:
+		wxsetingsdialog_display(this);
+		break;
 	};
 }
