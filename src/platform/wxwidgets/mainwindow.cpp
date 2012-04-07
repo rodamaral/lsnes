@@ -684,31 +684,11 @@ wxwin_mainwindow::wxwin_mainwindow()
 	SetMenuBar(menubar);
 
 	menu_start(wxT("lsnes"));
-	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
-	menu_check(wxID_READONLY_MODE, is_readonly_mode());
-	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
 	menu_check(wxID_SHOW_STATUS, true);
-	menu_start_sub(wxT("Speed"));
-	menu_entry(wxID_SPEED_5, wxT("1/20x"));
-	menu_entry(wxID_SPEED_10, wxT("1/10x"));
-	menu_entry(wxID_SPEED_17, wxT("1/6x"));
-	menu_entry(wxID_SPEED_20, wxT("1/5x"));
-	menu_entry(wxID_SPEED_25, wxT("1/4x"));
-	menu_entry(wxID_SPEED_33, wxT("1/3x"));
-	menu_entry(wxID_SPEED_50, wxT("1/2x"));
-	menu_entry(wxID_SPEED_100, wxT("1x"));
-	menu_entry(wxID_SPEED_150, wxT("1.5x"));
-	menu_entry(wxID_SPEED_200, wxT("2x"));
-	menu_entry(wxID_SPEED_300, wxT("3x"));
-	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
-	menu_entry(wxID_SET_SPEED, wxT("Set..."));
-	menu_end_sub();
 	if(load_library_supported) {
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
 	}
-	menu_special_sub(wxT("Dump video"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
-		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	if(platform::sound_initialized()) {
 		menu_separator();
@@ -749,7 +729,22 @@ wxwin_mainwindow::wxwin_mainwindow()
 	//Autohold menu: (ACOS)
 	menu_special(wxT("Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
-	//Scripting menu: (ACOS)ERU
+
+	menu_start(wxT("Speed"));
+	menu_entry(wxID_SPEED_5, wxT("1/20x"));
+	menu_entry(wxID_SPEED_10, wxT("1/10x"));
+	menu_entry(wxID_SPEED_17, wxT("1/6x"));
+	menu_entry(wxID_SPEED_20, wxT("1/5x"));
+	menu_entry(wxID_SPEED_25, wxT("1/4x"));
+	menu_entry(wxID_SPEED_33, wxT("1/3x"));
+	menu_entry(wxID_SPEED_50, wxT("1/2x"));
+	menu_entry(wxID_SPEED_100, wxT("1x"));
+	menu_entry(wxID_SPEED_150, wxT("1.5x"));
+	menu_entry(wxID_SPEED_200, wxT("2x"));
+	menu_entry(wxID_SPEED_300, wxT("3x"));
+	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
+	menu_entry(wxID_SET_SPEED, wxT("Set..."));
+
 	menu_start(wxT("Scripting"));
 	menu_entry(wxID_RUN_SCRIPT, wxT("Run script..."));
 	if(lua_supported) {
@@ -764,7 +759,15 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
-	//Settings menu: (ACFOS)
+
+	menu_start(wxT("Movie"));
+	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
+	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
+
+	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+
 	menu_start(wxT("Settings"));
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
@@ -1098,6 +1101,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([&bad, &value]() { try { setting::set("targetfps", value); } catch(...) { bad = true; } });
 		if(bad)
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
+		return
 	}
 	case wxID_SET_VOLUME: {
 		std::string value;
@@ -1117,6 +1121,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 		last_volume = value;
 		runemufn([parsed]() { platform::global_volume = parsed; });
+		return;
 	}
 	case wxID_SET_SCREEN:
 		wxeditor_screen_display(this);
