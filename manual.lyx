@@ -1655,14 +1655,6 @@ Cycle save jukebox forwards
 \end_layout
 
 \begin_layout Subsubsection
-add-jukebox-save <filename>
-\end_layout
-
-\begin_layout Standard
-Add <filename> to jukebox saves.
-\end_layout
-
-\begin_layout Subsubsection
 load-jukebox
 \end_layout
 

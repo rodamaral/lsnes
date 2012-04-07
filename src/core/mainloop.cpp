@@ -6,6 +6,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "lua/lua.hpp"
+#include "library/string.hpp"
 #include "core/mainloop.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
@@ -61,7 +62,7 @@ namespace
 	std::set<std::string> queued_saves;
 	bool stepping_into_save;
 	//Save jukebox.
-	std::vector<std::string> save_jukebox;
+	numeric_setting jukebox_size("jukebox-size", 0, 999, 12);
 	size_t save_jukebox_pointer;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
 	long pending_reset_cycles = -1;
@@ -75,6 +76,11 @@ namespace
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
+
+	std::string save_jukebox_name(size_t i)
+	{
+		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
+	}
 }
 
 class firmware_path_setting : public setting
@@ -272,8 +278,8 @@ void update_movie_state()
 			x << "F";
 		_status.set("Flags", x.str());
 	}
-	if(save_jukebox.size() > 0)
-		_status.set("Saveslot", translate_name_mprefix(save_jukebox[save_jukebox_pointer]));
+	if(jukebox_size > 0)
+		_status.set("Saveslot", translate_name_mprefix(save_jukebox_name(save_jukebox_pointer)));
 	else
 		_status.erase("Saveslot");
 	{
@@ -399,6 +405,20 @@ class my_interface : public SNES::Interface
 
 namespace
 {
+	class jukebox_size_listener : public information_dispatch
+	{
+	public:
+		jukebox_size_listener() : information_dispatch("jukebox-size-listener") {};
+		void on_setting_change(const std::string& setting, const std::string& value)
+		{
+			if(setting == "jukebox-size") {
+				if(save_jukebox_pointer >= jukebox_size)
+					save_jukebox_pointer = 0;
+				update_movie_state();
+			}
+		}
+	} _jukebox_size_listener;
+
 	function_ptr_command<> count_rerecords("count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -434,11 +454,13 @@ namespace
 	function_ptr_command<> save_jukebox_prev("cycle-jukebox-backward", "Cycle save jukebox backwards",
 		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				return;
 			if(save_jukebox_pointer == 0)
-				save_jukebox_pointer = save_jukebox.size() - 1;
+				save_jukebox_pointer = jukebox_size - 1;
 			else
 				save_jukebox_pointer--;
-			if(save_jukebox_pointer >= save_jukebox.size())
+			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 			information_dispatch::do_status_update();
@@ -447,20 +469,14 @@ namespace
 	function_ptr_command<> save_jukebox_next("cycle-jukebox-forward", "Cycle save jukebox forwards",
 		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(save_jukebox_pointer == save_jukebox.size() - 1)
+			if(jukebox_size == 0)
+				return;
+			if(save_jukebox_pointer == jukebox_size - 1)
 				save_jukebox_pointer = 0;
 			else
 				save_jukebox_pointer++;
-			if(save_jukebox_pointer >= save_jukebox.size())
+			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
-			update_movie_state();
-			information_dispatch::do_status_update();
-		});
-
-	function_ptr_command<arg_filename> add_jukebox("add-jukebox-save", "Add save to jukebox",
-		"Syntax: add-jukebox-save\nAdd save to jukebox\n",
-		[](arg_filename filename) throw(std::bad_alloc, std::runtime_error) {
-			save_jukebox.push_back(filename);
 			update_movie_state();
 			information_dispatch::do_status_update();
 		});
@@ -468,17 +484,17 @@ namespace
 	function_ptr_command<> load_jukebox("load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!save_jukebox.size())
-				throw std::runtime_error("No saves in jukebox");
-			mark_pending_load(save_jukebox[save_jukebox_pointer], LOAD_STATE_CURRENT);
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
 
 	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!save_jukebox.size())
-				throw std::runtime_error("No saves in jukebox");
-			mark_pending_save(save_jukebox[save_jukebox_pointer], SAVE_STATE);
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE);
 		});
 
 	function_ptr_command<> padvance_frame("+advance-frame", "Advance one frame",
@@ -645,7 +661,6 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			while(1);
 		});
-
 
 	inverse_key ipause_emulator("pause-emulator", "(Un)pause");
 	inverse_key ijback("cycle-jukebox-backward", "Cycle slot backwards");
@@ -851,19 +866,6 @@ namespace
 		}
 		return true;
 	}
-}
-
-std::vector<std::string> get_jukebox_names()
-{
-	return save_jukebox;
-}
-
-void set_jukebox_names(const std::vector<std::string>& newj)
-{
-	save_jukebox = newj;
-	if(save_jukebox_pointer >= save_jukebox.size())
-		save_jukebox_pointer = 0;
-	update_movie_state();
 }
 
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,

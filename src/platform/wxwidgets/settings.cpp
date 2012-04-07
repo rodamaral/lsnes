@@ -33,6 +33,8 @@ extern "C"
 #define FIRMWAREPATH "firmwarepath"
 #define ROMPATH "rompath"
 #define MOVIEPATH "moviepath"
+#define SLOTPATH "slotpath"
+#define SAVESLOTS "jukebox-size"
 
 
 
@@ -327,6 +329,8 @@ private:
 	wxStaticText* rompath;
 	wxStaticText* firmpath;
 	wxStaticText* savepath;
+	wxStaticText* slotpath;
+	wxStaticText* slots;
 	wxFlexGridSizer* top_s;
 };
 
@@ -334,21 +338,31 @@ wxeditor_esettings_paths::wxeditor_esettings_paths(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
 	wxButton* tmp;
-	top_s = new wxFlexGridSizer(3, 3, 0, 0);
+	top_s = new wxFlexGridSizer(5, 3, 0, 0);
 	SetSizer(top_s);
-	top_s->Add(new wxStaticText(this, -1, wxT("ROM path")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("ROM path: ")), 0, wxGROW);
 	top_s->Add(rompath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 1, wxT("Change...")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
 		this);
-	top_s->Add(new wxStaticText(this, -1, wxT("Firmware path")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Firmware path: ")), 0, wxGROW);
 	top_s->Add(firmpath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 2, wxT("Change...")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
 		this);
-	top_s->Add(new wxStaticText(this, -1, wxT("Save path")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Movie path: ")), 0, wxGROW);
 	top_s->Add(savepath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 3, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
+		this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Slot path: ")), 0, wxGROW);
+	top_s->Add(slotpath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 5, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
+		this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Save slots: ")), 0, wxGROW);
+	top_s->Add(slots = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 4, wxT("Change...")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
 		this);
 	refresh();
@@ -368,6 +382,10 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		name = FIRMWAREPATH;
 	else if(e.GetId() == wxID_HIGHEST + 3)
 		name = MOVIEPATH;
+	else if(e.GetId() == wxID_HIGHEST + 4)
+		name = SAVESLOTS;
+	else if(e.GetId() == wxID_HIGHEST + 5)
+		name = SLOTPATH;
 	else
 		return;
 	std::string val;
@@ -378,21 +396,28 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	runemufn([val, name]() { setting::set(name, val); });
+	std::string err;
+	runemufn([val, name, &err]() { try { setting::set(name, val); } catch(std::exception& e) { err = e.what(); }});
+	if(err != "")
+		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
 	refresh();
 }
 
 void wxeditor_esettings_paths::refresh()
 {
-	std::string rpath, fpath, spath;
-	runemufn([&rpath, &fpath, &spath]() {
+	std::string rpath, fpath, spath, nslot, lpath;
+	runemufn([&rpath, &fpath, &spath, &nslot, &lpath]() {
 		fpath = setting::get(FIRMWAREPATH);
 		rpath = setting::get(ROMPATH);
 		spath = setting::get(MOVIEPATH);
+		nslot = setting::get(SAVESLOTS);
+		lpath = setting::get(SLOTPATH);
 		});
 	rompath->SetLabel(towxstring(rpath));
 	firmpath->SetLabel(towxstring(fpath));
 	savepath->SetLabel(towxstring(spath));
+	slots->SetLabel(towxstring(nslot));
+	slotpath->SetLabel(towxstring(lpath));
 	top_s->Layout();
 	Fit();
 }

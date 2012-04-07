@@ -72,7 +72,6 @@ enum
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
-	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
 	wxID_EDIT_HOTKEYS,
@@ -771,7 +770,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
-	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
@@ -973,33 +971,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for alias:",
 			old_alias_value, true);
 		runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
-		return;
-	}
-	case wxID_EDIT_JUKEBOX: {
-		modal_pause_holder hld;
-		std::vector<std::string> new_jukebox;
-		std::string x;
-		runemufn([&x]() {
-			for(auto i : get_jukebox_names())
-				x = x + i + "\n";
-		});
-		x = pick_text(this, "Configure jukebox", "List jukebox entries", x, true);
-		while(x != "") {
-			size_t split = x.find_first_of("\n");
-			std::string l;
-			if(split < x.length()) {
-				l = x.substr(0, split);
-				x = x.substr(split + 1);
-			} else {
-				l = x;
-				x = "";
-			}
-			istrip_CR(l);
-			if(l != "")
-				new_jukebox.push_back(l);
-		}
-		runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
-		notify_update_status();
 		return;
 	}
 	case wxID_EDIT_MEMORYWATCH: {
