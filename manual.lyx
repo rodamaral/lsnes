@@ -2352,7 +2352,49 @@ outline: Color of outline (default is 0xFFFFFF (white))
 \end_layout
 
 \begin_layout Itemize
-fill: Color of fil (default is -1 (transparent))
+fill: Color of fill (default is -1 (transparent))
+\end_layout
+
+\begin_layout Subsubsection
+gui.box(number x, number y, number width, number height[, number thickness[,
+ number outline1[,number outline2[, number fill]]]])
+\end_layout
+
+\begin_layout Standard
+Draw rectangle with 3D effect on the GUI.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of upper edge.
+\end_layout
+
+\begin_layout Itemize
+width: Width of rectangle.
+\end_layout
+
+\begin_layout Itemize
+height: Height of rectangle.
+\end_layout
+
+\begin_layout Itemize
+thickness: Thickness of outline (default is 1).
+\end_layout
+
+\begin_layout Itemize
+outline1: First color of outline (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+outline2: First color of outline (default is 0x808080 (dark gray))
+\end_layout
+
+\begin_layout Itemize
+fill: Color of fill (default is 0xC0C0C0 (light grayy))
 \end_layout
 
 \begin_layout Subsubsection
