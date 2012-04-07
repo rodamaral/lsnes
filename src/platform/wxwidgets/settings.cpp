@@ -1,4 +1,5 @@
 #include "platform/wxwidgets/platform.hpp"
+#include "core/dispatch.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
 
@@ -469,7 +470,12 @@ void wxeditor_esettings_screen::on_configure(wxCommandEvent& e)
 {
 	if(e.GetId() == wxID_HIGHEST + 1) {
 		std::string v = (stringfmt() << horizontal_scale_factor).str();
-		v = pick_text(this, "Set X scaling factor", "Enter new horizontal scale factor:", v);
+		try {
+			v = pick_text(this, "Set X scaling factor", "Enter new horizontal scale factor:", v);
+		} catch(...) {
+			refresh();
+			return;
+		}
 		double x;
 		try {
 			x = parse_value<double>(v);
@@ -484,7 +490,12 @@ void wxeditor_esettings_screen::on_configure(wxCommandEvent& e)
 		horizontal_scale_factor = x;
 	} else if(e.GetId() == wxID_HIGHEST + 2) {
 		std::string v = (stringfmt() << vertical_scale_factor).str();
-		v = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor:", v);
+		try {
+			v = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor:", v);
+		} catch(...) {
+			refresh();
+			return;
+		}
 		double x;
 		try {
 			x = parse_value<double>(v);
@@ -526,6 +537,137 @@ void wxeditor_esettings_screen::refresh()
 	Fit();
 }
 
+class wxeditor_esettings_advanced : public wxPanel, information_dispatch
+{
+public:
+	wxeditor_esettings_advanced(wxWindow* parent);
+	~wxeditor_esettings_advanced();
+	void on_change(wxCommandEvent& e);
+	void on_clear(wxCommandEvent& e);
+	void on_setting_change(const std::string& setting, const std::string& value);
+	void on_setting_clear(const std::string& setting);
+	void _refresh();
+private:
+	void refresh();
+	std::set<std::string> settings;
+	std::map<std::string, std::string> values;
+	std::map<int, std::string> selections;
+	std::string selected();
+	wxListBox* _settings;
+};
+
+wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
+	: wxPanel(parent, -1), information_dispatch("wxeditor-settings-listener")
+{
+	wxButton* tmp;
+
+	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+	SetSizer(top_s);
+
+	top_s->Add(_settings = new wxListBox(this, wxID_ANY), 1, wxGROW);
+
+	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+	pbutton_s->AddStretchSpacer();
+	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_advanced::on_change), NULL,
+		this);
+	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Clear")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_advanced::on_clear), NULL,
+		this);
+	top_s->Add(pbutton_s, 0, wxGROW);
+
+	refresh();
+	top_s->SetSizeHints(this);
+	Fit();
+}
+
+wxeditor_esettings_advanced::~wxeditor_esettings_advanced()
+{
+}
+
+void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
+{
+	std::string name = selected();
+	if(name == "")
+		return;
+	std::string value;
+	std::string err;
+	runemufn([name, &value]() { value = setting::get(name); });
+	try {
+		value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
+	} catch(...) {
+		return;
+	}
+	runemufn([name, value, &err]() {
+		try { setting::set(name, value); } catch(std::exception& e) { err = e.what(); }
+		});
+	if(err != "")
+		wxMessageBox(towxstring(err), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
+}
+
+void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
+{
+	std::string name = selected();
+	if(name == "")
+		return;
+	bool err = false;
+	runemufn([name, &err]() { try { setting::blank(name); } catch(...) { err = true; }});
+	if(err)
+		wxMessageBox(wxT("This setting can't be cleared"), wxT("Error"), wxICON_EXCLAMATION | wxOK);
+}
+
+void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, const std::string& value)
+{
+	wxeditor_esettings_advanced* th = this;
+	runuifun([&settings, &values, setting, value, th]() { 
+		settings.insert(setting); values[setting] = value; th->_refresh();
+		});
+}
+
+void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
+{
+	wxeditor_esettings_advanced* th = this;
+	runuifun([&settings, &values, setting, th]() {
+		settings.insert(setting); values.erase(setting); th->_refresh();
+		});
+}
+
+void wxeditor_esettings_advanced::refresh()
+{
+	runemufn([&settings, &values]() {
+		settings = setting::get_settings_set();
+		for(auto i : settings) {
+			if(setting::is_set(i))
+				values[i] = setting::get(i);
+		}
+		});
+	_refresh();
+}
+
+std::string wxeditor_esettings_advanced::selected()
+{
+	int x = _settings->GetSelection();
+	if(selections.count(x))
+		return selections[x];
+	else
+		return "";
+}
+
+void wxeditor_esettings_advanced::_refresh()
+{
+	std::vector<wxString> strings;
+	int k = 0;
+	for(auto i : settings) {
+		if(values.count(i))
+			strings.push_back(towxstring(i + " (Value: " + values[i] + ")"));
+		else
+			strings.push_back(towxstring(i + " (Not set)"));
+		selections[k++] = i;
+	}
+	_settings->Set(strings.size(), &strings[0]);
+}
+
+
 class wxeditor_esettings : public wxDialog
 {
 public:
@@ -550,6 +692,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 	tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
 	tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
+	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
 	top_s->Add(tabset, 1, wxGROW);
 	
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);

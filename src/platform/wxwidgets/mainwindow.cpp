@@ -63,7 +63,6 @@ enum
 	wxID_EDIT_AUTHORS,
 	wxID_AUTOHOLD_FIRST,
 	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
-	wxID_EDIT_SETTINGS,
 	wxID_EDIT_KEYBINDINGS,
 	wxID_EDIT_ALIAS,
 	wxID_EDIT_MEMORYWATCH,
@@ -767,7 +766,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 
 	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
 	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
 	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
 	menu_separator();
@@ -913,9 +911,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
-		return;
-	case wxID_EDIT_SETTINGS:
-		wxeditor_settings_display(this);
 		return;
 	case wxID_EDIT_HOTKEYS:
 		wxeditor_hotkeys_display(this);
