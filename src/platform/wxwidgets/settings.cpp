@@ -614,6 +614,7 @@ void wxeditor_esettings_joystick::refresh()
 		}
 	}
 	jgrid->Layout();
+	this->Refresh();
 	Fit();
 }
 
@@ -949,6 +950,7 @@ void wxeditor_esettings_aliases::refresh()
 		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
+	select->Refresh();
 }
 
 std::string wxeditor_esettings_aliases::selected()
@@ -1135,6 +1137,7 @@ void wxeditor_esettings_hotkeys::refresh()
 			select->SetItemText(items[i.first], towxstring(text));
 		}
 	}
+	select->Refresh();
 }
 
 std::string wxeditor_esettings_hotkeys::selected()
@@ -1296,6 +1299,7 @@ void wxeditor_esettings_bindings::refresh()
 		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
+	select->Refresh();
 }
 
 std::string wxeditor_esettings_bindings::selected()
