@@ -936,7 +936,8 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 
-	top_s->Add(select = new wxTreeCtrl(this, wxID_ANY), 1, wxGROW);
+	top_s->Add(select = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS |
+		wxTR_HIDE_ROOT), 1, wxGROW);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
