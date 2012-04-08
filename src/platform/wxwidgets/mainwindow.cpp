@@ -63,8 +63,6 @@ enum
 	wxID_EDIT_AUTHORS,
 	wxID_AUTOHOLD_FIRST,
 	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
-	wxID_EDIT_KEYBINDINGS,
-	wxID_EDIT_ALIAS,
 	wxID_EDIT_MEMORYWATCH,
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
@@ -73,7 +71,6 @@ enum
 	wxID_REWIND_MOVIE,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
-	wxID_EDIT_HOTKEYS,
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
@@ -764,12 +761,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 
 	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
-
-	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
-	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
-	menu_separator();
-	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
 
 void wxwin_mainwindow::request_paint()
@@ -912,62 +903,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
 		return;
-	case wxID_EDIT_HOTKEYS:
-		wxeditor_hotkeys_display(this);
-		return;
-	case wxID_EDIT_KEYBINDINGS: {
-		modal_pause_holder hld;
-		std::set<std::string> bind;
-		runemufn([&bind]() { bind = keymapper::get_bindings(); });
-		std::vector<std::string> choices;
-		choices.push_back(NEW_KEYBINDING);
-		for(auto i : bind)
-			choices.push_back(i);
-		std::string key = pick_among(this, "Select binding", "Select keybinding to edit", choices);
-		if(key == NEW_KEYBINDING)
-			key = wxeditor_keyselect(this, false);
-		std::string old_command_value;
-		runemufn([&old_command_value, key]() { old_command_value = keymapper::get_command_for(key); });
-		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
-			old_command_value);
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, key, newcommand]() {
-			try {
-				keymapper::bind_for(key, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			show_message_ok(this, "Error", "Can't bind key: " + faulttext, wxICON_EXCLAMATION);
-		return;
-	}
-	case wxID_EDIT_ALIAS: {
-		modal_pause_holder hld;
-		std::set<std::string> bind;
-		runemufn([&bind]() { bind = command::get_aliases(); });
-		std::vector<std::string> choices;
-		choices.push_back(NEW_ALIAS);
-		for(auto i : bind)
-			choices.push_back(i);
-		std::string alias = pick_among(this, "Select alias", "Select alias to edit", choices);
-		if(alias == NEW_ALIAS) {
-			alias = pick_text(this, "Enter alias name", "Enter name for the new alias:");
-			if(!command::valid_alias_name(alias)) {
-				show_message_ok(this, "Error", "Not a valid alias name: " + alias,
-					wxICON_EXCLAMATION);
-				throw canceled_exception();
-			}
-		}
-		std::string old_alias_value;
-		runemufn([alias, &old_alias_value]() { old_alias_value = command::get_alias_for(alias); });
-		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for alias:",
-			old_alias_value, true);
-		runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
-		return;
-	}
 	case wxID_EDIT_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> bind;

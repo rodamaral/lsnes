@@ -12,7 +12,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#define DEFAULT_NOMINAL_RATE 60
 #define HISTORY_FRAMES 10
 
 namespace
@@ -22,7 +21,7 @@ namespace
 	bool time_frozen = true;
 	uint64_t frame_number = 0;
 	uint64_t frame_start_times[HISTORY_FRAMES];
-	double nominal_rate = DEFAULT_NOMINAL_RATE;
+	double nominal_rate = 100;
 	bool target_nominal = true;
 	double target_fps = 100.0;
 	bool target_infinite = false;
@@ -130,8 +129,8 @@ namespace
 			turboed = false;
 		});
 
-	inverse_key turboh("+turbo", "Turbo on hold");
-	inverse_key turbot("toggle-turbo", "Toggle turbo");
+	inverse_key turboh("+turbo", "Speed‣Turbo hold");
+	inverse_key turbot("toggle-turbo", "Speed‣Turbo toggle");
 }
 
 void freeze_time(uint64_t curtime)

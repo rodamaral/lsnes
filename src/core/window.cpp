@@ -148,8 +148,8 @@ namespace
 			}
 		});
 
-	inverse_key ienable_sound("enable-sound on", "Enable sound");
-	inverse_key idisable_sound("enable-sound off", "Disable sound");
+	inverse_key ienable_sound("enable-sound on", "Sound‣Enable");
+	inverse_key idisable_sound("enable-sound off", "Sound‣Disable");
 
 	function_ptr_command<const std::string&> set_sound_device("set-sound-device", "Set sound device",
 		"Syntax: set-sound-device <id>\nSet sound device to <id>.\n",
