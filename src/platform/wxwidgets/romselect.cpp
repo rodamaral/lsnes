@@ -278,48 +278,12 @@ namespace
 		wxTextCtrl* ctrl;
 	};
 
-	class rom_path_setting : public setting
-	{
-	public:
-		rom_path_setting() : setting("rompath") { _rompath = "."; default_rom = true; }
-		void blank() throw(std::bad_alloc, std::runtime_error)
-		{
-			_rompath = ".";
-			default_rom = true;
-		}
-
-		bool is_set() throw()
-		{
-			return !default_rom;
-		}
-
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(value != "") {
-				_rompath = value;
-				default_rom = false;
-			} else
-				blank();
-		}
-
-		std::string get() throw(std::bad_alloc)
-		{
-			return _rompath;
-		}
-
-		operator std::string() throw(std::bad_alloc)
-		{
-			return _rompath;
-		}
-	private:
-		std::string _rompath;
-		bool default_rom;
-	} rompath_setting;
+	path_setting rompath_setting("rompath");
 
 	std::string rom_path()
 	{
 		//This is pre-boot, so read directly.
-		return setting::get("rompath");
+		return rompath_setting;
 	}
 }
 

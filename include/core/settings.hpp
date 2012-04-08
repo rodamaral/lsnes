@@ -204,4 +204,22 @@ private:
 	bool value;
 };
 
+/**
+ * Setting having path value.
+ */
+class path_setting : public setting
+{
+public:
+	path_setting(const std::string& sname) throw(std::bad_alloc);
+	void blank() throw(std::bad_alloc, std::runtime_error);
+	bool is_set() throw();
+	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error);
+	std::string get() throw(std::bad_alloc);
+	operator std::string();
+private:
+	bool _default;
+	std::string path;
+};
+
+
 #endif

@@ -83,43 +83,7 @@ namespace
 	}
 }
 
-class firmware_path_setting : public setting
-{
-public:
-	firmware_path_setting() : setting("firmwarepath") { _firmwarepath = "."; default_firmware = true; }
-	void blank() throw(std::bad_alloc, std::runtime_error)
-	{
-		_firmwarepath = ".";
-		default_firmware = true;
-	}
-
-	bool is_set() throw()
-	{
-		return !default_firmware;
-	}
-
-	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-	{
-		if(value != "") {
-		_firmwarepath = value;
-		default_firmware = false;
-		} else
-			blank();
-	}
-
-	std::string get() throw(std::bad_alloc)
-	{
-		return _firmwarepath;
-	}
-
-	operator std::string() throw(std::bad_alloc)
-	{
-		return _firmwarepath;
-	}
-private:
-	std::string _firmwarepath;
-	bool default_firmware;
-} firmwarepath_setting;
+path_setting firmwarepath_setting("firmwarepath");
 
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {

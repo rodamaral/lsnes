@@ -48,43 +48,7 @@ namespace
 {
 	numeric_setting savecompression("savecompression", 0, 9, 7);
 
-	class slot_path_setting : public setting
-	{
-	public:
-		slot_path_setting() : setting("slotpath") { _slotpath = "."; default_slot = true; }
-		void blank() throw(std::bad_alloc, std::runtime_error)
-		{
-			_slotpath = ".";
-			default_slot = true;
-		}
-
-		bool is_set() throw()
-		{
-			return !default_slot;
-		}
-
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(value != "") {
-				_slotpath = value;
-				default_slot = false;
-			} else
-				blank();
-		}
-
-		std::string get() throw(std::bad_alloc)
-		{
-			return _slotpath;
-		}
-
-		operator std::string() throw(std::bad_alloc)
-		{
-			return _slotpath;
-		}
-	private:
-		std::string _slotpath;
-		bool default_slot;
-	} slotpath_setting;
+	path_setting slotpath_setting("slotpath");
 
 	class projectprefix_setting : public setting
 	{

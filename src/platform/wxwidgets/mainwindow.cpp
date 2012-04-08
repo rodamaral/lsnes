@@ -442,44 +442,7 @@ namespace
 		runuifun([ahmenu]() { ahmenu->reconfigure(); });
 	}
 
-
-	class movie_path_setting : public setting
-	{
-	public:
-		movie_path_setting() : setting("moviepath") { _moviepath = "."; default_movie = true; }
-		void blank() throw(std::bad_alloc, std::runtime_error)
-		{
-			_moviepath = ".";
-			default_movie = true;
-		}
-
-		bool is_set() throw()
-		{
-			return !default_movie;
-		}
-
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(value != "") {
-				_moviepath = value;
-				default_movie = false;
-			} else
-				blank();
-		}
-
-		std::string get() throw(std::bad_alloc)
-		{
-			return _moviepath;
-		}
-
-		operator std::string() throw(std::bad_alloc)
-		{
-			return _moviepath;
-		}
-	private:
-		std::string _moviepath;
-		bool default_movie;
-	} moviepath_setting;
+	path_setting moviepath_setting("moviepath");
 
 	std::string movie_path()
 	{
