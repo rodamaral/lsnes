@@ -70,7 +70,10 @@ namespace
 		void set_set(const std::string& mset,
 			void (wxdialog_keyentry::*fn)(const std::string& mod));
 		void load_spec(const std::string& spec);
+		void set_class(const std::string& _class);
 		std::map<std::string, keyentry_mod_data> modifiers;
+		std::map<std::string, std::set<std::string>> classes;
+		std::string currentclass;
 		wxComboBox* mainclass;
 		wxComboBox* mainkey;
 		wxButton* ok;
@@ -83,11 +86,24 @@ namespace
 		bool clearable)
 		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
 	{
-		std::vector<wxString> keych;
+		std::vector<wxString> classeslist;
+		wxString emptystring;
 		std::set<std::string> mods, keys;
 
 		cleared = false;
-		runemufn([&mods, &keys]() { mods = modifier::get_set(); keys = keygroup::get_keys(); });
+		runemufn([&mods, &keys, &classes, &classeslist]() {
+			std::set<std::string> x;
+			mods = modifier::get_set();
+			keys = keygroup::get_keys();
+			for(auto i : keys) {
+				std::string kclass = keygroup::lookup(i).first->get_class();
+				if(!x.count(kclass))
+					classeslist.push_back(towxstring(kclass));
+				x.insert(kclass);
+				classes[kclass].insert(i);
+			}
+			});
+
 		Centre();
 		wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 		SetSizer(top_s);
@@ -105,11 +121,13 @@ namespace
 			m.unmasked->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
 		}
-		for(auto i : keys)
-			keych.push_back(towxstring(i));
 		t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Key")), 0, wxGROW);
-		t_s->Add(mainkey = new wxComboBox(this, wxID_ANY, keych[0], wxDefaultPosition, wxDefaultSize,
-			keych.size(), &keych[0], wxCB_READONLY), 1, wxGROW);
+		t_s->Add(mainclass = new wxComboBox(this, wxID_ANY, classeslist[0], wxDefaultPosition, wxDefaultSize,
+			classeslist.size(), &classeslist[0], wxCB_READONLY), 1, wxGROW);
+		mainclass->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+			wxCommandEventHandler(wxdialog_keyentry::on_classchange), NULL, this);
+		t_s->Add(mainkey = new wxComboBox(this, wxID_ANY, emptystring, wxDefaultPosition, wxDefaultSize,
+			1, &emptystring, wxCB_READONLY), 1, wxGROW);
 		mainkey->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 			wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
 		top_s->Add(t_s);
@@ -124,10 +142,14 @@ namespace
 			wxCommandEventHandler(wxdialog_keyentry::on_ok), NULL, this);
 		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxdialog_keyentry::on_cancel), NULL, this);
+		mainclass->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+			wxCommandEventHandler(wxdialog_keyentry::on_classchange), NULL, this);
 		if(clearable)
 			clear->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 				wxCommandEventHandler(wxdialog_keyentry::on_clear), NULL, this);
 		top_s->Add(pbutton_s, 0, wxGROW);
+
+		set_class(tostdstring(classeslist[0]));
 
 		t_s->SetSizeHints(this);
 		top_s->SetSizeHints(this);
@@ -194,6 +216,12 @@ namespace
 		std::string key = _spec.substr(s2 + 1);
 		set_set(mask, &wxdialog_keyentry::set_mask);
 		set_set(mod, &wxdialog_keyentry::set_mod);
+		std::string _class;
+		for(auto i : classes)
+			if(i.second.count(key))
+				_class = i.first;
+		set_class(_class);
+		mainclass->SetValue(towxstring(_class));
 		mainkey->SetValue(towxstring(key));
 	}		
 
@@ -262,6 +290,24 @@ namespace
 	void wxdialog_keyentry::on_cancel(wxCommandEvent& e)
 	{
 		EndModal(wxID_CANCEL);
+	}
+
+	void wxdialog_keyentry::set_class(const std::string& _class)
+	{
+		if(!mainkey)
+			return;
+		if(currentclass == _class)
+			return;
+		mainkey->Clear();
+		for(auto i : classes[_class])
+			mainkey->Append(towxstring(i));
+		currentclass = _class;
+		mainkey->SetSelection(0);
+	}
+
+	void wxdialog_keyentry::on_classchange(wxCommandEvent& e)
+	{
+		set_class(tostdstring(mainclass->GetValue()));
 	}
 
 	std::string wxdialog_keyentry::getkey()

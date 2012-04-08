@@ -852,11 +852,13 @@ std::string inverse_key::get(bool primary) throw(std::bad_alloc)
 void inverse_key::clear(bool primary) throw(std::bad_alloc)
 {
 	if(primary) {
-		keymapper::bind_for(primary_spec, "");
+		if(primary_spec != "")
+			keymapper::bind_for(primary_spec, "");
 		primary_spec = secondary_spec;
 		secondary_spec = "";
 	} else {
-		keymapper::bind_for(secondary_spec, "");
+		if(secondary_spec != "")
+			keymapper::bind_for(secondary_spec, "");
 		secondary_spec = "";
 	}
 	//Search the keybindings for matches.
