@@ -11,7 +11,7 @@
 namespace
 {
 	numeric_setting clvl("avi-cscd-compression", 0, 9, 7);
-	numeric_setting kint("avi-cscd-keyint", 1, 999999999, 0);
+	numeric_setting kint("avi-cscd-keyint", 0, 999999999, 0);
 
 	struct avi_codec_cscd : public avi_video_codec
 	{

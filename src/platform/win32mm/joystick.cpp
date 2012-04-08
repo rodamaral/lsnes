@@ -33,14 +33,14 @@ namespace
 	void create_hat(unsigned i)
 	{
 		std::string n = (stringfmt() << "joystick" << i << "hat").str();
-		keygroup* k = new keygroup(n, keygroup::KT_HAT);
+		keygroup* k = new keygroup(n, "joystick", keygroup::KT_HAT);
 		hats[i] = k;
 	}
 
 	void create_button(unsigned i, unsigned j)
 	{
 		std::string n = (stringfmt() << "joystick" << i << "button" << j).str();
-		keygroup* k = new keygroup(n, keygroup::KT_KEY);
+		keygroup* k = new keygroup(n, "joystick", keygroup::KT_KEY);
 		buttons[std::make_pair(i, j)] = k;
 	}
 
@@ -48,7 +48,7 @@ namespace
 	{
 		std::string n = (stringfmt() << "joystick" << i << "axis" << j).str();
 		keygroup* k;
-		k = new keygroup(n, keygroup::KT_AXIS_PAIR);
+		k = new keygroup(n, "joystick", keygroup::KT_AXIS_PAIR);
 		axes[std::make_pair(i, j)] = k;
 	}
 

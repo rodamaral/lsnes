@@ -214,10 +214,11 @@ public:
  * Create a new key group.
  *
  * parameter name: Name of the key group.
+ * parameter _clazz: The key class.
  * parameter t: Initial type of the key group.
  * throws std::bad_alloc: Not enough memory.
  */
-	keygroup(const std::string& name, enum type t) throw(std::bad_alloc);
+	keygroup(const std::string& name, const std::string& _clazz, enum type t) throw(std::bad_alloc);
 /**
  * Destructor
  */
@@ -331,6 +332,10 @@ public:
  * Get status value.
  */
 	signed get_value();
+/**
+ * Get class.
+ */
+	const std::string& get_class();
 private:
 	signed state;
 	enum type ktype;
@@ -343,6 +348,7 @@ private:
 	double compensate2(double value);
 	void run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x);
 	std::string keyname;
+	std::string clazz;
 	bool requests_hook;
 };
 

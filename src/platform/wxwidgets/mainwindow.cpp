@@ -64,23 +64,17 @@ enum
 	wxID_EDIT_AUTHORS,
 	wxID_AUTOHOLD_FIRST,
 	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
-	wxID_EDIT_SETTINGS,
-	wxID_EDIT_KEYBINDINGS,
-	wxID_EDIT_ALIAS,
 	wxID_EDIT_MEMORYWATCH,
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
-	wxID_EDIT_JUKEBOX,
 	wxID_MEMORY_SEARCH,
 	wxID_CANCEL_SAVES,
-	wxID_EDIT_HOTKEYS,
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
-	wxID_SET_SCREEN,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -149,12 +143,12 @@ namespace
 		emulation_thread->join();
 	}
 
-	keygroup mouse_x("mouse_x", keygroup::KT_MOUSE);
-	keygroup mouse_y("mouse_y", keygroup::KT_MOUSE);
-	keygroup mouse_l("mouse_left", keygroup::KT_KEY);
-	keygroup mouse_m("mouse_center", keygroup::KT_KEY);
-	keygroup mouse_r("mouse_right", keygroup::KT_KEY);
-	keygroup mouse_i("mouse_inwindow", keygroup::KT_KEY);
+	keygroup mouse_x("mouse_x", "mouse", keygroup::KT_MOUSE);
+	keygroup mouse_y("mouse_y", "mouse", keygroup::KT_MOUSE);
+	keygroup mouse_l("mouse_left", "mouse", keygroup::KT_KEY);
+	keygroup mouse_m("mouse_center", "mouse", keygroup::KT_KEY);
+	keygroup mouse_r("mouse_right", "mouse", keygroup::KT_KEY);
+	keygroup mouse_i("mouse_inwindow", "mouse", keygroup::KT_KEY);
 
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
@@ -449,44 +443,7 @@ namespace
 		runuifun([ahmenu]() { ahmenu->reconfigure(); });
 	}
 
-
-	class movie_path_setting : public setting
-	{
-	public:
-		movie_path_setting() : setting("moviepath") { _moviepath = "."; default_movie = true; }
-		void blank() throw(std::bad_alloc, std::runtime_error)
-		{
-			_moviepath = ".";
-			default_movie = true;
-		}
-
-		bool is_set() throw()
-		{
-			return !default_movie;
-		}
-
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(value != "") {
-				_moviepath = value;
-				default_movie = false;
-			} else
-				blank();
-		}
-
-		std::string get() throw(std::bad_alloc)
-		{
-			return _moviepath;
-		}
-
-		operator std::string() throw(std::bad_alloc)
-		{
-			return _moviepath;
-		}
-	private:
-		std::string _moviepath;
-		bool default_movie;
-	} moviepath_setting;
+	path_setting moviepath_setting("moviepath");
 
 	std::string movie_path()
 	{
@@ -768,15 +725,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 
 	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
-
-	menu_start(wxT("Settings"));
-	menu_entry(wxID_EDIT_SETTINGS, wxT("Configure settings..."));
-	menu_entry(wxID_EDIT_KEYBINDINGS, wxT("Configure keybindings..."));
-	menu_entry(wxID_EDIT_ALIAS, wxT("Configure aliases..."));
-	menu_entry(wxID_EDIT_JUKEBOX, wxT("Configure jukebox..."));
-	menu_separator();
-	menu_entry(wxID_SET_SCREEN, wxT("Set screen scaling..."));
-	menu_entry(wxID_EDIT_HOTKEYS, wxT("Configure hotkeys..."));
 }
 
 void wxwin_mainwindow::request_paint()
@@ -919,92 +867,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
 		return;
-	case wxID_EDIT_SETTINGS:
-		wxeditor_settings_display(this);
-		return;
-	case wxID_EDIT_HOTKEYS:
-		wxeditor_hotkeys_display(this);
-		return;
-	case wxID_EDIT_KEYBINDINGS: {
-		modal_pause_holder hld;
-		std::set<std::string> bind;
-		runemufn([&bind]() { bind = keymapper::get_bindings(); });
-		std::vector<std::string> choices;
-		choices.push_back(NEW_KEYBINDING);
-		for(auto i : bind)
-			choices.push_back(i);
-		std::string key = pick_among(this, "Select binding", "Select keybinding to edit", choices);
-		if(key == NEW_KEYBINDING)
-			key = wxeditor_keyselect(this, false);
-		std::string old_command_value;
-		runemufn([&old_command_value, key]() { old_command_value = keymapper::get_command_for(key); });
-		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
-			old_command_value);
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, key, newcommand]() {
-			try {
-				keymapper::bind_for(key, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			show_message_ok(this, "Error", "Can't bind key: " + faulttext, wxICON_EXCLAMATION);
-		return;
-	}
-	case wxID_EDIT_ALIAS: {
-		modal_pause_holder hld;
-		std::set<std::string> bind;
-		runemufn([&bind]() { bind = command::get_aliases(); });
-		std::vector<std::string> choices;
-		choices.push_back(NEW_ALIAS);
-		for(auto i : bind)
-			choices.push_back(i);
-		std::string alias = pick_among(this, "Select alias", "Select alias to edit", choices);
-		if(alias == NEW_ALIAS) {
-			alias = pick_text(this, "Enter alias name", "Enter name for the new alias:");
-			if(!command::valid_alias_name(alias)) {
-				show_message_ok(this, "Error", "Not a valid alias name: " + alias,
-					wxICON_EXCLAMATION);
-				throw canceled_exception();
-			}
-		}
-		std::string old_alias_value;
-		runemufn([alias, &old_alias_value]() { old_alias_value = command::get_alias_for(alias); });
-		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for alias:",
-			old_alias_value, true);
-		runemufn([alias, newcmd]() { command::set_alias_for(alias, newcmd); });
-		return;
-	}
-	case wxID_EDIT_JUKEBOX: {
-		modal_pause_holder hld;
-		std::vector<std::string> new_jukebox;
-		std::string x;
-		runemufn([&x]() {
-			for(auto i : get_jukebox_names())
-				x = x + i + "\n";
-		});
-		x = pick_text(this, "Configure jukebox", "List jukebox entries", x, true);
-		while(x != "") {
-			size_t split = x.find_first_of("\n");
-			std::string l;
-			if(split < x.length()) {
-				l = x.substr(0, split);
-				x = x.substr(split + 1);
-			} else {
-				l = x;
-				x = "";
-			}
-			istrip_CR(l);
-			if(l != "")
-				new_jukebox.push_back(l);
-		}
-		runemufn([&new_jukebox]() { set_jukebox_names(new_jukebox); });
-		notify_update_status();
-		return;
-	}
 	case wxID_EDIT_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> bind;
@@ -1124,9 +986,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([parsed]() { platform::global_volume = parsed; });
 		return;
 	}
-	case wxID_SET_SCREEN:
-		wxeditor_screen_display(this);
-		return;
 	case wxID_SPEED_5:
 		set_speed(5);
 		break;

@@ -196,3 +196,42 @@ boolean_setting::operator bool() throw()
 {
 	return value;
 }
+
+path_setting::path_setting(const std::string& sname) throw(std::bad_alloc)
+	: setting(sname)
+{
+	path = ".";
+	_default = true;
+}
+
+void path_setting::blank() throw(std::bad_alloc, std::runtime_error)
+{
+	path = ".";
+	_default = true;
+}
+
+bool path_setting::is_set() throw()
+{
+	return !_default;
+}
+
+void path_setting::set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+{
+	if(value == "") {
+		path = ".";
+		_default = true;
+	} else {
+		path = value;
+		_default = false;
+	}
+}
+
+std::string path_setting::get() throw(std::bad_alloc)
+{
+	return path;
+}
+
+path_setting::operator std::string()
+{
+	return path;
+}

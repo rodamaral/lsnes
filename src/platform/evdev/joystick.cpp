@@ -93,7 +93,7 @@ namespace
 		std::ostringstream _name;
 		_name << "joystick" << joynum << "button" << buttonnum;
 		std::string name = _name.str();
-		keygroup* grp = new keygroup(name, keygroup::KT_KEY);
+		keygroup* grp = new keygroup(name, "joystick", keygroup::KT_KEY);
 		keygroups.insert(grp);
 		struct event_mapping evmap;
 		evmap.joystick = joynum;
@@ -115,9 +115,9 @@ namespace
 		std::string name = _name.str();
 		keygroup* grp;
 		if(min < 0)
-			grp = new keygroup(name, keygroup::KT_AXIS_PAIR);
+			grp = new keygroup(name, "joystick", keygroup::KT_AXIS_PAIR);
 		else
-			grp = new keygroup(name, keygroup::KT_PRESSURE_MP);
+			grp = new keygroup(name, "joystick", keygroup::KT_PRESSURE_MP);
 		keygroups.insert(grp);
 		struct event_mapping evmap;
 		evmap.joystick = joynum;
@@ -138,7 +138,7 @@ namespace
 		std::ostringstream _name;
 		_name << "joystick" << joynum << "hat" << hatnum;
 		std::string name = _name.str();
-		keygroup* grp = new keygroup(name, keygroup::KT_HAT);
+		keygroup* grp = new keygroup(name, "joystick", keygroup::KT_HAT);
 		keygroups.insert(grp);
 		struct event_mapping evmap1;
 		evmap1.joystick = joynum;

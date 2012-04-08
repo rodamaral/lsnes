@@ -794,15 +794,11 @@ Cycle save jukebox backwards.
 
 Cycle save jukebox forwards
 
-6.8.3 add-jukebox-save <filename>
-
-Add <filename> to jukebox saves.
-
-6.8.4 load-jukebox
+6.8.3 load-jukebox
 
 Do load from jukebox (current mode).
 
-6.8.5 save-jukebox
+6.8.4 save-jukebox
 
 Do state save to jukebox.
 

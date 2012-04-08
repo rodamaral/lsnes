@@ -165,9 +165,6 @@ end:
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.rc";
 		std::ofstream cfgfile(cfg.c_str());
-		//Jukebox.
-		for(auto i : get_jukebox_names())
-			cfgfile << "add-jukebox-save " << i << std::endl;
 		//Joystick axis.
 		for(auto i : keygroup::get_axis_set()) {
 			keygroup* k = keygroup::lookup_by_name(i);

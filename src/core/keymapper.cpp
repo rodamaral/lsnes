@@ -257,6 +257,11 @@ std::string keygroup::name() throw(std::bad_alloc)
 	return keyname;
 }
 
+const std::string& keygroup::get_class()
+{
+	return clazz;
+}
+
 struct keygroup::parameters keygroup::get_parameters()
 {
 	parameters p;
@@ -277,9 +282,10 @@ std::map<std::string, struct keygroup::parameters> keygroup::get_all_parameters(
 	return ret;
 }
 
-keygroup::keygroup(const std::string& name, enum type t) throw(std::bad_alloc)
+keygroup::keygroup(const std::string& name, const std::string& _clazz, enum type t) throw(std::bad_alloc)
 {
 	keygroups()[keyname = name] = this;
+	clazz = _clazz;
 	ktype = t;
 	state = 0;
 	last_rawval = 0;
@@ -846,11 +852,13 @@ std::string inverse_key::get(bool primary) throw(std::bad_alloc)
 void inverse_key::clear(bool primary) throw(std::bad_alloc)
 {
 	if(primary) {
-		keymapper::bind_for(primary_spec, "");
+		if(primary_spec != "")
+			keymapper::bind_for(primary_spec, "");
 		primary_spec = secondary_spec;
 		secondary_spec = "";
 	} else {
-		keymapper::bind_for(secondary_spec, "");
+		if(secondary_spec != "")
+			keymapper::bind_for(secondary_spec, "");
 		secondary_spec = "";
 	}
 	//Search the keybindings for matches.

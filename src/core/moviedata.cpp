@@ -49,6 +49,8 @@ namespace
 {
 	numeric_setting savecompression("savecompression", 0, 9, 7);
 
+	path_setting slotpath_setting("slotpath");
+
 	class projectprefix_setting : public setting
 	{
 	public:
@@ -169,13 +171,17 @@ namespace
 	}
 }
 
-std::string translate_name_mprefix(std::string original)
+std::string translate_name_mprefix(std::string original, bool forio)
 {
 	size_t prefixloc = original.find("${project}");
-	if(prefixloc < original.length())
-		return original.substr(0, prefixloc) + static_cast<std::string>(mprefix) +
-			original.substr(prefixloc + 10);
-	else
+	if(prefixloc < original.length()) {
+		std::string pprf = forio ? (slotpath_setting.get() + "/") : std::string("");
+		if(prefixloc == 0)
+			return pprf + static_cast<std::string>(mprefix) + original.substr(prefixloc + 10);
+		else
+			return original.substr(0, prefixloc) + static_cast<std::string>(mprefix) +
+				original.substr(prefixloc + 10);
+	} else
 		return original;
 }
 
@@ -202,7 +208,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	std::string filename2 = translate_name_mprefix(filename);
+	std::string filename2 = translate_name_mprefix(filename, true);
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
@@ -237,7 +243,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 //Save movie.
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
-	std::string filename2 = translate_name_mprefix(filename);
+	std::string filename2 = translate_name_mprefix(filename, true);
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
@@ -458,7 +464,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
-	std::string filename2 = translate_name_mprefix(filename);
+	std::string filename2 = translate_name_mprefix(filename, true);
 	uint64_t origtime = get_utime();
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;

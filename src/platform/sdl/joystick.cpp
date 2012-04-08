@@ -71,19 +71,19 @@ void joystick_plugin::init() throw()
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "axis" << k;
-				joyaxis[num] = new keygroup(x.str(), keygroup::KT_AXIS_PAIR);
+				joyaxis[num] = new keygroup(x.str(), "joystick", keygroup::KT_AXIS_PAIR);
 			}
 			for(int k = 0; k < SDL_JoystickNumButtons(j); k++) {
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "button" << k;
-				joybutton[num] = new keygroup(x.str(), keygroup::KT_KEY);
+				joybutton[num] = new keygroup(x.str(), "joystick", keygroup::KT_KEY);
 			}
 			for(int k = 0; k < SDL_JoystickNumHats(j); k++) {
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "hat" << k;
-				joyhat[num] = new keygroup(x.str(), keygroup::KT_HAT);
+				joyhat[num] = new keygroup(x.str(), "joystick", keygroup::KT_HAT);
 			}
 		}
 	}

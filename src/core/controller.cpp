@@ -197,7 +197,7 @@ namespace
 						};
 						x << (k + 1) << get_logical_button_name(i);
 						y << (k + 1) << get_logical_button_name(i);
-						expx << "Controller " << (k + 1) << " " << get_logical_button_name(i);
+						expx << "Controller‣" << (k + 1) << "‣" << get_logical_button_name(i);
 						our_commands.insert(new button_action(x.str(), j, k, y.str()));
 						if(j == 0)
 							our_icommands.insert(new inverse_key(x.str(), expx.str()));
@@ -205,7 +205,7 @@ namespace
 			for(unsigned k = 0; k < 8; ++k) {
 				stringfmt x, expx;
 				x << "controller" << (k + 1) << "analog";
-				expx << "Controller " << (k + 1) << " analog function";
+				expx << "Controller‣" << (k + 1) << "‣Analog function";
 				our_commands.insert(new analog_action(x.str(), k));
 				our_icommands.insert(new inverse_key(x.str(), expx.str()));
 			}

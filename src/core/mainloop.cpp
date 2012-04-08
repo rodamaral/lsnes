@@ -6,6 +6,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "lua/lua.hpp"
+#include "library/string.hpp"
 #include "core/mainloop.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
@@ -62,7 +63,7 @@ namespace
 	std::set<std::string> queued_saves;
 	bool stepping_into_save;
 	//Save jukebox.
-	std::vector<std::string> save_jukebox;
+	numeric_setting jukebox_size("jukebox-size", 0, 999, 12);
 	size_t save_jukebox_pointer;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
 	long pending_reset_cycles = -1;
@@ -76,45 +77,14 @@ namespace
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
+
+	std::string save_jukebox_name(size_t i)
+	{
+		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
+	}
 }
 
-class firmware_path_setting : public setting
-{
-public:
-	firmware_path_setting() : setting("firmwarepath") { _firmwarepath = "."; default_firmware = true; }
-	void blank() throw(std::bad_alloc, std::runtime_error)
-	{
-		_firmwarepath = ".";
-		default_firmware = true;
-	}
-
-	bool is_set() throw()
-	{
-		return !default_firmware;
-	}
-
-	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-	{
-		if(value != "") {
-		_firmwarepath = value;
-		default_firmware = false;
-		} else
-			blank();
-	}
-
-	std::string get() throw(std::bad_alloc)
-	{
-		return _firmwarepath;
-	}
-
-	operator std::string() throw(std::bad_alloc)
-	{
-		return _firmwarepath;
-	}
-private:
-	std::string _firmwarepath;
-	bool default_firmware;
-} firmwarepath_setting;
+path_setting firmwarepath_setting("firmwarepath");
 
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
@@ -273,8 +243,8 @@ void update_movie_state()
 			x << "F";
 		_status.set("Flags", x.str());
 	}
-	if(save_jukebox.size() > 0)
-		_status.set("Saveslot", translate_name_mprefix(save_jukebox[save_jukebox_pointer]));
+	if(jukebox_size > 0)
+		_status.set("Saveslot", translate_name_mprefix(save_jukebox_name(save_jukebox_pointer)));
 	else
 		_status.erase("Saveslot");
 	{
@@ -378,6 +348,20 @@ class my_interface : public SNES::Interface
 
 namespace
 {
+	class jukebox_size_listener : public information_dispatch
+	{
+	public:
+		jukebox_size_listener() : information_dispatch("jukebox-size-listener") {};
+		void on_setting_change(const std::string& setting, const std::string& value)
+		{
+			if(setting == "jukebox-size") {
+				if(save_jukebox_pointer >= jukebox_size)
+					save_jukebox_pointer = 0;
+				update_movie_state();
+			}
+		}
+	} _jukebox_size_listener;
+
 	function_ptr_command<> count_rerecords("count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -413,11 +397,13 @@ namespace
 	function_ptr_command<> save_jukebox_prev("cycle-jukebox-backward", "Cycle save jukebox backwards",
 		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				return;
 			if(save_jukebox_pointer == 0)
-				save_jukebox_pointer = save_jukebox.size() - 1;
+				save_jukebox_pointer = jukebox_size - 1;
 			else
 				save_jukebox_pointer--;
-			if(save_jukebox_pointer >= save_jukebox.size())
+			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
 			information_dispatch::do_status_update();
@@ -426,20 +412,14 @@ namespace
 	function_ptr_command<> save_jukebox_next("cycle-jukebox-forward", "Cycle save jukebox forwards",
 		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(save_jukebox_pointer == save_jukebox.size() - 1)
+			if(jukebox_size == 0)
+				return;
+			if(save_jukebox_pointer == jukebox_size - 1)
 				save_jukebox_pointer = 0;
 			else
 				save_jukebox_pointer++;
-			if(save_jukebox_pointer >= save_jukebox.size())
+			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
-			update_movie_state();
-			information_dispatch::do_status_update();
-		});
-
-	function_ptr_command<arg_filename> add_jukebox("add-jukebox-save", "Add save to jukebox",
-		"Syntax: add-jukebox-save\nAdd save to jukebox\n",
-		[](arg_filename filename) throw(std::bad_alloc, std::runtime_error) {
-			save_jukebox.push_back(filename);
 			update_movie_state();
 			information_dispatch::do_status_update();
 		});
@@ -447,17 +427,17 @@ namespace
 	function_ptr_command<> load_jukebox("load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!save_jukebox.size())
-				throw std::runtime_error("No saves in jukebox");
-			mark_pending_load(save_jukebox[save_jukebox_pointer], LOAD_STATE_CURRENT);
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
 
 	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!save_jukebox.size())
-				throw std::runtime_error("No saves in jukebox");
-			mark_pending_save(save_jukebox[save_jukebox_pointer], SAVE_STATE);
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE);
 		});
 
 	function_ptr_command<> padvance_frame("+advance-frame", "Advance one frame",
@@ -625,87 +605,86 @@ namespace
 			while(1);
 		});
 
-
-	inverse_key ipause_emulator("pause-emulator", "(Un)pause");
-	inverse_key ijback("cycle-jukebox-backward", "Cycle slot backwards");
-	inverse_key ijforward("cycle-jukebox-forward", "Cycle slot forwards");
-	inverse_key iloadj("load-jukebox", "load selected slot");
-	inverse_key isavej("save-jukebox", "Save selected slot");
-	inverse_key iadvframe("+advance-frame", "Advance frame");
-	inverse_key iadvsubframe("+advance-poll", "Advance subframe");
-	inverse_key iskiplag("advance-skiplag", "Advance to next poll");
-	inverse_key ireset("reset", "System reset");
-	inverse_key iset_rwmode("set-rwmode", "Switch to read/write");
-	inverse_key itoggle_romode("set-romode", "Switch to read-only");
-	inverse_key itoggle_rwmode("toggle-rwmode", "Toggle read-only");
-	inverse_key irepaint("repaint", "Repaint screen");
-	inverse_key itogglepause("toggle-pause-on-end", "Toggle pause-on-end");
-	inverse_key irewind_movie("rewind-movie", "Rewind movie");
-	inverse_key icancel_saves("cancel-saves", "Cancel pending saves");
-	inverse_key iload1("load ${project}1.lsmv", "Load slot 1");
-	inverse_key iload2("load ${project}2.lsmv", "Load slot 2");
-	inverse_key iload3("load ${project}3.lsmv", "Load slot 3");
-	inverse_key iload4("load ${project}4.lsmv", "Load slot 4");
-	inverse_key iload5("load ${project}5.lsmv", "Load slot 5");
-	inverse_key iload6("load ${project}6.lsmv", "Load slot 6");
-	inverse_key iload7("load ${project}7.lsmv", "Load slot 7");
-	inverse_key iload8("load ${project}8.lsmv", "Load slot 8");
-	inverse_key iload9("load ${project}9.lsmv", "Load slot 9");
-	inverse_key iload10("load ${project}10.lsmv", "Load slot 10");
-	inverse_key iload11("load ${project}11.lsmv", "Load slot 11");
-	inverse_key iload12("load ${project}12.lsmv", "Load slot 12");
-	inverse_key iload13("load ${project}13.lsmv", "Load slot 13");
-	inverse_key iload14("load ${project}14.lsmv", "Load slot 14");
-	inverse_key iload15("load ${project}15.lsmv", "Load slot 15");
-	inverse_key iload16("load ${project}16.lsmv", "Load slot 16");
-	inverse_key iload17("load ${project}17.lsmv", "Load slot 17");
-	inverse_key iload18("load ${project}18.lsmv", "Load slot 18");
-	inverse_key iload19("load ${project}19.lsmv", "Load slot 19");
-	inverse_key iload20("load ${project}20.lsmv", "Load slot 20");
-	inverse_key iload21("load ${project}21.lsmv", "Load slot 21");
-	inverse_key iload22("load ${project}22.lsmv", "Load slot 22");
-	inverse_key iload23("load ${project}23.lsmv", "Load slot 23");
-	inverse_key iload24("load ${project}24.lsmv", "Load slot 24");
-	inverse_key iload25("load ${project}25.lsmv", "Load slot 25");
-	inverse_key iload26("load ${project}26.lsmv", "Load slot 26");
-	inverse_key iload27("load ${project}27.lsmv", "Load slot 27");
-	inverse_key iload28("load ${project}28.lsmv", "Load slot 28");
-	inverse_key iload29("load ${project}29.lsmv", "Load slot 29");
-	inverse_key iload30("load ${project}30.lsmv", "Load slot 30");
-	inverse_key iload31("load ${project}31.lsmv", "Load slot 31");
-	inverse_key iload32("load ${project}32.lsmv", "Load slot 32");
-	inverse_key isave1("save-state ${project}1.lsmv", "Save slot 1");
-	inverse_key isave2("save-state ${project}2.lsmv", "Save slot 2");
-	inverse_key isave3("save-state ${project}3.lsmv", "Save slot 3");
-	inverse_key isave4("save-state ${project}4.lsmv", "Save slot 4");
-	inverse_key isave5("save-state ${project}5.lsmv", "Save slot 5");
-	inverse_key isave6("save-state ${project}6.lsmv", "Save slot 6");
-	inverse_key isave7("save-state ${project}7.lsmv", "Save slot 7");
-	inverse_key isave8("save-state ${project}8.lsmv", "Save slot 8");
-	inverse_key isave9("save-state ${project}9.lsmv", "Save slot 9");
-	inverse_key isave10("save-state ${project}10.lsmv", "Save slot 10");
-	inverse_key isave11("save-state ${project}11.lsmv", "Save slot 11");
-	inverse_key isave12("save-state ${project}12.lsmv", "Save slot 12");
-	inverse_key isave13("save-state ${project}13.lsmv", "Save slot 13");
-	inverse_key isave14("save-state ${project}14.lsmv", "Save slot 14");
-	inverse_key isave15("save-state ${project}15.lsmv", "Save slot 15");
-	inverse_key isave16("save-state ${project}16.lsmv", "Save slot 16");
-	inverse_key isave17("save-state ${project}17.lsmv", "Save slot 17");
-	inverse_key isave18("save-state ${project}18.lsmv", "Save slot 18");
-	inverse_key isave19("save-state ${project}19.lsmv", "Save slot 19");
-	inverse_key isave20("save-state ${project}20.lsmv", "Save slot 20");
-	inverse_key isave21("save-state ${project}21.lsmv", "Save slot 21");
-	inverse_key isave22("save-state ${project}22.lsmv", "Save slot 22");
-	inverse_key isave23("save-state ${project}23.lsmv", "Save slot 23");
-	inverse_key isave24("save-state ${project}24.lsmv", "Save slot 24");
-	inverse_key isave25("save-state ${project}25.lsmv", "Save slot 25");
-	inverse_key isave26("save-state ${project}26.lsmv", "Save slot 26");
-	inverse_key isave27("save-state ${project}27.lsmv", "Save slot 27");
-	inverse_key isave28("save-state ${project}28.lsmv", "Save slot 28");
-	inverse_key isave29("save-state ${project}29.lsmv", "Save slot 29");
-	inverse_key isave30("save-state ${project}30.lsmv", "Save slot 30");
-	inverse_key isave31("save-state ${project}31.lsmv", "Save slot 31");
-	inverse_key isave32("save-state ${project}32.lsmv", "Save slot 32");
+	inverse_key ipause_emulator("pause-emulator", "Speed‣(Un)pause");
+	inverse_key ijback("cycle-jukebox-backward", "Slot select‣Cycle backwards");
+	inverse_key ijforward("cycle-jukebox-forward", "Slot select‣Cycle forwards");
+	inverse_key iloadj("load-jukebox", "Load‣Selected slot");
+	inverse_key isavej("save-jukebox", "Save‣Selected slot");
+	inverse_key iadvframe("+advance-frame", "Speed‣Advance frame");
+	inverse_key iadvsubframe("+advance-poll", "Speed‣Advance subframe");
+	inverse_key iskiplag("advance-skiplag", "Speed‣Advance poll");
+	inverse_key ireset("reset", "System‣Reset");
+	inverse_key iset_rwmode("set-rwmode", "Movie‣Switch to read/write");
+	inverse_key itoggle_romode("set-romode", "Movie‣Switch to read-only");
+	inverse_key itoggle_rwmode("toggle-rwmode", "Movie‣Toggle read-only");
+	inverse_key irepaint("repaint", "System‣Repaint screen");
+	inverse_key itogglepause("toggle-pause-on-end", "Movie‣Toggle pause-on-end");
+	inverse_key irewind_movie("rewind-movie", "Movie‣Rewind movie");
+	inverse_key icancel_saves("cancel-saves", "Save‣Cancel pending saves");
+	inverse_key iload1("load ${project}1.lsmv", "Load‣Slot 1");
+	inverse_key iload2("load ${project}2.lsmv", "Load‣Slot 2");
+	inverse_key iload3("load ${project}3.lsmv", "Load‣Slot 3");
+	inverse_key iload4("load ${project}4.lsmv", "Load‣Slot 4");
+	inverse_key iload5("load ${project}5.lsmv", "Load‣Slot 5");
+	inverse_key iload6("load ${project}6.lsmv", "Load‣Slot 6");
+	inverse_key iload7("load ${project}7.lsmv", "Load‣Slot 7");
+	inverse_key iload8("load ${project}8.lsmv", "Load‣Slot 8");
+	inverse_key iload9("load ${project}9.lsmv", "Load‣Slot 9");
+	inverse_key iload10("load ${project}10.lsmv", "Load‣Slot 10");
+	inverse_key iload11("load ${project}11.lsmv", "Load‣Slot 11");
+	inverse_key iload12("load ${project}12.lsmv", "Load‣Slot 12");
+	inverse_key iload13("load ${project}13.lsmv", "Load‣Slot 13");
+	inverse_key iload14("load ${project}14.lsmv", "Load‣Slot 14");
+	inverse_key iload15("load ${project}15.lsmv", "Load‣Slot 15");
+	inverse_key iload16("load ${project}16.lsmv", "Load‣Slot 16");
+	inverse_key iload17("load ${project}17.lsmv", "Load‣Slot 17");
+	inverse_key iload18("load ${project}18.lsmv", "Load‣Slot 18");
+	inverse_key iload19("load ${project}19.lsmv", "Load‣Slot 19");
+	inverse_key iload20("load ${project}20.lsmv", "Load‣Slot 20");
+	inverse_key iload21("load ${project}21.lsmv", "Load‣Slot 21");
+	inverse_key iload22("load ${project}22.lsmv", "Load‣Slot 22");
+	inverse_key iload23("load ${project}23.lsmv", "Load‣Slot 23");
+	inverse_key iload24("load ${project}24.lsmv", "Load‣Slot 24");
+	inverse_key iload25("load ${project}25.lsmv", "Load‣Slot 25");
+	inverse_key iload26("load ${project}26.lsmv", "Load‣Slot 26");
+	inverse_key iload27("load ${project}27.lsmv", "Load‣Slot 27");
+	inverse_key iload28("load ${project}28.lsmv", "Load‣Slot 28");
+	inverse_key iload29("load ${project}29.lsmv", "Load‣Slot 29");
+	inverse_key iload30("load ${project}30.lsmv", "Load‣Slot 30");
+	inverse_key iload31("load ${project}31.lsmv", "Load‣Slot 31");
+	inverse_key iload32("load ${project}32.lsmv", "Load‣Slot 32");
+	inverse_key isave1("save-state ${project}1.lsmv", "Save‣Slot 1");
+	inverse_key isave2("save-state ${project}2.lsmv", "Save‣Slot 2");
+	inverse_key isave3("save-state ${project}3.lsmv", "Save‣Slot 3");
+	inverse_key isave4("save-state ${project}4.lsmv", "Save‣Slot 4");
+	inverse_key isave5("save-state ${project}5.lsmv", "Save‣Slot 5");
+	inverse_key isave6("save-state ${project}6.lsmv", "Save‣Slot 6");
+	inverse_key isave7("save-state ${project}7.lsmv", "Save‣Slot 7");
+	inverse_key isave8("save-state ${project}8.lsmv", "Save‣Slot 8");
+	inverse_key isave9("save-state ${project}9.lsmv", "Save‣Slot 9");
+	inverse_key isave10("save-state ${project}10.lsmv", "Save‣Slot 10");
+	inverse_key isave11("save-state ${project}11.lsmv", "Save‣Slot 11");
+	inverse_key isave12("save-state ${project}12.lsmv", "Save‣Slot 12");
+	inverse_key isave13("save-state ${project}13.lsmv", "Save‣Slot 13");
+	inverse_key isave14("save-state ${project}14.lsmv", "Save‣Slot 14");
+	inverse_key isave15("save-state ${project}15.lsmv", "Save‣Slot 15");
+	inverse_key isave16("save-state ${project}16.lsmv", "Save‣Slot 16");
+	inverse_key isave17("save-state ${project}17.lsmv", "Save‣Slot 17");
+	inverse_key isave18("save-state ${project}18.lsmv", "Save‣Slot 18");
+	inverse_key isave19("save-state ${project}19.lsmv", "Save‣Slot 19");
+	inverse_key isave20("save-state ${project}20.lsmv", "Save‣Slot 20");
+	inverse_key isave21("save-state ${project}21.lsmv", "Save‣Slot 21");
+	inverse_key isave22("save-state ${project}22.lsmv", "Save‣Slot 22");
+	inverse_key isave23("save-state ${project}23.lsmv", "Save‣Slot 23");
+	inverse_key isave24("save-state ${project}24.lsmv", "Save‣Slot 24");
+	inverse_key isave25("save-state ${project}25.lsmv", "Save‣Slot 25");
+	inverse_key isave26("save-state ${project}26.lsmv", "Save‣Slot 26");
+	inverse_key isave27("save-state ${project}27.lsmv", "Save‣Slot 27");
+	inverse_key isave28("save-state ${project}28.lsmv", "Save‣Slot 28");
+	inverse_key isave29("save-state ${project}29.lsmv", "Save‣Slot 29");
+	inverse_key isave30("save-state ${project}30.lsmv", "Save‣Slot 30");
+	inverse_key isave31("save-state ${project}31.lsmv", "Save‣Slot 31");
+	inverse_key isave32("save-state ${project}32.lsmv", "Save‣Slot 32");
 
 	bool on_quit_prompt = false;
 	class mywindowcallbacks : public information_dispatch
@@ -830,19 +809,6 @@ namespace
 		}
 		return true;
 	}
-}
-
-std::vector<std::string> get_jukebox_names()
-{
-	return save_jukebox;
-}
-
-void set_jukebox_names(const std::vector<std::string>& newj)
-{
-	save_jukebox = newj;
-	if(save_jukebox_pointer >= save_jukebox.size())
-		save_jukebox_pointer = 0;
-	update_movie_state();
 }
 
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
