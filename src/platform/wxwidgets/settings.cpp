@@ -988,7 +988,7 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 	SetSizer(top_s);
 
 	top_s->Add(select = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS |
-		wxTR_HIDE_ROOT), 1, wxGROW);
+		wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
@@ -1000,7 +1000,7 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 		wxCommandEventHandler(wxeditor_esettings_hotkeys::on_secondary), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
-	items[""] = select->AddRoot(wxT(""));
+	items[""] = select->AddRoot(wxT("<root>"));
 
 	refresh();
 	top_s->SetSizeHints(this);
