@@ -690,7 +690,10 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 	std::string val;
 	runemufn([&val, name]() { val = setting::get(name); });
 	try {
-		val = pick_text(this, "Change path to", "Enter new path:", val);
+		if(e.GetId() == wxID_HIGHEST + 4)
+			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
+		else
+			val = pick_text(this, "Change path to", "Enter new path:", val);
 	} catch(...) {
 		refresh();
 		return;
