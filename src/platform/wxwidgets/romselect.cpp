@@ -1,5 +1,7 @@
 #include <wx/wx.h>
 #include <wx/dnd.h>
+#include <wx/statbox.h>
+#include <wx/notebook.h>
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
@@ -8,7 +10,6 @@
 #include "interface/core.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
-#include "platform/wxwidgets/window_romselect.hpp"
 
 #define ROM_SELECTS_BASE	(wxID_HIGHEST + 0)
 #define ROM_SELECTS_LAST	(wxID_HIGHEST + 127)
@@ -33,40 +34,50 @@
 #define RNAME_AUTO "Autodetect"
 #define RNAME_NTSC "NTSC"
 #define RNAME_PAL "PAL"
-#define WNAME_SNES_MAIN "ROM"
-#define WNAME_SNES_MAIN_XML "ROM XML"
+#define WNAME_SNES_MAIN "Cartridge ROM"
 #define WNAME_BS_MAIN "BS-X BIOS"
-#define WNAME_BS_MAIN_XML "BS-X BIOS XML"
 #define WNAME_BS_SLOTA "BS FLASH"
-#define WNAME_BS_SLOTA_XML "BS FLASH XML"
-#define WNAME_ST_MAIN "ST BIOS"
-#define WNAME_ST_MAIN_XML "ST BIOS XML"
+#define WNAME_ST_MAIN "Sufami Turbo BIOS"
 #define WNAME_ST_SLOTA "SLOT A ROM"
-#define WNAME_ST_SLOTA_XML "SLOT A XML"
 #define WNAME_ST_SLOTB "SLOT B ROM"
-#define WNAME_ST_SLOTB_XML "SLOT B XML"
 #define WNAME_SGB_MAIN "SGB BIOS"
-#define WNAME_SGB_MAIN_XML "SGB BIOS XML"
 #define WNAME_SGB_SLOTA "DMG ROM"
-#define WNAME_SGB_SLOTA_XML "BMG XML"
+#define MARKUP_POSTFIX " Markup"
 
 
 void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
+#define ROMSELECT_ROM_COUNT 3
+
 namespace
 {
-	void enable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask, const std::string& newlabel)
+	class my_interfaced : public SNES::Interface
 	{
-		label->SetLabel(towxstring(newlabel));
-		filename->Enable();
-		ask->Enable();
-	}
+		string path(SNES::Cartridge::Slot slot, const string &hint)
+		{
+			return "./";
+		}
+	} simple_interface;
 
-	void disable_slot(wxStaticText* label, wxTextCtrl* filename, wxButton* ask)
+	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
 	{
-		label->SetLabel(wxT(""));
-		filename->Disable();
-		ask->Disable();
+		std::string id(_id, _id.length());
+		//Fixup name change by bsnes v087...
+		if(id == "bsx.ram")
+			id = ".bss";
+		if(id == "bsx.psram")
+			id = ".bsp";
+		if(id == "program.rtc")
+			id = ".rtc";
+		if(id == "upd96050.ram")
+			id = ".dsp";
+		if(id == "program.ram")
+			id = ".srm";
+		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
+			return "slota." + id.substr(1);
+		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
+			return "slotb." + id.substr(1);
+		return id.substr(1);
 	}
 
 	porttype_t get_controller_type(const std::string& s)
@@ -137,71 +148,66 @@ namespace
 		case ROMTYPE_BSX:
 		case ROMTYPE_BSXSLOTTED:
 		case ROMTYPE_SGB:
-			return ((flags & 5) == 5);
+			return ((flags & 3) == 3);
 		case ROMTYPE_SUFAMITURBO:
-			return ((flags & 1) == 1) && ((flags & 20) != 0);
+			return ((flags & 1) == 1) && ((flags & 6) != 0);
 		default:
 			return false;
 		};
 	}
 
-	wxString romname(enum rom_type rtype, unsigned index)
+	std::string romname(enum rom_type rtype, unsigned index)
 	{
 		switch(rtype) {
 		case ROMTYPE_SNES:
 			switch(index) {
-			case 0:		return wxT(WNAME_SNES_MAIN);
-			case 1:		return wxT(WNAME_SNES_MAIN_XML);
+			case 0:		return WNAME_SNES_MAIN;
 			};
 			break;
 		case ROMTYPE_BSX:
 		case ROMTYPE_BSXSLOTTED:
 			switch(index) {
-			case 0:		return wxT(WNAME_BS_MAIN);
-			case 1:		return wxT(WNAME_BS_MAIN_XML);
-			case 2:		return wxT(WNAME_BS_SLOTA);
-			case 3:		return wxT(WNAME_BS_SLOTA_XML);
+			case 0:		return WNAME_BS_MAIN;
+			case 1:		return WNAME_BS_SLOTA;
 			};
 			break;
 		case ROMTYPE_SUFAMITURBO:
 			switch(index) {
-			case 0:		return wxT(WNAME_ST_MAIN);
-			case 1:		return wxT(WNAME_ST_MAIN_XML);
-			case 2:		return wxT(WNAME_ST_SLOTA);
-			case 3:		return wxT(WNAME_ST_SLOTA_XML);
-			case 4:		return wxT(WNAME_ST_SLOTB);
-			case 5:		return wxT(WNAME_ST_SLOTB_XML);
+			case 0:		return WNAME_ST_MAIN;
+			case 1:		return WNAME_ST_SLOTA;
+			case 2:		return WNAME_ST_SLOTB;
 			};
 			break;
 		case ROMTYPE_SGB:
 			switch(index) {
-			case 0:		return wxT(WNAME_SGB_MAIN);
-			case 1:		return wxT(WNAME_SGB_MAIN_XML);
-			case 2:		return wxT(WNAME_SGB_SLOTA);
-			case 3:		return wxT(WNAME_SGB_SLOTA_XML);
+			case 0:		return WNAME_SGB_MAIN;
+			case 1:		return WNAME_SGB_SLOTA;
 			};
 			break;
 		case ROMTYPE_NONE:
-			if(index == 0)	return wxT("dummy");
 			break;
 		}
-		return wxT("");
+		return "";
 	}
 
-	unsigned romname_to_index(enum rom_type rtype, const wxString& name)
+	unsigned romname_to_index(enum rom_type rtype, const wxString& _name)
 	{
-		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
+		std::string name = tostdstring(_name);
+		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
 			if(romname(rtype, i) == name)
-				return i;
-		return ROMSELECT_ROM_COUNT;
+				return 2 * i;
+			if(romname(rtype, i) + MARKUP_POSTFIX == name)
+				return 2 * i + 1;
+		}
+		return 2 * ROMSELECT_ROM_COUNT;
 	}
 
-	unsigned fill_rom_names(enum rom_type rtype, wxString* array)
+	unsigned fill_rom_names(enum rom_type rtype, std::string* array)
 	{
 		unsigned r = 0;
-		for(unsigned i = 0; i < 6; i++) {
-			wxString s = romname(rtype, i);
-			if(s.Length())
+		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
+			std::string s = romname(rtype, i);
+			if(s.length())
 				array[r++] = s;
 		}
 		return r;
@@ -254,7 +260,226 @@ namespace
 		//This is pre-boot, so read directly.
 		return rompath_setting;
 	}
+
+	struct rom_slot_callback
+	{
+		virtual void on_file_change() = 0;
+	};
+
+	class rom_slot : public wxEvtHandler
+	{
+	public:
+		rom_slot(wxWindow* inWindow, rom_slot_callback* _cb);
+		void show(wxSizer* sizer);
+		void hide(wxSizer* sizer);
+		void change(const std::string& name, bool has_markup);
+		std::string get_filename();
+		std::string get_markup();
+		void on_change(wxCommandEvent& e);
+		void on_filename_b(wxCommandEvent& e);
+		void on_markup_b(wxCommandEvent& e);
+	private:
+		wxPanel* panel;
+		wxBoxSizer* top;
+		wxStaticBox* box;
+		wxButton* filename_pick;
+		wxButton* markup_pick;
+		wxTextCtrl* filename;
+		wxTextCtrl* markup;
+		bool markup_flag;
+		bool enabled;
+		rom_slot_callback* cb;
+		wxStaticBoxSizer* intsizer;
+	};
+
+	rom_slot::rom_slot(wxWindow* in_window, rom_slot_callback* _cb)
+	{
+		wxSizer* tmp;
+		cb = _cb;
+		panel = new wxPanel(in_window);
+		top = new wxBoxSizer(wxVERTICAL);
+		box = new wxStaticBox(panel, wxID_ANY, wxT(""));
+		intsizer = new wxStaticBoxSizer(box, wxVERTICAL);
+		intsizer->Add(new wxStaticText(panel, wxID_ANY, wxT("File")));
+		tmp = new wxBoxSizer(wxHORIZONTAL);
+		tmp->Add(filename = new wxTextCtrl(panel, wxID_ANY, wxT(""), wxDefaultPosition,
+			wxSize(400,-1)), 1, wxGROW);
+		filename->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(rom_slot::on_change), NULL, this);
+		filename->SetDropTarget(new textboxloadfilename(filename));
+		tmp->Add(filename_pick = new wxButton(panel, wxID_ANY, wxT("Pick...")));
+		filename_pick->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(rom_slot::on_filename_b),
+			NULL, this);;
+		intsizer->Add(tmp);
+		intsizer->Add(new wxStaticText(panel, wxID_ANY, wxT("Default mappings override file (optional) ")));
+		tmp = new wxBoxSizer(wxHORIZONTAL);
+		tmp->Add(markup = new wxTextCtrl(panel, wxID_ANY, wxT(""), wxDefaultPosition,
+			wxSize(400,-1)), 1, wxGROW);
+		markup->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(rom_slot::on_change), NULL, this);
+		markup->SetDropTarget(new textboxloadfilename(markup));
+		tmp->Add(markup_pick = new wxButton(panel, wxID_ANY, wxT("Pick...")));
+		markup_pick->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(rom_slot::on_markup_b),
+			NULL, this);
+		intsizer->Add(tmp);
+		markup->Enable(markup_flag = false);
+		top->Add(intsizer);
+		hide(NULL);
+		enabled = false;
+	}
+
+	void rom_slot::on_change(wxCommandEvent& e)
+	{
+		if(cb)
+			cb->on_file_change();
+	}
+
+	void rom_slot::show(wxSizer* sizer)
+	{
+		panel->Show();
+		sizer->Add(panel);
+		enabled = true;
+		intsizer->Layout();
+		top->Layout();
+		sizer->Layout();
+	}
+
+	void rom_slot::hide(wxSizer* sizer)
+	{
+		if(sizer)
+			sizer->Detach(panel);
+		enabled = false;
+		panel->Hide();
+		if(sizer)
+			sizer->Layout();
+	}
+
+	void rom_slot::change(const std::string& name, bool has_markup)
+	{
+		box->SetLabel(towxstring(name));
+		markup_flag = has_markup;
+		markup->Enable(has_markup);
+		markup_pick->Enable(has_markup);
+	}
+	
+	std::string rom_slot::get_filename()
+	{
+		if(!enabled)
+			return "";
+		return tostdstring(filename->GetValue());
+	}
+
+	std::string rom_slot::get_markup()
+	{
+		if(!enabled || !markup_flag)
+			return "";
+		return tostdstring(markup->GetValue());
+	}
+
+	void rom_slot::on_filename_b(wxCommandEvent& e)
+	{
+		try {
+			std::string fname = pick_file_member(panel, "Choose ROM file", rom_path());
+			filename->SetValue(towxstring(fname));
+			on_change(e);
+		} catch(canceled_exception& e) {
+		}
+	}
+
+	void rom_slot::on_markup_b(wxCommandEvent& e)
+	{
+		try {
+			std::string fname = pick_file_member(panel, "Choose markup file", rom_path());
+			markup->SetValue(towxstring(fname));
+			on_change(e);
+		} catch(canceled_exception& e) {
+		}
+	}
 }
+
+class wxwin_romselect : public wxFrame, rom_slot_callback
+{
+public:
+	wxwin_romselect();
+	~wxwin_romselect();
+	void on_filename_change(wxCommandEvent& e);
+	void on_romtype_change(wxCommandEvent& e);
+	void on_quit(wxCommandEvent& e);
+	void on_open_rom(wxCommandEvent& e);
+	void on_apply_rom(wxCommandEvent& e);
+	void on_openapply_rom(wxCommandEvent& e, bool apply);
+	void on_file_change();
+	loaded_rom* our_rom;
+private:
+	wxComboBox* romtype_combo;
+	wxComboBox* region_combo;
+	wxBoxSizer* romgrid;
+	rom_slot* slots[ROMSELECT_ROM_COUNT];
+	wxButton* apply_rom;
+	wxButton* open_rom;
+	wxButton* quit_button;
+	std::string current_rtype;
+	std::string remembered_region;
+	void set_rtype(std::string rtype);
+};
+
+void open_rom_select_window()
+{
+	wxwin_romselect* romwin = new wxwin_romselect();
+	romwin->Show();
+}
+
+class wxwin_patch : public wxFrame
+{
+public:
+	wxwin_patch(loaded_rom& rom);
+	~wxwin_patch();
+	void on_patchfile_change(wxCommandEvent& e);
+	void on_ask_patchfile(wxCommandEvent& e);
+	void on_do_patch(wxCommandEvent& e);
+	void on_quit(wxCommandEvent& e);
+	void on_done(wxCommandEvent& e);
+	loaded_rom* our_rom;
+private:
+	wxComboBox* patch_what;
+	wxStaticText* checksums[ROMSELECT_ROM_COUNT];
+	wxTextCtrl* patchfile;
+	wxButton* choosefile;
+	wxButton* dopatch;
+	wxTextCtrl* patch_offset;
+};
+
+class wxwin_project : public wxFrame
+{
+public:
+	wxwin_project(loaded_rom& rom);
+	~wxwin_project();
+	void on_file_select(wxCommandEvent& e);
+	void on_new_select(wxCommandEvent& e);
+	void on_filename_change(wxCommandEvent& e);
+	void on_ask_filename(wxCommandEvent& e);
+	void on_quit(wxCommandEvent& e);
+	void on_load(wxCommandEvent& e);
+	void on_tab_select(wxNotebookEvent& e);
+	loaded_rom* our_rom;
+private:
+	bool load_file;
+	std::set<std::string> get_sram_set();
+	struct moviefile make_movie();
+	wxTextCtrl* savefile;
+	wxButton* ask_savefile;
+	wxNotebook* notebook;
+	std::map<std::string, wxTextCtrl*> sram_files;
+	std::map<std::string, wxButton*> sram_choosers;
+	wxComboBox* controller1type;
+	wxComboBox* controller2type;
+	wxTextCtrl* projectname;
+	wxTextCtrl* prefix;
+	wxTextCtrl* rtc_sec;
+	wxTextCtrl* rtc_subsec;
+	wxTextCtrl* authors;
+	wxButton* load;
+	wxButton* quit;
+	std::map<unsigned, std::string> sram_names;
+};
 
 
 wxwin_romselect::wxwin_romselect()
@@ -290,18 +515,9 @@ wxwin_romselect::wxwin_romselect()
 	toplevel->Add(selects, 0, wxGROW);
 
 	//ROM filename selects
-	wxFlexGridSizer* romgrid = new wxFlexGridSizer(ROMSELECT_ROM_COUNT, 3, 0, 0);
-	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
-		romgrid->Add(rom_label[i] = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
-		romgrid->Add(rom_name[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
-			1, wxGROW);
-		romgrid->Add(rom_change[i] = new wxButton(this, ROM_SELECTS_BASE + i, wxT("Pick")), 0, wxGROW);
-		rom_name[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
-			wxCommandEventHandler(wxwin_romselect::on_filename_change), NULL, this);
-		rom_change[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxwin_romselect::on_ask_rom_filename), NULL, this);
-		rom_name[i]->SetDropTarget(new textboxloadfilename(rom_name[i]));
-	}
+	romgrid = new wxBoxSizer(wxVERTICAL);
+	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
+		slots[i] = new rom_slot(this, this);
 	toplevel->Add(romgrid, 1, wxGROW);
 
 	//Button bar.
@@ -330,6 +546,8 @@ wxwin_romselect::wxwin_romselect()
 
 wxwin_romselect::~wxwin_romselect()
 {
+	for(size_t i = 0; i < ROMSELECT_ROM_COUNT; i++)
+		delete slots[i];
 }
 
 void wxwin_romselect::set_rtype(std::string rtype)
@@ -348,36 +566,26 @@ void wxwin_romselect::set_rtype(std::string rtype)
 		remembered_region = "";
 		region_combo->Enable();
 	}
-	wxString tmp[ROMSELECT_ROM_COUNT];
+	std::string tmp[ROMSELECT_ROM_COUNT];
 	unsigned c = fill_rom_names(romtype_from_string(rtype), tmp);
-	for(unsigned i = 0; i < c; i++)
-		enable_slot(rom_label[i], rom_name[i], rom_change[i], tostdstring(tmp[i]));
-	for(unsigned i = c; i < ROMSELECT_ROM_COUNT; i++)
-		disable_slot(rom_label[i], rom_name[i], rom_change[i]);
+	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
+		slots[i]->hide(romgrid);
+	for(unsigned i = 0; i < c; i++) {
+		slots[i]->change(tmp[i], true);
+		slots[i]->show(romgrid);
+	}
+	romgrid->Layout();
 	current_rtype = rtype;
 	Fit();
 }
 
-void wxwin_romselect::on_ask_rom_filename(wxCommandEvent& e)
-{
-	try {
-		std::string fname = pick_file_member(this, "Choose " + tostdstring(
-			rom_label[e.GetId() - ROM_SELECTS_BASE]->GetLabel()), rom_path());
-		wxTextCtrl* textbox = rom_name[e.GetId() - ROM_SELECTS_BASE];
-		if(textbox)
-			textbox->SetValue(towxstring(fname));
-		on_filename_change(e);
-	} catch(canceled_exception& e) {
-	}
-}
-
-void wxwin_romselect::on_filename_change(wxCommandEvent& e)
+void wxwin_romselect::on_file_change()
 {
 	bool ok = true;
 	enum rom_type rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
 	unsigned flags = 0;
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
-		flags |= ((rom_name[i]->GetValue().Length() != 0) ? (1 << i) : 0);
+		flags |= ((slots[i]->get_filename() != "") ? (1 << i) : 0);
 	open_rom->Enable(check_present_roms(rtype, flags));
 	apply_rom->Enable(check_present_roms(rtype, flags));
 }
@@ -385,7 +593,7 @@ void wxwin_romselect::on_filename_change(wxCommandEvent& e)
 void wxwin_romselect::on_romtype_change(wxCommandEvent& e)
 {
 	set_rtype(tostdstring(romtype_combo->GetValue()));
-	on_filename_change(e);
+	on_file_change();
 }
 
 void wxwin_romselect::on_quit(wxCommandEvent& e)
@@ -410,12 +618,12 @@ void wxwin_romselect::on_openapply_rom(wxCommandEvent& e, bool apply)
 	rfiles.base_file = "";
 	rfiles.rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
 	rfiles.region = region_from_string(tostdstring(region_combo->GetValue()));
-	rfiles.rom = tostdstring(rom_name[0]->GetValue());
-	rfiles.rom_xml = tostdstring(rom_name[1]->GetValue());
-	rfiles.slota = tostdstring(rom_name[2]->GetValue());
-	rfiles.slota_xml = tostdstring(rom_name[3]->GetValue());
-	rfiles.slotb = tostdstring(rom_name[4]->GetValue());
-	rfiles.slotb_xml = tostdstring(rom_name[5]->GetValue());
+	rfiles.rom = slots[0]->get_filename();
+	rfiles.rom_xml = slots[0]->get_markup();
+	rfiles.slota = slots[1]->get_filename();
+	rfiles.slota_xml = slots[1]->get_markup();
+	rfiles.slotb = slots[2]->get_filename();
+	rfiles.slotb_xml = slots[2]->get_markup();
 	try {
 		our_rom = new loaded_rom(rfiles);
 		if(our_rom->slota.valid)
@@ -442,8 +650,15 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
 	our_rom = &rom;
-	wxString targets[ROMSELECT_ROM_COUNT];
-	size_t target_count = fill_rom_names(rom.rtype, targets);
+	wxString targets[2 * ROMSELECT_ROM_COUNT];
+	std::string _targets[ROMSELECT_ROM_COUNT];
+	size_t _target_count = fill_rom_names(rom.rtype, _targets);
+	size_t target_count = 0;
+	for(auto i = 0; i < _target_count; i++) {
+		targets[2 * i] = towxstring(_targets[i]);
+		targets[2 * i + 1] = towxstring(_targets[i] + MARKUP_POSTFIX);
+		target_count += 2;
+	}
 
 	//Toplevel has 5 blocks:
 	//- Checksums for ROMs.
@@ -556,7 +771,7 @@ void wxwin_patch::on_do_patch(wxCommandEvent& e)
 	try {
 		auto patch_contents = read_file_relative(tostdstring(patchfile->GetValue()), "");
 		size_t patch_index = romname_to_index(our_rom->rtype, patch_what->GetValue());
-		if(patch_index > ROMSELECT_ROM_COUNT)
+		if(patch_index > 2 * ROMSELECT_ROM_COUNT)
 			throw std::runtime_error("Internal error: Patch WHAT?");
 		loaded_slot& s = get_rom_slot(*our_rom, patch_index);
 		std::string offsetv = tostdstring(patch_offset->GetValue());
@@ -628,93 +843,95 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	std::set<std::string> sram_set = get_sram_set();
 
 	Centre();
-	//6 Top-level blocks.
-	//- Radiobutton for load
-	//- Radiobutton for new.
-	//- Filename/Controllertypes/initRTC/Gamename/SRAMs.
-	//- Authors explanation.
-	//- Authors
+	//2 Top-level block.
+	//- Notebook
 	//- Button bar.
-	wxFlexGridSizer* toplevel = new wxFlexGridSizer(6, 1, 0, 0);
+	wxBoxSizer* toplevel = new wxBoxSizer(wxVERTICAL);
 	SetSizer(toplevel);
+	notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+	wxPanel* load_panel = new wxPanel(notebook);
+	wxPanel* new_panel = new wxPanel(notebook);
 
-	//Radiobutton for load.
-	wxRadioButton* file = new wxRadioButton(this, wxID_ANY, wxT("Load movie/savestate"), wxDefaultPosition,
-		wxDefaultSize, wxRB_GROUP);
-	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
-		wxCommandEventHandler(wxwin_project::on_file_select), NULL, this);
-	toplevel->Add(file, 0, wxGROW);
-	load_file = true;
-	
-	//Radiobutton for new proect.
-	wxRadioButton* newp = new wxRadioButton(this, wxID_ANY, wxT("New project"));
-	newp->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
-		wxCommandEventHandler(wxwin_project::on_new_select), NULL, this);
-	toplevel->Add(newp, 0, wxGROW);
-
-	//Filename/Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(6 + sram_set.size(), 2, 0, 0);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("File to load:")), 0, wxGROW);
-	wxFlexGridSizer* fileblock = new wxFlexGridSizer(1, 2, 0, 0);
-	fileblock->Add(savefile = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
+	//The load page.
+	wxSizer* load_sizer = new wxFlexGridSizer(1, 3, 0, 0);
+	load_panel->SetSizer(load_sizer);
+	load_sizer->Add(new wxStaticText(load_panel, wxID_ANY, wxT("File to load:")), 0, wxGROW);
+	load_sizer->Add(savefile = new wxTextCtrl(load_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 		1, wxGROW);
 	savefile->SetDropTarget(new textboxloadfilename(savefile));
 
-	fileblock->Add(ask_savefile = new wxButton(this, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
+	load_sizer->Add(ask_savefile = new wxButton(load_panel, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
 	savefile->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 	ask_savefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_project::on_ask_filename), NULL, this);
-	mainblock->Add(fileblock, 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
-	mainblock->Add(controller1type = new wxComboBox(this, wxID_ANY, cchoices[1], wxDefaultPosition, wxDefaultSize,
-		CONTROLLERTYPES_P1, cchoices, wxCB_READONLY), 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
-	mainblock->Add(controller2type = new wxComboBox(this, wxID_ANY, cchoices[0], wxDefaultPosition, wxDefaultSize,
-		CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
+	notebook->AddPage(load_panel, wxT("Load save/movie"));
+
+	//The new page.
+	//3 Page-level blocks.
+	//- Controllertypes/initRTC/Gamename/SRAMs.
+	//- Authors explanation.
+	//- Authors
+	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
+	new_panel->SetSizer(new_sizer);
+	//Controllertypes/Gamename/initRTC/SRAMs.
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
+	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[1], wxDefaultPosition,
+		wxDefaultSize, CONTROLLERTYPES_P1, cchoices, wxCB_READONLY), 0, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
+	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[0], wxDefaultPosition,
+		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
-	initrtc->Add(rtc_sec = new wxTextCtrl(this, wxID_ANY, wxT("1000000000"), wxDefaultPosition, wxSize(150, -1)),
-		1, wxGROW);
-	initrtc->Add(new wxStaticText(this, wxID_ANY, wxT(":")), 0, wxGROW);
-	initrtc->Add(rtc_subsec = new wxTextCtrl(this, wxID_ANY, wxT("0"), wxDefaultPosition,
+	initrtc->Add(rtc_sec = new wxTextCtrl(new_panel, wxID_ANY, wxT("1000000000"), wxDefaultPosition,
+		wxSize(150, -1)), 1, wxGROW);
+	initrtc->Add(new wxStaticText(new_panel, wxID_ANY, wxT(":")), 0, wxGROW);
+	initrtc->Add(rtc_subsec = new wxTextCtrl(new_panel, wxID_ANY, wxT("0"), wxDefaultPosition,
 		wxSize(150, -1)), 1, wxGROW);
 	mainblock->Add(initrtc, 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Game name:")), 0, wxGROW);
-	mainblock->Add(projectname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
-		wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Save prefix:")), 0, wxGROW);
-	mainblock->Add(prefix = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Game name:")), 0, wxGROW);
+	mainblock->Add(projectname = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)),
+		1, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Save prefix:")), 0, wxGROW);
+	mainblock->Add(prefix = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
 		wxGROW);
 	unsigned idx = 0;
 	for(auto i : sram_set) {
-		mainblock->Add(new wxStaticText(this, wxID_ANY, towxstring("SRAM " + i)), 0, wxGROW);
+		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring("SRAM " + i)), 0, wxGROW);
 		wxFlexGridSizer* fileblock2 = new wxFlexGridSizer(1, 2, 0, 0);
-		fileblock2->Add(sram_files[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition,
+		fileblock2->Add(sram_files[i] = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition,
 			wxSize(500, -1)), 1, wxGROW);
 		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
-		fileblock2->Add(sram_choosers[i] = new wxButton(this, ASK_SRAMS_BASE + idx, wxT("Pick")), 0, wxGROW);
+		fileblock2->Add(sram_choosers[i] = new wxButton(new_panel, ASK_SRAMS_BASE + idx, wxT("Pick")), 0,
+			wxGROW);
 		sram_files[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
+		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
 		sram_choosers[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_project::on_ask_filename), NULL, this);
 		mainblock->Add(fileblock2, 0, wxGROW);
 		sram_names[idx] = i;
 		idx++;
 	}
-	toplevel->Add(mainblock, 0, wxGROW);
+	new_sizer->Add(mainblock, 0, wxGROW);
 
 	//Authors
-	toplevel->Add(new wxStaticText(this, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
-	toplevel->Add(authors = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+	new_sizer->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
+	new_sizer->Add(authors = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE), 0, wxGROW);
 	authors->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxwin_project::on_filename_change), NULL,
 		this);
 
+	notebook->Connect(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler(wxwin_project::on_tab_select),
+		NULL, this);
+	notebook->AddPage(new_panel, wxT("New movie"));
+	toplevel->Add(notebook, 1, wxGROW);
+
 	//Button bar.
 	wxBoxSizer* buttonbar = new wxBoxSizer(wxHORIZONTAL);
-	buttonbar->AddStretchSpacer();
 	buttonbar->Add(load = new wxButton(this, wxID_ANY, wxT("Load")), 0, wxGROW);
+	buttonbar->AddStretchSpacer();
 	buttonbar->Add(quit = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxGROW);
 	load->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_project::on_load), NULL, this);
@@ -728,10 +945,12 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		savefile->SetValue(towxstring(last_save));
 	}
 
-	wxCommandEvent e;
-	on_file_select(e);
+	wxNotebookEvent e2;
+	on_tab_select(e2);
 
 	mainblock->SetSizeHints(this);
+	new_sizer->SetSizeHints(this);
+	load_sizer->SetSizeHints(this);
 	toplevel->SetSizeHints(this);
 	Fit();
 }
@@ -740,45 +959,22 @@ wxwin_project::~wxwin_project()
 {
 }
 
-void wxwin_project::on_file_select(wxCommandEvent& e)
+void wxwin_project::on_tab_select(wxNotebookEvent& e)
 {
-	savefile->Enable();
-	ask_savefile->Enable();
-	controller1type->Disable();
-	controller2type->Disable();
-	rtc_sec->Disable();
-	rtc_subsec->Disable();
-	projectname->Disable();
-	prefix->Disable();
-	authors->Disable();
-	load->SetLabel(wxT("Load"));
-	load_file = true;
-	for(auto i : sram_files)
-		i.second->Disable();
-	for(auto i : sram_choosers)
-		i.second->Disable();
-	on_filename_change(e);
-}
-
-void wxwin_project::on_new_select(wxCommandEvent& e)
-{
-	savefile->Disable();
-	ask_savefile->Disable();
-	controller1type->Enable();
-	controller2type->Enable();
-	rtc_sec->Enable();
-	rtc_subsec->Enable();
-	projectname->Enable();
-	prefix->Enable();
-	authors->Enable();
-	load->SetLabel(wxT("Start"));
-	on_filename_change(e);
-	load_file = false;
-	for(auto i : sram_files)
-		i.second->Enable();
-	for(auto i : sram_choosers)
-		i.second->Enable();
-	on_filename_change(e);
+	int p = e.GetSelection();
+	if(p == -1) {
+		notebook->SetSelection(0);
+		p = 0;
+	}
+	if(p == 0) {
+		load_file = true;
+		load->SetLabel(wxT("Load"));
+	} else if(p == 1) {
+		load_file = false;
+		load->SetLabel(wxT("Start"));
+	}
+	wxCommandEvent e2;
+	on_filename_change(e2);
 }
 
 void wxwin_project::on_ask_filename(wxCommandEvent& e)

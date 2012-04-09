@@ -37,6 +37,7 @@ void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void wxsetingsdialog_display(wxWindow* parent);
+void open_rom_select_window();
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
