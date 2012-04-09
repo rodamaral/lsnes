@@ -21,7 +21,6 @@
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
-#include "platform/wxwidgets/window_romselect.hpp"
 
 #include <cassert>
 #include <boost/lexical_cast.hpp>
@@ -331,8 +330,7 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
-	wxwin_romselect* romwin = new wxwin_romselect();
-	romwin->Show();
+	open_rom_select_window();
 
 	return true;
 }
