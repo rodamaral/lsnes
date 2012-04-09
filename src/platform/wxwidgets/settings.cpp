@@ -847,9 +847,12 @@ public:
 	void on_add(wxCommandEvent& e);
 	void on_edit(wxCommandEvent& e);
 	void on_delete(wxCommandEvent& e);
+	void on_change(wxCommandEvent& e);
 private:
 	std::map<int, std::string> numbers;
 	wxListBox* select;
+	wxButton* editbutton;
+	wxButton* deletebutton;
 	void refresh();
 	std::string selected();
 };
@@ -863,27 +866,38 @@ wxeditor_esettings_aliases::wxeditor_esettings_aliases(wxWindow* parent)
 	SetSizer(top_s);
 
 	top_s->Add(select = new wxListBox(this, wxID_ANY), 1, wxGROW);
+	select->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(wxeditor_esettings_aliases::on_change),
+		NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_aliases::on_add), NULL,
 		this);
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Edit")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_aliases::on_edit), NULL,
-		this);
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Delete")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_aliases::on_delete), NULL,
-		this);
+	pbutton_s->Add(editbutton = new wxButton(this, wxID_ANY, wxT("Edit")), 0, wxGROW);
+	editbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_aliases::on_edit),
+		NULL, this);
+	pbutton_s->Add(deletebutton = new wxButton(this, wxID_ANY, wxT("Delete")), 0, wxGROW);
+	deletebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_aliases::on_delete), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	refresh();
+	wxCommandEvent e;
+	on_change(e);
 	top_s->SetSizeHints(this);
 	Fit();
 }
 
 wxeditor_esettings_aliases::~wxeditor_esettings_aliases()
 {
+}
+
+void wxeditor_esettings_aliases::on_change(wxCommandEvent& e)
+{
+	bool enable = (selected() != "");
+	editbutton->Enable(enable);
+	deletebutton->Enable(enable);
 }
 
 void wxeditor_esettings_aliases::on_add(wxCommandEvent& e)
@@ -950,6 +964,8 @@ void wxeditor_esettings_aliases::refresh()
 		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
+	wxCommandEvent e;
+	on_change(e);
 	select->Refresh();
 }
 
@@ -969,6 +985,7 @@ public:
 	~wxeditor_esettings_hotkeys();
 	void on_primary(wxCommandEvent& e);
 	void on_secondary(wxCommandEvent& e);
+	void on_change(wxCommandEvent& e);
 private:
 	std::map<std::string, wxTreeItemId> items;
 	std::map<std::string, inverse_key*> realitems;
@@ -989,6 +1006,8 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 
 	top_s->Add(select = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS |
 		wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
+	select->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED, wxCommandEventHandler(wxeditor_esettings_hotkeys::on_change),
+		NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
@@ -1003,8 +1022,17 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 	items[""] = select->AddRoot(wxT("<root>"));
 
 	refresh();
+	wxCommandEvent e;
+	on_change(e);
 	top_s->SetSizeHints(this);
 	Fit();
+}
+
+void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
+{
+	bool enable = (selected() != "");
+	pri_button->Enable(enable);
+	sec_button->Enable(enable);
 }
 
 wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
@@ -1163,6 +1191,7 @@ public:
 	void on_add(wxCommandEvent& e);
 	void on_edit(wxCommandEvent& e);
 	void on_delete(wxCommandEvent& e);
+	void on_change(wxCommandEvent& e);
 private:
 	std::map<int, std::string> numbers;
 	wxListBox* select;
@@ -1171,6 +1200,8 @@ private:
 	std::map<std::string, std::string> values;
 	std::map<int, std::string> selections;
 	std::string selected();
+	wxButton* editbutton;
+	wxButton* deletebutton;
 	wxListBox* _settings;
 };
 
@@ -1183,27 +1214,38 @@ wxeditor_esettings_bindings::wxeditor_esettings_bindings(wxWindow* parent)
 	SetSizer(top_s);
 
 	top_s->Add(select = new wxListBox(this, wxID_ANY), 1, wxGROW);
+	select->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(wxeditor_esettings_bindings::on_change),
+		NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_bindings::on_add), NULL,
 		this);
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Edit")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_bindings::on_edit), NULL,
-		this);
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Delete")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_bindings::on_delete), NULL,
-		this);
+	pbutton_s->Add(editbutton = new wxButton(this, wxID_ANY, wxT("Edit")), 0, wxGROW);
+	editbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_bindings::on_edit),
+		NULL, this);
+	pbutton_s->Add(deletebutton = new wxButton(this, wxID_ANY, wxT("Delete")), 0, wxGROW);
+	deletebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_bindings::on_delete), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	refresh();
+	wxCommandEvent e;
+	on_change(e);
 	top_s->SetSizeHints(this);
 	Fit();
 }
 
 wxeditor_esettings_bindings::~wxeditor_esettings_bindings()
 {
+}
+
+void wxeditor_esettings_bindings::on_change(wxCommandEvent& e)
+{
+	bool enable = (selected() != "");
+	editbutton->Enable(enable);
+	deletebutton->Enable(enable);
 }
 
 void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
@@ -1299,6 +1341,8 @@ void wxeditor_esettings_bindings::refresh()
 		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
+	wxCommandEvent e;
+	on_change(e);
 	select->Refresh();
 }
 
