@@ -152,6 +152,8 @@ Building is via makefile, the following options are available:
 
     ∗ EVDEV: Use EVDEV for joystick (Linux only).
 
+    ∗ WIN32MM: Use Win32mm for joystick (Windows only).
+
     ∗ DUMMY: Disable joystick support.
 
   – Default is SDL.

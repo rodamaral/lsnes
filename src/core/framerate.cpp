@@ -61,11 +61,14 @@ namespace
 		{
 		}
 
-		void blank() throw(std::bad_alloc, std::runtime_error)
+		bool blank(bool really) throw(std::bad_alloc, std::runtime_error)
 		{
+			if(!really)
+				return true;
 			target_nominal = true;
 			target_infinite = false;
 			target_fps = 100.0;
+			return true;
 		}
 
 		bool is_set() throw()

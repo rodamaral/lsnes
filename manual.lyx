@@ -384,6 +384,10 @@ EVDEV: Use EVDEV for joystick (Linux only).
 \end_layout
 
 \begin_layout Itemize
+WIN32MM: Use Win32mm for joystick (Windows only).
+\end_layout
+
+\begin_layout Itemize
 DUMMY: Disable joystick support.
 \end_layout
 
