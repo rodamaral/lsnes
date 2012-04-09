@@ -35,7 +35,7 @@
 #define RNAME_AUTO "Autodetect"
 #define RNAME_NTSC "NTSC"
 #define RNAME_PAL "PAL"
-#define WNAME_SNES_MAIN "ROM"
+#define WNAME_SNES_MAIN "Cartridge ROM"
 #define WNAME_BS_MAIN "BS-X BIOS"
 #define WNAME_BS_SLOTA "BS FLASH"
 #define WNAME_ST_MAIN "Sufami Turbo BIOS"
