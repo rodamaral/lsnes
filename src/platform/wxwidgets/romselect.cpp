@@ -962,11 +962,10 @@ wxwin_project::~wxwin_project()
 void wxwin_project::on_tab_select(wxNotebookEvent& e)
 {
 	int p = e.GetSelection();
-	if(p == -1) {
-		notebook->SetSelection(0);
-		p = 0;
-	}
-	if(p == 0) {
+	if(p < 0) {
+		load->Disable();
+		return;
+	} else if(p == 0) {
 		load_file = true;
 		load->SetLabel(wxT("Load"));
 	} else if(p == 1) {
@@ -975,6 +974,7 @@ void wxwin_project::on_tab_select(wxNotebookEvent& e)
 	}
 	wxCommandEvent e2;
 	on_filename_change(e2);
+	e.Skip();
 }
 
 void wxwin_project::on_ask_filename(wxCommandEvent& e)
