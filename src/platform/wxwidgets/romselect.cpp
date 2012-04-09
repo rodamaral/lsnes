@@ -2,6 +2,7 @@
 #include <wx/wx.h>
 #include <wx/dnd.h>
 #include <wx/statbox.h>
+#include <wx/notebook.h>
 
 #include "core/bsnes.hpp"
 
@@ -459,6 +460,7 @@ public:
 	void on_ask_filename(wxCommandEvent& e);
 	void on_quit(wxCommandEvent& e);
 	void on_load(wxCommandEvent& e);
+	void on_tab_select(wxNotebookEvent& e);
 	loaded_rom* our_rom;
 private:
 	bool load_file;
@@ -466,6 +468,7 @@ private:
 	struct moviefile make_movie();
 	wxTextCtrl* savefile;
 	wxButton* ask_savefile;
+	wxNotebook* notebook;
 	std::map<std::string, wxTextCtrl*> sram_files;
 	std::map<std::string, wxButton*> sram_choosers;
 	wxComboBox* controller1type;
@@ -842,72 +845,68 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	std::set<std::string> sram_set = get_sram_set();
 
 	Centre();
-	//6 Top-level blocks.
-	//- Radiobutton for load
-	//- Radiobutton for new.
-	//- Filename/Controllertypes/initRTC/Gamename/SRAMs.
-	//- Authors explanation.
-	//- Authors
+	//2 Top-level block.
+	//- Notebook
 	//- Button bar.
-	wxFlexGridSizer* toplevel = new wxFlexGridSizer(6, 1, 0, 0);
+	wxBoxSizer* toplevel = new wxBoxSizer(wxVERTICAL);
 	SetSizer(toplevel);
+	notebook = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+	wxPanel* load_panel = new wxPanel(notebook);
+	wxPanel* new_panel = new wxPanel(notebook);
 
-	//Radiobutton for load.
-	wxRadioButton* file = new wxRadioButton(this, wxID_ANY, wxT("Load movie/savestate"), wxDefaultPosition,
-		wxDefaultSize, wxRB_GROUP);
-	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
-		wxCommandEventHandler(wxwin_project::on_file_select), NULL, this);
-	toplevel->Add(file, 0, wxGROW);
-	load_file = true;
-	
-	//Radiobutton for new proect.
-	wxRadioButton* newp = new wxRadioButton(this, wxID_ANY, wxT("New project"));
-	newp->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
-		wxCommandEventHandler(wxwin_project::on_new_select), NULL, this);
-	toplevel->Add(newp, 0, wxGROW);
-
-	//Filename/Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(6 + sram_set.size(), 2, 0, 0);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("File to load:")), 0, wxGROW);
-	wxFlexGridSizer* fileblock = new wxFlexGridSizer(1, 2, 0, 0);
-	fileblock->Add(savefile = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
+	//The load page.
+	wxSizer* load_sizer = new wxFlexGridSizer(1, 3, 0, 0);
+	load_panel->SetSizer(load_sizer);
+	load_sizer->Add(new wxStaticText(load_panel, wxID_ANY, wxT("File to load:")), 0, wxGROW);
+	load_sizer->Add(savefile = new wxTextCtrl(load_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 		1, wxGROW);
 	savefile->SetDropTarget(new textboxloadfilename(savefile));
 
-	fileblock->Add(ask_savefile = new wxButton(this, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
+	load_sizer->Add(ask_savefile = new wxButton(load_panel, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
 	savefile->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 	ask_savefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_project::on_ask_filename), NULL, this);
-	mainblock->Add(fileblock, 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
-	mainblock->Add(controller1type = new wxComboBox(this, wxID_ANY, cchoices[1], wxDefaultPosition, wxDefaultSize,
-		CONTROLLERTYPES_P1, cchoices, wxCB_READONLY), 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
-	mainblock->Add(controller2type = new wxComboBox(this, wxID_ANY, cchoices[0], wxDefaultPosition, wxDefaultSize,
-		CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
+	notebook->AddPage(load_panel, wxT("Load save/movie"));
+
+	//The new page.
+	//3 Page-level blocks.
+	//- Controllertypes/initRTC/Gamename/SRAMs.
+	//- Authors explanation.
+	//- Authors
+	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
+	new_panel->SetSizer(new_sizer);
+	//Controllertypes/Gamename/initRTC/SRAMs.
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
+	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[1], wxDefaultPosition,
+		wxDefaultSize, CONTROLLERTYPES_P1, cchoices, wxCB_READONLY), 0, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
+	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[0], wxDefaultPosition,
+		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
-	initrtc->Add(rtc_sec = new wxTextCtrl(this, wxID_ANY, wxT("1000000000"), wxDefaultPosition, wxSize(150, -1)),
-		1, wxGROW);
-	initrtc->Add(new wxStaticText(this, wxID_ANY, wxT(":")), 0, wxGROW);
-	initrtc->Add(rtc_subsec = new wxTextCtrl(this, wxID_ANY, wxT("0"), wxDefaultPosition,
+	initrtc->Add(rtc_sec = new wxTextCtrl(new_panel, wxID_ANY, wxT("1000000000"), wxDefaultPosition,
+		wxSize(150, -1)), 1, wxGROW);
+	initrtc->Add(new wxStaticText(new_panel, wxID_ANY, wxT(":")), 0, wxGROW);
+	initrtc->Add(rtc_subsec = new wxTextCtrl(new_panel, wxID_ANY, wxT("0"), wxDefaultPosition,
 		wxSize(150, -1)), 1, wxGROW);
 	mainblock->Add(initrtc, 0, wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Game name:")), 0, wxGROW);
-	mainblock->Add(projectname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
-		wxGROW);
-	mainblock->Add(new wxStaticText(this, wxID_ANY, wxT("Save prefix:")), 0, wxGROW);
-	mainblock->Add(prefix = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Game name:")), 0, wxGROW);
+	mainblock->Add(projectname = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)),
+		1, wxGROW);
+	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Save prefix:")), 0, wxGROW);
+	mainblock->Add(prefix = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
 		wxGROW);
 	unsigned idx = 0;
 	for(auto i : sram_set) {
-		mainblock->Add(new wxStaticText(this, wxID_ANY, towxstring("SRAM " + i)), 0, wxGROW);
+		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring("SRAM " + i)), 0, wxGROW);
 		wxFlexGridSizer* fileblock2 = new wxFlexGridSizer(1, 2, 0, 0);
-		fileblock2->Add(sram_files[i] = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition,
+		fileblock2->Add(sram_files[i] = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition,
 			wxSize(500, -1)), 1, wxGROW);
 		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
-		fileblock2->Add(sram_choosers[i] = new wxButton(this, ASK_SRAMS_BASE + idx, wxT("Pick")), 0, wxGROW);
+		fileblock2->Add(sram_choosers[i] = new wxButton(new_panel, ASK_SRAMS_BASE + idx, wxT("Pick")), 0,
+			wxGROW);
 		sram_files[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
@@ -917,19 +916,24 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		sram_names[idx] = i;
 		idx++;
 	}
-	toplevel->Add(mainblock, 0, wxGROW);
+	new_sizer->Add(mainblock, 0, wxGROW);
 
 	//Authors
-	toplevel->Add(new wxStaticText(this, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
-	toplevel->Add(authors = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+	new_sizer->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Authors (one per line):")), 0, wxGROW);
+	new_sizer->Add(authors = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 		wxTE_MULTILINE), 0, wxGROW);
 	authors->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(wxwin_project::on_filename_change), NULL,
 		this);
 
+	notebook->Connect(wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler(wxwin_project::on_tab_select),
+		NULL, this);
+	notebook->AddPage(new_panel, wxT("New movie"));
+	toplevel->Add(notebook, 1, wxGROW);
+
 	//Button bar.
 	wxBoxSizer* buttonbar = new wxBoxSizer(wxHORIZONTAL);
-	buttonbar->AddStretchSpacer();
 	buttonbar->Add(load = new wxButton(this, wxID_ANY, wxT("Load")), 0, wxGROW);
+	buttonbar->AddStretchSpacer();
 	buttonbar->Add(quit = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxGROW);
 	load->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_project::on_load), NULL, this);
@@ -943,10 +947,12 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		savefile->SetValue(towxstring(last_save));
 	}
 
-	wxCommandEvent e;
-	on_file_select(e);
+	wxNotebookEvent e2;
+	on_tab_select(e2);
 
 	mainblock->SetSizeHints(this);
+	new_sizer->SetSizeHints(this);
+	load_sizer->SetSizeHints(this);
 	toplevel->SetSizeHints(this);
 	Fit();
 }
@@ -955,45 +961,22 @@ wxwin_project::~wxwin_project()
 {
 }
 
-void wxwin_project::on_file_select(wxCommandEvent& e)
+void wxwin_project::on_tab_select(wxNotebookEvent& e)
 {
-	savefile->Enable();
-	ask_savefile->Enable();
-	controller1type->Disable();
-	controller2type->Disable();
-	rtc_sec->Disable();
-	rtc_subsec->Disable();
-	projectname->Disable();
-	prefix->Disable();
-	authors->Disable();
-	load->SetLabel(wxT("Load"));
-	load_file = true;
-	for(auto i : sram_files)
-		i.second->Disable();
-	for(auto i : sram_choosers)
-		i.second->Disable();
-	on_filename_change(e);
-}
-
-void wxwin_project::on_new_select(wxCommandEvent& e)
-{
-	savefile->Disable();
-	ask_savefile->Disable();
-	controller1type->Enable();
-	controller2type->Enable();
-	rtc_sec->Enable();
-	rtc_subsec->Enable();
-	projectname->Enable();
-	prefix->Enable();
-	authors->Enable();
-	load->SetLabel(wxT("Start"));
-	on_filename_change(e);
-	load_file = false;
-	for(auto i : sram_files)
-		i.second->Enable();
-	for(auto i : sram_choosers)
-		i.second->Enable();
-	on_filename_change(e);
+	int p = e.GetSelection();
+	if(p == -1) {
+		notebook->SetSelection(0);
+		p = 0;
+	}
+	if(p == 0) {
+		load_file = true;
+		load->SetLabel(wxT("Load"));
+	} else if(p == 1) {
+		load_file = false;
+		load->SetLabel(wxT("Start"));
+	}
+	wxCommandEvent e2;
+	on_filename_change(e2);
 }
 
 void wxwin_project::on_ask_filename(wxCommandEvent& e)
