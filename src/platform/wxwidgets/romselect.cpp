@@ -910,6 +910,7 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		fileblock2->Add(sram_choosers[i] = new wxButton(this, ASK_SRAMS_BASE + idx, wxT("Pick")), 0, wxGROW);
 		sram_files[i]->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
+		sram_files[i]->SetDropTarget(new textboxloadfilename(sram_files[i]));
 		sram_choosers[i]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwin_project::on_ask_filename), NULL, this);
 		mainblock->Add(fileblock2, 0, wxGROW);
