@@ -76,17 +76,34 @@ void setting::set(const std::string& _setting, const std::string& value) throw(s
 	}
 }
 
+bool setting::blank(bool really) throw(std::bad_alloc, std::runtime_error)
+{
+	return false;
+}
+
+bool setting::blankable(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
+{
+	if(!settings().count(_setting))
+		throw std::runtime_error("No such setting '" + _setting + "'");
+	try {
+		return settings()[_setting]->blank(false);
+	} catch(...) {
+		return false;
+	}
+}
+
 void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!settings().count(_setting))
 		throw std::runtime_error("No such setting '" + _setting + "'");
 	try {
-		settings()[_setting]->blank();
+		if(!settings()[_setting]->blank(true))
+			throw std::runtime_error("This setting can't be cleared");
 		information_dispatch::do_setting_clear(_setting);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
-		throw std::runtime_error("Can't blank setting '" + _setting + "': " + e.what());
+		throw std::runtime_error("Can't clear setting '" + _setting + "': " + e.what());
 	}
 }
 
@@ -122,11 +139,6 @@ numeric_setting::numeric_setting(const std::string& sname, int32_t minv, int32_t
 	value = dflt;
 }
 
-void numeric_setting::blank() throw(std::bad_alloc, std::runtime_error)
-{
-	throw std::runtime_error("This setting can't be blanked");
-}
-
 bool numeric_setting::is_set() throw()
 {
 	return true;
@@ -159,10 +171,6 @@ boolean_setting::boolean_setting(const std::string& sname, bool dflt) throw(std:
 	: setting(sname)
 {
 	value = dflt;
-}
-void boolean_setting::blank() throw(std::bad_alloc, std::runtime_error)
-{
-	throw std::runtime_error("This setting can't be unset");
 }
 
 bool boolean_setting::is_set() throw()
@@ -204,10 +212,13 @@ path_setting::path_setting(const std::string& sname) throw(std::bad_alloc)
 	_default = true;
 }
 
-void path_setting::blank() throw(std::bad_alloc, std::runtime_error)
+bool path_setting::blank(bool really) throw(std::bad_alloc, std::runtime_error)
 {
+	if(!really)
+		return true;
 	path = ".";
 	_default = true;
+	return true;
 }
 
 bool path_setting::is_set() throw()

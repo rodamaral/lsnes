@@ -60,9 +60,12 @@ namespace
 		{
 			_set = false;
 		}
-		void blank() throw(std::bad_alloc, std::runtime_error)
+		bool blank(bool really) throw(std::bad_alloc, std::runtime_error)
 		{
+			if(!really)
+				return true;
 			_set = false;
+			return true;
 		}
 		bool is_set() throw()
 		{

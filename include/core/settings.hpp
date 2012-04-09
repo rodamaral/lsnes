@@ -28,10 +28,17 @@ public:
 /**
  * Set the setting to special blank state. Not all settings can be blanked.
  *
+ * Parameter really: Do dummy clear if false, otherwise try it for real.
+ * Returns: True on success, false on failure.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Blanking this setting is not allowed (currently).
  */
-	virtual void blank() throw(std::bad_alloc, std::runtime_error) = 0;
+	virtual bool blank(bool really) throw(std::bad_alloc, std::runtime_error);
+
+/**
+ * Can the setting be blanked?
+ */
+	static bool blankable(const std::string& name) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Look up setting and try to blank it.
@@ -120,10 +127,6 @@ public:
  */
 	numeric_setting(const std::string& sname, int32_t minv, int32_t maxv, int32_t dflt) throw(std::bad_alloc);
 /**
- * Raises std::runtime_error as these settings can't be blanked.
- */
-	void blank() throw(std::bad_alloc, std::runtime_error);
-/**
  * Returns true (these settings are always set).
  */
 	bool is_set() throw();
@@ -169,10 +172,6 @@ public:
  */
 	boolean_setting(const std::string& sname, bool dflt) throw(std::bad_alloc);
 /**
- * Raises std::runtime_error as these settings can't be blanked.
- */
-	void blank() throw(std::bad_alloc, std::runtime_error);
-/**
  * Returns true (these settings are always set).
  */
 	bool is_set() throw();
@@ -211,7 +210,7 @@ class path_setting : public setting
 {
 public:
 	path_setting(const std::string& sname) throw(std::bad_alloc);
-	void blank() throw(std::bad_alloc, std::runtime_error);
+	bool blank(bool really) throw(std::bad_alloc, std::runtime_error);
 	bool is_set() throw();
 	void set(const std::string& value) throw(std::bad_alloc, std::runtime_error);
 	std::string get() throw(std::bad_alloc);

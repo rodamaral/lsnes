@@ -1362,6 +1362,7 @@ public:
 	~wxeditor_esettings_advanced();
 	void on_change(wxCommandEvent& e);
 	void on_clear(wxCommandEvent& e);
+	void on_selchange(wxCommandEvent& e);
 	void on_setting_change(const std::string& setting, const std::string& value);
 	void on_setting_clear(const std::string& setting);
 	void _refresh();
@@ -1370,7 +1371,10 @@ private:
 	std::set<std::string> settings;
 	std::map<std::string, std::string> values;
 	std::map<int, std::string> selections;
+	std::set<std::string> blankables;
 	std::string selected();
+	wxButton* changebutton;
+	wxButton* clearbutton;
 	wxListBox* _settings;
 };
 
@@ -1383,18 +1387,22 @@ wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
 	SetSizer(top_s);
 
 	top_s->Add(_settings = new wxListBox(this, wxID_ANY), 1, wxGROW);
+	_settings->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+		wxCommandEventHandler(wxeditor_esettings_advanced::on_selchange), NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_advanced::on_change), NULL,
-		this);
-	pbutton_s->Add(tmp = new wxButton(this, wxID_ANY, wxT("Clear")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_advanced::on_clear), NULL,
-		this);
+	pbutton_s->Add(changebutton = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
+	changebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_advanced::on_change), NULL, this);
+	pbutton_s->Add(clearbutton = new wxButton(this, wxID_ANY, wxT("Clear")), 0, wxGROW);
+	clearbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_advanced::on_clear), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	refresh();
+	wxCommandEvent e;
+	on_selchange(e);
 	top_s->SetSizeHints(this);
 	Fit();
 }
@@ -1421,6 +1429,14 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 		});
 	if(err != "")
 		wxMessageBox(towxstring(err), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
+}
+
+void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
+{
+	std::string sel = selected();
+	bool enable = (sel != "");
+	changebutton->Enable(enable);
+	clearbutton->Enable(enable && blankables.count(sel));
 }
 
 void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
@@ -1452,11 +1468,14 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 
 void wxeditor_esettings_advanced::refresh()
 {
-	runemufn([&settings, &values]() {
+	runemufn([&settings, &values, &blankables]() {
 		settings = setting::get_settings_set();
+		blankables.clear();
 		for(auto i : settings) {
 			if(setting::is_set(i))
 				values[i] = setting::get(i);
+			if(setting::blankable(i))
+				blankables.insert(i);
 		}
 		});
 	_refresh();
