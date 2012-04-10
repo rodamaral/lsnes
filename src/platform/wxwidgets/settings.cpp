@@ -1533,6 +1533,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
 	tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
 	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
+	tabset->SetMinSize(wxSize(400, 420));
 	top_s->Add(tabset, 1, wxGROW);
 	
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
