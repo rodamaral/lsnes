@@ -300,6 +300,7 @@ namespace
 		cb = _cb;
 		panel = new wxPanel(in_window);
 		top = new wxBoxSizer(wxVERTICAL);
+		panel->SetSizer(top);
 		box = new wxStaticBox(panel, wxID_ANY, wxT(""));
 		intsizer = new wxStaticBoxSizer(box, wxVERTICAL);
 		intsizer->Add(new wxStaticText(panel, wxID_ANY, wxT("File")));
