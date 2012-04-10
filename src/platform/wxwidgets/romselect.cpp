@@ -298,6 +298,7 @@ namespace
 		cb = _cb;
 		panel = new wxPanel(in_window);
 		top = new wxBoxSizer(wxVERTICAL);
+		panel->SetSizer(top);
 		box = new wxStaticBox(panel, wxID_ANY, wxT(""));
 		intsizer = new wxStaticBoxSizer(box, wxVERTICAL);
 		intsizer->Add(new wxStaticText(panel, wxID_ANY, wxT("File")));
@@ -939,14 +940,21 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		wxCommandEventHandler(wxwin_project::on_quit), NULL, this);
 	toplevel->Add(buttonbar, 0, wxGROW);
 
+	bool file_filled = false;
 	{
 		std::ifstream s(get_config_path() + "/" + our_rom_name + ".ls");
 		std::getline(s, last_save);
 		savefile->SetValue(towxstring(last_save));
+		if(last_save != "")
+			file_filled = true;
 	}
 
-	wxNotebookEvent e2;
-	on_tab_select(e2);
+	//This gets re-enabled later if needed.
+	load_file = true;
+	load->Disable();
+	notebook->SetSelection(file_filled ? 0 : 1);
+	wxCommandEvent e2;
+	on_filename_change(e2);
 
 	mainblock->SetSizeHints(this);
 	new_sizer->SetSizeHints(this);
