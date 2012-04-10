@@ -516,6 +516,7 @@ public:
 private:
 	void refresh();
 	wxSizer* jgrid;
+	wxStaticText* no_joysticks;
 	std::map<std::string, wxButton*> buttons;
 	std::map<int, std::string> ids;
 	int last_id;
@@ -555,7 +556,10 @@ wxeditor_esettings_joystick::wxeditor_esettings_joystick(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
 	last_id = wxID_HIGHEST + 1;
-	SetSizer(jgrid = new wxBoxSizer(wxVERTICAL));
+	no_joysticks = new wxStaticText(this, wxID_ANY, wxT("Sorry, no joysticks detected"));
+	no_joysticks->SetMinSize(wxSize(400, -1));
+	no_joysticks->Hide();
+	SetSizer(jgrid = new wxFlexGridSizer(0, 1, 0, 0));
 	refresh();
 	jgrid->SetSizeHints(this);
 	Fit();
@@ -588,7 +592,9 @@ void wxeditor_esettings_joystick::refresh()
 		}
 		});
 
+	unsigned jcount = 0;
 	for(auto i : x) {
+		jcount++;
 		if(buttons.count(i.first)) {
 			//Okay, this already exists. Update.
 			buttons[i.first]->SetLabel(towxstring(formatsettings(i.first, i.second)));
@@ -612,6 +618,13 @@ void wxeditor_esettings_joystick::refresh()
 			i.second->Hide();
 			jgrid->Detach(i.second);
 		}
+	}
+	if(jcount > 0) {
+		jgrid->Detach(no_joysticks);
+		no_joysticks->Hide();
+	} else {
+		no_joysticks->Show();
+		jgrid->Add(no_joysticks);
 	}
 	jgrid->Layout();
 	this->Refresh();
@@ -1533,7 +1546,6 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
 	tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
 	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
-	tabset->SetMinSize(wxSize(400, 420));
 	top_s->Add(tabset, 1, wxGROW);
 	
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
