@@ -557,6 +557,7 @@ wxeditor_esettings_joystick::wxeditor_esettings_joystick(wxWindow* parent)
 {
 	last_id = wxID_HIGHEST + 1;
 	no_joysticks = new wxStaticText(this, wxID_ANY, wxT("Sorry, no joysticks detected"));
+	no_joysticks->SetMinSize(wxSize(400, -1));
 	no_joysticks->Hide();
 	SetSizer(jgrid = new wxFlexGridSizer(0, 1, 0, 0));
 	refresh();
