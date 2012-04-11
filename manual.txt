@@ -154,6 +154,9 @@ Building is via makefile, the following options are available:
 
     ∗ WIN32MM: Use Win32mm for joystick (Windows only).
 
+    ∗ WXWIDGETS: Use Wxwidgets for joystick (requires WXWIDGETS 
+      graphics)
+
     ∗ DUMMY: Disable joystick support.
 
   – Default is SDL.

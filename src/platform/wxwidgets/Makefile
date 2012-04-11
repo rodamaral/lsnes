@@ -6,6 +6,13 @@ else
 OBJECTS = dummy.$(OBJECT_SUFFIX)
 endif
 
+ifeq ($(JOYSTICK), WXWIDGETS)
+ifneq ($(GRAPHICS), WXWIDGETS)
+$(error "WXWIDGETS joystick requires WXWIDGETS graphics")
+endif
+WXW_CFLAGS += -DWXWIDGETS_JOYSTICK_SUPPORT
+endif
+
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 

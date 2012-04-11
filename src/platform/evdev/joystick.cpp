@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
 #include "core/window.hpp"
+#include "library/joyfun.hpp"
 
 #include <unistd.h>
 #include <map>
@@ -202,8 +203,7 @@ namespace
 			v = (e.current_status != 0);
 			break;
 		case ET_AXIS:
-			v = -32768 + 65535 * (static_cast<double>(e.current_status) - e.axis_min) /
-				(static_cast<double>(e.axis_max) - e.axis_min);
+			v = calibration_correction(e.current_status, e.axis_min, e.axis_max);
 			break;
 		case ET_HAT_X:
 		case ET_HAT_Y: {

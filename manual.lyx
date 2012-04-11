@@ -388,6 +388,10 @@ WIN32MM: Use Win32mm for joystick (Windows only).
 \end_layout
 
 \begin_layout Itemize
+WXWIDGETS: Use Wxwidgets for joystick (requires WXWIDGETS graphics)
+\end_layout
+
+\begin_layout Itemize
 DUMMY: Disable joystick support.
 \end_layout
 
