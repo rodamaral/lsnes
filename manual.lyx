@@ -6040,5 +6040,81 @@ Fix writing port2 data to movie.
 Fix SRAM handling with Bsnes v087.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta6
+\end_layout
+
+\begin_layout Itemize
+Library loading support
+\end_layout
+
+\begin_layout Itemize
+Built-in TSCC encoder
+\end_layout
+
+\begin_layout Itemize
+Hi-color (256T colors) dumping.
+\end_layout
+
+\begin_layout Itemize
+Dump over TCP/IP(v6)
+\end_layout
+
+\begin_layout Itemize
+Hidable status panel
+\end_layout
+
+\begin_layout Itemize
+Turbo toggle/hold
+\end_layout
+
+\begin_layout Itemize
+Adjustable sound volume
+\end_layout
+
+\begin_layout Itemize
+Screen scaling
+\end_layout
+
+\begin_layout Itemize
+Allow DnD into filename boxes
+\end_layout
+
+\begin_layout Itemize
+Configurable paths
+\end_layout
+
+\begin_layout Itemize
+Portaudio: Fix speaker popping at start
+\end_layout
+
+\begin_layout Itemize
+Lots of UI changes
+\end_layout
+
+\begin_layout Itemize
+Speed adjustment menu
+\end_layout
+
+\begin_layout Itemize
+Win32 joystick support
+\end_layout
+
+\begin_layout Itemize
+Lua: gui.rainbow and gui.box
+\end_layout
+
+\begin_layout Itemize
+Split key lists into classes (the key list was large!)
+\end_layout
+
+\begin_layout Itemize
+More save slots support
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets (wxJoystick) joystick support
+\end_layout
+
 \end_body
 \end_document

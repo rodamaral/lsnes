@@ -2979,3 +2979,41 @@ set-axis joystick0axis19 disabled
 
 • Fix SRAM handling with Bsnes v087.
 
+15.56 rr1-delta6
+
+• Library loading support
+
+• Built-in TSCC encoder
+
+• Hi-color (256T colors) dumping.
+
+• Dump over TCP/IP(v6)
+
+• Hidable status panel
+
+• Turbo toggle/hold
+
+• Adjustable sound volume
+
+• Screen scaling
+
+• Allow DnD into filename boxes
+
+• Configurable paths
+
+• Portaudio: Fix speaker popping at start
+
+• Lots of UI changes
+
+• Speed adjustment menu
+
+• Win32 joystick support
+
+• Lua: gui.rainbow and gui.box
+
+• Split key lists into classes (the key list was large!)
+
+• More save slots support
+
+• Wxwidgets (wxJoystick) joystick support
+
