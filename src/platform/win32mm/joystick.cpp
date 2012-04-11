@@ -4,6 +4,7 @@
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
+#include "library/joyfun.hpp"
 
 #include <windows.h>
 #include <mmsystem.h>
@@ -30,9 +31,9 @@ namespace
 	volatile bool quit_signaled;
 	volatile bool quit_ack;
 
-	void create_hat(unsigned i)
+	void create_hat(unsigned i, unsigned j = 0)
 	{
-		std::string n = (stringfmt() << "joystick" << i << "hat").str();
+		std::string n = (stringfmt() << "joystick" << i << "hat" << j).str();
 		keygroup* k = new keygroup(n, "joystick", keygroup::KT_HAT);
 		hats[i] = k;
 	}
@@ -57,21 +58,8 @@ namespace
 		auto key = std::make_pair(i, j);
 		if(!axes.count(key))
 			return;
-		short cpos;
-		double _pos = pos;
-		double _pmin = pmin;
-		double _pmax = pmax;
-		_pos = 65535 * (_pos - _pmin) / (_pmax - _pmin) - 32768;
-		if(_pos < -32768)
-			cpos = -32768;
-		else if(_pos > 32767)
-			cpos = 32767;
-		else
-			cpos = _pos;
-		if(laxes[key] != cpos) {
-			platform::queue(keypress(modifier_set(), *axes[key], cpos));
-			laxes[key] = cpos;
-		}
+		if(make_equal(laxes[key], calibration_correction(pos, pmin, pmax)))
+			platform::queue(keypress(modifier_set(), *axes[key], laxes[key]));
 	}
 
 	void init_joysticks()
@@ -144,31 +132,15 @@ namespace
 			info.dwFlags = JOY_RETURNALL;
 			if(joyGetPosEx(jnum, &info) != JOYERR_NOERROR)
 				continue;	//Not usable.
-			if(caps.wCaps & JOYCAPS_HASPOV) {
-				//Read POV hat.
-				short m = 0;
-				int pov = info.dwPOV;
-				if((pov >= 0 && pov <= 6000) || (pov >= 30000  && pov <= 36000))
-					m |= 1;
-				if(pov >= 3000 && pov <= 15000)
-					m |= 2;
-				if(pov >= 12000 && pov <= 24000)
-					m |= 4;
-				if(pov >= 21000 && pov <= 33000)
-					m |= 8;
-				if(lhats[jnum] != m) {
-					platform::queue(keypress(modifier_set(), *hats[jnum], m));
-					lhats[jnum] = m;
-				}
-			}
+			if(caps.wCaps & JOYCAPS_HASPOV)
+				if(make_equal(lhats[jnum], angle_to_bitmask(info.dwPOV)))
+					platform::queue(keypress(modifier_set(), *hats[jnum], lhats[jnum]));
 			for(unsigned j = 0; j < caps.wMaxButtons; j++) {
 				//Read buttons
 				auto key = std::make_pair(jnum, j);
-				short x = (info.dwButtons >> j) & 1;
-				if(buttons.count(key) && lbuttons[key] != x) {
-					platform::queue(keypress(modifier_set(), *buttons[key], x));
-					lbuttons[key] = x;
-				}
+				if(buttons.count(key) && make_equal(lbuttons[key],
+						static_cast<short>((info.dwButtons >> j) & 1)))
+					platform::queue(keypress(modifier_set(), *buttons[key], lbuttons[key]));
 			}
 			read_axis(jnum, 0, info.dwXpos, caps.wXmin, caps.wXmax);
 			read_axis(jnum, 1, info.dwYpos, caps.wYmin, caps.wYmax);

@@ -74,6 +74,8 @@ namespace
 		std::map<std::string, keyentry_mod_data> modifiers;
 		std::map<std::string, std::set<std::string>> classes;
 		std::string currentclass;
+		wxFlexGridSizer* top_s;
+		wxFlexGridSizer* t_s;
 		wxComboBox* mainclass;
 		wxComboBox* mainkey;
 		wxButton* ok;
@@ -105,15 +107,15 @@ namespace
 			});
 
 		Centre();
-		wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
+		top_s = new wxFlexGridSizer(2, 1, 0, 0);
 		SetSizer(top_s);
 
-		wxFlexGridSizer* t_s = new wxFlexGridSizer(mods.size() + 1, 3, 0, 0);
+		t_s = new wxFlexGridSizer(mods.size() + 1, 3, 0, 0);
 		for(auto i : mods) {
 			t_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
 			keyentry_mod_data m;
 			t_s->Add(m.pressed = new wxCheckBox(this, wxID_ANY, wxT("Pressed")), 0, wxGROW);
-			t_s->Add(m.unmasked = new wxCheckBox(this, wxID_ANY, wxT("Unmasked")), 0, wxGROW);
+			t_s->Add(m.unmasked = new wxCheckBox(this, wxID_ANY, wxT("Unmasked")), 1, wxGROW);
 			m.pressed->Disable();
 			modifiers[i] = m;
 			m.pressed->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
@@ -123,7 +125,7 @@ namespace
 		}
 		t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Key")), 0, wxGROW);
 		t_s->Add(mainclass = new wxComboBox(this, wxID_ANY, classeslist[0], wxDefaultPosition, wxDefaultSize,
-			classeslist.size(), &classeslist[0], wxCB_READONLY), 1, wxGROW);
+			classeslist.size(), &classeslist[0], wxCB_READONLY), 0, wxGROW);
 		mainclass->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 			wxCommandEventHandler(wxdialog_keyentry::on_classchange), NULL, this);
 		t_s->Add(mainkey = new wxComboBox(this, wxID_ANY, emptystring, wxDefaultPosition, wxDefaultSize,
@@ -135,9 +137,9 @@ namespace
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		if(clearable)
 			pbutton_s->Add(clear = new wxButton(this, wxID_OK, wxT("Clear")), 0, wxGROW);
-		pbutton_s->AddStretchSpacer();
 		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
 		pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+		pbutton_s->AddStretchSpacer();
 		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxdialog_keyentry::on_ok), NULL, this);
 		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -223,7 +225,10 @@ namespace
 		set_class(_class);
 		mainclass->SetValue(towxstring(_class));
 		mainkey->SetValue(towxstring(key));
-	}		
+		t_s->Layout();
+		top_s->Layout();
+		Fit();
+	}
 
 	void wxdialog_keyentry::on_change_setting(wxCommandEvent& e)
 	{
@@ -303,6 +308,9 @@ namespace
 			mainkey->Append(towxstring(i));
 		currentclass = _class;
 		mainkey->SetSelection(0);
+		t_s->Layout();
+		top_s->Layout();
+		Fit();
 	}
 
 	void wxdialog_keyentry::on_classchange(wxCommandEvent& e)
