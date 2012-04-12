@@ -21,46 +21,41 @@
 
 namespace
 {
-	std::set<keygroup*> keygroups;
-	std::map<std::pair<unsigned, unsigned>, keygroup*> buttons;
+	std::map<unsigned, joystick_model> joysticks;
 	std::map<std::pair<unsigned, unsigned>, keygroup*> axes;
-	std::map<unsigned, keygroup*> hats;
-	std::map<std::pair<unsigned, unsigned>, short> lbuttons;
-	std::map<std::pair<unsigned, unsigned>, short> laxes;
-	std::map<unsigned, short> lhats;
-	std::map<unsigned, wxJoystick*> joysticks;
+	std::map<std::pair<unsigned, unsigned>, keygroup*> buttons;
+	std::map<std::pair<unsigned, unsigned>, keygroup*> hats;
+	std::map<unsigned, wxJoystick*> jobjects;
+	volatile bool quit_signaled;
+	volatile bool quit_ack;
 	volatile bool ready = false;
+
+	const char* axisnames[] = {"X", "Y", "Z", "Rudder", "U", "V"};
+	const char* buttonnames[] = {"Button1", "Button2", "Button3", "Button4", "Button5", "Button6", "Button7", 
+		"Button8", "Button9", "Button10", "Button11", "Button12", "Button13", "Button14", "Button15",
+		"Button16", "Button17", "Button18", "Button19", "Button20", "Button21", "Button22", "Button23", 
+		"Button24", "Button25", "Button26", "Button27", "Button28", "Button29", "Button30", "Button31",
+		"Button32"};
 
 	void create_hat(unsigned i, unsigned j = 0)
 	{
-		std::string n = (stringfmt() << "joystick" << i << "hat" << j).str();
-		keygroup* k = new keygroup(n, "joystick", keygroup::KT_HAT);
-		hats[i] = k;
+		unsigned n = joysticks[i].new_hat(j, "POV");
+		std::string name = (stringfmt() << "joystick" << i << "hat" << n).str();
+		hats[std::make_pair(i, n)] = new keygroup(name, "joystick", keygroup::KT_HAT);
 	}
 
 	void create_button(unsigned i, unsigned j)
 	{
-		std::string n = (stringfmt() << "joystick" << i << "button" << j).str();
-		keygroup* k = new keygroup(n, "joystick", keygroup::KT_KEY);
-		buttons[std::make_pair(i, j)] = k;
+		unsigned n = joysticks[i].new_button(j, buttonnames[j]);
+		std::string name = (stringfmt() << "joystick" << i << "button" << n).str();
+		buttons[std::make_pair(i, n)] = new keygroup(name, "joystick", keygroup::KT_KEY);
 	}
 
 	void create_axis(unsigned i, unsigned j, int min, int max)
 	{
-		messages << "axis #" << j << ": " << min << " " << max << std::endl;
-		std::string n = (stringfmt() << "joystick" << i << "axis" << j).str();
-		keygroup* k;
-		k = new keygroup(n, "joystick", keygroup::KT_AXIS_PAIR);
-		axes[std::make_pair(i, j)] = k;
-	}
-
-	void read_axis(unsigned i, unsigned j, int pos, int pmin, int pmax)
-	{
-		auto key = std::make_pair(i, j);
-		if(!axes.count(key))
-			return;
-		if(make_equal(laxes[key], calibration_correction(pos, pmin, pmax)))
-			platform::queue(keypress(modifier_set(), *axes[key], laxes[key]));
+		unsigned n = joysticks[i].new_axis(j, min, max, axisnames[j]);
+		std::string name = (stringfmt() << "joystick" << i << "axis" << n).str();
+		axes[std::make_pair(i, n)] = new keygroup(name, "joystick", keygroup::KT_AXIS_PAIR);
 	}
 
 	void init_joysticks()
@@ -75,34 +70,22 @@ namespace
 				delete joy;
 				continue;
 			}
-			joysticks[i] = joy;
+			jobjects[i] = joy;
+			joysticks[i].name(joy->GetProductName());
 			messages << "Joystick #" << i << ": " << joy->GetProductName() << std::endl;
 			if(joy->HasPOV())
 				create_hat(i);
 			for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)
 				create_button(i, j);
-			unsigned axcount = 2;
 			create_axis(i, 0, joy->GetXMin(), joy->GetXMax());
 			create_axis(i, 1, joy->GetYMin(), joy->GetYMax());
-			if(joy->HasZ()) {
-				create_axis(i, 2, joy->GetZMin(), joy->GetZMax());
-				axcount++;
-			}
-			if(joy->HasRudder()) {
-				create_axis(i, 3, joy->GetRudderMin(), joy->GetRudderMax());
-				axcount++;
-			}
-			if(joy->HasU()) {
-				create_axis(i, 4, joy->GetUMin(), joy->GetUMax());
-				axcount++;
-			}
-			if(joy->HasV()) {
-				create_axis(i, 5, joy->GetVMin(), joy->GetVMax());
-				axcount++;
-			}
+			if(joy->HasZ())		create_axis(i, 2, joy->GetZMin(), joy->GetZMax());
+			if(joy->HasRudder())	create_axis(i, 3, joy->GetRudderMin(), joy->GetRudderMax());
+			if(joy->HasU()) 	create_axis(i, 4, joy->GetUMin(), joy->GetUMax());
+			if(joy->HasV())		create_axis(i, 5, joy->GetVMin(), joy->GetVMax());
 			if(joy->HasPOV())
 				messages << "1 hat, ";
-			messages << axcount << " axes, " << min((int)joy->GetNumberButtons(), 32) << " buttons"
+			messages << joysticks[i].axes() << " axes, " << joysticks[i].buttons() << " buttons"
 				<< std::endl;
 		}
 		ready = true;
@@ -112,33 +95,31 @@ namespace
 	{
 		if(!ready)
 			return;
-		modifier_set mod;
-		for(auto i : joysticks) {
-			unsigned jnum = i.first;
-			wxJoystick* joy = i.second;
-			if(joy->HasPOV())
-				if(make_equal(lhats[jnum], angle_to_bitmask(joy->GetPOVCTSPosition())))
-					platform::queue(keypress(modifier_set(), *hats[jnum], lhats[jnum]));
-			uint32_t bmask = joy->GetButtonState();
-			for(unsigned j = 0; j < 32; j++) {
-				//Read buttons
-				auto key = std::make_pair(jnum, j);
-				if(buttons.count(key) && make_equal(lbuttons[key], static_cast<short>((bmask >> j) &
-					1)))
-					platform::queue(keypress(modifier_set(), *buttons[key], lbuttons[key]));
-			}
-			wxPoint xy = joy->GetPosition();
-			read_axis(jnum, 0, xy.x, joy->GetXMin(), joy->GetXMax());
-			read_axis(jnum, 1, xy.y, joy->GetYMin(), joy->GetYMax());
-			if(joy->HasZ())
-				read_axis(jnum, 2, joy->GetZPosition(), joy->GetZMin(), joy->GetZMax());
-			if(joy->HasRudder())
-				read_axis(jnum, 3, joy->GetRudderPosition(), joy->GetRudderMin(), joy->GetRudderMax());
-			if(joy->HasU())
-				read_axis(jnum, 4, joy->GetUPosition(), joy->GetUMin(), joy->GetUMax());
-			if(joy->HasV())
-				read_axis(jnum, 5, joy->GetVPosition(), joy->GetUMin(), joy->GetUMax());
+		for(auto i : jobjects) {
+			joystick_model& m = joysticks[i.first];
+			wxJoystick& j = *i.second;
+			m.report_pov(0, j.GetPOVCTSPosition());
+			uint32_t bmask = j.GetButtonState();
+			for(unsigned j = 0; j < 32; j++)
+				m.report_button(j, (bmask >> j) & 1);
+			wxPoint xy = j.GetPosition();
+			m.report_axis(0, xy.x);
+			m.report_axis(1, xy.y);
+			m.report_axis(2, j.GetZPosition());
+			m.report_axis(3, j.GetRudderPosition());
+			m.report_axis(4, j.GetUPosition());
+			m.report_axis(5, j.GetVPosition());
 		}
+		short x;
+		for(auto i : buttons)
+			if(joysticks[i.first.first].button(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
+		for(auto i : axes)
+			if(joysticks[i.first.first].axis(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
+		for(auto i : hats)
+			if(joysticks[i.first.first].hat(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
 	}
 
 	struct joystick_timer : public wxTimer
@@ -148,6 +129,13 @@ namespace
 		void stop() { Stop(); }
 		void Notify() { poll_joysticks(); }
 	}* jtimer;
+
+	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
+		"Syntax: show-joysticks\nShow joystick data.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			for(auto i : joysticks)
+				messages << i.second.compose_report(i.first) << std::endl;
+		});
 }
 
 void joystick_plugin::init() throw()
@@ -163,16 +151,16 @@ void joystick_plugin::quit() throw()
 	jtimer = NULL;
 	ready = false;
 	usleep(50000);
-	for(auto i : keygroups)
-		delete i;
-	for(auto i : joysticks)
-		delete i.second;
-	usleep(500000);
-	buttons.clear();
-	axes.clear();
-	hats.clear();
-	keygroups.clear();
+
+	for(auto i : jobjects)	delete i.second;
+	for(auto i : axes)	delete i.second;
+	for(auto i : buttons)	delete i.second;
+	for(auto i : hats)	delete i.second;
 	joysticks.clear();
+	jobjects.clear();
+	axes.clear();
+	buttons.clear();
+	hats.clear();
 }
 
 void joystick_plugin::thread_fn() throw()

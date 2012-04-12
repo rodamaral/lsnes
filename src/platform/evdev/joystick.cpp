@@ -2,6 +2,7 @@
 #include "core/keymapper.hpp"
 #include "core/window.hpp"
 #include "library/joyfun.hpp"
+#include "library/string.hpp"
 
 #include <unistd.h>
 #include <map>
@@ -26,212 +27,63 @@ namespace
 {
 	const char* axisnames[ABS_MAX + 1] = {0};
 	const char* buttonnames[KEY_MAX + 1] = {0};
+	std::map<int, joystick_model> joysticks;
+	std::map<int, unsigned> joystick_nums;
+	std::map<std::pair<int, unsigned>, keygroup*> axes;
+	std::map<std::pair<int, unsigned>, keygroup*> buttons;
+	std::map<std::pair<int, unsigned>, keygroup*> hats;
+	unsigned joystick_count = 0;
 
-	enum event_type
+	std::string get_button_name(uint16_t code)
 	{
-		ET_BUTTON,
-		ET_AXIS,
-		ET_HAT_X,
-		ET_HAT_Y
-	};
-
-	struct event_mapping
-	{
-		uint16_t joystick;
-		uint32_t tevcode;
-		enum event_type type;
-		uint16_t controlnum;
-		int32_t axis_min;
-		int32_t axis_max;
-		int32_t current_status;
-		uint32_t paired_mapping;	//Only hats.
-		class keygroup* group;
-	};
-
-	struct event_mapping dummy_event_mapping = {
-		9999,		//Joystick (don't care).
-		99999,		//Tyep&Event code (don't care).
-		ET_BUTTON,	//Not really.
-		9999,		//Control num (don't care).
-		0,		//Axis minimum (don't care).
-		0,		//Axis maximum (don't care).
-		0,		//Current status (don't care).
-		0,		//This is not a hat, so don't care about paired mapping.
-		NULL		//No associated key group.
-	};
-
-	std::set<keygroup*> keygroups;
-	std::map<uint64_t, struct event_mapping> event_map;
-	std::map<int, uint16_t> joystick_map;
-	std::set<int> joysticks;
-	std::map<uint16_t, std::string> joystick_names;
-	uint16_t connected_joysticks = 0;
-
-	uint16_t get_joystick_number(int fd)
-	{
-		if(joystick_map.count(fd))
-			return joystick_map[fd];
-		else
-			return (joystick_map[fd] = connected_joysticks++);
+		if(code <= KEY_MAX && buttonnames[code])
+			return buttonnames[code];
+		else {
+			std::ostringstream str;
+			str << "Unknown button #" << code << std::endl;
+			return str.str();
+		}
 	}
 
-	uint64_t get_ev_id(uint16_t joystick, uint16_t type, uint16_t evcode)
+	std::string get_axis_name(uint16_t code)
 	{
-		return (static_cast<uint64_t>(joystick) << 32) |
-			(static_cast<uint64_t>(type) << 16) |
-			static_cast<uint64_t>(evcode);
-	};
-
-	uint64_t get_ev_id(uint16_t joystick, uint32_t tevcode)
-	{
-		return (static_cast<uint64_t>(joystick) << 32) |
-			static_cast<uint64_t>(tevcode);
-	};
-
-	void create_button(int fd, uint16_t type, uint16_t evcode, uint16_t buttonnum)
-	{
-		uint16_t joynum = get_joystick_number(fd);
-		std::ostringstream _name;
-		_name << "joystick" << joynum << "button" << buttonnum;
-		std::string name = _name.str();
-		keygroup* grp = new keygroup(name, "joystick", keygroup::KT_KEY);
-		keygroups.insert(grp);
-		struct event_mapping evmap;
-		evmap.joystick = joynum;
-		evmap.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcode);
-		evmap.type = ET_BUTTON;
-		evmap.controlnum = buttonnum;
-		evmap.axis_min = evmap.axis_max = 0;
-		evmap.current_status = 0;
-		evmap.paired_mapping = 0;
-		evmap.group = grp;
-		event_map[get_ev_id(joynum, evmap.tevcode)] = evmap;
+		if(code <= ABS_MAX && axisnames[code])
+			return axisnames[code];
+		else {
+			std::ostringstream str;
+			str << "Unknown axis #" << code << std::endl;
+			return str.str();
+		}
 	}
 
-	void create_axis(int fd, uint16_t type, uint16_t evcode, uint16_t axisnum, int32_t min, int32_t max)
+	void create_button(int fd, unsigned jnum, uint16_t code)
 	{
-		uint16_t joynum = get_joystick_number(fd);
-		std::ostringstream _name;
-		_name << "joystick" << joynum << "axis" << axisnum;
-		std::string name = _name.str();
-		keygroup* grp;
+		unsigned n = joysticks[fd].new_button(code, get_button_name(code));
+		std::string name = (stringfmt() << "joystick" << jnum << "button" << n).str();
+		buttons[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_KEY);
+	}
+
+	void create_axis(int fd, unsigned jnum, uint16_t code, int32_t min, int32_t max)
+	{
+		unsigned n = joysticks[fd].new_axis(code, min, max, get_axis_name(code));
+		std::string name = (stringfmt() << "joystick" << jnum << "axis" << n).str();
 		if(min < 0)
-			grp = new keygroup(name, "joystick", keygroup::KT_AXIS_PAIR);
+			axes[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_AXIS_PAIR);
 		else
-			grp = new keygroup(name, "joystick", keygroup::KT_PRESSURE_MP);
-		keygroups.insert(grp);
-		struct event_mapping evmap;
-		evmap.joystick = joynum;
-		evmap.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcode);
-		evmap.type = ET_AXIS;
-		evmap.controlnum = axisnum;
-		evmap.axis_min = min;
-		evmap.axis_max = max;
-		evmap.current_status = 0;
-		evmap.paired_mapping = 0;
-		evmap.group = grp;
-		event_map[get_ev_id(joynum, evmap.tevcode)] = evmap;
+			axes[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_PRESSURE_MP);
 	}
 
-	void create_hat(int fd, uint16_t type, uint16_t evcodeX, uint16_t evcodeY, uint16_t hatnum)
+	void create_hat(int fd, unsigned jnum, uint16_t codeX, uint16_t codeY)
 	{
-		uint16_t joynum = get_joystick_number(fd);
-		std::ostringstream _name;
-		_name << "joystick" << joynum << "hat" << hatnum;
-		std::string name = _name.str();
-		keygroup* grp = new keygroup(name, "joystick", keygroup::KT_HAT);
-		keygroups.insert(grp);
-		struct event_mapping evmap1;
-		evmap1.joystick = joynum;
-		evmap1.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcodeX);
-		evmap1.type = ET_HAT_X;
-		evmap1.controlnum = hatnum;
-		evmap1.axis_min = -1;
-		evmap1.axis_max = 1;
-		evmap1.current_status = 0;
-		evmap1.group = grp;
-		struct event_mapping evmap2;
-		evmap2.joystick = joynum;
-		evmap2.tevcode = (static_cast<uint32_t>(type) << 16) | static_cast<uint32_t>(evcodeY);
-		evmap2.type = ET_HAT_Y;
-		evmap2.controlnum = hatnum;
-		evmap2.axis_min = -1;
-		evmap1.axis_max = 1;
-		evmap2.current_status = 0;
-		evmap2.group = grp;
-		evmap1.paired_mapping = get_ev_id(joynum, evmap2.tevcode);
-		evmap2.paired_mapping = get_ev_id(joynum, evmap1.tevcode);
-		event_map[get_ev_id(joynum, evmap1.tevcode)] = evmap1;
-		event_map[get_ev_id(joynum, evmap2.tevcode)] = evmap2;
-	}
-
-	struct event_mapping& get_mapping_for(uint16_t joystick, uint16_t type, uint16_t evcode)
-	{
-		uint64_t evid = get_ev_id(joystick, type, evcode);
-		if(event_map.count(evid))
-			return event_map[evid];
-		else
-			return dummy_event_mapping;
-	}
-
-	struct event_mapping& get_mapping_for(uint16_t joystick, uint32_t tevcode)
-	{
-		uint64_t evid = get_ev_id(joystick, tevcode);
-		if(event_map.count(evid))
-			return event_map[evid];
-		else
-			return dummy_event_mapping;
-	}
-
-	struct event_mapping& get_mapping_for_fd(int fd, uint16_t type, uint16_t evcode)
-	{
-		if(joystick_map.count(fd))
-			return get_mapping_for(joystick_map[fd], type, evcode);
-		else
-			return dummy_event_mapping;
-	}
-
-	void update_mapping_for_fd(int fd, uint16_t type, uint16_t evcode, int32_t value)
-	{
-		struct event_mapping& e = get_mapping_for_fd(fd, type, evcode);
-		e.current_status = value;
-		if(!e.group)
-			return;		//Dummy.
-		int16_t v = 0;
-		switch(e.type) {
-		case ET_BUTTON:
-			v = (e.current_status != 0);
-			break;
-		case ET_AXIS:
-			v = calibration_correction(e.current_status, e.axis_min, e.axis_max);
-			break;
-		case ET_HAT_X:
-		case ET_HAT_Y: {
-			uint32_t xaxis, yaxis;
-			if(e.type == ET_HAT_X) {
-				xaxis = get_ev_id(e.joystick, e.tevcode);
-				yaxis = e.paired_mapping;
-			} else {
-				yaxis = get_ev_id(e.joystick, e.tevcode);
-				xaxis = e.paired_mapping;
-			}
-			if(event_map[yaxis].current_status < 0)
-				v |= 1;
-			if(event_map[xaxis].current_status > 0)
-				v |= 2;
-			if(event_map[yaxis].current_status > 0)
-				v |= 4;
-			if(event_map[xaxis].current_status < 0)
-				v |= 8;
-			break;
-		}
-		}
-		platform::queue(keypress(modifier_set(), *e.group, v));
-		//e.group->set_position(v, modifier_set());
+		unsigned n = joysticks[fd].new_hat(codeX, codeY, 1, get_axis_name(codeX), get_axis_name(codeY));
+		std::string name = (stringfmt() << "joystick" << jnum << "hat" << n).str();
+		hats[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_HAT);
 	}
 
 	bool read_one_input_event(int fd)
 	{
+		short x;
+		joystick_model& m = joysticks[fd];
 		struct input_event ev;
 		int r = read(fd, &ev, sizeof(ev));
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
@@ -241,7 +93,10 @@ namespace
 				<< std::endl;
 			return false;
 		}
-		update_mapping_for_fd(fd, ev.type, ev.code, ev.value);
+		if(ev.type == EV_KEY)
+			m.report_button(ev.code, ev.value != 0);
+		if(ev.type == EV_ABS)
+			m.report_axis(ev.code, ev.value);
 		return true;
 	}
 
@@ -283,16 +138,19 @@ namespace
 				<< std::endl;
 			return false;
 		}
+		joysticks[fd].name(namebuffer);
+		unsigned jnum = joystick_count++;
+		joystick_nums[fd] = jnum;
+		
 		for(unsigned i = 0; i <= KEY_MAX; i++) {
 			if(keys[i / div] & (1ULL << (i % div))) {
-				create_button(fd, EV_KEY, i, button_count++);
+				create_button(fd, jnum, i);
+				button_count++;
 			}
 		}
 		for(unsigned i = 0; i <= ABS_MAX; i++) {
 			if(axes[i / div] & (1ULL << (i % div))) {
 				if(i < ABS_HAT0X || i > ABS_HAT3Y) {
-					int32_t min;
-					int32_t max;
 					int32_t V[5];
 					if(ioctl(fd, EVIOCGABS(i), V) < 0) {
 						int merrno = errno;
@@ -300,32 +158,17 @@ namespace
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
-					min = V[1];
-					max = V[2];
-					create_axis(fd, EV_ABS, i, axis_count++, min, max);
+					create_axis(fd, jnum, i, V[1], V[2]);
+					axis_count++;
 				} else if(i % 2 == 0) {
-					create_hat(fd, EV_ABS, i, i + 1, hat_count++);
+					create_hat(fd, jnum, i, i + 1);
+					hat_count++;
 				}
 			}
 		}
-		uint16_t joynum = get_joystick_number(fd);
-		joystick_names[joynum] = namebuffer;
 		messages << "Found '" << namebuffer << "' (" << button_count << " buttons, " << axis_count
 			<< " axes, " << hat_count << " hats)" << std::endl;
-		joysticks.insert(fd);
 		return true;
-	}
-
-	void open_and_probe(const std::string& filename)
-	{
-		int r = open(filename.c_str(), O_RDONLY | O_NONBLOCK);
-		if(r < 0) {
-			return;
-		}
-		if(!probe_joystick(r, filename)) {
-			close(r);
-		}
-		return;
 	}
 
 	void probe_all_joysticks()
@@ -345,54 +188,21 @@ namespace
 			for(size_t i = 5; dentry->d_name[i]; i++)
 				if(!isdigit(static_cast<uint8_t>(dentry->d_name[i])))
 					continue;
-			open_and_probe(std::string("/dev/input/") + dentry->d_name);
+			std::string filename = std::string("/dev/input/") + dentry->d_name;
+			int r = open(filename.c_str(), O_RDONLY | O_NONBLOCK);
+			if(r < 0)
+				continue;
+			if(!probe_joystick(r, filename))
+				close(r);
 		}
 		closedir(d);
-	}
-
-	std::string get_button_name(uint16_t code)
-	{
-		if(code <= KEY_MAX && buttonnames[code])
-			return buttonnames[code];
-		else {
-			std::ostringstream str;
-			str << "Unknown button #" << code << std::endl;
-			return str.str();
-		}
-	}
-
-	std::string get_axis_name(uint16_t code)
-	{
-		if(code <= ABS_MAX && axisnames[code])
-			return axisnames[code];
-		else {
-			std::ostringstream str;
-			str << "Unknown axis #" << code << std::endl;
-			return str.str();
-		}
 	}
 
 	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
 		"Syntax: show-joysticks\nShow joystick data.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i : joystick_names) {
-				messages << "Joystick #" << i.first << ": " << i.second << std::endl;
-				for(auto j : event_map) {
-					if(j.second.joystick != i.first)
-						continue;
-					if(j.second.type == ET_BUTTON)
-						messages << j.second.group->name() << ": "
-							<< get_button_name(j.second.tevcode & 0xFFFF) << std::endl;
-					if(j.second.type == ET_AXIS)
-						messages << j.second.group->name() << ": "
-							<< get_axis_name(j.second.tevcode & 0xFFFF)
-							<< "[" << j.second.axis_min << "," << j.second.axis_max
-							<< "]" << std::endl;
-					if(j.second.type == ET_HAT_X || j.second.type == ET_HAT_Y)
-						messages << j.second.group->name() << ": "
-							<< get_axis_name(j.second.tevcode & 0xFFFF) << std::endl;
-				}
-			}
+			for(auto i : joystick_nums)
+				messages << joysticks[i.first].compose_report(i.second) << std::endl;
 		});
 
 	volatile bool quit_signaled = false;
@@ -401,9 +211,9 @@ namespace
 
 void joystick_plugin::init() throw()
 {
-	probe_all_joysticks();
 	evdev_init_buttons(buttonnames);
 	evdev_init_axes(axisnames);
+	probe_all_joysticks();
 	quit_ack = quit_signaled = false;
 }
 
@@ -411,18 +221,15 @@ void joystick_plugin::quit() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
-	for(int fd : joysticks)
-		close(fd);
-	for(auto i : keygroups)
-		delete i;
-	keygroups.clear();
-	joystick_map.clear();
+	for(auto i : joysticks)	close(i.first);
+	for(auto i : axes)	delete i.second;
+	for(auto i : buttons)	delete i.second;
+	for(auto i : hats)	delete i.second;
 	joysticks.clear();
-	joystick_names.clear();
-	std::map<uint64_t, struct event_mapping> event_map;
-	std::map<int, uint16_t> joystick_map;
-	std::set<int> joysticks;
-	std::map<uint16_t, std::string> joystick_names;
+	joystick_nums.clear();
+	axes.clear();
+	buttons.clear();
+	hats.clear();
 }
 
 #define POLL_WAIT 20000
@@ -430,8 +237,18 @@ void joystick_plugin::quit() throw()
 void joystick_plugin::thread_fn() throw()
 {
 	while(!quit_signaled) {
-		for(int fd : joysticks)
-			while(read_one_input_event(fd));
+		for(auto fd : joysticks)
+			while(read_one_input_event(fd.first));
+		short x;
+		for(auto i : buttons)
+			if(joysticks[i.first.first].button(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
+		for(auto i : axes)
+			if(joysticks[i.first.first].axis(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
+		for(auto i : hats)
+			if(joysticks[i.first.first].hat(i.first.second, x))
+				platform::queue(keypress(modifier_set(), *i.second, x));
 		usleep(POLL_WAIT);
 	}
 	quit_ack = true;
