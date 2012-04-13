@@ -18,8 +18,11 @@ namespace
 	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
 		"Syntax: show-joysticks\nShow joystick data.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			messages << "Driver: " << joystick_plugin::name << std::endl;
+			messages << "--------------------------------------" << std::endl;
 			for(auto i : joynumbers)
 				messages << joysticks[i.first].compose_report(i.second) << std::endl;
+			messages << "--------------------------------------" << std::endl;
 		});
 }
 
