@@ -932,6 +932,9 @@ x[BTN_TOOL_TRIPLETAP] = "Button TOOL_TRIPLETAP";
 #ifdef BTN_TOOL_QUADTAP
 x[BTN_TOOL_QUADTAP] = "Button TOOL_QUADTAP";
 #endif
+#ifdef BTN_TOOL_QUINTTAP
+x[BTN_TOOL_QUINTTAP] = "Button TOOL_QUINTTAP";
+#endif
 #ifdef BTN_WHEEL
 x[BTN_WHEEL] = "Button WHEEL";
 #endif
