@@ -1,7 +1,7 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
+#include "core/joystick.hpp"
 #include "core/window.hpp"
-#include "library/joyfun.hpp"
 #include "library/string.hpp"
 
 #include <unistd.h>
@@ -27,63 +27,26 @@ namespace
 {
 	const char* axisnames[ABS_MAX + 1] = {0};
 	const char* buttonnames[KEY_MAX + 1] = {0};
-	std::map<int, joystick_model> joysticks;
-	std::map<int, unsigned> joystick_nums;
-	std::map<std::pair<int, unsigned>, keygroup*> axes;
-	std::map<std::pair<int, unsigned>, keygroup*> buttons;
-	std::map<std::pair<int, unsigned>, keygroup*> hats;
-	unsigned joystick_count = 0;
 
 	std::string get_button_name(uint16_t code)
 	{
 		if(code <= KEY_MAX && buttonnames[code])
 			return buttonnames[code];
-		else {
-			std::ostringstream str;
-			str << "Unknown button #" << code << std::endl;
-			return str.str();
-		}
+		else
+			return (stringfmt() << "Unknown button #" << code).str();
 	}
 
 	std::string get_axis_name(uint16_t code)
 	{
 		if(code <= ABS_MAX && axisnames[code])
 			return axisnames[code];
-		else {
-			std::ostringstream str;
-			str << "Unknown axis #" << code << std::endl;
-			return str.str();
-		}
-	}
-
-	void create_button(int fd, unsigned jnum, uint16_t code)
-	{
-		unsigned n = joysticks[fd].new_button(code, get_button_name(code));
-		std::string name = (stringfmt() << "joystick" << jnum << "button" << n).str();
-		buttons[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_KEY);
-	}
-
-	void create_axis(int fd, unsigned jnum, uint16_t code, int32_t min, int32_t max)
-	{
-		unsigned n = joysticks[fd].new_axis(code, min, max, get_axis_name(code));
-		std::string name = (stringfmt() << "joystick" << jnum << "axis" << n).str();
-		if(min < 0)
-			axes[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_AXIS_PAIR);
 		else
-			axes[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_PRESSURE_MP);
-	}
-
-	void create_hat(int fd, unsigned jnum, uint16_t codeX, uint16_t codeY)
-	{
-		unsigned n = joysticks[fd].new_hat(codeX, codeY, 1, get_axis_name(codeX), get_axis_name(codeY));
-		std::string name = (stringfmt() << "joystick" << jnum << "hat" << n).str();
-		hats[std::make_pair(fd, n)] = new keygroup(name, "joystick", keygroup::KT_HAT);
+			return (stringfmt() << "Unknown axis #" << code).str();
 	}
 
 	bool read_one_input_event(int fd)
 	{
 		short x;
-		joystick_model& m = joysticks[fd];
 		struct input_event ev;
 		int r = read(fd, &ev, sizeof(ev));
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))
@@ -94,9 +57,9 @@ namespace
 			return false;
 		}
 		if(ev.type == EV_KEY)
-			m.report_button(ev.code, ev.value != 0);
+			joystick_report_button(fd, ev.code, ev.value != 0);
 		if(ev.type == EV_ABS)
-			m.report_axis(ev.code, ev.value);
+			joystick_report_axis(fd, ev.code, ev.value);
 		return true;
 	}
 
@@ -138,13 +101,10 @@ namespace
 				<< std::endl;
 			return false;
 		}
-		joysticks[fd].name(namebuffer);
-		unsigned jnum = joystick_count++;
-		joystick_nums[fd] = jnum;
-		
+		joystick_create(fd, namebuffer);
 		for(unsigned i = 0; i <= KEY_MAX; i++) {
 			if(keys[i / div] & (1ULL << (i % div))) {
-				create_button(fd, jnum, i);
+				joystick_new_button(fd, i, get_button_name(i));
 				button_count++;
 			}
 		}
@@ -158,16 +118,17 @@ namespace
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
-					create_axis(fd, jnum, i, V[1], V[2]);
+					if(V[1] < 0)
+					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i),
+						(V[1] < 0) ? keygroup::KT_AXIS_PAIR : keygroup::KT_PRESSURE_MP);
 					axis_count++;
 				} else if(i % 2 == 0) {
-					create_hat(fd, jnum, i, i + 1);
+					joystick_new_hat(fd, i, i + 1, 1, get_axis_name(i), get_axis_name(i + 1));
 					hat_count++;
 				}
 			}
 		}
-		messages << "Found '" << namebuffer << "' (" << button_count << " buttons, " << axis_count
-			<< " axes, " << hat_count << " hats)" << std::endl;
+		joystick_message(fd);
 		return true;
 	}
 
@@ -197,14 +158,6 @@ namespace
 		}
 		closedir(d);
 	}
-
-	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
-		"Syntax: show-joysticks\nShow joystick data.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i : joystick_nums)
-				messages << joysticks[i.first].compose_report(i.second) << std::endl;
-		});
-
 	volatile bool quit_signaled = false;
 	volatile bool quit_ack = false;
 }
@@ -221,15 +174,7 @@ void joystick_plugin::quit() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
-	for(auto i : joysticks)	close(i.first);
-	for(auto i : axes)	delete i.second;
-	for(auto i : buttons)	delete i.second;
-	for(auto i : hats)	delete i.second;
-	joysticks.clear();
-	joystick_nums.clear();
-	axes.clear();
-	buttons.clear();
-	hats.clear();
+	joystick_quit();
 }
 
 #define POLL_WAIT 20000
@@ -237,18 +182,9 @@ void joystick_plugin::quit() throw()
 void joystick_plugin::thread_fn() throw()
 {
 	while(!quit_signaled) {
-		for(auto fd : joysticks)
-			while(read_one_input_event(fd.first));
-		short x;
-		for(auto i : buttons)
-			if(joysticks[i.first.first].button(i.first.second, x))
-				platform::queue(keypress(modifier_set(), *i.second, x));
-		for(auto i : axes)
-			if(joysticks[i.first.first].axis(i.first.second, x))
-				platform::queue(keypress(modifier_set(), *i.second, x));
-		for(auto i : hats)
-			if(joysticks[i.first.first].hat(i.first.second, x))
-				platform::queue(keypress(modifier_set(), *i.second, x));
+		for(auto fd : joystick_set())
+			while(read_one_input_event(fd));
+		joystick_flush();
 		usleep(POLL_WAIT);
 	}
 	quit_ack = true;
@@ -257,6 +193,7 @@ void joystick_plugin::thread_fn() throw()
 void joystick_plugin::signal() throw()
 {
 	quit_signaled = true;
+	while(!quit_ack);
 }
 
 const char* joystick_plugin::name = "Evdev joystick plugin";
