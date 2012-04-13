@@ -118,7 +118,6 @@ namespace
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
-					if(V[1] < 0)
 					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i),
 						(V[1] < 0) ? keygroup::KT_AXIS_PAIR : keygroup::KT_PRESSURE_MP);
 					axis_count++;
