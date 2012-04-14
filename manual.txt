@@ -1710,16 +1710,237 @@ result.
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
-8.9 Table _SYSTEM
+8.9 Table simd
+
+Contains various functions for caluculating calculations on 
+entiere vectors.
+
+8.9.1 Type codes:
+
+
++---------+--------------+---------+----------+
+|  Size   | Unspecified  | Signed  | Unsigned |
++---------+--------------+---------+----------+
++---------+--------------+---------+----------+
+|  Byte   |      b       |   sb    |    ub    |
++---------+--------------+---------+----------+
+|  Word   |      w       |   sw    |    uw    |
++---------+--------------+---------+----------+
+| Dword   |      d       |   sd    |    ud    |
++---------+--------------+---------+----------+
+| Qword   |      q       |   sq    |    uq    |
++---------+--------------+---------+----------+
+| Single  |      s       |   s     |   N/A    |
++---------+--------------+---------+----------+
+| Double  |      s       |   f     |   N/A    |
++---------+--------------+---------+----------+
+
+
+8.9.2 simd.new(number size)
+
+Returns vector with given number of bytes.
+
+8.9.3 simd.copy(simdvector target, number doff, simdvector 
+  source, number soff, number len)
+
+Copies len bytes from offset soff of source to offset doff of 
+target.
+
+8.9.4 simd.length_<type>(simdvector v)
+
+• Applicable types: All unspecified.
+
+Returns length of vector v in elements.
+
+8.9.5 simd.store_<type>(simdvector v, number n, number x)
+
+• Applicable types: All signed and unsigned
+
+Stores number x in element n of vector v.
+
+8.9.6 simd.load_<type>(simdvector v, number n)
+
+• Applicable types: All signed and unsigned
+
+Returns element n of vector v.
+
+8.9.7 simd.copy_<type>(simdvector d, simdvector/number s)
+
+• Applicable types: All unspecified
+
+Copies entiere vector of values from s to d.
+
+8.9.8 simd.neg_<type>(simdvector d, simdvector/number s)
+
+• Applicable types: All signed
+
+Elementwise negation: d <- -s
+
+8.9.9 simd.add_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All unspecified
+
+Elementwise addition: d <- s1 + s2
+
+8.9.10 simd.sub_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All unspecified
+
+Elementwise substraction: d <- s1 - s2
+
+8.9.11 simd.mul_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned
+
+Elementwise multiplication: d <- s1 * s2
+
+8.9.12 simd.div_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned
+
+Elementwise division: d <- s1 / s2
+
+8.9.13 simd.rem_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned integer types
+
+Elementwise remainder: d <- s1 % s2
+
+8.9.14 simd.lshift_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned integer types
+
+Elementwise left shift: d <- s1 << s2
+
+8.9.15 simd.rshift_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned integer types
+
+Elementwise right shift: d <- s1 >> s2
+
+8.9.16 simd.cadd_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All unspecified
+
+Returns sum of all elements.
+
+8.9.17 simd.cmul_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All unspecified
+
+Returns product of all elements.
+
+8.9.18 simd.convert_<dtype>_<stype>(simdvector d, 
+  simdvector/number s)
+
+• Applicable types: All signed and unsigned
+
+d <- s, converting all values from <stype> to <dtype>.
+
+8.9.19 simd.lt_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise less than: d <- (s1 < s2).
+
+8.9.20 simd.le_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise less or equal to: d <- (s1 < s2).
+
+8.9.21 simd.eq_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise equal to: d <- (s1 == s2).
+
+8.9.22 simd.ne_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise not equal to: d <- (s1 != s2).
+
+8.9.23 simd.ge_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise greater or equal to: d <- (s1 >= s2).
+
+8.9.24 simd.gt_<type>(simdvector d, simdvector/number s1, 
+  simdvector/number s2)
+
+• Applicable types: All signed and unsigned for s1/s2, d is 
+  always unsigned byte.
+
+Elementwise greater than: d <- (s1 > s2).
+
+8.9.25 simd.isort_<itype>_<dtype>(simdvector d, simdvector s)
+
+• Applicable types: itype is d or q, dtype is any signed or 
+  unsigned type.
+
+For each value of s (dtype), writes the rank of said value in 
+numerical order to d (itype).
+
+8.9.26 simd.ipermute_<itype>_<dtype>(simdvector d, simdvector o, 
+  simdvector s)
+
+• Applicable types: itype is d or q, dtype is any signed or 
+  unsigned type.
+
+Elementwise selection: d <- s[o]. d and s are of dtype, o is of 
+itype. Out of range indices give zeroes.
+
+8.9.27 simd.{sqrt,sin,cos,tan,atan,abs}_{s,f}(simdvector d, 
+  simdvector s)
+
+Elementwise functions: d <- f(s), where f is one of square root, 
+sine, cosine, tangent, arctangent or absolute value.
+
+8.9.28 simd.cplxabs_{s,f}(simdvector d, simdvector s1, simdvector 
+  s2)
+
+Elementwise functions: d <- abs(s1,s2).
+
+8.9.29 simd.b{xor,or,and}(simdvector d, simdvector s1, simdvector 
+  s2)
+
+Bitwise functions XOR, OR and AND from s1 and s2 into d.
+
+8.9.30 simd.bnot(simdvector d, simdvector s)
+
+Bitwise function NOT from s into d.
+
+8.10 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-8.10 Callbacks
+8.11 Callbacks
 
 Various callbacks to Lua that can occur.
 
-8.10.1 Callback: on_paint(bool not_synth)
+8.11.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
@@ -1727,80 +1948,80 @@ graphic context draw on the screen.
 not_synth is true if this hook is being called in response to 
 received frame, false otherwise.
 
-8.10.2 Callback: on_video()
+8.11.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-8.10.3 Callback: on_frame_emulated()
+8.11.3 Callback: on_frame_emulated()
 
 Called when emulating frame has completed and 
 on_paint()/on_video() calls are about to be issued.
 
-8.10.4 Callback: on_frame()
+8.11.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-8.10.5 Callback: on_startup()
+8.11.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-8.10.6 Callback: on_rewind()
+8.11.6 Callback: on_rewind()
 
 Called when rewind movie to beginning has completed.
 
-8.10.7 Callback: on_pre_load(string name)
+8.11.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-8.10.8 Callback: on_err_load(string name)
+8.11.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-8.10.9 Callback: on_post_load(string name, boolean was_savestate)
+8.11.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-8.10.10 Callback: on_pre_save(string name, boolean is_savestate)
+8.11.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-8.10.11 Callback: on_err_save(string name)
+8.11.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-8.10.12 Callback: on_post_save(string name, boolean is_savestate)
+8.11.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-8.10.13 Callback: on_quit()
+8.11.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-8.10.14 Callback: on_input(boolean subframe)
+8.11.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-8.10.15 Callback: on_reset()
+8.11.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-8.10.16 Callback: on_readwrite()
+8.11.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-8.10.17 Callback: on_snoop(number port, number controller, number 
+8.11.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1809,18 +2030,18 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-8.10.18 Callback: on_keyhook(string keyname, table state)
+8.11.18 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-8.10.19 Callback: on_idle()
+8.11.19 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-8.10.20 Callback: on_timer()
+8.11.20 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).

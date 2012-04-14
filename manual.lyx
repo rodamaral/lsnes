@@ -3389,6 +3389,636 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsection
+Table simd
+\end_layout
+
+\begin_layout Standard
+Contains various functions for caluculating calculations on entiere vectors.
+\end_layout
+
+\begin_layout Subsubsection
+Type codes:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="7" columns="4">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<column alignment="center" valignment="top" width="0">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Size
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Unspecified
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Signed
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Unsigned
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Byte
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+b
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sb
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ub
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Word
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+w
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sw
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+uw
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Dword
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+d
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sd
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+ud
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Qword
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+q
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+sq
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+uq
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Single
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+s
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+s
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+N/A
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Double
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+s
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+f
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+N/A
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+simd.new(number size)
+\end_layout
+
+\begin_layout Standard
+Returns vector with given number of bytes.
+\end_layout
+
+\begin_layout Subsubsection
+simd.copy(simdvector target, number doff, simdvector source, number soff,
+ number len)
+\end_layout
+
+\begin_layout Standard
+Copies len bytes from offset soff of source to offset doff of target.
+\end_layout
+
+\begin_layout Subsubsection
+simd.length_<type>(simdvector v)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified.
+\end_layout
+
+\begin_layout Standard
+Returns length of vector v in elements.
+\end_layout
+
+\begin_layout Subsubsection
+simd.store_<type>(simdvector v, number n, number x)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned
+\end_layout
+
+\begin_layout Standard
+Stores number x in element n of vector v.
+\end_layout
+
+\begin_layout Subsubsection
+simd.load_<type>(simdvector v, number n)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned
+\end_layout
+
+\begin_layout Standard
+Returns element n of vector v.
+\end_layout
+
+\begin_layout Subsubsection
+simd.copy_<type>(simdvector d, simdvector/number s)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified
+\end_layout
+
+\begin_layout Standard
+Copies entiere vector of values from s to d.
+\end_layout
+
+\begin_layout Subsubsection
+simd.neg_<type>(simdvector d, simdvector/number s)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed
+\end_layout
+
+\begin_layout Standard
+Elementwise negation: d <- -s
+\end_layout
+
+\begin_layout Subsubsection
+simd.add_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified
+\end_layout
+
+\begin_layout Standard
+Elementwise addition: d <- s1 + s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.sub_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified
+\end_layout
+
+\begin_layout Standard
+Elementwise substraction: d <- s1 - s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.mul_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned
+\end_layout
+
+\begin_layout Standard
+Elementwise multiplication: d <- s1 * s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.div_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned
+\end_layout
+
+\begin_layout Standard
+Elementwise division: d <- s1 / s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.rem_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned integer types
+\end_layout
+
+\begin_layout Standard
+Elementwise remainder: d <- s1 % s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.lshift_<type>(simdvector d, simdvector/number s1, simdvector/number
+ s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned integer types
+\end_layout
+
+\begin_layout Standard
+Elementwise left shift: d <- s1 << s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.rshift_<type>(simdvector d, simdvector/number s1, simdvector/number
+ s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned integer types
+\end_layout
+
+\begin_layout Standard
+Elementwise right shift: d <- s1 >> s2
+\end_layout
+
+\begin_layout Subsubsection
+simd.cadd_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified
+\end_layout
+
+\begin_layout Standard
+Returns sum of all elements.
+\end_layout
+
+\begin_layout Subsubsection
+simd.cmul_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All unspecified
+\end_layout
+
+\begin_layout Standard
+Returns product of all elements.
+\end_layout
+
+\begin_layout Subsubsection
+simd.convert_<dtype>_<stype>(simdvector d, simdvector/number s)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned
+\end_layout
+
+\begin_layout Standard
+d <- s, converting all values from <stype> to <dtype>.
+\end_layout
+
+\begin_layout Subsubsection
+simd.lt_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise less than: d <- (s1 < s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.le_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise less or equal to: d <- (s1 < s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.eq_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise equal to: d <- (s1 == s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.ne_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise not equal to: d <- (s1 != s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.ge_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise greater or equal to: d <- (s1 >= s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.gt_<type>(simdvector d, simdvector/number s1, simdvector/number s2)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: All signed and unsigned for s1/s2, d is always unsigned
+ byte.
+\end_layout
+
+\begin_layout Standard
+Elementwise greater than: d <- (s1 > s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.isort_<itype>_<dtype>(simdvector d, simdvector s)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: itype is d or q, dtype is any signed or unsigned type.
+\end_layout
+
+\begin_layout Standard
+For each value of s (dtype), writes the rank of said value in numerical
+ order to d (itype).
+\end_layout
+
+\begin_layout Subsubsection
+simd.ipermute_<itype>_<dtype>(simdvector d, simdvector o, simdvector s)
+\end_layout
+
+\begin_layout Itemize
+Applicable types: itype is d or q, dtype is any signed or unsigned type.
+\end_layout
+
+\begin_layout Standard
+Elementwise selection: d <- s[o].
+ d and s are of dtype, o is of itype.
+ Out of range indices give zeroes.
+\end_layout
+
+\begin_layout Subsubsection
+simd.{sqrt,sin,cos,tan,atan,abs}_{s,f}(simdvector d, simdvector s)
+\end_layout
+
+\begin_layout Standard
+Elementwise functions: d <- f(s), where f is one of square root, sine, cosine,
+ tangent, arctangent or absolute value.
+\end_layout
+
+\begin_layout Subsubsection
+simd.cplxabs_{s,f}(simdvector d, simdvector s1, simdvector s2)
+\end_layout
+
+\begin_layout Standard
+Elementwise functions: d <- abs(s1,s2).
+\end_layout
+
+\begin_layout Subsubsection
+simd.b{xor,or,and}(simdvector d, simdvector s1, simdvector s2)
+\end_layout
+
+\begin_layout Standard
+Bitwise functions XOR, OR and AND from s1 and s2 into d.
+\end_layout
+
+\begin_layout Subsubsection
+simd.bnot(simdvector d, simdvector s)
+\end_layout
+
+\begin_layout Standard
+Bitwise function NOT from s into d.
+\end_layout
+
+\begin_layout Subsection
 Table _SYSTEM
 \end_layout
 
