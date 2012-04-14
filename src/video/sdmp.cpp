@@ -84,7 +84,7 @@ namespace
 				write32ube(tbuffer, 0x53444D50U);
 				write32ube(tbuffer + 4, emucore_get_video_rate().first);
 				write32ube(tbuffer + 8, emucore_get_audio_rate().first);
-				out.write(reinterpret_cast<char*>(tbuffer), 12);
+				out->write(reinterpret_cast<char*>(tbuffer), 12);
 				if(!out)
 					throw std::runtime_error("Failed to write header to '" + str2 + "'");
 				ssize = 12;
