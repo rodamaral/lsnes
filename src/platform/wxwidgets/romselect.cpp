@@ -51,35 +51,6 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	class my_interfaced : public SNES::Interface
-	{
-		string path(SNES::Cartridge::Slot slot, const string &hint)
-		{
-			return "./";
-		}
-	} simple_interface;
-
-	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
-	{
-		std::string id(_id, _id.length());
-		//Fixup name change by bsnes v087...
-		if(id == "bsx.ram")
-			id = ".bss";
-		if(id == "bsx.psram")
-			id = ".bsp";
-		if(id == "program.rtc")
-			id = ".rtc";
-		if(id == "upd96050.ram")
-			id = ".dsp";
-		if(id == "program.ram")
-			id = ".srm";
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
-			return "slota." + id.substr(1);
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
-			return "slotb." + id.substr(1);
-		return id.substr(1);
-	}
-
 	porttype_t get_controller_type(const std::string& s)
 	{
 		if(s == CNAME_NONE)
