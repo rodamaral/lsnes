@@ -46,10 +46,6 @@
  */
 #define DESERIALIZE_SPECIAL_BLANK 0xFFFFFFFFUL
 /**
- * Analog indices.
- */
-#define MAX_ANALOG 3
-/**
  * Logical button IDs.
  */
 #define LOGICAL_BUTTON_LEFT 0
