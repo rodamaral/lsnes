@@ -55,7 +55,7 @@ namespace
 		lua_pushnumber(LS, r.delay().second);
 		lua_settable(LS, -3);
 
-		for(size_t i = 0; i < MAX_BUTTONS; i++) {
+		for(size_t i = 0; i < r.maxbuttons(); i++) {
 			lua_pushnumber(LS, i + 4);
 			lua_pushnumber(LS, r.axis2(i));
 			lua_settable(LS, -3);

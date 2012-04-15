@@ -8,23 +8,21 @@ namespace
 	function_ptr_luafun iset("input.set", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
-		short value = get_numeric_argument<short>(LS, 3, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
-			return 0;
-		lua_input_controllerdata->axis(controller, index, value);
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		short value = get_numeric_argument<short>(LS, 4, fname.c_str());
+		lua_input_controllerdata->axis(port, controller, index, value);
 		return 0;
 	});
 
 	function_ptr_luafun iget("input.get", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
-			return 0;
-		lua_pushnumber(LS, lua_input_controllerdata->axis(controller, index));
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		lua_pushnumber(LS, lua_input_controllerdata->axis(port, controller, index));
 		return 1;
 	});
 
@@ -32,14 +30,13 @@ namespace
 		if(!lua_input_controllerdata)
 			return 0;
 		short val;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT)
-			return 0;
-		uint64_t base = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++) {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		uint64_t base = get_numeric_argument<uint64_t>(LS, 3, fname.c_str());
+		for(unsigned i = 0; i < lua_input_controllerdata->control_count(); i++) {
 			val = (base >> i) & 1;
-			get_numeric_argument<short>(LS, i + 3, val, fname.c_str());
-			lua_input_controllerdata->axis(controller, i, val);
+			get_numeric_argument<short>(LS, i + 4, val, fname.c_str());
+			lua_input_controllerdata->axis(port, controller, i, val);
 		}
 		return 0;
 	});
@@ -47,26 +44,26 @@ namespace
 	function_ptr_luafun igeta("input.geta", [](lua_State* LS, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT)
-			return 0;
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
 		uint64_t fret = 0;
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++)
-			if(lua_input_controllerdata->axis(controller, i))
+		for(unsigned i = 0; i < lua_input_controllerdata->control_count(); i++)
+			if(lua_input_controllerdata->axis(port, controller, i))
 				fret |= (1ULL << i);
 		lua_pushnumber(LS, fret);
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++)
-			lua_pushnumber(LS, lua_input_controllerdata->axis(controller, i));
-		return MAX_CONTROLS_PER_CONTROLLER + 1;
+		for(unsigned i = 0; i < lua_input_controllerdata->control_count(); i++)
+			lua_pushnumber(LS, lua_input_controllerdata->axis(port, controller, i));
+		return lua_input_controllerdata->control_count() + 1;
 	});
 
 	function_ptr_luafun igett("input.controllertype", [](lua_State* LS, const std::string& fname) -> int {
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		porttype_t p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
+		porttype_t p = f.get_port_type(port);
 		const porttype_info& i = porttype_info::lookup(p);
-		if(i.controllers <= controller % MAX_CONTROLLERS_PER_PORT)
+		if(i.controllers <= controller)
 			lua_pushnil(LS);
 		else if(p == PT_NONE)
 			lua_pushnil(LS);

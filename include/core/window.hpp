@@ -563,5 +563,7 @@ void runemufn(T fn)
  * If set, queueing synchronous function produces a warning.
  */
 extern volatile bool queue_synchronous_fn_warning;
+extern void* queue_synchronous_fn_stack[512];
+extern size_t queue_synchronous_fn_stacksize;
 
 #endif

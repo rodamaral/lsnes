@@ -188,16 +188,16 @@ void information_dispatch::do_mode_change(bool readonly) throw()
 	}
 }
 
-void information_dispatch::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
+void information_dispatch::on_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate) throw()
+void information_dispatch::do_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate) throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK
-		i->on_autohold_update(pid, ctrlnum, newstate);
+		i->on_autohold_update(port, pid, ctrlnum, newstate);
 		END_EH_BLOCK(i, "on_autohold_update");
 	}
 }

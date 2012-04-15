@@ -28,8 +28,6 @@
 #include "platform/wxwidgets/window_mainwindow.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 
-#define MAXCONTROLLERS MAX_PORTS * MAX_CONTROLLERS_PER_PORT
-
 extern "C"
 {
 #ifndef UINT64_C
@@ -37,6 +35,9 @@ extern "C"
 #endif
 #include <libswscale/swscale.h>
 }
+
+//FIXME: Support more ports/controllers.
+#define MAXCONTROLLERS 8
 
 enum
 {
@@ -179,29 +180,29 @@ namespace
 		return ret;
 	}
 
-	bool UI_get_autohold(unsigned pid, unsigned idx)
+	bool UI_get_autohold(unsigned port, unsigned pid, unsigned idx)
 	{
 		bool ret;
-		runemufn([&ret, pid, idx]() { ret = controls.autohold(pid, idx); });
+		runemufn([&ret, port, pid, idx]() { ret = controls.autohold(port, pid, idx); });
 		return ret;
 	}
 
-	void UI_change_autohold(unsigned pid, unsigned idx, bool newstate)
+	void UI_change_autohold(unsigned port, unsigned pid, unsigned idx, bool newstate)
 	{
-		runemufn([pid, idx, newstate]() { controls.autohold(pid, idx, newstate); });
+		runemufn([port, pid, idx, newstate]() { controls.autohold(port, pid, idx, newstate); });
 	}
 
-	int UI_controller_index_by_logical(unsigned lid)
+	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)
 	{
-		int ret;
+		std::pair<int, int> ret;
 		runemufn([&ret, lid]() { ret = controls.lcid_to_pcid(lid); });
 		return ret;
 	}
 
-	int UI_button_id(unsigned pcid, unsigned lidx)
+	int UI_button_id(unsigned port, unsigned pcid, unsigned lidx)
 	{
 		int ret;
-		runemufn([&ret, pcid, lidx]() { ret = controls.button_id(pcid, lidx); });
+		runemufn([&ret, port, pcid, lidx]() { ret = controls.button_id(port, pcid, lidx); });
 		return ret;
 	}
 
@@ -221,7 +222,7 @@ namespace
 		void change_type();
 		bool is_dummy();
 		void on_select(wxCommandEvent& e);
-		void update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void update(std::pair<int, int> pid, unsigned ctrlnum, bool newstate);
 	private:
 		unsigned our_lid;
 		wxMenuItem* entries[MAX_LOGICAL_BUTTONS];
@@ -234,10 +235,10 @@ namespace
 		autohold_menu(wxwin_mainwindow* win);
 		void reconfigure();
 		void on_select(wxCommandEvent& e);
-		void update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
-		controller_autohold_menu* menus[MAXCONTROLLERS];
-		wxMenuItem* entries[MAXCONTROLLERS];
+		std::vector<controller_autohold_menu*> menus;
+		std::vector<wxMenuItem*> entries;
 	};
 
 	class sound_select_menu : public wxMenu
@@ -262,7 +263,7 @@ namespace
 		void on_sound_unmute(bool unmute) throw();
 		void on_sound_change(const std::string& dev) throw();
 		void on_mode_change(bool readonly) throw();
-		void on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void on_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate);
 		void on_autohold_reconfigure();
 	private:
 		wxwin_mainwindow* mainw;
@@ -284,13 +285,13 @@ namespace
 	void controller_autohold_menu::change_type()
 	{
 		enabled_entries = 0;
-		int pid = controls.lcid_to_pcid(our_lid);
+		auto pid = controls.lcid_to_pcid(our_lid);
 		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
 			int pidx = -1;
-			if(pid >= 0)
-				pidx = controls.button_id(pid, i);
+			if(pid.first >= 0)
+				pidx = controls.button_id(pid.first, pid.second, i);
 			if(pidx >= 0) {
-				entries[i]->Check(pid > 0 && UI_get_autohold(pid, pidx));
+				entries[i]->Check(pid.first > 0 && UI_get_autohold(pid.first, pid.second, pidx));
 				entries[i]->Enable();
 				enabled_entries++;
 			} else {
@@ -314,41 +315,33 @@ namespace
 		}
 		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % MAX_LOGICAL_BUTTONS;
 		modal_pause_holder hld;
-		int pid = controls.lcid_to_pcid(our_lid);
-		if(pid < 0 || !entries[lidx])
+		auto pid = controls.lcid_to_pcid(our_lid);
+		if(pid.first < 0 || !entries[lidx])
 			return;
-		int pidx = controls.button_id(pid, lidx);
+		int pidx = controls.button_id(pid.first, pid.second, lidx);
 		if(pidx < 0)
 			return;
 		//Autohold change on pid=pid, ctrlindx=idx, state
 		bool newstate = entries[lidx]->IsChecked();
-		UI_change_autohold(pid, pidx, newstate);
+		UI_change_autohold(pid.first, pid.second, pidx, newstate);
 	}
 
-	void controller_autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void controller_autohold_menu::update(std::pair<int, int> pid, unsigned ctrlnum, bool newstate)
 	{
 		modal_pause_holder hld;
-		int pid2 = UI_controller_index_by_logical(our_lid);
-		if(pid2 < 0 || static_cast<unsigned>(pid) != pid2)
+		auto pid2 = UI_controller_index_by_logical(our_lid);
+		if(pid2.first < 0 || pid != pid2)
 			return;
 		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
-			int idx = UI_button_id(pid2, i);
+			int idx = UI_button_id(pid2.first, pid2.second, i);
 			if(idx < 0 || static_cast<unsigned>(idx) != ctrlnum)
 				continue;
 			entries[i]->Check(newstate);
 		}
 	}
 
-
 	autohold_menu::autohold_menu(wxwin_mainwindow* win)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
-			std::ostringstream str;
-			str << "Controller #&" << (i + 1);
-			menus[i] = new controller_autohold_menu(i, DT_NONE);
-			entries[i] = AppendSubMenu(menus[i], towxstring(str.str()));
-			entries[i]->Enable(!menus[i]->is_dummy());
-		}
 		win->Connect(wxID_AUTOHOLD_FIRST, wxID_AUTOHOLD_LAST, wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(autohold_menu::on_select), NULL, this);
 		reconfigure();
@@ -357,7 +350,19 @@ namespace
 	void autohold_menu::reconfigure()
 	{
 		modal_pause_holder hld;
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
+		unsigned idx;
+		for(idx = menus.size(); controls.lcid_to_pcid(idx).first >= 0; idx++);
+		unsigned osize = menus.size();
+		menus.resize(idx);
+		entries.resize(idx);
+		for(unsigned i = osize; i < menus.size(); i++) {
+			std::ostringstream str;
+			str << "Controller #&" << (i + 1);
+			menus[i] = new controller_autohold_menu(i, DT_NONE);
+			entries[i] = AppendSubMenu(menus[i], towxstring(str.str()));
+			entries[i]->Enable(!menus[i]->is_dummy());
+		}
+		for(unsigned i = 0; i < menus.size(); i++) {
 			menus[i]->change_type();
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
@@ -365,14 +370,14 @@ namespace
 
 	void autohold_menu::on_select(wxCommandEvent& e)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++)
+		for(unsigned i = 0; i < menus.size(); i++)
 			menus[i]->on_select(e);
 	}
 
-	void autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void autohold_menu::update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++)
-			menus[i]->update(pid, ctrlnum, newstate);
+		for(unsigned i = 0; i < menus.size(); i++)
+			menus[i]->update(std::make_pair(port, pid), ctrlnum, newstate);
 	}
 
 	sound_select_menu::sound_select_menu(wxwin_mainwindow* win)
@@ -433,9 +438,9 @@ namespace
 		runuifun([readonly, mainw]() { mainw->menu_check(wxID_READONLY_MODE, readonly); });
 	}
 
-	void broadcast_listener::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void broadcast_listener::on_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		runuifun([pid, ctrlnum, newstate, ahmenu]() { ahmenu->update(pid, ctrlnum, newstate); });
+		runuifun([port, pid, ctrlnum, newstate, ahmenu]() { ahmenu->update(port, pid, ctrlnum, newstate); });
 	}
 
 	void broadcast_listener::on_autohold_reconfigure()

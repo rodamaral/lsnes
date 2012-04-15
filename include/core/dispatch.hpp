@@ -152,15 +152,16 @@ public:
  *
  * The default handler does nothing.
  *
- * Parameter pid: The physical ID of controller (0-7).
- * Parameter ctrlnum: Physical control number (0-15).
+ * Parameter port: The port number.
+ * Parameter pid: The physical ID of controller.
+ * Parameter ctrlnum: Physical control number.
  * Parameter newstate: True if autohold is now active, false if autohold is now inactive.
  */
-	virtual void on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
+	virtual void on_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate);
 /**
  * Call all on_autohold_update() handlers.
  */
-	static void do_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate) throw();
+	static void do_autohold_update(unsigned port, unsigned pid, unsigned ctrlnum, bool newstate) throw();
 /**
  * Controller configuration may have been changed.
  *

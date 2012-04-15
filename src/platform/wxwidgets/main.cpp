@@ -14,6 +14,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/core.hpp"
+#include "library/backtrace.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -81,6 +82,8 @@ namespace
 	{
 		void(*fn)(void*);
 		void* arg;
+		int stacksize;
+		void* stack[512];
 	};
 
 	std::list<ui_queue_entry> ui_queue;
@@ -139,6 +142,8 @@ back:
 				if(ui_queue.empty())
 					goto end;
 				i = ui_queue.begin();
+				memcpy(queue_synchronous_fn_stack, i->stack, i->stacksize * sizeof(void*));
+				queue_synchronous_fn_stacksize = i->stacksize;
 			}
 			i->fn(i->arg);
 			{
@@ -389,6 +394,7 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 	ui_queue_entry e;
 	e.fn = fn;
 	e.arg = arg;
+	e.stacksize = lsnes_backtrace(e.stack, 512);
 	ui_queue.push_back(e);
 	auto i = ui_queue.insert(ui_queue.end(), e);
 	post_ui_event(UISERV_UIFUN);

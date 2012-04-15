@@ -21,6 +21,9 @@ namespace
 		//Project IDs have to match.
 		if(old_projectid != new_projectid)
 			return false;
+		//The controller types have to match.
+		if(!old_movie.blank_frame(false).type_matches(new_movie.blank_frame(false)))
+			return false;
 		//If new movie is before first frame, anything with same project_id is compatible.
 		if(frame == 0)
 			return true;
@@ -64,7 +67,8 @@ namespace
 		if(old_reset != new_reset || old_delay != new_delay)
 			return false;
 		//Then rest of the stuff.
-		for(unsigned i = 0; i < MAX_BUTTONS; i++) {
+		unsigned buttons = old_movie.blank_frame(false).maxbuttons();
+		for(unsigned i = 0; i < buttons; i++) {
 			uint32_t p = polls[i + 4] & 0x7FFFFFFFUL;
 			short ov = 0, nv = 0;
 			for(uint32_t j = 0; j < p; j++) {
@@ -136,7 +140,7 @@ controller_frame movie::get_controls() throw()
 		c.reset(movie_data[current_frame_first_subframe].reset());
 		c.delay(movie_data[current_frame_first_subframe].delay());
 	}
-	for(size_t i = 0; i < MAX_BUTTONS; i++) {
+	for(size_t i = 0; i < c.maxbuttons(); i++) {
 		uint32_t polls = pollcounters.get_polls(i);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
 		c.axis2(i, movie_data[current_frame_first_subframe + index].axis2(i));
@@ -188,20 +192,20 @@ void movie::next_frame() throw(std::bad_alloc)
 	current_frame++;
 }
 
-bool movie::get_DRDY(unsigned pid, unsigned ctrl) throw(std::logic_error)
+bool movie::get_DRDY(unsigned port, unsigned pid, unsigned ctrl) throw(std::logic_error)
 {
-	return pollcounters.get_DRDY(pid, ctrl);
+	return pollcounters.get_DRDY(port, pid, ctrl);
 }
 
-short movie::next_input(unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::logic_error)
+short movie::next_input(unsigned port, unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::logic_error)
 {
-	pollcounters.clear_DRDY(pid, ctrl);
+	pollcounters.clear_DRDY(port, pid, ctrl);
 
 	if(readonly) {
 		//In readonly mode...
 		//If at the end of the movie, return released / neutral (but also record the poll)...
 		if(current_frame_first_subframe >= movie_data.size()) {
-			pollcounters.increment_polls(pid, ctrl);
+			pollcounters.increment_polls(port, pid, ctrl);
 			return 0;
 		}
 		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
@@ -209,10 +213,10 @@ short movie::next_input(unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::
 			return 0;
 		//Otherwise find the last valid frame of input.
 		uint32_t changes = count_changes(current_frame_first_subframe);
-		uint32_t polls = pollcounters.increment_polls(pid, ctrl);
+		uint32_t polls = pollcounters.increment_polls(port, pid, ctrl);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
 		//debuglog << "Frame=" << current_frame << " Subframe=" << polls << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe + index](controlindex) << " fetchrow=" << current_frame_first_subframe + index << std::endl << std::flush;
-		return movie_data[current_frame_first_subframe + index].axis(pid, ctrl);
+		return movie_data[current_frame_first_subframe + index].axis(port, pid, ctrl);
 	} else {
 		//Readwrite mode.
 		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
@@ -223,30 +227,30 @@ short movie::next_input(unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::
 		if(current_frame_first_subframe >= movie_data.size()) {
 			movie_data.append(current_controls.copy(true));
 			//current_frame_first_subframe should be movie_data.size(), so it is right.
-			pollcounters.increment_polls(pid, ctrl);
+			pollcounters.increment_polls(port, pid, ctrl);
 			frames_in_movie++;
 			//debuglog << "Frame=" << current_frame << " Subframe=" << (pollcounters[controlindex] - 1) << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe](controlindex) << " fetchrow=" << current_frame_first_subframe << std::endl << std::flush;
-			return movie_data[current_frame_first_subframe].axis(pid, ctrl);
+			return movie_data[current_frame_first_subframe].axis(port, pid, ctrl);
 		}
-		short new_value = current_controls.axis(pid, ctrl);
+		short new_value = current_controls.axis(port, pid, ctrl);
 		//Fortunately, we know this frame is the last one in movie_data.
-		uint32_t pollcounter = pollcounters.get_polls(pid, ctrl);
+		uint32_t pollcounter = pollcounters.get_polls(port, pid, ctrl);
 		uint64_t fetchrow = movie_data.size() - 1;
 		if(current_frame_first_subframe + pollcounter < movie_data.size()) {
 			//The index is within existing size. Change the value and propagate to all subsequent
 			//subframes.
 			for(uint64_t i = current_frame_first_subframe + pollcounter; i < movie_data.size(); i++)
-				movie_data[i].axis(pid, ctrl, new_value);
+				movie_data[i].axis(port, pid, ctrl, new_value);
 			fetchrow = current_frame_first_subframe + pollcounter;
-		} else if(new_value != movie_data[movie_data.size() - 1].axis(pid, ctrl)) {
+		} else if(new_value != movie_data[movie_data.size() - 1].axis(port, pid, ctrl)) {
 			//The index is not within existing size and value does not match. We need to create a new
 			//subframes(s), copying the last subframe.
 			while(current_frame_first_subframe + pollcounter >= movie_data.size())
 				movie_data.append(movie_data[movie_data.size() - 1].copy(false));
 			fetchrow = current_frame_first_subframe + pollcounter;
-			movie_data[current_frame_first_subframe + pollcounter].axis(pid, ctrl, new_value);
+			movie_data[current_frame_first_subframe + pollcounter].axis(port, pid, ctrl, new_value);
 		}
-		pollcounters.increment_polls(pid, ctrl);
+		pollcounters.increment_polls(port, pid, ctrl);
 		//debuglog << "Frame=" << current_frame << " Subframe=" << (pollcounters[controlindex] - 1) << " control=" << controlindex << " value=" << new_value << " fetchrow=" << fetchrow << std::endl << std::flush;
 		return new_value;
 	}
@@ -353,7 +357,7 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 			movie_data[j].delay(movie_data[current_frame_first_subframe].delay());
 		}
 		//Then the other buttons.
-		for(size_t i = 0; i < MAX_BUTTONS; i++) {
+		for(size_t i = 0; i < pollcounters.maxbuttons(); i++) {
 			uint32_t polls = pollcounters.get_polls(i);
 			polls = polls ? polls : 1;
 			for(uint64_t j = current_frame_first_subframe + polls; j < next_frame_first_subframe; j++)
@@ -482,14 +486,13 @@ long movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::
 	return mov.get_reset_status();
 }
 
-short movie_logic::input_poll(bool port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error)
+short movie_logic::input_poll(unsigned port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error)
 {
-	unsigned pid = port ? (dev + MAX_CONTROLLERS_PER_PORT) : dev;
-	if(!mov.get_DRDY(pid, id)) {
+	if(!mov.get_DRDY(port, dev, id)) {
 		mov.set_controls(update_controls(true));
 		mov.set_all_DRDY();
 	}
-	int16_t in = mov.next_input(pid, id);
+	int16_t in = mov.next_input(port, dev, id);
 	//debuglog << "BSNES asking for (" << port << "," << dev << "," << id << ") (frame " << mov.get_current_frame()
 	//	<< ") giving " << in << std::endl;
 	//debuglog.flush();

@@ -341,46 +341,83 @@ pollcounter_vector::pollcounter_vector() throw()
 void pollcounter_vector::clear() throw()
 {
 	system_flag = false;
-	memset(ctrs, 0, sizeof(ctrs));
+	//FIXME: Support more controllers/ports
+	ctrs.resize(96);
+	memset(&ctrs[0], 0, sizeof(uint32_t) * ctrs.size());
 }
 
 void pollcounter_vector::set_all_DRDY() throw()
 {
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
+	for(size_t i = 0; i < ctrs.size() ; i++)
 		ctrs[i] |= 0x80000000UL;
 }
 
-#define INDEXOF(pcid, ctrl) ((pcid) * MAX_CONTROLS_PER_CONTROLLER + (ctrl))
-
-void pollcounter_vector::clear_DRDY(unsigned pcid, unsigned ctrl) throw()
+namespace
 {
-	ctrs[INDEXOF(pcid, ctrl)] &= 0x7FFFFFFFUL;
+	inline size_t INDEXOF(unsigned port, unsigned pcid, unsigned ctrl)
+	{
+		//FIXME: Support more controls.
+		return port * 48 + pcid * 12 + ctrl;
+	}
+
+	inline unsigned IINDEXOF_PORT(unsigned c)
+	{
+		//FIXME: Support more controls.
+		return c / 48;
+	}
+
+	inline unsigned IINDEXOF_PCID(unsigned c)
+	{
+		//FIXME: Support more controls.
+		return c / 12 % 4;
+	}
+
+	inline unsigned IINDEXOF_CTRL(unsigned c)
+	{
+		//FIXME: Support more controls.
+		return c % 12;
+	}
 }
 
-bool pollcounter_vector::get_DRDY(unsigned pcid, unsigned ctrl) throw()
+void pollcounter_vector::clear_DRDY(unsigned port, unsigned pcid, unsigned ctrl) throw()
 {
-	return ((ctrs[INDEXOF(pcid, ctrl)] & 0x80000000UL) != 0);
+	ctrs[INDEXOF(port, pcid, ctrl)] &= 0x7FFFFFFFUL;
+}
+
+bool pollcounter_vector::get_DRDY(unsigned port, unsigned pcid, unsigned ctrl) throw()
+{
+	return ((ctrs[INDEXOF(port, pcid, ctrl)] & 0x80000000UL) != 0);
 }
 
 bool pollcounter_vector::has_polled() throw()
 {
 	uint32_t res = system_flag ? 1 : 0;
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
+	for(size_t i = 0; i < ctrs.size(); i++)
 		res |= ctrs[i];
 	return ((res & 0x7FFFFFFFUL) != 0);
 }
 
-uint32_t pollcounter_vector::get_polls(unsigned pcid, unsigned ctrl) throw()
+uint32_t pollcounter_vector::get_polls(unsigned port, unsigned pcid, unsigned ctrl) throw()
 {
-	return ctrs[INDEXOF(pcid, ctrl)] & 0x7FFFFFFFUL;
+	return ctrs[INDEXOF(port, pcid, ctrl)] & 0x7FFFFFFFUL;
 }
 
-uint32_t pollcounter_vector::increment_polls(unsigned pcid, unsigned ctrl) throw()
+uint32_t pollcounter_vector::get_polls(unsigned ctrl) throw()
 {
-	size_t i = INDEXOF(pcid, ctrl);
+	return get_polls(IINDEXOF_PORT(ctrl), IINDEXOF_PCID(ctrl), IINDEXOF_CTRL(ctrl));
+}
+
+uint32_t pollcounter_vector::increment_polls(unsigned port, unsigned pcid, unsigned ctrl) throw()
+{
+	size_t i = INDEXOF(port, pcid, ctrl);
 	uint32_t x = ctrs[i] & 0x7FFFFFFFUL;
 	++ctrs[i];
 	return x;
+}
+
+unsigned pollcounter_vector::maxbuttons() throw()
+{
+	return ctrs.size();
 }
 
 void pollcounter_vector::set_system() throw()
@@ -396,7 +433,7 @@ bool pollcounter_vector::get_system() throw()
 uint32_t pollcounter_vector::max_polls() throw()
 {
 	uint32_t max = system_flag ? 1 : 0;
-	for(unsigned i = 0; i < MAX_BUTTONS; i++) {
+	for(unsigned i = 0; i < ctrs.size(); i++) {
 		uint32_t tmp = ctrs[i] & 0x7FFFFFFFUL;
 		max = (max < tmp) ? tmp : max;
 	}
@@ -405,28 +442,27 @@ uint32_t pollcounter_vector::max_polls() throw()
 
 void pollcounter_vector::save_state(std::vector<uint32_t>& mem) throw(std::bad_alloc)
 {
-	mem.resize(4 + MAX_BUTTONS );
+	mem.resize(4 + ctrs.size());
 	//Compatiblity fun.
 	mem[0] = 0x80000000UL;
 	mem[1] = system_flag ? 1 : 0x80000000UL;
 	mem[2] = system_flag ? 1 : 0x80000000UL;
 	mem[3] = system_flag ? 1 : 0x80000000UL;
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
+	for(size_t i = 0; i < ctrs.size(); i++)
 		mem[4 + i] = ctrs[i];
 }
 
 void pollcounter_vector::load_state(const std::vector<uint32_t>& mem) throw()
 {
 	system_flag = (mem[1] | mem[2] | mem[3]) & 0x7FFFFFFFUL;
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
+	for(size_t i = 0; i < ctrs.size(); i++)
 		ctrs[i] = mem[i + 4];
 }
 
 bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 {
-	return (mem.size() == MAX_BUTTONS  + 4);
+	return (mem.size() == ctrs.size() + 4);
 }
-
 
 controller_frame::controller_frame(porttype_t p1, porttype_t p2) throw(std::runtime_error)
 {
@@ -478,6 +514,30 @@ void controller_frame::set_types(const porttype_t* tarr)
 		offset += pinfo[i]->storage_size;
 	}
 	totalsize = offset;
+}
+
+void controller_frame::axis2(unsigned ctrl, short value) throw()
+{
+	axis(IINDEXOF_PORT(ctrl), IINDEXOF_PCID(ctrl), IINDEXOF_CTRL(ctrl), value);
+}
+
+short controller_frame::axis2(unsigned ctrl) throw()
+{
+	return axis(IINDEXOF_PORT(ctrl), IINDEXOF_PCID(ctrl), IINDEXOF_CTRL(ctrl));
+}
+
+unsigned controller_frame::maxbuttons() throw()
+{
+	//FIXME: Fix for more ports/controllers/controls
+	return 96;
+}
+
+bool controller_frame::type_matches(const controller_frame& a)
+{
+	for(unsigned i = 0; i < MAX_PORTS; i++)
+		if(a.types[i] != types[i])
+			return false;
+	return true;
 }
 
 size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
@@ -717,6 +777,12 @@ controller_frame::controller_frame() throw()
 	totalsize = SYSTEM_BYTES;
 }
 
+unsigned controller_frame::control_count()
+{
+	//FIXME: More controls.
+	return 12;
+}
+
 void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std::runtime_error)
 {
 	char tmp[MAXIMUM_CONTROLLER_FRAME_SIZE] = {0};
@@ -750,59 +816,46 @@ void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std:
 
 controller_state::controller_state() throw()
 {
-	for(size_t i = 0; i < MAX_ANALOG; i++) {
-		analog_indices[i] = -1;
-		analog_mouse[i] = false;
-	}
 	for(size_t i = 0; i < MAX_PORTS; i++) {
 		porttypes[i] = PT_INVALID;
 		porttypeinfo[i] = NULL;
 	}
 }
 
-int controller_state::lcid_to_pcid(unsigned lcid) throw()
+unsigned controller_state::lcid_count() throw()
+{
+	//FIXME: Support more ports/controllers.
+	return 8;
+}
+
+std::pair<int, int> controller_state::lcid_to_pcid(unsigned lcid) throw()
 {
 	if(!porttypeinfo[0] || !porttypeinfo[1])
-		return -1;
+		return std::make_pair(-1, -1);
+	//FIXME: Support more ports/controllers.
 	unsigned p1devs = porttypeinfo[0]->controllers;
 	unsigned p2devs = porttypeinfo[1]->controllers;
 	if(lcid >= p1devs + p2devs)
-		return -1;
+		return std::make_pair(-1, -1);
 	//Exceptional: If p1 is none, map all to p2.
 	if(!p1devs)
-		return lcid + MAX_CONTROLLERS_PER_PORT;
+		return std::make_pair(1, lcid);
 	//LID 0 Is always PID 0 unless out of range.
 	if(lcid == 0)
-		return 0;
+		return std::make_pair(0, 0);
 	//LID 1-n are on port 2.
 	else if(lcid < 1 + p2devs)
-		return lcid - 1 + MAX_CONTROLLERS_PER_PORT;
+		return std::make_pair(1, lcid- 1);
 	//From there, those are on port 1 (except for the first).
 	else
-		return lcid - p2devs;
+		return std::make_pair(0, lcid - p2devs);
 }
 
-int controller_state::acid_to_pcid(unsigned acid) throw()
+devicetype_t controller_state::pcid_to_type(unsigned port, unsigned pcid) throw()
 {
-	if(acid > MAX_ANALOG)
-		return -1;
-	return analog_indices[acid];
-}
-
-bool controller_state::acid_is_mouse(unsigned acid) throw()
-{
-	if(acid > MAX_ANALOG)
-		return -1;
-	return analog_mouse[acid];
-	
-}
-
-devicetype_t controller_state::pcid_to_type(unsigned pcid) throw()
-{
-	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
 	if(port >= MAX_PORTS)
 		return DT_NONE;
-	return porttypeinfo[port]->devicetype(pcid % MAX_CONTROLLERS_PER_PORT);
+	return porttypeinfo[port]->devicetype(pcid);
 }
 
 controller_frame controller_state::get(uint64_t framenum) throw()
@@ -813,14 +866,10 @@ controller_frame controller_state::get(uint64_t framenum) throw()
 		return _input ^ _autohold;
 }
 
-void controller_state::analog(unsigned acid, int x, int y) throw()
+void controller_state::analog(unsigned port, unsigned pcid, int x, int y) throw()
 {
-	if(acid >= MAX_ANALOG || analog_indices[acid] < 0) {
-		messages << "No analog controller #" << acid << std::endl;
-		return;
-	}
-	_input.axis(analog_indices[acid], 0, x);
-	_input.axis(analog_indices[acid], 1, y);
+	_input.axis(port, pcid, 0, x);
+	_input.axis(port, pcid, 1, y);
 }
 
 void controller_state::reset(int32_t delay) throw()
@@ -834,25 +883,25 @@ void controller_state::reset(int32_t delay) throw()
 	}
 }
 
-void controller_state::autohold(unsigned pcid, unsigned pbid, bool newstate) throw()
+void controller_state::autohold(unsigned port, unsigned pcid, unsigned pbid, bool newstate) throw()
 {
-	_autohold.axis(pcid, pbid, newstate ? 1 : 0);
-	information_dispatch::do_autohold_update(pcid, pbid, newstate);
+	_autohold.axis(port, pcid, pbid, newstate ? 1 : 0);
+	information_dispatch::do_autohold_update(port, pcid, pbid, newstate);
 }
 
-bool controller_state::autohold(unsigned pcid, unsigned pbid) throw()
+bool controller_state::autohold(unsigned port, unsigned pcid, unsigned pbid) throw()
 {
-	return (_autohold.axis(pcid, pbid) != 0);
+	return (_autohold.axis(port, pcid, pbid) != 0);
 }
 
-void controller_state::button(unsigned pcid, unsigned pbid, bool newstate) throw()
+void controller_state::button(unsigned port, unsigned pcid, unsigned pbid, bool newstate) throw()
 {
-	_input.axis(pcid, pbid, newstate ? 1 : 0);
+	_input.axis(port, pcid, pbid, newstate ? 1 : 0);
 }
 
-bool controller_state::button(unsigned pcid, unsigned pbid) throw()
+bool controller_state::button(unsigned port, unsigned pcid, unsigned pbid) throw()
 {
-	return (_input.axis(pcid, pbid) != 0);
+	return (_input.axis(port, pcid, pbid) != 0);
 }
 
 void controller_state::autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc)
@@ -860,12 +909,11 @@ void controller_state::autofire(std::vector<controller_frame> pattern) throw(std
 	_autofire = pattern;
 }
 
-int controller_state::button_id(unsigned pcid, unsigned lbid) throw()
+int controller_state::button_id(unsigned port, unsigned pcid, unsigned lbid) throw()
 {
-	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
 	if(port >= MAX_PORTS)
 		return -1;
-	return porttypeinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
+	return porttypeinfo[port]->button_id(pcid, lbid);
 }
 
 void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) throw(std::runtime_error)
@@ -887,29 +935,6 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 	}
 	porttypes[port] = ptype;
 	porttypeinfo[port] = info;
-	int i = 0;
-	for(unsigned j = 0; j < MAX_ANALOG; j++)
-		analog_indices[j] = -1;
-	for(unsigned j = 0; j < MAX_PORTS * MAX_CONTROLLERS_PER_PORT; j++) {
-		if(!porttypeinfo[j / MAX_CONTROLLERS_PER_PORT])
-			continue;
-		devicetype_t d = porttypeinfo[j / MAX_CONTROLLERS_PER_PORT]->devicetype(j % MAX_CONTROLLERS_PER_PORT);
-		switch(d) {
-		case DT_NONE:
-		case DT_GAMEPAD:
-			break;
-		case DT_MOUSE:
-			analog_mouse[i] = true;
-			analog_indices[i++] = j;
-			break;
-		case DT_LIGHTGUN:
-			analog_mouse[i] = false;
-			analog_indices[i++] = j;
-			break;
-		}
-		if(i == MAX_ANALOG)
-			break;
-	}
 	information_dispatch::do_autohold_reconfigure();
 }
 
@@ -936,12 +961,12 @@ controller_frame controller_state::commit(controller_frame controls) throw()
 	return _committed;
 }
 
-bool controller_state::is_analog(unsigned pcid) throw()
+bool controller_state::is_analog(unsigned port, unsigned pcid) throw()
 {
-	return _input.is_analog(pcid);
+	return _input.is_analog(port, pcid);
 }
 
-bool controller_state::is_mouse(unsigned pcid) throw()
+bool controller_state::is_mouse(unsigned port, unsigned pcid) throw()
 {
-	return _input.is_mouse(pcid);
+	return _input.is_mouse(port, pcid);
 }

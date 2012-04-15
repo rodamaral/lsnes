@@ -101,12 +101,13 @@ public:
  * Reads the data ready flag. On new frame, all data ready flags are unset. On reading control, its data ready
  * flag is unset.
  *
+ * parameter port: The port ID.
  * parameter pid: Physical controller id.
  * parameter index: Control ID.
  * returns: The read value.
  * throws std::logic_error: Invalid control index.
  */
-	bool get_DRDY(unsigned pid, unsigned index) throw(std::logic_error);
+	bool get_DRDY(unsigned port, unsigned pid, unsigned index) throw(std::logic_error);
 
 /**
  * Set all data ready flags
@@ -116,13 +117,14 @@ public:
 /**
  * Poll a control by (port, controller, index) tuple.
  *
+ * parameter port: The port ID.
  * parameter pid: Physical controller ID.
  * parameter index: The index of control in controller (0 to 11)
  * returns: The read value
  * throws std::bad_alloc: Not enough memory.
  * throws std::logic_error: Invalid port, controller or index or before movie start.
  */
-	short next_input(unsigned pid, unsigned index) throw(std::bad_alloc, std::logic_error);
+	short next_input(unsigned port, unsigned pid, unsigned index) throw(std::bad_alloc, std::logic_error);
 
 /**
  * Set current control values. These are read in readwrite mode.
@@ -292,7 +294,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error polling for input.
  */
-	short input_poll(bool port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error);
+	short input_poll(unsigned port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Called when movie code needs new controls snapshot.

@@ -7,6 +7,7 @@
 #include "core/window.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "library/backtrace.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -575,8 +576,16 @@ void platform::queue(const std::string& c) throw(std::bad_alloc)
 
 void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
 {
-	if(sync && queue_synchronous_fn_warning)
+	if(sync && queue_synchronous_fn_warning) {
+		void* buffer[512];
+		int ss = lsnes_backtrace(buffer, 512);
 		std::cerr << "WARNING: Synchronous queue in callback to UI, this may deadlock!" << std::endl;
+		std::cerr << "UI called from:" << std::endl;
+		lsnes_backtrace_symbols_stderr(queue_synchronous_fn_stack, queue_synchronous_fn_stacksize);
+		std::cerr << "Queue called from:" << std::endl;
+		lsnes_backtrace_symbols_stderr(buffer, ss);
+		std::cerr << "----------------------------------" << std::endl;
+	}
 	init_threading();
 	mutex::holder h(*queue_lock);
 	++next_function;
@@ -659,3 +668,5 @@ modal_pause_holder::~modal_pause_holder()
 bool platform::pausing_allowed = true;
 double platform::global_volume = 1.0;
 volatile bool queue_synchronous_fn_warning;
+void* queue_synchronous_fn_stack[512];
+size_t queue_synchronous_fn_stacksize;

@@ -259,13 +259,13 @@ void update_movie_state()
 		c = movb.get_movie().get_controls();
 	else
 		c = controls.get_committed();
-	for(unsigned i = 0; i < 8; i++) {
-		unsigned pindex = controls.lcid_to_pcid(i);
-		devicetype_t dtype = controls.pcid_to_type(pindex);
+	for(unsigned i = 0; i < controls.lcid_count(); i++) {
+		auto pindex = controls.lcid_to_pcid(i);
+		devicetype_t dtype = controls.pcid_to_type(pindex.first, pindex.second);
 		if(dtype == DT_NONE)
 			continue;
 		char buffer[MAX_DISPLAY_LENGTH];
-		c.display(pindex, buffer);
+		c.display(pindex.first, pindex.second, buffer);
 		char y[3] = {'P', 0, 0};
 		y[1] = 49 + i;
 		_status.set(y, buffer);
@@ -340,7 +340,7 @@ class my_interface : public SNES::Interface
 	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 	{
 		int16_t x;
-		x = movb.input_poll(port, index, id);
+		x = movb.input_poll(port ? 1 : 0, index, id);
 		lua_callback_snoop_input(port ? 1 : 0, index, id, x);
 		return x;
 	}
