@@ -296,7 +296,7 @@ porttype_t parse_controller_type(const std::string& type, bool port) throw(std::
 moviefile::moviefile() throw(std::bad_alloc)
 {
 	force_corrupt = false;
-	gametype = GT_INVALID;
+	gametype = "";
 	port1 = PT_INVALID;
 	port2 = PT_INVALID;
 	coreversion = "";
@@ -305,6 +305,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 	is_savestate = false;
 	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
+	main_checksums.resize(27);
+	markup_checksums.resize(27);
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
@@ -319,14 +321,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_linefile(r, "controlsversion", tmp);
 	if(tmp != "0")
 		throw std::runtime_error("Can't decode movie data");
-	read_linefile(r, "gametype", tmp);
-	try {
-		gametype = gtype::togametype(tmp);
-	} catch(std::bad_alloc& e) {
-		throw;
-	} catch(std::exception& e) {
-		throw std::runtime_error("Illegal game type '" + tmp + "'");
-	}
+	read_linefile(r, "gametype", gametype);
 	tmp = "gamepad";
 	read_linefile(r, "port1", tmp, true);
 	port1 = porttype_info::lookup(tmp).value;
@@ -338,12 +333,16 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_linefile(r, "projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
 	read_linefile(r, "coreversion", coreversion);
-	read_linefile(r, "rom.sha256", rom_sha256, true);
-	read_linefile(r, "romxml.sha256", romxml_sha256, true);
-	read_linefile(r, "slota.sha256", slota_sha256, true);
-	read_linefile(r, "slotaxml.sha256", slotaxml_sha256, true);
-	read_linefile(r, "slotb.sha256", slotb_sha256, true);
-	read_linefile(r, "slotbxml.sha256", slotbxml_sha256, true);
+	main_checksums.resize(27);
+	markup_checksums.resize(27);
+	read_linefile(r, "rom.sha256", main_checksums[0], true);
+	read_linefile(r, "romxml.sha256", markup_checksums[0], true);
+	for(size_t i = 0; i < 26; i++) {
+		read_linefile(r, (stringfmt() << "slot" << static_cast<char>('a' + i) << ".sha256").str(),
+			      main_checksums[i + 1], true);
+		read_linefile(r, (stringfmt() << "slot" << static_cast<char>('a' + i) << "xml.sha256").str(),
+			      markup_checksums[i + 1], true);
+	}
 	read_linefile(r, "prefix", prefix, true);
 	prefix = sanitize_prefix(prefix);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
@@ -386,7 +385,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 void moviefile::save(const std::string& movie, unsigned compression) throw(std::bad_alloc, std::runtime_error)
 {
 	zip_writer w(movie, compression);
-	write_linefile(w, "gametype", gtype::tostring(gametype));
+	write_linefile(w, "gametype", gametype);
 	if(port1 != PT_GAMEPAD)
 		write_linefile(w, "port1", porttype_info::lookup(port1).name);
 	if(port2 != PT_NONE)
@@ -398,12 +397,14 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "coreversion", coreversion);
 	write_linefile(w, "projectid", projectid);
 	write_rrdata(w);
-	write_linefile(w, "rom.sha256", rom_sha256, true);
-	write_linefile(w, "romxml.sha256", romxml_sha256, true);
-	write_linefile(w, "slota.sha256", slota_sha256, true);
-	write_linefile(w, "slotaxml.sha256", slotaxml_sha256, true);
-	write_linefile(w, "slotb.sha256", slotb_sha256, true);
-	write_linefile(w, "slotbxml.sha256", slotbxml_sha256, true);
+	write_linefile(w, "rom.sha256", main_checksums[0], true);
+	write_linefile(w, "romxml.sha256", markup_checksums[0], true);
+	for(size_t i = 0; i < 26; i++) {
+		write_linefile(w, (stringfmt() << "slot" << static_cast<char>('a' + i) << ".sha256").str(),
+			      main_checksums[i + 1], true);
+		write_linefile(w, (stringfmt() << "slot" << static_cast<char>('a' + i) << "xml.sha256").str(),
+			      markup_checksums[i + 1], true);
+	}
 	write_linefile(w, "prefix", prefix, true);
 	for(auto i : movie_sram)
 		write_raw_file(w, "moviesram." + i.first, i.second);
@@ -438,11 +439,6 @@ namespace
 	const int BLOCK_FRAMES = 1;
 	const int STEP_W = 2;
 	const int STEP_N = 3;
-
-	uint64_t magic[2][4] = {
-		{178683, 10738636, 16639264, 596096},
-		{6448, 322445, 19997208, 266440}
-	};
 }
 
 uint64_t moviefile::get_movie_length(uint64_t framebias) throw()
@@ -452,60 +448,12 @@ uint64_t moviefile::get_movie_length(uint64_t framebias) throw()
 		frames -= framebias;
 	else
 		frames = 0;
-	uint64_t* _magic = magic[(gametype == GT_SNES_PAL || gametype == GT_SGB_PAL) ? 1 : 0];
+	uint64_t _magic[4];
+	emucore_sysregion_for_sysregion(gametype)->get_length_magic(_magic);
 	uint64_t t = _magic[BLOCK_SECONDS] * 1000000000ULL * (frames / _magic[BLOCK_FRAMES]);
 	frames %= _magic[BLOCK_FRAMES];
 	t += frames * _magic[STEP_W] + (frames * _magic[STEP_N] / _magic[BLOCK_FRAMES]);
 	return t;
-}
-
-gametype_t gametype_compose(rom_type type, rom_region region)
-{
-	switch(type) {
-	case ROMTYPE_SNES:
-		return (region == REGION_PAL) ? GT_SNES_PAL : GT_SNES_NTSC;
-	case ROMTYPE_BSX:
-		return GT_BSX;
-	case ROMTYPE_BSXSLOTTED:
-		return GT_BSX_SLOTTED;
-	case ROMTYPE_SUFAMITURBO:
-		return GT_SUFAMITURBO;
-	case ROMTYPE_SGB:
-		return (region == REGION_PAL) ? GT_SGB_PAL : GT_SGB_NTSC;
-	default:
-		return GT_INVALID;
-	}
-}
-
-rom_region gametype_region(gametype_t type)
-{
-	switch(type) {
-	case GT_SGB_PAL:
-	case GT_SNES_PAL:
-		return REGION_PAL;
-	default:
-		return REGION_NTSC;
-	}
-}
-
-rom_type gametype_romtype(gametype_t type)
-{
-	switch(type) {
-	case GT_SNES_NTSC:
-	case GT_SNES_PAL:
-		return ROMTYPE_SNES;
-	case GT_BSX:
-		return ROMTYPE_BSX;
-	case GT_BSX_SLOTTED:
-		return ROMTYPE_BSXSLOTTED;
-	case GT_SUFAMITURBO:
-		return ROMTYPE_SUFAMITURBO;
-	case GT_SGB_PAL:
-	case GT_SGB_NTSC:
-		return ROMTYPE_SGB;
-	default:
-		return ROMTYPE_NONE;
-	};
 }
 
 std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc)
@@ -522,4 +470,13 @@ std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc)
 		s << ch;
 	}
 	return s.str();
+}
+
+void copy_romdata_to_movie(struct moviefile& movie, const struct loaded_rom& r)
+{
+	movie.gametype = r.rtype->get_sysregion(r.region->get_iname())->get_iname();
+	for(size_t i = 0; i < r.rtype->rom_slots() && i < 27; i++)
+		movie.main_checksums[i] = r.main_slots[i].sha256;
+	for(size_t i = 0; i < r.rtype->rom_slots() && i < 27; i++)
+		movie.markup_checksums[i] = r.markup_slots[i].sha256;
 }

@@ -28,13 +28,7 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	movie.port2 = PT_NONE;
 	movie.coreversion = emucore_get_version();
 	movie.projectid = get_random_hexstring(40);
-	movie.gametype = gtype::togametype(r.rtype, r.region);
-	movie.rom_sha256 = r.rom.sha256;
-	movie.romxml_sha256 = r.rom_xml.sha256;
-	movie.slota_sha256 = r.slota.sha256;
-	movie.slotaxml_sha256 = r.slota_xml.sha256;
-	movie.slotb_sha256 = r.slotb.sha256;
-	movie.slotbxml_sha256 = r.slotb_xml.sha256;
+	copy_romdata_to_movie(movie, r);
 	movie.movie_sram = load_sram_commandline(cmdline);
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 		std::string o = *i;
@@ -179,11 +173,9 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
-	if(r.region == REGION_PAL)
-		set_nominal_framerate(322445.0/6448.0);
-	else if(r.region == REGION_NTSC)
-		set_nominal_framerate(10738636.0/178683.0);
+	messages << "Detected region: " << r.rtype->get_sysregion(r.region->get_iname())->get_iname() << std::endl;
+	auto vrate = emucore_get_video_rate();
+	set_nominal_framerate(1.0 * vrate.first / vrate.second);
 
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();

@@ -1,26 +1,26 @@
 #include "core/moviefile.hpp"
 #include "core/rrdata.hpp"
+#include "library/string.hpp"
 
 #include <iostream>
 #include <iomanip>
 #include <string>
 #include <sstream>
 
-std::string name_romtype(rom_type r)
+std::string name_romtype(systype_info_structure* r)
 {
-	if(r == ROMTYPE_SNES)		return "SNES";
-	if(r == ROMTYPE_BSX)		return "BS-X (non-slotted)";
-	if(r == ROMTYPE_BSXSLOTTED)	return "BS-X (slotted)";
-	if(r == ROMTYPE_SUFAMITURBO)	return "Sufami turbo";
-	if(r == ROMTYPE_SGB)		return "SGB";
-	return "Unknown";
+	if(r)
+		return r->get_hname();
+	else
+		return "Unknown";
 }
 
-std::string name_region(rom_region r)
+std::string name_region(region_info_structure* r)
 {
-	if(r == REGION_PAL)		return "PAL";
-	if(r == REGION_NTSC)		return "NTSC";
-	return "Unknown";
+	if(r)
+		return r->get_hname();
+	else
+		return "Unknown";
 }
 
 std::string name_porttype(porttype_t r)
@@ -60,8 +60,9 @@ int main(int argc, char** argv)
 	try {
 		uint64_t starting_point = 0;
 		struct moviefile m(argv[1]);
-		rom_type rtype = gtype::toromtype(m.gametype);
-		rom_region reg = gtype::toromregion(m.gametype);
+
+		auto rtype = emucore_systype_for_sysregion(m.gametype);
+		auto reg = emucore_region_for_sysregion(m.gametype);
 		std::cout << "Console: " << name_romtype(rtype) << std::endl;
 		std::cout << "Region: " << name_region(reg) << std::endl;
 		std::cout << "Port #1: " << name_porttype(m.port1) << std::endl;
@@ -72,32 +73,21 @@ int main(int argc, char** argv)
 		else
 			std::cout << "No game name available" << std::endl;
 		std::cout << "Project ID: " << escape_string(m.projectid) << std::endl;
-		if(m.rom_sha256 != "") {
-			std::cout << "ROM checksum: " << escape_string(m.rom_sha256) << std::endl;
-			if(m.romxml_sha256 != "")
-				std::cout << "ROM XML checksum: " << escape_string(m.romxml_sha256) << std::endl;
-			else
-				std::cout << "Using default settings for ROM" << std::endl;
-		} else
-			std::cout << "No main ROM present" << std::endl;
-		if(m.slota_sha256 != "") {
-			std::cout << "BS/ST-A/DMG checksum: " << escape_string(m.slota_sha256) << std::endl;
-			if(m.slotaxml_sha256 != "")
-				std::cout << "BS/ST-A/DMG XML checksum: " << escape_string(m.slotaxml_sha256)
+		for(size_t i = 0; i < m.main_checksums.size(); i++) {
+			std::string name = (stringfmt() << "Unknown ROM #" << i).str();
+			if(rtype && rtype->rom_slot(i))
+				name = rtype->rom_slot(i)->get_hname();
+			if(m.main_checksums[i] != "")
+				std::cout << name << " checksum: "<< escape_string(m.main_checksums[i]) << std::endl;
+		}
+		for(size_t i = 0; i < m.markup_checksums.size(); i++) {
+			std::string name = (stringfmt() << "Unknown ROM #" << i).str();
+			if(rtype && rtype->rom_slot(i))
+				name = rtype->rom_slot(i)->get_hname();
+			if(m.markup_checksums[i] != "")
+				std::cout << name << " markup checksum: "<< escape_string(m.markup_checksums[i])
 					<< std::endl;
-			else
-				std::cout << "Using default settings for BS/ST-A/DMG" << std::endl;
-		} else
-			std::cout << "No BS/ST-A/DMG present" << std::endl;
-		if(m.slotb_sha256 != "") {
-			std::cout << "ST-B checksum: " << escape_string(m.slotb_sha256) << std::endl;
-			if(m.slotbxml_sha256 != "")
-				std::cout << "ST-B XML checksum: " << escape_string(m.slotbxml_sha256)
-					<< std::endl;
-			else
-				std::cout << "Using default settings for BS/ST-A/DMG" << std::endl;
-		} else
-			std::cout << "No ST-B present" << std::endl;
+		}
 		for(auto i = m.authors.begin(); i != m.authors.end(); i++) {
 			if(i->first != "" && i->second != "")
 				std::cout << "Author: " << escape_string(i->first) << " (" << escape_string(i->second)

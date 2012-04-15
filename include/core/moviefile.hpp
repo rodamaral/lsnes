@@ -47,7 +47,7 @@ struct moviefile
 /**
  * What is the ROM type and region?
  */
-	gametype_t gametype;
+	std::string gametype;
 /**
  * What's in port #1?
  */
@@ -73,13 +73,13 @@ struct moviefile
  */
 	std::string rerecords;
 /**
- * SHA-256 of main ROM (empty string if none).
+ * SHA-256 of main ROMs (empty string if none).
  */
-	std::string rom_sha256;			//SHA-256 of main ROM.
+	std::vector<std::string> main_checksums;
 /**
- * SHA-256 of main ROM XML (empty string if none).
+ * SHA-256 of main ROM XMLs (empty string if none).
  */
-	std::string romxml_sha256;		//SHA-256 of main ROM XML.
+	std::vector<std::string> markup_checksums;
 /**
  * SHA-256 of slot A ROM (empty string if none).
  */
@@ -181,5 +181,7 @@ struct moviefile
 };
 
 std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc);
+void copy_romdata_to_movie(struct moviefile& movie, const struct loaded_rom& r);
+
 
 #endif

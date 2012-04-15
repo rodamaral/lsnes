@@ -16,6 +16,9 @@
 
 namespace
 {
+	uint64_t ntsc_magic[4] = {178683, 10738636, 16639264, 596096};
+	uint64_t pal_magic[4] = {6448, 322445, 19997208, 266440};
+
 	class my_interfaced : public SNES::Interface
 	{
 		string path(SNES::Cartridge::Slot slot, const string &hint)
@@ -23,6 +26,179 @@ namespace
 			return "./";
 		}
 	};
+
+	struct bsnes_region_info_structure : public region_info_structure
+	{
+		bsnes_region_info_structure(const std::string& _iname, const std::string& _hname, bool _autod)
+		{
+			hname = _hname;
+			iname = _iname;
+			autod = _autod;
+		}
+		~bsnes_region_info_structure() {}
+		std::string get_hname() { return hname; }
+		std::string get_iname() { return iname; }
+		bool compatible(const std::string& movie) { return autod || movie == iname; }
+		std::string hname;
+		std::string iname;
+		bool autod;
+	};
+
+	struct bsnes_sysregion_info_structure : public sysregion_info_structure
+	{
+		bsnes_sysregion_info_structure(const std::string& _iname, bool _pal)
+		{
+			iname = _iname;
+			pal = _pal;
+		}
+		~bsnes_sysregion_info_structure() {}
+		std::string get_iname() { return iname; }
+		void get_length_magic(uint64_t* magic)
+		{
+			if(pal)
+				memcpy(magic, pal_magic, sizeof(pal_magic));
+			else
+				memcpy(magic, ntsc_magic, sizeof(ntsc_magic));
+		}
+		std::string iname;
+		bool pal;
+	};
+
+	struct bsnes_rom_info_structure : public rom_info_structure
+	{
+		bsnes_rom_info_structure(const std::string& _iname, const std::string& _hname, unsigned _mflags)
+		{
+			iname = _iname;
+			hname = _hname;
+			mflags = _mflags;
+		}
+		~bsnes_rom_info_structure() {}
+		std::string get_iname() { return iname; }
+		std::string get_hname() { return hname; }
+		bool has_markup() { return true; }
+		size_t headersize(size_t imagesize)
+		{
+			return (imagesize % 1024 == 512) ? 512 : 0;
+		}
+		virtual unsigned mandatory_flags() { return mflags; }
+		std::string iname;
+		std::string hname;
+		unsigned mflags;
+	};
+
+	bsnes_region_info_structure r_autodetect("autodetect", "Autodetect", true);
+	bsnes_region_info_structure r_ntsc("ntsc", "NTSC", false);
+	bsnes_region_info_structure r_pal("pal", "PAL", false);
+	bsnes_sysregion_info_structure t_snes_ntsc("snes_ntsc", false);
+	bsnes_sysregion_info_structure t_snes_pal("snes_pal", true);
+	bsnes_sysregion_info_structure t_bsx("bsx", false);
+	bsnes_sysregion_info_structure t_bsxslotted("bsxslotted", false);
+	bsnes_sysregion_info_structure t_sufamiturbo("sufamiturbo", false);
+	bsnes_sysregion_info_structure t_sgb_ntsc("sgb_ntsc", false);
+	bsnes_sysregion_info_structure t_sgb_pal("sgb_pal", true);
+	bsnes_rom_info_structure g_snes("rom", "Cartridge ROM", 1);
+	bsnes_rom_info_structure g_bsx_bios("bsxbios", "BS-X BIOS", 1);
+	bsnes_rom_info_structure g_bsx_flash("bsxflash", "BS-X FLASH", 2);
+	bsnes_rom_info_structure g_st_bios("stbios", "Sufami Turbo BIOS", 1);
+	bsnes_rom_info_structure g_st_slota("stslota", "Slot A ROM", 2);
+	bsnes_rom_info_structure g_st_slotb("stslotb", "Slot B ROM", 2);
+	bsnes_rom_info_structure g_sgb_bios("sgbbios", "SGB BIOS", 1);
+	bsnes_rom_info_structure g_dmg("dmg", "DMG ROM", 2);
+
+	struct bsnes_systype : public systype_info_structure
+	{
+		bsnes_systype(int index)
+		{
+			switch(index) {
+			case 0:
+				iname = "snes";
+				hname = "SNES";
+				regslots.push_back(&r_autodetect);
+				regslots.push_back(&r_ntsc);
+				regslots.push_back(&r_pal);
+				romslots.push_back(&g_snes);
+				sysregions["ntsc"] = &t_snes_ntsc;
+				sysregions["pal"] = &t_snes_pal;
+				break;
+			case 1:
+				iname = "bsx";
+				hname = "BS-X (non-slotted)";
+				regslots.push_back(&r_ntsc);
+				romslots.push_back(&g_bsx_bios);
+				romslots.push_back(&g_bsx_flash);
+				sysregions["ntsc"] = &t_bsx;
+				break;
+			case 2:
+				iname = "bsxslotted";
+				hname = "BS-X (slotted)";
+				regslots.push_back(&r_ntsc);
+				romslots.push_back(&g_bsx_bios);
+				romslots.push_back(&g_bsx_flash);
+				sysregions["ntsc"] = &t_bsxslotted;
+				break;
+			case 3:
+				iname = "sufamiturbo";
+				hname = "Sufami Turbo";
+				regslots.push_back(&r_ntsc);
+				romslots.push_back(&g_st_bios);
+				romslots.push_back(&g_st_slota);
+				romslots.push_back(&g_st_slotb);
+				sysregions["ntsc"] = &t_sufamiturbo;
+				break;
+			case 4:
+				iname = "sgb";
+				hname = "Super Game Boy";
+				regslots.push_back(&r_autodetect);
+				regslots.push_back(&r_ntsc);
+				regslots.push_back(&r_pal);
+				romslots.push_back(&g_sgb_bios);
+				romslots.push_back(&g_dmg);
+				sysregions["ntsc"] = &t_sgb_ntsc;
+				sysregions["pal"] = &t_sgb_pal;
+				break;
+			};
+		}
+		~bsnes_systype() {};
+		std::string get_iname() { return iname; }
+		std::string get_hname() { return hname; }
+		size_t region_slots() { return regslots.size(); };
+		struct region_info_structure* region_slot(size_t index)
+		{
+			return (index < regslots.size()) ? regslots[index] : NULL;
+		}
+		size_t rom_slots() { return romslots.size(); }
+		struct rom_info_structure* rom_slot(size_t index)
+		{
+			return (index < romslots.size()) ? romslots[index] : NULL;
+		}
+		struct sysregion_info_structure* get_sysregion(const std::string& region)
+		{
+			return sysregions.count(region) ? sysregions[region] : NULL;
+		}
+		std::string iname;
+		std::string hname;
+		std::vector<region_info_structure*> regslots;
+		std::vector<rom_info_structure*> romslots;
+		std::map<std::string, sysregion_info_structure*> sysregions;
+	};
+
+	bsnes_systype s_snes(0);
+	bsnes_systype s_bsx(1);
+	bsnes_systype s_bsxslotted(2);
+	bsnes_systype s_sufamiturbo(3);
+	bsnes_systype s_sgb(4);
+
+	void internal_load(const std::vector<std::vector<char>>& romslots,
+		const std::vector<std::vector<char>>&markslots, size_t i, const uint8_t*& rom, const char*& xml,
+		size_t& romsize)
+	{
+		if(i < romslots.size() && romslots[i].size()) {
+			rom = reinterpret_cast<const uint8_t*>(&romslots[i][0]);
+			romsize = romslots[i].size();
+		}
+		if(i < markslots.size() && markslots[i].size())
+			xml = &markslots[i][0];
+	}
 }
 
 std::string emucore_get_version()
@@ -295,4 +471,77 @@ void emucore_unserialize(const std::vector<char>& buf)
 	serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
 	if(!SNES::system.unserialize(s))
 		throw std::runtime_error("SNES core rejected savestate");
+}
+
+size_t emucore_systype_slots()
+{
+	return 5;
+}
+
+struct systype_info_structure* emucore_systype_slot(size_t index)
+{
+	switch(index) {
+	case 0:		return &s_snes;
+	case 1:		return &s_bsx;
+	case 2:		return &s_bsxslotted;
+	case 3:		return &s_sufamiturbo;
+	case 4:		return &s_sgb;
+	default:	return NULL;
+	};
+}
+
+void emucore_load_rom(systype_info_structure* rtype, region_info_structure* region,
+	const std::vector<std::vector<char>>& romslots, const std::vector<std::vector<char>>& markslots)
+{
+	if(region == &r_autodetect)
+		SNES::config.region = SNES::System::Region::Autodetect;
+	else if(region == &r_ntsc)
+		SNES::config.region = SNES::System::Region::NTSC;
+	else if(region == &r_pal)
+		SNES::config.region = SNES::System::Region::PAL;
+	else
+		throw std::runtime_error("Trying to force unknown region");
+	const uint8_t* rom0 = NULL;
+	const char* xml0 = NULL;
+	size_t rom0size = 0;
+	const uint8_t* rom1 = NULL;
+	const char* xml1 = NULL;
+	size_t rom1size = 0;
+	const uint8_t* rom2 = NULL;
+	const char* xml2 = NULL;
+	size_t rom2size = 0;
+	internal_load(romslots, markslots, 0, rom0, xml0, rom0size);
+	internal_load(romslots, markslots, 1, rom1, xml1, rom1size);
+	internal_load(romslots, markslots, 2, rom2, xml2, rom2size);
+
+	if(rtype == &s_snes) {
+		if(!snes_load_cartridge_normal(xml0, rom0, rom0size))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else if(rtype == &s_bsx) {
+		if(!snes_load_cartridge_bsx(xml0, rom0, rom0size, xml1, rom1, rom1size))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else if(rtype == &s_bsxslotted) {
+		if(!snes_load_cartridge_bsx_slotted(xml0, rom0, rom0size, xml1, rom1, rom1size))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else if(rtype == &s_sgb) {
+		if(!snes_load_cartridge_super_game_boy(xml0, rom0, rom0size, xml1, rom1, rom1size))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else if(rtype == &s_sufamiturbo) {
+		if(!snes_load_cartridge_sufami_turbo(xml0, rom0, rom0size, xml1, rom1, rom1size, xml2, rom2, rom2size))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else
+		throw std::runtime_error("Unknown cartridge type");
+	snes_power();
+	emucore_refresh_cart();
+}
+
+struct region_info_structure* emucore_current_region()
+{
+	return snes_get_region() ? &r_pal : &r_ntsc;
+}
+
+void emucore_pre_load_settings()
+{
+	SNES::config.random = false;
+	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 }

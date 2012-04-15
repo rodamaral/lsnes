@@ -94,69 +94,6 @@ void set_random_seed() throw(std::bad_alloc)
 }
 
 
-struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	struct rom_files f;
-	try {
-		f = rom_files(cmdline);
-		f.resolve_relative();
-	} catch(std::bad_alloc& e) {
-		OOM_panic();
-	} catch(std::exception& e) {
-		throw std::runtime_error(std::string("Can't resolve ROM files: ") + e.what());
-	}
-	messages << "ROM type: " << gtype::tostring(f.rtype, f.region) << std::endl;
-	if(f.rom != "")		messages << name_subrom(f.rtype, 0) << " file: '" << f.rom << "'" << std::endl;
-	if(f.rom_xml != "")	messages << name_subrom(f.rtype, 1) << " file: '" << f.rom_xml << "'"
-		<< std::endl;
-	if(f.slota != "")	messages << name_subrom(f.rtype, 2) << " file: '" << f.slota << "'" << std::endl;
-	if(f.slota_xml != "")	messages << name_subrom(f.rtype, 3) << " file: '" << f.slota_xml << "'"
-		<< std::endl;
-	if(f.slotb != "")	messages << name_subrom(f.rtype, 4) << " file: '" << f.slotb << "'" << std::endl;
-	if(f.slotb_xml != "")	messages << name_subrom(f.rtype, 5) << " file: '" << f.slotb_xml << "'"
-		<< std::endl;
-
-	struct loaded_rom r;
-	try {
-		r = loaded_rom(f);
-		r.do_patch(cmdline);
-	} catch(std::bad_alloc& e) {
-		OOM_panic();
-	} catch(std::exception& e) {
-		throw std::runtime_error(std::string("Can't load ROM: ") + e.what());
-	}
-
-	std::string not_present = "N/A";
-	if(r.rom.valid)		messages << name_subrom(f.rtype, 0) << " hash: " << r.rom.sha256 << std::endl;
-	if(r.rom_xml.valid)	messages << name_subrom(f.rtype, 1) << " hash: " << r.rom_xml.sha256 << std::endl;
-	if(r.slota.valid)	messages << name_subrom(f.rtype, 2) << " hash: " << r.slota.sha256 << std::endl;
-	if(r.slota_xml.valid)	messages << name_subrom(f.rtype, 3) << " hash: " << r.slota_xml.sha256
-		<< std::endl;
-	if(r.slotb.valid)	messages << name_subrom(f.rtype, 4) << " hash: " << r.slotb.sha256 << std::endl;
-	if(r.slotb_xml.valid)	messages << name_subrom(f.rtype, 5) << " hash: " << r.slotb_xml.sha256
-		<< std::endl;
-	return r;
-}
-
-void dump_region_map() throw(std::bad_alloc)
-{
-	std::vector<vma_structure*> regions = get_regions();
-	for(auto i : regions) {
-		char buf[256];
-		char echar;
-		if(i->get_endian() == vma_structure::E_LITTLE)
-			echar = 'L';
-		if(i->get_endian() == vma_structure::E_BIG)
-			echar = 'B';
-		if(i->get_endian() == vma_structure::E_HOST)
-			echar = 'N';
-		sprintf(buf, "Region: %016X-%016X %016X %s%c %s", i->get_base(), i->get_base() + i->get_size() - 1,
-			i->get_size(), i->is_readonly() ? "R-" : "RW", echar, i->get_name().c_str());
-		messages << buf << std::endl;
-	}
-}
-
 void fatal_error() throw()
 {
 	platform::fatal_error();

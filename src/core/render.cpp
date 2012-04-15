@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include <snes/snes.hpp>
 
 #include "core/misc.hpp"
 #include "core/png.hpp"
@@ -7,6 +6,8 @@
 
 #include <sstream>
 #include <list>
+#include <cstring>
+#include <cmath>
 #include <iomanip>
 #include <cstdint>
 #include <string>

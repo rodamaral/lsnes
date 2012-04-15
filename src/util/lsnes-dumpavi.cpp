@@ -257,11 +257,9 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
-	if(r.region == REGION_PAL)
-		set_nominal_framerate(322445.0/6448.0);
-	else if(r.region == REGION_NTSC)
-		set_nominal_framerate(10738636.0/178683.0);
+	messages << "Detected region: " << r.rtype->get_sysregion(r.region->get_iname())->get_iname() << std::endl;
+	auto vrate = emucore_get_video_rate();
+	set_nominal_framerate(1.0 * vrate.first / vrate.second);
 
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
@@ -290,7 +288,9 @@ int main(int argc, char** argv)
 			throw std::runtime_error("Can't load any of the movies specified");
 		//Load ROM before starting the dumper.
 		our_rom = &r;
-		our_rom->region = gtype::toromregion(movie.gametype);
+		our_rom->region = emucore_region_for_sysregion(movie.gametype);
+		if(!our_rom->region)
+			throw std::runtime_error("Core does not support game type '" + movie.gametype + "'");
 		our_rom->load();
 		dumper_startup(dumper, mode, prefix, length);
 		startup_lua_scripts(cmdline);

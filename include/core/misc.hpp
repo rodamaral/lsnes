@@ -38,26 +38,6 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc);
 void set_random_seed() throw(std::bad_alloc);
 
 /**
- * \brief Load a ROM.
- *
- * Given commandline arguments, load a ROM.
- *
- * \param cmdline The command line.
- * \return The loaded ROM set.
- * \throws std::bad_alloc Not enough memory.
- * \throws std::runtime_error Can't load the ROMset.
- */
-struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
-	std::runtime_error);
-
-/**
- * \brief Dump listing of regions to graphics system messages.
- *
- * \throws std::bad_alloc Not enough memory.
- */
-void dump_region_map() throw(std::bad_alloc);
-
-/**
  * \brief Fatal error.
  *
  * Fatal error.
