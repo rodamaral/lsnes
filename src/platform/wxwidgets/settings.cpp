@@ -534,7 +534,8 @@ namespace
 {
 	std::string formattype(keygroup::type t)
 	{
-		if(t == keygroup::KT_AXIS_PAIR) return AMODE_AXIS_PAIR;
+		if(t == keygroup::KT_DISABLED) return AMODE_DISABLED;
+		else if(t == keygroup::KT_AXIS_PAIR) return AMODE_AXIS_PAIR;
 		else if(t == keygroup::KT_AXIS_PAIR_INVERSE) return AMODE_AXIS_PAIR_INVERSE;
 		else if(t == keygroup::KT_PRESSURE_0M) return AMODE_PRESSURE_0M;
 		else if(t == keygroup::KT_PRESSURE_0P) return AMODE_PRESSURE_0P;
