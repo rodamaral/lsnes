@@ -995,6 +995,7 @@ public:
 	void on_primary(wxCommandEvent& e);
 	void on_secondary(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
+	void kill_internal_data();
 private:
 	std::map<std::string, wxTreeItemId> items;
 	std::map<std::string, inverse_key*> realitems;
@@ -1046,6 +1047,14 @@ void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 
 wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
 {
+}
+
+void wxeditor_esettings_hotkeys::kill_internal_data()
+{
+	items.clear();
+	realitems.clear();
+	leafname.clear();
+	true_root = wxTreeItemId();
 }
 
 void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
@@ -1504,6 +1513,7 @@ private:
 	wxWindow* joystick_window;
 	wxNotebook* tabset;
 	wxButton* closebutton;
+	wxeditor_esettings_hotkeys* hotkeytab;
 };
 
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
@@ -1517,7 +1527,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 	tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
 	tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
-	tabset->AddPage(new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
+	tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
 	tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
 	tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
 	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
@@ -1545,6 +1555,7 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
+	hotkeytab->kill_internal_data();
 	EndModal(wxID_OK);
 }
 

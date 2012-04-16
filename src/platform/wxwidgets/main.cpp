@@ -285,7 +285,7 @@ void graphics_plugin::quit() throw()
 }
 
 static const wxCmdLineEntryDesc dummy_descriptor_table[] = {
-	{ wxCMD_LINE_PARAM,  NULL, NULL, wxT("argument"), wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL |
+	{ wxCMD_LINE_PARAM,  NULL, NULL, NULL, wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL |
 		wxCMD_LINE_PARAM_MULTIPLE },
 	{ wxCMD_LINE_NONE }
 };
