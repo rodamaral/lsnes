@@ -920,11 +920,10 @@ void wxeditor_esettings_aliases::on_add(wxCommandEvent& e)
 			show_message_ok(this, "Error", "Not a valid alias name: " + name, wxICON_EXCLAMATION);
 			throw canceled_exception();
 		}
-		std::string old_alias_value;
-		runemufn([name, &old_alias_value]() { old_alias_value = command::get_alias_for(name); });
+		std::string old_alias_value = command::get_alias_for(name);
 		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 			old_alias_value, true);
-		runemufn([name, newcmd]() { command::set_alias_for(name, newcmd); });
+		command::set_alias_for(name, newcmd);
 	} catch(...) {
 	}
 	refresh();
@@ -938,11 +937,10 @@ void wxeditor_esettings_aliases::on_edit(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string old_alias_value;
-		runemufn([name, &old_alias_value]() { old_alias_value = command::get_alias_for(name); });
+		std::string old_alias_value = command::get_alias_for(name);
 		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 			old_alias_value, true);
-		runemufn([name, newcmd]() { command::set_alias_for(name, newcmd); });
+		command::set_alias_for(name, newcmd);
 	} catch(...) {
 	}
 	refresh();
@@ -955,7 +953,7 @@ void wxeditor_esettings_aliases::on_delete(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	runemufn([name]() { command::set_alias_for(name, ""); });
+	command::set_alias_for(name, "");
 	refresh();
 }
 
@@ -964,7 +962,7 @@ void wxeditor_esettings_aliases::refresh()
 	int n = select->GetSelection();
 	std::set<std::string> bind;
 	std::vector<wxString> choices;
-	runemufn([&bind]() { bind = command::get_aliases(); });
+	bind = command::get_aliases();
 	for(auto i : bind) {
 		numbers[choices.size()] = i;
 		choices.push_back(towxstring(i));
