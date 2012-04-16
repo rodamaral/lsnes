@@ -29,6 +29,7 @@
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
+#include <wx/cmdline.h>
 
 #define UISERV_RESIZED 9991
 #define UISERV_UIFUN 9992
@@ -283,18 +284,53 @@ void graphics_plugin::quit() throw()
 {
 }
 
+static const wxCmdLineEntryDesc dummy_descriptor_table[] = {
+	{ wxCMD_LINE_PARAM,  NULL, NULL, "argument", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL |
+		wxCMD_LINE_PARAM_MULTIPLE },
+	{ wxCMD_LINE_NONE }
+};
 
 class lsnes_app : public wxApp
 {
 public:
+	lsnes_app();
 	virtual bool OnInit();
 	virtual int OnExit();
+	virtual void OnInitCmdLine(wxCmdLineParser& parser);
+	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
+private:
+	bool settings_mode;
 };
 
 IMPLEMENT_APP(lsnes_app)
 
+lsnes_app::lsnes_app()
+{
+	settings_mode = false;
+}
+
+void lsnes_app::OnInitCmdLine(wxCmdLineParser& parser)
+{
+	parser.SetDesc(dummy_descriptor_table);
+	parser.SetSwitchChars(wxT(""));
+}
+
+bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
+{
+	std::vector<std::string> cmdline;
+	for(size_t i = 0; i< parser.GetParamCount(); i++)
+		cmdline.push_back(tostdstring(parser.GetParam(i)));
+	for(auto i: cmdline) {
+		if(i == "--settings")
+			settings_mode = true;
+	}
+}
+
+
 bool lsnes_app::OnInit()
 {
+	wxApp::OnInit();
+
 	reached_main();
 	set_random_seed();
 	bring_app_foreground();
@@ -311,7 +347,6 @@ bool lsnes_app::OnInit()
 	
 	ui_thread = &thread_id::me();
 	platform::init();
-	init_lua();
 
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
@@ -325,6 +360,13 @@ bool lsnes_app::OnInit()
 	command::invokeC("run-script " + cfgpath + "/lsneswxw.rc");
 	messages << "--- End running lsnesrc --- " << std::endl;
 
+	if(settings_mode) {
+		wxsetingsdialog_display(NULL);
+		save_configuration();
+		return false;
+	}
+	init_lua();
+
 	joystick_thread_handle = &thread::create(joystick_thread, NULL);
 	
 	msg_window = new wxwin_messages();
@@ -337,12 +379,14 @@ bool lsnes_app::OnInit()
 
 int lsnes_app::OnExit()
 {
+	if(settings_mode)
+		return 0;
 	//NULL these so no further messages will be sent.
 	msg_window = NULL;
 	main_window = NULL;
+	save_configuration();
 	information_dispatch::do_dump_end();
 	rrdata::close();
-	save_configuration();
 	joystick_plugin::signal();
 	joystick_thread_handle->join();
 	platform::quit();
