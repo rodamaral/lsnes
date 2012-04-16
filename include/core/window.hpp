@@ -32,6 +32,10 @@ struct mutex
  */
 	static mutex& aquire() throw(std::bad_alloc);
 /**
+ * Create a recursive mutex. The returned mutex can be deleted using delete.
+ */
+	static mutex& aquire_rec() throw(std::bad_alloc);
+/**
  * Destroy a mutex.
  */
 	virtual ~mutex() throw();

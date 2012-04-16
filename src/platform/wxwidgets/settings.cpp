@@ -93,18 +93,16 @@ namespace
 		std::set<std::string> mods, keys;
 
 		cleared = false;
-		runemufn([&mods, &keys, &classes, &classeslist]() {
-			std::set<std::string> x;
-			mods = modifier::get_set();
-			keys = keygroup::get_keys();
-			for(auto i : keys) {
-				std::string kclass = keygroup::lookup(i).first->get_class();
-				if(!x.count(kclass))
-					classeslist.push_back(towxstring(kclass));
-				x.insert(kclass);
-				classes[kclass].insert(i);
-			}
-			});
+		std::set<std::string> x;
+		mods = modifier::get_set();
+		keys = keygroup::get_keys();
+		for(auto i : keys) {
+			std::string kclass = keygroup::lookup(i).first->get_class();
+			if(!x.count(kclass))
+				classeslist.push_back(towxstring(kclass));
+			x.insert(kclass);
+			classes[kclass].insert(i);
+		}
 
 		Centre();
 		top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -384,11 +382,9 @@ wxeditor_esettings_joystick_aconfig::wxeditor_esettings_joystick_aconfig(wxWindo
 	aname = _aname;
 	keygroup::parameters params;
 
-	runemufn([aname, &params]() {
-		auto k = keygroup::lookup_by_name(aname);
-		if(k)
-			params = k->get_parameters();
-		});
+	auto k = keygroup::lookup_by_name(aname);
+	if(k)
+		params = k->get_parameters();
 
 	switch(params.ktype) {
 	case keygroup::KT_DISABLED:		didx = 0; break;
@@ -456,12 +452,10 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 	double ntol;
 	keygroup* k;
 
-	runemufn([&k, aname, &_ctype]() {
-		k = keygroup::lookup_by_name(aname);
-		if(k)
-			_ctype = k->get_parameters().ktype;
-		});
-	if(!k) {
+	k = keygroup::lookup_by_name(aname);
+	if(k)
+		_ctype = k->get_parameters().ktype;
+	else {
 		//Axis gone away?
 		EndModal(wxID_OK);
 		return;
@@ -502,11 +496,9 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 		return;
 	}
 	
-	runemufn([&k, _ctype, _ntype, nlow, nmid, nhi, ntol]() {
-		if(_ctype != _ntype)
-			k->change_type(_ntype);
-		k->change_calibration(nlow, nmid, nhi, ntol);
-		});
+	if(_ctype != _ntype)
+		k->change_type(_ntype);
+	k->change_calibration(nlow, nmid, nhi, ntol);
 	EndModal(wxID_OK);
 }
 
@@ -592,14 +584,12 @@ void wxeditor_esettings_joystick::refresh()
 {
 	//Collect the new settings.
 	std::map<std::string, keygroup::parameters> x;
-	runemufn([&x]() {
-		auto axisnames = keygroup::get_axis_set();
-		for(auto i : axisnames) {
-			keygroup* k = keygroup::lookup_by_name(i);
-			if(k)
-				x[i] = k->get_parameters();
-		}
-		});
+	auto axisnames = keygroup::get_axis_set();
+	for(auto i : axisnames) {
+		keygroup* k = keygroup::lookup_by_name(i);
+		if(k)
+			x[i] = k->get_parameters();
+	}
 
 	unsigned jcount = 0;
 	for(auto i : x) {
@@ -1069,13 +1059,12 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string key;
 		inverse_key* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
 		}
-		runemufn([&key, ik]() { key = ik->get(true); });
+		std::string key = ik->get(true);
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify key for " + name, key, true);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
@@ -1084,9 +1073,9 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 		key = d->getkey();
 		d->Destroy();
 		if(key != "")
-			runemufn([key, ik]() { ik->set(key, true); });
+			ik->set(key, true);
 		else
-			runemufn([key, ik]() { ik->clear(true); });
+			ik->clear(true);
 		refresh();
 	} catch(...) {
 		refresh();
@@ -1101,13 +1090,12 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string key;
 		inverse_key* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
 		}
-		runemufn([&key, ik]() { key = ik->get(false); });
+		std::string key = ik->get(false);
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify key for " + name, key, true);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
@@ -1116,9 +1104,9 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 		key = d->getkey();
 		d->Destroy();
 		if(key != "")
-			runemufn([key, ik]() { ik->set(key, false); });
+			ik->set(key, false);
 		else
-			runemufn([key, ik]() { ik->clear(false); });
+			ik->clear(false);
 		refresh();
 	} catch(...) {
 		refresh();
@@ -1130,13 +1118,11 @@ void wxeditor_esettings_hotkeys::refresh()
 	std::set<std::string> closure_additional;
 	std::map<std::string, inverse_key*> keyorder;
 	std::map<inverse_key*, std::pair<std::string, std::string>> data;
-	runemufn([&data, &keyorder]() {
-		auto x = inverse_key::get_ikeys();
-		for(auto y : x) {
-			keyorder[y->getname()] = y;
-			data[y] = std::make_pair(y->get(true), y->get(false));
-		}
-	});
+	auto x = inverse_key::get_ikeys();
+	for(auto y : x) {
+		keyorder[y->getname()] = y;
+		data[y] = std::make_pair(y->get(true), y->get(false));
+	}
 	//Close keyorder with respect to parents.
 	for(auto i : keyorder) {
 		std::string tmp = i.first;
@@ -1283,22 +1269,15 @@ void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 		d->Destroy();
 
 		std::string newcommand = pick_text(this, "New binding", "Enter command for binding:", "");
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, name, newcommand]() {
-			try {
-				keymapper::bind_for(name, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			wxMessageBox(wxT("Error"), towxstring("Can't bind key: " + faulttext), wxICON_EXCLAMATION);
-		refresh();
+		try {
+			keymapper::bind_for(name, newcommand);
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
+				wxICON_EXCLAMATION);
+		}
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
@@ -1309,26 +1288,18 @@ void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string old_command_value;
-		runemufn([&old_command_value, name]() { old_command_value = keymapper::get_command_for(name); });
+		std::string old_command_value = keymapper::get_command_for(name);
 		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
 			old_command_value);
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, name, newcommand]() {
-			try {
-				keymapper::bind_for(name, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			wxMessageBox(wxT("Error"), towxstring("Can't bind key: " + faulttext), wxICON_EXCLAMATION);
-		refresh();
+		try {
+			keymapper::bind_for(name, newcommand);
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
+				wxICON_EXCLAMATION);
+		}
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
@@ -1338,7 +1309,7 @@ void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	runemufn([name]() { try { keymapper::bind_for(name, ""); } catch(...) {} });
+	try { keymapper::bind_for(name, ""); } catch(...) {}
 	refresh();
 }
 
@@ -1347,11 +1318,9 @@ void wxeditor_esettings_bindings::refresh()
 	int n = select->GetSelection();
 	std::map<std::string, std::string> bind;
 	std::vector<wxString> choices;
-	runemufn([&bind]() {
-		std::set<std::string> a = keymapper::get_bindings();
-		for(auto i : a)
-			bind[i] = keymapper::get_command_for(i);
-		});
+	std::set<std::string> a = keymapper::get_bindings();
+	for(auto i : a)
+		bind[i] = keymapper::get_command_for(i);
 	for(auto i : bind) {
 		numbers[choices.size()] = i.first;
 		choices.push_back(towxstring(i.first + " (" + i.second + ")"));

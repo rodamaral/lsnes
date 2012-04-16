@@ -24,6 +24,11 @@ mutex& mutex::aquire() throw(std::bad_alloc)
 	return *new dummy_mutex();
 }
 
+mutex& mutex::aquire_rec() throw(std::bad_alloc)
+{
+	return *new dummy_mutex();
+}
+
 struct dummy_condition : public condition
 {
 	dummy_condition(mutex& m);
