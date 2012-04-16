@@ -700,8 +700,7 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		name = SLOTPATH;
 	else
 		return;
-	std::string val;
-	runemufn([&val, name]() { val = setting::get(name); });
+	std::string val = setting::get(name);
 	try {
 		if(e.GetId() == wxID_HIGHEST + 4)
 			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
@@ -712,22 +711,22 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		return;
 	}
 	std::string err;
-	runemufn([val, name, &err]() { try { setting::set(name, val); } catch(std::exception& e) { err = e.what(); }});
-	if(err != "")
+	try {
+		setting::set(name, val);
+	} catch(std::exception& e) {
 		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
+	}
 	refresh();
 }
 
 void wxeditor_esettings_paths::refresh()
 {
 	std::string rpath, fpath, spath, nslot, lpath;
-	runemufn([&rpath, &fpath, &spath, &nslot, &lpath]() {
-		fpath = setting::get(FIRMWAREPATH);
-		rpath = setting::get(ROMPATH);
-		spath = setting::get(MOVIEPATH);
-		nslot = setting::get(SAVESLOTS);
-		lpath = setting::get(SLOTPATH);
-		});
+	fpath = setting::get(FIRMWAREPATH);
+	rpath = setting::get(ROMPATH);
+	spath = setting::get(MOVIEPATH);
+	nslot = setting::get(SAVESLOTS);
+	lpath = setting::get(SLOTPATH);
 	rompath->SetLabel(towxstring(rpath));
 	firmpath->SetLabel(towxstring(fpath));
 	savepath->SetLabel(towxstring(spath));
@@ -1407,17 +1406,17 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 		return;
 	std::string value;
 	std::string err;
-	runemufn([name, &value]() { value = setting::get(name); });
+	value = setting::get(name);
 	try {
 		value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
 	} catch(...) {
 		return;
 	}
-	runemufn([name, value, &err]() {
-		try { setting::set(name, value); } catch(std::exception& e) { err = e.what(); }
-		});
-	if(err != "")
+	try {
+		setting::set(name, value);
+	} catch(std::exception& e) {
 		wxMessageBox(towxstring(err), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
+	}
 }
 
 void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
@@ -1434,9 +1433,11 @@ void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 	if(name == "")
 		return;
 	bool err = false;
-	runemufn([name, &err]() { try { setting::blank(name); } catch(...) { err = true; }});
-	if(err)
+	try {
+		setting::blank(name);
+	} catch(...) {
 		wxMessageBox(wxT("This setting can't be cleared"), wxT("Error"), wxICON_EXCLAMATION | wxOK);
+	}
 }
 
 void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, const std::string& value)
@@ -1457,16 +1458,14 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 
 void wxeditor_esettings_advanced::refresh()
 {
-	runemufn([&settings, &values, &blankables]() {
-		settings = setting::get_settings_set();
-		blankables.clear();
-		for(auto i : settings) {
-			if(setting::is_set(i))
-				values[i] = setting::get(i);
-			if(setting::blankable(i))
-				blankables.insert(i);
-		}
-		});
+	settings = setting::get_settings_set();
+	blankables.clear();
+	for(auto i : settings) {
+		if(setting::is_set(i))
+			values[i] = setting::get(i);
+		if(setting::blankable(i))
+			blankables.insert(i);
+	}
 	_refresh();
 }
 

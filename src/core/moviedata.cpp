@@ -82,6 +82,7 @@ namespace
 		}
 		operator std::string() throw()
 		{
+			lock_holder lck(this);
 			if(_set)
 				return prefix + "-";
 			else
