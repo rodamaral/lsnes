@@ -13,6 +13,8 @@
 #include <iostream>
 #include <string>
 #include <deque>
+#include <sys/time.h>
+#include <unistd.h>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -118,6 +120,7 @@ keypress::keypress(modifier_set mod, keygroup& _key, keygroup& _key2, short _val
 	value = _value;
 }
 
+volatile bool platform::do_exit_dummy_event_loop = false;
 
 namespace
 {
@@ -298,6 +301,7 @@ bool platform::is_sound_enabled() throw()
 
 void platform::init()
 {
+	do_exit_dummy_event_loop = false;
 	msgbuf.register_handler(msg_callback_obj);
 	system_log.open("lsnes.log", std::ios_base::out | std::ios_base::app);
 	time_t curtime = time(NULL);
@@ -449,6 +453,24 @@ namespace
 
 #define MAXWAIT 100000ULL
 
+void platform::dummy_event_loop() throw()
+{
+	init_threading();
+	while(!do_exit_dummy_event_loop) {
+		mutex::holder h(*queue_lock);
+		internal_run_queues(true);
+		queue_condition->wait(MAXWAIT);
+	}
+}
+
+void platform::exit_dummy_event_loop() throw()
+{
+	init_threading();
+	do_exit_dummy_event_loop = true;
+	mutex::holder h(*queue_lock);
+	queue_condition->signal();
+	usleep(200000);
+}
 
 void platform::flush_command_queue() throw()
 {

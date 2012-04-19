@@ -46,6 +46,154 @@ const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Expe
 
 namespace
 {
+	class wxdialog_pressbutton;
+	volatile bool keygrab_active = false;
+	std::string pkey;
+	wxdialog_pressbutton* presser = NULL;
+
+	void report_grab_key(const std::string& name);
+
+	class keygrabber : public information_dispatch
+	{
+	public:
+		keygrabber() : information_dispatch("wxwdigets-key-grabber") { keygrab_active = false; }
+		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+			bool polarity, const std::string& name)
+		{
+			if(!keygrab_active)
+				return;
+			if(polarity)
+				pkey = name;
+			else {
+				if(pkey == name) {
+					keygrab_active = false;
+					runuifun([pkey]() { report_grab_key(pkey); });
+				} else
+					pkey = "";
+			}
+		}
+	} keygrabber;
+
+	class wxdialog_pressbutton : public wxDialog
+	{
+	public:
+		wxdialog_pressbutton(wxWindow* parent, const std::string& title);
+		std::string getkey() { return key; }
+		void on_mouse(wxMouseEvent& e);
+		void on_keyboard_up(wxKeyEvent& e);
+		void on_keyboard_down(wxKeyEvent& e);
+		void dismiss_with(const std::string& k);
+	private:
+		bool handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const, bool(wxMouseEvent::*up)()const,
+			const std::string& k, int flag);
+		std::string key;
+		int mouseflag;
+		int lastkbdkey;
+	};
+
+	void report_grab_key(const std::string& name)
+	{
+		presser->dismiss_with(name);
+	}
+
+	int vert_padding = 40;
+	int horiz_padding = 60;
+
+	wxdialog_pressbutton::wxdialog_pressbutton(wxWindow* parent, const std::string& title)
+		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
+	{
+		wxStaticText* t;
+		wxBoxSizer* s2 = new wxBoxSizer(wxVERTICAL);
+		wxPanel* p = new wxPanel(this, wxID_ANY);
+		s2->Add(p, 1, wxGROW);
+		lastkbdkey = -1;
+		mouseflag = 0;
+		Centre();
+		wxFlexGridSizer* s = new wxFlexGridSizer(3, 3, 0, 0);
+		p->SetSizer(s);
+		SetSizer(s2);
+		s->Add(horiz_padding, vert_padding);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(t = new wxStaticText(p, wxID_ANY, wxT("Press the key to assign")), 1, wxGROW);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(horiz_padding, vert_padding);
+		p->SetFocus();
+		p->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_down), NULL, this);
+		p->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_up), NULL, this);
+		p->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_down), NULL, this);
+		t->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_up), NULL, this);
+		t->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		presser = this;
+		keygrab_active = true;
+		s->SetSizeHints(this);
+		Fit();
+	}
+
+	bool wxdialog_pressbutton::handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const,
+		bool(wxMouseEvent::*up)()const, const std::string& k, int flag)
+	{
+		if((e.*down)())
+			mouseflag = flag;
+		if((e.*up)()) {
+			if(mouseflag == flag) {
+				dismiss_with(k);
+				return true;
+			} else
+				mouseflag = 0;
+		}
+		return false;
+	}
+
+	void wxdialog_pressbutton::on_mouse(wxMouseEvent& e)
+	{
+		handle_mousebtn(e, &wxMouseEvent::LeftDown, &wxMouseEvent::LeftUp, "mouse_left", 1);
+		handle_mousebtn(e, &wxMouseEvent::MiddleDown, &wxMouseEvent::MiddleUp, "mouse_center", 2);
+		handle_mousebtn(e, &wxMouseEvent::RightDown, &wxMouseEvent::RightUp, "mouse_right", 3);
+	}
+
+	void wxdialog_pressbutton::on_keyboard_down(wxKeyEvent& e)
+	{
+		lastkbdkey = e.GetKeyCode();
+		mouseflag = 0;
+	}
+
+	void wxdialog_pressbutton::on_keyboard_up(wxKeyEvent& e)
+	{
+		int kcode = e.GetKeyCode();
+		if(lastkbdkey == kcode) {
+			dismiss_with(map_keycode_to_key(kcode));
+		} else {
+			lastkbdkey = -1;
+			mouseflag = 0;
+		}
+	}
+
+	void wxdialog_pressbutton::dismiss_with(const std::string& k)
+	{
+		if(k == "")
+			return;
+		if(key == "") {
+			keygrab_active = false;
+			key = k;
+			EndModal(wxID_OK);
+		}
+	}
+
 	struct keyentry_mod_data
 	{
 		wxCheckBox* pressed;
@@ -62,6 +210,7 @@ namespace
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_clear(wxCommandEvent& e);
+		void on_pressbutton(wxCommandEvent& e);
 		void on_classchange(wxCommandEvent& e);
 		std::string getkey();
 	private:
@@ -73,11 +222,13 @@ namespace
 		void set_class(const std::string& _class);
 		std::map<std::string, keyentry_mod_data> modifiers;
 		std::map<std::string, std::set<std::string>> classes;
+		std::string wtitle;
 		std::string currentclass;
 		wxFlexGridSizer* top_s;
 		wxFlexGridSizer* t_s;
 		wxComboBox* mainclass;
 		wxComboBox* mainkey;
+		wxButton* press;
 		wxButton* ok;
 		wxButton* cancel;
 		wxButton* clear;
@@ -92,19 +243,19 @@ namespace
 		wxString emptystring;
 		std::set<std::string> mods, keys;
 
+		wtitle = title;
+
 		cleared = false;
-		runemufn([&mods, &keys, &classes, &classeslist]() {
-			std::set<std::string> x;
-			mods = modifier::get_set();
-			keys = keygroup::get_keys();
-			for(auto i : keys) {
-				std::string kclass = keygroup::lookup(i).first->get_class();
-				if(!x.count(kclass))
-					classeslist.push_back(towxstring(kclass));
-				x.insert(kclass);
-				classes[kclass].insert(i);
-			}
-			});
+		std::set<std::string> x;
+		mods = modifier::get_set();
+		keys = keygroup::get_keys();
+		for(auto i : keys) {
+			std::string kclass = keygroup::lookup(i).first->get_class();
+			if(!x.count(kclass))
+				classeslist.push_back(towxstring(kclass));
+			x.insert(kclass);
+			classes[kclass].insert(i);
+		}
 
 		Centre();
 		top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -135,6 +286,9 @@ namespace
 		top_s->Add(t_s);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->Add(press = new wxButton(this, wxID_OK, wxT("Prompt key")), 0, wxGROW);
+		press->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxdialog_keyentry::on_pressbutton), NULL, this);
 		if(clearable)
 			pbutton_s->Add(clear = new wxButton(this, wxID_OK, wxT("Clear")), 0, wxGROW);
 		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
@@ -222,9 +376,11 @@ namespace
 		for(auto i : classes)
 			if(i.second.count(key))
 				_class = i.first;
-		set_class(_class);
-		mainclass->SetValue(towxstring(_class));
-		mainkey->SetValue(towxstring(key));
+		if(_class != "") {
+			set_class(_class);
+			mainclass->SetValue(towxstring(_class));
+			mainkey->SetValue(towxstring(key));
+		}
 		t_s->Layout();
 		top_s->Layout();
 		Fit();
@@ -279,6 +435,23 @@ namespace
 				i.second.pressed->Disable();
 			}
 		}
+	}
+
+	void wxdialog_keyentry::on_pressbutton(wxCommandEvent& e)
+	{
+		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle);
+		p->ShowModal();
+		std::string key = p->getkey();
+		p->Destroy();
+		std::string _class;
+		for(auto i : classes)
+			if(i.second.count(key))
+				_class = i.first;
+		if(_class == "")
+			return;
+		set_class(_class);
+		mainclass->SetValue(towxstring(_class));
+		mainkey->SetValue(towxstring(key));
 	}
 
 	void wxdialog_keyentry::on_ok(wxCommandEvent& e)
@@ -384,11 +557,9 @@ wxeditor_esettings_joystick_aconfig::wxeditor_esettings_joystick_aconfig(wxWindo
 	aname = _aname;
 	keygroup::parameters params;
 
-	runemufn([aname, &params]() {
-		auto k = keygroup::lookup_by_name(aname);
-		if(k)
-			params = k->get_parameters();
-		});
+	auto k = keygroup::lookup_by_name(aname);
+	if(k)
+		params = k->get_parameters();
 
 	switch(params.ktype) {
 	case keygroup::KT_DISABLED:		didx = 0; break;
@@ -456,12 +627,10 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 	double ntol;
 	keygroup* k;
 
-	runemufn([&k, aname, &_ctype]() {
-		k = keygroup::lookup_by_name(aname);
-		if(k)
-			_ctype = k->get_parameters().ktype;
-		});
-	if(!k) {
+	k = keygroup::lookup_by_name(aname);
+	if(k)
+		_ctype = k->get_parameters().ktype;
+	else {
 		//Axis gone away?
 		EndModal(wxID_OK);
 		return;
@@ -502,11 +671,9 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 		return;
 	}
 	
-	runemufn([&k, _ctype, _ntype, nlow, nmid, nhi, ntol]() {
-		if(_ctype != _ntype)
-			k->change_type(_ntype);
-		k->change_calibration(nlow, nmid, nhi, ntol);
-		});
+	if(_ctype != _ntype)
+		k->change_type(_ntype);
+	k->change_calibration(nlow, nmid, nhi, ntol);
 	EndModal(wxID_OK);
 }
 
@@ -534,7 +701,8 @@ namespace
 {
 	std::string formattype(keygroup::type t)
 	{
-		if(t == keygroup::KT_AXIS_PAIR) return AMODE_AXIS_PAIR;
+		if(t == keygroup::KT_DISABLED) return AMODE_DISABLED;
+		else if(t == keygroup::KT_AXIS_PAIR) return AMODE_AXIS_PAIR;
 		else if(t == keygroup::KT_AXIS_PAIR_INVERSE) return AMODE_AXIS_PAIR_INVERSE;
 		else if(t == keygroup::KT_PRESSURE_0M) return AMODE_PRESSURE_0M;
 		else if(t == keygroup::KT_PRESSURE_0P) return AMODE_PRESSURE_0P;
@@ -591,14 +759,12 @@ void wxeditor_esettings_joystick::refresh()
 {
 	//Collect the new settings.
 	std::map<std::string, keygroup::parameters> x;
-	runemufn([&x]() {
-		auto axisnames = keygroup::get_axis_set();
-		for(auto i : axisnames) {
-			keygroup* k = keygroup::lookup_by_name(i);
-			if(k)
-				x[i] = k->get_parameters();
-		}
-		});
+	auto axisnames = keygroup::get_axis_set();
+	for(auto i : axisnames) {
+		keygroup* k = keygroup::lookup_by_name(i);
+		if(k)
+			x[i] = k->get_parameters();
+	}
 
 	unsigned jcount = 0;
 	for(auto i : x) {
@@ -709,8 +875,7 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		name = SLOTPATH;
 	else
 		return;
-	std::string val;
-	runemufn([&val, name]() { val = setting::get(name); });
+	std::string val = setting::get(name);
 	try {
 		if(e.GetId() == wxID_HIGHEST + 4)
 			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
@@ -721,22 +886,22 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		return;
 	}
 	std::string err;
-	runemufn([val, name, &err]() { try { setting::set(name, val); } catch(std::exception& e) { err = e.what(); }});
-	if(err != "")
+	try {
+		setting::set(name, val);
+	} catch(std::exception& e) {
 		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
+	}
 	refresh();
 }
 
 void wxeditor_esettings_paths::refresh()
 {
 	std::string rpath, fpath, spath, nslot, lpath;
-	runemufn([&rpath, &fpath, &spath, &nslot, &lpath]() {
-		fpath = setting::get(FIRMWAREPATH);
-		rpath = setting::get(ROMPATH);
-		spath = setting::get(MOVIEPATH);
-		nslot = setting::get(SAVESLOTS);
-		lpath = setting::get(SLOTPATH);
-		});
+	fpath = setting::get(FIRMWAREPATH);
+	rpath = setting::get(ROMPATH);
+	spath = setting::get(MOVIEPATH);
+	nslot = setting::get(SAVESLOTS);
+	lpath = setting::get(SLOTPATH);
 	rompath->SetLabel(towxstring(rpath));
 	firmpath->SetLabel(towxstring(fpath));
 	savepath->SetLabel(towxstring(spath));
@@ -929,11 +1094,10 @@ void wxeditor_esettings_aliases::on_add(wxCommandEvent& e)
 			show_message_ok(this, "Error", "Not a valid alias name: " + name, wxICON_EXCLAMATION);
 			throw canceled_exception();
 		}
-		std::string old_alias_value;
-		runemufn([name, &old_alias_value]() { old_alias_value = command::get_alias_for(name); });
+		std::string old_alias_value = command::get_alias_for(name);
 		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 			old_alias_value, true);
-		runemufn([name, newcmd]() { command::set_alias_for(name, newcmd); });
+		command::set_alias_for(name, newcmd);
 	} catch(...) {
 	}
 	refresh();
@@ -947,11 +1111,10 @@ void wxeditor_esettings_aliases::on_edit(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string old_alias_value;
-		runemufn([name, &old_alias_value]() { old_alias_value = command::get_alias_for(name); });
+		std::string old_alias_value = command::get_alias_for(name);
 		std::string newcmd = pick_text(this, "Edit alias", "Enter new commands for '" + name + "':",
 			old_alias_value, true);
-		runemufn([name, newcmd]() { command::set_alias_for(name, newcmd); });
+		command::set_alias_for(name, newcmd);
 	} catch(...) {
 	}
 	refresh();
@@ -964,7 +1127,7 @@ void wxeditor_esettings_aliases::on_delete(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	runemufn([name]() { command::set_alias_for(name, ""); });
+	command::set_alias_for(name, "");
 	refresh();
 }
 
@@ -973,7 +1136,7 @@ void wxeditor_esettings_aliases::refresh()
 	int n = select->GetSelection();
 	std::set<std::string> bind;
 	std::vector<wxString> choices;
-	runemufn([&bind]() { bind = command::get_aliases(); });
+	bind = command::get_aliases();
 	for(auto i : bind) {
 		numbers[choices.size()] = i;
 		choices.push_back(towxstring(i));
@@ -1007,6 +1170,7 @@ public:
 	void on_primary(wxCommandEvent& e);
 	void on_secondary(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
+	void kill_internal_data();
 private:
 	std::map<std::string, wxTreeItemId> items;
 	std::map<std::string, inverse_key*> realitems;
@@ -1060,6 +1224,14 @@ wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
 {
 }
 
+void wxeditor_esettings_hotkeys::kill_internal_data()
+{
+	items.clear();
+	realitems.clear();
+	leafname.clear();
+	true_root = wxTreeItemId();
+}
+
 void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 {
 	std::string name = selected();
@@ -1068,13 +1240,12 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string key;
 		inverse_key* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
 		}
-		runemufn([&key, ik]() { key = ik->get(true); });
+		std::string key = ik->get(true);
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify key for " + name, key, true);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
@@ -1083,9 +1254,9 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 		key = d->getkey();
 		d->Destroy();
 		if(key != "")
-			runemufn([key, ik]() { ik->set(key, true); });
+			ik->set(key, true);
 		else
-			runemufn([key, ik]() { ik->clear(true); });
+			ik->clear(true);
 		refresh();
 	} catch(...) {
 		refresh();
@@ -1100,13 +1271,12 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string key;
 		inverse_key* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
 		}
-		runemufn([&key, ik]() { key = ik->get(false); });
+		std::string key = ik->get(false);
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify key for " + name, key, true);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
@@ -1115,9 +1285,9 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 		key = d->getkey();
 		d->Destroy();
 		if(key != "")
-			runemufn([key, ik]() { ik->set(key, false); });
+			ik->set(key, false);
 		else
-			runemufn([key, ik]() { ik->clear(false); });
+			ik->clear(false);
 		refresh();
 	} catch(...) {
 		refresh();
@@ -1129,13 +1299,11 @@ void wxeditor_esettings_hotkeys::refresh()
 	std::set<std::string> closure_additional;
 	std::map<std::string, inverse_key*> keyorder;
 	std::map<inverse_key*, std::pair<std::string, std::string>> data;
-	runemufn([&data, &keyorder]() {
-		auto x = inverse_key::get_ikeys();
-		for(auto y : x) {
-			keyorder[y->getname()] = y;
-			data[y] = std::make_pair(y->get(true), y->get(false));
-		}
-	});
+	auto x = inverse_key::get_ikeys();
+	for(auto y : x) {
+		keyorder[y->getname()] = y;
+		data[y] = std::make_pair(y->get(true), y->get(false));
+	}
 	//Close keyorder with respect to parents.
 	for(auto i : keyorder) {
 		std::string tmp = i.first;
@@ -1282,22 +1450,15 @@ void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 		d->Destroy();
 
 		std::string newcommand = pick_text(this, "New binding", "Enter command for binding:", "");
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, name, newcommand]() {
-			try {
-				keymapper::bind_for(name, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			wxMessageBox(wxT("Error"), towxstring("Can't bind key: " + faulttext), wxICON_EXCLAMATION);
-		refresh();
+		try {
+			keymapper::bind_for(name, newcommand);
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
+				wxICON_EXCLAMATION);
+		}
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
@@ -1308,26 +1469,18 @@ void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string old_command_value;
-		runemufn([&old_command_value, name]() { old_command_value = keymapper::get_command_for(name); });
+		std::string old_command_value = keymapper::get_command_for(name);
 		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
 			old_command_value);
-		bool fault = false;
-		std::string faulttext;
-		runemufn([&fault, &faulttext, name, newcommand]() {
-			try {
-				keymapper::bind_for(name, newcommand);
-			} catch(std::exception& e) {
-				fault = true;
-				faulttext = e.what();
-			}
-		});
-		if(fault)
-			wxMessageBox(wxT("Error"), towxstring("Can't bind key: " + faulttext), wxICON_EXCLAMATION);
-		refresh();
+		try {
+			keymapper::bind_for(name, newcommand);
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
+				wxICON_EXCLAMATION);
+		}
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
@@ -1337,7 +1490,7 @@ void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	runemufn([name]() { try { keymapper::bind_for(name, ""); } catch(...) {} });
+	try { keymapper::bind_for(name, ""); } catch(...) {}
 	refresh();
 }
 
@@ -1346,11 +1499,9 @@ void wxeditor_esettings_bindings::refresh()
 	int n = select->GetSelection();
 	std::map<std::string, std::string> bind;
 	std::vector<wxString> choices;
-	runemufn([&bind]() {
-		std::set<std::string> a = keymapper::get_bindings();
-		for(auto i : a)
-			bind[i] = keymapper::get_command_for(i);
-		});
+	std::set<std::string> a = keymapper::get_bindings();
+	for(auto i : a)
+		bind[i] = keymapper::get_command_for(i);
 	for(auto i : bind) {
 		numbers[choices.size()] = i.first;
 		choices.push_back(towxstring(i.first + " (" + i.second + ")"));
@@ -1439,17 +1590,17 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 		return;
 	std::string value;
 	std::string err;
-	runemufn([name, &value]() { value = setting::get(name); });
+	value = setting::get(name);
 	try {
 		value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
 	} catch(...) {
 		return;
 	}
-	runemufn([name, value, &err]() {
-		try { setting::set(name, value); } catch(std::exception& e) { err = e.what(); }
-		});
-	if(err != "")
+	try {
+		setting::set(name, value);
+	} catch(std::exception& e) {
 		wxMessageBox(towxstring(err), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
+	}
 }
 
 void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
@@ -1466,9 +1617,11 @@ void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 	if(name == "")
 		return;
 	bool err = false;
-	runemufn([name, &err]() { try { setting::blank(name); } catch(...) { err = true; }});
-	if(err)
+	try {
+		setting::blank(name);
+	} catch(...) {
 		wxMessageBox(wxT("This setting can't be cleared"), wxT("Error"), wxICON_EXCLAMATION | wxOK);
+	}
 }
 
 void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, const std::string& value)
@@ -1489,16 +1642,14 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 
 void wxeditor_esettings_advanced::refresh()
 {
-	runemufn([&settings, &values, &blankables]() {
-		settings = setting::get_settings_set();
-		blankables.clear();
-		for(auto i : settings) {
-			if(setting::is_set(i))
-				values[i] = setting::get(i);
-			if(setting::blankable(i))
-				blankables.insert(i);
-		}
-		});
+	settings = setting::get_settings_set();
+	blankables.clear();
+	for(auto i : settings) {
+		if(setting::is_set(i))
+			values[i] = setting::get(i);
+		if(setting::blankable(i))
+			blankables.insert(i);
+	}
 	_refresh();
 }
 
@@ -1537,11 +1688,15 @@ private:
 	wxWindow* joystick_window;
 	wxNotebook* tabset;
 	wxButton* closebutton;
+	wxeditor_esettings_hotkeys* hotkeytab;
 };
 
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
 {
+	//Grab keys to prevent the joystick driver from running who knows what commands.
+	keygrabber.grab_keys();
+
 	Centre();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
@@ -1550,7 +1705,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 	tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
 	tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
-	tabset->AddPage(new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
+	tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
 	tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
 	tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
 	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
@@ -1578,6 +1733,8 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
+	hotkeytab->kill_internal_data();
+	keygrabber.ungrab_keys();
 	EndModal(wxID_OK);
 }
 

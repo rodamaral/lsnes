@@ -210,9 +210,9 @@ namespace
 	{
 		std::string v = (stringfmt() << target).str();
 		if(target < 0)
-			runemufn([]() { setting::set("targetfps", "infinite"); });
+			setting::set("targetfps", "infinite");
 		else
-			runemufn([v]() { setting::set("targetfps", v); });
+			setting::set("targetfps", v);
 	}
 
 	class controller_autohold_menu : public wxMenu
@@ -452,9 +452,7 @@ namespace
 
 	std::string movie_path()
 	{
-		std::string x;
-		runemufn([&x]() { x = setting::get("moviepath"); });
-		return x;
+		return setting::get("moviepath");
 	}
 }
 
@@ -962,13 +960,14 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	}
 	case wxID_SET_SPEED: {
-		std::string value;
 		bool bad = false;
-		runemufn([&value]() { value = setting::is_set("targetfps") ? setting::get("targetfps") : ""; });
+		std::string value = setting::is_set("targetfps") ? setting::get("targetfps") : "";
 		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
-		runemufn([&bad, &value]() { try { setting::set("targetfps", value); } catch(...) { bad = true; } });
-		if(bad)
+		try {
+			setting::set("targetfps", value);
+		} catch(...) {
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
+		}
 		return;
 	}
 	case wxID_SET_VOLUME: {

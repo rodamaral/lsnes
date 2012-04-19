@@ -78,6 +78,23 @@ namespace
 	globalwrap<std::map<std::string, std::string>> modifier_linkages;
 	globalwrap<std::map<std::string, keygroup*>> keygroups;
 
+	//Return the recursive mutex.
+	mutex& kmlock()
+	{
+		static mutex& m = mutex::aquire_rec();
+		return m;
+	}
+
+	class kmlock_hold
+	{
+	public:
+		kmlock_hold() { kmlock().lock(); }
+		~kmlock_hold() { kmlock().unlock(); }
+	private:
+		kmlock_hold(const kmlock_hold& k);
+		kmlock_hold& operator=(const kmlock_hold& k);
+	};
+
 	//Returns orig if not linked.
 	const modifier* get_linked_modifier(const modifier* orig)
 	{
@@ -90,23 +107,27 @@ namespace
 
 modifier::modifier(const std::string& name) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	known_modifiers()[modname = name] = this;
 }
 
 modifier::modifier(const std::string& name, const std::string& linkgroup) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	known_modifiers()[modname = name] = this;
 	modifier_linkages()[name] = linkgroup;
 }
 
 modifier::~modifier() throw()
 {
+	kmlock_hold lck;
 	known_modifiers().erase(modname);
 	modifier_linkages().erase(modname);
 }
 
 std::set<std::string> modifier::get_set() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	std::set<std::string> r;
 	for(auto i : known_modifiers())
 		r.insert(i.first);
@@ -115,6 +136,7 @@ std::set<std::string> modifier::get_set() throw(std::bad_alloc)
 
 modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
+	kmlock_hold lck;
 	if(!known_modifiers().count(name)) {
 		std::ostringstream x;
 		x << "Invalid modifier '" << name << "'";
@@ -125,11 +147,13 @@ modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::r
 
 std::string modifier::name() const throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return modname;
 }
 
 std::string modifier::linked_name() const throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	const modifier* p = get_linked_modifier(this);
 	if(p == this)
 		return "";
@@ -139,18 +163,21 @@ std::string modifier::linked_name() const throw(std::bad_alloc)
 
 void modifier_set::add(const modifier& mod, bool really) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	if(really)
 		set.insert(&mod);
 }
 
 void modifier_set::remove(const modifier& mod, bool really) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	if(really)
 		set.erase(&mod);
 }
 
 modifier_set modifier_set::construct(const std::string& _modifiers) throw(std::bad_alloc, std::runtime_error)
 {
+	kmlock_hold lck;
 	modifier_set set;
 	std::string modifiers = _modifiers;
 	while(modifiers != "") {
@@ -169,6 +196,7 @@ modifier_set modifier_set::construct(const std::string& _modifiers) throw(std::b
 
 bool modifier_set::valid(const modifier_set& set, const modifier_set& mask) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	//No element can be together with its linkage group.
 	for(auto i : set.set) {
 		const modifier* j = get_linked_modifier(i);
@@ -191,6 +219,7 @@ bool modifier_set::valid(const modifier_set& set, const modifier_set& mask) thro
 
 bool modifier_set::operator==(const modifier_set& m) const throw()
 {
+	kmlock_hold lck;
 	for(auto i : set)
 		if(!m.set.count(i))
 			return false;
@@ -202,6 +231,7 @@ bool modifier_set::operator==(const modifier_set& m) const throw()
 
 std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
 {
+	kmlock_hold lck;
 	os << "<modset:";
 	for(auto i : m.set)
 		os << i->name() << " ";
@@ -212,6 +242,7 @@ std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
 bool modifier_set::triggers(const modifier_set& set, const modifier_set& trigger, const modifier_set& mask)
 	throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	for(auto i : mask.set) {
 		bool ok = false;
 		//OK iff at least one of:
@@ -254,16 +285,19 @@ bool modifier_set::triggers(const modifier_set& set, const modifier_set& trigger
 
 std::string keygroup::name() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return keyname;
 }
 
 const std::string& keygroup::get_class()
 {
+	kmlock_hold lck;
 	return clazz;
 }
 
 struct keygroup::parameters keygroup::get_parameters()
 {
+	kmlock_hold lck;
 	parameters p;
 	p.ktype = ktype;
 	p.cal_left = cal_left;
@@ -276,6 +310,7 @@ struct keygroup::parameters keygroup::get_parameters()
 
 std::map<std::string, struct keygroup::parameters> keygroup::get_all_parameters()
 {
+	kmlock_hold lck;
 	std::map<std::string, struct parameters> ret;
 	for(auto i : keygroups())
 		ret[i.first] = i.second->get_parameters();
@@ -284,6 +319,7 @@ std::map<std::string, struct keygroup::parameters> keygroup::get_all_parameters(
 
 keygroup::keygroup(const std::string& name, const std::string& _clazz, enum type t) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	keygroups()[keyname = name] = this;
 	clazz = _clazz;
 	ktype = t;
@@ -298,11 +334,13 @@ keygroup::keygroup(const std::string& name, const std::string& _clazz, enum type
 
 keygroup::~keygroup() throw()
 {
+	kmlock_hold lck;
 	keygroups().erase(keyname);
 }
 
 void keygroup::change_type(enum type t) throw()
 {
+	kmlock_hold lck;
 	ktype = t;
 	state = 0;
 	if(requests_hook)
@@ -311,6 +349,7 @@ void keygroup::change_type(enum type t) throw()
 
 void keygroup::request_hook_callback(bool state)
 {
+	kmlock_hold lck;
 	requests_hook = state;
 }
 
@@ -318,6 +357,7 @@ void keygroup::request_hook_callback(bool state)
 std::pair<keygroup*, unsigned> keygroup::lookup(const std::string& name) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	kmlock_hold lck;
 	if(keygroups().count(name))
 		return std::make_pair(keygroups()[name], 0);
 	std::string prefix = name;
@@ -344,6 +384,7 @@ std::pair<keygroup*, unsigned> keygroup::lookup(const std::string& name) throw(s
 
 void keygroup::change_calibration(short left, short center, short right, double tolerance)
 {
+	kmlock_hold lck;
 	cal_left = left;
 	cal_center = center;
 	cal_right = right;
@@ -354,6 +395,7 @@ void keygroup::change_calibration(short left, short center, short right, double 
 
 double keygroup::compensate(short value)
 {
+	kmlock_hold lck;
 	if(ktype == KT_HAT || ktype == KT_KEY || ktype == KT_DISABLED || ktype == KT_MOUSE)
 		return value;	//These can't be calibrated.
 	if(value <= cal_left)
@@ -370,6 +412,7 @@ double keygroup::compensate(short value)
 
 double keygroup::compensate2(double value)
 {
+	kmlock_hold lck;
 	switch(ktype) {
 	case KT_DISABLED:
 	case KT_MOUSE:
@@ -398,6 +441,7 @@ double keygroup::compensate2(double value)
 
 void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 {
+	kmlock_hold lck;
 	last_rawval = pos;
 	if(requests_hook)
 		lua_callback_keyhook(keyname, get_parameters());
@@ -461,26 +505,32 @@ void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 
 void keygroup::run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x)
 {
-	if(!really)
-		return;
-	std::string name = keyname;
-	if(ktype == KT_AXIS_PAIR && subkey == 0)
-		name = name + "+";
-	if(ktype == KT_AXIS_PAIR && subkey == 1)
-		name = name + "-";
-	if(ktype == KT_HAT && subkey == 0)
-		name = name + "n";
-	if(ktype == KT_HAT && subkey == 1)
-		name = name + "e";
-	if(ktype == KT_HAT && subkey == 2)
-		name = name + "s";
-	if(ktype == KT_HAT && subkey == 3)
-		name = name + "w";
-	information_dispatch::do_key_event(modifiers, *this, subkey, polarity, name);
+	std::string name;
+	modifier_set _modifiers = modifiers;
+	{
+		if(!really)
+			return;
+		kmlock_hold lck;
+		name = keyname;
+		if(ktype == KT_AXIS_PAIR && subkey == 0)
+			name = name + "+";
+		if(ktype == KT_AXIS_PAIR && subkey == 1)
+			name = name + "-";
+		if(ktype == KT_HAT && subkey == 0)
+			name = name + "n";
+		if(ktype == KT_HAT && subkey == 1)
+			name = name + "e";
+		if(ktype == KT_HAT && subkey == 2)
+			name = name + "s";
+		if(ktype == KT_HAT && subkey == 3)
+			name = name + "w";
+	}
+	information_dispatch::do_key_event(_modifiers, *this, subkey, polarity, name);
 }
 
 keygroup* keygroup::lookup_by_name(const std::string& name) throw()
 {
+	kmlock_hold lck;
 	if(keygroups().count(name))
 		return keygroups()[name];
 	else
@@ -489,6 +539,7 @@ keygroup* keygroup::lookup_by_name(const std::string& name) throw()
 
 std::set<std::string> keygroup::get_axis_set() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	std::set<std::string> r;
 	for(auto i : keygroups()) {
 		keygroup::parameters p = i.second->get_parameters();
@@ -514,6 +565,7 @@ std::set<std::string> keygroup::get_axis_set() throw(std::bad_alloc)
 
 std::set<std::string> keygroup::get_keys() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	std::set<std::string> r;
 	for(auto i : keygroups()) {
 		switch(i.second->ktype) {
@@ -546,12 +598,12 @@ std::set<std::string> keygroup::get_keys() throw(std::bad_alloc)
 
 signed keygroup::get_value()
 {
+	kmlock_hold lck;
 	return state;
 }
 
 namespace
 {
-
 	function_ptr_command<const std::string&> set_axis("set-axis", "Set mode of Joystick axis",
 		"Syntax: set-axis <axis> <options>...\nKnown options: disabled, axis, axis-inverse, pressure0-\n"
 		"pressure0+, pressure-0, pressure-+, pressure+0, pressure+-\nminus=<val>, zero=<val>, plus=<val>\n"
@@ -721,6 +773,7 @@ namespace
 
 	std::map<triple, keybind_data*>& keybindings()
 	{
+		kmlock_hold lck;
 		static std::map<triple, keybind_data*> x;
 		return x;
 	}
@@ -729,35 +782,42 @@ namespace
 void keymapper::bind(std::string mod, std::string modmask, std::string keyname, std::string command)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	triple k(mod, modmask, keyname);
-	modifier_set _mod = modifier_set::construct(mod);
-	modifier_set _modmask = modifier_set::construct(modmask);
-	if(!modifier_set::valid(_mod, _modmask))
-		throw std::runtime_error("Invalid modifiers");
-	auto g = keygroup::lookup(keyname);
-	if(!keybindings().count(k)) {
-		keybindings()[k] = new keybind_data;
-		keybindings()[k]->mod = _mod;
-		keybindings()[k]->modmask = _modmask;
-		keybindings()[k]->group = g.first;
-		keybindings()[k]->subkey = g.second;
+	{
+		kmlock_hold lck;
+		triple k(mod, modmask, keyname);
+		modifier_set _mod = modifier_set::construct(mod);
+		modifier_set _modmask = modifier_set::construct(modmask);
+		if(!modifier_set::valid(_mod, _modmask))
+			throw std::runtime_error("Invalid modifiers");
+		auto g = keygroup::lookup(keyname);
+		if(!keybindings().count(k)) {
+			keybindings()[k] = new keybind_data;
+			keybindings()[k]->mod = _mod;
+			keybindings()[k]->modmask = _modmask;
+			keybindings()[k]->group = g.first;
+			keybindings()[k]->subkey = g.second;
+		}
+		keybindings()[k]->command = command;
 	}
-	keybindings()[k]->command = command;
 	inverse_key::notify_update(mod + "/" + modmask + "|" + keyname, command);
 }
 void keymapper::unbind(std::string mod, std::string modmask, std::string keyname) throw(std::bad_alloc,
 		std::runtime_error)
 {
-	triple k(mod, modmask, keyname);
-	if(!keybindings().count(k))
-		throw std::runtime_error("Key is not bound");
-	delete keybindings()[k];
-	keybindings().erase(k);
+	{
+		kmlock_hold lck;
+		triple k(mod, modmask, keyname);
+		if(!keybindings().count(k))
+			throw std::runtime_error("Key is not bound");
+		delete keybindings()[k];
+		keybindings().erase(k);
+	}
 	inverse_key::notify_update(mod + "/" + modmask + "|" + keyname, "");
 }
 
 void keymapper::dumpbindings() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	for(auto i : keybindings()) {
 		messages << "bind-key ";
 		if(i.first.a != "" || i.first.b != "")
@@ -768,6 +828,7 @@ void keymapper::dumpbindings() throw(std::bad_alloc)
 
 std::set<std::string> keymapper::get_bindings() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	std::set<std::string> r;
 	for(auto i : keybindings())
 		r.insert(i.first.a + "/" + i.first.b + "|" + i.first.c);
@@ -776,6 +837,7 @@ std::set<std::string> keymapper::get_bindings() throw(std::bad_alloc)
 
 std::string keymapper::get_command_for(const std::string& keyspec) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	triple k("", "", "");
 	try {
 		k = parse_to_triple(keyspec);
@@ -800,6 +862,7 @@ void keymapper::bind_for(const std::string& keyspec, const std::string& cmd) thr
 
 inverse_key::inverse_key(const std::string& command, const std::string& name) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	cmd = command;
 	oname = name;
 	ikeys().insert(this);
@@ -813,44 +876,52 @@ inverse_key::inverse_key(const std::string& command, const std::string& name) th
 
 inverse_key::~inverse_key()
 {
+	kmlock_hold lck;
 	ikeys().erase(this);
 	forkey().erase(cmd);
 }
 
 std::set<inverse_key*> inverse_key::get_ikeys() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return ikeys();
 }
 
 std::string inverse_key::getname() throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return oname;
 }
 
 inverse_key* inverse_key::get_for(const std::string& command) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return forkey().count(command) ? forkey()[command] : NULL;
 }
 
 std::set<inverse_key*>& inverse_key::ikeys()
 {
+	kmlock_hold lck;
 	static std::set<inverse_key*> x;
 	return x;
 }
 
 std::map<std::string, inverse_key*>& inverse_key::forkey()
 {
+	kmlock_hold lck;
 	static std::map<std::string, inverse_key*> x;
 	return x;
 }
 
 std::string inverse_key::get(bool primary) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	return primary ? primary_spec : secondary_spec;
 }
 
 void inverse_key::clear(bool primary) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	if(primary) {
 		if(primary_spec != "")
 			keymapper::bind_for(primary_spec, "");
@@ -870,6 +941,7 @@ void inverse_key::clear(bool primary) throw(std::bad_alloc)
 
 void inverse_key::set(std::string keyspec, bool primary) throw(std::bad_alloc)
 {
+	kmlock_hold lck;
 	if(keyspec == "") {
 		clear(primary);
 		return;
@@ -891,6 +963,7 @@ void inverse_key::set(std::string keyspec, bool primary) throw(std::bad_alloc)
 
 void inverse_key::addkey(const std::string& keyspec)
 {
+	kmlock_hold lck;
 	if(primary_spec == "" || primary_spec == keyspec)
 		primary_spec = keyspec;
 	else if(secondary_spec == "")
@@ -899,6 +972,7 @@ void inverse_key::addkey(const std::string& keyspec)
 
 void inverse_key::notify_update(const std::string& keyspec, const std::string& command)
 {
+	kmlock_hold lck;
 	for(auto k : ikeys()) {
 		bool u = false;
 		if(k->primary_spec == keyspec || k->secondary_spec == keyspec) {

@@ -1,6 +1,8 @@
 #ifndef _settings__hpp__included__
 #define _settings__hpp__included__
 
+#include "core/window.hpp"
+
 #include <string>
 #include <set>
 #include <stdexcept>
@@ -106,8 +108,22 @@ public:
  * Get set of all settings.
  */
 	static std::set<std::string> get_settings_set() throw(std::bad_alloc);
+/**
+ * Lock holder
+ */
+	struct lock_holder
+	{
+		lock_holder(setting* t) { (targ = t)->mut->lock(); }
+		~lock_holder() { targ->mut->unlock(); }
+	private:
+		setting* targ;
+	};
+	friend struct lock_holder;
 protected:
 	std::string settingname;
+private:
+	static setting* get_by_name(const std::string& name);
+	mutex* mut;
 };
 
 /**

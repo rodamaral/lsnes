@@ -208,9 +208,6 @@ namespace
 		unsigned long axes[(ABS_MAX + div) / div] = {0};
 		unsigned long evtypes[(EV_MAX + div) / div] = {0};
 		char namebuffer[256];
-		unsigned button_count = 0;
-		unsigned axis_count = 0;
-		unsigned hat_count = 0;
 		if(ioctl(fd, EVIOCGBIT(0, sizeof(evtypes)), evtypes) < 0) {
 			int merrno = errno;
 			messages << "Error probing joystick (evmap; " << filename << "): " << strerror(merrno)
@@ -240,13 +237,10 @@ namespace
 			return false;
 		}
 		joystick_create(fd, namebuffer);
-		for(unsigned i = 0; i <= KEY_MAX; i++) {
-			if(keys[i / div] & (1ULL << (i % div))) {
+		for(unsigned i = 0; i <= KEY_MAX; i++)
+			if(keys[i / div] & (1ULL << (i % div)))
 				joystick_new_button(fd, i, get_button_name(i));
-				button_count++;
-			}
-		}
-		for(unsigned i = 0; i <= ABS_MAX; i++) {
+		for(unsigned i = 0; i <= ABS_MAX; i++)
 			if(axes[i / div] & (1ULL << (i % div))) {
 				if(i < ABS_HAT0X || i > ABS_HAT3Y) {
 					int32_t V[5];
@@ -258,13 +252,9 @@ namespace
 					}
 					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i),
 						(V[1] < 0) ? keygroup::KT_AXIS_PAIR : keygroup::KT_PRESSURE_MP);
-					axis_count++;
-				} else if(i % 2 == 0) {
+				} else if(i % 2 == 0)
 					joystick_new_hat(fd, i, i + 1, 1, get_axis_name(i), get_axis_name(i + 1));
-					hat_count++;
-				}
 			}
-		}
 		joystick_message(fd);
 		return true;
 	}

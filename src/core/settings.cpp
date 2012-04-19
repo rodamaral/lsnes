@@ -50,24 +50,55 @@ namespace
 					messages << i << ": " << setting::get(i) << std::endl;
 			}
 		});
+
+	//Return the mutex.
+	mutex& stlock()
+	{
+		static mutex& m = mutex::aquire();
+		return m;
+	}
+
+	class stlock_hold
+	{
+	public:
+		stlock_hold() { stlock().lock(); }
+		~stlock_hold() { stlock().unlock(); }
+	private:
+		stlock_hold(const stlock_hold& k);
+		stlock_hold& operator=(const stlock_hold& k);
+	};
 }
 
 setting::setting(const std::string& name) throw(std::bad_alloc)
 {
+	stlock_hold lck;
+	mut = &mutex::aquire();
 	settings()[settingname = name] = this;
 }
 
 setting::~setting() throw()
 {
+	stlock_hold lck;
+	delete mut;
 	settings().erase(settingname);
+}
+
+setting* setting::get_by_name(const std::string& name)
+{
+	stlock_hold lck;
+	if(!settings().count(name))
+		throw std::runtime_error("No such setting '" + name + "'");
+	return settings()[name];
 }
 
 void setting::set(const std::string& _setting, const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings().count(_setting))
-		throw std::runtime_error("No such setting '" + _setting + "'");
+	setting* tochange = get_by_name(_setting);
 	try {
-		settings()[_setting]->set(value);
+		{
+			lock_holder lck(tochange);
+			tochange->set(value);
+		}
 		information_dispatch::do_setting_change(_setting, value);
 	} catch(std::bad_alloc& e) {
 		throw;
@@ -83,10 +114,12 @@ bool setting::blank(bool really) throw(std::bad_alloc, std::runtime_error)
 
 bool setting::blankable(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings().count(_setting))
-		throw std::runtime_error("No such setting '" + _setting + "'");
+	setting* tochange = get_by_name(_setting);
 	try {
-		return settings()[_setting]->blank(false);
+		{
+			lock_holder lck(tochange);
+			return tochange->blank(false);
+		}
 	} catch(...) {
 		return false;
 	}
@@ -94,11 +127,13 @@ bool setting::blankable(const std::string& _setting) throw(std::bad_alloc, std::
 
 void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings().count(_setting))
-		throw std::runtime_error("No such setting '" + _setting + "'");
+	setting* tochange = get_by_name(_setting);
 	try {
-		if(!settings()[_setting]->blank(true))
-			throw std::runtime_error("This setting can't be cleared");
+		{
+			lock_holder lck(tochange);
+			if(!tochange->blank(true))
+				throw std::runtime_error("This setting can't be cleared");
+		}
 		information_dispatch::do_setting_clear(_setting);
 	} catch(std::bad_alloc& e) {
 		throw;
@@ -109,16 +144,20 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 
 std::string setting::get(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings().count(_setting))
-		throw std::runtime_error("No such setting '" + _setting + "'");
-	return settings()[_setting]->get();
+	setting* tochange = get_by_name(_setting);
+	{
+		lock_holder lck(tochange);
+		return tochange->get();
+	}
 }
 
 bool setting::is_set(const std::string& _setting) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!settings().count(_setting))
-		throw std::runtime_error("No such setting '" + _setting + "'");
-	return settings()[_setting]->is_set();
+	setting* tochange = get_by_name(_setting);
+	{
+		lock_holder lck(tochange);
+		return tochange->is_set();
+	}
 }
 
 std::set<std::string> setting::get_settings_set() throw(std::bad_alloc)
@@ -164,6 +203,7 @@ std::string numeric_setting::get() throw(std::bad_alloc)
 
 numeric_setting::operator int32_t() throw()
 {
+	lock_holder lck(this);
 	return value;
 }
 
@@ -202,6 +242,7 @@ std::string boolean_setting::get() throw(std::bad_alloc)
 
 boolean_setting::operator bool() throw()
 {
+	lock_holder lck(this);
 	return value;
 }
 
@@ -244,5 +285,6 @@ std::string path_setting::get() throw(std::bad_alloc)
 
 path_setting::operator std::string()
 {
+	lock_holder lck(this);
 	return path;
 }

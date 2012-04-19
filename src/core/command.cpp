@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/globalwrap.hpp"
 #include "core/misc.hpp"
+#include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -13,6 +14,24 @@ namespace
 	globalwrap<std::map<std::string, command*>> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
+
+	//Return the recursive mutex.
+	mutex& cmlock()
+	{
+		static mutex& m = mutex::aquire_rec();
+		return m;
+	}
+
+	class cmlock_hold
+	{
+	public:
+		cmlock_hold() { cmlock().lock(); }
+		~cmlock_hold() { cmlock().unlock(); }
+	private:
+		cmlock_hold(const cmlock_hold& k);
+		cmlock_hold& operator=(const cmlock_hold& k);
+	};
+
 
 	function_ptr_command<arg_filename> run_script("run-script", "run file as a script",
 		"Syntax: run-script <file>\nRuns file <file> just as it would have been entered in the command line\n",
@@ -34,6 +53,7 @@ namespace
 	function_ptr_command<> show_aliases("show-aliases", "show aliases",
 		"Syntax: show-aliases\nShow expansions of all aliases\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			cmlock_hold lck;
 			for(auto i : aliases)
 				for(auto j : i.second)
 					messages << "alias " << i.first << " " << j << std::endl;
@@ -45,6 +65,7 @@ namespace
 			auto r = regex("([^ \t]+)[ \t]*", t, "This command only takes one argument");
 			if(!command::valid_alias_name(r[1]))
 				throw std::runtime_error("Illegal alias name");
+			cmlock_hold lck;
 			aliases[r[1]].clear();
 			messages << "Command '" << r[1] << "' unaliased" << std::endl;
 		});
@@ -56,6 +77,7 @@ namespace
 			auto r = regex("([^ \t]+)[ \t]+([^ \t].*)", t, "Alias name and command needed");
 			if(!command::valid_alias_name(r[1]))
 				throw std::runtime_error("Illegal alias name");
+			cmlock_hold lck;
 			aliases[r[1]].push_back(r[2]);
 			messages << "Command '" << r[1] << "' aliased to '" << r[2] << "'" << std::endl;
 		});
@@ -63,6 +85,7 @@ namespace
 
 command::command(const std::string& cmd) throw(std::bad_alloc)
 {
+	cmlock_hold lck;
 	if(commands().count(cmd))
 		std::cerr << "WARNING: Command collision for " << cmd << "!" << std::endl;
 	commands()[commandname = cmd] = this;
@@ -70,6 +93,7 @@ command::command(const std::string& cmd) throw(std::bad_alloc)
 
 command::~command() throw()
 {
+	cmlock_hold lck;
 	commands().erase(commandname);
 }
 
@@ -79,12 +103,14 @@ void command::invokeC(const std::string& cmd) throw()
 		std::string cmd2 = strip_CR(cmd);
 		if(cmd2 == "?") {
 			//The special ? command.
+			cmlock_hold lck;
 			for(auto i : commands())
 				messages << i.first << ": " << i.second->get_short_help() << std::endl;
 			return;
 		}
 		if(firstchar(cmd2) == '?') {
 			//?command.
+			cmlock_hold lck;
 			std::string rcmd = cmd2.substr(1, min(cmd2.find_first_of(" \t"), cmd2.length()));
 			if(firstchar(rcmd) != '*') {
 				//This may be an alias.
@@ -109,21 +135,33 @@ void command::invokeC(const std::string& cmd) throw()
 			may_be_alias_expanded = false;
 			cmd2 = cmd2.substr(1);
 		}
-		if(may_be_alias_expanded && aliases.count(cmd2)) {
-			for(auto i : aliases[cmd2])
+		//Now this gets painful as command handlers must not be invoked with lock held.
+		if(may_be_alias_expanded) {
+			std::list<std::string> aexp;
+			{
+				cmlock_hold lck;
+				if(!aliases.count(cmd))
+					goto not_alias;
+				aexp = aliases[cmd2];
+			}
+			for(auto i : aexp)
 				invokeC(i);
 			return;
 		}
+not_alias:
 		try {
 			size_t split = cmd2.find_first_of(" \t");
 			std::string rcmd = cmd2.substr(0, min(split, cmd2.length()));
 			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
 			command* cmdh = NULL;
-			if(!commands().count(rcmd)) {
-				messages << "Unknown command '" << rcmd << "'" << std::endl;
-				return;
+			{
+				cmlock_hold lck;
+				if(!commands().count(rcmd)) {
+					messages << "Unknown command '" << rcmd << "'" << std::endl;
+					return;
+				}
+				cmdh = commands()[rcmd];
 			}
-			cmdh = commands()[rcmd];
 			if(command_stack.count(cmd2))
 				throw std::runtime_error("Recursive command invocation");
 			command_stack.insert(cmd2);
@@ -154,6 +192,7 @@ std::string command::get_long_help() throw(std::bad_alloc)
 
 std::set<std::string> command::get_aliases() throw(std::bad_alloc)
 {
+	cmlock_hold lck;
 	std::set<std::string> r;
 	for(auto i : aliases)
 		r.insert(i.first);
@@ -162,6 +201,7 @@ std::set<std::string> command::get_aliases() throw(std::bad_alloc)
 
 std::string command::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 {
+	cmlock_hold lck;
 	if(!valid_alias_name(aname))
 		return "";
 	if(aliases.count(aname)) {
@@ -175,6 +215,7 @@ std::string command::get_alias_for(const std::string& aname) throw(std::bad_allo
 
 void command::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
 {
+	cmlock_hold lck;
 	if(!valid_alias_name(aname))
 		return;
 	std::list<std::string> newlist;

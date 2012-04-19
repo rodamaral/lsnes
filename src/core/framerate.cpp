@@ -110,6 +110,27 @@ namespace
 			}
 		}
 
+		std::pair<bool, double> read() throw()
+		{
+			lock_holder lck(this);
+			return std::make_pair(target_infinite, target_fps);
+		}
+
+		void set_nominal_framerate(double fps)
+		{
+			lock_holder(this);
+			nominal_rate = fps;
+			if(target_nominal) {
+				target_fps = nominal_rate;
+				target_infinite = false;
+			}
+		}
+
+		double get_framerate()
+		{
+			lock_holder(this);
+			return 100.0 * get_realized_fps() / nominal_rate;
+		}
 	} targetfps;
 
 	bool turboed = false;
@@ -151,16 +172,12 @@ void unfreeze_time(uint64_t curtime)
 
 void set_nominal_framerate(double fps) throw()
 {
-	nominal_rate = fps;
-	if(target_nominal) {
-		target_fps = nominal_rate;
-		target_infinite = false;
-	}
+	targetfps.set_nominal_framerate(fps);
 }
 
 double get_framerate() throw()
 {
-	return 100.0 * get_realized_fps() / nominal_rate;
+	return targetfps.get_framerate();
 }
 
 void ack_frame_tick(uint64_t usec) throw()
@@ -171,21 +188,21 @@ void ack_frame_tick(uint64_t usec) throw()
 
 uint64_t to_wait_frame(uint64_t usec) throw()
 {
-	if(!frame_number || target_infinite || turboed)
+	auto target = targetfps.read();
+	if(!frame_number || target.first || turboed)
 		return 0;
 	uint64_t lintime = get_time(usec, true);
 	uint64_t frame_lasted = lintime - frame_start_times[0];
-	uint64_t frame_should_last = 1000000 / (target_fps * nominal_rate / 100);
+	uint64_t frame_should_last = 1000000 / (target.second * nominal_rate / 100);
 	if(frame_lasted >= frame_should_last)
 		return 0;	//We are late.
 	uint64_t history_frames = min(frame_number, static_cast<uint64_t>(HISTORY_FRAMES));
 	uint64_t history_lasted = lintime - frame_start_times[history_frames - 1];
-	uint64_t history_should_last = history_frames * 1000000 / (target_fps * nominal_rate / 100);
+	uint64_t history_should_last = history_frames * 1000000 / (target.second * nominal_rate / 100);
 	if(history_lasted >= history_should_last)
 		return 0;
 	return min(history_should_last - history_lasted, frame_should_last - frame_lasted);
 }
-
 
 uint64_t get_utime()
 {

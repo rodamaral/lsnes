@@ -13,6 +13,18 @@ struct sdl_mutex : public mutex
 	SDL_mutex* m;
 };
 
+struct sdl_rec_mutex : public mutex
+{
+	sdl_rec_mutex() throw(std::bad_alloc);
+	~sdl_rec_mutex() throw();
+	void lock() throw();
+	void unlock() throw();
+	SDL_mutex* m;
+	volatile bool locked;
+	uint32_t owner;
+	uint32_t count;
+};
+
 sdl_mutex::sdl_mutex() throw(std::bad_alloc)
 {
 	m = SDL_CreateMutex();
@@ -21,6 +33,21 @@ sdl_mutex::sdl_mutex() throw(std::bad_alloc)
 }
 
 sdl_mutex::~sdl_mutex() throw()
+{
+	SDL_DestroyMutex(m);
+}
+
+sdl_rec_mutex::sdl_rec_mutex() throw(std::bad_alloc)
+{
+	m = SDL_CreateMutex();
+	if(!m)
+		throw std::bad_alloc();
+	locked = false;
+	owner = 0;
+	count = 0;
+}
+
+sdl_rec_mutex::~sdl_rec_mutex() throw()
 {
 	SDL_DestroyMutex(m);
 }
@@ -35,9 +62,40 @@ void sdl_mutex::unlock() throw()
 	SDL_mutexV(m);
 }
 
+void sdl_rec_mutex::lock() throw()
+{
+	uint32_t our_id = SDL_ThreadID();
+	if(locked && owner == our_id) {
+		//Owned by us, increment lock count.
+		++count;
+		return;
+	}
+	SDL_mutexP(m);
+	locked = true;
+	owner = our_id;
+	count = 1;
+}
+
+void sdl_rec_mutex::unlock() throw()
+{
+	uint32_t our_id = SDL_ThreadID();
+	if(!locked || owner != our_id)
+		std::cerr << "Warning: Trying to unlock recursive lock locked by another thread!" << std::endl;
+	if(!--count) {
+		locked = false;
+		owner = 0;
+		SDL_mutexV(m);
+	}
+}
+
 mutex& mutex::aquire() throw(std::bad_alloc)
 {
 	return *new sdl_mutex;
+}
+
+mutex& mutex::aquire_rec() throw(std::bad_alloc)
+{
+	return *new sdl_rec_mutex;
 }
 
 struct sdl_condition : public condition

@@ -11,6 +11,18 @@ struct wxw_mutex : public mutex
 	wxMutex* m;
 };
 
+struct wxw_rec_mutex : public mutex
+{
+	wxw_rec_mutex() throw(std::bad_alloc);
+	~wxw_rec_mutex() throw();
+	void lock() throw();
+	void unlock() throw();
+	wxMutex* m;
+	volatile bool locked;
+	uint32_t owner;
+	uint32_t count;
+};
+
 wxw_mutex::wxw_mutex() throw(std::bad_alloc)
 {
 	m = new wxMutex();
@@ -31,9 +43,53 @@ void wxw_mutex::unlock() throw()
 	m->Unlock();
 }
 
+wxw_rec_mutex::wxw_rec_mutex() throw(std::bad_alloc)
+{
+	m = new wxMutex();
+	locked = false;
+	owner = 0;
+	count = 0;
+}
+
+wxw_rec_mutex::~wxw_rec_mutex() throw()
+{
+	delete m;
+}
+
+void wxw_rec_mutex::lock() throw()
+{
+	uint32_t our_id = wxThread::GetCurrentId();
+	if(locked && owner == our_id) {
+		//Owned by us, increment lock count.
+		++count;
+		return;
+	}
+	m->Lock();
+	locked = true;
+	owner = our_id;
+	count = 1;
+}
+
+void wxw_rec_mutex::unlock() throw()
+{
+	uint32_t our_id = wxThread::GetCurrentId();
+	if(!locked || owner != our_id)
+		std::cerr << "Warning: Trying to unlock recursive lock locked by another thread!" << std::endl;
+	if(!--count) {
+		locked = false;
+		owner = 0;
+		m->Unlock();
+	}
+}
+
 mutex& mutex::aquire() throw(std::bad_alloc)
 {
 	return *new wxw_mutex;
+}
+
+mutex& mutex::aquire_rec() throw(std::bad_alloc)
+{
+	return *new wxw_rec_mutex;
 }
 
 struct wxw_condition : public condition

@@ -32,6 +32,10 @@ struct mutex
  */
 	static mutex& aquire() throw(std::bad_alloc);
 /**
+ * Create a recursive mutex. The returned mutex can be deleted using delete.
+ */
+	static mutex& aquire_rec() throw(std::bad_alloc);
+/**
  * Destroy a mutex.
  */
 	virtual ~mutex() throw();
@@ -535,6 +539,9 @@ struct platform
 
 	static bool pausing_allowed;
 	static double global_volume;
+	static volatile bool do_exit_dummy_event_loop;
+	static void dummy_event_loop() throw();
+	static void exit_dummy_event_loop() throw();
 };
 
 class modal_pause_holder
