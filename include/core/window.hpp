@@ -539,6 +539,9 @@ struct platform
 
 	static bool pausing_allowed;
 	static double global_volume;
+	static volatile bool do_exit_dummy_event_loop;
+	static void dummy_event_loop() throw();
+	static void exit_dummy_event_loop() throw();
 };
 
 class modal_pause_holder

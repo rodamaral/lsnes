@@ -27,6 +27,7 @@ void bring_app_foreground();
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc);
 void boot_emulator(loaded_rom& rom, moviefile& movie);
 void handle_wx_keyboard(wxKeyEvent& e, bool polarity);
+std::string map_keycode_to_key(int kcode);
 void initialize_wx_keyboard();
 void signal_program_exit();
 void signal_resize_needed();

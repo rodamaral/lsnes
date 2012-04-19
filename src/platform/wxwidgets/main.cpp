@@ -229,6 +229,13 @@ end:
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;
 	}
+
+
+	void* eloop_helper(void* x)
+	{
+		platform::dummy_event_loop();
+		return NULL;
+	}
 }
 
 wxString towxstring(const std::string& str) throw(std::bad_alloc)
@@ -361,7 +368,15 @@ bool lsnes_app::OnInit()
 	messages << "--- End running lsnesrc --- " << std::endl;
 
 	if(settings_mode) {
+		//We got to boot this up quite a bit to get the joystick driver working.
+		//In practicular, we need joystick thread and emulator thread in pause.
+		joystick_thread_handle = &thread::create(joystick_thread, NULL);
+		thread* dummy_loop = &thread::create(eloop_helper, NULL);
 		wxsetingsdialog_display(NULL);
+		platform::exit_dummy_event_loop();
+		joystick_plugin::signal();
+		joystick_thread_handle->join();
+		dummy_loop->join();
 		save_configuration();
 		return false;
 	}

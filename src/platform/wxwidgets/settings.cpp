@@ -46,6 +46,154 @@ const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Expe
 
 namespace
 {
+	class wxdialog_pressbutton;
+	volatile bool keygrab_active = false;
+	std::string pkey;
+	wxdialog_pressbutton* presser = NULL;
+
+	void report_grab_key(const std::string& name);
+
+	class keygrabber : public information_dispatch
+	{
+	public:
+		keygrabber() : information_dispatch("wxwdigets-key-grabber") { keygrab_active = false; }
+		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+			bool polarity, const std::string& name)
+		{
+			if(!keygrab_active)
+				return;
+			if(polarity)
+				pkey = name;
+			else {
+				if(pkey == name) {
+					keygrab_active = false;
+					runuifun([pkey]() { report_grab_key(pkey); });
+				} else
+					pkey = "";
+			}
+		}
+	} keygrabber;
+
+	class wxdialog_pressbutton : public wxDialog
+	{
+	public:
+		wxdialog_pressbutton(wxWindow* parent, const std::string& title);
+		std::string getkey() { return key; }
+		void on_mouse(wxMouseEvent& e);
+		void on_keyboard_up(wxKeyEvent& e);
+		void on_keyboard_down(wxKeyEvent& e);
+		void dismiss_with(const std::string& k);
+	private:
+		bool handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const, bool(wxMouseEvent::*up)()const,
+			const std::string& k, int flag);
+		std::string key;
+		int mouseflag;
+		int lastkbdkey;
+	};
+
+	void report_grab_key(const std::string& name)
+	{
+		presser->dismiss_with(name);
+	}
+
+	int vert_padding = 40;
+	int horiz_padding = 60;
+
+	wxdialog_pressbutton::wxdialog_pressbutton(wxWindow* parent, const std::string& title)
+		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
+	{
+		wxStaticText* t;
+		wxBoxSizer* s2 = new wxBoxSizer(wxVERTICAL);
+		wxPanel* p = new wxPanel(this, wxID_ANY);
+		s2->Add(p, 1, wxGROW);
+		lastkbdkey = -1;
+		mouseflag = 0;
+		Centre();
+		wxFlexGridSizer* s = new wxFlexGridSizer(3, 3, 0, 0);
+		p->SetSizer(s);
+		SetSizer(s2);
+		s->Add(horiz_padding, vert_padding);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(t = new wxStaticText(p, wxID_ANY, wxT("Press the key to assign")), 1, wxGROW);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(0, 0);
+		s->Add(horiz_padding, vert_padding);
+		p->SetFocus();
+		p->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_down), NULL, this);
+		p->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_up), NULL, this);
+		p->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		p->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_down), NULL, this);
+		t->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxdialog_pressbutton::on_keyboard_up), NULL, this);
+		t->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		t->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxdialog_pressbutton::on_mouse), NULL, this);
+		presser = this;
+		keygrab_active = true;
+		s->SetSizeHints(this);
+		Fit();
+	}
+
+	bool wxdialog_pressbutton::handle_mousebtn(wxMouseEvent& e, bool(wxMouseEvent::*down)()const,
+		bool(wxMouseEvent::*up)()const, const std::string& k, int flag)
+	{
+		if((e.*down)())
+			mouseflag = flag;
+		if((e.*up)()) {
+			if(mouseflag == flag) {
+				dismiss_with(k);
+				return true;
+			} else
+				mouseflag = 0;
+		}
+		return false;
+	}
+
+	void wxdialog_pressbutton::on_mouse(wxMouseEvent& e)
+	{
+		handle_mousebtn(e, &wxMouseEvent::LeftDown, &wxMouseEvent::LeftUp, "mouse_left", 1);
+		handle_mousebtn(e, &wxMouseEvent::MiddleDown, &wxMouseEvent::MiddleUp, "mouse_center", 2);
+		handle_mousebtn(e, &wxMouseEvent::RightDown, &wxMouseEvent::RightUp, "mouse_right", 3);
+	}
+
+	void wxdialog_pressbutton::on_keyboard_down(wxKeyEvent& e)
+	{
+		lastkbdkey = e.GetKeyCode();
+		mouseflag = 0;
+	}
+
+	void wxdialog_pressbutton::on_keyboard_up(wxKeyEvent& e)
+	{
+		int kcode = e.GetKeyCode();
+		if(lastkbdkey == kcode) {
+			dismiss_with(map_keycode_to_key(kcode));
+		} else {
+			lastkbdkey = -1;
+			mouseflag = 0;
+		}
+	}
+
+	void wxdialog_pressbutton::dismiss_with(const std::string& k)
+	{
+		if(k == "")
+			return;
+		if(key == "") {
+			keygrab_active = false;
+			key = k;
+			EndModal(wxID_OK);
+		}
+	}
+
 	struct keyentry_mod_data
 	{
 		wxCheckBox* pressed;
@@ -62,6 +210,7 @@ namespace
 		void on_ok(wxCommandEvent& e);
 		void on_cancel(wxCommandEvent& e);
 		void on_clear(wxCommandEvent& e);
+		void on_pressbutton(wxCommandEvent& e);
 		void on_classchange(wxCommandEvent& e);
 		std::string getkey();
 	private:
@@ -73,11 +222,13 @@ namespace
 		void set_class(const std::string& _class);
 		std::map<std::string, keyentry_mod_data> modifiers;
 		std::map<std::string, std::set<std::string>> classes;
+		std::string wtitle;
 		std::string currentclass;
 		wxFlexGridSizer* top_s;
 		wxFlexGridSizer* t_s;
 		wxComboBox* mainclass;
 		wxComboBox* mainkey;
+		wxButton* press;
 		wxButton* ok;
 		wxButton* cancel;
 		wxButton* clear;
@@ -91,6 +242,8 @@ namespace
 		std::vector<wxString> classeslist;
 		wxString emptystring;
 		std::set<std::string> mods, keys;
+
+		wtitle = title;
 
 		cleared = false;
 		std::set<std::string> x;
@@ -133,6 +286,9 @@ namespace
 		top_s->Add(t_s);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->Add(press = new wxButton(this, wxID_OK, wxT("Prompt key")), 0, wxGROW);
+		press->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxdialog_keyentry::on_pressbutton), NULL, this);
 		if(clearable)
 			pbutton_s->Add(clear = new wxButton(this, wxID_OK, wxT("Clear")), 0, wxGROW);
 		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
@@ -277,6 +433,23 @@ namespace
 				i.second.pressed->Disable();
 			}
 		}
+	}
+
+	void wxdialog_keyentry::on_pressbutton(wxCommandEvent& e)
+	{
+		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle);
+		p->ShowModal();
+		std::string key = p->getkey();
+		p->Destroy();
+		std::string _class;
+		for(auto i : classes)
+			if(i.second.count(key))
+				_class = i.first;
+		if(_class == "")
+			return;
+		set_class(_class);
+		mainclass->SetValue(towxstring(_class));
+		mainkey->SetValue(towxstring(key));
 	}
 
 	void wxdialog_keyentry::on_ok(wxCommandEvent& e)
@@ -1519,6 +1692,9 @@ private:
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
 {
+	//Grab keys to prevent the joystick driver from running who knows what commands.
+	keygrabber.grab_keys();
+
 	Centre();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
@@ -1556,6 +1732,7 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
 	hotkeytab->kill_internal_data();
+	keygrabber.ungrab_keys();
 	EndModal(wxID_OK);
 }
 

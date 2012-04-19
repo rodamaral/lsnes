@@ -283,6 +283,17 @@ namespace
 	}
 }
 
+std::string map_keycode_to_key(int kcode)
+{
+	key_entry* k = keys;
+	while(k->name) {
+		if(k->keynum == kcode)
+			return k->name;
+		k++;
+	}
+	return "";
+}
+
 void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 {
 	int mods = e.GetModifiers();
