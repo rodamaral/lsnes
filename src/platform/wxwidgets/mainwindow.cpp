@@ -151,8 +151,8 @@ namespace
 
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
-		platform::queue(keypress(modifier_set(), mouse_x, e.GetX()));
-		platform::queue(keypress(modifier_set(), mouse_y, e.GetY()));
+		platform::queue(keypress(modifier_set(), mouse_x, e.GetX() / horizontal_scale_factor));
+		platform::queue(keypress(modifier_set(), mouse_y, e.GetY() / vertical_scale_factor));
 		if(e.Entering())
 			platform::queue(keypress(modifier_set(), mouse_i, 1));
 		if(e.Leaving())
