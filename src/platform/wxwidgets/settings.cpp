@@ -376,9 +376,11 @@ namespace
 		for(auto i : classes)
 			if(i.second.count(key))
 				_class = i.first;
-		set_class(_class);
-		mainclass->SetValue(towxstring(_class));
-		mainkey->SetValue(towxstring(key));
+		if(_class != "") {
+			set_class(_class);
+			mainclass->SetValue(towxstring(_class));
+			mainkey->SetValue(towxstring(key));
+		}
 		t_s->Layout();
 		top_s->Layout();
 		Fit();
