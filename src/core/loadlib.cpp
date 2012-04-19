@@ -19,6 +19,7 @@ namespace {
 
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
+#include <unistd.h>
 void load_library(const std::string& filename)
 {
 	char buffer[16384];
