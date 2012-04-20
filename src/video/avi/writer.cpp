@@ -38,6 +38,7 @@ void avi_writer::close()
 
 void avi_writer::flush(bool force)
 {
+do_again:
 	if(vqueue.empty())
 		return;
 	bool sbreak = false;
@@ -76,8 +77,10 @@ void avi_writer::flush(bool force)
 		messages << "Start AVI: " << curwidth << "x" << curheight << "@" << curfps_n << "/" << curfps_d
 			<< " to '" << aviname << "'" << std::endl;
 	}
-	if(aviout.readqueue(f.data, aqueue, force))
+	if(aviout.readqueue(f.data, aqueue, force)) {
 		vqueue.pop_front();
+		goto do_again;
+	}
 }
 
 avi_writer::avi_writer(const std::string& _prefix, struct avi_video_codec& _vcodec, struct avi_audio_codec& _acodec,
