@@ -1170,17 +1170,18 @@ public:
 	void on_primary(wxCommandEvent& e);
 	void on_secondary(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
-	void kill_internal_data();
 private:
-	std::map<std::string, wxTreeItemId> items;
-	std::map<std::string, inverse_key*> realitems;
-	std::map<std::string, std::string> leafname;
-	wxTreeItemId true_root;
-	wxTreeCtrl* select;
+	wxListBox* category;
+	wxListBox* control;
 	wxButton* pri_button;
 	wxButton* sec_button;
+	std::map<int, std::string> categories;
+	std::map<std::pair<int, int>, std::string> itemlabels;
+	std::map<std::pair<int, int>, std::string> items;
+	std::map<std::string, inverse_key*> realitems;
+	void change_category(int cat);
 	void refresh();
-	std::string selected();
+	std::pair<std::string, std::string> splitkeyname(const std::string& kn);
 };
 
 wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
@@ -1188,10 +1189,11 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 {
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
+	wxString empty[1];
 
-	top_s->Add(select = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTR_HAS_BUTTONS |
-		wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
-	select->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED, wxCommandEventHandler(wxeditor_esettings_hotkeys::on_change),
+	top_s->Add(category = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1, wxGROW);
+	top_s->Add(control = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1, wxGROW);
+	category->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(wxeditor_esettings_hotkeys::on_change),
 		NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -1204,37 +1206,64 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 		wxCommandEventHandler(wxeditor_esettings_hotkeys::on_secondary), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
-	items[""] = select->AddRoot(wxT("<root>"));
-
 	refresh();
-	wxCommandEvent e;
-	on_change(e);
 	top_s->SetSizeHints(this);
 	Fit();
 }
 
+std::pair<std::string, std::string> wxeditor_esettings_hotkeys::splitkeyname(const std::string& kn)
+{
+	std::string tmp = kn;
+	size_t split = 0;
+	for(size_t itr = 0; itr < tmp.length() - 2 && itr < tmp.length(); itr++) {
+		unsigned char ch1 = tmp[itr];
+		unsigned char ch2 = tmp[itr + 1];
+		unsigned char ch3 = tmp[itr + 2];
+		if(ch1 == 0xE2 && ch2 == 0x80 && ch3 == 0xA3)
+			split = itr;
+	}
+	if(split)
+		return std::make_pair(tmp.substr(0, split), tmp.substr(split + 3));
+	else
+		return std::make_pair("(Uncategorized)", tmp);
+}
+
 void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 {
-	bool enable = (selected() != "");
-	pri_button->Enable(enable);
-	sec_button->Enable(enable);
+	int c = category->GetSelection();
+	if(c == wxNOT_FOUND) {
+		category->SetSelection(0);
+		change_category(0);
+	} else
+		change_category(c);
+}
+
+void wxeditor_esettings_hotkeys::change_category(int cat)
+{
+	std::map<int, std::string> n;
+	for(auto i : itemlabels)
+		if(i.first.first == cat)
+			n[i.first.second] = i.second;
+	
+	for(int i = 0; i < control->GetCount(); i++)
+		if(n.count(i))
+			control->SetString(i, towxstring(n[i]));
+		else
+			control->Delete(i--);
+	for(auto i : n)
+		if(i.first >= control->GetCount())
+			control->Append(towxstring(n[i.first]));
+	if(control->GetSelection() == wxNOT_FOUND)
+		control->SetSelection(0);
 }
 
 wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
 {
 }
 
-void wxeditor_esettings_hotkeys::kill_internal_data()
-{
-	items.clear();
-	realitems.clear();
-	leafname.clear();
-	true_root = wxTreeItemId();
-}
-
 void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 {
-	std::string name = selected();
+	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
 	if(name == "") {
 		refresh();
 		return;
@@ -1257,15 +1286,15 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 			ik->set(key, true);
 		else
 			ik->clear(true);
-		refresh();
+		
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 {
-	std::string name = selected();
+	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
 	if(name == "") {
 		refresh();
 		return;
@@ -1288,88 +1317,54 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 			ik->set(key, false);
 		else
 			ik->clear(false);
-		refresh();
 	} catch(...) {
-		refresh();
 	}
+	refresh();
 }
 
 void wxeditor_esettings_hotkeys::refresh()
 {
-	std::set<std::string> closure_additional;
-	std::map<std::string, inverse_key*> keyorder;
 	std::map<inverse_key*, std::pair<std::string, std::string>> data;
+	std::map<std::string, int> cat_set;
+	std::map<std::string, int> cat_assign;
+	realitems.clear();
 	auto x = inverse_key::get_ikeys();
 	for(auto y : x) {
-		keyorder[y->getname()] = y;
+		realitems[y->getname()] = y;
 		data[y] = std::make_pair(y->get(true), y->get(false));
 	}
-	//Close keyorder with respect to parents.
-	for(auto i : keyorder) {
-		std::string tmp = i.first;
-		for(size_t itr = 0; itr < tmp.length() - 2 && itr < tmp.length(); itr++) {
-			unsigned char ch1 = tmp[itr];
-			unsigned char ch2 = tmp[itr + 1];
-			unsigned char ch3 = tmp[itr + 2];
-			if(ch1 == 0xE2 && ch2 == 0x80 && ch3 == 0xA3) {
-				closure_additional.insert(tmp.substr(0, itr));
-			}
-		}
-	}
-	for(auto i : closure_additional)
-		if(!keyorder.count(i)) {
-			keyorder[i] = NULL;
-		}
-	//Then add the needed entries to the tree. Thanks to the ordering, presence of parent before child is always
-	//guaranteed.
-	for(auto i : keyorder) {
-		if(!items.count(i.first)) {
-			//Not found, add.
-			//Find the parent name.
-			std::string tmp = i.first;
-			std::string parent = "";
-			std::string leaf = i.first;
-			for(size_t itr = 0; itr < tmp.length() - 2 && itr < tmp.length(); itr++) {
-				unsigned char ch1 = tmp[itr];
-				unsigned char ch2 = tmp[itr + 1];
-				unsigned char ch3 = tmp[itr + 2];
-				if(ch1 == 0xE2 && ch2 == 0x80 && ch3 == 0xA3) {
-					parent = tmp.substr(0, itr);
-					leaf = tmp.substr(itr + 3);
-				}
-			}
-			items[i.first] = select->AppendItem(items[parent], towxstring(leaf));
-			leafname[i.first] = leaf;
-		}
-		if(i.second) {
-			//Real, set the keys.
-			realitems[i.first] = i.second;
-			std::string text = leafname[i.first];
-			if(data[i.second].first == "")
-				text = text + " (not set)";
-			else if(data[i.second].second == "")
-				text = text + " (" + data[i.second].first + ")";
-			else
-				text = text + " (" + data[i.second].first + " or " + data[i.second].second + ")";
-			select->SetItemText(items[i.first], towxstring(text));
-		}
-	}
-	select->Refresh();
-}
 
-std::string wxeditor_esettings_hotkeys::selected()
-{
-	wxTreeItemId sel = select->GetSelection();
-	std::string item;
-	bool found = false;
-	for(auto i : items)
-		if(i.second == sel) {
-			found = true;
-			item = i.first;
+	int cidx = 0;
+	for(auto i : realitems) {
+		std::pair<std::string, std::string> j = splitkeyname(i.first);
+		if(!cat_set.count(j.first)) {
+			categories[cidx] = j.first;
+			cat_assign[j.first] = 0;
+			cat_set[j.first] = cidx++;
 		}
-	if(!found || !realitems.count(item))
-		return "";
-	return item;
+		items[std::make_pair(cat_set[j.first], cat_assign[j.first])] = i.first;
+		std::string text = j.second;
+		if(data[i.second].first == "")
+			text = text + " (not set)";
+		else if(data[i.second].second == "")
+			text = text + " (" + data[i.second].first + ")";
+		else
+			text = text + " (" + data[i.second].first + " or " + data[i.second].second + ")";
+		itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
+		cat_assign[j.first]++;
+	}
+
+	for(int i = 0; i < category->GetCount(); i++)
+		if(categories.count(i))
+			category->SetString(i, towxstring(categories[i]));
+		else
+			category->Delete(i--);
+	for(auto i : categories)
+		if(i.first >= category->GetCount())
+			category->Append(towxstring(categories[i.first]));
+	if(category->GetSelection() == wxNOT_FOUND)
+		category->SetSelection(0);
+	change_category(category->GetSelection());
 }
 
 class wxeditor_esettings_bindings : public wxPanel
@@ -1733,7 +1728,6 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
-	hotkeytab->kill_internal_data();
 	keygrabber.ungrab_keys();
 	EndModal(wxID_OK);
 }
