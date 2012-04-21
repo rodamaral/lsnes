@@ -3026,3 +3026,25 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets (wxJoystick) joystick support
 
+15.57 rr1-delta7
+
+• Lots of internal joystick refactoring
+
+• Evdev: Add mapping for BTN_TOOL_QUINTTAP
+
+• Wxwidgets: Settings mode (open settings without ROM)
+
+• Wxwidgets: Prompt key to use option
+
+• Wxwidgets: Fix crash if key goes away underneath
+
+• Wxwidgets: Fix mouse position in presence of scaling
+
+• AVI dumper: Mode 4 (high-quality resampling to common rate 
+  using SRC)
+
+• Wxwidgets: Redesign hotkeys dialog to avoid tree control (tree 
+  control doesn't seem to work well on WinXP)
+
+• Start paused option.
+
