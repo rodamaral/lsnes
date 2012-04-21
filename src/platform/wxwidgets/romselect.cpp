@@ -972,7 +972,9 @@ void wxwin_project::on_load(wxCommandEvent& e)
 			mov.start_paused = start_pause->GetValue();
 			boot_emulator(*our_rom, mov);
 		} else {
-			boot_emulator(*our_rom, *new moviefile(make_movie()));
+			moviefile& mov = *new moviefile(make_movie());
+			mov.start_paused = start_pause->GetValue();
+			boot_emulator(*our_rom, mov);
 		}
 		Destroy();
 	} catch(std::exception& e) {

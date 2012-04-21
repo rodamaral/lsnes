@@ -6135,5 +6135,46 @@ More save slots support
 Wxwidgets (wxJoystick) joystick support
 \end_layout
 
+\begin_layout Subsection
+rr1-delta7
+\end_layout
+
+\begin_layout Itemize
+Lots of internal joystick refactoring
+\end_layout
+
+\begin_layout Itemize
+Evdev: Add mapping for BTN_TOOL_QUINTTAP
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Settings mode (open settings without ROM)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Prompt key to use option
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix crash if key goes away underneath
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix mouse position in presence of scaling
+\end_layout
+
+\begin_layout Itemize
+AVI dumper: Mode 4 (high-quality resampling to common rate using SRC)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Redesign hotkeys dialog to avoid tree control (tree control doesn't
+ seem to work well on WinXP)
+\end_layout
+
+\begin_layout Itemize
+Start paused option.
+\end_layout
+
 \end_body
 \end_document
