@@ -365,6 +365,17 @@ Default is to assume accuracy core.
 
 \end_deeper
 \begin_layout Itemize
+SECRET_RABBIT_CODE=<anything>
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Signals that SRC (a.k.a.
+ libsamplerate) should be used for high-quality samplerate conversions.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
 JOYSTICK=<implementation>
 \end_layout
 

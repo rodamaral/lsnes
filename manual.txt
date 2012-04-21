@@ -144,6 +144,11 @@ Building is via makefile, the following options are available:
 
   – Default is to assume accuracy core.
 
+• SECRET_RABBIT_CODE=<anything>
+
+  – Signals that SRC (a.k.a. libsamplerate) should be used for 
+    high-quality samplerate conversions.
+
 • JOYSTICK=<implementation>
 
   – Set joystick implementation. Valid values are:
