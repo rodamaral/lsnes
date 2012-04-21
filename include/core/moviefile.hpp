@@ -165,12 +165,15 @@ struct moviefile
  */
 	std::string prefix;
 /**
+ * Start paused flag.
+ */
+	bool start_paused;
+/**
  * Get number of frames in movie.
  *
  * returns: Number of frames.
  */
 	uint64_t get_frame_count() throw();
-
 /**
  * Get length of the movie
  *

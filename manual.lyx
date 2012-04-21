@@ -582,6 +582,14 @@ Session options
 \end_layout
 
 \begin_layout Subsubsection
+--pause
+\end_layout
+
+\begin_layout Standard
+Start paused
+\end_layout
+
+\begin_layout Subsubsection
 <filename> (lsnes/SDL, lsnes-avidump, movieinfo)
 \end_layout
 

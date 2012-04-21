@@ -306,10 +306,12 @@ moviefile::moviefile() throw(std::bad_alloc)
 	is_savestate = false;
 	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
+	start_paused = false;
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
 {
+	start_paused = false;
 	force_corrupt = false;
 	is_savestate = false;
 	std::string tmp;

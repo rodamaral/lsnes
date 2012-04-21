@@ -474,6 +474,7 @@ private:
 	std::map<std::string, wxButton*> sram_choosers;
 	wxComboBox* controller1type;
 	wxComboBox* controller2type;
+	wxCheckBox* start_pause;
 	wxTextCtrl* projectname;
 	wxTextCtrl* prefix;
 	wxTextCtrl* rtc_sec;
@@ -857,13 +858,16 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 
 	//The load page.
 	wxSizer* load_sizer = new wxFlexGridSizer(1, 3, 0, 0);
-	load_panel->SetSizer(load_sizer);
+	wxSizer* load_sizer2 = new wxBoxSizer(wxVERTICAL);
+	load_panel->SetSizer(load_sizer2);
+	load_sizer2->Add(load_sizer, 0, wxGROW);
 	load_sizer->Add(new wxStaticText(load_panel, wxID_ANY, wxT("File to load:")), 0, wxGROW);
 	load_sizer->Add(savefile = new wxTextCtrl(load_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, -1)),
 		1, wxGROW);
 	savefile->SetDropTarget(new textboxloadfilename(savefile));
 
 	load_sizer->Add(ask_savefile = new wxButton(load_panel, ASK_FILENAME_BUTTON, wxT("Pick")), 0, wxGROW);
+	load_sizer2->Add(start_pause = new wxCheckBox(load_panel, wxID_ANY, wxT("Start paused")), 0, wxGROW);
 	savefile->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxwin_project::on_filename_change), NULL, this);
 	ask_savefile->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -1034,7 +1038,9 @@ void wxwin_project::on_load(wxCommandEvent& e)
 {
 	try {
 		if(load_file) {
-			boot_emulator(*our_rom, *new moviefile(tostdstring(savefile->GetValue())));
+			moviefile& mov = *new moviefile(tostdstring(savefile->GetValue()));
+			mov.start_paused = start_pause->GetValue();
+			boot_emulator(*our_rom, mov);
 		} else {
 			boot_emulator(*our_rom, *new moviefile(make_movie()));
 		}
