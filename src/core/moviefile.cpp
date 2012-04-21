@@ -307,10 +307,12 @@ moviefile::moviefile() throw(std::bad_alloc)
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	main_checksums.resize(27);
 	markup_checksums.resize(27);
+	start_paused = false;
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
 {
+	start_paused = false;
 	force_corrupt = false;
 	is_savestate = false;
 	std::string tmp;

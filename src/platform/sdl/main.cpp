@@ -199,6 +199,9 @@ int main(int argc, char** argv)
 			}
 		if(!tried)
 			movie = generate_movie_template(cmdline, r);
+		for(auto i = cmdline.begin(); i != cmdline.end(); i++)
+			if(*i == "--pause")
+				movie.start_paused = true;
 		sdl_main_loop(r, movie);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

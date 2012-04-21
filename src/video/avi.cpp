@@ -6,6 +6,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "lua/lua.hpp"
+#include "library/minmax.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
 
@@ -15,21 +16,37 @@
 #include <cmath>
 #include <sstream>
 #include <zlib.h>
+#ifdef WITH_SECRET_RABBIT_CODE
+#include <samplerate.h>
+#endif
+#define RESAMPLE_BUFFER 1024
 
-#define CSCD_PCM "cscd/pcm"
-#define UNCOMPRESSED_PCM "uncompressed/pcm"
+
 
 namespace
 {
 	uint32_t rates[] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
 		128000, 176400, 192000};
 
+	uint32_t topowerof2(uint32_t base)
+	{
+		if(base & (base - 1) == 0)
+			return base;	//Already power of two.
+		base |= (base >> 16);
+		base |= (base >> 8);
+		base |= (base >> 4);
+		base |= (base >> 2);
+		base |= (base >> 1);
+		return base + 1;
+	}
+
 	uint32_t get_rate(uint32_t n, uint32_t d, unsigned mode)
 	{
 		if(mode == 0) {
 			auto best = std::make_pair(1e99, static_cast<size_t>(0));
 			for(size_t i = 0; i < sizeof(rates) / sizeof(rates[0]); i++)
-				best = min(best, std::make_pair(fabs(log(static_cast<double>(d) * rates[i] / n)), i));
+				best = ::min(best, std::make_pair(fabs(log(static_cast<double>(d) * rates[i] / n)),
+					i));
 			return rates[best.second];
 		} else if(mode == 1) {
 			return static_cast<uint32_t>(n / d);
@@ -44,6 +61,16 @@ namespace
 				y = t;
 			}
 			return static_cast<uint32_t>(n / x);
+		} else if(mode == 4) {
+			uint32_t base = static_cast<uint32_t>((n + d - 1) / d);
+			//Handle large values specially.
+			if(base > 0xFA000000U)	return 0xFFFFFFFFU;
+			if(base > 0xBB800000U)	return 0xFA000000U;
+			if(base > 0xAC440000U)	return 0xBB800000U;
+			uint32_t base_A = topowerof2((base + 7999) / 8000);
+			uint32_t base_B = topowerof2((base + 11024) / 11025);
+			uint32_t base_C = topowerof2((base + 11999) / 12000);
+			return min(base_A * 8000, min(base_B * 11025, base_C * 12000));
 		}
 	}
 
@@ -53,7 +80,11 @@ namespace
 	numeric_setting dlb("avi-left-border", 0, 8191, 0);
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
+#ifdef WITH_SECRET_RABBIT_CODE
+	numeric_setting soundrate_setting("avi-soundrate", 0, 4, 0);
+#else
 	numeric_setting soundrate_setting("avi-soundrate", 0, 3, 0);
+#endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)
 	{
@@ -182,11 +213,11 @@ namespace
 	class avi_avsnoop : public information_dispatch
 	{
 	public:
-		avi_avsnoop(avi_info& info) throw(std::bad_alloc)
+		avi_avsnoop(avi_info& info) throw(std::bad_alloc, std::runtime_error)
 			: information_dispatch("dump-avi-int")
 		{
 			enable_send_sound();
-			info.audio_chans = 2;
+			chans = info.audio_chans = 2;
 			soundrate = get_sound_rate();
 			audio_record_rate = info.sample_rate = get_rate(soundrate.first, soundrate.second,
 				soundrate_setting);
@@ -195,10 +226,32 @@ namespace
 				soundrate.second, 2);
 			dcounter = 0;
 			have_dumped_frame = false;
+			resampler = NULL;
+			if(soundrate_setting == 4) {
+				double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
+				sbuffer.resize(RESAMPLE_BUFFER * chans);
+				sbuffer2.resize(RESAMPLE_BUFFER * chans);
+				fbuffer.resize((RESAMPLE_BUFFER * ratio + 128) * chans + 128);
+				fbuffer2.resize((RESAMPLE_BUFFER * ratio + 128) * chans + 128);
+				sbuffer_fill = 0;
+#ifdef WITH_SECRET_RABBIT_CODE
+				int errc = 0;
+				resampler = src_new(SRC_SINC_BEST_QUALITY, info.audio_chans, &errc);
+				if(errc)
+					throw std::runtime_error(std::string("Error initing libsamplerate: ") +
+						src_strerror(errc));
+#else
+				throw std::runtime_error("HQ sample rate conversion not available");
+#endif
+			}
 		}
 
 		~avi_avsnoop() throw()
 		{
+#ifdef WITH_SECRET_RABBIT_CODE
+			if(resampler)
+				src_delete((SRC_STATE*)resampler);
+#endif
 			delete worker;
 			delete soxdumper;
 		}
@@ -218,6 +271,14 @@ namespace
 
 		void on_sample(short l, short r)
 		{
+			if(resampler) {
+				if(!have_dumped_frame)
+					return;
+				sbuffer[sbuffer_fill++] = l;
+				sbuffer[sbuffer_fill++] = r;
+				forward_samples(false);
+				return;
+			}
 			short x[2];
 			x[0] = l;
 			x[1] = r;
@@ -234,8 +295,10 @@ namespace
 
 		void on_dump_end()
 		{
-			if(worker)
+			if(worker) {
+				forward_samples(true);
 				worker->request_quit();
+			}
 			if(soxdumper)
 				soxdumper->close();
 			delete worker;
@@ -250,12 +313,47 @@ namespace
 		}
 		avi_worker* worker;
 	private:
+		void forward_samples(bool eos)
+		{
+			if(!eos && sbuffer_fill < sbuffer.size())
+				return;
+#ifdef WITH_SECRET_RABBIT_CODE
+			double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
+			SRC_DATA block;
+			src_short_to_float_array(&sbuffer[0], &sbuffer2[0], sbuffer_fill);
+			block.data_in = &sbuffer2[0];
+			block.data_out = &fbuffer2[0];
+			block.input_frames = sbuffer_fill / chans;
+			block.input_frames_used = 0;
+			block.output_frames = fbuffer2.size() / chans;
+			block.output_frames_gen = 0;
+			block.end_of_input = eos ? 1 : 0;
+			block.src_ratio = ratio;
+			int errc = src_process((SRC_STATE*)resampler, &block);
+			if(errc)
+				throw std::runtime_error(std::string("Error using libsamplerate: ") +
+					src_strerror(errc));
+			src_float_to_short_array(&fbuffer2[0], &fbuffer[0], block.output_frames_gen * chans);
+			worker->queue_audio(&fbuffer[0], block.output_frames_gen * chans);
+			if(block.input_frames_used * chans < sbuffer_fill)
+				memmove(&sbuffer[0], &sbuffer[block.output_frames_gen * chans], sbuffer_fill -
+					block.input_frames_used * chans);
+			sbuffer_fill -= block.input_frames_used * chans;
+#endif
+		}
 		sox_dumper* soxdumper;
 		screen<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		std::pair<uint32_t, uint32_t> soundrate;
 		uint32_t audio_record_rate;
+		void* resampler;
+		std::vector<short> sbuffer;
+		std::vector<float> sbuffer2;
+		std::vector<float> fbuffer2;
+		std::vector<short> fbuffer;
+		size_t sbuffer_fill;
+		uint32_t chans;
 	};
 
 	avi_avsnoop* vid_dumper;

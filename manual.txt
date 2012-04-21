@@ -144,6 +144,11 @@ Building is via makefile, the following options are available:
 
   – Default is to assume accuracy core.
 
+• SECRET_RABBIT_CODE=<anything>
+
+  – Signals that SRC (a.k.a. libsamplerate) should be used for 
+    high-quality samplerate conversions.
+
 • JOYSTICK=<implementation>
 
   – Set joystick implementation. Valid values are:
@@ -242,12 +247,16 @@ Force ROM to be considered NTSC-only.
 
 4.2 Session options
 
-4.2.1 <filename> (lsnes/SDL, lsnes-avidump, movieinfo)
+4.2.1 --pause
+
+Start paused
+
+4.2.2 <filename> (lsnes/SDL, lsnes-avidump, movieinfo)
 
 Load <filename> as movie or savestate file. All other session 
 options are ignored.
 
-4.2.2 --port1=<device> (lsnes/SDL)
+4.2.3 --port1=<device> (lsnes/SDL)
 
 Set type of port1. Valid values are:
 
@@ -260,7 +269,7 @@ Set type of port1. Valid values are:
 
 • mouse: Mouse.
 
-4.2.3 --port2=<type> (lsnes/SDL)
+4.2.4 --port2=<type> (lsnes/SDL)
 
 Set type of port2. Valid values are:
 
@@ -278,29 +287,29 @@ Set type of port2. Valid values are:
 
 • justifiers: Two justifiers
 
-4.2.4 --gamename=<name> (lsnes/SDL)
+4.2.5 --gamename=<name> (lsnes/SDL)
 
 Set the name of game to <name>. Default is blank.
 
-4.2.5 --author=<name> (lsnes/SDL)
+4.2.6 --author=<name> (lsnes/SDL)
 
 Add author with full name of <name> (no nickname).
 
-4.2.6 --author=|<name> (lsnes/SDL)
+4.2.7 --author=|<name> (lsnes/SDL)
 
 Add author with nickname of <name> (no full name).
 
-4.2.7 --author=<fullname>|<nickname> (lsnes/SDL)
+4.2.8 --author=<fullname>|<nickname> (lsnes/SDL)
 
 Add author with full name of <fullname> and nickname of 
 <nickname>.
 
-4.2.8 --rtc-second=<value> (lsnes/SDL)
+4.2.9 --rtc-second=<value> (lsnes/SDL)
 
 Set RTC second (0 is 1st January 1970 00:00:00Z). Default is 
 1,000,000,000.
 
-4.2.9 --rtc-subsecond=<value> (lsnes/SDL)
+4.2.10 --rtc-subsecond=<value> (lsnes/SDL)
 
 Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 

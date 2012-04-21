@@ -846,8 +846,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	lua_callback_startup();
 
-	platform::set_paused(false);
-	amode = ADVANCE_AUTO;
+	platform::set_paused(initial.start_paused);
+	amode = initial.start_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
