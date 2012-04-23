@@ -13,13 +13,18 @@ namespace
 	numeric_setting bwv("avi-zmbv-blockw", 8, 64, 16);
 	numeric_setting bhv("avi-zmbv-blockh", 8, 64, 16);
 
+	//Motion vector.
 	struct motion
 	{
+		//X motion (positive is to left), -64...63.
 		int dx;
+		//Y motion (positive it to up), -64...63.
 		int dy;
+		//How bad the vector is. 0 means the vector is perfect (no residual).
 		uint32_t p;
 	};
 
+	//The main ZMBV decoder state.
 	struct avi_codec_zmbv : public avi_video_codec
 	{
 		avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh);
@@ -29,46 +34,58 @@ namespace
 		bool ready();
 		avi_packet getpacket();
 	private:
+		//The current pending packet, if any.
 		avi_packet out;
+		//False if there is a pending packet, true if ready to take a frame.
 		bool ready_flag;
+		//The size of supplied frames.
 		unsigned iwidth;
 		unsigned iheight;
+		//The size of written frames.
 		unsigned ewidth;
 		unsigned eheight;
+		//P-frames written since last I-frame.
 		unsigned pframes;
+		//Maximum number of P-frames to write in sequence.
 		unsigned max_pframes;
+		//Compression level to use.
 		unsigned level;
-
-		//Size of block.
+		//Size of one block.
 		uint32_t bw;
 		uint32_t bh;
-		//Entropy estimator table.
-		std::vector<uint32_t> entropy_tab;
-		//Temporary scratch memory (one block).
-		std::vector<uint32_t> tmp;
-		//Motion vector buffer.
+		//Motion vector buffer, one motion vector for each block, in left-to-right, top-to-bottom order.
 		std::vector<motion> mv;
-		//Previous&Current frame.
-		std::vector<uint32_t> current;
-		std::vector<uint32_t> prev;
-		//Compression packet buffer and size.
-		std::vector<char> diff;
-		size_t diffsize;
+		//Pixel buffer (2 full frames and one block).
+		std::vector<uint32_t> pixbuf;
+		//Current frame pointer.
+		uint32_t* current_frame;
+		//Previous frame pointer.
+		uint32_t* prev_frame;
+		//Scratch block pointer.
+		uint32_t* scratch;
+		//Output buffer. Sufficient space to hold both compressed and uncompressed data.
+		std::vector<char> outbuffer;
+		//Output scratch memory.
+		char* oscratch;
+		//The actual output buffer. Pointer, size and ued.
+		char* outbuf;
+		size_t outbuf_size;
+		size_t outbuf_used;
+		//Zlib state.
 		z_stream zstream;
-		//Output packet buffer and size.
-		std::vector<char> output;
-		size_t output_size;
 
-		//Motion vector penalty.
-		uint32_t mv_penalty(uint32_t* data, int32_t bx, int32_t by, int dx, int dy);
-		//Do motion detection.
-		void mv_detect(uint32_t* data, int32_t bx, int32_t by, motion& m, motion t);
-		//Serialize to difference buffer.
-		void serialize_frame(bool keyframe, uint32_t* data);
-		//Take compression packet buffer and write output packet buffer.
-		void compress_packet(bool keyframe);
+		//Compute penalty for motion vector (dx, dy) on block with upper-left corner at (bx, by).
+		uint32_t mv_penalty(int32_t bx, int32_t by, int dx, int dy);
+		//Do motion detection for block with upper-left corner at (bx, by). M is filled with the resulting
+		//motion vector and t is initial guess for the motion vector.
+		void mv_detect(int32_t bx, int32_t by, motion& m, motion t);
+		//Serialize movement vectors and furrent frame data to output buffer. If keyframe is true, keyframe is
+		//written, otherwise non-keyframe.
+		void serialize_frame(bool keyframe);
 	};
 
+	//Intersect the range [x, x+b) with [0, w). start is where the range starts, size is size of range,
+	//and offset is number of numbers clipped from low bound.
 	void rbound(int32_t x, int32_t w, uint32_t b, int32_t& start, int32_t& offset, int32_t& size)
 	{
 		start = x;
@@ -86,6 +103,7 @@ namespace
 		start = x + offset;
 	}
 
+	//Compute XOR of blocks.
 	void xor_blocks(uint32_t* target, uint32_t* src1, int32_t src1x, int32_t src1y,
 		int32_t src1w, int32_t src1h, uint32_t* src2, int32_t src2x, int32_t src2y,
 		int32_t src2w, int32_t src2h, uint32_t bw, uint32_t bh)
@@ -121,89 +139,87 @@ namespace
 				t2ptr[y * bw + x] ^= s2ptr[y * src2w + x];
 	}
 
-	void entropy_init(std::vector<uint32_t>& mem, uint32_t bw, uint32_t bh)
+	//Estimate entropy.
+	uint32_t entropy(uint32_t* data, uint32_t bw, uint32_t bh)
 	{
-		size_t bytes = 4 * bw * bh;
-		mem.resize(bytes + 1);
-		mem[0] = 0;
-		mem[bytes] = 0;
-		double M0 = log(bytes);
-		double M1 = 700000000.0 / bytes;
-		for(size_t i = 1; i < bytes; i++)
-			mem[i] = M1 * (M0 - log(i));
-	}
-
-	uint32_t entropy(std::vector<uint32_t>& mem, uint32_t* data)
-	{
+		//Because XORs are essentially random, calculate the number of non-zeroes to ascertain badness.
 		uint8_t* _data = reinterpret_cast<uint8_t*>(data);
 		uint32_t e = 0;
-		size_t imax = mem.size() - 1;
+		size_t imax = 4 * bw * bh;
 		for(size_t i = 0; i < imax; i++)
 			if(_data[i])
 				e++;
 		return e;
 	}
 
-	uint32_t avi_codec_zmbv::mv_penalty(uint32_t* data, int32_t bx, int32_t by, int dx, int dy)
+	uint32_t avi_codec_zmbv::mv_penalty(int32_t bx, int32_t by, int dx, int dy)
 	{
-		xor_blocks(&tmp[0], data, bx, by, ewidth, eheight, &prev[0], bx + dx, by + dy, ewidth, eheight, bw,
-			bh);
-		return entropy(entropy_tab, &tmp[0]);
+		//Penalty is entropy estimate of resulting block.
+		xor_blocks(scratch, current_frame, bx, by, ewidth, eheight, prev_frame, bx + dx, by + dy, ewidth,
+			eheight, bw, bh);
+		return entropy(scratch, bw, bh);
 	}
 
-	void avi_codec_zmbv::serialize_frame(bool keyframe, uint32_t* data)
+	void avi_codec_zmbv::serialize_frame(bool keyframe)
 	{
-		if(keyframe) {
-			memcpy(&diff[0], data, 4 * ewidth * eheight);
-			diffsize = 4 * ewidth * eheight;
-			return;
-		}
-		uint32_t nhb = (ewidth + bw - 1) / bw;
-		uint32_t nvb = (eheight + bh - 1) / bh;
-		uint32_t nb = nhb * nvb;
+		uint32_t nhb, nvb, nb;
 		size_t osize = 0;
-		for(size_t i = 0; i < nb; i++) {
-			diff[osize++] = (mv[i].dx << 1) | (mv[i].p ? 1 : 0);
-			diff[osize++] = (mv[i].dy << 1);
+		if(keyframe) {
+			//Just copy the frame data and compress that.
+			memcpy(oscratch, current_frame, 4 * ewidth * eheight);
+			osize = 4 * ewidth * eheight;
+			goto compress;
 		}
+		//Number of blocks.
+		nhb = (ewidth + bw - 1) / bw;
+		nvb = (eheight + bh - 1) / bh;
+		nb = nhb * nvb;
+		osize = 0;
+		//Serialize the motion vectors.
+		for(size_t i = 0; i < nb; i++) {
+			oscratch[osize++] = (mv[i].dx << 1) | (mv[i].p ? 1 : 0);
+			oscratch[osize++] = (mv[i].dy << 1);
+		}
+		//Pad to multiple of 4 bytes.
 		while(osize % 4)
-			diff[osize++] = 0;
+			oscratch[osize++] = 0;
+		//Serialize the residuals.
 		for(size_t i = 0; i < nb; i++) {
 			if(mv[i].p == 0)
 				continue;
 			int32_t bx = (i % nhb) * bw;
 			int32_t by = (i / nhb) * bh;
-			xor_blocks(reinterpret_cast<uint32_t*>(&diff[osize]), data, bx, by, ewidth, eheight, &prev[0],
-				bx + mv[i].dx, by + mv[i].dy, ewidth, eheight, bw, bh);
+			xor_blocks(reinterpret_cast<uint32_t*>(oscratch + osize), current_frame, bx, by, ewidth,
+				eheight, prev_frame, bx + mv[i].dx, by + mv[i].dy, ewidth, eheight, bw, bh);
 			osize += 4 * bw * bh;
 		}
-		diffsize = osize;
-	}
+compress:
+		//Compress the output data.
+		zstream.next_in = reinterpret_cast<uint8_t*>(oscratch);
+		zstream.avail_in = osize;
 
-	void avi_codec_zmbv::compress_packet(bool keyframe)
-	{
-		size_t osize = 0;
-		output[osize++] = keyframe ? 1 : 0;	//Indicate keyframe/not.
+		osize = 0;
+		outbuf[osize++] = keyframe ? 1 : 0;	//Indicate keyframe/not.
 		if(keyframe) {
-			output[osize++] = 0;		//Version 0.1
-			output[osize++] = 1;
-			output[osize++] = 1;		//Zlib compression.
-			output[osize++] = 8;		//32 bit.
-			output[osize++] = bw;		//Block size.
-			output[osize++] = bh;
+			//Write the keyframe header.
+			outbuf[osize++] = 0;		//Version 0.1
+			outbuf[osize++] = 1;
+			outbuf[osize++] = 1;		//Zlib compression.
+			outbuf[osize++] = 8;		//32 bit.
+			outbuf[osize++] = bw;		//Block size.
+			outbuf[osize++] = bh;
 			deflateReset(&zstream);		//Reset the zlib context.
 		}
-		zstream.next_in = reinterpret_cast<uint8_t*>(&diff[0]);
-		zstream.avail_in = diffsize;
-		zstream.next_out = reinterpret_cast<uint8_t*>(&output[osize]);
-		zstream.avail_out = output.size() - osize;
+		zstream.next_out = reinterpret_cast<uint8_t*>(&outbuf[osize]);
+		zstream.avail_out = outbuf_size - osize;
 		if(deflate(&zstream, Z_SYNC_FLUSH) != Z_OK)
 			throw std::runtime_error("Zlib error while compressing data");
 		if(zstream.avail_in || !zstream.avail_out)
 			throw std::runtime_error("Buffer overrun while compressing data");
-		output_size = output.size() - zstream.avail_out;
+		outbuf_used = outbuf_size - zstream.avail_out;
 	}
 
+	//If candidate is better than best, update best. Returns true if ideal has been reached, else false.
 	bool update_best(motion& best, motion& candidate)
 	{
 		if(candidate.p < best.p)
@@ -211,28 +227,31 @@ namespace
 		return (best.p == 0);
 	}
 
-	void avi_codec_zmbv::mv_detect(uint32_t* data, int32_t bx, int32_t by, motion& m, motion t)
+	void avi_codec_zmbv::mv_detect(int32_t bx, int32_t by, motion& m, motion t)
 	{
+		//Try the suggested vector.
 		motion c;
-		m.p = mv_penalty(data, bx, by, m.dx = t.dx, m.dy = t.dy);
+		m.p = mv_penalty(bx, by, m.dx = t.dx, m.dy = t.dy);
 		if(!m.p)
 			return;
-		c.p = mv_penalty(data, bx, by, c.dx = 0, c.dy = 0);
+		//Try the zero vector.
+		c.p = mv_penalty(bx, by, c.dx = 0, c.dy = 0);
 		if(update_best(m, c))
 			return;
+		//Try cardinal vectors up to 9 units.
 		for(int s = 1; s < 10; s++) {
 			if(s == 0)
 				continue;
-			c.p = mv_penalty(data, bx, by, c.dx = -s, c.dy = 0);
+			c.p = mv_penalty(bx, by, c.dx = -s, c.dy = 0);
 			if(update_best(m, c))
 				return;
-			c.p = mv_penalty(data, bx, by, c.dx = 0, c.dy = -s);
+			c.p = mv_penalty(bx, by, c.dx = 0, c.dy = -s);
 			if(update_best(m, c))
 				return;
-			c.p = mv_penalty(data, bx, by, c.dx = s, c.dy = 0);
+			c.p = mv_penalty(bx, by, c.dx = s, c.dy = 0);
 			if(update_best(m, c))
 				return;
-			c.p = mv_penalty(data, bx, by, c.dx = 0, c.dy = s);
+			c.p = mv_penalty(bx, by, c.dx = 0, c.dy = s);
 			if(update_best(m, c))
 				return;
 		}
@@ -271,19 +290,23 @@ namespace
 		ready_flag = true;
 		avi_video_codec::format fmt(ewidth, eheight, 0x56424D5A, 24);
 
-		entropy_init(entropy_tab, bw, bh);
-		prev.resize(4 * ewidth * eheight);
-		current.resize(4 * ewidth * eheight);
-		tmp.resize(4 * bw * bh);
+		pixbuf.resize(2 * ewidth * eheight + bw * bh);
+		current_frame = &pixbuf[0];
+		prev_frame = &pixbuf[ewidth * eheight];
+		scratch = &pixbuf[2 * ewidth * eheight];
 		mv.resize(((ewidth + bw - 1) / bw) * ((eheight + bh - 1) / bh));
-		diff.resize(4 * ((mv.size() + 1) / 2) + 4 * ewidth * eheight);
-		output.resize(deflateBound(&zstream, diff.size()) + 128);
+		size_t maxdiff = 4 * ((mv.size() + 1) / 2) + 4 * ewidth * eheight;
+		outbuf_size = deflateBound(&zstream, maxdiff) + 128;
+		outbuffer.resize(maxdiff + outbuf_size);
+		oscratch = &outbuffer[outbuf_size];
+		outbuf = &outbuffer[0];
+		memset(&pixbuf[0], 0, 4 * pixbuf.size());
 		return fmt;
 	}
 
 	void avi_codec_zmbv::frame(uint32_t* data)
 	{
-		bool buffer_loaded = false;
+		//Keyframe/not determination.
 		bool keyframe = false;
 		if(pframes >= max_pframes) {
 			keyframe = true;
@@ -294,24 +317,29 @@ namespace
 		//If bigendian, swap.
 		short magic = 258;
 		if(reinterpret_cast<uint8_t*>(&magic)[0] == 1)
-			for(size_t i = 0; i < ewidth * eheight; i++) {
-				uint8_t* _current = reinterpret_cast<uint8_t*>(&current[0]);
-				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[0]);
-				_current[4 * i + 0] = _data[4 * i + 3];
-				_current[4 * i + 1] = _data[4 * i + 2];
-				_current[4 * i + 2] = _data[4 * i + 1];
-				_current[4 * i + 3] = _data[4 * i + 0];
+			for(size_t y = 0; y < iheight; y++) {
+				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + ewidth * y);
+				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
+				for(size_t i = 0; i < iwidth; i++) {
+					_current[4 * i + 0] = _data[4 * i + 3];
+					_current[4 * i + 1] = _data[4 * i + 2];
+					_current[4 * i + 2] = _data[4 * i + 1];
+					_current[4 * i + 3] = _data[4 * i + 0];
+				}
 			}
 		else
-			for(size_t i = 0; i < ewidth * eheight; i++) {
-				uint8_t* _current = reinterpret_cast<uint8_t*>(&current[0]);
-				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[0]);
-				_current[4 * i + 2] = _data[4 * i + 0];
-				_current[4 * i + 1] = _data[4 * i + 1];
-				_current[4 * i + 0] = _data[4 * i + 2];
-				_current[4 * i + 3] = _data[4 * i + 3];
+			for(size_t y = 0; y < iheight; y++) {
+				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + ewidth * y);
+				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
+				for(size_t i = 0; i < iwidth; i++) {
+					_current[4 * i + 2] = _data[4 * i + 0];
+					_current[4 * i + 1] = _data[4 * i + 1];
+					_current[4 * i + 0] = _data[4 * i + 2];
+					_current[4 * i + 3] = _data[4 * i + 3];
+				}
 			}
 
+		//Estimate motion vectors for all blocks if non-keyframe.
 		uint32_t nhb = (ewidth + bw - 1) / bw;
 		if(!keyframe) {
 			motion t;
@@ -319,16 +347,16 @@ namespace
 			t.dy = 0;
 			t.p = 0;
 			for(size_t i = 0; i < mv.size(); i++) {
-				mv_detect(&current[0], (i % nhb) * bw, (i / nhb) * bh, mv[i], t);
+				mv_detect((i % nhb) * bw, (i / nhb) * bh, mv[i], t);
 				t = mv[i];
 			}
 		}
 
-		serialize_frame(keyframe, &current[0]);
-		compress_packet(keyframe);
-		memcpy(&prev[0], &current[0], 4 * ewidth * eheight);
-		out.payload.resize(output_size);
-		memcpy(&out.payload[0], &output[0], output_size);
+		//Serialize and output.
+		serialize_frame(keyframe);
+		std::swap(current_frame, prev_frame);
+		out.payload.resize(outbuf_used);
+		memcpy(&out.payload[0], outbuf, outbuf_used);
 		out.typecode = 0x6264;		//Not exactly correct according to specs...
 		out.hidden = false;
 		out.indexflags = keyframe ? 0x10 : 0;
@@ -346,7 +374,7 @@ namespace
 		return out;
 	}
 
-
+	//ZMBV encoder factory object.
 	avi_video_codec_type rgb("zmbv", "Zip Motion Blocks Video codec",
 		[]() -> avi_video_codec* { return new avi_codec_zmbv(clvl, kint, bwv, bhv);});
 }
