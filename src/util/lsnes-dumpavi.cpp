@@ -306,8 +306,8 @@ int main(int argc, char** argv)
 		our_rom = &r;
 		our_rom->region = gtype::toromregion(movie.gametype);
 		our_rom->load();
-		dumper_startup(dumper, mode, prefix, length);
 		startup_lua_scripts(cmdline);
+		dumper_startup(dumper, mode, prefix, length);
 		main_loop(r, movie, true);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
