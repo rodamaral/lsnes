@@ -25,6 +25,9 @@
 
 namespace
 {
+	class avi_avsnoop;
+	avi_avsnoop* vid_dumper;
+
 	uint32_t rates[] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
 		128000, 176400, 192000};
 
@@ -111,6 +114,24 @@ namespace
 		uint32_t max_frames;
 	};
 
+	struct resample_worker : public worker_thread
+	{
+		resample_worker(double _ratio, uint32_t _nch);
+		~resample_worker();
+		void entry();
+		void sendblock(short* block, size_t frames);
+		void sendend();
+	private:
+		std::vector<short> buffers;
+		std::vector<float> buffers2;
+		std::vector<float> buffers3;
+		std::vector<short> buffers4;
+		size_t bufused;
+		double ratio;
+		uint32_t nch;
+		void* resampler;
+	};
+
 	struct avi_worker : public worker_thread
 	{
 		avi_worker(const struct avi_info& info);
@@ -133,7 +154,6 @@ namespace
 #define WORKFLAG_QUEUE_FRAME 1
 #define WORKFLAG_FLUSH 2
 #define WORKFLAG_END 4
-
 
 	avi_worker::avi_worker(const struct avi_info& info)
 		: aviout(info.prefix, *info.vcodec, *info.acodec, info.sample_rate, info.audio_chans)
@@ -212,6 +232,64 @@ namespace
 		}
 	}
 
+	resample_worker::resample_worker(double _ratio, uint32_t _nch)
+	{
+		ratio = _ratio;
+		nch = _nch;
+		buffers.resize(RESAMPLE_BUFFER * nch);
+		buffers2.resize(RESAMPLE_BUFFER * nch);
+		buffers3.resize((RESAMPLE_BUFFER * nch * ratio) + 128 * nch);
+		buffers4.resize((RESAMPLE_BUFFER * nch * ratio) + 128 * nch);
+		bufused = 0;
+#ifdef WITH_SECRET_RABBIT_CODE
+		int errc = 0;
+		resampler = src_new(SRC_SINC_BEST_QUALITY, nch, &errc);
+		if(errc)
+			throw std::runtime_error(std::string("Error initing libsamplerate: ") +
+				src_strerror(errc));
+#else
+		throw std::runtime_error("HQ sample rate conversion not available");
+#endif
+		fire();
+	}
+
+	resample_worker::~resample_worker()
+	{
+#ifdef WITH_SECRET_RABBIT_CODE
+		src_delete((SRC_STATE*)resampler);
+#endif
+	}
+
+	void resample_worker::sendend()
+	{
+		rethrow();
+		set_workflag(WORKFLAG_END);
+		request_quit();
+	}
+
+	void resample_worker::sendblock(short* block, size_t frames)
+	{
+again:
+		rethrow();
+		wait_busy();
+		if(bufused + frames < RESAMPLE_BUFFER) {
+			memcpy(&buffers[bufused * nch], block, 2 * nch * frames);
+			bufused += frames;
+			block += (frames * nch);
+			frames = 0;
+		} else if(bufused < RESAMPLE_BUFFER) {
+			size_t processable = RESAMPLE_BUFFER - bufused;
+			memcpy(&buffers[bufused * nch], block, 2 * nch * processable);
+			block += (processable * nch);
+			frames -= processable;
+			bufused = RESAMPLE_BUFFER;
+		}
+		set_busy();
+		set_workflag(WORKFLAG_QUEUE_FRAME);
+		if(frames > 0)
+			goto again;
+	}
+
 	void waitfn();
 
 	class avi_avsnoop : public information_dispatch
@@ -230,32 +308,19 @@ namespace
 				soundrate.second, 2);
 			dcounter = 0;
 			have_dumped_frame = false;
-			resampler = NULL;
+			resampler_w = NULL;
 			if(soundrate_setting == 4) {
 				double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
-				sbuffer.resize(RESAMPLE_BUFFER * chans);
-				sbuffer2.resize(RESAMPLE_BUFFER * chans);
-				fbuffer.resize((RESAMPLE_BUFFER * ratio + 128) * chans + 128);
-				fbuffer2.resize((RESAMPLE_BUFFER * ratio + 128) * chans + 128);
 				sbuffer_fill = 0;
-#ifdef WITH_SECRET_RABBIT_CODE
-				int errc = 0;
-				resampler = src_new(SRC_SINC_BEST_QUALITY, info.audio_chans, &errc);
-				if(errc)
-					throw std::runtime_error(std::string("Error initing libsamplerate: ") +
-						src_strerror(errc));
-#else
-				throw std::runtime_error("HQ sample rate conversion not available");
-#endif
+				sbuffer.resize(RESAMPLE_BUFFER * chans);
+				resampler_w = new resample_worker(ratio, chans);
 			}
 		}
 
 		~avi_avsnoop() throw()
 		{
-#ifdef WITH_SECRET_RABBIT_CODE
-			if(resampler)
-				src_delete((SRC_STATE*)resampler);
-#endif
+			if(resampler_w)
+				delete resampler_w;
 			delete worker;
 			delete soxdumper;
 		}
@@ -275,12 +340,15 @@ namespace
 
 		void on_sample(short l, short r)
 		{
-			if(resampler) {
+			if(resampler_w) {
 				if(!have_dumped_frame)
 					return;
 				sbuffer[sbuffer_fill++] = l;
 				sbuffer[sbuffer_fill++] = r;
-				forward_samples(false);
+				if(sbuffer_fill == sbuffer.size()) {
+					resampler_w->sendblock(&sbuffer[0], sbuffer_fill / chans);
+					sbuffer_fill = 0;
+				}
 				soxdumper->sample(l, r);
 				return;
 			}
@@ -301,7 +369,8 @@ namespace
 		void on_dump_end()
 		{
 			if(worker) {
-				forward_samples(true);
+				if(resampler_w)
+					resampler_w->sendend();
 				worker->request_quit();
 			}
 			if(soxdumper)
@@ -317,51 +386,18 @@ namespace
 			return true;
 		}
 		avi_worker* worker;
+		resample_worker* resampler_w;
 	private:
-		void forward_samples(bool eos)
-		{
-			if(!eos && sbuffer_fill < sbuffer.size())
-				return;
-#ifdef WITH_SECRET_RABBIT_CODE
-			double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
-			SRC_DATA block;
-			src_short_to_float_array(&sbuffer[0], &sbuffer2[0], sbuffer_fill);
-			block.data_in = &sbuffer2[0];
-			block.data_out = &fbuffer2[0];
-			block.input_frames = sbuffer_fill / chans;
-			block.input_frames_used = 0;
-			block.output_frames = fbuffer2.size() / chans;
-			block.output_frames_gen = 0;
-			block.end_of_input = eos ? 1 : 0;
-			block.src_ratio = ratio;
-			int errc = src_process((SRC_STATE*)resampler, &block);
-			if(errc)
-				throw std::runtime_error(std::string("Error using libsamplerate: ") +
-					src_strerror(errc));
-			src_float_to_short_array(&fbuffer2[0], &fbuffer[0], block.output_frames_gen * chans);
-			worker->queue_audio(&fbuffer[0], block.output_frames_gen * chans);
-			if(block.input_frames_used * chans < sbuffer_fill)
-				memmove(&sbuffer[0], &sbuffer[block.output_frames_gen * chans], sbuffer_fill -
-					block.input_frames_used * chans);
-			sbuffer_fill -= block.input_frames_used * chans;
-#endif
-		}
 		sox_dumper* soxdumper;
 		screen<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		std::pair<uint32_t, uint32_t> soundrate;
 		uint32_t audio_record_rate;
-		void* resampler;
 		std::vector<short> sbuffer;
-		std::vector<float> sbuffer2;
-		std::vector<float> fbuffer2;
-		std::vector<short> fbuffer;
 		size_t sbuffer_fill;
 		uint32_t chans;
 	};
-
-	avi_avsnoop* vid_dumper;
 
 	void waitfn()
 	{
@@ -453,5 +489,46 @@ namespace
 	
 	adv_avi_dumper::~adv_avi_dumper() throw()
 	{
+	}
+
+	void resample_worker::entry()
+	{
+		while(1) {
+			wait_workflag();
+			uint32_t work = clear_workflag(~WORKFLAG_QUIT_REQUEST);
+			if(work & (WORKFLAG_QUEUE_FRAME | WORKFLAG_END)) {
+#ifdef WITH_SECRET_RABBIT_CODE
+again:
+				SRC_DATA block;
+				src_short_to_float_array(&buffers[0], &buffers2[0], bufused * nch);
+				block.data_in = &buffers2[0];
+				block.data_out = &buffers3[0];
+				block.input_frames = bufused;
+				block.input_frames_used = 0;
+				block.output_frames = buffers3.size() / nch;
+				block.output_frames_gen = 0;
+				block.end_of_input = (work & WORKFLAG_END) ? 1 : 0;
+				block.src_ratio = ratio;
+				int errc = src_process((SRC_STATE*)resampler, &block);
+				if(errc)
+					throw std::runtime_error(std::string("Error using libsamplerate: ") +
+					src_strerror(errc));
+				src_float_to_short_array(&buffers3[0], &buffers4[0], block.output_frames_gen * nch);
+				vid_dumper->worker->queue_audio(&buffers4[0], block.output_frames_gen * nch);
+				if(block.input_frames_used < bufused)
+					memmove(&buffers[0], &buffers[block.output_frames_gen * nch], (bufused -
+						block.input_frames_used) * nch);
+				bufused -= block.input_frames_used;
+				if(block.output_frames_gen > 0 && work & WORKFLAG_END)
+					goto again;	//Try again to get all the samples.
+#endif
+				clear_workflag(WORKFLAG_END | WORKFLAG_FLUSH | WORKFLAG_QUEUE_FRAME);
+				clear_busy();
+				if(work & WORKFLAG_END)
+					return;
+			}
+			if(work == WORKFLAG_QUIT_REQUEST)
+				break;
+		}
 	}
 }
