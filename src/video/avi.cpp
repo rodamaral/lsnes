@@ -281,6 +281,7 @@ namespace
 				sbuffer[sbuffer_fill++] = l;
 				sbuffer[sbuffer_fill++] = r;
 				forward_samples(false);
+				soxdumper->sample(l, r);
 				return;
 			}
 			short x[2];
