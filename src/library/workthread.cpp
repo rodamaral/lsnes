@@ -1,5 +1,16 @@
 #include "library/workthread.hpp"
 #include <stdexcept>
+#include <sys/time.h>
+
+namespace
+{
+	uint64_t ticks()
+	{
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
+	}
+}
 
 struct worker_thread_reflector
 {
@@ -15,6 +26,8 @@ worker_thread::worker_thread()
 	reflector = NULL;
 	workflag = 0;
 	busy = false;
+	waitamt_busy = 0;
+	waitamt_work = 0;
 	exception_caught = false;
 	exception_oom = false;
 	joined = false;
@@ -58,8 +71,12 @@ void worker_thread::clear_busy()
 void worker_thread::wait_busy()
 {
 	umutex_class h(mutex);
-	while(busy)
-		condition.wait(h);
+	if(busy) {
+		uint64_t tmp = ticks();
+		while(busy)
+			condition.wait(h);
+		waitamt_busy += (ticks() - tmp);
+	}
 }
 
 void worker_thread::rethrow()
@@ -90,9 +107,19 @@ uint32_t worker_thread::clear_workflag(uint32_t flag)
 uint32_t worker_thread::wait_workflag()
 {
 	umutex_class h(mutex);
-	while(!workflag)
-		condition.wait(h);
+	if(!workflag) {
+		uint64_t tmp = ticks();
+		while(!workflag)
+			condition.wait(h);
+		waitamt_work += (ticks() - tmp);
+	}
 	return workflag;
+}
+
+std::pair<uint64_t, uint64_t> worker_thread::get_wait_count()
+{
+	umutex_class h(mutex);
+	return std::make_pair(waitamt_busy, waitamt_work);
 }
 
 int worker_thread::operator()(int dummy)

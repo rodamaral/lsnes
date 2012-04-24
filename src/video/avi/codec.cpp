@@ -22,6 +22,10 @@ avi_video_codec::format::format(uint32_t _width, uint32_t _height, uint32_t _com
 	clr_important = 0;
 }
 
+void avi_video_codec::send_performance_counters(uint64_t b, uint64_t w)
+{
+}
+
 avi_audio_codec::format::format(uint16_t tag)
 {
 	max_bytes_per_sec = 200000;

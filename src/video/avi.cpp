@@ -127,6 +127,7 @@ namespace
 		uint32_t segframes;
 		uint32_t max_segframes;
 		bool closed;
+		avi_video_codec* ivcodec;
 	};
 
 #define WORKFLAG_QUEUE_FRAME 1
@@ -137,6 +138,7 @@ namespace
 	avi_worker::avi_worker(const struct avi_info& info)
 		: aviout(info.prefix, *info.vcodec, *info.acodec, info.sample_rate, info.audio_chans)
 	{
+		ivcodec = info.vcodec;
 		segframes = 0;
 		max_segframes = info.max_frames;
 		fire();
@@ -183,6 +185,8 @@ namespace
 				f.force_break = (segframes == max_segframes && max_segframes > 0);
 				if(f.force_break)
 					segframes = 0;
+				auto wc = get_wait_count();
+				ivcodec->send_performance_counters(wc.first, wc.second);
 				memcpy(&f.data[0], frame, 4 * frame_width * frame_height);
 				frame = NULL;
 				clear_workflag(WORKFLAG_QUEUE_FRAME);
