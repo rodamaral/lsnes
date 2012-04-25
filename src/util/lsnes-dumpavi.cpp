@@ -292,8 +292,8 @@ int main(int argc, char** argv)
 		if(!our_rom->region)
 			throw std::runtime_error("Core does not support game type '" + movie.gametype + "'");
 		our_rom->load();
-		dumper_startup(dumper, mode, prefix, length);
 		startup_lua_scripts(cmdline);
+		dumper_startup(dumper, mode, prefix, length);
 		main_loop(r, movie, true);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

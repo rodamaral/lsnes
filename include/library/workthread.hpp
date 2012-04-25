@@ -85,6 +85,14 @@ public:
  * Note: Don't call from outside workthread code.
  */
 	int operator()(int dummy);
+/**
+ * Get wait counters.
+ *
+ * Retrns: Two-element tuple.
+ *	- The first element is the amount of microseconds wait_busy() has waited.
+ *	- The second element is the amount of microseconds wait_workflag() has waited.
+ */
+	std::pair<uint64_t, uint64_t> get_wait_count();
 protected:
 /**
  * Thread entrypoint.
@@ -106,6 +114,8 @@ private:
 	volatile bool busy;
 	volatile bool exception_caught;
 	volatile bool exception_oom;
+	volatile uint64_t waitamt_busy;
+	volatile uint64_t waitamt_work;
 	std::string exception_text;
 };
 

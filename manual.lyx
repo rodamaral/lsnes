@@ -6176,5 +6176,21 @@ Wxwidgets: Redesign hotkeys dialog to avoid tree control (tree control doesn't
 Start paused option.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta7epsilon1
+\end_layout
+
+\begin_layout Itemize
+AVI: ZMBV support
+\end_layout
+
+\begin_layout Itemize
+lsnes-dumpavi: Start Lua before starting dumper
+\end_layout
+
+\begin_layout Itemize
+AVI: Fix secondary audio in mode 4.
+\end_layout
+
 \end_body
 \end_document

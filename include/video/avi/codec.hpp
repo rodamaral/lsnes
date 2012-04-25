@@ -94,6 +94,13 @@ struct avi_video_codec
  * Returns: The packet.
  */
 	virtual avi_packet getpacket() = 0;
+/**
+ * Send performance counters.
+ *
+ * Parameter b: Amount of busywaiting by emulator.
+ * Parameter w: Amount of workwaiting by dumper.
+ */
+	virtual void send_performance_counters(uint64_t b, uint64_t w);
 };
 
 /**

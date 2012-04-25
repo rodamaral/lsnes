@@ -3048,3 +3048,11 @@ set-axis joystick0axis19 disabled
 
 • Start paused option.
 
+15.58 rr1-delta7epsilon1
+
+• AVI: ZMBV support
+
+• lsnes-dumpavi: Start Lua before starting dumper
+
+• AVI: Fix secondary audio in mode 4.
+
