@@ -6,6 +6,9 @@
 #include <cerrno>
 #include <stdexcept>
 
+//The largest possible vector.
+#define MAXIMUM_VECTOR 64
+
 namespace
 {
 	numeric_setting clvl("avi-zmbv-compression", 0, 9, 7);
@@ -73,70 +76,30 @@ namespace
 		size_t outbuf_used;
 		//Zlib state.
 		z_stream zstream;
-
 		//Compute penalty for motion vector (dx, dy) on block with upper-left corner at (bx, by).
-		uint32_t mv_penalty(int32_t bx, int32_t by, int dx, int dy);
+		uint32_t mv_penalty(uint32_t bx, uint32_t by, int dx, int dy);
 		//Do motion detection for block with upper-left corner at (bx, by). M is filled with the resulting
 		//motion vector and t is initial guess for the motion vector.
-		void mv_detect(int32_t bx, int32_t by, motion& m, motion t);
+		void mv_detect(uint32_t bx, uint32_t by, motion& m, motion t);
 		//Serialize movement vectors and furrent frame data to output buffer. If keyframe is true, keyframe is
 		//written, otherwise non-keyframe.
 		void serialize_frame(bool keyframe);
 	};
 
-	//Intersect the range [x, x+b) with [0, w). start is where the range starts, size is size of range,
-	//and offset is number of numbers clipped from low bound.
-	void rbound(int32_t x, int32_t w, uint32_t b, int32_t& start, int32_t& offset, int32_t& size)
-	{
-		start = x;
-		offset = 0;
-		size = b;
-		if(start < 0) {
-			offset = -start;
-			start = 0;
-			size = b - offset;
-		}
-		if(start + size > w)
-			size = w - start;
-		if(size < 0)
-			size = 0;
-		start = x + offset;
-	}
-
 	//Compute XOR of blocks.
-	void xor_blocks(uint32_t* target, uint32_t* src1, int32_t src1x, int32_t src1y,
-		int32_t src1w, int32_t src1h, uint32_t* src2, int32_t src2x, int32_t src2y,
-		int32_t src2w, int32_t src2h, uint32_t bw, uint32_t bh)
+	void xor_blocks(uint32_t* target, uint32_t* src1, uint32_t src1x, uint32_t src1y,
+		uint32_t src1w, uint32_t src1h, uint32_t* src2, uint32_t src2x, uint32_t src2y,
+		uint32_t src2w, uint32_t src2h, uint32_t bw, uint32_t bh)
 	{
-		int32_t h_s1start;
-		int32_t h_s1off;
-		int32_t h_s1size;
-		int32_t h_s2start;
-		int32_t h_s2off;
-		int32_t h_s2size;
-		int32_t v_s1start;
-		int32_t v_s1off;
-		int32_t v_s1size;
-		int32_t v_s2start;
-		int32_t v_s2off;
-		int32_t v_s2size;
-
-		rbound(src1x, src1w, bw, h_s1start, h_s1off, h_s1size);
-		rbound(src2x, src2w, bw, h_s2start, h_s2off, h_s2size);
-		rbound(src1y, src1h, bh, v_s1start, v_s1off, v_s1size);
-		rbound(src2y, src2h, bh, v_s2start, v_s2off, v_s2size);
-
-		if(h_s1size < bw || v_s1size < bh)
-			memset(target, 0, 4 * bw * bh);
-		uint32_t* t1ptr = target + v_s1off * bh + h_s1off;
-		uint32_t* t2ptr = target + v_s2off * bh + h_s2off;
-		uint32_t* s1ptr = src1 + v_s1start * src1w + h_s1start;
-		uint32_t* s2ptr = src2 + v_s2start * src2w + h_s2start;
-		for(int32_t y = 0; y < v_s1size; y++)
-			memcpy(t1ptr + bw * y, s1ptr + src1w * y, 4 * h_s1size);
-		for(int32_t y = 0; y < v_s2size; y++)
-			for(int32_t x = 0; x < h_s2size; x++)
-				t2ptr[y * bw + x] ^= s2ptr[y * src2w + x];
+		uint32_t* s1ptr = src1 + src1y * src1w + src1x;
+		uint32_t* s2ptr = src2 + src2y * src2w + src2x;
+		for(uint32_t y = 0; y < bh; y++) {
+			for(uint32_t x = 0; x < bw; x++)
+				target[x] = s1ptr[x] ^ s2ptr[x];
+			target += bw;
+			s1ptr += src1w;
+			s2ptr += src2w;
+		}
 	}
 
 	//Estimate entropy.
@@ -152,21 +115,26 @@ namespace
 		return e;
 	}
 
-	uint32_t avi_codec_zmbv::mv_penalty(int32_t bx, int32_t by, int dx, int dy)
+	uint32_t avi_codec_zmbv::mv_penalty(uint32_t bx, uint32_t by, int dx, int dy)
 	{
 		//Penalty is entropy estimate of resulting block.
-		xor_blocks(scratch, current_frame, bx, by, ewidth, eheight, prev_frame, bx + dx, by + dy, ewidth,
-			eheight, bw, bh);
+		xor_blocks(scratch, current_frame, bx, by, ewidth + 2 * MAXIMUM_VECTOR, eheight, prev_frame, bx + dx,
+			by + dy, ewidth + 2 * MAXIMUM_VECTOR, eheight, bw, bh);
 		return entropy(scratch, bw, bh);
 	}
 
 	void avi_codec_zmbv::serialize_frame(bool keyframe)
 	{
 		uint32_t nhb, nvb, nb;
+		//In_stride/in_offset is in units of words, out_stride is in units of bytes.
+		size_t in_stride = (ewidth + 2 * MAXIMUM_VECTOR);
+		size_t in_offset = MAXIMUM_VECTOR * (in_stride + 1);
 		size_t osize = 0;
 		if(keyframe) {
 			//Just copy the frame data and compress that.
-			memcpy(oscratch, current_frame, 4 * ewidth * eheight);
+			for(size_t y = 0; y < eheight; y++)
+				memcpy(oscratch + 4 * ewidth * y, current_frame + in_stride * y + in_offset,
+					4 * ewidth);
 			osize = 4 * ewidth * eheight;
 			goto compress;
 		}
@@ -187,10 +155,11 @@ namespace
 		for(size_t i = 0; i < nb; i++) {
 			if(mv[i].p == 0)
 				continue;
-			int32_t bx = (i % nhb) * bw;
-			int32_t by = (i / nhb) * bh;
-			xor_blocks(reinterpret_cast<uint32_t*>(oscratch + osize), current_frame, bx, by, ewidth,
-				eheight, prev_frame, bx + mv[i].dx, by + mv[i].dy, ewidth, eheight, bw, bh);
+			uint32_t bx = (i % nhb) * bw + MAXIMUM_VECTOR;
+			uint32_t by = (i / nhb) * bh + MAXIMUM_VECTOR;
+			xor_blocks(reinterpret_cast<uint32_t*>(oscratch + osize), current_frame, bx, by, ewidth + 2 *
+				MAXIMUM_VECTOR, eheight, prev_frame, bx + mv[i].dx, by + mv[i].dy, ewidth + 2 *
+				MAXIMUM_VECTOR, eheight, bw, bh);
 			osize += 4 * bw * bh;
 		}
 compress:
@@ -227,7 +196,7 @@ compress:
 		return (best.p == 0);
 	}
 
-	void avi_codec_zmbv::mv_detect(int32_t bx, int32_t by, motion& m, motion t)
+	void avi_codec_zmbv::mv_detect(uint32_t bx, uint32_t by, motion& m, motion t)
 	{
 		//Try the suggested vector.
 		motion c;
@@ -290,10 +259,10 @@ compress:
 		ready_flag = true;
 		avi_video_codec::format fmt(ewidth, eheight, 0x56424D5A, 24);
 
-		pixbuf.resize(2 * ewidth * eheight + bw * bh);
+		pixbuf.resize(2 * (ewidth + 2 * MAXIMUM_VECTOR) * (eheight + 2 * MAXIMUM_VECTOR) + bw * bh);
 		current_frame = &pixbuf[0];
-		prev_frame = &pixbuf[ewidth * eheight];
-		scratch = &pixbuf[2 * ewidth * eheight];
+		prev_frame = &pixbuf[(ewidth + 2 * MAXIMUM_VECTOR) * (eheight + 2 * MAXIMUM_VECTOR)];
+		scratch = &pixbuf[2 * (ewidth + 2 * MAXIMUM_VECTOR) * (eheight + 2 * MAXIMUM_VECTOR)];
 		mv.resize(((ewidth + bw - 1) / bw) * ((eheight + bh - 1) / bh));
 		size_t maxdiff = 4 * ((mv.size() + 1) / 2) + 4 * ewidth * eheight;
 		outbuf_size = deflateBound(&zstream, maxdiff) + 128;
@@ -316,9 +285,12 @@ compress:
 
 		//If bigendian, swap.
 		short magic = 258;
+		size_t frameoffset = MAXIMUM_VECTOR * (ewidth + 2 * MAXIMUM_VECTOR + 1);
+		size_t framestride = ewidth + 2 * MAXIMUM_VECTOR;
 		if(reinterpret_cast<uint8_t*>(&magic)[0] == 1)
 			for(size_t y = 0; y < iheight; y++) {
-				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + ewidth * y);
+				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + frameoffset +
+					framestride * y);
 				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
 				for(size_t i = 0; i < iwidth; i++) {
 					_current[4 * i + 0] = _data[4 * i + 3];
@@ -329,7 +301,8 @@ compress:
 			}
 		else
 			for(size_t y = 0; y < iheight; y++) {
-				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + ewidth * y);
+				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + frameoffset +
+					framestride * y);
 				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
 				for(size_t i = 0; i < iwidth; i++) {
 					_current[4 * i + 2] = _data[4 * i + 0];
@@ -347,7 +320,7 @@ compress:
 			t.dy = 0;
 			t.p = 0;
 			for(size_t i = 0; i < mv.size(); i++) {
-				mv_detect((i % nhb) * bw, (i / nhb) * bh, mv[i], t);
+				mv_detect((i % nhb) * bw + MAXIMUM_VECTOR, (i / nhb) * bh + MAXIMUM_VECTOR, mv[i], t);
 				t = mv[i];
 			}
 		}
