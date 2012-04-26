@@ -38,6 +38,11 @@ zlibstream::~zlibstream()
 
 void zlibstream::reset(uint8_t* data, size_t datalen)
 {
+	_reset(data, datalen, true);
+}
+
+void zlibstream::_reset(uint8_t* data, size_t datalen, bool doactually)
+{
 	std::list<struct page> tmp;
 	size_t odatalen = datalen;
 	while(datalen > 0) {
@@ -48,7 +53,8 @@ void zlibstream::reset(uint8_t* data, size_t datalen)
 		data += copylen;
 		datalen -= copylen;
 	}
-	deflateReset(&z);
+	if(doactually)
+		deflateReset(&z);
 	streamsize = odatalen;
 	flag = false;
 	tmp.swap(storage);
@@ -56,12 +62,17 @@ void zlibstream::reset(uint8_t* data, size_t datalen)
 
 void zlibstream::write(uint8_t* data, size_t datalen)
 {
-	flushpage(data, datalen, false);
+	flushpage(data, datalen, 0);
 }
 
 void zlibstream::read(std::vector<char>& out)
 {
-	flushpage(NULL, 0, true);
+	_read(out, Z_FINISH);
+}
+
+void zlibstream::_read(std::vector<char>& out, int mode)
+{
+	flushpage(NULL, 0, mode);
 	out.resize(streamsize);
 	size_t itr = 0;
 	for(auto& i : storage) {
@@ -70,14 +81,11 @@ void zlibstream::read(std::vector<char>& out)
 	}
 }
 
-extern void* orig_return_address;
-extern void* orig_return_address2;
-
-void zlibstream::flushpage(uint8_t* data, size_t datalen, bool final)
+void zlibstream::flushpage(uint8_t* data, size_t datalen, int mode)
 {
 	z.next_in = data;
 	z.avail_in = datalen;
-	while(z.avail_in || final) {
+	while(z.avail_in || mode) {
 		if(storage.empty() || storage.back().used == ZLIB_PAGE_STORAGE) {
 			storage.push_back(page());
 			storage.back().used = 0;
@@ -85,13 +93,23 @@ void zlibstream::flushpage(uint8_t* data, size_t datalen, bool final)
 		z.next_out = storage.back().data + storage.back().used;
 		z.avail_out = ZLIB_PAGE_STORAGE - storage.back().used;
 		size_t itmp = z.avail_out;
-		int x = deflate(&z, final ? Z_FINISH : 0);
+		int x = deflate(&z, mode);
 		storage.back().used += (itmp - z.avail_out);
 		streamsize += (itmp - z.avail_out);
 		throw_zlib_error(x);
-		if(final && x == Z_STREAM_END)
+		if(mode && !z.avail_in && z.avail_out)
 			break;
 	}
+}
+
+void zlibstream::readsync(std::vector<char>& out)
+{
+	_read(out, Z_SYNC_FLUSH);
+}
+
+void zlibstream::adddata(uint8_t* data, size_t datalen)
+{
+	_reset(data, datalen, false);
 }
 
 void zlibstream::set_flag(bool f)

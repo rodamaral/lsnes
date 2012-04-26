@@ -1,5 +1,6 @@
 #include "video/avi/codec.hpp"
 #include "core/settings.hpp"
+#include "library/zlibstream.hpp"
 #include <zlib.h>
 #include <limits>
 #include <cstring>
@@ -51,8 +52,6 @@ namespace
 		unsigned pframes;
 		//Maximum number of P-frames to write in sequence.
 		unsigned max_pframes;
-		//Compression level to use.
-		unsigned level;
 		//Size of one block.
 		uint32_t bw;
 		uint32_t bh;
@@ -66,16 +65,12 @@ namespace
 		uint32_t* prev_frame;
 		//Scratch block pointer.
 		uint32_t* scratch;
-		//Output buffer. Sufficient space to hold both compressed and uncompressed data.
+		//Output buffer. Sufficient space to hold uncompressed data.
 		std::vector<char> outbuffer;
 		//Output scratch memory.
 		char* oscratch;
-		//The actual output buffer. Pointer, size and ued.
-		char* outbuf;
-		size_t outbuf_size;
-		size_t outbuf_used;
-		//Zlib state.
-		z_stream zstream;
+		//Zlib streaam.
+		zlibstream z;
 		//Compute penalty for motion vector (dx, dy) on block with upper-left corner at (bx, by).
 		uint32_t mv_penalty(uint32_t bx, uint32_t by, int dx, int dy);
 		//Do motion detection for block with upper-left corner at (bx, by). M is filled with the resulting
@@ -125,6 +120,7 @@ namespace
 
 	void avi_codec_zmbv::serialize_frame(bool keyframe)
 	{
+		unsigned char tmp[7];
 		uint32_t nhb, nvb, nb;
 		//In_stride/in_offset is in units of words, out_stride is in units of bytes.
 		size_t in_stride = (ewidth + 2 * MAXIMUM_VECTOR);
@@ -164,28 +160,21 @@ namespace
 		}
 compress:
 		//Compress the output data.
-		zstream.next_in = reinterpret_cast<uint8_t*>(oscratch);
-		zstream.avail_in = osize;
-
-		osize = 0;
-		outbuf[osize++] = keyframe ? 1 : 0;	//Indicate keyframe/not.
-		if(keyframe) {
-			//Write the keyframe header.
-			outbuf[osize++] = 0;		//Version 0.1
-			outbuf[osize++] = 1;
-			outbuf[osize++] = 1;		//Zlib compression.
-			outbuf[osize++] = 8;		//32 bit.
-			outbuf[osize++] = bw;		//Block size.
-			outbuf[osize++] = bh;
-			deflateReset(&zstream);		//Reset the zlib context.
+		if(keyframe)
+		{
+			tmp[0] = 1;	//Keyframe
+			tmp[1] = 0;	//Major version.
+			tmp[2] = 1;	//Minor version.
+			tmp[3] = 1;	//Zlib compresison.
+			tmp[4] = 8;	//32-bit
+			tmp[5] = bw;	//Block size.
+			tmp[6] = bh;	//Block size.
+			z.reset(tmp, 7);
+		} else {
+			tmp[0] = 0;	//Not keyframe.
+			z.adddata(tmp, 1);
 		}
-		zstream.next_out = reinterpret_cast<uint8_t*>(&outbuf[osize]);
-		zstream.avail_out = outbuf_size - osize;
-		if(deflate(&zstream, Z_SYNC_FLUSH) != Z_OK)
-			throw std::runtime_error("Zlib error while compressing data");
-		if(zstream.avail_in || !zstream.avail_out)
-			throw std::runtime_error("Buffer overrun while compressing data");
-		outbuf_used = outbuf_size - zstream.avail_out;
+		z.write(reinterpret_cast<uint8_t*>(oscratch), osize);
 	}
 
 	//If candidate is better than best, update best. Returns true if ideal has been reached, else false.
@@ -228,7 +217,6 @@ compress:
 
 	avi_codec_zmbv::~avi_codec_zmbv()
 	{
-		deflateEnd(&zstream);
 	}
 
 	unsigned getzlevel(uint32_t _level)
@@ -239,14 +227,11 @@ compress:
 	}
 
 	avi_codec_zmbv::avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh)
+		: z(getzlevel(_level))
 	{
 		bh = _bh;
 		bw = _bw;
-		level = _level;
 		max_pframes = maxpframes;
-		memset(&zstream, 0, sizeof(zstream));
-		if(deflateInit(&zstream, getzlevel(_level)))
-			throw std::runtime_error("Error initializing deflate");
 	}
 
 	avi_video_codec::format avi_codec_zmbv::reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d)
@@ -264,11 +249,8 @@ compress:
 		prev_frame = &pixbuf[(ewidth + 2 * MAXIMUM_VECTOR) * (eheight + 2 * MAXIMUM_VECTOR)];
 		scratch = &pixbuf[2 * (ewidth + 2 * MAXIMUM_VECTOR) * (eheight + 2 * MAXIMUM_VECTOR)];
 		mv.resize(((ewidth + bw - 1) / bw) * ((eheight + bh - 1) / bh));
-		size_t maxdiff = 4 * ((mv.size() + 1) / 2) + 4 * ewidth * eheight;
-		outbuf_size = deflateBound(&zstream, maxdiff) + 128;
-		outbuffer.resize(maxdiff + outbuf_size);
-		oscratch = &outbuffer[outbuf_size];
-		outbuf = &outbuffer[0];
+		outbuffer.resize(4 * ((mv.size() + 1) / 2) + 4 * ewidth * eheight);
+		oscratch = &outbuffer[0];
 		memset(&pixbuf[0], 0, 4 * pixbuf.size());
 		return fmt;
 	}
@@ -328,8 +310,7 @@ compress:
 		//Serialize and output.
 		serialize_frame(keyframe);
 		std::swap(current_frame, prev_frame);
-		out.payload.resize(outbuf_used);
-		memcpy(&out.payload[0], outbuf, outbuf_used);
+		z.readsync(out.payload);
 		out.typecode = 0x6264;		//Not exactly correct according to specs...
 		out.hidden = false;
 		out.indexflags = keyframe ? 0x10 : 0;
