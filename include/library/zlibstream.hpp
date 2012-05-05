@@ -43,6 +43,23 @@ struct zlibstream
  */
 	void read(std::vector<char>& out);
 /**
+ * Read the data so far as buffer and empty compressed data.
+ *
+ * This performs a sync flush.
+ *
+ * Parameter out: The buffer to write to.
+ */
+	void readsync(std::vector<char>& out);
+/**
+ * Clear the output stream and add some uncompressed data.
+ *
+ * This is useful after doing readsync().
+ *
+ * Parameter data: The data to write (may be NULL if datalen=0).
+ * Parameter datalen: The length of data.
+ */
+	void adddata(uint8_t* data, size_t datalen);
+/**
  * Set flag.
  *
  * Parameter f: New flag value.
@@ -61,7 +78,9 @@ private:
 		size_t used;
 	};
 
-	void flushpage(uint8_t* data, size_t datalen, bool final);
+	void _read(std::vector<char>& out, int mode);
+	void _reset(uint8_t* data, size_t datalen, bool doactually);
+	void flushpage(uint8_t* data, size_t datalen, int mode);
 	zlibstream(zlibstream&);
 	zlibstream& operator=(zlibstream&);
 	z_stream z;
