@@ -647,7 +647,8 @@ short read_axis_value(const char* buf, size_t& idx) throw()
 			idx++;
 		}
 		//Read the sign if any.
-		if(!is_nonterminator(buf[idx]))
+		ch = buf[idx];
+		if(!is_nonterminator(ch))
 			return 0;
 		bool negative = false;
 		if(ch == '-') {
@@ -659,7 +660,7 @@ short read_axis_value(const char* buf, size_t& idx) throw()
 
 		//Read numeric value.
 		int numval = 0;
-		while(!is_nonterminator(buf[idx]) && isdigit(static_cast<unsigned char>(ch = buf[idx]))) {
+		while(is_nonterminator(buf[idx]) && isdigit(static_cast<unsigned char>(ch = buf[idx]))) {
 			numval = numval * 10 + (ch - '0');
 			idx++;
 		}
