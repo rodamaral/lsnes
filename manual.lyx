@@ -6192,5 +6192,17 @@ lsnes-dumpavi: Start Lua before starting dumper
 AVI: Fix secondary audio in mode 4.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta7epsilon2
+\end_layout
+
+\begin_layout Itemize
+AVI: Refactor ZMBV a bit.
+\end_layout
+
+\begin_layout Itemize
+Fix error reading analog values from movie file
+\end_layout
+
 \end_body
 \end_document

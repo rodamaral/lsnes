@@ -3056,3 +3056,9 @@ set-axis joystick0axis19 disabled
 
 • AVI: Fix secondary audio in mode 4.
 
+15.59 rr1-delta7epsilon2
+
+• AVI: Refactor ZMBV a bit.
+
+• Fix error reading analog values from movie file
+
