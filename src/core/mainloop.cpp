@@ -76,6 +76,17 @@ namespace
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
+	//Delay reset.
+	unsigned long long delayreset_cycles_run;
+	unsigned long long delayreset_cycles_target;
+
+	bool delayreset_fn()
+	{
+		if(delayreset_cycles_run == delayreset_cycles_target || video_refresh_done)
+			return true;
+		delayreset_cycles_run++;
+		return false;
+	}
 
 	std::string save_jukebox_name(size_t i)
 	{
@@ -505,10 +516,13 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<> reset_c("reset", "Reset the SNES",
-		"Syntax: reset\nResets the SNES in beginning of the next frame.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			pending_reset_cycles = 0;
+	function_ptr_command<const std::string&> reset_c("reset", "Reset the SNES",
+		"Syntax: reset\nReset <delay>\nResets the SNES in beginning of the next frame.\n",
+		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			if(x == "")
+				pending_reset_cycles = 0;
+			else
+				pending_reset_cycles = parse_value<uint32_t>(x);
 		});
 
 	function_ptr_command<arg_filename> load_c("load", "Load savestate (current mode)",
@@ -789,22 +803,16 @@ namespace
 		if(cycles == 0)
 			messages << "SNES reset" << std::endl;
 		else if(cycles > 0) {
-			messages << "SNES delayed reset not implemented (doing immediate reset)" << std::endl;
-			/* ... This code is just too buggy.
-			long cycles_executed = 0;
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
-			while(cycles_executed < cycles && !video_refresh_done) {
-				//Poll inputs once in a while to prevent activating watchdog.
-				if(cycles_executed % 100 == 0)
-					platform::flush_command_queue();
-				SNES::cpu.op_step();
-				cycles_executed++;
-			}
+			delayreset_cycles_run = 0;
+			delayreset_cycles_target = cycles;
+			SNES::cpu.step_event = delayreset_fn;
+			SNES::system.run();
+			SNES::cpu.step_event = nall::function<bool()>();
 			if(!video_refresh_done)
-				messages << "SNES reset (delayed " << cycles_executed << ")" << std::endl;
+				messages << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
 			else
-				messages << "SNES reset (forced at " << cycles_executed << ")" << std::endl;
-			*/
+				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
 		}
 		SNES::system.reset();
 		lua_callback_do_reset();
