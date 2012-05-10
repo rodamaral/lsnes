@@ -3067,3 +3067,9 @@ set-axis joystick0axis19 disabled
 
 • Fix error reading analog values from movie file
 
+15.60 rr1-delta8
+
+• Delayed reset support
+
+• Lua: memory.hash_region
+

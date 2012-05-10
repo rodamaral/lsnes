@@ -6213,5 +6213,17 @@ AVI: Refactor ZMBV a bit.
 Fix error reading analog values from movie file
 \end_layout
 
+\begin_layout Subsection
+rr1-delta8
+\end_layout
+
+\begin_layout Itemize
+Delayed reset support
+\end_layout
+
+\begin_layout Itemize
+Lua: memory.hash_region
+\end_layout
+
 \end_body
 \end_document
