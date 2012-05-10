@@ -1719,6 +1719,11 @@ result.
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
+8.8.16 memory.hash_region(number base, number size)
+
+Hash specified number of bytes starting from specified address 
+and return the SHA-256.
+
 8.9 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
