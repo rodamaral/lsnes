@@ -1719,6 +1719,11 @@ result.
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
+8.8.16 memory.hash_region(number base, number size)
+
+Hash specified number of bytes starting from specified address 
+and return the SHA-256.
+
 8.9 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
@@ -3061,4 +3066,10 @@ set-axis joystick0axis19 disabled
 • AVI: Refactor ZMBV a bit.
 
 • Fix error reading analog values from movie file
+
+15.60 rr1-delta8
+
+• Delayed reset support
+
+• Lua: memory.hash_region
 

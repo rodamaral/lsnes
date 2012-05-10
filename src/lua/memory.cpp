@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/memorymanip.hpp"
 #include "core/rom.hpp"
+#include "library/sha256.hpp"
 
 namespace
 {
@@ -92,6 +93,29 @@ namespace
 			hash[2 * i + 1] = hexes[static_cast<unsigned char>(x[offset + i]) & 0xF];
 		}
 		lua_pushlstring(LS, hash, 64);
+		return 1;
+	});
+
+#define BLOCKSIZE 256
+
+	function_ptr_luafun hashmemory("memory.hash_region", [](lua_State* LS, const std::string& fname) -> int {
+		std::string hash;
+		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		uint32_t size = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
+		char buffer[BLOCKSIZE];
+		sha256 h;
+		while(size > BLOCKSIZE) {
+			for(size_t i = 0; i < BLOCKSIZE; i++)
+				buffer[i] = memory_read_byte(addr + i);
+			h.write(buffer, BLOCKSIZE);
+			addr += BLOCKSIZE;
+			size -= BLOCKSIZE;
+		}
+		for(size_t i = 0; i < size; i++)
+			buffer[i] = memory_read_byte(addr + i);
+		h.write(buffer, size);
+		hash = h.read();
+		lua_pushlstring(LS, hash.c_str(), 64);
 		return 1;
 	});
 
