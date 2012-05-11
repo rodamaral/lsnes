@@ -1,0 +1,105 @@
+# Prefix to apply to commands for building stuff for target architecture.
+CROSS_PREFIX=
+
+# Postfix for object files
+OBJECT_SUFFIX=o
+
+# Postfix for archive files
+OBJECT_SUFFIX=a
+
+# Postfix (including possible '.') for executable files.
+DOT_EXECUTABLE_SUFFIX=
+
+# C++ compiler (GCC 4.6)
+# CROSS_PREFIX is prepended.
+CC=g++-4.6
+
+# Linker
+# CROSS_PREFIX is prepended.
+LD=ld
+
+# Host C++ compiler
+HOSTCC=CC
+
+# Host C++ compiler/linker flags.
+USER_HOSTCCFLAGS=
+
+# C++ complier extra flags.
+USER_CFLAGS=-g
+
+# Linker extra flags.
+USER_LDFLAGS=
+
+# C++ compiler extra flags for platform code.
+USER_PLATFORM_CFLAGS=
+
+# Linker extra flags for platform code.
+USER_PLATFORM_LDFLAGS=
+
+# The name of font file to use.
+# Currently supported:
+# - cp437.hex: Standard VGA font (256 characters).
+# - unifontfull-5.1.20080820.hex: GNU unifont (covers most of Unicode BMP)
+FONT_SRC=unifontfull-5.1.20080820.hex
+
+# Lua package to use.
+# - Usually either 'lua' or 'lua5.1'.
+# - Empty value disables Lua support.
+LUA=lua
+
+# Threading package to use.
+# Currently supported:
+# - NATIVE: std::thread
+# - BOOST: boost_thread
+THREADS=BOOST
+
+# Graphics library to use.
+# Currently supported:
+# - SDL: Simple Directmedia Layer.
+# - WXWIDGETS: wxWidgets
+GRAPHICS=WXWIDGETS
+
+# Sound library to use.
+# Currently supported:
+# - DUMMY: No sound.
+# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
+# - PORTAUDIO: Portaudio.
+SOUND=PORTAUDIO
+
+# Joystick library to use.
+# Currently supported:
+# - DUMMY: No joystick.
+# - EVDEV: EVDEV (Linux only)
+# - WIN32MM: Windows Multimedia (Win32 only).
+# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
+# - WXWIDGETS: wxWidgets (GRAPHICS=WXWIDGETS only)
+JOYSTICK=DUMMY
+
+# Enable use of Secret Rabbit Code (a.k.a. libsamperate).
+# Set to non-blank (e.g. 'yes') to enable.
+SECRET_RABBIT_CODE=
+
+# Path to bsnes for includes/library.
+# Edit this to whatever is appropriate (it needs to point to the bsnes directory that was alongside other top-level
+# bsnes directories, but those directories themselves are not needed).
+BSNES_PATH=bsnes/bsnes
+
+# Bsnes version used.
+# 087 has different layout from the rest.
+BSNES_VERSION=085
+
+# Bsnes build uses compatiblity core, not accuracy core.
+# Set to non-empty value (e.g. 'yes') if so.
+BSNES_IS_COMPAT=
+
+# Do boost libraries need the '-mt' prefix?
+# Set to non-empty value (e.g. 'yes') if so.
+BOOST_NEEDS_MT=
+
+# Does the linker not need -rdynamic to export the symbols?
+# Set to non-empty value (e.g. 'yes') if so.
+NO_RDYNAMIC=
+
+# Disable use of DLFCN.
+# Set to non-empty value (e.g. 'yes') if so.
+NO_DLFCN=

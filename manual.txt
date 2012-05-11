@@ -6,9 +6,9 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 1. bsnes libsnes
 
-  (a) v084 or 085
+  (a) v084, v085, v086 or v087
 
-  (b) accuracy or compatiblity core.
+  (b) accuracy or compatiblity core with debugger enabled.
 
   (c) Patched version (using included 6 patches)
 
@@ -18,7 +18,7 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 4. boost_filesystem
 
-5. boost_thread
+5. boost_thread (if native std::thread is not available)
 
 6. libsdl (SDL only)
 
@@ -30,163 +30,18 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 10. Portaudio (portaudio sound only)
 
-11. std::thread and co (for threaded dumper only, not needed if 
-  std::thread is available)
+11. Lua (if Lua support is needed).
 
-12. Lua (if Lua support is needed).
+  • Version 5.1.X or 5.2X.
 
-• Version 5.1.X or 5.2X.
+12. G++ 4.6 (bsnes doesn't seem to like 4.7).
 
 3 Building
 
-Building is via makefile, the following options are available:
+• Edit options.build (or copy of that file)
 
-• CROSS_PREFIX=<prefix>
-
-  – Prefix to apply to commands when building executables / 
-    object files for the target architecture. 
-
-  – Default is blank.
-
-• CC=<name>
-
-  – Name of C++ compiler.
-
-  – CROSS_PREFIX is prepended if compiling for target 
-    architecture.
-
-  – This needs to be at least GCC 4.6.
-
-  – Set to 'g++-mp-4.6' if compiling on Mac OS X using GCC 4.6 
-    from Macports.
-
-  – Default is 'g++'.
-
-• HOSTCC=<name>
-
-  – Name of host C++ compiler.
-
-  – Default is value of 'CC' option.
-
-• USER_HOSTCCFLAGS=<flags>:
-
-  – Compiler flags to pass when compiling/linking for host 
-    architecture.
-
-  – Default is blank.
-
-• USER_CFLAGS=<flags>
-
-  – Extra flags to pass when compiling for target architecture
-
-  – Default is blank.
-
-• USER_LDFLAGS=<flags>: 
-
-  – Extra flags to pass when linking for target architecture.
-
-  – Default is blank.
-
-• USER_PLATFORM_CFLAGS=<flags>
-
-  – Extra flags to pass when compiling files using 
-    platform-dependent code for target architecture.
-
-  – Default is blank.
-
-• USER_PLATFORM_LDFLAGS=<flags>
-
-  – Extra flags to pass when linking files using 
-    platform-dependent code for target architecture.
-
-  – Default is blank.
-
-• FONT_SRC=<file>
-
-  – Set the font file to use.
-
-  – Currently the valid values are:
-
-    ∗ cp437.hex: Standard VGA font (256 characters).
-
-    ∗ unifontfull-5.1.20080820.hex: GNU unifont (covers most of 
-      Unicode BMP)
-
-  – Default is 'unifontfull-5.1.20080820.hex'
-
-• LUA=<package>
-
-  – Package to use for Lua support.
-
-  – Usually valid value is 'lua' or 'lua5.1'.
-
-  – Default is not to build Lua support.
-
-• THREADS=<value>
-
-  – Override platform default for dumper threading support.
-
-  – Threading is default on Linux.
-
-  – 'YES' tries to use threading (std::thread).
-
-  – 'BOOST' tries to use threading (boost::thread).
-
-  – 'NO' disables threading.
-
-  – Note: This has absolutely nothing to do with platform 
-    threading.
-
-• BSNES_IS_COMPAT=<anything>
-
-  – Signals that BSNES core used is compatiblity core, not 
-    accuracy core.
-
-  – Default is to assume accuracy core.
-
-• SECRET_RABBIT_CODE=<anything>
-
-  – Signals that SRC (a.k.a. libsamplerate) should be used for 
-    high-quality samplerate conversions.
-
-• JOYSTICK=<implementation>
-
-  – Set joystick implementation. Valid values are:
-
-    ∗ SDL: Use SDL for joystick (requires SDL graphics)
-
-    ∗ EVDEV: Use EVDEV for joystick (Linux only).
-
-    ∗ WIN32MM: Use Win32mm for joystick (Windows only).
-
-    ∗ WXWIDGETS: Use Wxwidgets for joystick (requires WXWIDGETS 
-      graphics)
-
-    ∗ DUMMY: Disable joystick support.
-
-  – Default is SDL.
-
-• SOUND=<implementation>
-
-  – Set sound implementation. Valid values are:
-
-    ∗ SDL: Use SDL for sound (requires SDL graphics)
-
-    ∗ PORTAUDIO: Use Portaudio for sound.
-
-    ∗ DUMMY: Disable sound support
-
-  – Default is SDL.
-
-• GRAPHICS=<implementation>
-
-  – Set windowing library to use. Valid values are:
-
-    ∗ SDL: Use SDL for graphics
-
-    ∗ WXWIDGETS: Use wxWidgets for graphics.
-
-  – Default is SDL.
+• Run make (passing 'OPTIONS=<filename>' if using something else 
+  than options.build).
 
 4 Command line options
 

@@ -9,7 +9,7 @@ codec/__all__.o: forcelook
 	$(MAKE) -C codec
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../include $(VIDEO_CLFAGS)
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../include
 
 forcelook:
 	@true

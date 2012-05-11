@@ -7,8 +7,6 @@ endif
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
-export VIDEO_CFLAGS
-
 __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALLD) -r -o $@ $^
 	echo $(AVI_LDFLAGS) >__all__.ldflags

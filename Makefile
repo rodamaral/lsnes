@@ -1,50 +1,30 @@
-CROSS_PREFIX=
-DOT_EXECUTABLE_SUFFIX=
-OBJECT_SUFFIX = o
-ARCHIVE_SUFFIX = a
-FONT_SRC := unifontfull-5.1.20080820.hex
+OPTIONS=options.build
+include $(OPTIONS)
 
-USER_CFLAGS=
-USER_LDFLAGS=
 
 #Compilers.
-CC := g++
-LD := ld
 REALCC = $(CROSS_PREFIX)$(CC)
 REALLD = $(CROSS_PREFIX)$(LD)
-HOSTCC = $(CC)
 
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -std=gnu++0x $(USER_CFLAGS)
-LDFLAGS = -lboost_iostreams-mt -lboost_filesystem-mt -lboost_system-mt -lboost_regex-mt -lz $(USER_LDFLAGS)
-
-#Platform
-GRAPHICS=SDL
-SOUND=SDL
-JOYSTICK=SDL
-THREADS=BOOST
-
-#bsnes
-ifdef BSNES_VERSION
-CFLAGS += -DBSNES_V$(BSNES_VERSION)
+ifdef BOOST_NEEDS_MT
+BOOST_LIB_POSTFIX=
+else
+BOOST_LIB_POSTFIX=-mt
 endif
 
-#Threads
-ifdef THREADS
+LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
+
 ifeq ($(THREADS), NATIVE)
 CFLAGS += -DNATIVE_THREADS
 else
 ifeq ($(THREADS), BOOST)
 CFLAGS += -DBOOST_THREADS
-ifdef BOOST_THREAD_LIB
-LDFLAGS += -l$(BOOST_THREAD_LIB)
-else
-LDFLAGS += -lboost_thread-mt
-endif
+LDFLAGS += -lboost_thread$(BOOST_LIB_POSTFIX)
 else
 $(error "Bad value for THREADS (expected NATIVE or BOOST)")
-endif
 endif
 endif
 
@@ -52,7 +32,7 @@ ifdef BSNES_IS_COMPAT
 CFLAGS += -DBSNES_IS_COMPAT
 endif
 
-export DOT_EXECUTABLE_SUFFIX OBJECT_SUFFIX ARCHIVE_SUFFIX FONT_SRC REALCC HOSTCC REALLD HOSTCCFLAGS CFLAGS LDFLAGS GRAPHICS SOUND JOYSTICK THREADS
+export
 
 all: src/__all_files__
 
