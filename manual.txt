@@ -642,14 +642,19 @@ button names are known:
 Hold/unhold button <button> on controller <num> (1-8). See 
 +controller for button names.
 
-6.7.27 autofire (<pattern>|-)...
+6.7.27 controllerf<num><button>
+
+Hold/unhold button <button> on controller <num> (1-8) for the 
+next frame. See +controller for button names.
+
+6.7.28 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
 button names (in form of 1start, 1A, 2B, etc..) to hold on that 
 frame. After reaching the end of pattern, the pattern restarts 
 from the beginning.
 
-6.7.28 repaint
+6.7.29 repaint
 
 Force a repaint.
 

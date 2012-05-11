@@ -30,7 +30,7 @@ namespace
 	}
 
 	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, bool autoh)
+	void do_button_action(unsigned ui_id, unsigned button, short newstate, int mode)
 	{
 		int x = controls.lcid_to_pcid(ui_id);
 		if(x < 0) {
@@ -42,9 +42,20 @@ namespace
 			messages << "Invalid button for controller type" << std::endl;
 			return;
 		}
-		if(autoh) {
+		if(mode == 1) {
+			//Autohold.
 			controls.autohold(x, bid, controls.autohold(x, bid) ^ newstate);
 			information_dispatch::do_autohold_update(x, bid, controls.autohold(x, bid));
+		} else if(mode == 2) {
+			//Framehold.
+			bool nstate = controls.framehold(x, bid) ^ newstate;
+			controls.framehold(x, bid, nstate);
+			if(nstate)
+				messages << "Holding " << (ui_id + 1) << get_logical_button_name(button)
+					<< " for the next frame" << std::endl;
+			else
+				messages << "Not holding " << (ui_id + 1) << get_logical_button_name(button)
+					<< " for the next frame" << std::endl;
 		} else
 			controls.button(x, bid, newstate);
 	}
@@ -130,7 +141,14 @@ namespace
 			if(!buttonmap.count(button))
 				return;
 			auto i = buttonmap[button];
-			do_button_action(i.first, i.second, (type != 1) ? 1 : 0, (type == 2));
+			if(type == 0)
+				do_button_action(i.first, i.second, 1, 0);
+			else if(type == 1)
+				do_button_action(i.first, i.second, 0, 0);
+			else if(type == 2)
+				do_button_action(i.first, i.second, 1, 1);
+			else if(type == 3)
+				do_button_action(i.first, i.second, 1, 2);
 			update_movie_state();
 			information_dispatch::do_status_update();
 		}
@@ -181,7 +199,7 @@ namespace
 		button_action_helper()
 		{
 			for(size_t i = 0; i < MAX_LOGICAL_BUTTONS; ++i)
-				for(int j = 0; j < 3; ++j)
+				for(int j = 0; j < 4; ++j)
 					for(unsigned k = 0; k < 8; ++k) {
 						stringfmt x, y, expx;
 						switch(j) {
@@ -193,6 +211,9 @@ namespace
 							break;
 						case 2:
 							x << "controllerh";
+							break;
+						case 3:
+							x << "controllerf";
 							break;
 						};
 						x << (k + 1) << get_logical_button_name(i);

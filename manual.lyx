@@ -1329,6 +1329,15 @@ Hold/unhold button <button> on controller <num> (1-8).
 \end_layout
 
 \begin_layout Subsubsection
+controllerf<num><button>
+\end_layout
+
+\begin_layout Standard
+Hold/unhold button <button> on controller <num> (1-8) for the next frame.
+ See +controller for button names.
+\end_layout
+
+\begin_layout Subsubsection
 autofire (<pattern>|-)...
 \end_layout
 

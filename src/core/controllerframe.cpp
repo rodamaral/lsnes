@@ -809,9 +809,9 @@ devicetype_t controller_state::pcid_to_type(unsigned pcid) throw()
 controller_frame controller_state::get(uint64_t framenum) throw()
 {
 	if(_autofire.size())
-		return _input ^ _autohold ^ _autofire[framenum % _autofire.size()];
+		return _input ^ _framehold ^ _autohold ^ _autofire[framenum % _autofire.size()];
 	else
-		return _input ^ _autohold;
+		return _input ^ _framehold ^ _autohold;
 }
 
 void controller_state::analog(unsigned acid, int x, int y) throw()
@@ -844,6 +844,22 @@ void controller_state::autohold(unsigned pcid, unsigned pbid, bool newstate) thr
 bool controller_state::autohold(unsigned pcid, unsigned pbid) throw()
 {
 	return (_autohold.axis(pcid, pbid) != 0);
+}
+
+void controller_state::reset_framehold() throw()
+{
+	_framehold = _framehold.blank_frame();
+}
+
+void controller_state::framehold(unsigned pcid, unsigned pbid, bool newstate) throw()
+{
+	_framehold.axis(pcid, pbid, newstate ? 1 : 0);
+	information_dispatch::do_autohold_update(pcid, pbid, newstate);
+}
+
+bool controller_state::framehold(unsigned pcid, unsigned pbid) throw()
+{
+	return (_framehold.axis(pcid, pbid) != 0);
 }
 
 void controller_state::button(unsigned pcid, unsigned pbid, bool newstate) throw()
@@ -883,6 +899,7 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 		_input.set_port_type(port, ptype);
 		_autohold.set_port_type(port, ptype);
 		_committed.set_port_type(port, ptype);
+		_framehold.set_port_type(port, ptype);
 		//The old autofire pattern no longer applies.
 		_autofire.clear();
 	}

@@ -1132,6 +1132,26 @@ public:
  */
 	bool autohold(unsigned pcid, unsigned pbid) throw();
 /**
+ * Reset all frame holds.
+ */
+	void reset_framehold() throw();
+/**
+ * Manipulate hold for frame.
+ *
+ * Parameter pcid: The physical controller ID to manipulate.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter newstate: The new state for framehold.
+ */
+	void framehold(unsigned pcid, unsigned pbid, bool newstate) throw();
+/**
+ * Query hold for frame.
+ *
+ * Parameter pcid: The physical controller ID to query.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of framehold.
+ */
+	bool framehold(unsigned pcid, unsigned pbid) throw();
+/**
  * Manipulate button.
  *
  * Parameter pcid: The physical controller ID to manipulate.
@@ -1177,6 +1197,7 @@ private:
 	bool analog_mouse[MAX_ANALOG];
 	controller_frame _input;
 	controller_frame _autohold;
+	controller_frame _framehold;
 	controller_frame _committed;
 	std::vector<controller_frame> _autofire;
 };

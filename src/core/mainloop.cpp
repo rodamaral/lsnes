@@ -890,6 +890,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			amode = ADVANCE_SKIPLAG;
 
 		if(!first_round) {
+			controls.reset_framehold();
 			resetcycles = movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
