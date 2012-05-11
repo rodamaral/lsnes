@@ -912,6 +912,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				else
 					amode = old_mode;
 				just_did_loadstate = first_round;
+				controls.reset_framehold();
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
