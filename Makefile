@@ -56,7 +56,7 @@ endif
 bsnes_compiler=$(subst ++,cc,$(REALCC))
 
 bsnes/out/libsnes.$(ARCHIVE_SUFFIX): bsnes/snes/snes.hpp forcelook
-	$(MAKE) -C bsnes OPTIONS=debugger $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING) compiler=$(bsnes_compiler)
+	$(MAKE) -C bsnes options=debugger $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING) compiler=$(bsnes_compiler)
 	$(REALRANLIB) $@
 
 src/__all_files__: src/core/version.cpp forcelook bsnes/out/libsnes.$(ARCHIVE_SUFFIX)

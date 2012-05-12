@@ -6,7 +6,7 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 1. bsnes libsnes
 
-  (a) v085
+  (a) v084-v087 (v084 or v085 for delayreset support)
 
   (b) accuracy or compatiblity core with debugger enabled.
 

@@ -77,7 +77,7 @@ bsnes libsnes
 
 \begin_deeper
 \begin_layout Enumerate
-v085
+v084-v087 (v084 or v085 for delayreset support)
 \end_layout
 
 \begin_layout Enumerate

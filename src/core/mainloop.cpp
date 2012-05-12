@@ -803,6 +803,7 @@ namespace
 		if(cycles == 0)
 			messages << "SNES reset" << std::endl;
 		else if(cycles > 0) {
+#if defined(BSNES_V084) || defined(BSNES_V085)
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			delayreset_cycles_run = 0;
 			delayreset_cycles_target = cycles;
@@ -813,6 +814,10 @@ namespace
 				messages << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
 			else
 				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
+#else
+			messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
+				<< std::endl;
+#endif
 		}
 		SNES::system.reset();
 		lua_callback_do_reset();
