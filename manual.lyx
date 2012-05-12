@@ -144,7 +144,7 @@ Building
 \end_layout
 
 \begin_layout Itemize
-Copy bsnes sources to subdirectory 'bsnes'
+Copy bsnes sources (the bsnes subdirectory) to subdirectory 'bsnes'.
 \end_layout
 
 \begin_layout Itemize
