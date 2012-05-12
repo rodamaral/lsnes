@@ -13,9 +13,9 @@ BSNES_PATH=$(shell pwd)/bsnes
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -std=gnu++0x $(USER_CFLAGS)
 ifdef BOOST_NEEDS_MT
-BOOST_LIB_POSTFIX=
-else
 BOOST_LIB_POSTFIX=-mt
+else
+BOOST_LIB_POSTFIX=
 endif
 
 LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS)
