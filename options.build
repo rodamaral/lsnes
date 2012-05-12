@@ -1,8 +1,9 @@
 #
-# Target system:
-#	- The system the built lsnes will run on.
 # Host system:
 #	- The system lsnes is being built on.
+# Target system:
+#	- The system the built lsnes will run on.
+#	- If not crosscompiling, this is the same as host system.
 #
 
 
