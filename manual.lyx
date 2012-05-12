@@ -77,7 +77,7 @@ bsnes libsnes
 
 \begin_deeper
 \begin_layout Enumerate
-v084, v085, v086 or v087
+v085
 \end_layout
 
 \begin_layout Enumerate
@@ -85,7 +85,7 @@ accuracy or compatiblity core with debugger enabled.
 \end_layout
 
 \begin_layout Enumerate
-Patched version (using included 6 patches)
+Patched version (using included 7 patches)
 \end_layout
 
 \end_deeper
