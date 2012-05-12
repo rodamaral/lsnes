@@ -5,6 +5,7 @@ include $(OPTIONS)
 #Compilers.
 REALCC = $(CROSS_PREFIX)$(CC)
 REALLD = $(CROSS_PREFIX)$(LD)
+REALRANLIB = $(CROSS_PREFIX)$(RANLIB)
 
 BSNES_PATH=$(shell pwd)/bsnes
 
@@ -52,8 +53,9 @@ endif
 
 bsnes_compiler=$(subst ++,cc,$(REALCC))
 
-bsnes/out/libsnes.$(ARCHIVE_SUFFIX): bsnes/snes/snes.hpp
+bsnes/out/libsnes.$(ARCHIVE_SUFFIX): bsnes/snes/snes.hpp forcelook
 	$(MAKE) -C bsnes OPTIONS=debugger $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING) compiler=$(bsnes_compiler)
+	$(REALRANLIB) $@
 
 src/__all_files__: src/core/version.cpp forcelook bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 	$(MAKE) -C src precheck

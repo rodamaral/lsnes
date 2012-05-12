@@ -27,6 +27,10 @@ CC=g++-4.6
 # CROSS_PREFIX is prepended to this.
 LD=ld
 
+# Ranlib for target system.
+# CROSS_PREFIX is prepended to this.
+RANLIB=ranlib
+
 # Host system C++ compiler.
 # If not crosscompiling, build host system and target system are one and the same.
 # $(CC) means the same compiler as main C++ compiler to use (but without prefix). Otherwise, set to host C++ compiler.
