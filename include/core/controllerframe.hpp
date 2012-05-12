@@ -1128,6 +1128,28 @@ public:
  */
 	bool autohold(unsigned port, unsigned pcid, unsigned pbid) throw();
 /**
+ * Reset all frame holds.
+ */
+	void reset_framehold() throw();
+/**
+ * Manipulate hold for frame.
+ *
+ * Parameter port: The port.
+ * Parameter pcid: The physical controller ID to manipulate.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter newstate: The new state for framehold.
+ */
+	void framehold(unsigned port, unsigned pcid, unsigned pbid, bool newstate) throw();
+/**
+ * Query hold for frame.
+ *
+ * Parameter port: The port.
+ * Parameter pcid: The physical controller ID to query.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of framehold.
+ */
+	bool framehold(unsigned port, unsigned pcid, unsigned pbid) throw();
+/**
  * Manipulate button.
  *
  * Parameter port: The port number to manipulate.
@@ -1174,6 +1196,7 @@ private:
 	porttype_t porttypes[MAX_PORTS];
 	controller_frame _input;
 	controller_frame _autohold;
+	controller_frame _framehold;
 	controller_frame _committed;
 	std::vector<controller_frame> _autofire;
 };

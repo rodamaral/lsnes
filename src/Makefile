@@ -7,6 +7,8 @@ LDFLAGS += -rdynamic
 endif
 ifdef NO_DLFCN
 CFLAGS += -DNO_DLFCN
+else
+LDFLAGS += -ldl
 endif
 
 DUMMY_LIBRARY=core lua fonts interface library video dummy

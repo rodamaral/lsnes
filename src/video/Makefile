@@ -1,4 +1,4 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) avi/__all__.o
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) avi/__all__.$(OBJECT_SUFFIX)
 
 ifdef SECRET_RABBIT_CODE
 AVI_CFLAGS=-DWITH_SECRET_RABBIT_CODE
@@ -6,8 +6,6 @@ AVI_LDFLAGS=-lsamplerate
 endif
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
-
-export VIDEO_CFLAGS
 
 __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALLD) -r -o $@ $^

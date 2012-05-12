@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstdlib>
+#include <map>
 #include "video/avi/structure.hpp"
 #include "video/avi/samplequeue.hpp"
 #include "video/avi/timer.hpp"

@@ -2,13 +2,11 @@ OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
-export VIDEO_CFLAGS
-
-__all__.o: $(OBJECTS)
+__all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALLD) -r -o $@ $^
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../../../include $(VIDEO_CLFAGS)
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../../../include
 
 precheck:
 	@true

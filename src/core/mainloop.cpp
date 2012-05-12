@@ -782,6 +782,7 @@ namespace
 		if(cycles == 0)
 			messages << "SNES reset" << std::endl;
 		else if(cycles > 0) {
+#if defined(BSNES_V084) || defined(BSNES_V085)
 			messages << "Executing delayed reset... This can take some time!" << std::endl;
 			delayreset_cycles_run = 0;
 			delayreset_cycles_target = cycles;
@@ -792,6 +793,10 @@ namespace
 				messages << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
 			else
 				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
+#else
+			messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
+				<< std::endl;
+#endif
 		}
 		SNES::system.reset();
 		lua_callback_do_reset();
@@ -869,6 +874,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			amode = ADVANCE_SKIPLAG;
 
 		if(!first_round) {
+			controls.reset_framehold();
 			resetcycles = movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
@@ -890,6 +896,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 				else
 					amode = old_mode;
 				just_did_loadstate = first_round;
+				controls.reset_framehold();
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.

@@ -77,15 +77,15 @@ bsnes libsnes
 
 \begin_deeper
 \begin_layout Enumerate
-v084 or 085
+v084-v087 (v084 or v085 for delayreset support)
 \end_layout
 
 \begin_layout Enumerate
-accuracy or compatiblity core.
+accuracy or compatiblity core with debugger enabled.
 \end_layout
 
 \begin_layout Enumerate
-Patched version (using included 6 patches)
+Patched version (using included 7 patches)
 \end_layout
 
 \end_deeper
@@ -102,7 +102,7 @@ boost_filesystem
 \end_layout
 
 \begin_layout Enumerate
-boost_thread
+boost_thread (if native std::thread is not available)
 \end_layout
 
 \begin_layout Enumerate
@@ -126,346 +126,41 @@ Portaudio (portaudio sound only)
 \end_layout
 
 \begin_layout Enumerate
-std::thread and co (for threaded dumper only, not needed if std::thread
- is available)
-\end_layout
-
-\begin_layout Enumerate
 Lua (if Lua support is needed).
 \end_layout
 
+\begin_deeper
 \begin_layout Itemize
 Version 5.1.X or 5.2X.
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+G++ 4.6 (bsnes doesn't seem to like 4.7).
 \end_layout
 
 \begin_layout Section
 Building
 \end_layout
 
-\begin_layout Standard
-Building is via makefile, the following options are available:
-\end_layout
-
-\begin_layout Itemize
-CROSS_PREFIX=<prefix>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Prefix to apply to commands when building executables / object files for
- the target architecture.
- 
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-CC=<name>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Name of C++ compiler.
-\end_layout
-
-\begin_layout Itemize
-CROSS_PREFIX is prepended if compiling for target architecture.
-\end_layout
-
-\begin_layout Itemize
-This needs to be at least GCC 4.6.
-\end_layout
-
-\begin_layout Itemize
-Set to 'g++-mp-4.6' if compiling on Mac OS X using GCC 4.6 from Macports.
-\end_layout
-
-\begin_layout Itemize
-Default is 'g++'.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-HOSTCC=<name>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Name of host C++ compiler.
-\end_layout
-
-\begin_layout Itemize
-Default is value of 'CC' option.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-USER_HOSTCCFLAGS=<flags>:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Compiler flags to pass when compiling/linking for host architecture.
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-USER_CFLAGS=<flags>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Extra flags to pass when compiling for target architecture
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-USER_LDFLAGS=<flags>: 
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Extra flags to pass when linking for target architecture.
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-USER_PLATFORM_CFLAGS=<flags>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Extra flags to pass when compiling files using platform-dependent code for
- target architecture.
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-USER_PLATFORM_LDFLAGS=<flags>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Extra flags to pass when linking files using platform-dependent code for
- target architecture.
-\end_layout
-
-\begin_layout Itemize
-Default is blank.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-FONT_SRC=<file>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Set the font file to use.
-\end_layout
-
-\begin_layout Itemize
-Currently the valid values are:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-cp437.hex: Standard VGA font (256 characters).
-\end_layout
-
-\begin_layout Itemize
-unifontfull-5.1.20080820.hex: GNU unifont (covers most of Unicode BMP)
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Default is 'unifontfull-5.1.20080820.hex'
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-LUA=<package>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Package to use for Lua support.
-\end_layout
-
-\begin_layout Itemize
-Usually valid value is 'lua' or 'lua5.1'.
-\end_layout
-
-\begin_layout Itemize
-Default is not to build Lua support.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-THREADS=<value>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Override platform default for dumper threading support.
-\end_layout
-
-\begin_layout Itemize
-Threading is default on Linux.
-\end_layout
-
-\begin_layout Itemize
-'YES' tries to use threading (std::thread).
-\end_layout
-
-\begin_layout Itemize
-'BOOST' tries to use threading (boost::thread).
-\end_layout
-
-\begin_layout Itemize
-'NO' disables threading.
-\end_layout
-
-\begin_layout Itemize
-Note: This has absolutely nothing to do with platform threading.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-BSNES_IS_COMPAT=<anything>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Signals that BSNES core used is compatiblity core, not accuracy core.
-\end_layout
-
-\begin_layout Itemize
-Default is to assume accuracy core.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-SECRET_RABBIT_CODE=<anything>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Signals that SRC (a.k.a.
- libsamplerate) should be used for high-quality samplerate conversions.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-JOYSTICK=<implementation>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Set joystick implementation.
- Valid values are:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-SDL: Use SDL for joystick (requires SDL graphics)
-\end_layout
-
-\begin_layout Itemize
-EVDEV: Use EVDEV for joystick (Linux only).
-\end_layout
-
-\begin_layout Itemize
-WIN32MM: Use Win32mm for joystick (Windows only).
-\end_layout
-
-\begin_layout Itemize
-WXWIDGETS: Use Wxwidgets for joystick (requires WXWIDGETS graphics)
-\end_layout
-
-\begin_layout Itemize
-DUMMY: Disable joystick support.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Default is SDL.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-SOUND=<implementation>
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Set sound implementation.
- Valid values are:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-SDL: Use SDL for sound (requires SDL graphics)
-\end_layout
-
-\begin_layout Itemize
-PORTAUDIO: Use Portaudio for sound.
-\end_layout
-
-\begin_layout Itemize
-DUMMY: Disable sound support
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-Default is SDL.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-GRAPHICS=<implementation>
-\end_layout
-
-\begin_deeper
 \begin_layout Itemize
-Set windowing library to use.
- Valid values are:
+Copy bsnes sources (the bsnes subdirectory) to subdirectory 'bsnes'.
 \end_layout
 
-\begin_deeper
 \begin_layout Itemize
-SDL: Use SDL for graphics
+Patch the bsnes sources with included patches (directory 'bsnes-patches/<version
+>')
 \end_layout
 
 \begin_layout Itemize
-WXWIDGETS: Use wxWidgets for graphics.
+Edit options.build (or copy of that file)
 \end_layout
 
-\end_deeper
 \begin_layout Itemize
-Default is SDL.
+Run make (passing 'OPTIONS=<filename>' if using something else than options.build
+).
 \end_layout
 
-\end_deeper
 \begin_layout Section
 Command line options
 \end_layout
@@ -1639,6 +1334,15 @@ controllerh<num><button>
 
 \begin_layout Standard
 Hold/unhold button <button> on controller <num> (1-8).
+ See +controller for button names.
+\end_layout
+
+\begin_layout Subsubsection
+controllerf<num><button>
+\end_layout
+
+\begin_layout Standard
+Hold/unhold button <button> on controller <num> (1-8) for the next frame.
  See +controller for button names.
 \end_layout
 

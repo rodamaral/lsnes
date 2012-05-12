@@ -1,0 +1,116 @@
+#
+# Host system:
+#	- The system lsnes is being built on.
+# Target system:
+#	- The system the built lsnes will run on.
+#	- If not crosscompiling, this is the same as host system.
+#
+
+
+# Prefix to apply to compiler commands for the target system.
+CROSS_PREFIX=
+
+# Postfix for object files
+OBJECT_SUFFIX=o
+
+# Postfix for archive files
+ARCHIVE_SUFFIX=a
+
+# Postfix (including possible '.') for executable files.
+# Usually blank for any unix-type system, '.exe' for Windows.
+DOT_EXECUTABLE_SUFFIX=
+
+# C++ compiler (GCC 4.6)
+# CROSS_PREFIX is prepended to this.
+CC=g++-4.6
+
+# Linker for target system.
+# CROSS_PREFIX is prepended to this.
+LD=ld
+
+# Ranlib for target system.
+# CROSS_PREFIX is prepended to this.
+RANLIB=ranlib
+
+# Host system C++ compiler.
+# If not crosscompiling, build host system and target system are one and the same.
+# $(CC) means the same compiler as main C++ compiler to use (but without prefix). Otherwise, set to host C++ compiler.
+HOSTCC=$(CC)
+
+# Host C++ compiler/linker flags.
+USER_HOSTCCFLAGS=
+
+# C++ complier extra flags.
+USER_CFLAGS=-g
+
+# Linker extra flags.
+USER_LDFLAGS=
+
+# C++ compiler extra flags for platform code.
+USER_PLATFORM_CFLAGS=
+
+# Linker extra flags for platform code.
+USER_PLATFORM_LDFLAGS=
+
+# The name of font file to use.
+# Currently supported:
+# - cp437.hex: Standard VGA font (256 characters).
+# - unifontfull-5.1.20080820.hex: GNU unifont (covers most of Unicode BMP)
+FONT_SRC=unifontfull-5.1.20080820.hex
+
+# Lua package to use.
+# - Usually either 'lua' or 'lua5.1'.
+# - Empty value disables Lua support.
+LUA=lua
+
+# Threading package to use.
+# Currently supported:
+# - NATIVE: std::thread
+# - BOOST: boost_thread
+THREADS=BOOST
+
+# Graphics library to use.
+# Currently supported:
+# - SDL: Simple Directmedia Layer.
+# - WXWIDGETS: wxWidgets
+GRAPHICS=WXWIDGETS
+
+# Sound library to use.
+# Currently supported:
+# - DUMMY: No sound.
+# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
+# - PORTAUDIO: Portaudio.
+SOUND=PORTAUDIO
+
+# Joystick library to use.
+# Currently supported:
+# - DUMMY: No joystick.
+# - EVDEV: EVDEV (Linux only)
+# - WIN32MM: Windows Multimedia (Win32 only).
+# - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
+# - WXWIDGETS: wxWidgets (GRAPHICS=WXWIDGETS only)
+JOYSTICK=DUMMY
+
+# Enable use of Secret Rabbit Code (a.k.a. libsamperate).
+# Set to non-blank (e.g. 'yes') to enable.
+SECRET_RABBIT_CODE=
+
+# Bsnes version used.
+# 087 has different layout from the rest.
+BSNES_VERSION=085
+
+# Bsnes build uses compatiblity core, not accuracy core.
+# Set to non-empty value (e.g. 'yes') if so.
+BSNES_IS_COMPAT=
+
+# Do boost libraries need the '-mt' prefix?
+# Set to non-empty value (e.g. 'yes') if so.
+BOOST_NEEDS_MT=
+
+# Does the linker not need -rdynamic to export the symbols?
+# Set to non-empty value (e.g. 'yes') if so.
+NO_RDYNAMIC=
+
+# Disable use of DLFCN.
+# Set to non-empty value (e.g. 'yes') if so.
+NO_DLFCN=

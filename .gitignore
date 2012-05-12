@@ -9,5 +9,6 @@ rom
 lsnes
 *.util
 /core
+/bsnes
 src/fonts/font.cpp
 src/core/version.cpp
