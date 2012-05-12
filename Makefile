@@ -45,6 +45,8 @@ else
 BSNES_TARGET_STRING=ui=ui-libsnes
 endif
 
+CFLAGS += -DBSNES_V${BSNES_VERSION}
+
 ifdef BSNES_IS_COMPAT
 BSNES_PROFILE_STRING=profile=compatibility
 else
