@@ -38,6 +38,11 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 3 Building
 
+• Copy bsnes sources to subdirectory 'bsnes'
+
+• Patch the bsnes sources with included patches (directory 
+  'bsnes-patches/<version>')
+
 • Edit options.build (or copy of that file)
 
 • Run make (passing 'OPTIONS=<filename>' if using something else 

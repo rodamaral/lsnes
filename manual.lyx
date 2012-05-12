@@ -144,6 +144,15 @@ Building
 \end_layout
 
 \begin_layout Itemize
+Copy bsnes sources to subdirectory 'bsnes'
+\end_layout
+
+\begin_layout Itemize
+Patch the bsnes sources with included patches (directory 'bsnes-patches/<version
+>')
+\end_layout
+
+\begin_layout Itemize
 Edit options.build (or copy of that file)
 \end_layout
 

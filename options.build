@@ -1,25 +1,36 @@
-# Prefix to apply to commands for building stuff for target architecture.
+#
+# Target system:
+#	- The system the built lsnes will run on.
+# Host system:
+#	- The system lsnes is being built on.
+#
+
+
+# Prefix to apply to compiler commands for the target system.
 CROSS_PREFIX=
 
 # Postfix for object files
 OBJECT_SUFFIX=o
 
 # Postfix for archive files
-OBJECT_SUFFIX=a
+ARCHIVE_SUFFIX=a
 
 # Postfix (including possible '.') for executable files.
+# Usually blank for any unix-type system, '.exe' for Windows.
 DOT_EXECUTABLE_SUFFIX=
 
 # C++ compiler (GCC 4.6)
-# CROSS_PREFIX is prepended.
+# CROSS_PREFIX is prepended to this.
 CC=g++-4.6
 
-# Linker
-# CROSS_PREFIX is prepended.
+# Linker for target system.
+# CROSS_PREFIX is prepended to this.
 LD=ld
 
-# Host C++ compiler
-HOSTCC=CC
+# Host system C++ compiler.
+# If not crosscompiling, build host system and target system are one and the same.
+# $(CC) means the same compiler as main C++ compiler to use (but without prefix). Otherwise, set to host C++ compiler.
+HOSTCC=$(CC)
 
 # Host C++ compiler/linker flags.
 USER_HOSTCCFLAGS=
@@ -78,11 +89,6 @@ JOYSTICK=DUMMY
 # Enable use of Secret Rabbit Code (a.k.a. libsamperate).
 # Set to non-blank (e.g. 'yes') to enable.
 SECRET_RABBIT_CODE=
-
-# Path to bsnes for includes/library.
-# Edit this to whatever is appropriate (it needs to point to the bsnes directory that was alongside other top-level
-# bsnes directories, but those directories themselves are not needed).
-BSNES_PATH=bsnes/bsnes
 
 # Bsnes version used.
 # 087 has different layout from the rest.

@@ -6,6 +6,8 @@ include $(OPTIONS)
 REALCC = $(CROSS_PREFIX)$(CC)
 REALLD = $(CROSS_PREFIX)$(LD)
 
+BSNES_PATH=$(shell pwd)/bsnes
+
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
 CFLAGS = -I$(BSNES_PATH) -std=gnu++0x $(USER_CFLAGS)
@@ -36,7 +38,24 @@ export
 
 all: src/__all_files__
 
-src/__all_files__: src/core/version.cpp forcelook
+ifeq ($(BSNES_VERSION), 087)
+BSNES_TARGET_STRING=target=libsnes
+else
+BSNES_TARGET_STRING=ui=ui-libsnes
+endif
+
+ifdef BSNES_IS_COMPAT
+BSNES_PROFILE_STRING=profile=compatibility
+else
+BSNES_PROFILE_STRING=profile=accuracy
+endif
+
+bsnes_compiler=$(subst ++,cc,$(REALCC))
+
+bsnes/out/libsnes.$(ARCHIVE_SUFFIX): bsnes/snes/snes.hpp
+	$(MAKE) -C bsnes OPTIONS=debugger $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING) compiler=$(bsnes_compiler)
+
+src/__all_files__: src/core/version.cpp forcelook bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 	$(MAKE) -C src precheck
 	$(MAKE) -C src
 	cp src/lsnes$(DOT_EXECUTABLE_SUFFIX) .
@@ -48,6 +67,7 @@ src/core/version.cpp: buildaux/version.exe forcelook
 
 
 clean:
+	$(MAKE) -C bsnes clean
 	$(MAKE) -C src clean
 
 forcelook:

@@ -1,11 +1,11 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) codec/__all__.o
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) codec/__all__.$(OBJECT_SUFFIX)
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
-__all__.o: $(OBJECTS)
+__all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALLD) -r -o $@ $^
 
-codec/__all__.o: forcelook
+codec/__all__.$(OBJECT_SUFFIX): forcelook
 	$(MAKE) -C codec
 
 %.$(OBJECT_SUFFIX): %.cpp
