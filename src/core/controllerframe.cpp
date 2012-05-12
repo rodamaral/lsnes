@@ -854,7 +854,6 @@ void controller_state::reset_framehold() throw()
 void controller_state::framehold(unsigned pcid, unsigned pbid, bool newstate) throw()
 {
 	_framehold.axis(pcid, pbid, newstate ? 1 : 0);
-	information_dispatch::do_autohold_update(pcid, pbid, newstate);
 }
 
 bool controller_state::framehold(unsigned pcid, unsigned pbid) throw()

@@ -222,6 +222,12 @@ namespace
 						our_commands.insert(new button_action(x.str(), j, k, y.str()));
 						if(j == 0)
 							our_icommands.insert(new inverse_key(x.str(), expx.str()));
+						if(j == 2)
+							our_icommands.insert(new inverse_key(x.str(), expx.str() +
+								" (hold)"));
+						if(j == 3)
+							our_icommands.insert(new inverse_key(x.str(), expx.str() +
+								" (typed)"));
 					}
 			for(unsigned k = 0; k < 8; ++k) {
 				stringfmt x, expx;
