@@ -7,6 +7,34 @@ namespace
 {
 	volatile uint32_t autorepeat_first = 10;
 	volatile uint32_t autorepeat_subsequent = 4;
+
+	bool is_whitespace(uint32_t cp)
+	{
+		switch(cp) {
+		case 12:
+		case 32:
+		case 9:
+		case 0x1680:
+		case 0x180E:
+		case 0x2000:
+		case 0x2001:
+		case 0x2002:
+		case 0x2003:
+		case 0x2004:
+		case 0x2005:
+		case 0x2006:
+		case 0x2007:
+		case 0x2008:
+		case 0x2009:
+		case 0x200A:
+		case 0x2028:
+		case 0x205F:
+		case 0x3000:
+			return true;
+		default:
+			return false;
+		};
+	}
 }
 
 commandline_model::commandline_model() throw()
@@ -90,6 +118,31 @@ std::string commandline_model::key(uint32_t k) throw(std::bad_alloc)
 			//Nothing to delete.
 			return "";
 		delete_codepoint(cursor_pos);
+		return "";
+	case SPECIAL_LEFT_WORD:
+		while(cursor_pos > 0 && (cursor_pos == codepoints.size() || isspace(codepoints[cursor_pos])))
+			cursor_pos--;
+		while(cursor_pos > 0 && (cursor_pos == codepoints.size() || !isspace(codepoints[cursor_pos])))
+			cursor_pos--;
+		//If the previous position is whitespace, back off to it.
+		while(cursor_pos > 0 && isspace(codepoints[cursor_pos - 1]))
+			cursor_pos--;
+		return "";
+	case SPECIAL_RIGHT_WORD:
+		while(cursor_pos < codepoints.size() && isspace(codepoints[cursor_pos]))
+			cursor_pos++;
+		while(cursor_pos < codepoints.size() && !isspace(codepoints[cursor_pos]))
+			cursor_pos++;
+		return "";
+	case SPECIAL_DELETE_WORD:
+		while(cursor_pos > 0 && !isspace(codepoints[cursor_pos - 1])) {
+			delete_codepoint(cursor_pos - 1);
+			cursor_pos--;
+		}
+		while(cursor_pos > 0 && isspace(codepoints[cursor_pos - 1])) {
+			delete_codepoint(cursor_pos - 1);
+			cursor_pos--;
+		}
 		return "";
 	case 0:
 	case PRESSED_MASK:

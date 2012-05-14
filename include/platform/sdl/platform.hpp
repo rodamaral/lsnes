@@ -38,6 +38,12 @@
 #define SPECIAL_LEFT		0x4000000CUL
 //Right.
 #define SPECIAL_RIGHT		0x4000000DUL
+//Left word.
+#define SPECIAL_LEFT_WORD	0x4000000EUL
+//Right word.
+#define SPECIAL_RIGHT_WORD	0x4000000FUL
+//Delete word.
+#define SPECIAL_DELETE_WORD	0x40000010UL
 //Pressed mask.
 #define PRESSED_MASK		0x80000000UL
 
