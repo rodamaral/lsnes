@@ -421,6 +421,8 @@ void notify_emulator_exit();
  * The user interface loop. Call in UI thread. notify_emulator_exit() causes this to return.
  */
 void ui_loop();
-
-
+/**
+ * Save the config.
+ */
+void lsnes_sdl_save_config();
 #endif

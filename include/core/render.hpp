@@ -386,7 +386,6 @@ private:
 	std::map<size_t, page> memory;
 };
 
-
 /**
  * Clip range inside another.
  *

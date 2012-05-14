@@ -232,6 +232,7 @@ int main(int argc, char** argv)
 		fatal_error();
 		return 1;
 	}
+	lsnes_sdl_save_config();
 	rrdata::close();
 	platform::quit();
 	quit_lua();
