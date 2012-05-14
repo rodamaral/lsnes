@@ -145,6 +145,35 @@ bool commandline_model::overwriting() throw()
 	return overwrite_mode;
 }
 
+void commandline_model::enable(const std::string& cmd) throw()
+{
+	enable();
+	unsigned left = 0;
+	unsigned tmp = 0;
+	for(size_t itr = 0; itr < cmd.length(); itr++) {
+		unsigned char ch = cmd[itr];
+		if(ch < 128)
+			codepoints.push_back(ch);
+		else if(left) {
+			left--;
+			tmp = tmp * 64 + (ch & 0x3F);
+			if(!left)
+				codepoints.push_back(tmp);
+		} else if(ch < 192) {
+		} else if(ch < 224) {
+			left = 1;
+			tmp = ch & 0x1F;
+		} else if(ch < 240) {
+			left = 2;
+			tmp = ch & 0x0F;
+		} else if(ch < 248) {
+			left = 3;
+			tmp = ch & 0x07;
+		}
+	}
+	cursor_pos = codepoints.size();
+}
+
 void commandline_model::enable() throw()
 {
 	if(enabled_flag)

@@ -194,6 +194,12 @@ struct commandline_model
  */
 	void enable() throw();
 /**
+ * Enable command line with specific command.
+ *
+ * Parameter cmd: The command template.
+ */
+	void enable(const std::string& cmd) throw();
+/**
  * Repaint to SDL surface.
  *
  * Parameter surf: The surface to paint on, must be locked.
