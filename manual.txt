@@ -765,6 +765,11 @@ Scroll messages window back one screenful.
 
 Scroll messages window forward one screenful.
 
+6.12.7 prompt-command <command>
+
+Enter command prompt, with prompt prepopulated with specified 
+command.
+
 7 Settings
 
 7.1 Core settings

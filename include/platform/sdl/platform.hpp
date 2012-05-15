@@ -38,6 +38,12 @@
 #define SPECIAL_LEFT		0x4000000CUL
 //Right.
 #define SPECIAL_RIGHT		0x4000000DUL
+//Left word.
+#define SPECIAL_LEFT_WORD	0x4000000EUL
+//Right word.
+#define SPECIAL_RIGHT_WORD	0x4000000FUL
+//Delete word.
+#define SPECIAL_DELETE_WORD	0x40000010UL
 //Pressed mask.
 #define PRESSED_MASK		0x80000000UL
 
@@ -193,6 +199,12 @@ struct commandline_model
  * Enable command line.
  */
 	void enable() throw();
+/**
+ * Enable command line with specific command.
+ *
+ * Parameter cmd: The command template.
+ */
+	void enable(const std::string& cmd) throw();
 /**
  * Repaint to SDL surface.
  *
@@ -421,6 +433,8 @@ void notify_emulator_exit();
  * The user interface loop. Call in UI thread. notify_emulator_exit() causes this to return.
  */
 void ui_loop();
-
-
+/**
+ * Save the config.
+ */
+void lsnes_sdl_save_config();
 #endif

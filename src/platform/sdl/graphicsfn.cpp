@@ -69,6 +69,9 @@ namespace
 	SDL_TimerID timer_id;
 	//Timer IRQ counter. Used by identify key stuff.
 	volatile unsigned timer_irq_counter;
+	//Delayed command to start.
+	bool delayed_cmd_active;
+	std::string delayed_cmd;
 
 	void sigalrm_handler(int s)
 	{
@@ -270,6 +273,13 @@ namespace
 		platform::queue(emu_handle_identify, NULL, false);
 	}
 
+	function_ptr_command<const std::string&> exec_command_prefix("prompt-command", 
+		"Prompt for command", "Syntax: prompt-command <prefix>\nPrompts command with specified text.\n",
+		[](const std::string& line) throw(std::bad_alloc, std::runtime_error) {
+			delayed_cmd = line;
+			delayed_cmd_active = true;
+		});
+
 	//Handle QUIT in normal state.
 	void ui_handle_quit_signal()
 	{
@@ -307,7 +317,7 @@ void ui_loop()
 		{
 			ui_mutex->lock();
 			int r = SDL_PollEvent(&e);
-			if(!repaint_in_flight && !timer_triggered && !r) {
+			if(!repaint_in_flight && !timer_triggered && !delayed_cmd_active && !r) {
 				ui_mutex->unlock();
 				usleep(2000);
 				continue;
@@ -386,9 +396,13 @@ void ui_loop()
 		switch(special_mode) {
 		case SPECIALMODE_NORMAL:
 			//Enable command line if needed.
-			if(iskbd && kbdkey == SDLK_ESCAPE) {
+			if((iskbd && kbdkey == SDLK_ESCAPE) || delayed_cmd_active) {
 				if(!cmdline.enabled() && !polarity) {
-					cmdline.enable();
+					if(delayed_cmd_active)
+						cmdline.enable(delayed_cmd);
+					else
+						cmdline.enable();
+					delayed_cmd_active = false;
 					commandline_updated = true;
 					special_mode = SPECIALMODE_COMMAND;
 					platform::set_modal_pause(true);

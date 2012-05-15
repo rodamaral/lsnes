@@ -1565,6 +1565,14 @@ scroll-down
 Scroll messages window forward one screenful.
 \end_layout
 
+\begin_layout Subsubsection
+prompt-command <command>
+\end_layout
+
+\begin_layout Standard
+Enter command prompt, with prompt prepopulated with specified command.
+\end_layout
+
 \begin_layout Section
 Settings
 \end_layout

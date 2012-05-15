@@ -306,6 +306,46 @@ uint32_t get_command_edit_operation(SDL_Event& e, bool enable)
 	//Everything except keyboard is no-op.
 	if(e.type != SDL_KEYDOWN && e.type != SDL_KEYUP)
 		return SPECIAL_NOOP;
+	//Keys with CTRL held.
+	if(e.key.keysym.mod & KMOD_CTRL) {
+		switch(e.key.keysym.sym) {
+		case 'A':	case 'a':
+			return SPECIAL_HOME | press;
+		case 'B':	case 'b':
+			return SPECIAL_LEFT | press;
+		case 'D':	case 'd':
+			return SPECIAL_DELETE | press;
+		case 'E':	case 'e':
+			return SPECIAL_END | press;
+		case 'F':	case 'f':
+			return SPECIAL_RIGHT | press;
+		case 'P':	case 'p':
+			return SPECIAL_UP | press;
+		case 'N':	case 'n':
+			return SPECIAL_DOWN | press;
+		case SDLK_LEFT:
+			return SPECIAL_LEFT_WORD | press;
+		case SDLK_RIGHT:
+			return SPECIAL_RIGHT_WORD | press;
+		case 'W':	case 'w':
+			return SPECIAL_DELETE_WORD | press;
+		default:
+			return SPECIAL_NOOP;
+		};
+	}
+	//Keys with ALT held.
+	if(e.key.keysym.mod & KMOD_ALT) {
+		switch(e.key.keysym.sym) {
+		case 'B':	case 'b':
+			return SPECIAL_LEFT_WORD | press;
+		case 'D':	case 'd':
+			return SPECIAL_DELETE_WORD | press;
+		case 'F':	case 'f':
+			return SPECIAL_RIGHT_WORD | press;
+		default:
+			return SPECIAL_NOOP;
+		};
+	}
 	//Escape is special.
 	if(e.key.keysym.sym == SDLK_ESCAPE)
 		return (e.type == SDL_KEYUP) ? SPECIAL_NAK : SPECIAL_NOOP;

@@ -7,6 +7,34 @@ namespace
 {
 	volatile uint32_t autorepeat_first = 10;
 	volatile uint32_t autorepeat_subsequent = 4;
+
+	bool is_whitespace(uint32_t cp)
+	{
+		switch(cp) {
+		case 12:
+		case 32:
+		case 9:
+		case 0x1680:
+		case 0x180E:
+		case 0x2000:
+		case 0x2001:
+		case 0x2002:
+		case 0x2003:
+		case 0x2004:
+		case 0x2005:
+		case 0x2006:
+		case 0x2007:
+		case 0x2008:
+		case 0x2009:
+		case 0x200A:
+		case 0x2028:
+		case 0x205F:
+		case 0x3000:
+			return true;
+		default:
+			return false;
+		};
+	}
 }
 
 commandline_model::commandline_model() throw()
@@ -91,6 +119,31 @@ std::string commandline_model::key(uint32_t k) throw(std::bad_alloc)
 			return "";
 		delete_codepoint(cursor_pos);
 		return "";
+	case SPECIAL_LEFT_WORD:
+		while(cursor_pos > 0 && (cursor_pos == codepoints.size() || isspace(codepoints[cursor_pos])))
+			cursor_pos--;
+		while(cursor_pos > 0 && (cursor_pos == codepoints.size() || !isspace(codepoints[cursor_pos])))
+			cursor_pos--;
+		//If the previous position is whitespace, back off to it.
+		while(cursor_pos > 0 && isspace(codepoints[cursor_pos - 1]))
+			cursor_pos--;
+		return "";
+	case SPECIAL_RIGHT_WORD:
+		while(cursor_pos < codepoints.size() && isspace(codepoints[cursor_pos]))
+			cursor_pos++;
+		while(cursor_pos < codepoints.size() && !isspace(codepoints[cursor_pos]))
+			cursor_pos++;
+		return "";
+	case SPECIAL_DELETE_WORD:
+		while(cursor_pos > 0 && !isspace(codepoints[cursor_pos - 1])) {
+			delete_codepoint(cursor_pos - 1);
+			cursor_pos--;
+		}
+		while(cursor_pos > 0 && isspace(codepoints[cursor_pos - 1])) {
+			delete_codepoint(cursor_pos - 1);
+			cursor_pos--;
+		}
+		return "";
 	case 0:
 	case PRESSED_MASK:
 		//Eh?
@@ -143,6 +196,35 @@ bool commandline_model::enabled() throw()
 bool commandline_model::overwriting() throw()
 {
 	return overwrite_mode;
+}
+
+void commandline_model::enable(const std::string& cmd) throw()
+{
+	enable();
+	unsigned left = 0;
+	unsigned tmp = 0;
+	for(size_t itr = 0; itr < cmd.length(); itr++) {
+		unsigned char ch = cmd[itr];
+		if(ch < 128)
+			codepoints.push_back(ch);
+		else if(left) {
+			left--;
+			tmp = tmp * 64 + (ch & 0x3F);
+			if(!left)
+				codepoints.push_back(tmp);
+		} else if(ch < 192) {
+		} else if(ch < 224) {
+			left = 1;
+			tmp = ch & 0x1F;
+		} else if(ch < 240) {
+			left = 2;
+			tmp = ch & 0x0F;
+		} else if(ch < 248) {
+			left = 3;
+			tmp = ch & 0x07;
+		}
+	}
+	cursor_pos = codepoints.size();
 }
 
 void commandline_model::enable() throw()

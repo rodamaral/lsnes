@@ -1,5 +1,5 @@
 ifeq ($(GRAPHICS), SDL)
-OBJECTS = commandline.$(OBJECT_SUFFIX) drawprim.$(OBJECT_SUFFIX) graphicsfn.$(OBJECT_SUFFIX) keyboard.$(OBJECT_SUFFIX) main.$(OBJECT_SUFFIX) thread.$(OBJECT_SUFFIX) status.$(OBJECT_SUFFIX)
+OBJECTS = commandline.$(OBJECT_SUFFIX) drawprim.$(OBJECT_SUFFIX) graphicsfn.$(OBJECT_SUFFIX) keyboard.$(OBJECT_SUFFIX) main.$(OBJECT_SUFFIX) thread.$(OBJECT_SUFFIX) status.$(OBJECT_SUFFIX) savesettings.$(OBJECT_SUFFIX)
 SDL_CFLAGS += $(shell $(CROSS_PREFIX)sdl-config --cflags)
 SDL_LDFLAGS += $(shell $(CROSS_PREFIX)sdl-config --libs)
 else
