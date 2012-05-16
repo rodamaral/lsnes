@@ -1346,6 +1346,10 @@ Hold/unhold button <button> on controller <num> (1-8) for the next frame.
  See +controller for button names.
 \end_layout
 
+\begin_layout Standard
+Cauntion: Does not work properly if outside frame advance.
+\end_layout
+
 \begin_layout Subsubsection
 autofire (<pattern>|-)...
 \end_layout
@@ -1599,11 +1603,11 @@ Set where bsnes looks for firmware files.
 \end_layout
 
 \begin_layout Subsubsection
-targetfps
+target
 \end_layout
 
 \begin_layout Standard
-Set the target fps.
+Set the target .
  Numeric, range is 0.001 to 
 \begin_inset Quotes eld
 \end_inset
@@ -3653,29 +3657,29 @@ Return (also KPEnter): Execute command, ok modal dialog.
 \end_layout
 
 \begin_layout Itemize
-Pgup/Up (also KP8/9 if no num lock; command mode): Previous command in command
- history
+Pgup/Up (also KP8/9 if no num lock, CTRL+P; command mode): Previous command
+ in command history
 \end_layout
 
 \begin_layout Itemize
-Pgdn/Down(also KP2/3 if no num lock; command mode): Next command in command
- history
+Pgdn/Down(also KP2/3 if no num lock, CTRL+N; command mode): Next command
+ in command history
 \end_layout
 
 \begin_layout Itemize
-Home (also KP7 if no num lock; command mode): Beginning of command.
+Home (also KP7 if no num lock, CTRL+A; command mode): Beginning of command.
 \end_layout
 
 \begin_layout Itemize
-End (also KP1 if no num lock; command mode): End of command.
+End (also KP1 if no num lock, CTRL+E; command mode): End of command.
 \end_layout
 
 \begin_layout Itemize
-Left (also KP4 if no num lock; command mode): Move cursor left.
+Left (also KP4 if no num lock, CTRL+B; command mode): Move cursor left.
 \end_layout
 
 \begin_layout Itemize
-Right (also KP6 if no num lock; command mode): Move cursor right.
+Right (also KP6 if no num lock, CTRL+F; command mode): Move cursor right.
 \end_layout
 
 \begin_layout Itemize
@@ -3690,6 +3694,18 @@ Insert (also KP0 if no num lock; command mode): Toggle between insert /
 
 \begin_layout Itemize
 Backspace (command mode): Delete character to left of cursor.
+\end_layout
+
+\begin_layout Itemize
+CTRL+LEFT (also ALT+B; command mode): Previous word.
+\end_layout
+
+\begin_layout Itemize
+CTRL+RIGHT (also ALT+F; command mode): Next word.
+\end_layout
+
+\begin_layout Itemize
+ALT+D (also CTRL+W; command mode): Delete word.
 \end_layout
 
 \begin_layout Itemize
@@ -5935,6 +5951,34 @@ Delayed reset support
 
 \begin_layout Itemize
 Lua: memory.hash_region
+\end_layout
+
+\begin_layout Subsection
+rr1-delta8epsilon1
+\end_layout
+
+\begin_layout Itemize
+Rework the build system
+\end_layout
+
+\begin_layout Itemize
+Typing input support
+\end_layout
+
+\begin_layout Itemize
+Fix building with bsnes v086 and v087.
+\end_layout
+
+\begin_layout Itemize
+SDL: Save settings on exit
+\end_layout
+
+\begin_layout Itemize
+SDL: Command to enter command line mode with given command.
+\end_layout
+
+\begin_layout Itemize
+SDL: More advanced command editing.
 \end_layout
 
 \end_body

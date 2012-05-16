@@ -653,6 +653,8 @@ Hold/unhold button <button> on controller <num> (1-8). See
 Hold/unhold button <button> on controller <num> (1-8) for the 
 next frame. See +controller for button names.
 
+Cauntion: Does not work properly if outside frame advance.
+
 6.7.28 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
@@ -778,10 +780,10 @@ command.
 
 Set where bsnes looks for firmware files. Default is “.”.
 
-7.1.2 targetfps
+7.1.2 target
 
-Set the target fps. Numeric, range is 0.001 to “infinite”. 
-Default is native framerate.
+Set the target . Numeric, range is 0.001 to “infinite”. Default 
+is native framerate.
 
 7.1.3 savecompression
 
@@ -1895,21 +1897,23 @@ Following key names are known:
 
 • Return (also KPEnter): Execute command, ok modal dialog.
 
-• Pgup/Up (also KP8/9 if no num lock; command mode): Previous 
-  command in command history
+• Pgup/Up (also KP8/9 if no num lock, CTRL+P; command mode): 
+  Previous command in command history
 
-• Pgdn/Down(also KP2/3 if no num lock; command mode): Next 
-  command in command history
+• Pgdn/Down(also KP2/3 if no num lock, CTRL+N; command mode): 
+  Next command in command history
 
-• Home (also KP7 if no num lock; command mode): Beginning of 
+• Home (also KP7 if no num lock, CTRL+A; command mode): Beginning 
+  of command.
+
+• End (also KP1 if no num lock, CTRL+E; command mode): End of 
   command.
 
-• End (also KP1 if no num lock; command mode): End of command.
+• Left (also KP4 if no num lock, CTRL+B; command mode): Move 
+  cursor left.
 
-• Left (also KP4 if no num lock; command mode): Move cursor left.
-
-• Right (also KP6 if no num lock; command mode): Move cursor 
-  right.
+• Right (also KP6 if no num lock, CTRL+F; command mode): Move 
+  cursor right.
 
 • Delete (also KP. if no num lock; command mode): Delete 
   character to right of cursor.
@@ -1918,6 +1922,12 @@ Following key names are known:
   insert / overwrite modes.
 
 • Backspace (command mode): Delete character to left of cursor.
+
+• CTRL+LEFT (also ALT+B; command mode): Previous word.
+
+• CTRL+RIGHT (also ALT+F; command mode): Next word.
+
+• ALT+D (also CTRL+W; command mode): Delete word.
 
 • LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump 
   corrupted!).
@@ -2943,4 +2953,18 @@ set-axis joystick0axis19 disabled
 • Delayed reset support
 
 • Lua: memory.hash_region
+
+15.61 rr1-delta8epsilon1
+
+• Rework the build system
+
+• Typing input support
+
+• Fix building with bsnes v086 and v087.
+
+• SDL: Save settings on exit
+
+• SDL: Command to enter command line mode with given command.
+
+• SDL: More advanced command editing.
 
