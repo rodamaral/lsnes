@@ -7,29 +7,32 @@
 #
 
 
-# Prefix to apply to compiler commands for the target system.
+# Apply the following prefix for commands when building things that target the target system.
+# If not crosscompiling, leave blank.
 CROSS_PREFIX=
 
-# Postfix for object files
+# Postfix (without the leading dot) for object files.
+# Usually 'o'.
 OBJECT_SUFFIX=o
 
-# Postfix for archive files
+# Postfix (without the leading dot) for archive files.
+# Usually 'a'.
 ARCHIVE_SUFFIX=a
 
 # Postfix (including possible '.') for executable files.
-# Usually blank for any unix-type system, '.exe' for Windows.
+# Usually blank for unix-type systems (including Linux and Mac OS X), '.exe' for Windows.
 DOT_EXECUTABLE_SUFFIX=
 
-# C++ compiler (GCC 4.6)
-# CROSS_PREFIX is prepended to this.
+# C++ compiler (GCC 4.6) for the target system.
+# CROSS_PREFIX is prepended to this command.
 CC=g++-4.6
 
-# Linker for target system.
-# CROSS_PREFIX is prepended to this.
+# Linker for the target system.
+# CROSS_PREFIX is prepended to this command.
 LD=ld
 
 # Ranlib for target system.
-# CROSS_PREFIX is prepended to this.
+# CROSS_PREFIX is prepended to this command.
 RANLIB=ranlib
 
 # Host system C++ compiler.
@@ -91,26 +94,22 @@ SOUND=PORTAUDIO
 # - WXWIDGETS: wxWidgets (GRAPHICS=WXWIDGETS only)
 JOYSTICK=DUMMY
 
-# Enable use of Secret Rabbit Code (a.k.a. libsamperate).
-# Set to non-blank (e.g. 'yes') to enable.
+# Set to non-empty value (e.g. 'yes') to enable use of Secret Rabbit Code (a.k.a. libsamperate).
+# This is used for high-quality samplerate conversion for dumping.
 SECRET_RABBIT_CODE=
 
 # Bsnes version used.
 # 087 has different layout from the rest.
 BSNES_VERSION=085
 
-# Bsnes build uses compatiblity core, not accuracy core.
-# Set to non-empty value (e.g. 'yes') if so.
+# Set to non-empty value (e.g. 'yes') if bsnes build uses compatiblity core, not accuracy core.
 BSNES_IS_COMPAT=
 
-# Do boost libraries need the '-mt' prefix?
-# Set to non-empty value (e.g. 'yes') if so.
+# Set to non-empty value (e.g. 'yes') if boost libraries need the '-mt' prefix.
 BOOST_NEEDS_MT=
 
-# Does the linker not need -rdynamic to export the symbols?
-# Set to non-empty value (e.g. 'yes') if so.
+# Set to non-empty value (e.g. 'yes') if the linker exports symbols without -rdynamic.
 NO_RDYNAMIC=
 
-# Disable use of DLFCN.
-# Set to non-empty value (e.g. 'yes') if so.
+# Set to non-empty vlaue (e.g. 'yes') to disable use of DLFCN.
 NO_DLFCN=
