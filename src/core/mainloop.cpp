@@ -285,7 +285,7 @@ void update_movie_state()
 uint64_t audio_irq_time;
 uint64_t controller_irq_time;
 uint64_t frame_irq_time;
-
+std::string msu1_base_path;
 
 class my_interface : public SNES::Interface
 {
@@ -294,6 +294,23 @@ class my_interface : public SNES::Interface
 		const char* _hint = hint;
 		std::string _hint2 = _hint;
 		std::string fwp = firmwarepath_setting;
+		regex_results r;
+		std::string msubase = msu1_base_path;
+		if(regex_match(".*\\.sfc", msu1_base_path))
+			msubase = msu1_base_path.substr(0, msu1_base_path.length() - 4);
+
+		if(_hint2 == "msu1.rom" || _hint2 == ".msu") {
+			//MSU-1 main ROM.
+			std::string x = msubase + ".msu";
+			messages << "MSU main data file: " << x << std::endl;
+			return x.c_str();
+		}
+		if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
+			//MSU track.
+			std::string x = msubase + r[2];
+			messages << "MSU track " << r[3] << "': " << x << std::endl;
+			return x.c_str();
+		}
 		std::string finalpath = fwp + "/" + _hint2;
 		return finalpath.c_str();
 	}

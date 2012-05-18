@@ -3,6 +3,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/patchrom.hpp"
@@ -384,6 +385,10 @@ loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtim
 	slotb = loaded_slot(_slotb, files.base_file, false);
 	slotb_xml = loaded_slot(_slotb_xml, files.base_file, true);
 	orig_region = region = files.region;
+	if(files.rtype == ROMTYPE_SNES)
+		msu1_base = resolve_file_relative(files.rom, files.base_file);
+	else
+		msu1_base = resolve_file_relative(_slota, files.base_file);
 }
 
 void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
@@ -449,6 +454,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	information_dispatch::do_sound_rate(SNES::system.apu_frequency(), 768);
 	current_rom_type = rtype;
 	current_region = region;
+	msu1_base_path = msu1_base;
 	refresh_cart_mappings();
 }
 

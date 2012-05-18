@@ -376,7 +376,10 @@ struct loaded_rom
  * Loaded slot B XML (.st).
  */
 	loaded_slot slotb_xml;
-
+/**
+ * MSU-1 base.
+ */
+	std::string msu1_base;
 /**
  * Patch the ROM.
  *
