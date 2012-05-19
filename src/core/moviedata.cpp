@@ -293,6 +293,7 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 		redraw_framebuffer(screen_corrupt, true);
 		throw;
 	}
+	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
 	our_movie.is_savestate = false;
 	our_movie.host_memory.clear();
 	messages << "Movie rewound to beginning." << std::endl;
