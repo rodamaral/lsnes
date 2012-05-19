@@ -1476,6 +1476,28 @@ Count number of subframes in specified frame (frame numbers are
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
 
+8.6.7 movie.unsafe_rewind([UNSAFEREWIND state])
+
+Start setting point for unsafe rewind or jump to point of unsafe 
+rewind.
+
+• If called without argument, causes emulator to start process of 
+  setting unsafe rewind point. When this has finished, callback 
+  on_set_rewind occurs, passing the rewind state to lua script.
+
+• If called with argument, causes emulator rewind to passed 
+  rewind point as soon as possible. Readwrite mode is implicitly 
+  activated.
+
+The following warnings apply to unsafe rewinding:
+
+• There are no safety checks against misuse (that's what “unsafe” 
+  comes from)!
+
+• Only call rewind from timeline rewind point was set from.
+
+• Only call rewind from after the rewind point was set.
+
 8.7 Table settings
 
 Routines for settings manipulation
@@ -1711,6 +1733,18 @@ expired and emulator is waiting.
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
+
+8.10.21 Callback: on_set_rewind(UNSAFEREWIND r)
+
+Called when unsafe rewind object has been constructed.
+
+8.10.22 Callback: on_pre_rewind() 
+
+Called just before unsafe rewind is about to occur.
+
+8.10.23 Callback: on_post_rewind() 
+
+Called just after unsafe rewind has occured.
 
 9 Memory watch expression syntax
 

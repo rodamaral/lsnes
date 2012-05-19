@@ -1,6 +1,8 @@
 #include "lua/internal.hpp"
+#include "lua/unsaferewind.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
+#include "core/mainloop.hpp"
 
 namespace
 {
@@ -68,4 +70,20 @@ namespace
 		lua_pushnumber(LS, our_movie.rtc_subsecond);
 		return 2;
 	});
+
+	function_ptr_luafun musv("movie.unsafe_rewind", [](lua_State* LS, const std::string& fname) -> int {
+		if(lua_isnoneornil(LS, 1)) {
+			//Start process to mark save.
+			mainloop_signal_need_rewind(NULL);
+		} else if(lua_class<lua_unsaferewind>::is(LS, 1)) {
+			//Load the save.
+			lua_obj_pin<lua_unsaferewind>* u = lua_class<lua_unsaferewind>::pin(LS, 1, fname.c_str());
+			mainloop_signal_need_rewind(u);
+		} else {
+			lua_pushstring(LS, "movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
+			lua_error(LS);
+			return 0;
+		}
+	});
 }
+

@@ -455,6 +455,25 @@ void movie::reset_state() throw()
 	clear_caches();
 }
 
+void movie::fast_save(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& _counters)
+{
+	pollcounters.save_state(_counters);
+	_frame = current_frame;
+	_ptr = current_frame_first_subframe;
+	_lagc = lag_frames;
+}
+
+void movie::fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& _counters)
+{
+	readonly = true;
+	current_frame = _frame;
+	current_frame_first_subframe = (_ptr <= movie_data.size()) ? _ptr : movie_data.size();
+	lag_frames = _lagc;
+	pollcounters.load_state(_counters);
+	readonly_mode(false);
+}
+
+
 movie_logic::movie_logic() throw()
 {
 }

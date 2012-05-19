@@ -600,12 +600,14 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	return ret;
 }
 
-std::vector<char> save_core_state() throw(std::bad_alloc)
+std::vector<char> save_core_state(bool nochecksum) throw(std::bad_alloc)
 {
 	std::vector<char> ret;
 	serializer s = SNES::system.serialize();
 	ret.resize(s.size());
 	memcpy(&ret[0], s.data(), s.size());
+	if(nochecksum)
+		return ret;
 	size_t offset = ret.size();
 	unsigned char tmp[32];
 	sha256::hash(tmp, ret);
@@ -614,8 +616,15 @@ std::vector<char> save_core_state() throw(std::bad_alloc)
 	return ret;
 }
 
-void load_core_state(const std::vector<char>& buf) throw(std::runtime_error)
+void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::runtime_error)
 {
+	if(nochecksum) {
+		serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size());
+		if(!SNES::system.unserialize(s))
+			throw std::runtime_error("SNES core rejected savestate");
+		return;
+	}
+
 	if(buf.size() < 32)
 		throw std::runtime_error("Savestate corrupt");
 	unsigned char tmp[32];

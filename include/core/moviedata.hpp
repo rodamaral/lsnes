@@ -33,4 +33,14 @@ std::string translate_name_mprefix(std::string original, bool forio = false);
 extern std::string last_save;
 extern movie_logic movb;
 
+/**
+ * Restore the actual core state from quicksave. Only call in rewind callback.
+ *
+ * Parameter state: The state to restore.
+ * Parameter secs: The seconds counter.
+ * Parameter ssecs: The subsecond counter.
+ */
+void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs);
+
+
 #endif

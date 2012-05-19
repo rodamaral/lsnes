@@ -228,6 +228,15 @@ public:
  *	movie, reads all released.
  */
 	controller_frame read_subframe(uint64_t frame, uint64_t subframe) throw();
+/**
+ * Fast save.
+ */
+	void fast_save(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& counters);
+/**
+ * Fast load.
+ */
+	void fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& counters);
+
 private:
 	//TRUE if readonly mode is active.
 	bool readonly;

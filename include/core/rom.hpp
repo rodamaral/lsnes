@@ -469,7 +469,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
  * returns: The saved state.
  * throws std::bad_alloc: Not enough memory.
  */
-std::vector<char> save_core_state() throw(std::bad_alloc);
+std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc);
 
 /**
  * Loads core state from buffer.
@@ -477,7 +477,7 @@ std::vector<char> save_core_state() throw(std::bad_alloc);
  * parameter buf: The buffer containing the state.
  * throws std::runtime_error: Loading state failed.
  */
-void load_core_state(const std::vector<char>& buf) throw(std::runtime_error);
+void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
 
 /**
  * Read index of ROMs and add ROMs found to content-searchable storage.

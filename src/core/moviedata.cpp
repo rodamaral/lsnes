@@ -495,3 +495,11 @@ bool do_load_state(const std::string& filename, int lmode)
 	}
 	return true;
 }
+
+void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
+{
+	rrdata::add_internal();
+	our_movie.rtc_second = secs;
+	our_movie.rtc_subsecond = ssecs;
+	load_core_state(state, true);
+}

@@ -2,8 +2,10 @@
 #include "core/globalwrap.hpp"
 #include "lua/internal.hpp"
 #include "lua/lua.hpp"
+#include "lua/unsaferewind.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
+#include "core/moviedata.hpp"
 #include "core/misc.hpp"
 
 #include <map>
@@ -555,7 +557,38 @@ uint64_t lua_timed_hook(int timer) throw()
 	}
 }
 
+void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov, void* u)
+{
+	if(u) {
+		lua_unsaferewind* u2 = reinterpret_cast<lua_obj_pin<lua_unsaferewind>*>(u)->object();
+		//Load.
+		try {
+			if(callback_exists("on_pre_rewind"))
+				run_lua_cb(0);
+			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
+			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
+			if(callback_exists("on_post_rewind"))
+				run_lua_cb(0);
+		} catch(...) {
+			return;
+		}
+	} else {
+		//Save
+		if(callback_exists("on_set_rewind")) {
+			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(L);
+			u2->state = save;
+			u2->secs = secs,
+			u2->ssecs = ssecs;
+			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
+			run_lua_cb(1);
+		}
+		
+	}
+}
+
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 bool lua_supported = true;
+
+DECLARE_LUACLASS(lua_unsaferewind, "UNSAFEREWIND");
