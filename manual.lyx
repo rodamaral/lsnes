@@ -2918,6 +2918,51 @@ Read specifed subframe in specified frame and return data as array (100
  elements, numbered 0-99 currently).
 \end_layout
 
+\begin_layout Subsubsection
+movie.unsafe_rewind([UNSAFEREWIND state])
+\end_layout
+
+\begin_layout Standard
+Start setting point for unsafe rewind or jump to point of unsafe rewind.
+\end_layout
+
+\begin_layout Itemize
+If called without argument, causes emulator to start process of setting
+ unsafe rewind point.
+ When this has finished, callback on_set_rewind occurs, passing the rewind
+ state to lua script.
+\end_layout
+
+\begin_layout Itemize
+If called with argument, causes emulator rewind to passed rewind point as
+ soon as possible.
+ Readwrite mode is implicitly activated.
+\end_layout
+
+\begin_layout Standard
+The following warnings apply to unsafe rewinding:
+\end_layout
+
+\begin_layout Itemize
+There are no safety checks against misuse (that's what 
+\begin_inset Quotes eld
+\end_inset
+
+unsafe
+\begin_inset Quotes erd
+\end_inset
+
+ comes from)!
+\end_layout
+
+\begin_layout Itemize
+Only call rewind from timeline rewind point was set from.
+\end_layout
+
+\begin_layout Itemize
+Only call rewind from after the rewind point was set.
+\end_layout
+
 \begin_layout Subsection
 Table settings
 \end_layout
@@ -3339,6 +3384,30 @@ Callback: on_timer()
 \begin_layout Standard
 Called when requested by set_idle_timeout() and the timeout has expired
  (regardless if emulator is waiting).
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_set_rewind(UNSAFEREWIND r)
+\end_layout
+
+\begin_layout Standard
+Called when unsafe rewind object has been constructed.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_pre_rewind() 
+\end_layout
+
+\begin_layout Standard
+Called just before unsafe rewind is about to occur.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_post_rewind() 
+\end_layout
+
+\begin_layout Standard
+Called just after unsafe rewind has occured.
 \end_layout
 
 \begin_layout Section

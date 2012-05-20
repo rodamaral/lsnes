@@ -446,12 +446,14 @@ void emucore_refresh_cart()
 		delete i;
 }
 
-std::vector<char> emucore_serialize()
+std::vector<char> emucore_serialize(bool nochecksum)
 {
 	std::vector<char> ret;
 	serializer s = SNES::system.serialize();
 	ret.resize(s.size());
 	memcpy(&ret[0], s.data(), s.size());
+	if(nochecksum)
+		return ret;
 	size_t offset = ret.size();
 	unsigned char tmp[32];
 	sha256::hash(tmp, ret);
@@ -460,8 +462,14 @@ std::vector<char> emucore_serialize()
 	return ret;
 }
 
-void emucore_unserialize(const std::vector<char>& buf)
+void emucore_unserialize(const std::vector<char>& buf, bool nochecksum)
 {
+	if(nochecksum) {
+		serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size());
+		if(!SNES::system.unserialize(s))
+			throw std::runtime_error("SNES core rejected savestate");
+		return;
+	}
 	if(buf.size() < 32)
 		throw std::runtime_error("Savestate corrupt");
 	unsigned char tmp[32];

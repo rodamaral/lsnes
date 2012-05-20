@@ -473,7 +473,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 }
 
 wxwin_mainwindow::panel::panel(wxWindow* win)
-	: wxPanel(win)
+	: wxPanel(win, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS)
 {
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(panel::on_paint), NULL, this);
 	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(panel::on_erase), NULL, this);

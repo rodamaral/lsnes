@@ -80,6 +80,11 @@ namespace
 	//Delay reset.
 	unsigned long long delayreset_cycles_run;
 	unsigned long long delayreset_cycles_target;
+	//Unsafe rewind.
+	bool do_unsafe_rewind = false;
+	void* unsafe_rewind_obj = NULL;
+
+	enum advance_mode old_mode;
 
 	bool delayreset_fn()
 	{
@@ -96,6 +101,16 @@ namespace
 }
 
 path_setting firmwarepath_setting("firmwarepath");
+
+void mainloop_signal_need_rewind(void* ptr)
+{
+	if(ptr) {
+		old_mode = amode;
+		amode = ADVANCE_LOAD;
+	}
+	do_unsafe_rewind = true;
+	unsafe_rewind_obj = ptr;
+}
 
 controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error)
 {
@@ -165,7 +180,6 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 
 namespace
 {
-	enum advance_mode old_mode;
 
 	//Do pending load (automatically unpauses).
 	void mark_pending_load(const std::string& filename, int lmode)
@@ -286,7 +300,7 @@ void update_movie_state()
 uint64_t audio_irq_time;
 uint64_t controller_irq_time;
 uint64_t frame_irq_time;
-
+std::string msu1_base_path;
 
 class my_interface : public SNES::Interface
 {
@@ -295,6 +309,23 @@ class my_interface : public SNES::Interface
 		const char* _hint = hint;
 		std::string _hint2 = _hint;
 		std::string fwp = firmwarepath_setting;
+		regex_results r;
+		std::string msubase = msu1_base_path;
+		if(regex_match(".*\\.sfc", msu1_base_path))
+			msubase = msu1_base_path.substr(0, msu1_base_path.length() - 4);
+
+		if(_hint2 == "msu1.rom" || _hint2 == ".msu") {
+			//MSU-1 main ROM.
+			std::string x = msubase + ".msu";
+			messages << "MSU main data file: " << x << std::endl;
+			return x.c_str();
+		}
+		if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
+			//MSU track.
+			std::string x = msubase + r[2];
+			messages << "MSU track " << r[3] << "': " << x << std::endl;
+			return x.c_str();
+		}
 		std::string finalpath = fwp + "/" + _hint2;
 		return finalpath.c_str();
 	}
@@ -736,6 +767,18 @@ namespace
 	//failing.
 	int handle_load()
 	{
+		if(do_unsafe_rewind && unsafe_rewind_obj) {
+			uint64_t t = get_utime();
+			std::vector<char> s;
+			lua_callback_do_unsafe_rewind(s, 0, 0, movb.get_movie(), unsafe_rewind_obj);
+			information_dispatch::do_mode_change(false);
+			do_unsafe_rewind = false;
+			our_movie.is_savestate = true;
+			location_special = SPECIAL_SAVEPOINT;
+			update_movie_state();
+			messages << "Rewind done in " << (get_utime() - t) << " usec." << std::endl;
+			return 1;
+		}
 		if(pending_load != "") {
 			system_corrupt = false;
 			if(loadmode != LOAD_STATE_BEGINNING && !do_load_state(pending_load, loadmode)) {
@@ -763,12 +806,21 @@ namespace
 	//If there are pending saves, perform them.
 	void handle_saves()
 	{
-		if(!queued_saves.empty()) {
+		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			stepping_into_save = true;
 			SNES::system.runtosave();
 			stepping_into_save = false;
 			for(auto i : queued_saves)
 				do_save_state(i);
+			if(do_unsafe_rewind && !unsafe_rewind_obj) {
+				uint64_t t = get_utime();
+				std::vector<char> s = emucore_serialize(true);
+				uint64_t secs = our_movie.rtc_second;
+				uint64_t ssecs = our_movie.rtc_subsecond;
+				lua_callback_do_unsafe_rewind(s, secs, ssecs, movb.get_movie(), NULL);
+				do_unsafe_rewind = false;
+				messages << "Rewind point set in " << (get_utime() - t) << " usec." << std::endl;
+			}
 		}
 		queued_saves.clear();
 	}

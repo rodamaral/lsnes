@@ -89,8 +89,8 @@ struct sram_slot_structure* emucore_sram_slot(size_t index);
 size_t emucore_vma_slots();
 struct vma_structure* emucore_vma_slot(size_t index);
 void emucore_refresh_cart();
-std::vector<char> emucore_serialize();
-void emucore_unserialize(const std::vector<char>& data);
+std::vector<char> emucore_serialize(bool nochecksum = false);
+void emucore_unserialize(const std::vector<char>& data, bool nochecksum = false);
 void emucore_load_rom(systype_info_structure* rtype, region_info_structure* region,
 	const std::vector<std::vector<char>>& romslots, const std::vector<std::vector<char>>& markslots);
 struct region_info_structure* emucore_current_region();

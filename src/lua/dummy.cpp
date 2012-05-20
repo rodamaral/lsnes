@@ -27,6 +27,8 @@ void lua_callback_keyhook(const std::string& key, const struct keygroup::paramet
 void init_lua() throw() {}
 void quit_lua() throw() {}
 uint64_t lua_timed_hook(int timer) throw() { return 0x7EFFFFFFFFFFFFFFULL; }
+void lua_callback_do_unsafe_rewind(const std::vector<char>& save, movie& mov, void* u) {}
+
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;

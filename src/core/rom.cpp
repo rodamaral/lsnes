@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/mainloop.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
@@ -210,6 +211,10 @@ loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtim
 			markup_slots[i] = loaded_slot(files.markup_slots[i], files.base_file, *rtype->rom_slot(i),
 				true);
 	orig_region = region = files.region;
+	if(main_slots.size() > 1)
+		msu1_base = resolve_file_relative(files.main_slots[1], files.base_file);
+	else
+		msu1_base = resolve_file_relative(files.main_slots[0], files.base_file);
 }
 
 void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
@@ -234,6 +239,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	auto soundrate = emucore_get_audio_rate();
 	set_nominal_framerate(1.0 * framerate.first / framerate.second);
 	information_dispatch::do_sound_rate(soundrate.first, soundrate.second);
+	msu1_base_path = msu1_base;
 	refresh_cart_mappings();
 }
 

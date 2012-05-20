@@ -100,11 +100,11 @@ namespace
 	int horiz_padding = 60;
 
 	wxdialog_pressbutton::wxdialog_pressbutton(wxWindow* parent, const std::string& title)
-		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
+		: wxDialog(parent, wxID_ANY, towxstring(title))
 	{
 		wxStaticText* t;
 		wxBoxSizer* s2 = new wxBoxSizer(wxVERTICAL);
-		wxPanel* p = new wxPanel(this, wxID_ANY);
+		wxPanel* p = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, -1), wxWANTS_CHARS);
 		s2->Add(p, 1, wxGROW);
 		lastkbdkey = -1;
 		mouseflag = 0;
@@ -116,7 +116,8 @@ namespace
 		s->Add(0, 0);
 		s->Add(0, 0);
 		s->Add(0, 0);
-		s->Add(t = new wxStaticText(p, wxID_ANY, wxT("Press the key to assign")), 1, wxGROW);
+		s->Add(t = new wxStaticText(p, wxID_ANY, wxT("Press the key to assign"), wxDefaultPosition,
+			wxSize(-1, -1), wxWANTS_CHARS), 1, wxGROW);
 		s->Add(0, 0);
 		s->Add(0, 0);
 		s->Add(0, 0);

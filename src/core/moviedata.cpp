@@ -291,6 +291,7 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 		redraw_framebuffer(screen_corrupt, true);
 		throw;
 	}
+	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
 	our_movie.is_savestate = false;
 	our_movie.host_memory.clear();
 	messages << "Movie rewound to beginning." << std::endl;
@@ -468,4 +469,12 @@ bool do_load_state(const std::string& filename, int lmode)
 		return false;
 	}
 	return true;
+}
+
+void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
+{
+	rrdata::add_internal();
+	our_movie.rtc_second = secs;
+	our_movie.rtc_subsecond = ssecs;
+	emucore_unserialize(state, true);
 }
