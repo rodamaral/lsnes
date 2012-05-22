@@ -67,6 +67,8 @@ struct rrdata::instance& rrdata::instance::operator++() throw()
 	return *this;
 }
 
+const char* hexes = "0123456789ABCDEF";
+
 namespace
 {
 	std::set<rrdata::instance> rrset;
@@ -74,6 +76,22 @@ namespace
 	std::ofstream ohandle;
 	bool handle_open;
 	std::string current_project;
+	//% is intentionally missing.
+	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		"^&'@{}[],$?!-#().+~_";
+
+	std::string safe_filename(const std::string& str)
+	{
+		std::ostringstream o;
+		for(size_t i = 0; i < str.length(); i++) {
+			unsigned char ch = static_cast<unsigned char>(str[i]);
+			if(strchr(allowed_filename_chars, ch))
+				o << str[i];
+			else
+				o << "%" << hexes[ch / 16] << hexes[ch % 16];
+		}
+		return o.str();
+	}
 }
 
 void rrdata::read_base(const std::string& project) throw(std::bad_alloc)
@@ -81,7 +99,7 @@ void rrdata::read_base(const std::string& project) throw(std::bad_alloc)
 	if(project == current_project)
 		return;
 	std::set<rrdata::instance> new_rrset;
-	std::string filename = get_config_path() + "/" + project + ".rr";
+	std::string filename = get_config_path() + "/" + safe_filename(project) + ".rr";
 	if(handle_open) {
 		ohandle.close();
 		handle_open = false;
@@ -247,8 +265,6 @@ uint64_t rrdata::count(std::vector<char>& strm) throw(std::bad_alloc)
 {
 	return read(strm, true);
 }
-
-const char* hexes = "0123456789ABCDEF";
 
 std::ostream& operator<<(std::ostream& os, const struct rrdata::instance& j)
 {
