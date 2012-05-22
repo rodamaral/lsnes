@@ -3002,3 +3002,15 @@ set-axis joystick0axis19 disabled
 
 • SDL: More advanced command editing.
 
+15.62 rr1-delta9
+
+• wxMSW: Fix the “arrow keys and enter don't work” problem
+
+• MSU-1 support
+
+• Show mode changes due to rewinding.
+
+• Unsafe rewind support
+
+• Fix directory transversal.
+

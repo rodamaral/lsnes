@@ -6050,5 +6050,37 @@ SDL: Command to enter command line mode with given command.
 SDL: More advanced command editing.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta9
+\end_layout
+
+\begin_layout Itemize
+wxMSW: Fix the 
+\begin_inset Quotes eld
+\end_inset
+
+arrow keys and enter don't work
+\begin_inset Quotes erd
+\end_inset
+
+ problem
+\end_layout
+
+\begin_layout Itemize
+MSU-1 support
+\end_layout
+
+\begin_layout Itemize
+Show mode changes due to rewinding.
+\end_layout
+
+\begin_layout Itemize
+Unsafe rewind support
+\end_layout
+
+\begin_layout Itemize
+Fix directory transversal.
+\end_layout
+
 \end_body
 \end_document
