@@ -74,7 +74,8 @@ namespace
 			uint32_t base_B = topowerof2((base + 11024) / 11025);
 			uint32_t base_C = topowerof2((base + 11999) / 12000);
 			return min(base_A * 8000, min(base_B * 11025, base_C * 12000));
-		}
+		} else if(mode == 5)
+			return 48000;
 	}
 
 	boolean_setting dump_large("avi-large", false);
@@ -84,7 +85,7 @@ namespace
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	numeric_setting soundrate_setting("avi-soundrate", 0, 4, 0);
+	numeric_setting soundrate_setting("avi-soundrate", 0, 5, 0);
 #else
 	numeric_setting soundrate_setting("avi-soundrate", 0, 3, 0);
 #endif
@@ -309,7 +310,7 @@ again:
 			dcounter = 0;
 			have_dumped_frame = false;
 			resampler_w = NULL;
-			if(soundrate_setting == 4) {
+			if(soundrate_setting == 4 || soundrate_setting == 5) {
 				double ratio = 1.0 * audio_record_rate * soundrate.second / soundrate.first;
 				sbuffer_fill = 0;
 				sbuffer.resize(RESAMPLE_BUFFER * chans);
