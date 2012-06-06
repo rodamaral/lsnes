@@ -33,10 +33,10 @@ namespace
 {
 	struct translated_address
 	{
-		uint32_t rel_addr;
-		uint32_t raw_addr;
+		uint64_t rel_addr;
+		uint64_t raw_addr;
 		uint8_t* memory;
-		uint32_t memory_size;
+		uint64_t memory_size;
 		bool not_writable;
 		bool native_endian;
 	};
@@ -44,18 +44,18 @@ namespace
 	struct region
 	{
 		std::string name;
-		uint32_t base;
-		uint32_t size;
+		uint64_t base;
+		uint64_t size;
 		uint8_t* memory;
 		bool not_writable;
 		bool native_endian;
 	};
 
 	std::vector<region> memory_regions;
-	uint32_t linear_ram_size = 0;
+	uint64_t linear_ram_size = 0;
 	bool system_little_endian = true;
 
-	struct translated_address translate_address(uint32_t rawaddr) throw()
+	struct translated_address translate_address(uint64_t rawaddr) throw()
 	{
 		struct translated_address t;
 		t.rel_addr = 0;
@@ -77,7 +77,7 @@ namespace
 		return t;
 	}
 
-	struct translated_address translate_address_linear_ram(uint32_t ramlinaddr) throw()
+	struct translated_address translate_address_linear_ram(uint64_t ramlinaddr) throw()
 	{
 		struct translated_address t;
 		t.rel_addr = 0;
@@ -103,12 +103,12 @@ namespace
 		return t;
 	}
 
-	uint32_t get_linear_ram_size() throw()
+	uint64_t get_linear_ram_size() throw()
 	{
 		return linear_ram_size;
 	}
 
-	uint32_t create_region(const std::string& name, uint32_t base, uint8_t* memory, uint32_t size, bool readonly,
+	uint64_t create_region(const std::string& name, uint64_t base, uint8_t* memory, uint64_t size, bool readonly,
 		bool native_endian = false) throw(std::bad_alloc)
 	{
 		if(size == 0)
@@ -126,7 +126,7 @@ namespace
 		return base + size;
 	}
 
-	uint32_t create_region(const std::string& name, uint32_t base, SNES::MappedRAM& memory, bool readonly,
+	uint64_t create_region(const std::string& name, uint64_t base, SNES::MappedRAM& memory, bool readonly,
 		bool native_endian = false) throw(std::bad_alloc)
 	{
 		return create_region(name, base, memory.data(), memory.size(), readonly, native_endian);
@@ -223,7 +223,7 @@ std::vector<struct memory_region> get_regions() throw(std::bad_alloc)
 	return out;
 }
 
-uint8_t memory_read_byte(uint32_t addr) throw()
+uint8_t memory_read_byte(uint64_t addr) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	uint8_t value = 0;
@@ -232,7 +232,7 @@ uint8_t memory_read_byte(uint32_t addr) throw()
 	return value;
 }
 
-uint16_t memory_read_word(uint32_t addr) throw()
+uint16_t memory_read_word(uint64_t addr) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	uint16_t value = 0;
@@ -245,7 +245,7 @@ uint16_t memory_read_word(uint32_t addr) throw()
 	return value;
 }
 
-uint32_t memory_read_dword(uint32_t addr) throw()
+uint32_t memory_read_dword(uint64_t addr) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	uint32_t value = 0;
@@ -262,7 +262,7 @@ uint32_t memory_read_dword(uint32_t addr) throw()
 	return value;
 }
 
-uint64_t memory_read_qword(uint32_t addr) throw()
+uint64_t memory_read_qword(uint64_t addr) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	uint64_t value = 0;
@@ -288,7 +288,7 @@ uint64_t memory_read_qword(uint32_t addr) throw()
 }
 
 //Byte write to address (false if failed).
-bool memory_write_byte(uint32_t addr, uint8_t data) throw()
+bool memory_write_byte(uint64_t addr, uint8_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.rel_addr >= laddr.memory_size || laddr.not_writable)
@@ -297,7 +297,7 @@ bool memory_write_byte(uint32_t addr, uint8_t data) throw()
 	return true;
 }
 
-bool memory_write_word(uint32_t addr, uint16_t data) throw()
+bool memory_write_word(uint64_t addr, uint16_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
@@ -309,7 +309,7 @@ bool memory_write_word(uint32_t addr, uint16_t data) throw()
 	return true;
 }
 
-bool memory_write_dword(uint32_t addr, uint32_t data) throw()
+bool memory_write_dword(uint64_t addr, uint32_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
@@ -323,7 +323,7 @@ bool memory_write_dword(uint32_t addr, uint32_t data) throw()
 	return true;
 }
 
-bool memory_write_qword(uint32_t addr, uint64_t data) throw()
+bool memory_write_qword(uint64_t addr, uint64_t data) throw()
 {
 	struct translated_address laddr = translate_address(addr);
 	if(laddr.native_endian)
@@ -348,14 +348,14 @@ memorysearch::memorysearch() throw(std::bad_alloc)
 
 void memorysearch::reset() throw(std::bad_alloc)
 {
-	uint32_t linearram = get_linear_ram_size();
+	uint64_t linearram = get_linear_ram_size();
 	previous_content.resize(linearram);
 	still_in.resize((linearram + 63) / 64);
-	for(uint32_t i = 0; i < linearram / 64; i++)
+	for(uint64_t i = 0; i < linearram / 64; i++)
 		still_in[i] = 0xFFFFFFFFFFFFFFFFULL;
 	if(linearram % 64)
 		still_in[linearram / 64] = (1ULL << (linearram % 64)) - 1;
-	uint32_t addr = 0;
+	uint64_t addr = 0;
 	while(addr < linearram) {
 		struct translated_address t = translate_address_linear_ram(addr);
 		memcpy(&previous_content[addr], t.memory, t.memory_size);
@@ -594,7 +594,7 @@ struct search_value_helper
  *
  * This function is search()-compatible condition function calling the underlying condition.
  */
-	bool operator()(const uint8_t* newv, const uint8_t* oldv, uint32_t left, bool nativeendian) const throw()
+	bool operator()(const uint8_t* newv, const uint8_t* oldv, uint64_t left, bool nativeendian) const throw()
 	{
 		if(left < sizeof(value_type))
 			return false;
@@ -621,10 +621,10 @@ template<class T> void memorysearch::search(const T& obj) throw()
 {
 	search_value_helper<T> helper(obj);
 	struct translated_address t = translate_address_linear_ram(0);
-	uint32_t switch_at = t.memory_size;
-	uint32_t base = 0;
-	uint32_t size = previous_content.size();
-	for(uint32_t i = 0; i < size; i++) {
+	uint64_t switch_at = t.memory_size;
+	uint64_t base = 0;
+	uint64_t size = previous_content.size();
+	for(uint64_t i = 0; i < size; i++) {
 		if(still_in[i / 64] == 0) {
 			i = (i + 64) >> 6 << 6;
 			i--;
@@ -715,21 +715,21 @@ void memorysearch::qword_ugt() throw() { search(search_gt<uint64_t>()); }
 
 void memorysearch::update() throw() { search(search_update()); }
 
-uint32_t memorysearch::get_candidate_count() throw()
+uint64_t memorysearch::get_candidate_count() throw()
 {
 	return candidates;
 }
 
-std::list<uint32_t> memorysearch::get_candidates() throw(std::bad_alloc)
+std::list<uint64_t> memorysearch::get_candidates() throw(std::bad_alloc)
 {
 	struct translated_address t = translate_address_linear_ram(0);
-	uint32_t switch_at = t.memory_size;
-	uint32_t base = 0;
-	uint32_t rbase = t.raw_addr;
-	uint32_t size = previous_content.size();
-	std::list<uint32_t> out;
+	uint64_t switch_at = t.memory_size;
+	uint64_t base = 0;
+	uint64_t rbase = t.raw_addr;
+	uint64_t size = previous_content.size();
+	std::list<uint64_t> out;
 
-	for(uint32_t i = 0; i < size; i++) {
+	for(uint64_t i = 0; i < size; i++) {
 		if(still_in[i / 64] == 0) {
 			i = (i + 64) >> 6 << 6;
 			i--;
@@ -805,7 +805,7 @@ namespace
 					for(unsigned i = 0; i < t[1].length(); i++)
 						address = 16 * address + hex(t[1][i]);
 				} else {
-					address = parse_value<uint32_t>(firstword);
+					address = parse_value<uint64_t>(firstword);
 				}
 				address_bad = false;
 			} catch(...) {
@@ -830,7 +830,7 @@ namespace
 		virtual void invoke2() throw(std::bad_alloc, std::runtime_error) = 0;
 		std::string firstword;
 		std::string secondword;
-		uint32_t address;
+		uint64_t address;
 		uint64_t value;
 		bool has_tail;
 		bool address_bad;
@@ -843,7 +843,7 @@ namespace
 	class read_command : public memorymanip_command
 	{
 	public:
-		read_command(const std::string& cmd, ret (*_rfn)(uint32_t addr)) throw(std::bad_alloc)
+		read_command(const std::string& cmd, ret (*_rfn)(uint64_t addr)) throw(std::bad_alloc)
 			: memorymanip_command(cmd)
 		{
 			rfn = _rfn;
@@ -867,14 +867,14 @@ namespace
 				"Reads data from memory.\n";
 		}
 
-		ret (*rfn)(uint32_t addr);
+		ret (*rfn)(uint64_t addr);
 	};
 
 	template<typename arg, int64_t low, uint64_t high>
 	class write_command : public memorymanip_command
 	{
 	public:
-		write_command(const std::string& cmd, bool (*_wfn)(uint32_t addr, arg a)) throw(std::bad_alloc)
+		write_command(const std::string& cmd, bool (*_wfn)(uint64_t addr, arg a)) throw(std::bad_alloc)
 			: memorymanip_command(cmd)
 		{
 			wfn = _wfn;
@@ -895,7 +895,7 @@ namespace
 			return "Syntax: " + _command + " <address> <value>\n"
 				"Writes data to memory.\n";
 		}
-		bool (*wfn)(uint32_t addr, arg a);
+		bool (*wfn)(uint64_t addr, arg a);
 	};
 
 	class memorysearch_command : public memorymanip_command

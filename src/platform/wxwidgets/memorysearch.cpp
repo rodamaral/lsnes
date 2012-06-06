@@ -70,10 +70,10 @@ namespace
 		&memorysearch::qword_une, &memorysearch::qword_uge, &memorysearch::qword_ugt, &memorysearch::update }
 	};
 
-	std::string hexformat_address(uint32_t addr)
+	std::string hexformat_address(uint64_t addr)
 	{
 		std::ostringstream x;
-		x << std::setfill('0') << std::setw(8) << std::hex << addr;
+		x << std::setfill('0') << std::setw(16) << std::hex << addr;
 		return x.str();
 	}
 
@@ -242,11 +242,11 @@ void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 void wxwindow_memorysearch::update()
 {
 	std::string ret;
-	uint32_t addr_count;
+	uint64_t addr_count;
 	runemufn([msearch, &ret, &addr_count, typecode, hexmode]() {
 		addr_count = msearch->get_candidate_count();
 		if(addr_count <= CANDIDATE_LIMIT) {
-			std::list<uint32_t> addrs = msearch->get_candidates();
+			std::list<uint64_t> addrs = msearch->get_candidates();
 			for(auto i : addrs) {
 				std::ostringstream row;
 				row << hexformat_address(i) << " ";

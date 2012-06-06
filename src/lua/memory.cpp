@@ -5,27 +5,27 @@
 
 namespace
 {
-	template<typename T, typename U, U (*rfun)(uint32_t addr)>
+	template<typename T, typename U, U (*rfun)(uint64_t addr)>
 	class lua_read_memory : public lua_function
 	{
 	public:
 		lua_read_memory(const std::string& name) : lua_function(name) {}
 		int invoke(lua_State* LS)
 		{
-			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 			lua_pushnumber(LS, static_cast<T>(rfun(addr)));
 			return 1;
 		}
 	};
 
-	template<typename T, bool (*wfun)(uint32_t addr, T value)>
+	template<typename T, bool (*wfun)(uint64_t addr, T value)>
 	class lua_write_memory : public lua_function
 	{
 	public:
 		lua_write_memory(const std::string& name) : lua_function(name) {}
 		int invoke(lua_State* LS)
 		{
-			uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 			T value = get_numeric_argument<T>(LS, 2, fname.c_str());
 			wfun(addr, value);
 			return 0;
@@ -74,7 +74,7 @@ namespace
 
 	function_ptr_luafun findvma("memory.find_vma", [](lua_State* LS, const std::string& fname) -> int {
 		std::vector<memory_region> regions = get_regions();
-		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		size_t i;
 		for(i = 0; i < regions.size(); i++)
 			if(addr >= regions[i].baseaddr && addr <= regions[i].lastaddr)
@@ -100,8 +100,8 @@ namespace
 
 	function_ptr_luafun hashmemory("memory.hash_region", [](lua_State* LS, const std::string& fname) -> int {
 		std::string hash;
-		uint32_t addr = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
-		uint32_t size = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t size = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
 		char buffer[BLOCKSIZE];
 		sha256 h;
 		while(size > BLOCKSIZE) {
