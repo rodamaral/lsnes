@@ -57,6 +57,7 @@ enum
 	wxID_LOAD_MOVIE,
 	wxID_RUN_SCRIPT,
 	wxID_RUN_LUA,
+	wxID_RESET_LUA,
 	wxID_EVAL_LUA,
 	wxID_SAVE_SCREENSHOT,
 	wxID_READONLY_MODE,
@@ -706,6 +707,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 		menu_separator();
 		menu_entry(wxID_EVAL_LUA, wxT("Evaluate Lua statement..."));
 		menu_entry(wxID_RUN_LUA, wxT("Run Lua script..."));
+		menu_separator();
+		menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
 	}
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
@@ -848,6 +851,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_RUN_LUA:
 		platform::queue("run-lua " + pick_file(this, "Select Lua Script", "."));
+		return;
+	case wxID_RESET_LUA:
+		platform::queue("reset-lua");
 		return;
 	case wxID_EVAL_LUA:
 		platform::queue("evaluate-lua " + pick_text(this, "Evaluate Lua", "Enter Lua Statement:"));

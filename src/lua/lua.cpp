@@ -506,6 +506,22 @@ namespace
 		{
 			do_run_lua(args);
 		});
+
+	function_ptr_command<> reset_lua("reset-lua", "Reset the Lua VM",
+		"Syntax: reset-lua\nReset the Lua VM.\n",
+		[]() throw(std::bad_alloc, std::runtime_error)
+		{
+			lua_State* L = lua_initialized;
+			lua_initialized = NULL;
+			init_lua(true);
+			if(!lua_initialized) {
+				lua_initialized = L;
+				return;
+			}
+			lua_close(L);
+			messages << "Lua VM reset" << std::endl;
+		});
+
 }
 
 void lua_callback_quit() throw()
@@ -524,11 +540,13 @@ void lua_callback_keyhook(const std::string& key, const struct keygroup::paramet
 	run_lua_cb(2);
 }
 
-void init_lua() throw()
+void init_lua(bool soft) throw()
 {
 	L = lua_newstate(alloc, NULL);
 	if(!L) {
 		messages << "Can't initialize Lua." << std::endl;
+		if(soft)
+			return;
 		fatal_error();
 	}
 	luaL_openlibs(L);
