@@ -696,6 +696,10 @@ Run Lua code <luacode> using built-in Lua interpretter.
 
 Run specified lua file using built-in Lua interpretter.
 
+6.9.3 reset-lua
+
+Clear the Lua VM state and restore to factory defaults.
+
 6.10 Memory watch
 
 6.10.1 add-watch <name> <expression>
@@ -894,6 +898,11 @@ has expired, on_idle() will be called once.
 
 Set number of microseconds to block timer for. After this timeout 
 has expired, on_timer() will be called once.
+
+8.1.7 bus_address(number snesaddr)
+
+Returns virtual address corresponding to specified address on 
+SNES bus.
 
 8.2 Table bit:
 
@@ -1545,6 +1554,8 @@ fields:
 • size (number): The size of VMA in bytes.
 
 • readonly (boolean): True of the VMA corresponds to ROM.
+
+• iospace (boolean): True if the VMA is I/O space.
 
 • native_endian (boolean): True if the VMA has native endian as 
   opposed to little endian.

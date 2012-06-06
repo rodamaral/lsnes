@@ -37,6 +37,10 @@ struct memory_region
  */
 	bool readonly;
 /**
+ * \brief True for I/O space, false for fixed memory.
+ */
+	bool iospace;
+/**
  * \brief Endianess of the region.
  *
  * If true, region uses host endian.

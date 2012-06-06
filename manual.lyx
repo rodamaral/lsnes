@@ -1429,6 +1429,14 @@ run-lua <script>
 Run specified lua file using built-in Lua interpretter.
 \end_layout
 
+\begin_layout Subsubsection
+reset-lua
+\end_layout
+
+\begin_layout Standard
+Clear the Lua VM state and restore to factory defaults.
+\end_layout
+
 \begin_layout Subsection
 Memory watch
 \end_layout
@@ -1834,6 +1842,14 @@ set_timer_timeout(number timeout)
 \begin_layout Standard
 Set number of microseconds to block timer for.
  After this timeout has expired, on_timer() will be called once.
+\end_layout
+
+\begin_layout Subsubsection
+bus_address(number snesaddr)
+\end_layout
+
+\begin_layout Standard
+Returns virtual address corresponding to specified address on SNES bus.
 \end_layout
 
 \begin_layout Subsection
@@ -3052,6 +3068,10 @@ size (number): The size of VMA in bytes.
 
 \begin_layout Itemize
 readonly (boolean): True of the VMA corresponds to ROM.
+\end_layout
+
+\begin_layout Itemize
+iospace (boolean): True if the VMA is I/O space.
 \end_layout
 
 \begin_layout Itemize

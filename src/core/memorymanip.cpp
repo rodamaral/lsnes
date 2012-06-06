@@ -39,6 +39,7 @@ namespace
 		uint64_t memory_size;
 		bool not_writable;
 		bool native_endian;
+		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
 	};
 
 	struct region
@@ -49,11 +50,20 @@ namespace
 		uint8_t* memory;
 		bool not_writable;
 		bool native_endian;
+		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
 	};
 
 	std::vector<region> memory_regions;
 	uint64_t linear_ram_size = 0;
 	bool system_little_endian = true;
+
+	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	{
+		if(write)
+			SNES::bus.write(offset, data);
+		else
+			return SNES::bus.read(offset);
+	}
 
 	struct translated_address translate_address(uint64_t rawaddr) throw()
 	{
@@ -72,6 +82,7 @@ namespace
 			t.memory_size = i.size;
 			t.not_writable = i.not_writable;
 			t.native_endian = i.native_endian;
+			t.iospace_rw = i.iospace_rw;
 			break;
 		}
 		return t;
@@ -86,7 +97,7 @@ namespace
 		t.memory_size = 0;
 		t.not_writable = true;
 		for(auto i : memory_regions) {
-			if(i.not_writable)
+			if(i.not_writable || i.iospace_rw)
 				continue;
 			if(ramlinaddr >= i.size) {
 				ramlinaddr -= i.size;
@@ -108,6 +119,23 @@ namespace
 		return linear_ram_size;
 	}
 
+	uint64_t create_region(const std::string& name, uint64_t base, uint64_t size,
+		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write)) throw(std::bad_alloc)
+	{
+		if(size == 0)
+			return base;
+		struct region r;
+		r.name = name;
+		r.base = base;
+		r.memory = NULL;
+		r.size = size;
+		r.not_writable = false;
+		r.native_endian = false;
+		r.iospace_rw = iospace_rw;
+		memory_regions.push_back(r);
+		return base + size;
+	}
+
 	uint64_t create_region(const std::string& name, uint64_t base, uint8_t* memory, uint64_t size, bool readonly,
 		bool native_endian = false) throw(std::bad_alloc)
 	{
@@ -120,6 +148,7 @@ namespace
 		r.size = size;
 		r.not_writable = readonly;
 		r.native_endian = native_endian;
+		r.iospace_rw = NULL;
 		if(!readonly)
 			linear_ram_size += size;
 		memory_regions.push_back(r);
@@ -130,6 +159,11 @@ namespace
 		bool native_endian = false) throw(std::bad_alloc)
 	{
 		return create_region(name, base, memory.data(), memory.size(), readonly, native_endian);
+	}
+
+	uint8_t native_littleendian_convert(uint8_t x) throw()
+	{
+		return x;
 	}
 
 	uint16_t native_littleendian_convert(uint16_t x) throw()
@@ -159,6 +193,43 @@ namespace
 		else
 			return x;
 	}
+
+	template<typename T>
+	inline T memory_read_generic(uint64_t addr) throw()
+	{
+		struct translated_address laddr = translate_address(addr);
+		T value = 0;
+		if(laddr.iospace_rw) {
+			for(size_t i = 0; i < sizeof(T); i++)
+				if(laddr.rel_addr < laddr.memory_size)
+					value |= laddr.iospace_rw(laddr.rel_addr++, 0, false) << (8 * i);
+		} else {
+			for(size_t i = 0; i < sizeof(T); i++)
+				if(laddr.rel_addr < laddr.memory_size)
+					value |= laddr.memory[laddr.rel_addr++] << (8 * i);
+		}
+		if(laddr.native_endian)
+			value = native_littleendian_convert(value);
+		return value;
+	}
+
+	template<typename T>
+	inline bool memory_write_generic(uint64_t addr, T data) throw()
+	{
+		struct translated_address laddr = translate_address(addr);
+		if(laddr.native_endian)
+			data = native_littleendian_convert(data);
+		if(laddr.rel_addr >= laddr.memory_size - (sizeof(T) - 1) || laddr.not_writable)
+			return false;
+		if(laddr.iospace_rw) {
+			for(size_t i = 0; i < sizeof(T); i++)
+				laddr.iospace_rw(laddr.rel_addr++, static_cast<uint8_t>(data >> (8 * i)), true);
+		} else {
+			for(size_t i = 0; i < sizeof(T); i++)
+				laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> (8 * i));
+		}
+		return true;
+	}
 }
 
 void refresh_cart_mappings() throw(std::bad_alloc)
@@ -184,6 +255,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 	}
 	create_region("SRAM", 0x10000000, SNES::cartridge.ram, false);
 	create_region("ROM", 0x80000000, SNES::cartridge.rom, true);
+	create_region("BUS", 0x100000000ULL, 0x1000000, snes_bus_iospace_rw);
 	switch(get_current_rom_info().first) {
 	case ROMTYPE_BSX:
 	case ROMTYPE_BSXSLOTTED:
@@ -217,6 +289,7 @@ std::vector<struct memory_region> get_regions() throw(std::bad_alloc)
 		r.size = i.size;
 		r.lastaddr = i.base + i.size - 1;
 		r.readonly = i.not_writable;
+		r.iospace = (i.iospace_rw != NULL);
 		r.native_endian = i.native_endian;
 		out.push_back(r);
 	}
@@ -225,120 +298,43 @@ std::vector<struct memory_region> get_regions() throw(std::bad_alloc)
 
 uint8_t memory_read_byte(uint64_t addr) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	uint8_t value = 0;
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= laddr.memory[laddr.rel_addr++];
-	return value;
+	return memory_read_generic<uint8_t>(addr);
 }
 
 uint16_t memory_read_word(uint64_t addr) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	uint16_t value = 0;
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint16_t>(laddr.memory[laddr.rel_addr++]));
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint16_t>(laddr.memory[laddr.rel_addr++]) << 8);
-	if(laddr.native_endian)
-		value = native_littleendian_convert(value);
-	return value;
+	return memory_read_generic<uint16_t>(addr);
 }
 
 uint32_t memory_read_dword(uint64_t addr) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	uint32_t value = 0;
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]));
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 8);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 16);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint32_t>(laddr.memory[laddr.rel_addr++]) << 24);
-	if(laddr.native_endian)
-		value = native_littleendian_convert(value);
-	return value;
+	return memory_read_generic<uint32_t>(addr);
 }
 
 uint64_t memory_read_qword(uint64_t addr) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	uint64_t value = 0;
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]));
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 8);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 16);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 24);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 32);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 40);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 48);
-	if(laddr.rel_addr < laddr.memory_size)
-		value |= (static_cast<uint64_t>(laddr.memory[laddr.rel_addr++]) << 56);
-	if(laddr.native_endian)
-		value = native_littleendian_convert(value);
-	return value;
+	return memory_read_generic<uint64_t>(addr);
 }
 
 //Byte write to address (false if failed).
 bool memory_write_byte(uint64_t addr, uint8_t data) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	if(laddr.rel_addr >= laddr.memory_size || laddr.not_writable)
-		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
-	return true;
+	return memory_write_generic<uint8_t>(addr, data);
 }
 
 bool memory_write_word(uint64_t addr, uint16_t data) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	if(laddr.native_endian)
-		data = native_littleendian_convert(data);
-	if(laddr.rel_addr >= laddr.memory_size - 1 || laddr.not_writable)
-		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
-	return true;
+	return memory_write_generic<uint16_t>(addr, data);
 }
 
 bool memory_write_dword(uint64_t addr, uint32_t data) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	if(laddr.native_endian)
-		data = native_littleendian_convert(data);
-	if(laddr.rel_addr >= laddr.memory_size - 3 || laddr.not_writable)
-		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
-	return true;
+	return memory_write_generic<uint32_t>(addr, data);
 }
 
 bool memory_write_qword(uint64_t addr, uint64_t data) throw()
 {
-	struct translated_address laddr = translate_address(addr);
-	if(laddr.native_endian)
-		data = native_littleendian_convert(data);
-	if(laddr.rel_addr >= laddr.memory_size - 7 || laddr.not_writable)
-		return false;
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 8);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 16);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 24);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 32);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 40);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 48);
-	laddr.memory[laddr.rel_addr++] = static_cast<uint8_t>(data >> 56);
-	return true;
+	return memory_write_generic<uint64_t>(addr, data);
 }
 
 memorysearch::memorysearch() throw(std::bad_alloc)

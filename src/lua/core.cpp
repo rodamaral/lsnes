@@ -68,5 +68,10 @@ namespace
 		lua_timer_hook_time = get_utime() + get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		return 0;
 	});
-	
+
+	function_ptr_luafun lua_busaddr("bus_address", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		lua_pushnumber(LS, 0x1000000 + (addr & 0xFFFFFF));
+		return 1;
+	});
 }
