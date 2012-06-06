@@ -3025,3 +3025,13 @@ set-axis joystick0axis19 disabled
 
 • Fix directory transversal.
 
+15.63 rr1-delta10
+
+• AVI: Sound mode 5 (48kHz high-quality)
+
+• Lua: Reset Lua VM
+
+• Map the SNES bus into address space
+
+• Fix loading memory watch files with CRLF line endings
+

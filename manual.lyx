@@ -6102,5 +6102,25 @@ Unsafe rewind support
 Fix directory transversal.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta10
+\end_layout
+
+\begin_layout Itemize
+AVI: Sound mode 5 (48kHz high-quality)
+\end_layout
+
+\begin_layout Itemize
+Lua: Reset Lua VM
+\end_layout
+
+\begin_layout Itemize
+Map the SNES bus into address space
+\end_layout
+
+\begin_layout Itemize
+Fix loading memory watch files with CRLF line endings
+\end_layout
+
 \end_body
 \end_document

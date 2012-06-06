@@ -255,7 +255,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 	}
 	create_region("SRAM", 0x10000000, SNES::cartridge.ram, false);
 	create_region("ROM", 0x80000000, SNES::cartridge.rom, true);
-	create_region("BUS", 0x100000000ULL, 0x1000000, snes_bus_iospace_rw);
+	create_region("BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
 	switch(get_current_rom_info().first) {
 	case ROMTYPE_BSX:
 	case ROMTYPE_BSXSLOTTED:
