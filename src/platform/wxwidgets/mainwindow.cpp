@@ -914,7 +914,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 				std::string wexpr;
 				std::getline(in, wname);
 				std::getline(in, wexpr);
-				new_watches[wname] = wexpr;
+				new_watches[strip_CR(wname)] = strip_CR(wexpr);
 			}
 			delete &in;
 		} catch(std::exception& e) {
