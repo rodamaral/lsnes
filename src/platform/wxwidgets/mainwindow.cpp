@@ -702,7 +702,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SET_SPEED, wxT("Set..."));
 
 	menu_start(wxT("Scripting"));
-	menu_entry(wxID_RUN_SCRIPT, wxT("Run script..."));
+	menu_entry(wxID_RUN_SCRIPT, wxT("Run batch file..."));
 	if(lua_supported) {
 		menu_separator();
 		menu_entry(wxID_EVAL_LUA, wxT("Evaluate Lua statement..."));
