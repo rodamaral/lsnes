@@ -60,6 +60,9 @@ namespace
 		lua_pushstring(LS, "readonly");
 		lua_pushboolean(LS, r.readonly);
 		lua_settable(LS, -3);
+		lua_pushstring(LS, "iospace");
+		lua_pushboolean(LS, r.iospace);
+		lua_settable(LS, -3);
 		lua_pushstring(LS, "native_endian");
 		lua_pushboolean(LS, r.native_endian);
 		lua_settable(LS, -3);
