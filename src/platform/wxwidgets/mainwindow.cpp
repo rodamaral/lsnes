@@ -18,6 +18,8 @@
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
+#include <wx/dnd.h>
+
 #include <cmath>
 #include <vector>
 #include <string>
@@ -449,6 +451,18 @@ namespace
 	{
 		return setting::get("moviepath");
 	}
+
+	class loadfile : public wxFileDropTarget
+	{
+	public:
+		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
+		{
+			if(filenames.Count() != 1)
+				return false;
+			platform::queue("load " + filenames[0]);
+			return true;
+		}
+	};
 }
 
 void boot_emulator(loaded_rom& rom, moviefile& movie)
@@ -725,6 +739,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 
 	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+
+	gpanel->SetDropTarget(new loadfile());
+	spanel->SetDropTarget(new loadfile());
 }
 
 void wxwin_mainwindow::request_paint()
