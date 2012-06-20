@@ -1,8 +1,8 @@
 #ifndef _framebuffer__hpp__included__
 #define _framebuffer__hpp__included__
 
-#include "core/render.hpp"
 #include "core/window.hpp"
+#include "library/framebuffer.hpp"
 
 #include <stdexcept>
 
@@ -54,19 +54,19 @@ private:
 /**
  * The main framebuffer.
  */
-extern lcscreen framebuffer;
+extern framebuffer_raw main_framebuffer;
 /**
  * Special screen: "NO SIGNAL".
  */
-extern lcscreen screen_nosignal;
+extern framebuffer_raw screen_nosignal;
 /**
  * Special screen: "SYSTEM STATE CORRUPT".
  */
-extern lcscreen screen_corrupt;
+extern framebuffer_raw screen_corrupt;
 /**
  * The main screen to draw on.
  */
-extern screen<false> main_screen;
+extern framebuffer<false> main_screen;
 /**
  * Initialize special screens.
  *
@@ -76,7 +76,7 @@ void init_special_screens() throw(std::bad_alloc);
 /**
  * Copy framebuffer to backing store, running Lua hooks if any.
  */
-void redraw_framebuffer(lcscreen& torender, bool no_lua = false, bool spontaneous = false);
+void redraw_framebuffer(framebuffer_raw& torender, bool no_lua = false, bool spontaneous = false);
 /**
  * Redraw the framebuffer, reusing contents from last redraw. Runs lua hooks if last redraw ran them.
  */
@@ -84,7 +84,7 @@ void redraw_framebuffer();
 /**
  * Return last complete framebuffer.
  */
-lcscreen get_framebuffer() throw(std::bad_alloc);
+framebuffer_raw get_framebuffer() throw(std::bad_alloc);
 /**
  * Render framebuffer to main screen.
  */

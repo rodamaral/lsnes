@@ -1,4 +1,4 @@
-OBJECTS=font.$(OBJECT_SUFFIX)
+OBJECTS=font.$(OBJECT_SUFFIX) wrapper.$(OBJECT_SUFFIX)
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
@@ -8,8 +8,8 @@ __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 
 .PRECIOUS: font.$(OBJECT_SUFFIX) font.cpp
 
-font.$(OBJECT_SUFFIX): font.cpp
-	$(REALCC) $(CORE_CFLAGS) -c -o $@ font.cpp
+%.$(OBJECT_SUFFIX): %.cpp
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
 
 font.cpp : $(FONT_SRC)
 	echo "extern const char* font_hex_data = " >font.cpp

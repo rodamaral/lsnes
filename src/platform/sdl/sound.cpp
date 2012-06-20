@@ -5,9 +5,9 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/misc.hpp"
-#include "core/render.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/framebuffer.hpp"
 
 #include <vector>
 #include <iostream>

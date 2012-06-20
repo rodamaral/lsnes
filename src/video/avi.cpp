@@ -326,16 +326,16 @@ again:
 			delete soxdumper;
 		}
 
-		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
-			if(dump_large && _frame.width < 400)
+			if(dump_large && _frame.get_width() < 400)
 				hscl = 2;
-			if(dump_large && _frame.height < 400)
+			if(dump_large && _frame.get_height() < 400)
 				vscl = 2;
 			render_video_hud(dscr, _frame, hscl, vscl, 0, 8, 16, dlb, dtb, drb, dbb, waitfn);
-			worker->queue_video(dscr.memory, dscr.width, dscr.height, fps_n, fps_d);
+			worker->queue_video(dscr.rowptr(0), dscr.get_width(), dscr.get_height(), fps_n, fps_d);
 			have_dumped_frame = true;
 		}
 
@@ -390,7 +390,7 @@ again:
 		resample_worker* resampler_w;
 	private:
 		sox_dumper* soxdumper;
-		screen<false> dscr;
+		framebuffer<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		std::pair<uint32_t, uint32_t> soundrate;

@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 namespace
 {
@@ -8,24 +8,26 @@ namespace
 		render_object_crosshair(int32_t _x, int32_t _y, premultiplied_color _color, uint32_t _length) throw()
 			: x(_x), y(_y), color(_color), length(_length) {}
 		~render_object_crosshair() throw() {}
-		template<bool X> void op(struct screen<X>& scr) throw()
+		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			color.set_palette(scr);
+			uint32_t originx = scr.get_origin_x();
+			uint32_t originy = scr.get_origin_y();
 			int32_t xmin = -static_cast<int32_t>(length);
 			int32_t xmax = static_cast<int32_t>(length + 1);
 			int32_t ymin = -static_cast<int32_t>(length);
 			int32_t ymax = static_cast<int32_t>(length + 1);
-			clip_range(scr.originx, scr.width, x, xmin, xmax);
-			clip_range(scr.originy, scr.height, y, ymin, ymax);
+			clip_range(originx, scr.get_width(), x, xmin, xmax);
+			clip_range(originy, scr.get_height(), y, ymin, ymax);
 			if(xmin <= 0 && xmax > 0)
 				for(int32_t r = ymin; r < ymax; r++)
-					color.apply(scr.rowptr(y + r + scr.originy)[x + scr.originx]);
+					color.apply(scr.rowptr(y + r + originy)[x + originx]);
 			if(ymin <= 0 && ymax > 0)
 				for(int32_t r = xmin; r < xmax; r++)
-					color.apply(scr.rowptr(y + scr.originy)[x + r + scr.originx]);
+					color.apply(scr.rowptr(y + originy)[x + r + originx]);
 		}
-		void operator()(struct screen<true>& scr) throw()  { op(scr); }
-		void operator()(struct screen<false>& scr) throw() { op(scr); }
+		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

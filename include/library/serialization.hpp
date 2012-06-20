@@ -12,7 +12,7 @@ void _write_common(unsigned char* target, T1 value)
 }
 
 template<typename T1, typename T2, size_t ssize, bool be>
-T1 _read_common(unsigned char* source)
+T1 _read_common(const unsigned char* source)
 {
 	T2 value = 0;
 	for(size_t i = 0; i < ssize; i++)
@@ -39,22 +39,22 @@ T1 _read_common(unsigned char* source)
 #define write64sle(t, v) _write_common< int64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t), (v));
 #define write64ube(t, v) _write_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<unsigned char*>(t), (v));
 #define write64ule(t, v) _write_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t), (v));
-#define read8sbe(t)  _read_common<  int8_t,  uint8_t, 1,  true>(reinterpret_cast<unsigned char*>(t));
-#define read8sle(t)  _read_common<  int8_t,  uint8_t, 1, false>(reinterpret_cast<unsigned char*>(t));
-#define read8ube(t)  _read_common< uint8_t,  uint8_t, 1,  true>(reinterpret_cast<unsigned char*>(t));
-#define read8ule(t)  _read_common< uint8_t,  uint8_t, 1, false>(reinterpret_cast<unsigned char*>(t));
-#define read16sbe(t) _read_common< int16_t, uint16_t, 2,  true>(reinterpret_cast<unsigned char*>(t));
-#define read16sle(t) _read_common< int16_t, uint16_t, 2, false>(reinterpret_cast<unsigned char*>(t));
-#define read16ube(t) _read_common<uint16_t, uint16_t, 2,  true>(reinterpret_cast<unsigned char*>(t));
-#define read16ule(t) _read_common<uint16_t, uint16_t, 2, false>(reinterpret_cast<unsigned char*>(t));
-#define read32sbe(t) _read_common< int32_t, uint32_t, 4,  true>(reinterpret_cast<unsigned char*>(t));
-#define read32sle(t) _read_common< int32_t, uint32_t, 4, false>(reinterpret_cast<unsigned char*>(t));
-#define read32ube(t) _read_common<uint32_t, uint32_t, 4,  true>(reinterpret_cast<unsigned char*>(t));
-#define read32ule(t) _read_common<uint32_t, uint32_t, 4, false>(reinterpret_cast<unsigned char*>(t));
-#define read64sbe(t) _read_common< int64_t, uint64_t, 8,  true>(reinterpret_cast<unsigned char*>(t));
-#define read64sle(t) _read_common< int64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t));
-#define read64ube(t) _read_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<unsigned char*>(t));
-#define read64ule(t) _read_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t));
+#define read8sbe(t)  _read_common<  int8_t,  uint8_t, 1,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read8sle(t)  _read_common<  int8_t,  uint8_t, 1, false>(reinterpret_cast<const unsigned char*>(t));
+#define read8ube(t)  _read_common< uint8_t,  uint8_t, 1,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read8ule(t)  _read_common< uint8_t,  uint8_t, 1, false>(reinterpret_cast<const unsigned char*>(t));
+#define read16sbe(t) _read_common< int16_t, uint16_t, 2,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read16sle(t) _read_common< int16_t, uint16_t, 2, false>(reinterpret_cast<const unsigned char*>(t));
+#define read16ube(t) _read_common<uint16_t, uint16_t, 2,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read16ule(t) _read_common<uint16_t, uint16_t, 2, false>(reinterpret_cast<const unsigned char*>(t));
+#define read32sbe(t) _read_common< int32_t, uint32_t, 4,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read32sle(t) _read_common< int32_t, uint32_t, 4, false>(reinterpret_cast<const unsigned char*>(t));
+#define read32ube(t) _read_common<uint32_t, uint32_t, 4,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read32ule(t) _read_common<uint32_t, uint32_t, 4, false>(reinterpret_cast<const unsigned char*>(t));
+#define read64sbe(t) _read_common< int64_t, uint64_t, 8,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read64sle(t) _read_common< int64_t, uint64_t, 8, false>(reinterpret_cast<const unsigned char*>(t));
+#define read64ube(t) _read_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<const unsigned char*>(t));
+#define read64ule(t) _read_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<const unsigned char*>(t));
 
 
 

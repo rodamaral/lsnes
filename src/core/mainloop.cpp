@@ -13,11 +13,12 @@
 #include "core/moviefile.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
-#include "core/render.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/framebuffer.hpp"
+#include "library/pixfmt-lrgb.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -356,7 +357,20 @@ class my_interface : public SNES::Interface
 		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
 		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
-		lcscreen ls(data, hires, interlace, overscan, region);
+
+		framebuffer_info inf;
+		inf.type = &_pixel_format_lrgb;
+		inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
+		inf.physwidth = 512;
+		inf.physheight = 512;
+		inf.physstride = 2048;
+		inf.width = hires ? 512 : 256;
+		inf.height = (region ? 239 : 224) * (interlace ? 2 : 1);
+		inf.stride = interlace ? 2048 : 4096;
+		inf.offset_x = 0;
+		inf.offset_y = (region ? (overscan ? 9 : 1) : (overscan ? 16 : 9)) * 2;
+
+		framebuffer_raw ls(inf);
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
 		redraw_framebuffer(ls, false, true);

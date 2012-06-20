@@ -393,7 +393,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	movb.get_movie() = newmovie;
 	//Paint the screen.
 	{
-		lcscreen tmp;
+		framebuffer_raw tmp;
 		if(will_load_state) {
 			tmp.load(_movie.screenshot);
 			redraw_framebuffer(tmp);

@@ -34,7 +34,7 @@ namespace
 		{
 		}
 
-		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			frames_dumped++;
 			if(frames_dumped % 100 == 0) {
