@@ -15,11 +15,12 @@
 #include "core/moviefile.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
-#include "core/render.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/framebuffer.hpp"
+#include "library/pixfmt-lrgb.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -312,7 +313,7 @@ public:
 		return random_seed_value;
 	}
 
-	void output_frame(lcscreen& screen, uint32_t fps_n, uint32_t fps_d)
+	void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d)
 	{
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;

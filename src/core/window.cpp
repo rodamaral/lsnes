@@ -3,8 +3,9 @@
 #include "core/framerate.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
-#include "core/render.hpp"
 #include "core/window.hpp"
+#include "fonts/wrapper.hpp"
+#include "library/framebuffer.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
 
@@ -617,19 +618,19 @@ void platform::run_queues() throw()
 namespace
 {
 	mutex* _msgbuf_lock;
-	screen<false>* our_screen;
+	framebuffer<false>* our_screen;
 
 	struct painter_listener : public information_dispatch
 	{
 		painter_listener();
-		void on_set_screen(screen<false>& scr);
+		void on_set_screen(framebuffer<false>& scr);
 		void on_screen_update();
 		void on_status_update();
 	} x;
 
 	painter_listener::painter_listener() : information_dispatch("painter-listener") {}
 
-	void painter_listener::on_set_screen(screen<false>& scr)
+	void painter_listener::on_set_screen(framebuffer<false>& scr)
 	{
 		our_screen = &scr;
 	}
@@ -660,9 +661,9 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 {
 	if(!our_screen)
 		return;
-	if(our_screen->palette_r == rshift &&
-		our_screen->palette_g == gshift &&
-		our_screen->palette_b == bshift)
+	if(our_screen->get_palette_r() == rshift &&
+		our_screen->get_palette_g() == gshift &&
+		our_screen->get_palette_b() == bshift)
 		return;
 	our_screen->set_palette(rshift, gshift, bshift);
 	graphics_plugin::notify_screen();

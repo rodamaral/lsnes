@@ -3,17 +3,19 @@
 #include "core/framebuffer.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
-#include "core/render.hpp"
 #include "core/window.hpp"
+#include "fonts/wrapper.hpp"
+#include "library/framebuffer.hpp"
+#include "library/pixfmt-lrgb.hpp"
 
-lcscreen screen_nosignal;
-lcscreen screen_corrupt;
+framebuffer_raw screen_nosignal;
+framebuffer_raw screen_corrupt;
 
 namespace
 {
 	struct render_info
 	{
-		lcscreen fbuf;
+		framebuffer_raw fbuf;
 		render_queue rq;
 		uint32_t hscl;
 		uint32_t vscl;
@@ -103,13 +105,11 @@ namespace
 	void draw_special_screen(uint32_t* target, struct render_list_entry* rlist)
 	{
 		while(rlist->scale) {
-			int32_t x;
-			int32_t y;
-			auto g = find_glyph(rlist->codepoint, 0, 0, 0, x, y);
+			auto g = main_font.get_glyph(rlist->codepoint);
 			for(uint32_t j = 0; j < 16; j++) {
-				for(uint32_t i = 0; i < 8; i++) {
-					uint32_t slice = g.second[j / 4];
-					uint32_t bit = 31 - ((j % 4) * 8 + i);
+				for(uint32_t i = 0; i < (g.wide ? 16 : 8); i++) {
+					uint32_t slice = g.data[j / (g.wide ? 2 : 4)];
+					uint32_t bit = 31 - ((j % (g.wide ? 2 : 4)) * (g.wide ? 16 : 8) + i);
 					uint32_t value = (slice >> bit) & 1;
 					if(value) {
 						uint32_t basex = rlist->x + rlist->scale * i;
@@ -148,7 +148,7 @@ namespace
 	bool last_redraw_no_lua = true;
 }
 
-screen<false> main_screen;
+framebuffer<false> main_screen;
 
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
@@ -162,16 +162,29 @@ void init_special_screens() throw(std::bad_alloc)
 {
 	std::vector<uint32_t> buf;
 	buf.resize(512*448);
+
+	framebuffer_info inf;
+	inf.type = &_pixel_format_lrgb;
+	inf.mem = reinterpret_cast<char*>(&buf[0]);
+	inf.physwidth = 512;
+	inf.physheight = 448;
+	inf.physstride = 2048;
+	inf.width = 512;
+	inf.height = 448;
+	inf.stride = 2048;
+	inf.offset_x = 0;
+	inf.offset_y = 0;
+
 	draw_nosignal(&buf[0]);
-	screen_nosignal = lcscreen(&buf[0], 512, 448);
+	screen_nosignal = framebuffer_raw(inf);
 	draw_corrupt(&buf[0]);
-	screen_corrupt = lcscreen(&buf[0], 512, 448);
+	screen_corrupt = framebuffer_raw(inf);
 }
 
-void redraw_framebuffer(lcscreen& todraw, bool no_lua, bool spontaneous)
+void redraw_framebuffer(framebuffer_raw& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
-	auto g = get_scale_factors(todraw.width, todraw.height);
+	auto g = get_scale_factors(todraw.get_width(), todraw.get_height());
 	hscl = g.first;
 	vscl = g.second;
 	render_info& ri = get_write_buffer();
@@ -182,8 +195,8 @@ void redraw_framebuffer(lcscreen& todraw, bool no_lua, bool spontaneous)
 	lrc.bottom_gap = 0;
 	lrc.top_gap = 0;
 	lrc.queue = &ri.rq;
-	lrc.width = todraw.width * hscl;
-	lrc.height = todraw.height * vscl;
+	lrc.width = todraw.get_width() * hscl;
+	lrc.height = todraw.get_height() * vscl;
 	if(!no_lua)
 		lua_callback_do_paint(&lrc, spontaneous);
 	ri.fbuf = todraw;
@@ -201,7 +214,7 @@ void redraw_framebuffer(lcscreen& todraw, bool no_lua, bool spontaneous)
 void redraw_framebuffer()
 {
 	render_info& ri = get_read_buffer();
-	lcscreen copy = ri.fbuf;
+	framebuffer_raw copy = ri.fbuf;
 	buffering.end_read();
 	//Redraws are never spontaneous
 	redraw_framebuffer(copy, last_redraw_no_lua, false);
@@ -213,8 +226,8 @@ void render_framebuffer()
 	static uint32_t val1, val2, val3, val4;
 	uint32_t nval1, nval2, nval3, nval4;
 	render_info& ri = get_read_buffer();
-	main_screen.reallocate(ri.fbuf.width * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.height * ri.vscl + ri.tgap +
-		ri.bgap);
+	main_screen.reallocate(ri.fbuf.get_width() * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.get_height() * ri.vscl +
+		ri.tgap + ri.bgap);
 	main_screen.set_origin(ri.lgap, ri.tgap);
 	main_screen.copy_from(ri.fbuf, ri.hscl, ri.vscl);
 	ri.rq.run(main_screen);
@@ -224,14 +237,14 @@ void render_framebuffer()
 	keygroup* mouse_y = keygroup::lookup_by_name("mouse_y");
 	nval1 = ri.lgap;
 	nval2 = ri.tgap;
-	nval3 = ri.fbuf.width * ri.hscl + ri.rgap;
-	nval4 = ri.fbuf.height * ri.vscl + ri.bgap;
+	nval3 = ri.fbuf.get_width() * ri.hscl + ri.rgap;
+	nval4 = ri.fbuf.get_height() * ri.vscl + ri.bgap;
 	if(mouse_x && (nval1 != val1 || nval3 != val3))
-		mouse_x->change_calibration(-static_cast<short>(ri.lgap), ri.lgap, ri.fbuf.width * ri.hscl + ri.rgap,
-			0.5);
+		mouse_x->change_calibration(-static_cast<short>(ri.lgap), ri.lgap, ri.fbuf.get_width() * ri.hscl +
+			ri.rgap, 0.5);
 	if(mouse_y && (nval2 != val2 || nval4 != val4))
-		mouse_y->change_calibration(-static_cast<short>(ri.tgap), ri.tgap, ri.fbuf.height * ri.vscl + ri.bgap,
-			0.5);
+		mouse_y->change_calibration(-static_cast<short>(ri.tgap), ri.tgap, ri.fbuf.get_height() * ri.vscl +
+			ri.bgap, 0.5);
 	val1 = nval1;
 	val2 = nval2;
 	val3 = nval3;
@@ -243,16 +256,16 @@ std::pair<uint32_t, uint32_t> get_framebuffer_size()
 {
 	uint32_t v, h;
 	render_info& ri = get_read_buffer();
-	v = ri.fbuf.width;
-	h = ri.fbuf.height;
+	v = ri.fbuf.get_width();
+	h = ri.fbuf.get_height();
 	buffering.end_read();
 	return std::make_pair(h, v);
 }
 
-lcscreen get_framebuffer() throw(std::bad_alloc)
+framebuffer_raw get_framebuffer() throw(std::bad_alloc)
 {
 	render_info& ri = get_read_buffer();
-	lcscreen copy = ri.fbuf;
+	framebuffer_raw copy = ri.fbuf;
 	buffering.end_read();
 	return copy;
 }

@@ -87,14 +87,14 @@ namespace
 			}
 		}
 
-		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL);
 			frame_buffer f;
 			f.ts = get_next_video_ts(fps_n, fps_d);
 			size_t fsize = 0;
 			//We'll compress the frame here.
-			f.data = compress_frame(dscr.memory, dscr.width, dscr.height);
+			f.data = compress_frame(dscr.rowptr(0), dscr.get_width(), dscr.get_height());
 			frames.push_back(f);
 			flush_buffers(false);
 			have_dumped_frame = true;
@@ -175,7 +175,7 @@ namespace
 			return ret;
 		}
 
-		screen<false> dscr;
+		framebuffer<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		uint64_t audio_w;

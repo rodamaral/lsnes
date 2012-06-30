@@ -4,8 +4,8 @@
 #include <vector>
 #include <string>
 #include <cstdint>
-#include "core/render.hpp"
 #include "core/window.hpp"
+#include "library/framebuffer.hpp"
 
 struct lua_bitmap
 {

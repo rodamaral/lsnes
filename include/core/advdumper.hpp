@@ -5,7 +5,7 @@
 #include <set>
 #include <stdexcept>
 
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 class adv_dumper
 {
@@ -110,8 +110,8 @@ private:
  * Parameter bgap: Bottom gap.
  * Parameter fn: Function to call between running lua hooks and actually rendering.
  */
-template<bool X> void render_video_hud(struct screen<X>& target, struct lcscreen& source, uint32_t hscl, uint32_t vscl,
-	uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap, uint32_t rgap,
-	uint32_t bgap, void(*fn)());
+template<bool X> void render_video_hud(struct framebuffer<X>& target, struct framebuffer_raw& source, uint32_t hscl,
+	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
+	uint32_t rgap, uint32_t bgap, void(*fn)());
 
 #endif

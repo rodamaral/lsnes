@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 namespace
 {
@@ -11,20 +11,22 @@ namespace
 			: x(_x), y(_y), width(_width), height(_height), outline1(_outline1), outline2(_outline2),
 			fill(_fill), thickness(_thickness) {}
 		~render_object_box() throw() {}
-		template<bool X> void op(struct screen<X>& scr) throw()
+		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			outline1.set_palette(scr);
 			outline2.set_palette(scr);
 			fill.set_palette(scr);
+			uint32_t originx = scr.get_origin_x();
+			uint32_t originy = scr.get_origin_y();
 			int32_t xmin = 0;
 			int32_t xmax = width;
 			int32_t ymin = 0;
 			int32_t ymax = height;
-			clip_range(scr.originx, scr.width, x, xmin, xmax);
-			clip_range(scr.originy, scr.height, y, ymin, ymax);
+			clip_range(originx, scr.get_width(), x, xmin, xmax);
+			clip_range(originy, scr.get_height(), y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename screen<X>::element_t* rptr = scr.rowptr(y + r + scr.originy);
-				size_t eptr = x + xmin + scr.originx;
+				typename framebuffer<X>::element_t* rptr = scr.rowptr(y + r + originy);
+				size_t eptr = x + xmin + originx;
 				for(int32_t c = xmin; c < xmax; c++, eptr++)
 					if((r < thickness && r <= (width - c)) || (c < thickness && c < (height - r)))
 						outline1.apply(rptr[eptr]);
@@ -35,8 +37,8 @@ namespace
 						fill.apply(rptr[eptr]);
 			}
 		}
-		void operator()(struct screen<true>& scr) throw()  { op(scr); }
-		void operator()(struct screen<false>& scr) throw() { op(scr); }
+		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

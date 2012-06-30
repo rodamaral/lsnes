@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 namespace
 {
@@ -18,20 +18,22 @@ namespace
 						(_radius - _thickness);
 			}
 		~render_object_circle() throw() {}
-		template<bool X> void op(struct screen<X>& scr) throw()
+		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			outline.set_palette(scr);
 			fill.set_palette(scr);
+			uint32_t originx = scr.get_origin_x();
+			uint32_t originy = scr.get_origin_y();
 			int32_t xmin = -radius;
 			int32_t xmax = radius;
 			int32_t ymin = -radius;
 			int32_t ymax = radius;
-			clip_range(scr.originx, scr.width, x, xmin, xmax);
-			clip_range(scr.originy, scr.height, y, ymin, ymax);
+			clip_range(originx, scr.get_width(), x, xmin, xmax);
+			clip_range(originy, scr.get_height(), y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
 				uint64_t pd2 = static_cast<int64_t>(r) * r;
-				typename screen<X>::element_t* rptr = scr.rowptr(y + r + scr.originy);
-				size_t eptr = x + xmin + scr.originx;
+				typename framebuffer<X>::element_t* rptr = scr.rowptr(y + r + originy);
+				size_t eptr = x + xmin + originx;
 				for(int32_t c = xmin; c < xmax; c++, eptr++) {
 					uint64_t fd2 = pd2 + static_cast<int64_t>(c) * c;
 					if(fd2 > radius2)
@@ -43,8 +45,8 @@ namespace
 				}
 			}
 		}
-		void operator()(struct screen<true>& scr) throw()  { op(scr); }
-		void operator()(struct screen<false>& scr) throw() { op(scr); }
+		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

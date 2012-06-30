@@ -7,7 +7,7 @@
 #include <string>
 #include <set>
 #include <vector>
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 /**
  * Logical button IDs.
@@ -147,7 +147,7 @@ public:
 	//Get random seed.
 	virtual time_t get_randomseed() = 0;
 	//Output frame.
-	virtual void output_frame(lcscreen& screen, uint32_t fps_n, uint32_t fps_d) = 0;
+	virtual void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d) = 0;
 };
 
 extern struct emucore_callbacks* ecore_callbacks;

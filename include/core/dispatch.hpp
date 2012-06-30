@@ -1,8 +1,8 @@
 #ifndef _dispatch__hpp__included__
 #define _dispatch__hpp__included__
 
-#include "render.hpp"
-#include "keymapper.hpp"
+#include "core/keymapper.hpp"
+#include "library/framebuffer.hpp"
 
 #include <cstdint>
 #include <string>
@@ -224,13 +224,13 @@ public:
  * Parameter fps_n: Numerator of current video fps.
  * Parameter fps_d: Denominator of current video fps.
  */
-	virtual void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d);
+	virtual void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d);
 /**
  * Call all on_frame() handlers.
  *
  * Calls on_new_dumper() on dumpers that had that not yet called.
  */
-	static void do_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d) throw();
+	static void do_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d) throw();
 /**
  * A sample has been received.
  *
@@ -378,11 +378,11 @@ public:
  *
  * parameter scr: The render buffer object.
  */
-	virtual void on_set_screen(screen<false>& scr);
+	virtual void on_set_screen(framebuffer<false>& scr);
 /**
  * Call on_set_screen on all objects.
  */
-	static void do_set_screen(screen<false>& scr) throw();
+	static void do_set_screen(framebuffer<false>& scr) throw();
 /**
  * Notify that new frame is available.
  *

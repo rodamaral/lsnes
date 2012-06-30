@@ -3,8 +3,8 @@
 
 #include "core/keymapper.hpp"
 #include "core/messagebuffer.hpp"
-#include "core/render.hpp"
 #include "core/status.hpp"
+#include "library/framebuffer.hpp"
 #include <string>
 #include <map>
 #include <list>

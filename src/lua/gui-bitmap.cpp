@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 #include "lua/bitmap.hpp"
 #include <vector>
 
@@ -58,10 +58,12 @@ namespace
 			delete p;
 		}
 
-		template<bool T> void composite_op(struct screen<T>& scr) throw()
+		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
 		{
 			if(p)
 				p->object()->palette_mutex->lock();
+			uint32_t originx = scr.get_origin_x();
+			uint32_t originy = scr.get_origin_y();
 			size_t pallim = 0;
 			size_t w, h;
 			premultiplied_color* palette;
@@ -83,11 +85,11 @@ namespace
 			int32_t xmax = w;
 			int32_t ymin = 0;
 			int32_t ymax = h;
-			clip_range(scr.originx, scr.width, x, xmin, xmax);
-			clip_range(scr.originy, scr.height, y, ymin, ymax);
+			clip_range(originx, scr.get_width(), x, xmin, xmax);
+			clip_range(originy, scr.get_height(), y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename screen<T>::element_t* rptr = scr.rowptr(y + r + scr.originy);
-				size_t eptr = x + xmin + scr.originx;
+				typename framebuffer<T>::element_t* rptr = scr.rowptr(y + r + originy);
+				size_t eptr = x + xmin + originx;
 				if(b)
 					for(int32_t c = xmin; c < xmax; c++, eptr++) {
 						uint16_t i = b->object()->pixels[r * b->object()->width + c];
@@ -101,8 +103,8 @@ namespace
 			if(p)
 				p->object()->palette_mutex->unlock();
 		}
-		void operator()(struct screen<false>& x) throw() { composite_op(x); }
-		void operator()(struct screen<true>& x) throw() { composite_op(x); }
+		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
+		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
 	private:
 		int32_t x;
 		int32_t y;

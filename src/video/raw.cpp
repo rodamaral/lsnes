@@ -73,7 +73,7 @@ namespace
 				deleter(audio);
 		}
 
-		void on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			if(!video)
 				return;
@@ -85,16 +85,20 @@ namespace
 			unsigned r = (reinterpret_cast<unsigned char*>(&magic))[swap ? 2 : 0];
 			unsigned g = (reinterpret_cast<unsigned char*>(&magic))[1];
 			unsigned b = (reinterpret_cast<unsigned char*>(&magic))[swap ? 0 : 2];
-			uint32_t hscl = (_frame.width < 400) ? 2 : 1;
-			uint32_t vscl = (_frame.height < 400) ? 2 : 1;
+			uint32_t hscl = (_frame.get_width() < 400) ? 2 : 1;
+			uint32_t vscl = (_frame.get_height() < 400) ? 2 : 1;
 			if(bits64) {
+				size_t w = dscr2.get_width();
+				size_t h = dscr2.get_height();
 				render_video_hud(dscr2, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL);
-				for(size_t i = 0; i < dscr2.height; i++)
-					video->write(reinterpret_cast<char*>(dscr2.rowptr(i)), 8 * dscr2.width);
+				for(size_t i = 0; i < h; i++)
+					video->write(reinterpret_cast<char*>(dscr2.rowptr(i)), 8 * w);
 			} else {
+				size_t w = dscr.get_width();
+				size_t h = dscr.get_height();
 				render_video_hud(dscr, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL);
-				for(size_t i = 0; i < dscr.height; i++)
-					video->write(reinterpret_cast<char*>(dscr.rowptr(i)), 4 * dscr.width);
+				for(size_t i = 0; i < h; i++)
+					video->write(reinterpret_cast<char*>(dscr.rowptr(i)), 4 * w);
 			}
 			if(!*video)
 				messages << "Video write error" << std::endl;
@@ -128,8 +132,8 @@ namespace
 		std::ostream* video;
 		void (*deleter)(void* f);
 		bool have_dumped_frame;
-		struct screen<false> dscr;
-		struct screen<true> dscr2;
+		struct framebuffer<false> dscr;
+		struct framebuffer<true> dscr2;
 		bool swap;
 		bool bits64;
 	};

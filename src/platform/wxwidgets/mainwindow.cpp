@@ -586,16 +586,16 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	uint8_t* dstp[1];
 	int dsts[1];
 	wxPaintDC dc(this);
-	uint32_t tw = main_screen.width * horizontal_scale_factor + 0.5;
-	uint32_t th = main_screen.height * vertical_scale_factor + 0.5;
+	uint32_t tw = main_screen.get_width() * horizontal_scale_factor + 0.5;
+	uint32_t th = main_screen.get_height() * vertical_scale_factor + 0.5;
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags) {
 		if(screen_buffer)
 			delete[] screen_buffer;
 		old_height = th;
 		old_width = tw;
 		old_flags = scaling_flags;
-		uint32_t w = main_screen.width;
-		uint32_t h = main_screen.height;
+		uint32_t w = main_screen.get_width();
+		uint32_t h = main_screen.get_height();
 		if(w && h)
 			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags,
 				NULL, NULL, NULL);
@@ -605,13 +605,13 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		SetMinSize(wxSize(tw, th));
 		signal_resize_needed();
 	}
-	srcs[0] = 4 * main_screen.width;
+	srcs[0] = 4 * main_screen.get_width();
 	dsts[0] = 3 * tw;
-	srcp[0] = reinterpret_cast<unsigned char*>(main_screen.memory);
+	srcp[0] = reinterpret_cast<unsigned char*>(main_screen.rowptr(0));
 	dstp[0] = screen_buffer;
 	memset(screen_buffer, 0, tw * th * 3);
-	if(main_screen.width && main_screen.height)
-		sws_scale(ctx, srcp, srcs, 0, main_screen.height, dstp, dsts);
+	if(main_screen.get_width() && main_screen.get_height())
+		sws_scale(ctx, srcp, srcs, 0, main_screen.get_height(), dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	main_window_dirty = false;

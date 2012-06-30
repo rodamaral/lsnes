@@ -1,5 +1,5 @@
 #include "lua/internal.hpp"
-#include "core/render.hpp"
+#include "library/framebuffer.hpp"
 
 namespace
 {
@@ -8,19 +8,19 @@ namespace
 		render_object_pixel(int32_t _x, int32_t _y, premultiplied_color _color) throw()
 			: x(_x), y(_y), color(_color) {}
 		~render_object_pixel() throw() {}
-		template<bool X> void op(struct screen<X>& scr) throw()
+		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			color.set_palette(scr);
-			int32_t _x = x + scr.originx;
-			int32_t _y = y + scr.originy;
-			if(_x < 0 || static_cast<uint32_t>(_x) >= scr.width)
+			int32_t _x = x + scr.get_origin_x();
+			int32_t _y = y + scr.get_origin_y();
+			if(_x < 0 || static_cast<uint32_t>(_x) >= scr.get_width())
 				return;
-			if(_y < 0 || static_cast<uint32_t>(_y) >= scr.height)
+			if(_y < 0 || static_cast<uint32_t>(_y) >= scr.get_height())
 				return;
 			color.apply(scr.rowptr(_y)[_x]);
 		}
-		void operator()(struct screen<true>& scr) throw()  { op(scr); }
-		void operator()(struct screen<false>& scr) throw() { op(scr); }
+		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
 	private:
 		int32_t x;
 		int32_t y;

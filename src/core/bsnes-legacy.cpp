@@ -8,7 +8,9 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
+#include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
+#include "library/framebuffer.hpp"
 #include <snes/snes.hpp>
 #include <gameboy/gameboy.hpp>
 #ifdef BSNES_V087
@@ -201,7 +203,20 @@ namespace
 			uint32_t g = gcd(fps_n, fps_d);
 			fps_n /= g;
 			fps_d /= g;
-			lcscreen ls(data, hires, interlace, overscan, region);
+
+			framebuffer_info inf;
+			inf.type = &_pixel_format_lrgb;
+			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
+			inf.physwidth = 512;
+			inf.physheight = 512;
+			inf.physstride = 2048;
+			inf.width = hires ? 512 : 256;
+			inf.height = (region ? 239 : 224) * (interlace ? 2 : 1);
+			inf.stride = interlace ? 2048 : 4096;
+			inf.offset_x = 0;
+			inf.offset_y = (region ? (overscan ? 9 : 1) : (overscan ? 16 : 9)) * 2;
+
+			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, fps_n, fps_d);
 			information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ?
 				VIDEO_REGION_PAL : VIDEO_REGION_NTSC);

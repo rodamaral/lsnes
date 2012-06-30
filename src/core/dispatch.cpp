@@ -262,12 +262,12 @@ void information_dispatch::do_raw_frame(const uint32_t* raw, bool hires, bool in
 	}
 }
 
-void information_dispatch::on_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d)
+void information_dispatch::on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_frame(struct lcscreen& _frame, uint32_t fps_n, uint32_t fps_d) throw()
+void information_dispatch::do_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d) throw()
 {
 	update_dumpers();
 	for(auto& i : dispatch()) {
@@ -476,12 +476,12 @@ void information_dispatch::update_dumpers(bool nocalls) throw()
 	}
 }
 
-void information_dispatch::on_set_screen(screen<false>& scr)
+void information_dispatch::on_set_screen(framebuffer<false>& scr)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_set_screen(screen<false>& scr) throw()
+void information_dispatch::do_set_screen(framebuffer<false>& scr) throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK

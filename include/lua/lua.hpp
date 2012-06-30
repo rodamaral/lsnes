@@ -3,8 +3,8 @@
 
 #include "core/controllerframe.hpp"
 #include "core/keymapper.hpp"
-#include "core/render.hpp"
 #include "core/movie.hpp"
+#include "library/framebuffer.hpp"
 
 struct lua_State;
 
