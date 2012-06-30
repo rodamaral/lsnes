@@ -1,7 +1,9 @@
+#if defined(BSNES_V084) || defined(BSNES_V085) || defined(BSNES_V086) || defined(BSNES_V087)
 #include "lsnes.hpp"
-#include <snes/snes.hpp>
+#include <core/emucore.hpp>
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
+#include "core/emucore.hpp"
 #include "library/serialization.hpp"
 #include "video/tcp.hpp"
 
@@ -81,8 +83,8 @@ namespace
 				if(!*out)
 					throw std::runtime_error("Failed to open '" + str2 + "'");
 				write32ube(tbuffer, 0x53444D50U);
-				write32ube(tbuffer + 4, SNES::system.cpu_frequency());
-				write32ube(tbuffer + 8, SNES::system.apu_frequency());
+				write32ube(tbuffer + 4, get_snes_cpu_rate());
+				write32ube(tbuffer + 8, get_snes_apu_rate());
 				out->write(reinterpret_cast<char*>(tbuffer), 12);
 				if(!*out)
 					throw std::runtime_error("Failed to write header to '" + str2 + "'");
@@ -224,3 +226,4 @@ namespace
 	{
 	}
 }
+#endif

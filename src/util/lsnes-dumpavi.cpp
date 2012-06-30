@@ -1,4 +1,5 @@
-#include "core/bsnes.hpp"
+#include "lsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
@@ -218,35 +219,20 @@ namespace
 	}
 }
 
-class my_interfaced : public SNES::Interface
-{
-	string path(SNES::Cartridge::Slot slot, const string &hint)
-	{
-		return "./";
-	}
-};
-
-
 int main(int argc, char** argv)
 {
 	reached_main();
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
-	my_interfaced intrf;
 	uint64_t length;
 	std::string mode, prefix;
-	SNES::interface = &intrf;
-
+	
+	do_basic_core_init();
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();
-
-	{
-		std::ostringstream x;
-		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
-		bsnes_core_version = x.str();
-	}
+	bsnes_core_version = get_core_identifier();
 	platform::init();
 	init_lua();
 

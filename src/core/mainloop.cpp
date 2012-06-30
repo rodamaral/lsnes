@@ -1,4 +1,6 @@
+#include "lsnes.hpp"
 #include "core/bsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -60,14 +62,11 @@ namespace
 	std::string pending_load;
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
-	bool stepping_into_save;
 	//Save jukebox.
 	numeric_setting jukebox_size("jukebox-size", 0, 999, 12);
 	size_t save_jukebox_pointer;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
 	long pending_reset_cycles = -1;
-	//Set by every video refresh.
-	bool video_refresh_done;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
 	//Few settings.
@@ -76,22 +75,11 @@ namespace
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
-	//Delay reset.
-	unsigned long long delayreset_cycles_run;
-	unsigned long long delayreset_cycles_target;
 	//Unsafe rewind.
 	bool do_unsafe_rewind = false;
 	void* unsafe_rewind_obj = NULL;
 
 	enum advance_mode old_mode;
-
-	bool delayreset_fn()
-	{
-		if(delayreset_cycles_run == delayreset_cycles_target || video_refresh_done)
-			return true;
-		delayreset_cycles_run++;
-		return false;
-	}
 
 	std::string save_jukebox_name(size_t i)
 	{
@@ -201,27 +189,6 @@ namespace
 		queued_saves.insert(filename);
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
-
-	uint32_t lpalette[0x80000];
-	void init_palette()
-	{
-		static bool palette_init = false;
-		if(palette_init)
-			return;
-		palette_init = true;
-		for(unsigned i = 0; i < 0x80000; i++) {
-			unsigned l = (i >> 15) & 0xF;
-			unsigned r = (i >> 0) & 0x1F;
-			unsigned g = (i >> 5) & 0x1F;
-			unsigned b = (i >> 10) & 0x1F;
-			double _l = static_cast<double>(l);
-			double m = 17.0 / 31.0;
-			r = floor(m * r * _l + 0.5);
-			g = floor(m * g * _l + 0.5);
-			b = floor(m * b * _l + 0.5);
-			lpalette[i] = r * 65536 + g * 256 + b;
-		}
-	}
 }
 
 void update_movie_state()
@@ -301,111 +268,60 @@ uint64_t controller_irq_time;
 uint64_t frame_irq_time;
 std::string msu1_base_path;
 
-class my_interface : public SNES::Interface
+struct lsnes_callbacks : public emucore_callbacks
 {
-	string path(SNES::Cartridge::Slot slot, const string &hint)
+public:
+	~lsnes_callbacks() throw()
 	{
-		const char* _hint = hint;
-		std::string _hint2 = _hint;
-		std::string fwp = firmwarepath_setting;
-		regex_results r;
-		std::string msubase = msu1_base_path;
-		if(regex_match(".*\\.sfc", msu1_base_path))
-			msubase = msu1_base_path.substr(0, msu1_base_path.length() - 4);
-
-		if(_hint2 == "msu1.rom" || _hint2 == ".msu") {
-			//MSU-1 main ROM.
-			std::string x = msubase + ".msu";
-			messages << "MSU main data file: " << x << std::endl;
-			return x.c_str();
-		}
-		if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
-			//MSU track.
-			std::string x = msubase + r[2];
-			messages << "MSU track " << r[3] << "': " << x << std::endl;
-			return x.c_str();
-		}
-		std::string finalpath = fwp + "/" + _hint2;
-		return finalpath.c_str();
+	}
+	
+	int16_t get_input(unsigned port, unsigned index, unsigned control)
+	{
+		int16_t x;
+		x = movb.input_poll(port, index, control);
+		lua_callback_snoop_input(port, index, control, x);
+		return x;
 	}
 
-	time_t currentTime()
+	void timer_tick(uint32_t increment, uint32_t per_second)
+	{
+		our_movie.rtc_subsecond += increment;
+		while(our_movie.rtc_subsecond >= per_second) {
+			our_movie.rtc_second++;
+			our_movie.rtc_subsecond -= per_second;
+		}
+	}
+
+	std::string get_firmware_path()
+	{
+		return firmwarepath_setting;
+	}
+	
+	std::string get_base_path()
+	{
+		return msu1_base_path;
+	}
+
+	time_t get_time()
 	{
 		return our_movie.rtc_second;
 	}
 
-	time_t randomSeed()
+	time_t get_randomseed()
 	{
 		return random_seed_value;
 	}
 
-	void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
+	void output_frame(lcscreen& screen, uint32_t fps_n, uint32_t fps_d)
 	{
-//		uint64_t time_x = get_utime();
-		last_hires = hires;
-		last_interlace = interlace;
-		init_palette();
-		if(stepping_into_save)
-			messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
-		video_refresh_done = true;
 		lua_callback_do_frame_emulated();
-		bool region = (SNES::system.region() == SNES::System::Region::PAL);
-		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ? VIDEO_REGION_PAL :
-			VIDEO_REGION_NTSC);
-		//std::cerr << "Frame: hires     flag is " << (hires ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: interlace flag is " << (interlace ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: overscan  flag is " << (overscan ? "  " : "un") << "set." << std::endl;
-		//std::cerr << "Frame: region    flag is " << (region ? "  " : "un") << "set." << std::endl;
-		lcscreen ls(data, hires, interlace, overscan, region);
 		location_special = SPECIAL_FRAME_VIDEO;
 		update_movie_state();
-		redraw_framebuffer(ls, false, true);
-		uint32_t fps_n, fps_d;
-		uint32_t fclocks;
-		if(region)
-			fclocks = interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
-		else
-			fclocks = interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
-		fps_n = SNES::system.cpu_frequency();
-		fps_d = fclocks;
+		redraw_framebuffer(screen, false, true);
 		uint32_t g = gcd(fps_n, fps_d);
 		fps_n /= g;
 		fps_d /= g;
-		information_dispatch::do_frame(ls, fps_n, fps_d);
-//		time_x = get_utime() - time_x;
-//		std::cerr << "IRQ TIMINGS (microseconds): "
-//			<< "V: " << time_x << " "
-//			<< "A: " << audio_irq_time << " "
-//			<< "C: " << controller_irq_time << " "
-//			<< "F: " << frame_irq_time << " "
-//			<< "Total: " << (time_x + audio_irq_time + controller_irq_time + frame_irq_time) << std::endl;
-		audio_irq_time = controller_irq_time = 0;
-	}
-
-	void audioSample(int16_t l_sample, int16_t r_sample)
-	{
-//		uint64_t time_x = get_utime();
-		uint16_t _l = l_sample;
-		uint16_t _r = r_sample;
-		platform::audio_sample(_l + 32768, _r + 32768);
-		information_dispatch::do_sample(l_sample, r_sample);
-		//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of time.
-		our_movie.rtc_subsecond += 768;
-		while(our_movie.rtc_subsecond >= SNES::system.apu_frequency()) {
-			our_movie.rtc_second++;
-			our_movie.rtc_subsecond -= SNES::system.apu_frequency();
-		}
-//		audio_irq_time += get_utime() - time_x;
-	}
-
-	int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
-	{
-//		uint64_t time_x = get_utime();
-		int16_t x;
-		x = movb.input_poll(port, index, id);
-		lua_callback_snoop_input(port ? 1 : 0, index, id, x);
-//		controller_irq_time += get_utime() - time_x;
-		return x;
+		information_dispatch::do_frame(screen, fps_n, fps_d);
 	}
 };
 
@@ -828,9 +744,7 @@ namespace
 	void handle_saves()
 	{
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
-			stepping_into_save = true;
-			SNES::system.runtosave();
-			stepping_into_save = false;
+			core_runtosave();
 			for(auto i : queued_saves)
 				do_save_state(i);
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
@@ -851,27 +765,18 @@ namespace
 	{
 		if(cycles < 0)
 			return true;
-		video_refresh_done = false;
+		bool video_refresh_done = false;
 		if(cycles == 0)
 			messages << "SNES reset" << std::endl;
 		else if(cycles > 0) {
-#if defined(BSNES_V084) || defined(BSNES_V085)
-			messages << "Executing delayed reset... This can take some time!" << std::endl;
-			delayreset_cycles_run = 0;
-			delayreset_cycles_target = cycles;
-			SNES::cpu.step_event = delayreset_fn;
-			SNES::system.run();
-			SNES::cpu.step_event = nall::function<bool()>();
-			if(!video_refresh_done)
-				messages << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
+			auto x = core_emulate_cycles(cycles);
+			if(x.first)
+				messages << "SNES reset (delayed " << x.second << ")" << std::endl;
 			else
-				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
-#else
-			messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
-				<< std::endl;
-#endif
+				messages << "SNES reset (forced at " << x.second << ")" << std::endl;
+			video_refresh_done = !x.first;
 		}
-		SNES::system.reset();
+		core_reset();
 		lua_callback_do_reset();
 		redraw_framebuffer(screen_nosignal);
 		if(video_refresh_done) {
@@ -903,10 +808,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	//Basic initialization.
 	init_special_screens();
 	our_rom = &rom;
-	my_interface intrf;
-	auto old_inteface = SNES::interface;
-	SNES::interface = &intrf;
-	SNES::system.init();
+	lsnes_callbacks lsnes_callbacks_obj;
+	ecore_callbacks = &lsnes_callbacks_obj;
+	core_install_handler();
 
 	//Load our given movie.
 	bool first_round = false;
@@ -989,7 +893,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		SNES::system.run();
+		core_emulate_frame();
 		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(to_wait_frame(get_utime()));
@@ -997,5 +901,5 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		lua_callback_do_frame();
 	}
 	information_dispatch::do_dump_end();
-	SNES::interface = old_inteface;
+	core_uninstall_handler();
 }

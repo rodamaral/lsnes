@@ -4,7 +4,8 @@
 #include <wx/statbox.h>
 #include <wx/notebook.h>
 
-#include "core/bsnes.hpp"
+#include "lsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
@@ -53,35 +54,6 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	class my_interfaced : public SNES::Interface
-	{
-		string path(SNES::Cartridge::Slot slot, const string &hint)
-		{
-			return "./";
-		}
-	} simple_interface;
-
-	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
-	{
-		std::string id(_id, _id.length());
-		//Fixup name change by bsnes v087...
-		if(id == "bsx.ram")
-			id = ".bss";
-		if(id == "bsx.psram")
-			id = ".bsp";
-		if(id == "program.rtc")
-			id = ".rtc";
-		if(id == "upd96050.ram")
-			id = ".dsp";
-		if(id == "program.ram")
-			id = ".srm";
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
-			return "slota." + id.substr(1);
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
-			return "slotb." + id.substr(1);
-		return id.substr(1);
-	}
-
 	porttype_t get_controller_type(const std::string& s)
 	{
 		if(s == CNAME_NONE)
@@ -465,7 +437,6 @@ public:
 	loaded_rom* our_rom;
 private:
 	bool load_file;
-	std::set<std::string> get_sram_set();
 	struct moviefile make_movie();
 	wxTextCtrl* savefile;
 	wxButton* ask_savefile;
@@ -798,7 +769,7 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 {
 	struct loaded_rom* our_rom = &rom;
 	try {
-		SNES::interface = &simple_interface;
+		do_basic_core_init();
 		if(our_rom->slota.valid)
 			our_rom_name = our_rom->slota.sha256;
 		else if(our_rom->slotb.valid)
@@ -885,7 +856,7 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
 	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[1], wxDefaultPosition,
-		wxDefaultSize, CONTROLLERTYPES_P1, cchoices, wxCB_READONLY), 0, wxGROW);
+		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
 	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[0], wxDefaultPosition,
 		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
@@ -1051,16 +1022,6 @@ void wxwin_project::on_load(wxCommandEvent& e)
 		show_message_ok(this, "Error loading movie", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
-}
-
-std::set<std::string> wxwin_project::get_sram_set()
-{
-	std::set<std::string> r;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
-		r.insert(sram_name(s.id, s.slot));
-	}
-	return r;
 }
 
 struct moviefile wxwin_project::make_movie()

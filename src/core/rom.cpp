@@ -1,3 +1,5 @@
+#include "lsnes.hpp"
+#include "core/emucore.hpp"
 #include "core/bsnes.hpp"
 
 #include "core/command.hpp"
@@ -401,43 +403,37 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	if(rtype == ROMTYPE_NONE)
 		throw std::runtime_error("Can't insert cartridge of type NONE!");
 	switch(region) {
-	case REGION_AUTO:
-		SNES::config.region = SNES::System::Region::Autodetect;
-		break;
-	case REGION_NTSC:
-		SNES::config.region = SNES::System::Region::NTSC;
-		break;
-	case REGION_PAL:
-		SNES::config.region = SNES::System::Region::PAL;
-		break;
+	case REGION_AUTO:	core_set_region(EC_REGION_AUTO);	break;
+	case REGION_NTSC:	core_set_region(EC_REGION_NTSC);	break;
+	case REGION_PAL:	core_set_region(EC_REGION_PAL);		break;
 	default:
 		throw std::runtime_error("Trying to force unknown region");
 	}
 	switch(rtype) {
 	case ROMTYPE_SNES:
-		if(!snes_load_cartridge_normal(rom_xml, rom, rom))
+		if(!core_load_cartridge_normal(rom_xml, rom, rom))
 			throw std::runtime_error("Can't load cartridge ROM");
 		break;
 	case ROMTYPE_BSX:
 		if(region == REGION_PAL)
 			throw std::runtime_error("BSX can't be PAL");
-		if(!snes_load_cartridge_bsx(rom_xml, rom, rom, slota_xml, slota, slota))
+		if(!core_load_cartridge_bsx(rom_xml, rom, rom, slota_xml, slota, slota))
 			throw std::runtime_error("Can't load cartridge ROM");
 		break;
 	case ROMTYPE_BSXSLOTTED:
 		if(region == REGION_PAL)
 			throw std::runtime_error("Slotted BSX can't be PAL");
-		if(!snes_load_cartridge_bsx_slotted(rom_xml, rom, rom, slota_xml, slota, slota))
+		if(!core_load_cartridge_bsx_slotted(rom_xml, rom, rom, slota_xml, slota, slota))
 			throw std::runtime_error("Can't load cartridge ROM");
 		break;
 	case ROMTYPE_SGB:
-		if(!snes_load_cartridge_super_game_boy(rom_xml, rom, rom, slota_xml, slota, slota))
+		if(!core_load_cartridge_super_game_boy(rom_xml, rom, rom, slota_xml, slota, slota))
 			throw std::runtime_error("Can't load cartridge ROM");
 		break;
 	case ROMTYPE_SUFAMITURBO:
 		if(region == REGION_PAL)
 			throw std::runtime_error("Sufami Turbo can't be PAL");
-		if(!snes_load_cartridge_sufami_turbo(rom_xml, rom, rom, slota_xml, slota, slota, slotb_xml, slotb,
+		if(!core_load_cartridge_sufami_turbo(rom_xml, rom, rom, slota_xml, slota, slota, slotb_xml, slotb,
 			slotb))
 			throw std::runtime_error("Can't load cartridge ROM");
 		break;
@@ -445,13 +441,12 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 		throw std::runtime_error("Unknown cartridge type");
 	}
 	if(region == REGION_AUTO)
-		region = snes_get_region() ? REGION_PAL : REGION_NTSC;
-	snes_power();
-	if(region == REGION_PAL)
-		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_PAL_FRAME);
-	else
-		set_nominal_framerate(SNES::system.cpu_frequency() / DURATION_NTSC_FRAME);
-	information_dispatch::do_sound_rate(SNES::system.apu_frequency(), 768);
+		region = core_get_region() ? REGION_PAL : REGION_NTSC;
+	core_power();
+	auto nominal_fps = get_video_rate();
+	auto nominal_hz = get_audio_rate();
+	set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
+	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;
 	msu1_base_path = msu1_base;
@@ -501,67 +496,6 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::ba
 	}
 }
 
-namespace
-{
-	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
-	{
-		std::string id(_id, _id.length());
-		//Fixup name change by bsnes v087...
-		if(id == "bsx.ram")
-			id = ".bss";
-		if(id == "bsx.psram")
-			id = ".bsp";
-		if(id == "program.rtc")
-			id = ".rtc";
-		if(id == "upd96050.ram")
-			id = ".dsp";
-		if(id == "program.ram")
-			id = ".srm";
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboA)
-			return "slota." + id.substr(1);
-		if(slotname == SNES::Cartridge::Slot::SufamiTurboB)
-			return "slotb." + id.substr(1);
-		return id.substr(1);
-	}
-}
-
-std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
-{
-	std::map<std::string, std::vector<char>> out;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[i];
-		std::string savename = sram_name(r.id, r.slot);
-		std::vector<char> x;
-		x.resize(r.size);
-		memcpy(&x[0], r.data, r.size);
-		out[savename] = x;
-	}
-	return out;
-}
-
-void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
-{
-	std::set<std::string> used;
-	if(sram.empty())
-		return;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[i];
-		std::string savename = sram_name(r.id, r.slot);
-		if(sram.count(savename)) {
-			std::vector<char>& x = sram[savename];
-			if(r.size != x.size())
-				messages << "WARNING: SRAM '" << savename << "': Loaded " << x.size()
-					<< " bytes, but the SRAM is " << r.size << "." << std::endl;
-			memcpy(r.data, &x[0], (r.size < x.size()) ? r.size : x.size());
-			used.insert(savename);
-		} else
-			messages << "WARNING: SRAM '" << savename << ": No data." << std::endl;
-	}
-	for(auto i : sram)
-		if(!used.count(i.first))
-			messages << "WARNING: SRAM '" << i.first << ": Not found on cartridge." << std::endl;
-}
-
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -572,7 +506,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 			zip_reader r(opt[1]);
 			for(auto j : r) {
 				auto sramname = regex("sram\\.(.*)", j);
-				if(!sram_name)
+				if(!sramname)
 					continue;
 				std::istream& x = r[j];
 				try {
@@ -603,9 +537,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 std::vector<char> save_core_state(bool nochecksum) throw(std::bad_alloc)
 {
 	std::vector<char> ret;
-	serializer s = SNES::system.serialize();
-	ret.resize(s.size());
-	memcpy(&ret[0], s.data(), s.size());
+	core_serialize(ret);
 	if(nochecksum)
 		return ret;
 	size_t offset = ret.size();
@@ -619,9 +551,7 @@ std::vector<char> save_core_state(bool nochecksum) throw(std::bad_alloc)
 void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::runtime_error)
 {
 	if(nochecksum) {
-		serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size());
-		if(!SNES::system.unserialize(s))
-			throw std::runtime_error("SNES core rejected savestate");
+		core_unserialize(&buf[0], buf.size());
 		return;
 	}
 
@@ -631,9 +561,7 @@ void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::r
 	sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
 	if(memcmp(tmp, &buf[buf.size() - 32], 32))
 		throw std::runtime_error("Savestate corrupt");
-	serializer s(reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
-	if(!SNES::system.unserialize(s))
-		throw std::runtime_error("SNES core rejected savestate");
+	core_unserialize(&buf[0], buf.size() - 32);;
 }
 
 std::string name_subrom(enum rom_type major, unsigned romnumber) throw(std::bad_alloc)

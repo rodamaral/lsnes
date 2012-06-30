@@ -3,13 +3,6 @@
 
 #include <cstdint>
 
-/**
- * Number clocks per field/frame on NTSC/PAL
- */
-#define DURATION_NTSC_FRAME 357366
-#define DURATION_NTSC_FIELD 357368
-#define DURATION_PAL_FRAME 425568
-#define DURATION_PAL_FIELD 425568
 
 /**
  * Sets the nominal frame rate. Framerate limiting tries to maintain the nominal framerate when there is no other

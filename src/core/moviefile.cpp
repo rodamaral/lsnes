@@ -285,8 +285,6 @@ porttype_t parse_controller_type(const std::string& type, bool port) throw(std::
 {
 	try {
 		const porttype_info& i = porttype_info::lookup(type);
-		if(!i.legal(port ? 1 : 0))
-			throw 42;
 		return i.value;
 	} catch(...) {
 		throw std::runtime_error(std::string("Illegal port") + (port ? "2" : "1") + " device '" + type + "'");

@@ -1,4 +1,5 @@
 #include "lsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"

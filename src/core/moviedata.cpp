@@ -1,4 +1,5 @@
-#include "core/bsnes.hpp"
+#include "lsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -271,8 +272,7 @@ extern time_t random_seed_value;
 
 void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 {
-	SNES::config.random = false;
-	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
+	set_preload_settings();
 
 	//Negative return.
 	rrdata::add_internal();
@@ -337,8 +337,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(!rom_ok)
 		throw std::runtime_error("Incorrect ROM");
 
-	SNES::config.random = false;
-	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
+	set_preload_settings();
 
 	movie newmovie;
 	if(lmode == LOAD_STATE_PRESERVE)

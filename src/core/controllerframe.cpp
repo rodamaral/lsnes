@@ -1,4 +1,5 @@
 #include "core/bsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
@@ -15,19 +16,6 @@ namespace
 	{
 		static std::set<porttype_info*> p;
 		return p;
-	}
-
-	const char* buttonnames[MAX_LOGICAL_BUTTONS] = {
-		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
-		"cursor", "turbo", "pause"
-	};
-
-	template<unsigned type>
-	void set_core_controller_bsnes(unsigned port) throw()
-	{
-		if(port > 1)
-			return;
-		snes_set_controller_port_device(port != 0, type);
 	}
 
 	void set_core_controller_illegal(unsigned port) throw()
@@ -47,8 +35,6 @@ namespace
 			deserialize = NULL;
 			devicetype = generic_port_devicetype<0, DT_NONE>;
 			controllers = 0;
-			internal_type = 0;
-			legal = generic_port_legal<0xFFFFFFFFU>;
 			set_core_controller = set_core_controller_illegal;
 		}
 
@@ -68,31 +54,13 @@ namespace
 			serialize = generic_port_serialize<1, 0, 12, 0>;
 			deserialize = generic_port_deserialize<1, 0, 12>;
 			devicetype = generic_port_devicetype<1, DT_GAMEPAD>;
-			legal = generic_port_legal<3>;
 			controllers = 1;
-			internal_type = SNES_DEVICE_JOYPAD;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JOYPAD>;
+			set_core_controller = set_core_controller_gamepad;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 0)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-			case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-			case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-			case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-			case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-			case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-			case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-			case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-			case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
-			default:			return -1;
-			}
+			return get_button_id_gamepad(controller, lbid);
 		}
 	} gamepad;
 
@@ -106,21 +74,13 @@ namespace
 			serialize = generic_port_serialize<1, 2, 2, 12>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
-			legal = generic_port_legal<2>;
 			controllers = 1;
-			internal_type = SNES_DEVICE_JUSTIFIER;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JUSTIFIER>;
+			set_core_controller = set_core_controller_justifier;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 0)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
-			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
-			default:			return -1;
-			}
+			return get_button_id_justifier(controller, lbid);
 		}
 	} justifier;
 
@@ -134,21 +94,13 @@ namespace
 			serialize = generic_port_serialize<2, 2, 2, 12>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			devicetype = generic_port_devicetype<2, DT_LIGHTGUN>;
-			legal = generic_port_legal<2>;
 			controllers = 2;
-			internal_type = SNES_DEVICE_JUSTIFIERS;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_JUSTIFIERS>;
+			set_core_controller = set_core_controller_justifiers;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 1)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
-			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
-			default:			return -1;
-			}
+			return get_button_id_justifiers(controller, lbid);
 		}
 	} justifiers;
 
@@ -162,21 +114,13 @@ namespace
 			serialize = generic_port_serialize<1, 2, 2, 12>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			devicetype = generic_port_devicetype<1, DT_MOUSE>;
-			legal = generic_port_legal<3>;
 			controllers = 1;
-			internal_type = SNES_DEVICE_MOUSE;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_MOUSE>;
+			set_core_controller = set_core_controller_mouse;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 0)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
-			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
-			default:			return -1;
-			}
+			return get_button_id_mouse(controller, lbid);
 		}
 	} mouse;
 
@@ -190,31 +134,13 @@ namespace
 			serialize = generic_port_serialize<4, 0, 12, 0>;
 			deserialize = generic_port_deserialize<4, 0, 12>;
 			devicetype = generic_port_devicetype<4, DT_GAMEPAD>;
-			legal = generic_port_legal<3>;
 			controllers = 4;
-			internal_type = SNES_DEVICE_MULTITAP;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_MULTITAP>;
+			set_core_controller = set_core_controller_multitap;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 3)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-			case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-			case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-			case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-			case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-			case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-			case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-			case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-			case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-			case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-			case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-			case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
-			default:			return -1;
-			}
+			return get_button_id_multitap(controller, lbid);
 		}
 	} multitap;
 
@@ -228,15 +154,13 @@ namespace
 			serialize = generic_port_serialize<0, 0, 0, 0>;
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			devicetype = generic_port_devicetype<0, DT_GAMEPAD>;
-			legal = generic_port_legal<3>;
 			controllers = 0;
-			internal_type = SNES_DEVICE_NONE;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_NONE>;
+			set_core_controller = set_core_controller_none;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			return -1;
+			return get_button_id_none(controller, lbid);
 		}
 	} none;
 
@@ -250,23 +174,13 @@ namespace
 			serialize = generic_port_serialize<1, 2, 4, 14>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
-			legal = generic_port_legal<2>;
 			controllers = 1;
-			internal_type = SNES_DEVICE_SUPER_SCOPE;
-			set_core_controller = set_core_controller_bsnes<SNES_DEVICE_SUPER_SCOPE>;
+			set_core_controller = set_core_controller_superscope;
 		}
 
 		int button_id(unsigned controller, unsigned lbid) const throw()
 		{
-			if(controller > 0)
-				return -1;
-			switch(lbid) {
-			case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
-			case LOGICAL_BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
-			case LOGICAL_BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
-			case LOGICAL_BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
-			default:			return -1;
-			}
+			return get_button_id_superscope(controller, lbid);
 		}
 	} superscope;
 
@@ -275,20 +189,6 @@ namespace
 		static porttype_invalid inv;
 		return inv;
 	}
-}
-
-/**
- * Get name of logical button.
- *
- * Parameter lbid: ID of logical button.
- * Returns: The name of button.
- * Throws std::bad_alloc: Not enough memory.
- */
-std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
-{
-	if(lbid >= MAX_LOGICAL_BUTTONS)
-		return "";
-	return buttonnames[lbid];
 }
 
 const porttype_info& porttype_info::lookup(porttype_t p) throw(std::runtime_error)
@@ -467,8 +367,6 @@ void controller_frame::set_types(const porttype_t* tarr)
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		if(memory != backing && types[i] != tarr[i])
 			throw std::runtime_error("Controller_frame: Type mismatch");
-		if(!porttype_info::lookup(tarr[i]).legal(i))
-			throw std::runtime_error("Illegal port type for port index");
 	}
 	size_t offset = SYSTEM_BYTES;
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
@@ -721,8 +619,6 @@ controller_frame::controller_frame() throw()
 void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std::runtime_error)
 {
 	char tmp[MAXIMUM_CONTROLLER_FRAME_SIZE] = {0};
-	if(!porttype_info::lookup(ptype).legal(port))
-		throw std::runtime_error("Illegal port type for port index");
 	if(memory != backing)
 		throw std::runtime_error("Can't set port type on non-dedicated controller frame");
 	if(port >= MAX_PORTS)
@@ -889,8 +785,6 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 	if(port >= MAX_PORTS)
 		throw std::runtime_error("Port number invalid");
 	const porttype_info* info = &porttype_info::lookup(ptype);
-	if(!info->legal(port))
-		throw std::runtime_error("Port type not valid for port");
 	if(set_core)
 		info->set_core_controller(port);
 	porttype_t oldtype = porttypes[port];

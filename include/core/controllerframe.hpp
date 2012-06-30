@@ -17,13 +17,12 @@
 #include <set>
 
 /**
- * For now, reserve 20 bytes, for:
+ * For now, reserve 23 bytes, for:
  *
  * - 5 bytes for system.
- * - 6 bytes for port 1 (multitap). 
- * - 9 bytes for port 2 (justifiers).
+ * - 9 bytes for ports 1&2 (justifiers).
  */
-#define MAXIMUM_CONTROLLER_FRAME_SIZE 20
+#define MAXIMUM_CONTROLLER_FRAME_SIZE 23
 
 /**
  * Maximum amount of data controller_frame::display() can write.
@@ -61,35 +60,7 @@
  * Analog indices.
  */
 #define MAX_ANALOG 3
-/**
- * Logical button IDs.
- */
-#define LOGICAL_BUTTON_LEFT 0
-#define LOGICAL_BUTTON_RIGHT 1
-#define LOGICAL_BUTTON_UP 2
-#define LOGICAL_BUTTON_DOWN 3
-#define LOGICAL_BUTTON_A 4
-#define LOGICAL_BUTTON_B 5
-#define LOGICAL_BUTTON_X 6
-#define LOGICAL_BUTTON_Y 7
-#define LOGICAL_BUTTON_L 8
-#define LOGICAL_BUTTON_R 9
-#define LOGICAL_BUTTON_SELECT 10
-#define LOGICAL_BUTTON_START 11
-#define LOGICAL_BUTTON_TRIGGER 12
-#define LOGICAL_BUTTON_CURSOR 13
-#define LOGICAL_BUTTON_TURBO 14
-#define LOGICAL_BUTTON_PAUSE 15
-#define MAX_LOGICAL_BUTTONS 16
 
-/**
- * Get name of logical button.
- *
- * Parameter lbid: ID of logical button.
- * Returns: The name of button.
- * Throws std::bad_alloc: Not enough memory.
- */
-std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc);
 
 /**
  * This enumeration gives the type of port.
@@ -328,17 +299,6 @@ struct porttype_info
  * Number of controllers connected to this port.
  */
 	unsigned controllers;
-/**
- * Internal type value for port.
- */
-	unsigned internal_type;
-/**
- * Return if type is legal for port.
- *
- * Parameter port: Number of port.
- * Returns: True if legal, false if not.
- */
-	bool (*legal)(unsigned port);
 /**
  * Translate controller and logical button id pair into physical button id.
  *

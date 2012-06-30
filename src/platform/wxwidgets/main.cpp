@@ -1,7 +1,8 @@
 //Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
 
-#include "core/bsnes.hpp"
+#include "lsnes.hpp"
+#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -346,12 +347,7 @@ bool lsnes_app::OnInit()
 	ui_mutex = &mutex::aquire();
 	ui_condition = &condition::aquire(*ui_mutex);
 
-	{
-		std::ostringstream x;
-		x << snes_library_id() << " (" << SNES::Info::Profile << " core)";
-		bsnes_core_version = x.str();
-	}
-	
+	bsnes_core_version = get_core_identifier();
 	ui_thread = &thread_id::me();
 	platform::init();
 

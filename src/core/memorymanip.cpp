@@ -1,5 +1,4 @@
-#include "core/bsnes.hpp"
-#include <gameboy/gameboy.hpp>
+#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
@@ -56,26 +55,6 @@ namespace
 	std::vector<region> memory_regions;
 	uint64_t linear_ram_size = 0;
 	bool system_little_endian = true;
-	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
-
-	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
-	{
-		if(write)
-			SNES::bus.write(offset, data);
-		else
-			return SNES::bus.read(offset);
-	}
-
-	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
-	{
-		uint16_t entry = offset >> 4;
-		if(!ptrmap.count(entry))
-			return 0;
-		uint64_t val = ((offset & 15) < 8) ? ptrmap[entry].first : ptrmap[entry].second;
-		uint8_t byte = offset & 7;
-		//These things are always little-endian.
-		return (val >> (8 * byte));
-	}
 
 	struct translated_address translate_address(uint64_t rawaddr) throw()
 	{
@@ -167,19 +146,6 @@ namespace
 		return base + size;
 	}
 
-	uint64_t map_internal(const std::string& name, uint16_t index, void* memory, size_t memsize)
-	{
-		ptrmap[index] = std::make_pair(reinterpret_cast<uint64_t>(memory), static_cast<uint64_t>(memsize));
-		return create_region(name, 0x101000000 + index * 0x1000000, reinterpret_cast<uint8_t*>(memory),
-			memsize, true, true);
-	}
-
-	uint64_t create_region(const std::string& name, uint64_t base, SNES::MappedRAM& memory, bool readonly,
-		bool native_endian = false) throw(std::bad_alloc)
-	{
-		return create_region(name, base, memory.data(), memory.size(), readonly, native_endian);
-	}
-
 	uint8_t native_littleendian_convert(uint8_t x) throw()
 	{
 		return x;
@@ -257,50 +223,14 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 	memory_regions.clear();
 	if(get_current_rom_info().first == ROMTYPE_NONE)
 		return;
-	create_region("WRAM", 0x007E0000, SNES::cpu.wram, 131072, false);
-	create_region("APURAM", 0x00000000, SNES::smp.apuram, 65536, false);
-	create_region("VRAM", 0x00010000, SNES::ppu.vram, 65536, false);
-	create_region("OAM", 0x00020000, SNES::ppu.oam, 544, false);
-	create_region("CGRAM", 0x00021000, SNES::ppu.cgram, 512, false);
-	if(SNES::cartridge.has_srtc()) create_region("RTC", 0x00022000, SNES::srtc.rtc, 20, false);
-	if(SNES::cartridge.has_spc7110rtc()) create_region("RTC", 0x00022000, SNES::spc7110.rtc, 20, false);
-	if(SNES::cartridge.has_necdsp()) {
-		create_region("DSPRAM", 0x00023000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataRAM), 4096, false,
-			true);
-		create_region("DSPPROM", 0xF0000000, reinterpret_cast<uint8_t*>(SNES::necdsp.programROM), 65536, true,
-			true);
-		create_region("DSPDROM", 0xF0010000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataROM), 4096, true,
-			true);
+	auto vmalist = get_vma_list();
+	for(auto i : vmalist) {
+		if(i.iospace_rw)
+			create_region(i.name, i.base, i.size, i.iospace_rw);
+		else
+			create_region(i.name, i.base, reinterpret_cast<uint8_t*>(i.backing_ram), i.size, i.readonly,
+				i.native_endian);
 	}
-	create_region("SRAM", 0x10000000, SNES::cartridge.ram, false);
-	create_region("ROM", 0x80000000, SNES::cartridge.rom, true);
-	create_region("BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
-	create_region("PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_rw);
-	map_internal("CPU_STATE", 0, &SNES::cpu, sizeof(SNES::cpu));
-	map_internal("PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
-	map_internal("SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
-	map_internal("DSP_STATE", 3, &SNES::dsp, sizeof(SNES::dsp));
-	switch(get_current_rom_info().first) {
-	case ROMTYPE_BSX:
-	case ROMTYPE_BSXSLOTTED:
-		create_region("BSXFLASH", 0x90000000, SNES::bsxflash.memory, true);
-		create_region("BSX_RAM", 0x20000000, SNES::bsxcartridge.sram, false);
-		create_region("BSX_PRAM", 0x30000000, SNES::bsxcartridge.psram, false);
-		break;
-	case ROMTYPE_SUFAMITURBO:
-		create_region("SLOTA_ROM", 0x90000000, SNES::sufamiturbo.slotA.rom, true);
-		create_region("SLOTB_ROM", 0xA0000000, SNES::sufamiturbo.slotB.rom, true);
-		create_region("SLOTA_RAM", 0x20000000, SNES::sufamiturbo.slotA.ram, false);
-		create_region("SLOTB_RAM", 0x30000000, SNES::sufamiturbo.slotB.ram, false);
-		break;
-	case ROMTYPE_SGB:
-		create_region("GBROM", 0x90000000, GameBoy::cartridge.romdata, GameBoy::cartridge.romsize, true);
-		create_region("GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
-		break;
-	case ROMTYPE_SNES:
-	case ROMTYPE_NONE:
-		break;
-	};
 }
 
 std::vector<struct memory_region> get_regions() throw(std::bad_alloc)
