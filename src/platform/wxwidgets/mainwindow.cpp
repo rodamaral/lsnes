@@ -459,7 +459,7 @@ namespace
 		{
 			if(filenames.Count() != 1)
 				return false;
-			platform::queue("load " + filenames[0]);
+			platform::queue("load " + tostdstring(filenames[0]));
 			return true;
 		}
 	};
