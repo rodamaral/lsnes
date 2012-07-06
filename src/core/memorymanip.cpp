@@ -56,6 +56,7 @@ namespace
 	std::vector<region> memory_regions;
 	uint64_t linear_ram_size = 0;
 	bool system_little_endian = true;
+	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
 	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
 	{
@@ -63,6 +64,17 @@ namespace
 			SNES::bus.write(offset, data);
 		else
 			return SNES::bus.read(offset);
+	}
+
+	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	{
+		uint16_t entry = offset >> 4;
+		if(!ptrmap.count(entry))
+			return 0;
+		uint64_t val = ((offset & 15) < 8) ? ptrmap[entry].first : ptrmap[entry].second;
+		uint8_t byte = offset & 7;
+		//These things are always little-endian.
+		return (val >> (8 * byte));
 	}
 
 	struct translated_address translate_address(uint64_t rawaddr) throw()
@@ -153,6 +165,13 @@ namespace
 			linear_ram_size += size;
 		memory_regions.push_back(r);
 		return base + size;
+	}
+
+	uint64_t map_internal(const std::string& name, uint16_t index, void* memory, size_t memsize)
+	{
+		ptrmap[index] = std::make_pair(reinterpret_cast<uint64_t>(memory), static_cast<uint64_t>(memsize));
+		return create_region(name, 0x101000000 + index * 0x1000000, reinterpret_cast<uint8_t*>(memory),
+			memsize, true, true);
 	}
 
 	uint64_t create_region(const std::string& name, uint64_t base, SNES::MappedRAM& memory, bool readonly,
@@ -256,6 +275,11 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 	create_region("SRAM", 0x10000000, SNES::cartridge.ram, false);
 	create_region("ROM", 0x80000000, SNES::cartridge.rom, true);
 	create_region("BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
+	create_region("PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_rw);
+	map_internal("CPU_STATE", 0, &SNES::cpu, sizeof(SNES::cpu));
+	map_internal("PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
+	map_internal("SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
+	map_internal("DSP_STATE", 3, &SNES::dsp, sizeof(SNES::dsp));
 	switch(get_current_rom_info().first) {
 	case ROMTYPE_BSX:
 	case ROMTYPE_BSXSLOTTED:
