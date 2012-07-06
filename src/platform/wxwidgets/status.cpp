@@ -4,15 +4,17 @@
 
 #define MAXSTATUS 30
 
-wxwin_status::panel::panel(wxWindow* _parent, unsigned lines)
+wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines)
 	: wxPanel(_parent)
 {
+	tfocuswin = focuswin;
 	parent = _parent;
 	dirty = false;
 	wxMemoryDC d;
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
 	SetMinSize(wxSize(4 * s.x, lines * s.y));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
+	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 }
 
 bool wxwin_status::panel::AcceptsFocus () const
@@ -20,12 +22,18 @@ bool wxwin_status::panel::AcceptsFocus () const
 	return false;
 }
 
+void wxwin_status::panel::on_focus(wxFocusEvent& e)
+{
+	if(tfocuswin)
+		tfocuswin->SetFocus();
+}
+
 wxwin_status::wxwin_status()
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Status"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
 {
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(1, 1, 0, 0);
-	top_s->Add(spanel = new wxwin_status::panel(this, MAXSTATUS));
+	top_s->Add(spanel = new wxwin_status::panel(this, NULL, MAXSTATUS));
 	top_s->SetSizeHints(this);
 	SetSizer(top_s);
 	Fit();
