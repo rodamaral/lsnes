@@ -6122,5 +6122,29 @@ Map the SNES bus into address space
 Fix loading memory watch files with CRLF line endings
 \end_layout
 
+\begin_layout Subsection
+rr1-delta10epsilon1
+\end_layout
+
+\begin_layout Itemize
+Map bsnes internal state into memory space
+\end_layout
+
+\begin_layout Itemize
+Fix the 
+\begin_inset Quotes eld
+\end_inset
+
+click on panel wedges the emulator
+\begin_inset Quotes erd
+\end_inset
+
+ for real.
+\end_layout
+
+\begin_layout Itemize
+DnD movies/saves on the main window.
+\end_layout
+
 \end_body
 \end_document

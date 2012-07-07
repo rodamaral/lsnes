@@ -3035,3 +3035,11 @@ set-axis joystick0axis19 disabled
 
 • Fix loading memory watch files with CRLF line endings
 
+15.64 rr1-delta10epsilon1
+
+• Map bsnes internal state into memory space
+
+• Fix the “click on panel wedges the emulator” for real.
+
+• DnD movies/saves on the main window.
+

@@ -10,11 +10,13 @@ public:
 	class panel : public wxPanel
 	{
 	public:
-		panel(wxWindow* _parent, unsigned lines);
+		panel(wxWindow* _parent, wxWindow* tfocus, unsigned lines);
 		bool AcceptsFocus () const;
+		void on_focus(wxFocusEvent& e);
 		void on_paint(wxPaintEvent& e);
 		bool dirty;
 		wxWindow* parent;
+		wxWindow* tfocuswin;
 	};
 	wxwin_status();
 	~wxwin_status();

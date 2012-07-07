@@ -461,7 +461,7 @@ namespace
 		{
 			if(filenames.Count() != 1)
 				return false;
-			platform::queue("load " + filenames[0]);
+			platform::queue("load " + tostdstring(filenames[0]));
 			return true;
 		}
 	};
@@ -645,7 +645,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	Centre();
 	toplevel = new wxFlexGridSizer(1, 2, 0, 0);
 	toplevel->Add(gpanel = new panel(this), 1, wxGROW);
-	toplevel->Add(spanel = new wxwin_status::panel(this, 20), 1, wxGROW);
+	toplevel->Add(spanel = new wxwin_status::panel(this, gpanel, 20), 1, wxGROW);
 	spanel_shown = true;
 	toplevel->SetSizeHints(this);
 	SetSizer(toplevel);
