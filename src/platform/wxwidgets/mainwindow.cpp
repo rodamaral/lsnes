@@ -31,8 +31,6 @@
 #include "platform/wxwidgets/window_mainwindow.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 
-#define MAXCONTROLLERS MAX_PORTS * MAX_CONTROLLERS_PER_PORT
-
 extern "C"
 {
 #ifndef UINT64_C
@@ -240,8 +238,8 @@ namespace
 		void on_select(wxCommandEvent& e);
 		void update(unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
-		controller_autohold_menu* menus[MAXCONTROLLERS];
-		wxMenuItem* entries[MAXCONTROLLERS];
+		controller_autohold_menu* menus[MAX_LOGICAL_CONTROLLERS];
+		wxMenuItem* entries[MAX_LOGICAL_CONTROLLERS];
 	};
 
 	class sound_select_menu : public wxMenu
@@ -346,7 +344,7 @@ namespace
 
 	autohold_menu::autohold_menu(wxwin_mainwindow* win)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
+		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
 			std::ostringstream str;
 			str << "Controller #&" << (i + 1);
 			menus[i] = new controller_autohold_menu(i, DT_NONE);
@@ -361,7 +359,7 @@ namespace
 	void autohold_menu::reconfigure()
 	{
 		modal_pause_holder hld;
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++) {
+		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
 			menus[i]->change_type();
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
@@ -369,13 +367,13 @@ namespace
 
 	void autohold_menu::on_select(wxCommandEvent& e)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++)
+		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
 			menus[i]->on_select(e);
 	}
 
 	void autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		for(unsigned i = 0; i < MAXCONTROLLERS; i++)
+		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
 			menus[i]->update(pid, ctrlnum, newstate);
 	}
 
