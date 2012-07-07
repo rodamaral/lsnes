@@ -22,7 +22,7 @@ namespace
 		static int done = 0;
 		if(done)
 			return;
-		for(unsigned i = 0; i < 8; i++)
+		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
 			for(unsigned j = 0; j < MAX_LOGICAL_BUTTONS; j++) {
 				buttonmap[(stringfmt() << (i + 1) << get_logical_button_name(j)).str()] =
 					std::make_pair(i, j);
@@ -201,7 +201,7 @@ namespace
 		{
 			for(size_t i = 0; i < MAX_LOGICAL_BUTTONS; ++i)
 				for(int j = 0; j < 4; ++j)
-					for(unsigned k = 0; k < 8; ++k) {
+					for(unsigned k = 0; k < MAX_LOGICAL_CONTROLLERS; ++k) {
 						stringfmt x, y, expx;
 						switch(j) {
 						case 0:
@@ -230,7 +230,7 @@ namespace
 							our_icommands.insert(new inverse_key(x.str(), expx.str() +
 								" (typed)"));
 					}
-			for(unsigned k = 0; k < 8; ++k) {
+			for(unsigned k = 0; k < MAX_LOGICAL_CONTROLLERS; ++k) {
 				stringfmt x, expx;
 				x << "controller" << (k + 1) << "analog";
 				expx << "Controller‣" << (k + 1) << "‣Analog function";

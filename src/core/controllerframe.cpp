@@ -1,4 +1,3 @@
-#include "core/bsnes.hpp"
 #include "core/emucore.hpp"
 
 #include "core/controllerframe.hpp"
