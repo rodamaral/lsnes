@@ -269,7 +269,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 
 extern time_t random_seed_value;
 
-void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
+void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
 	SNES::config.random = false;
 	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
@@ -277,10 +277,13 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 	//Negative return.
 	rrdata::add_internal();
 	try {
+		bool ro = movb.get_movie().readonly_mode();
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
 		our_rom->load();
-
+		if(reload)
+			movb.get_movie().readonly_mode(ro);
+		
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
@@ -296,7 +299,10 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
 	our_movie.is_savestate = false;
 	our_movie.host_memory.clear();
-	messages << "Movie rewound to beginning." << std::endl;
+	if(reload)
+		messages << "ROM reloaded." << std::endl;
+	else
+		messages << "Movie rewound to beginning." << std::endl;
 }
 
 //Load state from loaded movie file (does not catch errors).

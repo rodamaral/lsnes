@@ -413,6 +413,8 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 	default:
 		throw std::runtime_error("Trying to force unknown region");
 	}
+	snes_term();
+	snes_unload_cartridge();
 	switch(rtype) {
 	case ROMTYPE_SNES:
 		if(!snes_load_cartridge_normal(rom_xml, rom, rom))

@@ -11,6 +11,7 @@
 #define LOAD_STATE_DEFAULT 4
 #define LOAD_STATE_CURRENT 5
 #define LOAD_STATE_BEGINNING 6
+#define LOAD_STATE_ROMRELOAD 7
 #define SAVE_STATE 0
 #define SAVE_MOVIE 1
 
@@ -25,7 +26,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 
 void do_save_state(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
-void do_load_beginning() throw(std::bad_alloc, std::runtime_error);
+void do_load_beginning(bool reloading = false) throw(std::bad_alloc, std::runtime_error);
 void do_load_state(struct moviefile& _movie, int lmode);
 bool do_load_state(const std::string& filename, int lmode);
 std::string translate_name_mprefix(std::string original, bool forio = false);

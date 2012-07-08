@@ -202,6 +202,29 @@ namespace
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
 
+	bool reload_rom(const std::string& filename)
+	{
+		std::string filenam = filename;
+		if(filenam == "")
+			filenam = our_rom->msu1_base;
+		try {
+			loaded_slot newrom(filenam, "");
+			if(our_rom->slota.sha256 != "")
+				our_rom->slota = newrom;
+			else
+				our_rom->rom = newrom;
+			our_rom->msu1_base = filenam;
+			if(our_rom->slota.sha256 != "")
+				our_movie.slota_sha256 = newrom.sha256;
+			else
+				our_movie.rom_sha256 = newrom.sha256;
+		} catch(std::exception& e) {
+			messages << "Can't reload ROM: " << e.what() << std::endl;
+			return false;
+		}
+		return true;
+	}
+
 	uint32_t lpalette[0x80000];
 	void init_palette()
 	{
@@ -649,6 +672,13 @@ namespace
 			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
 		});
 
+	function_ptr_command<const std::string&> reload_rom2("reload-rom", "Reload the ROM image",
+		"Syntax: reload-rom [<file>]\nReload the ROM image from <file>\n",
+		[](const std::string& filename) throw(std::bad_alloc, std::runtime_error) {
+			if(reload_rom(filename))
+				mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+		});
+
 	function_ptr_command<> cancel_save("cancel-saves", "Cancel all pending saves", "Syntax: cancel-save\n"
 		"Cancel pending saves\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -802,12 +832,15 @@ namespace
 		}
 		if(pending_load != "") {
 			system_corrupt = false;
-			if(loadmode != LOAD_STATE_BEGINNING && !do_load_state(pending_load, loadmode)) {
+			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
+				!do_load_state(pending_load, loadmode)) {
 				pending_load = "";
 				return -1;
 			}
 			if(loadmode == LOAD_STATE_BEGINNING)
-				do_load_beginning();
+				do_load_beginning(false);
+			if(loadmode == LOAD_STATE_ROMRELOAD)
+				do_load_beginning(true);
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
