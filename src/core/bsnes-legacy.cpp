@@ -5,6 +5,7 @@
 #include <vector>
 #include "core/misc.hpp"
 #include "core/emucore.hpp"
+#include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
@@ -30,6 +31,26 @@
 #define ROM_TYPE_SUFAMITURBO 4
 #define ROM_TYPE_SGB 5
 
+/**
+ * Logical button IDs.
+ */
+#define LOGICAL_BUTTON_LEFT 0
+#define LOGICAL_BUTTON_RIGHT 1
+#define LOGICAL_BUTTON_UP 2
+#define LOGICAL_BUTTON_DOWN 3
+#define LOGICAL_BUTTON_A 4
+#define LOGICAL_BUTTON_B 5
+#define LOGICAL_BUTTON_X 6
+#define LOGICAL_BUTTON_Y 7
+#define LOGICAL_BUTTON_L 8
+#define LOGICAL_BUTTON_R 9
+#define LOGICAL_BUTTON_SELECT 10
+#define LOGICAL_BUTTON_START 11
+#define LOGICAL_BUTTON_TRIGGER 12
+#define LOGICAL_BUTTON_CURSOR 13
+#define LOGICAL_BUTTON_TURBO 14
+#define LOGICAL_BUTTON_PAUSE 15
+
 namespace
 {
 	bool last_hires = false;
@@ -44,7 +65,7 @@ namespace
 	unsigned internal_rom = ROM_TYPE_NONE;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
-	const char* buttonnames[MAX_LOGICAL_BUTTONS] = {
+	const char* buttonnames[] = {
 		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
 		"cursor", "turbo", "pause"
 	};
@@ -240,6 +261,159 @@ namespace
 		}
 	};
 
+	struct porttype_gamepad : public porttype_info
+	{
+		porttype_gamepad() : porttype_info("gamepad", "Gamepad", generic_port_size<1, 0, 12>())
+		{
+			write = generic_port_write<1, 0, 12>;
+			read = generic_port_read<1, 0, 12>;
+			display = generic_port_display<1, 0, 12, 0>;
+			serialize = generic_port_serialize<1, 0, 12, 0>;
+			deserialize = generic_port_deserialize<1, 0, 12>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			ctrlname = "gamepad";
+			controllers = 1;
+			set_core_controller = set_core_controller_gamepad;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_gamepad(controller, lbid);
+		}
+	} gamepad;
+
+	struct porttype_justifier : public porttype_info
+	{
+		porttype_justifier() : porttype_info("justifier", "Justifier", generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 12>;
+			serialize = generic_port_serialize<1, 2, 2, 12>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<2>;
+			deviceflags = generic_port_deviceflags<1, 3>;
+			ctrlname = "justifier";
+			controllers = 1;
+			set_core_controller = set_core_controller_justifier;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_justifier(controller, lbid);
+		}
+	} justifier;
+
+	struct porttype_justifiers : public porttype_info
+	{
+		porttype_justifiers() : porttype_info("justifiers", "2 Justifiers", generic_port_size<2, 2, 2>())
+		{
+			write = generic_port_write<2, 2, 2>;
+			read = generic_port_read<2, 2, 2>;
+			display = generic_port_display<2, 2, 2, 0>;
+			serialize = generic_port_serialize<2, 2, 2, 12>;
+			deserialize = generic_port_deserialize<2, 2, 2>;
+			legal = generic_port_legal<2>;
+			deviceflags = generic_port_deviceflags<2, 3>;
+			ctrlname = "justifier";
+			controllers = 2;
+			set_core_controller = set_core_controller_justifiers;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_justifiers(controller, lbid);
+		}
+	} justifiers;
+
+	struct porttype_mouse : public porttype_info
+	{
+		porttype_mouse() : porttype_info("mouse", "Mouse", generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 0>;
+			serialize = generic_port_serialize<1, 2, 2, 12>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 5>;
+			ctrlname = "mouse";
+			controllers = 1;
+			set_core_controller = set_core_controller_mouse;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_mouse(controller, lbid);
+		}
+	} mouse;
+
+	struct porttype_multitap : public porttype_info
+	{
+		porttype_multitap() : porttype_info("multitap", "Multitap", generic_port_size<4, 0, 12>())
+		{
+			write = generic_port_write<4, 0, 12>;
+			read = generic_port_read<4, 0, 12>;
+			display = generic_port_display<4, 0, 12, 0>;
+			serialize = generic_port_serialize<4, 0, 12, 0>;
+			deserialize = generic_port_deserialize<4, 0, 12>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<4, 1>;
+			ctrlname = "multitap";
+			controllers = 4;
+			set_core_controller = set_core_controller_multitap;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_multitap(controller, lbid);
+		}
+	} multitap;
+
+	struct porttype_none : public porttype_info
+	{
+		porttype_none() : porttype_info("none", "None", generic_port_size<0, 0, 0>())
+		{
+			write = generic_port_write<0, 0, 0>;
+			read = generic_port_read<0, 0, 0>;
+			display = generic_port_display<0, 0, 0, 0>;
+			serialize = generic_port_serialize<0, 0, 0, 0>;
+			deserialize = generic_port_deserialize<0, 0, 0>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<0, 0>;
+			ctrlname = "";
+			controllers = 0;
+			set_core_controller = set_core_controller_none;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_none(controller, lbid);
+		}
+	} none;
+
+	struct porttype_superscope : public porttype_info
+	{
+		porttype_superscope() : porttype_info("superscope", "Super Scope", generic_port_size<1, 2, 4>())
+		{
+			write = generic_port_write<1, 2, 4>;
+			read = generic_port_read<1, 2, 4>;
+			display = generic_port_display<1, 2, 4, 0>;
+			serialize = generic_port_serialize<1, 2, 4, 14>;
+			deserialize = generic_port_deserialize<1, 2, 4>;
+			legal = generic_port_legal<2>;
+			ctrlname = "superscope";
+			controllers = 1;
+			set_core_controller = set_core_controller_superscope;
+		}
+
+		int button_id(unsigned controller, unsigned lbid) const throw()
+		{
+			return get_button_id_superscope(controller, lbid);
+		}
+	} superscope;
+
 	my_interface my_interface_obj;
 	SNES::Interface* old;
 }
@@ -272,6 +446,16 @@ uint32_t get_snes_cpu_rate()
 uint32_t get_snes_apu_rate()
 {
 	return SNES::system.apu_frequency();
+}
+
+std::pair<unsigned, unsigned> get_core_logical_controller_limits()
+{
+	return std::make_pair(8U, (unsigned)(sizeof(buttonnames)/sizeof(buttonnames[0])));
+}
+
+bool get_core_need_analog()
+{
+	return true;
 }
 
 std::string get_core_identifier()
@@ -445,7 +629,7 @@ int get_button_id_justifiers(unsigned controller, unsigned lbid) throw()
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
 {
-	if(lbid >= MAX_LOGICAL_BUTTONS)
+	if(lbid >= sizeof(buttonnames) / sizeof(buttonnames[0]))
 		return "";
 	return buttonnames[lbid];
 }

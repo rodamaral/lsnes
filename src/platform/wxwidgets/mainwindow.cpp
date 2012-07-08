@@ -226,7 +226,7 @@ namespace
 		void update(unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
 		unsigned our_lid;
-		wxMenuItem* entries[MAX_LOGICAL_BUTTONS];
+		std::vector<wxMenuItem*> entries;
 		unsigned enabled_entries;
 	};
 
@@ -238,8 +238,8 @@ namespace
 		void on_select(wxCommandEvent& e);
 		void update(unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
-		controller_autohold_menu* menus[MAX_LOGICAL_CONTROLLERS];
-		wxMenuItem* entries[MAX_LOGICAL_CONTROLLERS];
+		std::vector<controller_autohold_menu*> menus;
+		std::vector<wxMenuItem*> entries;
 	};
 
 	class sound_select_menu : public wxMenu
@@ -274,10 +274,12 @@ namespace
 
 	controller_autohold_menu::controller_autohold_menu(unsigned lid)
 	{
+		auto limits = get_core_logical_controller_limits();
+		entries.resize(limits.second);
 		modal_pause_holder hld;
 		our_lid = lid;
-		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
-			int id = wxID_AUTOHOLD_FIRST + MAX_LOGICAL_BUTTONS * lid + i;
+		for(unsigned i = 0; i < limits.second; i++) {
+			int id = wxID_AUTOHOLD_FIRST + limits.second * lid + i;
 			entries[i] = AppendCheckItem(id, towxstring(get_logical_button_name(i)));
 		}
 		change_type();
@@ -285,9 +287,10 @@ namespace
 
 	void controller_autohold_menu::change_type()
 	{
+		auto limits = get_core_logical_controller_limits();
 		enabled_entries = 0;
 		int pid = controls.lcid_to_pcid(our_lid);
-		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
+		for(unsigned i = 0; i < limits.second; i++) {
 			int pidx = -1;
 			if(pid >= 0)
 				pidx = controls.button_id(pid, i);
@@ -309,12 +312,13 @@ namespace
 
 	void controller_autohold_menu::on_select(wxCommandEvent& e)
 	{
+		auto limits = get_core_logical_controller_limits();
 		int x = e.GetId();
-		if(x < wxID_AUTOHOLD_FIRST + our_lid * MAX_LOGICAL_BUTTONS || x >= wxID_AUTOHOLD_FIRST * 
-			(our_lid + 1) * MAX_LOGICAL_BUTTONS) {
+		if(x < wxID_AUTOHOLD_FIRST + our_lid * limits.second || x >= wxID_AUTOHOLD_FIRST * 
+			(our_lid + 1) * limits.second) {
 			return;
 		}
-		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % MAX_LOGICAL_BUTTONS;
+		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % limits.second;
 		modal_pause_holder hld;
 		int pid = controls.lcid_to_pcid(our_lid);
 		if(pid < 0 || !entries[lidx])
@@ -333,7 +337,8 @@ namespace
 		int pid2 = UI_controller_index_by_logical(our_lid);
 		if(pid2 < 0 || static_cast<unsigned>(pid) != pid2)
 			return;
-		for(unsigned i = 0; i < MAX_LOGICAL_BUTTONS; i++) {
+		auto limits = get_core_logical_controller_limits();
+		for(unsigned i = 0; i < limits.second; i++) {
 			int idx = UI_button_id(pid2, i);
 			if(idx < 0 || static_cast<unsigned>(idx) != ctrlnum)
 				continue;
@@ -344,7 +349,10 @@ namespace
 
 	autohold_menu::autohold_menu(wxwin_mainwindow* win)
 	{
-		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
+		auto limits = get_core_logical_controller_limits();
+		entries.resize(limits.first);
+		menus.resize(limits.first);
+		for(unsigned i = 0; i < limits.first; i++) {
 			std::ostringstream str;
 			str << "Controller #&" << (i + 1);
 			menus[i] = new controller_autohold_menu(i);
@@ -359,7 +367,8 @@ namespace
 	void autohold_menu::reconfigure()
 	{
 		modal_pause_holder hld;
-		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
+		auto limits = get_core_logical_controller_limits();
+		for(unsigned i = 0; i < limits.first; i++) {
 			menus[i]->change_type();
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}
@@ -367,13 +376,15 @@ namespace
 
 	void autohold_menu::on_select(wxCommandEvent& e)
 	{
-		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
+		auto limits = get_core_logical_controller_limits();
+		for(unsigned i = 0; i < limits.first; i++)
 			menus[i]->on_select(e);
 	}
 
 	void autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
+		auto limits = get_core_logical_controller_limits();
+		for(unsigned i = 0; i < limits.first; i++)
 			menus[i]->update(pid, ctrlnum, newstate);
 	}
 

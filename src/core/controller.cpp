@@ -22,8 +22,9 @@ namespace
 		static int done = 0;
 		if(done)
 			return;
-		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++)
-			for(unsigned j = 0; j < MAX_LOGICAL_BUTTONS; j++) {
+		auto lim = get_core_logical_controller_limits();
+		for(unsigned i = 0; i < lim.first; i++)
+			for(unsigned j = 0; j < lim.second; j++) {
 				buttonmap[(stringfmt() << (i + 1) << get_logical_button_name(j)).str()] =
 					std::make_pair(i, j);
 			}
@@ -199,9 +200,10 @@ namespace
 	public:
 		button_action_helper()
 		{
-			for(size_t i = 0; i < MAX_LOGICAL_BUTTONS; ++i)
+			auto lim = get_core_logical_controller_limits();
+			for(size_t i = 0; i < lim.second; ++i)
 				for(int j = 0; j < 4; ++j)
-					for(unsigned k = 0; k < MAX_LOGICAL_CONTROLLERS; ++k) {
+					for(unsigned k = 0; k < lim.first; ++k) {
 						stringfmt x, y, expx;
 						switch(j) {
 						case 0:
@@ -230,13 +232,14 @@ namespace
 							our_icommands.insert(new inverse_key(x.str(), expx.str() +
 								" (typed)"));
 					}
-			for(unsigned k = 0; k < MAX_LOGICAL_CONTROLLERS; ++k) {
-				stringfmt x, expx;
-				x << "controller" << (k + 1) << "analog";
-				expx << "Controller‣" << (k + 1) << "‣Analog function";
-				our_commands.insert(new analog_action(x.str(), k));
-				our_icommands.insert(new inverse_key(x.str(), expx.str()));
-			}
+			if(get_core_need_analog())
+				for(unsigned k = 0; k < lim.first; ++k) {
+					stringfmt x, expx;
+					x << "controller" << (k + 1) << "analog";
+					expx << "Controller‣" << (k + 1) << "‣Analog function";
+					our_commands.insert(new analog_action(x.str(), k));
+					our_icommands.insert(new inverse_key(x.str(), expx.str()));
+				}
 		}
 		~button_action_helper()
 		{

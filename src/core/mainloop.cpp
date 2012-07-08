@@ -250,7 +250,8 @@ void update_movie_state()
 		c = movb.get_movie().get_controls();
 	else
 		c = controls.get_committed();
-	for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
+	auto lim = get_core_logical_controller_limits();
+	for(unsigned i = 0; i < lim.first; i++) {
 		unsigned pindex = controls.lcid_to_pcid(i);
 		if(!controls.is_present(pindex))
 			continue;

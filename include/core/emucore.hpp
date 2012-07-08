@@ -9,28 +9,6 @@
 #include <vector>
 #include "library/framebuffer.hpp"
 
-/**
- * Logical button IDs.
- */
-#define LOGICAL_BUTTON_LEFT 0
-#define LOGICAL_BUTTON_RIGHT 1
-#define LOGICAL_BUTTON_UP 2
-#define LOGICAL_BUTTON_DOWN 3
-#define LOGICAL_BUTTON_A 4
-#define LOGICAL_BUTTON_B 5
-#define LOGICAL_BUTTON_X 6
-#define LOGICAL_BUTTON_Y 7
-#define LOGICAL_BUTTON_L 8
-#define LOGICAL_BUTTON_R 9
-#define LOGICAL_BUTTON_SELECT 10
-#define LOGICAL_BUTTON_START 11
-#define LOGICAL_BUTTON_TRIGGER 12
-#define LOGICAL_BUTTON_CURSOR 13
-#define LOGICAL_BUTTON_TURBO 14
-#define LOGICAL_BUTTON_PAUSE 15
-#define MAX_LOGICAL_BUTTONS 16
-#define MAX_LOGICAL_CONTROLLERS 8
-
 #define EC_REGION_AUTO -1
 #define EC_REGION_NTSC 0
 #define EC_REGION_PAL 1
@@ -41,6 +19,10 @@ uint32_t get_snes_cpu_rate();
 uint32_t get_snes_apu_rate();
 //Get the core identifier.
 std::string get_core_identifier();
+//Get maximum number of logical controllers and buttons.
+std::pair<unsigned, unsigned> get_core_logical_controller_limits();
+//Needs analog action?
+bool get_core_need_analog();
 //Get the default controller type for specified port.
 std::string get_core_default_port(unsigned port);
 //Do basic core initialization (to get it to stable state).
