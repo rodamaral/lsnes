@@ -37,34 +37,6 @@ std::pair<uint32_t, uint32_t> get_video_rate();
 std::pair<uint32_t, uint32_t> get_audio_rate();
 //Set preload settings.
 void set_preload_settings();
-//Set controller type to none.
-void set_core_controller_none(unsigned port) throw();
-//Set controller type to gamepad.
-void set_core_controller_gamepad(unsigned port) throw();
-//Set controller type to mouse.
-void set_core_controller_mouse(unsigned port) throw();
-//Set controller type to multitap.
-void set_core_controller_multitap(unsigned port) throw();
-//Set controller type to superscope.
-void set_core_controller_superscope(unsigned port) throw();
-//Set controller type to justifier.
-void set_core_controller_justifier(unsigned port) throw();
-//Set controller type to justifiers.
-void set_core_controller_justifiers(unsigned port) throw();
-//Button ID function for none.
-int get_button_id_none(unsigned controller, unsigned lbid) throw();
-//Button ID function for gamepad.
-int get_button_id_gamepad(unsigned controller, unsigned lbid) throw();
-//Button ID function for mouse.
-int get_button_id_mouse(unsigned controller, unsigned lbid) throw();
-//Button ID function for multitap.
-int get_button_id_multitap(unsigned controller, unsigned lbid) throw();
-//Button ID function for superscope.
-int get_button_id_superscope(unsigned controller, unsigned lbid) throw();
-//Button ID function for justifier.
-int get_button_id_justifier(unsigned controller, unsigned lbid) throw();
-//Button ID function for justifiers.
-int get_button_id_justifiers(unsigned controller, unsigned lbid) throw();
 //Load SNES cartridge.
 bool core_load_cartridge_normal(const char* rom_markup, const unsigned char* rom, size_t romsize);
 //Load BS-X cartridge.
