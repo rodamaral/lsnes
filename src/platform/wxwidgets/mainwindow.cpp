@@ -219,7 +219,7 @@ namespace
 	class controller_autohold_menu : public wxMenu
 	{
 	public:
-		controller_autohold_menu(unsigned lid, enum devicetype_t dtype);
+		controller_autohold_menu(unsigned lid);
 		void change_type();
 		bool is_dummy();
 		void on_select(wxCommandEvent& e);
@@ -272,7 +272,7 @@ namespace
 		autohold_menu* ahmenu;
 	};
 
-	controller_autohold_menu::controller_autohold_menu(unsigned lid, enum devicetype_t dtype)
+	controller_autohold_menu::controller_autohold_menu(unsigned lid)
 	{
 		modal_pause_holder hld;
 		our_lid = lid;
@@ -347,7 +347,7 @@ namespace
 		for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
 			std::ostringstream str;
 			str << "Controller #&" << (i + 1);
-			menus[i] = new controller_autohold_menu(i, DT_NONE);
+			menus[i] = new controller_autohold_menu(i);
 			entries[i] = AppendSubMenu(menus[i], towxstring(str.str()));
 			entries[i]->Enable(!menus[i]->is_dummy());
 		}

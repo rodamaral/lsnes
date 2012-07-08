@@ -1,4 +1,5 @@
 #include "core/framebuffer.hpp"
+#include "fonts/wrapper.hpp"
 #include "platform/sdl/platform.hpp"
 
 void statusarea_model::paint(SDL_Surface* surf, uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color,
@@ -112,9 +113,17 @@ void paint_modal_dialog(SDL_Surface* surf, const std::string& text, bool confirm
 		int32_t y = 0;
 		auto s2 = decode_utf8(rtext);
 		for(auto i : s2) {
-			auto g = find_glyph(i, x, y, 0, x, y);
-			if(x + g.first > text_w)
-				text_w = static_cast<uint32_t>(x + g.first);
+			auto g = main_font.get_glyph(i);
+			if(i == 9)
+				x = (x + 63) / 64 * 64;
+			else if(i == 10) {
+				x = 0;
+				y += 16;
+			} else {
+				x += (g.wide ? 16 : 8);
+			}
+			if(x + (g.wide ? 16 : 8) > text_w)
+				text_w = static_cast<uint32_t>(x + (g.wide ? 16 : 8));
 			if(y + 16 > static_cast<int32_t>(text_h))
 				text_h = static_cast<uint32_t>(y + 16);
 		}
@@ -311,8 +320,8 @@ namespace
 void screen_model::repaint_full() throw()
 {
 	render_framebuffer();
-	uint32_t current_w = main_screen.width;
-	uint32_t current_h = main_screen.height;
+	uint32_t current_w = main_screen.get_width();
+	uint32_t current_h = main_screen.get_height();
 	if(!surf || old_screen_w != current_w || old_screen_h != current_h) {
 		layout.real_width = current_w;
 		layout.real_height = current_h;
@@ -363,8 +372,8 @@ void screen_model::repaint_modal() throw()
 void screen_model::_repaint_screen() throw()
 {
 	render_framebuffer();
-	uint32_t current_w = main_screen.width;
-	uint32_t current_h = main_screen.height;
+	uint32_t current_w = main_screen.get_width();
+	uint32_t current_h = main_screen.get_height();
 	//Optimize for case where the screen is not resized.
 	{
 		SDL_LockSurface(surf);

@@ -250,16 +250,13 @@ void update_movie_state()
 		c = movb.get_movie().get_controls();
 	else
 		c = controls.get_committed();
-	for(unsigned i = 0; i < 8; i++) {
+	for(unsigned i = 0; i < MAX_LOGICAL_CONTROLLERS; i++) {
 		unsigned pindex = controls.lcid_to_pcid(i);
-		devicetype_t dtype = controls.pcid_to_type(pindex);
-		if(dtype == DT_NONE)
+		if(!controls.is_present(pindex))
 			continue;
 		char buffer[MAX_DISPLAY_LENGTH];
 		c.display(pindex, buffer);
-		char y[3] = {'P', 0, 0};
-		y[1] = 49 + i;
-		_status.set(y, buffer);
+		_status.set((stringfmt() << "P" << (i + 1)).str(), buffer);
 	}
 }
 

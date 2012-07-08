@@ -64,26 +64,13 @@ namespace
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		porttype_t p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
-		const porttype_info& i = porttype_info::lookup(p);
-		if(i.controllers <= controller % MAX_CONTROLLERS_PER_PORT)
+		porttype_info& p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
+		if(p.controllers <= controller % MAX_CONTROLLERS_PER_PORT)
 			lua_pushnil(LS);
-		else if(p == PT_NONE)
+		else if(p.ctrlname == "")
 			lua_pushnil(LS);
-		else if(p == PT_GAMEPAD)
-			lua_pushstring(LS, "gamepad");
-		else if(p == PT_MULTITAP)
-			lua_pushstring(LS, "gamepad");
-		else if(p == PT_MOUSE)
-			lua_pushstring(LS, "mouse");
-		else if(p == PT_SUPERSCOPE)
-			lua_pushstring(LS, "superscope");
-		else if(p == PT_JUSTIFIER)
-			lua_pushstring(LS, "justifier");
-		else if(p == PT_JUSTIFIERS)
-			lua_pushstring(LS, "justifier");
 		else
-			lua_pushstring(LS, "unknown");
+			lua_pushstring(LS, p.ctrlname.c_str());
 		return 1;
 	});
 

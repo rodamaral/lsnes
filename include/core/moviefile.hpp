@@ -51,11 +51,11 @@ struct moviefile
 /**
  * What's in port #1?
  */
-	porttype_t port1;
+	porttype_info* port1;
 /**
  * What's in port #2?
  */
-	porttype_t port2;
+	porttype_info* port2;
 /**
  * Emulator Core version string.
  */

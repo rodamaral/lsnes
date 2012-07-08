@@ -25,14 +25,16 @@ namespace
 
 	struct porttype_invalid : public porttype_info
 	{
-		porttype_invalid() : porttype_info(PT_INVALID, "invalid-port-type", 0)
+		porttype_invalid() : porttype_info("invalid-port-type", "invalid-port-type", 0)
 		{
 			write = NULL;
 			read = NULL;
 			display = NULL;
 			serialize = NULL;
 			deserialize = NULL;
-			devicetype = generic_port_devicetype<0, DT_NONE>;
+			legal = NULL;
+			deviceflags = generic_port_deviceflags<0, 0>;
+			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_illegal;
 		}
@@ -45,14 +47,16 @@ namespace
 
 	struct porttype_gamepad : public porttype_info
 	{
-		porttype_gamepad() : porttype_info(PT_GAMEPAD, "gamepad", generic_port_size<1, 0, 12>())
+		porttype_gamepad() : porttype_info("gamepad", "Gamepad", generic_port_size<1, 0, 12>())
 		{
 			write = generic_port_write<1, 0, 12>;
 			read = generic_port_read<1, 0, 12>;
 			display = generic_port_display<1, 0, 12, 0>;
 			serialize = generic_port_serialize<1, 0, 12, 0>;
 			deserialize = generic_port_deserialize<1, 0, 12>;
-			devicetype = generic_port_devicetype<1, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad;
 		}
@@ -65,14 +69,16 @@ namespace
 
 	struct porttype_justifier : public porttype_info
 	{
-		porttype_justifier() : porttype_info(PT_JUSTIFIER, "justifier", generic_port_size<1, 2, 2>())
+		porttype_justifier() : porttype_info("justifier", "Justifier", generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
 			display = generic_port_display<1, 2, 2, 12>;
 			serialize = generic_port_serialize<1, 2, 2, 12>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
-			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			deviceflags = generic_port_deviceflags<1, 3>;
+			ctrlname = "justifier";
 			controllers = 1;
 			set_core_controller = set_core_controller_justifier;
 		}
@@ -85,14 +91,16 @@ namespace
 
 	struct porttype_justifiers : public porttype_info
 	{
-		porttype_justifiers() : porttype_info(PT_JUSTIFIERS, "justifiers", generic_port_size<2, 2, 2>())
+		porttype_justifiers() : porttype_info("justifiers", "2 Justifiers", generic_port_size<2, 2, 2>())
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
 			display = generic_port_display<2, 2, 2, 0>;
 			serialize = generic_port_serialize<2, 2, 2, 12>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
-			devicetype = generic_port_devicetype<2, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			deviceflags = generic_port_deviceflags<2, 3>;
+			ctrlname = "justifier";
 			controllers = 2;
 			set_core_controller = set_core_controller_justifiers;
 		}
@@ -105,14 +113,16 @@ namespace
 
 	struct porttype_mouse : public porttype_info
 	{
-		porttype_mouse() : porttype_info(PT_MOUSE, "mouse", generic_port_size<1, 2, 2>())
+		porttype_mouse() : porttype_info("mouse", "Mouse", generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
 			display = generic_port_display<1, 2, 2, 0>;
 			serialize = generic_port_serialize<1, 2, 2, 12>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
-			devicetype = generic_port_devicetype<1, DT_MOUSE>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 5>;
+			ctrlname = "mouse";
 			controllers = 1;
 			set_core_controller = set_core_controller_mouse;
 		}
@@ -125,14 +135,16 @@ namespace
 
 	struct porttype_multitap : public porttype_info
 	{
-		porttype_multitap() : porttype_info(PT_MULTITAP, "multitap", generic_port_size<4, 0, 12>())
+		porttype_multitap() : porttype_info("multitap", "Multitap", generic_port_size<4, 0, 12>())
 		{
 			write = generic_port_write<4, 0, 12>;
 			read = generic_port_read<4, 0, 12>;
 			display = generic_port_display<4, 0, 12, 0>;
 			serialize = generic_port_serialize<4, 0, 12, 0>;
 			deserialize = generic_port_deserialize<4, 0, 12>;
-			devicetype = generic_port_devicetype<4, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<4, 1>;
+			ctrlname = "multitap";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap;
 		}
@@ -145,14 +157,16 @@ namespace
 
 	struct porttype_none : public porttype_info
 	{
-		porttype_none() : porttype_info(PT_NONE, "none", generic_port_size<0, 0, 0>())
+		porttype_none() : porttype_info("none", "None", generic_port_size<0, 0, 0>())
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
 			display = generic_port_display<0, 0, 0, 0>;
 			serialize = generic_port_serialize<0, 0, 0, 0>;
 			deserialize = generic_port_deserialize<0, 0, 0>;
-			devicetype = generic_port_devicetype<0, DT_GAMEPAD>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<0, 0>;
+			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_none;
 		}
@@ -165,14 +179,15 @@ namespace
 
 	struct porttype_superscope : public porttype_info
 	{
-		porttype_superscope() : porttype_info(PT_SUPERSCOPE, "superscope", generic_port_size<1, 2, 4>())
+		porttype_superscope() : porttype_info("superscope", "Super Scope", generic_port_size<1, 2, 4>())
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;
 			display = generic_port_display<1, 2, 4, 0>;
 			serialize = generic_port_serialize<1, 2, 4, 14>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
-			devicetype = generic_port_devicetype<1, DT_LIGHTGUN>;
+			legal = generic_port_legal<2>;
+			ctrlname = "superscope";
 			controllers = 1;
 			set_core_controller = set_core_controller_superscope;
 		}
@@ -190,22 +205,18 @@ namespace
 	}
 }
 
-const porttype_info& porttype_info::lookup(porttype_t p) throw(std::runtime_error)
+porttype_info& porttype_info::lookup(const std::string& p) throw(std::runtime_error)
 {
 	get_invalid_port_type();
 	for(auto i : porttypes())
-		if(p == i->value)
+		if(p == i->name && i->legal)
 			return *i;
 	throw std::runtime_error("Bad port type");
 }
 
-const porttype_info& porttype_info::lookup(const std::string& p) throw(std::runtime_error)
+porttype_info& porttype_info::port_default(unsigned port)
 {
-	get_invalid_port_type();
-	for(auto i : porttypes())
-		if(p == i->name && i->value != PT_INVALID)
-			return *i;
-	throw std::runtime_error("Bad port type");
+	return lookup(get_core_default_port(port));
 }
 
 porttype_info::~porttype_info() throw()
@@ -213,23 +224,43 @@ porttype_info::~porttype_info() throw()
 	porttypes().erase(this);
 }
 
-porttype_info::porttype_info(porttype_t ptype, const std::string& pname, size_t psize) throw(std::bad_alloc)
+porttype_info::porttype_info(const std::string& pname, const std::string& _hname, size_t psize) throw(std::bad_alloc)
 {
-	value = ptype;
 	name = pname;
+	hname = _hname;
 	storage_size = psize;
 	porttypes().insert(this);
 }
 
+porttype_info& porttype_info::default_type()
+{
+	return get_invalid_port_type();
+}
+
+std::set<porttype_info*> porttype_info::get_all()
+{
+	std::set<porttype_info*> p;
+	for(auto i : porttypes())
+		if(i->legal)
+			p.insert(i);
+	return p;
+}
+
+bool porttype_info::is_present(unsigned controller) const throw()
+{
+	unsigned d = deviceflags(controller);
+	return ((d & 1) != 0);
+}
+
 bool porttype_info::is_analog(unsigned controller) const throw()
 {
-	devicetype_t d = devicetype(controller);
-	return (d == DT_MOUSE || d == DT_LIGHTGUN);
+	unsigned d = deviceflags(controller);
+	return ((d & 1) != 0) && ((d & 6) != 0);
 }
 
 bool porttype_info::is_mouse(unsigned controller) const throw()
 {
-	return (devicetype(controller) == DT_MOUSE);
+	return ((deviceflags(controller) & 5) == 5);
 }
 
 pollcounter_vector::pollcounter_vector() throw()
@@ -327,23 +358,23 @@ bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 }
 
 
-controller_frame::controller_frame(porttype_t p1, porttype_t p2) throw(std::runtime_error)
+controller_frame::controller_frame(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
-	types[0] = p1;
-	types[1] = p2;
+	types[0] = &p1;
+	types[1] = &p2;
 	set_types(types);
 }
 
-controller_frame::controller_frame(unsigned char* mem, porttype_t p1, porttype_t p2) throw(std::runtime_error)
+controller_frame::controller_frame(unsigned char* mem, porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	if(!mem)
 		throw std::runtime_error("NULL backing memory not allowed");
 	memset(memory, 0, sizeof(memory));
 	backing = mem;
-	types[0] = p1;
-	types[1] = p2;
+	types[0] = &p1;
+	types[1] = &p2;
 	set_types(types);
 }
 
@@ -351,17 +382,17 @@ controller_frame::controller_frame(const controller_frame& obj) throw()
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
-	set_types(obj.types);
+	set_types(const_cast<porttype_info**>(obj.types));
 	memcpy(backing, obj.backing, totalsize);
 }
 
 controller_frame& controller_frame::operator=(const controller_frame& obj) throw(std::runtime_error)
 {
-	set_types(obj.types);
+	set_types(const_cast<porttype_info**>(obj.types));
 	memcpy(backing, obj.backing, totalsize);
 }
 
-void controller_frame::set_types(const porttype_t* tarr)
+void controller_frame::set_types(porttype_info** tarr)
 {
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		if(memory != backing && types[i] != tarr[i])
@@ -371,8 +402,7 @@ void controller_frame::set_types(const porttype_t* tarr)
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		offsets[i] = offset;
 		types[i] = tarr[i];
-		pinfo[i] = &porttype_info::lookup(tarr[i]);
-		offset += pinfo[i]->storage_size;
+		offset += types[i]->storage_size;
 	}
 	totalsize = offset;
 }
@@ -432,14 +462,14 @@ size_t controller_frame_vector::count_frames() throw()
 	return ret;
 }
 
-void controller_frame_vector::clear(enum porttype_t p1, enum porttype_t p2) throw(std::runtime_error)
+void controller_frame_vector::clear(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	controller_frame check(p1, p2);
 	frame_size = check.size();
 	frames_per_page = CONTROLLER_PAGE_SIZE / frame_size;
 	frames = 0;
-	types[0] = p1;
-	types[1] = p2;
+	types[0] = &p1;
+	types[1] = &p2;
 	clear_cache();
 	pages.clear();
 }
@@ -450,14 +480,19 @@ controller_frame_vector::~controller_frame_vector() throw()
 	cache_page = NULL;
 }
 
-controller_frame_vector::controller_frame_vector(enum porttype_t p1, enum porttype_t p2) throw(std::runtime_error)
+controller_frame_vector::controller_frame_vector() throw(std::runtime_error)
+{
+	clear(porttype_info::default_type(), porttype_info::default_type());
+}
+
+controller_frame_vector::controller_frame_vector(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	clear(p1, p2);
 }
 
 void controller_frame_vector::append(controller_frame frame) throw(std::bad_alloc, std::runtime_error)
 {
-	controller_frame check(types[0], types[1]);
+	controller_frame check(*types[0], *types[1]);
 	if(!check.types_match(frame))
 		throw std::runtime_error("controller_frame_vector::append: Type mismatch");
 	if(frames % frames_per_page == 0) {
@@ -471,13 +506,13 @@ void controller_frame_vector::append(controller_frame frame) throw(std::bad_allo
 		cache_page_num = page;
 		cache_page = &pages[page];
 	}
-	controller_frame(cache_page->content + offset, types[0], types[1]) = frame;
+	controller_frame(cache_page->content + offset, *types[0], *types[1]) = frame;
 	frames++;
 }
 
 controller_frame_vector::controller_frame_vector(const controller_frame_vector& vector) throw(std::bad_alloc)
 {
-	clear(vector.types[0], vector.types[1]);
+	clear(*vector.types[0], *vector.types[1]);
 	*this = vector;
 }
 
@@ -609,27 +644,26 @@ controller_frame::controller_frame() throw()
 	backing = memory;
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		offsets[i] = SYSTEM_BYTES;
-		types[i] = PT_INVALID;
-		pinfo[i] = NULL;
+		types[i] = &porttype_info::default_type();
 	}
 	totalsize = SYSTEM_BYTES;
 }
 
-void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std::runtime_error)
+void controller_frame::set_port_type(unsigned port, porttype_info& ptype) throw(std::runtime_error)
 {
 	char tmp[MAXIMUM_CONTROLLER_FRAME_SIZE] = {0};
 	if(memory != backing)
 		throw std::runtime_error("Can't set port type on non-dedicated controller frame");
 	if(port >= MAX_PORTS)
 		return;
-	const porttype_info* newpinfo[MAX_PORTS];
+	porttype_info* newpinfo[MAX_PORTS];
 	size_t newoffsets[MAX_PORTS];
 	size_t offset = SYSTEM_BYTES;
 	for(size_t i = 0; i < MAX_PORTS; i++) {
 		if(i != port)
-			newpinfo[i] = pinfo[i];
+			newpinfo[i] = types[i];
 		else
-			newpinfo[i] = &porttype_info::lookup(ptype);
+			newpinfo[i] = &ptype;
 		newoffsets[i] = offset;
 		if(newpinfo[i])
 			offset += newpinfo[i]->storage_size;
@@ -637,8 +671,7 @@ void controller_frame::set_port_type(unsigned port, porttype_t ptype) throw(std:
 			memcpy(tmp + newoffsets[i], backing + offsets[i], newpinfo[i]->storage_size);
 	}
 	memcpy(memory, tmp, MAXIMUM_CONTROLLER_FRAME_SIZE);
-	types[port] = ptype;
-	pinfo[port] = newpinfo[port];
+	types[port] = &ptype;
 	for(size_t i = 0; i < MAX_PORTS; i++)
 		offsets[i] = newoffsets[i];
 	totalsize = offset;
@@ -651,17 +684,16 @@ controller_state::controller_state() throw()
 		analog_mouse[i] = false;
 	}
 	for(size_t i = 0; i < MAX_PORTS; i++) {
-		porttypes[i] = PT_INVALID;
-		porttypeinfo[i] = NULL;
+		porttypes[i] = &porttype_info::default_type();
 	}
 }
 
 int controller_state::lcid_to_pcid(unsigned lcid) throw()
 {
-	if(!porttypeinfo[0] || !porttypeinfo[1])
+	if(!porttypes[0] || !porttypes[1])
 		return -1;
-	unsigned p1devs = porttypeinfo[0]->controllers;
-	unsigned p2devs = porttypeinfo[1]->controllers;
+	unsigned p1devs = porttypes[0]->controllers;
+	unsigned p2devs = porttypes[1]->controllers;
 	if(lcid >= p1devs + p2devs)
 		return -1;
 	//Exceptional: If p1 is none, map all to p2.
@@ -691,14 +723,6 @@ bool controller_state::acid_is_mouse(unsigned acid) throw()
 		return -1;
 	return analog_mouse[acid];
 	
-}
-
-devicetype_t controller_state::pcid_to_type(unsigned pcid) throw()
-{
-	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
-	if(port >= MAX_PORTS)
-		return DT_NONE;
-	return porttypeinfo[port]->devicetype(pcid % MAX_CONTROLLERS_PER_PORT);
 }
 
 controller_frame controller_state::get(uint64_t framenum) throw()
@@ -776,18 +800,18 @@ int controller_state::button_id(unsigned pcid, unsigned lbid) throw()
 	size_t port = pcid / MAX_CONTROLLERS_PER_PORT;
 	if(port >= MAX_PORTS)
 		return -1;
-	return porttypeinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
+	return porttypes[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
 }
 
-void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) throw(std::runtime_error)
+void controller_state::set_port(unsigned port, porttype_info& ptype, bool set_core) throw(std::runtime_error)
 {
 	if(port >= MAX_PORTS)
 		throw std::runtime_error("Port number invalid");
-	const porttype_info* info = &porttype_info::lookup(ptype);
+	porttype_info* info = &ptype;
 	if(set_core)
 		info->set_core_controller(port);
-	porttype_t oldtype = porttypes[port];
-	if(oldtype != ptype) {
+	porttype_info* oldtype = porttypes[port];
+	if(oldtype != &ptype) {
 		_input.set_port_type(port, ptype);
 		_autohold.set_port_type(port, ptype);
 		_committed.set_port_type(port, ptype);
@@ -795,27 +819,19 @@ void controller_state::set_port(unsigned port, porttype_t ptype, bool set_core) 
 		//The old autofire pattern no longer applies.
 		_autofire.clear();
 	}
-	porttypes[port] = ptype;
-	porttypeinfo[port] = info;
+	porttypes[port] = &ptype;
 	int i = 0;
 	for(unsigned j = 0; j < MAX_ANALOG; j++)
 		analog_indices[j] = -1;
 	for(unsigned j = 0; j < MAX_PORTS * MAX_CONTROLLERS_PER_PORT; j++) {
-		if(!porttypeinfo[j / MAX_CONTROLLERS_PER_PORT])
+		if(!porttypes[j / MAX_CONTROLLERS_PER_PORT])
 			continue;
-		devicetype_t d = porttypeinfo[j / MAX_CONTROLLERS_PER_PORT]->devicetype(j % MAX_CONTROLLERS_PER_PORT);
-		switch(d) {
-		case DT_NONE:
-		case DT_GAMEPAD:
-			break;
-		case DT_MOUSE:
+		if(porttypes[j / MAX_CONTROLLERS_PER_PORT]->is_mouse(j % MAX_CONTROLLERS_PER_PORT)) {
 			analog_mouse[i] = true;
 			analog_indices[i++] = j;
-			break;
-		case DT_LIGHTGUN:
+		} else if(porttypes[j / MAX_CONTROLLERS_PER_PORT]->is_analog(j % MAX_CONTROLLERS_PER_PORT)) {
 			analog_mouse[i] = false;
 			analog_indices[i++] = j;
-			break;
 		}
 		if(i == MAX_ANALOG)
 			break;
@@ -844,6 +860,11 @@ controller_frame controller_state::commit(controller_frame controls) throw()
 {
 	_committed = controls;
 	return _committed;
+}
+
+bool controller_state::is_present(unsigned pcid) throw()
+{
+	return _input.is_present(pcid);
 }
 
 bool controller_state::is_analog(unsigned pcid) throw()

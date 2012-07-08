@@ -54,23 +54,27 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	porttype_t get_controller_type(const std::string& s)
+	porttype_info& get_controller_type(const std::string& s)
 	{
-		if(s == CNAME_NONE)
-			return PT_NONE;
-		if(s == CNAME_GAMEPAD)
-			return PT_GAMEPAD;
-		if(s == CNAME_MULTITAP)
-			return PT_MULTITAP;
-		if(s == CNAME_MOUSE)
-			return PT_MOUSE;
-		if(s == CNAME_SUPERSCOPE)
-			return PT_SUPERSCOPE;
-		if(s == CNAME_JUSTIFIER)
-			return PT_JUSTIFIER;
-		if(s == CNAME_JUSTIFIERS)
-			return PT_JUSTIFIERS;
-		return PT_INVALID;
+		auto types = porttype_info::get_all();
+		for(auto i : types)
+			if(s == i->hname)
+				return *i;
+		return porttype_info::default_type();
+	}
+
+	void load_cchoices(std::vector<wxString>& cc, unsigned port, unsigned& dfltidx)
+	{
+		cc.clear();
+		porttype_info& dflt = porttype_info::port_default(port);
+		dfltidx = 0;
+		auto types = porttype_info::get_all();
+		for(auto i : types)
+			if(i->legal && i->legal(port)) {
+				cc.push_back(towxstring(i->hname));
+				if(i == &dflt)
+					dfltidx = cc.size() - 1;
+			}
 	}
 
 	struct loaded_slot& get_rom_slot(struct loaded_rom& rom, unsigned index)
@@ -806,14 +810,8 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
 	our_rom = &rom;
-	wxString cchoices[CONTROLLERTYPES];
-	cchoices[0] = wxT(CNAME_NONE);
-	cchoices[1] = wxT(CNAME_GAMEPAD);
-	cchoices[2] = wxT(CNAME_MULTITAP);
-	cchoices[3] = wxT(CNAME_MOUSE);
-	cchoices[4] = wxT(CNAME_SUPERSCOPE);
-	cchoices[5] = wxT(CNAME_JUSTIFIER);
-	cchoices[6] = wxT(CNAME_JUSTIFIERS);
+	std::vector<wxString> cchoices;
+	unsigned dfltidx;
 
 	std::set<std::string> sram_set = get_sram_set();
 
@@ -855,11 +853,13 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	//Controllertypes/Gamename/initRTC/SRAMs.
 	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
-	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[1], wxDefaultPosition,
-		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
+	load_cchoices(cchoices, 0, dfltidx);
+	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx], wxDefaultPosition,
+		wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
+	load_cchoices(cchoices, 1, dfltidx);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
-	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[0], wxDefaultPosition,
-		wxDefaultSize, CONTROLLERTYPES, cchoices, wxCB_READONLY), 0, wxGROW);
+	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx], wxDefaultPosition,
+		wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
 	initrtc->Add(rtc_sec = new wxTextCtrl(new_panel, wxID_ANY, wxT("1000000000"), wxDefaultPosition,
@@ -1029,8 +1029,8 @@ struct moviefile wxwin_project::make_movie()
 	moviefile f;
 	f.force_corrupt = false;
 	f.gametype = gtype::togametype(our_rom->rtype, our_rom->region);
-	f.port1 = get_controller_type(tostdstring(controller1type->GetValue()));
-	f.port2 = get_controller_type(tostdstring(controller2type->GetValue()));
+	f.port1 = &get_controller_type(tostdstring(controller1type->GetValue()));
+	f.port2 = &get_controller_type(tostdstring(controller2type->GetValue()));
 	f.coreversion = bsnes_core_version;
 	f.gamename = tostdstring(projectname->GetValue());
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
@@ -1058,7 +1058,7 @@ struct moviefile wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
-	f.input.clear(f.port1, f.port2);
+	f.input.clear(*f.port1, *f.port2);
 	return f;
 }
 

@@ -41,6 +41,8 @@ uint32_t get_snes_cpu_rate();
 uint32_t get_snes_apu_rate();
 //Get the core identifier.
 std::string get_core_identifier();
+//Get the default controller type for specified port.
+std::string get_core_default_port(unsigned port);
 //Do basic core initialization (to get it to stable state).
 void do_basic_core_init();
 //Get set of SRAMs.

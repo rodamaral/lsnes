@@ -195,7 +195,7 @@ void write_authors_file(zip_writer& w, std::vector<std::pair<std::string, std::s
 	}
 }
 
-void write_input(zip_writer& w, controller_frame_vector& input, porttype_t port1, porttype_t port2)
+void write_input(zip_writer& w, controller_frame_vector& input)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::ostream& m = w.create_file("input");
@@ -214,8 +214,8 @@ void write_input(zip_writer& w, controller_frame_vector& input, porttype_t port1
 	}
 }
 
-void read_input(zip_reader& r, controller_frame_vector& input, porttype_t port1, porttype_t port2, unsigned version)
-	throw(std::bad_alloc, std::runtime_error)
+void read_input(zip_reader& r, controller_frame_vector& input, unsigned version) throw(std::bad_alloc,
+	std::runtime_error)
 {
 	controller_frame tmp = input.blank_frame(false);
 	std::istream& m = r["input"];
@@ -280,13 +280,15 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 	}
 }
 
-porttype_t parse_controller_type(const std::string& type, bool port) throw(std::bad_alloc, std::runtime_error)
+porttype_info& parse_controller_type(const std::string& type, unsigned port) throw(std::bad_alloc, std::runtime_error)
 {
 	try {
-		const porttype_info& i = porttype_info::lookup(type);
-		return i.value;
+		porttype_info& i = porttype_info::lookup(type);
+		if(!i.legal || !(i.legal(port)))
+			throw 42;
+		return i;
 	} catch(...) {
-		throw std::runtime_error(std::string("Illegal port") + (port ? "2" : "1") + " device '" + type + "'");
+		(stringfmt() << "Illegal port " << (port + 1) << " device '" << type << "'").throwex();
 	}
 }
 
@@ -295,8 +297,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 {
 	force_corrupt = false;
 	gametype = GT_INVALID;
-	port1 = PT_INVALID;
-	port2 = PT_INVALID;
+	port1 = &porttype_info::default_type();
+	port2 = &porttype_info::default_type();
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
@@ -327,13 +329,13 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	tmp = "gamepad";
+	tmp = porttype_info::port_default(0).name;
 	read_linefile(r, "port1", tmp, true);
-	port1 = porttype_info::lookup(tmp).value;
-	tmp = "none";
+	port1 = &porttype_info::lookup(tmp);
+	tmp = porttype_info::port_default(1).name;
 	read_linefile(r, "port2", tmp, true);
-	port2 = porttype_info::lookup(tmp).value;
-	input.clear(port1, port2);
+	port2 = &porttype_info::lookup(tmp);
+	input.clear(*port1, *port2);
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
@@ -380,17 +382,17 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		if(name.length() >= 10 && name.substr(0, 10) == "moviesram.")
 			movie_sram[name.substr(10)] = read_raw_file(r, name);
 	read_authors_file(r, authors);
-	read_input(r, input, port1, port2, 0);
+	read_input(r, input, 0);
 }
 
 void moviefile::save(const std::string& movie, unsigned compression) throw(std::bad_alloc, std::runtime_error)
 {
 	zip_writer w(movie, compression);
 	write_linefile(w, "gametype", gtype::tostring(gametype));
-	if(port1 != PT_GAMEPAD)
-		write_linefile(w, "port1", porttype_info::lookup(port1).name);
-	if(port2 != PT_NONE)
-		write_linefile(w, "port2", porttype_info::lookup(port2).name);
+	if(port1->name != porttype_info::port_default(0).name)
+		write_linefile(w, "port1", port1->name);
+	if(port2->name != porttype_info::port_default(1).name)
+		write_linefile(w, "port2", port2->name);
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
 	write_linefile(w, "controlsversion", "0");
@@ -422,7 +424,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
 	}
 	write_authors_file(w, authors);
-	write_input(w, input, port1, port2);
+	write_input(w, input);
 
 	w.commit();
 }

@@ -23,18 +23,6 @@ std::string name_region(rom_region r)
 	return "Unknown";
 }
 
-std::string name_porttype(porttype_t r)
-{
-	if(r == PT_NONE)		return "No device";
-	if(r == PT_GAMEPAD)		return "Gamepad";
-	if(r == PT_MULTITAP)		return "Multitap";
-	if(r == PT_MOUSE)		return "Mouse";
-	if(r == PT_SUPERSCOPE)		return "Super Scope";
-	if(r == PT_JUSTIFIER)		return "Justifier";
-	if(r == PT_JUSTIFIERS)		return "2 Justifiers";
-	return "Unknown";
-}
-
 std::string escape_string(std::string x)
 {
 	std::ostringstream out;
@@ -64,8 +52,8 @@ int main(int argc, char** argv)
 		rom_region reg = gtype::toromregion(m.gametype);
 		std::cout << "Console: " << name_romtype(rtype) << std::endl;
 		std::cout << "Region: " << name_region(reg) << std::endl;
-		std::cout << "Port #1: " << name_porttype(m.port1) << std::endl;
-		std::cout << "Port #2: " << name_porttype(m.port2) << std::endl;
+		std::cout << "Port #1: " << m.port1->hname << std::endl;
+		std::cout << "Port #2: " << m.port2->hname << std::endl;
 		std::cout << "Used emulator core: " << escape_string(m.coreversion) << std::endl;
 		if(m.gamename != "")
 			std::cout << "Game name: " << escape_string(m.gamename) << std::endl;

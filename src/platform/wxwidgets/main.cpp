@@ -354,8 +354,8 @@ bool lsnes_app::OnInit()
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 
-	controls.set_port(0, PT_NONE, false);
-	controls.set_port(1, PT_NONE, false);
+	controls.set_port(0, porttype_info::port_default(0), false);
+	controls.set_port(1, porttype_info::port_default(1), false);
 
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;

@@ -61,73 +61,6 @@
  */
 #define MAX_ANALOG 3
 
-
-/**
- * This enumeration gives the type of port.
- */
-enum porttype_t
-{
-/**
- * No device
- */
-	PT_NONE = 0,			//Nothing connected to port.
-/**
- * Gamepad
- */
-	PT_GAMEPAD = 1,
-/**
- * Multitap (with 4 gamepads connected)
- */
-	PT_MULTITAP = 2,
-/**
- * Mouse
- */
-	PT_MOUSE = 3,
-/**
- * Superscope (only allowed for port 2).
- */
-	PT_SUPERSCOPE = 4,
-/**
- * Justifier (only allowed for port 2).
- */
-	PT_JUSTIFIER = 5,
-/**
- * 2 Justifiers (only allowed for port 2).
- */
-	PT_JUSTIFIERS = 6,
-/**
- * Number of controller types.
- */
-	PT_LAST_CTYPE = 6,
-/**
- * Invalid controller type.
- */
-	PT_INVALID = PT_LAST_CTYPE + 1
-};
-
-/**
- * This enumeration gives the type of device.
- */
-enum devicetype_t
-{
-/**
- * No device
- */
-	DT_NONE = 0,
-/**
- * Gamepad (note that multitap controllers are gamepads)
- */
-	DT_GAMEPAD = 1,
-/**
- * Mouse
- */
-	DT_MOUSE = 2,
-/**
- * Lightgun
- */
-	DT_LIGHTGUN = 3,
-};
-
 /**
  * Is not field terminator.
  *
@@ -215,28 +148,32 @@ struct porttype_info
 /**
  * Look up information about port type.
  *
- * Parameter p: The port type.
- * Returns: Infor about port type.
- * Throws std::runtime_error: Invalid port type.
- */
-	static const porttype_info& lookup(porttype_t p) throw(std::runtime_error);
-/**
- * Look up information about port type.
- *
  * Parameter p: The port type string.
  * Returns: Infor about port type.
  * Throws std::runtime_error: Invalid port type.
  */
-	static const porttype_info& lookup(const std::string& p) throw(std::runtime_error);
+	static porttype_info& lookup(const std::string& p) throw(std::runtime_error);
+/**
+ * Get set of all available port types.
+ */
+	static std::set<porttype_info*> get_all();
+/**
+ * Get some default port type.
+ */
+	static porttype_info& default_type();
+/**
+ * Get port default type.
+ */
+	static porttype_info& port_default(unsigned port);
 /**
  * Register port type.
  *
- * Parameter ptype: Type value for port type.
  * Parameter pname: The name of port type.
+ * Parameter hname: Human-readable name of the port type.
  * Parameter psize: The size of storage for this type.
  * Throws std::bad_alloc: Not enough memory.
  */
-	porttype_info(porttype_t ptype, const std::string& pname, size_t psize) throw(std::bad_alloc);
+	porttype_info(const std::string& pname, const std::string& hname, size_t psize) throw(std::bad_alloc);
 /**
  * Unregister port type.
  */
@@ -289,12 +226,22 @@ struct porttype_info
  */
 	size_t (*deserialize)(unsigned char* buffer, const char* textbuf);
 /**
- * Return device type for given index.
+ * Get device flags for given index.
  *
  * Parameter idx: The index of controller.
- * Returns: The type of device.
+ * Returns: The device flags.
+ *	Bit 0: Present.
+ *	Bit 1: Has absolute analog axes 0 and 1.
+ *	Bit 2: Has relative analog axes 0 and 1.
  */
-	devicetype_t (*devicetype)(unsigned idx);
+	unsigned (*deviceflags)(unsigned idx);
+/**
+ * Is the device legal for port?
+ *
+ * Parameter port: Port to query.
+ * Returns: Nonzero if legal, zero if illegal.
+ */
+	int (*legal)(unsigned port);
 /**
  * Number of controllers connected to this port.
  */
@@ -314,6 +261,12 @@ struct porttype_info
  */
 	void (*set_core_controller)(unsigned port);
 /**
+ * Does the controller exist?
+ *
+ * Parameter controller: Controller number.
+ */
+	bool is_present(unsigned controller) const throw();
+/**
  * Does the controller have analog function?
  *
  * Parameter controller: Controller number.
@@ -326,9 +279,9 @@ struct porttype_info
  */
 	bool is_mouse(unsigned controller) const throw();
 /**
- * Port type value.
+ * Human-readable name.
  */
-	porttype_t value;
+	std::string hname;
 /**
  * Number of bytes it takes to store this.
  */
@@ -337,6 +290,10 @@ struct porttype_info
  * Name of port type.
  */
 	std::string name;
+/**
+ * Name of controller.
+ */
+	std::string ctrlname;
 private:
 	porttype_info(const porttype_info&);
 	porttype_info& operator=(const porttype_info&);
@@ -477,7 +434,7 @@ public:
  *
  * Throws std::runtime_error: Invalid port type.
  */
-	controller_frame(porttype_t p1, porttype_t p2) throw(std::runtime_error);
+	controller_frame(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Create subframe of controls with specified controller types and specified memory.
  *
@@ -487,7 +444,7 @@ public:
  *
  * Throws std::runtime_error: Invalid port type or NULL memory.
  */
-	controller_frame(unsigned char* memory, porttype_t p1 = PT_GAMEPAD, porttype_t p2 = PT_NONE)
+	controller_frame(unsigned char* memory, porttype_info& p1, porttype_info& p2)
 		throw(std::runtime_error);
 /**
  * Copy construct a frame. The memory will be dedicated.
@@ -509,9 +466,9 @@ public:
  * Parameter port: Number of port.
  * Returns: The type of port.
  */
-	porttype_t get_port_type(unsigned port) throw()
+	porttype_info& get_port_type(unsigned port) throw()
 	{
-		return (port < MAX_PORTS) ? types[port] : PT_NONE;
+		return (port < MAX_PORTS) ? *types[port] : porttype_info::default_type();
 	}
 /**
  * Get blank dedicated frame of same port types.
@@ -520,7 +477,7 @@ public:
  */
 	controller_frame blank_frame() throw()
 	{
-		return controller_frame(types[0], types[1]);
+		return controller_frame(*types[0], *types[1]);
 	}
 /**
  * Set type of port. Input for that port is zeroized.
@@ -529,7 +486,7 @@ public:
  * Parameter type: The new type.
  * Throws std::runtime_error: Bad port type or non-dedicated memory.
  */
-	void set_port_type(unsigned port, porttype_t ptype) throw(std::runtime_error);
+	void set_port_type(unsigned port, porttype_info& ptype) throw(std::runtime_error);
 /**
  * Check that types match.
  *
@@ -654,7 +611,7 @@ public:
 	void axis(unsigned pcid, unsigned ctrl, short x) throw()
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		pinfo[port]->write(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl, x);
+		types[port]->write(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl, x);
 	}
 /**
  * Set axis/button value.
@@ -676,7 +633,7 @@ public:
 	short axis(unsigned pcid, unsigned ctrl) throw()
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->read(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl);
+		return types[port]->read(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, ctrl);
 	}
 
 /**
@@ -698,18 +655,18 @@ public:
 	void display(unsigned pcid, char* buf) throw()
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->display(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, buf);
+		return types[port]->display(backing + offsets[port], pcid % MAX_CONTROLLERS_PER_PORT, buf);
 	}
 /**
- * Get device type.
+ * Is device present?
  *
  * Parameter pcid: Physical controller id.
- * Returns: Device type.
+ * Returns: True if present, false if not.
  */
-	devicetype_t devicetype(unsigned pcid) throw()
+	bool is_present(unsigned pcid) throw()
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->devicetype(pcid % MAX_CONTROLLERS_PER_PORT);
+		return types[port]->is_present(pcid % MAX_CONTROLLERS_PER_PORT);
 	}
 /**
  * Deserialize frame from text format.
@@ -724,7 +681,7 @@ public:
 		if(buf[offset] == '|')
 			offset++;
 		for(size_t i = 0; i < MAX_PORTS; i++) {
-			size_t s = pinfo[i]->deserialize(backing + offsets[i], buf + offset);
+			size_t s = types[i]->deserialize(backing + offsets[i], buf + offset);
 			if(s != DESERIALIZE_SPECIAL_BLANK) {
 				offset += s;
 				if(buf[offset] == '|')
@@ -742,7 +699,7 @@ public:
 		size_t offset = 0;
 		offset += system_serialize(backing, buf);
 		for(size_t i = 0; i < MAX_PORTS; i++)
-			offset += pinfo[i]->serialize(backing + offsets[i], buf + offset);
+			offset += types[i]->serialize(backing + offsets[i], buf + offset);
 		buf[offset++] = '\0';
 	}
 /**
@@ -789,7 +746,7 @@ public:
 	int button_id(unsigned pcid, unsigned lbid)
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
+		return types[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
 	}
 /**
  * Does the specified controller have analog function.
@@ -799,7 +756,7 @@ public:
 	bool is_analog(unsigned pcid)
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->is_analog(pcid % MAX_CONTROLLERS_PER_PORT);
+		return types[port]->is_analog(pcid % MAX_CONTROLLERS_PER_PORT);
 	}
 /**
  * Does the specified controller have mouse-type function.
@@ -809,18 +766,17 @@ public:
 	bool is_mouse(unsigned pcid)
 	{
 		unsigned port = (pcid / MAX_CONTROLLERS_PER_PORT) % MAX_PORTS;
-		return pinfo[port]->is_mouse(pcid % MAX_CONTROLLERS_PER_PORT);
+		return types[port]->is_mouse(pcid % MAX_CONTROLLERS_PER_PORT);
 	}
 private:
 	size_t totalsize;
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
 	unsigned char* backing;
-	porttype_t types[MAX_PORTS];
+	porttype_info* types[MAX_PORTS];
 	size_t offsets[MAX_PORTS];
-	const porttype_info* pinfo[MAX_PORTS];
 	static size_t system_serialize(const unsigned char* buffer, char* textbuf);
 	static size_t system_deserialize(unsigned char* buffer, const char* textbuf);
-	void set_types(const porttype_t* tarr);
+	void set_types(porttype_info** tarr);
 };
 
 /**
@@ -831,13 +787,16 @@ class controller_frame_vector
 public:
 /**
  * Construct new controller frame vector.
+ */
+	controller_frame_vector() throw(std::runtime_error);
+/**
+ * Construct new controller frame vector.
  *
  * Parameter p1: Type of port 1.
  * Parameter p2: Type of port 2.
  * Throws std::runtime_error: Illegal port types.
  */
-	controller_frame_vector(enum porttype_t p1 = PT_INVALID, enum porttype_t p2 = PT_INVALID)
-		throw(std::runtime_error);
+	controller_frame_vector(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Destroy controller frame vector
  */
@@ -864,13 +823,13 @@ public:
  * Parameter p2: Type of port 2.
  * Throws std::runtime_error: Illegal port types.
  */
-	void clear(enum porttype_t p1, enum porttype_t p2) throw(std::runtime_error);
+	void clear(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Blank vector.
  */
 	void clear() throw()
 	{
-		clear(types[0], types[1]);
+		clear(*types[0], *types[1]);
 	}
 /**
  * Get number of subframes.
@@ -896,7 +855,7 @@ public:
 			cache_page = &pages[page];
 			cache_page_num = page;
 		}
-		return controller_frame(cache_page->content + pageoffset, types[0], types[1]);
+		return controller_frame(cache_page->content + pageoffset, *types[0], *types[1]);
 	}
 /**
  * Append a subframe.
@@ -957,7 +916,7 @@ public:
  */
 	controller_frame blank_frame(bool sync)
 	{
-		controller_frame c(types[0], types[1]);
+		controller_frame c(*types[0], *types[1]);
 		c.sync(sync);
 		return c;
 	}
@@ -971,7 +930,7 @@ private:
 	size_t frames_per_page;
 	size_t frame_size;
 	size_t frames;
-	porttype_t types[MAX_PORTS];
+	porttype_info* types[MAX_PORTS];
 	size_t cache_page_num;
 	page* cache_page;
 	std::map<size_t, page> pages;
@@ -1016,12 +975,12 @@ public:
  */
 	bool acid_is_mouse(unsigned acid) throw();
 /**
- * Look up device type type of given pcid.
+ * Is given pcid present?
  *
  * Parameter pcid: The physical controller id.
- * Returns: The type of device.
+ * Returns: True if present, false if not.
  */
-	devicetype_t pcid_to_type(unsigned pcid) throw();
+	bool pcid_present(unsigned pcid) throw();
 /**
  * Set type of port.
  *
@@ -1030,7 +989,7 @@ public:
  * Parameter set_core: If true, set the core port type too, otherwise don't do that.
  * Throws std::runtime_error: Illegal port type.
  */
-	void set_port(unsigned port, porttype_t ptype, bool set_core) throw(std::runtime_error);
+	void set_port(unsigned port, porttype_info& ptype, bool set_core) throw(std::runtime_error);
 /**
  * Get status of current controls (with autohold/autofire factored in).
  *
@@ -1145,14 +1104,17 @@ public:
 /**
  * TODO: Document.
  */
+	bool is_present(unsigned pcid) throw();
+/**
+ * TODO: Document.
+ */
 	bool is_analog(unsigned pcid) throw();
 /**
  * TODO: Document.
  */
 	bool is_mouse(unsigned pcid) throw();
 private:
-	const porttype_info* porttypeinfo[MAX_PORTS];
-	porttype_t porttypes[MAX_PORTS];
+	porttype_info* porttypes[MAX_PORTS];
 	int analog_indices[MAX_ANALOG];
 	bool analog_mouse[MAX_ANALOG];
 	controller_frame _input;
@@ -1284,7 +1246,7 @@ inline size_t generic_port_deserialize(unsigned char* buffer, const char* textbu
 }
 
 template<unsigned mask>
-inline bool generic_port_legal(unsigned port) throw()
+inline int generic_port_legal(unsigned port) throw()
 {
 	if(port >= CHAR_BIT * sizeof(unsigned))
 		port = CHAR_BIT * sizeof(unsigned) - 1;
@@ -1294,10 +1256,10 @@ inline bool generic_port_legal(unsigned port) throw()
 /**
  * Generic port type function.
  */
-template<unsigned controllers, devicetype_t dtype>
-inline devicetype_t generic_port_devicetype(unsigned idx) throw()
+template<unsigned controllers, unsigned flags>
+inline unsigned generic_port_deviceflags(unsigned idx) throw()
 {
-	return (idx < controllers) ? dtype : DT_NONE;
+	return (idx < controllers) ? flags : 0;
 }
 
 #endif

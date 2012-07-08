@@ -331,8 +331,11 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 {
 	typename framebuffer<X>::element_t decbuf[DECBUF_SIZE];
 
-	if(!scr.fmt)
-		throw std::runtime_error("Source screen has invalid pixel format");
+	if(!scr.fmt) {
+		for(size_t y = 0; y < height; y++)
+			memset(rowptr(y), 0, sizeof(typename framebuffer<X>::element_t) * width);
+		return;
+	}
 	if(scr.fmt != current_fmt || active_rshift != auxpal.rshift || active_gshift != auxpal.gshift ||
 		active_bshift != auxpal.bshift) {
 		scr.fmt->set_palette(auxpal, active_rshift, active_gshift, active_bshift);

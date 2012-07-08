@@ -1,4 +1,5 @@
 #include "core/misc.hpp"
+#include "fonts/wrapper.hpp"
 #include "platform/sdl/platform.hpp"
 
 #include <cstdint>
@@ -183,18 +184,25 @@ namespace
 		for(auto si : s) {
 			uint32_t old_x = pos_x;
 			uint32_t old_y = pos_y;
-			auto g = find_glyph(si, pos_x, pos_y, 0, pos_x, pos_y);
+			auto g = main_font.get_glyph(si);
+			if(si == 9)
+				pos_x = (pos_x + 63) / 64 * 64;
+			else if(si == 10) {
+				pos_x = 0;
+				pos_y += 16;
+			} else
+				pos_x += (g.wide ? 16 : 8);
 			uint32_t mw = maxwidth - old_x;
 			if(maxwidth < old_x)
 				mw = 0;
-			if(mw > g.first)
-				mw = g.first;
+			if(mw > (g.wide ? 16 : 8))
+				mw = (g.wide ? 16 : 8);
 			uint8_t* cbase = base + (y + old_y) * yo + (x + old_x) * xo;
-			if(g.second == NULL)
-				draw_blank_glyph(cbase, pitch, pbytes, g.first, mw, color,
+			if(g.data == NULL)
+				draw_blank_glyph(cbase, pitch, pbytes, (g.wide ? 16 : 8), mw, color,
 					(c == hilite_pos) ? hilite_mode : 0);
 			else
-				draw_glyph(cbase, pitch, pbytes, g.second, g.first, mw, color,
+				draw_glyph(cbase, pitch, pbytes, g.data, (g.wide ? 16 : 8), mw, color,
 					(c == hilite_pos) ? hilite_mode : 0);
 			c++;
 		}
