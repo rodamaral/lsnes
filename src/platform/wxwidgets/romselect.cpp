@@ -20,37 +20,12 @@
 #define ASK_SRAMS_BASE		(wxID_HIGHEST + 129)
 #define ASK_SRAMS_LAST		(wxID_HIGHEST + 255)
 
-#define CONTROLLERTYPES_P1 4
-#define CONTROLLERTYPES 7
-#define CNAME_NONE "None"
-#define CNAME_GAMEPAD "Gamepad"
-#define CNAME_MULTITAP "Multitap"
-#define CNAME_MOUSE "Mouse"
-#define CNAME_SUPERSCOPE "Superscope"
-#define CNAME_JUSTIFIER "Justifier"
-#define CNAME_JUSTIFIERS "2 Justifiers"
-#define TNAME_SNES "SNES"
-#define TNAME_BSX_NS "BS-X (non-slotted)"
-#define TNAME_BSX_S "BS-X (slotted)"
-#define TNAME_SUFAMITURBO "Sufami Turbo"
-#define TNAME_SGB "SGB"
-#define RNAME_AUTO "Autodetect"
-#define RNAME_NTSC "NTSC"
-#define RNAME_PAL "PAL"
-#define WNAME_SNES_MAIN "Cartridge ROM"
-#define WNAME_BS_MAIN "BS-X BIOS"
-#define WNAME_BS_SLOTA "BS FLASH"
-#define WNAME_ST_MAIN "Sufami Turbo BIOS"
-#define WNAME_ST_SLOTA "SLOT A ROM"
-#define WNAME_ST_SLOTB "SLOT B ROM"
-#define WNAME_SGB_MAIN "SGB BIOS"
-#define WNAME_SGB_SLOTA "DMG ROM"
 #define MARKUP_POSTFIX " Markup"
 
 
 void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
-#define ROMSELECT_ROM_COUNT 3
+#define ROMSELECT_ROM_COUNT 27
 
 namespace
 {
@@ -79,96 +54,56 @@ namespace
 
 	struct loaded_slot& get_rom_slot(struct loaded_rom& rom, unsigned index)
 	{
-		switch(index) {
-		case 0:		return rom.rom;
-		case 1:		return rom.rom_xml;
-		case 2:		return rom.slota;
-		case 3:		return rom.slota_xml;
-		case 4:		return rom.slotb;
-		case 5:		return rom.slotb_xml;
+		if(index >= 2 * sizeof(rom.romimg) / sizeof(rom.romimg[0]))
+			return rom.romimg[0];
+		if(index & 1)
+			return rom.romxml[index / 2];
+		else
+			return rom.romimg[index / 2];
+	}
+
+	core_region& region_from_string(core_type& rtype, const std::string& str)
+	{
+		core_region* x = NULL;
+		for(auto i : rtype.get_regions())
+			if(i->get_hname() == str)
+				return *i;
+		return *x;
+	}
+
+	unsigned populate_region_choices(std::vector<wxString>& array)
+	{
+		array.push_back(wxT("(Default)"));
+		return 1;
+	}
+
+	unsigned populate_system_choices(std::vector<wxString>& array)
+	{
+		for(auto i : core_type::get_core_types())
+			array.push_back(i->get_hname());
+		return array.size();
+	}
+
+	bool check_present_roms(core_type& rtype, unsigned flags)
+	{
+		unsigned a = 0;
+		unsigned b = 0;
+		for(size_t i = 0; i < ROMSELECT_ROM_COUNT && i < rtype.get_image_count(); i++) {
+			if((flags >> i) & 1)
+				a |= rtype.get_image_info(i).mandatory;
+			b |= rtype.get_image_info(i).mandatory;
 		}
-		return rom.rom;
+		return (a == b);
 	}
 
-	enum rom_region region_from_string(const std::string& str)
+	std::string romname(core_type& rtype, unsigned index)
 	{
-		if(str == RNAME_NTSC)
-			return REGION_NTSC;
-		if(str == RNAME_PAL)
-			return REGION_PAL;
-		return REGION_AUTO;
+		if(index >= rtype.get_image_count())
+			return "";
+		return rtype.get_image_info(index).hname;
 	}
 
-	unsigned populate_region_choices(wxString* array)
-	{
-		array[0] = wxT(RNAME_AUTO);
-		array[1] = wxT(RNAME_NTSC);
-		array[2] = wxT(RNAME_PAL);
-		return 3;
-	}
-
-	unsigned populate_system_choices(wxString* array)
-	{
-		array[0] = wxT(TNAME_SNES);
-		array[1] = wxT(TNAME_BSX_NS);
-		array[2] = wxT(TNAME_BSX_S);
-		array[3] = wxT(TNAME_SUFAMITURBO);
-		array[4] = wxT(TNAME_SGB);
-		return 5;
-	}
-
-	bool check_present_roms(enum rom_type rtype, unsigned flags)
-	{
-		switch(rtype)
-		{
-		case ROMTYPE_SNES:
-			return ((flags & 1) == 1);
-		case ROMTYPE_BSX:
-		case ROMTYPE_BSXSLOTTED:
-		case ROMTYPE_SGB:
-			return ((flags & 3) == 3);
-		case ROMTYPE_SUFAMITURBO:
-			return ((flags & 1) == 1) && ((flags & 6) != 0);
-		default:
-			return false;
-		};
-	}
-
-	std::string romname(enum rom_type rtype, unsigned index)
-	{
-		switch(rtype) {
-		case ROMTYPE_SNES:
-			switch(index) {
-			case 0:		return WNAME_SNES_MAIN;
-			};
-			break;
-		case ROMTYPE_BSX:
-		case ROMTYPE_BSXSLOTTED:
-			switch(index) {
-			case 0:		return WNAME_BS_MAIN;
-			case 1:		return WNAME_BS_SLOTA;
-			};
-			break;
-		case ROMTYPE_SUFAMITURBO:
-			switch(index) {
-			case 0:		return WNAME_ST_MAIN;
-			case 1:		return WNAME_ST_SLOTA;
-			case 2:		return WNAME_ST_SLOTB;
-			};
-			break;
-		case ROMTYPE_SGB:
-			switch(index) {
-			case 0:		return WNAME_SGB_MAIN;
-			case 1:		return WNAME_SGB_SLOTA;
-			};
-			break;
-		case ROMTYPE_NONE:
-			break;
-		}
-		return "";
-	}
-
-	unsigned romname_to_index(enum rom_type rtype, const wxString& _name)
+	unsigned romname_to_index(core_type& rtype, const wxString& _name)
 	{
 		std::string name = tostdstring(_name);
 		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
@@ -180,7 +115,7 @@ namespace
 		return 2 * ROMSELECT_ROM_COUNT;
 	}
 
-	unsigned fill_rom_names(enum rom_type rtype, std::string* array)
+	unsigned fill_rom_names(core_type& rtype, std::string* array)
 	{
 		unsigned r = 0;
 		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
@@ -191,25 +126,19 @@ namespace
 		return r;
 	}
 
-	enum rom_type romtype_from_string(const std::string& str)
+	core_type& romtype_from_string(const std::string& str)
 	{
-		if(str == TNAME_SNES)
-			return ROMTYPE_SNES;
-		if(str == TNAME_BSX_NS)
-			return ROMTYPE_BSX;
-		if(str == TNAME_BSX_S)
-			return ROMTYPE_BSXSLOTTED;
-		if(str == TNAME_SUFAMITURBO)
-			return ROMTYPE_SUFAMITURBO;
-		if(str == TNAME_SGB)
-			return ROMTYPE_SGB;
-		return ROMTYPE_NONE;
+		core_type* x = NULL;
+		for(auto i : core_type::get_core_types())
+			if(i->get_hname() == str)
+				return *i;
+		return *x;
 	}
 
 	bool has_forced_region(const std::string& str)
 	{
-		enum rom_type rtype = romtype_from_string(str);
-		return (rtype != ROMTYPE_SNES && rtype != ROMTYPE_SGB);
+		core_type& rtype = romtype_from_string(str);
+		return (rtype.get_regions().size() == 1);
 	}
 
 	class textboxloadfilename : public wxFileDropTarget
@@ -396,7 +325,6 @@ private:
 	wxButton* open_rom;
 	wxButton* quit_button;
 	std::string current_rtype;
-	std::string remembered_region;
 	void set_rtype(std::string rtype);
 };
 
@@ -465,8 +393,8 @@ wxwin_romselect::wxwin_romselect()
 	: wxFrame(NULL, wxID_ANY, wxT("Select ROM"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
-	wxString rtchoices[32];
-	wxString rrchoices[32];
+	std::vector<wxString> rtchoices;
+	std::vector<wxString> rrchoices;
 	size_t systems = populate_system_choices(rtchoices);
 	size_t regions = populate_region_choices(rrchoices);
 
@@ -483,10 +411,10 @@ wxwin_romselect::wxwin_romselect()
 	wxBoxSizer* selects = new wxBoxSizer(wxHORIZONTAL);
 	selects->Add(new wxStaticText(this, wxID_ANY, wxT("ROM type:")), 0, wxGROW);
 	selects->Add(romtype_combo = new wxComboBox(this, wxID_ANY, rtchoices[0], wxDefaultPosition, wxDefaultSize,
-		systems, rtchoices, wxCB_READONLY), 0, wxGROW);
+		systems, &rtchoices[0], wxCB_READONLY), 0, wxGROW);
 	selects->Add(new wxStaticText(this, wxID_ANY, wxT("Region:")), 0, wxGROW);
 	selects->Add(region_combo = new wxComboBox(this, wxID_ANY, rrchoices[0], wxDefaultPosition, wxDefaultSize,
-		regions, rrchoices, wxCB_READONLY), 0, wxGROW);
+		regions, &rrchoices[0], wxCB_READONLY), 0, wxGROW);
 	romtype_combo->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 		wxCommandEventHandler(wxwin_romselect::on_romtype_change), NULL, this);
 	region_combo->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
@@ -536,15 +464,14 @@ void wxwin_romselect::set_rtype(std::string rtype)
 		rtype = tostdstring(romtype_combo->GetValue());
 	if(rtype == current_rtype)
 		return;
-	if(has_forced_region(rtype)) {
+	region_combo->Clear();
+	for(auto i : romtype_from_string(rtype).get_regions())
+		region_combo->Append(i->get_hname());
+	region_combo->SetSelection(0);
+	if(has_forced_region(rtype))
 		region_combo->Disable();
-		remembered_region = tostdstring(region_combo->GetValue());
-	} else {
-		if(remembered_region != "")
-			region_combo->SetValue(towxstring(remembered_region));
-		remembered_region = "";
+	else
 		region_combo->Enable();
-	}
 	std::string tmp[ROMSELECT_ROM_COUNT];
 	unsigned c = fill_rom_names(romtype_from_string(rtype), tmp);
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
@@ -561,7 +488,7 @@ void wxwin_romselect::set_rtype(std::string rtype)
 void wxwin_romselect::on_file_change()
 {
 	bool ok = true;
-	enum rom_type rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
+	core_type& rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
 	unsigned flags = 0;
 	for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++)
 		flags |= ((slots[i]->get_filename() != "") ? (1 << i) : 0);
@@ -595,22 +522,20 @@ void wxwin_romselect::on_openapply_rom(wxCommandEvent& e, bool apply)
 {
 	rom_files rfiles;
 	rfiles.base_file = "";
-	rfiles.rtype = romtype_from_string(tostdstring(romtype_combo->GetValue()));
-	rfiles.region = region_from_string(tostdstring(region_combo->GetValue()));
-	rfiles.rom = slots[0]->get_filename();
-	rfiles.rom_xml = slots[0]->get_markup();
-	rfiles.slota = slots[1]->get_filename();
-	rfiles.slota_xml = slots[1]->get_markup();
-	rfiles.slotb = slots[2]->get_filename();
-	rfiles.slotb_xml = slots[2]->get_markup();
+	rfiles.rtype = &romtype_from_string(tostdstring(romtype_combo->GetValue()));
+	rfiles.region = &region_from_string(*rfiles.rtype, tostdstring(region_combo->GetValue()));
+	for(size_t i = 0; i < ROMSELECT_ROM_COUNT && i < sizeof(rfiles.romimg) / sizeof(rfiles.romimg[0]); i++) {
+		rfiles.romimg[i] = slots[i]->get_filename();
+		rfiles.romxml[i] = slots[i]->get_markup();
+	}
 	try {
 		our_rom = new loaded_rom(rfiles);
-		if(our_rom->slota.valid)
-			our_rom_name = our_rom->slota.sha256;
-		else if(our_rom->slotb.valid)
-			our_rom_name = our_rom->slotb.sha256;
-		else
-			our_rom_name = our_rom->rom.sha256;
+		our_rom_name = "";
+		for(size_t i = 1; i < sizeof(our_rom->romimg) / sizeof(our_rom->romimg[0]); i++)
+			if(our_rom->romimg[i].valid && our_rom_name == "")
+				our_rom_name = our_rom->romimg[i].sha256;
+		if(our_rom_name == "")
+			our_rom_name = our_rom->romimg[0].sha256;
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
@@ -631,7 +556,7 @@ wxwin_patch::wxwin_patch(loaded_rom& rom)
 	our_rom = &rom;
 	wxString targets[2 * ROMSELECT_ROM_COUNT];
 	std::string _targets[ROMSELECT_ROM_COUNT];
-	size_t _target_count = fill_rom_names(rom.rtype, _targets);
+	size_t _target_count = fill_rom_names(*rom.rtype, _targets);
 	size_t target_count = 0;
 	for(auto i = 0; i < _target_count; i++) {
 		targets[2 * i] = towxstring(_targets[i]);
@@ -749,7 +674,7 @@ void wxwin_patch::on_do_patch(wxCommandEvent& e)
 {
 	try {
 		auto patch_contents = read_file_relative(tostdstring(patchfile->GetValue()), "");
-		size_t patch_index = romname_to_index(our_rom->rtype, patch_what->GetValue());
+		size_t patch_index = romname_to_index(*our_rom->rtype, patch_what->GetValue());
 		if(patch_index > 2 * ROMSELECT_ROM_COUNT)
 			throw std::runtime_error("Internal error: Patch WHAT?");
 		loaded_slot& s = get_rom_slot(*our_rom, patch_index);
@@ -774,22 +699,19 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 	struct loaded_rom* our_rom = &rom;
 	try {
 		do_basic_core_init();
-		if(our_rom->slota.valid)
-			our_rom_name = our_rom->slota.sha256;
-		else if(our_rom->slotb.valid)
-			our_rom_name = our_rom->slotb.sha256;
-		else
-			our_rom_name = our_rom->rom.sha256;
+		our_rom_name = "";
+		for(size_t i = 1; i < sizeof(our_rom->romimg) / sizeof(our_rom->romimg[0]); i++)
+			if(our_rom->romimg[i].valid && our_rom_name == "")
+				our_rom_name = our_rom->romimg[i].sha256;
+		if(our_rom_name == "")
+			our_rom_name = our_rom->romimg[0].sha256;
 		our_rom->load();
 	} catch(std::exception& e) {
 		show_message_ok(modwin, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;
 	}
-	messages << "Detected region: " << gtype::tostring(our_rom->rtype, our_rom->region) << std::endl;
-	if(our_rom->region == REGION_PAL)
-		set_nominal_framerate(322445.0/6448.0);
-	else if(our_rom->region == REGION_NTSC)
-		set_nominal_framerate(10738636.0/178683.0);
+	messages << "Detected region: " << our_rom->rtype->combine_region(*our_rom->region).get_name() << std::endl;
+	set_nominal_framerate(our_rom->region->approx_framerate());
 
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
@@ -1028,7 +950,7 @@ struct moviefile wxwin_project::make_movie()
 {
 	moviefile f;
 	f.force_corrupt = false;
-	f.gametype = gtype::togametype(our_rom->rtype, our_rom->region);
+	f.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 	f.port1 = &get_controller_type(tostdstring(controller1type->GetValue()));
 	f.port2 = &get_controller_type(tostdstring(controller2type->GetValue()));
 	f.coreversion = bsnes_core_version;
@@ -1036,12 +958,10 @@ struct moviefile wxwin_project::make_movie()
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
 	f.projectid = get_random_hexstring(40);
 	f.rerecords = "0";
-	f.rom_sha256 = our_rom->rom.sha256;
-	f.romxml_sha256 = our_rom->rom_xml.sha256;
-	f.slota_sha256 = our_rom->slota.sha256;
-	f.slotaxml_sha256 = our_rom->slota_xml.sha256;
-	f.slotb_sha256 = our_rom->slotb.sha256;
-	f.slotbxml_sha256 = our_rom->slotb_xml.sha256;
+	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+		f.romimg_sha256[i] = our_rom->romimg[i].sha256;
+		f.romxml_sha256[i] = our_rom->romxml[i].sha256;
+	}
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {
 		std::string l = tostdstring(authors->GetLineText(i));

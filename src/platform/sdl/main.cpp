@@ -29,13 +29,11 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	movie.port2 = &porttype_info::port_default(1);
 	movie.coreversion = bsnes_core_version;
 	movie.projectid = get_random_hexstring(40);
-	movie.gametype = gtype::togametype(r.rtype, r.region);
-	movie.rom_sha256 = r.rom.sha256;
-	movie.romxml_sha256 = r.rom_xml.sha256;
-	movie.slota_sha256 = r.slota.sha256;
-	movie.slotaxml_sha256 = r.slota_xml.sha256;
-	movie.slotb_sha256 = r.slotb.sha256;
-	movie.slotbxml_sha256 = r.slotb_xml.sha256;
+	movie.gametype = &r.rtype->combine_region(*r.region);
+	for(size_t i = 0; i < sizeof(r.romimg)/sizeof(r.romimg[0]); i++) {
+		movie.romimg_sha256[i] = r.romimg[i].sha256;
+		movie.romxml_sha256[i] = r.romxml[i].sha256;
+	}
 	movie.movie_sram = load_sram_commandline(cmdline);
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 		std::string o = *i;
@@ -180,11 +178,8 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
-	if(r.region == REGION_PAL)
-		set_nominal_framerate(322445.0/6448.0);
-	else if(r.region == REGION_NTSC)
-		set_nominal_framerate(10738636.0/178683.0);
+	messages << "Detected region: " << r.rtype->combine_region(*r.region).get_name() << std::endl;
+	set_nominal_framerate(r.region->approx_framerate());
 
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();

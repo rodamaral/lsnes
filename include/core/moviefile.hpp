@@ -47,7 +47,7 @@ struct moviefile
 /**
  * What is the ROM type and region?
  */
-	gametype_t gametype;
+	core_sysregion* gametype;
 /**
  * What's in port #1?
  */
@@ -73,29 +73,13 @@ struct moviefile
  */
 	std::string rerecords;
 /**
- * SHA-256 of main ROM (empty string if none).
+ * SHA-256 of ROM (empty string if none).
  */
-	std::string rom_sha256;			//SHA-256 of main ROM.
+	std::string romimg_sha256[27];
 /**
- * SHA-256 of main ROM XML (empty string if none).
+ * SHA-256 of ROM XML (empty string if none).
  */
-	std::string romxml_sha256;		//SHA-256 of main ROM XML.
-/**
- * SHA-256 of slot A ROM (empty string if none).
- */
-	std::string slota_sha256;		//SHA-256 of SLOT A ROM.
-/**
- * SHA-256 of slot A XML (empty string if none).
- */
-	std::string slotaxml_sha256;		//SHA-256 of SLOT A XML.
-/**
- * SHA-256 of slot B ROM (empty string if none).
- */
-	std::string slotb_sha256;		//SHA-256 of SLOT B ROM.
-/**
- * SHA-256 of slot B XML (empty string if none).
- */
-	std::string slotbxml_sha256;		//SHA-256 of SLOT B XML.
+	std::string romxml_sha256[27];
 /**
  * Authors of the run, first in each pair is full name, second is nickname.
  */

@@ -51,37 +51,119 @@
 #define LOGICAL_BUTTON_TURBO 14
 #define LOGICAL_BUTTON_PAUSE 15
 
-//Set controller type to none.
-void set_core_controller_none(unsigned port) throw();
-//Set controller type to gamepad.
-void set_core_controller_gamepad(unsigned port) throw();
-//Set controller type to mouse.
-void set_core_controller_mouse(unsigned port) throw();
-//Set controller type to multitap.
-void set_core_controller_multitap(unsigned port) throw();
-//Set controller type to superscope.
-void set_core_controller_superscope(unsigned port) throw();
-//Set controller type to justifier.
-void set_core_controller_justifier(unsigned port) throw();
-//Set controller type to justifiers.
-void set_core_controller_justifiers(unsigned port) throw();
-//Button ID function for none.
-int get_button_id_none(unsigned controller, unsigned lbid) throw();
-//Button ID function for gamepad.
-int get_button_id_gamepad(unsigned controller, unsigned lbid) throw();
-//Button ID function for mouse.
-int get_button_id_mouse(unsigned controller, unsigned lbid) throw();
-//Button ID function for multitap.
-int get_button_id_multitap(unsigned controller, unsigned lbid) throw();
-//Button ID function for superscope.
-int get_button_id_superscope(unsigned controller, unsigned lbid) throw();
-//Button ID function for justifier.
-int get_button_id_justifier(unsigned controller, unsigned lbid) throw();
-//Button ID function for justifiers.
-int get_button_id_justifiers(unsigned controller, unsigned lbid) throw();
-
 namespace
 {
+	int regions_compatible(unsigned rom, unsigned run)
+	{
+		return (!rom || rom == run);
+	}
+
+	unsigned header_fn(size_t r)
+	{
+		if((r % 1024) == 512)
+			return 512;
+		else
+			return 0;
+	}
+
+	core_type* internal_rom;
+	extern core_type type_snes;
+	extern core_type type_bsx;
+	extern core_type type_bsxslotted;
+	extern core_type type_sufamiturbo;
+	extern core_type type_sgb;
+
+	int load_rom_snes(core_romimage* img)
+	{
+		bool r = snes_load_cartridge_normal(img[0].markup, img[0].data, img[0].size);
+		if(r)
+			internal_rom = &type_snes;
+		return r ? 0 : -1;
+	}
+
+	int load_rom_bsx(core_romimage* img)
+	{
+		bool r = snes_load_cartridge_bsx(img[0].markup, img[0].data, img[0].size,
+			img[1].markup, img[1].data, img[1].size);
+		if(r)
+			internal_rom = &type_bsx;
+		return r ? 0 : -1;
+	}
+
+	int load_rom_bsxslotted(core_romimage* img)
+	{
+		bool r = snes_load_cartridge_bsx_slotted(img[0].markup, img[0].data, img[0].size,
+			img[1].markup, img[1].data, img[1].size);
+		if(r)
+			internal_rom = &type_bsxslotted;
+		return r ? 0 : -1;
+	}
+
+	int load_rom_sgb(core_romimage* img)
+	{
+		bool r = snes_load_cartridge_super_game_boy(img[0].markup, img[0].data, img[0].size,
+			img[1].markup, img[1].data, img[1].size);
+		if(r)
+			internal_rom = &type_sgb;
+		return r ? 0 : -1;
+	}
+
+	int load_rom_sufamiturbo(core_romimage* img)
+	{
+		bool r = snes_load_cartridge_sufami_turbo(img[0].markup, img[0].data, img[0].size,
+			img[1].markup, img[1].data, img[1].size, img[2].markup, img[2].data, img[2].size);
+		if(r)
+			internal_rom = &type_sufamiturbo;
+		return r ? 0 : -1;
+	}
+
+	uint64_t ntsc_magic[4] = {178683, 10738636, 16639264, 596096};
+	uint64_t pal_magic[4] = {6448, 322445, 19997208, 266440};
+
+	core_region region_auto("autodetect", "Autodetect", 1, 0, true, ntsc_magic, regions_compatible);
+	core_region region_ntsc("ntsc", "NTSC", 0, 1, true, ntsc_magic, regions_compatible);
+	core_region region_pal("pal", "PAL", 0, 2, true, pal_magic, regions_compatible);
+	core_romimage_info image_snescart("rom", "Cartridge ROM", 1, header_fn);
+	core_romimage_info image_bsxbios("rom", "BS-X BIOS", 1, header_fn);
+	core_romimage_info image_bsxflash("bsx", "BS-X Flash", 2, header_fn);
+	core_romimage_info image_bsxsflash("bsxslotted", "BS-X Flash", 2, header_fn);
+	core_romimage_info image_sgbbios("rom", "SGB BIOS", 1, header_fn);
+	core_romimage_info image_dmg("dmg", "DMG ROM", 2, header_fn);
+	core_romimage_info image_stbios("rom", "ST BIOS", 1, header_fn);
+	core_romimage_info image_stslota("slot-a", "ST Slot A ROM", 2, header_fn);
+	core_romimage_info image_stslotb("slot-b", "ST Slot B ROM", 2, header_fn);
+	core_type type_snes("snes", "SNES", load_rom_snes);
+	core_type type_bsx("bsx", "BS-X (non-slotted)", load_rom_bsx);
+	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", load_rom_bsxslotted);
+	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", load_rom_sufamiturbo);
+	core_type type_sgb("sgb", "Super Game Boy", load_rom_sgb);
+	core_type_region_bind bind_A(type_snes, region_auto);
+	core_type_region_bind bind_B(type_snes, region_ntsc);
+	core_type_region_bind bind_C(type_snes, region_pal);
+	core_type_region_bind bind_D(type_bsx, region_ntsc);
+	core_type_region_bind bind_E(type_bsxslotted, region_ntsc);
+	core_type_region_bind bind_F(type_sufamiturbo, region_ntsc);
+	core_type_region_bind bind_G(type_sgb, region_auto);
+	core_type_region_bind bind_H(type_sgb, region_ntsc);
+	core_type_region_bind bind_I(type_sgb, region_pal);
+	core_type_image_bind bind_J(type_snes, image_snescart, 0);
+	core_type_image_bind bind_K(type_bsx, image_bsxbios, 0);
+	core_type_image_bind bind_L(type_bsx, image_bsxflash, 1);
+	core_type_image_bind bind_M(type_bsxslotted, image_bsxbios, 0);
+	core_type_image_bind bind_N(type_bsxslotted, image_bsxsflash, 1);
+	core_type_image_bind bind_O(type_sufamiturbo, image_stbios, 0);
+	core_type_image_bind bind_P(type_sufamiturbo, image_stslota, 1);
+	core_type_image_bind bind_Q(type_sufamiturbo, image_stslotb, 2);
+	core_type_image_bind bind_R(type_sgb, image_sgbbios, 0);
+	core_type_image_bind bind_S(type_sgb, image_dmg, 1);
+	core_sysregion sr1("snes_ntsc", type_snes, region_ntsc);
+	core_sysregion sr2("snes_pal", type_snes, region_pal);
+	core_sysregion sr3("bsx", type_bsx, region_ntsc);
+	core_sysregion sr4("bsxslotted", type_bsxslotted, region_ntsc);
+	core_sysregion sr5("sufamiturbo", type_sufamiturbo, region_ntsc);
+	core_sysregion sr6("sgb_ntsc", type_sgb, region_ntsc);
+	core_sysregion sr7("sgb_pal", type_sgb, region_pal);
+
 	bool last_hires = false;
 	bool last_interlace = false;
 	bool stepping_into_save;
@@ -91,7 +173,6 @@ namespace
 	unsigned long long delayreset_cycles_target;
 	
 	bool p1disable = false;
-	unsigned internal_rom = ROM_TYPE_NONE;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
 	const char* buttonnames[] = {
@@ -242,7 +323,7 @@ namespace
 		{
 			last_hires = hires;
 			last_interlace = interlace;
-			bool region = core_get_region();
+			bool region = (&core_get_region() == &region_pal);
 			if(stepping_into_save)
 				messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 			video_refresh_done = true;
@@ -289,6 +370,146 @@ namespace
 			return ecore_callbacks->get_input(port ? 1 : 0, index, id);
 		}
 	};
+
+	void set_core_controller_generic(unsigned port, unsigned id, bool p2only)
+	{
+		if(port > 1)
+			return;
+		if(port == 1)
+			snes_set_controller_port_device(true, id);
+		if(port == 0) {
+			snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : id);
+			p1disable = p2only;
+		}
+	}
+
+	void set_core_controller_none(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_NONE, false);
+	}
+
+	void set_core_controller_gamepad(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
+	}
+
+	void set_core_controller_mouse(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_MOUSE, false);
+	}
+
+	void set_core_controller_multitap(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
+	}
+
+	void set_core_controller_superscope(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_SUPER_SCOPE, true);
+	}
+
+	void set_core_controller_justifier(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIER, true);
+	}
+
+	void set_core_controller_justifiers(unsigned port) throw()
+	{
+		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIERS, true);
+	}
+
+	int get_button_id_none(unsigned controller, unsigned lbid) throw()
+	{
+		return -1;
+	}
+
+	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 0)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+		case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+		case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
+		case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+		case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+		case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+		case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+		case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+		default:			return -1;
+		}
+	}
+
+	int get_button_id_mouse(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 0)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
+		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
+		default:			return -1;
+		}
+	}
+
+	int get_button_id_multitap(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 3)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
+		case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
+		case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
+		case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
+		case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
+		case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
+		case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
+		case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
+		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
+		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
+		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
+		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+		default:			return -1;
+		}
+	}
+
+	int get_button_id_superscope(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 0)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
+		case LOGICAL_BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
+		case LOGICAL_BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
+		case LOGICAL_BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
+		default:			return -1;
+		}
+	}
+
+	int get_button_id_justifier(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 0)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+		case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+		default:			return -1;
+		}
+	}
+
+	int get_button_id_justifiers(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller > 1)
+			return -1;
+		switch(lbid) {
+		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
+		case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
+		default:			return -1;
+		}
+	}
 
 	struct porttype_gamepad : public porttype_info
 	{
@@ -447,6 +668,13 @@ namespace
 	SNES::Interface* old;
 }
 
+std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
+{
+	if(lbid >= sizeof(buttonnames) / sizeof(buttonnames[0]))
+		return "";
+	return buttonnames[lbid];
+}
+
 void core_install_handler()
 {
 	old = SNES::interface;
@@ -516,208 +744,23 @@ void set_preload_settings()
 	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 }
 
-void set_core_controller_generic(unsigned port, unsigned id, bool p2only)
+core_region& core_get_region()
 {
-	if(port > 1)
-		return;
-	if(port == 1)
-		snes_set_controller_port_device(true, id);
-	if(port == 0) {
-		snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : id);
-		p1disable = p2only;
-	}
-}
-
-void set_core_controller_none(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_NONE, false);
-}
-
-void set_core_controller_gamepad(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
-}
-
-void set_core_controller_mouse(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_MOUSE, false);
-}
-
-void set_core_controller_multitap(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
-}
-
-void set_core_controller_superscope(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_SUPER_SCOPE, true);
-}
-
-void set_core_controller_justifier(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_JUSTIFIER, true);
-}
-
-void set_core_controller_justifiers(unsigned port) throw()
-{
-	set_core_controller_generic(port, SNES_DEVICE_JUSTIFIERS, true);
-}
-
-int get_button_id_none(unsigned controller, unsigned lbid) throw()
-{
-	return -1;
-}
-
-int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 0)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-	case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-	case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-	case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-	case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-	case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-	case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-	case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-	case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-	case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-	case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-	case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
-	default:			return -1;
-	}
-}
-
-int get_button_id_mouse(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 0)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
-	case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
-	default:			return -1;
-	}
-}
-
-int get_button_id_multitap(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 3)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-	case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-	case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-	case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-	case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-	case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-	case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-	case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-	case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-	case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-	case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-	case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
-	default:			return -1;
-	}
-}
-
-int get_button_id_superscope(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 0)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_SUPER_SCOPE_TRIGGER;
-	case LOGICAL_BUTTON_CURSOR:	return SNES_DEVICE_ID_SUPER_SCOPE_CURSOR;
-	case LOGICAL_BUTTON_TURBO:	return SNES_DEVICE_ID_SUPER_SCOPE_TURBO;
-	case LOGICAL_BUTTON_PAUSE:	return SNES_DEVICE_ID_SUPER_SCOPE_PAUSE;
-	default:			return -1;
-	}
-}
-
-int get_button_id_justifier(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 0)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
-	case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
-	default:			return -1;
-	}
-}
-
-int get_button_id_justifiers(unsigned controller, unsigned lbid) throw()
-{
-	if(controller > 1)
-		return -1;
-	switch(lbid) {
-	case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
-	case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
-	default:			return -1;
-	}
-}
-
-std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
-{
-	if(lbid >= sizeof(buttonnames) / sizeof(buttonnames[0]))
-		return "";
-	return buttonnames[lbid];
-}
-
-bool core_get_region()
-{
-	bool r = (SNES::system.region() == SNES::System::Region::PAL);
-	return r;
-}
-
-bool core_load_cartridge_normal(const char* rom_markup, const unsigned char* rom, size_t romsize)
-{
-	bool r = snes_load_cartridge_normal(rom_markup, rom, romsize);
-	if(r)
-		internal_rom = ROM_TYPE_SNES;
-	return r;
-}
-
-bool core_load_cartridge_bsx(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize)
-{
-	bool r = snes_load_cartridge_bsx(bios_markup, bios, biossize, rom_markup, rom, romsize);
-	if(r)
-		internal_rom = ROM_TYPE_BSX;
-	return r;
-}
-
-bool core_load_cartridge_bsx_slotted(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize)
-{
-	bool r = snes_load_cartridge_bsx_slotted(bios_markup, bios, biossize, rom_markup, rom, romsize);
-	if(r)
-		internal_rom = ROM_TYPE_BSXSLOTTED;
-	return r;
-}
-
-bool core_load_cartridge_super_game_boy(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize)
-{
-	bool r = snes_load_cartridge_super_game_boy(bios_markup, bios, biossize, rom_markup, rom, romsize);
-	if(r)
-		internal_rom = ROM_TYPE_SGB;
-	return r;
-}
-
-bool core_load_cartridge_sufami_turbo(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* romA_markup, const unsigned char* romA, size_t romAsize, const char* romB_markup,
-	const unsigned char* romB, size_t romBsize)
-{
-	bool r = snes_load_cartridge_sufami_turbo(bios_markup, bios, biossize, romA_markup, romA, romAsize,
-		romB_markup, romB, romBsize);
-	if(r)
-		internal_rom = ROM_TYPE_SUFAMITURBO;
-	return r;
+	if(SNES::system.region() == SNES::System::Region::PAL)
+		return region_pal;
+	else
+		return region_ntsc;
 }
 
 void core_power()
 {
 	snes_power();
+}
+
+void core_unload_cartridge()
+{
+	snes_term();
+	snes_unload_cartridge();
 }
 
 //Get the current video rate.
@@ -774,13 +817,14 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 			messages << "WARNING: SRAM '" << i.first << ": Not found on cartridge." << std::endl;
 }
 
-void core_set_region(int region)
+bool core_set_region(core_region& region)
 {
-	switch(region) {
-	case EC_REGION_AUTO:	SNES::config.region = SNES::System::Region::Autodetect;	break;
-	case EC_REGION_NTSC:	SNES::config.region = SNES::System::Region::NTSC;	break;
-	case EC_REGION_PAL:	SNES::config.region = SNES::System::Region::PAL;	break;
-	}
+	if(&region == &region_auto)		SNES::config.region = SNES::System::Region::Autodetect;
+	else if(&region == &region_ntsc)	SNES::config.region = SNES::System::Region::NTSC;
+	else if(&region == &region_pal)		SNES::config.region = SNES::System::Region::PAL;
+	else
+		return false;
+	return true;
 }
 
 void core_serialize(std::vector<char>& out)
@@ -835,7 +879,7 @@ void core_runtosave()
 std::list<vma_info> get_vma_list()
 {
 	std::list<vma_info> ret;
-	if(internal_rom == ROM_TYPE_NONE)
+	if(!internal_rom)
 		return ret;
 	create_region(ret, "WRAM", 0x007E0000, SNES::cpu.wram, 131072, false);
 	create_region(ret, "APURAM", 0x00000000, SNES::smp.apuram, 65536, false);
@@ -860,27 +904,21 @@ std::list<vma_info> get_vma_list()
 	map_internal(ret, "PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
 	map_internal(ret, "SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
 	map_internal(ret, "DSP_STATE", 3, &SNES::dsp, sizeof(SNES::dsp));
-	switch(internal_rom) {
-	case ROM_TYPE_BSX:
-	case ROM_TYPE_BSXSLOTTED:
+	if(internal_rom == &type_bsx || internal_rom == &type_bsxslotted) {
 		create_region(ret, "BSXFLASH", 0x90000000, SNES::bsxflash.memory, true);
 		create_region(ret, "BSX_RAM", 0x20000000, SNES::bsxcartridge.sram, false);
 		create_region(ret, "BSX_PRAM", 0x30000000, SNES::bsxcartridge.psram, false);
-		break;
-	case ROM_TYPE_SUFAMITURBO:
+	}
+	if(internal_rom == &type_sufamiturbo) {
 		create_region(ret, "SLOTA_ROM", 0x90000000, SNES::sufamiturbo.slotA.rom, true);
 		create_region(ret, "SLOTB_ROM", 0xA0000000, SNES::sufamiturbo.slotB.rom, true);
 		create_region(ret, "SLOTA_RAM", 0x20000000, SNES::sufamiturbo.slotA.ram, false);
 		create_region(ret, "SLOTB_RAM", 0x30000000, SNES::sufamiturbo.slotB.ram, false);
-		break;
-	case ROM_TYPE_SGB:
+	}
+	if(internal_rom == &type_sgb) {
 		create_region(ret, "GBROM", 0x90000000, GameBoy::cartridge.romdata, GameBoy::cartridge.romsize, true);
 		create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
-		break;
-	case ROM_TYPE_SNES:
-	case ROM_TYPE_NONE:
-		break;
-	};
+	}
 	return ret;
 }
 

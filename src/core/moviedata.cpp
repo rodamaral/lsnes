@@ -220,12 +220,10 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.prefix = sanitize_prefix(mprefix.prefix);
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
-		our_movie.rom_sha256 = our_rom->rom.sha256;
-		our_movie.romxml_sha256 = our_rom->rom_xml.sha256;
-		our_movie.slota_sha256 = our_rom->slota.sha256;
-		our_movie.slotaxml_sha256 = our_rom->slota_xml.sha256;
-		our_movie.slotb_sha256 = our_rom->slotb.sha256;
-		our_movie.slotbxml_sha256 = our_rom->slotb_xml.sha256;
+		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+			our_movie.romimg_sha256[i] = our_rom->romimg[i].sha256;
+			our_movie.romxml_sha256[i] = our_rom->romxml[i].sha256;
+		}
 		our_movie.savestate = save_core_state();
 		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
@@ -306,13 +304,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
-	if(gtype::toromtype(_movie.gametype) != our_rom->rtype) {
-		messages << "_movie.gametype = " << _movie.gametype << std::endl;
-		messages << "gtype::toromtype(_movie.gametype) = " << gtype::toromtype(_movie.gametype) << std::endl;
-		messages << "our_rom->rtype = " << our_rom->rtype << std::endl;
+	if(&(_movie.gametype->get_type()) != our_rom->rtype)
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
-	}
-	if(gtype::toromregion(_movie.gametype) != our_rom->orig_region && our_rom->orig_region != REGION_AUTO)
+	if(!our_rom->orig_region->compatible_with(_movie.gametype->get_region()))
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
 
 	if(_movie.coreversion != bsnes_core_version) {
@@ -328,12 +322,12 @@ void do_load_state(struct moviefile& _movie, int lmode)
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
 	bool rom_ok = true;
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.rom_sha256, our_rom->rom, "ROM #1", will_load_state);
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256, our_rom->rom_xml, "XML #1", will_load_state);
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.slota_sha256, our_rom->slota, "ROM #2", will_load_state);
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotaxml_sha256, our_rom->slota_xml, "XML #2", will_load_state);
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotb_sha256, our_rom->slotb, "ROM #3", will_load_state);
-	rom_ok = rom_ok & warn_hash_mismatch(_movie.slotbxml_sha256, our_rom->slotb_xml, "XML #3", will_load_state);
+	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+		rom_ok = rom_ok & warn_hash_mismatch(_movie.romimg_sha256[i], our_rom->romimg[i],
+			(stringfmt() << "ROM #" << (i + 1)).str(), will_load_state);
+		rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256[i], our_rom->romxml[i],
+			(stringfmt() << "XML #" << (i + 1)).str(), will_load_state);
+	}
 	if(!rom_ok)
 		throw std::runtime_error("Incorrect ROM");
 
@@ -354,7 +348,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	rrdata::read(_movie.c_rrdata);
 	rrdata::add_internal();
 	try {
-		our_rom->region = gtype::toromregion(_movie.gametype);
+		our_rom->region = &(_movie.gametype->get_region());
 		random_seed_value = _movie.rtc_second;
 		our_rom->load();
 
@@ -407,40 +401,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
-	messages << "ROM Type ";
-	switch(our_rom->rtype) {
-	case ROMTYPE_SNES:
-		messages << "SNES";
-		break;
-	case ROMTYPE_BSX:
-		messages << "BS-X";
-		break;
-	case ROMTYPE_BSXSLOTTED:
-		messages << "BS-X slotted";
-		break;
-	case ROMTYPE_SUFAMITURBO:
-		messages << "Sufami Turbo";
-		break;
-	case ROMTYPE_SGB:
-		messages << "Super Game Boy";
-		break;
-	default:
-		messages << "Unknown";
-		break;
-	}
-	messages << " region ";
-	switch(our_rom->region) {
-	case REGION_PAL:
-		messages << "PAL";
-		break;
-	case REGION_NTSC:
-		messages << "NTSC";
-		break;
-	default:
-		messages << "Unknown";
-		break;
-	}
-	messages << std::endl;
+	messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()
+		<< std::endl;
 	uint64_t mlength = _movie.get_movie_length();
 	{
 		mlength += 999999;

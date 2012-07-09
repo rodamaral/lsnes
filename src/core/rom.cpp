@@ -39,156 +39,26 @@
 #define SGB_PAL "sgb_pal"
 #define SGB_NTSC "sgb_ntsc"
 
-std::string gtype::tostring(rom_type rtype, rom_region region) throw(std::bad_alloc, std::runtime_error)
-{
-	switch(rtype) {
-	case ROMTYPE_SNES:
-		switch(region) {
-		case REGION_AUTO:	return "snes";
-		case REGION_NTSC:	return "snes_ntsc";
-		case REGION_PAL:	return "snes_pal";
-		};
-	case ROMTYPE_SGB:
-		switch(region) {
-		case REGION_AUTO:	return "sgb";
-		case REGION_NTSC:	return "sgb_ntsc";
-		case REGION_PAL:	return "sgb_pal";
-		};
-	case ROMTYPE_BSX:		return "bsx";
-	case ROMTYPE_BSXSLOTTED:	return "bsxslotted";
-	case ROMTYPE_SUFAMITURBO:	return "sufamiturbo";
-	default:			throw std::runtime_error("tostring: ROMTYPE_NONE");
-	};
-}
+/**
+ * Recognize the slot this ROM goes to.
+ *
+ * parameter major: The major type.
+ * parameter romname: Name of the ROM type.
+ * returns: Even if this is main rom, odd if XML. 0/1 for main slot, 2/3 for slot A, 4/5 for slot B. -1 if not valid
+ *	rom type.
+ * throws std::bad_alloc: Not enough memory
+ */
+int recognize_commandline_rom(core_type& major, const std::string& romname) throw(std::bad_alloc);
 
-std::string gtype::tostring(gametype_t gametype) throw(std::bad_alloc, std::runtime_error)
-{
-	switch(gametype) {
-	case GT_SNES_NTSC:		return "snes_ntsc";
-	case GT_SNES_PAL:		return "snes_pal";
-	case GT_SGB_NTSC:		return "sgb_ntsc";
-	case GT_SGB_PAL:		return "sgb_pal";
-	case GT_BSX:			return "bsx";
-	case GT_BSX_SLOTTED:		return "bsxslotted";
-	case GT_SUFAMITURBO:		return "sufamiturbo";
-	default:			throw std::runtime_error("tostring: GT_INVALID");
-	};
-}
-
-gametype_t gtype::togametype(rom_type rtype, rom_region region) throw(std::bad_alloc, std::runtime_error)
-{
-	switch(rtype) {
-	case ROMTYPE_SNES:
-		switch(region) {
-		case REGION_AUTO:	return GT_SGB_NTSC;
-		case REGION_NTSC:	return GT_SNES_NTSC;
-		case REGION_PAL:	return GT_SNES_PAL;
-		};
-	case ROMTYPE_SGB:
-		switch(region) {
-		case REGION_AUTO:	return GT_SGB_NTSC;
-		case REGION_NTSC:	return GT_SGB_NTSC;
-		case REGION_PAL:	return GT_SGB_PAL;
-		};
-	case ROMTYPE_BSX:		return GT_BSX;
-	case ROMTYPE_BSXSLOTTED:	return GT_BSX_SLOTTED;
-	case ROMTYPE_SUFAMITURBO:	return GT_SUFAMITURBO;
-	default:			throw std::runtime_error("togametype: ROMTYPE_NONE");
-	};
-}
-
-gametype_t gtype::togametype(const std::string& gametype) throw(std::bad_alloc, std::runtime_error)
-{
-	if(gametype == "snes_ntsc")
-		return GT_SNES_NTSC;
-	if(gametype == "snes_pal")
-		return GT_SNES_PAL;
-	if(gametype == "sgb_ntsc")
-		return GT_SGB_NTSC;
-	if(gametype == "sgb_pal")
-		return GT_SGB_PAL;
-	if(gametype == "bsx")
-		return GT_BSX;
-	if(gametype == "bsxslotted")
-		return GT_BSX_SLOTTED;
-	if(gametype == "sufamiturbo")
-		return GT_SUFAMITURBO;
-	throw std::runtime_error("Unknown game type '" + gametype + "'");
-}
-
-rom_type gtype::toromtype(const std::string& gametype) throw(std::bad_alloc, std::runtime_error)
-{
-	if(gametype == "snes_ntsc")
-		return ROMTYPE_SNES;
-	if(gametype == "snes_pal")
-		return ROMTYPE_SNES;
-	if(gametype == "snes")
-		return ROMTYPE_SNES;
-	if(gametype == "sgb_ntsc")
-		return ROMTYPE_SGB;
-	if(gametype == "sgb_pal")
-		return ROMTYPE_SGB;
-	if(gametype == "sgb")
-		return ROMTYPE_SGB;
-	if(gametype == "bsx")
-		return ROMTYPE_BSX;
-	if(gametype == "bsxslotted")
-		return ROMTYPE_BSXSLOTTED;
-	if(gametype == "sufamiturbo")
-		return ROMTYPE_SUFAMITURBO;
-	throw std::runtime_error("Unknown game type '" + gametype + "'");
-}
-
-rom_type gtype::toromtype(gametype_t gametype) throw()
-{
-	switch(gametype) {
-	case GT_SNES_NTSC:		return ROMTYPE_SNES;
-	case GT_SNES_PAL:		return ROMTYPE_SNES;
-	case GT_SGB_NTSC:		return ROMTYPE_SGB;
-	case GT_SGB_PAL:		return ROMTYPE_SGB;
-	case GT_BSX:			return ROMTYPE_BSX;
-	case GT_BSX_SLOTTED:		return ROMTYPE_BSXSLOTTED;
-	case GT_SUFAMITURBO:		return ROMTYPE_SUFAMITURBO;
-	case GT_INVALID:		throw std::runtime_error("toromtype: GT_INVALID");
-	};
-}
-
-rom_region gtype::toromregion(const std::string& gametype) throw(std::bad_alloc, std::runtime_error)
-{
-	if(gametype == "snes_ntsc")
-		return REGION_NTSC;
-	if(gametype == "snes_pal")
-		return REGION_PAL;
-	if(gametype == "snes")
-		return REGION_AUTO;
-	if(gametype == "sgb_ntsc")
-		return REGION_NTSC;
-	if(gametype == "sgb_pal")
-		return REGION_PAL;
-	if(gametype == "sgb")
-		return REGION_AUTO;
-	if(gametype == "bsx")
-		return REGION_NTSC;
-	if(gametype == "bsxslotted")
-		return REGION_NTSC;
-	if(gametype == "sufamiturbo")
-		return REGION_NTSC;
-	throw std::runtime_error("Unknown game type '" + gametype + "'");
-}
-
-rom_region gtype::toromregion(gametype_t gametype) throw()
-{
-	switch(gametype) {
-	case GT_SNES_NTSC:		return REGION_NTSC;
-	case GT_SNES_PAL:		return REGION_PAL;
-	case GT_SGB_NTSC:		return REGION_NTSC;
-	case GT_SGB_PAL:		return REGION_PAL;
-	case GT_BSX:			return REGION_NTSC;
-	case GT_BSX_SLOTTED:		return REGION_NTSC;
-	case GT_SUFAMITURBO:		return REGION_NTSC;
-	case GT_INVALID:		throw std::runtime_error("toromregion: GT_INVALID");
-	};
-}
+/**
+ * Recognize major type from flags.
+ *
+ * parameter flags: Flags telling what ROM parameters are present.
+ * returns: The recognzed major type.
+ * throws std::bad_alloc: Not enough memory
+ * throws std::runtime_error: Illegal flags.
+ */
+core_type& recognize_platform(const std::set<std::string>& present) throw(std::bad_alloc, std::runtime_error);
 
 
 namespace
@@ -201,13 +71,8 @@ namespace
 		return false;
 	}
 
-	const char* romtypes_to_recognize[] = {
-		"rom", "bsx", "bsxslotted", "dmg", "slot-a", "slot-b",
-		"rom-xml", "bsx-xml", "bsxslotted-xml", "dmg-xml", "slot-a-xml", "slot-b-xml"
-	};
-
-	enum rom_type current_rom_type = ROMTYPE_NONE;
-	enum rom_region current_region = REGION_NTSC;
+	core_type* current_rom_type = NULL;
+	core_region* current_region = NULL;
 
 	std::string findoption(const std::vector<std::string>& cmdline, const std::string& option)
 	{
@@ -226,6 +91,21 @@ namespace
 		return value;
 	}
 
+	std::set<std::string> find_present_roms(const std::vector<std::string>& cmdline)
+	{
+		std::set<std::string> p;
+		std::set<core_type*> types = core_type::get_core_types();
+		for(auto i : types) {
+			for(unsigned j = 0; j < i->get_image_count(); j++) {
+				std::string iname = i->get_image_info(j).iname;
+				if(findoption(cmdline, iname) != "")
+					p.insert(iname);
+				if(findoption(cmdline, iname + "-xml") != "")
+					p.insert(iname + "-xml");
+			}
+		}
+		return p;
+	}
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
@@ -288,159 +168,128 @@ void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(st
 
 rom_files::rom_files() throw()
 {
-	rtype = ROMTYPE_NONE;
-	region = REGION_AUTO;
-
+	rtype = NULL;
+	region = NULL;
 }
 
 rom_files::rom_files(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error)
 {
-	rom = rom_xml = slota = slota_xml = slotb = slotb_xml = "";
-	std::string arr[sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0])];
-	unsigned long flags = 0;
-	for(size_t i = 0; i < sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0]); i++) {
-		arr[i] = findoption(cmdline, romtypes_to_recognize[i]);
-		if(arr[i] != "")
-			flags |= (1L << i);
+	for(size_t i = 0; i < sizeof(romimg) / sizeof(romimg[0]); i++) {
+		romimg[i] = "";
+		romxml[i] = "";
 	}
-	rtype = recognize_platform(flags);
-	for(size_t i = 0; i < sizeof(romtypes_to_recognize) / sizeof(romtypes_to_recognize[0]); i++) {
-		if(arr[i] != "")
-			switch(recognize_commandline_rom(rtype, romtypes_to_recognize[i])) {
-			case 0:		rom = arr[i];		break;
-			case 1:		rom_xml = arr[i];	break;
-			case 2:		slota = arr[i];		break;
-			case 3:		slota_xml = arr[i];	break;
-			case 4:		slotb = arr[i];		break;
-			case 5:		slotb_xml = arr[i];	break;
-			};
-	}
-	region = (rtype == ROMTYPE_SGB || rtype == ROMTYPE_SNES) ? REGION_AUTO : REGION_NTSC;
-	if(option_set(cmdline, "--ntsc"))
-		region = REGION_NTSC;
-	else if(option_set(cmdline, "--pal"))
-		region = REGION_PAL;
 
+	auto opts = find_present_roms(cmdline);
+	rtype = &recognize_platform(opts);
+	for(auto i : opts) {
+		std::string o = findoption(cmdline, i);
+		if(o != "") {
+			int j = recognize_commandline_rom(*rtype, i);
+			if(j >= 0 && j & 1)
+				romxml[j / 2] = o;
+			else if(j >= 0)
+				romimg[j / 2] = o;
+		}
+	}
+	region = &rtype->get_preferred_region();
+	std::string _region = findoption(cmdline, "region");
+	if(_region != "") {
+		bool isset = false;
+		for(auto i : rtype->get_regions()) {
+			if(i->get_iname() == _region) {
+				region = i;
+				isset = true;
+			}
+		}
+		if(!isset)
+			throw std::runtime_error("Unknown region for system type");
+	}
 	base_file = "";
 }
 
 void rom_files::resolve_relative() throw(std::bad_alloc, std::runtime_error)
 {
-	rom = resolve_file_relative(rom, base_file);
-	rom_xml = resolve_file_relative(rom_xml, base_file);
-	slota = resolve_file_relative(slota, base_file);
-	slota_xml = resolve_file_relative(slota_xml, base_file);
-	slotb = resolve_file_relative(slotb, base_file);
-	slotb_xml = resolve_file_relative(slotb_xml, base_file);
+	for(size_t i = 0; i < sizeof(romimg)/sizeof(romimg[0]); i++) {
+		romimg[i] = resolve_file_relative(romimg[i], base_file);
+		romxml[i] = resolve_file_relative(romxml[i], base_file);
+	}
 	base_file = "";
 }
 
 
-std::pair<enum rom_type, enum rom_region> get_current_rom_info() throw()
+std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {
 	return std::make_pair(current_rom_type, current_region);
 }
 
 loaded_rom::loaded_rom() throw()
 {
-	rtype = ROMTYPE_NONE;
-	region = orig_region = REGION_AUTO;
+	rtype = NULL;
+	region = orig_region = NULL;
 }
 
 loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtime_error)
 {
-	std::string _slota = files.slota;
-	std::string _slota_xml = files.slota_xml;
-	std::string _slotb = files.slotb;
-	std::string _slotb_xml = files.slotb_xml;
-	if(files.rtype == ROMTYPE_NONE) {
-		rtype = ROMTYPE_NONE;
+	std::string cromimg[sizeof(files.romimg)/sizeof(files.romimg[0])];
+	std::string cromxml[sizeof(files.romimg)/sizeof(files.romimg[0])];
+	for(size_t i = 0; i < sizeof(files.romimg)/sizeof(files.romimg[0]); i++) {
+		cromimg[i] = files.romimg[i];
+		cromxml[i] = files.romxml[i];
+	}
+	if(!files.rtype) {
+		rtype = NULL;
 		region = orig_region = files.region;
 		return;
 	}
-	if((_slota != "" || _slota_xml != "") && files.rtype == ROMTYPE_SNES) {
-		messages << "WARNING: SNES takes only 1 ROM image" << std::endl;
-		_slota = "";
-		_slota_xml = "";
+	for(size_t i = 0; i < sizeof(files.romimg)/sizeof(files.romimg[0]); i++) {
+		if((cromimg[i] != "" || cromxml[i] != "") && i > rtype->get_image_count()) {
+			messages << "Warning: ROM slot #" << (i + 1) << " is not used for this console" << std::endl;
+			cromimg[i] = "";
+			cromxml[i] = "";
+		}
+		if(cromimg[i] == "" && cromxml[i] != "") {
+			messages << "WARNING: " << name_subrom(*files.rtype, 2 * i + 1) << " specified without " 
+				<< "corresponding " << name_subrom(*files.rtype, 2 * i + 0) << std::endl;
+			cromxml[i] = "";
+		}
 	}
-	if((_slotb != "" || _slotb_xml != "") && files.rtype != ROMTYPE_SUFAMITURBO) {
-		messages << "WARNING: Only Sufami Turbo takes 3 ROM images" << std::endl;
-		_slotb = "";
-		_slotb_xml = "";
-	}
-	if(files.rom_xml != "" && files.rom == "")
-		messages << "WARNING: " << name_subrom(files.rtype, 0) << " specified without corresponding "
-			<< name_subrom(files.rtype, 1) << std::endl;
-	if(_slota_xml != "" && _slota == "")
-		messages << "WARNING: " << name_subrom(files.rtype, 2) << " specified without corresponding "
-			<< name_subrom(files.rtype, 3) << std::endl;
-	if(_slotb_xml != "" && _slotb == "")
-		messages << "WARNING: " << name_subrom(files.rtype, 4) << " specified without corresponding "
-			<< name_subrom(files.rtype, 5) << std::endl;
 
 	rtype = files.rtype;
-	rom = loaded_slot(files.rom, files.base_file, false);
-	rom_xml = loaded_slot(files.rom_xml, files.base_file, true);
-	slota = loaded_slot(_slota, files.base_file, false);
-	slota_xml = loaded_slot(_slota_xml, files.base_file, true);
-	slotb = loaded_slot(_slotb, files.base_file, false);
-	slotb_xml = loaded_slot(_slotb_xml, files.base_file, true);
+	for(size_t i = 0; i < sizeof(romimg) / sizeof(romimg[0]); i++) {
+		romimg[i] = loaded_slot(cromimg[i], files.base_file, false);
+		romxml[i] = loaded_slot(cromxml[i], files.base_file, true);
+	}
 	orig_region = region = files.region;
-	if(files.rtype == ROMTYPE_SNES)
-		msu1_base = resolve_file_relative(files.rom, files.base_file);
+	if(cromimg[1] != "")
+		msu1_base = resolve_file_relative(cromimg[1], files.base_file);
 	else
-		msu1_base = resolve_file_relative(_slota, files.base_file);
+		msu1_base = resolve_file_relative(cromimg[0], files.base_file);
 }
 
 void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 {
-	current_rom_type = ROMTYPE_NONE;
-	if(region == REGION_AUTO && orig_region != REGION_AUTO)
-		region = orig_region;
-	if(region != orig_region && orig_region != REGION_AUTO)
-		throw std::runtime_error("Trying to force incompatible region");
-	if(rtype == ROMTYPE_NONE)
+	if(!rtype)
 		throw std::runtime_error("Can't insert cartridge of type NONE!");
-	switch(region) {
-	case REGION_AUTO:	core_set_region(EC_REGION_AUTO);	break;
-	case REGION_NTSC:	core_set_region(EC_REGION_NTSC);	break;
-	case REGION_PAL:	core_set_region(EC_REGION_PAL);		break;
-	default:
+	current_rom_type = NULL;
+	if(!orig_region)
+		orig_region = &rtype->get_preferred_region();
+	if(!region)
+		region = orig_region;
+	if(!orig_region->compatible_with(*region))
+		throw std::runtime_error("Trying to force incompatible region");
+	if(!core_set_region(*region))
 		throw std::runtime_error("Trying to force unknown region");
+
+	core_romimage images[sizeof(romimg)/sizeof(romimg[0])];
+	for(size_t i = 0; i < sizeof(romimg)/sizeof(romimg[0]); i++) {
+		images[i].markup = (const char*)romxml[i];
+		images[i].data = (const unsigned char*)romimg[i];
+		images[i].size = (size_t)romimg[i];
 	}
-	switch(rtype) {
-	case ROMTYPE_SNES:
-		if(!core_load_cartridge_normal(rom_xml, rom, rom))
-			throw std::runtime_error("Can't load cartridge ROM");
-		break;
-	case ROMTYPE_BSX:
-		if(region == REGION_PAL)
-			throw std::runtime_error("BSX can't be PAL");
-		if(!core_load_cartridge_bsx(rom_xml, rom, rom, slota_xml, slota, slota))
-			throw std::runtime_error("Can't load cartridge ROM");
-		break;
-	case ROMTYPE_BSXSLOTTED:
-		if(region == REGION_PAL)
-			throw std::runtime_error("Slotted BSX can't be PAL");
-		if(!core_load_cartridge_bsx_slotted(rom_xml, rom, rom, slota_xml, slota, slota))
-			throw std::runtime_error("Can't load cartridge ROM");
-		break;
-	case ROMTYPE_SGB:
-		if(!core_load_cartridge_super_game_boy(rom_xml, rom, rom, slota_xml, slota, slota))
-			throw std::runtime_error("Can't load cartridge ROM");
-		break;
-	case ROMTYPE_SUFAMITURBO:
-		if(region == REGION_PAL)
-			throw std::runtime_error("Sufami Turbo can't be PAL");
-		if(!core_load_cartridge_sufami_turbo(rom_xml, rom, rom, slota_xml, slota, slota, slotb_xml, slotb,
-			slotb))
-			throw std::runtime_error("Can't load cartridge ROM");
-		break;
-	default:
-		throw std::runtime_error("Unknown cartridge type");
-	}
-	if(region == REGION_AUTO)
-		region = core_get_region() ? REGION_PAL : REGION_NTSC;
+	if(!rtype->load(images))
+		throw std::runtime_error("Can't load cartridge ROM");
+
+	region = &core_get_region();
 	core_power();
 	auto nominal_fps = get_video_rate();
 	auto nominal_hz = get_audio_rate();
@@ -476,16 +325,13 @@ void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::ba
 				throw std::runtime_error("Can't read IPS '" + opt[2] + "': " + e.what());
 			}
 			try {
-				switch(recognize_commandline_rom(rtype, opt[1])) {
-				case 0:		rom.patch(ips, offset);			break;
-				case 1:		rom_xml.patch(ips, offset);		break;
-				case 2:		slota.patch(ips, offset);		break;
-				case 3:		slota_xml.patch(ips, offset);		break;
-				case 4:		slotb.patch(ips, offset);		break;
-				case 5:		slotb_xml.patch(ips, offset);		break;
-				default:
+				int r_id = recognize_commandline_rom(*rtype, opt[1]);
+				if(r_id < 0 || r_id > 2 * sizeof(romimg) / sizeof(romimg[0]))
 					throw std::runtime_error("Invalid subROM '" + opt[1] + "' to patch");
-				}
+				if(r_id & 1)
+					romxml[r_id / 2].patch(ips, offset);
+				else
+					romimg[r_id / 2].patch(ips, offset);
 			} catch(std::bad_alloc& e) {
 				OOM_panic();
 			} catch(std::exception& e) {
@@ -563,84 +409,59 @@ void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::r
 	core_unserialize(&buf[0], buf.size() - 32);;
 }
 
-std::string name_subrom(enum rom_type major, unsigned romnumber) throw(std::bad_alloc)
+std::string name_subrom(core_type& major, unsigned romnumber) throw(std::bad_alloc)
 {
-	if(romnumber == 0)
+	std::string name = "UNKNOWN";
+	if(romnumber < 2 * major.get_image_count())
+		name = major.get_image_info(romnumber / 2).hname;
+	if(romnumber % 2)
+		return name + " XML";
+	else if(name != "ROM")
+		return name + " ROM";
+	else
 		return "ROM";
-	else if(romnumber == 1)
-		return "ROM XML";
-	else if(major == ROMTYPE_BSX && romnumber == 2)
-		return "BSX ROM";
-	else if(major == ROMTYPE_BSX && romnumber == 3)
-		return "BSX XML";
-	else if(major == ROMTYPE_BSXSLOTTED && romnumber == 2)
-		return "BSX ROM";
-	else if(major == ROMTYPE_BSXSLOTTED && romnumber == 3)
-		return "BSX XML";
-	else if(major == ROMTYPE_SGB && romnumber == 2)
-		return "DMG ROM";
-	else if(major == ROMTYPE_SGB && romnumber == 3)
-		return "DMG XML";
-	else if(major == ROMTYPE_SUFAMITURBO && romnumber == 2)
-		return "SLOT A ROM";
-	else if(major == ROMTYPE_SUFAMITURBO && romnumber == 3)
-		return "SLOT A XML";
-	else if(major == ROMTYPE_SUFAMITURBO && romnumber == 4)
-		return "SLOT B ROM";
-	else if(major == ROMTYPE_SUFAMITURBO && romnumber == 5)
-		return "SLOT B XML";
-	else if(romnumber % 2)
-		return "UNKNOWN XML";
-	else
-		return "UNKNOWN ROM";
 }
 
 
-int recognize_commandline_rom(enum rom_type major, const std::string& romname) throw(std::bad_alloc)
+int recognize_commandline_rom(core_type& major, const std::string& romname) throw(std::bad_alloc)
 {
-	if(romname == romtypes_to_recognize[0])
-		return 0;
-	else if(romname == romtypes_to_recognize[6])
-		return 1;
-	else if(major == ROMTYPE_BSX && romname == romtypes_to_recognize[1])
-		return 2;
-	else if(major == ROMTYPE_BSX && romname == romtypes_to_recognize[7])
-		return 3;
-	else if(major == ROMTYPE_BSX && romname == romtypes_to_recognize[2])
-		return 2;
-	else if(major == ROMTYPE_BSX && romname == romtypes_to_recognize[8])
-		return 3;
-	else if(major == ROMTYPE_SGB && romname == romtypes_to_recognize[3])
-		return 2;
-	else if(major == ROMTYPE_SGB && romname == romtypes_to_recognize[9])
-		return 3;
-	else if(major == ROMTYPE_SUFAMITURBO && romname == romtypes_to_recognize[4])
-		return 2;
-	else if(major == ROMTYPE_SUFAMITURBO && romname == romtypes_to_recognize[10])
-		return 3;
-	else if(major == ROMTYPE_SUFAMITURBO && romname == romtypes_to_recognize[5])
-		return 4;
-	else if(major == ROMTYPE_SUFAMITURBO && romname == romtypes_to_recognize[11])
-		return 5;
-	else
-		return -1;
+	for(unsigned i = 0; i < major.get_image_count(); i++) {
+		std::string iname = major.get_image_info(i).iname;
+		if(romname == iname)
+			return 2 * i + 0;
+		if(romname == iname + "-xml")
+			return 2 * i + 1;
+	}
+	return -1;
 }
 
-rom_type recognize_platform(unsigned long flags) throw(std::bad_alloc, std::runtime_error)
+core_type& recognize_platform(const std::set<std::string>& present) throw(std::bad_alloc, std::runtime_error)
 {
-	if((flags & 07700) >> 6 & ~(flags & 077))
-		throw std::runtime_error("SubROM XML specified without corresponding subROM");
-	if((flags & 1) == 0)
-		throw std::runtime_error("No SNES main cartridge ROM specified");
-	if((flags & 077) == 1)
-		return ROMTYPE_SNES;
-	if((flags & 077) == 3)
-		return ROMTYPE_BSX;
-	if((flags & 077) == 5)
-		return ROMTYPE_BSXSLOTTED;
-	if((flags & 077) == 9)
-		return ROMTYPE_SGB;
-	if((flags & 060) != 0 && (flags & 017) == 1)
-		return ROMTYPE_SUFAMITURBO;
-	throw std::runtime_error("Not valid combination of rom/bsx/bsxslotted/dmg/slot-a/slot-b");
+	std::set<core_type*> possible = core_type::get_core_types();
+	unsigned total = 0;
+	for(auto i : present) {
+		regex_results r;
+		std::string base = i;
+		if(r = regex("(.*)-xml", base)) {
+			if(!present.count(r[1]))
+				throw std::runtime_error("SubROM XML specified without corresponding subROM");
+		} else
+			total++;
+	}
+	for(auto i : possible) {
+		unsigned pmask = 0;
+		unsigned rmask = 0;
+		unsigned found = 0;
+		for(unsigned j = 0; j < i->get_image_count(); j++) {
+			std::string iname = i->get_image_info(j).iname;
+			if(present.count(iname)) {
+				pmask |= i->get_image_info(j).mandatory;
+				found++;
+			}
+			rmask |= i->get_image_info(j).mandatory;
+		}
+		if(pmask == rmask && found == total)
+			return *i;
+	}
+	throw std::runtime_error("Invalid combination of subROMs");
 }

@@ -257,11 +257,8 @@ int main(int argc, char** argv)
 		fatal_error();
 		exit(1);
 	}
-	messages << "Detected region: " << gtype::tostring(r.rtype, r.region) << std::endl;
-	if(r.region == REGION_PAL)
-		set_nominal_framerate(322445.0/6448.0);
-	else if(r.region == REGION_NTSC)
-		set_nominal_framerate(10738636.0/178683.0);
+	messages << "Detected region: " << r.rtype->combine_region(*r.region).get_name() << std::endl;
+	set_nominal_framerate(r.region->approx_framerate());
 
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
@@ -290,7 +287,7 @@ int main(int argc, char** argv)
 			throw std::runtime_error("Can't load any of the movies specified");
 		//Load ROM before starting the dumper.
 		our_rom = &r;
-		our_rom->region = gtype::toromregion(movie.gametype);
+		our_rom->region = &movie.gametype->get_region();
 		our_rom->load();
 		startup_lua_scripts(cmdline);
 		dumper_startup(dumper, mode, prefix, length);

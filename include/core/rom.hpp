@@ -5,178 +5,10 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
-#include "misc.hpp"
+#include "core/misc.hpp"
+#include "core/romtype.hpp"
 
-/**
- * Region of ROM.
- */
-enum rom_region
-{
-/**
- * Autodetect region
- */
-	REGION_AUTO = 0,
-/**
- * (force) PAL region
- */
-	REGION_PAL,
-/**
- * (force) NTSC region
- */
-	REGION_NTSC
-};
 
-/**
- * Major type of ROM
- */
-enum rom_type
-{
-/**
- * Ordinary SNES ROM
- */
-	ROMTYPE_SNES,
-/**
- * BS-X Slotted ROM.
- */
-	ROMTYPE_BSXSLOTTED,
-/**
- * BS-X (non-slotted) ROM.
- */
-	ROMTYPE_BSX,
-/**
- * Sufami Turbo ROM.
- */
-	ROMTYPE_SUFAMITURBO,
-/**
- * Super Game Boy ROM.
- */
-	ROMTYPE_SGB,
-/**
- * No ROM.
- */
-	ROMTYPE_NONE
-};
-
-/**
- * This enumeration enumerates possible ROM types and regions for those.
- */
-enum gametype_t
-{
-/**
- * NTSC-region SNES game
- */
-	GT_SNES_NTSC = 0,
-/**
- * PAL-region SNES game
- */
-	GT_SNES_PAL = 1,
-/**
- * NTSC-region BSX slotted game
- */
-	GT_BSX_SLOTTED = 2,
-/**
- * NTSC-region BSX (non-slotted) game
- */
-	GT_BSX = 3,
-/**
- * NTSC-region sufami turbo game
- */
-	GT_SUFAMITURBO = 4,
-/**
- * NTSC-region Super Game Boy game
- */
-	GT_SGB_NTSC = 5,
-/**
- * PAL-region Super Game Boy game
- */
-	GT_SGB_PAL = 6,
-/**
- * Invalid game type
- */
-	GT_INVALID = 7
-};
-
-/**
- * Translations between diffrent representations of type.
- */
-class gtype
-{
-public:
-/**
- * Translate from major ROM type and region to string representation of the type.
- *
- * parameter rtype: The major ROM type.
- * parameter region: Region.
- * returns: String representation of combined type/region.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static std::string tostring(rom_type rtype, rom_region region) throw(std::bad_alloc, std::runtime_error);
-/**
- * Translate major/region combination to string representation.
- *
- * This function produces the same IDs as the other tostring(), except that it can't produce arbitrary-region ones.
- *
- * parameter gametype: Type of the game.
- * returns: String representation of the type.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static std::string tostring(gametype_t gametype) throw(std::bad_alloc, std::runtime_error);
-/**
- * Combine major/region into game type.
- *
- * For arbitrary-region types, this gives NTSC types.
- *
- * parameter rtype: Major type.
- * parameter region: The region.
- * returns: The combined game type.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static gametype_t togametype(rom_type rtype, rom_region region) throw(std::bad_alloc, std::runtime_error);
-/**
- * Parse string representation to game type.
- *
- * parameter gametype: The game type to parse.
- * returns: The parsed game type.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static gametype_t togametype(const std::string& gametype) throw(std::bad_alloc, std::runtime_error);
-/**
- * Parse string representation into major type.
- *
- * parameter gametype: The game type to parse.
- * returns: The major type.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static rom_type toromtype(const std::string& gametype) throw(std::bad_alloc, std::runtime_error);
-/**
- * Extract major type out of game type.
- *
- * parameter gametype: the game type to parse.
- * returns: The major type.
- */
-	static rom_type toromtype(gametype_t gametype) throw();
-/**
- * Extract region out of game type.
- *
- * parameter gametype: the game type to parse.
- * returns: The region.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Invalid type.
- */
-	static rom_region toromregion(const std::string& gametype) throw(std::bad_alloc, std::runtime_error);
-/**
- * Extract region out of game type.
- *
- * parameter gametype: the game type to parse.
- * returns: The region.
- */
-	static rom_region toromregion(gametype_t gametype) throw();
-};
 
 /**
  * This structure gives all files associated with given ROM image.
@@ -212,35 +44,19 @@ struct rom_files
 /**
  * Major ROM type.
  */
-	enum rom_type rtype;
+	core_type* rtype;
 /**
  * Game region (the region ROM is to be loaded as)
  */
-	enum rom_region region;
+	core_region* region;
 /**
  * Relative filename of main ROM file.
  */
-	std::string rom;
+	std::string romimg[27];
 /**
  * Relative filename of main ROM XML file.
  */
-	std::string rom_xml;
-/**
- * Relative filename of slot A ROM file (non-SNES only).
- */
-	std::string slota;
-/**
- * Relative filename of slot A XML file (non-SNES only).
- */
-	std::string slota_xml;
-/**
- * Relative filename of slot B ROM file (Sufami Turbo only).
- */
-	std::string slotb;
-/**
- * Relative filename of slot B XML file (Sufami Turbo only).
- */
-	std::string slotb_xml;
+	std::string romxml[27];
 };
 
 /**
@@ -343,39 +159,23 @@ struct loaded_rom
 /**
  * ROM type
  */
-	enum rom_type rtype;
+	core_type* rtype;
 /**
  * ROM region (this is the currently active region).
  */
-	enum rom_region region;
+	core_region* region;
 /**
  * ROM original region (this is the region ROM is loaded as).
  */
-	enum rom_region orig_region;
+	core_region* orig_region;
 /**
  * Loaded main ROM
  */
-	loaded_slot rom;
+	loaded_slot romimg[27];
 /**
  * Loaded main ROM XML
  */
-	loaded_slot rom_xml;
-/**
- * Loaded slot A ROM (.bs, .st or .dmg)
- */
-	loaded_slot slota;
-/**
- * Loaded slot A XML (.bs, .st or .dmg)
- */
-	loaded_slot slota_xml;
-/**
- * Loaded slot B ROM (.st)
- */
-	loaded_slot slotb;
-/**
- * Loaded slot B XML (.st).
- */
-	loaded_slot slotb_xml;
+	loaded_slot romxml[27];
 /**
  * MSU-1 base.
  */
@@ -399,26 +199,6 @@ struct loaded_rom
 	void load() throw(std::bad_alloc, std::runtime_error);
 };
 
-/**
- * Recognize the slot this ROM goes to.
- *
- * parameter major: The major type.
- * parameter romname: Name of the ROM type.
- * returns: Even if this is main rom, odd if XML. 0/1 for main slot, 2/3 for slot A, 4/5 for slot B. -1 if not valid
- *	rom type.
- * throws std::bad_alloc: Not enough memory
- */
-int recognize_commandline_rom(enum rom_type major, const std::string& romname) throw(std::bad_alloc);
-
-/**
- * Recognize major type from flags.
- *
- * parameter flags: Flags telling what ROM parameters are present.
- * returns: The recognzed major type.
- * throws std::bad_alloc: Not enough memory
- * throws std::runtime_error: Illegal flags.
- */
-rom_type recognize_platform(unsigned long flags) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Name a sub-ROM.
@@ -427,14 +207,14 @@ rom_type recognize_platform(unsigned long flags) throw(std::bad_alloc, std::runt
  * parameter romnumber: ROM number to name (as returned by recognize_commandline_rom).
  * throws std::bad_alloc: Not enough memory
  */
-std::string name_subrom(enum rom_type major, unsigned romnumber) throw(std::bad_alloc);
+std::string name_subrom(core_type& major, unsigned romnumber) throw(std::bad_alloc);
 
 /**
  * Get major type and region of loaded ROM.
  *
  * returns: Tuple (ROM type, ROM region) of currently loaded ROM.
  */
-std::pair<enum rom_type, enum rom_region> get_current_rom_info() throw();
+std::pair<core_type*, core_region*> get_current_rom_info() throw();
 
 /**
  * Take current values of all SRAMs in current system and save their contents.

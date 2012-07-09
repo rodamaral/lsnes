@@ -8,10 +8,8 @@
 #include <set>
 #include <vector>
 #include "library/framebuffer.hpp"
+#include "core/romtype.hpp"
 
-#define EC_REGION_AUTO -1
-#define EC_REGION_NTSC 0
-#define EC_REGION_PAL 1
 
 //Get the CPU rate.
 uint32_t get_snes_cpu_rate();
@@ -30,32 +28,19 @@ void do_basic_core_init();
 //Get set of SRAMs.
 std::set<std::string> get_sram_set();
 //Get region.
-bool core_get_region();
+core_region& core_get_region();
 //Get the current video rate.
 std::pair<uint32_t, uint32_t> get_video_rate();
 //Get the current audio rate.
 std::pair<uint32_t, uint32_t> get_audio_rate();
 //Set preload settings.
 void set_preload_settings();
-//Load SNES cartridge.
-bool core_load_cartridge_normal(const char* rom_markup, const unsigned char* rom, size_t romsize);
-//Load BS-X cartridge.
-bool core_load_cartridge_bsx(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize);
-//Load slotted BS-X cartridge.
-bool core_load_cartridge_bsx_slotted(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize);
-//Load Super Game Boy cartridge.
-bool core_load_cartridge_super_game_boy(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* rom_markup, const unsigned char* rom, size_t romsize);
-//Load Sufami turbo cartridge.
-bool core_load_cartridge_sufami_turbo(const char* bios_markup, const unsigned char* bios, size_t biossize,
-	const char* romA_markup, const unsigned char* romA, size_t romAsize, const char* romB_markup,
-	const unsigned char* romB, size_t romBsize);
 //Set the region.
-void core_set_region(int region);
+bool core_set_region(core_region& region);
 //Power the core.
 void core_power();
+//Unload the cartridge.
+void core_unload_cartridge();
 //Save SRAM set.
 std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
 //Load SRAM set.

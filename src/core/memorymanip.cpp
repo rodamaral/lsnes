@@ -221,7 +221,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 {
 	linear_ram_size = 0;
 	memory_regions.clear();
-	if(get_current_rom_info().first == ROMTYPE_NONE)
+	if(!get_current_rom_info().first)
 		return;
 	auto vmalist = get_vma_list();
 	for(auto i : vmalist) {
