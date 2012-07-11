@@ -51,6 +51,8 @@
 #define LOGICAL_BUTTON_TURBO 14
 #define LOGICAL_BUTTON_PAUSE 15
 
+const char* button_symbols = "BYsSudlrAXLRTSTCUP";
+
 namespace
 {
 	int regions_compatible(unsigned rom, unsigned run)

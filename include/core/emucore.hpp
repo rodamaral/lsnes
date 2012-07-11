@@ -61,6 +61,8 @@ std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles);
 void core_reset();
 //Run to point save.
 void core_runtosave();
+//Button symbols.
+extern const char* button_symbols;
 
 /**
  * Get name of logical button.

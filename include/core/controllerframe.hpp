@@ -1163,13 +1163,14 @@ inline short generic_port_read(const unsigned char* buffer, unsigned idx, unsign
 		return 0;
 }
 
+extern const char* button_symbols;
+
 /**
  * Generic port display function.
  */
 template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
 inline void generic_port_display(const unsigned char* buffer, unsigned idx, char* buf) throw()
 {
-	const char sym[] = "BYsSudlrAXLRTSTCUP";
 	if(idx > controllers) {
 		buf[0] = '\0';
 		return;
@@ -1182,7 +1183,7 @@ inline void generic_port_display(const unsigned char* buffer, unsigned idx, char
 	}
 	for(unsigned i = 0; i < buttons; i++) {
 		size_t bit = 16 * controllers * analog_axis + idx * buttons + i;
-		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? sym[i + sidx] : '-';
+		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '-';
 	}
 	buf[ptr] = '\0';
 }
@@ -1193,13 +1194,12 @@ inline void generic_port_display(const unsigned char* buffer, unsigned idx, char
 template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
 inline size_t generic_port_serialize(const unsigned char* buffer, char* textbuf) throw()
 {
-	const char sym[] = "BYsSudlrAXLRTSTCUP";
 	size_t ptr = 0;
 	for(unsigned j = 0; j < controllers; j++) {
 		textbuf[ptr++] = '|';
 		for(unsigned i = 0; i < buttons; i++) {
 			size_t bit = 16 * controllers * analog_axis + j * buttons + i;
-			textbuf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? sym[i + sidx] : '.';
+			textbuf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '.';
 		}
 		for(unsigned i = 0; i < analog_axis; i++) {
 			uint16_t a = buffer[2 * j * analog_axis + 2 * i];
