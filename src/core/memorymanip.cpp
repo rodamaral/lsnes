@@ -11,22 +11,6 @@
 #include <sstream>
 #include <iomanip>
 #include <cstdint>
-/*
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-#include <nall/platform.hpp>
-#include <nall/endian.hpp>
-#include <nall/varint.hpp>
-#include <nall/bit.hpp>
-#include <nall/serializer.hpp>
-#include <nall/property.hpp>
-using namespace nall;
-using namespace SNES;
-*/
 
 namespace
 {
