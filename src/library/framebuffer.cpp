@@ -624,16 +624,6 @@ void bitmap_font::load_hex(const char* data, size_t size) throw(std::bad_alloc, 
 	glyphs[32].offset = memory.size() - 4;
 	for(auto& i : glyphs)
 		i.second.data = &memory[i.second.offset];
-
-	glyph gt = glyphs['N'];
-	std::cerr << "N is located at " << gt.data << std::endl;
-	for(size_t i = 0; i < 4; i++) {
-		for(size_t j = 0; j < 32; j++) {
-			std::cerr << (((gt.data[i] >> j) & 1) ? '*' : ' ');
-			if((j & 7) == 7)
-				std::cerr << std::endl;
-		}
-	}
 }
 
 const bitmap_font::glyph& bitmap_font::get_glyph(uint32_t glyph) throw()
