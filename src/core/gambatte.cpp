@@ -479,7 +479,7 @@ void core_unserialize(const char* in, size_t insize)
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 {
-	return std::make_pair(min(512 / width, (uint32_t)1), min(448 / height, (uint32_t)1));
+	return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
 }
 
 emucore_callbacks::~emucore_callbacks() throw() {}
