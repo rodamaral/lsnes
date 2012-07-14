@@ -936,7 +936,12 @@ std::list<vma_info> get_vma_list()
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 {
-	return std::make_pair(last_hires ? 1 : 2, last_interlace ? 1 : 2);
+	uint32_t h = 1, v = 1;
+	if(width < 400)
+		h = 2;
+	if(height < 400)
+		v = 2;
+	return std::make_pair(h, v);
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

@@ -21,7 +21,7 @@
 #endif
 #define RESAMPLE_BUFFER 1024
 
-
+std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 namespace
 {
@@ -330,10 +330,11 @@ again:
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
-			if(dump_large && _frame.get_width() < 400)
-				hscl = 2;
-			if(dump_large && _frame.get_height() < 400)
-				vscl = 2;
+			auto scl = get_scale_factors(_frame.get_width(), _frame.get_height());
+			if(dump_large) {
+				hscl = scl.first;
+				vscl = scl.second;
+			}
 			render_video_hud(dscr, _frame, hscl, vscl, 0, 8, 16, dlb, dtb, drb, dbb, waitfn);
 			worker->queue_video(dscr.rowptr(0), dscr.get_width(), dscr.get_height(), fps_n, fps_d);
 			have_dumped_frame = true;

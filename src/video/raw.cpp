@@ -16,7 +16,7 @@
 #define IS_64(m) (m % 5 < 2)
 #define IS_TCP(m) (((m % 5) * (m % 5)) % 5 == 1)
 
-
+std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 namespace
 {
@@ -85,8 +85,9 @@ namespace
 			unsigned r = (reinterpret_cast<unsigned char*>(&magic))[swap ? 2 : 0];
 			unsigned g = (reinterpret_cast<unsigned char*>(&magic))[1];
 			unsigned b = (reinterpret_cast<unsigned char*>(&magic))[swap ? 0 : 2];
-			uint32_t hscl = (_frame.get_width() < 400) ? 2 : 1;
-			uint32_t vscl = (_frame.get_height() < 400) ? 2 : 1;
+			auto scl = get_scale_factors(_frame.get_width(), _frame.get_height());
+			uint32_t hscl = scl.first;
+			uint32_t vscl = scl.second;
 			if(bits64) {
 				size_t w = dscr2.get_width();
 				size_t h = dscr2.get_height();
