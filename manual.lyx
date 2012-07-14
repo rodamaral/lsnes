@@ -72,20 +72,16 @@ Dependencies
 \end_layout
 
 \begin_layout Enumerate
-bsnes libsnes
+gambatte
 \end_layout
 
 \begin_deeper
 \begin_layout Enumerate
-v084-v087 (v084 or v085 for delayreset support)
+SVN r320
 \end_layout
 
 \begin_layout Enumerate
-accuracy or compatiblity core with debugger enabled.
-\end_layout
-
-\begin_layout Enumerate
-Patched version (using included 7 patches)
+Patched version (using included patch)
 \end_layout
 
 \end_deeper
@@ -136,7 +132,7 @@ Version 5.1.X or 5.2X.
 
 \end_deeper
 \begin_layout Enumerate
-G++ 4.6 (bsnes doesn't seem to like 4.7).
+G++ 4.6 (4.7 might also work).
 \end_layout
 
 \begin_layout Section
@@ -144,12 +140,12 @@ Building
 \end_layout
 
 \begin_layout Itemize
-Copy bsnes sources (the bsnes subdirectory) to subdirectory 'bsnes'.
+Copy gambatte sources to subdirectory 'gambatte'.
 \end_layout
 
 \begin_layout Itemize
-Patch the bsnes sources with included patches (directory 'bsnes-patches/<version
->')
+Patch the bsnes sources with included patches (directory 'gambatte-patches/<vers
+ion>')
 \end_layout
 
 \begin_layout Itemize
@@ -174,28 +170,15 @@ ROM options
 \end_layout
 
 \begin_layout Itemize
-rom: Cartridge ROM (BIOS for special carts).
- This is required.
+gbrom: Game Boy ROM.
 \end_layout
 
 \begin_layout Itemize
-bsx: BS-X (non-slotted) Game flash ROM.
+gbcrom: Game Boy Color ROM.
 \end_layout
 
 \begin_layout Itemize
-bsxslotted: BS-X (slotted) Game flash ROM.
-\end_layout
-
-\begin_layout Itemize
-dmg: DMG game ROM
-\end_layout
-
-\begin_layout Itemize
-slot-a: Sufami Turbo Slot A ROM
-\end_layout
-
-\begin_layout Itemize
-slot-b: Sufami Turbo Slot B ROM
+gbcarom: Game Boy Color ROM (to be run with GBA initial register values).
 \end_layout
 
 \begin_layout Subsubsection
@@ -203,7 +186,7 @@ slot-b: Sufami Turbo Slot B ROM
 \end_layout
 
 \begin_layout Standard
-Load <file> as specified ROM (SFC/BS/DMG/ST file format).
+Load <file> as specified ROM (GB/GBC file format).
 \end_layout
 
 \begin_layout Subsubsection
@@ -211,8 +194,8 @@ Load <file> as specified ROM (SFC/BS/DMG/ST file format).
 \end_layout
 
 \begin_layout Standard
-Override hardware detection for ROM, reading the values from <file> (BSNES
- XML format).
+Override hardware detection for ROM, reading the values from <file> (contains
+ extra gambatte flags).
 \end_layout
 
 \begin_layout Subsubsection
@@ -244,34 +227,6 @@ Set offset to apply to IPS patches.
  The offset must be 0 for BPS patches.
 \end_layout
 
-\begin_layout Subsubsection
---pal
-\end_layout
-
-\begin_layout Standard
-Force ROM to be considered PAL-only.
-\end_layout
-
-\begin_layout Itemize
-Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
-\end_layout
-
-\begin_layout Itemize
-Attempting to load NTSC movie file will error out.
-\end_layout
-
-\begin_layout Subsubsection
---ntsc
-\end_layout
-
-\begin_layout Standard
-Force ROM to be considered NTSC-only.
-\end_layout
-
-\begin_layout Itemize
-Attempting to load PAL movie file will error out.
-\end_layout
-
 \begin_layout Subsection
 Session options
 \end_layout
@@ -291,68 +246,6 @@ Start paused
 \begin_layout Standard
 Load <filename> as movie or savestate file.
  All other session options are ignored.
-\end_layout
-
-\begin_layout Subsubsection
---port1=<device> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set type of port1.
- Valid values are:
-\end_layout
-
-\begin_layout Itemize
-none: No device connected
-\end_layout
-
-\begin_layout Itemize
-gamepad: One gamepad (the default)
-\end_layout
-
-\begin_layout Itemize
-multitap: Four gamepads (warning: makes most games refuse to start)
-\end_layout
-
-\begin_layout Itemize
-mouse: Mouse.
-\end_layout
-
-\begin_layout Subsubsection
---port2=<type> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set type of port2.
- Valid values are:
-\end_layout
-
-\begin_layout Itemize
-none: No device connected (the default)
-\end_layout
-
-\begin_layout Itemize
-gamepad: One gamepad
-\end_layout
-
-\begin_layout Itemize
-multitap: Four gamepads.
-\end_layout
-
-\begin_layout Itemize
-mouse: Mouse
-\end_layout
-
-\begin_layout Itemize
-superscope: Super Scope
-\end_layout
-
-\begin_layout Itemize
-justifier: One justifier
-\end_layout
-
-\begin_layout Itemize
-justifiers: Two justifiers
 \end_layout
 
 \begin_layout Subsubsection
@@ -848,22 +741,6 @@ Video is always upscaled to double resolution (512x448 / 512 x 478).
 \begin_layout Itemize
 Video framerate is usually 322445/6448 fps for PAL and 10738636/178683 fps
  for NTSC.
-\end_layout
-
-\end_deeper
-\begin_layout Itemize
-INTERNAL-SDMP: Internal SDMP dumper.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Mode 'ms': Multi-segment.
- Takes prefix.
-\end_layout
-
-\begin_layout Itemize
-Mode 'ss': Single-segment.
- Takes filename.
 \end_layout
 
 \end_deeper

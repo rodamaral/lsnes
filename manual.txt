@@ -4,13 +4,11 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 2 Dependencies
 
-1. bsnes libsnes
+1. gambatte
 
-  (a) v084-v087 (v084 or v085 for delayreset support)
+  (a) SVN r320
 
-  (b) accuracy or compatiblity core with debugger enabled.
-
-  (c) Patched version (using included 7 patches)
+  (b) Patched version (using included patch)
 
 2. Zlib
 
@@ -34,15 +32,14 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
   • Version 5.1.X or 5.2X.
 
-12. G++ 4.6 (bsnes doesn't seem to like 4.7).
+12. G++ 4.6 (4.7 might also work).
 
 3 Building
 
-• Copy bsnes sources (the bsnes subdirectory) to subdirectory 
-  'bsnes'.
+• Copy gambatte sources to subdirectory 'gambatte'.
 
 • Patch the bsnes sources with included patches (directory 
-  'bsnes-patches/<version>')
+  'gambatte-patches/<version>')
 
 • Edit options.build (or copy of that file)
 
@@ -55,26 +52,21 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 <kind> in the following can be one of:
 
-• rom: Cartridge ROM (BIOS for special carts). This is required.
+• gbrom: Game Boy ROM.
 
-• bsx: BS-X (non-slotted) Game flash ROM.
+• gbcrom: Game Boy Color ROM.
 
-• bsxslotted: BS-X (slotted) Game flash ROM.
-
-• dmg: DMG game ROM
-
-• slot-a: Sufami Turbo Slot A ROM
-
-• slot-b: Sufami Turbo Slot B ROM
+• gbcarom: Game Boy Color ROM (to be run with GBA initial 
+  register values).
 
 4.1.1 --<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
-Load <file> as specified ROM (SFC/BS/DMG/ST file format).
+Load <file> as specified ROM (GB/GBC file format).
 
 4.1.2 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 
 Override hardware detection for ROM, reading the values from 
-<file> (BSNES XML format).
+<file> (contains extra gambatte flags).
 
 4.1.3 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
@@ -92,20 +84,6 @@ Set offset to apply to IPS patches. May be negative. Handy for
 applying headered IPS patches (use offset of -512 for this). The 
 offset must be 0 for BPS patches.
 
-4.1.6 --pal
-
-Force ROM to be considered PAL-only.
-
-• Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
-
-• Attempting to load NTSC movie file will error out.
-
-4.1.7 --ntsc
-
-Force ROM to be considered NTSC-only.
-
-• Attempting to load PAL movie file will error out.
-
 4.2 Session options
 
 4.2.1 --pause
@@ -117,60 +95,29 @@ Start paused
 Load <filename> as movie or savestate file. All other session 
 options are ignored.
 
-4.2.3 --port1=<device> (lsnes/SDL)
-
-Set type of port1. Valid values are:
-
-• none: No device connected
-
-• gamepad: One gamepad (the default)
-
-• multitap: Four gamepads (warning: makes most games refuse to 
-  start)
-
-• mouse: Mouse.
-
-4.2.4 --port2=<type> (lsnes/SDL)
-
-Set type of port2. Valid values are:
-
-• none: No device connected (the default)
-
-• gamepad: One gamepad
-
-• multitap: Four gamepads.
-
-• mouse: Mouse
-
-• superscope: Super Scope
-
-• justifier: One justifier
-
-• justifiers: Two justifiers
-
-4.2.5 --gamename=<name> (lsnes/SDL)
+4.2.3 --gamename=<name> (lsnes/SDL)
 
 Set the name of game to <name>. Default is blank.
 
-4.2.6 --author=<name> (lsnes/SDL)
+4.2.4 --author=<name> (lsnes/SDL)
 
 Add author with full name of <name> (no nickname).
 
-4.2.7 --author=|<name> (lsnes/SDL)
+4.2.5 --author=|<name> (lsnes/SDL)
 
 Add author with nickname of <name> (no full name).
 
-4.2.8 --author=<fullname>|<nickname> (lsnes/SDL)
+4.2.6 --author=<fullname>|<nickname> (lsnes/SDL)
 
 Add author with full name of <fullname> and nickname of 
 <nickname>.
 
-4.2.9 --rtc-second=<value> (lsnes/SDL)
+4.2.7 --rtc-second=<value> (lsnes/SDL)
 
 Set RTC second (0 is 1st January 1970 00:00:00Z). Default is 
 1,000,000,000.
 
-4.2.10 --rtc-subsecond=<value> (lsnes/SDL)
+4.2.8 --rtc-subsecond=<value> (lsnes/SDL)
 
 Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 
@@ -397,12 +344,6 @@ The following dumpers are available:
 
   – Video framerate is usually 322445/6448 fps for PAL and 
     10738636/178683 fps for NTSC.
-
-• INTERNAL-SDMP: Internal SDMP dumper.
-
-  – Mode 'ms': Multi-segment. Takes prefix.
-
-  – Mode 'ss': Single-segment. Takes filename.
 
 6.5.2 end-dump <dumper>
 
