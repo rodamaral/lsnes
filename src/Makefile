@@ -51,10 +51,10 @@ video/$(ALLOBJECT): forcelook
 .PRECIOUS: %.$(OBJECT_SUFFIX) util/%.$(OBJECT_SUFFIX)
 
 %.util$(DOT_EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(DUMMY_LIBRARY_OBJS)
-	$(REALCC) -o $@ $^ $(LDFLAGS) $(BSNES_PATH)/out/libsnes.a `cat $(DUMMY_LIBRARY_FLAGS)`
+	$(REALCC) -o $@ $^ $(LDFLAGS) $(GAMBATTE_PATH)/libgambatte/libgambatte.$(ARCHIVE_SUFFIX) `cat $(DUMMY_LIBRARY_FLAGS)`
 
 lsnes$(DOT_EXECUTABLE_SUFFIX): $(PLATFORM_LIBRARY_OBJS)
-	$(REALCC) -o $@ $^ $(LDFLAGS) $(BSNES_PATH)/out/libsnes.a `cat $(PLATFORM_LIBRARY_FLAGS)`
+	$(REALCC) -o $@ $^ $(LDFLAGS) $(GAMBATTE_PATH)/libgambatte/libgambatte.$(ARCHIVE_SUFFIX) `cat $(PLATFORM_LIBRARY_FLAGS)`
 
 precheck:
 	$(MAKE) -C core precheck
