@@ -1522,6 +1522,18 @@ Set the volume multiplier to <multiplier> dB.
 \end_layout
 
 \begin_layout Subsection
+Misc.
+\end_layout
+
+\begin_layout Subsubsection
+reload-rom [<file>]
+\end_layout
+
+\begin_layout Standard
+Reloads the main ROM image from <file>.
+\end_layout
+
+\begin_layout Subsection
 SDL Platform commands 
 \end_layout
 

@@ -69,6 +69,11 @@ private:
 	lua_obj_pin& operator=(const lua_obj_pin&);
 };
 
+template<class T> struct lua_class_bind_data
+{
+	int (T::*fn)(lua_State* LS);
+};
+
 template<class T> class lua_class;
 
 template<class T> lua_class<T>& objclass();
@@ -102,6 +107,7 @@ public:
 		lua_pushvalue(LS, -3);
 		lua_pushvalue(LS, -3);
 		lua_rawset(LS, -3);
+		lua_pop(LS, 1);
 	}
 
 	void bind(lua_State* LS, const char* keyname)
@@ -110,6 +116,36 @@ public:
 		lua_pushstring(LS, keyname);
 		lua_pushvalue(LS, -3);
 		lua_rawset(LS, -3);
+		lua_pop(LS, 1);
+	}
+
+	static int class_bind_trampoline(lua_State* LS)
+	{
+		lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
+		const char* fname = lua_tostring(LS, lua_upvalueindex(2));
+		T* p = lua_class<T>::get(LS, 1, fname);
+		return (p->*(b->fn))(LS);
+	}
+
+	void bind(lua_State* LS, const char* keyname, int (T::*fn)(lua_State* LS))
+	{
+		load_metatable(LS);
+		lua_pushstring(LS, keyname);
+		lua_rawget(LS, -2);
+		if(!lua_isnil(LS, -1)) {
+			lua_pop(LS, 2);
+			return;
+		}
+		lua_pop(LS, 1);
+		lua_class_bind_data<T>* bdata = new lua_class_bind_data<T>;
+		bdata->fn = fn;
+		lua_pushstring(LS, keyname);
+		lua_pushlightuserdata(LS, bdata);
+		std::string name = std::string("Method ") + keyname;
+		lua_pushstring(LS, name.c_str());
+		lua_pushcclosure(LS, class_bind_trampoline, 2);
+		lua_rawset(LS, -3);
+		lua_pop(LS, 1);
 	}
 
 	T* _get(lua_State* LS, int arg, const char* fname, bool optional = false)
@@ -121,10 +157,12 @@ public:
 				goto badtype;
 		}
 		load_metatable(LS);
-		if(!lua_getmetatable(LS, arg))
+		if(!lua_getmetatable(LS, arg)) {
 			goto badtype;
-		if(!lua_rawequal(LS, -1, -2))
+		}
+		if(!lua_rawequal(LS, -1, -2)) {
 			goto badtype;
+		}
 		lua_pop(LS, 2);
 		return reinterpret_cast<T*>(lua_touserdata(LS, arg));
 badtype:
@@ -176,6 +214,20 @@ private:
 		obj->~T();
 	}
 
+	static int newindex(lua_State* LS)
+	{
+		lua_pushstring(LS, "Writing metatables of classes is not allowed");
+		lua_error(LS);
+	}
+
+	static int index(lua_State* LS)
+	{
+		lua_getmetatable(LS, 1);
+		lua_pushvalue(LS, 2);
+		lua_rawget(LS, -2);
+		return 1;
+	}
+
 	void load_metatable(lua_State* LS)
 	{
 again:
@@ -185,8 +237,16 @@ again:
 			lua_pop(LS, 1);
 			lua_pushlightuserdata(LS, this);
 			lua_newtable(LS);
+			lua_pushvalue(LS, -1);
+			lua_setmetatable(LS, -2);
 			lua_pushstring(LS, "__gc");
 			lua_pushcfunction(LS, &lua_class<T>::dogc);
+			lua_rawset(LS, -3);
+			lua_pushstring(LS, "__newindex");
+			lua_pushcfunction(LS, &lua_class<T>::newindex);
+			lua_rawset(LS, -3);
+			lua_pushstring(LS, "__index");
+			lua_pushcfunction(LS, &lua_class<T>::index);
 			lua_rawset(LS, -3);
 			lua_rawset(LS, LUA_REGISTRYINDEX);
 			goto again;

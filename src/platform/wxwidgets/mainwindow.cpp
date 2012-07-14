@@ -91,6 +91,8 @@ enum
 	wxID_SPEED_TURBO,
 	wxID_LOAD_LIBRARY,
 	wxID_SETTINGS,
+	wxID_RELOAD_ROM_IMAGE,
+	wxID_LOAD_ROM_IMAGE
 };
 
 
@@ -692,6 +694,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE_RW, wxT("State (read-write)..."));
 	menu_entry(wxID_LOAD_STATE_P, wxT("State (preserve input)..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
+	menu_separator();
+	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM image"));
+	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("Load ROM image..."));
 	menu_end_sub();
 	menu_start_sub(wxT("Save"));
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
@@ -1062,5 +1067,11 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SETTINGS:
 		wxsetingsdialog_display(this);
 		break;
+	case wxID_LOAD_ROM_IMAGE:
+		platform::queue("reload-rom " + pick_file_member(this, "Select new ROM image", "."));
+		return;
+	case wxID_RELOAD_ROM_IMAGE:
+		platform::queue("reload-rom");
+		return;
 	};
 }

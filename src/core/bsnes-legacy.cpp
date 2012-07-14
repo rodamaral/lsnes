@@ -77,6 +77,8 @@ namespace
 
 	int load_rom_snes(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
+		snes_term();
+		snes_unload_cartridge();
 		bool r = snes_load_cartridge_normal(img[0].markup, img[0].data, img[0].size);
 		if(r)
 			internal_rom = &type_snes;
@@ -85,6 +87,8 @@ namespace
 
 	int load_rom_bsx(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
+		snes_term();
+		snes_unload_cartridge();
 		bool r = snes_load_cartridge_bsx(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
@@ -94,6 +98,8 @@ namespace
 
 	int load_rom_bsxslotted(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
+		snes_term();
+		snes_unload_cartridge();
 		bool r = snes_load_cartridge_bsx_slotted(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
@@ -103,6 +109,8 @@ namespace
 
 	int load_rom_sgb(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
+		snes_term();
+		snes_unload_cartridge();
 		bool r = snes_load_cartridge_super_game_boy(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
@@ -112,6 +120,8 @@ namespace
 
 	int load_rom_sufamiturbo(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
+		snes_term();
+		snes_unload_cartridge();
 		bool r = snes_load_cartridge_sufami_turbo(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size, img[2].markup, img[2].data, img[2].size);
 		if(r)

@@ -743,35 +743,41 @@ volume, and higher numbers are louder.
 Set the volume multiplier to <multiplier> dB. 0 is normal volume, 
 and higher numbers are louder. The value may be negative.
 
-6.12 SDL Platform commands 
+6.12 Misc.
+
+6.12.1 reload-rom [<file>]
+
+Reloads the main ROM image from <file>.
+
+6.13 SDL Platform commands 
 
 The following are valid on SDL platform.
 
-6.12.1 identify-key
+6.13.1 identify-key
 
 Asks to press a key and then identifies that (pseudo-)key.
 
-6.12.2 toggle-console 
+6.13.2 toggle-console 
 
 Toggle between windowed/fullscreen console.
 
-6.12.3 scroll-fullup 
+6.13.3 scroll-fullup 
 
 Scroll messages window as far back as it goes.
 
-6.12.4 scroll-fulldown 
+6.13.4 scroll-fulldown 
 
 Scroll messages window as far forward as it goes.
 
-6.12.5 scroll-up 
+6.13.5 scroll-up 
 
 Scroll messages window back one screenful.
 
-6.12.6 scroll-down 
+6.13.6 scroll-down 
 
 Scroll messages window forward one screenful.
 
-6.12.7 prompt-command <command>
+6.13.7 prompt-command <command>
 
 Enter command prompt, with prompt prepopulated with specified 
 command.
