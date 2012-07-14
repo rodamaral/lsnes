@@ -1,4 +1,4 @@
-From ae85d61305e367d7c657bc664c5a4e5638604377 Mon Sep 17 00:00:00 2001
+From 58e7bcf988a64733c22337e21b74b31d2de7b64b Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 12 Jul 2012 20:49:57 +0300
 Subject: [PATCH] Changes to make libgambatte rerecording-friendly
@@ -6,14 +6,14 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
 ---
  Makefile                                     |   10 +
  libgambatte/Makefile                         |   18 ++
- libgambatte/include/gambatte.h               |   65 ++++++-
+ libgambatte/include/gambatte.h               |   68 ++++++-
  libgambatte/src/bitmap_font.cpp              |   10 +-
  libgambatte/src/bitmap_font.h                |    6 +-
  libgambatte/src/cpu.cpp                      |   45 ++++-
  libgambatte/src/cpu.h                        |   31 +++-
  libgambatte/src/file/file.cpp                |   34 ++++
  libgambatte/src/file/file.h                  |   10 +
- libgambatte/src/gambatte.cpp                 |  124 ++++++++++--
+ libgambatte/src/gambatte.cpp                 |  129 +++++++++++--
  libgambatte/src/initstate.cpp                |    8 +-
  libgambatte/src/initstate.h                  |    8 +-
  libgambatte/src/interrupter.cpp              |   17 ++-
@@ -66,7 +66,7 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
  libgambatte/src/video/ppu.h                  |   84 ++++++---
  libgambatte/src/video/sprite_mapper.cpp      |   17 +-
  libgambatte/src/video/sprite_mapper.h        |   53 ++++--
- 62 files changed, 2142 insertions(+), 603 deletions(-)
+ 62 files changed, 2150 insertions(+), 603 deletions(-)
  create mode 100644 Makefile
  create mode 100644 libgambatte/Makefile
  create mode 100644 libgambatte/src/loadsave.cpp
@@ -114,7 +114,7 @@ index 0000000..7c3724e
 +	@true
 \ No newline at end of file
 diff --git a/libgambatte/include/gambatte.h b/libgambatte/include/gambatte.h
-index b13e4be..8406a3c 100644
+index b13e4be..1db8086 100644
 --- a/libgambatte/include/gambatte.h
 +++ b/libgambatte/include/gambatte.h
 @@ -22,6 +22,11 @@
@@ -175,7 +175,7 @@ index b13e4be..8406a3c 100644
  	/** Selects which state slot to save state to or load state from.
  	  * There are 10 such slots, numbered from 0 to 9 (periodically extended for all n).
  	  */
-@@ -134,10 +158,43 @@ public:
+@@ -134,10 +158,46 @@ public:
  	  * @param codes Game Shark codes in format 01HHHHHH;01HHHHHH;... where H is [0-9]|[A-F]
  	  */
  	void setGameShark(const std::string &codes);
@@ -211,6 +211,9 @@ index b13e4be..8406a3c 100644
 +
 +	/** Function to get wall time. */
 +	void set_walltime_fn(time_t (*_walltime)());
++
++	/** Get version. */
++	static std::string version();
  private:
 +	void preload_common();
 +	void postload_common(const unsigned flags);
@@ -542,7 +545,7 @@ index 23b23c0..1a95543 100644
  }
  
 diff --git a/libgambatte/src/gambatte.cpp b/libgambatte/src/gambatte.cpp
-index d33b3f2..c6248b7 100644
+index d33b3f2..589a608 100644
 --- a/libgambatte/src/gambatte.cpp
 +++ b/libgambatte/src/gambatte.cpp
 @@ -25,6 +25,10 @@
@@ -702,7 +705,7 @@ index d33b3f2..c6248b7 100644
  void GB::selectState(int n) {
  	n -= (n / 10) * 10;
  	p_->stateNo = n < 0 ? n + 10 : n;
-@@ -189,4 +244,33 @@ void GB::setGameShark(const std::string &codes) {
+@@ -189,4 +244,38 @@ void GB::setGameShark(const std::string &codes) {
  	p_->cpu.setGameShark(codes);
  }
  
@@ -733,6 +736,11 @@ index d33b3f2..c6248b7 100644
 +void GB::set_walltime_fn(time_t (*_walltime)())
 +{
 +	walltime = _walltime;
++}
++
++std::string GB::version()
++{
++	return "SVN320";
 +}
 +
  }

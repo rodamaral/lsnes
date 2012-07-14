@@ -210,7 +210,7 @@ uint32_t get_snes_cpu_rate() { return 0; }
 uint32_t get_snes_apu_rate() { return 0; }
 std::string get_core_identifier()
 {
-	return "libgambatte SVN320";
+	return "libgambatte "+gambatte::GB::version();
 }
 
 std::pair<unsigned, unsigned> get_core_logical_controller_limits()
