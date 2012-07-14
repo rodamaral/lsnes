@@ -80,7 +80,7 @@ namespace
 	unsigned populate_system_choices(std::vector<wxString>& array)
 	{
 		for(auto i : core_type::get_core_types())
-			array.push_back(i->get_hname());
+			array.push_back(towxstring(i->get_hname()));
 		return array.size();
 	}
 
@@ -466,7 +466,7 @@ void wxwin_romselect::set_rtype(std::string rtype)
 		return;
 	region_combo->Clear();
 	for(auto i : romtype_from_string(rtype).get_regions())
-		region_combo->Append(i->get_hname());
+		region_combo->Append(towxstring(i->get_hname()));
 	region_combo->SetSelection(0);
 	if(has_forced_region(rtype))
 		region_combo->Disable();
