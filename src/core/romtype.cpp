@@ -226,9 +226,9 @@ core_region& core_type::get_preferred_region()
 	return *p;
 }
 
-bool core_type::load(core_romimage* images)
+bool core_type::load(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec)
 {
-	return (loadimg(images) >= 0);
+	return (loadimg(images, rtc_sec, rtc_subsec) >= 0);
 }
 
 core_sysregion& core_type::combine_region(core_region& reg)
@@ -239,7 +239,8 @@ core_sysregion& core_type::combine_region(core_region& reg)
 	throw std::runtime_error("Invalid region for system type");
 }
 
-core_type::core_type(const std::string& _iname, const std::string& _hname, int (*_load)(core_romimage* images))
+core_type::core_type(const std::string& _iname, const std::string& _hname, int (*_load)(core_romimage* images,
+		uint64_t rtc_sec, uint64_t rtc_subsec))
 	: iname(_iname), hname(_hname), loadimg(_load)
 {
 	types()[iname] = this;

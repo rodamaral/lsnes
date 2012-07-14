@@ -196,7 +196,7 @@ struct loaded_rom
  * throws std::bad_alloc: Not enough memory
  * throws std::runtime_error: Switching cartridges failed.
  */
-	void load() throw(std::bad_alloc, std::runtime_error);
+	void load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error);
 };
 
 

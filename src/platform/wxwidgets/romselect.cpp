@@ -705,7 +705,7 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin)
 				our_rom_name = our_rom->romimg[i].sha256;
 		if(our_rom_name == "")
 			our_rom_name = our_rom->romimg[0].sha256;
-		our_rom->load();
+		our_rom->load(1000000000, 0);
 	} catch(std::exception& e) {
 		show_message_ok(modwin, "Error loading ROM", e.what(), wxICON_EXCLAMATION);
 		return;

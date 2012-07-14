@@ -271,17 +271,6 @@ framebuffer_raw get_framebuffer() throw(std::bad_alloc)
 }
 
 
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
-{
-	uint32_t v = 1;
-	uint32_t h = 1;
-	if(width < 512)
-		h = 2;
-	if(height < 400)
-		v = 2;
-	return std::make_pair(h, v);
-}
-
 triplebuffer_logic::triplebuffer_logic() throw(std::bad_alloc)
 {
 	mut = &mutex::aquire();

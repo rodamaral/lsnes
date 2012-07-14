@@ -55,7 +55,8 @@ struct core_romimage
 struct core_type
 {
 public:
-	core_type(const std::string& iname, const std::string& hname, int (*_load)(core_romimage* images));
+	core_type(const std::string& iname, const std::string& hname, int (*_load)(core_romimage* images,
+		uint64_t rtc_sec, uint64_t rtc_subsec));
 	static std::set<core_type*> get_core_types();
 	void add_region(core_region& reg);
 	void add_romimage(core_romimage_info& info, unsigned index);
@@ -66,9 +67,9 @@ public:
 	const std::string& get_hname();
 	unsigned get_image_count();
 	core_romimage_info get_image_info(unsigned index);
-	bool load(core_romimage* images);
+	bool load(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec);
 private:
-	int (*loadimg)(core_romimage* images);
+	int (*loadimg)(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec);
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
 	std::string iname;

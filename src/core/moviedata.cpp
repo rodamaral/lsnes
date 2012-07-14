@@ -277,7 +277,7 @@ void do_load_beginning() throw(std::bad_alloc, std::runtime_error)
 	try {
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
-		our_rom->load();
+		our_rom->load(our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
 
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
@@ -349,8 +349,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	rrdata::add_internal();
 	try {
 		our_rom->region = &(_movie.gametype->get_region());
-		random_seed_value = _movie.rtc_second;
-		our_rom->load();
+		random_seed_value = _movie.movie_rtc_second;
+		our_rom->load(_movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 
 		if(will_load_state) {
 			//Load the savestate and movie state.

@@ -266,7 +266,7 @@ loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtim
 		msu1_base = resolve_file_relative(cromimg[0], files.base_file);
 }
 
-void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
+void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!rtype)
 		throw std::runtime_error("Can't insert cartridge of type NONE!");
@@ -286,7 +286,7 @@ void loaded_rom::load() throw(std::bad_alloc, std::runtime_error)
 		images[i].data = (const unsigned char*)romimg[i];
 		images[i].size = (size_t)romimg[i];
 	}
-	if(!rtype->load(images))
+	if(!rtype->load(images, rtc_sec, rtc_subsec))
 		throw std::runtime_error("Can't load cartridge ROM");
 
 	region = &core_get_region();

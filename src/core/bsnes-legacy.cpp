@@ -75,7 +75,7 @@ namespace
 	extern core_type type_sufamiturbo;
 	extern core_type type_sgb;
 
-	int load_rom_snes(core_romimage* img)
+	int load_rom_snes(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
 		bool r = snes_load_cartridge_normal(img[0].markup, img[0].data, img[0].size);
 		if(r)
@@ -83,7 +83,7 @@ namespace
 		return r ? 0 : -1;
 	}
 
-	int load_rom_bsx(core_romimage* img)
+	int load_rom_bsx(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
 		bool r = snes_load_cartridge_bsx(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
@@ -92,7 +92,7 @@ namespace
 		return r ? 0 : -1;
 	}
 
-	int load_rom_bsxslotted(core_romimage* img)
+	int load_rom_bsxslotted(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
 		bool r = snes_load_cartridge_bsx_slotted(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
@@ -101,7 +101,7 @@ namespace
 		return r ? 0 : -1;
 	}
 
-	int load_rom_sgb(core_romimage* img)
+	int load_rom_sgb(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
 		bool r = snes_load_cartridge_super_game_boy(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
@@ -110,7 +110,7 @@ namespace
 		return r ? 0 : -1;
 	}
 
-	int load_rom_sufamiturbo(core_romimage* img)
+	int load_rom_sufamiturbo(core_romimage* img, uint64_t secs, uint64_t subsecs)
 	{
 		bool r = snes_load_cartridge_sufami_turbo(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size, img[2].markup, img[2].data, img[2].size);
@@ -922,6 +922,11 @@ std::list<vma_info> get_vma_list()
 		create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
 	}
 	return ret;
+}
+
+std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
+{
+	return std::make_pair(last_hires ? 1 : 2, last_interlace ? 1 : 2);
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

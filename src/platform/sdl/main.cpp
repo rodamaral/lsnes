@@ -170,7 +170,7 @@ int main(int argc, char** argv)
 	struct loaded_rom r;
 	try {
 		r = load_rom_from_commandline(cmdline);
-		r.load();
+		r.load(1000000000, 0);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
