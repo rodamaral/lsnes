@@ -4,42 +4,58 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 2 Dependencies
 
-1. gambatte
+1. bsnes libsnes (for bsnes SNES core)
+
+  (a) v084-v087 (v084 or v085 for delayreset support)
+
+  (b) accuracy or compatiblity core with debugger enabled.
+
+  (c) Patched version (using included 7 patches)
+
+2. gambatte (for gambatte core)
 
   (a) SVN r320
 
-  (b) Patched version (using included patch)
+  (b) Patched with included patches
 
-2. Zlib
+3. Zlib
 
-3. boost_iostreams
+4. boost_iostreams
 
-4. boost_filesystem
+5. boost_filesystem
 
-5. boost_thread (if native std::thread is not available)
+6. boost_thread (if native std::thread is not available)
 
-6. libsdl (SDL only)
+7. libsdl (SDL only)
 
-7. sdlmain (SDL only, part of SDL)
+8. sdlmain (SDL only, part of SDL)
 
-8. boost_conversion (this is header-only library)
+9. boost_conversion (this is header-only library)
 
-9. libswscale (wxwidgets graphics only)
+10. libswscale (wxwidgets graphics only)
 
-10. Portaudio (portaudio sound only)
+11. Portaudio (portaudio sound only)
 
-11. Lua (if Lua support is needed).
+12. Lua (if Lua support is needed).
 
   • Version 5.1.X or 5.2X.
 
-12. G++ 4.6 (4.7 might also work).
+13. G++ 4.6 (bsnes doesn't seem to like 4.7, status for gambatte 
+  is unknown).
 
 3 Building
 
-• Copy gambatte sources to subdirectory 'gambatte'.
+• Copy bsnes sources (the bsnes subdirectory) to subdirectory 
+  'bsnes' (for bsnes core).
+
+• Copy gambatte sources to subdirectory 'gambatte' (for gambatte 
+  core).
 
 • Patch the bsnes sources with included patches (directory 
-  'gambatte-patches/<version>')
+  'bsnes-patches/<version>', bsnes core)
+
+• Patch the gambatte sources with included patches (directory 
+  'gambatte-patches/<version>', gambatte core)
 
 • Edit options.build (or copy of that file)
 
@@ -52,21 +68,34 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 <kind> in the following can be one of:
 
-• gbrom: Game Boy ROM.
+• rom: Cartridge ROM (BIOS for special carts). This is required. 
+  (bsnes)
 
-• gbcrom: Game Boy Color ROM.
+• bsx: BS-X (non-slotted) Game flash ROM. (bsnes)
 
-• gbcarom: Game Boy Color ROM (to be run with GBA initial 
-  register values).
+• bsxslotted: BS-X (slotted) Game flash ROM. (bsnes)
+
+• dmg: DMG game ROM (bsnes)
+
+• slot-a: Sufami Turbo Slot A ROM (bsnes)
+
+• slot-b: Sufami Turbo Slot B ROM (bsnes)
+
+• gbrom: Game Boy ROM (gambatte)
+
+• gbcrom: Game Boy Color ROM (gambatte)
+
+• gbcarom: Game Boy Color ROM (Use GBA initial registers, 
+  gambatte)
 
 4.1.1 --<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
-Load <file> as specified ROM (GB/GBC file format).
+Load <file> as specified ROM (SFC/BS/DMG/GB/GBC/ST file format).
 
 4.1.2 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 
 Override hardware detection for ROM, reading the values from 
-<file> (contains extra gambatte flags).
+<file> (BSNES XML format or gambatte extra flags).
 
 4.1.3 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
@@ -84,6 +113,20 @@ Set offset to apply to IPS patches. May be negative. Handy for
 applying headered IPS patches (use offset of -512 for this). The 
 offset must be 0 for BPS patches.
 
+4.1.6 --region=pal (BSNES core only)
+
+Force ROM to be considered PAL-only.
+
+• Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
+
+• Attempting to load NTSC movie file will error out.
+
+4.1.7 --region=ntsc (BSNES core only)
+
+Force ROM to be considered NTSC-only.
+
+• Attempting to load PAL movie file will error out.
+
 4.2 Session options
 
 4.2.1 --pause
@@ -95,29 +138,60 @@ Start paused
 Load <filename> as movie or savestate file. All other session 
 options are ignored.
 
-4.2.3 --gamename=<name> (lsnes/SDL)
+4.2.3 --port1=<device> (lsnes/SDL, bsnes core only)
+
+Set type of port1. Valid values are:
+
+• none: No device connected
+
+• gamepad: One gamepad (the default)
+
+• multitap: Four gamepads (warning: makes most games refuse to 
+  start)
+
+• mouse: Mouse.
+
+4.2.4 --port2=<type> (lsnes/SDL, bsnes core only)
+
+Set type of port2. Valid values are:
+
+• none: No device connected (the default)
+
+• gamepad: One gamepad
+
+• multitap: Four gamepads.
+
+• mouse: Mouse
+
+• superscope: Super Scope
+
+• justifier: One justifier
+
+• justifiers: Two justifiers
+
+4.2.5 --gamename=<name> (lsnes/SDL)
 
 Set the name of game to <name>. Default is blank.
 
-4.2.4 --author=<name> (lsnes/SDL)
+4.2.6 --author=<name> (lsnes/SDL)
 
 Add author with full name of <name> (no nickname).
 
-4.2.5 --author=|<name> (lsnes/SDL)
+4.2.7 --author=|<name> (lsnes/SDL)
 
 Add author with nickname of <name> (no full name).
 
-4.2.6 --author=<fullname>|<nickname> (lsnes/SDL)
+4.2.8 --author=<fullname>|<nickname> (lsnes/SDL)
 
 Add author with full name of <fullname> and nickname of 
 <nickname>.
 
-4.2.7 --rtc-second=<value> (lsnes/SDL)
+4.2.9 --rtc-second=<value> (lsnes/SDL)
 
 Set RTC second (0 is 1st January 1970 00:00:00Z). Default is 
 1,000,000,000.
 
-4.2.8 --rtc-subsecond=<value> (lsnes/SDL)
+4.2.10 --rtc-subsecond=<value> (lsnes/SDL)
 
 Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 
@@ -344,6 +418,12 @@ The following dumpers are available:
 
   – Video framerate is usually 322445/6448 fps for PAL and 
     10738636/178683 fps for NTSC.
+
+• INTERNAL-SDMP: Internal SDMP dumper.
+
+  – Mode 'ms': Multi-segment. Takes prefix.
+
+  – Mode 'ss': Single-segment. Takes filename.
 
 6.5.2 end-dump <dumper>
 

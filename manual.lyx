@@ -72,7 +72,25 @@ Dependencies
 \end_layout
 
 \begin_layout Enumerate
-gambatte
+bsnes libsnes (for bsnes SNES core)
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+v084-v087 (v084 or v085 for delayreset support)
+\end_layout
+
+\begin_layout Enumerate
+accuracy or compatiblity core with debugger enabled.
+\end_layout
+
+\begin_layout Enumerate
+Patched version (using included 7 patches)
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+gambatte (for gambatte core)
 \end_layout
 
 \begin_deeper
@@ -81,7 +99,7 @@ SVN r320
 \end_layout
 
 \begin_layout Enumerate
-Patched version (using included patch)
+Patched with included patches
 \end_layout
 
 \end_deeper
@@ -132,7 +150,7 @@ Version 5.1.X or 5.2X.
 
 \end_deeper
 \begin_layout Enumerate
-G++ 4.6 (4.7 might also work).
+G++ 4.6 (bsnes doesn't seem to like 4.7, status for gambatte is unknown).
 \end_layout
 
 \begin_layout Section
@@ -140,12 +158,22 @@ Building
 \end_layout
 
 \begin_layout Itemize
-Copy gambatte sources to subdirectory 'gambatte'.
+Copy bsnes sources (the bsnes subdirectory) to subdirectory 'bsnes' (for
+ bsnes core).
 \end_layout
 
 \begin_layout Itemize
-Patch the bsnes sources with included patches (directory 'gambatte-patches/<vers
-ion>')
+Copy gambatte sources to subdirectory 'gambatte' (for gambatte core).
+\end_layout
+
+\begin_layout Itemize
+Patch the bsnes sources with included patches (directory 'bsnes-patches/<version
+>', bsnes core)
+\end_layout
+
+\begin_layout Itemize
+Patch the gambatte sources with included patches (directory 'gambatte-patches/<v
+ersion>', gambatte core)
 \end_layout
 
 \begin_layout Itemize
@@ -170,15 +198,43 @@ ROM options
 \end_layout
 
 \begin_layout Itemize
-gbrom: Game Boy ROM.
+rom: Cartridge ROM (BIOS for special carts).
+ This is required.
+ (bsnes)
 \end_layout
 
 \begin_layout Itemize
-gbcrom: Game Boy Color ROM.
+bsx: BS-X (non-slotted) Game flash ROM.
+ (bsnes)
 \end_layout
 
 \begin_layout Itemize
-gbcarom: Game Boy Color ROM (to be run with GBA initial register values).
+bsxslotted: BS-X (slotted) Game flash ROM.
+ (bsnes)
+\end_layout
+
+\begin_layout Itemize
+dmg: DMG game ROM (bsnes)
+\end_layout
+
+\begin_layout Itemize
+slot-a: Sufami Turbo Slot A ROM (bsnes)
+\end_layout
+
+\begin_layout Itemize
+slot-b: Sufami Turbo Slot B ROM (bsnes)
+\end_layout
+
+\begin_layout Itemize
+gbrom: Game Boy ROM (gambatte)
+\end_layout
+
+\begin_layout Itemize
+gbcrom: Game Boy Color ROM (gambatte)
+\end_layout
+
+\begin_layout Itemize
+gbcarom: Game Boy Color ROM (Use GBA initial registers, gambatte)
 \end_layout
 
 \begin_layout Subsubsection
@@ -186,7 +242,7 @@ gbcarom: Game Boy Color ROM (to be run with GBA initial register values).
 \end_layout
 
 \begin_layout Standard
-Load <file> as specified ROM (GB/GBC file format).
+Load <file> as specified ROM (SFC/BS/DMG/GB/GBC/ST file format).
 \end_layout
 
 \begin_layout Subsubsection
@@ -194,8 +250,8 @@ Load <file> as specified ROM (GB/GBC file format).
 \end_layout
 
 \begin_layout Standard
-Override hardware detection for ROM, reading the values from <file> (contains
- extra gambatte flags).
+Override hardware detection for ROM, reading the values from <file> (BSNES
+ XML format or gambatte extra flags).
 \end_layout
 
 \begin_layout Subsubsection
@@ -227,6 +283,34 @@ Set offset to apply to IPS patches.
  The offset must be 0 for BPS patches.
 \end_layout
 
+\begin_layout Subsubsection
+--region=pal (BSNES core only)
+\end_layout
+
+\begin_layout Standard
+Force ROM to be considered PAL-only.
+\end_layout
+
+\begin_layout Itemize
+Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
+\end_layout
+
+\begin_layout Itemize
+Attempting to load NTSC movie file will error out.
+\end_layout
+
+\begin_layout Subsubsection
+--region=ntsc (BSNES core only)
+\end_layout
+
+\begin_layout Standard
+Force ROM to be considered NTSC-only.
+\end_layout
+
+\begin_layout Itemize
+Attempting to load PAL movie file will error out.
+\end_layout
+
 \begin_layout Subsection
 Session options
 \end_layout
@@ -246,6 +330,68 @@ Start paused
 \begin_layout Standard
 Load <filename> as movie or savestate file.
  All other session options are ignored.
+\end_layout
+
+\begin_layout Subsubsection
+--port1=<device> (lsnes/SDL, bsnes core only)
+\end_layout
+
+\begin_layout Standard
+Set type of port1.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+none: No device connected
+\end_layout
+
+\begin_layout Itemize
+gamepad: One gamepad (the default)
+\end_layout
+
+\begin_layout Itemize
+multitap: Four gamepads (warning: makes most games refuse to start)
+\end_layout
+
+\begin_layout Itemize
+mouse: Mouse.
+\end_layout
+
+\begin_layout Subsubsection
+--port2=<type> (lsnes/SDL, bsnes core only)
+\end_layout
+
+\begin_layout Standard
+Set type of port2.
+ Valid values are:
+\end_layout
+
+\begin_layout Itemize
+none: No device connected (the default)
+\end_layout
+
+\begin_layout Itemize
+gamepad: One gamepad
+\end_layout
+
+\begin_layout Itemize
+multitap: Four gamepads.
+\end_layout
+
+\begin_layout Itemize
+mouse: Mouse
+\end_layout
+
+\begin_layout Itemize
+superscope: Super Scope
+\end_layout
+
+\begin_layout Itemize
+justifier: One justifier
+\end_layout
+
+\begin_layout Itemize
+justifiers: Two justifiers
 \end_layout
 
 \begin_layout Subsubsection
@@ -741,6 +887,22 @@ Video is always upscaled to double resolution (512x448 / 512 x 478).
 \begin_layout Itemize
 Video framerate is usually 322445/6448 fps for PAL and 10738636/178683 fps
  for NTSC.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+INTERNAL-SDMP: Internal SDMP dumper.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Mode 'ms': Multi-segment.
+ Takes prefix.
+\end_layout
+
+\begin_layout Itemize
+Mode 'ss': Single-segment.
+ Takes filename.
 \end_layout
 
 \end_deeper
