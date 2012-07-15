@@ -1,7 +1,7 @@
 #ifndef _romtype__hpp__included__
 #define _romtype__hpp__included__
 
-#include <set>
+#include <list>
 #include <string>
 #include <cstdint>
 #include <vector>
@@ -19,6 +19,7 @@ public:
 	const std::string& get_iname();
 	const std::string& get_hname();
 	unsigned get_priority();
+	unsigned get_handle();
 	bool is_multi();
 	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.
 	double approx_framerate();
@@ -55,16 +56,17 @@ struct core_romimage
 struct core_type
 {
 public:
-	core_type(const std::string& iname, const std::string& hname, int (*_load)(core_romimage* images,
+	core_type(const std::string& iname, const std::string& hname, unsigned id, int (*_load)(core_romimage* images,
 		uint64_t rtc_sec, uint64_t rtc_subsec));
-	static std::set<core_type*> get_core_types();
+	static std::list<core_type*> get_core_types();
 	void add_region(core_region& reg);
 	void add_romimage(core_romimage_info& info, unsigned index);
 	core_region& get_preferred_region();
-	std::set<core_region*> get_regions();
+	std::list<core_region*> get_regions();
 	core_sysregion& combine_region(core_region& reg);
 	const std::string& get_iname();
 	const std::string& get_hname();
+	unsigned get_id();
 	unsigned get_image_count();
 	core_romimage_info get_image_info(unsigned index);
 	bool load(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec);
@@ -72,9 +74,10 @@ private:
 	int (*loadimg)(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec);
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
+	unsigned id;
 	std::string iname;
 	std::string hname;
-	std::set<core_region*> regions;
+	std::list<core_region*> regions;
 	std::vector<core_romimage_info*> imageinfo;
 };
 

@@ -129,9 +129,9 @@ namespace
 	core_romimage_info image_rom_dmg("gbrom", "Cartridge ROM", 1, header_fn);
 	core_romimage_info image_rom_gbc("gbcrom", "Cartridge ROM", 1, header_fn);
 	core_romimage_info image_rom_gbca("gbcarom", "Cartridge ROM", 1, header_fn);
-	core_type type_dmg("dmg", "Game Boy", load_rom_dmg);
-	core_type type_gbc("gbc", "Game Boy Color", load_rom_gbc);
-	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", load_rom_gbc_gba);
+	core_type type_dmg("dmg", "Game Boy", 1, load_rom_dmg);
+	core_type type_gbc("gbc", "Game Boy Color", 0, load_rom_gbc);
+	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", 2, load_rom_gbc_gba);
 	core_type_region_bind bind_A(type_dmg, region_world);
 	core_type_region_bind bind_B(type_gbc, region_world);
 	core_type_region_bind bind_C(type_gbc_gba, region_world);
@@ -148,7 +148,7 @@ namespace
 	
 	struct porttype_gamepad : public porttype_info
 	{
-		porttype_gamepad() : porttype_info("gamepad", "Gamepad", generic_port_size<1, 0, 8>())
+		porttype_gamepad() : porttype_info("gamepad", "Gamepad", 1, generic_port_size<1, 0, 8>())
 		{
 			write = generic_port_write<1, 0, 8>;
 			read = generic_port_read<1, 0, 8>;
@@ -180,7 +180,7 @@ namespace
 
 	struct porttype_none : public porttype_info
 	{
-		porttype_none() : porttype_info("none", "None", generic_port_size<0, 0, 0>())
+		porttype_none() : porttype_info("none", "None", 0, generic_port_size<0, 0, 0>())
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;

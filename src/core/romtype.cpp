@@ -69,6 +69,16 @@ namespace
 				i++;
 		}
 	}
+
+	bool compare_coretype(core_type* a, core_type* b)
+	{
+		return (a->get_id() < b->get_id());
+	}
+
+	bool compare_regions(core_region* a, core_region* b)
+	{
+		return (a->get_handle() < b->get_handle());
+	}
 }
 
 core_region::core_region(const std::string& _iname, const std::string& _hname, unsigned _priority, unsigned _handle,
@@ -112,6 +122,11 @@ const std::string& core_region::get_hname()
 unsigned core_region::get_priority()
 {
 	return priority;
+}
+
+unsigned core_region:: get_handle()
+{
+	return handle;
 }
 
 void core_region::fill_framerate_magic(uint64_t* _magic)
@@ -159,9 +174,14 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 	region.fill_framerate_magic(magic);
 }
 
+unsigned core_type::get_id()
+{
+	return id;
+}
+
 void core_type::add_region(core_region& reg)
 {
-	regions.insert(&reg);
+	regions.push_back(&reg);
 }
 
 void core_type::add_romimage(core_romimage_info& info, unsigned index)
@@ -199,17 +219,20 @@ core_romimage_info core_type::get_image_info(unsigned index)
 	return *imageinfo[index];
 }
 
-std::set<core_type*> core_type::get_core_types()
+std::list<core_type*> core_type::get_core_types()
 {
-	std::set<core_type*> ret;
+	std::list<core_type*> ret;
 	for(auto i : types())
-		ret.insert(i.second);
+		ret.push_back(i.second);
+	ret.sort(compare_coretype);
 	return ret;
 }
 
-std::set<core_region*> core_type::get_regions()
+std::list<core_region*> core_type::get_regions()
 {
-	return regions;
+	std::list<core_region*> ret = regions;
+	ret.sort(compare_regions);
+	return ret;
 }
 
 core_region& core_type::get_preferred_region()
@@ -239,9 +262,9 @@ core_sysregion& core_type::combine_region(core_region& reg)
 	throw std::runtime_error("Invalid region for system type");
 }
 
-core_type::core_type(const std::string& _iname, const std::string& _hname, int (*_load)(core_romimage* images,
-		uint64_t rtc_sec, uint64_t rtc_subsec))
-	: iname(_iname), hname(_hname), loadimg(_load)
+core_type::core_type(const std::string& _iname, const std::string& _hname, unsigned _id, 
+	int (*_load)(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec))
+	: iname(_iname), hname(_hname), loadimg(_load), id(_id)
 {
 	types()[iname] = this;
 	process_registrations();
