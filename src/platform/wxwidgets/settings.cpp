@@ -1595,7 +1595,7 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	try {
 		setting::set(name, value);
 	} catch(std::exception& e) {
-		wxMessageBox(towxstring(err), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
+		wxMessageBox(towxstring(e.what()), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
 	}
 }
 
