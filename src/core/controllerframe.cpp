@@ -25,7 +25,7 @@ namespace
 
 	struct porttype_invalid : public porttype_info
 	{
-		porttype_invalid() : porttype_info("invalid-port-type", "invalid-port-type", 0)
+		porttype_invalid() : porttype_info("invalid-port-type", "invalid-port-type", 99999, 0)
 		{
 			write = NULL;
 			read = NULL;
@@ -51,6 +51,11 @@ namespace
 		static porttype_invalid inv;
 		return inv;
 	}
+
+	bool compare_porttype(porttype_info* a, porttype_info* b)
+	{
+		return (a->pt_id < b->pt_id);
+	}
 }
 
 porttype_info& porttype_info::lookup(const std::string& p) throw(std::runtime_error)
@@ -72,11 +77,13 @@ porttype_info::~porttype_info() throw()
 	porttypes().erase(this);
 }
 
-porttype_info::porttype_info(const std::string& pname, const std::string& _hname, size_t psize) throw(std::bad_alloc)
+porttype_info::porttype_info(const std::string& pname, const std::string& _hname, unsigned _pt_id, size_t psize) 
+	throw(std::bad_alloc)
 {
 	name = pname;
 	hname = _hname;
 	storage_size = psize;
+	pt_id = _pt_id;
 	porttypes().insert(this);
 }
 
@@ -85,12 +92,13 @@ porttype_info& porttype_info::default_type()
 	return get_invalid_port_type();
 }
 
-std::set<porttype_info*> porttype_info::get_all()
+std::list<porttype_info*> porttype_info::get_all()
 {
-	std::set<porttype_info*> p;
+	std::list<porttype_info*> p;
 	for(auto i : porttypes())
 		if(i->legal)
-			p.insert(i);
+			p.push_back(i);
+	p.sort(compare_porttype);
 	return p;
 }
 

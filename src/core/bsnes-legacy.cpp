@@ -144,11 +144,11 @@ namespace
 	core_romimage_info image_stbios("rom", "ST BIOS", 1, header_fn);
 	core_romimage_info image_stslota("slot-a", "ST Slot A ROM", 2, header_fn);
 	core_romimage_info image_stslotb("slot-b", "ST Slot B ROM", 2, header_fn);
-	core_type type_snes("snes", "SNES", load_rom_snes);
-	core_type type_bsx("bsx", "BS-X (non-slotted)", load_rom_bsx);
-	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", load_rom_bsxslotted);
-	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", load_rom_sufamiturbo);
-	core_type type_sgb("sgb", "Super Game Boy", load_rom_sgb);
+	core_type type_snes("snes", "SNES", 0, load_rom_snes);
+	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx);
+	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted);
+	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo);
+	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb);
 	core_type_region_bind bind_A(type_snes, region_auto);
 	core_type_region_bind bind_B(type_snes, region_ntsc);
 	core_type_region_bind bind_C(type_snes, region_pal);
@@ -525,7 +525,7 @@ namespace
 
 	struct porttype_gamepad : public porttype_info
 	{
-		porttype_gamepad() : porttype_info("gamepad", "Gamepad", generic_port_size<1, 0, 12>())
+		porttype_gamepad() : porttype_info("gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
 		{
 			write = generic_port_write<1, 0, 12>;
 			read = generic_port_read<1, 0, 12>;
@@ -547,7 +547,7 @@ namespace
 
 	struct porttype_justifier : public porttype_info
 	{
-		porttype_justifier() : porttype_info("justifier", "Justifier", generic_port_size<1, 2, 2>())
+		porttype_justifier() : porttype_info("justifier", "Justifier", 5, generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
@@ -569,7 +569,7 @@ namespace
 
 	struct porttype_justifiers : public porttype_info
 	{
-		porttype_justifiers() : porttype_info("justifiers", "2 Justifiers", generic_port_size<2, 2, 2>())
+		porttype_justifiers() : porttype_info("justifiers", "2 Justifiers", 6, generic_port_size<2, 2, 2>())
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
@@ -591,7 +591,7 @@ namespace
 
 	struct porttype_mouse : public porttype_info
 	{
-		porttype_mouse() : porttype_info("mouse", "Mouse", generic_port_size<1, 2, 2>())
+		porttype_mouse() : porttype_info("mouse", "Mouse", 3, generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
@@ -613,7 +613,7 @@ namespace
 
 	struct porttype_multitap : public porttype_info
 	{
-		porttype_multitap() : porttype_info("multitap", "Multitap", generic_port_size<4, 0, 12>())
+		porttype_multitap() : porttype_info("multitap", "Multitap", 2, generic_port_size<4, 0, 12>())
 		{
 			write = generic_port_write<4, 0, 12>;
 			read = generic_port_read<4, 0, 12>;
@@ -635,7 +635,7 @@ namespace
 
 	struct porttype_none : public porttype_info
 	{
-		porttype_none() : porttype_info("none", "None", generic_port_size<0, 0, 0>())
+		porttype_none() : porttype_info("none", "None", 0, generic_port_size<0, 0, 0>())
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
@@ -657,7 +657,7 @@ namespace
 
 	struct porttype_superscope : public porttype_info
 	{
-		porttype_superscope() : porttype_info("superscope", "Super Scope", generic_port_size<1, 2, 4>())
+		porttype_superscope() : porttype_info("superscope", "Super Scope", 4, generic_port_size<1, 2, 4>())
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;

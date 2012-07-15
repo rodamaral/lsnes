@@ -94,7 +94,7 @@ namespace
 	std::set<std::string> find_present_roms(const std::vector<std::string>& cmdline)
 	{
 		std::set<std::string> p;
-		std::set<core_type*> types = core_type::get_core_types();
+		std::list<core_type*> types = core_type::get_core_types();
 		for(auto i : types) {
 			for(unsigned j = 0; j < i->get_image_count(); j++) {
 				std::string iname = i->get_image_info(j).iname;
@@ -437,7 +437,7 @@ int recognize_commandline_rom(core_type& major, const std::string& romname) thro
 
 core_type& recognize_platform(const std::set<std::string>& present) throw(std::bad_alloc, std::runtime_error)
 {
-	std::set<core_type*> possible = core_type::get_core_types();
+	std::list<core_type*> possible = core_type::get_core_types();
 	unsigned total = 0;
 	for(auto i : present) {
 		regex_results r;

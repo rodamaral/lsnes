@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <set>
+#include <list>
 
 /**
  * For now, reserve 23 bytes, for:
@@ -156,7 +156,7 @@ struct porttype_info
 /**
  * Get set of all available port types.
  */
-	static std::set<porttype_info*> get_all();
+	static std::list<porttype_info*> get_all();
 /**
  * Get some default port type.
  */
@@ -173,7 +173,8 @@ struct porttype_info
  * Parameter psize: The size of storage for this type.
  * Throws std::bad_alloc: Not enough memory.
  */
-	porttype_info(const std::string& pname, const std::string& hname, size_t psize) throw(std::bad_alloc);
+	porttype_info(const std::string& pname, const std::string& hname, unsigned _pt_id, size_t psize)
+		throw(std::bad_alloc);
 /**
  * Unregister port type.
  */
@@ -294,6 +295,10 @@ struct porttype_info
  * Name of controller.
  */
 	std::string ctrlname;
+/**
+ * Id of the port.
+ */
+	unsigned pt_id;
 private:
 	porttype_info(const porttype_info&);
 	porttype_info& operator=(const porttype_info&);
