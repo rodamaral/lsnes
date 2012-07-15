@@ -193,6 +193,8 @@ end:
 			else
 				cfgfile << "set-setting " << i << " " << setting::get(i) << std::endl;
 		}
+		for(auto i : setting::get_invalid_values())
+			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : command::get_aliases()) {
 			std::string old_alias_value = command::get_alias_for(i);
@@ -360,7 +362,9 @@ bool lsnes_app::OnInit()
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Running lsnesrc --- " << std::endl;
+	setting::set_storage_mode(true);
 	command::invokeC("run-script " + cfgpath + "/lsneswxw.rc");
+	setting::set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 
 	if(settings_mode) {
