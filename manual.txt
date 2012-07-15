@@ -4,7 +4,7 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 2 Dependencies
 
-1. bsnes libsnes
+1. bsnes libsnes (for bsnes SNES core)
 
   (a) v084-v087 (v084 or v085 for delayreset support)
 
@@ -12,37 +12,50 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
   (c) Patched version (using included 7 patches)
 
-2. Zlib
+2. gambatte (for gambatte core)
 
-3. boost_iostreams
+  (a) SVN r320
 
-4. boost_filesystem
+  (b) Patched with included patches
 
-5. boost_thread (if native std::thread is not available)
+3. Zlib
 
-6. libsdl (SDL only)
+4. boost_iostreams
 
-7. sdlmain (SDL only, part of SDL)
+5. boost_filesystem
 
-8. boost_conversion (this is header-only library)
+6. boost_thread (if native std::thread is not available)
 
-9. libswscale (wxwidgets graphics only)
+7. libsdl (SDL only)
 
-10. Portaudio (portaudio sound only)
+8. sdlmain (SDL only, part of SDL)
 
-11. Lua (if Lua support is needed).
+9. boost_conversion (this is header-only library)
+
+10. libswscale (wxwidgets graphics only)
+
+11. Portaudio (portaudio sound only)
+
+12. Lua (if Lua support is needed).
 
   • Version 5.1.X or 5.2X.
 
-12. G++ 4.6 (bsnes doesn't seem to like 4.7).
+13. G++ 4.6 (bsnes doesn't seem to like 4.7, status for gambatte 
+  is unknown).
 
 3 Building
 
 • Copy bsnes sources (the bsnes subdirectory) to subdirectory 
-  'bsnes'.
+  'bsnes' (for bsnes core).
+
+• Copy gambatte sources to subdirectory 'gambatte' (for gambatte 
+  core).
 
 • Patch the bsnes sources with included patches (directory 
-  'bsnes-patches/<version>')
+  'bsnes-patches/<version>', bsnes core)
+
+• Patch the gambatte sources with included patches (directory 
+  'gambatte-patches/<version>', gambatte core)
 
 • Edit options.build (or copy of that file)
 
@@ -55,26 +68,34 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 <kind> in the following can be one of:
 
-• rom: Cartridge ROM (BIOS for special carts). This is required.
+• rom: Cartridge ROM (BIOS for special carts). This is required. 
+  (bsnes)
 
-• bsx: BS-X (non-slotted) Game flash ROM.
+• bsx: BS-X (non-slotted) Game flash ROM. (bsnes)
 
-• bsxslotted: BS-X (slotted) Game flash ROM.
+• bsxslotted: BS-X (slotted) Game flash ROM. (bsnes)
 
-• dmg: DMG game ROM
+• dmg: DMG game ROM (bsnes)
 
-• slot-a: Sufami Turbo Slot A ROM
+• slot-a: Sufami Turbo Slot A ROM (bsnes)
 
-• slot-b: Sufami Turbo Slot B ROM
+• slot-b: Sufami Turbo Slot B ROM (bsnes)
+
+• gbrom: Game Boy ROM (gambatte)
+
+• gbcrom: Game Boy Color ROM (gambatte)
+
+• gbcarom: Game Boy Color ROM (Use GBA initial registers, 
+  gambatte)
 
 4.1.1 --<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
-Load <file> as specified ROM (SFC/BS/DMG/ST file format).
+Load <file> as specified ROM (SFC/BS/DMG/GB/GBC/ST file format).
 
 4.1.2 --<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
 
 Override hardware detection for ROM, reading the values from 
-<file> (BSNES XML format).
+<file> (BSNES XML format or gambatte extra flags).
 
 4.1.3 --ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
 
@@ -92,7 +113,7 @@ Set offset to apply to IPS patches. May be negative. Handy for
 applying headered IPS patches (use offset of -512 for this). The 
 offset must be 0 for BPS patches.
 
-4.1.6 --pal
+4.1.6 --region=pal (BSNES core only)
 
 Force ROM to be considered PAL-only.
 
@@ -100,7 +121,7 @@ Force ROM to be considered PAL-only.
 
 • Attempting to load NTSC movie file will error out.
 
-4.1.7 --ntsc
+4.1.7 --region=ntsc (BSNES core only)
 
 Force ROM to be considered NTSC-only.
 
@@ -117,7 +138,7 @@ Start paused
 Load <filename> as movie or savestate file. All other session 
 options are ignored.
 
-4.2.3 --port1=<device> (lsnes/SDL)
+4.2.3 --port1=<device> (lsnes/SDL, bsnes core only)
 
 Set type of port1. Valid values are:
 
@@ -130,7 +151,7 @@ Set type of port1. Valid values are:
 
 • mouse: Mouse.
 
-4.2.4 --port2=<type> (lsnes/SDL)
+4.2.4 --port2=<type> (lsnes/SDL, bsnes core only)
 
 Set type of port2. Valid values are:
 
