@@ -1,4 +1,4 @@
-From 58e7bcf988a64733c22337e21b74b31d2de7b64b Mon Sep 17 00:00:00 2001
+From 0c061244bc907dc3f3202f62b771759105825b1f Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 12 Jul 2012 20:49:57 +0300
 Subject: [PATCH] Changes to make libgambatte rerecording-friendly
@@ -41,7 +41,7 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
  libgambatte/src/sound/channel3.cpp           |   41 +++-
  libgambatte/src/sound/channel3.h             |   27 ++-
  libgambatte/src/sound/channel4.cpp           |   59 ++++--
- libgambatte/src/sound/channel4.h             |   39 +++--
+ libgambatte/src/sound/channel4.h             |   40 +++--
  libgambatte/src/sound/duty_unit.cpp          |   34 +++-
  libgambatte/src/sound/duty_unit.h            |   29 ++-
  libgambatte/src/sound/envelope_unit.cpp      |   19 ++-
@@ -66,7 +66,7 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
  libgambatte/src/video/ppu.h                  |   84 ++++++---
  libgambatte/src/video/sprite_mapper.cpp      |   17 +-
  libgambatte/src/video/sprite_mapper.h        |   53 ++++--
- 62 files changed, 2150 insertions(+), 603 deletions(-)
+ 62 files changed, 2151 insertions(+), 603 deletions(-)
  create mode 100644 Makefile
  create mode 100644 libgambatte/Makefile
  create mode 100644 libgambatte/src/loadsave.cpp
@@ -3504,7 +3504,7 @@ index 35c3c00..9d89db7 100644
 +
  }
 diff --git a/libgambatte/src/sound/channel4.h b/libgambatte/src/sound/channel4.h
-index 00b0b5a..cb923b8 100644
+index 00b0b5a..d52d9f7 100644
 --- a/libgambatte/src/sound/channel4.h
 +++ b/libgambatte/src/sound/channel4.h
 @@ -24,6 +24,11 @@
@@ -3519,7 +3519,7 @@ index 00b0b5a..cb923b8 100644
  
  namespace gambatte {
  
-@@ -31,26 +36,32 @@ struct SaveState;
+@@ -31,26 +36,33 @@ struct SaveState;
  
  class Channel4 {
  	class Lfsr : public SoundUnit {
@@ -3552,6 +3552,7 @@ index 00b0b5a..cb923b8 100644
 -		void reviveCounter(unsigned long cc);
 +		void reviveCounter(unsigned cc);
 +		void loadOrSave(loadsave& state) {
++			loadOrSave2(state);
 +			state(backupCounter);
 +			state(reg);
 +			state(nr3);
@@ -3560,7 +3561,7 @@ index 00b0b5a..cb923b8 100644
  	};
  	
  	class Ch4MasterDisabler : public MasterDisabler {
-@@ -70,9 +81,9 @@ class Channel4 {
+@@ -70,9 +82,9 @@ class Channel4 {
  	
  	SoundUnit *nextEventUnit;
  	
@@ -3573,7 +3574,7 @@ index 00b0b5a..cb923b8 100644
  	
  	unsigned char nr4;
  	bool master;
-@@ -86,15 +97,17 @@ public:
+@@ -86,15 +98,17 @@ public:
  	void setNr3(unsigned data) { lfsr.nr3Change(data, cycleCounter); /*setEvent();*/ }
  	void setNr4(unsigned data);
  	

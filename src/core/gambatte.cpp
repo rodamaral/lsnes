@@ -13,6 +13,7 @@
 #include "core/window.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
+#include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
 #define HAVE_CSTDINT
@@ -53,6 +54,7 @@ namespace
 	gambatte::GB* instance;
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
+	uint32_t primary_framebuffer[160*144];
 
 	time_t walltime_fn()
 	{
@@ -95,6 +97,7 @@ namespace
 		new(instance) gambatte::GB;
 		instance->setInputGetter(&getinput);
 		instance->set_walltime_fn(walltime_fn);
+		memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
 		frame_overflow = 0;
 		
 		rtc_fixed = true;
@@ -296,13 +299,9 @@ void core_emulate_frame()
 	static uint32_t accumulator_r = 0;
 	static unsigned accumulator_s = 0;
 	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
-	uint32_t videobuf[160*144];
-	static uint32_t old_videobuf[160*144];
 	while(true) {
 		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
-		long ret = instance->runFor(videobuf, 160, samplebuffer, samples_emitted);
-		if(ret >= 0)
-			memcpy(old_videobuf, videobuf, sizeof(old_videobuf));
+		long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
 		for(unsigned i = 0; i < samples_emitted; i++) {
 			uint32_t l = (int32_t)(int16_t)(samplebuffer[i]) + 32768;
 			uint32_t r = (int32_t)(int16_t)(samplebuffer[i] >> 16) + 32768;
@@ -327,7 +326,7 @@ void core_emulate_frame()
 	}
 	framebuffer_info inf;
 	inf.type = &_pixel_format_rgb32;
-	inf.mem = const_cast<char*>(reinterpret_cast<const char*>(old_videobuf));
+	inf.mem = const_cast<char*>(reinterpret_cast<const char*>(primary_framebuffer));
 	inf.physwidth = 160;
 	inf.physheight = 144;
 	inf.physstride = 640;
@@ -458,23 +457,27 @@ function_ptr_command<> cmp_save2("do-cmp-save", "", "\n", []() throw(std::bad_al
 void core_serialize(std::vector<char>& out)
 {
 	instance->saveState(out);
+	size_t osize = out.size();
+	out.resize(osize + 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]));
+	for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
+		write32ube(&out[osize + 4 * i], primary_framebuffer[i]);
 	out.push_back(frame_overflow >> 8);
 	out.push_back(frame_overflow);
 }
 
 void core_unserialize(const char* in, size_t insize)
 {
+	size_t foffset = insize - 2 - 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]);
 	std::vector<char> tmp;
-	tmp.resize(insize - 2);
-	memcpy(&tmp[0], in, insize - 2);
+	tmp.resize(foffset);
+	memcpy(&tmp[0], in, foffset);
 	instance->loadState(tmp);
+	for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
+		primary_framebuffer[i] = read32ube(&in[foffset + 4 * i]);
+
 	unsigned x1 = (unsigned char)in[insize - 2];
 	unsigned x2 = (unsigned char)in[insize - 1];
 	frame_overflow = x1 * 256 + x2;
-	std::vector<char> cmpx;
-	core_serialize(cmpx);
-	if(cmpx.size() != insize || memcmp(&cmpx[0], in, insize))
-		throw std::runtime_error("Loading and resaving won't roundtrip");
 }
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
