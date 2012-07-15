@@ -1,4 +1,4 @@
-From 0c061244bc907dc3f3202f62b771759105825b1f Mon Sep 17 00:00:00 2001
+From 24eb71f288305085f52961b2c1bcb9273aebed49 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 12 Jul 2012 20:49:57 +0300
 Subject: [PATCH] Changes to make libgambatte rerecording-friendly
@@ -35,7 +35,7 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
  libgambatte/src/sound.cpp                    |   36 +++-
  libgambatte/src/sound.h                      |   17 ++-
  libgambatte/src/sound/channel1.cpp           |   44 ++++-
- libgambatte/src/sound/channel1.h             |   24 ++-
+ libgambatte/src/sound/channel1.h             |   25 ++-
  libgambatte/src/sound/channel2.cpp           |   41 +++-
  libgambatte/src/sound/channel2.h             |   17 ++-
  libgambatte/src/sound/channel3.cpp           |   41 +++-
@@ -66,7 +66,7 @@ Subject: [PATCH] Changes to make libgambatte rerecording-friendly
  libgambatte/src/video/ppu.h                  |   84 ++++++---
  libgambatte/src/video/sprite_mapper.cpp      |   17 +-
  libgambatte/src/video/sprite_mapper.h        |   53 ++++--
- 62 files changed, 2151 insertions(+), 603 deletions(-)
+ 62 files changed, 2152 insertions(+), 603 deletions(-)
  create mode 100644 Makefile
  create mode 100644 libgambatte/Makefile
  create mode 100644 libgambatte/src/loadsave.cpp
@@ -2998,7 +2998,7 @@ index 82e623a..e282d0a 100644
 +
  }
 diff --git a/libgambatte/src/sound/channel1.h b/libgambatte/src/sound/channel1.h
-index 9c77277..780f02d 100644
+index 9c77277..1f4eba9 100644
 --- a/libgambatte/src/sound/channel1.h
 +++ b/libgambatte/src/sound/channel1.h
 @@ -19,12 +19,17 @@
@@ -3019,7 +3019,7 @@ index 9c77277..780f02d 100644
  
  namespace gambatte {
  
-@@ -44,10 +49,15 @@ class Channel1 {
+@@ -44,10 +49,16 @@ class Channel1 {
  		SweepUnit(MasterDisabler &disabler, DutyUnit &dutyUnit);
  		void event();
  		void nr0Change(unsigned newNr0);
@@ -3029,6 +3029,7 @@ index 9c77277..780f02d 100644
  		void saveState(SaveState &state) const;
  		void loadState(const SaveState &state);
 +		void loadOrSave(loadsave& state) {
++			loadOrSave2(state);
 +			state(shadow);
 +			state(nr0);
 +			state(negging);
@@ -3036,7 +3037,7 @@ index 9c77277..780f02d 100644
  	};
  	
  	friend class StaticOutputTester<Channel1,DutyUnit>;
-@@ -61,9 +71,9 @@ class Channel1 {
+@@ -61,9 +72,9 @@ class Channel1 {
  	
  	SoundUnit *nextEventUnit;
  	
@@ -3049,7 +3050,7 @@ index 9c77277..780f02d 100644
  	
  	unsigned char nr4;
  	bool master;
-@@ -78,15 +88,17 @@ public:
+@@ -78,15 +89,17 @@ public:
  	void setNr3(unsigned data);
  	void setNr4(unsigned data);
  	
