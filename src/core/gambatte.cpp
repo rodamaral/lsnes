@@ -337,7 +337,7 @@ void core_emulate_frame()
 	inf.offset_y = 0;
 
 	framebuffer_raw ls(inf);
-	ecore_callbacks->output_frame(ls, 4389, 262144);
+	ecore_callbacks->output_frame(ls, 262144, 4389);
 }
 
 std::list<vma_info> get_vma_list()
