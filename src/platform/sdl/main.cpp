@@ -10,6 +10,7 @@
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 
 #include "platform/sdl/platform.hpp"

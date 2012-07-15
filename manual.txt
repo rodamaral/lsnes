@@ -3070,3 +3070,13 @@ set-axis joystick0axis19 disabled
 
 • DnD movies/saves on the main window.
 
+15.65 rr1-delta11
+
+• Split core bindings into own module.
+
+• Remember invalid settings
+
+• Support for modified Gambatte core for GB/GBC emulation.
+
+• Reload/swap ROM function
+
