@@ -6197,5 +6197,25 @@ click on panel wedges the emulator
 DnD movies/saves on the main window.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta11
+\end_layout
+
+\begin_layout Itemize
+Split core bindings into own module.
+\end_layout
+
+\begin_layout Itemize
+Remember invalid settings
+\end_layout
+
+\begin_layout Itemize
+Support for modified Gambatte core for GB/GBC emulation.
+\end_layout
+
+\begin_layout Itemize
+Reload/swap ROM function
+\end_layout
+
 \end_body
 \end_document
