@@ -109,6 +109,16 @@ public:
  */
 	static std::set<std::string> get_settings_set() throw(std::bad_alloc);
 /**
+ * Enable/Disable storage mode.
+ *
+ * In storage mode, invalid values are stored in addition to being rejected.
+ */
+	static void set_storage_mode(bool enable) throw();
+/**
+ * Get invalid settings cache.
+ */
+	static std::map<std::string, std::string> get_invalid_values() throw(std::bad_alloc);
+/**
  * Lock holder
  */
 	struct lock_holder
@@ -123,6 +133,8 @@ protected:
 	std::string settingname;
 private:
 	static setting* get_by_name(const std::string& name);
+	static std::map<std::string, std::string> invalid_values;
+	static bool storage_mode;
 	mutex* mut;
 };
 

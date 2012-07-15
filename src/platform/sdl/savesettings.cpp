@@ -44,6 +44,8 @@ namespace
 			else
 				cfgfile << "set-setting " << i << " " << setting::get(i) << std::endl;
 		}
+		for(auto i : setting::get_invalid_values())
+			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : command::get_aliases()) {
 			std::string old_alias_value = command::get_alias_for(i);

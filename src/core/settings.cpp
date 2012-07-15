@@ -69,6 +69,9 @@ namespace
 	};
 }
 
+std::map<std::string, std::string> setting::invalid_values;
+bool setting::storage_mode = false;
+
 setting::setting(const std::string& name) throw(std::bad_alloc)
 {
 	stlock_hold lck;
@@ -93,16 +96,26 @@ setting* setting::get_by_name(const std::string& name)
 
 void setting::set(const std::string& _setting, const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
-	setting* tochange = get_by_name(_setting);
+	setting* tochange;
+	try {
+		tochange = get_by_name(_setting);
+	} catch(...) {
+		if(storage_mode)
+			invalid_values[_setting] = value;
+		throw;
+	}
 	try {
 		{
 			lock_holder lck(tochange);
 			tochange->set(value);
+			invalid_values.erase(_setting);
 		}
 		information_dispatch::do_setting_change(_setting, value);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
+		if(storage_mode)
+			invalid_values[_setting] = value;
 		throw std::runtime_error("Can't set setting '" + _setting + "': " + e.what());
 	}
 }
@@ -133,6 +146,7 @@ void setting::blank(const std::string& _setting) throw(std::bad_alloc, std::runt
 			lock_holder lck(tochange);
 			if(!tochange->blank(true))
 				throw std::runtime_error("This setting can't be cleared");
+			invalid_values.erase(_setting);
 		}
 		information_dispatch::do_setting_clear(_setting);
 	} catch(std::bad_alloc& e) {
@@ -166,6 +180,16 @@ std::set<std::string> setting::get_settings_set() throw(std::bad_alloc)
 	for(auto i : settings())
 		r.insert(i.first);
 	return r;
+}
+
+void setting::set_storage_mode(bool enable) throw()
+{
+	storage_mode = enable;
+}
+
+std::map<std::string, std::string> setting::get_invalid_values() throw(std::bad_alloc)
+{
+	return invalid_values;
 }
 
 
