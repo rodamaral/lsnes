@@ -123,8 +123,6 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			cancel_advance = false;
 		}
-		if(amode == ADVANCE_SKIPLAG)
-			amode = ADVANCE_AUTO;
 		location_special = SPECIAL_NONE;
 		update_movie_state();
 	} else {
@@ -479,7 +477,7 @@ namespace
 	function_ptr_command<> advance_skiplag("advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			amode = ADVANCE_SKIPLAG;
+			amode = ADVANCE_SKIPLAG_PENDING;
 			platform::cancel_wait();
 			platform::set_paused(false);
 		});
