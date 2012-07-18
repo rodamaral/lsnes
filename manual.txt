@@ -3080,3 +3080,7 @@ set-axis joystick0axis19 disabled
 
 • Reload/swap ROM function
 
+15.66 rr1-delta11epsilon1
+
+• Fix step poll function
+

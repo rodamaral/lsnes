@@ -6217,5 +6217,13 @@ Support for modified Gambatte core for GB/GBC emulation.
 Reload/swap ROM function
 \end_layout
 
+\begin_layout Subsection
+rr1-delta11epsilon1
+\end_layout
+
+\begin_layout Itemize
+Fix step poll function
+\end_layout
+
 \end_body
 \end_document
