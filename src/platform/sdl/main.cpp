@@ -12,6 +12,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/zip.hpp"
 
 #include "platform/sdl/platform.hpp"
 
@@ -56,8 +57,9 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 		}
 		if(o.length() >= 16 && o.substr(0, 16) == "--rtc-subsecond=") {
 			movie.rtc_subsecond = movie.movie_rtc_subsecond = parse_value<int64_t>(o.substr(16));
-			if(movie.rtc_subsecond < 0 || movie.rtc_subsecond > 3462619485019ULL)
-				throw std::runtime_error("Bad RTC subsecond value (range is 0-3462619485019)");
+		}
+		if(o.length() >= 19 && o.substr(0, 19) == "--anchor-savestate=") {
+			movie.anchor_savestate = read_file_relative(o.substr(19), "");
 		}
 	}
 	movie.input.clear(*movie.port1, *movie.port2);

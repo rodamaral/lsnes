@@ -773,7 +773,7 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(5 + sram_set.size(), 2, 0, 0);
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(6 + sram_set.size(), 2, 0, 0);
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
 	load_cchoices(cchoices, 0, dfltidx);
 	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx], wxDefaultPosition,
@@ -797,8 +797,12 @@ wxwin_project::wxwin_project(loaded_rom& rom)
 	mainblock->Add(prefix = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
 		wxGROW);
 	unsigned idx = 0;
+	sram_set.insert("");
 	for(auto i : sram_set) {
-		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring("SRAM " + i)), 0, wxGROW);
+		std::string name = "SRAM " + i;
+		if(i == "")
+			name = "Anchor savestate";
+		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring(name)), 0, wxGROW);
 		wxFlexGridSizer* fileblock2 = new wxFlexGridSizer(1, 2, 0, 0);
 		fileblock2->Add(sram_files[i] = new wxTextCtrl(new_panel, wxID_ANY, wxT(""), wxDefaultPosition,
 			wxSize(500, -1)), 1, wxGROW);
@@ -970,8 +974,13 @@ struct moviefile wxwin_project::make_movie()
 	}
 	for(auto i : sram_files) {
 		std::string sf = tostdstring(i.second->GetValue());
-		if(sf != "")
-			f.movie_sram[i.first] = read_file_relative(sf, "");
+		if(i.first != "") {
+			if(sf != "")
+				f.movie_sram[i.first] = read_file_relative(sf, "");
+		} else {
+			if(sf != "")
+				f.anchor_savestate = read_file_relative(sf, "");
+		}
 	}
 	f.is_savestate = false;
 	f.movie_rtc_second = f.rtc_second = boost::lexical_cast<int64_t>(tostdstring(rtc_sec->GetValue()));

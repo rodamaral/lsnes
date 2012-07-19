@@ -447,6 +447,14 @@ Set RTC subsecond.
  Default is 0.
 \end_layout
 
+\begin_layout Subsubsection
+--anchor-savestate=<file> (lsnes/SDL)
+\end_layout
+
+\begin_layout Standard
+Set the anchor savestate file.
+\end_layout
+
 \begin_layout Subsection
 Misc.
  options:
@@ -6223,6 +6231,14 @@ rr1-delta11epsilon1
 
 \begin_layout Itemize
 Fix step poll function
+\end_layout
+
+\begin_layout Subsection
+rr1-delta12
+\end_layout
+
+\begin_layout Itemize
+Non-insane savestate anchoring
 \end_layout
 
 \end_body

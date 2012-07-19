@@ -98,11 +98,8 @@ int main(int argc, char** argv)
 					<< " bytes)" << std::endl;
 		} else
 			std::cout << "Movie starts from clean state" << std::endl;
-		if(m.get_frame_count() > starting_point)
-			std::cout << "Movie frame count: " << (m.get_frame_count() - starting_point) << std::endl;
-		else
-			std::cout << "Movie frame count: 0" << std::endl;
-		uint64_t length = m.get_movie_length(starting_point);
+		std::cout << "Movie frame count: " << m.get_frame_count() << std::endl;
+		uint64_t length = m.get_movie_length();
 		{
 			std::ostringstream x;
 			if(length >= 3600000000000ULL) {

@@ -195,6 +195,10 @@ Set RTC second (0 is 1st January 1970 00:00:00Z). Default is
 
 Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 
+4.2.11 --anchor-savestate=<file> (lsnes/SDL)
+
+Set the anchor savestate file.
+
 4.3 Misc. options:
 
 4.3.1 --run=<file> (lsnes/SDL)
@@ -3083,4 +3087,8 @@ set-axis joystick0axis19 disabled
 15.66 rr1-delta11epsilon1
 
 • Fix step poll function
+
+15.67 rr1-delta12
+
+• Non-insane savestate anchoring
 

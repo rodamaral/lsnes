@@ -356,6 +356,8 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_numeric_file(r, "starttime.subsecond", movie_rtc_subsecond, true);
 	rtc_second = movie_rtc_second;
 	rtc_subsecond = movie_rtc_subsecond;
+	if(r.has_member("savestate.anchor"))
+		anchor_savestate = read_raw_file(r, "savestate.anchor");
 	if(r.has_member("savestate")) {
 		is_savestate = true;
 		if(r.has_member("moviestate"))
@@ -415,6 +417,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_raw_file(w, "moviesram." + i.first, i.second);
 	write_numeric_file(w, "starttime.second", movie_rtc_second);
 	write_numeric_file(w, "starttime.subsecond", movie_rtc_subsecond);
+	if(!anchor_savestate.empty())
+			write_raw_file(w, "savestate.anchor", anchor_savestate);
 	if(is_savestate) {
 		write_numeric_file(w, "saveframe", save_frame);
 		write_numeric_file(w, "lagcounter", lagged_frames);
@@ -424,8 +428,8 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_raw_file(w, "screenshot", screenshot);
 		for(auto i : sram)
 			write_raw_file(w, "sram." + i.first, i.second);
-	write_numeric_file(w, "savetime.second", rtc_second);
-	write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
+		write_numeric_file(w, "savetime.second", rtc_second);
+		write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
 	}
 	write_authors_file(w, authors);
 	write_input(w, input);
@@ -444,20 +448,11 @@ namespace
 	const int BLOCK_FRAMES = 1;
 	const int STEP_W = 2;
 	const int STEP_N = 3;
-
-	uint64_t magic[2][4] = {
-		{178683, 10738636, 16639264, 596096},
-		{6448, 322445, 19997208, 266440}
-	};
 }
 
-uint64_t moviefile::get_movie_length(uint64_t framebias) throw()
+uint64_t moviefile::get_movie_length() throw()
 {
 	uint64_t frames = get_frame_count();
-	if(frames > framebias)
-		frames -= framebias;
-	else
-		frames = 0;
 	uint64_t _magic[4];
 	gametype->fill_framerate_magic(_magic);
 	uint64_t t = _magic[BLOCK_SECONDS] * 1000000000ULL * (frames / _magic[BLOCK_FRAMES]);
