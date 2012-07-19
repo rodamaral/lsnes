@@ -285,6 +285,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
+		if(!our_movie.anchor_savestate.empty())
+			load_core_state(our_movie.anchor_savestate);
 		redraw_framebuffer(screen_nosignal);
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
@@ -370,6 +372,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			controls.set_port(1, *_movie.port2, true);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
+			if(!_movie.anchor_savestate.empty())
+				load_core_state(_movie.anchor_savestate);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

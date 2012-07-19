@@ -101,6 +101,10 @@ struct moviefile
  */
 	std::vector<char> savestate;		//Savestate to load (if is_savestate is true).
 /**
+ * Anchoring core savestate (if not empty).
+ */
+	std::vector<char> anchor_savestate;
+/**
  * Host memory (if is_savestate is true).
  */
 	std::vector<char> host_memory;
@@ -161,10 +165,9 @@ struct moviefile
 /**
  * Get length of the movie
  *
- * parameter framebias: Number of frames to subtract.
  * returns: Length of the movie in nanoseconds.
  */
-	uint64_t get_movie_length(uint64_t framebias = 0) throw();
+	uint64_t get_movie_length() throw();
 };
 
 std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc);
