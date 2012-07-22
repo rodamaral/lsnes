@@ -242,7 +242,7 @@ loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtim
 		return;
 	}
 	for(size_t i = 0; i < sizeof(files.romimg)/sizeof(files.romimg[0]); i++) {
-		if((cromimg[i] != "" || cromxml[i] != "") && i > rtype->get_image_count()) {
+		if((cromimg[i] != "" || cromxml[i] != "") && i > files.rtype->get_image_count()) {
 			messages << "Warning: ROM slot #" << (i + 1) << " is not used for this console" << std::endl;
 			cromimg[i] = "";
 			cromxml[i] = "";
