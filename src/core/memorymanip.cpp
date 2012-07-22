@@ -360,6 +360,44 @@ struct search_value
 };
 
 /**
+ * \brief Native-value search function for specific difference
+ */
+template<typename T>
+struct search_difference
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef T value_type;
+
+/**
+ * \brief Create new search object
+ *
+ * \param v The value to search for.
+ */
+	search_difference(T v) throw()
+	{
+		val = v;
+	}
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(T oldv, T newv) const throw()
+	{
+		return ((newv - oldv) == val);
+	}
+
+/**
+ * \brief The value to look for
+ */
+	T val;
+};
+
+/**
  * \brief Native-value search function for less-than function.
  */
 template<typename T>
@@ -498,6 +536,107 @@ struct search_gt
 };
 
 /**
+ * \brief Native-value search function for sequence less-than function.
+ */
+template<typename T>
+struct search_seqlt
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef T value_type;
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(T oldv, T newv) const throw()
+	{
+		T mask = (T)1 << (sizeof(T) * 8 - 1);
+		T diff = newv - oldv;
+		return ((diff & mask) != 0);
+	}
+};
+
+/**
+ * \brief Native-value search function for sequence less-or-equal function.
+ */
+template<typename T>
+struct search_seqle
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef T value_type;
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(T oldv, T newv) const throw()
+	{
+		T mask = (T)1 << (sizeof(T) * 8 - 1);
+		T diff = newv - oldv;
+		return ((diff & mask) != 0) || (diff == 0);
+	}
+};
+
+/**
+ * \brief Native-value search function for sequence greater-or-equal function.
+ */
+template<typename T>
+struct search_seqge
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef T value_type;
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(T oldv, T newv) const throw()
+	{
+		T mask = (T)1 << (sizeof(T) * 8 - 1);
+		T diff = newv - oldv;
+		return ((diff & mask) == 0);
+	}
+};
+
+/**
+ * \brief Native-value search function for sequence greater-than function.
+ */
+template<typename T>
+struct search_seqgt
+{
+/**
+ * \brief The underlying numeric type
+ */
+	typedef T value_type;
+
+/**
+ * \brief Condition function.
+ * \param oldv The old value
+ * \param newv The new value
+ * \return True if new value satisfies condition, false otherwise.
+ */
+	bool operator()(T oldv, T newv) const throw()
+	{
+		T mask = (T)1 << (sizeof(T) * 8 - 1);
+		T diff = newv - oldv;
+		return ((diff & mask) == 0) && (diff != 0);
+	}
+};
+
+
+/**
  * \brief Helper class to decode arguments to search functions
  *
  * This class acts as adapter between search conditions taking native numbers as parameters and the interface
@@ -552,6 +691,35 @@ struct search_value_helper
 	const T& val;
 };
 
+void memorysearch::dq_range(uint64_t first, uint64_t last)
+{
+	struct translated_address t = translate_address_linear_ram(0);
+	uint64_t switch_at = t.memory_size;
+	uint64_t base = 0;
+	uint64_t size = previous_content.size();
+	for(uint64_t i = 0; i < size; i++) {
+		if(still_in[i / 64] == 0) {
+			i = (i + 64) >> 6 << 6;
+			i--;
+			continue;
+		}
+		//t.memory_size == 0 can happen if cart changes.
+		while(i >= switch_at && t.memory_size > 0) {
+			t = translate_address_linear_ram(switch_at);
+			base = switch_at;
+			switch_at += t.memory_size;
+		}
+		uint64_t addr = t.raw_addr + (i - base);
+		if(t.memory_size == 0 || (addr >= first && addr <= last)) {
+			if((still_in[i / 64] >> (i % 64)) & 1) {
+				still_in[i / 64] &= ~(1ULL << (i % 64));
+				candidates--;
+			}
+		}
+	}
+}
+
+
 template<class T> void memorysearch::search(const T& obj) throw()
 {
 	search_value_helper<T> helper(obj);
@@ -593,6 +761,7 @@ template<class T> void memorysearch::search(const T& obj) throw()
 }
 
 void memorysearch::byte_value(uint8_t value) throw() { search(search_value<uint8_t>(value)); }
+void memorysearch::byte_difference(uint8_t value) throw() { search(search_difference<uint8_t>(value)); }
 void memorysearch::byte_slt() throw() { search(search_lt<int8_t>()); }
 void memorysearch::byte_sle() throw() { search(search_le<int8_t>()); }
 void memorysearch::byte_seq() throw() { search(search_eq<int8_t>()); }
@@ -605,8 +774,13 @@ void memorysearch::byte_ueq() throw() { search(search_eq<uint8_t>()); }
 void memorysearch::byte_une() throw() { search(search_ne<uint8_t>()); }
 void memorysearch::byte_uge() throw() { search(search_ge<uint8_t>()); }
 void memorysearch::byte_ugt() throw() { search(search_gt<uint8_t>()); }
+void memorysearch::byte_seqlt() throw() { search(search_seqlt<uint8_t>()); }
+void memorysearch::byte_seqle() throw() { search(search_seqle<uint8_t>()); }
+void memorysearch::byte_seqge() throw() { search(search_seqge<uint8_t>()); }
+void memorysearch::byte_seqgt() throw() { search(search_seqgt<uint8_t>()); }
 
 void memorysearch::word_value(uint16_t value) throw() { search(search_value<uint16_t>(value)); }
+void memorysearch::word_difference(uint16_t value) throw() { search(search_difference<uint16_t>(value)); }
 void memorysearch::word_slt() throw() { search(search_lt<int16_t>()); }
 void memorysearch::word_sle() throw() { search(search_le<int16_t>()); }
 void memorysearch::word_seq() throw() { search(search_eq<int16_t>()); }
@@ -619,8 +793,13 @@ void memorysearch::word_ueq() throw() { search(search_eq<uint16_t>()); }
 void memorysearch::word_une() throw() { search(search_ne<uint16_t>()); }
 void memorysearch::word_uge() throw() { search(search_ge<uint16_t>()); }
 void memorysearch::word_ugt() throw() { search(search_gt<uint16_t>()); }
+void memorysearch::word_seqlt() throw() { search(search_seqlt<uint16_t>()); }
+void memorysearch::word_seqle() throw() { search(search_seqle<uint16_t>()); }
+void memorysearch::word_seqge() throw() { search(search_seqge<uint16_t>()); }
+void memorysearch::word_seqgt() throw() { search(search_seqgt<uint16_t>()); }
 
 void memorysearch::dword_value(uint32_t value) throw() { search(search_value<uint32_t>(value)); }
+void memorysearch::dword_difference(uint32_t value) throw() { search(search_difference<uint32_t>(value)); }
 void memorysearch::dword_slt() throw() { search(search_lt<int32_t>()); }
 void memorysearch::dword_sle() throw() { search(search_le<int32_t>()); }
 void memorysearch::dword_seq() throw() { search(search_eq<int32_t>()); }
@@ -633,8 +812,13 @@ void memorysearch::dword_ueq() throw() { search(search_eq<uint32_t>()); }
 void memorysearch::dword_une() throw() { search(search_ne<uint32_t>()); }
 void memorysearch::dword_uge() throw() { search(search_ge<uint32_t>()); }
 void memorysearch::dword_ugt() throw() { search(search_gt<uint32_t>()); }
+void memorysearch::dword_seqlt() throw() { search(search_seqlt<uint32_t>()); }
+void memorysearch::dword_seqle() throw() { search(search_seqle<uint32_t>()); }
+void memorysearch::dword_seqge() throw() { search(search_seqge<uint32_t>()); }
+void memorysearch::dword_seqgt() throw() { search(search_seqgt<uint32_t>()); }
 
 void memorysearch::qword_value(uint64_t value) throw() { search(search_value<uint64_t>(value)); }
+void memorysearch::qword_difference(uint64_t value) throw() { search(search_difference<uint64_t>(value)); }
 void memorysearch::qword_slt() throw() { search(search_lt<int64_t>()); }
 void memorysearch::qword_sle() throw() { search(search_le<int64_t>()); }
 void memorysearch::qword_seq() throw() { search(search_eq<int64_t>()); }
@@ -647,6 +831,10 @@ void memorysearch::qword_ueq() throw() { search(search_eq<uint64_t>()); }
 void memorysearch::qword_une() throw() { search(search_ne<uint64_t>()); }
 void memorysearch::qword_uge() throw() { search(search_ge<uint64_t>()); }
 void memorysearch::qword_ugt() throw() { search(search_gt<uint64_t>()); }
+void memorysearch::qword_seqlt() throw() { search(search_seqlt<uint64_t>()); }
+void memorysearch::qword_seqle() throw() { search(search_seqle<uint64_t>()); }
+void memorysearch::qword_seqge() throw() { search(search_seqge<uint64_t>()); }
+void memorysearch::qword_seqgt() throw() { search(search_seqgt<uint64_t>()); }
 
 void memorysearch::update() throw() { search(search_update()); }
 
@@ -865,10 +1053,22 @@ namespace
 				isrch->byte_uge();
 			else if(firstword == "ubgt" && !has_value)
 				isrch->byte_ugt();
+			else if(firstword == "bseqlt" && !has_value)
+				isrch->byte_seqlt();
+			else if(firstword == "bseqle" && !has_value)
+				isrch->byte_seqle();
+			else if(firstword == "bseqge" && !has_value)
+				isrch->byte_seqge();
+			else if(firstword == "bseqgt" && !has_value)
+				isrch->byte_seqgt();
 			else if(firstword == "b" && has_value) {
 				if(static_cast<int64_t>(value) < -128 || value > 255)
 					throw std::runtime_error("Value to compare out of range");
 				isrch->byte_value(value & 0xFF);
+			} else if(firstword == "bdiff" && has_value) {
+				if(static_cast<int64_t>(value) < -128 || value > 255)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->byte_difference(value & 0xFF);
 			} else if(firstword == "swlt" && !has_value)
 				isrch->word_slt();
 			else if(firstword == "swle" && !has_value)
@@ -893,10 +1093,22 @@ namespace
 				isrch->word_uge();
 			else if(firstword == "uwgt" && !has_value)
 				isrch->word_ugt();
+			else if(firstword == "wseqlt" && !has_value)
+				isrch->word_seqlt();
+			else if(firstword == "wseqle" && !has_value)
+				isrch->word_seqle();
+			else if(firstword == "wseqge" && !has_value)
+				isrch->word_seqge();
+			else if(firstword == "wseqgt" && !has_value)
+				isrch->word_seqgt();
 			else if(firstword == "w" && has_value) {
 				if(static_cast<int64_t>(value) < -32768 || value > 65535)
 					throw std::runtime_error("Value to compare out of range");
 				isrch->word_value(value & 0xFFFF);
+			} else if(firstword == "wdiff" && has_value) {
+				if(static_cast<int64_t>(value) < -32768 || value > 65535)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->word_difference(value & 0xFFFF);
 			} else if(firstword == "sdlt" && !has_value)
 				isrch->dword_slt();
 			else if(firstword == "sdle" && !has_value)
@@ -921,10 +1133,22 @@ namespace
 				isrch->dword_uge();
 			else if(firstword == "udgt" && !has_value)
 				isrch->dword_ugt();
+			else if(firstword == "dseqlt" && !has_value)
+				isrch->dword_seqlt();
+			else if(firstword == "dseqle" && !has_value)
+				isrch->dword_seqle();
+			else if(firstword == "dseqge" && !has_value)
+				isrch->dword_seqge();
+			else if(firstword == "dseqgt" && !has_value)
+				isrch->dword_seqgt();
 			else if(firstword == "d" && has_value) {
 				if(static_cast<int64_t>(value) < -2147483648LL || value > 4294967295ULL)
 					throw std::runtime_error("Value to compare out of range");
 				isrch->dword_value(value & 0xFFFFFFFFULL);
+			} else if(firstword == "ddiff" && has_value) {
+				if(static_cast<int64_t>(value) < -2147483648LL || value > 4294967295ULL)
+					throw std::runtime_error("Value to compare out of range");
+				isrch->dword_difference(value & 0xFFFFFFFFULL);
 			} else if(firstword == "sqlt" && !has_value)
 				isrch->qword_slt();
 			else if(firstword == "sqle" && !has_value)
@@ -949,9 +1173,26 @@ namespace
 				isrch->qword_uge();
 			else if(firstword == "uqgt" && !has_value)
 				isrch->qword_ugt();
+			else if(firstword == "qseqlt" && !has_value)
+				isrch->qword_seqlt();
+			else if(firstword == "qseqle" && !has_value)
+				isrch->qword_seqle();
+			else if(firstword == "qseqge" && !has_value)
+				isrch->qword_seqge();
+			else if(firstword == "qseqgt" && !has_value)
+				isrch->qword_seqgt();
 			else if(firstword == "q" && has_value)
 				isrch->qword_value(value);
-			else if(firstword == "update" && !has_value)
+			else if(firstword == "qdiff" && has_value)
+				isrch->qword_difference(value);
+			else if(firstword == "disqualify" && has_value)
+				isrch->dq_range(value, value);
+			else if(firstword == "disqualify_vma" && has_value) {
+				auto r = translate_address(value);
+				if(r.memory_size != 0)
+					isrch->dq_range(r.raw_addr - r.rel_addr, r.raw_addr - r.rel_addr +
+						r.memory_size - 1);
+			} else if(firstword == "update" && !has_value)
 				isrch->update();
 			else if(firstword == "reset" && !has_value)
 				isrch->reset();
@@ -972,7 +1213,10 @@ namespace
 		std::string get_long_help() throw(std::bad_alloc)
 		{
 			return "Syntax: " + _command + " {s,u}{b,w,d,q}{lt,le,eq,ne,ge,gt}\n"
+				"Syntax: " + _command + " {b,w,d,q}seq{lt,le,ge,gt}\n"
 				"Syntax: " + _command + " {b,w,d,q} <value>\n"
+				"Syntax: " + _command + " {b,w,d,q}diff <value>\n"
+				"Syntax: " + _command + " disqualify{,_vma} <address>\n"
 				"Syntax: " + _command + " update\n"
 				"Syntax: " + _command + " reset\n"
 				"Syntax: " + _command + " count\n"
