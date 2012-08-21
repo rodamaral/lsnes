@@ -48,6 +48,7 @@ movie& get_movie()
 namespace
 {
 	numeric_setting savecompression("savecompression", 0, 9, 7);
+	boolean_setting readonly_load_preserves("preserve_on_readonly_load", true);
 
 	path_setting slotpath_setting("slotpath");
 
@@ -341,7 +342,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 
 	set_preload_settings();
 
-	if(lmode == LOAD_STATE_CURRENT && movb.get_movie().readonly_mode())
+	if(lmode == LOAD_STATE_CURRENT && movb.get_movie().readonly_mode() && readonly_load_preserves)
 		lmode = LOAD_STATE_PRESERVE;
 
 	movie newmovie;
