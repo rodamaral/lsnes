@@ -341,6 +341,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 
 	set_preload_settings();
 
+	if(lmode == LOAD_STATE_CURRENT && movb.get_movie().readonly_mode())
+		lmode = LOAD_STATE_PRESERVE;
+
 	movie newmovie;
 	if(lmode == LOAD_STATE_PRESERVE)
 		newmovie = movb.get_movie();
