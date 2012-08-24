@@ -28,109 +28,37 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
-//Some anti-typo defs.
-#define SNES_TYPE "snes"
-#define SNES_PAL "snes_pal"
-#define SNES_NTSC "snes_ntsc"
-#define BSX "bsx"
-#define BSXSLOTTED "bsxslotted"
-#define SUFAMITURBO "sufamiturbo"
-#define SGB_TYPE "SGB"
-#define SGB_PAL "sgb_pal"
-#define SGB_NTSC "sgb_ntsc"
-
-/**
- * Recognize the slot this ROM goes to.
- *
- * parameter major: The major type.
- * parameter romname: Name of the ROM type.
- * returns: Even if this is main rom, odd if XML. 0/1 for main slot, 2/3 for slot A, 4/5 for slot B. -1 if not valid
- *	rom type.
- * throws std::bad_alloc: Not enough memory
- */
-int recognize_commandline_rom(core_type& major, const std::string& romname) throw(std::bad_alloc);
-
-/**
- * Recognize major type from flags.
- *
- * parameter flags: Flags telling what ROM parameters are present.
- * returns: The recognzed major type.
- * throws std::bad_alloc: Not enough memory
- * throws std::runtime_error: Illegal flags.
- */
-core_type& recognize_platform(const std::set<std::string>& present) throw(std::bad_alloc, std::runtime_error);
-
-
 namespace
 {
-	bool option_set(const std::vector<std::string>& cmdline, const std::string& option)
-	{
-		for(auto i : cmdline)
-			if(i == option)
-				return true;
-		return false;
-	}
-
 	core_type* current_rom_type = NULL;
 	core_region* current_region = NULL;
-
-	std::string findoption(const std::vector<std::string>& cmdline, const std::string& option)
-	{
-		std::string value;
-		regex_results optp;
-		for(auto i : cmdline) {
-			if(!(optp = regex("--([^=]+)=(.*)", i)) || optp[1] != option)
-				continue;
-			if(value == "")
-				value = optp[2];
-			else
-				std::cerr << "WARNING: Ignored duplicate option for '" << option << "'." << std::endl;
-			if(value == "")
-				throw std::runtime_error("Empty value for '" + option + "' is not allowed");
-		}
-		return value;
-	}
-
-	std::set<std::string> find_present_roms(const std::vector<std::string>& cmdline)
-	{
-		std::set<std::string> p;
-		std::list<core_type*> types = core_type::get_core_types();
-		for(auto i : types) {
-			for(unsigned j = 0; j < i->get_image_count(); j++) {
-				std::string iname = i->get_image_info(j).iname;
-				if(findoption(cmdline, iname) != "")
-					p.insert(iname);
-				if(findoption(cmdline, iname + "-xml") != "")
-					p.insert(iname + "-xml");
-			}
-		}
-		return p;
-	}
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
 {
 	valid = false;
+	xml = false;
+	sha256 = "";
 }
 
-loaded_slot::loaded_slot(const std::string& filename, const std::string& base, bool xml_flag)
-	throw(std::bad_alloc, std::runtime_error)
+loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
+	const struct core_romimage_info& imginfo, bool xml_flag) throw(std::bad_alloc, std::runtime_error)
 {
-	bool headered = false;
+	unsigned headered = 0;
 	xml = xml_flag;
 	if(filename == "") {
 		valid = false;
+		sha256 = "";
 		return;
 	}
 	valid = true;
 	data = read_file_relative(filename, base);
-	if(!xml && data.size() % 1024 == 512)
-		//Assume headered.
-		headered = true;
+	if(!xml)
+		headered = imginfo.headersize(data.size());
 	if(headered && !xml) {
-		if(data.size() >= 512) {
-			memmove(&data[0], &data[512], data.size() - 512);
-			data.resize(data.size() - 512);
+		if(data.size() >= headered) {
+			memmove(&data[0], &data[headered], data.size() - headered);
+			data.resize(data.size() - headered);
 		} else {
 			data.resize(0);
 		}
@@ -166,55 +94,6 @@ void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(st
 	}
 }
 
-rom_files::rom_files() throw()
-{
-	rtype = NULL;
-	region = NULL;
-}
-
-rom_files::rom_files(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error)
-{
-	for(size_t i = 0; i < sizeof(romimg) / sizeof(romimg[0]); i++) {
-		romimg[i] = "";
-		romxml[i] = "";
-	}
-
-	auto opts = find_present_roms(cmdline);
-	rtype = &recognize_platform(opts);
-	for(auto i : opts) {
-		std::string o = findoption(cmdline, i);
-		if(o != "") {
-			int j = recognize_commandline_rom(*rtype, i);
-			if(j >= 0 && j & 1)
-				romxml[j / 2] = o;
-			else if(j >= 0)
-				romimg[j / 2] = o;
-		}
-	}
-	region = &rtype->get_preferred_region();
-	std::string _region = findoption(cmdline, "region");
-	if(_region != "") {
-		bool isset = false;
-		for(auto i : rtype->get_regions()) {
-			if(i->get_iname() == _region) {
-				region = i;
-				isset = true;
-			}
-		}
-		if(!isset)
-			throw std::runtime_error("Unknown region for system type");
-	}
-	base_file = "";
-}
-
-void rom_files::resolve_relative() throw(std::bad_alloc, std::runtime_error)
-{
-	for(size_t i = 0; i < sizeof(romimg)/sizeof(romimg[0]); i++) {
-		romimg[i] = resolve_file_relative(romimg[i], base_file);
-		romxml[i] = resolve_file_relative(romxml[i], base_file);
-	}
-	base_file = "";
-}
 
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
@@ -228,56 +107,139 @@ loaded_rom::loaded_rom() throw()
 	region = orig_region = NULL;
 }
 
-loaded_rom::loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtime_error)
+loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
-	std::string cromimg[sizeof(files.romimg)/sizeof(files.romimg[0])];
-	std::string cromxml[sizeof(files.romimg)/sizeof(files.romimg[0])];
-	for(size_t i = 0; i < sizeof(files.romimg)/sizeof(files.romimg[0]); i++) {
-		cromimg[i] = files.romimg[i];
-		cromxml[i] = files.romxml[i];
-	}
-	if(!files.rtype) {
-		rtype = NULL;
-		region = orig_region = files.region;
+	std::list<core_type*> possible = core_type::get_core_types();
+	std::istream& spec = open_file_relative(file, "");
+	std::string s;
+	std::getline(spec, s);
+	load_filename = file;
+	if(!spec || s != "[GAMEPACK FILE]") {
+		//This is a Raw ROM image.
+		regex_results tmp;
+		std::string ext = regex(".*\\.([^.]*)?", file, "Unknown ROM file type")[1];
+		core_type* coretype = NULL;
+		for(auto i : possible) {
+			if(i->is_known_extension(ext))
+				coretype = i;
+		}
+		if(!coretype)
+			throw std::runtime_error("Unknown ROM file type");
+		rtype = coretype;
+		region = orig_region = &rtype->get_preferred_region();
+		romimg[0] = loaded_slot(file, "", coretype->get_image_info(0), false);
+		msu1_base = resolve_file_relative(file, "");
 		return;
 	}
-	for(size_t i = 0; i < sizeof(files.romimg)/sizeof(files.romimg[0]); i++) {
-		if((cromimg[i] != "" || cromxml[i] != "") && i > rtype->get_image_count()) {
-			messages << "Warning: ROM slot #" << (i + 1) << " is not used for this console" << std::endl;
-			cromimg[i] = "";
-			cromxml[i] = "";
-		}
-		if(cromimg[i] == "" && cromxml[i] != "") {
-			messages << "WARNING: " << name_subrom(*files.rtype, 2 * i + 1) << " specified without " 
-				<< "corresponding " << name_subrom(*files.rtype, 2 * i + 0) << std::endl;
-			cromxml[i] = "";
-		}
+	std::vector<std::string> lines;
+	while(std::getline(spec, s))
+		lines.push_back(s);
+	std::string platname = "";
+	std::string platreg = "";
+	for(auto i : lines) {
+		regex_results tmp;
+		if(tmp = regex("type[ \t]+(.+)", i))
+			platname = tmp[1];
+		if(tmp = regex("region[ \t]+(.+)", i))
+			platreg = tmp[1];
 	}
 
-	rtype = files.rtype;
-	for(size_t i = 0; i < sizeof(romimg) / sizeof(romimg[0]); i++) {
-		romimg[i] = loaded_slot(cromimg[i], files.base_file, false);
-		romxml[i] = loaded_slot(cromxml[i], files.base_file, true);
+	//Detect type.
+	rtype = NULL;
+	for(auto i : possible)
+		if(i->get_iname() == platname)
+			rtype = i;
+	if(!rtype)
+		(stringfmt() << "Not a valid system type '" << platname << "'").throwex();
+
+	//Detect region.
+	bool goodreg = false;
+	orig_region = &rtype->get_preferred_region();
+	for(auto i: rtype->get_regions())
+		if(i->get_iname() == platreg) {
+			orig_region = i;
+			goodreg = true;
+		}
+	if(!goodreg && platreg != "")
+		(stringfmt() << "Not a valid system region '" << platreg << "'").throwex();
+	region = orig_region;
+
+	//ROM files.
+	std::string cromimg[sizeof(romimg)/sizeof(romimg[0])];
+	std::string cromxml[sizeof(romimg)/sizeof(romimg[0])];
+	for(auto i : lines) {
+		regex_results tmp;
+		if(!(tmp = regex("(rom|xml)[ \t]+([^ \t]+)[ \t]+(.*)", i)))
+			continue;
+		size_t idxs = rtype->get_image_count();
+		size_t idx = idxs;
+		for(size_t i = 0; i < idxs; i++)
+			if(rtype->get_image_info(i).iname == tmp[2])
+				idx = i;
+		if(idx == idxs)
+			(stringfmt() << "Not a valid ROM name '" << tmp[2] << "'").throwex();
+		if(tmp[1] == "rom")
+			cromimg[idx] = tmp[3];
+		else
+			cromxml[idx] = tmp[3];
 	}
-	orig_region = region = files.region;
+
+	//Check ROMs.
+	unsigned mask1 = 0, mask2 = 0;
+	for(size_t i = 0; i < rtype->get_image_count(); i++) {
+		auto ii = rtype->get_image_info(i);
+		mask1 |= ii.mandatory;
+		if(cromimg[i] != "")
+			mask2 |= ii.mandatory;
+		if(cromimg[i] == "" && cromxml[i] != "") {
+			messages << "WARNING: Slot " << ii.iname << ": XML without ROM." << std::endl;
+			cromxml[i] = "";
+		}
+	}
+	if(mask1 != mask2)
+		throw std::runtime_error("Required ROM missing");
+
+	//Load ROMs.
+	for(size_t i = 0; i < rtype->get_image_count(); i++) {
+		romimg[i] = loaded_slot(cromimg[i], file, rtype->get_image_info(i), false);
+		romxml[i] = loaded_slot(cromxml[i], file, rtype->get_image_info(i), true);
+	}
+
+	//Patch ROMs.
+	for(auto i : lines) {
+		regex_results tmp;
+		if(!(tmp = regex("patch[ \t]+([^ \t]+)[ \t]+(.*)([ \t]+[+-][0-9]+)?", i)))
+			continue;
+		size_t idxs = rtype->get_image_count();
+		size_t idx = idxs;
+		for(size_t i = 0; i < idxs; i++)
+			if(rtype->get_image_info(i).iname == tmp[1])
+				idx = i;
+		if(idx == idxs)
+			(stringfmt() << "Not a valid ROM name '" << tmp[1] << "'").throwex();
+		int32_t offset = 0;
+		if(tmp[3] != "")
+			offset = parse_value<int32_t>(tmp[3]);
+		romimg[idx].patch(read_file_relative(tmp[2], ""), offset);
+	}
+
+	//MSU-1 base.
 	if(cromimg[1] != "")
-		msu1_base = resolve_file_relative(cromimg[1], files.base_file);
+		msu1_base = resolve_file_relative(cromimg[1], file);
 	else
-		msu1_base = resolve_file_relative(cromimg[0], files.base_file);
+		msu1_base = resolve_file_relative(cromimg[0], file);
 }
 
 void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!rtype)
-		throw std::runtime_error("Can't insert cartridge of type NONE!");
 	current_rom_type = NULL;
-	if(!orig_region)
+	if(!orig_region && rtype)
 		orig_region = &rtype->get_preferred_region();
 	if(!region)
 		region = orig_region;
-	if(!orig_region->compatible_with(*region))
+	if(rtype && !orig_region->compatible_with(*region))
 		throw std::runtime_error("Trying to force incompatible region");
-	if(!core_set_region(*region))
+	if(rtype && !core_set_region(*region))
 		throw std::runtime_error("Trying to force unknown region");
 
 	core_romimage images[sizeof(romimg)/sizeof(romimg[0])];
@@ -286,8 +248,11 @@ void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_allo
 		images[i].data = (const unsigned char*)romimg[i];
 		images[i].size = (size_t)romimg[i];
 	}
-	if(!rtype->load(images, rtc_sec, rtc_subsec))
-		throw std::runtime_error("Can't load cartridge ROM");
+	if(rtype) {
+		if(!rtype->load(images, rtc_sec, rtc_subsec))
+			throw std::runtime_error("Can't load cartridge ROM");
+	} else
+		core_unload_cartridge();
 
 	region = &core_get_region();
 	core_power();
@@ -299,46 +264,6 @@ void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_allo
 	current_region = region;
 	msu1_base_path = msu1_base;
 	refresh_cart_mappings();
-}
-
-void loaded_rom::do_patch(const std::vector<std::string>& cmdline) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	int32_t offset = 0;
-	regex_results opt;
-	for(auto i : cmdline) {
-		if(opt = regex("--ips-offset=(.*)", i)) {
-			try {
-				offset = parse_value<int32_t>(opt[1]);
-			} catch(std::exception& e) {
-				throw std::runtime_error("Invalid IPS offset option '" + i + "': " + e.what());
-			}
-			continue;
-		} else if(opt = regex("--ips-([^=]*)=(.+)", i)) {
-			messages << "Patching " << opt[1] << " using '" << opt[2] << "'" << std::endl;
-			std::vector<char> ips;
-			try {
-				ips = read_file_relative(opt[2], "");
-			} catch(std::bad_alloc& e) {
-				OOM_panic();
-			} catch(std::exception& e) {
-				throw std::runtime_error("Can't read IPS '" + opt[2] + "': " + e.what());
-			}
-			try {
-				int r_id = recognize_commandline_rom(*rtype, opt[1]);
-				if(r_id < 0 || r_id > 2 * sizeof(romimg) / sizeof(romimg[0]))
-					throw std::runtime_error("Invalid subROM '" + opt[1] + "' to patch");
-				if(r_id & 1)
-					romxml[r_id / 2].patch(ips, offset);
-				else
-					romimg[r_id / 2].patch(ips, offset);
-			} catch(std::bad_alloc& e) {
-				OOM_panic();
-			} catch(std::exception& e) {
-				throw std::runtime_error("Can't Patch with IPS '" + opt[2] + "': " + e.what());
-			}
-		}
-	}
 }
 
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
@@ -407,61 +332,4 @@ void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::r
 	if(memcmp(tmp, &buf[buf.size() - 32], 32))
 		throw std::runtime_error("Savestate corrupt");
 	core_unserialize(&buf[0], buf.size() - 32);;
-}
-
-std::string name_subrom(core_type& major, unsigned romnumber) throw(std::bad_alloc)
-{
-	std::string name = "UNKNOWN";
-	if(romnumber < 2 * major.get_image_count())
-		name = major.get_image_info(romnumber / 2).hname;
-	if(romnumber % 2)
-		return name + " XML";
-	else if(name != "ROM")
-		return name + " ROM";
-	else
-		return "ROM";
-}
-
-
-int recognize_commandline_rom(core_type& major, const std::string& romname) throw(std::bad_alloc)
-{
-	for(unsigned i = 0; i < major.get_image_count(); i++) {
-		std::string iname = major.get_image_info(i).iname;
-		if(romname == iname)
-			return 2 * i + 0;
-		if(romname == iname + "-xml")
-			return 2 * i + 1;
-	}
-	return -1;
-}
-
-core_type& recognize_platform(const std::set<std::string>& present) throw(std::bad_alloc, std::runtime_error)
-{
-	std::list<core_type*> possible = core_type::get_core_types();
-	unsigned total = 0;
-	for(auto i : present) {
-		regex_results r;
-		std::string base = i;
-		if(r = regex("(.*)-xml", base)) {
-			if(!present.count(r[1]))
-				throw std::runtime_error("SubROM XML specified without corresponding subROM");
-		} else
-			total++;
-	}
-	for(auto i : possible) {
-		unsigned pmask = 0;
-		unsigned rmask = 0;
-		unsigned found = 0;
-		for(unsigned j = 0; j < i->get_image_count(); j++) {
-			std::string iname = i->get_image_info(j).iname;
-			if(present.count(iname)) {
-				pmask |= i->get_image_info(j).mandatory;
-				found++;
-			}
-			rmask |= i->get_image_info(j).mandatory;
-		}
-		if(pmask == rmask && found == total)
-			return *i;
-	}
-	throw std::runtime_error("Invalid combination of subROMs");
 }

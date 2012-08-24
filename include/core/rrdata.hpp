@@ -64,9 +64,10 @@ public:
  * Read the saved set of load IDs for specified project and switch to that project.
  *
  * parameter project: The name of project.
+ * parameter lazy: If true, just switch to project, don't read the IDs.
  * throws std::bad_alloc: Not enough memory
  */
-	static void read_base(const std::string& project) throw(std::bad_alloc);
+	static void read_base(const std::string& project, bool lazy) throw(std::bad_alloc);
 /**
  * Switch to no project, closing the load IDs.
  */

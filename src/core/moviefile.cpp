@@ -292,7 +292,6 @@ porttype_info& parse_controller_type(const std::string& type, unsigned port) thr
 	}
 }
 
-
 moviefile::moviefile() throw(std::bad_alloc)
 {
 	force_corrupt = false;
@@ -306,6 +305,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 	movie_rtc_second = rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	start_paused = false;
+	lazy_project_create = true;
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
@@ -313,6 +313,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	start_paused = false;
 	force_corrupt = false;
 	is_savestate = false;
+	lazy_project_create = false;
 	std::string tmp;
 	zip_reader r(movie);
 	read_linefile(r, "systemid", tmp);
@@ -453,6 +454,9 @@ namespace
 uint64_t moviefile::get_movie_length() throw()
 {
 	uint64_t frames = get_frame_count();
+	if(!gametype) {
+		return 100000000ULL * frames / 6;
+	}
 	uint64_t _magic[4];
 	gametype->fill_framerate_magic(_magic);
 	uint64_t t = _magic[BLOCK_SECONDS] * 1000000000ULL * (frames / _magic[BLOCK_FRAMES]);

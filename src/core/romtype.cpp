@@ -1,6 +1,10 @@
 #include "core/romtype.hpp"
 #include "library/minmax.hpp"
+#include "library/string.hpp"
 #include <map>
+#include <string>
+#include <algorithm>
+#include <cctype>
 #include <stdexcept>
 #include <list>
 
@@ -263,11 +267,30 @@ core_sysregion& core_type::combine_region(core_region& reg)
 }
 
 core_type::core_type(const std::string& _iname, const std::string& _hname, unsigned _id, 
-	int (*_load)(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec))
+	int (*_load)(core_romimage* images, uint64_t rtc_sec, uint64_t rtc_subsec), const std::string& _extensions)
 	: iname(_iname), hname(_hname), loadimg(_load), id(_id)
 {
 	types()[iname] = this;
+	std::string ext;
+	std::string ext2 = _extensions;
+	while(extract_token(ext2, ext, ";") >= 0)
+		extensions.push_back(ext);
 	process_registrations();
+}
+
+const std::list<std::string>& core_type::get_extensions()
+{
+	return extensions;
+}
+
+bool core_type::is_known_extension(const std::string& ext)
+{
+	std::string _ext = ext;
+	std::transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
+	for(auto i : extensions)
+		if(i == _ext)
+			return true;
+	return false;
 }
 
 core_type_region_bind::core_type_region_bind(core_type& type, core_region& region)

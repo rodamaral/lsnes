@@ -45,7 +45,7 @@ namespace
 	}
 
 
-	core_type* internal_rom;
+	core_type* internal_rom = NULL;
 	extern core_type type_dmg;
 	extern core_type type_gbc;
 	extern core_type type_gbc_gba;
@@ -55,6 +55,20 @@ namespace
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
 	uint32_t primary_framebuffer[160*144];
+	uint32_t norom_framebuffer[160*144];
+	uint32_t accumulator_l = 0;
+	uint32_t accumulator_r = 0;
+	unsigned accumulator_s = 0;
+
+	void init_norom_framebuffer()
+	{
+		static bool done = false;
+		if(done)
+			return;
+		done = true;
+		for(size_t i = 0; i < 160 * 144; i++)
+			norom_framebuffer[i] = 0xFF8080;
+	}
 
 	time_t walltime_fn()
 	{
@@ -79,7 +93,8 @@ namespace
 		};
 	} getinput;
 
-	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec)
+	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
+		core_type* inttype)
 	{
 		const char* markup = img[0].markup;
 		int flags2 = 0;
@@ -106,32 +121,33 @@ namespace
 		rtc_fixed = false;
 		romdata.resize(size);
 		memcpy(&romdata[0], data, size);
+		internal_rom = inttype;
 	}
 
 	int load_rom_dmg(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
 	{
-		return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec);
+		return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
 	}
 
 	int load_rom_gbc(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
 	{
-		return load_rom_common(img, 0, rtc_sec, rtc_subsec);
+		return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
 	}
 
 	int load_rom_gbc_gba(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
 	{
-		return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec);
+		return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
 	}
 
 	uint64_t magic[4] = {35112, 2097152, 16742706, 626688};
 	
 	core_region region_world("world", "World", 0, 0, false, magic, regions_compatible);
-	core_romimage_info image_rom_dmg("gbrom", "Cartridge ROM", 1, header_fn);
-	core_romimage_info image_rom_gbc("gbcrom", "Cartridge ROM", 1, header_fn);
-	core_romimage_info image_rom_gbca("gbcarom", "Cartridge ROM", 1, header_fn);
-	core_type type_dmg("dmg", "Game Boy", 1, load_rom_dmg);
-	core_type type_gbc("gbc", "Game Boy Color", 0, load_rom_gbc);
-	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", 2, load_rom_gbc_gba);
+	core_romimage_info image_rom_dmg("rom", "Cartridge ROM", 1, header_fn);
+	core_romimage_info image_rom_gbc("rom", "Cartridge ROM", 1, header_fn);
+	core_romimage_info image_rom_gbca("rom", "Cartridge ROM", 1, header_fn);
+	core_type type_dmg("dmg", "Game Boy", 1, load_rom_dmg, "gb;dmg");
+	core_type type_gbc("gbc", "Game Boy Color", 0, load_rom_gbc, "gbc;cgb");
+	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", 2, load_rom_gbc_gba, "");
 	core_type_region_bind bind_A(type_dmg, region_world);
 	core_type_region_bind bind_B(type_gbc, region_world);
 	core_type_region_bind bind_C(type_gbc_gba, region_world);
@@ -263,6 +279,8 @@ void core_runtosave()
 
 void core_reset()
 {
+	if(!internal_rom)
+		return;
 	instance->reset();
 }
 
@@ -293,11 +311,49 @@ void core_uninstall_handler()
 {
 }
 
+void core_emulate_frame_nocore()
+{
+	init_norom_framebuffer();
+	while(true) {
+		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
+		for(unsigned i = 0; i < samples_emitted; i++) {
+			accumulator_l += 32768;
+			accumulator_r += 32768;
+			accumulator_s++;
+			if((accumulator_s & 63) == 0) {
+				uint16_t l2 = accumulator_l >> 6;
+				uint16_t r2 = accumulator_r >> 6;
+				platform::audio_sample(l2, r2);
+				information_dispatch::do_sample(l2 - 32768, r2 - 32768);
+				accumulator_l = accumulator_r = 0;
+				accumulator_s = 0;
+			}
+		}
+		ecore_callbacks->timer_tick(samples_emitted, 2097152);
+		frame_overflow = 0;
+		break;
+	}
+	framebuffer_info inf;
+	inf.type = &_pixel_format_rgb32;
+	inf.mem = const_cast<char*>(reinterpret_cast<const char*>(norom_framebuffer));
+	inf.physwidth = 160;
+	inf.physheight = 144;
+	inf.physstride = 640;
+	inf.width = 160;
+	inf.height = 144;
+	inf.stride = 640;
+	inf.offset_x = 0;
+	inf.offset_y = 0;
+
+	framebuffer_raw ls(inf);
+	ecore_callbacks->output_frame(ls, 262144, 4389);
+}
 void core_emulate_frame()
 {
-	static uint32_t accumulator_l = 0;
-	static uint32_t accumulator_r = 0;
-	static unsigned accumulator_s = 0;
+	if(!internal_rom) {
+		core_emulate_frame_nocore();
+		return;
+	}
 	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
 	while(true) {
 		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
@@ -343,6 +399,8 @@ void core_emulate_frame()
 std::list<vma_info> get_vma_list()
 {
 	std::list<vma_info> vmas;
+	if(!internal_rom)
+		return vmas;
 	vma_info sram;
 	vma_info wram;
 	vma_info vram;
@@ -405,6 +463,8 @@ std::list<vma_info> get_vma_list()
 std::set<std::string> get_sram_set()
 {
 	std::set<std::string> s;
+	if(!internal_rom)
+		return s;
 	auto g = instance->getSaveRam();
 	if(g.second)
 		s.insert("main");
@@ -415,6 +475,8 @@ std::set<std::string> get_sram_set()
 std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 {
 	std::map<std::string, std::vector<char>> s;
+	if(!internal_rom)
+		return s;
 	auto g = instance->getSaveRam();
 	s["main"].resize(g.second);
 	memcpy(&s["main"][0], g.first, g.second);
@@ -427,7 +489,7 @@ std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 
 void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 {
-	if(!sram.count("main"))
+	if(!internal_rom)
 		return;
 	std::vector<char>& x = sram["main"];
 	std::vector<char>& x2 = sram["rtc"];
@@ -445,17 +507,23 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 std::vector<char> cmp_save;
 
 function_ptr_command<> cmp_save1("set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
+	if(!internal_rom)
+		return;
 	instance->saveState(cmp_save);
 });
 
 function_ptr_command<> cmp_save2("do-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
 	std::vector<char> x;
+	if(!internal_rom)
+		return;
 	instance->saveState(x, cmp_save);
 });
 
 
 void core_serialize(std::vector<char>& out)
 {
+	if(!internal_rom)
+		throw std::runtime_error("Can't save without ROM");
 	instance->saveState(out);
 	size_t osize = out.size();
 	out.resize(osize + 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]));
@@ -467,6 +535,8 @@ void core_serialize(std::vector<char>& out)
 
 void core_unserialize(const char* in, size_t insize)
 {
+	if(!internal_rom)
+		throw std::runtime_error("Can't load without ROM");
 	size_t foffset = insize - 2 - 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]);
 	std::vector<char> tmp;
 	tmp.resize(foffset);

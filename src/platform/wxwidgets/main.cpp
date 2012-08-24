@@ -387,7 +387,14 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
-	open_rom_select_window();
+	do_basic_core_init();
+	loaded_rom* rom = new loaded_rom;
+	moviefile mov;
+	mov.port1 = &porttype_info::port_default(0);
+	mov.port2 = &porttype_info::port_default(1);
+	mov.input.clear(*mov.port1, *mov.port2);
+	mov.start_paused = true;
+	boot_emulator(*rom, mov);
 
 	return true;
 }

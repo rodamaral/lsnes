@@ -193,6 +193,7 @@ public:
  * \param value The value to search for
  */
 	void byte_value(uint8_t value) throw();
+	void byte_difference(uint8_t value) throw();
 /**
  * \brief Search for bytes that are signed less
  */
@@ -241,12 +242,17 @@ public:
  * \brief Search for bytes that are unsigned greater
  */
 	void byte_ugt() throw();
+	void byte_seqlt() throw();
+	void byte_seqle() throw();
+	void byte_seqge() throw();
+	void byte_seqgt() throw();
 
 /**
  * \brief Search for word with specified value
  * \param value The value to search for
  */
 	void word_value(uint16_t value) throw();
+	void word_difference(uint16_t value) throw();
 /**
  * \brief Search for words that are signed less
  */
@@ -295,12 +301,17 @@ public:
  * \brief Search for words that are unsigned greater
  */
 	void word_ugt() throw();
+	void word_seqlt() throw();
+	void word_seqle() throw();
+	void word_seqge() throw();
+	void word_seqgt() throw();
 
 /**
  * \brief Search for dword with specified value
  * \param value The value to search for
  */
 	void dword_value(uint32_t value) throw();
+	void dword_difference(uint32_t value) throw();
 /**
  * \brief Search for dwords that are signed less
  */
@@ -349,12 +360,17 @@ public:
  * \brief Search for dwords that are unsigned greater
  */
 	void dword_ugt() throw();
+	void dword_seqlt() throw();
+	void dword_seqle() throw();
+	void dword_seqge() throw();
+	void dword_seqgt() throw();
 
 /**
  * \brief Search for qword with specified value
  * \param value The value to search for
  */
 	void qword_value(uint64_t value) throw();
+	void qword_difference(uint64_t value) throw();
 /**
  * \brief Search for qwords that are signed less
  */
@@ -403,6 +419,15 @@ public:
  * \brief Search for qwords that are unsigned greater
  */
 	void qword_ugt() throw();
+	void qword_seqlt() throw();
+	void qword_seqle() throw();
+	void qword_seqge() throw();
+	void qword_seqgt() throw();
+
+/**
+ * \brief DQ a range of addresses (inclusive on both ends!).
+ */
+	void dq_range(uint64_t first, uint64_t last);
 
 /**
  * \brief Search for all bytes (update values)

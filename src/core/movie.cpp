@@ -14,6 +14,16 @@
 
 namespace
 {
+	uint64_t find_next_sync(controller_frame_vector& movie, uint64_t after)
+	{
+		if(after >= movie.size())
+			return after;
+		do {
+			after++;
+		} while(after < movie.size() && !movie[after].sync());
+		return after;
+	}
+
 	bool movies_compatible(controller_frame_vector& old_movie, controller_frame_vector& new_movie,
 		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
 		const std::string& new_projectid)
@@ -44,10 +54,12 @@ namespace
 		frames_read--;
 		//Current frame. We need to compare each control up to poll counter.
 		uint64_t readable_old_subframes = 0, readable_new_subframes = 0;
-		if(frames_read < old_movie.size())
-			readable_old_subframes = old_movie.size() - frames_read;
-		if(frames_read < new_movie.size())
-			readable_new_subframes = new_movie.size() - frames_read;
+		uint64_t oldlen = find_next_sync(old_movie, frames_read);
+		uint64_t newlen = find_next_sync(new_movie, frames_read);
+		if(frames_read < oldlen)
+			readable_old_subframes = oldlen - frames_read;
+		if(frames_read < newlen)
+			readable_new_subframes = newlen - frames_read;
 		//Compare reset flags of current frame.
 		bool old_reset = false;
 		bool new_reset = false;

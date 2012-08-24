@@ -192,18 +192,19 @@ namespace
 	{
 		std::string filenam = filename;
 		if(filenam == "")
-			filenam = our_rom->msu1_base;
+			filenam = our_rom->load_filename;
+		if(filenam == "") {
+			messages << "No ROM loaded" << std::endl;
+			return false;
+		}
 		try {
-			loaded_slot newrom(filenam, "");
-			if(our_rom->romimg[1].sha256 != "")
-				our_rom->romimg[1] = newrom;
-			else
-				our_rom->romimg[0] = newrom;
-			our_rom->msu1_base = filenam;
-			if(our_rom->romimg[1].sha256 != "")
-				our_movie.romimg_sha256[1] = newrom.sha256;
-			else
-				our_movie.romimg_sha256[0] = newrom.sha256;
+			messages << "Loading ROM " << filenam << std::endl;
+			loaded_rom newrom(filenam);
+			*our_rom = newrom;
+			for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha256;
+				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha256;
+			}
 		} catch(std::exception& e) {
 			messages << "Can't reload ROM: " << e.what() << std::endl;
 			return false;
@@ -495,6 +496,12 @@ namespace
 		"Syntax: load <file>\nLoads SNES state from <file> in current mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_CURRENT);
+		});
+
+	function_ptr_command<arg_filename> load_smart_c("load-smart", "Load savestate (heuristic mode)",
+		"Syntax: load <file>\nLoads SNES state from <file> in heuristic mode\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_load(args, LOAD_STATE_DEFAULT);
 		});
 
 	function_ptr_command<arg_filename> load_state_c("load-state", "Load savestate (R/W)",
