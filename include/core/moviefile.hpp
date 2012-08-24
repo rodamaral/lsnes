@@ -157,6 +157,10 @@ struct moviefile
  */
 	bool start_paused;
 /**
+ * Lazy project create flag.
+ */
+	bool lazy_project_create;
+/**
  * Get number of frames in movie.
  *
  * returns: Number of frames.

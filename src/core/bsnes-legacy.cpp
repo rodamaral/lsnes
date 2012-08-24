@@ -55,6 +55,18 @@ const char* button_symbols = "BYsSudlrAXLRTSTCUP";
 
 namespace
 {
+	uint32_t norom_frame[512 * 448];
+
+	void init_norom_frame()
+	{
+		static bool done = false;
+		if(done)
+			return;
+		done = true;
+		for(size_t i = 0; i < 512 * 448; i++)
+			norom_frame[i] = 0x7C21F;
+	}
+
 	int regions_compatible(unsigned rom, unsigned run)
 	{
 		return (!rom || rom == run);
@@ -68,7 +80,7 @@ namespace
 			return 0;
 	}
 
-	core_type* internal_rom;
+	core_type* internal_rom = NULL;
 	extern core_type type_snes;
 	extern core_type type_bsx;
 	extern core_type type_bsxslotted;
@@ -144,11 +156,11 @@ namespace
 	core_romimage_info image_stbios("rom", "ST BIOS", 1, header_fn);
 	core_romimage_info image_stslota("slot-a", "ST Slot A ROM", 2, header_fn);
 	core_romimage_info image_stslotb("slot-b", "ST Slot B ROM", 2, header_fn);
-	core_type type_snes("snes", "SNES", 0, load_rom_snes);
-	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx);
-	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted);
-	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo);
-	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb);
+	core_type type_snes("snes", "SNES", 0, load_rom_snes, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh");
+	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx, "");
+	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted, "");
+	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo, "");
+	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb, "");
 	core_type_region_bind bind_A(type_snes, region_auto);
 	core_type_region_bind bind_B(type_snes, region_ntsc);
 	core_type_region_bind bind_C(type_snes, region_pal);
@@ -664,6 +676,7 @@ namespace
 			display = generic_port_display<1, 2, 4, 0>;
 			serialize = generic_port_serialize<1, 2, 4, 14>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
+			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;
 			ctrlname = "superscope";
 			controllers = 1;
@@ -743,6 +756,8 @@ void do_basic_core_init()
 std::set<std::string> get_sram_set()
 {
 	std::set<std::string> r;
+	if(!internal_rom)
+		return r;
 	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
 		SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
 		r.insert(sram_name(s.id, s.slot));
@@ -766,18 +781,24 @@ core_region& core_get_region()
 
 void core_power()
 {
-	snes_power();
+	if(internal_rom)
+		snes_power();
 }
 
 void core_unload_cartridge()
 {
+	if(!internal_rom)
+		return;
 	snes_term();
 	snes_unload_cartridge();
+	internal_rom = NULL;
 }
 
 //Get the current video rate.
 std::pair<uint32_t, uint32_t> get_video_rate()
 {
+	if(!internal_rom)
+		return std::make_pair(60, 1);
 	uint32_t div;
 	if(snes_get_region())
 		div = last_interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
@@ -789,12 +810,16 @@ std::pair<uint32_t, uint32_t> get_video_rate()
 //Get the current audio rate.
 std::pair<uint32_t, uint32_t> get_audio_rate()
 {
+	if(!internal_rom)
+		return std::make_pair(64081, 2);
 	return std::make_pair(get_snes_apu_rate(), static_cast<uint32_t>(768));
 }
 
 std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 {
 	std::map<std::string, std::vector<char>> out;
+	if(!internal_rom)
+		return out;
 	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
 		SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[i];
 		std::string savename = sram_name(r.id, r.slot);
@@ -809,6 +834,11 @@ std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 {
 	std::set<std::string> used;
+	if(!internal_rom) {
+		for(auto i : sram)
+			messages << "WARNING: SRAM '" << i.first << ": Not found on cartridge." << std::endl;
+		return;
+	}
 	if(sram.empty())
 		return;
 	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
@@ -841,6 +871,8 @@ bool core_set_region(core_region& region)
 
 void core_serialize(std::vector<char>& out)
 {
+	if(!internal_rom)
+		throw std::runtime_error("No ROM loaded");
 	serializer s = SNES::system.serialize();
 	out.resize(s.size());
 	memcpy(&out[0], s.data(), s.size());
@@ -848,6 +880,8 @@ void core_serialize(std::vector<char>& out)
 
 void core_unserialize(const char* in, size_t insize)
 {
+	if(!internal_rom)
+		throw std::runtime_error("No ROM loaded");
 	serializer s(reinterpret_cast<const uint8_t*>(in), insize);
 	if(!SNES::system.unserialize(s))
 		throw std::runtime_error("SNES core rejected savestate");
@@ -855,34 +889,70 @@ void core_unserialize(const char* in, size_t insize)
 
 std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
 {
-#if defined(BSNES_V084) || defined(BSNES_V085)
-		messages << "Executing delayed reset... This can take some time!" << std::endl;
-		video_refresh_done = false;
-		delayreset_cycles_run = 0;
-		delayreset_cycles_target = cycles;
-		SNES::cpu.step_event = delayreset_fn;
-		SNES::system.run();
-		SNES::cpu.step_event = nall::function<bool()>();
-		return std::make_pair(!video_refresh_done, delayreset_cycles_run);
-#else
-		messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
-			<< std::endl;
+	if(!internal_rom)
 		return std::make_pair(false, 0);
+#if defined(BSNES_V084) || defined(BSNES_V085)
+	messages << "Executing delayed reset... This can take some time!" << std::endl;
+	video_refresh_done = false;
+	delayreset_cycles_run = 0;
+	delayreset_cycles_target = cycles;
+	SNES::cpu.step_event = delayreset_fn;
+	SNES::system.run();
+	SNES::cpu.step_event = nall::function<bool()>();
+	return std::make_pair(!video_refresh_done, delayreset_cycles_run);
+#else
+	messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
+		<< std::endl;
+	return std::make_pair(false, 0);
 #endif
 }
 
 void core_emulate_frame()
 {
+	static unsigned frame_modulus = 0;
+	if(!internal_rom) {
+		init_norom_frame();
+		framebuffer_info inf;
+		inf.type = &_pixel_format_lrgb;
+		inf.mem = const_cast<char*>(reinterpret_cast<const char*>(norom_frame));
+		inf.physwidth = 512;
+		inf.physheight = 448;
+		inf.physstride = 2048;
+		inf.width = 512;
+		inf.height = 448;
+		inf.stride = 2048;
+		inf.offset_x = 0;
+		inf.offset_y = 0;
+
+		framebuffer_raw ls(inf);
+		ecore_callbacks->output_frame(ls, 60, 1);
+
+		for(unsigned i = 0; i < 534; i++) {
+			platform::audio_sample(32768, 32768);
+			information_dispatch::do_sample(0, 0);
+		}
+		if(frame_modulus++ == 0) {
+			platform::audio_sample(32768, 32768);
+			information_dispatch::do_sample(0, 0);
+		}
+		frame_modulus %= 120;
+		ecore_callbacks->timer_tick(1, 60);
+		return;
+	}
 	SNES::system.run();
 }
 
 void core_reset()
 {
+	if(!internal_rom)
+		return;
 	SNES::system.reset();
 }
 
 void core_runtosave()
 {
+	if(!internal_rom)
+		return;
 	stepping_into_save = true;
 	SNES::system.runtosave();
 	stepping_into_save = false;

@@ -57,7 +57,7 @@ struct core_type
 {
 public:
 	core_type(const std::string& iname, const std::string& hname, unsigned id, int (*_load)(core_romimage* images,
-		uint64_t rtc_sec, uint64_t rtc_subsec));
+		uint64_t rtc_sec, uint64_t rtc_subsec), const std::string& extensions);
 	static std::list<core_type*> get_core_types();
 	void add_region(core_region& reg);
 	void add_romimage(core_romimage_info& info, unsigned index);
@@ -66,6 +66,8 @@ public:
 	core_sysregion& combine_region(core_region& reg);
 	const std::string& get_iname();
 	const std::string& get_hname();
+	const std::list<std::string>& get_extensions();
+	bool is_known_extension(const std::string& ext);
 	unsigned get_id();
 	unsigned get_image_count();
 	core_romimage_info get_image_info(unsigned index);
@@ -77,6 +79,7 @@ private:
 	unsigned id;
 	std::string iname;
 	std::string hname;
+	std::list<std::string> extensions;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info*> imageinfo;
 };

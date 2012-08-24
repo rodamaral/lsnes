@@ -6,6 +6,7 @@
 #include "core/threaddebug.hpp"
 #include "core/window.hpp"
 #include "library/sha256.hpp"
+#include "library/string.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -97,27 +98,17 @@ void set_random_seed() throw(std::bad_alloc)
 struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	struct rom_files f;
-	try {
-		f = rom_files(cmdline);
-		f.resolve_relative();
-	} catch(std::bad_alloc& e) {
-		OOM_panic();
-	} catch(std::exception& e) {
-		throw std::runtime_error(std::string("Can't resolve ROM files: ") + e.what());
-	}
-	messages << "ROM type: " << f.rtype->get_hname() << " (" << f.region->get_hname() << ")"  << std::endl;
-	for(size_t i = 0; i < sizeof(f.romimg)/sizeof(f.romimg[0]); i++) {
-		if(f.romimg[i] != "")	messages << name_subrom(*f.rtype, 2 * i + 0) << " file: '" << f.romimg[i]
-			<< "'" << std::endl;
-		if(f.romxml[i] != "")	messages << name_subrom(*f.rtype, 2 * i + 1) << " file: '" << f.romxml[i]
-			<< "'" << std::endl;
+	std::string f;
+	regex_results optp;
+	for(auto i : cmdline) {
+		if(!(optp = regex("--rom=(.+)", i)))
+			continue;
+		f = optp[1];
 	}
 
 	struct loaded_rom r;
 	try {
 		r = loaded_rom(f);
-		r.do_patch(cmdline);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -126,10 +117,15 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 	std::string not_present = "N/A";
 	for(size_t i = 0; i < sizeof(r.romimg)/sizeof(r.romimg[0]); i++) {
-		if(r.romimg[i].valid)	messages << name_subrom(*f.rtype, 2 * i + 0) << " hash: "
-			<< r.romimg[i].sha256 << std::endl;
-		if(r.romxml[i].valid)	messages << name_subrom(*f.rtype, 2 * i + 1) << " hash: "
-			<< r.romxml[i].sha256 << std::endl;
+		std::string romname = "UNKNOWN ROM";
+		std::string xmlname = "UNKNOWN XML";
+		if(i < r.rtype->get_image_count()) {
+			romname = (r.rtype->get_image_info(i).hname == "ROM") ? std::string("ROM") :
+				(r.rtype->get_image_info(i).hname + " ROM");
+			xmlname = r.rtype->get_image_info(i).hname + " XML";
+		}
+		if(r.romimg[i].valid)	messages << romname << " hash: " << r.romimg[i].sha256 << std::endl;
+		if(r.romxml[i].valid)	messages << xmlname << " hash: " << r.romxml[i].sha256 << std::endl;
 	}
 	return r;
 }

@@ -8,57 +8,6 @@
 #include "core/misc.hpp"
 #include "core/romtype.hpp"
 
-
-
-/**
- * This structure gives all files associated with given ROM image.
- */
-struct rom_files
-{
-/**
- * Construct defaults
- */
-	rom_files() throw();
-
-/**
- * Reads the filenames out of command line arguments given.
- *
- * parameter cmdline: The commmand line
- * throws std::bad_alloc: Not enough memory
- * throws std::runtime_error: Failed to load ROM filenames.
- */
-	rom_files(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Resolve relative references.
- *
- * throws std::bad_alloc: Not enough memory
- * throws std::runtime_error: Bad path.
- */
-	void resolve_relative() throw(std::bad_alloc, std::runtime_error);
-
-/**
- * The file to look other ROM files relative to. May be blank.
- */
-	std::string base_file;
-/**
- * Major ROM type.
- */
-	core_type* rtype;
-/**
- * Game region (the region ROM is to be loaded as)
- */
-	core_region* region;
-/**
- * Relative filename of main ROM file.
- */
-	std::string romimg[27];
-/**
- * Relative filename of main ROM XML file.
- */
-	std::string romxml[27];
-};
-
 /**
  * Some loaded data or indication of no data.
  */
@@ -76,12 +25,13 @@ struct loaded_slot
  *
  * parameter filename: The filename to read. If "", empty slot is constructed.
  * parameter base: Base filename to interpret the filename against. If "", no base filename is used.
+ * parameter imginfo: Image information.
  * parameter xml_flag: If set, always keep trailing NUL.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't load the data.
  */
-	loaded_slot(const std::string& filename, const std::string& base, bool xml_flag = false)
-		throw(std::bad_alloc, std::runtime_error);
+	loaded_slot(const std::string& filename, const std::string& base, const struct core_romimage_info& imginfo,
+		bool xml_flag = false) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * This method patches this slot using specified IPS patch.
@@ -149,13 +99,13 @@ struct loaded_rom
  */
 	loaded_rom() throw();
 /**
- * Takes in collection of ROM filenames and loads them into memory.
+ * Take in ROM filename (or a bundle) and load it to memory.
  *
- * parameter files: The files to load
+ * parameter file: The file to load
  * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Loading ROM files failed.
+ * throws std::runtime_error: Loading ROM file failed.
  */
-	loaded_rom(const rom_files& files) throw(std::bad_alloc, std::runtime_error);
+	loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error);
 /**
  * ROM type
  */
@@ -181,14 +131,9 @@ struct loaded_rom
  */
 	std::string msu1_base;
 /**
- * Patch the ROM.
- *
- * parameter cmdline: The command line.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Failed to patch the ROM.
+ * Load filename.
  */
-	void do_patch(const std::vector<std::string>& cmdline) throw(std::bad_alloc, std::runtime_error);
-
+	std::string load_filename;
 /**
  * Switches the active cartridge to this cartridge. The compatiblity between selected region and original region
  * is checked. Region is updated after cartridge has been loaded.
@@ -198,16 +143,6 @@ struct loaded_rom
  */
 	void load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error);
 };
-
-
-/**
- * Name a sub-ROM.
- *
- * parameter major: The major type.
- * parameter romnumber: ROM number to name (as returned by recognize_commandline_rom).
- * throws std::bad_alloc: Not enough memory
- */
-std::string name_subrom(core_type& major, unsigned romnumber) throw(std::bad_alloc);
 
 /**
  * Get major type and region of loaded ROM.
@@ -258,24 +193,5 @@ std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc)
  * throws std::runtime_error: Loading state failed.
  */
 void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
-
-/**
- * Read index of ROMs and add ROMs found to content-searchable storage.
- *
- * parameter filename: The filename of index file.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Loading index failed.
- */
-void load_index_file(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Search all indices, looking for file with specified SHA-256 (specifying hash of "" results "").
- *
- * parameter hash: The hash of file.
- * returns: Absolute filename.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Not found.
- */
-std::string lookup_file_by_sha256(const std::string& hash) throw(std::bad_alloc, std::runtime_error);
 
 #endif

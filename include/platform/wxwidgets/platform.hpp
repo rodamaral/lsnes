@@ -32,6 +32,7 @@ void initialize_wx_keyboard();
 void signal_program_exit();
 void signal_resize_needed();
 void _runuifun_async(void (*fn)(void*), void* arg);
+void show_projectwindow(wxWindow* modwin);
 
 //Editor dialogs.
 void wxeditor_authors_display(wxWindow* parent);

@@ -213,6 +213,10 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	if(!our_movie.gametype) {
+		messages << "Can't save movie without a ROM" << std::endl;
+		return;
+	}
 	std::string filename2 = translate_name_mprefix(filename, true);
 	lua_callback_pre_save(filename2, true);
 	try {
@@ -246,6 +250,10 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 //Save movie.
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
+	if(!our_movie.gametype) {
+		messages << "Can't save movie without a ROM" << std::endl;
+		return;
+	}
 	std::string filename2 = translate_name_mprefix(filename, true);
 	lua_callback_pre_save(filename2, false);
 	try {
@@ -271,15 +279,27 @@ extern time_t random_seed_value;
 
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
+	if(!our_movie.gametype && !reload) {
+		messages << "Can't load movie without a ROM" << std::endl;
+		return;
+	}
 	set_preload_settings();
 
 	//Negative return.
-	rrdata::add_internal();
+	if(!reload) {
+		//Force unlazy rrdata.
+		rrdata::read_base(our_movie.projectid, false);
+		rrdata::add_internal();
+	}
 	try {
 		bool ro = movb.get_movie().readonly_mode();
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
 		our_rom->load(our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
+		if(our_rom->rtype)
+			our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
+		else
+			our_movie.gametype = NULL;
 		if(reload)
 			movb.get_movie().readonly_mode(ro);
 
@@ -313,12 +333,12 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
-	if(&(_movie.gametype->get_type()) != our_rom->rtype)
+	if(our_rom->rtype && &(_movie.gametype->get_type()) != our_rom->rtype)
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
-	if(!our_rom->orig_region->compatible_with(_movie.gametype->get_region()))
+	if(our_rom->orig_region && !our_rom->orig_region->compatible_with(_movie.gametype->get_region()))
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
 
-	if(_movie.coreversion != bsnes_core_version) {
+	if(our_rom->rtype && _movie.coreversion != bsnes_core_version) {
 		if(will_load_state) {
 			std::ostringstream x;
 			x << "ERROR: Emulator core version mismatch!" << std::endl
@@ -356,11 +376,11 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			(lmode == LOAD_STATE_PRESERVE) ? &_movie.input : NULL, _movie.projectid);
 
 	//Negative return.
-	rrdata::read_base(_movie.projectid);
+	rrdata::read_base(_movie.projectid, _movie.lazy_project_create);
 	rrdata::read(_movie.c_rrdata);
 	rrdata::add_internal();
 	try {
-		our_rom->region = &(_movie.gametype->get_region());
+		our_rom->region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		random_seed_value = _movie.movie_rtc_second;
 		our_rom->load(_movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 
@@ -410,13 +430,15 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
 		movb.get_movie().readonly_mode(false);
-	if(lmode == LOAD_STATE_DEFAULT && movb.get_movie().get_frame_count() <= movb.get_movie().get_current_frame())
+	if(lmode == LOAD_STATE_DEFAULT && !current_mode &&
+		movb.get_movie().get_frame_count() <= movb.get_movie().get_current_frame())
 		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
-	messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()
-		<< std::endl;
+	if(our_rom->rtype)
+		messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()
+			<< std::endl;
 	uint64_t mlength = _movie.get_movie_length();
 	{
 		mlength += 999999;
@@ -473,6 +495,8 @@ bool do_load_state(const std::string& filename, int lmode)
 
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
 {
+	//Force unlazy rrdata.
+	rrdata::read_base(our_movie.projectid, false);
 	rrdata::add_internal();
 	our_movie.rtc_second = secs;
 	our_movie.rtc_subsecond = ssecs;

@@ -76,6 +76,7 @@ namespace
 	std::ofstream ohandle;
 	bool handle_open;
 	std::string current_project;
+	bool lazy_mode;
 	//% is intentionally missing.
 	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 		"^&'@{}[],$?!-#().+~_";
@@ -94,17 +95,29 @@ namespace
 	}
 }
 
-void rrdata::read_base(const std::string& project) throw(std::bad_alloc)
+void rrdata::read_base(const std::string& project, bool lazy) throw(std::bad_alloc)
 {
-	if(project == current_project)
+	if(project == current_project && (!lazy_mode || lazy))
 		return;
+	if(lazy) {
+		std::set<rrdata::instance> new_rrset;
+		rrset = new_rrset;
+		current_project = project;
+		lazy_mode = true;
+		if(handle_open)
+			ohandle.close();
+		handle_open = false;
+		return;
+	}
 	std::set<rrdata::instance> new_rrset;
+	if(project == current_project)
+		new_rrset = rrset;
 	std::string filename = get_config_path() + "/" + safe_filename(project) + ".rr";
 	if(handle_open) {
 		ohandle.close();
 		handle_open = false;
 	}
-	ihandle.open(filename.c_str(), std::ios_base::in);
+	ihandle.open(filename.c_str(), std::ios_base::in | std::ios_base::binary);
 	while(ihandle) {
 		unsigned char bytes[RRDATA_BYTES];
 		ihandle.read(reinterpret_cast<char*>(bytes), RRDATA_BYTES);
@@ -113,11 +126,19 @@ void rrdata::read_base(const std::string& project) throw(std::bad_alloc)
 		new_rrset.insert(k);
 	}
 	ihandle.close();
-	ohandle.open(filename.c_str(), std::ios_base::out | std::ios_base::app);
+	ohandle.open(filename.c_str(), std::ios_base::out | std::ios_base::app | std::ios_base::binary);
 	if(ohandle)
 		handle_open = true;
+	if(project == current_project && lazy_mode && !lazy) {
+		//Finish the project creation, write all.
+		for(auto i : rrset) {
+			ohandle.write(reinterpret_cast<const char*>(i.bytes), RRDATA_BYTES);
+			ohandle.flush();
+		}
+	}
 	rrset = new_rrset;
 	current_project = project;
+	lazy_mode = lazy;
 }
 
 void rrdata::close() throw()

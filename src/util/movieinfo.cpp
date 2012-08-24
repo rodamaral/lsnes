@@ -6,6 +6,19 @@
 #include <string>
 #include <sstream>
 
+std::string name_subrom(core_type& major, unsigned romnumber) throw(std::bad_alloc)
+{
+	std::string name = "UNKNOWN";
+	if(romnumber < 2 * major.get_image_count())
+		name = major.get_image_info(romnumber / 2).hname;
+	if(romnumber % 2)
+		return name + " XML";
+	else if(name != "ROM")
+		return name + " ROM";
+	else
+		return "ROM";
+}
+
 std::string escape_string(std::string x)
 {
 	std::ostringstream out;

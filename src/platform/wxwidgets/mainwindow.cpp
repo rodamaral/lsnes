@@ -92,7 +92,8 @@ enum
 	wxID_LOAD_LIBRARY,
 	wxID_SETTINGS,
 	wxID_RELOAD_ROM_IMAGE,
-	wxID_LOAD_ROM_IMAGE
+	wxID_LOAD_ROM_IMAGE,
+	wxID_NEW_MOVIE,
 };
 
 
@@ -459,10 +460,31 @@ namespace
 	}
 
 	path_setting moviepath_setting("moviepath");
+	path_setting rompath_setting("rompath");
 
 	std::string movie_path()
 	{
 		return setting::get("moviepath");
+	}
+
+	std::string rom_path()
+	{
+		return setting::get("rompath");
+	}
+
+	bool is_lsnes_movie(const std::string& filename)
+	{
+		try {
+			zip_reader r(filename);
+			std::istream& s = r["systemid"];
+			std::string s2;
+			std::getline(s, s2);
+			delete &s;
+			istrip_CR(s2);
+			return (s2 == "lsnes-rr1");
+		} catch(...) {
+			return false;
+		}
 	}
 
 	class loadfile : public wxFileDropTarget
@@ -472,7 +494,10 @@ namespace
 		{
 			if(filenames.Count() != 1)
 				return false;
-			platform::queue("load " + tostdstring(filenames[0]));
+			if(is_lsnes_movie(tostdstring(filenames[0])))
+				platform::queue("load-smart " + tostdstring(filenames[0]));
+			else
+				platform::queue("reload-rom " + tostdstring(filenames[0]));
 			return true;
 		}
 	};
@@ -688,6 +713,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_ABOUT, wxT("About..."));
 	menu_start(wxT("System"));
+	menu_start_sub(wxT("New"));
+	menu_entry(wxID_NEW_MOVIE, wxT("Movie..."));
+	menu_end_sub();
 	menu_start_sub(wxT("Load"));
 	menu_entry(wxID_LOAD_STATE, wxT("State..."));
 	menu_entry(wxID_LOAD_STATE_RO, wxT("State (readonly)..."));
@@ -1068,10 +1096,13 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxsetingsdialog_display(this);
 		break;
 	case wxID_LOAD_ROM_IMAGE:
-		platform::queue("reload-rom " + pick_file_member(this, "Select new ROM image", "."));
+		platform::queue("reload-rom " + pick_file_member(this, "Select new ROM image", rom_path()));
 		return;
 	case wxID_RELOAD_ROM_IMAGE:
 		platform::queue("reload-rom");
+		return;
+	case wxID_NEW_MOVIE:
+		show_projectwindow(this);
 		return;
 	};
 }
