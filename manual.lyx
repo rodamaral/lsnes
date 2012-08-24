@@ -193,122 +193,12 @@ Command line options
 ROM options
 \end_layout
 
-\begin_layout Standard
-<kind> in the following can be one of:
-\end_layout
-
-\begin_layout Itemize
-rom: Cartridge ROM (BIOS for special carts).
- This is required.
- (bsnes)
-\end_layout
-
-\begin_layout Itemize
-bsx: BS-X (non-slotted) Game flash ROM.
- (bsnes)
-\end_layout
-
-\begin_layout Itemize
-bsxslotted: BS-X (slotted) Game flash ROM.
- (bsnes)
-\end_layout
-
-\begin_layout Itemize
-dmg: DMG game ROM (bsnes)
-\end_layout
-
-\begin_layout Itemize
-slot-a: Sufami Turbo Slot A ROM (bsnes)
-\end_layout
-
-\begin_layout Itemize
-slot-b: Sufami Turbo Slot B ROM (bsnes)
-\end_layout
-
-\begin_layout Itemize
-gbrom: Game Boy ROM (gambatte)
-\end_layout
-
-\begin_layout Itemize
-gbcrom: Game Boy Color ROM (gambatte)
-\end_layout
-
-\begin_layout Itemize
-gbcarom: Game Boy Color ROM (Use GBA initial registers, gambatte)
-\end_layout
-
 \begin_layout Subsubsection
---<kind>=<file> (lsnes/SDL, lsnes-avidump)
+--rom=<file> (lsnes/SDL, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
-Load <file> as specified ROM (SFC/BS/DMG/GB/GBC/ST file format).
-\end_layout
-
-\begin_layout Subsubsection
---<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
-\end_layout
-
-\begin_layout Standard
-Override hardware detection for ROM, reading the values from <file> (BSNES
- XML format or gambatte extra flags).
-\end_layout
-
-\begin_layout Subsubsection
---ips-<kind>=<file> (lsnes/SDL, lsnes-avidump)
-\end_layout
-
-\begin_layout Standard
-Apply BPS/IPS patch <file> to ROM <kind>.
- If specified multiple times, the patches are applied in order.
-\end_layout
-
-\begin_layout Subsubsection
---ips-<kind>-xml=<file> (lsnes/SDL, lsnes-avidump)
-\end_layout
-
-\begin_layout Standard
-Apply BPS/IPS patch <file> to XML of ROM <kind>.
- If specified multiple times, the patches are applied in order.
-\end_layout
-
-\begin_layout Subsubsection
---ips-offset=<offset> (lsnes/SDL, lsnes-avidump)
-\end_layout
-
-\begin_layout Standard
-Set offset to apply to IPS patches.
- May be negative.
- Handy for applying headered IPS patches (use offset of -512 for this).
- The offset must be 0 for BPS patches.
-\end_layout
-
-\begin_layout Subsubsection
---region=pal (BSNES core only)
-\end_layout
-
-\begin_layout Standard
-Force ROM to be considered PAL-only.
-\end_layout
-
-\begin_layout Itemize
-Only works on SNES and SGB ROMs (not BS-X or Sufami Turbo).
-\end_layout
-
-\begin_layout Itemize
-Attempting to load NTSC movie file will error out.
-\end_layout
-
-\begin_layout Subsubsection
---region=ntsc (BSNES core only)
-\end_layout
-
-\begin_layout Standard
-Force ROM to be considered NTSC-only.
-\end_layout
-
-\begin_layout Itemize
-Attempting to load PAL movie file will error out.
+Load <file> as ROM.
 \end_layout
 
 \begin_layout Subsection
@@ -4633,11 +4523,146 @@ Movie saving time, subsecond part.
 \end_layout
 
 \begin_layout Section
+Gamepack files
+\end_layout
+
+\begin_layout Itemize
+The first line must be: 
+\begin_inset Quotes eld
+\end_inset
+
+[GAMEPACK FILE]
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+There is one needed line: 
+\begin_inset Quotes eld
+\end_inset
+
+type <systype>
+\begin_inset Quotes erd
+\end_inset
+
+.
+ This sets system type to <systype>.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The system types: snes, bsx, bsxslotted, sufamiturbo, sgb, dmg, gbc, gbc_gba
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Region can be specified: 
+\begin_inset Quotes eld
+\end_inset
+
+region <region>
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The regions: ntsc, pal, autodetect, world
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Rom can be loaded as: 
+\begin_inset Quotes eld
+\end_inset
+
+rom <type> <file>
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The types: rom, bsx, dmg, slot-a slot-b
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Rom markup can be loaded as: 
+\begin_inset Quotes eld
+\end_inset
+
+xml <type> <file>
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Patches can be loaded as 
+\begin_inset Quotes eld
+\end_inset
+
+patch <type> <file> [<offset>]
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Example:
+\end_layout
+
+\begin_layout LyX-Code
+[GAMEPACK FILE]
+\end_layout
+
+\begin_layout LyX-Code
+type snes
+\end_layout
+
+\begin_layout LyX-Code
+rom rom speedygonzales.sfc
+\end_layout
+
+\begin_layout LyX-Code
+patch rom sonicthehedgehog.ips -512
+\end_layout
+
+\begin_layout Subsection
+Example 2:
+\end_layout
+
+\begin_layout LyX-Code
+[GAMEPACK FILE]
+\end_layout
+
+\begin_layout LyX-Code
+type sgb
+\end_layout
+
+\begin_layout LyX-Code
+rom rom supergameboy.sfc
+\end_layout
+
+\begin_layout LyX-Code
+rom dmg foo.dmg
+\end_layout
+
+\begin_layout Section
 Quick'n'dirty encode guide
 \end_layout
 
 \begin_layout Enumerate
-Start the emulator and load the movie file.
+Start the emulator and load the ROM and movie file.
 \end_layout
 
 \begin_layout Enumerate
@@ -4806,19 +4831,11 @@ Audio in UI is pretty bad in quality if game doesn't run at full speed.
 \end_layout
 
 \begin_layout Itemize
-AVI compression levels 10-18 are not compatible with AVISynth AVISource.
-\end_layout
-
-\begin_layout Itemize
 No menus, command based interface (SDL).
 \end_layout
 
 \begin_layout Itemize
 Long commands don't scroll.
-\end_layout
-
-\begin_layout Itemize
-Wxwidgets UI is still buggy.
 \end_layout
 
 \begin_layout Section
