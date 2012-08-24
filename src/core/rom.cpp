@@ -113,6 +113,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	std::istream& spec = open_file_relative(file, "");
 	std::string s;
 	std::getline(spec, s);
+	istrip_CR(s);
 	load_filename = file;
 	if(!spec || s != "[GAMEPACK FILE]") {
 		//This is a Raw ROM image.
@@ -133,7 +134,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	}
 	std::vector<std::string> lines;
 	while(std::getline(spec, s))
-		lines.push_back(s);
+		lines.push_back(strip_CR(s));
 	std::string platname = "";
 	std::string platreg = "";
 	for(auto i : lines) {
