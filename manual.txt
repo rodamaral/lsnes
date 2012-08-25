@@ -2221,29 +2221,73 @@ present in savestates.
 Movie saving time, subsecond part. Default is 
 starttime.subsecond. Only present in savestates.
 
-12 Gamepack files
+12 Known ROM extensions
+
+• SNES cartridge ROMs: sfc, smc, swc, fig, ufo, sf2, gd3, gd7, 
+  dx2, mgd, mgh.
+
+• DMG cartridge ROMs: dmg, gb.
+
+• GBC cartridge ROMs: cgb, gbc.
+
+13 Gamepack files
 
 • The first line must be: “[GAMEPACK FILE]”.
 
 • There is one needed line: “type <systype>”. This sets system 
-  type to <systype>.
+  type to <systype>. The following system types are valid:
 
-  – The system types: snes, bsx, bsxslotted, sufamiturbo, sgb, 
-    dmg, gbc, gbc_gba
+  – snes (SNES)
 
-• Region can be specified: “region <region>”.
+  – bsx (BS-X non-slotted)
 
-  – The regions: ntsc, pal, autodetect, world
+  – bsxslotted (BS-X slotted)
 
-• Rom can be loaded as: “rom <type> <file>”.
+  – sufamiturbo (Sufami Turbo)
 
-  – The types: rom, bsx, dmg, slot-a slot-b
+  – sgb (Super Game Boy)
 
-• Rom markup can be loaded as: “xml <type> <file>”.
+  – dmg (Game Boy)
 
-• Patches can be loaded as “patch <type> <file> [<offset>]”.
+  – gbc (Game Boy Color)
 
-12.1 Example:
+  – gbc_gba (Game Boy Color with GBA initial register values)
+
+• Optionally a region can be specified: “region <region>”. The 
+  following values are valid:
+
+  – autodetect (Autodetect region: snes and sgb only)
+
+  – ntsc (NTSC: snes, bsx, bsxslotted, sufamiturbo, sgb)
+
+  – pal (PAL: snes, sgb)
+
+  – world (World: dmg, gbc, gbc_gba)
+
+• ROM images are loaded as: “rom <type> <file>”. The following 
+  types are valid:
+
+  – rom (Cartridge ROM in snes, dmg, gbc, gbc_gba. BIOS in bsx, 
+    bsxslotted, sufamiturbo)
+
+  – bsx (Cartridge ROM in bsx, bsxslotted)
+
+  – slot-a (Cartridge ROM in sufamiturbo)
+
+  – slot-b (Cartridge ROM in sufamiturbo)
+
+• ROM markup can be loaded as: “xml <type> <file>”. The types 
+  valid are the same as for ROMs.
+
+• Patches can be loaded as “patch[<offset>] <type> <file>”. The 
+  types are the same as for ROMs.
+
+  – Offset is given in form [+-]<number>. Usually offset is 
+    either +0 or -512.
+
+  – Default offset is +0.
+
+13.1 Example:
 
 [GAMEPACK FILE]
 
@@ -2251,9 +2295,9 @@ type snes
 
 rom rom speedygonzales.sfc
 
-patch rom sonicthehedgehog.ips -512
+patch-512 rom sonicthehedgehog.ips
 
-12.2 Example 2:
+13.2 Example 2:
 
 [GAMEPACK FILE]
 
@@ -2261,9 +2305,9 @@ type sgb
 
 rom rom supergameboy.sfc
 
-rom dmg foo.dmg
+rom dmg megamanV.dmg
 
-13 Quick'n'dirty encode guide
+14 Quick'n'dirty encode guide
 
 1. Start the emulator and load the ROM and movie file.
 
@@ -2288,9 +2332,9 @@ rom dmg foo.dmg
 9. Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'. Now 
   final.mkv contains quick'n'dirty encode.
 
-14 Axis configurations for some gamepad types:
+15 Axis configurations for some gamepad types:
 
-14.1 XBox360 controller:
+15.1 XBox360 controller:
 
 Axes 2 and 5 (joystick<n>axis2 and joystick<n>axis5) should be 
 set to pressure-+.
@@ -2301,7 +2345,7 @@ set-axis joystick0axis5 pressure-+
 
 • This is needed for SDL only. EVDEV sets those types correctly.
 
-14.2 PS3 “sixaxis” controller:
+15.2 PS3 “sixaxis” controller:
 
 Axes 8-19 should be disabled.
 
@@ -2329,9 +2373,9 @@ set-axis joystick0axis18 disabled
 
 set-axis joystick0axis19 disabled
 
-15 Errata:
+16 Errata:
 
-15.1 Problems from BSNES core:
+16.1 Problems from BSNES core:
 
 • The whole pending save stuff.
 
@@ -2341,7 +2385,7 @@ set-axis joystick0axis19 disabled
 
 • Firmwares can't be loaded from ZIP archives.
 
-15.2 Other problems:
+16.2 Other problems:
 
 • Modifiers don't work with pseudo-keys (SDL, EVDEV).
 
@@ -2354,15 +2398,15 @@ set-axis joystick0axis19 disabled
 
 • Long commands don't scroll.
 
-16 Changelog:
+17 Changelog:
 
-16.1 rr0-beta1
+17.1 rr0-beta1
 
 • Fix -Wall warnings
 
 • Fix dumper video corruption with levels 10-18.
 
-16.2 rr0-beta2
+17.2 rr0-beta2
 
 • Autofire
 
@@ -2378,23 +2422,23 @@ set-axis joystick0axis19 disabled
 
 • Faster movie loading and saving.
 
-16.3 rr0-beta3
+17.3 rr0-beta3
 
 • Joystick support
 
-16.4 rr0-beta4
+17.4 rr0-beta4
 
 • Fix multi-buttons
 
 • Save jukebox functionality.
 
-16.5 rr0-beta5
+17.5 rr0-beta5
 
 • Try to fix some nasty failing movie load edge cases
 
 • Allow specifying scripts to run on command line.
 
-16.6 rr0-beta6
+17.6 rr0-beta6
 
 • Major source code reorganization.
 
@@ -2402,7 +2446,7 @@ set-axis joystick0axis19 disabled
 
 • Don't crash if loading initial state fails.
 
-16.7 rr0-beta7
+17.7 rr0-beta7
 
 • Fix firmware lookup
 
@@ -2416,7 +2460,7 @@ set-axis joystick0axis19 disabled
 
 • Fix loading movies starting from SRAM.
 
-16.8 rr0-beta8
+17.8 rr0-beta8
 
 • Add support for unattended dumping
 
@@ -2429,7 +2473,7 @@ set-axis joystick0axis19 disabled
 • Don't try to do dubious things in global ctors (fix crash on 
   startup)
 
-16.9 rr0-beta9
+17.9 rr0-beta9
 
 • Small documentation tweaking
 
@@ -2437,7 +2481,7 @@ set-axis joystick0axis19 disabled
 
 • Fix major bug in modifier matching
 
-16.10 rr0-beta10
+17.10 rr0-beta10
 
 • Lots of documentation fixes
 
@@ -2448,7 +2492,7 @@ set-axis joystick0axis19 disabled
 
 • Remove errant tab from joystick message.
 
-16.11 rr0-beta11
+17.11 rr0-beta11
 
 • Make autofire operate in absolute time, not linear time
 
@@ -2463,19 +2507,19 @@ set-axis joystick0axis19 disabled
 • Dump at correct framerate if dumping interlaced NTSC 
   (height=448).
 
-16.12 rr0-beta12
+17.12 rr0-beta12
 
 • Actually include the complete source code
 
 • Keep track of RTC
 
-16.13 rr0-beta13
+17.13 rr0-beta13
 
 • Document {save,start}time.{,sub}second.
 
 • Intercept time() from bsnes core.
 
-16.14 rr0-beta14
+17.14 rr0-beta14
 
 • Allow disabling time() interception (allow build on Mac OS X)
 
@@ -2493,7 +2537,7 @@ set-axis joystick0axis19 disabled
 
 • New CSCD writer implementation.
 
-16.15 rr0-beta15
+17.15 rr0-beta15
 
 • Fix interaction of * and +.
 
@@ -2507,7 +2551,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor controller input code.
 
-16.16 rr0-beta16
+17.16 rr0-beta16
 
 • Fix mouseclick scale compensation.
 
@@ -2517,7 +2561,7 @@ set-axis joystick0axis19 disabled
 
 • Fix CSCD output (buffer overrun and race condition).
 
-16.17 rr0-beta17
+17.17 rr0-beta17
 
 • JMD dumping support.
 
@@ -2535,7 +2579,7 @@ set-axis joystick0axis19 disabled
 
 • Pass colors in one chunk from Lua.
 
-16.18 rr0-beta18
+17.18 rr0-beta18
 
 • New lua functions gui.line(), gui.status() and gui.circle(), 
   memory.vma_count(), memory.read_vma() and memory.find_vma().
@@ -2566,7 +2610,7 @@ set-axis joystick0axis19 disabled
 
 • Refactor more code into generic window code.
 
-16.19 rr0-beta19
+17.19 rr0-beta19
 
 • Refactor message handling.
 
@@ -2578,7 +2622,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets graphics plugin.
 
-16.20 rr0-beta20
+17.20 rr0-beta20
 
 • Get rid of win32-crap.[ch]pp.
 
@@ -2596,7 +2640,7 @@ set-axis joystick0axis19 disabled
 
 • Load/Save settings in wxwidgets gui.
 
-16.21 rr0-beta21
+17.21 rr0-beta21
 
 • Patch problems in bsnes core
 
@@ -2604,7 +2648,7 @@ set-axis joystick0axis19 disabled
 
 • Fix memory corruption in lcscreen::load()
 
-16.22 rr0-beta22
+17.22 rr0-beta22
 
 • Fix interpretting repeat counts in rrdata loading.
 
@@ -2627,7 +2671,7 @@ set-axis joystick0axis19 disabled
 • Fix titlebar version number (no, the last version wasn't 
   'lsnes-0-beta21', it was 'lsnes rr0-beta21').
 
-16.23 rr0-beta23
+17.23 rr0-beta23
 
 • Fix memory corruption due to macro/field mixup
 
@@ -2649,7 +2693,7 @@ set-axis joystick0axis19 disabled
 
 • Fix crash related to full console mode.
 
-16.24 rr0-beta24
+17.24 rr0-beta24
 
 • Wxwidgets: Allow bringing application to foreground on Mac OS 
   X.
@@ -2660,7 +2704,7 @@ set-axis joystick0axis19 disabled
 
 • Lua: _SYSTEM table.
 
-16.25 rr0-beta25
+17.25 rr0-beta25
 
 • sdmp2sox: Pad soundtrack if using -l or -L.
 
@@ -2673,7 +2717,7 @@ set-axis joystick0axis19 disabled
 • Fix zip_writer bug causing warnings from info-zip and error 
   from advzip.
 
-16.26 rr0-beta26
+17.26 rr0-beta26
 
 • Fix IPS patching code (use bsnes core IPS patcher).
 
@@ -2681,11 +2725,11 @@ set-axis joystick0axis19 disabled
 
 • Add feature to load headered ROMs.
 
-16.27 rr0-beta27
+17.27 rr0-beta27
 
 • Show command names when showing keybindings
 
-16.28 rr0
+17.28 rr0
 
 • Fix pause-on-end to be actually controllable
 
@@ -2694,7 +2738,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Fix ROM loading.
 
-16.29 rr1-beta0
+17.29 rr1-beta0
 
 • Lua: Add gui.textH, gui.textV, gui.textHV
 
@@ -2708,13 +2752,13 @@ set-axis joystick0axis19 disabled
 
 • Split UI and core into their own threads
 
-16.30 rr1-beta1
+17.30 rr1-beta1
 
 • Remove leftover dummy SRAM slot
 
 • Fix controller numbers.
 
-16.31 rr1-beta2
+17.31 rr1-beta2
 
 • Fix lsnes-dumpavi after interface change.
 
@@ -2722,7 +2766,7 @@ set-axis joystick0axis19 disabled
 
 • Pack movie data in memory.
 
-16.32 rr1-beta3
+17.32 rr1-beta3
 
 • Fix framecount/length given when loading movies.
 
@@ -2730,29 +2774,29 @@ set-axis joystick0axis19 disabled
 
 • Don't leak palette if freeing screen object.
 
-16.33 rr1-beta4
+17.33 rr1-beta4
 
 • Detect revisions.
 
 • Wxwidgets: Allow controlling dumper from the menu.
 
-16.34 rr1-beta5
+17.34 rr1-beta5
 
 • Rewrite parts of manual
 
 • Lua: Make it work with Lua 5.2.
 
-16.35 rr1-beta6
+17.35 rr1-beta6
 
 • Win32: Fix compile errors.
 
-16.36 rr1-beta7
+17.36 rr1-beta7
 
 • Refactor controller input code.
 
 • Fix crash when using command line on SDL / Mac OS X.
 
-16.37 rr1-beta8
+17.37 rr1-beta8
 
 • Delete core/coroutine (obsolete)
 
@@ -2771,27 +2815,27 @@ set-axis joystick0axis19 disabled
 
 • SDL: Fix command history
 
-16.38 rr1-beta9
+17.38 rr1-beta9
 
 • Fix some order-of-global-ctor bugs.
 
-16.39 rr1-beta10
+17.39 rr1-beta10
 
 • Fix crashes when quitting on Win32.
 
-16.40 rr1-beta11
+17.40 rr1-beta11
 
 • EVDEV: Queue keypresses from joystick, don't send directly
 
 • Wxwidgets: Load-Preserve that actually works.
 
-16.41 rr1-beta12
+17.41 rr1-beta12
 
 • Wxwidgets: GUI for memory search.
 
 • Warn about using synchronous queue in UI callback.
 
-16.42 rr1-beta13
+17.42 rr1-beta13
 
 • Remember last saved file for each ROM
 
@@ -2805,7 +2849,7 @@ set-axis joystick0axis19 disabled
 
 • SDL: Don't screw up commands with NUL codepoints.
 
-16.43 rr1-beta14
+17.43 rr1-beta14
 
 • Merge status panel and main window
 
@@ -2815,7 +2859,7 @@ set-axis joystick0axis19 disabled
 
 • Elminate cross calls in dump menu code.
 
-16.44 rr1-beta15
+17.44 rr1-beta15
 
 • Cancel pending saves command
 
@@ -2825,7 +2869,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Read watch expressions in the right thread
 
-16.45 rr1-beta16
+17.45 rr1-beta16
 
 • Wxwidgets: Don't prompt for member when running Lua script (Lua 
   doesn't support that).
@@ -2838,11 +2882,11 @@ set-axis joystick0axis19 disabled
 • Fix ROM/savestate handling (don't let user mismatch ROM and 
   savestates).
 
-16.46 rr1
+17.46 rr1
 
 • Document memory watch syntax.
 
-16.47 rr1-delta1
+17.47 rr1-delta1
 
 • Fix unattended dumping (lsnes-dumpavi)
 
@@ -2853,17 +2897,17 @@ set-axis joystick0axis19 disabled
 
 • Add option to control sample rate preturbation in AVI dumper
 
-16.48 rr1-delta2
+17.48 rr1-delta2
 
 • Wxwidgets: Fix dumper submodes
 
 • Set core controller types before loadstate
 
-16.49 rr1-delta2epsilon1
+17.49 rr1-delta2epsilon1
 
 • Fix compiling with bsnes v086.
 
-16.50 rr1-delta3
+17.50 rr1-delta3
 
 • Don't prompt before quitting
 
@@ -2876,7 +2920,7 @@ set-axis joystick0axis19 disabled
 
 • Allow configuring some hotkeys.
 
-16.51 rr1-delta4
+17.51 rr1-delta4
 
 • Lots of code cleanups
 
@@ -2890,12 +2934,12 @@ set-axis joystick0axis19 disabled
 
 • Improve stability on win32.
 
-16.52 rr1-delta4epsilon1
+17.52 rr1-delta4epsilon1
 
 • Don't corrupt movie if movie length is integer multiple of 
   frames per page.
 
-16.53 rr1-delta5
+17.53 rr1-delta5
 
 • New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
 
@@ -2918,19 +2962,19 @@ set-axis joystick0axis19 disabled
 
 • Bsnes v087 support.
 
-16.54 rr1-delta5epsilon1
+17.54 rr1-delta5epsilon1
 
 • Movieinfo: Fix display of port #2 type.
 
 • Call on_input() after loadstate.
 
-16.55 rr1-delta5epsilon2
+17.55 rr1-delta5epsilon2
 
 • Fix writing port2 data to movie.
 
 • Fix SRAM handling with Bsnes v087.
 
-16.56 rr1-delta6
+17.56 rr1-delta6
 
 • Library loading support
 
@@ -2968,7 +3012,7 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets (wxJoystick) joystick support
 
-16.57 rr1-delta7
+17.57 rr1-delta7
 
 • Lots of internal joystick refactoring
 
@@ -2990,7 +3034,7 @@ set-axis joystick0axis19 disabled
 
 • Start paused option.
 
-16.58 rr1-delta7epsilon1
+17.58 rr1-delta7epsilon1
 
 • AVI: ZMBV support
 
@@ -2998,19 +3042,19 @@ set-axis joystick0axis19 disabled
 
 • AVI: Fix secondary audio in mode 4.
 
-16.59 rr1-delta7epsilon2
+17.59 rr1-delta7epsilon2
 
 • AVI: Refactor ZMBV a bit.
 
 • Fix error reading analog values from movie file
 
-16.60 rr1-delta8
+17.60 rr1-delta8
 
 • Delayed reset support
 
 • Lua: memory.hash_region
 
-16.61 rr1-delta8epsilon1
+17.61 rr1-delta8epsilon1
 
 • Rework the build system
 
@@ -3024,7 +3068,7 @@ set-axis joystick0axis19 disabled
 
 • SDL: More advanced command editing.
 
-16.62 rr1-delta9
+17.62 rr1-delta9
 
 • wxMSW: Fix the “arrow keys and enter don't work” problem
 
@@ -3036,7 +3080,7 @@ set-axis joystick0axis19 disabled
 
 • Fix directory transversal.
 
-16.63 rr1-delta10
+17.63 rr1-delta10
 
 • AVI: Sound mode 5 (48kHz high-quality)
 
@@ -3046,7 +3090,7 @@ set-axis joystick0axis19 disabled
 
 • Fix loading memory watch files with CRLF line endings
 
-16.64 rr1-delta10epsilon1
+17.64 rr1-delta10epsilon1
 
 • Map bsnes internal state into memory space
 
@@ -3054,7 +3098,7 @@ set-axis joystick0axis19 disabled
 
 • DnD movies/saves on the main window.
 
-16.65 rr1-delta11
+17.65 rr1-delta11
 
 • Split core bindings into own module.
 
@@ -3064,11 +3108,11 @@ set-axis joystick0axis19 disabled
 
 • Reload/swap ROM function
 
-16.66 rr1-delta11epsilon1
+17.66 rr1-delta11epsilon1
 
 • Fix step poll function
 
-16.67 rr1-delta12
+17.67 rr1-delta12
 
 • Non-insane savestate anchoring
 

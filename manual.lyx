@@ -4523,6 +4523,22 @@ Movie saving time, subsecond part.
 \end_layout
 
 \begin_layout Section
+Known ROM extensions
+\end_layout
+
+\begin_layout Itemize
+SNES cartridge ROMs: sfc, smc, swc, fig, ufo, sf2, gd3, gd7, dx2, mgd, mgh.
+\end_layout
+
+\begin_layout Itemize
+DMG cartridge ROMs: dmg, gb.
+\end_layout
+
+\begin_layout Itemize
+GBC cartridge ROMs: cgb, gbc.
+\end_layout
+
+\begin_layout Section
 Gamepack files
 \end_layout
 
@@ -4549,16 +4565,45 @@ type <systype>
 
 .
  This sets system type to <systype>.
+ The following system types are valid:
 \end_layout
 
 \begin_deeper
 \begin_layout Itemize
-The system types: snes, bsx, bsxslotted, sufamiturbo, sgb, dmg, gbc, gbc_gba
+snes (SNES)
+\end_layout
+
+\begin_layout Itemize
+bsx (BS-X non-slotted)
+\end_layout
+
+\begin_layout Itemize
+bsxslotted (BS-X slotted)
+\end_layout
+
+\begin_layout Itemize
+sufamiturbo (Sufami Turbo)
+\end_layout
+
+\begin_layout Itemize
+sgb (Super Game Boy)
+\end_layout
+
+\begin_layout Itemize
+dmg (Game Boy)
+\end_layout
+
+\begin_layout Itemize
+gbc (Game Boy Color)
+\end_layout
+
+\begin_layout Itemize
+gbc_gba (Game Boy Color with GBA initial register values)
 \end_layout
 
 \end_deeper
 \begin_layout Itemize
-Region can be specified: 
+Optionally a region can be specified: 
 \begin_inset Quotes eld
 \end_inset
 
@@ -4567,16 +4612,29 @@ region <region>
 \end_inset
 
 .
+ The following values are valid:
 \end_layout
 
 \begin_deeper
 \begin_layout Itemize
-The regions: ntsc, pal, autodetect, world
+autodetect (Autodetect region: snes and sgb only)
+\end_layout
+
+\begin_layout Itemize
+ntsc (NTSC: snes, bsx, bsxslotted, sufamiturbo, sgb)
+\end_layout
+
+\begin_layout Itemize
+pal (PAL: snes, sgb)
+\end_layout
+
+\begin_layout Itemize
+world (World: dmg, gbc, gbc_gba)
 \end_layout
 
 \end_deeper
 \begin_layout Itemize
-Rom can be loaded as: 
+ROM images are loaded as: 
 \begin_inset Quotes eld
 \end_inset
 
@@ -4585,16 +4643,30 @@ rom <type> <file>
 \end_inset
 
 .
+ The following types are valid:
 \end_layout
 
 \begin_deeper
 \begin_layout Itemize
-The types: rom, bsx, dmg, slot-a slot-b
+rom (Cartridge ROM in snes, dmg, gbc, gbc_gba.
+ BIOS in bsx, bsxslotted, sufamiturbo)
+\end_layout
+
+\begin_layout Itemize
+bsx (Cartridge ROM in bsx, bsxslotted)
+\end_layout
+
+\begin_layout Itemize
+slot-a (Cartridge ROM in sufamiturbo)
+\end_layout
+
+\begin_layout Itemize
+slot-b (Cartridge ROM in sufamiturbo)
 \end_layout
 
 \end_deeper
 \begin_layout Itemize
-Rom markup can be loaded as: 
+ROM markup can be loaded as: 
 \begin_inset Quotes eld
 \end_inset
 
@@ -4603,6 +4675,7 @@ xml <type> <file>
 \end_inset
 
 .
+ The types valid are the same as for ROMs.
 \end_layout
 
 \begin_layout Itemize
@@ -4610,13 +4683,25 @@ Patches can be loaded as
 \begin_inset Quotes eld
 \end_inset
 
-patch <type> <file> [<offset>]
+patch[<offset>] <type> <file>
 \begin_inset Quotes erd
 \end_inset
 
 .
+ The types are the same as for ROMs.
 \end_layout
 
+\begin_deeper
+\begin_layout Itemize
+Offset is given in form [+-]<number>.
+ Usually offset is either +0 or -512.
+\end_layout
+
+\begin_layout Itemize
+Default offset is +0.
+\end_layout
+
+\end_deeper
 \begin_layout Subsection
 Example:
 \end_layout
@@ -4634,7 +4719,7 @@ rom rom speedygonzales.sfc
 \end_layout
 
 \begin_layout LyX-Code
-patch rom sonicthehedgehog.ips -512
+patch-512 rom sonicthehedgehog.ips
 \end_layout
 
 \begin_layout Subsection
@@ -4654,7 +4739,7 @@ rom rom supergameboy.sfc
 \end_layout
 
 \begin_layout LyX-Code
-rom dmg foo.dmg
+rom dmg megamanV.dmg
 \end_layout
 
 \begin_layout Section
