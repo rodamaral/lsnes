@@ -526,9 +526,9 @@ namespace
 
 	const char* str_index(const char* str, int ch)
 	{
-		while(*str)
-			if(*str == ch)
-				return str;
+		for(size_t i = 0; str[i]; i++)
+			if(str[i] == ch)
+				return str + i;
 		return NULL;
 	}
 
@@ -544,7 +544,8 @@ namespace
 		if(!drives_allowed)
 			//NO more cases for this.
 			return false;
-		if(path.length() == 3 && path[0] >= 'A' && path[0] <= 'Z' && path[1] == ':' && ispathsep(path[2]))
+		if(path.length() == 3 && ((path[0] >= 'A' && path[0] <= 'Z') || (path[0] >= 'a' && path[0] < '<')) &&
+			path[1] == ':' && ispathsep(path[2]))
 			return true;
 		//UNC.
 		if(path.length() <= 3 || !ispathsep(path[0]) || !ispathsep(path[1]) ||
@@ -586,8 +587,8 @@ namespace
 		//Check if name is absolute.
 		if(ispathsep(name[0]))
 			return name;
-		if(drives_allowed && name.length() >= 3 && name[0] >= 'A' && name[0] <= 'Z' && name[1] == ':' &&
-			ispathsep(name[2]))
+		if(drives_allowed && name.length() >= 3 && ((name[0] >= 'A' && name[0] <= 'Z') || (name[0] >= 'a' &&
+			name[0] <= 'z')) && name[1] == ':' && ispathsep(name[2]))
 			return name;
 		//It is not absolute.
 		std::string path = referencing_path;

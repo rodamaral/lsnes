@@ -286,7 +286,6 @@ void update_movie_state()
 uint64_t audio_irq_time;
 uint64_t controller_irq_time;
 uint64_t frame_irq_time;
-std::string msu1_base_path;
 
 struct lsnes_callbacks : public emucore_callbacks
 {
@@ -319,7 +318,7 @@ public:
 	
 	std::string get_base_path()
 	{
-		return msu1_base_path;
+		return our_rom->msu1_base;
 	}
 
 	time_t get_time()

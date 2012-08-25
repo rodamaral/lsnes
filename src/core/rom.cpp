@@ -209,19 +209,19 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	//Patch ROMs.
 	for(auto i : lines) {
 		regex_results tmp;
-		if(!(tmp = regex("patch[ \t]+([^ \t]+)[ \t]+(.*)([ \t]+[+-][0-9]+)?", i)))
+		if(!(tmp = regex("patch([+-][0-9]+)?[ \t]+([^ \t]+)[ \t]+(.*)", i)))
 			continue;
 		size_t idxs = rtype->get_image_count();
 		size_t idx = idxs;
 		for(size_t i = 0; i < idxs; i++)
-			if(rtype->get_image_info(i).iname == tmp[1])
+			if(rtype->get_image_info(i).iname == tmp[2])
 				idx = i;
 		if(idx == idxs)
-			(stringfmt() << "Not a valid ROM name '" << tmp[1] << "'").throwex();
+			(stringfmt() << "Not a valid ROM name '" << tmp[2] << "'").throwex();
 		int32_t offset = 0;
-		if(tmp[3] != "")
-			offset = parse_value<int32_t>(tmp[3]);
-		romimg[idx].patch(read_file_relative(tmp[2], ""), offset);
+		if(tmp[1] != "")
+			offset = parse_value<int32_t>(tmp[1]);
+		romimg[idx].patch(read_file_relative(tmp[3], file), offset);
 	}
 
 	//MSU-1 base.
@@ -263,7 +263,6 @@ void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_allo
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;
-	msu1_base_path = msu1_base;
 	refresh_cart_mappings();
 }
 

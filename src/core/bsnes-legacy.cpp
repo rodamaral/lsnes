@@ -150,7 +150,7 @@ namespace
 	core_romimage_info image_snescart("rom", "Cartridge ROM", 1, header_fn);
 	core_romimage_info image_bsxbios("rom", "BS-X BIOS", 1, header_fn);
 	core_romimage_info image_bsxflash("bsx", "BS-X Flash", 2, header_fn);
-	core_romimage_info image_bsxsflash("bsxslotted", "BS-X Flash", 2, header_fn);
+	core_romimage_info image_bsxsflash("bsx", "BS-X Flash", 2, header_fn);
 	core_romimage_info image_sgbbios("rom", "SGB BIOS", 1, header_fn);
 	core_romimage_info image_dmg("dmg", "DMG ROM", 2, header_fn);
 	core_romimage_info image_stbios("rom", "ST BIOS", 1, header_fn);
