@@ -241,7 +241,6 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	struct keyentry_mod_data
 	{
 		wxCheckBox* pressed;
-		wxCheckBox* unmasked;
 		unsigned tmpflags;
 	};
 
@@ -302,22 +301,21 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		}
 
 		Centre();
-		top_s = new wxFlexGridSizer(2, 1, 0, 0);
+		top_s = new wxFlexGridSizer(3, 1, 0, 0);
 		SetSizer(top_s);
 
-		t_s = new wxFlexGridSizer(mods.size() + 1, 3, 0, 0);
+		t_s = new wxFlexGridSizer(1, 3, 0, 0);
+		wxFlexGridSizer* t2_s = new wxFlexGridSizer(mods.size(), 1, 0, 0);
 		for(auto i : mods) {
-			t_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
 			keyentry_mod_data m;
-			t_s->Add(m.pressed = new wxCheckBox(this, wxID_ANY, wxT("Pressed")), 0, wxGROW);
-			t_s->Add(m.unmasked = new wxCheckBox(this, wxID_ANY, wxT("Unmasked")), 1, wxGROW);
-			m.pressed->Disable();
+			t2_s->Add(m.pressed = new wxCheckBox(this, wxID_ANY, towxstring(i), wxDefaultPosition, 
+				wxDefaultSize, wxCHK_3STATE | wxCHK_ALLOW_3RD_STATE_FOR_USER), 1, wxGROW);
+			m.pressed->Set3StateValue(wxCHK_UNDETERMINED);
 			modifiers[i] = m;
 			m.pressed->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
-			m.unmasked->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
-				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
 		}
+		top_s->Add(t2_s);
 		t_s->Add(new wxStaticText(this, wxID_ANY, wxT("Key")), 0, wxGROW);
 		t_s->Add(mainclass = new wxComboBox(this, wxID_ANY, classeslist[0], wxDefaultPosition, wxDefaultSize,
 			classeslist.size(), &classeslist[0], wxCB_READONLY), 0, wxGROW);
@@ -370,9 +368,9 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	{
 		if(!modifiers.count(mod))
 			return;
-		if(modifiers[mod].unmasked->IsEnabled()) {
+		if(modifiers[mod].pressed->Get3StateValue() == wxCHK_UNDETERMINED) {
 			wxCommandEvent e;
-			modifiers[mod].unmasked->SetValue(true);
+			modifiers[mod].pressed->Set3StateValue(wxCHK_UNCHECKED);
 			on_change_setting(e);
 		}
 	}	
@@ -381,9 +379,9 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	{
 		if(!modifiers.count(mod))
 			return;
-		if(modifiers[mod].pressed->IsEnabled()) {
+		if(modifiers[mod].pressed->Get3StateValue() != wxCHK_UNDETERMINED) {
 			wxCommandEvent e;
-			modifiers[mod].pressed->SetValue(true);
+			modifiers[mod].pressed->Set3StateValue(wxCHK_CHECKED);
 			on_change_setting(e);
 		}
 	}	
@@ -432,53 +430,6 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 
 	void wxdialog_keyentry::on_change_setting(wxCommandEvent& e)
 	{
-		for(auto& i : modifiers)
-			i.second.tmpflags = 0;
-		for(auto& i : modifiers) {
-			modifier* m = NULL;
-			try {
-				m = &modifier::lookup(i.first);
-			} catch(...) {
-				i.second.pressed->Disable();
-				i.second.unmasked->Disable();
-				continue;
-			}
-			std::string j = m->linked_name();
-			if(i.second.unmasked->GetValue())
-				i.second.tmpflags |= TMPFLAG_UNMASKED;
-			if(j != "") {
-				if(modifiers[j].unmasked->GetValue())
-					i.second.tmpflags |= TMPFLAG_UNMASKED_LINK_PARENT;
-				if(i.second.unmasked->GetValue())
-					modifiers[j].tmpflags |= TMPFLAG_UNMASKED_LINK_CHILD;
-			}
-			if(i.second.pressed->GetValue())
-				i.second.tmpflags |= TMPFLAG_PRESSED;
-			if(j != "") {
-				if(modifiers[j].pressed->GetValue())
-					i.second.tmpflags |= TMPFLAG_PRESSED_LINK_PARENT;
-				if(i.second.pressed->GetValue())
-					modifiers[j].tmpflags |= TMPFLAG_PRESSED_LINK_CHILD;
-			}
-		}
-		for(auto& i : modifiers) {
-			//Unmasked is to be enabled if neither unmasked link flag is set.
-			if(i.second.tmpflags & ((TMPFLAG_UNMASKED_LINK_CHILD | TMPFLAG_UNMASKED_LINK_PARENT) & ~64)) {
-				i.second.unmasked->SetValue(false);
-				i.second.unmasked->Disable();
-			} else
-				i.second.unmasked->Enable();
-			//Pressed is to be enabled if:
-			//- This modifier is unmasked or parent is unmasked.
-			//- Parent nor child is not pressed.
-			if(((i.second.tmpflags & (TMPFLAG_UNMASKED | TMPFLAG_UNMASKED_LINK_PARENT |
-				TMPFLAG_PRESSED_LINK_CHILD | TMPFLAG_PRESSED_LINK_PARENT)) & 112) == 64)
-				i.second.pressed->Enable();
-			else {
-				i.second.pressed->SetValue(false);
-				i.second.pressed->Disable();
-			}
-		}
 	}
 
 	void wxdialog_keyentry::on_pressbutton(wxCommandEvent& e)
@@ -543,7 +494,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		bool f;
 		f = true;
 		for(auto i : modifiers) {
-			if(i.second.pressed->GetValue()) {
+			if(i.second.pressed->Get3StateValue() == wxCHK_CHECKED) {
 				if(!f)
 					x = x + ",";
 				f = false;
@@ -553,7 +504,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		x = x + "/";
 		f = true;
 		for(auto i : modifiers) {
-			if(i.second.unmasked->GetValue()) {
+			if(i.second.pressed->Get3StateValue() != wxCHK_UNDETERMINED) {
 				if(!f)
 					x = x + ",";
 				f = false;
