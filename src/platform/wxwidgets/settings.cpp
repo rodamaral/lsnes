@@ -240,7 +240,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 
 	struct keyentry_mod_data
 	{
-		wxCheckBox* pressed;
+		wxComboBox* pressed;
 		unsigned tmpflags;
 	};
 
@@ -282,6 +282,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		bool clearable)
 		: wxDialog(parent, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1))
 	{
+		wxString boxchoices[] = { wxT("Released"), wxT("Don't care"), wxT("Pressed") };
 		std::vector<wxString> classeslist;
 		wxString emptystring;
 		std::set<std::string> mods, keys;
@@ -304,13 +305,14 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		top_s = new wxFlexGridSizer(3, 1, 0, 0);
 		SetSizer(top_s);
 
-		t_s = new wxFlexGridSizer(1, 3, 0, 0);
-		wxFlexGridSizer* t2_s = new wxFlexGridSizer(mods.size(), 1, 0, 0);
+		t_s = new wxFlexGridSizer(2, 3, 0, 0);
+		wxFlexGridSizer* t2_s = new wxFlexGridSizer(mods.size(), 2, 0, 0);
 		for(auto i : mods) {
 			keyentry_mod_data m;
-			t2_s->Add(m.pressed = new wxCheckBox(this, wxID_ANY, towxstring(i), wxDefaultPosition, 
-				wxDefaultSize, wxCHK_3STATE | wxCHK_ALLOW_3RD_STATE_FOR_USER), 1, wxGROW);
-			m.pressed->Set3StateValue(wxCHK_UNDETERMINED);
+			t2_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
+			t2_s->Add(m.pressed = new wxComboBox(this, wxID_ANY, boxchoices[1], wxDefaultPosition, 
+				wxDefaultSize, 3, boxchoices, wxCB_READONLY), 1, wxGROW);
+			m.pressed->SetSelection(1);
 			modifiers[i] = m;
 			m.pressed->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxdialog_keyentry::on_change_setting), NULL, this);
@@ -368,9 +370,9 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	{
 		if(!modifiers.count(mod))
 			return;
-		if(modifiers[mod].pressed->Get3StateValue() == wxCHK_UNDETERMINED) {
+		if(modifiers[mod].pressed->GetSelection() == 1) {
 			wxCommandEvent e;
-			modifiers[mod].pressed->Set3StateValue(wxCHK_UNCHECKED);
+			modifiers[mod].pressed->SetSelection(0);
 			on_change_setting(e);
 		}
 	}	
@@ -379,9 +381,9 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	{
 		if(!modifiers.count(mod))
 			return;
-		if(modifiers[mod].pressed->Get3StateValue() != wxCHK_UNDETERMINED) {
+		if(modifiers[mod].pressed->GetSelection() != 1) {
 			wxCommandEvent e;
-			modifiers[mod].pressed->Set3StateValue(wxCHK_CHECKED);
+			modifiers[mod].pressed->SetSelection(2);
 			on_change_setting(e);
 		}
 	}	
@@ -494,7 +496,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		bool f;
 		f = true;
 		for(auto i : modifiers) {
-			if(i.second.pressed->Get3StateValue() == wxCHK_CHECKED) {
+			if(i.second.pressed->GetSelection() == 2) {
 				if(!f)
 					x = x + ",";
 				f = false;
@@ -504,7 +506,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		x = x + "/";
 		f = true;
 		for(auto i : modifiers) {
-			if(i.second.pressed->Get3StateValue() != wxCHK_UNDETERMINED) {
+			if(i.second.pressed->GetSelection() != 1) {
 				if(!f)
 					x = x + ",";
 				f = false;
