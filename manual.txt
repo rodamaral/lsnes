@@ -3116,3 +3116,21 @@ set-axis joystick0axis19 disabled
 
 • Non-insane savestate anchoring
 
+17.68 rr1-delta13
+
+• More Memory search methods
+
+• Preserve movie if loading in RO mode.
+
+• Fix a obscure case in timeline check
+
+• Revamp the entiere ROM loading code
+
+• Support DnD on ROMs
+
+• Revamp menu layout
+
+• Standalone hotkey config dialog
+
+• Show bindings in more user-friendly format
+
