@@ -499,8 +499,10 @@ namespace
 				return false;
 			if(is_lsnes_movie(tostdstring(filenames[0])))
 				platform::queue("load-smart " + tostdstring(filenames[0]));
-			else
+			else {
+				platform::queue("unpause-emulator");
 				platform::queue("reload-rom " + tostdstring(filenames[0]));
+			}
 			return true;
 		}
 	};
