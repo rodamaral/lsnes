@@ -122,6 +122,7 @@ namespace
 		romdata.resize(size);
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
+		return 1;
 	}
 
 	int load_rom_dmg(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
