@@ -6343,5 +6343,41 @@ rr1-delta12
 Non-insane savestate anchoring
 \end_layout
 
+\begin_layout Subsection
+rr1-delta13
+\end_layout
+
+\begin_layout Itemize
+More Memory search methods
+\end_layout
+
+\begin_layout Itemize
+Preserve movie if loading in RO mode.
+\end_layout
+
+\begin_layout Itemize
+Fix a obscure case in timeline check
+\end_layout
+
+\begin_layout Itemize
+Revamp the entiere ROM loading code
+\end_layout
+
+\begin_layout Itemize
+Support DnD on ROMs
+\end_layout
+
+\begin_layout Itemize
+Revamp menu layout
+\end_layout
+
+\begin_layout Itemize
+Standalone hotkey config dialog
+\end_layout
+
+\begin_layout Itemize
+Show bindings in more user-friendly format
+\end_layout
+
 \end_body
 \end_document

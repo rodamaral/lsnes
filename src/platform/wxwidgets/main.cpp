@@ -389,12 +389,12 @@ bool lsnes_app::OnInit()
 
 	do_basic_core_init();
 	loaded_rom* rom = new loaded_rom;
-	moviefile mov;
-	mov.port1 = &porttype_info::port_default(0);
-	mov.port2 = &porttype_info::port_default(1);
-	mov.input.clear(*mov.port1, *mov.port2);
-	mov.start_paused = true;
-	boot_emulator(*rom, mov);
+	moviefile* mov = new moviefile;
+	mov->port1 = &porttype_info::port_default(0);
+	mov->port2 = &porttype_info::port_default(1);
+	mov->input.clear(*mov->port1, *mov->port2);
+	mov->start_paused = true;
+	boot_emulator(*rom, *mov);
 
 	return true;
 }
