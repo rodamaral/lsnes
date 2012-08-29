@@ -765,10 +765,14 @@ namespace
 				pending_load = "";
 				return -1;
 			}
-			if(loadmode == LOAD_STATE_BEGINNING)
-				do_load_beginning(false);
-			if(loadmode == LOAD_STATE_ROMRELOAD)
-				do_load_beginning(true);
+			try {
+				if(loadmode == LOAD_STATE_BEGINNING)
+					do_load_beginning(false);
+				if(loadmode == LOAD_STATE_ROMRELOAD)
+					do_load_beginning(true);
+			} catch(std::exception& e) {
+				messages << "Load failed: " << e.what() << std::endl;
+			}
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;

@@ -1676,7 +1676,7 @@ void wxeditor_esettings_advanced::_refresh()
 class wxeditor_esettings : public wxDialog
 {
 public:
-	wxeditor_esettings(wxWindow* parent);
+	wxeditor_esettings(wxWindow* parent, bool hotkeys_only);
 	~wxeditor_esettings();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCommandEvent& e);
@@ -1687,8 +1687,9 @@ private:
 	wxeditor_esettings_hotkeys* hotkeytab;
 };
 
-wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
+	: wxDialog(parent, wxID_ANY, hotkeys_only ? wxT("lsnes: Configure hotkeys") :
+		wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
 {
 	//Grab keys to prevent the joystick driver from running who knows what commands.
 	keygrabber.grab_keys();
@@ -1697,15 +1698,20 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent)
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 
-	tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
-	tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
-	tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
-	tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
-	tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
-	tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
-	tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
-	tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
-	top_s->Add(tabset, 1, wxGROW);
+	if(hotkeys_only) {
+		hotkeytab = new wxeditor_esettings_hotkeys(this);
+		top_s->Add(hotkeytab);
+	} else {
+		tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+		tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
+		tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
+		tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
+		tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
+		tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
+		tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
+		tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
+		top_s->Add(tabset, 1, wxGROW);
+	}
 	
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
@@ -1733,12 +1739,12 @@ void wxeditor_esettings::on_close(wxCommandEvent& e)
 	EndModal(wxID_OK);
 }
 
-void wxsetingsdialog_display(wxWindow* parent)
+void wxsetingsdialog_display(wxWindow* parent, bool hotkeys_only)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_esettings(parent);
+		editor = new wxeditor_esettings(parent, hotkeys_only);
 		editor->ShowModal();
 	} catch(...) {
 	}

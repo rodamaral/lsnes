@@ -93,6 +93,7 @@ enum
 	wxID_SPEED_TURBO,
 	wxID_LOAD_LIBRARY,
 	wxID_SETTINGS,
+	wxID_SETTINGS_HOTKEYS,
 	wxID_RELOAD_ROM_IMAGE,
 	wxID_LOAD_ROM_IMAGE,
 	wxID_NEW_MOVIE,
@@ -779,6 +780,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
 	menu_check(wxID_SHOW_STATUS, true);
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
+	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
 	if(platform::sound_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
@@ -1108,7 +1110,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	}
 	case wxID_SETTINGS:
-		wxsetingsdialog_display(this);
+		wxsetingsdialog_display(this, false);
+		break;
+	case wxID_SETTINGS_HOTKEYS:
+		wxsetingsdialog_display(this, true);
 		break;
 	case wxID_LOAD_ROM_IMAGE:
 		filename = pick_file_member(this, "Select new ROM image", rom_path());
