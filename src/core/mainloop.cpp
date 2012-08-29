@@ -25,6 +25,7 @@
 #include <cassert>
 #include <sstream>
 #include <iostream>
+#include <limits>
 #include <set>
 #include <sys/time.h>
 
@@ -275,7 +276,7 @@ void update_movie_state()
 	auto lim = get_core_logical_controller_limits();
 	for(unsigned i = 0; i < lim.first; i++) {
 		unsigned pindex = controls.lcid_to_pcid(i);
-		if(!controls.is_present(pindex))
+		if(pindex == std::numeric_limits<unsigned>::max() || !controls.is_present(pindex))
 			continue;
 		char buffer[MAX_DISPLAY_LENGTH];
 		c.display(pindex, buffer);
@@ -374,6 +375,15 @@ namespace
 			amode = ADVANCE_QUIT;
 			platform::set_paused(false);
 			platform::cancel_wait();
+		});
+
+	function_ptr_command<> unpause_emulator("unpause-emulator", "Unpause the emulator",
+		"Syntax: unpause-emulator\nUnpauses the emulator.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			amode = ADVANCE_AUTO;
+			platform::set_paused(false);
+			platform::cancel_wait();
+			messages << "Unpaused" << std::endl;
 		});
 
 	function_ptr_command<> pause_emulator("pause-emulator", "(Un)pause the emulator",

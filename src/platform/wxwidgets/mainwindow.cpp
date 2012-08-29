@@ -88,6 +88,8 @@ enum
 	wxID_SPEED_150,
 	wxID_SPEED_200,
 	wxID_SPEED_300,
+	wxID_SPEED_500,
+	wxID_SPEED_1000,
 	wxID_SPEED_TURBO,
 	wxID_LOAD_LIBRARY,
 	wxID_SETTINGS,
@@ -691,28 +693,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menubar = new wxMenuBar;
 	SetMenuBar(menubar);
 
-	menu_start(wxT("lsnes"));
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
-	menu_check(wxID_SHOW_STATUS, true);
-	if(load_library_supported) {
-		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
-	}
-	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
-	if(platform::sound_initialized()) {
-		menu_separator();
-		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
-		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
-		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
-		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("Show audio status"));
-		menu_special_sub(wxT("Select sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
-			new sound_select_menu(this)));
-		blistener->set_sound_select(reinterpret_cast<sound_select_menu*>(sounddev));
-	}
-	menu_separator();
-	menu_entry(wxID_EXIT, wxT("Quit"));
-	menu_separator();
-	menu_entry(wxID_ABOUT, wxT("About..."));
-	menu_start(wxT("System"));
+	menu_start(wxT("File"));
 	menu_start_sub(wxT("New"));
 	menu_entry(wxID_NEW_MOVIE, wxT("Movie..."));
 	menu_end_sub();
@@ -722,9 +703,13 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE_RW, wxT("State (read-write)..."));
 	menu_entry(wxID_LOAD_STATE_P, wxT("State (preserve input)..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
+	if(load_library_supported) {
+		menu_separator();
+		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
+	}
 	menu_separator();
-	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM image"));
-	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("Load ROM image..."));
+	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
+	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("ROM..."));
 	menu_end_sub();
 	menu_start_sub(wxT("Save"));
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
@@ -732,14 +717,23 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Screenshot..."));
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
 	menu_end_sub();
-	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
 	menu_separator();
+	menu_entry(wxID_EXIT, wxT("Quit"));
+
+	menu_start(wxT("System"));
 	menu_entry(wxID_PAUSE, wxT("Pause/Unpause"));
 	menu_entry(wxID_FRAMEADVANCE, wxT("Step frame"));
 	menu_entry(wxID_SUBFRAMEADVANCE, wxT("Step subframe"));
 	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
-	menu_separator();
 	menu_entry(wxID_ERESET, wxT("Reset"));
+
+	menu_start(wxT("Movie"));
+	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
+	menu_check(wxID_READONLY_MODE, is_readonly_mode());
+	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
+	menu_separator();
+	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
+
 	//Autohold menu: (ACOS)
 	menu_special(wxT("Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
 	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
@@ -756,10 +750,12 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SPEED_150, wxT("1.5x"));
 	menu_entry(wxID_SPEED_200, wxT("2x"));
 	menu_entry(wxID_SPEED_300, wxT("3x"));
+	menu_entry(wxID_SPEED_500, wxT("5x"));
+	menu_entry(wxID_SPEED_1000, wxT("10x"));
 	menu_entry(wxID_SPEED_TURBO, wxT("Turbo"));
 	menu_entry(wxID_SET_SPEED, wxT("Set..."));
 
-	menu_start(wxT("Scripting"));
+	menu_start(wxT("Tools"));
 	menu_entry(wxID_RUN_SCRIPT, wxT("Run batch file..."));
 	if(lua_supported) {
 		menu_separator();
@@ -775,14 +771,27 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
-
-	menu_start(wxT("Movie"));
-	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
-	menu_check(wxID_READONLY_MODE, is_readonly_mode());
-	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
-
-	menu_special(wxT("Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
+	menu_separator();
+	menu_special_sub(wxT("Video Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
+
+	menu_start(wxT("Configure"));
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
+	menu_check(wxID_SHOW_STATUS, true);
+	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
+	if(platform::sound_initialized()) {
+		menu_separator();
+		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
+		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
+		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
+		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("Show audio status"));
+		menu_special_sub(wxT("Select sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
+			new sound_select_menu(this)));
+		blistener->set_sound_select(reinterpret_cast<sound_select_menu*>(sounddev));
+	}
+
+	menu_start(wxT("Help"));
+	menu_entry(wxID_ABOUT, wxT("About..."));
 
 	gpanel->SetDropTarget(new loadfile());
 	spanel->SetDropTarget(new loadfile());
@@ -1084,6 +1093,12 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SPEED_300:
 		set_speed(300);
 		break;
+	case wxID_SPEED_500:
+		set_speed(500);
+		break;
+	case wxID_SPEED_1000:
+		set_speed(1000);
+		break;
 	case wxID_SPEED_TURBO:
 		set_speed(-1);
 		break;
@@ -1096,9 +1111,12 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxsetingsdialog_display(this);
 		break;
 	case wxID_LOAD_ROM_IMAGE:
-		platform::queue("reload-rom " + pick_file_member(this, "Select new ROM image", rom_path()));
+		filename = pick_file_member(this, "Select new ROM image", rom_path());
+		platform::queue("unpause-emulator");
+		platform::queue("reload-rom " + filename);
 		return;
 	case wxID_RELOAD_ROM_IMAGE:
+		platform::queue("unpause-emulator");
 		platform::queue("reload-rom");
 		return;
 	case wxID_NEW_MOVIE:
