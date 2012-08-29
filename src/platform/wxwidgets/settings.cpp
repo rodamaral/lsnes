@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 
+#include "library/string.hpp"
 #include <boost/lexical_cast.hpp>
 #include <sstream>
 
@@ -73,6 +74,48 @@ namespace
 			}
 		}
 	} keygrabber;
+
+	std::string clean_keystring(const std::string& in)
+	{
+		regex_results tmp = regex("(.*)/(.*)\\|(.*)", in);
+		if(!tmp)
+			return in;
+		std::string mods = tmp[1];
+		std::string mask = tmp[2];
+		std::string key = tmp[3];
+		std::set<std::string> _mods, _mask;
+		std::string tmp2;
+		while(mods != "") {
+			extract_token(mods, tmp2, ",");
+			_mods.insert(tmp2);
+		}
+		while(mask != "") {
+			extract_token(mask, tmp2, ",");
+			_mask.insert(tmp2);
+		}
+		for(auto i : _mods)
+			if(!_mask.count(i))
+				return in;
+		std::string out;
+		for(auto i : _mask)
+			if(!_mods.count(i))
+				out = out + "!" + i + "+";
+			else
+				out = out + i + "+";
+		out = out + key;
+		return out;
+	}
+
+/**
+ * Extract token out of string.
+ *
+ * Parameter str: The original string and the rest of the string on return.
+ * Parameter tok: The extracted token will be written here.
+ * Parameter sep: The characters to split on (empty always extracts the rest).
+ * Parameter seq: If true, skip whole sequence of token ending characters.
+ * Returns: The character token splitting occured on (-1 if end of string, -2 if string is empty).
+ */
+int extract_token(std::string& str, std::string& tok, const char* sep, bool seq = false) throw(std::bad_alloc);
 
 	class wxdialog_pressbutton : public wxDialog
 	{
@@ -1348,9 +1391,10 @@ void wxeditor_esettings_hotkeys::refresh()
 		if(data[i.second].first == "")
 			text = text + " (not set)";
 		else if(data[i.second].second == "")
-			text = text + " (" + data[i.second].first + ")";
+			text = text + " (" + clean_keystring(data[i.second].first) + ")";
 		else
-			text = text + " (" + data[i.second].first + " or " + data[i.second].second + ")";
+			text = text + " (" + clean_keystring(data[i.second].first) + " or " +
+				clean_keystring(data[i.second].second) + ")";
 		itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
 		cat_assign[j.first]++;
 	}
@@ -1500,7 +1544,7 @@ void wxeditor_esettings_bindings::refresh()
 		bind[i] = keymapper::get_command_for(i);
 	for(auto i : bind) {
 		numbers[choices.size()] = i.first;
-		choices.push_back(towxstring(i.first + " (" + i.second + ")"));
+		choices.push_back(towxstring(clean_keystring(i.first) + " (" + i.second + ")"));
 	}
 	select->Set(choices.size(), &choices[0]);
 	if(n == wxNOT_FOUND && select->GetCount())
