@@ -3134,3 +3134,9 @@ set-axis joystick0axis19 disabled
 
 • Show bindings in more user-friendly format
 
+17.69 rr1-delta13epsilon1
+
+• Pipedec support
+
+• Fix uninitialized variables in bsnes v085
+
