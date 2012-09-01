@@ -3,8 +3,10 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <fstream>
 #include "core/misc.hpp"
 #include "core/emucore.hpp"
+#include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
@@ -1017,5 +1019,15 @@ std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 emucore_callbacks::~emucore_callbacks() throw()
 {
 }
+
+function_ptr_command<arg_filename> dump_core("dump-core", "No description available",
+	"No description available\n",
+	[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+		std::vector<char> out;
+		core_serialize(out);
+		std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
+		x.write(&out[0], out.size());
+	});
+
 
 struct emucore_callbacks* ecore_callbacks;

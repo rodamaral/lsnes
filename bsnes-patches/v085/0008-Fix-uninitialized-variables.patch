@@ -1,0 +1,142 @@
+From 3761a50c0faed2d9252781c5508bf91cc84ad493 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sat, 1 Sep 2012 11:23:34 +0300
+Subject: [PATCH] Fix uninitialized variables
+
+These uninitialized variables cause a lot of desyncs in Shadowrun.
+---
+ snes/alt/dsp/dsp.cpp               |    2 ++
+ snes/alt/ppu-compatibility/ppu.cpp |   11 +++++++++++
+ snes/cpu/core/core.cpp             |    8 ++++++++
+ snes/cpu/core/core.hpp             |    2 ++
+ snes/cpu/cpu.cpp                   |    1 +
+ snes/smp/core/core.cpp             |   11 +++++++++++
+ snes/smp/core/core.hpp             |    2 ++
+ snes/smp/smp.cpp                   |    1 +
+ 8 files changed, 38 insertions(+), 0 deletions(-)
+
+diff --git a/snes/alt/dsp/dsp.cpp b/snes/alt/dsp/dsp.cpp
+index d0c9e07..c6809f7 100755
+--- a/snes/alt/dsp/dsp.cpp
++++ b/snes/alt/dsp/dsp.cpp
+@@ -40,6 +40,8 @@ void DSP::write(uint8 addr, uint8 data) {
+ }
+ 
+ void DSP::power() {
++  clock = 0;
++  memset(samplebuffer, 0, sizeof(samplebuffer));
+   spc_dsp.init(smp.apuram);
+   spc_dsp.reset();
+   spc_dsp.set_output(samplebuffer, 8192);
+diff --git a/snes/alt/ppu-compatibility/ppu.cpp b/snes/alt/ppu-compatibility/ppu.cpp
+index 1a3835b..a21e5e3 100755
+--- a/snes/alt/ppu-compatibility/ppu.cpp
++++ b/snes/alt/ppu-compatibility/ppu.cpp
+@@ -345,6 +345,17 @@ void PPU::power() {
+   regs.time_over  = false;
+   regs.range_over = false;
+ 
++  //All kinds of shit...
++  line = 0;
++  memset(pixel_cache, 0, sizeof(pixel_cache));
++  memset(window, 0, sizeof(window));
++  memset(bg_info, 0, sizeof(bg_info));
++  active_sprite = 0;
++  memset(oam_itemlist, 0, sizeof(oam_itemlist));
++  memset(oam_tilelist, 0, sizeof(oam_tilelist));
++  memset(oam_line_pal, 0, sizeof(oam_line_pal));
++  memset(oam_line_pri, 0, sizeof(oam_line_pri));
++  
+   reset();
+ }
+ 
+diff --git a/snes/cpu/core/core.cpp b/snes/cpu/core/core.cpp
+index 427176b..a5b809b 100755
+--- a/snes/cpu/core/core.cpp
++++ b/snes/cpu/core/core.cpp
+@@ -86,4 +86,12 @@ CPUcore::CPUcore() {
+   initialize_opcode_table();
+ }
+ 
++void CPUcore::powercycle()
++{
++  aa.d = 0;
++  rd.d = 0;
++  sp = 0;
++  dp = 0;
++}
++
+ }
+diff --git a/snes/cpu/core/core.hpp b/snes/cpu/core/core.hpp
+index 964bd12..7a685a8 100755
+--- a/snes/cpu/core/core.hpp
++++ b/snes/cpu/core/core.hpp
+@@ -7,6 +7,8 @@ struct CPUcore {
+   reg24_t aa, rd;
+   uint8_t sp, dp;
+ 
++  void powercycle();
++
+   virtual void op_io() = 0;
+   virtual uint8_t op_read(uint32_t addr) = 0;
+   virtual void op_write(uint32_t addr, uint8_t data) = 0;
+diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
+index f6ae975..2d7d343 100755
+--- a/snes/cpu/cpu.cpp
++++ b/snes/cpu/cpu.cpp
+@@ -125,6 +125,7 @@ void CPU::power() {
+   mmio_power();
+   dma_power();
+   timing_power();
++  CPUcore::powercycle();
+ }
+ 
+ void CPU::reset() {
+diff --git a/snes/smp/core/core.cpp b/snes/smp/core/core.cpp
+index 9c94d00..2fc29be 100755
+--- a/snes/smp/core/core.cpp
++++ b/snes/smp/core/core.cpp
+@@ -269,4 +269,15 @@ void SMPcore::op_step() {
+   }
+ }
+ 
++void SMPcore::powercycle()
++{
++  opcode = 0;
++  dp.w = 0;
++  sp.w = 0;
++  rd.w = 0;
++  wr.w = 0;
++  bit.w = 0;
++  ya.w = 0;
++}
++
+ }
+diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
+index 6adf6f6..1489fce 100755
+--- a/snes/smp/core/core.hpp
++++ b/snes/smp/core/core.hpp
+@@ -11,6 +11,8 @@ struct SMPcore {
+   word_t dp, sp, rd, wr, bit, ya;
+   uint8 opcode;
+ 
++  void powercycle();
++
+   void core_serialize(serializer&);
+   string disassemble_opcode(uint16 addr);
+ 
+diff --git a/snes/smp/smp.cpp b/snes/smp/smp.cpp
+index 9080624..d4ccf42 100755
+--- a/snes/smp/smp.cpp
++++ b/snes/smp/smp.cpp
+@@ -53,6 +53,7 @@ void SMP::power() {
+   timer0.target = 0;
+   timer1.target = 0;
+   timer2.target = 0;
++  SMPcore::powercycle();
+ }
+ 
+ void SMP::reset() {
+-- 
+1.7.9.48.g85da4d
+
