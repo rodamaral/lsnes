@@ -6379,5 +6379,17 @@ Standalone hotkey config dialog
 Show bindings in more user-friendly format
 \end_layout
 
+\begin_layout Subsection
+rr1-delta13epsilon1
+\end_layout
+
+\begin_layout Itemize
+Pipedec support
+\end_layout
+
+\begin_layout Itemize
+Fix uninitialized variables in bsnes v085
+\end_layout
+
 \end_body
 \end_document
