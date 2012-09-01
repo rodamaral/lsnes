@@ -345,6 +345,17 @@ void PPU::power() {
   regs.time_over  = false;
   regs.range_over = false;
 
+  //All kinds of shit...
+  line = 0;
+  memset(pixel_cache, 0, sizeof(pixel_cache));
+  memset(window, 0, sizeof(window));
+  memset(bg_info, 0, sizeof(bg_info));
+  active_sprite = 0;
+  memset(oam_itemlist, 0, sizeof(oam_itemlist));
+  memset(oam_tilelist, 0, sizeof(oam_tilelist));
+  memset(oam_line_pal, 0, sizeof(oam_line_pal));
+  memset(oam_line_pri, 0, sizeof(oam_line_pri));
+  
   reset();
 }
 

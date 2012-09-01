@@ -125,6 +125,7 @@ void CPU::power() {
   mmio_power();
   dma_power();
   timing_power();
+  CPUcore::powercycle();
 }
 
 void CPU::reset() {

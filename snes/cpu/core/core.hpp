@@ -7,6 +7,8 @@ struct CPUcore {
   reg24_t aa, rd;
   uint8_t sp, dp;
 
+  void powercycle();
+
   virtual void op_io() = 0;
   virtual uint8_t op_read(uint32_t addr) = 0;
   virtual void op_write(uint32_t addr, uint8_t data) = 0;

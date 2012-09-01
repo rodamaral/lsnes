@@ -269,4 +269,15 @@ void SMPcore::op_step() {
   }
 }
 
+void SMPcore::powercycle()
+{
+  opcode = 0;
+  dp.w = 0;
+  sp.w = 0;
+  rd.w = 0;
+  wr.w = 0;
+  bit.w = 0;
+  ya.w = 0;
+}
+
 }

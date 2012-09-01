@@ -86,4 +86,12 @@ CPUcore::CPUcore() {
   initialize_opcode_table();
 }
 
+void CPUcore::powercycle()
+{
+  aa.d = 0;
+  rd.d = 0;
+  sp = 0;
+  dp = 0;
+}
+
 }
