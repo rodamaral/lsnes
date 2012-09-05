@@ -1,3 +1,4 @@
+#ifdef CORETYPE_BSNES
 #include "lsnes.hpp"
 #include <sstream>
 #include <map>
@@ -1031,3 +1032,4 @@ function_ptr_command<arg_filename> dump_core("dump-core", "No description availa
 
 
 struct emucore_callbacks* ecore_callbacks;
+#endif

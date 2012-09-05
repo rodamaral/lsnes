@@ -7,11 +7,39 @@ REALCC = $(CROSS_PREFIX)$(CC)
 REALLD = $(CROSS_PREFIX)$(LD)
 REALRANLIB = $(CROSS_PREFIX)$(RANLIB)
 
-BSNES_PATH=$(shell pwd)/bsnes
+ifeq ($(CORE_TYPE), BSNES)
+CORE_PATH=$(shell pwd)/bsnes
+CORE_SUBDIR=bsnes
+CORE_OBJECT=bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
+CORE_DEFINE=-DCORETYPE_BSNES=1
+ifdef BSNES_IS_COMPAT
+CFLAGS += -DBSNES_IS_COMPAT
+BSNES_PROFILE_STRING=profile=compatibility
+else
+BSNES_PROFILE_STRING=profile=accuracy
+endif
+ifeq ($(BSNES_VERSION), 087)
+BSNES_TARGET_STRING=target=libsnes
+else
+BSNES_TARGET_STRING=ui=ui-libsnes
+endif
+CFLAGS += -DBSNES_V${BSNES_VERSION}
+else
+ifeq ($(CORE_TYPE), GAMBATTE)
+CORE_PATH=$(shell pwd)/gambatte
+CORE_SUBDIR=gambatte
+CORE_OBJECT=gambatte/libgambatte/libgambatte.$(ARCHIVE_SUFFIX)
+CORE_DEFINE=-DCORETYPE_GAMBATTE=1
+BSNES_PROFILE_STRING=
+BSNES_TARGET_STRING=
+else
+$(error "Bad value for CORETYPE (expected BSNES or GAMBATTE)")
+endif
+endif
 
 #Flags.
 HOSTCCFLAGS = -std=gnu++0x
-CFLAGS = -I$(BSNES_PATH) -std=gnu++0x $(USER_CFLAGS)
+CFLAGS += -I$(CORE_PATH) $(CORE_DEFINE) -std=gnu++0x $(USER_CFLAGS)
 ifdef BOOST_NEEDS_MT
 BOOST_LIB_POSTFIX=-mt
 else
@@ -31,35 +59,21 @@ $(error "Bad value for THREADS (expected NATIVE or BOOST)")
 endif
 endif
 
-ifdef BSNES_IS_COMPAT
-CFLAGS += -DBSNES_IS_COMPAT
-endif
 
 export
 
 all: src/__all_files__
 
-ifeq ($(BSNES_VERSION), 087)
-BSNES_TARGET_STRING=target=libsnes
-else
-BSNES_TARGET_STRING=ui=ui-libsnes
-endif
 
-CFLAGS += -DBSNES_V${BSNES_VERSION}
 
-ifdef BSNES_IS_COMPAT
-BSNES_PROFILE_STRING=profile=compatibility
-else
-BSNES_PROFILE_STRING=profile=accuracy
-endif
+compiler=$(subst ++,cc,$(REALCC))
+gambatte_compiler=$(REALCC)
 
-bsnes_compiler=$(subst ++,cc,$(REALCC))
-
-bsnes/out/libsnes.$(ARCHIVE_SUFFIX): bsnes/snes/snes.hpp forcelook
-	$(MAKE) -C bsnes options=debugger $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING) compiler=$(bsnes_compiler)
+$(CORE_OBJECT): forcelook
+	$(MAKE) -C $(CORE_SUBDIR) $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING)
 	$(REALRANLIB) $@
 
-src/__all_files__: src/core/version.cpp forcelook bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
+src/__all_files__: src/core/version.cpp forcelook $(CORE_OBJECT)
 	$(MAKE) -C src precheck
 	$(MAKE) -C src
 	cp src/lsnes$(DOT_EXECUTABLE_SUFFIX) .
@@ -71,7 +85,8 @@ src/core/version.cpp: buildaux/version.exe forcelook
 
 
 clean:
-	$(MAKE) -C bsnes clean
+	-$(MAKE) -C bsnes clean
+	-$(MAKE) -C gambatte clean
 	$(MAKE) -C src clean
 
 forcelook:
