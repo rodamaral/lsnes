@@ -163,6 +163,11 @@ namespace
 			return target_type_mask;
 		}
 
+		std::string mode_extension(const std::string& mode) throw()
+		{
+			return "sdmp";	//Ignored anyway in non-ss mode.
+		}
+
 		std::string name() throw(std::bad_alloc)
 		{
 			return "SDMP";

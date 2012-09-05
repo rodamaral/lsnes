@@ -243,6 +243,11 @@ namespace
 			return target_type_file;
 		}
 
+		std::string mode_extension(const std::string& mode) throw()
+		{
+			return "sox";
+		}
+
 		std::string name() throw(std::bad_alloc)
 		{
 			return "PIPEDEC";

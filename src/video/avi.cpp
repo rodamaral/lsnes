@@ -426,6 +426,12 @@ again:
 			return target_type_prefix;
 		}
 
+		std::string mode_extension(const std::string& mode) throw()
+		{
+			return "";	//Not interesting
+		}
+
+
 		std::string name() throw(std::bad_alloc)
 		{
 			return "AVI (internal)";

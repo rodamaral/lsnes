@@ -56,6 +56,13 @@ public:
  */
 	virtual unsigned mode_details(const std::string& mode) throw() = 0;
 /**
+ * Get mode extensions. Only called if mode details specifies that output is a single file.
+ *
+ * parameter mode: The submode.
+ * Returns: Mode extension
+ */
+	virtual std::string mode_extension(const std::string& mode) throw() = 0;
+/**
  * Get human-readable name for this dumper.
  *
  * Returns: The name.

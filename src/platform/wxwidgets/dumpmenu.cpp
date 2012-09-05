@@ -118,6 +118,8 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			std::string prefix;
 			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
 				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"), wxT("."));
+				std::string modext = t->mode_extension(mode);
+				d->SetWildcard(towxstring(modext + " files|*." + modext));
 				if(d->ShowModal() == wxID_OK)
 					prefix = tostdstring(d->GetPath());
 				d->Destroy();

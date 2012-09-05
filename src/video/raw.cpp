@@ -162,6 +162,11 @@ namespace
 			return IS_TCP(strhash(mode)) ? target_type_special : target_type_prefix;
 		}
 
+		std::string mode_extension(const std::string& mode) throw()
+		{
+			return "";	//Nothing interesting.
+		}
+
 		std::string name() throw(std::bad_alloc)
 		{
 			return "RAW";

@@ -342,6 +342,11 @@ namespace
 			return (mode == "tcp") ? target_type_special : target_type_file;
 		}
 
+		std::string mode_extension(const std::string& mode) throw()
+		{
+			return "jmd";	//Ignored if tcp mode.
+		}
+
 		std::string name() throw(std::bad_alloc)
 		{
 			return "JMD";
