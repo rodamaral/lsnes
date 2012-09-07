@@ -2,6 +2,7 @@
 
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
+#include "core/moviedata.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "library/string.hpp"
@@ -41,6 +42,24 @@ namespace
 	uint64_t linear_ram_size = 0;
 	bool system_little_endian = true;
 
+	uint8_t lsnes_mmio_iospace_handler(uint64_t offset, uint8_t data, bool write)
+	{
+		if(offset >= 0 && offset < 8 && !write) {
+			//Frame counter.
+			uint64_t x = get_movie().get_current_frame();
+			return x >> (8 * (offset & 7));
+		} else if(offset >= 8 && offset < 16 && !write) {
+			//Movie length.
+			uint64_t x = get_movie().get_frame_count();
+			return x >> (8 * (offset & 7));
+		} else if(offset >= 16 && offset < 24 && !write) {
+			//Lag counter.
+			uint64_t x = get_movie().get_lag_frames();
+			return x >> (8 * (offset & 7));
+		} else
+			return 0;
+	}
+
 	struct translated_address translate_address(uint64_t rawaddr) throw()
 	{
 		struct translated_address t;
@@ -49,6 +68,17 @@ namespace
 		t.memory = NULL;
 		t.memory_size = 0;
 		t.not_writable = true;
+		if((rawaddr >> 32) == 0xFFFFFFFFULL) {
+			//lsnes MMIO.
+			t.rel_addr = rawaddr & 0xFFFFFFFFULL;
+			t.raw_addr = rawaddr;
+			t.memory = NULL;
+			t.memory_size = 0x100000000ULL;
+			t.not_writable = false;
+			t.native_endian = false;
+			t.iospace_rw = lsnes_mmio_iospace_handler;
+			return t;
+		}
 		for(auto i : memory_regions) {
 			if(i.base > rawaddr || i.base + i.size <= rawaddr)
 				continue;
