@@ -1,6 +1,7 @@
 #include "core/window.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_status.hpp"
+#include "library/string.hpp"
 
 #define MAXSTATUS 30
 
@@ -55,7 +56,35 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(this);
 	dc.Clear();
 	int y = 0;
+	bool has_watches = false;
+	for(auto i : newstatus)
+		has_watches |= regex_match("M\\[.*\\]", i.first);
+	regex_results r;
+	if(has_watches) {
+		std::string pstr = "Memory watches:";
+		wxSize s = dc.GetTextExtent(towxstring(pstr));
+		dc.DrawText(towxstring(pstr), 0, y);
+		y += s.y;
+		for(auto i : newstatus) {
+			if(r = regex("M\\[(.*)\\]", i.first)) {
+				pstr = r[1] + ": " + i.second;
+				wxSize s = dc.GetTextExtent(towxstring(pstr));
+				dc.DrawText(towxstring(pstr), 0, y);
+				y += s.y;
+			}
+		}
+		s = dc.GetSize();
+		dc.SetPen(wxPen(wxColour(0, 0, 0)));
+		dc.DrawLine(0, y + 1, s.x, y + 1);
+		y += 3;
+		pstr = "Other status:";
+		s = dc.GetTextExtent(towxstring(pstr));
+		dc.DrawText(towxstring(pstr), 0, y);
+		y += s.y;
+	}
 	for(auto i : newstatus) {
+		if(regex_match("M\\[.*\\]", i.first))
+			continue;
 		std::string pstr = i.first + ": " + i.second;
 		wxSize s = dc.GetTextExtent(towxstring(pstr));
 		dc.DrawText(towxstring(pstr), 0, y);
