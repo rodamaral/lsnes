@@ -17,218 +17,322 @@
 namespace
 {
 	std::map<std::string, std::string> watches;
+
+	struct numeric_type
+	{
+		numeric_type() { t = VT_NAN; }
+		numeric_type(int8_t x) { t = VT_SIGNED; s = x; }
+		numeric_type(uint8_t x) { t = VT_UNSIGNED; u = x; }
+		numeric_type(int16_t x) { t = VT_SIGNED; s = x; }
+		numeric_type(uint16_t x) { t = VT_UNSIGNED; u = x; }
+		numeric_type(int32_t x) { t = VT_SIGNED; s = x; }
+		numeric_type(uint32_t x) { t = VT_UNSIGNED; u = x; }
+		numeric_type(int64_t x) { t = VT_SIGNED; s = x; }
+		numeric_type(uint64_t x) { t = VT_UNSIGNED; u = x; }
+		numeric_type(double x) { t = VT_FLOAT; f = x; }
+		numeric_type(const std::string& _s)
+		{
+			char* end;
+			if(_s.length() > 2 && _s[0] == '0' && _s[1] == 'x') {
+				t = VT_UNSIGNED;
+				u = strtoull(_s.c_str() + 2, &end, 16);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else if(_s.length() > 3 && _s[0] == '+' && _s[1] == '0' && _s[2] == 'x') {
+				t = VT_SIGNED;
+				s = (int64_t)strtoull(_s.c_str() + 3, &end, 16);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else if(_s.length() > 3 && _s[0] == '-' && _s[1] == '0' && _s[2] == 'x') {
+				t = VT_SIGNED;
+				s = -(int64_t)strtoull(_s.c_str() + 3, &end, 16);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else if(_s.find_first_of(".") < _s.length()) {
+				t = VT_FLOAT;
+				f = strtod(_s.c_str(), &end);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else if(_s.length() > 1 && _s[0] == '+') {
+				t = VT_SIGNED;
+				s = (int64_t)strtoull(_s.c_str() + 1, &end, 10);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else if(_s.length() > 1 && _s[0] == '-') {
+				t = VT_SIGNED;
+				s = -(int64_t)strtoull(_s.c_str() + 1, &end, 10);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			} else {
+				t = VT_UNSIGNED;
+				u = strtoull(_s.c_str(), &end, 10);
+				if(*end)
+					throw std::runtime_error("#syntax (badval)");
+			}
+		}
+		uint64_t as_address() const
+		{
+			switch(t) {
+			case VT_SIGNED:		return s;
+			case VT_UNSIGNED:	return u;
+			case VT_FLOAT:		return f;
+			case VT_NAN:		throw std::runtime_error("#NAN");
+			};
+		}
+		int64_t as_integer() const
+		{
+			switch(t) {
+			case VT_SIGNED:		return s;
+			case VT_UNSIGNED:	return u;
+			case VT_FLOAT:		return f;
+			case VT_NAN:		throw std::runtime_error("#NAN");
+			};
+		}
+		double as_double() const
+		{
+			switch(t) {
+			case VT_SIGNED:		return s;
+			case VT_UNSIGNED:	return u;
+			case VT_FLOAT:		return f;
+			case VT_NAN:		throw std::runtime_error("#NAN");
+			};
+		}
+		std::string str() const
+		{
+			std::ostringstream x;
+			switch(t) {
+			case VT_SIGNED:		x << s;		break;
+			case VT_UNSIGNED:	x << u;		break;
+			case VT_FLOAT:		x << f;		break;
+			case VT_NAN:		x << "#NAN";	break;
+			};
+			return x.str();
+		}
+		numeric_type round(int prec) const
+		{
+			double b = 0, c = 0;
+			switch(t) {
+			case VT_FLOAT:
+				b = pow(10, prec);
+				c = floor(b * f + 0.5) / b;
+				return numeric_type(c);
+			default:
+				return *this;
+			}
+		}
+		numeric_type operator+(const numeric_type& b) const
+		{
+			if(t == VT_NAN || b.t == VT_NAN)
+				return numeric_type();
+			else if(t == VT_FLOAT || b.t == VT_FLOAT)
+				return numeric_type(as_double() + b.as_double());
+			else if(t == VT_SIGNED || b.t == VT_SIGNED)
+				return numeric_type(as_integer() + b.as_integer());
+			else
+				return numeric_type(as_address() + b.as_address());
+		}
+		numeric_type operator-(const numeric_type& b) const
+		{
+			if(t == VT_NAN || b.t == VT_NAN)
+				return numeric_type();
+			else if(t == VT_FLOAT || b.t == VT_FLOAT)
+				return numeric_type(as_double() - b.as_double());
+			else if(t == VT_SIGNED || b.t == VT_SIGNED)
+				return numeric_type(as_integer() - b.as_integer());
+			else
+				return numeric_type(as_address() - b.as_address());
+		}
+		numeric_type operator*(const numeric_type& b) const
+		{
+			if(t == VT_NAN || b.t == VT_NAN)
+				return numeric_type();
+			else if(t == VT_FLOAT || b.t == VT_FLOAT)
+				return numeric_type(as_double() * b.as_double());
+			else if(t == VT_SIGNED || b.t == VT_SIGNED)
+				return numeric_type(as_integer() * b.as_integer());
+			else
+				return numeric_type(as_address() * b.as_address());
+		}
+		numeric_type operator/(const numeric_type& b) const
+		{
+			if(b.t != VT_NAN && fabs(b.as_double()) < 1e-30)
+				throw std::runtime_error("#DIV-BY-0");
+			if(t == VT_NAN || b.t == VT_NAN)
+				return numeric_type();
+			else if(t == VT_FLOAT || b.t == VT_FLOAT)
+				return numeric_type(as_double() / b.as_double());
+			else if(t == VT_SIGNED || b.t == VT_SIGNED)
+				return numeric_type(as_integer() / b.as_integer());
+			else
+				return numeric_type(as_address() / b.as_address());
+		}
+		numeric_type operator%(const numeric_type& b) const
+		{
+			return numeric_type(*this - b * idiv(b));
+		}
+		numeric_type idiv(const numeric_type& b) const
+		{
+			if(b.t != VT_NAN && fabs(b.as_double()) < 1e-30)
+				throw std::runtime_error("#DIV-BY-0");
+			if(t == VT_NAN || b.t == VT_NAN)
+				return numeric_type();
+			else if(t == VT_FLOAT || b.t == VT_FLOAT)
+				return numeric_type(floor(as_double() / b.as_double()));
+			else if(t == VT_SIGNED || b.t == VT_SIGNED)
+				return numeric_type(as_integer() / b.as_integer());
+			else
+				return numeric_type(as_address() / b.as_address());
+		}
+	private:
+		enum value_type
+		{
+			VT_SIGNED,
+			VT_UNSIGNED,
+			VT_FLOAT,
+			VT_NAN
+		} t;
+		int64_t s;
+		uint64_t u;
+		double f;
+	};
+
+	numeric_type stack_pop(std::stack<numeric_type>& s, bool norm = false)
+	{
+		if(s.size() < 1)
+			throw std::runtime_error("#syntax (underflow)");
+		numeric_type r = s.top();
+		if(!norm)
+			s.pop();
+		return r;
+	}
+
+	template<typename T> void stack_push(std::stack<numeric_type>& s, T val)
+	{
+		s.push(numeric_type(val));
+	}
 }
 
 std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 {
-	std::stack<double> s;
+	std::stack<numeric_type> s;
 	size_t y;
 	std::string _expr = expr;
 	std::string t;
-	double a;
-	double b;
+	numeric_type a;
+	numeric_type b;
 	int d;
+	try {
 	for(size_t i = 0; i < expr.length(); i++) {
-		switch(expr[i]) {
-		case 'C':
-			y = expr.find_first_of("z", i);
-			if(y > expr.length())
-				return "#syntax (noterm)";
-			t = _expr.substr(i + 1, y - i - 1);
-			if(t.length() > 2 && t.substr(0, 2) == "0x") {
-				char* end;
-				s.push(strtoull(t.c_str() + 2, &end, 16));
-				if(*end)
-					return "#syntax (badhex)";
-			} else {
-				char* end;
-				s.push(strtod(t.c_str(), &end));
-				if(*end)
-					return "#syntax (badnum)";
+		numeric_type r;
+			switch(expr[i]) {
+			case 'C':
+				y = expr.find_first_of("z", i);
+				if(y > expr.length())
+					return "#syntax (noterm)";
+				t = _expr.substr(i + 1, y - i - 1);
+				stack_push(s, numeric_type(t));
+				i = y;
+				break;
+			case 'R':
+				if(i + 1 == expr.length())
+					throw std::runtime_error("#syntax (noparam)");
+				a = stack_pop(s);
+				d = expr[++i] - '0';
+				stack_push(s, a.round(d));
+				break;
+			case 'a':
+				stack_push<double>(s, atan(stack_pop(s).as_double()));
+				break;
+			case 'A':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push<double>(s, atan2(a.as_double(), b.as_double()));
+				break;
+			case 'c':
+				stack_push<double>(s, cos(stack_pop(s).as_double()));
+				break;
+			case 'r':
+				a = stack_pop(s);
+				if(a.as_double() < 0)
+					throw std::runtime_error("#NAN");
+				stack_push<double>(s, sqrt(a.as_double()));
+				break;
+			case 's':
+				stack_push<double>(s, sin(stack_pop(s).as_double()));
+				break;
+			case 't':
+				stack_push<double>(s, tan(stack_pop(s).as_double()));
+				break;
+			case 'u':
+				stack_push(s, stack_pop(s, true));
+				break;
+			case 'p':
+				stack_push(s, 4 * atan(1));
+				break;
+			case '+':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a + b);
+				break;
+			case '-':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a - b);
+				break;
+			case '*':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a * b);
+				break;
+			case 'i':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a / b);
+				break;
+			case '/':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a.idiv(b));
+				break;
+			case '%':
+				a = stack_pop(s);
+				b = stack_pop(s);
+				stack_push(s, a % b);
+				break;
+			case 'b':
+				stack_push<int8_t>(s, memory_read_byte(stack_pop(s).as_address()));
+				break;
+			case 'B':
+				stack_push<uint8_t>(s, memory_read_byte(stack_pop(s).as_address()));
+				break;
+			case 'w':
+				stack_push<int16_t>(s, memory_read_word(stack_pop(s).as_address()));
+				break;
+			case 'W':
+				stack_push<uint16_t>(s, memory_read_word(stack_pop(s).as_address()));
+				break;
+			case 'd':
+				stack_push<int32_t>(s, memory_read_dword(stack_pop(s).as_address()));
+				break;
+			case 'D':
+				stack_push<uint32_t>(s, memory_read_dword(stack_pop(s).as_address()));
+				break;
+			case 'q':
+				stack_push<int64_t>(s, memory_read_qword(stack_pop(s).as_address()));
+				break;
+			case 'Q':
+				stack_push<uint64_t>(s, memory_read_qword(stack_pop(s).as_address()));
+				break;
+			default:
+				throw std::runtime_error("#syntax (illchar)");
 			}
-			i = y;
-			break;
-		case 'R':
-			if(i + 1 == expr.length())
-				return "#syntax (noparam)";
-			d = expr[++i] - '0';
-			a = s.top();
-			s.pop();
-			b = pow(10, d);
-			s.push(floor(b * a + 0.5) / b);
-			break;
-		case 'a':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(atan(a));
-			break;
-		case 'A':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(atan2(a, b));
-			break;
-		case 'c':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(cos(a));
-			break;
-		case 'r':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(sqrt(a));
-			break;
-		case 's':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(sin(a));
-			break;
-		case 't':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(tan(a));
-			break;
-		case 'u':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			s.push(s.top());
-			break;
-		case 'p':
-			s.push(4 * atan(1));
-			break;
-		case '+':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(a + b);
-			break;
-		case '-':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(a - b);
-			break;
-		case '*':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(a * b);
-			break;
-		case 'i':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(a / b);
-			break;
-		case '/':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(static_cast<int64_t>(a / b));
-			break;
-		case '%':
-			if(s.size() < 2)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			b = s.top();
-			s.pop();
-			s.push(a - static_cast<int64_t>(a / b) * b);
-			break;
-		case 'b':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<int8_t>(memory_read_byte(a)));
-			break;
-		case 'B':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<uint8_t>(memory_read_byte(a)));
-			break;
-		case 'w':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<int16_t>(memory_read_word(a)));
-			break;
-		case 'W':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<uint16_t>(memory_read_word(a)));
-			break;
-		case 'd':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<int32_t>(memory_read_dword(a)));
-			break;
-		case 'D':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<uint32_t>(memory_read_dword(a)));
-			break;
-		case 'q':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<int64_t>(memory_read_qword(a)));
-			break;
-		case 'Q':
-			if(s.size() < 1)
-				return "#syntax (underflow)";
-			a = s.top();
-			s.pop();
-			s.push(static_cast<uint64_t>(memory_read_qword(a)));
-			break;
-		default:
-			return "#syntax (illchar)";
 		}
-	}
-	if(s.empty())
-		return "#ERR";
-	else {
-		char buffer[512];
-		sprintf(buffer, "%f", s.top());
-		return buffer;
+		if(s.empty())
+			return "#ERR";
+		else
+			return s.top().str();
+	} catch(std::exception& e) {
+		return e.what();
 	}
 }
 
