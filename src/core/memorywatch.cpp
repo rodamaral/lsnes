@@ -20,15 +20,15 @@ namespace
 
 	struct numeric_type
 	{
-		numeric_type() { t = VT_NAN; }
-		numeric_type(int8_t x) { t = VT_SIGNED; s = x; }
-		numeric_type(uint8_t x) { t = VT_UNSIGNED; u = x; }
-		numeric_type(int16_t x) { t = VT_SIGNED; s = x; }
-		numeric_type(uint16_t x) { t = VT_UNSIGNED; u = x; }
-		numeric_type(int32_t x) { t = VT_SIGNED; s = x; }
-		numeric_type(uint32_t x) { t = VT_UNSIGNED; u = x; }
-		numeric_type(int64_t x) { t = VT_SIGNED; s = x; }
-		numeric_type(uint64_t x) { t = VT_UNSIGNED; u = x; }
+		numeric_type() { t = VT_NAN; hex = 0; }
+		numeric_type(int8_t x) { t = VT_SIGNED; s = x; hex = 0; }
+		numeric_type(uint8_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
+		numeric_type(int16_t x) { t = VT_SIGNED; s = x; hex = 0; }
+		numeric_type(uint16_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
+		numeric_type(int32_t x) { t = VT_SIGNED; s = x; hex = 0; }
+		numeric_type(uint32_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
+		numeric_type(int64_t x) { t = VT_SIGNED; s = x; hex = 0; }
+		numeric_type(uint64_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
 		numeric_type(double x) { t = VT_FLOAT; f = x; }
 		numeric_type(const std::string& _s)
 		{
@@ -99,7 +99,21 @@ namespace
 		}
 		std::string str() const
 		{
+			uint64_t wmasks[] = {
+				0x0000000000000000ULL, 0x000000000000000FULL, 0x00000000000000FFULL,
+				0x0000000000000FFFULL, 0x000000000000FFFFULL, 0x00000000000FFFFFULL,
+				0x0000000000FFFFFFULL, 0x000000000FFFFFFFULL, 0x00000000FFFFFFFFULL,
+				0x0000000FFFFFFFFFULL, 0x000000FFFFFFFFFFULL, 0x00000FFFFFFFFFFFULL,
+				0x0000FFFFFFFFFFFFULL, 0x000FFFFFFFFFFFFFULL, 0x00FFFFFFFFFFFFFFULL,
+				0x0FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL
+			};
 			std::ostringstream x;
+			if(hex && (t == VT_SIGNED || t == VT_UNSIGNED)) {
+				uint64_t wmask = wmasks[hex];
+				uint64_t w = (t == VT_SIGNED) ? s : u;
+				x << std::hex << std::setw(hex) << std::setfill('0') << (w & wmask);
+				return x.str();
+			}
 			switch(t) {
 			case VT_SIGNED:		x << s;		break;
 			case VT_UNSIGNED:	x << u;		break;
@@ -183,6 +197,15 @@ namespace
 			else
 				return numeric_type(as_address() / b.as_address());
 		}
+		void sethex(char ch)
+		{
+			if(ch >= '0' && ch <= '9')
+				hex = (ch - '0');
+			if(ch >= 'A' && ch <= 'G')
+				hex = (ch - 'A') + 10;
+			if(ch >= 'a' && ch <= 'g')
+				hex = (ch - 'a') + 10;
+		}
 	private:
 		enum value_type
 		{
@@ -194,6 +217,7 @@ namespace
 		int64_t s;
 		uint64_t u;
 		double f;
+		unsigned hex;
 	};
 
 	numeric_type stack_pop(std::stack<numeric_type>& s, bool norm = false)
@@ -239,6 +263,11 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 				a = stack_pop(s);
 				d = expr[++i] - '0';
 				stack_push(s, a.round(d));
+				break;
+			case 'H':
+				if(i + 1 == expr.length())
+					throw std::runtime_error("#syntax (noparam)");
+				s.top().sethex(expr[++i]);
 				break;
 			case 'a':
 				stack_push<double>(s, atan(stack_pop(s).as_double()));
