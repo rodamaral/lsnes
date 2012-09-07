@@ -65,6 +65,8 @@ void core_runtosave();
 extern const char* button_symbols;
 //Get the scale factors.
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
+//Get bus map range.
+std::pair<uint64_t, uint64_t> core_get_bus_map();
 
 /**
  * Get name of logical button.

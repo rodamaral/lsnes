@@ -1021,6 +1021,11 @@ emucore_callbacks::~emucore_callbacks() throw()
 {
 }
 
+std::pair<uint64_t, uint64_t> core_get_bus_map()
+{
+	return std::make_pair(0x1000000, 0x1000000);
+}
+
 function_ptr_command<arg_filename> dump_core("dump-core", "No description available",
 	"No description available\n",
 	[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {

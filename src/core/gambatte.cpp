@@ -557,6 +557,11 @@ std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 	return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
 }
 
+std::pair<uint64_t, uint64_t> core_get_bus_map()
+{
+	return std::make_pair(0, 0);
+}
+
 emucore_callbacks::~emucore_callbacks() throw() {}
 
 struct emucore_callbacks* ecore_callbacks;

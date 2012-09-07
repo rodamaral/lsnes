@@ -944,22 +944,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
 		return;
-	case wxID_EDIT_MEMORYWATCH: {
-		modal_pause_holder hld;
-		std::set<std::string> bind;
-		runemufn([&bind]() { bind = get_watches(); });
-		std::vector<std::string> choices;
-		choices.push_back(NEW_WATCH);
-		for(auto i : bind)
-			choices.push_back(i);
-		std::string watch = pick_among(this, "Select watch", "Select watch to edit", choices);
-		if(watch == NEW_WATCH)
-			watch =  pick_text(this, "Enter watch name", "Enter name for the new watch:");
-		std::string newexpr = pick_text(this, "Edit watch", "Enter new expression for watch:",
-			get_watchexpr_for(watch));
-		runemufn([watch, newexpr]() { set_watchexpr_for(watch, newexpr); });
+	case wxID_EDIT_MEMORYWATCH:
+		wxeditor_memorywatch_display(this);
 		return;
-	}
 	case wxID_SAVE_MEMORYWATCH: {
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
