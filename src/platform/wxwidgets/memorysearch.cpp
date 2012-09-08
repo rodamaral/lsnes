@@ -180,7 +180,6 @@ public:
 	wxwindow_memorysearch();
 	~wxwindow_memorysearch();
 	bool ShouldPreventAppExit() const;
-	void on_add(wxCommandEvent& e);
 	void on_close(wxCloseEvent& e);
 	void on_button_click(wxCommandEvent& e);
 	bool update_queued;
@@ -231,8 +230,8 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	buttons->Add(hexmode2 = new wxCheckBox(this, wxID_HEX_SELECT, wxT("Hex display")), 0, wxGROW);
 	hexmode2->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 		wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
-	buttons->Add(tmp = new wxButton(this, wxID_ADD, wxT("Add")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_add),
+	buttons->Add(tmp = new wxButton(this, wxID_ADD, wxT("Add watch")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
 		NULL, this);
 	toplevel->Add(buttons);
 
@@ -252,6 +251,7 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	Fit();
 	update();
 	Fit();
+	hexmode = false;
 }
 
 wxwindow_memorysearch::~wxwindow_memorysearch()
@@ -269,36 +269,6 @@ void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 {
 	Destroy();
 	mwatch = NULL;
-}
-
-void wxwindow_memorysearch::on_add(wxCommandEvent& e)
-{
-	long start, end;
-	long startx, starty, endx, endy;
-	matches->GetSelection(&start, &end);
-	if(start == end)
-		return;
-	if(!matches->PositionToXY(start, &startx, &starty))
-		return;
-	if(!matches->PositionToXY(end, &endx, &endy))
-		return;
-	if(endx == 0 && endy != 0)
-		endy--;
-	char wch = watchchars[typecode];
-	for(long r = starty; r <= endy; r++) {
-		if(!addresses.count(r))
-			return;
-		uint64_t addr = addresses[r];
-		try {
-			std::string n = pick_text(this, "Name for watch", (stringfmt() << "Enter name for watch at 0x"
-				<< std::hex << addr << ":").str());
-			if(n == "")
-				continue;
-			std::string e = (stringfmt() << "C0x" << std::hex << addr << "z" << wch).str();
-			runemufn([n, e]() { set_watchexpr_for(n, e); });
-		} catch(canceled_exception& e) {
-		}
-	}
 }
 
 void wxwindow_memorysearch::update()
@@ -356,6 +326,33 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				typecode = i;
 	} else if(id == wxID_HEX_SELECT) {
 		hexmode = hexmode2->GetValue();
+	} else if(id == wxID_ADD) {
+		long start, end;
+		long startx, starty, endx, endy;
+		matches->GetSelection(&start, &end);
+		if(start == end)
+			return;
+		if(!matches->PositionToXY(start, &startx, &starty))
+			return;
+		if(!matches->PositionToXY(end, &endx, &endy))
+			return;
+		if(endx == 0 && endy != 0)
+			endy--;
+		char wch = watchchars[typecode];
+		for(long r = starty; r <= endy; r++) {
+			if(!addresses.count(r))
+				return;
+			uint64_t addr = addresses[r];
+			try {
+				std::string n = pick_text(this, "Name for watch", (stringfmt()
+					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
+				if(n == "")
+					continue;
+				std::string e = (stringfmt() << "C0x" << std::hex << addr << "z" << wch).str();
+				runemufn([n, e]() { set_watchexpr_for(n, e); });
+			} catch(canceled_exception& e) {
+			}
+		}
 	} else if(id == wxID_BUTTONS_BASE || id == wxID_BUTTONS_BASE + 1) {
 		//Value search.
 		bool diff = (id == wxID_BUTTONS_BASE + 1);
