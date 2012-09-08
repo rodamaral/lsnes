@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <iostream>
 
+bool dummy_interface = true;
+
 namespace
 {
 	uint64_t next_message_to_print = 0;

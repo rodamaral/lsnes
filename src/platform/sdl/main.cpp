@@ -23,6 +23,7 @@
 #include "SDL_main.h"
 #endif
 
+bool dummy_interface = false;
 
 struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {

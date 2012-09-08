@@ -46,6 +46,8 @@ wxwin_messages* msg_window;
 wxwin_mainwindow* main_window;
 std::string our_rom_name;
 
+bool dummy_interface = false;
+
 namespace
 {
 	thread_id* ui_thread;

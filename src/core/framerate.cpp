@@ -14,6 +14,8 @@
 
 #define HISTORY_FRAMES 10
 
+extern bool dummy_interface;
+
 namespace
 {
 	uint64_t last_time_update = 0;
@@ -189,7 +191,7 @@ void ack_frame_tick(uint64_t usec) throw()
 uint64_t to_wait_frame(uint64_t usec) throw()
 {
 	auto target = targetfps.read();
-	if(!frame_number || target.first || turboed)
+	if(!frame_number || target.first || turboed || dummy_interface)
 		return 0;
 	uint64_t lintime = get_time(usec, true);
 	uint64_t frame_lasted = lintime - frame_start_times[0];
