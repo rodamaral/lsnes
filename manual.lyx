@@ -1470,6 +1470,22 @@ reload-rom [<file>]
 Reloads the main ROM image from <file>.
 \end_layout
 
+\begin_layout Subsubsection
+edit-subtitle <firstframe> <length> [<text>]
+\end_layout
+
+\begin_layout Standard
+Edit or delete a subtitle.
+\end_layout
+
+\begin_layout Subsubsection
+list-subtitle
+\end_layout
+
+\begin_layout Standard
+List subtitles.
+\end_layout
+
 \begin_layout Subsection
 SDL Platform commands 
 \end_layout
@@ -4392,6 +4408,29 @@ First subframe must start a new frame.
 \begin_layout Standard
 Length of movie in frames is number of lines in input file that start a
  new frame.
+\end_layout
+
+\begin_layout Subsection
+Member: subtitles
+\end_layout
+
+\begin_layout Standard
+Subtitle track.
+ Optional.
+\end_layout
+
+\begin_layout Itemize
+Each line is in form <firstframe> <numframes> <text>.
+\end_layout
+
+\begin_layout Itemize
+Linefeed is encoded as 
+\backslash
+n, backslash is encoded as 
+\backslash
+
+\backslash
+.
 \end_layout
 
 \begin_layout Subsection

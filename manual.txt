@@ -717,6 +717,14 @@ and higher numbers are louder. The value may be negative.
 
 Reloads the main ROM image from <file>.
 
+6.12.2 edit-subtitle <firstframe> <length> [<text>]
+
+Edit or delete a subtitle.
+
+6.12.3 list-subtitle
+
+List subtitles.
+
 6.13 SDL Platform commands 
 
 The following are valid on SDL platform.
@@ -2152,12 +2160,20 @@ skipped).
 Length of movie in frames is number of lines in input file that 
 start a new frame.
 
-11.21 Member: rerecords
+11.21 Member: subtitles
+
+Subtitle track. Optional.
+
+• Each line is in form <firstframe> <numframes> <text>.
+
+• Linefeed is encoded as \n, backslash is encoded as \\.
+
+11.22 Member: rerecords
 
 Contains textual base-10 rerecord count (as one line; emulator 
 just writes this, it doesn't read it) + 1.
 
-11.22 Member: rrdata
+11.23 Member: rrdata
 
 This member stores set of load IDs. There is one load ID per 
 rerecord (plus one corresponding to start of project).
@@ -2201,22 +2217,22 @@ Records are processed as follows:
 The number of rerecords + 1 is equal to the sum of number of IDs 
 encoded by all records.
 
-11.23 Member: starttime.second
+11.24 Member: starttime.second
 
 Movie starting time, second part. Epoch is Unix epoch. Default is 
 1,000,000,000.
 
-11.24 Member: starttime.subsecond
+11.25 Member: starttime.subsecond
 
 Movie starting time, subsecond part. Unit is CPU clocks. Default 
 is 0.
 
-11.25 Member: savetime.second
+11.26 Member: savetime.second
 
 Movie saving time, second part. Default is starttime.second. Only 
 present in savestates.
 
-11.26 Member: savetime.subsecond
+11.27 Member: savetime.subsecond
 
 Movie saving time, subsecond part. Default is 
 starttime.subsecond. Only present in savestates.
