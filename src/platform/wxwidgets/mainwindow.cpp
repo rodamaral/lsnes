@@ -69,6 +69,7 @@ enum
 	wxID_EDIT_MEMORYWATCH,
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
+	wxID_EDIT_SUBTITLES,
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
@@ -734,6 +735,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
 	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
+	menu_entry(wxID_EDIT_SUBTITLES, wxT("Edit subtitles..."));
 	menu_separator();
 	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
 
@@ -943,6 +945,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
+		return;
+	case wxID_EDIT_SUBTITLES:
+		wxeditor_subtitles_display(this);
 		return;
 	case wxID_EDIT_MEMORYWATCH:
 		wxeditor_memorywatch_display(this);

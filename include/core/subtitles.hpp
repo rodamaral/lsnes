@@ -19,6 +19,9 @@ private:
 	bool position_only;
 };
 
+std::set<std::pair<uint64_t, uint64_t>> get_subtitles();
+std::string get_subtitle_for(uint64_t f, uint64_t l);
+void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x);
 std::string s_unescape(std::string x);
 std::string s_escape(std::string x);
 void render_subtitles(lua_render_context& ctx);

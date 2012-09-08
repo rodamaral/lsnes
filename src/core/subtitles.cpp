@@ -158,4 +158,28 @@ void render_subtitles(lua_render_context& ctx)
 	}
 }
 
+std::set<std::pair<uint64_t, uint64_t>> get_subtitles()
+{
+	std::set<std::pair<uint64_t, uint64_t>> r;
+	for(auto i = our_movie.subtitles.rbegin(); i != our_movie.subtitles.rend(); i++)
+		r.insert(std::make_pair(i->first.get_frame(), i->first.get_length()));
+	return r;
+}
 
+std::string get_subtitle_for(uint64_t f, uint64_t l)
+{
+	moviefile_subtiming key(f, l);
+	if(!our_movie.subtitles.count(key))
+		return "";
+	else
+		return s_escape(our_movie.subtitles[key]);
+}
+
+void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x)
+{
+	moviefile_subtiming key(f, l);
+	if(x == "")
+		our_movie.subtitles.erase(key);
+	else
+		our_movie.subtitles[key] = s_unescape(x);
+}
