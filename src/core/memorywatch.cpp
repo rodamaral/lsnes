@@ -173,12 +173,8 @@ namespace
 				throw std::runtime_error("#DIV-BY-0");
 			if(t == VT_NAN || b.t == VT_NAN)
 				return numeric_type();
-			else if(t == VT_FLOAT || b.t == VT_FLOAT)
-				return numeric_type(as_double() / b.as_double());
-			else if(t == VT_SIGNED || b.t == VT_SIGNED)
-				return numeric_type(as_integer() / b.as_integer());
 			else
-				return numeric_type(as_address() / b.as_address());
+				return numeric_type(as_double() / b.as_double());
 		}
 		numeric_type operator%(const numeric_type& b) const
 		{
@@ -316,12 +312,12 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 			case 'i':
 				a = stack_pop(s);
 				b = stack_pop(s);
-				stack_push(s, a / b);
+				stack_push(s, a.idiv(b));
 				break;
 			case '/':
 				a = stack_pop(s);
 				b = stack_pop(s);
-				stack_push(s, a.idiv(b));
+				stack_push(s, a / b);
 				break;
 			case '%':
 				a = stack_pop(s);
