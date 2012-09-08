@@ -13,6 +13,7 @@
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
 
+
 void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -214,6 +215,47 @@ void write_input(zip_writer& w, controller_frame_vector& input)
 	}
 }
 
+void read_subtitles(zip_reader& r, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+{
+	x.clear();
+	if(!r.has_member(file))
+		return;
+	std::istream& m = r[file];
+	try {
+		while(m) {
+			std::string out;
+			std::getline(m, out);
+			istrip_CR(out);
+			auto r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]+(.*)", out);
+			if(!r)
+				continue;
+			x[moviefile_subtiming(parse_value<uint64_t>(r[1]), parse_value<uint64_t>(r[2]))] =
+				s_unescape(r[3]);
+		}
+		delete &m;
+	} catch(...) {
+		delete &m;
+		throw;
+	}
+	
+}
+
+void write_subtitles(zip_writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+{
+	std::ostream& m = w.create_file(file);
+	try {
+		for(auto i : x)
+			m << i.first.get_frame() << " " << i.first.get_length() << " " << s_escape(i.second)
+				<< std::endl;
+		if(!m)
+			throw std::runtime_error("Can't write ZIP file member");
+		w.close_file();
+	} catch(...) {
+		w.close_file();
+		throw;
+	}
+}
+
 void read_input(zip_reader& r, controller_frame_vector& input, unsigned version) throw(std::bad_alloc,
 	std::runtime_error)
 {
@@ -350,6 +392,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 			romxml_sha256[i + 1], true);
 	}
 	read_linefile(r, "prefix", prefix, true);
+	read_subtitles(r, "subtitles", subtitles);
 	prefix = sanitize_prefix(prefix);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
@@ -413,6 +456,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(),
 			romxml_sha256[i + 1], true);
 	}
+	write_subtitles(w, "subtitles", subtitles);
 	write_linefile(w, "prefix", prefix, true);
 	for(auto i : movie_sram)
 		write_raw_file(w, "moviesram." + i.first, i.second);

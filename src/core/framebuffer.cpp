@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/subtitles.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
@@ -197,8 +198,10 @@ void redraw_framebuffer(framebuffer_raw& todraw, bool no_lua, bool spontaneous)
 	lrc.queue = &ri.rq;
 	lrc.width = todraw.get_width() * hscl;
 	lrc.height = todraw.get_height() * vscl;
-	if(!no_lua)
+	if(!no_lua) {
 		lua_callback_do_paint(&lrc, spontaneous);
+		render_subtitles(lrc);
+	}
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;

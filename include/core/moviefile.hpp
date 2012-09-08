@@ -5,8 +5,9 @@
 #include <vector>
 #include <stdexcept>
 #include <map>
-#include "controllerframe.hpp"
-#include "rom.hpp"
+#include "core/controllerframe.hpp"
+#include "core/rom.hpp"
+#include "core/subtitles.hpp"
 
 
 /**
@@ -160,6 +161,10 @@ struct moviefile
  * Lazy project create flag.
  */
 	bool lazy_project_create;
+/**
+ * Subtitles.
+ */
+	std::map<moviefile_subtiming, std::string> subtitles;
 /**
  * Get number of frames in movie.
  *
