@@ -2,8 +2,21 @@
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 #include "library/string.hpp"
+#include "library/minmax.hpp"
 
 #define MAXSTATUS 30
+
+namespace
+{
+	std::string string_pad(const std::string& x, size_t width)
+	{
+		if(x.length() >= width)
+			return x;
+		std::string y = x;
+		y.append(width - y.length(), ' ');
+		return y;
+	}
+}
 
 wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines)
 	: wxPanel(_parent)
@@ -12,8 +25,11 @@ wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines
 	parent = _parent;
 	dirty = false;
 	wxMemoryDC d;
-	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	SetMinSize(wxSize(4 * s.x, lines * s.y));
+	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
+	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	d.SetFont(tsysfont);
+	wxSize s = d.GetTextExtent(wxT("MM"));
+	SetMinSize(wxSize(20 * s.x, lines * s.y));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 }
@@ -55,10 +71,21 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 
 	wxPaintDC dc(this);
 	dc.Clear();
+	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
+	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	dc.SetFont(tsysfont);
 	int y = 0;
 	bool has_watches = false;
-	for(auto i : newstatus)
-		has_watches |= regex_match("M\\[.*\\]", i.first);
+	size_t mem_width = 0;
+	size_t oth_width = 0;
+	for(auto i : newstatus) {
+		bool x = regex_match("M\\[.*\\]", i.first);
+		if(x)
+			mem_width = max(mem_width, i.first.length() - 3);
+		else
+			oth_width = max(oth_width, i.first.length());
+		has_watches |= x;
+	}
 	regex_results r;
 	if(has_watches) {
 		std::string pstr = "Memory watches:";
@@ -67,7 +94,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		y += s.y;
 		for(auto i : newstatus) {
 			if(r = regex("M\\[(.*)\\]", i.first)) {
-				pstr = r[1] + ": " + i.second;
+				pstr = string_pad(r[1] + ": ", mem_width + 2) + i.second;
 				wxSize s = dc.GetTextExtent(towxstring(pstr));
 				dc.DrawText(towxstring(pstr), 0, y);
 				y += s.y;
@@ -85,7 +112,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	for(auto i : newstatus) {
 		if(regex_match("M\\[.*\\]", i.first))
 			continue;
-		std::string pstr = i.first + ": " + i.second;
+		std::string pstr = string_pad(i.first + ": ", oth_width + 2) + i.second;
 		wxSize s = dc.GetTextExtent(towxstring(pstr));
 		dc.DrawText(towxstring(pstr), 0, y);
 		y += s.y;
