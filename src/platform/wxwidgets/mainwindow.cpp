@@ -52,6 +52,7 @@ enum
 	wxID_AUDIODEV_LAST = wxID_AUDIODEV_FIRST + 255,
 	wxID_SAVE_STATE,
 	wxID_SAVE_MOVIE,
+	wxID_SAVE_SUBTITLES,
 	wxID_LOAD_STATE,
 	wxID_LOAD_STATE_RO,
 	wxID_LOAD_STATE_RW,
@@ -719,6 +720,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
 	menu_entry(wxID_SAVE_MOVIE, wxT("Movie..."));
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Screenshot..."));
+	menu_entry(wxID_SAVE_SUBTITLES, wxT("Subtitles..."));
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
 	menu_end_sub();
 	menu_separator();
@@ -915,6 +917,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_SAVE_MOVIE:
 		platform::queue("save-movie " + pick_file(this, "Save Movie", movie_path()));
+		return;
+	case wxID_SAVE_SUBTITLES:
+		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", movie_path()));
 		return;
 	case wxID_SAVE_STATE:
 		platform::queue("save-state " + pick_file(this, "Save State", movie_path()));

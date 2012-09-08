@@ -4,6 +4,7 @@
 #include "core/window.hpp"
 #include "library/string.hpp"
 #include "fonts/wrapper.hpp"
+#include <fstream>
 
 moviefile_subtiming::moviefile_subtiming(uint64_t _frame)
 {
@@ -58,6 +59,21 @@ uint64_t moviefile_subtiming::get_length() const { return length; }
 
 namespace
 {
+	std::string s_subescape(std::string x)
+	{
+		std::string y;
+		for(size_t i = 0; i < x.length(); i++) {
+			char ch = x[i];
+			if(ch == '\n')
+				y += "|";
+			else if(ch == '|')
+				y += "⎢";
+			else
+				y.append(1, ch);
+		}
+		return y;
+	}
+
 	struct render_object_subtitle : public render_object
 	{
 		render_object_subtitle(int32_t _x, int32_t _y, const std::string& _text) throw()
@@ -102,6 +118,37 @@ namespace
 				messages << i->first.get_frame() << " " << i->first.get_length() << " "
 					<< s_escape(i->second) << std::endl;
 			}
+		});
+
+	function_ptr_command<arg_filename> save_s("save-subtitle", "Save subtitles in .sub format",
+		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			if(our_movie.subtitles.empty())
+				return;
+			auto i = our_movie.subtitles.begin();
+			uint64_t lastframe = i->first.get_frame() + i->first.get_length();
+			std::ofstream y(std::string(args).c_str());
+			if(!y)
+				throw std::runtime_error("Can't open output file");
+			std::string lasttxt = "";
+			uint64_t since = 0;
+			for(uint64_t i = 1; i < lastframe; i++) {
+				moviefile_subtiming posmarker(i);
+				auto j = our_movie.subtitles.upper_bound(posmarker);
+				if(j == our_movie.subtitles.end() || !j->first.inrange(i))
+					continue;
+				if(lasttxt != j->second) {
+					if(lasttxt != "")
+						y << "{" << since << "}{" << i - 1 << "}" << s_subescape(lasttxt)
+							<< std::endl;
+					since = i;
+					lasttxt = j->second;
+				}
+			}
+			if(lasttxt != "")
+				y << "{" << since << "}{" << lastframe - 1 << "}" << s_subescape(lasttxt)
+					<< std::endl;
+			messages << "Saved subtitles to " << std::string(args) << std::endl;
 		});
 }
 
