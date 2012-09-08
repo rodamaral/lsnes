@@ -1342,132 +1342,153 @@ table has the following fields:
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
 
-8.5 Table hostmemory
+8.5 Table subtitle
+
+Subtitle handling
+
+8.5.1 subtitle.byindex(number i)
+
+Read the frame and length of ith subtitle. Returns nothing if not 
+present.
+
+8.5.2 subtitle.set(number f, number l, string txt)
+
+Set the text of subtitle.
+
+8.5.3 subtitle.get(number f, number l)
+
+Get the text of subtitle.
+
+8.5.4 subtitle.delete(number f, number l)
+
+Delete specified subtitle.
+
+8.6 Table hostmemory
 
 Host memory handling (extra memory saved to savestates). Host 
 memory starts empty.
 
-8.5.1 hostmemory.read(number address)
+8.6.1 hostmemory.read(number address)
 
 Reads hostmemory slot address. Slot numbers out of range return 
 false instead of numeric.
 
-8.5.2 hostmemory.write(number address, number value)
+8.6.2 hostmemory.write(number address, number value)
 
 Writes hostmemory slot with 0-255. Slot numbers out of range 
 cause extension of host memory slot space.
 
-8.5.3 hostmemory.readbyte(number address)
+8.6.3 hostmemory.readbyte(number address)
 
 Read unsigned byte (1 element) from given address. Slots out of 
 range return false.
 
-8.5.4 hostmemory.writebyte(number address, number value)
+8.6.4 hostmemory.writebyte(number address, number value)
 
 Write unsigned byte (1 element) to given slot. Slot numbers out 
 of range cause extension.
 
-8.5.5 hostmemory.readsbyte(number address)
+8.6.5 hostmemory.readsbyte(number address)
 
 Read signed byte (1 element) from given address. Slots out of 
 range return false.
 
-8.5.6 hostmemory.writesbyte(number address, number value)
+8.6.6 hostmemory.writesbyte(number address, number value)
 
 Write signed byte (1 element) to given slot. Slot numbers out of 
 range cause extension.
 
-8.5.7 hostmemory.readword(number address)
+8.6.7 hostmemory.readword(number address)
 
 Read unsigned word (2 elements) from given address. Slots out of 
 range return false.
 
-8.5.8 hostmemory.writeword(number address, number value)
+8.6.8 hostmemory.writeword(number address, number value)
 
 Write unsigned word (2 elements) to given slot. Slot numbers out 
 of range cause extension.
 
-8.5.9 hostmemory.readsword(number address)
+8.6.9 hostmemory.readsword(number address)
 
 Read signed word (2 elements) from given address. Slots out of 
 range return false.
 
-8.5.10 hostmemory.writesword(number address, number value)
+8.6.10 hostmemory.writesword(number address, number value)
 
 Write signed word (2 elements) to given slot. Slot numbers out of 
 range cause extension.
 
-8.5.11 hostmemory.readdword(number address)
+8.6.11 hostmemory.readdword(number address)
 
 Read unsigned doubleword (4 elements) from given address. Slots 
 out of range return false.
 
-8.5.12 hostmemory.writedword(number address, number value)
+8.6.12 hostmemory.writedword(number address, number value)
 
 Write unsigned doubleword (4 elements) to given slot. Slot 
 numbers out of range cause extension.
 
-8.5.13 hostmemory.readsdword(number address)
+8.6.13 hostmemory.readsdword(number address)
 
 Read signed doubleword (4 elements) from given address. Slots out 
 of range return false.
 
-8.5.14 hostmemory.writesdword(number address, number value)
+8.6.14 hostmemory.writesdword(number address, number value)
 
 Write signed doubleword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-8.5.15 hostmemory.readqword(number address)
+8.6.15 hostmemory.readqword(number address)
 
 Read unsigned quadword (8 elements) from given address. Slots out 
 of range return false.
 
-8.5.16 hostmemory.writeqword(number address, number value)
+8.6.16 hostmemory.writeqword(number address, number value)
 
 Write unsigned quadword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-8.5.17 hostmemory.readsqword(number address)
+8.6.17 hostmemory.readsqword(number address)
 
 Read signed quadword (8 elements) from given address. Slots out 
 of range return false.
 
-8.5.18 hostmemory.writesqword(number address, number value)
+8.6.18 hostmemory.writesqword(number address, number value)
 
 Write signed quadword (8 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-8.6 Table movie
+8.7 Table movie
 
 Movie handling
 
-8.6.1 movie.currentframe()
+8.7.1 movie.currentframe()
 
 Return number of current frame.
 
-8.6.2 movie.framecount()
+8.7.2 movie.framecount()
 
 Return number of frames in movie.
 
-8.6.3 movie.readonly()
+8.7.3 movie.readonly()
 
 Return true if in readonly mode, false if in readwrite.
 
-8.6.4 movie.set_readwrite()
+8.7.4 movie.set_readwrite()
 
 Set readwrite mode (does not cause on_readwrite callback).
 
-8.6.5 movie.frame_subframes(number frame)
+8.7.5 movie.frame_subframes(number frame)
 
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-8.6.6 movie.read_subframe(number frame, number subframe)
+8.7.6 movie.read_subframe(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
 
-8.6.7 movie.unsafe_rewind([UNSAFEREWIND state])
+8.7.7 movie.unsafe_rewind([UNSAFEREWIND state])
 
 Start setting point for unsafe rewind or jump to point of unsafe 
 rewind.
@@ -1489,39 +1510,39 @@ The following warnings apply to unsafe rewinding:
 
 • Only call rewind from after the rewind point was set.
 
-8.7 Table settings
+8.8 Table settings
 
 Routines for settings manipulation
 
-8.7.1 settings.get(string name)
+8.8.1 settings.get(string name)
 
 Get value of setting. If setting is blank, returns false. If 
 setting value can't be obtained, returns (nil, error message).
 
-8.7.2 settings.set(string name, string value)
+8.8.2 settings.set(string name, string value)
 
 Set value of setting. If setting can't be set, returns (nil, 
 error message).
 
-8.7.3 settings.is_set(string name)
+8.8.3 settings.is_set(string name)
 
 Returns if setting is set. If setting does not exist, returns 
 (nil, error message).
 
-8.7.4 settings.blank(string name)
+8.8.4 settings.blank(string name)
 
 Blanks a setting and returns true. If setting can't be blanked, 
 returns (nil, error message).
 
-8.8 Table memory
+8.9 Table memory
 
 Contains various functions for managing memory
 
-8.8.1 memory.vma_count()
+8.9.1 memory.vma_count()
 
 Returns the number of VMAs
 
-8.8.2 memory.read_vma(number index)
+8.9.2 memory.read_vma(number index)
 
 Reads the specified VMA (indices start from zero). Trying to read 
 invalid VMA gives nil. The read VMA is table with the following 
@@ -1542,86 +1563,86 @@ fields:
 • native_endian (boolean): True if the VMA has native endian as 
   opposed to little endian.
 
-8.8.3 memory.find_vma(number address)
+8.9.3 memory.find_vma(number address)
 
 Finds the VMA containing specified address. Returns table in the 
 same format as read_vma or nil if not found.
 
-8.8.4 memory.readbyte(number address)
+8.9.4 memory.readbyte(number address)
 
 Reads the specified address as unsigned byte and returns the 
 result.
 
-8.8.5 memory.readsbyte(number address)
+8.9.5 memory.readsbyte(number address)
 
 Reads the specified address as signed byte and returns the 
 result.
 
-8.8.6 memory.writebyte(number address, number value)
+8.9.6 memory.writebyte(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a byte).
 
-8.8.7 memory.readword(number address)
+8.9.7 memory.readword(number address)
 
 Reads the specified address as unsigned word and returns the 
 result.
 
-8.8.8 memory.readsword(number address)
+8.9.8 memory.readsword(number address)
 
 Reads the specified address as signed word and returns the 
 result.
 
-8.8.9 memory.writeword(number address, number value)
+8.9.9 memory.writeword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a word).
 
-8.8.10 memory.readdword(number address)
+8.9.10 memory.readdword(number address)
 
 Reads the specified address as unsigned doubleword and returns 
 the result.
 
-8.8.11 memory.readsdword(number address)
+8.9.11 memory.readsdword(number address)
 
 Reads the specified address as signed doubleword and returns the 
 result.
 
-8.8.12 memory.writedword(number address, number value)
+8.9.12 memory.writedword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a doubleword).
 
-8.8.13 memory.readqword(number address)
+8.9.13 memory.readqword(number address)
 
 Reads the specified address as unsigned quadword and returns the 
 result.
 
-8.8.14 memory.readsqword(number address)
+8.9.14 memory.readsqword(number address)
 
 Reads the specified address as signed quadword and returns the 
 result.
 
-8.8.15 memory.writeqword(number address, number value)
+8.9.15 memory.writeqword(number address, number value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
-8.8.16 memory.hash_region(number base, number size)
+8.9.16 memory.hash_region(number base, number size)
 
 Hash specified number of bytes starting from specified address 
 and return the SHA-256.
 
-8.9 Table _SYSTEM
+8.10 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-8.10 Callbacks
+8.11 Callbacks
 
 Various callbacks to Lua that can occur.
 
-8.10.1 Callback: on_paint(bool not_synth)
+8.11.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
@@ -1629,80 +1650,80 @@ graphic context draw on the screen.
 not_synth is true if this hook is being called in response to 
 received frame, false otherwise.
 
-8.10.2 Callback: on_video()
+8.11.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-8.10.3 Callback: on_frame_emulated()
+8.11.3 Callback: on_frame_emulated()
 
 Called when emulating frame has completed and 
 on_paint()/on_video() calls are about to be issued.
 
-8.10.4 Callback: on_frame()
+8.11.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-8.10.5 Callback: on_startup()
+8.11.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-8.10.6 Callback: on_rewind()
+8.11.6 Callback: on_rewind()
 
 Called when rewind movie to beginning has completed.
 
-8.10.7 Callback: on_pre_load(string name)
+8.11.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-8.10.8 Callback: on_err_load(string name)
+8.11.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-8.10.9 Callback: on_post_load(string name, boolean was_savestate)
+8.11.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-8.10.10 Callback: on_pre_save(string name, boolean is_savestate)
+8.11.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-8.10.11 Callback: on_err_save(string name)
+8.11.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-8.10.12 Callback: on_post_save(string name, boolean is_savestate)
+8.11.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-8.10.13 Callback: on_quit()
+8.11.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-8.10.14 Callback: on_input(boolean subframe)
+8.11.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-8.10.15 Callback: on_reset()
+8.11.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-8.10.16 Callback: on_readwrite()
+8.11.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-8.10.17 Callback: on_snoop(number port, number controller, number 
+8.11.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1711,31 +1732,31 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-8.10.18 Callback: on_keyhook(string keyname, table state)
+8.11.18 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-8.10.19 Callback: on_idle()
+8.11.19 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-8.10.20 Callback: on_timer()
+8.11.20 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-8.10.21 Callback: on_set_rewind(UNSAFEREWIND r)
+8.11.21 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-8.10.22 Callback: on_pre_rewind() 
+8.11.22 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-8.10.23 Callback: on_post_rewind() 
+8.11.23 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
 

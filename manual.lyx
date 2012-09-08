@@ -2671,6 +2671,47 @@ Requests that keyhook events to be sent for key (state=true) or not sent
 \end_layout
 
 \begin_layout Subsection
+Table subtitle
+\end_layout
+
+\begin_layout Standard
+Subtitle handling
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.byindex(number i)
+\end_layout
+
+\begin_layout Standard
+Read the frame and length of ith subtitle.
+ Returns nothing if not present.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.set(number f, number l, string txt)
+\end_layout
+
+\begin_layout Standard
+Set the text of subtitle.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.get(number f, number l)
+\end_layout
+
+\begin_layout Standard
+Get the text of subtitle.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.delete(number f, number l)
+\end_layout
+
+\begin_layout Standard
+Delete specified subtitle.
+\end_layout
+
+\begin_layout Subsection
 Table hostmemory
 \end_layout
 
