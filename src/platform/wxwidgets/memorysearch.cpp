@@ -18,6 +18,7 @@
 #define wxID_TYPESELECT (wxID_HIGHEST + 3)
 #define wxID_HEX_SELECT (wxID_HIGHEST + 4)
 #define wxID_ADD (wxID_HIGHEST + 5)
+#define wxID_SET_REGIONS (wxID_HIGHEST + 6)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 8
@@ -27,6 +28,7 @@
 #define CANDIDATE_LIMIT 200
 
 class wxwindow_memorysearch;
+
 namespace
 {
 	const char* watchchars = "bBwWdDqQ";
@@ -174,6 +176,77 @@ namespace
 	}
 }
 
+class wxwindow_memorysearch_vmasel : public wxDialog
+{
+public:
+	wxwindow_memorysearch_vmasel(wxWindow* p, const std::set<std::string>& enabled);
+	bool ShouldPreventAppExit() const;
+	std::set<std::string> get_vmas();
+	void on_ok(wxCommandEvent& e);
+	void on_cancel(wxCommandEvent& e);
+private:
+	std::set<std::string> vmas;
+	std::vector<wxCheckBox*> checkboxes;
+	wxButton* ok;
+	wxButton* cancel;
+};
+
+wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, const std::set<std::string>& enabled)
+	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1))
+{
+	auto i = get_regions();
+	Centre();
+	wxFlexGridSizer* top_s = new wxFlexGridSizer(i.size() + 1, 1, 0, 0);
+	SetSizer(top_s);
+	for(auto j : i) {
+		if(j.readonly || j.iospace)
+			continue;
+		wxCheckBox* t;
+		top_s->Add(t = new wxCheckBox(this, wxID_ANY, towxstring(j.region_name)), 0, wxGROW);
+		if(enabled.count(j.region_name))
+			t->SetValue(true);
+		checkboxes.push_back(t);
+	}
+	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+	pbutton_s->AddStretchSpacer();
+	pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("Ok")), 0, wxGROW);
+	pbutton_s->Add(cancel = new wxButton(this, wxID_ANY, wxT("Cancel")), 0, wxGROW);
+	ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxwindow_memorysearch_vmasel::on_ok), NULL, this);
+	cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxwindow_memorysearch_vmasel::on_cancel), NULL, this);
+	top_s->Add(pbutton_s);
+
+	pbutton_s->SetSizeHints(this);
+	top_s->SetSizeHints(this);
+	Fit();
+}
+
+bool wxwindow_memorysearch_vmasel::ShouldPreventAppExit() const
+{
+	return false;
+}
+
+std::set<std::string> wxwindow_memorysearch_vmasel::get_vmas()
+{
+	return vmas;
+}
+
+void wxwindow_memorysearch_vmasel::on_ok(wxCommandEvent& e)
+{
+	for(auto i : checkboxes)
+		if(i->GetValue())
+			vmas.insert(tostdstring(i->GetLabel()));
+	EndModal(wxID_OK);
+}
+
+void wxwindow_memorysearch_vmasel::on_cancel(wxCommandEvent& e)
+{
+	EndModal(wxID_CANCEL);
+}
+
+
+
 class wxwindow_memorysearch : public wxFrame
 {
 public:
@@ -196,6 +269,7 @@ private:
 	std::map<long, uint64_t> addresses;
 	unsigned typecode;
 	bool hexmode;
+	std::set<std::string> vmas_enabled;
 };
 
 wxwindow_memorysearch::wxwindow_memorysearch()
@@ -211,11 +285,17 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	wxFlexGridSizer* toplevel = new wxFlexGridSizer(4, 1, 0, 0);
 	SetSizer(toplevel);
 
-	wxFlexGridSizer* buttons = new wxFlexGridSizer(1, 6, 0, 0);
+	wxFlexGridSizer* buttons = new wxFlexGridSizer(1, 7, 0, 0);
 	buttons->Add(tmp = new wxButton(this, wxID_RESET, wxT("Reset")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
 		NULL, this);
 	buttons->Add(tmp = new wxButton(this, wxID_UPDATE, wxT("Update")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
+		NULL, this);
+	buttons->Add(tmp = new wxButton(this, wxID_ADD, wxT("Add watch")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
+		NULL, this);
+	buttons->Add(tmp = new wxButton(this, wxID_SET_REGIONS, wxT("Disable regions")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
 		NULL, this);
 	buttons->Add(new wxStaticText(this, wxID_ANY, wxT("Data type:")), 0, wxGROW);
@@ -230,9 +310,6 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	buttons->Add(hexmode2 = new wxCheckBox(this, wxID_HEX_SELECT, wxT("Hex display")), 0, wxGROW);
 	hexmode2->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 		wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
-	buttons->Add(tmp = new wxButton(this, wxID_ADD, wxT("Add watch")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
-		NULL, this);
 	toplevel->Add(buttons);
 
 	wxFlexGridSizer* searches = new wxFlexGridSizer(1, BROW_SIZE, 0, 0);
@@ -246,6 +323,10 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	toplevel->Add(count = new wxStaticText(this, wxID_ANY, wxT("XXX candidates")), 0, wxGROW);
 	toplevel->Add(matches = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, 300),
 		wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP | wxTE_NOHIDESEL), 1, wxGROW);
+
+	for(auto i : get_regions())
+		if(!i.readonly && !i.iospace)
+			vmas_enabled.insert(i.region_name);
 
 	toplevel->SetSizeHints(this);
 	Fit();
@@ -317,6 +398,9 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 	int id = e.GetId();
 	if(id == wxID_RESET) {
 		msearch->reset();
+		for(auto i : get_regions())
+			if(!i.readonly && !i.iospace && !vmas_enabled.count(i.region_name))
+				msearch->dq_range(i.baseaddr, i.baseaddr + i.size - 1);
 	} else if(id == wxID_UPDATE) {
 		update();
 	} else if(id == wxID_TYPESELECT) {
@@ -353,6 +437,14 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			} catch(canceled_exception& e) {
 			}
 		}
+	} else if(id == wxID_SET_REGIONS) {
+		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
+		if(d->ShowModal() == wxID_OK)
+			vmas_enabled = d->get_vmas();
+		d->Destroy();
+		for(auto i : get_regions())
+			if(!i.readonly && !i.iospace && !vmas_enabled.count(i.region_name))
+				msearch->dq_range(i.baseaddr, i.baseaddr + i.size - 1);
 	} else if(id == wxID_BUTTONS_BASE || id == wxID_BUTTONS_BASE + 1) {
 		//Value search.
 		bool diff = (id == wxID_BUTTONS_BASE + 1);
