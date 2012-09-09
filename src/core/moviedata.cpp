@@ -452,7 +452,10 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		x << std::setfill('0') << std::setw(2) << mlength / 1000000000 << ".";
 		mlength %= 1000000000;
 		x << std::setfill('0') << std::setw(3) << mlength / 1000000;
-		messages << "Rerecords " << _movie.rerecords << " length " << x.str() << " ("
+		std::string rerecords = _movie.rerecords;
+		if(lmode != LOAD_STATE_MOVIE)
+			rerecords = (stringfmt() << rrdata::count()).str();
+		messages << "Rerecords " << rerecords << " length " << x.str() << " ("
 			<< _movie.get_frame_count() << " frames)" << std::endl;
 	}
 	if(_movie.gamename != "")
