@@ -408,12 +408,13 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	}
 
 	//Okay, copy the movie data.
-	our_movie = _movie;
+	if(lmode != LOAD_STATE_PRESERVE)
+		our_movie = _movie;
 	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
 		our_movie.is_savestate = false;
 		our_movie.host_memory.clear();
 	}
-	if(our_movie.prefix != "") {
+	if(our_movie.prefix != "" && lmode != LOAD_STATE_PRESERVE) {
 		mprefix.prefix = our_movie.prefix;
 		mprefix._set = true;
 	}
