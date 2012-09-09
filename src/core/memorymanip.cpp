@@ -5,6 +5,7 @@
 #include "core/moviedata.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "core/rrdata.hpp"
 #include "library/string.hpp"
 
 #include <iostream>
@@ -55,6 +56,10 @@ namespace
 		} else if(offset >= 16 && offset < 24 && !write) {
 			//Lag counter.
 			uint64_t x = get_movie().get_lag_frames();
+			return x >> (8 * (offset & 7));
+		} else if(offset >= 24 && offset < 32 && !write) {
+			//Rerecord counter.
+			uint64_t x = rrdata::count();
 			return x >> (8 * (offset & 7));
 		} else
 			return 0;

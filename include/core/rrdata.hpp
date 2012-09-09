@@ -114,6 +114,12 @@ public:
  */
 	static uint64_t count(std::vector<char>& strm) throw(std::bad_alloc);
 /**
+ * Count number of rerecords.
+ *
+ * returns: Rerecord count.
+ */
+	static uint64_t count() throw();
+/**
  * Internal pointer used by add_internal.
  */
 	static struct instance* internal;

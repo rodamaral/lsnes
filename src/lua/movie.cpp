@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "lua/unsaferewind.hpp"
 #include "core/movie.hpp"
+#include "core/rrdata.hpp"
 #include "core/moviedata.hpp"
 #include "core/mainloop.hpp"
 
@@ -15,6 +16,11 @@ namespace
 	function_ptr_luafun mfc("movie.framecount", [](lua_State* LS, const std::string& fname) -> int {
 		auto& m = get_movie();
 		lua_pushnumber(LS, m.get_frame_count());
+		return 1;
+	});
+
+	function_ptr_luafun mrrs("movie.rerecords", [](lua_State* LS, const std::string& fname) -> int {
+		lua_pushnumber(LS, rrdata::count());
 		return 1;
 	});
 

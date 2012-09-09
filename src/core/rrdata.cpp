@@ -287,6 +287,16 @@ uint64_t rrdata::count(std::vector<char>& strm) throw(std::bad_alloc)
 	return read(strm, true);
 }
 
+uint64_t rrdata::count() throw()
+{
+	uint64_t c = rrset.size();
+	if(c)
+		return c - 1;
+	else
+		return 0;
+}
+
+
 std::ostream& operator<<(std::ostream& os, const struct rrdata::instance& j)
 {
 	for(unsigned i = 0; i < 32; i++) {
