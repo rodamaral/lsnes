@@ -6471,5 +6471,61 @@ Pipedec support
 Fix uninitialized variables in bsnes v085
 \end_layout
 
+\begin_layout Subsection
+rr1-delta14
+\end_layout
+
+\begin_layout Itemize
+Merge gambatte core into mainline (from its own branch)
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Show expected dump file formats
+\end_layout
+
+\begin_layout Itemize
+Memory watch: Data typing
+\end_layout
+
+\begin_layout Itemize
+lsnes internal MMIO area.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: New memory watch editor
+\end_layout
+
+\begin_layout Itemize
+Hexadecimal memory watches
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Monospaced panel
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Split memory watches in panel
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Disable VMAs in memory search
+\end_layout
+
+\begin_layout Itemize
+lsnes-dumpavi: Fix speed bug
+\end_layout
+
+\begin_layout Itemize
+Movie subtitle support
+\end_layout
+
+\begin_layout Itemize
+Fix rerecord count reporting
+\end_layout
+
+\begin_layout Itemize
+Don't trash movie when loading in readonly mode.
+\end_layout
+
 \end_body
 \end_document

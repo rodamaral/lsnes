@@ -3177,3 +3177,31 @@ set-axis joystick0axis19 disabled
 
 • Fix uninitialized variables in bsnes v085
 
+17.70 rr1-delta14
+
+• Merge gambatte core into mainline (from its own branch)
+
+• Wxwidgets: Show expected dump file formats
+
+• Memory watch: Data typing
+
+• lsnes internal MMIO area.
+
+• Wxwidgets: New memory watch editor
+
+• Hexadecimal memory watches
+
+• Wxwidgets: Monospaced panel
+
+• Wxwidgets: Split memory watches in panel
+
+• Wxwidgets: Disable VMAs in memory search
+
+• lsnes-dumpavi: Fix speed bug
+
+• Movie subtitle support
+
+• Fix rerecord count reporting
+
+• Don't trash movie when loading in readonly mode.
+
