@@ -1817,6 +1817,53 @@ bus_address(number snesaddr)
 Returns virtual address corresponding to specified address on SNES bus.
 \end_layout
 
+\begin_layout Subsubsection
+loopwrapper(function fun, ...)
+\end_layout
+
+\begin_layout Standard
+Calls function fun with function and specified arguments.
+ The function passed suspends execution until the function returned is called.
+ Handy for linear flow control among multiple invocations of a hook.
+ Example code:
+\end_layout
+
+\begin_layout LyX-Code
+on_paint = loopwrapper(function(wait)
+\end_layout
+
+\begin_deeper
+\begin_layout LyX-Code
+while true do
+\end_layout
+
+\begin_deeper
+\begin_layout LyX-Code
+gui.text(0, 0, 
+\begin_inset Quotes eld
+\end_inset
+
+Test!
+\begin_inset Quotes erd
+\end_inset
+
+);
+\end_layout
+
+\begin_layout LyX-Code
+wait();
+\end_layout
+
+\end_deeper
+\begin_layout LyX-Code
+end
+\end_layout
+
+\end_deeper
+\begin_layout LyX-Code
+end);
+\end_layout
+
 \begin_layout Subsection
 Table bit:
 \end_layout
