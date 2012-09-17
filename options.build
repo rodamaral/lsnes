@@ -112,10 +112,15 @@ BSNES_VERSION=085
 BSNES_IS_COMPAT=
 
 # Set to non-empty value (e.g. 'yes') if boost libraries need the '-mt' prefix.
+# Useful on Win32 and Mac OS X.
 BOOST_NEEDS_MT=
 
 # Set to non-empty value (e.g. 'yes') if the linker exports symbols without -rdynamic.
+# Useful on Mac OS X.
 NO_RDYNAMIC=
 
 # Set to non-empty vlaue (e.g. 'yes') to disable use of DLFCN.
 NO_DLFCN=
+
+# Set to non-empty value (e.g. 'yes') to use boost::filesystem3 instead of boost::filesystem.
+BOOST_FILESYSTEM3=
