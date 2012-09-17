@@ -1167,7 +1167,9 @@ public:
 	void on_primary(wxCommandEvent& e);
 	void on_secondary(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
+	void prepare_destroy();
 private:
+	bool destruction_underway;
 	wxListBox* category;
 	wxListBox* control;
 	wxButton* pri_button;
@@ -1184,6 +1186,7 @@ private:
 wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
+	destruction_underway = false;
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 	wxString empty[1];
@@ -1208,6 +1211,11 @@ wxeditor_esettings_hotkeys::wxeditor_esettings_hotkeys(wxWindow* parent)
 	Fit();
 }
 
+void wxeditor_esettings_hotkeys::prepare_destroy()
+{
+	destruction_underway = true;
+}
+
 std::pair<std::string, std::string> wxeditor_esettings_hotkeys::splitkeyname(const std::string& kn)
 {
 	std::string tmp = kn;
@@ -1227,6 +1235,8 @@ std::pair<std::string, std::string> wxeditor_esettings_hotkeys::splitkeyname(con
 
 void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	int c = category->GetSelection();
 	if(c == wxNOT_FOUND) {
 		category->SetSelection(0);
@@ -1237,6 +1247,8 @@ void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 
 void wxeditor_esettings_hotkeys::change_category(int cat)
 {
+	if(destruction_underway)
+		return;
 	std::map<int, std::string> n;
 	for(auto i : itemlabels)
 		if(i.first.first == cat)
@@ -1260,6 +1272,8 @@ wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
 
 void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
 	if(name == "") {
 		refresh();
@@ -1291,6 +1305,8 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 
 void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
 	if(name == "") {
 		refresh();
@@ -1321,6 +1337,8 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 
 void wxeditor_esettings_hotkeys::refresh()
 {
+	if(destruction_underway)
+		return;
 	std::map<inverse_key*, std::pair<std::string, std::string>> data;
 	std::map<std::string, int> cat_set;
 	std::map<std::string, int> cat_assign;
@@ -1374,7 +1392,9 @@ public:
 	void on_edit(wxCommandEvent& e);
 	void on_delete(wxCommandEvent& e);
 	void on_change(wxCommandEvent& e);
+	void prepare_destroy();
 private:
+	bool destruction_underway;
 	std::map<int, std::string> numbers;
 	wxListBox* select;
 	void refresh();
@@ -1390,6 +1410,7 @@ private:
 wxeditor_esettings_bindings::wxeditor_esettings_bindings(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
+	destruction_underway = false;
 	wxButton* tmp;
 
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -1423,8 +1444,15 @@ wxeditor_esettings_bindings::~wxeditor_esettings_bindings()
 {
 }
 
+void wxeditor_esettings_bindings::prepare_destroy()
+{
+	destruction_underway = true;
+}
+
 void wxeditor_esettings_bindings::on_change(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	bool enable = (selected() != "");
 	editbutton->Enable(enable);
 	deletebutton->Enable(enable);
@@ -1432,6 +1460,8 @@ void wxeditor_esettings_bindings::on_change(wxCommandEvent& e)
 
 void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	try {
 		std::string name;
 		wxdialog_keyentry* d = new wxdialog_keyentry(this, "Specify new key", "", false);
@@ -1456,6 +1486,8 @@ void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 
 void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = selected();
 	if(name == "") {
 		refresh();
@@ -1478,6 +1510,8 @@ void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 
 void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = selected();
 	if(name == "") {
 		refresh();
@@ -1489,6 +1523,8 @@ void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 
 void wxeditor_esettings_bindings::refresh()
 {
+	if(destruction_underway)
+		return;
 	int n = select->GetSelection();
 	std::map<std::string, std::string> bind;
 	std::vector<wxString> choices;
@@ -1513,6 +1549,8 @@ void wxeditor_esettings_bindings::refresh()
 
 std::string wxeditor_esettings_bindings::selected()
 {
+	if(destruction_underway)
+		return "";
 	int x = select->GetSelection();
 	if(numbers.count(x))
 		return numbers[x];
@@ -1531,7 +1569,9 @@ public:
 	void on_setting_change(const std::string& setting, const std::string& value);
 	void on_setting_clear(const std::string& setting);
 	void _refresh();
+	void prepare_destroy();
 private:
+	bool destruction_underway;
 	void refresh();
 	std::set<std::string> settings;
 	std::map<std::string, std::string> values;
@@ -1546,6 +1586,7 @@ private:
 wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
 	: wxPanel(parent, -1), information_dispatch("wxeditor-settings-listener")
 {
+	destruction_underway = false;
 	wxButton* tmp;
 
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -1572,12 +1613,19 @@ wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
 	Fit();
 }
 
+void wxeditor_esettings_advanced::prepare_destroy()
+{
+	destruction_underway = true;
+}
+
 wxeditor_esettings_advanced::~wxeditor_esettings_advanced()
 {
 }
 
 void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = selected();
 	if(name == "")
 		return;
@@ -1598,6 +1646,8 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 
 void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string sel = selected();
 	bool enable = (sel != "");
 	changebutton->Enable(enable);
@@ -1606,6 +1656,8 @@ void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
 
 void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 {
+	if(destruction_underway)
+		return;
 	std::string name = selected();
 	if(name == "")
 		return;
@@ -1619,6 +1671,8 @@ void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 
 void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, const std::string& value)
 {
+	if(destruction_underway)
+		return;
 	wxeditor_esettings_advanced* th = this;
 	runuifun([&settings, &values, setting, value, th]() { 
 		settings.insert(setting); values[setting] = value; th->_refresh();
@@ -1627,6 +1681,8 @@ void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, 
 
 void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 {
+	if(destruction_underway)
+		return;
 	wxeditor_esettings_advanced* th = this;
 	runuifun([&settings, &values, setting, th]() {
 		settings.insert(setting); values.erase(setting); th->_refresh();
@@ -1635,6 +1691,8 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 
 void wxeditor_esettings_advanced::refresh()
 {
+	if(destruction_underway)
+		return;
 	settings = setting::get_settings_set();
 	blankables.clear();
 	for(auto i : settings) {
@@ -1648,6 +1706,8 @@ void wxeditor_esettings_advanced::refresh()
 
 std::string wxeditor_esettings_advanced::selected()
 {
+	if(destruction_underway)
+		return "";
 	int x = _settings->GetSelection();
 	if(selections.count(x))
 		return selections[x];
@@ -1657,6 +1717,8 @@ std::string wxeditor_esettings_advanced::selected()
 
 void wxeditor_esettings_advanced::_refresh()
 {
+	if(destruction_underway)
+		return;
 	std::vector<wxString> strings;
 	int k = 0;
 	for(auto i : settings) {
@@ -1682,6 +1744,8 @@ private:
 	wxNotebook* tabset;
 	wxButton* closebutton;
 	wxeditor_esettings_hotkeys* hotkeytab;
+	wxeditor_esettings_bindings* bindtab;
+	wxeditor_esettings_advanced* advtab;
 };
 
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
@@ -1697,6 +1761,8 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 
 	if(hotkeys_only) {
 		hotkeytab = new wxeditor_esettings_hotkeys(this);
+		bindtab = NULL;
+		advtab = NULL;
 		top_s->Add(hotkeytab);
 	} else {
 		tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
@@ -1705,8 +1771,8 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 		tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
 		tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
 		tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
-		tabset->AddPage(new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
-		tabset->AddPage(new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
+		tabset->AddPage(bindtab = new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
+		tabset->AddPage(advtab = new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
 		top_s->Add(tabset, 1, wxGROW);
 	}
 	
@@ -1723,6 +1789,9 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 
 wxeditor_esettings::~wxeditor_esettings()
 {
+	if(hotkeytab) hotkeytab->prepare_destroy();
+	if(bindtab) bindtab->prepare_destroy();
+	if(advtab) advtab->prepare_destroy();
 }
 
 bool wxeditor_esettings::ShouldPreventAppExit() const
