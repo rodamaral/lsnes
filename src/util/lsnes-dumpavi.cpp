@@ -15,6 +15,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 
 #include <sys/time.h>
 #include <sstream>
@@ -245,6 +246,26 @@ int main(int argc, char** argv)
 
 	std::string cfgpath = get_config_path();
 
+	for(auto i : cmdline) {
+		regex_results r;
+		if(r = regex("--setting-(.*)=(.*)", i)) {
+			try {
+				setting::set(r[1], r[2]);
+				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
+			} catch(std::exception& e) {
+				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what() << std::endl;
+			}
+		}
+		if(r = regex("--clear-setting-(.*)", i)) {
+			try {
+				setting::blank(r[1]);
+				std::cerr << "Blanked " << r[1] << std::endl;
+			} catch(std::exception& e) {
+				std::cerr << "Can't blank " << r[1] << ": " << e.what() << std::endl;
+			}
+		}
+	}
+
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
@@ -263,7 +284,6 @@ int main(int argc, char** argv)
 	messages << "--- Internal memory mappings ---" << std::endl;
 	dump_region_map();
 	messages << "--- End of Startup --- " << std::endl;
-
 
 	moviefile movie;
 	try {
