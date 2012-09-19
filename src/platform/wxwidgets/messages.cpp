@@ -18,7 +18,7 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 
 wxwin_messages::wxwin_messages()
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Messages"), wxDefaultPosition, wxSize(-1, -1), 
-		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
+		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
 {
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(3, 1, 0, 0);
 	top_s->Add(mpanel = new panel(this, MAXMESSAGES));
@@ -58,6 +58,7 @@ wxwin_messages::wxwin_messages()
 	cmd_s->SetSizeHints(this);
 	top_s->Add(cmd_s, 0, wxGROW);
 
+	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_messages::on_close));
 	top_s->SetSizeHints(this);
 	SetSizer(top_s);
 	Fit();
@@ -87,6 +88,19 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 		dc.DrawText(towxstring(msgs[i]), 0, y);
 		y += s.y;
 	}
+}
+
+void wxwin_messages::on_close(wxCloseEvent& e)
+{
+	if(wxwidgets_exiting)
+		return;
+	e.Veto();
+	Hide();
+}
+
+void wxwin_messages::reshow()
+{
+	Show();
 }
 
 void wxwin_messages::on_scroll_home(wxCommandEvent& e)

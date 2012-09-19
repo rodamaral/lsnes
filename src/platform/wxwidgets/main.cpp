@@ -47,6 +47,7 @@ wxwin_mainwindow* main_window;
 std::string our_rom_name;
 
 bool dummy_interface = false;
+bool wxwidgets_exiting = false;
 
 namespace
 {
@@ -406,6 +407,8 @@ int lsnes_app::OnExit()
 	if(settings_mode)
 		return 0;
 	//NULL these so no further messages will be sent.
+	auto x = msg_window;
+	auto y = main_window;
 	msg_window = NULL;
 	main_window = NULL;
 	save_configuration();

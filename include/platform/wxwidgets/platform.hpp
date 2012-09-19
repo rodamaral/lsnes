@@ -81,5 +81,6 @@ void show_message_ok(wxWindow* parent, const std::string& title, const std::stri
 extern wxwin_messages* msg_window;
 extern wxwin_mainwindow* main_window;
 extern std::string our_rom_name;
+extern bool wxwidgets_exiting;
 
 #endif

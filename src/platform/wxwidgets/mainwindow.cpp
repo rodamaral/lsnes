@@ -29,6 +29,7 @@
 #include "platform/wxwidgets/menu_dump.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
+#include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 
 extern "C"
@@ -99,6 +100,7 @@ enum
 	wxID_RELOAD_ROM_IMAGE,
 	wxID_LOAD_ROM_IMAGE,
 	wxID_NEW_MOVIE,
+	wxID_SHOW_MESSAGES,
 };
 
 
@@ -785,6 +787,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("Configure"));
 	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
 	menu_check(wxID_SHOW_STATUS, true);
+	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
 	if(platform::sound_initialized()) {
@@ -842,6 +845,7 @@ void wxwin_mainwindow::notify_update_status() throw()
 
 void wxwin_mainwindow::notify_exit() throw()
 {
+	wxwidgets_exiting = true;
 	join_emulator_thread();
 	Destroy();
 }
@@ -1125,6 +1129,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_NEW_MOVIE:
 		show_projectwindow(this);
+		return;
+	case wxID_SHOW_MESSAGES:
+		msg_window->reshow();
 		return;
 	};
 }

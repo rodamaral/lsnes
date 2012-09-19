@@ -28,6 +28,8 @@ public:
 	void on_scroll_pagedown(wxCommandEvent& e);
 	void on_scroll_end(wxCommandEvent& e);
 	void on_execute(wxCommandEvent& e);
+	void on_close(wxCloseEvent& e);
+	void reshow();
 private:
 	wxTextCtrl* command;
 	panel* mpanel;
