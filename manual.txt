@@ -886,6 +886,25 @@ has expired, on_timer() will be called once.
 Returns virtual address corresponding to specified address on 
 SNES bus.
 
+8.1.8 loopwrapper(function fun, ...)
+
+Calls function fun with function and specified arguments. The 
+function passed suspends execution until the function returned is 
+called. Handy for linear flow control among multiple invocations 
+of a hook. Example code:
+
+on_paint = loopwrapper(function(wait)
+
+  while true do
+
+    gui.text(0, 0, “Test!”);
+
+    wait();
+
+  end
+
+end);
+
 8.2 Table bit:
 
 Bitwise logical functions and related.

@@ -19,6 +19,7 @@ extern "C" {
 
 uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+extern const char* lua_sysrc_script;
 
 namespace
 {
@@ -338,6 +339,12 @@ namespace
 		lua_setmetatable(L, -2);
 		lua_setglobal(L, "_SYSTEM");
 	}
+
+	void run_sysrc_lua(lua_State* L)
+	{
+		do_eval_lua(lua_sysrc_script);
+	}
+
 }
 
 void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
@@ -552,6 +559,7 @@ void init_lua(bool soft) throw()
 	luaL_openlibs(L);
 
 	register_lua_functions(L);
+	run_sysrc_lua(L);
 	copy_system_tables(L);
 }
 
