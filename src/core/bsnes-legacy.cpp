@@ -11,6 +11,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
@@ -58,6 +59,7 @@ const char* button_symbols = "BYsSudlrAXLRTSTCUP";
 
 namespace
 {
+	boolean_setting allow_inconsistent_saves("allow-inconsistent-saves", false);
 	uint32_t norom_frame[512 * 448];
 
 	void init_norom_frame()
@@ -957,7 +959,8 @@ void core_runtosave()
 	if(!internal_rom)
 		return;
 	stepping_into_save = true;
-	SNES::system.runtosave();
+	if(!allow_inconsistent_saves)
+		SNES::system.runtosave();
 	stepping_into_save = false;
 }
 
