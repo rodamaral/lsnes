@@ -1,7 +1,10 @@
 #include "core/keymapper.hpp"
 #include "lua/internal.hpp"
 #include "core/movie.hpp"
+#include "core/emucore.hpp"
 #include "core/moviedata.hpp"
+#include "core/controller.hpp"
+#include <iostream>
 
 namespace
 {
@@ -111,6 +114,48 @@ namespace
 			return 0;
 		}
 		k->request_hook_callback(state);
+		return 0;
+	});
+
+	function_ptr_luafun ijset("input.joyset", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		if(lua_type(LS, 2) != LUA_TTABLE) {
+			lua_pushstring(LS, "Invalid type for input.joyset");
+			lua_error(LS);
+			return 0;
+		}
+		if(!lua_input_controllerdata)
+			return 0;
+		int pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid < 0) {
+			lua_pushstring(LS, "Invalid controller for input.joyset");
+			lua_error(LS);
+			return 0;
+		}
+		unsigned lcnt = get_core_logical_controller_limits().second;
+		for(unsigned i = 0; i < lcnt; i++) {
+			std::string n = get_logical_button_name(i);
+			int y = lua_input_controllerdata->button_id(pcid, i);
+			if(y < 0)
+				continue;
+			lua_pushstring(LS, n.c_str());
+			lua_gettable(LS, 2);
+			int s = lua_toboolean(LS, -1) ? 1 : 0;
+			lua_input_controllerdata->axis(pcid, y, s);
+			lua_pop(LS, 1);
+		}
+		if(lua_input_controllerdata->is_analog(pcid)) {
+			lua_pushstring(LS, "xaxis");
+			lua_gettable(LS, 2);
+			int s = lua_tonumber(LS, -1);
+			lua_input_controllerdata->axis(pcid, 0, s);
+			lua_pop(LS, 1);
+			lua_pushstring(LS, "yaxis");
+			lua_gettable(LS, 2);
+			s = lua_tonumber(LS, -1);
+			lua_input_controllerdata->axis(pcid, 1, s);
+			lua_pop(LS, 1);
+		}
 		return 0;
 	});
 }
