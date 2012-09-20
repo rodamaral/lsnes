@@ -475,11 +475,12 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 
 canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled") {}
 
-std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir)
+std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave)
 {
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
-	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir);
+	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), wxT("All files|*"), forsave ?
+		wxFD_SAVE : wxFD_OPEN);
 	if(d->ShowModal() == wxID_CANCEL)
 		throw canceled_exception();
 	std::string filename = tostdstring(d->GetPath());
@@ -491,7 +492,7 @@ std::string pick_file(wxWindow* parent, const std::string& title, const std::str
 
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir)
 {
-	std::string filename = pick_file(parent, title, startdir);
+	std::string filename = pick_file(parent, title, startdir, false);
 	//Did we pick a .zip file?
 	try {
 		zip_reader zr(filename);
