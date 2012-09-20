@@ -643,6 +643,10 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(this);
 	uint32_t tw = main_screen.get_width() * horizontal_scale_factor + 0.5;
 	uint32_t th = main_screen.get_height() * vertical_scale_factor + 0.5;
+	if(!tw || !th) {
+		main_window_dirty = false;
+		return;
+	}
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags) {
 		if(screen_buffer)
 			delete[] screen_buffer;

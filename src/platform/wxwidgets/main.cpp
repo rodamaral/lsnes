@@ -16,6 +16,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -313,6 +314,8 @@ public:
 	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
 private:
 	bool settings_mode;
+	std::string c_rom;
+	std::string c_file;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -334,8 +337,13 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 	for(size_t i = 0; i< parser.GetParamCount(); i++)
 		cmdline.push_back(tostdstring(parser.GetParam(i)));
 	for(auto i: cmdline) {
+		regex_results r;
 		if(i == "--settings")
 			settings_mode = true;
+		if(r = regex("--rom=(.+)", i))
+			c_rom = r[1];
+		if(r = regex("--load=(.+)", i))
+			c_file = r[1];
 	}
 }
 
@@ -391,11 +399,45 @@ bool lsnes_app::OnInit()
 	msg_window->Show();
 
 	do_basic_core_init();
-	loaded_rom* rom = new loaded_rom;
-	moviefile* mov = new moviefile;
-	mov->port1 = &porttype_info::port_default(0);
-	mov->port2 = &porttype_info::port_default(1);
-	mov->input.clear(*mov->port1, *mov->port2);
+	loaded_rom* rom = NULL;
+	if(c_rom != "")
+		try {
+			moviefile mov;
+			rom = new loaded_rom(c_rom);
+			rom->load(mov.movie_rtc_second, mov.movie_rtc_subsecond);
+		} catch(std::exception& e) {
+			std::cerr << "Can't load ROM: " << e.what() << std::endl;
+			return false;
+		}
+	else
+		rom = new loaded_rom;
+	moviefile* mov = NULL;
+	if(c_file != "")
+		try {
+			mov = new moviefile(c_file);
+			if(c_rom != "")
+				rom->load(mov->movie_rtc_second, mov->movie_rtc_subsecond);
+		} catch(std::exception& e) {
+			std::cerr << "Can't load state: " << e.what() << std::endl;
+			return false;
+		}
+	else {
+		mov = new moviefile;
+		mov->port1 = &porttype_info::port_default(0);
+		mov->port2 = &porttype_info::port_default(1);
+		mov->input.clear(*mov->port1, *mov->port2);
+		if(c_rom != "") {
+			//Initialize the remainder.
+			mov->coreversion = bsnes_core_version;
+			mov->projectid = get_random_hexstring(40);
+			mov->rerecords = "0";
+			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
+				mov->romimg_sha256[i] = rom->romimg[i].sha256;
+				mov->romxml_sha256[i] = rom->romxml[i].sha256;
+			}
+			mov->gametype = &rom->rtype->combine_region(*rom->region);
+		}
+	}
 	mov->start_paused = true;
 	boot_emulator(*rom, *mov);
 
