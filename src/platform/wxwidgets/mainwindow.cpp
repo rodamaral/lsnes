@@ -236,8 +236,11 @@ namespace
 		void update(unsigned pid, unsigned ctrlnum, bool newstate);
 	private:
 		unsigned our_lid;
+		int our_pid;
 		std::vector<wxMenuItem*> entries;
 		unsigned enabled_entries;
+		std::map<unsigned, int> pidxs;
+		std::vector<bool> autoholds;
 	};
 
 	class autohold_menu : public wxMenu
@@ -297,20 +300,29 @@ namespace
 
 	void controller_autohold_menu::change_type()
 	{
-		auto limits = get_core_logical_controller_limits();
 		enabled_entries = 0;
-		int pid = controls.lcid_to_pcid(our_lid);
-		for(unsigned i = 0; i < limits.second; i++) {
-			int pidx = -1;
-			if(pid >= 0)
-				pidx = controls.button_id(pid, i);
-			if(pidx >= 0) {
-				entries[i]->Check(pid > 0 && UI_get_autohold(pid, pidx));
-				entries[i]->Enable();
+		runuifun([&autoholds, &pidxs, our_pid]() {
+			auto limits = get_core_logical_controller_limits();
+			autoholds.resize(limits.second);
+			for(unsigned i = 0; i < limits.second; i++) {
+				pidxs[i] = -1;
+				if(our_pid >= 0)
+					pidxs[i] = controls.button_id(our_pid, i);
+				if(pidxs[i] >= 0)
+					autoholds[i] = (our_pid > 0 && controls.autohold(our_pid, pidxs[i]));
+				else
+					autoholds[i] = false;
+			}
+		});
+		our_pid = controls.lcid_to_pcid(our_lid);
+		for(auto i : pidxs) {
+			if(i.second >= 0) {
+				entries[i.first]->Check(autoholds[i.first]);
+				entries[i.first]->Enable();
 				enabled_entries++;
 			} else {
-				entries[i]->Check(false);
-				entries[i]->Enable(false);
+				entries[i.first]->Check(false);
+				entries[i.first]->Enable(false);
 			}
 		}
 	}
@@ -344,13 +356,11 @@ namespace
 	void controller_autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
 	{
 		modal_pause_holder hld;
-		int pid2 = UI_controller_index_by_logical(our_lid);
-		if(pid2 < 0 || static_cast<unsigned>(pid) != pid2)
+		if(our_pid < 0 || static_cast<unsigned>(pid) != our_pid)
 			return;
 		auto limits = get_core_logical_controller_limits();
 		for(unsigned i = 0; i < limits.second; i++) {
-			int idx = UI_button_id(pid2, i);
-			if(idx < 0 || static_cast<unsigned>(idx) != ctrlnum)
+			if(pidxs[i] < 0 || static_cast<unsigned>(pidxs[i]) != ctrlnum)
 				continue;
 			entries[i]->Check(newstate);
 		}
