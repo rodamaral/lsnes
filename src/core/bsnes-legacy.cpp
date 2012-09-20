@@ -60,7 +60,9 @@ const char* button_symbols = "BYsSudlrAXLRTSTCUP";
 namespace
 {
 	boolean_setting allow_inconsistent_saves("allow-inconsistent-saves", false);
+	boolean_setting save_every_frame("save-every-frame", false);
 	uint32_t norom_frame[512 * 448];
+	bool have_saved_this_frame = false;
 
 	void init_norom_frame()
 	{
@@ -99,6 +101,7 @@ namespace
 		bool r = snes_load_cartridge_normal(img[0].markup, img[0].data, img[0].size);
 		if(r)
 			internal_rom = &type_snes;
+		have_saved_this_frame = false;
 		return r ? 0 : -1;
 	}
 
@@ -110,6 +113,7 @@ namespace
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
 			internal_rom = &type_bsx;
+		have_saved_this_frame = false;
 		return r ? 0 : -1;
 	}
 
@@ -121,6 +125,7 @@ namespace
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
 			internal_rom = &type_bsxslotted;
+		have_saved_this_frame = false;
 		return r ? 0 : -1;
 	}
 
@@ -132,6 +137,7 @@ namespace
 			img[1].markup, img[1].data, img[1].size);
 		if(r)
 			internal_rom = &type_sgb;
+		have_saved_this_frame = false;
 		return r ? 0 : -1;
 	}
 
@@ -143,6 +149,7 @@ namespace
 			img[1].markup, img[1].data, img[1].size, img[2].markup, img[2].data, img[2].size);
 		if(r)
 			internal_rom = &type_sufamiturbo;
+		have_saved_this_frame = false;
 		return r ? 0 : -1;
 	}
 
@@ -890,6 +897,7 @@ void core_unserialize(const char* in, size_t insize)
 	serializer s(reinterpret_cast<const uint8_t*>(in), insize);
 	if(!SNES::system.unserialize(s))
 		throw std::runtime_error("SNES core rejected savestate");
+	have_saved_this_frame = true;
 }
 
 std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
@@ -944,7 +952,10 @@ void core_emulate_frame()
 		ecore_callbacks->timer_tick(1, 60);
 		return;
 	}
+	if(!have_saved_this_frame && save_every_frame)
+		SNES::system.runtosave();
 	SNES::system.run();
+	have_saved_this_frame = false;
 }
 
 void core_reset()
@@ -961,6 +972,7 @@ void core_runtosave()
 	stepping_into_save = true;
 	if(!allow_inconsistent_saves)
 		SNES::system.runtosave();
+	have_saved_this_frame = true;
 	stepping_into_save = false;
 }
 
