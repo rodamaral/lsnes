@@ -416,6 +416,10 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	//Okay, copy the movie data.
 	if(lmode != LOAD_STATE_PRESERVE)
 		our_movie = _movie;
+	else {
+		//The is_savestate MUST be taken from movie (except LOAD_STATE_MOVIE), or one gets desyncs.
+		our_movie.is_savestate = _movie.is_savestate;
+	}
 	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
 		our_movie.is_savestate = false;
 		our_movie.host_memory.clear();
