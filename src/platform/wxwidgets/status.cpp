@@ -25,11 +25,15 @@ wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines
 	parent = _parent;
 	dirty = false;
 	wxMemoryDC d;
+#ifndef __WXMSW_
+	//This doesn't work right on win32.
 	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
 	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	d.SetFont(tsysfont);
+#endif
 	wxSize s = d.GetTextExtent(wxT("MM"));
-	SetMinSize(wxSize(20 * s.x, lines * s.y));
+	//Yes, s.y for both, as s.x can be quite nutty.
+	SetMinSize(wxSize(20 * s.y, lines * s.y));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 }
@@ -71,9 +75,12 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 
 	wxPaintDC dc(this);
 	dc.Clear();
+#ifndef __WXMSW_
+	//This doesn't work right on win32.
 	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
 	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
 	dc.SetFont(tsysfont);
+#endif
 	int y = 0;
 	bool has_watches = false;
 	size_t mem_width = 0;
