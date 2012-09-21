@@ -66,7 +66,7 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 4.1 ROM options
 
-4.1.1 --rom=<file> (lsnes/SDL, lsnes-avidump)
+4.1.1 --rom=<file> (lsnes/SDL, lsnes/wxwidgets, lsnes-avidump)
 
 Load <file> as ROM.
 
@@ -141,6 +141,10 @@ Set RTC subsecond. Range is 0-. Unit is CPU cycle. Default is 0.
 4.2.11 --anchor-savestate=<file> (lsnes/SDL)
 
 Set the anchor savestate file.
+
+4.2.12 --load=<file> (lsnes/wxwidgets)
+
+After loading the ROM, load <file> as savestate/movie.
 
 4.3 Misc. options:
 
@@ -780,6 +784,17 @@ compression).
 
 Set the frame advance timeout in milliseconds. Numeric integer, 
 range is 0-999999999. Default is 500.
+
+7.1.5 allow-inconsistent-saves (bsnes only)
+
+If true, save without synchronization. Makes games seriously 
+unstable.
+
+7.1.6 save-every-frame (bsnes only)
+
+If true, simulate saving on each frame. Trades off emulation 
+accuracy for sync stability. Also needed if the movie assumes 
+saving on each frame for rewind.
 
 7.2 AVI dumper settings
 

@@ -194,7 +194,7 @@ ROM options
 \end_layout
 
 \begin_layout Subsubsection
---rom=<file> (lsnes/SDL, lsnes-avidump)
+--rom=<file> (lsnes/SDL, lsnes/wxwidgets, lsnes-avidump)
 \end_layout
 
 \begin_layout Standard
@@ -343,6 +343,14 @@ Set RTC subsecond.
 
 \begin_layout Standard
 Set the anchor savestate file.
+\end_layout
+
+\begin_layout Subsubsection
+--load=<file> (lsnes/wxwidgets)
+\end_layout
+
+\begin_layout Standard
+After loading the ROM, load <file> as savestate/movie.
 \end_layout
 
 \begin_layout Subsection
@@ -1610,6 +1618,25 @@ advance-timeout
 Set the frame advance timeout in milliseconds.
  Numeric integer, range is 0-999999999.
  Default is 500.
+\end_layout
+
+\begin_layout Subsubsection
+allow-inconsistent-saves (bsnes only)
+\end_layout
+
+\begin_layout Standard
+If true, save without synchronization.
+ Makes games seriously unstable.
+\end_layout
+
+\begin_layout Subsubsection
+save-every-frame (bsnes only)
+\end_layout
+
+\begin_layout Standard
+If true, simulate saving on each frame.
+ Trades off emulation accuracy for sync stability.
+ Also needed if the movie assumes saving on each frame for rewind.
 \end_layout
 
 \begin_layout Subsection
