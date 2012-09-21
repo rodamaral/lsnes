@@ -3239,3 +3239,30 @@ set-axis joystick0axis19 disabled
 
 • Don't trash movie when loading in readonly mode.
 
+17.71 rr1-delta14epsilon1
+
+• Wxwidgets: Fix crashes on closing settings dialogs on Mac OS X.
+
+• Fix build on Mac OS X.
+
+• Lua: loopwrapper
+
+• Wxwidgets: Hidable messages window
+
+• Lua: input.joyset
+
+• Bsnes: Support inconsistent saves
+
+• Bsnes: Allow simulating saving every frame
+
+• Fix desync if savestate is loaded in readonly mode in certain 
+  conditions.
+
+• Wxwidgets: Fix save dialogs on Mac OS X.
+
+• Wxwidgets: Fix insane status width on Win32.
+
+• Wxwidgets: Fix autohold processing to be faster.
+
+• Wxwidgets: Allow loading ROMs and movies from commandline.
+

@@ -6601,5 +6601,57 @@ Fix rerecord count reporting
 Don't trash movie when loading in readonly mode.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta14epsilon1
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix crashes on closing settings dialogs on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Fix build on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Lua: loopwrapper
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Hidable messages window
+\end_layout
+
+\begin_layout Itemize
+Lua: input.joyset
+\end_layout
+
+\begin_layout Itemize
+Bsnes: Support inconsistent saves
+\end_layout
+
+\begin_layout Itemize
+Bsnes: Allow simulating saving every frame
+\end_layout
+
+\begin_layout Itemize
+Fix desync if savestate is loaded in readonly mode in certain conditions.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix save dialogs on Mac OS X.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix insane status width on Win32.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix autohold processing to be faster.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Allow loading ROMs and movies from commandline.
+\end_layout
+
 \end_body
 \end_document
