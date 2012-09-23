@@ -16,6 +16,10 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <unistd.h>
+#include <sys/time.h>
+//Fsck it.
+#define OPUS_BUILD
 #include "opus/opus.h"
 #include "opus/opus_defines.h"
 

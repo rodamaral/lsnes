@@ -3,6 +3,8 @@
 #include "library/minmax.hpp"
 #include <cstring>
 #include <iostream>
+#include <unistd.h>
+#include <sys/time.h>
 #ifdef NATIVE_THREADS
 #include <thread>
 #include <condition_variable>
