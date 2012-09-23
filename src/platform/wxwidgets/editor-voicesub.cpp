@@ -1,3 +1,4 @@
+#ifdef WITH_OPUS_CODEC
 #include "core/inthread.hpp"
 #include <stdexcept>
 
@@ -366,3 +367,4 @@ void show_wxeditor_voicesub(wxWindow* parent)
 	wxeditor_voicesub* v = new wxeditor_voicesub(parent);
 	v->Show();
 }
+#endif

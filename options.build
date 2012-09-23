@@ -124,3 +124,6 @@ NO_DLFCN=
 
 # Set to non-empty value (e.g. 'yes') to use boost::filesystem3 instead of boost::filesystem.
 BOOST_FILESYSTEM3=
+
+# Set to non-empty value (e.g. 'yes') to enable commentary track support (requires Opus codec).
+OPUS_CODEC=

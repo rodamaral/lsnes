@@ -1,3 +1,5 @@
+#include <cstdint>
+#ifdef WITH_OPUS_CODEC
 #include "library/filesys.hpp"
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
@@ -1698,3 +1700,13 @@ double voicesub_ts_seconds(uint64_t ts)
 {
 	return ts / 48000.0;
 }
+#else
+void voicethread_task()
+{
+}
+
+void voice_frame_number(uint64_t newframe, double rate)
+{
+}
+
+#endif

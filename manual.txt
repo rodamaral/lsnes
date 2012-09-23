@@ -729,39 +729,91 @@ Edit or delete a subtitle.
 
 List subtitles.
 
-6.12.4 +tangent
+6.13 Commentary track
 
-Tangent for recording voice for commentary track.
+6.13.1 list-streams
 
-6.13 SDL Platform commands 
+List streams
+
+6.13.2 play-stream <id>
+
+Play stream <id>.
+
+6.13.3 delete-stream <id>
+
+Delete stream <id>
+
+6.13.4 change-timebase <id> <newbase>
+
+Change time base of <id> to <newbase>. The time base can be given 
+as samples (integer) or second (postfix with s).
+
+6.13.5 import-stream-opus <timebase> <file>
+
+Import opus stream from <file>, placing it at <timebase>. This 
+operation is lossless.
+
+6.13.6 import-stream-pcm <timebase> <file>
+
+Import PCM (.sox, 1ch@48kHz) stream from <file>, placing it at 
+<timebase>.
+
+6.13.7 export-stream-opus <id> <file>
+
+Export stream <id> as opus stream to <file>. This operation is 
+lossless.
+
+6.13.8 export-stream-pcm <id> <file>
+
+Export stream <id> as PCM (.sox) stream to <file>. 
+
+6.13.9 export-superstream <file>
+
+Export the entiere superstream as PCM (.sox) stream to <file>.
+
+6.13.10 load-collection <file>
+
+Load collection (if there is existing collection, unload it) from 
+<file>
+
+6.13.11 unload-collection
+
+Unload collection.
+
+6.13.12 +tangent
+
+Tangent for recording voice for commentary track. While pressed, 
+record a stream.
+
+6.14 SDL Platform commands 
 
 The following are valid on SDL platform.
 
-6.13.1 identify-key
+6.14.1 identify-key
 
 Asks to press a key and then identifies that (pseudo-)key.
 
-6.13.2 toggle-console 
+6.14.2 toggle-console 
 
 Toggle between windowed/fullscreen console.
 
-6.13.3 scroll-fullup 
+6.14.3 scroll-fullup 
 
 Scroll messages window as far back as it goes.
 
-6.13.4 scroll-fulldown 
+6.14.4 scroll-fulldown 
 
 Scroll messages window as far forward as it goes.
 
-6.13.5 scroll-up 
+6.14.5 scroll-up 
 
 Scroll messages window back one screenful.
 
-6.13.6 scroll-down 
+6.14.6 scroll-down 
 
 Scroll messages window forward one screenful.
 
-6.13.7 prompt-command <command>
+6.14.7 prompt-command <command>
 
 Enter command prompt, with prompt prepopulated with specified 
 command.

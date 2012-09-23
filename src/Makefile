@@ -15,6 +15,11 @@ ifdef BOOST_FILESYSTEM3
 CFLAGS += -DBOOST_FILESYSTEM3
 endif
 
+ifdef OPUS_CODEC
+CFLAGS += -DWITH_OPUS_CODEC
+LDFLAGS += -lopus
+endif
+
 DUMMY_LIBRARY=core lua fonts library video dummy
 PLATFORM_LIBRARY=core lua fonts library video platform
 ALLOBJECT=__all__.$(OBJECT_SUFFIX)

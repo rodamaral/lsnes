@@ -1494,12 +1494,110 @@ list-subtitle
 List subtitles.
 \end_layout
 
+\begin_layout Subsection
+Commentary track
+\end_layout
+
+\begin_layout Subsubsection
+list-streams
+\end_layout
+
+\begin_layout Standard
+List streams
+\end_layout
+
+\begin_layout Subsubsection
+play-stream <id>
+\end_layout
+
+\begin_layout Standard
+Play stream <id>.
+\end_layout
+
+\begin_layout Subsubsection
+delete-stream <id>
+\end_layout
+
+\begin_layout Standard
+Delete stream <id>
+\end_layout
+
+\begin_layout Subsubsection
+change-timebase <id> <newbase>
+\end_layout
+
+\begin_layout Standard
+Change time base of <id> to <newbase>.
+ The time base can be given as samples (integer) or second (postfix with
+ s).
+\end_layout
+
+\begin_layout Subsubsection
+import-stream-opus <timebase> <file>
+\end_layout
+
+\begin_layout Standard
+Import opus stream from <file>, placing it at <timebase>.
+ This operation is lossless.
+\end_layout
+
+\begin_layout Subsubsection
+import-stream-pcm <timebase> <file>
+\end_layout
+
+\begin_layout Standard
+Import PCM (.sox, 1ch@48kHz) stream from <file>, placing it at <timebase>.
+\end_layout
+
+\begin_layout Subsubsection
+export-stream-opus <id> <file>
+\end_layout
+
+\begin_layout Standard
+Export stream <id> as opus stream to <file>.
+ This operation is lossless.
+\end_layout
+
+\begin_layout Subsubsection
+export-stream-pcm <id> <file>
+\end_layout
+
+\begin_layout Standard
+Export stream <id> as PCM (.sox) stream to <file>.
+ 
+\end_layout
+
+\begin_layout Subsubsection
+export-superstream <file>
+\end_layout
+
+\begin_layout Standard
+Export the entiere superstream as PCM (.sox) stream to <file>.
+\end_layout
+
+\begin_layout Subsubsection
+load-collection <file>
+\end_layout
+
+\begin_layout Standard
+Load collection (if there is existing collection, unload it) from <file>
+\end_layout
+
+\begin_layout Subsubsection
+unload-collection
+\end_layout
+
+\begin_layout Standard
+Unload collection.
+\end_layout
+
 \begin_layout Subsubsection
 +tangent
 \end_layout
 
 \begin_layout Standard
 Tangent for recording voice for commentary track.
+ While pressed, record a stream.
 \end_layout
 
 \begin_layout Subsection
