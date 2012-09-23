@@ -444,6 +444,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode == LOAD_STATE_DEFAULT && !current_mode &&
 		movb.get_movie().get_frame_count() <= movb.get_movie().get_current_frame())
 		movb.get_movie().readonly_mode(false);
+	if(lmode == LOAD_STATE_INITIAL && movb.get_movie().get_frame_count() <= movb.get_movie().get_current_frame())
+		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());

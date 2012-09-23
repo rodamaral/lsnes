@@ -865,7 +865,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	bool first_round = false;
 	bool just_did_loadstate = false;
 	try {
-		do_load_state(initial, LOAD_STATE_DEFAULT);
+		do_load_state(initial, LOAD_STATE_INITIAL);
 		location_special = SPECIAL_SAVEPOINT;
 		update_movie_state();
 		first_round = our_movie.is_savestate;
