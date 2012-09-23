@@ -1,46 +1,43 @@
 #include "core/command.hpp"
-#include "core/window.hpp"
+#include "core/audioapi.hpp"
 
 #include <cstdlib>
 #include <iostream>
 
-void sound_plugin::init() throw()
+void audioapi_driver_init() throw()
+{
+	audioapi_set_dummy_cb(true);
+}
+
+void audioapi_driver_quit() throw()
 {
 }
 
-void sound_plugin::quit() throw()
+void audioapi_driver_enable(bool enable) throw()
 {
 }
 
-void sound_plugin::enable(bool enable) throw()
-{
-}
-
-void sound_plugin::sample(uint16_t left, uint16_t right) throw()
-{
-}
-
-bool sound_plugin::initialized()
+bool audioapi_driver_initialized()
 {
 	return true;
 }
 
-void sound_plugin::set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
+void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
 {
 	if(dev != "null")
 		throw std::runtime_error("Bad sound device '" + dev + "'");
 }
 
-std::string sound_plugin::get_device() throw(std::bad_alloc)
+std::string audioapi_driver_get_device() throw(std::bad_alloc)
 {
 	return "null";
 }
 
-std::map<std::string, std::string> sound_plugin::get_devices() throw(std::bad_alloc)
+std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc)
 {
 	std::map<std::string, std::string> ret;
 	ret["null"] = "NULL sound output";
 	return ret;
 }
 
-const char* sound_plugin::name = "Dummy sound plugin";
+const char* audioapi_driver_name = "Dummy sound plugin";

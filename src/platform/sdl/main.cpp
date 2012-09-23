@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 #include "core/emucore.hpp"
 
+#include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
@@ -12,6 +13,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/minmax.hpp"
 #include "library/zip.hpp"
 
 #include "platform/sdl/platform.hpp"

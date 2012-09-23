@@ -1,3 +1,4 @@
+#include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
@@ -130,7 +131,7 @@ namespace
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Graphics:\t" << graphics_plugin::name << std::endl;
-			messages << "Sound:\t" << sound_plugin::name << std::endl;
+			messages << "Sound:\t" << audioapi_driver_name << std::endl;
 			messages << "Joystick:\t" << joystick_plugin::name << std::endl;
 		});
 
@@ -139,12 +140,12 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			switch(string_to_bool(args)) {
 			case 1:
-				if(!platform::sound_initialized())
+				if(!audioapi_driver_initialized())
 					throw std::runtime_error("Sound failed to initialize and is disabled");
 				platform::sound_enable(true);
 				break;
 			case 0:
-				if(platform::sound_initialized())
+				if(audioapi_driver_initialized())
 					platform::sound_enable(false);
 				break;
 			default:
@@ -158,7 +159,7 @@ namespace
 	function_ptr_command<const std::string&> set_sound_device("set-sound-device", "Set sound device",
 		"Syntax: set-sound-device <id>\nSet sound device to <id>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(!platform::sound_initialized())
+			if(!audioapi_driver_initialized())
 				throw std::runtime_error("Sound failed to initialize and is disabled");
 			platform::set_sound_device(args);
 		});
@@ -166,29 +167,29 @@ namespace
 	function_ptr_command<> get_sound_devices("show-sound-devices", "Show sound devices",
 		"Syntax: show-sound-devices\nShow listing of available sound devices\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!platform::sound_initialized())
+			if(!audioapi_driver_initialized())
 				throw std::runtime_error("Sound failed to initialize and is disabled");
-			auto r = platform::get_sound_devices();
-				auto s = platform::get_sound_device();
+			auto r = audioapi_driver_get_devices();
+				auto s = audioapi_driver_get_device();
 				std::string dname = "unknown";
 				if(r.count(s))
 					dname = r[s];
 			messages << "Detected " << r.size() << " sound output devices." << std::endl;
 			for(auto i : r)
 				messages << "Audio device " << i.first << ": " << i.second << std::endl;
-			messages << "Currently using device " << platform::get_sound_device() << " ("
+			messages << "Currently using device " << audioapi_driver_get_device() << " ("
 				<< dname << ")" << std::endl;
 		});
 
 	function_ptr_command<> get_sound_status("show-sound-status", "Show sound status",
 		"Syntax: show-sound-status\nShow current sound status\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Sound plugin: " << sound_plugin::name << std::endl;
-			if(!platform::sound_initialized())
+			messages << "Sound plugin: " << audioapi_driver_name << std::endl;
+			if(!audioapi_driver_initialized())
 				messages << "Sound initialization failed, sound disabled" << std::endl;
 			else {
-				auto r = platform::get_sound_devices();
-				auto s = platform::get_sound_device();
+				auto r = audioapi_driver_get_devices();
+				auto s = audioapi_driver_get_device();
 				std::string dname = "unknown";
 				if(r.count(s))
 					dname = r[s];
@@ -211,7 +212,45 @@ namespace
 				messages << "Invalid volume" << std::endl;
 				return;
 			}
-			platform::global_volume = parsed;
+			audioapi_music_volume(parsed);
+		});
+
+	function_ptr_command<const std::string&> set_volume2("set-voice-volume", "Set voice playback volume",
+		"Syntax: set-voice-volume <scale>\nset-voice-volume <scale>%\nset-voice-volume <scale>dB\n"
+		"Set voice volume\n",
+		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r;
+			double parsed = 1;
+			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
+				parsed = strtod(r[1].c_str(), NULL);
+			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
+				parsed = strtod(r[1].c_str(), NULL) / 100;
+			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
+				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
+			else {
+				messages << "Invalid volume" << std::endl;
+				return;
+			}
+			audioapi_voicep_volume(parsed);
+		});
+
+	function_ptr_command<const std::string&> set_volume3("set-record-volume", "Set voice record volume",
+		"Syntax: set-record-volume <scale>\nset-record-volume <scale>%\nset-record-volume <scale>dB\n"
+		"Set record volume\n",
+		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r;
+			double parsed = 1;
+			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
+				parsed = strtod(r[1].c_str(), NULL);
+			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
+				parsed = strtod(r[1].c_str(), NULL) / 100;
+			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
+				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
+			else {
+				messages << "Invalid volume" << std::endl;
+				return;
+			}
+			audioapi_voicer_volume(parsed);
 		});
 
 
@@ -277,7 +316,7 @@ emulator_status& platform::get_emustatus() throw()
 
 void platform::sound_enable(bool enable) throw()
 {
-	sound_plugin::enable(enable);
+	audioapi_driver_enable(enable);
 	sounds_enabled = enable;
 	information_dispatch::do_sound_unmute(enable);
 }
@@ -285,12 +324,12 @@ void platform::sound_enable(bool enable) throw()
 void platform::set_sound_device(const std::string& dev) throw()
 {
 	try {
-		sound_plugin::set_device(dev);
+		audioapi_driver_set_device(dev);
 	} catch(std::exception& e) {
 		out() << "Error changing sound device: " << e.what() << std::endl;
 	}
 	//After failed change, we don't know what is selected.
-	information_dispatch::do_sound_change(sound_plugin::get_device());
+	information_dispatch::do_sound_change(audioapi_driver_get_device());
 }
 
 bool platform::is_sound_enabled() throw()
@@ -313,14 +352,16 @@ void platform::init()
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	do_init_font();
 	graphics_plugin::init();
-	sound_plugin::init();
+	audioapi_init();
+	audioapi_driver_init();
 	joystick_plugin::init();
 }
 
 void platform::quit()
 {
 	joystick_plugin::quit();
-	sound_plugin::quit();
+	audioapi_driver_quit();
+	audioapi_quit();
 	graphics_plugin::quit();
 	msgbuf.unregister_handler(msg_callback_obj);
 	time_t curtime = time(NULL);

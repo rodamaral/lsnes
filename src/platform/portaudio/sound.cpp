@@ -18,6 +18,8 @@
 #include <sstream>
 #include <fstream>
 #include <cassert>
+#include "core/audioapi.hpp"
+#include "library/minmax.hpp"
 #include <string>
 #include <map>
 #include <stdexcept>
@@ -27,56 +29,63 @@
 namespace
 {
 	uint32_t audio_playback_freq = 0;
-	const size_t audiobuf_size = 8192;
-	uint16_t audiobuf[audiobuf_size];
-	volatile size_t audiobuf_get = 0;
-	volatile size_t audiobuf_put = 0;
-	uint64_t sampledup_ctr = 0;
-	uint64_t sampledup_inc = 0;
-	uint64_t sampledup_mod = 0;
-	uint32_t use_rate_n = 32000;
-	uint32_t use_rate_d = 1;
 	PaDeviceIndex current_device = paNoDevice;
 	bool stereo = false;
+	bool istereo = false;
 	PaStream* s = NULL;
 	bool init_flag = false;
 	bool was_enabled = false;
+	double ltnow = 0;
+	double ltadc = 0;
+	double ltdac = 0;
 
-	void calculate_sampledup(uint32_t rate_n, uint32_t rate_d)
-	{
-		if(!audio_playback_freq) {
-			//Sound disabled.
-			sampledup_ctr = 0;
-			sampledup_inc = 0;
-			sampledup_mod = 0;
-		} else {
-			sampledup_ctr = 0;
-			sampledup_inc = rate_n;
-			sampledup_mod = rate_d * audio_playback_freq + rate_n;
-		}
-	}
+	uint64_t first_ts;
+	uint64_t frames;
 
 	int audiocb(const void *input, void *output, unsigned long frame_count,
 		const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags flags, void* user)
 	{
-		static uint16_t lprev = 32768, rprev = 32768;
+		if(!first_ts)
+			first_ts = get_utime();
+		frames += frame_count;
+//		std::cerr << "Frames requested: " << frame_count << std::endl;
+//		std::cerr << "dtnow=" << (time_info->currentTime - ltnow)
+//			<< " dtdac=" << (time_info->outputBufferDacTime - ltdac)
+//			<< " dtadc=" << (time_info->inputBufferAdcTime - ltadc) << std::endl;
+		ltnow = time_info->currentTime;
+		ltadc = time_info->inputBufferAdcTime;
+		ltdac = time_info->outputBufferDacTime;
 		int16_t* _output = reinterpret_cast<int16_t*>(output);
-		for(unsigned long i = 0; i < frame_count; i++) {
-			uint16_t l, r;
-			if(audiobuf_get == audiobuf_put) {
-				l = lprev;
-				r = rprev;
-			} else {
-				l = lprev = audiobuf[audiobuf_get++];
-				r = rprev = audiobuf[audiobuf_get++];
-				if(audiobuf_get == audiobuf_size)
-					audiobuf_get = 0;
+		const int16_t* _input = reinterpret_cast<const int16_t*>(input);
+		const unsigned voice_blocksize = 256;
+		int16_t voicebuf[voice_blocksize];
+		float voicebuf2[voice_blocksize];
+		size_t ptr = 0;
+		size_t iptr = 0;
+		while(frame_count > 0) {
+			unsigned bsize = min(voice_blocksize / 2, static_cast<unsigned>(frame_count));
+			audioapi_get_mixed(voicebuf, bsize, stereo);
+			if(was_enabled)
+				for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
+					_output[ptr++] = voicebuf[i];
+			else
+				for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
+					_output[ptr++] = 0;
+			if(!input)
+				audioapi_put_voice(NULL, bsize);
+			else {
+				if(istereo)
+					for(size_t i = 0; i < bsize; i++) {
+						float l = _input[iptr++];
+						float r = _input[iptr++];
+						voicebuf2[i] = (l + r) / 2;
+					}
+				else
+					for(size_t i = 0; i < bsize; i++)
+						voicebuf2[i] = _input[iptr++];
+				audioapi_put_voice(voicebuf2, bsize);
 			}
-			if(!stereo)
-				l = l / 2 + r / 2;
-			*(_output++) = l - 32768;
-			if(stereo)
-				*(_output++) = r - 32768;
+			frame_count -= bsize;
 		}
 		return 0;
 	}
@@ -96,13 +105,11 @@ namespace
 		//If audio is open somewhere, close it.
 		if(current_device != paNoDevice) {
 			PaError err;
-			if(was_enabled) {
-				err = Pa_StopStream(s);
-				if(err != paNoError) {
-					messages << "Portaudio error (stop): " << Pa_GetErrorText(err)
-						<< std::endl;
-					return false;
-				}
+			err = Pa_StopStream(s);
+			if(err != paNoError) {
+				messages << "Portaudio error (stop): " << Pa_GetErrorText(err)
+					<< std::endl;
+				return false;
 			}
 			err = Pa_CloseStream(s);
 			if(err != paNoError) {
@@ -111,9 +118,6 @@ namespace
 			}
 			current_device = paNoDevice;
 			//Sound disabled.
-			sampledup_ctr = 0;
-			sampledup_inc = 0;
-			sampledup_mod = 0;
 		}
 		//If new audio device is to be opened, try to do it.
 		if(newdevice != paNoDevice) {
@@ -125,51 +129,77 @@ namespace
 			output.sampleFormat = paInt16;
 			output.suggestedLatency = inf->defaultLowOutputLatency;
 			output.hostApiSpecificStreamInfo = NULL;
-			PaError err = Pa_OpenStream(&s, NULL, &output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
+
+			//Blacklist these devices for recording, portaudio is buggy with recording off
+			//these things.
+			bool buggy = /*(!strcmp(inf->name, "default") || !strcmp(inf->name, "sysdefault"));*/false;
+
+			PaStreamParameters input;
+			memset(&input, 0, sizeof(input));
+			input.device = newdevice;
+			input.channelCount = (inf->maxInputChannels > 1) ? 2 : 1;
+			input.sampleFormat = paInt16;
+			input.suggestedLatency = inf->defaultLowInputLatency;
+			input.hostApiSpecificStreamInfo = NULL;
+			PaStreamParameters* _input = (!buggy && inf->maxInputChannels) ? &input : NULL;
+			if(!_input)
+				if(!buggy)
+					messages << "Portaudio: Warning: Audio capture not available on this device"
+						<< std::endl;
+				else
+					messages << "Portaudio: Warning: This device is blacklisted for capture"
+						<< std::endl;
+			else
+				messages << "Portaudio: Notice: Audio capture available" << std::endl;
+	
+			PaError err = Pa_OpenStream(&s, _input, &output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
 			if(err != paNoError) {
 				messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl
 					<< "\tOn device: '" << inf->name << "'" << std::endl;
+				audioapi_set_dummy_cb(true);
 				return false;
 			}
 
+			frames = 0;
+			first_ts = 0;
 			stereo = (output.channelCount == 2);
-			if(was_enabled) {
-				err = Pa_StartStream(s);
-				if(err != paNoError) {
-					messages << "Portaudio error (start): " << Pa_GetErrorText(err)
-						<< std::endl << "\tOn device: '" << inf->name << "'" << std::endl;
-					return false;
-				}
+			istereo = (input.channelCount == 2);
+			err = Pa_StartStream(s);
+			if(err != paNoError) {
+				messages << "Portaudio error (start): " << Pa_GetErrorText(err)
+					<< std::endl << "\tOn device: '" << inf->name << "'" << std::endl;
+				audioapi_set_dummy_cb(true);
+				return false;
 			}
-			audio_playback_freq = inf->defaultSampleRate;
-			calculate_sampledup(use_rate_n, use_rate_d);
-			messages << "Portaudio: Opened " << inf->defaultSampleRate << "Hz "
+			const PaStreamInfo* si = Pa_GetStreamInfo(s);
+			audio_playback_freq = si ? si->sampleRate : inf->defaultSampleRate;
+			audioapi_set_dummy_cb(false);
+			audioapi_voice_rate(audio_playback_freq);
+			messages << "Portaudio: Opened " << audio_playback_freq << "Hz "
 				<< (stereo ? "Stereo" : "Mono") << " sound on '" << inf->name << "'" << std::endl;
 			messages << "Switched to sound device '" << inf->name << "'" << std::endl;
-		} else
+		} else {
 			messages << "Switched to sound device NULL" << std::endl;
+			audioapi_set_dummy_cb(true);
+		}
 		current_device = newdevice;
 		return true;
 	}
 
+	function_ptr_command<const std::string&> x("portaudio", "", "",
+		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
+			messages << "Load: " << Pa_GetStreamCpuLoad(s) << std::endl;
+			messages << "Rate: " << 1000000.0 * frames / (get_utime() - first_ts) << std::endl;
+		});
+
 }
 
-void sound_plugin::enable(bool enable) throw()
+void audioapi_driver_enable(bool enable) throw()
 {
-	PaError err;
-	if(enable == was_enabled)
-		return;
-	if(enable)
-		err = Pa_StartStream(s);
-	else
-		err = Pa_StopStream(s);
-	if(err != paNoError)
-		messages << "Portaudio error (start/stop): " << Pa_GetErrorText(err) << std::endl;
-	else
-		was_enabled = enable;
+	was_enabled = enable;
 }
 
-void sound_plugin::init() throw()
+void audioapi_driver_init() throw()
 {
 	PaError err = Pa_Initialize();
 	if(err != paNoError) {
@@ -197,11 +227,13 @@ void sound_plugin::init() throw()
 		}
 	} else
 		any_success |= switch_devices(forcedevice);
-	if(!any_success)
+	if(!any_success) {
 		messages << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
+		audioapi_set_dummy_cb(true);
+	}
 }
 
-void sound_plugin::quit() throw()
+void audioapi_driver_quit() throw()
 {
 	if(!init_flag)
 		return;
@@ -210,42 +242,21 @@ void sound_plugin::quit() throw()
 	init_flag = false;
 }
 
-void sound_plugin::sample(uint16_t left, uint16_t right) throw()
-{
-	if(!init_flag)
-		return;
-	sampledup_ctr += sampledup_inc;
-	while(sampledup_ctr < sampledup_mod) {
-		audiobuf[audiobuf_put++] = left;
-		audiobuf[audiobuf_put++] = right;
-		if(audiobuf_put == audiobuf_size)
-			audiobuf_put = 0;
-		sampledup_ctr += sampledup_inc;
-	}
-	sampledup_ctr -= sampledup_mod;
-}
-
 class sound_change_listener : public information_dispatch
 {
 public:
 	sound_change_listener() : information_dispatch("portaudio-sound-change-listener") {}
 	void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
 	{
-		if(!init_flag)
-			return;
-		uint32_t g = gcd(rate_n, rate_d);
-		use_rate_n = rate_n / g;
-		use_rate_d = rate_d / g;
-		calculate_sampledup(use_rate_n, use_rate_d);
 	}
 } sndchgl;
 
-bool sound_plugin::initialized()
+bool audioapi_driver_initialized()
 {
 	return init_flag;
 }
 
-void sound_plugin::set_device(const std::string& dev) throw (std::bad_alloc, std::runtime_error)
+void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
 {
 	if(dev == "null") {
 		if(!switch_devices(paNoDevice))
@@ -264,7 +275,7 @@ void sound_plugin::set_device(const std::string& dev) throw (std::bad_alloc, std
 	}
 }
 
-std::string sound_plugin::get_device() throw(std::bad_alloc)
+std::string audioapi_driver_get_device() throw(std::bad_alloc)
 {
 	if(current_device == paNoDevice)
 		return "null";
@@ -275,7 +286,7 @@ std::string sound_plugin::get_device() throw(std::bad_alloc)
 	}
 }
 
-std::map<std::string, std::string> sound_plugin::get_devices() throw (std::bad_alloc)
+std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc)
 {
 	std::map<std::string, std::string> ret;
 	ret["null"] = "null sound output";
@@ -287,4 +298,4 @@ std::map<std::string, std::string> sound_plugin::get_devices() throw (std::bad_a
 	return ret;
 }
 
-const char* sound_plugin::name = "Portaudio sound plugin";
+const char* audioapi_driver_name = "Portaudio sound plugin";

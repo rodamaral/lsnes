@@ -2,6 +2,7 @@
 
 #include "core/emucore.hpp"
 
+#include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/controllerframe.hpp"
@@ -72,6 +73,7 @@ enum
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
 	wxID_EDIT_SUBTITLES,
+	wxID_EDIT_VSUBTITLES,
 	wxID_DUMP_FIRST,
 	wxID_DUMP_LAST = wxID_DUMP_FIRST + 1023,
 	wxID_REWIND_MOVIE,
@@ -410,9 +412,9 @@ namespace
 
 	sound_select_menu::sound_select_menu(wxwin_mainwindow* win)
 	{
-		std::string curdev = platform::get_sound_device();
+		std::string curdev = audioapi_driver_get_device();
 		int j = wxID_AUDIODEV_FIRST;
-		for(auto i : platform::get_sound_devices()) {
+		for(auto i : audioapi_driver_get_devices()) {
 			items[i.first] = AppendRadioItem(j, towxstring(i.first + "(" + i.second + ")"));
 			devices[j] = i.first;
 			if(i.first == curdev)
@@ -754,6 +756,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
 	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
 	menu_entry(wxID_EDIT_SUBTITLES, wxT("Edit subtitles..."));
+	menu_entry(wxID_EDIT_VSUBTITLES, wxT("Edit commantary track..."));
 	menu_separator();
 	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
 
@@ -804,7 +807,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
-	if(platform::sound_initialized()) {
+	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
@@ -971,6 +974,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_EDIT_SUBTITLES:
 		wxeditor_subtitles_display(this);
+		return;
+	case wxID_EDIT_VSUBTITLES:
+		show_wxeditor_voicesub(this);
 		return;
 	case wxID_EDIT_MEMORYWATCH:
 		wxeditor_memorywatch_display(this);

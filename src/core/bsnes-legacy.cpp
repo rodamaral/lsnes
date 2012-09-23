@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include "core/audioapi.hpp"
 #include "core/misc.hpp"
 #include "core/emucore.hpp"
 #include "core/command.hpp"
@@ -63,6 +64,9 @@ namespace
 	boolean_setting save_every_frame("save-every-frame", false);
 	uint32_t norom_frame[512 * 448];
 	bool have_saved_this_frame = false;
+	int16_t blanksound[1070] = {0};
+	int16_t soundbuf[8192] = {0};
+	size_t soundbuf_fill = 0;
 
 	void init_norom_frame()
 	{
@@ -387,13 +391,19 @@ namespace
 			ecore_callbacks->output_frame(ls, fps_n, fps_d);
 			information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ?
 				VIDEO_REGION_PAL : VIDEO_REGION_NTSC);
+			if(soundbuf_fill > 0) {
+				auto hz = get_audio_rate();
+				audioapi_submit_buffer(soundbuf, soundbuf_fill / 2, true, 1.0 * hz.first / hz.second);
+				soundbuf_fill = 0;
+			}
 		}
 
 		void audioSample(int16_t l_sample, int16_t r_sample)
 		{
 			uint16_t _l = l_sample;
 			uint16_t _r = r_sample;
-			platform::audio_sample(_l + 32768, _r + 32768);
+			soundbuf[soundbuf_fill++] = l_sample;
+			soundbuf[soundbuf_fill++] = r_sample;
 			information_dispatch::do_sample(l_sample, r_sample);
 			//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of
 			//time.
@@ -940,14 +950,12 @@ void core_emulate_frame()
 		framebuffer_raw ls(inf);
 		ecore_callbacks->output_frame(ls, 60, 1);
 
-		for(unsigned i = 0; i < 534; i++) {
-			platform::audio_sample(32768, 32768);
+		audioapi_submit_buffer(blanksound, frame_modulus ? 534 : 535, true, 32040.5);
+		for(unsigned i = 0; i < 534; i++)
 			information_dispatch::do_sample(0, 0);
-		}
-		if(frame_modulus++ == 0) {
-			platform::audio_sample(32768, 32768);
+		if(!frame_modulus)
 			information_dispatch::do_sample(0, 0);
-		}
+		frame_modulus++;
 		frame_modulus %= 120;
 		ecore_callbacks->timer_tick(1, 60);
 		return;

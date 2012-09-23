@@ -6,6 +6,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "core/inthread.hpp"
 #include "lua/lua.hpp"
 #include "library/string.hpp"
 #include "core/mainloop.hpp"
@@ -216,6 +217,11 @@ namespace
 
 void update_movie_state()
 {
+	{
+		uint64_t magic[4];
+		core_get_region().fill_framerate_magic(magic);
+		voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
+	}
 	auto& _status = platform::get_emustatus();
 	if(!system_corrupt) {
 		std::ostringstream x;
@@ -855,6 +861,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	//Basic initialization.
+	voicethread_task();
 	init_special_screens();
 	our_rom = &rom;
 	lsnes_callbacks lsnes_callbacks_obj;

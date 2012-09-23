@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "core/audioapi.hpp"
 #include "core/misc.hpp"
 #include "core/emucore.hpp"
 #include "core/command.hpp"
@@ -317,20 +318,24 @@ void core_emulate_frame_nocore()
 {
 	init_norom_framebuffer();
 	while(true) {
+		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32];
+		size_t emitted = 0;
 		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
 		for(unsigned i = 0; i < samples_emitted; i++) {
 			accumulator_l += 32768;
 			accumulator_r += 32768;
 			accumulator_s++;
 			if((accumulator_s & 63) == 0) {
-				uint16_t l2 = accumulator_l >> 6;
-				uint16_t r2 = accumulator_r >> 6;
-				platform::audio_sample(l2, r2);
-				information_dispatch::do_sample(l2 - 32768, r2 - 32768);
+				int16_t l2 = (accumulator_l >> 6) - 32768;
+				int16_t r2 = (accumulator_r >> 6) - 32768;
+				soundbuf[emitted++] = l2;
+				soundbuf[emitted++] = r2;
+				information_dispatch::do_sample(l2, r2);
 				accumulator_l = accumulator_r = 0;
 				accumulator_s = 0;
 			}
 		}
+		audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
 		ecore_callbacks->timer_tick(samples_emitted, 2097152);
 		frame_overflow = 0;
 		break;
@@ -358,6 +363,8 @@ void core_emulate_frame()
 	}
 	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
 	while(true) {
+		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32];
+		size_t emitted = 0;
 		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
 		long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
 		for(unsigned i = 0; i < samples_emitted; i++) {
@@ -367,14 +374,16 @@ void core_emulate_frame()
 			accumulator_r += r;
 			accumulator_s++;
 			if((accumulator_s & 63) == 0) {
-				uint16_t l2 = accumulator_l >> 6;
-				uint16_t r2 = accumulator_r >> 6;
-				platform::audio_sample(l2, r2);
-				information_dispatch::do_sample(l2 - 32768, r2 - 32768);
+				int16_t l2 = (accumulator_l >> 6) - 32768;
+				int16_t r2 = (accumulator_r >> 6) - 32768;
+				soundbuf[emitted++] = l2;
+				soundbuf[emitted++] = r2;
+				information_dispatch::do_sample(l2, r2);
 				accumulator_l = accumulator_r = 0;
 				accumulator_s = 0;
 			}
 		}
+		audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
 		ecore_callbacks->timer_tick(samples_emitted, 2097152);
 		frame_overflow += samples_emitted;
 		if(frame_overflow >= SAMPLES_PER_FRAME) {

@@ -1494,6 +1494,14 @@ list-subtitle
 List subtitles.
 \end_layout
 
+\begin_layout Subsubsection
++tangent
+\end_layout
+
+\begin_layout Standard
+Tangent for recording voice for commentary track.
+\end_layout
+
 \begin_layout Subsection
 SDL Platform commands 
 \end_layout
@@ -4674,6 +4682,214 @@ Member: savetime.subsecond
 Movie saving time, subsecond part.
  Default is starttime.subsecond.
  Only present in savestates.
+\end_layout
+
+\begin_layout Section
+lsvs file format (commentary tracks)
+\end_layout
+
+\begin_layout Subsection
+Clusters
+\end_layout
+
+\begin_layout Itemize
+Each cluster is 8kB (8192 bytes) in size.
+\end_layout
+
+\begin_layout Itemize
+Cluster n starts at offset 8192*n in file.
+\end_layout
+
+\begin_layout Itemize
+The following clusters are system special:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Cluster 0 and all clusters with number multiple of 2048 (cluster tables)
+\end_layout
+
+\begin_layout Itemize
+Cluster 1 (superblock)
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Cluster tables
+\end_layout
+
+\begin_layout Itemize
+The cluster table describing cluster n is stored in cluster n & ~0x7FF (zero
+ last 11 bits of n).
+\end_layout
+
+\begin_layout Itemize
+This cluster table consists of 2048 4-byte big-endian integers.
+\end_layout
+
+\begin_layout Itemize
+Each entry describes a cluster in 16MB supercluster, in order.
+\end_layout
+
+\begin_layout Itemize
+The valid values for entries are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+0x00000000: Free cluster
+\end_layout
+
+\begin_layout Itemize
+0x00000001: Last cluster in chain.
+\end_layout
+
+\begin_layout Itemize
+0xFFFFFFFF: System cluster (cluster tables and superblock)
+\end_layout
+
+\begin_layout Itemize
+(anything else): Number of next cluster in chain.
+ Must not be multiple of 2048.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Due to limitations of the format, there can be at most 2097052 superclusters,
+ giving maximum file size of 16TB.
+\end_layout
+
+\begin_layout Subsection
+Stream table
+\end_layout
+
+\begin_layout Itemize
+The stream table chain always starts in cluster 2.
+\end_layout
+
+\begin_layout Itemize
+Otherwise, it follows normal chaining.
+\end_layout
+
+\begin_layout Itemize
+The stream table consists of 16-byte entries:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The first 8 bytes of entry give big-endian beginning position of stream
+ in units of 1/48000 s.
+\end_layout
+
+\begin_layout Itemize
+The next 4 bytes of entry give big-endian beginning cluster for control
+ data.
+ 0 here marks the entry as not present.
+\end_layout
+
+\begin_layout Itemize
+The last 4 bytes of entry give big-endian beginning cluster for codec data.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Stream table clusters are normal clusters, following normal chaining.
+\end_layout
+
+\begin_layout Itemize
+The stream begnning position is not guarenteed unique.
+ There can be multiple streams with the same starting position in the file.
+\end_layout
+
+\begin_layout Subsection
+Stream control data
+\end_layout
+
+\begin_layout Itemize
+The stream control data consists of entries 4 bytes each:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+The first 2 bytes of entry gives big-endian length of packet
+\end_layout
+
+\begin_layout Itemize
+The next byte of entry gives audio length of packet in units of 1/400 s.
+\end_layout
+
+\begin_layout Itemize
+The last byte is control byte.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+0 means this entry is not present and the control data ends.
+\end_layout
+
+\begin_layout Itemize
+1 is valid control entry.
+\end_layout
+
+\end_deeper
+\end_deeper
+\begin_layout Itemize
+The stream control data can also end by running into end of the readable
+ chain.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+This happens if there happens to be exact multiple of 2048 packets in stream
+ and number of packets is nonzero.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+These clusters follow normal chaining.
+\end_layout
+
+\begin_layout Subsection
+Stream codec data
+\end_layout
+
+\begin_layout Itemize
+Stream codec data consists of raw Opus data packets packed back to back
+ with nothing in between.
+\end_layout
+
+\begin_layout Itemize
+Warning: Due to internal limitations, this data must reside in the first
+ 65536 superclusters (that is, the first 1TB of the file).
+\end_layout
+
+\begin_layout Subsection
+Superblock
+\end_layout
+
+\begin_layout Itemize
+The superblock is stored in cluster 1.
+ 
+\end_layout
+
+\begin_layout Itemize
+The first 11 bytes are 
+\begin_inset Quotes eld
+\end_inset
+
+sefs-magic
+\begin_inset Quotes erd
+\end_inset
+
+<NUL>.
+\end_layout
+
+\begin_layout Itemize
+The rest are unused.
+\end_layout
+
+\begin_layout Itemize
+This cluster 1 is marked as system special.
 \end_layout
 
 \begin_layout Section

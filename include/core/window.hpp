@@ -228,72 +228,7 @@ struct graphics_plugin
 };
 
 /**
- * Functions implemented by the sound plugin.
- *
- * Unless explicitly noted otherwise, all the methods are to be called from emulation thread if that exists, otherwise
- * from the main thread.
- */
-struct sound_plugin
-{
-/**
- * Sound initialization function.
- *
- * - The second initialization function to be called by window_init().
- */
-	static void init() throw();
-/**
- * Sound quit function.
- *
- * - The second last quit function to be called by window_quit().
- */
-	static void quit() throw();
-/**
- * Enable or disable sound.
- *
- * parameter enable: Enable sounds if true, otherwise disable sounds.
- */
-	static void enable(bool enable) throw();
-/**
- * Input audio sample (at specified rate).
- *
- * parameter left: Left sample.
- * parameter right: Right sample.
- */
-	static void sample(uint16_t left, uint16_t right) throw();
-/**
- * Has the sound system been successfully initialized?
- *
- * Returns: True if sound system has successfully initialized, false otherwise.
- */
-	static bool initialized();
-/**
- * Set sound device.
- *
- * - If new sound device is invalid, the sound device is not changed.
- *
- * Parameter dev: The new sound device.
- */
-	static void set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error);
-/**
- * Get current sound device.
- *
- * Returns: The current sound device.
- */
-	static std::string get_device() throw(std::bad_alloc);
-/**
- * Get available sound devices.
- *
- * Returns: The map of devices. Keyed by name of the device, values are human-readable names for devices.
- */
-	static std::map<std::string, std::string> get_devices() throw(std::bad_alloc);
-/**
- * Identification for sound plugin.
- */
-	static const char* name;
-};
-
-/**
- * Functions implemented by the sound plugin.
+ * Functions implemented by the joystick plugin.
  *
  * Unless explicitly noted otherwise, all the methods are to be called from emulation thread if that exists, otherwise
  * from the main thread.
@@ -404,30 +339,9 @@ struct platform
  */
 	static bool is_sound_enabled() throw();
 /**
- * Is sound system initialized?
- */
-	static bool sound_initialized() throw()
-	{
-		return sound_plugin::initialized();
-	}
-/**
  * Set sound device.
  */
 	static void set_sound_device(const std::string& dev) throw();
-/**
- * Get sound device.
- */
-	static std::string get_sound_device() throw(std::bad_alloc)
-	{
-		return sound_plugin::get_device();
-	}
-/**
- * Get list of sound devices.
- */
-	static std::map<std::string, std::string> get_sound_devices() throw(std::bad_alloc)
-	{
-		return sound_plugin::get_devices();
-	}
 /**
  * Show modal message dialog.
  *
@@ -487,16 +401,6 @@ struct platform
 	static void notify_screen() throw()
 	{
 		graphics_plugin::notify_screen();
-	}
-/**
- * Input audio sample (at specified rate).
- *
- * parameter left: Left sample.
- * parameter right: Right sample.
- */
-	static void audio_sample(uint16_t left, uint16_t right) throw()
-	{
-		sound_plugin::sample(global_volume * left, global_volume * right);
 	}
 /**
  * Set modal pause mode.
