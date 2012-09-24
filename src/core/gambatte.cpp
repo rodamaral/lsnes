@@ -530,7 +530,6 @@ function_ptr_command<> cmp_save2("do-cmp-save", "", "\n", []() throw(std::bad_al
 	instance->saveState(x, cmp_save);
 });
 
-
 void core_serialize(std::vector<char>& out)
 {
 	if(!internal_rom)
