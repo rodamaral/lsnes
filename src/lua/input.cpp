@@ -117,6 +117,38 @@ namespace
 		return 0;
 	});
 
+	function_ptr_luafun ijget("input.joyget", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		if(!lua_input_controllerdata)
+			return 0;
+		int pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid < 0) {
+			lua_pushstring(LS, "Invalid controller for input.joyget");
+			lua_error(LS);
+			return 0;
+		}
+		lua_newtable(LS);
+		unsigned lcnt = get_core_logical_controller_limits().second;
+		for(unsigned i = 0; i < lcnt; i++) {
+			std::string n = get_logical_button_name(i);
+			int y = lua_input_controllerdata->button_id(pcid, i);
+			if(y < 0)
+				continue;
+			lua_pushstring(LS, n.c_str());
+			lua_pushboolean(LS, lua_input_controllerdata->axis(pcid, y) != 0);
+			lua_settable(LS, -3);
+		}
+		if(lua_input_controllerdata->is_analog(pcid)) {
+			lua_pushstring(LS, "xaxis");
+			lua_pushnumber(LS, lua_input_controllerdata->axis(pcid, 0));
+			lua_settable(LS, -3);
+			lua_pushstring(LS, "yaxis");
+			lua_pushnumber(LS, lua_input_controllerdata->axis(pcid, 1));
+			lua_settable(LS, -3);
+		}
+		return 1;
+	});
+
 	function_ptr_luafun ijset("input.joyset", [](lua_State* LS, const std::string& fname) -> int {
 		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		if(lua_type(LS, 2) != LUA_TTABLE) {
