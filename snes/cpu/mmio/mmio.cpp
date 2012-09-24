@@ -42,6 +42,7 @@ void CPU::mmio_w4016(uint8 data) {
 //1-0 = Joypad serial data
 uint8 CPU::mmio_r4016() {
   uint8 r = regs.mdr & 0xfc;
+  controller_flag = true;
   r |= input.port1->data();
   return r;
 }
@@ -52,6 +53,7 @@ uint8 CPU::mmio_r4016() {
 //1-0 = Joypad serial data
 uint8 CPU::mmio_r4017() {
   uint8 r = (regs.mdr & 0xe0) | 0x1c;
+  controller_flag = true;
   r |= input.port2->data();
   return r;
 }
@@ -204,14 +206,14 @@ uint8 CPU::mmio_r4217() {
   return status.rdmpy >> 8;
 }
 
-uint8 CPU::mmio_r4218() { return status.joy1 >> 0; }  //JOY1L
-uint8 CPU::mmio_r4219() { return status.joy1 >> 8; }  //JOY1H
-uint8 CPU::mmio_r421a() { return status.joy2 >> 0; }  //JOY2L
-uint8 CPU::mmio_r421b() { return status.joy2 >> 8; }  //JOY2H
-uint8 CPU::mmio_r421c() { return status.joy3 >> 0; }  //JOY3L
-uint8 CPU::mmio_r421d() { return status.joy3 >> 8; }  //JOY3H
-uint8 CPU::mmio_r421e() { return status.joy4 >> 0; }  //JOY4L
-uint8 CPU::mmio_r421f() { return status.joy4 >> 8; }  //JOY4H
+uint8 CPU::mmio_r4218() { controller_flag = true; return status.joy1 >> 0; }  //JOY1L
+uint8 CPU::mmio_r4219() { controller_flag = true; return status.joy1 >> 8; }  //JOY1H
+uint8 CPU::mmio_r421a() { controller_flag = true; return status.joy2 >> 0; }  //JOY2L
+uint8 CPU::mmio_r421b() { controller_flag = true; return status.joy2 >> 8; }  //JOY2H
+uint8 CPU::mmio_r421c() { controller_flag = true; return status.joy3 >> 0; }  //JOY3L
+uint8 CPU::mmio_r421d() { controller_flag = true; return status.joy3 >> 8; }  //JOY3H
+uint8 CPU::mmio_r421e() { controller_flag = true; return status.joy4 >> 0; }  //JOY4L
+uint8 CPU::mmio_r421f() { controller_flag = true; return status.joy4 >> 8; }  //JOY4H
 
 //DMAPx
 uint8 CPU::mmio_r43x0(uint8 i) {
