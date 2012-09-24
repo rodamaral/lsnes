@@ -25,6 +25,7 @@ struct CPU : public Processor, public CPUcore, public PPUcounter {
   CPU();
   ~CPU();
 
+  bool controller_flag;
 private:
   #include "dma/dma.hpp"
   #include "memory/memory.hpp"
