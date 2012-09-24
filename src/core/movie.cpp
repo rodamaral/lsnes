@@ -1,5 +1,6 @@
 #include "lsnes.hpp"
 
+#include "core/emucore.hpp"
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/rom.hpp"
@@ -173,11 +174,19 @@ uint64_t movie::get_frame_count() throw()
 
 void movie::next_frame() throw(std::bad_alloc)
 {
+	//Adjust lag count. Frame 0 MUST NOT be considered lag.
+	unsigned pflag = core_get_poll_flag();
+	if(current_frame && pflag == 0)
+		lag_frames++;
+	else if(pflag < 2)
+		core_set_poll_flag(0);
+
 	//If all poll counters are zero for all real controls, this frame is lag.
 	bool this_frame_lag = !pollcounters.has_polled();
 	//Oh, frame 0 must not be considered lag.
 	if(current_frame && this_frame_lag) {
-		lag_frames++;
+		if(pflag == 2)
+			lag_frames++;	//Legacy compat. behaviour.
 		//debuglog << "Frame " << current_frame << " is lag" << std::endl << std::flush;
 		if(!readonly) {
 			//If in read-write mode, write a dummy record for the frame. Force sync flag.

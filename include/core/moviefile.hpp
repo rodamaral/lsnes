@@ -126,6 +126,10 @@ struct moviefile
  */
 	std::vector<uint32_t> pollcounters;
 /**
+ * Poll flag.
+ */
+	unsigned poll_flag;
+/**
  * Compressed rrdata.
  */
 	std::vector<char> c_rrdata;

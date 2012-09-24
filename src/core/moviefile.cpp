@@ -348,10 +348,12 @@ moviefile::moviefile() throw(std::bad_alloc)
 	movie_rtc_subsecond = rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	start_paused = false;
 	lazy_project_create = true;
+	poll_flag = 0;
 }
 
 moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
 {
+	poll_flag = false;
 	start_paused = false;
 	force_corrupt = false;
 	is_savestate = false;
@@ -422,6 +424,9 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		//If these can't be read, just use some (wrong) values.
 		read_numeric_file(r, "savetime.second", rtc_second, true);
 		read_numeric_file(r, "savetime.subsecond", rtc_subsecond, true);
+		uint64_t _poll_flag = 2;	//Legacy behaviour is the default.
+		read_numeric_file(r, "pollflag", _poll_flag, true);
+		poll_flag = _poll_flag;
 	}
 	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
@@ -475,6 +480,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 			write_raw_file(w, "sram." + i.first, i.second);
 		write_numeric_file(w, "savetime.second", rtc_second);
 		write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
+		write_numeric_file(w, "pollflag", poll_flag);
 	}
 	write_authors_file(w, authors);
 	write_input(w, input);

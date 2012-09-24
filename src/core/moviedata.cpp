@@ -241,6 +241,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename2, savecompression);
+		our_movie.poll_flag = core_get_poll_flag();
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_save(filename2, true);
@@ -314,6 +315,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
 		if(!our_movie.anchor_savestate.empty())
 			load_core_state(our_movie.anchor_savestate);
+		core_set_poll_flag(0);
 		redraw_framebuffer(screen_nosignal);
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
@@ -396,6 +398,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			controls.set_port(0, *_movie.port1, true);
 			controls.set_port(1, *_movie.port2, true);
 			load_core_state(_movie.savestate);
+			core_set_poll_flag(_movie.poll_flag);
 		} else {
 			load_sram(_movie.movie_sram);
 			controls.set_port(0, *_movie.port1, true);
@@ -404,6 +407,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty())
 				load_core_state(_movie.anchor_savestate);
+			core_set_poll_flag(0);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

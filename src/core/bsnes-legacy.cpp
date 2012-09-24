@@ -60,6 +60,7 @@ const char* button_symbols = "BYsSudlrAXLRTSTCUP";
 
 namespace
 {
+	bool pollflag_active = true;
 	boolean_setting allow_inconsistent_saves("allow-inconsistent-saves", false);
 	boolean_setting save_every_frame("save-every-frame", false);
 	uint32_t norom_frame[512 * 448];
@@ -1038,6 +1039,17 @@ std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 	if(height < 400)
 		v = 2;
 	return std::make_pair(h, v);
+}
+
+unsigned core_get_poll_flag()
+{
+	return pollflag_active ? (SNES::cpu.controller_flag ? 1 : 0) : 2;
+}
+
+void core_set_poll_flag(unsigned pflag)
+{
+	SNES::cpu.controller_flag = (pflag != 0);
+	pollflag_active = (pflag < 2);
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

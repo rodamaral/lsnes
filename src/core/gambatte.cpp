@@ -46,7 +46,7 @@ namespace
 		return 0;
 	}
 
-
+	unsigned int_pflag;
 	core_type* internal_rom = NULL;
 	extern core_type type_dmg;
 	extern core_type type_gbc;
@@ -88,9 +88,11 @@ namespace
 		unsigned operator()()
 		{
 			unsigned v = 0;
-			for(unsigned i = 0; i < 8; i++)
+			for(unsigned i = 0; i < 8; i++) {
+				int_pflag = int_pflag ? int_pflag : 1;
 				if(ecore_callbacks->get_input(0, 0, i))
 					v |= (1 << i);
+			}
 			return v;
 		};
 	} getinput;
@@ -514,6 +516,17 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 		timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
 	instance->setRtcBase(timebase);
 }
+
+unsigned core_get_poll_flag()
+{
+	return int_pflag;
+}
+
+void core_set_poll_flag(unsigned pflag)
+{
+	int_pflag = pflag;
+}
+
 
 std::vector<char> cmp_save;
 

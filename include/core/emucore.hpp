@@ -67,6 +67,10 @@ extern const char* button_symbols;
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 //Get bus map range.
 std::pair<uint64_t, uint64_t> core_get_bus_map();
+//Get poll flag (set to 1 on each real poll, except if 2.
+unsigned core_get_poll_flag();
+//Set poll flag (set to 1 on each real poll, except if 2.
+void core_set_poll_flag(unsigned pflag);
 
 /**
  * Get name of logical button.
