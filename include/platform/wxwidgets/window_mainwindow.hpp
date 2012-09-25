@@ -2,6 +2,7 @@
 #define _plat_wxwidgets__window_mainwindow__hpp__included__
 
 #include "platform/wxwidgets/window_status.hpp"
+#include "platform/wxwidgets/menu_recent.hpp"
 
 #include <stack>
 
@@ -40,6 +41,8 @@ public:
 	void menu_check(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
+	recent_menu* recent_roms;
+	recent_menu* recent_movies;
 private:
 	void handle_menu_click_cancelable(wxCommandEvent& e);
 	panel* gpanel;

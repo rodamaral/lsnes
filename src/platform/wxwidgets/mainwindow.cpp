@@ -104,6 +104,10 @@ enum
 	wxID_NEW_MOVIE,
 	wxID_SHOW_MESSAGES,
 	wxID_DEDICATED_MEMORY_WATCH,
+	wxID_RMOVIE_FIRST,
+	wxID_RMOVIE_LAST = wxID_RMOVIE_FIRST + 16,
+	wxID_RROM_FIRST,
+	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
 };
 
 
@@ -120,6 +124,17 @@ namespace
 	int old_flags = SWS_POINT;
 	bool main_window_dirty;
 	struct thread* emulation_thread;
+
+	void recent_rom_selected(const std::string& file)
+	{
+		platform::queue("unpause-emulator");
+		platform::queue("reload-rom " + file);
+	}
+
+	void recent_movie_selected(const std::string& file)
+	{
+		platform::queue("load-smart " + file);
+	}
 
 	wxString getname()
 	{
@@ -510,18 +525,22 @@ namespace
 	class loadfile : public wxFileDropTarget
 	{
 	public:
+		loadfile(wxwin_mainwindow* win) : pwin(win) {};
 		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
 		{
 			if(filenames.Count() != 1)
 				return false;
-			if(is_lsnes_movie(tostdstring(filenames[0])))
+			if(is_lsnes_movie(tostdstring(filenames[0]))) {
 				platform::queue("load-smart " + tostdstring(filenames[0]));
-			else {
+				pwin->recent_movies->add(tostdstring(filenames[0]));
+			} else {
 				platform::queue("unpause-emulator");
 				platform::queue("reload-rom " + tostdstring(filenames[0]));
+				pwin->recent_roms->add(tostdstring(filenames[0]));
 			}
 			return true;
 		}
+		wxwin_mainwindow* pwin;
 	};
 }
 
@@ -735,6 +754,11 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
 	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("ROM..."));
+	menu_separator();
+	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu(this, wxID_RROM_FIRST, wxID_RROM_LAST,
+		get_config_path() + "/recent-roms.txt", recent_rom_selected));
+	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu(this, wxID_RMOVIE_FIRST,
+		wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt", recent_movie_selected));
 	menu_end_sub();
 	menu_start_sub(wxT("Save"));
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
@@ -826,8 +850,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("Help"));
 	menu_entry(wxID_ABOUT, wxT("About..."));
 
-	gpanel->SetDropTarget(new loadfile());
-	spanel->SetDropTarget(new loadfile());
+	gpanel->SetDropTarget(new loadfile(this));
+	spanel->SetDropTarget(new loadfile(this));
 }
 
 void wxwin_mainwindow::request_paint()
@@ -926,31 +950,45 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		platform::queue("load-movie " + pick_file(this, "Load Movie", movie_path(), false));
+		filename = pick_file(this, "Load Movie", movie_path(), false);
+		recent_movies->add(filename);
+		platform::queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		platform::queue("load " + pick_file(this, "Load State", movie_path(), false));
+		filename = pick_file(this, "Load State", movie_path(), false);
+		recent_movies->add(filename);
+		platform::queue("load " + filename);
 		return;
 	case wxID_LOAD_STATE_RO:
-		platform::queue("load-readonly " + pick_file(this, "Load State (Read-Only)", movie_path(), false));
+		filename = pick_file(this, "Load State (Read-Only)", movie_path(), false);
+		recent_movies->add(filename);
+		platform::queue("load-readonly " + filename);
 		return;
 	case wxID_LOAD_STATE_RW:
-		platform::queue("load-state " + pick_file(this, "Load State (Read-Write)", movie_path(), false));
+		filename = pick_file(this, "Load State (Read-Write)", movie_path(), false);
+		recent_movies->add(filename);
+		platform::queue("load-state " + filename);
 		return;
 	case wxID_LOAD_STATE_P:
-		platform::queue("load-preserve " + pick_file(this, "Load State (Preserve)", movie_path(), false));
+		filename = pick_file(this, "Load State (Preserve)", movie_path(), false);
+		recent_movies->add(filename);
+		platform::queue("load-preserve " + filename);
 		return;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		platform::queue("save-movie " + pick_file(this, "Save Movie", movie_path(), true));
+		filename = pick_file(this, "Save Movie", movie_path(), true);
+		recent_movies->add(filename);
+		platform::queue("save-movie " + filename);
 		return;
 	case wxID_SAVE_SUBTITLES:
 		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", movie_path(), true));
 		return;
 	case wxID_SAVE_STATE:
-		platform::queue("save-state " + pick_file(this, "Save State", movie_path(), true));
+		filename = pick_file(this, "Save State", movie_path(), true);
+		recent_movies->add(filename);
+		platform::queue("save-state " + filename);
 		return;
 	case wxID_SAVE_SCREENSHOT:
 		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path(), true));
@@ -1162,6 +1200,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_ROM_IMAGE:
 		filename = pick_file_member(this, "Select new ROM image", rom_path());
+		recent_roms->add(filename);
 		platform::queue("unpause-emulator");
 		platform::queue("reload-rom " + filename);
 		return;
