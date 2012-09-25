@@ -1876,7 +1876,7 @@ index c43229c..b3073b5 100644
 +void MemPtrs::loadOrSave(loadsave& state)
 +{
 +	state(memchunk_, 0x4000);
-+	state(romdataend()_, memchunk_size - (romdataend() - memchunk_));
++	state(romdataend(), memchunk_size - (romdataend() - memchunk_));
 +	int oamDmaSrc_2 = oamDmaSrc_;
 +	state(oamDmaSrc_2);
 +	oamDmaSrc_ = (OamDmaSrc)oamDmaSrc_2;
