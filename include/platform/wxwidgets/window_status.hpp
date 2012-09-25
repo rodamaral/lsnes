@@ -19,11 +19,14 @@ public:
 		bool dirty;
 		wxWindow* parent;
 		wxWindow* tfocuswin;
+		//-1: memory watch only, 0: Both, 1: Status only.
+		void set_watch_flag(int f) { watch_flag = f; }
 	private:
 		text_framebuffer statusvars;
 		text_framebuffer memorywatches;
+		int watch_flag;
 	};
-	wxwin_status();
+	wxwin_status(int flag, const std::string& title);
 	~wxwin_status();
 	bool ShouldPreventAppExit() const;
 	void notify_update() throw();

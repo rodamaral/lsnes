@@ -47,6 +47,7 @@ private:
 	wxMenuBar* menubar;
 	wxwin_status::panel* spanel;
 	bool spanel_shown;
+	wxwin_status* mwindow;
 	wxFlexGridSizer* toplevel;
 	std::map<int, wxMenuItem*> checkitems;
 	std::stack<wxMenu*> upper;

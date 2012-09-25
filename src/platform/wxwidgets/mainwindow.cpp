@@ -103,6 +103,7 @@ enum
 	wxID_LOAD_ROM_IMAGE,
 	wxID_NEW_MOVIE,
 	wxID_SHOW_MESSAGES,
+	wxID_DEDICATED_MEMORY_WATCH,
 };
 
 
@@ -704,6 +705,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 {
 	broadcast_listener* blistener = new broadcast_listener(this);
 	Centre();
+	mwindow = NULL;
 	toplevel = new wxFlexGridSizer(1, 2, 0, 0);
 	toplevel->Add(gpanel = new panel(this), 1, wxGROW);
 	toplevel->Add(spanel = new wxwin_status::panel(this, gpanel, 20), 1, wxGROW);
@@ -804,8 +806,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 
 	menu_start(wxT("Configure"));
-	menu_entry_check(wxID_SHOW_STATUS, wxT("Show/Hide status panel"));
+	menu_entry_check(wxID_SHOW_STATUS, wxT("Show status panel"));
 	menu_check(wxID_SHOW_STATUS, true);
+	menu_entry_check(wxID_DEDICATED_MEMORY_WATCH, wxT("Dedicated memory watch"));
 	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
@@ -860,6 +863,8 @@ void wxwin_mainwindow::notify_update_status() throw()
 		spanel->dirty = true;
 		spanel->Refresh();
 	}
+	if(mwindow)
+		mwindow->notify_update();
 }
 
 void wxwin_mainwindow::notify_exit() throw()
@@ -1056,6 +1061,19 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		toplevel->Layout();
 		toplevel->SetSizeHints(this);
 		Fit();
+		return;
+	}
+	case wxID_DEDICATED_MEMORY_WATCH: {
+		bool newstate = menu_ischecked(wxID_DEDICATED_MEMORY_WATCH);
+		if(newstate && !mwindow) {
+			mwindow = new wxwin_status(-1, "Memory Watch");
+			spanel->set_watch_flag(1);
+			mwindow->Show();
+		} else if(!newstate && mwindow) {
+			mwindow->Destroy();
+			mwindow = NULL;
+			spanel->set_watch_flag(0);
+		}
 		return;
 	}
 	case wxID_SET_SPEED: {
