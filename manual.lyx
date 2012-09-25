@@ -140,6 +140,10 @@ Portaudio (portaudio sound only)
 \end_layout
 
 \begin_layout Enumerate
+libao (libao sound only)
+\end_layout
+
+\begin_layout Enumerate
 Lua (if Lua support is needed).
 \end_layout
 
