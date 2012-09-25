@@ -83,6 +83,7 @@ GRAPHICS=WXWIDGETS
 # - DUMMY: No sound.
 # - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
 # - PORTAUDIO: Portaudio.
+# - LIBAO: Libao.
 SOUND=PORTAUDIO
 
 # Joystick library to use.

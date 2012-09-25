@@ -1,4 +1,4 @@
-PLATFORMS=dummy evdev portaudio sdl wxwidgets win32mm
+PLATFORMS=dummy evdev portaudio sdl wxwidgets win32mm libao
 ALLOBJECT=__all__.$(OBJECT_SUFFIX)
 ALLFLAGS=__all__.ldflags
 PLATFORMS_OBJS=$(patsubst %,%/$(ALLOBJECT),$(PLATFORMS))
@@ -20,6 +20,9 @@ win32mm/$(ALLOBJECT): forcelook
 portaudio/$(ALLOBJECT): forcelook
 	$(MAKE) -C portaudio
 
+libao/$(ALLOBJECT): forcelook
+	$(MAKE) -C libao
+
 sdl/$(ALLOBJECT): forcelook
 	$(MAKE) -C sdl
 
@@ -34,6 +37,7 @@ precheck:
 	$(MAKE) -C evdev precheck
 	$(MAKE) -C win32mm precheck
 	$(MAKE) -C portaudio precheck
+	$(MAKE) -C libao precheck
 	$(MAKE) -C sdl precheck
 	$(MAKE) -C wxwidgets precheck
 
@@ -43,6 +47,7 @@ clean:
 	$(MAKE) -C evdev clean
 	$(MAKE) -C win32mm clean
 	$(MAKE) -C portaudio clean
+	$(MAKE) -C libao clean
 	$(MAKE) -C sdl clean
 	$(MAKE) -C wxwidgets clean
 
