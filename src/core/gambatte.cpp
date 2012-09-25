@@ -365,7 +365,7 @@ void core_emulate_frame()
 	}
 	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
 	while(true) {
-		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32];
+		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
 		size_t emitted = 0;
 		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
 		long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
