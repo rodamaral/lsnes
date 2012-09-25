@@ -102,8 +102,9 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		}
 	}
 	statusvars.set_size(STATWIDTH, oth_count + 1);
-	statusvars.write("Status:", 0, 0, 0, 0, 0xFFFFFF);
-	p = 1;
+	if(mem_count)
+		statusvars.write("Status:", 0, 0, 0, 0, 0xFFFFFF);
+	p = mem_count ? 1 : 0;
 	for(auto i : newstatus) {
 		if(regex_match("M\\[.*\\]", i.first))
 			continue;
@@ -119,9 +120,9 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	buffer2.resize(ssize.first * ssize.second * 3);
 	memorywatches.render(&buffer1[0]);
 	statusvars.render(&buffer2[0]);
-	wxBitmap bmp1(wxImage(msize.first, msize.second, reinterpret_cast<unsigned char*>(&buffer1[0]), true));
 	wxBitmap bmp2(wxImage(ssize.first, ssize.second, reinterpret_cast<unsigned char*>(&buffer2[0]), true));
 	if(mem_count) {
+		wxBitmap bmp1(wxImage(msize.first, msize.second, reinterpret_cast<unsigned char*>(&buffer1[0]), true));
 		dc.DrawBitmap(bmp1, 0, 0, false);
 		dc.SetPen(wxPen(wxColour(0, 0, 0)));
 		dc.DrawLine(0, msize.second + 1, msize.first, msize.second + 1);
