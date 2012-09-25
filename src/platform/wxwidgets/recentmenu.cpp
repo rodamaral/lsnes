@@ -50,7 +50,7 @@ void recent_menu::update()
 	}
 	if(has_ents)
 		items[-1] = AppendSeparator();
-	items[wxid_range_high] = Append(wxid_range_high, "Refresh");
+	items[wxid_range_high] = Append(wxid_range_high, wxT("Refresh"));
 }
 
 void recent_menu::add(const std::string& file)
