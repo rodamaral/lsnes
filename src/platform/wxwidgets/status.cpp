@@ -3,7 +3,9 @@
 #include "platform/wxwidgets/window_status.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include <iostream>
 
+#define STATWIDTH 40
 #define MAXSTATUS 30
 
 namespace
@@ -24,16 +26,9 @@ wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines
 	tfocuswin = focuswin;
 	parent = _parent;
 	dirty = false;
-	wxMemoryDC d;
-#ifndef __WXMSW_
-	//This doesn't work right on win32.
-	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
-	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-	d.SetFont(tsysfont);
-#endif
-	wxSize s = d.GetTextExtent(wxT("MM"));
-	//Yes, s.y for both, as s.x can be quite nutty.
-	SetMinSize(wxSize(20 * s.y, lines * s.y));
+	statusvars.set_size(STATWIDTH, lines ? lines : MAXSTATUS);
+	auto s = statusvars.get_pixels();
+	SetMinSize(wxSize(s.first, s.second));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 }
@@ -73,57 +68,66 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	while(s.next(i))
 		newstatus[i.key] = i.value;
 
+	memorywatches.clear();
+	statusvars.clear();
+	
 	wxPaintDC dc(this);
 	dc.Clear();
-#ifndef __WXMSW_
-	//This doesn't work right on win32.
-	wxFont sysfont = wxSystemSettings::GetFont(wxSYS_OEM_FIXED_FONT);
-	wxFont tsysfont(sysfont.GetPointSize(), wxFONTFAMILY_TELETYPE, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
-	dc.SetFont(tsysfont);
-#endif
 	int y = 0;
-	bool has_watches = false;
 	size_t mem_width = 0;
 	size_t oth_width = 0;
+	size_t mem_count = 0;
+	size_t oth_count = 0;
 	for(auto i : newstatus) {
 		bool x = regex_match("M\\[.*\\]", i.first);
-		if(x)
-			mem_width = max(mem_width, i.first.length() - 3);
-		else
-			oth_width = max(oth_width, i.first.length());
-		has_watches |= x;
+		if(x) {
+			mem_width = max(mem_width, text_framebuffer::text_width(i.first) - 3);
+			mem_count++;
+		} else {
+			oth_width = max(oth_width, text_framebuffer::text_width(i.first));
+			oth_count++;
+		}
 	}
 	regex_results r;
-	if(has_watches) {
-		std::string pstr = "Memory watches:";
-		wxSize s = dc.GetTextExtent(towxstring(pstr));
-		dc.DrawText(towxstring(pstr), 0, y);
-		y += s.y;
+	size_t p = 1;
+	if(mem_count) {
+		memorywatches.set_size(STATWIDTH, mem_count + 1);
+		memorywatches.write("Memory watches:", 0, 0, 0, 0, 0xFFFFFF);
 		for(auto i : newstatus) {
 			if(r = regex("M\\[(.*)\\]", i.first)) {
-				pstr = string_pad(r[1] + ": ", mem_width + 2) + i.second;
-				wxSize s = dc.GetTextExtent(towxstring(pstr));
-				dc.DrawText(towxstring(pstr), 0, y);
-				y += s.y;
+				size_t n = memorywatches.write(r[1], mem_width + 1, 0, p, 0, 0xFFFFFF);
+				memorywatches.write(i.second, 0, n, p, 0, 0xFFFFFF);
+				p++;
 			}
 		}
-		s = dc.GetSize();
-		dc.SetPen(wxPen(wxColour(0, 0, 0)));
-		dc.DrawLine(0, y + 1, s.x, y + 1);
-		y += 3;
-		pstr = "Other status:";
-		s = dc.GetTextExtent(towxstring(pstr));
-		dc.DrawText(towxstring(pstr), 0, y);
-		y += s.y;
 	}
+	statusvars.set_size(STATWIDTH, oth_count + 1);
+	statusvars.write("Status:", 0, 0, 0, 0, 0xFFFFFF);
+	p = 1;
 	for(auto i : newstatus) {
 		if(regex_match("M\\[.*\\]", i.first))
 			continue;
-		std::string pstr = string_pad(i.first + ": ", oth_width + 2) + i.second;
-		wxSize s = dc.GetTextExtent(towxstring(pstr));
-		dc.DrawText(towxstring(pstr), 0, y);
-		y += s.y;
+		size_t n = statusvars.write(i.first, oth_width + 1, 0, p, 0, 0xFFFFFF);
+		statusvars.write(i.second, 0, n, p, 0, 0xFFFFFF);
+		p++;
 	}
+
+	auto ssize = statusvars.get_pixels();
+	auto msize = memorywatches.get_pixels();
+	std::vector<char> buffer1, buffer2;
+	buffer1.resize(msize.first * msize.second * 3);
+	buffer2.resize(ssize.first * ssize.second * 3);
+	memorywatches.render(&buffer1[0]);
+	statusvars.render(&buffer2[0]);
+	wxBitmap bmp1(wxImage(msize.first, msize.second, reinterpret_cast<unsigned char*>(&buffer1[0]), true));
+	wxBitmap bmp2(wxImage(ssize.first, ssize.second, reinterpret_cast<unsigned char*>(&buffer2[0]), true));
+	if(mem_count) {
+		dc.DrawBitmap(bmp1, 0, 0, false);
+		dc.SetPen(wxPen(wxColour(0, 0, 0)));
+		dc.DrawLine(0, msize.second + 1, msize.first, msize.second + 1);
+	}
+	dc.DrawBitmap(bmp2, 0, mem_count ? msize.second + 3 : 0, false);
+	
 	dirty = false;
 }
 

@@ -4,6 +4,8 @@
 #include <wx/string.h>
 #include <wx/wx.h>
 
+#include "platform/wxwidgets/textrender.hpp"
+
 class wxwin_status : public wxFrame
 {
 public:
@@ -17,6 +19,9 @@ public:
 		bool dirty;
 		wxWindow* parent;
 		wxWindow* tfocuswin;
+	private:
+		text_framebuffer statusvars;
+		text_framebuffer memorywatches;
 	};
 	wxwin_status();
 	~wxwin_status();
