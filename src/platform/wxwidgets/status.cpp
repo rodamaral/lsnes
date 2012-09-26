@@ -6,7 +6,7 @@
 #include <iostream>
 
 #define STATWIDTH 40
-#define MAXSTATUS 1
+#define MAXSTATUS 15
 
 namespace
 {
@@ -47,10 +47,10 @@ void wxwin_status::panel::on_focus(wxFocusEvent& e)
 
 wxwin_status::wxwin_status(int flag, const std::string& title)
 	: wxFrame(NULL, wxID_ANY, towxstring(title), wxDefaultPosition, wxSize(-1, -1),
-		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
+		wxMINIMIZE_BOX | wxRESIZE_BORDER | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
 {
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(1, 1, 0, 0);
-	top_s->Add(spanel = new wxwin_status::panel(this, NULL, MAXSTATUS));
+	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+	top_s->Add(spanel = new wxwin_status::panel(this, NULL, MAXSTATUS), 1, wxGROW);
 	spanel->set_watch_flag(flag);
 	top_s->SetSizeHints(this);
 	SetSizer(top_s);
@@ -133,9 +133,6 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	std::vector<char> buffer1, buffer2;
 	buffer1.resize(msize.first * msize.second * 3);
 	buffer2.resize(ssize.first * ssize.second * 3);
-
-	SetMinSize(wxSize(max(msize.first, ssize.first), max(yt, size_t(16))));
-	parent->Fit();
 
 	wxPaintDC dc(this);
 	dc.Clear();
