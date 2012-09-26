@@ -3429,3 +3429,27 @@ set-axis joystick0axis19 disabled
 
 • Wxwidgets: Allow loading ROMs and movies from commandline.
 
+18.72 rr1-delta15
+
+• Be a bit smarter with --load
+
+• Rewrote higher-level parts of audio system
+
+• Tool to build commentary tracks
+
+• Lua: input.joyget
+
+• Gambatte: Add support for SVN358
+
+• Use builtin font when rendering status panel.
+
+• Option to detach memory watch to its own window.
+
+• Recent ROMs/Movies menu
+
+• Libao support
+
+• Useful lag counter for SNES games that autopoll
+
+• Fix buffer overflow in gambatte sound output
+

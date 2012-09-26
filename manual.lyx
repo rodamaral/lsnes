@@ -6971,5 +6971,53 @@ Wxwidgets: Fix autohold processing to be faster.
 Wxwidgets: Allow loading ROMs and movies from commandline.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta15
+\end_layout
+
+\begin_layout Itemize
+Be a bit smarter with --load
+\end_layout
+
+\begin_layout Itemize
+Rewrote higher-level parts of audio system
+\end_layout
+
+\begin_layout Itemize
+Tool to build commentary tracks
+\end_layout
+
+\begin_layout Itemize
+Lua: input.joyget
+\end_layout
+
+\begin_layout Itemize
+Gambatte: Add support for SVN358
+\end_layout
+
+\begin_layout Itemize
+Use builtin font when rendering status panel.
+\end_layout
+
+\begin_layout Itemize
+Option to detach memory watch to its own window.
+\end_layout
+
+\begin_layout Itemize
+Recent ROMs/Movies menu
+\end_layout
+
+\begin_layout Itemize
+Libao support
+\end_layout
+
+\begin_layout Itemize
+Useful lag counter for SNES games that autopoll
+\end_layout
+
+\begin_layout Itemize
+Fix buffer overflow in gambatte sound output
+\end_layout
+
 \end_body
 \end_document
