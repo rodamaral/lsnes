@@ -528,17 +528,36 @@ namespace
 		loadfile(wxwin_mainwindow* win) : pwin(win) {};
 		bool OnDropFiles(wxCoord x, wxCoord y, const wxArrayString& filenames)
 		{
-			if(filenames.Count() != 1)
-				return false;
-			if(is_lsnes_movie(tostdstring(filenames[0]))) {
-				platform::queue("load-smart " + tostdstring(filenames[0]));
-				pwin->recent_movies->add(tostdstring(filenames[0]));
-			} else {
-				platform::queue("unpause-emulator");
-				platform::queue("reload-rom " + tostdstring(filenames[0]));
-				pwin->recent_roms->add(tostdstring(filenames[0]));
+			bool ret = false;
+			if(filenames.Count() == 2) {
+				if(is_lsnes_movie(tostdstring(filenames[0])) &&
+					!is_lsnes_movie(tostdstring(filenames[1]))) {
+					platform::queue("unpause-emulator");
+					platform::queue("reload-rom " + tostdstring(filenames[1]));
+					platform::queue("load-smart " + tostdstring(filenames[0]));
+					ret = true;
+				}
+				if(!is_lsnes_movie(tostdstring(filenames[0])) &&
+					is_lsnes_movie(tostdstring(filenames[1]))) {
+					platform::queue("unpause-emulator");
+					platform::queue("reload-rom " + tostdstring(filenames[0]));
+					platform::queue("load-smart " + tostdstring(filenames[1]));
+					ret = true;
+				}
 			}
-			return true;
+			if(filenames.Count() == 1) {
+				if(is_lsnes_movie(tostdstring(filenames[0]))) {
+					platform::queue("load-smart " + tostdstring(filenames[0]));
+					pwin->recent_movies->add(tostdstring(filenames[0]));
+					ret = true;
+				} else {
+					platform::queue("unpause-emulator");
+					platform::queue("reload-rom " + tostdstring(filenames[0]));
+					pwin->recent_roms->add(tostdstring(filenames[0]));
+					ret = true;
+				}
+			}
+			return ret;
 		}
 		wxwin_mainwindow* pwin;
 	};
