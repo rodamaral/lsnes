@@ -10,13 +10,6 @@ recent_files::recent_files(const std::string& _cfgfile, size_t _maxcount)
 
 void recent_files::add(const std::string& file)
 {
-	try {
-		//Probe for existence.
-		delete &open_file_relative(file, "");
-	} catch(std::exception& e) {
-		return;
-	}
-
 	std::list<std::string> ents;
 	//Load the list.
 	{
@@ -81,14 +74,7 @@ std::list<std::string> recent_files::get()
 		while(in) {
 			std::getline(in, f);
 			if(f != "") {
-				bool exists = true;
-				try {
-					//Probe for existence.
-					delete &open_file_relative(f, "");
-				} catch(std::exception& e) {
-					exists = false;
-				}
-				if(exists && c < maxcount) {
+				if(c < maxcount) {
 					ents.push_back(f);
 					c++;
 				}
