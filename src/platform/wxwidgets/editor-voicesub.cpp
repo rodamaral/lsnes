@@ -324,6 +324,7 @@ void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
 void wxeditor_voicesub::on_close(wxCommandEvent& e)
 {
 	Destroy();
+	voicesub_open = false;
 }
 
 void wxeditor_voicesub::refresh()
