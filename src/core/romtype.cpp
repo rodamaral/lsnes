@@ -273,14 +273,23 @@ core_type::core_type(const std::string& _iname, const std::string& _hname, unsig
 	types()[iname] = this;
 	std::string ext;
 	std::string ext2 = _extensions;
-	while(extract_token(ext2, ext, ";") >= 0)
+	if(ext2.find_first_of("!") < ext2.length())
+		extract_token(ext2, biosname, "!");
+	while(ext2 != "") {
+		extract_token(ext2, ext, ";");
 		extensions.push_back(ext);
+	}
 	process_registrations();
 }
 
 const std::list<std::string>& core_type::get_extensions()
 {
 	return extensions;
+}
+
+std::string core_type::get_biosname()
+{
+	return biosname;
 }
 
 bool core_type::is_known_extension(const std::string& ext)

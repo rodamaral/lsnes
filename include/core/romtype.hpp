@@ -68,6 +68,7 @@ public:
 	const std::string& get_hname();
 	const std::list<std::string>& get_extensions();
 	bool is_known_extension(const std::string& ext);
+	std::string get_biosname();
 	unsigned get_id();
 	unsigned get_image_count();
 	core_romimage_info get_image_info(unsigned index);
@@ -79,6 +80,7 @@ private:
 	unsigned id;
 	std::string iname;
 	std::string hname;
+	std::string biosname;
 	std::list<std::string> extensions;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info*> imageinfo;

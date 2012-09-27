@@ -174,10 +174,10 @@ namespace
 	core_romimage_info image_stslota("slot-a", "ST Slot A ROM", 2, header_fn);
 	core_romimage_info image_stslotb("slot-b", "ST Slot B ROM", 2, header_fn);
 	core_type type_snes("snes", "SNES", 0, load_rom_snes, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh");
-	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx, "");
-	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted, "");
-	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo, "");
-	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb, "");
+	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx, "bsx.sfc!bs");
+	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted, "bsxslotted.sfc!bss");
+	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo, "sufamiturbo.sfc!st");
+	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb, "sgb.sfc!gb;dmg;sgb");
 	core_type_region_bind bind_A(type_snes, region_auto);
 	core_type_region_bind bind_B(type_snes, region_ntsc);
 	core_type_region_bind bind_C(type_snes, region_pal);

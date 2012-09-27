@@ -8,6 +8,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/patch.hpp"
 #include "library/sha256.hpp"
@@ -128,7 +129,15 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 			throw std::runtime_error("Unknown ROM file type");
 		rtype = coretype;
 		region = orig_region = &rtype->get_preferred_region();
-		romimg[0] = loaded_slot(file, "", coretype->get_image_info(0), false);
+		unsigned romidx = 0;
+		std::string bios;
+		if((bios = coretype->get_biosname()) != "") {
+			//This thing has a BIOS.
+			romidx = 1;
+			romimg[0] = loaded_slot(setting::get("firmwarepath") + "/" + bios, "",
+				coretype->get_image_info(0), false);
+		}
+		romimg[romidx] = loaded_slot(file, "", coretype->get_image_info(romidx), false);
 		msu1_base = resolve_file_relative(file, "");
 		return;
 	}
