@@ -504,17 +504,21 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 {
 	if(!internal_rom)
 		return;
-	std::vector<char>& x = sram["main"];
-	std::vector<char>& x2 = sram["rtc"];
+	std::vector<char> x = sram.count("main") ? sram["main"] : std::vector<char>();
+	std::vector<char> x2 = sram.count("rtc") ? sram["rtc"] : std::vector<char>();
 	auto g = instance->getSaveRam();
-	if(x.size() != g.second)
-		messages << "WARNING: SRAM 'main': Loaded " << x.size()
-			<< " bytes, but the SRAM is " << g.second << "." << std::endl;
-	memcpy(g.first, &x[0], min(x.size(), g.second));
-	time_t timebase = 0;
-	for(size_t i = 0; i < 8 && i < x2.size(); i++)
-		timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
-	instance->setRtcBase(timebase);
+	if(x.size()) {
+		if(x.size() != g.second)
+			messages << "WARNING: SRAM 'main': Loaded " << x.size()
+				<< " bytes, but the SRAM is " << g.second << "." << std::endl;
+		memcpy(g.first, &x[0], min(x.size(), g.second));
+	}
+	if(x2.size()) {
+		time_t timebase = 0;
+		for(size_t i = 0; i < 8 && i < x2.size(); i++)
+			timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
+		instance->setRtcBase(timebase);
+	}
 }
 
 unsigned core_get_poll_flag()
