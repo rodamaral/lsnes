@@ -7019,5 +7019,33 @@ Useful lag counter for SNES games that autopoll
 Fix buffer overflow in gambatte sound output
 \end_layout
 
+\begin_layout Subsection
+rr1-delta15epsilon1
+\end_layout
+
+\begin_layout Itemize
+Don't blow up on wxGTK if the window is hidden somehow
+\end_layout
+
+\begin_layout Itemize
+Support simultaneous drop of ROM and movie.
+\end_layout
+
+\begin_layout Itemize
+Gambatte: Don't save spurious SRAMs.
+\end_layout
+
+\begin_layout Itemize
+Make SGB ROMs actually usable.
+\end_layout
+
+\begin_layout Itemize
+Fix so that saved movies appear in recent movies.
+\end_layout
+
+\begin_layout Itemize
+Don't open multiple commentary editors at once.
+\end_layout
+
 \end_body
 \end_document

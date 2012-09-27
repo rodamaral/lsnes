@@ -3453,3 +3453,17 @@ set-axis joystick0axis19 disabled
 
 • Fix buffer overflow in gambatte sound output
 
+18.73 rr1-delta15epsilon1
+
+• Don't blow up on wxGTK if the window is hidden somehow
+
+• Support simultaneous drop of ROM and movie.
+
+• Gambatte: Don't save spurious SRAMs.
+
+• Make SGB ROMs actually usable.
+
+• Fix so that saved movies appear in recent movies.
+
+• Don't open multiple commentary editors at once.
+
