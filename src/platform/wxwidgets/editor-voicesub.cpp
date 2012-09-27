@@ -13,6 +13,11 @@
 
 #define NOTHING 0xFFFFFFFFFFFFFFFFULL
 
+namespace
+{
+	bool voicesub_open = false;
+}
+
 class wxeditor_voicesub : public wxDialog
 {
 public:
@@ -358,13 +363,17 @@ void wxeditor_voicesub::on_wclose(wxCloseEvent& e)
 	closing = true;
 	if(!wasc)
 		Destroy();
+	voicesub_open = false;
 }
 
 bool wxeditor_voicesub::ShouldPreventAppExit() const { return false; }
 
 void show_wxeditor_voicesub(wxWindow* parent)
 {
+	if(voicesub_open)
+		return;
 	wxeditor_voicesub* v = new wxeditor_voicesub(parent);
 	v->Show();
+	voicesub_open = true;
 }
 #endif
