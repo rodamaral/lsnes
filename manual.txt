@@ -1780,6 +1780,18 @@ Write a region of memory.
 • Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
+8.9.21 memory.map_struct()
+
+Returns a new mapping structure (MMAP_STRUCT)
+
+8.9.22 MMAP_STRUCT(string key, number address, string type)
+
+Bind key in mmap structure to specified address with specified 
+type.
+
+• Type may be one of: byte, sbyte, word, sword, dword, sdword, 
+  qword or sqword.
+
 8.10 Table subtitle
 
 Contains functions for manipulating subtitles.

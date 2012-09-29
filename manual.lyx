@@ -3500,6 +3500,26 @@ Write a region of memory.
 Warning: If the region crosses VMA boundary, the results are undefined.
 \end_layout
 
+\begin_layout Subsubsection
+memory.map_struct()
+\end_layout
+
+\begin_layout Standard
+Returns a new mapping structure (MMAP_STRUCT)
+\end_layout
+
+\begin_layout Subsubsection
+MMAP_STRUCT(string key, number address, string type)
+\end_layout
+
+\begin_layout Standard
+Bind key in mmap structure to specified address with specified type.
+\end_layout
+
+\begin_layout Itemize
+Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+\end_layout
+
 \begin_layout Subsection
 Table subtitle
 \end_layout

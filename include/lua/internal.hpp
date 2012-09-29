@@ -4,6 +4,7 @@
 #include "lua.hpp"
 #include <cstdio>
 #include <cstdlib>
+#include <iostream>
 extern "C"
 {
 #include <lua.h>
@@ -127,12 +128,12 @@ public:
 		return (p->*(b->fn))(LS);
 	}
 
-	void bind(lua_State* LS, const char* keyname, int (T::*fn)(lua_State* LS))
+	void bind(lua_State* LS, const char* keyname, int (T::*fn)(lua_State* LS), bool force = false)
 	{
 		load_metatable(LS);
 		lua_pushstring(LS, keyname);
 		lua_rawget(LS, -2);
-		if(!lua_isnil(LS, -1)) {
+		if(!lua_isnil(LS, -1) && !force) {
 			lua_pop(LS, 2);
 			return;
 		}

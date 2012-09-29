@@ -2,6 +2,7 @@
 #include "core/memorymanip.hpp"
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
+#include "library/string.hpp"
 #include "library/minmax.hpp"
 
 namespace
@@ -41,7 +42,7 @@ namespace
 		virtual void write(lua_State* LS, uint64_t addr) = 0;
 	};
 
-	
+
 	template<typename T, typename U, U (*rfun)(uint64_t addr), bool (*wfun)(uint64_t addr, U value)>
 	class lua_mmap_memory_helper : public mmap_base
 	{
@@ -51,14 +52,60 @@ namespace
 		{
 			lua_pushnumber(LS, static_cast<T>(rfun(addr)));
 		}
-		
+
 		void write(lua_State* LS, uint64_t addr)
 		{
 			T value = get_numeric_argument<T>(LS, 3, "aperture(write)");
 			wfun(addr, value);
 		}
 	};
+}
 
+class lua_mmap_struct
+{
+public:
+	lua_mmap_struct(lua_State* LS);
+
+	~lua_mmap_struct()
+	{
+	}
+
+	int index(lua_State* LS)
+	{
+		const char* c = lua_tostring(LS, 2);
+		if(!c) {
+			lua_pushnil(LS);
+			return 1;
+		}
+		std::string c2(c);
+		if(!mappings.count(c2)) {
+			lua_pushnil(LS);
+			return 1;
+		}
+		auto& x = mappings[c2];
+		x.first->read(LS, x.second);
+		return 1;
+	}
+	int newindex(lua_State* LS)
+	{
+		const char* c = lua_tostring(LS, 2);
+		if(!c)
+			return 0;
+		std::string c2(c);
+		if(!mappings.count(c2))
+			return 0;
+		auto& x = mappings[c2];
+		x.first->write(LS, x.second);
+		return 0;
+	}
+
+	int map(lua_State* LS);
+private:
+	std::map<std::string, std::pair<mmap_base*, uint64_t>> mappings;
+};
+
+namespace
+{
 	int aperture_read_fun(lua_State* LS)
 	{
 		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
@@ -78,7 +125,7 @@ namespace
 
 	int aperture_write_fun(lua_State* LS)
 	{
-		
+
 		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
@@ -272,6 +319,11 @@ namespace
 		return 1;
 	});
 
+	function_ptr_luafun gui_cbitmap("memory.map_structure", [](lua_State* LS, const std::string& fname) -> int {
+		lua_mmap_struct* b = lua_class<lua_mmap_struct>::create(LS, LS);
+		return 1;
+	});
+
 	lua_read_memory<uint8_t, uint8_t, memory_read_byte> rub("memory.readbyte");
 	lua_read_memory<int8_t, uint8_t, memory_read_byte> rsb("memory.readsbyte");
 	lua_read_memory<uint16_t, uint16_t, memory_read_word> ruw("memory.readword");
@@ -300,4 +352,59 @@ namespace
 	lua_mmap_memory msd("memory.mapsdword", mhsd);
 	lua_mmap_memory muq("memory.mapqword", mhuq);
 	lua_mmap_memory msq("memory.mapsqword", mhsq);
+
+}
+
+int lua_mmap_struct::map(lua_State* LS)
+{
+	const char* name = lua_tostring(LS, 2);
+	uint64_t addr = get_numeric_argument<uint64_t>(LS, 3, "lua_mmap_struct::map");
+	const char* type = lua_tostring(LS, 4);
+	if(!name) {
+		lua_pushstring(LS, "lua_mmap_struct::map: Bad name");
+		lua_error(LS);
+		return 0;
+	}
+	if(!type) {
+		lua_pushstring(LS, "lua_mmap_struct::map: Bad type");
+		lua_error(LS);
+		return 0;
+	}
+	std::string name2(name);
+	std::string type2(type);
+	if(type2 == "byte")
+		mappings[name2] = std::make_pair(&mhub, addr);
+	else if(type2 == "sbyte")
+		mappings[name2] = std::make_pair(&mhsb, addr);
+	else if(type2 == "word")
+		mappings[name2] = std::make_pair(&mhuw, addr);
+	else if(type2 == "sword")
+		mappings[name2] = std::make_pair(&mhsw, addr);
+	else if(type2 == "dword")
+		mappings[name2] = std::make_pair(&mhud, addr);
+	else if(type2 == "sdword")
+		mappings[name2] = std::make_pair(&mhsd, addr);
+	else if(type2 == "qword")
+		mappings[name2] = std::make_pair(&mhuq, addr);
+	else if(type2 == "sqword")
+		mappings[name2] = std::make_pair(&mhsq, addr);
+	else {
+		lua_pushstring(LS, "lua_mmap_struct::map: Bad type");
+		lua_error(LS);
+		return 0;
+	}
+	return 0;
+}
+
+DECLARE_LUACLASS(lua_mmap_struct, "MMAP_STRUCT");
+
+lua_mmap_struct::lua_mmap_struct(lua_State* LS)
+{
+	static bool done = false;
+	if(!done) {
+		objclass<lua_mmap_struct>().bind(LS, "__index", &lua_mmap_struct::index, true);
+		objclass<lua_mmap_struct>().bind(LS, "__newindex", &lua_mmap_struct::newindex, true);
+		objclass<lua_mmap_struct>().bind(LS, "__call", &lua_mmap_struct::map);
+		done = true;
+	}
 }
