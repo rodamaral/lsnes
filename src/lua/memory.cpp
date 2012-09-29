@@ -2,6 +2,7 @@
 #include "core/memorymanip.hpp"
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
+#include "library/minmax.hpp"
 
 namespace
 {
@@ -119,6 +120,48 @@ namespace
 		h.write(buffer, size);
 		hash = h.read();
 		lua_pushlstring(LS, hash.c_str(), 64);
+		return 1;
+	});
+
+	function_ptr_luafun readmemoryr("memory.readregion", [](lua_State* LS, const std::string& fname) -> int {
+		std::string hash;
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t size = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		lua_newtable(LS);
+		char buffer[BLOCKSIZE];
+		uint64_t ctr = 0;
+		while(size > 0) {
+			size_t rsize = min(size, static_cast<size_t>(BLOCKSIZE));
+			memory_read_bytes(addr, rsize, buffer);
+			for(size_t i = 0; i < rsize; i++) {
+				lua_pushnumber(LS, ctr++);
+				lua_pushnumber(LS, static_cast<unsigned char>(buffer[i]));
+				lua_settable(LS, -3);
+			}
+			addr += rsize;
+			size -= rsize;
+		}
+		return 1;
+	});
+
+	function_ptr_luafun writememoryr("memory.writeregion", [](lua_State* LS, const std::string& fname) -> int {
+		std::string hash;
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t size = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		char buffer[BLOCKSIZE];
+		uint64_t ctr = 0;
+		while(size > 0) {
+			size_t rsize = min(size, static_cast<size_t>(BLOCKSIZE));
+			for(size_t i = 0; i < rsize; i++) {
+				lua_pushnumber(LS, ctr++);
+				lua_gettable(LS, 3);
+				buffer[i] = lua_tointeger(LS, -1);
+				lua_pop(LS, 1);
+			}
+			memory_write_bytes(addr, rsize, buffer);
+			addr += rsize;
+			size -= rsize;
+		}
 		return 1;
 	});
 

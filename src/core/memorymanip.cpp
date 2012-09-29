@@ -7,6 +7,7 @@
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "library/string.hpp"
+#include "library/minmax.hpp"
 
 #include <iostream>
 #include <limits>
@@ -275,6 +276,20 @@ uint8_t memory_read_byte(uint64_t addr) throw()
 	return memory_read_generic<uint8_t>(addr);
 }
 
+void memory_read_bytes(uint64_t addr, uint64_t size, char* buffer) throw()
+{
+	struct translated_address laddr = translate_address(addr);
+	size_t ssize = min(static_cast<uint64_t>(size), laddr.memory_size - laddr.rel_addr);
+	if(ssize > 0) {
+		if(laddr.iospace_rw) {
+			for(size_t i = 0; i < ssize; i++)
+				buffer[i] = laddr.iospace_rw(laddr.rel_addr++, 0, false);
+		} else
+			memcpy(buffer, laddr.memory + laddr.rel_addr, ssize);
+	}
+	memset(buffer + ssize, 0, size - ssize);
+}
+
 uint16_t memory_read_word(uint64_t addr) throw()
 {
 	return memory_read_generic<uint16_t>(addr);
@@ -294,6 +309,21 @@ uint64_t memory_read_qword(uint64_t addr) throw()
 bool memory_write_byte(uint64_t addr, uint8_t data) throw()
 {
 	return memory_write_generic<uint8_t>(addr, data);
+}
+
+void memory_write_bytes(uint64_t addr, uint64_t size, const char* buffer) throw()
+{
+	struct translated_address laddr = translate_address(addr);
+	if(laddr.not_writable)
+		return;
+	size_t ssize = min(static_cast<uint64_t>(size), laddr.memory_size - laddr.rel_addr);
+	if(ssize > 0) {
+		if(laddr.iospace_rw) {
+			for(size_t i = 0; i < ssize; i++)
+				laddr.iospace_rw(laddr.rel_addr++, buffer[i], true);
+		} else
+			memcpy(laddr.memory + laddr.rel_addr, buffer, ssize);
+	}
 }
 
 bool memory_write_word(uint64_t addr, uint16_t data) throw()

@@ -79,6 +79,19 @@ std::vector<struct memory_region> get_regions() throw(std::bad_alloc);
 uint8_t memory_read_byte(uint64_t addr) throw();
 
 /**
+ * \brief Read bytes from memory
+ *
+ * This function read table of bytes from memory.
+ *
+ * \param addr The address to read.
+ * \param size The size to read.
+ * \param data The place to store values read.
+ *
+ * \note This does not cross VMAs.
+ */
+void memory_read_bytes(uint64_t addr, uint64_t size, char* data) throw();
+
+/**
  * \brief Read word from memory
  *
  * This function reads two bytes from memory.
@@ -118,6 +131,19 @@ uint64_t memory_read_qword(uint64_t addr) throw();
  * \return true if the write succeeded.
  */
 bool memory_write_byte(uint64_t addr, uint8_t data) throw();
+
+/**
+ * \brief Write bytes to memory
+ *
+ * This function writes table of bytes to memory.
+ *
+ * \param addr The address to write.
+ * \param size The size of area to write.
+ * \param data The value to write.
+ *
+ * \note This does not cross VMAs.
+ */
+void memory_write_bytes(uint64_t addr, uint64_t size, const char* data) throw();
 
 /**
  * \brief Write word to memory

@@ -1351,6 +1351,10 @@ absolute value of <steps>.
 
 If <steps> is negative, the rotation will be counterclockwise.
 
+8.3.28 gui.screenshot(string filename)
+
+Saves a screenshot into specified file.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.
@@ -1429,10 +1433,25 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
-8.4.8 input.keyhook(key, state)
+8.4.8 input.keyhook(string key, boolean state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
+
+8.4.9 input.joyget(number controller)
+
+Returns table for current controls for specified controller. The 
+names of fields vary by controller type.
+
+• The buttons have the same name as those are referred to in 
+  other contexts in the emulator
+
+• The analog axes are “xaxis” and “yaxis”.
+
+8.4.10 input.joyset(number controller, table controls)
+
+Set the the state of specified controller to values specified in 
+specified table.
 
 8.5 Table subtitle
 
@@ -1566,21 +1585,30 @@ Return number of frames in movie.
 
 Return true if in readonly mode, false if in readwrite.
 
-8.7.4 movie.set_readwrite()
+8.7.4 movie.rerecords()
+
+Returns the current value of rerecord count.
+
+8.7.5 movie.set_readwrite()
 
 Set readwrite mode (does not cause on_readwrite callback).
 
-8.7.5 movie.frame_subframes(number frame)
+8.7.6 movie.frame_subframes(number frame)
 
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-8.7.6 movie.read_subframe(number frame, number subframe)
+8.7.7 movie.read_subframe(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
 
-8.7.7 movie.unsafe_rewind([UNSAFEREWIND state])
+8.7.8 movie.read_rtc()
+
+Returns the current value of the RTC as a pair (second, 
+subsecond).
+
+8.7.9 movie.unsafe_rewind([UNSAFEREWIND state])
 
 Start setting point for unsafe rewind or jump to point of unsafe 
 rewind.
@@ -1725,16 +1753,58 @@ complement) to specified address (as a quadword).
 Hash specified number of bytes starting from specified address 
 and return the SHA-256.
 
-8.10 Table _SYSTEM
+8.9.17 memory.hash_state()
+
+Hash the current system state. Mainly useful for debugging 
+savestates.
+
+8.9.18 memory.readregion(number base, number size)
+
+Read a region of memory.
+
+• Warning: If the region crosses VMA boundary, the results are 
+  undefined.
+
+8.9.19 memory.writeregion(number base, number size, table data)
+
+Write a region of memory.
+
+• Warning: If the region crosses VMA boundary, the results are 
+  undefined.
+
+8.10 Table subtitle
+
+Contains functions for manipulating subtitles.
+
+8.10.1 subtitle.byindex(number index)
+
+Get (basetime, length) pair of specified subtitle index or 
+nothing if index isn't valid.
+
+8.10.2 subtitle.get(number basetime, number length)
+
+Read the specified subtitle. Returns “” if the subtitle does not 
+exist.
+
+8.10.3 subtitle.set(number basetime, number length, string 
+  content)
+
+Set the specified subtitle.
+
+8.10.4 subtitle.deltete(number basetime, number length)
+
+Delete the specified subtitle.
+
+8.11 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-8.11 Callbacks
+8.12 Callbacks
 
 Various callbacks to Lua that can occur.
 
-8.11.1 Callback: on_paint(bool not_synth)
+8.12.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
@@ -1742,80 +1812,80 @@ graphic context draw on the screen.
 not_synth is true if this hook is being called in response to 
 received frame, false otherwise.
 
-8.11.2 Callback: on_video()
+8.12.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-8.11.3 Callback: on_frame_emulated()
+8.12.3 Callback: on_frame_emulated()
 
 Called when emulating frame has completed and 
 on_paint()/on_video() calls are about to be issued.
 
-8.11.4 Callback: on_frame()
+8.12.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-8.11.5 Callback: on_startup()
+8.12.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-8.11.6 Callback: on_rewind()
+8.12.6 Callback: on_rewind()
 
 Called when rewind movie to beginning has completed.
 
-8.11.7 Callback: on_pre_load(string name)
+8.12.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-8.11.8 Callback: on_err_load(string name)
+8.12.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-8.11.9 Callback: on_post_load(string name, boolean was_savestate)
+8.12.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-8.11.10 Callback: on_pre_save(string name, boolean is_savestate)
+8.12.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-8.11.11 Callback: on_err_save(string name)
+8.12.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-8.11.12 Callback: on_post_save(string name, boolean is_savestate)
+8.12.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-8.11.13 Callback: on_quit()
+8.12.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-8.11.14 Callback: on_input(boolean subframe)
+8.12.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-8.11.15 Callback: on_reset()
+8.12.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-8.11.16 Callback: on_readwrite()
+8.12.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-8.11.17 Callback: on_snoop(number port, number controller, number 
+8.12.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1824,31 +1894,31 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-8.11.18 Callback: on_keyhook(string keyname, table state)
+8.12.18 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-8.11.19 Callback: on_idle()
+8.12.19 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-8.11.20 Callback: on_timer()
+8.12.20 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-8.11.21 Callback: on_set_rewind(UNSAFEREWIND r)
+8.12.21 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-8.11.22 Callback: on_pre_rewind() 
+8.12.22 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-8.11.23 Callback: on_post_rewind() 
+8.12.23 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
 

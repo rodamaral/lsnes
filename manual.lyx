@@ -2703,6 +2703,14 @@ Perform hue rotation of color <color> (default bright red), by <step> steps.
 If <steps> is negative, the rotation will be counterclockwise.
 \end_layout
 
+\begin_layout Subsubsection
+gui.screenshot(string filename)
+\end_layout
+
+\begin_layout Standard
+Saves a screenshot into specified file.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
@@ -2846,12 +2854,55 @@ cal_tolerance: Dead zone tolerance.
 \end_layout
 
 \begin_layout Subsubsection
-input.keyhook(key, state)
+input.keyhook(string key, boolean state)
 \end_layout
 
 \begin_layout Standard
 Requests that keyhook events to be sent for key (state=true) or not sent
  (state=false).
+\end_layout
+
+\begin_layout Subsubsection
+input.joyget(number controller)
+\end_layout
+
+\begin_layout Standard
+Returns table for current controls for specified controller.
+ The names of fields vary by controller type.
+\end_layout
+
+\begin_layout Itemize
+The buttons have the same name as those are referred to in other contexts
+ in the emulator
+\end_layout
+
+\begin_layout Itemize
+The analog axes are 
+\begin_inset Quotes eld
+\end_inset
+
+xaxis
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+yaxis
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+input.joyset(number controller, table controls)
+\end_layout
+
+\begin_layout Standard
+Set the the state of specified controller to values specified in specified
+ table.
 \end_layout
 
 \begin_layout Subsection
@@ -3099,6 +3150,14 @@ Return true if in readonly mode, false if in readwrite.
 \end_layout
 
 \begin_layout Subsubsection
+movie.rerecords()
+\end_layout
+
+\begin_layout Standard
+Returns the current value of rerecord count.
+\end_layout
+
+\begin_layout Subsubsection
 movie.set_readwrite()
 \end_layout
 
@@ -3122,6 +3181,14 @@ movie.read_subframe(number frame, number subframe)
 \begin_layout Standard
 Read specifed subframe in specified frame and return data as array (100
  elements, numbered 0-99 currently).
+\end_layout
+
+\begin_layout Subsubsection
+movie.read_rtc()
+\end_layout
+
+\begin_layout Standard
+Returns the current value of the RTC as a pair (second, subsecond).
 \end_layout
 
 \begin_layout Subsubsection
@@ -3385,6 +3452,89 @@ memory.hash_region(number base, number size)
 \begin_layout Standard
 Hash specified number of bytes starting from specified address and return
  the SHA-256.
+\end_layout
+
+\begin_layout Subsubsection
+memory.hash_state()
+\end_layout
+
+\begin_layout Standard
+Hash the current system state.
+ Mainly useful for debugging savestates.
+\end_layout
+
+\begin_layout Subsubsection
+memory.readregion(number base, number size)
+\end_layout
+
+\begin_layout Standard
+Read a region of memory.
+\end_layout
+
+\begin_layout Itemize
+Warning: If the region crosses VMA boundary, the results are undefined.
+\end_layout
+
+\begin_layout Subsubsection
+memory.writeregion(number base, number size, table data)
+\end_layout
+
+\begin_layout Standard
+Write a region of memory.
+\end_layout
+
+\begin_layout Itemize
+Warning: If the region crosses VMA boundary, the results are undefined.
+\end_layout
+
+\begin_layout Subsection
+Table subtitle
+\end_layout
+
+\begin_layout Standard
+Contains functions for manipulating subtitles.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.byindex(number index)
+\end_layout
+
+\begin_layout Standard
+Get (basetime, length) pair of specified subtitle index or nothing if index
+ isn't valid.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.get(number basetime, number length)
+\end_layout
+
+\begin_layout Standard
+Read the specified subtitle.
+ Returns 
+\begin_inset Quotes eld
+\end_inset
+
+
+\begin_inset Quotes erd
+\end_inset
+
+ if the subtitle does not exist.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.set(number basetime, number length, string content)
+\end_layout
+
+\begin_layout Standard
+Set the specified subtitle.
+\end_layout
+
+\begin_layout Subsubsection
+subtitle.deltete(number basetime, number length)
+\end_layout
+
+\begin_layout Standard
+Delete the specified subtitle.
 \end_layout
 
 \begin_layout Subsection
