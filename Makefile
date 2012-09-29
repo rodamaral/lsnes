@@ -20,9 +20,11 @@ BSNES_PROFILE_STRING=profile=accuracy
 endif
 ifeq ($(BSNES_VERSION), 084)
 BSNES_PROFILE_STRING+=options=debugger
+CFLAGS += -DBSNES_HAS_DEBUGGER
 else
 ifeq ($(BSNES_VERSION), 085)
 BSNES_PROFILE_STRING+=options=debugger
+CFLAGS += -DBSNES_HAS_DEBUGGER
 endif
 endif
 

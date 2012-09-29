@@ -915,7 +915,7 @@ std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
 {
 	if(!internal_rom)
 		return std::make_pair(false, 0);
-#if defined(BSNES_V084) || defined(BSNES_V085)
+#ifdef BSNES_HAS_DEBUGGER
 	messages << "Executing delayed reset... This can take some time!" << std::endl;
 	video_refresh_done = false;
 	delayreset_cycles_run = 0;
