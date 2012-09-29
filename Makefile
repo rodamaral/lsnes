@@ -18,6 +18,14 @@ BSNES_PROFILE_STRING=profile=compatibility
 else
 BSNES_PROFILE_STRING=profile=accuracy
 endif
+ifeq ($(BSNES_VERSION), 084)
+BSNES_PROFILE_STRING+=options=debugger
+else
+ifeq ($(BSNES_VERSION), 085)
+BSNES_PROFILE_STRING+=options=debugger
+endif
+endif
+
 ifeq ($(BSNES_VERSION), 087)
 BSNES_TARGET_STRING=target=libsnes
 else
