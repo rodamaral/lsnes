@@ -7230,5 +7230,37 @@ Fix so that saved movies appear in recent movies.
 Don't open multiple commentary editors at once.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta15epsilon2
+\end_layout
+
+\begin_layout Itemize
+Lua: memory.readregion/memory.writeregion
+\end_layout
+
+\begin_layout Itemize
+Lua: memory.map{,s}{byte,word,dword,qword}
+\end_layout
+
+\begin_layout Itemize
+Lua: memory.map_structure
+\end_layout
+
+\begin_layout Itemize
+Lua: Fix bus_address for gambatte
+\end_layout
+
+\begin_layout Itemize
+Fix features dependent of bsnes debugger
+\end_layout
+
+\begin_layout Itemize
+Cleanup bsnes debugger logic
+\end_layout
+
+\begin_layout Itemize
+Fix resets in presence of save every frame
+\end_layout
+
 \end_body
 \end_document

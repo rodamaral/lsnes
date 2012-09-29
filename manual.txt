@@ -3557,3 +3557,19 @@ set-axis joystick0axis19 disabled
 
 • Don't open multiple commentary editors at once.
 
+18.74 rr1-delta15epsilon2
+
+• Lua: memory.readregion/memory.writeregion
+
+• Lua: memory.map{,s}{byte,word,dword,qword}
+
+• Lua: memory.map_structure
+
+• Lua: Fix bus_address for gambatte
+
+• Fix features dependent of bsnes debugger
+
+• Cleanup bsnes debugger logic
+
+• Fix resets in presence of save every frame
+

@@ -285,7 +285,7 @@ namespace
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
 		while(size > 0) {
-			size_t rsize = min(size, static_cast<size_t>(BLOCKSIZE));
+			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
 			memory_read_bytes(addr, rsize, buffer);
 			for(size_t i = 0; i < rsize; i++) {
 				lua_pushnumber(LS, ctr++);
@@ -305,7 +305,7 @@ namespace
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
 		while(size > 0) {
-			size_t rsize = min(size, static_cast<size_t>(BLOCKSIZE));
+			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
 			for(size_t i = 0; i < rsize; i++) {
 				lua_pushnumber(LS, ctr++);
 				lua_gettable(LS, 3);
