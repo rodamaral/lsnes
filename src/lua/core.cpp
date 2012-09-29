@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/emucore.hpp"
 #include "lua/internal.hpp"
 #include "core/framerate.hpp"
 #include "core/window.hpp"
@@ -71,7 +72,13 @@ namespace
 
 	function_ptr_luafun lua_busaddr("bus_address", [](lua_State* LS, const std::string& fname) -> int {
 		uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
-		lua_pushnumber(LS, 0x1000000 + (addr & 0xFFFFFF));
+		auto busrange = core_get_bus_map();
+		if(!busrange.second) {
+			lua_pushstring(LS, "This platform does not have bus mapping");
+			lua_error(LS);
+			return 0;
+		}
+		lua_pushnumber(LS, busrange.first + (addr % busrange.second));
 		return 1;
 	});
 }
