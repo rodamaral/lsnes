@@ -3476,6 +3476,19 @@ Warning: If the region crosses VMA boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsubsection
+memory.map<type>([number base, number size])
+\end_layout
+
+\begin_layout Standard
+Returns a table mapping specified memory aperture for read/write.
+ If parameters are omitted, entiere map space is the aperture.
+\end_layout
+
+\begin_layout Itemize
+Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+\end_layout
+
+\begin_layout Subsubsection
 memory.writeregion(number base, number size, table data)
 \end_layout
 

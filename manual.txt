@@ -1765,7 +1765,15 @@ Read a region of memory.
 • Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
-8.9.19 memory.writeregion(number base, number size, table data)
+8.9.19 memory.map<type>([number base, number size])
+
+Returns a table mapping specified memory aperture for read/write. 
+If parameters are omitted, entiere map space is the aperture.
+
+• Type may be one of: byte, sbyte, word, sword, dword, sdword, 
+  qword or sqword.
+
+8.9.20 memory.writeregion(number base, number size, table data)
 
 Write a region of memory.
 

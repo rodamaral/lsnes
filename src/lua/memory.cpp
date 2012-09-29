@@ -33,6 +33,113 @@ namespace
 		}
 	};
 
+	class mmap_base
+	{
+	public:
+		~mmap_base() {}
+		virtual void read(lua_State* LS, uint64_t addr) = 0;
+		virtual void write(lua_State* LS, uint64_t addr) = 0;
+	};
+
+	
+	template<typename T, typename U, U (*rfun)(uint64_t addr), bool (*wfun)(uint64_t addr, U value)>
+	class lua_mmap_memory_helper : public mmap_base
+	{
+	public:
+		~lua_mmap_memory_helper() {}
+		void read(lua_State* LS, uint64_t addr)
+		{
+			lua_pushnumber(LS, static_cast<T>(rfun(addr)));
+		}
+		
+		void write(lua_State* LS, uint64_t addr)
+		{
+			T value = get_numeric_argument<T>(LS, 3, "aperture(write)");
+			wfun(addr, value);
+		}
+	};
+
+	int aperture_read_fun(lua_State* LS)
+	{
+		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
+		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
+		if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
+			size = lua_tonumber(LS, lua_upvalueindex(2));
+		mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(read)");
+		if(addr > size || addr + base < addr) {
+			lua_pushnumber(LS, 0);
+			return 1;
+		}
+		addr += base;
+		fn->read(LS, addr);
+		return 1;
+	}
+
+	int aperture_write_fun(lua_State* LS)
+	{
+		
+		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
+		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
+		if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
+			size = lua_tonumber(LS, lua_upvalueindex(2));
+		mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
+		uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(write)");
+		if(addr > size || addr + base < addr)
+			return 0;
+		addr += base;
+		fn->write(LS, addr);
+		return 0;
+	}
+
+	void aperture_make_fun(lua_State* LS, uint64_t base, uint64_t size, mmap_base& type)
+	{
+		lua_newtable(LS);
+		lua_newtable(LS);
+		lua_pushstring(LS, "__index");
+		lua_pushnumber(LS, base);
+		if(!(size + 1))
+			lua_pushnil(LS);
+		else
+			lua_pushnumber(LS, size);
+		lua_pushlightuserdata(LS, &type);
+		lua_pushcclosure(LS, aperture_read_fun, 3);
+		lua_settable(LS, -3);
+		lua_pushstring(LS, "__newindex");
+		lua_pushnumber(LS, base);
+		if(!(size + 1))
+			lua_pushnil(LS);
+		else
+			lua_pushnumber(LS, size);
+		lua_pushlightuserdata(LS, &type);
+		lua_pushcclosure(LS, aperture_write_fun, 3);
+		lua_settable(LS, -3);
+		lua_setmetatable(LS, -2);
+	}
+
+	class lua_mmap_memory : public lua_function
+	{
+	public:
+		lua_mmap_memory(const std::string& name, mmap_base& _h) : lua_function(name), h(_h) {}
+		int invoke(lua_State* LS)
+		{
+			if(lua_isnoneornil(LS, 1)) {
+				aperture_make_fun(LS, 0, 0xFFFFFFFFFFFFFFFFULL, h);
+				return 1;
+			}
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+			uint64_t size = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+			if(!size) {
+				lua_pushstring(LS, "Aperture with zero size is not valid");
+				lua_error(LS);
+				return 0;
+			}
+			aperture_make_fun(LS, addr, size - 1, h);
+			return 1;
+		}
+		mmap_base& h;
+	};
+
 	function_ptr_luafun vmacount("memory.vma_count", [](lua_State* LS, const std::string& fname) -> int {
 		lua_pushnumber(LS, get_regions().size());
 		return 1;
@@ -177,4 +284,20 @@ namespace
 	lua_write_memory<uint16_t, memory_write_word> ww("memory.writeword");
 	lua_write_memory<uint32_t, memory_write_dword> wd("memory.writedword");
 	lua_write_memory<uint64_t, memory_write_qword> wq("memory.writeqword");
+	lua_mmap_memory_helper<uint8_t, uint8_t, memory_read_byte, memory_write_byte> mhub;
+	lua_mmap_memory_helper<int8_t, uint8_t, memory_read_byte, memory_write_byte> mhsb;
+	lua_mmap_memory_helper<uint16_t, uint16_t, memory_read_word, memory_write_word> mhuw;
+	lua_mmap_memory_helper<int16_t, uint16_t, memory_read_word, memory_write_word> mhsw;
+	lua_mmap_memory_helper<uint32_t, uint32_t, memory_read_dword, memory_write_dword> mhud;
+	lua_mmap_memory_helper<int32_t, uint32_t, memory_read_dword, memory_write_dword> mhsd;
+	lua_mmap_memory_helper<uint64_t, uint64_t, memory_read_qword, memory_write_qword> mhuq;
+	lua_mmap_memory_helper<int64_t, uint64_t, memory_read_qword, memory_write_qword> mhsq;
+	lua_mmap_memory mub("memory.mapbyte", mhub);
+	lua_mmap_memory msb("memory.mapsbyte", mhsb);
+	lua_mmap_memory muw("memory.mapword", mhuw);
+	lua_mmap_memory msw("memory.mapsword", mhsw);
+	lua_mmap_memory mud("memory.mapdword", mhud);
+	lua_mmap_memory msd("memory.mapsdword", mhsd);
+	lua_mmap_memory muq("memory.mapqword", mhuq);
+	lua_mmap_memory msq("memory.mapsqword", mhsq);
 }
