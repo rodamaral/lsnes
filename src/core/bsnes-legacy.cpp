@@ -924,6 +924,7 @@ std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
 	SNES::system.run();
 	SNES::cpu.step_event = nall::function<bool()>();
 	return std::make_pair(!video_refresh_done, delayreset_cycles_run);
+	have_saved_this_frame = true;
 #else
 	messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
 		<< std::endl;
