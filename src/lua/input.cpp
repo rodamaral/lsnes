@@ -190,4 +190,15 @@ namespace
 		}
 		return 0;
 	});
+
+	function_ptr_luafun ijlcid_to_pcid("input.lcid_to_pcid", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		int pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid < 0)
+			return 0;
+		lua_pushnumber(LS, pcid);
+		lua_pushnumber(LS, pcid / 4);
+		lua_pushnumber(LS, pcid % 4);
+		return 3;
+	});
 }

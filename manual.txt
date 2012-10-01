@@ -1453,6 +1453,11 @@ names of fields vary by controller type.
 Set the the state of specified controller to values specified in 
 specified table.
 
+8.4.11 input.lcid_to_pcid(number controller)
+
+Return the physical index, physical port and controller number in 
+port for specified (1-based) logical controller.
+
 8.5 Table subtitle
 
 Subtitle handling
