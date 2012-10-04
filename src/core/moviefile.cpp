@@ -387,10 +387,13 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	read_linefile(r, "coreversion", coreversion);
 	read_linefile(r, "rom.sha256", romimg_sha256[0], true);
 	read_linefile(r, "romxml.sha256", romxml_sha256[0], true);
+	unsigned base = 97;
+	if(r.has_member("slot`.sha256"))
+		base = 96;
 	for(size_t i = 0; i < 26; i++) {
-		read_linefile(r, (stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i + 1],
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i) << ".sha256").str(), romimg_sha256[i + 1],
 			true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(),
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i) << "xml.sha256").str(),
 			romxml_sha256[i + 1], true);
 	}
 	read_linefile(r, "prefix", prefix, true);
@@ -456,9 +459,9 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 	write_linefile(w, "rom.sha256", romimg_sha256[0], true);
 	write_linefile(w, "romxml.sha256", romxml_sha256[0], true);
 	for(size_t i = 0; i < 26; i++) {
-		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i + 1],
+		write_linefile(w, (stringfmt() << "slot" << (char)(97 + i) << ".sha256").str(), romimg_sha256[i + 1],
 			true);
-		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(),
+		write_linefile(w, (stringfmt() << "slot" << (char)(97 + i) << "xml.sha256").str(),
 			romxml_sha256[i + 1], true);
 	}
 	write_subtitles(w, "subtitles", subtitles);
