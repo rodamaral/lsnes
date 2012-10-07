@@ -1797,6 +1797,10 @@ type.
 • Type may be one of: byte, sbyte, word, sword, dword, sdword, 
   qword or sqword.
 
+8.9.23 memory.watch_expr(string expr)
+
+Evaluate specified watch expression and return result
+
 8.10 Table subtitle
 
 Contains functions for manipulating subtitles.

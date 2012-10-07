@@ -3529,6 +3529,14 @@ Bind key in mmap structure to specified address with specified type.
 Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
 \end_layout
 
+\begin_layout Subsubsection
+memory.read_expr(string expr)
+\end_layout
+
+\begin_layout Standard
+Evaluate specified watch expression and return result
+\end_layout
+
 \begin_layout Subsection
 Table subtitle
 \end_layout

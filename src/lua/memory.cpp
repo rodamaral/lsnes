@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "core/memorymanip.hpp"
+#include "core/memorywatch.hpp"
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -321,6 +322,13 @@ namespace
 
 	function_ptr_luafun gui_cbitmap("memory.map_structure", [](lua_State* LS, const std::string& fname) -> int {
 		lua_mmap_struct* b = lua_class<lua_mmap_struct>::create(LS, LS);
+		return 1;
+	});
+
+	function_ptr_luafun memory_watchexpr("memory.read_expr", [](lua_State* LS, const std::string& fname) -> int {
+		std::string in = lua_tostring(LS, 1);
+		std::string val = evaluate_watch(in);
+		lua_pushstring(LS, val.c_str());
 		return 1;
 	});
 
