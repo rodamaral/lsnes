@@ -326,8 +326,7 @@ namespace
 	});
 
 	function_ptr_luafun memory_watchexpr("memory.read_expr", [](lua_State* LS, const std::string& fname) -> int {
-		std::string in = lua_tostring(LS, 1);
-		std::string val = evaluate_watch(in);
+		std::string val = evaluate_watch(get_string_argument(LS, 1, fname.c_str()));
 		lua_pushstring(LS, val.c_str());
 		return 1;
 	});
