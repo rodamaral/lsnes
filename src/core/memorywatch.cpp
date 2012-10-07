@@ -69,6 +69,7 @@ namespace
 				if(*end)
 					throw std::runtime_error("#syntax (badval)");
 			}
+			hex = 0;
 		}
 		uint64_t as_address() const
 		{
@@ -242,8 +243,8 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 	numeric_type b;
 	int d;
 	try {
-	for(size_t i = 0; i < expr.length(); i++) {
-		numeric_type r;
+		for(size_t i = 0; i < expr.length(); i++) {
+			numeric_type r;
 			switch(expr[i]) {
 			case 'C':
 				y = expr.find_first_of("z", i);
