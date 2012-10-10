@@ -166,6 +166,27 @@ namespace
 	const char* buttonnames[] = {"left", "right", "up", "down", "A", "B", "select", "start"};
 	
 	void _set_core_controller(unsigned port) throw() {}
+
+	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
+	{
+		if(controller)
+			return -1;
+		if(lbid == LOGICAL_BUTTON_A)		return 0;
+		if(lbid == LOGICAL_BUTTON_B)		return 1;
+		if(lbid == LOGICAL_BUTTON_SELECT)	return 2;
+		if(lbid == LOGICAL_BUTTON_START)	return 3;
+		if(lbid == LOGICAL_BUTTON_RIGHT)	return 4;
+		if(lbid == LOGICAL_BUTTON_LEFT)		return 5;
+		if(lbid == LOGICAL_BUTTON_UP)		return 6;
+		if(lbid == LOGICAL_BUTTON_DOWN)		return 7;
+		return -1;
+	}
+
+
+	int get_button_id_none(unsigned controller, unsigned lbid) throw()
+	{
+		return -1;
+	}
 	
 	struct porttype_gamepad : public porttype_info
 	{
@@ -178,25 +199,12 @@ namespace
 			deserialize = generic_port_deserialize<1, 0, 8>;
 			legal = generic_port_legal<1>;
 			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = _set_core_controller;
 		}
 
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			if(controller)
-				return -1;
-			if(lbid == LOGICAL_BUTTON_A)		return 0;
-			if(lbid == LOGICAL_BUTTON_B)		return 1;
-			if(lbid == LOGICAL_BUTTON_SELECT)	return 2;
-			if(lbid == LOGICAL_BUTTON_START)	return 3;
-			if(lbid == LOGICAL_BUTTON_RIGHT)	return 4;
-			if(lbid == LOGICAL_BUTTON_LEFT)		return 5;
-			if(lbid == LOGICAL_BUTTON_UP)		return 6;
-			if(lbid == LOGICAL_BUTTON_DOWN)		return 7;
-			return -1;
-		}
 	} gamepad;
 
 	struct porttype_none : public porttype_info
@@ -210,14 +218,10 @@ namespace
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<0, 0>;
+			button_id = get_button_id_none;
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = _set_core_controller;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return -1;
 		}
 	} none;
 

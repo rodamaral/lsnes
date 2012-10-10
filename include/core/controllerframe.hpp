@@ -254,7 +254,7 @@ struct porttype_info
  * Parameter lbid: Logigal button ID.
  * Returns: The physical button ID, or -1 if no such button exists.
  */
-	virtual int button_id(unsigned controller, unsigned lbid) const throw() = 0;
+	int (*button_id)(unsigned controller, unsigned lbid);
 /**
  * Set this controller as core controller.
  *

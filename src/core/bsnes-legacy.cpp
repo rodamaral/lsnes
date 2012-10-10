@@ -569,14 +569,10 @@ namespace
 			deserialize = generic_port_deserialize<1, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_gamepad(controller, lbid);
 		}
 	} gamepad;
 
@@ -591,14 +587,10 @@ namespace
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<1, 3>;
+			button_id = get_button_id_justifier;
 			ctrlname = "justifier";
 			controllers = 1;
 			set_core_controller = set_core_controller_justifier;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_justifier(controller, lbid);
 		}
 	} justifier;
 
@@ -613,14 +605,10 @@ namespace
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<2, 3>;
+			button_id = get_button_id_justifiers;
 			ctrlname = "justifier";
 			controllers = 2;
 			set_core_controller = set_core_controller_justifiers;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_justifiers(controller, lbid);
 		}
 	} justifiers;
 
@@ -635,14 +623,10 @@ namespace
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 5>;
+			button_id = get_button_id_mouse;
 			ctrlname = "mouse";
 			controllers = 1;
 			set_core_controller = set_core_controller_mouse;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_mouse(controller, lbid);
 		}
 	} mouse;
 
@@ -657,14 +641,10 @@ namespace
 			deserialize = generic_port_deserialize<4, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
+			button_id = get_button_id_multitap;
 			ctrlname = "multitap";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_multitap(controller, lbid);
 		}
 	} multitap;
 
@@ -679,14 +659,10 @@ namespace
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<0, 0>;
+			button_id = get_button_id_none;
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_none;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_none(controller, lbid);
 		}
 	} none;
 
@@ -701,14 +677,10 @@ namespace
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;
+			button_id = get_button_id_superscope;
 			ctrlname = "superscope";
 			controllers = 1;
 			set_core_controller = set_core_controller_superscope;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return get_button_id_superscope(controller, lbid);
 		}
 	} superscope;
 

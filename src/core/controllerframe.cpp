@@ -23,6 +23,11 @@ namespace
 		exit(1);
 	}
 
+	int button_id_illegal(unsigned controller, unsigned lbid)
+	{
+		return -1;
+	}
+	
 	struct porttype_invalid : public porttype_info
 	{
 		porttype_invalid() : porttype_info("invalid-port-type", "invalid-port-type", 99999, 0)
@@ -34,14 +39,10 @@ namespace
 			deserialize = NULL;
 			legal = NULL;
 			deviceflags = generic_port_deviceflags<0, 0>;
+			button_id = button_id_illegal;
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_illegal;
-		}
-
-		int button_id(unsigned controller, unsigned lbid) const throw()
-		{
-			return -1;
 		}
 	};
 
