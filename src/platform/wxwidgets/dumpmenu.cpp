@@ -56,14 +56,15 @@ public:
 
 	void on_dumper_update()
 	{
-		std::map<std::string, dumper_info> new_dumpers;
+		new_dumpers.clear();
 		std::set<adv_dumper*> dset = adv_dumper::get_dumper_set();
 		for(auto i : dset)
 			update_dumperinfo(new_dumpers, i);
-		runuifun([linked, new_dumpers]() { if(linked) linked->update(new_dumpers); });
+		runuifun([this]() { if(this->linked) this->linked->update(this->new_dumpers); });
 	}
 private:
 	dumper_menu* linked;
+	std::map<std::string, dumper_info> new_dumpers;
 };
 
 

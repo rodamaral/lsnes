@@ -356,32 +356,48 @@ void wxwindow_memorysearch::update()
 {
 	std::string ret;
 	uint64_t addr_count;
-	runemufn([msearch, &ret, &addr_count, typecode, hexmode, &addresses]() {
-		addr_count = msearch->get_candidate_count();
+	runemufn([this, &ret, &addr_count]() {
+		addr_count = this->msearch->get_candidate_count();
 		if(addr_count <= CANDIDATE_LIMIT) {
-			addresses.clear();
-			std::list<uint64_t> addrs = msearch->get_candidates();
+			this->addresses.clear();
+			std::list<uint64_t> addrs = this->msearch->get_candidates();
 			long j = 0;
 			for(auto i : addrs) {
 				std::ostringstream row;
 				row << hexformat_address(i) << " ";
-				switch(typecode) {
-				case 0:		row << format_number_signed(memory_read_byte(i), hexmode);	break;
-				case 1:		row << format_number_unsigned(memory_read_byte(i), hexmode);	break;
-				case 2:		row << format_number_signed(memory_read_word(i), hexmode);	break;
-				case 3:		row << format_number_unsigned(memory_read_word(i), hexmode);	break;
-				case 4:		row << format_number_signed(memory_read_dword(i), hexmode);	break;
-				case 5:		row << format_number_unsigned(memory_read_dword(i), hexmode);	break;
-				case 6:		row << format_number_signed(memory_read_qword(i), hexmode);	break;
-				case 7:		row << format_number_unsigned(memory_read_qword(i), hexmode);	break;
+				switch(this->typecode) {
+				case 0:
+					row << format_number_signed(memory_read_byte(i), this->hexmode);
+		 			break;
+				case 1:
+					row << format_number_unsigned(memory_read_byte(i), this->hexmode);
+					break;
+				case 2:
+					row << format_number_signed(memory_read_word(i), this->hexmode);
+					break;
+				case 3:
+					row << format_number_unsigned(memory_read_word(i), this->hexmode);
+					break;
+				case 4:
+					row << format_number_signed(memory_read_dword(i), this->hexmode);
+					break;
+				case 5:
+					row << format_number_unsigned(memory_read_dword(i), this->hexmode);
+					break;
+				case 6:
+					row << format_number_signed(memory_read_qword(i), this->hexmode);
+					break;
+				case 7:
+					row << format_number_unsigned(memory_read_qword(i), this->hexmode);
+					break;
 				};
 				row << std::endl;
 				ret = ret + row.str();
-				addresses[j++] = i;
+				this->addresses[j++] = i;
 			}
 		} else {
 			ret = "Too many candidates to display";
-			addresses.clear();
+			this->addresses.clear();
 		}
 	});
 	std::ostringstream x;

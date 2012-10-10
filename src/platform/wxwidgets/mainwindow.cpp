@@ -319,17 +319,18 @@ namespace
 	void controller_autohold_menu::change_type()
 	{
 		enabled_entries = 0;
-		runuifun([&autoholds, &pidxs, our_pid]() {
+		runuifun([this]() {
 			auto limits = get_core_logical_controller_limits();
-			autoholds.resize(limits.second);
+			this->autoholds.resize(limits.second);
 			for(unsigned i = 0; i < limits.second; i++) {
-				pidxs[i] = -1;
-				if(our_pid >= 0)
-					pidxs[i] = controls.button_id(our_pid, i);
-				if(pidxs[i] >= 0)
-					autoholds[i] = (our_pid > 0 && controls.autohold(our_pid, pidxs[i]));
+				this->pidxs[i] = -1;
+				if(this->our_pid >= 0)
+					this->pidxs[i] = controls.button_id(this->our_pid, i);
+				if(this->pidxs[i] >= 0)
+					this->autoholds[i] = (this->our_pid > 0 && controls.autohold(this->our_pid,
+						this->pidxs[i]));
 				else
-					autoholds[i] = false;
+					this->autoholds[i] = false;
 			}
 		});
 		our_pid = controls.lcid_to_pcid(our_lid);
@@ -471,27 +472,27 @@ namespace
 
 	void broadcast_listener::on_sound_unmute(bool unmute) throw()
 	{
-		runuifun([unmute, mainw]() { mainw->menu_check(wxID_AUDIO_ENABLED, unmute); });
+		runuifun([this, unmute]() { this->mainw->menu_check(wxID_AUDIO_ENABLED, unmute); });
 	}
 
 	void broadcast_listener::on_sound_change(const std::string& dev) throw()
 	{
-		runuifun([dev, sounddev]() { if(sounddev) sounddev->update(dev); });
+		runuifun([this, dev]() { if(this->sounddev) this->sounddev->update(dev); });
 	}
 
 	void broadcast_listener::on_mode_change(bool readonly) throw()
 	{
-		runuifun([readonly, mainw]() { mainw->menu_check(wxID_READONLY_MODE, readonly); });
+		runuifun([this, readonly]() { this->mainw->menu_check(wxID_READONLY_MODE, readonly); });
 	}
 
 	void broadcast_listener::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
 	{
-		runuifun([pid, ctrlnum, newstate, ahmenu]() { ahmenu->update(pid, ctrlnum, newstate); });
+		runuifun([this, pid, ctrlnum, newstate]() { this->ahmenu->update(pid, ctrlnum, newstate); });
 	}
 
 	void broadcast_listener::on_autohold_reconfigure()
 	{
-		runuifun([ahmenu]() { ahmenu->reconfigure(); });
+		runuifun([this]() { this->ahmenu->reconfigure(); });
 	}
 
 	path_setting moviepath_setting("moviepath");

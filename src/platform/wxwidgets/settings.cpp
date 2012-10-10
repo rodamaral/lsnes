@@ -68,7 +68,8 @@ namespace
 			else {
 				if(pkey == name) {
 					keygrab_active = false;
-					runuifun([pkey]() { report_grab_key(pkey); });
+					std::string tmp = pkey;
+					runuifun([tmp]() { report_grab_key(tmp); });
 				} else
 					pkey = "";
 			}
@@ -1673,9 +1674,8 @@ void wxeditor_esettings_advanced::on_setting_change(const std::string& setting, 
 {
 	if(destruction_underway)
 		return;
-	wxeditor_esettings_advanced* th = this;
-	runuifun([&settings, &values, setting, value, th]() { 
-		settings.insert(setting); values[setting] = value; th->_refresh();
+	runuifun([this, setting, value]() { 
+		this->settings.insert(setting); this->values[setting] = value; this->_refresh();
 		});
 }
 
@@ -1684,8 +1684,8 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 	if(destruction_underway)
 		return;
 	wxeditor_esettings_advanced* th = this;
-	runuifun([&settings, &values, setting, th]() {
-		settings.insert(setting); values.erase(setting); th->_refresh();
+	runuifun([this, setting]() {
+		this->settings.insert(setting); this->values.erase(setting); this->_refresh();
 		});
 }
 
