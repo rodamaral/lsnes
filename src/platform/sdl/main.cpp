@@ -13,6 +13,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 #include "library/minmax.hpp"
 #include "library/zip.hpp"
 
@@ -30,8 +31,9 @@ bool dummy_interface = false;
 struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {
 	struct moviefile movie;
-	movie.port1 = &core_portgroup.get_default_type(0);
-	movie.port2 = &core_portgroup.get_default_type(1);
+	std::vector<class port_type*> ports;
+	for(unsigned i = 0; i <= core_userports; i++)
+		ports.push_back(&core_portgroup.get_default_type(i));
 	movie.coreversion = bsnes_core_version;
 	movie.projectid = get_random_hexstring(40);
 	movie.gametype = &r.rtype->combine_region(*r.region);
@@ -44,10 +46,12 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 		std::string o = *i;
 		if(o.length() >= 9 && o.substr(0, 9) == "--prefix=")
 			movie.prefix = sanitize_prefix(o.substr(9));
-		if(o.length() >= 8 && o.substr(0, 8) == "--port1=")
-			movie.port1 = &core_portgroup.get_type(o.substr(8));
-		if(o.length() >= 8 && o.substr(0, 8) == "--port2=")
-			movie.port2 = &core_portgroup.get_type(o.substr(8));
+		for(unsigned i = 1; i <= core_userports; i++) {
+			std::string optn = (stringfmt() << "--port" << i << "=").str();
+			size_t optnl = optn.length();
+			if(o.length() >= optnl && o.substr(0, optnl) == optn)
+			ports[i] = &core_portgroup.get_type(o.substr(optnl));
+		}
 		if(o.length() >= 11 && o.substr(0, 11) == "--gamename=")
 			movie.gamename = o.substr(11);
 		if(o.length() >= 9 && o.substr(0, 9) == "--author=") {
@@ -65,7 +69,8 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 			movie.anchor_savestate = read_file_relative(o.substr(19), "");
 		}
 	}
-	movie.input.clear(*movie.port1, *movie.port2);
+	movie.ports = &port_type_set::make(ports);
+	movie.input.clear(*movie.ports);
 
 	return movie;
 }

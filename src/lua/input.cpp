@@ -8,73 +8,134 @@
 
 namespace
 {
-	function_ptr_luafun iset("input.set", [](lua_State* LS, const std::string& fname) -> int {
+	int input_set(lua_State* LS, unsigned port, unsigned controller, unsigned index, short value)
+	{
 		if(!lua_input_controllerdata)
 			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
-		short value = get_numeric_argument<short>(LS, 3, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
-			return 0;
-		lua_input_controllerdata->axis(controller, index, value);
+		lua_input_controllerdata->axis3(port, controller, index, value);
 		return 0;
-	});
+	}
 
-	function_ptr_luafun iget("input.get", [](lua_State* LS, const std::string& fname) -> int {
+	int input_get(lua_State* LS, unsigned port, unsigned controller, unsigned index)
+	{
 		if(!lua_input_controllerdata)
 			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT || index > MAX_CONTROLS_PER_CONTROLLER)
-			return 0;
-		lua_pushnumber(LS, lua_input_controllerdata->axis(controller, index));
+		lua_pushnumber(LS, lua_input_controllerdata->axis3(port, controller, index));
 		return 1;
-	});
+	}
 
-	function_ptr_luafun iseta("input.seta", [](lua_State* LS, const std::string& fname) -> int {
-		if(!lua_input_controllerdata)
-			return 0;
-		short val;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT)
-			return 0;
-		uint64_t base = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++) {
-			val = (base >> i) & 1;
-			get_numeric_argument<short>(LS, i + 3, val, fname.c_str());
-			lua_input_controllerdata->axis(controller, i, val);
-		}
-		return 0;
-	});
-
-	function_ptr_luafun igeta("input.geta", [](lua_State* LS, const std::string& fname) -> int {
-		if(!lua_input_controllerdata)
-			return 0;
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		if(controller >= MAX_PORTS * MAX_CONTROLLERS_PER_PORT)
-			return 0;
-		uint64_t fret = 0;
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++)
-			if(lua_input_controllerdata->axis(controller, i))
-				fret |= (1ULL << i);
-		lua_pushnumber(LS, fret);
-		for(unsigned i = 0; i < MAX_CONTROLS_PER_CONTROLLER; i++)
-			lua_pushnumber(LS, lua_input_controllerdata->axis(controller, i));
-		return MAX_CONTROLS_PER_CONTROLLER + 1;
-	});
-
-	function_ptr_luafun igett("input.controllertype", [](lua_State* LS, const std::string& fname) -> int {
-		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+	int input_controllertype(lua_State* LS, unsigned port, unsigned controller)
+	{
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		port_type& p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
-		if(p.controllers <= controller % MAX_CONTROLLERS_PER_PORT)
+		const port_type& p = f.get_port_type(port);
+		if(p.controllers <= controller)
 			lua_pushnil(LS);
 		else if(p.ctrlname == "")
 			lua_pushnil(LS);
 		else
 			lua_pushstring(LS, p.ctrlname.c_str());
 		return 1;
+	}
+
+	int input_seta(lua_State* LS, unsigned port, unsigned controller, int base, const char* fname)
+	{
+		if(!lua_input_controllerdata)
+			return 0;
+		short val;
+		if(port >= lua_input_controllerdata->get_port_count())
+			return 0;
+		const port_type& pt = lua_input_controllerdata->get_port_type(port);
+		if(controller >= pt.controllers)
+			return 0;
+		for(unsigned i = 0; i < pt.controller_indices[controller]; i++) {
+			val = (base >> i) & 1;
+			get_numeric_argument<short>(LS, i + base, val, fname);
+			lua_input_controllerdata->axis3(port, controller, i, val);
+		}
+		return 0;
+	}
+
+	int input_geta(lua_State* LS, unsigned port, unsigned controller)
+	{
+		if(!lua_input_controllerdata)
+			return 0;
+		if(port >= lua_input_controllerdata->get_port_count())
+			return 0;
+		const port_type& pt = lua_input_controllerdata->get_port_type(port);
+		if(controller >= pt.controllers)
+			return 0;
+		uint64_t fret = 0;
+		for(unsigned i = 0; i < pt.controller_indices[controller]; i++)
+			if(lua_input_controllerdata->axis3(port, controller, i))
+				fret |= (1ULL << i);
+		lua_pushnumber(LS, fret);
+		for(unsigned i = 0; i < pt.controller_indices[controller]; i++)
+			lua_pushnumber(LS, lua_input_controllerdata->axis3(port, controller, i));
+		return pt.controller_indices[controller] + 1;
+	}
+
+	function_ptr_luafun iset("input.set", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		short value = get_numeric_argument<short>(LS, 3, fname.c_str());
+		return input_set(LS, controller / 4 + 1, controller % 4, index, value);
+	});
+
+	function_ptr_luafun iset2("input.set2", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		short value = get_numeric_argument<short>(LS, 4, fname.c_str());
+		return input_set(LS, port, controller, index, value);
+	});
+
+	function_ptr_luafun iget("input.get", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		return input_get(LS, controller / 4 + 1, controller % 4, index);
+	});
+
+	function_ptr_luafun iget2("input.get2", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		return input_get(LS, port, controller, index);
+	});
+
+	function_ptr_luafun iseta("input.seta", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		uint64_t base = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		return input_seta(LS, controller / 4 + 1, controller % 4, 3, fname.c_str());
+	});
+
+	function_ptr_luafun iseta2("input.seta2", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		uint64_t base = get_numeric_argument<uint64_t>(LS, 3, fname.c_str());
+		return input_seta(LS, port, controller, 4, fname.c_str());
+	});
+
+	function_ptr_luafun igeta("input.geta", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		return input_geta(LS, controller / 4 + 1, controller % 4);
+	});
+
+	function_ptr_luafun igeta2("input.geta2", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		return input_geta(LS, port, controller);
+	});
+
+	function_ptr_luafun igett("input.controllertype", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		return input_controllertype(LS, controller / 4 + 1, controller % 4);
+	});
+
+	function_ptr_luafun igett2("input.controllertype2", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		return input_controllertype(LS, port, controller);
 	});
 
 	function_ptr_luafun ireset("input.reset", [](lua_State* LS, const std::string& fname) -> int {
@@ -86,8 +147,9 @@ namespace
 			return 0;
 		short lo = cycles % 10000;
 		short hi = cycles / 10000;
-		lua_input_controllerdata->reset(true);
-		lua_input_controllerdata->delay(std::make_pair(hi, lo));
+		lua_input_controllerdata->axis3(0, 0, 1, 1);
+		lua_input_controllerdata->axis3(0, 0, 2, hi);
+		lua_input_controllerdata->axis3(0, 0, 3, lo);
 		return 0;
 	});
 
@@ -121,8 +183,8 @@ namespace
 		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		if(!lua_input_controllerdata)
 			return 0;
-		int pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid < 0) {
+		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid.first < 0) {
 			lua_pushstring(LS, "Invalid controller for input.joyget");
 			lua_error(LS);
 			return 0;
@@ -131,19 +193,19 @@ namespace
 		unsigned lcnt = get_core_logical_controller_limits().second;
 		for(unsigned i = 0; i < lcnt; i++) {
 			std::string n = get_logical_button_name(i);
-			int y = lua_input_controllerdata->button_id(pcid, i);
+			int y = lua_input_controllerdata->button_id(pcid.first, pcid.second, i);
 			if(y < 0)
 				continue;
 			lua_pushstring(LS, n.c_str());
-			lua_pushboolean(LS, lua_input_controllerdata->axis(pcid, y) != 0);
+			lua_pushboolean(LS, lua_input_controllerdata->axis3(pcid.first, pcid.second, y) != 0);
 			lua_settable(LS, -3);
 		}
-		if(lua_input_controllerdata->is_analog(pcid)) {
+		if(lua_input_controllerdata->is_analog(pcid.first, pcid.second)) {
 			lua_pushstring(LS, "xaxis");
-			lua_pushnumber(LS, lua_input_controllerdata->axis(pcid, 0));
+			lua_pushnumber(LS, lua_input_controllerdata->axis3(pcid.first, pcid.second, 0));
 			lua_settable(LS, -3);
 			lua_pushstring(LS, "yaxis");
-			lua_pushnumber(LS, lua_input_controllerdata->axis(pcid, 1));
+			lua_pushnumber(LS, lua_input_controllerdata->axis3(pcid.first, pcid.second, 1));
 			lua_settable(LS, -3);
 		}
 		return 1;
@@ -158,8 +220,8 @@ namespace
 		}
 		if(!lua_input_controllerdata)
 			return 0;
-		int pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid < 0) {
+		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid.first < 0) {
 			lua_pushstring(LS, "Invalid controller for input.joyset");
 			lua_error(LS);
 			return 0;
@@ -167,25 +229,25 @@ namespace
 		unsigned lcnt = get_core_logical_controller_limits().second;
 		for(unsigned i = 0; i < lcnt; i++) {
 			std::string n = get_logical_button_name(i);
-			int y = lua_input_controllerdata->button_id(pcid, i);
+			int y = lua_input_controllerdata->button_id(pcid.first, pcid.second, i);
 			if(y < 0)
 				continue;
 			lua_pushstring(LS, n.c_str());
 			lua_gettable(LS, 2);
 			int s = lua_toboolean(LS, -1) ? 1 : 0;
-			lua_input_controllerdata->axis(pcid, y, s);
+			lua_input_controllerdata->axis3(pcid.first, pcid.second, y, s);
 			lua_pop(LS, 1);
 		}
-		if(lua_input_controllerdata->is_analog(pcid)) {
+		if(lua_input_controllerdata->is_analog(pcid.first, pcid.second)) {
 			lua_pushstring(LS, "xaxis");
 			lua_gettable(LS, 2);
 			int s = lua_tonumber(LS, -1);
-			lua_input_controllerdata->axis(pcid, 0, s);
+			lua_input_controllerdata->axis3(pcid.first, pcid.second, 0, s);
 			lua_pop(LS, 1);
 			lua_pushstring(LS, "yaxis");
 			lua_gettable(LS, 2);
 			s = lua_tonumber(LS, -1);
-			lua_input_controllerdata->axis(pcid, 1, s);
+			lua_input_controllerdata->axis3(pcid.first, pcid.second, 1, s);
 			lua_pop(LS, 1);
 		}
 		return 0;
@@ -193,12 +255,12 @@ namespace
 
 	function_ptr_luafun ijlcid_to_pcid("input.lcid_to_pcid", [](lua_State* LS, const std::string& fname) -> int {
 		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		int pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid < 0)
+		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid.first < 0)
 			return 0;
-		lua_pushnumber(LS, pcid);
-		lua_pushnumber(LS, pcid / 4);
-		lua_pushnumber(LS, pcid % 4);
+		lua_pushnumber(LS, (pcid.first - 1) * 4 + pcid.second);
+		lua_pushnumber(LS, pcid.first);
+		lua_pushnumber(LS, pcid.second);
 		return 3;
 	});
 }

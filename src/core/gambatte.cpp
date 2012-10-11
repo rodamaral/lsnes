@@ -34,6 +34,7 @@
 
 const char* button_symbols = "ABsSrlud";
 port_type_group core_portgroup;
+unsigned core_userports = 1;
 
 namespace
 {
@@ -62,6 +63,8 @@ namespace
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
+	unsigned index_count_table[] = {12, 12, 12, 12};
+	unsigned index_count_table_sys[] = {4};
 
 	void init_norom_framebuffer()
 	{
@@ -91,7 +94,7 @@ namespace
 			unsigned v = 0;
 			for(unsigned i = 0; i < 8; i++) {
 				int_pflag = int_pflag ? int_pflag : 1;
-				if(ecore_callbacks->get_input(0, 0, i))
+				if(ecore_callbacks->get_input(1, 0, i))
 					v |= (1 << i);
 			}
 			return v;
@@ -189,6 +192,40 @@ namespace
 		return -1;
 	}
 
+	size_t system_serialize(const unsigned char* buffer, char* textbuf)
+	{
+		char tmp[128];
+		sprintf(tmp, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+		size_t len = strlen(tmp);
+		memcpy(textbuf, tmp, len);
+		return len;
+	}
+
+	void set_core_controller_system(unsigned port) throw()
+	{
+	}
+
+	struct porttype_system : public port_type
+	{
+		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 1)
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 18>;
+			serialize = system_serialize;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<0>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_none;
+			ctrlname = "";
+			controllers = 1;
+			index_count = 4;
+			controller_indices = index_count_table_sys;
+			set_core_controller = set_core_controller_system;
+			core_portgroup.set_default(0, *this);
+		}
+	} psystem;
+
 	struct porttype_gamepad : public port_type
 	{
 		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1,
@@ -204,30 +241,13 @@ namespace
 			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
-			set_core_controller = _set_core_controller;
-			core_portgroup.set_default(0, *this);
-		}
-
-	} gamepad;
-
-	struct porttype_none : public port_type
-	{
-		porttype_none() : port_type(core_portgroup, "none", "None", 0, generic_port_size<0, 0, 0>())
-		{
-			write = generic_port_write<0, 0, 0>;
-			read = generic_port_read<0, 0, 0>;
-			display = generic_port_display<0, 0, 0, 0>;
-			serialize = generic_port_serialize<0, 0, 0, 0>;
-			deserialize = generic_port_deserialize<0, 0, 0>;
-			legal = generic_port_legal<2>;
-			deviceflags = generic_port_deviceflags<0, 0>;
-			button_id = get_button_id_none;
-			ctrlname = "";
-			controllers = 0;
+			index_count = 96;	//Backward compatiblity fun.
+			controller_indices = index_count_table;
 			set_core_controller = _set_core_controller;
 			core_portgroup.set_default(1, *this);
 		}
-	} none;
+
+	} gamepad;
 }
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)

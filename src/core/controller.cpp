@@ -34,24 +34,26 @@ namespace
 	//Do button action.
 	void do_button_action(unsigned ui_id, unsigned button, short newstate, int mode)
 	{
-		int x = controls.lcid_to_pcid(ui_id);
-		if(x < 0) {
+		auto x = controls.lcid_to_pcid(ui_id);
+		if(x.first < 0) {
 			messages << "No such controller #" << (ui_id + 1) << std::endl;
 			return;
 		}
-		int bid = controls.button_id(x, button);
+		int bid = controls.button_id(x.first, x.second, button);
 		if(bid < 0) {
 			messages << "Invalid button for controller type" << std::endl;
 			return;
 		}
 		if(mode == 1) {
 			//Autohold.
-			controls.autohold(x, bid, controls.autohold(x, bid) ^ newstate);
-			information_dispatch::do_autohold_update(x, bid, controls.autohold(x, bid));
+			controls.autohold2(x.first, x.second, bid, controls.autohold2(x.first, x.second, bid) ^
+				newstate);
+			information_dispatch::do_autohold_update(x.first, x.second, bid, controls.autohold2(x.first,
+				x.second, bid));
 		} else if(mode == 2) {
 			//Framehold.
-			bool nstate = controls.framehold(x, bid) ^ newstate;
-			controls.framehold(x, bid, nstate);
+			bool nstate = controls.framehold2(x.first, x.second, bid) ^ newstate;
+			controls.framehold2(x.first, x.second, bid, nstate);
 			if(nstate)
 				messages << "Holding " << (ui_id + 1) << get_logical_button_name(button)
 					<< " for the next frame" << std::endl;
@@ -59,25 +61,25 @@ namespace
 				messages << "Not holding " << (ui_id + 1) << get_logical_button_name(button)
 					<< " for the next frame" << std::endl;
 		} else
-			controls.button(x, bid, newstate);
+			controls.button2(x.first, x.second, bid, newstate);
 	}
 
 	void send_analog(unsigned lcid, int32_t x, int32_t y)
 	{
-		int pcid = controls.lcid_to_pcid(lcid);
-		if(pcid < 0) {
+		auto pcid = controls.lcid_to_pcid(lcid);
+		if(pcid.first < 0) {
 			messages << "Controller #" << (lcid + 1) << " not present" << std::endl;
 			return;
 		}
-		if(controls.is_analog(pcid) < 0) {
+		if(controls.is_analog(pcid.first, pcid.second) < 0) {
 			messages << "Controller #" << (lcid + 1) << " is not analog" << std::endl;
 			return;
 		}
 		auto g2 = get_framebuffer_size();
-		if(controls.is_mouse(pcid)) {
-			controls.analog(pcid, x - g2.first / 2, y - g2.second / 2);
+		if(controls.is_mouse(pcid.first, pcid.second)) {
+			controls.analog(pcid.first, pcid.second, x - g2.first / 2, y - g2.second / 2);
 		} else
-			controls.analog(pcid, x / 2 , y / 2);
+			controls.analog(pcid.first, pcid.second, x / 2 , y / 2);
 	}
 
 	function_ptr_command<const std::string&> autofire("autofire", "Set autofire pattern",
@@ -105,15 +107,15 @@ namespace
 						if(!buttonmap.count(button))
 							(stringfmt() << "Invalid button '" << button << "'").throwex();
 						auto g = buttonmap[button];
-						int x = controls.lcid_to_pcid(g.first);
-						if(x < 0)
+						auto x = controls.lcid_to_pcid(g.first);
+						if(x.first < 0)
 							(stringfmt() << "No such controller #" << (g.first + 1)).
 								throwex();
-						int bid = controls.button_id(x, g.second);
+						int bid = controls.button_id(x.first, x.second, g.second);
 						if(bid < 0)
 							(stringfmt() << "Invalid button for controller type").
 								throwex();
-						c.axis(x, bid, true);
+						c.axis3(x.first, x.second, bid, true);
 						fpattern = rest;
 					}
 					new_autofire_pattern.push_back(c);

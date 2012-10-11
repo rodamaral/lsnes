@@ -54,17 +54,17 @@ namespace
 		lua_pushnumber(LS, r.sync() ? 1 : 0);
 		lua_settable(LS, -3);
 		lua_pushnumber(LS, 1);
-		lua_pushnumber(LS, r.reset() ? 1 : 0);
+		lua_pushnumber(LS, r.axis3(0, 0, 1) ? 1 : 0);
 		lua_settable(LS, -3);
 		lua_pushnumber(LS, 2);
-		lua_pushnumber(LS, r.delay().first);
+		lua_pushnumber(LS, r.axis3(0, 0, 2));
 		lua_settable(LS, -3);
 		lua_pushnumber(LS, 3);
-		lua_pushnumber(LS, r.delay().second);
+		lua_pushnumber(LS, r.axis3(0, 0, 3));
 		lua_settable(LS, -3);
 
-		for(size_t i = 0; i < MAX_BUTTONS; i++) {
-			lua_pushnumber(LS, i + 4);
+		for(size_t i = 4; i < r.get_index_count(); i++) {
+			lua_pushnumber(LS, i);
 			lua_pushnumber(LS, r.axis2(i));
 			lua_settable(LS, -3);
 		}

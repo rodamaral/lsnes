@@ -11,6 +11,7 @@
 #include "core/framerate.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -46,7 +47,7 @@ namespace
 		dfltidx = 0;
 		auto types = core_portgroup.get_types();
 		for(auto i : types)
-			if(i->legal && i->legal(port)) {
+			if(i->legal && i->legal(port - 1)) {
 				cc.push_back(towxstring(i->hname));
 				if(i == &dflt)
 					dfltidx = cc.size() - 1;
@@ -177,8 +178,7 @@ private:
 	struct moviefile make_movie();
 	std::map<std::string, wxTextCtrl*> sram_files;
 	std::map<std::string, wxButton*> sram_choosers;
-	wxComboBox* controller1type;
-	wxComboBox* controller2type;
+	wxComboBox** controllertypes;
 	wxTextCtrl* projectname;
 	wxTextCtrl* prefix;
 	wxTextCtrl* rtc_sec;
@@ -229,15 +229,15 @@ wxwin_project::wxwin_project()
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(6 + sram_set.size(), 2, 0, 0);
-	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 1 Type:")), 0, wxGROW);
-	load_cchoices(cchoices, 0, dfltidx);
-	mainblock->Add(controller1type = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx], wxDefaultPosition,
-		wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
-	load_cchoices(cchoices, 1, dfltidx);
-	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Controller 2 Type:")), 0, wxGROW);
-	mainblock->Add(controller2type = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx], wxDefaultPosition,
-		wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + core_userports + sram_set.size(), 2, 0, 0);
+	controllertypes = new wxComboBox*[core_userports];
+	for(unsigned i = 1; i <= core_userports; i++) {
+		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring((stringfmt() << "Controller " << i
+			<< " Type:").str())), 0, wxGROW);
+		load_cchoices(cchoices, i, dfltidx);
+		mainblock->Add(controllertypes[i - 1] = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx],
+			wxDefaultPosition, wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
+	}
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
 	initrtc->Add(rtc_sec = new wxTextCtrl(new_panel, wxID_ANY, wxT("1000000000"), wxDefaultPosition,
@@ -366,8 +366,11 @@ struct moviefile wxwin_project::make_movie()
 	moviefile f;
 	f.force_corrupt = false;
 	f.gametype = &our_rom->rtype->combine_region(*our_rom->region);
-	f.port1 = &get_controller_type(tostdstring(controller1type->GetValue()));
-	f.port2 = &get_controller_type(tostdstring(controller2type->GetValue()));
+	std::vector<class port_type*> pt;
+	pt.push_back(&core_portgroup.get_default_type(0));
+	for(unsigned i = 1; i <= core_userports; i++)
+		pt.push_back(&get_controller_type(tostdstring(controllertypes[i - 1]->GetValue())));
+	f.ports = &port_type_set::make(pt);
 	f.coreversion = bsnes_core_version;
 	f.gamename = tostdstring(projectname->GetValue());
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
@@ -398,7 +401,7 @@ struct moviefile wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
-	f.input.clear(*f.port1, *f.port2);
+	f.input.clear(*f.ports);
 	return f;
 }
 

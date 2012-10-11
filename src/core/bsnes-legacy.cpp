@@ -56,9 +56,10 @@
 #define LOGICAL_BUTTON_TURBO 14
 #define LOGICAL_BUTTON_PAUSE 15
 
-const char* button_symbols = "BYsSudlrAXLRTSTCUP";
+const char* button_symbols = "BYsSudlrAXLRTSTCUPFR";
 
 port_type_group core_portgroup;
+unsigned core_userports = 2;
 
 namespace
 {
@@ -70,6 +71,8 @@ namespace
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
 	size_t soundbuf_fill = 0;
+	unsigned index_count_table[] = {12, 12, 12, 12};
+	unsigned index_count_table_sys[] = {4};
 
 	void init_norom_frame()
 	{
@@ -416,7 +419,7 @@ namespace
 
 		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 		{
-			return ecore_callbacks->get_input(port ? 1 : 0, index, id);
+			return ecore_callbacks->get_input(port ? 2 : 1, index, id);
 		}
 	};
 
@@ -434,37 +437,43 @@ namespace
 
 	void set_core_controller_none(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_NONE, false);
+		std::cerr << "Setting device " << port << " to NONE" << std::endl;
+		set_core_controller_generic(port - 1, SNES_DEVICE_NONE, false);
 	}
 
 	void set_core_controller_gamepad(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
+		std::cerr << "Setting device " << port << " to GAMEPAD" << std::endl;
+		set_core_controller_generic(port - 1, SNES_DEVICE_JOYPAD, false);
 	}
 
 	void set_core_controller_mouse(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_MOUSE, false);
+		set_core_controller_generic(port - 1, SNES_DEVICE_MOUSE, false);
 	}
 
 	void set_core_controller_multitap(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
+		set_core_controller_generic(port - 1, SNES_DEVICE_MULTITAP, false);
 	}
 
 	void set_core_controller_superscope(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_SUPER_SCOPE, true);
+		set_core_controller_generic(port - 1, SNES_DEVICE_SUPER_SCOPE, true);
 	}
 
 	void set_core_controller_justifier(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIER, true);
+		set_core_controller_generic(port - 1, SNES_DEVICE_JUSTIFIER, true);
 	}
 
 	void set_core_controller_justifiers(unsigned port) throw()
 	{
-		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIERS, true);
+		set_core_controller_generic(port - 1, SNES_DEVICE_JUSTIFIERS, true);
+	}
+
+	void set_core_controller_system(unsigned port) throw()
+	{
 	}
 
 	int get_button_id_none(unsigned controller, unsigned lbid) throw()
@@ -560,6 +569,41 @@ namespace
 		}
 	}
 
+	size_t system_serialize(const unsigned char* buffer, char* textbuf)
+	{
+		char tmp[128];
+		if(buffer[1] || buffer[2] || buffer[3] || buffer[4])
+			sprintf(tmp, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
+				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
+		else
+			sprintf(tmp, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+		size_t len = strlen(tmp);
+		memcpy(textbuf, tmp, len);
+		return len;
+	}
+
+
+	struct porttype_system : public port_type
+	{
+		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 5)
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, 18>;
+			serialize = system_serialize;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<0>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_none;
+			ctrlname = "";
+			controllers = 1;
+			index_count = 4;
+			controller_indices = index_count_table_sys;
+			set_core_controller = set_core_controller_system;
+			core_portgroup.set_default(0, *this);
+		}
+	} psystem;
+
 	struct porttype_gamepad : public port_type
 	{
 		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
@@ -574,8 +618,10 @@ namespace
 			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_gamepad;
-			core_portgroup.set_default(0, *this);
+			core_portgroup.set_default(1, *this);
 		}
 	} gamepad;
 
@@ -594,6 +640,8 @@ namespace
 			button_id = get_button_id_justifier;
 			ctrlname = "justifier";
 			controllers = 1;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_justifier;
 		}
 	} justifier;
@@ -613,6 +661,8 @@ namespace
 			button_id = get_button_id_justifiers;
 			ctrlname = "justifier";
 			controllers = 2;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_justifiers;
 		}
 	} justifiers;
@@ -631,13 +681,16 @@ namespace
 			button_id = get_button_id_mouse;
 			ctrlname = "mouse";
 			controllers = 1;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_mouse;
 		}
 	} mouse;
 
 	struct porttype_multitap : public port_type
 	{
-		porttype_multitap() : port_type(core_portgroup, "multitap", "Multitap", 2, generic_port_size<4, 0, 12>())
+		porttype_multitap() : port_type(core_portgroup, "multitap", "Multitap", 2,
+			generic_port_size<4, 0, 12>())
 		{
 			write = generic_port_write<4, 0, 12>;
 			read = generic_port_read<4, 0, 12>;
@@ -649,6 +702,9 @@ namespace
 			button_id = get_button_id_multitap;
 			ctrlname = "multitap";
 			controllers = 4;
+			index_count = 48;
+			priority = true;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_multitap;
 		}
 	} multitap;
@@ -667,8 +723,10 @@ namespace
 			button_id = get_button_id_none;
 			ctrlname = "";
 			controllers = 0;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_none;
-			core_portgroup.set_default(1, *this);
+			core_portgroup.set_default(2, *this);
 		}
 	} none;
 
@@ -687,6 +745,8 @@ namespace
 			button_id = get_button_id_superscope;
 			ctrlname = "superscope";
 			controllers = 1;
+			index_count = 48;
+			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_superscope;
 		}
 	} superscope;

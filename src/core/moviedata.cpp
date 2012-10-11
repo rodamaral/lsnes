@@ -395,14 +395,12 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		if(will_load_state) {
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
-			controls.set_port(0, *_movie.port1, true);
-			controls.set_port(1, *_movie.port2, true);
+			controls.set_ports(*_movie.ports, true);
 			load_core_state(_movie.savestate);
 			core_set_poll_flag(_movie.poll_flag);
 		} else {
 			load_sram(_movie.movie_sram);
-			controls.set_port(0, *_movie.port1, true);
-			controls.set_port(1, *_movie.port2, true);
+			controls.set_ports(*_movie.ports, true);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty())

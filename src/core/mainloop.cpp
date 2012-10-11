@@ -281,11 +281,13 @@ void update_movie_state()
 		c = controls.get_committed();
 	auto lim = get_core_logical_controller_limits();
 	for(unsigned i = 0; i < lim.first; i++) {
-		unsigned pindex = controls.lcid_to_pcid(i);
-		if(pindex == std::numeric_limits<unsigned>::max() || !controls.is_present(pindex))
+		auto pindex = controls.lcid_to_pcid(i);
+		if(pindex.first < 0 || !controls.is_present(pindex.first, pindex.second)) {
+			_status.erase((stringfmt() << "P" << (i + 1)).str());
 			continue;
+		}
 		char buffer[MAX_DISPLAY_LENGTH];
-		c.display(pindex, buffer);
+		c.display(pindex.first, pindex.second, buffer);
 		_status.set((stringfmt() << "P" << (i + 1)).str(), buffer);
 	}
 }

@@ -209,29 +209,30 @@ namespace
 		return ret;
 	}
 
-	bool UI_get_autohold(unsigned pid, unsigned idx)
+	bool UI_get_autohold(unsigned port, unsigned controller, unsigned idx)
 	{
 		bool ret;
-		runemufn([&ret, pid, idx]() { ret = controls.autohold(pid, idx); });
+		runemufn([&ret, port, controller, idx]() { ret = controls.autohold2(port, controller, idx); });
 		return ret;
 	}
 
-	void UI_change_autohold(unsigned pid, unsigned idx, bool newstate)
+	void UI_change_autohold(unsigned port, unsigned controller, unsigned idx, bool newstate)
 	{
-		runemufn([pid, idx, newstate]() { controls.autohold(pid, idx, newstate); });
+		runemufn([port, controller, idx, newstate]() { controls.autohold2(port, controller, idx,
+			newstate); });
 	}
 
-	int UI_controller_index_by_logical(unsigned lid)
+	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)
 	{
-		int ret;
+		std::pair<int, int> ret;
 		runemufn([&ret, lid]() { ret = controls.lcid_to_pcid(lid); });
 		return ret;
 	}
 
-	int UI_button_id(unsigned pcid, unsigned lidx)
+	int UI_button_id(unsigned port, unsigned controller, unsigned lidx)
 	{
 		int ret;
-		runemufn([&ret, pcid, lidx]() { ret = controls.button_id(pcid, lidx); });
+		runemufn([&ret, port, controller, lidx]() { ret = controls.button_id(port, controller, lidx); });
 		return ret;
 	}
 
@@ -251,10 +252,10 @@ namespace
 		void change_type();
 		bool is_dummy();
 		void on_select(wxCommandEvent& e);
-		void update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 	private:
 		unsigned our_lid;
-		int our_pid;
+		std::pair<int, int> our_pid;
 		std::vector<wxMenuItem*> entries;
 		unsigned enabled_entries;
 		std::map<unsigned, int> pidxs;
@@ -267,7 +268,7 @@ namespace
 		autohold_menu(wxwin_mainwindow* win);
 		void reconfigure();
 		void on_select(wxCommandEvent& e);
-		void update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 	private:
 		std::vector<controller_autohold_menu*> menus;
 		std::vector<wxMenuItem*> entries;
@@ -295,7 +296,7 @@ namespace
 		void on_sound_unmute(bool unmute) throw();
 		void on_sound_change(const std::string& dev) throw();
 		void on_mode_change(bool readonly) throw();
-		void on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate);
+		void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 		void on_autohold_reconfigure();
 	private:
 		wxwin_mainwindow* mainw;
@@ -324,10 +325,12 @@ namespace
 			this->autoholds.resize(limits.second);
 			for(unsigned i = 0; i < limits.second; i++) {
 				this->pidxs[i] = -1;
-				if(this->our_pid >= 0)
-					this->pidxs[i] = controls.button_id(this->our_pid, i);
+				if(this->our_pid.first >= 0)
+					this->pidxs[i] = controls.button_id(this->our_pid.first, this->our_pid.second,
+						i);
 				if(this->pidxs[i] >= 0)
-					this->autoholds[i] = (this->our_pid > 0 && controls.autohold(this->our_pid,
+					this->autoholds[i] = (this->our_pid.first >= 0 &&
+						controls.autohold2(this->our_pid.first, this->our_pid.second,
 						this->pidxs[i]));
 				else
 					this->autoholds[i] = false;
@@ -361,21 +364,21 @@ namespace
 		}
 		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % limits.second;
 		modal_pause_holder hld;
-		int pid = controls.lcid_to_pcid(our_lid);
-		if(pid < 0 || !entries[lidx])
+		std::pair<int, int> pid = controls.lcid_to_pcid(our_lid);
+		if(pid.first < 0 || !entries[lidx])
 			return;
-		int pidx = controls.button_id(pid, lidx);
+		int pidx = controls.button_id(pid.first, pid.second, lidx);
 		if(pidx < 0)
 			return;
 		//Autohold change on pid=pid, ctrlindx=idx, state
 		bool newstate = entries[lidx]->IsChecked();
-		UI_change_autohold(pid, pidx, newstate);
+		UI_change_autohold(pid.first, pid.second, pidx, newstate);
 	}
 
-	void controller_autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void controller_autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
 	{
 		modal_pause_holder hld;
-		if(our_pid < 0 || static_cast<unsigned>(pid) != our_pid)
+		if(our_pid.first < 0 || port != our_pid.first || controller != our_pid.second)
 			return;
 		auto limits = get_core_logical_controller_limits();
 		for(unsigned i = 0; i < limits.second; i++) {
@@ -420,11 +423,11 @@ namespace
 			menus[i]->on_select(e);
 	}
 
-	void autohold_menu::update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
 	{
 		auto limits = get_core_logical_controller_limits();
 		for(unsigned i = 0; i < limits.first; i++)
-			menus[i]->update(pid, ctrlnum, newstate);
+			menus[i]->update(port, controller, ctrlnum, newstate);
 	}
 
 	sound_select_menu::sound_select_menu(wxwin_mainwindow* win)
@@ -485,9 +488,11 @@ namespace
 		runuifun([this, readonly]() { this->mainw->menu_check(wxID_READONLY_MODE, readonly); });
 	}
 
-	void broadcast_listener::on_autohold_update(unsigned pid, unsigned ctrlnum, bool newstate)
+	void broadcast_listener::on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum,
+		bool newstate)
 	{
-		runuifun([this, pid, ctrlnum, newstate]() { this->ahmenu->update(pid, ctrlnum, newstate); });
+		runuifun([this, port, controller, ctrlnum, newstate]() { this->ahmenu->update(port, controller,
+			ctrlnum, newstate); });
 	}
 
 	void broadcast_listener::on_autohold_reconfigure()

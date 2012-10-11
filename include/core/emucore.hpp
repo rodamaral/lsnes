@@ -74,6 +74,8 @@ unsigned core_get_poll_flag();
 void core_set_poll_flag(unsigned pflag);
 //The port type group.
 extern port_type_group core_portgroup;
+//Number of user ports.
+extern unsigned core_userports;
 
 /**
  * Get name of logical button.

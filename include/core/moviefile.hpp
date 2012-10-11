@@ -50,13 +50,9 @@ struct moviefile
  */
 	core_sysregion* gametype;
 /**
- * What's in port #1?
+ * The set of port types.
  */
-	port_type* port1;
-/**
- * What's in port #2?
- */
-	port_type* port2;
+	const port_type_set* ports;
 /**
  * Emulator Core version string.
  */

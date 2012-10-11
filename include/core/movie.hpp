@@ -106,7 +106,7 @@ public:
  * returns: The read value.
  * throws std::logic_error: Invalid control index.
  */
-	bool get_DRDY(unsigned pid, unsigned index) throw(std::logic_error);
+	bool get_DRDY(unsigned port, unsigned controller, unsigned index) throw(std::logic_error);
 
 /**
  * Set all data ready flags
@@ -122,7 +122,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::logic_error: Invalid port, controller or index or before movie start.
  */
-	short next_input(unsigned pid, unsigned index) throw(std::bad_alloc, std::logic_error);
+	short next_input(unsigned port, unsigned controller, unsigned index) throw(std::bad_alloc, std::logic_error);
 
 /**
  * Set current control values. These are read in readwrite mode.
@@ -301,7 +301,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error polling for input.
  */
-	short input_poll(bool port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error);
+	short input_poll(unsigned port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Called when movie code needs new controls snapshot.

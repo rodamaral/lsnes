@@ -326,20 +326,20 @@ port_type& parse_controller_type(const std::string& type, unsigned port) throw(s
 {
 	try {
 		port_type& i = core_portgroup.get_type(type);
-		if(!i.legal || !(i.legal(port)))
+		if(!i.legal || !(i.legal(port - 1)))
 			throw 42;
 		return i;
 	} catch(...) {
-		(stringfmt() << "Illegal port " << (port + 1) << " device '" << type << "'").throwex();
+		(stringfmt() << "Illegal port " << port << " device '" << type << "'").throwex();
 	}
 }
 
 moviefile::moviefile() throw(std::bad_alloc)
 {
+	static port_type_set dummy_types;
 	force_corrupt = false;
 	gametype = NULL;
-	port1 = &get_dummy_port_type();
-	port2 = &get_dummy_port_type();
+	ports = &dummy_types;
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
@@ -374,13 +374,15 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	tmp = core_portgroup.get_default_type(0).name;
-	read_linefile(r, "port1", tmp, true);
-	port1 = &core_portgroup.get_type(tmp);
-	tmp = core_portgroup.get_default_type(1).name;
-	read_linefile(r, "port2", tmp, true);
-	port2 = &core_portgroup.get_type(tmp);
-	input.clear(*port1, *port2);
+	std::vector<port_type*> pt;
+	pt.push_back(&core_portgroup.get_default_type(0));
+	for(unsigned i = 0; i < core_userports; i++) {
+		tmp = core_portgroup.get_default_type(i + 1).name;
+		read_linefile(r, (stringfmt() << "port" << (i + 1)).str(), tmp, true);
+		pt.push_back(&core_portgroup.get_type(tmp));
+	}
+	ports = &port_type_set::make(pt);
+	input.clear(*ports);
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
@@ -445,10 +447,9 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 {
 	zip_writer w(movie, compression);
 	write_linefile(w, "gametype", gametype->get_name());
-	if(port1->name != core_portgroup.get_default_type(0).name)
-		write_linefile(w, "port1", port1->name);
-	if(port2->name != core_portgroup.get_default_type(1).name)
-		write_linefile(w, "port2", port2->name);
+	for(unsigned i = 0; i < core_userports; i++)
+		if(ports->port_type(i + 1).name != core_portgroup.get_default_type(i + 1).name)
+			write_linefile(w, (stringfmt() << "port" << (i + 1)).str(), ports->port_type(i + 1).name);
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
 	write_linefile(w, "controlsversion", "0");

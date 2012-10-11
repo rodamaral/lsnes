@@ -48,8 +48,8 @@ int main(int argc, char** argv)
 		core_region* reg = &m.gametype->get_region();
 		std::cout << "Console: " << rtype->get_hname() << std::endl;
 		std::cout << "Region: " << reg->get_hname() << std::endl;
-		std::cout << "Port #1: " << m.port1->hname << std::endl;
-		std::cout << "Port #2: " << m.port2->hname << std::endl;
+		for(unsigned i = 0; i < m.ports->ports(); i++)
+			std::cout << "Port #" << i << ": " << m.ports->port_type(i).hname << std::endl;
 		std::cout << "Used emulator core: " << escape_string(m.coreversion) << std::endl;
 		if(m.gamename != "")
 			std::cout << "Game name: " << escape_string(m.gamename) << std::endl;
