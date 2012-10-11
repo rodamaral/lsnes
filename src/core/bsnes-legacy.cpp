@@ -58,6 +58,8 @@
 
 const char* button_symbols = "BYsSudlrAXLRTSTCUP";
 
+port_type_group core_portgroup;
+
 namespace
 {
 	bool pollflag_active = true;
@@ -558,9 +560,9 @@ namespace
 		}
 	}
 
-	struct porttype_gamepad : public porttype_info
+	struct porttype_gamepad : public port_type
 	{
-		porttype_gamepad() : porttype_info("gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
+		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
 		{
 			write = generic_port_write<1, 0, 12>;
 			read = generic_port_read<1, 0, 12>;
@@ -573,12 +575,14 @@ namespace
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad;
+			core_portgroup.set_default(0, *this);
 		}
 	} gamepad;
 
-	struct porttype_justifier : public porttype_info
+	struct porttype_justifier : public port_type
 	{
-		porttype_justifier() : porttype_info("justifier", "Justifier", 5, generic_port_size<1, 2, 2>())
+		porttype_justifier() : port_type(core_portgroup, "justifier", "Justifier", 5,
+			generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
@@ -594,9 +598,10 @@ namespace
 		}
 	} justifier;
 
-	struct porttype_justifiers : public porttype_info
+	struct porttype_justifiers : public port_type
 	{
-		porttype_justifiers() : porttype_info("justifiers", "2 Justifiers", 6, generic_port_size<2, 2, 2>())
+		porttype_justifiers() : port_type(core_portgroup, "justifiers", "2 Justifiers", 6,
+			generic_port_size<2, 2, 2>())
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
@@ -612,9 +617,9 @@ namespace
 		}
 	} justifiers;
 
-	struct porttype_mouse : public porttype_info
+	struct porttype_mouse : public port_type
 	{
-		porttype_mouse() : porttype_info("mouse", "Mouse", 3, generic_port_size<1, 2, 2>())
+		porttype_mouse() : port_type(core_portgroup, "mouse", "Mouse", 3, generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
@@ -630,9 +635,9 @@ namespace
 		}
 	} mouse;
 
-	struct porttype_multitap : public porttype_info
+	struct porttype_multitap : public port_type
 	{
-		porttype_multitap() : porttype_info("multitap", "Multitap", 2, generic_port_size<4, 0, 12>())
+		porttype_multitap() : port_type(core_portgroup, "multitap", "Multitap", 2, generic_port_size<4, 0, 12>())
 		{
 			write = generic_port_write<4, 0, 12>;
 			read = generic_port_read<4, 0, 12>;
@@ -648,9 +653,9 @@ namespace
 		}
 	} multitap;
 
-	struct porttype_none : public porttype_info
+	struct porttype_none : public port_type
 	{
-		porttype_none() : porttype_info("none", "None", 0, generic_port_size<0, 0, 0>())
+		porttype_none() : port_type(core_portgroup, "none", "None", 0, generic_port_size<0, 0, 0>())
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
@@ -663,12 +668,14 @@ namespace
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_none;
+			core_portgroup.set_default(1, *this);
 		}
 	} none;
 
-	struct porttype_superscope : public porttype_info
+	struct porttype_superscope : public port_type
 	{
-		porttype_superscope() : porttype_info("superscope", "Super Scope", 4, generic_port_size<1, 2, 4>())
+		porttype_superscope() : port_type(core_portgroup, "superscope", "Super Scope", 4,
+			generic_port_size<1, 2, 4>())
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;

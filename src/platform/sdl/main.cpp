@@ -30,8 +30,8 @@ bool dummy_interface = false;
 struct moviefile generate_movie_template(std::vector<std::string> cmdline, loaded_rom& r)
 {
 	struct moviefile movie;
-	movie.port1 = &porttype_info::port_default(0);
-	movie.port2 = &porttype_info::port_default(1);
+	movie.port1 = &core_portgroup.get_default_type(0);
+	movie.port2 = &core_portgroup.get_default_type(1);
 	movie.coreversion = bsnes_core_version;
 	movie.projectid = get_random_hexstring(40);
 	movie.gametype = &r.rtype->combine_region(*r.region);
@@ -45,9 +45,9 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 		if(o.length() >= 9 && o.substr(0, 9) == "--prefix=")
 			movie.prefix = sanitize_prefix(o.substr(9));
 		if(o.length() >= 8 && o.substr(0, 8) == "--port1=")
-			movie.port1 = &porttype_info::lookup(o.substr(8));
+			movie.port1 = &core_portgroup.get_type(o.substr(8));
 		if(o.length() >= 8 && o.substr(0, 8) == "--port2=")
-			movie.port2 = &porttype_info::lookup(o.substr(8));
+			movie.port2 = &core_portgroup.get_type(o.substr(8));
 		if(o.length() >= 11 && o.substr(0, 11) == "--gamename=")
 			movie.gamename = o.substr(11);
 		if(o.length() >= 9 && o.substr(0, 9) == "--author=") {

@@ -8,6 +8,7 @@
 #include <set>
 #include <vector>
 #include "library/framebuffer.hpp"
+#include "library/controller-data.hpp"
 #include "core/romtype.hpp"
 
 
@@ -71,6 +72,8 @@ std::pair<uint64_t, uint64_t> core_get_bus_map();
 unsigned core_get_poll_flag();
 //Set poll flag (set to 1 on each real poll, except if 2.
 void core_set_poll_flag(unsigned pflag);
+//The port type group.
+extern port_type_group core_portgroup;
 
 /**
  * Get name of logical button.

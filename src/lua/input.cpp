@@ -67,7 +67,7 @@ namespace
 		unsigned controller = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		porttype_info& p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
+		port_type& p = f.get_port_type(controller / MAX_CONTROLLERS_PER_PORT);
 		if(p.controllers <= controller % MAX_CONTROLLERS_PER_PORT)
 			lua_pushnil(LS);
 		else if(p.ctrlname == "")
