@@ -249,11 +249,11 @@ namespace
 	{
 		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 1)
 		{
-			write = generic_port_write<1, 2, 2>;
-			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 18>;
+			write = system_write;
+			read = system_read;
+			display = system_display;
 			serialize = system_serialize;
-			deserialize = generic_port_deserialize<1, 2, 2>;
+			deserialize = system_deserialize;
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;
