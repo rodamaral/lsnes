@@ -881,7 +881,7 @@ public:
 		size_t offset = 0;
 		for(size_t i = 0; i < types->ports(); i++) {
 			size_t s;
-			s += types->port_type(i).deserialize(backing + types->port_offset(i), buf + offset);
+			s = types->port_type(i).deserialize(backing + types->port_offset(i), buf + offset);
 			if(s != DESERIALIZE_SPECIAL_BLANK) {
 				offset += s;
 				if(buf[offset] == '|')
