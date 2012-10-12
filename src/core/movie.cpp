@@ -292,7 +292,7 @@ void movie::load(const std::string& rerecs, const std::string& project_id, contr
 	_project_id = project_id;
 	current_frame = 0;
 	current_frame_first_subframe = 0;
-	pollcounters.clear();
+	pollcounters = pollcounter_vector(input.get_types());
 	lag_frames = 0;
 	movie_data = input;
 	//This is to force internal type of current_controls to become correct.
