@@ -884,6 +884,8 @@ public:
 			s = types->port_type(i).deserialize(backing + types->port_offset(i), buf + offset);
 			if(s != DESERIALIZE_SPECIAL_BLANK) {
 				offset += s;
+				while(is_nonterminator(buf[offset]))
+					offset++;
 				if(buf[offset] == '|')
 					offset++;
 			}
@@ -923,7 +925,7 @@ public:
 	{
 		if(!types_match(obj))
 			return false;
-		return !memcmp(backing, obj.backing, totalsize);
+		return !memcmp(backing, obj.backing, types->size());
 	}
 /**
  * Compare two frames.
@@ -974,7 +976,6 @@ public:
 		return types->port_type(port).is_mouse(controller);
 	}
 private:
-	size_t totalsize;
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
 	unsigned char* backing;
 	const port_type_set* types;
