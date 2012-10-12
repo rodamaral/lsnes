@@ -569,6 +569,59 @@ namespace
 		}
 	}
 
+	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
+	{
+		if(idx)
+			return;
+		if(ctrl < 2)
+			if(x)
+				buffer[0] |= (1 << ctrl);
+			else
+				buffer[0] &= ~(1 << ctrl);
+		else if(ctrl < 4) {
+			buffer[2 * ctrl - 3] = x >> 8;
+			buffer[2 * ctrl - 2] = x;
+		}
+	}
+
+	short system_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
+	{
+		if(idx)
+			return 0;
+		if(ctrl < 2)
+			return (buffer[0] >> ctrl) ? 1 : 0;
+		else if(ctrl < 4)
+			return unserialize_short(buffer + 2 * ctrl - 3);
+		return 0;
+	}
+
+	size_t system_deserialize(unsigned char* buffer, const char* textbuf)
+	{
+		memset(buffer, 0, 5);
+		size_t ptr = 0;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 1;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 2;
+		short v = read_axis_value(textbuf, ptr);
+		buffer[1] = v >> 8;
+		buffer[2] = v;
+		v = read_axis_value(textbuf, ptr);
+		buffer[3] = v >> 8;
+		buffer[4] = v;
+		skip_rest_of_field(textbuf, ptr, false);
+		return ptr;
+	}
+
+	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
+	{
+		if(idx)
+			sprintf(buf, "");
+		else
+			sprintf(buf, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
+				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
+	}
+
 	size_t system_serialize(const unsigned char* buffer, char* textbuf)
 	{
 		char tmp[128];
@@ -582,16 +635,15 @@ namespace
 		return len;
 	}
 
-
 	struct porttype_system : public port_type
 	{
 		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 5)
 		{
-			write = generic_port_write<1, 2, 2>;
-			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 18>;
+			write = system_write;
+			read = system_read;
+			display = system_display;
 			serialize = system_serialize;
-			deserialize = generic_port_deserialize<1, 2, 2>;
+			deserialize = system_deserialize;
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;

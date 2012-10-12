@@ -192,6 +192,46 @@ namespace
 		return -1;
 	}
 
+	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
+	{
+		if(idx)
+			return;
+		if(ctrl < 2)
+			if(x)
+				buffer[0] |= (1 << ctrl);
+			else
+				buffer[0] &= ~(1 << ctrl);
+	}
+
+	short system_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
+	{
+		if(idx)
+			return 0;
+		if(ctrl < 2)
+			return (buffer[0] >> ctrl) ? 1 : 0;
+		return 0;
+	}
+
+	size_t system_deserialize(unsigned char* buffer, const char* textbuf)
+	{
+		memset(buffer, 0, 1);
+		size_t ptr = 0;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 1;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 2;
+		skip_rest_of_field(textbuf, ptr, false);
+		return ptr;
+	}
+
+	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
+	{
+		if(idx)
+			sprintf(buf, "");
+		else
+			sprintf(buf, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+	}
+
 	size_t system_serialize(const unsigned char* buffer, char* textbuf)
 	{
 		char tmp[128];
