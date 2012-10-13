@@ -1,5 +1,5 @@
-#ifndef _messagebuffer__hpp__included__
-#define _messagebuffer__hpp__included__
+#ifndef _library__messagebuffer__hpp__included__
+#define _library__messagebuffer__hpp__included__
 
 #include <stdexcept>
 #include <map>

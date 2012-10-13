@@ -2,7 +2,7 @@
 #define _window__hpp__included__
 
 #include "core/keymapper.hpp"
-#include "core/messagebuffer.hpp"
+#include "library/messagebuffer.hpp"
 #include "core/status.hpp"
 #include "library/framebuffer.hpp"
 #include <string>
