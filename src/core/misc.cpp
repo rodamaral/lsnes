@@ -4,6 +4,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "core/settings.hpp"
 #include "core/threaddebug.hpp"
 #include "core/window.hpp"
 #include "library/sha256.hpp"
@@ -246,6 +247,7 @@ void reached_main()
 	init_threaded_malloc();
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(_messages());
+	cmd_bridge.set_output(_messages());
 }
 
 std::string bsnes_core_version;
