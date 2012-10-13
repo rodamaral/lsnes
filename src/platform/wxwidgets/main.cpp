@@ -456,9 +456,12 @@ int lsnes_app::OnExit()
 	auto y = main_window;
 	msg_window = NULL;
 	main_window = NULL;
+	if(x)
+		x->Destroy();
 	save_configuration();
 	information_dispatch::do_dump_end();
 	rrdata::close();
+	quit_lua();
 	joystick_plugin::signal();
 	joystick_thread_handle->join();
 	platform::quit();
@@ -513,7 +516,6 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 	e.fn = fn;
 	e.arg = arg;
 	ui_queue.push_back(e);
-	auto i = ui_queue.insert(ui_queue.end(), e);
 	post_ui_event(UISERV_UIFUN);
 }
 

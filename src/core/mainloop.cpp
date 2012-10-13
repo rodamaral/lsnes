@@ -963,5 +963,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		lua_callback_do_frame();
 	}
 	information_dispatch::do_dump_end();
+	voicethread_task_end();
 	core_uninstall_handler();
 }

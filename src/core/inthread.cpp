@@ -1240,6 +1240,12 @@ out_parsing:
 
 			drain_input();
 			while(1) {
+				if(clear_workflag(WORKFLAG_QUIT_REQUEST) & WORKFLAG_QUIT_REQUEST) {
+					if(!active_flag && active_stream)
+						handle_tangent_negative_edge(active_stream, total_compressed,
+							total_blocks);
+					break;
+				}
 				uint64_t ticks = get_utime();
 				//Handle tangent edgets.
 				if(active_flag && !active_stream) {
@@ -1308,6 +1314,8 @@ out_parsing:
 			active_flag = false;
 		});
 	
+
+	inthread_th* task = NULL;
 }
 
 void voice_frame_number(uint64_t newframe, double rate)
@@ -1324,7 +1332,12 @@ void voice_frame_number(uint64_t newframe, double rate)
 
 void voicethread_task()
 {
-	new inthread_th;
+	task = new inthread_th;
+}
+
+void voicethread_task_end()
+{
+	delete task;
 }
 
 uint64_t voicesub_parse_timebase(const std::string& n)
@@ -1709,6 +1722,10 @@ double voicesub_ts_seconds(uint64_t ts)
 }
 #else
 void voicethread_task()
+{
+}
+
+void voicethread_task_end()
 {
 }
 

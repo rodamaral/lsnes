@@ -565,8 +565,10 @@ void init_lua(bool soft) throw()
 
 void quit_lua() throw()
 {
-	if(lua_initialized)
+	if(lua_initialized) {
 		lua_close(lua_initialized);
+		lua_initialized = NULL;
+	}
 }
 
 

@@ -57,7 +57,7 @@ void functor_call_helper2(void* args)
 template<typename T>
 void runuifun(T fn)
 {
-	_runuifun_async(functor_call_helper<T>, new T(fn));
+	_runuifun_async(functor_call_helper2<T>, new T(fn));
 }
 
 //Thrown by various dialog functions if canceled.
