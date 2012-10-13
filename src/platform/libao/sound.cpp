@@ -115,7 +115,7 @@ namespace
 		return true;
 	}
 
-	function_ptr_command<const std::string&> x("libao-set-id", "", "",
+	function_ptr_command<const std::string&> x(lsnes_cmd, "libao-set-id", "", "",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			driver_id = parse_value<int>(value);
 		});

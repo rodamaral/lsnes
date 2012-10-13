@@ -15,7 +15,7 @@ namespace
 	std::map<std::pair<uint64_t, unsigned>, keygroup*> hats;
 	unsigned joystick_count = 0;
 
-	function_ptr_command<> show_joysticks("show-joysticks", "Show joysticks",
+	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joysticks",
 		"Syntax: show-joysticks\nShow joystick data.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Driver: " << joystick_plugin::name << std::endl;

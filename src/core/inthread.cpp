@@ -1297,12 +1297,12 @@ out_parsing:
 	};
 
 	//The tangent function.
-	function_ptr_command<> ptangent("+tangent", "Voice tangent",
+	function_ptr_command<> ptangent(lsnes_cmd, "+tangent", "Voice tangent",
 		"Syntax: +tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = true;
 		});
-	function_ptr_command<> ntangent("-tangent", "Voice tangent",
+	function_ptr_command<> ntangent(lsnes_cmd, "-tangent", "Voice tangent",
 		"Syntax: -tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = false;
@@ -1339,7 +1339,8 @@ uint64_t voicesub_parse_timebase(const std::string& n)
 
 namespace
 {
-	function_ptr_command<> list_streams("list-streams", "List streams ", "list-streams\nList known voice streams",
+	function_ptr_command<> list_streams(lsnes_cmd, "list-streams", "List streams ", "list-streams\n"
+		"List known voice streams",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
 			if(!current_collection) {
@@ -1359,7 +1360,7 @@ namespace
 			messages << "-----------------------" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> delete_stream("delete-stream", "Delete a stream",
+	function_ptr_command<const std::string&> delete_stream(lsnes_cmd, "delete-stream", "Delete a stream",
 		"delete-stream <id>\nDelete a voice stream with given ID.",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
@@ -1378,8 +1379,8 @@ namespace
 			messages << "Deleted stream #" << id << "." << std::endl;
 		});
 
-	function_ptr_command<const std::string&> play_stream("play-stream", "Play a stream", "play-stream <id>\n"
-		"Play a voice stream with given ID.",
+	function_ptr_command<const std::string&> play_stream(lsnes_cmd, "play-stream", "Play a stream",
+		"play-stream <id>\nPlay a voice stream with given ID.",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
 			uint64_t id = parse_value<uint64_t>(x);
@@ -1402,8 +1403,8 @@ namespace
 			messages << "Playing stream #" << id << "." << std::endl;
 		});
 
-	function_ptr_command<const std::string&> change_timebase("change-timebase", "Change stream timebase",
-		"change-timebase <id> <newbase>\nChange timebase of given stream",
+	function_ptr_command<const std::string&> change_timebase(lsnes_cmd, "change-timebase",
+		"Change stream timebase", "change-timebase <id> <newbase>\nChange timebase of given stream",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
 			if(!current_collection) {
@@ -1459,15 +1460,16 @@ namespace
 		messages << "Imported stream (" << st->length() / 48000.0 << "s) as ID #" << id << std::endl;
 	}
 
-	function_ptr_command<const std::string&> import_stream_c("import-stream-opus", "Import a opus stream",
-		"import-stream-opus <timebase> <filename>\nImport opus stream from <filename>, starting at "
+	function_ptr_command<const std::string&> import_stream_c(lsnes_cmd, "import-stream-opus", "Import a opus "
+		"stream", "import-stream-opus <timebase> <filename>\nImport opus stream from <filename>, starting at "
 		"<timebase>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			import_cmd_common(x, "opus", true);
 		});
 
-	function_ptr_command<const std::string&> import_stream_p("import-stream-pcm", "Import a PCM stream",
-		"import-stream-pcm <timebase> <filename>\nImport PCM stream from <filename>, starting at <timebase>",
+	function_ptr_command<const std::string&> import_stream_p(lsnes_cmd, "import-stream-pcm", "Import a PCM "
+		"stream", "import-stream-pcm <timebase> <filename>\nImport PCM stream from <filename>, starting at "
+		"<timebase>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			import_cmd_common(x, "pcm", false);
 		});
@@ -1505,19 +1507,19 @@ namespace
 		st->put_ref();
 	}
 
-	function_ptr_command<const std::string&> export_stream_c("export-stream-opus", "Export a opus stream",
-		"export-stream-opus <id> <filename>\nExport opus stream <id> to <filename>",
+	function_ptr_command<const std::string&> export_stream_c(lsnes_cmd, "export-stream-opus", "Export a opus "
+		"stream", "export-stream-opus <id> <filename>\nExport opus stream <id> to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			export_cmd_common(x, "opus", true);
 		});
 
-	function_ptr_command<const std::string&> export_stream_p("export-stream-pcm", "Export a PCM stream",
-		"export-stream-pcm <id> <filename>\nExport PCM stream <id> to <filename>",
+	function_ptr_command<const std::string&> export_stream_p(lsnes_cmd, "export-stream-pcm",
+		"Export a PCM stream", "export-stream-pcm <id> <filename>\nExport PCM stream <id> to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			export_cmd_common(x, "pcm", false);
 		});
 
-	function_ptr_command<const std::string&> export_sstream("export-superstream", "Export superstream",
+	function_ptr_command<const std::string&> export_sstream(lsnes_cmd, "export-superstream", "Export superstream",
 		"export-superstream <filename>\nExport PCM superstream to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
@@ -1532,8 +1534,9 @@ namespace
 			messages << "Superstream exported." << std::endl;
 		});
 
-	function_ptr_command<const std::string&> load_collection("load-collection", "Load voice subtitling "
-		"collection", "load-collection <filename>\nLoad voice subtitling collection from <filename>",
+	function_ptr_command<const std::string&> load_collection(lsnes_cmd, "load-collection",
+		"Load voice subtitling collection", "load-collection <filename>\nLoad voice subtitling collection "
+		"from <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);
 			filesystem_ref newfs;
@@ -1551,7 +1554,7 @@ namespace
 			messages << "Loaded '" << x << "'" << std::endl;
 		});
 
-	function_ptr_command<> unload_collection("unload-collection", "Unload voice subtitling collection",
+	function_ptr_command<> unload_collection(lsnes_cmd, "unload-collection", "Unload voice subtitling collection",
 		"unload-collection\nUnload voice subtitling collection",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			umutex_class m2(current_collection_lock);

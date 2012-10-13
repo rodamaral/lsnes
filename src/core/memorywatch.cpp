@@ -400,14 +400,14 @@ void do_watch_memory()
 
 namespace
 {
-	function_ptr_command<const std::string&> add_watch("add-watch", "Add a memory watch",
+	function_ptr_command<const std::string&> add_watch(lsnes_cmd, "add-watch", "Add a memory watch",
 		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)[ \t]+(|[^ \t].*)", t, "Name and expression required.");
 			set_watchexpr_for(r[1], r[2]);
 		});
 
-	function_ptr_command<const std::string&> remove_watch("remove-watch", "Remove a memory watch",
+	function_ptr_command<const std::string&> remove_watch(lsnes_cmd, "remove-watch", "Remove a memory watch",
 		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)[ \t]*", t, "Name required.");

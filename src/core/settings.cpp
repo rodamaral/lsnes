@@ -13,7 +13,7 @@ namespace
 {
 	globalwrap<std::map<std::string, setting*>> settings;
 
-	function_ptr_command<const std::string&> set_setting("set-setting", "set a setting",
+	function_ptr_command<const std::string&> set_setting(lsnes_cmd, "set-setting", "set a setting",
 		"Syntax: set-setting <setting> [<value>]\nSet setting to a new value. Omit <value> to set to ''\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)([ \t]+(|[^ \t].*))?", t, "Setting name required.");
@@ -21,7 +21,7 @@ namespace
 			messages << "Setting '" << r[1] << "' set to '" << r[3] << "'" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> unset_setting("unset-setting", "unset a setting",
+	function_ptr_command<const std::string&> unset_setting(lsnes_cmd, "unset-setting", "unset a setting",
 		"Syntax: unset-setting <setting>\nTry to unset a setting. Note that not all settings can be unset\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
@@ -29,7 +29,7 @@ namespace
 			messages << "Setting '" << r[1] << "' unset" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> get_command("get-setting", "get value of a setting",
+	function_ptr_command<const std::string&> get_command(lsnes_cmd, "get-setting", "get value of a setting",
 		"Syntax: get-setting <setting>\nShow value of setting\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
@@ -40,7 +40,7 @@ namespace
 				messages << "Setting '" << r[1] << "' is unset" << std::endl;
 		});
 
-	function_ptr_command<> show_settings("show-settings", "Show values of all settings",
+	function_ptr_command<> show_settings(lsnes_cmd, "show-settings", "Show values of all settings",
 		"Syntax: show-settings\nShow value of all settings\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i : setting::get_settings_set()) {

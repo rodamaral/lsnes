@@ -18,7 +18,7 @@
 
 namespace
 {
-	function_ptr_command<const std::string&> bind_key("bind-key", "Bind a (pseudo-)key",
+	function_ptr_command<const std::string&> bind_key(lsnes_cmd, "bind-key", "Bind a (pseudo-)key",
 		"Syntax: bind-key [<mod>/<modmask>] <key> <command>\nBind command to specified key (with specified "
 		" modifiers)\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
@@ -30,7 +30,7 @@ namespace
 			messages << r[4] << " bound to '" << r[5] << "'" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> unbind_key("unbind-key", "Unbind a (pseudo-)key",
+	function_ptr_command<const std::string&> unbind_key(lsnes_cmd, "unbind-key", "Unbind a (pseudo-)key",
 		"Syntax: unbind-key [<mod>/<modmask>] <key>\nUnbind specified key (with specified modifiers)\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("(([^ /\t]*)/([^ /\t]*)[ \t]+)?([^ \t]+)[ \t]*", t, "Key required");
@@ -40,13 +40,13 @@ namespace
 			messages << r[4] << " unbound" << std::endl;
 		});
 
-	function_ptr_command<> show_bindings("show-bindings", "Show active bindings",
+	function_ptr_command<> show_bindings(lsnes_cmd, "show-bindings", "Show active bindings",
 		"Syntax: show-bindings\nShow bindings that are currently active.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			keymapper::dumpbindings();
 		});
 
-	function_ptr_command<> show_inverse("show-inverse", "Show inverse bindings",
+	function_ptr_command<> show_inverse(lsnes_cmd, "show-inverse", "Show inverse bindings",
 		"Syntax: show-inverse\nShow inversebindings that are currently active.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i : inverse_key::get_ikeys())
@@ -604,7 +604,7 @@ signed keygroup::get_value()
 
 namespace
 {
-	function_ptr_command<const std::string&> set_axis("set-axis", "Set mode of Joystick axis",
+	function_ptr_command<const std::string&> set_axis(lsnes_cmd, "set-axis", "Set mode of Joystick axis",
 		"Syntax: set-axis <axis> <options>...\nKnown options: disabled, axis, axis-inverse, pressure0-\n"
 		"pressure0+, pressure-0, pressure-+, pressure+0, pressure+-\nminus=<val>, zero=<val>, plus=<val>\n"
 		"tolerance=<val>\n",
@@ -684,7 +684,7 @@ namespace
 			keygroups()[r[1]]->change_calibration(p.cal_left, p.cal_center, p.cal_right, p.cal_tolerance);
 		});
 
-	function_ptr_command<> set_axismode("show-axes", "Show all joystick axes",
+	function_ptr_command<> set_axismode(lsnes_cmd, "show-axes", "Show all joystick axes",
 		"Syntax: show-axes\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			for(auto i = keygroups().begin(); i != keygroups().end(); ++i) {
@@ -753,7 +753,7 @@ namespace
 			std::string cmd = fixup_command_polarity(command, polarity);
 			if(cmd == "")
 				return;
-			command::invokeC(cmd);
+			lsnes_cmd.invoke(cmd);
 		}
 	};
 

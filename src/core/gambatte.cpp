@@ -601,13 +601,13 @@ void core_set_poll_flag(unsigned pflag)
 
 std::vector<char> cmp_save;
 
-function_ptr_command<> cmp_save1("set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
+function_ptr_command<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
 	if(!internal_rom)
 		return;
 	instance->saveState(cmp_save);
 });
 
-function_ptr_command<> cmp_save2("do-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
+function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
 	std::vector<char> x;
 	if(!internal_rom)
 		return;

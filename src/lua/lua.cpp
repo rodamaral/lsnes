@@ -268,7 +268,7 @@ namespace
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint");
+			lsnes_cmd.invoke("repaint");
 		}
 	}
 
@@ -307,7 +307,7 @@ namespace
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
-			command::invokeC("repaint");
+			lsnes_cmd.invoke("repaint");
 		}
 	}
 
@@ -499,22 +499,22 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 
 namespace
 {
-	function_ptr_command<const std::string&> evaluate_lua("evaluate-lua", "Evaluate expression in Lua VM",
-		"Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
+	function_ptr_command<const std::string&> evaluate_lua(lsnes_cmd, "evaluate-lua", "Evaluate expression in "
+		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
 			do_eval_lua(args);
 		});
 
-	function_ptr_command<arg_filename> run_lua("run-lua", "Run Lua script in Lua VM",
+	function_ptr_command<arg_filename> run_lua(lsnes_cmd, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
 			do_run_lua(args);
 		});
 
-	function_ptr_command<> reset_lua("reset-lua", "Reset the Lua VM",
+	function_ptr_command<> reset_lua(lsnes_cmd, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{

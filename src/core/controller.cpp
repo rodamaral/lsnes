@@ -82,7 +82,7 @@ namespace
 			controls.analog(pcid.first, pcid.second, x / 2 , y / 2);
 	}
 
-	function_ptr_command<const std::string&> autofire("autofire", "Set autofire pattern",
+	function_ptr_command<const std::string&> autofire(lsnes_cmd, "autofire", "Set autofire pattern",
 		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex(".*[^ \t].*", a, "Need at least one frame for autofire");
@@ -129,7 +129,7 @@ namespace
 	public:
 		button_action(const std::string& cmd, int _type, unsigned _controller, std::string _button)
 			throw(std::bad_alloc)
-			: command(cmd)
+			: command(lsnes_cmd, cmd)
 		{
 			commandn = cmd;
 			type = _type;
@@ -176,7 +176,7 @@ namespace
 	public:
 		analog_action(const std::string& cmd, unsigned _controller)
 			throw(std::bad_alloc)
-			: command(cmd)
+			: command(lsnes_cmd, cmd)
 		{
 			controller = _controller;
 		}

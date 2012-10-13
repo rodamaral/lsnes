@@ -4,7 +4,7 @@
 #include <sstream>
 
 namespace {
-	function_ptr_command<arg_filename> load_lib("load-library", "Load a library",
+	function_ptr_command<arg_filename> load_lib(lsnes_cmd, "load-library", "Load a library",
 		"Syntax: load-library <file>\nLoad library <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			try {

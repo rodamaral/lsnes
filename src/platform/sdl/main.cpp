@@ -84,7 +84,7 @@ namespace
 			if(o.length() >= 6 && o.substr(0, 6) == "--run=") {
 				std::string file = o.substr(6);
 				messages << "--- Running " << file << " --- " << std::endl;
-				command::invokeC("run-script " + file);
+				lsnes_cmd.invoke("run-script " + file);
 				messages << "--- End running " << file << " --- " << std::endl;
 			}
 		}
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Running lsnesrc --- " << std::endl;
 	setting::set_storage_mode(true);
-	command::invokeC("run-script " + cfgpath + "/lsnes.rc");
+	lsnes_cmd.invoke("run-script " + cfgpath + "/lsnes.rc");
 	setting::set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 

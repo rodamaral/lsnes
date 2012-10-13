@@ -127,7 +127,7 @@ namespace
 {
 	bool queue_function_run = false;
 
-	function_ptr_command<> identify_key("show-plugins", "Show plugins in use",
+	function_ptr_command<> identify_key(lsnes_cmd, "show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Graphics:\t" << graphics_plugin::name << std::endl;
@@ -135,7 +135,7 @@ namespace
 			messages << "Joystick:\t" << joystick_plugin::name << std::endl;
 		});
 
-	function_ptr_command<const std::string&> enable_sound("enable-sound", "Enable/Disable sound",
+	function_ptr_command<const std::string&> enable_sound(lsnes_cmd, "enable-sound", "Enable/Disable sound",
 		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			switch(string_to_bool(args)) {
@@ -156,7 +156,7 @@ namespace
 	inverse_key ienable_sound("enable-sound on", "Sound‣Enable");
 	inverse_key idisable_sound("enable-sound off", "Sound‣Disable");
 
-	function_ptr_command<const std::string&> set_sound_device("set-sound-device", "Set sound device",
+	function_ptr_command<const std::string&> set_sound_device(lsnes_cmd, "set-sound-device", "Set sound device",
 		"Syntax: set-sound-device <id>\nSet sound device to <id>.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(!audioapi_driver_initialized())
@@ -164,7 +164,7 @@ namespace
 			platform::set_sound_device(args);
 		});
 
-	function_ptr_command<> get_sound_devices("show-sound-devices", "Show sound devices",
+	function_ptr_command<> get_sound_devices(lsnes_cmd, "show-sound-devices", "Show sound devices",
 		"Syntax: show-sound-devices\nShow listing of available sound devices\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(!audioapi_driver_initialized())
@@ -181,7 +181,7 @@ namespace
 				<< dname << ")" << std::endl;
 		});
 
-	function_ptr_command<> get_sound_status("show-sound-status", "Show sound status",
+	function_ptr_command<> get_sound_status(lsnes_cmd, "show-sound-status", "Show sound status",
 		"Syntax: show-sound-status\nShow current sound status\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Sound plugin: " << audioapi_driver_name << std::endl;
@@ -197,7 +197,7 @@ namespace
 			}
 		});
 
-	function_ptr_command<const std::string&> set_volume("set-volume", "Set sound volume",
+	function_ptr_command<const std::string&> set_volume(lsnes_cmd, "set-volume", "Set sound volume",
 		"Syntax: set-volume <scale>\nset-volume <scale>%\nset-volume <scale>dB\nSet sound volume\n",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r;
@@ -215,8 +215,8 @@ namespace
 			audioapi_music_volume(parsed);
 		});
 
-	function_ptr_command<const std::string&> set_volume2("set-voice-volume", "Set voice playback volume",
-		"Syntax: set-voice-volume <scale>\nset-voice-volume <scale>%\nset-voice-volume <scale>dB\n"
+	function_ptr_command<const std::string&> set_volume2(lsnes_cmd, "set-voice-volume", "Set voice playback "
+		"volume", "Syntax: set-voice-volume <scale>\nset-voice-volume <scale>%\nset-voice-volume <scale>dB\n"
 		"Set voice volume\n",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r;
@@ -234,9 +234,9 @@ namespace
 			audioapi_voicep_volume(parsed);
 		});
 
-	function_ptr_command<const std::string&> set_volume3("set-record-volume", "Set voice record volume",
-		"Syntax: set-record-volume <scale>\nset-record-volume <scale>%\nset-record-volume <scale>dB\n"
-		"Set record volume\n",
+	function_ptr_command<const std::string&> set_volume3(lsnes_cmd, "set-record-volume", "Set voice record "
+		"volume", "Syntax: set-record-volume <scale>\nset-record-volume <scale>%\nset-record-volume "
+		"<scale>dB\nSet record volume\n",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			regex_results r;
 			double parsed = 1;
@@ -457,7 +457,7 @@ namespace
 				std::string c = commands.front();
 				commands.pop_front();
 				queue_lock->unlock();
-				command::invokeC(c);
+				lsnes_cmd.invoke(c);
 				queue_lock->lock();
 				queue_function_run = true;
 			}

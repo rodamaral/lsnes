@@ -44,7 +44,7 @@ namespace
 
 	function_ptr_luafun lua_exec("exec", [](lua_State* LS, const std::string& fname) -> int {
 		std::string text = get_string_argument(LS, 1, fname.c_str());
-		command::invokeC(text);
+		lsnes_cmd.invoke(text);
 		return 0;
 	});
 

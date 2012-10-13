@@ -21,7 +21,7 @@ namespace
 		throw std::runtime_error("Unknown dumper");
 	}
 
-	function_ptr_command<const std::string&> start_dump("start-dump", "Start dumping",
+	function_ptr_command<const std::string&> start_dump(lsnes_cmd, "start-dump", "Start dumping",
 		"Syntax: start-dump <dumper> <prefix/filename>\nSyntax: start-dump <dumper> <mode> <prefix/filename>\n"
 			"Start dumping using <dumper> in mode <mode> to <prefix/filename>\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
@@ -41,7 +41,7 @@ namespace
 			d.start(mode, t2);
 		});
 
-	function_ptr_command<const std::string&> end_dump("end-dump", "End dumping",
+	function_ptr_command<const std::string&> end_dump(lsnes_cmd, "end-dump", "End dumping",
 		"Syntax: end-dump <dumper>\nEnd dumping using dumper <dumper>\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
 			auto r = regex("([^ \t]+)[ \t]*", t, "Command syntax error");
@@ -49,7 +49,7 @@ namespace
 			d.end();
 		});
 
-	function_ptr_command<const std::string&> dumpersc("show-dumpers", "Show dumpers",
+	function_ptr_command<const std::string&> dumpersc(lsnes_cmd, "show-dumpers", "Show dumpers",
 		"Syntax: show-dumpers\nSyntax: show-dumpers <dumper>\nShow dumpers or dumper modes for <dumper>\n",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			auto a = adv_dumper::get_dumper_set();

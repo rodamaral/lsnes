@@ -84,7 +84,7 @@ namespace
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
 			if(a.length() > 6 && a.substr(0, 6) == "--lua=") {
-				command::invokeC("run-lua " + a.substr(6));
+				lsnes_cmd.invoke("run-lua " + a.substr(6));
 			}
 		}
 	}

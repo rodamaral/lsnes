@@ -369,7 +369,7 @@ namespace
 		}
 	} _jukebox_size_listener;
 
-	function_ptr_command<> count_rerecords("count-rerecords", "Count rerecords",
+	function_ptr_command<> count_rerecords(lsnes_cmd, "count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> tmp;
@@ -377,7 +377,7 @@ namespace
 			messages << x << " rerecord(s)" << std::endl;
 		});
 
-	function_ptr_command<const std::string&> quit_emulator("quit-emulator", "Quit the emulator",
+	function_ptr_command<const std::string&> quit_emulator(lsnes_cmd, "quit-emulator", "Quit the emulator",
 		"Syntax: quit-emulator [/y]\nQuits emulator (/y => don't ask for confirmation).\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_QUIT;
@@ -385,7 +385,7 @@ namespace
 			platform::cancel_wait();
 		});
 
-	function_ptr_command<> unpause_emulator("unpause-emulator", "Unpause the emulator",
+	function_ptr_command<> unpause_emulator(lsnes_cmd, "unpause-emulator", "Unpause the emulator",
 		"Syntax: unpause-emulator\nUnpauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_AUTO;
@@ -394,7 +394,7 @@ namespace
 			messages << "Unpaused" << std::endl;
 		});
 
-	function_ptr_command<> pause_emulator("pause-emulator", "(Un)pause the emulator",
+	function_ptr_command<> pause_emulator(lsnes_cmd, "pause-emulator", "(Un)pause the emulator",
 		"Syntax: pause-emulator\n(Un)pauses the emulator.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(amode != ADVANCE_AUTO) {
@@ -410,7 +410,7 @@ namespace
 			}
 		});
 
-	function_ptr_command<> save_jukebox_prev("cycle-jukebox-backward", "Cycle save jukebox backwards",
+	function_ptr_command<> save_jukebox_prev(lsnes_cmd, "cycle-jukebox-backward", "Cycle save jukebox backwards",
 		"Syntax: cycle-jukebox-backward\nCycle save jukebox backwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
@@ -425,7 +425,7 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
-	function_ptr_command<> save_jukebox_next("cycle-jukebox-forward", "Cycle save jukebox forwards",
+	function_ptr_command<> save_jukebox_next(lsnes_cmd, "cycle-jukebox-forward", "Cycle save jukebox forwards",
 		"Syntax: cycle-jukebox-forward\nCycle save jukebox forwards\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
@@ -440,7 +440,7 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
-	function_ptr_command<> load_jukebox("load-jukebox", "Load save from jukebox",
+	function_ptr_command<> load_jukebox(lsnes_cmd, "load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
@@ -448,7 +448,7 @@ namespace
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
 
-	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
+	function_ptr_command<> save_jukebox_c(lsnes_cmd, "save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
@@ -456,7 +456,7 @@ namespace
 			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE);
 		});
 
-	function_ptr_command<> padvance_frame("+advance-frame", "Advance one frame",
+	function_ptr_command<> padvance_frame(lsnes_cmd, "+advance-frame", "Advance one frame",
 		"Syntax: +advance-frame\nAdvances the emulation by one frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_FRAME;
@@ -466,7 +466,7 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<> nadvance_frame("-advance-frame", "Advance one frame",
+	function_ptr_command<> nadvance_frame(lsnes_cmd, "-advance-frame", "Advance one frame",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
@@ -474,7 +474,7 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<> padvance_poll("+advance-poll", "Advance one subframe",
+	function_ptr_command<> padvance_poll(lsnes_cmd, "+advance-poll", "Advance one subframe",
 		"Syntax: +advance-poll\nAdvances the emulation by one subframe.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_SUBFRAME;
@@ -484,7 +484,7 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<> nadvance_poll("-advance-poll", "Advance one subframe",
+	function_ptr_command<> nadvance_poll(lsnes_cmd, "-advance-poll", "Advance one subframe",
 		"No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			cancel_advance = true;
@@ -492,7 +492,7 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<> advance_skiplag("advance-skiplag", "Skip to next poll",
+	function_ptr_command<> advance_skiplag(lsnes_cmd, "advance-skiplag", "Skip to next poll",
 		"Syntax: advance-skiplag\nAdvances the emulation to the next poll.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			amode = ADVANCE_SKIPLAG_PENDING;
@@ -500,7 +500,7 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<const std::string&> reset_c("reset", "Reset the SNES",
+	function_ptr_command<const std::string&> reset_c(lsnes_cmd, "reset", "Reset the SNES",
 		"Syntax: reset\nReset <delay>\nResets the SNES in beginning of the next frame.\n",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			if(x == "")
@@ -509,56 +509,56 @@ namespace
 				pending_reset_cycles = parse_value<uint32_t>(x);
 		});
 
-	function_ptr_command<arg_filename> load_c("load", "Load savestate (current mode)",
+	function_ptr_command<arg_filename> load_c(lsnes_cmd, "load", "Load savestate (current mode)",
 		"Syntax: load <file>\nLoads SNES state from <file> in current mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_CURRENT);
 		});
 
-	function_ptr_command<arg_filename> load_smart_c("load-smart", "Load savestate (heuristic mode)",
+	function_ptr_command<arg_filename> load_smart_c(lsnes_cmd, "load-smart", "Load savestate (heuristic mode)",
 		"Syntax: load <file>\nLoads SNES state from <file> in heuristic mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_DEFAULT);
 		});
 
-	function_ptr_command<arg_filename> load_state_c("load-state", "Load savestate (R/W)",
+	function_ptr_command<arg_filename> load_state_c(lsnes_cmd, "load-state", "Load savestate (R/W)",
 		"Syntax: load-state <file>\nLoads SNES state from <file> in Read/Write mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RW);
 		});
 
-	function_ptr_command<arg_filename> load_readonly("load-readonly", "Load savestate (RO)",
+	function_ptr_command<arg_filename> load_readonly(lsnes_cmd, "load-readonly", "Load savestate (RO)",
 		"Syntax: load-readonly <file>\nLoads SNES state from <file> in read-only mode\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_RO);
 		});
 
-	function_ptr_command<arg_filename> load_preserve("load-preserve", "Load savestate (preserve input)",
-		"Syntax: load-preserve <file>\nLoads SNES state from <file> preserving input\n",
+	function_ptr_command<arg_filename> load_preserve(lsnes_cmd, "load-preserve", "Load savestate (preserve "
+		"input)", "Syntax: load-preserve <file>\nLoads SNES state from <file> preserving input\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_PRESERVE);
 		});
 
-	function_ptr_command<arg_filename> load_movie_c("load-movie", "Load movie",
+	function_ptr_command<arg_filename> load_movie_c(lsnes_cmd, "load-movie", "Load movie",
 		"Syntax: load-movie <file>\nLoads SNES movie from <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load(args, LOAD_STATE_MOVIE);
 		});
 
 
-	function_ptr_command<arg_filename> save_state("save-state", "Save state",
+	function_ptr_command<arg_filename> save_state(lsnes_cmd, "save-state", "Save state",
 		"Syntax: save-state <file>\nSaves SNES state to <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_STATE);
 		});
 
-	function_ptr_command<arg_filename> save_movie("save-movie", "Save movie",
+	function_ptr_command<arg_filename> save_movie(lsnes_cmd, "save-movie", "Save movie",
 		"Syntax: save-movie <file>\nSaves SNES movie to <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_save(args, SAVE_MOVIE);
 		});
 
-	function_ptr_command<> set_rwmode("set-rwmode", "Switch to read/write mode",
+	function_ptr_command<> set_rwmode(lsnes_cmd, "set-rwmode", "Switch to read/write mode",
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
@@ -568,7 +568,7 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
-	function_ptr_command<> set_romode("set-romode", "Switch to read-only mode",
+	function_ptr_command<> set_romode(lsnes_cmd, "set-romode", "Switch to read-only mode",
 		"Syntax: set-romode\nSwitches to read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(true);
@@ -577,7 +577,7 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
-	function_ptr_command<> toggle_rwmode("toggle-rwmode", "Toggle read/write mode",
+	function_ptr_command<> toggle_rwmode(lsnes_cmd, "toggle-rwmode", "Toggle read/write mode",
 		"Syntax: toggle-rwmode\nToggles read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = movb.get_movie().readonly_mode();
@@ -589,50 +589,50 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
-	function_ptr_command<> repaint("repaint", "Redraw the screen",
+	function_ptr_command<> repaint(lsnes_cmd, "repaint", "Redraw the screen",
 		"Syntax: repaint\nRedraws the screen\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer();
 		});
 
-	function_ptr_command<> tpon("toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
+	function_ptr_command<> tpon(lsnes_cmd, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool newstate = !static_cast<bool>(pause_on_end);
 			pause_on_end.set(newstate ? "1" : "0");
 			messages << "Pause-on-end is now " << (newstate ? "ON" : "OFF") << std::endl;
 		});
 
-	function_ptr_command<> rewind_movie("rewind-movie", "Rewind movie to the beginning",
+	function_ptr_command<> rewind_movie(lsnes_cmd, "rewind-movie", "Rewind movie to the beginning",
 		"Syntax: rewind-movie\nRewind movie to the beginning\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
 		});
 
-	function_ptr_command<const std::string&> reload_rom2("reload-rom", "Reload the ROM image",
+	function_ptr_command<const std::string&> reload_rom2(lsnes_cmd, "reload-rom", "Reload the ROM image",
 		"Syntax: reload-rom [<file>]\nReload the ROM image from <file>\n",
 		[](const std::string& filename) throw(std::bad_alloc, std::runtime_error) {
 			if(reload_rom(filename))
 				mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
 		});
 
-	function_ptr_command<> cancel_save("cancel-saves", "Cancel all pending saves", "Syntax: cancel-save\n"
-		"Cancel pending saves\n",
+	function_ptr_command<> cancel_save(lsnes_cmd, "cancel-saves", "Cancel all pending saves", "Syntax: "
+		"cancel-save\nCancel pending saves\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			queued_saves.clear();
 			messages << "Pending saves canceled." << std::endl;
 		});
 
-	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
+	function_ptr_command<> test1(lsnes_cmd, "test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer(screen_nosignal);
 		});
 
-	function_ptr_command<> test2("test-2", "no description available", "No help available\n",
+	function_ptr_command<> test2(lsnes_cmd, "test-2", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer(screen_corrupt);
 		});
 
-	function_ptr_command<> test3("test-3", "no description available", "No help available\n",
+	function_ptr_command<> test3(lsnes_cmd, "test-3", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			while(1);
 		});

@@ -131,43 +131,43 @@ namespace
 		}
 	}
 
-	function_ptr_command<> identify_key("identify-key", "Identify a key",
+	function_ptr_command<> identify_key(lsnes_cmd, "identify-key", "Identify a key",
 		"Syntax: identify-key\nIdentifies a (pseudo-)key.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			identify_requested = true;
 			wake_ui();
 		});
 
-	function_ptr_command<> scroll_up("scroll-up", "Scroll messages a page up",
+	function_ptr_command<> scroll_up(lsnes_cmd, "scroll-up", "Scroll messages a page up",
 		"Syntax: scroll-up\nScrolls message console backward one page.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mutex::holder h(platform::msgbuf_lock());
 			platform::msgbuf.scroll_up_page();
 		});
 
-	function_ptr_command<> scroll_fullup("scroll-fullup", "Scroll messages to beginning",
+	function_ptr_command<> scroll_fullup(lsnes_cmd, "scroll-fullup", "Scroll messages to beginning",
 		"Syntax: scroll-fullup\nScrolls message console to its beginning.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mutex::holder h(platform::msgbuf_lock());
 			platform::msgbuf.scroll_beginning();
 		});
 
-	function_ptr_command<> scroll_fulldown("scroll-fulldown", "Scroll messages to end",
+	function_ptr_command<> scroll_fulldown(lsnes_cmd, "scroll-fulldown", "Scroll messages to end",
 		"Syntax: scroll-fulldown\nScrolls message console to its end.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mutex::holder h(platform::msgbuf_lock());
 			platform::msgbuf.scroll_end();
 		});
 
-	function_ptr_command<> scrolldown("scroll-down", "Scroll messages a page down",
+	function_ptr_command<> scrolldown(lsnes_cmd, "scroll-down", "Scroll messages a page down",
 		"Syntax: scroll-up\nScrolls message console forward one page.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mutex::holder h(platform::msgbuf_lock());
 			platform::msgbuf.scroll_down_page();
 		});
 
-	function_ptr_command<> toggle_console("toggle-console", "Toggle console between small and full window",
-		"Syntax: toggle-console\nToggles console between small and large.\n",
+	function_ptr_command<> toggle_console(lsnes_cmd, "toggle-console", "Toggle console between small and full "
+		"window", "Syntax: toggle-console\nToggles console between small and large.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			fullscreen_console = !fullscreen_console;
 			wake_ui();
@@ -272,7 +272,7 @@ namespace
 		platform::queue(emu_handle_identify, NULL, false);
 	}
 
-	function_ptr_command<const std::string&> exec_command_prefix("prompt-command", 
+	function_ptr_command<const std::string&> exec_command_prefix(lsnes_cmd, "prompt-command", 
 		"Prompt for command", "Syntax: prompt-command <prefix>\nPrompts command with specified text.\n",
 		[](const std::string& line) throw(std::bad_alloc, std::runtime_error) {
 			delayed_cmd = line;

@@ -137,19 +137,19 @@ namespace
 
 	bool turboed = false;
 
-	function_ptr_command<> tturbo("toggle-turbo", "Toggle turbo",
+	function_ptr_command<> tturbo(lsnes_cmd, "toggle-turbo", "Toggle turbo",
 		"Syntax: toggle-turbo\nToggle turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = !turboed;
 		});
 
-	function_ptr_command<> pturbo("+turbo", "Activate turbo",
+	function_ptr_command<> pturbo(lsnes_cmd, "+turbo", "Activate turbo",
 		"Syntax: +turbo\nActivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = true;
 		});
 
-	function_ptr_command<> nturbo("-turbo", "Deactivate turbo",
+	function_ptr_command<> nturbo(lsnes_cmd, "-turbo", "Deactivate turbo",
 		"Syntax: -turbo\nDeactivate turbo mode.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			turboed = false;

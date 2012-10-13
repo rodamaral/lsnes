@@ -186,7 +186,7 @@ namespace
 		return true;
 	}
 
-	function_ptr_command<const std::string&> x("portaudio", "", "",
+	function_ptr_command<const std::string&> x(lsnes_cmd, "portaudio", "", "",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			messages << "Load: " << Pa_GetStreamCpuLoad(s) << std::endl;
 			messages << "Rate: " << 1000000.0 * frames / (get_utime() - first_ts) << std::endl;

@@ -47,8 +47,8 @@ namespace
 		for(auto i : setting::get_invalid_values())
 			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
 		//Aliases.
-		for(auto i : command::get_aliases()) {
-			std::string old_alias_value = command::get_alias_for(i);
+		for(auto i : lsnes_cmd.get_aliases()) {
+			std::string old_alias_value = lsnes_cmd.get_alias_for(i);
 			while(old_alias_value != "") {
 				std::string aliasline;
 				size_t s = old_alias_value.find_first_of("\n");
