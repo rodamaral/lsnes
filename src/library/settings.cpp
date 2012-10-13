@@ -1,7 +1,9 @@
 #include "library/globalwrap.hpp"
+#include "library/register-queue.hpp"
 #include "library/settings.hpp"
 #include "library/string.hpp"
 
+#include <set>
 #include <map>
 #include <sstream>
 #include <iostream>
@@ -15,56 +17,7 @@ namespace
 		setting* toreg;
 	};
 
-	globalwrap<mutex_class> reg_mutex;
-	globalwrap<std::set<setting_group*>> ready_groups;
-	globalwrap<std::list<pending_registration>> pending_registrations;
-
-	void run_pending_registrations()
-	{
-		umutex_class m(reg_mutex());
-		auto i = pending_registrations().begin();
-		while(i != pending_registrations().end()) {
-			auto entry = i++;
-			if(ready_groups().count(entry->group)) {
-				entry->group->register_setting(entry->name, *entry->toreg);
-				pending_registrations().erase(entry);
-			}
-		}
-	}
-
-	void add_registration(setting_group& group, const std::string& name, setting& type)
-	{
-		{
-			umutex_class m(reg_mutex());
-			if(ready_groups().count(&group)) {
-				group.register_setting(name, type);
-				return;
-			}
-			pending_registration p;
-			p.group = &group;
-			p.name = name;
-			p.toreg = &type;
-			pending_registrations().push_back(p);
-		}
-		run_pending_registrations();
-	}
-
-	void delete_registration(setting_group& group, const std::string& name)
-	{
-		{
-			umutex_class m(reg_mutex());
-			if(ready_groups().count(&group))
-				group.unregister_setting(name);
-			else {
-				auto i = pending_registrations().begin();
-				while(i != pending_registrations().end()) {
-					auto entry = i++;
-					if(entry->group == &group && entry->name == name)
-						pending_registrations().erase(entry);
-				}
-			}
-		}
-	}
+	typedef register_queue<setting_group, setting> regqueue_t;
 }
 
 setting_listener::~setting_listener() throw()
@@ -73,19 +26,12 @@ setting_listener::~setting_listener() throw()
 
 setting_group::setting_group() throw(std::bad_alloc)
 {
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().insert(this);
-	}
-	run_pending_registrations();
+	regqueue_t::do_ready(*this, true);
 }
 
 setting_group::~setting_group() throw()
 {
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().erase(this);
-	}
+	regqueue_t::do_ready(*this, false);
 }
 
 setting* setting_group::get_by_name(const std::string& name)
@@ -218,13 +164,13 @@ void setting_group::remove_listener(struct setting_listener& listener) throw(std
 	listeners.erase(&listener);
 }
 
-void setting_group::register_setting(const std::string& name, setting& _setting) throw(std::bad_alloc)
+void setting_group::do_register(const std::string& name, setting& _setting) throw(std::bad_alloc)
 {
 	umutex_class(lock);
 	settings[name] = &_setting;
 }
 
-void setting_group::unregister_setting(const std::string& name) throw(std::bad_alloc)
+void setting_group::do_unregister(const std::string& name) throw(std::bad_alloc)
 {
 	umutex_class(lock);
 	settings.erase(name);
@@ -233,12 +179,12 @@ void setting_group::unregister_setting(const std::string& name) throw(std::bad_a
 setting::setting(setting_group& group, const std::string& name) throw(std::bad_alloc)
 	: in_group(group)
 {
-	add_registration(group, settingname = name, *this);
+	regqueue_t::do_register(group, settingname = name, *this);
 }
 
 setting::~setting() throw()
 {
-	delete_registration(in_group, settingname);
+	regqueue_t::do_unregister(in_group, settingname);
 }
 
 bool setting::blank(bool really) throw(std::bad_alloc, std::runtime_error)

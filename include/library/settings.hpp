@@ -108,11 +108,11 @@ public:
 /**
  * Register a setting.
  */
-	void register_setting(const std::string& name, setting& _setting) throw(std::bad_alloc);
+	void do_register(const std::string& name, setting& _setting) throw(std::bad_alloc);
 /**
  * Unregister a setting.
  */
-	void unregister_setting(const std::string& name) throw(std::bad_alloc);
+	void do_unregister(const std::string& name) throw(std::bad_alloc);
 private:
 	setting* get_by_name(const std::string& name);
 	std::map<std::string, class setting*> settings;

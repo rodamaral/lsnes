@@ -49,11 +49,11 @@ public:
 /**
  * Register a command.
  */
-	void register_command(const std::string& name, command& cmd) throw(std::bad_alloc);
+	void do_register(const std::string& name, command& cmd) throw(std::bad_alloc);
 /**
  * Unregister a command.
  */
-	void unregister_command(const std::string& name) throw(std::bad_alloc);
+	void do_unregister(const std::string& name) throw(std::bad_alloc);
 /**
  * Set the output stream.
  */

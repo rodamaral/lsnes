@@ -1,6 +1,7 @@
 #include "library/commands.hpp"
 #include "library/globalwrap.hpp"
 #include "library/minmax.hpp"
+#include "library/register-queue.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include <iostream>
@@ -167,86 +168,25 @@ namespace
 		command_group& in_group;
 		std::ostream*& output;
 	};
-}
 
-namespace
-{
 	void default_oom_panic()
 	{
 		std::cerr << "PANIC: Fatal error, can't continue: Out of memory." << std::endl;
 		exit(1);
 	}
 
-	struct pending_registration
-	{
-		command_group* group;
-		std::string name;
-		command* toreg;
-	};
-
-	globalwrap<mutex_class> reg_mutex;
-	globalwrap<std::set<command_group*>> ready_groups;
-	globalwrap<std::list<pending_registration>> pending_registrations;
-
-	void run_pending_registrations()
-	{
-		umutex_class m(reg_mutex());
-		auto i = pending_registrations().begin();
-		while(i != pending_registrations().end()) {
-			auto entry = i++;
-			if(ready_groups().count(entry->group)) {
-				entry->group->register_command(entry->name, *entry->toreg);
-				pending_registrations().erase(entry);
-			}
-		}
-	}
-
-	void add_registration(command_group& group, const std::string& name, command& type)
-	{
-		{
-			umutex_class m(reg_mutex());
-			if(ready_groups().count(&group)) {
-				group.register_command(name, type);
-				return;
-			}
-			pending_registration p;
-			p.group = &group;
-			p.name = name;
-			p.toreg = &type;
-			pending_registrations().push_back(p);
-		}
-		run_pending_registrations();
-	}
-
-	void delete_registration(command_group& group, const std::string& name)
-	{
-		{
-			umutex_class m(reg_mutex());
-			if(ready_groups().count(&group))
-				group.unregister_command(name);
-			else {
-				auto i = pending_registrations().begin();
-				while(i != pending_registrations().end()) {
-					auto entry = i++;
-					if(entry->group == &group && entry->name == name)
-						pending_registrations().erase(entry);
-				}
-			}
-		}
-	}
-
-	
+	typedef register_queue<command_group, command> regqueue_t;
 }
 
 command::command(command_group& group, const std::string& cmd) throw(std::bad_alloc)
 	: in_group(group)
 {
-	add_registration(in_group, commandname = cmd, *this);
+	regqueue_t::do_register(in_group, commandname = cmd, *this);
 }
 
 command::~command() throw()
 {
-	delete_registration(in_group, commandname);
+	regqueue_t::do_unregister(in_group, commandname);
 }
 
 
@@ -264,11 +204,7 @@ command_group::command_group() throw(std::bad_alloc)
 {
 	oom_panic_routine = default_oom_panic;
 	output = &std::cerr;
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().insert(this);
-	}
-	run_pending_registrations();
+	regqueue_t::do_ready(*this, true);
 	//The builtin commands.
 	builtin[0] = new run_script(*this, output);
 	builtin[1] = new show_aliases(*this, output);
@@ -280,10 +216,7 @@ command_group::~command_group() throw()
 {
 	for(size_t i = 0; i < sizeof(builtin)/sizeof(builtin[0]); i++)
 		delete builtin[i];
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().erase(this);
-	}
+	regqueue_t::do_ready(*this, false);
 }
 
 void command_group::invoke(const std::string& cmd) throw()
@@ -421,7 +354,7 @@ bool command_group::valid_alias_name(const std::string& aliasname) throw(std::ba
 	return true;
 }
 
-void command_group::register_command(const std::string& name, command& cmd) throw(std::bad_alloc)
+void command_group::do_register(const std::string& name, command& cmd) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	if(commands.count(name))
@@ -429,7 +362,7 @@ void command_group::register_command(const std::string& name, command& cmd) thro
 	commands[name] = &cmd;
 }
 
-void command_group::unregister_command(const std::string& name) throw(std::bad_alloc)
+void command_group::do_unregister(const std::string& name) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	commands.erase(name);
