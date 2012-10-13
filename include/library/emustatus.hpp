@@ -1,12 +1,10 @@
-#ifndef _core__status__hpp__included__
-#define _core__status__hpp__included__
+#ifndef _library__emustatus__hpp__included__
+#define _library__emustatus__hpp__included__
 
-#include "core/window.hpp"
+#include "library/workthread.hpp"
 
 #include <map>
 #include <string>
-
-class mutex;
 
 class emulator_status
 {
@@ -85,7 +83,7 @@ public:
 private:
 	emulator_status(const emulator_status&);
 	emulator_status& operator=(const emulator_status&);
-	mutex* lock;
+	mutex_class lock;
 	std::map<std::string, std::string> content;
 };
 

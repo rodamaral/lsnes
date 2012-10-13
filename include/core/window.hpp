@@ -3,7 +3,7 @@
 
 #include "core/keymapper.hpp"
 #include "library/messagebuffer.hpp"
-#include "core/status.hpp"
+#include "library/emustatus.hpp"
 #include "library/framebuffer.hpp"
 #include <string>
 #include <map>
