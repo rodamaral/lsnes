@@ -1,5 +1,5 @@
 #include "core/command.hpp"
-#include "core/globalwrap.hpp"
+#include "library/globalwrap.hpp"
 #include "lua/internal.hpp"
 #include "lua/lua.hpp"
 #include "lua/unsaferewind.hpp"

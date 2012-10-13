@@ -1,6 +1,6 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
-#include "core/globalwrap.hpp"
+#include "library/globalwrap.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
