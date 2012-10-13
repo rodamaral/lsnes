@@ -1,6 +1,7 @@
 #include "library/controller-data.hpp"
 #include "library/workthread.hpp"
 #include "library/minmax.hpp"
+#include "library/globalwrap.hpp"
 #include <iostream>
 #include <list>
 
@@ -65,7 +66,6 @@ namespace
 		}
 	};
 
-	mutex_class reg_mutex;
 	struct pending_registration
 	{
 		port_type_group* group;
@@ -73,21 +73,13 @@ namespace
 		port_type* toreg;
 	};
 
-	std::set<port_type_group*>& ready_groups()
-	{
-		static std::set<port_type_group*> x;
-		return x;
-	}
-
-	std::list<pending_registration>& pending_registrations()
-	{
-		static std::list<pending_registration> x;
-		return x;
-	}
+	globalwrap<mutex_class> reg_mutex;
+	globalwrap<std::set<port_type_group*>> ready_groups;
+	globalwrap<std::list<pending_registration>> pending_registrations;
 
 	void run_pending_registrations()
 	{
-		umutex_class m(reg_mutex);
+		umutex_class m(reg_mutex());
 		auto i = pending_registrations().begin();
 		while(i != pending_registrations().end()) {
 			auto entry = i++;
@@ -101,7 +93,7 @@ namespace
 	void add_registration(port_type_group& group, const std::string& name, port_type& type)
 	{
 		{
-			umutex_class m(reg_mutex);
+			umutex_class m(reg_mutex());
 			pending_registration p;
 			p.group = &group;
 			p.name = name;
@@ -114,7 +106,7 @@ namespace
 	void delete_registration(port_type_group& group, const std::string& name)
 	{
 		{
-			umutex_class m(reg_mutex);
+			umutex_class m(reg_mutex());
 			if(ready_groups().count(&group))
 				group.unregister_type(name);
 			else {
@@ -132,7 +124,7 @@ namespace
 port_type_group::port_type_group() throw(std::bad_alloc)
 {
 	{
-		umutex_class m(reg_mutex);
+		umutex_class m(reg_mutex());
 		ready_groups().insert(this);
 	}
 	run_pending_registrations();
@@ -141,7 +133,7 @@ port_type_group::port_type_group() throw(std::bad_alloc)
 port_type_group::~port_type_group() throw()
 {
 	{
-		umutex_class m(reg_mutex);
+		umutex_class m(reg_mutex());
 		ready_groups().erase(this);
 	}
 }
