@@ -873,7 +873,7 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 		name = SLOTPATH;
 	else
 		return;
-	std::string val = setting::get(name);
+	std::string val = lsnes_set.get(name);
 	try {
 		if(e.GetId() == wxID_HIGHEST + 4)
 			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
@@ -885,7 +885,7 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 	}
 	std::string err;
 	try {
-		setting::set(name, val);
+		lsnes_set.set(name, val);
 	} catch(std::exception& e) {
 		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
 	}
@@ -895,11 +895,11 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 void wxeditor_esettings_paths::refresh()
 {
 	std::string rpath, fpath, spath, nslot, lpath;
-	fpath = setting::get(FIRMWAREPATH);
-	rpath = setting::get(ROMPATH);
-	spath = setting::get(MOVIEPATH);
-	nslot = setting::get(SAVESLOTS);
-	lpath = setting::get(SLOTPATH);
+	fpath = lsnes_set.get(FIRMWAREPATH);
+	rpath = lsnes_set.get(ROMPATH);
+	spath = lsnes_set.get(MOVIEPATH);
+	nslot = lsnes_set.get(SAVESLOTS);
+	lpath = lsnes_set.get(SLOTPATH);
 	rompath->SetLabel(towxstring(rpath));
 	firmpath->SetLabel(towxstring(fpath));
 	savepath->SetLabel(towxstring(spath));
@@ -1559,7 +1559,7 @@ std::string wxeditor_esettings_bindings::selected()
 		return "";
 }
 
-class wxeditor_esettings_advanced : public wxPanel, information_dispatch
+class wxeditor_esettings_advanced : public wxPanel
 {
 public:
 	wxeditor_esettings_advanced(wxWindow* parent);
@@ -1571,7 +1571,28 @@ public:
 	void on_setting_clear(const std::string& setting);
 	void _refresh();
 	void prepare_destroy();
+	struct listener : public setting_listener
+	{
+		listener(setting_group& group, wxeditor_esettings_advanced& _obj)
+			: obj(_obj)
+		{
+			group.add_listener(*this);
+		}
+		~listener() throw()
+		{
+		}
+		void changed(setting_group& grp, const std::string& sname, const std::string& svalue)
+		{
+			obj.on_setting_change(sname, svalue);
+		}
+		void blanked(setting_group& grp, const std::string& sname)
+		{
+			obj.on_setting_clear(sname);
+		}
+		wxeditor_esettings_advanced& obj;
+	};
 private:
+	listener _listener;
 	bool destruction_underway;
 	void refresh();
 	std::set<std::string> settings;
@@ -1585,7 +1606,7 @@ private:
 };
 
 wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
-	: wxPanel(parent, -1), information_dispatch("wxeditor-settings-listener")
+	: wxPanel(parent, -1), _listener(lsnes_set, *this)
 {
 	destruction_underway = false;
 	wxButton* tmp;
@@ -1632,14 +1653,14 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 		return;
 	std::string value;
 	std::string err;
-	value = setting::get(name);
+	value = lsnes_set.get(name);
 	try {
 		value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
 	} catch(...) {
 		return;
 	}
 	try {
-		setting::set(name, value);
+		lsnes_set.set(name, value);
 	} catch(std::exception& e) {
 		wxMessageBox(towxstring(e.what()), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
 	}
@@ -1664,7 +1685,7 @@ void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 		return;
 	bool err = false;
 	try {
-		setting::blank(name);
+		lsnes_set.blank(name);
 	} catch(...) {
 		wxMessageBox(wxT("This setting can't be cleared"), wxT("Error"), wxICON_EXCLAMATION | wxOK);
 	}
@@ -1693,12 +1714,12 @@ void wxeditor_esettings_advanced::refresh()
 {
 	if(destruction_underway)
 		return;
-	settings = setting::get_settings_set();
+	settings = lsnes_set.get_settings_set();
 	blankables.clear();
 	for(auto i : settings) {
-		if(setting::is_set(i))
-			values[i] = setting::get(i);
-		if(setting::blankable(i))
+		if(lsnes_set.is_set(i))
+			values[i] = lsnes_set.get(i);
+		if(lsnes_set.blankable(i))
 			blankables.insert(i);
 	}
 	_refresh();

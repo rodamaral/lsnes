@@ -53,10 +53,10 @@ movie& get_movie()
 
 namespace
 {
-	numeric_setting savecompression("savecompression", 0, 9, 7);
-	boolean_setting readonly_load_preserves("preserve_on_readonly_load", true);
+	numeric_setting savecompression(lsnes_set, "savecompression", 0, 9, 7);
+	boolean_setting readonly_load_preserves(lsnes_set, "preserve_on_readonly_load", true);
 
-	path_setting slotpath_setting("slotpath");
+	path_setting slotpath_setting(lsnes_set, "slotpath");
 
 	class projectprefix_setting : public setting
 	{
@@ -64,7 +64,7 @@ namespace
 		bool _set;
 		std::string prefix;
 		projectprefix_setting() throw(std::bad_alloc)
-			: setting("$project")
+			: setting(lsnes_set, "$project")
 		{
 			_set = false;
 		}

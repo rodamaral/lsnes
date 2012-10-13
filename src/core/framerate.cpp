@@ -59,7 +59,7 @@ namespace
 	struct setting_targetfps : public setting
 	{
 		setting_targetfps() throw(std::bad_alloc)
-			: setting("targetfps")
+			: setting(lsnes_set, "targetfps")
 		{
 		}
 

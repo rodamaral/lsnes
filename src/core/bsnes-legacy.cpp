@@ -64,8 +64,8 @@ unsigned core_userports = 2;
 namespace
 {
 	bool pollflag_active = true;
-	boolean_setting allow_inconsistent_saves("allow-inconsistent-saves", false);
-	boolean_setting save_every_frame("save-every-frame", false);
+	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
+	boolean_setting save_every_frame(lsnes_set, "save-every-frame", false);
 	uint32_t norom_frame[512 * 448];
 	bool have_saved_this_frame = false;
 	int16_t blanksound[1070] = {0};

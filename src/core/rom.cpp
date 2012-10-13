@@ -134,7 +134,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			romimg[0] = loaded_slot(setting::get("firmwarepath") + "/" + bios, "",
+			romimg[0] = loaded_slot(lsnes_set.get("firmwarepath") + "/" + bios, "",
 				coretype->get_image_info(0), false);
 		}
 		romimg[romidx] = loaded_slot(file, "", coretype->get_image_info(romidx), false);

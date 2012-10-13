@@ -78,16 +78,16 @@ namespace
 			return 48000;
 	}
 
-	boolean_setting dump_large("avi-large", false);
-	numeric_setting dtb("avi-top-border", 0, 8191, 0);
-	numeric_setting dbb("avi-bottom-border", 0, 8191, 0);
-	numeric_setting dlb("avi-left-border", 0, 8191, 0);
-	numeric_setting drb("avi-right-border", 0, 8191, 0);
-	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
+	boolean_setting dump_large(lsnes_set, "avi-large", false);
+	numeric_setting dtb(lsnes_set, "avi-top-border", 0, 8191, 0);
+	numeric_setting dbb(lsnes_set, "avi-bottom-border", 0, 8191, 0);
+	numeric_setting dlb(lsnes_set, "avi-left-border", 0, 8191, 0);
+	numeric_setting drb(lsnes_set, "avi-right-border", 0, 8191, 0);
+	numeric_setting max_frames_per_segment(lsnes_set, "avi-maxframes", 0, 999999999, 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	numeric_setting soundrate_setting("avi-soundrate", 0, 5, 0);
+	numeric_setting soundrate_setting(lsnes_set, "avi-soundrate", 0, 5, 0);
 #else
-	numeric_setting soundrate_setting("avi-soundrate", 0, 3, 0);
+	numeric_setting soundrate_setting(lsnes_set, "avi-soundrate", 0, 3, 0);
 #endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)

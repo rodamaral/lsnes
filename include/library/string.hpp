@@ -5,6 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <vector>
+#include <boost/lexical_cast.hpp>
 
 /**
  * Strip trailing CR if any.
@@ -89,5 +90,26 @@ bool regex_match(const std::string& regex, const std::string& str) throw(std::ba
  * Returns: -1 if string is bad, 0 if false, 1 if true.
  */
 int string_to_bool(const std::string& cast_to_bool);
+
+/**
+ * \brief Typeconvert string.
+ */
+template<typename T> inline T parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+{
+	try {
+		//Hack, since lexical_cast lets negative values slip through.
+		if(!std::numeric_limits<T>::is_signed && value.length() && value[0] == '-') {
+			throw std::runtime_error("Unsigned values can't be negative");
+		}
+		return boost::lexical_cast<T>(value);
+	} catch(std::exception& e) {
+		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
+	}
+}
+
+template<> inline std::string parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+{
+	return value;
+}
 
 #endif

@@ -240,9 +240,9 @@ namespace
 	{
 		std::string v = (stringfmt() << target).str();
 		if(target < 0)
-			setting::set("targetfps", "infinite");
+			lsnes_set.set("targetfps", "infinite");
 		else
-			setting::set("targetfps", v);
+			lsnes_set.set("targetfps", v);
 	}
 
 	class controller_autohold_menu : public wxMenu
@@ -500,17 +500,17 @@ namespace
 		runuifun([this]() { this->ahmenu->reconfigure(); });
 	}
 
-	path_setting moviepath_setting("moviepath");
-	path_setting rompath_setting("rompath");
+	path_setting moviepath_setting(lsnes_set, "moviepath");
+	path_setting rompath_setting(lsnes_set, "rompath");
 
 	std::string movie_path()
 	{
-		return setting::get("moviepath");
+		return lsnes_set.get("moviepath");
 	}
 
 	std::string rom_path()
 	{
-		return setting::get("rompath");
+		return lsnes_set.get("rompath");
 	}
 
 	bool is_lsnes_movie(const std::string& filename)
@@ -1141,10 +1141,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SET_SPEED: {
 		bool bad = false;
-		std::string value = setting::is_set("targetfps") ? setting::get("targetfps") : "";
+		std::string value = lsnes_set.is_set("targetfps") ? lsnes_set.get("targetfps") : "";
 		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
 		try {
-			setting::set("targetfps", value);
+			lsnes_set.set("targetfps", value);
 		} catch(...) {
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
 		}

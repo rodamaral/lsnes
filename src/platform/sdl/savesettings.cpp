@@ -38,13 +38,13 @@ namespace
 				<< " tolerance=" << p.cal_tolerance << std::endl;
 		}
 		//Settings.
-		for(auto i : setting::get_settings_set()) {
-			if(!setting::is_set(i))
+		for(auto i : lsnes_set.get_settings_set()) {
+			if(!lsnes_set.is_set(i))
 				cfgfile << "unset-setting " << i << std::endl;
 			else
-				cfgfile << "set-setting " << i << " " << setting::get(i) << std::endl;
+				cfgfile << "set-setting " << i << " " << lsnes_set.get(i) << std::endl;
 		}
-		for(auto i : setting::get_invalid_values())
+		for(auto i : lsnes_set.get_invalid_values())
 			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {

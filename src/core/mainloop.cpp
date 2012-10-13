@@ -65,15 +65,15 @@ namespace
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
 	//Save jukebox.
-	numeric_setting jukebox_size("jukebox-size", 0, 999, 12);
+	numeric_setting jukebox_size(lsnes_set, "jukebox-size", 0, 999, 12);
 	size_t save_jukebox_pointer;
 	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
 	long pending_reset_cycles = -1;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
 	//Few settings.
-	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
-	boolean_setting pause_on_end("pause-on-end", false);
+	numeric_setting advance_timeout_first(lsnes_set, "advance-timeout", 0, 999999999, 500);
+	boolean_setting pause_on_end(lsnes_set, "pause-on-end", false);
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
@@ -89,7 +89,7 @@ namespace
 	}
 }
 
-path_setting firmwarepath_setting("firmwarepath");
+path_setting firmwarepath_setting(lsnes_set, "firmwarepath");
 
 void mainloop_signal_need_rewind(void* ptr)
 {
@@ -355,11 +355,13 @@ public:
 
 namespace
 {
-	class jukebox_size_listener : public information_dispatch
+	class jukebox_size_listener : public setting_listener
 	{
 	public:
-		jukebox_size_listener() : information_dispatch("jukebox-size-listener") {};
-		void on_setting_change(const std::string& setting, const std::string& value)
+		jukebox_size_listener() {}
+		~jukebox_size_listener() throw() {}
+		void blanked(setting_group& group, const std::string& setting) {}
+		void changed(setting_group& group, const std::string& setting, const std::string& value)
 		{
 			if(setting == "jukebox-size") {
 				if(save_jukebox_pointer >= jukebox_size)
@@ -862,6 +864,8 @@ namespace
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	//Init listners.
+	lsnes_set.add_listener(_jukebox_size_listener);
 	//Basic initialization.
 	voicethread_task();
 	init_special_screens();

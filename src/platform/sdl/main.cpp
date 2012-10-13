@@ -172,9 +172,9 @@ int main(int argc, char** argv)
 	create_lsnesrc();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Running lsnesrc --- " << std::endl;
-	setting::set_storage_mode(true);
+	lsnes_set.set_storage_mode(true);
 	lsnes_cmd.invoke("run-script " + cfgpath + "/lsnes.rc");
-	setting::set_storage_mode(false);
+	lsnes_set.set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 
 	run_extra_scripts(cmdline);

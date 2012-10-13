@@ -216,35 +216,6 @@ void information_dispatch::do_autohold_reconfigure() throw()
 	}
 }
 
-void information_dispatch::on_setting_change(const std::string& setting, const std::string& value)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_setting_change(const std::string& setting, const std::string& value) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_setting_change(setting, value);
-		END_EH_BLOCK(i, "on_setting_change");
-	}
-}
-
-void information_dispatch::on_setting_clear(const std::string& setting)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_setting_clear(const std::string& setting) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_setting_clear(setting);
-		END_EH_BLOCK(i, "on_setting_clear");
-	}
-}
-
-
 void information_dispatch::on_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan,
 	unsigned region)
 {

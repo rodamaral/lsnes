@@ -173,31 +173,6 @@ public:
  */
 	static void do_autohold_reconfigure() throw();
 /**
- * A setting may have changed.
- *
- * The default handler does nothing.
- *
- * Parameter setting: The setting that has possibly changed.
- * Parameter value: The new value for the setting.
- */
-	virtual void on_setting_change(const std::string& setting, const std::string& value);
-/**
- * Call all on_setting_change() handlers.
- */
-	static void do_setting_change(const std::string& setting, const std::string& value) throw();
-/**
- * A setting has been cleared (but it might have been cleared already).
- *
- * The default handler does nothing.
- *
- * Parameter setting: The setting that is now clear.
- */
-	virtual void on_setting_clear(const std::string& setting);
-/**
- * Call all on_setting_clear() handlers
- */
-	static void do_setting_clear(const std::string& setting) throw();
-/**
  * A raw frame has been received.
  *
  * The default handler does nothing.

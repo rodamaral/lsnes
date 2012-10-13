@@ -191,13 +191,13 @@ end:
 				<< " tolerance=" << p.cal_tolerance << std::endl;
 		}
 		//Settings.
-		for(auto i : setting::get_settings_set()) {
-			if(!setting::is_set(i))
+		for(auto i : lsnes_set.get_settings_set()) {
+			if(!lsnes_set.is_set(i))
 				cfgfile << "unset-setting " << i << std::endl;
 			else
-				cfgfile << "set-setting " << i << " " << setting::get(i) << std::endl;
+				cfgfile << "set-setting " << i << " " << lsnes_set.get(i) << std::endl;
 		}
-		for(auto i : setting::get_invalid_values())
+		for(auto i : lsnes_set.get_invalid_values())
 			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {
@@ -377,9 +377,9 @@ bool lsnes_app::OnInit()
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Running lsnesrc --- " << std::endl;
-	setting::set_storage_mode(true);
+	lsnes_set.set_storage_mode(true);
 	lsnes_cmd.invoke("run-script " + cfgpath + "/lsneswxw.rc");
-	setting::set_storage_mode(false);
+	lsnes_set.set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 
 	if(settings_mode) {

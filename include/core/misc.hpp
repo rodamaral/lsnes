@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <boost/lexical_cast.hpp>
+#include "library/string.hpp"
 
 /**
  * \brief Get random hexes
@@ -83,26 +83,6 @@ void OOM_panic();
 std::ostream& _messages();
 #define messages _messages()
 
-/**
- * \brief Typeconvert string.
- */
-template<typename T> inline T parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-{
-	try {
-		//Hack, since lexical_cast lets negative values slip through.
-		if(!std::numeric_limits<T>::is_signed && value.length() && value[0] == '-') {
-			throw std::runtime_error("Unsigned values can't be negative");
-		}
-		return boost::lexical_cast<T>(value);
-	} catch(std::exception& e) {
-		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
-	}
-}
-
-template<> inline std::string parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-{
-	return value;
-}
 
 uint32_t gcd(uint32_t a, uint32_t b) throw();
 
