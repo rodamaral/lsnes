@@ -9,7 +9,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
-#include "core/loadlib.hpp"
+#include "library/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorywatch.hpp"
@@ -772,9 +772,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE_RW, wxT("State (read-write)..."));
 	menu_entry(wxID_LOAD_STATE_P, wxT("State (preserve input)..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
-	if(load_library_supported) {
+	if(loaded_library::call_library() != "") {
 		menu_separator();
-		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + library_is_called));
+		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + loaded_library::call_library()));
 	}
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
@@ -1213,8 +1213,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		set_speed(-1);
 		break;
 	case wxID_LOAD_LIBRARY: {
-		std::string name = std::string("load ") + library_is_called;
-		load_library(pick_file(this, name, ".", false));
+		std::string name = std::string("load ") + loaded_library::call_library();
+		new loaded_library(pick_file(this, name, ".", false));
 		break;
 	}
 	case wxID_SETTINGS:
