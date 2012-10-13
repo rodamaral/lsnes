@@ -69,6 +69,7 @@ private:
 	mutex_class int_mutex;
 	std::ostream* output;
 	void (*oom_panic_routine)();
+	command* builtin[4];
 };
 
 /**

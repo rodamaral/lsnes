@@ -270,14 +270,16 @@ command_group::command_group() throw(std::bad_alloc)
 	}
 	run_pending_registrations();
 	//The builtin commands.
-	new run_script(*this, output);
-	new show_aliases(*this, output);
-	new unalias_command(*this, output);
-	new alias_command(*this, output);
+	builtin[0] = new run_script(*this, output);
+	builtin[1] = new show_aliases(*this, output);
+	builtin[2] = new unalias_command(*this, output);
+	builtin[3] = new alias_command(*this, output);
 }
 
 command_group::~command_group() throw()
 {
+	for(size_t i = 0; i < sizeof(builtin)/sizeof(builtin[0]); i++)
+		delete builtin[i];
 	{
 		umutex_class m(reg_mutex());
 		ready_groups().erase(this);
