@@ -10,6 +10,7 @@ namespace
 			: command(_cgroup, _cmd), sgroup(_sgroup), output(out), cmd(_cmd)
 		{
 		}
+		~set_setting_cmd() throw() {}
 		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
 		{
 			auto r = regex("([^ \t]+)([ \t]+(|[^ \t].*))?", t, "Setting name required.");
@@ -37,6 +38,7 @@ namespace
 			: command(_cgroup, _cmd), sgroup(_sgroup), output(out), cmd(_cmd)
 		{
 		}
+		~unset_setting_cmd() throw() {}
 		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
 		{
 			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
@@ -64,6 +66,7 @@ namespace
 			: command(_cgroup, _cmd), sgroup(_sgroup), output(out), cmd(_cmd)
 		{
 		}
+		~get_setting_cmd() throw() {}
 		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
 		{
 			auto r = regex("([^ \t]+)[ \t]*", t, "Expected setting name and nothing else");
@@ -93,6 +96,7 @@ namespace
 			: command(_cgroup, _cmd), sgroup(_sgroup), output(out), cmd(_cmd)
 		{
 		}
+		~show_setting_cmd() throw() {}
 		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
 		{
 			if(t != "")
