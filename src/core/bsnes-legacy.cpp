@@ -423,54 +423,18 @@ namespace
 		}
 	};
 
-	void set_core_controller_generic(unsigned port, unsigned id, bool p2only)
+	template<int type, bool p2only>
+	void set_core_controller_X(unsigned port) throw()
 	{
-		if(port > 1)
+		if(port != 1 && port != 2)
 			return;
-		if(port == 1)
-			snes_set_controller_port_device(true, id);
-		if(port == 0) {
-			snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : id);
+		if(port == 2)
+			snes_set_controller_port_device(true, type);
+		if(port == 1) {
+			snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : type);
 			p1disable = p2only;
 		}
-	}
-
-	void set_core_controller_none(unsigned port) throw()
-	{
-		std::cerr << "Setting device " << port << " to NONE" << std::endl;
-		set_core_controller_generic(port - 1, SNES_DEVICE_NONE, false);
-	}
-
-	void set_core_controller_gamepad(unsigned port) throw()
-	{
-		std::cerr << "Setting device " << port << " to GAMEPAD" << std::endl;
-		set_core_controller_generic(port - 1, SNES_DEVICE_JOYPAD, false);
-	}
-
-	void set_core_controller_mouse(unsigned port) throw()
-	{
-		set_core_controller_generic(port - 1, SNES_DEVICE_MOUSE, false);
-	}
-
-	void set_core_controller_multitap(unsigned port) throw()
-	{
-		set_core_controller_generic(port - 1, SNES_DEVICE_MULTITAP, false);
-	}
-
-	void set_core_controller_superscope(unsigned port) throw()
-	{
-		set_core_controller_generic(port - 1, SNES_DEVICE_SUPER_SCOPE, true);
-	}
-
-	void set_core_controller_justifier(unsigned port) throw()
-	{
-		set_core_controller_generic(port - 1, SNES_DEVICE_JUSTIFIER, true);
-	}
-
-	void set_core_controller_justifiers(unsigned port) throw()
-	{
-		set_core_controller_generic(port - 1, SNES_DEVICE_JUSTIFIERS, true);
-	}
+	};
 
 	void set_core_controller_system(unsigned port) throw()
 	{
@@ -672,7 +636,7 @@ namespace
 			controllers = 1;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_gamepad;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
 			core_portgroup.set_default(1, *this);
 		}
 	} gamepad;
@@ -694,7 +658,7 @@ namespace
 			controllers = 1;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_justifier;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIER, true>;
 		}
 	} justifier;
 
@@ -715,7 +679,7 @@ namespace
 			controllers = 2;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_justifiers;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIERS, true>;
 		}
 	} justifiers;
 
@@ -735,7 +699,7 @@ namespace
 			controllers = 1;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_mouse;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_MOUSE, false>;
 		}
 	} mouse;
 
@@ -757,7 +721,7 @@ namespace
 			index_count = 48;
 			priority = true;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_multitap;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
 	} multitap;
 
@@ -777,7 +741,7 @@ namespace
 			controllers = 0;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_none;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_NONE, false>;
 			core_portgroup.set_default(2, *this);
 		}
 	} none;
@@ -799,7 +763,7 @@ namespace
 			controllers = 1;
 			index_count = 48;
 			controller_indices = index_count_table;
-			set_core_controller = set_core_controller_superscope;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_SUPER_SCOPE, true>;
 		}
 	} superscope;
 
