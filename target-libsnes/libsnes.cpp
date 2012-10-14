@@ -1,5 +1,6 @@
 #include "libsnes.hpp"
 #include <snes/snes.hpp>
+#include <gameboy/gameboy.hpp>
 
 #include <nall/snes/cartridge.hpp>
 #include <nall/gameboy/cartridge.hpp>
