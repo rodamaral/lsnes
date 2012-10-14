@@ -3,6 +3,7 @@
 
 #include <wx/string.h>
 #include <wx/wx.h>
+#include <map>
 
 class dumper_menu_monitor;
 class dumper_info;

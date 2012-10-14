@@ -1,7 +1,7 @@
-#include "core/window.hpp"
-
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/platform.hpp"
+
+#include "core/window.hpp"
 
 #define MAXMESSAGES 20
 

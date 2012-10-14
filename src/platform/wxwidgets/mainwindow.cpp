@@ -1,7 +1,13 @@
 #include "lsnes.hpp"
 
-#include "core/emucore.hpp"
+#include <wx/dnd.h>
+#include "platform/wxwidgets/menu_dump.hpp"
+#include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/window_mainwindow.hpp"
+#include "platform/wxwidgets/window_messages.hpp"
+#include "platform/wxwidgets/window_status.hpp"
 
+#include "core/emucore.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -21,17 +27,10 @@
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
-#include <wx/dnd.h>
-
 #include <cmath>
 #include <vector>
 #include <string>
 
-#include "platform/wxwidgets/menu_dump.hpp"
-#include "platform/wxwidgets/platform.hpp"
-#include "platform/wxwidgets/window_mainwindow.hpp"
-#include "platform/wxwidgets/window_messages.hpp"
-#include "platform/wxwidgets/window_status.hpp"
 
 extern "C"
 {

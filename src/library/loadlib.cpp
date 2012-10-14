@@ -1,4 +1,5 @@
 #include "library/loadlib.hpp"
+#include <sstream>
 
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
@@ -76,7 +77,7 @@ void* loaded_library::operator[](const std::string& symbol) throw(std::bad_alloc
 		throw std::runtime_error(e);
 	return NULL;	//Yes, real NULL symbol.
 #elif defined(_WIN32) || defined(_WIN64)
-	void* s = GetProcAddress(handle, symbol.c_str());
+	void* s = (void*)GetProcAddress(handle, symbol.c_str());
 	if(s)
 		return s;
 	int errcode = GetLastError();
