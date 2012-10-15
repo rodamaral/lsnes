@@ -1,6 +1,9 @@
 OPTIONS=options.build
 include $(OPTIONS)
 
+ifndef LUA
+LUA=lua
+endif
 
 #Compilers.
 REALCC = $(CROSS_PREFIX)$(CC)

@@ -63,7 +63,7 @@ FONT_SRC=unifontfull-5.1.20080820.hex
 
 # Lua package to use.
 # - Usually either 'lua' or 'lua5.1'.
-# - Empty value disables Lua support.
+# - Default value is 'lua'.
 LUA=lua
 
 # Threading package to use.

@@ -96,7 +96,6 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 
 uint64_t lua_timed_hook(int timer) throw();
 
-extern bool lua_supported;
 extern bool lua_requests_repaint;
 extern bool lua_requests_subframe_paint;
 

@@ -835,13 +835,11 @@ wxwin_mainwindow::wxwin_mainwindow()
 
 	menu_start(wxT("Tools"));
 	menu_entry(wxID_RUN_SCRIPT, wxT("Run batch file..."));
-	if(lua_supported) {
-		menu_separator();
-		menu_entry(wxID_EVAL_LUA, wxT("Evaluate Lua statement..."));
-		menu_entry(wxID_RUN_LUA, wxT("Run Lua script..."));
-		menu_separator();
-		menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
-	}
+	menu_separator();
+	menu_entry(wxID_EVAL_LUA, wxT("Evaluate Lua statement..."));
+	menu_entry(wxID_RUN_LUA, wxT("Run Lua script..."));
+	menu_separator();
+	menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();

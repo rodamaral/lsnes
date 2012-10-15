@@ -617,6 +617,5 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
-bool lua_supported = true;
 
 DECLARE_LUACLASS(lua_unsaferewind, "UNSAFEREWIND");

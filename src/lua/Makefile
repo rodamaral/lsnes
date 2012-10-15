@@ -1,12 +1,7 @@
-ifndef LUA
-CFLAGS += -DNO_LUA
-OBJECTS = dummy.$(OBJECT_SUFFIX)
-else
 OBJECTS = $(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard src/lua/*.cpp))
 LUA_CFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --cflags)
 LUA_LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --libs)
 OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) 
-endif
 
 .PRECIOUS: %.$(OBJECT_SUFFIX)
 
