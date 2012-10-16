@@ -46,7 +46,6 @@ namespace
 		return 0;
 	}
 
-	unsigned int_pflag;
 	core_type* internal_rom = NULL;
 	extern core_type type_dmg;
 	extern core_type type_gbc;
@@ -89,7 +88,6 @@ namespace
 		{
 			unsigned v = 0;
 			for(unsigned i = 0; i < 8; i++) {
-				int_pflag = int_pflag ? int_pflag : 1;
 				if(ecore_callbacks->get_input(0, 0, i))
 					v |= (1 << i);
 			}
@@ -527,12 +525,11 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 
 unsigned core_get_poll_flag()
 {
-	return int_pflag;
+	return 2;
 }
 
 void core_set_poll_flag(unsigned pflag)
 {
-	int_pflag = pflag;
 }
 
 
