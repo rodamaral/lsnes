@@ -120,6 +120,33 @@ inline short unserialize_short(const unsigned char* buf)
 class port_type;
 
 /**
+ * Index triple.
+ */
+class port_index_triple
+{
+/**
+ * If true, the other parameters are valid. Otherwise this index doesn't correspond to anything valid, but still
+ * exists. The reason for having invalid entries is to be backward-compatible.
+ */
+	bool valid;
+/**
+ * The port number.
+ */
+	unsigned port;
+/**
+ * The controller number.
+ */
+	unsigned controller;
+/**
+ * The control number.
+ */
+	unsigned control;
+/**
+ * If true, poll on this triple forces non-lag unconditionally. If false, only non-neutral poll forces non-lag.
+ */
+};
+
+/**
  * Group of port types.
  */
 class port_type_group

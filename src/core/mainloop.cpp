@@ -87,6 +87,23 @@ namespace
 	{
 		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
 	}
+
+	class _lsnes_pflag_handler : public movie::poll_flag
+	{
+	public:
+		~_lsnes_pflag_handler()
+		{
+		}
+		int get_pflag()
+		{
+			return core_get_poll_flag();
+		}
+		void set_pflag(int flag)
+		{
+			core_set_poll_flag(flag);
+		}
+	} lsnes_pflag_handler;
+
 }
 
 path_setting firmwarepath_setting(lsnes_set, "firmwarepath");
@@ -772,6 +789,7 @@ namespace
 			system_corrupt = false;
 			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
 				!do_load_state(pending_load, loadmode)) {
+				movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 				pending_load = "";
 				return -1;
 			}
@@ -783,6 +801,7 @@ namespace
 			} catch(std::exception& e) {
 				messages << "Load failed: " << e.what() << std::endl;
 			}
+			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 			pending_load = "";
 			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
@@ -872,6 +891,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	our_rom = &rom;
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
+	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 	core_install_handler();
 
 	//Load our given movie.

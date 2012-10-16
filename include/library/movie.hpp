@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <stdexcept>
+#include "library/controller-data.hpp"
 
 /**
  * Movie being played back or recorded
@@ -235,8 +236,29 @@ public:
  * Fast load.
  */
 	void fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& counters);
-
+/**
+ * Poll flag handling.
+ */
+	class poll_flag
+	{
+	public:
+		virtual ~poll_flag();
+	/**
+	 * Get the poll flag.
+	 */
+		virtual int get_pflag() = 0;
+	/**
+	 * Set the poll flag.
+	 */
+		virtual void set_pflag(int flag) = 0;
+	};
+/**
+ * Set the poll flag handler.
+ */
+	void set_pflag_handler(poll_flag* handler);
 private:
+	//The poll flag handling.
+	poll_flag* pflag_handler;
 	//TRUE if readonly mode is active.
 	bool readonly;
 	//Movie (not global!) rerecord count.

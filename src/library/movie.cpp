@@ -1,9 +1,6 @@
 #include "lsnes.hpp"
 
-#include "core/emucore.hpp"
-#include "core/misc.hpp"
 #include "library/movie.hpp"
-#include "core/rom.hpp"
 
 #include <stdexcept>
 #include <cassert>
@@ -166,11 +163,12 @@ uint64_t movie::get_frame_count() throw()
 void movie::next_frame() throw(std::bad_alloc)
 {
 	//Adjust lag count. Frame 0 MUST NOT be considered lag.
-	unsigned pflag = core_get_poll_flag();
+	//If we don't have valid pflag handler, use the legacy behaviour.
+	unsigned pflag = pflag_handler ? pflag_handler->get_pflag() : 2;
 	if(current_frame && pflag == 0)
 		lag_frames++;
-	else if(pflag < 2)
-		core_set_poll_flag(0);
+	else if(pflag < 2 && pflag_handler)
+		pflag_handler->set_pflag(0);
 
 	//If all poll counters are zero for all real controls, this frame is lag.
 	bool this_frame_lag = !pollcounters.has_polled();
@@ -274,6 +272,7 @@ movie::movie() throw(std::bad_alloc)
 	frames_in_movie = 0;
 	current_frame_first_subframe = 0;
 	lag_frames = 0;
+	pflag_handler = NULL;
 	clear_caches();
 }
 
@@ -486,4 +485,13 @@ void movie::fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::ve
 	lag_frames = _lagc;
 	pollcounters.load_state(_counters);
 	readonly_mode(false);
+}
+
+void movie::set_pflag_handler(poll_flag* handler)
+{
+	pflag_handler = handler;
+}
+
+movie::poll_flag::~poll_flag()
+{
 }
