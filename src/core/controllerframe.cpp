@@ -11,10 +11,113 @@
 
 namespace
 {
-	bool compare_porttype(port_type* a, port_type* b)
+	std::set<porttype_info*>& porttypes()
+	{
+		static std::set<porttype_info*> p;
+		return p;
+	}
+
+	void set_core_controller_illegal(unsigned port) throw()
+	{
+		std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
+		exit(1);
+	}
+
+	int button_id_illegal(unsigned controller, unsigned lbid)
+	{
+		return -1;
+	}
+	
+	struct porttype_invalid : public porttype_info
+	{
+		porttype_invalid() : porttype_info("invalid-port-type", "invalid-port-type", 99999, 0)
+		{
+			write = NULL;
+			read = NULL;
+			display = NULL;
+			serialize = NULL;
+			deserialize = NULL;
+			legal = NULL;
+			deviceflags = generic_port_deviceflags<0, 0>;
+			button_id = button_id_illegal;
+			ctrlname = "";
+			controllers = 0;
+			set_core_controller = set_core_controller_illegal;
+		}
+	};
+
+
+	porttype_invalid& get_invalid_port_type()
+	{
+		static porttype_invalid inv;
+		return inv;
+	}
+
+	bool compare_porttype(porttype_info* a, porttype_info* b)
 	{
 		return (a->pt_id < b->pt_id);
 	}
+}
+
+porttype_info& porttype_info::lookup(const std::string& p) throw(std::runtime_error)
+{
+	get_invalid_port_type();
+	for(auto i : porttypes())
+		if(p == i->name && i->legal)
+			return *i;
+	throw std::runtime_error("Bad port type");
+}
+
+porttype_info& porttype_info::port_default(unsigned port)
+{
+	return lookup(get_core_default_port(port));
+}
+
+porttype_info::~porttype_info() throw()
+{
+	porttypes().erase(this);
+}
+
+porttype_info::porttype_info(const std::string& pname, const std::string& _hname, unsigned _pt_id, size_t psize) 
+	throw(std::bad_alloc)
+{
+	name = pname;
+	hname = _hname;
+	storage_size = psize;
+	pt_id = _pt_id;
+	porttypes().insert(this);
+}
+
+porttype_info& porttype_info::default_type()
+{
+	return get_invalid_port_type();
+}
+
+std::list<porttype_info*> porttype_info::get_all()
+{
+	std::list<porttype_info*> p;
+	for(auto i : porttypes())
+		if(i->legal)
+			p.push_back(i);
+	p.sort(compare_porttype);
+	return p;
+}
+
+bool porttype_info::is_present(unsigned controller) const throw()
+{
+	unsigned d = deviceflags(controller);
+	return ((d & 1) != 0);
+}
+
+bool porttype_info::is_analog(unsigned controller) const throw()
+{
+	unsigned d = deviceflags(controller);
+	return ((d & 1) != 0) && ((d & 6) != 0);
+}
+
+bool porttype_info::is_mouse(unsigned controller) const throw()
+{
+	return ((deviceflags(controller) & 5) == 5);
 }
 
 pollcounter_vector::pollcounter_vector() throw()
@@ -112,7 +215,7 @@ bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 }
 
 
-controller_frame::controller_frame(port_type& p1, port_type& p2) throw(std::runtime_error)
+controller_frame::controller_frame(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
@@ -121,7 +224,7 @@ controller_frame::controller_frame(port_type& p1, port_type& p2) throw(std::runt
 	set_types(types);
 }
 
-controller_frame::controller_frame(unsigned char* mem, port_type& p1, port_type& p2) throw(std::runtime_error)
+controller_frame::controller_frame(unsigned char* mem, porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	if(!mem)
 		throw std::runtime_error("NULL backing memory not allowed");
@@ -136,17 +239,17 @@ controller_frame::controller_frame(const controller_frame& obj) throw()
 {
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
-	set_types(const_cast<port_type**>(obj.types));
+	set_types(const_cast<porttype_info**>(obj.types));
 	memcpy(backing, obj.backing, totalsize);
 }
 
 controller_frame& controller_frame::operator=(const controller_frame& obj) throw(std::runtime_error)
 {
-	set_types(const_cast<port_type**>(obj.types));
+	set_types(const_cast<porttype_info**>(obj.types));
 	memcpy(backing, obj.backing, totalsize);
 }
 
-void controller_frame::set_types(port_type** tarr)
+void controller_frame::set_types(porttype_info** tarr)
 {
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		if(memory != backing && types[i] != tarr[i])
@@ -216,7 +319,7 @@ size_t controller_frame_vector::count_frames() throw()
 	return ret;
 }
 
-void controller_frame_vector::clear(port_type& p1, port_type& p2) throw(std::runtime_error)
+void controller_frame_vector::clear(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	controller_frame check(p1, p2);
 	frame_size = check.size();
@@ -236,10 +339,10 @@ controller_frame_vector::~controller_frame_vector() throw()
 
 controller_frame_vector::controller_frame_vector() throw(std::runtime_error)
 {
-	clear(get_dummy_port_type(), get_dummy_port_type());
+	clear(porttype_info::default_type(), porttype_info::default_type());
 }
 
-controller_frame_vector::controller_frame_vector(port_type& p1, port_type& p2) throw(std::runtime_error)
+controller_frame_vector::controller_frame_vector(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {
 	clear(p1, p2);
 }
@@ -322,6 +425,39 @@ size_t controller_frame::system_deserialize(unsigned char* buffer, const char* t
 	return idx;
 }
 
+short read_axis_value(const char* buf, size_t& idx) throw()
+{
+		char ch;
+		//Skip ws.
+		while(is_nonterminator(buf[idx])) {
+			char ch = buf[idx];
+			if(ch != ' ' && ch != '\t')
+				break;
+			idx++;
+		}
+		//Read the sign if any.
+		ch = buf[idx];
+		if(!is_nonterminator(ch))
+			return 0;
+		bool negative = false;
+		if(ch == '-') {
+			negative = true;
+			idx++;
+		}
+		if(ch == '+')
+			idx++;
+
+		//Read numeric value.
+		int numval = 0;
+		while(is_nonterminator(buf[idx]) && isdigit(static_cast<unsigned char>(ch = buf[idx]))) {
+			numval = numval * 10 + (ch - '0');
+			idx++;
+		}
+		if(negative)
+			numval = -numval;
+
+		return static_cast<short>(numval);
+}
 
 void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 {
@@ -365,19 +501,19 @@ controller_frame::controller_frame() throw()
 	backing = memory;
 	for(unsigned i = 0; i < MAX_PORTS; i++) {
 		offsets[i] = SYSTEM_BYTES;
-		types[i] = &get_dummy_port_type();
+		types[i] = &porttype_info::default_type();
 	}
 	totalsize = SYSTEM_BYTES;
 }
 
-void controller_frame::set_port_type(unsigned port, port_type& ptype) throw(std::runtime_error)
+void controller_frame::set_port_type(unsigned port, porttype_info& ptype) throw(std::runtime_error)
 {
 	char tmp[MAXIMUM_CONTROLLER_FRAME_SIZE] = {0};
 	if(memory != backing)
 		throw std::runtime_error("Can't set port type on non-dedicated controller frame");
 	if(port >= MAX_PORTS)
 		return;
-	port_type* newpinfo[MAX_PORTS];
+	porttype_info* newpinfo[MAX_PORTS];
 	size_t newoffsets[MAX_PORTS];
 	size_t offset = SYSTEM_BYTES;
 	for(size_t i = 0; i < MAX_PORTS; i++) {
@@ -405,7 +541,7 @@ controller_state::controller_state() throw()
 		analog_mouse[i] = false;
 	}
 	for(size_t i = 0; i < MAX_PORTS; i++) {
-		porttypes[i] = &get_dummy_port_type();
+		porttypes[i] = &porttype_info::default_type();
 	}
 }
 
@@ -524,14 +660,14 @@ int controller_state::button_id(unsigned pcid, unsigned lbid) throw()
 	return porttypes[port]->button_id(pcid % MAX_CONTROLLERS_PER_PORT, lbid);
 }
 
-void controller_state::set_port(unsigned port, port_type& ptype, bool set_core) throw(std::runtime_error)
+void controller_state::set_port(unsigned port, porttype_info& ptype, bool set_core) throw(std::runtime_error)
 {
 	if(port >= MAX_PORTS)
 		throw std::runtime_error("Port number invalid");
-	port_type* info = &ptype;
+	porttype_info* info = &ptype;
 	if(set_core)
 		info->set_core_controller(port);
-	port_type* oldtype = porttypes[port];
+	porttype_info* oldtype = porttypes[port];
 	if(oldtype != &ptype) {
 		_input.set_port_type(port, ptype);
 		_autohold.set_port_type(port, ptype);

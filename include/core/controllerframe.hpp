@@ -15,7 +15,6 @@
 #include <vector>
 #include <map>
 #include <list>
-#include "library/controller-data.hpp"
 
 /**
  * For now, reserve 23 bytes, for:
@@ -54,9 +53,256 @@
  */
 #define CONTROLLER_PAGE_SIZE 65500
 /**
+ * Special return value for deserialize() indicating no input was taken.
+ */
+#define DESERIALIZE_SPECIAL_BLANK 0xFFFFFFFFUL
+/**
  * Analog indices.
  */
 #define MAX_ANALOG 3
+
+/**
+ * Is not field terminator.
+ *
+ * Parameter ch: The character.
+ * Returns: True if character is not terminator, false if character is terminator.
+ */
+inline bool is_nonterminator(char ch) throw()
+{
+	return (ch != '|' && ch != '\r' && ch != '\n' && ch != '\0');
+}
+
+/**
+ * Read button value.
+ *
+ * Parameter buf: Buffer to read from.
+ * Parameter idx: Index to buffer. Updated.
+ * Returns: The read value.
+ */
+inline bool read_button_value(const char* buf, size_t& idx) throw()
+{
+	char ch = buf[idx];
+	if(is_nonterminator(ch))
+		idx++;
+	return (ch != '|' && ch != '\r' && ch != '\n' && ch != '\0' && ch != '.' && ch != ' ' && ch != '\t');
+}
+
+/**
+ * Read axis value.
+ *
+ * Parameter buf: Buffer to read from.
+ * Parameter idx: Index to buffer. Updated.
+ * Returns: The read value.
+ */
+short read_axis_value(const char* buf, size_t& idx) throw();
+
+/**
+ * Skip whitespace.
+ *
+ * Parameter buf: Buffer to read from.
+ * Parameter idx: Index to buffer. Updated.
+ */
+inline void skip_field_whitespace(const char* buf, size_t& idx) throw()
+{
+	while(buf[idx] == ' ' || buf[idx] == '\t')
+		idx++;
+}
+
+/**
+ * Skip rest of the field.
+ *
+ * Parameter buf: Buffer to read from.
+ * Parameter idx: Index to buffer. Updated.
+ * Parameter include_pipe: If true, also skip the '|'.
+ */
+inline void skip_rest_of_field(const char* buf, size_t& idx, bool include_pipe) throw()
+{
+	while(is_nonterminator(buf[idx]))
+		idx++;
+	if(include_pipe && buf[idx] == '|')
+		idx++;
+}
+
+/**
+ * Serialize short.
+ */
+inline void serialize_short(unsigned char* buf, short val)
+{
+	buf[0] = static_cast<unsigned short>(val) >> 8;
+	buf[1] = static_cast<unsigned short>(val);
+}
+
+/**
+ * Serialize short.
+ */
+inline short unserialize_short(const unsigned char* buf)
+{
+	return static_cast<short>((static_cast<unsigned short>(buf[0]) << 8) | static_cast<unsigned short>(buf[1]));
+}
+
+/**
+ * Information about port type.
+ */
+struct porttype_info
+{
+/**
+ * Look up information about port type.
+ *
+ * Parameter p: The port type string.
+ * Returns: Infor about port type.
+ * Throws std::runtime_error: Invalid port type.
+ */
+	static porttype_info& lookup(const std::string& p) throw(std::runtime_error);
+/**
+ * Get set of all available port types.
+ */
+	static std::list<porttype_info*> get_all();
+/**
+ * Get some default port type.
+ */
+	static porttype_info& default_type();
+/**
+ * Get port default type.
+ */
+	static porttype_info& port_default(unsigned port);
+/**
+ * Register port type.
+ *
+ * Parameter pname: The name of port type.
+ * Parameter hname: Human-readable name of the port type.
+ * Parameter psize: The size of storage for this type.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+	porttype_info(const std::string& pname, const std::string& hname, unsigned _pt_id, size_t psize)
+		throw(std::bad_alloc);
+/**
+ * Unregister port type.
+ */
+	~porttype_info() throw();
+/**
+ * Writes controller data into compressed representation.
+ *
+ * Parameter buffer: The buffer storing compressed representation of controller state.
+ * Parameter idx: Index of controller.
+ * Parameter ctrl: The control to manipulate.
+ * Parameter x: New value for control. Only zero/nonzero matters for buttons.
+ */
+	void (*write)(unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
+/**
+ * Read controller data from compressed representation.
+ *
+ * Parameter buffer: The buffer storing compressed representation of controller state.
+ * Parameter idx: Index of controller.
+ * Parameter ctrl: The control to query.
+ * Returns: The value of control. Buttons return 0 or 1.
+ */
+	short (*read)(const unsigned char* buffer, unsigned idx, unsigned ctrl);
+/**
+ * Format compressed controller data into input display.
+ *
+ * Parameter buffer: The buffer storing compressed representation of controller state.
+ * Parameter idx: Index of controller.
+ * Parameter buf: The buffer to write NUL-terminated display string to. Assumed to be MAX_DISPLAY_LENGTH bytes in size.
+ */
+	void (*display)(const unsigned char* buffer, unsigned idx, char* buf);
+/**
+ * Take compressed controller data and serialize it into textual representation.
+ *
+ * - The initial '|' is also written.
+ *
+ * Parameter buffer: The buffer storing compressed representation of controller state.
+ * Parameter textbuf: The text buffer to write to.
+ * Returns: Number of bytes written.
+ */
+	size_t (*serialize)(const unsigned char* buffer, char* textbuf);
+/**
+ * Unserialize textual representation into compressed controller state.
+ *
+ * - Only stops reading on '|', NUL, CR or LF in the final read field. That byte is not read.
+ *
+ * Parameter buffer: The buffer storing compressed representation of controller state.
+ * Parameter textbuf: The text buffer to read.
+ * Returns: Number of bytes read.
+ * Throws std::runtime_error: Bad serialization.
+ */
+	size_t (*deserialize)(unsigned char* buffer, const char* textbuf);
+/**
+ * Get device flags for given index.
+ *
+ * Parameter idx: The index of controller.
+ * Returns: The device flags.
+ *	Bit 0: Present.
+ *	Bit 1: Has absolute analog axes 0 and 1.
+ *	Bit 2: Has relative analog axes 0 and 1.
+ */
+	unsigned (*deviceflags)(unsigned idx);
+/**
+ * Is the device legal for port?
+ *
+ * Parameter port: Port to query.
+ * Returns: Nonzero if legal, zero if illegal.
+ */
+	int (*legal)(unsigned port);
+/**
+ * Number of controllers connected to this port.
+ */
+	unsigned controllers;
+/**
+ * Translate controller and logical button id pair into physical button id.
+ *
+ * Parameter controller: The number of controller.
+ * Parameter lbid: Logigal button ID.
+ * Returns: The physical button ID, or -1 if no such button exists.
+ */
+	int (*button_id)(unsigned controller, unsigned lbid);
+/**
+ * Set this controller as core controller.
+ *
+ * Parameter port: Port to set to.
+ */
+	void (*set_core_controller)(unsigned port);
+/**
+ * Does the controller exist?
+ *
+ * Parameter controller: Controller number.
+ */
+	bool is_present(unsigned controller) const throw();
+/**
+ * Does the controller have analog function?
+ *
+ * Parameter controller: Controller number.
+ */
+	bool is_analog(unsigned controller) const throw();
+/**
+ * Does the controller have mouse-type function?
+ *
+ * Parameter controller: Controller number.
+ */
+	bool is_mouse(unsigned controller) const throw();
+/**
+ * Human-readable name.
+ */
+	std::string hname;
+/**
+ * Number of bytes it takes to store this.
+ */
+	size_t storage_size;
+/**
+ * Name of port type.
+ */
+	std::string name;
+/**
+ * Name of controller.
+ */
+	std::string ctrlname;
+/**
+ * Id of the port.
+ */
+	unsigned pt_id;
+private:
+	porttype_info(const porttype_info&);
+	porttype_info& operator=(const porttype_info&);
+};
 
 /**
  * Poll counter vector.
@@ -193,7 +439,7 @@ public:
  *
  * Throws std::runtime_error: Invalid port type.
  */
-	controller_frame(port_type& p1, port_type& p2) throw(std::runtime_error);
+	controller_frame(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Create subframe of controls with specified controller types and specified memory.
  *
@@ -203,7 +449,7 @@ public:
  *
  * Throws std::runtime_error: Invalid port type or NULL memory.
  */
-	controller_frame(unsigned char* memory, port_type& p1, port_type& p2)
+	controller_frame(unsigned char* memory, porttype_info& p1, porttype_info& p2)
 		throw(std::runtime_error);
 /**
  * Copy construct a frame. The memory will be dedicated.
@@ -225,10 +471,9 @@ public:
  * Parameter port: Number of port.
  * Returns: The type of port.
  */
-	port_type& get_port_type(unsigned port) throw()
+	porttype_info& get_port_type(unsigned port) throw()
 	{
-		//FIXME: Return proper types.
-		return (port < MAX_PORTS) ? *types[port] : get_dummy_port_type();
+		return (port < MAX_PORTS) ? *types[port] : porttype_info::default_type();
 	}
 /**
  * Get blank dedicated frame of same port types.
@@ -246,7 +491,7 @@ public:
  * Parameter type: The new type.
  * Throws std::runtime_error: Bad port type or non-dedicated memory.
  */
-	void set_port_type(unsigned port, port_type& ptype) throw(std::runtime_error);
+	void set_port_type(unsigned port, porttype_info& ptype) throw(std::runtime_error);
 /**
  * Check that types match.
  *
@@ -532,11 +777,11 @@ private:
 	size_t totalsize;
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
 	unsigned char* backing;
-	port_type* types[MAX_PORTS];
+	porttype_info* types[MAX_PORTS];
 	size_t offsets[MAX_PORTS];
 	static size_t system_serialize(const unsigned char* buffer, char* textbuf);
 	static size_t system_deserialize(unsigned char* buffer, const char* textbuf);
-	void set_types(port_type** tarr);
+	void set_types(porttype_info** tarr);
 };
 
 /**
@@ -556,7 +801,7 @@ public:
  * Parameter p2: Type of port 2.
  * Throws std::runtime_error: Illegal port types.
  */
-	controller_frame_vector(port_type& p1, port_type& p2) throw(std::runtime_error);
+	controller_frame_vector(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Destroy controller frame vector
  */
@@ -583,7 +828,7 @@ public:
  * Parameter p2: Type of port 2.
  * Throws std::runtime_error: Illegal port types.
  */
-	void clear(port_type& p1, port_type& p2) throw(std::runtime_error);
+	void clear(porttype_info& p1, porttype_info& p2) throw(std::runtime_error);
 /**
  * Blank vector.
  */
@@ -690,7 +935,7 @@ private:
 	size_t frames_per_page;
 	size_t frame_size;
 	size_t frames;
-	port_type* types[MAX_PORTS];
+	porttype_info* types[MAX_PORTS];
 	size_t cache_page_num;
 	page* cache_page;
 	std::map<size_t, page> pages;
@@ -749,7 +994,7 @@ public:
  * Parameter set_core: If true, set the core port type too, otherwise don't do that.
  * Throws std::runtime_error: Illegal port type.
  */
-	void set_port(unsigned port, port_type& ptype, bool set_core) throw(std::runtime_error);
+	void set_port(unsigned port, porttype_info& ptype, bool set_core) throw(std::runtime_error);
 /**
  * Get status of current controls (with autohold/autofire factored in).
  *
@@ -874,7 +1119,7 @@ public:
  */
 	bool is_mouse(unsigned pcid) throw();
 private:
-	port_type* porttypes[MAX_PORTS];
+	porttype_info* porttypes[MAX_PORTS];
 	int analog_indices[MAX_ANALOG];
 	bool analog_mouse[MAX_ANALOG];
 	controller_frame _input;
@@ -884,5 +1129,142 @@ private:
 	std::vector<controller_frame> _autofire;
 };
 
+/**
+ * Generic port write function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons>
+inline void generic_port_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
+{
+	if(idx >= controllers)
+		return;
+	if(ctrl < analog_axis) {
+		buffer[2 * idx * analog_axis + 2 * ctrl] = (x >> 8);
+		buffer[2 * idx * analog_axis + 2 * ctrl + 1] = x;
+	} else if(ctrl < analog_axis + buttons) {
+		size_t bit = 16 * controllers * analog_axis + idx * buttons + ctrl - analog_axis;
+		if(x)
+			buffer[bit / 8] |= (1 << (bit % 8));
+		else
+			buffer[bit / 8] &= ~(1 << (bit % 8));
+	}
+}
+
+/**
+ * Generic port read function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons>
+inline short generic_port_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
+{
+	if(idx >= controllers)
+		return 0;
+	if(ctrl < analog_axis) {
+		uint16_t a = buffer[2 * idx * analog_axis + 2 * ctrl];
+		uint16_t b = buffer[2 * idx * analog_axis + 2 * ctrl + 1];
+		return static_cast<short>(256 * a + b);
+	} else if(ctrl < analog_axis + buttons) {
+		size_t bit = 16 * controllers * analog_axis + idx * buttons + ctrl - analog_axis;
+		return ((buffer[bit / 8] & (1 << (bit % 8))) != 0);
+	} else
+		return 0;
+}
+
+extern const char* button_symbols;
+
+/**
+ * Generic port display function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
+inline void generic_port_display(const unsigned char* buffer, unsigned idx, char* buf) throw()
+{
+	if(idx > controllers) {
+		buf[0] = '\0';
+		return;
+	}
+	size_t ptr = 0;
+	for(unsigned i = 0; i < analog_axis; i++) {
+		uint16_t a = buffer[2 * idx * analog_axis + 2 * i];
+		uint16_t b = buffer[2 * idx * analog_axis + 2 * i + 1];
+		ptr += sprintf(buf + ptr, "%i ", static_cast<short>(256 * a + b));
+	}
+	for(unsigned i = 0; i < buttons; i++) {
+		size_t bit = 16 * controllers * analog_axis + idx * buttons + i;
+		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '-';
+	}
+	buf[ptr] = '\0';
+}
+
+/**
+ * Generic port serialization function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
+inline size_t generic_port_serialize(const unsigned char* buffer, char* textbuf) throw()
+{
+	size_t ptr = 0;
+	for(unsigned j = 0; j < controllers; j++) {
+		textbuf[ptr++] = '|';
+		for(unsigned i = 0; i < buttons; i++) {
+			size_t bit = 16 * controllers * analog_axis + j * buttons + i;
+			textbuf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '.';
+		}
+		for(unsigned i = 0; i < analog_axis; i++) {
+			uint16_t a = buffer[2 * j * analog_axis + 2 * i];
+			uint16_t b = buffer[2 * j * analog_axis + 2 * i + 1];
+			ptr += sprintf(textbuf + ptr, " %i", static_cast<short>(256 * a + b));
+		}
+	}
+	return ptr;
+}
+
+/**
+ * Generic port size function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons>
+inline size_t generic_port_size()
+{
+	return 2 * controllers * analog_axis + (controllers * buttons + 7) / 8;
+}
+
+/**
+ * Generic port deserialization function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons>
+inline size_t generic_port_deserialize(unsigned char* buffer, const char* textbuf) throw()
+{
+	if(!controllers)
+		return DESERIALIZE_SPECIAL_BLANK;
+	memset(buffer, 0, generic_port_size<controllers, analog_axis, buttons>());
+	size_t ptr = 0;
+	for(unsigned j = 0; j < controllers; j++) {
+		for(unsigned i = 0; i < buttons; i++) {
+			size_t bit = 16 * controllers * analog_axis + j * buttons + i;
+			if(read_button_value(textbuf, ptr))
+				buffer[bit / 8] |= (1 << (bit % 8));
+		}
+		for(unsigned i = 0; i < analog_axis; i++) {
+			short v = read_axis_value(textbuf, ptr);
+			buffer[2 * j * analog_axis + 2 * i] = v >> 8;
+			buffer[2 * j * analog_axis + 2 * i + 1] = v;
+		}
+		skip_rest_of_field(textbuf, ptr, j + 1 < controllers);
+	}
+	return ptr;
+}
+
+template<unsigned mask>
+inline int generic_port_legal(unsigned port) throw()
+{
+	if(port >= CHAR_BIT * sizeof(unsigned))
+		port = CHAR_BIT * sizeof(unsigned) - 1;
+	return ((mask >> port) & 1);
+}
+
+/**
+ * Generic port type function.
+ */
+template<unsigned controllers, unsigned flags>
+inline unsigned generic_port_deviceflags(unsigned idx) throw()
+{
+	return (idx < controllers) ? flags : 0;
+}
 
 #endif

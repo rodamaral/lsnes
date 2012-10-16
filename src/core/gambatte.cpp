@@ -33,7 +33,6 @@
 #define LOGICAL_BUTTON_START 7
 
 const char* button_symbols = "ABsSrlud";
-port_type_group core_portgroup;
 
 namespace
 {
@@ -188,11 +187,10 @@ namespace
 	{
 		return -1;
 	}
-
-	struct porttype_gamepad : public port_type
+	
+	struct porttype_gamepad : public porttype_info
 	{
-		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1,
-			generic_port_size<1, 0, 8>())
+		porttype_gamepad() : porttype_info("gamepad", "Gamepad", 1, generic_port_size<1, 0, 8>())
 		{
 			write = generic_port_write<1, 0, 8>;
 			read = generic_port_read<1, 0, 8>;
@@ -205,14 +203,13 @@ namespace
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = _set_core_controller;
-			core_portgroup.set_default(0, *this);
 		}
 
 	} gamepad;
 
-	struct porttype_none : public port_type
+	struct porttype_none : public porttype_info
 	{
-		porttype_none() : port_type(core_portgroup, "none", "None", 0, generic_port_size<0, 0, 0>())
+		porttype_none() : porttype_info("none", "None", 0, generic_port_size<0, 0, 0>())
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
@@ -225,9 +222,9 @@ namespace
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = _set_core_controller;
-			core_portgroup.set_default(1, *this);
 		}
 	} none;
+
 }
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)

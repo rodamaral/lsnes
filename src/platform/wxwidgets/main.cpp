@@ -367,8 +367,8 @@ bool lsnes_app::OnInit()
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 
-	controls.set_port(0, core_portgroup.get_default_type(0), false);
-	controls.set_port(1, core_portgroup.get_default_type(1), false);
+	controls.set_port(0, porttype_info::port_default(0), false);
+	controls.set_port(1, porttype_info::port_default(1), false);
 
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
@@ -423,8 +423,8 @@ bool lsnes_app::OnInit()
 		}
 	else {
 		mov = new moviefile;
-		mov->port1 = &core_portgroup.get_default_type(0);
-		mov->port2 = &core_portgroup.get_default_type(1);
+		mov->port1 = &porttype_info::port_default(0);
+		mov->port2 = &porttype_info::port_default(1);
 		mov->input.clear(*mov->port1, *mov->port2);
 		if(c_rom != "") {
 			//Initialize the remainder.

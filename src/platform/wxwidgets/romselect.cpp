@@ -30,21 +30,21 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	port_type& get_controller_type(const std::string& s)
+	porttype_info& get_controller_type(const std::string& s)
 	{
-		auto types = core_portgroup.get_types();
+		auto types = porttype_info::get_all();
 		for(auto i : types)
 			if(s == i->hname)
 				return *i;
-		return get_dummy_port_type();
+		return porttype_info::default_type();
 	}
 
 	void load_cchoices(std::vector<wxString>& cc, unsigned port, unsigned& dfltidx)
 	{
 		cc.clear();
-		port_type& dflt = core_portgroup.get_default_type(port);
+		porttype_info& dflt = porttype_info::port_default(port);
 		dfltidx = 0;
-		auto types = core_portgroup.get_types();
+		auto types = porttype_info::get_all();
 		for(auto i : types)
 			if(i->legal && i->legal(port)) {
 				cc.push_back(towxstring(i->hname));

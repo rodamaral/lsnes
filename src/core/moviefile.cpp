@@ -322,10 +322,10 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 	}
 }
 
-port_type& parse_controller_type(const std::string& type, unsigned port) throw(std::bad_alloc, std::runtime_error)
+porttype_info& parse_controller_type(const std::string& type, unsigned port) throw(std::bad_alloc, std::runtime_error)
 {
 	try {
-		port_type& i = core_portgroup.get_type(type);
+		porttype_info& i = porttype_info::lookup(type);
 		if(!i.legal || !(i.legal(port)))
 			throw 42;
 		return i;
@@ -338,8 +338,8 @@ moviefile::moviefile() throw(std::bad_alloc)
 {
 	force_corrupt = false;
 	gametype = NULL;
-	port1 = &get_dummy_port_type();
-	port2 = &get_dummy_port_type();
+	port1 = &porttype_info::default_type();
+	port2 = &porttype_info::default_type();
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
@@ -374,12 +374,12 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	tmp = core_portgroup.get_default_type(0).name;
+	tmp = porttype_info::port_default(0).name;
 	read_linefile(r, "port1", tmp, true);
-	port1 = &core_portgroup.get_type(tmp);
-	tmp = core_portgroup.get_default_type(1).name;
+	port1 = &porttype_info::lookup(tmp);
+	tmp = porttype_info::port_default(1).name;
 	read_linefile(r, "port2", tmp, true);
-	port2 = &core_portgroup.get_type(tmp);
+	port2 = &porttype_info::lookup(tmp);
 	input.clear(*port1, *port2);
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
@@ -445,9 +445,9 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 {
 	zip_writer w(movie, compression);
 	write_linefile(w, "gametype", gametype->get_name());
-	if(port1->name != core_portgroup.get_default_type(0).name)
+	if(port1->name != porttype_info::port_default(0).name)
 		write_linefile(w, "port1", port1->name);
-	if(port2->name != core_portgroup.get_default_type(1).name)
+	if(port2->name != porttype_info::port_default(1).name)
 		write_linefile(w, "port2", port2->name);
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
