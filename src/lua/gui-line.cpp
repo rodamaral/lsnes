@@ -88,15 +88,15 @@ nodraw2:
 		premultiplied_color color;
 	};
 
-	function_ptr_luafun gui_pixel("gui.line", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_pixel(LS, "gui.line", [](lua_state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t color = 0xFFFFFFU;
-		int32_t x1 = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
-		int32_t y1 = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		int32_t x2 = get_numeric_argument<int32_t>(LS, 3, fname.c_str());
-		int32_t y2 = get_numeric_argument<int32_t>(LS, 4, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 5, color, fname.c_str());
+		int32_t x1 = L.get_numeric_argument<int32_t>(1, fname.c_str());
+		int32_t y1 = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		int32_t x2 = L.get_numeric_argument<int32_t>(3, fname.c_str());
+		int32_t y2 = L.get_numeric_argument<int32_t>(4, fname.c_str());
+		L.get_numeric_argument<int64_t>(5, color, fname.c_str());
 		premultiplied_color pcolor(color);
 		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;

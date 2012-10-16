@@ -57,18 +57,18 @@ namespace
 		premultiplied_color fill;
 	};
 
-	function_ptr_luafun gui_rectangle("gui.circle", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_rectangle(LS, "gui.circle", [](lua_state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t outline = 0xFFFFFFU;
 		int64_t fill = -1;
 		uint32_t thickness = 1;
-		int32_t x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
-		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		uint32_t radius = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
-		get_numeric_argument<uint32_t>(LS, 4, thickness, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 5, outline, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 6, fill, fname.c_str());
+		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
+		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		uint32_t radius = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+		L.get_numeric_argument<uint32_t>(4, thickness, fname.c_str());
+		L.get_numeric_argument<int64_t>(5, outline, fname.c_str());
+		L.get_numeric_argument<int64_t>(6, fill, fname.c_str());
 		premultiplied_color poutline(outline);
 		premultiplied_color pfill(fill);
 		lua_render_ctx->queue->create_add<render_object_circle>(x, y, radius, poutline, pfill, thickness);

@@ -28,36 +28,36 @@ namespace
 		bool vdbl;
 	};
 
-	int internal_gui_text(lua_State* LS, const std::string& fname, bool hdbl, bool vdbl)
+	int internal_gui_text(lua_state& L, const std::string& fname, bool hdbl, bool vdbl)
 	{
 		if(!lua_render_ctx)
 			return 0;
 		int64_t fgc = 0xFFFFFFU;
 		int64_t bgc = -1;
-		int32_t _x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
-		int32_t _y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 4, fgc, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 5, bgc, fname.c_str());
-		std::string text = get_string_argument(LS, 3, fname.c_str());
+		int32_t _x = L.get_numeric_argument<int32_t>(1, fname.c_str());
+		int32_t _y = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		L.get_numeric_argument<int64_t>(4, fgc, fname.c_str());
+		L.get_numeric_argument<int64_t>(5, bgc, fname.c_str());
+		std::string text = L.get_string(3, fname.c_str());
 		premultiplied_color fg(fgc);
 		premultiplied_color bg(bgc);
 		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
 
-	function_ptr_luafun gui_text("gui.text", [](lua_State* LS, const std::string& fname) -> int {
-		internal_gui_text(LS, fname, false, false);
+	function_ptr_luafun gui_text(LS, "gui.text", [](lua_state& L, const std::string& fname) -> int {
+		internal_gui_text(L, fname, false, false);
 	});
 
-	function_ptr_luafun gui_textH("gui.textH", [](lua_State* LS, const std::string& fname) -> int {
-		internal_gui_text(LS, fname, true, false);
+	function_ptr_luafun gui_textH(LS, "gui.textH", [](lua_state& L, const std::string& fname) -> int {
+		internal_gui_text(L, fname, true, false);
 	});
 
-	function_ptr_luafun gui_textV("gui.textV", [](lua_State* LS, const std::string& fname) -> int {
-		internal_gui_text(LS, fname, false, true);
+	function_ptr_luafun gui_textV(LS, "gui.textV", [](lua_state& L, const std::string& fname) -> int {
+		internal_gui_text(L, fname, false, true);
 	});
 
-	function_ptr_luafun gui_textHV("gui.textHV", [](lua_State* LS, const std::string& fname) -> int {
-		internal_gui_text(LS, fname, true, true);
+	function_ptr_luafun gui_textHV(LS, "gui.textHV", [](lua_state& L, const std::string& fname) -> int {
+		internal_gui_text(L, fname, true, true);
 	});
 }

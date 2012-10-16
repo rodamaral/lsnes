@@ -6,55 +6,6 @@
 #include "core/movie.hpp"
 #include "library/framebuffer.hpp"
 
-struct lua_State;
-
-/**
- * Function implemented in C++ exported to Lua.
- */
-class lua_function
-{
-public:
-/**
- * Register function.
- */
-	lua_function(const std::string& name) throw(std::bad_alloc);
-/**
- * Unregister function.
- */
-	virtual ~lua_function() throw();
-
-/**
- * Invoke function.
- */
-	virtual int invoke(lua_State* L) = 0;
-protected:
-	std::string fname;
-};
-
-/**
- * Register function pointer as lua function.
- */
-class function_ptr_luafun : public lua_function
-{
-public:
-/**
- * Register.
- */
-	function_ptr_luafun(const std::string& name, int (*_fn)(lua_State* L, const std::string& fname))
-		: lua_function(name)
-	{
-		fn = _fn;
-	}
-/**
- * Invoke function.
- */
-	int invoke(lua_State* L)
-	{
-		return fn(L, fname);
-	}
-private:
-	int (*fn)(lua_State* L, const std::string& fname);
-};
 
 struct lua_render_context
 {

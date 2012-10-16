@@ -27,13 +27,13 @@ namespace
 		premultiplied_color color;
 	};
 
-	function_ptr_luafun gui_pixel("gui.pixel", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_pixel(LS, "gui.pixel", [](lua_state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t color = 0xFFFFFFU;
-		int32_t x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
-		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 3, color, fname.c_str());
+		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
+		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		L.get_numeric_argument<int64_t>(3, color, fname.c_str());
 		premultiplied_color pcolor(color);
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;

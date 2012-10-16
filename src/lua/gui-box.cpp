@@ -50,21 +50,21 @@ namespace
 		uint32_t thickness;
 	};
 
-	function_ptr_luafun gui_box("gui.box", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_box(LS, "gui.box", [](lua_state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t outline1 = 0xFFFFFFU;
 		int64_t outline2 = 0x808080U;
 		int64_t fill = 0xC0C0C0U;
 		uint32_t thickness = 1;
-		int32_t x = get_numeric_argument<int32_t>(LS, 1, fname.c_str());
-		int32_t y = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		uint32_t width = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
-		uint32_t height = get_numeric_argument<uint32_t>(LS, 4, fname.c_str());
-		get_numeric_argument<uint32_t>(LS, 5, thickness, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 6, outline1, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 7, outline2, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 8, fill, fname.c_str());
+		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
+		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		uint32_t width = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+		uint32_t height = L.get_numeric_argument<uint32_t>(4, fname.c_str());
+		L.get_numeric_argument<uint32_t>(5, thickness, fname.c_str());
+		L.get_numeric_argument<int64_t>(6, outline1, fname.c_str());
+		L.get_numeric_argument<int64_t>(7, outline2, fname.c_str());
+		L.get_numeric_argument<int64_t>(8, fill, fname.c_str());
 		premultiplied_color poutline1(outline1);
 		premultiplied_color poutline2(outline2);
 		premultiplied_color pfill(fill);

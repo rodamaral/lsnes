@@ -13,7 +13,6 @@
 #include <string>
 #include <iostream>
 extern "C" {
-#include <lua.h>
 #include <lualib.h>
 }
 
@@ -21,153 +20,42 @@ uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 extern const char* lua_sysrc_script;
 
-namespace
+lua_state LS;
+
+void push_keygroup_parameters(lua_state& L, const struct keygroup::parameters& p)
 {
-	globalwrap<std::map<std::string, lua_function*>> functions;
-	lua_State* lua_initialized;
-	int lua_trampoline_function(lua_State* L)
-	{
-		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
-		lua_function* f = reinterpret_cast<lua_function*>(ptr);
-		try {
-			return f->invoke(L);
-		} catch(std::exception& e) {
-			lua_pushfstring(L, "Error in internal function: %s", e.what());
-			lua_error(L);
-		}
-	}
-
-	//Pushes given table to top of stack, creating if needed.
-	void recursive_lookup_table(lua_State* L, const std::string& tab)
-	{
-		if(tab == "") {
-			lua_getglobal(L, "_G");
-			return;
-		}
-		std::string u = tab;
-		size_t split = u.find_last_of(".");
-		std::string u1;
-		std::string u2 = u;
-		if(split < u.length()) {
-			u1 = u.substr(0, split);
-			u2 = u.substr(split + 1);
-		}
-		recursive_lookup_table(L, u1);
-		lua_getfield(L, -1, u2.c_str());
-		if(lua_type(L, -1) != LUA_TTABLE) {
-			//Not a table, create a table.
-			lua_pop(L, 1);
-			lua_newtable(L);
-			lua_setfield(L, -2, u2.c_str());
-			lua_getfield(L, -1, u2.c_str());
-		}
-		//Get rid of previous table.
-		lua_insert(L, -2);
-		lua_pop(L, 1);
-	}
-
-	void register_lua_function(lua_State* L, const std::string& fun)
-	{
-		std::string u = fun;
-		size_t split = u.find_last_of(".");
-		std::string u1;
-		std::string u2 = u;
-		if(split < u.length()) {
-			u1 = u.substr(0, split);
-			u2 = u.substr(split + 1);
-		}
-		recursive_lookup_table(L, u1);
-		void* ptr = reinterpret_cast<void*>(functions()[fun]);
-		lua_pushlightuserdata(L, ptr);
-		lua_pushcclosure(L, lua_trampoline_function, 1);
-		lua_setfield(L, -2, u2.c_str());
-		lua_pop(L, 1);
-	}
-
-	void register_lua_functions(lua_State* L)
-	{
-		for(auto i : functions())
-			register_lua_function(L, i.first);
-		lua_initialized = L;
-	}
-}
-
-lua_function::lua_function(const std::string& name) throw(std::bad_alloc)
-{
-	functions()[fname = name] = this;
-	if(lua_initialized)
-		register_lua_function(lua_initialized, fname);
-}
-
-lua_function::~lua_function() throw()
-{
-	functions().erase(fname);
-}
-
-std::string get_string_argument(lua_State* LS, unsigned argindex, const char* fname)
-{
-	if(lua_isnone(LS, argindex)) {
-		char buffer[1024];
-		sprintf(buffer, "argument #%i to %s must be string", argindex, fname);
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
-	}
-	size_t len;
-	const char* f = lua_tolstring(LS, argindex, &len);
-	if(!f) {
-		char buffer[1024];
-		sprintf(buffer, "argument #%i to %s must be string", argindex, fname);
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
-	}
-	return std::string(f, f + len);
-}
-
-bool get_boolean_argument(lua_State* LS, unsigned argindex, const char* fname)
-{
-	if(lua_isnone(LS, argindex) || !lua_isboolean(LS, argindex)) {
-		char buffer[1024];
-		sprintf(buffer, "argument #%i to %s must be boolean", argindex, fname);
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
-	}
-	return (lua_toboolean(LS, argindex) != 0);
-}
-
-void push_keygroup_parameters(lua_State* LS, const struct keygroup::parameters& p)
-{
-	lua_newtable(LS);
-	lua_pushstring(LS, "last_rawval");
-	lua_pushnumber(LS, p.last_rawval);
-	lua_settable(LS, -3);
-	lua_pushstring(LS, "cal_left");
-	lua_pushnumber(LS, p.cal_left);
-	lua_settable(LS, -3);
-	lua_pushstring(LS, "cal_center");
-	lua_pushnumber(LS, p.cal_center);
-	lua_settable(LS, -3);
-	lua_pushstring(LS, "cal_right");
-	lua_pushnumber(LS, p.cal_right);
-	lua_settable(LS, -3);
-	lua_pushstring(LS, "cal_tolerance");
-	lua_pushnumber(LS, p.cal_tolerance);
-	lua_settable(LS, -3);
-	lua_pushstring(LS, "ktype");
+	L.newtable();
+	L.pushstring("last_rawval");
+	L.pushnumber(p.last_rawval);
+	L.settable(-3);
+	L.pushstring("cal_left");
+	L.pushnumber(p.cal_left);
+	L.settable(-3);
+	L.pushstring("cal_center");
+	L.pushnumber(p.cal_center);
+	L.settable(-3);
+	L.pushstring("cal_right");
+	L.pushnumber(p.cal_right);
+	L.settable(-3);
+	L.pushstring("cal_tolerance");
+	L.pushnumber(p.cal_tolerance);
+	L.settable(-3);
+	L.pushstring("ktype");
 	switch(p.ktype) {
-	case keygroup::KT_DISABLED:		lua_pushstring(LS, "disabled");		break;
-	case keygroup::KT_KEY:			lua_pushstring(LS, "key");		break;
-	case keygroup::KT_AXIS_PAIR:		lua_pushstring(LS, "axis");		break;
-	case keygroup::KT_AXIS_PAIR_INVERSE:	lua_pushstring(LS, "axis-inverse");	break;
-	case keygroup::KT_HAT:			lua_pushstring(LS, "hat");		break;
-	case keygroup::KT_MOUSE:		lua_pushstring(LS, "mouse");		break;
-	case keygroup::KT_PRESSURE_PM:		lua_pushstring(LS, "pressure-pm");	break;
-	case keygroup::KT_PRESSURE_P0:		lua_pushstring(LS, "pressure-p0");	break;
-	case keygroup::KT_PRESSURE_0M:		lua_pushstring(LS, "pressure-0m");	break;
-	case keygroup::KT_PRESSURE_0P:		lua_pushstring(LS, "pressure-0p");	break;
-	case keygroup::KT_PRESSURE_M0:		lua_pushstring(LS, "pressure-m0");	break;
-	case keygroup::KT_PRESSURE_MP:		lua_pushstring(LS, "pressure-mp");	break;
+	case keygroup::KT_DISABLED:		L.pushstring("disabled");		break;
+	case keygroup::KT_KEY:			L.pushstring("key");		break;
+	case keygroup::KT_AXIS_PAIR:		L.pushstring("axis");		break;
+	case keygroup::KT_AXIS_PAIR_INVERSE:	L.pushstring("axis-inverse");	break;
+	case keygroup::KT_HAT:			L.pushstring("hat");		break;
+	case keygroup::KT_MOUSE:		L.pushstring("mouse");		break;
+	case keygroup::KT_PRESSURE_PM:		L.pushstring("pressure-pm");	break;
+	case keygroup::KT_PRESSURE_P0:		L.pushstring("pressure-p0");	break;
+	case keygroup::KT_PRESSURE_0M:		L.pushstring("pressure-0m");	break;
+	case keygroup::KT_PRESSURE_0P:		L.pushstring("pressure-0p");	break;
+	case keygroup::KT_PRESSURE_M0:		L.pushstring("pressure-m0");	break;
+	case keygroup::KT_PRESSURE_MP:		L.pushstring("pressure-mp");	break;
 	};
-	lua_settable(LS, -3);
+	L.settable(-3);
 }
 
 lua_render_context* lua_render_ctx = NULL;
@@ -176,7 +64,6 @@ bool lua_booted_flag = false;
 
 namespace
 {
-	lua_State* L;
 	bool recursive_flag = false;
 	const char* luareader_fragment = NULL;
 
@@ -193,37 +80,25 @@ namespace
 		}
 	}
 
-	void* alloc(void* user, void* old, size_t olds, size_t news)
-	{
-		if(news) {
-			void* m = realloc(old, news);
-			if(!m)
-				OOM_panic();
-			return m;
-		} else
-			free(old);
-		return NULL;
-	}
-
 	bool callback_exists(const char* name)
 	{
 		if(recursive_flag)
 			return false;
-		lua_getglobal(L, name);
-		int t = lua_type(L, -1);
+		LS.getglobal(name);
+		int t = LS.type(-1);
 		if(t != LUA_TFUNCTION)
-			lua_pop(L, 1);
+			LS.pop(1);
 		return (t == LUA_TFUNCTION);
 	}
 
-	void push_string(const std::string& s)
+	void push_string(lua_state& L, const std::string& s)
 	{
-		lua_pushlstring(L, s.c_str(), s.length());
+		L.pushlstring(s.c_str(), s.length());
 	}
 
-	void push_boolean(bool b)
+	void push_boolean(lua_state& L, bool b)
 	{
-		lua_pushboolean(L, b ? 1 : 0);
+		L.pushboolean(b ? 1 : 0);
 	}
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
@@ -231,40 +106,41 @@ namespace
 	const char* eval_lua_lua = "loadstring(" TEMPORARY ")();";
 	const char* run_lua_lua = "dofile(" TEMPORARY ");";
 
-	void run_lua_fragment() throw(std::bad_alloc)
+	void run_lua_fragment(lua_state& L) throw(std::bad_alloc)
 	{
 		if(recursive_flag)
 			return;
 #if LUA_VERSION_NUM == 501
-		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment");
+		int t = L.load(read_lua_fragment, NULL, "run_lua_fragment");
 #endif
 #if LUA_VERSION_NUM == 502
-		int t = lua_load(L, read_lua_fragment, NULL, "run_lua_fragment", "bt");
+		int t = L.load(read_lua_fragment, NULL, "run_lua_fragment", "bt");
 #endif
 		if(t == LUA_ERRSYNTAX) {
-			messages << "Can't run Lua: Internal syntax error: " << lua_tostring(L, -1) << std::endl;
-			lua_pop(L, 1);
+			messages << "Can't run Lua: Internal syntax error: " << L.tostring(-1)
+				<< std::endl;
+			L.pop(1);
 			return;
 		}
 		if(t == LUA_ERRMEM) {
 			messages << "Can't run Lua: Out of memory" << std::endl;
-			lua_pop(L, 1);
+			L.pop(1);
 			return;
 		}
 		recursive_flag = true;
-		int r = lua_pcall(L, 0, 0, 0);
+		int r = L.pcall(0, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			messages << "Error running Lua hunk: " << lua_tostring(L, -1)  << std::endl;
-			lua_pop(L, 1);
+			messages << "Error running Lua hunk: " << L.tostring(-1)  << std::endl;
+			L.pop(1);
 		}
 		if(r == LUA_ERRMEM) {
 			messages << "Error running Lua hunk: Out of memory" << std::endl;
-			lua_pop(L, 1);
+			L.pop(1);
 		}
 		if(r == LUA_ERRERR) {
 			messages << "Error running Lua hunk: Double Fault???" << std::endl;
-			lua_pop(L, 1);
+			L.pop(1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
@@ -272,38 +148,38 @@ namespace
 		}
 	}
 
-	void do_eval_lua(const std::string& c) throw(std::bad_alloc)
+	void do_eval_lua(lua_state& L, const std::string& c) throw(std::bad_alloc)
 	{
-		push_string(c);
-		lua_setglobal(L, TEMPORARY);
+		push_string(L, c);
+		L.setglobal(TEMPORARY);
 		luareader_fragment = eval_lua_lua;
-		run_lua_fragment();
+		run_lua_fragment(L);
 	}
 
-	void do_run_lua(const std::string& c) throw(std::bad_alloc)
+	void do_run_lua(lua_state& L, const std::string& c) throw(std::bad_alloc)
 	{
-		push_string(c);
-		lua_setglobal(L, TEMPORARY);
+		push_string(L, c);
+		L.setglobal(TEMPORARY);
 		luareader_fragment = run_lua_lua;
-		run_lua_fragment();
+		run_lua_fragment(L);
 	}
 
-	void run_lua_cb(int args) throw()
+	void run_lua_cb(lua_state& L, int args) throw()
 	{
 		recursive_flag = true;
-		int r = lua_pcall(L, args, 0, 0);
+		int r = L.pcall(args, 0, 0);
 		recursive_flag = false;
 		if(r == LUA_ERRRUN) {
-			messages << "Error running Lua callback: " << lua_tostring(L, -1)  << std::endl;
-			lua_pop(L, 1);
+			messages << "Error running Lua callback: " << L.tostring(-1)  << std::endl;
+			L.pop(1);
 		}
 		if(r == LUA_ERRMEM) {
 			messages << "Error running Lua callback: Out of memory" << std::endl;
-			lua_pop(L, 1);
+			L.pop(1);
 		}
 		if(r == LUA_ERRERR) {
 			messages << "Error running Lua callback: Double Fault???" << std::endl;
-			lua_pop(L, 1);
+			L.pop(1);
 		}
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
@@ -318,31 +194,36 @@ namespace
 		return 0;
 	}
 
-	void copy_system_tables(lua_State* L)
+	void copy_system_tables(lua_state& L)
 	{
-		lua_getglobal(L, "_G");
-		lua_newtable(L);
-		lua_pushnil(L);
-		while(lua_next(L, -3)) {
+#if LUA_VERSION_NUM == 501
+		L.pushvalue(LUA_GLOBALSINDEX);
+#endif
+#if LUA_VERSION_NUM == 502
+		L.rawgeti(LUA_REGISTRYINDEX, LUA_RIDX_GLOBALS);
+#endif
+		L.newtable();
+		L.pushnil();
+		while(L.next(-3)) {
 			//Stack: _SYSTEM, KEY, VALUE
-			lua_pushvalue(L, -2);
-			lua_pushvalue(L, -2);
+			L.pushvalue(-2);
+			L.pushvalue(-2);
 			//Stack: _SYSTEM, KEY, VALUE, KEY, VALUE
-			lua_rawset(L, -5);
+			L.rawset(-5);
 			//Stack: _SYSTEM, KEY, VALUE
-			lua_pop(L, 1);
+			L.pop(1);
 			//Stack: _SYSTEM, KEY
 		}
-		lua_newtable(L);
-		lua_pushcfunction(L, system_write_error);
-		lua_setfield(L, -2, "__newindex");
-		lua_setmetatable(L, -2);
-		lua_setglobal(L, "_SYSTEM");
+		L.newtable();
+		L.pushcfunction(system_write_error);
+		L.setfield(-2, "__newindex");
+		L.setmetatable(-2);
+		L.setglobal("_SYSTEM");
 	}
 
-	void run_sysrc_lua(lua_State* L)
+	void run_sysrc_lua(lua_state& L)
 	{
-		do_eval_lua(lua_sysrc_script);
+		do_eval_lua(L, lua_sysrc_script);
 	}
 
 }
@@ -352,8 +233,8 @@ void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) t
 	if(!callback_exists("on_paint"))
 		return;
 	lua_render_ctx = ctx;
-	push_boolean(non_synthetic);
-	run_lua_cb(1);
+	push_boolean(LS, non_synthetic);
+	run_lua_cb(LS, 1);
 	lua_render_ctx = NULL;
 }
 
@@ -362,7 +243,7 @@ void lua_callback_do_video(struct lua_render_context* ctx) throw()
 	if(!callback_exists("on_video"))
 		return;
 	lua_render_ctx = ctx;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 	lua_render_ctx = NULL;
 }
 
@@ -370,21 +251,21 @@ void lua_callback_do_reset() throw()
 {
 	if(!callback_exists("on_reset"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_frame() throw()
 {
 	if(!callback_exists("on_frame"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_rewind() throw()
 {
 	if(!callback_exists("on_rewind"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_idle() throw()
@@ -392,7 +273,7 @@ void lua_callback_do_idle() throw()
 	lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 	if(!callback_exists("on_idle"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_timer() throw()
@@ -400,21 +281,21 @@ void lua_callback_do_timer() throw()
 	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;	
 	if(!callback_exists("on_timer"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_frame_emulated() throw()
 {
 	if(!callback_exists("on_frame_emulated"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_do_readwrite() throw()
 {
 	if(!callback_exists("on_readwrite"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_startup() throw()
@@ -422,58 +303,58 @@ void lua_callback_startup() throw()
 	lua_booted_flag = true;
 	if(!callback_exists("on_startup"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_pre_load(const std::string& name) throw()
 {
 	if(!callback_exists("on_pre_load"))
 		return;
-	push_string(name);
-	run_lua_cb(1);
+	push_string(LS, name);
+	run_lua_cb(LS, 1);
 }
 
 void lua_callback_err_load(const std::string& name) throw()
 {
 	if(!callback_exists("on_err_load"))
 		return;
-	push_string(name);
-	run_lua_cb(1);
+	push_string(LS, name);
+	run_lua_cb(LS, 1);
 }
 
 void lua_callback_post_load(const std::string& name, bool was_state) throw()
 {
 	if(!callback_exists("on_post_load"))
 		return;
-	push_string(name);
-	push_boolean(was_state);
-	run_lua_cb(2);
+	push_string(LS, name);
+	push_boolean(LS, was_state);
+	run_lua_cb(LS, 2);
 }
 
 void lua_callback_pre_save(const std::string& name, bool is_state) throw()
 {
 	if(!callback_exists("on_pre_save"))
 		return;
-	push_string(name);
-	push_boolean(is_state);
-	run_lua_cb(2);
+	push_string(LS, name);
+	push_boolean(LS, is_state);
+	run_lua_cb(LS, 2);
 }
 
 void lua_callback_err_save(const std::string& name) throw()
 {
 	if(!callback_exists("on_err_save"))
 		return;
-	push_string(name);
-	run_lua_cb(1);
+	push_string(LS, name);
+	run_lua_cb(LS, 1);
 }
 
 void lua_callback_post_save(const std::string& name, bool is_state) throw()
 {
 	if(!callback_exists("on_post_save"))
 		return;
-	push_string(name);
-	push_boolean(is_state);
-	run_lua_cb(2);
+	push_string(LS, name);
+	push_boolean(LS, is_state);
+	run_lua_cb(LS, 2);
 }
 
 void lua_callback_do_input(controller_frame& data, bool subframe) throw()
@@ -481,8 +362,8 @@ void lua_callback_do_input(controller_frame& data, bool subframe) throw()
 	if(!callback_exists("on_input"))
 		return;
 	lua_input_controllerdata = &data;
-	push_boolean(subframe);
-	run_lua_cb(1);
+	push_boolean(LS, subframe);
+	run_lua_cb(LS, 1);
 	lua_input_controllerdata = NULL;
 }
 
@@ -490,11 +371,11 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 {
 	if(!callback_exists("on_snoop"))
 		return;
-	lua_pushnumber(L, port);
-	lua_pushnumber(L, controller);
-	lua_pushnumber(L, index);
-	lua_pushnumber(L, value);
-	run_lua_cb(4);
+	LS.pushnumber(port);
+	LS.pushnumber(controller);
+	LS.pushnumber(index);
+	LS.pushnumber(value);
+	run_lua_cb(LS, 4);
 }
 
 namespace
@@ -504,28 +385,25 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(args);
+			do_eval_lua(LS, args);
 		});
 
 	function_ptr_command<arg_filename> run_lua(lsnes_cmd, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
-			do_run_lua(args);
+			do_run_lua(LS, args);
 		});
 
 	function_ptr_command<> reset_lua(lsnes_cmd, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
-			lua_State* L = lua_initialized;
-			lua_initialized = NULL;
-			init_lua(true);
-			if(!lua_initialized) {
-				lua_initialized = L;
-				return;
-			}
-			lua_close(L);
+			LS.reset();
+			luaL_openlibs(LS.handle());
+
+			run_sysrc_lua(LS);
+			copy_system_tables(LS);
 			messages << "Lua VM reset" << std::endl;
 		});
 
@@ -535,40 +413,40 @@ void lua_callback_quit() throw()
 {
 	if(!callback_exists("on_quit"))
 		return;
-	run_lua_cb(0);
+	run_lua_cb(LS, 0);
 }
 
 void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw()
 {
 	if(!callback_exists("on_keyhook"))
 		return;
-	lua_pushstring(L, key.c_str());
-	push_keygroup_parameters(L, p);
-	run_lua_cb(2);
+	LS.pushstring(key.c_str());
+	push_keygroup_parameters(LS, p);
+	run_lua_cb(LS, 2);
 }
 
 void init_lua(bool soft) throw()
 {
-	L = lua_newstate(alloc, NULL);
-	if(!L) {
+	char tmpkey;
+	LS.set_oom_handler(OOM_panic);
+	try {
+		LS.reset();
+	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
 		if(soft)
 			return;
-		fatal_error();
+		fatal_error();	
 	}
-	luaL_openlibs(L);
-
-	register_lua_functions(L);
-	run_sysrc_lua(L);
-	copy_system_tables(L);
+	LS.getglobal("print");
+	luaL_openlibs(LS.handle());
+	LS.setglobal("print");
+	run_sysrc_lua(LS);
+	copy_system_tables(LS);
 }
 
 void quit_lua() throw()
 {
-	if(lua_initialized) {
-		lua_close(lua_initialized);
-		lua_initialized = NULL;
-	}
+	LS.deinit();
 }
 
 
@@ -592,28 +470,27 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 		//Load.
 		try {
 			if(callback_exists("on_pre_rewind"))
-				run_lua_cb(0);
+				run_lua_cb(LS, 0);
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			if(callback_exists("on_post_rewind"))
-				run_lua_cb(0);
+				run_lua_cb(LS, 0);
 		} catch(...) {
 			return;
 		}
 	} else {
 		//Save
 		if(callback_exists("on_set_rewind")) {
-			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(L);
+			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(LS);
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
-			run_lua_cb(1);
+			run_lua_cb(LS, 1);
 		}
 		
 	}
 }
-
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;

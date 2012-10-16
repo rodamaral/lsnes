@@ -77,7 +77,8 @@ export
 
 all: src/__all_files__
 
-
+CFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --cflags)
+LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config $(LUA) --libs)
 
 compiler=$(subst ++,cc,$(REALCC))
 gambatte_compiler=$(REALCC)

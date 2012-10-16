@@ -7,13 +7,13 @@ namespace
 	class lua_gui_resolution : public lua_function
 	{
 	public:
-		lua_gui_resolution() : lua_function("gui.resolution") {}
-		int invoke(lua_State* LS)
+		lua_gui_resolution() : lua_function(LS, "gui.resolution") {}
+		int invoke(lua_state& L)
 		{
 			if(!lua_render_ctx)
 				return 0;
-			lua_pushnumber(LS, lua_render_ctx->width);
-			lua_pushnumber(LS, lua_render_ctx->height);
+			L.pushnumber(lua_render_ctx->width);
+			L.pushnumber(lua_render_ctx->height);
 			return 2;
 		}
 	} gui_resolution;
@@ -22,12 +22,12 @@ namespace
 	class lua_gui_set_gap : public lua_function
 	{
 	public:
-		lua_gui_set_gap(const std::string& name) : lua_function(name) {}
-		int invoke(lua_State* LS)
+		lua_gui_set_gap(const std::string& name) : lua_function(LS, name) {}
+		int invoke(lua_state& L)
 		{
 			if(!lua_render_ctx)
 				return 0;
-			uint32_t g = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
+			uint32_t g = L.get_numeric_argument<uint32_t>(1, fname.c_str());
 			if(g > 8192)
 				return 0;	//Ignore ridiculous gap.
 			lua_render_ctx->*gap = g;
@@ -40,32 +40,32 @@ namespace
 	lua_gui_set_gap<&lua_render_context::top_gap> tg("gui.top_gap");
 	lua_gui_set_gap<&lua_render_context::bottom_gap> bg("gui.bottom_gap");
 
-	function_ptr_luafun gui_repaint("gui.repaint", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_repaint(LS, "gui.repaint", [](lua_state& L, const std::string& fname) -> int {
 		lua_requests_repaint = true;
 		return 0;
 	});
 
-	function_ptr_luafun gui_sfupd("gui.subframe_update", [](lua_State* LS, const std::string& fname) -> int {
-		lua_requests_subframe_paint = get_boolean_argument(LS, 1, fname.c_str());
+	function_ptr_luafun gui_sfupd(LS, "gui.subframe_update", [](lua_state& L, const std::string& fname) -> int {
+		lua_requests_subframe_paint = L.get_bool(1, fname.c_str());
 		return 0;
 	});
 
-	function_ptr_luafun gui_color("gui.color", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_color(LS, "gui.color", [](lua_state& L, const std::string& fname) -> int {
 		int64_t a = 256;
-		int64_t r = get_numeric_argument<uint32_t>(LS, 1, fname.c_str());
-		int64_t g = get_numeric_argument<uint32_t>(LS, 2, fname.c_str());
-		int64_t b = get_numeric_argument<uint32_t>(LS, 3, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 4, a, fname.c_str());
+		int64_t r = L.get_numeric_argument<uint32_t>(1, fname.c_str());
+		int64_t g = L.get_numeric_argument<uint32_t>(2, fname.c_str());
+		int64_t b = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+		L.get_numeric_argument<int64_t>(4, a, fname.c_str());
 		if(a > 0)
-			lua_pushnumber(LS, ((256 - a) << 24) | (r << 16) | (g << 8) | b);
+			L.pushnumber(((256 - a) << 24) | (r << 16) | (g << 8) | b);
 		else
-			lua_pushnumber(LS, -1);
+			L.pushnumber(-1);
 		return 1;
 	});
 
-	function_ptr_luafun gui_status("gui.status", [](lua_State* LS, const std::string& fname) -> int {
-		std::string name = get_string_argument(LS, 1, fname.c_str());
-		std::string value = get_string_argument(LS, 2, fname.c_str());
+	function_ptr_luafun gui_status(LS, "gui.status", [](lua_state& L, const std::string& fname) -> int {
+		std::string name = L.get_string(1, fname.c_str());
+		std::string value = L.get_string(2, fname.c_str());
 		auto& w = platform::get_emustatus();
 		if(value == "")
 			w.erase("L[" + name + "]");
@@ -109,18 +109,18 @@ namespace
 		return (V[(flag >> 4) & 3] << 16) | (V[(flag >> 2) & 3] << 8) | (V[flag & 3]);
 	}
 
-	function_ptr_luafun gui_rainbow("gui.rainbow", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun gui_rainbow(LS, "gui.rainbow", [](lua_state& L, const std::string& fname) -> int {
 		int64_t basecolor = 0x00FF0000;
-		uint64_t step = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
-		int32_t steps = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
-		get_numeric_argument<int64_t>(LS, 3, basecolor, fname.c_str());
+		uint64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		int32_t steps = L.get_numeric_argument<int32_t>(2, fname.c_str());
+		L.get_numeric_argument<int64_t>(3, basecolor, fname.c_str());
 		if(!steps) {
-			lua_pushstring(LS, "Expected nonzero steps for gui.rainbow");
-			lua_error(LS);
+			L.pushstring("Expected nonzero steps for gui.rainbow");
+			L.error();
 		}
 		if(basecolor < 0) {
 			//Special: Any rotation of transparent is transparent.
-			lua_pushnumber(LS, -1);
+			L.pushnumber(-1);
 			return 1;
 		}
 		uint32_t asteps = std::abs(steps);
@@ -128,7 +128,7 @@ namespace
 			step = asteps - step % asteps;	//Reverse order.
 		double hueshift = 6.0 * (step % asteps) / asteps;
 		basecolor = shifthue(basecolor & 0xFFFFFF, hueshift) | (basecolor & 0xFF000000);
-		lua_pushnumber(LS, basecolor);
+		L.pushnumber(basecolor);
 		return 1;
 	});
 }

@@ -70,16 +70,16 @@ namespace
 	class lua_symmetric_bitwise : public lua_function
 	{
 	public:
-		lua_symmetric_bitwise(const std::string& s) : lua_function(s) {};
-		int invoke(lua_State* L)
+		lua_symmetric_bitwise(const std::string& s) : lua_function(LS, s) {};
+		int invoke(lua_state& L)
 		{
 			int stacksize = 0;
-			while(!lua_isnone(L, stacksize + 1))
+			while(!L.isnone(stacksize + 1))
 				stacksize++;
 			uint64_t ret = init;
 			for(int i = 0; i < stacksize; i++)
-				ret = combine(ret, get_numeric_argument<uint64_t>(L, i + 1, fname.c_str()));
-			lua_pushnumber(L, ret);
+				ret = combine(ret, L.get_numeric_argument<uint64_t>(i + 1, fname.c_str()));
+			L.pushnumber(ret);
 			return 1;
 		}
 	};
@@ -88,48 +88,48 @@ namespace
 	class lua_shifter : public lua_function
 	{
 	public:
-		lua_shifter(const std::string& s) : lua_function(s) {};
-		int invoke(lua_State* L)
+		lua_shifter(const std::string& s) : lua_function(LS, s) {};
+		int invoke(lua_state& L)
 		{
 			uint64_t base;
 			uint64_t amount = 1;
 			uint64_t bits = BITWISE_BITS;
-			base = get_numeric_argument<uint64_t>(L, 1, fname.c_str());
-			get_numeric_argument(L, 2, amount, fname.c_str());
-			get_numeric_argument(L, 3, bits, fname.c_str());
-			lua_pushnumber(L, shift(base, amount, bits));
+			base = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+			L.get_numeric_argument(2, amount, fname.c_str());
+			L.get_numeric_argument(3, bits, fname.c_str());
+			L.pushnumber(shift(base, amount, bits));
 			return 1;
 		}
 	};
 
-	function_ptr_luafun lua_bextract("bit.extract", [](lua_State* LS, const std::string& fname) -> int {
-		uint64_t num = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+	function_ptr_luafun lua_bextract(LS, "bit.extract", [](lua_state& L, const std::string& fname) -> int {
+		uint64_t num = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
-			if(lua_isnumber(LS, i + 2)) {
-				uint8_t bit = get_numeric_argument<uint8_t>(LS, i + 2, fname.c_str());
+			if(L.isnumber(i + 2)) {
+				uint8_t bit = L.get_numeric_argument<uint8_t>(i + 2, fname.c_str());
 				ret |= (((num >> bit) & 1) << i);
-			} else if(lua_isboolean(LS, i + 2)) {
-				if(lua_toboolean(LS, i + 2))
+			} else if(L.isboolean(i + 2)) {
+				if(L.toboolean(i + 2))
 					ret |= (1ULL << i);
 			} else
 				break;
 		}
-		lua_pushnumber(LS, ret);
+		L.pushnumber(ret);
 		return 1;
 	});
 
-	function_ptr_luafun lua_bvalue("bit.value", [](lua_State* LS, const std::string& fname) -> int {
+	function_ptr_luafun lua_bvalue(LS, "bit.value", [](lua_state& L, const std::string& fname) -> int {
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
-			if(lua_isnumber(LS, i + 1)) {
-				uint8_t bit = get_numeric_argument<uint8_t>(LS, i + 1, fname.c_str());
+			if(L.isnumber(i + 1)) {
+				uint8_t bit = L.get_numeric_argument<uint8_t>(i + 1, fname.c_str());
 				ret |= (1ULL << bit);
-			} else if(lua_isnil(LS, i + 1)) {
+			} else if(L.isnil(i + 1)) {
 			} else
 				break;
 		}
-		lua_pushnumber(LS, ret);
+		L.pushnumber(ret);
 		return 1;
 	});
 
