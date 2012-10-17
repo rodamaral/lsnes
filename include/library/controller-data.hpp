@@ -614,7 +614,7 @@ public:
 		if(i != 0xFFFFFFFFU)
 			return get_DRDY(i);
 		else
-			return false;
+			return true;
 	}
 /**
  * Get state of DRDY bit.
