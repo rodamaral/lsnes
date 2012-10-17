@@ -35,6 +35,8 @@
 const char* button_symbols = "ABsSrlud";
 port_type_group core_portgroup;
 unsigned core_userports = 1;
+extern const bool core_supports_reset = true;
+extern const bool core_supports_dreset = false;
 
 namespace
 {
@@ -48,6 +50,7 @@ namespace
 		return 0;
 	}
 
+	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
 	extern core_type type_dmg;
 	extern core_type type_gbc;
@@ -128,6 +131,7 @@ namespace
 		romdata.resize(size);
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
+		do_reset_flag = false;
 		return 1;
 	}
 
@@ -292,8 +296,8 @@ namespace
 		struct port_index_map i;
 		i.indices.resize(100);
 		for(unsigned j = 0; j < 100; j++) {
-			i.indices[j].valid = (j < 12);
-			i.indices[j].port = (j < 4) ? 0 : 1;
+			i.indices[j].valid = (j < 12) && j != 2 && j != 3;
+			i.indices[j].port = (j < 2) ? 0 : 1;
 			i.indices[j].controller = 0;
 			i.indices[j].control = (j < 4) ? j : (j - 4);;
 			i.indices[j].marks_nonlag = (j >= 4);
@@ -355,21 +359,8 @@ bool core_set_region(core_region& region)
 	return (&region == &region_world);
 }
 
-std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
-{
-	messages << "Delayed resets are not supported";
-	return std::make_pair(false, 0);
-}
-
 void core_runtosave()
 {
-}
-
-void core_reset()
-{
-	if(!internal_rom)
-		return;
-	instance->reset();
 }
 
 void do_basic_core_init()
@@ -401,6 +392,7 @@ void core_uninstall_handler()
 
 void core_emulate_frame_nocore()
 {
+	do_reset_flag = -1;
 	init_norom_framebuffer();
 	while(true) {
 		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32];
@@ -440,12 +432,26 @@ void core_emulate_frame_nocore()
 	framebuffer_raw ls(inf);
 	ecore_callbacks->output_frame(ls, 262144, 4389);
 }
+
+void core_request_reset(long delay)
+{
+	do_reset_flag = true;
+}
+
 void core_emulate_frame()
 {
 	if(!internal_rom) {
 		core_emulate_frame_nocore();
 		return;
 	}
+
+	int16_t reset = ecore_callbacks->set_input(0, 0, 1, do_reset_flag ? 1 : 0);
+	if(reset) {
+		instance->reset();
+		messages << "GB(C) reset" << std::endl;
+	}
+	do_reset_flag = false;
+
 	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
 	while(true) {
 		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
@@ -657,6 +663,7 @@ void core_unserialize(const char* in, size_t insize)
 	unsigned x1 = (unsigned char)in[insize - 2];
 	unsigned x2 = (unsigned char)in[insize - 1];
 	frame_overflow = x1 * 256 + x2;
+	do_reset_flag = false;
 }
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)

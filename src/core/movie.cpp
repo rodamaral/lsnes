@@ -20,7 +20,7 @@ movie& movie_logic::get_movie() throw()
 	return mov;
 }
 
-long movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error)
+void movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error)
 {
 	mov.next_frame();
 	controller_frame c = update_controls(false);
@@ -28,14 +28,8 @@ long movie_logic::new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::
 		mov.set_controls(c);
 		if(!dont_poll)
 			mov.set_all_DRDY();
-		if(c.axis3(0, 0, 1)) {
-			long hi = c.axis3(0, 0, 2);
-			long lo = c.axis3(0, 0, 3);
-			mov.commit_reset(hi * 10000 + lo);
-		}
 	} else if(!dont_poll)
 		mov.set_all_DRDY();
-	return mov.get_reset_status();
 }
 
 short movie_logic::input_poll(unsigned port, unsigned dev, unsigned id) throw(std::bad_alloc, std::runtime_error)

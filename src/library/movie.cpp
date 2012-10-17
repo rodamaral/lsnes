@@ -131,12 +131,6 @@ controller_frame movie::get_controls() throw()
 	uint32_t changes = count_changes(current_frame_first_subframe);
 	if(!changes)
 		return c;	//End of movie.
-	if(pollcounters.get_polls(0, 0, 1)) {
-		//Process reset.
-		c.axis3(0, 0, 1, movie_data[current_frame_first_subframe].axis3(0, 0, 1));
-		c.axis3(0, 0, 2, movie_data[current_frame_first_subframe].axis3(0, 0, 2));
-		c.axis3(0, 0, 3, movie_data[current_frame_first_subframe].axis3(0, 0, 3));
-	}
 	for(size_t i = 0; i < movie_data.get_types().indices(); i++) {
 		uint32_t polls = pollcounters.get_polls(i);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
@@ -205,13 +199,15 @@ bool movie::get_DRDY(unsigned port, unsigned controller, unsigned ctrl) throw(st
 
 short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw(std::bad_alloc, std::logic_error)
 {
+	bool do_neutral_update = movie_data.get_types().marks_nonlag(port, controller, ctrl);
 	pollcounters.clear_DRDY(port, controller, ctrl);
 
 	if(readonly) {
 		//In readonly mode...
 		//If at the end of the movie, return released / neutral (but also record the poll)...
 		if(current_frame_first_subframe >= movie_data.size()) {
-			pollcounters.increment_polls(port, controller, ctrl);
+			if(do_neutral_update)
+				pollcounters.increment_polls(port, controller, ctrl);
 			return 0;
 		}
 		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
@@ -219,9 +215,12 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 			return 0;
 		//Otherwise find the last valid frame of input.
 		uint32_t changes = count_changes(current_frame_first_subframe);
-		uint32_t polls = pollcounters.increment_polls(port, controller, ctrl);
+		uint32_t polls = pollcounters.get_polls(port, controller, ctrl);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
-		return movie_data[current_frame_first_subframe + index].axis3(port, controller, ctrl);
+		int16_t data = movie_data[current_frame_first_subframe + index].axis3(port, controller, ctrl);
+		if(data || do_neutral_update)
+			pollcounters.increment_polls(port, controller, ctrl);
+		return data;
 	} else {
 		//Readwrite mode.
 		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
@@ -232,7 +231,8 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 		if(current_frame_first_subframe >= movie_data.size()) {
 			movie_data.append(current_controls.copy(true));
 			//current_frame_first_subframe should be movie_data.size(), so it is right.
-			pollcounters.increment_polls(port, controller, ctrl);
+			if(current_controls.axis3(port, controller, ctrl) || do_neutral_update)
+				pollcounters.increment_polls(port, controller, ctrl);
 			frames_in_movie++;
 			return movie_data[current_frame_first_subframe].axis3(port, controller, ctrl);
 		}
@@ -255,7 +255,8 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 			movie_data[current_frame_first_subframe + pollcounter].axis3(port, controller, ctrl,
 				new_value);
 		}
-		pollcounters.increment_polls(port, controller, ctrl);
+		if(new_value || do_neutral_update)
+			pollcounters.increment_polls(port, controller, ctrl);
 		return new_value;
 	}
 }
@@ -298,25 +299,6 @@ void movie::load(const std::string& rerecs, const std::string& project_id, contr
 controller_frame_vector movie::save() throw(std::bad_alloc)
 {
 	return movie_data;
-}
-
-void movie::commit_reset(long delay) throw(std::bad_alloc)
-{
-	if(readonly || delay < 0)
-		return;
-	//If this frame is lagged, we need to write entry for it.
-	if(!pollcounters.has_polled()) {
-		movie_data.append(current_controls.copy(true));
-		frames_in_movie++;
-		//Current_frame_first_subframe is correct.
-	}
-	//Also set poll counters on reset cycles to avoid special cases elsewhere.
-	if(!pollcounters.get_polls(0, 0, 1))
-		pollcounters.increment_polls(0, 0, 1);
-	//Current frame is always last in rw mode.
-	movie_data[current_frame_first_subframe].axis3(0, 0, 1, 1);
-	movie_data[current_frame_first_subframe].axis3(0, 0, 2, delay / 10000);
-	movie_data[current_frame_first_subframe].axis3(0, 0, 3, delay % 10000);
 }
 
 unsigned movie::next_poll_number()
@@ -400,20 +382,6 @@ size_t movie::restore_state(uint64_t curframe, uint64_t lagframe, const std::vec
 	pollcounters.load_state(pcounters);
 	readonly_mode(ro);
 	return 0;
-}
-
-long movie::get_reset_status() throw()
-{
-	if(current_frame == 0 || current_frame_first_subframe >= movie_data.size())
-		return -1;	//No resets out of range.
-	if(!movie_data[current_frame_first_subframe].axis3(0, 0, 1))
-		return -1;	//Not a reset.
-	//Also set poll counters on reset cycles to avoid special cases elsewhere.
-	if(!pollcounters.get_polls(0, 0, 1))
-		pollcounters.increment_polls(0, 0, 1);
-	long hi = movie_data[current_frame_first_subframe].axis3(0, 0, 2);
-	long lo = movie_data[current_frame_first_subframe].axis3(0, 0, 3);
-	return hi * 10000 + lo;
 }
 
 uint64_t movie::frame_subframes(uint64_t frame) throw()

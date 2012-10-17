@@ -110,12 +110,6 @@ public:
  */
 	void analog(unsigned port, unsigned controller, int x, int y) throw();
 /**
- * Manipulate the reset flag.
- *
- * Parameter delay: Delay for reset (-1 for no reset)
- */
-	void reset(int32_t delay) throw();
-/**
  * Manipulate autohold.
  *
  * Parameter port: The port.

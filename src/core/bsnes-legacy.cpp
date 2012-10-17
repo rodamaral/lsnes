@@ -60,9 +60,16 @@ const char* button_symbols = "BYsSudlrAXLRTSTCUPFR";
 
 port_type_group core_portgroup;
 unsigned core_userports = 2;
+extern const bool core_supports_reset = true;
+#ifdef BSNES_HAS_DEBUGGER
+extern const bool core_supports_dreset = true;
+#else
+extern const bool core_supports_dreset = false;
+#endif
 
 namespace
 {
+	long do_reset_flag = -1;
 	bool pollflag_active = true;
 	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
 	boolean_setting save_every_frame(lsnes_set, "save-every-frame", false);
@@ -112,6 +119,7 @@ namespace
 		if(r)
 			internal_rom = &type_snes;
 		have_saved_this_frame = false;
+		do_reset_flag = -1;
 		return r ? 0 : -1;
 	}
 
@@ -124,6 +132,7 @@ namespace
 		if(r)
 			internal_rom = &type_bsx;
 		have_saved_this_frame = false;
+		do_reset_flag = -1;
 		return r ? 0 : -1;
 	}
 
@@ -136,6 +145,7 @@ namespace
 		if(r)
 			internal_rom = &type_bsxslotted;
 		have_saved_this_frame = false;
+		do_reset_flag = -1;
 		return r ? 0 : -1;
 	}
 
@@ -148,6 +158,7 @@ namespace
 		if(r)
 			internal_rom = &type_sgb;
 		have_saved_this_frame = false;
+		do_reset_flag = -1;
 		return r ? 0 : -1;
 	}
 
@@ -160,6 +171,7 @@ namespace
 		if(r)
 			internal_rom = &type_sufamiturbo;
 		have_saved_this_frame = false;
+		do_reset_flag = -1;
 		return r ? 0 : -1;
 	}
 
@@ -1014,6 +1026,12 @@ void core_unserialize(const char* in, size_t insize)
 	if(!SNES::system.unserialize(s))
 		throw std::runtime_error("SNES core rejected savestate");
 	have_saved_this_frame = true;
+	do_reset_flag = -1;
+}
+
+void core_request_reset(long delay)
+{
+	do_reset_flag = delay;
 }
 
 std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
@@ -1041,6 +1059,7 @@ void core_emulate_frame()
 {
 	static unsigned frame_modulus = 0;
 	if(!internal_rom) {
+		do_reset_flag = -1;
 		init_norom_frame();
 		framebuffer_info inf;
 		inf.type = &_pixel_format_lrgb;
@@ -1067,17 +1086,49 @@ void core_emulate_frame()
 		ecore_callbacks->timer_tick(1, 60);
 		return;
 	}
-	if(!have_saved_this_frame && save_every_frame)
+
+	bool was_delay_reset = false;
+	int16_t reset = ecore_callbacks->set_input(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
+	if(reset) {
+		long hi = ecore_callbacks->set_input(0, 0, 2, do_reset_flag / 10000);
+		long lo = ecore_callbacks->set_input(0, 0, 3, do_reset_flag % 10000);
+		long delay = 10000 * hi + lo;
+		if(delay > 0) {
+			was_delay_reset = true;
+#ifdef BSNES_HAS_DEBUGGER
+			messages << "Executing delayed reset... This can take some time!" << std::endl;
+			video_refresh_done = false;
+			delayreset_cycles_run = 0;
+			delayreset_cycles_target = delay;
+			SNES::cpu.step_event = delayreset_fn;
+			SNES::system.run();
+			SNES::cpu.step_event = nall::function<bool()>();
+			if(video_refresh_done) {
+				//Force the reset here.
+				do_reset_flag = -1;
+				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
+				SNES::system.reset();
+				return;
+			}
+			SNES::system.reset();
+			messages  << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
+#else
+			messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
+				<< std::endl;
+			SNES::system.reset();
+#endif
+		} else if(delay == 0) {
+			SNES::system.reset();
+			messages << "SNES reset" << std::endl;
+		}
+	}
+	do_reset_flag = -1;
+	
+
+	if(!have_saved_this_frame && save_every_frame && !was_delay_reset)
 		SNES::system.runtosave();
 	SNES::system.run();
 	have_saved_this_frame = false;
-}
-
-void core_reset()
-{
-	if(!internal_rom)
-		return;
-	SNES::system.reset();
 }
 
 void core_runtosave()

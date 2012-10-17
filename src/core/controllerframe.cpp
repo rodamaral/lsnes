@@ -58,19 +58,6 @@ void controller_state::analog(unsigned port, unsigned controller, int x, int y) 
 	_input.axis3(port, controller, 1, y);
 }
 
-void controller_state::reset(int32_t delay) throw()
-{
-	if(delay >= 0) {
-		_input.axis3(0, 0, 1, 1);
-		_input.axis3(0, 0, 2, delay / 10000);
-		_input.axis3(0, 0, 3, delay % 10000);
-	} else {
-		_input.axis3(0, 0, 1, 0);
-		_input.axis3(0, 0, 2, 0);
-		_input.axis3(0, 0, 3, 0);
-	}
-}
-
 void controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid, bool newstate) throw()
 {
 	_autohold.axis3(port, controller, pbid, newstate ? 1 : 0);

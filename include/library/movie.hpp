@@ -192,21 +192,6 @@ public:
  */
 	void reset_state() throw();
 /**
- * Get reset status for current frame.
- *
- * returns: -1 if current frame doesn't have a reset. Otherwise number of cycles to wait for delayed reset (0 is
- *	immediate reset).
- */
-	long get_reset_status() throw();
-
-/**
- * Commit a reset (writes a reset into current frame in readwrite mode).
- *
- * parameter delay: The number of cycles to delay the reset.
- */
-	void commit_reset(long delay) throw(std::bad_alloc);
-
-/**
  * Get how manyth poll in the frame next poll would be?
  *
  * returns: Poll number.

@@ -27,10 +27,8 @@ public:
 
 /**
  * Notify about new frame starting.
- *
- * returns: Reset status for the new frame.
  */
-	long new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error);
+	void new_frame_starting(bool dont_poll) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Poll for input.

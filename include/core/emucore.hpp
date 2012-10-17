@@ -56,10 +56,6 @@ void core_install_handler();
 void core_uninstall_handler();
 //Emulate a frame.
 void core_emulate_frame();
-//Run specified number of frames inside frame.
-std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles);
-//Do soft reset.
-void core_reset();
 //Run to point save.
 void core_runtosave();
 //Button symbols.
@@ -72,10 +68,16 @@ std::pair<uint64_t, uint64_t> core_get_bus_map();
 unsigned core_get_poll_flag();
 //Set poll flag (set to 1 on each real poll, except if 2.
 void core_set_poll_flag(unsigned pflag);
+//Request reset on next frame.
+void core_request_reset(long delay);
 //The port type group.
 extern port_type_group core_portgroup;
 //Number of user ports.
 extern unsigned core_userports;
+//Core supports resets.
+extern const bool core_supports_reset;
+//Core supports delayed resets.
+extern const bool core_supports_dreset;
 
 /**
  * Get name of logical button.
@@ -93,6 +95,9 @@ public:
 	virtual ~emucore_callbacks() throw();
 	//Get the input for specified control.
 	virtual int16_t get_input(unsigned port, unsigned index, unsigned control) = 0;
+	//Set the input for specified control (used for system controls, only works in readwrite mode).
+	//Returns the actual value of control (may differ if in readonly mode).
+	virtual int16_t set_input(unsigned port, unsigned index, unsigned control, int16_t value) = 0;
 	//Do timer tick.
 	virtual void timer_tick(uint32_t increment, uint32_t per_second) = 0;
 	//Get the firmware path.

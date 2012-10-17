@@ -527,6 +527,36 @@ public:
 			throw std::runtime_error("Bad logical controller");
 		return controllers[lcid];
 	}
+/**
+ * Get "marks nonlag even if neutral" flag for specified index.
+ *
+ * Parameter index: The index.
+ * Returns: The flag.
+ */
+	bool marks_nonlag(unsigned index) const throw()
+	{
+		try {
+			index_to_triple(index).marks_nonlag;
+		} catch(...) {
+			return false;
+		}
+	}
+/**
+ * Get "marks nonlag even if neutral" flag for specified triplet.
+ *
+ * Parameter port: The port
+ * Parameter controller: The controller.
+ * Parameter index: The index.
+ * Returns: The flag.
+ */
+	bool marks_nonlag(unsigned port, unsigned controller, unsigned index) const throw()
+	{
+		try {
+			index_to_triple(triple_to_index(port, controller, index)).marks_nonlag;
+		} catch(...) {
+			return false;
+		}
+	}
 private:
 	port_type_set(std::vector<class port_type*> types);
 	size_t* port_offsets;
@@ -853,36 +883,6 @@ public:
 	size_t size()
 	{
 		return types->size();
-	}
-/**
- * Get "marks nonlag even if neutral" flag for specified index.
- *
- * Parameter index: The index.
- * Returns: The flag.
- */
-	bool marks_nonlag(unsigned index) throw()
-	{
-		try {
-			types->index_to_triple(index).marks_nonlag;
-		} catch(...) {
-			return false;
-		}
-	}
-/**
- * Get "marks nonlag even if neutral" flag for specified triplet.
- *
- * Parameter port: The port
- * Parameter controller: The controller.
- * Parameter index: The index.
- * Returns: The flag.
- */
-	bool marks_nonlag(unsigned port, unsigned controller, unsigned index) throw()
-	{
-		try {
-			types->index_to_triple(types->triple_to_index(port, controller, index)).marks_nonlag;
-		} catch(...) {
-			return false;
-		}
 	}
 /**
  * Set axis/button value.

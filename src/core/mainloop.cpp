@@ -67,8 +67,6 @@ namespace
 	//Save jukebox.
 	numeric_setting jukebox_size(lsnes_set, "jukebox-size", 0, 999, 12);
 	size_t save_jukebox_pointer;
-	//Pending reset cycles. -1 if no reset pending, otherwise, cycle count for reset.
-	long pending_reset_cycles = -1;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
 	//Few settings.
@@ -173,10 +171,6 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	}
 	information_dispatch::do_status_update();
 	platform::flush_command_queue();
-	if(!subframe && pending_reset_cycles >= 0)
-		controls.reset(pending_reset_cycles);
-	else if(!subframe)
-		controls.reset(-1);
 	controller_frame tmp = controls.commit(movb.get_movie().get_current_frame());
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
@@ -326,6 +320,16 @@ public:
 		x = movb.input_poll(port, index, control);
 		lua_callback_snoop_input(port, index, control, x);
 		return x;
+	}
+
+	int16_t set_input(unsigned port, unsigned index, unsigned control, int16_t value)
+	{
+		if(!movb.get_movie().readonly_mode()) {
+			controller_frame f = movb.get_movie().get_controls();
+			f.axis3(port, index, control, value);
+			movb.get_movie().set_controls(f);
+		}
+		return movb.get_movie().next_input(port, index, control);
 	}
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
@@ -519,13 +523,21 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<const std::string&> reset_c(lsnes_cmd, "reset", "Reset the SNES",
-		"Syntax: reset\nReset <delay>\nResets the SNES in beginning of the next frame.\n",
+	function_ptr_command<const std::string&> reset_c(lsnes_cmd, "reset", "Reset the system",
+		"Syntax: reset\nReset <delay>\nResets the system in beginning of the next frame.\n",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			if(!core_supports_reset) {
+				messages << "Emulator core does not support resets" << std::endl;
+				return;
+			}
+			if(!core_supports_dreset && x != "") {
+				messages << "Emulator core does not support delayed resets" << std::endl;
+				return;
+			}
 			if(x == "")
-				pending_reset_cycles = 0;
+				core_request_reset(0);
 			else
-				pending_reset_cycles = parse_value<uint32_t>(x);
+				core_request_reset(parse_value<uint32_t>(x));
 		});
 
 	function_ptr_command<arg_filename> load_c(lsnes_cmd, "load", "Load savestate (current mode)",
@@ -803,7 +815,6 @@ namespace
 			}
 			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 			pending_load = "";
-			pending_reset_cycles = -1;
 			amode = ADVANCE_AUTO;
 			platform::cancel_wait();
 			platform::set_paused(false);
@@ -836,32 +847,6 @@ namespace
 			}
 		}
 		queued_saves.clear();
-	}
-
-	//Do (delayed) reset. Return true if proper, false if forced at frame boundary.
-	bool handle_reset(long cycles)
-	{
-		if(cycles < 0)
-			return true;
-		bool video_refresh_done = false;
-		if(cycles == 0)
-			messages << "SNES reset" << std::endl;
-		else if(cycles > 0) {
-			auto x = core_emulate_cycles(cycles);
-			if(x.first)
-				messages << "SNES reset (delayed " << x.second << ")" << std::endl;
-			else
-				messages << "SNES reset (forced at " << x.second << ")" << std::endl;
-			video_refresh_done = !x.first;
-		}
-		core_reset();
-		lua_callback_do_reset();
-		redraw_framebuffer(screen_nosignal);
-		if(video_refresh_done) {
-			to_wait_frame(get_utime());
-			return false;
-		}
-		return true;
 	}
 
 	bool handle_corrupt()
@@ -927,24 +912,16 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = first_round;
 			continue;
 		}
-		long resetcycles = -1;
 		ack_frame_tick(get_utime());
 		if(amode == ADVANCE_SKIPLAG_PENDING)
 			amode = ADVANCE_SKIPLAG;
 
 		if(!first_round) {
 			controls.reset_framehold();
-			resetcycles = movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
+			movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
-			bool delayed_reset = (resetcycles > 0);
-			pending_reset_cycles = -1;
-			if(!handle_reset(resetcycles)) {
-				continue;
-			}
-			if(!delayed_reset) {
-				handle_saves();
-			}
+			handle_saves();
 			int r = 0;
 			if(queued_saves.empty())
 				r = handle_load();
