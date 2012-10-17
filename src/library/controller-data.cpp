@@ -18,6 +18,17 @@ namespace
 		return -1;
 	}
 
+	struct port_index_map invalid_construct_map(std::vector<port_type*> types)
+	{
+		struct port_index_map i;
+		i.indices.resize(1);
+		i.indices[0].valid = true;
+		i.indices[0].port = 0;
+		i.indices[0].controller = 0;
+		i.indices[0].control = 0;
+		return i;
+	}
+	
 	struct port_type_group invalid_group;
 	struct porttype_invalid : public port_type
 	{
@@ -31,6 +42,7 @@ namespace
 			legal = generic_port_legal<0xFFFFFFFFU>;
 			deviceflags = generic_port_deviceflags<0, 0>;
 			button_id = button_id_illegal;
+			construct_map = invalid_construct_map;
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_illegal;
@@ -55,6 +67,7 @@ namespace
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<0, 0>;
 			button_id = button_id_illegal;
+			construct_map = invalid_construct_map;
 			ctrlname = "(system)";
 			controllers = 1;
 			set_core_controller = set_core_controller_illegal;
@@ -181,7 +194,6 @@ port_type::port_type(port_type_group& group, const std::string& iname, const std
 	size_t ssize) throw(std::bad_alloc)
 	: ingroup(group), name(iname), hname(_hname), pt_id(id), storage_size(ssize)
 {
-	priority = false;
 	add_registration(ingroup, name, *this);
 }
 
@@ -210,7 +222,6 @@ namespace
 	size_t dummy_offset = 0;
 	port_type* dummy_type = &porttype_basecontrol::get();
 	unsigned dummy_index = 0;
-	port_type_set::triplet dummy_triplet(0, 0, 0);
 	struct binding
 	{
 		std::vector<port_type*> types;
@@ -234,16 +245,22 @@ namespace
 
 port_type_set::port_type_set() throw()
 {
+	
 	port_offsets = &dummy_offset;
 	port_types = &dummy_type;
 	port_count = 1;
-	index_count = 1;
 	total_size = 1;
-	triple_port_m = 1;
-	triple_controller_m = 1;
-	indexes_size = 1;
-	indexes_tab = &dummy_index;
-	triples = &dummy_triplet;
+	_indices.resize(1);
+	_indices[0].valid = true;
+	_indices[0].port = 0;
+	_indices[0].controller = 0;
+	_indices[0].control = 0;
+	_indices[0].marks_nonlag = false;
+	
+	port_multiplier = 1;
+	controller_multiplier = 1;
+	indices_size = 1;
+	indices_tab = &dummy_index;
 }
 
 port_type_set& port_type_set::make(std::vector<class port_type*> types) throw(std::bad_alloc, std::runtime_error)
@@ -262,53 +279,46 @@ port_type_set& port_type_set::make(std::vector<class port_type*> types) throw(st
 
 port_type_set::port_type_set(std::vector<class port_type*> types)
 {
-	port_offsets = new size_t[types.size()];
-	port_types = new class port_type*[types.size()];
 	port_count = types.size();
-	size_t offset = 0;
-	unsigned maxcnt = 0;
-	index_count = 0;
-	triple_port_m = 1;
-	triple_controller_m = 1;
-	for(size_t i = 0; i < port_count; i++) {
+	//Verify legality of port types.
+	for(size_t i = 0; i < port_count; i++)
 		if(!types[i] || (i > 0 && !types[i]->legal(i - 1)))
 			throw std::runtime_error("Illegal port types");
+	//Count maximum number of controller indices to determine the controller multiplier.
+	controller_multiplier = 1;
+	for(size_t i = 0; i < port_count; i++)
 		for(unsigned j = 0; j < types[i]->controllers; j++)
-			triple_controller_m = max(triple_controller_m, (size_t)types[i]->controller_indices[j]);
-		maxcnt = max(maxcnt, types[i]->controllers);
-		index_count += types[i]->index_count;
-	}
-	triple_port_m = max(triple_port_m, maxcnt * triple_controller_m);
-	indexes_size = triple_port_m * types.size();
-	indexes_tab = new unsigned[indexes_size];
-	triples = new triplet[index_count];
-
-	for(size_t i = 0; i < indexes_size; i++)
-		indexes_tab[i] = 0xFFFFFFFFU;
-	
-	size_t ibase = 0;
-	for(size_t i = 0; i < types.size(); i++) {
+			controller_multiplier = max(controller_multiplier, (size_t)types[i]->controller_indices[j]);
+	//Count maximum number of controllers to determine the port multiplier.
+	port_multiplier = 1;
+	for(size_t i = 0; i < port_count; i++)
+		port_multiplier = max(port_multiplier, controller_multiplier * (size_t)types[i]->controllers);
+	//Query core about maps.
+	struct port_index_map control_map = types[0]->construct_map(types);
+	//Allocate the per-port tables.
+	port_offsets = new size_t[types.size()];
+	port_types = new class port_type*[types.size()];
+	//Determine the total size and offsets.
+	size_t offset = 0;
+	for(size_t i = 0; i < port_count; i++) {
 		port_offsets[i] = offset;
+		offset += types[i]->storage_size;
 		port_types[i] = types[i];
-		offset += port_types[i]->storage_size;
-		size_t idx = ibase;
-		for(unsigned k = 0; k < types[i]->index_count; k++) {
-			triples[ibase + k].port = i;
-			triples[ibase + k].controller = types[i]->controllers;
-			triples[ibase + k].control = 0;
-		}
-		for(unsigned j = 0; j < types[i]->controllers; j++) {
-			for(unsigned k = 0; k < types[i]->controller_indices[j]; k++) {
-				indexes_tab[i * triple_port_m + j * triple_controller_m + k] = idx + k;
-				triples[idx + k].port = i;
-				triples[idx + k].controller = j;
-				triples[idx + k].control = k;
-			}
-			idx += types[i]->controller_indices[j];
-		}
-		ibase += port_types[i]->index_count;
 	}
 	total_size = offset;
+	//Determine the index size and allocate it.
+	indices_size = port_multiplier * port_count;
+	indices_tab = new unsigned[indices_size];
+	for(size_t i = 0; i < indices_size; i++)
+		indices_tab[i] = 0xFFFFFFFFUL;
+	//Copy the index data (and reverse it).
+	controllers = control_map.logical_map;
+	_indices = control_map.indices;
+	for(size_t j = 0; j < _indices.size(); j++) {
+		auto& i = _indices[j];
+		if(i.valid)
+			indices_tab[i.port * port_multiplier + i.controller * controller_multiplier + i.control] = j;
+	}
 }
 
 short read_axis_value(const char* buf, size_t& idx) throw()

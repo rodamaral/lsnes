@@ -23,27 +23,10 @@ controller_state::controller_state() throw()
 
 std::pair<int,int> controller_state::lcid_to_pcid(unsigned lcid) throw()
 {
-	unsigned base = 0;
-	//Port 0 is system and never has logical controllers.
-	//First scan high-priority.
-	for(unsigned i = 1; i < types->ports(); i++) {
-		if(!types->port_type(i).controllers)
-			break;
-		if(base == lcid)
-			return std::make_pair(i, 0);
-		if(!types->port_type(i).priority && lcid < base + types->port_type(i).controllers)
-			return std::make_pair(i, lcid - base);
-		base += types->port_type(i).priority ? 1 : types->port_type(i).controllers;
-	}
-	//Then scan low-priority.
-	for(unsigned i = 1; i < types->ports(); i++) {
-		if(!types->port_type(i).controllers || !types->port_type(i).priority)
-			break;
-		if(lcid < base + types->port_type(i).controllers)
-			return std::make_pair(i, lcid - base - 1);
-		base += types->port_type(i).priority ? (types->port_type(i).controllers - 1) : 0;
-	}
-	return std::make_pair(-1, -1);
+	if(lcid >= types->number_of_controllers())
+		return std::make_pair(-1, -1);
+	auto k = types->lcid_to_pcid(lcid);
+	return std::make_pair(k.first, k.second);
 }
 
 std::pair<int,int> controller_state::acid_to_pcid(unsigned acid) throw()

@@ -50,20 +50,7 @@ namespace
 		controller_frame r = m.read_subframe(frame, subframe);
 		L.newtable();
 
-		L.pushnumber(0);
-		L.pushnumber(r.sync() ? 1 : 0);
-		L.settable(-3);
-		L.pushnumber(1);
-		L.pushnumber(r.axis3(0, 0, 1) ? 1 : 0);
-		L.settable(-3);
-		L.pushnumber(2);
-		L.pushnumber(r.axis3(0, 0, 2));
-		L.settable(-3);
-		L.pushnumber(3);
-		L.pushnumber(r.axis3(0, 0, 3));
-		L.settable(-3);
-
-		for(size_t i = 4; i < r.get_index_count(); i++) {
+		for(size_t i = 0; i < r.get_index_count(); i++) {
 			L.pushnumber(i);
 			L.pushnumber(r.axis2(i));
 			L.settable(-3);

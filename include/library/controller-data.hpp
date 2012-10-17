@@ -121,8 +121,10 @@ class port_type;
 
 /**
  * Index triple.
+ *
+ * Note: The index 0 has to be mapped to triple (0, 0, 0).
  */
-class port_index_triple
+struct port_index_triple
 {
 /**
  * If true, the other parameters are valid. Otherwise this index doesn't correspond to anything valid, but still
@@ -142,8 +144,24 @@ class port_index_triple
  */
 	unsigned control;
 /**
- * If true, poll on this triple forces non-lag unconditionally. If false, only non-neutral poll forces non-lag.
+ * Does neutral poll of this index count as non-lag frame (non-neutral polls always do)?
  */
+	bool marks_nonlag;
+};
+
+/**
+ * Controller index mappings
+ */
+struct port_index_map
+{
+/**
+ * The poll indices.
+ */
+	std::vector<port_index_triple> indices;
+/**
+ * The logical controller mappings.
+ */
+	std::vector<std::pair<unsigned, unsigned>> logical_map;
 };
 
 /**
@@ -211,6 +229,8 @@ private:
 	std::map<std::string, port_type*> types;
 	std::map<unsigned, port_type*> defaults;
 };
+
+class port_type_set;
 
 /**
  * Type of controller.
@@ -317,6 +337,13 @@ public:
  */
 	void (*set_core_controller)(unsigned port);
 /**
+ * Construct index map. Only called for port0.
+ *
+ * Parameter types: The port types to construct the map for.
+ * Returns: The index map.
+ */
+	struct port_index_map (*construct_map)(std::vector<port_type*> types);
+/**
  * Does the controller exist?
  *
  * Parameter controller: Controller number.
@@ -334,10 +361,6 @@ public:
  * Parameter controller: Controller number.
  */
 	bool is_mouse(unsigned controller) const throw();
-/**
- * Number of control indices claimed.
- */
-	unsigned index_count;
 /**
  * Number of control indices used per controller.
  */
@@ -363,10 +386,6 @@ public:
  */
 	unsigned pt_id;
 /**
- * Low-priority flag.
- */
-	bool priority;
-/**
  * Group this port is in.
  */
 	port_type_group& ingroup;
@@ -381,17 +400,6 @@ private:
 class port_type_set
 {
 public:
-/**
- * Controller index triplet.
- */
-	struct triplet
-	{
-		triplet() {}
-		triplet(unsigned p, unsigned c, unsigned i) : port(p), controller(c), control(i) {}
-		unsigned port;
-		unsigned controller;
-		unsigned control;
-	};
 /**
  * Create empty port type set.
  */
@@ -461,49 +469,77 @@ public:
  */
 	unsigned indices() const throw()
 	{
-		return index_count;
+		return _indices.size();
 	}
 /**
  * Look up the triplet for given control.
  *
  * Parameter index: The index to look up.
- * Returns: The triplet (may have out of range indices)
+ * Returns: The triplet (may not be valid).
  * Throws std::runtime_error: Index out of range.
  */
-	triplet index_to_triple(unsigned index) const throw(std::runtime_error)
+	port_index_triple index_to_triple(unsigned index) const throw(std::runtime_error)
 	{
-		if(index >= index_count)
+		if(index >= _indices.size())
 			throw std::runtime_error("Invalid index");
-		return triples[index];
+		return _indices[index];
 	}
 /**
  * Translate triplet into index.
  *
  * Parameter port: The port.
  * Parameter controller: The controller.
- * Parameter index: The control index.
- * Returns: The index.
- * Throws std::runtime_error: No such triplet.
+ * Parameter _index: The control index.
+ * Returns: The index, or 0xFFFFFFFFUL if specified triple is not valid.
  */
-	unsigned triple_to_index(unsigned port, unsigned controller, unsigned index) const throw(std::runtime_error)
+	unsigned triple_to_index(unsigned port, unsigned controller, unsigned _index) const throw(std::runtime_error)
 	{
-		size_t i = port * triple_port_m + controller * triple_controller_m + index;
-		if(i >= indexes_size || indexes_tab[i] == 0xFFFFFFFFUL)
+		size_t place = port * port_multiplier + controller * controller_multiplier + _index;
+		if(place >= indices_size)
 			return 0xFFFFFFFFUL;
-		return indexes_tab[i];
+		unsigned pindex = indices_tab[place];
+		if(pindex == 0xFFFFFFFFUL)
+			return 0xFFFFFFFFUL;
+		const struct port_index_triple& t = _indices[pindex];
+		if(!t.valid || t.port != port || t.controller != controller || t.control != _index)
+			return 0xFFFFFFFFUL;
+		return indices_tab[place];
+	}
+/**
+ * Return number of controllers connected.
+ *
+ * Returns: Number of controllers.
+ */
+	unsigned number_of_controllers() const throw()
+	{
+		return controllers.size();
+	}
+/**
+ * Lookup physical controller index corresponding to logical one.
+ *
+ * Parameter lcid: Logical controller id.
+ * Returns: Physical controller index (port, controller).
+ * Throws std::runtime_error: No such controller.
+ */
+	std::pair<unsigned, unsigned> lcid_to_pcid(unsigned lcid) const throw(std::runtime_error)
+	{
+		if(lcid >= controllers.size())
+			throw std::runtime_error("Bad logical controller");
+		return controllers[lcid];
 	}
 private:
 	port_type_set(std::vector<class port_type*> types);
 	size_t* port_offsets;
 	class port_type** port_types;
 	unsigned port_count;
-	unsigned index_count;
 	size_t total_size;
-	size_t triple_port_m;
-	size_t triple_controller_m;
-	size_t indexes_size;
-	unsigned* indexes_tab;
-	triplet* triples;
+	std::vector<port_index_triple> _indices;
+	std::vector<std::pair<unsigned, unsigned>> controllers;
+
+	size_t port_multiplier;
+	size_t controller_multiplier;
+	size_t indices_size;
+	unsigned* indices_tab;
 };
 
 /**
@@ -819,6 +855,36 @@ public:
 		return types->size();
 	}
 /**
+ * Get "marks nonlag even if neutral" flag for specified index.
+ *
+ * Parameter index: The index.
+ * Returns: The flag.
+ */
+	bool marks_nonlag(unsigned index) throw()
+	{
+		try {
+			types->index_to_triple(index).marks_nonlag;
+		} catch(...) {
+			return false;
+		}
+	}
+/**
+ * Get "marks nonlag even if neutral" flag for specified triplet.
+ *
+ * Parameter port: The port
+ * Parameter controller: The controller.
+ * Parameter index: The index.
+ * Returns: The flag.
+ */
+	bool marks_nonlag(unsigned port, unsigned controller, unsigned index) throw()
+	{
+		try {
+			types->index_to_triple(types->triple_to_index(port, controller, index)).marks_nonlag;
+		} catch(...) {
+			return false;
+		}
+	}
+/**
  * Set axis/button value.
  *
  * Parameter port: The port.
@@ -840,7 +906,7 @@ public:
  */
 	void axis2(unsigned idx, short x) throw()
 	{
-		port_type_set::triplet t = types->index_to_triple(idx);
+		port_index_triple t = types->index_to_triple(idx);
 		axis3(t.port, t.controller, t.control, x);
 	}
 /**
@@ -866,7 +932,7 @@ public:
  */
 	short axis2(unsigned idx) throw()
 	{
-		port_type_set::triplet t = types->index_to_triple(idx);
+		port_index_triple t = types->index_to_triple(idx);
 		return axis3(t.port, t.controller, t.control);
 	}
 /**

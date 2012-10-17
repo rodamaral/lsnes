@@ -243,6 +243,8 @@ namespace
 	{
 	}
 
+	struct port_index_map build_indices(std::vector<port_type*> types);
+
 	struct porttype_system : public port_type
 	{
 		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 1)
@@ -255,9 +257,9 @@ namespace
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;
+			construct_map = build_indices;
 			ctrlname = "";
 			controllers = 1;
-			index_count = 4;
 			controller_indices = index_count_table_sys;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
@@ -279,13 +281,29 @@ namespace
 			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
-			index_count = 96;	//Backward compatiblity fun.
 			controller_indices = index_count_table;
 			set_core_controller = _set_core_controller;
 			core_portgroup.set_default(1, *this);
 		}
-
 	} gamepad;
+
+	struct port_index_map build_indices(std::vector<port_type*> types)
+	{
+		struct port_index_map i;
+		i.indices.resize(100);
+		for(unsigned j = 0; j < 100; j++) {
+			i.indices[j].valid = (j < 12);
+			i.indices[j].port = (j < 4) ? 0 : 1;
+			i.indices[j].controller = 0;
+			i.indices[j].control = (j < 4) ? j : (j - 4);;
+			i.indices[j].marks_nonlag = (j >= 4);
+		}		
+		i.logical_map.resize(1);
+		i.logical_map[0] = std::make_pair(1, 0);
+		return i;
+	}
+	
+	
 }
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)

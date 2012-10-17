@@ -599,6 +599,8 @@ namespace
 		return len;
 	}
 
+	struct port_index_map build_indices(std::vector<port_type*> types);
+
 	struct porttype_system : public port_type
 	{
 		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 5)
@@ -611,9 +613,9 @@ namespace
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;
+			construct_map = build_indices;
 			ctrlname = "";
 			controllers = 1;
-			index_count = 4;
 			controller_indices = index_count_table_sys;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
@@ -634,7 +636,6 @@ namespace
 			button_id = get_button_id_gamepad;
 			ctrlname = "gamepad";
 			controllers = 1;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
 			core_portgroup.set_default(1, *this);
@@ -656,7 +657,6 @@ namespace
 			button_id = get_button_id_justifier;
 			ctrlname = "justifier";
 			controllers = 1;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIER, true>;
 		}
@@ -677,7 +677,6 @@ namespace
 			button_id = get_button_id_justifiers;
 			ctrlname = "justifier";
 			controllers = 2;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIERS, true>;
 		}
@@ -697,7 +696,6 @@ namespace
 			button_id = get_button_id_mouse;
 			ctrlname = "mouse";
 			controllers = 1;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MOUSE, false>;
 		}
@@ -718,8 +716,6 @@ namespace
 			button_id = get_button_id_multitap;
 			ctrlname = "multitap";
 			controllers = 4;
-			index_count = 48;
-			priority = true;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
@@ -739,7 +735,6 @@ namespace
 			button_id = get_button_id_none;
 			ctrlname = "";
 			controllers = 0;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_NONE, false>;
 			core_portgroup.set_default(2, *this);
@@ -761,11 +756,66 @@ namespace
 			button_id = get_button_id_superscope;
 			ctrlname = "superscope";
 			controllers = 1;
-			index_count = 48;
 			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_SUPER_SCOPE, true>;
 		}
 	} superscope;
+
+	template<unsigned x, unsigned y>
+	void fill_map_partial(std::vector<port_index_triple>& map, unsigned port)
+	{
+		unsigned sidx = port ? (port * 48 - 44) : 0;
+		for(unsigned i = 0; i < 48; i++) {
+			map[i + sidx].valid = (i / 12 < x) && (i % 12 < y);
+			map[i + sidx].port = port;
+			map[i + sidx].controller = i / 12;
+			map[i + sidx].control = i % 12;
+			map[i + sidx].marks_nonlag = (port != 0);
+		}
+	}
+
+	void fill_map_port(std::vector<port_index_triple>& map, port_type& ptype, unsigned port)
+	{
+		if(&ptype == &psystem)
+			fill_map_partial<1, 4>(map, port);
+		if(&ptype == &none)
+			fill_map_partial<0, 0>(map, port);
+		if(&ptype == &gamepad)
+			fill_map_partial<1, 12>(map, port);
+		if(&ptype == &multitap)
+			fill_map_partial<4, 12>(map, port);
+		if(&ptype == &mouse)
+			fill_map_partial<1, 4>(map, port);
+		if(&ptype == &superscope)
+			fill_map_partial<1, 6>(map, port);
+		if(&ptype == &justifier)
+			fill_map_partial<1, 4>(map, port);
+		if(&ptype == &justifiers)
+			fill_map_partial<2, 4>(map, port);
+	}
+	
+	struct port_index_map build_indices(std::vector<port_type*> types)
+	{
+		struct port_index_map i;
+		i.indices.resize(100);
+		fill_map_port(i.indices, *types[0], 0);
+		fill_map_port(i.indices, *types[1], 1);
+		fill_map_port(i.indices, *types[2], 2);
+		i.logical_map.resize(types[1]->controllers + types[2]->controllers);
+		if(types[1] == &multitap) {
+			i.logical_map[0] = std::make_pair(1, 0);
+			for(size_t j = 0; j < types[2]->controllers; j++)
+				i.logical_map[j + 1] = std::make_pair(2U, j);
+			for(size_t j = 1; j < types[1]->controllers; j++)
+				i.logical_map[j + types[2]->controllers]  = std::make_pair(1U, j);
+		} else {
+			for(size_t j = 0; j < types[1]->controllers; j++)
+				i.logical_map[j]  = std::make_pair(1, j);
+			for(size_t j = 0; j < types[2]->controllers; j++)
+				i.logical_map[j + types[1]->controllers]  = std::make_pair(2U, j);
+		}
+		return i;
+	}
 
 	my_interface my_interface_obj;
 	SNES::Interface* old;
