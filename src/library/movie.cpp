@@ -221,7 +221,6 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 		uint32_t changes = count_changes(current_frame_first_subframe);
 		uint32_t polls = pollcounters.increment_polls(port, controller, ctrl);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
-		//debuglog << "Frame=" << current_frame << " Subframe=" << polls << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe + index](controlindex) << " fetchrow=" << current_frame_first_subframe + index << std::endl << std::flush;
 		return movie_data[current_frame_first_subframe + index].axis3(port, controller, ctrl);
 	} else {
 		//Readwrite mode.
@@ -235,7 +234,6 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 			//current_frame_first_subframe should be movie_data.size(), so it is right.
 			pollcounters.increment_polls(port, controller, ctrl);
 			frames_in_movie++;
-			//debuglog << "Frame=" << current_frame << " Subframe=" << (pollcounters[controlindex] - 1) << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe](controlindex) << " fetchrow=" << current_frame_first_subframe << std::endl << std::flush;
 			return movie_data[current_frame_first_subframe].axis3(port, controller, ctrl);
 		}
 		short new_value = current_controls.axis3(port, controller, ctrl);
@@ -258,7 +256,6 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 				new_value);
 		}
 		pollcounters.increment_polls(port, controller, ctrl);
-		//debuglog << "Frame=" << current_frame << " Subframe=" << (pollcounters[controlindex] - 1) << " control=" << controlindex << " value=" << new_value << " fetchrow=" << fetchrow << std::endl << std::flush;
 		return new_value;
 	}
 }
@@ -314,7 +311,8 @@ void movie::commit_reset(long delay) throw(std::bad_alloc)
 		//Current_frame_first_subframe is correct.
 	}
 	//Also set poll counters on reset cycles to avoid special cases elsewhere.
-	pollcounters.increment_polls(0, 0, 1);
+	if(!pollcounters.get_polls(0, 0, 1))
+		pollcounters.increment_polls(0, 0, 1);
 	//Current frame is always last in rw mode.
 	movie_data[current_frame_first_subframe].axis3(0, 0, 1, 1);
 	movie_data[current_frame_first_subframe].axis3(0, 0, 2, delay / 10000);
@@ -360,14 +358,8 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 
 		movie_data.resize(max_readable_subframes);
 		next_frame_first_subframe = max_readable_subframes;
-		//Propagate RESET. This always has poll count of 0 or 1, which always behaves like 1.
-		for(uint64_t j = current_frame_first_subframe + 1; j < next_frame_first_subframe; j++) {
-			movie_data[j].axis3(0, 0, 1, movie_data[current_frame_first_subframe].axis3(0, 0, 1));
-			movie_data[j].axis3(0, 0, 2, movie_data[current_frame_first_subframe].axis3(0, 0, 2));
-			movie_data[j].axis3(0, 0, 3, movie_data[current_frame_first_subframe].axis3(0, 0, 3));
-		}
-		//Then the other buttons.
-		for(size_t i = 4; i < movie_data.get_types().indices(); i++) {
+		//Propagate buttons. The only one that needs special handling is sync flag (index 0, tuple 0,0,0).
+		for(size_t i = 1; i < movie_data.get_types().indices(); i++) {
 			uint32_t polls = pollcounters.get_polls(i);
 			polls = polls ? polls : 1;
 			for(uint64_t j = current_frame_first_subframe + polls; j < next_frame_first_subframe; j++)
@@ -417,7 +409,8 @@ long movie::get_reset_status() throw()
 	if(!movie_data[current_frame_first_subframe].axis3(0, 0, 1))
 		return -1;	//Not a reset.
 	//Also set poll counters on reset cycles to avoid special cases elsewhere.
-	pollcounters.increment_polls(0, 0, 1);
+	if(!pollcounters.get_polls(0, 0, 1))
+		pollcounters.increment_polls(0, 0, 1);
 	long hi = movie_data[current_frame_first_subframe].axis3(0, 0, 2);
 	long lo = movie_data[current_frame_first_subframe].axis3(0, 0, 3);
 	return hi * 10000 + lo;
