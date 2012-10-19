@@ -33,10 +33,10 @@
 #define LOGICAL_BUTTON_START 7
 
 const char* button_symbols = "ABsSrlud";
-const char* controller_names[] = {"(system)", "gamepad"};
+const char* controller_names[] = {"(system)"};
 
 port_type_group core_portgroup;
-unsigned core_userports = 1;
+unsigned core_userports = 0;
 extern const bool core_supports_reset = true;
 extern const bool core_supports_dreset = false;
 
@@ -95,7 +95,7 @@ namespace
 		{
 			unsigned v = 0;
 			for(unsigned i = 0; i < 8; i++) {
-				if(ecore_callbacks->get_input(1, 0, i))
+				if(ecore_callbacks->get_input(0, 1, i))
 					v |= (1 << i);
 			}
 			return v;
@@ -173,9 +173,9 @@ namespace
 	
 	void _set_core_controller(unsigned port) throw() {}
 
-	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
+	int get_button_id(unsigned controller, unsigned lbid) throw()
 	{
-		if(controller)
+		if(controller != 1)
 			return -1;
 		if(lbid == LOGICAL_BUTTON_A)		return 0;
 		if(lbid == LOGICAL_BUTTON_B)		return 1;
@@ -189,55 +189,58 @@ namespace
 	}
 
 
-	int get_button_id_none(unsigned controller, unsigned lbid) throw()
-	{
-		return -1;
-	}
-
 	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
 	{
-		if(idx)
-			return;
-		if(ctrl < 2)
+		if(idx < 2 && ctrl < 8)
 			if(x)
-				buffer[0] |= (1 << ctrl);
+				buffer[idx] |= (1 << ctrl);
 			else
-				buffer[0] &= ~(1 << ctrl);
+				buffer[idx] &= ~(1 << ctrl);
 	}
 
 	short system_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
 	{
-		if(idx)
-			return 0;
-		if(ctrl < 2)
-			return (buffer[0] >> ctrl) ? 1 : 0;
-		return 0;
+		short y = 0;
+		if(idx < 2 && ctrl < 8)
+			y = ((buffer[idx] >> ctrl) & 1) ? 1 : 0;
+		return y;
 	}
 
 	size_t system_deserialize(unsigned char* buffer, const char* textbuf)
 	{
-		memset(buffer, 0, 1);
+		memset(buffer, 0, 2);
 		size_t ptr = 0;
 		if(read_button_value(textbuf, ptr))
 			buffer[0] |= 1;
 		if(read_button_value(textbuf, ptr))
 			buffer[0] |= 2;
+		skip_rest_of_field(textbuf, ptr, true);
+		for(unsigned i = 0; i < 8; i++)
+			if(read_button_value(textbuf, ptr))
+				buffer[1] |= (1 << i);
 		skip_rest_of_field(textbuf, ptr, false);
 		return ptr;
 	}
 
 	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
 	{
-		if(idx)
+		if(idx > 1)
 			sprintf(buf, "");
-		else
+		else if(idx == 1) {
+			for(unsigned i = 0; i < 8; i++)
+				buf[i] = ((buffer[1] & (1 << i)) != 0) ? button_symbols[i] : '-';
+			buf[8] = '\0';
+		} else
 			sprintf(buf, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
 	}
 
 	size_t system_serialize(const unsigned char* buffer, char* textbuf)
 	{
 		char tmp[128];
-		sprintf(tmp, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+		sprintf(tmp, "%c%c|", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+		for(unsigned i = 0; i < 8; i++)
+			tmp[i + 3] = ((buffer[1] & (1 << i)) != 0) ? button_symbols[i] : '.';
+		tmp[11] = 0;
 		size_t len = strlen(tmp);
 		memcpy(textbuf, tmp, len);
 		return len;
@@ -247,11 +250,21 @@ namespace
 	{
 	}
 
+	unsigned _used_indices(unsigned c)
+	{
+		return c ? ((c == 1) ? 8 : 0) : 2;
+	}
+
+	const char* _controller_name(unsigned c)
+	{
+		return c ? ((c == 1) ? "gamepad" : NULL) : "(system)";
+	}
+
 	struct port_index_map build_indices(std::vector<port_type*> types);
 
 	struct porttype_system : public port_type
 	{
-		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 1)
+		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 2)
 		{
 			write = system_write;
 			read = system_read;
@@ -259,37 +272,16 @@ namespace
 			serialize = system_serialize;
 			deserialize = system_deserialize;
 			legal = generic_port_legal<0>;
-			deviceflags = generic_port_deviceflags<1, 1>;
-			button_id = get_button_id_none;
+			deviceflags = generic_port_deviceflags<2, 1>;
+			button_id = get_button_id;
 			construct_map = build_indices;
-			used_indices = generic_used_indices<1, 2>;
-			controller_name = generic_controller_name<1, 0>;
-			controllers = 1;
+			used_indices = _used_indices;
+			controller_name = _controller_name;
+			controllers = 2;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
 		}
 	} psystem;
-
-	struct porttype_gamepad : public port_type
-	{
-		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1,
-			generic_port_size<1, 0, 8>())
-		{
-			write = generic_port_write<1, 0, 8>;
-			read = generic_port_read<1, 0, 8>;
-			display = generic_port_display<1, 0, 8, 0>;
-			serialize = generic_port_serialize<1, 0, 8, 0>;
-			deserialize = generic_port_deserialize<1, 0, 8>;
-			legal = generic_port_legal<1>;
-			deviceflags = generic_port_deviceflags<1, 1>;
-			button_id = get_button_id_gamepad;
-			used_indices = generic_used_indices<1, 8>;
-			controller_name = generic_controller_name<1, 1>;
-			controllers = 1;
-			set_core_controller = _set_core_controller;
-			core_portgroup.set_default(1, *this);
-		}
-	} gamepad;
 
 	struct port_index_map build_indices(std::vector<port_type*> types)
 	{
@@ -297,19 +289,17 @@ namespace
 		i.indices.resize(100);
 		for(unsigned j = 0; j < 100; j++) {
 			i.indices[j].valid = (j < 12) && j != 2 && j != 3;
-			i.indices[j].port = (j < 2) ? 0 : 1;
-			i.indices[j].controller = 0;
+			i.indices[j].port = 0;
+			i.indices[j].controller = (j < 4) ? 0 : 1;
 			i.indices[j].control = (j < 4) ? j : (j - 4);;
 			i.indices[j].marks_nonlag = (j >= 4);
 		}		
 		i.logical_map.resize(1);
-		i.logical_map[0] = std::make_pair(1, 0);
+		i.logical_map[0] = std::make_pair(0, 1);
 		i.pcid_map.resize(1);
-		i.pcid_map[0] = std::make_pair(1, 0);
+		i.pcid_map[0] = std::make_pair(0, 1);
 		return i;
 	}
-	
-	
 }
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
