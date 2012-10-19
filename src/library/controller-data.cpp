@@ -41,9 +41,10 @@ namespace
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<0xFFFFFFFFU>;
 			deviceflags = generic_port_deviceflags<0, 0>;
+			used_indices = generic_used_indices<0, 0>;
+			controller_name = generic_controller_name<0, 0>;
 			button_id = button_id_illegal;
 			construct_map = invalid_construct_map;
-			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_illegal;
 		}
@@ -68,7 +69,8 @@ namespace
 			deviceflags = generic_port_deviceflags<0, 0>;
 			button_id = button_id_illegal;
 			construct_map = invalid_construct_map;
-			ctrlname = "(system)";
+			used_indices = generic_used_indices<1, 1>;
+			controller_name = generic_controller_name<1, 0>;
 			controllers = 1;
 			set_core_controller = set_core_controller_illegal;
 		}
@@ -288,7 +290,7 @@ port_type_set::port_type_set(std::vector<class port_type*> types)
 	controller_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
 		for(unsigned j = 0; j < types[i]->controllers; j++)
-			controller_multiplier = max(controller_multiplier, (size_t)types[i]->controller_indices[j]);
+			controller_multiplier = max(controller_multiplier, (size_t)types[i]->used_indices(j));
 	//Count maximum number of controllers to determine the port multiplier.
 	port_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)

@@ -57,6 +57,7 @@
 #define LOGICAL_BUTTON_PAUSE 15
 
 const char* button_symbols = "BYsSudlrAXLRTSTCUPFR";
+const char* controller_names[] = {"(system)", "gamepad", "mouse", "superscope", "justifier"};
 
 port_type_group core_portgroup;
 unsigned core_userports = 2;
@@ -78,8 +79,6 @@ namespace
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
 	size_t soundbuf_fill = 0;
-	unsigned index_count_table[] = {12, 12, 12, 12};
-	unsigned index_count_table_sys[] = {4};
 
 	void init_norom_frame()
 	{
@@ -626,9 +625,9 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;
 			construct_map = build_indices;
-			ctrlname = "";
+			used_indices = generic_used_indices<1, 4>;
+			controller_name = generic_controller_name<1, 0>;
 			controllers = 1;
-			controller_indices = index_count_table_sys;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
 		}
@@ -646,9 +645,9 @@ namespace
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_gamepad;
-			ctrlname = "gamepad";
+			used_indices = generic_used_indices<1, 12>;
+			controller_name = generic_controller_name<1, 1>;
 			controllers = 1;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
 			core_portgroup.set_default(1, *this);
 		}
@@ -667,9 +666,9 @@ namespace
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<1, 3>;
 			button_id = get_button_id_justifier;
-			ctrlname = "justifier";
+			used_indices = generic_used_indices<1, 4>;
+			controller_name = generic_controller_name<1, 4>;
 			controllers = 1;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIER, true>;
 		}
 	} justifier;
@@ -687,9 +686,9 @@ namespace
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<2, 3>;
 			button_id = get_button_id_justifiers;
-			ctrlname = "justifier";
+			used_indices = generic_used_indices<2, 4>;
+			controller_name = generic_controller_name<2, 4>;
 			controllers = 2;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIERS, true>;
 		}
 	} justifiers;
@@ -706,9 +705,9 @@ namespace
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 5>;
 			button_id = get_button_id_mouse;
-			ctrlname = "mouse";
+			used_indices = generic_used_indices<1, 4>;
+			controller_name = generic_controller_name<1, 2>;
 			controllers = 1;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MOUSE, false>;
 		}
 	} mouse;
@@ -726,9 +725,9 @@ namespace
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
 			button_id = get_button_id_multitap;
-			ctrlname = "multitap";
+			used_indices = generic_used_indices<4, 12>;
+			controller_name = generic_controller_name<4, 1>;
 			controllers = 4;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
 	} multitap;
@@ -745,9 +744,9 @@ namespace
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<0, 0>;
 			button_id = get_button_id_none;
-			ctrlname = "";
+			used_indices = generic_used_indices<0, 0>;
+			controller_name = generic_controller_name<0, 1>;
 			controllers = 0;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_NONE, false>;
 			core_portgroup.set_default(2, *this);
 		}
@@ -766,9 +765,9 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;
 			button_id = get_button_id_superscope;
-			ctrlname = "superscope";
+			used_indices = generic_used_indices<1, 6>;
+			controller_name = generic_controller_name<1, 3>;
 			controllers = 1;
-			controller_indices = index_count_table;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_SUPER_SCOPE, true>;
 		}
 	} superscope;

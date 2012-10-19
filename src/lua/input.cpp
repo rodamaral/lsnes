@@ -28,13 +28,16 @@ namespace
 	{
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		const port_type& p = f.get_port_type(port);
-		if(p.controllers <= controller)
+		if(port >= f.get_port_count()) {
 			L.pushnil();
-		else if(p.ctrlname == "")
+			return 1;
+		}
+		const port_type& p = f.get_port_type(port);
+		const char* name = p.controller_name(controller);
+		if(!name)
 			L.pushnil();
 		else
-			L.pushstring(p.ctrlname.c_str());
+			L.pushstring(name);
 		return 1;
 	}
 
@@ -48,7 +51,7 @@ namespace
 		const port_type& pt = lua_input_controllerdata->get_port_type(port);
 		if(controller >= pt.controllers)
 			return 0;
-		for(unsigned i = 0; i < pt.controller_indices[controller]; i++) {
+		for(unsigned i = 0; i < pt.used_indices(controller); i++) {
 			val = (base >> i) & 1;
 			L.get_numeric_argument<short>(i + base, val, fname);
 			lua_input_controllerdata->axis3(port, controller, i, val);
@@ -66,13 +69,13 @@ namespace
 		if(controller >= pt.controllers)
 			return 0;
 		uint64_t fret = 0;
-		for(unsigned i = 0; i < pt.controller_indices[controller]; i++)
+		for(unsigned i = 0; i < pt.used_indices(controller); i++)
 			if(lua_input_controllerdata->axis3(port, controller, i))
 				fret |= (1ULL << i);
 		L.pushnumber(fret);
-		for(unsigned i = 0; i < pt.controller_indices[controller]; i++)
+		for(unsigned i = 0; i < pt.used_indices(controller); i++)
 			L.pushnumber(lua_input_controllerdata->axis3(port, controller, i));
-		return pt.controller_indices[controller] + 1;
+		return pt.used_indices(controller) + 1;
 	}
 
 	function_ptr_luafun iset(LS, "input.set", [](lua_state& L, const std::string& fname) -> int {
@@ -133,7 +136,9 @@ namespace
 
 	function_ptr_luafun igett(LS, "input.controllertype", [](lua_state& L, const std::string& fname) -> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		auto& m = get_movie();
+		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
+		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
 	});
 

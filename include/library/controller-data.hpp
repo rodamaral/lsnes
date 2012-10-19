@@ -341,6 +341,20 @@ public:
  */
 	void (*set_core_controller)(unsigned port);
 /**
+ * Get number of used control indices on controller.
+ *
+ * Parameter controller: Number of controller.
+ * Returns: Number of used control indices.
+ */
+	unsigned (*used_indices)(unsigned controller);
+/**
+ * Get name of controller type on controller.
+ *
+ * Parameter controller: Number of controller.
+ * Returns: The name of controller.
+ */
+	const char* (*controller_name)(unsigned controller);
+/**
  * Construct index map. Only called for port0.
  *
  * Parameter types: The port types to construct the map for.
@@ -366,10 +380,6 @@ public:
  */
 	bool is_mouse(unsigned controller) const throw();
 /**
- * Number of control indices used per controller.
- */
-	unsigned* controller_indices;
-/**
  * Human-readable name.
  */
 	std::string hname;
@@ -381,10 +391,6 @@ public:
  * Name of port type.
  */
 	std::string name;
-/**
- * Name of controller.
- */
-	std::string ctrlname;
 /**
  * Id of the port.
  */
@@ -913,7 +919,7 @@ public:
  * Set axis/button value.
  *
  * Parameter port: The port.
- * Parameter controller: The controllre
+ * Parameter controller: The controller
  * Parameter ctrl: The control id.
  * Parameter x: The new value.
  */
@@ -1320,6 +1326,7 @@ inline short generic_port_read(const unsigned char* buffer, unsigned idx, unsign
 }
 
 extern const char* button_symbols;
+extern const char* controller_names[];
 
 /**
  * Generic port display function.
@@ -1342,6 +1349,28 @@ inline void generic_port_display(const unsigned char* buffer, unsigned idx, char
 		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '-';
 	}
 	buf[ptr] = '\0';
+}
+
+/**
+ * Generic port control index function.
+ */
+template<unsigned controllers, unsigned indices>
+inline unsigned generic_used_indices(unsigned controller)
+{
+	if(controller >= controllers)
+		return 0;
+	return indices;
+}
+
+/**
+ * Generic port controller name function.
+ */
+template<unsigned controllers, unsigned nameindex>
+inline const char* generic_controller_name(unsigned controller)
+{
+	if(controller >= controllers)
+		return NULL;
+	return controller_names[nameindex];
 }
 
 /**

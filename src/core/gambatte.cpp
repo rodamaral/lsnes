@@ -33,6 +33,8 @@
 #define LOGICAL_BUTTON_START 7
 
 const char* button_symbols = "ABsSrlud";
+const char* controller_names[] = {"(system)", "gamepad"};
+
 port_type_group core_portgroup;
 unsigned core_userports = 1;
 extern const bool core_supports_reset = true;
@@ -65,8 +67,6 @@ namespace
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
-	unsigned index_count_table[] = {12, 12, 12, 12};
-	unsigned index_count_table_sys[] = {4};
 
 	void init_norom_framebuffer()
 	{
@@ -262,9 +262,9 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_none;
 			construct_map = build_indices;
-			ctrlname = "";
+			used_indices = generic_used_indices<1, 2>;
+			controller_name = generic_controller_name<1, 0>;
 			controllers = 1;
-			controller_indices = index_count_table_sys;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
 		}
@@ -283,9 +283,9 @@ namespace
 			legal = generic_port_legal<1>;
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_gamepad;
-			ctrlname = "gamepad";
+			used_indices = generic_used_indices<1, 8>;
+			controller_name = generic_controller_name<1, 1>;
 			controllers = 1;
-			controller_indices = index_count_table;
 			set_core_controller = _set_core_controller;
 			core_portgroup.set_default(1, *this);
 		}
