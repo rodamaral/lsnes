@@ -214,4 +214,63 @@ private:
 	std::vector<controller_frame> _autofire;
 };
 
+extern const char* button_symbols;
+extern const char* controller_names[];
+
+/**
+ * Generic port display function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
+inline void generic_port_display(const unsigned char* buffer, unsigned idx, char* buf) throw()
+{
+	if(idx > controllers) {
+		buf[0] = '\0';
+		return;
+	}
+	size_t ptr = 0;
+	for(unsigned i = 0; i < analog_axis; i++) {
+		uint16_t a = buffer[2 * idx * analog_axis + 2 * i];
+		uint16_t b = buffer[2 * idx * analog_axis + 2 * i + 1];
+		ptr += sprintf(buf + ptr, "%i ", static_cast<short>(256 * a + b));
+	}
+	for(unsigned i = 0; i < buttons; i++) {
+		size_t bit = 16 * controllers * analog_axis + idx * buttons + i;
+		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '-';
+	}
+	buf[ptr] = '\0';
+}
+
+/**
+ * Generic port controller name function.
+ */
+template<unsigned controllers, unsigned nameindex>
+inline const char* generic_controller_name(unsigned controller)
+{
+	if(controller >= controllers)
+		return NULL;
+	return controller_names[nameindex];
+}
+
+/**
+ * Generic port serialization function.
+ */
+template<unsigned controllers, unsigned analog_axis, unsigned buttons, unsigned sidx>
+inline size_t generic_port_serialize(const unsigned char* buffer, char* textbuf) throw()
+{
+	size_t ptr = 0;
+	for(unsigned j = 0; j < controllers; j++) {
+		textbuf[ptr++] = '|';
+		for(unsigned i = 0; i < buttons; i++) {
+			size_t bit = 16 * controllers * analog_axis + j * buttons + i;
+			textbuf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? button_symbols[i + sidx] : '.';
+		}
+		for(unsigned i = 0; i < analog_axis; i++) {
+			uint16_t a = buffer[2 * j * analog_axis + 2 * i];
+			uint16_t b = buffer[2 * j * analog_axis + 2 * i + 1];
+			ptr += sprintf(textbuf + ptr, " %i", static_cast<short>(256 * a + b));
+		}
+	}
+	return ptr;
+}
+
 #endif

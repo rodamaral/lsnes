@@ -28,7 +28,32 @@ namespace
 		i.indices[0].control = 0;
 		return i;
 	}
-	
+
+	inline size_t invalid_serialize(const unsigned char* buffer, char* textbuf) throw()
+	{
+		return 0;
+	}
+
+	inline void invalid_display(const unsigned char* buffer, unsigned idx, char* buf)
+	{
+		*buf = 0;
+	}
+
+	inline void basecontrol_display(const unsigned char* buffer, unsigned idx, char* buf)
+	{
+		if(idx) 
+			*buf = 0;
+		else {
+			buf[0] = (buffer[0] & 1) ? 'F' : '-';
+			buf[1] = 0;
+		}
+	}
+
+	inline const char* invalid_controller_name(unsigned c)
+	{
+		return c ? NULL : "(system)";
+	}
+
 	struct port_type_group invalid_group;
 	struct porttype_invalid : public port_type
 	{
@@ -36,13 +61,13 @@ namespace
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
-			display = generic_port_display<0, 0, 0, 0>;
-			serialize = generic_port_serialize<0, 0, 0, 0>;
+			display = invalid_display;
+			serialize = invalid_serialize;
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<0xFFFFFFFFU>;
 			deviceflags = generic_port_deviceflags<0, 0>;
 			used_indices = generic_used_indices<0, 0>;
-			controller_name = generic_controller_name<0, 0>;
+			controller_name = invalid_controller_name;
 			button_id = button_id_illegal;
 			construct_map = invalid_construct_map;
 			controllers = 0;
@@ -62,7 +87,7 @@ namespace
 		{
 			write = generic_port_write<1, 0, 1>;
 			read = generic_port_read<1, 0, 1>;
-			display = generic_port_display<0, 0, 0, 0>;
+			display = basecontrol_display;
 			serialize = basecontrol_serialize;
 			deserialize = generic_port_deserialize<1, 0, 1>;
 			legal = generic_port_legal<0>;
@@ -70,7 +95,7 @@ namespace
 			button_id = button_id_illegal;
 			construct_map = invalid_construct_map;
 			used_indices = generic_used_indices<1, 1>;
-			controller_name = generic_controller_name<1, 0>;
+			controller_name = invalid_controller_name;
 			controllers = 1;
 			set_core_controller = set_core_controller_illegal;
 		}
