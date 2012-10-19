@@ -313,6 +313,7 @@ port_type_set::port_type_set(std::vector<class port_type*> types)
 		indices_tab[i] = 0xFFFFFFFFUL;
 	//Copy the index data (and reverse it).
 	controllers = control_map.logical_map;
+	legacy_pcids = control_map.pcid_map;
 	_indices = control_map.indices;
 	for(size_t j = 0; j < _indices.size(); j++) {
 		auto& i = _indices[j];

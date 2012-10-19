@@ -79,7 +79,8 @@ namespace
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned index = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		short value = L.get_numeric_argument<short>(3, fname.c_str());
-		return input_set(L, controller / 4 + 1, controller % 4, index, value);
+		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		return input_set(L, _controller.first, _controller.second, index, value);
 	});
 
 	function_ptr_luafun iset2(LS, "input.set2", [](lua_state& L, const std::string& fname) -> int {
@@ -93,7 +94,8 @@ namespace
 	function_ptr_luafun iget(LS, "input.get", [](lua_state& L, const std::string& fname) -> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned index = L.get_numeric_argument<unsigned>(2, fname.c_str());
-		return input_get(L, controller / 4 + 1, controller % 4, index);
+		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		return input_get(L, _controller.first, _controller.second, index);
 	});
 
 	function_ptr_luafun iget2(LS, "input.get2", [](lua_state& L, const std::string& fname) -> int {
@@ -106,7 +108,8 @@ namespace
 	function_ptr_luafun iseta(LS, "input.seta", [](lua_state& L, const std::string& fname) -> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		uint64_t base = L.get_numeric_argument<uint64_t>(2, fname.c_str());
-		return input_seta(L, controller / 4 + 1, controller % 4, 3, fname.c_str());
+		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		return input_seta(L, _controller.first, _controller.second, 3, fname.c_str());
 	});
 
 	function_ptr_luafun iseta2(LS, "input.seta2", [](lua_state& L, const std::string& fname) -> int {
@@ -118,7 +121,8 @@ namespace
 
 	function_ptr_luafun igeta(LS, "input.geta", [](lua_state& L, const std::string& fname) -> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		return input_geta(L, controller / 4 + 1, controller % 4);
+		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		return input_geta(L, _controller.first, _controller.second);
 	});
 
 	function_ptr_luafun igeta2(LS, "input.geta2", [](lua_state& L, const std::string& fname) -> int {
@@ -129,7 +133,8 @@ namespace
 
 	function_ptr_luafun igett(LS, "input.controllertype", [](lua_state& L, const std::string& fname) -> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		return input_controllertype(L, controller / 4 + 1, controller % 4);
+		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
+		return input_controllertype(L, _controller.first, _controller.second);
 	});
 
 	function_ptr_luafun igett2(LS, "input.controllertype2", [](lua_state& L, const std::string& fname) -> int {
@@ -259,7 +264,21 @@ namespace
 		auto pcid = controls.lcid_to_pcid(lcid - 1);
 		if(pcid.first < 0)
 			return 0;
-		L.pushnumber((pcid.first - 1) * 4 + pcid.second);
+		int legacy_pcid = -1;
+		for(unsigned i = 0;; i++)
+			try {
+				auto p = controls.legacy_pcid_to_pair(i);
+				if(p.first == pcid.first && p.second == pcid.second) {
+					legacy_pcid = i;
+					break;
+				}
+			} catch(...) {
+				break;
+			}
+		if(legacy_pcid >= 0)
+			L.pushnumber(legacy_pcid);
+		else
+			L.pushboolean(false);
 		L.pushnumber(pcid.first);
 		L.pushnumber(pcid.second);
 		return 3;

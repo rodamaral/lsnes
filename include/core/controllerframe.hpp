@@ -41,6 +41,14 @@ public:
  */
 	std::pair<int, int> lcid_to_pcid(unsigned lcid) throw();
 /**
+ * Lookup (port,controller) pair corresponding to given legacy pcid.
+ *
+ * Parameter pcid: The legacy pcid.
+ * Returns: The controller index, or <-1, -1> if no such thing exists.
+ * Note: Even if this does return a valid index, it still may not exist.
+ */
+	std::pair<int, int> legacy_pcid_to_pair(unsigned pcid) throw();
+/**
  * Convert acid (Analog Controller ID) into pcid.
  *
  * Parameter acid: The analog controller ID.

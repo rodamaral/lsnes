@@ -162,6 +162,10 @@ struct port_index_map
  * The logical controller mappings.
  */
 	std::vector<std::pair<unsigned, unsigned>> logical_map;
+/**
+ * Legacy PCID mappings.
+ */
+	std::vector<std::pair<unsigned, unsigned>> pcid_map;
 };
 
 /**
@@ -528,6 +532,26 @@ public:
 		return controllers[lcid];
 	}
 /**
+ * Return number of legacy PCIDs.
+ */
+	unsigned number_of_legacy_pcids() const throw()
+	{
+		return legacy_pcids.size();
+	}
+/**
+ * Lookup (port,controller) pair corresponding to given legacy pcid.
+ *
+ * Parameter pcid: The legacy pcid.
+ * Returns: The controller index.
+ * Throws std::runtime_error: No such controller.
+ */
+	std::pair<unsigned, unsigned> legacy_pcid_to_pair(unsigned pcid) const throw(std::runtime_error)
+	{
+		if(pcid >= legacy_pcids.size())
+			throw std::runtime_error("Bad legacy PCID");
+		return legacy_pcids[pcid];
+	}
+/**
  * Get "marks nonlag even if neutral" flag for specified index.
  *
  * Parameter index: The index.
@@ -565,6 +589,7 @@ private:
 	size_t total_size;
 	std::vector<port_index_triple> _indices;
 	std::vector<std::pair<unsigned, unsigned>> controllers;
+	std::vector<std::pair<unsigned, unsigned>> legacy_pcids;
 
 	size_t port_multiplier;
 	size_t controller_multiplier;
@@ -1067,6 +1092,13 @@ public:
 		if(port >= types->ports())
 			return false;
 		return types->port_type(port).is_mouse(controller);
+	}
+/**
+ * Get the port type set.
+ */
+	const port_type_set& porttypes()
+	{
+		return *types;
 	}
 private:
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];

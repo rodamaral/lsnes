@@ -826,6 +826,9 @@ namespace
 			for(size_t j = 0; j < types[2]->controllers; j++)
 				i.logical_map[j + types[1]->controllers]  = std::make_pair(2U, j);
 		}
+		i.pcid_map.resize(8);
+		for(size_t j = 0; j < 8; j++)
+			i.pcid_map[j] = std::make_pair(j / 4 + 1, j % 4);
 		return i;
 	}
 

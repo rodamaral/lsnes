@@ -29,6 +29,15 @@ std::pair<int,int> controller_state::lcid_to_pcid(unsigned lcid) throw()
 	return std::make_pair(k.first, k.second);
 }
 
+std::pair<int, int> controller_state::legacy_pcid_to_pair(unsigned pcid) throw()
+{
+	if(pcid >= types->number_of_legacy_pcids())
+		return std::make_pair(-1, -1);
+	auto k = types->legacy_pcid_to_pair(pcid);
+	return std::make_pair(k.first, k.second);
+}
+
+
 std::pair<int,int> controller_state::acid_to_pcid(unsigned acid) throw()
 {
 	if(acid > MAX_ANALOG)

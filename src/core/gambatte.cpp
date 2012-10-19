@@ -304,6 +304,8 @@ namespace
 		}		
 		i.logical_map.resize(1);
 		i.logical_map[0] = std::make_pair(1, 0);
+		i.pcid_map.resize(1);
+		i.pcid_map[0] = std::make_pair(1, 0);
 		return i;
 	}
 	
