@@ -938,7 +938,8 @@ public:
 	void axis2(unsigned idx, short x) throw()
 	{
 		port_index_triple t = types->index_to_triple(idx);
-		axis3(t.port, t.controller, t.control, x);
+		if(t.valid)
+			axis3(t.port, t.controller, t.control, x);
 	}
 /**
  * Get axis/button value.
@@ -964,7 +965,10 @@ public:
 	short axis2(unsigned idx) throw()
 	{
 		port_index_triple t = types->index_to_triple(idx);
-		return axis3(t.port, t.controller, t.control);
+		if(t.valid)
+			return axis3(t.port, t.controller, t.control);
+		else
+			return 0;
 	}
 /**
  * Get controller display.
