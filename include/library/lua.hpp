@@ -19,6 +19,92 @@ struct lua_function;
 class lua_state
 {
 public:
+	template<typename T> struct _store_tag
+	{
+		T& addr;
+		T val;
+		_store_tag(T& a, T v) : addr(a), val(v) {}
+	};
+	template<typename T> static struct _store_tag<T> store_tag(T& a, T v) { return _store_tag<T>(a, v); }
+	template<typename T> struct _numeric_tag
+	{
+		T val;
+		_numeric_tag(T v) : val(v) {}
+	};
+	template<typename T> static struct _numeric_tag<T> numeric_tag(T v) { return _numeric_tag<T>(v); }
+	template<typename T> struct _fnptr_tag
+	{
+		int(*fn)(lua_state& L, T v);
+		T val;
+		_fnptr_tag(int (*f)(lua_state& L, T v), T v) : fn(f), val(v) {}
+	};
+	template<typename T> static struct _fnptr_tag<T> fnptr_tag(int (*f)(lua_state& L, T v), T v)
+	{
+		return _fnptr_tag<T>(f, v);
+	}
+	template<typename T> struct _fn_tag
+	{
+		T fn;
+		_fn_tag(T f) : fn(f) {}
+	};
+	template<typename T> static struct _fn_tag<T> fn_tag(T v) { return _fn_tag<T>(v); }
+	struct boolean_tag { bool val; boolean_tag(bool v) : val(v) {}};
+	struct string_tag { std::string val; string_tag(const std::string& v) : val(v) {}};
+private:
+	template<typename U, typename... T> void _callback(int argc, _store_tag<U> tag, T... args)
+	{
+		tag.addr = tag.val;
+		_callback(argc, args...);
+		tag.addr = NULL;
+	}
+
+	template<typename... T> void _callback(int argc, boolean_tag tag, T... args)
+	{
+		pushboolean(tag.val);
+		_callback(argc + 1, args...);
+	}
+
+	template<typename... T> void _callback(int argc, string_tag tag, T... args)
+	{
+		pushlstring(tag.val.c_str(), tag.val.length());
+		_callback(argc + 1, args...);
+	}
+
+	template<typename U, typename... T> void _callback(int argc, _numeric_tag<U> tag, T... args)
+	{
+		pushnumber(tag.val);
+		_callback(argc + 1, args...);
+	}
+
+	template<typename U, typename... T> void _callback(int argc, _fnptr_tag<U> tag, T... args)
+	{
+		int extra = tag.fn(*this, tag.val);
+		_callback(argc + extra, args...);
+	}
+
+	template<typename U, typename... T> void _callback(int argc, _fn_tag<U> tag, T... args)
+	{
+		int extra = tag.fn(*this);
+		_callback(argc + extra, args...);
+	}
+
+	void _callback(int argc)
+	{
+		int r = pcall(argc, 0, 0);
+		if(r == LUA_ERRRUN) {
+			(stringfmt() << "Error running Lua callback: " << tostring(-1)).throwex();
+			pop(1);
+		}
+		if(r == LUA_ERRMEM) {
+			(stringfmt() << "Error running Lua callback: Out of memory").throwex();
+			pop(1);
+		}
+		if(r == LUA_ERRERR) {
+			(stringfmt() << "Error running Lua callback: Double Fault???").throwex();
+			pop(1);
+		}
+	}
+public:
 /**
  * Create a new state.
  */
@@ -122,6 +208,23 @@ public:
 			(stringfmt() << "Argunment #" << argindex << " to " << fname << " must be numeric if "
 				"present").throwex();
 		value = static_cast<T>(lua_tonumber(lua_handle, argindex));
+	}
+/**
+ * Do a callback.
+ *
+ * Parameter name: The name of the callback.
+ * Parameter args: Arguments to pass to the callback.
+ */
+	template<typename... T>
+	void callback(const std::string& name, T... args)
+	{
+		getglobal(name.c_str());
+		int t = type(-1);
+		if(t != LUA_TFUNCTION) {
+			pop(1);
+			return;
+		}
+		_callback(0, args...);
 	}
 
 	void pop(int n) { lua_pop(lua_handle, n); }
