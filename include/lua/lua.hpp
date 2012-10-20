@@ -5,18 +5,7 @@
 #include "core/keymapper.hpp"
 #include "core/movie.hpp"
 #include "library/framebuffer.hpp"
-
-
-struct lua_render_context
-{
-	uint32_t left_gap;
-	uint32_t right_gap;
-	uint32_t top_gap;
-	uint32_t bottom_gap;
-	struct render_queue* queue;
-	uint32_t width;
-	uint32_t height;
-};
+#include "library/lua-framebuffer.hpp"
 
 void init_lua(bool soft = false) throw();
 void quit_lua() throw();
