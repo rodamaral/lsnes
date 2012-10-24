@@ -987,7 +987,7 @@ namespace
 			has_value = (secondword != "");
 			try {
 				if(t = regex("0x(.+)", firstword)) {
-					if(t[1].length() > 8)
+					if(t[1].length() > 16)
 						throw 42;
 					address = 0;
 					for(unsigned i = 0; i < t[1].length(); i++)
