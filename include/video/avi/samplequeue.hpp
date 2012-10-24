@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstdlib>
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 
 /**
  * Sample queue.

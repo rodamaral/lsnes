@@ -6,7 +6,7 @@
 #include <vector>
 #include <cstdint>
 #include <cstring>
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 
 /**
  * Information about region of memory.

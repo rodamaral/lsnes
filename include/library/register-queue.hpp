@@ -1,7 +1,7 @@
 #ifndef _library__register_queue__hpp__included__
 #define _library__register_queue__hpp__included__
 
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 #include <string>
 #include <list>
 #include <set>

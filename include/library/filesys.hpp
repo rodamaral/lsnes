@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 #include <fstream>
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 
 #define CLUSTER_SIZE 8192
 #define CLUSTERS_PER_SUPER (CLUSTER_SIZE / 4)

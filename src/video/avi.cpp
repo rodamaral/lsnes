@@ -7,6 +7,7 @@
 #include "core/dispatch.hpp"
 #include "lua/lua.hpp"
 #include "library/minmax.hpp"
+#include "library/workthread.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
 

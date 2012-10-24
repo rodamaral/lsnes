@@ -6,7 +6,7 @@
 #include <set>
 #include <map>
 #include <list>
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 
 class command;
 

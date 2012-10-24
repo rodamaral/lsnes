@@ -1,7 +1,7 @@
 #ifndef _library__emustatus__hpp__included__
 #define _library__emustatus__hpp__included__
 
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 
 #include <map>
 #include <string>

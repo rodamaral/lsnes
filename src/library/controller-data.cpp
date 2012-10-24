@@ -1,5 +1,5 @@
 #include "library/controller-data.hpp"
-#include "library/workthread.hpp"
+#include "library/threadtypes.hpp"
 #include "library/minmax.hpp"
 #include "library/globalwrap.hpp"
 #include <iostream>
