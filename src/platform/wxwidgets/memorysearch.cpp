@@ -2,6 +2,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "library/string.hpp"
+#include "library/memorysearch.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 
@@ -61,41 +62,41 @@ namespace
 		"true"
 	};
 
-	typedef void (memorysearch::*primitive_search_t)();
+	typedef void (memory_search::*primitive_search_t)();
 	
 	primitive_search_t primitive_searches[DATATYPES][PRIMITIVES] = {
-		{ &memorysearch::byte_slt, &memorysearch::byte_sle, &memorysearch::byte_seq, &memorysearch::byte_sne,
-		&memorysearch::byte_sge, &memorysearch::byte_sgt, &memorysearch::byte_seqlt,
-		&memorysearch::byte_seqle, &memorysearch::byte_seqge, &memorysearch::byte_seqgt,
-		&memorysearch::update },
-		{ &memorysearch::byte_ult, &memorysearch::byte_ule, &memorysearch::byte_ueq, &memorysearch::byte_une,
-		&memorysearch::byte_uge, &memorysearch::byte_ugt, &memorysearch::byte_seqlt,
-		&memorysearch::byte_seqle, &memorysearch::byte_seqge, &memorysearch::byte_seqgt,
-		&memorysearch::update },
-		{ &memorysearch::word_slt, &memorysearch::word_sle, &memorysearch::word_seq, &memorysearch::word_sne,
-		&memorysearch::word_sge, &memorysearch::word_sgt, &memorysearch::word_seqlt,
-		&memorysearch::word_seqle, &memorysearch::word_seqge, &memorysearch::word_seqgt,
-		&memorysearch::update },
-		{ &memorysearch::word_ult, &memorysearch::word_ule, &memorysearch::word_ueq, &memorysearch::word_une,
-		&memorysearch::word_uge, &memorysearch::word_ugt, &memorysearch::word_seqlt,
-		&memorysearch::word_seqle, &memorysearch::word_seqge, &memorysearch::word_seqgt,
-		&memorysearch::update },
-		{ &memorysearch::dword_slt, &memorysearch::dword_sle, &memorysearch::dword_seq,
-		&memorysearch::dword_sne, &memorysearch::dword_sge, &memorysearch::dword_sgt,
-		&memorysearch::dword_seqlt, &memorysearch::dword_seqle, &memorysearch::dword_seqge,
-		&memorysearch::dword_seqgt, &memorysearch::update },
-		{ &memorysearch::dword_ult, &memorysearch::dword_ule, &memorysearch::dword_ueq,
-		&memorysearch::dword_une, &memorysearch::dword_uge, &memorysearch::dword_ugt,
-		&memorysearch::dword_seqlt, &memorysearch::dword_seqle, &memorysearch::dword_seqge,
-		&memorysearch::dword_seqgt, &memorysearch::update },
-		{ &memorysearch::qword_slt, &memorysearch::qword_sle, &memorysearch::qword_seq,
-		&memorysearch::qword_sne, &memorysearch::qword_sge, &memorysearch::qword_sgt,
-		&memorysearch::qword_seqlt, &memorysearch::qword_seqle, &memorysearch::qword_seqge,
-		&memorysearch::qword_seqgt, &memorysearch::update },
-		{ &memorysearch::qword_ult, &memorysearch::qword_ule, &memorysearch::qword_ueq,
-		&memorysearch::qword_une, &memorysearch::qword_uge, &memorysearch::qword_ugt,
-		&memorysearch::qword_seqlt, &memorysearch::qword_seqle, &memorysearch::qword_seqge,
-		&memorysearch::qword_seqgt, &memorysearch::update }
+		{ &memory_search::byte_slt, &memory_search::byte_sle, &memory_search::byte_seq,
+		&memory_search::byte_sne, &memory_search::byte_sge, &memory_search::byte_sgt,
+		&memory_search::byte_seqlt, &memory_search::byte_seqle, &memory_search::byte_seqge,
+		&memory_search::byte_seqgt, &memory_search::update },
+		{ &memory_search::byte_ult, &memory_search::byte_ule, &memory_search::byte_ueq,
+		&memory_search::byte_une, &memory_search::byte_uge, &memory_search::byte_ugt,
+		&memory_search::byte_seqlt, &memory_search::byte_seqle, &memory_search::byte_seqge,
+		&memory_search::byte_seqgt, &memory_search::update },
+		{ &memory_search::word_slt, &memory_search::word_sle, &memory_search::word_seq,
+		&memory_search::word_sne, &memory_search::word_sge, &memory_search::word_sgt,
+		&memory_search::word_seqlt, &memory_search::word_seqle, &memory_search::word_seqge,
+		&memory_search::word_seqgt, &memory_search::update },
+		{ &memory_search::word_ult, &memory_search::word_ule, &memory_search::word_ueq,
+		&memory_search::word_une, &memory_search::word_uge, &memory_search::word_ugt,
+		&memory_search::word_seqlt, &memory_search::word_seqle, &memory_search::word_seqge,
+		&memory_search::word_seqgt, &memory_search::update },
+		{ &memory_search::dword_slt, &memory_search::dword_sle, &memory_search::dword_seq,
+		&memory_search::dword_sne, &memory_search::dword_sge, &memory_search::dword_sgt,
+		&memory_search::dword_seqlt, &memory_search::dword_seqle, &memory_search::dword_seqge,
+		&memory_search::dword_seqgt, &memory_search::update },
+		{ &memory_search::dword_ult, &memory_search::dword_ule, &memory_search::dword_ueq,
+		&memory_search::dword_une, &memory_search::dword_uge, &memory_search::dword_ugt,
+		&memory_search::dword_seqlt, &memory_search::dword_seqle, &memory_search::dword_seqge,
+		&memory_search::dword_seqgt, &memory_search::update },
+		{ &memory_search::qword_slt, &memory_search::qword_sle, &memory_search::qword_seq,
+		&memory_search::qword_sne, &memory_search::qword_sge, &memory_search::qword_sgt,
+		&memory_search::qword_seqlt, &memory_search::qword_seqle, &memory_search::qword_seqge,
+		&memory_search::qword_seqgt, &memory_search::update },
+		{ &memory_search::qword_ult, &memory_search::qword_ule, &memory_search::qword_ueq,
+		&memory_search::qword_une, &memory_search::qword_uge, &memory_search::qword_ugt,
+		&memory_search::qword_seqlt, &memory_search::qword_seqle, &memory_search::qword_seqge,
+		&memory_search::qword_seqgt, &memory_search::update }
 	};
 
 	std::string hexformat_address(uint64_t addr)
@@ -194,16 +195,16 @@ private:
 wxwindow_memorysearch_vmasel::wxwindow_memorysearch_vmasel(wxWindow* p, const std::set<std::string>& enabled)
 	: wxDialog(p, wxID_ANY, towxstring("lsnes: Select enabled regions"), wxDefaultPosition, wxSize(300, -1))
 {
-	auto i = get_regions();
+	auto i = lsnes_memory.get_regions();
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(i.size() + 1, 1, 0, 0);
 	SetSizer(top_s);
 	for(auto j : i) {
-		if(j.readonly || j.iospace)
+		if(j->readonly || j->special)
 			continue;
 		wxCheckBox* t;
-		top_s->Add(t = new wxCheckBox(this, wxID_ANY, towxstring(j.region_name)), 0, wxGROW);
-		if(enabled.count(j.region_name))
+		top_s->Add(t = new wxCheckBox(this, wxID_ANY, towxstring(j->name)), 0, wxGROW);
+		if(enabled.count(j->name))
 			t->SetValue(true);
 		checkboxes.push_back(t);
 	}
@@ -261,7 +262,7 @@ private:
 	template<typename T> void valuesearch2(T value);
 	template<typename T> void valuesearch3(T value);
 	void update();
-	memorysearch* msearch;
+	memory_search* msearch;
 	wxStaticText* count;
 	wxTextCtrl* matches;
 	wxComboBox* type;
@@ -280,7 +281,7 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	wxButton* tmp;
 	Centre();
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwindow_memorysearch::on_close));
-	msearch = new memorysearch();
+	msearch = new memory_search(lsnes_memory);
 
 	wxFlexGridSizer* toplevel = new wxFlexGridSizer(4, 1, 0, 0);
 	SetSizer(toplevel);
@@ -324,9 +325,9 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	toplevel->Add(matches = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, 300),
 		wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP | wxTE_NOHIDESEL), 1, wxGROW);
 
-	for(auto i : get_regions())
-		if(!i.readonly && !i.iospace)
-			vmas_enabled.insert(i.region_name);
+	for(auto i : lsnes_memory.get_regions())
+		if(memory_search::searchable_region(i))
+			vmas_enabled.insert(i->name);
 
 	toplevel->SetSizeHints(this);
 	Fit();
@@ -367,28 +368,28 @@ void wxwindow_memorysearch::update()
 				row << hexformat_address(i) << " ";
 				switch(this->typecode) {
 				case 0:
-					row << format_number_signed(memory_read_byte(i), this->hexmode);
+					row << format_number_signed(lsnes_memory.read<uint8_t>(i), this->hexmode);
 		 			break;
 				case 1:
-					row << format_number_unsigned(memory_read_byte(i), this->hexmode);
+					row << format_number_unsigned(lsnes_memory.read<uint8_t>(i), this->hexmode);
 					break;
 				case 2:
-					row << format_number_signed(memory_read_word(i), this->hexmode);
+					row << format_number_signed(lsnes_memory.read<uint16_t>(i), this->hexmode);
 					break;
 				case 3:
-					row << format_number_unsigned(memory_read_word(i), this->hexmode);
+					row << format_number_unsigned(lsnes_memory.read<uint16_t>(i), this->hexmode);
 					break;
 				case 4:
-					row << format_number_signed(memory_read_dword(i), this->hexmode);
+					row << format_number_signed(lsnes_memory.read<uint32_t>(i), this->hexmode);
 					break;
 				case 5:
-					row << format_number_unsigned(memory_read_dword(i), this->hexmode);
+					row << format_number_unsigned(lsnes_memory.read<uint32_t>(i), this->hexmode);
 					break;
 				case 6:
-					row << format_number_signed(memory_read_qword(i), this->hexmode);
+					row << format_number_signed(lsnes_memory.read<uint64_t>(i), this->hexmode);
 					break;
 				case 7:
-					row << format_number_unsigned(memory_read_qword(i), this->hexmode);
+					row << format_number_unsigned(lsnes_memory.read<uint64_t>(i), this->hexmode);
 					break;
 				};
 				row << std::endl;
@@ -414,9 +415,9 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 	int id = e.GetId();
 	if(id == wxID_RESET) {
 		msearch->reset();
-		for(auto i : get_regions())
-			if(!i.readonly && !i.iospace && !vmas_enabled.count(i.region_name))
-				msearch->dq_range(i.baseaddr, i.baseaddr + i.size - 1);
+		for(auto i : lsnes_memory.get_regions())
+			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
+				msearch->dq_range(i->base, i->last_address());
 	} else if(id == wxID_UPDATE) {
 		update();
 	} else if(id == wxID_TYPESELECT) {
@@ -458,9 +459,9 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		if(d->ShowModal() == wxID_OK)
 			vmas_enabled = d->get_vmas();
 		d->Destroy();
-		for(auto i : get_regions())
-			if(!i.readonly && !i.iospace && !vmas_enabled.count(i.region_name))
-				msearch->dq_range(i.baseaddr, i.baseaddr + i.size - 1);
+		for(auto i : lsnes_memory.get_regions())
+			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
+				msearch->dq_range(i->base, i->last_address());
 	} else if(id == wxID_BUTTONS_BASE || id == wxID_BUTTONS_BASE + 1) {
 		//Value search.
 		bool diff = (id == wxID_BUTTONS_BASE + 1);

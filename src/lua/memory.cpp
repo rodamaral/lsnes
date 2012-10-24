@@ -8,7 +8,7 @@
 
 namespace
 {
-	template<typename T, typename U, U (*rfun)(uint64_t addr)>
+	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	class lua_read_memory : public lua_function
 	{
 	public:
@@ -16,12 +16,12 @@ namespace
 		int invoke(lua_state& L)
 		{
 			uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-			L.pushnumber(static_cast<T>(rfun(addr)));
+			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 			return 1;
 		}
 	};
 
-	template<typename T, bool (*wfun)(uint64_t addr, T value)>
+	template<typename T, bool (memory_space::*wfun)(uint64_t addr, T value)>
 	class lua_write_memory : public lua_function
 	{
 	public:
@@ -30,7 +30,7 @@ namespace
 		{
 			uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 			T value = L.get_numeric_argument<T>(2, fname.c_str());
-			wfun(addr, value);
+			(lsnes_memory.*wfun)(addr, value);
 			return 0;
 		}
 	};
@@ -44,20 +44,21 @@ namespace
 	};
 
 
-	template<typename T, typename U, U (*rfun)(uint64_t addr), bool (*wfun)(uint64_t addr, U value)>
+	template<typename T, T (memory_space::*rfun)(uint64_t addr), bool (memory_space::*wfun)(uint64_t addr,
+		T value)>
 	class lua_mmap_memory_helper : public mmap_base
 	{
 	public:
 		~lua_mmap_memory_helper() {}
 		void read(lua_state& L, uint64_t addr)
 		{
-			L.pushnumber(static_cast<T>(rfun(addr)));
+			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 		}
 
 		void write(lua_state& L, uint64_t addr)
 		{
 			T value = L.get_numeric_argument<T>(3, "aperture(write)");
-			wfun(addr, value);
+			(lsnes_memory.*wfun)(addr, value);
 		}
 	};
 }
@@ -192,56 +193,58 @@ namespace
 	};
 
 	function_ptr_luafun vmacount(LS, "memory.vma_count", [](lua_state& L, const std::string& fname) -> int {
-		L.pushnumber(get_regions().size());
+		L.pushnumber(lsnes_memory.get_regions().size());
 		return 1;
 	});
 
-	int handle_push_vma(lua_state& L, std::vector<memory_region>& regions, size_t idx)
+	int handle_push_vma(lua_state& L, memory_region& r)
 	{
-		if(idx >= regions.size()) {
-			L.pushnil();
-			return 1;
-		}
-		memory_region& r = regions[idx];
 		L.newtable();
 		L.pushstring("region_name");
-		L.pushlstring(r.region_name.c_str(), r.region_name.size());
+		L.pushlstring(r.name.c_str(), r.name.size());
 		L.settable(-3);
 		L.pushstring("baseaddr");
-		L.pushnumber(r.baseaddr);
+		L.pushnumber(r.base);
 		L.settable(-3);
 		L.pushstring("size");
 		L.pushnumber(r.size);
 		L.settable(-3);
 		L.pushstring("lastaddr");
-		L.pushnumber(r.lastaddr);
+		L.pushnumber(r.last_address());
 		L.settable(-3);
 		L.pushstring("readonly");
 		L.pushboolean(r.readonly);
 		L.settable(-3);
 		L.pushstring("iospace");
-		L.pushboolean(r.iospace);
+		L.pushboolean(r.special);
 		L.settable(-3);
 		L.pushstring("native_endian");
-		L.pushboolean(r.native_endian);
+		L.pushboolean(r.endian == 0);
+		L.settable(-3);
+		L.pushstring("endian");
+		L.pushnumber(r.endian);
 		L.settable(-3);
 		return 1;
 	}
 
 	function_ptr_luafun readvma(LS, "memory.read_vma", [](lua_state& L, const std::string& fname) -> int {
-		std::vector<memory_region> regions = get_regions();
+		std::list<memory_region*> regions = lsnes_memory.get_regions();
 		uint32_t num = L.get_numeric_argument<uint32_t>(1, fname.c_str());
-		return handle_push_vma(L, regions, num);
+		uint32_t j = 0;
+		for(auto i = regions.begin(); i != regions.end(); i++, j++)
+			if(j == num)
+				return handle_push_vma(L, **i);
+		L.pushnil();
+		return 1;
 	});
 
 	function_ptr_luafun findvma(LS, "memory.find_vma", [](lua_state& L, const std::string& fname) -> int {
-		std::vector<memory_region> regions = get_regions();
 		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		size_t i;
-		for(i = 0; i < regions.size(); i++)
-			if(addr >= regions[i].baseaddr && addr <= regions[i].lastaddr)
-				break;
-		return handle_push_vma(L, regions, i);
+		auto r = lsnes_memory.lookup(addr);
+		if(r.first)
+			return handle_push_vma(L, *r.first);
+		L.pushnil();
+		return 1;
 	});
 
 	const char* hexes = "0123456789ABCDEF";
@@ -268,13 +271,13 @@ namespace
 		sha256 h;
 		while(size > BLOCKSIZE) {
 			for(size_t i = 0; i < BLOCKSIZE; i++)
-				buffer[i] = memory_read_byte(addr + i);
+				buffer[i] = lsnes_memory.read<uint8_t>(addr + i);
 			h.write(buffer, BLOCKSIZE);
 			addr += BLOCKSIZE;
 			size -= BLOCKSIZE;
 		}
 		for(size_t i = 0; i < size; i++)
-			buffer[i] = memory_read_byte(addr + i);
+			buffer[i] = lsnes_memory.read<uint8_t>(addr + i);
 		h.write(buffer, size);
 		hash = h.read();
 		L.pushlstring(hash.c_str(), 64);
@@ -290,7 +293,7 @@ namespace
 		uint64_t ctr = 0;
 		while(size > 0) {
 			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
-			memory_read_bytes(addr, rsize, buffer);
+			lsnes_memory.read_range(addr, buffer, rsize);
 			for(size_t i = 0; i < rsize; i++) {
 				L.pushnumber(ctr++);
 				L.pushnumber(static_cast<unsigned char>(buffer[i]));
@@ -316,7 +319,7 @@ namespace
 				buffer[i] = L.tointeger(-1);
 				L.pop(1);
 			}
-			memory_write_bytes(addr, rsize, buffer);
+			lsnes_memory.write_range(addr, buffer, rsize);
 			addr += rsize;
 			size -= rsize;
 		}
@@ -336,26 +339,26 @@ namespace
 		return 1;
 	});
 
-	lua_read_memory<uint8_t, uint8_t, memory_read_byte> rub("memory.readbyte");
-	lua_read_memory<int8_t, uint8_t, memory_read_byte> rsb("memory.readsbyte");
-	lua_read_memory<uint16_t, uint16_t, memory_read_word> ruw("memory.readword");
-	lua_read_memory<int16_t, uint16_t, memory_read_word> rsw("memory.readsword");
-	lua_read_memory<uint32_t, uint32_t, memory_read_dword> rud("memory.readdword");
-	lua_read_memory<int32_t, uint32_t, memory_read_dword> rsd("memory.readsdword");
-	lua_read_memory<uint64_t, uint64_t, memory_read_qword> ruq("memory.readqword");
-	lua_read_memory<int64_t, uint64_t, memory_read_qword> rsq("memory.readsqword");
-	lua_write_memory<uint8_t, memory_write_byte> wb("memory.writebyte");
-	lua_write_memory<uint16_t, memory_write_word> ww("memory.writeword");
-	lua_write_memory<uint32_t, memory_write_dword> wd("memory.writedword");
-	lua_write_memory<uint64_t, memory_write_qword> wq("memory.writeqword");
-	lua_mmap_memory_helper<uint8_t, uint8_t, memory_read_byte, memory_write_byte> mhub;
-	lua_mmap_memory_helper<int8_t, uint8_t, memory_read_byte, memory_write_byte> mhsb;
-	lua_mmap_memory_helper<uint16_t, uint16_t, memory_read_word, memory_write_word> mhuw;
-	lua_mmap_memory_helper<int16_t, uint16_t, memory_read_word, memory_write_word> mhsw;
-	lua_mmap_memory_helper<uint32_t, uint32_t, memory_read_dword, memory_write_dword> mhud;
-	lua_mmap_memory_helper<int32_t, uint32_t, memory_read_dword, memory_write_dword> mhsd;
-	lua_mmap_memory_helper<uint64_t, uint64_t, memory_read_qword, memory_write_qword> mhuq;
-	lua_mmap_memory_helper<int64_t, uint64_t, memory_read_qword, memory_write_qword> mhsq;
+	lua_read_memory<uint8_t, &memory_space::read<uint8_t>> rub("memory.readbyte");
+	lua_read_memory<int8_t, &memory_space::read<int8_t>> rsb("memory.readsbyte");
+	lua_read_memory<uint16_t, &memory_space::read<uint16_t>> ruw("memory.readword");
+	lua_read_memory<int16_t, &memory_space::read<int16_t>> rsw("memory.readsword");
+	lua_read_memory<uint32_t, &memory_space::read<uint32_t>> rud("memory.readdword");
+	lua_read_memory<int32_t, &memory_space::read<int32_t>> rsd("memory.readsdword");
+	lua_read_memory<uint64_t, &memory_space::read<uint64_t>> ruq("memory.readqword");
+	lua_read_memory<int64_t, &memory_space::read<int64_t>> rsq("memory.readsqword");
+	lua_write_memory<uint8_t, &memory_space::write<uint8_t>> wb("memory.writebyte");
+	lua_write_memory<uint16_t, &memory_space::write<uint16_t>> ww("memory.writeword");
+	lua_write_memory<uint32_t, &memory_space::write<uint32_t>> wd("memory.writedword");
+	lua_write_memory<uint64_t, &memory_space::write<uint64_t>> wq("memory.writeqword");
+	lua_mmap_memory_helper<uint8_t, &memory_space::read<uint8_t>, &memory_space::write<uint8_t>> mhub;
+	lua_mmap_memory_helper<int8_t, &memory_space::read<int8_t>, &memory_space::write<int8_t>> mhsb;
+	lua_mmap_memory_helper<uint16_t, &memory_space::read<uint16_t>, &memory_space::write<uint16_t>> mhuw;
+	lua_mmap_memory_helper<int16_t, &memory_space::read<int16_t>, &memory_space::write<int16_t>> mhsw;
+	lua_mmap_memory_helper<uint32_t, &memory_space::read<uint32_t>, &memory_space::write<uint32_t>> mhud;
+	lua_mmap_memory_helper<int32_t, &memory_space::read<int32_t>, &memory_space::write<int32_t>> mhsd;
+	lua_mmap_memory_helper<uint64_t, &memory_space::read<uint64_t>, &memory_space::write<uint64_t>> mhuq;
+	lua_mmap_memory_helper<int64_t, &memory_space::read<int64_t>, &memory_space::write<int64_t>> mhsq;
 	lua_mmap_memory mub("memory.mapbyte", mhub);
 	lua_mmap_memory msb("memory.mapsbyte", mhsb);
 	lua_mmap_memory muw("memory.mapword", mhuw);

@@ -326,28 +326,28 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 				stack_push(s, a % b);
 				break;
 			case 'b':
-				stack_push<int8_t>(s, memory_read_byte(stack_pop(s).as_address()));
+				stack_push<int8_t>(s, lsnes_memory.read<uint8_t>(stack_pop(s).as_address()));
 				break;
 			case 'B':
-				stack_push<uint8_t>(s, memory_read_byte(stack_pop(s).as_address()));
+				stack_push<uint8_t>(s, lsnes_memory.read<uint8_t>(stack_pop(s).as_address()));
 				break;
 			case 'w':
-				stack_push<int16_t>(s, memory_read_word(stack_pop(s).as_address()));
+				stack_push<int16_t>(s, lsnes_memory.read<uint16_t>(stack_pop(s).as_address()));
 				break;
 			case 'W':
-				stack_push<uint16_t>(s, memory_read_word(stack_pop(s).as_address()));
+				stack_push<uint16_t>(s, lsnes_memory.read<uint16_t>(stack_pop(s).as_address()));
 				break;
 			case 'd':
-				stack_push<int32_t>(s, memory_read_dword(stack_pop(s).as_address()));
+				stack_push<int32_t>(s, lsnes_memory.read<uint32_t>(stack_pop(s).as_address()));
 				break;
 			case 'D':
-				stack_push<uint32_t>(s, memory_read_dword(stack_pop(s).as_address()));
+				stack_push<uint32_t>(s, lsnes_memory.read<uint32_t>(stack_pop(s).as_address()));
 				break;
 			case 'q':
-				stack_push<int64_t>(s, memory_read_qword(stack_pop(s).as_address()));
+				stack_push<int64_t>(s, lsnes_memory.read<uint64_t>(stack_pop(s).as_address()));
 				break;
 			case 'Q':
-				stack_push<uint64_t>(s, memory_read_qword(stack_pop(s).as_address()));
+				stack_push<uint64_t>(s, lsnes_memory.read<uint64_t>(stack_pop(s).as_address()));
 				break;
 			default:
 				throw std::runtime_error("#syntax (illchar)");

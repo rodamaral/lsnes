@@ -60,6 +60,15 @@ namespace
 		}
 		return str.str();
 	}
+
+	char endian_char(int e)
+	{
+		if(e < 0)
+			return 'L';
+		if(e > 0)
+			return 'B';
+		return 'N';
+	}
 }
 
 std::string get_random_hexstring(size_t length) throw(std::bad_alloc)
@@ -134,14 +143,14 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 
 void dump_region_map() throw(std::bad_alloc)
 {
-	std::vector<struct memory_region> regions = get_regions();
+	std::list<struct memory_region*> regions = lsnes_memory.get_regions();
 	for(auto i : regions) {
 		std::ostringstream x;
-		x << std::setfill('0') << std::setw(16) << std::hex << i.baseaddr << "-";
-		x << std::setfill('0') << std::setw(16) << std::hex << i.lastaddr << " ";
-		x << std::setfill('0') << std::setw(16) << std::hex << i.size << " ";
-		messages << x.str() << (i.readonly ? "R-" : "RW") << (i.native_endian ? 'N' : 'L')
-			<< (i.iospace ? 'I' : 'M') << " " << i.region_name << std::endl;
+		x << std::setfill('0') << std::setw(16) << std::hex << i->base << "-";
+		x << std::setfill('0') << std::setw(16) << std::hex << i->last_address() << " ";
+		x << std::setfill('0') << std::setw(16) << std::hex << i->size << " ";
+		messages << x.str() << (i->readonly ? "R-" : "RW") << endian_char(i->endian)
+			<< (i->special ? 'I' : 'M') << " " << i->name << std::endl;
 	}
 }
 
