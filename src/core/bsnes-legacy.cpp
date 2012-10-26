@@ -414,7 +414,31 @@ namespace
 
 		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 		{
-			return ecore_callbacks->get_input(port ? 1 : 0, index, id);
+			int16_t offset = 0;
+			//The superscope/justifier handling is nuts.
+			if(port && SNES::input.port2) {
+				SNES::SuperScope* ss = dynamic_cast<SNES::SuperScope*>(SNES::input.port2);
+				SNES::Justifier* js = dynamic_cast<SNES::Justifier*>(SNES::input.port2);
+				if(ss && index == 0) {
+					if(id == 0)
+						offset = ss->x;
+					if(id == 1)
+						offset = ss->y;
+				}
+				if(js && index == 0) {
+					if(id == 0)
+						offset = js->player1.x;
+					if(id == 1)
+						offset = js->player1.y;
+				}
+				if(js && js->chained && index == 1) {
+					if(id == 0)
+						offset = js->player2.x;
+					if(id == 1)
+						offset = js->player2.y;
+				}
+			}
+			return ecore_callbacks->get_input(port ? 1 : 0, index, id) - offset;
 		}
 	};
 
