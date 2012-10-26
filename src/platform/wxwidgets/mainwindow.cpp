@@ -319,21 +319,19 @@ namespace
 	void controller_autohold_menu::change_type()
 	{
 		enabled_entries = 0;
-		runuifun([this]() {
-			auto limits = get_core_logical_controller_limits();
-			this->autoholds.resize(limits.second);
-			for(unsigned i = 0; i < limits.second; i++) {
-				this->pidxs[i] = -1;
-				if(this->our_pid >= 0)
-					this->pidxs[i] = controls.button_id(this->our_pid, i);
-				if(this->pidxs[i] >= 0)
-					this->autoholds[i] = (this->our_pid > 0 && controls.autohold(this->our_pid,
-						this->pidxs[i]));
-				else
-					this->autoholds[i] = false;
-			}
-		});
 		our_pid = controls.lcid_to_pcid(our_lid);
+		auto limits = get_core_logical_controller_limits();
+		this->autoholds.resize(limits.second);
+		//We have asserted modal pause.
+		for(unsigned i = 0; i < limits.second; i++) {
+			this->pidxs[i] = -1;
+			if(this->our_pid >= 0)
+				this->pidxs[i] = controls.button_id(this->our_pid, i);
+			if(this->pidxs[i] >= 0)
+				this->autoholds[i] = controls.autohold(this->our_pid, this->pidxs[i]);
+			else
+				this->autoholds[i] = false;
+		}
 		for(auto i : pidxs) {
 			if(i.second >= 0) {
 				entries[i.first]->Check(autoholds[i.first]);
