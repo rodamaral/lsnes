@@ -590,14 +590,10 @@ controller_frame controller_state::get(uint64_t framenum) throw()
 		return _input ^ _framehold ^ _autohold;
 }
 
-void controller_state::analog(unsigned acid, int x, int y) throw()
+void controller_state::analog(unsigned pcid, int x, int y) throw()
 {
-	if(acid >= MAX_ANALOG || analog_indices[acid] < 0) {
-		messages << "No analog controller #" << acid << std::endl;
-		return;
-	}
-	_input.axis(analog_indices[acid], 0, x);
-	_input.axis(analog_indices[acid], 1, y);
+	_input.axis(pcid, 0, x);
+	_input.axis(pcid, 1, y);
 }
 
 void controller_state::reset(int32_t delay) throw()
