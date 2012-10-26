@@ -600,7 +600,7 @@ namespace
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
-			display = generic_port_display<2, 2, 2, 0>;
+			display = generic_port_display<2, 2, 2, 12>;
 			serialize = generic_port_serialize<2, 2, 2, 12>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			legal = generic_port_legal<2>;
@@ -618,8 +618,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 0>;
-			serialize = generic_port_serialize<1, 2, 2, 12>;
+			display = generic_port_display<1, 2, 2, 10>;
+			serialize = generic_port_serialize<1, 2, 2, 10>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 5>;
@@ -672,7 +672,7 @@ namespace
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;
-			display = generic_port_display<1, 2, 4, 0>;
+			display = generic_port_display<1, 2, 4, 14>;
 			serialize = generic_port_serialize<1, 2, 4, 14>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			deviceflags = generic_port_deviceflags<1, 3>;
