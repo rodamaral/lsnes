@@ -7279,5 +7279,69 @@ Cleanup bsnes debugger logic
 Fix resets in presence of save every frame
 \end_layout
 
+\begin_layout Subsection
+rr1-delta15epsilon3
+\end_layout
+
+\begin_layout Itemize
+Lua: input.lcid_to_pcid
+\end_layout
+
+\begin_layout Itemize
+Fix off-by-one bug with slot hashes
+\end_layout
+
+\begin_layout Itemize
+Fix crashes on certain memory watch expressions
+\end_layout
+
+\begin_layout Itemize
+Lua: memory.read_expr
+\end_layout
+
+\begin_layout Itemize
+Lua: Fix memory.read_expr on nil argument
+\end_layout
+
+\begin_layout Itemize
+Fix the code to compile on G++ 4.7
+\end_layout
+
+\begin_layout Itemize
+Change button_id to be a function pointer field, not a virtual method
+\end_layout
+
+\begin_layout Itemize
+Add bsnes patches to fix libsnes to compile on GCC 4.7
+\end_layout
+
+\begin_layout Itemize
+Gambatte: Always use legacy lag counting
+\end_layout
+
+\begin_layout Itemize
+Memory commands: Memory addresses are up to 16 hex digits, not up to 8
+\end_layout
+
+\begin_layout Itemize
+Fix analog controllers
+\end_layout
+
+\begin_layout Itemize
+Fix autohold menus
+\end_layout
+
+\begin_layout Itemize
+Fix button symbols in input display
+\end_layout
+
+\begin_layout Itemize
+Compensate for nuts bsnes superscope/justifier handling
+\end_layout
+
+\begin_layout Itemize
+Lua: Fix bit.extract boolean handling
+\end_layout
+
 \end_body
 \end_document

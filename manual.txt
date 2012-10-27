@@ -1797,7 +1797,7 @@ type.
 • Type may be one of: byte, sbyte, word, sword, dword, sdword, 
   qword or sqword.
 
-8.9.23 memory.watch_expr(string expr)
+8.9.23 memory.read_expr(string expr)
 
 Evaluate specified watch expression and return result
 
@@ -3581,4 +3581,38 @@ set-axis joystick0axis19 disabled
 • Cleanup bsnes debugger logic
 
 • Fix resets in presence of save every frame
+
+18.75 rr1-delta15epsilon3
+
+• Lua: input.lcid_to_pcid
+
+• Fix off-by-one bug with slot hashes
+
+• Fix crashes on certain memory watch expressions
+
+• Lua: memory.read_expr
+
+• Lua: Fix memory.read_expr on nil argument
+
+• Fix the code to compile on G++ 4.7
+
+• Change button_id to be a function pointer field, not a virtual 
+  method
+
+• Add bsnes patches to fix libsnes to compile on GCC 4.7
+
+• Gambatte: Always use legacy lag counting
+
+• Memory commands: Memory addresses are up to 16 hex digits, not 
+  up to 8
+
+• Fix analog controllers
+
+• Fix autohold menus
+
+• Fix button symbols in input display
+
+• Compensate for nuts bsnes superscope/justifier handling
+
+• Lua: Fix bit.extract boolean handling
 
