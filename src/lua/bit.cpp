@@ -106,12 +106,12 @@ namespace
 		uint64_t num = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
-			if(L.isnumber(i + 2)) {
-				uint8_t bit = L.get_numeric_argument<uint8_t>(i + 2, fname.c_str());
-				ret |= (((num >> bit) & 1) << i);
-			} else if(L.isboolean(i + 2)) {
+			if(L.isboolean(i + 2)) {
 				if(L.toboolean(i + 2))
 					ret |= (1ULL << i);
+			} else if(L.isnumber(i + 2)) {
+				uint8_t bit = L.get_numeric_argument<uint8_t>(i + 2, fname.c_str());
+				ret |= (((num >> bit) & 1) << i);
 			} else
 				break;
 		}
