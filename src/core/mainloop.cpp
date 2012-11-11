@@ -157,7 +157,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
 		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end) {
-			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count() + 1) {
+			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count()) {
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
 			}
