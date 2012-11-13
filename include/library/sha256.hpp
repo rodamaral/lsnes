@@ -1,7 +1,7 @@
 #ifndef _library__sha256__hpp__included__
 #define _library__sha256__hpp__included__
 
-#include "library/bintohex.hpp"
+#include "bintohex.hpp"
 #include <cstdint>
 #include <cstring>
 #include <vector>

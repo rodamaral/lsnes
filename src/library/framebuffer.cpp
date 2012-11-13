@@ -1,8 +1,8 @@
-#include "library/framebuffer.hpp"
-#include "library/png.hpp"
-#include "library/serialization.hpp"
-#include "library/string.hpp"
-#include "library/utf8.hpp"
+#include "framebuffer.hpp"
+#include "png.hpp"
+#include "serialization.hpp"
+#include "string.hpp"
+#include "utf8.hpp"
 #include <cstring>
 #include <iostream>
 #include <list>

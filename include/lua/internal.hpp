@@ -5,7 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include "library/lua.hpp"
+#include "library/luabase.hpp"
 
 extern lua_state LS;
 

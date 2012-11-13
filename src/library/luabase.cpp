@@ -1,5 +1,5 @@
-#include "library/lua.hpp"
-#include "library/register-queue.hpp"
+#include "luabase.hpp"
+#include "register-queue.hpp"
 #include <iostream>
 #include <cassert>
 

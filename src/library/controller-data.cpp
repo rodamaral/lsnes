@@ -1,7 +1,7 @@
-#include "library/controller-data.hpp"
-#include "library/threadtypes.hpp"
-#include "library/minmax.hpp"
-#include "library/globalwrap.hpp"
+#include "controller-data.hpp"
+#include "threadtypes.hpp"
+#include "minmax.hpp"
+#include "globalwrap.hpp"
 #include <iostream>
 #include <list>
 

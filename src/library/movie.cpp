@@ -1,6 +1,4 @@
-#include "lsnes.hpp"
-
-#include "library/movie.hpp"
+#include "movie.hpp"
 
 #include <stdexcept>
 #include <cassert>

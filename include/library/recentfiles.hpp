@@ -1,5 +1,5 @@
-#ifndef _recentfiles__hpp__included__
-#define _recentfiles__hpp__included__
+#ifndef _library__recentfiles__hpp__included__
+#define _library__recentfiles__hpp__included__
 
 #include <string>
 #include <cstdlib>

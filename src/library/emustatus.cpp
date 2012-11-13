@@ -1,4 +1,4 @@
-#include "library/emustatus.hpp"
+#include "emustatus.hpp"
 
 emulator_status::emulator_status() throw(std::bad_alloc)
 {

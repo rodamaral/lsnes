@@ -1,9 +1,9 @@
-#include "library/commands.hpp"
-#include "library/globalwrap.hpp"
-#include "library/minmax.hpp"
-#include "library/register-queue.hpp"
-#include "library/string.hpp"
-#include "library/zip.hpp"
+#include "commands.hpp"
+#include "globalwrap.hpp"
+#include "minmax.hpp"
+#include "register-queue.hpp"
+#include "string.hpp"
+#include "zip.hpp"
 #include <iostream>
 #include <cstdlib>
 

@@ -1,5 +1,5 @@
-#include "library/recentfiles.hpp"
-#include "library/zip.hpp"
+#include "recentfiles.hpp"
+#include "zip.hpp"
 #include <fstream>
 
 recent_files::recent_files(const std::string& _cfgfile, size_t _maxcount)

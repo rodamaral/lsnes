@@ -1,5 +1,5 @@
-#include "library/memorysearch.hpp"
-#include "library/minmax.hpp"
+#include "memorysearch.hpp"
+#include "minmax.hpp"
 #include <iostream>
 
 memory_search::memory_search(memory_space& space) throw(std::bad_alloc)

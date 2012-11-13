@@ -1,7 +1,7 @@
 #ifndef _library__memorysearch__hpp__included__
 #define _library__memorysearch__hpp__included__
 
-#include "library/memoryspace.hpp"
+#include "memoryspace.hpp"
 #include <string>
 #include <list>
 #include <vector>

@@ -1,6 +1,4 @@
-#include "lsnes.hpp"
-
-#include "library/zip.hpp"
+#include "zip.hpp"
 
 #include <cstdint>
 #include <cstring>

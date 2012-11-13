@@ -7,7 +7,7 @@
 #include <iostream>
 #include <map>
 #include <list>
-#include "library/threadtypes.hpp"
+#include "threadtypes.hpp"
 
 class setting;
 class setting_group;

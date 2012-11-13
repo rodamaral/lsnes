@@ -1,8 +1,8 @@
 #ifndef _library__settings_cmd_bridge__hpp__included__
 #define _library__settings_cmd_bridge__hpp__included__
 
-#include "library/commands.hpp"
-#include "library/settings.hpp"
+#include "commands.hpp"
+#include "settings.hpp"
 
 /**
  * Bridge between command group and settings group.

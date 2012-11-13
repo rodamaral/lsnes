@@ -7,7 +7,7 @@ __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	touch __all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp
-	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
+	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library
 
 precheck:
 	@true

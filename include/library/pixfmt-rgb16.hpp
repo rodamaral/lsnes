@@ -1,5 +1,5 @@
-#ifndef _pixfmt_rgb16__hpp__included__
-#define _pixfmt_rgb16__hpp__included__
+#ifndef _library__pixfmt_rgb16__hpp__included__
+#define _library__pixfmt_rgb16__hpp__included__
 
 #include "framebuffer.hpp"
 

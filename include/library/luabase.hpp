@@ -1,11 +1,11 @@
-#ifndef _library__lua__hpp__included__
-#define _library__lua__hpp__included__
+#ifndef _library__luabase__hpp__included__
+#define _library__luabase__hpp__included__
 
 #include <string>
 #include <stdexcept>
 #include <map>
 #include <cassert>
-#include "library/string.hpp"
+#include "string.hpp"
 extern "C"
 {
 #include <lua.h>

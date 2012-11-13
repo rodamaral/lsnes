@@ -1,5 +1,5 @@
-#include "library/memoryspace.hpp"
-#include "library/minmax.hpp"
+#include "memoryspace.hpp"
+#include "minmax.hpp"
 #include <algorithm>
 
 namespace

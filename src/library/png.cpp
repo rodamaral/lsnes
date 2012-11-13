@@ -1,4 +1,4 @@
-#include "library/png.hpp"
+#include "png.hpp"
 
 #include <fstream>
 #include <iostream>

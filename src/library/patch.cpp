@@ -1,6 +1,6 @@
-#include "library/patch.hpp"
-#include "library/sha256.hpp"
-#include "library/string.hpp"
+#include "patch.hpp"
+#include "sha256.hpp"
+#include "string.hpp"
 #include <cstdint>
 #include <cstring>
 #include <iostream>

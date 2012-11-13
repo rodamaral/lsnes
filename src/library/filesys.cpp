@@ -1,6 +1,6 @@
-#include "library/filesys.hpp"
-#include "library/minmax.hpp"
-#include "library/serialization.hpp"
+#include "filesys.hpp"
+#include "minmax.hpp"
+#include "serialization.hpp"
 #include <cstring>
 #include <stdexcept>
 #include <iostream>

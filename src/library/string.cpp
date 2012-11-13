@@ -1,5 +1,5 @@
-#include "library/string.hpp"
-#include "library/minmax.hpp"
+#include "string.hpp"
+#include "minmax.hpp"
 #include <cctype>
 #include <boost/regex.hpp>
 

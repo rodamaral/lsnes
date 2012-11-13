@@ -2,7 +2,7 @@
 #define _library_workthread__hpp__included__
 
 #include <cstdint>
-#include "library/threadtypes.hpp"
+#include "threadtypes.hpp"
 
 #define WORKFLAG_QUIT_REQUEST 0x80000000U
 

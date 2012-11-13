@@ -4,7 +4,7 @@
 #include <string>
 #include <cstdint>
 #include <stdexcept>
-#include "library/controller-data.hpp"
+#include "controller-data.hpp"
 
 /**
  * Movie being played back or recorded

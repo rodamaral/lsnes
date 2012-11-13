@@ -1,7 +1,7 @@
-#include "library/globalwrap.hpp"
-#include "library/register-queue.hpp"
-#include "library/settings.hpp"
-#include "library/string.hpp"
+#include "globalwrap.hpp"
+#include "register-queue.hpp"
+#include "settings.hpp"
+#include "string.hpp"
 
 #include <set>
 #include <map>

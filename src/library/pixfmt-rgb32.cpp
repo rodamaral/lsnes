@@ -1,4 +1,4 @@
-#include "library/pixfmt-rgb32.hpp"
+#include "pixfmt-rgb32.hpp"
 
 pixel_format_rgb32::~pixel_format_rgb32() throw() {}
 

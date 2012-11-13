@@ -1,4 +1,4 @@
-#include "library/messagebuffer.hpp"
+#include "messagebuffer.hpp"
 
 messagebuffer::update_handler::~update_handler() throw()
 {

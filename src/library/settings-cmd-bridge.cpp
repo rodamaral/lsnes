@@ -1,5 +1,5 @@
-#include "library/settings-cmd-bridge.hpp"
-#include "library/string.hpp"
+#include "settings-cmd-bridge.hpp"
+#include "string.hpp"
 
 namespace
 {

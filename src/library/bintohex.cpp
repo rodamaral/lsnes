@@ -1,4 +1,4 @@
-#include "library/bintohex.hpp"
+#include "bintohex.hpp"
 #include <sstream>
 #include <iomanip>
 

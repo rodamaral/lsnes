@@ -1,5 +1,5 @@
-#ifndef _zip__hpp__included__
-#define _zip__hpp__included__
+#ifndef _library__zip__hpp__included__
+#define _library__zip__hpp__included__
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <iostream>
