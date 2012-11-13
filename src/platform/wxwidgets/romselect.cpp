@@ -13,6 +13,7 @@
 #include "core/window.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
+#include <boost/lexical_cast.hpp>
 
 #include "platform/wxwidgets/platform.hpp"
 

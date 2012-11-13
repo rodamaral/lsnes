@@ -80,9 +80,21 @@ void OOM_panic();
 /**
  * messages -> window::out().
  */
-std::ostream& _messages();
-#define messages _messages()
-
+class messages_relay_class
+{
+public:
+	operator std::ostream&() { return getstream(); }
+	static std::ostream& getstream();
+};
+template<typename T> inline std::ostream& operator<<(messages_relay_class& x, T value)
+{
+	return messages_relay_class::getstream() << value;
+};
+inline std::ostream& operator<<(messages_relay_class& x, std::ostream& (*fn)(std::ostream& o))
+{
+	return fn(messages_relay_class::getstream());
+};
+extern messages_relay_class messages;
 
 uint32_t gcd(uint32_t a, uint32_t b) throw();
 

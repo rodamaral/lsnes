@@ -224,10 +224,8 @@ void OOM_panic()
 	fatal_error();
 }
 
-std::ostream& _messages()
-{
-	return platform::out();
-}
+std::ostream& messages_relay_class::getstream() { return platform::out(); }
+messages_relay_class messages;
 
 uint32_t gcd(uint32_t a, uint32_t b) throw()
 {
@@ -255,8 +253,8 @@ void reached_main()
 	reached_main_flag = true;
 	init_threaded_malloc();
 	lsnes_cmd.set_oom_panic(OOM_panic);
-	lsnes_cmd.set_output(_messages());
-	cmd_bridge.set_output(_messages());
+	lsnes_cmd.set_output(platform::out());
+	cmd_bridge.set_output(platform::out());
 }
 
 std::string bsnes_core_version;
