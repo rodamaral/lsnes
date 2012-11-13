@@ -1,5 +1,5 @@
-#ifndef _png__hpp__included__
-#define _png__hpp__included__
+#ifndef _library__png__hpp__included__
+#define _library__png__hpp__included__
 
 #include <stdexcept>
 #include <cstdint>

@@ -1,4 +1,4 @@
-#include "library/pixfmt-rgb16.hpp"
+#include "pixfmt-rgb16.hpp"
 
 template<bool uvswap>
 pixel_format_rgb16<uvswap>::~pixel_format_rgb16() throw()

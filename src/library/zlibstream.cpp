@@ -1,5 +1,5 @@
-#include "library/zlibstream.hpp"
-#include "library/minmax.hpp"
+#include "zlibstream.hpp"
+#include "minmax.hpp"
 #include <stdexcept>
 #include <cstring>
 #include <cerrno>

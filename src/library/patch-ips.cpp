@@ -1,7 +1,7 @@
-#include "library/minmax.hpp"
-#include "library/patch.hpp"
-#include "library/serialization.hpp"
-#include "library/string.hpp"
+#include "minmax.hpp"
+#include "patch.hpp"
+#include "serialization.hpp"
+#include "string.hpp"
 #include <cstdint>
 #include <limits>
 #include <cstring>

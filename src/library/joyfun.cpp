@@ -1,5 +1,5 @@
-#include "library/joyfun.hpp"
-#include "library/string.hpp"
+#include "joyfun.hpp"
+#include "string.hpp"
 #include <sstream>
 #include <iostream>
 

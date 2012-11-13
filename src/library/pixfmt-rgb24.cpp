@@ -1,4 +1,4 @@
-#include "library/pixfmt-rgb24.hpp"
+#include "pixfmt-rgb24.hpp"
 #include <cstring>
 
 template<bool uvswap>

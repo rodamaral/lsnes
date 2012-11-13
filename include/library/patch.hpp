@@ -1,5 +1,5 @@
-#ifndef _slot__hpp__included__
-#define _slot__hpp__included__
+#ifndef _library__patch__hpp__included__
+#define _library__patch__hpp__included__
 
 #include <vector>
 #include <string>

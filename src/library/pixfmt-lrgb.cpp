@@ -1,4 +1,4 @@
-#include "library/pixfmt-lrgb.hpp"
+#include "pixfmt-lrgb.hpp"
 
 pixel_format_lrgb::~pixel_format_lrgb() throw()
 {

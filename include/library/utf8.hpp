@@ -1,5 +1,5 @@
-#ifndef _utf8__hpp__included__
-#define _utf8__hpp__included__
+#ifndef _library__utf8__hpp__included__
+#define _library__utf8__hpp__included__
 
 #include <cstdint>
 #include <cstdlib>

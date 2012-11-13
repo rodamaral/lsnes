@@ -1,4 +1,4 @@
-#include "library/workthread.hpp"
+#include "workthread.hpp"
 #include <stdexcept>
 #include <sys/time.h>
 
