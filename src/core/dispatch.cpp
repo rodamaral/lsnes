@@ -10,10 +10,10 @@
 #define END_EH_BLOCK(obj, call) } catch(std::bad_alloc& e) { \
 	OOM_panic(); \
 	} catch(std::exception& e) { \
-		messages << messages << "[dumper " << obj->get_name() << "] Warning: " call ": " << e.what() \
+		messages << "[dumper " << obj->get_name() << "] Warning: " call ": " << e.what() \
 			<< std::endl; \
 	} catch(int code) { \
-		messages << messages << "[dumper " << obj->get_name() << "] Warning: " call ": Error code #" << code \
+		messages << "[dumper " << obj->get_name() << "] Warning: " call ": Error code #" << code \
 			<< std::endl; \
 	}
 

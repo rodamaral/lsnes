@@ -213,10 +213,8 @@ void OOM_panic()
 	fatal_error();
 }
 
-std::ostream& _messages()
-{
-	return platform::out();
-}
+std::ostream& messages_relay_class::getstream() { return platform::out(); }
+messages_relay_class messages;
 
 uint32_t gcd(uint32_t a, uint32_t b) throw()
 {

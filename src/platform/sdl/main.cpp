@@ -14,6 +14,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
+#include "library/string.hpp"
 #include "library/zip.hpp"
 
 #include "platform/sdl/platform.hpp"
