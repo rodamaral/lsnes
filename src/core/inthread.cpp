@@ -1205,6 +1205,13 @@ out_parsing:
 			rptr = 0;
 			fire();
 		}
+		void kill()
+		{
+			quit = true;
+			while(!quit_ack)
+				usleep(100000);
+			usleep(100000);
+		}
 	protected:
 		void entry()
 		{
@@ -1215,6 +1222,7 @@ out_parsing:
 			} catch(std::exception& e) {
 				messages << "AIEEE... Fatal exception in voice thread: " << e.what() << std::endl;
 			}
+			quit_ack = true;
 		}
 		void entry2()
 		{
@@ -1249,8 +1257,10 @@ out_parsing:
 					handle_tangent_positive_edge(oenc, active_stream, total_compressed,
 						total_blocks);
 				}
-				else if(!active_flag && active_stream)
+				else if((!active_flag || quit) && active_stream)
 					handle_tangent_negative_edge(active_stream, total_compressed, total_blocks);
+				if(quit)
+					break;
 
 				//Read input, up to 25ms.
 				unsigned rate = audioapi_voice_rate();
@@ -1294,6 +1304,8 @@ out_parsing:
 	private:
 		size_t rptr;
 		double position;
+		volatile bool quit;
+		volatile bool quit_ack;
 	};
 
 	//The tangent function.
@@ -1307,6 +1319,8 @@ out_parsing:
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = false;
 		});
+
+	inthread_th* int_task;
 	
 }
 
@@ -1324,7 +1338,13 @@ void voice_frame_number(uint64_t newframe, double rate)
 
 void voicethread_task()
 {
-	new inthread_th;
+	int_task = new inthread_th;
+}
+
+void voicethread_kill()
+{
+	int_task->kill();
+	int_task = NULL;
 }
 
 uint64_t voicesub_parse_timebase(const std::string& n)
@@ -1705,12 +1725,7 @@ double voicesub_ts_seconds(uint64_t ts)
 	return ts / 48000.0;
 }
 #else
-void voicethread_task()
-{
-}
-
-void voice_frame_number(uint64_t newframe, double rate)
-{
-}
-
+void voicethread_task() {}
+void voice_frame_number(uint64_t newframe, double rate) {}
+void voicethread_kill() {}
 #endif

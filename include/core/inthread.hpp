@@ -6,6 +6,7 @@
 #include <string>
 
 void voicethread_task();
+void voicethread_kill();
 void voice_frame_number(uint64_t newframe, double rate);
 
 struct playback_stream_info

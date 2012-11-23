@@ -958,4 +958,5 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	}
 	information_dispatch::do_dump_end();
 	core_uninstall_handler();
+	voicethread_kill();
 }
