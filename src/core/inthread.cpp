@@ -124,12 +124,13 @@ namespace
 		opus_stream(uint64_t base, filesystem_ref filesys, uint32_t ctrl_cluster, uint32_t data_cluster);
 		//Import a stream with specified base time.
 		//Can throw.
-		opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data, bool compressed);
+		opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data,
+			external_stream_format extfmt);
 		//Delete this stream (also puts a ref)
 		void delete_stream() { deleting = true; put_ref(); }
 		//Export a stream.
 		//Can throw.
-		void export_stream(std::ofstream& data, bool compressed);
+		void export_stream(std::ofstream& data, external_stream_format extfmt);
 		//Get length of specified packet in samples.
 		uint16_t packet_length(uint32_t seqno)
 		{
@@ -146,7 +147,27 @@ namespace
 		//Set base time in samples for stream.
 		void timebase(uint64_t ts) { s_timebase = ts; }
 		//Get length of stream in samples.
-		uint64_t length() { return total_len; }
+		uint64_t length()
+		{
+			if(pregap_length + postgap_length > total_len)
+				return 0;
+			else
+				return total_len - pregap_length - postgap_length;
+		}
+		//Set the pregap length.
+		void set_pregap(uint32_t p) { pregap_length = p; }
+		//Get the pregap length.
+		uint32_t get_pregap() { return pregap_length; }
+		//Set the postgap length.
+		void set_potsgap(uint32_t p) { postgap_length = p; }
+		//Get the postgap length.
+		uint32_t get_postgap() { return postgap_length; }
+		//Set gain.
+		void set_gain(int16_t g) { gain = g; }
+		//Get gain.
+		int16_t get_gain() { return gain; }
+		//Get linear gain.
+		float get_gain_linear() { return pow(10, gain / 20); }
 		//Get number of packets in stream.
 		uint32_t blocks() { return packets.size(); }
 		//Is this stream locked?
@@ -163,9 +184,16 @@ namespace
 		//Not safe to call simultaneously with packet_length() or packet().
 		//Can throw.
 		void write(uint8_t len, const unsigned char* payload, size_t payload_len);
+		//Write stream trailer.
+		void write_trailier();
 		//Get clusters.
 		std::pair<uint32_t, uint32_t> get_clusters() { return std::make_pair(ctrl_cluster, data_cluster); }
 	private:
+		void export_stream_opusdemo(std::ofstream& data);
+		void export_stream_sox(std::ofstream& data);
+		void import_stream_opusdemo(std::ifstream& data);
+		void import_stream_sox(std::ifstream& data);
+
 		opus_stream(const opus_stream&);
 		opus_stream& operator=(const opus_stream&);
 		void destroy();
@@ -179,6 +207,9 @@ namespace
 		uint32_t next_moffset;
 		uint32_t ctrl_cluster;
 		uint32_t data_cluster;
+		uint32_t pregap_length;
+		uint32_t postgap_length;
+		int16_t gain;
 		bool locked;
 		mutex_class reflock;
 		unsigned refcount;
@@ -199,6 +230,9 @@ namespace
 		next_moffset = 0;
 		ctrl_cluster = 0;
 		data_cluster = 0;
+		pregap_length = 0;
+		postgap_length = 0;
+		gain = 0;
 	}
 
 	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys, uint32_t _ctrl_cluster,
@@ -214,11 +248,18 @@ namespace
 		next_mcluster = ctrl_cluster = _ctrl_cluster;
 		next_offset = 0;
 		next_moffset = 0;
+		pregap_length = 0;
+		postgap_length = 0;
+		gain = 0;
 		//Read the data buffers.
 		char buf[CLUSTER_SIZE];
 		uint32_t last_cluster_seen = next_mcluster;
 		uint64_t total_size = 0;
 		uint64_t total_frames = 0;
+		bool trailers = false;
+		bool saved_pointer_valid = false;
+		uint32_t saved_next_mcluster = 0;
+		uint32_t saved_next_moffset = 0;
 		while(true) {
 			last_cluster_seen = next_mcluster;
 			size_t r = fs.read_data(next_mcluster, next_moffset, buf, CLUSTER_SIZE);
@@ -228,10 +269,32 @@ namespace
 			}
 			//Find the first unused entry if any.
 			for(unsigned i = 0; i < CLUSTER_SIZE; i += 4)
-				if(!buf[i + 3]) {
-					//This entry is unused, end of stream.
-					next_moffset = i;
-					goto out_parsing;
+				if(!buf[i + 3] || trailers) {
+					//This entry is unused. If the next entry is also unused, that is the end.
+					//Otherwise, there might be stream trailers.
+					if(trailers && !buf[i + 3]) {
+						goto out_parsing;		//Ends for real.
+					}
+					if(!trailers) {
+						//Set the trailer flag and continue parsing.
+						//The saved offset must be placed here.
+						saved_next_mcluster = last_cluster_seen;
+						saved_next_moffset = i;
+						saved_pointer_valid = true;
+						trailers = true;
+						continue;
+					}
+					//This is a trailer entry.
+					if(buf[i + 3] == 2) {
+						//Pregap.
+						pregap_length = read32ube(buf + i) >> 8;
+					} else if(buf[i + 3] == 3) {
+						//Postgap.
+						postgap_length = read32ube(buf + i) >> 8;
+					} else if(buf[i + 3] == 4) {
+						//Gain.
+						gain = read16sbe(buf + i);
+					}
 				} else {
 					uint16_t psize = read16ube(buf + i);
 					uint8_t plen = read8ube(buf + i + 2);
@@ -247,10 +310,15 @@ namespace
 				}
 		}
 out_parsing:
-		;
+		//If saved pointer is valid, restore to that.
+		if(saved_pointer_valid) {
+			next_mcluster = saved_next_mcluster;
+			next_moffset = saved_next_moffset;
+		}
 	}
 
-	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data, bool compressed)
+	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data,
+		external_stream_format extfmt)
 		: fs(filesys)
 	{
 		refcount = 1;
@@ -264,115 +332,156 @@ out_parsing:
 		next_moffset = 0;
 		ctrl_cluster = 0;
 		data_cluster = 0;
+		pregap_length = 0;
+		postgap_length = 0;
+		gain = 0;
+		if(extfmt == EXTFMT_OPUSDEMO)
+			import_stream_opusdemo(data);
+		else if(extfmt == EXTFMT_SOX)
+			import_stream_sox(data);
+	}
+
+	void opus_stream::import_stream_opusdemo(std::ifstream& data)
+	{
 		int err;
 		unsigned char tmpi[65536];
 		float tmp[OPUS_MAX_OUT];
-		if(compressed) {
-			OpusDecoder* dec = opus_decoder_create(48000, 1, &err);
-			while(data) {
-				char head[8];
-				data.read(head, 8);
-				if(!data)
-					continue;
-				uint32_t psize = read32ube(head);
-				uint32_t pstate = read32ube(head + 4);
-				if(psize > sizeof(tmpi)) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					throw std::runtime_error("Packet too large to decode");
-				}
-				data.read(reinterpret_cast<char*>(tmpi), psize);
-				if(!data) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					throw std::runtime_error("Error reading opus packet");
-				}
-				int r = opus_decode_float(dec, tmpi, psize, tmp,
-					OPUS_MAX_OUT, 0);
-				if(r < 0) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
-				}
-				uint32_t cstate;
-				opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&cstate));
-				if(cstate != pstate) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					throw std::runtime_error("Opus packet checksum mismatch");
-				}
-				r = opus_decoder_get_nb_samples(dec, tmpi, psize);
-				if(r < 0 || r % 120) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					throw std::runtime_error("Error getting length of opus packet");
-				}
-				uint8_t plen = r / 120;
-				try {
-					write(plen, tmpi, psize);
-				} catch(...) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_decoder_destroy(dec);
-					throw;
-				}
-			}
-			opus_decoder_destroy(dec);
-		} else {
-			char header[260];
-			data.read(header, 32);
+		OpusDecoder* dec = opus_decoder_create(48000, 1, &err);
+		while(data) {
+			char head[8];
+			data.read(head, 8);
 			if(!data)
-				throw std::runtime_error("Can't read .sox header");
-			if(read32ule(header + 0) != 0x586F532EULL)
-				throw std::runtime_error("Bad .sox header magic");
-			if(read8ube(header + 4) > 28)
-				data.read(header + 32, read8ube(header + 4) - 28);
-			if(!data)
-				throw std::runtime_error("Can't read .sox header");
-			if(read64ule(header + 16) != 4676829883349860352ULL)
-				throw std::runtime_error("Bad .sox sampling rate");
-			if(read32ule(header + 24) != 1)
-				throw std::runtime_error("Only mono streams are supported");
-			uint64_t samples = read64ule(header + 8);
-			OpusEncoder* enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
-			opus_encoder_ctl(enc, OPUS_SET_BITRATE(OPUS_BITRATE));
-			for(uint64_t i = 0; i < samples; i += OPUS_BLOCK_SIZE) {
-				size_t bs = OPUS_BLOCK_SIZE;
-				if(i + bs > samples)
-					bs = samples - i;
-				data.read(reinterpret_cast<char*>(tmpi), 4 * bs);
-				if(!data) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_encoder_destroy(enc);
-					throw std::runtime_error("Can't read .sox data");
-				}
-				for(size_t j = 0; j < bs; j++)
-					tmp[j] = static_cast<float>(read32sle(tmpi + 4 * j)) / 268435456;
-				for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
-					tmp[j] = 0;
-				int r = opus_encode_float(enc, tmp, OPUS_BLOCK_SIZE, tmpi, sizeof(tmpi));
-				if(r < 0) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_encoder_destroy(enc);
-					(stringfmt() << "Error encoding opus packet: " << opus_strerror(r)).throwex();
-				}
-				try {
-					write(OPUS_BLOCK_SIZE / 120, tmpi, r);
-				} catch(...) {
-					if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-					if(data_cluster) fs.free_cluster_chain(data_cluster);
-					opus_encoder_destroy(enc);
-					throw;
-				}
+				continue;
+			uint32_t psize = read32ube(head);
+			uint32_t pstate = read32ube(head + 4);
+			if(psize > sizeof(tmpi)) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				throw std::runtime_error("Packet too large to decode");
 			}
-			opus_encoder_destroy(enc);
+			data.read(reinterpret_cast<char*>(tmpi), psize);
+			if(!data) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				throw std::runtime_error("Error reading opus packet");
+			}
+			int r = opus_decode_float(dec, tmpi, psize, tmp,
+				OPUS_MAX_OUT, 0);
+			if(r < 0) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
+			}
+			uint32_t cstate;
+			opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&cstate));
+			if(cstate != pstate) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				throw std::runtime_error("Opus packet checksum mismatch");
+			}
+			r = opus_decoder_get_nb_samples(dec, tmpi, psize);
+			if(r < 0 || r % 120) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				throw std::runtime_error("Error getting length of opus packet");
+			}
+			uint8_t plen = r / 120;
+			try {
+				write(plen, tmpi, psize);
+			} catch(...) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_decoder_destroy(dec);
+				throw;
+			}
+		}
+		opus_decoder_destroy(dec);
+		try {
+			write_trailier();
+		} catch(...) {
+			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+			if(data_cluster) fs.free_cluster_chain(data_cluster);
+			throw;
+		}
+	}
+
+	void opus_stream::import_stream_sox(std::ifstream& data)
+	{
+		int err;
+		unsigned char tmpi[65536];
+		float tmp[OPUS_MAX_OUT];
+		char header[260];
+		data.read(header, 32);
+		if(!data)
+			throw std::runtime_error("Can't read .sox header");
+		if(read32ule(header + 0) != 0x586F532EULL)
+			throw std::runtime_error("Bad .sox header magic");
+		if(read8ube(header + 4) > 28)
+			data.read(header + 32, read8ube(header + 4) - 28);
+		if(!data)
+			throw std::runtime_error("Can't read .sox header");
+		if(read64ule(header + 16) != 4676829883349860352ULL)
+			throw std::runtime_error("Bad .sox sampling rate");
+		if(read32ule(header + 24) != 1)
+			throw std::runtime_error("Only mono streams are supported");
+		uint64_t samples = read64ule(header + 8);
+		OpusEncoder* enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
+		opus_encoder_ctl(enc, OPUS_SET_BITRATE(OPUS_BITRATE));
+		int pregap;
+		opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&pregap));
+		pregap_length = pregap;
+		for(uint64_t i = 0; i < samples + pregap; i += OPUS_BLOCK_SIZE) {
+			size_t bs = OPUS_BLOCK_SIZE;
+			if(i + bs > samples + pregap)
+				bs = samples + pregap - i;
+			//We have to read zero bytes after the end of stream.
+			size_t readable = bs;
+			if(readable + i > samples)
+				readable = max(samples, i) - i;
+			if(readable > 0)
+				data.read(reinterpret_cast<char*>(tmpi), 4 * readable);
+			if(readable < bs)
+				memset(tmpi + 4 * readable, 0, 4 * (bs - readable));
+			if(!data) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_encoder_destroy(enc);
+				throw std::runtime_error("Can't read .sox data");
+			}
+			for(size_t j = 0; j < bs; j++)
+				tmp[j] = static_cast<float>(read32sle(tmpi + 4 * j)) / 268435456;
+			if(bs < OPUS_BLOCK_SIZE)
+				postgap_length = OPUS_BLOCK_SIZE - bs;
+			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
+				tmp[j] = 0;
+			int r = opus_encode_float(enc, tmp, OPUS_BLOCK_SIZE, tmpi, sizeof(tmpi));
+			if(r < 0) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_encoder_destroy(enc);
+				(stringfmt() << "Error encoding opus packet: " << opus_strerror(r)).throwex();
+			}
+			try {
+				write(OPUS_BLOCK_SIZE / 120, tmpi, r);
+			} catch(...) {
+				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+				if(data_cluster) fs.free_cluster_chain(data_cluster);
+				opus_encoder_destroy(enc);
+				throw;
+			}
+		}
+		opus_encoder_destroy(enc);
+		try {
+			write_trailier();
+		} catch(...) {
+			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+			if(data_cluster) fs.free_cluster_chain(data_cluster);
+			throw;
 		}
 	}
 
@@ -395,82 +504,108 @@ out_parsing:
 		delete this;
 	}
 
-	void opus_stream::export_stream(std::ofstream& data, bool compressed)
+	void opus_stream::export_stream_opusdemo(std::ofstream& data)
 	{
 		int err;
 		OpusDecoder* dec = opus_decoder_create(48000, 1, &err);
 		std::vector<unsigned char> p;
 		float tmp[OPUS_MAX_OUT];
-		if(compressed) {
-			for(size_t i = 0; i < packets.size(); i++) {
-				char head[8];
-				unsigned state;
-				try {
-					p = packet(i);
-				} catch(std::exception& e) {
-					opus_decoder_destroy(dec);
-					(stringfmt() << "Error reading opus packet: " << e.what()).throwex();
-				}
-				int r = opus_decode_float(dec, &p[0], p.size(), tmp, OPUS_MAX_OUT, 0);
-				if(r < 0) {
-					opus_decoder_destroy(dec);
-					(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
-				}
-				opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&state));
-				write32ube(head + 0, p.size());
-				write32ube(head + 4, state);
-				data.write(head, 8);
-				data.write(reinterpret_cast<char*>(&p[0]), p.size());
-				if(!data) {
-					opus_decoder_destroy(dec);
-					throw std::runtime_error("Error writing opus packet");
-				}
+		for(size_t i = 0; i < packets.size(); i++) {
+			char head[8];
+			unsigned state;
+			try {
+				p = packet(i);
+			} catch(std::exception& e) {
+				opus_decoder_destroy(dec);
+				(stringfmt() << "Error reading opus packet: " << e.what()).throwex();
 			}
-		} else {
-			char header[32];
-			write64ule(header, 0x1C586F532EULL);			//Magic and header size.
-			write64ule(header + 16, 4676829883349860352ULL);	//Sampling rate.
-			write32ule(header + 24, 1);
-			uint64_t tlen = 0;
-			data.write(header, 32);
+			int r = opus_decode_float(dec, &p[0], p.size(), tmp, OPUS_MAX_OUT, 0);
+			if(r < 0) {
+				opus_decoder_destroy(dec);
+				(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
+			}
+			opus_decoder_ctl(dec, OPUS_GET_FINAL_RANGE(&state));
+			write32ube(head + 0, p.size());
+			write32ube(head + 4, state);
+			data.write(head, 8);
+			data.write(reinterpret_cast<char*>(&p[0]), p.size());
 			if(!data) {
 				opus_decoder_destroy(dec);
-				throw std::runtime_error("Error writing PCM data.");
-			}
-			for(size_t i = 0; i < packets.size(); i++) {
-				char blank[4] = {0, 0, 0, 0};
-				std::vector<unsigned char> p;
-				try {
-					p = packet(i);
-				} catch(std::exception& e) {
-					opus_decoder_destroy(dec);
-					(stringfmt() << "Error reading opus packet: " << e.what()).throwex();
-				}
-				uint32_t len = packet_length(i);
-				int r = opus_decode_float(dec, &p[0], p.size(), tmp, OPUS_MAX_OUT, 0);
-				tlen += len;
-				if(r < 0) {
-					opus_decoder_destroy(dec);
-					(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
-				} else {
-					for(uint32_t j = 0; j < len; j++) {
-						int32_t s = (int32_t)(tmp[j] * 268435456.0);
-						write32sle(blank, s);
-						data.write(blank, 4);
-						if(!data)
-							throw std::runtime_error("Error writing PCM data.");
-					}
-				}
-			}
-			data.seekp(0, std::ios_base::beg);
-			write64ule(header + 8, tlen);
-			data.write(header, 32);
-			if(!data) {
-				opus_decoder_destroy(dec);
-				throw std::runtime_error("Error writing PCM data.");
+				throw std::runtime_error("Error writing opus packet");
 			}
 		}
 		opus_decoder_destroy(dec);
+	}
+
+	void opus_stream::export_stream_sox(std::ofstream& data)
+	{
+		int err;
+		OpusDecoder* dec = opus_decoder_create(48000, 1, &err);
+		std::vector<unsigned char> p;
+		float tmp[OPUS_MAX_OUT];
+		char header[32];
+		write64ule(header, 0x1C586F532EULL);			//Magic and header size.
+		write64ule(header + 16, 4676829883349860352ULL);	//Sampling rate.
+		write32ule(header + 24, 1);
+		uint64_t tlen = 0;
+		uint32_t lookahead_thrown = 0;
+		data.write(header, 32);
+		if(!data) {
+			opus_decoder_destroy(dec);
+			throw std::runtime_error("Error writing PCM data.");
+		}
+		float lgain = get_gain_linear();
+		for(size_t i = 0; i < packets.size(); i++) {
+			char blank[4] = {0, 0, 0, 0};
+			std::vector<unsigned char> p;
+			try {
+				p = packet(i);
+			} catch(std::exception& e) {
+				opus_decoder_destroy(dec);
+				(stringfmt() << "Error reading opus packet: " << e.what()).throwex();
+			}
+			uint32_t len = packet_length(i);
+			int r = opus_decode_float(dec, &p[0], p.size(), tmp, OPUS_MAX_OUT, 0);
+			bool is_last = (i == packets.size() - 1);
+			uint32_t pregap_throw = 0;
+			uint32_t postgap_throw = 0;
+			if(r < 0) {
+				opus_decoder_destroy(dec);
+				(stringfmt() << "Error decoding opus packet: " << opus_strerror(r)).throwex();
+			}
+			if(lookahead_thrown < pregap_length) {
+				//We haven't yet thrown the full pregap. Throw some.
+				uint32_t maxthrow = pregap_length - lookahead_thrown;
+				pregap_throw = min(len, maxthrow);
+				lookahead_thrown += pregap_length;
+			}
+			if(is_last)
+				postgap_throw = min(len - pregap_throw, postgap_length);
+			tlen += (len - pregap_throw - postgap_throw);
+			for(uint32_t j = pregap_throw; j < len - postgap_throw; j++) {
+				int32_t s = (int32_t)(tmp[j] * lgain * 268435456.0);
+				write32sle(blank, s);
+				data.write(blank, 4);
+				if(!data)
+					throw std::runtime_error("Error writing PCM data.");
+			}
+		}
+		data.seekp(0, std::ios_base::beg);
+		write64ule(header + 8, tlen);
+		data.write(header, 32);
+		if(!data) {
+			opus_decoder_destroy(dec);
+			throw std::runtime_error("Error writing PCM data.");
+		}
+		opus_decoder_destroy(dec);
+	}
+
+	void opus_stream::export_stream(std::ofstream& data, external_stream_format extfmt)
+	{
+		if(extfmt == EXTFMT_OPUSDEMO)
+			export_stream_opusdemo(data);
+		else if(extfmt == EXTFMT_SOX)
+			export_stream_sox(data);
 	}
 
 	void opus_stream::write(uint8_t len, const unsigned char* payload, size_t payload_len)
@@ -497,6 +632,29 @@ out_parsing:
 		}
 	}
 
+	void opus_stream::write_trailier()
+	{
+		try {
+			char descriptor[16];
+			uint32_t used_mcluster, used_moffset;
+			//The allocation must be done for real.
+			if(!next_mcluster)
+				next_mcluster = ctrl_cluster = fs.allocate_cluster();
+			//But the write must not update the pointers..
+			uint32_t tmp_mcluster = next_mcluster;
+			uint32_t tmp_moffset = next_moffset;
+			write32ube(descriptor, 0);
+			write32ube(descriptor + 4, (pregap_length << 8) | 0x02);
+			write32ube(descriptor + 8, (postgap_length << 8) | 0x03);
+			write16sbe(descriptor + 12, gain);
+			write16ube(descriptor + 14, 0x0004);
+			fs.write_data(tmp_mcluster, tmp_moffset, descriptor, 16, used_mcluster, used_moffset);
+		} catch(std::exception& e) {
+			(stringfmt() << "Can't write stream trailer: " << e.what()).throwex();
+		}
+	}
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Playing opus stream.
 	struct opus_playback_stream
@@ -520,6 +678,8 @@ out_parsing:
 		void decode_block();
 		float output[OPUS_MAX_OUT];
 		unsigned output_left;
+		uint32_t pregap_thrown;
+		bool postgap_thrown = false;
 		OpusDecoder* decoder;
 		opus_stream& stream;
 		uint32_t next_block;
@@ -534,6 +694,8 @@ out_parsing:
 		stream.lock();
 		next_block = 0;
 		output_left = 0;
+		pregap_thrown = 0;
+		postgap_thrown = false;
 		blocks = stream.blocks();
 		decoder = opus_decoder_create(OPUS_SAMPLERATE, 1, &err);
 		if(!decoder)
@@ -571,13 +733,28 @@ out_parsing:
 			for(unsigned i = 0; i < plen; i++)
 				output[output_left++] = 0;
 		}
+		//Throw the pregap away if needed.
+		if(pregap_thrown < stream.get_pregap()) {
+			uint32_t throw_amt = min(stream.get_pregap() - pregap_thrown, (uint32_t)output_left);
+			if(throw_amt && throw_amt < output_left)
+				memmove(output, output + throw_amt, (output_left - throw_amt) * sizeof(float));
+			output_left -= throw_amt;
+			pregap_thrown += throw_amt;
+		}
 		next_block++;
 	}
 
 	void opus_playback_stream::read(float* data, size_t samples)
 	{
+		float lgain = stream.get_gain_linear();
 		while(samples > 0) {
 			decode_block();
+			if(next_block >= blocks && !postgap_thrown) {
+				//This is the final packet. Throw away postgap samples at the end.
+				uint32_t thrown = min(stream.get_postgap(), (uint32_t)output_left);
+				output_left -= thrown;
+				postgap_thrown = true;
+			}
 			if(next_block >= blocks && !output_left) {
 				//Zerofill remainder.
 				for(size_t i = 0; i < samples; i++)
@@ -585,8 +762,12 @@ out_parsing:
 				return;
 			}
 			unsigned maxcopy = min(static_cast<unsigned>(samples), output_left);
-			memcpy(data, output, maxcopy * sizeof(float));
-			if(maxcopy < output_left)
+			if(maxcopy) {
+				memcpy(data, output, maxcopy * sizeof(float));
+				for(size_t i = 0; i < maxcopy; i++)
+					data[i] *= lgain;
+			}
+			if(maxcopy < output_left && maxcopy)
 				memmove(output, output + maxcopy, (output_left - maxcopy) * sizeof(float));
 			output_left -= maxcopy;
 			samples -= maxcopy;
@@ -596,6 +777,10 @@ out_parsing:
 
 	void opus_playback_stream::skip(uint64_t samples)
 	{
+		//Adjust for preskip and declare all preskip already thrown away.
+		pregap_thrown = stream.get_pregap();
+		samples += pregap_thrown;
+		postgap_thrown = false;
 		//First, skip inside decoded samples.
 		if(samples < output_left) {
 			//Skipping less than amount in output buffer. Just discard from output buffer and try
@@ -1171,6 +1356,9 @@ out_parsing:
 		active_stream = NULL;
 		try {
 			active_stream = new opus_stream(ctime, current_collection->get_filesystem());
+			int pregap;
+			opus_encoder_ctl(e, OPUS_GET_LOOKAHEAD(&pregap));
+			active_stream->set_pregap(pregap);
 		} catch(std::exception& e) {
 			messages << "Can't start stream: " << e.what() << std::endl;
 			return;
@@ -1185,6 +1373,7 @@ out_parsing:
 		messages << "Tangent negative edge. "
 			<< total_compressed << " bytes in " << total_blocks << " blocks, "
 			<< (0.4 * total_compressed / total_blocks) << " kbps" << std::endl;
+		active_stream->write_trailier();
 		if(current_collection) {
 			try {
 				current_collection->add_stream(*active_stream);
@@ -1321,7 +1510,7 @@ out_parsing:
 		});
 
 	inthread_th* int_task;
-	
+
 }
 
 void voice_frame_number(uint64_t newframe, double rate)
@@ -1448,7 +1637,7 @@ namespace
 				<< std::endl;
 		});
 
-	void import_cmd_common(const std::string& x, const char* postfix, bool mode)
+	void import_cmd_common(const std::string& x, const char* postfix, external_stream_format mode)
 	{
 		umutex_class m2(current_collection_lock);
 		if(!current_collection) {
@@ -1483,16 +1672,16 @@ namespace
 		"import-stream-opus <timebase> <filename>\nImport opus stream from <filename>, starting at "
 		"<timebase>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			import_cmd_common(x, "opus", true);
+			import_cmd_common(x, "opus", EXTFMT_OPUSDEMO);
 		});
 
 	function_ptr_command<const std::string&> import_stream_p("import-stream-pcm", "Import a PCM stream",
 		"import-stream-pcm <timebase> <filename>\nImport PCM stream from <filename>, starting at <timebase>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			import_cmd_common(x, "pcm", false);
+			import_cmd_common(x, "pcm", EXTFMT_SOX);
 		});
 
-	void export_cmd_common(const std::string& x, const char* postfix, bool mode)
+	void export_cmd_common(const std::string& x, const char* postfix, external_stream_format mode)
 	{
 		umutex_class m2(current_collection_lock);
 		if(!current_collection) {
@@ -1528,13 +1717,13 @@ namespace
 	function_ptr_command<const std::string&> export_stream_c("export-stream-opus", "Export a opus stream",
 		"export-stream-opus <id> <filename>\nExport opus stream <id> to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			export_cmd_common(x, "opus", true);
+			export_cmd_common(x, "opus", EXTFMT_OPUSDEMO);
 		});
 
 	function_ptr_command<const std::string&> export_stream_p("export-stream-pcm", "Export a PCM stream",
 		"export-stream-pcm <id> <filename>\nExport PCM stream <id> to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			export_cmd_common(x, "pcm", false);
+			export_cmd_common(x, "pcm", EXTFMT_SOX);
 		});
 
 	function_ptr_command<const std::string&> export_sstream("export-superstream", "Export superstream",
@@ -1630,7 +1819,7 @@ void voicesub_play_stream(uint64_t id)
 	s->put_ref();
 }
 
-void voicesub_export_stream(uint64_t id, const std::string& filename, bool opus)
+void voicesub_export_stream(uint64_t id, const std::string& filename, external_stream_format fmt)
 {
 	umutex_class m2(current_collection_lock);
 	if(!current_collection)
@@ -1644,7 +1833,7 @@ void voicesub_export_stream(uint64_t id, const std::string& filename, bool opus)
 		throw std::runtime_error("Can't open output file");
 	}
 	try {
-		st->export_stream(s, opus);
+		st->export_stream(s, fmt);
 	} catch(std::exception& e) {
 		st->put_ref();
 		(stringfmt() << "Export failed: " << e.what()).throwex();
@@ -1652,16 +1841,16 @@ void voicesub_export_stream(uint64_t id, const std::string& filename, bool opus)
 	st->put_ref();
 }
 
-uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, bool opus)
+uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt)
 {
 	umutex_class m2(current_collection_lock);
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
-	
+
 	std::ifstream s(filename, std::ios_base::in | std::ios_base::binary);
 	if(!s)
 		throw std::runtime_error("Can't open input file");
-	opus_stream* st = new opus_stream(ts, current_collection->get_filesystem(), s, opus);
+	opus_stream* st = new opus_stream(ts, current_collection->get_filesystem(), s, fmt);
 	uint64_t id;
 	try {
 		id = current_collection->add_stream(*st);

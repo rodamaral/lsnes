@@ -194,7 +194,7 @@ void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		voicesub_export_stream(id, filename, true);
+		voicesub_export_stream(id, filename, EXTFMT_OPUSDEMO);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -213,7 +213,7 @@ void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		voicesub_export_stream(id, filename, false);
+		voicesub_export_stream(id, filename, EXTFMT_SOX);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -248,7 +248,7 @@ void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		voicesub_import_stream(ts, filename, true);
+		voicesub_import_stream(ts, filename, EXTFMT_OPUSDEMO);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -267,7 +267,7 @@ void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
 		} catch(...) {
 			return;
 		}
-		voicesub_import_stream(ts, filename, false);
+		voicesub_import_stream(ts, filename, EXTFMT_SOX);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
