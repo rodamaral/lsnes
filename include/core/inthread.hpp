@@ -13,6 +13,7 @@ enum external_stream_format
 {
 	EXTFMT_OPUSDEMO,
 	EXTFMT_SOX,
+	EXTFMT_OGGOPUS
 };
 
 struct playback_stream_info

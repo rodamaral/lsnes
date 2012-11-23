@@ -1,3 +1,4 @@
+#include <lsnes.hpp>
 #include <cstdint>
 #ifdef WITH_OPUS_CODEC
 #include "library/filesys.hpp"
@@ -5,6 +6,7 @@
 #include "library/workthread.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"
+#include "library/ogg.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/framerate.hpp"
@@ -18,6 +20,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <sys/time.h>
+#include <zlib.h>
 //Fsck it.
 #define OPUS_BUILD
 #include "opus/opus.h"
@@ -41,10 +44,14 @@
 #define ITERATION_TIME 15000
 //Opus bitrate to use.
 #define OPUS_BITRATE 48000
+//Ogg Opus granule rate.
+#define OGGOPUS_GRANULERATE 48000
 //Record buffer size threshold divider.
 #define REC_THRESHOLD_DIV 40
 //Playback buffer size threshold divider.
 #define PLAY_THRESHOLD_DIV 30
+//Special granule position: None.
+#define GRANULEPOS_NONE 0xFFFFFFFFFFFFFFFFULL
 
 namespace
 {
@@ -191,8 +198,10 @@ namespace
 	private:
 		void export_stream_opusdemo(std::ofstream& data);
 		void export_stream_sox(std::ofstream& data);
+		void export_stream_oggopus(std::ofstream& data);
 		void import_stream_opusdemo(std::ifstream& data);
 		void import_stream_sox(std::ifstream& data);
+		void import_stream_oggopus(std::ifstream& data);
 
 		opus_stream(const opus_stream&);
 		opus_stream& operator=(const opus_stream&);
@@ -337,6 +346,8 @@ out_parsing:
 		gain = 0;
 		if(extfmt == EXTFMT_OPUSDEMO)
 			import_stream_opusdemo(data);
+		else if(extfmt == EXTFMT_OGGOPUS)
+			import_stream_oggopus(data);
 		else if(extfmt == EXTFMT_SOX)
 			import_stream_sox(data);
 	}
@@ -402,6 +413,223 @@ out_parsing:
 		}
 		opus_decoder_destroy(dec);
 		try {
+			write_trailier();
+		} catch(...) {
+			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
+			if(data_cluster) fs.free_cluster_chain(data_cluster);
+			throw;
+		}
+	}
+
+	class oggopus_importer
+	{
+	public:
+		struct packet
+		{
+			const unsigned char* data;
+			size_t size;
+			unsigned units;
+		};
+		oggopus_importer();
+		void put_page(const ogg_page& p);
+		bool packet_pending();
+		packet get_packet();
+		size_t get_postgap();
+	private:
+		oggopus_importer(const oggopus_importer&);
+		oggopus_importer& operator=(const oggopus_importer&);
+		std::vector<uint8_t> incomplete;
+		std::vector<uint8_t> pincomplete;
+		const ogg_page* curpage;
+		size_t curpacket;
+		size_t pagepackets;
+		size_t postgap;
+		bool eospage;
+		bool incomplete_f;
+		uint64_t expected_granule;
+		bool granule_correction_done;
+	};
+
+	oggopus_importer::oggopus_importer()
+	{
+		curpacket = 0;
+		curpage = 0;
+		pagepackets = 0;
+		postgap = 0;
+		eospage = false;
+		incomplete_f = false;
+		expected_granule = 0;
+		granule_correction_done = false;
+	}
+
+	void oggopus_importer::put_page(const ogg_page& p)
+	{
+		//If not continued packet, drop the last packet.
+		if(!p.get_continue() && incomplete_f)
+			messages << "Warning: Incomplete packet not continued by the next page" << std::endl;
+		if(!p.get_continue())
+			incomplete.clear();
+		//If totally empty page...
+		if(p.get_packet_count() == 0) {
+			if(p.get_granulepos() != ogg_page::granulepos_none)
+				(stringfmt() << "Bad granulepos in empty page: Expected -1, got "
+					<< p.get_granulepos()).throwex();
+			curpacket = 0;
+			pagepackets = 0;
+			curpage = &p;
+			return;
+		}
+		//If continued packet, paste packet 0 to previous.
+		size_t tmppackets = p.get_packet_count();
+		bool tmp_incomplete;
+		if((tmp_incomplete = p.get_last_packet_incomplete()))
+			tmppackets--;
+		if(tmppackets == 0 && p.get_granulepos() != ogg_page::granulepos_none)
+			(stringfmt() << "Bad granulepos in page with no complete packets: Expected -1, got "
+				<< p.get_granulepos()).throwex();
+		if(tmppackets > 0 && p.get_granulepos() == ogg_page::granulepos_none)
+			(stringfmt() << "Bad granulepos in page with complete packets: Expected != -1, got "
+				<< "-1").throwex();
+		auto p0 = p.get_packet(0);
+		size_t off = incomplete.size();
+		incomplete.resize(off + p0.second);
+		if(p0.second)
+			memcpy(&incomplete[off], p0.first, p0.second);
+		incomplete_f = tmp_incomplete;
+		pagepackets = tmppackets;
+		curpacket = 0;
+		curpage = &p;
+		eospage = p.get_eos();
+	}
+
+	bool oggopus_importer::packet_pending()
+	{
+		return (curpacket < pagepackets);
+	}
+
+	oggopus_importer::packet oggopus_importer::get_packet()
+	{
+		oggopus_importer::packet p;
+		if(curpacket == 0) {
+			//Packet 0 is special.
+			pincomplete = incomplete;
+			p.data = &pincomplete[0];
+			p.size = pincomplete.size();
+		} else {
+			auto pn = curpage->get_packet(curpacket);
+			p.data = pn.first;
+			p.size = pn.second;
+		}
+		curpacket++;
+		if(curpacket == pagepackets && incomplete_f) {
+			//Copy the incomplete page to buffer.
+			auto pn = curpage->get_packet(pagepackets);
+			incomplete.resize(pn.second);
+			if(pn.second)
+				memcpy(&incomplete[0], pn.first, pn.second);
+		}
+		if(!p.size) {
+			messages << "Warning, skipping empty Opus packet" << std::endl;
+			p.units = 0;
+		} else {
+			int frames = opus_packet_get_nb_frames(p.data, p.size);
+			int samples_pf = opus_packet_get_samples_per_frame(p.data, OGGOPUS_GRANULERATE);
+			if(frames < 0 || samples_pf < 0)
+				(stringfmt() << "Bad Opus packet").throwex();
+			p.units = frames * samples_pf / 120;
+		}
+		expected_granule += p.units * 120;
+		if(curpacket == pagepackets && curpage->get_eos()) {
+			if(curpage->get_eos()) {
+				//The postgap is expected_granule - granulepos.
+				if(curpage->get_granulepos() > expected_granule)
+					(stringfmt() << "Page granule too large, expected maximum of " <<
+						expected_granule << ", got " << curpage->get_granulepos()).throwex();
+				postgap = expected_granule - curpage->get_granulepos();
+				if(postgap > p.units * 120) {
+					messages << "Warning, postgap too large, clipped to last packet" << std::endl;
+					postgap = p.units * 120;
+				}
+			} else if(!granule_correction_done)
+				expected_granule = curpage->get_granulepos();
+			else
+				(stringfmt() << "Page granule invalid, expected " <<
+					expected_granule << ", got " << curpage->get_granulepos()).throwex();
+			granule_correction_done = true;
+		}
+		return p;
+	}
+
+	size_t oggopus_importer::get_postgap()
+	{
+		return postgap;
+	}
+
+	void opus_stream::import_stream_oggopus(std::ifstream& data)
+	{
+		ogg_stream_reader_iostreams reader(data);
+		ogg_page page;
+		oggopus_importer importer;
+		uint32_t stream_seq = 0;	//The imprinting duckling model.
+		int state = 0;			//Not locked.
+		size_t advance;
+		uint32_t last_page_seen = 0xFFFFFFFFUL;
+		bool seen_data = false;
+		reader.set_errors_to(messages);
+		try {
+			while(reader.get_page(page)) {
+				if(state && page.get_stream() != stream_seq)
+					continue;	//Wrong stream.
+				if(state && page.get_sequence() != last_page_seen + 1)
+					messages << "Warning: Packet(s) missing in OggOpus stream" << std::endl;
+				last_page_seen = page.get_sequence();
+				struct oggopus_header h;
+				struct oggopus_tags t;
+				size_t packets = page.get_packet_count();
+				switch(state) {
+				case 0:		//Not locked.
+					try {
+						h = parse_oggopus_header(page);
+					} catch(...) {
+						continue;
+					}
+					if(h.streams != 1)
+						throw std::runtime_error("Multistream OggOpus streams are not " 
+							"supported");
+					state = 1;	//Expecting comment.
+					pregap_length = h.preskip;
+					gain = h.gain;
+					stream_seq = page.get_stream();
+					last_page_seen = page.get_sequence();
+					break;
+				case 1:		//Expecting comment.
+					t = parse_oggopus_tags(page);
+					state = 2;	//Data page.
+					if(page.get_eos())
+						throw std::runtime_error("Empty OggOpus stream");
+					//We don't do anything with this.
+					break;
+				case 2:		//Data page.
+					importer.put_page(page);
+					while(importer.packet_pending()) {
+						auto p = importer.get_packet();
+						if(p.units)
+							write(p.units, p.data, p.size);
+					}
+					if(page.get_eos()) {
+						state = 3;	//End of stream.
+						goto out;
+					}
+				}
+			}
+out:
+			if(state == 0)
+				throw std::runtime_error("No OggOpus stream found");
+			if(state == 1)
+				throw std::runtime_error("Oggopus stream missing required tags page");
+			if(state == 2)
+				messages << "Warning: Incomplete Oggopus stream." << std::endl;
+			postgap_length = importer.get_postgap();
 			write_trailier();
 		} catch(...) {
 			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
@@ -537,6 +765,64 @@ out_parsing:
 		opus_decoder_destroy(dec);
 	}
 
+	void opus_stream::export_stream_oggopus(std::ofstream& data)
+	{
+		oggopus_header header;
+		oggopus_tags tags;
+		ogg_stream_writer_iostreams writer(data);
+		//Headers / Tags.
+		header.version = 1;
+		header.channels = 1;
+		header.preskip = pregap_length;
+		header.rate = OPUS_SAMPLERATE;
+		header.gain = 0;
+		header.map_family = 0;
+		header.streams = 1;
+		header.coupled = 0;
+		header.chanmap[0] = 0;
+		memset(header.chanmap + 1, 255, 254);
+		tags.vendor = "lsnes rr" + lsnes_version;
+		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
+		struct ogg_page hpage = serialize_oggopus_header(header);
+		struct ogg_page tpage = serialize_oggopus_tags(tags);
+		struct ogg_page ppage;
+		uint64_t true_granule = 0;
+		uint32_t seq = 2;
+		//Empty stream?
+		if(!packets.size())
+			tpage.set_eos(true);
+		writer.put_page(hpage);
+		writer.put_page(tpage);
+		for(size_t i = 0; i < packets.size(); i++) {
+			std::vector<unsigned char> p;
+			try {
+				p = packet(i);
+			} catch(std::exception& e) {
+				(stringfmt() << "Error reading opus packet: " << e.what()).throwex();
+			}
+			if(!p.size())
+				(stringfmt() << "Empty Opus packet is not valid").throwex();
+			int frames = opus_packet_get_nb_frames(&p[0], p.size());
+			int samples_pf = opus_packet_get_samples_per_frame(&p[0], OGGOPUS_GRANULERATE);
+			if(frames < 0 || samples_pf < 0)
+				(stringfmt() << "Bad Opus packet").throwex();
+			if(!ppage.append_packet(&p[0], p.size())) {
+				//Won't fit.
+				ppage.set_granulepos(true_granule);
+				ppage.set_sequence(seq++);
+				writer.put_page(ppage);
+				ppage = ogg_page();	//Reset.
+				if(!ppage.append_packet(&p[0], p.size()))
+					throw std::runtime_error("Internal error: Opus packet larger than page");
+			}
+			true_granule += frames * samples_pf;
+		}
+		ppage.set_eos(true);
+		ppage.set_sequence(seq++);
+		ppage.set_granulepos(true_granule - postgap_length);
+		writer.put_page(ppage);
+	}
+
 	void opus_stream::export_stream_sox(std::ofstream& data)
 	{
 		int err;
@@ -604,6 +890,8 @@ out_parsing:
 	{
 		if(extfmt == EXTFMT_OPUSDEMO)
 			export_stream_opusdemo(data);
+		else if(extfmt == EXTFMT_OGGOPUS)
+			export_stream_oggopus(data);
 		else if(extfmt == EXTFMT_SOX)
 			export_stream_sox(data);
 	}
@@ -1681,6 +1969,13 @@ namespace
 			import_cmd_common(x, "pcm", EXTFMT_SOX);
 		});
 
+	function_ptr_command<const std::string&> import_stream_o("import-stream-ogg", "Import a OggOpus stream",
+		"import-stream-ogg <timebase> <filename>\nImport OggOpus stream from <filename>, starting at "
+		"<timebase>",
+		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			import_cmd_common(x, "ogg", EXTFMT_OGGOPUS);
+		});
+
 	void export_cmd_common(const std::string& x, const char* postfix, external_stream_format mode)
 	{
 		umutex_class m2(current_collection_lock);
@@ -1724,6 +2019,12 @@ namespace
 		"export-stream-pcm <id> <filename>\nExport PCM stream <id> to <filename>",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
 			export_cmd_common(x, "pcm", EXTFMT_SOX);
+		});
+
+	function_ptr_command<const std::string&> export_stream_o("export-stream-ogg", "Export a OggOpus stream",
+		"export-stream-ogg <id> <filename>\nExport OggOpus stream <id> to <filename>",
+		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			export_cmd_common(x, "ogg", EXTFMT_OGGOPUS);
 		});
 
 	function_ptr_command<const std::string&> export_sstream("export-superstream", "Export superstream",
