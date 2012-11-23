@@ -6,8 +6,15 @@
 #include <string>
 
 void voicethread_task();
-void voicethread_task_end();
+void voicethread_kill();
 void voice_frame_number(uint64_t newframe, double rate);
+
+enum external_stream_format
+{
+	EXTFMT_OPUSDEMO,
+	EXTFMT_SOX,
+	EXTFMT_OGGOPUS
+};
 
 struct playback_stream_info
 {
@@ -19,8 +26,8 @@ struct playback_stream_info
 bool voicesub_collection_loaded();
 std::list<playback_stream_info> voicesub_get_stream_info();
 void voicesub_play_stream(uint64_t id);
-void voicesub_export_stream(uint64_t id, const std::string& filename, bool opus);
-uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, bool opus);
+void voicesub_export_stream(uint64_t id, const std::string& filename, external_stream_format fmt);
+uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, external_stream_format fmt);
 void voicesub_delete_stream(uint64_t id);
 void voicesub_export_superstream(const std::string& filename);
 void voicesub_load_collection(const std::string& filename);

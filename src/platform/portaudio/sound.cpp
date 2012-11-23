@@ -132,7 +132,7 @@ namespace
 
 			//Blacklist these devices for recording, portaudio is buggy with recording off
 			//these things.
-			bool buggy = /*(!strcmp(inf->name, "default") || !strcmp(inf->name, "sysdefault"));*/false;
+			bool buggy = (!strcmp(inf->name, "default") || !strcmp(inf->name, "sysdefault"));
 
 			PaStreamParameters input;
 			memset(&input, 0, sizeof(input));
