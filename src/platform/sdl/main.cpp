@@ -39,8 +39,8 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	movie.projectid = get_random_hexstring(40);
 	movie.gametype = &r.rtype->combine_region(*r.region);
 	for(size_t i = 0; i < sizeof(r.romimg)/sizeof(r.romimg[0]); i++) {
-		movie.romimg_sha256[i] = r.romimg[i].sha256;
-		movie.romxml_sha256[i] = r.romxml[i].sha256;
+		movie.romimg_sha256[i] = r.romimg[i].sha_256;
+		movie.romxml_sha256[i] = r.romxml[i].sha_256;
 	}
 	movie.movie_sram = load_sram_commandline(cmdline);
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {

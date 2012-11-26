@@ -47,11 +47,6 @@ namespace
 		return 1;
 	}
 
-	unsigned header_fn(size_t r)
-	{
-		return 0;
-	}
-
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
 	extern core_type type_dmg;
@@ -153,9 +148,9 @@ namespace
 	uint64_t magic[4] = {35112, 2097152, 16742706, 626688};
 	
 	core_region region_world("world", "World", 0, 0, false, magic, regions_compatible);
-	core_romimage_info image_rom_dmg("rom", "Cartridge ROM", 1, header_fn);
-	core_romimage_info image_rom_gbc("rom", "Cartridge ROM", 1, header_fn);
-	core_romimage_info image_rom_gbca("rom", "Cartridge ROM", 1, header_fn);
+	core_romimage_info image_rom_dmg("rom", "Cartridge ROM", 1, NULL);
+	core_romimage_info image_rom_gbc("rom", "Cartridge ROM", 1, NULL);
+	core_romimage_info image_rom_gbca("rom", "Cartridge ROM", 1, NULL);
 	core_type type_dmg("dmg", "Game Boy", 1, load_rom_dmg, "gb;dmg");
 	core_type type_gbc("gbc", "Game Boy Color", 0, load_rom_gbc, "gbc;cgb");
 	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", 2, load_rom_gbc_gba, "");

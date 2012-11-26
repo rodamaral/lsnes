@@ -38,11 +38,15 @@ private:
 
 struct core_romimage_info
 {
+	//If headersize is NULL, always use 0.
 	core_romimage_info(const std::string& iname, const std::string& hname, unsigned mandatory,
 		unsigned (*headersize)(size_t imagesize));
+	//This sets pass_by_filename!
+	core_romimage_info(const std::string& iname, const std::string& hname, unsigned mandatory);
 	std::string iname;
 	std::string hname;
 	unsigned mandatory;
+	bool pass_by_filename;
 	unsigned (*headersize)(size_t imagesize);
 };
 

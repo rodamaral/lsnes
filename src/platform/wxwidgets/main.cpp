@@ -435,8 +435,8 @@ bool lsnes_app::OnInit()
 			mov->projectid = get_random_hexstring(40);
 			mov->rerecords = "0";
 			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
-				mov->romimg_sha256[i] = rom->romimg[i].sha256;
-				mov->romxml_sha256[i] = rom->romxml[i].sha256;
+				mov->romimg_sha256[i] = rom->romimg[i].sha_256;
+				mov->romxml_sha256[i] = rom->romxml[i].sha_256;
 			}
 			mov->gametype = &rom->rtype->combine_region(*rom->region);
 		}

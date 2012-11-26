@@ -166,17 +166,17 @@ namespace
 	bool warn_hash_mismatch(const std::string& mhash, const loaded_slot& slot,
 		const std::string& name, bool fatal)
 	{
-		if(mhash == slot.sha256)
+		if(mhash == slot.sha_256)
 			return true;
 		if(!fatal) {
 			messages << "WARNING: " << name << " hash mismatch!" << std::endl
 				<< "\tMovie:   " << mhash << std::endl
-				<< "\tOur ROM: " << slot.sha256 << std::endl;
+				<< "\tOur ROM: " << slot.sha_256 << std::endl;
 			return true;
 		} else {
 			messages << "ERROR: " << name << " hash mismatch!" << std::endl
 				<< "\tMovie:   " << mhash << std::endl
-				<< "\tOur ROM: " << slot.sha256 << std::endl;
+				<< "\tOur ROM: " << slot.sha_256 << std::endl;
 			return false;
 		}
 	}
@@ -232,8 +232,8 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		our_movie.is_savestate = true;
 		our_movie.sram = save_sram();
 		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
-			our_movie.romimg_sha256[i] = our_rom->romimg[i].sha256;
-			our_movie.romxml_sha256[i] = our_rom->romxml[i].sha256;
+			our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256;
+			our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256;
 		}
 		our_movie.savestate = save_core_state();
 		get_framebuffer().save(our_movie.screenshot);

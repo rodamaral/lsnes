@@ -135,8 +135,8 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 				(r.rtype->get_image_info(i).hname + " ROM");
 			xmlname = r.rtype->get_image_info(i).hname + " XML";
 		}
-		if(r.romimg[i].valid)	messages << romname << " hash: " << r.romimg[i].sha256 << std::endl;
-		if(r.romxml[i].valid)	messages << xmlname << " hash: " << r.romxml[i].sha256 << std::endl;
+		if(r.romimg[i].valid)	messages << romname << " hash: " << r.romimg[i].sha_256 << std::endl;
+		if(r.romxml[i].valid)	messages << xmlname << " hash: " << r.romxml[i].sha_256 << std::endl;
 	}
 	return r;
 }

@@ -16,6 +16,7 @@
 #include "library/zip.hpp"
 
 #include <stdexcept>
+
 #include <sstream>
 #include <iomanip>
 #include <cstdint>
@@ -28,6 +29,13 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#include <boost/filesystem.hpp>
+
+#ifdef BOOST_FILESYSTEM3
+namespace boost_fs = boost::filesystem3;
+#else
+namespace boost_fs = boost::filesystem;
+#endif
 
 namespace
 {
@@ -39,7 +47,8 @@ loaded_slot::loaded_slot() throw(std::bad_alloc)
 {
 	valid = false;
 	xml = false;
-	sha256 = "";
+	sha_256 = "";
+	filename_flag = false;
 }
 
 loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
@@ -49,9 +58,32 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 	xml = xml_flag;
 	if(filename == "") {
 		valid = false;
-		sha256 = "";
+		sha_256 = "";
+		filename_flag = (!xml && imginfo.pass_by_filename);
 		return;
 	}
+	//XMLs are always loaded, no matter what.
+	if(!xml && imginfo.pass_by_filename) {
+		std::string _filename = filename;
+		//Translate the passed filename to absolute one.
+		_filename = resolve_file_relative(_filename, base);
+		_filename = boost_fs::absolute(boost_fs::path(_filename)).string();
+		filename_flag = true;
+		data.resize(_filename.length());
+		std::copy(_filename.begin(), _filename.end(), data.begin());
+		//Compute the SHA-256.
+		std::istream& s = open_file_relative(filename, "");
+		sha256 hash;
+		char buffer[8192];
+		size_t block;
+		while(block = s.readsome(buffer, 8192))
+			hash.write(buffer, block);
+		sha_256 = hash.read();
+		delete &s;
+		valid = true;
+		return;
+	}
+	filename_flag = false;
 	valid = true;
 	data = read_file_relative(filename, base);
 	if(!xml)
@@ -64,7 +96,7 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 			data.resize(0);
 		}
 	}
-	sha256 = sha256::hash(data);
+	sha_256 = sha256::hash(data);
 	if(xml) {
 		size_t osize = data.size();
 		data.resize(osize + 1);
@@ -74,6 +106,8 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 
 void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error)
 {
+	if(filename_flag)
+		throw std::runtime_error("CD images can't be patched on the fly");
 	try {
 		std::vector<char> data2 = data;
 		size_t poffset = 0;
@@ -89,13 +123,11 @@ void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(st
 			data2[osize] = 0;
 		}
 		data = data2;
-		sha256 = new_sha256;
+		sha_256 = new_sha256;
 	} catch(...) {
 		throw;
 	}
 }
-
-
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {

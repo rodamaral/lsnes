@@ -42,7 +42,10 @@ struct loaded_slot
  * throws std::runtime_error: Bad IPS patch.
  */
 	void patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error);
-
+/**
+ * Is this filename?
+ */
+	bool filename_flag;
 /**
  * Is this slot XML slot?
  */
@@ -59,7 +62,7 @@ struct loaded_slot
 /**
  * SHA-256 for the data in this slot if data is valid. If no valid data, this field is "".
  */
-	std::string sha256;
+	std::string sha_256;
 /**
  * Get pointer to loaded data
  *

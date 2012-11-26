@@ -83,6 +83,11 @@ namespace
 	{
 		return (a->get_handle() < b->get_handle());
 	}
+
+	unsigned default_headersize(size_t imagesize)
+	{
+		return 0;
+	}
 }
 
 core_region::core_region(const std::string& _iname, const std::string& _hname, unsigned _priority, unsigned _handle,
@@ -212,7 +217,13 @@ unsigned core_type::get_image_count()
 
 core_romimage_info::core_romimage_info(const std::string& _iname, const std::string& _hname, unsigned _mandatory,
 	unsigned (*_headersize)(size_t imagesize))
-	: iname(_iname), hname(_hname), headersize(_headersize), mandatory(_mandatory)
+	: iname(_iname), hname(_hname), headersize(_headersize ? _headersize : default_headersize),
+	mandatory(_mandatory), pass_by_filename(false)
+{
+}
+
+core_romimage_info::core_romimage_info(const std::string& _iname, const std::string& _hname, unsigned _mandatory)
+	: iname(_iname), hname(_hname), headersize(NULL), mandatory(_mandatory), pass_by_filename(true)
 {
 }
 
