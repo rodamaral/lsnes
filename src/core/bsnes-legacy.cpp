@@ -55,9 +55,13 @@
 #define LOGICAL_BUTTON_CURSOR 13
 #define LOGICAL_BUTTON_TURBO 14
 #define LOGICAL_BUTTON_PAUSE 15
+#define LOGICAL_BUTTON_EXT0 16
+#define LOGICAL_BUTTON_EXT1 17
+#define LOGICAL_BUTTON_EXT2 18
+#define LOGICAL_BUTTON_EXT3 19
 
-const char* button_symbols = "BYsSudlrAXLRTSTCUPFR";
-const char* controller_names[] = {"(system)", "gamepad", "mouse", "superscope", "justifier"};
+const char* button_symbols = "BYsSudlrAXLR0123TSTCUPFR";
+const char* controller_names[] = {"(system)", "gamepad", "mouse", "superscope", "justifier", "gamepad16"};
 
 port_type_group core_portgroup;
 unsigned core_userports = 2;
@@ -234,7 +238,7 @@ namespace
 
 	const char* buttonnames[] = {
 		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
-		"cursor", "turbo", "pause"
+		"cursor", "turbo", "pause", "ext0", "ext1", "ext2", "ext3"
 	};
 
 	class my_interfaced : public SNES::Interface
@@ -480,9 +484,10 @@ namespace
 		return -1;
 	}
 
+	template<unsigned lim>
 	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
 	{
-		if(controller > 0)
+		if(controller > lim)
 			return -1;
 		switch(lbid) {
 		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
@@ -497,6 +502,10 @@ namespace
 		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
 		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
 		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+		case LOGICAL_BUTTON_EXT0:	return 12;
+		case LOGICAL_BUTTON_EXT1:	return 13;
+		case LOGICAL_BUTTON_EXT2:	return 14;
+		case LOGICAL_BUTTON_EXT3:	return 15;
 		default:			return -1;
 		}
 	}
@@ -508,27 +517,6 @@ namespace
 		switch(lbid) {
 		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
 		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
-		default:			return -1;
-		}
-	}
-
-	int get_button_id_multitap(unsigned controller, unsigned lbid) throw()
-	{
-		if(controller > 3)
-			return -1;
-		switch(lbid) {
-		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-		case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-		case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-		case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-		case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-		case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-		case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-		case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
 		default:			return -1;
 		}
 	}
@@ -546,20 +534,10 @@ namespace
 		}
 	}
 
+	template<unsigned lim>
 	int get_button_id_justifier(unsigned controller, unsigned lbid) throw()
 	{
-		if(controller > 0)
-			return -1;
-		switch(lbid) {
-		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
-		case LOGICAL_BUTTON_TRIGGER:	return SNES_DEVICE_ID_JUSTIFIER_TRIGGER;
-		default:			return -1;
-		}
-	}
-
-	int get_button_id_justifiers(unsigned controller, unsigned lbid) throw()
-	{
-		if(controller > 1)
+		if(controller > lim)
 			return -1;
 		switch(lbid) {
 		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JUSTIFIER_START;
@@ -668,7 +646,7 @@ namespace
 			deserialize = generic_port_deserialize<1, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
-			button_id = get_button_id_gamepad;
+			button_id = get_button_id_gamepad<0>;
 			used_indices = generic_used_indices<1, 12>;
 			controller_name = generic_controller_name<1, 1>;
 			controllers = 1;
@@ -676,6 +654,26 @@ namespace
 			core_portgroup.set_default(1, *this);
 		}
 	} gamepad;
+
+	struct porttype_gamepad16 : public port_type
+	{
+		porttype_gamepad16() : port_type(core_portgroup, "gamepad16", "Gamepad (16-button)", 1,
+			generic_port_size<1, 0, 16>())
+		{
+			write = generic_port_write<1, 0, 16>;
+			read = generic_port_read<1, 0, 16>;
+			display = generic_port_display<1, 0, 16, 0>;
+			serialize = generic_port_serialize<1, 0, 16, 0>;
+			deserialize = generic_port_deserialize<1, 0, 16>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_gamepad<0>;
+			used_indices = generic_used_indices<1, 16>;
+			controller_name = generic_controller_name<1, 5>;
+			controllers = 1;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
+		}
+	} gamepad16;
 
 	struct porttype_justifier : public port_type
 	{
@@ -685,11 +683,11 @@ namespace
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
 			display = generic_port_display<1, 2, 2, 12>;
-			serialize = generic_port_serialize<1, 2, 2, 12>;
+			serialize = generic_port_serialize<1, 2, 2, 16>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<1, 3>;
-			button_id = get_button_id_justifier;
+			button_id = get_button_id_justifier<0>;
 			used_indices = generic_used_indices<1, 4>;
 			controller_name = generic_controller_name<1, 4>;
 			controllers = 1;
@@ -705,11 +703,11 @@ namespace
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
 			display = generic_port_display<2, 2, 2, 12>;
-			serialize = generic_port_serialize<2, 2, 2, 12>;
+			serialize = generic_port_serialize<2, 2, 2, 16>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<2, 3>;
-			button_id = get_button_id_justifiers;
+			button_id = get_button_id_justifier<1>;
 			used_indices = generic_used_indices<2, 4>;
 			controller_name = generic_controller_name<2, 4>;
 			controllers = 2;
@@ -748,13 +746,33 @@ namespace
 			deserialize = generic_port_deserialize<4, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
-			button_id = get_button_id_multitap;
+			button_id = get_button_id_gamepad<3>;
 			used_indices = generic_used_indices<4, 12>;
 			controller_name = generic_controller_name<4, 1>;
 			controllers = 4;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
 	} multitap;
+
+	struct porttype_multitap16 : public port_type
+	{
+		porttype_multitap16() : port_type(core_portgroup, "multitap16", "Multitap (16-button)", 2,
+			generic_port_size<4, 0, 16>())
+		{
+			write = generic_port_write<4, 0, 16>;
+			read = generic_port_read<4, 0, 16>;
+			display = generic_port_display<4, 0, 16, 0>;
+			serialize = generic_port_serialize<4, 0, 16, 0>;
+			deserialize = generic_port_deserialize<4, 0, 16>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<4, 1>;
+			button_id = get_button_id_gamepad<3>;
+			used_indices = generic_used_indices<4, 16>;
+			controller_name = generic_controller_name<4, 5>;
+			controllers = 4;
+			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
+		}
+	} multitap16;
 
 	struct porttype_none : public port_type
 	{
@@ -783,8 +801,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;
-			display = generic_port_display<1, 2, 4, 14>;
-			serialize = generic_port_serialize<1, 2, 4, 14>;
+			display = generic_port_display<1, 2, 4, 18>;
+			serialize = generic_port_serialize<1, 2, 4, 18>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;
@@ -807,6 +825,16 @@ namespace
 			map[i + sidx].control = i % 12;
 			map[i + sidx].marks_nonlag = (port != 0);
 		}
+		for(unsigned i = 0; i < x; i++)
+			for(unsigned j = 12; j < y; j++) {
+				port_index_triple t;
+				t.valid = true;
+				t.port = port;
+				t.controller = i;
+				t.control = j;
+				t.marks_nonlag = true;
+				map.push_back(t);
+			}
 	}
 
 	void fill_map_port(std::vector<port_index_triple>& map, port_type& ptype, unsigned port)
@@ -817,8 +845,12 @@ namespace
 			fill_map_partial<0, 0>(map, port);
 		if(&ptype == &gamepad)
 			fill_map_partial<1, 12>(map, port);
+		if(&ptype == &gamepad16)
+			fill_map_partial<1, 16>(map, port);
 		if(&ptype == &multitap)
 			fill_map_partial<4, 12>(map, port);
+		if(&ptype == &multitap16)
+			fill_map_partial<4, 16>(map, port);
 		if(&ptype == &mouse)
 			fill_map_partial<1, 4>(map, port);
 		if(&ptype == &superscope)
@@ -837,7 +869,7 @@ namespace
 		fill_map_port(i.indices, *types[1], 1);
 		fill_map_port(i.indices, *types[2], 2);
 		i.logical_map.resize(types[1]->controllers + types[2]->controllers);
-		if(types[1] == &multitap) {
+		if(types[1] == &multitap || types[1] == &multitap16) {
 			i.logical_map[0] = std::make_pair(1, 0);
 			for(size_t j = 0; j < types[2]->controllers; j++)
 				i.logical_map[j + 1] = std::make_pair(2U, j);
