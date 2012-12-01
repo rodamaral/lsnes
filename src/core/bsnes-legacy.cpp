@@ -17,6 +17,8 @@
 #include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
 #include "library/framebuffer.hpp"
+#include "library/luabase.hpp"
+#include "lua/internal.hpp"
 #include <snes/snes.hpp>
 #include <gameboy/gameboy.hpp>
 #ifdef BSNES_V087
@@ -1285,6 +1287,47 @@ function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No descrip
 		x.write(&out[0], out.size());
 	});
 
+function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L, const std::string& fname) -> int {
+	std::string r = L.get_string(1, fname.c_str());
+	auto& c = SNES::cpu.regs;
+	auto& c2 = SNES::cpu;
+	if(r == "pbpc")		L.pushnumber((unsigned)c.pc);
+	else if(r == "pb")	L.pushnumber((unsigned)c.pc >> 16);
+	else if(r == "pc")	L.pushnumber((unsigned)c.pc & 0xFFFF);
+	else if(r == "r0")	L.pushnumber((unsigned)c.r[0]);
+	else if(r == "r1")	L.pushnumber((unsigned)c.r[1]);
+	else if(r == "r2")	L.pushnumber((unsigned)c.r[2]);
+	else if(r == "r3")	L.pushnumber((unsigned)c.r[3]);
+	else if(r == "r4")	L.pushnumber((unsigned)c.r[4]);
+	else if(r == "r5")	L.pushnumber((unsigned)c.r[5]);
+	else if(r == "a")	L.pushnumber((unsigned)c.a);
+	else if(r == "x")	L.pushnumber((unsigned)c.x);
+	else if(r == "y")	L.pushnumber((unsigned)c.y);
+	else if(r == "z")	L.pushnumber((unsigned)c.z);
+	else if(r == "s")	L.pushnumber((unsigned)c.s);
+	else if(r == "d")	L.pushnumber((unsigned)c.d);
+	else if(r == "db")	L.pushnumber((unsigned)c.db);
+	else if(r == "p")	L.pushnumber((unsigned)c.p);
+	else if(r == "p_n")	L.pushboolean(c.p.n);
+	else if(r == "p_v")	L.pushboolean(c.p.v);
+	else if(r == "p_m")	L.pushboolean(c.p.m);
+	else if(r == "p_x")	L.pushboolean(c.p.x);
+	else if(r == "p_d")	L.pushboolean(c.p.d);
+	else if(r == "p_i")	L.pushboolean(c.p.i);
+	else if(r == "p_z")	L.pushboolean(c.p.z);
+	else if(r == "p_c")	L.pushboolean(c.p.c);
+	else if(r == "e")	L.pushboolean(c.e);
+	else if(r == "irq")	L.pushboolean(c.irq);
+	else if(r == "wai")	L.pushboolean(c.wai);
+	else if(r == "mdr")	L.pushnumber((unsigned)c.mdr);
+	else if(r == "vector")	L.pushnumber((unsigned)c.vector);
+	else if(r == "aa")	L.pushnumber((unsigned)c2.aa);
+	else if(r == "rd")	L.pushnumber((unsigned)c2.rd);
+	else if(r == "sp")	L.pushnumber((unsigned)c2.sp);
+	else if(r == "dp")	L.pushnumber((unsigned)c2.dp);
+	else			L.pushnil();
+	return 1;
+});
 
 struct emucore_callbacks* ecore_callbacks;
 #endif
