@@ -232,7 +232,7 @@ namespace
 				if(buffer_remaining)
 					memmove(buffer, buffer + buffer_offset, buffer_remaining);
 				buffer_offset = 0;
-				size_t fill_amount = min(buffer_capacity, rsize - buffer_eoffset);
+				size_t fill_amount = min((uint64_t)buffer_capacity, rsize - buffer_eoffset);
 				region.read(buffer_eoffset, buffer + buffer_remaining, fill_amount);
 				buffer_eoffset += fill_amount;
 				buffer_remaining += fill_amount;
