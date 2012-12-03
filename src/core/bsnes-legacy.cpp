@@ -75,6 +75,7 @@ extern const bool core_supports_dreset = false;
 #endif
 
 void snesdbg_on_break();
+void snesdbg_on_trace();
 
 namespace
 {
@@ -87,6 +88,9 @@ namespace
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
 	size_t soundbuf_fill = 0;
+	uint64_t trace_counter;
+	std::ofstream trace_output;
+	bool trace_output_enable;
 
 	void init_norom_frame()
 	{
@@ -338,8 +342,42 @@ namespace
 			memsize, true, true);
 	}
 
+	bool trace_enabled()
+	{
+		return (trace_counter || !!trace_output_enable);
+	}
+
+	bool forced_hook = false;
+	
+	bool trace_fn()
+	{
+		if(trace_counter && !--trace_counter) {
+			//Trace counter did transition 1->0. Call the hook.
+			snesdbg_on_trace();
+		}
+		if(trace_output_enable) {
+			char buffer[1024];
+			SNES::cpu.disassemble_opcode(buffer, SNES::cpu.regs.pc);
+			trace_output << buffer << std::endl;
+		}
+		return false;
+	}
+
+	void update_trace_hook_state()
+	{
+		if(forced_hook)
+			return;
+#ifdef BSNES_HAS_DEBUGGER
+		if(!trace_enabled())
+			SNES::cpu.step_event = nall::function<bool()>();
+		else
+			SNES::cpu.step_event = trace_fn;
+#endif
+	}
+
 	bool delayreset_fn()
 	{
+		trace_fn();	//Call this also.
 		if(delayreset_cycles_run == delayreset_cycles_target || video_refresh_done)
 			return true;
 		delayreset_cycles_run++;
@@ -1141,6 +1179,7 @@ void core_emulate_frame()
 			video_refresh_done = false;
 			delayreset_cycles_run = 0;
 			delayreset_cycles_target = delay;
+			forced_hook = true;
 			SNES::cpu.step_event = delayreset_fn;
 again:
 			SNES::system.run();
@@ -1150,6 +1189,7 @@ again:
 				goto again;
 			}
 			SNES::cpu.step_event = nall::function<bool()>();
+			forced_hook = false;
 			if(video_refresh_done) {
 				//Force the reset here.
 				do_reset_flag = -1;
@@ -1174,6 +1214,10 @@ again:
 
 	if(!have_saved_this_frame && save_every_frame && !was_delay_reset)
 		SNES::system.runtosave();
+#ifdef BSNES_HAS_DEBUGGER
+	if(trace_enabled())
+		SNES::cpu.step_event = trace_fn;
+#endif
 again2:
 	SNES::system.run();
 	if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
@@ -1181,6 +1225,9 @@ again2:
 		snesdbg_on_break();
 		goto again2;
 	}
+#ifdef BSNES_HAS_DEBUGGER
+	SNES::cpu.step_event = nall::function<bool()>();
+#endif
 	have_saved_this_frame = false;
 }
 
@@ -1325,11 +1372,11 @@ function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L
 #ifdef BSNES_HAS_DEBUGGER
 
 char snes_debug_cb_keys[SNES::Debugger::Breakpoints];
+char snes_debug_cb_trace;
 
-void snesdbg_on_break()
+void snesdbg_execute_callback(char& cb, signed r)
 {
-	unsigned r = SNES::debugger.breakpoint_hit;
-	LS.pushlightuserdata(&snes_debug_cb_keys[r]);
+	LS.pushlightuserdata(&cb);
 	LS.gettable(LUA_REGISTRYINDEX);
 	LS.pushnumber(r);
 	if(LS.type(-2) == LUA_TFUNCTION) {
@@ -1344,6 +1391,24 @@ void snesdbg_on_break()
 		lua_requests_repaint = false;
 		lsnes_cmd.invoke("repaint");
 	}
+}
+
+void snesdbg_on_break()
+{
+	signed r = SNES::debugger.breakpoint_hit;
+	snesdbg_execute_callback(snes_debug_cb_keys[r], r);
+}
+
+void snesdbg_on_trace()
+{
+	snesdbg_execute_callback(snes_debug_cb_trace, -1);
+}
+
+void snesdbg_set_callback(lua_state& L, char& cb)
+{
+	L.pushlightuserdata(&cb);
+	L.pushvalue(-2);
+	L.settable(LUA_REGISTRYINDEX);
 }
 
 bool snesdbg_get_bp_enabled(lua_state& L)
@@ -1442,20 +1507,58 @@ function_ptr_luafun lua_memory_setdebug(LS, "memory.setdebug", [](lua_state& L, 
 		x.mode = snesdbg_get_bp_mode(L);
 		x.source = snesdbg_get_bp_source(L);
 		snesdbg_get_bp_callback(L);
-		L.pushlightuserdata(&snes_debug_cb_keys[r]);
-		L.pushvalue(-2);
-		L.settable(LUA_REGISTRYINDEX);
+		snesdbg_set_callback(L, snes_debug_cb_keys[r]);
 		L.pop(2);
+		return 0;
 	} else {
 		L.pushstring("Expected argument 2 to memory.setdebug to be nil or table");
 		L.error();
 		return 0;
 	}
 });
-#else
-void snesdbg_on_break()
+
+function_ptr_luafun lua_memory_setstep(LS, "memory.setstep", [](lua_state& L, const std::string& fname) -> int {
+	uint64_t r = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+	L.pushvalue(2);
+	snesdbg_set_callback(L, snes_debug_cb_trace);
+	trace_counter = r;
+	update_trace_hook_state();
+	L.pop(1);
+	return 0;
+});
+
+void snesdbg_settrace(std::string r)
 {
+	if(trace_output_enable)
+		messages << "------- End of trace -----" << std::endl;
+	trace_output.close();
+	trace_output_enable = false;
+	if(r != "") {
+		trace_output.close();
+		trace_output.open(r);
+		if(trace_output) {
+			trace_output_enable = true;
+			messages << "------- Start of trace -----" << std::endl;
+		} else
+			messages << "Can't open " << r << std::endl;
+	}
+	update_trace_hook_state();
 }
+
+function_ptr_luafun lua_memory_settrace(LS, "memory.settrace", [](lua_state& L, const std::string& fname) -> int {
+	std::string r = L.get_string(1, fname.c_str());
+	snesdbg_settrace(r);
+});
+
+function_ptr_command<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
+	"No description available\n",
+	[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
+		snesdbg_settrace(r);
+	});
+
+#else
+void snesdbg_on_break() {}
+void snesdbg_on_trace() {}
 #endif
 
 struct emucore_callbacks* ecore_callbacks;
