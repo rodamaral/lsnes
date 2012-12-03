@@ -74,6 +74,8 @@ extern const bool core_supports_dreset = true;
 extern const bool core_supports_dreset = false;
 #endif
 
+void snesdbg_on_break();
+
 namespace
 {
 	long do_reset_flag = -1;
@@ -1094,27 +1096,6 @@ void core_request_reset(long delay)
 	do_reset_flag = delay;
 }
 
-std::pair<bool, uint32_t> core_emulate_cycles(uint32_t cycles)
-{
-	if(!internal_rom)
-		return std::make_pair(false, 0);
-#ifdef BSNES_HAS_DEBUGGER
-	messages << "Executing delayed reset... This can take some time!" << std::endl;
-	video_refresh_done = false;
-	delayreset_cycles_run = 0;
-	delayreset_cycles_target = cycles;
-	SNES::cpu.step_event = delayreset_fn;
-	SNES::system.run();
-	SNES::cpu.step_event = nall::function<bool()>();
-	return std::make_pair(!video_refresh_done, delayreset_cycles_run);
-	have_saved_this_frame = true;
-#else
-	messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
-		<< std::endl;
-	return std::make_pair(false, 0);
-#endif
-}
-
 void core_emulate_frame()
 {
 	static unsigned frame_modulus = 0;
@@ -1161,7 +1142,13 @@ void core_emulate_frame()
 			delayreset_cycles_run = 0;
 			delayreset_cycles_target = delay;
 			SNES::cpu.step_event = delayreset_fn;
+again:
 			SNES::system.run();
+			if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
+				SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
+				snesdbg_on_break();
+				goto again;
+			}
 			SNES::cpu.step_event = nall::function<bool()>();
 			if(video_refresh_done) {
 				//Force the reset here.
@@ -1187,7 +1174,13 @@ void core_emulate_frame()
 
 	if(!have_saved_this_frame && save_every_frame && !was_delay_reset)
 		SNES::system.runtosave();
+again2:
 	SNES::system.run();
+	if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
+		SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
+		snesdbg_on_break();
+		goto again2;
+	}
 	have_saved_this_frame = false;
 }
 
@@ -1328,6 +1321,142 @@ function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L
 	else			L.pushnil();
 	return 1;
 });
+
+#ifdef BSNES_HAS_DEBUGGER
+
+char snes_debug_cb_keys[SNES::Debugger::Breakpoints];
+
+void snesdbg_on_break()
+{
+	unsigned r = SNES::debugger.breakpoint_hit;
+	LS.pushlightuserdata(&snes_debug_cb_keys[r]);
+	LS.gettable(LUA_REGISTRYINDEX);
+	LS.pushnumber(r);
+	if(LS.type(-2) == LUA_TFUNCTION) {
+		int s = LS.pcall(1, 0, 0);
+		if(s)
+			LS.pop(1);
+	} else {
+		messages << "Can't execute debug callback" << std::endl;
+		LS.pop(2);
+	}
+	if(lua_requests_repaint) {
+		lua_requests_repaint = false;
+		lsnes_cmd.invoke("repaint");
+	}
+}
+
+bool snesdbg_get_bp_enabled(lua_state& L)
+{
+	bool r;
+	L.getfield(-1, "addr");
+	r = (L.type(-1) == LUA_TNUMBER);
+	L.pop(1);
+	return r;
+}
+
+uint32_t snesdbg_get_bp_addr(lua_state& L)
+{
+	uint32_t r = 0;
+	L.getfield(-1, "addr");
+	if(L.type(-1) == LUA_TNUMBER)
+		r = static_cast<uint32_t>(L.tonumber(-1));
+	L.pop(1);
+	return r;
+}
+
+uint32_t snesdbg_get_bp_data(lua_state& L)
+{
+	signed r = -1;
+	L.getfield(-1, "data");
+	if(L.type(-1) == LUA_TNUMBER)
+		r = static_cast<signed>(L.tonumber(-1));
+	L.pop(1);
+	return r;
+}
+
+SNES::Debugger::Breakpoint::Mode snesdbg_get_bp_mode(lua_state& L)
+{
+	SNES::Debugger::Breakpoint::Mode r = SNES::Debugger::Breakpoint::Mode::Exec;
+	L.getfield(-1, "mode");
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "e"))
+		r = SNES::Debugger::Breakpoint::Mode::Exec;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "x"))
+		r = SNES::Debugger::Breakpoint::Mode::Exec;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "exec"))
+		r = SNES::Debugger::Breakpoint::Mode::Exec;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "r"))
+		r = SNES::Debugger::Breakpoint::Mode::Read;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "read"))
+		r = SNES::Debugger::Breakpoint::Mode::Read;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "w"))
+		r = SNES::Debugger::Breakpoint::Mode::Write;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "write"))
+		r = SNES::Debugger::Breakpoint::Mode::Write;
+	L.pop(1);
+	return r;
+}
+
+SNES::Debugger::Breakpoint::Source snesdbg_get_bp_source(lua_state& L)
+{
+	SNES::Debugger::Breakpoint::Source r = SNES::Debugger::Breakpoint::Source::CPUBus;
+	L.getfield(-1, "source");
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cpubus"))
+		r = SNES::Debugger::Breakpoint::Source::CPUBus;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "apuram"))
+		r = SNES::Debugger::Breakpoint::Source::APURAM;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "vram"))
+		r = SNES::Debugger::Breakpoint::Source::VRAM;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "oam"))
+		r = SNES::Debugger::Breakpoint::Source::OAM;
+	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cgram"))
+		r = SNES::Debugger::Breakpoint::Source::CGRAM;
+	L.pop(1);
+	return r;
+}
+
+void snesdbg_get_bp_callback(lua_state& L)
+{
+	L.getfield(-1, "callback");
+}
+
+
+
+function_ptr_luafun lua_memory_setdebug(LS, "memory.setdebug", [](lua_state& L, const std::string& fname) -> int {
+	unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
+	if(r >= SNES::Debugger::Breakpoints) {
+		L.pushstring("Bad breakpoint number");
+		L.error();
+		return 0;
+	}
+	if(L.type(2) == LUA_TNIL) {
+		//Clear breakpoint.
+		SNES::debugger.breakpoint[r].enabled = false;
+		return 0;
+	} else if(L.type(2) == LUA_TTABLE) {
+		L.pushvalue(2);
+		auto& x = SNES::debugger.breakpoint[r];
+		x.enabled = snesdbg_get_bp_enabled(L);
+		x.addr = snesdbg_get_bp_addr(L);
+		x.data = snesdbg_get_bp_data(L);
+		x.mode = snesdbg_get_bp_mode(L);
+		x.source = snesdbg_get_bp_source(L);
+		snesdbg_get_bp_callback(L);
+		L.pushlightuserdata(&snes_debug_cb_keys[r]);
+		L.pushvalue(-2);
+		L.settable(LUA_REGISTRYINDEX);
+		L.pop(2);
+	} else {
+		L.pushstring("Expected argument 2 to memory.setdebug to be nil or table");
+		L.error();
+		return 0;
+	}
+});
+#else
+void snesdbg_on_break()
+{
+}
+#endif
 
 struct emucore_callbacks* ecore_callbacks;
 #endif
