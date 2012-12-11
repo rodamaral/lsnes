@@ -9,6 +9,8 @@
 
 #define SYSTEM_BYTES 5
 
+extern unsigned extended_mode;
+
 namespace
 {
 	std::set<porttype_info*>& porttypes()
@@ -192,26 +194,37 @@ uint32_t pollcounter_vector::max_polls() throw()
 
 void pollcounter_vector::save_state(std::vector<uint32_t>& mem) throw(std::bad_alloc)
 {
-	mem.resize(4 + MAX_BUTTONS );
+	if(extended_mode)
+		mem.resize(4 + MAX_BUTTONS );
+	else
+		mem.resize(100);
 	//Compatiblity fun.
 	mem[0] = 0x80000000UL;
 	mem[1] = system_flag ? 1 : 0x80000000UL;
 	mem[2] = system_flag ? 1 : 0x80000000UL;
 	mem[3] = system_flag ? 1 : 0x80000000UL;
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
-		mem[4 + i] = ctrs[i];
+	if(extended_mode)
+		for(size_t i = 0; i < MAX_BUTTONS ; i++)
+			mem[4 + i] = ctrs[i];
+	else
+		for(size_t i = 0; i < 96 ; i++)
+			mem[4 + i] = ctrs[(i / 12) * MAX_CONTROLS_PER_CONTROLLER + (i % 12)];
 }
 
 void pollcounter_vector::load_state(const std::vector<uint32_t>& mem) throw()
 {
 	system_flag = (mem[1] | mem[2] | mem[3]) & 0x7FFFFFFFUL;
-	for(size_t i = 0; i < MAX_BUTTONS ; i++)
-		ctrs[i] = mem[i + 4];
+	if(mem.size() == MAX_BUTTONS + 4)
+		for(size_t i = 0; i < MAX_BUTTONS ; i++)
+			ctrs[i] = mem[i + 4];
+	else
+		for(size_t i = 0; i < 96; i++)
+			ctrs[(i / 12) * MAX_CONTROLS_PER_CONTROLLER + (i % 12)] = mem[i + 4];
 }
 
 bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 {
-	return (mem.size() == MAX_BUTTONS  + 4);
+	return (mem.size() == 100 || mem.size() == (MAX_BUTTONS  + 4));	//Non-extended is 100.
 }
 
 

@@ -5,6 +5,8 @@
 #include "core/moviedata.hpp"
 #include "core/mainloop.hpp"
 
+extern unsigned extended_mode;
+
 namespace
 {
 	function_ptr_luafun mcurframe("movie.currentframe", [](lua_State* LS, const std::string& fname) -> int {
@@ -63,11 +65,18 @@ namespace
 		lua_pushnumber(LS, r.delay().second);
 		lua_settable(LS, -3);
 
-		for(size_t i = 0; i < MAX_BUTTONS; i++) {
-			lua_pushnumber(LS, i + 4);
-			lua_pushnumber(LS, r.axis2(i));
-			lua_settable(LS, -3);
-		}
+		if(extended_mode)
+			for(size_t i = 0; i < MAX_BUTTONS; i++) {
+				lua_pushnumber(LS, i + 4);
+				lua_pushnumber(LS, r.axis2(i));
+				lua_settable(LS, -3);
+			}
+		else
+			for(size_t i = 0; i < 96; i++) {
+				lua_pushnumber(LS, i + 4);
+				lua_pushnumber(LS, r.axis2((i / 12) * MAX_CONTROLS_PER_CONTROLLER + (i % 12)));
+				lua_settable(LS, -3);
+			}
 		return 1;
 	});
 

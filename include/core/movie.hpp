@@ -313,4 +313,9 @@ private:
 	movie mov;
 };
 
+/**
+ * Extended mode flag.
+ */
+extern unsigned extended_mode;
+
 #endif

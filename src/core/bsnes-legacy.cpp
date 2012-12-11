@@ -12,6 +12,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/movie.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/pixfmt-lrgb.hpp"
@@ -55,8 +56,12 @@
 #define LOGICAL_BUTTON_CURSOR 13
 #define LOGICAL_BUTTON_TURBO 14
 #define LOGICAL_BUTTON_PAUSE 15
+#define LOGICAL_BUTTON_EXT0 16
+#define LOGICAL_BUTTON_EXT1 17
+#define LOGICAL_BUTTON_EXT2 18
+#define LOGICAL_BUTTON_EXT3 19
 
-const char* button_symbols = "BYsSudlrAXLRTSTCUP";
+const char* button_symbols = "BYsSudlrAXLR0123TSTCUP";
 
 namespace
 {
@@ -68,6 +73,8 @@ namespace
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
 	size_t soundbuf_fill = 0;
+	bool p1_needs_ext = false;
+	bool p2_needs_ext = false;
 
 	void init_norom_frame()
 	{
@@ -218,7 +225,7 @@ namespace
 
 	const char* buttonnames[] = {
 		"left", "right", "up", "down", "A", "B", "X", "Y", "L", "R", "select", "start", "trigger",
-		"cursor", "turbo", "pause"
+		"cursor", "turbo", "pause", "ext0", "ext1", "ext2", "ext3"
 	};
 
 	class my_interfaced : public SNES::Interface
@@ -452,40 +459,66 @@ namespace
 			snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : id);
 			p1disable = p2only;
 		}
+		extended_mode = (p1_needs_ext || p2_needs_ext) ? 1 : 0;
+	}
+
+	void set_needext(unsigned port, bool v)
+	{
+		*(port ? &p2_needs_ext : &p1_needs_ext) = v;
 	}
 
 	void set_core_controller_none(unsigned port) throw()
 	{
+		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_NONE, false);
+		
 	}
 
 	void set_core_controller_gamepad(unsigned port) throw()
 	{
+		set_needext(port, false);
+		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
+	}
+
+	void set_core_controller_gamepad16(unsigned port) throw()
+	{
+		set_needext(port, true);
 		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
 	}
 
 	void set_core_controller_mouse(unsigned port) throw()
 	{
+		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_MOUSE, false);
 	}
 
 	void set_core_controller_multitap(unsigned port) throw()
 	{
+		set_needext(port, false);
+		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
+	}
+
+	void set_core_controller_multitap16(unsigned port) throw()
+	{
+		set_needext(port, true);
 		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
 	}
 
 	void set_core_controller_superscope(unsigned port) throw()
 	{
+		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_SUPER_SCOPE, true);
 	}
 
 	void set_core_controller_justifier(unsigned port) throw()
 	{
+		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIER, true);
 	}
 
 	void set_core_controller_justifiers(unsigned port) throw()
 	{
+		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIERS, true);
 	}
 
@@ -511,6 +544,10 @@ namespace
 		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
 		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
 		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
+		case LOGICAL_BUTTON_EXT0:	return 12;
+		case LOGICAL_BUTTON_EXT1:	return 13;
+		case LOGICAL_BUTTON_EXT2:	return 14;
+		case LOGICAL_BUTTON_EXT3:	return 15;
 		default:			return -1;
 		}
 	}
@@ -600,14 +637,33 @@ namespace
 		}
 	} gamepad;
 
+	struct porttype_gamepad16 : public porttype_info
+	{
+		porttype_gamepad16() : porttype_info("gamepad16", "Gamepad (16 buttons)", 1,
+			generic_port_size<1, 0, 16>())
+		{
+			write = generic_port_write<1, 0, 16>;
+			read = generic_port_read<1, 0, 16>;
+			display = generic_port_display<1, 0, 16, 0>;
+			serialize = generic_port_serialize<1, 0, 16, 0>;
+			deserialize = generic_port_deserialize<1, 0, 16>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<1, 1>;
+			button_id = get_button_id_gamepad;
+			ctrlname = "gamepad16";
+			controllers = 1;
+			set_core_controller = set_core_controller_gamepad16;
+		}
+	} gamepad16;
+
 	struct porttype_justifier : public porttype_info
 	{
 		porttype_justifier() : porttype_info("justifier", "Justifier", 5, generic_port_size<1, 2, 2>())
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 12>;
-			serialize = generic_port_serialize<1, 2, 2, 12>;
+			display = generic_port_display<1, 2, 2, 16>;
+			serialize = generic_port_serialize<1, 2, 2, 16>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<1, 3>;
@@ -624,8 +680,8 @@ namespace
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
-			display = generic_port_display<2, 2, 2, 12>;
-			serialize = generic_port_serialize<2, 2, 2, 12>;
+			display = generic_port_display<2, 2, 2, 16>;
+			serialize = generic_port_serialize<2, 2, 2, 16>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<2, 3>;
@@ -653,6 +709,25 @@ namespace
 			set_core_controller = set_core_controller_mouse;
 		}
 	} mouse;
+
+	struct porttype_multitap16 : public porttype_info
+	{
+		porttype_multitap16() : porttype_info("multitap16", "Multitap (16 buttons)", 2,
+			generic_port_size<4, 0, 16>())
+		{
+			write = generic_port_write<4, 0, 16>;
+			read = generic_port_read<4, 0, 16>;
+			display = generic_port_display<4, 0, 16, 0>;
+			serialize = generic_port_serialize<4, 0, 16, 0>;
+			deserialize = generic_port_deserialize<4, 0, 16>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<4, 1>;
+			button_id = get_button_id_multitap;
+			ctrlname = "multitap16";
+			controllers = 4;
+			set_core_controller = set_core_controller_multitap16;
+		}
+	} multitap16;
 
 	struct porttype_multitap : public porttype_info
 	{
@@ -696,8 +771,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;
-			display = generic_port_display<1, 2, 4, 14>;
-			serialize = generic_port_serialize<1, 2, 4, 14>;
+			display = generic_port_display<1, 2, 4, 18>;
+			serialize = generic_port_serialize<1, 2, 4, 18>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;

@@ -43,7 +43,7 @@
 /**
  * Maximum numbers of controls per one controller.
  */
-#define MAX_CONTROLS_PER_CONTROLLER 12
+#define MAX_CONTROLS_PER_CONTROLLER 16
 /**
  * Number of button controls.
  */

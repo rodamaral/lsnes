@@ -535,3 +535,5 @@ short movie_logic::input_poll(bool port, unsigned dev, unsigned id) throw(std::b
 	//debuglog.flush();
 	return in;
 }
+
+unsigned extended_mode = 0;
