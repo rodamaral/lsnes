@@ -967,7 +967,7 @@ out:
 		float output[OPUS_MAX_OUT];
 		unsigned output_left;
 		uint32_t pregap_thrown;
-		bool postgap_thrown = false;
+		bool postgap_thrown;
 		OpusDecoder* decoder;
 		opus_stream& stream;
 		uint32_t next_block;
