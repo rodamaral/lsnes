@@ -181,24 +181,24 @@ namespace
 
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
-		platform::queue(keypress(modifier_set(), mouse_x, e.GetX() / horizontal_scale_factor));
-		platform::queue(keypress(modifier_set(), mouse_y, e.GetY() / vertical_scale_factor));
+		platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.GetX() / horizontal_scale_factor));
+		platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.GetY() / vertical_scale_factor));
 		if(e.Entering())
-			platform::queue(keypress(modifier_set(), mouse_i, 1));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_i, 1));
 		if(e.Leaving())
-			platform::queue(keypress(modifier_set(), mouse_i, 0));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_i, 0));
 		if(e.LeftDown())
-			platform::queue(keypress(modifier_set(), mouse_l, 1));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_l, 1));
 		if(e.LeftUp())
-			platform::queue(keypress(modifier_set(), mouse_l, 0));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_l, 0));
 		if(e.MiddleDown())
-			platform::queue(keypress(modifier_set(), mouse_m, 1));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_m, 1));
 		if(e.MiddleUp())
-			platform::queue(keypress(modifier_set(), mouse_m, 0));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_m, 0));
 		if(e.RightDown())
-			platform::queue(keypress(modifier_set(), mouse_r, 1));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_r, 1));
 		if(e.RightUp())
-			platform::queue(keypress(modifier_set(), mouse_r, 0));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_r, 0));
 	}
 
 	bool is_readonly_mode()

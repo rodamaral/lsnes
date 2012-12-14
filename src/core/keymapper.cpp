@@ -16,6 +16,8 @@
 #include <sstream>
 #include <set>
 
+keyboard lsnes_kbd;
+
 namespace
 {
 	function_ptr_command<const std::string&> bind_key(lsnes_cmd, "bind-key", "Bind a (pseudo-)key",
@@ -74,8 +76,6 @@ std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::ba
 
 namespace
 {
-	globalwrap<std::map<std::string, modifier*>> known_modifiers;
-	globalwrap<std::map<std::string, std::string>> modifier_linkages;
 	globalwrap<std::map<std::string, keygroup*>> keygroups;
 
 	//Return the recursive mutex.
@@ -96,191 +96,11 @@ namespace
 	};
 
 	//Returns orig if not linked.
-	const modifier* get_linked_modifier(const modifier* orig)
+	keyboard_modifier* get_linked_modifier(keyboard_modifier* orig)
 	{
-		if(!modifier_linkages().count(orig->name()))
-			return orig;
-		std::string l = modifier_linkages()[orig->name()];
-		return known_modifiers()[l];
+		keyboard_modifier* r = orig->get_link();
+		return r ? r : orig;
 	}
-}
-
-modifier::modifier(const std::string& name) throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	known_modifiers()[modname = name] = this;
-}
-
-modifier::modifier(const std::string& name, const std::string& linkgroup) throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	known_modifiers()[modname = name] = this;
-	modifier_linkages()[name] = linkgroup;
-}
-
-modifier::~modifier() throw()
-{
-	kmlock_hold lck;
-	known_modifiers().erase(modname);
-	modifier_linkages().erase(modname);
-}
-
-std::set<std::string> modifier::get_set() throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	std::set<std::string> r;
-	for(auto i : known_modifiers())
-		r.insert(i.first);
-	return r;
-}
-
-modifier& modifier::lookup(const std::string& name) throw(std::bad_alloc, std::runtime_error)
-{
-	kmlock_hold lck;
-	if(!known_modifiers().count(name)) {
-		std::ostringstream x;
-		x << "Invalid modifier '" << name << "'";
-		throw std::runtime_error(x.str());
-	}
-	return *known_modifiers()[name];
-}
-
-std::string modifier::name() const throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	return modname;
-}
-
-std::string modifier::linked_name() const throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	const modifier* p = get_linked_modifier(this);
-	if(p == this)
-		return "";
-	return p->modname;
-}
-
-
-void modifier_set::add(const modifier& mod, bool really) throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	if(really)
-		set.insert(&mod);
-}
-
-void modifier_set::remove(const modifier& mod, bool really) throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	if(really)
-		set.erase(&mod);
-}
-
-modifier_set modifier_set::construct(const std::string& _modifiers) throw(std::bad_alloc, std::runtime_error)
-{
-	kmlock_hold lck;
-	modifier_set set;
-	std::string modifiers = _modifiers;
-	while(modifiers != "") {
-		std::string mod = modifiers;
-		std::string rest;
-		size_t split = modifiers.find_first_of(",");
-		if(split < modifiers.length()) {
-			mod = modifiers.substr(0, split);
-			rest = modifiers.substr(split + 1);
-		}
-		set.add(modifier::lookup(mod));
-		modifiers = rest;
-	}
-	return set;
-}
-
-bool modifier_set::valid(const modifier_set& set, const modifier_set& mask) throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	//No element can be together with its linkage group.
-	for(auto i : set.set) {
-		const modifier* j = get_linked_modifier(i);
-		if(i != j && set.set.count(j))
-			return false;
-	}
-	for(auto i : mask.set) {
-		const modifier* j = get_linked_modifier(i);
-		if(i != j && mask.set.count(j))
-			return false;
-	}
-	//For every element of set, it or its linkage group must be in mask.
-	for(auto i : set.set) {
-		const modifier* j = get_linked_modifier(i);
-		if(!mask.set.count(i) && !mask.set.count(j))
-			return false;
-	}
-	return true;
-}
-
-bool modifier_set::operator==(const modifier_set& m) const throw()
-{
-	kmlock_hold lck;
-	for(auto i : set)
-		if(!m.set.count(i))
-			return false;
-	for(auto i : m.set)
-		if(!set.count(i))
-			return false;
-	return true;
-}
-
-std::ostream&  operator<<(std::ostream& os, const modifier_set& m)
-{
-	kmlock_hold lck;
-	os << "<modset:";
-	for(auto i : m.set)
-		os << i->name() << " ";
-	os << ">";
-	return os;
-}
-
-bool modifier_set::triggers(const modifier_set& set, const modifier_set& trigger, const modifier_set& mask)
-	throw(std::bad_alloc)
-{
-	kmlock_hold lck;
-	for(auto i : mask.set) {
-		bool ok = false;
-		//OK iff at least one of:
-		//Key itself appears in both set and trigger.
-		for(auto j : set.set) {
-			if(!trigger.set.count(j))
-				continue;
-			ok = true;
-		}
-		//Key with this linkage group appears in both set and trigger.
-		for(auto j : set.set) {
-			auto linked = get_linked_modifier(j);
-			if(linked != i)
-				continue;
-			if(!trigger.set.count(j))
-				continue;
-			ok = true;
-		}
-		//Key with this linkage appears in set and the key itself appears in trigger.
-		for(auto j : set.set) {
-			auto linked = get_linked_modifier(j);
-			if(linked != i)
-				continue;
-			if(!trigger.set.count(i))
-				continue;
-			ok = true;
-		}
-		//Nothing linked is found from neither set nor trigger.
-		bool found = false;
-		for(auto j : set.set)
-			found = found || (j == i || get_linked_modifier(j) == i);
-		for(auto j : trigger.set)
-			found = found || (j == i || get_linked_modifier(j) == i);
-		ok = ok || !found;
-		if(!ok)
-			return false;
-	}
-	return true;
 }
 
 std::string keygroup::name() throw(std::bad_alloc)
@@ -439,7 +259,7 @@ double keygroup::compensate2(double value)
 	};
 }
 
-void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
+void keygroup::set_position(short pos, keyboard_modifier_set& modifiers) throw()
 {
 	kmlock_hold lck;
 	last_rawval = pos;
@@ -503,10 +323,10 @@ void keygroup::set_position(short pos, const modifier_set& modifiers) throw()
 	}
 }
 
-void keygroup::run_listeners(const modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x)
+void keygroup::run_listeners(keyboard_modifier_set& modifiers, unsigned subkey, bool polarity, bool really, double x)
 {
 	std::string name;
-	modifier_set _modifiers = modifiers;
+	keyboard_modifier_set _modifiers = modifiers;
 	{
 		if(!really)
 			return;
@@ -733,18 +553,18 @@ namespace
 	};
 	struct keybind_data : public information_dispatch
 	{
-		modifier_set mod;
-		modifier_set modmask;
+		keyboard_modifier_set mod;
+		keyboard_modifier_set modmask;
 		keygroup* group;
 		unsigned subkey;
 		std::string command;
 
 		keybind_data() : information_dispatch("keybind-listener") {}
 
-		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned _subkey, bool polarity,
-			const std::string& name)
+		void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned _subkey,
+			bool polarity, const std::string& name)
 		{
-			if(!modifier_set::triggers(modifiers, mod, modmask))
+			if(!modifiers.triggers(mod, modmask))
 				return;
 			if(subkey != _subkey)
 				return;
@@ -785,9 +605,9 @@ void keymapper::bind(std::string mod, std::string modmask, std::string keyname, 
 	{
 		kmlock_hold lck;
 		triple k(mod, modmask, keyname);
-		modifier_set _mod = modifier_set::construct(mod);
-		modifier_set _modmask = modifier_set::construct(modmask);
-		if(!modifier_set::valid(_mod, _modmask))
+		keyboard_modifier_set _mod = keyboard_modifier_set::construct(lsnes_kbd, mod);
+		keyboard_modifier_set _modmask = keyboard_modifier_set::construct(lsnes_kbd, modmask);
+		if(!_mod.valid(_modmask))
 			throw std::runtime_error("Invalid modifiers");
 		auto g = keygroup::lookup(keyname);
 		if(!keybindings().count(k)) {

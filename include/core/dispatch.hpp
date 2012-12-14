@@ -324,12 +324,12 @@ public:
  * Parameter polarity: True if key is being pressed, false if being released.
  * Parameter name: Name of the key being pressed/released.
  */
-	virtual void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+	virtual void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 		bool polarity, const std::string& name);
 /**
  * Call on_key_event() for all event handlers (or just one if keys are being grabbed).
  */
-	static void do_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+	static void do_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 		bool polarity, const std::string& name) throw();
 /**
  * Grab all key events.

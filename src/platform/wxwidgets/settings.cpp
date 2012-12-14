@@ -58,7 +58,7 @@ namespace
 	{
 	public:
 		keygrabber() : information_dispatch("wxwdigets-key-grabber") { keygrab_active = false; }
-		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+		void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 			bool polarity, const std::string& name)
 		{
 			if(!keygrab_active)
@@ -286,13 +286,14 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		wxString boxchoices[] = { wxT("Released"), wxT("Don't care"), wxT("Pressed") };
 		std::vector<wxString> classeslist;
 		wxString emptystring;
-		std::set<std::string> mods, keys;
+		std::list<keyboard_modifier*> mods;
+		std::set<std::string> keys;
 
 		wtitle = title;
 
 		cleared = false;
 		std::set<std::string> x;
-		mods = modifier::get_set();
+		mods = lsnes_kbd.all_modifiers();
 		keys = keygroup::get_keys();
 		for(auto i : keys) {
 			std::string kclass = keygroup::lookup(i).first->get_class();
@@ -308,8 +309,9 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 
 		t_s = new wxFlexGridSizer(2, 3, 0, 0);
 		wxFlexGridSizer* t2_s = new wxFlexGridSizer(mods.size(), 2, 0, 0);
-		for(auto i : mods) {
+		for(auto i2 : mods) {
 			keyentry_mod_data m;
+			std::string i = i2->get_name();
 			t2_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
 			t2_s->Add(m.pressed = new wxComboBox(this, wxID_ANY, boxchoices[1], wxDefaultPosition, 
 				wxDefaultSize, 3, boxchoices, wxCB_READONLY), 1, wxGROW);

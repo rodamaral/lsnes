@@ -195,7 +195,7 @@ namespace
 			keys = "";
 			idmode = false;
 		}
-		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+		void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 			bool polarity, const std::string& name)
 		{
 			if(idmode && !polarity) {
@@ -343,37 +343,37 @@ void ui_loop()
 			while(true);
 		}
 		if(e.type == SDL_MOUSEMOTION && special_mode == SPECIALMODE_NORMAL) {
-			platform::queue(keypress(modifier_set(), mouse_x, e.motion.x - 6));
-			platform::queue(keypress(modifier_set(), mouse_y, e.motion.y - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.motion.x - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.motion.y - 6));
 		}
 		if(e.type == SDL_MOUSEBUTTONDOWN && special_mode == SPECIALMODE_NORMAL) {
 			int i;
-			platform::queue(keypress(modifier_set(), mouse_x, e.button.x - 6));
-			platform::queue(keypress(modifier_set(), mouse_y, e.button.y - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.button.x - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.button.y - 6));
 			switch(e.button.button) {
 			case SDL_BUTTON_LEFT:
-				platform::queue(keypress(modifier_set(), mouse_l, 1));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_l, 1));
 				break;
 			case SDL_BUTTON_MIDDLE:
-				platform::queue(keypress(modifier_set(), mouse_m, 1));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_m, 1));
 				break;
 			case SDL_BUTTON_RIGHT:
-				platform::queue(keypress(modifier_set(), mouse_r, 1));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_r, 1));
 				break;
 			};
 		}
 		if(e.type == SDL_MOUSEBUTTONUP && special_mode == SPECIALMODE_NORMAL) {
-			platform::queue(keypress(modifier_set(), mouse_x, e.button.x - 6));
-			platform::queue(keypress(modifier_set(), mouse_y, e.button.y - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.button.x - 6));
+			platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.button.y - 6));
 			switch(e.button.button) {
 			case SDL_BUTTON_LEFT:
-				platform::queue(keypress(modifier_set(), mouse_l, 0));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_l, 0));
 				break;
 			case SDL_BUTTON_MIDDLE:
-				platform::queue(keypress(modifier_set(), mouse_m, 0));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_m, 0));
 				break;
 			case SDL_BUTTON_RIGHT:
-				platform::queue(keypress(modifier_set(), mouse_r, 0));
+				platform::queue(keypress(keyboard_modifier_set(), mouse_r, 0));
 				break;
 			};
 		}

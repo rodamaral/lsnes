@@ -271,7 +271,7 @@ namespace
 		{NULL,			0			}
 	};
 
-	std::map<unsigned, modifier*> supported_modifiers;
+	std::map<unsigned, keyboard_modifier*> supported_modifiers;
 	std::map<unsigned, keygroup*> scancodekeys;
 	std::map<unsigned, keygroup*> symbolkeys;
 }
@@ -279,7 +279,7 @@ namespace
 unsigned translate_sdl_key(SDL_Event& e, keypress& k)
 {
 	if(e.type == SDL_KEYDOWN || e.type == SDL_KEYUP) {
-		modifier_set modifiers;
+		keyboard_modifier_set modifiers;
 		short value = (e.type == SDL_KEYDOWN) ? 1 : 0;
 		SDL_KeyboardEvent& ke = e.key;
 		SDL_keysym sym = ke.keysym;
@@ -396,11 +396,11 @@ void init_sdl_keys()
 {
 	struct sdl_modifier* m = modifiers_table;
 	while(m->name) {
-		modifier* m2;
+		keyboard_modifier* m2;
 		if(m->linkname)
-			m2 = new modifier(m->name, m->linkname);
+			m2 = new keyboard_modifier(lsnes_kbd, m->name, m->linkname);
 		else
-			m2 = new modifier(m->name);
+			m2 = new keyboard_modifier(lsnes_kbd, m->name);
 		if(m->sdlvalue)
 			supported_modifiers[m->sdlvalue] = m2;
 		m++;

@@ -105,7 +105,7 @@ keypress::keypress()
 	value = 0;
 }
 
-keypress::keypress(modifier_set mod, keygroup& _key, short _value)
+keypress::keypress(keyboard_modifier_set mod, keygroup& _key, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;
@@ -113,7 +113,7 @@ keypress::keypress(modifier_set mod, keygroup& _key, short _value)
 	value = _value;
 }
 
-keypress::keypress(modifier_set mod, keygroup& _key, keygroup& _key2, short _value)
+keypress::keypress(keyboard_modifier_set mod, keygroup& _key, keygroup& _key2, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;

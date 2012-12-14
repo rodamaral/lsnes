@@ -381,13 +381,13 @@ std::set<std::string> information_dispatch::get_dumpers() throw(std::bad_alloc)
 	return r;
 }
 
-void information_dispatch::on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+void information_dispatch::on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 	bool polarity, const std::string& name)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
+void information_dispatch::do_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
 	bool polarity, const std::string& name) throw()
 {
 	if(exclusive_key) {

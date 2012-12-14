@@ -17,7 +17,7 @@ namespace
 		int mod;
 		const char* name;
 		const char* lname;
-		modifier* allocated;
+		keyboard_modifier* allocated;
 	} modifiers[] = {
 		{ wxMOD_ALT, "alt", NULL, NULL },
 		{ wxMOD_CONTROL, "ctrl", NULL, NULL },
@@ -256,20 +256,20 @@ namespace
 		{ 0, NULL, NULL, NULL }
 	};
 
-	std::map<int, modifier*> modifier_map;
+	std::map<int, keyboard_modifier*> modifier_map;
 	std::map<int, keygroup*> key_map;
 	std::map<std::string, int> keys_allocated;
 	std::set<int> keys_held;
 
 	struct keypress_request
 	{
-		modifier_set mods;
+		keyboard_modifier_set mods;
 		keygroup* key;
 		bool polarity;
 	};
 
 	//Request keypress event to happen.
-	void do_keypress(modifier_set mods, keygroup& key, bool polarity)
+	void do_keypress(keyboard_modifier_set mods, keygroup& key, bool polarity)
 	{
 		struct keypress_request* req = new keypress_request;
 		req->mods = mods;
@@ -298,7 +298,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 {
 	int mods = e.GetModifiers();
 	int keyc = e.GetKeyCode();
-	modifier_set mset;
+	keyboard_modifier_set mset;
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if((mods & m->mod) == m->mod) {
@@ -336,9 +336,9 @@ void initialize_wx_keyboard()
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if(m->lname)
-			m->allocated = new modifier(m->name, m->lname);
+			m->allocated = new keyboard_modifier(lsnes_kbd, m->name, m->lname);
 		else
-			m->allocated = new modifier(m->name);
+			m->allocated = new keyboard_modifier(lsnes_kbd, m->name);
 		modifier_map[m->mod] = m->allocated;
 		m++;
 	}

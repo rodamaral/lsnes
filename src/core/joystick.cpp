@@ -132,11 +132,11 @@ void joystick_flush()
 	short x;
 	for(auto i : buttons)
 		if(joysticks[i.first.first].button(i.first.second, x))
-			platform::queue(keypress(modifier_set(), *i.second, x));
+			platform::queue(keypress(keyboard_modifier_set(), *i.second, x));
 	for(auto i : axes)
 		if(joysticks[i.first.first].axis(i.first.second, x))
-			platform::queue(keypress(modifier_set(), *i.second, x));
+			platform::queue(keypress(keyboard_modifier_set(), *i.second, x));
 	for(auto i : hats)
 		if(joysticks[i.first.first].hat(i.first.second, x))
-			platform::queue(keypress(modifier_set(), *i.second, x));
+			platform::queue(keypress(keyboard_modifier_set(), *i.second, x));
 }
