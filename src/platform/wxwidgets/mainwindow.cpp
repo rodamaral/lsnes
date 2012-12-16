@@ -81,6 +81,8 @@ enum
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
 	wxID_SET_VOLUME,
+	wxID_SET_VOLUME_VOICE,
+	wxID_SET_VOLUME_RECORD,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -117,12 +119,35 @@ int scaling_flags = SWS_POINT;
 namespace
 {
 	std::string last_volume = "0dB";
+	std::string last_volume_record = "0dB";
+	std::string last_volume_voice = "0dB";
 	unsigned char* screen_buffer;
 	uint32_t old_width;
 	uint32_t old_height;
 	int old_flags = SWS_POINT;
 	bool main_window_dirty;
 	struct thread* emulation_thread;
+
+	double pick_volume(wxWindow* win, const std::string& title, std::string& last)
+	{
+		std::string value;
+		regex_results r;
+		double parsed = 1;
+		value = pick_text(win, title, "Enter volume in absolute units, percentage (%) or dB:",
+			last);
+		if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
+			parsed = strtod(r[1].c_str(), NULL);
+		else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
+			parsed = strtod(r[1].c_str(), NULL) / 100;
+		else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
+			parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
+		else {
+			wxMessageBox(wxT("Invalid volume"), _T("Error"), wxICON_EXCLAMATION | wxOK, win);
+			return -1;
+		}
+		last = value;
+		return parsed;
+	}
 
 	void recent_rom_selected(const std::string& file)
 	{
@@ -862,6 +887,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
 		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
+		menu_entry(wxID_SET_VOLUME_VOICE, wxT("Set Voice volume"));
+		menu_entry(wxID_SET_VOLUME_RECORD, wxT("Set Record volume"));
 		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("Show audio status"));
 		menu_special_sub(wxT("Select sound device"), reinterpret_cast<sound_select_menu*>(sounddev =
 			new sound_select_menu(this)));
@@ -940,6 +967,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
 	std::string filename;
 	bool s;
+	double parsed;
 	switch(e.GetId()) {
 	case wxID_FRAMEADVANCE:
 		platform::queue("+advance-frame");
@@ -1146,26 +1174,21 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 		return;
 	}
-	case wxID_SET_VOLUME: {
-		std::string value;
-		regex_results r;
-		double parsed = 1;
-		value = pick_text(this, "Set volume", "Enter volume in absolute units, percentage (%) or dB:",
-			last_volume);
-		if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
-			parsed = strtod(r[1].c_str(), NULL);
-		else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
-			parsed = strtod(r[1].c_str(), NULL) / 100;
-		else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
-			parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
-		else {
-			wxMessageBox(wxT("Invalid volume"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
-			return;
-		}
-		last_volume = value;
-		runemufn([parsed]() { platform::global_volume = parsed; });
+	case wxID_SET_VOLUME:
+		parsed = pick_volume(this, "Set volume", last_volume);
+		if(parsed >= -1e-10)
+			runemufn([parsed]() { platform::global_volume = parsed; });
 		return;
-	}
+	case wxID_SET_VOLUME_RECORD:
+		parsed = pick_volume(this, "Set recording volume", last_volume_record);
+		if(parsed >= -1e-10)
+			audioapi_voicer_volume(parsed);
+		return;
+	case wxID_SET_VOLUME_VOICE:
+		parsed = pick_volume(this, "Set voice volume", last_volume_voice);
+		if(parsed >= -1e-10)
+			audioapi_voicep_volume(parsed);
+		return;
 	case wxID_SPEED_5:
 		set_speed(5);
 		break;
