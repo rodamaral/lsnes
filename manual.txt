@@ -333,60 +333,7 @@ Print all aliases and their expansions in effect.
 
 Run <script> as if commands were entered on the command line.
 
-6.5 Video dumping
-
-Following commands control video dumping:
-
-6.5.1 start-dump <dumper> [<mode>] <prefix/filename>
-
-Start dumping using dumper <dumper>. If mode is present or not 
-and if prefix or filename is present depends on the dumper and 
-dumper mode.
-
-The following dumpers are available:
-
-• INTERNAL-AVI-CSCD: Internal CSCD in .avi dumper.
-
-  – Mode: uncompressed/pcm: Uncompressed video, PCM audio. Takes 
-    prefix.
-
-  – Mode: cscd/pcm: CSCD video, PCM audio. Takes prefix.
-
-• INTERNAL-JMD: Internal .jmd dumper.
-
-  – Does not take mode.
-
-  – Takes a filename.
-
-• INTERNAL-RAW: Internal RAW dumper.
-
-  – Does not take mode.
-
-  – Takes a prefix.
-
-  – Sound is big-endian signed 16-bit, usually at 32040.5Hz.
-
-  – Video is always upscaled to double resolution (512x448 / 512 
-    x 478).
-
-  – Video framerate is usually 322445/6448 fps for PAL and 
-    10738636/178683 fps for NTSC.
-
-• INTERNAL-SDMP: Internal SDMP dumper.
-
-  – Mode 'ms': Multi-segment. Takes prefix.
-
-  – Mode 'ss': Single-segment. Takes filename.
-
-6.5.2 end-dump <dumper>
-
-End dumping using <dumper>
-
-6.5.3 show-dumpers [<dumper>]
-
-Show the list of dumpers or list of modes for <dumper>
-
-6.6 Memory manipulation
+6.5 Memory manipulation
 
 <address> may be decimal or hexadecimal (prefixed with '0x'). 
 <value> can be hexadecimal (prefixed with '0x'), unsigned or 
@@ -407,31 +354,31 @@ When dealing with DSP memory, multi-byte reads/writes are
 native-endian (do not use operand sizes exceeding DSP bitness, 
 except dword is OK for 24-bit memory).
 
-6.6.1 read-<size> <address>
+6.5.1 read-<size> <address>
 
 Read the value of byte in <address>.
 
-6.6.2 read-s<size> <address>
+6.5.2 read-s<size> <address>
 
 Read the value of signed byte in <address>.
 
-6.6.3 write-<size> <address> <value>
+6.5.3 write-<size> <address> <value>
 
 Write <value> to byte in address <address>.
 
-6.6.4 search-memory reset
+6.5.4 search-memory reset
 
 Reset the memory search
 
-6.6.5 search-memory count
+6.5.5 search-memory count
 
 Print number of candidates remaining
 
-6.6.6 search-memory print
+6.5.6 search-memory print
 
 Print all candidates remaining
 
-6.6.7 search-memory <usflag><sizeflag><op>
+6.5.7 search-memory <usflag><sizeflag><op>
 
 Searches memory for addresses satisfying criteria.
 
@@ -465,122 +412,122 @@ Searches memory for addresses satisfying criteria.
 
 • gt: > previous value.
 
-6.6.8 search-memory <sizeflag> <value>
+6.5.8 search-memory <sizeflag> <value>
 
 Searches for addresses that currently have value <value>. 
 <sizeflag> is as in previous command.
 
-6.7 Main commands
+6.6 Main commands
 
 These commands are not available in lsnesrc, but are available 
 after ROM has been loaded.
 
-6.7.1 quit-emulator [/y]
+6.6.1 quit-emulator [/y]
 
 Quits the emulator (asking for confirmation). If /y is given, no 
 confirmation is asked.
 
-6.7.2 pause-emulator
+6.6.2 pause-emulator
 
 Toggle paused/unpaused
 
-6.7.3 +advance-frame 
+6.6.3 +advance-frame 
 
 Advance frame. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-6.7.4 +advance-poll 
+6.6.4 +advance-poll 
 
 Advance subframe. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-6.7.5 advance-skiplag 
+6.6.5 advance-skiplag 
 
 Skip to first poll in frame after current.
 
-6.7.6 reset 
+6.6.6 reset 
 
 Reset the SNES after this frame.
 
-6.7.7 load <filename> 
+6.6.7 load <filename> 
 
 Load savestate <filename> in current mode.
 
-6.7.8 load-state <filename> 
+6.6.8 load-state <filename> 
 
 Load savestate <filename> in readwrite mode.
 
-6.7.9 load-readonly <filename> 
+6.6.9 load-readonly <filename> 
 
 Load savestate <filename> in readonly mode.
 
-6.7.10 load-preserve <filename> 
+6.6.10 load-preserve <filename> 
 
 Load savestate <filename> in readonly mode, preserving current 
 events.
 
-6.7.11 load-movie <filename> 
+6.6.11 load-movie <filename> 
 
 Load savestate <filename>, ignoring save part in readonly mode.
 
-6.7.12 save-state <filename> 
+6.6.12 save-state <filename> 
 
 Save system state to <filename> as soon as possible.
 
-6.7.13 save-movie <filename> 
+6.6.13 save-movie <filename> 
 
 Save movie to <filename>.
 
-6.7.14 set-rwmode 
+6.6.14 set-rwmode 
 
 Set read-write mode.
 
-6.7.15 set-romode 
+6.6.15 set-romode 
 
 Set read-only mode
 
-6.7.16 toggle-rwmode 
+6.6.16 toggle-rwmode 
 
 Toggle between read-only and read-write modes.
 
-6.7.17 set-gamename <name> 
+6.6.17 set-gamename <name> 
 
 Set name of the game to <name>
 
-6.7.18 get-gamename 
+6.6.18 get-gamename 
 
 Print the name of the game.
 
-6.7.19 add-author <author> 
+6.6.19 add-author <author> 
 
 Adds new author <author>. If <author> does not contain '|' it is 
 full name. If it contains '|', '|' splits the full name and 
 nickname.
 
-6.7.20 edit-author <num> <author> 
+6.6.20 edit-author <num> <author> 
 
 Edit the author in slot <num> (0-based) to be <author> (see 
 add-author for format)
 
-6.7.21 remove-author <num> 
+6.6.21 remove-author <num> 
 
 Remove author in slot <num>
 
-6.7.22 print-authors 
+6.6.22 print-authors 
 
 Print authors.
 
-6.7.23 test-1, test-2, test-3
+6.6.23 test-1, test-2, test-3
 
 Internal test commands. Don't use.
 
-6.7.24 take-screenshot <filename> 
+6.6.24 take-screenshot <filename> 
 
 Save screenshot to <filename>.
 
-6.7.25 +controller<num><button>
+6.6.25 +controller<num><button>
 
 Press button <button> on controller <num> (1-8). The following 
 button names are known:
@@ -617,208 +564,104 @@ button names are known:
 
 • turbo
 
-6.7.26 controllerh<num><button>
+6.6.26 controllerh<num><button>
 
 Hold/unhold button <button> on controller <num> (1-8). See 
 +controller for button names.
 
-6.7.27 controllerf<num><button>
+6.6.27 controllerf<num><button>
 
 Hold/unhold button <button> on controller <num> (1-8) for the 
 next frame. See +controller for button names.
 
 Cauntion: Does not work properly if outside frame advance.
 
-6.7.28 autofire (<pattern>|-)...
+6.6.28 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
 button names (in form of 1start, 1A, 2B, etc..) to hold on that 
 frame. After reaching the end of pattern, the pattern restarts 
 from the beginning.
 
-6.7.29 repaint
+6.6.29 repaint
 
 Force a repaint.
 
-6.8 Save jukebox 
+6.7 Save jukebox 
 
-6.8.1 cycle-jukebox-backward
+6.7.1 cycle-jukebox-backward
 
 Cycle save jukebox backwards.
 
-6.8.2 cycle-jukebox-forward
+6.7.2 cycle-jukebox-forward
 
 Cycle save jukebox forwards
 
-6.8.3 load-jukebox
+6.7.3 load-jukebox
 
 Do load from jukebox (current mode).
 
-6.8.4 save-jukebox
+6.7.4 save-jukebox
 
 Do state save to jukebox.
 
-6.9 Lua 
+6.8 Lua 
 
 Only available if lua support is compiled in.
 
-6.9.1 evaluate-lua <luacode>
+6.8.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-6.9.2 run-lua <script>
+6.8.2 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-6.9.3 reset-lua
+6.8.3 reset-lua
 
 Clear the Lua VM state and restore to factory defaults.
 
-6.10 Memory watch
+6.9 Memory watch
 
-6.10.1 add-watch <name> <expression>
+6.9.1 add-watch <name> <expression>
 
 Adds new watch (or modifies old one).
 
-6.10.2 remove-watch <name>
+6.9.2 remove-watch <name>
 
 Remove a watch.
 
-6.11 Sound 
+6.10 Sound 
 
-6.11.1 enable-sound <on/off> 
+6.10.1 enable-sound <on/off> 
 
 Enable/Disable sound.
 
-6.11.2 set-sound-device <device> 
-
-Set sound device to <device>
-
-6.11.3 show-sound-status 
-
-Show status of sound system.
-
-6.11.4 show-sound-devices
-
-Show all available devices.
-
-6.11.5 set-volume <multiplier>
+6.10.2 set-volume <multiplier>
 
 Set the volume multiplier to <multiplier>. 1 is normal volume, 
 and higher numbers are louder.
 
-6.11.6 set-volume <multiplier>%
+6.10.3 set-volume <multiplier>%
 
 Set the volume multiplier to <multiplier> percent. 100 is normal 
 volume, and higher numbers are louder.
 
-6.11.7 set-volume <multiplier>dB
+6.10.4 set-volume <multiplier>dB
 
 Set the volume multiplier to <multiplier> dB. 0 is normal volume, 
 and higher numbers are louder. The value may be negative.
 
-6.12 Misc.
+6.11 Misc.
 
-6.12.1 reload-rom [<file>]
+6.11.1 reload-rom [<file>]
 
 Reloads the main ROM image from <file>.
 
-6.12.2 edit-subtitle <firstframe> <length> [<text>]
-
-Edit or delete a subtitle.
-
-6.12.3 list-subtitle
-
-List subtitles.
-
-6.13 Commentary track
-
-6.13.1 list-streams
-
-List streams
-
-6.13.2 play-stream <id>
-
-Play stream <id>.
-
-6.13.3 delete-stream <id>
-
-Delete stream <id>
-
-6.13.4 change-timebase <id> <newbase>
-
-Change time base of <id> to <newbase>. The time base can be given 
-as samples (integer) or second (postfix with s).
-
-6.13.5 import-stream-opus <timebase> <file>
-
-Import opus stream from <file>, placing it at <timebase>. This 
-operation is lossless.
-
-6.13.6 import-stream-pcm <timebase> <file>
-
-Import PCM (.sox, 1ch@48kHz) stream from <file>, placing it at 
-<timebase>.
-
-6.13.7 export-stream-opus <id> <file>
-
-Export stream <id> as opus stream to <file>. This operation is 
-lossless.
-
-6.13.8 export-stream-pcm <id> <file>
-
-Export stream <id> as PCM (.sox) stream to <file>. 
-
-6.13.9 export-superstream <file>
-
-Export the entiere superstream as PCM (.sox) stream to <file>.
-
-6.13.10 load-collection <file>
-
-Load collection (if there is existing collection, unload it) from 
-<file>
-
-6.13.11 unload-collection
-
-Unload collection.
-
-6.13.12 +tangent
+6.11.2 +tangent
 
 Tangent for recording voice for commentary track. While pressed, 
 record a stream.
-
-6.14 SDL Platform commands 
-
-The following are valid on SDL platform.
-
-6.14.1 identify-key
-
-Asks to press a key and then identifies that (pseudo-)key.
-
-6.14.2 toggle-console 
-
-Toggle between windowed/fullscreen console.
-
-6.14.3 scroll-fullup 
-
-Scroll messages window as far back as it goes.
-
-6.14.4 scroll-fulldown 
-
-Scroll messages window as far forward as it goes.
-
-6.14.5 scroll-up 
-
-Scroll messages window back one screenful.
-
-6.14.6 scroll-down 
-
-Scroll messages window forward one screenful.
-
-6.14.7 prompt-command <command>
-
-Enter command prompt, with prompt prepopulated with specified 
-command.
 
 7 Settings
 

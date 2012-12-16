@@ -156,47 +156,6 @@ namespace
 	inverse_key ienable_sound("enable-sound on", "Sound‣Enable");
 	inverse_key idisable_sound("enable-sound off", "Sound‣Disable");
 
-	function_ptr_command<const std::string&> set_sound_device(lsnes_cmd, "set-sound-device", "Set sound device",
-		"Syntax: set-sound-device <id>\nSet sound device to <id>.\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			if(!audioapi_driver_initialized())
-				throw std::runtime_error("Sound failed to initialize and is disabled");
-			platform::set_sound_device(args);
-		});
-
-	function_ptr_command<> get_sound_devices(lsnes_cmd, "show-sound-devices", "Show sound devices",
-		"Syntax: show-sound-devices\nShow listing of available sound devices\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			if(!audioapi_driver_initialized())
-				throw std::runtime_error("Sound failed to initialize and is disabled");
-			auto r = audioapi_driver_get_devices();
-				auto s = audioapi_driver_get_device();
-				std::string dname = "unknown";
-				if(r.count(s))
-					dname = r[s];
-			messages << "Detected " << r.size() << " sound output devices." << std::endl;
-			for(auto i : r)
-				messages << "Audio device " << i.first << ": " << i.second << std::endl;
-			messages << "Currently using device " << audioapi_driver_get_device() << " ("
-				<< dname << ")" << std::endl;
-		});
-
-	function_ptr_command<> get_sound_status(lsnes_cmd, "show-sound-status", "Show sound status",
-		"Syntax: show-sound-status\nShow current sound status\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Sound plugin: " << audioapi_driver_name << std::endl;
-			if(!audioapi_driver_initialized())
-				messages << "Sound initialization failed, sound disabled" << std::endl;
-			else {
-				auto r = audioapi_driver_get_devices();
-				auto s = audioapi_driver_get_device();
-				std::string dname = "unknown";
-				if(r.count(s))
-					dname = r[s];
-				messages << "Current sound device " << s << " (" << dname << ")" << std::endl;
-			}
-		});
-
 	function_ptr_command<const std::string&> set_volume(lsnes_cmd, "set-volume", "Set sound volume",
 		"Syntax: set-volume <scale>\nset-volume <scale>%\nset-volume <scale>dB\nSet sound volume\n",
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
