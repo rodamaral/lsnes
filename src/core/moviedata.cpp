@@ -98,60 +98,6 @@ namespace
 		}
 	} mprefix;
 
-	function_ptr_command<> get_gamename(lsnes_cmd, "get-gamename", "Get the game name",
-		"Syntax: get-gamename\nPrints the game name\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Game name is '" << our_movie.gamename << "'" << std::endl;
-		});
-
-	function_ptr_command<const std::string&> set_gamename(lsnes_cmd, "set-gamename", "Set the game name",
-		"Syntax: set-gamename <name>\nSets the game name to <name>\n",
-		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-			our_movie.gamename = args;
-			messages << "Game name changed to '" << our_movie.gamename << "'" << std::endl;
-		});
-
-	function_ptr_command<> show_authors(lsnes_cmd, "show-authors", "Show the run authors",
-		"Syntax: show-authors\nShows the run authors\n",
-		[]() throw(std::bad_alloc, std::runtime_error)
-		{
-			size_t idx = 0;
-			for(auto i : our_movie.authors) {
-				messages << (idx++) << ": " << i.first << "|" << i.second << std::endl;
-			}
-			messages << "End of authors list" << std::endl;
-		});
-
-	function_ptr_command<const std::string&> add_author(lsnes_cmd, "add-author", "Add an author",
-		"Syntax: add-author <fullname>\nSyntax: add-author |<nickname>\n"
-		"Syntax: add-author <fullname>|<nickname>\nAdds a new author\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto g = split_author(t);
-			our_movie.authors.push_back(g);
-			messages << (our_movie.authors.size() - 1) << ": " << g.first << "|" << g.second << std::endl;
-		});
-
-	function_ptr_command<const std::string&> remove_author(lsnes_cmd, "remove-author", "Remove an author",
-		"Syntax: remove-author <id>\nRemoves author with ID <id>\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			uint64_t index = parse_value<uint64_t>(t);
-			if(index >= our_movie.authors.size())
-				throw std::runtime_error("No such author");
-			our_movie.authors.erase(our_movie.authors.begin() + index);
-		});
-
-	function_ptr_command<const std::string&> edit_author(lsnes_cmd, "edit-author", "Edit an author",
-		"Syntax: edit-author <authorid> <fullname>\nSyntax: edit-author <authorid> |<nickname>\n"
-		"Syntax: edit-author <authorid> <fullname>|<nickname>\nEdits author name\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("([^ \t]+)[ \t]+(|[^ \t].*)", t, "Index and author required.");
-			uint64_t index = parse_value<uint64_t>(r[1]);
-			if(index >= our_movie.authors.size())
-				throw std::runtime_error("No such author");
-			auto g = split_author(r[2]);
-			our_movie.authors[index] = g;
-		});
-
 	function_ptr_command<const std::string&> dump_coresave(lsnes_cmd, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {

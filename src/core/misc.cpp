@@ -254,7 +254,6 @@ void reached_main()
 	init_threaded_malloc();
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
-	cmd_bridge.set_output(platform::out());
 }
 
 std::string bsnes_core_version;

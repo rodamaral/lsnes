@@ -18,44 +18,6 @@
 
 keyboard lsnes_kbd;
 
-namespace
-{
-	function_ptr_command<const std::string&> bind_key(lsnes_cmd, "bind-key", "Bind a (pseudo-)key",
-		"Syntax: bind-key [<mod>/<modmask>] <key> <command>\nBind command to specified key (with specified "
-		" modifiers)\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("(([^ /\t]*)/([^ /\t]*)[ \t]+)?([^ \t]+)[ \t]+([^ \t].*)", t,
-				"Key and command required");
-			keymapper::bind(r[2], r[3], r[4], r[5]);
-			if(r[2] != "" || r[3] != "")
-				messages << r[2] << "/" << r[3] << " ";
-			messages << r[4] << " bound to '" << r[5] << "'" << std::endl;
-		});
-
-	function_ptr_command<const std::string&> unbind_key(lsnes_cmd, "unbind-key", "Unbind a (pseudo-)key",
-		"Syntax: unbind-key [<mod>/<modmask>] <key>\nUnbind specified key (with specified modifiers)\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("(([^ /\t]*)/([^ /\t]*)[ \t]+)?([^ \t]+)[ \t]*", t, "Key required");
-			keymapper::unbind(r[2], r[3], r[4]);
-			if(r[2] != "" || r[3] != "")
-				messages << r[2] << "/" << r[3] << " ";
-			messages << r[4] << " unbound" << std::endl;
-		});
-
-	function_ptr_command<> show_bindings(lsnes_cmd, "show-bindings", "Show active bindings",
-		"Syntax: show-bindings\nShow bindings that are currently active.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			keymapper::dumpbindings();
-		});
-
-	function_ptr_command<> show_inverse(lsnes_cmd, "show-inverse", "Show inverse bindings",
-		"Syntax: show-inverse\nShow inversebindings that are currently active.\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i : inverse_key::get_ikeys())
-				messages << i->getname() << ":" << i->get(true) << ":" << i->get(false) << std::endl;
-		});
-}
-
 std::string fixup_command_polarity(std::string cmd, bool polarity) throw(std::bad_alloc)
 {
 	if(cmd == "" || cmd == "*")
@@ -96,90 +58,6 @@ namespace
 
 namespace
 {
-	function_ptr_command<const std::string&> set_axis(lsnes_cmd, "set-axis", "Set mode of Joystick axis",
-		"Syntax: set-axis <axis> <options>...\nKnown options: disabled, axis, axis-inverse, pressure0-\n"
-		"pressure0+, pressure-0, pressure-+, pressure+0, pressure+-\nminus=<val>, zero=<val>, plus=<val>\n"
-		"tolerance=<val>\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("([^ \t]+)[ \t]+([^ \t].*)", t, "Axis name and option(s) required");
-			auto axis = lsnes_kbd.try_lookup_key(r[1]);
-			if(!axis)
-				throw std::runtime_error("Unknown axis name");
-			keyboard_key_axis* _axis = axis->cast_axis();
-			if(!_axis)
-				throw std::runtime_error("Not an axis");
-			auto p = _axis->get_calibration();
-			regex_results r2;
-			std::string options = r[2];
-			unsigned found_mask = 0;
-			while(options != "") {
-				std::string option;
-				extract_token(options, option, " \t", true);
-				unsigned optmask = 0;
-				if(option == "disabled") {
-					p.mode = -1;
-					optmask = 1;
-				} else if(option == "axis") {
-					p.mode = 1; p.esign_a = -1; p.esign_b = 1;
-					optmask = 1;
-				} else if(option == "axis-inverse") {
-					p.mode = 1; p.esign_a = 1; p.esign_b = -1;
-					optmask = 1;
-				} else if(option == "pressure0-") {
-					p.mode = 0; p.esign_a = 0; p.esign_b = -1;
-					optmask = 1;
-				} else if(option == "pressure0+") {
-					p.mode = 0; p.esign_a = 0; p.esign_b = 1;
-					optmask = 1;
-				} else if(option == "pressure-0") {
-					p.mode = 0; p.esign_a = -1; p.esign_b = 0;
-					optmask = 1;
-				} else if(option == "pressure-+") {
-					p.mode = 0; p.esign_a = -1; p.esign_b = 1;
-					optmask = 1;
-				} else if(option == "pressure+-") {
-					p.mode = 0; p.esign_a = 1; p.esign_b = -1;
-					optmask = 1;
-				} else if(option == "pressure+0") {
-					p.mode = 0; p.esign_a = 1; p.esign_b = 0;
-					optmask = 1;
-				} else if(r2 = regex("minus=([+-]?[0-9]+)", option)) {
-					p.left = parse_value<int32_t>(r2[1]);
-					optmask = 2;
-				} else if(r2 = regex("zero=([+-]?[0-9]+)", option)) {
-					p.center = parse_value<int32_t>(r2[1]);
-					optmask = 4;
-				} else if(r2 = regex("plus=([+-]?[0-9]+)", option)) {
-					p.right = parse_value<int32_t>(r2[1]);
-					optmask = 8;
-				} else if(r2 = regex("tolerance=0?(\\.[0-9]+)", option)) {
-					p.nullwidth = parse_value<double>(r2[1]);
-					optmask = 16;
-				} else
-					throw std::runtime_error("Unknown axis option");
-				if(found_mask & optmask)
-					throw std::runtime_error("Conflicting axis modes");
-				found_mask |= optmask;
-			}
-			_axis->set_calibration(p);
-		});
-
-	function_ptr_command<> set_axismode(lsnes_cmd, "show-axes", "Show all joystick axes",
-		"Syntax: show-axes\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i : lsnes_kbd.all_keys()) {
-				keyboard_key_axis* j = i->cast_axis();
-				if(!j)
-					continue;
-				auto p = j->get_calibration();
-				std::string type = calibration_to_mode(p);
-				messages << i->get_name() << " " << type << " -:" << p.left << " 0:"
-					<< p.center << " +:" << p.right << " t:" << p.nullwidth
-					<< std::endl;
-			}
-		});
-
-
 	struct triple
 	{
 		triple(const std::string& _a, const std::string& _b, const std::string& _c)

@@ -497,223 +497,6 @@ Commands without '+' execute only on negative edge (release).
 \end_layout
 
 \begin_layout Subsection
-Settings:
-\end_layout
-
-\begin_layout Standard
-Settings control various aspects of emulator behaviour.
-\end_layout
-
-\begin_layout Subsubsection
-set-setting <setting> <value>
-\end_layout
-
-\begin_layout Standard
-Sets setting <setting> to value <value> (may be empty).
-\end_layout
-
-\begin_layout Subsubsection
-unset-setting <setting>
-\end_layout
-
-\begin_layout Standard
-Try to unset setting <setting> (not all settings can be unset).
-\end_layout
-
-\begin_layout Subsubsection
-get-setting <setting>
-\end_layout
-
-\begin_layout Standard
-Read value of setting <setting>
-\end_layout
-
-\begin_layout Subsubsection
-show-settings
-\end_layout
-
-\begin_layout Standard
-Print names and values of all settings.
-\end_layout
-
-\begin_layout Subsection
-Keybindings
-\end_layout
-
-\begin_layout Standard
-Keybindings bind commands or aliases to keys (or pseudo-keys).
- 
-\end_layout
-
-\begin_layout Standard
-Notes:
-\end_layout
-
-\begin_layout Itemize
-Do not bind edge active (+/-) commands to keys with modifiers, that won't
- work right!
-\end_layout
-
-\begin_layout Itemize
-Names of keys and modifiers are platform-dependent.
-\end_layout
-
-\begin_layout Itemize
-Be careful before binding pseudo-keys (such as joystick axes, buttons or
- hats) with modifiers.
- That may or may not work right.
-\end_layout
-
-\begin_layout Subsubsection
-bind-key [<mod>/<modmask>] <key> <command>
-\end_layout
-
-\begin_layout Standard
-Bind <command> to key <key> (activating if modifiers in <modmask> (comma-seperat
-ed list) are set as <mod> (comma-seperated list).
-\end_layout
-
-\begin_layout Standard
-The names of keys and modifiers are platform-dependent.
-\end_layout
-
-\begin_layout Subsubsection
-unbind-key [<mod>/<modmask>] <key>
-\end_layout
-
-\begin_layout Standard
-Unbind command from <key> (with specified <mod> and <modmask>).
-\end_layout
-
-\begin_layout Subsubsection
-set-axis <axis> [disabled | axis | axis-inverse | pressure0- | pressure0+
- | pressure-0 | pressure-+ | pressure+0 | pressure+-] [minus=<val>] [zero=<val>]
- [plus=<val>] [tolerance=<val>]
-\end_layout
-
-\begin_layout Standard
-Set axis parameters for axis <axis>.
-\end_layout
-
-\begin_layout Itemize
-disabled: Disable axis
-\end_layout
-
-\begin_layout Itemize
-axis: Normal axis
-\end_layout
-
-\begin_layout Itemize
-axis-inverse: Inverse axis
-\end_layout
-
-\begin_layout Itemize
-pressure0-: Pressure sensitive.
- Released at 0, pressed at -.
-\end_layout
-
-\begin_layout Itemize
-pressure0+: Pressure sensitive.
- Released at 0, pressed at +.
-\end_layout
-
-\begin_layout Itemize
-pressure-0: Pressure sensitive.
- Released at -, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure-+: Pressure sensitive.
- Released at -, pressed at +.
-\end_layout
-
-\begin_layout Itemize
-pressure+0: Pressure sensitive.
- Released at +, pressed at 0.
-\end_layout
-
-\begin_layout Itemize
-pressure+-: Pressure sensitive.
- Released at +, pressed at -.
-\end_layout
-
-\begin_layout Itemize
-minus=<val>: Calibration at extreme minus position (-32768-32767)
-\end_layout
-
-\begin_layout Itemize
-zero=<val>: Calibration at neutral position (-32768-32767)
-\end_layout
-
-\begin_layout Itemize
-plus=<val>: Calibration at extreme plus position (-32768-32767)
-\end_layout
-
-\begin_layout Itemize
-tolerance=<value>: Center band tolerance (0<x<1).
- The smaller the value, the more sensitive the control is.
-\end_layout
-
-\begin_layout Subsubsection
-show-bindings
-\end_layout
-
-\begin_layout Standard
-Print all key bindings in effect.
-\end_layout
-
-\begin_layout Subsection
-Aliases
-\end_layout
-
-\begin_layout Standard
-Aliases bind command to sequence of commands.
- After alias has been defined, it replaces the command it shadows.
-\end_layout
-
-\begin_layout Standard
-Notes:
-\end_layout
-
-\begin_layout Itemize
-You can't alias command to itself.
-\end_layout
-
-\begin_layout Itemize
-Aliases starting with +/- are edge active just like ordinary commands starting
- with +/-.
-\end_layout
-
-\begin_layout Itemize
-One command can be aliased to multiple commands.
-\end_layout
-
-\begin_layout Subsubsection
-alias-command <command> <expansion>
-\end_layout
-
-\begin_layout Standard
-Append <expansion> to alias <command>.
- If alias does not already exist, it is created.
-\end_layout
-
-\begin_layout Subsubsection
-unalias-command <command>
-\end_layout
-
-\begin_layout Standard
-Clear alias expansion for <command>.
-\end_layout
-
-\begin_layout Subsubsection
-show-aliases
-\end_layout
-
-\begin_layout Standard
-Print all aliases and their expansions in effect.
-\end_layout
-
-\begin_layout Subsection
 run-script <script>
 \end_layout
 
@@ -780,107 +563,6 @@ write-<size> <address> <value>
 
 \begin_layout Standard
 Write <value> to byte in address <address>.
-\end_layout
-
-\begin_layout Subsubsection
-search-memory reset
-\end_layout
-
-\begin_layout Standard
-Reset the memory search
-\end_layout
-
-\begin_layout Subsubsection
-search-memory count
-\end_layout
-
-\begin_layout Standard
-Print number of candidates remaining
-\end_layout
-
-\begin_layout Subsubsection
-search-memory print
-\end_layout
-
-\begin_layout Standard
-Print all candidates remaining
-\end_layout
-
-\begin_layout Subsubsection
-search-memory <usflag><sizeflag><op>
-\end_layout
-
-\begin_layout Standard
-Searches memory for addresses satisfying criteria.
-\end_layout
-
-\begin_layout Standard
-<usflag> can be:
-\end_layout
-
-\begin_layout Itemize
-u: unsigned
-\end_layout
-
-\begin_layout Itemize
-s: signed
-\end_layout
-
-\begin_layout Standard
-<sizeflag> can be:
-\end_layout
-
-\begin_layout Itemize
-b: byte
-\end_layout
-
-\begin_layout Itemize
-w: word
-\end_layout
-
-\begin_layout Itemize
-d: dword
-\end_layout
-
-\begin_layout Itemize
-q: qword
-\end_layout
-
-\begin_layout Standard
-<op> can be:
-\end_layout
-
-\begin_layout Itemize
-lt: < previous value.
-\end_layout
-
-\begin_layout Itemize
-le: <= previous value.
-\end_layout
-
-\begin_layout Itemize
-eq: = previous value.
-\end_layout
-
-\begin_layout Itemize
-ne: != previous value.
-\end_layout
-
-\begin_layout Itemize
-ge: >= previous value.
-\end_layout
-
-\begin_layout Itemize
-gt: > previous value.
-\end_layout
-
-\begin_layout Subsubsection
-search-memory <sizeflag> <value>
-\end_layout
-
-\begin_layout Standard
-Searches for addresses that currently have value <value>.
- <sizeflag> is as in previous command.
 \end_layout
 
 \begin_layout Subsection
@@ -1023,57 +705,6 @@ toggle-rwmode
 
 \begin_layout Standard
 Toggle between read-only and read-write modes.
-\end_layout
-
-\begin_layout Subsubsection
-set-gamename <name> 
-\end_layout
-
-\begin_layout Standard
-Set name of the game to <name>
-\end_layout
-
-\begin_layout Subsubsection
-get-gamename 
-\end_layout
-
-\begin_layout Standard
-Print the name of the game.
-\end_layout
-
-\begin_layout Subsubsection
-add-author <author> 
-\end_layout
-
-\begin_layout Standard
-Adds new author <author>.
- If <author> does not contain '|' it is full name.
- If it contains '|', '|' splits the full name and nickname.
-\end_layout
-
-\begin_layout Subsubsection
-edit-author <num> <author> 
-\end_layout
-
-\begin_layout Standard
-Edit the author in slot <num> (0-based) to be <author> (see add-author for
- format)
-\end_layout
-
-\begin_layout Subsubsection
-remove-author <num> 
-\end_layout
-
-\begin_layout Standard
-Remove author in slot <num>
-\end_layout
-
-\begin_layout Subsubsection
-print-authors 
-\end_layout
-
-\begin_layout Standard
-Print authors.
 \end_layout
 
 \begin_layout Subsubsection
@@ -2602,6 +2233,38 @@ input.lcid_to_pcid(number controller)
 \begin_layout Standard
 Return the physical index, physical port and controller number in port for
  specified (1-based) logical controller.
+\end_layout
+
+\begin_layout Subsection
+Table keyboard
+\end_layout
+
+\begin_layout Standard
+Various keybinding-related functions
+\end_layout
+
+\begin_layout Subsubsection
+keyboard.bind(string mod, string mask, string key, string cmd)
+\end_layout
+
+\begin_layout Standard
+Bind specified key with specified modifers to specified command.
+\end_layout
+
+\begin_layout Subsubsection
+keyboard.unbind(string mod, string mask, string key)
+\end_layout
+
+\begin_layout Standard
+Unbind specified key with specified modifers.
+\end_layout
+
+\begin_layout Subsubsection
+keyboard.alias(string alias, string expansion)
+\end_layout
+
+\begin_layout Standard
+Set expansion of given command.
 \end_layout
 
 \begin_layout Subsection

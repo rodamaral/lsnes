@@ -32,6 +32,7 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 #include <wx/cmdline.h>
+#include <iostream>
 
 #define UISERV_RESIZED 9991
 #define UISERV_UIFUN 9992
@@ -167,9 +168,83 @@ end:
 		wxPostEvent(ui_services, uic);
 	}
 
+	void handle_config_line(std::string line)
+	{
+		regex_results r;
+		if(r = regex("AXIS[ \t]+([^ \t]+)[ \t]+(-?[0-9])[ \t]+(-?[0-9])[ \t]+(-?[0-9])[ \t]+"
+			"(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(0?.[0-9]+)[ \t]*", line)) {
+			keyboard_axis_calibration c;
+			c.mode = parse_value<int>(r[2]);
+			if(c.mode < -1 || c.mode > 1) {
+				messages << "Illegal axis mode " << c.mode << std::endl;
+				return;
+			}
+			c.esign_a = parse_value<int>(r[3]);
+			c.esign_b = parse_value<int>(r[4]);
+			if(c.esign_a < -1 || c.esign_a > 1 || c.esign_b < -1 || c.esign_b > 1 ||
+				c.esign_a == c.esign_b || (c.mode == 1 && (c.esign_a == 0 || c.esign_b == 0))) {
+				messages << "Illegal axis endings " << c.esign_a << "/" << c.esign_b << std::endl;
+				return;
+			}
+			c.left = parse_value<int32_t>(r[5]);
+			c.center = parse_value<int32_t>(r[6]);
+			c.right = parse_value<int32_t>(r[7]);
+			c.nullwidth = parse_value<double>(r[8]);
+			keyboard_key* _k = lsnes_kbd.try_lookup_key(r[1]);
+			keyboard_key_axis* k = NULL;
+			if(_k)
+				k = _k->cast_axis();
+			if(!k)
+				return;
+			k->set_calibration(c);
+			messages << "Calibration of " << r[1] << " changed: mode=" << calibration_to_mode(c)
+				<< " limits=" << c.left << "(" << c.center << ")" << c.right
+				<< " null=" << c.nullwidth << std::endl;
+		} else if(r = regex("UNSET[ \t]+([^ \t]+)[ \t]*", line)) {
+			try {
+				lsnes_set.blank(r[1]);
+				messages << "Setting " << r[1] << " unset" << std::endl;
+			} catch(std::exception& e) {
+				messages << "Can't unset " << r[1] << ": " << e.what() << std::endl;
+			}
+		} else if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
+			try {
+				lsnes_set.set(r[1], r[2]);
+				messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
+			} catch(std::exception& e) {
+				messages << "Can't set " << r[1] << ": " << e.what() << std::endl;
+			}
+		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
+			if(!lsnes_cmd.valid_alias_name(r[1])) {
+				messages << "Illegal alias name " << r[1] << std::endl;
+				return;
+			}
+			std::string tmp = lsnes_cmd.get_alias_for(r[1]);
+			tmp = tmp + r[2] + "\n";
+			lsnes_cmd.set_alias_for(r[1], tmp);
+			messages << r[1] << " aliased to " << r[2] << std::endl;
+		} else if(r = regex("BIND[ \t]+([^/]*)/([^|]*)\\|([^ \t]+)[ \t]+(.*)", line)) {
+			keymapper::bind(r[1], r[2], r[3], r[4]);
+			if(r[1] != "" || r[2] != "")
+				messages << r[1] << "/" << r[2] << " ";
+			messages << r[3] << " bound to '" << r[4] << "'" << std::endl;
+			
+		} else
+			messages << "Unrecognized directive: " << line << std::endl;
+	}
+
+	void load_configuration()
+	{
+		std::string cfg = get_config_path() + "/lsneswxw.cfg";
+		std::ifstream cfgfile(cfg.c_str());
+		std::string line;
+		while(std::getline(cfgfile, line))
+			handle_config_line(line);
+	}
+	
 	void save_configuration()
 	{
-		std::string cfg = get_config_path() + "/lsneswxw.rc";
+		std::string cfg = get_config_path() + "/lsneswxw.cfg";
 		std::ofstream cfgfile(cfg.c_str());
 		//Joystick axis.
 		for(auto i : lsnes_kbd.all_keys()) {
@@ -177,19 +252,19 @@ end:
 			if(!j)
 				continue;
 			auto p = j->get_calibration();
-			cfgfile << "set-axis " << i->get_name() << " " << calibration_to_mode(p);
-			cfgfile << " minus=" << p.left << " zero=" << p.center << " plus=" << p.right
-				<< " tolerance=" << p.nullwidth << std::endl;
+			cfgfile << "AXIS " << i->get_name() << " " << p.mode << " " << p.esign_a << " " << p.esign_b
+				<< " " << p.left << " " << p.center << " " << p.right << " " << p.nullwidth
+				<< std::endl;
 		}
 		//Settings.
 		for(auto i : lsnes_set.get_settings_set()) {
 			if(!lsnes_set.is_set(i))
-				cfgfile << "unset-setting " << i << std::endl;
+				cfgfile << "UNSET " << i << std::endl;
 			else
-				cfgfile << "set-setting " << i << " " << lsnes_set.get(i) << std::endl;
+				cfgfile << "SET " << i << " " << lsnes_set.get(i) << std::endl;
 		}
 		for(auto i : lsnes_set.get_invalid_values())
-			cfgfile << "set-setting " << i.first << " " << i.second << std::endl;
+			cfgfile << "SET " << i.first << " " << i.second << std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {
 			std::string old_alias_value = lsnes_cmd.get_alias_for(i);
@@ -203,7 +278,7 @@ end:
 					aliasline = old_alias_value;
 					old_alias_value = "";
 				}
-				cfgfile << "alias-command " << i << " " << aliasline << std::endl;
+				cfgfile << "ALIAS " << i << " " << aliasline << std::endl;
 			}
 		}
 		//Keybindings.
@@ -217,11 +292,8 @@ end:
 			std::string mod = i2.substr(0, s2);
 			std::string modspec = i2.substr(s2 + 1, s - s2 - 1);
 			std::string old_command_value = keymapper::get_command_for(i);
-			if(mod != "" || modspec != "")
-				cfgfile << "bind-key " << mod << "/" << modspec << " " << key << " "
-					<< old_command_value << std::endl;
-			else
-				cfgfile << "bind-key " << key << " " << old_command_value << std::endl;
+			cfgfile << "BIND " << mod << "/" << modspec << "|" << key << " "
+				<< old_command_value << std::endl;
 		}
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
@@ -367,9 +439,9 @@ bool lsnes_app::OnInit()
 
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
-	messages << "--- Running lsnesrc --- " << std::endl;
+	messages << "--- Loading configuration --- " << std::endl;
 	lsnes_set.set_storage_mode(true);
-	lsnes_cmd.invoke("run-script " + cfgpath + "/lsneswxw.rc");
+	load_configuration();
 	lsnes_set.set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 

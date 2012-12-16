@@ -55,120 +55,6 @@ namespace
 		std::ostream*& output;
 	};
 
-	struct show_aliases : public command
-	{
-		show_aliases(command_group& group, std::ostream*& _output)
-			: command(group, "show-aliases"), in_group(group), output(_output)
-		{
-		}
-
-		~show_aliases() throw()
-		{
-		}
-
-		void invoke(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(filename != "") {
-				(*output) << "Syntax: show-aliases" << std::endl;
-				return;
-			}
-			auto aliases = in_group.get_aliases();
-			for(auto i : aliases) {
-				std::string acmd = in_group.get_alias_for(i);
-				while(acmd != "") {
-					std::string j;
-					extract_token(acmd, j, "\n");
-					if(j != "")
-						(*output) << "alias " << i << " " << j << std::endl;
-				}
-			}
-		}
-
-		std::string get_short_help() throw(std::bad_alloc)
-		{
-			return "Show aliases";
-		}
-
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: show-aliases\nShow expansions of all aliases\n";
-		}
-
-		command_group& in_group;
-		std::ostream*& output;
-	};
-
-	struct unalias_command : public command
-	{
-		unalias_command(command_group& group, std::ostream*& _output)
-			: command(group, "unalias-command"), in_group(group), output(_output)
-		{
-		}
-
-		~unalias_command() throw()
-		{
-		}
-
-		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
-		{
-			auto r = regex("([^ \t]+)[ \t]*", t, "This command only takes one argument");
-			if(!in_group.valid_alias_name(r[1]))
-				throw std::runtime_error("Illegal alias name");
-			in_group.set_alias_for(r[1], "");
-			(*output) << "Command '" << r[1] << "' unaliased" << std::endl;
-		}
-
-		std::string get_short_help() throw(std::bad_alloc)
-		{
-			return "Unalias a command";
-		}
-
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: unalias-command <aliasname>\nClear expansion of alias <aliasname>\n";
-		}
-
-		command_group& in_group;
-		std::ostream*& output;
-	};
-
-	struct alias_command : public command
-	{
-		alias_command(command_group& group, std::ostream*& _output)
-			: command(group, "alias-command"), in_group(group), output(_output)
-		{
-		}
-
-		~alias_command() throw()
-		{
-		}
-
-		void invoke(const std::string& t) throw(std::bad_alloc, std::runtime_error)
-		{
-			auto r = regex("([^ \t]+)[ \t]+([^ \t].*)", t, "Alias name and command needed");
-			if(!in_group.valid_alias_name(r[1]))
-				throw std::runtime_error("Illegal alias name");
-			std::string tmp = in_group.get_alias_for(r[1]);
-			tmp = tmp + r[2] + "\n";
-			in_group.set_alias_for(r[1], tmp);
-			(*output) << "Command '" << r[1] << "' aliased to '" << r[2] << "'" << std::endl;
-		}
-
-		std::string get_short_help() throw(std::bad_alloc)
-		{
-			return "Alias a command";
-		}
-
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: alias-command <aliasname> <command>\nAppend <command> to expansion of alias "
-				"<aliasname>\nValid alias names can't be empty nor start with '*' or '?'\n";
-		}
-
-		command_group& in_group;
-		std::ostream*& output;
-	};
-
 	void default_oom_panic()
 	{
 		std::cerr << "PANIC: Fatal error, can't continue: Out of memory." << std::endl;
@@ -207,9 +93,6 @@ command_group::command_group() throw(std::bad_alloc)
 	regqueue_t::do_ready(*this, true);
 	//The builtin commands.
 	builtin[0] = new run_script(*this, output);
-	builtin[1] = new show_aliases(*this, output);
-	builtin[2] = new unalias_command(*this, output);
-	builtin[3] = new alias_command(*this, output);
 }
 
 command_group::~command_group() throw()
