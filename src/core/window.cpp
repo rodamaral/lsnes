@@ -105,7 +105,7 @@ keypress::keypress()
 	value = 0;
 }
 
-keypress::keypress(keyboard_modifier_set mod, keygroup& _key, short _value)
+keypress::keypress(keyboard_modifier_set mod, keyboard_key& _key, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;
@@ -113,7 +113,7 @@ keypress::keypress(keyboard_modifier_set mod, keygroup& _key, short _value)
 	value = _value;
 }
 
-keypress::keypress(keyboard_modifier_set mod, keygroup& _key, keygroup& _key2, short _value)
+keypress::keypress(keyboard_modifier_set mod, keyboard_key& _key, keyboard_key& _key2, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;
@@ -446,9 +446,9 @@ namespace
 				keypresses.pop_front();
 				queue_lock->unlock();
 				if(k.key1)
-					k.key1->set_position(k.value, k.modifiers);
+					k.key1->set_state(k.modifiers, k.value);
 				if(k.key2)
-					k.key2->set_position(k.value, k.modifiers);
+					k.key2->set_state(k.modifiers, k.value);
 				queue_lock->lock();
 				queue_function_run = true;
 			}

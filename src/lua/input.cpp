@@ -164,28 +164,44 @@ namespace
 	});
 
 	function_ptr_luafun iraw(LS, "input.raw", [](lua_state& L, const std::string& fname) -> int {
-		auto s = keygroup::get_all_parameters();
 		L.newtable();
-		for(auto i : s) {
-			L.pushstring(i.first.c_str());
-			push_keygroup_parameters(L, i.second);
+		for(auto i : lsnes_kbd.all_keys()) {
+			L.pushstring(i->get_name().c_str());
+			push_keygroup_parameters(L, *i);
 			L.settable(-3);
 		}
 		return 1;
 	});
 
+	class _keyhook_listener : public keyboard_event_listener
+	{
+		void on_key_event(keyboard_modifier_set& modifiers, keyboard_key& key, keyboard_event& event)
+		{
+			lua_callback_keyhook(key.get_name(), key);
+		}
+	} keyhook_listener;
+	std::set<std::string> hooked;
+
 	function_ptr_luafun ireq(LS, "input.keyhook", [](lua_state& L, const std::string& fname) -> int {
-		struct keygroup* k;
 		bool state;
 		std::string x = L.get_string(1, fname.c_str());
 		state = L.get_bool(2, fname.c_str());
-		k = keygroup::lookup_by_name(x);
-		if(!k) {
+		keyboard_key* key = lsnes_kbd.try_lookup_key(x);
+		if(!key) {
 			L.pushstring("Invalid key name");
 			L.error();
 			return 0;
 		}
-		k->request_hook_callback(state);
+		bool ostate = hooked.count(x) > 0;
+		if(ostate == state)
+			return 0;
+		if(state) {
+			hooked.insert(x);
+			key->add_listener(keyhook_listener, true);
+		} else {
+			hooked.erase(x);
+			key->remove_listener(keyhook_listener);
+		}
 		return 0;
 	});
 

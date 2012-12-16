@@ -22,40 +22,63 @@ extern const char* lua_sysrc_script;
 
 lua_state LS;
 
-void push_keygroup_parameters(lua_state& L, const struct keygroup::parameters& p)
+namespace
 {
+	void pushpair(lua_state& L, std::string key, double value)
+	{
+		L.pushstring(key.c_str());
+		L.pushnumber(value);
+		L.settable(-3);
+	}
+
+	void pushpair(lua_state& L, std::string key, std::string value)
+	{
+		L.pushstring(key.c_str());
+		L.pushstring(value.c_str());
+		L.settable(-3);
+	}
+
+	std::string calibration_to_type(keyboard_axis_calibration p)
+	{
+		if(p.mode == -1) return "disabled";
+		if(p.mode == 1 && p.esign_b == 1) return "axis";
+		if(p.mode == 1 && p.esign_b == -1) return "axis-inverse";
+		if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 0) return "pressure-m0";
+		if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 1) return "pressure-mp";
+		if(p.mode == 0 && p.esign_a == 0 && p.esign_b == -1) return "pressure-0m";
+		if(p.mode == 0 && p.esign_a == 0 && p.esign_b == 1) return "pressure-0p";
+		if(p.mode == 0 && p.esign_a == 1 && p.esign_b == -1) return "pressure-pm";
+		if(p.mode == 0 && p.esign_a == 1 && p.esign_b == 0) return "pressure-p0";
+		return "";
+	}
+
+}
+
+void push_keygroup_parameters(lua_state& L, keyboard_key& p)
+{
+	keyboard_mouse_calibration p2;
+	keyboard_axis_calibration p3;
 	L.newtable();
-	L.pushstring("last_rawval");
-	L.pushnumber(p.last_rawval);
-	L.settable(-3);
-	L.pushstring("cal_left");
-	L.pushnumber(p.cal_left);
-	L.settable(-3);
-	L.pushstring("cal_center");
-	L.pushnumber(p.cal_center);
-	L.settable(-3);
-	L.pushstring("cal_right");
-	L.pushnumber(p.cal_right);
-	L.settable(-3);
-	L.pushstring("cal_tolerance");
-	L.pushnumber(p.cal_tolerance);
-	L.settable(-3);
-	L.pushstring("ktype");
-	switch(p.ktype) {
-	case keygroup::KT_DISABLED:		L.pushstring("disabled");		break;
-	case keygroup::KT_KEY:			L.pushstring("key");		break;
-	case keygroup::KT_AXIS_PAIR:		L.pushstring("axis");		break;
-	case keygroup::KT_AXIS_PAIR_INVERSE:	L.pushstring("axis-inverse");	break;
-	case keygroup::KT_HAT:			L.pushstring("hat");		break;
-	case keygroup::KT_MOUSE:		L.pushstring("mouse");		break;
-	case keygroup::KT_PRESSURE_PM:		L.pushstring("pressure-pm");	break;
-	case keygroup::KT_PRESSURE_P0:		L.pushstring("pressure-p0");	break;
-	case keygroup::KT_PRESSURE_0M:		L.pushstring("pressure-0m");	break;
-	case keygroup::KT_PRESSURE_0P:		L.pushstring("pressure-0p");	break;
-	case keygroup::KT_PRESSURE_M0:		L.pushstring("pressure-m0");	break;
-	case keygroup::KT_PRESSURE_MP:		L.pushstring("pressure-mp");	break;
-	};
-	L.settable(-3);
+	switch(p.get_type()) {
+	case KBD_KEYTYPE_KEY:
+		pushpair(L, "value", p.get_state());
+		pushpair(L, "type", "key");
+		break;
+	case KBD_KEYTYPE_HAT:
+		pushpair(L, "value", p.get_state());
+		pushpair(L, "type", "hat");
+		break;
+	case KBD_KEYTYPE_MOUSE:
+		p2 = p.cast_mouse()->get_calibration();
+		pushpair(L, "value", p.get_state());
+		pushpair(L, "type", "mouse");
+		break;
+	case KBD_KEYTYPE_AXIS:
+		p3 = p.cast_axis()->get_calibration();
+		pushpair(L, "value", p.get_state());
+		pushpair(L, "type", calibration_to_type(p3));
+		break;
+	}
 }
 
 lua_render_context* lua_render_ctx = NULL;
@@ -64,7 +87,7 @@ bool lua_booted_flag = false;
 
 namespace
 {
-	int push_keygroup_parameters2(lua_state& L, const struct keygroup::parameters* p)
+	int push_keygroup_parameters2(lua_state& L, keyboard_key* p)
 	{
 		push_keygroup_parameters(L, *p);
 		return 1;
@@ -338,7 +361,7 @@ void lua_callback_quit() throw()
 	run_callback("on_quit");
 }
 
-void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw()
+void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw()
 {
 	run_callback("on_keyhook", lua_state::string_tag(key), lua_state::fnptr_tag(push_keygroup_parameters2, &p));
 }

@@ -1,6 +1,8 @@
 #include "core/command.hpp"
 #include "core/joystick.hpp"
 #include "core/window.hpp"
+#include "core/keymapper.hpp"
+#include "library/keyboard.hpp"
 #include "library/string.hpp"
 #include "library/joyfun.hpp"
 #include <map>
@@ -10,9 +12,9 @@ namespace
 {
 	std::map<uint64_t, joystick_model> joysticks;
 	std::map<uint64_t, unsigned> joynumbers;
-	std::map<std::pair<uint64_t, unsigned>, keygroup*> axes;
-	std::map<std::pair<uint64_t, unsigned>, keygroup*> buttons;
-	std::map<std::pair<uint64_t, unsigned>, keygroup*> hats;
+	std::map<std::pair<uint64_t, unsigned>, keyboard_key_axis*> axes;
+	std::map<std::pair<uint64_t, unsigned>, keyboard_key_key*> buttons;
+	std::map<std::pair<uint64_t, unsigned>, keyboard_key_hat*> hats;
 	unsigned joystick_count = 0;
 
 	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joysticks",
@@ -48,15 +50,22 @@ void joystick_quit()
 	joystick_count = 0;
 }
 
-void joystick_new_axis(uint64_t jid, uint64_t id, int64_t minv, int64_t maxv, const std::string& xname,
-	enum keygroup::type atype)
+void joystick_new_axis(uint64_t jid, uint64_t id, int64_t minv, int64_t maxv, const std::string& xname, int atype)
 {
 	if(!joysticks.count(jid))
 		return;
 	unsigned jnum = joynumbers[jid];
 	unsigned n = joysticks[jid].new_axis(id, minv, maxv, xname);
 	std::string name = (stringfmt() << "joystick" << jnum << "axis" << n).str();
-	axes[std::make_pair(jid, n)] = new keygroup(name, "joystick", atype);
+	keyboard_axis_calibration cal;
+	cal.left = -32767;
+	cal.center = 0;
+	cal.right = 32767;
+	cal.esign_a = -1;
+	cal.esign_b = 1;
+	cal.nullwidth = 0.5;
+	cal.mode = atype;
+	axes[std::make_pair(jid, n)] = new keyboard_key_axis(lsnes_kbd, name, "joystick", cal);
 }
 
 void joystick_new_button(uint64_t jid, uint64_t id, const std::string& xname)
@@ -66,7 +75,7 @@ void joystick_new_button(uint64_t jid, uint64_t id, const std::string& xname)
 	unsigned jnum = joynumbers[jid];
 	unsigned n = joysticks[jid].new_button(id, xname);
 	std::string name = (stringfmt() << "joystick" << jnum << "button" << n).str();
-	buttons[std::make_pair(jid, n)] = new keygroup(name, "joystick", keygroup::KT_KEY);
+	buttons[std::make_pair(jid, n)] = new keyboard_key_key(lsnes_kbd, name, "joystick");
 }
 
 void joystick_new_hat(uint64_t jid, uint64_t id_x, uint64_t id_y, int64_t min_dev, const std::string& xname_x,
@@ -77,7 +86,7 @@ void joystick_new_hat(uint64_t jid, uint64_t id_x, uint64_t id_y, int64_t min_de
 	unsigned jnum = joynumbers[jid];
 	unsigned n = joysticks[jid].new_hat(id_x, id_y, min_dev, xname_x, xname_y);
 	std::string name = (stringfmt() << "joystick" << jnum << "hat" << n).str();
-	hats[std::make_pair(jid, n)] = new keygroup(name, "joystick", keygroup::KT_HAT);
+	hats[std::make_pair(jid, n)] = new keyboard_key_hat(lsnes_kbd, name, "joystick");
 }
 
 void joystick_new_hat(uint64_t jid, uint64_t id, const std::string& xname)
@@ -87,7 +96,7 @@ void joystick_new_hat(uint64_t jid, uint64_t id, const std::string& xname)
 	unsigned jnum = joynumbers[jid];
 	unsigned n = joysticks[jid].new_hat(id, xname);
 	std::string name = (stringfmt() << "joystick" << jnum << "hat" << n).str();
-	hats[std::make_pair(jid, n)] = new keygroup(name, "joystick", keygroup::KT_HAT);
+	hats[std::make_pair(jid, n)] = new keyboard_key_hat(lsnes_kbd, name, "joystick");
 }
 
 void joystick_report_axis(uint64_t jid, uint64_t id, int64_t value)

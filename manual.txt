@@ -1415,23 +1415,21 @@ Returns table of tables of all available keys and axes. The first
 table is indexed by key name (platform-dependent!), and the inner 
 table has the following fields:
 
-• last_rawval: Last reported raw value for control.
+• value: Last reported value for control
+
+  – For keys: 1 for pressed, 0 for released.
+
+  – For axes: -32767...32767.
+
+  – For presure-sensitive buttons: 0...32767.
+
+  – For hats: Bitmask: 1=>Up, 2=>Right, 4=>Down, 8=>Left.
+
+  – For mouse: Coordinates relative to game area.
 
 • ktype: Type of key (disabled, key, mouse, axis, axis-inverse, 
   hat, pressure-m0, pressure-mp, pressure-0m, pressure-0p, 
   pressure-pm, pressure-p0).
-
-• cal_left: Minimum calibration value. Only meaningful with axis 
-  and pressure types.
-
-• cal_center: Center calibration value. Only meaningful with axis 
-  and pressure types.
-
-• cal_right: Maximum calibration value. Only meaningful with axis 
-  and pressure types.
-
-• cal_tolerance: Dead zone tolerance. Only meaningful with axis 
-  and pressure types.
 
 8.4.8 input.keyhook(string key, boolean state)
 

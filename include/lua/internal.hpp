@@ -9,7 +9,7 @@
 
 extern lua_state LS;
 
-void push_keygroup_parameters(lua_state& L, const struct keygroup::parameters& p);
+void push_keygroup_parameters(lua_state& L, keyboard_key& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
 extern bool lua_booted_flag;

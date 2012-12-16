@@ -54,24 +54,28 @@ namespace
 
 	void report_grab_key(const std::string& name);
 
-	class keygrabber : public information_dispatch
+	class keygrabber : public keyboard_event_listener
 	{
 	public:
-		keygrabber() : information_dispatch("wxwdigets-key-grabber") { keygrab_active = false; }
-		void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-			bool polarity, const std::string& name)
+		keygrabber() { keygrab_active = false; }
+		void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event)
 		{
 			if(!keygrab_active)
 				return;
-			if(polarity)
-				pkey = name;
-			else {
-				if(pkey == name) {
-					keygrab_active = false;
-					std::string tmp = pkey;
-					runuifun([tmp]() { report_grab_key(tmp); });
-				} else
-					pkey = "";
+			uint32_t dev = event.get_change_mask();
+			auto subkeys = key.get_subkeys();
+			for(unsigned i = 0; i < 16 && i < subkeys.size(); i++) {
+				std::string pname = key.get_name() + subkeys[i];
+				if(((dev >> (2 * i)) & 3) == 3)
+					pkey = pname;
+				if(((dev >> (2 * i)) & 3) == 2) {
+					if(pkey == pname) {
+						keygrab_active = false;
+						std::string tmp = pkey;
+						runuifun([tmp]() { report_grab_key(tmp); });
+					} else
+						pkey = "";
+				}
 			}
 		}
 	} keygrabber;
@@ -287,20 +291,21 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		std::vector<wxString> classeslist;
 		wxString emptystring;
 		std::list<keyboard_modifier*> mods;
-		std::set<std::string> keys;
+		std::list<keyboard_key*> keys;
 
 		wtitle = title;
 
 		cleared = false;
 		std::set<std::string> x;
 		mods = lsnes_kbd.all_modifiers();
-		keys = keygroup::get_keys();
+		keys = lsnes_kbd.all_keys();
 		for(auto i : keys) {
-			std::string kclass = keygroup::lookup(i).first->get_class();
+			std::string kclass = i->get_class();
 			if(!x.count(kclass))
 				classeslist.push_back(towxstring(kclass));
 			x.insert(kclass);
-			classes[kclass].insert(i);
+			for(auto k2 : i->get_subkeys())
+				classes[kclass].insert(i->get_name() + k2);
 		}
 
 		Centre();
@@ -555,23 +560,24 @@ wxeditor_esettings_joystick_aconfig::wxeditor_esettings_joystick_aconfig(wxWindo
 	choices[8] = wxT(AMODE_PRESSURE_P0);
 
 	aname = _aname;
-	keygroup::parameters params;
 
-	auto k = keygroup::lookup_by_name(aname);
+	keyboard_axis_calibration c;
+	keyboard_key* _k = lsnes_kbd.try_lookup_key(aname);
+	keyboard_key_axis* k = NULL;
+	if(_k)
+		k = _k->cast_axis();
 	if(k)
-		params = k->get_parameters();
+		c = k->get_calibration();
 
-	switch(params.ktype) {
-	case keygroup::KT_DISABLED:		didx = 0; break;
-	case keygroup::KT_AXIS_PAIR:		didx = 1; break;
-	case keygroup::KT_AXIS_PAIR_INVERSE:	didx = 2; break;
-	case keygroup::KT_PRESSURE_M0:		didx = 3; break;
-	case keygroup::KT_PRESSURE_MP:		didx = 4; break;
-	case keygroup::KT_PRESSURE_0M:		didx = 5; break;
-	case keygroup::KT_PRESSURE_0P:		didx = 6; break;
-	case keygroup::KT_PRESSURE_PM:		didx = 7; break;
-	case keygroup::KT_PRESSURE_P0:		didx = 8; break;
-	};
+	if(c.mode == -1)	didx = 0;
+	else if(c.mode == 1 && c.esign_a == -1 && c.esign_b == 1)	didx = 1;
+	else if(c.mode == 1 && c.esign_a == 1 && c.esign_b == -1)	didx = 2;
+	else if(c.mode == 0 && c.esign_a == -1 && c.esign_b == 0)	didx = 3;
+	else if(c.mode == 0 && c.esign_a == -1 && c.esign_b == 1)	didx = 4;
+	else if(c.mode == 0 && c.esign_a == 0 && c.esign_b == -1)	didx = 5;
+	else if(c.mode == 0 && c.esign_a == 0 && c.esign_b == 1)	didx = 6;
+	else if(c.mode == 0 && c.esign_a == 1 && c.esign_b == -1)	didx = 7;
+	else if(c.mode == 0 && c.esign_a == 1 && c.esign_b == 0)	didx = 8;
 
 	Centre();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -582,16 +588,16 @@ wxeditor_esettings_joystick_aconfig::wxeditor_esettings_joystick_aconfig(wxWindo
 	t_s->Add(type = new wxComboBox(this, wxID_ANY, choices[didx], wxDefaultPosition, wxDefaultSize,
 		9, choices, wxCB_READONLY), 1, wxGROW);
 	t_s->Add(new wxStaticText(this, -1, wxT("Low: ")), 0, wxGROW);
-	t_s->Add(low = new wxTextCtrl(this, -1, towxstring((stringfmt() << params.cal_left).str()), wxDefaultPosition,
+	t_s->Add(low = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.left).str()), wxDefaultPosition,
 		wxSize(100, -1)), 1, wxGROW);
 	t_s->Add(new wxStaticText(this, -1, wxT("Middle: ")), 0, wxGROW);
-	t_s->Add(mid = new wxTextCtrl(this, -1, towxstring((stringfmt() << params.cal_center).str()),
+	t_s->Add(mid = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.center).str()),
 		wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
 	t_s->Add(new wxStaticText(this, -1, wxT("High: ")), 0, wxGROW);
-	t_s->Add(hi = new wxTextCtrl(this, -1, towxstring((stringfmt() << params.cal_right).str()),
+	t_s->Add(hi = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.right).str()),
 		wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
 	t_s->Add(new wxStaticText(this, -1, wxT("Tolerance: ")), 0, wxGROW);
-	t_s->Add(tol = new wxTextCtrl(this, -1, towxstring((stringfmt() << params.cal_tolerance).str()),
+	t_s->Add(tol = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.nullwidth).str()),
 		wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
 	top_s->Add(t_s);
 
@@ -621,59 +627,48 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 	std::string _mid = tostdstring(mid->GetValue());
 	std::string _hi = tostdstring(hi->GetValue());
 	std::string _tol = tostdstring(tol->GetValue());
-	enum keygroup::type _ctype = keygroup::KT_DISABLED;
-	enum keygroup::type _ntype = keygroup::KT_AXIS_PAIR;
-	int32_t nlow, nmid, nhi;
-	double ntol;
-	keygroup* k;
-
-	k = keygroup::lookup_by_name(aname);
-	if(k)
-		_ctype = k->get_parameters().ktype;
-	else {
+	keyboard_key_axis* k = NULL;
+	keyboard_key* _k;
+	
+	_k = lsnes_kbd.try_lookup_key(aname);
+	if(_k)
+		k = _k->cast_axis();
+	if(!k) {
 		//Axis gone away?
 		EndModal(wxID_OK);
 		return;
 	}
 
+	keyboard_axis_calibration c;
 	const char* bad_what = NULL;
 	try {
 		bad_what = "Bad axis type";
-		if(_type == AMODE_AXIS_PAIR)			_ntype = keygroup::KT_AXIS_PAIR;
-		else if(_type == AMODE_AXIS_PAIR_INVERSE)	_ntype = keygroup::KT_AXIS_PAIR_INVERSE;
-		else if(_type == AMODE_DISABLED)		_ntype = keygroup::KT_DISABLED;
-		else if(_type == AMODE_PRESSURE_0M)		_ntype = keygroup::KT_PRESSURE_0M;
-		else if(_type == AMODE_PRESSURE_0P)		_ntype = keygroup::KT_PRESSURE_0P;
-		else if(_type == AMODE_PRESSURE_M0)		_ntype = keygroup::KT_PRESSURE_M0;
-		else if(_type == AMODE_PRESSURE_MP)		_ntype = keygroup::KT_PRESSURE_MP;
-		else if(_type == AMODE_PRESSURE_P0)		_ntype = keygroup::KT_PRESSURE_P0;
-		else if(_type == AMODE_PRESSURE_PM)		_ntype = keygroup::KT_PRESSURE_PM;
+		if(_type == AMODE_AXIS_PAIR)			{c.mode = 1;  c.esign_a = -1;  c.esign_b = 1;  }
+		else if(_type == AMODE_AXIS_PAIR_INVERSE)	{c.mode = 1;  c.esign_a = 1;   c.esign_b = -1; }
+		else if(_type == AMODE_DISABLED)		{c.mode = -1; c.esign_a = -1;  c.esign_b = 1;  }
+		else if(_type == AMODE_PRESSURE_0M)		{c.mode = 0;  c.esign_a = 0;   c.esign_b = -1; }
+		else if(_type == AMODE_PRESSURE_0P)		{c.mode = 0;  c.esign_a = 0;   c.esign_b = 1;  }
+		else if(_type == AMODE_PRESSURE_M0)		{c.mode = 0;  c.esign_a = -1;  c.esign_b = 0;  }
+		else if(_type == AMODE_PRESSURE_MP)		{c.mode = 0;  c.esign_a = -1;  c.esign_b = 1;  }
+		else if(_type == AMODE_PRESSURE_P0)		{c.mode = 0;  c.esign_a = 1;   c.esign_b = 0;  }
+		else if(_type == AMODE_PRESSURE_PM)		{c.mode = 0;  c.esign_a = 1;   c.esign_b = -1; }
 		else
 			throw 42;
 		bad_what = "Bad low calibration value (range is -32768 - 32767)";
-		nlow = boost::lexical_cast<int32_t>(_low);
-		if(nlow < -32768 || nlow > 32767)
-			throw 42;
+		c.left = boost::lexical_cast<int32_t>(_low);
 		bad_what = "Bad middle calibration value (range is -32768 - 32767)";
-		nmid = boost::lexical_cast<int32_t>(_mid);
-		if(nmid < -32768 || nmid > 32767)
-			throw 42;
+		c.center = boost::lexical_cast<int32_t>(_mid);
 		bad_what = "Bad high calibration value (range is -32768 - 32767)";
-		nhi = boost::lexical_cast<int32_t>(_hi);
-		if(nhi < -32768 || nhi > 32767)
-			throw 42;
+		c.right = boost::lexical_cast<int32_t>(_hi);
 		bad_what = "Bad tolerance (range is 0 - 1)";
-		ntol = boost::lexical_cast<double>(_tol);
-		if(ntol <= 0 || ntol >= 1)
+		c.nullwidth = boost::lexical_cast<double>(_tol);
+		if(c.nullwidth <= 0 || c.nullwidth >= 1)
 			throw 42;
 	} catch(...) {
 		wxMessageBox(towxstring(bad_what), _T("Error"), wxICON_EXCLAMATION | wxOK);
 		return;
 	}
-	
-	if(_ctype != _ntype)
-		k->change_type(_ntype);
-	k->change_calibration(nlow, nmid, nhi, ntol);
+	k->set_calibration(c);
 	EndModal(wxID_OK);
 }
 
@@ -699,24 +694,24 @@ private:
 
 namespace
 {
-	std::string formattype(keygroup::type t)
+	std::string formattype(const keyboard_axis_calibration& s)
 	{
-		if(t == keygroup::KT_DISABLED) return AMODE_DISABLED;
-		else if(t == keygroup::KT_AXIS_PAIR) return AMODE_AXIS_PAIR;
-		else if(t == keygroup::KT_AXIS_PAIR_INVERSE) return AMODE_AXIS_PAIR_INVERSE;
-		else if(t == keygroup::KT_PRESSURE_0M) return AMODE_PRESSURE_0M;
-		else if(t == keygroup::KT_PRESSURE_0P) return AMODE_PRESSURE_0P;
-		else if(t == keygroup::KT_PRESSURE_M0) return AMODE_PRESSURE_M0;
-		else if(t == keygroup::KT_PRESSURE_MP) return AMODE_PRESSURE_MP;
-		else if(t == keygroup::KT_PRESSURE_P0) return AMODE_PRESSURE_P0;
-		else if(t == keygroup::KT_PRESSURE_PM) return AMODE_PRESSURE_PM;
+		if(s.mode == -1) return AMODE_DISABLED;
+		else if(s.mode == 1 && s.esign_b == 1) return AMODE_AXIS_PAIR;
+		else if(s.mode == 1 && s.esign_b == -1) return AMODE_AXIS_PAIR_INVERSE;
+		else if(s.mode == 0 && s.esign_a == 0 && s.esign_b == -1) return AMODE_PRESSURE_0M;
+		else if(s.mode == 0 && s.esign_a == 0 && s.esign_b == 1) return AMODE_PRESSURE_0P;
+		else if(s.mode == 0 && s.esign_a == -1 && s.esign_b == 0) return AMODE_PRESSURE_M0;
+		else if(s.mode == 0 && s.esign_a == -1 && s.esign_b == 1) return AMODE_PRESSURE_MP;
+		else if(s.mode == 0 && s.esign_a == 1 && s.esign_b == 0) return AMODE_PRESSURE_P0;
+		else if(s.mode == 0 && s.esign_a == 1 && s.esign_b == -1) return AMODE_PRESSURE_PM;
 		else return "Unknown";
 	}
 
-	std::string formatsettings(const std::string& name, const keygroup::parameters& s)
+	std::string formatsettings(const std::string& name, const keyboard_axis_calibration& s)
 	{
-		return (stringfmt() << name << ": " << formattype(s.ktype) << " low:" << s.cal_left << " mid:"
-			<< s.cal_center << " high:" << s.cal_right << " tolerance:" << s.cal_tolerance).str();
+		return (stringfmt() << name << ": " << formattype(s) << " low:" << s.left << " mid:"
+			<< s.center << " high:" << s.right << " tolerance:" << s.nullwidth).str();
 	}
 
 	std::string getalgo(int flags)
@@ -758,12 +753,13 @@ void wxeditor_esettings_joystick::on_configure(wxCommandEvent& e)
 void wxeditor_esettings_joystick::refresh()
 {
 	//Collect the new settings.
-	std::map<std::string, keygroup::parameters> x;
-	auto axisnames = keygroup::get_axis_set();
-	for(auto i : axisnames) {
-		keygroup* k = keygroup::lookup_by_name(i);
-		if(k)
-			x[i] = k->get_parameters();
+	std::map<std::string, keyboard_axis_calibration> x;
+	auto axisset = lsnes_kbd.all_keys();
+	for(auto i : axisset) {
+		keyboard_key_axis* j = i->cast_axis();
+		if(!j)
+			continue;
+		x[i->get_name()] = j->get_calibration();
 	}
 
 	unsigned jcount = 0;
@@ -1776,7 +1772,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 		wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
 {
 	//Grab keys to prevent the joystick driver from running who knows what commands.
-	keygrabber.grab_keys();
+	lsnes_kbd.set_exclusive(&keygrabber);
 
 	Centre();
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
@@ -1824,7 +1820,7 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
-	keygrabber.ungrab_keys();
+	lsnes_kbd.set_exclusive(NULL);
 	EndModal(wxID_OK);
 }
 

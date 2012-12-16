@@ -1,3 +1,4 @@
+#include "library/keyboard.hpp"
 #include "core/keymapper.hpp"
 #include "core/window.hpp"
 
@@ -34,7 +35,7 @@ namespace
 		int keynum;
 		const char* name;
 		const char* clazz;
-		keygroup* allocated;
+		keyboard_key_key* allocated;
 	} keys[] = {
 		{ WXK_BACK, "back", "editing", NULL },
 		{ WXK_TAB, "tab", "editing", NULL },
@@ -257,19 +258,19 @@ namespace
 	};
 
 	std::map<int, keyboard_modifier*> modifier_map;
-	std::map<int, keygroup*> key_map;
+	std::map<int, keyboard_key_key*> key_map;
 	std::map<std::string, int> keys_allocated;
 	std::set<int> keys_held;
 
 	struct keypress_request
 	{
 		keyboard_modifier_set mods;
-		keygroup* key;
+		keyboard_key_key* key;
 		bool polarity;
 	};
 
 	//Request keypress event to happen.
-	void do_keypress(keyboard_modifier_set mods, keygroup& key, bool polarity)
+	void do_keypress(keyboard_modifier_set mods, keyboard_key_key& key, bool polarity)
 	{
 		struct keypress_request* req = new keypress_request;
 		req->mods = mods;
@@ -277,7 +278,7 @@ namespace
 		req->polarity = polarity;
 		platform::queue([](void* args) -> void {
 			struct keypress_request* x = reinterpret_cast<struct keypress_request*>(args);
-			x->key->set_position(x->polarity ? 1 : 0, x->mods);
+			x->key->set_state(x->mods, x->polarity ? 1 : 0);
 			delete x;
 			}, req, false);
 	}
@@ -315,7 +316,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 	} else
 		keys_held.erase(keyc);
 	key_entry* k = keys;
-	keygroup* grp = NULL;
+	keyboard_key_key* grp = NULL;
 	while(k->name) {
 		if(k->keynum == keyc) {
 			grp = k->allocated;
@@ -345,7 +346,7 @@ void initialize_wx_keyboard()
 	key_entry* k = keys;
 	while(k->name) {
 		if(!keys_allocated.count(k->name)) {
-			k->allocated = new keygroup(k->name, k->clazz, keygroup::KT_KEY);
+			k->allocated = new keyboard_key_key(lsnes_kbd, k->name, k->clazz);
 			key_map[k->keynum] = k->allocated;
 			keys_allocated[k->name] = k->keynum;
 		} else

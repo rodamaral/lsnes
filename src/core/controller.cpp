@@ -185,13 +185,13 @@ namespace
 		{
 			if(args != "")
 				throw std::runtime_error("This command does not take parameters");
-			keygroup* mouse_x = keygroup::lookup_by_name("mouse_x");
-			keygroup* mouse_y = keygroup::lookup_by_name("mouse_y");
+			keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
+			keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
 			if(!mouse_x || !mouse_y) {
 				messages << "Controller analog function not available without mouse" << std::endl;
 				return;
 			}
-			send_analog(controller, mouse_x->get_value(), mouse_y->get_value());
+			send_analog(controller, mouse_x->get_state(), mouse_y->get_state());
 		}
 	private:
 		unsigned controller;

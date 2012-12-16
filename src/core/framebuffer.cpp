@@ -236,18 +236,20 @@ void render_framebuffer()
 	ri.rq.run(main_screen);
 	information_dispatch::do_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	keygroup* mouse_x = keygroup::lookup_by_name("mouse_x");
-	keygroup* mouse_y = keygroup::lookup_by_name("mouse_y");
+	keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
+	keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
+	keyboard_mouse_calibration xcal;
+	keyboard_mouse_calibration ycal;
+	xcal.offset = ri.lgap;
+	ycal.offset = ri.tgap;
+	if(mouse_x && mouse_x->get_type() == KBD_KEYTYPE_MOUSE)
+		mouse_x->cast_mouse()->set_calibration(xcal);
+	if(mouse_y && mouse_y->get_type() == KBD_KEYTYPE_MOUSE)
+		mouse_y->cast_mouse()->set_calibration(ycal);
 	nval1 = ri.lgap;
 	nval2 = ri.tgap;
 	nval3 = ri.fbuf.get_width() * ri.hscl + ri.rgap;
 	nval4 = ri.fbuf.get_height() * ri.vscl + ri.bgap;
-	if(mouse_x && (nval1 != val1 || nval3 != val3))
-		mouse_x->change_calibration(-static_cast<short>(ri.lgap), ri.lgap, ri.fbuf.get_width() * ri.hscl +
-			ri.rgap, 0.5);
-	if(mouse_y && (nval2 != val2 || nval4 != val4))
-		mouse_y->change_calibration(-static_cast<short>(ri.tgap), ri.tgap, ri.fbuf.get_height() * ri.vscl +
-			ri.bgap, 0.5);
 	val1 = nval1;
 	val2 = nval2;
 	val3 = nval3;

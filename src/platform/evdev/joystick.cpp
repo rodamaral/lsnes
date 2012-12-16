@@ -250,8 +250,7 @@ namespace
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
-					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i),
-						(V[1] < 0) ? keygroup::KT_AXIS_PAIR : keygroup::KT_PRESSURE_MP);
+					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i), (V[1] < 0) ? 1 : 0);
 				} else if(i % 2 == 0)
 					joystick_new_hat(fd, i, i + 1, 1, get_axis_name(i), get_axis_name(i + 1));
 			}

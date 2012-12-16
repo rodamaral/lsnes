@@ -172,12 +172,13 @@ namespace
 		emulation_thread->join();
 	}
 
-	keygroup mouse_x("mouse_x", "mouse", keygroup::KT_MOUSE);
-	keygroup mouse_y("mouse_y", "mouse", keygroup::KT_MOUSE);
-	keygroup mouse_l("mouse_left", "mouse", keygroup::KT_KEY);
-	keygroup mouse_m("mouse_center", "mouse", keygroup::KT_KEY);
-	keygroup mouse_r("mouse_right", "mouse", keygroup::KT_KEY);
-	keygroup mouse_i("mouse_inwindow", "mouse", keygroup::KT_KEY);
+	keyboard_mouse_calibration mouse_cal = {0};
+	keyboard_key_mouse mouse_x(lsnes_kbd, "mouse_x", "mouse", mouse_cal);
+	keyboard_key_mouse mouse_y(lsnes_kbd, "mouse_y", "mouse", mouse_cal);
+	keyboard_key_key mouse_l(lsnes_kbd, "mouse_left", "mouse");
+	keyboard_key_key mouse_m(lsnes_kbd, "mouse_center", "mouse");
+	keyboard_key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
+	keyboard_key_key mouse_i(lsnes_kbd, "mouse_inwindow", "mouse");
 
 	void handle_wx_mouse(wxMouseEvent& e)
 	{

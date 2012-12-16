@@ -92,7 +92,6 @@ namespace
 	uint32_t srate_n = 32000;
 	uint32_t srate_d = 1;
 	struct gameinfo_struct sgi;
-	information_dispatch* exclusive_key = NULL;
 	int32_t vc_xoffset = 0;
 	int32_t vc_yoffset = 0;
 	uint32_t vc_hscl = 1;
@@ -107,7 +106,6 @@ information_dispatch::information_dispatch(const std::string& name) throw(std::b
 	known_if_dumper = false;
 	marked_as_dumper = false;
 	notified_as_dumper = false;
-	grabbing_keys = false;
 }
 
 information_dispatch::~information_dispatch() throw()
@@ -381,48 +379,6 @@ std::set<std::string> information_dispatch::get_dumpers() throw(std::bad_alloc)
 	return r;
 }
 
-void information_dispatch::on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-	bool polarity, const std::string& name)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-	bool polarity, const std::string& name) throw()
-{
-	if(exclusive_key) {
-		START_EH_BLOCK
-		exclusive_key->on_key_event(modifiers, keygroup, subkey, polarity, name);
-		END_EH_BLOCK(exclusive_key, "on_key_event");
-		return;
-	}
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_key_event(modifiers, keygroup, subkey, polarity, name);
-		END_EH_BLOCK(i, "on_key_event");
-	}
-}
-
-void information_dispatch::grab_keys() throw()
-{
-	if(grabbing_keys)
-		return;
-	exclusive_key = this;
-	grabbing_keys = true;
-}
-
-void information_dispatch::ungrab_keys() throw()
-{
-	if(!grabbing_keys)
-		return;
-	exclusive_key = NULL;
-	grabbing_keys = false;
-	for(auto& i : dispatch())
-		if(i->grabbing_keys) {
-			exclusive_key = i;
-			break;
-		}
-}
 
 const std::string& information_dispatch::get_name() throw()
 {

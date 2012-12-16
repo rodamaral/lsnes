@@ -173,10 +173,10 @@ namespace
 			wake_ui();
 		});
 
-	class keygrabber : public information_dispatch
+	class keygrabber : public keyboard_event_listener
 	{
 	public:
-		keygrabber() : information_dispatch("sdl-key-grabber") { idmode = false; }
+		keygrabber() { idmode = false; }
 		void enter_id_mode()
 		{
 			keys = "";
@@ -195,12 +195,13 @@ namespace
 			keys = "";
 			idmode = false;
 		}
-		void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-			bool polarity, const std::string& name)
+		void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event)
 		{
-			if(idmode && !polarity) {
-				keys = keys + "key: " + name + "\n";
-			}
+			uint32_t dev = event.get_change_mask();
+			auto subkeys = key.get_subkeys();
+			for(unsigned i = 0; i < 16 && i < subkeys.size(); i++)
+				if(idmode && ((dev >> (2 * i)) & 3) == 2)
+					keys = keys + "key: " + key.get_name() + subkeys[i] + "\n";
 		}
 		bool idmode;
 		std::string keys;
@@ -208,20 +209,20 @@ namespace
 
 	void emu_ungrab_keys(void* dummy)
 	{
-		keygrabber.ungrab_keys();
+		lsnes_kbd.set_exclusive(NULL);
 		keygrabber.leave_id_mode();
 	}
 
 	void emu_grab_keys_identify(void* dummy)
 	{
 		keygrabber.enter_id_mode();
-		keygrabber.grab_keys();
+		lsnes_kbd.set_exclusive(&keygrabber);
 	}
 
 	void emu_grab_keys_nonid(void* dummy)
 	{
 		keygrabber.leave_id_mode();
-		keygrabber.grab_keys();
+		lsnes_kbd.set_exclusive(&keygrabber);
 	}
 
 	void emu_handle_quit_signal(void* dummy)
@@ -252,14 +253,14 @@ namespace
 	void ui_grab_keys_special()
 	{
 		keygrabber.leave_id_mode();
-		keygrabber.grab_keys();
+		lsnes_kbd.set_exclusive(&keygrabber);
 	}
 
 	//Ungrab keys.
 	void ui_ungrab_keys(bool direct = false)
 	{
 		if(direct) {
-			keygrabber.ungrab_keys();
+			lsnes_kbd.set_exclusive(NULL);
 			keygrabber.leave_id_mode();
 		} else
 			platform::queue(emu_ungrab_keys, NULL, true);
@@ -285,11 +286,12 @@ namespace
 		platform::queue(emu_handle_quit_signal, NULL, false);
 	}
 
-	keygroup mouse_x("mouse_x", "mouse", keygroup::KT_MOUSE);
-	keygroup mouse_y("mouse_y", "mouse", keygroup::KT_MOUSE);
-	keygroup mouse_l("mouse_left", "mouse", keygroup::KT_KEY);
-	keygroup mouse_m("mouse_center", "mouse", keygroup::KT_KEY);
-	keygroup mouse_r("mouse_right", "mouse", keygroup::KT_KEY);
+	keyboard_mouse_calibration mouse_cal = {0};
+	keyboard_key_mouse mouse_x(lsnes_kbd, "mouse_x", "mouse", mouse_cal);
+	keyboard_key_mouse mouse_y(lsnes_kbd, "mouse_y", "mouse", mouse_cal);
+	keyboard_key_key mouse_l(lsnes_kbd, "mouse_left", "mouse");
+	keyboard_key_key mouse_m(lsnes_kbd, "mouse_center", "mouse");
+	keyboard_key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
 }
 
 void notify_emulator_exit()

@@ -22,10 +22,9 @@ void joystick_quit();
  * Parameter minv: The minimal calibration value.
  * Parameter maxv: The maximal calibration value.
  * Parameter xname: The name of axis.
- * Parameter atype: The axis type.
+ * Parameter atype: The axis type (-1 => Disabled, 0 => Pressure, 1 => Axis).
  */
-void joystick_new_axis(uint64_t jid, uint64_t id, int64_t minv, int64_t maxv, const std::string& xname,
-	enum keygroup::type atype);
+void joystick_new_axis(uint64_t jid, uint64_t id, int64_t minv, int64_t maxv, const std::string& xname, int atype);
 /**
  * Create a new button.
  *

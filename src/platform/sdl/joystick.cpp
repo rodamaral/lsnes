@@ -7,9 +7,9 @@
 
 namespace
 {
-	std::map<unsigned, keygroup*> joyaxis;
-	std::map<unsigned, keygroup*> joybutton;
-	std::map<unsigned, keygroup*> joyhat;
+	std::map<unsigned, keyboard_key*> joyaxis;
+	std::map<unsigned, keyboard_key*> joybutton;
+	std::map<unsigned, keyboard_key*> joyhat;
 	std::set<SDL_Joystick*> joysticksx;
 }
 
@@ -19,7 +19,7 @@ unsigned translate_sdl_joystick(SDL_Event& e, keypress& k)
 		unsigned num = static_cast<unsigned>(e.jaxis.which) * 256 +
 			static_cast<unsigned>(e.jaxis.axis);
 		if(joyaxis.count(num)) {
-			k = keypress(modifier_set(), *joyaxis[num], e.jaxis.value);
+			k = keypress(keyboard_modifier_set(), *joyaxis[num], e.jaxis.value);
 			return 1;
 		}
 	} else if(e.type == SDL_JOYHATMOTION) {
@@ -35,14 +35,14 @@ unsigned translate_sdl_joystick(SDL_Event& e, keypress& k)
 		if(e.jhat.value & SDL_HAT_LEFT)
 			v |= 8;
 		if(joyhat.count(num)) {
-			k = keypress(modifier_set(), *joyhat[num], v);
+			k = keypress(keyboard_modifier_set(), *joyhat[num], v);
 			return 1;
 		}
 	} else if(e.type == SDL_JOYBUTTONDOWN || e.type == SDL_JOYBUTTONUP) {
 		unsigned num = static_cast<unsigned>(e.jbutton.which) * 256 +
 			static_cast<unsigned>(e.jbutton.button);
 		if(joybutton.count(num)) {
-			k = keypress(modifier_set(), *joybutton[num], (e.type == SDL_JOYBUTTONDOWN) ? 1 : 0);
+			k = keypress(keyboard_modifier_set(), *joybutton[num], (e.type == SDL_JOYBUTTONDOWN) ? 1 : 0);
 			return 1;
 		}
 	}
@@ -71,19 +71,27 @@ void joystick_plugin::init() throw()
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "axis" << k;
-				joyaxis[num] = new keygroup(x.str(), "joystick", keygroup::KT_AXIS_PAIR);
+				keyboard_axis_calibration cal;
+				cal.mode = 1;
+				cal.esign_a = -1;
+				cal.esign_b = 1;
+				cal.left = -32767;
+				cal.center = 0;
+				cal.right = 32767;
+				cal.nullwidth = 0.3;
+				joyaxis[num] = new keyboard_key_axis(lsnes_kbd, x.str(), "joystick", cal);
 			}
 			for(int k = 0; k < SDL_JoystickNumButtons(j); k++) {
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "button" << k;
-				joybutton[num] = new keygroup(x.str(), "joystick", keygroup::KT_KEY);
+				joybutton[num] = new keyboard_key_key(lsnes_kbd, x.str(), "joystick");
 			}
 			for(int k = 0; k < SDL_JoystickNumHats(j); k++) {
 				unsigned num = 256 * i + k;
 				std::ostringstream x;
 				x << "joystick" << i << "hat" << k;
-				joyhat[num] = new keygroup(x.str(), "joystick", keygroup::KT_HAT);
+				joyhat[num] = new keyboard_key_hat(lsnes_kbd, x.str(), "joystick");
 			}
 		}
 	}

@@ -2825,32 +2825,34 @@ Returns table of tables of all available keys and axes.
 \end_layout
 
 \begin_layout Itemize
-last_rawval: Last reported raw value for control.
+value: Last reported value for control
 \end_layout
 
+\begin_deeper
+\begin_layout Itemize
+For keys: 1 for pressed, 0 for released.
+\end_layout
+
+\begin_layout Itemize
+For axes: -32767...32767.
+\end_layout
+
+\begin_layout Itemize
+For presure-sensitive buttons: 0...32767.
+\end_layout
+
+\begin_layout Itemize
+For hats: Bitmask: 1=>Up, 2=>Right, 4=>Down, 8=>Left.
+\end_layout
+
+\begin_layout Itemize
+For mouse: Coordinates relative to game area.
+\end_layout
+
+\end_deeper
 \begin_layout Itemize
 ktype: Type of key (disabled, key, mouse, axis, axis-inverse, hat, pressure-m0,
  pressure-mp, pressure-0m, pressure-0p, pressure-pm, pressure-p0).
-\end_layout
-
-\begin_layout Itemize
-cal_left: Minimum calibration value.
- Only meaningful with axis and pressure types.
-\end_layout
-
-\begin_layout Itemize
-cal_center: Center calibration value.
- Only meaningful with axis and pressure types.
-\end_layout
-
-\begin_layout Itemize
-cal_right: Maximum calibration value.
- Only meaningful with axis and pressure types.
-\end_layout
-
-\begin_layout Itemize
-cal_tolerance: Dead zone tolerance.
- Only meaningful with axis and pressure types.
 \end_layout
 
 \begin_layout Subsubsection

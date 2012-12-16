@@ -18,24 +18,15 @@ namespace
 	void write_configuration(const std::string& cfg)
 	{
 		std::ofstream cfgfile(cfg.c_str());
-		//Joystick axis.
-		for(auto i : keygroup::get_axis_set()) {
-			keygroup* k = keygroup::lookup_by_name(i);
-			auto p = k->get_parameters();
-			cfgfile << "set-axis " << i << " ";
-			switch(p.ktype) {
-			case keygroup::KT_DISABLED:		cfgfile << "disabled";		break;
-			case keygroup::KT_AXIS_PAIR:		cfgfile << "axis";		break;
-			case keygroup::KT_AXIS_PAIR_INVERSE:	cfgfile << "axis-inverse";	break;
-			case keygroup::KT_PRESSURE_M0:		cfgfile << "pressure-0";	break;
-			case keygroup::KT_PRESSURE_MP:		cfgfile << "pressure-+";	break;
-			case keygroup::KT_PRESSURE_0M:		cfgfile << "pressure0-";	break;
-			case keygroup::KT_PRESSURE_0P:		cfgfile << "pressure0+";	break;
-			case keygroup::KT_PRESSURE_PM:		cfgfile << "pressure+-";	break;
-			case keygroup::KT_PRESSURE_P0:		cfgfile << "pressure+0";	break;
-			};
-			cfgfile << " minus=" << p.cal_left << " zero=" << p.cal_center << " plus=" << p.cal_right
-				<< " tolerance=" << p.cal_tolerance << std::endl;
+		//Joystick axes.
+		for(auto i : lsnes_kbd.all_keys()) {
+			keyboard_key_axis* j = i->cast_axis();
+			if(!j)
+				continue;
+			auto p = j->get_calibration();
+			cfgfile << "set-axis " << i->get_name() << " " << calibration_to_mode(p);
+			cfgfile << " minus=" << p.left << " zero=" << p.center << " plus=" << p.right
+				<< " tolerance=" << p.nullwidth << std::endl;
 		}
 		//Settings.
 		for(auto i : lsnes_set.get_settings_set()) {

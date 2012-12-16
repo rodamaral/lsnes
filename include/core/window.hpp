@@ -151,11 +151,11 @@ struct keypress
 /**
  * Create new keypress.
  */
-	keypress(keyboard_modifier_set mod, keygroup& _key, short _value);
+	keypress(keyboard_modifier_set mod, keyboard_key& _key, short _value);
 /**
  * Create new keypress (two keys).
  */
-	keypress(keyboard_modifier_set mod, keygroup& _key, keygroup& _key2, short _value);
+	keypress(keyboard_modifier_set mod, keyboard_key& _key, keyboard_key& _key2, short _value);
 /**
  * Modifier set.
  */
@@ -163,11 +163,11 @@ struct keypress
 /**
  * The actual key (first)
  */
-	keygroup* key1;
+	keyboard_key* key1;
 /**
  * The actual key (second)
  */
-	keygroup* key2;
+	keyboard_key* key2;
 /**
  * Value for the press
  */

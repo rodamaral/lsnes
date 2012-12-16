@@ -316,34 +316,6 @@ public:
  */
 	static std::set<std::string> get_dumpers() throw(std::bad_alloc);
 /**
- * (Pseudo-)key has been pressed or released.
- *
- * Parameter modifiers: The modifier set currently active.
- * Parameter keygroup: The key group the (pseudo-)key is from.
- * Parameter subkey: Subkey index within the key group.
- * Parameter polarity: True if key is being pressed, false if being released.
- * Parameter name: Name of the key being pressed/released.
- */
-	virtual void on_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-		bool polarity, const std::string& name);
-/**
- * Call on_key_event() for all event handlers (or just one if keys are being grabbed).
- */
-	static void do_key_event(keyboard_modifier_set& modifiers, keygroup& keygroup, unsigned subkey,
-		bool polarity, const std::string& name) throw();
-/**
- * Grab all key events.
- *
- * While key events are grabbed, do_key_event() only calls on_key_event() for the grabbing object.
- */
-	void grab_keys() throw();
-/**
- * Ungrab all key events.
- *
- * While key events are grabbed, do_key_event() only calls on_key_event() for the grabbing object.
- */
-	void ungrab_keys() throw();
-/**
  * Get name of target.
  */
 	const std::string& get_name() throw();
@@ -400,7 +372,6 @@ private:
 	bool marked_as_dumper;
 	std::string target_name;
 	bool notified_as_dumper;
-	bool grabbing_keys;
 };
 
 #endif

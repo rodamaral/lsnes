@@ -75,14 +75,13 @@ void joystick_plugin::init() throw()
 			joystick_new_hat(jid, 0, "POV");
 		for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)
 			joystick_new_button(jid, j, buttonnames[j]);
-		keygroup::type t = keygroup::KT_AXIS_PAIR;
 		const char* R = "Rudder";
-		joystick_new_axis(jid, 0, joy->GetXMin(), joy->GetXMax(), "X", t);
-		joystick_new_axis(jid, 1, joy->GetYMin(), joy->GetYMax(), "Y", t);
-		if(joy->HasZ())		joystick_new_axis(jid, 2, joy->GetZMin(), joy->GetZMax(), "Z", t);
-		if(joy->HasRudder())	joystick_new_axis(jid, 3, joy->GetRudderMin(), joy->GetRudderMax(), R, t);
-		if(joy->HasU()) 	joystick_new_axis(jid, 4, joy->GetUMin(), joy->GetUMax(), "U", t);
-		if(joy->HasV())		joystick_new_axis(jid, 5, joy->GetVMin(), joy->GetVMax(), "V", t);
+		joystick_new_axis(jid, 0, joy->GetXMin(), joy->GetXMax(), "X", 1);
+		joystick_new_axis(jid, 1, joy->GetYMin(), joy->GetYMax(), "Y", 1);
+		if(joy->HasZ())		joystick_new_axis(jid, 2, joy->GetZMin(), joy->GetZMax(), "Z", 1);
+		if(joy->HasRudder())	joystick_new_axis(jid, 3, joy->GetRudderMin(), joy->GetRudderMax(), R, 1);
+		if(joy->HasU()) 	joystick_new_axis(jid, 4, joy->GetUMin(), joy->GetUMax(), "U", 1);
+		if(joy->HasV())		joystick_new_axis(jid, 5, joy->GetVMin(), joy->GetVMax(), "V", 1);
 		joystick_message(jid);
 	}
 	ready = true;

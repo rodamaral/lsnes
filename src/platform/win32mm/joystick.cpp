@@ -48,13 +48,12 @@ void joystick_plugin::init() throw()
 			joystick_new_hat(i, 0, "POV");
 		for(unsigned j = 0; j < caps.wNumButtons && j < 32; j++)
 			joystick_new_button(i, j, buttonnames[j]);
-		keygroup::type t = keygroup::KT_AXIS_PAIR;
-		joystick_new_axis(i, 0, caps.wXmin, caps.wXmax, "X", t);
-		joystick_new_axis(i, 1, caps.wYmin, caps.wYmax, "Y", t);
-		if(caps.wCaps & JOYCAPS_HASZ)	joystick_new_axis(i, 2, caps.wZmin, caps.wZmax, "Z", t);
-		if(caps.wCaps & JOYCAPS_HASR)	joystick_new_axis(i, 3, caps.wRmin, caps.wRmax, "Rudder", t);
-		if(caps.wCaps & JOYCAPS_HASU)	joystick_new_axis(i, 4, caps.wUmin, caps.wUmax, "U", t);
-		if(caps.wCaps & JOYCAPS_HASV)	joystick_new_axis(i, 5, caps.wVmin, caps.wVmax, "V", t);
+		joystick_new_axis(i, 0, caps.wXmin, caps.wXmax, "X", 1);
+		joystick_new_axis(i, 1, caps.wYmin, caps.wYmax, "Y", 1);
+		if(caps.wCaps & JOYCAPS_HASZ)	joystick_new_axis(i, 2, caps.wZmin, caps.wZmax, "Z", 1);
+		if(caps.wCaps & JOYCAPS_HASR)	joystick_new_axis(i, 3, caps.wRmin, caps.wRmax, "Rudder", 1);
+		if(caps.wCaps & JOYCAPS_HASU)	joystick_new_axis(i, 4, caps.wUmin, caps.wUmax, "U", 1);
+		if(caps.wCaps & JOYCAPS_HASV)	joystick_new_axis(i, 5, caps.wVmin, caps.wVmax, "V", 1);
 		joystick_message(i);
 	}
 	quit_ack = quit_signaled = false;

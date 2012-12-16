@@ -272,8 +272,8 @@ namespace
 	};
 
 	std::map<unsigned, keyboard_modifier*> supported_modifiers;
-	std::map<unsigned, keygroup*> scancodekeys;
-	std::map<unsigned, keygroup*> symbolkeys;
+	std::map<unsigned, keyboard_key_key*> scancodekeys;
+	std::map<unsigned, keyboard_key_key*> symbolkeys;
 }
 
 unsigned translate_sdl_key(SDL_Event& e, keypress& k)
@@ -407,13 +407,13 @@ void init_sdl_keys()
 	}
 	struct sdl_key* k = keys_table;
 	while(k->name) {
-		symbolkeys[k->symbol] = new keygroup(k->name, k->clazz, keygroup::KT_KEY);
+		symbolkeys[k->symbol] = new keyboard_key_key(lsnes_kbd, k->name, k->clazz);
 		k++;
 	}
 	for(unsigned i = 0; i < 256; i++) {
 		std::ostringstream x;
 		x << "key" << i;
-		scancodekeys[i] = new keygroup(x.str(), "scancode", keygroup::KT_KEY);
+		scancodekeys[i] = new keyboard_key_key(lsnes_kbd, x.str(), "scancode");
 	}
 }
 
