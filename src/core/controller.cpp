@@ -226,13 +226,14 @@ namespace
 						expx << "Controller‣" << (k + 1) << "‣" << get_logical_button_name(i);
 						our_commands.insert(new button_action(x.str(), j, k, y.str()));
 						if(j == 0)
-							our_icommands.insert(new inverse_key(x.str(), expx.str()));
+							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
+								expx.str()));
 						if(j == 2)
-							our_icommands.insert(new inverse_key(x.str(), expx.str() +
-								" (hold)"));
+							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
+								expx.str() + " (hold)"));
 						if(j == 3)
-							our_icommands.insert(new inverse_key(x.str(), expx.str() +
-								" (typed)"));
+							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
+								expx.str() + " (typed)"));
 					}
 			if(get_core_need_analog())
 				for(unsigned k = 0; k < lim.first; ++k) {
@@ -240,7 +241,7 @@ namespace
 					x << "controller" << (k + 1) << "analog";
 					expx << "Controller‣" << (k + 1) << "‣Analog function";
 					our_commands.insert(new analog_action(x.str(), k));
-					our_icommands.insert(new inverse_key(x.str(), expx.str()));
+					our_icommands.insert(new controller_key(lsnes_mapper, x.str(), expx.str()));
 				}
 		}
 		~button_action_helper()
@@ -253,7 +254,7 @@ namespace
 			our_icommands.clear();
 		}
 		std::set<command*> our_commands;
-		std::set<inverse_key*> our_icommands;
+		std::set<controller_key*> our_icommands;
 	} bah;
 }
 

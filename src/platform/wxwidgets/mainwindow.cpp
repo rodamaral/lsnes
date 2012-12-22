@@ -100,6 +100,7 @@ enum
 	wxID_LOAD_LIBRARY,
 	wxID_SETTINGS,
 	wxID_SETTINGS_HOTKEYS,
+	wxID_SETTINGS_CONTROLLERS,
 	wxID_RELOAD_ROM_IMAGE,
 	wxID_LOAD_ROM_IMAGE,
 	wxID_NEW_MOVIE,
@@ -882,6 +883,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
 	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
 	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
+	menu_entry(wxID_SETTINGS_CONTROLLERS, wxT("Configure controllers..."));
 	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
@@ -1237,10 +1239,13 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	}
 	case wxID_SETTINGS:
-		wxsetingsdialog_display(this, false);
+		wxsetingsdialog_display(this, 0);
 		break;
 	case wxID_SETTINGS_HOTKEYS:
-		wxsetingsdialog_display(this, true);
+		wxsetingsdialog_display(this, 1);
+		break;
+	case wxID_SETTINGS_CONTROLLERS:
+		wxsetingsdialog_display(this, 2);
 		break;
 	case wxID_LOAD_ROM_IMAGE:
 		filename = pick_file_member(this, "Select new ROM image", rom_path());

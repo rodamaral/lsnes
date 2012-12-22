@@ -155,8 +155,8 @@ namespace
 			turboed = false;
 		});
 
-	inverse_key turboh("+turbo", "Speed‣Turbo hold");
-	inverse_key turbot("toggle-turbo", "Speed‣Turbo toggle");
+	inverse_bind turboh(lsnes_mapper, "+turbo", "Speed‣Turbo hold");
+	inverse_bind turbot(lsnes_mapper, "toggle-turbo", "Speed‣Turbo toggle");
 }
 
 void freeze_time(uint64_t curtime)

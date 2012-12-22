@@ -273,7 +273,11 @@ public:
  * - Modifiers with this linkage group do not appear in either set nor trigger.
  *
  */
-	bool triggers(keyboard_modifier_set& trigger, keyboard_modifier_set& mask) throw(std::bad_alloc);
+	bool triggers(const keyboard_modifier_set& trigger, const keyboard_modifier_set& mask) throw(std::bad_alloc);
+/**
+ * Stringify.
+ */
+	operator std::string() const throw(std::bad_alloc);
 /**
  * Equality check.
  *
@@ -281,7 +285,10 @@ public:
  * returns: True if two sets are equal, false if not.
  */
 	bool operator==(const keyboard_modifier_set& m) const throw();
-
+/**
+ * Less than check.
+ */
+	bool operator<(const keyboard_modifier_set& m) const throw();
 private:
 	friend std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m);
 	std::set<keyboard_modifier*> set;

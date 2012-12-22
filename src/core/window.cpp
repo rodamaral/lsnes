@@ -153,8 +153,8 @@ namespace
 			}
 		});
 
-	inverse_key ienable_sound("enable-sound on", "Sound‣Enable");
-	inverse_key idisable_sound("enable-sound off", "Sound‣Disable");
+	inverse_bind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
+	inverse_bind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
 
 	function_ptr_command<const std::string&> set_volume(lsnes_cmd, "set-volume", "Set sound volume",
 		"Syntax: set-volume <scale>\nset-volume <scale>%\nset-volume <scale>dB\nSet sound volume\n",

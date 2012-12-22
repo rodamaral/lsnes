@@ -11,7 +11,7 @@ namespace
 		std::string key = L.get_string(3, fname.c_str());
 		std::string cmd = L.get_string(4, fname.c_str());
 		try {
-			keymapper::bind(mod, mask, key, cmd);
+			lsnes_mapper.bind(mod, mask, key, cmd);
 		} catch(std::exception& e) {
 			L.pushstring(e.what());
 			L.error();
@@ -24,7 +24,7 @@ namespace
 		std::string mask = L.get_string(2, fname.c_str());
 		std::string key = L.get_string(3, fname.c_str());
 		try {
-			keymapper::unbind(mod, mask, key);
+			lsnes_mapper.unbind(mod, mask, key);
 		} catch(std::exception& e) {
 			L.pushstring(e.what());
 			L.error();

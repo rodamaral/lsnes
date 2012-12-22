@@ -168,6 +168,8 @@ end:
 		wxPostEvent(ui_services, uic);
 	}
 
+	std::map<std::string, std::string> saved_buttons;
+
 	void handle_config_line(std::string line)
 	{
 		regex_results r;
@@ -224,11 +226,17 @@ end:
 			lsnes_cmd.set_alias_for(r[1], tmp);
 			messages << r[1] << " aliased to " << r[2] << std::endl;
 		} else if(r = regex("BIND[ \t]+([^/]*)/([^|]*)\\|([^ \t]+)[ \t]+(.*)", line)) {
-			keymapper::bind(r[1], r[2], r[3], r[4]);
+			lsnes_mapper.bind(r[1], r[2], r[3], r[4]);
 			if(r[1] != "" || r[2] != "")
 				messages << r[1] << "/" << r[2] << " ";
 			messages << r[3] << " bound to '" << r[4] << "'" << std::endl;
-			
+		} else if(r = regex("BUTTON[ \t]+([^ ]+)[ \t](.*)", line)) {
+			controller_key* ckey = lsnes_mapper.get_controllerkey(r[2]);
+			if(ckey) {
+				ckey->set(r[1]);
+				messages << r[1] << " bound (button) to " << r[2] << std::endl;
+			} else
+				saved_buttons[r[2]] = r[1];
 		} else
 			messages << "Unrecognized directive: " << line << std::endl;
 	}
@@ -239,7 +247,11 @@ end:
 		std::ifstream cfgfile(cfg.c_str());
 		std::string line;
 		while(std::getline(cfgfile, line))
-			handle_config_line(line);
+			try {
+				handle_config_line(line);
+			} catch(std::exception& e) {
+				messages << "Error processing line: " << e.what() << std::endl;
+			}
 	}
 	
 	void save_configuration()
@@ -282,19 +294,16 @@ end:
 			}
 		}
 		//Keybindings.
-		for(auto i : keymapper::get_bindings()) {
-			std::string i2 = i;
-			size_t s = i2.find_first_of("|");
-			size_t s2 = i2.find_first_of("/");
-			if(s > i2.length() || s2 > s)
-				continue;
-			std::string key = i2.substr(s + 1);
-			std::string mod = i2.substr(0, s2);
-			std::string modspec = i2.substr(s2 + 1, s - s2 - 1);
-			std::string old_command_value = keymapper::get_command_for(i);
-			cfgfile << "BIND " << mod << "/" << modspec << "|" << key << " "
-				<< old_command_value << std::endl;
+		for(auto i : lsnes_mapper.get_bindings())
+			cfgfile << "BIND " << std::string(i) << " " << lsnes_mapper.get(i) << std::endl;
+		//Buttons.
+		for(auto i : lsnes_mapper.get_controller_keys()) {
+			std::string b = i->get_string();
+			if(b != "")
+				cfgfile << "BUTTON " << b << " " << i->get_command() << std::endl;
 		}
+		for(auto i : saved_buttons)
+			cfgfile << "BUTTON " << i.second << " " << i.first << std::endl;
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;

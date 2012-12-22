@@ -159,6 +159,27 @@ bool keyboard_modifier_set::operator==(const keyboard_modifier_set& m) const thr
 	return true;
 }
 
+bool keyboard_modifier_set::operator<(const keyboard_modifier_set& m) const throw()
+{
+	auto i1 = set.begin();
+	auto i2 = m.set.begin();
+	for(; i1 != set.end() && i2 != m.set.end(); i1++, i2++) {
+		if((uint64_t)*i1 < (uint64_t)*i2)
+			return true;
+		if((uint64_t)*i1 > (uint64_t)*i2)
+			return false;
+	}
+	return (i2 != m.set.end());
+}
+
+keyboard_modifier_set::operator std::string() const throw(std::bad_alloc)
+{
+	std::string r;
+	for(auto i : set)
+		r = r + ((r != "") ? "," : "") + i->get_name();
+	return r;
+}
+
 std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m)
 {
 	os << "<modset:";
@@ -168,7 +189,7 @@ std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m)
 	return os;
 }
 
-bool keyboard_modifier_set::triggers(keyboard_modifier_set& trigger, keyboard_modifier_set& mask)
+bool keyboard_modifier_set::triggers(const keyboard_modifier_set& trigger, const keyboard_modifier_set& mask)
 	throw(std::bad_alloc)
 {
 	for(auto i : mask.set) {

@@ -52,6 +52,18 @@ namespace
 	std::string pkey;
 	wxdialog_pressbutton* presser = NULL;
 
+	std::string get_title(int mode)
+	{
+		switch(mode) {
+		case 0:
+			return "lsnes: Configure emulator";
+		case 1:
+			return "lsnes: Configure hotkeys";
+		case 2:
+			return "lsnes: Configure controllers";
+		}
+	}
+
 	void report_grab_key(const std::string& name);
 
 	class keygrabber : public keyboard_event_listener
@@ -1176,7 +1188,7 @@ private:
 	std::map<int, std::string> categories;
 	std::map<std::pair<int, int>, std::string> itemlabels;
 	std::map<std::pair<int, int>, std::string> items;
-	std::map<std::string, inverse_key*> realitems;
+	std::map<std::string, inverse_bind*> realitems;
 	void change_category(int cat);
 	void refresh();
 	std::pair<std::string, std::string> splitkeyname(const std::string& kn);
@@ -1279,7 +1291,7 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		inverse_key* ik = realitems[name];
+		inverse_bind* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
@@ -1312,7 +1324,7 @@ void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
 		return;
 	}
 	try {
-		inverse_key* ik = realitems[name];
+		inverse_bind* ik = realitems[name];
 		if(!ik) {
 			refresh();
 			return;
@@ -1338,11 +1350,11 @@ void wxeditor_esettings_hotkeys::refresh()
 {
 	if(destruction_underway)
 		return;
-	std::map<inverse_key*, std::pair<std::string, std::string>> data;
+	std::map<inverse_bind*, std::pair<key_specifier, key_specifier>> data;
 	std::map<std::string, int> cat_set;
 	std::map<std::string, int> cat_assign;
 	realitems.clear();
-	auto x = inverse_key::get_ikeys();
+	auto x = lsnes_mapper.get_inverses();
 	for(auto y : x) {
 		realitems[y->getname()] = y;
 		data[y] = std::make_pair(y->get(true), y->get(false));
@@ -1358,13 +1370,213 @@ void wxeditor_esettings_hotkeys::refresh()
 		}
 		items[std::make_pair(cat_set[j.first], cat_assign[j.first])] = i.first;
 		std::string text = j.second;
-		if(data[i.second].first == "")
+		if(!data[i.second].first)
 			text = text + " (not set)";
-		else if(data[i.second].second == "")
+		else if(!data[i.second].second)
 			text = text + " (" + clean_keystring(data[i.second].first) + ")";
 		else
 			text = text + " (" + clean_keystring(data[i.second].first) + " or " +
 				clean_keystring(data[i.second].second) + ")";
+		itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
+		cat_assign[j.first]++;
+	}
+
+	for(int i = 0; i < category->GetCount(); i++)
+		if(categories.count(i))
+			category->SetString(i, towxstring(categories[i]));
+		else
+			category->Delete(i--);
+	for(auto i : categories)
+		if(i.first >= category->GetCount())
+			category->Append(towxstring(categories[i.first]));
+	if(category->GetSelection() == wxNOT_FOUND)
+		category->SetSelection(0);
+	change_category(category->GetSelection());
+}
+
+class wxeditor_esettings_controllers : public wxPanel
+{
+public:
+	wxeditor_esettings_controllers(wxWindow* parent);
+	~wxeditor_esettings_controllers();
+	void on_setkey(wxCommandEvent& e);
+	void on_clearkey(wxCommandEvent& e);
+	void on_change(wxCommandEvent& e);
+	void prepare_destroy();
+private:
+	bool destruction_underway;
+	wxListBox* category;
+	wxListBox* control;
+	wxButton* set_button;
+	wxButton* clear_button;
+	std::map<int, std::string> categories;
+	std::map<std::pair<int, int>, std::string> itemlabels;
+	std::map<std::pair<int, int>, std::string> items;
+	std::map<std::string, controller_key*> realitems;
+	void change_category(int cat);
+	void refresh();
+	std::pair<std::string, std::string> splitkeyname(const std::string& kn);
+};
+
+wxeditor_esettings_controllers::wxeditor_esettings_controllers(wxWindow* parent)
+	: wxPanel(parent, -1)
+{
+	destruction_underway = false;
+	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+	SetSizer(top_s);
+	wxString empty[1];
+
+	top_s->Add(category = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1, wxGROW);
+	top_s->Add(control = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1, wxGROW);
+	category->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+		wxCommandEventHandler(wxeditor_esettings_controllers::on_change), NULL, this);
+
+	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+	pbutton_s->AddStretchSpacer();
+	pbutton_s->Add(set_button = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
+	set_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_controllers::on_setkey), NULL, this);
+	pbutton_s->Add(clear_button = new wxButton(this, wxID_ANY, wxT("Clear")), 0, wxGROW);
+	clear_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_esettings_controllers::on_clearkey), NULL, this);
+	top_s->Add(pbutton_s, 0, wxGROW);
+
+	refresh();
+	top_s->SetSizeHints(this);
+	Fit();
+}
+
+void wxeditor_esettings_controllers::prepare_destroy()
+{
+	destruction_underway = true;
+}
+
+std::pair<std::string, std::string> wxeditor_esettings_controllers::splitkeyname(const std::string& kn)
+{
+	std::string tmp = kn;
+	size_t split = 0;
+	for(size_t itr = 0; itr < tmp.length() - 2 && itr < tmp.length(); itr++) {
+		unsigned char ch1 = tmp[itr];
+		unsigned char ch2 = tmp[itr + 1];
+		unsigned char ch3 = tmp[itr + 2];
+		if(ch1 == 0xE2 && ch2 == 0x80 && ch3 == 0xA3)
+			split = itr;
+	}
+	if(split)
+		return std::make_pair(tmp.substr(0, split), tmp.substr(split + 3));
+	else
+		return std::make_pair("(Uncategorized)", tmp);
+}
+
+void wxeditor_esettings_controllers::on_change(wxCommandEvent& e)
+{
+	if(destruction_underway)
+		return;
+	int c = category->GetSelection();
+	if(c == wxNOT_FOUND) {
+		category->SetSelection(0);
+		change_category(0);
+	} else
+		change_category(c);
+}
+
+void wxeditor_esettings_controllers::change_category(int cat)
+{
+	if(destruction_underway)
+		return;
+	std::map<int, std::string> n;
+	for(auto i : itemlabels)
+		if(i.first.first == cat)
+			n[i.first.second] = i.second;
+	
+	for(int i = 0; i < control->GetCount(); i++)
+		if(n.count(i))
+			control->SetString(i, towxstring(n[i]));
+		else
+			control->Delete(i--);
+	for(auto i : n)
+		if(i.first >= control->GetCount())
+			control->Append(towxstring(n[i.first]));
+	if(control->GetSelection() == wxNOT_FOUND)
+		control->SetSelection(0);
+}
+
+wxeditor_esettings_controllers::~wxeditor_esettings_controllers()
+{
+}
+
+void wxeditor_esettings_controllers::on_setkey(wxCommandEvent& e)
+{
+	if(destruction_underway)
+		return;
+	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
+	if(name == "") {
+		refresh();
+		return;
+	}
+	try {
+		controller_key* ik = realitems[name];
+		if(!ik) {
+			refresh();
+			return;
+		}
+		std::string wtitle = "Specify key for " + name;
+		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle);
+		p->ShowModal();
+		std::string key = p->getkey();
+		p->Destroy();
+		ik->set(key);
+	} catch(...) {
+	}
+	refresh();
+}
+
+void wxeditor_esettings_controllers::on_clearkey(wxCommandEvent& e)
+{
+	if(destruction_underway)
+		return;
+	std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
+	if(name == "") {
+		refresh();
+		return;
+	}
+	try {
+		controller_key* ik = realitems[name];
+		if(ik)
+			ik->set(NULL, 0);
+	} catch(...) {
+	}
+	refresh();
+}
+
+void wxeditor_esettings_controllers::refresh()
+{
+	if(destruction_underway)
+		return;
+	std::map<controller_key*, std::string> data;
+	std::map<std::string, int> cat_set;
+	std::map<std::string, int> cat_assign;
+	realitems.clear();
+	auto x = lsnes_mapper.get_controller_keys();
+	for(auto y : x) {
+		realitems[y->get_name()] = y;
+		data[y] = y->get_string();
+	}
+
+	int cidx = 0;
+	for(auto i : realitems) {
+		std::pair<std::string, std::string> j = splitkeyname(i.first);
+		if(!cat_set.count(j.first)) {
+			categories[cidx] = j.first;
+			cat_assign[j.first] = 0;
+			cat_set[j.first] = cidx++;
+		}
+		items[std::make_pair(cat_set[j.first], cat_assign[j.first])] = i.first;
+		std::string text = j.second;
+		if(data[i.second] == "")
+			text = text + " (not set)";
+		else
+			text = text + " (" + clean_keystring(data[i.second]) + ")";
 		itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
 		cat_assign[j.first]++;
 	}
@@ -1473,7 +1685,7 @@ void wxeditor_esettings_bindings::on_add(wxCommandEvent& e)
 
 		std::string newcommand = pick_text(this, "New binding", "Enter command for binding:", "");
 		try {
-			keymapper::bind_for(name, newcommand);
+			lsnes_mapper.set(name, newcommand);
 		} catch(std::exception& e) {
 			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 				wxICON_EXCLAMATION);
@@ -1493,11 +1705,11 @@ void wxeditor_esettings_bindings::on_edit(wxCommandEvent& e)
 		return;
 	}
 	try {
-		std::string old_command_value = keymapper::get_command_for(name);
+		std::string old_command_value = lsnes_mapper.get(name);
 		std::string newcommand = pick_text(this, "Edit binding", "Enter new command for binding:",
 			old_command_value);
 		try {
-			keymapper::bind_for(name, newcommand);
+			lsnes_mapper.set(name, newcommand);
 		} catch(std::exception& e) {
 			wxMessageBox(wxT("Error"), towxstring(std::string("Can't bind key: ") + e.what()),
 				wxICON_EXCLAMATION);
@@ -1516,7 +1728,7 @@ void wxeditor_esettings_bindings::on_delete(wxCommandEvent& e)
 		refresh();
 		return;
 	}
-	try { keymapper::bind_for(name, ""); } catch(...) {}
+	try { lsnes_mapper.set(name, ""); } catch(...) {}
 	refresh();
 }
 
@@ -1527,9 +1739,9 @@ void wxeditor_esettings_bindings::refresh()
 	int n = select->GetSelection();
 	std::map<std::string, std::string> bind;
 	std::vector<wxString> choices;
-	std::set<std::string> a = keymapper::get_bindings();
+	std::list<key_specifier> a = lsnes_mapper.get_bindings();
 	for(auto i : a)
-		bind[i] = keymapper::get_command_for(i);
+		bind[i] = lsnes_mapper.get(i);
 	for(auto i : bind) {
 		numbers[choices.size()] = i.first;
 		choices.push_back(towxstring(clean_keystring(i.first) + " (" + i.second + ")"));
@@ -1754,7 +1966,7 @@ void wxeditor_esettings_advanced::_refresh()
 class wxeditor_esettings : public wxDialog
 {
 public:
-	wxeditor_esettings(wxWindow* parent, bool hotkeys_only);
+	wxeditor_esettings(wxWindow* parent, int mode);
 	~wxeditor_esettings();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCommandEvent& e);
@@ -1763,13 +1975,13 @@ private:
 	wxNotebook* tabset;
 	wxButton* closebutton;
 	wxeditor_esettings_hotkeys* hotkeytab;
+	wxeditor_esettings_controllers* controllertab;
 	wxeditor_esettings_bindings* bindtab;
 	wxeditor_esettings_advanced* advtab;
 };
 
-wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
-	: wxDialog(parent, wxID_ANY, hotkeys_only ? wxT("lsnes: Configure hotkeys") :
-		wxT("lsnes: Configure emulator"), wxDefaultPosition, wxSize(-1, -1))
+wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
+	: wxDialog(parent, wxID_ANY, towxstring(get_title(mode)), wxDefaultPosition, wxSize(-1, -1))
 {
 	//Grab keys to prevent the joystick driver from running who knows what commands.
 	lsnes_kbd.set_exclusive(&keygrabber);
@@ -1778,17 +1990,25 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 
-	if(hotkeys_only) {
+	if(mode == 1) {
 		hotkeytab = new wxeditor_esettings_hotkeys(this);
+		controllertab = NULL;
 		bindtab = NULL;
 		advtab = NULL;
 		top_s->Add(hotkeytab);
+	} else if(mode == 2) {
+		hotkeytab = NULL;
+		controllertab = new wxeditor_esettings_controllers(this);
+		bindtab = NULL;
+		advtab = NULL;
+		top_s->Add(controllertab);
 	} else {
 		tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 		tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 		tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
 		tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
 		tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
+		tabset->AddPage(controllertab = new wxeditor_esettings_controllers(tabset), wxT("Controllers"));
 		tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
 		tabset->AddPage(bindtab = new wxeditor_esettings_bindings(tabset), wxT("Bindings"));
 		tabset->AddPage(advtab = new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
@@ -1809,6 +2029,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, bool hotkeys_only)
 wxeditor_esettings::~wxeditor_esettings()
 {
 	if(hotkeytab) hotkeytab->prepare_destroy();
+	if(controllertab) controllertab->prepare_destroy();
 	if(bindtab) bindtab->prepare_destroy();
 	if(advtab) advtab->prepare_destroy();
 }
@@ -1824,12 +2045,12 @@ void wxeditor_esettings::on_close(wxCommandEvent& e)
 	EndModal(wxID_OK);
 }
 
-void wxsetingsdialog_display(wxWindow* parent, bool hotkeys_only)
+void wxsetingsdialog_display(wxWindow* parent, int mode)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_esettings(parent, hotkeys_only);
+		editor = new wxeditor_esettings(parent, mode);
 		editor->ShowModal();
 	} catch(...) {
 	}

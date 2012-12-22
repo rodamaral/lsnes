@@ -40,7 +40,7 @@ void wxeditor_hotkeys_display(wxWindow* parent);
 void wxeditor_memorywatch_display(wxWindow* parent);
 void wxeditor_subtitles_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
-void wxsetingsdialog_display(wxWindow* parent, bool hotkeys_only);
+void wxsetingsdialog_display(wxWindow* parent, int mode);
 void show_wxeditor_voicesub(wxWindow* parent);
 void open_rom_select_window();
 
