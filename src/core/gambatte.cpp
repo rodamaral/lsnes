@@ -33,8 +33,6 @@
 #define LOGICAL_BUTTON_SELECT 6
 #define LOGICAL_BUTTON_START 7
 
-const char* controller_names[] = {"(system)"};
-
 port_type_group core_portgroup;
 unsigned core_userports = 0;
 extern const bool core_supports_reset = true;

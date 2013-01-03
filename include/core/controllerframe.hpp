@@ -214,17 +214,15 @@ private:
 	std::vector<controller_frame> _autofire;
 };
 
-extern const char* controller_names[];
-
 /**
  * Generic port controller name function.
  */
-template<unsigned controllers, unsigned nameindex>
+template<unsigned controllers, const char** name>
 inline const char* generic_controller_name(unsigned controller)
 {
 	if(controller >= controllers)
 		return NULL;
-	return controller_names[nameindex];
+	return *name;
 }
 
 #endif

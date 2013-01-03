@@ -96,6 +96,13 @@ namespace
 	const char* mouse_buttons = "LR";
 	const char* superscope_buttons = "TCUP";
 	const char* justifier_buttons = "TS";
+	const char* system_name = "(system)";
+	const char* none_name = "";
+	const char* gamepad_name = "gamepad";
+	const char* mouse_name = "mouse";
+	const char* superscope_name = "superscope";
+	const char* justifier_name = "justifier";
+	const char* gamepad16_name = "gamepad16";
 
 	void init_norom_frame()
 	{
@@ -675,7 +682,7 @@ namespace
 			button_id = get_button_id_none;
 			construct_map = build_indices;
 			used_indices = generic_used_indices<1, 4>;
-			controller_name = generic_controller_name<1, 0>;
+			controller_name = generic_controller_name<1, &system_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
@@ -695,7 +702,7 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_gamepad<0>;
 			used_indices = generic_used_indices<1, 12>;
-			controller_name = generic_controller_name<1, 1>;
+			controller_name = generic_controller_name<1, &gamepad_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
 			core_portgroup.set_default(1, *this);
@@ -716,7 +723,7 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 1>;
 			button_id = get_button_id_gamepad<0>;
 			used_indices = generic_used_indices<1, 16>;
-			controller_name = generic_controller_name<1, 5>;
+			controller_name = generic_controller_name<1, &gamepad16_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
 		}
@@ -736,7 +743,7 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 3>;
 			button_id = get_button_id_justifier<0>;
 			used_indices = generic_used_indices<1, 4>;
-			controller_name = generic_controller_name<1, 4>;
+			controller_name = generic_controller_name<1, &justifier_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIER, true>;
 		}
@@ -756,7 +763,7 @@ namespace
 			deviceflags = generic_port_deviceflags<2, 3>;
 			button_id = get_button_id_justifier<1>;
 			used_indices = generic_used_indices<2, 4>;
-			controller_name = generic_controller_name<2, 4>;
+			controller_name = generic_controller_name<2, &justifier_name>;
 			controllers = 2;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIERS, true>;
 		}
@@ -775,7 +782,7 @@ namespace
 			deviceflags = generic_port_deviceflags<1, 5>;
 			button_id = get_button_id_mouse;
 			used_indices = generic_used_indices<1, 4>;
-			controller_name = generic_controller_name<1, 2>;
+			controller_name = generic_controller_name<1, &mouse_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MOUSE, false>;
 		}
@@ -795,7 +802,7 @@ namespace
 			deviceflags = generic_port_deviceflags<4, 1>;
 			button_id = get_button_id_gamepad<3>;
 			used_indices = generic_used_indices<4, 12>;
-			controller_name = generic_controller_name<4, 1>;
+			controller_name = generic_controller_name<4, &gamepad_name>;
 			controllers = 4;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
@@ -815,7 +822,7 @@ namespace
 			deviceflags = generic_port_deviceflags<4, 1>;
 			button_id = get_button_id_gamepad<3>;
 			used_indices = generic_used_indices<4, 16>;
-			controller_name = generic_controller_name<4, 5>;
+			controller_name = generic_controller_name<4, &gamepad16_name>;
 			controllers = 4;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
 		}
@@ -834,7 +841,7 @@ namespace
 			deviceflags = generic_port_deviceflags<0, 0>;
 			button_id = get_button_id_none;
 			used_indices = generic_used_indices<0, 0>;
-			controller_name = generic_controller_name<0, 1>;
+			controller_name = generic_controller_name<0, &none_name>;
 			controllers = 0;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_NONE, false>;
 			core_portgroup.set_default(2, *this);
@@ -855,7 +862,7 @@ namespace
 			legal = generic_port_legal<2>;
 			button_id = get_button_id_superscope;
 			used_indices = generic_used_indices<1, 6>;
-			controller_name = generic_controller_name<1, 3>;
+			controller_name = generic_controller_name<1, &superscope_name>;
 			controllers = 1;
 			set_core_controller = set_core_controller_X<SNES_DEVICE_SUPER_SCOPE, true>;
 		}
