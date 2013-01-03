@@ -58,8 +58,6 @@ void core_uninstall_handler();
 void core_emulate_frame();
 //Run to point save.
 void core_runtosave();
-//Button symbols.
-extern const char* button_symbols;
 //Get the scale factors.
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 //Get bus map range.

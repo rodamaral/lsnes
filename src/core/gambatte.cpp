@@ -15,6 +15,7 @@
 #include "core/window.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
+#include "library/portfn.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
@@ -32,7 +33,6 @@
 #define LOGICAL_BUTTON_SELECT 6
 #define LOGICAL_BUTTON_START 7
 
-const char* button_symbols = "ABsSrlud";
 const char* controller_names[] = {"(system)"};
 
 port_type_group core_portgroup;
@@ -216,6 +216,8 @@ namespace
 		skip_rest_of_field(textbuf, ptr, false);
 		return ptr;
 	}
+
+	const char* button_symbols = "ABsSrlud";
 
 	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
 	{

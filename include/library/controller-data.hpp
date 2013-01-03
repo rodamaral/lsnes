@@ -1290,44 +1290,6 @@ private:
  */
 port_type& get_dummy_port_type() throw(std::bad_alloc);
 
-/**
- * Generic port write function.
- */
-template<unsigned controllers, unsigned analog_axis, unsigned buttons>
-inline void generic_port_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
-{
-	if(idx >= controllers)
-		return;
-	if(ctrl < analog_axis) {
-		buffer[2 * idx * analog_axis + 2 * ctrl] = (x >> 8);
-		buffer[2 * idx * analog_axis + 2 * ctrl + 1] = x;
-	} else if(ctrl < analog_axis + buttons) {
-		size_t bit = 16 * controllers * analog_axis + idx * buttons + ctrl - analog_axis;
-		if(x)
-			buffer[bit / 8] |= (1 << (bit % 8));
-		else
-			buffer[bit / 8] &= ~(1 << (bit % 8));
-	}
-}
-
-/**
- * Generic port read function.
- */
-template<unsigned controllers, unsigned analog_axis, unsigned buttons>
-inline short generic_port_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
-{
-	if(idx >= controllers)
-		return 0;
-	if(ctrl < analog_axis) {
-		uint16_t a = buffer[2 * idx * analog_axis + 2 * ctrl];
-		uint16_t b = buffer[2 * idx * analog_axis + 2 * ctrl + 1];
-		return static_cast<short>(256 * a + b);
-	} else if(ctrl < analog_axis + buttons) {
-		size_t bit = 16 * controllers * analog_axis + idx * buttons + ctrl - analog_axis;
-		return ((buffer[bit / 8] & (1 << (bit % 8))) != 0);
-	} else
-		return 0;
-}
 
 /**
  * Generic port control index function.
@@ -1338,42 +1300,6 @@ inline unsigned generic_used_indices(unsigned controller)
 	if(controller >= controllers)
 		return 0;
 	return indices;
-}
-
-
-/**
- * Generic port size function.
- */
-template<unsigned controllers, unsigned analog_axis, unsigned buttons>
-inline size_t generic_port_size()
-{
-	return 2 * controllers * analog_axis + (controllers * buttons + 7) / 8;
-}
-
-/**
- * Generic port deserialization function.
- */
-template<unsigned controllers, unsigned analog_axis, unsigned buttons>
-inline size_t generic_port_deserialize(unsigned char* buffer, const char* textbuf) throw()
-{
-	if(!controllers)
-		return DESERIALIZE_SPECIAL_BLANK;
-	memset(buffer, 0, generic_port_size<controllers, analog_axis, buttons>());
-	size_t ptr = 0;
-	for(unsigned j = 0; j < controllers; j++) {
-		for(unsigned i = 0; i < buttons; i++) {
-			size_t bit = 16 * controllers * analog_axis + j * buttons + i;
-			if(read_button_value(textbuf, ptr))
-				buffer[bit / 8] |= (1 << (bit % 8));
-		}
-		for(unsigned i = 0; i < analog_axis; i++) {
-			short v = read_axis_value(textbuf, ptr);
-			buffer[2 * j * analog_axis + 2 * i] = v >> 8;
-			buffer[2 * j * analog_axis + 2 * i + 1] = v;
-		}
-		skip_rest_of_field(textbuf, ptr, j + 1 < controllers);
-	}
-	return ptr;
 }
 
 template<unsigned mask>

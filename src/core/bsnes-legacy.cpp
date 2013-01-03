@@ -16,6 +16,7 @@
 #include "core/window.hpp"
 #include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
+#include "library/portfn.hpp"
 #include "library/framebuffer.hpp"
 #include "library/luabase.hpp"
 #include "lua/internal.hpp"
@@ -62,7 +63,6 @@
 #define LOGICAL_BUTTON_EXT2 18
 #define LOGICAL_BUTTON_EXT3 19
 
-const char* button_symbols = "BYsSudlrAXLR0123TSTCUPFR";
 const char* controller_names[] = {"(system)", "gamepad", "mouse", "superscope", "justifier", "gamepad16"};
 
 port_type_group core_portgroup;
@@ -91,6 +91,11 @@ namespace
 	uint64_t trace_counter;
 	std::ofstream trace_output;
 	bool trace_output_enable;
+	const char* none_buttons = "";
+	const char* gamepad_buttons = "BYsSudlrAXLR0123";
+	const char* mouse_buttons = "LR";
+	const char* superscope_buttons = "TCUP";
+	const char* justifier_buttons = "TS";
 
 	void init_norom_frame()
 	{
@@ -683,8 +688,8 @@ namespace
 		{
 			write = generic_port_write<1, 0, 12>;
 			read = generic_port_read<1, 0, 12>;
-			display = generic_port_display<1, 0, 12, 0>;
-			serialize = generic_port_serialize<1, 0, 12, 0>;
+			display = generic_port_display<1, 0, 12, &gamepad_buttons>;
+			serialize = generic_port_serialize<1, 0, 12, &gamepad_buttons>;
 			deserialize = generic_port_deserialize<1, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
@@ -704,8 +709,8 @@ namespace
 		{
 			write = generic_port_write<1, 0, 16>;
 			read = generic_port_read<1, 0, 16>;
-			display = generic_port_display<1, 0, 16, 0>;
-			serialize = generic_port_serialize<1, 0, 16, 0>;
+			display = generic_port_display<1, 0, 16, &gamepad_buttons>;
+			serialize = generic_port_serialize<1, 0, 16, &gamepad_buttons>;
 			deserialize = generic_port_deserialize<1, 0, 16>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
@@ -724,8 +729,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 12>;
-			serialize = generic_port_serialize<1, 2, 2, 16>;
+			display = generic_port_display<1, 2, 2, &justifier_buttons>;
+			serialize = generic_port_serialize<1, 2, 2, &justifier_buttons>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<1, 3>;
@@ -744,8 +749,8 @@ namespace
 		{
 			write = generic_port_write<2, 2, 2>;
 			read = generic_port_read<2, 2, 2>;
-			display = generic_port_display<2, 2, 2, 12>;
-			serialize = generic_port_serialize<2, 2, 2, 16>;
+			display = generic_port_display<2, 2, 2, &justifier_buttons>;
+			serialize = generic_port_serialize<2, 2, 2, &justifier_buttons>;
 			deserialize = generic_port_deserialize<2, 2, 2>;
 			legal = generic_port_legal<2>;
 			deviceflags = generic_port_deviceflags<2, 3>;
@@ -763,8 +768,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 2>;
 			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, 10>;
-			serialize = generic_port_serialize<1, 2, 2, 10>;
+			display = generic_port_display<1, 2, 2, &mouse_buttons>;
+			serialize = generic_port_serialize<1, 2, 2, &mouse_buttons>;
 			deserialize = generic_port_deserialize<1, 2, 2>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 5>;
@@ -783,8 +788,8 @@ namespace
 		{
 			write = generic_port_write<4, 0, 12>;
 			read = generic_port_read<4, 0, 12>;
-			display = generic_port_display<4, 0, 12, 0>;
-			serialize = generic_port_serialize<4, 0, 12, 0>;
+			display = generic_port_display<4, 0, 12, &gamepad_buttons>;
+			serialize = generic_port_serialize<4, 0, 12, &gamepad_buttons>;
 			deserialize = generic_port_deserialize<4, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
@@ -803,8 +808,8 @@ namespace
 		{
 			write = generic_port_write<4, 0, 16>;
 			read = generic_port_read<4, 0, 16>;
-			display = generic_port_display<4, 0, 16, 0>;
-			serialize = generic_port_serialize<4, 0, 16, 0>;
+			display = generic_port_display<4, 0, 16, &gamepad_buttons>;
+			serialize = generic_port_serialize<4, 0, 16, &gamepad_buttons>;
 			deserialize = generic_port_deserialize<4, 0, 16>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
@@ -822,8 +827,8 @@ namespace
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
-			display = generic_port_display<0, 0, 0, 0>;
-			serialize = generic_port_serialize<0, 0, 0, 0>;
+			display = generic_port_display<0, 0, 0, &none_buttons>;
+			serialize = generic_port_serialize<0, 0, 0, &none_buttons>;
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<0, 0>;
@@ -843,8 +848,8 @@ namespace
 		{
 			write = generic_port_write<1, 2, 4>;
 			read = generic_port_read<1, 2, 4>;
-			display = generic_port_display<1, 2, 4, 18>;
-			serialize = generic_port_serialize<1, 2, 4, 18>;
+			display = generic_port_display<1, 2, 4, &superscope_buttons>;
+			serialize = generic_port_serialize<1, 2, 4, &superscope_buttons>;
 			deserialize = generic_port_deserialize<1, 2, 4>;
 			deviceflags = generic_port_deviceflags<1, 3>;
 			legal = generic_port_legal<2>;

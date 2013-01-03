@@ -1,4 +1,5 @@
 #include "controller-data.hpp"
+#include "portfn.hpp"
 #include "threadtypes.hpp"
 #include "minmax.hpp"
 #include "globalwrap.hpp"
@@ -29,30 +30,13 @@ namespace
 		return i;
 	}
 
-	inline size_t invalid_serialize(const unsigned char* buffer, char* textbuf) throw()
-	{
-		return 0;
-	}
-
-	inline void invalid_display(const unsigned char* buffer, unsigned idx, char* buf)
-	{
-		*buf = 0;
-	}
-
-	inline void basecontrol_display(const unsigned char* buffer, unsigned idx, char* buf)
-	{
-		if(idx) 
-			*buf = 0;
-		else {
-			buf[0] = (buffer[0] & 1) ? 'F' : '-';
-			buf[1] = 0;
-		}
-	}
-
 	inline const char* invalid_controller_name(unsigned c)
 	{
 		return c ? NULL : "(system)";
 	}
+
+	const char* invalid_chars = "";
+	const char* basecontrol_chars = "F";
 
 	struct port_type_group invalid_group;
 	struct porttype_invalid : public port_type
@@ -61,8 +45,8 @@ namespace
 		{
 			write = generic_port_write<0, 0, 0>;
 			read = generic_port_read<0, 0, 0>;
-			display = invalid_display;
-			serialize = invalid_serialize;
+			display = generic_port_display<0, 0, 0, &invalid_chars>;
+			serialize = generic_port_serialize<0, 0, 0, &invalid_chars>;
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<0xFFFFFFFFU>;
 			deviceflags = generic_port_deviceflags<0, 0>;
@@ -75,20 +59,14 @@ namespace
 		}
 	};
 
-	inline size_t basecontrol_serialize(const unsigned char* buffer, char* textbuf) throw()
-	{
-		textbuf[0] = (buffer[0] & 1) ? 'F' : '.';
-		return 1;
-	}
-
 	struct porttype_basecontrol : public port_type
 	{
 		porttype_basecontrol() : port_type(invalid_group, "basecontrol", "basecontrol", 999998, 0)
 		{
 			write = generic_port_write<1, 0, 1>;
 			read = generic_port_read<1, 0, 1>;
-			display = basecontrol_display;
-			serialize = basecontrol_serialize;
+			display = generic_port_display<1, 0, 1, &basecontrol_chars>;
+			serialize = generic_port_serialize<1, 0, 1, &basecontrol_chars>;
 			deserialize = generic_port_deserialize<1, 0, 1>;
 			legal = generic_port_legal<0>;
 			deviceflags = generic_port_deviceflags<0, 0>;
