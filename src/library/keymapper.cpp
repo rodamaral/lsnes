@@ -421,6 +421,8 @@ controller_key::controller_key(keyboard_mapper& _mapper, const std::string& _com
 {
 	register_queue<keyboard_mapper::_controllerkey_proxy, controller_key>::do_register(mapper.controllerkey_proxy,
 		cmd, *this);
+	key = NULL;
+	subkey = 0;
 }
 
 controller_key::~controller_key() throw()

@@ -101,7 +101,7 @@ inline void generic_port_display(const unsigned char* buffer, unsigned idx, char
 	}
 	for(unsigned i = 0; i < buttons; i++) {
 		size_t bit = idx * buttons + i;
-		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? (*bbuffer[i]) : '-';
+		buf[ptr++] = ((buffer[bit / 8] & (1 << (bit % 8))) != 0) ? (*bbuffer)[i] : '-';
 	}
 	buf[ptr] = '\0';
 }

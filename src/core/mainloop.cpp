@@ -228,6 +228,7 @@ namespace
 
 void update_movie_state()
 {
+	static unsigned last_controllers = 0;
 	{
 		uint64_t magic[4];
 		core_get_region().fill_framerate_magic(magic);
@@ -290,12 +291,13 @@ void update_movie_state()
 		c = movb.get_movie().get_controls();
 	else
 		c = controls.get_committed();
-	auto lim = get_core_logical_controller_limits();
-	for(unsigned i = 0; i < lim.first; i++) {
+	for(unsigned i = 0;; i++) {
 		auto pindex = controls.lcid_to_pcid(i);
 		if(pindex.first < 0 || !controls.is_present(pindex.first, pindex.second)) {
-			_status.erase((stringfmt() << "P" << (i + 1)).str());
-			continue;
+			for(unsigned j = i; j < last_controllers; j++)
+				_status.erase((stringfmt() << "P" << (j + 1)).str());
+			last_controllers = i;
+			break;
 		}
 		char buffer[MAX_DISPLAY_LENGTH];
 		c.display(pindex.first, pindex.second, buffer);

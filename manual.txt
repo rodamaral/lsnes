@@ -337,63 +337,42 @@ Internal test commands. Don't use.
 
 Save screenshot to <filename>.
 
-6.3.19 +controller<num><button>
+6.3.19 +controller <class>-<#>-<button>
 
-Press button <button> on controller <num> (1-8). The following 
-button names are known:
+Press button <button> on controller <num> of class <class>.
 
-• left
+• Class 'gamepad': A, B, X, Y, L, R, select, start, up, down, 
+  left, right, ext0, ext1, ext2, ext3
 
-• right
+• Class 'mouse': L, R
 
-• up
+• Class 'superscope': trigger, cursor, turbo, pause
 
-• down
+• Class 'justifier': trigger, start
 
-• A
+6.3.20 hold-controller <class>-<#>-<button>
 
-• B
+Hold/unhold button <button> on controller <num> of class <class>.
 
-• X
+6.3.21 type-controller <class>-<#>-<button>
 
-• Y
-
-• L
-
-• R
-
-• select
-
-• start
-
-• trigger
-
-• cursor
-
-• pause
-
-• turbo
-
-6.3.20 controllerh<num><button>
-
-Hold/unhold button <button> on controller <num> (1-8). See 
-+controller for button names.
-
-6.3.21 controllerf<num><button>
-
-Hold/unhold button <button> on controller <num> (1-8) for the 
-next frame. See +controller for button names.
+Hold/unhold button <button> on controller <num> of class <class> 
+for the next frame. See +controller for button names.
 
 Cauntion: Does not work properly if outside frame advance.
 
-6.3.22 autofire (<pattern>|-)...
+6.3.22 designate-position <class>-<#>-analog<n>
+
+Designate position for analog pair. <n> is only there if there 
+are multiple axis pairs.
+
+6.3.23 autofire (<pattern>|-)...
 
 Set autofire pattern. Each parameter is comma-separated list of 
-button names (in form of 1start, 1A, 2B, etc..) to hold on that 
-frame. After reaching the end of pattern, the pattern restarts 
-from the beginning.
+button names to hold on that frame. After reaching the end of 
+pattern, the pattern restarts from the beginning.
 
-6.3.23 repaint
+6.3.24 repaint
 
 Force a repaint.
 

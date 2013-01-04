@@ -725,93 +725,45 @@ Save screenshot to <filename>.
 \end_layout
 
 \begin_layout Subsubsection
-+controller<num><button>
++controller <class>-<#>-<button>
 \end_layout
 
 \begin_layout Standard
-Press button <button> on controller <num> (1-8).
- The following button names are known:
+Press button <button> on controller <num> of class <class>.
 \end_layout
 
 \begin_layout Itemize
-left
+Class 'gamepad': A, B, X, Y, L, R, select, start, up, down, left, right,
+ ext0, ext1, ext2, ext3
 \end_layout
 
 \begin_layout Itemize
-right
+Class 'mouse': L, R
 \end_layout
 
 \begin_layout Itemize
-up
+Class 'superscope': trigger, cursor, turbo, pause
 \end_layout
 
 \begin_layout Itemize
-down
-\end_layout
-
-\begin_layout Itemize
-A
-\end_layout
-
-\begin_layout Itemize
-B
-\end_layout
-
-\begin_layout Itemize
-X
-\end_layout
-
-\begin_layout Itemize
-Y
-\end_layout
-
-\begin_layout Itemize
-L
-\end_layout
-
-\begin_layout Itemize
-R
-\end_layout
-
-\begin_layout Itemize
-select
-\end_layout
-
-\begin_layout Itemize
-start
-\end_layout
-
-\begin_layout Itemize
-trigger
-\end_layout
-
-\begin_layout Itemize
-cursor
-\end_layout
-
-\begin_layout Itemize
-pause
-\end_layout
-
-\begin_layout Itemize
-turbo
+Class 'justifier': trigger, start
 \end_layout
 
 \begin_layout Subsubsection
-controllerh<num><button>
+hold-controller <class>-<#>-<button>
 \end_layout
 
 \begin_layout Standard
-Hold/unhold button <button> on controller <num> (1-8).
- See +controller for button names.
+Hold/unhold button <button> on controller <num> of class <class>.
 \end_layout
 
 \begin_layout Subsubsection
-controllerf<num><button>
+type-controller <class>-<#>-<button>
 \end_layout
 
 \begin_layout Standard
-Hold/unhold button <button> on controller <num> (1-8) for the next frame.
+Hold/unhold button <button> on controller <num> of class <class> for the
+ next frame.
  See +controller for button names.
 \end_layout
 
@@ -820,13 +772,22 @@ Cauntion: Does not work properly if outside frame advance.
 \end_layout
 
 \begin_layout Subsubsection
+designate-position <class>-<#>-analog<n>
+\end_layout
+
+\begin_layout Standard
+Designate position for analog pair.
+ <n> is only there if there are multiple axis pairs.
+\end_layout
+
+\begin_layout Subsubsection
 autofire (<pattern>|-)...
 \end_layout
 
 \begin_layout Standard
 Set autofire pattern.
- Each parameter is comma-separated list of button names (in form of 1start,
- 1A, 2B, etc..) to hold on that frame.
+ Each parameter is comma-separated list of button names to hold on that
+ frame.
  After reaching the end of pattern, the pattern restarts from the beginning.
 \end_layout
 

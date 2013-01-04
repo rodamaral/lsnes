@@ -255,13 +255,6 @@ namespace
 		return ret;
 	}
 
-	int UI_button_id(unsigned port, unsigned controller, unsigned lidx)
-	{
-		int ret;
-		runemufn([&ret, port, controller, lidx]() { ret = controls.button_id(port, controller, lidx); });
-		return ret;
-	}
-
 	void set_speed(double target)
 	{
 		std::string v = (stringfmt() << target).str();
@@ -271,21 +264,21 @@ namespace
 			lsnes_set.set("targetfps", v);
 	}
 
+	class autohold_menu;
+
 	class controller_autohold_menu : public wxMenu
 	{
 	public:
-		controller_autohold_menu(unsigned lid);
-		void change_type();
-		bool is_dummy();
+		controller_autohold_menu(autohold_menu& amenu, unsigned port, unsigned controller);
 		void on_select(wxCommandEvent& e);
 		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 	private:
-		unsigned our_lid;
-		std::pair<int, int> our_pid;
-		std::vector<wxMenuItem*> entries;
-		unsigned enabled_entries;
-		std::map<unsigned, int> pidxs;
-		std::vector<bool> autoholds;
+		unsigned our_port;
+		unsigned our_controller;
+		std::map<unsigned, wxMenuItem*> entries;
+		std::map<unsigned, unsigned> order;
+		std::map<unsigned, bool> autoholds;
+		std::map<int, unsigned> by_id;
 	};
 
 	class autohold_menu : public wxMenu
@@ -295,9 +288,11 @@ namespace
 		void reconfigure();
 		void on_select(wxCommandEvent& e);
 		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
+		int allocate_wxid() { return next_wxid++; }
 	private:
-		std::vector<controller_autohold_menu*> menus;
-		std::vector<wxMenuItem*> entries;
+		std::map<unsigned, controller_autohold_menu*> menus;
+		std::map<unsigned, wxMenuItem*> entries;
+		int next_wxid;
 	};
 
 	class sound_select_menu : public wxMenu
@@ -330,101 +325,47 @@ namespace
 		autohold_menu* ahmenu;
 	};
 
-	controller_autohold_menu::controller_autohold_menu(unsigned lid)
+	controller_autohold_menu::controller_autohold_menu(autohold_menu& amenu, unsigned port, unsigned controller)
 	{
-		auto limits = get_core_logical_controller_limits();
-		entries.resize(limits.second);
+		our_port = port;
+		our_controller = controller;
 		modal_pause_holder hld;
-		our_lid = lid;
-		for(unsigned i = 0; i < limits.second; i++) {
-			int id = wxID_AUTOHOLD_FIRST + limits.second * lid + i;
-			entries[i] = AppendCheckItem(id, towxstring(get_logical_button_name(i)));
+		const port_type& pt = controls.get_blank().get_port_type(port);
+		const port_controller& ctrl = *pt.controller_info->controllers[controller];
+		unsigned j = 0;
+		for(unsigned i = 0; i < ctrl.button_count; i++) {
+			if(ctrl.buttons[i]->is_analog())
+				continue;
+			int id = amenu.allocate_wxid();
+			by_id[id] = i;
+			order[i] = j;
+			autoholds[j] = controls.autohold2(our_port, our_controller, i);
+			entries[j] = AppendCheckItem(id, towxstring(ctrl.buttons[i]->name));
+			entries[j]->Check(autoholds[i]);
+			j++;
 		}
-		change_type();
-	}
-
-	void controller_autohold_menu::change_type()
-	{
-		enabled_entries = 0;
-		our_pid = controls.lcid_to_pcid(our_lid);
-		//We have modal lock.
-		auto limits = get_core_logical_controller_limits();
-		this->autoholds.resize(limits.second);
-		for(unsigned i = 0; i < limits.second; i++) {
-			this->pidxs[i] = -1;
-			if(this->our_pid.first >= 0)
-				this->pidxs[i] = controls.button_id(this->our_pid.first, this->our_pid.second,
-					i);
-			if(this->pidxs[i] >= 0)
-				this->autoholds[i] = controls.autohold2(this->our_pid.first, this->our_pid.second,
-					this->pidxs[i]);
-			else
-				this->autoholds[i] = false;
-		}
-		for(auto i : pidxs) {
-			if(i.second >= 0) {
-				entries[i.first]->Check(autoholds[i.first]);
-				entries[i.first]->Enable();
-				enabled_entries++;
-			} else {
-				entries[i.first]->Check(false);
-				entries[i.first]->Enable(false);
-			}
-		}
-	}
-
-	bool controller_autohold_menu::is_dummy()
-	{
-		return !enabled_entries;
 	}
 
 	void controller_autohold_menu::on_select(wxCommandEvent& e)
 	{
-		auto limits = get_core_logical_controller_limits();
 		int x = e.GetId();
-		if(x < wxID_AUTOHOLD_FIRST + our_lid * limits.second || x >= wxID_AUTOHOLD_FIRST * 
-			(our_lid + 1) * limits.second) {
+		if(!by_id.count(x))
 			return;
-		}
-		unsigned lidx = (x - wxID_AUTOHOLD_FIRST) % limits.second;
 		modal_pause_holder hld;
-		std::pair<int, int> pid = controls.lcid_to_pcid(our_lid);
-		if(pid.first < 0 || !entries[lidx])
-			return;
-		int pidx = controls.button_id(pid.first, pid.second, lidx);
-		if(pidx < 0)
-			return;
-		//Autohold change on pid=pid, ctrlindx=idx, state
-		bool newstate = entries[lidx]->IsChecked();
-		UI_change_autohold(pid.first, pid.second, pidx, newstate);
+		bool newstate = entries[order[by_id[x]]]->IsChecked();
+		UI_change_autohold(our_port, our_controller, by_id[x], newstate);
 	}
 
 	void controller_autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
 	{
 		modal_pause_holder hld;
-		if(our_pid.first < 0 || port != our_pid.first || controller != our_pid.second)
+		if(port != our_port || controller != our_controller || !order.count(ctrlnum))
 			return;
-		auto limits = get_core_logical_controller_limits();
-		for(unsigned i = 0; i < limits.second; i++) {
-			if(pidxs[i] < 0 || static_cast<unsigned>(pidxs[i]) != ctrlnum)
-				continue;
-			entries[i]->Check(newstate);
-		}
+		entries[order[ctrlnum]]->Check(newstate);
 	}
-
 
 	autohold_menu::autohold_menu(wxwin_mainwindow* win)
 	{
-		auto limits = get_core_logical_controller_limits();
-		entries.resize(limits.first);
-		menus.resize(limits.first);
-		for(unsigned i = 0; i < limits.first; i++) {
-			std::ostringstream str;
-			str << "Controller #&" << (i + 1);
-			menus[i] = new controller_autohold_menu(i);
-			entries[i] = AppendSubMenu(menus[i], towxstring(str.str()));
-			entries[i]->Enable(!menus[i]->is_dummy());
-		}
 		win->Connect(wxID_AUTOHOLD_FIRST, wxID_AUTOHOLD_LAST, wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(autohold_menu::on_select), NULL, this);
 		reconfigure();
@@ -433,24 +374,36 @@ namespace
 	void autohold_menu::reconfigure()
 	{
 		modal_pause_holder hld;
-		auto limits = get_core_logical_controller_limits();
-		for(unsigned i = 0; i < limits.first; i++) {
-			menus[i]->change_type();
-			entries[i]->Enable(!menus[i]->is_dummy());
+		next_wxid = wxID_AUTOHOLD_FIRST;
+		for(unsigned i = 0; i < menus.size(); i++)
+			Destroy(entries[i]);
+		std::map<std::string, unsigned> classnum;
+		for(unsigned i = 0;; i++) {
+			auto pcid = controls.lcid_to_pcid(i);
+			if(pcid.first < 0)
+				break;
+			const port_type& pt = controls.get_blank().get_port_type(pcid.first);
+			const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
+			if(!classnum.count(ctrl.cclass))
+				classnum[ctrl.cclass] = 1;
+			else
+				classnum[ctrl.cclass]++;
+			std::string name = (stringfmt() << ctrl.cclass << " #" << classnum[ctrl.cclass]).str();
+			menus[i] = new controller_autohold_menu(*this, pcid.first, pcid.second);
+			entries[i] = AppendSubMenu(menus[i], towxstring(name));
+			
 		}
 	}
 
 	void autohold_menu::on_select(wxCommandEvent& e)
 	{
-		auto limits = get_core_logical_controller_limits();
-		for(unsigned i = 0; i < limits.first; i++)
+		for(unsigned i = 0; i < menus.size(); i++)
 			menus[i]->on_select(e);
 	}
 
 	void autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
 	{
-		auto limits = get_core_logical_controller_limits();
-		for(unsigned i = 0; i < limits.first; i++)
+		for(unsigned i = 0; i < menus.size(); i++)
 			menus[i]->update(port, controller, ctrlnum, newstate);
 	}
 

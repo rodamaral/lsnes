@@ -12,74 +12,199 @@
 
 #include <map>
 #include <sstream>
+#include <string>
 
 namespace
 {
-	std::map<std::string, std::pair<unsigned, unsigned>> buttonmap;
+	struct controller_bind
+	{
+		std::string cclass;
+		unsigned number;
+		std::string name;
+		bool is_axis;
+		bool xrel;
+		bool yrel;
+		unsigned control1;
+		unsigned control2;	//Axis only, UINT_MAX if not valid.
+	};
+
+	struct active_bind
+	{
+		unsigned port;
+		unsigned controller;
+		struct controller_bind bind;
+	};
+
+	struct controller_triple
+	{
+		std::string cclass;
+		unsigned port;
+		unsigned controller;
+		bool operator<(const struct controller_triple& t) const throw()
+		{
+			if(cclass < t.cclass) return true;
+			if(cclass > t.cclass) return false;
+			if(port < t.port) return true;
+			if(port > t.port) return false;
+			if(controller < t.controller) return true;
+			if(controller > t.controller) return false;
+			return false;
+		}
+		bool operator==(const struct controller_triple& t) const throw()
+		{
+			return (cclass == t.cclass && port == t.port && controller == t.controller);
+		}
+	};
+
+	std::map<std::string, unsigned> allocated_controllers;
+	std::map<std::string, controller_bind> all_buttons;
+	std::map<controller_triple, unsigned> assignments;
+	std::map<std::string, active_bind> active_buttons;
+
+	void process_controller(port_controller& controller, unsigned number)
+	{
+		unsigned analog_num = 1;
+		bool multi_analog = (controller.analog_actions() > 1);
+		//This controller might be processed already, but perhaps only partially.
+		for(unsigned i = 0; i < controller.button_count; i++) {
+			if(controller.buttons[i]->is_analog())
+				continue;
+			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
+				<< controller.buttons[i]->name).str();
+			controller_bind b;
+			b.cclass = controller.cclass;
+			b.number = number;
+			b.name = controller.buttons[i]->name;
+			b.is_axis = false;
+			b.xrel = b.yrel = false;
+			b.control1 = i;
+			b.control2 = std::numeric_limits<unsigned>::max();
+			if(!all_buttons.count(name))
+				all_buttons[name] = b;
+		}
+		for(unsigned i = 0; i < controller.analog_actions(); i++) {
+			auto g = controller.analog_action(i);
+			auto raxis = port_controller_button::TYPE_RAXIS;
+			std::string name;
+			controller_bind b;
+			if(multi_analog)
+				b.name = (stringfmt() << "analog" << analog_num).str();
+			else
+				b.name = (stringfmt() << "analog").str();
+			name = (stringfmt() << controller.cclass << "-" << number << "-" << b.name).str();
+			analog_num++;
+			b.cclass = controller.cclass;
+			b.number = number;
+			b.is_axis = true;
+			b.xrel = (g.first < controller.button_count) &&
+				(controller.buttons[g.first]->type == raxis);
+			b.yrel = (g.second < controller.button_count) &&
+				(controller.buttons[g.second]->type == raxis);
+			b.control1 = g.first;
+			b.control2 = g.second;
+			if(!all_buttons.count(name) ||
+				(all_buttons[name].control2 == std::numeric_limits<unsigned>::max()) &&
+				(b.control2 < std::numeric_limits<unsigned>::max()))
+				all_buttons[name] = b;
+		}
+	}
+
+	void process_controller(port_controller& controller, unsigned port, unsigned number_in_port)
+	{
+		controller_triple key;
+		key.cclass = controller.cclass;
+		key.port = port;
+		key.controller = number_in_port;
+		unsigned n;
+		if(!assignments.count(key)) {
+			if(allocated_controllers.count(controller.cclass)) 
+				++(allocated_controllers[controller.cclass]);
+			else
+				allocated_controllers[controller.cclass] = 1;
+			assignments[key] = n = allocated_controllers[controller.cclass];
+		} else
+			n = assignments[key];
+		process_controller(controller, n);
+	}
+
+	void process_port(unsigned port, port_type& ptype)
+	{
+		//What makes this nasty: Separate ports are always processed, but the same controllers can come
+		//multiple times, including with partial reprocessing.
+		std::map<std::string, unsigned> counts;
+		for(unsigned i = 0; i < ptype.controller_info->controller_count; i++) {
+			unsigned n;
+			if(!counts.count(ptype.controller_info->controllers[i]->cclass))
+				counts[ptype.controller_info->controllers[i]->cclass] = 1;
+			else
+				counts[ptype.controller_info->controllers[i]->cclass]++;
+			n = counts[ptype.controller_info->controllers[i]->cclass];
+			process_controller(*ptype.controller_info->controllers[i], port, n);
+		}
+	}
 
 	void init_buttonmap()
 	{
 		static int done = 0;
 		if(done)
 			return;
-		auto lim = get_core_logical_controller_limits();
-		for(unsigned i = 0; i < lim.first; i++)
-			for(unsigned j = 0; j < lim.second; j++) {
-				buttonmap[(stringfmt() << (i + 1) << get_logical_button_name(j)).str()] =
-					std::make_pair(i, j);
+		process_port(0, core_portgroup.get_default_type(0));
+		for(unsigned i = 0; i < core_userports; i++) {
+			for(auto j : core_portgroup.get_types()) {
+				if(!j->legal(i))
+					continue;
+				process_port(i + 1, *j);
 			}
+		}
 		done = 1;
 	}
 
 	//Do button action.
-	void do_button_action(unsigned ui_id, unsigned button, short newstate, int mode)
+	void do_button_action(const std::string& name, short newstate, int mode)
 	{
-		auto x = controls.lcid_to_pcid(ui_id);
-		if(x.first < 0) {
-			messages << "No such controller #" << (ui_id + 1) << std::endl;
+		if(!active_buttons.count(name)) {
+			messages << "No such button " << name << std::endl;
 			return;
 		}
-		int bid = controls.button_id(x.first, x.second, button);
-		if(bid < 0) {
-			messages << "Invalid button for controller type" << std::endl;
+		auto x = active_buttons[name];
+		if(x.bind.is_axis)
 			return;
-		}
 		if(mode == 1) {
 			//Autohold.
-			controls.autohold2(x.first, x.second, bid, controls.autohold2(x.first, x.second, bid) ^
-				newstate);
-			information_dispatch::do_autohold_update(x.first, x.second, bid, controls.autohold2(x.first,
-				x.second, bid));
+			controls.autohold2(x.port, x.controller, x.bind.control1, controls.autohold2(
+				x.port, x.controller, x.bind.control1) ^ newstate);
+			information_dispatch::do_autohold_update(x.port, x.controller, x.bind.control1,
+				controls.autohold2(x.port, x.controller, x.bind.control1));
 		} else if(mode == 2) {
 			//Framehold.
-			bool nstate = controls.framehold2(x.first, x.second, bid) ^ newstate;
-			controls.framehold2(x.first, x.second, bid, nstate);
+			bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
+			controls.framehold2(x.port, x.controller, x.bind.control1, nstate);
 			if(nstate)
-				messages << "Holding " << (ui_id + 1) << get_logical_button_name(button)
-					<< " for the next frame" << std::endl;
+				messages << "Holding " << name << " for the next frame" << std::endl;
 			else
-				messages << "Not holding " << (ui_id + 1) << get_logical_button_name(button)
-					<< " for the next frame" << std::endl;
+				messages << "Not holding " << name << " for the next frame" << std::endl;
 		} else
-			controls.button2(x.first, x.second, bid, newstate);
+			controls.button2(x.port, x.controller, x.bind.control1, newstate);
 	}
 
-	void send_analog(unsigned lcid, int32_t x, int32_t y)
+	void send_analog(const std::string& name, int32_t x, int32_t y)
 	{
-		auto pcid = controls.lcid_to_pcid(lcid);
-		if(pcid.first < 0) {
-			messages << "Controller #" << (lcid + 1) << " not present" << std::endl;
+		if(!active_buttons.count(name)) {
+			messages << "No such action " << name << std::endl;
 			return;
 		}
-		if(controls.is_analog(pcid.first, pcid.second) < 0) {
-			messages << "Controller #" << (lcid + 1) << " is not analog" << std::endl;
+		auto z = active_buttons[name];
+		if(!z.bind.is_axis) {
+			std::cerr << name << " is not a axis." << std::endl;
 			return;
 		}
 		auto g2 = get_framebuffer_size();
-		if(controls.is_mouse(pcid.first, pcid.second)) {
-			controls.analog(pcid.first, pcid.second, x - g2.first / 2, y - g2.second / 2);
-		} else
-			controls.analog(pcid.first, pcid.second, x / 2 , y / 2);
+		x = z.bind.xrel ? (x - g2.first / 2) : (x / 2);
+		y = z.bind.yrel ? (y - g2.second / 2) : (y / 2);
+		if(z.bind.control1 < std::numeric_limits<unsigned>::max())
+			controls.analog(z.port, z.controller, z.bind.control1, x);
+		if(z.bind.control2 < std::numeric_limits<unsigned>::max())
+			controls.analog(z.port, z.controller, z.bind.control2, y);
 	}
 
 	function_ptr_command<const std::string&> autofire(lsnes_cmd, "autofire", "Set autofire pattern",
@@ -104,18 +229,12 @@ namespace
 							button = fpattern.substr(0, split);
 							rest = fpattern.substr(split + 1);
 						}
-						if(!buttonmap.count(button))
+						if(!active_buttons.count(button))
 							(stringfmt() << "Invalid button '" << button << "'").throwex();
-						auto g = buttonmap[button];
-						auto x = controls.lcid_to_pcid(g.first);
-						if(x.first < 0)
-							(stringfmt() << "No such controller #" << (g.first + 1)).
-								throwex();
-						int bid = controls.button_id(x.first, x.second, g.second);
-						if(bid < 0)
-							(stringfmt() << "Invalid button for controller type").
-								throwex();
-						c.axis3(x.first, x.second, bid, true);
+						auto g = active_buttons[button];
+						if(g.bind.is_axis)
+							(stringfmt() << "Invalid button '" << button << "'").throwex();
+						c.axis3(g.port, g.controller, g.bind.control1, true);
 						fpattern = rest;
 					}
 					new_autofire_pattern.push_back(c);
@@ -124,138 +243,133 @@ namespace
 			controls.autofire(new_autofire_pattern);
 		});
 
-	class button_action : public command
+	void do_action(const std::string& name, short state, int mode)
 	{
-	public:
-		button_action(const std::string& cmd, int _type, unsigned _controller, std::string _button)
-			throw(std::bad_alloc)
-			: command(lsnes_cmd, cmd)
-		{
-			commandn = cmd;
-			type = _type;
-			controller = _controller;
-			button = _button;
-		}
-		~button_action() throw() {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
-			init_buttonmap();
-			if(!buttonmap.count(button))
-				return;
-			auto i = buttonmap[button];
-			if(type == 0)
-				do_button_action(i.first, i.second, 1, 0);
-			else if(type == 1)
-				do_button_action(i.first, i.second, 0, 0);
-			else if(type == 2)
-				do_button_action(i.first, i.second, 1, 1);
-			else if(type == 3)
-				do_button_action(i.first, i.second, 1, 2);
-			update_movie_state();
-			information_dispatch::do_status_update();
-		}
-		std::string get_short_help() throw(std::bad_alloc)
-		{
-			return "Press/Unpress button";
-		}
-		std::string get_long_help() throw(std::bad_alloc)
-		{
-			return "Syntax: " + commandn + "\n"
-				"Presses/Unpresses button\n";
-		}
-		std::string commandn;
-		unsigned controller;
-		int type;
-		std::string button;
-	};
-
-	class analog_action : public command
-	{
-	public:
-		analog_action(const std::string& cmd, unsigned _controller)
-			throw(std::bad_alloc)
-			: command(lsnes_cmd, cmd)
-		{
-			controller = _controller;
-		}
-		~analog_action() throw() {}
-		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(args != "")
-				throw std::runtime_error("This command does not take parameters");
+		if(mode < 3)
+			do_button_action(name, state, mode);
+		else if(mode == 3) {
 			keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
 			keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
 			if(!mouse_x || !mouse_y) {
 				messages << "Controller analog function not available without mouse" << std::endl;
 				return;
 			}
-			send_analog(controller, mouse_x->get_state(), mouse_y->get_state());
+			send_analog(name, mouse_x->get_state(), mouse_y->get_state());
 		}
-	private:
-		unsigned controller;
-	};
+	}
+
+	function_ptr_command<const std::string&> button_p(lsnes_cmd, "+controller", "Press a button",
+		"Syntax: +button <button>...\nPress a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_action(a, 1, 0);
+		});
+
+	function_ptr_command<const std::string&> button_r(lsnes_cmd, "-controller", "Release a button",
+		"Syntax: -button <button>...\nRelease a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_action(a, 0, 0);
+		});
+
+	function_ptr_command<const std::string&> button_h(lsnes_cmd, "hold-controller", "Autohold a button",
+		"Syntax: hold-button <button>...\nAutohold a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_action(a, 1, 1);
+		});
+
+	function_ptr_command<const std::string&> button_t(lsnes_cmd, "type-controller", "Type a button",
+		"Syntax: type-button <button>...\nType a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_action(a, 1, 2);
+		});
+
+	function_ptr_command<const std::string&> button_d(lsnes_cmd, "designate-position", "Set postion",
+		"Syntax: designate-position <button>...\nDesignate position for an axis\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_action(a, 0, 3);
+		});
 
 	class button_action_helper
 	{
 	public:
 		button_action_helper()
 		{
-			auto lim = get_core_logical_controller_limits();
-			for(size_t i = 0; i < lim.second; ++i)
-				for(int j = 0; j < 4; ++j)
-					for(unsigned k = 0; k < lim.first; ++k) {
-						stringfmt x, y, expx;
-						switch(j) {
-						case 0:
-							x << "+controller";
-							break;
-						case 1:
-							x << "-controller";
-							break;
-						case 2:
-							x << "controllerh";
-							break;
-						case 3:
-							x << "controllerf";
-							break;
-						};
-						x << (k + 1) << get_logical_button_name(i);
-						y << (k + 1) << get_logical_button_name(i);
-						expx << "Controller‣" << (k + 1) << "‣" << get_logical_button_name(i);
-						our_commands.insert(new button_action(x.str(), j, k, y.str()));
-						if(j == 0)
-							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
-								expx.str()));
-						if(j == 2)
-							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
-								expx.str() + " (hold)"));
-						if(j == 3)
-							our_icommands.insert(new controller_key(lsnes_mapper, x.str(),
-								expx.str() + " (typed)"));
-					}
-			if(get_core_need_analog())
-				for(unsigned k = 0; k < lim.first; ++k) {
-					stringfmt x, expx;
-					x << "controller" << (k + 1) << "analog";
-					expx << "Controller‣" << (k + 1) << "‣Analog function";
-					our_commands.insert(new analog_action(x.str(), k));
-					our_icommands.insert(new controller_key(lsnes_mapper, x.str(), expx.str()));
-				}
+			init_buttonmap();
+			for(auto i : all_buttons) {
+				if(!i.second.is_axis) {
+					our.insert(new controller_key(lsnes_mapper, (stringfmt()
+						<< "+controller " << i.first).str(), (stringfmt()
+						<< "Controller‣" << i.second.cclass
+						<< "-" << i.second.number << "‣" << i.second.name).str()));
+					our.insert(new controller_key(lsnes_mapper, (stringfmt()
+						<< "hold-controller " << i.first).str(), (stringfmt()
+						<< "Controller‣" << i.second.cclass
+						<< "-" << i.second.number << "‣" << i.second.name
+						<< " (hold)").str()));
+					our.insert(new controller_key(lsnes_mapper, (stringfmt()
+						<< "type-controller " << i.first).str(), (stringfmt()
+						<< "Controller‣" << i.second.cclass
+						<< "-" << i.second.number << "‣" << i.second.name
+						<< " (type)").str()));
+				} else
+					our.insert(new controller_key(lsnes_mapper, (stringfmt()
+						<< "designate-position " << i.first).str(), (stringfmt()
+						<< "Controller‣" << i.second.cclass
+						<< "-" << i.second.number << "‣" << i.second.name).str()));
+			}
 		}
 		~button_action_helper()
 		{
-			for(auto i : our_commands)
+			for(auto i : our)
 				delete i;
-			for(auto i : our_icommands)
-				delete i;
-			our_commands.clear();
-			our_icommands.clear();
+			our.clear();
 		}
-		std::set<command*> our_commands;
-		std::set<controller_key*> our_icommands;
+		std::set<controller_key*> our;
 	} bah;
+}
+
+void reread_active_buttons()
+{
+	std::map<std::string, unsigned> classnum;
+	active_buttons.clear();
+	for(unsigned i = 0;; i++) {
+		auto x = controls.lcid_to_pcid(i);
+		if(x.first < 0)
+			break;
+		const port_type& pt = controls.get_blank().get_port_type(x.first);
+		const port_controller& ctrl = *pt.controller_info->controllers[x.second];
+		if(!classnum.count(ctrl.cclass))
+			classnum[ctrl.cclass] = 1;
+		else
+			classnum[ctrl.cclass]++;
+		for(unsigned j = 0; j < ctrl.button_count; j++) {
+			std::string name = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
+				<< ctrl.buttons[j]->name).str();
+			if(all_buttons.count(name)) {
+				active_bind a;
+				a.port = x.first;
+				a.controller = x.second;
+				a.bind = all_buttons[name];
+				active_buttons[name] = a;
+			}
+		}
+		bool multi = (ctrl.analog_actions() > 1);
+		for(unsigned j = 0; j < ctrl.analog_actions(); j++) {
+			std::string name;
+			if(multi)
+				name = (stringfmt() << "analog" << (j + 1)).str();
+			else
+				name = "analog";
+			std::string cname = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
+				<< name).str();
+			if(all_buttons.count(cname)) {
+				active_bind a;
+				a.port = x.first;
+				a.controller = x.second;
+				a.bind = all_buttons[cname];
+				active_buttons[cname] = a;
+			}
+		}
+	}
 }
 
 controller_state controls;

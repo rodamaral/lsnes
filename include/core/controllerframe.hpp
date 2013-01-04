@@ -49,20 +49,6 @@ public:
  */
 	std::pair<int, int> legacy_pcid_to_pair(unsigned pcid) throw();
 /**
- * Convert acid (Analog Controller ID) into pcid.
- *
- * Parameter acid: The analog controller ID.
- * Return: The physical controller ID, or <-1,-1> if no such controller exists.
- */
-	std::pair<int, int> acid_to_pcid(unsigned acid) throw();
-/**
- * Is given acid a mouse?
- *
- * Parameter acid: The analog controller ID.
- * Returns: True if given acid is mouse, false otherwise.
- */
-	bool acid_is_mouse(unsigned acid) throw();
-/**
  * Is given pcid present?
  *
  * Parameter port: The port.
@@ -113,10 +99,10 @@ public:
  *
  * Parameter port: The port to send input to.
  * Parameter controller: The controller to send input to.
- * Parameter x: The x coordinate to send.
- * Parameter y: The x coordinate to send.
+ * Parameter control: The control to send.
+ * Parameter x: The coordinate to send.
  */
-	void analog(unsigned port, unsigned controller, int x, int y) throw();
+	void analog(unsigned port, unsigned controller, unsigned control, short x) throw();
 /**
  * Manipulate autohold.
  *
@@ -183,30 +169,11 @@ public:
  */
 	void autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc);
 /**
- * Get physical button ID for physical controller ID and logical button ID.
- *
- * Parameter port: The port.
- * Parameter controller: The controller.
- * Parameter lbid: Logical button id.
- * Returns: The physical button id, or -1 if no such button.
- */
-	int button_id(unsigned port, unsigned controller, unsigned lbid) throw();
-/**
  * TODO: Document.
  */
 	bool is_present(unsigned port, unsigned controller) throw();
-/**
- * TODO: Document.
- */
-	bool is_analog(unsigned port, unsigned controller) throw();
-/**
- * TODO: Document.
- */
-	bool is_mouse(unsigned port, unsigned controller) throw();
 private:
 	const port_type_set* types;
-	std::pair<int, int> analog_indices[MAX_ANALOG];
-	bool analog_mouse[MAX_ANALOG];
 	controller_frame _input;
 	controller_frame _autohold;
 	controller_frame _framehold;

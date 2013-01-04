@@ -33,11 +33,10 @@ namespace
 			return 1;
 		}
 		const port_type& p = f.get_port_type(port);
-		const char* name = p.controller_name(controller);
-		if(!name)
+		if(controller >= p.controller_info->controller_count)
 			L.pushnil();
 		else
-			L.pushstring(name);
+			L.pushstring(p.controller_info->controllers[controller]->type);
 		return 1;
 	}
 
@@ -49,9 +48,9 @@ namespace
 		if(port >= lua_input_controllerdata->get_port_count())
 			return 0;
 		const port_type& pt = lua_input_controllerdata->get_port_type(port);
-		if(controller >= pt.controllers)
+		if(controller >= pt.controller_info->controller_count)
 			return 0;
-		for(unsigned i = 0; i < pt.used_indices(controller); i++) {
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++) {
 			val = (base >> i) & 1;
 			L.get_numeric_argument<short>(i + base, val, fname);
 			lua_input_controllerdata->axis3(port, controller, i, val);
@@ -66,16 +65,16 @@ namespace
 		if(port >= lua_input_controllerdata->get_port_count())
 			return 0;
 		const port_type& pt = lua_input_controllerdata->get_port_type(port);
-		if(controller >= pt.controllers)
+		if(controller >= pt.controller_info->controller_count)
 			return 0;
 		uint64_t fret = 0;
-		for(unsigned i = 0; i < pt.used_indices(controller); i++)
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++)
 			if(lua_input_controllerdata->axis3(port, controller, i))
 				fret |= (1ULL << i);
 		L.pushnumber(fret);
-		for(unsigned i = 0; i < pt.used_indices(controller); i++)
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++)
 			L.pushnumber(lua_input_controllerdata->axis3(port, controller, i));
-		return pt.used_indices(controller) + 1;
+		return pt.controller_info->controllers[controller]->button_count + 1;
 	}
 
 	function_ptr_luafun iset(LS, "input.set", [](lua_state& L, const std::string& fname) -> int {
@@ -216,22 +215,15 @@ namespace
 			return 0;
 		}
 		L.newtable();
-		unsigned lcnt = get_core_logical_controller_limits().second;
+		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
+		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
+		unsigned lcnt = ctrl.button_count;
 		for(unsigned i = 0; i < lcnt; i++) {
-			std::string n = get_logical_button_name(i);
-			int y = lua_input_controllerdata->button_id(pcid.first, pcid.second, i);
-			if(y < 0)
-				continue;
-			L.pushstring(n.c_str());
-			L.pushboolean(lua_input_controllerdata->axis3(pcid.first, pcid.second, y) != 0);
-			L.settable(-3);
-		}
-		if(lua_input_controllerdata->is_analog(pcid.first, pcid.second)) {
-			L.pushstring("xaxis");
-			L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, 0));
-			L.settable(-3);
-			L.pushstring("yaxis");
-			L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, 1));
+			L.pushstring(ctrl.buttons[i]->name);
+			if(ctrl.buttons[i]->is_analog())
+				L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, i));
+			else
+				L.pushboolean(lua_input_controllerdata->axis3(pcid.first, pcid.second, i) != 0);
 			L.settable(-3);
 		}
 		return 1;
@@ -252,28 +244,18 @@ namespace
 			L.error();
 			return 0;
 		}
-		unsigned lcnt = get_core_logical_controller_limits().second;
+		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
+		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
+		unsigned lcnt = ctrl.button_count;
 		for(unsigned i = 0; i < lcnt; i++) {
-			std::string n = get_logical_button_name(i);
-			int y = lua_input_controllerdata->button_id(pcid.first, pcid.second, i);
-			if(y < 0)
-				continue;
-			L.pushstring(n.c_str());
+			L.pushstring(ctrl.buttons[i]->name);
 			L.gettable(2);
-			int s = L.toboolean(-1) ? 1 : 0;
-			lua_input_controllerdata->axis3(pcid.first, pcid.second, y, s);
-			L.pop(1);
-		}
-		if(lua_input_controllerdata->is_analog(pcid.first, pcid.second)) {
-			L.pushstring("xaxis");
-			L.gettable(2);
-			int s = L.tonumber(-1);
-			lua_input_controllerdata->axis3(pcid.first, pcid.second, 0, s);
-			L.pop(1);
-			L.pushstring("yaxis");
-			L.gettable(2);
-			s = L.tonumber(-1);
-			lua_input_controllerdata->axis3(pcid.first, pcid.second, 1, s);
+			int s;
+			if(ctrl.buttons[i]->is_analog())
+				s = L.tonumber(-1);
+			else
+				s = L.toboolean(-1) ? 1 : 0;
+			lua_input_controllerdata->axis3(pcid.first, pcid.second, i, s);
 			L.pop(1);
 		}
 		return 0;

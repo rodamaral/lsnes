@@ -3,6 +3,7 @@
 
 #include "controllerframe.hpp"
 
+void reread_active_buttons();
 extern controller_state controls;
 
 #endif

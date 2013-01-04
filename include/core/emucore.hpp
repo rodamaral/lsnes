@@ -18,8 +18,6 @@ uint32_t get_snes_cpu_rate();
 uint32_t get_snes_apu_rate();
 //Get the core identifier.
 std::string get_core_identifier();
-//Get maximum number of logical controllers and buttons.
-std::pair<unsigned, unsigned> get_core_logical_controller_limits();
 //Needs analog action?
 bool get_core_need_analog();
 //Get the default controller type for specified port.
@@ -76,15 +74,6 @@ extern unsigned core_userports;
 extern const bool core_supports_reset;
 //Core supports delayed resets.
 extern const bool core_supports_dreset;
-
-/**
- * Get name of logical button.
- *
- * Parameter lbid: ID of logical button.
- * Returns: The name of button.
- * Throws std::bad_alloc: Not enough memory.
- */
-std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc);
 
 //Callbacks.
 struct emucore_callbacks

@@ -38,6 +38,11 @@ namespace
 	const char* invalid_chars = "";
 	const char* basecontrol_chars = "F";
 
+	port_controller_button* null_buttons[] = {};
+	port_controller simple_controller = {"(system)", "system", 0, null_buttons};
+	port_controller* simple_controllers[] = {&simple_controller};
+	port_controller_set simple_port = {1, simple_controllers};
+
 	struct port_type_group invalid_group;
 	struct porttype_invalid : public port_type
 	{
@@ -49,12 +54,9 @@ namespace
 			serialize = generic_port_serialize<0, 0, 0, &invalid_chars>;
 			deserialize = generic_port_deserialize<0, 0, 0>;
 			legal = generic_port_legal<0xFFFFFFFFU>;
-			deviceflags = generic_port_deviceflags<0, 0>;
+			controller_info = &simple_port;
 			used_indices = generic_used_indices<0, 0>;
-			controller_name = invalid_controller_name;
-			button_id = button_id_illegal;
 			construct_map = invalid_construct_map;
-			controllers = 0;
 			set_core_controller = set_core_controller_illegal;
 		}
 	};
@@ -69,12 +71,9 @@ namespace
 			serialize = generic_port_serialize<1, 0, 1, &basecontrol_chars>;
 			deserialize = generic_port_deserialize<1, 0, 1>;
 			legal = generic_port_legal<0>;
-			deviceflags = generic_port_deviceflags<0, 0>;
-			button_id = button_id_illegal;
+			controller_info = &simple_port;
 			construct_map = invalid_construct_map;
 			used_indices = generic_used_indices<1, 1>;
-			controller_name = invalid_controller_name;
-			controllers = 1;
 			set_core_controller = set_core_controller_illegal;
 		}
 		static port_type& get()
@@ -209,17 +208,7 @@ port_type::~port_type() throw()
 
 bool port_type::is_present(unsigned controller) const throw()
 {
-	return (deviceflags(controller) & 1) != 0;
-}
-
-bool port_type::is_analog(unsigned controller) const throw()
-{
-	return (deviceflags(controller) & 6) != 0;
-}
-
-bool port_type::is_mouse(unsigned controller) const throw()
-{
-	return (deviceflags(controller) & 4) != 0;
+	return controller_info->controller_count > controller;
 }
 
 namespace
@@ -292,12 +281,13 @@ port_type_set::port_type_set(std::vector<class port_type*> types)
 	//Count maximum number of controller indices to determine the controller multiplier.
 	controller_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
-		for(unsigned j = 0; j < types[i]->controllers; j++)
+		for(unsigned j = 0; j < types[i]->controller_info->controller_count; j++)
 			controller_multiplier = max(controller_multiplier, (size_t)types[i]->used_indices(j));
 	//Count maximum number of controllers to determine the port multiplier.
 	port_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
-		port_multiplier = max(port_multiplier, controller_multiplier * (size_t)types[i]->controllers);
+		port_multiplier = max(port_multiplier, controller_multiplier *
+		(size_t)types[i]->controller_info->controller_count);
 	//Query core about maps.
 	struct port_index_map control_map = types[0]->construct_map(types);
 	//Allocate the per-port tables.
@@ -692,4 +682,29 @@ controller_frame::controller_frame() throw()
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
 	types = &dummytypes();
+}
+
+unsigned port_controller::analog_actions() const
+{
+	unsigned r = 0;
+	for(unsigned i = 0; i < button_count; i++)
+		if(buttons[i]->is_analog())
+			r++;
+	return (r + 1)/ 2;
+}
+
+std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
+{
+	unsigned x1 = std::numeric_limits<unsigned>::max();
+	unsigned x2 = std::numeric_limits<unsigned>::max();
+	unsigned r = 0;
+	for(unsigned i = 0; i < button_count; i++)
+		if(buttons[i]->is_analog()) {
+			if(r == 2 * k)
+				x1 = i;
+			if(r == 2 * k + 1)
+				x2 = i;
+			r++;
+		}
+	return std::make_pair(x1, x2);
 }

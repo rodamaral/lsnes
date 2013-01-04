@@ -237,6 +237,68 @@ private:
 class port_type_set;
 
 /**
+ * A button or axis on controller
+ */
+struct port_controller_button
+{
+/**
+ * Type of button
+ */
+	enum _type
+	{
+		TYPE_BUTTON,	//Button.
+		TYPE_AXIS,	//Axis.
+		TYPE_RAXIS	//Relative Axis (mouse).
+	};
+	enum _type type;
+	const char* name;
+/**
+ * Is analog?
+ */
+	bool is_analog() const throw() { return type != TYPE_BUTTON; }
+};
+
+/**
+ * A controller.
+ */
+struct port_controller
+{
+	const char* cclass;				//Controller class.
+	const char* type;				//Controller type.
+	unsigned button_count;				//Number of buttons / axes.
+	struct port_controller_button** buttons;	//Buttons.
+/**
+ * Count number of analog actions on this controller.
+ */
+	unsigned analog_actions() const;
+/**
+ * Get the axis numbers of specified analog action. If no valid axis exists, returns UINT_MAX.
+ */
+	std::pair<unsigned, unsigned> analog_action(unsigned i) const;
+/**
+ * Get specified button, or NULL if it doesn't exist.
+ */
+	struct port_controller_button* get(unsigned i);
+};
+
+/**
+ * A port controller set
+ */
+struct port_controller_set
+{
+	unsigned controller_count;			//Number of controllers.
+	struct port_controller** controllers;		//Controllers.
+/**
+ * Get specified controller, or NULL if it doesn't exist.
+ */
+	struct port_controller* get(unsigned c) throw();
+/**
+ * Get specified button, or NULL if it doesn't exist.
+ */
+	struct port_controller_button* get(unsigned c, unsigned i) throw();
+};
+
+/**
  * Type of controller.
  */
 class port_type
@@ -306,16 +368,6 @@ public:
  */
 	size_t (*deserialize)(unsigned char* buffer, const char* textbuf);
 /**
- * Get device flags for given index.
- *
- * Parameter idx: The index of controller.
- * Returns: The device flags.
- *	Bit 0: Present.
- *	Bit 1: Has absolute analog axes 0 and 1.
- *	Bit 2: Has relative analog axes 0 and 1.
- */
-	unsigned (*deviceflags)(unsigned idx);
-/**
  * Is the device legal for port?
  *
  * Parameter port: Port to query.
@@ -323,17 +375,9 @@ public:
  */
 	int (*legal)(unsigned port);
 /**
- * Number of controllers connected to this port.
+ * Controller info.
  */
-	unsigned controllers;
-/**
- * Translate controller and logical button id pair into physical button id.
- *
- * Parameter controller: The number of controller.
- * Parameter lbid: Logigal button ID.
- * Returns: The physical button ID, or -1 if no such button exists.
- */
-	int (*button_id)(unsigned controller, unsigned lbid);
+	port_controller_set* controller_info;
 /**
  * Set this controller as core controller.
  *
@@ -348,37 +392,12 @@ public:
  */
 	unsigned (*used_indices)(unsigned controller);
 /**
- * Get name of controller type on controller.
- *
- * Parameter controller: Number of controller.
- * Returns: The name of controller.
- */
-	const char* (*controller_name)(unsigned controller);
-/**
  * Construct index map. Only called for port0.
  *
  * Parameter types: The port types to construct the map for.
  * Returns: The index map.
  */
 	struct port_index_map (*construct_map)(std::vector<port_type*> types);
-/**
- * Does the controller exist?
- *
- * Parameter controller: Controller number.
- */
-	bool is_present(unsigned controller) const throw();
-/**
- * Does the controller have analog function?
- *
- * Parameter controller: Controller number.
- */
-	bool is_analog(unsigned controller) const throw();
-/**
- * Does the controller have mouse-type function?
- *
- * Parameter controller: Controller number.
- */
-	bool is_mouse(unsigned controller) const throw();
 /**
  * Human-readable name.
  */
@@ -395,6 +414,10 @@ public:
  * Id of the port.
  */
 	unsigned pt_id;
+/**
+ * Is given controller present?
+ */
+	bool is_present(unsigned controller) const throw();
 /**
  * Group this port is in.
  */
@@ -1064,44 +1087,6 @@ public:
 	bool operator!=(const controller_frame& obj) const throw()
 	{
 		return !(*this == obj);
-	}
-/**
- * Get physical button ID for physical controller ID and logical button ID.
- *
- * Parameter port: The port.
- * Parameter controller: The controller
- * Parameter lbid: Logical button id.
- * Returns: The physical button id, or -1 if no such button.
- */
-	int button_id(unsigned port, unsigned controller, unsigned lbid)
-	{
-		if(port >= types->ports())
-			return -1;
-		return types->port_type(port).button_id(controller, lbid);
-	}
-/**
- * Does the specified controller have analog function.
- *
- * Parameter port: The port.
- * Parameter controller: The controller
- */
-	bool is_analog(unsigned port, unsigned controller)
-	{
-		if(port >= types->ports())
-			return false;
-		return types->port_type(port).is_analog(controller);
-	}
-/**
- * Does the specified controller have mouse-type function.
- *
- * Parameter port: The port.
- * Parameter controller: The controller
- */
-	bool is_mouse(unsigned port, unsigned controller)
-	{
-		if(port >= types->ports())
-			return false;
-		return types->port_type(port).is_mouse(controller);
 	}
 /**
  * Get the port type set.

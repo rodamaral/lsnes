@@ -254,8 +254,25 @@ namespace
 	{
 		return c ? ((c == 1) ? "gamepad" : NULL) : "(system)";
 	}
-
 	struct port_index_map build_indices(std::vector<port_type*> types);
+
+	port_controller_button gamepad_A = {port_controller_button::TYPE_BUTTON, "A"};
+	port_controller_button gamepad_B = {port_controller_button::TYPE_BUTTON, "B"};
+	port_controller_button gamepad_s = {port_controller_button::TYPE_BUTTON, "select"};
+	port_controller_button gamepad_S = {port_controller_button::TYPE_BUTTON, "start"};
+	port_controller_button gamepad_u = {port_controller_button::TYPE_BUTTON, "up"};
+	port_controller_button gamepad_d = {port_controller_button::TYPE_BUTTON, "down"};
+	port_controller_button gamepad_l = {port_controller_button::TYPE_BUTTON, "left"};
+	port_controller_button gamepad_r = {port_controller_button::TYPE_BUTTON, "right"};
+	port_controller_button* gamepad_buttons[] = {
+		&gamepad_A, &gamepad_B, &gamepad_s, &gamepad_S,
+		&gamepad_r, &gamepad_l, &gamepad_u, &gamepad_d
+	};
+	port_controller_button* none_buttons[] = {};
+	port_controller system_controller = {"system", "system", 0, none_buttons};
+	port_controller gb_buttons = {"gb", "gamepad", 8, gamepad_buttons};
+	port_controller* gambatte_controllers[] = {&system_controller, &gb_buttons};
+	port_controller_set _controller_info = {2, gambatte_controllers};
 
 	struct porttype_system : public port_type
 	{
@@ -267,12 +284,9 @@ namespace
 			serialize = system_serialize;
 			deserialize = system_deserialize;
 			legal = generic_port_legal<0>;
-			deviceflags = generic_port_deviceflags<2, 1>;
-			button_id = get_button_id;
 			construct_map = build_indices;
 			used_indices = _used_indices;
-			controller_name = _controller_name;
-			controllers = 2;
+			controller_info = &_controller_info;
 			set_core_controller = set_core_controller_system;
 			core_portgroup.set_default(0, *this);
 		}
