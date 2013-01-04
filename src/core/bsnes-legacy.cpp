@@ -925,14 +925,6 @@ void core_install_handler()
 	SNES::system.init();
 }
 
-std::string get_core_default_port(unsigned port)
-{
-	if(port == 0)
-		return "gamepad";
-	else
-		return "none";
-}
-
 void core_uninstall_handler()
 {
 	SNES::interface = old;
@@ -946,11 +938,6 @@ uint32_t get_snes_cpu_rate()
 uint32_t get_snes_apu_rate()
 {
 	return SNES::system.apu_frequency();
-}
-
-bool get_core_need_analog()
-{
-	return true;
 }
 
 std::string get_core_identifier()

@@ -325,21 +325,6 @@ std::string get_core_identifier()
 	return "libgambatte "+gambatte::GB::version();
 }
 
-std::pair<unsigned, unsigned> get_core_logical_controller_limits()
-{
-	return std::make_pair(1, 8);
-}
-
-bool get_core_need_analog()
-{
-	return false;
-}
-
-std::string get_core_default_port(unsigned port)
-{
-	return (port == 0) ? "gamepad" : "none";
-}
-
 core_region& core_get_region()
 {
 	return region_world;
