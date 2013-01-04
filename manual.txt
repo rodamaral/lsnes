@@ -350,6 +350,8 @@ Press button <button> on controller <num> of class <class>.
 
 • Class 'justifier': trigger, start
 
+• Class 'gb': A, B, select, start, up, down, left, right
+
 6.3.20 hold-controller <class>-<#>-<button>
 
 Hold/unhold button <button> on controller <num> of class <class>.

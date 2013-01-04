@@ -749,6 +749,10 @@ Class 'superscope': trigger, cursor, turbo, pause
 Class 'justifier': trigger, start
 \end_layout
 
+\begin_layout Itemize
+Class 'gb': A, B, select, start, up, down, left, right
+\end_layout
+
 \begin_layout Subsubsection
 hold-controller <class>-<#>-<button>
 \end_layout

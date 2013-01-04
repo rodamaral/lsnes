@@ -388,7 +388,7 @@ namespace
 				classnum[ctrl.cclass] = 1;
 			else
 				classnum[ctrl.cclass]++;
-			std::string name = (stringfmt() << ctrl.cclass << " #" << classnum[ctrl.cclass]).str();
+			std::string name = (stringfmt() << ctrl.type << " #" << classnum[ctrl.cclass]).str();
 			menus[i] = new controller_autohold_menu(*this, pcid.first, pcid.second);
 			entries[i] = AppendSubMenu(menus[i], towxstring(name));
 			
