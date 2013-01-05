@@ -24,10 +24,6 @@ void do_basic_core_init();
 std::set<std::string> get_sram_set();
 //Get region.
 core_region& core_get_region();
-//Get the current video rate.
-std::pair<uint32_t, uint32_t> get_video_rate();
-//Get the current audio rate.
-std::pair<uint32_t, uint32_t> get_audio_rate();
 //Set preload settings.
 void set_preload_settings();
 //Power the core.

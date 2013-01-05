@@ -50,6 +50,8 @@ struct core_type_params
 	core_romimage_info** images;	//Terminate with NULL.
 	core_setting_group* settings;
 	bool (*set_region)(core_region& region);
+	std::pair<uint32_t, uint32_t> (*video_rate)();
+	std::pair<uint32_t, uint32_t> (*audio_rate)();
 };
 
 struct core_region
@@ -116,6 +118,8 @@ public:
 	unsigned get_reset_support();
 	core_setting_group& get_settings();
 	bool set_region(core_region& region);
+	std::pair<uint32_t, uint32_t> get_video_rate();
+	std::pair<uint32_t, uint32_t> get_audio_rate();
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
@@ -123,6 +127,8 @@ private:
 		uint64_t rtc_subsec);
 	controller_set (*_controllerconfig)(std::map<std::string, std::string>& settings);
 	bool (*_set_region)(core_region& region);
+	std::pair<uint32_t, uint32_t> (*_video_rate)();
+	std::pair<uint32_t, uint32_t> (*_audio_rate)();
 	unsigned id;
 	unsigned reset_support;
 	std::string iname;

@@ -63,6 +63,8 @@ namespace
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
 	size_t soundbuf_fill = 0;
+	bool last_hires = false;
+	bool last_interlace = false;
 	uint64_t trace_counter;
 	std::ofstream trace_output;
 	bool trace_output_enable;
@@ -649,27 +651,51 @@ namespace
 		return true;
 	}
 
-	
+	//Get the current video rate.
+	std::pair<uint32_t, uint32_t> get_video_rate()
+	{
+		if(!internal_rom)
+			return std::make_pair(60, 1);
+		uint32_t div;
+		if(snes_get_region())
+			div = last_interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
+		else
+			div = last_interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
+		return std::make_pair(get_snes_cpu_rate(), div);
+	}
+
+	//Get the current audio rate.
+	std::pair<uint32_t, uint32_t> get_audio_rate()
+	{
+		if(!internal_rom)
+			return std::make_pair(64081, 2);
+		return std::make_pair(get_snes_apu_rate(), static_cast<uint32_t>(768));
+	}
+
 	core_type_params _type_snes = {
 		"snes", "SNES", 0, BSNES_RESET_LEVEL , load_rom_snes, _controllerconfig,
 		"sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images, &bsnes_settings,
-		core_set_region
+		core_set_region, get_video_rate, get_audio_rate
 	};
 	core_type_params _type_bsx = {
 		"bsx", "BS-X (non-slotted)", 1, BSNES_RESET_LEVEL , load_rom_bsx, _controllerconfig,
-		"bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, core_set_region
+		"bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, core_set_region, get_video_rate, 
+		get_audio_rate
 	};
 	core_type_params _type_bsxslotted = {
 		"bsxslotted", "BS-X (slotted)", 2, BSNES_RESET_LEVEL , load_rom_bsxslotted, _controllerconfig,
-		"bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region
+		"bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region, get_video_rate, 
+		get_audio_rate
 	};
 	core_type_params _type_sufamiturbo = {
 		"sufamiturbo", "Sufami Turbo", 3, BSNES_RESET_LEVEL , load_rom_sufamiturbo, _controllerconfig,
-		"st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region
+		"st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region, get_video_rate, 
+		get_audio_rate
 	};
 	core_type_params _type_sgb = {
 		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL , load_rom_sgb, _controllerconfig,
-		"gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, core_set_region
+		"gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, core_set_region, get_video_rate,
+		get_audio_rate
 	};
 
 	core_type type_snes(_type_snes);
@@ -685,8 +711,6 @@ namespace
 	core_sysregion sr6("sgb_ntsc", type_sgb, region_ntsc);
 	core_sysregion sr7("sgb_pal", type_sgb, region_pal);
 
-	bool last_hires = false;
-	bool last_interlace = false;
 	bool stepping_into_save;
 	bool video_refresh_done;
 	//Delay reset.
@@ -1035,26 +1059,6 @@ void core_unload_cartridge()
 	internal_rom = NULL;
 }
 
-//Get the current video rate.
-std::pair<uint32_t, uint32_t> get_video_rate()
-{
-	if(!internal_rom)
-		return std::make_pair(60, 1);
-	uint32_t div;
-	if(snes_get_region())
-		div = last_interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
-	else
-		div = last_interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
-	return std::make_pair(get_snes_cpu_rate(), div);
-}
-
-//Get the current audio rate.
-std::pair<uint32_t, uint32_t> get_audio_rate()
-{
-	if(!internal_rom)
-		return std::make_pair(64081, 2);
-	return std::make_pair(get_snes_apu_rate(), static_cast<uint32_t>(768));
-}
 
 std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
 {

@@ -125,6 +125,8 @@ core_type::core_type(core_type_params& params)
 	loadimg = params.load_rom;
 	_controllerconfig = params.controllerconfig;
 	_set_region = params.set_region;
+	_audio_rate = params.audio_rate;
+	_video_rate = params.video_rate;
 	settings = params.settings;
 	if(params.bios)
 		biosname = params.bios;
@@ -253,6 +255,17 @@ bool core_type::set_region(core_region& region)
 {
 	return _set_region(region);
 }
+
+std::pair<uint32_t, uint32_t> core_type::get_video_rate()
+{
+	return _video_rate();
+}
+
+std::pair<uint32_t, uint32_t> core_type::get_audio_rate()
+{
+	return _audio_rate();
+}
+
 
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)

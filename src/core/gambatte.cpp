@@ -97,6 +97,17 @@ namespace
 		};
 	} getinput;
 
+	std::pair<uint32_t, uint32_t> get_video_rate()
+	{
+		return std::make_pair(262144, 4389);
+	}
+
+	std::pair<uint32_t, uint32_t> get_audio_rate()
+	{
+		return std::make_pair(32768, 1);
+	}
+
+
 	const char* buttonnames[] = {"left", "right", "up", "down", "A", "B", "select", "start"};
 	
 	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
@@ -296,15 +307,15 @@ namespace
 
 	core_type_params  _type_dmg = {
 		"dmg", "Game Boy", 1, 1, load_rom_dmg, _controllerconfig, "gb;dmg", NULL,
-		regions_gambatte, dmg_images, &gambatte_settings, core_set_region
+		regions_gambatte, dmg_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate
 	};
 	core_type_params  _type_gbc = {
 		"gbc", "Game Boy Color", 0, 1, load_rom_gbc, _controllerconfig, "gbc;cgb", NULL,
-		regions_gambatte, gbc_images, &gambatte_settings, core_set_region
+		regions_gambatte, gbc_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate
 	};
 	core_type_params  _type_gbc_gba = {
 		"gbc_gba", "Game Boy Color (GBA)", 2, 1, load_rom_gbc_gba, _controllerconfig, "", NULL,
-		regions_gambatte, gbca_images, &gambatte_settings, core_set_region
+		regions_gambatte, gbca_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate
 	};
 	core_type type_dmg(_type_dmg);
 	core_type type_gbc(_type_gbc);
@@ -335,16 +346,6 @@ std::string get_core_identifier()
 core_region& core_get_region()
 {
 	return region_world;
-}
-
-std::pair<uint32_t, uint32_t> get_video_rate()
-{
-	return std::make_pair(262144, 4389);
-}
-
-std::pair<uint32_t, uint32_t> get_audio_rate()
-{
-	return std::make_pair(32768, 1);
 }
 
 void core_runtosave()

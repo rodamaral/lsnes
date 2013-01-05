@@ -72,6 +72,9 @@ namespace
 		return x;
 	}
 
+	std::pair<unsigned, unsigned> videorate_null() { return std::make_pair(60, 1); }
+	std::pair<unsigned, unsigned> audiorate_null() { return std::make_pair(48000, 1); }
+
 	bool set_region_null(core_region& reg)
 	{
 		return true;
@@ -94,7 +97,8 @@ namespace
 	core_romimage_info* null_images[] = {NULL};
 	core_type_params _type_null = {
 		"null", "(null)", 9999, 0, load_rom_null, null_controllerconfig,
-		"", NULL, null_regions, null_images, &null_settings, set_region_null
+		"", NULL, null_regions, null_images, &null_settings, set_region_null,
+		videorate_null, audiorate_null
 	};
 	core_type type_null(_type_null);
 	core_sysregion sysregion_null("null", type_null, null_region);
@@ -363,8 +367,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 		region = &core_get_region();
 		core_power();
 	}
-	auto nominal_fps = get_video_rate();
-	auto nominal_hz = get_audio_rate();
+	auto nominal_fps = rtype->get_video_rate();
+	auto nominal_hz = rtype->get_audio_rate();
 	set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
