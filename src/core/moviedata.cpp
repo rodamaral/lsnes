@@ -232,6 +232,7 @@ extern time_t random_seed_value;
 
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
+	bool force_rw = false;
 	if(!our_movie.gametype && !reload) {
 		messages << "Can't load movie without a ROM" << std::endl;
 		return;
@@ -243,16 +244,23 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		//Force unlazy rrdata.
 		rrdata::read_base(our_movie.projectid, false);
 		rrdata::add_internal();
+	} else {
+		auto ctrldata = our_rom->rtype->controllerconfig(our_movie.settings);
+		port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+		controls.set_ports(portset);
+		if(our_movie.input.get_types() != portset) {
+			//The input type changes, so set the types.
+			force_rw = true;
+			our_movie.input.clear(portset);
+			movb.get_movie().load(our_movie.rerecords, our_movie.projectid, our_movie.input);
+		}
 	}
 	try {
-		bool ro = movb.get_movie().readonly_mode();
+		bool ro = movb.get_movie().readonly_mode() && !force_rw;
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
-		our_rom->load(our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
-		if(our_rom->rtype)
-			our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
-		else
-			our_movie.gametype = NULL;
+		our_rom->load(our_movie.settings, our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
+		our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 		if(reload)
 			movb.get_movie().readonly_mode(ro);
 
@@ -329,6 +337,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		newmovie.restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
 			(lmode == LOAD_STATE_PRESERVE) ? &_movie.input : NULL, _movie.projectid);
 
+	auto ctrldata = our_rom->rtype->controllerconfig(_movie.settings);
+	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+
 	//Negative return.
 	rrdata::read_base(_movie.projectid, _movie.lazy_project_create);
 	rrdata::read(_movie.c_rrdata);
@@ -336,17 +347,17 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	try {
 		our_rom->region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		random_seed_value = _movie.movie_rtc_second;
-		our_rom->load(_movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+		our_rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 
 		if(will_load_state) {
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
-			controls.set_ports(*_movie.ports, true);
+			controls.set_ports(portset);
 			load_core_state(_movie.savestate);
 			core_set_poll_flag(_movie.poll_flag);
 		} else {
 			load_sram(_movie.movie_sram);
-			controls.set_ports(*_movie.ports, true);
+			controls.set_ports(portset);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty())

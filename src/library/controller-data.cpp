@@ -8,34 +8,6 @@
 
 namespace
 {
-	void set_core_controller_illegal(unsigned port) throw()
-	{
-		std::cerr << "Attempt to set core port type to INVALID port type" << std::endl;
-		exit(1);
-	}
-
-	int button_id_illegal(unsigned controller, unsigned lbid)
-	{
-		return -1;
-	}
-
-	struct port_index_map invalid_construct_map(std::vector<port_type*> types)
-	{
-		struct port_index_map i;
-		i.indices.resize(1);
-		i.indices[0].valid = true;
-		i.indices[0].port = 0;
-		i.indices[0].controller = 0;
-		i.indices[0].control = 0;
-		return i;
-	}
-
-	inline const char* invalid_controller_name(unsigned c)
-	{
-		return c ? NULL : "(system)";
-	}
-
-	const char* invalid_chars = "";
 	const char* basecontrol_chars = "F";
 
 	port_controller_button* null_buttons[] = {};
@@ -43,38 +15,18 @@ namespace
 	port_controller* simple_controllers[] = {&simple_controller};
 	port_controller_set simple_port = {1, simple_controllers};
 
-	struct port_type_group invalid_group;
-	struct porttype_invalid : public port_type
-	{
-		porttype_invalid() : port_type(invalid_group, "invalid-port-type", "invalid-port-type", 999999, 0)
-		{
-			write = generic_port_write<0, 0, 0>;
-			read = generic_port_read<0, 0, 0>;
-			display = generic_port_display<0, 0, 0, &invalid_chars>;
-			serialize = generic_port_serialize<0, 0, 0, &invalid_chars>;
-			deserialize = generic_port_deserialize<0, 0, 0>;
-			legal = generic_port_legal<0xFFFFFFFFU>;
-			controller_info = &simple_port;
-			used_indices = generic_used_indices<0, 0>;
-			construct_map = invalid_construct_map;
-			set_core_controller = set_core_controller_illegal;
-		}
-	};
-
 	struct porttype_basecontrol : public port_type
 	{
-		porttype_basecontrol() : port_type(invalid_group, "basecontrol", "basecontrol", 999998, 0)
+		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 999998, 0)
 		{
 			write = generic_port_write<1, 0, 1>;
 			read = generic_port_read<1, 0, 1>;
 			display = generic_port_display<1, 0, 1, &basecontrol_chars>;
 			serialize = generic_port_serialize<1, 0, 1, &basecontrol_chars>;
 			deserialize = generic_port_deserialize<1, 0, 1>;
-			legal = generic_port_legal<0>;
+			legal = generic_port_legal<1>;
 			controller_info = &simple_port;
-			construct_map = invalid_construct_map;
 			used_indices = generic_used_indices<1, 1>;
-			set_core_controller = set_core_controller_illegal;
 		}
 		static port_type& get()
 		{
@@ -82,128 +34,16 @@ namespace
 			return x;
 		}
 	};
-
-	struct pending_registration
-	{
-		port_type_group* group;
-		std::string name;
-		port_type* toreg;
-	};
-
-	globalwrap<mutex_class> reg_mutex;
-	globalwrap<std::set<port_type_group*>> ready_groups;
-	globalwrap<std::list<pending_registration>> pending_registrations;
-
-	void run_pending_registrations()
-	{
-		umutex_class m(reg_mutex());
-		auto i = pending_registrations().begin();
-		while(i != pending_registrations().end()) {
-			auto entry = i++;
-			if(ready_groups().count(entry->group)) {
-				entry->group->register_type(entry->name, *entry->toreg);
-				pending_registrations().erase(entry);
-			}
-		}
-	}
-
-	void add_registration(port_type_group& group, const std::string& name, port_type& type)
-	{
-		{
-			umutex_class m(reg_mutex());
-			pending_registration p;
-			p.group = &group;
-			p.name = name;
-			p.toreg = &type;
-			pending_registrations().push_back(p);
-		}
-		run_pending_registrations();
-	}
-
-	void delete_registration(port_type_group& group, const std::string& name)
-	{
-		{
-			umutex_class m(reg_mutex());
-			if(ready_groups().count(&group))
-				group.unregister_type(name);
-			else {
-				auto i = pending_registrations().begin();
-				while(i != pending_registrations().end()) {
-					auto entry = i++;
-					if(entry->group == &group && entry->name == name)
-						pending_registrations().erase(entry);
-				}
-			}
-		}
-	}
 }
 
-port_type_group::port_type_group() throw(std::bad_alloc)
-{
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().insert(this);
-	}
-	run_pending_registrations();
-}
-
-port_type_group::~port_type_group() throw()
-{
-	{
-		umutex_class m(reg_mutex());
-		ready_groups().erase(this);
-	}
-}
-
-port_type& port_type_group::get_type(const std::string& name) const throw(std::runtime_error)
-{
-	if(types.count(name))
-		return *(types.find(name)->second);
-	else
-		throw std::runtime_error("Unknown port type");
-}
-
-port_type& port_type_group::get_default_type(unsigned port) const throw(std::runtime_error)
-{
-	if(defaults.count(port))
-		return *(defaults.find(port)->second);
-	else
-		throw std::runtime_error("No default for this port");
-}
-
-std::set<port_type*> port_type_group::get_types() const throw(std::bad_alloc)
-{
-	std::set<port_type*> p;
-	for(auto i : types)
-		p.insert(i.second);
-	return p;
-}
-
-void port_type_group::set_default(unsigned port, port_type& ptype)
-{
-	defaults[port] = &ptype;
-}
-
-void port_type_group::register_type(const std::string& type, port_type& port)
-{
-	types[type] = &port;
-}
-
-void port_type_group::unregister_type(const std::string& type)
-{
-	types.erase(type);
-}
-
-port_type::port_type(port_type_group& group, const std::string& iname, const std::string& _hname,  unsigned id,
+port_type::port_type(const std::string& iname, const std::string& _hname,  unsigned id,
 	size_t ssize) throw(std::bad_alloc)
-	: ingroup(group), name(iname), hname(_hname), pt_id(id), storage_size(ssize)
+	: name(iname), hname(_hname), pt_id(id), storage_size(ssize)
 {
-	add_registration(ingroup, name, *this);
 }
 
 port_type::~port_type() throw()
 {
-	delete_registration(ingroup, name);
 }
 
 bool port_type::is_present(unsigned controller) const throw()
@@ -257,13 +97,14 @@ port_type_set::port_type_set() throw()
 	indices_tab = &dummy_index;
 }
 
-port_type_set& port_type_set::make(std::vector<class port_type*> types) throw(std::bad_alloc, std::runtime_error)
+port_type_set& port_type_set::make(std::vector<class port_type*> types, struct port_index_map control_map)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	for(auto i : bindings())
 		if(i.matches(types))
 			return *(i.stype);
 	//Not found, create new.
-	port_type_set& ret = *new port_type_set(types);
+	port_type_set& ret = *new port_type_set(types, control_map);
 	binding b;
 	b.types = types;
 	b.stype = &ret;
@@ -271,12 +112,12 @@ port_type_set& port_type_set::make(std::vector<class port_type*> types) throw(st
 	return ret;
 }
 
-port_type_set::port_type_set(std::vector<class port_type*> types)
+port_type_set::port_type_set(std::vector<class port_type*> types, struct port_index_map control_map)
 {
 	port_count = types.size();
 	//Verify legality of port types.
 	for(size_t i = 0; i < port_count; i++)
-		if(!types[i] || (i > 0 && !types[i]->legal(i - 1)))
+		if(!types[i] || !types[i]->legal(i))
 			throw std::runtime_error("Illegal port types");
 	//Count maximum number of controller indices to determine the controller multiplier.
 	controller_multiplier = 1;
@@ -288,8 +129,6 @@ port_type_set::port_type_set(std::vector<class port_type*> types)
 	for(size_t i = 0; i < port_count; i++)
 		port_multiplier = max(port_multiplier, controller_multiplier *
 		(size_t)types[i]->controller_info->controller_count);
-	//Query core about maps.
-	struct port_index_map control_map = types[0]->construct_map(types);
 	//Allocate the per-port tables.
 	port_offsets = new size_t[types.size()];
 	port_types = new class port_type*[types.size()];
@@ -349,12 +188,6 @@ short read_axis_value(const char* buf, size_t& idx) throw()
 			numval = -numval;
 
 		return static_cast<short>(numval);
-}
-
-port_type& get_dummy_port_type() throw(std::bad_alloc)
-{
-	static porttype_invalid inv;
-	return inv;
 }
 
 namespace

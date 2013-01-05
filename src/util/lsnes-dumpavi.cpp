@@ -269,8 +269,9 @@ int main(int argc, char** argv)
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
+		std::map<std::string, std::string> tmp;
 		r = load_rom_from_commandline(cmdline);
-		r.load(1000000000, 0);
+		r.load(tmp, 1000000000, 0);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -308,7 +309,7 @@ int main(int argc, char** argv)
 		//Load ROM before starting the dumper.
 		our_rom = &r;
 		our_rom->region = &movie.gametype->get_region();
-		our_rom->load(movie.movie_rtc_second, movie.movie_rtc_subsecond);
+		our_rom->load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
 		dumper_startup(dumper, mode, prefix, length);
 		main_loop(r, movie, true);

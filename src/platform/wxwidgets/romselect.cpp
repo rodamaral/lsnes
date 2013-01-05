@@ -11,6 +11,7 @@
 #include "core/framerate.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/setting.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include <boost/lexical_cast.hpp>
@@ -32,118 +33,6 @@ void patching_done(struct loaded_rom& rom, wxWindow* modwin);
 
 namespace
 {
-	port_type& get_controller_type(const std::string& s)
-	{
-		auto types = core_portgroup.get_types();
-		for(auto i : types)
-			if(s == i->hname)
-				return *i;
-		return get_dummy_port_type();
-	}
-
-	void load_cchoices(std::vector<wxString>& cc, unsigned port, unsigned& dfltidx)
-	{
-		cc.clear();
-		port_type& dflt = core_portgroup.get_default_type(port);
-		dfltidx = 0;
-		auto types = core_portgroup.get_types();
-		for(auto i : types)
-			if(i->legal && i->legal(port - 1)) {
-				cc.push_back(towxstring(i->hname));
-				if(i == &dflt)
-					dfltidx = cc.size() - 1;
-			}
-	}
-
-	struct loaded_slot& get_rom_slot(struct loaded_rom& rom, unsigned index)
-	{
-		if(index >= 2 * sizeof(rom.romimg) / sizeof(rom.romimg[0]))
-			return rom.romimg[0];
-		if(index & 1)
-			return rom.romxml[index / 2];
-		else
-			return rom.romimg[index / 2];
-	}
-
-	core_region& region_from_string(core_type& rtype, const std::string& str)
-	{
-		core_region* x = NULL;
-		for(auto i : rtype.get_regions())
-			if(i->get_hname() == str)
-				return *i;
-		return *x;
-	}
-
-	unsigned populate_region_choices(std::vector<wxString>& array)
-	{
-		array.push_back(wxT("(Default)"));
-		return 1;
-	}
-
-	unsigned populate_system_choices(std::vector<wxString>& array)
-	{
-		for(auto i : core_type::get_core_types())
-			array.push_back(towxstring(i->get_hname()));
-		return array.size();
-	}
-
-	bool check_present_roms(core_type& rtype, unsigned flags)
-	{
-		unsigned a = 0;
-		unsigned b = 0;
-		for(size_t i = 0; i < ROMSELECT_ROM_COUNT && i < rtype.get_image_count(); i++) {
-			if((flags >> i) & 1)
-				a |= rtype.get_image_info(i).mandatory;
-			b |= rtype.get_image_info(i).mandatory;
-		}
-		return (a == b);
-	}
-
-	std::string romname(core_type& rtype, unsigned index)
-	{
-		if(index >= rtype.get_image_count())
-			return "";
-		return rtype.get_image_info(index).hname;
-	}
-
-	unsigned romname_to_index(core_type& rtype, const wxString& _name)
-	{
-		std::string name = tostdstring(_name);
-		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
-			if(romname(rtype, i) == name)
-				return 2 * i;
-			if(romname(rtype, i) + MARKUP_POSTFIX == name)
-				return 2 * i + 1;
-		}
-		return 2 * ROMSELECT_ROM_COUNT;
-	}
-
-	unsigned fill_rom_names(core_type& rtype, std::string* array)
-	{
-		unsigned r = 0;
-		for(unsigned i = 0; i < ROMSELECT_ROM_COUNT; i++) {
-			std::string s = romname(rtype, i);
-			if(s.length())
-				array[r++] = s;
-		}
-		return r;
-	}
-
-	core_type& romtype_from_string(const std::string& str)
-	{
-		core_type* x = NULL;
-		for(auto i : core_type::get_core_types())
-			if(i->get_hname() == str)
-				return *i;
-		return *x;
-	}
-
-	bool has_forced_region(const std::string& str)
-	{
-		core_type& rtype = romtype_from_string(str);
-		return (rtype.get_regions().size() == 1);
-	}
-
 	class textboxloadfilename : public wxFileDropTarget
 	{
 	public:
@@ -162,6 +51,64 @@ namespace
 	private:
 		wxTextCtrl* ctrl;
 	};
+
+	struct setting_select
+	{
+		setting_select() {}
+		setting_select(wxWindow* parent, const core_setting& s);
+		wxWindow* get_label() { return label; }
+		wxWindow* get_control();
+		const core_setting* get_setting() { return setting; }
+		std::string read();
+	private:
+		wxStaticText* label;
+		wxTextCtrl* text;
+		wxCheckBox* check;
+		wxComboBox* combo;
+		const core_setting* setting;
+	};
+
+	setting_select::setting_select(wxWindow* parent, const core_setting& s)
+		: setting(&s)
+	{
+		label = new wxStaticText(parent, wxID_ANY, towxstring(setting->hname));
+		text = NULL;
+		combo = NULL;
+		check = NULL;
+		if(setting->is_boolean()) {
+			check = new wxCheckBox(parent, wxID_ANY, towxstring(""));
+			check->SetValue(s.dflt != "0");
+		} else if(setting->is_freetext()) {
+			text = new wxTextCtrl(parent, wxID_ANY, towxstring(setting->dflt), wxDefaultPosition,
+				wxSize(400, -1));
+		} else {
+			std::vector<wxString> _hvalues;
+			std::string dflt = "";
+			for(auto i : setting->values) {
+				_hvalues.push_back(towxstring(i->hname));
+				if(i->iname == setting->dflt)
+					dflt = i->hname;
+			}
+			combo = new wxComboBox(parent, wxID_ANY, towxstring(dflt), wxDefaultPosition,
+				wxDefaultSize, _hvalues.size(), &_hvalues[0], wxCB_READONLY);
+		}
+	}
+
+	wxWindow* setting_select::get_control()
+	{
+		if(text) return text;
+		if(check) return check;
+		if(combo) return combo;
+		return NULL;
+	}
+
+	std::string setting_select::read()
+	{
+		if(text) return tostdstring(text->GetValue());
+		if(check) return check->GetValue() ? "1" : "0";
+		if(combo) return setting->hvalue_to_ivalue(tostdstring(combo->GetValue()));
+		return "";
+	}
 }
 
 class wxwin_project : public wxDialog
@@ -179,7 +126,7 @@ private:
 	struct moviefile make_movie();
 	std::map<std::string, wxTextCtrl*> sram_files;
 	std::map<std::string, wxButton*> sram_choosers;
-	wxComboBox** controllertypes;
+	std::map<std::string, setting_select> settings;
 	wxTextCtrl* projectname;
 	wxTextCtrl* prefix;
 	wxTextCtrl* rtc_sec;
@@ -230,14 +177,12 @@ wxwin_project::wxwin_project()
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + core_userports + sram_set.size(), 2, 0, 0);
-	controllertypes = new wxComboBox*[core_userports];
-	for(unsigned i = 1; i <= core_userports; i++) {
-		mainblock->Add(new wxStaticText(new_panel, wxID_ANY, towxstring((stringfmt() << "Controller " << i
-			<< " Type:").str())), 0, wxGROW);
-		load_cchoices(cchoices, i, dfltidx);
-		mainblock->Add(controllertypes[i - 1] = new wxComboBox(new_panel, wxID_ANY, cchoices[dfltidx],
-			wxDefaultPosition, wxDefaultSize, cchoices.size(), &cchoices[0], wxCB_READONLY), 0, wxGROW);
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + our_rom->rtype->get_settings().settings.size() +
+		sram_set.size(), 2, 0, 0);
+	for(auto i : our_rom->rtype->get_settings().settings) {
+		settings[i.second->iname] = setting_select(new_panel, *i.second);
+		mainblock->Add(settings[i.second->iname].get_label());
+		mainblock->Add(settings[i.second->iname].get_control());
 	}
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
@@ -367,11 +312,11 @@ struct moviefile wxwin_project::make_movie()
 	moviefile f;
 	f.force_corrupt = false;
 	f.gametype = &our_rom->rtype->combine_region(*our_rom->region);
-	std::vector<class port_type*> pt;
-	pt.push_back(&core_portgroup.get_default_type(0));
-	for(unsigned i = 1; i <= core_userports; i++)
-		pt.push_back(&get_controller_type(tostdstring(controllertypes[i - 1]->GetValue())));
-	f.ports = &port_type_set::make(pt);
+	for(auto i : settings) {
+		f.settings[i.first] = i.second.read();
+		if(!i.second.get_setting()->validate(f.settings[i.first]))
+			throw std::runtime_error((stringfmt() << "Bad value for setting " << i.first).str());
+	}
 	f.coreversion = bsnes_core_version;
 	f.gamename = tostdstring(projectname->GetValue());
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
@@ -402,7 +347,9 @@ struct moviefile wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
-	f.input.clear(*f.ports);
+	auto ctrldata = our_rom->rtype->controllerconfig(f.settings);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+	f.input.clear(ports);
 	return f;
 }
 

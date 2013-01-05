@@ -20,8 +20,8 @@ CFLAGS += -DWITH_OPUS_CODEC
 LDFLAGS += -lopus
 endif
 
-DUMMY_LIBRARY=core lua fonts library video dummy
-PLATFORM_LIBRARY=core lua fonts library video platform
+DUMMY_LIBRARY=core lua fonts library interface video dummy
+PLATFORM_LIBRARY=core lua fonts library interface video platform
 ALLOBJECT=__all__.$(OBJECT_SUFFIX)
 ALLFLAGS=__all__.ldflags
 DUMMY_LIBRARY_OBJS=$(patsubst %,%/$(ALLOBJECT),$(DUMMY_LIBRARY))
@@ -41,6 +41,9 @@ fonts/$(ALLOBJECT): forcelook
 
 library/$(ALLOBJECT): forcelook
 	$(MAKE) -C library
+
+interface/$(ALLOBJECT): forcelook
+	$(MAKE) -C interface
 
 lua/$(ALLOBJECT): forcelook
 	$(MAKE) -C lua
@@ -72,6 +75,7 @@ precheck:
 	$(MAKE) -C lua precheck
 	$(MAKE) -C dummy precheck
 	$(MAKE) -C library precheck
+	$(MAKE) -C interface precheck
 	$(MAKE) -C platform precheck
 	$(MAKE) -C util precheck
 	$(MAKE) -C video precheck
@@ -85,6 +89,7 @@ clean:
 	$(MAKE) -C lua clean
 	$(MAKE) -C dummy clean
 	$(MAKE) -C library clean
+	$(MAKE) -C interface clean
 	$(MAKE) -C platform clean
 	$(MAKE) -C util clean
 	$(MAKE) -C video clean

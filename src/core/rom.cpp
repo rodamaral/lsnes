@@ -10,6 +10,7 @@
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/portfn.hpp"
 #include "library/patch.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -39,8 +40,67 @@ namespace boost_fs = boost::filesystem;
 
 namespace
 {
-	core_type* current_rom_type = NULL;
-	core_region* current_region = NULL;
+	const char* null_chars = "F";
+
+	port_controller_button* null_buttons[] = {};
+	port_controller simple_controller = {"(system)", "system", 0, null_buttons};
+	port_controller* simple_controllers[] = {&simple_controller};
+	port_controller_set simple_port = {1, simple_controllers};
+
+	struct porttype_null : public port_type
+	{
+		porttype_null() : port_type("null", "null", 999997, 1)
+		{
+			write = generic_port_write<1, 0, 1>;
+			read = generic_port_read<1, 0, 1>;
+			display = generic_port_display<1, 0, 1, &null_chars>;
+			serialize = generic_port_serialize<1, 0, 1, &null_chars>;
+			deserialize = generic_port_deserialize<1, 0, 1>;
+			legal = generic_port_legal<1>;
+			controller_info = &simple_port;
+			used_indices = generic_used_indices<1, 1>;
+		}
+	} pnull;
+
+	port_index_triple sync_triple = {true, 0, 0, 0, false };
+	
+	controller_set null_controllerconfig(std::map<std::string, std::string>& settings)
+	{
+		controller_set x;
+		x.ports.push_back(&pnull);
+		x.portindex.indices.push_back(sync_triple);
+		return x;
+	}
+
+	bool set_region_null(core_region& reg)
+	{
+		return true;
+	}
+
+	int load_rom_null(core_romimage* img, std::map<std::string, std::string>& settings,
+		uint64_t secs, uint64_t subsecs)
+	{
+		return 0;
+	}
+
+	core_setting_group null_settings;
+
+	unsigned null_compatible[] = {0, UINT_MAX};
+	struct core_region_params _null_region = {
+		"null", "(null)", 0, 0, false, {1, 60, 16666666, 40}, null_compatible
+	};
+	core_region null_region(_null_region);
+	core_region* null_regions[] = {&null_region, NULL};
+	core_romimage_info* null_images[] = {NULL};
+	core_type_params _type_null = {
+		"null", "(null)", 9999, 0, load_rom_null, null_controllerconfig,
+		"", NULL, null_regions, null_images, &null_settings, set_region_null
+	};
+	core_type type_null(_type_null);
+	core_sysregion sysregion_null("null", type_null, null_region);
+
+	core_type* current_rom_type = &type_null;
+	core_region* current_region = &null_region;
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
@@ -59,11 +119,11 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 	if(filename == "") {
 		valid = false;
 		sha_256 = "";
-		filename_flag = (!xml && imginfo.pass_by_filename);
+		filename_flag = (!xml && imginfo.pass_mode);
 		return;
 	}
 	//XMLs are always loaded, no matter what.
-	if(!xml && imginfo.pass_by_filename) {
+	if(!xml && imginfo.pass_mode) {
 		std::string _filename = filename;
 		//Translate the passed filename to absolute one.
 		_filename = resolve_file_relative(_filename, base);
@@ -86,8 +146,8 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 	filename_flag = false;
 	valid = true;
 	data = read_file_relative(filename, base);
-	if(!xml)
-		headered = imginfo.headersize(data.size());
+	if(!xml && imginfo.headersize)
+		headered = ((data.size() % (2 * imginfo.headersize)) == imginfo.headersize) ? imginfo.headersize : 0;
 	if(headered && !xml) {
 		if(data.size() >= headered) {
 			memmove(&data[0], &data[headered], data.size() - headered);
@@ -136,8 +196,8 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw()
 
 loaded_rom::loaded_rom() throw()
 {
-	rtype = NULL;
-	region = orig_region = NULL;
+	rtype = &type_null;
+	region = orig_region = &null_region;
 }
 
 loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error)
@@ -187,11 +247,11 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	}
 
 	//Detect type.
-	rtype = NULL;
+	rtype = &type_null;
 	for(auto i : possible)
 		if(i->get_iname() == platname)
 			rtype = i;
-	if(!rtype)
+	if(rtype == &type_null)
 		(stringfmt() << "Not a valid system type '" << platname << "'").throwex();
 
 	//Detect region.
@@ -272,16 +332,17 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		msu1_base = resolve_file_relative(cromimg[0], file);
 }
 
-void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error)
+void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
+	throw(std::bad_alloc, std::runtime_error)
 {
-	current_rom_type = NULL;
-	if(!orig_region && rtype)
+	current_rom_type = &type_null;
+	if(!orig_region && rtype != &type_null)
 		orig_region = &rtype->get_preferred_region();
 	if(!region)
 		region = orig_region;
 	if(rtype && !orig_region->compatible_with(*region))
 		throw std::runtime_error("Trying to force incompatible region");
-	if(rtype && !core_set_region(*region))
+	if(rtype && !rtype->set_region(*region))
 		throw std::runtime_error("Trying to force unknown region");
 
 	core_romimage images[sizeof(romimg)/sizeof(romimg[0])];
@@ -291,13 +352,17 @@ void loaded_rom::load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_allo
 		images[i].size = (size_t)romimg[i];
 	}
 	if(rtype) {
-		if(!rtype->load(images, rtc_sec, rtc_subsec))
+		if(!rtype->load(images, settings, rtc_sec, rtc_subsec))
 			throw std::runtime_error("Can't load cartridge ROM");
 	} else
 		core_unload_cartridge();
 
-	region = &core_get_region();
-	core_power();
+	if(rtype == &type_null) {
+		region = &null_region;
+	} else {
+		region = &core_get_region();
+		core_power();
+	}
 	auto nominal_fps = get_video_rate();
 	auto nominal_hz = get_audio_rate();
 	set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);

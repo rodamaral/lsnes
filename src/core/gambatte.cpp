@@ -13,6 +13,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
 #include "library/portfn.hpp"
@@ -33,7 +34,6 @@
 #define LOGICAL_BUTTON_SELECT 6
 #define LOGICAL_BUTTON_START 7
 
-port_type_group core_portgroup;
 unsigned core_userports = 0;
 extern const bool core_supports_reset = true;
 extern const bool core_supports_dreset = false;
@@ -60,6 +60,8 @@ namespace
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
+
+	core_setting_group gambatte_settings;
 
 	void init_norom_framebuffer()
 	{
@@ -95,93 +97,8 @@ namespace
 		};
 	} getinput;
 
-	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
-		core_type* inttype)
-	{
-		const char* markup = img[0].markup;
-		int flags2 = 0;
-		if(markup) {
-			flags2 = atoi(markup);
-			flags2 &= 4;
-		}
-		flags |= flags2;
-		const unsigned char* data = img[0].data;
-		size_t size = img[0].size;
-
-		//Reset it really.
-		instance->~GB();
-		memset(instance, 0, sizeof(gambatte::GB));
-		new(instance) gambatte::GB;
-		instance->setInputGetter(&getinput);
-		instance->set_walltime_fn(walltime_fn);
-		memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
-		frame_overflow = 0;
-		
-		rtc_fixed = true;
-		rtc_fixed_val = rtc_sec;
-		instance->load(data, size, flags);
-		rtc_fixed = false;
-		romdata.resize(size);
-		memcpy(&romdata[0], data, size);
-		internal_rom = inttype;
-		do_reset_flag = false;
-		return 1;
-	}
-
-	int load_rom_dmg(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
-	{
-		return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
-	}
-
-	int load_rom_gbc(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
-	{
-		return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
-	}
-
-	int load_rom_gbc_gba(core_romimage* img, uint64_t rtc_sec, uint64_t rtc_subsec)
-	{
-		return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
-	}
-
-	uint64_t magic[4] = {35112, 2097152, 16742706, 626688};
-	
-	core_region region_world("world", "World", 0, 0, false, magic, regions_compatible);
-	core_romimage_info image_rom_dmg("rom", "Cartridge ROM", 1, NULL);
-	core_romimage_info image_rom_gbc("rom", "Cartridge ROM", 1, NULL);
-	core_romimage_info image_rom_gbca("rom", "Cartridge ROM", 1, NULL);
-	core_type type_dmg("dmg", "Game Boy", 1, load_rom_dmg, "gb;dmg");
-	core_type type_gbc("gbc", "Game Boy Color", 0, load_rom_gbc, "gbc;cgb");
-	core_type type_gbc_gba("gbc_gba", "Game Boy Color (GBA)", 2, load_rom_gbc_gba, "");
-	core_type_region_bind bind_A(type_dmg, region_world);
-	core_type_region_bind bind_B(type_gbc, region_world);
-	core_type_region_bind bind_C(type_gbc_gba, region_world);
-	core_type_image_bind bind_D(type_dmg, image_rom_dmg, 0);
-	core_type_image_bind bind_E(type_gbc, image_rom_gbc, 0);
-	core_type_image_bind bind_F(type_gbc_gba, image_rom_gbca, 0);
-	core_sysregion sr1("gdmg", type_dmg, region_world);
-	core_sysregion sr2("ggbc", type_gbc, region_world);
-	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
-
 	const char* buttonnames[] = {"left", "right", "up", "down", "A", "B", "select", "start"};
 	
-	void _set_core_controller(unsigned port) throw() {}
-
-	int get_button_id(unsigned controller, unsigned lbid) throw()
-	{
-		if(controller != 1)
-			return -1;
-		if(lbid == LOGICAL_BUTTON_A)		return 0;
-		if(lbid == LOGICAL_BUTTON_B)		return 1;
-		if(lbid == LOGICAL_BUTTON_SELECT)	return 2;
-		if(lbid == LOGICAL_BUTTON_START)	return 3;
-		if(lbid == LOGICAL_BUTTON_RIGHT)	return 4;
-		if(lbid == LOGICAL_BUTTON_LEFT)		return 5;
-		if(lbid == LOGICAL_BUTTON_UP)		return 6;
-		if(lbid == LOGICAL_BUTTON_DOWN)		return 7;
-		return -1;
-	}
-
-
 	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
 	{
 		if(idx < 2 && ctrl < 8)
@@ -241,20 +158,10 @@ namespace
 		return len;
 	}
 
-	void set_core_controller_system(unsigned port) throw()
-	{
-	}
-
 	unsigned _used_indices(unsigned c)
 	{
 		return c ? ((c == 1) ? 8 : 0) : 2;
 	}
-
-	const char* _controller_name(unsigned c)
-	{
-		return c ? ((c == 1) ? "gamepad" : NULL) : "(system)";
-	}
-	struct port_index_map build_indices(std::vector<port_type*> types);
 
 	port_controller_button gamepad_A = {port_controller_button::TYPE_BUTTON, "A"};
 	port_controller_button gamepad_B = {port_controller_button::TYPE_BUTTON, "B"};
@@ -276,40 +183,135 @@ namespace
 
 	struct porttype_system : public port_type
 	{
-		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 2)
+		porttype_system() : port_type("<SYSTEM>", "<SYSTEM>", 9999, 2)
 		{
 			write = system_write;
 			read = system_read;
 			display = system_display;
 			serialize = system_serialize;
 			deserialize = system_deserialize;
-			legal = generic_port_legal<0>;
-			construct_map = build_indices;
+			legal = generic_port_legal<1>;
 			used_indices = _used_indices;
 			controller_info = &_controller_info;
-			set_core_controller = set_core_controller_system;
-			core_portgroup.set_default(0, *this);
 		}
 	} psystem;
 
-	struct port_index_map build_indices(std::vector<port_type*> types)
+	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
+		core_type* inttype)
 	{
-		struct port_index_map i;
-		i.indices.resize(100);
-		for(unsigned j = 0; j < 100; j++) {
-			i.indices[j].valid = (j < 12) && j != 2 && j != 3;
-			i.indices[j].port = 0;
-			i.indices[j].controller = (j < 4) ? 0 : 1;
-			i.indices[j].control = (j < 4) ? j : (j - 4);;
-			i.indices[j].marks_nonlag = (j >= 4);
-		}		
-		i.logical_map.resize(1);
-		i.logical_map[0] = std::make_pair(0, 1);
-		i.pcid_map.resize(1);
-		i.pcid_map[0] = std::make_pair(0, 1);
-		return i;
+		const char* markup = img[0].markup;
+		int flags2 = 0;
+		if(markup) {
+			flags2 = atoi(markup);
+			flags2 &= 4;
+		}
+		flags |= flags2;
+		const unsigned char* data = img[0].data;
+		size_t size = img[0].size;
+
+		//Reset it really.
+		instance->~GB();
+		memset(instance, 0, sizeof(gambatte::GB));
+		new(instance) gambatte::GB;
+		instance->setInputGetter(&getinput);
+		instance->set_walltime_fn(walltime_fn);
+		memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
+		frame_overflow = 0;
+		
+		rtc_fixed = true;
+		rtc_fixed_val = rtc_sec;
+		instance->load(data, size, flags);
+		rtc_fixed = false;
+		romdata.resize(size);
+		memcpy(&romdata[0], data, size);
+		internal_rom = inttype;
+		do_reset_flag = false;
+		return 1;
 	}
+
+	int load_rom_dmg(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec)
+	{
+		return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
+	}
+
+	int load_rom_gbc(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec)
+	{
+		return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
+	}
+
+	int load_rom_gbc_gba(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec)
+	{
+		return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
+	}
+
+	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
+	{
+		port_index_triple x;
+		x.port = p;
+		x.controller = c;
+		x.control = i;
+		x.marks_nonlag = nl;
+		return x;
+	}
+
+	controller_set _controllerconfig(std::map<std::string, std::string>& settings)
+	{
+		std::map<std::string, std::string> _settings = settings;
+		controller_set r;
+		r.ports.push_back(&psystem);
+		for(unsigned i = 0; i < 4; i++)
+			r.portindex.indices.push_back(t(0, 0, i, false));
+		for(unsigned i = 0; i < 8; i++)
+			r.portindex.indices.push_back(t(0, 1, i, true));
+		r.portindex.logical_map.push_back(std::make_pair(0, 1));
+		r.portindex.pcid_map.push_back(std::make_pair(0, 1));
+		return r;
+	}
+	
+
+	unsigned world_compatible[] = {0, UINT_MAX};
+	core_region_params _region_world = {
+		"world", "World", 1, 0, false, {35112, 2097152, 16742706, 626688}, world_compatible
+	};
+	core_romimage_info_params _image_rom = {
+		"rom", "Cartridge ROM", 1, 0, 0
+	};
+
+	core_region region_world(_region_world);
+	core_romimage_info image_rom_dmg(_image_rom);
+	core_romimage_info image_rom_gbc(_image_rom);
+	core_romimage_info image_rom_gbca(_image_rom);
+	core_region* regions_gambatte[] = {&region_world, NULL};
+	core_romimage_info* dmg_images[] = {&image_rom_dmg, NULL};
+	core_romimage_info* gbc_images[] = {&image_rom_gbc, NULL};
+	core_romimage_info* gbca_images[] = {&image_rom_gbca, NULL};
+
+	core_type_params  _type_dmg = {
+		"dmg", "Game Boy", 1, 1, load_rom_dmg, _controllerconfig, "gb;dmg", NULL,
+		regions_gambatte, dmg_images, &gambatte_settings, core_set_region
+	};
+	core_type_params  _type_gbc = {
+		"gbc", "Game Boy Color", 0, 1, load_rom_gbc, _controllerconfig, "gbc;cgb", NULL,
+		regions_gambatte, gbc_images, &gambatte_settings, core_set_region
+	};
+	core_type_params  _type_gbc_gba = {
+		"gbc_gba", "Game Boy Color (GBA)", 2, 1, load_rom_gbc_gba, _controllerconfig, "", NULL,
+		regions_gambatte, gbca_images, &gambatte_settings, core_set_region
+	};
+	core_type type_dmg(_type_dmg);
+	core_type type_gbc(_type_gbc);
+	core_type type_gbc_gba(_type_gbc_gba);
+	core_sysregion sr1("gdmg", type_dmg, region_world);
+	core_sysregion sr2("ggbc", type_gbc, region_world);
+	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
 }
+
+port_type* core_port_types[] = {
+	&psystem, NULL
+};
 
 std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
 {

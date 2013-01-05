@@ -13,7 +13,6 @@
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
 
-
 void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -30,17 +29,6 @@ void read_linefile(zip_reader& r, const std::string& member, std::string& out, b
 	}
 }
 
-template<typename T>
-void read_numeric_file(zip_reader& r, const std::string& member, T& out, bool conditional = false)
-	throw(std::bad_alloc, std::runtime_error)
-{
-	std::string _out;
-	read_linefile(r, member, _out, conditional);
-	if(conditional && _out == "")
-		return;
-	out = parse_value<int64_t>(_out);
-}
-
 void write_linefile(zip_writer& w, const std::string& member, const std::string& value, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -54,6 +42,53 @@ void write_linefile(zip_writer& w, const std::string& member, const std::string&
 		w.close_file();
 		throw;
 	}
+}
+
+
+namespace
+{
+	std::map<std::string, std::string> read_settings(zip_reader& r)
+	{
+		std::map<std::string, std::string> x;
+		for(auto i : r) {
+			if(!regex_match("port[0-9]+|setting\\..+", i))
+				continue;
+			std::string s;
+			if(i.substr(0, 4) == "port")
+				s = i;
+			else
+				s = i.substr(8);
+			read_linefile(r, i, x[s], true);
+		}
+		return x;
+	}
+
+	void write_settings(zip_writer& w, const std::map<std::string, std::string>& settings,
+		core_setting_group& sgroup)
+	{
+		for(auto i : settings) {
+			if(!sgroup.settings.count(i.first))
+				continue;
+			if(sgroup.settings[i.first]->dflt == i.second)
+				continue;
+			if(regex_match("port[0-9]+", i.first))
+				write_linefile(w, i.first, i.second);
+			else
+				write_linefile(w, "setting." + i.first, i.second);
+		}
+	}
+}
+
+
+template<typename T>
+void read_numeric_file(zip_reader& r, const std::string& member, T& out, bool conditional = false)
+	throw(std::bad_alloc, std::runtime_error)
+{
+	std::string _out;
+	read_linefile(r, member, _out, conditional);
+	if(conditional && _out == "")
+		return;
+	out = parse_value<int64_t>(_out);
 }
 
 template<typename T>
@@ -322,24 +357,11 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 	}
 }
 
-port_type& parse_controller_type(const std::string& type, unsigned port) throw(std::bad_alloc, std::runtime_error)
-{
-	try {
-		port_type& i = core_portgroup.get_type(type);
-		if(!i.legal || !(i.legal(port - 1)))
-			throw 42;
-		return i;
-	} catch(...) {
-		(stringfmt() << "Illegal port " << port << " device '" << type << "'").throwex();
-	}
-}
-
 moviefile::moviefile() throw(std::bad_alloc)
 {
 	static port_type_set dummy_types;
 	force_corrupt = false;
 	gametype = NULL;
-	ports = &dummy_types;
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
@@ -374,15 +396,11 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	std::vector<port_type*> pt;
-	pt.push_back(&core_portgroup.get_default_type(0));
-	for(unsigned i = 0; i < core_userports; i++) {
-		tmp = core_portgroup.get_default_type(i + 1).name;
-		read_linefile(r, (stringfmt() << "port" << (i + 1)).str(), tmp, true);
-		pt.push_back(&core_portgroup.get_type(tmp));
-	}
-	ports = &port_type_set::make(pt);
-	input.clear(*ports);
+	settings = read_settings(r);
+	auto ctrldata = gametype->get_type().controllerconfig(settings);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+
+	input.clear(ports);
 	read_linefile(r, "gamename", gamename, true);
 	read_linefile(r, "projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
@@ -447,9 +465,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 {
 	zip_writer w(movie, compression);
 	write_linefile(w, "gametype", gametype->get_name());
-	for(unsigned i = 0; i < core_userports; i++)
-		if(ports->port_type(i + 1).name != core_portgroup.get_default_type(i + 1).name)
-			write_linefile(w, (stringfmt() << "port" << (i + 1)).str(), ports->port_type(i + 1).name);
+	write_settings(w, settings, gametype->get_type().get_settings());
 	write_linefile(w, "gamename", gamename, true);
 	write_linefile(w, "systemid", "lsnes-rr1");
 	write_linefile(w, "controlsversion", "0");

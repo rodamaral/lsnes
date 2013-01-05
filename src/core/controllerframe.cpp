@@ -90,14 +90,10 @@ void controller_state::autofire(std::vector<controller_frame> pattern) throw(std
 
 void reread_active_buttons();
 
-void controller_state::set_ports(const port_type_set& ptype, bool set_core) throw(std::runtime_error)
+void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_error)
 {
 	const port_type_set* oldtype = types;
 	types = &ptype;
-	if(set_core) {
-		for(unsigned i = 1; i < types->ports(); i++)
-			types->port_type(i).set_core_controller(i);
-	}
 	if(oldtype != types) {
 		_input.set_types(ptype);
 		_autohold.set_types(ptype);

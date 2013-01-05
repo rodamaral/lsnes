@@ -60,10 +60,9 @@ public:
  * Set types of ports.
  *
  * Parameter ptype: The new types for ports.
- * Parameter set_core: If true, set the core port types too, otherwise don't do that.
  * Throws std::runtime_error: Illegal port type.
  */
-	void set_ports(const port_type_set& ptype, bool set_core) throw(std::runtime_error);
+	void set_ports(const port_type_set& ptype) throw(std::runtime_error);
 /**
  * Get status of current controls (with autohold/autofire factored in).
  *

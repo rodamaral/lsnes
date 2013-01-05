@@ -388,6 +388,7 @@ private:
 	bool settings_mode;
 	std::string c_rom;
 	std::string c_file;
+	std::map<std::string, std::string> c_settings;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -416,6 +417,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			c_rom = r[1];
 		if(r = regex("--load=(.+)", i))
 			c_file = r[1];
+		if(r = regex("--set=([^=]+)=(.+)", i))
+			c_settings[r[1]] = r[2];
 	}
 }
 
@@ -439,12 +442,12 @@ bool lsnes_app::OnInit()
 	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 
-	std::vector<class port_type*> pt;
-	for(unsigned i = 0; i <= core_userports; i++)
-		pt.push_back(&core_portgroup.get_default_type(i));
-	port_type_set* pset = &port_type_set::make(pt);
-		
-	controls.set_ports(*pset, false);
+	loaded_rom dummy_rom;
+	std::map<std::string, std::string> settings;
+	auto ctrldata = dummy_rom.rtype->controllerconfig(settings);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+
+	controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
@@ -480,7 +483,7 @@ bool lsnes_app::OnInit()
 		try {
 			moviefile mov;
 			rom = new loaded_rom(c_rom);
-			rom->load(mov.movie_rtc_second, mov.movie_rtc_subsecond);
+			rom->load(c_settings, mov.movie_rtc_second, mov.movie_rtc_subsecond);
 		} catch(std::exception& e) {
 			std::cerr << "Can't load ROM: " << e.what() << std::endl;
 			return false;
@@ -492,15 +495,17 @@ bool lsnes_app::OnInit()
 		try {
 			mov = new moviefile(c_file);
 			if(c_rom != "")
-				rom->load(mov->movie_rtc_second, mov->movie_rtc_subsecond);
+				rom->load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
 		} catch(std::exception& e) {
 			std::cerr << "Can't load state: " << e.what() << std::endl;
 			return false;
 		}
 	else {
 		mov = new moviefile;
-		mov->ports = pset;
-		mov->input.clear(*mov->ports);
+		mov->settings = c_settings;
+		auto ctrldata = rom->rtype->controllerconfig(mov->settings);
+		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+		mov->input.clear(ports);
 		if(c_rom != "") {
 			//Initialize the remainder.
 			mov->coreversion = bsnes_core_version;
@@ -510,8 +515,8 @@ bool lsnes_app::OnInit()
 				mov->romimg_sha256[i] = rom->romimg[i].sha_256;
 				mov->romxml_sha256[i] = rom->romxml[i].sha_256;
 			}
-			mov->gametype = &rom->rtype->combine_region(*rom->region);
 		}
+		mov->gametype = &rom->rtype->combine_region(*rom->region);
 	}
 	mov->start_paused = true;
 	boot_emulator(*rom, *mov);

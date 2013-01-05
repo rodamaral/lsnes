@@ -9,7 +9,7 @@
 #include <vector>
 #include "library/framebuffer.hpp"
 #include "library/controller-data.hpp"
-#include "core/romtype.hpp"
+#include "interface/romtype.hpp"
 
 
 //Get the CPU rate.
@@ -62,10 +62,8 @@ unsigned core_get_poll_flag();
 void core_set_poll_flag(unsigned pflag);
 //Request reset on next frame.
 void core_request_reset(long delay);
-//The port type group.
-extern port_type_group core_portgroup;
-//Number of user ports.
-extern unsigned core_userports;
+//Valid port types.
+extern port_type* core_port_types[];
 //Core supports resets.
 extern const bool core_supports_reset;
 //Core supports delayed resets.

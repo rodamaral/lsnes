@@ -148,13 +148,16 @@ namespace
 		static int done = 0;
 		if(done)
 			return;
-		process_port(0, core_portgroup.get_default_type(0));
-		for(unsigned i = 0; i < core_userports; i++) {
-			for(auto j : core_portgroup.get_types()) {
-				if(!j->legal(i))
+		for(unsigned i = 0;; i++) {
+			bool any = false;
+			for(unsigned j = 0; core_port_types[j]; j++) {
+				if(!core_port_types[j]->legal(i))
 					continue;
-				process_port(i + 1, *j);
+				any = true;
+				process_port(i, *core_port_types[j]);
 			}
+			if(!any)
+				break;
 		}
 		done = 1;
 	}

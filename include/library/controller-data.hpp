@@ -168,71 +168,6 @@ struct port_index_map
 	std::vector<std::pair<unsigned, unsigned>> pcid_map;
 };
 
-/**
- * Group of port types.
- */
-class port_type_group
-{
-public:
-/**
- * Construct a group.
- *
- * Throws std::bad_alloc: Not enough memory.
- */
-	port_type_group() throw(std::bad_alloc);
-/**
- * Destroy a group.
- */
-	~port_type_group() throw();
-/**
- * Get port type with specified name.
- *
- * Parameter name: The name of port type.
- * Returns: The port type structure.
- * Throws std::runtime_error: Specified port type unknown.
- */
-	port_type& get_type(const std::string& name) const throw(std::runtime_error);
-/**
- * Get set of all port types.
- *
- * Returns: The set of all port types.
- * Throws std::bad_alloc: Not enough memory.
- */
-	std::set<port_type*> get_types() const throw(std::bad_alloc);
-/**
- * Get default port type for specified port.
- *
- * Parameter port: The port.
- * Returns: The default port type.
- * Throws std::runtime_error: Bad port.
- */
-	port_type& get_default_type(unsigned port) const throw(std::runtime_error);
-/**
- * Add a port type.
- *
- * Parameter type: Name of the type.
- * Parameter port: The port type structure.
- * Throws std::bad_alloc: Not enough memory.
- */
-	void register_type(const std::string& type, port_type& port);
-/**
- * Remove a port type.
- *
- * Parameter type: Name of the type.
- * Throws std::bad_alloc: Not enough memory.
- */
-	void unregister_type(const std::string& type);
-/**
- * Set default type for port.
- *
- * Parameter port: The port.
- * Parameter ptype: The port type to make default.
- */
-	void set_default(unsigned port, port_type& ptype);
-private:
-	std::map<std::string, port_type*> types;
-	std::map<unsigned, port_type*> defaults;
-};
 
 class port_type_set;
 
@@ -307,14 +242,13 @@ public:
 /**
  * Create a new port type.
  *
- * Parameter group: The group the type will belong to.
  * Parameter iname: Internal name of the port type.
  * Parameter hname: Human-readable name of the port type.
  * Parameter id: Identifier.
  * Parameter ssize: The storage size in bytes.
  * Throws std::bad_alloc: Not enough memory.
  */
-	port_type(port_type_group& group, const std::string& iname, const std::string& hname, unsigned id,
+	port_type(const std::string& iname, const std::string& hname, unsigned id,
 		size_t ssize) throw(std::bad_alloc);
 /**
  * Unregister a port type.
@@ -379,25 +313,12 @@ public:
  */
 	port_controller_set* controller_info;
 /**
- * Set this controller as core controller.
- *
- * Parameter port: Port to set to.
- */
-	void (*set_core_controller)(unsigned port);
-/**
  * Get number of used control indices on controller.
  *
  * Parameter controller: Number of controller.
  * Returns: Number of used control indices.
  */
 	unsigned (*used_indices)(unsigned controller);
-/**
- * Construct index map. Only called for port0.
- *
- * Parameter types: The port types to construct the map for.
- * Returns: The index map.
- */
-	struct port_index_map (*construct_map)(std::vector<port_type*> types);
 /**
  * Human-readable name.
  */
@@ -418,10 +339,6 @@ public:
  * Is given controller present?
  */
 	bool is_present(unsigned controller) const throw();
-/**
- * Group this port is in.
- */
-	port_type_group& ingroup;
 private:
 	port_type(const port_type&);
 	port_type& operator=(const port_type&);
@@ -441,10 +358,12 @@ public:
  * Make a port type set with specified types. If called again with the same parameters, returns the same object.
  *
  * Parameter types: The types.
+ * Parameter control_map: The control map
  * Throws std::bad_alloc: Not enough memory.
  * Throws std::runtime_error: Illegal port types.
  */
-	static port_type_set& make(std::vector<port_type*> types) throw(std::bad_alloc, std::runtime_error);
+	static port_type_set& make(std::vector<port_type*> types, struct port_index_map control_map)
+		throw(std::bad_alloc, std::runtime_error);
 /**
  * Compare sets for equality.
  */
@@ -611,7 +530,7 @@ public:
 		}
 	}
 private:
-	port_type_set(std::vector<class port_type*> types);
+	port_type_set(std::vector<class port_type*> types, struct port_index_map control_map);
 	size_t* port_offsets;
 	class port_type** port_types;
 	unsigned port_count;
@@ -1267,14 +1186,6 @@ private:
 		cache_page = NULL;
 	}
 };
-
-/**
- * Get a dummy port type.
- *
- * Return value: Dummy port type.
- */
-port_type& get_dummy_port_type() throw(std::bad_alloc);
-
 
 /**
  * Generic port control index function.

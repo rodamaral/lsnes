@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <fstream>
+#include <climits>
 #include "core/audioapi.hpp"
 #include "core/misc.hpp"
 #include "core/emucore.hpp"
@@ -14,6 +15,7 @@
 #include "core/framebuffer.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/setting.hpp"
 #include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
 #include "library/portfn.hpp"
@@ -39,32 +41,6 @@
 #define ROM_TYPE_SUFAMITURBO 4
 #define ROM_TYPE_SGB 5
 
-/**
- * Logical button IDs.
- */
-#define LOGICAL_BUTTON_LEFT 0
-#define LOGICAL_BUTTON_RIGHT 1
-#define LOGICAL_BUTTON_UP 2
-#define LOGICAL_BUTTON_DOWN 3
-#define LOGICAL_BUTTON_A 4
-#define LOGICAL_BUTTON_B 5
-#define LOGICAL_BUTTON_X 6
-#define LOGICAL_BUTTON_Y 7
-#define LOGICAL_BUTTON_L 8
-#define LOGICAL_BUTTON_R 9
-#define LOGICAL_BUTTON_SELECT 10
-#define LOGICAL_BUTTON_START 11
-#define LOGICAL_BUTTON_TRIGGER 12
-#define LOGICAL_BUTTON_CURSOR 13
-#define LOGICAL_BUTTON_TURBO 14
-#define LOGICAL_BUTTON_PAUSE 15
-#define LOGICAL_BUTTON_EXT0 16
-#define LOGICAL_BUTTON_EXT1 17
-#define LOGICAL_BUTTON_EXT2 18
-#define LOGICAL_BUTTON_EXT3 19
-
-port_type_group core_portgroup;
-unsigned core_userports = 2;
 extern const bool core_supports_reset = true;
 #ifdef BSNES_HAS_DEBUGGER
 extern const bool core_supports_dreset = true;
@@ -77,6 +53,7 @@ void snesdbg_on_trace();
 
 namespace
 {
+	bool p1disable = false;
 	long do_reset_flag = -1;
 	bool pollflag_active = true;
 	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
@@ -187,18 +164,227 @@ namespace
 			norom_frame[i] = 0x7C21F;
 	}
 
-	int regions_compatible(unsigned rom, unsigned run)
+	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
 	{
-		return (!rom || rom == run);
+		if(idx)
+			return;
+		if(ctrl < 2)
+			if(x)
+				buffer[0] |= (1 << ctrl);
+			else
+				buffer[0] &= ~(1 << ctrl);
+		else if(ctrl < 4) {
+			buffer[2 * ctrl - 3] = x >> 8;
+			buffer[2 * ctrl - 2] = x;
+		}
 	}
 
-	unsigned header_fn(size_t r)
+	short system_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
 	{
-		if((r % 1024) == 512)
-			return 512;
-		else
+		if(idx)
 			return 0;
+		if(ctrl < 2)
+			return (buffer[0] >> ctrl) ? 1 : 0;
+		else if(ctrl < 4)
+			return unserialize_short(buffer + 2 * ctrl - 3);
+		return 0;
 	}
+
+	size_t system_deserialize(unsigned char* buffer, const char* textbuf)
+	{
+		memset(buffer, 0, 5);
+		size_t ptr = 0;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 1;
+		if(read_button_value(textbuf, ptr))
+			buffer[0] |= 2;
+		short v = read_axis_value(textbuf, ptr);
+		buffer[1] = v >> 8;
+		buffer[2] = v;
+		v = read_axis_value(textbuf, ptr);
+		buffer[3] = v >> 8;
+		buffer[4] = v;
+		skip_rest_of_field(textbuf, ptr, false);
+		return ptr;
+	}
+
+	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
+	{
+		if(idx)
+			sprintf(buf, "");
+		else
+			sprintf(buf, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
+				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
+	}
+
+	size_t system_serialize(const unsigned char* buffer, char* textbuf)
+	{
+		char tmp[128];
+		if(buffer[1] || buffer[2] || buffer[3] || buffer[4])
+			sprintf(tmp, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
+				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
+		else
+			sprintf(tmp, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
+		size_t len = strlen(tmp);
+		memcpy(textbuf, tmp, len);
+		return len;
+	}
+
+	struct porttype_system : public port_type
+	{
+		porttype_system() : port_type("<SYSTEM>", "<SYSTEM>", 9999, 5)
+		{
+			write = system_write;
+			read = system_read;
+			display = system_display;
+			serialize = system_serialize;
+			deserialize = system_deserialize;
+			legal = generic_port_legal<1>;
+			controller_info = &system_port;
+			used_indices = generic_used_indices<1, 4>;
+		}
+	} psystem;
+
+	struct porttype_gamepad : public port_type
+	{
+		porttype_gamepad() : port_type("gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
+		{
+			write = generic_port_write<1, 0, 12>;
+			read = generic_port_read<1, 0, 12>;
+			display = generic_port_display<1, 0, 12, &gamepad_buttons>;
+			serialize = generic_port_serialize<1, 0, 12, &gamepad_buttons>;
+			deserialize = generic_port_deserialize<1, 0, 12>;
+			legal = generic_port_legal<6>;
+			controller_info = &gamepad_port;
+			used_indices = generic_used_indices<1, 12>;
+		}
+	} gamepad;
+
+	struct porttype_gamepad16 : public port_type
+	{
+		porttype_gamepad16() : port_type("gamepad16", "Gamepad (16-button)", 1,
+			generic_port_size<1, 0, 16>())
+		{
+			write = generic_port_write<1, 0, 16>;
+			read = generic_port_read<1, 0, 16>;
+			display = generic_port_display<1, 0, 16, &gamepad_buttons>;
+			serialize = generic_port_serialize<1, 0, 16, &gamepad_buttons>;
+			deserialize = generic_port_deserialize<1, 0, 16>;
+			legal = generic_port_legal<6>;
+			controller_info = &gamepad16_port;
+			used_indices = generic_used_indices<1, 16>;
+		}
+	} gamepad16;
+
+	struct porttype_justifier : public port_type
+	{
+		porttype_justifier() : port_type("justifier", "Justifier", 5,
+			generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, &justifier_buttons>;
+			serialize = generic_port_serialize<1, 2, 2, &justifier_buttons>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<4>;
+			controller_info = &justifier_port;
+			used_indices = generic_used_indices<1, 4>;
+		}
+	} justifier;
+
+	struct porttype_justifiers : public port_type
+	{
+		porttype_justifiers() : port_type("justifiers", "2 Justifiers", 6,
+			generic_port_size<2, 2, 2>())
+		{
+			write = generic_port_write<2, 2, 2>;
+			read = generic_port_read<2, 2, 2>;
+			display = generic_port_display<2, 2, 2, &justifier_buttons>;
+			serialize = generic_port_serialize<2, 2, 2, &justifier_buttons>;
+			deserialize = generic_port_deserialize<2, 2, 2>;
+			legal = generic_port_legal<4>;
+			controller_info = &justifiers_port;
+			used_indices = generic_used_indices<2, 4>;
+		}
+	} justifiers;
+
+	struct porttype_mouse : public port_type
+	{
+		porttype_mouse() : port_type("mouse", "Mouse", 3, generic_port_size<1, 2, 2>())
+		{
+			write = generic_port_write<1, 2, 2>;
+			read = generic_port_read<1, 2, 2>;
+			display = generic_port_display<1, 2, 2, &mouse_buttons>;
+			serialize = generic_port_serialize<1, 2, 2, &mouse_buttons>;
+			deserialize = generic_port_deserialize<1, 2, 2>;
+			legal = generic_port_legal<6>;
+			controller_info = &mouse_port;
+			used_indices = generic_used_indices<1, 4>;
+		}
+	} mouse;
+
+	struct porttype_multitap : public port_type
+	{
+		porttype_multitap() : port_type("multitap", "Multitap", 2,
+			generic_port_size<4, 0, 12>())
+		{
+			write = generic_port_write<4, 0, 12>;
+			read = generic_port_read<4, 0, 12>;
+			display = generic_port_display<4, 0, 12, &gamepad_buttons>;
+			serialize = generic_port_serialize<4, 0, 12, &gamepad_buttons>;
+			deserialize = generic_port_deserialize<4, 0, 12>;
+			legal = generic_port_legal<6>;
+			controller_info = &multitap_port;
+			used_indices = generic_used_indices<4, 12>;
+		}
+	} multitap;
+
+	struct porttype_multitap16 : public port_type
+	{
+		porttype_multitap16() : port_type("multitap16", "Multitap (16-button)", 2,
+			generic_port_size<4, 0, 16>())
+		{
+			write = generic_port_write<4, 0, 16>;
+			read = generic_port_read<4, 0, 16>;
+			display = generic_port_display<4, 0, 16, &gamepad_buttons>;
+			serialize = generic_port_serialize<4, 0, 16, &gamepad_buttons>;
+			deserialize = generic_port_deserialize<4, 0, 16>;
+			legal = generic_port_legal<6>;
+			controller_info = &multitap16_port;
+			used_indices = generic_used_indices<4, 16>;
+		}
+	} multitap16;
+
+	struct porttype_none : public port_type
+	{
+		porttype_none() : port_type("none", "None", 0, generic_port_size<0, 0, 0>())
+		{
+			write = generic_port_write<0, 0, 0>;
+			read = generic_port_read<0, 0, 0>;
+			display = generic_port_display<0, 0, 0, &none_buttons>;
+			serialize = generic_port_serialize<0, 0, 0, &none_buttons>;
+			deserialize = generic_port_deserialize<0, 0, 0>;
+			legal = generic_port_legal<6>;
+			controller_info = &none_port;
+			used_indices = generic_used_indices<0, 0>;
+		}
+	} none;
+
+	struct porttype_superscope : public port_type
+	{
+		porttype_superscope() : port_type("superscope", "Super Scope", 4,
+			generic_port_size<1, 2, 4>())
+		{
+			write = generic_port_write<1, 2, 4>;
+			read = generic_port_read<1, 2, 4>;
+			display = generic_port_display<1, 2, 4, &superscope_buttons>;
+			serialize = generic_port_serialize<1, 2, 4, &superscope_buttons>;
+			deserialize = generic_port_deserialize<1, 2, 4>;
+			legal = generic_port_legal<4>;
+			controller_info = &superscope_port;
+			used_indices = generic_used_indices<1, 6>;
+		}
+	} superscope;
 
 	core_type* internal_rom = NULL;
 	extern core_type type_snes;
@@ -207,109 +393,290 @@ namespace
 	extern core_type type_sufamiturbo;
 	extern core_type type_sgb;
 
-	int load_rom_snes(core_romimage* img, uint64_t secs, uint64_t subsecs)
+	core_setting_group bsnes_settings;
+	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
+	core_setting_value setting_port1_none(setting_port1, "none", "None", 0);
+	core_setting_value setting_port1_gamepad(setting_port1, "gamepad", "Gamepad", 1);
+	core_setting_value setting_port1_gamepad16(setting_port1, "gamepad16", "Gamepad (16-button)", 2);
+	core_setting_value setting_port1_multitap(setting_port1, "multitap", "Multitap", 3);
+	core_setting_value setting_port1_multitap16(setting_port1, "multitap16", "Multitap (16-button)", 4);
+	core_setting_value setting_port1_mouse(setting_port1, "mouse", "Mouse", 5);
+	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none");
+	core_setting_value setting_port2_none(setting_port2, "none", "None", 0);
+	core_setting_value setting_port2_gamepad(setting_port2, "gamepad", "Gamepad", 1);
+	core_setting_value setting_port2_gamepad16(setting_port2, "gamepad16", "Gamepad (16-button)", 2);
+	core_setting_value setting_port2_multitap(setting_port2, "multitap", "Multitap", 3);
+	core_setting_value setting_port2_multitap16(setting_port2, "multitap16", "Multitap (16-button)", 4);
+	core_setting_value setting_port2_mouse(setting_port2, "mouse", "Mouse", 5);
+	core_setting_value setting_port2_justifier(setting_port2, "justifier", "Justifier", 6);
+	core_setting_value setting_port2_justifiers(setting_port2, "justifiers", "2 Justifiers", 7);
+	core_setting_value setting_port2_superscope(setting_port2, "superscope", "Super Scope", 8);
+
+	template<bool(*T)(const char*,const unsigned char*, unsigned)>
+	bool load_rom_X1(core_romimage* img)
 	{
-		snes_term();
-		snes_unload_cartridge();
-		bool r = snes_load_cartridge_normal(img[0].markup, img[0].data, img[0].size);
-		if(r)
-			internal_rom = &type_snes;
-		have_saved_this_frame = false;
-		do_reset_flag = -1;
-		return r ? 0 : -1;
+		return T(img[0].markup, img[0].data, img[0].size);
 	}
 
-	int load_rom_bsx(core_romimage* img, uint64_t secs, uint64_t subsecs)
+	template<bool(*T)(const char*,const unsigned char*, unsigned, const char*,const unsigned char*, unsigned)>
+	bool load_rom_X2(core_romimage* img)
 	{
-		snes_term();
-		snes_unload_cartridge();
-		bool r = snes_load_cartridge_bsx(img[0].markup, img[0].data, img[0].size,
+		return T(img[0].markup, img[0].data, img[0].size,
 			img[1].markup, img[1].data, img[1].size);
-		if(r)
-			internal_rom = &type_bsx;
-		have_saved_this_frame = false;
-		do_reset_flag = -1;
-		return r ? 0 : -1;
 	}
 
-	int load_rom_bsxslotted(core_romimage* img, uint64_t secs, uint64_t subsecs)
+	template<bool(*T)(const char*,const unsigned char*, unsigned, const char*,const unsigned char*, unsigned,
+		const char*,const unsigned char*, unsigned)>
+	bool load_rom_X3(core_romimage* img)
 	{
+		return T(img[0].markup, img[0].data, img[0].size,
+			img[1].markup, img[1].data, img[1].size,
+			img[2].markup, img[2].data, img[2].size);
+	}
+
+	unsigned index_to_bsnes_type(signed x)
+	{
+		switch(x) {
+		case 0:		return SNES_DEVICE_NONE;
+		case 1:		return SNES_DEVICE_JOYPAD;
+		case 2:		return SNES_DEVICE_JOYPAD;
+		case 3:		return SNES_DEVICE_MULTITAP;
+		case 4:		return SNES_DEVICE_MULTITAP;
+		case 5:		return SNES_DEVICE_MOUSE;
+		case 6:		return SNES_DEVICE_JUSTIFIER;
+		case 7:		return SNES_DEVICE_JUSTIFIERS;
+		case 8:		return SNES_DEVICE_SUPER_SCOPE;
+		};
+	}
+
+	int foobar(core_romimage* r);
+	
+	template<core_type* ctype>
+	int load_rom(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
+		uint64_t subsecs, bool(*fun)(core_romimage*))
+	{
+		std::map<std::string, std::string> _settings = settings;
+		bsnes_settings.fill_defaults(_settings);
+		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
+		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
+
 		snes_term();
 		snes_unload_cartridge();
-		bool r = snes_load_cartridge_bsx_slotted(img[0].markup, img[0].data, img[0].size,
-			img[1].markup, img[1].data, img[1].size);
+		bool r = fun(img);
 		if(r)
-			internal_rom = &type_bsxslotted;
+			internal_rom = ctype;
+		snes_set_controller_port_device(false, index_to_bsnes_type(type1));
+		snes_set_controller_port_device(true, index_to_bsnes_type(type2));
 		have_saved_this_frame = false;
 		do_reset_flag = -1;
 		return r ? 0 : -1;
+		
 	}
 
-	int load_rom_sgb(core_romimage* img, uint64_t secs, uint64_t subsecs)
+	int load_rom_snes(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
+		uint64_t subsecs)
 	{
-		snes_term();
-		snes_unload_cartridge();
-		bool r = snes_load_cartridge_super_game_boy(img[0].markup, img[0].data, img[0].size,
-			img[1].markup, img[1].data, img[1].size);
-		if(r)
-			internal_rom = &type_sgb;
-		have_saved_this_frame = false;
-		do_reset_flag = -1;
-		return r ? 0 : -1;
+		return load_rom<&type_snes>(img, settings, secs, subsecs, load_rom_X1<snes_load_cartridge_normal>);
 	}
 
-	int load_rom_sufamiturbo(core_romimage* img, uint64_t secs, uint64_t subsecs)
+	int load_rom_bsx(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
+		uint64_t subsecs)
 	{
-		snes_term();
-		snes_unload_cartridge();
-		bool r = snes_load_cartridge_sufami_turbo(img[0].markup, img[0].data, img[0].size,
-			img[1].markup, img[1].data, img[1].size, img[2].markup, img[2].data, img[2].size);
-		if(r)
-			internal_rom = &type_sufamiturbo;
-		have_saved_this_frame = false;
-		do_reset_flag = -1;
-		return r ? 0 : -1;
+		return load_rom<&type_bsx>(img, settings, secs, subsecs, load_rom_X2<snes_load_cartridge_bsx>);
 	}
 
-	uint64_t ntsc_magic[4] = {178683, 10738636, 16639264, 596096};
-	uint64_t pal_magic[4] = {6448, 322445, 19997208, 266440};
+	int load_rom_bsxslotted(core_romimage* img, std::map<std::string, std::string>& settings,
+		uint64_t secs, uint64_t subsecs)
+	{
+		return load_rom<&type_bsxslotted>(img, settings, secs, subsecs,
+			load_rom_X2<snes_load_cartridge_bsx_slotted>);
+	}
 
-	core_region region_auto("autodetect", "Autodetect", 1, 0, true, ntsc_magic, regions_compatible);
-	core_region region_ntsc("ntsc", "NTSC", 0, 1, true, ntsc_magic, regions_compatible);
-	core_region region_pal("pal", "PAL", 0, 2, true, pal_magic, regions_compatible);
-	core_romimage_info image_snescart("rom", "Cartridge ROM", 1, header_fn);
-	core_romimage_info image_bsxbios("rom", "BS-X BIOS", 1, header_fn);
-	core_romimage_info image_bsxflash("bsx", "BS-X Flash", 2, header_fn);
-	core_romimage_info image_bsxsflash("bsx", "BS-X Flash", 2, header_fn);
-	core_romimage_info image_sgbbios("rom", "SGB BIOS", 1, header_fn);
-	core_romimage_info image_dmg("dmg", "DMG ROM", 2, header_fn);
-	core_romimage_info image_stbios("rom", "ST BIOS", 1, header_fn);
-	core_romimage_info image_stslota("slot-a", "ST Slot A ROM", 2, header_fn);
-	core_romimage_info image_stslotb("slot-b", "ST Slot B ROM", 2, header_fn);
-	core_type type_snes("snes", "SNES", 0, load_rom_snes, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh");
-	core_type type_bsx("bsx", "BS-X (non-slotted)", 1, load_rom_bsx, "bsx.sfc!bs");
-	core_type type_bsxslotted("bsxslotted", "BS-X (slotted)", 2, load_rom_bsxslotted, "bsxslotted.sfc!bss");
-	core_type type_sufamiturbo("sufamiturbo", "Sufami Turbo", 3, load_rom_sufamiturbo, "sufamiturbo.sfc!st");
-	core_type type_sgb("sgb", "Super Game Boy", 4, load_rom_sgb, "sgb.sfc!gb;dmg;sgb");
-	core_type_region_bind bind_A(type_snes, region_auto);
-	core_type_region_bind bind_B(type_snes, region_ntsc);
-	core_type_region_bind bind_C(type_snes, region_pal);
-	core_type_region_bind bind_D(type_bsx, region_ntsc);
-	core_type_region_bind bind_E(type_bsxslotted, region_ntsc);
-	core_type_region_bind bind_F(type_sufamiturbo, region_ntsc);
-	core_type_region_bind bind_G(type_sgb, region_auto);
-	core_type_region_bind bind_H(type_sgb, region_ntsc);
-	core_type_region_bind bind_I(type_sgb, region_pal);
-	core_type_image_bind bind_J(type_snes, image_snescart, 0);
-	core_type_image_bind bind_K(type_bsx, image_bsxbios, 0);
-	core_type_image_bind bind_L(type_bsx, image_bsxflash, 1);
-	core_type_image_bind bind_M(type_bsxslotted, image_bsxbios, 0);
-	core_type_image_bind bind_N(type_bsxslotted, image_bsxsflash, 1);
-	core_type_image_bind bind_O(type_sufamiturbo, image_stbios, 0);
-	core_type_image_bind bind_P(type_sufamiturbo, image_stslota, 1);
-	core_type_image_bind bind_Q(type_sufamiturbo, image_stslotb, 2);
-	core_type_image_bind bind_R(type_sgb, image_sgbbios, 0);
-	core_type_image_bind bind_S(type_sgb, image_dmg, 1);
+	int load_rom_sgb(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
+		uint64_t subsecs)
+	{
+		return load_rom<&type_sgb>(img, settings, secs, subsecs,
+			load_rom_X2<snes_load_cartridge_super_game_boy>);
+	}
+
+	int load_rom_sufamiturbo(core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
+		uint64_t subsecs)
+	{
+		return load_rom<&type_sufamiturbo>(img, settings, secs, subsecs,
+			load_rom_X3<snes_load_cartridge_sufami_turbo>);
+	}
+
+	port_type* index_to_ptype(signed i)
+	{
+		switch(i) {
+		case 0:		return &none;
+		case 1:		return &gamepad;
+		case 2:		return &gamepad16;
+		case 3:		return &multitap;
+		case 4:		return &multitap16;
+		case 5:		return &mouse;
+		case 6:		return &justifier;
+		case 7:		return &justifiers;
+		case 8:		return &superscope;
+		};
+	}
+
+	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
+	{
+		port_index_triple x;
+		x.port = p;
+		x.controller = c;
+		x.control = i;
+		x.marks_nonlag = nl;
+		return x;
+	}
+
+	void push_port_indices(std::vector<port_index_triple>& tab, unsigned p, port_type& pt)
+	{
+		unsigned ctrls = pt.controller_info->controller_count;
+		for(unsigned i = 0; i < ctrls; i++)
+			for(unsigned j = 0; j < pt.controller_info->controllers[i]->button_count; j++)
+				tab.push_back(t(p, i, j, true));
+	}
+
+	controller_set _controllerconfig(std::map<std::string, std::string>& settings)
+	{
+		std::map<std::string, std::string> _settings = settings;
+		bsnes_settings.fill_defaults(_settings);
+		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
+		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
+		controller_set r;
+		r.ports.push_back(&psystem);
+		r.ports.push_back(index_to_ptype(type1));
+		r.ports.push_back(index_to_ptype(type2));
+		unsigned p1controllers = r.ports[1]->controller_info->controller_count;
+		unsigned p2controllers = r.ports[2]->controller_info->controller_count;
+		for(unsigned i = 0; i < 4; i++)
+			r.portindex.indices.push_back(t(0, 0, i, false));
+		push_port_indices(r.portindex.indices, 1, *r.ports[1]);
+		push_port_indices(r.portindex.indices, 2, *r.ports[2]);
+		r.portindex.logical_map.resize(p1controllers + p2controllers);
+		if(p1controllers == 4) {
+			r.portindex.logical_map[0] = std::make_pair(1, 0);
+			for(size_t j = 0; j < p2controllers; j++)
+				r.portindex.logical_map[j + 1] = std::make_pair(2U, j);
+			for(size_t j = 1; j < p1controllers; j++)
+				r.portindex.logical_map[j + p2controllers]  = std::make_pair(1U, j);
+		} else {
+			for(size_t j = 0; j < p1controllers; j++)
+				r.portindex.logical_map[j] = std::make_pair(1, j);
+			for(size_t j = 0; j < p2controllers; j++)
+				r.portindex.logical_map[j + p1controllers]  = std::make_pair(2U, j);
+		}
+		for(unsigned i = 0; i < 8; i++)
+			r.portindex.pcid_map.push_back(std::make_pair(i / 4 + 1, i % 4));
+		return r;
+	}
+
+	unsigned auto_compatible[] = {0, 1, 2, UINT_MAX};
+	unsigned ntsc_compatible[] = {1, UINT_MAX};
+	unsigned pal_compatible[] = {2, UINT_MAX};
+	struct core_region_params _region_auto = {
+		"autodetect", "Autodetect", 1, 0, true, {178683, 10738636, 16639264, 596096}, auto_compatible
+	};
+	struct core_region_params _region_ntsc = {
+		"ntsc", "NTSC", 0, 1, false, {178683, 10738636, 16639264, 596096}, ntsc_compatible
+	};
+	struct core_region_params _region_pal = {
+		"pal", "PAL", 0, 2, false, {6448, 322445, 19997208, 266440}, pal_compatible
+	};
+	struct core_romimage_info_params _image_snescart = {
+		"rom", "Cartridge ROM", 1, 0, 512
+	};
+	struct core_romimage_info_params _image_bsxbios = {
+		"rom", "BS-X BIOS", 1, 0, 512
+	};
+	struct core_romimage_info_params _image_bsxflash = {
+		"bsx", "BS-X Flash", 2, 0, 512
+	};
+	struct core_romimage_info_params _image_bsxsflash = {
+		"bsx", "BS-X Flash", 2, 0, 512
+	};
+	struct core_romimage_info_params _image_sgbbios = {
+		"rom", "SGB BIOS", 1, 0, 512
+	};
+	struct core_romimage_info_params _image_dmg = {
+		"dmg", "DMG ROM", 2, 0, 512
+	};
+	struct core_romimage_info_params _image_stbios = {
+		"rom", "ST BIOS", 1, 0, 512
+	};
+	struct core_romimage_info_params _image_stslota = {
+		"slot-a", "ST SLOT A ROM", 2, 0, 512
+	};
+	struct core_romimage_info_params _image_stslotb = {
+		"slot-b", "ST SLOT B ROM", 2, 0, 512
+	};
+
+	core_region region_auto(_region_auto);
+	core_region region_ntsc(_region_ntsc);
+	core_region region_pal(_region_pal);
+	core_region* _all_regions[] = {&region_auto, &region_ntsc, &region_pal, NULL};
+	core_region* _ntsconly[] = {&region_ntsc, NULL};
+	core_romimage_info image_snescart(_image_snescart);
+	core_romimage_info image_bsxbios(_image_bsxbios);
+	core_romimage_info image_bsxflash(_image_bsxflash);
+	core_romimage_info image_bsxsflash(_image_bsxsflash);
+	core_romimage_info image_sgbbios(_image_sgbbios);
+	core_romimage_info image_dmg(_image_dmg);
+	core_romimage_info image_stbios(_image_stbios);
+	core_romimage_info image_stslota(_image_stslota);
+	core_romimage_info image_stslotb(_image_stslotb);
+	core_romimage_info* snes_images[] = {&image_snescart, NULL};
+	core_romimage_info* bsx_images[] = {&image_bsxbios, &image_bsxflash, NULL};
+	core_romimage_info* bsxs_images[] = {&image_bsxbios, &image_bsxsflash, NULL};
+	core_romimage_info* sgb_images[] = {&image_sgbbios, &image_dmg, NULL};
+	core_romimage_info* st_images[] = {&image_stbios, &image_stslota, &image_stslotb, NULL};
+
+#ifdef BSNES_HAS_DEBUGGER
+#define BSNES_RESET_LEVEL 2
+#else
+#define BSNES_RESET_LEVEL 1
+#endif
+
+	bool core_set_region(core_region& region)
+	{
+		if(&region == &region_auto)		SNES::config.region = SNES::System::Region::Autodetect;
+		else if(&region == &region_ntsc)	SNES::config.region = SNES::System::Region::NTSC;
+		else if(&region == &region_pal)		SNES::config.region = SNES::System::Region::PAL;
+		else
+			return false;
+		return true;
+	}
+
+	
+	core_type_params _type_snes = {
+		"snes", "SNES", 0, BSNES_RESET_LEVEL , load_rom_snes, _controllerconfig,
+		"sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images, &bsnes_settings,
+		core_set_region
+	};
+	core_type_params _type_bsx = {
+		"bsx", "BS-X (non-slotted)", 1, BSNES_RESET_LEVEL , load_rom_bsx, _controllerconfig,
+		"bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, core_set_region
+	};
+	core_type_params _type_bsxslotted = {
+		"bsxslotted", "BS-X (slotted)", 2, BSNES_RESET_LEVEL , load_rom_bsxslotted, _controllerconfig,
+		"bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region
+	};
+	core_type_params _type_sufamiturbo = {
+		"sufamiturbo", "Sufami Turbo", 3, BSNES_RESET_LEVEL , load_rom_sufamiturbo, _controllerconfig,
+		"st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region
+	};
+	core_type_params _type_sgb = {
+		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL , load_rom_sgb, _controllerconfig,
+		"gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, core_set_region
+	};
+
+	core_type type_snes(_type_snes);
+	core_type type_bsx(_type_bsx);
+	core_type type_bsxslotted(_type_bsxslotted);
+	core_type type_sufamiturbo(_type_sufamiturbo);
+	core_type type_sgb(_type_sgb);
 	core_sysregion sr1("snes_ntsc", type_snes, region_ntsc);
 	core_sysregion sr2("snes_pal", type_snes, region_pal);
 	core_sysregion sr3("bsx", type_bsx, region_ntsc);
@@ -326,7 +693,6 @@ namespace
 	unsigned long long delayreset_cycles_run;
 	unsigned long long delayreset_cycles_target;
 	
-	bool p1disable = false;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
 	class my_interfaced : public SNES::Interface
@@ -584,339 +950,14 @@ namespace
 		}
 	};
 
-	template<int type, bool p2only>
-	void set_core_controller_X(unsigned port) throw()
-	{
-		if(port != 1 && port != 2)
-			return;
-		if(port == 2)
-			snes_set_controller_port_device(true, type);
-		if(port == 1) {
-			snes_set_controller_port_device(false, p2only ? SNES_DEVICE_NONE : type);
-			p1disable = p2only;
-		}
-	};
-
-	void set_core_controller_system(unsigned port) throw()
-	{
-	}
-
-	void system_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x) throw()
-	{
-		if(idx)
-			return;
-		if(ctrl < 2)
-			if(x)
-				buffer[0] |= (1 << ctrl);
-			else
-				buffer[0] &= ~(1 << ctrl);
-		else if(ctrl < 4) {
-			buffer[2 * ctrl - 3] = x >> 8;
-			buffer[2 * ctrl - 2] = x;
-		}
-	}
-
-	short system_read(const unsigned char* buffer, unsigned idx, unsigned ctrl) throw()
-	{
-		if(idx)
-			return 0;
-		if(ctrl < 2)
-			return (buffer[0] >> ctrl) ? 1 : 0;
-		else if(ctrl < 4)
-			return unserialize_short(buffer + 2 * ctrl - 3);
-		return 0;
-	}
-
-	size_t system_deserialize(unsigned char* buffer, const char* textbuf)
-	{
-		memset(buffer, 0, 5);
-		size_t ptr = 0;
-		if(read_button_value(textbuf, ptr))
-			buffer[0] |= 1;
-		if(read_button_value(textbuf, ptr))
-			buffer[0] |= 2;
-		short v = read_axis_value(textbuf, ptr);
-		buffer[1] = v >> 8;
-		buffer[2] = v;
-		v = read_axis_value(textbuf, ptr);
-		buffer[3] = v >> 8;
-		buffer[4] = v;
-		skip_rest_of_field(textbuf, ptr, false);
-		return ptr;
-	}
-
-	void system_display(const unsigned char* buffer, unsigned idx, char* buf)
-	{
-		if(idx)
-			sprintf(buf, "");
-		else
-			sprintf(buf, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
-				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
-	}
-
-	size_t system_serialize(const unsigned char* buffer, char* textbuf)
-	{
-		char tmp[128];
-		if(buffer[1] || buffer[2] || buffer[3] || buffer[4])
-			sprintf(tmp, "%c%c %i %i", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'),
-				unserialize_short(buffer + 1), unserialize_short(buffer + 3));
-		else
-			sprintf(tmp, "%c%c", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
-		size_t len = strlen(tmp);
-		memcpy(textbuf, tmp, len);
-		return len;
-	}
-
-	struct port_index_map build_indices(std::vector<port_type*> types);
-
-	struct porttype_system : public port_type
-	{
-		porttype_system() : port_type(core_portgroup, "<SYSTEM>", "<SYSTEM>", 9999, 5)
-		{
-			write = system_write;
-			read = system_read;
-			display = system_display;
-			serialize = system_serialize;
-			deserialize = system_deserialize;
-			legal = generic_port_legal<0>;
-			controller_info = &system_port;
-			construct_map = build_indices;
-			used_indices = generic_used_indices<1, 4>;
-			set_core_controller = set_core_controller_system;
-			core_portgroup.set_default(0, *this);
-		}
-	} psystem;
-
-	struct porttype_gamepad : public port_type
-	{
-		porttype_gamepad() : port_type(core_portgroup, "gamepad", "Gamepad", 1, generic_port_size<1, 0, 12>())
-		{
-			write = generic_port_write<1, 0, 12>;
-			read = generic_port_read<1, 0, 12>;
-			display = generic_port_display<1, 0, 12, &gamepad_buttons>;
-			serialize = generic_port_serialize<1, 0, 12, &gamepad_buttons>;
-			deserialize = generic_port_deserialize<1, 0, 12>;
-			legal = generic_port_legal<3>;
-			controller_info = &gamepad_port;
-			used_indices = generic_used_indices<1, 12>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
-			core_portgroup.set_default(1, *this);
-		}
-	} gamepad;
-
-	struct porttype_gamepad16 : public port_type
-	{
-		porttype_gamepad16() : port_type(core_portgroup, "gamepad16", "Gamepad (16-button)", 1,
-			generic_port_size<1, 0, 16>())
-		{
-			write = generic_port_write<1, 0, 16>;
-			read = generic_port_read<1, 0, 16>;
-			display = generic_port_display<1, 0, 16, &gamepad_buttons>;
-			serialize = generic_port_serialize<1, 0, 16, &gamepad_buttons>;
-			deserialize = generic_port_deserialize<1, 0, 16>;
-			legal = generic_port_legal<3>;
-			controller_info = &gamepad16_port;
-			used_indices = generic_used_indices<1, 16>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_JOYPAD, false>;
-		}
-	} gamepad16;
-
-	struct porttype_justifier : public port_type
-	{
-		porttype_justifier() : port_type(core_portgroup, "justifier", "Justifier", 5,
-			generic_port_size<1, 2, 2>())
-		{
-			write = generic_port_write<1, 2, 2>;
-			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, &justifier_buttons>;
-			serialize = generic_port_serialize<1, 2, 2, &justifier_buttons>;
-			deserialize = generic_port_deserialize<1, 2, 2>;
-			legal = generic_port_legal<2>;
-			controller_info = &justifier_port;
-			used_indices = generic_used_indices<1, 4>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIER, true>;
-		}
-	} justifier;
-
-	struct porttype_justifiers : public port_type
-	{
-		porttype_justifiers() : port_type(core_portgroup, "justifiers", "2 Justifiers", 6,
-			generic_port_size<2, 2, 2>())
-		{
-			write = generic_port_write<2, 2, 2>;
-			read = generic_port_read<2, 2, 2>;
-			display = generic_port_display<2, 2, 2, &justifier_buttons>;
-			serialize = generic_port_serialize<2, 2, 2, &justifier_buttons>;
-			deserialize = generic_port_deserialize<2, 2, 2>;
-			legal = generic_port_legal<2>;
-			controller_info = &justifiers_port;
-			used_indices = generic_used_indices<2, 4>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_JUSTIFIERS, true>;
-		}
-	} justifiers;
-
-	struct porttype_mouse : public port_type
-	{
-		porttype_mouse() : port_type(core_portgroup, "mouse", "Mouse", 3, generic_port_size<1, 2, 2>())
-		{
-			write = generic_port_write<1, 2, 2>;
-			read = generic_port_read<1, 2, 2>;
-			display = generic_port_display<1, 2, 2, &mouse_buttons>;
-			serialize = generic_port_serialize<1, 2, 2, &mouse_buttons>;
-			deserialize = generic_port_deserialize<1, 2, 2>;
-			legal = generic_port_legal<3>;
-			controller_info = &mouse_port;
-			used_indices = generic_used_indices<1, 4>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_MOUSE, false>;
-		}
-	} mouse;
-
-	struct porttype_multitap : public port_type
-	{
-		porttype_multitap() : port_type(core_portgroup, "multitap", "Multitap", 2,
-			generic_port_size<4, 0, 12>())
-		{
-			write = generic_port_write<4, 0, 12>;
-			read = generic_port_read<4, 0, 12>;
-			display = generic_port_display<4, 0, 12, &gamepad_buttons>;
-			serialize = generic_port_serialize<4, 0, 12, &gamepad_buttons>;
-			deserialize = generic_port_deserialize<4, 0, 12>;
-			legal = generic_port_legal<3>;
-			controller_info = &multitap_port;
-			used_indices = generic_used_indices<4, 12>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
-		}
-	} multitap;
-
-	struct porttype_multitap16 : public port_type
-	{
-		porttype_multitap16() : port_type(core_portgroup, "multitap16", "Multitap (16-button)", 2,
-			generic_port_size<4, 0, 16>())
-		{
-			write = generic_port_write<4, 0, 16>;
-			read = generic_port_read<4, 0, 16>;
-			display = generic_port_display<4, 0, 16, &gamepad_buttons>;
-			serialize = generic_port_serialize<4, 0, 16, &gamepad_buttons>;
-			deserialize = generic_port_deserialize<4, 0, 16>;
-			legal = generic_port_legal<3>;
-			controller_info = &multitap16_port;
-			used_indices = generic_used_indices<4, 16>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_MULTITAP, false>;
-		}
-	} multitap16;
-
-	struct porttype_none : public port_type
-	{
-		porttype_none() : port_type(core_portgroup, "none", "None", 0, generic_port_size<0, 0, 0>())
-		{
-			write = generic_port_write<0, 0, 0>;
-			read = generic_port_read<0, 0, 0>;
-			display = generic_port_display<0, 0, 0, &none_buttons>;
-			serialize = generic_port_serialize<0, 0, 0, &none_buttons>;
-			deserialize = generic_port_deserialize<0, 0, 0>;
-			legal = generic_port_legal<3>;
-			controller_info = &none_port;
-			used_indices = generic_used_indices<0, 0>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_NONE, false>;
-			core_portgroup.set_default(2, *this);
-		}
-	} none;
-
-	struct porttype_superscope : public port_type
-	{
-		porttype_superscope() : port_type(core_portgroup, "superscope", "Super Scope", 4,
-			generic_port_size<1, 2, 4>())
-		{
-			write = generic_port_write<1, 2, 4>;
-			read = generic_port_read<1, 2, 4>;
-			display = generic_port_display<1, 2, 4, &superscope_buttons>;
-			serialize = generic_port_serialize<1, 2, 4, &superscope_buttons>;
-			deserialize = generic_port_deserialize<1, 2, 4>;
-			legal = generic_port_legal<2>;
-			controller_info = &superscope_port;
-			used_indices = generic_used_indices<1, 6>;
-			set_core_controller = set_core_controller_X<SNES_DEVICE_SUPER_SCOPE, true>;
-		}
-	} superscope;
-
-	template<unsigned x, unsigned y>
-	void fill_map_partial(std::vector<port_index_triple>& map, unsigned port)
-	{
-		unsigned sidx = port ? (port * 48 - 44) : 0;
-		for(unsigned i = 0; i < 48; i++) {
-			map[i + sidx].valid = (i / 12 < x) && (i % 12 < y);
-			map[i + sidx].port = port;
-			map[i + sidx].controller = i / 12;
-			map[i + sidx].control = i % 12;
-			map[i + sidx].marks_nonlag = (port != 0);
-		}
-		for(unsigned i = 0; i < x; i++)
-			for(unsigned j = 12; j < y; j++) {
-				port_index_triple t;
-				t.valid = true;
-				t.port = port;
-				t.controller = i;
-				t.control = j;
-				t.marks_nonlag = true;
-				map.push_back(t);
-			}
-	}
-
-	void fill_map_port(std::vector<port_index_triple>& map, port_type& ptype, unsigned port)
-	{
-		if(&ptype == &psystem)
-			fill_map_partial<1, 4>(map, port);
-		if(&ptype == &none)
-			fill_map_partial<0, 0>(map, port);
-		if(&ptype == &gamepad)
-			fill_map_partial<1, 12>(map, port);
-		if(&ptype == &gamepad16)
-			fill_map_partial<1, 16>(map, port);
-		if(&ptype == &multitap)
-			fill_map_partial<4, 12>(map, port);
-		if(&ptype == &multitap16)
-			fill_map_partial<4, 16>(map, port);
-		if(&ptype == &mouse)
-			fill_map_partial<1, 4>(map, port);
-		if(&ptype == &superscope)
-			fill_map_partial<1, 6>(map, port);
-		if(&ptype == &justifier)
-			fill_map_partial<1, 4>(map, port);
-		if(&ptype == &justifiers)
-			fill_map_partial<2, 4>(map, port);
-	}
-	
-	struct port_index_map build_indices(std::vector<port_type*> types)
-	{
-		struct port_index_map i;
-		i.indices.resize(100);
-		fill_map_port(i.indices, *types[0], 0);
-		fill_map_port(i.indices, *types[1], 1);
-		fill_map_port(i.indices, *types[2], 2);
-		unsigned p1controllers = types[1]->controller_info->controller_count;
-		unsigned p2controllers = types[2]->controller_info->controller_count;
-		i.logical_map.resize(p1controllers + p2controllers);
-		if(p1controllers == 4) {
-			i.logical_map[0] = std::make_pair(1, 0);
-			for(size_t j = 0; j < p2controllers; j++)
-				i.logical_map[j + 1] = std::make_pair(2U, j);
-			for(size_t j = 1; j < p1controllers; j++)
-				i.logical_map[j + p2controllers]  = std::make_pair(1U, j);
-		} else {
-			for(size_t j = 0; j < p1controllers; j++)
-				i.logical_map[j] = std::make_pair(1, j);
-			for(size_t j = 0; j < p2controllers; j++)
-				i.logical_map[j + p1controllers]  = std::make_pair(2U, j);
-		}
-		i.pcid_map.resize(8);
-		for(size_t j = 0; j < 8; j++)
-			i.pcid_map[j] = std::make_pair(j / 4 + 1, j % 4);
-		return i;
-	}
-
 	my_interface my_interface_obj;
 	SNES::Interface* old;
 }
+
+port_type* core_port_types[] = {
+	&psystem, &none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers,
+	&superscope, NULL
+};
 
 void core_install_handler()
 {
@@ -1057,16 +1098,6 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 	for(auto i : sram)
 		if(!used.count(i.first))
 			messages << "WARNING: SRAM '" << i.first << ": Not found on cartridge." << std::endl;
-}
-
-bool core_set_region(core_region& region)
-{
-	if(&region == &region_auto)		SNES::config.region = SNES::System::Region::Autodetect;
-	else if(&region == &region_ntsc)	SNES::config.region = SNES::System::Region::NTSC;
-	else if(&region == &region_pal)		SNES::config.region = SNES::System::Region::PAL;
-	else
-		return false;
-	return true;
 }
 
 void core_serialize(std::vector<char>& out)

@@ -6,7 +6,7 @@
 #include <vector>
 #include <stdexcept>
 #include "core/misc.hpp"
-#include "core/romtype.hpp"
+#include "interface/romtype.hpp"
 
 /**
  * Some loaded data or indication of no data.
@@ -144,7 +144,8 @@ struct loaded_rom
  * throws std::bad_alloc: Not enough memory
  * throws std::runtime_error: Switching cartridges failed.
  */
-	void load(uint64_t rtc_sec, uint64_t rtc_subsec) throw(std::bad_alloc, std::runtime_error);
+	void load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
+		throw(std::bad_alloc, std::runtime_error);
 };
 
 /**

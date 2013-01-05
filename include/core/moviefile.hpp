@@ -50,9 +50,9 @@ struct moviefile
  */
 	core_sysregion* gametype;
 /**
- * The set of port types.
+ * Settings.
  */
-	const port_type_set* ports;
+	std::map<std::string, std::string> settings;
 /**
  * Emulator Core version string.
  */
