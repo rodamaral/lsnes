@@ -127,6 +127,7 @@ core_type::core_type(core_type_params& params)
 	_set_region = params.set_region;
 	_audio_rate = params.audio_rate;
 	_video_rate = params.video_rate;
+	_snes_rate = params.snes_rate;
 	settings = params.settings;
 	if(params.bios)
 		biosname = params.bios;
@@ -264,6 +265,14 @@ std::pair<uint32_t, uint32_t> core_type::get_video_rate()
 std::pair<uint32_t, uint32_t> core_type::get_audio_rate()
 {
 	return _audio_rate();
+}
+
+std::pair<uint32_t, uint32_t> core_type::get_snes_rate()
+{
+	if(_snes_rate)
+		return _snes_rate();
+	else
+		return std::make_pair(0, 0);
 }
 
 

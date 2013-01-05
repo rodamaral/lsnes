@@ -98,7 +98,7 @@ namespace
 	core_type_params _type_null = {
 		"null", "(null)", 9999, 0, load_rom_null, null_controllerconfig,
 		"", NULL, null_regions, null_images, &null_settings, set_region_null,
-		videorate_null, audiorate_null
+		videorate_null, audiorate_null, NULL
 	};
 	core_type type_null(_type_null);
 	core_sysregion sysregion_null("null", type_null, null_region);

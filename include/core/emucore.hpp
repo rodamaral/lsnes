@@ -12,10 +12,6 @@
 #include "interface/romtype.hpp"
 
 
-//Get the CPU rate.
-uint32_t get_snes_cpu_rate();
-//Get the APU rate.
-uint32_t get_snes_apu_rate();
 //Get the core identifier.
 std::string get_core_identifier();
 //Do basic core initialization (to get it to stable state).

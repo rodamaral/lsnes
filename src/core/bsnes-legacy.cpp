@@ -81,6 +81,11 @@ namespace
 	const char* justifier_name = "justifier";
 	const char* gamepad16_name = "gamepad16";
 
+	std::pair<uint32_t, uint32_t> snes_rate()
+	{
+		return std::make_pair(SNES::system.cpu_frequency(), SNES::system.apu_frequency());
+	}
+
 	port_controller_button gamepad_btn_B = {port_controller_button::TYPE_BUTTON, "B"};
 	port_controller_button gamepad_btn_Y = {port_controller_button::TYPE_BUTTON, "Y"};
 	port_controller_button gamepad_btn_s = {port_controller_button::TYPE_BUTTON, "select"};
@@ -661,7 +666,7 @@ namespace
 			div = last_interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
 		else
 			div = last_interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
-		return std::make_pair(get_snes_cpu_rate(), div);
+		return std::make_pair(SNES::system.cpu_frequency(), div);
 	}
 
 	//Get the current audio rate.
@@ -669,33 +674,33 @@ namespace
 	{
 		if(!internal_rom)
 			return std::make_pair(64081, 2);
-		return std::make_pair(get_snes_apu_rate(), static_cast<uint32_t>(768));
+		return std::make_pair(SNES::system.apu_frequency(), static_cast<uint32_t>(768));
 	}
 
 	core_type_params _type_snes = {
 		"snes", "SNES", 0, BSNES_RESET_LEVEL , load_rom_snes, _controllerconfig,
 		"sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images, &bsnes_settings,
-		core_set_region, get_video_rate, get_audio_rate
+		core_set_region, get_video_rate, get_audio_rate, snes_rate
 	};
 	core_type_params _type_bsx = {
 		"bsx", "BS-X (non-slotted)", 1, BSNES_RESET_LEVEL , load_rom_bsx, _controllerconfig,
 		"bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, core_set_region, get_video_rate, 
-		get_audio_rate
+		get_audio_rate, snes_rate
 	};
 	core_type_params _type_bsxslotted = {
 		"bsxslotted", "BS-X (slotted)", 2, BSNES_RESET_LEVEL , load_rom_bsxslotted, _controllerconfig,
 		"bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region, get_video_rate, 
-		get_audio_rate
+		get_audio_rate, snes_rate
 	};
 	core_type_params _type_sufamiturbo = {
 		"sufamiturbo", "Sufami Turbo", 3, BSNES_RESET_LEVEL , load_rom_sufamiturbo, _controllerconfig,
 		"st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, core_set_region, get_video_rate, 
-		get_audio_rate
+		get_audio_rate, snes_rate
 	};
 	core_type_params _type_sgb = {
 		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL , load_rom_sgb, _controllerconfig,
 		"gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, core_set_region, get_video_rate,
-		get_audio_rate
+		get_audio_rate, snes_rate
 	};
 
 	core_type type_snes(_type_snes);
@@ -993,16 +998,6 @@ void core_install_handler()
 void core_uninstall_handler()
 {
 	SNES::interface = old;
-}
-
-uint32_t get_snes_cpu_rate()
-{
-	return SNES::system.cpu_frequency();
-}
-
-uint32_t get_snes_apu_rate()
-{
-	return SNES::system.apu_frequency();
 }
 
 std::string get_core_identifier()

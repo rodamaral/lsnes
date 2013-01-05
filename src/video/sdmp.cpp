@@ -4,6 +4,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "core/emucore.hpp"
+#include "core/moviedata.hpp"
 #include "library/serialization.hpp"
 #include "video/tcp.hpp"
 
@@ -83,8 +84,9 @@ namespace
 				if(!*out)
 					throw std::runtime_error("Failed to open '" + str2 + "'");
 				write32ube(tbuffer, 0x53444D50U);
-				write32ube(tbuffer + 4, get_snes_cpu_rate());
-				write32ube(tbuffer + 8, get_snes_apu_rate());
+				auto rates = our_rom->rtype->get_snes_rate();
+				write32ube(tbuffer + 4, rates.first);
+				write32ube(tbuffer + 8, rates.second);
 				out->write(reinterpret_cast<char*>(tbuffer), 12);
 				if(!*out)
 					throw std::runtime_error("Failed to write header to '" + str2 + "'");

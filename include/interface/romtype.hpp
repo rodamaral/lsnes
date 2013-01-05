@@ -52,6 +52,7 @@ struct core_type_params
 	bool (*set_region)(core_region& region);
 	std::pair<uint32_t, uint32_t> (*video_rate)();
 	std::pair<uint32_t, uint32_t> (*audio_rate)();
+	std::pair<uint32_t, uint32_t> (*snes_rate)();
 };
 
 struct core_region
@@ -120,6 +121,7 @@ public:
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
+	std::pair<uint32_t, uint32_t> get_snes_rate();	//(0,0) for non-SNES.
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
@@ -129,6 +131,7 @@ private:
 	bool (*_set_region)(core_region& region);
 	std::pair<uint32_t, uint32_t> (*_video_rate)();
 	std::pair<uint32_t, uint32_t> (*_audio_rate)();
+	std::pair<uint32_t, uint32_t> (*_snes_rate)();
 	unsigned id;
 	unsigned reset_support;
 	std::string iname;
