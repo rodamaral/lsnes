@@ -30,8 +30,6 @@ std::pair<uint32_t, uint32_t> get_video_rate();
 std::pair<uint32_t, uint32_t> get_audio_rate();
 //Set preload settings.
 void set_preload_settings();
-//Set the region.
-bool core_set_region(core_region& region);
 //Power the core.
 void core_power();
 //Unload the cartridge.

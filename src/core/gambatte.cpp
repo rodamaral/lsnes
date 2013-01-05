@@ -289,6 +289,11 @@ namespace
 	core_romimage_info* gbc_images[] = {&image_rom_gbc, NULL};
 	core_romimage_info* gbca_images[] = {&image_rom_gbca, NULL};
 
+	bool core_set_region(core_region& region)
+	{
+		return (&region == &region_world);
+	}
+
 	core_type_params  _type_dmg = {
 		"dmg", "Game Boy", 1, 1, load_rom_dmg, _controllerconfig, "gb;dmg", NULL,
 		regions_gambatte, dmg_images, &gambatte_settings, core_set_region
@@ -340,11 +345,6 @@ std::pair<uint32_t, uint32_t> get_video_rate()
 std::pair<uint32_t, uint32_t> get_audio_rate()
 {
 	return std::make_pair(32768, 1);
-}
-
-bool core_set_region(core_region& region)
-{
-	return (&region == &region_world);
 }
 
 void core_runtosave()
