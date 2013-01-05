@@ -233,11 +233,10 @@ int main(int argc, char** argv)
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();
-	bsnes_core_version = get_core_identifier();
+	bsnes_core_version = emulator_core->get_core_identifier();
 	platform::init();
 	init_lua();
 
-	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 	messages << "Command line is: ";
 	for(auto k = cmdline.begin(); k != cmdline.end(); k++)
@@ -272,6 +271,7 @@ int main(int argc, char** argv)
 		std::map<std::string, std::string> tmp;
 		r = load_rom_from_commandline(cmdline);
 		r.load(tmp, 1000000000, 0);
+		messages << "Using core: " << r.rtype->get_core_identifier() << std::endl;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {

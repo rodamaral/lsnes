@@ -305,20 +305,96 @@ namespace
 		return (&region == &region_world);
 	}
 
+	std::string core_identifier()
+	{
+		return "libgambatte "+gambatte::GB::version();
+	}
+
+	std::map<std::string, std::vector<char>> gambatte_stsram() throw(std::bad_alloc)
+	{
+		std::map<std::string, std::vector<char>> s;
+		if(!internal_rom)
+			return s;
+		auto g = instance->getSaveRam();
+		s["main"].resize(g.second);
+		memcpy(&s["main"][0], g.first, g.second);
+		s["rtc"].resize(8);
+		time_t timebase = instance->getRtcBase();
+		for(size_t i = 0; i < 8; i++)
+			s["rtc"][i] = ((unsigned long long)timebase >> (8 * i));
+		return s;
+	}
+
+	void gambatte_ldsram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
+	{
+		if(!internal_rom)
+			return;
+		std::vector<char> x = sram.count("main") ? sram["main"] : std::vector<char>();
+		std::vector<char> x2 = sram.count("rtc") ? sram["rtc"] : std::vector<char>();
+		auto g = instance->getSaveRam();
+		if(x.size()) {
+			if(x.size() != g.second)
+				messages << "WARNING: SRAM 'main': Loaded " << x.size()
+					<< " bytes, but the SRAM is " << g.second << "." << std::endl;
+			memcpy(g.first, &x[0], min(x.size(), g.second));
+		}
+		if(x2.size()) {
+			time_t timebase = 0;
+			for(size_t i = 0; i < 8 && i < x2.size(); i++)
+				timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
+			instance->setRtcBase(timebase);
+		}
+	}
+
+	void gambatte_serialize(std::vector<char>& out)
+	{
+		if(!internal_rom)
+			throw std::runtime_error("Can't save without ROM");
+		instance->saveState(out);
+		size_t osize = out.size();
+		out.resize(osize + 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]));
+		for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
+			write32ube(&out[osize + 4 * i], primary_framebuffer[i]);
+		out.push_back(frame_overflow >> 8);
+		out.push_back(frame_overflow);
+	}
+
+	void gambatte_unserialize(const char* in, size_t insize)
+	{
+		if(!internal_rom)
+			throw std::runtime_error("Can't load without ROM");
+		size_t foffset = insize - 2 - 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]);
+		std::vector<char> tmp;
+		tmp.resize(foffset);
+		memcpy(&tmp[0], in, foffset);
+		instance->loadState(tmp);
+		for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
+			primary_framebuffer[i] = read32ube(&in[foffset + 4 * i]);
+
+		unsigned x1 = (unsigned char)in[insize - 2];
+	unsigned	 x2 = (unsigned char)in[insize - 1];
+		frame_overflow = x1 * 256 + x2;
+		do_reset_flag = false;
+	}
+
+	core_core_params _gambatte_core = {
+		core_identifier, core_set_region, get_video_rate, get_audio_rate, NULL,
+		gambatte_stsram, gambatte_ldsram, gambatte_serialize, gambatte_unserialize
+	};
+
+	core_core gambatte_core(_gambatte_core);
+	
 	core_type_params  _type_dmg = {
 		"dmg", "Game Boy", 1, 1, load_rom_dmg, _controllerconfig, "gb;dmg", NULL,
-		regions_gambatte, dmg_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate,
-		NULL
+		regions_gambatte, dmg_images, &gambatte_settings, &gambatte_core
 	};
 	core_type_params  _type_gbc = {
 		"gbc", "Game Boy Color", 0, 1, load_rom_gbc, _controllerconfig, "gbc;cgb", NULL,
-		regions_gambatte, gbc_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate,
-		NULL
+		regions_gambatte, gbc_images, &gambatte_settings, &gambatte_core
 	};
 	core_type_params  _type_gbc_gba = {
 		"gbc_gba", "Game Boy Color (GBA)", 2, 1, load_rom_gbc_gba, _controllerconfig, "", NULL,
-		regions_gambatte, gbca_images, &gambatte_settings, core_set_region, get_video_rate, get_audio_rate,
-		NULL
+		regions_gambatte, gbca_images, &gambatte_settings, &gambatte_core
 	};
 	core_type type_dmg(_type_dmg);
 	core_type type_gbc(_type_gbc);
@@ -327,6 +403,8 @@ namespace
 	core_sysregion sr2("ggbc", type_gbc, region_world);
 	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
 }
+
+core_core* emulator_core = &gambatte_core;
 
 port_type* core_port_types[] = {
 	&psystem, NULL
@@ -337,11 +415,6 @@ std::string get_logical_button_name(unsigned lbid) throw(std::bad_alloc)
 	if(lbid >= sizeof(buttonnames) / sizeof(buttonnames[0]))
 		return "";
 	return buttonnames[lbid];
-}
-
-std::string get_core_identifier()
-{
-	return "libgambatte "+gambatte::GB::version();
 }
 
 core_region& core_get_region()
@@ -564,42 +637,6 @@ std::set<std::string> get_sram_set()
 	return s;
 }
 
-std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc)
-{
-	std::map<std::string, std::vector<char>> s;
-	if(!internal_rom)
-		return s;
-	auto g = instance->getSaveRam();
-	s["main"].resize(g.second);
-	memcpy(&s["main"][0], g.first, g.second);
-	s["rtc"].resize(8);
-	time_t timebase = instance->getRtcBase();
-	for(size_t i = 0; i < 8; i++)
-		s["rtc"][i] = ((unsigned long long)timebase >> (8 * i));
-	return s;
-}
-
-void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
-{
-	if(!internal_rom)
-		return;
-	std::vector<char> x = sram.count("main") ? sram["main"] : std::vector<char>();
-	std::vector<char> x2 = sram.count("rtc") ? sram["rtc"] : std::vector<char>();
-	auto g = instance->getSaveRam();
-	if(x.size()) {
-		if(x.size() != g.second)
-			messages << "WARNING: SRAM 'main': Loaded " << x.size()
-				<< " bytes, but the SRAM is " << g.second << "." << std::endl;
-		memcpy(g.first, &x[0], min(x.size(), g.second));
-	}
-	if(x2.size()) {
-		time_t timebase = 0;
-		for(size_t i = 0; i < 8 && i < x2.size(); i++)
-			timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
-		instance->setRtcBase(timebase);
-	}
-}
-
 unsigned core_get_poll_flag()
 {
 	return 2;
@@ -625,36 +662,6 @@ function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(
 	instance->saveState(x, cmp_save);
 });
 
-void core_serialize(std::vector<char>& out)
-{
-	if(!internal_rom)
-		throw std::runtime_error("Can't save without ROM");
-	instance->saveState(out);
-	size_t osize = out.size();
-	out.resize(osize + 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]));
-	for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
-		write32ube(&out[osize + 4 * i], primary_framebuffer[i]);
-	out.push_back(frame_overflow >> 8);
-	out.push_back(frame_overflow);
-}
-
-void core_unserialize(const char* in, size_t insize)
-{
-	if(!internal_rom)
-		throw std::runtime_error("Can't load without ROM");
-	size_t foffset = insize - 2 - 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]);
-	std::vector<char> tmp;
-	tmp.resize(foffset);
-	memcpy(&tmp[0], in, foffset);
-	instance->loadState(tmp);
-	for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
-		primary_framebuffer[i] = read32ube(&in[foffset + 4 * i]);
-
-	unsigned x1 = (unsigned char)in[insize - 2];
-	unsigned x2 = (unsigned char)in[insize - 1];
-	frame_overflow = x1 * 256 + x2;
-	do_reset_flag = false;
-}
 
 std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 {

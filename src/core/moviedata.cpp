@@ -101,7 +101,7 @@ namespace
 	function_ptr_command<const std::string&> dump_coresave(lsnes_cmd, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
-			auto x = save_core_state();
+			auto x = our_rom->save_core_state();
 			x.resize(x.size() - 32);
 			std::ofstream y(name.c_str(), std::ios::out | std::ios::binary);
 			y.write(&x[0], x.size());
@@ -176,12 +176,12 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		if(mprefix._set)
 			our_movie.prefix = sanitize_prefix(mprefix.prefix);
 		our_movie.is_savestate = true;
-		our_movie.sram = save_sram();
+		our_movie.sram = our_rom->rtype->save_sram();
 		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
 			our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256;
 			our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256;
 		}
-		our_movie.savestate = save_core_state();
+		our_movie.savestate = our_rom->save_core_state();
 		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
@@ -264,11 +264,11 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		if(reload)
 			movb.get_movie().readonly_mode(ro);
 
-		load_sram(our_movie.movie_sram);
+		our_rom->rtype->load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
 		if(!our_movie.anchor_savestate.empty())
-			load_core_state(our_movie.anchor_savestate);
+			our_rom->load_core_state(our_movie.anchor_savestate);
 		core_set_poll_flag(0);
 		redraw_framebuffer(screen_nosignal);
 		lua_callback_do_rewind();
@@ -353,15 +353,15 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			//Load the savestate and movie state.
 			//Set the core ports in order to avoid port state being reinitialized when loading.
 			controls.set_ports(portset);
-			load_core_state(_movie.savestate);
+			our_rom->load_core_state(_movie.savestate);
 			core_set_poll_flag(_movie.poll_flag);
 		} else {
-			load_sram(_movie.movie_sram);
+			our_rom->rtype->load_sram(_movie.movie_sram);
 			controls.set_ports(portset);
 			_movie.rtc_second = _movie.movie_rtc_second;
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty())
-				load_core_state(_movie.anchor_savestate);
+				our_rom->load_core_state(_movie.anchor_savestate);
 			core_set_poll_flag(0);
 		}
 	} catch(std::bad_alloc& e) {
@@ -475,5 +475,5 @@ void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint6
 	rrdata::add_internal();
 	our_movie.rtc_second = secs;
 	our_movie.rtc_subsecond = ssecs;
-	load_core_state(state, true);
+	our_rom->load_core_state(state, true);
 }

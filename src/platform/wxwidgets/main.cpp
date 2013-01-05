@@ -435,7 +435,7 @@ bool lsnes_app::OnInit()
 	ui_mutex = &mutex::aquire();
 	ui_condition = &condition::aquire(*ui_mutex);
 
-	bsnes_core_version = get_core_identifier();
+	bsnes_core_version = emulator_core->get_core_identifier();
 	ui_thread = &thread_id::me();
 	platform::init();
 

@@ -1,6 +1,8 @@
 #include "lua/internal.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/moviedata.hpp"
+#include "core/moviefile.hpp"
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -251,7 +253,7 @@ namespace
 
 	function_ptr_luafun hashstate(LS, "memory.hash_state", [](lua_state& L, const std::string& fname) -> int {
 		char hash[64];
-		auto x = save_core_state();
+		auto x = our_rom->save_core_state();
 		size_t offset = x.size() - 32;
 		for(unsigned i = 0; i < 32; i++) {
 			hash[2 * i + 0] = hexes[static_cast<unsigned char>(x[offset + i]) >> 4];

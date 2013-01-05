@@ -13,6 +13,7 @@ struct core_type;
 struct core_sysregion;
 struct core_romimage;
 struct core_romimage_info;
+struct core_core;
 
 struct core_region_params
 {
@@ -49,10 +50,20 @@ struct core_type_params
 	core_region** regions;		//Terminate with NULL.
 	core_romimage_info** images;	//Terminate with NULL.
 	core_setting_group* settings;
+	core_core* core;
+};
+
+struct core_core_params
+{
+	std::string (*core_identifier)();
 	bool (*set_region)(core_region& region);
 	std::pair<uint32_t, uint32_t> (*video_rate)();
 	std::pair<uint32_t, uint32_t> (*audio_rate)();
 	std::pair<uint32_t, uint32_t> (*snes_rate)();
+	std::map<std::string, std::vector<char>> (*save_sram)() throw(std::bad_alloc);
+	void (*load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
+	void (*serialize)(std::vector<char>& out);
+	void (*unserialize)(const char* in, size_t insize);
 };
 
 struct core_region
@@ -97,6 +108,30 @@ struct core_romimage
 	size_t size;
 };
 
+struct core_core
+{
+	core_core(core_core_params& params);
+	bool set_region(core_region& region);
+	std::pair<uint32_t, uint32_t> get_video_rate();
+	std::pair<uint32_t, uint32_t> get_audio_rate();
+	std::pair<uint32_t, uint32_t> get_snes_rate();	//(0,0) for non-SNES.
+	std::string get_core_identifier();
+	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
+	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
+	void serialize(std::vector<char>& out);
+	void unserialize(const char* in, size_t insize);
+private:
+	std::string (*_core_identifier)();
+	bool (*_set_region)(core_region& region);
+	std::pair<uint32_t, uint32_t> (*_video_rate)();
+	std::pair<uint32_t, uint32_t> (*_audio_rate)();
+	std::pair<uint32_t, uint32_t> (*_snes_rate)();
+	std::map<std::string, std::vector<char>> (*_save_sram)() throw(std::bad_alloc);
+	void (*_load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
+	void (*_serialize)(std::vector<char>& out);
+	void (*_unserialize)(const char* in, size_t insize);
+};
+
 struct core_type
 {
 public:
@@ -118,20 +153,24 @@ public:
 	controller_set controllerconfig(std::map<std::string, std::string>& settings);
 	unsigned get_reset_support();
 	core_setting_group& get_settings();
-	bool set_region(core_region& region);
-	std::pair<uint32_t, uint32_t> get_video_rate();
-	std::pair<uint32_t, uint32_t> get_audio_rate();
-	std::pair<uint32_t, uint32_t> get_snes_rate();	//(0,0) for non-SNES.
+	bool set_region(core_region& region) { return core->set_region(region); }
+	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
+	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
+	std::pair<uint32_t, uint32_t> get_snes_rate() { return core->get_snes_rate(); }
+	std::string get_core_identifier() { return core->get_core_identifier(); }
+	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
+	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
+	{
+		core->load_sram(sram);
+	}
+	void serialize(std::vector<char>& out) { core->serialize(out); }
+	void unserialize(const char* in, size_t insize) { core->unserialize(in, insize); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
 	int (*loadimg)(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
 	controller_set (*_controllerconfig)(std::map<std::string, std::string>& settings);
-	bool (*_set_region)(core_region& region);
-	std::pair<uint32_t, uint32_t> (*_video_rate)();
-	std::pair<uint32_t, uint32_t> (*_audio_rate)();
-	std::pair<uint32_t, uint32_t> (*_snes_rate)();
 	unsigned id;
 	unsigned reset_support;
 	std::string iname;
@@ -141,6 +180,7 @@ private:
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info*> imageinfo;
 	core_setting_group* settings;
+	core_core* core;
 };
 
 struct core_sysregion

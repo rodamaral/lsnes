@@ -86,7 +86,18 @@ namespace
 		return 0;
 	}
 
+	std::map<std::string, std::vector<char>> null_stsram() throw(std::bad_alloc)
+	{
+		std::map<std::string, std::vector<char>> x;
+		return x;
+	}
+	void null_ldsram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {}
+	void null_serialize(std::vector<char>& out) { out.clear(); }
+	void null_unserialize(const char* in, size_t insize) {}
+
 	core_setting_group null_settings;
+
+	std::string core_identifier() { return "null core"; }
 
 	unsigned null_compatible[] = {0, UINT_MAX};
 	struct core_region_params _null_region = {
@@ -95,10 +106,15 @@ namespace
 	core_region null_region(_null_region);
 	core_region* null_regions[] = {&null_region, NULL};
 	core_romimage_info* null_images[] = {NULL};
+	core_core_params _core_null = {
+		core_identifier, set_region_null, videorate_null, audiorate_null, NULL,
+		null_stsram, null_ldsram, null_serialize, null_unserialize
+	};
+	core_core core_null(_core_null);
+	
 	core_type_params _type_null = {
 		"null", "(null)", 9999, 0, load_rom_null, null_controllerconfig,
-		"", NULL, null_regions, null_images, &null_settings, set_region_null,
-		videorate_null, audiorate_null, NULL
+		"", NULL, null_regions, null_images, &null_settings, &core_null
 	};
 	core_type type_null(_type_null);
 	core_sysregion sysregion_null("null", type_null, null_region);
@@ -414,10 +430,10 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	return ret;
 }
 
-std::vector<char> save_core_state(bool nochecksum) throw(std::bad_alloc)
+std::vector<char> loaded_rom::save_core_state(bool nochecksum) throw(std::bad_alloc)
 {
 	std::vector<char> ret;
-	core_serialize(ret);
+	rtype->serialize(ret);
 	if(nochecksum)
 		return ret;
 	size_t offset = ret.size();
@@ -428,10 +444,10 @@ std::vector<char> save_core_state(bool nochecksum) throw(std::bad_alloc)
 	return ret;
 }
 
-void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::runtime_error)
+void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::runtime_error)
 {
 	if(nochecksum) {
-		core_unserialize(&buf[0], buf.size());
+		rtype->unserialize(&buf[0], buf.size());
 		return;
 	}
 
@@ -441,5 +457,5 @@ void load_core_state(const std::vector<char>& buf, bool nochecksum) throw(std::r
 	sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
 	if(memcmp(tmp, &buf[buf.size() - 32], 32))
 		throw std::runtime_error("Savestate corrupt");
-	core_unserialize(&buf[0], buf.size() - 32);;
+	rtype->unserialize(&buf[0], buf.size() - 32);;
 }

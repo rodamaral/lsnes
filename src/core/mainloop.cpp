@@ -840,7 +840,7 @@ namespace
 				do_save_state(i);
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
-				std::vector<char> s = save_core_state(true);
+				std::vector<char> s = our_rom->save_core_state(true);
 				uint64_t secs = our_movie.rtc_second;
 				uint64_t ssecs = our_movie.rtc_subsecond;
 				lua_callback_do_unsafe_rewind(s, secs, ssecs, movb.get_movie(), NULL);

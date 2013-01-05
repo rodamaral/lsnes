@@ -124,10 +124,7 @@ core_type::core_type(core_type_params& params)
 	reset_support = params.reset_support;
 	loadimg = params.load_rom;
 	_controllerconfig = params.controllerconfig;
-	_set_region = params.set_region;
-	_audio_rate = params.audio_rate;
-	_video_rate = params.video_rate;
-	_snes_rate = params.snes_rate;
+	core = params.core;
 	settings = params.settings;
 	if(params.bios)
 		biosname = params.bios;
@@ -252,30 +249,6 @@ controller_set core_type::controllerconfig(std::map<std::string, std::string>& s
 	return _controllerconfig(settings);
 }
 
-bool core_type::set_region(core_region& region)
-{
-	return _set_region(region);
-}
-
-std::pair<uint32_t, uint32_t> core_type::get_video_rate()
-{
-	return _video_rate();
-}
-
-std::pair<uint32_t, uint32_t> core_type::get_audio_rate()
-{
-	return _audio_rate();
-}
-
-std::pair<uint32_t, uint32_t> core_type::get_snes_rate()
-{
-	if(_snes_rate)
-		return _snes_rate();
-	else
-		return std::make_pair(0, 0);
-}
-
-
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
 {
@@ -308,4 +281,65 @@ core_type& core_sysregion::get_type()
 void core_sysregion::fill_framerate_magic(uint64_t* magic)
 {
 	region.fill_framerate_magic(magic);
+}
+
+core_core::core_core(core_core_params& params)
+{
+	_core_identifier = params.core_identifier;
+	_set_region = params.set_region;
+	_video_rate = params.video_rate;
+	_audio_rate = params.audio_rate;
+	_snes_rate = params.snes_rate;
+	_save_sram = params.save_sram;
+	_load_sram = params.load_sram;
+	_serialize = params.serialize;
+	_unserialize = params.unserialize;
+}
+
+bool core_core::set_region(core_region& region)
+{
+	return _set_region(region);
+}
+
+std::pair<uint32_t, uint32_t> core_core::get_video_rate()
+{
+	return _video_rate();
+}
+
+std::pair<uint32_t, uint32_t> core_core::get_audio_rate()
+{
+	return _audio_rate();
+}
+
+std::pair<uint32_t, uint32_t> core_core::get_snes_rate()
+{
+	if(_snes_rate)
+		return _snes_rate();
+	else
+		return std::make_pair(0, 0);
+}
+
+std::string core_core::get_core_identifier()
+{
+	return _core_identifier();
+}
+
+std::map<std::string, std::vector<char>> core_core::save_sram() throw(std::bad_alloc)
+{
+	return _save_sram();
+}
+
+void core_core::load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
+{
+	_load_sram(sram);
+}
+
+void core_core::serialize(std::vector<char>& out)
+{
+	_serialize(out);
+}
+
+void core_core::unserialize(const char* in, size_t insize)
+{
+	_unserialize(in, insize);
 }

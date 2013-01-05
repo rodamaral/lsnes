@@ -146,6 +146,21 @@ struct loaded_rom
  */
 	void load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 		throw(std::bad_alloc, std::runtime_error);
+/**
+ * Saves core state into buffer. WARNING: This takes emulated time.
+ *
+ * returns: The saved state.
+ * throws std::bad_alloc: Not enough memory.
+ */
+	std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc);
+
+/**
+ * Loads core state from buffer.
+ *
+ * parameter buf: The buffer containing the state.
+ * throws std::runtime_error: Loading state failed.
+ */
+	void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
 };
 
 /**
@@ -154,22 +169,6 @@ struct loaded_rom
  * returns: Tuple (ROM type, ROM region) of currently loaded ROM.
  */
 std::pair<core_type*, core_region*> get_current_rom_info() throw();
-
-/**
- * Take current values of all SRAMs in current system and save their contents.
- *
- * returns: Saved SRAM contents.
- * throws std::bad_alloc: Out of memory.
- */
-std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
-
-/**
- * Write contents of saved SRAMs into current system SRAMs.
- *
- * parameter sram: Saved SRAM contents.
- * throws std::bad_alloc: Out of memory.
- */
-void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 
 /**
  * Read SRAMs from command-line and and load the files.
@@ -182,20 +181,5 @@ void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_al
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error);
 
-/**
- * Saves core state into buffer. WARNING: This takes emulated time.
- *
- * returns: The saved state.
- * throws std::bad_alloc: Not enough memory.
- */
-std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc);
-
-/**
- * Loads core state from buffer.
- *
- * parameter buf: The buffer containing the state.
- * throws std::runtime_error: Loading state failed.
- */
-void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
 
 #endif

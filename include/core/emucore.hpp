@@ -12,8 +12,6 @@
 #include "interface/romtype.hpp"
 
 
-//Get the core identifier.
-std::string get_core_identifier();
 //Do basic core initialization (to get it to stable state).
 void do_basic_core_init();
 //Get set of SRAMs.
@@ -26,14 +24,6 @@ void set_preload_settings();
 void core_power();
 //Unload the cartridge.
 void core_unload_cartridge();
-//Save SRAM set.
-std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
-//Load SRAM set.
-void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
-//Serialize state.
-void core_serialize(std::vector<char>& out);
-//Unserialize state.
-void core_unserialize(const char* in, size_t insize);
 //Install handler.
 void core_install_handler();
 //Uninstall handler.
@@ -58,6 +48,8 @@ extern port_type* core_port_types[];
 extern const bool core_supports_reset;
 //Core supports delayed resets.
 extern const bool core_supports_dreset;
+//Emulator core.
+extern core_core* emulator_core;
 
 //Callbacks.
 struct emucore_callbacks
