@@ -407,10 +407,6 @@ void do_basic_core_init()
 	instance->set_walltime_fn(walltime_fn);
 }
 
-void set_preload_settings()
-{
-}
-
 void core_install_handler()
 {
 }

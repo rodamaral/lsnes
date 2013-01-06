@@ -237,7 +237,6 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		messages << "Can't load movie without a ROM" << std::endl;
 		return;
 	}
-	set_preload_settings();
 
 	//Negative return.
 	if(!reload) {
@@ -321,8 +320,6 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	}
 	if(!rom_ok)
 		throw std::runtime_error("Incorrect ROM");
-
-	set_preload_settings();
 
 	if(lmode == LOAD_STATE_CURRENT && movb.get_movie().readonly_mode() && readonly_load_preserves)
 		lmode = LOAD_STATE_PRESERVE;

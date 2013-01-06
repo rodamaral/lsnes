@@ -14,8 +14,6 @@
 
 //Do basic core initialization (to get it to stable state).
 void do_basic_core_init();
-//Set preload settings.
-void set_preload_settings();
 //Install handler.
 void core_install_handler();
 //Uninstall handler.

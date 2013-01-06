@@ -476,6 +476,8 @@ namespace
 
 		snes_term();
 		snes_unload_cartridge();
+		SNES::config.random = false;
+		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 		bool r = fun(img);
 		if(r)
 			internal_rom = ctype;
@@ -1084,6 +1086,10 @@ void core_uninstall_handler()
 
 void do_basic_core_init()
 {
+	static bool done = false;
+	if(done)
+		return;
+	done = true;
 	static my_interfaced i;
 	SNES::interface = &i;
 }
@@ -1099,13 +1105,6 @@ std::set<std::string> get_sram_set()
 	}
 	return r;
 }
-
-void set_preload_settings()
-{
-	SNES::config.random = false;
-	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
-}
-
 
 void core_request_reset(long delay)
 {
