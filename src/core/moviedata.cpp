@@ -187,7 +187,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename2, savecompression);
-		our_movie.poll_flag = core_get_poll_flag();
+		our_movie.poll_flag = our_rom->rtype->get_pflag();
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_save(filename2, true);
@@ -268,7 +268,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
 		if(!our_movie.anchor_savestate.empty())
 			our_rom->load_core_state(our_movie.anchor_savestate);
-		core_set_poll_flag(0);
+		our_rom->rtype->set_pflag(0);
 		redraw_framebuffer(screen_nosignal);
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
@@ -351,7 +351,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			//Set the core ports in order to avoid port state being reinitialized when loading.
 			controls.set_ports(portset);
 			our_rom->load_core_state(_movie.savestate);
-			core_set_poll_flag(_movie.poll_flag);
+			our_rom->rtype->set_pflag(_movie.poll_flag);
 		} else {
 			our_rom->rtype->load_sram(_movie.movie_sram);
 			controls.set_ports(portset);
@@ -359,7 +359,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			_movie.rtc_subsecond = _movie.movie_rtc_subsecond;
 			if(!_movie.anchor_savestate.empty())
 				our_rom->load_core_state(_movie.anchor_savestate);
-			core_set_poll_flag(0);
+			our_rom->rtype->set_pflag(0);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

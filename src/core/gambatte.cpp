@@ -47,7 +47,6 @@ namespace
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
 	uint32_t primary_framebuffer[160*144];
-	uint32_t norom_framebuffer[160*144];
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
@@ -140,16 +139,6 @@ namespace
 
 
 
-
-	void init_norom_framebuffer()
-	{
-		static bool done = false;
-		if(done)
-			return;
-		done = true;
-		for(size_t i = 0; i < 160 * 144; i++)
-			norom_framebuffer[i] = 0xFF8080;
-	}
 
 	time_t walltime_fn()
 	{
@@ -248,7 +237,6 @@ namespace
 	{
 		return std::make_pair(0, 0);
 	}
-
 
 	unsigned world_compatible[] = {0, UINT_MAX};
 	core_region_params _region_world = {
@@ -353,7 +341,75 @@ namespace
 		//Get scale factors
 		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
 			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
-		}
+		},
+		//Install handler
+		[]() -> void  {},
+		//Uninstall handler.
+		[]() -> void {},
+		//Emulate frame.
+		[]() -> void {
+			if(!internal_rom)
+				return;
+			int16_t reset = ecore_callbacks->set_input(0, 0, 1, do_reset_flag ? 1 : 0);
+			if(reset) {
+				instance->reset();
+				messages << "GB(C) reset" << std::endl;
+			}
+			do_reset_flag = false;
+
+			uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
+			while(true) {
+				int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
+				size_t emitted = 0;
+				unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
+				long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
+				for(unsigned i = 0; i < samples_emitted; i++) {
+					uint32_t l = (int32_t)(int16_t)(samplebuffer[i]) + 32768;
+					uint32_t r = (int32_t)(int16_t)(samplebuffer[i] >> 16) + 32768;
+					accumulator_l += l;
+					accumulator_r += r;
+					accumulator_s++;
+					if((accumulator_s & 63) == 0) {
+						int16_t l2 = (accumulator_l >> 6) - 32768;
+						int16_t r2 = (accumulator_r >> 6) - 32768;
+						soundbuf[emitted++] = l2;
+						soundbuf[emitted++] = r2;
+						information_dispatch::do_sample(l2, r2);
+						accumulator_l = accumulator_r = 0;
+						accumulator_s = 0;
+					}
+				}
+				audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
+				ecore_callbacks->timer_tick(samples_emitted, 2097152);
+				frame_overflow += samples_emitted;
+				if(frame_overflow >= SAMPLES_PER_FRAME) {
+					frame_overflow -= SAMPLES_PER_FRAME;
+					break;
+				}
+			}
+			framebuffer_info inf;
+			inf.type = &_pixel_format_rgb32;
+			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(primary_framebuffer));
+			inf.physwidth = 160;
+			inf.physheight = 144;
+			inf.physstride = 640;
+			inf.width = 160;
+			inf.height = 144;
+			inf.stride = 640;
+			inf.offset_x = 0;
+			inf.offset_y = 0;
+
+			framebuffer_raw ls(inf);
+			ecore_callbacks->output_frame(ls, 262144, 4389);
+		},
+		//Run to save.
+		[]() -> void {},
+		//Get poll flag.
+		[]() -> unsigned { return 2; },
+		//Set poll flag.
+		[](unsigned pflag) -> void {},
+		//Request reset.
+		[](long delay) -> void { do_reset_flag = true; }
 	};
 
 	core_core gambatte_core(_gambatte_core);
@@ -401,125 +457,7 @@ port_type* core_port_types[] = {
 };
 
 
-void core_runtosave()
-{
-}
 
-void core_install_handler()
-{
-}
-
-void core_uninstall_handler()
-{
-}
-
-void core_emulate_frame_nocore()
-{
-	do_reset_flag = -1;
-	init_norom_framebuffer();
-	while(true) {
-		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32];
-		size_t emitted = 0;
-		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
-		for(unsigned i = 0; i < samples_emitted; i++) {
-			accumulator_l += 32768;
-			accumulator_r += 32768;
-			accumulator_s++;
-			if((accumulator_s & 63) == 0) {
-				int16_t l2 = (accumulator_l >> 6) - 32768;
-				int16_t r2 = (accumulator_r >> 6) - 32768;
-				soundbuf[emitted++] = l2;
-				soundbuf[emitted++] = r2;
-				information_dispatch::do_sample(l2, r2);
-				accumulator_l = accumulator_r = 0;
-				accumulator_s = 0;
-			}
-		}
-		audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
-		ecore_callbacks->timer_tick(samples_emitted, 2097152);
-		frame_overflow = 0;
-		break;
-	}
-	framebuffer_info inf;
-	inf.type = &_pixel_format_rgb32;
-	inf.mem = const_cast<char*>(reinterpret_cast<const char*>(norom_framebuffer));
-	inf.physwidth = 160;
-	inf.physheight = 144;
-	inf.physstride = 640;
-	inf.width = 160;
-	inf.height = 144;
-	inf.stride = 640;
-	inf.offset_x = 0;
-	inf.offset_y = 0;
-
-	framebuffer_raw ls(inf);
-	ecore_callbacks->output_frame(ls, 262144, 4389);
-}
-
-void core_request_reset(long delay)
-{
-	do_reset_flag = true;
-}
-
-void core_emulate_frame()
-{
-	if(!internal_rom) {
-		core_emulate_frame_nocore();
-		return;
-	}
-
-	int16_t reset = ecore_callbacks->set_input(0, 0, 1, do_reset_flag ? 1 : 0);
-	if(reset) {
-		instance->reset();
-		messages << "GB(C) reset" << std::endl;
-	}
-	do_reset_flag = false;
-
-	uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
-	while(true) {
-		int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
-		size_t emitted = 0;
-		unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
-		long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
-		for(unsigned i = 0; i < samples_emitted; i++) {
-			uint32_t l = (int32_t)(int16_t)(samplebuffer[i]) + 32768;
-			uint32_t r = (int32_t)(int16_t)(samplebuffer[i] >> 16) + 32768;
-			accumulator_l += l;
-			accumulator_r += r;
-			accumulator_s++;
-			if((accumulator_s & 63) == 0) {
-				int16_t l2 = (accumulator_l >> 6) - 32768;
-				int16_t r2 = (accumulator_r >> 6) - 32768;
-				soundbuf[emitted++] = l2;
-				soundbuf[emitted++] = r2;
-				information_dispatch::do_sample(l2, r2);
-				accumulator_l = accumulator_r = 0;
-				accumulator_s = 0;
-			}
-		}
-		audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
-		ecore_callbacks->timer_tick(samples_emitted, 2097152);
-		frame_overflow += samples_emitted;
-		if(frame_overflow >= SAMPLES_PER_FRAME) {
-			frame_overflow -= SAMPLES_PER_FRAME;
-			break;
-		}
-	}
-	framebuffer_info inf;
-	inf.type = &_pixel_format_rgb32;
-	inf.mem = const_cast<char*>(reinterpret_cast<const char*>(primary_framebuffer));
-	inf.physwidth = 160;
-	inf.physheight = 144;
-	inf.physstride = 640;
-	inf.width = 160;
-	inf.height = 144;
-	inf.stride = 640;
-	inf.offset_x = 0;
-	inf.offset_y = 0;
-
-	framebuffer_raw ls(inf);
-	ecore_callbacks->output_frame(ls, 262144, 4389);
-}
 
 std::list<vma_info> get_vma_list()
 {
@@ -597,15 +535,6 @@ std::set<std::string> get_sram_set()
 	return s;
 }
 
-unsigned core_get_poll_flag()
-{
-	return 2;
-}
-
-void core_set_poll_flag(unsigned pflag)
-{
-}
-
 std::vector<char> cmp_save;
 
 function_ptr_command<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
@@ -620,8 +549,6 @@ function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(
 		return;
 	instance->saveState(x, cmp_save);
 });
-
-
 
 emucore_callbacks::~emucore_callbacks() throw() {}
 

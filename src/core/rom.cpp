@@ -103,10 +103,24 @@ namespace
 		//Unload the cartridge.
 		[]() -> void {},
 		//Get scale factors.
-		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> { return std::make_pair(1, 1); }
+		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> { return std::make_pair(1, 1); },
+		//Install handler.
+		[]() -> void {},
+		//Uninstall handler.
+		[]() -> void {},
+		//Emulate frame.
+		[]() -> void {},
+		//Run to save.
+		[]() -> void {},
+		//Get poll flag.
+		[]() -> unsigned { return 2; },
+		//Set poll flag.
+		[](unsigned pflag) -> void {},
+		//Request reset.
+		[](long delay) -> void {}
 	};
 	core_core core_null(_core_null);
-	
+
 	core_type_params _type_null = {
 		"null", "(null)", 9999, 0,
 		[](core_romimage* img, std::map<std::string, std::string>& settings,

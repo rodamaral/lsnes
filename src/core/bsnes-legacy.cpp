@@ -51,7 +51,6 @@ namespace
 	bool pollflag_active = true;
 	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
 	boolean_setting save_every_frame(lsnes_set, "save-every-frame", false);
-	uint32_t norom_frame[512 * 448];
 	bool have_saved_this_frame = false;
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
@@ -61,6 +60,13 @@ namespace
 	uint64_t trace_counter;
 	std::ofstream trace_output;
 	bool trace_output_enable;
+	SNES::Interface* old;
+	bool stepping_into_save;
+	bool video_refresh_done;
+	bool forced_hook = false;
+	//Delay reset.
+	unsigned long long delayreset_cycles_run;
+	unsigned long long delayreset_cycles_target;
 
 
 	core_setting_group bsnes_settings;
@@ -446,22 +452,13 @@ namespace
 		SNES::interface = &i;
 	}
 
-	void init_norom_frame()
-	{
-		static bool done = false;
-		if(done)
-			return;
-		done = true;
-		for(size_t i = 0; i < 512 * 448; i++)
-			norom_frame[i] = 0x7C21F;
-	}
-
 	core_type* internal_rom = NULL;
 	extern core_type type_snes;
 	extern core_type type_bsx;
 	extern core_type type_bsxslotted;
 	extern core_type type_sufamiturbo;
 	extern core_type type_sgb;
+	extern core_core_params _bsnes_core;
 
 	template<bool(*T)(const char*,const unsigned char*, unsigned)>
 	bool load_rom_X1(core_romimage* img)
@@ -501,12 +498,13 @@ namespace
 		SNES::config.random = false;
 		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 		bool r = fun(img);
-		if(r)
+		if(r) {
 			internal_rom = ctype;
-		snes_set_controller_port_device(false, index_to_bsnes_type[type1]);
-		snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
-		have_saved_this_frame = false;
-		do_reset_flag = -1;
+			snes_set_controller_port_device(false, index_to_bsnes_type[type1]);
+			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
+			have_saved_this_frame = false;
+			do_reset_flag = -1;
+		}
 		return r ? 0 : -1;
 	}
 
@@ -632,6 +630,167 @@ namespace
 #else
 #define BSNES_RESET_LEVEL 1
 #endif
+
+	class my_interface : public SNES::Interface
+	{
+		string path(SNES::Cartridge::Slot slot, const string &hint)
+		{
+			const char* _hint = hint;
+			std::string _hint2 = _hint;
+			std::string fwp = ecore_callbacks->get_firmware_path();
+			regex_results r;
+			std::string msubase = ecore_callbacks->get_base_path();
+			if(regex_match(".*\\.sfc", msubase))
+				msubase = msubase.substr(0, msubase.length() - 4);
+
+			if(_hint2 == "msu1.rom" || _hint2 == ".msu") {
+				//MSU-1 main ROM.
+				std::string x = msubase + ".msu";
+				messages << "MSU main data file: " << x << std::endl;
+				return x.c_str();
+			}
+			if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
+				//MSU track.
+				std::string x = msubase + r[2];
+				messages << "MSU track " << r[3] << "': " << x << std::endl;
+				return x.c_str();
+			}
+			std::string finalpath = fwp + "/" + _hint2;
+			return finalpath.c_str();
+		}
+
+		time_t currentTime()
+		{
+			return ecore_callbacks->get_time();
+		}
+
+		time_t randomSeed()
+		{
+			return ecore_callbacks->get_randomseed();
+		}
+
+		void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
+		{
+			last_hires = hires;
+			last_interlace = interlace;
+			bool region = (SNES::system.region() == SNES::System::Region::PAL);
+			if(stepping_into_save)
+				messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
+			video_refresh_done = true;
+			uint32_t fps_n, fps_d;
+			auto fps = _bsnes_core.video_rate();
+			fps_n = fps.first;
+			fps_d = fps.second;
+			uint32_t g = gcd(fps_n, fps_d);
+			fps_n /= g;
+			fps_d /= g;
+
+			framebuffer_info inf;
+			inf.type = &_pixel_format_lrgb;
+			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
+			inf.physwidth = 512;
+			inf.physheight = 512;
+			inf.physstride = 2048;
+			inf.width = hires ? 512 : 256;
+			inf.height = (region ? 239 : 224) * (interlace ? 2 : 1);
+			inf.stride = interlace ? 2048 : 4096;
+			inf.offset_x = 0;
+			inf.offset_y = (region ? (overscan ? 9 : 1) : (overscan ? 16 : 9)) * 2;
+
+			framebuffer_raw ls(inf);
+			ecore_callbacks->output_frame(ls, fps_n, fps_d);
+			information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ?
+				VIDEO_REGION_PAL : VIDEO_REGION_NTSC);
+			if(soundbuf_fill > 0) {
+				auto freq = SNES::system.apu_frequency();
+				audioapi_submit_buffer(soundbuf, soundbuf_fill / 2, true, freq / 768.0);
+				soundbuf_fill = 0;
+			}
+		}
+
+		void audioSample(int16_t l_sample, int16_t r_sample)
+		{
+			uint16_t _l = l_sample;
+			uint16_t _r = r_sample;
+			soundbuf[soundbuf_fill++] = l_sample;
+			soundbuf[soundbuf_fill++] = r_sample;
+			information_dispatch::do_sample(l_sample, r_sample);
+			//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of
+			//time.
+			ecore_callbacks->timer_tick(768, SNES::system.apu_frequency());
+		}
+
+		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
+		{
+			int16_t offset = 0;
+			//The superscope/justifier handling is nuts.
+			if(port && SNES::input.port2) {
+				SNES::SuperScope* ss = dynamic_cast<SNES::SuperScope*>(SNES::input.port2);
+				SNES::Justifier* js = dynamic_cast<SNES::Justifier*>(SNES::input.port2);
+				if(ss && index == 0) {
+					if(id == 0)
+						offset = ss->x;
+					if(id == 1)
+						offset = ss->y;
+				}
+				if(js && index == 0) {
+					if(id == 0)
+						offset = js->player1.x;
+					if(id == 1)
+						offset = js->player1.y;
+				}
+				if(js && js->chained && index == 1) {
+					if(id == 0)
+						offset = js->player2.x;
+					if(id == 1)
+						offset = js->player2.y;
+				}
+			}
+			return ecore_callbacks->get_input(port ? 2 : 1, index, id) - offset;
+		}
+	} my_interface_obj;
+
+	bool trace_fn()
+	{
+#ifdef BSNES_HAS_DEBUGGER
+		if(trace_counter && !--trace_counter) {
+			//Trace counter did transition 1->0. Call the hook.
+			snesdbg_on_trace();
+		}
+		if(trace_output_enable) {
+			char buffer[1024];
+			SNES::cpu.disassemble_opcode(buffer, SNES::cpu.regs.pc);
+			trace_output << buffer << std::endl;
+		}
+		return false;
+#endif
+	}
+	bool delayreset_fn()
+	{
+		trace_fn();	//Call this also.
+		if(delayreset_cycles_run == delayreset_cycles_target || video_refresh_done)
+			return true;
+		delayreset_cycles_run++;
+		return false;
+	}
+
+
+	bool trace_enabled()
+	{
+		return (trace_counter || !!trace_output_enable);
+	}
+
+	void update_trace_hook_state()
+	{
+		if(forced_hook)
+			return;
+#ifdef BSNES_HAS_DEBUGGER
+		if(!trace_enabled())
+			SNES::cpu.step_event = nall::function<bool()>();
+		else
+			SNES::cpu.step_event = trace_fn;
+#endif
+	}
 
 	std::string sram_name(const nall::string& _id, SNES::Cartridge::Slot slotname)
 	{
@@ -772,7 +931,106 @@ namespace
 		//Get scale factors.
 		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
 			return std::make_pair((width < 400) ? 2 : 1, (height < 400) ? 2 : 1);
-		}
+		},
+		//Install handler
+		[]() -> void {
+			basic_init();
+			old = SNES::interface;
+			SNES::interface = &my_interface_obj;
+			SNES::system.init();
+		},
+		//Uninstall handler
+		[]() -> void { SNES::interface = old; },
+		//Emulate frame.
+		[]() -> void {
+			if(!internal_rom)
+				return;
+			bool was_delay_reset = false;
+			int16_t reset = ecore_callbacks->set_input(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
+			if(reset) {
+				long hi = ecore_callbacks->set_input(0, 0, 2, do_reset_flag / 10000);
+				long lo = ecore_callbacks->set_input(0, 0, 3, do_reset_flag % 10000);
+				long delay = 10000 * hi + lo;
+				if(delay > 0) {
+					was_delay_reset = true;
+#ifdef BSNES_HAS_DEBUGGER
+					messages << "Executing delayed reset... This can take some time!"
+						<< std::endl;
+					video_refresh_done = false;
+					delayreset_cycles_run = 0;
+					delayreset_cycles_target = delay;
+					forced_hook = true;
+					SNES::cpu.step_event = delayreset_fn;
+again:
+					SNES::system.run();
+					if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent
+						&& SNES::debugger.break_event ==
+						SNES::Debugger::BreakEvent::BreakpointHit) {
+						snesdbg_on_break();
+						goto again;
+					}
+					SNES::cpu.step_event = nall::function<bool()>();
+					forced_hook = false;
+					if(video_refresh_done) {
+						//Force the reset here.
+						do_reset_flag = -1;
+						messages << "SNES reset (forced at " << delayreset_cycles_run << ")"
+							<< std::endl;
+						SNES::system.reset();
+						return;
+					}
+					SNES::system.reset();
+					messages  << "SNES reset (delayed " << delayreset_cycles_run << ")"
+						<< std::endl;
+#else
+					messages << "Delayresets not supported on this bsnes version "
+						"(needs v084 or v085)" << std::endl;
+					SNES::system.reset();
+#endif
+				} else if(delay == 0) {
+					SNES::system.reset();
+					messages << "SNES reset" << std::endl;
+				}
+			}
+			do_reset_flag = -1;
+
+			if(!have_saved_this_frame && save_every_frame && !was_delay_reset)
+				SNES::system.runtosave();
+#ifdef BSNES_HAS_DEBUGGER
+			if(trace_enabled())
+				SNES::cpu.step_event = trace_fn;
+#endif
+again2:
+			SNES::system.run();
+			if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
+				SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
+				snesdbg_on_break();
+				goto again2;
+			}
+#ifdef BSNES_HAS_DEBUGGER
+			SNES::cpu.step_event = nall::function<bool()>();
+#endif
+			have_saved_this_frame = false;
+		},
+		//Run to save.
+		[]() -> void {
+			if(!internal_rom)
+				return;
+			stepping_into_save = true;
+			if(!allow_inconsistent_saves)
+				SNES::system.runtosave();
+			have_saved_this_frame = true;
+			stepping_into_save = false;
+		},
+		//Get poll flag.
+		[]() -> unsigned { return pollflag_active ? (SNES::cpu.controller_flag ? 1 : 0) : 2; },
+		//Set poll flag.
+		[](unsigned pflag) -> void {
+			SNES::cpu.controller_flag = (pflag != 0);
+			pollflag_active = (pflag < 2);
+		},
+		//Request reset.
+		[](long delay) -> void { do_reset_flag = delay; }
 	};
 
 	core_core bsnes_core(_bsnes_core);
@@ -842,11 +1100,6 @@ namespace
 	core_sysregion sr6("sgb_ntsc", type_sgb, region_ntsc);
 	core_sysregion sr7("sgb_pal", type_sgb, region_pal);
 
-	bool stepping_into_save;
-	bool video_refresh_done;
-	//Delay reset.
-	unsigned long long delayreset_cycles_run;
-	unsigned long long delayreset_cycles_target;
 
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
@@ -913,170 +1166,6 @@ namespace
 		create_region(inf, name, 0x101000000 + index * 0x1000000, reinterpret_cast<uint8_t*>(memory),
 			memsize, true, true);
 	}
-
-	bool trace_enabled()
-	{
-		return (trace_counter || !!trace_output_enable);
-	}
-
-	bool forced_hook = false;
-
-	bool trace_fn()
-	{
-		if(trace_counter && !--trace_counter) {
-			//Trace counter did transition 1->0. Call the hook.
-			snesdbg_on_trace();
-		}
-		if(trace_output_enable) {
-			char buffer[1024];
-			SNES::cpu.disassemble_opcode(buffer, SNES::cpu.regs.pc);
-			trace_output << buffer << std::endl;
-		}
-		return false;
-	}
-
-	void update_trace_hook_state()
-	{
-		if(forced_hook)
-			return;
-#ifdef BSNES_HAS_DEBUGGER
-		if(!trace_enabled())
-			SNES::cpu.step_event = nall::function<bool()>();
-		else
-			SNES::cpu.step_event = trace_fn;
-#endif
-	}
-
-	bool delayreset_fn()
-	{
-		trace_fn();	//Call this also.
-		if(delayreset_cycles_run == delayreset_cycles_target || video_refresh_done)
-			return true;
-		delayreset_cycles_run++;
-		return false;
-	}
-
-	class my_interface : public SNES::Interface
-	{
-		string path(SNES::Cartridge::Slot slot, const string &hint)
-		{
-			const char* _hint = hint;
-			std::string _hint2 = _hint;
-			std::string fwp = ecore_callbacks->get_firmware_path();
-			regex_results r;
-			std::string msubase = ecore_callbacks->get_base_path();
-			if(regex_match(".*\\.sfc", msubase))
-				msubase = msubase.substr(0, msubase.length() - 4);
-
-			if(_hint2 == "msu1.rom" || _hint2 == ".msu") {
-				//MSU-1 main ROM.
-				std::string x = msubase + ".msu";
-				messages << "MSU main data file: " << x << std::endl;
-				return x.c_str();
-			}
-			if(r = regex("(track)?(-([0-9])+\\.pcm)", _hint2)) {
-				//MSU track.
-				std::string x = msubase + r[2];
-				messages << "MSU track " << r[3] << "': " << x << std::endl;
-				return x.c_str();
-			}
-			std::string finalpath = fwp + "/" + _hint2;
-			return finalpath.c_str();
-		}
-
-		time_t currentTime()
-		{
-			return ecore_callbacks->get_time();
-		}
-
-		time_t randomSeed()
-		{
-			return ecore_callbacks->get_randomseed();
-		}
-
-		void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)
-		{
-			last_hires = hires;
-			last_interlace = interlace;
-			bool region = (SNES::system.region() == SNES::System::Region::PAL);
-			if(stepping_into_save)
-				messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
-			video_refresh_done = true;
-			uint32_t fps_n, fps_d;
-			auto fps = _bsnes_core.video_rate();
-			fps_n = fps.first;
-			fps_d = fps.second;
-			uint32_t g = gcd(fps_n, fps_d);
-			fps_n /= g;
-			fps_d /= g;
-
-			framebuffer_info inf;
-			inf.type = &_pixel_format_lrgb;
-			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
-			inf.physwidth = 512;
-			inf.physheight = 512;
-			inf.physstride = 2048;
-			inf.width = hires ? 512 : 256;
-			inf.height = (region ? 239 : 224) * (interlace ? 2 : 1);
-			inf.stride = interlace ? 2048 : 4096;
-			inf.offset_x = 0;
-			inf.offset_y = (region ? (overscan ? 9 : 1) : (overscan ? 16 : 9)) * 2;
-
-			framebuffer_raw ls(inf);
-			ecore_callbacks->output_frame(ls, fps_n, fps_d);
-			information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ?
-				VIDEO_REGION_PAL : VIDEO_REGION_NTSC);
-			if(soundbuf_fill > 0) {
-				auto freq = SNES::system.apu_frequency();
-				audioapi_submit_buffer(soundbuf, soundbuf_fill / 2, true, freq / 768.0);
-				soundbuf_fill = 0;
-			}
-		}
-
-		void audioSample(int16_t l_sample, int16_t r_sample)
-		{
-			uint16_t _l = l_sample;
-			uint16_t _r = r_sample;
-			soundbuf[soundbuf_fill++] = l_sample;
-			soundbuf[soundbuf_fill++] = r_sample;
-			information_dispatch::do_sample(l_sample, r_sample);
-			//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of
-			//time.
-			ecore_callbacks->timer_tick(768, SNES::system.apu_frequency());
-		}
-
-		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
-		{
-			int16_t offset = 0;
-			//The superscope/justifier handling is nuts.
-			if(port && SNES::input.port2) {
-				SNES::SuperScope* ss = dynamic_cast<SNES::SuperScope*>(SNES::input.port2);
-				SNES::Justifier* js = dynamic_cast<SNES::Justifier*>(SNES::input.port2);
-				if(ss && index == 0) {
-					if(id == 0)
-						offset = ss->x;
-					if(id == 1)
-						offset = ss->y;
-				}
-				if(js && index == 0) {
-					if(id == 0)
-						offset = js->player1.x;
-					if(id == 1)
-						offset = js->player1.y;
-				}
-				if(js && js->chained && index == 1) {
-					if(id == 0)
-						offset = js->player2.x;
-					if(id == 1)
-						offset = js->player2.y;
-				}
-			}
-			return ecore_callbacks->get_input(port ? 2 : 1, index, id) - offset;
-		}
-	};
-
-	my_interface my_interface_obj;
-	SNES::Interface* old;
 }
 
 core_core* emulator_core = &bsnes_core;
@@ -1086,18 +1175,6 @@ port_type* core_port_types[] = {
 	&superscope, NULL
 };
 
-void core_install_handler()
-{
-	basic_init();
-	old = SNES::interface;
-	SNES::interface = &my_interface_obj;
-	SNES::system.init();
-}
-
-void core_uninstall_handler()
-{
-	SNES::interface = old;
-}
 
 std::set<std::string> get_sram_set()
 {
@@ -1111,118 +1188,7 @@ std::set<std::string> get_sram_set()
 	return r;
 }
 
-void core_request_reset(long delay)
-{
-	do_reset_flag = delay;
-}
 
-void core_emulate_frame()
-{
-	static unsigned frame_modulus = 0;
-	if(!internal_rom) {
-		do_reset_flag = -1;
-		init_norom_frame();
-		framebuffer_info inf;
-		inf.type = &_pixel_format_lrgb;
-		inf.mem = const_cast<char*>(reinterpret_cast<const char*>(norom_frame));
-		inf.physwidth = 512;
-		inf.physheight = 448;
-		inf.physstride = 2048;
-		inf.width = 512;
-		inf.height = 448;
-		inf.stride = 2048;
-		inf.offset_x = 0;
-		inf.offset_y = 0;
-
-		framebuffer_raw ls(inf);
-		ecore_callbacks->output_frame(ls, 60, 1);
-
-		audioapi_submit_buffer(blanksound, frame_modulus ? 534 : 535, true, 32040.5);
-		for(unsigned i = 0; i < 534; i++)
-			information_dispatch::do_sample(0, 0);
-		if(!frame_modulus)
-			information_dispatch::do_sample(0, 0);
-		frame_modulus++;
-		frame_modulus %= 120;
-		ecore_callbacks->timer_tick(1, 60);
-		return;
-	}
-
-	bool was_delay_reset = false;
-	int16_t reset = ecore_callbacks->set_input(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
-	if(reset) {
-		long hi = ecore_callbacks->set_input(0, 0, 2, do_reset_flag / 10000);
-		long lo = ecore_callbacks->set_input(0, 0, 3, do_reset_flag % 10000);
-		long delay = 10000 * hi + lo;
-		if(delay > 0) {
-			was_delay_reset = true;
-#ifdef BSNES_HAS_DEBUGGER
-			messages << "Executing delayed reset... This can take some time!" << std::endl;
-			video_refresh_done = false;
-			delayreset_cycles_run = 0;
-			delayreset_cycles_target = delay;
-			forced_hook = true;
-			SNES::cpu.step_event = delayreset_fn;
-again:
-			SNES::system.run();
-			if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
-				SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
-				snesdbg_on_break();
-				goto again;
-			}
-			SNES::cpu.step_event = nall::function<bool()>();
-			forced_hook = false;
-			if(video_refresh_done) {
-				//Force the reset here.
-				do_reset_flag = -1;
-				messages << "SNES reset (forced at " << delayreset_cycles_run << ")" << std::endl;
-				SNES::system.reset();
-				return;
-			}
-			SNES::system.reset();
-			messages  << "SNES reset (delayed " << delayreset_cycles_run << ")" << std::endl;
-#else
-			messages << "Delayresets not supported on this bsnes version (needs v084 or v085)"
-				<< std::endl;
-			SNES::system.reset();
-#endif
-		} else if(delay == 0) {
-			SNES::system.reset();
-			messages << "SNES reset" << std::endl;
-		}
-	}
-	do_reset_flag = -1;
-
-
-	if(!have_saved_this_frame && save_every_frame && !was_delay_reset)
-		SNES::system.runtosave();
-#ifdef BSNES_HAS_DEBUGGER
-	if(trace_enabled())
-		SNES::cpu.step_event = trace_fn;
-#endif
-again2:
-	SNES::system.run();
-	if(SNES::scheduler.exit_reason() == SNES::Scheduler::ExitReason::DebuggerEvent &&
-		SNES::debugger.break_event == SNES::Debugger::BreakEvent::BreakpointHit) {
-		snesdbg_on_break();
-		goto again2;
-	}
-#ifdef BSNES_HAS_DEBUGGER
-	SNES::cpu.step_event = nall::function<bool()>();
-#endif
-	have_saved_this_frame = false;
-}
-
-void core_runtosave()
-{
-	if(!internal_rom)
-		return;
-	stepping_into_save = true;
-	if(!allow_inconsistent_saves)
-		SNES::system.runtosave();
-	have_saved_this_frame = true;
-	stepping_into_save = false;
-}
 
 std::list<vma_info> get_vma_list()
 {
@@ -1268,17 +1234,6 @@ std::list<vma_info> get_vma_list()
 		create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
 	}
 	return ret;
-}
-
-unsigned core_get_poll_flag()
-{
-	return pollflag_active ? (SNES::cpu.controller_flag ? 1 : 0) : 2;
-}
-
-void core_set_poll_flag(unsigned pflag)
-{
-	SNES::cpu.controller_flag = (pflag != 0);
-	pollflag_active = (pflag < 2);
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

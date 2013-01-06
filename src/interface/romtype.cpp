@@ -304,6 +304,13 @@ core_core::core_core(core_core_params& params)
 	_power = params.power;
 	_unload_cartridge = params.unload_cartridge;
 	_get_scale_factors = params.get_scale_factors;
+	_install_handler = params.install_handler;
+	_uninstall_handler = params.uninstall_handler;
+	_emulate = params.emulate;
+	_runtosave = params.runtosave;
+	_get_pflag = params.get_pflag;
+	_set_pflag = params.set_pflag;
+	_request_reset = params.request_reset;
 }
 
 bool core_core::set_region(core_region& region)
@@ -372,4 +379,40 @@ void core_core::unload_cartridge()
 std::pair<uint32_t, uint32_t> core_core::get_scale_factors(uint32_t width, uint32_t height)
 {
 	return _get_scale_factors(width, height);
+}
+
+void core_core::install_handler()
+{
+	_install_handler();
+}
+
+void core_core::uninstall_handler()
+{
+	_uninstall_handler();
+}
+
+void core_core::emulate()
+{
+	_emulate();
+}
+
+void core_core::runtosave()
+{
+	_runtosave();
+}
+
+unsigned core_core::get_pflag()
+{
+	return _get_pflag();
+}
+
+void core_core::set_pflag(unsigned pflag)
+{
+	return _set_pflag(pflag);
+}
+
+void core_core::request_reset(long delay)
+{
+	if(_request_reset)
+		_request_reset(delay);
 }

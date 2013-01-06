@@ -69,6 +69,13 @@ struct core_core_params
 	void (*power)();
 	void (*unload_cartridge)();
 	std::pair<uint32_t, uint32_t> (*get_scale_factors)(uint32_t width, uint32_t height);
+	void (*install_handler)();
+	void (*uninstall_handler)();
+	void (*emulate)();
+	void (*runtosave)();
+	unsigned (*get_pflag)();
+	void (*set_pflag)(unsigned pflag);
+	void (*request_reset)(long delay);
 };
 
 
@@ -130,6 +137,13 @@ struct core_core
 	void power();
 	void unload_cartridge();
 	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
+	void install_handler();
+	void uninstall_handler();
+	void emulate();
+	void runtosave();
+	unsigned get_pflag();
+	void set_pflag(unsigned pflag);
+	void request_reset(long delay);
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -144,6 +158,13 @@ private:
 	void (*_power)();
 	void (*_unload_cartridge)();
 	std::pair<uint32_t, uint32_t> (*_get_scale_factors)(uint32_t width, uint32_t height);
+	void (*_install_handler)();
+	void (*_uninstall_handler)();
+	void (*_emulate)();
+	void (*_runtosave)();
+	unsigned (*_get_pflag)();
+	void (*_set_pflag)(unsigned pflag);
+	void (*_request_reset)(long delay);
 };
 
 struct core_type
@@ -187,6 +208,13 @@ public:
 	{
 		return core->get_scale_factors(width, height);
 	}
+	void install_handler() { core->install_handler(); }
+	void uninstall_handler() { core->uninstall_handler(); }
+	void emulate() { core->emulate(); }
+	void runtosave() { core->runtosave(); }
+	unsigned get_pflag() { return core->get_pflag(); }
+	void set_pflag(unsigned pflag) { core->set_pflag(pflag); }
+	void request_reset(long delay) { core->request_reset(delay); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

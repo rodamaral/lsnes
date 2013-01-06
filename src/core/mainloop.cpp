@@ -94,14 +94,13 @@ namespace
 		}
 		int get_pflag()
 		{
-			return core_get_poll_flag();
+			return our_rom->rtype->get_pflag();
 		}
 		void set_pflag(int flag)
 		{
-			core_set_poll_flag(flag);
+			our_rom->rtype->set_pflag(flag);
 		}
 	} lsnes_pflag_handler;
-
 }
 
 path_setting firmwarepath_setting(lsnes_set, "firmwarepath");
@@ -537,9 +536,9 @@ namespace
 				return;
 			}
 			if(x == "")
-				core_request_reset(0);
+				our_rom->rtype->request_reset(0);
 			else
-				core_request_reset(parse_value<uint32_t>(x));
+				our_rom->rtype->request_reset(parse_value<uint32_t>(x));
 		});
 
 	function_ptr_command<arg_filename> load_c(lsnes_cmd, "load", "Load savestate (current mode)",
@@ -835,7 +834,7 @@ namespace
 	void handle_saves()
 	{
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
-			core_runtosave();
+			our_rom->rtype->runtosave();
 			for(auto i : queued_saves)
 				do_save_state(i);
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
@@ -879,7 +878,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
 	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
-	core_install_handler();
+	emulator_core->install_handler();
 
 	//Load our given movie.
 	bool first_round = false;
@@ -954,7 +953,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		core_emulate_frame();
+		our_rom->rtype->emulate();
 		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(to_wait_frame(get_utime()));
@@ -962,6 +961,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		lua_callback_do_frame();
 	}
 	information_dispatch::do_dump_end();
-	core_uninstall_handler();
+	emulator_core->uninstall_handler();
 	voicethread_kill();
 }

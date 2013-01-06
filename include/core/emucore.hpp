@@ -12,22 +12,8 @@
 #include "interface/romtype.hpp"
 
 
-//Install handler.
-void core_install_handler();
-//Uninstall handler.
-void core_uninstall_handler();
-//Emulate a frame.
-void core_emulate_frame();
-//Run to point save.
-void core_runtosave();
 //Get set of SRAMs.
 std::set<std::string> get_sram_set();
-//Get poll flag (set to 1 on each real poll, except if 2.
-unsigned core_get_poll_flag();
-//Set poll flag (set to 1 on each real poll, except if 2.
-void core_set_poll_flag(unsigned pflag);
-//Request reset on next frame.
-void core_request_reset(long delay);
 //Valid port types.
 extern port_type* core_port_types[];
 //Emulator core.
