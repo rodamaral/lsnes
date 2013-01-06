@@ -1,10 +1,9 @@
 #if defined(BSNES_V084) || defined(BSNES_V085) || defined(BSNES_V086) || defined(BSNES_V087)
 #include "lsnes.hpp"
-#include <core/emucore.hpp>
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
-#include "core/emucore.hpp"
 #include "core/moviedata.hpp"
+#include "interface/romtype.hpp"
 #include "library/serialization.hpp"
 #include "video/tcp.hpp"
 

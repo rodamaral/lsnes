@@ -361,6 +361,16 @@ public:
  * Call on_dumper_update on on all objects.
  */
 	static void do_dumper_update() throw();
+/**
+ * Notify that core changed.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_core_change();
+/**
+ * Call on_dumper_update on on all objects.
+ */
+	static void do_core_change() throw();
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.

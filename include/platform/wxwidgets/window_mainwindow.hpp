@@ -29,6 +29,7 @@ public:
 	void notify_update_status() throw();
 	void notify_resized() throw();
 	void notify_exit() throw();
+	void refresh_title() throw();
 	void on_close(wxCloseEvent& e);
 	void menu_start(wxString name);
 	void menu_special(wxString name, wxMenu* menu);

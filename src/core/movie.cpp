@@ -1,9 +1,9 @@
 #include "lsnes.hpp"
 
-#include "core/emucore.hpp"
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/rom.hpp"
+#include "interface/romtype.hpp"
 
 #include <stdexcept>
 #include <cassert>

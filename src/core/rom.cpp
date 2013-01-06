@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
@@ -10,6 +9,7 @@
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "library/portfn.hpp"
 #include "library/patch.hpp"
 #include "library/sha256.hpp"

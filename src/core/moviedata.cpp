@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -12,6 +11,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
+#include "interface/romtype.hpp"
 
 #include <iomanip>
 #include <fstream>
@@ -299,16 +299,16 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(our_rom->orig_region && !our_rom->orig_region->compatible_with(_movie.gametype->get_region()))
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
 
-	if(our_rom->rtype && _movie.coreversion != bsnes_core_version) {
+	if(our_rom->rtype && _movie.coreversion != our_rom->rtype->get_core_identifier()) {
 		if(will_load_state) {
 			std::ostringstream x;
 			x << "ERROR: Emulator core version mismatch!" << std::endl
-				<< "\tThis version: " << bsnes_core_version << std::endl
+				<< "\tThis version: " << our_rom->rtype->get_core_identifier() << std::endl
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 			throw std::runtime_error(x.str());
 		} else
 			messages << "WARNING: Emulator core version mismatch!" << std::endl
-				<< "\tThis version: " << bsnes_core_version << std::endl
+				<< "\tThis version: " << our_rom->rtype->get_core_identifier() << std::endl
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
 	bool rom_ok = true;

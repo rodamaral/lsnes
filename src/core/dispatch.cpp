@@ -465,3 +465,19 @@ void information_dispatch::do_dumper_update() throw()
 		END_EH_BLOCK(i, "on_dumper_update");
 	}
 }
+
+void information_dispatch::on_core_change()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_core_change() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_core_change();
+		END_EH_BLOCK(i, "on_core_change");
+	}
+}

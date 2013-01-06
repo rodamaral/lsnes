@@ -10,7 +10,6 @@
 #include <wx/radiobut.h>
 
 #include "library/string.hpp"
-#include "core/emucore.hpp"
 
 class wxeditor_subtitles : public wxDialog
 {

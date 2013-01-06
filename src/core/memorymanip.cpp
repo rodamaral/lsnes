@@ -1,4 +1,3 @@
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
@@ -6,6 +5,7 @@
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
+#include "interface/romtype.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
 #include "library/memorysearch.hpp"

@@ -8,14 +8,15 @@
 #include <climits>
 #include "core/audioapi.hpp"
 #include "core/misc.hpp"
-#include "core/emucore.hpp"
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "interface/setting.hpp"
+#include "interface/callbacks.hpp"
 #include "library/pixfmt-lrgb.hpp"
 #include "library/string.hpp"
 #include "library/portfn.hpp"
@@ -1475,8 +1476,5 @@ again2:
 	void snesdbg_on_trace() {}
 #endif
 }
-
-core_core* emulator_core = &bsnes_core;
-
 
 #endif

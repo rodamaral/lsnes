@@ -2,7 +2,6 @@
 #include <wx/wx.h>
 
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -16,6 +15,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
@@ -34,6 +34,7 @@
 #include <wx/cmdline.h>
 #include <iostream>
 
+#define UISERV_REFRESH_TITLE 9990
 #define UISERV_RESIZED 9991
 #define UISERV_UIFUN 9992
 //#define UISERV_UI_IRQ 9993	Not in use anymore, can be recycled.
@@ -101,6 +102,9 @@ namespace
 			wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR |
 				wxOK);
 			panic_ack = true;
+		} else if(c == UISERV_REFRESH_TITLE) {
+			if(main_window)
+				main_window->refresh_title();
 		} else if(c == UISERV_RESIZED) {
 			if(main_window)
 				main_window->notify_resized();
@@ -435,11 +439,9 @@ bool lsnes_app::OnInit()
 	ui_mutex = &mutex::aquire();
 	ui_condition = &condition::aquire(*ui_mutex);
 
-	bsnes_core_version = emulator_core->get_core_identifier();
 	ui_thread = &thread_id::me();
 	platform::init();
 
-	messages << "BSNES version: " << bsnes_core_version << std::endl;
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
 
 	loaded_rom dummy_rom;
@@ -505,9 +507,9 @@ bool lsnes_app::OnInit()
 		auto ctrldata = rom->rtype->controllerconfig(mov->settings);
 		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
 		mov->input.clear(ports);
+		mov->coreversion = rom->rtype->get_core_identifier();
 		if(c_rom != "") {
 			//Initialize the remainder.
-			mov->coreversion = bsnes_core_version;
 			mov->projectid = get_random_hexstring(40);
 			mov->rerecords = "0";
 			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
@@ -517,6 +519,7 @@ bool lsnes_app::OnInit()
 		}
 		mov->gametype = &rom->rtype->combine_region(*rom->region);
 	}
+	our_rom = rom;
 	mov->start_paused = true;
 	boot_emulator(*rom, *mov);
 
@@ -557,6 +560,11 @@ void graphics_plugin::notify_status() throw()
 void graphics_plugin::notify_screen() throw()
 {
 	post_ui_event(UISERV_UPDATE_SCREEN);
+}
+
+void signal_core_change()
+{
+	post_ui_event(UISERV_REFRESH_TITLE);
 }
 
 bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw()

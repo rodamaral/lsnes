@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -8,6 +7,7 @@
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "library/string.hpp"
 
 #include <map>
@@ -148,10 +148,15 @@ namespace
 		static int done = 0;
 		if(done)
 			return;
-		auto ptypes = emulator_core->get_port_types();
+		std::vector<port_type*> ptypes;
+		for(auto i : core_core::all_cores()) {
+			auto _ptypes = i->get_port_types();
+			for(unsigned j = 0; _ptypes[j]; j++)
+				ptypes.push_back(_ptypes[j]);
+		}
 		for(unsigned i = 0;; i++) {
 			bool any = false;
-			for(unsigned j = 0; ptypes[j]; j++) {
+			for(unsigned j = 0; j < ptypes.size(); j++) {
 				if(!ptypes[j]->legal(i))
 					continue;
 				any = true;

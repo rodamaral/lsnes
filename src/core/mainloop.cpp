@@ -1,5 +1,4 @@
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -19,6 +18,8 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/callbacks.hpp"
+#include "interface/romtype.hpp"
 #include "library/framebuffer.hpp"
 #include "library/pixfmt-lrgb.hpp"
 
@@ -221,6 +222,8 @@ namespace
 			messages << "Can't reload ROM: " << e.what() << std::endl;
 			return false;
 		}
+		messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
+		information_dispatch::do_core_change();
 		return true;
 	}
 }
@@ -878,7 +881,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
 	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
-	emulator_core->install_handler();
+	core_core::install_all_handlers();
 
 	//Load our given movie.
 	bool first_round = false;
@@ -961,6 +964,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		lua_callback_do_frame();
 	}
 	information_dispatch::do_dump_end();
-	emulator_core->uninstall_handler();
+	core_core::uninstall_all_handlers();
 	voicethread_kill();
 }

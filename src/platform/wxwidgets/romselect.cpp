@@ -5,12 +5,12 @@
 #include <wx/notebook.h>
 
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 #include "interface/setting.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -317,7 +317,7 @@ struct moviefile wxwin_project::make_movie()
 		if(!i.second.get_setting()->validate(f.settings[i.first]))
 			throw std::runtime_error((stringfmt() << "Bad value for setting " << i.first).str());
 	}
-	f.coreversion = bsnes_core_version;
+	f.coreversion = our_rom->rtype->get_core_identifier();
 	f.gamename = tostdstring(projectname->GetValue());
 	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
 	f.projectid = get_random_hexstring(40);

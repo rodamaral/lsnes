@@ -1,8 +1,7 @@
-#include "core/emucore.hpp"
-
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "interface/romtype.hpp"
 
 #include <cstdio>
 #include <iostream>

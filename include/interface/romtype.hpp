@@ -138,6 +138,7 @@ struct core_romimage
 struct core_core
 {
 	core_core(core_core_params& params);
+	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
@@ -159,6 +160,9 @@ struct core_core
 	void set_pflag(unsigned pflag);
 	void request_reset(long delay);
 	port_type** get_port_types() { return port_types; }
+	static std::set<core_core*> all_cores();
+	static void install_all_handlers();
+	static void uninstall_all_handlers();
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);

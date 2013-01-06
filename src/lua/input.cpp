@@ -1,9 +1,9 @@
 #include "core/keymapper.hpp"
 #include "lua/internal.hpp"
 #include "core/movie.hpp"
-#include "core/emucore.hpp"
 #include "core/moviedata.hpp"
 #include "core/controller.hpp"
+#include "interface/romtype.hpp"
 #include <iostream>
 
 namespace

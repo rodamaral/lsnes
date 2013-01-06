@@ -1,10 +1,10 @@
 #include "core/command.hpp"
-#include "core/emucore.hpp"
 #include "lua/internal.hpp"
 #include "core/framerate.hpp"
 #include "core/moviefile.hpp"
 #include "core/moviedata.hpp"
 #include "core/window.hpp"
+#include "interface/romtype.hpp"
 
 namespace
 {

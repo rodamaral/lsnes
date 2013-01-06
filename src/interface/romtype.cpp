@@ -12,6 +12,14 @@
 
 namespace
 {
+	bool install_handlers_automatically;
+
+	std::set<core_core*>& all_cores_set()
+	{
+		static std::set<core_core*> x;
+		return x;
+	}
+
 	std::map<std::string, core_sysregion*>& sysregions()
 	{
 		static std::map<std::string, core_sysregion*> x;
@@ -326,6 +334,14 @@ core_core::core_core(core_core_params& params)
 	_set_pflag = params.set_pflag;
 	_request_reset = params.request_reset;
 	port_types = params.port_types;
+	all_cores_set().insert(this);
+	if(install_handlers_automatically)
+		install_handler();
+}
+
+core_core::~core_core() throw()
+{
+	all_cores().erase(this);
 }
 
 bool core_core::set_region(core_region& region)
@@ -354,6 +370,25 @@ std::pair<uint32_t, uint32_t> core_core::get_snes_rate()
 std::string core_core::get_core_identifier()
 {
 	return _core_identifier();
+}
+
+std::set<core_core*> core_core::all_cores()
+{
+	return all_cores_set();
+}
+
+void core_core::install_all_handlers()
+{
+	install_handlers_automatically = true;
+	for(auto i : all_cores_set())
+		i->install_handler();
+}
+
+void core_core::uninstall_all_handlers()
+{
+	install_handlers_automatically = false;
+	for(auto i : all_cores_set())
+		i->uninstall_handler();
 }
 
 std::map<std::string, std::vector<char>> core_core::save_sram() throw(std::bad_alloc)

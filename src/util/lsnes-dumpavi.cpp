@@ -1,11 +1,11 @@
 #include "lsnes.hpp"
-#include "core/emucore.hpp"
 
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
+#include "interface/romtype.hpp"
 #include "library/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
@@ -232,7 +232,6 @@ int main(int argc, char** argv)
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();
-	bsnes_core_version = emulator_core->get_core_identifier();
 	platform::init();
 	init_lua();
 
@@ -307,6 +306,7 @@ int main(int argc, char** argv)
 			throw std::runtime_error("Can't load any of the movies specified");
 		//Load ROM before starting the dumper.
 		our_rom = &r;
+		messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
 		our_rom->region = &movie.gametype->get_region();
 		our_rom->load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);

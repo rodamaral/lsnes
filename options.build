@@ -99,13 +99,10 @@ JOYSTICK=DUMMY
 # This is used for high-quality samplerate conversion for dumping.
 SECRET_RABBIT_CODE=
 
-# Core to use.
-# Currently supported:
-# - BNSES: BSNES
-# - GAMBATTE: GAMBATTE
-CORE_TYPE=BSNES
+# Set to non-empty value (e.g. 'yes') to build the gambatte core.
+BUILD_GAMBATTE=
 
-# Bsnes version used.
+# Bsnes version used. Non-empty value also causes bsnes core to be built.
 # 087 has different layout from the rest.
 BSNES_VERSION=085
 

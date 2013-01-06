@@ -7,7 +7,6 @@
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 
-#include "core/emucore.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
 #include "core/controller.hpp"
@@ -15,6 +14,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "interface/romtype.hpp"
 #include "library/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
@@ -163,7 +163,8 @@ namespace
 
 	wxString getname()
 	{
-		std::string windowname = "lsnes rr" + lsnes_version + "[" + bsnes_core_version + "]";
+		std::string windowname = "lsnes rr" + lsnes_version + " [" + our_rom->rtype->get_core_identifier()
+			+ "]";
 		return towxstring(windowname);
 	}
 
@@ -179,6 +180,7 @@ namespace
 		struct emu_args* args = reinterpret_cast<struct emu_args*>(_args);
 		try {
 			our_rom = args->rom;
+			messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
 			struct moviefile* movie = args->initial;
 			bool has_to_succeed = args->load_has_to_succeed;
 			platform::flush_command_queue();
@@ -319,6 +321,7 @@ namespace
 		void on_mode_change(bool readonly) throw();
 		void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 		void on_autohold_reconfigure();
+		void on_core_change();
 	private:
 		wxwin_mainwindow* mainw;
 		sound_select_menu* sounddev;
@@ -438,6 +441,11 @@ namespace
 		: information_dispatch("wxwidgets-broadcast-listener")
 	{
 		mainw = win;
+	}
+
+	void broadcast_listener::on_core_change()
+	{
+		signal_core_change();
 	}
 
 	void broadcast_listener::set_sound_select(sound_select_menu* sdev)
@@ -918,6 +926,11 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 	}
 }
 
+void wxwin_mainwindow::refresh_title() throw()
+{
+	SetTitle(getname());
+}
+
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
 	std::string filename;
@@ -1085,7 +1098,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::ostringstream str;
 		str << "Version: lsnes rr" << lsnes_version << std::endl;
 		str << "Revision: " << lsnes_git_revision << std::endl;
-		str << "Core: " << bsnes_core_version << std::endl;
+		str << "Core: " << our_rom->rtype->get_core_identifier() << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 		return;
 	}

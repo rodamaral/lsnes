@@ -1,10 +1,10 @@
-#include "core/emucore.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rrdata.hpp"
 #include "library/zip.hpp"
 #include "library/string.hpp"
+#include "interface/romtype.hpp"
 
 #include <sstream>
 #include <boost/iostreams/copy.hpp>

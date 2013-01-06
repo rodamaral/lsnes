@@ -7,12 +7,12 @@
 #include <vector>
 #include "core/audioapi.hpp"
 #include "core/misc.hpp"
-#include "core/emucore.hpp"
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
+#include "interface/callbacks.hpp"
 #include "interface/romtype.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
@@ -546,7 +546,5 @@ namespace
 		instance->saveState(x, cmp_save);
 	});
 }
-
-core_core* emulator_core = &gambatte_core;
 
 #endif
