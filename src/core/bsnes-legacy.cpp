@@ -425,6 +425,27 @@ namespace
 
 
 
+
+
+
+	class my_interfaced : public SNES::Interface
+	{
+		string path(SNES::Cartridge::Slot slot, const string &hint)
+		{
+			return "./";
+		}
+	};
+
+	void basic_init()
+	{
+		static bool done = false;
+		if(done)
+			return;
+		done = true;
+		static my_interfaced i;
+		SNES::interface = &i;
+	}
+
 	void init_norom_frame()
 	{
 		static bool done = false;
@@ -474,6 +495,7 @@ namespace
 		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
 		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
 
+		basic_init();
 		snes_term();
 		snes_unload_cartridge();
 		SNES::config.random = false;
@@ -828,14 +850,6 @@ namespace
 
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 
-	class my_interfaced : public SNES::Interface
-	{
-		string path(SNES::Cartridge::Slot slot, const string &hint)
-		{
-			return "./";
-		}
-	};
-
 	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
 	{
 		if(write)
@@ -1074,6 +1088,7 @@ port_type* core_port_types[] = {
 
 void core_install_handler()
 {
+	basic_init();
 	old = SNES::interface;
 	SNES::interface = &my_interface_obj;
 	SNES::system.init();
@@ -1082,16 +1097,6 @@ void core_install_handler()
 void core_uninstall_handler()
 {
 	SNES::interface = old;
-}
-
-void do_basic_core_init()
-{
-	static bool done = false;
-	if(done)
-		return;
-	done = true;
-	static my_interfaced i;
-	SNES::interface = &i;
 }
 
 std::set<std::string> get_sram_set()

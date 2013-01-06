@@ -477,7 +477,6 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
-	do_basic_core_init();
 	loaded_rom* rom = NULL;
 	if(c_rom != "")
 		try {

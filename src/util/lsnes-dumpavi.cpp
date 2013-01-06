@@ -229,7 +229,6 @@ int main(int argc, char** argv)
 	uint64_t length;
 	std::string mode, prefix;
 	
-	do_basic_core_init();
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();

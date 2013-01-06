@@ -175,16 +175,21 @@ namespace
 		};
 	} getinput;
 
-
-
-
-
-
-
+	void basic_init()
+	{
+		static bool done = false;
+		if(done)
+			return;
+		done = true;
+		instance = new gambatte::GB;
+		instance->setInputGetter(&getinput);
+		instance->set_walltime_fn(walltime_fn);
+	}
 
 	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
 		core_type* inttype)
 	{
+		basic_init();
 		const char* markup = img[0].markup;
 		int flags2 = 0;
 		if(markup) {
@@ -398,13 +403,6 @@ port_type* core_port_types[] = {
 
 void core_runtosave()
 {
-}
-
-void do_basic_core_init()
-{
-	instance = new gambatte::GB;
-	instance->setInputGetter(&getinput);
-	instance->set_walltime_fn(walltime_fn);
 }
 
 void core_install_handler()

@@ -12,8 +12,6 @@
 #include "interface/romtype.hpp"
 
 
-//Do basic core initialization (to get it to stable state).
-void do_basic_core_init();
 //Install handler.
 void core_install_handler();
 //Uninstall handler.
