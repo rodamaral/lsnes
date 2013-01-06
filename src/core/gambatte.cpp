@@ -238,6 +238,82 @@ namespace
 		return std::make_pair(0, 0);
 	}
 
+	std::list<core_vma_info> get_VMAlist()
+	{
+		std::list<core_vma_info> vmas;
+		if(!internal_rom)
+			return vmas;
+		core_vma_info sram;
+		core_vma_info wram;
+		core_vma_info vram;
+		core_vma_info ioamhram;
+		core_vma_info rom;
+
+		auto g = instance->getSaveRam();
+		sram.name = "SRAM";
+		sram.base = 0x20000;
+		sram.size = g.second;
+		sram.backing_ram = g.first;
+		sram.native_endian = false;
+		sram.readonly = false;
+		sram.iospace_rw = NULL;
+
+		auto g2 = instance->getWorkRam();
+		wram.name = "WRAM";
+		wram.base = 0;
+		wram.size = g2.second;
+		wram.backing_ram = g2.first;
+		wram.native_endian = false;
+		wram.readonly = false;
+		wram.iospace_rw = NULL;
+
+		auto g3 = instance->getVideoRam();
+		vram.name = "VRAM";
+		vram.base = 0x10000;
+		vram.size = g3.second;
+		vram.backing_ram = g3.first;
+		vram.native_endian = false;
+		vram.readonly = false;
+		vram.iospace_rw = NULL;
+
+		auto g4 = instance->getIoRam();
+		ioamhram.name = "IOAMHRAM";
+		ioamhram.base = 0x18000;
+		ioamhram.size = g4.second;
+		ioamhram.backing_ram = g4.first;
+		ioamhram.native_endian = false;
+		ioamhram.readonly = false;
+		ioamhram.iospace_rw = NULL;
+
+		rom.name = "ROM";
+		rom.base = 0x80000000;
+		rom.size = romdata.size();
+		rom.backing_ram = (void*)&romdata[0];
+		rom.native_endian = false;
+		rom.readonly = true;
+		rom.iospace_rw = NULL;
+
+		if(sram.size)
+			vmas.push_back(sram);
+		vmas.push_back(wram);
+		vmas.push_back(rom);
+		vmas.push_back(vram);
+		vmas.push_back(ioamhram);
+		return vmas;
+	}
+
+	std::set<std::string> srams()
+	{
+		std::set<std::string> s;
+		if(!internal_rom)
+			return s;
+		auto g = instance->getSaveRam();
+		if(g.second)
+			s.insert("main");
+		s.insert("rtc");
+		return s;
+	}
+
 	unsigned world_compatible[] = {0, UINT_MAX};
 	core_region_params _region_world = {
 		"world", "World", 1, 0, false, {35112, 2097152, 16742706, 626688}, world_compatible
@@ -421,7 +497,7 @@ namespace
 			return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
 		},
 		_controllerconfig, "gb;dmg", NULL, regions_gambatte, dmg_images, &gambatte_settings, &gambatte_core,
-		gambatte_bus_map
+		gambatte_bus_map, get_VMAlist, srams
 	};
 	core_type_params  _type_gbc = {
 		"gbc", "Game Boy Color", 0, 1,
@@ -430,7 +506,7 @@ namespace
 			return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
 		},
 		_controllerconfig, "gbc;cgb", NULL, regions_gambatte, gbc_images, &gambatte_settings, &gambatte_core,
-		gambatte_bus_map
+		gambatte_bus_map, get_VMAlist, srams
 	};
 	core_type_params  _type_gbc_gba = {
 		"gbc_gba", "Game Boy Color (GBA)", 2, 1,
@@ -439,7 +515,7 @@ namespace
 			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
 		},
 		_controllerconfig, "", NULL, regions_gambatte, gbca_images, &gambatte_settings, &gambatte_core,
-		gambatte_bus_map
+		gambatte_bus_map, get_VMAlist, srams
 	};
 
 	core_type type_dmg(_type_dmg);
@@ -448,6 +524,23 @@ namespace
 	core_sysregion sr1("gdmg", type_dmg, region_world);
 	core_sysregion sr2("ggbc", type_gbc, region_world);
 	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
+
+	std::vector<char> cmp_save;
+
+	function_ptr_command<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc,
+		std::runtime_error) {
+		if(!internal_rom)
+			return;
+		instance->saveState(cmp_save);
+	});
+
+	function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(std::bad_alloc,
+		std::runtime_error) {
+		std::vector<char> x;
+		if(!internal_rom)
+			return;
+		instance->saveState(x, cmp_save);
+	});
 }
 
 core_core* emulator_core = &gambatte_core;
@@ -456,101 +549,4 @@ port_type* core_port_types[] = {
 	&psystem, NULL
 };
 
-
-
-
-std::list<vma_info> get_vma_list()
-{
-	std::list<vma_info> vmas;
-	if(!internal_rom)
-		return vmas;
-	vma_info sram;
-	vma_info wram;
-	vma_info vram;
-	vma_info ioamhram;
-	vma_info rom;
-
-	auto g = instance->getSaveRam();
-	sram.name = "SRAM";
-	sram.base = 0x20000;
-	sram.size = g.second;
-	sram.backing_ram = g.first;
-	sram.native_endian = false;
-	sram.readonly = false;
-	sram.iospace_rw = NULL;
-
-	auto g2 = instance->getWorkRam();
-	wram.name = "WRAM";
-	wram.base = 0;
-	wram.size = g2.second;
-	wram.backing_ram = g2.first;
-	wram.native_endian = false;
-	wram.readonly = false;
-	wram.iospace_rw = NULL;
-
-	auto g3 = instance->getVideoRam();
-	vram.name = "VRAM";
-	vram.base = 0x10000;
-	vram.size = g3.second;
-	vram.backing_ram = g3.first;
-	vram.native_endian = false;
-	vram.readonly = false;
-	vram.iospace_rw = NULL;
-
-	auto g4 = instance->getIoRam();
-	ioamhram.name = "IOAMHRAM";
-	ioamhram.base = 0x18000;
-	ioamhram.size = g4.second;
-	ioamhram.backing_ram = g4.first;
-	ioamhram.native_endian = false;
-	ioamhram.readonly = false;
-	ioamhram.iospace_rw = NULL;
-
-	rom.name = "ROM";
-	rom.base = 0x80000000;
-	rom.size = romdata.size();
-	rom.backing_ram = (void*)&romdata[0];
-	rom.native_endian = false;
-	rom.readonly = true;
-	rom.iospace_rw = NULL;
-
-	if(sram.size)
-		vmas.push_back(sram);
-	vmas.push_back(wram);
-	vmas.push_back(rom);
-	vmas.push_back(vram);
-	vmas.push_back(ioamhram);
-	return vmas;
-}
-
-std::set<std::string> get_sram_set()
-{
-	std::set<std::string> s;
-	if(!internal_rom)
-		return s;
-	auto g = instance->getSaveRam();
-	if(g.second)
-		s.insert("main");
-	s.insert("rtc");
-	return s;
-}
-
-std::vector<char> cmp_save;
-
-function_ptr_command<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
-	if(!internal_rom)
-		return;
-	instance->saveState(cmp_save);
-});
-
-function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
-	std::vector<char> x;
-	if(!internal_rom)
-		return;
-	instance->saveState(x, cmp_save);
-});
-
-emucore_callbacks::~emucore_callbacks() throw() {}
-
-struct emucore_callbacks* ecore_callbacks;
 #endif

@@ -159,7 +159,7 @@ wxwin_project::wxwin_project()
 	std::vector<wxString> cchoices;
 	unsigned dfltidx;
 
-	std::set<std::string> sram_set = get_sram_set();
+	std::set<std::string> sram_set = our_rom->rtype->srams();
 
 	Centre();
 	//2 Top-level block.

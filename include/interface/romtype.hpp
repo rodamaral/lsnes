@@ -36,6 +36,18 @@ struct core_romimage_info_params
 	unsigned headersize;	//Header size to remove (0 if there is never header to remove).
 };
 
+//A VMA.
+struct core_vma_info
+{
+	std::string name;
+	uint64_t base;
+	uint64_t size;
+	void* backing_ram;
+	bool readonly;
+	bool native_endian;
+	uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
+};
+
 struct core_type_params
 {
 	const char* iname;
@@ -52,6 +64,8 @@ struct core_type_params
 	core_setting_group* settings;
 	core_core* core;
 	std::pair<uint64_t, uint64_t> (*get_bus_map)();
+	std::list<core_vma_info> (*vma_list)();
+	std::set<std::string> (*srams)();
 };
 
 struct core_core_params
@@ -77,7 +91,6 @@ struct core_core_params
 	void (*set_pflag)(unsigned pflag);
 	void (*request_reset)(long delay);
 };
-
 
 struct core_region
 {
@@ -189,6 +202,8 @@ public:
 	unsigned get_reset_support();
 	core_setting_group& get_settings();
 	std::pair<uint64_t, uint64_t> get_bus_map();
+	std::list<core_vma_info> vma_list();
+	std::set<std::string> srams();
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
@@ -222,6 +237,8 @@ private:
 		uint64_t rtc_subsec);
 	controller_set (*_controllerconfig)(std::map<std::string, std::string>& settings);
 	std::pair<uint64_t, uint64_t> (*_get_bus_map)();
+	std::list<core_vma_info> (*_vma_list)();
+	std::set<std::string> (*_srams)();
 	unsigned id;
 	unsigned reset_support;
 	std::string iname;

@@ -41,9 +41,6 @@
 #define ROM_TYPE_SUFAMITURBO 4
 #define ROM_TYPE_SGB 5
 
-void snesdbg_on_break();
-void snesdbg_on_trace();
-
 namespace
 {
 	bool p1disable = false;
@@ -64,6 +61,7 @@ namespace
 	bool stepping_into_save;
 	bool video_refresh_done;
 	bool forced_hook = false;
+	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
 	//Delay reset.
 	unsigned long long delayreset_cycles_run;
 	unsigned long long delayreset_cycles_target;
@@ -432,7 +430,8 @@ namespace
 
 
 
-
+	void snesdbg_on_break();
+	void snesdbg_on_trace();
 
 	class my_interfaced : public SNES::Interface
 	{
@@ -813,6 +812,131 @@ namespace
 		return id.substr(1);
 	}
 
+	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	{
+		if(write)
+			SNES::bus.write(offset, data);
+		else
+			return SNES::bus.read(offset);
+	}
+
+	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	{
+		uint16_t entry = offset >> 4;
+		if(!ptrmap.count(entry))
+			return 0;
+		uint64_t val = ((offset & 15) < 8) ? ptrmap[entry].first : ptrmap[entry].second;
+		uint8_t byte = offset & 7;
+		//These things are always little-endian.
+		return (val >> (8 * byte));
+	}
+
+	void create_region(std::list<core_vma_info>& inf, const std::string& name, uint64_t base, uint64_t size,
+		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write)) throw(std::bad_alloc)
+	{
+		if(size == 0)
+			return;
+		core_vma_info i;
+		i.name = name;
+		i.base = base;
+		i.size = size;
+		i.readonly = false;
+		i.native_endian = false;
+		i.iospace_rw = iospace_rw;
+		inf.push_back(i);
+	}
+
+	void create_region(std::list<core_vma_info>& inf, const std::string& name, uint64_t base, uint8_t* memory,
+		uint64_t size, bool readonly, bool native_endian = false) throw(std::bad_alloc)
+	{
+		if(size == 0)
+			return;
+		core_vma_info i;
+		i.name = name;
+		i.base = base;
+		i.size = size;
+		i.backing_ram = memory;
+		i.readonly = readonly;
+		i.native_endian = native_endian;
+		i.iospace_rw = NULL;
+		inf.push_back(i);
+	}
+
+	void create_region(std::list<core_vma_info>& inf, const std::string& name, uint64_t base,
+		SNES::MappedRAM& memory, bool readonly, bool native_endian = false) throw(std::bad_alloc)
+	{
+		create_region(inf, name, base, memory.data(), memory.size(), readonly, native_endian);
+	}
+
+	void map_internal(std::list<core_vma_info>& inf, const std::string& name, uint16_t index, void* memory,
+		size_t memsize)
+	{
+		ptrmap[index] = std::make_pair(reinterpret_cast<uint64_t>(memory), static_cast<uint64_t>(memsize));
+		create_region(inf, name, 0x101000000 + index * 0x1000000, reinterpret_cast<uint8_t*>(memory),
+			memsize, true, true);
+	}
+
+	std::list<core_vma_info> get_VMAlist()
+	{
+		std::list<core_vma_info> ret;
+		if(!internal_rom)
+			return ret;
+		create_region(ret, "WRAM", 0x007E0000, SNES::cpu.wram, 131072, false);
+		create_region(ret, "APURAM", 0x00000000, SNES::smp.apuram, 65536, false);
+		create_region(ret, "VRAM", 0x00010000, SNES::ppu.vram, 65536, false);
+		create_region(ret, "OAM", 0x00020000, SNES::ppu.oam, 544, false);
+		create_region(ret, "CGRAM", 0x00021000, SNES::ppu.cgram, 512, false);
+		if(SNES::cartridge.has_srtc()) create_region(ret, "RTC", 0x00022000, SNES::srtc.rtc, 20, false);
+		if(SNES::cartridge.has_spc7110rtc()) create_region(ret, "RTC", 0x00022000, SNES::spc7110.rtc, 20,
+			false);
+		if(SNES::cartridge.has_necdsp()) {
+			create_region(ret, "DSPRAM", 0x00023000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataRAM),
+				4096, false, true);
+			create_region(ret, "DSPPROM", 0xF0000000, reinterpret_cast<uint8_t*>(SNES::necdsp.programROM),
+				65536, true, true);
+			create_region(ret, "DSPDROM", 0xF0010000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataROM),
+				4096, true, true);
+		}
+		create_region(ret, "SRAM", 0x10000000, SNES::cartridge.ram, false);
+		create_region(ret, "ROM", 0x80000000, SNES::cartridge.rom, true);
+		create_region(ret, "BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
+		create_region(ret, "PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_rw);
+		map_internal(ret, "CPU_STATE", 0, &SNES::cpu, sizeof(SNES::cpu));
+		map_internal(ret, "PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
+		map_internal(ret, "SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
+		map_internal(ret, "DSP_STATE", 3, &SNES::dsp, sizeof(SNES::dsp));
+		if(internal_rom == &type_bsx || internal_rom == &type_bsxslotted) {
+			create_region(ret, "BSXFLASH", 0x90000000, SNES::bsxflash.memory, true);
+			create_region(ret, "BSX_RAM", 0x20000000, SNES::bsxcartridge.sram, false);
+			create_region(ret, "BSX_PRAM", 0x30000000, SNES::bsxcartridge.psram, false);
+		}
+		if(internal_rom == &type_sufamiturbo) {
+			create_region(ret, "SLOTA_ROM", 0x90000000, SNES::sufamiturbo.slotA.rom, true);
+			create_region(ret, "SLOTB_ROM", 0xA0000000, SNES::sufamiturbo.slotB.rom, true);
+			create_region(ret, "SLOTA_RAM", 0x20000000, SNES::sufamiturbo.slotA.ram, false);
+			create_region(ret, "SLOTB_RAM", 0x30000000, SNES::sufamiturbo.slotB.ram, false);
+		}
+		if(internal_rom == &type_sgb) {
+			create_region(ret, "GBROM", 0x90000000, GameBoy::cartridge.romdata,
+				GameBoy::cartridge.romsize, true);
+			create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata,
+				GameBoy::cartridge.ramsize, false);
+		}
+		return ret;
+	}
+
+	std::set<std::string> srams()
+	{
+		std::set<std::string> r;
+		if(!internal_rom)
+			return r;
+		for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
+			SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
+			r.insert(sram_name(s.id, s.slot));
+		}
+		return r;
+	}
+
 	core_core_params _bsnes_core = {
 		//Identify core.
 		[]() -> std::string {
@@ -1043,7 +1167,7 @@ again2:
 				load_rom_X1<snes_load_cartridge_normal>);
 		},
 		_controllerconfig, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images,
-		&bsnes_settings, &bsnes_core, bsnes_get_bus_map
+		&bsnes_settings, &bsnes_core, bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_bsx = {
 		"bsx", "BS-X (non-slotted)", 1, BSNES_RESET_LEVEL , 
@@ -1053,7 +1177,7 @@ again2:
 				load_rom_X2<snes_load_cartridge_bsx>);
 		},
 		_controllerconfig, "bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, &bsnes_core,
-		bsnes_get_bus_map
+		bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_bsxslotted = {
 		"bsxslotted", "BS-X (slotted)", 2, BSNES_RESET_LEVEL ,
@@ -1063,7 +1187,7 @@ again2:
 				load_rom_X2<snes_load_cartridge_bsx_slotted>);
 		},
 		_controllerconfig, "bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
-		bsnes_get_bus_map
+		bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_sufamiturbo = {
 		"sufamiturbo", "Sufami Turbo", 3, BSNES_RESET_LEVEL ,
@@ -1073,7 +1197,7 @@ again2:
 				load_rom_X3<snes_load_cartridge_sufami_turbo>);
 		},
 		_controllerconfig, "st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
-		bsnes_get_bus_map
+		bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_sgb = {
 		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL ,
@@ -1084,7 +1208,7 @@ again2:
 				load_rom_X2<snes_load_cartridge_super_game_boy>);
 		},
 		_controllerconfig, "gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, &bsnes_core,
-		bsnes_get_bus_map
+		bsnes_get_bus_map, get_VMAlist, srams
 	};
 
 	core_type type_snes(_type_snes);
@@ -1101,71 +1225,249 @@ again2:
 	core_sysregion sr7("sgb_pal", type_sgb, region_pal);
 
 
-	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
+	function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
+		"No description available\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			std::vector<char> out;
+			_bsnes_core.serialize(out);
+			std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
+			x.write(&out[0], out.size());
+		});
 
-	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L, const std::string& fname) ->
+		int {
+		std::string r = L.get_string(1, fname.c_str());
+		auto& c = SNES::cpu.regs;
+		auto& c2 = SNES::cpu;
+		if(r == "pbpc")		L.pushnumber((unsigned)c.pc);
+		else if(r == "pb")	L.pushnumber((unsigned)c.pc >> 16);
+		else if(r == "pc")	L.pushnumber((unsigned)c.pc & 0xFFFF);
+		else if(r == "r0")	L.pushnumber((unsigned)c.r[0]);
+		else if(r == "r1")	L.pushnumber((unsigned)c.r[1]);
+		else if(r == "r2")	L.pushnumber((unsigned)c.r[2]);
+		else if(r == "r3")	L.pushnumber((unsigned)c.r[3]);
+		else if(r == "r4")	L.pushnumber((unsigned)c.r[4]);
+		else if(r == "r5")	L.pushnumber((unsigned)c.r[5]);
+		else if(r == "a")	L.pushnumber((unsigned)c.a);
+		else if(r == "x")	L.pushnumber((unsigned)c.x);
+		else if(r == "y")	L.pushnumber((unsigned)c.y);
+		else if(r == "z")	L.pushnumber((unsigned)c.z);
+		else if(r == "s")	L.pushnumber((unsigned)c.s);
+		else if(r == "d")	L.pushnumber((unsigned)c.d);
+		else if(r == "db")	L.pushnumber((unsigned)c.db);
+		else if(r == "p")	L.pushnumber((unsigned)c.p);
+		else if(r == "p_n")	L.pushboolean(c.p.n);
+		else if(r == "p_v")	L.pushboolean(c.p.v);
+		else if(r == "p_m")	L.pushboolean(c.p.m);
+		else if(r == "p_x")	L.pushboolean(c.p.x);
+		else if(r == "p_d")	L.pushboolean(c.p.d);
+		else if(r == "p_i")	L.pushboolean(c.p.i);
+		else if(r == "p_z")	L.pushboolean(c.p.z);
+		else if(r == "p_c")	L.pushboolean(c.p.c);
+		else if(r == "e")	L.pushboolean(c.e);
+		else if(r == "irq")	L.pushboolean(c.irq);
+		else if(r == "wai")	L.pushboolean(c.wai);
+		else if(r == "mdr")	L.pushnumber((unsigned)c.mdr);
+		else if(r == "vector")	L.pushnumber((unsigned)c.vector);
+		else if(r == "aa")	L.pushnumber((unsigned)c2.aa);
+		else if(r == "rd")	L.pushnumber((unsigned)c2.rd);
+		else if(r == "sp")	L.pushnumber((unsigned)c2.sp);
+		else if(r == "dp")	L.pushnumber((unsigned)c2.dp);
+		else			L.pushnil();
+		return 1;
+	});
+
+#ifdef BSNES_HAS_DEBUGGER
+	char snes_debug_cb_keys[SNES::Debugger::Breakpoints];
+	char snes_debug_cb_trace;
+
+	void snesdbg_execute_callback(char& cb, signed r)
 	{
-		if(write)
-			SNES::bus.write(offset, data);
-		else
-			return SNES::bus.read(offset);
+		LS.pushlightuserdata(&cb);
+		LS.gettable(LUA_REGISTRYINDEX);
+		LS.pushnumber(r);
+		if(LS.type(-2) == LUA_TFUNCTION) {
+			int s = LS.pcall(1, 0, 0);
+			if(s)
+				LS.pop(1);
+		} else {
+			messages << "Can't execute debug callback" << std::endl;
+			LS.pop(2);
+		}
+		if(lua_requests_repaint) {
+			lua_requests_repaint = false;
+			lsnes_cmd.invoke("repaint");
+		}
 	}
 
-	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	void snesdbg_on_break()
 	{
-		uint16_t entry = offset >> 4;
-		if(!ptrmap.count(entry))
+		signed r = SNES::debugger.breakpoint_hit;
+		snesdbg_execute_callback(snes_debug_cb_keys[r], r);
+	}
+
+	void snesdbg_on_trace()
+	{
+		snesdbg_execute_callback(snes_debug_cb_trace, -1);
+	}
+
+	void snesdbg_set_callback(lua_state& L, char& cb)
+	{
+		L.pushlightuserdata(&cb);
+		L.pushvalue(-2);
+		L.settable(LUA_REGISTRYINDEX);
+	}
+
+	bool snesdbg_get_bp_enabled(lua_state& L)
+	{
+		bool r;
+		L.getfield(-1, "addr");
+		r = (L.type(-1) == LUA_TNUMBER);
+		L.pop(1);
+		return r;
+	}
+
+	uint32_t snesdbg_get_bp_addr(lua_state& L)
+	{
+		uint32_t r = 0;
+		L.getfield(-1, "addr");
+		if(L.type(-1) == LUA_TNUMBER)
+			r = static_cast<uint32_t>(L.tonumber(-1));
+		L.pop(1);
+		return r;
+	}
+
+	uint32_t snesdbg_get_bp_data(lua_state& L)
+	{
+		signed r = -1;
+		L.getfield(-1, "data");
+		if(L.type(-1) == LUA_TNUMBER)
+			r = static_cast<signed>(L.tonumber(-1));
+		L.pop(1);
+		return r;
+	}
+
+	SNES::Debugger::Breakpoint::Mode snesdbg_get_bp_mode(lua_state& L)
+	{
+		SNES::Debugger::Breakpoint::Mode r = SNES::Debugger::Breakpoint::Mode::Exec;
+		L.getfield(-1, "mode");
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "e"))
+			r = SNES::Debugger::Breakpoint::Mode::Exec;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "x"))
+			r = SNES::Debugger::Breakpoint::Mode::Exec;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "exec"))
+			r = SNES::Debugger::Breakpoint::Mode::Exec;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "r"))
+			r = SNES::Debugger::Breakpoint::Mode::Read;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "read"))
+			r = SNES::Debugger::Breakpoint::Mode::Read;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "w"))
+			r = SNES::Debugger::Breakpoint::Mode::Write;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "write"))
+			r = SNES::Debugger::Breakpoint::Mode::Write;
+		L.pop(1);
+		return r;
+	}
+
+	SNES::Debugger::Breakpoint::Source snesdbg_get_bp_source(lua_state& L)
+	{
+		SNES::Debugger::Breakpoint::Source r = SNES::Debugger::Breakpoint::Source::CPUBus;
+		L.getfield(-1, "source");
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cpubus"))
+			r = SNES::Debugger::Breakpoint::Source::CPUBus;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "apuram"))
+			r = SNES::Debugger::Breakpoint::Source::APURAM;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "vram"))
+			r = SNES::Debugger::Breakpoint::Source::VRAM;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "oam"))
+			r = SNES::Debugger::Breakpoint::Source::OAM;
+		if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cgram"))
+			r = SNES::Debugger::Breakpoint::Source::CGRAM;
+		L.pop(1);
+		return r;
+	}
+
+	void snesdbg_get_bp_callback(lua_state& L)
+	{
+		L.getfield(-1, "callback");
+	}
+
+	function_ptr_luafun lua_memory_setdebug(LS, "memory.setdebug", [](lua_state& L, const std::string& fname) ->
+		int {
+		unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		if(r >= SNES::Debugger::Breakpoints) {
+			L.pushstring("Bad breakpoint number");
+			L.error();
 			return 0;
-		uint64_t val = ((offset & 15) < 8) ? ptrmap[entry].first : ptrmap[entry].second;
-		uint8_t byte = offset & 7;
-		//These things are always little-endian.
-		return (val >> (8 * byte));
+		}
+		if(L.type(2) == LUA_TNIL) {
+			//Clear breakpoint.
+			SNES::debugger.breakpoint[r].enabled = false;
+			return 0;
+		} else if(L.type(2) == LUA_TTABLE) {
+			L.pushvalue(2);
+			auto& x = SNES::debugger.breakpoint[r];
+			x.enabled = snesdbg_get_bp_enabled(L);
+			x.addr = snesdbg_get_bp_addr(L);
+			x.data = snesdbg_get_bp_data(L);
+			x.mode = snesdbg_get_bp_mode(L);
+			x.source = snesdbg_get_bp_source(L);
+			snesdbg_get_bp_callback(L);
+			snesdbg_set_callback(L, snes_debug_cb_keys[r]);
+			L.pop(2);
+			return 0;
+		} else {
+			L.pushstring("Expected argument 2 to memory.setdebug to be nil or table");
+			L.error();
+			return 0;
+		}
+	});
+
+	function_ptr_luafun lua_memory_setstep(LS, "memory.setstep", [](lua_state& L, const std::string& fname) ->
+		int {
+		uint64_t r = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		L.pushvalue(2);
+		snesdbg_set_callback(L, snes_debug_cb_trace);
+		trace_counter = r;
+		update_trace_hook_state();
+		L.pop(1);
+		return 0;
+	});
+
+	void snesdbg_settrace(std::string r)
+	{
+		if(trace_output_enable)
+			messages << "------- End of trace -----" << std::endl;
+		trace_output.close();
+		trace_output_enable = false;
+		if(r != "") {
+			trace_output.close();
+			trace_output.open(r);
+			if(trace_output) {
+				trace_output_enable = true;
+				messages << "------- Start of trace -----" << std::endl;
+			} else
+				messages << "Can't open " << r << std::endl;
+		}
+		update_trace_hook_state();
 	}
 
-	void create_region(std::list<vma_info>& inf, const std::string& name, uint64_t base, uint64_t size,
-		uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write)) throw(std::bad_alloc)
-	{
-		if(size == 0)
-			return;
-		vma_info i;
-		i.name = name;
-		i.base = base;
-		i.size = size;
-		i.readonly = false;
-		i.native_endian = false;
-		i.iospace_rw = iospace_rw;
-		inf.push_back(i);
-	}
+	function_ptr_luafun lua_memory_settrace(LS, "memory.settrace", [](lua_state& L, const std::string& fname) ->
+		int {
+		std::string r = L.get_string(1, fname.c_str());
+		snesdbg_settrace(r);
+	});
 
-	void create_region(std::list<vma_info>& inf, const std::string& name, uint64_t base, uint8_t* memory,
-		uint64_t size, bool readonly, bool native_endian = false) throw(std::bad_alloc)
-	{
-		if(size == 0)
-			return;
-		vma_info i;
-		i.name = name;
-		i.base = base;
-		i.size = size;
-		i.backing_ram = memory;
-		i.readonly = readonly;
-		i.native_endian = native_endian;
-		i.iospace_rw = NULL;
-		inf.push_back(i);
-	}
+	function_ptr_command<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
+		"No description available\n",
+		[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
+			snesdbg_settrace(r);
+		});
 
-	void create_region(std::list<vma_info>& inf, const std::string& name, uint64_t base,
-		SNES::MappedRAM& memory, bool readonly, bool native_endian = false) throw(std::bad_alloc)
-	{
-		create_region(inf, name, base, memory.data(), memory.size(), readonly, native_endian);
-	}
-
-	void map_internal(std::list<vma_info>& inf, const std::string& name, uint16_t index, void* memory,
-		size_t memsize)
-	{
-		ptrmap[index] = std::make_pair(reinterpret_cast<uint64_t>(memory), static_cast<uint64_t>(memsize));
-		create_region(inf, name, 0x101000000 + index * 0x1000000, reinterpret_cast<uint8_t*>(memory),
-			memsize, true, true);
-	}
+#else
+	void snesdbg_on_break() {}
+	void snesdbg_on_trace() {}
+#endif
 }
 
 core_core* emulator_core = &bsnes_core;
@@ -1175,313 +1477,4 @@ port_type* core_port_types[] = {
 	&superscope, NULL
 };
 
-
-std::set<std::string> get_sram_set()
-{
-	std::set<std::string> r;
-	if(!internal_rom)
-		return r;
-	for(unsigned i = 0; i < SNES::cartridge.nvram.size(); i++) {
-		SNES::Cartridge::NonVolatileRAM& s = SNES::cartridge.nvram[i];
-		r.insert(sram_name(s.id, s.slot));
-	}
-	return r;
-}
-
-
-
-std::list<vma_info> get_vma_list()
-{
-	std::list<vma_info> ret;
-	if(!internal_rom)
-		return ret;
-	create_region(ret, "WRAM", 0x007E0000, SNES::cpu.wram, 131072, false);
-	create_region(ret, "APURAM", 0x00000000, SNES::smp.apuram, 65536, false);
-	create_region(ret, "VRAM", 0x00010000, SNES::ppu.vram, 65536, false);
-	create_region(ret, "OAM", 0x00020000, SNES::ppu.oam, 544, false);
-	create_region(ret, "CGRAM", 0x00021000, SNES::ppu.cgram, 512, false);
-	if(SNES::cartridge.has_srtc()) create_region(ret, "RTC", 0x00022000, SNES::srtc.rtc, 20, false);
-	if(SNES::cartridge.has_spc7110rtc()) create_region(ret, "RTC", 0x00022000, SNES::spc7110.rtc, 20, false);
-	if(SNES::cartridge.has_necdsp()) {
-		create_region(ret, "DSPRAM", 0x00023000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataRAM), 4096,
-			false, true);
-		create_region(ret, "DSPPROM", 0xF0000000, reinterpret_cast<uint8_t*>(SNES::necdsp.programROM), 65536,
-			true, true);
-		create_region(ret, "DSPDROM", 0xF0010000, reinterpret_cast<uint8_t*>(SNES::necdsp.dataROM), 4096,
-			true, true);
-	}
-	create_region(ret, "SRAM", 0x10000000, SNES::cartridge.ram, false);
-	create_region(ret, "ROM", 0x80000000, SNES::cartridge.rom, true);
-	create_region(ret, "BUS", 0x1000000, 0x1000000, snes_bus_iospace_rw);
-	create_region(ret, "PTRTABLE", 0x100000000, 0x100000, ptrtable_iospace_rw);
-	map_internal(ret, "CPU_STATE", 0, &SNES::cpu, sizeof(SNES::cpu));
-	map_internal(ret, "PPU_STATE", 1, &SNES::ppu, sizeof(SNES::ppu));
-	map_internal(ret, "SMP_STATE", 2, &SNES::smp, sizeof(SNES::smp));
-	map_internal(ret, "DSP_STATE", 3, &SNES::dsp, sizeof(SNES::dsp));
-	if(internal_rom == &type_bsx || internal_rom == &type_bsxslotted) {
-		create_region(ret, "BSXFLASH", 0x90000000, SNES::bsxflash.memory, true);
-		create_region(ret, "BSX_RAM", 0x20000000, SNES::bsxcartridge.sram, false);
-		create_region(ret, "BSX_PRAM", 0x30000000, SNES::bsxcartridge.psram, false);
-	}
-	if(internal_rom == &type_sufamiturbo) {
-		create_region(ret, "SLOTA_ROM", 0x90000000, SNES::sufamiturbo.slotA.rom, true);
-		create_region(ret, "SLOTB_ROM", 0xA0000000, SNES::sufamiturbo.slotB.rom, true);
-		create_region(ret, "SLOTA_RAM", 0x20000000, SNES::sufamiturbo.slotA.ram, false);
-		create_region(ret, "SLOTB_RAM", 0x30000000, SNES::sufamiturbo.slotB.ram, false);
-	}
-	if(internal_rom == &type_sgb) {
-		create_region(ret, "GBROM", 0x90000000, GameBoy::cartridge.romdata, GameBoy::cartridge.romsize, true);
-		create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
-	}
-	return ret;
-}
-
-emucore_callbacks::~emucore_callbacks() throw()
-{
-}
-
-function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
-	"No description available\n",
-	[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-		std::vector<char> out;
-		_bsnes_core.serialize(out);
-		std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
-		x.write(&out[0], out.size());
-	});
-
-function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L, const std::string& fname) -> int {
-	std::string r = L.get_string(1, fname.c_str());
-	auto& c = SNES::cpu.regs;
-	auto& c2 = SNES::cpu;
-	if(r == "pbpc")		L.pushnumber((unsigned)c.pc);
-	else if(r == "pb")	L.pushnumber((unsigned)c.pc >> 16);
-	else if(r == "pc")	L.pushnumber((unsigned)c.pc & 0xFFFF);
-	else if(r == "r0")	L.pushnumber((unsigned)c.r[0]);
-	else if(r == "r1")	L.pushnumber((unsigned)c.r[1]);
-	else if(r == "r2")	L.pushnumber((unsigned)c.r[2]);
-	else if(r == "r3")	L.pushnumber((unsigned)c.r[3]);
-	else if(r == "r4")	L.pushnumber((unsigned)c.r[4]);
-	else if(r == "r5")	L.pushnumber((unsigned)c.r[5]);
-	else if(r == "a")	L.pushnumber((unsigned)c.a);
-	else if(r == "x")	L.pushnumber((unsigned)c.x);
-	else if(r == "y")	L.pushnumber((unsigned)c.y);
-	else if(r == "z")	L.pushnumber((unsigned)c.z);
-	else if(r == "s")	L.pushnumber((unsigned)c.s);
-	else if(r == "d")	L.pushnumber((unsigned)c.d);
-	else if(r == "db")	L.pushnumber((unsigned)c.db);
-	else if(r == "p")	L.pushnumber((unsigned)c.p);
-	else if(r == "p_n")	L.pushboolean(c.p.n);
-	else if(r == "p_v")	L.pushboolean(c.p.v);
-	else if(r == "p_m")	L.pushboolean(c.p.m);
-	else if(r == "p_x")	L.pushboolean(c.p.x);
-	else if(r == "p_d")	L.pushboolean(c.p.d);
-	else if(r == "p_i")	L.pushboolean(c.p.i);
-	else if(r == "p_z")	L.pushboolean(c.p.z);
-	else if(r == "p_c")	L.pushboolean(c.p.c);
-	else if(r == "e")	L.pushboolean(c.e);
-	else if(r == "irq")	L.pushboolean(c.irq);
-	else if(r == "wai")	L.pushboolean(c.wai);
-	else if(r == "mdr")	L.pushnumber((unsigned)c.mdr);
-	else if(r == "vector")	L.pushnumber((unsigned)c.vector);
-	else if(r == "aa")	L.pushnumber((unsigned)c2.aa);
-	else if(r == "rd")	L.pushnumber((unsigned)c2.rd);
-	else if(r == "sp")	L.pushnumber((unsigned)c2.sp);
-	else if(r == "dp")	L.pushnumber((unsigned)c2.dp);
-	else			L.pushnil();
-	return 1;
-});
-
-#ifdef BSNES_HAS_DEBUGGER
-
-char snes_debug_cb_keys[SNES::Debugger::Breakpoints];
-char snes_debug_cb_trace;
-
-void snesdbg_execute_callback(char& cb, signed r)
-{
-	LS.pushlightuserdata(&cb);
-	LS.gettable(LUA_REGISTRYINDEX);
-	LS.pushnumber(r);
-	if(LS.type(-2) == LUA_TFUNCTION) {
-		int s = LS.pcall(1, 0, 0);
-		if(s)
-			LS.pop(1);
-	} else {
-		messages << "Can't execute debug callback" << std::endl;
-		LS.pop(2);
-	}
-	if(lua_requests_repaint) {
-		lua_requests_repaint = false;
-		lsnes_cmd.invoke("repaint");
-	}
-}
-
-void snesdbg_on_break()
-{
-	signed r = SNES::debugger.breakpoint_hit;
-	snesdbg_execute_callback(snes_debug_cb_keys[r], r);
-}
-
-void snesdbg_on_trace()
-{
-	snesdbg_execute_callback(snes_debug_cb_trace, -1);
-}
-
-void snesdbg_set_callback(lua_state& L, char& cb)
-{
-	L.pushlightuserdata(&cb);
-	L.pushvalue(-2);
-	L.settable(LUA_REGISTRYINDEX);
-}
-
-bool snesdbg_get_bp_enabled(lua_state& L)
-{
-	bool r;
-	L.getfield(-1, "addr");
-	r = (L.type(-1) == LUA_TNUMBER);
-	L.pop(1);
-	return r;
-}
-
-uint32_t snesdbg_get_bp_addr(lua_state& L)
-{
-	uint32_t r = 0;
-	L.getfield(-1, "addr");
-	if(L.type(-1) == LUA_TNUMBER)
-		r = static_cast<uint32_t>(L.tonumber(-1));
-	L.pop(1);
-	return r;
-}
-
-uint32_t snesdbg_get_bp_data(lua_state& L)
-{
-	signed r = -1;
-	L.getfield(-1, "data");
-	if(L.type(-1) == LUA_TNUMBER)
-		r = static_cast<signed>(L.tonumber(-1));
-	L.pop(1);
-	return r;
-}
-
-SNES::Debugger::Breakpoint::Mode snesdbg_get_bp_mode(lua_state& L)
-{
-	SNES::Debugger::Breakpoint::Mode r = SNES::Debugger::Breakpoint::Mode::Exec;
-	L.getfield(-1, "mode");
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "e"))
-		r = SNES::Debugger::Breakpoint::Mode::Exec;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "x"))
-		r = SNES::Debugger::Breakpoint::Mode::Exec;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "exec"))
-		r = SNES::Debugger::Breakpoint::Mode::Exec;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "r"))
-		r = SNES::Debugger::Breakpoint::Mode::Read;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "read"))
-		r = SNES::Debugger::Breakpoint::Mode::Read;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "w"))
-		r = SNES::Debugger::Breakpoint::Mode::Write;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "write"))
-		r = SNES::Debugger::Breakpoint::Mode::Write;
-	L.pop(1);
-	return r;
-}
-
-SNES::Debugger::Breakpoint::Source snesdbg_get_bp_source(lua_state& L)
-{
-	SNES::Debugger::Breakpoint::Source r = SNES::Debugger::Breakpoint::Source::CPUBus;
-	L.getfield(-1, "source");
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cpubus"))
-		r = SNES::Debugger::Breakpoint::Source::CPUBus;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "apuram"))
-		r = SNES::Debugger::Breakpoint::Source::APURAM;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "vram"))
-		r = SNES::Debugger::Breakpoint::Source::VRAM;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "oam"))
-		r = SNES::Debugger::Breakpoint::Source::OAM;
-	if(L.type(-1) == LUA_TSTRING && !strcmp(L.tostring(-1), "cgram"))
-		r = SNES::Debugger::Breakpoint::Source::CGRAM;
-	L.pop(1);
-	return r;
-}
-
-void snesdbg_get_bp_callback(lua_state& L)
-{
-	L.getfield(-1, "callback");
-}
-
-
-
-function_ptr_luafun lua_memory_setdebug(LS, "memory.setdebug", [](lua_state& L, const std::string& fname) -> int {
-	unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
-	if(r >= SNES::Debugger::Breakpoints) {
-		L.pushstring("Bad breakpoint number");
-		L.error();
-		return 0;
-	}
-	if(L.type(2) == LUA_TNIL) {
-		//Clear breakpoint.
-		SNES::debugger.breakpoint[r].enabled = false;
-		return 0;
-	} else if(L.type(2) == LUA_TTABLE) {
-		L.pushvalue(2);
-		auto& x = SNES::debugger.breakpoint[r];
-		x.enabled = snesdbg_get_bp_enabled(L);
-		x.addr = snesdbg_get_bp_addr(L);
-		x.data = snesdbg_get_bp_data(L);
-		x.mode = snesdbg_get_bp_mode(L);
-		x.source = snesdbg_get_bp_source(L);
-		snesdbg_get_bp_callback(L);
-		snesdbg_set_callback(L, snes_debug_cb_keys[r]);
-		L.pop(2);
-		return 0;
-	} else {
-		L.pushstring("Expected argument 2 to memory.setdebug to be nil or table");
-		L.error();
-		return 0;
-	}
-});
-
-function_ptr_luafun lua_memory_setstep(LS, "memory.setstep", [](lua_state& L, const std::string& fname) -> int {
-	uint64_t r = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-	L.pushvalue(2);
-	snesdbg_set_callback(L, snes_debug_cb_trace);
-	trace_counter = r;
-	update_trace_hook_state();
-	L.pop(1);
-	return 0;
-});
-
-void snesdbg_settrace(std::string r)
-{
-	if(trace_output_enable)
-		messages << "------- End of trace -----" << std::endl;
-	trace_output.close();
-	trace_output_enable = false;
-	if(r != "") {
-		trace_output.close();
-		trace_output.open(r);
-		if(trace_output) {
-			trace_output_enable = true;
-			messages << "------- Start of trace -----" << std::endl;
-		} else
-			messages << "Can't open " << r << std::endl;
-	}
-	update_trace_hook_state();
-}
-
-function_ptr_luafun lua_memory_settrace(LS, "memory.settrace", [](lua_state& L, const std::string& fname) -> int {
-	std::string r = L.get_string(1, fname.c_str());
-	snesdbg_settrace(r);
-});
-
-function_ptr_command<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
-	"No description available\n",
-	[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
-		snesdbg_settrace(r);
-	});
-
-#else
-void snesdbg_on_break() {}
-void snesdbg_on_trace() {}
-#endif
-
-struct emucore_callbacks* ecore_callbacks;
 #endif

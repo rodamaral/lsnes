@@ -134,7 +134,15 @@ namespace
 			return x;
 		},
 		"", NULL, null_regions, null_images, &null_settings, &core_null,
-		[]() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0ULL, 0ULL); }
+		[]() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0ULL, 0ULL); },
+		[]() -> std::list<core_vma_info> {
+			std::list<core_vma_info> x;
+			return x;
+		},
+		[]() -> std::set<std::string> {
+			std::set<std::string> x;
+			return x;
+		}
 	};
 	core_type type_null(_type_null);
 	core_sysregion sysregion_null("null", type_null, null_region);

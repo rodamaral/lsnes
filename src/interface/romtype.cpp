@@ -1,4 +1,5 @@
 #include "interface/romtype.hpp"
+#include "interface/callbacks.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 #include <map>
@@ -125,6 +126,8 @@ core_type::core_type(core_type_params& params)
 	loadimg = params.load_rom;
 	_controllerconfig = params.controllerconfig;
 	_get_bus_map = params.get_bus_map;
+	_vma_list = params.vma_list;
+	_srams = params.srams;
 	core = params.core;
 	settings = params.settings;
 	if(params.bios)
@@ -254,6 +257,17 @@ std::pair<uint64_t, uint64_t> core_type::get_bus_map()
 {
 	return _get_bus_map();
 }
+
+std::list<core_vma_info> core_type::vma_list()
+{
+	return _vma_list();
+}
+
+std::set<std::string> core_type::srams()
+{
+	return _srams();
+}
+
 
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
@@ -416,3 +430,9 @@ void core_core::request_reset(long delay)
 	if(_request_reset)
 		_request_reset(delay);
 }
+
+emucore_callbacks::~emucore_callbacks() throw()
+{
+}
+
+struct emucore_callbacks* ecore_callbacks;
