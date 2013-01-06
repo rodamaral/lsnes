@@ -148,13 +148,14 @@ namespace
 		static int done = 0;
 		if(done)
 			return;
+		auto ptypes = emulator_core->get_port_types();
 		for(unsigned i = 0;; i++) {
 			bool any = false;
-			for(unsigned j = 0; core_port_types[j]; j++) {
-				if(!core_port_types[j]->legal(i))
+			for(unsigned j = 0; ptypes[j]; j++) {
+				if(!ptypes[j]->legal(i))
 					continue;
 				any = true;
-				process_port(i, *core_port_types[j]);
+				process_port(i, *ptypes[j]);
 			}
 			if(!any)
 				break;

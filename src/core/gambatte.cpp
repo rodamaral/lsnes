@@ -131,6 +131,8 @@ namespace
 		}
 	} psystem;
 
+	port_type* port_types[] = { &psystem, NULL };
+
 
 
 
@@ -485,7 +487,9 @@ namespace
 		//Set poll flag.
 		[](unsigned pflag) -> void {},
 		//Request reset.
-		[](long delay) -> void { do_reset_flag = true; }
+		[](long delay) -> void { do_reset_flag = true; },
+		//Port types.
+		port_types
 	};
 
 	core_core gambatte_core(_gambatte_core);
@@ -544,9 +548,5 @@ namespace
 }
 
 core_core* emulator_core = &gambatte_core;
-
-port_type* core_port_types[] = {
-	&psystem, NULL
-};
 
 #endif

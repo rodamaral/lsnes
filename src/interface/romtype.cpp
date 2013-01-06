@@ -325,6 +325,7 @@ core_core::core_core(core_core_params& params)
 	_get_pflag = params.get_pflag;
 	_set_pflag = params.set_pflag;
 	_request_reset = params.request_reset;
+	port_types = params.port_types;
 }
 
 bool core_core::set_region(core_region& region)

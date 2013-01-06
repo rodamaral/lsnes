@@ -9,9 +9,4 @@ struct controller_set
 	std::vector<port_type*> ports;
 };
 
-struct core_port_types
-{
-	port_type** types;
-};
-
 #endif

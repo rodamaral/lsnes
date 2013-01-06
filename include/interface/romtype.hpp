@@ -90,6 +90,7 @@ struct core_core_params
 	unsigned (*get_pflag)();
 	void (*set_pflag)(unsigned pflag);
 	void (*request_reset)(long delay);
+	port_type** port_types;
 };
 
 struct core_region
@@ -157,6 +158,7 @@ struct core_core
 	unsigned get_pflag();
 	void set_pflag(unsigned pflag);
 	void request_reset(long delay);
+	port_type** get_port_types() { return port_types; }
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -178,6 +180,7 @@ private:
 	unsigned (*_get_pflag)();
 	void (*_set_pflag)(unsigned pflag);
 	void (*_request_reset)(long delay);
+	port_type** port_types;
 };
 
 struct core_type

@@ -62,6 +62,7 @@ namespace
 		}
 	} pnull;
 
+	port_type* port_types[] = {NULL};
 	port_index_triple sync_triple = {true, 0, 0, 0, false };
 	
 
@@ -117,7 +118,9 @@ namespace
 		//Set poll flag.
 		[](unsigned pflag) -> void {},
 		//Request reset.
-		[](long delay) -> void {}
+		[](long delay) -> void {},
+		//Port types.
+		port_types
 	};
 	core_core core_null(_core_null);
 

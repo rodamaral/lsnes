@@ -424,6 +424,10 @@ namespace
 		SNES_DEVICE_NONE, SNES_DEVICE_JOYPAD, SNES_DEVICE_JOYPAD, SNES_DEVICE_MULTITAP, SNES_DEVICE_MULTITAP,
 		SNES_DEVICE_MOUSE, SNES_DEVICE_JUSTIFIER, SNES_DEVICE_JUSTIFIERS, SNES_DEVICE_SUPER_SCOPE
 	};
+	port_type* port_types[] = {
+		&psystem, &none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers,
+		&superscope, NULL
+	};
 
 
 
@@ -1154,7 +1158,9 @@ again2:
 			pollflag_active = (pflag < 2);
 		},
 		//Request reset.
-		[](long delay) -> void { do_reset_flag = delay; }
+		[](long delay) -> void { do_reset_flag = delay; },
+		//Port types.
+		port_types
 	};
 
 	core_core bsnes_core(_bsnes_core);
@@ -1472,9 +1478,5 @@ again2:
 
 core_core* emulator_core = &bsnes_core;
 
-port_type* core_port_types[] = {
-	&psystem, &none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers,
-	&superscope, NULL
-};
 
 #endif

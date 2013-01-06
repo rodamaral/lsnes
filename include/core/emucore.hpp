@@ -13,7 +13,7 @@
 #include "interface/callbacks.hpp"
 
 //Valid port types.
-extern port_type* core_port_types[];
+
 //Emulator core.
 extern core_core* emulator_core;
 
