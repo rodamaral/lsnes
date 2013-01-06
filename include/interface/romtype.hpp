@@ -51,6 +51,7 @@ struct core_type_params
 	core_romimage_info** images;	//Terminate with NULL.
 	core_setting_group* settings;
 	core_core* core;
+	std::pair<uint64_t, uint64_t> (*get_bus_map)();
 };
 
 struct core_core_params
@@ -64,7 +65,12 @@ struct core_core_params
 	void (*load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 	void (*serialize)(std::vector<char>& out);
 	void (*unserialize)(const char* in, size_t insize);
+	core_region& (*get_region)();
+	void (*power)();
+	void (*unload_cartridge)();
+	std::pair<uint32_t, uint32_t> (*get_scale_factors)(uint32_t width, uint32_t height);
 };
+
 
 struct core_region
 {
@@ -120,6 +126,10 @@ struct core_core
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 	void serialize(std::vector<char>& out);
 	void unserialize(const char* in, size_t insize);
+	core_region& get_region();
+	void power();
+	void unload_cartridge();
+	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -130,6 +140,10 @@ private:
 	void (*_load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 	void (*_serialize)(std::vector<char>& out);
 	void (*_unserialize)(const char* in, size_t insize);
+	core_region& (*_get_region)();
+	void (*_power)();
+	void (*_unload_cartridge)();
+	std::pair<uint32_t, uint32_t> (*_get_scale_factors)(uint32_t width, uint32_t height);
 };
 
 struct core_type
@@ -153,6 +167,7 @@ public:
 	controller_set controllerconfig(std::map<std::string, std::string>& settings);
 	unsigned get_reset_support();
 	core_setting_group& get_settings();
+	std::pair<uint64_t, uint64_t> get_bus_map();
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
@@ -165,12 +180,20 @@ public:
 	}
 	void serialize(std::vector<char>& out) { core->serialize(out); }
 	void unserialize(const char* in, size_t insize) { core->unserialize(in, insize); }
+	core_region& get_region() { return core->get_region(); }
+	void power() { core->power(); }
+	void unload_cartridge() { core->unload_cartridge(); }
+	std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
+	{
+		return core->get_scale_factors(width, height);
+	}
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
 	int (*loadimg)(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
 	controller_set (*_controllerconfig)(std::map<std::string, std::string>& settings);
+	std::pair<uint64_t, uint64_t> (*_get_bus_map)();
 	unsigned id;
 	unsigned reset_support;
 	std::string iname;

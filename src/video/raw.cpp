@@ -1,5 +1,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
+#include "core/moviedata.hpp"
+#include "core/moviefile.hpp"
 #include "video/tcp.hpp"
 #include "library/serialization.hpp"
 
@@ -15,8 +17,6 @@
 #define IS_RGB(m) (((m) + ((m) >> 3)) & 2)
 #define IS_64(m) (m % 5 < 2)
 #define IS_TCP(m) (((m % 5) * (m % 5)) % 5 == 1)
-
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 namespace
 {
@@ -85,7 +85,7 @@ namespace
 			unsigned r = (reinterpret_cast<unsigned char*>(&magic))[swap ? 2 : 0];
 			unsigned g = (reinterpret_cast<unsigned char*>(&magic))[1];
 			unsigned b = (reinterpret_cast<unsigned char*>(&magic))[swap ? 0 : 2];
-			auto scl = get_scale_factors(_frame.get_width(), _frame.get_height());
+			auto scl = our_rom->rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			uint32_t hscl = scl.first;
 			uint32_t vscl = scl.second;
 			if(bits64) {

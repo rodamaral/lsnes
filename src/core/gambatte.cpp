@@ -34,10 +34,6 @@
 #define LOGICAL_BUTTON_SELECT 6
 #define LOGICAL_BUTTON_START 7
 
-unsigned core_userports = 0;
-extern const bool core_supports_reset = true;
-extern const bool core_supports_dreset = false;
-
 namespace
 {
 	bool do_reset_flag = false;
@@ -242,7 +238,12 @@ namespace
 		r.portindex.pcid_map.push_back(std::make_pair(0, 1));
 		return r;
 	}
-	
+
+	std::pair<uint64_t, uint64_t> gambatte_bus_map()
+	{
+		return std::make_pair(0, 0);
+	}
+
 
 	unsigned world_compatible[] = {0, UINT_MAX};
 	core_region_params _region_world = {
@@ -337,9 +338,18 @@ namespace
 			unsigned x2 = (unsigned char)in[insize - 1];
 			frame_overflow = x1 * 256 + x2;
 			do_reset_flag = false;
+		},
+		//Get region.
+		[]() -> core_region& { return region_world; },
+		//Power the core.
+		[]() -> void {},
+		//Unload cartridge.
+		[]() -> void {},
+		//Get scale factors
+		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
 		}
 	};
-
 
 	core_core gambatte_core(_gambatte_core);
 	
@@ -349,7 +359,8 @@ namespace
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
 		},
-		_controllerconfig, "gb;dmg", NULL, regions_gambatte, dmg_images, &gambatte_settings, &gambatte_core
+		_controllerconfig, "gb;dmg", NULL, regions_gambatte, dmg_images, &gambatte_settings, &gambatte_core,
+		gambatte_bus_map
 	};
 	core_type_params  _type_gbc = {
 		"gbc", "Game Boy Color", 0, 1,
@@ -357,7 +368,8 @@ namespace
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
 		},
-		_controllerconfig, "gbc;cgb", NULL, regions_gambatte, gbc_images, &gambatte_settings, &gambatte_core
+		_controllerconfig, "gbc;cgb", NULL, regions_gambatte, gbc_images, &gambatte_settings, &gambatte_core,
+		gambatte_bus_map
 	};
 	core_type_params  _type_gbc_gba = {
 		"gbc_gba", "Game Boy Color (GBA)", 2, 1,
@@ -365,7 +377,8 @@ namespace
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
 		},
-		_controllerconfig, "", NULL, regions_gambatte, gbca_images, &gambatte_settings, &gambatte_core
+		_controllerconfig, "", NULL, regions_gambatte, gbca_images, &gambatte_settings, &gambatte_core,
+		gambatte_bus_map
 	};
 
 	core_type type_dmg(_type_dmg);
@@ -382,10 +395,6 @@ port_type* core_port_types[] = {
 	&psystem, NULL
 };
 
-core_region& core_get_region()
-{
-	return region_world;
-}
 
 void core_runtosave()
 {
@@ -396,14 +405,6 @@ void do_basic_core_init()
 	instance = new gambatte::GB;
 	instance->setInputGetter(&getinput);
 	instance->set_walltime_fn(walltime_fn);
-}
-
-void core_power()
-{
-}
-
-void core_unload_cartridge()
-{
 }
 
 void set_preload_settings()
@@ -611,7 +612,6 @@ void core_set_poll_flag(unsigned pflag)
 {
 }
 
-
 std::vector<char> cmp_save;
 
 function_ptr_command<> cmp_save1(lsnes_cmd, "set-cmp-save", "", "\n", []() throw(std::bad_alloc, std::runtime_error) {
@@ -628,15 +628,6 @@ function_ptr_command<> cmp_save2(lsnes_cmd, "do-cmp-save", "", "\n", []() throw(
 });
 
 
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
-{
-	return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
-}
-
-std::pair<uint64_t, uint64_t> core_get_bus_map()
-{
-	return std::make_pair(0, 0);
-}
 
 emucore_callbacks::~emucore_callbacks() throw() {}
 

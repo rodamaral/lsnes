@@ -231,7 +231,7 @@ void update_movie_state()
 	static unsigned last_controllers = 0;
 	{
 		uint64_t magic[4];
-		core_get_region().fill_framerate_magic(magic);
+		our_rom->region->fill_framerate_magic(magic);
 		voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
 	}
 	auto& _status = platform::get_emustatus();
@@ -528,11 +528,11 @@ namespace
 	function_ptr_command<const std::string&> reset_c(lsnes_cmd, "reset", "Reset the system",
 		"Syntax: reset\nReset <delay>\nResets the system in beginning of the next frame.\n",
 		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			if(!core_supports_reset) {
+			if(!our_rom->rtype->get_reset_support()) {
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
 			}
-			if(!core_supports_dreset && x != "") {
+			if(our_rom->rtype->get_reset_support() < 2 && x != "") {
 				messages << "Emulator core does not support delayed resets" << std::endl;
 				return;
 			}

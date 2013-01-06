@@ -41,13 +41,6 @@
 #define ROM_TYPE_SUFAMITURBO 4
 #define ROM_TYPE_SGB 5
 
-extern const bool core_supports_reset = true;
-#ifdef BSNES_HAS_DEBUGGER
-extern const bool core_supports_dreset = true;
-#else
-extern const bool core_supports_dreset = false;
-#endif
-
 void snesdbg_on_break();
 void snesdbg_on_trace();
 
@@ -493,6 +486,11 @@ namespace
 		return r ? 0 : -1;
 	}
 
+	std::pair<uint64_t, uint64_t> bsnes_get_bus_map()
+	{
+		return std::make_pair(0x1000000, 0x1000000);
+	}
+
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
 		port_index_triple x;
@@ -654,7 +652,7 @@ namespace
 			if(!internal_rom)
 				return std::make_pair(60, 1);
 			uint32_t div;
-			if(snes_get_region())
+			if(SNES::system.region() == SNES::System::Region::PAL)
 				div = last_interlace ? DURATION_PAL_FIELD : DURATION_PAL_FRAME;
 			else
 				div = last_interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
@@ -731,6 +729,25 @@ namespace
 				throw std::runtime_error("SNES core rejected savestate");
 			have_saved_this_frame = true;
 			do_reset_flag = -1;
+		},
+		//Get region.
+		[]() -> core_region& {
+			return (SNES::system.region() == SNES::System::Region::PAL) ? region_pal : region_ntsc;
+		},
+		//Power the core.
+		[]() -> void {
+			if(internal_rom) snes_power();
+		},
+		//Unload the cartridge.
+		[]() -> void {
+			if(!internal_rom) return;
+			snes_term();
+			snes_unload_cartridge();
+			internal_rom = NULL;
+		},
+		//Get scale factors.
+		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+			return std::make_pair((width < 400) ? 2 : 1, (height < 400) ? 2 : 1);
 		}
 	};
 
@@ -744,7 +761,7 @@ namespace
 				load_rom_X1<snes_load_cartridge_normal>);
 		},
 		_controllerconfig, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images,
-		&bsnes_settings, &bsnes_core
+		&bsnes_settings, &bsnes_core, bsnes_get_bus_map
 	};
 	core_type_params _type_bsx = {
 		"bsx", "BS-X (non-slotted)", 1, BSNES_RESET_LEVEL , 
@@ -753,7 +770,8 @@ namespace
 			return load_rom<&type_bsx>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_bsx>);
 		},
-		_controllerconfig, "bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, &bsnes_core
+		_controllerconfig, "bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, &bsnes_core,
+		bsnes_get_bus_map
 	};
 	core_type_params _type_bsxslotted = {
 		"bsxslotted", "BS-X (slotted)", 2, BSNES_RESET_LEVEL ,
@@ -762,7 +780,8 @@ namespace
 			return load_rom<&type_bsxslotted>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_bsx_slotted>);
 		},
-		_controllerconfig, "bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core
+		_controllerconfig, "bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
+		bsnes_get_bus_map
 	};
 	core_type_params _type_sufamiturbo = {
 		"sufamiturbo", "Sufami Turbo", 3, BSNES_RESET_LEVEL ,
@@ -771,7 +790,8 @@ namespace
 			return load_rom<&type_sufamiturbo>(img, settings, secs, subsecs,
 				load_rom_X3<snes_load_cartridge_sufami_turbo>);
 		},
-		_controllerconfig, "st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core
+		_controllerconfig, "st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
+		bsnes_get_bus_map
 	};
 	core_type_params _type_sgb = {
 		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL ,
@@ -781,7 +801,8 @@ namespace
 			return load_rom<&type_sgb>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_super_game_boy>);
 		},
-		_controllerconfig, "gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, &bsnes_core
+		_controllerconfig, "gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, &bsnes_core,
+		bsnes_get_bus_map
 	};
 
 	core_type type_snes(_type_snes);
@@ -961,7 +982,7 @@ namespace
 		{
 			last_hires = hires;
 			last_interlace = interlace;
-			bool region = (&core_get_region() == &region_pal);
+			bool region = (SNES::system.region() == SNES::System::Region::PAL);
 			if(stepping_into_save)
 				messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 			video_refresh_done = true;
@@ -1085,28 +1106,6 @@ void set_preload_settings()
 	SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 }
 
-core_region& core_get_region()
-{
-	if(SNES::system.region() == SNES::System::Region::PAL)
-		return region_pal;
-	else
-		return region_ntsc;
-}
-
-void core_power()
-{
-	if(internal_rom)
-		snes_power();
-}
-
-void core_unload_cartridge()
-{
-	if(!internal_rom)
-		return;
-	snes_term();
-	snes_unload_cartridge();
-	internal_rom = NULL;
-}
 
 void core_request_reset(long delay)
 {
@@ -1267,16 +1266,6 @@ std::list<vma_info> get_vma_list()
 	return ret;
 }
 
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
-{
-	uint32_t h = 1, v = 1;
-	if(width < 400)
-		h = 2;
-	if(height < 400)
-		v = 2;
-	return std::make_pair(h, v);
-}
-
 unsigned core_get_poll_flag()
 {
 	return pollflag_active ? (SNES::cpu.controller_flag ? 1 : 0) : 2;
@@ -1290,11 +1279,6 @@ void core_set_poll_flag(unsigned pflag)
 
 emucore_callbacks::~emucore_callbacks() throw()
 {
-}
-
-std::pair<uint64_t, uint64_t> core_get_bus_map()
-{
-	return std::make_pair(0x1000000, 0x1000000);
 }
 
 function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",

@@ -124,6 +124,7 @@ core_type::core_type(core_type_params& params)
 	reset_support = params.reset_support;
 	loadimg = params.load_rom;
 	_controllerconfig = params.controllerconfig;
+	_get_bus_map = params.get_bus_map;
 	core = params.core;
 	settings = params.settings;
 	if(params.bios)
@@ -249,6 +250,11 @@ controller_set core_type::controllerconfig(std::map<std::string, std::string>& s
 	return _controllerconfig(settings);
 }
 
+std::pair<uint64_t, uint64_t> core_type::get_bus_map()
+{
+	return _get_bus_map();
+}
+
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
 {
@@ -294,6 +300,10 @@ core_core::core_core(core_core_params& params)
 	_load_sram = params.load_sram;
 	_serialize = params.serialize;
 	_unserialize = params.unserialize;
+	_get_region = params.get_region;
+	_power = params.power;
+	_unload_cartridge = params.unload_cartridge;
+	_get_scale_factors = params.get_scale_factors;
 }
 
 bool core_core::set_region(core_region& region)
@@ -342,4 +352,24 @@ void core_core::serialize(std::vector<char>& out)
 void core_core::unserialize(const char* in, size_t insize)
 {
 	_unserialize(in, insize);
+}
+
+core_region& core_core::get_region()
+{
+	return _get_region();
+}
+
+void core_core::power()
+{
+	_power();
+}
+
+void core_core::unload_cartridge()
+{
+	_unload_cartridge();
+}
+
+std::pair<uint32_t, uint32_t> core_core::get_scale_factors(uint32_t width, uint32_t height)
+{
+	return _get_scale_factors(width, height);
 }

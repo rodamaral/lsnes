@@ -97,9 +97,5 @@ std::pair<uint32_t, uint32_t> get_framebuffer_size();
  * Take a screenshot to specified file.
  */
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error);
-/**
- * Get scale factors.
- */
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 #endif

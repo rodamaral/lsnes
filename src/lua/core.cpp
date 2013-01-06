@@ -2,6 +2,8 @@
 #include "core/emucore.hpp"
 #include "lua/internal.hpp"
 #include "core/framerate.hpp"
+#include "core/moviefile.hpp"
+#include "core/moviedata.hpp"
 #include "core/window.hpp"
 
 namespace
@@ -73,7 +75,7 @@ namespace
 
 	function_ptr_luafun lua_busaddr(LS, "bus_address", [](lua_state& L, const std::string& fname) -> int {
 		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		auto busrange = core_get_bus_map();
+		auto busrange = our_rom->rtype->get_bus_map();
 		if(!busrange.second) {
 			L.pushstring("This platform does not have bus mapping");
 			L.error();

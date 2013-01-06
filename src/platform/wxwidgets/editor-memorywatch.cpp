@@ -112,21 +112,21 @@ wxeditor_watchexpr::wxeditor_watchexpr(wxWindow* parent, const std::string& name
 	regex_results r;
 	if(expr == "") {
 		structured->SetValue(true);
-		busaddr->SetValue(core_get_bus_map().second);
-		mapaddr->SetValue(!core_get_bus_map().second);
-		busaddr->Enable(core_get_bus_map().second);
+		busaddr->SetValue(our_rom->rtype->get_bus_map().second);
+		mapaddr->SetValue(!our_rom->rtype->get_bus_map().second);
+		busaddr->Enable(our_rom->rtype->get_bus_map().second);
 		watchtxt->Disable();
 	} else if(r = regex("C0x([0-9A-Fa-f]{1,16})z([bBwWdDqQ])(H([0-9A-Ga-g]))?", expr)) {
 		structured->SetValue(true);
 		mapaddr->SetValue(true);
-		busaddr->Enable(core_get_bus_map().second);
+		busaddr->Enable(our_rom->rtype->get_bus_map().second);
 		watchtxt->Disable();
 		std::string addr2 = r[1];
 		char* end;
 		char buf[512];
 		std::copy(addr2.begin(), addr2.end(), buf);
 		uint64_t parsed = strtoull(buf, &end, 16);
-		auto r2 = core_get_bus_map();
+		auto r2 = our_rom->rtype->get_bus_map();
 		if(parsed >= r2.first && parsed < r2.first + r2.second) {
 			parsed -= r2.first;
 			busaddr->SetValue(true);
@@ -136,7 +136,7 @@ wxeditor_watchexpr::wxeditor_watchexpr(wxWindow* parent, const std::string& name
 		hex->SetValue(r[3] != "");
 	} else {
 		arbitrary->SetValue(true);
-		(core_get_bus_map().second ? busaddr : mapaddr)->SetValue(true);
+		(our_rom->rtype->get_bus_map().second ? busaddr : mapaddr)->SetValue(true);
 		mapaddr->Disable();
 		busaddr->Disable();
 		hex->Disable();
@@ -161,7 +161,7 @@ void wxeditor_watchexpr::on_ok(wxCommandEvent& e)
 		char* end;
 		uint64_t parsed = strtoull(addr2.c_str(), &end, 16);
 		if(busaddr->GetValue())
-			parsed += core_get_bus_map().first;
+			parsed += our_rom->rtype->get_bus_map().first;
 		if(hex->GetValue())
 			hexmod = std::string("H") + hexwidths[typesel->GetSelection()];
 		out = (stringfmt() << "C0x" << std::hex << parsed << "z" << letters[typesel->GetSelection()]
@@ -190,7 +190,7 @@ void wxeditor_watchexpr::on_rb_arbitrary(wxCommandEvent& e)
 void wxeditor_watchexpr::on_rb_structured(wxCommandEvent& e)
 {
 	typesel->Enable();
-	busaddr->Enable(core_get_bus_map().second);
+	busaddr->Enable(our_rom->rtype->get_bus_map().second);
 	mapaddr->Enable();
 	addr->Enable();
 	hex->Enable();
@@ -218,7 +218,7 @@ void wxeditor_watchexpr::on_addr_change(wxCommandEvent& e)
 		}
 		char* end;
 		uint64_t parsed = strtoull(addr2.c_str(), &end, 16);
-		if(busaddr->GetValue() && parsed >= core_get_bus_map().second) {
+		if(busaddr->GetValue() && parsed >= our_rom->rtype->get_bus_map().second) {
 			ok->Enable(false);
 			return;
 		}

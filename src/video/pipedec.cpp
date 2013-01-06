@@ -14,8 +14,6 @@
 #include <fstream>
 #include <zlib.h>
 
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
-
 namespace
 {
 	std::string get_pipedec_command(const std::string& type)

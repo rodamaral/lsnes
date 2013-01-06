@@ -64,40 +64,8 @@ namespace
 
 	port_index_triple sync_triple = {true, 0, 0, 0, false };
 	
-	controller_set null_controllerconfig(std::map<std::string, std::string>& settings)
-	{
-		controller_set x;
-		x.ports.push_back(&pnull);
-		x.portindex.indices.push_back(sync_triple);
-		return x;
-	}
-
-	std::pair<unsigned, unsigned> videorate_null() { return std::make_pair(60, 1); }
-	std::pair<unsigned, unsigned> audiorate_null() { return std::make_pair(48000, 1); }
-
-	bool set_region_null(core_region& reg)
-	{
-		return true;
-	}
-
-	int load_rom_null(core_romimage* img, std::map<std::string, std::string>& settings,
-		uint64_t secs, uint64_t subsecs)
-	{
-		return 0;
-	}
-
-	std::map<std::string, std::vector<char>> null_stsram() throw(std::bad_alloc)
-	{
-		std::map<std::string, std::vector<char>> x;
-		return x;
-	}
-	void null_ldsram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {}
-	void null_serialize(std::vector<char>& out) { out.clear(); }
-	void null_unserialize(const char* in, size_t insize) {}
 
 	core_setting_group null_settings;
-
-	std::string core_identifier() { return "null core"; }
 
 	unsigned null_compatible[] = {0, UINT_MAX};
 	struct core_region_params _null_region = {
@@ -107,14 +75,52 @@ namespace
 	core_region* null_regions[] = {&null_region, NULL};
 	core_romimage_info* null_images[] = {NULL};
 	core_core_params _core_null = {
-		core_identifier, set_region_null, videorate_null, audiorate_null, NULL,
-		null_stsram, null_ldsram, null_serialize, null_unserialize
+		//Identifier
+		[]() -> std::string { return "null core"; },
+		//Set region.
+		[](core_region& reg) -> bool { return true; },
+		//Get video rate.
+		[]() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
+		//Get audio rate.
+		[]() -> std::pair<unsigned, unsigned> { return std::make_pair(48000, 1); },
+		//Get SNES CPU/APU rate.
+		NULL,
+		//Store SRAM
+		[]() -> std::map<std::string, std::vector<char>> {
+			std::map<std::string, std::vector<char>> x;
+			return x;
+		},
+		//Load SRAM.
+		[](std::map<std::string, std::vector<char>>& sram) -> void {},
+		//Serialize state.
+		[](std::vector<char>& out) -> void { out.clear(); },
+		//Unserialize state.
+		[](const char* in, size_t insize) -> void {},
+		//Get region.
+		[]() -> core_region& { return null_region; },
+		//Power the core.
+		[]() -> void {},
+		//Unload the cartridge.
+		[]() -> void {},
+		//Get scale factors.
+		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> { return std::make_pair(1, 1); }
 	};
 	core_core core_null(_core_null);
 	
 	core_type_params _type_null = {
-		"null", "(null)", 9999, 0, load_rom_null, null_controllerconfig,
-		"", NULL, null_regions, null_images, &null_settings, &core_null
+		"null", "(null)", 9999, 0,
+		[](core_romimage* img, std::map<std::string, std::string>& settings,
+			uint64_t secs, uint64_t subsecs) -> int {
+			return 0;
+		},
+		[](std::map<std::string, std::string>& settings) -> controller_set {
+			controller_set x;
+			x.ports.push_back(&pnull);
+			x.portindex.indices.push_back(sync_triple);
+			return x;
+		},
+		"", NULL, null_regions, null_images, &null_settings, &core_null,
+		[]() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0ULL, 0ULL); }
 	};
 	core_type type_null(_type_null);
 	core_sysregion sysregion_null("null", type_null, null_region);
@@ -371,18 +377,11 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 		images[i].data = (const unsigned char*)romimg[i];
 		images[i].size = (size_t)romimg[i];
 	}
-	if(rtype) {
-		if(!rtype->load(images, settings, rtc_sec, rtc_subsec))
-			throw std::runtime_error("Can't load cartridge ROM");
-	} else
-		core_unload_cartridge();
+	if(!rtype->load(images, settings, rtc_sec, rtc_subsec))
+		throw std::runtime_error("Can't load cartridge ROM");
 
-	if(rtype == &type_null) {
-		region = &null_region;
-	} else {
-		region = &core_get_region();
-		core_power();
-	}
+	region = &rtype->get_region();
+	rtype->power();
 	auto nominal_fps = rtype->get_video_rate();
 	auto nominal_hz = rtype->get_audio_rate();
 	set_nominal_framerate(1.0 * nominal_fps.first / nominal_fps.second);

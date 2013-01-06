@@ -14,16 +14,8 @@
 
 //Do basic core initialization (to get it to stable state).
 void do_basic_core_init();
-//Get set of SRAMs.
-std::set<std::string> get_sram_set();
-//Get region.
-core_region& core_get_region();
 //Set preload settings.
 void set_preload_settings();
-//Power the core.
-void core_power();
-//Unload the cartridge.
-void core_unload_cartridge();
 //Install handler.
 void core_install_handler();
 //Uninstall handler.
@@ -32,10 +24,8 @@ void core_uninstall_handler();
 void core_emulate_frame();
 //Run to point save.
 void core_runtosave();
-//Get the scale factors.
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
-//Get bus map range.
-std::pair<uint64_t, uint64_t> core_get_bus_map();
+//Get set of SRAMs.
+std::set<std::string> get_sram_set();
 //Get poll flag (set to 1 on each real poll, except if 2.
 unsigned core_get_poll_flag();
 //Set poll flag (set to 1 on each real poll, except if 2.
@@ -44,10 +34,6 @@ void core_set_poll_flag(unsigned pflag);
 void core_request_reset(long delay);
 //Valid port types.
 extern port_type* core_port_types[];
-//Core supports resets.
-extern const bool core_supports_reset;
-//Core supports delayed resets.
-extern const bool core_supports_dreset;
 //Emulator core.
 extern core_core* emulator_core;
 

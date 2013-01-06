@@ -10,6 +10,8 @@
 #include "library/workthread.hpp"
 #include "core/misc.hpp"
 #include "core/settings.hpp"
+#include "core/moviedata.hpp"
+#include "core/moviefile.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -21,8 +23,6 @@
 #include <samplerate.h>
 #endif
 #define RESAMPLE_BUFFER 1024
-
-std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height);
 
 namespace
 {
@@ -331,7 +331,7 @@ again:
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
-			auto scl = get_scale_factors(_frame.get_width(), _frame.get_height());
+			auto scl = our_rom->rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			if(dump_large) {
 				hscl = scl.first;
 				vscl = scl.second;

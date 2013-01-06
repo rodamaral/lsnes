@@ -2,6 +2,8 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/settings.hpp"
+#include "core/moviedata.hpp"
+#include "core/moviefile.hpp"
 #include "library/minmax.hpp"
 
 #include <cstdlib>
