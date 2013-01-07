@@ -4,5 +4,6 @@
 #include "library/loadlib.hpp"
 
 void handle_post_loadlibrary();
+void autoload_libraries();
 
 #endif

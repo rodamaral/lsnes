@@ -243,6 +243,7 @@ int main(int argc, char** argv)
 	messages << std::endl;
 
 	std::string cfgpath = get_config_path();
+	autoload_libraries();
 
 	for(auto i : cmdline) {
 		regex_results r;

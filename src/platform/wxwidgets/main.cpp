@@ -7,6 +7,7 @@
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
@@ -451,6 +452,7 @@ bool lsnes_app::OnInit()
 	controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();
+	autoload_libraries();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Loading configuration --- " << std::endl;
 	lsnes_set.set_storage_mode(true);
