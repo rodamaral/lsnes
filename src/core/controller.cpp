@@ -56,28 +56,43 @@ namespace
 		}
 	};
 
-	std::map<std::string, unsigned> allocated_controllers;
 	std::map<std::string, controller_bind> all_buttons;
-	std::map<controller_triple, unsigned> assignments;
 	std::map<std::string, active_bind> active_buttons;
+
+	//Promote stored key to active key.
+	void promote_key(controller_key& k)
+	{
+		std::string name = k.get_command();
+		if(!button_keys.count(name))
+			return;
+		k.set(button_keys[name]);
+		messages << button_keys[name] << " bound (button) to " << name << std::endl;
+		button_keys.erase(name);
+	}
 
 	//Allocate controller keys for specified button.
 	void add_button(const std::string& name, const controller_bind& binding)
 	{
+		controller_key* k;
 		if(!binding.is_axis) {
-			new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
+			k = new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name).str());
-			new controller_key(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
+			promote_key(*k);
+			k = new controller_key(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name << " (hold)").str());
-			new controller_key(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
+			promote_key(*k);
+			k = new controller_key(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name << " (type)").str());
-		} else
-			new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
+			promote_key(*k);
+		} else {
+			k = new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name).str());
+			promote_key(*k);
+		}
 	}
 
 	//Take specified controller info and process it as specified controller of its class.
@@ -134,72 +149,82 @@ namespace
 		}
 	}
 
-	void process_controller(port_controller& controller, unsigned port, unsigned number_in_port)
+	unsigned next_id_from_map(std::map<std::string, unsigned>& map, const std::string& key, unsigned base)
+	{
+		if(!map.count(key))
+			return (map[key] = base);
+		else
+			return ++map[key];
+	}
+
+	//The rules for class number allocations are:
+	//- Different cores allocate numbers independently.
+	//- Within the same core, the allocations for higher port start after the previous port ends.
+	
+
+	void process_controller(std::map<std::string, unsigned>& allocated,
+		std::map<controller_triple, unsigned>& assigned,  port_controller& controller, unsigned port,
+		unsigned number_in_port)
 	{
 		controller_triple key;
 		key.cclass = controller.cclass;
 		key.port = port;
 		key.controller = number_in_port;
 		unsigned n;
-		if(!assignments.count(key)) {
-			if(allocated_controllers.count(controller.cclass)) 
-				++(allocated_controllers[controller.cclass]);
-			else
-				allocated_controllers[controller.cclass] = 1;
-			assignments[key] = n = allocated_controllers[controller.cclass];
-		} else
-			n = assignments[key];
+		if(!assigned.count(key))
+			assigned[key] = next_id_from_map(allocated, controller.cclass, 1);
+		n = assigned[key];
 		process_controller(controller, n);
 	}
 
-	void process_port(unsigned port, port_type& ptype)
+	void process_port(std::map<std::string, unsigned>& allocated,
+		std::map<controller_triple, unsigned>& assigned, unsigned port, port_type& ptype)
 	{
 		//What makes this nasty: Separate ports are always processed, but the same controllers can come
 		//multiple times, including with partial reprocessing.
 		std::map<std::string, unsigned> counts;
 		for(unsigned i = 0; i < ptype.controller_info->controller_count; i++) {
-			unsigned n;
-			if(!counts.count(ptype.controller_info->controllers[i]->cclass))
-				counts[ptype.controller_info->controllers[i]->cclass] = 1;
-			else
-				counts[ptype.controller_info->controllers[i]->cclass]++;
-			n = counts[ptype.controller_info->controllers[i]->cclass];
-			process_controller(*ptype.controller_info->controllers[i], port, n);
+			//No, n might not equal i + 1, since some ports have heterogenous controllers (e.g.
+			//gameboy-gambatte system port).
+			unsigned n = next_id_from_map(counts, ptype.controller_info->controllers[i]->cclass, 1);
+			process_controller(allocated, assigned, *ptype.controller_info->controllers[i], port, n);
 		}
 	}
 
 	void init_buttonmap()
 	{
-		static int done = 0;
-		if(done)
-			return;
+		static std::set<core_core*> done;
 		std::vector<port_type*> ptypes;
 		for(auto i : core_core::all_cores()) {
-			auto _ptypes = i->get_port_types();
-			for(unsigned j = 0; _ptypes[j]; j++)
-				ptypes.push_back(_ptypes[j]);
-		}
-		for(unsigned i = 0;; i++) {
-			bool any = false;
-			for(unsigned j = 0; j < ptypes.size(); j++) {
-				if(!ptypes[j]->legal(i))
-					continue;
-				any = true;
-				process_port(i, *ptypes[j]);
+			if(done.count(i))
+				continue;
+			std::map<std::string, unsigned> allocated;
+			std::map<controller_triple, unsigned> assigned;
+			auto ptypes = i->get_port_types();
+			for(unsigned i = 0;; i++) {
+				bool any = false;
+				for(unsigned j = 0; ptypes[j]; j++) {
+					if(!ptypes[j]->legal(i))
+						continue;
+					any = true;
+					process_port(allocated, assigned, i, *ptypes[j]);
+				}
+				if(!any)
+					break;
 			}
-			if(!any)
-				break;
+			done.insert(i);
 		}
-		done = 1;
 	}
 
 	//Do button action.
 	void do_button_action(const std::string& name, short newstate, int mode)
 	{
-		if(!active_buttons.count(name)) {
+		if(!all_buttons.count(name)) {
 			messages << "No such button " << name << std::endl;
 			return;
 		}
+		if(!active_buttons.count(name))
+			return;
 		auto x = active_buttons[name];
 		if(x.bind.is_axis)
 			return;
@@ -223,10 +248,12 @@ namespace
 
 	void send_analog(const std::string& name, int32_t x, int32_t y)
 	{
-		if(!active_buttons.count(name)) {
+		if(!all_buttons.count(name)) {
 			messages << "No such action " << name << std::endl;
 			return;
 		}
+		if(!active_buttons.count(name))
+			return;
 		auto z = active_buttons[name];
 		if(!z.bind.is_axis) {
 			std::cerr << name << " is not a axis." << std::endl;
@@ -321,6 +348,18 @@ namespace
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 3);
 		});
+
+	class new_core_snoop : public information_dispatch
+	{
+	public:
+		new_core_snoop() : information_dispatch("controller-newcore")
+		{
+		}
+		void on_new_core()
+		{
+			init_buttonmap();
+		}
+	} coresnoop;
 }
 
 void reinitialize_buttonmap()
@@ -374,3 +413,4 @@ void reread_active_buttons()
 }
 
 controller_state controls;
+std::map<std::string, std::string> button_keys;

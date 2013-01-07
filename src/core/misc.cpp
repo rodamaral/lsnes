@@ -250,6 +250,7 @@ bool in_global_ctors()
 
 void reached_main()
 {
+	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;
 	init_threaded_malloc();
 	lsnes_cmd.set_oom_panic(OOM_panic);

@@ -481,3 +481,19 @@ void information_dispatch::do_core_change() throw()
 		END_EH_BLOCK(i, "on_core_change");
 	}
 }
+
+void information_dispatch::on_new_core()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_new_core() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_new_core();
+		END_EH_BLOCK(i, "on_new_core");
+	}
+}

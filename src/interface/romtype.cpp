@@ -1,3 +1,4 @@
+#include "core/misc.hpp"
 #include "interface/romtype.hpp"
 #include "interface/callbacks.hpp"
 #include "library/minmax.hpp"
@@ -337,6 +338,9 @@ core_core::core_core(core_core_params& params)
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
+	new_core_flag = true;
+	if(!in_global_ctors())
+		messages << "Loaded core: " << _core_identifier() << std::endl;
 }
 
 core_core::~core_core() throw()
@@ -472,3 +476,5 @@ emucore_callbacks::~emucore_callbacks() throw()
 }
 
 struct emucore_callbacks* ecore_callbacks;
+
+bool new_core_flag = false;

@@ -1497,7 +1497,7 @@ void wxeditor_esettings_controllers::change_category(int cat)
 	for(auto i : n)
 		if(i.first >= control->GetCount())
 			control->Append(towxstring(n[i.first]));
-	if(control->GetSelection() == wxNOT_FOUND)
+	if(control->GetSelection() == wxNOT_FOUND && !control->IsEmpty())
 		control->SetSelection(0);
 }
 
@@ -1589,7 +1589,7 @@ void wxeditor_esettings_controllers::refresh()
 	for(auto i : categories)
 		if(i.first >= category->GetCount())
 			category->Append(towxstring(categories[i.first]));
-	if(category->GetSelection() == wxNOT_FOUND)
+	if(category->GetSelection() == wxNOT_FOUND && !category->IsEmpty())
 		category->SetSelection(0);
 	change_category(category->GetSelection());
 }

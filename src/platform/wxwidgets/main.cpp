@@ -172,8 +172,6 @@ end:
 		wxPostEvent(ui_services, uic);
 	}
 
-	std::map<std::string, std::string> saved_buttons;
-
 	void handle_config_line(std::string line)
 	{
 		regex_results r;
@@ -240,7 +238,7 @@ end:
 				ckey->set(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
 			} else
-				saved_buttons[r[2]] = r[1];
+				button_keys[r[2]] = r[1];
 		} else
 			messages << "Unrecognized directive: " << line << std::endl;
 	}
@@ -306,7 +304,7 @@ end:
 			if(b != "")
 				cfgfile << "BUTTON " << b << " " << i->get_command() << std::endl;
 		}
-		for(auto i : saved_buttons)
+		for(auto i : button_keys)
 			cfgfile << "BUTTON " << i.second << " " << i.first << std::endl;
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");

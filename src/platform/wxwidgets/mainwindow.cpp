@@ -15,7 +15,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "interface/romtype.hpp"
-#include "library/loadlib.hpp"
+#include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/memorywatch.hpp"
@@ -1202,6 +1202,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loaded_library::call_library();
 		new loaded_library(pick_file(this, name, ".", false));
+		handle_post_loadlibrary();
 		break;
 	}
 	case wxID_SETTINGS:

@@ -275,4 +275,7 @@ private:
 	core_region& region;
 };
 
+//Set to true if new core is detected.
+extern bool new_core_flag;
+
 #endif

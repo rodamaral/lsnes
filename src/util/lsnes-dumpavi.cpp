@@ -6,7 +6,7 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "interface/romtype.hpp"
-#include "library/loadlib.hpp"
+#include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
@@ -164,6 +164,7 @@ namespace
 			} else if(a.length() >= 12 && a.substr(0, 15) == "--load-library=")
 				try {
 					new loaded_library(a.substr(15));
+					handle_post_loadlibrary();
 				} catch(std::runtime_error& e) {
 					std::cerr << "Can't load '" << a.substr(15) << "': " << e.what() << std::endl;
 					exit(1);
