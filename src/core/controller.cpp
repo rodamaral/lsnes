@@ -195,12 +195,12 @@ namespace
 	{
 		static std::set<core_core*> done;
 		std::vector<port_type*> ptypes;
-		for(auto i : core_core::all_cores()) {
-			if(done.count(i))
+		for(auto k : core_core::all_cores()) {
+			if(done.count(k))
 				continue;
 			std::map<std::string, unsigned> allocated;
 			std::map<controller_triple, unsigned> assigned;
-			auto ptypes = i->get_port_types();
+			auto ptypes = k->get_port_types();
 			for(unsigned i = 0;; i++) {
 				bool any = false;
 				for(unsigned j = 0; ptypes[j]; j++) {
@@ -212,7 +212,7 @@ namespace
 				if(!any)
 					break;
 			}
-			done.insert(i);
+			done.insert(k);
 		}
 	}
 
