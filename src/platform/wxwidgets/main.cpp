@@ -449,6 +449,7 @@ bool lsnes_app::OnInit()
 	auto ctrldata = dummy_rom.rtype->controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
 
+	reinitialize_buttonmap();
 	controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();

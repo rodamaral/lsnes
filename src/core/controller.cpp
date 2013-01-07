@@ -61,6 +61,26 @@ namespace
 	std::map<controller_triple, unsigned> assignments;
 	std::map<std::string, active_bind> active_buttons;
 
+	//Allocate controller keys for specified button.
+	void add_button(const std::string& name, const controller_bind& binding)
+	{
+		if(!binding.is_axis) {
+			new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name).str());
+			new controller_key(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name << " (hold)").str());
+			new controller_key(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name << " (type)").str());
+		} else
+			new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name).str());
+	}
+
+	//Take specified controller info and process it as specified controller of its class.
 	void process_controller(port_controller& controller, unsigned number)
 	{
 		unsigned analog_num = 1;
@@ -79,8 +99,10 @@ namespace
 			b.xrel = b.yrel = false;
 			b.control1 = i;
 			b.control2 = std::numeric_limits<unsigned>::max();
-			if(!all_buttons.count(name))
+			if(!all_buttons.count(name)) {
 				all_buttons[name] = b;
+				add_button(name, b);
+			}
 		}
 		for(unsigned i = 0; i < controller.analog_actions(); i++) {
 			auto g = controller.analog_action(i);
@@ -102,10 +124,13 @@ namespace
 				(controller.buttons[g.second]->type == raxis);
 			b.control1 = g.first;
 			b.control2 = g.second;
+			if(!all_buttons.count(name))
+				add_button(name, b);
 			if(!all_buttons.count(name) ||
 				(all_buttons[name].control2 == std::numeric_limits<unsigned>::max()) &&
-				(b.control2 < std::numeric_limits<unsigned>::max()))
+				(b.control2 < std::numeric_limits<unsigned>::max())) {
 				all_buttons[name] = b;
+			}
 		}
 	}
 
@@ -296,44 +321,11 @@ namespace
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 3);
 		});
+}
 
-	class button_action_helper
-	{
-	public:
-		button_action_helper()
-		{
-			init_buttonmap();
-			for(auto i : all_buttons) {
-				if(!i.second.is_axis) {
-					our.insert(new controller_key(lsnes_mapper, (stringfmt()
-						<< "+controller " << i.first).str(), (stringfmt()
-						<< "Controller‣" << i.second.cclass
-						<< "-" << i.second.number << "‣" << i.second.name).str()));
-					our.insert(new controller_key(lsnes_mapper, (stringfmt()
-						<< "hold-controller " << i.first).str(), (stringfmt()
-						<< "Controller‣" << i.second.cclass
-						<< "-" << i.second.number << "‣" << i.second.name
-						<< " (hold)").str()));
-					our.insert(new controller_key(lsnes_mapper, (stringfmt()
-						<< "type-controller " << i.first).str(), (stringfmt()
-						<< "Controller‣" << i.second.cclass
-						<< "-" << i.second.number << "‣" << i.second.name
-						<< " (type)").str()));
-				} else
-					our.insert(new controller_key(lsnes_mapper, (stringfmt()
-						<< "designate-position " << i.first).str(), (stringfmt()
-						<< "Controller‣" << i.second.cclass
-						<< "-" << i.second.number << "‣" << i.second.name).str()));
-			}
-		}
-		~button_action_helper()
-		{
-			for(auto i : our)
-				delete i;
-			our.clear();
-		}
-		std::set<controller_key*> our;
-	} bah;
+void reinitialize_buttonmap()
+{
+	init_buttonmap();
 }
 
 void reread_active_buttons()

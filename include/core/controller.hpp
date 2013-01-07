@@ -4,6 +4,7 @@
 #include "controllerframe.hpp"
 
 void reread_active_buttons();
+void reinitialize_buttonmap();
 extern controller_state controls;
 
 #endif
