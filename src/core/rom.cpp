@@ -9,6 +9,7 @@
 #include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "library/pixfmt-rgb16.hpp"
 #include "library/portfn.hpp"
@@ -135,6 +136,10 @@ namespace
 		//Cover page.
 		[]() -> framebuffer_raw& {
 			static framebuffer_raw x(null_fbinfo);
+			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
+				null_cover_fbmem[i] = 0x0000;
+			std::string message = "NO ROM LOADED";
+			cover_render_string(null_cover_fbmem, 204, 220, message, 0xFFFF, 0x0000, 512, 448, 1024, 2);
 			return x;
 		}
 	};
@@ -168,16 +173,6 @@ namespace
 
 	core_type* current_rom_type = &type_null;
 	core_region* current_region = &null_region;
-
-	//Init the fbmem.
-	struct fbmem_initializer
-	{
-		fbmem_initializer()
-		{
-			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
-				null_cover_fbmem[i] = 0xFC00;
-		}
-	} fbmem_initializer;
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)

@@ -385,15 +385,6 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		mprefix._set = true;
 	}
 	movb.get_movie() = newmovie;
-	//Paint the screen.
-	{
-		framebuffer_raw tmp;
-		if(will_load_state) {
-			tmp.load(_movie.screenshot);
-			redraw_framebuffer(tmp);
-		} else
-			redraw_framebuffer(our_rom->rtype->draw_cover());
-	}
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
 		movb.get_movie().readonly_mode(false);
@@ -404,6 +395,15 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		movb.get_movie().readonly_mode(false);
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
+	//Paint the screen.
+	{
+		framebuffer_raw tmp;
+		if(will_load_state) {
+			tmp.load(_movie.screenshot);
+			redraw_framebuffer(tmp);
+		} else
+			redraw_framebuffer(our_rom->rtype->draw_cover());
+	}
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
 	if(our_rom->rtype)
 		messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()

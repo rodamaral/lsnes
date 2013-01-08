@@ -14,6 +14,7 @@
 #include "core/framebuffer.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "interface/setting.hpp"
 #include "interface/callbacks.hpp"
@@ -951,6 +952,23 @@ namespace
 		return r;
 	}
 
+	void redraw_cover_fbinfo()
+	{
+		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
+			cover_fbmem[i] = 0;
+		std::string ident = _bsnes_core.core_identifier();
+		cover_render_string(cover_fbmem, 0, 0, ident, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
+	}
+
+/*
+void cover_render_character(void* fb, unsigned x, unsigned y, uint32_t ch, uint32_t fg, uint32_t bg, size_t w,
+	size_t h, size_t istride, size_t pstride);
+void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& str, uint32_t fg, uint32_t bg,
+	size_t w, size_t h, size_t istride, size_t pstride);
+void cover_next_position(uint32_t ch, unsigned& x, unsigned& y);
+void cover_next_position(const std::string& ch, unsigned& x, unsigned& y);
+*/
+
 	core_core_params _bsnes_core = {
 		//Identify core.
 		[]() -> std::string {
@@ -1174,6 +1192,7 @@ again2:
 		//Cover page.
 		[]() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
+			redraw_cover_fbinfo();
 			return x;
 		}
 	};
@@ -1489,16 +1508,6 @@ again2:
 	void snesdbg_on_break() {}
 	void snesdbg_on_trace() {}
 #endif
-
-	//Init the fbmem.
-	struct fbmem_initializer
-	{
-		fbmem_initializer()
-		{
-			for(size_t i = 0; i < sizeof(cover_fbmem)/sizeof(cover_fbmem[0]); i++)
-				cover_fbmem[i] = 0x7FC00;
-		}
-	} fbmem_initializer;
 }
 
 #endif

@@ -13,6 +13,7 @@
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
 #include "interface/callbacks.hpp"
+#include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
@@ -41,6 +42,7 @@ namespace
 	extern core_type type_dmg;
 	extern core_type type_gbc;
 	extern core_type type_gbc_gba;
+	extern core_core_params _gambatte_core;
 	bool rtc_fixed;
 	time_t rtc_fixed_val;
 	gambatte::GB* instance;
@@ -326,6 +328,14 @@ namespace
 		return s;
 	}
 
+	void redraw_cover_fbinfo()
+	{
+		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
+			cover_fbmem[i] = 0x00000000;
+		std::string ident = _gambatte_core.core_identifier();
+		cover_render_string(cover_fbmem, 0, 0, ident, 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
+	}
+
 	unsigned world_compatible[] = {0, UINT_MAX};
 	core_region_params _region_world = {
 		"world", "World", 1, 0, false, {35112, 2097152, 16742706, 626688}, world_compatible
@@ -503,6 +513,7 @@ namespace
 		//Cover page.
 		[]() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
+			redraw_cover_fbinfo();
 			return x;
 		}
 	};
@@ -560,16 +571,6 @@ namespace
 			return;
 		instance->saveState(x, cmp_save);
 	});
-
-	//Init the fbmem.
-	struct fbmem_initializer
-	{
-		fbmem_initializer()
-		{
-			for(size_t i = 0; i < sizeof(cover_fbmem)/sizeof(cover_fbmem[0]); i++)
-				cover_fbmem[i] = 0x00FF0000;
-		}
-	} fbmem_initializer;
 }
 
 #endif
