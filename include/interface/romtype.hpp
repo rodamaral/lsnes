@@ -7,6 +7,7 @@
 #include <vector>
 #include "interface/controller.hpp"
 #include "interface/setting.hpp"
+#include "library/framebuffer.hpp"
 
 struct core_region;
 struct core_type;
@@ -91,6 +92,7 @@ struct core_core_params
 	void (*set_pflag)(unsigned pflag);
 	void (*request_reset)(long delay);
 	port_type** port_types;
+	framebuffer_raw& (*draw_cover)();
 };
 
 struct core_region
@@ -159,6 +161,7 @@ struct core_core
 	unsigned get_pflag();
 	void set_pflag(unsigned pflag);
 	void request_reset(long delay);
+	framebuffer_raw& draw_cover();
 	port_type** get_port_types() { return port_types; }
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
@@ -185,6 +188,7 @@ private:
 	void (*_set_pflag)(unsigned pflag);
 	void (*_request_reset)(long delay);
 	port_type** port_types;
+	framebuffer_raw& (*_draw_cover)();
 };
 
 struct core_type
@@ -237,6 +241,7 @@ public:
 	unsigned get_pflag() { return core->get_pflag(); }
 	void set_pflag(unsigned pflag) { core->set_pflag(pflag); }
 	void request_reset(long delay) { core->request_reset(delay); }
+	framebuffer_raw& draw_cover() { return core->draw_cover(); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

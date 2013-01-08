@@ -56,10 +56,6 @@ private:
  */
 extern framebuffer_raw main_framebuffer;
 /**
- * Special screen: "NO SIGNAL".
- */
-extern framebuffer_raw screen_nosignal;
-/**
  * Special screen: "SYSTEM STATE CORRUPT".
  */
 extern framebuffer_raw screen_corrupt;

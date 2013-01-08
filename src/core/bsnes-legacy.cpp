@@ -63,11 +63,20 @@ namespace
 	bool video_refresh_done;
 	bool forced_hook = false;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
+	uint32_t cover_fbmem[512 * 448];
 	//Delay reset.
 	unsigned long long delayreset_cycles_run;
 	unsigned long long delayreset_cycles_target;
 
-
+	//Framebuffer.
+	struct framebuffer_info cover_fbinfo = {
+		&_pixel_format_lrgb,		//Format.
+		(char*)cover_fbmem,		//Memory.
+		512, 448, 2048,			//Physical size.
+		512, 448, 2048,			//Logical size.
+		0, 0				//Offset.
+	};
+	
 	core_setting_group bsnes_settings;
 	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
 	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none");
@@ -1161,7 +1170,12 @@ again2:
 		//Request reset.
 		[](long delay) -> void { do_reset_flag = delay; },
 		//Port types.
-		port_types
+		port_types,
+		//Cover page.
+		[]() -> framebuffer_raw& {
+			static framebuffer_raw x(cover_fbinfo);
+			return x;
+		}
 	};
 
 	core_core bsnes_core(_bsnes_core);
@@ -1475,6 +1489,16 @@ again2:
 	void snesdbg_on_break() {}
 	void snesdbg_on_trace() {}
 #endif
+
+	//Init the fbmem.
+	struct fbmem_initializer
+	{
+		fbmem_initializer()
+		{
+			for(size_t i = 0; i < sizeof(cover_fbmem)/sizeof(cover_fbmem[0]); i++)
+				cover_fbmem[i] = 0x7FC00;
+		}
+	} fbmem_initializer;
 }
 
 #endif

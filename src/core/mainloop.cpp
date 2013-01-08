@@ -657,21 +657,6 @@ namespace
 			messages << "Pending saves canceled." << std::endl;
 		});
 
-	function_ptr_command<> test1(lsnes_cmd, "test-1", "no description available", "No help available\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			redraw_framebuffer(screen_nosignal);
-		});
-
-	function_ptr_command<> test2(lsnes_cmd, "test-2", "no description available", "No help available\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			redraw_framebuffer(screen_corrupt);
-		});
-
-	function_ptr_command<> test3(lsnes_cmd, "test-3", "no description available", "No help available\n",
-		[]() throw(std::bad_alloc, std::runtime_error) {
-			while(1);
-		});
-
 	inverse_bind ipause_emulator(lsnes_mapper, "pause-emulator", "Speed‣(Un)pause");
 	inverse_bind ijback(lsnes_mapper, "cycle-jukebox-backward", "Slot select‣Cycle backwards");
 	inverse_bind ijforward(lsnes_mapper, "cycle-jukebox-forward", "Slot select‣Cycle forwards");

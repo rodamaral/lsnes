@@ -335,6 +335,7 @@ core_core::core_core(core_core_params& params)
 	_set_pflag = params.set_pflag;
 	_request_reset = params.request_reset;
 	port_types = params.port_types;
+	_draw_cover = params.draw_cover;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
@@ -469,6 +470,11 @@ void core_core::request_reset(long delay)
 {
 	if(_request_reset)
 		_request_reset(delay);
+}
+
+framebuffer_raw& core_core::draw_cover()
+{
+	return _draw_cover();
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

@@ -11,7 +11,6 @@
 #include "library/framebuffer.hpp"
 #include "library/pixfmt-lrgb.hpp"
 
-framebuffer_raw screen_nosignal;
 framebuffer_raw screen_corrupt;
 
 namespace
@@ -71,18 +70,6 @@ namespace
 		uint32_t scale;
 	};
 
-	struct render_list_entry rl_nosignal[] = {
-		{'N', 4, 168, 7},
-		{'O', 60, 168, 7},
-		{'S', 172, 168, 7},
-		{'I', 228, 168, 7},
-		{'G', 284, 168, 7},
-		{'N', 340, 168, 7},
-		{'A', 396, 168, 7},
-		{'L', 452, 168, 7},
-		{0, 0, 0, 0}
-	};
-
 	struct render_list_entry rl_corrupt[] = {
 		{'S', 88, 56, 7},
 		{'Y', 144, 56, 7},
@@ -125,13 +112,6 @@ namespace
 			}
 			rlist++;
 		}
-	}
-
-	void draw_nosignal(uint32_t* target)
-	{
-		for(unsigned i = 0; i < 512 * 448; i++)
-			target[i] = 0x7FC00;
-		draw_special_screen(target, rl_nosignal);
 	}
 
 	void draw_corrupt(uint32_t* target)
@@ -178,8 +158,6 @@ void init_special_screens() throw(std::bad_alloc)
 	inf.offset_x = 0;
 	inf.offset_y = 0;
 
-	draw_nosignal(&buf[0]);
-	screen_nosignal = framebuffer_raw(inf);
 	draw_corrupt(&buf[0]);
 	screen_corrupt = framebuffer_raw(inf);
 }

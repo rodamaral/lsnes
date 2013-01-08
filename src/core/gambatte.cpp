@@ -46,12 +46,22 @@ namespace
 	gambatte::GB* instance;
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
+	uint32_t cover_fbmem[480 * 432];
 	uint32_t primary_framebuffer[160*144];
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
 
 	core_setting_group gambatte_settings;
+
+	//Framebuffer.
+	struct framebuffer_info cover_fbinfo = {
+		&_pixel_format_rgb32,		//Format.
+		(char*)cover_fbmem,		//Memory.
+		480, 432, 1920,			//Physical size.
+		480, 432, 1920,			//Logical size.
+		0, 0				//Offset.
+	};
 
 	//////////////////////////// PORT ////////////////////////////
 	const char* button_symbols = "ABsSrlud";
@@ -489,7 +499,12 @@ namespace
 		//Request reset.
 		[](long delay) -> void { do_reset_flag = true; },
 		//Port types.
-		port_types
+		port_types,
+		//Cover page.
+		[]() -> framebuffer_raw& {
+			static framebuffer_raw x(cover_fbinfo);
+			return x;
+		}
 	};
 
 	core_core gambatte_core(_gambatte_core);
@@ -545,6 +560,16 @@ namespace
 			return;
 		instance->saveState(x, cmp_save);
 	});
+
+	//Init the fbmem.
+	struct fbmem_initializer
+	{
+		fbmem_initializer()
+		{
+			for(size_t i = 0; i < sizeof(cover_fbmem)/sizeof(cover_fbmem[0]); i++)
+				cover_fbmem[i] = 0x00FF0000;
+		}
+	} fbmem_initializer;
 }
 
 #endif

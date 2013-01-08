@@ -269,7 +269,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		if(!our_movie.anchor_savestate.empty())
 			our_rom->load_core_state(our_movie.anchor_savestate);
 		our_rom->rtype->set_pflag(0);
-		redraw_framebuffer(screen_nosignal);
+		redraw_framebuffer(our_rom->rtype->draw_cover());
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -392,7 +392,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			tmp.load(_movie.screenshot);
 			redraw_framebuffer(tmp);
 		} else
-			redraw_framebuffer(screen_nosignal);
+			redraw_framebuffer(our_rom->rtype->draw_cover());
 	}
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
