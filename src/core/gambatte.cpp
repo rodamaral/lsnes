@@ -350,6 +350,11 @@ namespace
 		cover_render_string(cover_fbmem, 0, 0, ident, 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
 		cover_render_string(cover_fbmem, 0, 16, "Internal ROM name: " + get_cartridge_name(),
 			0xFFFFFF, 0x00000, 480, 432, 1920, 4);
+		unsigned y = 32;
+		for(auto i : cover_information()) {
+			cover_render_string(cover_fbmem, 0, y, i, 0xFFFFFF, 0x000000, 480, 432, 1920, 4);
+			y += 16;
+		}
 	}
 
 	unsigned world_compatible[] = {0, UINT_MAX};

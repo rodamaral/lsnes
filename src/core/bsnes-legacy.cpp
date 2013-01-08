@@ -971,6 +971,11 @@ namespace
 				name << ch;
 		}
 		cover_render_string(cover_fbmem, 0, 16, name.str(), 0x7FFFF, 0x00000, 512, 448, 2048, 4);
+		unsigned y = 32;
+		for(auto i : cover_information()) {
+			cover_render_string(cover_fbmem, 0, y, i, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
+			y += 16;
+		}
 	}
 
 /*

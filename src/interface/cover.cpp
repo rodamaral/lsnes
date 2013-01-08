@@ -1,3 +1,4 @@
+#include "core/moviedata.hpp"
 #include "interface/cover.hpp"
 #include "library/minmax.hpp"
 #include "library/utf8.hpp"
@@ -120,4 +121,11 @@ void cover_next_position(const std::string& str, unsigned& x, unsigned& y)
 		cover_next_position(u, x, y);
 		spos++;
 	}
+}
+
+std::vector<std::string> cover_information()
+{
+	std::vector<std::string> ret;
+	ret.push_back("Region: " + our_rom->region->get_hname());
+	return ret;
 }
