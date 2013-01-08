@@ -83,7 +83,8 @@ void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& st
 			spos++;
 			continue;
 		}
-		cover_render_character(fb, x, y, u, fg, bg, w, h, istride, pstride);
+		if(u != 9 && u != 10)
+			cover_render_character(fb, x, y, u, fg, bg, w, h, istride, pstride);
 		cover_next_position(u, x, y);
 		spos++;
 	}
