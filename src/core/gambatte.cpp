@@ -328,12 +328,28 @@ namespace
 		return s;
 	}
 
+	std::string get_cartridge_name()
+	{
+		std::ostringstream name;
+		if(romdata.size() < 0x200)
+			return "";	//Bad.
+		for(unsigned i = 0; i < 16; i++) {
+			if(romdata[0x134 + i])
+				name << (char)romdata[0x134 + i];
+			else
+				break;
+		}
+		return name.str();
+	}
+
 	void redraw_cover_fbinfo()
 	{
 		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
 			cover_fbmem[i] = 0x00000000;
 		std::string ident = _gambatte_core.core_identifier();
 		cover_render_string(cover_fbmem, 0, 0, ident, 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
+		cover_render_string(cover_fbmem, 0, 16, "Internal ROM name: " + get_cartridge_name(),
+			0xFFFFFF, 0x00000, 480, 432, 1920, 4);
 	}
 
 	unsigned world_compatible[] = {0, UINT_MAX};

@@ -952,12 +952,25 @@ namespace
 		return r;
 	}
 
+	const char* hexes = "0123456789ABCDEF";
+
 	void redraw_cover_fbinfo()
 	{
 		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
 			cover_fbmem[i] = 0;
 		std::string ident = _bsnes_core.core_identifier();
 		cover_render_string(cover_fbmem, 0, 0, ident, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
+		std::ostringstream name;
+		name << "Internal ROM name: ";
+		for(unsigned i = 0; i < 21; i++) {
+			unsigned busaddr = 0x00FFC0 + i;
+			unsigned char ch = SNES::bus.read(busaddr);
+			if(ch < 32 || ch > 126)
+				name << "<" << hexes[ch / 16] << hexes[ch % 16] << ">";
+			else
+				name << ch;
+		}
+		cover_render_string(cover_fbmem, 0, 16, name.str(), 0x7FFFF, 0x00000, 512, 448, 2048, 4);
 	}
 
 /*
