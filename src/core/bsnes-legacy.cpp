@@ -82,9 +82,7 @@ namespace
 	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
 	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none");
 
-
 	/////////////////// SYSTEM CONTROLLER ///////////////////
-	const char* system_name = "(system)";
 	port_controller_button* system_button_info[] = {};
 	port_controller system_controller = {"(system)", "system", 0, system_button_info};
 
