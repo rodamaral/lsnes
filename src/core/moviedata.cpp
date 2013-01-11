@@ -442,7 +442,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;
 	try {
-		mfile = moviefile(filename2);
+		mfile = moviefile(filename2, *our_rom->rtype);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {

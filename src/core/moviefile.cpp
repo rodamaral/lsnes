@@ -373,7 +373,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 	poll_flag = 0;
 }
 
-moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtime_error)
+moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
 	poll_flag = false;
 	start_paused = false;
@@ -390,7 +390,7 @@ moviefile::moviefile(const std::string& movie) throw(std::bad_alloc, std::runtim
 		throw std::runtime_error("Can't decode movie data");
 	read_linefile(r, "gametype", tmp);
 	try {
-		gametype = &core_sysregion::lookup(tmp);
+		gametype = &romtype.lookup_sysregion(tmp);
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {

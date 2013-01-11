@@ -78,7 +78,7 @@ namespace
 
 void refresh_cart_mappings() throw(std::bad_alloc)
 {
-	if(!get_current_rom_info().first)
+	if(!our_rom || !our_rom->rtype)
 		return;
 	std::list<memory_region*> cur_regions = lsnes_memory.get_regions();
 	std::list<memory_region*> regions;

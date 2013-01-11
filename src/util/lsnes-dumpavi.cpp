@@ -294,7 +294,7 @@ int main(int argc, char** argv)
 			if(i->length() > 0 && (*i)[0] != '-') {
 				try {
 					tried = true;
-					movie = moviefile(*i);
+					movie = moviefile(*i, *r.rtype);
 					loaded = true;
 				} catch(std::bad_alloc& e) {
 					OOM_panic();

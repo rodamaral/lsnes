@@ -26,10 +26,11 @@ struct moviefile
  * This constructor loads a movie/savestate file and fills structure accordingly.
  *
  * parameter filename: The file to load.
+ * parameter romtype: Type of ROM.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't load the movie file
  */
-	moviefile(const std::string& filename) throw(std::bad_alloc, std::runtime_error);
+	moviefile(const std::string& filename, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Reads this movie structure and saves it into file.

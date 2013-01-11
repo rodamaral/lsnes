@@ -495,7 +495,9 @@ bool lsnes_app::OnInit()
 	moviefile* mov = NULL;
 	if(c_file != "")
 		try {
-			mov = new moviefile(c_file);
+			if(!rom)
+				throw std::runtime_error("No ROM loaded");
+			mov = new moviefile(c_file, *rom->rtype);
 			if(c_rom != "")
 				rom->load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
 		} catch(std::exception& e) {

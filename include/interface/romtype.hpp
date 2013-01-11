@@ -203,6 +203,7 @@ public:
 	const std::string& get_hname();
 	const std::list<std::string>& get_extensions();
 	bool is_known_extension(const std::string& ext);
+	core_sysregion& lookup_sysregion(const std::string& sysreg);
 	std::string get_biosname();
 	unsigned get_id();
 	unsigned get_image_count();
@@ -267,7 +268,7 @@ struct core_sysregion
 {
 public:
 	core_sysregion(const std::string& name, core_type& type, core_region& region);
-	static core_sysregion& lookup(const std::string& name);
+	~core_sysregion() throw();
 	const std::string& get_name();
 	core_region& get_region();
 	core_type& get_type();

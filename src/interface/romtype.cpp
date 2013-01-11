@@ -21,9 +21,9 @@ namespace
 		return x;
 	}
 
-	std::map<std::string, core_sysregion*>& sysregions()
+	std::multimap<std::string, core_sysregion*>& sysregions()
 	{
-		static std::map<std::string, core_sysregion*> x;
+		static std::multimap<std::string, core_sysregion*> x;
 		return x;
 	}
 
@@ -281,15 +281,24 @@ std::set<std::string> core_type::srams()
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
 {
-	sysregions()[_name] = this;
+	sysregions().insert(std::make_pair(_name, this));
 }
 
-core_sysregion& core_sysregion::lookup(const std::string& _name)
+core_sysregion::~core_sysregion() throw()
 {
-	if(sysregions().count(_name))
-		return *(sysregions()[_name]);
-	else
-		throw std::runtime_error("Bad system-region type");
+	for(auto i = sysregions().begin(); i != sysregions().end(); i++)
+		if(i->second == this) {
+			sysregions().erase(i);
+			break;
+		}
+}
+
+core_sysregion& core_type::lookup_sysregion(const std::string& sysreg)
+{
+	for(auto i : sysregions())
+		if(i.first == sysreg && &i.second->get_type() == this)
+			return *i.second;
+	throw std::runtime_error("Bad system-region type");
 }
 
 const std::string& core_sysregion::get_name()
