@@ -465,12 +465,12 @@ void core_core::runtosave()
 	_runtosave();
 }
 
-unsigned core_core::get_pflag()
+bool core_core::get_pflag()
 {
 	return _get_pflag();
 }
 
-void core_core::set_pflag(unsigned pflag)
+void core_core::set_pflag(bool pflag)
 {
 	return _set_pflag(pflag);
 }

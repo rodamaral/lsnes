@@ -88,8 +88,8 @@ struct core_core_params
 	void (*uninstall_handler)();
 	void (*emulate)();
 	void (*runtosave)();
-	unsigned (*get_pflag)();
-	void (*set_pflag)(unsigned pflag);
+	bool (*get_pflag)();
+	void (*set_pflag)(bool pflag);
 	void (*request_reset)(long delay);
 	port_type** port_types;
 	framebuffer_raw& (*draw_cover)();
@@ -158,8 +158,8 @@ struct core_core
 	void uninstall_handler();
 	void emulate();
 	void runtosave();
-	unsigned get_pflag();
-	void set_pflag(unsigned pflag);
+	bool get_pflag();
+	void set_pflag(bool pflag);
 	void request_reset(long delay);
 	framebuffer_raw& draw_cover();
 	port_type** get_port_types() { return port_types; }
@@ -184,8 +184,8 @@ private:
 	void (*_uninstall_handler)();
 	void (*_emulate)();
 	void (*_runtosave)();
-	unsigned (*_get_pflag)();
-	void (*_set_pflag)(unsigned pflag);
+	bool (*_get_pflag)();
+	void (*_set_pflag)(bool pflag);
 	void (*_request_reset)(long delay);
 	port_type** port_types;
 	framebuffer_raw& (*_draw_cover)();
@@ -239,8 +239,8 @@ public:
 	void uninstall_handler() { core->uninstall_handler(); }
 	void emulate() { core->emulate(); }
 	void runtosave() { core->runtosave(); }
-	unsigned get_pflag() { return core->get_pflag(); }
-	void set_pflag(unsigned pflag) { core->set_pflag(pflag); }
+	bool get_pflag() { return core->get_pflag(); }
+	void set_pflag(bool pflag) { core->set_pflag(pflag); }
 	void request_reset(long delay) { core->request_reset(delay); }
 	framebuffer_raw& draw_cover() { return core->draw_cover(); }
 private:

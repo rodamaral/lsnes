@@ -155,19 +155,16 @@ uint64_t movie::get_frame_count() throw()
 void movie::next_frame() throw(std::bad_alloc)
 {
 	//Adjust lag count. Frame 0 MUST NOT be considered lag.
-	//If we don't have valid pflag handler, use the legacy behaviour.
-	unsigned pflag = pflag_handler ? pflag_handler->get_pflag() : 2;
-	if(current_frame && pflag == 0)
+	bool pflag = pflag_handler ? pflag_handler->get_pflag() : false;
+	if(current_frame && !pflag)
 		lag_frames++;
-	else if(pflag < 2 && pflag_handler)
-		pflag_handler->set_pflag(0);
+	else if(pflag_handler)
+		pflag_handler->set_pflag(false);
 
 	//If all poll counters are zero for all real controls, this frame is lag.
 	bool this_frame_lag = !pollcounters.has_polled();
 	//Oh, frame 0 must not be considered lag.
 	if(current_frame && this_frame_lag) {
-		if(pflag == 2)
-			lag_frames++;	//Legacy compat. behaviour.
 		//debuglog << "Frame " << current_frame << " is lag" << std::endl << std::flush;
 		if(!readonly) {
 			//If in read-write mode, write a dummy record for the frame. Force sync flag.
@@ -197,15 +194,13 @@ bool movie::get_DRDY(unsigned port, unsigned controller, unsigned ctrl) throw(st
 
 short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw(std::bad_alloc, std::logic_error)
 {
-	bool do_neutral_update = movie_data.get_types().marks_nonlag(port, controller, ctrl);
 	pollcounters.clear_DRDY(port, controller, ctrl);
 
 	if(readonly) {
 		//In readonly mode...
 		//If at the end of the movie, return released / neutral (but also record the poll)...
 		if(current_frame_first_subframe >= movie_data.size()) {
-			if(do_neutral_update)
-				pollcounters.increment_polls(port, controller, ctrl);
+			pollcounters.increment_polls(port, controller, ctrl);
 			return 0;
 		}
 		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
@@ -216,8 +211,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 		uint32_t polls = pollcounters.get_polls(port, controller, ctrl);
 		uint32_t index = (changes > polls) ? polls : changes - 1;
 		int16_t data = movie_data[current_frame_first_subframe + index].axis3(port, controller, ctrl);
-		if(data || do_neutral_update)
-			pollcounters.increment_polls(port, controller, ctrl);
+		pollcounters.increment_polls(port, controller, ctrl);
 		return data;
 	} else {
 		//Readwrite mode.
@@ -229,8 +223,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 		if(current_frame_first_subframe >= movie_data.size()) {
 			movie_data.append(current_controls.copy(true));
 			//current_frame_first_subframe should be movie_data.size(), so it is right.
-			if(current_controls.axis3(port, controller, ctrl) || do_neutral_update)
-				pollcounters.increment_polls(port, controller, ctrl);
+			pollcounters.increment_polls(port, controller, ctrl);
 			frames_in_movie++;
 			return movie_data[current_frame_first_subframe].axis3(port, controller, ctrl);
 		}
@@ -253,8 +246,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 			movie_data[current_frame_first_subframe + pollcounter].axis3(port, controller, ctrl,
 				new_value);
 		}
-		if(new_value || do_neutral_update)
-			pollcounters.increment_polls(port, controller, ctrl);
+		pollcounters.increment_polls(port, controller, ctrl);
 		return new_value;
 	}
 }

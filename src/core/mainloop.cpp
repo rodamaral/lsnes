@@ -890,6 +890,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		redraw_framebuffer(screen_corrupt);
 	}
 
+	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 	lua_callback_startup();
 
 	platform::set_paused(initial.start_paused);

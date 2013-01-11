@@ -53,6 +53,7 @@ namespace
 	uint32_t accumulator_l = 0;
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
+	bool pflag = false;
 
 	core_setting_group gambatte_settings;
 
@@ -174,6 +175,7 @@ namespace
 				if(ecore_callbacks->get_input(0, 1, i))
 					v |= (1 << i);
 			}
+			pflag = true;
 			return v;
 		};
 	} getinput;
@@ -229,7 +231,6 @@ namespace
 		x.port = p;
 		x.controller = c;
 		x.control = i;
-		x.marks_nonlag = nl;
 		return x;
 	}
 
@@ -524,9 +525,9 @@ namespace
 		//Run to save.
 		[]() -> void {},
 		//Get poll flag.
-		[]() -> unsigned { return 2; },
+		[]() -> bool { return pflag; },
 		//Set poll flag.
-		[](unsigned pflag) -> void {},
+		[](bool _pflag) -> void { pflag = _pflag; },
 		//Request reset.
 		[](long delay) -> void { do_reset_flag = true; },
 		//Port types.

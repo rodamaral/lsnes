@@ -89,7 +89,6 @@ port_type_set::port_type_set() throw()
 	_indices[0].port = 0;
 	_indices[0].controller = 0;
 	_indices[0].control = 0;
-	_indices[0].marks_nonlag = false;
 	
 	port_multiplier = 1;
 	controller_multiplier = 1;

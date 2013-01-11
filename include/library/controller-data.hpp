@@ -143,10 +143,6 @@ struct port_index_triple
  * The control number.
  */
 	unsigned control;
-/**
- * Does neutral poll of this index count as non-lag frame (non-neutral polls always do)?
- */
-	bool marks_nonlag;
 };
 
 /**
@@ -498,36 +494,6 @@ public:
 		if(pcid >= legacy_pcids.size())
 			throw std::runtime_error("Bad legacy PCID");
 		return legacy_pcids[pcid];
-	}
-/**
- * Get "marks nonlag even if neutral" flag for specified index.
- *
- * Parameter index: The index.
- * Returns: The flag.
- */
-	bool marks_nonlag(unsigned index) const throw()
-	{
-		try {
-			index_to_triple(index).marks_nonlag;
-		} catch(...) {
-			return false;
-		}
-	}
-/**
- * Get "marks nonlag even if neutral" flag for specified triplet.
- *
- * Parameter port: The port
- * Parameter controller: The controller.
- * Parameter index: The index.
- * Returns: The flag.
- */
-	bool marks_nonlag(unsigned port, unsigned controller, unsigned index) const throw()
-	{
-		try {
-			index_to_triple(triple_to_index(port, controller, index)).marks_nonlag;
-		} catch(...) {
-			return false;
-		}
 	}
 private:
 	port_type_set(std::vector<class port_type*> types, struct port_index_map control_map);

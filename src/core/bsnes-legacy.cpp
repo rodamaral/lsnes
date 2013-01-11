@@ -47,7 +47,6 @@ namespace
 {
 	bool p1disable = false;
 	long do_reset_flag = -1;
-	bool pollflag_active = true;
 	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
 	boolean_setting save_every_frame(lsnes_set, "save-every-frame", false);
 	bool have_saved_this_frame = false;
@@ -531,7 +530,6 @@ namespace
 		x.port = p;
 		x.controller = c;
 		x.control = i;
-		x.marks_nonlag = nl;
 		return x;
 	}
 
@@ -1195,11 +1193,10 @@ again2:
 			stepping_into_save = false;
 		},
 		//Get poll flag.
-		[]() -> unsigned { return pollflag_active ? (SNES::cpu.controller_flag ? 1 : 0) : 2; },
+		[]() -> bool { return SNES::cpu.controller_flag; },
 		//Set poll flag.
-		[](unsigned pflag) -> void {
-			SNES::cpu.controller_flag = (pflag != 0);
-			pollflag_active = (pflag < 2);
+		[](bool pflag) -> void {
+			SNES::cpu.controller_flag = pflag;
 		},
 		//Request reset.
 		[](long delay) -> void { do_reset_flag = delay; },
