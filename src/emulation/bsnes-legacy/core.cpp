@@ -1,4 +1,3 @@
-#ifdef CORETYPE_BSNES
 #include "lsnes.hpp"
 #include <sstream>
 #include <map>
@@ -1522,5 +1521,3 @@ again2:
 	void snesdbg_on_trace() {}
 #endif
 }
-
-#endif

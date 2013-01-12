@@ -1,4 +1,3 @@
-#ifdef CORETYPE_GAMBATTE
 #include "lsnes.hpp"
 #include <sstream>
 #include <iostream>
@@ -594,5 +593,3 @@ namespace
 		instance->saveState(x, cmp_save);
 	});
 }
-
-#endif
