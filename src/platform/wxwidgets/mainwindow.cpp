@@ -1098,7 +1098,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::ostringstream str;
 		str << "Version: lsnes rr" << lsnes_version << std::endl;
 		str << "Revision: " << lsnes_git_revision << std::endl;
-		str << "Core: " << our_rom->rtype->get_core_identifier() << std::endl;
+		for(auto i : core_core::all_cores())
+			str << "Core: " << i->get_core_identifier() << std::endl;
 		wxMessageBox(towxstring(str.str()), _T("About"), wxICON_INFORMATION | wxOK, this);
 		return;
 	}
