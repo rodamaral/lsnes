@@ -1,0 +1,411 @@
+nes_gamepad_controller = {
+	["name"] = "gamepad", ["class"] = "nesgamepad", ["buttons"] = {
+		{button, "A", "A"},
+		{button, "B", "B"},
+		{button, "s", "select"},
+		{button, "S", "start"},
+		{button, "u", "up"},
+		{button, "d", "down"},
+		{button, "l", "left"},
+		{button, "r", "right"}
+	}
+};
+
+
+ports = {
+	{
+		["symbol"] = "system_gba", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "gba", ["buttons"] = {
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "s", "select"},
+					{button, "S", "start"},
+					{button, "r", "right"},
+					{button, "l", "left"},
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "L", "L"},
+					{button, "R", "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_lynx", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "lynx", ["buttons"] = {
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "1", "option1"},
+					{button, "2", "option2"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "P", "pause"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_md", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "none", ["iname"] = "none", ["hname"] = "None", ["controllers"] = {
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "md_gamepad2", ["iname"] = "gamepad2", ["hname"] = "Gamepad (2 button)",
+		["controllers"] = {
+			{
+				["name"] = "gamepad2", ["class"] = "mdgamepad", ["buttons"] = {
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "S", "start"}
+				}
+			}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "md_gamepad3", ["iname"] = "gamepad3", ["hname"] = "Gamepad (3 button)",
+		["controllers"] = {
+			{
+				["name"] = "gamepad3", ["class"] = "mdgamepad", ["buttons"] = {
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "B", "B"},
+					{button, "C", "C"},
+					{button, "A", "A"},
+					{button, "S", "start"}
+				}
+			}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "md_gamepad6", ["iname"] = "gamepad6", ["hname"] = "Gamepad (6 button)",
+		["controllers"] = {
+			{
+				["name"] = "gamepad6", ["class"] = "mdgamepad", ["buttons"] = {
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "B", "B"},
+					{button, "C", "C"},
+					{button, "A", "A"},
+					{button, "S", "start"},
+					{button, "Z", "Z"},
+					{button, "Y", "Y"},
+					{button, "X", "X"},
+					{button, "M", "mode"}
+				}
+			}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "md_mouse", ["iname"] = "mouse", ["hname"] = "Mouse", ["controllers"] = {
+		{
+			["name"] = "mouse", ["class"] = "mdmouse", ["buttons"] = {
+				{raxis, "xaxis"},
+				{raxis, "yaxis"},
+				{button, "L", "L"},
+				{button, "R", "R"},
+				{button, "M", "M"},
+				{button, "S", "start"}
+			}
+		}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "nes_gamepad", ["iname"] = "gamepad", ["hname"] = "gamepad", ["controllers"] = {
+			nes_gamepad_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "nes_fourscore", ["iname"] = "fourscore", ["hname"] = "Fourscore", ["controllers"] = {
+			nes_gamepad_controller,
+			nes_gamepad_controller,
+			nes_gamepad_controller,
+			nes_gamepad_controller
+		}, ["legal"] = {1}
+	},{
+		["symbol"] = "nes_zapper", ["iname"] = "zapper", ["hname"] = "Zapper",
+		["controllers"] = {
+			["name"] = "justifier", ["class"] = "justifier", ["buttons"] = {
+				{axis, "xaxis"},
+				{axis, "yaxis"},
+				{button, "T", "trigger"},
+				{button, "a", "awaytrigger"}
+			}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "system_ngp", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "ngp", ["buttons"] = {
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "O", "Option"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_pce", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "pce_gamepad", ["iname"] = "gamepad", ["hname"] = "Gamepad",
+		["controllers"] = {
+			{
+				["name"] = "gamepad", ["class"] = "pcegamepad", ["buttons"] = {
+					{button, "1", "i"},
+					{button, "2", "ii"},
+					{button, "s", "select"},
+					{button, "R", "run"},
+					{button, "u", "up"},
+					{button, "r", "right"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "3", "iii"},
+					{button, "4", "iv"},
+					{button, "5", "v"},
+					{button, "6", "vi"},
+					{button, "M", "mode"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "pce_mouse", ["iname"] = "mouse", ["hname"] = "Mouse", ["controllers"] = {
+			{
+				["name"] = "mouse", ["class"] = "pcemouse", ["buttons"] = {
+					{raxis, "xaxis"},
+					{raxis, "yaxis"},
+					{button, "R", "R"},
+					{button, "L", "L"},
+					{button, "s", "select"},
+					{button, "r", "run"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "system_pcfx", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "pcfx_gamepad", ["iname"] = "gamepad", ["hname"] = "Gamepad",
+		["controllers"] = {
+			{
+				["name"] = "gamepad", ["class"] = "pcfxgamepad", ["buttons"] = {
+					{button, "1", "i"},
+					{button, "2", "ii"},
+					{button, "3", "iii"},
+					{button, "4", "iv"},
+					{button, "5", "v"},
+					{button, "6", "vi"},
+					{button, "s", "select"},
+					{button, "R", "run"},
+					{button, "u", "up"},
+					{button, "r", "right"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "M", "mode1"},
+					{null},
+					{button, "m", "mode2"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "pcfx_mouse", ["iname"] = "mouse", ["hname"] = "Mouse", ["controllers"] = {
+			{
+				["name"] = "mouse", ["class"] = "pcfxmouse", ["buttons"] = {
+					{raxis, "xaxis"},
+					{raxis, "yaxis"},
+						{button, "L", "L"},
+					{button, "R", "R"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "system_gg", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "gg", ["buttons"] = {
+					{button, "d", "down"},
+					{button, "u", "up"},
+					{button, "r", "right"},
+					{button, "l", "left"},
+					{button, "1", "button1"},
+					{button, "1", "button2"},
+					{button, "S", "start"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_sms", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "sms_gamepad", ["iname"] = "gamepad", ["hname"] = "Gamepad",
+		["controllers"] = {
+			{
+				["name"] = "gamepad", ["class"] = "smsgamepad", ["buttons"] = {
+					{button, "u", "up"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "r", "right"},
+					{button, "1", "fire1"},
+					{button, "2", "fire2"},
+					{button, "P", "pause"},
+				}
+			}
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "system_vboy", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "vboy", ["buttons"] = {
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "T", "rtrigger"},
+					{button, "t", "ltrigger"},
+					{button, "U", "rup"},
+					{button, "R", "rright"},
+					{button, "r", "lright"},
+					{button, "l", "lleft"},
+					{button, "d", "ldown"},
+					{button, "u", "lup"},
+					{button, "S", "start"},
+					{button, "s", "select"},
+					{button, "L", "rleft"},
+					{button, "D", "rdown"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_wswan", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "wswan", ["buttons"] = {
+					{button, "U", "xup"},
+					{button, "R", "xright"},
+					{button, "D", "xdown"},
+					{button, "L", "xleft"},
+					{button, "u", "yup"},
+					{button, "r", "yright"},
+					{button, "d", "ydown"},
+					{button, "l", "yleft"},
+					{button, "S", "start"},
+					{button, "A", "A"},
+					{button, "B", "B"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "system_psx", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			}
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "psx_gamepad", ["iname"] = "gamepad", ["hname"] = "Gamepad",
+		["controllers"] = {
+			{
+				["name"] = "gamepad", ["class"] = "psxgamepad", ["buttons"] = {
+					{button, "s", "select"},
+					{null},
+					{null},
+					{button, "S", "start"},
+					{button, "u", "up"},
+					{button, "r", "right"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{button, "L", "l2"},
+					{button, "R", "r2"},
+					{button, "m", "l1"},
+					{button, "t", "r1"},
+					{button, "T", "triangle"},
+					{button, "C", "circle"},
+					{button, "X", "cross"},
+					{button, "Q", "square"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "psx_dancepad", ["iname"] = "gamepad", ["hname"] = "Gamepad",
+		["controllers"] = {
+			{
+				["name"] = "gamepad", ["class"] = "psxdancepad", ["buttons"] = {
+					{button, "s", "select"},
+					{null},
+					{null},
+					{button, "S", "start"},
+					{button, "u", "up"},
+					{button, "r", "right"},
+					{button, "d", "down"},
+					{button, "l", "left"},
+					{null},
+					{null},
+					{null},
+					{null},
+					{button, "T", "triangle"},
+					{button, "C", "circle"},
+					{button, "X", "cross"},
+					{button, "Q", "square"}
+				}
+			}
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	}
+}
