@@ -104,6 +104,8 @@ namespace
 		for(unsigned i = 0; i < controller.button_count; i++) {
 			if(controller.buttons[i]->is_analog())
 				continue;
+			if(!controller.buttons[i]->name)
+				continue;
 			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
 				<< controller.buttons[i]->name).str();
 			controller_bind b;

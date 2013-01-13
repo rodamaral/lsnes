@@ -10,6 +10,7 @@ axis="AXIS";
 raxis="RAXIS";
 shadow="SHADOW";
 shadow_axis="SHADOW_AXIS";
+null="NULL";
 
 if not arg[1] then
 	error("Expected input file");
@@ -56,6 +57,11 @@ for i = 1,#ports do
 			end
 			if xbutton[1] == shadow_axis then
 				ints = ints + 1;
+			end
+			if xbutton[1] == null then
+				table.insert(bsyms, bsym);
+				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
+					"NULL};");
 			end
 		end
 		local s = "\tport_controller_button* "..csym.."[] = {";
