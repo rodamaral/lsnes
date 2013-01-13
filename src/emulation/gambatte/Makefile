@@ -18,7 +18,10 @@ __all__.$(OBJECT_SUFFIX): $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
 	$(MAKE) -C ../../../gambatte
 	$(REALRANLIB) $@
 
-%.$(OBJECT_SUFFIX): %.cpp
+ports.inc: ports.def ../make-ports.lua
+	lua ../make-ports.lua $< >$@
+
+%.$(OBJECT_SUFFIX): %.cpp ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
 
 forcelook:

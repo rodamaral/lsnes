@@ -1,0 +1,129 @@
+gamepad_controller = {
+	["name"] = "gamepad", ["class"] = "gamepad", ["buttons"] = {
+		{button, "B", "B"},
+		{button, "Y", "Y"},
+		{button, "s", "select"},
+		{button, "S", "start"},
+		{button, "u", "up"},
+		{button, "d", "down"},
+		{button, "l", "left"},
+		{button, "r", "right"},
+		{button, "A", "A"},
+		{button, "X", "X"},
+		{button, "L", "L"},
+		{button, "R", "R"}
+	}
+};
+
+gamepad16_controller = {
+	["name"] = "gamepad16", ["class"] = "gamepad", ["buttons"] = {
+		{button, "B", "B"},
+		{button, "Y", "Y"},
+		{button, "s", "select"},
+		{button, "S", "start"},
+		{button, "u", "up"},
+		{button, "d", "down"},
+		{button, "l", "left"},
+		{button, "r", "right"},
+		{button, "A", "A"},
+		{button, "X", "X"},
+		{button, "L", "L"},
+		{button, "R", "R"},
+		{button, "0", "ext0"},
+		{button, "1", "ext1"},
+		{button, "2", "ext2"},
+		{button, "3", "ext3"}
+	}
+};
+
+justifier_controller = {
+	["name"] = "justifier", ["class"] = "justifier", ["buttons"] = {
+		{axis, "xaxis"},
+		{axis, "yaxis"},
+		{button, "T", "trigger"},
+		{button, "S", "start"}
+	}
+};
+
+mouse_controller = {
+	["name"] = "mouse", ["class"] = "mouse", ["buttons"] = {
+		{raxis, "xaxis"},
+		{raxis, "yaxis"},
+		{button, "L", "L"},
+		{button, "R", "R"}
+	}
+};
+
+superscope_controller = {
+	["name"] = "superscope", ["class"] = "superscope", ["buttons"] = {
+		{axis, "xaxis"},
+		{axis, "yaxis"},
+		{button, "T", "trigger"},
+		{button, "C", "cursor"},
+		{button, "U", "turbo"},
+		{button, "P", "pause"}
+	}
+};
+
+system_controller = {
+	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+		{shadow, "F"},
+		{shadow, "R"},
+		{shadow_axis},
+		{shadow_axis}
+	}
+};
+
+ports = {
+	{
+		["symbol"] = "gamepad", ["iname"] = "gamepad", ["hname"] = "gamepad", ["controllers"] = {
+			gamepad_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "gamepad16", ["iname"] = "gamepad16", ["hname"] = "gamepad (16 buttons)",
+		["controllers"] = {
+			gamepad16_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "justifier", ["iname"] = "justifier", ["hname"] = "Justifier", ["controllers"] = {
+			justifier_controller
+		}, ["legal"] = {2}
+	},{
+		["symbol"] = "justifiers", ["iname"] = "justifiers", ["hname"] = "2 Justifiers",
+		["controllers"] = {
+			justifier_controller,
+			justifier_controller
+		}, ["legal"] = {2}
+	},{
+		["symbol"] = "mouse", ["iname"] = "mouse", ["hname"] = "Mouse", ["controllers"] = {
+			mouse_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "multitap", ["iname"] = "multitap", ["hname"] = "Multitap", ["controllers"] = {
+			gamepad_controller,
+			gamepad_controller,
+			gamepad_controller,
+			gamepad_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "multitap16", ["iname"] = "multitap16", ["hname"] = "Multitap (16 buttons)",
+		["controllers"] = {
+			gamepad16_controller,
+			gamepad16_controller,
+			gamepad16_controller,
+			gamepad16_controller
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "none", ["iname"] = "none", ["hname"] = "None", ["controllers"] = {
+		}, ["legal"] = {1, 2}
+	},{
+		["symbol"] = "superscope", ["iname"] = "superscope", ["hname"] = "Super Scope",
+		["controllers"] = {
+			superscope_controller
+		}, ["legal"] = {2}
+	},{
+		["symbol"] = "psystem", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			system_controller
+		}, ["legal"] = {0}
+	}
+};

@@ -39,7 +39,10 @@ __all__.$(OBJECT_SUFFIX): $(OBJECTS) ../../../$(BSNES_LIBRARY)
 	$(MAKE) -C ../../../bsnes $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING)
 	$(REALRANLIB) $@
 
-%.$(OBJECT_SUFFIX): %.cpp
+ports.inc: ports.def ../make-ports.lua
+	lua ../make-ports.lua $< >$@
+
+%.$(OBJECT_SUFFIX): %.cpp ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS)
 
 forcelook:

@@ -1,0 +1,23 @@
+ports = {
+	{
+		["symbol"] = "psystem", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			{
+				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+					{shadow, "F"},
+					{shadow, "R"}
+				}
+			},{
+				["name"] = "gamepad", ["class"] = "gb", ["buttons"] = {
+					{button, "A", "A"},
+					{button, "B", "B"},
+					{button, "s", "select"},
+					{button, "S", "start"},
+					{button, "r", "right"},
+					{button, "l", "left"},
+					{button, "u", "up"},
+					{button, "d", "down"},
+				}
+			}
+		}, ["legal"] = {0}
+	}
+}

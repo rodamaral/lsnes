@@ -54,8 +54,6 @@ namespace
 	unsigned accumulator_s = 0;
 	bool pflag = false;
 
-	core_setting_group gambatte_settings;
-
 	//Framebuffer.
 	struct framebuffer_info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
@@ -65,94 +63,9 @@ namespace
 		0, 0				//Offset.
 	};
 
-	//////////////////////////// PORT ////////////////////////////
-	const char* button_symbols = "ABsSrlud";
-	port_controller_button gamepad_A = {port_controller_button::TYPE_BUTTON, "A"};
-	port_controller_button gamepad_B = {port_controller_button::TYPE_BUTTON, "B"};
-	port_controller_button gamepad_s = {port_controller_button::TYPE_BUTTON, "select"};
-	port_controller_button gamepad_S = {port_controller_button::TYPE_BUTTON, "start"};
-	port_controller_button gamepad_u = {port_controller_button::TYPE_BUTTON, "up"};
-	port_controller_button gamepad_d = {port_controller_button::TYPE_BUTTON, "down"};
-	port_controller_button gamepad_l = {port_controller_button::TYPE_BUTTON, "left"};
-	port_controller_button gamepad_r = {port_controller_button::TYPE_BUTTON, "right"};
-	port_controller_button* gamepad_buttons[] = {
-		&gamepad_A, &gamepad_B, &gamepad_s, &gamepad_S,
-		&gamepad_r, &gamepad_l, &gamepad_u, &gamepad_d
-	};
-	port_controller_button* none_buttons[] = {};
-	port_controller system_controller = {"system", "system", 0, none_buttons};
-	port_controller gb_buttons = {"gb", "gamepad", 8, gamepad_buttons};
-	port_controller* gambatte_controllers[] = {&system_controller, &gb_buttons};
-	port_controller_set _controller_info = {2, gambatte_controllers};
+#include "ports.inc"
 
-	struct porttype_system : public port_type
-	{
-		porttype_system() : port_type("<SYSTEM>", "<SYSTEM>", 9999, 2)
-		{
-			write = [](unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> void {
-				if(idx < 2 && ctrl < 8)
-					if(x)
-						buffer[idx] |= (1 << ctrl);
-					else
-						buffer[idx] &= ~(1 << ctrl);
-			};
-			read = [](const unsigned char* buffer, unsigned idx, unsigned ctrl) -> short {
-				short y = 0;
-				if(idx < 2 && ctrl < 8)
-					y = ((buffer[idx] >> ctrl) & 1) ? 1 : 0;
-				return y;
-			};
-			display = [](const unsigned char* buffer, unsigned idx, char* buf) -> void {
-				if(idx > 1)
-					sprintf(buf, "");
-				else if(idx == 1) {
-					for(unsigned i = 0; i < 8; i++)
-						buf[i] = ((buffer[1] & (1 << i)) != 0) ? button_symbols[i] : '-';
-					buf[8] = '\0';
-				} else
-					sprintf(buf, "%c%c", ((buffer[0] & 1) ? 'F' : '.'),
-						((buffer[0] & 2) ? 'R' : '.'));
-			};
-			serialize = [](const unsigned char* buffer, char* textbuf) -> size_t {
-				char tmp[128];
-				sprintf(tmp, "%c%c|", ((buffer[0] & 1) ? 'F' : '.'), ((buffer[0] & 2) ? 'R' : '.'));
-				for(unsigned i = 0; i < 8; i++)
-					tmp[i + 3] = ((buffer[1] & (1 << i)) != 0) ? button_symbols[i] : '.';
-				tmp[11] = 0;
-				size_t len = strlen(tmp);
-				memcpy(textbuf, tmp, len);
-				return len;
-			};
-			deserialize = [](unsigned char* buffer, const char* textbuf) -> size_t {
-				memset(buffer, 0, 2);
-				size_t ptr = 0;
-				if(read_button_value(textbuf, ptr))
-					buffer[0] |= 1;
-				if(read_button_value(textbuf, ptr))
-					buffer[0] |= 2;
-				skip_rest_of_field(textbuf, ptr, true);
-				for(unsigned i = 0; i < 8; i++)
-					if(read_button_value(textbuf, ptr))
-						buffer[1] |= (1 << i);
-				skip_rest_of_field(textbuf, ptr, false);
-				return ptr;
-			};
-			legal = generic_port_legal<1>;
-			used_indices = [](unsigned c) -> unsigned { return c ? ((c == 1) ? 8 : 0) : 2; };
-			controller_info = &_controller_info;
-		}
-	} psystem;
-
-	port_type* port_types[] = { &psystem, NULL };
-
-
-
-
-
-
-
-
-
+	core_setting_group gambatte_settings;
 
 	time_t walltime_fn()
 	{
