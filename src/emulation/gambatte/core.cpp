@@ -38,9 +38,6 @@ namespace
 {
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
-	extern core_type type_dmg;
-	extern core_type type_gbc;
-	extern core_type type_gbc_gba;
 	extern core_core_params _gambatte_core;
 	bool rtc_fixed;
 	time_t rtc_fixed_val;
@@ -64,6 +61,8 @@ namespace
 	};
 
 #include "ports.inc"
+#include "slots.inc"
+#include "regions.inc"
 
 	core_setting_group gambatte_settings;
 
@@ -270,24 +269,6 @@ namespace
 		}
 	}
 
-	unsigned world_compatible[] = {0, UINT_MAX};
-	core_region_params _region_world = {
-		"world", "World", 1, 0, false, {35112, 2097152, 16742706, 626688}, world_compatible
-	};
-	core_romimage_info_params _image_rom = {
-		"rom", "Cartridge ROM", 1, 0, 0
-	};
-
-	core_region region_world(_region_world);
-	core_romimage_info image_rom_dmg(_image_rom);
-	core_romimage_info image_rom_gbc(_image_rom);
-	core_romimage_info image_rom_gbca(_image_rom);
-	core_region* regions_gambatte[] = {&region_world, NULL};
-	core_romimage_info* dmg_images[] = {&image_rom_dmg, NULL};
-	core_romimage_info* gbc_images[] = {&image_rom_gbc, NULL};
-	core_romimage_info* gbca_images[] = {&image_rom_gbca, NULL};
-
-
 	core_core_params _gambatte_core = {
 		//Get core identifier.
 		[]() -> std::string { return "libgambatte "+gambatte::GB::version(); },
@@ -460,7 +441,7 @@ namespace
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
 		},
-		_controllerconfig, "gb;dmg", NULL, regions_gambatte, dmg_images, &gambatte_settings, &gambatte_core,
+		_controllerconfig, "gb;dmg", NULL, dmg_regions, dmg_images, &gambatte_settings, &gambatte_core,
 		gambatte_bus_map, get_VMAlist, srams
 	};
 	core_type_params  _type_gbc = {
@@ -469,25 +450,22 @@ namespace
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
 		},
-		_controllerconfig, "gbc;cgb", NULL, regions_gambatte, gbc_images, &gambatte_settings, &gambatte_core,
+		_controllerconfig, "gbc;cgb", NULL, gbc_regions, gbc_images, &gambatte_settings, &gambatte_core,
 		gambatte_bus_map, get_VMAlist, srams
 	};
-	core_type_params  _type_gbc_gba = {
+	core_type_params  _type_gbca = {
 		"gbc_gba", "Game Boy Color (GBA)", 2, 1,
 		[](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
-			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbc_gba);
+			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbca);
 		},
-		_controllerconfig, "", NULL, regions_gambatte, gbca_images, &gambatte_settings, &gambatte_core,
+		_controllerconfig, "", NULL, gbca_regions, gbca_images, &gambatte_settings, &gambatte_core,
 		gambatte_bus_map, get_VMAlist, srams
 	};
 
 	core_type type_dmg(_type_dmg);
 	core_type type_gbc(_type_gbc);
-	core_type type_gbc_gba(_type_gbc_gba);
-	core_sysregion sr1("gdmg", type_dmg, region_world);
-	core_sysregion sr2("ggbc", type_gbc, region_world);
-	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
+	core_type type_gbca(_type_gbca);
 
 	std::vector<char> cmp_save;
 

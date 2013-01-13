@@ -1,0 +1,56 @@
+autodetect = {
+	["symbol"] = "region_auto",
+	["iname"] = "autodetect",
+	["hname"] = "Autodetect",
+	["priority"] = 1,
+	["id"] = 0,
+	["temporary"] = true,
+	["fps"] = {10738636, 178683},
+	["compatible"] = {0, 1, 2};
+};
+
+ntsc = {
+	["symbol"] = "region_ntsc",
+	["iname"] = "ntsc",
+	["hname"] = "NTSC",
+	["priority"] = 0,
+	["id"] = 1,
+	["temporary"] = false,
+	["fps"] = {10738636, 178683},
+	["compatible"] = {1};
+};
+
+pal = {
+	["symbol"] = "region_pal",
+	["iname"] = "pal",
+	["hname"] = "PAL",
+	["priority"] = 0,
+	["id"] = 2,
+	["temporary"] = false,
+	["fps"] = {322445, 6448},
+	["compatible"] = {2};
+};
+
+regions = {
+	{
+		["symbol"] = "snes_regions",
+		["core"] = "type_snes",
+		["regions"] = {autodetect, ["snes_ntsc"] = ntsc, ["snes_pal"] = pal};
+	},{
+		["symbol"] = "bsx_regions",
+		["core"] = "type_bsx",
+		["regions"] = {["bsx"] = ntsc};
+	},{
+		["symbol"] = "bsxs_regions",
+		["core"] = "type_bsxslotted",
+		["regions"] = {["bsxslotted"] = ntsc};
+	},{
+		["symbol"] = "sufamiturbo_regions",
+		["core"] = "type_sufamiturbo",
+		["regions"] = {["sufamiturbo"] = ntsc};
+	},{
+		["symbol"] = "sgb_regions",
+		["core"] = "type_sgb",
+		["regions"] = {autodetect, ["sgb_ntsc"] = ntsc, ["sgb_pal"] = pal};
+	}
+};

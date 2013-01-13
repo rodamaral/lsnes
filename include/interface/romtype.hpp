@@ -23,7 +23,7 @@ struct core_region_params
 	unsigned priority;
 	unsigned handle;
 	bool multi;
-	uint64_t framemagic[4];
+	uint64_t framemagic[2];
 	//Ended by UINT_MAX.
 	unsigned* compatible_runs;
 };

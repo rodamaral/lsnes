@@ -82,7 +82,7 @@ namespace
 
 	unsigned null_compatible[] = {0, UINT_MAX};
 	struct core_region_params _null_region = {
-		"null", "(null)", 0, 0, false, {1, 60, 16666666, 40}, null_compatible
+		"null", "(null)", 0, 0, false, {1, 60}, null_compatible
 	};
 	core_region null_region(_null_region);
 	core_region* null_regions[] = {&null_region, NULL};

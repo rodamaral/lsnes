@@ -77,6 +77,8 @@ namespace
 	};
 
 #include "ports.inc"
+#include "slots.inc"
+#include "regions.inc"
 
 	core_setting_group bsnes_settings;
 	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
@@ -129,11 +131,6 @@ namespace
 	}
 
 	core_type* internal_rom = NULL;
-	extern core_type type_snes;
-	extern core_type type_bsx;
-	extern core_type type_bsxslotted;
-	extern core_type type_sufamiturbo;
-	extern core_type type_sgb;
 	extern core_core_params _bsnes_core;
 
 	template<bool(*T)(const char*,const unsigned char*, unsigned)>
@@ -239,66 +236,6 @@ namespace
 			r.portindex.pcid_map.push_back(std::make_pair(i / 4 + 1, i % 4));
 		return r;
 	}
-
-	unsigned auto_compatible[] = {0, 1, 2, UINT_MAX};
-	unsigned ntsc_compatible[] = {1, UINT_MAX};
-	unsigned pal_compatible[] = {2, UINT_MAX};
-	struct core_region_params _region_auto = {
-		"autodetect", "Autodetect", 1, 0, true, {178683, 10738636, 16639264, 596096}, auto_compatible
-	};
-	struct core_region_params _region_ntsc = {
-		"ntsc", "NTSC", 0, 1, false, {178683, 10738636, 16639264, 596096}, ntsc_compatible
-	};
-	struct core_region_params _region_pal = {
-		"pal", "PAL", 0, 2, false, {6448, 322445, 19997208, 266440}, pal_compatible
-	};
-	struct core_romimage_info_params _image_snescart = {
-		"rom", "Cartridge ROM", 1, 0, 512
-	};
-	struct core_romimage_info_params _image_bsxbios = {
-		"rom", "BS-X BIOS", 1, 0, 512
-	};
-	struct core_romimage_info_params _image_bsxflash = {
-		"bsx", "BS-X Flash", 2, 0, 512
-	};
-	struct core_romimage_info_params _image_bsxsflash = {
-		"bsx", "BS-X Flash", 2, 0, 512
-	};
-	struct core_romimage_info_params _image_sgbbios = {
-		"rom", "SGB BIOS", 1, 0, 512
-	};
-	struct core_romimage_info_params _image_dmg = {
-		"dmg", "DMG ROM", 2, 0, 512
-	};
-	struct core_romimage_info_params _image_stbios = {
-		"rom", "ST BIOS", 1, 0, 512
-	};
-	struct core_romimage_info_params _image_stslota = {
-		"slot-a", "ST SLOT A ROM", 2, 0, 512
-	};
-	struct core_romimage_info_params _image_stslotb = {
-		"slot-b", "ST SLOT B ROM", 2, 0, 512
-	};
-
-	core_region region_auto(_region_auto);
-	core_region region_ntsc(_region_ntsc);
-	core_region region_pal(_region_pal);
-	core_region* _all_regions[] = {&region_auto, &region_ntsc, &region_pal, NULL};
-	core_region* _ntsconly[] = {&region_ntsc, NULL};
-	core_romimage_info image_snescart(_image_snescart);
-	core_romimage_info image_bsxbios(_image_bsxbios);
-	core_romimage_info image_bsxflash(_image_bsxflash);
-	core_romimage_info image_bsxsflash(_image_bsxsflash);
-	core_romimage_info image_sgbbios(_image_sgbbios);
-	core_romimage_info image_dmg(_image_dmg);
-	core_romimage_info image_stbios(_image_stbios);
-	core_romimage_info image_stslota(_image_stslota);
-	core_romimage_info image_stslotb(_image_stslotb);
-	core_romimage_info* snes_images[] = {&image_snescart, NULL};
-	core_romimage_info* bsx_images[] = {&image_bsxbios, &image_bsxflash, NULL};
-	core_romimage_info* bsxs_images[] = {&image_bsxbios, &image_bsxsflash, NULL};
-	core_romimage_info* sgb_images[] = {&image_sgbbios, &image_dmg, NULL};
-	core_romimage_info* st_images[] = {&image_stbios, &image_stslota, &image_stslotb, NULL};
 
 #ifdef BSNES_HAS_DEBUGGER
 #define BSNES_RESET_LEVEL 2
@@ -639,15 +576,6 @@ namespace
 		}
 	}
 
-/*
-void cover_render_character(void* fb, unsigned x, unsigned y, uint32_t ch, uint32_t fg, uint32_t bg, size_t w,
-	size_t h, size_t istride, size_t pstride);
-void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& str, uint32_t fg, uint32_t bg,
-	size_t w, size_t h, size_t istride, size_t pstride);
-void cover_next_position(uint32_t ch, unsigned& x, unsigned& y);
-void cover_next_position(const std::string& ch, unsigned& x, unsigned& y);
-*/
-
 	core_core_params _bsnes_core = {
 		//Identify core.
 		[]() -> std::string {
@@ -884,7 +812,7 @@ again2:
 			return load_rom<&type_snes>(img, settings, secs, subsecs,
 				load_rom_X1<snes_load_cartridge_normal>);
 		},
-		_controllerconfig, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, _all_regions, snes_images,
+		_controllerconfig, "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh", NULL, snes_regions, snes_images,
 		&bsnes_settings, &bsnes_core, bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_bsx = {
@@ -894,7 +822,7 @@ again2:
 			return load_rom<&type_bsx>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_bsx>);
 		},
-		_controllerconfig, "bs", "bsx.sfc", _ntsconly, bsx_images, &bsnes_settings, &bsnes_core,
+		_controllerconfig, "bs", "bsx.sfc", bsx_regions, bsx_images, &bsnes_settings, &bsnes_core,
 		bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_bsxslotted = {
@@ -904,7 +832,7 @@ again2:
 			return load_rom<&type_bsxslotted>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_bsx_slotted>);
 		},
-		_controllerconfig, "bss", "bsxslotted.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
+		_controllerconfig, "bss", "bsxslotted.sfc", bsxs_regions, bsxs_images, &bsnes_settings, &bsnes_core,
 		bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_sufamiturbo = {
@@ -914,8 +842,8 @@ again2:
 			return load_rom<&type_sufamiturbo>(img, settings, secs, subsecs,
 				load_rom_X3<snes_load_cartridge_sufami_turbo>);
 		},
-		_controllerconfig, "st", "sufamiturbo.sfc", _ntsconly, bsxs_images, &bsnes_settings, &bsnes_core,
-		bsnes_get_bus_map, get_VMAlist, srams
+		_controllerconfig, "st", "sufamiturbo.sfc", sufamiturbo_regions, sufamiturbo_images, &bsnes_settings,
+		&bsnes_core, bsnes_get_bus_map, get_VMAlist, srams
 	};
 	core_type_params _type_sgb = {
 		"sgb", "Super Game Boy", 4, BSNES_RESET_LEVEL ,
@@ -925,7 +853,7 @@ again2:
 			return load_rom<&type_sgb>(img, settings, secs, subsecs,
 				load_rom_X2<snes_load_cartridge_super_game_boy>);
 		},
-		_controllerconfig, "gb;dmg;sgb", "sgb.sfc", _all_regions, sgb_images, &bsnes_settings, &bsnes_core,
+		_controllerconfig, "gb;dmg;sgb", "sgb.sfc", sgb_regions, sgb_images, &bsnes_settings, &bsnes_core,
 		bsnes_get_bus_map, get_VMAlist, srams
 	};
 
@@ -934,14 +862,6 @@ again2:
 	core_type type_bsxslotted(_type_bsxslotted);
 	core_type type_sufamiturbo(_type_sufamiturbo);
 	core_type type_sgb(_type_sgb);
-	core_sysregion sr1("snes_ntsc", type_snes, region_ntsc);
-	core_sysregion sr2("snes_pal", type_snes, region_pal);
-	core_sysregion sr3("bsx", type_bsx, region_ntsc);
-	core_sysregion sr4("bsxslotted", type_bsxslotted, region_ntsc);
-	core_sysregion sr5("sufamiturbo", type_sufamiturbo, region_ntsc);
-	core_sysregion sr6("sgb_ntsc", type_sgb, region_ntsc);
-	core_sysregion sr7("sgb_pal", type_sgb, region_pal);
-
 
 	function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
 		"No description available\n",

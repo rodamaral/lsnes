@@ -56,8 +56,10 @@ core_region::core_region(const core_region_params& params)
 	multi = params.multi;
 	handle = params.handle;
 	priority = params.priority;
-	for(size_t i = 0; i < 4; i++)
-		magic[i] = params.framemagic[4];
+	magic[0] = params.framemagic[0];
+	magic[1] = params.framemagic[1];
+	magic[2] = 1000000000 * params.framemagic[0] / params.framemagic[1];
+	magic[3] = 1000000000 * params.framemagic[0] % params.framemagic[1];
 	for(size_t i = 0;; i++)
 		if(params.compatible_runs[i] == std::numeric_limits<unsigned>::max())
 			break;
