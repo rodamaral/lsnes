@@ -23,9 +23,6 @@ else
 BSNES_TARGET_STRING=ui=ui-libsnes
 endif
 CFLAGS += -DBSNES_V${BSNES_VERSION}
-else
-OBJECTS=dummy.$(OBJECT_SUFFIX)
-endif
 
 BSNES_LIBRARY=bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 
@@ -51,6 +48,13 @@ regions.inc: regions.def ../make-regions.lua
 
 %.$(OBJECT_SUFFIX): %.cpp ports.inc slots.inc regions.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS)
+else
+
+__all__.$(OBJECT_SUFFIX): dummy.cpp                              
+        $(REALCC) -c -o $@ $< $(CFLAGS)
+	echo >__all__.ldflags
+
+endif
 
 forcelook:
 	@true

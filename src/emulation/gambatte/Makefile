@@ -2,9 +2,6 @@ ifdef BUILD_GAMBATTE
 OBJECTS=core.$(OBJECT_SUFFIX)
 GAMBATTE_CFLAGS=
 GAMBATTE_LDFLAGS=
-else
-OBJECTS=dummy.$(OBJECT_SUFFIX)
-endif
 
 GAMBATTE_LIBRARY=gambatte/libgambatte/libgambatte.$(ARCHIVE_SUFFIX)
 
@@ -29,6 +26,14 @@ regions.inc: regions.def ../make-regions.lua
 
 %.$(OBJECT_SUFFIX): %.cpp ports.inc slots.inc regions.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
+
+else
+
+__all__.$(OBJECT_SUFFIX): dummy.cpp
+	$(REALCC) -c -o $@ $< $(CFLAGS)
+	echo >__all__.ldflags
+
+endif
 
 forcelook:
 	@true
