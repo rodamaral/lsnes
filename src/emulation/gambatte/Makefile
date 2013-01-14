@@ -37,5 +37,5 @@ precheck:
 	@true
 
 clean:
-	make -C ../../../gambatte clean
+	-make -C ../../../gambatte clean
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags

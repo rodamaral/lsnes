@@ -60,4 +60,4 @@ precheck:
 
 clean:
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags
-	make -C ../../../bsnes clean
+	-make -C ../../../bsnes clean
