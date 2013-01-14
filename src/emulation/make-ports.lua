@@ -60,7 +60,7 @@ for i = 1,#ports do
 			end
 			if xbutton[1] == null then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
+				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_NULL, "..
 					"NULL};");
 			end
 		end

@@ -177,6 +177,7 @@ struct port_controller_button
  */
 	enum _type
 	{
+		TYPE_NULL,	//Nothing (except takes the slot).
 		TYPE_BUTTON,	//Button.
 		TYPE_AXIS,	//Axis.
 		TYPE_RAXIS	//Relative Axis (mouse).
@@ -186,7 +187,7 @@ struct port_controller_button
 /**
  * Is analog?
  */
-	bool is_analog() const throw() { return type != TYPE_BUTTON; }
+	bool is_analog() const throw() { return type == (TYPE_AXIS) || (type == TYPE_RAXIS); }
 };
 
 /**

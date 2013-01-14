@@ -219,10 +219,12 @@ namespace
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.button_count;
 		for(unsigned i = 0; i < lcnt; i++) {
+			if(ctrl.buttons[i]->type == port_controller_button::TYPE_NULL)
+				continue;
 			L.pushstring(ctrl.buttons[i]->name);
 			if(ctrl.buttons[i]->is_analog())
 				L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, i));
-			else
+			else if(ctrl.buttons[i]->type == port_controller_button::TYPE_BUTTON)
 				L.pushboolean(lua_input_controllerdata->axis3(pcid.first, pcid.second, i) != 0);
 			L.settable(-3);
 		}
@@ -248,6 +250,8 @@ namespace
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.button_count;
 		for(unsigned i = 0; i < lcnt; i++) {
+			if(ctrl.buttons[i]->type == port_controller_button::TYPE_NULL)
+				continue;
 			L.pushstring(ctrl.buttons[i]->name);
 			L.gettable(2);
 			int s;

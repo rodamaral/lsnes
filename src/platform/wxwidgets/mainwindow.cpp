@@ -337,7 +337,7 @@ namespace
 		const port_controller& ctrl = *pt.controller_info->controllers[controller];
 		unsigned j = 0;
 		for(unsigned i = 0; i < ctrl.button_count; i++) {
-			if(ctrl.buttons[i]->is_analog())
+			if(ctrl.buttons[i]->type != port_controller_button::TYPE_BUTTON)
 				continue;
 			int id = amenu.allocate_wxid();
 			by_id[id] = i;

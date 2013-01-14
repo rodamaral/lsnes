@@ -102,9 +102,7 @@ namespace
 		bool multi_analog = (controller.analog_actions() > 1);
 		//This controller might be processed already, but perhaps only partially.
 		for(unsigned i = 0; i < controller.button_count; i++) {
-			if(controller.buttons[i]->is_analog())
-				continue;
-			if(!controller.buttons[i]->name)
+			if(controller.buttons[i]->type != port_controller_button::TYPE_BUTTON)
 				continue;
 			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
 				<< controller.buttons[i]->name).str();
