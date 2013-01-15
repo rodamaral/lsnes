@@ -3,6 +3,7 @@
 #include "interface/callbacks.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
+#include <set>
 #include <map>
 #include <string>
 #include <algorithm>
@@ -27,9 +28,9 @@ namespace
 		return x;
 	}
 
-	std::map<std::string, core_type*>& types()
+	std::set<core_type*>& types()
 	{
-		static std::map<std::string, core_type*> x;
+		static std::set<core_type*> x;
 		return x;
 	}
 
@@ -155,7 +156,12 @@ core_type::core_type(core_type_params& params)
 			extensions.push_back(ext);
 		}
 	}
-	types()[iname] = this;
+	types().insert(this);
+}
+
+core_type::~core_type() throw()
+{
+	types().erase(this);
 }
 
 unsigned core_type::get_id()
@@ -194,7 +200,7 @@ std::list<core_type*> core_type::get_core_types()
 {
 	std::list<core_type*> ret;
 	for(auto i : types())
-		ret.push_back(i.second);
+		ret.push_back(i);
 	ret.sort(compare_coretype);
 	return ret;
 }

@@ -195,6 +195,7 @@ struct core_type
 {
 public:
 	core_type(core_type_params& params);
+	~core_type() throw();
 	static std::list<core_type*> get_core_types();
 	core_region& get_preferred_region();
 	std::list<core_region*> get_regions();
