@@ -173,6 +173,25 @@ namespace
 
 	core_type* current_rom_type = &type_null;
 	core_region* current_region = &null_region;
+
+	core_type* find_core_by_extension(const std::string& ext)
+	{
+		std::list<core_type*> possible = core_type::get_core_types();
+		for(auto i : possible)
+			if(i->is_known_extension(ext))
+				return i;
+		return NULL;
+	}
+
+	core_type* find_core_by_name(const std::string& name)
+	{
+		std::list<core_type*> possible = core_type::get_core_types();
+		for(auto i : possible)
+			if(i->get_iname() == name)
+				return i;
+		return NULL;
+	}
+
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
@@ -274,7 +293,6 @@ loaded_rom::loaded_rom() throw()
 
 loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
-	std::list<core_type*> possible = core_type::get_core_types();
 	std::istream& spec = open_file_relative(file, "");
 	std::string s;
 	std::getline(spec, s);
@@ -284,11 +302,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		//This is a Raw ROM image.
 		regex_results tmp;
 		std::string ext = regex(".*\\.([^.]*)?", file, "Unknown ROM file type")[1];
-		core_type* coretype = NULL;
-		for(auto i : possible) {
-			if(i->is_known_extension(ext))
-				coretype = i;
-		}
+		core_type* coretype = find_core_by_extension(ext);
 		if(!coretype)
 			throw std::runtime_error("Unknown ROM file type");
 		rtype = coretype;
@@ -319,11 +333,8 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	}
 
 	//Detect type.
-	rtype = &type_null;
-	for(auto i : possible)
-		if(i->get_iname() == platname)
-			rtype = i;
-	if(rtype == &type_null)
+	rtype = find_core_by_name(platname);
+	if(!rtype)
 		(stringfmt() << "Not a valid system type '" << platname << "'").throwex();
 
 	//Detect region.
