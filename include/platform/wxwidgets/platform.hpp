@@ -44,6 +44,7 @@ std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void wxsetingsdialog_display(wxWindow* parent, int mode);
 void show_wxeditor_voicesub(wxWindow* parent);
 void open_rom_select_window();
+void show_conflictwindow(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
@@ -84,5 +85,8 @@ extern wxwin_messages* msg_window;
 extern wxwin_mainwindow* main_window;
 extern std::string our_rom_name;
 extern bool wxwidgets_exiting;
+
+//Some important settings.
+extern std::map<std::string, std::string> core_selections;
 
 #endif

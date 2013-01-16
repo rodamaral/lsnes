@@ -128,7 +128,9 @@ namespace
 		length = 0;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
-			if(a.length() >= 9 && a.substr(0, 9) == "--dumper=") {
+			if(a.length() >= 7 && a.substr(0, 7) == "--core=") {
+				preferred_core_default = a.substr(7);
+			} else if(a.length() >= 9 && a.substr(0, 9) == "--dumper=") {
 				dumper_given = true;
 				dumper = a.substr(9);
 			} else if(a.length() >= 7 && a.substr(0, 7) == "--mode=") {
@@ -169,6 +171,15 @@ namespace
 					std::cerr << "Can't load '" << a.substr(15) << "': " << e.what() << std::endl;
 					exit(1);
 				}
+		}
+		if(preferred_core_default == "list") {
+			//Help on cores.
+			std::set<std::pair<std::string, std::string>> cores;
+			for(auto i : core_type::get_core_types())
+				cores.insert(std::make_pair(i->get_core_shortname(), i->get_core_identifier()));
+			for(auto i : cores)
+				std::cout << i.first << " -> " << i.second << std::endl;
+			exit(0);
 		}
 		if(dumper == "list") {
 			//Help on dumpers.

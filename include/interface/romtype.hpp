@@ -93,6 +93,7 @@ struct core_core_params
 	void (*request_reset)(long delay);
 	port_type** port_types;
 	framebuffer_raw& (*draw_cover)();
+	std::string (*get_core_shortname)();
 };
 
 struct core_region
@@ -163,6 +164,7 @@ struct core_core
 	void request_reset(long delay);
 	framebuffer_raw& draw_cover();
 	port_type** get_port_types() { return port_types; }
+	std::string get_core_shortname();
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
@@ -189,6 +191,7 @@ private:
 	void (*_request_reset)(long delay);
 	port_type** port_types;
 	framebuffer_raw& (*_draw_cover)();
+	std::string (*_get_core_shortname)();
 };
 
 struct core_type
@@ -222,6 +225,7 @@ public:
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
 	std::pair<uint32_t, uint32_t> get_snes_rate() { return core->get_snes_rate(); }
 	std::string get_core_identifier() { return core->get_core_identifier(); }
+	std::string get_core_shortname() { return core->get_core_shortname(); }
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 	{

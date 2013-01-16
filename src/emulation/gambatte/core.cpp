@@ -430,7 +430,9 @@ namespace
 			static framebuffer_raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
-		}
+		},
+		//short identifier.
+		[]() -> std::string { return "gambatte"+gambatte::GB::version(); },
 	};
 
 	core_core gambatte_core(_gambatte_core);

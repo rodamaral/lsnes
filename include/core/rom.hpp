@@ -181,5 +181,9 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw();
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error);
 
+//Map of preferred cores for each extension and type.
+extern std::map<std::string, core_type*> preferred_core;
+//Preferred overall core.
+extern std::string preferred_core_default;
 
 #endif

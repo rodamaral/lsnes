@@ -2,6 +2,7 @@
 #include <sstream>
 #include <map>
 #include <string>
+#include <cctype>
 #include <vector>
 #include <fstream>
 #include <climits>
@@ -800,6 +801,15 @@ again2:
 			static framebuffer_raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
+		},
+		//Short name.
+		[]() -> std::string
+		{
+#ifdef BSNES_IS_COMPAT
+			return (stringfmt() << "bsnes" << BSNES_VERSION << "c").str();
+#else
+			return (stringfmt() << "bsnes" << BSNES_VERSION << "a").str();
+#endif
 		}
 	};
 

@@ -233,13 +233,16 @@ end:
 			if(r[1] != "" || r[2] != "")
 				messages << r[1] << "/" << r[2] << " ";
 			messages << r[3] << " bound to '" << r[4] << "'" << std::endl;
-		} else if(r = regex("BUTTON[ \t]+([^ ]+)[ \t](.*)", line)) {
+		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
 			controller_key* ckey = lsnes_mapper.get_controllerkey(r[2]);
 			if(ckey) {
 				ckey->set(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
 			} else
 				button_keys[r[2]] = r[1];
+		} else if(r = regex("PREFER[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
+			core_selections[r[1]] = r[2];
+			messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
 		} else
 			messages << "Unrecognized directive: " << line << std::endl;
 	}
@@ -307,6 +310,8 @@ end:
 		}
 		for(auto i : button_keys)
 			cfgfile << "BUTTON " << i.second << " " << i.first << std::endl;
+		for(auto i : core_selections)
+			cfgfile << "PREFER " << i.first << " " << i.second << std::endl;
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;

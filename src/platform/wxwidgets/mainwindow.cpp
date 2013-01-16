@@ -110,6 +110,7 @@ enum
 	wxID_RMOVIE_LAST = wxID_RMOVIE_FIRST + 16,
 	wxID_RROM_FIRST,
 	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
+	wxID_CONFLICTRESOLUTION,
 };
 
 
@@ -322,6 +323,7 @@ namespace
 		void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 		void on_autohold_reconfigure();
 		void on_core_change();
+		void on_new_core();
 	private:
 		wxwin_mainwindow* mainw;
 		sound_select_menu* sounddev;
@@ -485,6 +487,28 @@ namespace
 		runuifun([this]() { this->ahmenu->reconfigure(); });
 	}
 
+	void update_preferences()
+	{
+		preferred_core.clear();
+		for(auto i : core_type::get_core_types()) {
+			std::string val = i->get_hname() + " / " + i->get_core_identifier();
+			for(auto j : i->get_extensions()) {
+				std::string key = "ext:" + j;
+				if(core_selections.count(key) && core_selections[key] == val)
+					preferred_core[key] = i;
+			}
+			std::string key2 = "type:" + i->get_iname();
+			if(core_selections.count(key2) && core_selections[key2] == val)
+				preferred_core[key2] = i;
+			
+		}
+	}
+
+	void broadcast_listener::on_new_core()
+	{
+		update_preferences();
+	}
+
 	path_setting moviepath_setting(lsnes_set, "moviepath");
 	path_setting rompath_setting(lsnes_set, "rompath");
 
@@ -556,6 +580,7 @@ namespace
 
 void boot_emulator(loaded_rom& rom, moviefile& movie)
 {
+	update_preferences();
 	try {
 		struct emu_args* a = new emu_args;
 		a->rom = &rom;
@@ -769,6 +794,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 		get_config_path() + "/recent-roms.txt", recent_rom_selected));
 	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu(this, wxID_RMOVIE_FIRST,
 		wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt", recent_movie_selected));
+	menu_separator();
+	menu_entry(wxID_CONFLICTRESOLUTION, wxT("Conflict resolution"));
 	menu_end_sub();
 	menu_start_sub(wxT("Save"));
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
@@ -1230,6 +1257,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_SHOW_MESSAGES:
 		msg_window->reshow();
+		return;
+	case wxID_CONFLICTRESOLUTION:
+		show_conflictwindow(this);
 		return;
 	};
 }

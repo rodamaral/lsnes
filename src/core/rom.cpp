@@ -141,7 +141,9 @@ namespace
 			std::string message = "NO ROM LOADED";
 			cover_render_string(null_cover_fbmem, 204, 220, message, 0xFFFF, 0x0000, 512, 448, 1024, 2);
 			return x;
-		}
+		},
+		//Short name.
+		[]() -> std::string { return "null"; }
 	};
 	core_core core_null(_core_null);
 
@@ -176,20 +178,36 @@ namespace
 
 	core_type* find_core_by_extension(const std::string& ext)
 	{
+		std::string key = "ext:" + ext;
 		std::list<core_type*> possible = core_type::get_core_types();
+		core_type* fallback = NULL;
+		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
 		for(auto i : possible)
-			if(i->is_known_extension(ext))
-				return i;
-		return NULL;
+			if(i->is_known_extension(ext)) {
+				fallback = i;
+				if(!preferred && i->get_core_shortname() == preferred_core_default)
+					return i;
+				if(i == preferred)
+					return i;
+			}
+		return fallback;
 	}
 
 	core_type* find_core_by_name(const std::string& name)
 	{
+		std::string key = "type:" + name;
 		std::list<core_type*> possible = core_type::get_core_types();
+		core_type* fallback = NULL;
+		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
 		for(auto i : possible)
-			if(i->get_iname() == name)
-				return i;
-		return NULL;
+			if(i->get_iname() == name) {
+				fallback = i;
+				if(!preferred && i->get_core_shortname() == preferred_core_default)
+					return i;
+				if(i == preferred)
+					return i;
+			}
+		return fallback;
 	}
 
 }
@@ -515,3 +533,6 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 		throw std::runtime_error("Savestate corrupt");
 	rtype->unserialize(&buf[0], buf.size() - 32);;
 }
+
+std::map<std::string, core_type*> preferred_core;
+std::string preferred_core_default;

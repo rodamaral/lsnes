@@ -353,6 +353,7 @@ core_core::core_core(core_core_params& params)
 	_request_reset = params.request_reset;
 	port_types = params.port_types;
 	_draw_cover = params.draw_cover;
+	_get_core_shortname = params.get_core_shortname;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
@@ -364,6 +365,11 @@ core_core::core_core(core_core_params& params)
 core_core::~core_core() throw()
 {
 	all_cores().erase(this);
+}
+
+std::string core_core::get_core_shortname()
+{
+	return _get_core_shortname();
 }
 
 bool core_core::set_region(core_region& region)

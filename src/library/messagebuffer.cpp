@@ -38,6 +38,7 @@ void messagebuffer::add_message(const std::string& msg) throw(std::bad_alloc, st
 		window_start++;
 		send_notifications();
 	}
+	send_notifications();
 }
 
 const std::string& messagebuffer::get_message(size_t msgnum) throw(std::bad_alloc, std::logic_error)
