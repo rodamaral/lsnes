@@ -52,7 +52,7 @@ regions.inc: regions.def ../make-regions.lua
 else
 
 __all__.$(OBJECT_SUFFIX): dummy.cpp                              
-        $(REALCC) -c -o $@ $< $(CFLAGS)
+	$(REALCC) -c -o $@ $< $(CFLAGS)
 	echo >__all__.ldflags
 
 endif

@@ -29,7 +29,7 @@ private:
 };
 
 wxeditor_conflict::wxeditor_conflict(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit conflicts"))
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit conflicts"), wxDefaultPosition, wxSize(-1, -1))
 {
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
@@ -106,7 +106,7 @@ void wxeditor_conflict::add_option(wxWindow* win, wxSizer* sizer, const std::str
 	if(core_selections.count(key) && !dfltidx) {
 		bad_defaults.insert(key);
 		dfltidx = v.size();
-		v.push_back("bad default [" + core_selections[key] + "]");
+		v.push_back(towxstring("bad default [" + core_selections[key] + "]"));
 	}
 
 	sizer->Add(choices[key] = new wxComboBox(win, wxID_ANY, v[dfltidx], wxDefaultPosition, wxDefaultSize,
