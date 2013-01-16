@@ -6661,5 +6661,41 @@ Compensate for nuts bsnes superscope/justifier handling
 Lua: Fix bit.extract boolean handling
 \end_layout
 
+\begin_layout Subsection
+rr2-beta0
+\end_layout
+
+\begin_layout Itemize
+Split emulation cores more from the rest
+\end_layout
+
+\begin_layout Itemize
+Support having multiple emulation cores compiled at once
+\end_layout
+
+\begin_layout Itemize
+Support arbitrary number of ports (well, up to 31 anyway).
+\end_layout
+
+\begin_layout Itemize
+SNES debugger support
+\end_layout
+
+\begin_layout Itemize
+Support 16-button controllers
+\end_layout
+
+\begin_layout Itemize
+Remove old SDL front end
+\end_layout
+
+\begin_layout Itemize
+Data-driven controller buttons
+\end_layout
+
+\begin_layout Itemize
+Generate the port code from defines
+\end_layout
+
 \end_body
 \end_document

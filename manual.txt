@@ -3265,3 +3265,21 @@ set-axis joystick0axis19 disabled
 
 • Lua: Fix bit.extract boolean handling
 
+18.76 rr2-beta0
+
+• Split emulation cores more from the rest
+
+• Support having multiple emulation cores compiled at once
+
+• Support arbitrary number of ports (well, up to 31 anyway).
+
+• SNES debugger support
+
+• Support 16-button controllers
+
+• Remove old SDL front end
+
+• Data-driven controller buttons
+
+• Generate the port code from defines
+
