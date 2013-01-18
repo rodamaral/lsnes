@@ -43,7 +43,7 @@ struct Saver {
 	const char *label;
 	void (*save)(std::ofstream &file, const SaveState &state);
 	void (*load)(std::ifstream &file, SaveState &state);
-	unsigned char labelsize;
+	unsigned int labelsize;
 };
 
 static inline bool operator<(const Saver &l, const Saver &r) {
@@ -78,7 +78,7 @@ static void write(std::ofstream &file, const unsigned short data) {
 	file.put(data & 0xFF);
 }
 
-static void write(std::ofstream &file, const unsigned long data) {
+static void write(std::ofstream &file, const unsigned data) {
 	static const char inf[] = { 0x00, 0x00, 0x04 };
 	
 	file.write(inf, sizeof(inf));
@@ -137,7 +137,7 @@ static inline void read(std::ifstream &file, unsigned short &data) {
 	data = read(file) & 0xFFFF;
 }
 
-static inline void read(std::ifstream &file, unsigned long &data) {
+static inline void read(std::ifstream &file, unsigned &data) {
 	data = read(file);
 }
 

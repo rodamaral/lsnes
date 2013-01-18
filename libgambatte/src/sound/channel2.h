@@ -24,6 +24,11 @@
 #include "duty_unit.h"
 #include "envelope_unit.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -40,9 +45,9 @@ class Channel2 {
 	
 	SoundUnit *nextEventUnit;
 	
-	unsigned long cycleCounter;
-	unsigned long soMask;
-	unsigned long prevOut;
+	unsigned cycleCounter;
+	unsigned soMask;
+	unsigned prevOut;
 	
 	unsigned char nr4;
 	bool master;
@@ -56,16 +61,18 @@ public:
 	void setNr3(unsigned data);
 	void setNr4(unsigned data);
 	
-	void setSo(unsigned long soMask);
+	void setSo(unsigned soMask);
 	// void deactivate() { disableMaster(); setEvent(); }
 	bool isActive() const { return master; }
 	
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
 	void loadState(const SaveState &state);
+
+	void loadOrSave(loadsave& state);
 };
 
 }

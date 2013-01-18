@@ -20,6 +20,9 @@
 #include "../savestate.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -47,7 +50,7 @@ unsigned Channel1::SweepUnit::calcFreq() {
 }
 
 void Channel1::SweepUnit::event() {
-	const unsigned long period = nr0 >> 4 & 0x07;
+	const unsigned period = nr0 >> 4 & 0x07;
 	
 	if (period) {
 		const unsigned freq = calcFreq();
@@ -70,7 +73,7 @@ void Channel1::SweepUnit::nr0Change(const unsigned newNr0) {
 	nr0 = newNr0;
 }
 
-void Channel1::SweepUnit::nr4Init(const unsigned long cc) {
+void Channel1::SweepUnit::nr4Init(const unsigned cc) {
 	negging = false;
 	shadow = dutyUnit.getFreq();
 	
@@ -172,7 +175,7 @@ void Channel1::setNr4(const unsigned data) {
 	setEvent();
 }
 
-void Channel1::setSo(const unsigned long soMask) {
+void Channel1::setSo(const unsigned soMask) {
 	this->soMask = soMask;
 	staticOutputTest(cycleCounter);
 	setEvent();
@@ -215,15 +218,15 @@ void Channel1::loadState(const SaveState &state) {
 	master = state.spu.ch1.master;
 }
 
-void Channel1::update(uint_least32_t *buf, const unsigned long soBaseVol, unsigned long cycles) {
-	const unsigned long outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
-	const unsigned long outLow = outBase * (0 - 15ul);
-	const unsigned long endCycles = cycleCounter + cycles;
+void Channel1::update(uint_least32_t *buf, const unsigned soBaseVol, unsigned cycles) {
+	const unsigned outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
+	const unsigned outLow = outBase * (0 - 15ul);
+	const unsigned endCycles = cycleCounter + cycles;
 	
 	for (;;) {
-		const unsigned long outHigh = master ? outBase * (envelopeUnit.getVolume() * 2 - 15ul) : outLow;
-		const unsigned long nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
-		unsigned long out = dutyUnit.isHighState() ? outHigh : outLow;
+		const unsigned outHigh = master ? outBase * (envelopeUnit.getVolume() * 2 - 15ul) : outLow;
+		const unsigned nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
+		unsigned out = dutyUnit.isHighState() ? outHigh : outLow;
 		
 		while (dutyUnit.getCounter() <= nextMajorEvent) {
 			*buf = out - prevOut;
@@ -257,6 +260,27 @@ void Channel1::update(uint_least32_t *buf, const unsigned long soBaseVol, unsign
 		
 		cycleCounter -= SoundUnit::COUNTER_MAX;
 	}
+}
+
+void Channel1::loadOrSave(loadsave& state) {
+	//disableMaster has no state.
+	lengthCounter.loadOrSave(state);
+	dutyUnit.loadOrSave(state);
+	envelopeUnit.loadOrSave(state);
+	sweepUnit.loadOrSave(state);
+
+	state.startEnumeration();
+	state.enumerate<SoundUnit*>(nextEventUnit, NULL, 0);
+	state.enumerate<SoundUnit*>(nextEventUnit, &sweepUnit, 1);
+	state.enumerate<SoundUnit*>(nextEventUnit, &envelopeUnit, 2);
+	state.enumerate<SoundUnit*>(nextEventUnit, &lengthCounter, 3);
+	state.endEnumeration();
+
+	state(cycleCounter);
+	state(soMask);
+	state(prevOut);
+	state(nr4);
+	state(master);
 }
 
 }

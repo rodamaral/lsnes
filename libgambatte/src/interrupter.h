@@ -19,8 +19,14 @@
 #ifndef INTERRUPTER_H
 #define INTERRUPTER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include <string>
 #include <vector>
+#include "loadsave.h"
+
 
 namespace gambatte {
 
@@ -28,6 +34,12 @@ struct GsCode {
 	unsigned short address;
 	unsigned char value;
 	unsigned char type;
+
+	void loadOrSave(loadsave& state) {
+		state(address);
+		state(value);
+		state(type);
+	}
 };
 
 class Interrupter {
@@ -35,11 +47,13 @@ class Interrupter {
 	unsigned short &PC;
 	std::vector<GsCode> gsCodes;
 	
-	void applyVblankCheats(unsigned long cc, class Memory &mem);
+	void applyVblankCheats(unsigned cc, class Memory &mem);
 public:
 	Interrupter(unsigned short &SP, unsigned short &PC);
-	unsigned long interrupt(const unsigned address, unsigned long cycleCounter, class Memory &memory);
+	unsigned interrupt(const unsigned address, unsigned cycleCounter, class Memory &memory);
 	void setGameShark(const std::string &codes);
+
+	void loadOrSave(loadsave& state);
 };
 
 }

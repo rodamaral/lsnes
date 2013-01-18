@@ -24,6 +24,11 @@
 #include "length_counter.h"
 #include "envelope_unit.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -31,26 +36,33 @@ struct SaveState;
 
 class Channel4 {
 	class Lfsr : public SoundUnit {
-		unsigned long backupCounter;
+		unsigned backupCounter;
 		unsigned short reg;
 		unsigned char nr3;
 		bool master;
 		
-		void updateBackupCounter(unsigned long cc);
+		void updateBackupCounter(unsigned cc);
 		
 	public:
 		Lfsr();
 		void event();
 		bool isHighState() const { return ~reg & 1; }
-		void nr3Change(unsigned newNr3, unsigned long cc);
-		void nr4Init(unsigned long cc);
-		void reset(unsigned long cc);
-		void saveState(SaveState &state, const unsigned long cc);
+		void nr3Change(unsigned newNr3, unsigned cc);
+		void nr4Init(unsigned cc);
+		void reset(unsigned cc);
+		void saveState(SaveState &state, const unsigned cc);
 		void loadState(const SaveState &state);
-		void resetCounters(unsigned long oldCc);
+		void resetCounters(unsigned oldCc);
 		void disableMaster() { killCounter(); master = false; reg = 0xFF; }
 		void killCounter() { counter = COUNTER_DISABLED; }
-		void reviveCounter(unsigned long cc);
+		void reviveCounter(unsigned cc);
+		void loadOrSave(loadsave& state) {
+			loadOrSave2(state);
+			state(backupCounter);
+			state(reg);
+			state(nr3);
+			state(master);
+		}
 	};
 	
 	class Ch4MasterDisabler : public MasterDisabler {
@@ -70,9 +82,9 @@ class Channel4 {
 	
 	SoundUnit *nextEventUnit;
 	
-	unsigned long cycleCounter;
-	unsigned long soMask;
-	unsigned long prevOut;
+	unsigned cycleCounter;
+	unsigned soMask;
+	unsigned prevOut;
 	
 	unsigned char nr4;
 	bool master;
@@ -86,15 +98,17 @@ public:
 	void setNr3(unsigned data) { lfsr.nr3Change(data, cycleCounter); /*setEvent();*/ }
 	void setNr4(unsigned data);
 	
-	void setSo(unsigned long soMask);
+	void setSo(unsigned soMask);
 	bool isActive() const { return master; }
 	
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
 	void loadState(const SaveState &state);
+
+	void loadOrSave(loadsave& state);
 };
 
 }

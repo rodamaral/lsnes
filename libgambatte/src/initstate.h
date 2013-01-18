@@ -19,8 +19,14 @@
 #ifndef INITSTATE_H
 #define INITSTATE_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
+#include <ctime>
+
 namespace gambatte {
-void setInitState(struct SaveState &state, bool cgb, bool gbaCgbMode);
+void setInitState(struct SaveState &state, bool cgb, bool gbaCgbMode, time_t starttime);
 }
 
 #endif

@@ -19,9 +19,14 @@
 #ifndef SOUND_CHANNEL3_H
 #define SOUND_CHANNEL3_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include "master_disabler.h"
 #include "length_counter.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
@@ -29,10 +34,10 @@ struct SaveState;
 
 class Channel3 {
 	class Ch3MasterDisabler : public MasterDisabler {
-		unsigned long &waveCounter;
+		unsigned &waveCounter;
 		
 	public:
-		Ch3MasterDisabler(bool &m, unsigned long &wC) : MasterDisabler(m), waveCounter(wC) {}
+		Ch3MasterDisabler(bool &m, unsigned &wC) : MasterDisabler(m), waveCounter(wC) {}
 		void operator()() { MasterDisabler::operator()(); waveCounter = SoundUnit::COUNTER_DISABLED; }
 	};
 	
@@ -41,11 +46,11 @@ class Channel3 {
 	Ch3MasterDisabler disableMaster;
 	LengthCounter lengthCounter;
 	
-	unsigned long cycleCounter;
-	unsigned long soMask;
-	unsigned long prevOut;
-	unsigned long waveCounter;
-	unsigned long lastReadTime;
+	unsigned cycleCounter;
+	unsigned soMask;
+	unsigned prevOut;
+	unsigned waveCounter;
+	unsigned lastReadTime;
 	
 	unsigned char nr0;
 	unsigned char nr3;
@@ -57,7 +62,7 @@ class Channel3 {
 	bool master;
 	bool cgb;
 	
-	void updateWaveCounter(unsigned long cc);
+	void updateWaveCounter(unsigned cc);
 	
 public:
 	Channel3();
@@ -72,8 +77,8 @@ public:
 	void setNr2(unsigned data);
 	void setNr3(unsigned data) { nr3 = data; }
 	void setNr4(unsigned data);
-	void setSo(unsigned long soMask);
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void setSo(unsigned soMask);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	
 	unsigned waveRamRead(unsigned index) const {
 		if (master) {
@@ -96,6 +101,8 @@ public:
 		
 		waveRam[index] = data;
 	}
+
+	void loadOrSave(loadsave& state);
 };
 
 }

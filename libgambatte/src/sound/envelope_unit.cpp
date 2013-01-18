@@ -19,12 +19,16 @@
 #include "envelope_unit.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 EnvelopeUnit::VolOnOffEvent EnvelopeUnit::nullEvent;
 
 void EnvelopeUnit::event() {
-	const unsigned long period = nr2 & 7;
+	const unsigned period = nr2 & 7;
 	
 	if (period) {
 		unsigned newVol = volume;
@@ -63,9 +67,9 @@ bool EnvelopeUnit::nr2Change(const unsigned newNr2) {
 	return !(newNr2 & 0xF8);
 }
 
-bool EnvelopeUnit::nr4Init(const unsigned long cc) {
+bool EnvelopeUnit::nr4Init(const unsigned cc) {
 	{
-		unsigned long period = nr2 & 7;
+		unsigned period = nr2 & 7;
 		
 		if (!period)
 			period = 8;
@@ -97,10 +101,17 @@ void EnvelopeUnit::saveState(SaveState::SPU::Env &estate) const {
 	estate.volume = volume;
 }
 
-void EnvelopeUnit::loadState(const SaveState::SPU::Env &estate, const unsigned nr2, const unsigned long cc) {
+void EnvelopeUnit::loadState(const SaveState::SPU::Env &estate, const unsigned nr2, const unsigned cc) {
 	counter = std::max(estate.counter, cc);
 	volume = estate.volume;
 	this->nr2 = nr2;
+}
+
+void EnvelopeUnit::loadOrSave(loadsave& state)
+{
+	loadOrSave2(state);
+	state(nr2);
+	state(volume);
 }
 
 }

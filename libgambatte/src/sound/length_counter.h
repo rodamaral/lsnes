@@ -19,8 +19,13 @@
 #ifndef LENGTH_COUNTER_H
 #define LENGTH_COUNTER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "sound_unit.h"
 #include "../savestate.h"
+#include "../loadsave.h"
 
 namespace gambatte {
 
@@ -35,12 +40,14 @@ class LengthCounter : public SoundUnit {
 public:
 	LengthCounter(MasterDisabler &disabler, unsigned lengthMask);
 	void event();
-	void nr1Change(unsigned newNr1, unsigned nr4, unsigned long cc);
-	void nr4Change(unsigned oldNr4, unsigned newNr4, unsigned long cc);
+	void nr1Change(unsigned newNr1, unsigned nr4, unsigned cc);
+	void nr4Change(unsigned oldNr4, unsigned newNr4, unsigned cc);
 // 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState::SPU::LCounter &lstate) const;
-	void loadState(const SaveState::SPU::LCounter &lstate, unsigned long cc);
+	void loadState(const SaveState::SPU::LCounter &lstate, unsigned cc);
+
+	void loadOrSave(loadsave& state);
 };
 
 }

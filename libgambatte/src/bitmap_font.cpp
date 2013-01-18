@@ -68,6 +68,10 @@
   gnome dot org.
 */
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "bitmap_font.h"
 
 static const unsigned char n0_bits[] = { 0x68,
@@ -285,10 +289,10 @@ unsigned getWidth(const char *chars) {
 
 namespace {
 class Rgb32Fill {
-	const unsigned long color;
+	const uint_least32_t color;
 	
 public:
-	explicit Rgb32Fill(unsigned long color) : color(color) {}
+	explicit Rgb32Fill(uint_least32_t color) : color(color) {}
 	
 	void operator()(gambatte::uint_least32_t *dest, unsigned /*pitch*/) const {
 		*dest = color;
@@ -296,7 +300,7 @@ public:
 };
 }
 
-void print(gambatte::uint_least32_t *dest, const unsigned pitch, const unsigned long color, const char *chars) {
+void print(gambatte::uint_least32_t *dest, const unsigned pitch, const uint_least32_t color, const char *chars) {
 	print(dest, pitch, Rgb32Fill(color), chars);
 }
 

@@ -19,8 +19,13 @@
 #ifndef STATESAVER_H
 #define STATESAVER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include <string>
+#include <vector>
 
 namespace gambatte {
 
@@ -38,6 +43,8 @@ public:
 	static bool saveState(const SaveState &state,
 			const uint_least32_t *videoBuf, int pitch, const std::string &filename);
 	static bool loadState(SaveState &state, const std::string &filename);
+	static void saveState(const SaveState &state, std::vector<char>& data);
+	static bool loadState(SaveState &state, const std::vector<char>& data);
 };
 
 }

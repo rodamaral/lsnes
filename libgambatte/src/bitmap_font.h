@@ -19,6 +19,10 @@
 #ifndef BITMAP_FONT_H
 #define BITMAP_FONT_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 
 namespace bitmapfont {
@@ -42,7 +46,7 @@ unsigned getWidth(const char *chars);
 template<class RandomAccessIterator, class Fill>
 void print(RandomAccessIterator dest, unsigned pitch, Fill fill, const char *chars);
 
-void print(gambatte::uint_least32_t *dest, unsigned pitch, unsigned long color, const char *chars);
+void print(gambatte::uint_least32_t *dest, unsigned pitch, uint_least32_t color, const char *chars);
 void utoa(unsigned u, char *a);
 
 // --- INTERFACE END ---

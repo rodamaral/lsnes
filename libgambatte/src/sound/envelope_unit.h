@@ -19,8 +19,13 @@
 #ifndef ENVELOPE_UNIT_H
 #define ENVELOPE_UNIT_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "sound_unit.h"
 #include "../savestate.h"
+#include "../loadsave.h"
 
 namespace gambatte {
 
@@ -28,7 +33,7 @@ class EnvelopeUnit : public SoundUnit {
 public:
 	struct VolOnOffEvent {
 		virtual ~VolOnOffEvent() {}
-		virtual void operator()(unsigned long /*cc*/) {}
+		virtual void operator()(unsigned /*cc*/) {}
 	};
 	
 private:
@@ -43,10 +48,11 @@ public:
 	bool dacIsOn() const { return nr2 & 0xF8; }
 	unsigned getVolume() const { return volume; }
 	bool nr2Change(unsigned newNr2);
-	bool nr4Init(unsigned long cycleCounter);
+	bool nr4Init(unsigned cycleCounter);
 	void reset();
 	void saveState(SaveState::SPU::Env &estate) const;
-	void loadState(const SaveState::SPU::Env &estate, unsigned nr2, unsigned long cc);
+	void loadState(const SaveState::SPU::Env &estate, unsigned nr2, unsigned cc);
+	void loadOrSave(loadsave& state);
 };
 
 }

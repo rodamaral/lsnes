@@ -19,8 +19,13 @@
 #ifndef INTERRUPT_REQUESTER_H
 #define INTERRUPT_REQUESTER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "counterdef.h"
 #include "minkeeper.h"
+#include "loadsave.h"
 
 namespace gambatte {
 struct SaveState;
@@ -28,7 +33,7 @@ enum MemEventId { UNHALT, END, BLIT, SERIAL, OAM, DMA, TIMA, VIDEO, INTERRUPTS }
 
 class InterruptRequester {
 	MinKeeper<INTERRUPTS + 1> eventTimes;
-	unsigned long minIntTime;
+	unsigned minIntTime;
 	unsigned ifreg_;
 	unsigned iereg_;
 	
@@ -38,7 +43,9 @@ class InterruptRequester {
 		
 	public:
 		IntFlags() : flags_(0) {}
-		
+
+		void loadOrSave(loadsave& state) { state(flags_); }
+
 		bool ime() const { return flags_ & IME_MASK; }
 		bool halted() const { return flags_ & HALTED_MASK; }
 		bool imeOrHalted() const { return flags_; }
@@ -57,15 +64,17 @@ public:
 	
 	void saveState(SaveState &) const;
 	void loadState(const SaveState &);
-	
-	void resetCc(unsigned long oldCc, unsigned long newCc);
+
+	void loadOrSave(loadsave& state);
+
+	void resetCc(unsigned oldCc, unsigned newCc);
 	
 	unsigned ifreg() const { return ifreg_; }
 	unsigned pendingIrqs() const { return ifreg_ & iereg_; }
 	bool ime() const { return intFlags.ime(); }
 	bool halted() const { return intFlags.halted(); }
 	
-	void ei(unsigned long cc);
+	void ei(unsigned cc);
 	void di();
 	void halt();
 	void unhalt();
@@ -75,10 +84,10 @@ public:
 	void setIfreg(unsigned ifreg);
 	
 	MemEventId minEventId() const { return static_cast<MemEventId>(eventTimes.min()); }
-	unsigned long minEventTime() const { return eventTimes.minValue(); }
-	template<MemEventId id> void setEventTime(unsigned long value) { eventTimes.setValue<id>(value); }
-	void setEventTime(const MemEventId id, unsigned long value) { eventTimes.setValue(id, value); }
-	unsigned long eventTime(MemEventId id) const { return eventTimes.value(id); }
+	unsigned minEventTime() const { return eventTimes.minValue(); }
+	template<MemEventId id> void setEventTime(unsigned value) { eventTimes.setValue<id>(value); }
+	void setEventTime(const MemEventId id, unsigned value) { eventTimes.setValue(id, value); }
+	unsigned eventTime(MemEventId id) const { return eventTimes.value(id); }
 };
 
 inline void flagHdmaReq(InterruptRequester *const intreq) { intreq->setEventTime<DMA>(0); }

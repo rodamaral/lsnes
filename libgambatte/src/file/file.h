@@ -22,8 +22,17 @@ Free Software Foundation, Inc.,
 #ifndef GAMBATTE_FILE_H
 #define GAMBATTE_FILE_H
 
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include <memory>
 #include <string>
+
+//
+// Modified 2012-07-10 by H. Ilari Liusvaara
+//	- New API methods.
 
 namespace gambatte {
 
@@ -37,6 +46,7 @@ public:
 };
 
 std::auto_ptr<File> newFileInstance(const std::string &filepath);
+std::auto_ptr<File> newFileInstance(const unsigned char* image, size_t isize);
 
 }
 

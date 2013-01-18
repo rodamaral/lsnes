@@ -20,6 +20,12 @@
 #define RTC_H
 
 #include <ctime>
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 
 namespace gambatte {
 
@@ -39,6 +45,7 @@ private:
 	unsigned char dataS;
 	bool enabled;
 	bool lastLatchData;
+	time_t (**getCurrentTime)();
 	
 	void doLatch();
 	void doSwapActive();
@@ -49,7 +56,7 @@ private:
 	void setS(unsigned new_seconds);
 	
 public:
-	Rtc();
+	Rtc(time_t (**_getCurrentTime)());
 	
 	const unsigned char* getActive() const { return activeData; }
 	std::time_t getBaseTime() const { return baseTime; }
@@ -84,6 +91,8 @@ public:
 		(this->*activeSet)(data);
 		*activeData = data;
 	}
+
+	void loadOrSave(loadsave& state);
 };
 
 }

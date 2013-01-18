@@ -19,10 +19,15 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "sound/channel1.h"
 #include "sound/channel2.h"
 #include "sound/channel3.h"
 #include "sound/channel4.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
@@ -34,8 +39,8 @@ class PSG {
 		
 	uint_least32_t *buffer;
 	
-	unsigned long lastUpdate;
-	unsigned long soVol;
+	unsigned lastUpdate;
+	unsigned soVol;
 	
 	uint_least32_t rsum;
 	
@@ -43,7 +48,7 @@ class PSG {
 	
 	bool enabled;
 
-	void accumulate_channels(unsigned long cycles);
+	void accumulate_channels(unsigned cycles);
 
 public:
 	PSG();
@@ -53,8 +58,10 @@ public:
 	void saveState(SaveState &state);
 	void loadState(const SaveState &state);
 
-	void generate_samples(unsigned long cycleCounter, unsigned doubleSpeed);
-	void resetCounter(unsigned long newCc, unsigned long oldCc, unsigned doubleSpeed);
+	void loadOrSave(loadsave& state);
+
+	void generate_samples(unsigned cycleCounter, unsigned doubleSpeed);
+	void resetCounter(unsigned newCc, unsigned oldCc, unsigned doubleSpeed);
 	unsigned fillBuffer();
 	void setBuffer(uint_least32_t *const buf) { buffer = buf; bufferPos = 0; }
 	

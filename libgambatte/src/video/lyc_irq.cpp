@@ -22,6 +22,10 @@
 #include "savestate.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 LycIrq::LycIrq() :
@@ -34,14 +38,14 @@ LycIrq::LycIrq() :
 {
 }
 
-static unsigned long schedule(const unsigned statReg, const unsigned lycReg, const LyCounter &lyCounter, const unsigned long cc) {
+static unsigned schedule(const unsigned statReg, const unsigned lycReg, const LyCounter &lyCounter, const unsigned cc) {
 	return (statReg & 0x40) && lycReg < 154
 		? lyCounter.nextFrameCycle(lycReg ? lycReg * 456 : 153 * 456 + 8, cc)
-		: static_cast<unsigned long>(DISABLED_TIME);
+		: static_cast<unsigned>(DISABLED_TIME);
 }
 
-void LycIrq::regChange(const unsigned statReg, const unsigned lycReg, const LyCounter &lyCounter, const unsigned long cc) {
-	const unsigned long timeSrc = schedule(statReg, lycReg, lyCounter, cc);
+void LycIrq::regChange(const unsigned statReg, const unsigned lycReg, const LyCounter &lyCounter, const unsigned cc) {
+	const unsigned timeSrc = schedule(statReg, lycReg, lyCounter, cc);
 	statRegSrc_ = statReg;
 	lycRegSrc_ = lycReg;
 	time_ = std::min(time_, timeSrc);
@@ -89,7 +93,7 @@ void LycIrq::saveState(SaveState &state) const {
 	state.ppu.lyc = lycReg_;
 }
 
-void LycIrq::reschedule(const LyCounter & lyCounter, const unsigned long cc) {
+void LycIrq::reschedule(const LyCounter & lyCounter, const unsigned cc) {
 	time_ = std::min(schedule(statReg_   , lycReg_   , lyCounter, cc),
 	                 schedule(statRegSrc_, lycRegSrc_, lyCounter, cc));
 }

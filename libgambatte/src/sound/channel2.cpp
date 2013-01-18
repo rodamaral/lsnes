@@ -19,6 +19,10 @@
 #include "channel2.h"
 #include "../savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 Channel2::Channel2() :
@@ -80,7 +84,7 @@ void Channel2::setNr4(const unsigned data) {
 	setEvent();
 }
 
-void Channel2::setSo(const unsigned long soMask) {
+void Channel2::setSo(const unsigned soMask) {
 	this->soMask = soMask;
 	staticOutputTest(cycleCounter);
 	setEvent();
@@ -119,16 +123,15 @@ void Channel2::loadState(const SaveState &state) {
 	master = state.spu.ch2.master;
 }
 
-void Channel2::update(uint_least32_t *buf, const unsigned long soBaseVol, unsigned long cycles) {
-	const unsigned long outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
-	const unsigned long outLow = outBase * (0 - 15ul);
-	const unsigned long endCycles = cycleCounter + cycles;
+void Channel2::update(uint_least32_t *buf, const unsigned soBaseVol, unsigned cycles) {
+	const unsigned outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
+	const unsigned outLow = outBase * (0 - 15ul);
+	const unsigned endCycles = cycleCounter + cycles;
 	
 	for (;;) {
-		const unsigned long outHigh = master ? outBase * (envelopeUnit.getVolume() * 2 - 15ul) : outLow;
-		const unsigned long nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
-		unsigned long out = dutyUnit.isHighState() ? outHigh : outLow;
-		
+		const unsigned outHigh = master ? outBase * (envelopeUnit.getVolume() * 2 - 15ul) : outLow;
+		const unsigned nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
+		unsigned out = dutyUnit.isHighState() ? outHigh : outLow;
 		while (dutyUnit.getCounter() <= nextMajorEvent) {
 			*buf += out - prevOut;
 			prevOut = out;
@@ -160,6 +163,26 @@ void Channel2::update(uint_least32_t *buf, const unsigned long soBaseVol, unsign
 		
 		cycleCounter -= SoundUnit::COUNTER_MAX;
 	}
+}
+
+void Channel2::loadOrSave(loadsave& state)
+{
+	//disableMaster has no state.
+	lengthCounter.loadOrSave(state);
+	dutyUnit.loadOrSave(state);
+	envelopeUnit.loadOrSave(state);
+
+	state.startEnumeration();
+	state.enumerate<SoundUnit*>(nextEventUnit, NULL, 0);
+	state.enumerate<SoundUnit*>(nextEventUnit, &lengthCounter, 1);
+	state.enumerate<SoundUnit*>(nextEventUnit, &envelopeUnit, 2);
+	state.endEnumeration();
+
+	state(cycleCounter);
+	state(soMask);
+	state(prevOut);
+	state(nr4);
+	state(master);
 }
 
 }

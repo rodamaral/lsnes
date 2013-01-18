@@ -21,6 +21,10 @@
 #include <cstring>
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 static inline unsigned toPeriod(const unsigned nr3, const unsigned nr4) {
 	return 0x800 - ((nr4 << 8 & 0x700) | nr3);
 }
@@ -80,7 +84,7 @@ void Channel3::setNr4(const unsigned data) {
 	}
 }
 
-void Channel3::setSo(const unsigned long soMask) {
+void Channel3::setSo(const unsigned soMask) {
 	this->soMask = soMask;
 }
 
@@ -128,10 +132,10 @@ void Channel3::loadState(const SaveState &state) {
 	setNr2(state.mem.ioamhram.get()[0x11C]);
 }
 
-void Channel3::updateWaveCounter(const unsigned long cc) {
+void Channel3::updateWaveCounter(const unsigned cc) {
 	if (cc >= waveCounter) {
 		const unsigned period = toPeriod(nr3, nr4);
-		const unsigned long periods = (cc - waveCounter) / period;
+		const unsigned periods = (cc - waveCounter) / period;
 
 		lastReadTime = waveCounter + periods * period;
 		waveCounter = lastReadTime + period;
@@ -143,15 +147,15 @@ void Channel3::updateWaveCounter(const unsigned long cc) {
 	}
 }
 
-void Channel3::update(uint_least32_t *buf, const unsigned long soBaseVol, unsigned long cycles) {
-	const unsigned long outBase = (nr0/* & 0x80*/) ? soBaseVol & soMask : 0;
+void Channel3::update(uint_least32_t *buf, const unsigned soBaseVol, unsigned cycles) {
+	const unsigned outBase = (nr0/* & 0x80*/) ? soBaseVol & soMask : 0;
 	
 	if (outBase && rShift != 4) {
-		const unsigned long endCycles = cycleCounter + cycles;
+		const unsigned endCycles = cycleCounter + cycles;
 		
 		for (;;) {
-			const unsigned long nextMajorEvent = lengthCounter.getCounter() < endCycles ? lengthCounter.getCounter() : endCycles;
-			unsigned long out = outBase * (master ? ((sampleBuf >> (~wavePos << 2 & 4) & 0xF) >> rShift) * 2 - 15ul : 0 - 15ul);
+			const unsigned nextMajorEvent = lengthCounter.getCounter() < endCycles ? lengthCounter.getCounter() : endCycles;
+			unsigned out = outBase * (master ? ((sampleBuf >> (~wavePos << 2 & 4) & 0xF) >> rShift) * 2 - 15ul : 0 - 15ul);
 		
 			while (waveCounter <= nextMajorEvent) {
 				*buf += out - prevOut;
@@ -180,7 +184,7 @@ void Channel3::update(uint_least32_t *buf, const unsigned long soBaseVol, unsign
 				break;
 		}
 	} else {
-		unsigned long const out = outBase * (0 - 15ul);
+		unsigned const out = outBase * (0 - 15ul);
 		*buf += out - prevOut;
 		prevOut = out;
 		cycleCounter += cycles;
@@ -202,6 +206,25 @@ void Channel3::update(uint_least32_t *buf, const unsigned long soBaseVol, unsign
 		lastReadTime -= SoundUnit::COUNTER_MAX;
 		cycleCounter -= SoundUnit::COUNTER_MAX;
 	}
+}
+
+void Channel3::loadOrSave(loadsave& state) {
+	state(waveRam, 0x10);
+	//disableMaster has no saveable state.
+	lengthCounter.loadOrSave(state);
+	state(cycleCounter);
+	state(soMask);
+	state(prevOut);
+	state(waveCounter);
+	state(lastReadTime);
+	state(nr0);
+	state(nr3);
+	state(nr4);
+	state(wavePos);
+	state(rShift);
+	state(sampleBuf);
+	state(master);
+	state(cgb);
 }
 
 }

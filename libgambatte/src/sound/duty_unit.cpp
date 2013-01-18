@@ -19,6 +19,10 @@
 #include "duty_unit.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 static inline bool toOutState(const unsigned duty, const unsigned pos) {
 	static const unsigned char duties[4] = { 0x80, 0x81, 0xE1, 0x7E };
 	
@@ -31,9 +35,9 @@ static inline unsigned toPeriod(const unsigned freq) {
 
 namespace gambatte {
 
-void DutyUnit::updatePos(const unsigned long cc) {
+void DutyUnit::updatePos(const unsigned cc) {
 	if (cc >= nextPosUpdate) {
-		const unsigned long inc = (cc - nextPosUpdate) / period + 1;
+		const unsigned inc = (cc - nextPosUpdate) / period + 1;
 		nextPosUpdate += period * inc;
 		pos += inc;
 		pos &= 7;
@@ -59,7 +63,7 @@ void DutyUnit::setCounter() {
 		counter = COUNTER_DISABLED;
 }
 
-void DutyUnit::setFreq(const unsigned newFreq, const unsigned long cc) {
+void DutyUnit::setFreq(const unsigned newFreq, const unsigned cc) {
 	updatePos(cc);
 	period = toPeriod(newFreq);
 	setCounter();
@@ -77,17 +81,17 @@ void DutyUnit::event() {
 	counter += inc;
 }
 
-void DutyUnit::nr1Change(const unsigned newNr1, const unsigned long cc) {
+void DutyUnit::nr1Change(const unsigned newNr1, const unsigned cc) {
 	updatePos(cc);
 	setDuty(newNr1);
 	setCounter();
 }
 
-void DutyUnit::nr3Change(const unsigned newNr3, const unsigned long cc) {
+void DutyUnit::nr3Change(const unsigned newNr3, const unsigned cc) {
 	setFreq((getFreq() & 0x700) | newNr3, cc);
 }
 
-void DutyUnit::nr4Change(const unsigned newNr4, const unsigned long cc) {
+void DutyUnit::nr4Change(const unsigned newNr4, const unsigned cc) {
 	setFreq((newNr4 << 8 & 0x700) | (getFreq() & 0xFF), cc);
 	
 	if (newNr4 & 0x80) {
@@ -112,14 +116,14 @@ void DutyUnit::reset() {
 	setCounter();
 }
 
-void DutyUnit::saveState(SaveState::SPU::Duty &dstate, const unsigned long cc) {
+void DutyUnit::saveState(SaveState::SPU::Duty &dstate, const unsigned cc) {
 	updatePos(cc);
 	dstate.nextPosUpdate = nextPosUpdate;
 	dstate.nr3 = getFreq() & 0xFF;
 	dstate.pos = pos;
 }
 
-void DutyUnit::loadState(const SaveState::SPU::Duty &dstate, const unsigned nr1, const unsigned nr4, const unsigned long cc) {
+void DutyUnit::loadState(const SaveState::SPU::Duty &dstate, const unsigned nr1, const unsigned nr4, const unsigned cc) {
 	nextPosUpdate = std::max(dstate.nextPosUpdate, cc);
 	pos = dstate.pos & 7;
 	setDuty(nr1);
@@ -128,7 +132,7 @@ void DutyUnit::loadState(const SaveState::SPU::Duty &dstate, const unsigned nr1,
 	setCounter();
 }
 
-void DutyUnit::resetCounters(const unsigned long oldCc) {
+void DutyUnit::resetCounters(const unsigned oldCc) {
 	if (nextPosUpdate == COUNTER_DISABLED)
 		return;
 	
@@ -142,11 +146,21 @@ void DutyUnit::killCounter() {
 	setCounter();
 }
 
-void DutyUnit::reviveCounter(const unsigned long cc) {
+void DutyUnit::reviveCounter(const unsigned cc) {
 	updatePos(cc);
 	high = toOutState(duty, pos);
 	enableEvents = true;
 	setCounter();
+}
+
+void DutyUnit::loadOrSave(loadsave& state) {
+	loadOrSave2(state);
+	state(nextPosUpdate);
+	state(period);
+	state(pos);
+	state(duty);
+	state(high);
+	state(enableEvents);
 }
 
 }

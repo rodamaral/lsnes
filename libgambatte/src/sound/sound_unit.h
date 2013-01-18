@@ -19,19 +19,28 @@
 #ifndef SOUND_UNIT_H
 #define SOUND_UNIT_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
+#include "../loadsave.h"
+
 namespace gambatte {
 
 class SoundUnit {
 protected:
-	unsigned long counter;
+	unsigned counter;
 public:
 	enum { COUNTER_MAX = 0x80000000u, COUNTER_DISABLED = 0xFFFFFFFFu };
 	
 	SoundUnit() : counter(COUNTER_DISABLED) {}
 	virtual ~SoundUnit() {}
 	virtual void event() = 0;
-	unsigned long getCounter() const { return counter; }
-	virtual void resetCounters(unsigned long /*oldCc*/) { if (counter != COUNTER_DISABLED) counter -= COUNTER_MAX; }
+	unsigned getCounter() const { return counter; }
+	virtual void resetCounters(unsigned /*oldCc*/) { if (counter != COUNTER_DISABLED) counter -= COUNTER_MAX; }
+	void loadOrSave2(loadsave& state) {
+		state(counter);
+	}
 };
 
 }

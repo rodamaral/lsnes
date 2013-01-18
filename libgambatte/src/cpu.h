@@ -19,14 +19,19 @@
 #ifndef CPU_H
 #define CPU_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "memory.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
 class CPU {
 	Memory memory;
 	
-	unsigned long cycleCounter_;
+	unsigned cycleCounter_;
 
 	unsigned short PC_;
 	unsigned short SP;
@@ -37,20 +42,22 @@ class CPU {
 
 	bool skip;
 	
-	void process(unsigned long cycles);
+	void process(unsigned cycles);
 	
 public:
 	
-	CPU();
+	CPU(time_t (**_getCurrentTime)());
 // 	void halt();
 
 // 	unsigned interrupt(unsigned address, unsigned cycleCounter);
 	
-	long runFor(unsigned long cycles);
+	signed runFor(unsigned cycles);
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state);
 	void loadState(const SaveState &state);
-	
+
+	void loadOrSave(loadsave& state);
+
 	void loadSavedata() { memory.loadSavedata(); }
 	void saveSavedata() { memory.saveSavedata(); }
 	
@@ -77,7 +84,11 @@ public:
 	LoadRes load(std::string const &romfile, bool forceDmg, bool multicartCompat) {
 		return memory.loadROM(romfile, forceDmg, multicartCompat);
 	}
-	
+
+	LoadRes load(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat) {
+		return memory.loadROM(image, isize, forceDmg, multicartCompat);
+	}
+
 	bool loaded() const { return memory.loaded(); }
 	char const * romTitle() const { return memory.romTitle(); }
 	PakInfo const pakInfo(bool multicartCompat) const { return memory.pakInfo(multicartCompat); }
@@ -93,6 +104,14 @@ public:
 	
 	void setGameGenie(const std::string &codes) { memory.setGameGenie(codes); }
 	void setGameShark(const std::string &codes) { memory.setGameShark(codes); }
+
+	void setRtcBase(time_t time) { memory.setRtcBase(time); }
+	time_t getRtcBase() { return memory.getRtcBase(); }
+	std::pair<unsigned char*, size_t> getWorkRam() { return memory.getWorkRam(); }
+	std::pair<unsigned char*, size_t> getSaveRam() { return memory.getSaveRam(); }
+	std::pair<unsigned char*, size_t> getIoRam() { return memory.getIoRam(); }
+	std::pair<unsigned char*, size_t> getVideoRam() { return memory.getVideoRam(); };
+
 };
 
 }

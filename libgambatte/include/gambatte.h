@@ -23,6 +23,11 @@
 #include "loadres.h"
 #include "gbint.h"
 #include <string>
+#include <vector>
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 enum { BG_PALETTE = 0, SP1_PALETTE = 1, SP2_PALETTE = 2 };
@@ -31,7 +36,7 @@ class GB {
 public:
 	GB();
 	~GB();
-
+	
 	enum LoadFlag {
 		FORCE_DMG        = 1, /**< Treat the ROM as not having CGB support regardless of what its header advertises. */
 		GBA_CGB          = 2, /**< Use GBA intial CPU register values when in CGB mode. */
@@ -45,7 +50,15 @@ public:
 	  * @return 0 on success, negative value on failure.
 	  */
 	LoadRes load(const std::string &romfile, unsigned flags = 0);
-	
+	/** Load ROM image.
+	  *
+	  * @param image    Raw ROM image data.
+	  * @param isize    Size of raw ROM image data.
+	  * @param flags    ORed combination of LoadFlags.
+	  * @return 0 on success, negative value on failure.
+	  */
+	LoadRes load(const unsigned char* image, size_t isize, unsigned flags = 0);
+
 	/** Emulates until at least 'samples' stereo sound samples are produced in the supplied buffer,
 	  * or until a video frame has been drawn.
 	  *
@@ -67,7 +80,7 @@ public:
 	  * @param samples in: number of stereo samples to produce, out: actual number of samples produced
 	  * @return sample number at which the video frame was produced. -1 means no frame was produced.
 	  */
-	long runFor(gambatte::uint_least32_t *videoBuf, int pitch,
+	signed runFor(gambatte::uint_least32_t *videoBuf, int pitch,
 			gambatte::uint_least32_t *soundBuf, unsigned &samples);
 	
 	/** Reset to initial state.
@@ -121,7 +134,18 @@ public:
 	  * @return success
 	  */
 	bool loadState(const std::string &filepath);
-	
+
+	/** Save savestate to given buffer.
+	  */
+	void saveState(std::vector<char>& data, const std::vector<char>& cmpdata);
+	/** Save savestate to given buffer.
+	  */
+	void saveState(std::vector<char>& data);
+	/** Load savestate from given buffer.
+	  */
+	void loadState(const std::vector<char>& data);
+
+
 	/** Selects which state slot to save state to or load state from.
 	  * There are 10 such slots, numbered from 0 to 9 (periodically extended for all n).
 	  */
@@ -145,14 +169,52 @@ public:
 	  * @param codes Game Shark codes in format 01HHHHHH;01HHHHHH;... where H is [0-9]|[A-F]
 	  */
 	void setGameShark(const std::string &codes);
-	
+
+	/** Set RTC base time.
+	  */
+	void setRtcBase(time_t time);
+
+	/** Get RTC base time.
+	  */
+	time_t getRtcBase();
+
+	/** Get pointer and size to Work RAM.
+	  * @return The pointer and size of Work RAM.
+	 */
+	std::pair<unsigned char*, size_t> getWorkRam();
+
+	/** Get pointer and size to Save RAM.
+	  * @return The pointer and size of Save RAM.
+	 */
+	std::pair<unsigned char*, size_t> getSaveRam();
+
+	/** Get pointer and size to I/O RAM.
+	  * @return The pointer and size of I/O RAM.
+	 */
+	std::pair<unsigned char*, size_t> getIoRam();
+
+	/** Get pointer and size to Video RAM.
+	  * @return The pointer and size of Video RAM.
+	 */
+	std::pair<unsigned char*, size_t> getVideoRam();
+
+	/** Function to get wall time. */
+	void set_walltime_fn(time_t (*_walltime)());
+
+	/** Get version. */
+	static std::string version();
 private:
+	void preload_common();
+	void postload_common(const unsigned flags);
 	struct Priv;
 	Priv *const p_;
+	time_t (*walltime)();
 
 	GB(const GB &);
 	GB & operator=(const GB &);
 };
 }
+
+#define GAMBATTE_USES_LOADRES
 
 #endif

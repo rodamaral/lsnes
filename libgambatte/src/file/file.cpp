@@ -20,7 +20,41 @@ Free Software Foundation, Inc.,
 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ***************************************************************************/
 #include "stdfile.h"
+#include <cstring>
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 std::auto_ptr<gambatte::File> gambatte::newFileInstance(const std::string &filepath) {
 	return std::auto_ptr<File>(new StdFile(filepath.c_str()));
+}
+
+namespace
+{
+	struct MemoryFile : public gambatte::File
+	{
+		MemoryFile(const unsigned char* image, size_t isize) : buf(image), bufsize(isize),
+			ptr(0), xfail(false) {}
+		~MemoryFile() {}
+		void rewind() { ptr = 0; xfail = false; }
+		std::size_t size() const { return bufsize; }
+		void read(char *buffer, std::size_t amount) {
+			if(amount > bufsize - ptr) {
+				memcpy(buffer, buf, bufsize - ptr);
+				xfail = true;
+			} else
+				memcpy(buffer, buf, amount);
+		}
+		bool fail() const { return xfail; }
+	private:
+		const unsigned char* buf;
+		size_t bufsize;
+		size_t ptr;
+		bool xfail;
+	};
+}
+
+std::auto_ptr<gambatte::File> gambatte::newFileInstance(const unsigned char* image, size_t isize) {
+	return std::auto_ptr<File>(new MemoryFile(image, isize));
 }

@@ -18,13 +18,18 @@
  ***************************************************************************/
 #ifndef LY_COUNTER_H
 #define LY_COUNTER_H
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
 struct SaveState;
 
 class LyCounter {
-	unsigned long time_;
+	unsigned time_;
 	unsigned short lineTime_;
 	unsigned char ly_;
 	bool ds;
@@ -34,21 +39,28 @@ public:
 	void doEvent();
 	bool isDoubleSpeed() const { return ds; }
 	
-	unsigned long frameCycles(const unsigned long cc) const {
+	unsigned frameCycles(const unsigned cc) const {
 		return ly_ * 456ul + lineCycles(cc);
 	}
 	
-	unsigned lineCycles(const unsigned long cc) const {
+	unsigned lineCycles(const unsigned cc) const {
 		return 456u - ((time_ - cc) >> isDoubleSpeed());
 	}
 	
 	unsigned lineTime() const { return lineTime_; }
 	unsigned ly() const { return ly_; }
-	unsigned long nextLineCycle(unsigned lineCycle, unsigned long cycleCounter) const;
-	unsigned long nextFrameCycle(unsigned long frameCycle, unsigned long cycleCounter) const;
-	void reset(unsigned long videoCycles, unsigned long lastUpdate);
+	unsigned nextLineCycle(unsigned lineCycle, unsigned cycleCounter) const;
+	unsigned nextFrameCycle(unsigned frameCycle, unsigned cycleCounter) const;
+	void reset(unsigned videoCycles, unsigned lastUpdate);
 	void setDoubleSpeed(bool ds_in);
-	unsigned long time() const { return time_; }
+	unsigned time() const { return time_; }
+
+	void loadOrSave(loadsave& state) {
+		state(time_);
+		state(lineTime_);
+		state(ly_);
+		state(ds);
+	}
 };
 
 }

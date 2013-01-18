@@ -22,6 +22,10 @@
 #include <cstring>
 #include <cstddef>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace {
 
 using namespace gambatte;
@@ -427,7 +431,7 @@ namespace M3Loop {
 						
 						const unsigned attrib = p.spriteList[i].attrib;
 						unsigned spword       = p.spwordList[i];
-						const unsigned long *const spPalette = p.spPalette + (attrib >> 2 & 4);
+						const uint_least32_t *const spPalette = p.spPalette + (attrib >> 2 & 4);
 						uint_least32_t *d = dst + pos;
 						
 						if (!(attrib & 0x80)) {
@@ -543,7 +547,7 @@ namespace M3Loop {
 				xpos += n;
 				
 				do {
-					const unsigned long *const bgPalette = p.bgPalette + (nattrib & 7) * 4;
+					const uint_least32_t *const bgPalette = p.bgPalette + (nattrib & 7) * 4;
 					dst[0] = bgPalette[ ntileword & 0x0003       ];
 					dst[1] = bgPalette[(ntileword & 0x000C) >>  2];
 					dst[2] = bgPalette[(ntileword & 0x0030) >>  4];
@@ -581,7 +585,7 @@ namespace M3Loop {
 				uint_least32_t *const dst = dbufline + (xpos - 8);
 				const unsigned tileword = p.ntileword;
 				const unsigned attrib   = p.nattrib;
-				const unsigned long *const bgPalette = p.bgPalette + (attrib & 7) * 4;
+				const uint_least32_t *const bgPalette = p.bgPalette + (attrib & 7) * 4;
 				
 				dst[0] = bgPalette[ tileword & 0x0003       ];
 				dst[1] = bgPalette[(tileword & 0x000C) >>  2];
@@ -617,7 +621,7 @@ namespace M3Loop {
 						const unsigned char id = p.spriteList[i].oampos;
 						const unsigned sattrib = p.spriteList[i].attrib;
 						unsigned spword        = p.spwordList[i];
-						const unsigned long *const spPalette = p.spPalette + (sattrib & 7) * 4;
+						const uint_least32_t *const spPalette = p.spPalette + (sattrib & 7) * 4;
 						
 						if (!((attrib | sattrib) & bgenmask)) {
 							unsigned char  *const idt = idtab + pos;
@@ -772,7 +776,7 @@ namespace M3Loop {
 		}
 		
 		const unsigned twdata = tileword & ((p.lcdc & 1) | p.cgb) * 3;
-		unsigned long pixel = p.bgPalette[twdata + (p.attrib & 7) * 4];
+		uint_least32_t pixel = p.bgPalette[twdata + (p.attrib & 7) * 4];
 		int i = static_cast<int>(p.nextSprite) - 1;
 		
 		if (i >= 0 && static_cast<int>(p.spriteList[i].spx) > xpos - 8) {
@@ -831,8 +835,8 @@ namespace M3Loop {
 			plotPixel(p);
 	}
 	
-	static unsigned long nextM2Time(const PPUPriv &p) {
-		unsigned long nextm2 = p.lyCounter.isDoubleSpeed()
+	static unsigned nextM2Time(const PPUPriv &p) {
+		unsigned nextm2 = p.lyCounter.isDoubleSpeed()
 				? p.lyCounter.time() + (weMasterCheckPriorToLyIncLineCycle(true ) + M2_DS_OFFSET) * 2 - 456 * 2
 				: p.lyCounter.time() +  weMasterCheckPriorToLyIncLineCycle(p.cgb)                     - 456    ;
 
@@ -845,11 +849,11 @@ namespace M3Loop {
 	static void xpos168(PPUPriv &p) {
 		p.lastM0Time = p.now - (p.cycles << p.lyCounter.isDoubleSpeed());
 		
-		const unsigned long nextm2 = nextM2Time(p);
+		const unsigned nextm2 = nextM2Time(p);
 		
 		p.cycles = p.now >= nextm2
-				?  (static_cast<long>(p.now - nextm2) >> p.lyCounter.isDoubleSpeed())
-				: -(static_cast<long>(nextm2 - p.now) >> p.lyCounter.isDoubleSpeed());
+				?  (static_cast<signed>(p.now - nextm2) >> p.lyCounter.isDoubleSpeed())
+				: -(static_cast<signed>(nextm2 - p.now) >> p.lyCounter.isDoubleSpeed());
 				
 		nextCall(0, p.lyCounter.ly() == 143 ? M2::Ly0::f0_ : M2::LyNon0::f0_, p);
 	}
@@ -1533,8 +1537,8 @@ std::size_t upperBound(const T a[], const K e) {
 
 struct CycleState {
 	const PPUState *state;
-	long cycle;
-	operator long() const { return cycle; }
+	signed cycle;
+	operator signed() const { return cycle; }
 };
 
 static const PPUState * decodeM3LoopState(const unsigned state) {
@@ -1564,8 +1568,8 @@ static const PPUState * decodeM3LoopState(const unsigned state) {
 	return 0;
 }
 
-static long cyclesUntilM0Upperbound(const PPUPriv &p) {
-	long cycles = 168 - p.xpos + 6;
+static signed cyclesUntilM0Upperbound(const PPUPriv &p) {
+	signed cycles = 168 - p.xpos + 6;
 	
 	for (unsigned i = p.nextSprite; i < 10 && p.spriteList[i].spx < 168; ++i)
 		cycles += 11;
@@ -1605,17 +1609,17 @@ static void loadSpriteList(PPUPriv &p, const SaveState &ss) {
 
 void PPU::loadState(const SaveState &ss, const unsigned char *const oamram) {
 	const PPUState *const m3loopState = decodeM3LoopState(ss.ppu.state);
-	const long videoCycles = std::min(ss.ppu.videoCycles, 70223UL);
+	const signed videoCycles = std::min(ss.ppu.videoCycles, 70223u);
 	const bool ds = p_.cgb & ss.mem.ioamhram.get()[0x14D] >> 7;
-	const long vcycs = videoCycles - ds * M2_DS_OFFSET < 0
+	const signed vcycs = videoCycles - ds * M2_DS_OFFSET < 0
 	                 ? videoCycles - ds * M2_DS_OFFSET + 70224
 	                 : videoCycles - ds * M2_DS_OFFSET;
-	const long lineCycles = static_cast<unsigned long>(vcycs) % 456;
+	const signed lineCycles = static_cast<unsigned>(vcycs) % 456;
 	
 	p_.now = ss.cpu.cycleCounter;
 	p_.lcdc = ss.mem.ioamhram.get()[0x140];
 	p_.lyCounter.setDoubleSpeed(ds);
-	p_.lyCounter.reset(std::min(ss.ppu.videoCycles, 70223ul), ss.cpu.cycleCounter);
+	p_.lyCounter.reset(std::min(ss.ppu.videoCycles, 70223u), ss.cpu.cycleCounter);
 	p_.spriteMapper.loadState(ss, oamram);
 	p_.winYPos = ss.ppu.winYPos;
 	p_.scy = ss.mem.ioamhram.get()[0x142];
@@ -1639,10 +1643,10 @@ void PPU::loadState(const SaveState &ss, const unsigned char *const oamram) {
 	loadSpriteList(p_, ss);
 	
 	if (m3loopState && videoCycles < 144 * 456L && p_.xpos < 168
-			&& lineCycles + cyclesUntilM0Upperbound(p_) < static_cast<long>(weMasterCheckPriorToLyIncLineCycle(p_.cgb))) {
+			&& lineCycles + cyclesUntilM0Upperbound(p_) < static_cast<signed>(weMasterCheckPriorToLyIncLineCycle(p_.cgb))) {
 		p_.nextCallPtr = m3loopState;
 		p_.cycles = -1;
-	} else if (vcycs < 143 * 456L + static_cast<long>(m3StartLineCycle(p_.cgb)) + MAX_M3START_CYCLES) {
+	} else if (vcycs < 143 * 456L + static_cast<signed>(m3StartLineCycle(p_.cgb)) + MAX_M3START_CYCLES) {
 		const struct CycleState lineCycleStates[] = {
 			{    &M3Start::f0_, m3StartLineCycle(p_.cgb) },
 			{    &M3Start::f1_, m3StartLineCycle(p_.cgb) + MAX_M3START_CYCLES },
@@ -1673,9 +1677,9 @@ void PPU::reset(const unsigned char *const oamram, const unsigned char *const vr
 	p_.spriteMapper.reset(oamram, cgb);
 }
 
-void PPU::resetCc(const unsigned long oldCc, const unsigned long newCc) {
-	const unsigned long dec = oldCc - newCc;
-	const unsigned long videoCycles = p_.lcdc & 0x80 ? p_.lyCounter.frameCycles(p_.now) : 0;
+void PPU::resetCc(const unsigned oldCc, const unsigned newCc) {
+	const unsigned dec = oldCc - newCc;
+	const unsigned videoCycles = p_.lcdc & 0x80 ? p_.lyCounter.frameCycles(p_.now) : 0;
 	
 	p_.now -= dec;
 	p_.lastM0Time = p_.lastM0Time ? p_.lastM0Time - dec : p_.lastM0Time;
@@ -1683,8 +1687,8 @@ void PPU::resetCc(const unsigned long oldCc, const unsigned long newCc) {
 	p_.spriteMapper.resetCycleCounter(oldCc, newCc);
 }
 
-void PPU::speedChange(const unsigned long cycleCounter) {
-	const unsigned long videoCycles = p_.lcdc & 0x80 ? p_.lyCounter.frameCycles(p_.now) : 0;
+void PPU::speedChange(const unsigned cycleCounter) {
+	const unsigned videoCycles = p_.lcdc & 0x80 ? p_.lyCounter.frameCycles(p_.now) : 0;
 	
 	p_.spriteMapper.preSpeedChange(cycleCounter);
 	p_.lyCounter.setDoubleSpeed(!p_.lyCounter.isDoubleSpeed());
@@ -1699,11 +1703,11 @@ void PPU::speedChange(const unsigned long cycleCounter) {
 	}
 }
 
-unsigned long PPU::predictedNextXposTime(const unsigned xpos) const {
+unsigned PPU::predictedNextXposTime(const unsigned xpos) const {
 	return p_.now + (p_.nextCallPtr->predictCyclesUntilXpos_f(p_, xpos, -p_.cycles) << p_.lyCounter.isDoubleSpeed());
 }
 
-void PPU::setLcdc(const unsigned lcdc, const unsigned long cc) {
+void PPU::setLcdc(const unsigned lcdc, const unsigned cc) {
 	if ((p_.lcdc ^ lcdc) & lcdc & 0x80) {
 		p_.now = cc;
 		p_.lastM0Time = 0;
@@ -1733,7 +1737,7 @@ void PPU::setLcdc(const unsigned lcdc, const unsigned long cc) {
 	p_.lcdc = lcdc;
 }
 
-void PPU::update(const unsigned long cc) {
+void PPU::update(const unsigned cc) {
 	const int cycles = (cc - p_.now) >> p_.lyCounter.isDoubleSpeed();
 	
 	p_.now += cycles << p_.lyCounter.isDoubleSpeed();
@@ -1743,6 +1747,71 @@ void PPU::update(const unsigned long cc) {
 		p_.framebuf.setFbline(p_.lyCounter.ly());
 		p_.nextCallPtr->f(p_);
 	}
+}
+
+void PPUPriv::loadOrSave(loadsave& state)
+{
+	state(bgPalette, 32);
+	state(spPalette, 32);
+
+	state.startEnumeration();
+	state.enumerate<const PPUState*>(nextCallPtr, NULL, 0);
+	state.enumerate<const PPUState*>(nextCallPtr, &M2::Ly0::f0_, 1);
+	state.enumerate<const PPUState*>(nextCallPtr, &M2::LyNon0::f0_, 2);
+	state.enumerate<const PPUState*>(nextCallPtr, &M2::LyNon0::f1_, 3);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Start::f0_, 4);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Start::f1_, 5);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f0_, 6);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f1_, 7);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f2_, 8);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f3_, 9);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f4_, 10);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::Tile::f5_, 11);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f0_, 12);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f1_, 13);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f2_, 14);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f3_, 15);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f4_, 16);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::LoadSprites::f5_, 17);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f0_, 18);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f1_, 19);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f2_, 20);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f3_, 21);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f4_, 22);
+	state.enumerate<const PPUState*>(nextCallPtr, &M3Loop::StartWindowDraw::f5_, 23);
+	state.endEnumeration();
+	
+	state(now);
+	state(lastM0Time);
+	state(cycles);
+	state(tileword);
+	state(ntileword);
+	lyCounter.loadOrSave(state);
+	spriteMapper.loadOrSave(state);
+	framebuf.loadOrSave(state);
+
+	for(size_t i = 0; i < 11; i++)
+		spriteList[i].loadOrSave(state);
+	state(spwordList, 11);
+	state(lcdc);
+	state(scy);
+	state(scx);
+	state(wy);
+	state(wy2);
+	state(wx);
+	state(winDrawState);
+	state(wscx);
+	state(winYPos);
+	state(reg0);
+	state(reg1);
+	state(attrib);
+	state(nattrib);
+	state(nextSprite);
+	state(currentSprite);
+	state(xpos);
+	state(endx);
+	state(cgb);
+	state(weMaster);
 }
 
 }

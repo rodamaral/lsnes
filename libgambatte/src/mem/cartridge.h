@@ -26,8 +26,15 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
+
+class File;
 
 class Mbc {
 public:
@@ -36,13 +43,19 @@ public:
 	virtual void saveState(SaveState::Mem &ss) const = 0;
 	virtual void loadState(const SaveState::Mem &ss) = 0;
 	virtual bool isAddressWithinAreaRombankCanBeMappedTo(unsigned address, unsigned rombank) const = 0;
+	virtual void loadOrSave(loadsave& state) = 0;
 };
 
 class Cartridge {
 	struct AddrData {
-		unsigned long addr;
+		unsigned addr;
 		unsigned char data;
-		AddrData(unsigned long addr, unsigned data) : addr(addr), data(data) {}
+		AddrData(unsigned addr, unsigned data) : addr(addr), data(data) {}
+		AddrData() {}
+		void loadOrSave(loadsave& state) {
+			state(addr);
+			state(data);
+		}
 	};
 	
 	MemPtrs memptrs;
@@ -51,14 +64,22 @@ class Cartridge {
 	std::string defaultSaveBasePath;
 	std::string saveDir;
 	std::vector<AddrData> ggUndoList;
-	
+	bool memoryCartridge;
+	time_t memoryCartridgeRtcBase;
+	std::vector<unsigned char> memoryCartridgeSram;
+
 	void applyGameGenie(const std::string &code);
-	
+
+	LoadRes loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename);
+	void clearMemorySavedData();
 public:
+	Cartridge(time_t (**_getCurrentTime)());
 	void setStatePtrs(SaveState &);
 	void saveState(SaveState &) const;
 	void loadState(const SaveState &);
 	
+	void loadOrSave(loadsave& state);
+
 	bool loaded() const { return mbc.get(); }
 	
 	const unsigned char * rmem(unsigned area) const { return memptrs.rmem(area); }
@@ -88,9 +109,17 @@ public:
 	const std::string saveBasePath() const;
 	void setSaveDir(const std::string &dir);
 	LoadRes loadROM(const std::string &romfile, bool forceDmg, bool multicartCompat);
+	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat);
 	char const * romTitle() const { return reinterpret_cast<const char *>(memptrs.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(const std::string &codes);
+
+	void setRtcBase(time_t time) { rtc.setBaseTime(time); }
+	time_t getRtcBase() { return rtc.getBaseTime(); }
+	std::pair<unsigned char*, size_t> getWorkRam();
+	std::pair<unsigned char*, size_t> getSaveRam();
+	std::pair<unsigned char*, size_t> getVideoRam();
+
 };
 
 }

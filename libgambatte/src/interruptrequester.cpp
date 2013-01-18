@@ -19,6 +19,10 @@
 #include "interruptrequester.h"
 #include "savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 InterruptRequester::InterruptRequester() : minIntTime(0), ifreg_(0), iereg_(0) {}
@@ -35,17 +39,26 @@ void InterruptRequester::loadState(const SaveState &state) {
 	iereg_ = state.mem.ioamhram.get()[0x1FF] & 0x1F;
 	intFlags.set(state.mem.IME, state.mem.halted);
 	
-	eventTimes.setValue<INTERRUPTS>(intFlags.imeOrHalted() && pendingIrqs() ? minIntTime : static_cast<unsigned long>(DISABLED_TIME));
+	eventTimes.setValue<INTERRUPTS>(intFlags.imeOrHalted() && pendingIrqs() ? minIntTime : static_cast<unsigned>(DISABLED_TIME));
 }
 
-void InterruptRequester::resetCc(const unsigned long oldCc, const unsigned long newCc) {
+void InterruptRequester::loadOrSave(loadsave& state)
+{
+	eventTimes.loadOrSave(state);
+	state(minIntTime);
+	state(ifreg_);
+	state(iereg_);
+	intFlags.loadOrSave(state);
+}
+
+void InterruptRequester::resetCc(const unsigned oldCc, const unsigned newCc) {
 	minIntTime = minIntTime < oldCc ? 0 : minIntTime - (oldCc - newCc);
 	
 	if (eventTimes.value(INTERRUPTS) != DISABLED_TIME)
 		eventTimes.setValue<INTERRUPTS>(minIntTime);
 }
 
-void InterruptRequester::ei(const unsigned long cc) {
+void InterruptRequester::ei(const unsigned cc) {
 	intFlags.setIme();
 	minIntTime = cc + 1;
 	
@@ -90,14 +103,14 @@ void InterruptRequester::setIereg(const unsigned iereg) {
 	iereg_ = iereg & 0x1F;
 	
 	if (intFlags.imeOrHalted())
-		eventTimes.setValue<INTERRUPTS>(pendingIrqs() ? minIntTime : static_cast<unsigned long>(DISABLED_TIME));
+		eventTimes.setValue<INTERRUPTS>(pendingIrqs() ? minIntTime : static_cast<unsigned>(DISABLED_TIME));
 }
 
 void InterruptRequester::setIfreg(const unsigned ifreg) {
 	ifreg_ = ifreg;
 	
 	if (intFlags.imeOrHalted())
-		eventTimes.setValue<INTERRUPTS>(pendingIrqs() ? minIntTime : static_cast<unsigned long>(DISABLED_TIME));
+		eventTimes.setValue<INTERRUPTS>(pendingIrqs() ? minIntTime : static_cast<unsigned>(DISABLED_TIME));
 }
 
 }

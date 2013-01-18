@@ -22,6 +22,10 @@
 #include <fstream>
 #include <cstring>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace {
 
 using namespace gambatte;
@@ -71,7 +75,7 @@ life(4 * 60) {
 	print(pixels + 1 * w() + 1, w(), 0xE0E0E0ul, txt);*/
 	
 	print(pixels, w(), ShadeFill(), txt);
-	print(pixels + 1 * w() + 1, w(), 0xE0E0E0ul, txt);
+	print(pixels + 1 * w() + 1, w(), 0xE0E0E0u, txt);
 }
 
 ShadedTextOsdElment::~ShadedTextOsdElment() {
@@ -142,7 +146,7 @@ life(4 * 60) {
 			
 			static const char txt[] = { E,m,p,t,bitmapfont::y,0 };
 			
-			print(pixels + 3 + (StateSaver::SS_HEIGHT / 2 - bitmapfont::HEIGHT / 2) * StateSaver::SS_WIDTH, StateSaver::SS_WIDTH, 0x808080ul, txt);
+			print(pixels + 3 + (StateSaver::SS_HEIGHT / 2 - bitmapfont::HEIGHT / 2) * StateSaver::SS_WIDTH, StateSaver::SS_WIDTH, 0x808080u, txt);
 		}
 	}
 }

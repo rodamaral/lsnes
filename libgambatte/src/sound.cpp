@@ -21,6 +21,10 @@
 #include <cstring>
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 /*
 	Frame Sequencer
 
@@ -89,7 +93,7 @@ void PSG::loadState(const SaveState &state) {
 	enabled = state.mem.ioamhram.get()[0x126] >> 7 & 1;
 }
 
-void PSG::accumulate_channels(const unsigned long cycles) {
+void PSG::accumulate_channels(const unsigned cycles) {
 	uint_least32_t *const buf = buffer + bufferPos;
 	
 	std::memset(buf, 0, cycles * sizeof(uint_least32_t));
@@ -99,17 +103,16 @@ void PSG::accumulate_channels(const unsigned long cycles) {
 	ch4.update(buf, soVol, cycles);
 }
 
-void PSG::generate_samples(const unsigned long cycleCounter, const unsigned doubleSpeed) {
-	const unsigned long cycles = (cycleCounter - lastUpdate) >> (1 + doubleSpeed);
+void PSG::generate_samples(const unsigned cycleCounter, const unsigned doubleSpeed) {
+	const unsigned cycles = (cycleCounter - lastUpdate) >> (1 + doubleSpeed);
 	lastUpdate += cycles << (1 + doubleSpeed);
-
 	if (cycles)
 		accumulate_channels(cycles);
 	
 	bufferPos += cycles;
 }
 
-void PSG::resetCounter(const unsigned long newCc, const unsigned long oldCc, const unsigned doubleSpeed) {
+void PSG::resetCounter(const unsigned newCc, const unsigned oldCc, const unsigned doubleSpeed) {
 	generate_samples(oldCc, doubleSpeed);
 	lastUpdate = newCc - (oldCc - lastUpdate);
 }
@@ -155,11 +158,11 @@ unsigned PSG::fillBuffer() {
 }
 
 #ifdef WORDS_BIGENDIAN
-static const unsigned long so1Mul = 0x00000001;
-static const unsigned long so2Mul = 0x00010000;
+static const unsigned so1Mul = 0x00000001;
+static const unsigned so2Mul = 0x00010000;
 #else
-static const unsigned long so1Mul = 0x00010000;
-static const unsigned long so2Mul = 0x00000001;
+static const unsigned so1Mul = 0x00010000;
+static const unsigned so2Mul = 0x00000001;
 #endif
 
 void PSG::set_so_volume(const unsigned nr50) {
@@ -167,7 +170,7 @@ void PSG::set_so_volume(const unsigned nr50) {
 }
 
 void PSG::map_so(const unsigned nr51) {
-	const unsigned long tmp = nr51 * so1Mul + (nr51 >> 4) * so2Mul;
+	const unsigned tmp = nr51 * so1Mul + (nr51 >> 4) * so2Mul;
 	
 	ch1.setSo((tmp      & 0x00010001) * 0xFFFF);
 	ch2.setSo((tmp >> 1 & 0x00010001) * 0xFFFF);
@@ -177,6 +180,19 @@ void PSG::map_so(const unsigned nr51) {
 
 unsigned PSG::getStatus() const {
 	return ch1.isActive() | ch2.isActive() << 1 | ch3.isActive() << 2 | ch4.isActive() << 3;
+}
+
+void PSG::loadOrSave(loadsave& state)
+{
+	ch1.loadOrSave(state);
+	ch2.loadOrSave(state);
+	ch3.loadOrSave(state);
+	ch4.loadOrSave(state);
+	state(lastUpdate);
+	state(soVol);
+	state(rsum);
+	state(bufferPos);
+	state(enabled);
 }
 
 }

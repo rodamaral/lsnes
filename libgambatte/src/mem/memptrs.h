@@ -19,6 +19,12 @@
 #ifndef MEMPTRS_H
 #define MEMPTRS_H
 
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 enum OamDmaSrc { OAM_DMA_SRC_ROM, OAM_DMA_SRC_SRAM, OAM_DMA_SRC_VRAM,
@@ -28,15 +34,16 @@ class MemPtrs {
 	const unsigned char *rmem_[0x10];
 	      unsigned char *wmem_[0x10];
 	
+	unsigned char *memchunk_;
 	unsigned char *romdata_[2];
 	unsigned char *wramdata_[2];
+	unsigned char *rambankdata_;
+	unsigned char *wramdataend_;
 	unsigned char *vrambankptr_;
 	unsigned char *rsrambankptr_;
 	unsigned char *wsrambankptr_;
-	unsigned char *memchunk_;
-	unsigned char *rambankdata_;
-	unsigned char *wramdataend_;
-	
+	unsigned memchunk_size;
+
 	OamDmaSrc oamDmaSrc_;
 	
 	MemPtrs(const MemPtrs &);
@@ -74,6 +81,8 @@ public:
 	void setVrambank(unsigned bank) { vrambankptr_ = vramdata() + bank * 0x2000ul - 0x8000; }
 	void setWrambank(unsigned bank);
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc);
+
+	void loadOrSave(loadsave& state);
 };
 
 inline bool isCgb(const MemPtrs &memptrs) {

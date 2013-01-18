@@ -23,9 +23,13 @@
 #include "savestate.h"
 #include <cstring>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
-Memory::Memory(const Interrupter &interrupter_in)
+Memory::Memory(const Interrupter &interrupter_in, time_t (**_getCurrentTime)())
 : getInput(0),
   divLastUpdate(0),
   lastOamDmaUpdate(DISABLED_TIME),
@@ -35,7 +39,8 @@ Memory::Memory(const Interrupter &interrupter_in)
   dmaDestination(0),
   oamDmaPos(0xFE),
   serialCnt(0),
-  blanklcd(false)
+  blanklcd(false),
+  cart(_getCurrentTime)
 {
 	intreq.setEventTime<BLIT>(144*456ul);
 	intreq.setEventTime<END>(0);
@@ -49,7 +54,7 @@ void Memory::setStatePtrs(SaveState &state) {
 	sound.setStatePtrs(state);
 }
 
-unsigned long Memory::saveState(SaveState &state, unsigned long cycleCounter) {
+unsigned Memory::saveState(SaveState &state, unsigned cycleCounter) {
 	cycleCounter = resetCounters(cycleCounter);
 	nontrivial_ff_read(0xFF05, cycleCounter);
 	nontrivial_ff_read(0xFF0F, cycleCounter);
@@ -72,7 +77,7 @@ unsigned long Memory::saveState(SaveState &state, unsigned long cycleCounter) {
 	return cycleCounter;
 }
 
-static inline int serialCntFrom(const unsigned long cyclesUntilDone, const bool cgbFast) {
+static inline int serialCntFrom(const unsigned cyclesUntilDone, const bool cgbFast) {
 	return cgbFast ? (cyclesUntilDone + 0xF) >> 4 : (cyclesUntilDone + 0x1FF) >> 9;
 }
 
@@ -113,14 +118,14 @@ void Memory::loadState(const SaveState &state) {
 		std::memset(cart.vramdata() + 0x2000, 0, 0x2000);
 }
 
-void Memory::setEndtime(const unsigned long cycleCounter, const unsigned long inc) {
+void Memory::setEndtime(const unsigned cycleCounter, const unsigned inc) {
 	if (intreq.eventTime(BLIT) <= cycleCounter)
 		intreq.setEventTime<BLIT>(intreq.eventTime(BLIT) + (70224 << isDoubleSpeed()));
 	
 	intreq.setEventTime<END>(cycleCounter + (inc << isDoubleSpeed()));
 }
 
-void Memory::updateSerial(const unsigned long cc) {
+void Memory::updateSerial(const unsigned cc) {
 	if (intreq.eventTime(SERIAL) != DISABLED_TIME) {
 		if (intreq.eventTime(SERIAL) <= cc) {
 			ioamhram[0x101] = (((ioamhram[0x101] + 1) << serialCnt) - 1) & 0xFF;
@@ -135,18 +140,18 @@ void Memory::updateSerial(const unsigned long cc) {
 	}
 }
 
-void Memory::updateTimaIrq(const unsigned long cc) {
+void Memory::updateTimaIrq(const unsigned cc) {
 	while (intreq.eventTime(TIMA) <= cc)
 		tima.doIrqEvent(TimaInterruptRequester(intreq));
 }
 
-void Memory::updateIrqs(const unsigned long cc) {
+void Memory::updateIrqs(const unsigned cc) {
 	updateSerial(cc);
 	updateTimaIrq(cc);
 	display.update(cc);
 }
 
-unsigned long Memory::event(unsigned long cycleCounter) {
+unsigned Memory::event(unsigned cycleCounter) {
 	if (lastOamDmaUpdate != DISABLED_TIME)
 		updateOamDma(cycleCounter);
 
@@ -167,10 +172,10 @@ unsigned long Memory::event(unsigned long cycleCounter) {
 	case BLIT:
 		{
 			const bool lcden = ioamhram[0x140] >> 7 & 1;
-			unsigned long blitTime = intreq.eventTime(BLIT);
+			unsigned blitTime = intreq.eventTime(BLIT);
 			
 			if (lcden | blanklcd) {
-				display.updateScreen(blanklcd, cycleCounter);
+				display.updateScreen(blanklcd, cycleCounter, videoBuf_, pitch_);
 				intreq.setEventTime<BLIT>(DISABLED_TIME);
 				intreq.setEventTime<END>(DISABLED_TIME);
 				
@@ -188,7 +193,7 @@ unsigned long Memory::event(unsigned long cycleCounter) {
 		break;
 	case OAM:
 		intreq.setEventTime<OAM>(lastOamDmaUpdate == DISABLED_TIME ?
-				static_cast<unsigned long>(DISABLED_TIME) : intreq.eventTime(OAM) + 0xA0 * 4);
+				static_cast<unsigned>(DISABLED_TIME) : intreq.eventTime(OAM) + 0xA0 * 4);
 		break;
 	case DMA:
 		{
@@ -200,7 +205,7 @@ unsigned long Memory::event(unsigned long cycleCounter) {
 			
 			ackDmaReq(&intreq);
 
-			if ((static_cast<unsigned long>(dmaDest) + length) & 0x10000) {
+			if ((static_cast<unsigned>(dmaDest) + length) & 0x10000) {
 				length = 0x10000 - dmaDest;
 				ioamhram[0x155] |= 0x80;
 			}
@@ -211,7 +216,7 @@ unsigned long Memory::event(unsigned long cycleCounter) {
 				dmaLength = 0;
 
 			{
-				unsigned long lOamDmaUpdate = lastOamDmaUpdate;
+				unsigned lOamDmaUpdate = lastOamDmaUpdate;
 				lastOamDmaUpdate = DISABLED_TIME;
 
 				while (length--) {
@@ -292,7 +297,7 @@ unsigned long Memory::event(unsigned long cycleCounter) {
 	return cycleCounter;
 }
 
-unsigned long Memory::stop(unsigned long cycleCounter) {
+unsigned Memory::stop(unsigned cycleCounter) {
 	cycleCounter += 4 << isDoubleSpeed();
 	
 	if (ioamhram[0x14D] & isCgb()) {
@@ -315,31 +320,31 @@ unsigned long Memory::stop(unsigned long cycleCounter) {
 	return cycleCounter;
 }
 
-static void decCycles(unsigned long &counter, const unsigned long dec) {
+static void decCycles(unsigned &counter, const unsigned dec) {
 	if (counter != DISABLED_TIME)
 		counter -= dec;
 }
 
-void Memory::decEventCycles(const MemEventId eventId, const unsigned long dec) {
+void Memory::decEventCycles(const MemEventId eventId, const unsigned dec) {
 	if (intreq.eventTime(eventId) != DISABLED_TIME)
 		intreq.setEventTime(eventId, intreq.eventTime(eventId) - dec);
 }
 
-unsigned long Memory::resetCounters(unsigned long cycleCounter) {
+unsigned Memory::resetCounters(unsigned cycleCounter) {
 	if (lastOamDmaUpdate != DISABLED_TIME)
 		updateOamDma(cycleCounter);
 
 	updateIrqs(cycleCounter);
 
-	const unsigned long oldCC = cycleCounter;
+	const unsigned oldCC = cycleCounter;
 
 	{
-		const unsigned long divinc = (cycleCounter - divLastUpdate) >> 8;
+		const unsigned divinc = (cycleCounter - divLastUpdate) >> 8;
 		ioamhram[0x104] = (ioamhram[0x104] + divinc) & 0xFF;
 		divLastUpdate += divinc << 8;
 	}
 
-	const unsigned long dec = cycleCounter < 0x10000 ? 0 : (cycleCounter & ~0x7FFFul) - 0x8000;
+	const unsigned dec = cycleCounter < 0x10000 ? 0 : (cycleCounter & ~0x7FFFul) - 0x8000;
 
 	decCycles(divLastUpdate, dec);
 	decCycles(lastOamDmaUpdate, dec);
@@ -378,7 +383,7 @@ void Memory::updateInput() {
 		ioamhram[0x100] &= button;
 }
 
-void Memory::updateOamDma(const unsigned long cycleCounter) {
+void Memory::updateOamDma(const unsigned cycleCounter) {
 	const unsigned char *const oamDmaSrc = oamDmaSrcPtr();
 	unsigned cycles = (cycleCounter - lastOamDmaUpdate) >> 2;
 
@@ -426,17 +431,17 @@ const unsigned char * Memory::oamDmaSrcPtr() const {
 	return ioamhram[0x146] == 0xFF && !isCgb() ? oamDmaSrcZero() : cart.rdisabledRam();
 }
 
-void Memory::startOamDma(const unsigned long cycleCounter) {
+void Memory::startOamDma(const unsigned cycleCounter) {
 	display.oamChange(cart.rdisabledRam(), cycleCounter);
 }
 
-void Memory::endOamDma(const unsigned long cycleCounter) {
+void Memory::endOamDma(const unsigned cycleCounter) {
 	oamDmaPos = 0xFE;
 	cart.setOamDmaSrc(OAM_DMA_SRC_OFF);
 	display.oamChange(ioamhram, cycleCounter);
 }
 
-unsigned Memory::nontrivial_ff_read(const unsigned P, const unsigned long cycleCounter) {
+unsigned Memory::nontrivial_ff_read(const unsigned P, const unsigned cycleCounter) {
 	if (lastOamDmaUpdate != DISABLED_TIME)
 		updateOamDma(cycleCounter);
 
@@ -450,7 +455,7 @@ unsigned Memory::nontrivial_ff_read(const unsigned P, const unsigned long cycleC
 		break;
 	case 0x04:
 		{
-			const unsigned long divcycles = (cycleCounter - divLastUpdate) >> 8;
+			const unsigned divcycles = (cycleCounter - divLastUpdate) >> 8;
 			ioamhram[0x104] = (ioamhram[0x104] + divcycles) & 0xFF;
 			divLastUpdate += divcycles << 8;
 		}
@@ -529,7 +534,7 @@ static bool isInOamDmaConflictArea(const OamDmaSrc oamDmaSrc, const unsigned add
 	return addr < a[oamDmaSrc].areaUpper && addr - a[oamDmaSrc].exceptAreaLower >= a[oamDmaSrc].exceptAreaWidth;
 }
 
-unsigned Memory::nontrivial_read(const unsigned P, const unsigned long cycleCounter) {
+unsigned Memory::nontrivial_read(const unsigned P, const unsigned cycleCounter) {
 	if (P < 0xFF80) {
 		if (lastOamDmaUpdate != DISABLED_TIME) {
 			updateOamDma(cycleCounter);
@@ -568,7 +573,7 @@ unsigned Memory::nontrivial_read(const unsigned P, const unsigned long cycleCoun
 	return ioamhram[P - 0xFE00];
 }
 
-void Memory::nontrivial_ff_write(const unsigned P, unsigned data, const unsigned long cycleCounter) {
+void Memory::nontrivial_ff_write(const unsigned P, unsigned data, const unsigned cycleCounter) {
 	if (lastOamDmaUpdate != DISABLED_TIME)
 		updateOamDma(cycleCounter);
 
@@ -585,7 +590,7 @@ void Memory::nontrivial_ff_write(const unsigned P, unsigned data, const unsigned
 		serialCnt = 8;
 		intreq.setEventTime<SERIAL>((data & 0x81) == 0x81
 				? (data & isCgb() * 2 ? (cycleCounter & ~0x7ul) + 0x10 * 8 : (cycleCounter & ~0xFFul) + 0x200 * 8)
-				: static_cast<unsigned long>(DISABLED_TIME));
+				: static_cast<unsigned>(DISABLED_TIME));
 
 		data |= 0x7E - isCgb() * 2;
 		break;
@@ -946,7 +951,7 @@ void Memory::nontrivial_ff_write(const unsigned P, unsigned data, const unsigned
 	ioamhram[P - 0xFE00] = data;
 }
 
-void Memory::nontrivial_write(const unsigned P, const unsigned data, const unsigned long cycleCounter) {
+void Memory::nontrivial_write(const unsigned P, const unsigned data, const unsigned cycleCounter) {
 	if (lastOamDmaUpdate != DISABLED_TIME) {
 		updateOamDma(cycleCounter);
 		
@@ -983,24 +988,57 @@ void Memory::nontrivial_write(const unsigned P, const unsigned data, const unsig
 		ioamhram[P - 0xFE00] = data;
 }
 
+void Memory::postLoadRom()
+{
+	sound.init(cart.isCgb());
+	display.reset(ioamhram, cart.vramdata(), cart.isCgb());
+	interrupter.setGameShark(std::string());
+}
+
 LoadRes Memory::loadROM(std::string const &romfile, bool const forceDmg, bool const multicartCompat) {
 	if (LoadRes const fail = cart.loadROM(romfile, forceDmg, multicartCompat))
 		return fail;
 
-	sound.init(cart.isCgb());
-	display.reset(ioamhram, cart.vramdata(), cart.isCgb());
-	interrupter.setGameShark(std::string());
+	postLoadRom();
 
 	return LOADRES_OK;
 }
 
-unsigned Memory::fillSoundBuffer(const unsigned long cycleCounter) {
+LoadRes Memory::loadROM(const unsigned char* image, size_t isize, const bool forceDmg, const bool multicartCompat) {
+	if (LoadRes fail = cart.loadROM(image, isize, forceDmg, multicartCompat))
+		return fail;
+
+	postLoadRom();
+
+	return LOADRES_OK;
+}
+
+unsigned Memory::fillSoundBuffer(const unsigned cycleCounter) {
 	sound.generate_samples(cycleCounter, isDoubleSpeed());
 	return sound.fillBuffer();
 }
 
-void Memory::setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long rgb32) {
+void Memory::setDmgPaletteColor(unsigned palNum, unsigned colorNum, uint_least32_t rgb32) {
 	display.setDmgPaletteColor(palNum, colorNum, rgb32);
+}
+
+void Memory::loadOrSave(loadsave& state)
+{
+	state(ioamhram, 0x200);
+	//Don't save getInput, it has no state.
+	state(divLastUpdate);
+	state(lastOamDmaUpdate);
+	intreq.loadOrSave(state);
+	cart.loadOrSave(state);
+	tima.loadOrSave(state);
+	display.loadOrSave(state);
+	sound.loadOrSave(state);
+	interrupter.loadOrSave(state);
+	state(dmaSource);
+	state(dmaDestination);
+	state(oamDmaPos);
+	state(serialCnt);
+	state(blanklcd);
 }
 
 }

@@ -19,7 +19,12 @@
 #ifndef MINKEEPER_H
 #define MINKEEPER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include <algorithm>
+#include "loadsave.h"
 
 namespace MinKeeperUtil {
 template<int n> struct CeiledLog2 { enum { R = 1 + CeiledLog2<(n + 1) / 2>::R }; };
@@ -81,36 +86,43 @@ class MinKeeper {
 	};
 	
 	static UpdateValueLut updateValueLut;
-	unsigned long values[ids];
-	unsigned long minValue_;
+	unsigned values[ids];
+	unsigned minValue_;
 	int a[Sum<LEVELS>::R];
 	
 	template<int id> static void updateValue(MinKeeper<ids> &m);
 	
 public:
-	explicit MinKeeper(unsigned long initValue = 0xFFFFFFFF);
-	
+	explicit MinKeeper(unsigned initValue = 0xFFFFFFFFULL);
+
+	void loadOrSave(gambatte::loadsave& state) {
+		state(values, ids);
+		state(minValue_);
+		//updateValueLut is constant for our purposes.
+		state(a, Sum<LEVELS>::R);
+	}
+
 	int min() const { return a[0]; }
-	unsigned long minValue() const { return minValue_; }
+	unsigned minValue() const { return minValue_; }
 	
 	template<int id>
-	void setValue(const unsigned long cnt) {
+	void setValue(const unsigned cnt) {
 		values[id] = cnt;
 		updateValue<id / 2>(*this);
 	}
 	
-	void setValue(const int id, const unsigned long cnt) {
+	void setValue(const int id, const unsigned cnt) {
 		values[id] = cnt;
 		updateValueLut.call(id >> 1, *this);
 	}
 	
-	unsigned long value(const int id) const { return values[id]; }
+	unsigned value(const int id) const { return values[id]; }
 };
 
 template<int ids> typename MinKeeper<ids>::UpdateValueLut MinKeeper<ids>::updateValueLut;
 
 template<int ids>
-MinKeeper<ids>::MinKeeper(const unsigned long initValue) {
+MinKeeper<ids>::MinKeeper(const unsigned initValue) {
 	std::fill(values, values + ids, initValue);
 	
 	for (int i = 0; i < Num<LEVELS-1>::R; ++i) {

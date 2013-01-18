@@ -19,6 +19,10 @@
 #include "ly_counter.h"
 #include "../savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 LyCounter::LyCounter()
@@ -37,8 +41,8 @@ void LyCounter::doEvent() {
 	time_ = time_ + lineTime_;
 }
 
-unsigned long LyCounter::nextLineCycle(const unsigned lineCycle, const unsigned long cycleCounter) const {
-	unsigned long tmp = time_ + (lineCycle << ds);
+unsigned LyCounter::nextLineCycle(const unsigned lineCycle, const unsigned cycleCounter) const {
+	unsigned tmp = time_ + (lineCycle << ds);
 	
 	if (tmp - cycleCounter > lineTime_)
 		tmp -= lineTime_;
@@ -46,8 +50,8 @@ unsigned long LyCounter::nextLineCycle(const unsigned lineCycle, const unsigned 
 	return tmp;
 }
 
-unsigned long LyCounter::nextFrameCycle(const unsigned long frameCycle, const unsigned long cycleCounter) const {
-	unsigned long tmp = time_ + (((153U - ly()) * 456U + frameCycle) << ds);
+unsigned LyCounter::nextFrameCycle(const unsigned frameCycle, const unsigned cycleCounter) const {
+	unsigned tmp = time_ + (((153U - ly()) * 456U + frameCycle) << ds);
 	
 	if (tmp - cycleCounter > 70224U << ds)
 		tmp -= 70224U << ds;
@@ -55,7 +59,7 @@ unsigned long LyCounter::nextFrameCycle(const unsigned long frameCycle, const un
 	return tmp;
 }
 
-void LyCounter::reset(const unsigned long videoCycles, const unsigned long lastUpdate) {
+void LyCounter::reset(const unsigned videoCycles, const unsigned lastUpdate) {
 	ly_ = videoCycles / 456;
 	time_ = lastUpdate + ((456 - (videoCycles - ly_ * 456ul)) << isDoubleSpeed());
 }

@@ -19,12 +19,17 @@
 #ifndef SOUND_CHANNEL1_H
 #define SOUND_CHANNEL1_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include "master_disabler.h"
 #include "length_counter.h"
 #include "duty_unit.h"
 #include "envelope_unit.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
@@ -44,10 +49,16 @@ class Channel1 {
 		SweepUnit(MasterDisabler &disabler, DutyUnit &dutyUnit);
 		void event();
 		void nr0Change(unsigned newNr0);
-		void nr4Init(unsigned long cycleCounter);
+		void nr4Init(unsigned cycleCounter);
 		void reset();
 		void saveState(SaveState &state) const;
 		void loadState(const SaveState &state);
+		void loadOrSave(loadsave& state) {
+			loadOrSave2(state);
+			state(shadow);
+			state(nr0);
+			state(negging);
+		}
 	};
 	
 	friend class StaticOutputTester<Channel1,DutyUnit>;
@@ -61,9 +72,9 @@ class Channel1 {
 	
 	SoundUnit *nextEventUnit;
 	
-	unsigned long cycleCounter;
-	unsigned long soMask;
-	unsigned long prevOut;
+	unsigned cycleCounter;
+	unsigned soMask;
+	unsigned prevOut;
 	
 	unsigned char nr4;
 	bool master;
@@ -78,15 +89,17 @@ public:
 	void setNr3(unsigned data);
 	void setNr4(unsigned data);
 	
-	void setSo(unsigned long soMask);
+	void setSo(unsigned soMask);
 	bool isActive() const { return master; }
 	
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
 	void loadState(const SaveState &state);
+
+	void loadOrSave(loadsave& state);
 };
 
 }
