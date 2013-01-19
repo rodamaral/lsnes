@@ -20,6 +20,9 @@ class wxKeyEvent;
 extern double horizontal_scale_factor;
 extern double vertical_scale_factor;
 extern int scaling_flags;
+extern bool hflip_enabled;
+extern bool vflip_enabled;
+extern bool rotate_enabled;
 
 wxString towxstring(const std::string& str) throw(std::bad_alloc);
 std::string tostdstring(const wxString& str) throw(std::bad_alloc);

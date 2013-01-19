@@ -116,6 +116,9 @@ enum
 double horizontal_scale_factor = 1.0;
 double vertical_scale_factor = 1.0;
 int scaling_flags = SWS_POINT;
+bool hflip_enabled = false;
+bool vflip_enabled = false;
+bool rotate_enabled = false;
 
 namespace
 {
@@ -123,9 +126,13 @@ namespace
 	std::string last_volume_record = "0dB";
 	std::string last_volume_voice = "0dB";
 	unsigned char* screen_buffer;
+	uint32_t* rotate_buffer;
 	uint32_t old_width;
 	uint32_t old_height;
 	int old_flags = SWS_POINT;
+	bool old_hflip = false;
+	bool old_vflip = false;
+	bool old_rotate = false;
 	bool main_window_dirty;
 	struct thread* emulation_thread;
 
@@ -706,36 +713,84 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	uint8_t* dstp[1];
 	int dsts[1];
 	wxPaintDC dc(this);
-	uint32_t tw = main_screen.get_width() * horizontal_scale_factor + 0.5;
-	uint32_t th = main_screen.get_height() * vertical_scale_factor + 0.5;
+	uint32_t tw, th;
+	bool aux = hflip_enabled || vflip_enabled || rotate_enabled;
+	if(rotate_enabled) {
+		tw = main_screen.get_height() * horizontal_scale_factor + 0.5;
+		th = main_screen.get_width() * vertical_scale_factor + 0.5;
+	} else {
+		tw = main_screen.get_width() * horizontal_scale_factor + 0.5;
+		th = main_screen.get_height() * vertical_scale_factor + 0.5;
+	}
 	if(!tw || !th) {
 		main_window_dirty = false;
 		return;
 	}
-	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags) {
+	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags ||
+		hflip_enabled != old_hflip || vflip_enabled != old_vflip || rotate_enabled != old_rotate) {
 		if(screen_buffer)
 			delete[] screen_buffer;
+		if(rotate_buffer)
+			delete[] rotate_buffer;
 		old_height = th;
 		old_width = tw;
 		old_flags = scaling_flags;
+		old_hflip = hflip_enabled;
+		old_vflip = vflip_enabled;
+		old_rotate = rotate_enabled;
 		uint32_t w = main_screen.get_width();
 		uint32_t h = main_screen.get_height();
 		if(w && h)
-			ctx = sws_getCachedContext(ctx, w, h, PIX_FMT_RGBA, tw, th, PIX_FMT_BGR24, scaling_flags,
-				NULL, NULL, NULL);
+			ctx = sws_getCachedContext(ctx, rotate_enabled ? h : w, rotate_enabled ? w : h, PIX_FMT_RGBA,
+				tw, th, PIX_FMT_BGR24, scaling_flags, NULL, NULL, NULL);
 		tw = max(tw, static_cast<uint32_t>(128));
 		th = max(th, static_cast<uint32_t>(112));
 		screen_buffer = new unsigned char[tw * th * 3];
+		if(aux)
+			rotate_buffer = new uint32_t[main_screen.get_width() * main_screen.get_height()];
 		SetMinSize(wxSize(tw, th));
 		signal_resize_needed();
 	}
-	srcs[0] = 4 * main_screen.get_width();
+	if(aux) {
+		//Hflip, Vflip or rotate active.
+		size_t width = main_screen.get_width();
+		size_t height = main_screen.get_height();
+		size_t width1 = width - 1;
+		size_t height1 = height - 1;
+		size_t stride = main_screen.rowptr(1) - main_screen.rowptr(0);
+		uint32_t* pixels = main_screen.rowptr(0);
+		if(rotate_enabled) {
+			for(unsigned y = 0; y < height; y++) {
+				uint32_t* pixels2 = pixels + (vflip_enabled ? (height1 - y) : y) * stride;
+				uint32_t* dpixels = rotate_buffer + (height1 - y);
+				if(hflip_enabled)
+					for(unsigned x = 0; x < width; x++)
+						dpixels[x * height] = pixels2[width1 - x];
+				else
+					for(unsigned x = 0; x < width; x++)
+						dpixels[x * height] = pixels2[x];
+			}
+		} else {
+			for(unsigned y = 0; y < height; y++) {
+				uint32_t* pixels2 = pixels + (vflip_enabled ? (height1 - y) : y) * stride;
+				uint32_t* dpixels = rotate_buffer + y * width;
+				if(hflip_enabled)
+					for(unsigned x = 0; x < width; x++)
+						dpixels[x] = pixels2[width1 - x];
+				else
+					for(unsigned x = 0; x < width; x++)
+						dpixels[x] = pixels2[x];
+			}
+		}
+	}
+	srcs[0] = 4 * (rotate_enabled ? main_screen.get_height() : main_screen.get_width());
 	dsts[0] = 3 * tw;
-	srcp[0] = reinterpret_cast<unsigned char*>(main_screen.rowptr(0));
+	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : main_screen.rowptr(0));
 	dstp[0] = screen_buffer;
 	memset(screen_buffer, 0, tw * th * 3);
 	if(main_screen.get_width() && main_screen.get_height())
-		sws_scale(ctx, srcp, srcs, 0, main_screen.get_height(), dstp, dsts);
+		sws_scale(ctx, srcp, srcs, 0, rotate_enabled ? main_screen.get_width() : main_screen.get_height(),
+		dstp, dsts);
 	wxBitmap bmp(wxImage(tw, th, screen_buffer, true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	main_window_dirty = false;
