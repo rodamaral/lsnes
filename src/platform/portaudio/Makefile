@@ -3,14 +3,14 @@ OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 PA_CFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --cflags)
 PA_LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --libs)
 else
-OBJECTS = dummy.$(OBJECT_SUFFIX)
+OBJECTS=
 endif
 
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS)
-	$(REALLD) -r -o $@ $^
+__all__.files: $(OBJECTS)
+	lua ../../genfilelist.lua $^ >$@
 	echo $(PA_LDFLAGS) >__all__.ldflags
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -20,4 +20,4 @@ precheck:
 	@true
 
 clean:
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files

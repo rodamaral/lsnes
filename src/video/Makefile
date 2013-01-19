@@ -1,17 +1,17 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) avi/__all__.$(OBJECT_SUFFIX)
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 
 ifdef SECRET_RABBIT_CODE
 AVI_CFLAGS=-DWITH_SECRET_RABBIT_CODE
 AVI_LDFLAGS=-lsamplerate
 endif
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS)
-	$(REALLD) -r -o $@ $^
+__all__.files: avi/__all__.files $(OBJECTS)
+	lua ../genfilelist.lua $^ >$@
 	echo $(AVI_LDFLAGS) >__all__.ldflags
 
-avi/__all__.$(OBJECT_SUFFIX): forcelook
+avi/__all__.files: forcelook
 	$(MAKE) -C avi
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -25,4 +25,4 @@ precheck:
 
 clean:
 	$(MAKE) -C avi clean
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files

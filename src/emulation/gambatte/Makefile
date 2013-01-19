@@ -5,10 +5,10 @@ GAMBATTE_LDFLAGS=
 
 GAMBATTE_LIBRARY=gambatte/libgambatte/libgambatte.$(ARCHIVE_SUFFIX)
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
-	$(REALLD) -r -o $@ $^
+__all__.files: $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
+	lua ../../genfilelist.lua $^ >$@
 	echo $(GAMBATTE_LDFLAGS) ../$(GAMBATTE_LIBRARY) >__all__.ldflags
 
 ../../../$(GAMBATTE_LIBRARY): forcelook
@@ -29,8 +29,9 @@ regions.inc: regions.def ../make-regions.lua
 
 else
 
-__all__.$(OBJECT_SUFFIX): dummy.cpp
-	$(REALCC) -c -o $@ $< $(CFLAGS)
+OBJECTS=
+__all__.files: $(OBJECTS)
+	lua ../../genfilelist.lua $^ >$@
 	echo >__all__.ldflags
 
 endif
@@ -43,4 +44,4 @@ precheck:
 
 clean:
 	-make -C ../../../gambatte clean
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files

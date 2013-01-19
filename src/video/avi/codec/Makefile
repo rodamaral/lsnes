@@ -1,14 +1,14 @@
-OBJECTS=video/__all__.$(OBJECT_SUFFIX) audio/__all__.$(OBJECT_SUFFIX)
+OBJECTS=
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS)
-	$(REALLD) -r -o $@ $^
+__all__.files: audio/__all__.files video/__all__.files $(OBJECTS)
+	lua ../../../genfilelist.lua $^ >$@
 
-audio/__all__.$(OBJECT_SUFFIX): forcelook
+audio/__all__.files: forcelook
 	$(MAKE) -C audio
 
-video/__all__.$(OBJECT_SUFFIX): forcelook
+video/__all__.files: forcelook
 	$(MAKE) -C video
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -24,4 +24,4 @@ precheck:
 clean:
 	$(MAKE) -C audio clean
 	$(MAKE) -C video clean
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files

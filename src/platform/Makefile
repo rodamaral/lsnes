@@ -1,33 +1,33 @@
 PLATFORMS=dummy evdev portaudio wxwidgets win32mm libao
-ALLOBJECT=__all__.$(OBJECT_SUFFIX)
+ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
-PLATFORMS_OBJS=$(patsubst %,%/$(ALLOBJECT),$(PLATFORMS))
+PLATFORMS_FILES=$(patsubst %,%/$(ALLFILES),$(PLATFORMS))
 PLATFORMS_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(PLATFORMS))
 
-$(ALLOBJECT): $(PLATFORMS_OBJS)
-	$(REALLD) -r -o $@ $^
+$(ALLFILES): $(PLATFORMS_FILES) $(OBJECTS)
+	lua ../genfilelist.lua $^ >$@
 	cat $(PLATFORMS_FLAGS) >$(ALLFLAGS)
 
-dummy/$(ALLOBJECT): forcelook
+dummy/$(ALLFILES): forcelook
 	$(MAKE) -C dummy
 
-evdev/$(ALLOBJECT): forcelook
+evdev/$(ALLFILES): forcelook
 	$(MAKE) -C evdev
 
-win32mm/$(ALLOBJECT): forcelook
+win32mm/$(ALLFILES): forcelook
 	$(MAKE) -C win32mm
 
-portaudio/$(ALLOBJECT): forcelook
+portaudio/$(ALLFILES): forcelook
 	$(MAKE) -C portaudio
 
-libao/$(ALLOBJECT): forcelook
+libao/$(ALLFILES): forcelook
 	$(MAKE) -C libao
 
-wxwidgets/$(ALLOBJECT): forcelook
+wxwidgets/$(ALLFILES): forcelook
 	$(MAKE) -C wxwidgets
 
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) *.files
 
 precheck:
 	$(MAKE) -C dummy precheck
@@ -38,7 +38,7 @@ precheck:
 	$(MAKE) -C wxwidgets precheck
 
 clean:
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files
 	$(MAKE) -C dummy clean
 	$(MAKE) -C evdev clean
 	$(MAKE) -C win32mm clean

@@ -27,10 +27,10 @@ CFLAGS += -DBSNES_VERSION=\"${BSNES_VERSION}\"
 
 BSNES_LIBRARY=bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS) ../../../$(BSNES_LIBRARY)
-	$(REALLD) -r -o $@ $^
+__all__.files: $(OBJECTS) ../../../$(BSNES_LIBRARY)
+	lua ../../genfilelist.lua $^ >$@
 	echo $(BSNES_LDFLAGS) ../$(BSNES_LIBRARY) >__all__.ldflags
 
 ../../../$(BSNES_LIBRARY): forcelook
@@ -51,8 +51,9 @@ regions.inc: regions.def ../make-regions.lua
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS)
 else
 
-__all__.$(OBJECT_SUFFIX): dummy.cpp                              
-	$(REALCC) -c -o $@ $< $(CFLAGS)
+OBJECTS=
+__all__.files: $(OBJECTS)
+	lua ../../genfilelist.lua $^ >$@
 	echo >__all__.ldflags
 
 endif
@@ -64,5 +65,5 @@ precheck:
 	@true
 
 clean:
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.files __all__.ldflags
 	-make -C ../../../bsnes clean

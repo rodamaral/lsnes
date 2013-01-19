@@ -1,9 +1,9 @@
 OBJECTS=font.$(OBJECT_SUFFIX) wrapper.$(OBJECT_SUFFIX)
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS)
-	$(REALLD) -r -o $@ $^
+__all__.files: $(OBJECTS)
+	lua ../genfilelist.lua $^ >$@
 	touch __all__.ldflags
 
 .PRECIOUS: font.$(OBJECT_SUFFIX) font.cpp
@@ -20,4 +20,4 @@ precheck:
 	@true
 
 clean:
-	rm -f *.$(OBJECT_SUFFIX) font.cpp  *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) font.cpp __all__.ldflags __all__.files

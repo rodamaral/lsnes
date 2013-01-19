@@ -1,27 +1,27 @@
 CORES=bsnes-legacy gambatte
-ALLOBJECT=__all__.$(OBJECT_SUFFIX)
+ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
-CORES_OBJS=$(patsubst %,%/$(ALLOBJECT),$(CORES))
+CORES_FILES=$(patsubst %,%/$(ALLFILES),$(CORES))
 CORES_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(CORES))
 
-$(ALLOBJECT): $(CORES_OBJS)
-	$(REALLD) -r -o $@ $^
+__all__.files: $(CORES_FILES)
+	lua ../genfilelist.lua $^ >$@
 	cat $(CORES_FLAGS) >$(ALLFLAGS)
 
-bsnes-legacy/$(ALLOBJECT): forcelook
+bsnes-legacy/$(ALLFILES): forcelook
 	$(MAKE) -C bsnes-legacy
 
-gambatte/$(ALLOBJECT): forcelook
+gambatte/$(ALLFILES): forcelook
 	$(MAKE) -C gambatte
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
 precheck:
 	$(MAKE) -C bsnes-legacy precheck
 	$(MAKE) -C gambatte precheck
 
 clean:
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files
 	$(MAKE) -C bsnes-legacy clean
 	$(MAKE) -C gambatte clean
 

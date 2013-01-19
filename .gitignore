@@ -4,6 +4,7 @@
 *.obj
 *.exe
 *.ldflags
+*.files
 docs
 rom
 lsnes

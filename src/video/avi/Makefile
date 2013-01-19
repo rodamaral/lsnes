@@ -1,11 +1,11 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) codec/__all__.$(OBJECT_SUFFIX)
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 
-.PRECIOUS: %.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
-__all__.$(OBJECT_SUFFIX): $(OBJECTS)
-	$(REALLD) -r -o $@ $^
+__all__.files: codec/__all__.files $(OBJECTS)
+	lua ../../genfilelist.lua $^ >$@
 
-codec/__all__.$(OBJECT_SUFFIX): forcelook
+codec/__all__.files: forcelook
 	$(MAKE) -C codec
 
 %.$(OBJECT_SUFFIX): %.cpp
@@ -19,4 +19,4 @@ precheck:
 
 clean:
 	$(MAKE) -C codec clean
-	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	rm -f *.$(OBJECT_SUFFIX) __all__.ldflags __all__.files

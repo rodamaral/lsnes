@@ -20,38 +20,44 @@ CFLAGS += -DWITH_OPUS_CODEC
 LDFLAGS += -lopus
 endif
 
-DUMMY_LIBRARY=core lua fonts library interface video emulation dummy
-PLATFORM_LIBRARY=core lua fonts library interface video emulation platform
-ALLOBJECT=__all__.$(OBJECT_SUFFIX)
+COMMON_LIBRARY=core lua fonts library interface video emulation
+DUMMY_LIBRARY=$(COMMON_LIBRARY) dummy
+PLATFORM_LIBRARY=$(COMMON_LIBRARY) platform
+ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
-DUMMY_LIBRARY_OBJS=$(patsubst %,%/$(ALLOBJECT),$(DUMMY_LIBRARY))
-PLATFORM_LIBRARY_OBJS=$(patsubst %,%/$(ALLOBJECT),$(PLATFORM_LIBRARY))
+DUMMY_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(DUMMY_LIBRARY))
+PLATFORM_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(PLATFORM_LIBRARY))
 DUMMY_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(DUMMY_LIBRARY))
 PLATFORM_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(PLATFORM_LIBRARY))
 
+__all_dummy__.files: $(DUMMY_LIBRARY_FILES)
+	lua genfilelist.lua $^ >$@
 
-core/$(ALLOBJECT): forcelook
+__all_platform__.files: $(PLATFORM_LIBRARY_FILES)
+	lua genfilelist.lua $^ >$@
+
+core/$(ALLFILES): forcelook
 	$(MAKE) -C core
 
-dummy/$(ALLOBJECT): forcelook
+dummy/$(ALLFILES): forcelook
 	$(MAKE) -C dummy
 
-emulation/$(ALLOBJECT): forcelook
+emulation/$(ALLFILES): forcelook
 	$(MAKE) -C emulation
 
-fonts/$(ALLOBJECT): forcelook
+fonts/$(ALLFILES): forcelook
 	$(MAKE) -C fonts
 
-library/$(ALLOBJECT): forcelook
+library/$(ALLFILES): forcelook
 	$(MAKE) -C library
 
-interface/$(ALLOBJECT): forcelook
+interface/$(ALLFILES): forcelook
 	$(MAKE) -C interface
 
-lua/$(ALLOBJECT): forcelook
+lua/$(ALLFILES): forcelook
 	$(MAKE) -C lua
 
-platform/$(ALLOBJECT): forcelook
+platform/$(ALLFILES): forcelook
 	$(MAKE) -C platform
 
 util/__all_files__: forcelook
@@ -60,16 +66,16 @@ util/__all_files__: forcelook
 util/%.$(OBJECT_SUFFIX): util/__all_files__
 	@true;
 
-video/$(ALLOBJECT): forcelook
+video/$(ALLFILES): forcelook
 	$(MAKE) -C video
 
-.PRECIOUS: %.$(OBJECT_SUFFIX) util/%.$(OBJECT_SUFFIX)
+.PRECIOUS: %.$(OBJECT_SUFFIX) util/%.$(OBJECT_SUFFIX) %.files
 
-%.util$(DOT_EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) $(DUMMY_LIBRARY_OBJS)
-	$(REALCC) -o $@ $^ $(LDFLAGS) $(CORE_OBJECT) `cat $(DUMMY_LIBRARY_FLAGS)`
+%.util$(DOT_EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) __all_dummy__.files
+	$(REALCC) -o $@ $< `cat __all_dummy__.files` $(LDFLAGS) `cat $(DUMMY_LIBRARY_FLAGS)`
 
-lsnes$(DOT_EXECUTABLE_SUFFIX): $(PLATFORM_LIBRARY_OBJS)
-	$(REALCC) -o $@ $^ $(LDFLAGS) $(CORE_OBJECT) `cat $(PLATFORM_LIBRARY_FLAGS)`
+lsnes$(DOT_EXECUTABLE_SUFFIX): __all_platform__.files
+	$(REALCC) -o $@ `cat __all_platform__.files` $(LDFLAGS) `cat $(PLATFORM_LIBRARY_FLAGS)`
 
 precheck:
 	$(MAKE) -C core precheck
