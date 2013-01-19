@@ -451,10 +451,10 @@ std::string controller_key::get_string() throw(std::bad_alloc)
 void controller_key::set(keyboard_key* _key, unsigned _subkey) throw()
 {
 	umutex_class u(mutex);
-	if(_key)
-		_key->add_listener(*this, false);
-	if(key)
-		key->remove_listener(*this);
+	if(key != _key) {
+		if(_key) _key->add_listener(*this, false);
+		if(key) key->remove_listener(*this);
+	}
 	key = _key;
 	subkey = _subkey;
 }
