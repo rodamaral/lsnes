@@ -6697,5 +6697,29 @@ Data-driven controller buttons
 Generate the port code from defines
 \end_layout
 
+\begin_layout Subsection
+rr2-beta1
+\end_layout
+
+\begin_layout Itemize
+Update libgambatte to SVN364
+\end_layout
+
+\begin_layout Itemize
+Get rid of partial linking (building with MXE works)
+\end_layout
+
+\begin_layout Itemize
+Load XML even without gamepack files
+\end_layout
+
+\begin_layout Itemize
+Support screen rotate & flip
+\end_layout
+
+\begin_layout Itemize
+Fix bug when changing controller key to another subkey of the same key
+\end_layout
+
 \end_body
 \end_document

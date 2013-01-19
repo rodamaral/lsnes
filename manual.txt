@@ -3283,3 +3283,16 @@ set-axis joystick0axis19 disabled
 
 • Generate the port code from defines
 
+18.77 rr2-beta1
+
+• Update libgambatte to SVN364
+
+• Get rid of partial linking (building with MXE works)
+
+• Load XML even without gamepack files
+
+• Support screen rotate & flip
+
+• Fix bug when changing controller key to another subkey of the 
+  same key
+
