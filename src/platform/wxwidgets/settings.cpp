@@ -925,6 +925,9 @@ public:
 	wxeditor_esettings_screen(wxWindow* parent);
 	~wxeditor_esettings_screen();
 	void on_configure(wxCommandEvent& e);
+	wxCheckBox* hflip;
+	wxCheckBox* vflip;
+	wxCheckBox* rotate;
 private:
 	void refresh();
 	wxStaticText* xscale;
@@ -937,7 +940,7 @@ wxeditor_esettings_screen::wxeditor_esettings_screen(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
 	wxButton* tmp;
-	top_s = new wxFlexGridSizer(3, 3, 0, 0);
+	top_s = new wxFlexGridSizer(6, 3, 0, 0);
 	SetSizer(top_s);
 	top_s->Add(new wxStaticText(this, -1, wxT("X scale factor: ")), 0, wxGROW);
 	top_s->Add(xscale = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
@@ -954,6 +957,15 @@ wxeditor_esettings_screen::wxeditor_esettings_screen(wxWindow* parent)
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 3, wxT("Change...")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
 		NULL, this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Hflip: ")), 0, wxGROW);
+	top_s->Add(hflip = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Vflip: ")), 0, wxGROW);
+	top_s->Add(vflip = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Rotate: ")), 0, wxGROW);
+	top_s->Add(rotate = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
 	refresh();
 	top_s->SetSizeHints(this);
 	Fit();
@@ -1029,6 +1041,9 @@ void wxeditor_esettings_screen::refresh()
 	xscale->SetLabel(towxstring((stringfmt() << horizontal_scale_factor).str()));
 	yscale->SetLabel(towxstring((stringfmt() << vertical_scale_factor).str()));
 	algo->SetLabel(towxstring(getalgo(scaling_flags)));
+	hflip->SetValue(hflip_enabled);
+	vflip->SetValue(vflip_enabled);
+	rotate->SetValue(rotate_enabled);
 	top_s->Layout();
 	Fit();
 }
@@ -1978,6 +1993,7 @@ private:
 	wxeditor_esettings_controllers* controllertab;
 	wxeditor_esettings_bindings* bindtab;
 	wxeditor_esettings_advanced* advtab;
+	wxeditor_esettings_screen* screentab;
 };
 
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
@@ -1995,18 +2011,20 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
 		controllertab = NULL;
 		bindtab = NULL;
 		advtab = NULL;
+		screentab = NULL;
 		top_s->Add(hotkeytab);
 	} else if(mode == 2) {
 		hotkeytab = NULL;
 		controllertab = new wxeditor_esettings_controllers(this);
 		bindtab = NULL;
 		advtab = NULL;
+		screentab = NULL;
 		top_s->Add(controllertab);
 	} else {
 		tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 		tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
 		tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
-		tabset->AddPage(new wxeditor_esettings_screen(tabset), wxT("Scaling"));
+		tabset->AddPage(screentab = new wxeditor_esettings_screen(tabset), wxT("Scaling"));
 		tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
 		tabset->AddPage(controllertab = new wxeditor_esettings_controllers(tabset), wxT("Controllers"));
 		tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
@@ -2041,6 +2059,11 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
+	if(screentab) {
+		hflip_enabled = screentab->hflip->GetValue();
+		vflip_enabled = screentab->vflip->GetValue();
+		rotate_enabled = screentab->rotate->GetValue();
+	}
 	lsnes_kbd.set_exclusive(NULL);
 	EndModal(wxID_OK);
 }
