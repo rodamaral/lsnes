@@ -33,6 +33,16 @@ namespace
 {
 	core_type* current_rom_type = NULL;
 	core_region* current_region = NULL;
+
+	bool file_exists(const std::string& name)
+	{
+		try {
+			delete &open_file_relative(name, "");
+			return true;
+		} catch(...) {
+			return false;
+		}
+	}
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
@@ -134,10 +144,14 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			romimg[0] = loaded_slot(setting::get("firmwarepath") + "/" + bios, "",
-				coretype->get_image_info(0), false);
+			std::string basename = setting::get("firmwarepath") + "/" + bios;
+			romimg[0] = loaded_slot(basename, "", coretype->get_image_info(0), false);
+			if(file_exists(basename + ".xml"))
+				romxml[0] = loaded_slot(basename + ".xml", "", coretype->get_image_info(0), true);
 		}
 		romimg[romidx] = loaded_slot(file, "", coretype->get_image_info(romidx), false);
+		if(file_exists(file + ".xml"))
+			romxml[romidx] = loaded_slot(file + ".xml", "", coretype->get_image_info(romidx), true);
 		msu1_base = resolve_file_relative(file, "");
 		return;
 	}
