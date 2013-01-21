@@ -2122,6 +2122,30 @@ Returns bitwise OR of 1 left shifted by bit1 places, 1 left shifted by bit2
  As special value, nil argument is no-op.
 \end_layout
 
+\begin_layout Subsubsection
+bit.test_any(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Is there a common set bit in a and b?
+\end_layout
+
+\begin_layout Subsubsection
+bit.test_all(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Are all set bits in b also set in a?
+\end_layout
+
+\begin_layout Subsubsection
+bit.popcount(number a)
+\end_layout
+
+\begin_layout Standard
+Population count of a.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

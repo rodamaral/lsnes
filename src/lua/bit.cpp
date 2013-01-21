@@ -133,6 +133,38 @@ namespace
 		return 1;
 	});
 
+	function_ptr_luafun lua_testany("bit.test_any", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t b = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		lua_pushboolean(LS, (a & b) != 0);
+		return 1;
+	});
+
+	function_ptr_luafun lua_testall("bit.test_all", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t b = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		lua_pushboolean(LS, (a & b) == b);
+		return 1;
+	});
+
+	int poptable[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
+
+	int popcount(uint64_t x)
+	{
+		int c = 0;
+		for(unsigned i = 0; i < 16; i++) {
+			c += poptable[x & 15];
+			x >>= 4;
+		}
+		return c;
+	}
+
+	function_ptr_luafun lua_popcount("bit.popcount", [](lua_State* LS, const std::string& fname) -> int {
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		lua_pushnumber(LS,popcount(a));
+		return 1;
+	});
+
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_bnot("bit.bnot");
 	lua_symmetric_bitwise<combine_any, 0> bit_any("bit.any");
