@@ -2,6 +2,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/joystickapi.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"
@@ -63,7 +64,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Graphics:\t" << graphics_plugin::name << std::endl;
 			messages << "Sound:\t" << audioapi_driver_name << std::endl;
-			messages << "Joystick:\t" << joystick_plugin::name << std::endl;
+			messages << "Joystick:\t" << joystick_driver_name << std::endl;
 		});
 
 	function_ptr_command<const std::string&> enable_sound(lsnes_cmd, "enable-sound", "Enable/Disable sound",
@@ -244,12 +245,12 @@ void platform::init()
 	graphics_plugin::init();
 	audioapi_init();
 	audioapi_driver_init();
-	joystick_plugin::init();
+	joystick_driver_init();
 }
 
 void platform::quit()
 {
-	joystick_plugin::quit();
+	joystick_driver_quit();
 	audioapi_driver_quit();
 	audioapi_quit();
 	graphics_plugin::quit();

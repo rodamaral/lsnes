@@ -57,7 +57,7 @@ namespace
 	}* jtimer;
 }
 
-void joystick_plugin::init() throw()
+void joystick_driver_init() throw()
 {
 	unsigned max_joysticks = wxJoystick::GetNumberJoysticks();
 	if(!max_joysticks)
@@ -88,7 +88,7 @@ void joystick_plugin::init() throw()
 	jtimer = new joystick_timer();
 }
 
-void joystick_plugin::quit() throw()
+void joystick_driver_quit() throw()
 {
 	if(jtimer)
 		jtimer->stop();
@@ -101,15 +101,15 @@ void joystick_plugin::quit() throw()
 	joystick_quit();
 }
 
-void joystick_plugin::thread_fn() throw()
+void joystick_driver_thread_fn() throw()
 {
 	//We don't poll in this thread, so just quit instantly.
 }
 
-void joystick_plugin::signal() throw()
+void joystick_driver_signal() throw()
 {
 	//We don't poll in dedicated thread, so nothing to do.
 }
 
-const char* joystick_plugin::name = "Wxwidgets joystick plugin";
+const char* joystick_driver_name = "Wxwidgets joystick plugin";
 #endif

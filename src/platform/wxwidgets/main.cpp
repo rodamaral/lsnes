@@ -7,6 +7,7 @@
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
+#include "core/joystickapi.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
@@ -67,7 +68,7 @@ namespace
 
 	void* joystick_thread(int _args)
 	{
-		joystick_plugin::thread_fn();
+		joystick_driver_thread_fn();
 	}
 
 	struct uiserv_event : public wxEvent
@@ -471,7 +472,7 @@ bool lsnes_app::OnInit()
 		thread_class* dummy_loop = new thread_class(eloop_helper, 8);
 		wxsetingsdialog_display(NULL, false);
 		platform::exit_dummy_event_loop();
-		joystick_plugin::signal();
+		joystick_driver_signal();
 		joystick_thread_handle->join();
 		dummy_loop->join();
 		save_configuration();
@@ -548,7 +549,7 @@ int lsnes_app::OnExit()
 	information_dispatch::do_dump_end();
 	rrdata::close();
 	quit_lua();
-	joystick_plugin::signal();
+	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();
 	return 0;

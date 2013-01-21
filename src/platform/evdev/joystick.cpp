@@ -1,6 +1,7 @@
 #include "core/command.hpp"
 #include "core/keymapper.hpp"
 #include "core/joystick.hpp"
+#include "core/joystickapi.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
 
@@ -288,13 +289,13 @@ namespace
 	volatile bool quit_ack = false;
 }
 
-void joystick_plugin::init() throw()
+void joystick_driver_init() throw()
 {
 	probe_all_joysticks();
 	quit_ack = quit_signaled = false;
 }
 
-void joystick_plugin::quit() throw()
+void joystick_driver_quit() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
@@ -303,7 +304,7 @@ void joystick_plugin::quit() throw()
 
 #define POLL_WAIT 20000
 
-void joystick_plugin::thread_fn() throw()
+void joystick_driver_thread_fn() throw()
 {
 	while(!quit_signaled) {
 		for(auto fd : joystick_set())
@@ -314,10 +315,10 @@ void joystick_plugin::thread_fn() throw()
 	quit_ack = true;
 }
 
-void joystick_plugin::signal() throw()
+void joystick_driver_signal() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
 }
 
-const char* joystick_plugin::name = "Evdev joystick plugin";
+const char* joystick_driver_name = "Evdev joystick plugin";

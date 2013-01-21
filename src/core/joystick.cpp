@@ -1,5 +1,6 @@
 #include "core/command.hpp"
 #include "core/joystick.hpp"
+#include "core/joystickapi.hpp"
 #include "core/window.hpp"
 #include "core/keymapper.hpp"
 #include "library/keyboard.hpp"
@@ -20,7 +21,7 @@ namespace
 	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joysticks",
 		"Syntax: show-joysticks\nShow joystick data.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Driver: " << joystick_plugin::name << std::endl;
+			messages << "Driver: " << joystick_driver_name << std::endl;
 			messages << "--------------------------------------" << std::endl;
 			for(auto i : joynumbers)
 				messages << joysticks[i.first].compose_report(i.second) << std::endl;

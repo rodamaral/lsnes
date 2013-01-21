@@ -2,6 +2,7 @@
 #include "core/framerate.hpp"
 #include "core/joystick.hpp"
 #include "core/keymapper.hpp"
+#include "core/joystickapi.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
@@ -29,7 +30,7 @@ namespace
 		"Button32"};
 }
 
-void joystick_plugin::init() throw()
+void joystick_driver_init() throw()
 {
 	unsigned max_joysticks = joyGetNumDevs();
 	if(!max_joysticks)
@@ -59,7 +60,7 @@ void joystick_plugin::init() throw()
 	quit_ack = quit_signaled = false;
 }
 
-void joystick_plugin::quit() throw()
+void joystick_driver_quit() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
@@ -68,7 +69,7 @@ void joystick_plugin::quit() throw()
 
 #define POLL_WAIT 20000
 
-void joystick_plugin::thread_fn() throw()
+void joystick_driver_thread_fn() throw()
 {
 	while(!quit_signaled) {
 		for(auto i : joystick_set()) {
@@ -93,10 +94,10 @@ void joystick_plugin::thread_fn() throw()
 	quit_ack = true;
 }
 
-void joystick_plugin::signal() throw()
+void joystick_driver_signal() throw()
 {
 	quit_signaled = true;
 	while(!quit_ack);
 }
 
-const char* joystick_plugin::name = "Win32mm joystick plugin";
+const char* joystick_driver_name = "Win32mm joystick plugin";

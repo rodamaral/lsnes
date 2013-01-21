@@ -1,19 +1,19 @@
-#include "core/window.hpp"
+#include "core/joystickapi.hpp"
 
-void joystick_plugin::init() throw()
+void joystick_driver_init() throw()
 {
 }
 
-void joystick_plugin::quit() throw()
+void joystick_driver_quit() throw()
 {
 }
 
-void joystick_plugin::thread_fn() throw()
+void joystick_driver_thread_fn() throw()
 {
 }
 
-void joystick_plugin::signal() throw()
+void joystick_driver_signal() throw()
 {
 }
 
-const char* joystick_plugin::name = "Dummy joystick plugin";
+const char* joystick_driver_name = "Dummy joystick plugin";

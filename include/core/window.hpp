@@ -101,46 +101,6 @@ struct graphics_plugin
 };
 
 /**
- * Functions implemented by the joystick plugin.
- *
- * Unless explicitly noted otherwise, all the methods are to be called from emulation thread if that exists, otherwise
- * from the main thread.
- */
-struct joystick_plugin
-{
-/**
- * Joystick initialization function.
- *
- * - The third initialization function to be called by window_init().
- * - The call occurs in the main thread.
- * - Implemented by the joystick plugin.
- */
-	static void init() throw();
-/**
- * Joystick quit function.
- *
- * - The third last quit function to be called by window_quit().
- * - The call occurs in the main thread.
- * - Implemented by the joystick plugin.
- */
-	static void quit() throw();
-/**
- * This thread becomes the joystick polling thread.
- *
- * - Called in joystick polling thread.
- */
-	static void thread_fn() throw();
-/**
- * Signal the joystick thread to quit.
- */
-	static void signal() throw();
-/**
- * Identification for joystick plugin.
- */
-	static const char* name;
-};
-
-/**
  * Platform-specific-related functions.
  */
 struct platform
