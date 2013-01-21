@@ -1406,6 +1406,22 @@ Returns bitwise OR of 1 left shifted by bit1 places, 1 left shifted by bit2
  As special value, nil argument is no-op.
 \end_layout
 
+\begin_layout Subsubsection
+bit.test_any(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Returns true if bitwise and of a and b is nonzero, otherwise false.
+\end_layout
+
+\begin_layout Subsubsection
+bit.test_all(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Returns true if bitwise and of a and b is equals b, otherwise false.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

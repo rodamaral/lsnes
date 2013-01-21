@@ -681,6 +681,16 @@ Returns bitwise OR of 1 left shifted by bit1 places, 1 left
 shifted by bit2 places and so on. As special value, nil argument 
 is no-op.
 
+8.2.12 bit.test_any(number a, number b)
+
+Returns true if bitwise and of a and b is nonzero, otherwise 
+false.
+
+8.2.13 bit.test_all(number a, number b)
+
+Returns true if bitwise and of a and b is equals b, otherwise 
+false.
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 

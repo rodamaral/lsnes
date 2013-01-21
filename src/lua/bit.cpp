@@ -133,6 +133,20 @@ namespace
 		return 1;
 	});
 
+	function_ptr_luafun lua_testany(LS, "bit.test_any", [](lua_state& L, const std::string& fname) -> int {
+		uint64_t a = L.get_numeric_argument<uint8_t>(1, fname.c_str());
+		uint64_t b = L.get_numeric_argument<uint8_t>(2, fname.c_str());
+		L.pushboolean((a & b) != 0);
+		return 1;
+	});
+
+	function_ptr_luafun lua_testall(LS, "bit.test_all", [](lua_state& L, const std::string& fname) -> int {
+		uint64_t a = L.get_numeric_argument<uint8_t>(1, fname.c_str());
+		uint64_t b = L.get_numeric_argument<uint8_t>(2, fname.c_str());
+		L.pushboolean((a & b) == b);
+		return 1;
+	});
+
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_bnot("bit.bnot");
 	lua_symmetric_bitwise<combine_any, 0> bit_any("bit.any");
