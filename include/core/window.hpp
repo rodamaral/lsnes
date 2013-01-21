@@ -12,6 +12,12 @@
 
 class emulator_status;
 
+#ifdef GRAPHICS_WEAK
+#define GRAPHICS_DRV_ATTRIBUTE __attribute__((weak))
+#else
+#define GRAPHICS_DRV_ATTRIBUTE
+#endif
+
 /**
  * Information about keypress.
  */
@@ -47,30 +53,32 @@ struct keypress
 	short value;
 };
 
+//Is dummy graphics plugin.
+extern bool graphics_driver_is_dummy GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Graphics initialization function.
  *
  * - The first initialization function to be called by platform::init().
  */
-void graphics_driver_init() throw();
+void graphics_driver_init() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Graphics quit function.
  *
  * - The last quit function to be called by platform::quit().
  */
-void graphics_driver_quit() throw();
+void graphics_driver_quit() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Notification when messages get updated.
  */
-void graphics_driver_notify_message() throw();
+void graphics_driver_notify_message() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Notification when status gets updated.
  */
-void graphics_driver_notify_status() throw();
+void graphics_driver_notify_status() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Notification when main screen gets updated.
  */
-void graphics_driver_notify_screen() throw();
+void graphics_driver_notify_screen() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Show modal message dialog.
  *
@@ -78,18 +86,18 @@ void graphics_driver_notify_screen() throw();
  * Parameter confirm: If true, display confirmation dialog, if false, display notification dialog.
  * Returns: True if confirmation dialog was confirmed, otherwise false.
  */
-bool graphics_driver_modal_message(const std::string& text, bool confirm = false) throw();
+bool graphics_driver_modal_message(const std::string& text, bool confirm = false) throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Displays fatal error message.
  *
  * - After this routine returns, the program will quit.
  * - The call can occur in any thread.
  */
-void graphics_driver_fatal_error() throw();
+void graphics_driver_fatal_error() throw() GRAPHICS_DRV_ATTRIBUTE ;
 /**
  * Identification for graphics plugin.
  */
-extern const char* graphics_driver_name;
+extern const char* graphics_driver_name GRAPHICS_DRV_ATTRIBUTE ;
 
 /**
  * Platform-specific-related functions.

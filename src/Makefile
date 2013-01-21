@@ -21,16 +21,14 @@ LDFLAGS += -lopus
 endif
 
 COMMON_LIBRARY=core lua fonts library interface video emulation
-DUMMY_LIBRARY=$(COMMON_LIBRARY) dummy
-PLATFORM_LIBRARY=$(COMMON_LIBRARY) platform
 ALLFILES=__all__.files
 ALLFLAGS=__all__.ldflags
-DUMMY_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(DUMMY_LIBRARY))
-PLATFORM_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(PLATFORM_LIBRARY))
-DUMMY_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(DUMMY_LIBRARY))
-PLATFORM_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(PLATFORM_LIBRARY))
+COMMON_LIBRARY_FILES=$(patsubst %,%/$(ALLFILES),$(COMMON_LIBRARY))
+COMMON_LIBRARY_FLAGS=$(patsubst %,%/$(ALLFLAGS),$(COMMON_LIBRARY))
+PLATFORM_LIBRARY_FILES=platform/$(ALLFILES)
+PLATFORM_LIBRARY_FLAGS=platform/$(ALLFLAGS)
 
-__all_dummy__.files: $(DUMMY_LIBRARY_FILES)
+__all_common__.files: $(COMMON_LIBRARY_FILES)
 	lua genfilelist.lua $^ >$@
 
 __all_platform__.files: $(PLATFORM_LIBRARY_FILES)
@@ -38,9 +36,6 @@ __all_platform__.files: $(PLATFORM_LIBRARY_FILES)
 
 core/$(ALLFILES): forcelook
 	$(MAKE) -C core
-
-dummy/$(ALLFILES): forcelook
-	$(MAKE) -C dummy
 
 emulation/$(ALLFILES): forcelook
 	$(MAKE) -C emulation
@@ -71,15 +66,14 @@ video/$(ALLFILES): forcelook
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) util/%.$(OBJECT_SUFFIX) %.files
 
-%.util$(DOT_EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) __all_dummy__.files
-	$(REALCC) -o $@ $< `cat __all_dummy__.files` $(LDFLAGS) `cat $(DUMMY_LIBRARY_FLAGS)`
+%.util$(DOT_EXECUTABLE_SUFFIX): %.$(OBJECT_SUFFIX) __all_common__.files
+	$(REALCC) -o $@ $< `cat __all_common__.files` $(LDFLAGS) `cat $(COMMON_LIBRARY_FLAGS)`
 
-lsnes$(DOT_EXECUTABLE_SUFFIX): __all_platform__.files
-	$(REALCC) -o $@ `cat __all_platform__.files` $(LDFLAGS) `cat $(PLATFORM_LIBRARY_FLAGS)`
+lsnes$(DOT_EXECUTABLE_SUFFIX): __all_common__.files __all_platform__.files
+	$(REALCC) -o $@ `cat __all_common__.files __all_platform__.files` $(LDFLAGS) `cat $(COMMON_LIBRARY_FLAGS) $(PLATFORM_LIBRARY_FLAGS)`
 
 precheck:
 	$(MAKE) -C core precheck
-	$(MAKE) -C dummy precheck
 	$(MAKE) -C emulation precheck
 	$(MAKE) -C interface precheck
 	$(MAKE) -C library precheck
@@ -91,7 +85,6 @@ precheck:
 clean:
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags
 	$(MAKE) -C core clean
-	$(MAKE) -C dummy clean
 	$(MAKE) -C emulation clean
 	$(MAKE) -C fonts clean
 	$(MAKE) -C interface clean

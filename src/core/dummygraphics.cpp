@@ -1,9 +1,10 @@
+#define GRAPHICS_WEAK
 #include "core/window.hpp"
 
 #include <cstdlib>
 #include <iostream>
 
-bool dummy_interface = true;
+bool graphics_driver_is_dummy = true;
 
 namespace
 {
