@@ -56,7 +56,7 @@ bool wxwidgets_exiting = false;
 
 namespace
 {
-	thread_id* ui_thread;
+	threadid_class ui_thread;
 	volatile bool panic_ack = false;
 	std::string modal_dialog_text;
 	volatile bool modal_dialog_confirm;
@@ -442,7 +442,7 @@ bool lsnes_app::OnInit()
 
 	ui_services = new ui_services_type();
 
-	ui_thread = &thread_id::me();
+	ui_thread = this_thread_id();
 	platform::init();
 
 	messages << "lsnes version: lsnes rr" << lsnes_version << std::endl;
@@ -589,7 +589,7 @@ bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw
 void graphics_plugin::fatal_error() throw()
 {
 	//Fun: This can be called from any thread!
-	if(ui_thread->is_me()) {
+	if(ui_thread == this_thread_id()) {
 		//UI thread.
 		platform::set_modal_pause(true);
 		wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR | wxOK);

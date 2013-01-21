@@ -6,7 +6,7 @@
 
 namespace
 {
-	volatile thread_id* threads[DESIGNATED_THREADS];
+	threadid_class threads[DESIGNATED_THREADS];
 	volatile bool thread_marked;
 	mutex_class malloc_mutex;
 	bool initialized = false;
@@ -21,8 +21,8 @@ void assert_thread(signed shouldbe, const std::string& desc)
 	}
 	if(!thread_marked)
 		return;
-	thread_id* t = const_cast<thread_id*>(threads[shouldbe]);
-	if(!t || !t->is_me())
+	threadid_class t = threads[shouldbe];
+	if(t != this_thread_id())
 		std::cerr << "WARNING: " << desc << ": Wrong thread!" << std::endl;
 #endif
 }
@@ -35,7 +35,7 @@ void mark_thread_as(signed call_me)
 		return;
 	}
 	thread_marked = true;
-	threads[call_me] = &thread_id::me();
+	threads[call_me] = this_thread_id();
 #endif
 }
 

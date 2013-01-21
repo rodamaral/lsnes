@@ -13,27 +13,6 @@
 class emulator_status;
 
 /**
- * Thread ID.
- */
-struct thread_id
-{
-/**
- * Return thread id for this thread. Can be freed with delete.
- */
-	static thread_id& me() throw(std::bad_alloc);
-/**
- * Destructor.
- */
-	virtual ~thread_id() throw();
-/**
- * Is this thread me?
- */
-	virtual bool is_me() throw() = 0;
-protected:
-	thread_id() throw();
-};
-
-/**
  * Thread.
  */
 struct thread

@@ -2,33 +2,6 @@
 
 #include <wx/thread.h>
 
-struct wxw_thread_id : public thread_id
-{
-	wxw_thread_id() throw();
-	~wxw_thread_id() throw();
-	bool is_me() throw();
-	uint32_t id;
-};
-
-wxw_thread_id::wxw_thread_id() throw()
-{
-	id = wxThread::GetCurrentId();
-}
-
-wxw_thread_id::~wxw_thread_id() throw()
-{
-}
-
-bool wxw_thread_id::is_me() throw()
-{
-	return (id == wxThread::GetCurrentId());
-}
-
-thread_id& thread_id::me() throw(std::bad_alloc)
-{
-	return *new wxw_thread_id;
-}
-
 struct wxw_thread;
 
 struct wxw_thread_inner : public wxThread

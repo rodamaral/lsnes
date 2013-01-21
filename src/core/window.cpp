@@ -29,14 +29,6 @@
 #define MAXMESSAGES 5000
 #define INIT_WIN_SIZE 6
 
-thread_id::thread_id() throw()
-{
-}
-
-thread_id::~thread_id() throw()
-{
-}
-
 thread::thread() throw()
 {
 	alive = true;

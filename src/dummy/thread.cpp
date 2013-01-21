@@ -1,25 +1,5 @@
 #include "core/window.hpp"
 
-struct dummy_thread_id : public thread_id
-{
-	~dummy_thread_id() throw();
-	bool is_me() throw();
-};
-
-dummy_thread_id::~dummy_thread_id() throw()
-{
-}
-
-bool dummy_thread_id::is_me() throw()
-{
-	return true;
-}
-
-thread_id& thread_id::me() throw(std::bad_alloc)
-{
-	return *new dummy_thread_id();
-}
-
 struct dummy_thread : public thread
 {
 	dummy_thread();

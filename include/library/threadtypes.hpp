@@ -12,9 +12,14 @@ typedef std::condition_variable cv_class;
 typedef std::mutex mutex_class;
 typedef std::unique_lock<std::mutex> umutex_class;
 typedef std::chrono::microseconds microsec_class;
+typedef std::thread::id threadid_class;
 inline void cv_timed_wait(cv_class& c, umutex_class& m, const microsec_class& t)
 {
 	c.wait_for(m, t);
+}
+inline threadid_class this_thread_id()
+{
+	return std::this_thread::get_id();
 }
 #else
 #include <boost/thread.hpp>
@@ -24,9 +29,14 @@ typedef boost::condition_variable cv_class;
 typedef boost::mutex mutex_class;
 typedef boost::unique_lock<boost::mutex> umutex_class;
 typedef boost::posix_time::microseconds microsec_class;
+typedef boost::thread::id threadid_class;
 inline void cv_timed_wait(cv_class& c, umutex_class& m, const microsec_class& t)
 {
 	c.timed_wait(m, t);
+}
+inline threadid_class this_thread_id()
+{
+	return boost::this_thread::get_id();
 }
 #endif
 
