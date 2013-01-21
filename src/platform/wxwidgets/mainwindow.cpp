@@ -135,7 +135,7 @@ namespace
 	bool old_vflip = false;
 	bool old_rotate = false;
 	bool main_window_dirty;
-	struct thread* emulation_thread;
+	thread_class* emulation_thread;
 
 	double pick_volume(wxWindow* win, const std::string& title, std::string& last)
 	{
@@ -594,7 +594,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 		a->initial = &movie;
 		a->load_has_to_succeed = false;
 		modal_pause_holder hld;
-		emulation_thread = &thread::create(emulator_main, a);
+		emulation_thread = new thread_class(emulator_main, a);
 		main_window = new wxwin_mainwindow();
 		main_window->Show();
 	} catch(std::bad_alloc& e) {

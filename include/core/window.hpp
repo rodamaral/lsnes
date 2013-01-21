@@ -13,43 +13,6 @@
 class emulator_status;
 
 /**
- * Thread.
- */
-struct thread
-{
-/**
- * Create a thread, jumping to specified starting point.
- */
-	static thread& create(void* (*entrypoint)(void* arg), void* arg) throw(std::bad_alloc, std::runtime_error);
-/**
- * Destroy a thread, first joining it (if not already joined).
- */
-	virtual ~thread() throw();
-/**
- * Is this thread still alive?
- */
-	bool is_alive() throw();
-/**
- * Join a thread.
- */
-	void* join() throw();
-protected:
-	thread() throw();
-/**
- * Notify that this thread has quit.
- */
-	void notify_quit(void* retval) throw();
-/**
- * Join a thread.
- */
-	virtual void _join() throw() = 0;
-private:
-	bool alive;
-	bool joined;
-	void* returns;
-};
-
-/**
  * Information about keypress.
  */
 struct keypress

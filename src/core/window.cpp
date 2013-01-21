@@ -29,35 +29,6 @@
 #define MAXMESSAGES 5000
 #define INIT_WIN_SIZE 6
 
-thread::thread() throw()
-{
-	alive = true;
-	joined = false;
-}
-
-thread::~thread() throw()
-{
-}
-
-bool thread::is_alive() throw()
-{
-	return alive;
-}
-
-void* thread::join() throw()
-{
-	if(!joined)
-		this->_join();
-	joined = true;
-	return returns;
-}
-
-void thread::notify_quit(void* ret) throw()
-{
-	returns = ret;
-	alive = false;
-}
-
 keypress::keypress()
 {
 	key1 = NULL;
