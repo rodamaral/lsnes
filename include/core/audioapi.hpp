@@ -1,12 +1,6 @@
 #ifndef _audioapi__hpp__included__
 #define _audioapi__hpp__included__
 
-#ifdef AUDIO_WEAK
-#define AUDIOAPI_DRV_ATTRIBUTE __attribute__((weak))
-#else
-#define AUDIOAPI_DRV_ATTRIBUTE
-#endif
-
 #include <map>
 #include <cstdint>
 #include <cstdlib>
@@ -230,26 +224,26 @@ void audioapi_voice_rate(unsigned rate);
 /**
  * Initialize the driver.
  */
-void audioapi_driver_init() throw() AUDIOAPI_DRV_ATTRIBUTE ;
+void audioapi_driver_init() throw();
 
 /**
  * Deinitialize the driver.
  */
-void audioapi_driver_quit() throw() AUDIOAPI_DRV_ATTRIBUTE ;
+void audioapi_driver_quit() throw();
 
 /**
  * Enable or disable sound.
  *
  * parameter enable: Enable sounds if true, otherwise disable sounds.
  */
-void audioapi_driver_enable(bool enable) throw() AUDIOAPI_DRV_ATTRIBUTE ;
+void audioapi_driver_enable(bool enable) throw();
 
 /**
  * Has the sound system been successfully initialized?
  *
  * Returns: True if sound system has successfully initialized, false otherwise.
  */
-bool audioapi_driver_initialized() AUDIOAPI_DRV_ATTRIBUTE ;
+bool audioapi_driver_initialized();
 
 /**
  * Set sound device.
@@ -258,25 +252,25 @@ bool audioapi_driver_initialized() AUDIOAPI_DRV_ATTRIBUTE ;
  *
  * Parameter dev: The new sound device.
  */
-void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error) AUDIOAPI_DRV_ATTRIBUTE ;
+void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Get current sound device.
  *
  * Returns: The current sound device.
  */
-std::string audioapi_driver_get_device() throw(std::bad_alloc) AUDIOAPI_DRV_ATTRIBUTE ;
+std::string audioapi_driver_get_device() throw(std::bad_alloc);
 
 /**
  * Get available sound devices.
  *
  * Returns: The map of devices. Keyed by name of the device, values are human-readable names for devices.
  */
-std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc) AUDIOAPI_DRV_ATTRIBUTE ;
+std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc);
 
 /**
  * Identification for sound plugin.
  */
-extern const char* audioapi_driver_name AUDIOAPI_DRV_ATTRIBUTE ;
+extern const char* audioapi_driver_name;
 
 #endif

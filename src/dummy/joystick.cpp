@@ -1,4 +1,3 @@
-#define JOYSTICK_WEAK
 #include "core/joystickapi.hpp"
 
 void joystick_driver_init() throw()

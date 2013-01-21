@@ -52,7 +52,7 @@ wxwin_messages* msg_window;
 wxwin_mainwindow* main_window;
 std::string our_rom_name;
 
-bool graphics_driver_is_dummy = false;
+bool dummy_interface = false;
 bool wxwidgets_exiting = false;
 
 namespace

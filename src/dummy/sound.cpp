@@ -1,4 +1,3 @@
-#define AUDIO_WEAK
 #include "core/command.hpp"
 #include "core/audioapi.hpp"
 
