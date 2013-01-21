@@ -1430,6 +1430,24 @@ bit.popcount(number a)
 Returns number of set bits in a.
 \end_layout
 
+\begin_layout Subsubsection
+bit.clshift(number a, number b, [number amount,[number bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained left shift on a, b by amount positions, assuming numbers to
+ be of specified number of bits.
+\end_layout
+
+\begin_layout Subsubsection
+bit.crshift(number a, number b, [number amount,[number bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained right shift on a, b by amount positions, assuming numbers to
+ be of specified number of bits.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

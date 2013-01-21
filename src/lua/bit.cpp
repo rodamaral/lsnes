@@ -165,6 +165,45 @@ namespace
 		return 1;
 	});
 
+	function_ptr_luafun lua_clshift(LS, "bit.clshift", [](lua_state& L, const std::string& fname) -> int {
+		unsigned amount = 1;
+		unsigned bits = 48;
+		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		L.get_numeric_argument(3, amount, fname.c_str());
+		L.get_numeric_argument(4, bits, fname.c_str());
+		uint64_t mask = ((1ULL << bits) - 1);
+		a &= mask;
+		b &= mask;
+		a <<= amount;
+		a &= mask;
+		a |= (b >> (bits - amount));
+		b <<= amount;
+		b &= mask;
+		L.pushnumber(a);
+		L.pushnumber(b);
+		return 2;
+	});
+
+	function_ptr_luafun lua_crshift(LS, "bit.crshift", [](lua_state& L, const std::string& fname) -> int {
+		unsigned amount = 1;
+		unsigned bits = 48;
+		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		L.get_numeric_argument(3, amount, fname.c_str());
+		L.get_numeric_argument(4, bits, fname.c_str());
+		uint64_t mask = ((1ULL << bits) - 1);
+		a &= mask;
+		b &= mask;
+		b >>= amount;
+		b |= (a << (bits - amount));
+		b &= mask;
+		a >>= amount;
+		L.pushnumber(a);
+		L.pushnumber(b);
+		return 2;
+	});
+
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_bnot("bit.bnot");
 	lua_symmetric_bitwise<combine_any, 0> bit_any("bit.any");

@@ -695,6 +695,18 @@ false.
 
 Returns number of set bits in a.
 
+8.2.15 bit.clshift(number a, number b, [number amount,[number 
+  bits]])
+
+Does chained left shift on a, b by amount positions, assuming 
+numbers to be of specified number of bits.
+
+8.2.16 bit.crshift(number a, number b, [number amount,[number 
+  bits]])
+
+Does chained right shift on a, b by amount positions, assuming 
+numbers to be of specified number of bits.
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
