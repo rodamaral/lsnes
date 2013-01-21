@@ -2,9 +2,6 @@ OBJECTS=
 ifeq ($(SOUND),DUMMY)
 OBJECTS += sound.$(OBJECT_SUFFIX)
 endif
-ifeq ($(JOYSTICK),DUMMY)
-OBJECTS += joystick.$(OBJECT_SUFFIX)
-endif
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 
