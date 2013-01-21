@@ -258,7 +258,6 @@ framebuffer_raw get_framebuffer() throw(std::bad_alloc)
 
 triplebuffer_logic::triplebuffer_logic() throw(std::bad_alloc)
 {
-	mut = &mutex::aquire();
 	last_complete_slot = 0;
 	read_active = false;
 	write_active = false;
@@ -268,12 +267,11 @@ triplebuffer_logic::triplebuffer_logic() throw(std::bad_alloc)
 
 triplebuffer_logic::~triplebuffer_logic() throw()
 {
-	delete mut;
 }
 
 unsigned triplebuffer_logic::start_write() throw()
 {
-	mutex::holder h(*mut);
+	umutex_class h(mut);
 	if(!write_active) {
 		//We need to avoid hitting last complete slot or slot that is active for read.
 		if(last_complete_slot != 0 && read_active_slot != 0)
@@ -289,14 +287,14 @@ unsigned triplebuffer_logic::start_write() throw()
 
 void triplebuffer_logic::end_write() throw()
 {
-	mutex::holder h(*mut);
+	umutex_class h(mut);
 	if(!--write_active)
 		last_complete_slot = write_active_slot;
 }
 
 unsigned triplebuffer_logic::start_read() throw()
 {
-	mutex::holder h(*mut);
+	umutex_class h(mut);
 	if(!read_active)
 		read_active_slot = last_complete_slot;
 	read_active++;
@@ -305,6 +303,6 @@ unsigned triplebuffer_logic::start_read() throw()
 
 void triplebuffer_logic::end_read() throw()
 {
-	mutex::holder h(*mut);
+	umutex_class h(mut);
 	read_active--;
 }

@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 #include "lua/bitmap.hpp"
+#include "library/threadtypes.hpp"
 #include <vector>
 
 lua_bitmap::lua_bitmap(uint32_t w, uint32_t h)
@@ -20,12 +21,10 @@ lua_dbitmap::lua_dbitmap(uint32_t w, uint32_t h)
 
 lua_palette::lua_palette()
 {
-	palette_mutex = &mutex::aquire();
 }
 
 lua_palette::~lua_palette()
 {
-	delete palette_mutex;
 }
 
 namespace
@@ -61,7 +60,7 @@ namespace
 		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
 		{
 			if(p)
-				p->object()->palette_mutex->lock();
+				p->object()->palette_mutex.lock();
 			uint32_t originx = scr.get_origin_x();
 			uint32_t originy = scr.get_origin_y();
 			size_t pallim = 0;
@@ -101,7 +100,7 @@ namespace
 						b2->object()->pixels[r * b2->object()->width + c].apply(rptr[eptr]);
 			}
 			if(p)
-				p->object()->palette_mutex->unlock();
+				p->object()->palette_mutex.unlock();
 		}
 		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
@@ -167,9 +166,9 @@ namespace
 		premultiplied_color nc(nval);
 		//The mutex lock protects only the internals of colors array.
 		if(p->colors.size() <= c) {
-			p->palette_mutex->lock();
+			p->palette_mutex.lock();
 			p->colors.resize(static_cast<uint32_t>(c) + 1);
-			p->palette_mutex->unlock();
+			p->palette_mutex.unlock();
 		}
 		p->colors[c] = nc;
 		return 0;

@@ -9,6 +9,7 @@
 #include "library/framebuffer.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "library/threadtypes.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -27,39 +28,6 @@
 
 #define MAXMESSAGES 5000
 #define INIT_WIN_SIZE 6
-
-mutex::holder::holder(mutex& m) throw()
-	: mut(m)
-{
-	mut.lock();
-}
-
-mutex::holder::~holder() throw()
-{
-	mut.unlock();
-}
-
-mutex::~mutex() throw()
-{
-}
-
-mutex::mutex() throw()
-{
-}
-
-condition::~condition() throw()
-{
-}
-
-mutex& condition::associated() throw()
-{
-	return assoc;
-}
-
-condition::condition(mutex& m)
-	: assoc(m)
-{
-}
 
 thread_id::thread_id() throw()
 {
@@ -347,7 +315,7 @@ messagebuffer platform::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 
 void platform::message(const std::string& msg) throw(std::bad_alloc)
 {
-	mutex::holder h(msgbuf_lock());
+	umutex_class h(msgbuf_lock());
 	std::string msg2 = msg;
 	while(msg2 != "") {
 		std::string forlog;
@@ -374,8 +342,8 @@ void platform::fatal_error() throw()
 
 namespace
 {
-	mutex* queue_lock;
-	condition* queue_condition;
+	mutex_class queue_lock;
+	cv_class queue_condition;
 	std::deque<keypress> keypresses;
 	std::deque<std::string> commands;
 	std::deque<std::pair<void(*)(void*), void*>> functions;
@@ -387,50 +355,46 @@ namespace
 
 	void init_threading()
 	{
-		if(!queue_lock)
-			queue_lock = &mutex::aquire();
-		if(!queue_condition)
-			queue_condition = &condition::aquire(*queue_lock);
 	}
 
 	void internal_run_queues(bool unlocked) throw()
 	{
 		init_threading();
 		if(!unlocked)
-			queue_lock->lock();
+			queue_lock.lock();
 		try {
 			//Flush keypresses.
 			while(!keypresses.empty()) {
 				keypress k = keypresses.front();
 				keypresses.pop_front();
-				queue_lock->unlock();
+				queue_lock.unlock();
 				if(k.key1)
 					k.key1->set_state(k.modifiers, k.value);
 				if(k.key2)
 					k.key2->set_state(k.modifiers, k.value);
-				queue_lock->lock();
+				queue_lock.lock();
 				queue_function_run = true;
 			}
 			//Flush commands.
 			while(!commands.empty()) {
 				std::string c = commands.front();
 				commands.pop_front();
-				queue_lock->unlock();
+				queue_lock.unlock();
 				lsnes_cmd.invoke(c);
-				queue_lock->lock();
+				queue_lock.lock();
 				queue_function_run = true;
 			}
 			//Flush functions.
 			while(!functions.empty()) {
 				std::pair<void(*)(void*), void*> f = functions.front();
 				functions.pop_front();
-				queue_lock->unlock();
+				queue_lock.unlock();
 				f.first(f.second);
-				queue_lock->lock();
+				queue_lock.lock();
 				++functions_executed;
 				queue_function_run = true;
 			}
-			queue_condition->signal();
+			queue_condition.notify_all();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
 		} catch(std::exception& e) {
@@ -438,7 +402,7 @@ namespace
 			exit(1);
 		}
 		if(!unlocked)
-			queue_lock->unlock();
+			queue_lock.unlock();
 	}
 
 	uint64_t on_idle_time;
@@ -457,9 +421,9 @@ void platform::dummy_event_loop() throw()
 {
 	init_threading();
 	while(!do_exit_dummy_event_loop) {
-		mutex::holder h(*queue_lock);
+		umutex_class h(queue_lock);
 		internal_run_queues(true);
-		queue_condition->wait(MAXWAIT);
+		cv_timed_wait(queue_condition, h, microsec_class(MAXWAIT));
 	}
 }
 
@@ -467,8 +431,8 @@ void platform::exit_dummy_event_loop() throw()
 {
 	init_threading();
 	do_exit_dummy_event_loop = true;
-	mutex::holder h(*queue_lock);
-	queue_condition->signal();
+	umutex_class h(queue_lock);
+	queue_condition.notify_all();
 	usleep(200000);
 }
 
@@ -491,7 +455,7 @@ void platform::flush_command_queue() throw()
 			reload_lua_timers();
 			run_idle = false;
 		}
-		mutex::holder h(*queue_lock);
+		umutex_class h(queue_lock);
 		internal_run_queues(true);
 		if(!pausing_allowed)
 			break;
@@ -512,7 +476,7 @@ void platform::flush_command_queue() throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0)
-				queue_condition->wait(waitleft);
+				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
 		} else
 			break;
 		//If we had to wait, check queues at least once more.
@@ -543,7 +507,7 @@ void platform::wait(uint64_t usec) throw()
 			run_idle = false;
 			reload_lua_timers();
 		}
-		mutex::holder h(*queue_lock);
+		umutex_class h(queue_lock);
 		internal_run_queues(true);
 		if(queue_function_run)
 			reload_lua_timers();
@@ -561,7 +525,7 @@ void platform::wait(uint64_t usec) throw()
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
 			if(waitleft > 0)
-				queue_condition->wait(waitleft);
+				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
 		} else
 			return;
 	}
@@ -571,8 +535,8 @@ void platform::cancel_wait() throw()
 {
 	init_threading();
 	continue_time = 0;
-	mutex::holder h(*queue_lock);
-	queue_condition->signal();
+	umutex_class h(queue_lock);
+	queue_condition.notify_all();
 }
 
 void platform::set_modal_pause(bool enable) throw()
@@ -583,17 +547,17 @@ void platform::set_modal_pause(bool enable) throw()
 void platform::queue(const keypress& k) throw(std::bad_alloc)
 {
 	init_threading();
-	mutex::holder h(*queue_lock);
+	umutex_class h(queue_lock);
 	keypresses.push_back(k);
-	queue_condition->signal();
+	queue_condition.notify_all();
 }
 
 void platform::queue(const std::string& c) throw(std::bad_alloc)
 {
 	init_threading();
-	mutex::holder h(*queue_lock);
+	umutex_class h(queue_lock);
 	commands.push_back(c);
-	queue_condition->signal();
+	queue_condition.notify_all();
 }
 
 void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
@@ -601,13 +565,13 @@ void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_
 	if(sync && queue_synchronous_fn_warning)
 		std::cerr << "WARNING: Synchronous queue in callback to UI, this may deadlock!" << std::endl;
 	init_threading();
-	mutex::holder h(*queue_lock);
+	umutex_class h(queue_lock);
 	++next_function;
 	functions.push_back(std::make_pair(f, arg));
-	queue_condition->signal();
+	queue_condition.notify_all();
 	if(sync)
 		while(functions_executed < next_function)
-			queue_condition->wait(10000);
+			cv_timed_wait(queue_condition, h, microsec_class(10000));
 }
 
 void platform::run_queues() throw()
@@ -617,7 +581,7 @@ void platform::run_queues() throw()
 
 namespace
 {
-	mutex* _msgbuf_lock;
+	mutex_class _msgbuf_lock;
 	framebuffer<false>* our_screen;
 
 	struct painter_listener : public information_dispatch
@@ -646,15 +610,9 @@ namespace
 	}
 }
 
-mutex& platform::msgbuf_lock() throw()
+mutex_class& platform::msgbuf_lock() throw()
 {
-	if(!_msgbuf_lock)
-		try {
-			_msgbuf_lock = &mutex::aquire();
-		} catch(...) {
-			OOM_panic();
-		}
-	return *_msgbuf_lock;
+	return _msgbuf_lock;
 }
 
 void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw()

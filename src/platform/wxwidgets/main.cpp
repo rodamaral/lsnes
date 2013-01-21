@@ -18,6 +18,7 @@
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
+#include "library/threadtypes.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -60,8 +61,8 @@ namespace
 	std::string modal_dialog_text;
 	volatile bool modal_dialog_confirm;
 	volatile bool modal_dialog_active;
-	mutex* ui_mutex;
-	condition* ui_condition;
+	mutex_class ui_mutex;
+	cv_class ui_condition;
 	thread* joystick_thread_handle;
 
 	void* joystick_thread(void* _args)
@@ -113,7 +114,7 @@ namespace
 			std::string text;
 			bool confirm;
 			{
-				mutex::holder h(*ui_mutex);
+				umutex_class h(ui_mutex);
 				text = modal_dialog_text;
 				confirm = modal_dialog_confirm;
 			}
@@ -126,10 +127,10 @@ namespace
 					main_window);
 			}
 			{
-				mutex::holder h(*ui_mutex);
+				umutex_class h(ui_mutex);
 				modal_dialog_confirm = confirm;
 				modal_dialog_active = false;
-				ui_condition->signal();
+				ui_condition.notify_all();
 			}
 		} else if(c == UISERV_UPDATE_MESSAGES) {
 			if(msg_window)
@@ -148,14 +149,14 @@ namespace
 			queue_synchronous_fn_warning = true;
 back:
 			{
-				mutex::holder h(*ui_mutex);
+				umutex_class h(ui_mutex);
 				if(ui_queue.empty())
 					goto end;
 				i = ui_queue.begin();
 			}
 			i->fn(i->arg);
 			{
-				mutex::holder h(*ui_mutex);
+				umutex_class h(ui_mutex);
 				ui_queue.erase(i);
 			}
 			goto back;
@@ -440,8 +441,6 @@ bool lsnes_app::OnInit()
 	bring_app_foreground();
 
 	ui_services = new ui_services_type();
-	ui_mutex = &mutex::aquire();
-	ui_condition = &condition::aquire(*ui_mutex);
 
 	ui_thread = &thread_id::me();
 	platform::init();
@@ -577,13 +576,13 @@ void signal_core_change()
 
 bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw()
 {
-	mutex::holder h(*ui_mutex);
+	umutex_class h(ui_mutex);
 	modal_dialog_active = true;
 	modal_dialog_confirm = confirm;
 	modal_dialog_text = text;
 	post_ui_event(UISERV_MODAL);
 	while(modal_dialog_active)
-		ui_condition->wait(10000);
+		cv_timed_wait(ui_condition, h, microsec_class(10000));
 	return modal_dialog_confirm;
 }
 
@@ -603,7 +602,7 @@ void graphics_plugin::fatal_error() throw()
 
 void _runuifun_async(void (*fn)(void*), void* arg)
 {
-	mutex::holder h(*ui_mutex);
+	umutex_class h(ui_mutex);
 	ui_queue_entry e;
 	e.fn = fn;
 	e.arg = arg;

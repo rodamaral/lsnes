@@ -76,7 +76,7 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 	uint64_t lines, first;
 	std::vector<std::string> msgs;
 	{
-		mutex::holder h(platform::msgbuf_lock());
+		umutex_class h(platform::msgbuf_lock());
 		lines = platform::msgbuf.get_visible_count();
 		first = platform::msgbuf.get_visible_first();
 		msgs.resize(lines);
@@ -105,37 +105,37 @@ void wxwin_messages::reshow()
 
 void wxwin_messages::on_scroll_home(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_beginning();
 }
 
 void wxwin_messages::on_scroll_pageup(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_up_page();
 }
 
 void wxwin_messages::on_scroll_lineup(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_up_line();
 }
 
 void wxwin_messages::on_scroll_linedown(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_down_line();
 }
 
 void wxwin_messages::on_scroll_pagedown(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_down_page();
 }
 
 void wxwin_messages::on_scroll_end(wxCommandEvent& e)
 {
-	mutex::holder h(platform::msgbuf_lock());
+	umutex_class h(platform::msgbuf_lock());
 	platform::msgbuf.scroll_end();
 }
 

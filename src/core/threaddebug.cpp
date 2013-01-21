@@ -1,5 +1,6 @@
 #include "core/threaddebug.hpp"
 #include "core/window.hpp"
+#include "library/threadtypes.hpp"
 
 #define DESIGNATED_THREADS 16
 
@@ -7,7 +8,8 @@ namespace
 {
 	volatile thread_id* threads[DESIGNATED_THREADS];
 	volatile bool thread_marked;
-	mutex* malloc_mutex;
+	mutex_class malloc_mutex;
+	bool initialized = false;
 }
 
 void assert_thread(signed shouldbe, const std::string& desc)
@@ -40,8 +42,8 @@ void mark_thread_as(signed call_me)
 #ifdef MAKE_MALLOC_THREADSAFE
 void init_threaded_malloc()
 {
-	if(!malloc_mutex)
-		malloc_mutex = &mutex::aquire();
+	if(!initialized)
+		initialized = true;
 }
 
 extern "C"
@@ -54,33 +56,33 @@ void __real_free(void*);
 
 void* __wrap_malloc(size_t block)
 {
-	if(!malloc_mutex)
+	if(!initialized)
 		return __real_malloc(block);
-	mutex::holder(*malloc_mutex);
+	umutex_class h(malloc_mutex);
 	return __real_malloc(block);
 }
 
 void* __wrap_calloc(size_t count, size_t size)
 {
-	if(!malloc_mutex)
+	if(!initialized)
 		return __real_calloc(count, size);
-	mutex::holder(*malloc_mutex);
+	umutex_class h(malloc_mutex);
 	return __real_calloc(count, size);
 }
 
 void* __wrap_realloc(void* block, size_t size)
 {
-	if(!malloc_mutex)
+	if(!initialized)
 		return __real_realloc(block, size);
-	mutex::holder(*malloc_mutex);
+	umutex_class h(malloc_mutex);
 	return __real_realloc(block, size);
 }
 
 void __wrap_free(void* block)
 {
-	if(!malloc_mutex)
+	if(!initialized)
 		return __real_free(block);
-	mutex::holder(*malloc_mutex);
+	umutex_class h(malloc_mutex);
 	return __real_free(block);
 }
 }

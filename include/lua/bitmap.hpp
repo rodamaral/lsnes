@@ -6,6 +6,7 @@
 #include <cstdint>
 #include "core/window.hpp"
 #include "library/framebuffer.hpp"
+#include "library/threadtypes.hpp"
 
 struct lua_bitmap
 {
@@ -28,7 +29,7 @@ struct lua_palette
 	std::vector<premultiplied_color> colors;
 	lua_palette();
 	~lua_palette();
-	mutex* palette_mutex;
+	mutex_class palette_mutex;
 };
 
 struct lua_loaded_bitmap

@@ -13,75 +13,6 @@
 class emulator_status;
 
 /**
- * Mutex.
- */
-struct mutex
-{
-/**
- * Hold mutex RAII-style.
- */
-	struct holder
-	{
-		holder(mutex& m) throw();
-		~holder() throw();
-	private:
-		mutex& mut;
-	};
-/**
- * Create a mutex. The returned mutex can be deleted using delete.
- */
-	static mutex& aquire() throw(std::bad_alloc);
-/**
- * Create a recursive mutex. The returned mutex can be deleted using delete.
- */
-	static mutex& aquire_rec() throw(std::bad_alloc);
-/**
- * Destroy a mutex.
- */
-	virtual ~mutex() throw();
-/**
- * Lock a mutex.
- */
-	virtual void lock() throw() = 0;
-/**
- * Lock a mutex.
- */
-	virtual void unlock() throw() = 0;
-protected:
-	mutex() throw();
-};
-
-/**
- * Condition variable.
- */
-struct condition
-{
-/**
- * Create a condition variable. The returned condition can be freed using delete.
- */
-	static condition& aquire(mutex& m) throw(std::bad_alloc);
-/**
- * Destroy a condition.
- */
-	virtual ~condition() throw();
-/**
- * Return associated mutex.
- */
-	mutex& associated() throw();
-/**
- * Wait for condition. The associate mutex must be locked.
- */
-	virtual bool wait(uint64_t max_usec) throw() = 0;
-/**
- * Signal a condition. The associated mutex should be locked.
- */
-	virtual void signal() throw() = 0;
-protected:
-	condition(mutex& m);
-	mutex& assoc;
-};
-
-/**
  * Thread ID.
  */
 struct thread_id
@@ -305,7 +236,7 @@ struct platform
 /**
  * Get message buffer lock.
  */
-	static mutex& msgbuf_lock() throw();
+	static mutex_class& msgbuf_lock() throw();
 /**
  * Set palette used on screen.
  */
