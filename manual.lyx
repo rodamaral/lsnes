@@ -1448,6 +1448,16 @@ Does chained right shift on a, b by amount positions, assuming numbers to
  be of specified number of bits.
 \end_layout
 
+\begin_layout Subsubsection
+bit.flagdecode(number a, number bits, [string on, [string off]])
+\end_layout
+
+\begin_layout Standard
+Return string of length bits where ith character is ith character of on
+ if bit i is on, otherwise ith character of off.
+ Out of range reads give last character, or '*'/'-' if empty.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

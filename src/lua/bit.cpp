@@ -204,6 +204,30 @@ namespace
 		return 2;
 	});
 
+	function_ptr_luafun lua_flagdecode(LS, "bit.flagdecode", [](lua_state& L, const std::string& fname) -> int {
+		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		std::string on, off;
+		if(L.type(3) == LUA_TSTRING)
+			on = L.get_string(3, fname.c_str());
+		if(L.type(4) == LUA_TSTRING)
+			off = L.get_string(4, fname.c_str());
+		size_t onl = on.length();
+		size_t offl = off.length();
+		char onc = onl ? on[onl - 1] : '*';
+		char offc = offl ? off[offl - 1] : '-';
+		char buffer[65];
+		unsigned i;
+		for(i = 0; i < 64 && i < b; i++) {
+			char onc2 = (i < onl) ? on[i] : onc;
+			char offc2 = (i < offl) ? off[i] : offc;
+			buffer[i] = ((a >> i) & 1) ? onc2 : offc2;
+		}
+		buffer[i] = '\0';
+		L.pushstring(buffer);
+		return 1;
+	});
+
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_bnot("bit.bnot");
 	lua_symmetric_bitwise<combine_any, 0> bit_any("bit.any");
