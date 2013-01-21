@@ -48,37 +48,29 @@ struct keypress
 };
 
 /**
- * Functions implemented by the graphics plugin.
- *
- * Unless explicitly noted otherwise, all the methods are to be called from emulation thread if that exists, otherwise
- * from the main thread.
- */
-struct graphics_plugin
-{
-/**
  * Graphics initialization function.
  *
  * - The first initialization function to be called by platform::init().
  */
-	static void init() throw();
+void graphics_driver_init() throw();
 /**
  * Graphics quit function.
  *
  * - The last quit function to be called by platform::quit().
  */
-	static void quit() throw();
+void graphics_driver_quit() throw();
 /**
  * Notification when messages get updated.
  */
-	static void notify_message() throw();
+void graphics_driver_notify_message() throw();
 /**
  * Notification when status gets updated.
  */
-	static void notify_status() throw();
+void graphics_driver_notify_status() throw();
 /**
  * Notification when main screen gets updated.
  */
-	static void notify_screen() throw();
+void graphics_driver_notify_screen() throw();
 /**
  * Show modal message dialog.
  *
@@ -86,19 +78,18 @@ struct graphics_plugin
  * Parameter confirm: If true, display confirmation dialog, if false, display notification dialog.
  * Returns: True if confirmation dialog was confirmed, otherwise false.
  */
-	static bool modal_message(const std::string& text, bool confirm = false) throw();
+bool graphics_driver_modal_message(const std::string& text, bool confirm = false) throw();
 /**
  * Displays fatal error message.
  *
  * - After this routine returns, the program will quit.
  * - The call can occur in any thread.
  */
-	static void fatal_error() throw();
+void graphics_driver_fatal_error() throw();
 /**
  * Identification for graphics plugin.
  */
-	static const char* name;
-};
+extern const char* graphics_driver_name;
 
 /**
  * Platform-specific-related functions.
@@ -184,7 +175,7 @@ struct platform
  */
 	static bool modal_message(const std::string& text, bool confirm = false) throw()
 	{
-		return graphics_plugin::modal_message(text, confirm);
+		return graphics_driver_modal_message(text, confirm);
 	}
 /**
  * Process command and keypress queues.
@@ -219,21 +210,21 @@ struct platform
  */
 	static void notify_message() throw()
 	{
-		graphics_plugin::notify_message();
+		graphics_driver_notify_message();
 	}
 /**
  * Notify changed status.
  */
 	static void notify_status() throw()
 	{
-		graphics_plugin::notify_status();
+		graphics_driver_notify_status();
 	}
 /**
  * Notify changed screen.
  */
 	static void notify_screen() throw()
 	{
-		graphics_plugin::notify_screen();
+		graphics_driver_notify_screen();
 	}
 /**
  * Set modal pause mode.

@@ -371,12 +371,12 @@ void signal_resize_needed()
 	post_ui_event(UISERV_RESIZED);
 }
 
-void graphics_plugin::init() throw()
+void graphics_driver_init() throw()
 {
 	initialize_wx_keyboard();
 }
 
-void graphics_plugin::quit() throw()
+void graphics_driver_quit() throw()
 {
 }
 
@@ -555,17 +555,17 @@ int lsnes_app::OnExit()
 	return 0;
 }
 
-void graphics_plugin::notify_message() throw()
+void graphics_driver_notify_message() throw()
 {
 	post_ui_event(UISERV_UPDATE_MESSAGES);
 }
 
-void graphics_plugin::notify_status() throw()
+void graphics_driver_notify_status() throw()
 {
 	post_ui_event(UISERV_UPDATE_STATUS);
 }
 
-void graphics_plugin::notify_screen() throw()
+void graphics_driver_notify_screen() throw()
 {
 	post_ui_event(UISERV_UPDATE_SCREEN);
 }
@@ -575,7 +575,7 @@ void signal_core_change()
 	post_ui_event(UISERV_REFRESH_TITLE);
 }
 
-bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw()
+bool graphics_driver_modal_message(const std::string& text, bool confirm) throw()
 {
 	umutex_class h(ui_mutex);
 	modal_dialog_active = true;
@@ -587,7 +587,7 @@ bool graphics_plugin::modal_message(const std::string& text, bool confirm) throw
 	return modal_dialog_confirm;
 }
 
-void graphics_plugin::fatal_error() throw()
+void graphics_driver_fatal_error() throw()
 {
 	//Fun: This can be called from any thread!
 	if(ui_thread == this_thread_id()) {
@@ -687,4 +687,4 @@ void show_message_ok(wxWindow* parent, const std::string& title, const std::stri
 }
 
 
-const char* graphics_plugin::name = "wxwidgets graphics plugin";
+const char* graphics_driver_name = "wxwidgets graphics plugin";

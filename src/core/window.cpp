@@ -62,7 +62,7 @@ namespace
 	function_ptr_command<> identify_key(lsnes_cmd, "show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Graphics:\t" << graphics_plugin::name << std::endl;
+			messages << "Graphics:\t" << graphics_driver_name << std::endl;
 			messages << "Sound:\t" << audioapi_driver_name << std::endl;
 			messages << "Joystick:\t" << joystick_driver_name << std::endl;
 		});
@@ -242,7 +242,7 @@ void platform::init()
 	system_log << "lsnes started at " << buffer << std::endl;
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	do_init_font();
-	graphics_plugin::init();
+	graphics_driver_init();
 	audioapi_init();
 	audioapi_driver_init();
 	joystick_driver_init();
@@ -253,7 +253,7 @@ void platform::quit()
 	joystick_driver_quit();
 	audioapi_driver_quit();
 	audioapi_quit();
-	graphics_plugin::quit();
+	graphics_driver_quit();
 	msgbuf.unregister_handler(msg_callback_obj);
 	time_t curtime = time(NULL);
 	struct tm* tm = localtime(&curtime);
@@ -300,7 +300,7 @@ void platform::fatal_error() throw()
 	system_log << "lsnes paniced at " << buffer << std::endl;
 	system_log << "-----------------------------------------------------------------------" << std::endl;
 	system_log.close();
-	graphics_plugin::fatal_error();
+	graphics_driver_fatal_error();
 	exit(1);
 }
 
@@ -565,12 +565,12 @@ namespace
 
 	void painter_listener::on_screen_update()
 	{
-		graphics_plugin::notify_screen();
+		graphics_driver_notify_screen();
 	}
 
 	void painter_listener::on_status_update()
 	{
-		graphics_plugin::notify_status();
+		graphics_driver_notify_status();
 	}
 }
 
@@ -588,7 +588,7 @@ void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bsh
 		our_screen->get_palette_b() == bshift)
 		return;
 	our_screen->set_palette(rshift, gshift, bshift);
-	graphics_plugin::notify_screen();
+	graphics_driver_notify_screen();
 }
 
 modal_pause_holder::modal_pause_holder()
