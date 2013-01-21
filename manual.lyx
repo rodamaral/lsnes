@@ -1422,6 +1422,14 @@ bit.test_all(number a, number b)
 Returns true if bitwise and of a and b is equals b, otherwise false.
 \end_layout
 
+\begin_layout Subsubsection
+bit.popcount(number a)
+\end_layout
+
+\begin_layout Standard
+Returns number of set bits in a.
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout

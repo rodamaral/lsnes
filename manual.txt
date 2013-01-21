@@ -691,6 +691,10 @@ false.
 Returns true if bitwise and of a and b is equals b, otherwise 
 false.
 
+8.2.14 bit.popcount(number a)
+
+Returns number of set bits in a.
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
