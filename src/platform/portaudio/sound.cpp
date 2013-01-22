@@ -192,110 +192,94 @@ namespace
 			messages << "Rate: " << 1000000.0 * frames / (get_utime() - first_ts) << std::endl;
 		});
 
-}
-
-void audioapi_driver_enable(bool enable) throw()
-{
-	was_enabled = enable;
-}
-
-void audioapi_driver_init() throw()
-{
-	PaError err = Pa_Initialize();
-	if(err != paNoError) {
-		messages << "Portaudio error (init): " << Pa_GetErrorText(err) << std::endl;
-		messages << "Audio can't be initialized, audio playback disabled" << std::endl;
-		return;
-	}
-	init_flag = true;
-
-	PaDeviceIndex forcedevice = paNoDevice;
-	if(getenv("LSNES_FORCE_AUDIO_OUT")) {
-		forcedevice = atoi(getenv("LSNES_FORCE_AUDIO_OUT"));
-		messages << "Attempting to force sound output " << forcedevice << std::endl;
-	}
-	messages << "Detected " << Pa_GetDeviceCount() << " sound output devices." << std::endl;
-	for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++)
-		messages << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
-	bool any_success = false;
-	was_enabled = true;
-	if(forcedevice == paNoDevice) {
-		for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
-			any_success |= switch_devices(j);
-			if(any_success)
-				break;
-		}
-	} else
-		any_success |= switch_devices(forcedevice);
-	if(!any_success) {
-		messages << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
-		audioapi_set_dummy_cb(true);
-	}
-}
-
-void audioapi_driver_quit() throw()
-{
-	if(!init_flag)
-		return;
-	switch_devices(paNoDevice);
-	Pa_Terminate();
-	init_flag = false;
-}
-
-class sound_change_listener : public information_dispatch
-{
-public:
-	sound_change_listener() : information_dispatch("portaudio-sound-change-listener") {}
-	void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
+	class sound_change_listener : public information_dispatch
 	{
-	}
-} sndchgl;
-
-bool audioapi_driver_initialized()
-{
-	return init_flag;
-}
-
-void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
-{
-	if(dev == "null") {
-		if(!switch_devices(paNoDevice))
-			throw std::runtime_error("Failed to switch sound outputs");
-	} else {
-		PaDeviceIndex idx;
-		try {
-			idx = boost::lexical_cast<PaDeviceIndex>(dev);
-			if(idx < 0 || !Pa_GetDeviceInfo(idx))
-				throw std::runtime_error("foo");
-		} catch(std::exception& e) {
-			throw std::runtime_error("Invalid device '" + dev + "'");
+	public:
+		sound_change_listener() : information_dispatch("portaudio-sound-change-listener") {}
+		void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
+		{
 		}
-		if(!switch_devices(idx))
-			throw std::runtime_error("Failed to switch sound outputs");
-	}
-}
+	} sndchgl;
 
-std::string audioapi_driver_get_device() throw(std::bad_alloc)
-{
-	if(current_device == paNoDevice)
-		return "null";
-	else {
-		std::ostringstream str;
-		str << current_device;
-		return str.str();
-	}
-}
+	struct _audioapi_driver drv = {
+		.init = []() -> void {
+			PaError err = Pa_Initialize();
+			if(err != paNoError) {
+				messages << "Portaudio error (init): " << Pa_GetErrorText(err) << std::endl;
+				messages << "Audio can't be initialized, audio playback disabled" << std::endl;
+				return;
+			}
+			init_flag = true;
 
-std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc)
-{
-	std::map<std::string, std::string> ret;
-	ret["null"] = "null sound output";
-	for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
-		std::ostringstream str;
-		str << j;
-		ret[str.str()] = Pa_GetDeviceInfo(j)->name;
-	}
-	return ret;
+			PaDeviceIndex forcedevice = paNoDevice;
+			if(getenv("LSNES_FORCE_AUDIO_OUT")) {
+				forcedevice = atoi(getenv("LSNES_FORCE_AUDIO_OUT"));
+				messages << "Attempting to force sound output " << forcedevice << std::endl;
+			}
+			messages << "Detected " << Pa_GetDeviceCount() << " sound output devices." << std::endl;
+			for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++)
+				messages << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
+			bool any_success = false;
+			was_enabled = true;
+			if(forcedevice == paNoDevice) {
+				for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
+					any_success |= switch_devices(j);
+					if(any_success)
+						break;
+				}
+			} else
+				any_success |= switch_devices(forcedevice);
+			if(!any_success) {
+				messages << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
+				audioapi_set_dummy_cb(true);
+			}
+		},
+		.quit = []() -> void {
+			if(!init_flag)
+				return;
+			switch_devices(paNoDevice);
+			Pa_Terminate();
+			init_flag = false;
+		},
+		.enable = [](bool _enable) -> void { was_enabled = _enable; },
+		.initialized = []() -> bool { return init_flag; },
+		.set_device = [](const std::string& dev) -> void {
+			if(dev == "null") {
+				if(!switch_devices(paNoDevice))
+					throw std::runtime_error("Failed to switch sound outputs");
+			} else {
+				PaDeviceIndex idx;
+				try {
+					idx = boost::lexical_cast<PaDeviceIndex>(dev);
+					if(idx < 0 || !Pa_GetDeviceInfo(idx))
+						throw std::runtime_error("foo");
+				} catch(std::exception& e) {
+					throw std::runtime_error("Invalid device '" + dev + "'");
+				}
+				if(!switch_devices(idx))
+					throw std::runtime_error("Failed to switch sound outputs");
+			}
+		},
+		.get_device = []() -> std::string {
+			if(current_device == paNoDevice)
+				return "null";
+			else {
+				std::ostringstream str;
+				str << current_device;
+				return str.str();
+			}
+		},
+		.get_devices = []() -> std::map<std::string, std::string> {
+			std::map<std::string, std::string> ret;
+			ret["null"] = "null sound output";
+			for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
+				std::ostringstream str;
+				str << j;
+				ret[str.str()] = Pa_GetDeviceInfo(j)->name;
+			}
+			return ret;
+		},
+		.name = []() -> const char* { return "Portaudio sound plugin"; }
+	};
+	struct audioapi_driver _drv(drv);
 }
-
-const char* audioapi_driver_name = "Portaudio sound plugin";

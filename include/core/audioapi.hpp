@@ -220,6 +220,24 @@ void audioapi_put_voice(float* samples, size_t count);
 void audioapi_voice_rate(unsigned rate);
 
 //All the following need to be implemented by the sound driver itself
+struct _audioapi_driver
+{
+	//These correspond to various audioapi_driver_* functions.
+	void (*init)() throw();
+	void (*quit)() throw();
+	void (*enable)(bool enable);
+	bool (*initialized)();
+	void (*set_device)(const std::string& dev);
+	std::string (*get_device)();
+	std::map<std::string, std::string> (*get_devices)();
+	const char* (*name)();
+};
+
+struct audioapi_driver
+{
+	audioapi_driver(struct _audioapi_driver driver);
+};
+
 
 /**
  * Initialize the driver.
@@ -271,6 +289,6 @@ std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_
 /**
  * Identification for sound plugin.
  */
-extern const char* audioapi_driver_name;
+const char* audioapi_driver_name() throw();
 
 #endif

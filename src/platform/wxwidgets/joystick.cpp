@@ -3,6 +3,7 @@
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "core/joystick.hpp"
+#include "core/joystickapi.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
@@ -55,61 +56,58 @@ namespace
 			joystick_flush();
 		}
 	}* jtimer;
+
+	struct _joystick_driver drv = {
+		.init = []() -> void {
+			unsigned max_joysticks = wxJoystick::GetNumberJoysticks();
+			if(!max_joysticks)
+				return;		//No joystick support.
+			for(unsigned i = 0; i < max_joysticks; i++) {
+				wxJoystick* joy = new wxJoystick(i);
+				if(!joy->IsOk()) {
+					//Not usable.
+					delete joy;
+					continue;
+				}
+				uint64_t jid = reinterpret_cast<uint64_t>(joy);
+				joystick_create(jid, joy->GetProductName());
+				if(joy->HasPOV())
+					joystick_new_hat(jid, 0, "POV");
+				for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)
+					joystick_new_button(jid, j, buttonnames[j]);
+				const char* R = "Rudder";
+				joystick_new_axis(jid, 0, joy->GetXMin(), joy->GetXMax(), "X", 1);
+				joystick_new_axis(jid, 1, joy->GetYMin(), joy->GetYMax(), "Y", 1);
+				if(joy->HasZ())		joystick_new_axis(jid, 2, joy->GetZMin(),
+					joy->GetZMax(), "Z", 1);
+				if(joy->HasRudder())	joystick_new_axis(jid, 3, joy->GetRudderMin(),
+					joy->GetRudderMax(), R, 1);
+				if(joy->HasU()) 	joystick_new_axis(jid, 4, joy->GetUMin(),
+					joy->GetUMax(), "U", 1);
+				if(joy->HasV())		joystick_new_axis(jid, 5, joy->GetVMin(),
+					joy->GetVMax(), "V", 1);
+				joystick_message(jid);
+			}
+			ready = true;
+			jtimer = new joystick_timer();
+		},
+		.quit = []() -> void {
+			if(jtimer)
+				jtimer->stop();
+			delete jtimer;
+			jtimer = NULL;
+			ready = false;
+			for(auto i : joystick_set())
+				delete reinterpret_cast<wxJoystick*>(i);
+			usleep(50000);
+			joystick_quit();
+		},
+		//We don't poll in this thread, so just quit instantly.
+		.thread_fn = []() -> void {},
+		.signal = []() -> void {},
+		.name = []() -> const char* { return "Wxwidgets joystick plugin"; }
+	};
+	struct joystick_driver _drv(drv);
 }
 
-void joystick_driver_init() throw()
-{
-	unsigned max_joysticks = wxJoystick::GetNumberJoysticks();
-	if(!max_joysticks)
-		return;		//No joystick support.
-	for(unsigned i = 0; i < max_joysticks; i++) {
-		wxJoystick* joy = new wxJoystick(i);
-		if(!joy->IsOk()) {
-			//Not usable.
-			delete joy;
-			continue;
-		}
-		uint64_t jid = reinterpret_cast<uint64_t>(joy);
-		joystick_create(jid, joy->GetProductName());
-		if(joy->HasPOV())
-			joystick_new_hat(jid, 0, "POV");
-		for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)
-			joystick_new_button(jid, j, buttonnames[j]);
-		const char* R = "Rudder";
-		joystick_new_axis(jid, 0, joy->GetXMin(), joy->GetXMax(), "X", 1);
-		joystick_new_axis(jid, 1, joy->GetYMin(), joy->GetYMax(), "Y", 1);
-		if(joy->HasZ())		joystick_new_axis(jid, 2, joy->GetZMin(), joy->GetZMax(), "Z", 1);
-		if(joy->HasRudder())	joystick_new_axis(jid, 3, joy->GetRudderMin(), joy->GetRudderMax(), R, 1);
-		if(joy->HasU()) 	joystick_new_axis(jid, 4, joy->GetUMin(), joy->GetUMax(), "U", 1);
-		if(joy->HasV())		joystick_new_axis(jid, 5, joy->GetVMin(), joy->GetVMax(), "V", 1);
-		joystick_message(jid);
-	}
-	ready = true;
-	jtimer = new joystick_timer();
-}
-
-void joystick_driver_quit() throw()
-{
-	if(jtimer)
-		jtimer->stop();
-	delete jtimer;
-	jtimer = NULL;
-	ready = false;
-	for(auto i : joystick_set())
-		delete reinterpret_cast<wxJoystick*>(i);
-	usleep(50000);
-	joystick_quit();
-}
-
-void joystick_driver_thread_fn() throw()
-{
-	//We don't poll in this thread, so just quit instantly.
-}
-
-void joystick_driver_signal() throw()
-{
-	//We don't poll in dedicated thread, so nothing to do.
-}
-
-const char* joystick_driver_name = "Wxwidgets joystick plugin";
 #endif

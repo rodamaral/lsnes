@@ -119,87 +119,77 @@ namespace
 		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
 			driver_id = parse_value<int>(value);
 		});
-	
+
+	struct _audioapi_driver drv = {
+		.init = []() -> void {
+			ao_initialize();
+			init_flag = true;
+			current_device = "";
+
+			int dcount;
+			int defaultid = ao_default_driver_id();
+			std::string dname = "";
+			ao_info** drvs = ao_driver_info_list(&dcount);
+			messages << "Detected " << dcount << " sound output devices." << std::endl;
+			for(int j = 0; j < dcount; j++) {
+				messages << "Audio device " << drvs[j]->short_name << ": " << drvs[j]->name
+					<< std::endl;
+				if(j == defaultid)
+					dname = drvs[j]->short_name;
+			}
+			new cb_thread;
+			was_enabled = true;
+			try {
+				switch_devices(defaultid, dname);
+			} catch(...) {
+				switch_devices(-1, "");
+			}
+		},
+		.quit = []() -> void {
+			if(!init_flag)
+				return;
+			switch_devices(-1, "");
+			ao_shutdown();
+			init_flag = false;
+		},
+		.enable = [](bool enable) -> void { was_enabled = enable; },
+		.initialized = []() -> bool { return init_flag; },
+		.set_device = [](const std::string& dev) -> void {
+			if(dev == "null") {
+				if(!switch_devices(-1, ""))
+					throw std::runtime_error("Failed to switch sound outputs");
+			} else {
+				int idx = ao_driver_id(dev.c_str());
+				if(idx == -1)
+					throw std::runtime_error("Invalid device '" + dev + "'");
+				try {
+					if(!switch_devices(idx, dev))
+						throw std::runtime_error("Failed to switch sound outputs");
+				} catch(std::exception& e) {
+					throw std::runtime_error(std::string("Failed to switch sound outputs: ") +
+						e.what());
+				}
+			}
+		},
+		.get_device = []() -> std::string {
+			if(current_device == "")
+				return "null";
+			else
+				return current_device;
+		},
+		.get_devices = []() -> std::map<std::string, std::string> {
+			std::map<std::string, std::string> ret;
+			ret["null"] = "null sound output";
+			int dcount;
+			ao_info** drvs = ao_driver_info_list(&dcount);
+			if(!drvs)
+				return ret;
+			for(int j = 0; j < dcount; j++)
+				if(drvs[j]->type == AO_TYPE_LIVE)
+					ret[drvs[j]->short_name] = drvs[j]->name;
+			return ret;
+		},
+		.name = []() -> const char* { return "Libao sound plugin"; }
+	};
+	audioapi_driver _drv(drv);
 }
-
-void audioapi_driver_enable(bool enable) throw()
-{
-	was_enabled = enable;
-}
-
-void audioapi_driver_init() throw()
-{
-	ao_initialize();
-	init_flag = true;
-	current_device = "";
-
-	int dcount;
-	int defaultid = ao_default_driver_id();
-	std::string dname = "";
-	ao_info** drvs = ao_driver_info_list(&dcount);
-	messages << "Detected " << dcount << " sound output devices." << std::endl;
-	for(int j = 0; j < dcount; j++) {
-		messages << "Audio device " << drvs[j]->short_name << ": " << drvs[j]->name << std::endl;
-		if(j == defaultid)
-			dname = drvs[j]->short_name;
-	}
-	new cb_thread;
-	was_enabled = true;
-	switch_devices(defaultid, dname);
-}
-
-void audioapi_driver_quit() throw()
-{
-	if(!init_flag)
-		return;
-	switch_devices(-1, "");
-	ao_shutdown();
-	init_flag = false;
-}
-
-bool audioapi_driver_initialized()
-{
-	return init_flag;
-}
-
-void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error)
-{
-	if(dev == "null") {
-		if(!switch_devices(-1, ""))
-			throw std::runtime_error("Failed to switch sound outputs");
-	} else {
-		int idx = ao_driver_id(dev.c_str());
-		if(idx == -1)
-			throw std::runtime_error("Invalid device '" + dev + "'");
-		try {
-			if(!switch_devices(idx, dev))
-				throw std::runtime_error("Failed to switch sound outputs");
-		} catch(std::exception& e) {
-			throw std::runtime_error(std::string("Failed to switch sound outputs: ") + e.what());
-		}
-	}
-}
-
-std::string audioapi_driver_get_device() throw(std::bad_alloc)
-{
-	if(current_device == "")
-		return "null";
-	else
-		return current_device;
-}
-
-std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc)
-{
-	std::map<std::string, std::string> ret;
-	ret["null"] = "null sound output";
-	int dcount;
-	ao_info** drvs = ao_driver_info_list(&dcount);
-	if(!drvs)
-		return ret;
-	for(int j = 0; j < dcount; j++)
-		if(drvs[j]->type == AO_TYPE_LIVE)
-			ret[drvs[j]->short_name] = drvs[j]->name;
-	return ret;
-}
-
-const char* audioapi_driver_name = "Libao sound plugin";

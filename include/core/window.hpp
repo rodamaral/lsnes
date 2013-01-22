@@ -47,6 +47,26 @@ struct keypress
 	short value;
 };
 
+//Various methods corresponding to graphics_driver_*
+struct _graphics_driver
+{
+	void (*init)();
+	void (*quit)();
+	void (*notify_message)();
+	void (*notify_status)();
+	void (*notify_screen)();
+	bool (*modal_message)(const std::string& text, bool confirm);
+	void (*fatal_error)();
+	const char* (*name)();
+};
+
+struct graphics_driver
+{
+	graphics_driver(_graphics_driver drv);
+};
+
+//Is dummy graphics plugin.
+bool graphics_driver_is_dummy();
 /**
  * Graphics initialization function.
  *
@@ -89,7 +109,7 @@ void graphics_driver_fatal_error() throw();
 /**
  * Identification for graphics plugin.
  */
-extern const char* graphics_driver_name;
+const char* graphics_driver_name();
 
 /**
  * Platform-specific-related functions.

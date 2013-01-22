@@ -52,7 +52,6 @@ wxwin_messages* msg_window;
 wxwin_mainwindow* main_window;
 std::string our_rom_name;
 
-bool dummy_interface = false;
 bool wxwidgets_exiting = false;
 
 namespace
@@ -371,14 +370,6 @@ void signal_resize_needed()
 	post_ui_event(UISERV_RESIZED);
 }
 
-void graphics_driver_init() throw()
-{
-	initialize_wx_keyboard();
-}
-
-void graphics_driver_quit() throw()
-{
-}
 
 static const wxCmdLineEntryDesc dummy_descriptor_table[] = {
 	{ wxCMD_LINE_PARAM,  NULL, NULL, NULL, wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL |
@@ -555,50 +546,56 @@ int lsnes_app::OnExit()
 	return 0;
 }
 
-void graphics_driver_notify_message() throw()
+namespace
 {
-	post_ui_event(UISERV_UPDATE_MESSAGES);
-}
-
-void graphics_driver_notify_status() throw()
-{
-	post_ui_event(UISERV_UPDATE_STATUS);
-}
-
-void graphics_driver_notify_screen() throw()
-{
-	post_ui_event(UISERV_UPDATE_SCREEN);
+	struct _graphics_driver drv = {
+		.init = []() -> void {
+			initialize_wx_keyboard();
+		},
+		.quit = []() -> void {},
+		.notify_message = []() -> void 
+		{
+			post_ui_event(UISERV_UPDATE_MESSAGES);
+		},
+		.notify_status = []() -> void
+		{
+			post_ui_event(UISERV_UPDATE_STATUS);
+		},
+		.notify_screen = []() -> void
+		{
+			post_ui_event(UISERV_UPDATE_SCREEN);
+		},
+		.modal_message = [](const std::string& text, bool confirm) -> bool {
+			umutex_class h(ui_mutex);
+			modal_dialog_active = true;
+			modal_dialog_confirm = confirm;
+			modal_dialog_text = text;
+			post_ui_event(UISERV_MODAL);
+			while(modal_dialog_active)
+				cv_timed_wait(ui_condition, h, microsec_class(10000));
+			return modal_dialog_confirm;
+		},
+		.fatal_error = []() -> void {
+			//Fun: This can be called from any thread!
+			if(ui_thread == this_thread_id()) {
+				//UI thread.
+				platform::set_modal_pause(true);
+				wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"),
+					wxICON_ERROR | wxOK);
+			} else {
+				//Emulation thread panic. Signal the UI thread.
+				post_ui_event(UISERV_PANIC);
+				while(!panic_ack);
+			}
+		},
+		.name = []() -> const char* { return "wxwidgets graphics plugin"; }
+	};
+	struct graphics_driver _drv(drv);
 }
 
 void signal_core_change()
 {
 	post_ui_event(UISERV_REFRESH_TITLE);
-}
-
-bool graphics_driver_modal_message(const std::string& text, bool confirm) throw()
-{
-	umutex_class h(ui_mutex);
-	modal_dialog_active = true;
-	modal_dialog_confirm = confirm;
-	modal_dialog_text = text;
-	post_ui_event(UISERV_MODAL);
-	while(modal_dialog_active)
-		cv_timed_wait(ui_condition, h, microsec_class(10000));
-	return modal_dialog_confirm;
-}
-
-void graphics_driver_fatal_error() throw()
-{
-	//Fun: This can be called from any thread!
-	if(ui_thread == this_thread_id()) {
-		//UI thread.
-		platform::set_modal_pause(true);
-		wxMessageBox(_T("Panic: Unrecoverable error, can't continue"), _T("Error"), wxICON_ERROR | wxOK);
-	} else {
-		//Emulation thread panic. Signal the UI thread.
-		post_ui_event(UISERV_PANIC);
-		while(!panic_ack);
-	}
 }
 
 void _runuifun_async(void (*fn)(void*), void* arg)
@@ -685,6 +682,3 @@ void show_message_ok(wxWindow* parent, const std::string& title, const std::stri
 	d3->ShowModal();
 	d3->Destroy();
 }
-
-
-const char* graphics_driver_name = "wxwidgets graphics plugin";

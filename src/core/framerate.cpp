@@ -16,7 +16,7 @@
 
 #define HISTORY_FRAMES 10
 
-extern bool dummy_interface;
+bool graphics_driver_is_dummy();
 
 namespace
 {
@@ -193,7 +193,7 @@ void ack_frame_tick(uint64_t usec) throw()
 uint64_t to_wait_frame(uint64_t usec) throw()
 {
 	auto target = targetfps.read();
-	if(!frame_number || target.first || turboed || dummy_interface)
+	if(!frame_number || target.first || turboed || graphics_driver_is_dummy())
 		return 0;
 	uint64_t lintime = get_time(usec, true);
 	uint64_t frame_lasted = lintime - frame_start_times[0];

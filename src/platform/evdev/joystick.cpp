@@ -287,38 +287,33 @@ namespace
 	}
 	volatile bool quit_signaled = false;
 	volatile bool quit_ack = false;
-}
-
-void joystick_driver_init() throw()
-{
-	probe_all_joysticks();
-	quit_ack = quit_signaled = false;
-}
-
-void joystick_driver_quit() throw()
-{
-	quit_signaled = true;
-	while(!quit_ack);
-	joystick_quit();
-}
 
 #define POLL_WAIT 20000
 
-void joystick_driver_thread_fn() throw()
-{
-	while(!quit_signaled) {
-		for(auto fd : joystick_set())
-			while(read_one_input_event(fd));
-		joystick_flush();
-		usleep(POLL_WAIT);
-	}
-	quit_ack = true;
+	struct _joystick_driver drv = {
+		.init = []() -> void {
+			probe_all_joysticks();
+			quit_ack = quit_signaled = false;
+		},
+		.quit = []() -> void {
+			quit_signaled = true;
+			while(!quit_ack);
+			joystick_quit();
+		},
+		.thread_fn = []() -> void {
+			while(!quit_signaled) {
+				for(auto fd : joystick_set())
+					while(read_one_input_event(fd));
+				joystick_flush();
+				usleep(POLL_WAIT);
+			}
+			quit_ack = true;
+		},
+		.signal = []() -> void {
+			quit_signaled = true;
+			while(!quit_ack);
+		},
+		.name = []() -> const char* { return "Evdev joystick plugin"; }
+	};
+	struct joystick_driver _drv(drv);
 }
-
-void joystick_driver_signal() throw()
-{
-	quit_signaled = true;
-	while(!quit_ack);
-}
-
-const char* joystick_driver_name = "Evdev joystick plugin";

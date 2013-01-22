@@ -62,9 +62,9 @@ namespace
 	function_ptr_command<> identify_key(lsnes_cmd, "show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			messages << "Graphics:\t" << graphics_driver_name << std::endl;
-			messages << "Sound:\t" << audioapi_driver_name << std::endl;
-			messages << "Joystick:\t" << joystick_driver_name << std::endl;
+			messages << "Graphics:\t" << graphics_driver_name() << std::endl;
+			messages << "Sound:\t" << audioapi_driver_name() << std::endl;
+			messages << "Joystick:\t" << joystick_driver_name() << std::endl;
 		});
 
 	function_ptr_command<const std::string&> enable_sound(lsnes_cmd, "enable-sound", "Enable/Disable sound",

@@ -1,6 +1,21 @@
 #ifndef _joystickapi__hpp__included__
 #define _joystickapi__hpp__included__
 
+//These correspond to various joystick_driver_* functions.
+struct _joystick_driver
+{
+	void (*init)();
+	void (*quit)();
+	void (*thread_fn)();
+	void (*signal)();
+	const char* (*name)();
+};
+
+struct joystick_driver
+{
+	joystick_driver(_joystick_driver drv);
+};
+
 /**
  * Joystick initialization function.
  *
@@ -30,7 +45,7 @@ void joystick_driver_signal() throw();
 /**
  * Identification for joystick plugin.
  */
-extern const char* joystick_driver_name;
+const char* joystick_driver_name();
 
 #endif
 
