@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "library/minmax.hpp"
 
 #define BITWISE_BITS 48
 #define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)
@@ -163,6 +164,79 @@ namespace
 		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		lua_pushnumber(LS,popcount(a));
 		return 1;
+	});
+
+	function_ptr_luafun lua_clshift("bit.clshift", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned amount = 1;
+		unsigned bits = 48;
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t b = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		get_numeric_argument(LS, 3, amount, fname.c_str());
+		get_numeric_argument(LS, 4, bits, fname.c_str());
+		uint64_t mask = ((1ULL << bits) - 1);
+		a &= mask;
+		b &= mask;
+		a <<= amount;
+		a &= mask;
+		a |= (b >> (bits - amount));
+		b <<= amount;
+		b &= mask;
+		lua_pushnumber(LS, a);
+		lua_pushnumber(LS, b);
+		return 2;
+	});
+
+	function_ptr_luafun lua_crshift("bit.crshift", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned amount = 1;
+		unsigned bits = 48;
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t b = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		get_numeric_argument(LS, 3, amount, fname.c_str());
+		get_numeric_argument(LS, 4, bits, fname.c_str());
+		uint64_t mask = ((1ULL << bits) - 1);
+		a &= mask;
+		b &= mask;
+		b >>= amount;
+		b |= (a << (bits - amount));
+		b &= mask;
+		a >>= amount;
+		lua_pushnumber(LS, a);
+		lua_pushnumber(LS, b);
+		return 2;
+	});
+
+	int flagdecode_core(lua_State* LS, const std::string& fname, bool reverse)
+	{
+		uint64_t a = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
+		uint64_t b = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
+		std::string on, off;
+		if(lua_type(LS, 3) == LUA_TSTRING)
+			on = get_string_argument(LS, 3, fname.c_str());
+		if(lua_type(LS, 4) == LUA_TSTRING)
+			off = get_string_argument(LS, 4, fname.c_str());
+		size_t onl = on.length();
+		size_t offl = off.length();
+		char onc = onl ? on[onl - 1] : '*';
+		char offc = offl ? off[offl - 1] : '-';
+		char buffer[65];
+		unsigned i;
+		size_t bias = min(b, (uint64_t)64) - 1;
+		for(i = 0; i < 64 && i < b; i++) {
+			char onc2 = (i < onl) ? on[i] : onc;
+			char offc2 = (i < offl) ? off[i] : offc;
+			buffer[reverse ? (bias - i) : i] = ((a >> i) & 1) ? onc2 : offc2;
+		}
+		buffer[i] = '\0';
+		lua_pushstring(LS, buffer);
+		return 1;
+	}
+
+	function_ptr_luafun lua_flagdecode("bit.flagdecode", [](lua_State* LS, const std::string& fname) -> int {
+		return flagdecode_core(LS, fname, false);
+	});
+
+	function_ptr_luafun lua_rflagdecode("bit.rflagdecode", [](lua_State* LS, const std::string& fname) -> int {
+		return flagdecode_core(LS, fname, true);
 	});
 
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");

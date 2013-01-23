@@ -1059,6 +1059,31 @@ Are all set bits in b also set in a?
 
 Population count of a.
 
+8.2.15 bit.clshift(number a, number b, [number amount,[number 
+  bits]])
+
+Does chained left shift on a, b by amount positions, assuming 
+numbers to be of specified number of bits.
+
+8.2.16 bit.crshift(number a, number b, [number amount,[number 
+  bits]])
+
+Does chained right shift on a, b by amount positions, assuming 
+numbers to be of specified number of bits.
+
+8.2.17 bit.flagdecode(number a, number bits, [string on, [string 
+  off]])
+
+Return string of length bits where ith character is ith character 
+of on if bit i is on, otherwise ith character of off. Out of 
+range reads give last character, or '*'/'-' if empty.
+
+8.2.18 bit.rflagdecode(number a, number bits, [string on, [string 
+  off]])
+
+Like bit.flagdecode, but outputs the string in the opposite order 
+(most significant bit first).
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
