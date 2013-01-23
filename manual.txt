@@ -714,6 +714,12 @@ Return string of length bits where ith character is ith character
 of on if bit i is on, otherwise ith character of off. Out of 
 range reads give last character, or '*'/'-' if empty.
 
+8.2.18 bit.rflagdecode(number a, number bits, [string on, [string 
+  off]])
+
+Like bit.flagdecode, but outputs the string in the opposite order 
+(most significant bit first).
+
 8.3 Table gui:
 
 Most of these functions can only be called in on_paint and 

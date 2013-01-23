@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "library/minmax.hpp"
 
 #define BITWISE_BITS 48
 #define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)
@@ -204,7 +205,8 @@ namespace
 		return 2;
 	});
 
-	function_ptr_luafun lua_flagdecode(LS, "bit.flagdecode", [](lua_state& L, const std::string& fname) -> int {
+	int flagdecode_core(lua_state& L, const std::string& fname, bool reverse)
+	{
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		std::string on, off;
@@ -218,14 +220,23 @@ namespace
 		char offc = offl ? off[offl - 1] : '-';
 		char buffer[65];
 		unsigned i;
+		size_t bias = min(b, (uint64_t)64) - 1;
 		for(i = 0; i < 64 && i < b; i++) {
 			char onc2 = (i < onl) ? on[i] : onc;
 			char offc2 = (i < offl) ? off[i] : offc;
-			buffer[i] = ((a >> i) & 1) ? onc2 : offc2;
+			buffer[reverse ? (bias - i) : i] = ((a >> i) & 1) ? onc2 : offc2;
 		}
 		buffer[i] = '\0';
 		L.pushstring(buffer);
 		return 1;
+	}
+
+	function_ptr_luafun lua_flagdecode(LS, "bit.flagdecode", [](lua_state& L, const std::string& fname) -> int {
+		return flagdecode_core(L, fname, false);
+	});
+
+	function_ptr_luafun lua_rflagdecode(LS, "bit.rflagdecode", [](lua_state& L, const std::string& fname) -> int {
+		return flagdecode_core(L, fname, true);
 	});
 
 	lua_symmetric_bitwise<combine_none, BITWISE_MASK> bit_none("bit.none");

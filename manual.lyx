@@ -1458,6 +1458,15 @@ Return string of length bits where ith character is ith character of on
  Out of range reads give last character, or '*'/'-' if empty.
 \end_layout
 
+\begin_layout Subsubsection
+bit.rflagdecode(number a, number bits, [string on, [string off]])
+\end_layout
+
+\begin_layout Standard
+Like bit.flagdecode, but outputs the string in the opposite order (most significa
+nt bit first).
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout
