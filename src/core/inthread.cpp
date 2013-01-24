@@ -9,6 +9,7 @@
 #include "library/ogg.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/inthread.hpp"
 #include "core/keymapper.hpp"
@@ -1669,6 +1670,7 @@ out:
 				messages << "Can't add stream: " << e.what() << std::endl;
 				active_stream->put_ref();
 			}
+			information_dispatch::do_voice_stream_change();
 		} else
 			active_stream->put_ref();
 		active_stream = NULL;
@@ -1925,6 +1927,7 @@ uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, extern
 		throw;
 	}
 	st->unlock();	//Not locked.
+	information_dispatch::do_voice_stream_change();
 	return id;
 }
 
@@ -1934,6 +1937,7 @@ void voicesub_delete_stream(uint64_t id)
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->delete_stream(id);
+	information_dispatch::do_voice_stream_change();
 }
 
 void voicesub_export_superstream(const std::string& filename)
@@ -1957,6 +1961,7 @@ void voicesub_load_collection(const std::string& filename)
 	if(current_collection)
 		delete current_collection;
 	current_collection = newc;
+	information_dispatch::do_voice_stream_change();
 }
 
 void voicesub_unload_collection()
@@ -1965,6 +1970,7 @@ void voicesub_unload_collection()
 	if(current_collection)
 		delete current_collection;
 	current_collection = NULL;
+	information_dispatch::do_voice_stream_change();
 }
 
 void voicesub_alter_timebase(uint64_t id, uint64_t ts)
@@ -1973,6 +1979,7 @@ void voicesub_alter_timebase(uint64_t id, uint64_t ts)
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->alter_stream_timebase(id, ts);
+	information_dispatch::do_voice_stream_change();
 }
 
 double voicesub_ts_seconds(uint64_t ts)

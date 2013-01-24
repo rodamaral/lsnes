@@ -381,6 +381,16 @@ public:
  * Call on_new_core on on all objects.
  */
 	static void do_new_core() throw();
+/**
+ * Notify about changes to voice streams.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_voice_stream_change();
+/**
+ * Call on_voice_stream_change on all objects.
+ */
+	static void do_voice_stream_change() throw();
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.

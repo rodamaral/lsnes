@@ -497,3 +497,19 @@ void information_dispatch::do_new_core() throw()
 		END_EH_BLOCK(i, "on_new_core");
 	}
 }
+
+void information_dispatch::on_voice_stream_change()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_voice_stream_change() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_voice_stream_change();
+		END_EH_BLOCK(i, "on_voice_stream_change");
+	}
+}

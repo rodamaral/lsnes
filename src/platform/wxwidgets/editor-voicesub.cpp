@@ -9,6 +9,7 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 
+#include "core/dispatch.hpp"
 #include "library/string.hpp"
 
 #define NOTHING 0xFFFFFFFFFFFFFFFFULL
@@ -22,6 +23,7 @@ class wxeditor_voicesub : public wxDialog
 {
 public:
 	wxeditor_voicesub(wxWindow* parent);
+	~wxeditor_voicesub() throw();
 	bool ShouldPreventAppExit() const;
 	void on_select(wxCommandEvent& e);
 	void on_play(wxCommandEvent& e);
@@ -39,9 +41,23 @@ public:
 	void on_refresh(wxCommandEvent& e);
 	void on_close(wxCommandEvent& e);
 	void on_wclose(wxCloseEvent& e);
-private:
-	bool closing;
 	void refresh();
+private:
+	struct refresh_listener : public information_dispatch
+	{
+		refresh_listener(wxeditor_voicesub* v)
+			: information_dispatch("voicesub-editor-change-listner")
+		{
+			obj = v;
+		}
+		void on_voice_stream_change()
+		{
+			wxeditor_voicesub* _obj = obj;
+			runuifun([_obj]() -> void { _obj->refresh(); });
+		}
+		wxeditor_voicesub* obj;
+	};
+	bool closing;
 	uint64_t get_id();
 	std::map<int, uint64_t> smap;
 	wxListBox* subtitles;
@@ -59,6 +75,8 @@ private:
 	wxButton* unloadbutton;
 	wxButton* refreshbutton;
 	wxButton* closebutton;
+	refresh_listener* rlistener;
+	
 };
 
 wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
@@ -150,7 +168,13 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
+	rlistener = new refresh_listener(this);
 	refresh();
+}
+
+wxeditor_voicesub::~wxeditor_voicesub() throw()
+{
+	delete rlistener;
 }
 
 void wxeditor_voicesub::on_select(wxCommandEvent& e)
@@ -177,7 +201,6 @@ void wxeditor_voicesub::on_play(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error playing", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_delete(wxCommandEvent& e)
@@ -190,7 +213,6 @@ void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error deleting", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
@@ -209,7 +231,6 @@ void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
@@ -228,7 +249,6 @@ void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_export_q(wxCommandEvent& e)
@@ -247,7 +267,6 @@ void wxeditor_voicesub::on_export_q(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
@@ -263,7 +282,6 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
@@ -282,7 +300,6 @@ void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
@@ -301,7 +318,6 @@ void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_import_q(wxCommandEvent& e)
@@ -320,7 +336,6 @@ void wxeditor_voicesub::on_import_q(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
@@ -340,7 +355,6 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing timebase", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
@@ -356,13 +370,11 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading collection", e.what(), wxICON_EXCLAMATION);
 	}
-	refresh();
 }
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
 	voicesub_unload_collection();
-	refresh();
 }
 
 void wxeditor_voicesub::on_refresh(wxCommandEvent& e)
@@ -378,6 +390,8 @@ void wxeditor_voicesub::on_close(wxCommandEvent& e)
 
 void wxeditor_voicesub::refresh()
 {
+	if(closing)
+		return;
 	bool cflag = voicesub_collection_loaded();
 	unloadbutton->Enable(cflag);
 	exportsbutton->Enable(cflag);
