@@ -1228,7 +1228,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_SET_VOLUME:
 		parsed = pick_volume(this, "Set volume", last_volume);
 		if(parsed >= -1e-10)
-			runemufn([parsed]() { platform::global_volume = parsed; });
+			runemufn([parsed]() { audioapi_music_volume(parsed); });
 		return;
 	case wxID_SET_VOLUME_RECORD:
 		parsed = pick_volume(this, "Set recording volume", last_volume_record);
