@@ -3335,3 +3335,40 @@ set-axis joystick0axis19 disabled
 • Fix bug when changing controller key to another subkey of the 
   same key
 
+18.78 rr1-delta16
+
+• Stop at movie end: Don't off-by-one
+
+• Fix crash closing lsnes with voice playback active.
+
+• Import/Export OggOpus for commentary tracks
+
+• 16-button controllers.
+
+• Don't show nonexistent controllers in input display
+
+• Set voice record/playback volume from UI
+
+• Patches for gambatte SVN364.
+
+• Load markup (if exists) even without gamepack file.
+
+• Screen rotation & flipping
+
+• Lua: Some new bit functions
+
+• Auto-refresh voice streams on change.
+
+• Auto-refresh subtitles on change & new subtitle editor.
+
+• Fix music volume adjustment.
+
+18.79 rr2-beta2
+
+• Use system threads instead of platform threads
+
+• Cleanup build by allowing dummy and real drivers to link 
+  together.
+
+• Split duplex support
+

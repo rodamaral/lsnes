@@ -6782,5 +6782,77 @@ Support screen rotate & flip
 Fix bug when changing controller key to another subkey of the same key
 \end_layout
 
+\begin_layout Subsection
+rr1-delta16
+\end_layout
+
+\begin_layout Itemize
+Stop at movie end: Don't off-by-one
+\end_layout
+
+\begin_layout Itemize
+Fix crash closing lsnes with voice playback active.
+\end_layout
+
+\begin_layout Itemize
+Import/Export OggOpus for commentary tracks
+\end_layout
+
+\begin_layout Itemize
+16-button controllers.
+\end_layout
+
+\begin_layout Itemize
+Don't show nonexistent controllers in input display
+\end_layout
+
+\begin_layout Itemize
+Set voice record/playback volume from UI
+\end_layout
+
+\begin_layout Itemize
+Patches for gambatte SVN364.
+\end_layout
+
+\begin_layout Itemize
+Load markup (if exists) even without gamepack file.
+\end_layout
+
+\begin_layout Itemize
+Screen rotation & flipping
+\end_layout
+
+\begin_layout Itemize
+Lua: Some new bit functions
+\end_layout
+
+\begin_layout Itemize
+Auto-refresh voice streams on change.
+\end_layout
+
+\begin_layout Itemize
+Auto-refresh subtitles on change & new subtitle editor.
+\end_layout
+
+\begin_layout Itemize
+Fix music volume adjustment.
+\end_layout
+
+\begin_layout Subsection
+rr2-beta2
+\end_layout
+
+\begin_layout Itemize
+Use system threads instead of platform threads
+\end_layout
+
+\begin_layout Itemize
+Cleanup build by allowing dummy and real drivers to link together.
+\end_layout
+
+\begin_layout Itemize
+Split duplex support
+\end_layout
+
 \end_body
 \end_document
