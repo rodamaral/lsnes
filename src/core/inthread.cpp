@@ -1748,13 +1748,14 @@ out:
 					break;
 
 				//Read input, up to 25ms.
-				unsigned rate = audioapi_voice_rate();
-				size_t dbuf_max = min(buf_max, rate / REC_THRESHOLD_DIV);
+				unsigned rate_in = audioapi_voice_rate().first;
+				unsigned rate_out = audioapi_voice_rate().second;
+				size_t dbuf_max = min(buf_max, rate_in / REC_THRESHOLD_DIV);
 				read_input(buf_in, buf_in_use, dbuf_max);
 
 				//Resample up to full opus block.
 				do_resample(rin, buf_in, buf_in_use, buf_inr, buf_inr_use, OPUS_BLOCK_SIZE,
-					1.0 * OPUS_SAMPLERATE / rate);
+					1.0 * OPUS_SAMPLERATE / rate_in);
 
 				//If we have full opus block and recording is enabled, compress it.
 				if(buf_inr_use >= OPUS_BLOCK_SIZE && active_stream)
@@ -1770,10 +1771,10 @@ out:
 
 				//Resample to output rate.
 				do_resample(rout, buf_outr, buf_outr_use, buf_out, buf_out_use, buf_max,
-					1.0 * rate / OPUS_SAMPLERATE);
+					1.0 * rate_out / OPUS_SAMPLERATE);
 
 				//Output stuff.
-				if(buf_out_use > 0 && audioapi_voice_p_status2() < rate / PLAY_THRESHOLD_DIV) {
+				if(buf_out_use > 0 && audioapi_voice_p_status2() < rate_out / PLAY_THRESHOLD_DIV) {
 					audioapi_play_voice(buf_out, buf_out_use);
 					buf_out_use = 0;
 				}
@@ -1808,6 +1809,7 @@ out:
 	inthread_th* int_task;
 }
 
+//Rate is not sampling rate!
 void voice_frame_number(uint64_t newframe, double rate)
 {
 	if(rate == last_rate && last_frame_number == newframe)

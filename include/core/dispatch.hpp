@@ -130,11 +130,11 @@ public:
  *
  * Parameter dev: The device name sound is now playing (if enabled) from.
  */
-	virtual void on_sound_change(const std::string& dev);
+	virtual void on_sound_change(std::pair<std::string, std::string> dev);
 /**
  * Call all on_sound_change() handlers.
  */
-	static void do_sound_change(const std::string& dev) throw();
+	static void do_sound_change(std::pair<std::string, std::string> dev) throw();
 /**
  * Emulator mode might have been changed.
  *

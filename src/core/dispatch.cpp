@@ -158,12 +158,12 @@ void information_dispatch::do_sound_unmute(bool unmuted) throw()
 	}
 }
 
-void information_dispatch::on_sound_change(const std::string& dev)
+void information_dispatch::on_sound_change(std::pair<std::string, std::string> dev)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_sound_change(const std::string& dev) throw()
+void information_dispatch::do_sound_change(std::pair<std::string,std::string> dev) throw()
 {
 	for(auto& i : dispatch()) {
 		START_EH_BLOCK

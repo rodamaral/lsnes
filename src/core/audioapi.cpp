@@ -44,9 +44,11 @@ namespace
 	volatile unsigned voicep_put = 0;
 	volatile unsigned voicer_get = 0;
 	volatile unsigned voicer_put = 0;
-	volatile unsigned voice_rate = 40000;
-	volatile unsigned orig_voice_rate = 40000;
-	volatile bool dummy_cb_active = false;
+	volatile unsigned voice_rate_play = 40000;
+	volatile unsigned orig_voice_rate_play = 40000;
+	volatile unsigned voice_rate_rec = 40000;
+	volatile bool dummy_cb_active_record = false;
+	volatile bool dummy_cb_active_play = false;
 	volatile bool dummy_cb_quit = false;
 	volatile float music_volume = 1;
 	volatile float voicep_volume = 32767.0;
@@ -64,10 +66,10 @@ namespace
 				unsigned samples = dt / 25;
 				if(samples > 16384)
 					samples = 16384;	//Don't get crazy.
-				if(dummy_cb_active) {
+				if(dummy_cb_active_record)
 					audioapi_get_voice(buf, samples);
+				if(dummy_cb_active_play)
 					audioapi_put_voice(NULL, samples);
-				}
 				usleep(10000);
 			}
 		}
@@ -142,14 +144,23 @@ exit:
 }
 
 
-unsigned audioapi_voice_rate()
+std::pair<unsigned, unsigned> audioapi_voice_rate()
 {
-	return voice_rate;
+	return std::make_pair(voice_rate_rec, voice_rate_play);
 }
 
-void audioapi_voice_rate(unsigned rate)
+void audioapi_voice_rate(unsigned rate_rec, unsigned rate_play)
 {
-	orig_voice_rate = voice_rate = rate;
+	if(rate_rec)
+		voice_rate_rec = rate_rec;
+	else
+		voice_rate_rec = 40000;
+	dummy_cb_active_record = !rate_rec;
+	if(rate_play)
+		orig_voice_rate_play = voice_rate_play = rate_play;
+	else
+		voice_rate_rec = 40000;
+	dummy_cb_active_play = !rate_play;
 }
 
 unsigned audioapi_voice_p_status()
@@ -245,8 +256,8 @@ struct audioapi_buffer audioapi_get_music(size_t played)
 		//Otherwise, check if current buffer is not next on the line to be overwritten.
 		if((midx2 + 1) % MUSIC_BUFFERS == midx) {
 			//It is, bump buffer by one.
-			if(!last_adjust && voice_rate > orig_voice_rate - MAX_VOICE_ADJUST)
-				voice_rate--;
+			if(!last_adjust && voice_rate_play > orig_voice_rate_play - MAX_VOICE_ADJUST)
+				voice_rate_play--;
 			last_adjust = true;
 			midx = last_complete_music_seen = (midx + 1) % MUSIC_BUFFERS;
 			music_ptr = 0;
@@ -256,8 +267,8 @@ struct audioapi_buffer audioapi_get_music(size_t played)
 			music_ptr = 0;
 			last_adjust = false;
 		} else if(music_ptr >= music_size[midx] && midx == midx2) {
-			if(!last_adjust && voice_rate < orig_voice_rate + MAX_VOICE_ADJUST)
-				voice_rate++;
+			if(!last_adjust && voice_rate_play < orig_voice_rate_play + MAX_VOICE_ADJUST)
+				voice_rate_play++;
 			last_adjust = true;
 			//Current buffer is finished, but there is no new buffer.
 			//Send silence.
@@ -313,14 +324,6 @@ void audioapi_put_voice(float* samples, size_t count)
 	voicer_put = ptr;
 }
 
-void audioapi_set_dummy_cb(bool enable)
-{
-	if(enable)
-		voice_rate = 40000;
-	dummy_cb_active = enable;
-}
-
-
 void audioapi_init()
 {
 	voicep_get = 0;
@@ -329,7 +332,8 @@ void audioapi_init()
 	voicer_put = 0;
 	last_complete_music = 3;
 	last_complete_music_seen = 4;
-	dummy_cb_active = true;
+	dummy_cb_active_play = true;
+	dummy_cb_active_record = true;
 	dummy_cb_quit = false;
 	dummy_cb_proc_obj = new dummy_cb_proc;
 	dummy_cb_thread = new thread_class(*dummy_cb_proc_obj);
@@ -394,7 +398,7 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			else
 				for(size_t i = 0; i < 2 * indata; i++)
 					intbuf[i] = 0;
-			music_resampler.resample(in, indata, out, outdata, voice_rate / b.rate, true);
+			music_resampler.resample(in, indata, out, outdata, voice_rate_play / b.rate, true);
 			indata_used -= indata;
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);
@@ -418,7 +422,7 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			else
 				for(size_t i = 0; i < indata; i++)
 					intbuf[i] = 0;
-			music_resampler.resample(in, indata, out, outdata, voice_rate / b.rate, false);
+			music_resampler.resample(in, indata, out, outdata, voice_rate_play / b.rate, false);
 			indata_used -= indata;
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);

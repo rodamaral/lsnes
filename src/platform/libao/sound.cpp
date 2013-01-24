@@ -43,7 +43,6 @@ namespace
 		void entry()
 		{
 			int16_t buffer[1024];
-			float voicebuf2[512] = {0.0f};
 			while(true) {
 				audioapi_get_mixed(buffer, 512, true);
 				if(!was_enabled)
@@ -53,7 +52,6 @@ namespace
 					ao_play(d, reinterpret_cast<char*>(buffer), 2048);
 				else
 					usleep(10000);
-				audioapi_put_voice(voicebuf2, 512);
 			}
 		}
 	};
@@ -68,6 +66,7 @@ namespace
 			usleep(50000);
 			ao_close(d);
 			current_device = "";
+			audioapi_voice_rate(0, 0);
 		}
 		//Open new audio.
 		if(newdevice != -1) {
@@ -101,16 +100,14 @@ namespace
 					(stringfmt() << "Error code " << err).throwex();
 				}
 			}
+			audioapi_voice_rate(0, 48000);
 		}
 		if(cdev) {
-			audioapi_set_dummy_cb(false);
-			audioapi_voice_rate(48000);
 			current_device = name;
 			messages << "Switched to audio output " << name << std::endl;
 		} else {
-			audioapi_set_dummy_cb(true);
 			current_device = "";
-			messages << "Switched to audio output null" << std::endl;
+			messages << "Switched to null audio output" << std::endl;
 		}
 		return true;
 	}
@@ -154,14 +151,17 @@ namespace
 		},
 		.enable = [](bool enable) -> void { was_enabled = enable; },
 		.initialized = []() -> bool { return init_flag; },
-		.set_device = [](const std::string& dev) -> void {
+		.set_device = [](const std::string& dev, bool rec) -> void {
+			if(rec && dev != "null")
+				//Sound input not supported.
+				throw std::runtime_error("Invalid sound input device");
 			if(dev == "null") {
 				if(!switch_devices(-1, ""))
 					throw std::runtime_error("Failed to switch sound outputs");
 			} else {
 				int idx = ao_driver_id(dev.c_str());
 				if(idx == -1)
-					throw std::runtime_error("Invalid device '" + dev + "'");
+					throw std::runtime_error("Invalid output device '" + dev + "'");
 				try {
 					if(!switch_devices(idx, dev))
 						throw std::runtime_error("Failed to switch sound outputs");
@@ -171,14 +171,20 @@ namespace
 				}
 			}
 		},
-		.get_device = []() -> std::string {
+		.get_device = [](bool rec) -> std::string {
+			if(rec)
+				return "null";	//Sound input not supported.
 			if(current_device == "")
 				return "null";
 			else
 				return current_device;
 		},
-		.get_devices = []() -> std::map<std::string, std::string> {
+		.get_devices = [](bool rec) -> std::map<std::string, std::string> {
 			std::map<std::string, std::string> ret;
+			if(rec) {
+				ret["null"] = "null sound input";
+				return ret;
+			}
 			ret["null"] = "null sound output";
 			int dcount;
 			ao_info** drvs = ao_driver_info_list(&dcount);

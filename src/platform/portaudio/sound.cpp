@@ -29,15 +29,14 @@
 namespace
 {
 	uint32_t audio_playback_freq = 0;
-	PaDeviceIndex current_device = paNoDevice;
+	uint32_t audio_record_freq = 0;
+	PaDeviceIndex current_device_rec = paNoDevice;
+	PaDeviceIndex current_device_play = paNoDevice;
 	bool stereo = false;
 	bool istereo = false;
-	PaStream* s = NULL;
+	PaStream* st = NULL;
 	bool init_flag = false;
 	bool was_enabled = false;
-	double ltnow = 0;
-	double ltadc = 0;
-	double ltdac = 0;
 
 	uint64_t first_ts;
 	uint64_t frames;
@@ -48,13 +47,6 @@ namespace
 		if(!first_ts)
 			first_ts = get_utime();
 		frames += frame_count;
-//		std::cerr << "Frames requested: " << frame_count << std::endl;
-//		std::cerr << "dtnow=" << (time_info->currentTime - ltnow)
-//			<< " dtdac=" << (time_info->outputBufferDacTime - ltdac)
-//			<< " dtadc=" << (time_info->inputBufferAdcTime - ltadc) << std::endl;
-		ltnow = time_info->currentTime;
-		ltadc = time_info->inputBufferAdcTime;
-		ltdac = time_info->outputBufferDacTime;
 		int16_t* _output = reinterpret_cast<int16_t*>(output);
 		const int16_t* _input = reinterpret_cast<const int16_t*>(input);
 		const unsigned voice_blocksize = 256;
@@ -64,16 +56,16 @@ namespace
 		size_t iptr = 0;
 		while(frame_count > 0) {
 			unsigned bsize = min(voice_blocksize / 2, static_cast<unsigned>(frame_count));
-			audioapi_get_mixed(voicebuf, bsize, stereo);
-			if(was_enabled)
-				for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
-					_output[ptr++] = voicebuf[i];
-			else
-				for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
-					_output[ptr++] = 0;
-			if(!input)
-				audioapi_put_voice(NULL, bsize);
-			else {
+			if(output) {
+				audioapi_get_mixed(voicebuf, bsize, stereo);
+				if(was_enabled)
+					for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
+						_output[ptr++] = voicebuf[i];
+				else
+					for(size_t i = 0; i < bsize * (stereo ? 2 : 1); i++)
+						_output[ptr++] = 0;
+			}
+			if(input) {
 				if(istereo)
 					for(size_t i = 0; i < bsize; i++) {
 						float l = _input[iptr++];
@@ -90,117 +82,217 @@ namespace
 		return 0;
 	}
 
-	bool switch_devices(PaDeviceIndex newdevice)
+	PaStreamParameters* get_output_parameters(PaDeviceIndex idx_in, PaDeviceIndex idx_out)
 	{
-		//Check that the new device index is valid at all.
-		if((newdevice >= 0 && !Pa_GetDeviceInfo(newdevice)) || (newdevice < 0 && newdevice != paNoDevice)) {
-			messages << "Invalid device " << newdevice << std::endl;
-			return false;
-		}
-		if(newdevice != paNoDevice && Pa_GetDeviceInfo(newdevice)->maxOutputChannels < 1) {
-			messages << "Portaudio: Device " << newdevice << " is not capable of playing sound."
+		static PaStreamParameters output;
+		if(idx_out == paNoDevice)
+			return NULL;
+		const PaDeviceInfo* inf = Pa_GetDeviceInfo(idx_out);
+		if(!inf || !inf->maxOutputChannels)
+			return NULL;
+		memset(&output, 0, sizeof(output));
+		output.device = idx_out;
+		output.channelCount = (inf->maxOutputChannels > 1) ? 2 : 1;
+		output.sampleFormat = paInt16;
+		output.suggestedLatency = inf->defaultLowOutputLatency;
+		output.hostApiSpecificStreamInfo = NULL;
+		return &output;
+	}
+
+	PaStreamParameters* get_input_parameters(PaDeviceIndex idx_in, PaDeviceIndex idx_out)
+	{
+		static PaStreamParameters input;
+		if(idx_in == paNoDevice)
+			return NULL;
+		const PaDeviceInfo* inf = Pa_GetDeviceInfo(idx_in);
+		if(!inf || !inf->maxInputChannels)
+			return NULL;
+		const PaHostApiInfo* host = Pa_GetHostApiInfo(inf->hostApi);
+		if(idx_in == idx_out && host && host->type == paALSA && (!strcmp(inf->name, "default") ||
+			!strcmp(inf->name, "sysdefault")))
+			//These things are blacklisted for full-duplex because Portaudio is buggy with these.
+			return NULL;
+		memset(&input, 0, sizeof(input));
+		input.device = idx_in;
+		input.channelCount = (inf->maxInputChannels > 1) ? 2 : 1;
+		input.sampleFormat = paInt16;
+		input.suggestedLatency = inf->defaultLowInputLatency;
+		input.hostApiSpecificStreamInfo = NULL;
+		return &input;
+	}
+	
+	bool dispose_stream(PaStream* s)
+	{
+		PaError err;
+		err = Pa_StopStream(s);
+		if(err != paNoError) {
+			messages << "Portaudio error (stop): " << Pa_GetErrorText(err)
 				<< std::endl;
 			return false;
 		}
-		//If audio is open somewhere, close it.
-		if(current_device != paNoDevice) {
-			PaError err;
-			err = Pa_StopStream(s);
-			if(err != paNoError) {
-				messages << "Portaudio error (stop): " << Pa_GetErrorText(err)
-					<< std::endl;
-				return false;
-			}
-			err = Pa_CloseStream(s);
-			if(err != paNoError) {
-				messages << "Portaudio error (close): " << Pa_GetErrorText(err) << std::endl;
-				return false;
-			}
-			current_device = paNoDevice;
-			//Sound disabled.
+		err = Pa_CloseStream(s);
+		if(err != paNoError) {
+			messages << "Portaudio error (close): " << Pa_GetErrorText(err) << std::endl;
+			return false;
 		}
-		//If new audio device is to be opened, try to do it.
-		if(newdevice != paNoDevice) {
-			const PaDeviceInfo* inf = Pa_GetDeviceInfo(newdevice);
-			PaStreamParameters output;
-			memset(&output, 0, sizeof(output));
-			output.device = newdevice;
-			output.channelCount = (inf->maxOutputChannels > 1) ? 2 : 1;
-			output.sampleFormat = paInt16;
-			output.suggestedLatency = inf->defaultLowOutputLatency;
-			output.hostApiSpecificStreamInfo = NULL;
-
-			//Blacklist these devices for recording, portaudio is buggy with recording off
-			//these things.
-			bool buggy = (!strcmp(inf->name, "default") || !strcmp(inf->name, "sysdefault"));
-
-			PaStreamParameters input;
-			memset(&input, 0, sizeof(input));
-			input.device = newdevice;
-			input.channelCount = (inf->maxInputChannels > 1) ? 2 : 1;
-			input.sampleFormat = paInt16;
-			input.suggestedLatency = inf->defaultLowInputLatency;
-			input.hostApiSpecificStreamInfo = NULL;
-			PaStreamParameters* _input = (!buggy && inf->maxInputChannels) ? &input : NULL;
-			if(!_input)
-				if(!buggy)
-					messages << "Portaudio: Warning: Audio capture not available on this device"
-						<< std::endl;
-				else
-					messages << "Portaudio: Warning: This device is blacklisted for capture"
-						<< std::endl;
-			else
-				messages << "Portaudio: Notice: Audio capture available" << std::endl;
-	
-			PaError err = Pa_OpenStream(&s, _input, &output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
-			if(err != paNoError) {
-				messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl
-					<< "\tOn device: '" << inf->name << "'" << std::endl;
-				audioapi_set_dummy_cb(true);
-				return false;
-			}
-
-			frames = 0;
-			first_ts = 0;
-			stereo = (output.channelCount == 2);
-			istereo = (input.channelCount == 2);
-			err = Pa_StartStream(s);
-			if(err != paNoError) {
-				messages << "Portaudio error (start): " << Pa_GetErrorText(err)
-					<< std::endl << "\tOn device: '" << inf->name << "'" << std::endl;
-				audioapi_set_dummy_cb(true);
-				return false;
-			}
-			const PaStreamInfo* si = Pa_GetStreamInfo(s);
-			audio_playback_freq = si ? si->sampleRate : inf->defaultSampleRate;
-			audioapi_set_dummy_cb(false);
-			audioapi_voice_rate(audio_playback_freq);
-			messages << "Portaudio: Opened " << audio_playback_freq << "Hz "
-				<< (stereo ? "Stereo" : "Mono") << " sound on '" << inf->name << "'" << std::endl;
-			messages << "Switched to sound device '" << inf->name << "'" << std::endl;
-		} else {
-			messages << "Switched to sound device NULL" << std::endl;
-			audioapi_set_dummy_cb(true);
-		}
-		current_device = newdevice;
 		return true;
 	}
-
-	function_ptr_command<const std::string&> x(lsnes_cmd, "portaudio", "", "",
-		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
-			messages << "Load: " << Pa_GetStreamCpuLoad(s) << std::endl;
-			messages << "Rate: " << 1000000.0 * frames / (get_utime() - first_ts) << std::endl;
-		});
-
-	class sound_change_listener : public information_dispatch
+	
+	bool close_devices_for_change()
 	{
-	public:
-		sound_change_listener() : information_dispatch("portaudio-sound-change-listener") {}
-		void on_sound_rate(uint32_t rate_n, uint32_t rate_d)
-		{
-		}
-	} sndchgl;
+		bool status = true;
+		if(st)
+			status &= dispose_stream(st);
+		st = NULL;
+		current_device_rec = paNoDevice;
+		current_device_play = paNoDevice;
+		audio_playback_freq = 0;
+		audio_record_freq = 0;
+		audioapi_voice_rate(0, 0);
+		return status;
+	}
 
+	unsigned switch_devices(PaDeviceIndex new_in, PaDeviceIndex new_out)
+	{
+		const PaStreamInfo* si;
+		if(new_in == current_device_rec && new_out == current_device_play)
+			return ((current_device_rec != paNoDevice) ? 1 : 0) | 
+				((current_device_play != paNoDevice) ? 2 : 0);
+		close_devices_for_change();
+		if(new_in == paNoDevice && new_out == paNoDevice) {
+			messages << "Sound devices closed." << std::endl;
+			return 0;
+		}
+		const PaDeviceInfo* inf = Pa_GetDeviceInfo(new_out);
+		if(!inf)
+			inf = Pa_GetDeviceInfo(new_in);
+		if(!inf)
+			return 0;
+		PaStreamParameters* input = get_input_parameters(new_in, new_out);
+		PaStreamParameters* output = get_output_parameters(new_in, new_out);
+		PaError err = Pa_OpenStream(&st, input, output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
+		if(err != paNoError) {
+			messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl;
+			audioapi_voice_rate(0, 0);
+			goto end_routine;
+		}
+
+		frames = 0;
+		first_ts = 0;
+		stereo = (output && output->channelCount == 2);
+		istereo = (input && input->channelCount == 2);
+		err = Pa_StartStream(st);
+		if(err != paNoError) {
+			messages << "Portaudio error (start): " << Pa_GetErrorText(err) << std::endl;
+			audioapi_voice_rate(0, 0);
+			goto end_routine;
+		}
+		si = Pa_GetStreamInfo(st);
+		audio_playback_freq = output ? si->sampleRate : 0;
+		audio_record_freq = input ? si->sampleRate : 0;
+		audioapi_voice_rate(audio_record_freq, audio_playback_freq);
+	end_routine:
+		if(audio_record_freq)
+			messages << "Portaudio: Input: " << audio_record_freq << "Hz "
+				<< (istereo ? "Stereo" : "Mono") << " on '" << Pa_GetDeviceInfo(new_in)->name
+				<< std::endl;
+		else
+			messages << "Portaudio: No sound input" << std::endl;
+		if(audio_playback_freq)
+			messages << "Portaudio: Output: " << audio_playback_freq << "Hz "
+				<< (istereo ? "Stereo" : "Mono") << " on '" << Pa_GetDeviceInfo(new_out)->name
+				<< std::endl;
+		else
+			messages << "Portaudio: No sound output" << std::endl;
+		current_device_play = audio_playback_freq ? new_out : paNoDevice;
+		current_device_rec = audio_record_freq ? new_in : paNoDevice;
+		return ((current_device_rec != paNoDevice) ? 1 : 0) | 
+			((current_device_play != paNoDevice) ? 2 : 0);
+	}
+
+	bool initial_switch_devices(PaDeviceIndex force_in, PaDeviceIndex force_out)
+	{
+		if(force_in != paNoDevice && force_out != paNoDevice) {
+			//Both are being forced. Just try to open.
+			unsigned r = switch_devices(force_in, force_out);
+			return (r != 0);
+		} else if(force_in != paNoDevice) {
+			//Input forcing, but no output. Prefer full dupex.
+			unsigned r = switch_devices(force_in, force_in);
+			PaDeviceIndex out;
+			bool tmp;
+			switch(r) {
+			case 0:
+			case 1:
+				tmp = (r != 0);
+				//We didn't get output open on that. Scan for output device.
+				for(out = 0; out < Pa_GetDeviceCount(); out++) {
+					if(out == force_in)
+						continue;	//Don't retry that.
+					r = switch_devices(tmp ? force_in : paNoDevice, out);
+					if(r == 3)
+						return true;	//Got it open.
+				}
+				//We can't get output.
+				return (switch_devices(force_in, paNoDevice) != 0);
+			case 2:
+			case 3:
+				//We got output open. This is enough success.
+				return true;
+			}
+		} else if(force_out != paNoDevice) {
+			//Output forcing, but no input. Prefer full dupex.
+			unsigned r = switch_devices(force_out, force_out);
+			PaDeviceIndex in;
+			bool tmp;
+			switch(r) {
+			case 0:
+			case 2:
+				tmp = (r != 0);
+				//We didn't get input open on that. Scan for input device.
+				for(in = 0; in < Pa_GetDeviceCount(); in++) {
+					if(in == force_out)
+						continue;	//Don't retry that.
+					r = switch_devices(in, tmp ? force_out : paNoDevice);
+					if(r == 3)
+						return true;	//Got it open.
+				}
+				//We can't get input.
+				return (switch_devices(paNoDevice, force_out) != 0);
+			case 1:
+			case 3:
+				//We got input open. This is enough success.
+				return true;
+			}
+		} else {
+			//Neither is forced.
+			unsigned r;
+			PaDeviceIndex idx;
+			PaDeviceIndex sidx;
+			PaDeviceIndex pidx;
+			PaDeviceIndex ridx;
+			bool o_r = true;
+			bool o_p = true;
+			for(idx = 0; idx < Pa_GetDeviceCount(); idx++) {
+				r = switch_devices(o_r ? idx : ridx, o_p ? idx : pidx);
+				if(r & 1) {
+					o_r = false;
+					ridx = idx;
+				}
+				if(r & 2) {
+					o_p = false;
+					pidx = idx;
+				}
+				if(r == 3)
+					return true;
+			}
+			//Get output open if possible.
+			if(!o_p)
+				return (switch_devices(paNoDevice, pidx) != 0);
+			return false;
+		}
+	}
+	
 	struct _audioapi_driver drv = {
 		.init = []() -> void {
 			PaError err = Pa_Initialize();
@@ -211,44 +303,42 @@ namespace
 			}
 			init_flag = true;
 
-			PaDeviceIndex forcedevice = paNoDevice;
+			PaDeviceIndex forcedevice_in = paNoDevice;
+			PaDeviceIndex forcedevice_out = paNoDevice;
 			if(getenv("LSNES_FORCE_AUDIO_OUT")) {
-				forcedevice = atoi(getenv("LSNES_FORCE_AUDIO_OUT"));
-				messages << "Attempting to force sound output " << forcedevice << std::endl;
+				forcedevice_out = atoi(getenv("LSNES_FORCE_AUDIO_OUT"));
+				messages << "Attempting to force sound output " << forcedevice_out << std::endl;
 			}
-			messages << "Detected " << Pa_GetDeviceCount() << " sound output devices." << std::endl;
+			if(getenv("LSNES_FORCE_AUDIO_IN")) {
+				forcedevice_in = atoi(getenv("LSNES_FORCE_AUDIO_IN"));
+				messages << "Attempting to force sound input " << forcedevice_in << std::endl;
+			}
+			messages << "Detected " << Pa_GetDeviceCount() << " sound devices." << std::endl;
 			for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++)
 				messages << "Audio device " << j << ": " << Pa_GetDeviceInfo(j)->name << std::endl;
-			bool any_success = false;
 			was_enabled = true;
-			if(forcedevice == paNoDevice) {
-				for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
-					any_success |= switch_devices(j);
-					if(any_success)
-						break;
-				}
-			} else
-				any_success |= switch_devices(forcedevice);
-			if(!any_success) {
+			bool any_success = initial_switch_devices(forcedevice_in, forcedevice_out);
+			if(!any_success)
 				messages << "Portaudio: Can't open any sound device, audio disabled" << std::endl;
-				audioapi_set_dummy_cb(true);
-			}
 		},
 		.quit = []() -> void {
 			if(!init_flag)
 				return;
-			switch_devices(paNoDevice);
+			if(st) {
+				Pa_StopStream(st);
+				Pa_CloseStream(st);
+			}
 			Pa_Terminate();
 			init_flag = false;
 		},
 		.enable = [](bool _enable) -> void { was_enabled = _enable; },
 		.initialized = []() -> bool { return init_flag; },
-		.set_device = [](const std::string& dev) -> void {
+		.set_device = [](const std::string& dev, bool rec) -> void {
+			bool failed = false;
+			PaDeviceIndex idx;
 			if(dev == "null") {
-				if(!switch_devices(paNoDevice))
-					throw std::runtime_error("Failed to switch sound outputs");
+				idx = paNoDevice;
 			} else {
-				PaDeviceIndex idx;
 				try {
 					idx = boost::lexical_cast<PaDeviceIndex>(dev);
 					if(idx < 0 || !Pa_GetDeviceInfo(idx))
@@ -256,26 +346,35 @@ namespace
 				} catch(std::exception& e) {
 					throw std::runtime_error("Invalid device '" + dev + "'");
 				}
-				if(!switch_devices(idx))
-					throw std::runtime_error("Failed to switch sound outputs");
 			}
+			if(rec) 
+				failed = ((switch_devices(idx, current_device_play) & 2) == 0);
+			else
+				failed = ((switch_devices(current_device_rec, idx) & 1) == 0);
 		},
-		.get_device = []() -> std::string {
-			if(current_device == paNoDevice)
-				return "null";
-			else {
-				std::ostringstream str;
-				str << current_device;
-				return str.str();
-			}
+		.get_device = [](bool rec) -> std::string {
+			if(rec)
+				if(current_device_rec == paNoDevice)
+					return "null";
+				else
+					return (stringfmt() << current_device_rec).str();
+			else
+				if(current_device_play == paNoDevice)
+					return "null";
+				else
+					return (stringfmt() << current_device_play).str();
 		},
-		.get_devices = []() -> std::map<std::string, std::string> {
+		.get_devices = [](bool rec) -> std::map<std::string, std::string> {
 			std::map<std::string, std::string> ret;
-			ret["null"] = "null sound output";
+			ret["null"] = rec ? "null sound input" : "null sound output";
 			for(PaDeviceIndex j = 0; j < Pa_GetDeviceCount(); j++) {
 				std::ostringstream str;
 				str << j;
-				ret[str.str()] = Pa_GetDeviceInfo(j)->name;
+				auto devinfo = Pa_GetDeviceInfo(j);
+				if(rec && devinfo->maxInputChannels)
+					ret[str.str()] = devinfo->name;
+				if(!rec && devinfo->maxOutputChannels)
+					ret[str.str()] = devinfo->name;
 			}
 			return ret;
 		},

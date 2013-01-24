@@ -63,9 +63,9 @@ void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double 
 /**
  * Get the voice channel playback/record rate.
  *
- * Returns: The rate in samples per second.
+ * Returns: The rate in samples per second (first for recording, then for playback).
  */
-unsigned audioapi_voice_rate();
+std::pair<unsigned,unsigned> audioapi_voice_rate();
 
 /**
  * Get the voice channel playback status register.
@@ -156,17 +156,6 @@ void audioapi_voicer_volume(float volume);
  */
 float audioapi_voicer_volume();
 
-//The following are intender to be used by the driver.
-
-/**
- * Set dummy CB enable flag.
- *
- * Parameter enable: The new state for enable flag.
- *
- * Note: Dummy CB enable should be set when the audio driver itself does not have active CB running.
- * Note: After negative edge, reprogram voice rate.
- */
-void audioapi_set_dummy_cb(bool enable);
 
 //The following are intended to be used by the driver from the callback
 
@@ -213,11 +202,13 @@ void audioapi_put_voice(float* samples, size_t count);
 /**
  * Set the voice channel playback/record rate.
  *
- * Parameter rate: The rate in samples per second.
+ * Parameter rate_r: The recording rate in samples per second.
+ * Parameter rate_p: The playback rate in samples per second.
  *
  * Note: This should only be called from the sound driver.
+ * Note: Setting rate to 0 enables dummy callbacks.
  */
-void audioapi_voice_rate(unsigned rate);
+void audioapi_voice_rate(unsigned rate_r, unsigned rate_p);
 
 //All the following need to be implemented by the sound driver itself
 struct _audioapi_driver
@@ -227,9 +218,9 @@ struct _audioapi_driver
 	void (*quit)() throw();
 	void (*enable)(bool enable);
 	bool (*initialized)();
-	void (*set_device)(const std::string& dev);
-	std::string (*get_device)();
-	std::map<std::string, std::string> (*get_devices)();
+	void (*set_device)(const std::string& dev, bool rec);
+	std::string (*get_device)(bool rec);
+	std::map<std::string, std::string> (*get_devices)(bool rec);
 	const char* (*name)();
 };
 
@@ -264,27 +255,27 @@ void audioapi_driver_enable(bool enable) throw();
 bool audioapi_driver_initialized();
 
 /**
- * Set sound device.
+ * Set sound device (playback).
  *
  * - If new sound device is invalid, the sound device is not changed.
  *
  * Parameter dev: The new sound device.
  */
-void audioapi_driver_set_device(const std::string& dev) throw(std::bad_alloc, std::runtime_error);
+void audioapi_driver_set_device(const std::string& dev, bool rec) throw(std::bad_alloc, std::runtime_error);
 
 /**
- * Get current sound device.
+ * Get current sound device (playback).
  *
  * Returns: The current sound device.
  */
-std::string audioapi_driver_get_device() throw(std::bad_alloc);
+std::string audioapi_driver_get_device(bool rec) throw(std::bad_alloc);
 
 /**
- * Get available sound devices.
+ * Get available sound devices (playback).
  *
  * Returns: The map of devices. Keyed by name of the device, values are human-readable names for devices.
  */
-std::map<std::string, std::string> audioapi_driver_get_devices() throw(std::bad_alloc);
+std::map<std::string, std::string> audioapi_driver_get_devices(bool rec) throw(std::bad_alloc);
 
 /**
  * Identification for sound plugin.

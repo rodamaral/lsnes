@@ -56,7 +56,8 @@ private:
 	std::map<int, wxMenuItem*> checkitems;
 	std::stack<wxMenu*> upper;
 	void* ahmenu;
-	void* sounddev;
+	void* sounddev1;
+	void* sounddev2;
 	void* dmenu;
 };
 

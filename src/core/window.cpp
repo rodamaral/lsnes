@@ -88,63 +88,6 @@ namespace
 	inverse_bind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
 	inverse_bind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
 
-	function_ptr_command<const std::string&> set_volume(lsnes_cmd, "set-volume", "Set sound volume",
-		"Syntax: set-volume <scale>\nset-volume <scale>%\nset-volume <scale>dB\nSet sound volume\n",
-		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
-			regex_results r;
-			double parsed = 1;
-			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
-				parsed = strtod(r[1].c_str(), NULL);
-			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
-				parsed = strtod(r[1].c_str(), NULL) / 100;
-			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
-				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
-			else {
-				messages << "Invalid volume" << std::endl;
-				return;
-			}
-			audioapi_music_volume(parsed);
-		});
-
-	function_ptr_command<const std::string&> set_volume2(lsnes_cmd, "set-voice-volume", "Set voice playback "
-		"volume", "Syntax: set-voice-volume <scale>\nset-voice-volume <scale>%\nset-voice-volume <scale>dB\n"
-		"Set voice volume\n",
-		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
-			regex_results r;
-			double parsed = 1;
-			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
-				parsed = strtod(r[1].c_str(), NULL);
-			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
-				parsed = strtod(r[1].c_str(), NULL) / 100;
-			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
-				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
-			else {
-				messages << "Invalid volume" << std::endl;
-				return;
-			}
-			audioapi_voicep_volume(parsed);
-		});
-
-	function_ptr_command<const std::string&> set_volume3(lsnes_cmd, "set-record-volume", "Set voice record "
-		"volume", "Syntax: set-record-volume <scale>\nset-record-volume <scale>%\nset-record-volume "
-		"<scale>dB\nSet record volume\n",
-		[](const std::string& value) throw(std::bad_alloc, std::runtime_error) {
-			regex_results r;
-			double parsed = 1;
-			if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)", value))
-				parsed = strtod(r[1].c_str(), NULL);
-			else if(r = regex("([0-9]*\\.[0-9]+|[0-9]+)%", value))
-				parsed = strtod(r[1].c_str(), NULL) / 100;
-			else if(r = regex("([+-]?([0-9]*.[0-9]+|[0-9]+))dB", value))
-				parsed = pow(10, strtod(r[1].c_str(), NULL) / 20);
-			else {
-				messages << "Invalid volume" << std::endl;
-				return;
-			}
-			audioapi_voicer_volume(parsed);
-		});
-
-
 	emulator_status emustatus;
 
 	class window_output
@@ -212,15 +155,16 @@ void platform::sound_enable(bool enable) throw()
 	information_dispatch::do_sound_unmute(enable);
 }
 
-void platform::set_sound_device(const std::string& dev) throw()
+void platform::set_sound_device(const std::string& dev, bool rec) throw()
 {
 	try {
-		audioapi_driver_set_device(dev);
+		audioapi_driver_set_device(dev, rec);
 	} catch(std::exception& e) {
 		out() << "Error changing sound device: " << e.what() << std::endl;
 	}
 	//After failed change, we don't know what is selected.
-	information_dispatch::do_sound_change(audioapi_driver_get_device());
+	information_dispatch::do_sound_change(std::make_pair(audioapi_driver_get_device(true),
+		audioapi_driver_get_device(false)));
 }
 
 bool platform::is_sound_enabled() throw()

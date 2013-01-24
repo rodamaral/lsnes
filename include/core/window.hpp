@@ -185,7 +185,7 @@ struct platform
 /**
  * Set sound device.
  */
-	static void set_sound_device(const std::string& dev) throw();
+	static void set_sound_device(const std::string& dev, bool recording) throw();
 /**
  * Show modal message dialog.
  *
