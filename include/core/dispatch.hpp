@@ -423,6 +423,17 @@ public:
  * Call on_voice_stream_change on all objects.
  */
 	static void do_voice_stream_change() throw();
+/**
+ * Notify about changes to subtitles.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_subtitle_change();
+/**
+ * Call on_subtitle_change on all objects.
+ */
+	static void do_subtitle_change() throw();
+
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.

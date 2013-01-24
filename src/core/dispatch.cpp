@@ -554,3 +554,19 @@ void information_dispatch::do_voice_stream_change() throw()
 		END_EH_BLOCK(i, "on_voice_stream_change");
 	}
 }
+
+void information_dispatch::on_subtitle_change()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_subtitle_change() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_subtitle_change();
+		END_EH_BLOCK(i, "on_subtitle_change");
+	}
+}
