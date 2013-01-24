@@ -1,4 +1,6 @@
 #include "core/command.hpp"
+#include "core/dispatch.hpp"
+#include "core/framebuffer.hpp"
 #include "core/moviedata.hpp"
 #include "core/subtitles.hpp"
 #include "core/window.hpp"
@@ -109,6 +111,8 @@ namespace
 				our_movie.subtitles.erase(key);
 			else
 				our_movie.subtitles[key] = s_unescape(text);
+			information_dispatch::do_subtitle_change();
+			redraw_framebuffer();
 		});
 
 	function_ptr_command<> list_subtitle(lsnes_cmd, "list-subtitle", "List the subtitles",
@@ -229,4 +233,6 @@ void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x)
 		our_movie.subtitles.erase(key);
 	else
 		our_movie.subtitles[key] = s_unescape(x);
+	information_dispatch::do_subtitle_change();
+	redraw_framebuffer();
 }

@@ -10,56 +10,203 @@
 #include <wx/radiobut.h>
 
 #include "library/string.hpp"
+#include "core/dispatch.hpp"
+#include "core/subtitles.hpp"
 
-class wxeditor_subtitles : public wxDialog
+namespace
+{
+	struct subdata
+	{
+		uint64_t first;
+		uint64_t last;
+		std::string text;
+	};
+}
+
+class wxeditor_subtitles : public wxFrame
 {
 public:
 	wxeditor_subtitles(wxWindow* parent);
+	~wxeditor_subtitles() throw();
 	bool ShouldPreventAppExit() const;
-	void on_subtitles_change(wxCommandEvent& e);
-	void on_ok(wxCommandEvent& e);
-	void on_cancel(wxCommandEvent& e);
+	void on_change(wxCommandEvent& e);
+	void on_add(wxCommandEvent& e);
+	void on_edit(wxCommandEvent& e);
+	void on_delete(wxCommandEvent& e);
+	void on_close(wxCommandEvent& e);
+	void on_wclose(wxCloseEvent& e);
+	void refresh();
 private:
-	wxTextCtrl* subs;
-	wxButton* ok;
-	wxButton* cancel;
+	struct refresh_listener : public information_dispatch
+	{
+		refresh_listener(wxeditor_subtitles* v)
+			: information_dispatch("subtitle-editor-change-listener")
+		{
+			obj = v;
+		}
+		void on_subtitle_change()
+		{
+			wxeditor_subtitles* _obj = obj;
+			runuifun([_obj]() -> void { _obj->refresh(); });
+		}
+		wxeditor_subtitles* obj;
+	};
+	bool closing;
+	wxListBox* subs;
+	wxTextCtrl* subtext;
+	wxButton* add;
+	wxButton* edit;
+	wxButton* _delete;
+	wxButton* close;
+	std::map<int, subdata> subtexts;
+	refresh_listener* rlistener;
 };
+
+namespace
+{
+
+	class wxeditor_subtitles_subtitle : public wxDialog
+	{
+	public:
+		wxeditor_subtitles_subtitle(wxWindow* parent, subdata d);
+		void on_change(wxCommandEvent& e);
+		void on_cancel(wxCommandEvent& e);
+		void on_ok(wxCommandEvent& e);
+		subdata get_result();
+	private:
+		wxTextCtrl* first;
+		wxTextCtrl* last;
+		wxTextCtrl* text;
+		wxButton* ok;
+		wxButton* cancel;
+	};
+
+	wxeditor_subtitles_subtitle::wxeditor_subtitles_subtitle(wxWindow* parent, subdata d)
+		: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit subtitle"), wxDefaultPosition, wxSize(-1, -1))
+	{
+		Centre();
+		wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
+		SetSizer(top_s);
+
+		wxFlexGridSizer* data_s = new wxFlexGridSizer(3, 2, 0, 0);
+		data_s->Add(new wxStaticText(this, wxID_ANY, wxT("First frame:")));
+		data_s->Add(first = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(200, -1)));
+		data_s->Add(new wxStaticText(this, wxID_ANY, wxT("Last frame:")));
+		data_s->Add(last = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(200, -1)));
+		data_s->Add(new wxStaticText(this, wxID_ANY, wxT("Text:")));
+		data_s->Add(text = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)));
+		top_s->Add(data_s, 1, wxGROW);
+
+		first->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxeditor_subtitles_subtitle::on_change), NULL, this);
+		last->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxeditor_subtitles_subtitle::on_change), NULL, this);
+		text->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxeditor_subtitles_subtitle::on_change), NULL, this);
+
+		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->AddStretchSpacer();
+		pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("OK")), 0, wxGROW);
+		pbutton_s->Add(cancel = new wxButton(this, wxID_ANY, wxT("Cancel")), 0, wxGROW);
+		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles_subtitle::on_ok),
+			NULL, this);
+		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxeditor_subtitles_subtitle::on_cancel), NULL, this);
+		top_s->Add(pbutton_s, 0, wxGROW);
+
+		pbutton_s->SetSizeHints(this);
+		top_s->SetSizeHints(this);
+
+		first->SetValue(towxstring((stringfmt() << d.first).str()));
+		last->SetValue(towxstring((stringfmt() << d.last).str()));
+		text->SetValue(towxstring(d.text));
+		Fit();
+	}
+
+	void wxeditor_subtitles_subtitle::on_change(wxCommandEvent& e)
+	{
+		bool valid = true;
+		std::string _first = tostdstring(first->GetValue());
+		std::string _last = tostdstring(last->GetValue());
+		std::string _text = tostdstring(text->GetValue());
+		valid = valid && regex_match("[0-9]{1,19}", _first);
+		valid = valid && regex_match("[0-9]{1,19}", _last);
+		valid = valid && (_text != "");
+		ok->Enable(valid);
+	}
+
+	void wxeditor_subtitles_subtitle::on_cancel(wxCommandEvent& e)
+	{
+		EndModal(wxID_CANCEL);
+	}
+
+	void wxeditor_subtitles_subtitle::on_ok(wxCommandEvent& e)
+	{
+		EndModal(wxID_OK);
+	}
+
+	subdata wxeditor_subtitles_subtitle::get_result()
+	{
+		subdata d;
+		d.first = parse_value<uint64_t>(tostdstring(first->GetValue()));
+		d.last = parse_value<uint64_t>(tostdstring(last->GetValue()));
+		d.text = tostdstring(text->GetValue());
+		return d;
+	}
+
+	bool edit_subtext(wxWindow* w, struct subdata& d)
+	{
+		wxeditor_subtitles_subtitle* editor = NULL;
+		try {
+			editor = new wxeditor_subtitles_subtitle(w, d);
+			int ret = editor->ShowModal();
+			if(ret == wxID_OK)
+				d = editor->get_result();
+		} catch(...) {
+		}
+		if(editor)
+			editor->Destroy();
+	}
+}
 
 
 wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit subtitles"), wxDefaultPosition, wxSize(-1, -1))
+	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Edit subtitles"), wxDefaultPosition, wxSize(-1, -1))
 {
+	closing = false;
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(2, 1, 0, 0);
 	SetSizer(top_s);
 
-	top_s->Add(subs = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, 300),
-		wxTE_MULTILINE), 1, wxGROW);
-	subs->Connect(wxEVT_COMMAND_TEXT_UPDATED,
-		wxCommandEventHandler(wxeditor_subtitles::on_subtitles_change), NULL, this);
+	//TODO: Apppropriate controls.
+	top_s->Add(subs = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(300, 400), 0, NULL,
+		wxLB_SINGLE), 1, wxGROW);
+	subs->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+		wxCommandEventHandler(wxeditor_subtitles::on_change), NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
-	pbutton_s->Add(ok = new wxButton(this, wxID_ANY, wxT("OK")), 0, wxGROW);
-	pbutton_s->Add(cancel = new wxButton(this, wxID_ANY, wxT("Cancel")), 0, wxGROW);
-	ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_ok), NULL, this);
-	cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_cancel), NULL,
+	pbutton_s->Add(add = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
+	pbutton_s->Add(edit = new wxButton(this, wxID_ANY, wxT("Edit")), 0, wxGROW);
+	pbutton_s->Add(_delete = new wxButton(this, wxID_ANY, wxT("Delete")), 0, wxGROW);
+	pbutton_s->Add(close = new wxButton(this, wxID_ANY, wxT("Close")), 0, wxGROW);
+	add->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_add), NULL, this);
+	edit->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_edit), NULL, this);
+	_delete->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_delete), NULL,
 		this);
+	close->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_subtitles::on_close), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
 
 	pbutton_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
 	Fit();
+	rlistener = new refresh_listener(this);
+	refresh();
+}
 
-	std::string txt = "";
-	runemufn([&txt]() {
-		for(auto i : get_subtitles()) {
-			std::ostringstream line;
-			line << i.first << " " << i.second << " " << get_subtitle_for(i.first, i.second) << std::endl;
-			txt = txt + line.str();
-		}
-	});
-	subs->SetValue(towxstring(txt));
+wxeditor_subtitles::~wxeditor_subtitles() throw()
+{
+	delete rlistener;
 }
 
 bool wxeditor_subtitles::ShouldPreventAppExit() const
@@ -67,76 +214,107 @@ bool wxeditor_subtitles::ShouldPreventAppExit() const
 	return false;
 }
 
-void wxeditor_subtitles::on_subtitles_change(wxCommandEvent& e)
+void wxeditor_subtitles::on_close(wxCommandEvent& e)
 {
-	std::string txt = tostdstring(subs->GetValue());
-	std::string line;
-	while(txt != "") {
-		extract_token(txt, line, "\n");
-		istrip_CR(line);
-		if(line == "")
-			continue;
-		auto r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]+(.+)", line);
-		if(!r) {
-			ok->Disable();
-			return;
-		}
-		try {
-			parse_value<uint64_t>(r[1]);
-			parse_value<uint64_t>(r[2]);
-		} catch(...) {
-			ok->Disable();
-			return;
-		}
-	}
-	ok->Enable();
+	closing = true;
+	Destroy();
 }
 
-void wxeditor_subtitles::on_ok(wxCommandEvent& e)
+void wxeditor_subtitles::on_wclose(wxCloseEvent& e)
 {
-	std::map<std::pair<uint64_t, uint64_t>, std::string> data;
-	runemufn([&data]() {
-		for(auto i : get_subtitles())
-			data[std::make_pair(i.first, i.second)] = "";
-	});
-	std::string txt = tostdstring(subs->GetValue());
-	std::string line;
-	while(txt != "") {
-		extract_token(txt, line, "\n");
-		istrip_CR(line);
-		if(line == "")
-			continue;
-		auto r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]+(.+)", line);
-		if(!r)
-			return;
-		try {
-			uint64_t f = parse_value<uint64_t>(r[1]);
-			uint64_t l = parse_value<uint64_t>(r[2]);
-			data[std::make_pair(f, l)] = r[3];
-		} catch(...) {
-			return;
-		}
-	}
-	runemufn([&data]() {
-		for(auto i : data)
-			set_subtitle_for(i.first.first, i.first.second, i.second);
-	});
-	EndModal(wxID_OK);
+	closing = true;
 }
 
-void wxeditor_subtitles::on_cancel(wxCommandEvent& e)
+void wxeditor_subtitles::refresh()
 {
-	EndModal(wxID_CANCEL);
+	if(closing)
+		return;
+	std::map<std::pair<uint64_t, uint64_t>, std::string> _subtitles;
+	runemufn([&_subtitles]() -> void {
+		auto keys = get_subtitles();
+		for(auto i : keys)
+			_subtitles[i] = get_subtitle_for(i.first, i.second);
+	});
+	int sel = subs->GetSelection();
+	bool found = (subtexts.count(sel) != 0);
+	subdata matching = subtexts[sel];
+	subs->Clear();
+	unsigned num = 0;
+	subtexts.clear();
+	for(auto i : _subtitles) {
+		subdata newdata;
+		newdata.first = i.first.first;
+		newdata.last = i.first.second;
+		newdata.text = i.second;
+		subtexts[num++] = newdata;
+		std::string s = (stringfmt() << i.first.first << "-" << i.first.second << ": " << i.second).str();
+		subs->Append(towxstring(s));
+	}
+	for(int i = 0; i < subs->GetCount(); i++)
+		if(subtexts[i].first == matching.first && subtexts[i].last == matching.last)
+			subs->SetSelection(i);
+	if(subs->GetSelection() == wxNOT_FOUND && sel < subs->GetCount())
+		subs->SetSelection(sel);
+	sel = subs->GetSelection();
+	found = (subtexts.count(sel) != 0);
+	edit->Enable(found);
+	_delete->Enable(found);
+}
+
+void wxeditor_subtitles::on_change(wxCommandEvent& e)
+{
+	if(closing)
+		return;
+	int sel = subs->GetSelection();
+	bool found = (subtexts.count(sel) != 0);
+	edit->Enable(found);
+	_delete->Enable(found);
+}
+
+void wxeditor_subtitles::on_add(wxCommandEvent& e)
+{
+	if(closing)
+		return;
+	subdata t;
+	t.first = 0;
+	t.last = 0;
+	t.text = "";
+	if(edit_subtext(this, t))
+		set_subtitle_for(t.first, t.last, t.text);
+}
+
+void wxeditor_subtitles::on_edit(wxCommandEvent& e)
+{
+	if(closing)
+		return;
+	int sel = subs->GetSelection();
+	if(!subtexts.count(sel))
+		return;
+	auto t = subtexts[sel];
+	auto old = t;
+	if(edit_subtext(this, t)) {
+		set_subtitle_for(old.first, old.last, "");
+		set_subtitle_for(t.first, t.last, t.text);
+	}
+}
+
+void wxeditor_subtitles::on_delete(wxCommandEvent& e)
+{
+	if(closing)
+		return;
+	int sel = subs->GetSelection();
+	if(!subtexts.count(sel))
+		return;
+	auto t = subtexts[sel];
+	set_subtitle_for(t.first, t.last, "");
 }
 
 void wxeditor_subtitles_display(wxWindow* parent)
 {
-	modal_pause_holder hld;
-	wxDialog* editor;
+	wxFrame* editor;
 	try {
 		editor = new wxeditor_subtitles(parent);
-		editor->ShowModal();
+		editor->Show();
 	} catch(...) {
 	}
-	editor->Destroy();
 }

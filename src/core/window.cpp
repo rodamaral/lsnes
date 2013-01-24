@@ -526,8 +526,6 @@ void platform::queue(const std::string& c) throw(std::bad_alloc)
 
 void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
 {
-	if(sync && queue_synchronous_fn_warning)
-		std::cerr << "WARNING: Synchronous queue in callback to UI, this may deadlock!" << std::endl;
 	init_threading();
 	umutex_class h(queue_lock);
 	++next_function;
