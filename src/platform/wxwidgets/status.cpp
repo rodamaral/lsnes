@@ -129,7 +129,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	auto msize = memorywatches.get_pixels();
 	size_t y2 = !single ? ssize.second + 3 : 0;
 	size_t yt = (oth_count ? ssize.second : 0) + (mem_count ? msize.second : 0) + (!single ? 3 : 0);
-	size_t yl = msize.second + 1;
+	size_t yl = ssize.second + 1;
 	std::vector<char> buffer1, buffer2;
 	buffer1.resize(msize.first * msize.second * 3);
 	buffer2.resize(ssize.first * ssize.second * 3);
