@@ -2122,6 +2122,67 @@ Returns bitwise OR of 1 left shifted by bit1 places, 1 left shifted by bit2
  As special value, nil argument is no-op.
 \end_layout
 
+\begin_layout Subsubsection
+bit.test_any(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Is there a common set bit in a and b?
+\end_layout
+
+\begin_layout Subsubsection
+bit.test_all(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Are all set bits in b also set in a?
+\end_layout
+
+\begin_layout Subsubsection
+bit.popcount(number a)
+\end_layout
+
+\begin_layout Standard
+Population count of a.
+\end_layout
+
+\begin_layout Subsubsection
+bit.clshift(number a, number b, [number amount,[number bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained left shift on a, b by amount positions, assuming numbers to
+ be of specified number of bits.
+\end_layout
+
+\begin_layout Subsubsection
+bit.crshift(number a, number b, [number amount,[number bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained right shift on a, b by amount positions, assuming numbers to
+ be of specified number of bits.
+\end_layout
+
+\begin_layout Subsubsection
+bit.flagdecode(number a, number bits, [string on, [string off]])
+\end_layout
+
+\begin_layout Standard
+Return string of length bits where ith character is ith character of on
+ if bit i is on, otherwise ith character of off.
+ Out of range reads give last character, or '*'/'-' if empty.
+\end_layout
+
+\begin_layout Subsubsection
+bit.rflagdecode(number a, number bits, [string on, [string off]])
+\end_layout
+
+\begin_layout Standard
+Like bit.flagdecode, but outputs the string in the opposite order (most significa
+nt bit first).
+\end_layout
+
 \begin_layout Subsection
 Table gui:
 \end_layout
@@ -7341,6 +7402,62 @@ Compensate for nuts bsnes superscope/justifier handling
 
 \begin_layout Itemize
 Lua: Fix bit.extract boolean handling
+\end_layout
+
+\begin_layout Subsection
+rr1-delta16
+\end_layout
+
+\begin_layout Itemize
+Stop at movie end: Don't off-by-one
+\end_layout
+
+\begin_layout Itemize
+Fix crash closing lsnes with voice playback active.
+\end_layout
+
+\begin_layout Itemize
+Import/Export OggOpus for commentary tracks
+\end_layout
+
+\begin_layout Itemize
+16-button controllers.
+\end_layout
+
+\begin_layout Itemize
+Don't show nonexistent controllers in input display
+\end_layout
+
+\begin_layout Itemize
+Set voice record/playback volume from UI
+\end_layout
+
+\begin_layout Itemize
+Patches for gambatte SVN364.
+\end_layout
+
+\begin_layout Itemize
+Load markup (if exists) even without gamepack file.
+\end_layout
+
+\begin_layout Itemize
+Screen rotation & flipping
+\end_layout
+
+\begin_layout Itemize
+Lua: Some new bit functions
+\end_layout
+
+\begin_layout Itemize
+Auto-refresh voice streams on change.
+\end_layout
+
+\begin_layout Itemize
+Auto-refresh subtitles on change & new subtitle editor.
+\end_layout
+
+\begin_layout Itemize
+Fix music volume adjustment.
 \end_layout
 
 \end_body

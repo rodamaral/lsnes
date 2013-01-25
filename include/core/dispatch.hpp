@@ -413,6 +413,27 @@ public:
  * Call on_dumper_update on on all objects.
  */
 	static void do_dumper_update() throw();
+/**
+ * Notify about changes to voice streams.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_voice_stream_change();
+/**
+ * Call on_voice_stream_change on all objects.
+ */
+	static void do_voice_stream_change() throw();
+/**
+ * Notify about changes to subtitles.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_subtitle_change();
+/**
+ * Call on_subtitle_change on all objects.
+ */
+	static void do_subtitle_change() throw();
+
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.
