@@ -35,5 +35,7 @@ void voicesub_unload_collection();
 void voicesub_alter_timebase(uint64_t id, uint64_t ts);
 uint64_t voicesub_parse_timebase(const std::string& n);
 double voicesub_ts_seconds(uint64_t ts);
+float voicesub_get_gain(uint64_t id);
+void voicesub_set_gain(uint64_t id, float gain);
 
 #endif
