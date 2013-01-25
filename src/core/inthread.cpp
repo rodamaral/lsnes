@@ -1145,6 +1145,8 @@ out:
 		//Alter stream timebase.
 		//Can throw.
 		void alter_stream_timebase(uint64_t index, uint64_t newts);
+		//Alter stream gain.
+		void alter_stream_gain(uint64_t index, uint16_t newgain);
 		//Enumerate all valid stream indices, in time order.
 		std::list<uint64_t> all_streams();
 		//Export the entiere superstream.
@@ -1308,6 +1310,19 @@ out:
 			streams_by_time.insert(std::make_pair(newts, index));
 		} catch(std::exception& e) {
 			(stringfmt() << "Failed to alter stream timebase: " << e.what()).throwex();
+		}
+	}
+
+	void stream_collection::alter_stream_gain(uint64_t index, uint16_t newgain)
+	{
+		try {
+			umutex_class m(mutex);
+			if(!streams.count(index))
+				return;
+			streams[index]->set_gain(newgain);
+			streams[index]->write_trailier();
+		} catch(std::exception& e) {
+			(stringfmt() << "Failed to alter stream gain: " << e.what()).throwex();
 		}
 	}
 
@@ -1929,6 +1944,37 @@ namespace
 				<< std::endl;
 		});
 
+	function_ptr_command<const std::string&> change_gain("change-gain", "Change stream gain",
+		"change-gain <id> <newgain>\nChange gain of given stream",
+		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
+			umutex_class m2(current_collection_lock);
+			if(!current_collection) {
+				messages << "No voice streams loaded." << std::endl;
+				return;
+			}
+			auto r = regex("([0-9]+)[ \t]+([^ \t]*)", x);
+			if(!r) {
+				messages << "Syntax: change-timebase <id> <timebase>" << std::endl;
+				return;
+			}
+			uint64_t id = parse_value<uint64_t>(r[1]);
+			int64_t gain = 256 * parse_value<float>(r[2]);
+			if(gain < -32768 || gain > 32767) {
+				messages << "Error, gain out of range (+-128dB)." << std::endl;
+				return;
+			}
+			opus_stream* s = current_collection->get_stream(id);
+			if(!s) {
+				messages << "Error, no such stream found." << std::endl;
+				return;
+			}
+			s->put_ref();
+			current_collection->alter_stream_gain(id, (int16_t)gain);
+			information_dispatch::do_voice_stream_change();
+			messages << "Gain of stream #" << id << " is now " << (gain / 256.0) << "dB"
+				<< std::endl;
+		});
+
 	void import_cmd_common(const std::string& x, const char* postfix, external_stream_format mode)
 	{
 		umutex_class m2(current_collection_lock);
@@ -2219,6 +2265,26 @@ void voicesub_alter_timebase(uint64_t id, uint64_t ts)
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->alter_stream_timebase(id, ts);
+	information_dispatch::do_voice_stream_change();
+}
+
+float voicesub_get_gain(uint64_t id)
+{
+	umutex_class m2(current_collection_lock);
+	if(!current_collection)
+		throw std::runtime_error("No collection loaded");
+	return current_collection->get_stream(id)->get_gain() / 256.0;
+}
+
+void voicesub_set_gain(uint64_t id, float gain)
+{
+	umutex_class m2(current_collection_lock);
+	if(!current_collection)
+		throw std::runtime_error("No collection loaded");
+	int64_t _gain = gain * 256;
+	if(_gain < -32768 || _gain > 32767)
+		throw std::runtime_error("Gain out of range (+-128dB)");
+	current_collection->alter_stream_gain(id, _gain);
 	information_dispatch::do_voice_stream_change();
 }
 

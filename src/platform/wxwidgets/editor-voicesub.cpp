@@ -11,6 +11,7 @@
 
 #include "core/dispatch.hpp"
 #include "library/string.hpp"
+#include <sstream>
 
 #define NOTHING 0xFFFFFFFFFFFFFFFFULL
 
@@ -36,6 +37,7 @@ public:
 	void on_import_p(wxCommandEvent& e);
 	void on_import_q(wxCommandEvent& e);
 	void on_change_ts(wxCommandEvent& e);
+	void on_change_gain(wxCommandEvent& e);
 	void on_load(wxCommandEvent& e);
 	void on_unload(wxCommandEvent& e);
 	void on_refresh(wxCommandEvent& e);
@@ -71,6 +73,7 @@ private:
 	wxButton* importpbutton;
 	wxButton* importqbutton;
 	wxButton* changetsbutton;
+	wxButton* changegainbutton;
 	wxButton* loadbutton;
 	wxButton* unloadbutton;
 	wxButton* refreshbutton;
@@ -117,6 +120,7 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 	pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->Add(new wxStaticText(this, wxID_ANY, wxT("Misc.")), 0, wxGROW);
 	pbutton_s->Add(changetsbutton = new wxButton(this, wxID_ANY, wxT("Change time")), 0, wxGROW);
+	pbutton_s->Add(changegainbutton = new wxButton(this, wxID_ANY, wxT("Change gain")), 0, wxGROW);
 	top_s->Add(pbutton_s, 1, wxGROW);
 	pbutton_s->SetSizeHints(this);
 
@@ -154,6 +158,8 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 		wxCommandEventHandler(wxeditor_voicesub::on_import_q), NULL, this);
 	changetsbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_change_ts), NULL, this);
+	changegainbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_voicesub::on_change_gain), NULL, this);
 	loadbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_load), NULL, this);
 	unloadbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -189,6 +195,7 @@ void wxeditor_voicesub::on_select(wxCommandEvent& e)
 	exportpbutton->Enable(valid);
 	exportqbutton->Enable(valid);
 	changetsbutton->Enable(valid);
+	changegainbutton->Enable(valid);
 }
 
 void wxeditor_voicesub::on_play(wxCommandEvent& e)
@@ -222,12 +229,9 @@ void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		try {
-			filename = pick_file(this, "Select opus file to export", ".", true);
-		} catch(...) {
-			return;
-		}
+		filename = pick_file(this, "Select opus file to export", ".", true);
 		voicesub_export_stream(id, filename, EXTFMT_OPUSDEMO);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -240,12 +244,9 @@ void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		try {
-			filename = pick_file(this, "Select sox file to export", ".", true);
-		} catch(...) {
-			return;
-		}
+		filename = pick_file(this, "Select sox file to export", ".", true);
 		voicesub_export_stream(id, filename, EXTFMT_SOX);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -258,12 +259,9 @@ void wxeditor_voicesub::on_export_q(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		try {
 			filename = pick_file(this, "Select Ogg (Opus) file to export", ".", true);
-		} catch(...) {
-			return;
-		}
 		voicesub_export_stream(id, filename, EXTFMT_OGGOPUS);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
@@ -273,12 +271,9 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 {
 	try {
 		std::string filename;
-		try {
-			filename = pick_file(this, "Select sox file to export (superstream)", ".", true);
-		} catch(...) {
-			return;
-		}
+		filename = pick_file(this, "Select sox file to export (superstream)", ".", true);
 		voicesub_export_superstream(filename);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
 	}
@@ -289,14 +284,11 @@ void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
 	try {
 		std::string filename;
 		uint64_t ts;
-		try {
-			ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
-				"imported stream"));
-			filename = pick_file(this, "Select opus file to import", ".", false);
-		} catch(...) {
-			return;
-		}
+		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
+			"imported stream"));
+		filename = pick_file(this, "Select opus file to import", ".", false);
 		voicesub_import_stream(ts, filename, EXTFMT_OPUSDEMO);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -307,14 +299,11 @@ void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
 	try {
 		std::string filename;
 		uint64_t ts;
-		try {
-			ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
-				"imported stream"));
-			filename = pick_file(this, "Select sox file to import", ".", false);
-		} catch(...) {
-			return;
-		}
+		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
+			"imported stream"));
+		filename = pick_file(this, "Select sox file to import", ".", false);
 		voicesub_import_stream(ts, filename, EXTFMT_SOX);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -325,14 +314,11 @@ void wxeditor_voicesub::on_import_q(wxCommandEvent& e)
 	try {
 		std::string filename;
 		uint64_t ts;
-		try {
-			ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
-				"imported stream"));
-			filename = pick_file(this, "Select Ogg (Opus) file to import", ".", false);
-		} catch(...) {
-			return;
-		}
+		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
+			"imported stream"));
+		filename = pick_file(this, "Select Ogg (Opus) file to import", ".", false);
 		voicesub_import_stream(ts, filename, EXTFMT_OGGOPUS);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
@@ -345,15 +331,28 @@ void wxeditor_voicesub::on_change_ts(wxCommandEvent& e)
 		return;
 	try {
 		uint64_t ts;
-		try {
-			ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter new position for "
-				"stream"));
-		} catch(...) {
-			return;
-		}
+		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter new position for "
+			"stream"));
 		voicesub_alter_timebase(id, ts);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error changing timebase", e.what(), wxICON_EXCLAMATION);
+	}
+}
+
+void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
+{
+	uint64_t id = get_id();
+	if(id == NOTHING)
+		return;
+	try {
+		float gain;
+		std::string old = (stringfmt() << voicesub_get_gain(id)).str();
+		gain = parse_value<float>(pick_text(this, "Enter gain", "Enter new gain (dB) for stream", old));
+		voicesub_set_gain(id, gain);
+	} catch(canceled_exception& e) {
+	} catch(std::exception& e) {
+		show_message_ok(this, "Error changing gain", e.what(), wxICON_EXCLAMATION);
 	}
 }
 
@@ -367,6 +366,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 			return;
 		}
 		voicesub_load_collection(filename);
+	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error loading collection", e.what(), wxICON_EXCLAMATION);
 	}
@@ -404,8 +404,13 @@ void wxeditor_voicesub::refresh()
 	int next = 0;
 	for(auto i : voicesub_get_stream_info()) {
 		smap[next++] = i.id;
-		std::string text = (stringfmt() << "#" << i.id << " " << voicesub_ts_seconds(i.length) << "s@"
-			<< voicesub_ts_seconds(i.base) << "s").str();
+		std::ostringstream tmp;
+		tmp << "#" << i.id << " " << voicesub_ts_seconds(i.length) << "s@" << voicesub_ts_seconds(i.base)
+			<< "s";
+		float gain = voicesub_get_gain(i.id);
+		if(gain < -1e-5 || gain > 1e-5)
+			tmp << " (gain " << gain << "dB)";
+		std::string text = tmp.str();
 		subtitles->Append(towxstring(text));
 	}
 	if(sel != wxNOT_FOUND && sel < subtitles->GetCount())
