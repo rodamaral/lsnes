@@ -80,6 +80,7 @@ nodraw2:
 		}
 		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
 		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
+		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x1;
 		int32_t y1;

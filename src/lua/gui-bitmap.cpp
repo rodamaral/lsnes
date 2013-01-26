@@ -104,6 +104,7 @@ namespace
 		}
 		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
+		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;

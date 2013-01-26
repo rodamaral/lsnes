@@ -346,6 +346,8 @@ private:
 	friend struct premultiplied_color;
 };
 
+struct render_queue;
+
 /**
  * Base class for objects to render.
  */
@@ -363,9 +365,11 @@ struct render_object
  */
 	virtual void operator()(struct framebuffer<false>& scr) throw() = 0;
 	virtual void operator()(struct framebuffer<true>& scr) throw() = 0;
+/**
+ * Clone the object.
+ */
+	virtual void clone(struct render_queue& q) const throw(std::bad_alloc) = 0;
 };
-
-
 
 /**
  * Premultiplied color.
@@ -550,7 +554,17 @@ struct render_queue
 	{
 		add(*new(alloc(sizeof(T))) T(args...));
 	}
-
+/**
+ * Copy objects from another render queue.
+ */
+	void copy_from(render_queue& q) throw(std::bad_alloc);
+/**
+ * Helper for clone.
+ */
+	template<typename T> void clone_helper(const T* obj)
+	{
+		create_add<T>(*obj);
+	}
 /**
  * Constructor.
  */

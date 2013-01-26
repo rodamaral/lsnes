@@ -507,6 +507,18 @@ void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 		queue_head = queue_tail = n;
 }
 
+void render_queue::copy_from(render_queue& q) throw(std::bad_alloc)
+{
+	struct node* tmp = q.queue_head;
+	while(tmp) {
+		try {
+			tmp->obj->clone(*this);
+			tmp = tmp->next;
+		} catch(...) {
+		}
+	}
+}
+
 template<bool X> void render_queue::run(struct framebuffer<X>& scr) throw()
 {
 	struct node* tmp = queue_head;

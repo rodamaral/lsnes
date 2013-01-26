@@ -150,6 +150,7 @@ namespace
 			messages << "Error running Lua hunk: Double Fault???" << std::endl;
 			L.pop(1);
 		}
+		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
 			lsnes_cmd.invoke("repaint");
@@ -182,6 +183,7 @@ namespace
 		} catch(std::exception& e) {
 			messages << e.what() << std::endl;
 		}
+		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
 			lua_requests_repaint = false;
 			lsnes_cmd.invoke("repaint");
