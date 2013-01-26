@@ -1028,6 +1028,29 @@ If <steps> is negative, the rotation will be counterclockwise.
 
 Saves a screenshot into specified file.
 
+8.3.29 gui.renderq_new(number width, number height)
+
+Create render queue with specified reported size and return it.
+
+8.3.30 gui.renderq_clear(RENDERQUEUE queue)
+
+Clear specified render queue.
+
+8.3.31 gui.renderq_set(RENDERQUEUE queue)
+
+Switch to specified render queue. Use nil as queue to switch to 
+default queue.
+
+• When switched to another queue, all drawing functions work and 
+  draw there, even outside on_video/on_paint.
+
+8.3.32 gui.renderq_run(RENDERQUEUE queue)
+
+Run specified render queue, copying the objects to current render 
+queue. 
+
+• Warning: Don't try to run the current render queue.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.

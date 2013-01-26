@@ -2056,6 +2056,49 @@ gui.screenshot(string filename)
 Saves a screenshot into specified file.
 \end_layout
 
+\begin_layout Subsubsection
+gui.renderq_new(number width, number height)
+\end_layout
+
+\begin_layout Standard
+Create render queue with specified reported size and return it.
+\end_layout
+
+\begin_layout Subsubsection
+gui.renderq_clear(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Clear specified render queue.
+\end_layout
+
+\begin_layout Subsubsection
+gui.renderq_set(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Switch to specified render queue.
+ Use nil as queue to switch to default queue.
+\end_layout
+
+\begin_layout Itemize
+When switched to another queue, all drawing functions work and draw there,
+ even outside on_video/on_paint.
+\end_layout
+
+\begin_layout Subsubsection
+gui.renderq_run(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Run specified render queue, copying the objects to current render queue.
+ 
+\end_layout
+
+\begin_layout Itemize
+Warning: Don't try to run the current render queue.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
