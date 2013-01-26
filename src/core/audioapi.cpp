@@ -1,7 +1,9 @@
 #include "core/audioapi.hpp"
+#include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "library/minmax.hpp"
 #include <cstring>
+#include <cmath>
 #include <iostream>
 #include <unistd.h>
 #include <sys/time.h>
@@ -316,6 +318,7 @@ void audioapi_get_voice(float* samples, size_t count)
 void audioapi_put_voice(float* samples, size_t count)
 {
 	unsigned ptr = voicer_put;
+	audioapi_vu_vin(samples, count, false, voice_rate_rec, voicer_volume);
 	for(size_t i = 0; i < count; i++) {
 		voicer_buffer[ptr++] = samples ? voicer_volume * samples[i] : 0.0;
 		if(ptr == voicer_bufsize)
@@ -363,7 +366,7 @@ void audioapi_voicep_volume(float volume)
 
 float audioapi_voicep_volume()
 {
-	return voicep_volume;
+	return voicep_volume / 32767;
 }
 
 void audioapi_voicer_volume(float volume)
@@ -373,7 +376,7 @@ void audioapi_voicer_volume(float volume)
 
 float audioapi_voicer_volume()
 {
-	return voicer_volume;
+	return voicer_volume * 32768;
 }
 
 void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
@@ -403,6 +406,11 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);
 			audioapi_get_voice(intbuf, outdata_used);
+
+			audioapi_vu_mleft(intbuf2, outdata_used, true, voice_rate_play, 1 / 32768.0);
+			audioapi_vu_mright(intbuf2 + 1, outdata_used, true, voice_rate_play, 1 / 32768.0);
+			audioapi_vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
+
 			for(size_t i = 0; i < outdata_used * (stereo ? 2 : 1); i++)
 				intbuf2[i] = max(min(intbuf2[i] + intbuf[i / 2], 32766.0f), -32767.0f);
 			if(stereo)
@@ -427,6 +435,11 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);
 			audioapi_get_voice(intbuf, outdata_used);
+
+			audioapi_vu_mleft(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			audioapi_vu_mright(intbuf2, outdata_used, false, voice_rate_play, 1 / 32768.0);
+			audioapi_vu_vout(intbuf, outdata_used, false, voice_rate_play, 1 / 32768.0);
+
 			for(size_t i = 0; i < outdata_used; i++)
 				intbuf2[i] = max(min(intbuf2[i] + intbuf[i], 32766.0f), -32767.0f);
 			if(stereo)
@@ -442,3 +455,66 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 		count -= outdata_used;
 	}
 }
+
+audioapi_vumeter::audioapi_vumeter()
+{
+	accumulator = 0;
+	samples = 0;
+	vu = -999.0;
+}
+
+void audioapi_vumeter::operator()(float* asamples, size_t count, bool stereo, double rate, double scale)
+{
+	size_t limit = rate / 25;
+	//If we already at or exceed limit, cut immediately.
+	if(samples >= limit)
+		update_vu();
+	if(asamples) {
+		double sscale = scale * scale;
+		size_t j = 0;
+		if(stereo)
+			for(size_t i = 0; i < count; i++) {
+				accumulator += sscale * asamples[j] * asamples[j];
+				j += 2;
+				samples++;
+				if(samples >= limit)
+					update_vu();
+			}
+		else
+			for(size_t i = 0; i < count; i++) {
+				accumulator += sscale * asamples[i] * asamples[i];
+				samples++;
+				if(samples >= limit)
+					update_vu();
+			}
+	} else
+		for(size_t i = 0; i < count; i++) {
+			samples++;
+			if(samples >= limit)
+				update_vu();
+		}
+}
+
+void audioapi_vumeter::update_vu()
+{
+	if(!samples) {
+		vu = -999.0;
+		accumulator = 0;
+	} else {
+		double a = accumulator;
+		if(a < 1e-120)
+			a = 1e-120;	//Don't take log of zero.
+		vu = 10 / log(10) * (log(a) - log(samples));
+		if(vu < -999.0)
+			vu = -999.0;
+		accumulator = 0;
+		samples = 0;
+	}
+	information_dispatch::do_vu_change();
+}
+
+//VU values.
+audioapi_vumeter audioapi_vu_mleft;
+audioapi_vumeter audioapi_vu_mright;
+audioapi_vumeter audioapi_vu_vout;
+audioapi_vumeter audioapi_vu_vin;

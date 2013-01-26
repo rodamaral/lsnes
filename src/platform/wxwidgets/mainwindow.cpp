@@ -48,7 +48,6 @@ enum
 	wxID_NEXTPOLL,
 	wxID_ERESET,
 	wxID_AUDIO_ENABLED,
-	wxID_SHOW_AUDIO_STATUS,
 	wxID_AUDIODEV_FIRST,
 	wxID_AUDIODEV_LAST = wxID_AUDIODEV_FIRST + 255,
 	wxID_RAUDIODEV_FIRST,
@@ -82,9 +81,6 @@ enum
 	wxID_CANCEL_SAVES,
 	wxID_SHOW_STATUS,
 	wxID_SET_SPEED,
-	wxID_SET_VOLUME,
-	wxID_SET_VOLUME_VOICE,
-	wxID_SET_VOLUME_RECORD,
 	wxID_SPEED_5,
 	wxID_SPEED_10,
 	wxID_SPEED_17,
@@ -113,6 +109,7 @@ enum
 	wxID_RROM_FIRST,
 	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
 	wxID_CONFLICTRESOLUTION,
+	wxID_VUDISPLAY
 };
 
 
@@ -942,11 +939,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
+		menu_entry(wxID_VUDISPLAY, wxT("VU display / volume controls"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
-		menu_entry(wxID_SET_VOLUME, wxT("Set Sound volume"));
-		menu_entry(wxID_SET_VOLUME_VOICE, wxT("Set Voice volume"));
-		menu_entry(wxID_SET_VOLUME_RECORD, wxT("Set Record volume"));
-		menu_entry(wxID_SHOW_AUDIO_STATUS, wxT("Show audio status"));
 		menu_special_sub(wxT("Select input device"), reinterpret_cast<sound_select_menu*>(sounddev1 =
 			new sound_select_menu(this, true)));
 		menu_special_sub(wxT("Select output device"), reinterpret_cast<sound_select_menu*>(sounddev2 =
@@ -1056,9 +1050,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_AUDIO_ENABLED:
 		platform::sound_enable(menu_ischecked(wxID_AUDIO_ENABLED));
-		return;
-	case wxID_SHOW_AUDIO_STATUS:
-		platform::queue("show-sound-status");
 		return;
 	case wxID_CANCEL_SAVES:
 		platform::queue("cancel-saves");
@@ -1240,21 +1231,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 		return;
 	}
-	case wxID_SET_VOLUME:
-		parsed = pick_volume(this, "Set volume", last_volume);
-		if(parsed >= -1e-10)
-			runemufn([parsed]() { audioapi_music_volume(parsed); });
-		return;
-	case wxID_SET_VOLUME_RECORD:
-		parsed = pick_volume(this, "Set recording volume", last_volume_record);
-		if(parsed >= -1e-10)
-			audioapi_voicer_volume(parsed);
-		return;
-	case wxID_SET_VOLUME_VOICE:
-		parsed = pick_volume(this, "Set voice volume", last_volume_voice);
-		if(parsed >= -1e-10)
-			audioapi_voicep_volume(parsed);
-		return;
 	case wxID_SPEED_5:
 		set_speed(5);
 		break;
@@ -1330,6 +1306,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_CONFLICTRESOLUTION:
 		show_conflictwindow(this);
+	case wxID_VUDISPLAY:
+		open_vumeter_window(this);
 		return;
 	};
 }

@@ -36,6 +36,42 @@ struct audioapi_buffer
 	double rate;
 };
 
+/**
+ * Audio API VU calculator.
+ */
+struct audioapi_vumeter
+{
+/**
+ * Initialize.
+ */
+	audioapi_vumeter();
+/**
+ * Submit samples.
+ *
+ * Parameter samples: The samples to submit. If NULL, reads all samples as 0.
+ * Parameter count: Number of samples.
+ * Parameter stereo: If true, read only every other sample (but still read count samples).
+ * Parameter rate: Sound sampling rate.
+ * Parameter scale: Value to scale the samples by.
+ */
+	void operator()(float* samples, size_t count, bool stereo, double rate, double scale);
+/**
+ * Get VU value in dB.
+ */
+	operator float() const throw() { return vu; }
+private:
+	double accumulator;
+	size_t samples;
+	float vu;
+	void update_vu();
+};
+
+//VU values.
+extern audioapi_vumeter audioapi_vu_mleft;
+extern audioapi_vumeter audioapi_vu_mright;
+extern audioapi_vumeter audioapi_vu_vout;
+extern audioapi_vumeter audioapi_vu_vin;
+
 //Resampler.
 class audioapi_resampler
 {

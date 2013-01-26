@@ -48,6 +48,7 @@ void wxsetingsdialog_display(wxWindow* parent, int mode);
 void show_wxeditor_voicesub(wxWindow* parent);
 void open_rom_select_window();
 void show_conflictwindow(wxWindow* parent);
+void open_vumeter_window(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
