@@ -570,3 +570,19 @@ void information_dispatch::do_subtitle_change() throw()
 		END_EH_BLOCK(i, "on_subtitle_change");
 	}
 }
+
+void information_dispatch::on_vu_change()
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_vu_change() throw()
+{
+	if(in_global_ctors())
+		return;
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_vu_change();
+		END_EH_BLOCK(i, "on_vu_change");
+	}
+}

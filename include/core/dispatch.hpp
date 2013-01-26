@@ -433,6 +433,16 @@ public:
  * Call on_subtitle_change on all objects.
  */
 	static void do_subtitle_change() throw();
+/**
+ * Notify about changes to VU levels.
+ *
+ * Default implementation does nothing.
+ */
+	virtual void on_vu_change();
+/**
+ * Call on_vu_change on all objects.
+ */
+	static void do_vu_change() throw();
 
 protected:
 /**
