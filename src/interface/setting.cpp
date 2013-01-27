@@ -56,7 +56,7 @@ bool core_setting::is_boolean() const throw()
 		return false;
 	std::string a = values[0]->iname;
 	std::string b = values[1]->iname;
-	if(a < b)
+	if(a > b)
 		std::swap(a, b);
 	return (a == "0" && b == "1");
 }

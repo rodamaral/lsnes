@@ -489,10 +489,10 @@ void core_core::set_pflag(bool pflag)
 	return _set_pflag(pflag);
 }
 
-void core_core::request_reset(long delay)
+void core_core::request_reset(long delay, bool hard)
 {
 	if(_request_reset)
-		_request_reset(delay);
+		_request_reset(delay, hard);
 }
 
 framebuffer_raw& core_core::draw_cover()

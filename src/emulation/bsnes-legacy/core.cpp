@@ -62,9 +62,10 @@
 namespace
 {
 	bool p1disable = false;
+	bool do_hreset_flag = false;
 	long do_reset_flag = -1;
-	boolean_setting allow_inconsistent_saves(lsnes_set, "allow-inconsistent-saves", false);
-	boolean_setting save_every_frame(lsnes_set, "save-every-frame", false);
+	bool support_hreset = false;
+	bool save_every_frame = false;
 	bool have_saved_this_frame = false;
 	int16_t blanksound[1070] = {0};
 	int16_t soundbuf[8192] = {0};
@@ -100,6 +101,9 @@ namespace
 	core_setting_group bsnes_settings;
 	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
 	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none");
+	core_setting setting_hardreset(bsnes_settings, "hardreset", "Support hard resets", "0");
+	core_setting setting_saveevery(bsnes_settings, "saveevery", "Emulate saving each frame", "0");
+	core_setting setting_randinit(bsnes_settings, "radominit", "Random initial state", "0");
 	core_setting_value setting_port1_none(setting_port1, "none", "None", 0);
 	core_setting_value setting_port2_none(setting_port2, "none", "None", 0);
 	core_setting_value setting_port2_gamepad(setting_port2, "gamepad", "Gamepad", 1);
@@ -115,7 +119,13 @@ namespace
 	core_setting_value setting_port2_superscope(setting_port2, "superscope", "Super Scope", 8);
 	core_setting_value setting_port2_justifier(setting_port2, "justifier", "Justifier", 6);
 	core_setting_value setting_port2_justifiers(setting_port2, "justifiers", "2 Justifiers", 7);
-
+	core_setting_value setting_hardreset_0(setting_hardreset, "0", "False", 0);
+	core_setting_value setting_hardreset_1(setting_hardreset, "1", "True", 1);
+	core_setting_value setting_saveevery_0(setting_saveevery, "0", "False", 0);
+	core_setting_value setting_saveevery_1(setting_saveevery, "1", "True", 1);
+	core_setting_value setting_randinit_0(setting_randinit, "0", "False", 0);
+	core_setting_value setting_randinit_1(setting_randinit, "1", "True", 1);
+	
 	////////////////// PORTS COMMON ///////////////////
 	port_type* index_to_ptype[] = {
 		&none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers, &superscope
@@ -181,11 +191,16 @@ namespace
 		bsnes_settings.fill_defaults(_settings);
 		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
 		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
+		signed hreset = setting_hardreset.ivalue_to_index(_settings[setting_hardreset.iname]);
+		signed esave = setting_saveevery.ivalue_to_index(_settings[setting_saveevery.iname]);
+		signed irandom = setting_randinit.ivalue_to_index(_settings[setting_randinit.iname]);
 
 		basic_init();
 		snes_term();
 		snes_unload_cartridge();
-		SNES::config.random = false;
+		SNES::config.random = (irandom != 0);
+		save_every_frame = (esave != 0);
+		support_hreset = (hreset != 0);
 		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 		bool r = fun(img);
 		if(r) {
@@ -226,13 +241,17 @@ namespace
 		bsnes_settings.fill_defaults(_settings);
 		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
 		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
+		signed hreset = setting_hardreset.ivalue_to_index(_settings[setting_hardreset.iname]);
 		controller_set r;
-		r.ports.push_back(&psystem);
+		if(hreset)
+			r.ports.push_back(&psystem_hreset);
+		else
+			r.ports.push_back(&psystem);
 		r.ports.push_back(index_to_ptype[type1]);
 		r.ports.push_back(index_to_ptype[type2]);
 		unsigned p1controllers = r.ports[1]->controller_info->controller_count;
 		unsigned p2controllers = r.ports[2]->controller_info->controller_count;
-		for(unsigned i = 0; i < 4; i++)
+		for(unsigned i = 0; i < (hreset ? 5 : 4); i++)
 			r.portindex.indices.push_back(t(0, 0, i, false));
 		push_port_indices(r.portindex.indices, 1, *r.ports[1]);
 		push_port_indices(r.portindex.indices, 2, *r.ports[2]);
@@ -255,9 +274,9 @@ namespace
 	}
 
 #ifdef BSNES_HAS_DEBUGGER
-#define BSNES_RESET_LEVEL 2
+#define BSNES_RESET_LEVEL 6
 #else
-#define BSNES_RESET_LEVEL 1
+#define BSNES_RESET_LEVEL 5
 #endif
 
 	class my_interface : public SNES::Interface
@@ -727,6 +746,9 @@ namespace
 				return;
 			bool was_delay_reset = false;
 			int16_t reset = ecore_callbacks->set_input(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
+			int16_t hreset = 0;
+			if(support_hreset)
+				hreset = ecore_callbacks->set_input(0, 0, 4, do_hreset_flag ? 1 : 0);
 			if(reset) {
 				long hi = ecore_callbacks->set_input(0, 0, 2, do_reset_flag / 10000);
 				long lo = ecore_callbacks->set_input(0, 0, 3, do_reset_flag % 10000);
@@ -756,19 +778,31 @@ again:
 						do_reset_flag = -1;
 						messages << "SNES reset (forced at " << delayreset_cycles_run << ")"
 							<< std::endl;
-						SNES::system.reset();
+						if(hreset)
+							SNES::system.power();
+						else
+							SNES::system.reset();
 						return;
 					}
-					SNES::system.reset();
+					if(hreset)
+						SNES::system.power();
+					else
+						SNES::system.reset();
 					messages  << "SNES reset (delayed " << delayreset_cycles_run << ")"
 						<< std::endl;
 #else
 					messages << "Delayresets not supported on this bsnes version "
 						"(needs v084 or v085)" << std::endl;
-					SNES::system.reset();
+					if(hreset)
+						SNES::system.power();
+					else
+						SNES::system.reset();
 #endif
 				} else if(delay == 0) {
-					SNES::system.reset();
+					if(hreset)
+						SNES::system.power();
+					else
+						SNES::system.reset();
 					messages << "SNES reset" << std::endl;
 				}
 			}
@@ -797,8 +831,7 @@ again2:
 			if(!internal_rom)
 				return;
 			stepping_into_save = true;
-			if(!allow_inconsistent_saves)
-				SNES::system.runtosave();
+			SNES::system.runtosave();
 			have_saved_this_frame = true;
 			stepping_into_save = false;
 		},
@@ -809,7 +842,7 @@ again2:
 			SNES::cpu.controller_flag = pflag;
 		},
 		//Request reset.
-		[](long delay) -> void { do_reset_flag = delay; },
+		[](long delay, bool hard) -> void { do_reset_flag = delay; do_hreset_flag = hard; },
 		//Port types.
 		port_types,
 		//Cover page.

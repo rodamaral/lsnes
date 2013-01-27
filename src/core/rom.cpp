@@ -130,7 +130,7 @@ namespace
 		//Set poll flag.
 		[](bool pflag) -> void {},
 		//Request reset.
-		[](long delay) -> void {},
+		[](long delay, bool hard) -> void {},
 		//Port types.
 		port_types,
 		//Cover page.

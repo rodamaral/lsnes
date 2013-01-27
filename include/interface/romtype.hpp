@@ -90,7 +90,7 @@ struct core_core_params
 	void (*runtosave)();
 	bool (*get_pflag)();
 	void (*set_pflag)(bool pflag);
-	void (*request_reset)(long delay);
+	void (*request_reset)(long delay, bool hard);
 	port_type** port_types;
 	framebuffer_raw& (*draw_cover)();
 	std::string (*get_core_shortname)();
@@ -161,7 +161,7 @@ struct core_core
 	void runtosave();
 	bool get_pflag();
 	void set_pflag(bool pflag);
-	void request_reset(long delay);
+	void request_reset(long delay, bool hard);
 	framebuffer_raw& draw_cover();
 	port_type** get_port_types() { return port_types; }
 	std::string get_core_shortname();
@@ -188,7 +188,7 @@ private:
 	void (*_runtosave)();
 	bool (*_get_pflag)();
 	void (*_set_pflag)(bool pflag);
-	void (*_request_reset)(long delay);
+	void (*_request_reset)(long delay, bool hard);
 	port_type** port_types;
 	framebuffer_raw& (*_draw_cover)();
 	std::string (*_get_core_shortname)();
@@ -246,7 +246,7 @@ public:
 	void runtosave() { core->runtosave(); }
 	bool get_pflag() { return core->get_pflag(); }
 	void set_pflag(bool pflag) { core->set_pflag(pflag); }
-	void request_reset(long delay) { core->request_reset(delay); }
+	void request_reset(long delay, bool hard) { core->request_reset(delay, hard); }
 	framebuffer_raw& draw_cover() { return core->draw_cover(); }
 private:
 	core_type(const core_type&);

@@ -74,6 +74,16 @@ system_controller = {
 	}
 };
 
+system_controller_hreset = {
+	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+		{shadow, "F"},
+		{shadow, "R"},
+		{shadow_axis},
+		{shadow_axis},
+		{shadow, "H"}
+	}
+};
+
 ports = {
 	{
 		["symbol"] = "gamepad", ["iname"] = "gamepad", ["hname"] = "gamepad", ["controllers"] = {
@@ -124,6 +134,10 @@ ports = {
 	},{
 		["symbol"] = "psystem", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
 			system_controller
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "psystem_hreset", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			system_controller_hreset
 		}, ["legal"] = {0}
 	}
 };

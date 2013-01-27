@@ -47,6 +47,7 @@ enum
 	wxID_SUBFRAMEADVANCE,
 	wxID_NEXTPOLL,
 	wxID_ERESET,
+	wxID_EHRESET,
 	wxID_AUDIO_ENABLED,
 	wxID_AUDIODEV_FIRST,
 	wxID_AUDIODEV_LAST = wxID_AUDIODEV_FIRST + 255,
@@ -877,6 +878,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SUBFRAMEADVANCE, wxT("Step subframe"));
 	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
 	menu_entry(wxID_ERESET, wxT("Reset"));
+	menu_entry(wxID_EHRESET, wxT("Power cycle"));
 
 	menu_start(wxT("Movie"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
@@ -1044,6 +1046,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_ERESET:
 		platform::queue("reset");
+		return;
+	case wxID_EHRESET:
+		platform::queue("reset-hard");
 		return;
 	case wxID_EXIT:
 		platform::queue("quit-emulator");

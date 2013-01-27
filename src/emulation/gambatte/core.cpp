@@ -439,7 +439,7 @@ namespace
 		//Set poll flag.
 		[](bool _pflag) -> void { pflag = _pflag; },
 		//Request reset.
-		[](long delay) -> void { do_reset_flag = true; },
+		[](long delay, bool hard) -> void { do_reset_flag = true; },
 		//Port types.
 		port_types,
 		//Cover page.
