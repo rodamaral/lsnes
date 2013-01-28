@@ -1,0 +1,14 @@
+slots = {
+	{
+		["symbol"] = "saturn_images",
+		["slots"] = {
+			{
+				["iname"] = "CD,
+				["hname"] = "CD image",
+				["mandatory"] = 1,
+				["mode"] = 1,
+				["header"] = 0
+			}
+		}
+	}
+};

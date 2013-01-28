@@ -1,0 +1,50 @@
+gamepad_controller = {
+	["name"] = "gamepad", ["class"] = "saturngpad", ["buttons"] = {
+		{button, "u", "up"},
+		{button, "r", "right"},
+		{button, "d", "down"},
+		{button, "l", "left"},
+		{button, "R", "R"},
+		{button, "L", "L"},
+		{button, "S", "start"},
+		{button, "A", "A"},
+		{button, "B", "B"},
+		{button, "C", "C"},
+		{button, "X", "X"},
+		{button, "Y", "Y"}
+		{button, "Z", "Z"}
+	}
+};
+
+mouse_controller = {
+	["name"] = "mouse", ["class"] = "saturnmouse", ["buttons"] = {
+		{raxis, "xaxis"},
+		{raxis, "yaxis"},
+		{button, "A", "A"},
+		{button, "B", "B"},
+		{button, "C", "C"},
+		{button, "S", "start"}
+	}
+};
+
+system_controller = {
+	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+		{shadow, "F"},
+		{shadow, "R"}
+	}
+};
+
+ports = {
+	{
+		["symbol"] = "gamepad", ["iname"] = "gamepad", ["hname"] = "gamepad", ["controllers"] = {
+			gamepad_controller
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "none", ["iname"] = "none", ["hname"] = "None", ["controllers"] = {
+		}, ["legal"] = {1, 2, 3, 4, 5, 6, 7, 8}
+	},{
+		["symbol"] = "psystem", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			system_controller
+		}, ["legal"] = {0}
+	}
+};

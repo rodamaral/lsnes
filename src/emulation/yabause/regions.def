@@ -1,0 +1,110 @@
+autodetect = {
+	["symbol"] = "region_auto",
+	["iname"] = "autodetect",
+	["hname"] = "Autodetect",
+	["priority"] = 1,
+	["id"] = 0,
+	["temporary"] = true,
+	["fps"] = {60, 1},
+	["compatible"] = {0, 1, 2, 4, 5, 6, 10, 12, 13};
+};
+
+japan = {
+	["symbol"] = "region_japan",
+	["iname"] = "japan",
+	["hname"] = "Japan",
+	["priority"] = 0,
+	["id"] = 1,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {1};
+};
+
+asia_ntsc = {
+	["symbol"] = "region_asia_ntsc",
+	["iname"] = "asia_ntsc",
+	["hname"] = "Asia (NTSC)",
+	["priority"] = 0,
+	["id"] = 2,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {2};
+};
+
+northamerica = {
+	["symbol"] = "region_northamerica",
+	["iname"] = "northamerica",
+	["hname"] = "North America",
+	["priority"] = 0,
+	["id"] = 4,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {4};
+};
+
+southamerica_ntsc = {
+	["symbol"] = "region_southamerica_ntsc",
+	["iname"] = "southamerica_ntsc",
+	["hname"] = "South America (NTSC)",
+	["priority"] = 0,
+	["id"] = 5,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {5};
+};
+
+korea = {
+	["symbol"] = "region_korea",
+	["iname"] = "korea",
+	["hname"] = "Korea",
+	["priority"] = 0,
+	["id"] = 6,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {6};
+};
+
+asia_pal = {
+	["symbol"] = "region_asia_pal",
+	["iname"] = "asia_pal",
+	["hname"] = "Asia (PAL)",
+	["priority"] = 0,
+	["id"] = 10,
+	["temporary"] = false,
+	["fps"] = {50, 1},
+	["compatible"] = {10};
+};
+
+europe = {
+	["symbol"] = "region_europe",
+	["iname"] = "europe",
+	["hname"] = "Europe",
+	["priority"] = 0,
+	["id"] = 12,
+	["temporary"] = false,
+	["fps"] = {50, 1},
+	["compatible"] = {12};
+};
+
+southamerica_pal = {
+	["symbol"] = "region_southamerica_pal",
+	["iname"] = "southamerica_pal",
+	["hname"] = "South America (PAL)",
+	["priority"] = 0,
+	["id"] = 13,
+	["temporary"] = false,
+	["fps"] = {50, 1},
+	["compatible"] = {13};
+};
+
+
+regions = {
+	{
+		["symbol"] = "saturn_regions",
+		["core"] = "type_saturn",
+		["regions"] = {autodetect, ["saturn_japan"] = japan, ["saturn_asia_ntsc"] = asia_ntsc,
+			["saturn_northamerica"] = northamerica, ["saturn_southamerica_ntsc"] = southamerica_ntsc,
+			["saturn_korea"] = korea, ["saturn_asia_pal"] = asia_pal, ["saturn_europe"] = europe,
+			["saturn_southamerica_pal"] = southamerica_pal};
+	}
+};
