@@ -151,19 +151,19 @@ namespace
 		},
 		.enable = [](bool enable) -> void { was_enabled = enable; },
 		.initialized = []() -> bool { return init_flag; },
-		.set_device = [](const std::string& dev, bool rec) -> void {
-			if(rec && dev != "null")
+		.set_device = [](const std::string& pdev, const std::string& rdev) -> void {
+			if(rdev != "null")
 				//Sound input not supported.
 				throw std::runtime_error("Invalid sound input device");
-			if(dev == "null") {
+			if(pdev == "null") {
 				if(!switch_devices(-1, ""))
 					throw std::runtime_error("Failed to switch sound outputs");
 			} else {
-				int idx = ao_driver_id(dev.c_str());
+				int idx = ao_driver_id(pdev.c_str());
 				if(idx == -1)
-					throw std::runtime_error("Invalid output device '" + dev + "'");
+					throw std::runtime_error("Invalid output device '" + pdev + "'");
 				try {
-					if(!switch_devices(idx, dev))
+					if(!switch_devices(idx, pdev))
 						throw std::runtime_error("Failed to switch sound outputs");
 				} catch(std::exception& e) {
 					throw std::runtime_error(std::string("Failed to switch sound outputs: ") +

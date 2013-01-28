@@ -155,12 +155,19 @@ void platform::sound_enable(bool enable) throw()
 	information_dispatch::do_sound_unmute(enable);
 }
 
-void platform::set_sound_device(const std::string& dev, bool rec) throw()
+void platform::set_sound_device(const std::string& pdev, const std::string& rdev) throw()
 {
+	std::string old_play = audioapi_driver_get_device(false);
+	std::string old_rec = audioapi_driver_get_device(true);
 	try {
-		audioapi_driver_set_device(dev, rec);
+		audioapi_driver_set_device(pdev, rdev);
 	} catch(std::exception& e) {
 		out() << "Error changing sound device: " << e.what() << std::endl;
+		//Try to restore the device.
+		try {
+			audioapi_driver_set_device(old_play, old_rec);
+		} catch(...) {
+		}
 	}
 	//After failed change, we don't know what is selected.
 	information_dispatch::do_sound_change(std::make_pair(audioapi_driver_get_device(true),

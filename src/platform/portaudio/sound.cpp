@@ -292,7 +292,24 @@ namespace
 			return false;
 		}
 	}
-	
+
+	PaDeviceIndex output_to_index(const std::string& dev)
+	{
+		PaDeviceIndex idx;
+		if(dev == "null") {
+			idx = paNoDevice;
+		} else {
+			try {
+				idx = boost::lexical_cast<PaDeviceIndex>(dev);
+				if(idx < 0 || !Pa_GetDeviceInfo(idx))
+					throw std::runtime_error("foo");
+			} catch(std::exception& e) {
+				throw std::runtime_error("Invalid device '" + dev + "'");
+			}
+		}
+		return idx;
+	}
+
 	struct _audioapi_driver drv = {
 		.init = []() -> void {
 			PaError err = Pa_Initialize();
@@ -333,24 +350,14 @@ namespace
 		},
 		.enable = [](bool _enable) -> void { was_enabled = _enable; },
 		.initialized = []() -> bool { return init_flag; },
-		.set_device = [](const std::string& dev, bool rec) -> void {
+		.set_device = [](const std::string& pdev, const std::string& rdev) -> void {
 			bool failed = false;
-			PaDeviceIndex idx;
-			if(dev == "null") {
-				idx = paNoDevice;
-			} else {
-				try {
-					idx = boost::lexical_cast<PaDeviceIndex>(dev);
-					if(idx < 0 || !Pa_GetDeviceInfo(idx))
-						throw std::runtime_error("foo");
-				} catch(std::exception& e) {
-					throw std::runtime_error("Invalid device '" + dev + "'");
-				}
-			}
-			if(rec) 
-				failed = ((switch_devices(idx, current_device_play) & 2) == 0);
-			else
-				failed = ((switch_devices(current_device_rec, idx) & 1) == 0);
+			PaDeviceIndex pidx = output_to_index(pdev);
+			PaDeviceIndex ridx = output_to_index(rdev);
+			auto ret = switch_devices(ridx, pidx);
+			int expect_ret = ((ridx == paNoDevice) ? 0 : 1) | ((pidx == paNoDevice) ? 0 : 2);
+			if(ret != expect_ret)
+				throw std::runtime_error("Can't switch audio device");
 		},
 		.get_device = [](bool rec) -> std::string {
 			if(rec)

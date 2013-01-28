@@ -49,10 +49,7 @@ enum
 	wxID_ERESET,
 	wxID_EHRESET,
 	wxID_AUDIO_ENABLED,
-	wxID_AUDIODEV_FIRST,
-	wxID_AUDIODEV_LAST = wxID_AUDIODEV_FIRST + 255,
-	wxID_RAUDIODEV_FIRST,
-	wxID_RAUDIODEV_LAST = wxID_RAUDIODEV_FIRST + 255,
+	wxID_AUDIO_DEVICE,
 	wxID_SAVE_STATE,
 	wxID_SAVE_MOVIE,
 	wxID_SAVE_SUBTITLES,
@@ -305,28 +302,12 @@ namespace
 		int next_wxid;
 	};
 
-	class sound_select_menu : public wxMenu
-	{
-	public:
-		sound_select_menu(wxwin_mainwindow* win, bool rec_flag);
-		void update(const std::string& dev);
-		void on_select(wxCommandEvent& e);
-	private:
-		std::map<std::string, wxMenuItem*> items; 
-		std::map<int, std::string> devices;
-		bool rec;
-	};
-
-	class sound_select_menu;
-
 	class broadcast_listener : public information_dispatch
 	{
 	public:
 		broadcast_listener(wxwin_mainwindow* win);
-		void set_sound_select(sound_select_menu* sdev1, sound_select_menu* sdev2);
 		void set_autohold_menu(autohold_menu* ah);
 		void on_sound_unmute(bool unmute) throw();
-		void on_sound_change(std::pair<std::string, std::string> dev) throw();
 		void on_mode_change(bool readonly) throw();
 		void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
 		void on_autohold_reconfigure();
@@ -334,8 +315,6 @@ namespace
 		void on_new_core();
 	private:
 		wxwin_mainwindow* mainw;
-		sound_select_menu* sounddev1;
-		sound_select_menu* sounddev2;
 		autohold_menu* ahmenu;
 	};
 
@@ -421,35 +400,6 @@ namespace
 			menus[i]->update(port, controller, ctrlnum, newstate);
 	}
 
-	sound_select_menu::sound_select_menu(wxwin_mainwindow* win, bool rec_flag)
-	{
-		rec = rec_flag;
-		std::string curdev = audioapi_driver_get_device(rec);
-		int j = rec ? wxID_RAUDIODEV_FIRST : wxID_AUDIODEV_FIRST;
-		for(auto i : audioapi_driver_get_devices(rec)) {
-			items[i.first] = AppendRadioItem(j, towxstring(i.first + " (" + i.second + ")"));
-			devices[j] = i.first;
-			if(i.first == curdev)
-				items[i.first]->Check();
-			win->Connect(j, wxEVT_COMMAND_MENU_SELECTED,
-				wxCommandEventHandler(sound_select_menu::on_select), NULL, this);
-			j++;
-		}
-	}
-
-	void sound_select_menu::update(const std::string& dev)
-	{
-		items[dev]->Check();
-	}
-
-	void sound_select_menu::on_select(wxCommandEvent& e)
-	{
-		std::string devname = devices[e.GetId()];
-		bool _rec = rec;
-		if(devname != "")
-			runemufn([devname, _rec]() { platform::set_sound_device(devname, _rec); });
-	}
-
 	broadcast_listener::broadcast_listener(wxwin_mainwindow* win)
 		: information_dispatch("wxwidgets-broadcast-listener")
 	{
@@ -461,12 +411,6 @@ namespace
 		signal_core_change();
 	}
 
-	void broadcast_listener::set_sound_select(sound_select_menu* sdev1, sound_select_menu* sdev2)
-	{
-		sounddev1 = sdev1;
-		sounddev2 = sdev2;
-	}
-
 	void broadcast_listener::set_autohold_menu(autohold_menu* ah)
 	{
 		ahmenu = ah;
@@ -475,16 +419,6 @@ namespace
 	void broadcast_listener::on_sound_unmute(bool unmute) throw()
 	{
 		runuifun([this, unmute]() { this->mainw->menu_check(wxID_AUDIO_ENABLED, unmute); });
-	}
-
-	void broadcast_listener::on_sound_change(std::pair<std::string, std::string> dev) throw()
-	{
-		std::string dev1 = dev.first;
-		std::string dev2 = dev.second;
-		runuifun([this, dev1, dev2]() {
-			if(this->sounddev1) this->sounddev1->update(dev1);
-			if(this->sounddev2) this->sounddev2->update(dev2);
-		});
 	}
 
 	void broadcast_listener::on_mode_change(bool readonly) throw()
@@ -943,12 +877,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
 		menu_entry(wxID_VUDISPLAY, wxT("VU display / volume controls"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
-		menu_special_sub(wxT("Select input device"), reinterpret_cast<sound_select_menu*>(sounddev1 =
-			new sound_select_menu(this, true)));
-		menu_special_sub(wxT("Select output device"), reinterpret_cast<sound_select_menu*>(sounddev2 =
-			new sound_select_menu(this, false)));
-		blistener->set_sound_select(reinterpret_cast<sound_select_menu*>(sounddev1), 
-			reinterpret_cast<sound_select_menu*>(sounddev2));
+		menu_entry(wxID_AUDIO_DEVICE, wxT("Set audio device"));
 	}
 
 	menu_start(wxT("Help"));
@@ -1055,6 +984,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_AUDIO_ENABLED:
 		platform::sound_enable(menu_ischecked(wxID_AUDIO_ENABLED));
+		return;
+	case wxID_AUDIO_DEVICE:
+		wxeditor_sounddev_display(this);
 		return;
 	case wxID_CANCEL_SAVES:
 		platform::queue("cancel-saves");
@@ -1311,6 +1243,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_CONFLICTRESOLUTION:
 		show_conflictwindow(this);
+		return;
 	case wxID_VUDISPLAY:
 		open_vumeter_window(this);
 		return;

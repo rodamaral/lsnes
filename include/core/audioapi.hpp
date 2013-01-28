@@ -254,7 +254,7 @@ struct _audioapi_driver
 	void (*quit)() throw();
 	void (*enable)(bool enable);
 	bool (*initialized)();
-	void (*set_device)(const std::string& dev, bool rec);
+	void (*set_device)(const std::string& pdev, const std::string& rdev);
 	std::string (*get_device)(bool rec);
 	std::map<std::string, std::string> (*get_devices)(bool rec);
 	const char* (*name)();
@@ -295,9 +295,11 @@ bool audioapi_driver_initialized();
  *
  * - If new sound device is invalid, the sound device is not changed.
  *
- * Parameter dev: The new sound device.
+ * Parameter pdev: The new sound device (playback).
+ * Parameter rdev: The new sound device (recording)
  */
-void audioapi_driver_set_device(const std::string& dev, bool rec) throw(std::bad_alloc, std::runtime_error);
+void audioapi_driver_set_device(const std::string& pdev, const std::string& rdev) throw(std::bad_alloc,
+	 std::runtime_error);
 
 /**
  * Get current sound device (playback).
