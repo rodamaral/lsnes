@@ -226,6 +226,10 @@ public:
 		}
 		_callback(0, args...);
 	}
+/**
+ * Do something just once per VM.
+ */
+	bool do_once(void* key);
 
 	void pop(int n) { lua_pop(lua_handle, n); }
 	void* newuserdata(size_t size) { return lua_newuserdata(lua_handle, size); }

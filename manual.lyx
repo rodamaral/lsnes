@@ -2949,7 +2949,7 @@ Warning: If the region crosses VMA boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsubsection
-memory.map_struct()
+memory.map_structure()
 \end_layout
 
 \begin_layout Standard

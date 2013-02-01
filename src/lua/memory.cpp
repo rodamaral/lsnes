@@ -417,17 +417,10 @@ DECLARE_LUACLASS(lua_mmap_struct, "MMAP_STRUCT");
 
 lua_mmap_struct::lua_mmap_struct(lua_state* L)
 {
-	static char key;
-	L->pushlightuserdata(&key);
-	L->rawget(LUA_REGISTRYINDEX);
-	if(L->type(-1) == LUA_TNIL) {
-		L->pop(1);
-		L->pushlightuserdata(&key);
-		L->pushboolean(true);
-		L->rawset(LUA_REGISTRYINDEX);
-		objclass<lua_mmap_struct>().bind(*L, "__index", &lua_mmap_struct::index, true);
-		objclass<lua_mmap_struct>().bind(*L, "__newindex", &lua_mmap_struct::newindex, true);
-		objclass<lua_mmap_struct>().bind(*L, "__call", &lua_mmap_struct::map);
-	} else
-		L->pop(1);
+	static char done_key;
+	if(L->do_once(&done_key)) {
+		objclass<lua_mmap_struct>().bind(LS, "__index", &lua_mmap_struct::index, true);
+		objclass<lua_mmap_struct>().bind(LS, "__newindex", &lua_mmap_struct::newindex, true);
+		objclass<lua_mmap_struct>().bind(LS, "__call", &lua_mmap_struct::map);
+	}
 }
