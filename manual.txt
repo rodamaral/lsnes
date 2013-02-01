@@ -1392,6 +1392,16 @@ If <steps> is negative, the rotation will be counterclockwise.
 
 Saves a screenshot into specified file.
 
+8.3.29 gui.loadfont(string filename)
+
+Loads font from specified file (CUSTOMFONT object).
+
+8.3.30 CUSTOMFONT(number x, number y, string text[, number fgc[, 
+  number bgc]])
+
+Draw string with custom font to screen. The parameters are the 
+same as in gui.text.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.
