@@ -1051,6 +1051,16 @@ queue.
 
 • Warning: Don't try to run the current render queue.
 
+8.3.33 gui.loadfont(string filename)
+
+Loads font from specified file (CUSTOMFONT object).
+
+8.3.34 CUSTOMFONT(number x, number y, string text[, number fgc[, 
+  number bgc]])
+
+Draw string with custom font to screen. The parameters are the 
+same as in gui.text.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.

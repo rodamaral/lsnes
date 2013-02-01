@@ -2099,6 +2099,23 @@ Run specified render queue, copying the objects to current render queue.
 Warning: Don't try to run the current render queue.
 \end_layout
 
+\begin_layout Subsubsection
+gui.loadfont(string filename)
+\end_layout
+
+\begin_layout Standard
+Loads font from specified file (CUSTOMFONT object).
+\end_layout
+
+\begin_layout Subsubsection
+CUSTOMFONT(number x, number y, string text[, number fgc[, number bgc]])
+\end_layout
+
+\begin_layout Standard
+Draw string with custom font to screen.
+ The parameters are the same as in gui.text.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
