@@ -4,14 +4,14 @@ Date: Sun, 14 Oct 2012 23:29:40 +0300
 Subject: [PATCH] Fix compiling on GCC 4.7
 
 ---
- bsnes/nall/string.hpp        |    2 +-
- bsnes/ui-libsnes/libsnes.cpp |    1 +
+ nall/string.hpp        |    2 +-
+ ui-libsnes/libsnes.cpp |    1 +
  2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/bsnes/nall/string.hpp b/bsnes/nall/string.hpp
+diff --git a/nall/string.hpp b/nall/string.hpp
 index 996cd68..4747e4c 100755
---- a/bsnes/nall/string.hpp
-+++ b/bsnes/nall/string.hpp
+--- a/nall/string.hpp
++++ b/nall/string.hpp
 @@ -25,8 +25,8 @@
  #include <nall/string/base.hpp>
  #include <nall/string/bml.hpp>
@@ -22,10 +22,10 @@ index 996cd68..4747e4c 100755
  #include <nall/string/compare.hpp>
  #include <nall/string/convert.hpp>
  #include <nall/string/cstring.hpp>
-diff --git a/bsnes/ui-libsnes/libsnes.cpp b/bsnes/ui-libsnes/libsnes.cpp
+diff --git a/ui-libsnes/libsnes.cpp b/ui-libsnes/libsnes.cpp
 index 3b2be7a..ca90762 100755
---- a/bsnes/ui-libsnes/libsnes.cpp
-+++ b/bsnes/ui-libsnes/libsnes.cpp
+--- a/ui-libsnes/libsnes.cpp
++++ b/ui-libsnes/libsnes.cpp
 @@ -1,5 +1,6 @@
  #include "libsnes.hpp"
  #include <snes/snes.hpp>
