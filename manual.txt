@@ -1832,7 +1832,7 @@ Write a region of memory.
 • Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
-8.9.21 memory.map_struct()
+8.9.21 memory.map_structure()
 
 Returns a new mapping structure (MMAP_STRUCT)
 

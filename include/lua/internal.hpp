@@ -258,6 +258,8 @@ again:
 	lua_class& operator=(const lua_class<T>&);
 };
 
+bool lua_do_once(lua_State* LS, void* key);
+
 #define DECLARE_LUACLASS(x, X) template<> lua_class< x >& objclass() { static lua_class< x > clazz( X ); \
 	return clazz; }
 

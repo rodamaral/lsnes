@@ -407,11 +407,10 @@ DECLARE_LUACLASS(lua_mmap_struct, "MMAP_STRUCT");
 
 lua_mmap_struct::lua_mmap_struct(lua_State* LS)
 {
-	static bool done = false;
-	if(!done) {
+	static char done_key;
+	if(lua_do_once(LS, &done_key)) {
 		objclass<lua_mmap_struct>().bind(LS, "__index", &lua_mmap_struct::index, true);
 		objclass<lua_mmap_struct>().bind(LS, "__newindex", &lua_mmap_struct::newindex, true);
 		objclass<lua_mmap_struct>().bind(LS, "__call", &lua_mmap_struct::map);
-		done = true;
 	}
 }

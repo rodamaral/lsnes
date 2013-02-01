@@ -612,6 +612,21 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 	}
 }
 
+bool lua_do_once(lua_State* LS, void* key)
+{
+	lua_pushlightuserdata(LS, key);
+	lua_rawget(LS, LUA_REGISTRYINDEX);
+	if(lua_type(LS, -1) == LUA_TNIL) {
+		lua_pop(LS, 1);
+		lua_pushlightuserdata(LS, key);
+		lua_pushlightuserdata(LS, key);
+		lua_rawset(LS, LUA_REGISTRYINDEX);
+		return true;
+	} else {
+		lua_pop(LS, 1);
+		return true;
+	}
+}
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
