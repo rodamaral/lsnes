@@ -5,14 +5,14 @@ Subject: [PATCH] Add needed support for detecting true polls as opposed to
  just autopolling
 
 ---
- bsnes/snes/cpu/cpu.hpp       |    1 +
- bsnes/snes/cpu/mmio/mmio.cpp |   18 ++++++++++--------
+ snes/cpu/cpu.hpp       |    1 +
+ snes/cpu/mmio/mmio.cpp |   18 ++++++++++--------
  2 files changed, 11 insertions(+), 8 deletions(-)
 
-diff --git a/bsnes/snes/cpu/cpu.hpp b/bsnes/snes/cpu/cpu.hpp
+diff --git a/snes/cpu/cpu.hpp b/snes/cpu/cpu.hpp
 index 5eb963e..f6466cc 100755
---- a/bsnes/snes/cpu/cpu.hpp
-+++ b/bsnes/snes/cpu/cpu.hpp
+--- a/snes/cpu/cpu.hpp
++++ b/snes/cpu/cpu.hpp
 @@ -25,6 +25,7 @@ struct CPU : public Processor, public CPUcore, public PPUcounter {
    CPU();
    ~CPU();
@@ -21,10 +21,10 @@ index 5eb963e..f6466cc 100755
  privileged:
    #include "dma/dma.hpp"
    #include "memory/memory.hpp"
-diff --git a/bsnes/snes/cpu/mmio/mmio.cpp b/bsnes/snes/cpu/mmio/mmio.cpp
+diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
 index 8b6aaa6..c5ee930 100755
---- a/bsnes/snes/cpu/mmio/mmio.cpp
-+++ b/bsnes/snes/cpu/mmio/mmio.cpp
+--- a/snes/cpu/mmio/mmio.cpp
++++ b/snes/cpu/mmio/mmio.cpp
 @@ -42,6 +42,7 @@ void CPU::mmio_w4016(uint8 data) {
  //1-0 = Joypad serial data
  uint8 CPU::mmio_r4016() {

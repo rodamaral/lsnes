@@ -4,13 +4,13 @@ Date: Sun, 14 Oct 2012 23:31:36 +0300
 Subject: [PATCH] Fix compiling on GCC 4.7
 
 ---
- bsnes/nall/string.hpp |    2 +-
+ nall/string.hpp |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/bsnes/nall/string.hpp b/bsnes/nall/string.hpp
+diff --git a/nall/string.hpp b/nall/string.hpp
 index 1b255ce..07a64df 100755
---- a/bsnes/nall/string.hpp
-+++ b/bsnes/nall/string.hpp
+--- a/nall/string.hpp
++++ b/nall/string.hpp
 @@ -25,8 +25,8 @@
  #include <nall/string/base.hpp>
  #include <nall/string/bml.hpp>
