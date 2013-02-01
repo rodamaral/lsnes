@@ -85,9 +85,9 @@ namespace
 	numeric_setting drb("avi-right-border", 0, 8191, 0);
 	numeric_setting max_frames_per_segment("avi-maxframes", 0, 999999999, 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	numeric_setting soundrate_setting("avi-soundrate", 0, 5, 0);
+	numeric_setting soundrate_setting("avi-soundrate", 0, 5, 5);
 #else
-	numeric_setting soundrate_setting("avi-soundrate", 0, 3, 0);
+	numeric_setting soundrate_setting("avi-soundrate", 0, 3, 2);
 #endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)
