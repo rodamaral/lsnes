@@ -426,10 +426,10 @@ bool lsnes_app::OnInit()
 		mov->port1 = &porttype_info::port_default(0);
 		mov->port2 = &porttype_info::port_default(1);
 		mov->input.clear(*mov->port1, *mov->port2);
+		mov->projectid = get_random_hexstring(40);
 		if(c_rom != "") {
 			//Initialize the remainder.
 			mov->coreversion = bsnes_core_version;
-			mov->projectid = get_random_hexstring(40);
 			mov->rerecords = "0";
 			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
 				mov->romimg_sha256[i] = rom->romimg[i].sha256;

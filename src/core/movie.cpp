@@ -26,7 +26,7 @@ namespace
 	}
 
 	bool movies_compatible(controller_frame_vector& old_movie, controller_frame_vector& new_movie,
-		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
+		uint64_t frame, const uint32_t* polls, bool extended, const std::string& old_projectid,
 		const std::string& new_projectid)
 	{
 		//Project IDs have to match.
@@ -78,7 +78,13 @@ namespace
 			return false;
 		//Then rest of the stuff.
 		for(unsigned i = 0; i < MAX_BUTTONS; i++) {
-			uint32_t p = polls[i + 4] & 0x7FFFFFFFUL;
+			unsigned _i = i;
+			if(!extended) {
+				if(i % MAX_CONTROLS_PER_CONTROLLER > 11)
+					continue;
+				_i = (i / MAX_CONTROLS_PER_CONTROLLER) * 12 + (i % MAX_CONTROLS_PER_CONTROLLER);
+			}
+			uint32_t p = polls[_i + 4] & 0x7FFFFFFFUL;
 			short ov = 0, nv = 0;
 			for(uint32_t j = 0; j < p; j++) {
 				if(j < readable_old_subframes)
@@ -401,8 +407,8 @@ size_t movie::restore_state(uint64_t curframe, uint64_t lagframe, const std::vec
 {
 	if(!pollcounters.check(pcounters))
 		throw std::runtime_error("Wrong number of poll counters");
-	if(old_movie && !movies_compatible(*old_movie, movie_data, curframe, &pcounters[0], old_projectid,
-		_project_id))
+	if(old_movie && !movies_compatible(*old_movie, movie_data, curframe, &pcounters[0],
+		pcounters.size() > 100, old_projectid, _project_id))
 		throw std::runtime_error("Save is not from this movie");
 	uint64_t tmp_firstsubframe = 0;
 	for(uint64_t i = 1; i < curframe; i++)

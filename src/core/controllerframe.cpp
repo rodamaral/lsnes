@@ -217,9 +217,11 @@ void pollcounter_vector::load_state(const std::vector<uint32_t>& mem) throw()
 	if(mem.size() == MAX_BUTTONS + 4)
 		for(size_t i = 0; i < MAX_BUTTONS ; i++)
 			ctrs[i] = mem[i + 4];
-	else
+	else {
+		memset(ctrs, 0, sizeof(ctrs));
 		for(size_t i = 0; i < 96; i++)
 			ctrs[(i / 12) * MAX_CONTROLS_PER_CONTROLLER + (i % 12)] = mem[i + 4];
+	}
 }
 
 bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
