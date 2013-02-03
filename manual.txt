@@ -3691,3 +3691,17 @@ set-axis joystick0axis19 disabled
 
 • Fix music volume adjustment.
 
+18.77 rr1-delta16epsilon1
+
+• Wxwidgets: Fix memory watch rendering.
+
+• Wxwidgets: Allow setting voice stream gain.
+
+• Wxwidgets: VU meters and volume adjustment.
+
+• Lua: Custom fonts support.
+
+• Lua: Fix methods stopping working when resetting Lua.
+
+• Fix loading standard-format movies in preserve (readonly) mode.
+
