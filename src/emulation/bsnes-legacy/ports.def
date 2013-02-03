@@ -67,20 +67,20 @@ superscope_controller = {
 
 system_controller = {
 	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
-		{shadow, "F"},
-		{shadow, "R"},
-		{shadow_axis},
-		{shadow_axis}
+		{shadow, "F", "framesync"},
+		{shadow, "R", "reset"},
+		{shadow_axis, "rlow"},
+		{shadow_axis, "rhigh"}
 	}
 };
 
 system_controller_hreset = {
 	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
-		{shadow, "F"},
-		{shadow, "R"},
-		{shadow_axis},
-		{shadow_axis},
-		{shadow, "H"}
+		{shadow, "F", "framesync"},
+		{shadow, "R", "reset"},
+		{shadow_axis, "rlow"},
+		{shadow_axis, "rhigh"},
+		{shadow, "H", "hard"}
 	}
 };
 

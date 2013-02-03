@@ -183,7 +183,9 @@ struct port_controller_button
 		TYPE_RAXIS	//Relative Axis (mouse).
 	};
 	enum _type type;
+	char symbol;
 	const char* name;
+	bool shadow;
 /**
  * Is analog?
  */
@@ -452,7 +454,7 @@ public:
 		const struct port_index_triple& t = _indices[pindex];
 		if(!t.valid || t.port != port || t.controller != controller || t.control != _index)
 			return 0xFFFFFFFFUL;
-		return indices_tab[place];
+		return pindex;
 	}
 /**
  * Return number of controllers connected.

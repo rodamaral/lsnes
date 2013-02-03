@@ -241,7 +241,37 @@ public:
  * Set the poll flag handler.
  */
 	void set_pflag_handler(poll_flag* handler);
+/**
+ * Get the internal controller frame vector.
+ */
+	controller_frame_vector& get_frame_vector() throw() { return movie_data; }
+/**
+ * Flush caches.
+ */
+	void clear_caches() throw();
+/**
+ * Get sequence number (increments by 1 each time whole data is reloaded).
+ */
+	uint64_t get_seqno() throw() { return seqno; }
+/**
+ * Assignment.
+ */
+	movie& operator=(const movie& m);
+/**
+ * Get pollcounter vector.
+ */
+	pollcounter_vector& get_pollcounters() { return pollcounters; }
+/**
+ * Get first subframe of this frame.
+ */
+	uint64_t get_current_frame_first_subframe() { return current_frame_first_subframe; }
+/**
+ * Recount frames.
+ */
+	void recount_frames() { frames_in_movie = movie_data.count_frames(); }
 private:
+	//Sequence number.
+	uint64_t seqno;
 	//The poll flag handling.
 	poll_flag* pflag_handler;
 	//TRUE if readonly mode is active.
@@ -265,7 +295,6 @@ private:
 	//Number of frames in movie.
 	uint64_t frames_in_movie;
 	//Cached subframes.
-	void clear_caches() throw();
 	uint64_t cached_frame;
 	uint64_t cached_subframe;
 	//Count present subframes in frame starting from first_subframe (returns 0 if out of movie).

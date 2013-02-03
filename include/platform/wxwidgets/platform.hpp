@@ -50,6 +50,8 @@ void open_rom_select_window();
 void show_conflictwindow(wxWindow* parent);
 void open_vumeter_window(wxWindow* parent);
 void wxeditor_sounddev_display(wxWindow* parent);
+void wxeditor_movie_display(wxWindow* parent);
+void wxeditor_movie_update();
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();

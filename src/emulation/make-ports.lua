@@ -37,31 +37,37 @@ for i = 1,#ports do
 			if xbutton[1] == button then
 				table.insert(bsyms, bsym);
 				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
-					"\""..xbutton[3].."\"};");
+					"'" .. xbutton[2] .. "', \""..xbutton[3].."\", false};");
 				bits = bits + 1;
 			end
 			if xbutton[1] == axis then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_AXIS, \""..
-					xbutton[2].."\"};");
+				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_AXIS, " ..
+					"'\\0', \"".. xbutton[2].."\", false};");
 				ints = ints + 1;
 			end
 			if xbutton[1] == raxis then
 				table.insert(bsyms, bsym);
 				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_RAXIS, "..
-					"\""..xbutton[2].."\"};");
+					"'\\0', \""..xbutton[2].."\", false};");
 				ints = ints + 1;
 			end
 			if xbutton[1] == shadow then
+				table.insert(bsyms, bsym);
+				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
+					"'" .. xbutton[2] .. "', \""..xbutton[3].."\", true};");
 				bits = bits + 1;
 			end
 			if xbutton[1] == shadow_axis then
+				table.insert(bsyms, bsym);
+				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_AXIS, " ..
+					"'\\0', \"".. xbutton[2].."\", true};");
 				ints = ints + 1;
 			end
 			if xbutton[1] == null then
 				table.insert(bsyms, bsym);
 				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_NULL, "..
-					"NULL};");
+					"'\\0', NULL, false};");
 			end
 		end
 		local s = "\tport_controller_button* "..csym.."[] = {";

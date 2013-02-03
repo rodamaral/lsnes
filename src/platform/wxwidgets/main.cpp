@@ -138,6 +138,7 @@ namespace
 		} else if(c == UISERV_UPDATE_STATUS) {
 			if(main_window)
 				main_window->notify_update_status();
+			wxeditor_movie_update();
 		} else if(c == UISERV_UPDATE_SCREEN) {
 			if(main_window)
 				main_window->notify_update();
@@ -507,9 +508,9 @@ bool lsnes_app::OnInit()
 		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
 		mov->input.clear(ports);
 		mov->coreversion = rom->rtype->get_core_identifier();
+		mov->projectid = get_random_hexstring(40);
 		if(c_rom != "") {
 			//Initialize the remainder.
-			mov->projectid = get_random_hexstring(40);
 			mov->rerecords = "0";
 			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
 				mov->romimg_sha256[i] = rom->romimg[i].sha_256;

@@ -156,6 +156,7 @@ namespace
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
 		port_index_triple x;
+		x.valid = true;
 		x.port = p;
 		x.controller = c;
 		x.control = i;

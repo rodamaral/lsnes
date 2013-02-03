@@ -6914,5 +6914,33 @@ Cleanup build by allowing dummy and real drivers to link together.
 Split duplex support
 \end_layout
 
+\begin_layout Subsection
+rr1-delta16epsilon1
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Fix memory watch rendering.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Allow setting voice stream gain.
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: VU meters and volume adjustment.
+\end_layout
+
+\begin_layout Itemize
+Lua: Custom fonts support.
+\end_layout
+
+\begin_layout Itemize
+Lua: Fix methods stopping working when resetting Lua.
+\end_layout
+
+\begin_layout Itemize
+Fix loading standard-format movies in preserve (readonly) mode.
+\end_layout
+
 \end_body
 \end_document

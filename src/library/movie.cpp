@@ -253,6 +253,7 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 
 movie::movie() throw(std::bad_alloc)
 {
+	seqno = 0;
 	readonly = false;
 	rerecords = "0";
 	_project_id = "";
@@ -269,6 +270,7 @@ void movie::load(const std::string& rerecs, const std::string& project_id, contr
 {
 	if(input.size() > 0 && !input[0].sync())
 		throw std::runtime_error("First subframe MUST have frame sync flag set");
+	seqno++;
 	clear_caches();
 	frames_in_movie = 0;
 	for(size_t i = 0; i < input.size(); i++)
@@ -436,6 +438,23 @@ void movie::fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::ve
 	lag_frames = _lagc;
 	pollcounters.load_state(_counters);
 	readonly_mode(false);
+}
+
+movie& movie::operator=(const movie& m)
+{
+	seqno++;
+	readonly = m.readonly;
+	rerecords = m.rerecords;
+	_project_id = m._project_id;
+	movie_data = m.movie_data;
+	current_frame = m.current_frame;
+	current_frame_first_subframe = m.current_frame_first_subframe;
+	pollcounters = m.pollcounters;
+	current_controls = m.current_controls;
+	lag_frames = m.lag_frames;
+	frames_in_movie = m.frames_in_movie;
+	cached_frame = m.cached_frame;
+	cached_subframe = m.cached_subframe;
 }
 
 void movie::set_pflag_handler(poll_flag* handler)

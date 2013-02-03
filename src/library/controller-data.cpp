@@ -520,7 +520,7 @@ unsigned port_controller::analog_actions() const
 {
 	unsigned r = 0;
 	for(unsigned i = 0; i < button_count; i++)
-		if(buttons[i]->is_analog())
+		if(buttons[i]->is_analog() && !buttons[i]->shadow)
 			r++;
 	return (r + 1)/ 2;
 }
@@ -531,7 +531,7 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 	unsigned x2 = std::numeric_limits<unsigned>::max();
 	unsigned r = 0;
 	for(unsigned i = 0; i < button_count; i++)
-		if(buttons[i]->is_analog()) {
+		if(buttons[i]->is_analog() && !buttons[i]->shadow) {
 			if(r == 2 * k)
 				x1 = i;
 			if(r == 2 * k + 1)

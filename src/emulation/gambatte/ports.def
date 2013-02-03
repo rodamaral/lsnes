@@ -3,8 +3,8 @@ ports = {
 		["symbol"] = "psystem", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
 			{
 				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
-					{shadow, "F"},
-					{shadow, "R"}
+					{shadow, "F", "framesync"},
+					{shadow, "R", "reset"}
 				}
 			},{
 				["name"] = "gamepad", ["class"] = "gb", ["buttons"] = {
