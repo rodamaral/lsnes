@@ -106,7 +106,8 @@ enum
 	wxID_RMOVIE_LAST = wxID_RMOVIE_FIRST + 16,
 	wxID_RROM_FIRST,
 	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
-	wxID_VUDISPLAY
+	wxID_VUDISPLAY,
+	wxID_MOVIE_EDIT
 };
 
 
@@ -921,6 +922,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	menu_separator();
+	menu_entry(wxID_MOVIE_EDIT, wxT("Edit movie..."));
+	menu_separator();
 	menu_special_sub(wxT("Video Capture"), reinterpret_cast<dumper_menu*>(dmenu = new dumper_menu(this,
 		wxID_DUMP_FIRST, wxID_DUMP_LAST)));
 
@@ -1288,6 +1291,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_VUDISPLAY:
 		open_vumeter_window(this);
+		return;
+	case wxID_MOVIE_EDIT:
+		wxeditor_movie_display(this);
 		return;
 	};
 }

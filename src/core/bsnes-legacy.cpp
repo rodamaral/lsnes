@@ -650,6 +650,7 @@ namespace
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad;
+			button_symbols = "BYsSudlrAXLR";
 		}
 	} gamepad;
 
@@ -669,6 +670,7 @@ namespace
 			ctrlname = "gamepad16";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad16;
+			button_symbols = "BYsSudlrAXLR0123";
 		}
 	} gamepad16;
 
@@ -687,6 +689,7 @@ namespace
 			ctrlname = "justifier";
 			controllers = 1;
 			set_core_controller = set_core_controller_justifier;
+			button_symbols = "TS";
 		}
 	} justifier;
 
@@ -705,6 +708,7 @@ namespace
 			ctrlname = "justifier";
 			controllers = 2;
 			set_core_controller = set_core_controller_justifiers;
+			button_symbols = "TS";
 		}
 	} justifiers;
 
@@ -723,6 +727,7 @@ namespace
 			ctrlname = "mouse";
 			controllers = 1;
 			set_core_controller = set_core_controller_mouse;
+			button_symbols = "LR";
 		}
 	} mouse;
 
@@ -742,6 +747,7 @@ namespace
 			ctrlname = "multitap16";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap16;
+			button_symbols = "BYsSudlrAXLR0123";
 		}
 	} multitap16;
 
@@ -760,6 +766,7 @@ namespace
 			ctrlname = "multitap";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap;
+			button_symbols = "BYsSudlrAXLR";
 		}
 	} multitap;
 
@@ -778,6 +785,7 @@ namespace
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = set_core_controller_none;
+			button_symbols = "";
 		}
 	} none;
 
@@ -796,6 +804,7 @@ namespace
 			ctrlname = "superscope";
 			controllers = 1;
 			set_core_controller = set_core_controller_superscope;
+			button_symbols = "TCUP";
 		}
 	} superscope;
 

@@ -236,7 +236,34 @@ public:
  * Fast load.
  */
 	void fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::vector<uint32_t>& counters);
-
+/**
+ * Get the internal controller frame vector.
+ */
+	controller_frame_vector& get_frame_vector() throw() { return movie_data; }
+/**
+ * Flush caches.
+ */
+	void clear_caches() throw();
+/**
+ * Get sequence number (increments by 1 each time whole data is reloaded).
+ */
+	uint64_t get_seqno() throw() { return seqno; }
+/**
+ * Assignment.
+ */
+	movie& operator=(const movie& m);
+/**
+ * Get pollcounter vector.
+ */
+	pollcounter_vector& get_pollcounters() { return pollcounters; }
+/**
+ * Get first subframe of this frame.
+ */
+	uint64_t get_current_frame_first_subframe() { return current_frame_first_subframe; }
+/**
+ * Recount frames.
+ */
+	void recount_frames() { frames_in_movie = movie_data.count_frames(); }
 private:
 	//TRUE if readonly mode is active.
 	bool readonly;
@@ -259,11 +286,12 @@ private:
 	//Number of frames in movie.
 	uint64_t frames_in_movie;
 	//Cached subframes.
-	void clear_caches() throw();
 	uint64_t cached_frame;
 	uint64_t cached_subframe;
 	//Count present subframes in frame starting from first_subframe (returns 0 if out of movie).
 	uint32_t count_changes(uint64_t first_subframe) throw();
+	//Sequence number.
+	uint64_t seqno;
 };
 
 /**

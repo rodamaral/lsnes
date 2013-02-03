@@ -218,6 +218,7 @@ namespace
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = _set_core_controller;
+			button_symbols = "ABsSrlud";
 		}
 
 	} gamepad;
@@ -237,6 +238,7 @@ namespace
 			ctrlname = "";
 			controllers = 0;
 			set_core_controller = _set_core_controller;
+			button_symbols = "";
 		}
 	} none;
 

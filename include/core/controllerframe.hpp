@@ -299,6 +299,10 @@ struct porttype_info
  * Id of the port.
  */
 	unsigned pt_id;
+/**
+ * Symbols of buttons.
+ */
+	const char* button_symbols;
 private:
 	porttype_info(const porttype_info&);
 	porttype_info& operator=(const porttype_info&);

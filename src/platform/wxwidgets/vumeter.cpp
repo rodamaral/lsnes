@@ -296,6 +296,7 @@ void wxwin_vumeter::refresh()
 
 void wxwin_vumeter::on_close(wxCommandEvent& e)
 {
+	closing = true;
 	Destroy();
 	vumeter_open = false;
 }
