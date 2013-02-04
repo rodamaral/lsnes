@@ -400,12 +400,16 @@ namespace
 		return cffs + fc.read_pollcount(pv, idx);
 	}
 
-	void movie_framecount_change()
+	void movie_framecount_change(int64_t adjust, bool known = true);
+	void movie_framecount_change(int64_t adjust, bool known)
 	{
-		movb.get_movie().recount_frames();
+		if(known)
+			movb.get_movie().adjust_frame_count(adjust);
+		else
+			movb.get_movie().recount_frames();
 		update_movie_state();
 		graphics_plugin::notify_status();
-	}	
+	}
 }
 
 wxeditor_movie::_moviepanel::~_moviepanel() {}
@@ -587,6 +591,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		std::swap(_press_line, line);
 	recursing = true;
 	runemufn([idx, _press_line, line, _fcontrols]() {
+		int64_t adjust = 0;
 		if(!movb.get_movie().readonly_mode())
 			return;
 		uint64_t fedit = first_editable(*_fcontrols, idx);
@@ -595,10 +600,12 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 			if(i < fedit || i >= fv.size())
 				continue;
 			controller_frame cf = fv[i];
-			_fcontrols->write_index(cf, idx, !_fcontrols->read_index(cf, idx));
+			bool v = _fcontrols->read_index(cf, idx);
+			_fcontrols->write_index(cf, idx, !v);
+			adjust += (v ? -1 : 1);
 		}
 		if(idx == 0)
-			movie_framecount_change();
+			movie_framecount_change(adjust);
 	});
 	recursing = false;
 	if(idx == 0)
@@ -656,7 +663,7 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
-		movie_framecount_change();
+		movie_framecount_change(1);
 	});
 	recursing = false;
 }
