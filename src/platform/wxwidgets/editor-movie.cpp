@@ -721,7 +721,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			std::string text = pick_text(m, "Set number of lines", "Set number of lines visible:",
 				(stringfmt() << lines_to_display).str());
 			unsigned tmp = parse_value<unsigned>(text);
-			if(tmp < 1)
+			if(tmp < 1 || tmp > 255)
 				throw std::runtime_error("Value out of range");
 			lines_to_display = tmp;
 		} catch(canceled_exception& e) {
