@@ -16,6 +16,13 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 
+enum
+{
+	wxID_TOGGLE = wxID_HIGHEST + 1,
+	wxID_CHANGE,
+	wxID_APPEND_FRAME
+};
+
 void update_movie_state();
 
 namespace
@@ -330,6 +337,7 @@ private:
 		void on_scroll(wxScrollEvent& e);
 		void on_paint(wxPaintEvent& e);
 		void on_mouse(wxMouseEvent& e);
+		void on_popup_menu(wxCommandEvent& e);
 	private:
 		int get_lines();
 		void render(text_framebuffer& fb, unsigned long long pos);
@@ -357,6 +365,7 @@ private:
 		int scroll_delta;
 		unsigned press_x;
 		uint64_t press_line;
+		unsigned press_index;
 		bool pressed;
 		bool recursing;
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
@@ -683,8 +692,57 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	}
 }
 
+void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
+{
+	int id = e.GetId();
+	switch(id) {
+	case wxID_TOGGLE:
+		do_toggle_buttons(press_index, press_line, press_line);
+		return;
+	case wxID_CHANGE:
+		do_alter_axis(press_index, press_line);
+		return;
+	case wxID_APPEND_FRAME:
+		do_append_frames(1);
+		return;
+	};
+}
+
+
 void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarity) {}
-void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity) {}
+void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
+{
+	if(polarity)
+		return;
+	if(y < 3)
+		return;
+	press_x = x;
+	press_line = spos + y - 3;
+	wxMenu menu;
+	bool on_button = false;
+	bool on_axis = false;
+	for(auto i : fcontrols.get_controlinfo()) {
+		unsigned off = divcnt + 1;
+		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
+			if(i.type == 0) {
+				on_button = true;
+				press_index = i.index;
+			}
+			if(i.type == 1) {
+				on_axis = true;
+				press_index = i.index;
+			}
+		}
+	}
+	if(on_button)
+		menu.Append(wxID_TOGGLE, wxT("Toggle"));
+	if(on_axis)
+		menu.Append(wxID_CHANGE, wxT("Change"));
+	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
+		NULL, this);
+	PopupMenu(&menu);
+}
 
 int wxeditor_movie::_moviepanel::get_lines()
 {
