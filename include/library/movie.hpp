@@ -269,6 +269,10 @@ public:
  * Recount frames.
  */
 	void recount_frames() { frames_in_movie = movie_data.count_frames(); }
+/**
+ * Adjust frame count.
+ */
+	void adjust_frame_count(int64_t adjust) { frames_in_movie += adjust; }
 private:
 	//Sequence number.
 	uint64_t seqno;
