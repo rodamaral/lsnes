@@ -171,6 +171,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			controlinfo.push_back(control_info::fixedinfo(c, "│"));
 		unsigned nextp = c;
 		controlinfo.push_back(control_info::portinfo(nextp, pid, i + 1));
+		bool last_multibyte = false;
 		for(unsigned j = 0; j < pc.button_count; j++) {
 			if(!pc.buttons[j])
 				continue;
@@ -179,11 +180,15 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			if(idx == 0xFFFFFFFFUL)
 				continue;
 			if(pcb.type == port_controller_button::TYPE_BUTTON) {
+				if(last_multibyte)
+					c++;
 				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, idx));
+				last_multibyte = false;
 			} else if(pcb.type == port_controller_button::TYPE_AXIS) {
 				if(j)
 					c++;
 				controlinfo.push_back(control_info::axisinfo(c, pcb.name, idx));
+				last_multibyte = true;
 			}
 		}
 		if(nextp > c)
