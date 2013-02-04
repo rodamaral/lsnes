@@ -345,6 +345,9 @@ private:
 		uint64_t press_line;
 		bool pressed;
 		bool recursing;
+		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
+		void do_alter_axis(unsigned idx, uint64_t row);
+		void do_append_frames(uint64_t count);
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
@@ -362,6 +365,13 @@ namespace
 		pollcounter_vector& pv = movb.get_movie().get_pollcounters();
 		return cffs + fc.read_pollcount(pv, idx);
 	}
+
+	void movie_framecount_change()
+	{
+		movb.get_movie().recount_frames();
+		update_movie_state();
+		graphics_driver_notify_status();
+	}	
 }
 
 wxeditor_movie::_moviepanel::~_moviepanel() {}
@@ -533,6 +543,91 @@ void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long lon
 	}
 }
 
+void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2)
+{
+
+	frame_controls* _fcontrols = &fcontrols;
+	uint64_t _press_line = row1;
+	uint64_t line = row2;
+	if(_press_line > line)
+		std::swap(_press_line, line);
+	recursing = true;
+	runemufn([idx, _press_line, line, _fcontrols]() {
+		if(!movb.get_movie().readonly_mode())
+			return;
+		uint64_t fedit = first_editable(*_fcontrols, idx);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		for(uint64_t i = _press_line; i <= line; i++) {
+			if(i < fedit || i >= fv.size())
+				continue;
+			controller_frame cf = fv[i];
+			_fcontrols->write_index(cf, idx, !_fcontrols->read_index(cf, idx));
+		}
+		if(idx == 0)
+			movie_framecount_change();
+	});
+	recursing = false;
+	if(idx == 0)
+		max_subframe = _press_line;	//Reparse.
+}
+
+void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
+{
+	frame_controls* _fcontrols = &fcontrols;
+	uint64_t line = row;
+	short value;
+	bool valid = true;
+	runemufn([idx, line, &value, _fcontrols, &valid]() {
+		if(!movb.get_movie().readonly_mode()) {
+			valid = false;
+			return;
+		}
+		uint64_t fedit = first_editable(*_fcontrols, idx);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		if(line < fedit || line >= fv.size()) {
+			valid = false;
+			return;
+		}
+		controller_frame cf = fv[line];
+		value = _fcontrols->read_index(cf, idx);
+	});
+	if(!valid)
+		return;
+	try {
+		std::string text = pick_text(m, "Set value", "Enter new value:", (stringfmt() << value).str());
+		value = parse_value<short>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	runemufn([idx, line, value, _fcontrols]() {
+		uint64_t fedit = first_editable(*_fcontrols, idx);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		if(line < fedit || line >= fv.size())
+			return;
+		controller_frame cf = fv[line];
+		_fcontrols->write_index(cf, idx, value);
+	});
+}
+
+void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
+{
+	recursing = true;
+	uint64_t _count = count;
+	runemufn([_count]() {
+		if(!movb.get_movie().readonly_mode())
+			return;
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		for(uint64_t i = 0; i < _count; i++)
+			fv.append(fv.blank_frame(true));
+		movie_framecount_change();
+	});
+	recursing = false;
+}
+
+
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
 {
 	if(y < 3)
@@ -547,23 +642,11 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	uint64_t line = spos + y - 3;
 	if(press_x < divcnt && x < divcnt) {
 		//Press on frame count.
-		recursing = true;
-		auto _press_line = press_line;
-		runemufn([_press_line, line]() {
-			if(!movb.get_movie().readonly_mode())
-				return;
-			controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-			auto a_press_line = _press_line;
-			auto a_line = line;
-			if(a_press_line > a_line)
-				std::swap(a_press_line, a_line);
-			for(uint64_t i = a_press_line; i <= a_line; i++)
-				fv.append(fv.blank_frame(true));
-			movb.get_movie().recount_frames();
-			update_movie_state();
-			graphics_driver_notify_status();
-		});
-		recursing = false;
+		uint64_t row1 = press_line;
+		uint64_t row2 = line;
+		if(row1 > row2)
+			std::swap(row1, row2);
+		do_append_frames(row2 - row1 + 1);
 	}
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
@@ -574,81 +657,12 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 				//Button.
 				if(press_x == x) {
 					//Drag action.
-					auto _press_line = press_line;
-					recursing = true;
-					runemufn([idx, _press_line, line, _fcontrols]() {
-						if(!movb.get_movie().readonly_mode())
-							return;
-						uint64_t fedit = first_editable(*_fcontrols, idx);
-						controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-						auto a_press_line = _press_line;
-						auto a_line = line;
-						if(a_press_line > a_line)
-							std::swap(a_press_line, a_line);
-						for(uint64_t i = a_press_line; i <= a_line; i++) {
-							if(i >= fv.size())
-								continue;
-							if(i < fedit)
-								continue;
-							controller_frame cf = fv[i];
-							_fcontrols->write_index(cf, idx,
-								!_fcontrols->read_index(cf, idx));
-						}
-						if(idx == 0) {
-							movb.get_movie().recount_frames();
-							update_movie_state();
-							graphics_driver_notify_status();
-						}
-					});
-					recursing = false;
-					if(idx == 0) {
-						max_subframe = 0;	//Reparse.
-					}
+					do_toggle_buttons(idx, press_line, line);
 				}
 			} else if(i.type == 1) {
 				if(press_x == x && press_line == line) {
 					//Click change value.
-					short value;
-					bool valid = true;
-					runemufn([idx, line, &value, _fcontrols, &valid]() {
-						if(!movb.get_movie().readonly_mode()) {
-							valid = false;
-							return;
-						}
-						uint64_t fedit = first_editable(*_fcontrols, idx);
-						controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-						if(line < fedit) {
-							valid = false;
-							return;
-						}
-						if(line >= fv.size())
-							return;
-						controller_frame cf = fv[line];
-						value = _fcontrols->read_index(cf, idx);
-					});
-					if(!valid)
-						continue;
-					try {
-						std::string text = pick_text(m, "Set value", "Enter new value:",
-							(stringfmt() << value).str());
-						value = parse_value<short>(text);
-					} catch(canceled_exception& e) {
-						return;
-					} catch(std::exception& e) {
-						wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION |
-							wxOK, m);
-						return;
-					}
-					runemufn([idx, line, value, _fcontrols]() {
-						uint64_t fedit = first_editable(*_fcontrols, idx);
-						controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-						if(line < fedit)
-							return;
-						if(line >= fv.size())
-							return;
-						controller_frame cf = fv[line];
-						_fcontrols->write_index(cf, idx, value);
-					});
+					do_alter_axis(idx, line);
 				}
 			}
 		}
