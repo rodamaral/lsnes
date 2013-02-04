@@ -56,7 +56,7 @@ struct control_info
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
 	static control_info fixedinfo(unsigned& p, const std::string& str);
-	static control_info buttoninfo(unsigned& p, char character, unsigned idx);
+	static control_info buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx);
 	static control_info axisinfo(unsigned& p, const std::string& title, unsigned idx);
 };
 
@@ -90,7 +90,7 @@ control_info control_info::fixedinfo(unsigned& p, const std::string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
@@ -99,7 +99,7 @@ control_info control_info::buttoninfo(unsigned& p, char character, unsigned idx)
 	i.index = idx;
 	i.type = 0;
 	i.ch = character;
-	i.title = "";
+	i.title = title;
 	i.port = 0;
 	i.controller = 0;
 	return i;
@@ -189,7 +189,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			if(pcb.type == port_controller_button::TYPE_BUTTON) {
 				if(last_multibyte)
 					c++;
-				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, idx));
+				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, pcb.name, idx));
 				last_multibyte = false;
 			} else if(pcb.type == port_controller_button::TYPE_AXIS) {
 				if(j)
@@ -554,7 +554,6 @@ void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long lon
 
 void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2)
 {
-
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t _press_line = row1;
 	uint64_t line = row2;
@@ -702,28 +701,33 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		return;
 	if(y < 3)
 		return;
+	if(!movb.get_movie().readonly_mode())
+		return;
 	press_x = x;
 	press_line = spos + y - 3;
 	wxMenu menu;
 	bool on_button = false;
 	bool on_axis = false;
+	std::string title;
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0) {
+			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index)) {
 				on_button = true;
 				press_index = i.index;
+				title = i.title;
 			}
-			if(i.type == 1) {
+			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index)) {
 				on_axis = true;
 				press_index = i.index;
+				title = i.title;
 			}
 		}
 	}
 	if(on_button)
-		menu.Append(wxID_TOGGLE, wxT("Toggle"));
+		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
 	if(on_axis)
-		menu.Append(wxID_CHANGE, wxT("Change"));
+		menu.Append(wxID_CHANGE, wxT("Change " + title));
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
 		NULL, this);
