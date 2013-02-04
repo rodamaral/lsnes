@@ -376,6 +376,7 @@ private:
 		unsigned press_index;
 		bool pressed;
 		bool recursing;
+		uint64_t linecount;
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row);
 		void do_append_frames(uint64_t count);
@@ -734,12 +735,14 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index)) {
+			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index) &&
+				press_line < linecount) {
 				on_button = true;
 				press_index = i.index;
 				title = i.title;
 			}
-			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index)) {
+			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index) &&
+				press_line < linecount) {
 				on_axis = true;
 				press_index = i.index;
 				title = i.title;
@@ -793,6 +796,7 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		if(new_width > 0 && s)
 			m->Fit();
 	}
+	linecount = lines;
 	Refresh();
 }
 
