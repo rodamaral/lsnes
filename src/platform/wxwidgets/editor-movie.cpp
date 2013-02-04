@@ -21,7 +21,8 @@ enum
 	wxID_TOGGLE = wxID_HIGHEST + 1,
 	wxID_CHANGE,
 	wxID_APPEND_FRAME,
-	wxID_CHANGE_LINECOUNT
+	wxID_CHANGE_LINECOUNT,
+	wxID_INSERT_AFTER
 };
 
 void update_movie_state();
@@ -382,6 +383,7 @@ private:
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row);
 		void do_append_frames(uint64_t count);
+		void do_insert_frame_after(uint64_t row);
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
@@ -668,6 +670,35 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 	recursing = false;
 }
 
+void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
+{
+	recursing = true;
+	frame_controls* _fcontrols = &fcontrols;
+	uint64_t _row = row;
+	runemufn([_row, _fcontrols]() {
+		if(!movb.get_movie().readonly_mode())
+			return;
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t fedit = first_editable(*_fcontrols, 0);
+		//Find the start of the next frame.
+		uint64_t nframe = _row + 1;
+		uint64_t vsize = fv.size();
+		while(nframe < vsize && !fv[nframe].sync())
+			nframe++;
+		if(nframe < fedit)
+			return;
+		fv.append(fv.blank_frame(true));
+		if(nframe < vsize) {
+			//Okay, gotta copy all data after this point. nframe has to be at least 1.
+			for(uint64_t i = vsize - 1; i >= nframe; i--)
+				fv[i + 1] = fv[i];
+			fv[nframe] = fv.blank_frame(true);
+		}
+		movie_framecount_change(1);
+	});
+	max_subframe = row;
+	recursing = false;
+}
 
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
 {
@@ -723,6 +754,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
 		return;
+	case wxID_INSERT_AFTER:
+		do_insert_frame_after(press_line);
+		return;
 	case wxID_CHANGE_LINECOUNT:
 		try {
 			std::string text = pick_text(m, "Set number of lines", "Set number of lines visible:",
@@ -751,6 +785,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	wxMenu menu;
 	bool on_button = false;
 	bool on_axis = false;
+	bool on_frame = false;
 	std::string title;
 	if(y < 3)
 		goto outrange;
@@ -775,10 +810,14 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 			}
 		}
 	}
+	if(press_line + 1 >= first_editable(fcontrols, 0) && press_line < linecount)
+		on_frame = true;
 	if(on_button)
 		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
 	if(on_axis)
 		menu.Append(wxID_CHANGE, wxT("Change " + title));
+	if(on_frame)
+		menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"));
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
 outrange:
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
