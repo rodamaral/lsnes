@@ -20,14 +20,15 @@ enum
 {
 	wxID_TOGGLE = wxID_HIGHEST + 1,
 	wxID_CHANGE,
-	wxID_APPEND_FRAME
+	wxID_APPEND_FRAME,
+	wxID_CHANGE_LINECOUNT
 };
 
 void update_movie_state();
 
 namespace
 {
-	const unsigned lines_to_display = 28;
+	unsigned lines_to_display = 28;
 	uint64_t divs[] = {1000000, 100000, 10000, 1000, 100, 10, 1};
 	uint64_t divsl[] = {1000000, 100000, 10000, 1000, 100, 10, 0};
 	const unsigned divcnt = sizeof(divs)/sizeof(divs[0]);
@@ -369,6 +370,7 @@ private:
 		int movielines;
 		int moviepos;
 		unsigned new_width;
+		unsigned new_height;
 		std::vector<uint8_t> pixels;
 		int scroll_delta;
 		unsigned press_x;
@@ -416,6 +418,7 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 	m = v;
 	Connect(wxEVT_PAINT, wxPaintEventHandler(_moviepanel::on_paint), NULL, this);
 	new_width = 0;
+	new_height = 0;
 	moviepos = 0;
 	scroll_delta = 0;
 	spos = 0;
@@ -713,6 +716,22 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
 		return;
+	case wxID_CHANGE_LINECOUNT:
+		try {
+			std::string text = pick_text(m, "Set number of lines", "Set number of lines visible:",
+				(stringfmt() << lines_to_display).str());
+			unsigned tmp = parse_value<unsigned>(text);
+			if(tmp < 1)
+				throw std::runtime_error("Value out of range");
+			lines_to_display = tmp;
+		} catch(canceled_exception& e) {
+			return;
+		} catch(std::exception& e) {
+			wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+			return;
+		}
+		signal_repaint();
+		return;
 	};
 }
 
@@ -722,16 +741,16 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 {
 	if(polarity)
 		return;
-	if(y < 3)
-		return;
-	if(!movb.get_movie().readonly_mode())
-		return;
-	press_x = x;
-	press_line = spos + y - 3;
 	wxMenu menu;
 	bool on_button = false;
 	bool on_axis = false;
 	std::string title;
+	if(y < 3)
+		goto outrange;
+	if(!movb.get_movie().readonly_mode())
+		goto outrange;
+	press_x = x;
+	press_line = spos + y - 3;
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
@@ -754,6 +773,8 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(on_axis)
 		menu.Append(wxID_CHANGE, wxT("Change " + title));
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+outrange:
+	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
 		NULL, this);
 	PopupMenu(&menu);
@@ -771,9 +792,9 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		return;
 	auto s = m->get_scroll();
 	requested = true;
-	int lines, width;
+	int lines, width, height;
 	wxeditor_movie* m2 = m;
-	runemufn([&lines, &width, m2, this]() {
+	runemufn([&lines, &width, &height, m2, this]() {
 		lines = this->get_lines();
 		if(lines < lines_to_display)
 			this->moviepos = 0;
@@ -782,15 +803,18 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		this->render(fb, moviepos);
 		auto x = fb.get_characters();
 		width = x.first;
+		height = x.second;
 	});
 	int prev_width = new_width;
+	int prev_height = new_height;
 	new_width = width;
+	new_height = height;
 	if(s)
 		s->SetScrollbar(moviepos, lines_to_display, lines, lines_to_display - 1);
 	auto size = fb.get_pixels();
 	pixels.resize(size.first * size.second * 3);
 	fb.render((char*)&pixels[0]);
-	if(prev_width != new_width) {
+	if(prev_width != new_width || prev_height != new_height) {
 		auto cell = fb.get_cell();
 		SetMinSize(wxSize(new_width * cell.first, (lines_to_display + 3) * cell.second));
 		if(new_width > 0 && s)
