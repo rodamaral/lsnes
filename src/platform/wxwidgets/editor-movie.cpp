@@ -124,9 +124,6 @@ control_info control_info::axisinfo(unsigned& p, const std::string& title, unsig
 	return i;
 }
 
-control_info axisinfo(unsigned& p, const std::string& title, unsigned idx);
-
-
 class frame_controls
 {
 public:
@@ -332,6 +329,11 @@ private:
 		void on_mouse0(unsigned x, unsigned y, bool polarity);
 		void on_mouse1(unsigned x, unsigned y, bool polarity);
 		void on_mouse2(unsigned x, unsigned y, bool polarity);
+		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
+		void do_alter_axis(unsigned idx, uint64_t row);
+		void do_append_frames(uint64_t count);
+		void do_insert_frame_after(uint64_t row);
+		uint64_t first_editable(unsigned index);
 		int width(controller_frame& f);
 		std::string render_line1(controller_frame& f);
 		std::string render_line2(controller_frame& f);
@@ -358,10 +360,7 @@ private:
 		bool pressed;
 		bool recursing;
 		uint64_t linecount;
-		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
-		void do_alter_axis(unsigned idx, uint64_t row);
-		void do_append_frames(uint64_t count);
-		void do_insert_frame_after(uint64_t row);
+		uint64_t cached_cffs;
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
@@ -373,13 +372,23 @@ namespace
 {
 	wxeditor_movie* movieeditor_open;
 
-	uint64_t first_editable(frame_controls& fc, unsigned idx)
+	//Find the first real editable subframe.
+	//Call only in emulator thread.
+	uint64_t real_first_editable(frame_controls& fc, unsigned idx)
 	{
 		uint64_t cffs = movb.get_movie().get_current_frame_first_subframe();
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		pollcounter_vector& pv = movb.get_movie().get_pollcounters();
-		return cffs + fc.read_pollcount(pv, idx);
+		uint64_t vsize = fv.size();
+		uint32_t pc = fc.read_pollcount(pv, idx);
+		for(uint32_t i = 1; i < pc; i++)
+			if(cffs + i >= vsize || fv[cffs + i].sync())
+				return cffs + i;
+		return cffs + pc;
 	}
 
+	//Adjust movie length by specified number of frames.
+	//Call only in emulator thread.
 	void movie_framecount_change(int64_t adjust, bool known = true);
 	void movie_framecount_change(int64_t adjust, bool known)
 	{
@@ -494,6 +503,7 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	uint64_t curframe = movb.get_movie().get_current_frame();
 	pollcounter_vector& pv = movb.get_movie().get_pollcounters();
 	uint64_t cffs = movb.get_movie().get_current_frame_first_subframe();
+	cached_cffs = cffs;
 	int past = -1;
 	if(!movb.get_movie().readonly_mode())
 		past = 1;
@@ -574,7 +584,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		int64_t adjust = 0;
 		if(!movb.get_movie().readonly_mode())
 			return;
-		uint64_t fedit = first_editable(*_fcontrols, idx);
+		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		for(uint64_t i = _press_line; i <= line; i++) {
 			if(i < fedit || i >= fv.size())
@@ -603,7 +613,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
 			valid = false;
 			return;
 		}
-		uint64_t fedit = first_editable(*_fcontrols, idx);
+		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		if(line < fedit || line >= fv.size()) {
 			valid = false;
@@ -624,7 +634,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
 		return;
 	}
 	runemufn([idx, line, value, _fcontrols]() {
-		uint64_t fedit = first_editable(*_fcontrols, idx);
+		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		if(line < fedit || line >= fv.size())
 			return;
@@ -657,7 +667,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 		if(!movb.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-		uint64_t fedit = first_editable(*_fcontrols, 0);
+		uint64_t fedit = real_first_editable(*_fcontrols, 0);
 		//Find the start of the next frame.
 		uint64_t nframe = _row + 1;
 		uint64_t vsize = fv.size();
@@ -754,6 +764,19 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	};
 }
 
+uint64_t wxeditor_movie::_moviepanel::first_editable(unsigned index)
+{
+	uint64_t cffs = cached_cffs;
+	if(!subframe_to_frame.count(cffs))
+		return cffs;
+	uint64_t f = subframe_to_frame[cffs];
+	pollcounter_vector& pv = movb.get_movie().get_pollcounters();
+	uint32_t pc = fcontrols.read_pollcount(pv, index);
+	for(uint32_t i = 1; i < pc; i++)
+		if(!subframe_to_frame.count(cffs + i) || subframe_to_frame[cffs + i] > f)
+				return cffs + i;
+	return cffs + pc;
+}
 
 void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarity) {}
 void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
@@ -774,13 +797,13 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index) &&
+			if(i.type == 0 && press_line >= first_editable(i.index) &&
 				press_line < linecount) {
 				on_button = true;
 				press_index = i.index;
 				title = i.title;
 			}
-			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index) &&
+			if(i.type == 1 && press_line >= first_editable(i.index) &&
 				press_line < linecount) {
 				on_axis = true;
 				press_index = i.index;
@@ -788,7 +811,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 			}
 		}
 	}
-	if(press_line + 1 >= first_editable(fcontrols, 0) && press_line < linecount)
+	if(press_line + 1 >= first_editable(0) && press_line < linecount)
 		on_frame = true;
 	if(on_button)
 		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
