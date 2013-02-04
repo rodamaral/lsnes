@@ -58,16 +58,17 @@ namespace
 	{
 		int operator()()
 		{
-			float buf[16384];
+			int16_t buf[16384];
 			uint64_t last_ts = get_utime();
 			while(!dummy_cb_quit) {
 				uint64_t cur_ts = get_utime();
 				uint64_t dt = cur_ts - last_ts;
+				last_ts = cur_ts;
 				unsigned samples = dt / 25;
 				if(samples > 16384)
 					samples = 16384;	//Don't get crazy.
 				if(dummy_cb_active) {
-					audioapi_get_voice(buf, samples);
+					audioapi_get_mixed(buf, samples, false);
 					audioapi_put_voice(NULL, samples);
 				}
 				usleep(10000);
@@ -319,7 +320,7 @@ void audioapi_put_voice(float* samples, size_t count)
 void audioapi_set_dummy_cb(bool enable)
 {
 	if(enable)
-		voice_rate = 40000;
+		orig_voice_rate = voice_rate = 40000;
 	dummy_cb_active = enable;
 }
 
@@ -397,7 +398,7 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			else
 				for(size_t i = 0; i < 2 * indata; i++)
 					intbuf[i] = 0;
-			music_resampler.resample(in, indata, out, outdata, voice_rate / b.rate, true);
+			music_resampler.resample(in, indata, out, outdata, (double)voice_rate / b.rate, true);
 			indata_used -= indata;
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);
@@ -426,7 +427,7 @@ void audioapi_get_mixed(int16_t* samples, size_t count, bool stereo)
 			else
 				for(size_t i = 0; i < indata; i++)
 					intbuf[i] = 0;
-			music_resampler.resample(in, indata, out, outdata, voice_rate / b.rate, false);
+			music_resampler.resample(in, indata, out, outdata, (double)voice_rate / b.rate, false);
 			indata_used -= indata;
 			outdata_used -= outdata;
 			audioapi_get_music(indata_used);
