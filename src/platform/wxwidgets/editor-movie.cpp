@@ -56,7 +56,7 @@ struct control_info
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
 	static control_info fixedinfo(unsigned& p, const std::string& str);
-	static control_info buttoninfo(unsigned& p, char character, unsigned idx);
+	static control_info buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx);
 	static control_info axisinfo(unsigned& p, const std::string& title, unsigned idx);
 };
 
@@ -90,7 +90,7 @@ control_info control_info::fixedinfo(unsigned& p, const std::string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
@@ -99,7 +99,7 @@ control_info control_info::buttoninfo(unsigned& p, char character, unsigned idx)
 	i.index = idx;
 	i.type = 0;
 	i.ch = character;
-	i.title = "";
+	i.title = title;
 	i.port = 0;
 	i.controller = 0;
 	return i;
@@ -160,8 +160,8 @@ void frame_controls::set_types(controller_frame& f)
 	unsigned nextc = 0;
 	controlinfo.clear();
 	controlinfo.push_back(control_info::portinfo(nextp, 0, 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', 1));
+	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', "Framesync", 0));
+	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', "Reset", 1));
 	nextc++;
 	controlinfo.push_back(control_info::axisinfo(nextc, "  rlow", 2));
 	nextc++;
@@ -194,9 +194,17 @@ void frame_controls::add_port(unsigned& c, unsigned pid, porttype_info& p)
 				c++;
 			b = 2;
 		}
-		for(unsigned j = 0; p.button_symbols[j]; j++, b++)
-			controlinfo.push_back(control_info::buttoninfo(c, p.button_symbols[j], 4 + b + ccount * pid +
-				i * MAX_CONTROLS_PER_CONTROLLER - ccount));
+		for(unsigned j = 0; p.button_symbols[j]; j++, b++) {
+			unsigned lbid;
+			for(lbid = 0; lbid < limits.second; lbid++)
+				if(p.button_id(i, lbid) == b)
+					break;
+			if(lbid == limits.second)
+				lbid = 0;
+			std::string name = get_logical_button_name(lbid);
+			controlinfo.push_back(control_info::buttoninfo(c, p.button_symbols[j], name, 4 + b + ccount *
+				pid + i * MAX_CONTROLS_PER_CONTROLLER - ccount));
+		}
 		if(nextp > c)
 			c = nextp;
 		i++;
@@ -722,23 +730,26 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	wxMenu menu;
 	bool on_button = false;
 	bool on_axis = false;
+	std::string title;
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
 			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index)) {
 				on_button = true;
 				press_index = i.index;
+				title = i.title;
 			}
 			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index)) {
 				on_axis = true;
 				press_index = i.index;
+				title = i.title;
 			}
 		}
 	}
 	if(on_button)
-		menu.Append(wxID_TOGGLE, wxT("Toggle"));
+		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
 	if(on_axis)
-		menu.Append(wxID_CHANGE, wxT("Change"));
+		menu.Append(wxID_CHANGE, wxT("Change " + title));
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
 		NULL, this);
