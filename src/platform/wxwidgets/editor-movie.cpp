@@ -568,7 +568,6 @@ void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long lon
 
 void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2)
 {
-
 	frame_controls* _fcontrols = &fcontrols;
 	uint64_t _press_line = row1;
 	uint64_t line = row2;
@@ -716,6 +715,8 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		return;
 	if(y < 3)
 		return;
+	if(!movb.get_movie().readonly_mode())
+		return;
 	press_x = x;
 	press_line = spos + y - 3;
 	wxMenu menu;
@@ -724,11 +725,11 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0) {
+			if(i.type == 0 && press_line >= first_editable(fcontrols, i.index)) {
 				on_button = true;
 				press_index = i.index;
 			}
-			if(i.type == 1) {
+			if(i.type == 1 && press_line >= first_editable(fcontrols, i.index)) {
 				on_axis = true;
 				press_index = i.index;
 			}
