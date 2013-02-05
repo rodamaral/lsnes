@@ -24,7 +24,8 @@ enum
 	wxID_CHANGE_LINECOUNT,
 	wxID_INSERT_AFTER,
 	wxID_DELETE_FRAME,
-	wxID_DELETE_SUBFRAME
+	wxID_DELETE_SUBFRAME,
+	wxID_POSITION_LOCK,
 };
 
 void update_movie_state();
@@ -365,6 +366,8 @@ private:
 		bool recursing;
 		uint64_t linecount;
 		uint64_t cached_cffs;
+		bool position_locked;
+		wxMenu* current_popup;
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
@@ -435,6 +438,8 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 	prev_seqno = 0;
 	max_subframe = 0;
 	recursing = false;
+	position_locked = true;
+	current_popup = NULL;
 
 	Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(_moviepanel::on_mouse), NULL, this);
 	Connect(wxEVT_LEFT_UP, wxMouseEventHandler(_moviepanel::on_mouse), NULL, this);
@@ -800,6 +805,7 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
+	wxMenuItem* tmpitem;
 	int id = e.GetId();
 	switch(id) {
 	case wxID_TOGGLE:
@@ -819,6 +825,12 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_DELETE_SUBFRAME:
 		do_delete_frame(press_line, false);
+		return;
+	case wxID_POSITION_LOCK:
+		if(!current_popup)
+			return;
+		tmpitem = current_popup->FindItem(wxID_POSITION_LOCK);
+		position_locked = tmpitem->IsChecked();
 		return;
 	case wxID_CHANGE_LINECOUNT:
 		try {
@@ -870,6 +882,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(polarity)
 		return;
 	wxMenu menu;
+	current_popup = &menu;
 	bool enable_toggle_button = false;
 	bool enable_change_axis = false;
 	bool enable_insert_frame = false;
@@ -918,6 +931,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
 outrange:
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
+	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
 		NULL, this);
 	PopupMenu(&menu);
@@ -937,6 +951,7 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 	requested = true;
 	int lines, width, height;
 	wxeditor_movie* m2 = m;
+	uint64_t old_cached_cffs = cached_cffs;
 	runemufn([&lines, &width, &height, m2, this]() {
 		lines = this->get_lines();
 		if(lines < lines_to_display)
@@ -952,6 +967,8 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 	int prev_height = new_height;
 	new_width = width;
 	new_height = height;
+	if(old_cached_cffs != cached_cffs && position_locked)
+		moviepos = cached_cffs;
 	if(s)
 		s->SetScrollbar(moviepos, lines_to_display, lines, lines_to_display - 1);
 	auto size = fb.get_pixels();
