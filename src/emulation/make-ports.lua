@@ -200,7 +200,7 @@ for i = 1,#ports do
 	print("\t\t\tshort tmp;");
 	for j = 1,#(port.controllers) do
 		local controller = port.controllers[j];
-		if j > 1 then
+		if j > 1 or port.legal[1] ~= 0 then
 			print("\t\t\ttextbuf[ptr++] = '|';");
 		end
 		for k = 1,#(controller.buttons) do

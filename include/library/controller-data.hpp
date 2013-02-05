@@ -939,8 +939,6 @@ public:
 	{
 		size_t offset = 0;
 		for(size_t i = 0; i < types->ports(); i++) {
-			if(i > 0)
-				buf[offset++] = '|';
 			offset += types->port_type(i).serialize(backing + types->port_offset(i), buf + offset);
 		}
 		buf[offset++] = '\0';
