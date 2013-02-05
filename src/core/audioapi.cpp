@@ -150,6 +150,11 @@ unsigned audioapi_voice_rate()
 	return voice_rate;
 }
 
+unsigned audioapi_orig_voice_rate()
+{
+	return orig_voice_rate;
+}
+
 void audioapi_voice_rate(unsigned rate)
 {
 	orig_voice_rate = voice_rate = rate;
