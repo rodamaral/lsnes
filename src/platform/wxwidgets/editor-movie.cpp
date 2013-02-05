@@ -22,7 +22,9 @@ enum
 	wxID_CHANGE,
 	wxID_APPEND_FRAME,
 	wxID_CHANGE_LINECOUNT,
-	wxID_INSERT_AFTER
+	wxID_INSERT_AFTER,
+	wxID_DELETE_FRAME,
+	wxID_DELETE_SUBFRAME
 };
 
 void update_movie_state();
@@ -355,7 +357,9 @@ private:
 		void do_alter_axis(unsigned idx, uint64_t row);
 		void do_append_frames(uint64_t count);
 		void do_insert_frame_after(uint64_t row);
+		void do_delete_frame(uint64_t row, bool wholeframe);
 		uint64_t first_editable(unsigned index);
+		uint64_t first_nextframe();
 		int width(controller_frame& f);
 		std::string render_line1(controller_frame& f);
 		std::string render_line2(controller_frame& f);
@@ -407,6 +411,18 @@ namespace
 			if(cffs + i >= vsize || fv[cffs + i].sync())
 				return cffs + i;
 		return cffs + pc;
+	}
+
+	//Find the first real editable whole frame.
+	//Call only in emulator thread.
+	uint64_t real_first_nextframe(frame_controls& fc)
+	{
+		uint64_t base = real_first_editable(fc, 0);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		for(uint32_t i = 0;; i++)
+			if(base + i >= vsize || fv[base + i].sync())
+				return base + i;
 	}
 
 	//Adjust movie length by specified number of frames.
@@ -710,6 +726,59 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 	recursing = false;
 }
 
+void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
+{
+	recursing = true;
+	uint64_t _row = row;
+	bool _wholeframe = wholeframe;
+	frame_controls* _fcontrols = &fcontrols;
+	runemufn([_row, _wholeframe, _fcontrols]() {
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(_row >= vsize)
+			return;
+		if(_wholeframe) {
+			if(_row < real_first_nextframe(*_fcontrols))
+				return;
+			//Scan backwards for the first subframe of this frame and forwards for the last.
+			uint64_t fsf = _row;
+			uint64_t lsf = _row;
+			if(fv[_row].sync())
+				lsf++;		//Bump by one so it finds the end.
+			while(fsf < vsize && !fv[fsf].sync())
+				fsf--;
+			while(lsf < vsize && !fv[lsf].sync())
+				lsf++;
+			uint64_t tonuke = lsf - fsf;
+			//Nuke from fsf to lsf.
+			for(uint64_t i = fsf; i < vsize - tonuke; i++)
+				fv[i] = fv[i + tonuke];
+			fv.resize(vsize - tonuke);
+			movie_framecount_change(-1);
+		} else {
+			if(_row < real_first_editable(*_fcontrols, 0))
+				return;
+			//Is the nuked frame a first subframe?
+			bool is_first = fv[_row].sync();
+			//Nuke the subframe.
+			for(uint64_t i = _row; i < vsize - 1; i++)
+				fv[i] = fv[i + 1];
+			fv.resize(vsize - 1);
+			//Next subframe inherits the sync flag.
+			if(is_first) {
+				if(_row < vsize && !fv[_row].sync())
+					fv[_row].sync();
+				else
+					movie_framecount_change(-1);
+			}
+		}
+		
+	});
+	max_subframe = row;
+	recursing = false;
+}
+
+
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
 {
 	if(y < 3)
@@ -767,6 +836,12 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_INSERT_AFTER:
 		do_insert_frame_after(press_line);
 		return;
+	case wxID_DELETE_FRAME:
+		do_delete_frame(press_line, true);
+		return;
+	case wxID_DELETE_SUBFRAME:
+		do_delete_frame(press_line, false);
+		return;
 	case wxID_CHANGE_LINECOUNT:
 		try {
 			std::string text = pick_text(m, "Set number of lines", "Set number of lines visible:",
@@ -800,15 +875,28 @@ uint64_t wxeditor_movie::_moviepanel::first_editable(unsigned index)
 	return cffs + pc;
 }
 
+uint64_t wxeditor_movie::_moviepanel::first_nextframe()
+{
+	uint64_t base = first_editable(0);
+	if(!subframe_to_frame.count(cached_cffs))
+		return cached_cffs;
+	uint64_t f = subframe_to_frame[cached_cffs];
+	for(uint32_t i = 0;; i++)
+		if(!subframe_to_frame.count(base + i) || subframe_to_frame[base + i] > f)
+			return base + i;
+}
+
 void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarity) {}
 void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
 {
 	if(polarity)
 		return;
 	wxMenu menu;
-	bool on_button = false;
-	bool on_axis = false;
-	bool on_frame = false;
+	bool enable_toggle_button = false;
+	bool enable_change_axis = false;
+	bool enable_insert_frame = false;
+	bool enable_delete_frame = false;
+	bool enable_delete_subframe = false;
 	std::string title;
 	if(y < 3)
 		goto outrange;
@@ -821,26 +909,34 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
 			if(i.type == 0 && press_line >= first_editable(i.index) &&
 				press_line < linecount) {
-				on_button = true;
+				enable_toggle_button = true;
 				press_index = i.index;
 				title = i.title;
 			}
 			if(i.type == 1 && press_line >= first_editable(i.index) &&
 				press_line < linecount) {
-				on_axis = true;
+				enable_change_axis = true;
 				press_index = i.index;
 				title = i.title;
 			}
 		}
 	}
 	if(press_line + 1 >= first_editable(0) && press_line < linecount)
-		on_frame = true;
-	if(on_button)
+		enable_insert_frame = true;
+	if(press_line >= first_editable(0) && press_line < linecount)
+		enable_delete_subframe = true;
+	if(press_line >= first_nextframe() && press_line < linecount)
+		enable_delete_frame = true;
+	if(enable_toggle_button)
 		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
-	if(on_axis)
+	if(enable_change_axis)
 		menu.Append(wxID_CHANGE, wxT("Change " + title));
-	if(on_frame)
+	if(enable_insert_frame)
 		menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"));
+	if(enable_delete_subframe)
+		menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"));
+	if(enable_delete_frame)
+		menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"));
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
 outrange:
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
