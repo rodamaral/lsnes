@@ -766,8 +766,8 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 			fv.resize(vsize - 1);
 			//Next subframe inherits the sync flag.
 			if(is_first) {
-				if(_row < vsize && !fv[_row].sync())
-					fv[_row].sync();
+				if(_row < vsize - 1 && !fv[_row].sync())
+					fv[_row].sync(true);
 				else
 					movie_framecount_change(-1);
 			}
