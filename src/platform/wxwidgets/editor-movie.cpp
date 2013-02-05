@@ -570,7 +570,8 @@ void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long lon
 	size_t fbstride = fb.get_stride();
 	auto fbsize = fb.get_characters();
 	text_framebuffer::element* _fb = fb.get_buffer();
-	fb.write((stringfmt() << "Current frame: " << movb.get_movie().get_current_frame()).str(), _width, 0, 0,
+	fb.write((stringfmt() << "Current frame: " << movb.get_movie().get_current_frame() << " of "
+		<< movb.get_movie().get_frame_count()).str(), _width, 0, 0,
 		 0x000000, 0xFFFFFF);
 	fb.write(render_line1(cf), _width, 0, 1, 0x000000, 0xFFFFFF);
 	fb.write(render_line2(cf), _width, 0, 2, 0x000000, 0xFFFFFF);
@@ -922,13 +923,14 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
 	if(enable_change_axis)
 		menu.Append(wxID_CHANGE, wxT("Change " + title));
-	if(enable_insert_frame)
-		menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"));
-	if(enable_delete_subframe)
-		menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"));
-	if(enable_delete_frame)
-		menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"));
+	if(enable_toggle_button || enable_change_axis)
+		menu.AppendSeparator();
+	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+	menu.AppendSeparator();
+	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
+	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
+	menu.AppendSeparator();
 outrange:
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
