@@ -200,6 +200,9 @@ for i = 1,#ports do
 	print("\t\t\tshort tmp;");
 	for j = 1,#(port.controllers) do
 		local controller = port.controllers[j];
+		if j > 1 then
+			print("\t\t\ttextbuf[ptr++] = '|';");
+		end
 		for k = 1,#(controller.buttons) do
 			local xbutton = controller.buttons[k];
 			local bt = xbutton[1];
@@ -211,9 +214,6 @@ for i = 1,#ports do
 				bit_l = bit_l + 1;
 			end
 		end
-	end
-	for j = 1,#(port.controllers) do
-		local controller = port.controllers[j];
 		for k = 1,#(controller.buttons) do
 			local xbutton = controller.buttons[k];
 			local bt = xbutton[1];
