@@ -944,13 +944,14 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
 	if(enable_change_axis)
 		menu.Append(wxID_CHANGE, wxT("Change " + title));
-	if(enable_insert_frame)
-		menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"));
-	if(enable_delete_subframe)
-		menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"));
-	if(enable_delete_frame)
-		menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"));
+	if(enable_toggle_button || enable_change_axis)
+		menu.AppendSeparator();
+	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+	menu.AppendSeparator();
+	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
+	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
+	menu.AppendSeparator();
 outrange:
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
