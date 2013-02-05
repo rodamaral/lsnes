@@ -104,6 +104,13 @@ void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double 
 std::pair<unsigned,unsigned> audioapi_voice_rate();
 
 /**
+ * Get the voice channel nominal playback/record rate.
+ *
+ * Returns: The rate in samples per second.
+ */
+unsigned audioapi_orig_voice_rate();
+
+/**
  * Get the voice channel playback status register.
  *
  * Returns: The number of samples free for playback.

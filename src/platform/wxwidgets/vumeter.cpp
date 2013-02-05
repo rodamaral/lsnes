@@ -1,6 +1,7 @@
 #include "core/audioapi.hpp"
 #include "core/dispatch.hpp"
 
+#include "library/string.hpp"
 #include "platform/wxwidgets/platform.hpp"
 
 #include <wx/wx.h>
@@ -190,7 +191,6 @@ private:
 					memcpy(&buffer[pos], colorstrip, 3 * val);
 				pos += bufferstride;
 			}
-			
 		}
 	};
 	struct refresh_listener : public information_dispatch
@@ -215,6 +215,7 @@ private:
 	wxButton* closebutton;
 	refresh_listener* rlistener;
 	_vupanel* vupanel;
+	wxStaticText* rate;
 	wxSlider* gamevol;
 	wxSlider* voutvol;
 	wxSlider* vinvol;
@@ -226,10 +227,11 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 	update_sent = false;
 	closing = false;
 	Centre();
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(3, 1, 0, 0);
+	wxFlexGridSizer* top_s = new wxFlexGridSizer(4, 1, 0, 0);
 	SetSizer(top_s);
 
 	top_s->Add(vupanel = new _vupanel(this));
+	top_s->Add(rate = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 
 	wxFlexGridSizer* slier_s = new wxFlexGridSizer(3, 2, 0, 0);
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
@@ -291,6 +293,10 @@ void wxwin_vumeter::on_vin_change(wxScrollEvent& e)
 
 void wxwin_vumeter::refresh()
 {
+	auto rate_cur = audioapi_voice_rate();
+	unsigned rate_nom = audioapi_orig_voice_rate();
+	rate->SetLabel(towxstring((stringfmt() << "Current: " << rate_cur.second << "Hz (nominal " << rate_nom
+		<< "Hz), record: " << rate_cur.first << "Hz").str()));
 	vupanel->signal_repaint();
 }
 

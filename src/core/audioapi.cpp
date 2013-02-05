@@ -152,6 +152,11 @@ std::pair<unsigned, unsigned> audioapi_voice_rate()
 	return std::make_pair(voice_rate_rec, voice_rate_play);
 }
 
+unsigned audioapi_orig_voice_rate()
+{
+	return orig_voice_rate_play;
+}
+
 void audioapi_voice_rate(unsigned rate_rec, unsigned rate_play)
 {
 	if(rate_rec)
