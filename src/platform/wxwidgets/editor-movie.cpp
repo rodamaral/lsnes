@@ -4,6 +4,7 @@
 #include "core/emucore.hpp"
 #include "core/window.hpp"
 
+#include "core/mainloop.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 #include "library/minmax.hpp"
@@ -26,6 +27,7 @@ enum
 	wxID_DELETE_FRAME,
 	wxID_DELETE_SUBFRAME,
 	wxID_POSITION_LOCK,
+	wxID_RUN_TO_FRAME
 };
 
 void update_movie_state();
@@ -359,6 +361,7 @@ private:
 		void do_append_frames(uint64_t count);
 		void do_insert_frame_after(uint64_t row);
 		void do_delete_frame(uint64_t row, bool wholeframe);
+		void do_set_stop_at_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -784,6 +787,31 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 	recursing = false;
 }
 
+void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
+{
+	uint64_t curframe;
+	uint64_t frame;
+	runemufn([&curframe]() {
+		curframe = movb.get_movie().get_current_frame();
+	});
+	try {
+		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to stop at (currently at "
+			<< curframe << "):").str(), "");
+		frame = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	if(frame < curframe) {
+		wxMessageBox(wxT("The movie is already past that point"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	runemufn([frame]() {
+		set_stop_at_frame(frame);
+	});
+}
 
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
 {
@@ -848,6 +876,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_DELETE_SUBFRAME:
 		do_delete_frame(press_line, false);
+		return;
+	case wxID_RUN_TO_FRAME:
+		do_set_stop_at_frame();
 		return;
 	case wxID_POSITION_LOCK:
 		if(!current_popup)
@@ -954,6 +985,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
 	menu.AppendSeparator();
 outrange:
+	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),

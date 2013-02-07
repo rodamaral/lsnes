@@ -80,6 +80,9 @@ namespace
 	//Unsafe rewind.
 	bool do_unsafe_rewind = false;
 	void* unsafe_rewind_obj = NULL;
+	//Stop at frame.
+	bool stop_at_frame_active = false;
+	uint64_t stop_at_frame = 0;
 
 	enum advance_mode old_mode;
 
@@ -113,6 +116,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 				advanced_once = true;
 			}
 			if(cancel_advance) {
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
@@ -120,8 +124,10 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		} else if(amode == ADVANCE_FRAME) {
 			;
 		} else {
-			if(amode == ADVANCE_SKIPLAG)
+			if(amode == ADVANCE_SKIPLAG) {
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
+			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			cancel_advance = false;
 		}
@@ -137,12 +143,21 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 				advanced_once = true;
 			}
 			if(cancel_advance) {
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				cancel_advance = false;
 			}
 			platform::set_paused(amode == ADVANCE_PAUSE);
-		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end) {
+		} else if(amode == ADVANCE_AUTO && movb.get_movie().readonly_mode() && pause_on_end &&
+			!stop_at_frame_active) {
 			if(movb.get_movie().get_current_frame() == movb.get_movie().get_frame_count()) {
+				stop_at_frame_active = false;
+				amode = ADVANCE_PAUSE;
+				platform::set_paused(true);
+			}
+		} else if(amode == ADVANCE_AUTO && stop_at_frame_active) {
+			if(movb.get_movie().get_current_frame() >= stop_at_frame) {
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				platform::set_paused(true);
 			}
@@ -406,6 +421,7 @@ namespace
 			} else {
 				platform::cancel_wait();
 				cancel_advance = false;
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 				messages << "Paused" << std::endl;
 			}
@@ -897,6 +913,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 	platform::set_paused(initial.start_paused);
 	amode = initial.start_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
+	stop_at_frame_active = false;
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
@@ -931,11 +948,13 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 					amode = ADVANCE_PAUSE;
 				else
 					amode = old_mode;
+				stop_at_frame_active = false;
 				just_did_loadstate = first_round;
 				controls.reset_framehold();
 				continue;
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
+				stop_at_frame_active = false;
 				amode = ADVANCE_PAUSE;
 			}
 		}
@@ -962,4 +981,12 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	information_dispatch::do_dump_end();
 	core_uninstall_handler();
 	voicethread_kill();
+}
+
+void set_stop_at_frame(uint64_t frame)
+{
+	stop_at_frame = frame;
+	stop_at_frame_active = (frame != 0);
+	amode = ADVANCE_AUTO;
+	platform::set_paused(false);
 }
