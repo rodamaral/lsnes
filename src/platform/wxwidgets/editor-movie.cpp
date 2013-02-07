@@ -942,9 +942,9 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(press_line >= first_nextframe() && press_line < linecount)
 		enable_delete_frame = true;
 	if(enable_toggle_button)
-		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
+		menu.Append(wxID_TOGGLE, towxstring("Toggle " + title));
 	if(enable_change_axis)
-		menu.Append(wxID_CHANGE, wxT("Change " + title));
+		menu.Append(wxID_CHANGE, towxstring("Change " + title));
 	if(enable_toggle_button || enable_change_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
