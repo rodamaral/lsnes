@@ -30,6 +30,7 @@ enum
 	wxID_RUN_TO_FRAME,
 	wxID_APPEND_FRAMES,
 	wxID_TRUNCATE,
+	wxID_SCROLL_FRAME,
 };
 
 void update_movie_state();
@@ -366,6 +367,7 @@ private:
 		void do_delete_frame(uint64_t row, bool wholeframe);
 		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
+		void do_scroll_to_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -896,6 +898,36 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	}
 }
 
+void wxeditor_movie::_moviepanel::do_scroll_to_frame()
+{
+	uint64_t frame;
+	try {
+		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to scroll to:").str(), "");
+		frame = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	uint64_t wouldbe;
+	uint64_t low = 0;
+	uint64_t high = max_subframe;
+	while(low < high) {
+		wouldbe = (low + high) / 2;
+		if(subframe_to_frame[wouldbe] < frame)
+			low = wouldbe;
+		else if(subframe_to_frame[wouldbe] > frame)
+			high = wouldbe;
+		else
+			break;
+	}
+	while(wouldbe > 1 && subframe_to_frame[wouldbe - 1] == frame)
+		wouldbe--;
+	moviepos = wouldbe;
+	signal_repaint();
+}
+
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
 	wxMenuItem* tmpitem;
@@ -927,6 +959,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_RUN_TO_FRAME:
 		do_set_stop_at_frame();
+		return;
+	case wxID_SCROLL_FRAME:
+		do_scroll_to_frame();
 		return;
 	case wxID_POSITION_LOCK:
 		if(!current_popup)
@@ -1036,6 +1071,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.Append(wxID_TRUNCATE, wxT("Truncate movie"))->Enable(enable_delete_subframe);
 	menu.AppendSeparator();
 outrange:
+	menu.Append(wxID_SCROLL_FRAME, wxT("Scroll to frame..."));
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
