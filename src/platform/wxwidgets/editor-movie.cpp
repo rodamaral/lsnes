@@ -27,7 +27,8 @@ enum
 	wxID_DELETE_FRAME,
 	wxID_DELETE_SUBFRAME,
 	wxID_POSITION_LOCK,
-	wxID_RUN_TO_FRAME
+	wxID_RUN_TO_FRAME,
+	wxID_APPEND_FRAMES,
 };
 
 void update_movie_state();
@@ -359,6 +360,7 @@ private:
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row);
 		void do_append_frames(uint64_t count);
+		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
 		void do_delete_frame(uint64_t row, bool wholeframe);
 		void do_set_stop_at_frame();
@@ -700,9 +702,24 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
-		movie_framecount_change(1);
+		movie_framecount_change(_count);
 	});
 	recursing = false;
+}
+
+void wxeditor_movie::_moviepanel::do_append_frames()
+{
+	uint64_t value;
+	try {
+		std::string text = pick_text(m, "Append frames", "Enter number of frames to append:", "");
+		value = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	do_append_frames(value);
 }
 
 void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
@@ -868,6 +885,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
 		return;
+	case wxID_APPEND_FRAMES:
+		do_append_frames();
+		return;
 	case wxID_INSERT_AFTER:
 		do_insert_frame_after(press_line);
 		return;
@@ -980,6 +1000,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+	menu.Append(wxID_APPEND_FRAMES, wxT("Append frames..."));
 	menu.AppendSeparator();
 	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
 	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
