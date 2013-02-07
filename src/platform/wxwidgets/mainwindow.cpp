@@ -1107,6 +1107,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			if(!s)
 				lua_callback_do_readwrite();
 			update_movie_state();
+			graphics_plugin::notify_status();
 		});
 		return;
 	case wxID_EDIT_AUTHORS:
