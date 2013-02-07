@@ -1110,6 +1110,7 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 	int prev_height = new_height;
 	new_width = width;
 	new_height = height;
+	movielines = lines;
 	if(old_cached_cffs != cached_cffs && position_locked)
 		moviepos = cached_cffs;
 	if(s)
@@ -1146,8 +1147,9 @@ void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 	int threshold = e.GetWheelDelta();
 	bool scrolled = false;
 	auto s = m->get_scroll();
-	scroll_delta += wrotate;
-	while(wrotate && scroll_delta <= -threshold) {
+	if(threshold)
+		scroll_delta += wrotate;
+	while(wrotate && threshold && scroll_delta <= -threshold) {
 		//Scroll down by line.
 		moviepos++;
 		if(movielines <= lines_to_display)
@@ -1157,7 +1159,7 @@ void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 		scrolled = true;
 		scroll_delta += threshold;
 	}
-	while(wrotate && scroll_delta >= threshold) {
+	while(wrotate && threshold && scroll_delta >= threshold) {
 		//Scroll up by line.
 		if(moviepos > 0)
 			moviepos--;
