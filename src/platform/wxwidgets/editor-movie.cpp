@@ -29,6 +29,7 @@ enum
 	wxID_POSITION_LOCK,
 	wxID_RUN_TO_FRAME,
 	wxID_APPEND_FRAMES,
+	wxID_TRUNCATE,
 };
 
 void update_movie_state();
@@ -363,6 +364,7 @@ private:
 		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
 		void do_delete_frame(uint64_t row, bool wholeframe);
+		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
@@ -804,6 +806,29 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 	recursing = false;
 }
 
+void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
+{
+	recursing = true;
+	uint64_t _row = row;
+	frame_controls* _fcontrols = &fcontrols;
+	runemufn([_row, _fcontrols]() {
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(_row >= vsize)
+			return;
+		if(_row < real_first_editable(*_fcontrols, 0))
+			return;
+		int64_t delete_count = 0;
+		for(uint64_t i = _row; i < vsize; i++)
+			if(fv[i].sync())
+				delete_count--;
+		fv.resize(_row);
+		movie_framecount_change(delete_count);
+	});
+	max_subframe = row;
+	recursing = false;
+}
+
 void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 {
 	uint64_t curframe;
@@ -896,6 +921,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_DELETE_SUBFRAME:
 		do_delete_frame(press_line, false);
+		return;
+	case wxID_TRUNCATE:
+		do_truncate(press_line);
 		return;
 	case wxID_RUN_TO_FRAME:
 		do_set_stop_at_frame();
@@ -1004,6 +1032,8 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.AppendSeparator();
 	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
 	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
+	menu.AppendSeparator();
+	menu.Append(wxID_TRUNCATE, wxT("Truncate movie"))->Enable(enable_delete_subframe);
 	menu.AppendSeparator();
 outrange:
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
