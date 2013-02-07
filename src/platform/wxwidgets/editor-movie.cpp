@@ -4,6 +4,7 @@
 #include "core/window.hpp"
 
 #include "interface/controller.hpp"
+#include "core/mainloop.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 #include "library/minmax.hpp"
@@ -26,6 +27,10 @@ enum
 	wxID_DELETE_FRAME,
 	wxID_DELETE_SUBFRAME,
 	wxID_POSITION_LOCK,
+	wxID_RUN_TO_FRAME,
+	wxID_APPEND_FRAMES,
+	wxID_TRUNCATE,
+	wxID_SCROLL_FRAME,
 };
 
 void update_movie_state();
@@ -335,8 +340,12 @@ private:
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row);
 		void do_append_frames(uint64_t count);
+		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
 		void do_delete_frame(uint64_t row, bool wholeframe);
+		void do_truncate(uint64_t row);
+		void do_set_stop_at_frame();
+		void do_scroll_to_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -675,9 +684,24 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
-		movie_framecount_change(1);
+		movie_framecount_change(_count);
 	});
 	recursing = false;
+}
+
+void wxeditor_movie::_moviepanel::do_append_frames()
+{
+	uint64_t value;
+	try {
+		std::string text = pick_text(m, "Append frames", "Enter number of frames to append:", "");
+		value = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	do_append_frames(value);
 }
 
 void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
@@ -762,6 +786,54 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 	recursing = false;
 }
 
+void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
+{
+	recursing = true;
+	uint64_t _row = row;
+	frame_controls* _fcontrols = &fcontrols;
+	runemufn([_row, _fcontrols]() {
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(_row >= vsize)
+			return;
+		if(_row < real_first_editable(*_fcontrols, 0))
+			return;
+		int64_t delete_count = 0;
+		for(uint64_t i = _row; i < vsize; i++)
+			if(fv[i].sync())
+				delete_count--;
+		fv.resize(_row);
+		movie_framecount_change(delete_count);
+	});
+	max_subframe = row;
+	recursing = false;
+}
+
+void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
+{
+	uint64_t curframe;
+	uint64_t frame;
+	runemufn([&curframe]() {
+		curframe = movb.get_movie().get_current_frame();
+	});
+	try {
+		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to stop at (currently at "
+			<< curframe << "):").str(), "");
+		frame = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	if(frame < curframe) {
+		wxMessageBox(wxT("The movie is already past that point"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	runemufn([frame]() {
+		set_stop_at_frame(frame);
+	});
+}
 
 void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
 {
@@ -804,6 +876,36 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	}
 }
 
+void wxeditor_movie::_moviepanel::do_scroll_to_frame()
+{
+	uint64_t frame;
+	try {
+		std::string text = pick_text(m, "Frame", (stringfmt() << "Enter frame to scroll to:").str(), "");
+		frame = parse_value<uint64_t>(text);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(std::exception& e) {
+		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
+		return;
+	}
+	uint64_t wouldbe;
+	uint64_t low = 0;
+	uint64_t high = max_subframe;
+	while(low < high) {
+		wouldbe = (low + high) / 2;
+		if(subframe_to_frame[wouldbe] < frame)
+			low = wouldbe;
+		else if(subframe_to_frame[wouldbe] > frame)
+			high = wouldbe;
+		else
+			break;
+	}
+	while(wouldbe > 1 && subframe_to_frame[wouldbe - 1] == frame)
+		wouldbe--;
+	moviepos = wouldbe;
+	signal_repaint();
+}
+
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
 	wxMenuItem* tmpitem;
@@ -818,6 +920,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
 		return;
+	case wxID_APPEND_FRAMES:
+		do_append_frames();
+		return;
 	case wxID_INSERT_AFTER:
 		do_insert_frame_after(press_line);
 		return;
@@ -826,6 +931,15 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_DELETE_SUBFRAME:
 		do_delete_frame(press_line, false);
+		return;
+	case wxID_TRUNCATE:
+		do_truncate(press_line);
+		return;
+	case wxID_RUN_TO_FRAME:
+		do_set_stop_at_frame();
+		return;
+	case wxID_SCROLL_FRAME:
+		do_scroll_to_frame();
 		return;
 	case wxID_POSITION_LOCK:
 		if(!current_popup)
@@ -920,18 +1034,23 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(press_line >= first_nextframe() && press_line < linecount)
 		enable_delete_frame = true;
 	if(enable_toggle_button)
-		menu.Append(wxID_TOGGLE, wxT("Toggle " + title));
+		menu.Append(wxID_TOGGLE, towxstring("Toggle " + title));
 	if(enable_change_axis)
-		menu.Append(wxID_CHANGE, wxT("Change " + title));
+		menu.Append(wxID_CHANGE, towxstring("Change " + title));
 	if(enable_toggle_button || enable_change_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
 	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
+	menu.Append(wxID_APPEND_FRAMES, wxT("Append frames..."));
 	menu.AppendSeparator();
 	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
 	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
 	menu.AppendSeparator();
+	menu.Append(wxID_TRUNCATE, wxT("Truncate movie"))->Enable(enable_delete_subframe);
+	menu.AppendSeparator();
 outrange:
+	menu.Append(wxID_SCROLL_FRAME, wxT("Scroll to frame..."));
+	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),

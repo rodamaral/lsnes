@@ -12,9 +12,21 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+#include <windows.h>
+#endif
 
 namespace
 {
+	int lsnes_rename(const char* oldname, const char* newname)
+	{
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+		return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
+#else
+		return rename(oldname, newname);
+#endif
+	}
+
 	uint32_t read32(const unsigned char* buf, unsigned offset = 0, unsigned modulo = 4) throw()
 	{
 		return (uint32_t)buf[offset % modulo] |
@@ -439,12 +451,8 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		throw std::runtime_error("Failed to write central directory end marker to output file");
 	zipstream.close();
 	std::string backup = zipfile_path + ".backup";
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-	//Grumble, Windows seemingly can't do this atomically.
-	remove(backup.c_str());
-#endif
-	rename(zipfile_path.c_str(), backup.c_str());
-	if(rename(temp_path.c_str(), zipfile_path.c_str()) < 0)
+	lsnes_rename(zipfile_path.c_str(), backup.c_str());
+	if(lsnes_rename(temp_path.c_str(), zipfile_path.c_str()) < 0)
 		throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
 	committed = true;
 }
