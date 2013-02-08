@@ -564,29 +564,44 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	else if(subframe_to_frame[sfn] > curframe)
 		past = 0;
 	bool now = (subframe_to_frame[sfn] == curframe);
+	int xcord = -32768;
+	if(pressed)
+		xcord = press_x;
+
 	for(auto i : ctrlinfo) {
 		int rpast = past;
+		unsigned off = divcnt + 1;
+		unsigned idx = i.index;
+		frame_controls* _fcontrols = &fcontrols;
+		bool cselected = (xcord >= i.position_left + off && xcord < i.position_left + i.reserved + off);
 		if(rpast == -1) {
 			unsigned polls = fcontrols.read_pollcount(pv, i.index);
 			rpast = ((cffs + polls) > sfn) ? 1 : 0;
 		}
+		uint32_t bgc = 0xC0C0C0;
+		if(rpast)
+			bgc |= 0x0000FF;
+		if(now)
+			bgc |= 0xFF0000;
+		if(cselected)
+			bgc |= 0x00FF00;
+		if(bgc == 0xC0C0C0)
+			bgc = 0xFFFFFF;
 		if(i.type == -1) {
 			//Separator.
-			fb.write(i.title, 0, divcnt + 1 + i.position_left, y, 0x000000, now ? 0xFFC0C0 : 0xFFFFFF);
+			fb.write(i.title, 0, divcnt + 1 + i.position_left, y, 0x000000, 0xFFFFFF);
 		} else if(i.type == 0) {
 			//Button.
 			char c[2];
 			bool v = (fcontrols.read_index(f, i.index) != 0);
 			c[0] = v ? i.ch : ' ';
 			c[1] = 0;
-			fb.write(c, 0, divcnt + 1 + i.position_left, y, rpast ? 0x808080 : 0x000000,
-				 now ? 0xFFC0C0 : 0xFFFFFF);
+			fb.write(c, 0, divcnt + 1 + i.position_left, y, 0x000000, bgc);
 		} else if(i.type == 1) {
 			//Axis.
 			char c[7];
 			sprintf(c, "%6d", fcontrols.read_index(f, i.index));
-			fb.write(c, 0, divcnt + 1 + i.position_left, y, rpast ? 0x808080 : 0x000000,
-				 now ? 0xFFC0C0 : 0xFFFFFF);
+			fb.write(c, 0, divcnt + 1 + i.position_left, y, 0x000000, bgc);
 		}
 	}
 }
