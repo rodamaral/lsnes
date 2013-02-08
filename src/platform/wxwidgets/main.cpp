@@ -243,8 +243,10 @@ end:
 			} else
 				button_keys[r[2]] = r[1];
 		} else if(r = regex("PREFER[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			core_selections[r[1]] = r[2];
-			messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
+			if(r[2] != "") {
+				core_selections[r[1]] = r[2];
+				messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
+			}
 		} else
 			messages << "Unrecognized directive: " << line << std::endl;
 	}
@@ -313,7 +315,8 @@ end:
 		for(auto i : button_keys)
 			cfgfile << "BUTTON " << i.second << " " << i.first << std::endl;
 		for(auto i : core_selections)
-			cfgfile << "PREFER " << i.first << " " << i.second << std::endl;
+			if(i.second != "")
+				cfgfile << "PREFER " << i.first << " " << i.second << std::endl;
 		//Last save.
 		std::ofstream lsave(get_config_path() + "/" + our_rom_name + ".ls");
 		lsave << last_save;
