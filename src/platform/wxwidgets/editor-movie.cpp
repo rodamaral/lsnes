@@ -1095,6 +1095,9 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 	int lines, width, height;
 	wxeditor_movie* m2 = m;
 	uint64_t old_cached_cffs = cached_cffs;
+	int prev_width, prev_height;
+	bool done_again = false;
+do_again:
 	runemufn([&lines, &width, &height, m2, this]() {
 		lines = this->get_lines();
 		if(lines < lines_to_display)
@@ -1106,13 +1109,16 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		width = x.first;
 		height = x.second;
 	});
-	int prev_width = new_width;
-	int prev_height = new_height;
+	if(old_cached_cffs != cached_cffs && position_locked && !done_again) {
+		moviepos = cached_cffs;
+		done_again = true;
+		goto do_again;
+	}
+	prev_width = new_width;
+	prev_height = new_height;
 	new_width = width;
 	new_height = height;
 	movielines = lines;
-	if(old_cached_cffs != cached_cffs && position_locked)
-		moviepos = cached_cffs;
 	if(s)
 		s->SetScrollbar(moviepos, lines_to_display, lines, lines_to_display - 1);
 	auto size = fb.get_pixels();
