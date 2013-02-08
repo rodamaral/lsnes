@@ -46,7 +46,7 @@ namespace
 		const PaStreamCallbackTimeInfo* time_info, PaStreamCallbackFlags flags, void* user)
 	{
 		const unsigned voice_blocksize = 256;
-		if(output) {
+		if(output && current_pfreq) {
 			int16_t voicebuf[voice_blocksize];
 			unsigned long pframe_count = frame_count;
 			int16_t* _output = reinterpret_cast<int16_t*>(output);
@@ -64,7 +64,7 @@ namespace
 				pframe_count -= bsize;
 			}
 		}
-		if(input) {
+		if(input && current_rfreq) {
 			const int16_t* _input = reinterpret_cast<const int16_t*>(input);
 			unsigned long rframe_count = frame_count;
 			float voicebuf2[voice_blocksize];
@@ -342,7 +342,8 @@ namespace
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_r);
 		current_rfreq = input ? si->sampleRate : 0;
 		si = Pa_GetStreamInfo(stream_p);
-		current_rfreq = output ? si->sampleRate : 0;
+		current_pfreq = output ? si->sampleRate : 0;
+		current_rfreq = input ? si->sampleRate : 0;
 		current_rdev = dev;
 		current_pdev = dev;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
