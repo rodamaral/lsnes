@@ -81,7 +81,7 @@ for i = 1,#ports do
 		end
 		s = s .. "};"
 		print(s);
-		print("\tport_controller "..csym2.." = {\""..controller.name.."\", \""..controller.class.."\", "..
+		print("\tport_controller "..csym2.." = {\""..controller.class.."\", \""..controller.name.."\", "..
 			#bsyms..", "..csym.."};");
 	end
 	local s = "\tport_controller* "..psym.."[] = {";
