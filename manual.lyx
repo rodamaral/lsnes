@@ -3927,7 +3927,8 @@ Clicking on cell in future (indicated by lack of redish background) toggles
 \end_layout
 
 \begin_layout Itemize
-Dragging vertically toggles sequence of buttons.
+Dragging vertically toggles sequence of buttons or changes a sequence of
+ axis values.
 \end_layout
 
 \begin_layout Subsection

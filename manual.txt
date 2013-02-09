@@ -2012,7 +2012,8 @@ Called just after unsafe rewind has occured.
   background) toggles it (if it is a button) or prompts for a 
   value (if it is an axis)
 
-• Dragging vertically toggles sequence of buttons.
+• Dragging vertically toggles sequence of buttons or changes a 
+  sequence of axis values.
 
 9.2 Right button actions
 

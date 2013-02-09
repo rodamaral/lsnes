@@ -361,7 +361,7 @@ private:
 		void on_mouse1(unsigned x, unsigned y, bool polarity);
 		void on_mouse2(unsigned x, unsigned y, bool polarity);
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
-		void do_alter_axis(unsigned idx, uint64_t row);
+		void do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_append_frames(uint64_t count);
 		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
@@ -672,10 +672,11 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		max_subframe = _press_line;	//Reparse.
 }
 
-void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
+void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2)
 {
 	frame_controls* _fcontrols = &fcontrols;
-	uint64_t line = row;
+	uint64_t line = row1;
+	uint64_t line2 = row2;
 	short value;
 	bool valid = true;
 	runemufn([idx, line, &value, _fcontrols, &valid]() {
@@ -703,13 +704,17 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
 		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
 		return;
 	}
-	runemufn([idx, line, value, _fcontrols]() {
+	if(line > line2)
+		std::swap(line, line2);
+	runemufn([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-		if(line < fedit || line >= fv.size())
-			return;
-		controller_frame cf = fv[line];
-		_fcontrols->write_index(cf, idx, value);
+		for(uint64_t i = line; i <= line2; i++) {
+			if(i < fedit || i >= fv.size())
+				continue;
+			controller_frame cf = fv[i];
+			_fcontrols->write_index(cf, idx, value);
+		}
 	});
 }
 
@@ -898,19 +903,12 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 		unsigned off = divcnt + 1;
 		unsigned idx = i.index;
 		frame_controls* _fcontrols = &fcontrols;
-		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0) {
-				//Button.
-				if(press_x == x) {
-					//Drag action.
-					do_toggle_buttons(idx, press_line, line);
-				}
-			} else if(i.type == 1) {
-				if(press_x == x && press_line == line) {
-					//Click change value.
-					do_alter_axis(idx, line);
-				}
-			}
+		if((press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) &&
+			(x >= i.position_left + off && x < i.position_left + i.reserved + off)) {
+			if(i.type == 0)
+				do_toggle_buttons(idx, press_line, line);
+			else if(i.type == 1)
+				do_alter_axis(idx, press_line, line);
 		}
 	}
 }
@@ -960,7 +958,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		do_toggle_buttons(press_index, press_line, press_line);
 		return;
 	case wxID_CHANGE:
-		do_alter_axis(press_index, press_line);
+		do_alter_axis(press_index, press_line, press_line);
 		return;
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
