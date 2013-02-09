@@ -151,10 +151,6 @@ struct moviefile
  */
 	int64_t movie_rtc_subsecond;
 /**
- * Movie prefix.
- */
-	std::string prefix;
-/**
  * Start paused flag.
  */
 	bool start_paused;
@@ -179,7 +175,5 @@ struct moviefile
  */
 	uint64_t get_movie_length() throw();
 };
-
-std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc);
 
 #endif

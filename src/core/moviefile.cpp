@@ -416,9 +416,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		read_linefile(r, (stringfmt() << "slot" << (char)(base + i) << "xml.sha256").str(),
 			romxml_sha256[i + 1], true);
 	}
-	read_linefile(r, "prefix", prefix, true);
 	read_subtitles(r, "subtitles", subtitles);
-	prefix = sanitize_prefix(prefix);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
 	read_numeric_file(r, "starttime.second", movie_rtc_second, true);
@@ -482,7 +480,6 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 			romxml_sha256[i + 1], true);
 	}
 	write_subtitles(w, "subtitles", subtitles);
-	write_linefile(w, "prefix", prefix, true);
 	for(auto i : movie_sram)
 		write_raw_file(w, "moviesram." + i.first, i.second);
 	write_numeric_file(w, "starttime.second", movie_rtc_second);
@@ -533,20 +530,4 @@ uint64_t moviefile::get_movie_length() throw()
 	frames %= _magic[BLOCK_FRAMES];
 	t += frames * _magic[STEP_W] + (frames * _magic[STEP_N] / _magic[BLOCK_FRAMES]);
 	return t;
-}
-
-std::string sanitize_prefix(const std::string& in) throw(std::bad_alloc)
-{
-	std::ostringstream s;
-	bool any = false;
-	for(size_t i = 0; i < in.length(); i++) {
-		char ch = in[i];
-		if(ch < 33 || ch == '$' || ch == ':' || ch == '/' || ch == '\\')
-			continue;	//Always disallowed.
-		if(ch == '.' && !any)
-			continue;	//Sometimes disallowed.
-		any = true;
-		s << ch;
-	}
-	return s.str();
 }

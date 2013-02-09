@@ -18,6 +18,7 @@ public:
 private:
 	wxTextCtrl* projectname;
 	wxTextCtrl* authors;
+	wxTextCtrl* projectpfx;
 	wxButton* okbutton;
 	wxButton* cancel;
 };
@@ -27,7 +28,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit game name & authors"), wxDefaultPosition, wxSize(-1, -1))
 {
 	Centre();
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(4, 1, 0, 0);
+	wxFlexGridSizer* top_s = new wxFlexGridSizer(5, 1, 0, 0);
 	SetSizer(top_s);
 
 	wxFlexGridSizer* c_s = new wxFlexGridSizer(1, 2, 0, 0);
@@ -40,6 +41,12 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 		wxTE_MULTILINE), 0, wxGROW);
 	authors->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 		wxCommandEventHandler(wxeditor_authors::on_authors_change), NULL, this);
+
+	wxFlexGridSizer* c2_s = new wxFlexGridSizer(1, 2, 0, 0);
+	c2_s->Add(new wxStaticText(this, wxID_ANY, wxT("Save slot prefix:")), 0, wxGROW);
+	c2_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(get_mprefix_for_project()),
+		wxDefaultPosition, wxSize(300, -1)), 1, wxGROW);
+	top_s->Add(c2_s);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
@@ -103,6 +110,8 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			newauthors.push_back(split_author(l));
 	}
 	runemufn([newauthors]() { our_movie.authors = newauthors; });
+	std::string pfx = tostdstring(projectpfx->GetValue());
+	set_mprefix_for_project(pfx);
 	EndModal(wxID_OK);
 }
 

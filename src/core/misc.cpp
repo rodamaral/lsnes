@@ -69,6 +69,24 @@ namespace
 			return 'B';
 		return 'N';
 	}
+
+	//% is intentionally missing.
+	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+		"^&'@{}[],$?!-#().+~_";
+	const char* hexes = "0123456789ABCDEF";
+}
+
+std::string safe_filename(const std::string& str)
+{
+	std::ostringstream o;
+	for(size_t i = 0; i < str.length(); i++) {
+		unsigned char ch = static_cast<unsigned char>(str[i]);
+		if(strchr(allowed_filename_chars, ch))
+			o << str[i];
+		else
+			o << "%" << hexes[ch / 16] << hexes[ch % 16];
+	}
+	return o.str();
 }
 
 std::string get_random_hexstring(size_t length) throw(std::bad_alloc)

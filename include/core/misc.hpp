@@ -112,4 +112,9 @@ bool in_global_ctors();
  */
 void reached_main();
 
+/**
+ * Clean up filename from dangerous chars
+ */
+std::string safe_filename(const std::string& str);
+
 #endif

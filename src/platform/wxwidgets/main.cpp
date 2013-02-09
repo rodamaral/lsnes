@@ -207,6 +207,13 @@ end:
 			messages << "Calibration of " << r[1] << " changed: mode=" << calibration_to_mode(c)
 				<< " limits=" << c.left << "(" << c.center << ")" << c.right
 				<< " null=" << c.nullwidth << std::endl;
+		} else if(r = regex("SET[ \t]+jukebox-size[ \t]+([0-9]+)", line)) {
+			try {
+				set_jukebox_size(parse_value<size_t>(r[1]));
+				messages << "Number of save slots set to " << r[1] << std::endl;
+			} catch(std::exception& e) {
+				messages << "Can't set jukebox-size: " << e.what() << std::endl;
+			}
 		} else if(r = regex("UNSET[ \t]+([^ \t]+)[ \t]*", line)) {
 			try {
 				lsnes_set.blank(r[1]);
@@ -287,6 +294,7 @@ end:
 		}
 		for(auto i : lsnes_set.get_invalid_values())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
+		cfgfile << "SET jukebox-size " << get_jukebox_size() << std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {
 			std::string old_alias_value = lsnes_cmd.get_alias_for(i);

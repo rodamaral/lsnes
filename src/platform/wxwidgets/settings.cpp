@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/platform.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/mainloop.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
 
@@ -38,9 +39,6 @@ extern "C"
 #define ROMPATH "rompath"
 #define MOVIEPATH "moviepath"
 #define SLOTPATH "slotpath"
-#define SAVESLOTS "jukebox-size"
-
-
 
 const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Experimential", "Point", "Area",
 	"Bicubic-Linear", "Gauss", "Sinc", "Lanczos", "Spline"};
@@ -878,24 +876,31 @@ void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
 	else if(e.GetId() == wxID_HIGHEST + 3)
 		name = MOVIEPATH;
 	else if(e.GetId() == wxID_HIGHEST + 4)
-		name = SAVESLOTS;
+		;
 	else if(e.GetId() == wxID_HIGHEST + 5)
 		name = SLOTPATH;
 	else
 		return;
-	std::string val = lsnes_set.get(name);
+	std::string val;
 	try {
-		if(e.GetId() == wxID_HIGHEST + 4)
+		if(e.GetId() == wxID_HIGHEST + 4) {
+			val = (stringfmt() << get_jukebox_size()).str();
 			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
-		else
+		} else {
+			val = lsnes_set.get(name);
 			val = pick_text(this, "Change path to", "Enter new path:", val);
+		}
 	} catch(...) {
 		refresh();
 		return;
 	}
 	std::string err;
 	try {
-		lsnes_set.set(name, val);
+		if(e.GetId() == wxID_HIGHEST + 4) {
+			set_jukebox_size(parse_value<size_t>(val));
+		} else {
+			lsnes_set.set(name, val);
+		}
 	} catch(std::exception& e) {
 		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
 	}
@@ -908,7 +913,7 @@ void wxeditor_esettings_paths::refresh()
 	fpath = lsnes_set.get(FIRMWAREPATH);
 	rpath = lsnes_set.get(ROMPATH);
 	spath = lsnes_set.get(MOVIEPATH);
-	nslot = lsnes_set.get(SAVESLOTS);
+	nslot = (stringfmt() << get_jukebox_size()).str();
 	lpath = lsnes_set.get(SLOTPATH);
 	rompath->SetLabel(towxstring(rpath));
 	firmpath->SetLabel(towxstring(fpath));

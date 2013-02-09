@@ -44,5 +44,8 @@ extern movie_logic movb;
  */
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs);
 
+std::string get_mprefix_for_project();
+void set_mprefix_for_project(const std::string& pfx);
+void set_mprefix_for_project(const std::string& prjid, const std::string& pfx);
 
 #endif

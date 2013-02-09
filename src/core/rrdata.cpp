@@ -67,8 +67,6 @@ struct rrdata::instance& rrdata::instance::operator++() throw()
 	return *this;
 }
 
-const char* hexes = "0123456789ABCDEF";
-
 namespace
 {
 	std::set<rrdata::instance> rrset;
@@ -77,22 +75,7 @@ namespace
 	bool handle_open;
 	std::string current_project;
 	bool lazy_mode;
-	//% is intentionally missing.
-	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-		"^&'@{}[],$?!-#().+~_";
-
-	std::string safe_filename(const std::string& str)
-	{
-		std::ostringstream o;
-		for(size_t i = 0; i < str.length(); i++) {
-			unsigned char ch = static_cast<unsigned char>(str[i]);
-			if(strchr(allowed_filename_chars, ch))
-				o << str[i];
-			else
-				o << "%" << hexes[ch / 16] << hexes[ch % 16];
-		}
-		return o.str();
-	}
+	const char* hexes = "0123456789ABCDEF";
 }
 
 void rrdata::read_base(const std::string& project, bool lazy) throw(std::bad_alloc)

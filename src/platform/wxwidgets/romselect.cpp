@@ -319,8 +319,8 @@ struct moviefile wxwin_project::make_movie()
 	}
 	f.coreversion = our_rom->rtype->get_core_identifier();
 	f.gamename = tostdstring(projectname->GetValue());
-	f.prefix = sanitize_prefix(tostdstring(prefix->GetValue()));
 	f.projectid = get_random_hexstring(40);
+	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
 	f.rerecords = "0";
 	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
 		f.romimg_sha256[i] = our_rom->romimg[i].sha_256;

@@ -66,7 +66,7 @@ namespace
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
 	//Save jukebox.
-	numeric_setting jukebox_size(lsnes_set, "jukebox-size", 0, 999, 12);
+	size_t jukebox_size = 12;
 	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
@@ -293,14 +293,10 @@ void update_movie_state()
 		_status.set("Flags", x.str());
 	}
 	if(jukebox_size > 0)
-		_status.set("Saveslot", translate_name_mprefix(save_jukebox_name(save_jukebox_pointer)));
+		_status.set("Saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str()); 
 	else
 		_status.erase("Saveslot");
-	{
-		std::ostringstream x;
-		x << 100 * get_realized_multiplier();
-		_status.set("SPD%", x.str());
-	}
+	_status.set("SPD%", (stringfmt() << (100 * get_realized_multiplier())).str());
 	do_watch_memory();
 
 	controller_frame c;
@@ -393,24 +389,20 @@ public:
 	}
 };
 
+void set_jukebox_size(size_t size)
+{
+	jukebox_size = size;
+	if(save_jukebox_pointer >= jukebox_size)
+		save_jukebox_pointer = 0;
+}
+
+size_t get_jukebox_size()
+{
+	return jukebox_size;
+}
+
 namespace
 {
-	class jukebox_size_listener : public setting_listener
-	{
-	public:
-		jukebox_size_listener() {}
-		~jukebox_size_listener() throw() {}
-		void blanked(setting_group& group, const std::string& setting) {}
-		void changed(setting_group& group, const std::string& setting, const std::string& value)
-		{
-			if(setting == "jukebox-size") {
-				if(save_jukebox_pointer >= jukebox_size)
-					save_jukebox_pointer = 0;
-				update_movie_state();
-			}
-		}
-	} _jukebox_size_listener;
-
 	function_ptr_command<> count_rerecords(lsnes_cmd, "count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -890,8 +882,6 @@ namespace
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	//Init listners.
-	lsnes_set.add_listener(_jukebox_size_listener);
 	//Basic initialization.
 	voicethread_task();
 	init_special_screens();

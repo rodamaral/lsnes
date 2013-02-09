@@ -58,45 +58,18 @@ namespace
 
 	path_setting slotpath_setting(lsnes_set, "slotpath");
 
-	class projectprefix_setting : public setting
+	mutex_class mprefix_lock;
+	std::string mprefix;
+	bool mprefix_valid;
+
+	std::string get_mprefix()
 	{
-	public:
-		bool _set;
-		std::string prefix;
-		projectprefix_setting() throw(std::bad_alloc)
-			: setting(lsnes_set, "$project")
-		{
-			_set = false;
-		}
-		bool blank(bool really) throw(std::bad_alloc, std::runtime_error)
-		{
-			if(!really)
-				return true;
-			_set = false;
-			return true;
-		}
-		bool is_set() throw()
-		{
-			return _set;
-		}
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			prefix = value;
-			_set = true;
-		}
-		std::string get() throw(std::bad_alloc)
-		{
-			return prefix;
-		}
-		operator std::string() throw()
-		{
-			lock_holder lck(this);
-			if(_set)
-				return prefix + "-";
-			else
-				return "movieslot";
-		}
-	} mprefix;
+		umutex_class h(mprefix_lock);
+		if(!mprefix_valid)
+			return "movieslot";
+		else
+			return mprefix + "-";
+	}
 
 	function_ptr_command<const std::string&> dump_coresave(lsnes_cmd, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
@@ -126,6 +99,43 @@ namespace
 			return false;
 		}
 	}
+
+	void set_mprefix(const std::string& pfx)
+	{
+		umutex_class h(mprefix_lock);
+		mprefix_valid = (pfx != "");
+		mprefix = pfx;
+	}
+
+	std::string get_mprefix_for_project(const std::string& prjid)
+	{
+		std::string filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
+		std::ifstream strm(filename);
+		if(!strm)
+			return "";
+		std::string pfx;
+		std::getline(strm, pfx);
+		return strip_CR(pfx);
+	}
+}
+
+
+std::string get_mprefix_for_project()
+{
+	return get_mprefix_for_project(our_movie.projectid);
+}
+
+void set_mprefix_for_project(const std::string& prjid, const std::string& pfx)
+{
+	std::string filename = get_config_path() + "/" + safe_filename(prjid) + ".pfx";
+	std::ofstream strm(filename);
+	strm << pfx << std::endl;
+}
+
+void set_mprefix_for_project(const std::string& pfx)
+{
+	set_mprefix_for_project(our_movie.projectid, pfx);
+	set_mprefix(pfx);
 }
 
 std::string translate_name_mprefix(std::string original, bool forio)
@@ -134,10 +144,9 @@ std::string translate_name_mprefix(std::string original, bool forio)
 	if(prefixloc < original.length()) {
 		std::string pprf = forio ? (slotpath_setting.get() + "/") : std::string("");
 		if(prefixloc == 0)
-			return pprf + static_cast<std::string>(mprefix) + original.substr(prefixloc + 10);
+			return pprf + get_mprefix() + original.substr(prefixloc + 10);
 		else
-			return original.substr(0, prefixloc) + static_cast<std::string>(mprefix) +
-				original.substr(prefixloc + 10);
+			return original.substr(0, prefixloc) + get_mprefix() + original.substr(prefixloc + 10);
 	} else
 		return original;
 }
@@ -173,8 +182,6 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
-		if(mprefix._set)
-			our_movie.prefix = sanitize_prefix(mprefix.prefix);
 		our_movie.is_savestate = true;
 		our_movie.sram = our_rom->rtype->save_sram();
 		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
@@ -211,8 +218,6 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
-		if(mprefix._set)
-			our_movie.prefix = sanitize_prefix(static_cast<std::string>(mprefix.prefix));
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
 		our_movie.save(filename2, savecompression);
@@ -380,9 +385,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		our_movie.is_savestate = false;
 		our_movie.host_memory.clear();
 	}
-	if(our_movie.prefix != "" && lmode != LOAD_STATE_PRESERVE) {
-		mprefix.prefix = our_movie.prefix;
-		mprefix._set = true;
+	if(lmode != LOAD_STATE_PRESERVE) {
+		set_mprefix(get_mprefix_for_project(our_movie.projectid));
 	}
 	movb.get_movie() = newmovie;
 	//Activate RW mode if needed.
