@@ -95,7 +95,7 @@ gambatte (for gambatte core)
 
 \begin_deeper
 \begin_layout Enumerate
-SVN r320
+SVN r320, r358 or r364
 \end_layout
 
 \begin_layout Enumerate
@@ -144,17 +144,15 @@ libao (libao sound only)
 \end_layout
 
 \begin_layout Enumerate
-Lua (if Lua support is needed).
+Lua (if Lua support is needed) version 5.1.X or 5.2.X
 \end_layout
 
-\begin_deeper
-\begin_layout Itemize
-Version 5.1.X or 5.2X.
-\end_layout
-
-\end_deeper
 \begin_layout Enumerate
-G++ 4.6 (bsnes doesn't seem to like 4.7, status for gambatte is unknown).
+G++ 4.6 or 4.7
+\end_layout
+
+\begin_layout Enumerate
+libopus (optional, for commentary track tool)
 \end_layout
 
 \begin_layout Section
@@ -3899,6 +3897,102 @@ Called just after unsafe rewind has occured.
 \end_layout
 
 \begin_layout Section
+Movie editor
+\end_layout
+
+\begin_layout Itemize
+The editor edits in-memory movie.
+\end_layout
+
+\begin_layout Itemize
+Because past can't be edited and readwrite mode doesn't allow future, editing
+ only works in 
+\emph on
+read only
+\emph default
+ mode.
+\end_layout
+
+\begin_layout Itemize
+Keyboard triggers the normal hotkeys and bindings.
+\end_layout
+
+\begin_layout Subsection
+Left button actions
+\end_layout
+
+\begin_layout Itemize
+Clicking on cell in future (indicated by lack of redish background) toggles
+ it (if it is a button) or prompts for a value (if it is an axis)
+\end_layout
+
+\begin_layout Itemize
+Dragging vertically toggles sequence of buttons.
+\end_layout
+
+\begin_layout Subsection
+Right button actions
+\end_layout
+
+\begin_layout Standard
+The right mouse button pops up a context-sensitive menu:
+\end_layout
+
+\begin_layout Itemize
+Toggle <something>: Toggle this button
+\end_layout
+
+\begin_layout Itemize
+Change <something>: Change this axis value
+\end_layout
+
+\begin_layout Itemize
+Insert frame after: Insert a frame after this frame
+\end_layout
+
+\begin_layout Itemize
+Append frame: Append a frame to movie
+\end_layout
+
+\begin_layout Itemize
+Append frames: Append specified number of frames to movie
+\end_layout
+
+\begin_layout Itemize
+Delete frame: Delete this frame
+\end_layout
+
+\begin_layout Itemize
+Delete subframe: Delete this subframe
+\end_layout
+
+\begin_layout Itemize
+Truncate movie: Delete this subframe and everything after it.
+\end_layout
+
+\begin_layout Itemize
+Scroll to frame: Prompt for a frame and scroll the display to that frame.
+\end_layout
+
+\begin_layout Itemize
+Scroll to current frame: Scroll the display to current position
+\end_layout
+
+\begin_layout Itemize
+Run to frame: Prompts for frame and runs the emulation to that frame.
+\end_layout
+
+\begin_layout Itemize
+Change number of lines visible: Change the height of the movie display (1
+ to 255).
+\end_layout
+
+\begin_layout Itemize
+Lock scroll to playback: While playing back or rewinding movies, the display
+ will follow if enabled.
+\end_layout
+
+\begin_layout Section
 Memory watch expression syntax
 \end_layout
 
@@ -4031,6 +4125,11 @@ D : read_unsigned_dword(a)
 
 \begin_layout Itemize
 C0x<number>z : Push number <number> (hexadecimal) to stack.
+\end_layout
+
+\begin_layout Itemize
+H<digit> : Set hexadecimal mode with specified number of digits (use A-G
+ for 10-16 digits).
 \end_layout
 
 \begin_layout Itemize
