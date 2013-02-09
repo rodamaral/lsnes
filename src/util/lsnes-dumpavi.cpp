@@ -3,6 +3,7 @@
 #include "core/advdumper.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/mainloop.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
 #include "interface/romtype.hpp"
@@ -258,9 +259,9 @@ int main(int argc, char** argv)
 
 	for(auto i : cmdline) {
 		regex_results r;
-		if(r = regex("--firmware-path=(.*)", i) {
+		if(r = regex("--firmware-path=(.*)", i)) {
 			try {
-				set_firmwarpath(r[1]);
+				set_firmwarepath(r[1]);
 				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
