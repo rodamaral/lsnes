@@ -312,6 +312,18 @@ pattern, the pattern restarts from the beginning.
 
 Force a repaint.
 
+5.3.25 toggle-pause-on-end
+
+Toggle pause on end flag.
+
+5.3.26 set-pause-on-end
+
+Set pause on end flag.
+
+5.3.27 clear-pause-on-end
+
+Clear pause on end flag.
+
 5.4 Save jukebox 
 
 5.4.1 cycle-jukebox-backward

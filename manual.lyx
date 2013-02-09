@@ -674,6 +674,30 @@ repaint
 Force a repaint.
 \end_layout
 
+\begin_layout Subsubsection
+toggle-pause-on-end
+\end_layout
+
+\begin_layout Standard
+Toggle pause on end flag.
+\end_layout
+
+\begin_layout Subsubsection
+set-pause-on-end
+\end_layout
+
+\begin_layout Standard
+Set pause on end flag.
+\end_layout
+
+\begin_layout Subsubsection
+clear-pause-on-end
+\end_layout
+
+\begin_layout Standard
+Clear pause on end flag.
+\end_layout
+
 \begin_layout Subsection
 Save jukebox 
 \end_layout

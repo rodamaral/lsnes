@@ -678,6 +678,18 @@ namespace
 			messages << "Pause-on-end is now " << (pause_on_end ? "ON" : "OFF") << std::endl;
 		});
 
+	function_ptr_command<> spon(lsnes_cmd, "set-pause-on-end", "Set pause on end", "Set pause on end\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			pause_on_end = true;
+			messages << "Pause-on-end is now ON" << std::endl;
+		});
+
+	function_ptr_command<> cpon(lsnes_cmd, "clear-pause-on-end", "Clear pause on end", "Clear pause on end\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			pause_on_end = false;
+			messages << "Pause-on-end is now OFF" << std::endl;
+		});
+
 	function_ptr_command<> rewind_movie(lsnes_cmd, "rewind-movie", "Rewind movie to the beginning",
 		"Syntax: rewind-movie\nRewind movie to the beginning\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
