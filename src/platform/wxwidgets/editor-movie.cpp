@@ -31,6 +31,7 @@ enum
 	wxID_APPEND_FRAMES,
 	wxID_TRUNCATE,
 	wxID_SCROLL_FRAME,
+	wxID_SCROLL_CURRENT_FRAME
 };
 
 void update_movie_state();
@@ -338,7 +339,7 @@ private:
 		void on_mouse1(unsigned x, unsigned y, bool polarity);
 		void on_mouse2(unsigned x, unsigned y, bool polarity);
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
-		void do_alter_axis(unsigned idx, uint64_t row);
+		void do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_append_frames(uint64_t count);
 		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
@@ -346,6 +347,7 @@ private:
 		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
 		void do_scroll_to_frame();
+		void do_scroll_to_current_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -572,9 +574,9 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 			//Button.
 			char c[2];
 			bool v = (fcontrols.read_index(f, i.index) != 0);
-			c[0] = v ? i.ch : ' ';
+			c[0] = i.ch;
 			c[1] = 0;
-			fb.write(c, 0, divcnt + 1 + i.position_left, y, 0x000000, bgc);
+			fb.write(c, 0, divcnt + 1 + i.position_left, y, v ? 0x000000 : 0xC8C8C8, bgc);
 		} else if(i.type == 1) {
 			//Axis.
 			char c[7];
@@ -648,10 +650,11 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		max_subframe = _press_line;	//Reparse.
 }
 
-void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
+void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2)
 {
 	frame_controls* _fcontrols = &fcontrols;
-	uint64_t line = row;
+	uint64_t line = row1;
+	uint64_t line2 = row2;
 	short value;
 	bool valid = true;
 	runemufn([idx, line, &value, _fcontrols, &valid]() {
@@ -679,13 +682,17 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row)
 		wxMessageBox(wxT("Invalid value"), _T("Error"), wxICON_EXCLAMATION | wxOK, m);
 		return;
 	}
-	runemufn([idx, line, value, _fcontrols]() {
+	if(line > line2)
+		std::swap(line, line2);
+	runemufn([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
-		if(line < fedit || line >= fv.size())
-			return;
-		controller_frame cf = fv[line];
-		_fcontrols->write_index(cf, idx, value);
+		for(uint64_t i = line; i <= line2; i++) {
+			if(i < fedit || i >= fv.size())
+				continue;
+			controller_frame cf = fv[i];
+			_fcontrols->write_index(cf, idx, value);
+		}
 	});
 }
 
@@ -874,19 +881,12 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 		unsigned off = divcnt + 1;
 		unsigned idx = i.index;
 		frame_controls* _fcontrols = &fcontrols;
-		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0) {
-				//Button.
-				if(press_x == x) {
-					//Drag action.
-					do_toggle_buttons(idx, press_line, line);
-				}
-			} else if(i.type == 1) {
-				if(press_x == x && press_line == line) {
-					//Click change value.
-					do_alter_axis(idx, line);
-				}
-			}
+		if((press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) &&
+			(x >= i.position_left + off && x < i.position_left + i.reserved + off)) {
+			if(i.type == 0)
+				do_toggle_buttons(idx, press_line, line);
+			else if(i.type == 1)
+				do_alter_axis(idx, press_line, line);
 		}
 	}
 }
@@ -921,6 +921,12 @@ void wxeditor_movie::_moviepanel::do_scroll_to_frame()
 	signal_repaint();
 }
 
+void wxeditor_movie::_moviepanel::do_scroll_to_current_frame()
+{
+	moviepos = cached_cffs;
+	signal_repaint();
+}
+
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
 	wxMenuItem* tmpitem;
@@ -930,7 +936,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		do_toggle_buttons(press_index, press_line, press_line);
 		return;
 	case wxID_CHANGE:
-		do_alter_axis(press_index, press_line);
+		do_alter_axis(press_index, press_line, press_line);
 		return;
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
@@ -955,6 +961,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_SCROLL_FRAME:
 		do_scroll_to_frame();
+		return;
+	case wxID_SCROLL_CURRENT_FRAME:
+		do_scroll_to_current_frame();
 		return;
 	case wxID_POSITION_LOCK:
 		if(!current_popup)
@@ -1065,6 +1074,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.AppendSeparator();
 outrange:
 	menu.Append(wxID_SCROLL_FRAME, wxT("Scroll to frame..."));
+	menu.Append(wxID_SCROLL_CURRENT_FRAME, wxT("Scroll to current frame"));
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
