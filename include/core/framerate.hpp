@@ -3,6 +3,19 @@
 
 #include <cstdint>
 
+/**
+ * Set the target speed multiplier.
+ *
+ * Parameter multiplier: The multiplier target. May be INFINITE.
+ */
+void set_speed_multiplier(double multiplier) throw();
+
+/**
+ * Get the target speed multiplier.
+ *
+ * Returns: The multiplier. May be INFINITE.
+ */
+double get_speed_multiplier() throw();
 
 /**
  * Sets the nominal frame rate. Framerate limiting tries to maintain the nominal framerate when there is no other
@@ -11,11 +24,11 @@
 void set_nominal_framerate(double fps) throw();
 
 /**
- * Returns the current realized framerate.
+ * Returns the current realized framerate multiplier.
  *
- * returns: The framerate the system is currently archiving.
+ * returns: The framerate multiplier the system is currently archiving.
  */
-double get_framerate() throw();
+double get_realized_multiplier() throw();
 
 /**
  * Freeze time.

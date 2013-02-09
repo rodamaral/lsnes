@@ -265,11 +265,10 @@ namespace
 
 	void set_speed(double target)
 	{
-		std::string v = (stringfmt() << target).str();
 		if(target < 0)
-			lsnes_set.set("targetfps", "infinite");
+			set_speed_multiplier(std::numeric_limits<double>::infinity());
 		else
-			lsnes_set.set("targetfps", v);
+			set_speed_multiplier(target / 100);
 	}
 
 	class autohold_menu;
@@ -1165,10 +1164,20 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_SET_SPEED: {
 		bool bad = false;
-		std::string value = lsnes_set.is_set("targetfps") ? lsnes_set.get("targetfps") : "";
+		std::string value = "infinite";
+		double val = get_speed_multiplier();
+		if(!(val == std::numeric_limits<double>::infinity()))
+			value = (stringfmt() << (100 * val)).str();
 		value = pick_text(this, "Set speed", "Enter percentage speed (or \"infinite\"):", value);
 		try {
-			lsnes_set.set("targetfps", value);
+			if(value == "infinite")
+				set_speed_multiplier(std::numeric_limits<double>::infinity());
+			else {
+				double v = parse_value<double>(value) / 100;
+				if(v <= 0.0001)
+					throw 42;
+				set_speed_multiplier(v);
+			}
 		} catch(...) {
 			wxMessageBox(wxT("Invalid speed"), _T("Error"), wxICON_EXCLAMATION | wxOK, this);
 		}

@@ -298,7 +298,7 @@ void update_movie_state()
 		_status.erase("Saveslot");
 	{
 		std::ostringstream x;
-		x << get_framerate();
+		x << 100 * get_realized_multiplier();
 		_status.set("SPD%", x.str());
 	}
 	do_watch_memory();
