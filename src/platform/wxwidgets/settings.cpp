@@ -2,6 +2,7 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/mainloop.hpp"
+#include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
 
@@ -35,10 +36,6 @@ extern "C"
 #define AMODE_PRESSURE_0P "Pressure 0 to +"
 #define AMODE_PRESSURE_PM "Pressure + to -"
 #define AMODE_PRESSURE_P0 "Pressure + to 0"
-#define FIRMWAREPATH "firmwarepath"
-#define ROMPATH "rompath"
-#define MOVIEPATH "moviepath"
-#define SLOTPATH "slotpath"
 
 const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Experimential", "Point", "Area",
 	"Bicubic-Linear", "Gauss", "Sinc", "Lanczos", "Spline"};
@@ -811,12 +808,17 @@ void wxeditor_esettings_joystick::refresh()
 	Fit();
 }
 
-class wxeditor_esettings_paths : public wxPanel
+class wxeditor_esettings_settings : public wxPanel
 {
 public:
-	wxeditor_esettings_paths(wxWindow* parent);
-	~wxeditor_esettings_paths();
+	wxeditor_esettings_settings(wxWindow* parent);
+	~wxeditor_esettings_settings();
 	void on_configure(wxCommandEvent& e);
+	wxCheckBox* hflip;
+	wxCheckBox* vflip;
+	wxCheckBox* rotate;
+	wxCheckBox* pause_oe;
+	wxCheckBox* readonly_preserve;
 private:
 	void refresh();
 	wxStaticText* rompath;
@@ -825,142 +827,58 @@ private:
 	wxStaticText* slotpath;
 	wxStaticText* slots;
 	wxFlexGridSizer* top_s;
+	wxStaticText* xscale;
+	wxStaticText* yscale;
+	wxStaticText* algo;
+	wxStaticText* atimeout;
+	wxStaticText* _savecompression;
 };
 
-wxeditor_esettings_paths::wxeditor_esettings_paths(wxWindow* parent)
+wxeditor_esettings_settings::wxeditor_esettings_settings(wxWindow* parent)
 	: wxPanel(parent, -1)
 {
 	wxButton* tmp;
-	top_s = new wxFlexGridSizer(5, 3, 0, 0);
+	top_s = new wxFlexGridSizer(15, 3, 0, 0);
 	SetSizer(top_s);
 	top_s->Add(new wxStaticText(this, -1, wxT("ROM path: ")), 0, wxGROW);
 	top_s->Add(rompath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 1, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
-		this);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
+		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Firmware path: ")), 0, wxGROW);
 	top_s->Add(firmpath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 2, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
-		this);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
+		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Movie path: ")), 0, wxGROW);
 	top_s->Add(savepath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 3, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
-		this);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure), 
+		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Slot path: ")), 0, wxGROW);
 	top_s->Add(slotpath = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 5, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
-		this);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure), 
+		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Save slots: ")), 0, wxGROW);
 	top_s->Add(slots = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 4, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_paths::on_configure), NULL,
-		this);
-	refresh();
-	top_s->SetSizeHints(this);
-	Fit();
-}
-wxeditor_esettings_paths::~wxeditor_esettings_paths()
-{
-}
-
-void wxeditor_esettings_paths::on_configure(wxCommandEvent& e)
-{
-	std::string name;
-	if(e.GetId() == wxID_HIGHEST + 1)
-		name = ROMPATH;
-	else if(e.GetId() == wxID_HIGHEST + 2)
-		name = FIRMWAREPATH;
-	else if(e.GetId() == wxID_HIGHEST + 3)
-		name = MOVIEPATH;
-	else if(e.GetId() == wxID_HIGHEST + 4)
-		;
-	else if(e.GetId() == wxID_HIGHEST + 5)
-		name = SLOTPATH;
-	else
-		return;
-	std::string val;
-	try {
-		if(e.GetId() == wxID_HIGHEST + 4) {
-			val = (stringfmt() << get_jukebox_size()).str();
-			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
-		} else {
-			val = lsnes_set.get(name);
-			val = pick_text(this, "Change path to", "Enter new path:", val);
-		}
-	} catch(...) {
-		refresh();
-		return;
-	}
-	std::string err;
-	try {
-		if(e.GetId() == wxID_HIGHEST + 4) {
-			set_jukebox_size(parse_value<size_t>(val));
-		} else {
-			lsnes_set.set(name, val);
-		}
-	} catch(std::exception& e) {
-		wxMessageBox(wxT("Invalid value"), wxT("Can't change value"), wxICON_EXCLAMATION | wxOK);
-	}
-	refresh();
-}
-
-void wxeditor_esettings_paths::refresh()
-{
-	std::string rpath, fpath, spath, nslot, lpath;
-	fpath = lsnes_set.get(FIRMWAREPATH);
-	rpath = lsnes_set.get(ROMPATH);
-	spath = lsnes_set.get(MOVIEPATH);
-	nslot = (stringfmt() << get_jukebox_size()).str();
-	lpath = lsnes_set.get(SLOTPATH);
-	rompath->SetLabel(towxstring(rpath));
-	firmpath->SetLabel(towxstring(fpath));
-	savepath->SetLabel(towxstring(spath));
-	slots->SetLabel(towxstring(nslot));
-	slotpath->SetLabel(towxstring(lpath));
-	top_s->Layout();
-	Fit();
-}
-
-class wxeditor_esettings_screen : public wxPanel
-{
-public:
-	wxeditor_esettings_screen(wxWindow* parent);
-	~wxeditor_esettings_screen();
-	void on_configure(wxCommandEvent& e);
-	wxCheckBox* hflip;
-	wxCheckBox* vflip;
-	wxCheckBox* rotate;
-private:
-	void refresh();
-	wxStaticText* xscale;
-	wxStaticText* yscale;
-	wxStaticText* algo;
-	wxFlexGridSizer* top_s;
-};
-
-wxeditor_esettings_screen::wxeditor_esettings_screen(wxWindow* parent)
-	: wxPanel(parent, -1)
-{
-	wxButton* tmp;
-	top_s = new wxFlexGridSizer(6, 3, 0, 0);
-	SetSizer(top_s);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure), 
+		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("X scale factor: ")), 0, wxGROW);
 	top_s->Add(xscale = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
-	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 1, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 6, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
 		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Y scale factor: ")), 0, wxGROW);
 	top_s->Add(yscale = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
-	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 2, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 7, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
 		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Scaling type: ")), 0, wxGROW);
 	top_s->Add(algo = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
-	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 3, wxT("Change...")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_screen::on_configure),
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 8, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
 		NULL, this);
 	top_s->Add(new wxStaticText(this, -1, wxT("Hflip: ")), 0, wxGROW);
 	top_s->Add(hflip = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
@@ -971,84 +889,144 @@ wxeditor_esettings_screen::wxeditor_esettings_screen(wxWindow* parent)
 	top_s->Add(new wxStaticText(this, -1, wxT("Rotate: ")), 0, wxGROW);
 	top_s->Add(rotate = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
 	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Advance timeout: ")), 0, wxGROW);
+	top_s->Add(atimeout = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 9, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
+		NULL, this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Pause on end: ")), 0, wxGROW);
+	top_s->Add(pause_oe = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("Save compression: ")), 0, wxGROW);
+	top_s->Add(_savecompression = new wxStaticText(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(tmp = new wxButton(this, wxID_HIGHEST + 10, wxT("Change...")), 0, wxGROW);
+	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxeditor_esettings_settings::on_configure),
+		NULL, this);
+	top_s->Add(new wxStaticText(this, -1, wxT("Readonly preserves movie: ")), 0, wxGROW);
+	top_s->Add(readonly_preserve = new wxCheckBox(this, -1, wxT("")), 1, wxGROW);
+	top_s->Add(new wxStaticText(this, -1, wxT("")), 0, wxGROW);
+
 	refresh();
 	top_s->SetSizeHints(this);
 	Fit();
 }
-wxeditor_esettings_screen::~wxeditor_esettings_screen()
+wxeditor_esettings_settings::~wxeditor_esettings_settings()
 {
 }
 
-void wxeditor_esettings_screen::on_configure(wxCommandEvent& e)
+void wxeditor_esettings_settings::on_configure(wxCommandEvent& e)
 {
-	if(e.GetId() == wxID_HIGHEST + 1) {
-		std::string v = (stringfmt() << horizontal_scale_factor).str();
-		try {
-			v = pick_text(this, "Set X scaling factor", "Enter new horizontal scale factor:", v);
-		} catch(...) {
-			refresh();
-			return;
+	std::vector<std::string> sa_choices;
+	std::string v;
+	int newflags = 1;
+	for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
+			sa_choices.push_back(scalealgo_choices[i]);
+	std::string name;
+	if(e.GetId() <= wxID_HIGHEST || e.GetId() > wxID_HIGHEST + 10)
+		return;
+	std::string val;
+	try {
+		if(e.GetId() == wxID_HIGHEST + 1) {
+			val = rompath_setting;
+			val = pick_text(this, "Change ROM path", "Enter new ROM path:", val);
+		} else if(e.GetId() == wxID_HIGHEST + 2) {
+			val = get_firmwarepath();
+			val = pick_text(this, "Change firmware path", "Enter new firmware path:", val);
+		} else if(e.GetId() == wxID_HIGHEST + 3) {
+			val = moviepath_setting;
+			val = pick_text(this, "Change movie path", "Enter new movie path:", val);
+		} else if(e.GetId() == wxID_HIGHEST + 4) {
+			val = (stringfmt() << get_jukebox_size()).str();
+			val = pick_text(this, "Change number of slots", "Enter number of slots:", val);
+		} else if(e.GetId() == wxID_HIGHEST + 5) {
+			val = (stringfmt() << get_slotpath()).str();
+			val = pick_text(this, "Change slot path", "Enter new slot path:", val);
+		} else if(e.GetId() == wxID_HIGHEST + 6) {
+			val = (stringfmt() << horizontal_scale_factor).str();
+			val = pick_text(this, "Set X scaling factor", "Enter new horizontal scale factor (0.25-10):",
+				val);
+		} else if(e.GetId() == wxID_HIGHEST + 7) {
+			val = (stringfmt() << horizontal_scale_factor).str();
+			val = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor (0.25-10):",
+				val);
+		} else if(e.GetId() == wxID_HIGHEST + 8) {
+			val = pick_among(this, "Select algorithm", "Select scaling algorithm", sa_choices);
+		} else if(e.GetId() == wxID_HIGHEST + 9) {
+			val = (stringfmt() << advance_timeout_first).str();
+			val = pick_text(this, "Set advance timeout", "Enter new advance timeout (ms):", val);
+		} else if(e.GetId() == wxID_HIGHEST + 10) {
+			val = (stringfmt() << (uint32_t)savecompression).str();
+			val = pick_text(this, "Set save compression", "Enter new save compression level (0-9):", val);
 		}
-		double x;
-		try {
-			x = parse_value<double>(v);
+	} catch(...) {
+		refresh();
+		return;
+	}
+	std::string err;
+	try {
+		if(e.GetId() == wxID_HIGHEST + 1) {
+			rompath_setting = (val != "") ? val : ".";
+		} else if(e.GetId() == wxID_HIGHEST + 2) {
+			set_firmwarepath(val);
+		} else if(e.GetId() == wxID_HIGHEST + 3) {
+			moviepath_setting = (val != "") ? val : ".";
+		} else if(e.GetId() == wxID_HIGHEST + 4) {
+			set_jukebox_size(parse_value<size_t>(val));
+		} else if(e.GetId() == wxID_HIGHEST + 5) {
+			set_slotpath(val);
+		} else if(e.GetId() == wxID_HIGHEST + 6) {
+			double x = parse_value<double>(val);
 			if(x < 0.25 || x > 10)
-				throw 42;
-		} catch(...) {
-			wxMessageBox(wxT("Bad horizontal scale factor (0.25-10)"), wxT("Input error"),
-				wxICON_EXCLAMATION | wxOK);
-			refresh();
-			return;
-		}
-		horizontal_scale_factor = x;
-	} else if(e.GetId() == wxID_HIGHEST + 2) {
-		std::string v = (stringfmt() << vertical_scale_factor).str();
-		try {
-			v = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor:", v);
-		} catch(...) {
-			refresh();
-			return;
-		}
-		double x;
-		try {
-			x = parse_value<double>(v);
+				throw "Bad horizontal scaling factor (0.25-10)";
+			horizontal_scale_factor = x;
+		} else if(e.GetId() == wxID_HIGHEST + 7) {
+			double x = parse_value<double>(val);
 			if(x < 0.25 || x > 10)
-				throw 42;
-		} catch(...) {
-			wxMessageBox(wxT("Bad vertical scale factor (0.25-10)"), wxT("Input error"),
-				wxICON_EXCLAMATION | wxOK);
-			refresh();
-			return;
+				throw "Bad vertical scaling factor (0.25-10)";
+			vertical_scale_factor = x;
+		} else if(e.GetId() == wxID_HIGHEST + 8) {
+			for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
+				if(val == scalealgo_choices[i])
+					newflags = 1 << i;
+			scaling_flags = newflags;
+		} else if(e.GetId() == wxID_HIGHEST + 9) {
+			advance_timeout_first = parse_value<uint32_t>(val);
+		} else if(e.GetId() == wxID_HIGHEST + 10) {
+			int32_t x = parse_value<int32_t>(val);
+			if(x < 0 || x > 9)
+				throw std::runtime_error("Bad save compression level (0-9)");
+			savecompression = x;
 		}
-		vertical_scale_factor = x;
-	} else if(e.GetId() == wxID_HIGHEST + 3) {
-		std::vector<std::string> choices;
-		std::string v;
-		int newflags = 1;
-		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
-			choices.push_back(scalealgo_choices[i]);
-		try {
-			v = pick_among(this, "Select algorithm", "Select scaling algorithm", choices);
-		} catch(...) {
-			refresh();
-			return;
-		}
-		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
-			if(v == scalealgo_choices[i])
-				newflags = 1 << i;
-		scaling_flags = newflags;
+	} catch(std::exception& e) {
+		wxMessageBox(towxstring(std::string("Invalid value: ") + e.what()), wxT("Can't change value"),
+			wxICON_EXCLAMATION | wxOK);
 	}
 	refresh();
 }
 
-void wxeditor_esettings_screen::refresh()
+void wxeditor_esettings_settings::refresh()
 {
+	std::string rpath, fpath, spath, nslot, lpath;
+	fpath = get_firmwarepath();
+	rpath = rompath_setting;
+	spath = moviepath_setting;
+	nslot = (stringfmt() << get_jukebox_size()).str();
+	lpath = get_slotpath();
+	rompath->SetLabel(towxstring(rpath));
+	firmpath->SetLabel(towxstring(fpath));
+	savepath->SetLabel(towxstring(spath));
+	slots->SetLabel(towxstring(nslot));
+	slotpath->SetLabel(towxstring(lpath));
 	xscale->SetLabel(towxstring((stringfmt() << horizontal_scale_factor).str()));
 	yscale->SetLabel(towxstring((stringfmt() << vertical_scale_factor).str()));
 	algo->SetLabel(towxstring(getalgo(scaling_flags)));
+	atimeout->SetLabel(towxstring((stringfmt() << advance_timeout_first).str()));
 	hflip->SetValue(hflip_enabled);
 	vflip->SetValue(vflip_enabled);
 	rotate->SetValue(rotate_enabled);
+	pause_oe->SetValue(pause_on_end);
+	_savecompression->SetLabel(towxstring((stringfmt() << (uint32_t)savecompression).str()));
+	readonly_preserve->SetValue(readonly_load_preserves);
 	top_s->Layout();
 	Fit();
 }
@@ -1998,7 +1976,7 @@ private:
 	wxeditor_esettings_controllers* controllertab;
 	wxeditor_esettings_bindings* bindtab;
 	wxeditor_esettings_advanced* advtab;
-	wxeditor_esettings_screen* screentab;
+	wxeditor_esettings_settings* settingstab;
 };
 
 wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
@@ -2016,20 +1994,19 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
 		controllertab = NULL;
 		bindtab = NULL;
 		advtab = NULL;
-		screentab = NULL;
+		settingstab = NULL;
 		top_s->Add(hotkeytab);
 	} else if(mode == 2) {
 		hotkeytab = NULL;
 		controllertab = new wxeditor_esettings_controllers(this);
 		bindtab = NULL;
 		advtab = NULL;
-		screentab = NULL;
+		settingstab = NULL;
 		top_s->Add(controllertab);
 	} else {
 		tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 		tabset->AddPage(new wxeditor_esettings_joystick(tabset), wxT("Joysticks"));
-		tabset->AddPage(new wxeditor_esettings_paths(tabset), wxT("Paths"));
-		tabset->AddPage(screentab = new wxeditor_esettings_screen(tabset), wxT("Scaling"));
+		tabset->AddPage(settingstab = new wxeditor_esettings_settings(tabset), wxT("Settings"));
 		tabset->AddPage(hotkeytab = new wxeditor_esettings_hotkeys(tabset), wxT("Hotkeys"));
 		tabset->AddPage(controllertab = new wxeditor_esettings_controllers(tabset), wxT("Controllers"));
 		tabset->AddPage(new wxeditor_esettings_aliases(tabset), wxT("Aliases"));
@@ -2064,10 +2041,12 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
-	if(screentab) {
-		hflip_enabled = screentab->hflip->GetValue();
-		vflip_enabled = screentab->vflip->GetValue();
-		rotate_enabled = screentab->rotate->GetValue();
+	if(settingstab) {
+		hflip_enabled = settingstab->hflip->GetValue();
+		vflip_enabled = settingstab->vflip->GetValue();
+		rotate_enabled = settingstab->rotate->GetValue();
+		pause_on_end = settingstab->pause_oe->GetValue();
+		readonly_load_preserves = settingstab->readonly_preserve->GetValue();
 	}
 	lsnes_kbd.set_exclusive(NULL);
 	EndModal(wxID_OK);

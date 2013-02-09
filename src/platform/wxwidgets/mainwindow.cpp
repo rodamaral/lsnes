@@ -118,6 +118,8 @@ int scaling_flags = SWS_POINT;
 bool hflip_enabled = false;
 bool vflip_enabled = false;
 bool rotate_enabled = false;
+std::string rompath_setting = ".";
+std::string moviepath_setting = ".";
 
 namespace
 {
@@ -462,17 +464,14 @@ namespace
 		update_preferences();
 	}
 
-	path_setting moviepath_setting(lsnes_set, "moviepath");
-	path_setting rompath_setting(lsnes_set, "rompath");
-
 	std::string movie_path()
 	{
-		return lsnes_set.get("moviepath");
+		return moviepath_setting;
 	}
 
 	std::string rom_path()
 	{
-		return lsnes_set.get("rompath");
+		return rompath_setting;
 	}
 
 	bool is_lsnes_movie(const std::string& filename)

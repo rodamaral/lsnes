@@ -39,6 +39,9 @@
 void update_movie_state();
 time_t random_seed_value = 0;
 
+volatile uint32_t advance_timeout_first = 500;
+volatile bool pause_on_end = false;
+
 namespace
 {
 	enum advance_mode
@@ -71,8 +74,6 @@ namespace
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
 	//Few settings.
-	numeric_setting advance_timeout_first(lsnes_set, "advance-timeout", 0, 999999999, 500);
-	boolean_setting pause_on_end(lsnes_set, "pause-on-end", false);
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
@@ -82,6 +83,9 @@ namespace
 	//Stop at frame.
 	bool stop_at_frame_active = false;
 	uint64_t stop_at_frame = 0;
+	//Firmware path.
+	mutex_class firmwarepath_lock;
+	std::string firmwarepath = ".";
 
 	enum advance_mode old_mode;
 
@@ -106,8 +110,6 @@ namespace
 		}
 	} lsnes_pflag_handler;
 }
-
-path_setting firmwarepath_setting(lsnes_set, "firmwarepath");
 
 void mainloop_signal_need_rewind(void* ptr)
 {
@@ -358,7 +360,8 @@ public:
 
 	std::string get_firmware_path()
 	{
-		return firmwarepath_setting;
+		umutex_class h(firmwarepath_lock);
+		return firmwarepath;
 	}
 	
 	std::string get_base_path()
@@ -388,6 +391,20 @@ public:
 		information_dispatch::do_frame(screen, fps_n, fps_d);
 	}
 };
+
+void set_firmwarepath(const std::string& fwp)
+{
+	umutex_class h(firmwarepath_lock);
+	if(fwp == "")
+		firmwarepath = ".";
+	else
+		firmwarepath = fwp;
+}
+
+std::string get_firmwarepath()
+{
+	return firmwarepath;
+}
 
 void set_jukebox_size(size_t size)
 {
@@ -657,9 +674,8 @@ namespace
 
 	function_ptr_command<> tpon(lsnes_cmd, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			bool newstate = !static_cast<bool>(pause_on_end);
-			pause_on_end.set(newstate ? "1" : "0");
-			messages << "Pause-on-end is now " << (newstate ? "ON" : "OFF") << std::endl;
+			pause_on_end = !pause_on_end;
+			messages << "Pause-on-end is now " << (pause_on_end ? "ON" : "OFF") << std::endl;
 		});
 
 	function_ptr_command<> rewind_movie(lsnes_cmd, "rewind-movie", "Rewind movie to the beginning",

@@ -47,5 +47,10 @@ void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint6
 std::string get_mprefix_for_project();
 void set_mprefix_for_project(const std::string& pfx);
 void set_mprefix_for_project(const std::string& prjid, const std::string& pfx);
+void set_slotpath(const std::string& pfx);
+std::string get_slotpath();
+extern volatile uint8_t savecompression;
+extern volatile bool readonly_load_preserves;
+
 
 #endif

@@ -26,5 +26,10 @@ void mainloop_signal_need_rewind(void* ptr);
 void set_stop_at_frame(uint64_t frame = 0);
 void set_jukebox_size(size_t size);
 size_t get_jukebox_size();
+void set_firmwarepath(const std::string& fwp);
+std::string get_firmwarepath();
+extern volatile uint32_t advance_timeout_first;
+extern volatile bool pause_on_end;
+
 
 #endif

@@ -182,17 +182,13 @@ end:
 			"(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(0?.[0-9]+)[ \t]*", line)) {
 			keyboard_axis_calibration c;
 			c.mode = parse_value<int>(r[2]);
-			if(c.mode < -1 || c.mode > 1) {
-				messages << "Illegal axis mode " << c.mode << std::endl;
-				return;
-			}
+			if(c.mode < -1 || c.mode > 1)
+				(stringfmt() << "Illegal axis mode " << c.mode).throwex();
 			c.esign_a = parse_value<int>(r[3]);
 			c.esign_b = parse_value<int>(r[4]);
 			if(c.esign_a < -1 || c.esign_a > 1 || c.esign_b < -1 || c.esign_b > 1 ||
-				c.esign_a == c.esign_b || (c.mode == 1 && (c.esign_a == 0 || c.esign_b == 0))) {
-				messages << "Illegal axis endings " << c.esign_a << "/" << c.esign_b << std::endl;
-				return;
-			}
+				c.esign_a == c.esign_b || (c.mode == 1 && (c.esign_a == 0 || c.esign_b == 0)))
+				(stringfmt() << "Illegal axis endings " << c.esign_a << "/" << c.esign_b).throwex();
 			c.left = parse_value<int32_t>(r[5]);
 			c.center = parse_value<int32_t>(r[6]);
 			c.right = parse_value<int32_t>(r[7]);
@@ -208,26 +204,34 @@ end:
 				<< " limits=" << c.left << "(" << c.center << ")" << c.right
 				<< " null=" << c.nullwidth << std::endl;
 		} else if(r = regex("SET[ \t]+jukebox-size[ \t]+([0-9]+)", line)) {
-			try {
-				set_jukebox_size(parse_value<size_t>(r[1]));
-				messages << "Number of save slots set to " << r[1] << std::endl;
-			} catch(std::exception& e) {
-				messages << "Can't set jukebox-size: " << e.what() << std::endl;
-			}
+			set_jukebox_size(parse_value<size_t>(r[1]));
+			messages << "Number of save slots set to " << r[1] << std::endl;
+		} else if(r = regex("SET[ \t]+advance-timeout[ \t]+([0-9]+)", line)) {
+			advance_timeout_first = parse_value<uint32_t>(r[1]);
+			messages << "Advance timeout set to " << r[1] << std::endl;
+		} else if(r = regex("SET[ \t]+pause-on-end[ \t]+(true|false)", line)) {
+			pause_on_end = (r[1] == "true");
+			messages << "Pause on end set to " << (pause_on_end ? "ON" : "OFF") << std::endl;
+		} else if(r = regex("SET[ \t]+preserve_on_readonly_load[ \t]+(true|false)", line)) {
+			readonly_load_preserves = (r[1] == "true");
+			messages << "Preserve on readonly set to " << (pause_on_end ? "ON" : "OFF") << std::endl;
+		} else if(r = regex("SET[ \t]+savecompression[ \t]+([0-9])", line)) {
+			savecompression = (uint8_t)parse_value<uint32_t>(r[1]);
+			messages << "Save compression set to " << r[1] << std::endl;
+		} else if(r = regex("SET[ \t]+firmwarepath[ \t]+(.*)", line)) {
+			set_firmwarepath(r[1]);
+		} else if(r = regex("SET[ \t]+slotpath[ \t]+(.*)", line)) {
+			set_slotpath(r[1]);
+		} else if(r = regex("SET[ \t]+rompath[ \t]+(.*)", line)) {
+			rompath_setting = (r[1] != "") ? r[1] : "";
+		} else if(r = regex("SET[ \t]+moviepath[ \t]+(.*)", line)) {
+			moviepath_setting = (r[1] != "") ? r[1] : "";
 		} else if(r = regex("UNSET[ \t]+([^ \t]+)[ \t]*", line)) {
-			try {
-				lsnes_set.blank(r[1]);
-				messages << "Setting " << r[1] << " unset" << std::endl;
-			} catch(std::exception& e) {
-				messages << "Can't unset " << r[1] << ": " << e.what() << std::endl;
-			}
+			lsnes_set.blank(r[1]);
+			messages << "Setting " << r[1] << " unset" << std::endl;
 		} else if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			try {
-				lsnes_set.set(r[1], r[2]);
-				messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
-			} catch(std::exception& e) {
-				messages << "Can't set " << r[1] << ": " << e.what() << std::endl;
-			}
+			lsnes_set.set(r[1], r[2]);
+			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
 			if(!lsnes_cmd.valid_alias_name(r[1])) {
 				messages << "Illegal alias name " << r[1] << std::endl;
@@ -255,7 +259,7 @@ end:
 				messages << "Prefer " << r[2] << " for " << r[1] << std::endl;
 			}
 		} else
-			messages << "Unrecognized directive: " << line << std::endl;
+			(stringfmt() << "Unrecognized directive: " << line).throwex();
 	}
 
 	void load_configuration()
@@ -263,12 +267,15 @@ end:
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";
 		std::ifstream cfgfile(cfg.c_str());
 		std::string line;
-		while(std::getline(cfgfile, line))
+		size_t lineno = 1;
+		while(std::getline(cfgfile, line)) {
 			try {
 				handle_config_line(line);
 			} catch(std::exception& e) {
-				messages << "Error processing line: " << e.what() << std::endl;
+				messages << "Error processing line " << lineno << ": " << e.what() << std::endl;
 			}
+			lineno++;
+		}
 	}
 	
 	void save_configuration()
@@ -295,6 +302,15 @@ end:
 		for(auto i : lsnes_set.get_invalid_values())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
 		cfgfile << "SET jukebox-size " << get_jukebox_size() << std::endl;
+		cfgfile << "SET advance-timeout " << advance_timeout_first << std::endl;
+		cfgfile << "SET pause-on-end " << (pause_on_end ? "true" : "false") << std::endl;
+		cfgfile << "SET firmwarepath " << get_firmwarepath() << std::endl;
+		cfgfile << "SET moviepath " << moviepath_setting << std::endl;
+		cfgfile << "SET rompath " << rompath_setting << std::endl;
+		cfgfile << "SET slotpath " << get_slotpath() << std::endl;
+		cfgfile << "SET savecompression " << (uint32_t)savecompression << std::endl;
+		cfgfile << "SET preserve_on_readonly_load " << (readonly_load_preserves ? "true" : "false")
+			<< std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {
 			std::string old_alias_value = lsnes_cmd.get_alias_for(i);
