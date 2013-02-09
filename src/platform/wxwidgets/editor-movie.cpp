@@ -31,6 +31,7 @@ enum
 	wxID_APPEND_FRAMES,
 	wxID_TRUNCATE,
 	wxID_SCROLL_FRAME,
+	wxID_SCROLL_CURRENT_FRAME
 };
 
 void update_movie_state();
@@ -368,6 +369,7 @@ private:
 		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
 		void do_scroll_to_frame();
+		void do_scroll_to_current_frame();
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -943,6 +945,12 @@ void wxeditor_movie::_moviepanel::do_scroll_to_frame()
 	signal_repaint();
 }
 
+void wxeditor_movie::_moviepanel::do_scroll_to_current_frame()
+{
+	moviepos = cached_cffs;
+	signal_repaint();
+}
+
 void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
 	wxMenuItem* tmpitem;
@@ -977,6 +985,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		return;
 	case wxID_SCROLL_FRAME:
 		do_scroll_to_frame();
+		return;
+	case wxID_SCROLL_CURRENT_FRAME:
+		do_scroll_to_current_frame();
 		return;
 	case wxID_POSITION_LOCK:
 		if(!current_popup)
@@ -1087,6 +1098,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.AppendSeparator();
 outrange:
 	menu.Append(wxID_SCROLL_FRAME, wxT("Scroll to frame..."));
+	menu.Append(wxID_SCROLL_CURRENT_FRAME, wxT("Scroll to current frame"));
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
