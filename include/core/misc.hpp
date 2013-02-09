@@ -98,8 +98,6 @@ extern messages_relay_class messages;
 
 uint32_t gcd(uint32_t a, uint32_t b) throw();
 
-void create_lsnesrc();
-
 /**
  * Return hexadecimal representation of address
  */

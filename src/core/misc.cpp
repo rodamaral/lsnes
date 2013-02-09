@@ -198,26 +198,6 @@ std::string get_config_path() throw(std::bad_alloc)
 	return lsnes_path;
 }
 
-extern const char* lsnesrc_file;
-
-void create_lsnesrc()
-{
-	std::string rcfile = get_config_path() + "/lsnes.rc";
-	std::ifstream x(rcfile.c_str());
-	if(x) {
-		x.close();
-		return;
-	}
-	std::ofstream y(rcfile.c_str());
-	if(!y) {
-		messages << "FATAL: lsnes.rc (" << rcfile << ") doesn't exist nor it can be created" << std::endl;
-		fatal_error();
-	}
-	y.write(lsnesrc_file, strlen(lsnesrc_file));
-	y.close();
-}
-
-
 void OOM_panic()
 {
 	messages << "FATAL: Out of memory!" << std::endl;
