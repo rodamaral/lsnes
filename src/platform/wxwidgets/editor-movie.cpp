@@ -596,9 +596,9 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 			//Button.
 			char c[2];
 			bool v = (fcontrols.read_index(f, i.index) != 0);
-			c[0] = v ? i.ch : ' ';
+			c[0] = i.ch;
 			c[1] = 0;
-			fb.write(c, 0, divcnt + 1 + i.position_left, y, 0x000000, bgc);
+			fb.write(c, 0, divcnt + 1 + i.position_left, y, v ? 0x000000 : 0xC8C8C8, bgc);
 		} else if(i.type == 1) {
 			//Axis.
 			char c[7];
