@@ -192,159 +192,15 @@ Command line options
 \end_layout
 
 \begin_layout Subsection
-ROM options
+Wxwidgets options
 \end_layout
 
 \begin_layout Subsubsection
---rom=<file> (lsnes/SDL, lsnes/wxwidgets, lsnes-avidump)
+--rom=<file>
 \end_layout
 
 \begin_layout Standard
 Load <file> as ROM.
-\end_layout
-
-\begin_layout Subsection
-Session options
-\end_layout
-
-\begin_layout Subsubsection
---pause
-\end_layout
-
-\begin_layout Standard
-Start paused
-\end_layout
-
-\begin_layout Subsubsection
-<filename> (lsnes/SDL, lsnes-avidump, movieinfo)
-\end_layout
-
-\begin_layout Standard
-Load <filename> as movie or savestate file.
- All other session options are ignored.
-\end_layout
-
-\begin_layout Subsubsection
---port1=<device> (lsnes/SDL, bsnes core only)
-\end_layout
-
-\begin_layout Standard
-Set type of port1.
- Valid values are:
-\end_layout
-
-\begin_layout Itemize
-none: No device connected
-\end_layout
-
-\begin_layout Itemize
-gamepad: One gamepad (the default)
-\end_layout
-
-\begin_layout Itemize
-multitap: Four gamepads (warning: makes most games refuse to start)
-\end_layout
-
-\begin_layout Itemize
-mouse: Mouse.
-\end_layout
-
-\begin_layout Subsubsection
---port2=<type> (lsnes/SDL, bsnes core only)
-\end_layout
-
-\begin_layout Standard
-Set type of port2.
- Valid values are:
-\end_layout
-
-\begin_layout Itemize
-none: No device connected (the default)
-\end_layout
-
-\begin_layout Itemize
-gamepad: One gamepad
-\end_layout
-
-\begin_layout Itemize
-multitap: Four gamepads.
-\end_layout
-
-\begin_layout Itemize
-mouse: Mouse
-\end_layout
-
-\begin_layout Itemize
-superscope: Super Scope
-\end_layout
-
-\begin_layout Itemize
-justifier: One justifier
-\end_layout
-
-\begin_layout Itemize
-justifiers: Two justifiers
-\end_layout
-
-\begin_layout Subsubsection
---gamename=<name> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set the name of game to <name>.
- Default is blank.
-\end_layout
-
-\begin_layout Subsubsection
---author=<name> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Add author with full name of <name> (no nickname).
-\end_layout
-
-\begin_layout Subsubsection
---author=|<name> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Add author with nickname of <name> (no full name).
-\end_layout
-
-\begin_layout Subsubsection
---author=<fullname>|<nickname> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Add author with full name of <fullname> and nickname of <nickname>.
-\end_layout
-
-\begin_layout Subsubsection
---rtc-second=<value> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set RTC second (0 is 1st January 1970 00:00:00Z).
- Default is 1,000,000,000.
-\end_layout
-
-\begin_layout Subsubsection
---rtc-subsecond=<value> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set RTC subsecond.
- Range is 0-.
- Unit is CPU cycle.
- Default is 0.
-\end_layout
-
-\begin_layout Subsubsection
---anchor-savestate=<file> (lsnes/SDL)
-\end_layout
-
-\begin_layout Standard
-Set the anchor savestate file.
 \end_layout
 
 \begin_layout Subsubsection
@@ -352,25 +208,37 @@ Set the anchor savestate file.
 \end_layout
 
 \begin_layout Standard
-After loading the ROM, load <file> as savestate/movie.
-\end_layout
-
-\begin_layout Subsection
-Misc.
- options:
+Load <file> as movie or savestate file on startup.
 \end_layout
 
 \begin_layout Subsubsection
---run=<file> (lsnes/SDL)
+--settings
 \end_layout
 
 \begin_layout Standard
-After running main RC file, run this file.
- If multiple are specified, these execute in order specified.
+Instead of starting the emulator, only display the settings.
 \end_layout
 
 \begin_layout Subsection
 dump options (lsnes-dumpavi only)
+\end_layout
+
+\begin_layout Subsubsection
+--rom=<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> as ROM.
+ Required.
+\end_layout
+
+\begin_layout Subsubsection
+<filename>
+\end_layout
+
+\begin_layout Standard
+Load <filename> as movie or savestate file on startup.
+ Required.
 \end_layout
 
 \begin_layout Subsubsection
@@ -380,6 +248,14 @@ dump options (lsnes-dumpavi only)
 \begin_layout Standard
 Set the dumper to use (required).
  Use 'list' for listing of known dumpers.
+\end_layout
+
+\begin_layout Subsubsection
+--firmware-path=<path>
+\end_layout
+
+\begin_layout Standard
+Set path to look for firmware.
 \end_layout
 
 \begin_layout Subsubsection
@@ -442,33 +318,31 @@ Run specified lua script (lsnes-dumpavi does not have initialization files).
 Load the specified shared object / dynamic library / dynamic link library.
 \end_layout
 
-\begin_layout Section
-Startup file lsnes.rc
+\begin_layout Subsection
+lsnes settings directory
 \end_layout
 
 \begin_layout Standard
-Upon startup, lsnes (lsnes/SDL only) executes file lsnes.rc as commands.
- This file is located in:
+The lsnes settings directory is (in order of decreasing perference):
 \end_layout
 
 \begin_layout Itemize
 Windows: %APPDATA%
 \backslash
-lsnes
-\backslash
-lsnes.rc (if %APPDATA% exists)
+lsnes (if %APPDATA% exists)
 \end_layout
 
 \begin_layout Itemize
-Unix: $XDG_CONFIG_HOME/lsnes/lsnes.rc (if $XDG_CONFIG_HOME exists)
+Unix: $XDG_CONFIG_HOME/lsnes (if $XDG_CONFIG_HOME exists)
 \end_layout
 
 \begin_layout Itemize
-Unix: $HOME/.config/lsnes/lsnes.rc (if $HOME exists)
+Unix: $HOME/.config/lsnes (if $HOME exists)
 \end_layout
 
 \begin_layout Itemize
-All: ./lsnes.rc (fallback default).
+All: .
+ (fallback default).
 \end_layout
 
 \begin_layout Standard
@@ -573,12 +447,11 @@ These commands are not available in lsnesrc, but are available after ROM
 \end_layout
 
 \begin_layout Subsubsection
-quit-emulator [/y]
+quit-emulator
 \end_layout
 
 \begin_layout Standard
-Quits the emulator (asking for confirmation).
- If /y is given, no confirmation is asked.
+Quits the emulator.
 \end_layout
 
 \begin_layout Subsubsection
@@ -901,34 +774,6 @@ enable-sound <on/off>
 Enable/Disable sound.
 \end_layout
 
-\begin_layout Subsubsection
-set-volume <multiplier>
-\end_layout
-
-\begin_layout Standard
-Set the volume multiplier to <multiplier>.
- 1 is normal volume, and higher numbers are louder.
-\end_layout
-
-\begin_layout Subsubsection
-set-volume <multiplier>%
-\end_layout
-
-\begin_layout Standard
-Set the volume multiplier to <multiplier> percent.
- 100 is normal volume, and higher numbers are louder.
-\end_layout
-
-\begin_layout Subsubsection
-set-volume <multiplier>dB
-\end_layout
-
-\begin_layout Standard
-Set the volume multiplier to <multiplier> dB.
- 0 is normal volume, and higher numbers are louder.
- The value may be negative.
-\end_layout
-
 \begin_layout Subsection
 Misc.
 \end_layout
@@ -956,79 +801,6 @@ Settings
 
 \begin_layout Subsection
 Core settings
-\end_layout
-
-\begin_layout Subsubsection
-firmwarepath
-\end_layout
-
-\begin_layout Standard
-Set where bsnes looks for firmware files.
- Default is 
-\begin_inset Quotes eld
-\end_inset
-
-.
-\begin_inset Quotes erd
-\end_inset
-
-.
-\end_layout
-
-\begin_layout Subsubsection
-target
-\end_layout
-
-\begin_layout Standard
-Set the target .
- Numeric, range is 0.001 to 
-\begin_inset Quotes eld
-\end_inset
-
-infinite
-\begin_inset Quotes erd
-\end_inset
-
-.
- Default is native framerate.
-\end_layout
-
-\begin_layout Subsubsection
-savecompression
-\end_layout
-
-\begin_layout Standard
-Set save compression level (integer 0-9).
- Default is 7 (0 is no compression).
-\end_layout
-
-\begin_layout Subsubsection
-advance-timeout
-\end_layout
-
-\begin_layout Standard
-Set the frame advance timeout in milliseconds.
- Numeric integer, range is 0-999999999.
- Default is 500.
-\end_layout
-
-\begin_layout Subsubsection
-allow-inconsistent-saves (bsnes only)
-\end_layout
-
-\begin_layout Standard
-If true, save without synchronization.
- Makes games seriously unstable.
-\end_layout
-
-\begin_layout Subsubsection
-save-every-frame (bsnes only)
-\end_layout
-
-\begin_layout Standard
-If true, simulate saving on each frame.
- Trades off emulation accuracy for sync stability.
- Also needed if the movie assumes saving on each frame for rewind.
 \end_layout
 
 \begin_layout Subsection
@@ -1135,36 +907,28 @@ AVI dumper: Set method of determining the sound rate.
 2: Round up to nearest ingeter.
 \end_layout
 
+\begin_layout Itemize
+3: Multiply by denominator.
+\end_layout
+
+\begin_layout Itemize
+4: High quality 44.1kHz (SRC needed).
+\end_layout
+
+\begin_layout Itemize
+5: High quality 48kHz (SRC needed).
+\end_layout
+
 \begin_layout Subsection
 JMD options
 \end_layout
 
 \begin_layout Subsubsection
-jmd-copression
+jmd-compression
 \end_layout
 
 \begin_layout Standard
 JMD dumper: Compression level (0-9).
-\end_layout
-
-\begin_layout Subsection
-SDL platform settings
-\end_layout
-
-\begin_layout Subsubsection
-autorepeat-first-delay
-\end_layout
-
-\begin_layout Standard
-Sets the delay for first character in typematic autorepeat.
-\end_layout
-
-\begin_layout Subsubsection
-autorepeat-subsequent-delay
-\end_layout
-
-\begin_layout Standard
-Sets the delay for subsequent characters in typematic autorepeat.
 \end_layout
 
 \begin_layout Section

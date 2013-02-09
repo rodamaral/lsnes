@@ -258,6 +258,14 @@ int main(int argc, char** argv)
 
 	for(auto i : cmdline) {
 		regex_results r;
+		if(r = regex("--firmware-path=(.*)", i) {
+			try {
+				set_firmwarpath(r[1]);
+				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
+			} catch(std::exception& e) {
+				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
+			}
+		}
 		if(r = regex("--setting-(.*)=(.*)", i)) {
 			try {
 				lsnes_set.set(r[1], r[2]);
