@@ -740,6 +740,7 @@ namespace
 		std::string command;
 
 		keybind_data() : information_dispatch("keybind-listener") {}
+		~keybind_data() throw() {}
 
 		void on_key_event(const modifier_set& modifiers, keygroup& keygroup, unsigned _subkey, bool polarity,
 			const std::string& name)

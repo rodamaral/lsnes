@@ -177,6 +177,7 @@ namespace
 	{
 	public:
 		keygrabber() : information_dispatch("sdl-key-grabber") { idmode = false; }
+		~keygrabber() throw() {}
 		void enter_id_mode()
 		{
 			keys = "";
