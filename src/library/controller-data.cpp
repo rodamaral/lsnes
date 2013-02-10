@@ -38,7 +38,7 @@ namespace
 
 port_type::port_type(const std::string& iname, const std::string& _hname,  unsigned id,
 	size_t ssize) throw(std::bad_alloc)
-	: name(iname), hname(_hname), pt_id(id), storage_size(ssize)
+	: hname(_hname), storage_size(ssize), name(iname), pt_id(id)
 {
 }
 
@@ -337,6 +337,7 @@ controller_frame& controller_frame::operator=(const controller_frame& obj) throw
 		throw std::runtime_error("Port types do not match");
 	types = obj.types;
 	memcpy(backing, obj.backing, types->size());
+	return *this;
 }
 
 size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()

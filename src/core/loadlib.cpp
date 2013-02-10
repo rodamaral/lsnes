@@ -19,7 +19,7 @@ namespace
 			messages << "Can't read directory '" << dir << "'" << std::endl;
 			return x;
 		}
-		while(d2 = readdir(d))
+		while((d2 = readdir(d)))
 			x.insert(dir + "/" + d2->d_name);
 		closedir(d);
 		return x;

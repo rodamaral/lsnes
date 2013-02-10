@@ -396,6 +396,7 @@ template<class T> class lua_class
 		return reinterpret_cast<T*>(state.touserdata(arg));
 badtype:
 		(stringfmt() << "argument #" << arg << " to " << fname << " must be " << name).throwex();
+		return NULL;	//Never reached.
 	}
 
 	bool _is(lua_state& state, int arg)
@@ -515,12 +516,14 @@ private:
 	{
 		T* obj = reinterpret_cast<T*>(lua_touserdata(LS, 1));
 		obj->~T();
+		return 0;
 	}
 
 	static int newindex(lua_State* LS)
 	{
 		lua_pushstring(LS, "Writing metatables of classes is not allowed");
 		lua_error(LS);
+		return 0;
 	}
 
 	static int index(lua_State* LS)

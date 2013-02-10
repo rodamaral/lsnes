@@ -17,6 +17,7 @@ namespace
 			L.error();
 			return 0;
 		}
+		return 0;
 	});
 
 	function_ptr_luafun kunbind(LS, "keyboard.unbind", [](lua_state& L, const std::string& fname) -> int {
@@ -30,6 +31,7 @@ namespace
 			L.error();
 			return 0;
 		}
+		return 0;
 	});
 
 	function_ptr_luafun kalias(LS, "keyboard.alias", [](lua_state& L, const std::string& fname) -> int {
@@ -42,5 +44,6 @@ namespace
 			L.error();
 			return 0;
 		}
+		return 0;
 	});
 }

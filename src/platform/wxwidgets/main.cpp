@@ -68,6 +68,7 @@ namespace
 	void* joystick_thread(int _args)
 	{
 		joystick_driver_thread_fn();
+		return NULL;
 	}
 
 	struct uiserv_event : public wxEvent
@@ -449,6 +450,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		if(r = regex("--set=([^=]+)=(.+)", i))
 			c_settings[r[1]] = r[2];
 	}
+	return true;
 }
 
 
@@ -559,7 +561,6 @@ int lsnes_app::OnExit()
 		return 0;
 	//NULL these so no further messages will be sent.
 	auto x = msg_window;
-	auto y = main_window;
 	msg_window = NULL;
 	main_window = NULL;
 	if(x)

@@ -413,7 +413,7 @@ void wxeditor_voicesub::refresh()
 		std::string text = tmp.str();
 		subtitles->Append(towxstring(text));
 	}
-	if(sel != wxNOT_FOUND && sel < subtitles->GetCount())
+	if(sel != wxNOT_FOUND && sel < (ssize_t)subtitles->GetCount())
 		subtitles->SetSelection(sel);
 	else if(subtitles->GetCount())
 		subtitles->SetSelection(0);

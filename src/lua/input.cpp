@@ -40,7 +40,7 @@ namespace
 		return 1;
 	}
 
-	int input_seta(lua_state& L, unsigned port, unsigned controller, int base, const char* fname)
+	int input_seta(lua_state& L, unsigned port, unsigned controller, uint64_t base, const char* fname)
 	{
 		if(!lua_input_controllerdata)
 			return 0;
@@ -111,14 +111,14 @@ namespace
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		uint64_t base = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
-		return input_seta(L, _controller.first, _controller.second, 3, fname.c_str());
+		return input_seta(L, _controller.first, _controller.second, base, fname.c_str());
 	});
 
 	function_ptr_luafun iseta2(LS, "input.seta2", [](lua_state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		uint64_t base = L.get_numeric_argument<uint64_t>(3, fname.c_str());
-		return input_seta(L, port, controller, 4, fname.c_str());
+		return input_seta(L, port, controller, base, fname.c_str());
 	});
 
 	function_ptr_luafun igeta(LS, "input.geta", [](lua_state& L, const std::string& fname) -> int {

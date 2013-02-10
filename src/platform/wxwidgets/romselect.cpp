@@ -157,7 +157,6 @@ wxwin_project::wxwin_project()
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
 	std::vector<wxString> cchoices;
-	unsigned dfltidx;
 
 	std::set<std::string> sram_set = our_rom->rtype->srams();
 

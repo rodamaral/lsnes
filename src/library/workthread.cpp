@@ -17,6 +17,7 @@ struct worker_thread_reflector
 	int operator()(worker_thread* x)
 	{
 		(*x)(42);
+		return 0;
 	}
 };
 

@@ -809,7 +809,7 @@ int main(int argc, char** argv)
 	uint32_t idx2 = 0;
 	uint32_t idx3 = 0;
 	uint32_t idx4 = 0;
-	for(unsigned i = 1; i < argc; i++) {
+	for(int i = 1; i < argc; i++) {
 		if(argv[i][0] == '-')
 			for(unsigned j = 1; argv[i][j]; j++)
 				switch(argv[i][j]) {

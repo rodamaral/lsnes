@@ -23,7 +23,7 @@ public:
 /**
  * Destructor.
  */
-	~worker_thread();
+	virtual ~worker_thread();
 /**
  * Request quit. Sets quit request workflag.
  */

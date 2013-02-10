@@ -57,6 +57,7 @@ namespace
 		case 2:
 			return "lsnes: Configure controllers";
 		}
+		return "";
 	}
 
 	void report_grab_key(const std::string& name);
@@ -1150,7 +1151,7 @@ void wxeditor_esettings_aliases::refresh()
 	select->Set(choices.size(), &choices[0]);
 	if(n == wxNOT_FOUND && select->GetCount())
 		select->SetSelection(0);
-	else if(n >= select->GetCount())
+	else if(n >= (int)select->GetCount())
 		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
@@ -1263,13 +1264,13 @@ void wxeditor_esettings_hotkeys::change_category(int cat)
 		if(i.first.first == cat)
 			n[i.first.second] = i.second;
 	
-	for(int i = 0; i < control->GetCount(); i++)
+	for(size_t i = 0; i < control->GetCount(); i++)
 		if(n.count(i))
 			control->SetString(i, towxstring(n[i]));
 		else
 			control->Delete(i--);
 	for(auto i : n)
-		if(i.first >= control->GetCount())
+		if(i.first >= (int)control->GetCount())
 			control->Append(towxstring(n[i.first]));
 	if(control->GetSelection() == wxNOT_FOUND)
 		control->SetSelection(0);
@@ -1379,13 +1380,13 @@ void wxeditor_esettings_hotkeys::refresh()
 		cat_assign[j.first]++;
 	}
 
-	for(int i = 0; i < category->GetCount(); i++)
+	for(size_t i = 0; i < category->GetCount(); i++)
 		if(categories.count(i))
 			category->SetString(i, towxstring(categories[i]));
 		else
 			category->Delete(i--);
 	for(auto i : categories)
-		if(i.first >= category->GetCount())
+		if(i.first >= (int)category->GetCount())
 			category->Append(towxstring(categories[i.first]));
 	if(category->GetSelection() == wxNOT_FOUND)
 		category->SetSelection(0);
@@ -1487,13 +1488,13 @@ void wxeditor_esettings_controllers::change_category(int cat)
 		if(i.first.first == cat)
 			n[i.first.second] = i.second;
 	
-	for(int i = 0; i < control->GetCount(); i++)
+	for(size_t i = 0; i < control->GetCount(); i++)
 		if(n.count(i))
 			control->SetString(i, towxstring(n[i]));
 		else
 			control->Delete(i--);
 	for(auto i : n)
-		if(i.first >= control->GetCount())
+		if(i.first >= (int)control->GetCount())
 			control->Append(towxstring(n[i.first]));
 	if(control->GetSelection() == wxNOT_FOUND && !control->IsEmpty())
 		control->SetSelection(0);
@@ -1579,13 +1580,13 @@ void wxeditor_esettings_controllers::refresh()
 		cat_assign[j.first]++;
 	}
 
-	for(int i = 0; i < category->GetCount(); i++)
+	for(size_t i = 0; i < category->GetCount(); i++)
 		if(categories.count(i))
 			category->SetString(i, towxstring(categories[i]));
 		else
 			category->Delete(i--);
 	for(auto i : categories)
-		if(i.first >= category->GetCount())
+		if(i.first >= (int)category->GetCount())
 			category->Append(towxstring(categories[i.first]));
 	if(category->GetSelection() == wxNOT_FOUND && !category->IsEmpty())
 		category->SetSelection(0);
@@ -1747,8 +1748,8 @@ void wxeditor_esettings_bindings::refresh()
 	select->Set(choices.size(), &choices[0]);
 	if(n == wxNOT_FOUND && select->GetCount())
 		select->SetSelection(0);
-	else if(n >= select->GetCount())
-		select->SetSelection(select->GetCount() ? (select->GetCount() - 1) : wxNOT_FOUND);
+	else if(n >= (int)select->GetCount())
+		select->SetSelection(select->GetCount() ? (int)(select->GetCount() - 1) : wxNOT_FOUND);
 	else
 		select->SetSelection(n);
 	wxCommandEvent e;
@@ -1817,7 +1818,6 @@ wxeditor_esettings_advanced::wxeditor_esettings_advanced(wxWindow* parent)
 	: wxPanel(parent, -1), _listener(lsnes_set, *this)
 {
 	destruction_underway = false;
-	wxButton* tmp;
 
 	wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
@@ -1891,7 +1891,6 @@ void wxeditor_esettings_advanced::on_clear(wxCommandEvent& e)
 	std::string name = selected();
 	if(name == "")
 		return;
-	bool err = false;
 	try {
 		lsnes_set.blank(name);
 	} catch(...) {
@@ -1912,7 +1911,6 @@ void wxeditor_esettings_advanced::on_setting_clear(const std::string& setting)
 {
 	if(destruction_underway)
 		return;
-	wxeditor_esettings_advanced* th = this;
 	runuifun([this, setting]() {
 		this->settings.insert(setting); this->values.erase(setting); this->_refresh();
 		});

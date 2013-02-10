@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 	if(!strcmp(argv[2], "write")) {
 		std::istringstream s1(argv[3]);
 		std::istringstream s2(argv[4]);
-		uint32_t c1, c2, c3, c4, c5;
+		uint32_t c1, c2, c4, c5;
 		s1 >> c1;
 		s2 >> c2;
 		x.write_data(c1, c2, argv[5], strlen(argv[5]), c4, c5);

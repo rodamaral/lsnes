@@ -156,16 +156,21 @@ namespace
 
 	bool edit_subtext(wxWindow* w, struct subdata& d)
 	{
+		bool res = false;
 		wxeditor_subtitles_subtitle* editor = NULL;
 		try {
 			editor = new wxeditor_subtitles_subtitle(w, d);
 			int ret = editor->ShowModal();
-			if(ret == wxID_OK)
+			if(ret == wxID_OK) {
 				d = editor->get_result();
+				res = true;
+			}
 		} catch(...) {
+			return false;
 		}
 		if(editor)
 			editor->Destroy();
+		return res;
 	}
 }
 
@@ -250,10 +255,10 @@ void wxeditor_subtitles::refresh()
 		std::string s = (stringfmt() << i.first.first << "-" << i.first.second << ": " << i.second).str();
 		subs->Append(towxstring(s));
 	}
-	for(int i = 0; i < subs->GetCount(); i++)
+	for(size_t i = 0; i < subs->GetCount(); i++)
 		if(subtexts[i].first == matching.first && subtexts[i].last == matching.last)
 			subs->SetSelection(i);
-	if(subs->GetSelection() == wxNOT_FOUND && sel < subs->GetCount())
+	if(subs->GetSelection() == wxNOT_FOUND && sel < (ssize_t)subs->GetCount())
 		subs->SetSelection(sel);
 	sel = subs->GetSelection();
 	found = (subtexts.count(sel) != 0);

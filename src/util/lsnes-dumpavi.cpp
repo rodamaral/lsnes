@@ -33,7 +33,7 @@ namespace
 			total = frames_to_dump;
 		}
 
-		~myavsnoop()
+		~myavsnoop() throw()
 		{
 		}
 
@@ -77,7 +77,7 @@ namespace
 			std::cout << "Can't start dumper!" << std::endl;
 			exit(1);
 		}
-		myavsnoop* s = new myavsnoop(dumper, length);
+		new myavsnoop(dumper, length);
 	}
 
 	void startup_lua_scripts(const std::vector<std::string>& cmdline)
@@ -124,7 +124,6 @@ namespace
 		bool dumper_given = false;
 		std::string dumper;
 		bool mode_given = false;
-		bool length_given = false;
 		prefix = "avidump";
 		length = 0;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {

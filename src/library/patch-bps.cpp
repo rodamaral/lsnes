@@ -47,6 +47,8 @@ namespace
 			if(y < 128)
 				return v;
 		}
+		(stringfmt() << "Varint decoding overlows: v=" << v << " y=" << y << ".").throwex();
+		return 0;
 	}
 
 	struct bps_patcher : public rom_patcher

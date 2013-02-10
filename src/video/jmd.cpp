@@ -92,7 +92,6 @@ namespace
 			render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL);
 			frame_buffer f;
 			f.ts = get_next_video_ts(fps_n, fps_d);
-			size_t fsize = 0;
 			//We'll compress the frame here.
 			f.data = compress_frame(dscr.rowptr(0), dscr.get_width(), dscr.get_height());
 			frames.push_back(f);

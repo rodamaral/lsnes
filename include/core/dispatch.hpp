@@ -100,7 +100,7 @@ public:
 /**
  * Destroy object.
  */
-	~information_dispatch() throw();
+	virtual ~information_dispatch() throw();
 /**
  * Window close event received (this is not emulator close!)
  *

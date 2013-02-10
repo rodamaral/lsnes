@@ -46,7 +46,6 @@ namespace
 		uint64_t ioffset = 5;
 		while(true) {
 			bool rle = false;
-			size_t left = patch.size() - ioffset;
 			uint8_t b;
 			uint32_t off = 0, l = 0;
 			off |= static_cast<uint32_t>(readbyte(_patch, ioffset, psize)) << 16;

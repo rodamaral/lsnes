@@ -122,7 +122,8 @@ void wxeditor_conflict::on_ok(wxCommandEvent& e)
 			//Reset to unspecified.
 			preferred_core.erase(i.first);
 			core_selections.erase(i.first);
-		} else if(bad_defaults.count(i.first) && i.second->GetSelection() == i.second->GetCount() - 1) {
+		} else if(bad_defaults.count(i.first) && i.second->GetSelection() ==
+			(int)(i.second->GetCount() - 1)) {
 			//Preserve the previous, reset real setting to unspecified.
 			preferred_core.erase(i.first);
 		} else {

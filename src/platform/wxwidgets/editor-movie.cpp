@@ -165,7 +165,6 @@ frame_controls::frame_controls()
 void frame_controls::set_types(controller_frame& f)
 {
 	unsigned nextp = 0;
-	unsigned nextc = 0;
 	controlinfo.clear();
 	const port_type_set& pts = f.porttypes();
 	unsigned pcnt = pts.ports();
@@ -176,7 +175,6 @@ void frame_controls::set_types(controller_frame& f)
 
 void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts)
 {
-	unsigned i = 0;
 	const port_controller_set& pci = *(p.controller_info);
 	for(unsigned i = 0; i < pci.controller_count; i++) {
 		if(!pci.controllers[i])
@@ -326,7 +324,7 @@ private:
 	struct _moviepanel : public wxPanel, public information_dispatch
 	{
 		_moviepanel(wxeditor_movie* v);
-		~_moviepanel();
+		~_moviepanel() throw();
 		void signal_repaint();
 		void on_scroll(wxScrollEvent& e);
 		void on_paint(wxPaintEvent& e);
@@ -364,8 +362,8 @@ private:
 		wxeditor_movie* m;
 		bool requested;
 		text_framebuffer fb;
-		int movielines;
-		int moviepos;
+		uint64_t movielines;
+		uint64_t moviepos;
 		unsigned new_width;
 		unsigned new_height;
 		std::vector<uint8_t> pixels;
@@ -431,7 +429,7 @@ namespace
 	}	
 }
 
-wxeditor_movie::_moviepanel::~_moviepanel() {}
+wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
 wxeditor_movie::~wxeditor_movie() throw() {}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
@@ -519,7 +517,6 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 {
 	update_cache();
 	size_t fbstride = fb.get_stride();
-	auto fbsize = fb.get_characters();
 	text_framebuffer::element* _fb = fb.get_buffer();
 	text_framebuffer::element e;
 	e.bg = 0xFFFFFF;
@@ -544,15 +541,13 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	else if(subframe_to_frame[sfn] > curframe)
 		past = 0;
 	bool now = (subframe_to_frame[sfn] == curframe);
-	int xcord = -32768;
+	unsigned xcord = 32768;
 	if(pressed)
 		xcord = press_x;
 
 	for(auto i : ctrlinfo) {
 		int rpast = past;
 		unsigned off = divcnt + 1;
-		unsigned idx = i.index;
-		frame_controls* _fcontrols = &fcontrols;
 		bool cselected = (xcord >= i.position_left + off && xcord < i.position_left + i.reserved + off);
 		if(rpast == -1) {
 			unsigned polls = fcontrols.read_pollcount(pv, i.index);
@@ -880,7 +875,6 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		unsigned idx = i.index;
-		frame_controls* _fcontrols = &fcontrols;
 		if((press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) &&
 			(x >= i.position_left + off && x < i.position_left + i.reserved + off)) {
 			if(i.type == 0)
@@ -1095,10 +1089,11 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		return;
 	auto s = m->get_scroll();
 	requested = true;
-	int lines, width, height;
+	uint32_t width, height;
+	uint64_t lines;
 	wxeditor_movie* m2 = m;
 	uint64_t old_cached_cffs = cached_cffs;
-	int prev_width, prev_height;
+	uint32_t prev_width, prev_height;
 	bool done_again = false;
 do_again:
 	runemufn([&lines, &width, &height, m2, this]() {

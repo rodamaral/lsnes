@@ -139,7 +139,7 @@ keyboard& keyboard_mapper::get_keyboard() throw()
 }
 
 keyboard_mapper::keyboard_mapper(keyboard& _kbd, command_group& _domain) throw(std::bad_alloc)
-	: kbd(_kbd), domain(_domain), inverse_proxy(*this), controllerkey_proxy(*this)
+	: inverse_proxy(*this), controllerkey_proxy(*this), kbd(_kbd), domain(_domain)
 {
 	register_queue<_inverse_proxy, inverse_bind>::do_ready(inverse_proxy, true);
 	register_queue<_controllerkey_proxy, controller_key>::do_ready(controllerkey_proxy, true);
@@ -481,7 +481,7 @@ std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const 
 	if(!key)
 		throw std::runtime_error("Invalid key");
 	auto s = key->get_subkeys();
-	for(auto i = 0; i < s.size(); i++)
+	for(size_t i = 0; i < s.size(); i++)
 		if(s[i].length() > 0 && letter == s[i][0])
 			return std::make_pair(key, i);
 	throw std::runtime_error("Invalid key");

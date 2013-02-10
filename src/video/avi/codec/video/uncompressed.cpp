@@ -50,9 +50,7 @@ namespace
 	{
 		out.payload.resize(3 * ewidth * eheight);
 
-		uint32_t s = 0;
 		for(uint32_t y = 0; y < eheight; y++) {
-			bool done = true;
 			if(y < eheight - iheight)
 				readrow(NULL);
 			else

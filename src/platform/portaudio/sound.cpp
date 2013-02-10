@@ -313,7 +313,6 @@ namespace
 	//Switch to full-duplex configuration.
 	unsigned switch_devices_full(PaDeviceIndex dev)
 	{
-		unsigned status = 0;
 		if(!check_indev(dev) || !check_outdev(dev))
 			return 0;
 		close_all();
@@ -427,7 +426,6 @@ namespace
 			//Neither is forced.
 			unsigned r;
 			PaDeviceIndex idx;
-			PaDeviceIndex sidx;
 			PaDeviceIndex pidx;
 			PaDeviceIndex ridx;
 			bool o_r = true;
@@ -463,6 +461,7 @@ namespace
 				return (switch_devices(paNoDevice, pidx) != 0);
 			return false;
 		}
+		return false;
 	}
 
 	PaDeviceIndex output_to_index(const std::string& dev)
@@ -520,7 +519,6 @@ namespace
 		.enable = [](bool _enable) -> void { was_enabled = _enable; },
 		.initialized = []() -> bool { return init_flag; },
 		.set_device = [](const std::string& pdev, const std::string& rdev) -> void {
-			bool failed = false;
 			PaDeviceIndex pidx = output_to_index(pdev);
 			PaDeviceIndex ridx = output_to_index(rdev);
 			auto ret = switch_devices(ridx, pidx);

@@ -241,7 +241,6 @@ namespace
 	{
 		msrle_compressor c;
 		bool keyframe = false;
-		bool changed = false;
 		if(pframes >= max_pframes) {
 			keyframe = true;
 			pframes = 0;

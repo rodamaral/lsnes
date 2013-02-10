@@ -254,7 +254,7 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 		sha256 hash;
 		char buffer[8192];
 		size_t block;
-		while(block = s.readsome(buffer, 8192))
+		while((block = s.readsome(buffer, 8192)))
 			hash.write(buffer, block);
 		sha_256 = hash.read();
 		delete &s;
@@ -288,7 +288,6 @@ void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(st
 		throw std::runtime_error("CD images can't be patched on the fly");
 	try {
 		std::vector<char> data2 = data;
-		size_t poffset = 0;
 		if(xml && valid)
 			data2.resize(data2.size() - 1);
 		data2 = do_patch_file(data2, patch, offset);

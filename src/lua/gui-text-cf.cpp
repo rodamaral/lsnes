@@ -78,9 +78,9 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
+		std::string text;
 		premultiplied_color fg;
 		premultiplied_color bg;
-		std::string text;
 		lua_obj_pin<lua_customfont>* font;
 	};
 
@@ -117,7 +117,7 @@ namespace
 	function_ptr_luafun gui_text_cf(LS, "gui.loadfont", [](lua_state& L, const std::string& fname) -> int {
 		std::string filename = L.get_string(1, fname.c_str());
 		try {
-			lua_customfont* b = lua_class<lua_customfont>::create(L, &L, filename);
+			lua_class<lua_customfont>::create(L, &L, filename);
 			return 1;
 		} catch(std::exception& e) {
 			L.pushstring(e.what());

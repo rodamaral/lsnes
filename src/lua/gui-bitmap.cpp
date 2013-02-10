@@ -281,7 +281,6 @@ namespace
 
 	function_ptr_luafun gui_loadbitmap(LS, "gui.bitmap_load", [](lua_state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
-		uint32_t w, h;
 		auto bitmap = lua_loaded_bitmap::load(name);
 		if(bitmap.d) {
 			lua_dbitmap* b = lua_class<lua_dbitmap>::create(L, bitmap.w, bitmap.h);

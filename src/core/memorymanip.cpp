@@ -111,12 +111,6 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 
 namespace
 {
-	memory_search* isrch;
-
-	std::string tokenize1(const std::string& command, const std::string& syntax);
-	std::pair<std::string, std::string> tokenize2(const std::string& command, const std::string& syntax);
-	std::pair<std::string, std::string> tokenize12(const std::string& command, const std::string& syntax);
-
 	unsigned char hex(char ch)
 	{
 		switch(ch) {

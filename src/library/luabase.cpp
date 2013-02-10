@@ -16,6 +16,7 @@ namespace
 			lua_pushfstring(L, "%s", e.what());
 			lua_error(L);
 		}
+		return 0;
 	}
 
 	//Pushes given table to top of stack, creating if needed.

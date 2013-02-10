@@ -182,7 +182,6 @@ void messagebuffer::set_max_window_size(size_t windowsize) throw(std::bad_alloc,
 		throw std::logic_error("Invalid window size");
 	if(window_size > windowsize) {
 		//Shrink window.
-		size_t shrinkage = window_size - windowsize;
 		bool autoscrolling = !scroll_frozen && (window_start + window_size >= next_message_number);
 		if(autoscrolling && window_start + windowsize < next_message_number)
 			window_start = next_message_number - windowsize;
@@ -190,7 +189,6 @@ void messagebuffer::set_max_window_size(size_t windowsize) throw(std::bad_alloc,
 		send_notifications();
 	} else if(window_size < windowsize) {
 		//Enlarge window.
-		size_t enlargement = windowsize - window_size;
 		if(first_present_message + windowsize >= next_message_number)
 			window_start = first_present_message;
 		else if(window_start + windowsize >= next_message_number)

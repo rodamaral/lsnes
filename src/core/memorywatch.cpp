@@ -79,6 +79,7 @@ namespace
 			case VT_FLOAT:		return f;
 			case VT_NAN:		throw std::runtime_error("#NAN");
 			};
+			return 0;
 		}
 		int64_t as_integer() const
 		{
@@ -88,6 +89,7 @@ namespace
 			case VT_FLOAT:		return f;
 			case VT_NAN:		throw std::runtime_error("#NAN");
 			};
+			return 0;
 		}
 		double as_double() const
 		{
@@ -97,6 +99,7 @@ namespace
 			case VT_FLOAT:		return f;
 			case VT_NAN:		throw std::runtime_error("#NAN");
 			};
+			return 0;
 		}
 		std::string str() const
 		{

@@ -142,6 +142,7 @@ int32_t utf8_parse_byte(int ch, uint16_t& state) throw()
 			return -1;
 		}
 	};
+	return -1;
 }
 
 size_t utf8_strlen(const std::string& str) throw()

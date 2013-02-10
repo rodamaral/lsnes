@@ -22,9 +22,9 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
+		std::string text;
 		premultiplied_color fg;
 		premultiplied_color bg;
-		std::string text;
 		bool hdbl;
 		bool vdbl;
 	};
@@ -47,18 +47,18 @@ namespace
 	}
 
 	function_ptr_luafun gui_text(LS, "gui.text", [](lua_state& L, const std::string& fname) -> int {
-		internal_gui_text(L, fname, false, false);
+		return internal_gui_text(L, fname, false, false);
 	});
 
 	function_ptr_luafun gui_textH(LS, "gui.textH", [](lua_state& L, const std::string& fname) -> int {
-		internal_gui_text(L, fname, true, false);
+		return internal_gui_text(L, fname, true, false);
 	});
 
 	function_ptr_luafun gui_textV(LS, "gui.textV", [](lua_state& L, const std::string& fname) -> int {
-		internal_gui_text(L, fname, false, true);
+		return internal_gui_text(L, fname, false, true);
 	});
 
 	function_ptr_luafun gui_textHV(LS, "gui.textHV", [](lua_state& L, const std::string& fname) -> int {
-		internal_gui_text(L, fname, true, true);
+		return internal_gui_text(L, fname, true, true);
 	});
 }

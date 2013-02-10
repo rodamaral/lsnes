@@ -573,9 +573,7 @@ out_parsing:
 		oggopus_importer importer;
 		uint32_t stream_seq = 0;	//The imprinting duckling model.
 		int state = 0;			//Not locked.
-		size_t advance;
 		uint32_t last_page_seen = 0xFFFFFFFFUL;
-		bool seen_data = false;
 		reader.set_errors_to(messages);
 		try {
 			while(reader.get_page(page)) {
@@ -586,7 +584,6 @@ out_parsing:
 				last_page_seen = page.get_sequence();
 				struct oggopus_header h;
 				struct oggopus_tags t;
-				size_t packets = page.get_packet_count();
 				switch(state) {
 				case 0:		//Not locked.
 					try {
@@ -1223,11 +1220,12 @@ out:
 
 	uint64_t stream_collection::add_stream(opus_stream& stream)
 	{
+		uint64_t idx;
 		try {
 			umutex_class m(mutex);
 			//Lock the added stream so it doesn't start playing back immediately.
 			stream.lock();
-			uint64_t idx = next_index++;
+			idx = next_index++;
 			streams[idx] = &stream;
 			char buffer[16];
 			write64ube(buffer, stream.timebase());
@@ -1252,6 +1250,7 @@ out:
 		} catch(std::exception& e) {
 			(stringfmt() << "Failed to add stream: " << e.what()).throwex();
 		}
+		return idx;
 	}
 
 	void stream_collection::unlock_all()
@@ -1648,7 +1647,6 @@ out:
 		umutex_class m2(current_collection_lock);
 		if(!current_collection)
 			return;
-		static unsigned output_seq = 0;
 		opus_encoder_ctl(e, OPUS_RESET_STATE);
 		total_compressed = 0;
 		total_blocks = 0;
@@ -1722,8 +1720,6 @@ out:
 		}
 		void entry2()
 		{
-			const size_t f = sizeof(float);
-			double position = 0;
 			int err;
 			OpusEncoder* oenc = opus_encoder_create(OPUS_SAMPLERATE, 1, OPUS_APPLICATION_VOIP, &err);
 			opus_encoder_ctl(oenc, OPUS_SET_BITRATE(OPUS_BITRATE));

@@ -206,8 +206,6 @@ void redraw_framebuffer()
 
 void render_framebuffer()
 {
-	static uint32_t val1, val2, val3, val4;
-	uint32_t nval1, nval2, nval3, nval4;
 	render_info& ri = get_read_buffer();
 	main_screen.reallocate(ri.fbuf.get_width() * ri.hscl + ri.lgap + ri.rgap, ri.fbuf.get_height() * ri.vscl +
 		ri.tgap + ri.bgap);
@@ -226,14 +224,6 @@ void render_framebuffer()
 		mouse_x->cast_mouse()->set_calibration(xcal);
 	if(mouse_y && mouse_y->get_type() == KBD_KEYTYPE_MOUSE)
 		mouse_y->cast_mouse()->set_calibration(ycal);
-	nval1 = ri.lgap;
-	nval2 = ri.tgap;
-	nval3 = ri.fbuf.get_width() * ri.hscl + ri.rgap;
-	nval4 = ri.fbuf.get_height() * ri.vscl + ri.bgap;
-	val1 = nval1;
-	val2 = nval2;
-	val3 = nval3;
-	val4 = nval4;
 	buffering.end_read();
 }
 

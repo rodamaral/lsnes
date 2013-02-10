@@ -330,7 +330,7 @@ namespace
 
 	function_ptr_luafun gui_cbitmap(LS, "memory.map_structure", [](lua_state& L, const std::string& fname) ->
 		int {
-		lua_mmap_struct* b = lua_class<lua_mmap_struct>::create(L, &L);
+		lua_class<lua_mmap_struct>::create(L, &L);
 		return 1;
 	});
 

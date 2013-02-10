@@ -16,7 +16,7 @@ struct memory_region
 /**
  * Destructor.
  */
-	~memory_region() throw();
+	virtual ~memory_region() throw();
 /**
  * Name of the region (mainly for debugging and showing to user).
  */

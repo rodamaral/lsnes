@@ -960,7 +960,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
 	std::string filename;
 	bool s;
-	double parsed;
 	switch(e.GetId()) {
 	case wxID_FRAMEADVANCE:
 		platform::queue("+advance-frame");
@@ -1162,7 +1161,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	}
 	case wxID_SET_SPEED: {
-		bool bad = false;
 		std::string value = "infinite";
 		double val = get_speed_multiplier();
 		if(!(val == std::numeric_limits<double>::infinity()))

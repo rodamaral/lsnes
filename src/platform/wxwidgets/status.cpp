@@ -73,7 +73,6 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	memorywatches.clear();
 	statusvars.clear();
 	
-	int y = 0;
 	size_t mem_width = 0;
 	size_t oth_width = 0;
 	size_t mem_count = 0;
@@ -128,7 +127,6 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	auto ssize = statusvars.get_pixels();
 	auto msize = memorywatches.get_pixels();
 	size_t y2 = !single ? ssize.second + 3 : 0;
-	size_t yt = (oth_count ? ssize.second : 0) + (mem_count ? msize.second : 0) + (!single ? 3 : 0);
 	size_t yl = ssize.second + 1;
 	std::vector<char> buffer1, buffer2;
 	buffer1.resize(msize.first * msize.second * 3);

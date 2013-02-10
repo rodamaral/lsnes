@@ -108,7 +108,6 @@ socket_address::socket_address(const std::string& name)
 {
 	struct addrinfo hints;
 	struct addrinfo* ainfo;
-	bool real = false;
 	int r;
 	std::string node, service, tmp = name;
 	size_t s;
@@ -145,11 +144,9 @@ socket_address::socket_address(const std::string& name)
 #ifdef AI_ADDRCONFIG
 	hints.ai_flags = AI_ADDRCONFIG;
 #endif
-	real = true;
 	r = getaddrinfo(node.c_str(), service.c_str(), &hints, &ainfo);
 	if(r < 0)
 		throw std::runtime_error(std::string("getaddrinfo: ") + gai_strerror(r));
-establish:
 	family = ainfo->ai_family;
 	socktype = ainfo->ai_socktype;
 	protocol = ainfo->ai_protocol;

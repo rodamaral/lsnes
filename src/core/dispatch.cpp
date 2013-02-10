@@ -46,6 +46,7 @@ std::string gameinfo_struct::get_readable_time(unsigned digits) const throw(std:
 		len -= floor(len);
 		digits--;
 	}
+	return str.str();
 }
 
 size_t gameinfo_struct::get_author_count() const throw()
@@ -92,10 +93,6 @@ namespace
 	uint32_t srate_n = 32000;
 	uint32_t srate_d = 1;
 	struct gameinfo_struct sgi;
-	int32_t vc_xoffset = 0;
-	int32_t vc_yoffset = 0;
-	uint32_t vc_hscl = 1;
-	uint32_t vc_vscl = 1;
 	bool recursive = false;
 }
 

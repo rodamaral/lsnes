@@ -5,9 +5,9 @@ namespace
 {
 	struct render_object_box : public render_object
 	{
-		render_object_box(int32_t _x, int32_t _y, uint32_t _width, uint32_t _height,
+		render_object_box(int32_t _x, int32_t _y, int32_t _width, int32_t _height,
 			premultiplied_color _outline1, premultiplied_color _outline2, premultiplied_color _fill,
-			uint32_t _thickness) throw()
+			int32_t _thickness) throw()
 			: x(_x), y(_y), width(_width), height(_height), outline1(_outline1), outline2(_outline2),
 			fill(_fill), thickness(_thickness) {}
 		~render_object_box() throw() {}
@@ -43,12 +43,12 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
-		uint32_t width;
-		uint32_t height;
+		int32_t width;
+		int32_t height;
 		premultiplied_color outline1;
 		premultiplied_color outline2;
 		premultiplied_color fill;
-		uint32_t thickness;
+		int32_t thickness;
 	};
 
 	function_ptr_luafun gui_box(LS, "gui.box", [](lua_state& L, const std::string& fname) -> int {

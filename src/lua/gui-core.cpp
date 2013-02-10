@@ -98,7 +98,6 @@ namespace
 			hue = B - R + 2 * S;
 		else
 			hue = R - G + 4 * S;
-		int16_t ohue = hue % (6 * S);
 		hue = (hue + static_cast<uint32_t>(shift * S)) % (6 * S);
 		uint32_t V[4];
 		V[0] = m;

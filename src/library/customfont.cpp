@@ -31,7 +31,7 @@ namespace
 {
 	void bound(int32_t c, uint32_t odim, uint32_t dim, uint32_t& dc, uint32_t& off, uint32_t& size)
 	{
-		if(c >= dim || c + odim <= 0) {
+		if(c >= (int32_t)dim || c + odim <= 0) {
 			//Outside the screen.
 			dc = 0;
 			off = 0;

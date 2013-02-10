@@ -73,7 +73,6 @@ namespace
 
 	void avi_codec_cscd::frame(uint32_t* data)
 	{
-		bool buffer_loaded = false;
 		bool keyframe = false;
 		if(pframes >= max_pframes) {
 			keyframe = true;
@@ -87,7 +86,6 @@ namespace
 		z.reset(h, 2);
 
 		for(uint32_t y = 0; y < eheight; y++) {
-			bool done = true;
 			if(y < eheight - iheight)
 				readrow(NULL);
 			else

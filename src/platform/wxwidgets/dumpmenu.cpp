@@ -50,7 +50,7 @@ public:
 		linked = dmenu;
 	}
 
-	~dumper_menu_monitor()
+	~dumper_menu_monitor() throw()
 	{
 	}
 

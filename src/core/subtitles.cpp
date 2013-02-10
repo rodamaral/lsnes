@@ -93,9 +93,9 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
+		std::string text;
 		premultiplied_color fg;
 		premultiplied_color bg;
-		std::string text;
 	};
 
 

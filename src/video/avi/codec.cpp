@@ -187,7 +187,6 @@ void avi_output_stream::flushaudio()
 void avi_output_stream::end()
 {
 	flushaudio();	//In case audio codec uses internal buffering...
-	std::ostream& out = *avifile.outstream;
 	avifile.finish_avi();
 	in_segment = false;
 }

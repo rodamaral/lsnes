@@ -93,8 +93,6 @@ void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& st
 
 void cover_next_position(uint32_t ch, unsigned& x, unsigned& y)
 {
-	unsigned ox = x;
-	unsigned oy = y;
 	if(ch == 9)
 		x = (x + 63) >> 6 << 6;
 	else if(ch == 10) {

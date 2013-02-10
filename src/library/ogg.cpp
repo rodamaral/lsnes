@@ -138,7 +138,7 @@ ogg_page::ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error
 	if(segment_count)
 		memcpy(segments, buffer + 27, segment_count);
 	memset(data, 0, sizeof(data));
-	if(b > 27 + segment_count)
+	if(b > 27U + segment_count)
 		memcpy(data, buffer + 27 + segment_count, b - 27 - segment_count);
 	packet_count = 0;
 	memset(packets, 0, sizeof(packets));
@@ -159,7 +159,6 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 {
 	const char* _buffer = buffer;
 	size_t buffer_left = bufferlen;
-	int capture_state = 0;
 	advance = 0;
 	while(buffer_left >= 27) {
 		//Check capture pattern.
@@ -184,7 +183,7 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 			continue;
 		}
 		//Check that segment table is present. If not, more data can uncover a page here.
-		if(27 + (unsigned char)_buffer[26] > buffer_left) {
+		if(27U + (unsigned char)_buffer[26] > buffer_left) {
 			if(!eof) {
 				return false;
 			} else {
@@ -228,6 +227,7 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 		//Advance to the end.
 		advance += buffer_left;
 	}
+	return false;
 }
 
 bool ogg_page::append_packet(const uint8_t* _data, size_t datalen) throw()
@@ -323,7 +323,7 @@ struct oggopus_header parse_oggopus_header(struct ogg_page& page) throw(std::run
 	auto p = page.get_packet(0);
 	if(p.second < 8 || memcmp(p.first, "OpusHead", 8))
 		throw std::runtime_error("Bad OggOpus header magic");
-	if(p.second < 19 || (p.first[18] && p.second < 21 + p.first[5]))
+	if(p.second < 19 || (p.first[18] && p.second < 21U + p.first[5]))
 		throw std::runtime_error("OggOpus header packet truncated");
 	if(!p.first[9])
 		throw std::runtime_error("Zero channels not allowed");

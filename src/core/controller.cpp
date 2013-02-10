@@ -146,8 +146,8 @@ namespace
 			if(!all_buttons.count(name))
 				add_button(name, b);
 			if(!all_buttons.count(name) ||
-				(all_buttons[name].control2 == std::numeric_limits<unsigned>::max()) &&
-				(b.control2 < std::numeric_limits<unsigned>::max())) {
+				((all_buttons[name].control2 == std::numeric_limits<unsigned>::max()) &&
+				(b.control2 < std::numeric_limits<unsigned>::max()))) {
 				all_buttons[name] = b;
 			}
 		}

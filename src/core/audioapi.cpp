@@ -75,6 +75,7 @@ namespace
 					audioapi_put_voice(NULL, samples);
 				usleep(10000);
 			}
+			return 0;
 		}
 	};
 

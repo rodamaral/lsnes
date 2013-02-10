@@ -185,7 +185,6 @@ namespace
 
 	bool read_one_input_event(int fd)
 	{
-		short x;
 		struct input_event ev;
 		int r = read(fd, &ev, sizeof(ev));
 		if(r < 0 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK))

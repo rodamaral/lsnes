@@ -230,19 +230,16 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 		short new_value = current_controls.axis3(port, controller, ctrl);
 		//Fortunately, we know this frame is the last one in movie_data.
 		uint32_t pollcounter = pollcounters.get_polls(port, controller, ctrl);
-		uint64_t fetchrow = movie_data.size() - 1;
 		if(current_frame_first_subframe + pollcounter < movie_data.size()) {
 			//The index is within existing size. Change the value and propagate to all subsequent
 			//subframes.
 			for(uint64_t i = current_frame_first_subframe + pollcounter; i < movie_data.size(); i++)
 				movie_data[i].axis3(port, controller, ctrl, new_value);
-			fetchrow = current_frame_first_subframe + pollcounter;
 		} else if(new_value != movie_data[movie_data.size() - 1].axis3(port, controller, ctrl)) {
 			//The index is not within existing size and value does not match. We need to create a new
 			//subframes(s), copying the last subframe.
 			while(current_frame_first_subframe + pollcounter >= movie_data.size())
 				movie_data.append(movie_data[movie_data.size() - 1].copy(false));
-			fetchrow = current_frame_first_subframe + pollcounter;
 			movie_data[current_frame_first_subframe + pollcounter].axis3(port, controller, ctrl,
 				new_value);
 		}
@@ -455,6 +452,7 @@ movie& movie::operator=(const movie& m)
 	frames_in_movie = m.frames_in_movie;
 	cached_frame = m.cached_frame;
 	cached_subframe = m.cached_subframe;
+	return *this;
 }
 
 void movie::set_pflag_handler(poll_flag* handler)

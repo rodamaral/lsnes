@@ -370,7 +370,6 @@ void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw()
 
 void init_lua(bool soft) throw()
 {
-	char tmpkey;
 	LS.set_oom_handler(OOM_panic);
 	try {
 		LS.reset();
@@ -404,6 +403,7 @@ uint64_t lua_timed_hook(int timer) throw()
 	case LUA_TIMED_HOOK_TIMER:
 		return lua_timer_hook_time;
 	}
+	return 0;
 }
 
 void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov, void* u)

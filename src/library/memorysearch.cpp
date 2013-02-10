@@ -314,9 +314,7 @@ void memory_search::dq_range(uint64_t first, uint64_t last)
 	if(!t.first)
 		return;
 	uint64_t i = 0;
-	uint64_t switch_at = t.first->size - t.second;
 	uint64_t size = previous_content.size();
-	uint64_t addr = t.first->base + t.second;
 	while(true) {
 		//Switch blocks.
 		t = mspace.lookup_linear(i);
@@ -336,8 +334,6 @@ template<class T> void memory_search::search(const T& obj) throw()
 	auto t = mspace.lookup_linear(0);
 	if(!t.first)
 		return;
-	uint64_t switch_at = t.first->size - t.second;
-	uint64_t base = 0;
 	uint64_t size = previous_content.size();
 	uint64_t i = 0;
 	while(true) {
@@ -450,9 +446,6 @@ std::list<uint64_t> memory_search::get_candidates() throw(std::bad_alloc)
 	auto t = mspace.lookup_linear(0);
 	if(!t.first)
 		return out;
-	uint64_t switch_at = t.first->size - t.second;
-	uint64_t base = 0;
-	uint64_t size = previous_content.size();
 	uint64_t i = 0;
 	while(true) {
 		//Switch blocks.
@@ -474,15 +467,11 @@ void memory_search::reset() throw(std::bad_alloc)
 		still_in[i] = 0xFFFFFFFFFFFFFFFFULL;
 	if(linearram % 64)
 		still_in[linearram / 64] = (1ULL << (linearram % 64)) - 1;
-	uint64_t addr = 0;
 	candidates = linearram;
 
 	auto t = mspace.lookup_linear(0);
 	if(!t.first)
 		return;
-	uint64_t switch_at = t.first->size - t.second;
-	uint64_t base = 0;
-	uint64_t size = previous_content.size();
 	uint64_t i = 0;
 	while(true) {
 		//Switch blocks.

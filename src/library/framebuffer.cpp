@@ -617,7 +617,6 @@ void bitmap_font::load_hex_glyph(const char* data, size_t size) throw(std::bad_a
 void bitmap_font::load_hex(const char* data, size_t size) throw(std::bad_alloc, std::runtime_error)
 {
 	const char* enddata = data + size;
-	uint32_t lineno = 0;
 	while(data != enddata) {
 		size_t linesize = 0;
 		while(data + linesize != enddata && data[linesize] != '\n' && data[linesize] != '\r')
@@ -762,9 +761,9 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 			int32_t gx = x + layout_x;
 			int32_t gy = y + layout_y;
 			//Don't draw characters completely off-screen.
-			if(gy <= (vdbl ? -32 : -16) || gy >= sheight)
+			if(gy <= (vdbl ? -32 : -16) || gy >= (ssize_t)sheight)
 				break;
-			if(gx <= -(hdbl ? 2 : 1) * (g.wide ? 16 : 8) || gx >= swidth)
+			if(gx <= -(hdbl ? 2 : 1) * (g.wide ? 16 : 8) || gx >= (ssize_t)swidth)
 				break;
 			//Compute the bounding box.
 			uint32_t xstart = 0;

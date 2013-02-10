@@ -411,7 +411,6 @@ void wxwindow_memorysearch::update()
 
 void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 {
-	wxwindow_memorysearch* tmp = this;
 	int id = e.GetId();
 	if(id == wxID_RESET) {
 		msearch->reset();

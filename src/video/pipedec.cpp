@@ -92,6 +92,7 @@ namespace
 		case 'e':	case 'E':	return 14;
 		case 'f':	case 'F':	return 15;
 		};
+		return 16;
 	}
 
 	class pipedec_avsnoop : public information_dispatch

@@ -9,7 +9,6 @@ namespace
 	threadid_class threads[DESIGNATED_THREADS];
 	volatile bool thread_marked;
 	mutex_class malloc_mutex;
-	bool initialized = false;
 }
 
 void assert_thread(signed shouldbe, const std::string& desc)

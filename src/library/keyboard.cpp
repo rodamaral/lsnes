@@ -277,6 +277,7 @@ int keyboard_axis_calibration::get_digital_state(int32_t x) const throw()
 			return esign_b;
 		return 0;
 	}
+	return 0;
 }
 
 int32_t keyboard_mouse_calibration::get_calibrated_value(int32_t x) const throw()
@@ -337,7 +338,7 @@ int32_t keyboard_event_hat::get_state() const throw()
 
 keyboard_key::keyboard_key(keyboard& keyb, const std::string& _name, const std::string& _clazz,
 	keyboard_keytype _type) throw(std::bad_alloc)
-	:  kbd(keyb), name(_name), clazz(_clazz), type(_type)
+	:  kbd(keyb), clazz(_clazz), name(_name), type(_type)
 {
 	exclusive_listener = NULL;
 	register_queue<keyboard::_key_proxy, keyboard_key>::do_register(kbd.key_proxy, name, *this);
