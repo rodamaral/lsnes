@@ -419,6 +419,8 @@ private:
 	std::string c_rom;
 	std::string c_file;
 	std::map<std::string, std::string> c_settings;
+	std::vector<std::string> c_lua;
+	bool exit_immediately;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -426,6 +428,7 @@ IMPLEMENT_APP(lsnes_app)
 lsnes_app::lsnes_app()
 {
 	settings_mode = false;
+	exit_immediately = false;
 }
 
 void lsnes_app::OnInitCmdLine(wxCmdLineParser& parser)
@@ -441,6 +444,16 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		cmdline.push_back(tostdstring(parser.GetParam(i)));
 	for(auto i: cmdline) {
 		regex_results r;
+		if(i == "--help" || i == "-h") {
+			std::cout << "--settings: Show the settings dialog" << std::endl;
+			std::cout << "--rom=<filename>: Load specified ROM on startup" << std::endl;
+			std::cout << "--load=<filename>: Load specified save/movie on starup" << std::endl;
+			std::cout << "--lua=<filename>: Load specified Lua script on startup" << std::endl;
+			std::cout << "--set=<a>=<b>: Set setting <a> to value <b>" << std::endl;
+			std::cout << "<filename>: Load specified ROM on startup" << std::endl;
+			exit_immediately = true;
+			return true;
+		}
 		if(i == "--settings")
 			settings_mode = true;
 		if(r = regex("--rom=(.+)", i))
@@ -449,6 +462,10 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			c_file = r[1];
 		if(r = regex("--set=([^=]+)=(.+)", i))
 			c_settings[r[1]] = r[2];
+		if(r = regex("--lua=(.+)", i))
+			c_lua.push_back(r[1]);
+		if(r = regex("[^-].*", i))
+			c_rom = i;	//Alt. way to specify rom.
 	}
 	return true;
 }
@@ -457,6 +474,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 bool lsnes_app::OnInit()
 {
 	wxApp::OnInit();
+	if(exit_immediately)
+		return false;
 
 	reached_main();
 	set_random_seed();
@@ -550,8 +569,11 @@ bool lsnes_app::OnInit()
 	}
 	our_rom = rom;
 	mov->start_paused = true;
+	for(auto i : c_lua) {
+		messages << "Trying to run Lua script: " << i << std::endl;
+		lsnes_cmd.invoke("run-lua " + i);
+	}
 	boot_emulator(*rom, *mov);
-
 	return true;
 }
 

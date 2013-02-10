@@ -204,7 +204,15 @@ Load <file> as ROM.
 \end_layout
 
 \begin_layout Subsubsection
---load=<file> (lsnes/wxwidgets)
+<file>
+\end_layout
+
+\begin_layout Standard
+Load <file> as ROM.
+\end_layout
+
+\begin_layout Subsubsection
+--load=<file>
 \end_layout
 
 \begin_layout Standard
@@ -217,6 +225,14 @@ Load <file> as movie or savestate file on startup.
 
 \begin_layout Standard
 Instead of starting the emulator, only display the settings.
+\end_layout
+
+\begin_layout Subsubsection
+--lua=<file>
+\end_layout
+
+\begin_layout Standard
+Run this Lua file on startup
 \end_layout
 
 \begin_layout Subsection
@@ -6828,6 +6844,70 @@ Lua: Fix methods stopping working when resetting Lua.
 
 \begin_layout Itemize
 Fix loading standard-format movies in preserve (readonly) mode.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta17
+\end_layout
+
+\begin_layout Itemize
+Primitive movie editor
+\end_layout
+
+\begin_layout Itemize
+Fix VU meter with no sound device.
+\end_layout
+
+\begin_layout Itemize
+Fix various undefined return values.
+\end_layout
+
+\begin_layout Itemize
+Show rates in VU meter window.
+\end_layout
+
+\begin_layout Subsection
+rr2-beta3
+\end_layout
+
+\begin_layout Itemize
+Lua: Render queues as objects
+\end_layout
+
+\begin_layout Itemize
+Bsnes: support hard resets
+\end_layout
+
+\begin_layout Itemize
+Dedicated sound devices dialog
+\end_layout
+
+\begin_layout Itemize
+Change the default AVI sound mode to 2 or 5.
+\end_layout
+
+\begin_layout Itemize
+Fix totally borked movie saving.
+\end_layout
+
+\begin_layout Itemize
+Portaudio: Use split duplex with different devices.
+\end_layout
+
+\begin_layout Itemize
+Fix controls with gambatte core.
+\end_layout
+
+\begin_layout Itemize
+Modify save slot set handling.
+\end_layout
+
+\begin_layout Itemize
+lsnes-dumpavi: --firmware-path.
+\end_layout
+
+\begin_layout Itemize
+Fix lots of compiler warnings.
 \end_layout
 
 \end_body

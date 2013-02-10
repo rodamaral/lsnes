@@ -71,13 +71,21 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 Load <file> as ROM.
 
-4.1.2 --load=<file> (lsnes/wxwidgets)
+4.1.2 <file>
+
+Load <file> as ROM.
+
+4.1.3 --load=<file>
 
 Load <file> as movie or savestate file on startup.
 
-4.1.3 --settings
+4.1.4 --settings
 
 Instead of starting the emulator, only display the settings.
+
+4.1.5 --lua=<file>
+
+Run this Lua file on startup
 
 4.2 dump options (lsnes-dumpavi only)
 
@@ -3370,4 +3378,36 @@ set-axis joystick0axis19 disabled
 • Lua: Fix methods stopping working when resetting Lua.
 
 • Fix loading standard-format movies in preserve (readonly) mode.
+
+18.81 rr1-delta17
+
+• Primitive movie editor
+
+• Fix VU meter with no sound device.
+
+• Fix various undefined return values.
+
+• Show rates in VU meter window.
+
+18.82 rr2-beta3
+
+• Lua: Render queues as objects
+
+• Bsnes: support hard resets
+
+• Dedicated sound devices dialog
+
+• Change the default AVI sound mode to 2 or 5.
+
+• Fix totally borked movie saving.
+
+• Portaudio: Use split duplex with different devices.
+
+• Fix controls with gambatte core.
+
+• Modify save slot set handling.
+
+• lsnes-dumpavi: --firmware-path.
+
+• Fix lots of compiler warnings.
 
