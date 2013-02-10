@@ -203,6 +203,14 @@ ROM options
 Load <file> as ROM.
 \end_layout
 
+\begin_layout Subsubsection
+<file> (lsnes/wxwidgets)
+\end_layout
+
+\begin_layout Standard
+Load <file> as ROM.
+\end_layout
+
 \begin_layout Subsection
 Session options
 \end_layout
@@ -367,6 +375,14 @@ Misc.
 \begin_layout Standard
 After running main RC file, run this file.
  If multiple are specified, these execute in order specified.
+\end_layout
+
+\begin_layout Subsubsection
+--lua=<file> (lsnes/wxwidgets)
+\end_layout
+
+\begin_layout Standard
+Run this Lua file on startup
 \end_layout
 
 \begin_layout Subsection
@@ -7603,6 +7619,26 @@ Lua: Fix methods stopping working when resetting Lua.
 
 \begin_layout Itemize
 Fix loading standard-format movies in preserve (readonly) mode.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta17
+\end_layout
+
+\begin_layout Itemize
+Primitive movie editor
+\end_layout
+
+\begin_layout Itemize
+Fix VU meter with no sound device.
+\end_layout
+
+\begin_layout Itemize
+Fix various undefined return values.
+\end_layout
+
+\begin_layout Itemize
+Show rates in VU meter window.
 \end_layout
 
 \end_body

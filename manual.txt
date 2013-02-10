@@ -3759,3 +3759,13 @@ set-axis joystick0axis19 disabled
 
 • Fix loading standard-format movies in preserve (readonly) mode.
 
+19.78 rr1-delta17
+
+• Primitive movie editor
+
+• Fix VU meter with no sound device.
+
+• Fix various undefined return values.
+
+• Show rates in VU meter window.
+
