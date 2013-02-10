@@ -13,6 +13,7 @@
 #include "core/framerate.hpp"
 #include "core/inthread.hpp"
 #include "core/keymapper.hpp"
+#include "core/settings.hpp"
 #include "core/misc.hpp"
 #include <cmath>
 #include <list>
@@ -59,6 +60,26 @@ namespace
 	class opus_playback_stream;
 	class opus_stream;
 	class stream_collection;
+
+	volatile unsigned opus_bitrate = OPUS_BITRATE;
+	struct _bitrate_setting : public setting
+	{
+		_bitrate_setting() : setting("opus-bitrate") {}
+		~_bitrate_setting() {}
+		bool blank(bool x) throw (std::bad_alloc, std::runtime_error)
+		{
+			throw std::runtime_error("This setting can't be blanked");
+		}
+		bool is_set() throw() { return true; }
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			unsigned tmp = parse_value<unsigned>(value);
+			if(tmp < 8000 || tmp > 255000)
+				throw std::runtime_error("Bitrate out of range");
+			opus_bitrate = tmp;
+		}
+		std::string get() throw(std::bad_alloc) { return (stringfmt() << opus_bitrate).str(); }
+	} bitrate_setting;
 
 	//Recording active flag.
 	volatile bool active_flag = false;
@@ -660,7 +681,7 @@ out:
 			throw std::runtime_error("Only mono streams are supported");
 		uint64_t samples = read64ule(header + 8);
 		OpusEncoder* enc = opus_encoder_create(48000, 1, OPUS_APPLICATION_VOIP, &err);
-		opus_encoder_ctl(enc, OPUS_SET_BITRATE(OPUS_BITRATE));
+		opus_encoder_ctl(enc, OPUS_SET_BITRATE(opus_bitrate));
 		int pregap;
 		opus_encoder_ctl(enc, OPUS_GET_LOOKAHEAD(&pregap));
 		pregap_length = pregap;
@@ -1652,6 +1673,7 @@ out:
 			return;
 		static unsigned output_seq = 0;
 		opus_encoder_ctl(e, OPUS_RESET_STATE);
+		opus_encoder_ctl(e, OPUS_SET_BITRATE(opus_bitrate));
 		total_compressed = 0;
 		total_blocks = 0;
 		uint64_t ctime;
@@ -1726,7 +1748,7 @@ out:
 			double position = 0;
 			int err;
 			OpusEncoder* oenc = opus_encoder_create(OPUS_SAMPLERATE, 1, OPUS_APPLICATION_VOIP, &err);
-			opus_encoder_ctl(oenc, OPUS_SET_BITRATE(OPUS_BITRATE));
+			opus_encoder_ctl(oenc, OPUS_SET_BITRATE(opus_bitrate));
 			audioapi_resampler rin;
 			audioapi_resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.
