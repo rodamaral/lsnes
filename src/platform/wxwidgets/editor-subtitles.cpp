@@ -157,16 +157,20 @@ namespace
 
 	bool edit_subtext(wxWindow* w, struct subdata& d)
 	{
+		bool res = false;
 		wxeditor_subtitles_subtitle* editor = NULL;
 		try {
 			editor = new wxeditor_subtitles_subtitle(w, d);
 			int ret = editor->ShowModal();
-			if(ret == wxID_OK)
+			if(ret == wxID_OK) {
 				d = editor->get_result();
+				res = true;
+			}
 		} catch(...) {
 		}
 		if(editor)
 			editor->Destroy();
+		return res;
 	}
 }
 

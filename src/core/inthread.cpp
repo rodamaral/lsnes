@@ -1223,11 +1223,12 @@ out:
 
 	uint64_t stream_collection::add_stream(opus_stream& stream)
 	{
+		uint64_t idx;
 		try {
 			umutex_class m(mutex);
 			//Lock the added stream so it doesn't start playing back immediately.
 			stream.lock();
-			uint64_t idx = next_index++;
+			idx = next_index++;
 			streams[idx] = &stream;
 			char buffer[16];
 			write64ube(buffer, stream.timebase());
@@ -1252,6 +1253,7 @@ out:
 		} catch(std::exception& e) {
 			(stringfmt() << "Failed to add stream: " << e.what()).throwex();
 		}
+		return idx;
 	}
 
 	void stream_collection::unlock_all()

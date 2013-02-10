@@ -52,8 +52,6 @@ namespace
 		ADVANCE_PAUSE,			//Unconditional pause.
 	};
 
-	//Previous mouse mask.
-	int prev_mouse_mask = 0;
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;

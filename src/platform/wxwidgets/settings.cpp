@@ -1578,7 +1578,7 @@ class wxeditor_esettings_advanced : public wxPanel, information_dispatch
 {
 public:
 	wxeditor_esettings_advanced(wxWindow* parent);
-	~wxeditor_esettings_advanced();
+	~wxeditor_esettings_advanced() throw();
 	void on_change(wxCommandEvent& e);
 	void on_clear(wxCommandEvent& e);
 	void on_selchange(wxCommandEvent& e);
@@ -1634,7 +1634,7 @@ void wxeditor_esettings_advanced::prepare_destroy()
 	destruction_underway = true;
 }
 
-wxeditor_esettings_advanced::~wxeditor_esettings_advanced()
+wxeditor_esettings_advanced::~wxeditor_esettings_advanced() throw()
 {
 }
 

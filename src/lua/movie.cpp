@@ -99,6 +99,7 @@ namespace
 			lua_error(LS);
 			return 0;
 		}
+		return 0;
 	});
 }
 

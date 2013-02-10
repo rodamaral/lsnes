@@ -32,7 +32,7 @@ namespace
 			total = frames_to_dump;
 		}
 
-		~myavsnoop()
+		~myavsnoop() throw()
 		{
 		}
 

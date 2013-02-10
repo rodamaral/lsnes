@@ -12,7 +12,8 @@ __all__.$(OBJECT_SUFFIX): $(OBJECTS)
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
 
 font.cpp : $(FONT_SRC)
-	echo "extern const char* font_hex_data = " >font.cpp
+	echo "extern const char* font_hex_data; " >font.cpp
+	echo "const char* font_hex_data = " >>font.cpp
 	sed -E -f fonttransform.sed <$^ >>font.cpp
 	echo ";" >>font.cpp
 

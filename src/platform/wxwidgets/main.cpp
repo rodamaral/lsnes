@@ -64,6 +64,7 @@ namespace
 	void* joystick_thread(void* _args)
 	{
 		joystick_plugin::thread_fn();
+		return NULL;
 	}
 
 	struct uiserv_event : public wxEvent
@@ -346,6 +347,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		if(r = regex("--load=(.+)", i))
 			c_file = r[1];
 	}
+	return true;
 }
 
 

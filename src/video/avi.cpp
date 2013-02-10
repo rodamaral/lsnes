@@ -33,7 +33,7 @@ namespace
 
 	uint32_t topowerof2(uint32_t base)
 	{
-		if(base & (base - 1) == 0)
+		if((base & (base - 1)) == 0)
 			return base;	//Already power of two.
 		base |= (base >> 16);
 		base |= (base >> 8);
@@ -136,6 +136,7 @@ namespace
 	struct avi_worker : public worker_thread
 	{
 		avi_worker(const struct avi_info& info);
+		~avi_worker() throw();
 		void entry();
 		void queue_video(uint32_t* _frame, uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
 		void queue_audio(int16_t* data, size_t samples);
@@ -163,6 +164,10 @@ namespace
 		segframes = 0;
 		max_segframes = info.max_frames;
 		fire();
+	}
+
+	avi_worker::~avi_worker() throw()
+	{
 	}
 
 	void avi_worker::queue_video(uint32_t* _frame, uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d)

@@ -15,7 +15,7 @@ void timer::rate(uint32_t rate_n, uint32_t rate_d)
 	//Adjust n.
 	if(d == old_d2)
 		return;
-	uint64_t n = n * (d / old_d) + 0.5;
+	n = n * (d / old_d) + 0.5;
 	w += (n / d);
 	n %= d;
 }

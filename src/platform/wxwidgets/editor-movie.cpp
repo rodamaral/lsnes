@@ -348,7 +348,7 @@ private:
 	struct _moviepanel : public wxPanel, public information_dispatch
 	{
 		_moviepanel(wxeditor_movie* v);
-		~_moviepanel();
+		~_moviepanel() throw();
 		void signal_repaint();
 		void on_scroll(wxScrollEvent& e);
 		void on_paint(wxPaintEvent& e);
@@ -453,7 +453,7 @@ namespace
 	}
 }
 
-wxeditor_movie::_moviepanel::~_moviepanel() {}
+wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
 wxeditor_movie::~wxeditor_movie() throw() {}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
