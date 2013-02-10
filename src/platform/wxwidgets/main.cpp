@@ -318,6 +318,7 @@ private:
 	bool settings_mode;
 	std::string c_rom;
 	std::string c_file;
+	std::vector<std::string> c_lua;
 };
 
 IMPLEMENT_APP(lsnes_app)
@@ -346,6 +347,10 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 			c_rom = r[1];
 		if(r = regex("--load=(.+)", i))
 			c_file = r[1];
+		if(r = regex("--lua=(.+)", i))
+			c_lua.push_back(r[1]);
+		if(r = regex("[^-].*", i))
+			c_rom = i;	//Alt. way to specify rom.
 	}
 	return true;
 }
@@ -442,8 +447,11 @@ bool lsnes_app::OnInit()
 		}
 	}
 	mov->start_paused = true;
+	for(auto i : c_lua) {
+		messages << "Trying to run Lua script: " << i << std::endl;
+		command::invokeC("run-lua " + i);
+	}
 	boot_emulator(*rom, *mov);
-
 	return true;
 }
 
