@@ -46,6 +46,8 @@
 #define ITERATION_TIME 15000
 //Opus bitrate to use.
 #define OPUS_BITRATE 48000
+//Opus max bitrate to use.
+#define OPUS_MAX_BITRATE 255000
 //Ogg Opus granule rate.
 #define OGGOPUS_GRANULERATE 48000
 //Record buffer size threshold divider.
@@ -62,6 +64,7 @@ namespace
 	class stream_collection;
 
 	volatile unsigned opus_bitrate = OPUS_BITRATE;
+	volatile unsigned opus_max_bitrate = OPUS_MAX_BITRATE;
 	struct _bitrate_setting : public setting
 	{
 		_bitrate_setting() : setting(lsnes_set, "opus-bitrate") {}
@@ -80,6 +83,24 @@ namespace
 		}
 		std::string get() throw(std::bad_alloc) { return (stringfmt() << opus_bitrate).str(); }
 	} bitrate_setting;
+	struct _max_bitrate_setting : public setting
+	{
+		_max_bitrate_setting() : setting(lsnes_set, "opus-max-bitrate") {}
+		~_max_bitrate_setting() {}
+		bool blank(bool x) throw (std::bad_alloc, std::runtime_error)
+		{
+			throw std::runtime_error("This setting can't be blanked");
+		}
+		bool is_set() throw() { return true; }
+		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+		{
+			unsigned tmp = parse_value<unsigned>(value);
+			if(tmp < 8000 || tmp > 255000)
+				throw std::runtime_error("Bitrate out of range");
+			opus_max_bitrate = tmp;
+		}
+		std::string get() throw(std::bad_alloc) { return (stringfmt() << opus_max_bitrate).str(); }
+	} max_bitrate_setting;
 
 	//Recording active flag.
 	volatile bool active_flag = false;
@@ -104,6 +125,89 @@ namespace
 	stream_collection* current_collection;
 	//Lock protecting current collection.
 	mutex_class current_collection_lock;
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//Bitrate tracker.
+	struct bitrate_tracker
+	{
+		bitrate_tracker() throw();
+		void reset() throw();
+		double get_min() throw();
+		double get_avg() throw();
+		double get_max() throw();
+		double get_length() throw();
+		uint64_t get_bytes() throw();
+		uint64_t get_blocks() throw();
+		void submit(uint32_t bytes, uint32_t samples) throw();
+	private:
+		uint64_t blocks;
+		uint64_t samples;
+		uint64_t bytes;
+		uint32_t minrate;
+		uint32_t maxrate;
+	};
+
+	bitrate_tracker::bitrate_tracker() throw()
+	{
+		reset();
+	}
+
+	void bitrate_tracker::reset() throw()
+	{
+		blocks = 0;
+		samples = 0;
+		bytes = 0;
+		minrate = std::numeric_limits<uint32_t>::max();
+		maxrate = 0;
+	}
+
+	double bitrate_tracker::get_min() throw()
+	{
+		return blocks ? minrate / 1000.0 : 0.0;
+	}
+
+	double bitrate_tracker::get_avg() throw()
+	{
+		return samples ? bytes / (125.0 * samples / OPUS_SAMPLERATE) : 0.0;
+	}
+
+	double bitrate_tracker::get_max() throw()
+	{
+		return blocks ? maxrate / 1000.0 : 0.0;
+	}
+
+	double bitrate_tracker::get_length() throw()
+	{
+		return 1.0 * samples / OPUS_SAMPLERATE;
+	}
+
+	uint64_t bitrate_tracker::get_bytes() throw()
+	{
+		return bytes;
+	}
+
+	uint64_t bitrate_tracker::get_blocks() throw()
+	{
+		return blocks;
+	}
+
+	void bitrate_tracker::submit(uint32_t _bytes, uint32_t _samples) throw()
+	{
+		blocks++;
+		samples += _samples;
+		bytes += _bytes;
+		uint32_t irate = _bytes * 8 * OPUS_SAMPLERATE / OPUS_BLOCK_SIZE;
+		minrate = min(minrate, irate);
+		maxrate = max(maxrate, irate);
+	}
+
+	std::ostream& operator<<(std::ostream& s, bitrate_tracker& t)
+	{
+		s << t.get_bytes() << " bytes for " << t.get_length() << "s (" << t.get_blocks() << " blocks)"
+			<< std::endl << "Bitrate (kbps): min: " << t.get_min() << " avg: " << t.get_avg() << " max:"
+			<< t.get_max() << std::endl;
+		return s;
+	}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Information about individual opus packet in stream.
@@ -659,6 +763,7 @@ out:
 
 	void opus_stream::import_stream_sox(std::ifstream& data)
 	{
+		bitrate_tracker brtrack;
 		int err;
 		unsigned char tmpi[65536];
 		float tmp[OPUS_MAX_OUT];
@@ -706,7 +811,8 @@ out:
 				postgap_length = OPUS_BLOCK_SIZE - bs;
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
 				tmp[j] = 0;
-			int r = opus_encode_float(enc, tmp, OPUS_BLOCK_SIZE, tmpi, sizeof(tmpi));
+			const size_t opus_out_max2 = opus_max_bitrate * OPUS_BLOCK_SIZE / 384000;
+			int r = opus_encode_float(enc, tmp, OPUS_BLOCK_SIZE, tmpi, opus_out_max2);
 			if(r < 0) {
 				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
 				if(data_cluster) fs.free_cluster_chain(data_cluster);
@@ -721,8 +827,10 @@ out:
 				opus_encoder_destroy(enc);
 				throw;
 			}
+			brtrack.submit(r, bs);
 		}
 		opus_encoder_destroy(enc);
+		messages << "Imported stream: " << brtrack;
 		try {
 			write_trailier();
 		} catch(...) {
@@ -1572,7 +1680,7 @@ out:
 
 	//Compress Opus block.
 	void compress_opus_block(OpusEncoder* e, float* buf, size_t& use, opus_stream& active_stream,
-		double& total_compressed, double& total_blocks)
+		bitrate_tracker& brtrack)
 	{
 		const size_t opus_out_max = 1276;
 		unsigned char opus_output[opus_out_max];
@@ -1587,13 +1695,12 @@ out:
 			cblock = 120;
 		else
 			return;		//No valid data to compress.
-
-		int c = opus_encode_float(e, buf, cblock, opus_output, opus_out_max);
+		const size_t opus_out_max2 = opus_max_bitrate * cblock / 384000;
+		int c = opus_encode_float(e, buf, cblock, opus_output, opus_out_max2);
 		if(c > 0) {
 			//Successfully compressed a block.
 			size_t opus_output_len = c;
-			total_compressed += c;
-			total_blocks++;
+			brtrack.submit(c, cblock);
 			try {
 				active_stream.write(cblock / 120, opus_output, opus_output_len);
 			} catch(std::exception& e) {
@@ -1662,16 +1769,14 @@ out:
 		}
 	}
 
-	void handle_tangent_positive_edge(OpusEncoder* e, opus_stream*& active_stream,
-		double& total_compressed, double& total_blocks)
+	void handle_tangent_positive_edge(OpusEncoder* e, opus_stream*& active_stream, bitrate_tracker& brtrack)
 	{
 		umutex_class m2(current_collection_lock);
 		if(!current_collection)
 			return;
 		opus_encoder_ctl(e, OPUS_RESET_STATE);
 		opus_encoder_ctl(e, OPUS_SET_BITRATE(opus_bitrate));
-		total_compressed = 0;
-		total_blocks = 0;
+		brtrack.reset();
 		uint64_t ctime;
 		{
 			umutex_class m(time_mutex);
@@ -1687,16 +1792,13 @@ out:
 			messages << "Can't start stream: " << e.what() << std::endl;
 			return;
 		}
-		messages << "Tangent positive edge." << std::endl;
+		messages << "Tangent enaged." << std::endl;
 	}
 
-	void handle_tangent_negative_edge(opus_stream*& active_stream, double total_compressed,
-		double total_blocks)
+	void handle_tangent_negative_edge(opus_stream*& active_stream, bitrate_tracker& brtrack)
 	{
 		umutex_class m2(current_collection_lock);
-		messages << "Tangent negative edge. "
-			<< total_compressed << " bytes in " << total_blocks << " blocks, "
-			<< (0.4 * total_compressed / total_blocks) << " kbps" << std::endl;
+		messages << "Tangent disenaged: " << brtrack;
 		active_stream->write_trailier();
 		if(current_collection) {
 			try {
@@ -1756,16 +1858,14 @@ out:
 			float buf_inr[OPUS_BLOCK_SIZE];
 			float buf_outr[OUTPUT_SIZE];
 			float buf_out[buf_max];
-			double total_compressed = 0;
-			double total_blocks = 0;
+			bitrate_tracker brtrack;
 			opus_stream* active_stream = NULL;
 
 			drain_input();
 			while(1) {
 				if(clear_workflag(WORKFLAG_QUIT_REQUEST) & WORKFLAG_QUIT_REQUEST) {
 					if(!active_flag && active_stream)
-						handle_tangent_negative_edge(active_stream, total_compressed,
-							total_blocks);
+						handle_tangent_negative_edge(active_stream, brtrack);
 					break;
 				}
 				uint64_t ticks = get_utime();
@@ -1774,11 +1874,10 @@ out:
 					drain_input();
 					buf_in_use = 0;
 					buf_inr_use = 0;
-					handle_tangent_positive_edge(oenc, active_stream, total_compressed,
-						total_blocks);
+					handle_tangent_positive_edge(oenc, active_stream, brtrack);
 				}
 				else if((!active_flag || quit) && active_stream)
-					handle_tangent_negative_edge(active_stream, total_compressed, total_blocks);
+					handle_tangent_negative_edge(active_stream, brtrack);
 				if(quit)
 					break;
 
@@ -1794,8 +1893,7 @@ out:
 
 				//If we have full opus block and recording is enabled, compress it.
 				if(buf_inr_use >= OPUS_BLOCK_SIZE && active_stream)
-					compress_opus_block(oenc, buf_inr, buf_inr_use, *active_stream,
-						total_compressed, total_blocks);
+					compress_opus_block(oenc, buf_inr, buf_inr_use, *active_stream, brtrack);
 
 				//Update time, starting/ending streams.
 				update_time();
