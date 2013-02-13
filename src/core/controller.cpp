@@ -63,10 +63,8 @@ namespace
 	void promote_key(controller_key& k)
 	{
 		std::string name = k.get_command();
-		if(!button_keys.count(name)) {
-			delete &k;
+		if(!button_keys.count(name))
 			return;
-		}
 		k.set(button_keys[name]);
 		messages << button_keys[name] << " bound (button) to " << name << std::endl;
 		button_keys.erase(name);
