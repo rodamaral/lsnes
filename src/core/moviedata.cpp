@@ -345,6 +345,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		throw std::runtime_error("ROM types of movie and loaded ROM don't match");
 	if(our_rom->orig_region && !our_rom->orig_region->compatible_with(_movie.gametype->get_region()))
 		throw std::runtime_error("NTSC/PAL select of movie and loaded ROM don't match");
+	auto _hostmemory = _movie.host_memory;
 
 	if(our_rom->rtype && _movie.coreversion != bsnes_core_version) {
 		if(will_load_state) {
@@ -427,6 +428,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
 		our_movie.is_savestate = false;
 		our_movie.host_memory.clear();
+	} else {
+		//Hostmemory must be unconditionally reloaded, even in preserve mode.
+		our_movie.host_memory = _hostmemory;
 	}
 	if(our_movie.prefix != "" && lmode != LOAD_STATE_PRESERVE) {
 		mprefix.prefix = our_movie.prefix;
