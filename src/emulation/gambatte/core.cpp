@@ -198,7 +198,7 @@ namespace
 		sram.base = 0x20000;
 		sram.size = g.second;
 		sram.backing_ram = g.first;
-		sram.native_endian = false;
+		sram.endian = -1;
 		sram.readonly = false;
 		sram.iospace_rw = NULL;
 
@@ -207,7 +207,7 @@ namespace
 		wram.base = 0;
 		wram.size = g2.second;
 		wram.backing_ram = g2.first;
-		wram.native_endian = false;
+		wram.endian = -1;
 		wram.readonly = false;
 		wram.iospace_rw = NULL;
 
@@ -216,7 +216,7 @@ namespace
 		vram.base = 0x10000;
 		vram.size = g3.second;
 		vram.backing_ram = g3.first;
-		vram.native_endian = false;
+		vram.endian = -1;
 		vram.readonly = false;
 		vram.iospace_rw = NULL;
 
@@ -225,7 +225,7 @@ namespace
 		ioamhram.base = 0x18000;
 		ioamhram.size = g4.second;
 		ioamhram.backing_ram = g4.first;
-		ioamhram.native_endian = false;
+		ioamhram.endian = -1;
 		ioamhram.readonly = false;
 		ioamhram.iospace_rw = NULL;
 
@@ -233,7 +233,7 @@ namespace
 		rom.base = 0x80000000;
 		rom.size = romdata.size();
 		rom.backing_ram = (void*)&romdata[0];
-		rom.native_endian = false;
+		rom.endian = -1;
 		rom.readonly = true;
 		rom.iospace_rw = NULL;
 

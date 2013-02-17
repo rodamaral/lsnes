@@ -92,7 +92,7 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 			if(i.iospace_rw)
 				tmp = new iospace_region(i.name, i.base, i.size, i.iospace_rw);
 			else
-				tmp = new memory_region_direct(i.name, i.base, i.native_endian ? 0 : -1,
+				tmp = new memory_region_direct(i.name, i.base, i.endian,
 					reinterpret_cast<uint8_t*>(i.backing_ram), i.size, i.readonly);
 			regions.push_back(tmp);
 			tmp = NULL;

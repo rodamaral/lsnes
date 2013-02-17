@@ -45,7 +45,7 @@ struct core_vma_info
 	uint64_t size;
 	void* backing_ram;
 	bool readonly;
-	bool native_endian;
+	int endian;
 	uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
 };
 

@@ -491,7 +491,7 @@ namespace
 		i.base = base;
 		i.size = size;
 		i.readonly = false;
-		i.native_endian = false;
+		i.endian = -1;
 		i.iospace_rw = iospace_rw;
 		inf.push_back(i);
 	}
@@ -507,7 +507,7 @@ namespace
 		i.size = size;
 		i.backing_ram = memory;
 		i.readonly = readonly;
-		i.native_endian = native_endian;
+		i.endian = native_endian ? 0 : -1;
 		i.iospace_rw = NULL;
 		inf.push_back(i);
 	}
