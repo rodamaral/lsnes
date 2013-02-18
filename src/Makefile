@@ -16,8 +16,8 @@ CFLAGS += -DBOOST_FILESYSTEM3
 endif
 
 ifdef OPUS_CODEC
-CFLAGS += -DWITH_OPUS_CODEC
-LDFLAGS += -lopus
+CFLAGS += -DWITH_OPUS_CODEC $(shell pkg-config --cflags opus)
+LDFLAGS += $(shell pkg-config --libs opus)
 endif
 
 COMMON_LIBRARY=core lua fonts library interface video emulation
