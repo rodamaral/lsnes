@@ -22,6 +22,7 @@ template<typename T> struct generic_eget
 {
 	typedef T erettype;
 	T operator()(encoder& e) const;
+	T errordefault();
 };
 
 template<typename T> struct generic_get
@@ -30,12 +31,14 @@ template<typename T> struct generic_get
 	typedef T erettype;
 	T operator()(decoder& e) const;
 	T operator()(encoder& e) const;
+	T errordefault();
 };
 
 template<typename T> struct generic_dget
 {
 	typedef T drettype;
 	T operator()(decoder& e) const;
+	static T errordefault;
 };
 
 struct samplerate
@@ -49,6 +52,7 @@ struct samplerate
 	operator int32_t() { return fs; }
 	typedef samplerate erettype;
 	samplerate operator()(encoder& e) const;
+	samplerate errordefault() { return samplerate(0); }
 private:
 	int32_t fs;
 };
@@ -60,6 +64,7 @@ struct compexity
 	typedef generic_eget<compexity> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t c;
 };
@@ -73,6 +78,7 @@ struct bitrate
 	typedef generic_eget<bitrate> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t b;
 };
@@ -86,6 +92,7 @@ struct vbr
 	typedef generic_eget<vbr> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	bool v;
 };
@@ -99,6 +106,7 @@ struct vbr_constraint
 	typedef generic_eget<vbr_constraint> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	bool c;
 };
@@ -113,6 +121,7 @@ struct force_channels
 	typedef generic_eget<force_channels> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t f;
 };
@@ -129,6 +138,7 @@ struct max_bandwidth
 	typedef generic_eget<max_bandwidth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t bw;
 };
@@ -146,6 +156,7 @@ struct bandwidth
 	typedef generic_get<bandwidth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t bw;
 };
@@ -160,6 +171,7 @@ struct signal
 	typedef generic_eget<signal> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t s;
 };
@@ -174,6 +186,7 @@ struct application
 	typedef generic_eget<application> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t app;
 };
@@ -185,6 +198,7 @@ struct _lookahead
 	operator int32_t() { return l; }
 	typedef _lookahead erettype;
 	_lookahead operator()(encoder& e) const;
+	_lookahead errordefault() { return _lookahead(0);}
 private:
 	int32_t l;
 };
@@ -198,7 +212,8 @@ struct fec
 	operator bool() { return f; }
 	typedef generic_eget<fec> get;
 	typedef void erettype;
-	void operator()(encoder& e) const;
+	void operator()(encoder& e) const;	
+	void errordefault() {}
 private:
 	bool f;
 };
@@ -210,6 +225,7 @@ struct lossperc
 	typedef generic_eget<lossperc> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t loss;
 };
@@ -223,6 +239,7 @@ struct dtx
 	typedef generic_eget<dtx> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	bool d;
 };
@@ -237,6 +254,7 @@ struct lsbdepth
 	typedef generic_eget<lsbdepth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 private:
 	int32_t depth;
 };
@@ -248,6 +266,7 @@ struct _pktduration
 	operator int32_t() { return d; }
 	typedef _pktduration erettype;
 	_pktduration operator()(encoder& e) const;
+	_pktduration errordefault() { return _pktduration(0); }
 private:
 	int32_t d;
 };
@@ -259,6 +278,7 @@ struct _reset
 	typedef void erettype;
 	void operator()(decoder& e) const;
 	void operator()(encoder& e) const;
+	void errordefault() {}
 };
 extern _reset reset;
 
@@ -271,6 +291,7 @@ struct _finalrange
 	typedef _finalrange erettype;
 	_finalrange operator()(decoder& e) const;
 	_finalrange operator()(encoder& e) const;
+	_finalrange errordefault() { return _finalrange(0); }
 private:
 	uint32_t f;
 };
@@ -285,6 +306,7 @@ struct _pitch
 	typedef _pitch erettype;
 	_pitch operator()(encoder& e) const;
 	_pitch operator()(decoder& e) const;
+	_pitch errordefault() { return _pitch(0); }
 private:
 	int32_t p;
 };
@@ -297,6 +319,7 @@ struct gain
 	typedef generic_dget<gain> get;
 	typedef void drettype;
 	void operator()(decoder& d) const;
+	gain errordefault() { return gain(0); }
 private:
 	int32_t g;
 };
@@ -308,6 +331,7 @@ struct set_control_int
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(decoder& e) const;
+	void errordefault() {}
 private:
 	int32_t ctl;
 	int32_t val;
@@ -320,6 +344,7 @@ struct get_control_int
 	typedef int32_t erettype;
 	int32_t operator()(encoder& e) const;
 	int32_t operator()(decoder& e) const;
+	int32_t errordefault() { return -1; }
 private:
 	int32_t ctl;
 };
@@ -335,6 +360,10 @@ public:
 	static size_t size(bool stereo);
 	encoder& operator=(const encoder& e);
 	template<typename T> typename T::erettype ctl(const T& c) { return c(*this); }
+	template<typename T> typename T::erettype ctl_quiet(const T& c)
+	{
+		try { return c(*this); } catch(...) { return c.errordefault(); }
+	}
 	size_t encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
 	size_t encode(const float* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
 	bool is_stereo() { return stereo; }
@@ -356,6 +385,10 @@ public:
 	static size_t size(bool stereo);
 	decoder& operator=(const decoder& e);
 	template<typename T> typename T::drettype ctl(const T& c) { return c(*this); }
+	template<typename T> typename T::drettype ctl_quiet(const T& c)
+	{
+		try { return c(*this); } catch(...) { return c.errordefault(); }
+	}
 	size_t decode(const unsigned char* in, uint32_t insize, int16_t* out, uint32_t maxframes,
 		bool decode_fec = false);
 	size_t decode(const unsigned char* in, uint32_t insize, float* out, uint32_t maxframes,
