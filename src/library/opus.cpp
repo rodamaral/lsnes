@@ -110,9 +110,9 @@ int32_t throwex(int32_t ret)
 	throw std::runtime_error(s.str());
 }
 
-template<typename T> struct get_ctlnum { const static int32_t num; };
+template<typename T> struct get_ctlnum { const static int32_t num; static T errordefault(); };
 
-template<> const int32_t get_ctlnum<compexity>::num = OPUS_GET_COMPLEXITY_REQUEST;
+template<> const int32_t get_ctlnum<complexity>::num = OPUS_GET_COMPLEXITY_REQUEST;
 template<> const int32_t get_ctlnum<bitrate>::num = OPUS_GET_BITRATE_REQUEST;
 template<> const int32_t get_ctlnum<vbr>::num = OPUS_GET_VBR_REQUEST;
 template<> const int32_t get_ctlnum<vbr_constraint>::num = OPUS_GET_VBR_CONSTRAINT_REQUEST;
@@ -126,6 +126,22 @@ template<> const int32_t get_ctlnum<lossperc>::num = OPUS_GET_PACKET_LOSS_PERC_R
 template<> const int32_t get_ctlnum<dtx>::num = OPUS_GET_DTX_REQUEST;
 template<> const int32_t get_ctlnum<lsbdepth>::num = OPUS_GET_LSB_DEPTH_REQUEST;
 template<> const int32_t get_ctlnum<gain>::num = OPUS_GET_GAIN_REQUEST;
+
+template<> complexity get_ctlnum<complexity>::errordefault() { return complexity(10); }
+template<> bitrate get_ctlnum<bitrate>::errordefault() { return bitrate::_auto; }
+template<> vbr get_ctlnum<vbr>::errordefault() { return vbr::_vbr; }
+template<> vbr_constraint get_ctlnum<vbr_constraint>::errordefault() { return vbr_constraint::unconstrained; }
+template<> force_channels get_ctlnum<force_channels>::errordefault() { return force_channels::_auto; }
+template<> max_bandwidth get_ctlnum<max_bandwidth>::errordefault() { return max_bandwidth::full; }
+template<> bandwidth get_ctlnum<bandwidth>::errordefault() { return bandwidth::_auto; }
+template<> signal get_ctlnum<signal>::errordefault() { return signal::_auto; }
+template<> application get_ctlnum<application>::errordefault() { return application::audio; }
+template<> fec get_ctlnum<fec>::errordefault() { return fec::disabled; }
+template<> lossperc get_ctlnum<lossperc>::errordefault() { return lossperc(0); }
+template<> dtx get_ctlnum<dtx>::errordefault() { return dtx::disabled; }
+template<> lsbdepth get_ctlnum<lsbdepth>::errordefault() { return lsbdepth(24); }
+template<> gain get_ctlnum<gain>::errordefault() { return gain(0); }
+
 
 OpusEncoder* E(encoder& e) { return reinterpret_cast<OpusEncoder*>(e.getmem()); }
 OpusDecoder* D(decoder& d) { return reinterpret_cast<OpusDecoder*>(d.getmem()); }
@@ -186,55 +202,89 @@ template<typename T> T generic_get<T>::operator()(encoder& e) const
 	return do_generic_get<T>(e);
 }
 
+template<typename T> T generic_eget<T>::errordefault() const
+{
+	return get_ctlnum<T>::errordefault();
+}
+
+template<typename T> T generic_dget<T>::errordefault() const
+{
+	return get_ctlnum<T>::errordefault();
+}
+
+template<typename T> T generic_get<T>::errordefault() const
+{
+	return get_ctlnum<T>::errordefault();
+}
+
+
 samplerate samplerate::operator()(encoder& e) const
 {
 	return samplerate(generic_ctl<int32_t>(e, OPUS_GET_SAMPLE_RATE_REQUEST));
 }
 
-void compexity::operator()(encoder& e) const
+void complexity::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_COMPLEXITY_REQUEST, c);
 }
+
+generic_eget<complexity> complexity::get;
 
 void bitrate::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_BITRATE_REQUEST, b);
 }
 
+generic_eget<bitrate> bitrate::get;
+
 void vbr::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_VBR_REQUEST, v ? 1 : 0);
 }
+
+generic_eget<vbr> vbr::get;
 
 void vbr_constraint::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_VBR_CONSTRAINT_REQUEST, c ? 1 : 0);
 }
 
+generic_eget<vbr_constraint> vbr_constraint::get;
+
 void force_channels::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_FORCE_CHANNELS_REQUEST, f);
 }
+
+generic_eget<force_channels> force_channels::get;
 
 void max_bandwidth::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_MAX_BANDWIDTH_REQUEST, bw);
 }
 
+generic_eget<max_bandwidth> max_bandwidth::get;
+
 void bandwidth::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_BANDWIDTH_REQUEST, bw);
 }
+
+generic_get<bandwidth> bandwidth::get;
 
 void signal::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_SIGNAL_REQUEST, s);
 }
 
+generic_eget<signal> signal::get;
+
 void application::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_APPLICATION_REQUEST, app);
 }
+
+generic_eget<application> application::get;
 
 _lookahead _lookahead::operator()(encoder& e) const
 {
@@ -246,20 +296,28 @@ void fec::operator()(encoder& e) const
 	generic_ctl<int32_t>(e, OPUS_SET_INBAND_FEC_REQUEST, f ? 1 : 0);
 }
 
+generic_eget<fec> fec::get;
+
 void lossperc::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_PACKET_LOSS_PERC_REQUEST, loss);
 }
+
+generic_eget<lossperc> lossperc::get;
 
 void dtx::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_DTX_REQUEST, d ? 1 : 0);
 }
 
+generic_eget<dtx> dtx::get;
+
 void lsbdepth::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_LSB_DEPTH_REQUEST, depth);
 }
+
+generic_eget<lsbdepth> lsbdepth::get;
 
 _pktduration _pktduration::operator()(encoder& e) const
 {
@@ -301,6 +359,8 @@ void gain::operator()(decoder& d) const
 	generic_ctl(d, OPUS_SET_GAIN_REQUEST, g);
 }
 
+generic_dget<gain> gain::get;
+
 void set_control_int::operator()(encoder& e) const
 {
 	generic_ctl(e, ctl, val);
@@ -325,21 +385,40 @@ void force_instantiate()
 {
 	encoder e(samplerate::r48k, true, application::audio);
 	decoder d(samplerate::r48k, true);
-	compexity::get()(e);
-	bitrate::get()(e);
-	vbr::get()(e);
-	vbr_constraint::get()(e);
-	force_channels::get()(e);
-	max_bandwidth::get()(e);
-	bandwidth::get()(e);
-	bandwidth::get()(d);
-	signal::get()(e);
-	application::get()(e);
-	fec::get()(e);
-	lossperc::get()(e);
-	dtx::get()(e);
-	lsbdepth::get()(e);
-	gain::get()(d);
+	complexity::get(e);
+	bitrate::get(e);
+	vbr::get(e);
+	vbr_constraint::get(e);
+	force_channels::get(e);
+	max_bandwidth::get(e);
+	bandwidth::get(e);
+	bandwidth::get(d);
+	signal::get(e);
+	application::get(e);
+	fec::get(e);
+	lossperc::get(e);
+	dtx::get(e);
+	lsbdepth::get(e);
+	gain::get(d);
+
+	complexity::get.errordefault();
+	bitrate::get.errordefault();
+	vbr::get.errordefault();
+	vbr_constraint::get.errordefault();
+	force_channels::get.errordefault();
+	max_bandwidth::get.errordefault();
+	bandwidth::get.errordefault();
+	signal::get.errordefault();
+	application::get.errordefault();
+	fec::get.errordefault();
+	lossperc::get.errordefault();
+	dtx::get.errordefault();
+	lsbdepth::get.errordefault();
+	gain::get.errordefault();
+
+	e.ctl_quiet(opus::reset);
+	e.ctl_quiet(opus::finalrange);
+	e.ctl_quiet(opus::signal::get);
 }
 
 encoder::~encoder()
