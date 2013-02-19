@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <stdexcept>
+#include <vector>
 
 namespace opus
 {
@@ -368,7 +369,44 @@ private:
 	bool user;
 };
 
+class repacketizer
+{
+public:
+	repacketizer(char* memory = NULL);
+	repacketizer(const repacketizer& rp);
+	repacketizer(const repacketizer& rp, char* memory);
+	repacketizer& operator=(const repacketizer& rp);
+	~repacketizer();
+	static size_t size();
+	void cat(const unsigned char* data, size_t len);
+	size_t out(unsigned char* data, size_t maxlen);
+	size_t out(unsigned char* data, size_t maxlen, unsigned begin, unsigned end);
+	unsigned get_nb_frames();
+	void* getmem() { return memory; }
+private:
+	void* memory;
+	bool user;
+};
+
+struct parsed_frame
+{
+	const unsigned char* ptr;
+	short size;
+};
+
+struct parsed_packet
+{
+	unsigned char toc;
+	std::vector<parsed_frame> frames;
+	uint32_t payload_offset;
+};
+
 uint32_t packet_get_nb_frames(const unsigned char* packet, size_t len);
-uint32_t packet_get_samples_per_frame(const unsigned char* data, samplerate fs); 
+uint32_t packet_get_samples_per_frame(const unsigned char* data, samplerate fs);
+uint32_t packet_get_nb_samples(const unsigned char* packet, size_t len, samplerate fs);
+uint32_t packet_get_nb_channels(const unsigned char* packet);
+bandwidth packet_get_bandwidth(const unsigned char* packet);
+parsed_packet packet_parse(const unsigned char* packet, size_t len);
+std::string version();
 }
 #endif

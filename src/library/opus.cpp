@@ -129,6 +129,7 @@ template<> const int32_t get_ctlnum<gain>::num = OPUS_GET_GAIN_REQUEST;
 
 OpusEncoder* E(encoder& e) { return reinterpret_cast<OpusEncoder*>(e.getmem()); }
 OpusDecoder* D(decoder& d) { return reinterpret_cast<OpusDecoder*>(d.getmem()); }
+OpusRepacketizer* R(repacketizer& r) { return reinterpret_cast<OpusRepacketizer*>(r.getmem()); }
 
 
 template<typename T> T generic_ctl(encoder& e, int32_t ctl)
@@ -486,6 +487,67 @@ uint32_t decoder::get_nb_samples(const unsigned char* buf, size_t bufsize)
 	return throwex(opus_decoder_get_nb_samples(D(*this), buf, bufsize));
 }
 
+repacketizer::repacketizer(char* _memory)
+{
+	size_t s = size();
+	memory = _memory ? _memory : new char[s];
+	user = false;
+	opus_repacketizer_init(R(*this));
+}
+
+repacketizer::repacketizer(const repacketizer& rp)
+{
+	size_t s = size();
+	memory = new char[s];
+	user = false;
+	memcpy(memory, rp.memory, s);
+}
+
+repacketizer::repacketizer(const repacketizer& rp, char* _memory)
+{
+	memory = _memory;
+	user = true;
+	memcpy(memory, rp.memory, size());
+}
+
+repacketizer& repacketizer::operator=(const repacketizer& rp)
+{
+	if(memory != rp.memory)
+		memcpy(memory, rp.memory, size());
+	return *this;
+}
+
+repacketizer::~repacketizer()
+{
+	if(!user)
+		delete[] reinterpret_cast<char*>(memory);
+}
+
+size_t repacketizer::size()
+{
+	return opus_repacketizer_get_size();
+}
+
+void repacketizer::cat(const unsigned char* data, size_t len)
+{
+	throwex(opus_repacketizer_cat(R(*this), data, len));
+}
+
+size_t repacketizer::out(unsigned char* data, size_t maxlen)
+{
+	return throwex(opus_repacketizer_out(R(*this), data, maxlen));
+}
+
+size_t repacketizer::out(unsigned char* data, size_t maxlen, unsigned begin, unsigned end)
+{
+	return throwex(opus_repacketizer_out_range(R(*this), begin, end, data, maxlen));
+}
+
+unsigned repacketizer::get_nb_frames()
+{
+	return opus_repacketizer_get_nb_frames(R(*this));
+}
+
 uint32_t packet_get_nb_frames(const unsigned char* packet, size_t len)
 {
 	return throwex(opus_packet_get_nb_frames(packet, len));
@@ -494,6 +556,44 @@ uint32_t packet_get_nb_frames(const unsigned char* packet, size_t len)
 uint32_t packet_get_samples_per_frame(const unsigned char* data, samplerate fs)
 {
 	return throwex(opus_packet_get_samples_per_frame(data, fs));
+}
+
+uint32_t packet_get_nb_samples(const unsigned char* packet, size_t len, samplerate fs)
+{
+	return packet_get_nb_frames(packet, len) * packet_get_samples_per_frame(packet, fs);
+}
+
+uint32_t packet_get_nb_channels(const unsigned char* packet)
+{
+	return throwex(opus_packet_get_nb_channels(packet));
+}
+
+bandwidth packet_get_bandwidth(const unsigned char* packet)
+{
+	return bandwidth(throwex(opus_packet_get_bandwidth(packet)));
+}
+
+parsed_packet packet_parse(const unsigned char* packet, size_t len)
+{
+	parsed_packet p;
+	unsigned char toc;
+	const unsigned char* frames[48];
+	short size[48];
+	int payload_offset;
+	uint32_t framecnt = throwex(opus_packet_parse(packet, len, &toc, frames, size, &payload_offset));
+	p.toc = toc;
+	p.payload_offset = payload_offset;
+	p.frames.resize(framecnt);
+	for(unsigned i = 0; i < framecnt; i++) {
+		p.frames[i].ptr = frames[i];
+		p.frames[i].size = size[i];
+	}
+	return p;
+}
+
+std::string version()
+{
+	return opus_get_version_string();
 }
 
 }
