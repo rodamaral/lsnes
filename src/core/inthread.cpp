@@ -1713,16 +1713,16 @@ out:
 		umutex_class m2(current_collection_lock);
 		if(!current_collection)
 			return;
-		e.ctl(opus::reset);
-		e.ctl(opus::bitrate(opus_bitrate));
-		brtrack.reset();
-		uint64_t ctime;
-		{
-			umutex_class m(time_mutex);
-			ctime = current_time;
-		}
-		active_stream = NULL;
 		try {
+			e.ctl(opus::reset);
+			e.ctl(opus::bitrate(opus_bitrate));
+			brtrack.reset();
+			uint64_t ctime;
+			{
+				umutex_class m(time_mutex);
+				ctime = current_time;
+			}
+			active_stream = NULL;
 			active_stream = new opus_stream(ctime, current_collection->get_filesystem());
 			int32_t pregap = e.ctl(opus::lookahead);
 			active_stream->set_pregap(pregap);
@@ -1737,7 +1737,11 @@ out:
 	{
 		umutex_class m2(current_collection_lock);
 		messages << "Tangent disenaged: " << brtrack;
-		active_stream->write_trailier();
+		try {
+			active_stream->write_trailier();
+		} catch(std::exception& e) {
+			messages << e.what() << std::endl;
+		}
 		if(current_collection) {
 			try {
 				current_collection->add_stream(*active_stream);
