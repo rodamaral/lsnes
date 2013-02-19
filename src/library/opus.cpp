@@ -239,14 +239,14 @@ generic_eget<bitrate> bitrate::get;
 
 void vbr::operator()(encoder& e) const
 {
-	generic_ctl<int32_t>(e, OPUS_SET_VBR_REQUEST, v ? 1 : 0);
+	generic_ctl<int32_t>(e, OPUS_SET_VBR_REQUEST, (int32_t)(v ? 1 : 0));
 }
 
 generic_eget<vbr> vbr::get;
 
 void vbr_constraint::operator()(encoder& e) const
 {
-	generic_ctl<int32_t>(e, OPUS_SET_VBR_CONSTRAINT_REQUEST, c ? 1 : 0);
+	generic_ctl<int32_t>(e, OPUS_SET_VBR_CONSTRAINT_REQUEST, (int32_t)(c ? 1 : 0));
 }
 
 generic_eget<vbr_constraint> vbr_constraint::get;
@@ -293,28 +293,28 @@ _lookahead _lookahead::operator()(encoder& e) const
 
 void fec::operator()(encoder& e) const
 {
-	generic_ctl<int32_t>(e, OPUS_SET_INBAND_FEC_REQUEST, f ? 1 : 0);
+	generic_ctl<int32_t>(e, OPUS_SET_INBAND_FEC_REQUEST, (int32_t)(f ? 1 : 0));
 }
 
 generic_eget<fec> fec::get;
 
 void lossperc::operator()(encoder& e) const
 {
-	generic_ctl(e, OPUS_SET_PACKET_LOSS_PERC_REQUEST, loss);
+	generic_ctl(e, OPUS_SET_PACKET_LOSS_PERC_REQUEST, (int32_t)loss);
 }
 
 generic_eget<lossperc> lossperc::get;
 
 void dtx::operator()(encoder& e) const
 {
-	generic_ctl<int32_t>(e, OPUS_SET_DTX_REQUEST, d ? 1 : 0);
+	generic_ctl<int32_t>(e, OPUS_SET_DTX_REQUEST, (int32_t)(d ? 1 : 0));
 }
 
 generic_eget<dtx> dtx::get;
 
 void lsbdepth::operator()(encoder& e) const
 {
-	generic_ctl(e, OPUS_SET_LSB_DEPTH_REQUEST, depth);
+	generic_ctl(e, OPUS_SET_LSB_DEPTH_REQUEST, (int32_t)depth);
 }
 
 generic_eget<lsbdepth> lsbdepth::get;

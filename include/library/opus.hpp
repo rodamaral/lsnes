@@ -194,13 +194,13 @@ private:
 struct _lookahead
 {
 	_lookahead() { l = 0; }
-	_lookahead(int32_t _l) { l = _l; }
-	operator int32_t() { return l; }
+	_lookahead(uint32_t _l) { l = _l; }
+	operator uint32_t() { return l; }
 	typedef _lookahead erettype;
 	_lookahead operator()(encoder& e) const;
 	_lookahead errordefault() const { return _lookahead(0);}
 private:
-	int32_t l;
+	uint32_t l;
 };
 extern _lookahead lookahead;
 
@@ -220,14 +220,14 @@ private:
 
 struct lossperc
 {
-	lossperc(int32_t _loss) { loss = _loss; };
-	operator int32_t() { return loss; }
+	lossperc(uint32_t _loss) { loss = _loss; };
+	operator uint32_t() { return loss; }
 	static generic_eget<lossperc> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void errordefault() const {}
 private:
-	int32_t loss;
+	uint32_t loss;
 };
 
 struct dtx
@@ -246,29 +246,29 @@ private:
 
 struct lsbdepth
 {
-	lsbdepth(int32_t _depth) { depth = _depth; };
+	lsbdepth(uint32_t _depth) { depth = _depth; };
 	static lsbdepth d8;
 	static lsbdepth d16;
 	static lsbdepth d24;
-	operator int32_t() { return depth; }
+	operator uint32_t() { return depth; }
 	static generic_eget<lsbdepth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void errordefault() const {}
 private:
-	int32_t depth;
+	uint32_t depth;
 };
 
 struct _pktduration
 {
 	_pktduration() { d = 0; }
-	_pktduration(int32_t _d) { d = _d; }
-	operator int32_t() { return d; }
+	_pktduration(uint32_t _d) { d = _d; }
+	operator uint32_t() { return d; }
 	typedef _pktduration erettype;
 	_pktduration operator()(encoder& e) const;
 	_pktduration errordefault() const { return _pktduration(0); }
 private:
-	int32_t d;
+	uint32_t d;
 };
 extern _pktduration pktduration;
 
@@ -300,15 +300,15 @@ extern _finalrange finalrange;
 struct _pitch
 {
 	_pitch() { p = 0; }
-	_pitch(int32_t _p) { p = _p; }
-	operator int32_t() { return p; }
+	_pitch(uint32_t _p) { p = _p; }
+	operator uint32_t() { return p; }
 	typedef _pitch drettype;
 	typedef _pitch erettype;
 	_pitch operator()(encoder& e) const;
 	_pitch operator()(decoder& e) const;
 	_pitch errordefault() const { return _pitch(0); }
 private:
-	int32_t p;
+	uint32_t p;
 };
 extern _pitch pitch;
 
