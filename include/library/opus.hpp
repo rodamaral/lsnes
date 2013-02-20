@@ -17,12 +17,20 @@ struct invalid_state : public std::runtime_error { invalid_state(); };
 
 class encoder;
 class decoder;
+class multistream_encoder;
+class multistream_decoder;
 
 template<typename T> struct generic_eget
 {
 	typedef T erettype;
 	T operator()(encoder& e) const;
 	T errordefault() const;
+};
+
+template<typename T> struct generic_meget : public generic_eget<T>
+{
+	using generic_eget<T>::operator();
+	T operator()(multistream_encoder& e) const;
 };
 
 template<typename T> struct generic_get
@@ -34,11 +42,24 @@ template<typename T> struct generic_get
 	T errordefault() const;
 };
 
+template<typename T> struct generic_mget : public generic_get<T>
+{
+	using generic_get<T>::operator();
+	T operator()(multistream_decoder& e) const;
+	T operator()(multistream_encoder& e) const;
+};
+
 template<typename T> struct generic_dget
 {
 	typedef T drettype;
 	T operator()(decoder& e) const;
 	T errordefault() const;
+};
+
+template<typename T> struct generic_mdget : public generic_dget<T>
+{
+	using generic_dget<T>::operator();
+	T operator()(multistream_decoder& e) const;
 };
 
 struct samplerate
@@ -52,6 +73,9 @@ struct samplerate
 	operator int32_t() { return fs; }
 	typedef samplerate erettype;
 	samplerate operator()(encoder& e) const;
+	samplerate operator()(multistream_encoder& e) const;
+	samplerate operator()(decoder& e) const;
+	samplerate operator()(multistream_decoder& e) const;
 	samplerate errordefault() const { return samplerate(0); }
 private:
 	int32_t fs;
@@ -61,9 +85,10 @@ struct complexity
 {
 	complexity(int32_t _c) { c = _c; }
 	operator int32_t() { return c; }
-	static generic_eget<complexity> get;
+	static generic_meget<complexity> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t c;
@@ -75,9 +100,10 @@ struct bitrate
 	static bitrate _auto;
 	static bitrate max;
 	operator int32_t() { return b; }
-	static generic_eget<bitrate> get;
+	static generic_meget<bitrate> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t b;
@@ -89,9 +115,10 @@ struct vbr
 	static vbr cbr;
 	static vbr _vbr;
 	operator bool() { return v; }
-	static generic_eget<vbr> get;
+	static generic_meget<vbr> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool v;
@@ -103,9 +130,10 @@ struct vbr_constraint
 	static vbr_constraint unconstrained;
 	static vbr_constraint constrained;
 	operator bool() { return c; }
-	static generic_eget<vbr_constraint> get;
+	static generic_meget<vbr_constraint> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool c;
@@ -118,9 +146,10 @@ struct force_channels
 	static force_channels mono;
 	static force_channels stereo;
 	operator int32_t() { return f; }
-	static generic_eget<force_channels> get;
+	static generic_meget<force_channels> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t f;
@@ -153,9 +182,10 @@ struct bandwidth
 	static bandwidth superwide;
 	static bandwidth full;
 	operator int32_t() { return bw; }
-	static generic_get<bandwidth> get;
+	static generic_mget<bandwidth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t bw;
@@ -168,9 +198,10 @@ struct signal
 	static signal music;
 	static signal voice;
 	operator int32_t() { return s; }
-	static generic_eget<signal> get;
+	static generic_meget<signal> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t s;
@@ -183,9 +214,10 @@ struct application
 	static application voice;
 	static application lowdelay;
 	operator int32_t() { return app; }
-	static generic_eget<application> get;
+	static generic_meget<application> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t app;
@@ -198,6 +230,7 @@ struct _lookahead
 	operator uint32_t() { return l; }
 	typedef _lookahead erettype;
 	_lookahead operator()(encoder& e) const;
+	_lookahead operator()(multistream_encoder& e) const;
 	_lookahead errordefault() const { return _lookahead(0);}
 private:
 	uint32_t l;
@@ -210,9 +243,10 @@ struct fec
 	static fec disabled;
 	static fec enabled;
 	operator bool() { return f; }
-	static generic_eget<fec> get;
+	static generic_meget<fec> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;	
+	void operator()(multistream_encoder& e) const;	
 	void errordefault() const {}
 private:
 	bool f;
@@ -222,9 +256,10 @@ struct lossperc
 {
 	lossperc(uint32_t _loss) { loss = _loss; };
 	operator uint32_t() { return loss; }
-	static generic_eget<lossperc> get;
+	static generic_meget<lossperc> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	uint32_t loss;
@@ -236,9 +271,10 @@ struct dtx
 	static dtx disabled;
 	static dtx enabled;
 	operator bool() { return d; }
-	static generic_eget<dtx> get;
+	static generic_meget<dtx> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool d;
@@ -251,9 +287,10 @@ struct lsbdepth
 	static lsbdepth d16;
 	static lsbdepth d24;
 	operator uint32_t() { return depth; }
-	static generic_eget<lsbdepth> get;
+	static generic_meget<lsbdepth> get;
 	typedef void erettype;
 	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 private:
 	uint32_t depth;
@@ -264,9 +301,10 @@ struct _pktduration
 	_pktduration() { d = 0; }
 	_pktduration(uint32_t _d) { d = _d; }
 	operator uint32_t() { return d; }
-	typedef _pktduration erettype;
-	_pktduration operator()(encoder& e) const;
-	_pktduration errordefault() const { return _pktduration(0); }
+	typedef _pktduration drettype;
+	_pktduration operator()(decoder& e) const;
+	_pktduration operator()(multistream_decoder& e) const;
+	_pktduration errordefault() const; /*{ return _pktduration(0); }*/
 private:
 	uint32_t d;
 };
@@ -278,6 +316,8 @@ struct _reset
 	typedef void erettype;
 	void operator()(decoder& e) const;
 	void operator()(encoder& e) const;
+	void operator()(multistream_decoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void errordefault() const {}
 };
 extern _reset reset;
@@ -291,6 +331,8 @@ struct _finalrange
 	typedef _finalrange erettype;
 	_finalrange operator()(decoder& e) const;
 	_finalrange operator()(encoder& e) const;
+	_finalrange operator()(multistream_decoder& e) const;
+	_finalrange operator()(multistream_encoder& e) const;
 	_finalrange errordefault() const { return _finalrange(0); }
 private:
 	uint32_t f;
@@ -316,9 +358,10 @@ struct gain
 {
 	gain(int32_t _g) { g = _g; };
 	operator int32_t() { return g; }
-	static generic_dget<gain> get;
+	static generic_mdget<gain> get;
 	typedef void drettype;
 	void operator()(decoder& d) const;
+	void operator()(multistream_decoder& d) const;
 	gain errordefault() const { return gain(0); }
 private:
 	int32_t g;
@@ -331,6 +374,8 @@ struct set_control_int
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(decoder& e) const;
+	void operator()(multistream_encoder& e) const;
+	void operator()(multistream_decoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t ctl;
@@ -344,6 +389,8 @@ struct get_control_int
 	typedef int32_t erettype;
 	int32_t operator()(encoder& e) const;
 	int32_t operator()(decoder& e) const;
+	int32_t operator()(multistream_encoder& e) const;
+	int32_t operator()(multistream_decoder& e) const;
 	int32_t errordefault() const { return -1; }
 private:
 	int32_t ctl;
@@ -358,6 +405,7 @@ public:
 	encoder(const encoder& e);
 	encoder(const encoder& e, char* memory);
 	static size_t size(bool stereo);
+	size_t size() const { return size(stereo); }
 	encoder& operator=(const encoder& e);
 	template<typename T> typename T::erettype ctl(const T& c) { return c(*this); }
 	template<typename T> typename T::erettype ctl_quiet(const T& c)
@@ -383,6 +431,7 @@ public:
 	decoder(const decoder& e);
 	decoder(const decoder& e, char* memory);
 	static size_t size(bool stereo);
+	size_t size() const { return size(stereo); }
 	decoder& operator=(const decoder& e);
 	template<typename T> typename T::drettype ctl(const T& c) { return c(*this); }
 	template<typename T> typename T::drettype ctl_quiet(const T& c)
@@ -419,6 +468,78 @@ public:
 private:
 	void* memory;
 	bool user;
+};
+
+class multistream_encoder
+{
+public:
+	multistream_encoder(samplerate rate, unsigned channels, unsigned streams, 
+		unsigned coupled_streams, const unsigned char* mapping, application app, char* memory = NULL);
+	static size_t size(unsigned streams, unsigned coupled_streams);
+	size_t size() const { return size(streams, coupled); }
+	multistream_encoder(const multistream_encoder& e);
+	multistream_encoder(const multistream_encoder& e, char* memory);
+	multistream_encoder& operator=(const multistream_encoder& e);
+	~multistream_encoder();
+	encoder& operator[](size_t idx);
+	size_t encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
+	size_t encode(const float* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
+	template<typename T> typename T::erettype ctl(const T& c) { return c(*this); }
+	template<typename T> typename T::erettype ctl_quiet(const T& c)
+	{
+		try { return c(*this); } catch(...) { return c.errordefault(); }
+	}
+	uint8_t get_channels() { return channels; }
+	uint8_t get_streams() { return streams; }
+	void* getmem() { return memory + offset; }
+private:
+	void init_copy(const multistream_encoder& e, char* memory);
+	char* substream(size_t idx);
+	void set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled);
+	char* memory;
+	bool user;
+	uint8_t channels;
+	uint8_t streams;
+	uint8_t coupled;
+	size_t offset;
+	size_t opussize;
+};
+
+class multistream_decoder
+{
+public:
+	multistream_decoder(samplerate rate, unsigned channels, unsigned streams,
+		unsigned coupled_streams, const unsigned char* mapping, char* memory = NULL);
+	static size_t size(unsigned streams, unsigned coupled_streams);
+	size_t size() const { return size(streams, coupled); }
+	multistream_decoder(const multistream_decoder& e);
+	multistream_decoder(const multistream_decoder& e, char* memory);
+	multistream_decoder& operator=(const multistream_decoder& e);
+	~multistream_decoder();
+	decoder& operator[](size_t idx);
+	template<typename T> typename T::drettype ctl(const T& c) { return c(*this); }
+	template<typename T> typename T::drettype ctl_quiet(const T& c)
+	{
+		try { return c(*this); } catch(...) { return c.errordefault(); }
+	}
+	size_t decode(const unsigned char* in, uint32_t insize, int16_t* out, uint32_t maxframes,
+		bool decode_fec = false);
+	size_t decode(const unsigned char* in, uint32_t insize, float* out, uint32_t maxframes,
+		bool decode_fec = false);
+	uint8_t get_channels() { return channels; }
+	uint8_t get_streams() { return streams; }
+	void* getmem() { return memory + offset; }
+private:
+	void init_copy(const multistream_decoder& e, char* memory);
+	char* substream(size_t idx);
+	void set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled);
+	char* memory;
+	bool user;
+	uint8_t channels;
+	uint8_t streams;
+	uint8_t coupled;
+	size_t offset;
+	size_t opussize;
 };
 
 struct parsed_frame

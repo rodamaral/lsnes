@@ -3,6 +3,7 @@
 #include "opus.hpp"
 #include <opus.h>
 #include <opus_defines.h>
+#include <opus_multistream.h>
 #include <sstream>
 #include <cstring>
 
@@ -87,6 +88,13 @@ unimplemented::unimplemented()
 invalid_state::invalid_state()
 	: std::runtime_error("Invalid state") {}
 
+char* alignptr(char* ptr, size_t align)
+{
+	while((intptr_t)ptr % align)
+		ptr++;
+	return ptr;
+}
+
 int32_t throwex(int32_t ret)
 {
 	if(ret >= 0)
@@ -146,7 +154,8 @@ template<> gain get_ctlnum<gain>::errordefault() { return gain(0); }
 OpusEncoder* E(encoder& e) { return reinterpret_cast<OpusEncoder*>(e.getmem()); }
 OpusDecoder* D(decoder& d) { return reinterpret_cast<OpusDecoder*>(d.getmem()); }
 OpusRepacketizer* R(repacketizer& r) { return reinterpret_cast<OpusRepacketizer*>(r.getmem()); }
-
+OpusMSEncoder* ME(multistream_encoder& e) { return reinterpret_cast<OpusMSEncoder*>(e.getmem()); }
+OpusMSDecoder* MD(multistream_decoder& d) { return reinterpret_cast<OpusMSDecoder*>(d.getmem()); }
 
 template<typename T> T generic_ctl(encoder& e, int32_t ctl)
 {
@@ -172,14 +181,34 @@ template<typename T> T generic_ctl(decoder& d, int32_t ctl, T val)
 	throwex(opus_decoder_ctl(D(d), ctl, val));
 }
 
-template<typename T> T do_generic_get(encoder& e)
+template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl, T val)
 {
-	return T(generic_ctl<int32_t>(e, get_ctlnum<T>::num));
+	throwex(opus_multistream_encoder_ctl(ME(e), ctl, val));
 }
 
-template<typename T> T do_generic_get(decoder& d)
+template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl)
 {
-	return T(generic_ctl<int32_t>(d, get_ctlnum<T>::num));
+	T val;
+	throwex(opus_multistream_encoder_ctl(ME(e), ctl, &val));
+	return val;
+}
+
+template<typename T> T generic_ctl(multistream_decoder& d, int32_t ctl, T val)
+{
+	throwex(opus_multistream_decoder_ctl(MD(d), ctl, val));
+}
+
+template<typename T> T generic_ctl(multistream_decoder& d, int32_t ctl)
+{
+	T val;
+	throwex(opus_multistream_decoder_ctl(MD(d), ctl, &val));
+	return val;
+}
+
+
+template<typename T, typename U> T do_generic_get(U& e)
+{
+	return T(generic_ctl<int32_t>(e, get_ctlnum<T>::num));
 }
 
 template<typename T> T generic_eget<T>::operator()(encoder& e) const
@@ -187,7 +216,17 @@ template<typename T> T generic_eget<T>::operator()(encoder& e) const
 	return do_generic_get<T>(e);
 }
 
+template<typename T> T generic_meget<T>::operator()(multistream_encoder& e) const
+{
+	return do_generic_get<T>(e);
+}
+
 template<typename T> T generic_dget<T>::operator()(decoder& d) const
+{
+	return do_generic_get<T>(d);
+}
+
+template<typename T> T generic_mdget<T>::operator()(multistream_decoder& d) const
 {
 	return do_generic_get<T>(d);
 }
@@ -200,6 +239,16 @@ template<typename T> T generic_get<T>::operator()(decoder& d) const
 template<typename T> T generic_get<T>::operator()(encoder& e) const
 {
 	return do_generic_get<T>(e);
+}
+
+template<typename T> T generic_mget<T>::operator()(multistream_encoder& e) const
+{
+	return do_generic_get<T>(e);
+}
+
+template<typename T> T generic_mget<T>::operator()(multistream_decoder& d) const
+{
+	return do_generic_get<T>(d);
 }
 
 template<typename T> T generic_eget<T>::errordefault() const
@@ -217,7 +266,6 @@ template<typename T> T generic_get<T>::errordefault() const
 	return get_ctlnum<T>::errordefault();
 }
 
-
 samplerate samplerate::operator()(encoder& e) const
 {
 	return samplerate(generic_ctl<int32_t>(e, OPUS_GET_SAMPLE_RATE_REQUEST));
@@ -228,35 +276,40 @@ void complexity::operator()(encoder& e) const
 	generic_ctl(e, OPUS_SET_COMPLEXITY_REQUEST, c);
 }
 
-generic_eget<complexity> complexity::get;
+generic_meget<complexity> complexity::get;
 
 void bitrate::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_BITRATE_REQUEST, b);
 }
 
-generic_eget<bitrate> bitrate::get;
+void bitrate::operator()(multistream_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_BITRATE_REQUEST, b);
+}
+
+generic_meget<bitrate> bitrate::get;
 
 void vbr::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_VBR_REQUEST, (int32_t)(v ? 1 : 0));
 }
 
-generic_eget<vbr> vbr::get;
+generic_meget<vbr> vbr::get;
 
 void vbr_constraint::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_VBR_CONSTRAINT_REQUEST, (int32_t)(c ? 1 : 0));
 }
 
-generic_eget<vbr_constraint> vbr_constraint::get;
+generic_meget<vbr_constraint> vbr_constraint::get;
 
 void force_channels::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_FORCE_CHANNELS_REQUEST, f);
 }
 
-generic_eget<force_channels> force_channels::get;
+generic_meget<force_channels> force_channels::get;
 
 void max_bandwidth::operator()(encoder& e) const
 {
@@ -270,21 +323,21 @@ void bandwidth::operator()(encoder& e) const
 	generic_ctl(e, OPUS_SET_BANDWIDTH_REQUEST, bw);
 }
 
-generic_get<bandwidth> bandwidth::get;
+generic_mget<bandwidth> bandwidth::get;
 
 void signal::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_SIGNAL_REQUEST, s);
 }
 
-generic_eget<signal> signal::get;
+generic_meget<signal> signal::get;
 
 void application::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_APPLICATION_REQUEST, app);
 }
 
-generic_eget<application> application::get;
+generic_meget<application> application::get;
 
 _lookahead _lookahead::operator()(encoder& e) const
 {
@@ -296,32 +349,32 @@ void fec::operator()(encoder& e) const
 	generic_ctl<int32_t>(e, OPUS_SET_INBAND_FEC_REQUEST, (int32_t)(f ? 1 : 0));
 }
 
-generic_eget<fec> fec::get;
+generic_meget<fec> fec::get;
 
 void lossperc::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_PACKET_LOSS_PERC_REQUEST, (int32_t)loss);
 }
 
-generic_eget<lossperc> lossperc::get;
+generic_meget<lossperc> lossperc::get;
 
 void dtx::operator()(encoder& e) const
 {
 	generic_ctl<int32_t>(e, OPUS_SET_DTX_REQUEST, (int32_t)(d ? 1 : 0));
 }
 
-generic_eget<dtx> dtx::get;
+generic_meget<dtx> dtx::get;
 
 void lsbdepth::operator()(encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_LSB_DEPTH_REQUEST, (int32_t)depth);
 }
 
-generic_eget<lsbdepth> lsbdepth::get;
+generic_meget<lsbdepth> lsbdepth::get;
 
-_pktduration _pktduration::operator()(encoder& e) const
+_pktduration _pktduration::operator()(decoder& d) const
 {
-	return _pktduration(generic_ctl<int32_t>(e, OPUS_GET_LAST_PACKET_DURATION_REQUEST));
+	return _pktduration(generic_ctl<int32_t>(d, OPUS_GET_LAST_PACKET_DURATION_REQUEST));
 }
 
 void _reset::operator()(decoder& d) const
@@ -359,7 +412,7 @@ void gain::operator()(decoder& d) const
 	generic_ctl(d, OPUS_SET_GAIN_REQUEST, g);
 }
 
-generic_dget<gain> gain::get;
+generic_mdget<gain> gain::get;
 
 void set_control_int::operator()(encoder& e) const
 {
@@ -367,6 +420,16 @@ void set_control_int::operator()(encoder& e) const
 }
 
 void set_control_int::operator()(decoder& d) const
+{
+	generic_ctl(d, ctl, val);
+}
+
+void set_control_int::operator()(multistream_encoder& e) const
+{
+	generic_ctl(e, ctl, val);
+}
+
+void set_control_int::operator()(multistream_decoder& d) const
 {
 	generic_ctl(d, ctl, val);
 }
@@ -381,10 +444,23 @@ int32_t get_control_int::operator()(decoder& d) const
 	return generic_ctl<int32_t>(d, ctl);
 }
 
+int32_t get_control_int::operator()(multistream_encoder& e) const
+{
+	return generic_ctl<int32_t>(e, ctl);
+}
+
+int32_t get_control_int::operator()(multistream_decoder& d) const
+{
+	return generic_ctl<int32_t>(d, ctl);
+}
+
 void force_instantiate()
 {
 	encoder e(samplerate::r48k, true, application::audio);
 	decoder d(samplerate::r48k, true);
+	multistream_encoder me(samplerate::r48k, 1, 1, 0, NULL, application::audio);
+	multistream_decoder md(samplerate::r48k, 1, 1, 0, NULL);
+
 	complexity::get(e);
 	bitrate::get(e);
 	vbr::get(e);
@@ -400,6 +476,19 @@ void force_instantiate()
 	dtx::get(e);
 	lsbdepth::get(e);
 	gain::get(d);
+	bitrate::get(me);
+	lsbdepth::get(me);
+	vbr::get(me);
+	vbr_constraint::get(me);
+	application::get(me);
+	bandwidth::get(me);
+	bandwidth::get(md);
+	complexity::get(me);
+	lossperc::get(me);
+	dtx::get(me);
+	signal::get(me);
+	fec::get(me);
+	force_channels::get(me);
 
 	complexity::get.errordefault();
 	bitrate::get.errordefault();
@@ -416,6 +505,8 @@ void force_instantiate()
 	lsbdepth::get.errordefault();
 	gain::get.errordefault();
 
+	d.ctl(opus::pktduration);
+	//d.ctl_quiet(opus::pktduration);
 	e.ctl_quiet(opus::reset);
 	e.ctl_quiet(opus::finalrange);
 	e.ctl_quiet(opus::signal::get);
@@ -446,7 +537,8 @@ encoder::encoder(samplerate rate, bool _stereo, application app, char* _memory)
 	try {
 		throwex(opus_encoder_init(E(*this), rate, _stereo ? 2 : 1, app));
 	} catch(...) {
-		delete[] reinterpret_cast<char*>(memory);
+		if(!user)
+			delete[] reinterpret_cast<char*>(memory);
 		throw;
 	}
 }
@@ -506,7 +598,8 @@ decoder::decoder(samplerate rate, bool _stereo, char* _memory)
 	try {
 		throwex(opus_decoder_init(D(*this), rate, _stereo ? 2 : 1));
 	} catch(...) {
-		delete[] reinterpret_cast<char*>(memory);
+		if(!user)
+			delete[] reinterpret_cast<char*>(memory);
 		throw;
 	}
 }
@@ -625,6 +718,194 @@ size_t repacketizer::out(unsigned char* data, size_t maxlen, unsigned begin, uns
 unsigned repacketizer::get_nb_frames()
 {
 	return opus_repacketizer_get_nb_frames(R(*this));
+}
+
+encoder& multistream_encoder::operator[](size_t idx)
+{
+	if(idx > (size_t)streams)
+		throw opus::bad_argument();
+	return *reinterpret_cast<encoder*>(substream(idx));
+}
+
+size_t multistream_encoder::size(unsigned streams, unsigned coupled_streams)
+{
+	return alignof(encoder) + streams * sizeof(encoder) + opus_multistream_encoder_get_size(streams,
+		coupled_streams);
+}
+
+multistream_encoder::~multistream_encoder()
+{
+	if(!user)
+		delete memory;
+}
+
+multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, unsigned _streams, 
+	unsigned coupled_streams, const unsigned char* mapping, application app, char* _memory)
+{
+	user = (_memory != NULL);
+	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[size(streams, coupled_streams)];
+	set_params(_channels, _streams, coupled_streams);
+	try {
+		throwex(opus_multistream_encoder_init(ME(*this), rate, channels, _streams, coupled_streams, mapping,
+			app));
+	} catch(...) {
+		if(!user)
+			delete[] memory;
+		throw;
+	}
+}
+
+multistream_encoder::multistream_encoder(const multistream_encoder& e)
+{
+	init_copy(e, new char[e.size()]);
+	user = false;
+}
+
+multistream_encoder::multistream_encoder(const multistream_encoder& e, char* memory)
+{
+	init_copy(e, memory);
+	user = true;
+}
+
+multistream_encoder& multistream_encoder::operator=(const multistream_encoder& e)
+{
+	if(this == &e)
+		return *this;
+	if(streams != e.streams || coupled != e.coupled)
+		throw std::runtime_error("Stream mismatch in assignment");
+	memcpy(ME(*this), e.memory + e.offset, opussize);
+	channels = e.channels;
+	return *this;
+}
+
+void multistream_encoder::init_copy(const multistream_encoder& e, char* _memory)
+{
+	user = (_memory != NULL);
+	set_params(e.channels, e.streams, e.coupled);
+	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[e.size()];
+	memcpy(ME(*this), e.memory + e.offset, opussize);
+	for(int32_t i = 0; i < streams; i++) {
+		OpusEncoder* e;
+		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE(i, &e));
+		new(substream(i)) encoder(e, i < coupled);
+	}
+}
+
+size_t multistream_encoder::encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout)
+{
+	return throwex(opus_multistream_encode(ME(*this), in, inframes, out, maxout));
+}
+
+size_t multistream_encoder::encode(const float* in, uint32_t inframes, unsigned char* out, uint32_t maxout)
+{
+	return throwex(opus_multistream_encode_float(ME(*this), in, inframes, out, maxout));
+}
+
+char* multistream_encoder::substream(size_t idx)
+{
+	return memory + idx * sizeof(encoder);
+}
+
+void multistream_encoder::set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled)
+{
+	channels = _channels;
+	streams = _streams;
+	coupled = _coupled;
+	offset = _streams * sizeof(encoder);
+	opussize = opus_multistream_encoder_get_size(_streams, _coupled);
+}
+
+decoder& multistream_decoder::operator[](size_t idx)
+{
+	if(idx > (size_t)streams)
+		throw opus::bad_argument();
+	return *reinterpret_cast<decoder*>(substream(idx));
+}
+
+size_t multistream_decoder::size(unsigned streams, unsigned coupled_streams)
+{
+	return streams * sizeof(decoder) + opus_multistream_decoder_get_size(streams,
+		coupled_streams);
+}
+
+multistream_decoder::multistream_decoder(samplerate rate, unsigned _channels, unsigned _streams,
+	unsigned coupled_streams, const unsigned char* mapping, char* _memory)
+{
+	user = (memory != NULL);
+	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[size(streams, coupled_streams)];
+	set_params(_channels, _streams, coupled_streams);
+	try {
+		throwex(opus_multistream_decoder_init(MD(*this), rate, channels, streams, coupled_streams, mapping));
+	} catch(...) {
+		if(!user)
+			delete[] memory;
+		throw;
+	}
+}
+multistream_decoder::multistream_decoder(const multistream_decoder& e)
+{
+	init_copy(e, NULL);
+}
+
+multistream_decoder::multistream_decoder(const multistream_decoder& e, char* memory)
+{
+	init_copy(e, memory);
+}
+
+multistream_decoder::~multistream_decoder()
+{
+	if(!user)
+		delete memory;
+}
+
+multistream_decoder& multistream_decoder::operator=(const multistream_decoder& d)
+{
+	if(this == &d)
+		return *this;
+	if(streams != d.streams || coupled != d.coupled)
+		throw std::runtime_error("Stream mismatch in assignment");
+	memcpy(MD(*this), d.memory + d.offset, opussize);
+	channels = d.channels;
+	return *this;
+}
+
+void multistream_decoder::init_copy(const multistream_decoder& e, char* _memory)
+{
+	user = (_memory != NULL);
+	set_params(e.channels, e.streams, e.coupled);
+	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[e.size()];
+	memcpy(MD(*this), e.memory + e.offset, opussize);
+	for(int32_t i = 0; i < (size_t)streams; i++) {
+		OpusDecoder* e;
+		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE(i, &e));
+		new(substream(i)) decoder(e, i < coupled);
+	}
+}
+
+size_t multistream_decoder::decode(const unsigned char* in, uint32_t insize, int16_t* out, uint32_t maxframes,
+	bool decode_fec)
+{
+	return throwex(opus_multistream_decode(MD(*this), in, insize, out, maxframes, decode_fec));
+}
+
+size_t multistream_decoder::decode(const unsigned char* in, uint32_t insize, float* out, uint32_t maxframes,
+	bool decode_fec)
+{
+	return throwex(opus_multistream_decode_float(MD(*this), in, insize, out, maxframes, decode_fec));
+}
+
+void multistream_decoder::set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled)
+{
+	channels = _channels;
+	streams = _streams;
+	coupled = _coupled;
+	offset = _streams * sizeof(encoder);
+	opussize = opus_multistream_decoder_get_size(_streams, _coupled);
+}
+
+char* multistream_decoder::substream(size_t idx)
+{
+	return memory + idx * sizeof(encoder);
 }
 
 uint32_t packet_get_nb_frames(const unsigned char* packet, size_t len)
