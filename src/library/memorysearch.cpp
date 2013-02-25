@@ -138,7 +138,7 @@ struct search_value_helper
 			return false;
 		value_type v1 = 0;
 		value_type v2 = 0;
-		if((!endian || endian == memory_space::get_system_endian()) && memory_space::can_read_unaligned()) {
+		if(!endian || (endian == memory_space::get_system_endian() && memory_space::can_read_unaligned())) {
 			v1 = *reinterpret_cast<const value_type*>(oldv);
 			v2 = *reinterpret_cast<const value_type*>(newv);
 		} else if(endian < 0)
