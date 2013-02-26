@@ -168,6 +168,8 @@ struct core_core
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
+	void hide() { hidden = true; }
+	bool is_hidden() { return hidden; }
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -192,6 +194,7 @@ private:
 	port_type** port_types;
 	framebuffer_raw& (*_draw_cover)();
 	std::string (*_get_core_shortname)();
+	bool hidden;
 };
 
 struct core_type
@@ -248,6 +251,7 @@ public:
 	void set_pflag(bool pflag) { core->set_pflag(pflag); }
 	void request_reset(long delay, bool hard) { core->request_reset(delay, hard); }
 	framebuffer_raw& draw_cover() { return core->draw_cover(); }
+	bool is_hidden() { return core->is_hidden(); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

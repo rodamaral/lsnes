@@ -354,6 +354,7 @@ core_core::core_core(core_core_params& params)
 	port_types = params.port_types;
 	_draw_cover = params.draw_cover;
 	_get_core_shortname = params.get_core_shortname;
+	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();

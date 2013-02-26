@@ -65,6 +65,8 @@ void wxeditor_conflict::add_options(wxWindow* win, wxSizer* sizer)
 {
 	std::map<std::string, std::string> classes;
 	for(auto i : core_type::get_core_types()) {
+		if(i->is_hidden())
+			continue;
 		classes["type:" + i->get_iname()] = "Type " + i->get_iname();
 		for(auto j : i->get_extensions())
 			classes["ext:" + j] = "Extension " + j;
@@ -83,6 +85,8 @@ void wxeditor_conflict::add_option(wxWindow* win, wxSizer* sizer, const std::str
 	regex_results r;
 	if(r = regex("ext:(.*)", key)) {
 		for(auto i : core_type::get_core_types()) {
+			if(i->is_hidden())
+				continue;
 			for(auto j : i->get_extensions())
 				if(j == r[1]) {
 					std::string val = i->get_hname() + " / " + i->get_core_identifier();
@@ -94,6 +98,8 @@ void wxeditor_conflict::add_option(wxWindow* win, wxSizer* sizer, const std::str
 		}
 	} else if(r = regex("type:(.*)", key)) {
 		for(auto i : core_type::get_core_types()) {
+			if(i->is_hidden())
+				continue;
 			if(i->get_iname() == r[1]) {
 				std::string val = i->get_hname() + " / " + i->get_core_identifier();
 				rchoices[std::make_pair(key, val)] = i;

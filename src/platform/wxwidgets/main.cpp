@@ -681,6 +681,8 @@ std::string pick_file_member(wxWindow* parent, const std::string& title, const s
 {
 	std::string filename = pick_file(parent, title, startdir, false);
 	//Did we pick a .zip file?
+	if(!regex_match(".*\\.[zZ][iI][pP]", filename))
+		return filename;	//Not a ZIP.
 	try {
 		zip_reader zr(filename);
 		std::vector<std::string> files;
