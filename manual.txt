@@ -517,6 +517,29 @@ on_paint = loopwrapper(function(wait)
 
 end);
 
+7.1.9 list_bindings([string cmd])
+
+Get table of all keybindings, indexed by keyspec 
+(modifiers|mask/key). If command is specified, the table is 
+limited to that command. Also searches for controller keys.
+
+7.1.10 get_alias(string aname)
+
+Get expansion of given alias.
+
+7.1.11 set_alias(string aname, string value)
+
+Set expansion of given alias.
+
+7.1.12 create_ibind(string name, string cmd)
+
+Return object representing inverse binding with specified name 
+and specified command.
+
+• To create press/release commands, use aliases +foo and -foo .
+
+• Keep the returned object around.
+
 7.2 Table bit:
 
 Bitwise logical functions and related.
