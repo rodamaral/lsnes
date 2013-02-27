@@ -2015,6 +2015,48 @@ end
 end);
 \end_layout
 
+\begin_layout Subsubsection
+list_bindings([string cmd])
+\end_layout
+
+\begin_layout Standard
+Get table of all keybindings, indexed by keyspec (modifiers|mask/key).
+ If command is specified, the table is limited to that command.
+\end_layout
+
+\begin_layout Subsubsection
+get_alias(string aname)
+\end_layout
+
+\begin_layout Standard
+Get expansion of given alias.
+\end_layout
+
+\begin_layout Subsubsection
+set_alias(string aname, string value)
+\end_layout
+
+\begin_layout Standard
+Set expansion of given alias.
+\end_layout
+
+\begin_layout Subsubsection
+create_ibind(string name, string cmd)
+\end_layout
+
+\begin_layout Standard
+Return object representing inverse binding with specified name and specified
+ command.
+\end_layout
+
+\begin_layout Itemize
+To create press/release commands, use aliases +foo and -foo .
+\end_layout
+
+\begin_layout Itemize
+Keep the returned object around.
+\end_layout
+
 \begin_layout Subsection
 Table bit:
 \end_layout

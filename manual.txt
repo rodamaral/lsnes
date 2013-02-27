@@ -71,6 +71,10 @@ lsnes is SNES rerecording emulator based on bsnes core.
 
 Load <file> as ROM.
 
+4.1.2 <file> (lsnes/wxwidgets)
+
+Load <file> as ROM.
+
 4.2 Session options
 
 4.2.1 --pause
@@ -153,6 +157,10 @@ After loading the ROM, load <file> as savestate/movie.
 
 After running main RC file, run this file. If multiple are 
 specified, these execute in order specified.
+
+4.3.2 --lua=<file> (lsnes/wxwidgets)
+
+Run this Lua file on startup
 
 4.4 dump options (lsnes-dumpavi only)
 
@@ -976,6 +984,29 @@ on_paint = loopwrapper(function(wait)
   end
 
 end);
+
+8.1.9 list_bindings([string cmd])
+
+Get table of all keybindings, indexed by keyspec 
+(modifiers|mask/key). If command is specified, the table is 
+limited to that command.
+
+8.1.10 get_alias(string aname)
+
+Get expansion of given alias.
+
+8.1.11 set_alias(string aname, string value)
+
+Set expansion of given alias.
+
+8.1.12 create_ibind(string name, string cmd)
+
+Return object representing inverse binding with specified name 
+and specified command.
+
+• To create press/release commands, use aliases +foo and -foo .
+
+• Keep the returned object around.
 
 8.2 Table bit:
 
