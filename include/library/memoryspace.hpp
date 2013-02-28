@@ -111,15 +111,15 @@ public:
 /**
  * Get system endianess.
  */
-#if DISABLE_FAST_MEMORY && (defined(__i386__) || defined(__x86_64__))
+#if (defined(__i386__) || defined(__x86_64__))
 	static int get_system_endian() throw() { return -1; }
 #else
-	static int get_system_endian() throw() { if(!sysendian) _get_system_endian(); return sysendian; }
+	static int get_system_endian() throw() { if(!sysendian) sysendian = _get_system_endian(); return sysendian; }
 #endif
 /**
  * Do native unaligned reads work?
  */
-#if DISABLE_FAST_MEMORY && (defined(__i386__) || defined(__x86_64__))
+#if (defined(__i386__) || defined(__x86_64__))
 	static int can_read_unaligned() throw() { return true; }
 #else
 	static int can_read_unaligned() throw() { return false; }
