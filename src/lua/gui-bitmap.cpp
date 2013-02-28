@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
 #include "lua/bitmap.hpp"
 #include <vector>
@@ -11,11 +12,21 @@ lua_bitmap::lua_bitmap(uint32_t w, uint32_t h)
 	memset(&pixels[0], 0, width * height);
 }
 
+lua_bitmap::~lua_bitmap()
+{
+	render_kill_request(this);
+}
+
 lua_dbitmap::lua_dbitmap(uint32_t w, uint32_t h)
 {
 	width = w;
 	height = h;
 	pixels.resize(width * height);
+}
+
+lua_dbitmap::~lua_dbitmap()
+{
+	render_kill_request(this);
 }
 
 lua_palette::lua_palette()
@@ -40,6 +51,7 @@ namespace
 			b = _bitmap;
 			b2 = NULL;
 			p = _palette;
+			killed = false;
 		}
 
 		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_dbitmap>* _bitmap) throw()
@@ -49,13 +61,29 @@ namespace
 			b = NULL;
 			b2 = _bitmap;
 			p = NULL;
+			killed = false;
 		}
 
 		~render_object_bitmap() throw()
 		{
+			if(killed)
+				return;
 			delete b;
 			delete b2;
 			delete p;
+		}
+
+		bool kill_request(void* obj) throw()
+		{
+			if(!obj)
+				return false;		//Can't kill on NULL object.
+			if(p && p->object() == obj)
+				return killed = true;
+			if(b && b->object() == obj)
+				return killed = true;
+			if(b2 && b2->object() == obj)
+				return killed = true;
+			return false;
 		}
 
 		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
@@ -111,6 +139,7 @@ namespace
 		lua_obj_pin<lua_bitmap>* b;
 		lua_obj_pin<lua_dbitmap>* b2;
 		lua_obj_pin<lua_palette>* p;
+		bool killed;
 	};
 
 	function_ptr_luafun gui_bitmap("gui.bitmap_draw", [](lua_State* LS, const std::string& fname) -> int {

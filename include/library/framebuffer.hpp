@@ -355,7 +355,10 @@ struct render_object
  * Destructor.
  */
 	virtual ~render_object() throw();
-
+/**
+ * Kill object function. If it returns true, kill the request. Default is to return false.
+ */
+	virtual bool kill_request(void* obj) throw();
 /**
  * Draw the object.
  *
@@ -537,7 +540,10 @@ struct render_queue
  * Frees all objects in the queue without applying them.
  */
 	void clear() throw();
-
+/**
+ * Call kill_request on all objects in queue.
+ */
+	void kill_request(void* obj) throw();
 /**
  * Get memory from internal allocator.
  */
@@ -561,7 +567,7 @@ struct render_queue
 	~render_queue() throw();
 private:
 	void add(struct render_object& obj) throw(std::bad_alloc);
-	struct node { struct render_object* obj; struct node* next; };
+	struct node { struct render_object* obj; struct node* next; bool killed; };
 	struct page { char content[RENDER_PAGE_SIZE]; };
 	struct node* queue_head;
 	struct node* queue_tail;

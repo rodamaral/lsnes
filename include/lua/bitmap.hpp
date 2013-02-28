@@ -10,6 +10,7 @@
 struct lua_bitmap
 {
 	lua_bitmap(uint32_t w, uint32_t h);
+	~lua_bitmap();
 	size_t width;
 	size_t height;
 	std::vector<uint16_t> pixels;
@@ -18,6 +19,7 @@ struct lua_bitmap
 struct lua_dbitmap
 {
 	lua_dbitmap(uint32_t w, uint32_t h);
+	~lua_dbitmap();
 	size_t width;
 	size_t height;
 	std::vector<premultiplied_color> pixels;

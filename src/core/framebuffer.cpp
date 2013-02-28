@@ -326,3 +326,10 @@ void triplebuffer_logic::end_read() throw()
 	mutex::holder h(*mut);
 	read_active--;
 }
+
+void render_kill_request(void* obj)
+{
+	buffer1.rq.kill_request(obj);
+	buffer2.rq.kill_request(obj);
+	buffer3.rq.kill_request(obj);
+}
