@@ -778,7 +778,7 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 	size_t layout_x = 0;
 	size_t layout_y = 0;
 	size_t swidth = scr.get_width();
-	size_t sheight = scr.get_width();
+	size_t sheight = scr.get_height();
 	while(true) {
 		int ch = (itr < maxitr) ? static_cast<unsigned char>(text[itr++]) : -1;
 		int32_t cp = utf8_parse_byte(ch, utfstate);
