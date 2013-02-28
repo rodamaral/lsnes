@@ -331,6 +331,11 @@ private:
 	lua_obj_pin& operator=(const lua_obj_pin&);
 };
 
+template<typename T> void* unbox_any_pin(struct lua_obj_pin<T>* pin)
+{
+	return pin ? pin->object() : NULL;
+}
+
 /**
  * Helper class containing binding data for Lua class call.
  */

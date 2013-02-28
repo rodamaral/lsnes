@@ -589,8 +589,21 @@ render_queue::~render_queue() throw()
 	clear();
 }
 
+render_object::render_object() throw()
+{
+}
+
 render_object::~render_object() throw()
 {
+}
+
+bool render_object::kill_request_ifeq(void* myobj, void* killobj)
+{
+	if(!killobj)
+		return false;
+	if(myobj == killobj)
+		return true;
+	return false;
 }
 
 bool render_object::kill_request(void* obj) throw()

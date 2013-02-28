@@ -50,7 +50,6 @@ namespace
 			b = _bitmap;
 			b2 = NULL;
 			p = _palette;
-			killed = false;
 		}
 
 		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_dbitmap>* _bitmap) throw()
@@ -60,13 +59,10 @@ namespace
 			b = NULL;
 			b2 = _bitmap;
 			p = NULL;
-			killed = false;
 		}
 
 		~render_object_bitmap() throw()
 		{
-			if(killed)
-				return;
 			delete b;
 			delete b2;
 			delete p;
@@ -74,15 +70,9 @@ namespace
 
 		bool kill_request(void* obj) throw()
 		{
-			if(!obj)
-				return false;		//Can't kill on NULL object.
-			if(p && p->object() == obj)
-				return killed = true;
-			if(b && b->object() == obj)
-				return killed = true;
-			if(b2 && b2->object() == obj)
-				return killed = true;
-			return false;
+			return kill_request_ifeq(unbox_any_pin(p), obj) ||
+				kill_request_ifeq(unbox_any_pin(b), obj) ||
+				kill_request_ifeq(unbox_any_pin(b2), obj);
 		}
 
 		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
@@ -139,7 +129,6 @@ namespace
 		lua_obj_pin<lua_bitmap>* b;
 		lua_obj_pin<lua_dbitmap>* b2;
 		lua_obj_pin<lua_palette>* p;
-		bool killed;
 	};
 
 	function_ptr_luafun gui_bitmap(LS, "gui.bitmap_draw", [](lua_state& L, const std::string& fname) -> int {

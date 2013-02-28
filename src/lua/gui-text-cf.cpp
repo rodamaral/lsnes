@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "fonts/wrapper.hpp"
+#include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
 #include "library/customfont.hpp"
 #include "library/utf8.hpp"
@@ -42,7 +43,10 @@ namespace
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
 			premultiplied_color _bg, lua_obj_pin<lua_customfont>* _font) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), font(_font) {}
-		~render_object_text_cf() throw() {}
+		~render_object_text_cf() throw()
+		{
+			delete font;
+		}
 		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			fg.set_palette(scr);
@@ -72,6 +76,10 @@ namespace
 			}
 			
 		}
+		bool kill_request(void* obj) throw()
+		{
+			return kill_request_ifeq(unbox_any_pin(font), obj);
+		}
 		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
 		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
 		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
@@ -93,7 +101,10 @@ namespace
 		}
 	}
 	
-	lua_customfont::~lua_customfont() throw() {}
+	lua_customfont::~lua_customfont() throw()
+	{
+		render_kill_request(this);
+	}
 	
 	int lua_customfont::draw(lua_state& L)
 	{
