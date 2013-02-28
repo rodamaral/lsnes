@@ -1822,6 +1822,8 @@ out:
 	public:
 		inthread_th()
 		{
+			quit = false;
+			quit_ack = false;
 			rptr = 0;
 			fire();
 		}
