@@ -501,6 +501,7 @@ void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 	struct node* n = reinterpret_cast<struct node*>(alloc(sizeof(node)));
 	n->obj = &obj;
 	n->next = NULL;
+	n->killed = false;
 	if(queue_tail)
 		queue_tail = queue_tail->next = n;
 	else
@@ -524,7 +525,8 @@ template<bool X> void render_queue::run(struct framebuffer<X>& scr) throw()
 	struct node* tmp = queue_head;
 	while(tmp) {
 		try {
-			(*(tmp->obj))(scr);
+			if(!tmp->killed)
+				(*(tmp->obj))(scr);
 			tmp = tmp->next;
 		} catch(...) {
 		}
@@ -534,7 +536,8 @@ template<bool X> void render_queue::run(struct framebuffer<X>& scr) throw()
 void render_queue::clear() throw()
 {
 	while(queue_head) {
-		queue_head->obj->~render_object();
+		if(!queue_head->killed)
+			queue_head->obj->~render_object();
 		queue_head = queue_head->next;
 	}
 	//Release all memory for reuse.
@@ -557,6 +560,22 @@ void* render_queue::alloc(size_t block) throw(std::bad_alloc)
 	return mem;
 }
 
+void render_queue::kill_request(void* obj) throw()
+{
+	struct node* tmp = queue_head;
+	while(tmp) {
+		try {
+			if(!tmp->killed && tmp->obj->kill_request(obj)) {
+				//Kill this request.
+				tmp->killed = true;
+				tmp->obj->~render_object();
+			}
+			tmp = tmp->next;
+		} catch(...) {
+		}
+	}
+}
+
 render_queue::render_queue() throw()
 {
 	queue_head = NULL;
@@ -572,6 +591,11 @@ render_queue::~render_queue() throw()
 
 render_object::~render_object() throw()
 {
+}
+
+bool render_object::kill_request(void* obj) throw()
+{
+	return false;
 }
 
 bitmap_font::bitmap_font() throw(std::bad_alloc)

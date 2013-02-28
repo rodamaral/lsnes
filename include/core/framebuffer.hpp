@@ -93,5 +93,9 @@ std::pair<uint32_t, uint32_t> get_framebuffer_size();
  * Take a screenshot to specified file.
  */
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Kill pending requests associated with object.
+ */
+void render_kill_request(void* obj);
 
 #endif
