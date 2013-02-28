@@ -352,6 +352,10 @@ private:
 struct render_object
 {
 /**
+ * Constructor.
+ */
+	render_object() throw();
+/**
  * Destructor.
  */
 	virtual ~render_object() throw();
@@ -359,6 +363,10 @@ struct render_object
  * Kill object function. If it returns true, kill the request. Default is to return false.
  */
 	virtual bool kill_request(void* obj) throw();
+/**
+ * Return true if myobj and killobj are equal and not NULL.
+ */
+	bool kill_request_ifeq(void* myobj, void* killobj);
 /**
  * Draw the object.
  *

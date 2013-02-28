@@ -70,6 +70,11 @@ private:
 	lua_obj_pin& operator=(const lua_obj_pin&);
 };
 
+template<typename T> void* unbox_any_pin(struct lua_obj_pin<T>* pin)
+{
+	return pin ? pin->object() : NULL;
+}
+
 template<class T> struct lua_class_bind_data
 {
 	int (T::*fn)(lua_State* LS);
