@@ -260,7 +260,7 @@ void framebuffer_raw::save(std::vector<char>& data) throw(std::bad_alloc)
 	default:
 		//Choose the first two bytes so that screenshot is bad in legacy format.
 		m = 2;
-		while(width * height % m == 0)
+		while((sbpp * width * height + 8) % (3 * m) == 2)
 			m++;
 		offset = 8;
 		data.resize(offset + sbpp * static_cast<size_t>(width) * height);
