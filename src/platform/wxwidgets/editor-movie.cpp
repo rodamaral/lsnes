@@ -171,9 +171,9 @@ void frame_controls::set_types(controller_frame& f)
 	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', "Framesync", 0));
 	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', "Reset", 1));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, "  rlow", 2));
+	controlinfo.push_back(control_info::axisinfo(nextc, " rhigh", 2));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, " rhigh", 3));
+	controlinfo.push_back(control_info::axisinfo(nextc, "  rlow", 3));
 	if(nextp > nextc)
 		nextc = nextp;
 	nextp = nextc;
