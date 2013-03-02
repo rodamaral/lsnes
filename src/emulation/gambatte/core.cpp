@@ -374,7 +374,7 @@ namespace
 			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
 		},
 		//Install handler
-		[]() -> void  {},
+		[]() -> void  { magic_flags |= 2; },
 		//Uninstall handler.
 		[]() -> void {},
 		//Emulate frame.

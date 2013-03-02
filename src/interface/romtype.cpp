@@ -508,3 +508,4 @@ emucore_callbacks::~emucore_callbacks() throw()
 struct emucore_callbacks* ecore_callbacks;
 
 bool new_core_flag = false;
+uint32_t magic_flags = 0;

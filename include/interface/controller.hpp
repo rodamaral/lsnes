@@ -9,4 +9,6 @@ struct controller_set
 	std::vector<port_type*> ports;
 };
 
+extern uint32_t magic_flags;
+
 #endif

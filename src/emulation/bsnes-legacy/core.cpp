@@ -738,6 +738,7 @@ namespace
 			old = SNES::interface;
 			SNES::interface = &my_interface_obj;
 			SNES::system.init();
+			magic_flags |= 1;
 		},
 		//Uninstall handler
 		[]() -> void { SNES::interface = old; },
