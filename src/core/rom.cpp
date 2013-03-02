@@ -55,7 +55,7 @@ namespace
 	};
 
 	port_controller_button* null_buttons[] = {};
-	port_controller simple_controller = {"(system)", "system", 0, null_buttons};
+	port_controller simple_controller = {"system", "system", 0, null_buttons};
 	port_controller* simple_controllers[] = {&simple_controller};
 	port_controller_set simple_port = {1, simple_controllers};
 

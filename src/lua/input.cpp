@@ -290,4 +290,30 @@ namespace
 		L.pushnumber(pcid.second);
 		return 3;
 	});
+
+	//THE NEW API.
+
+	function_ptr_luafun ijlcid_to_pcid2(LS, "input.lcid_to_pcid2", [](lua_state& L, const std::string& fname) ->
+		int {
+		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		auto pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid.first < 0)
+			return 0;
+		L.pushnumber(pcid.first);
+		L.pushnumber(pcid.second);
+		return 2;
+	});
+
+	function_ptr_luafun iporttype(LS, "input.port_type", [](lua_state& L, const std::string& fname) -> int {
+		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		auto& m = get_movie();
+		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
+		try {
+			const port_type& p = s.port_type(port);
+			L.pushstring(p.hname.c_str());
+		} catch(...) {
+			return 0;
+		}
+		return 1;
+	});
 }

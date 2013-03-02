@@ -47,7 +47,7 @@ namespace
 		}
 		return 1;
 	});
-	
+
 	function_ptr_luafun get_alias(LS, "get_alias", [](lua_state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
 		std::string a = lsnes_cmd.get_alias_for(name);
