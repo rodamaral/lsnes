@@ -274,7 +274,7 @@ namespace
 	function_ptr_luafun iporttype("input.port_type", [](lua_State* LS, const std::string& fname) -> int {
 		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
 		if(port == 0) {
-			lua_pushstring(LS, "(system)");
+			lua_pushstring(LS, "system");
 		} else if(port < 3) {
 			auto& m = get_movie();
 			controller_frame f = m.read_subframe(m.get_current_frame(), 0);
