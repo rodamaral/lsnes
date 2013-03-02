@@ -1452,7 +1452,30 @@ storing value. Notes:
 • Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-8.4.3 input.geta(number controller)
+8.4.3 input.get2(number port, number controller, number index)
+
+Read the specified input tuple.
+
+• Port 0 is system port.
+
+8.4.4 input.set2(number port, number controller, number index, 
+  number value)
+
+Write the specified input tuple.
+
+• Port 0 is system port.
+
+8.4.5 input.lcid_to_pcid2(number lcid)
+
+Look up physical pcid pair (port, controller) corresponding to 
+specified logical controller (1-based). Returns nothing if 
+controller does not exist.
+
+8.4.6 input.port_type(number port)
+
+Return type of specified port.
+
+8.4.7 input.geta(number controller)
 
 Get input state for entiere controller. Returns 13 return values.
 
@@ -1461,13 +1484,13 @@ Get input state for entiere controller. Returns 13 return values.
 
 • 2nd-13th return value: value of i:th index.
 
-8.4.4 input.seta(number controller, number bitmask, number 
+8.4.8 input.seta(number controller, number bitmask, number 
   args...)
 
 Set state for entiere controller. args is up to 12 values for 
 indices (overriding values in bitmask if specified).
 
-8.4.5 input.controllertype(number controller)
+8.4.9 input.controllertype(number controller)
 
 Get the type of controller as string. Valid values are:
 
@@ -1479,14 +1502,14 @@ Get the type of controller as string. Valid values are:
 
 • superscope
 
-8.4.6 input.reset([number cycles])
+8.4.10 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-8.4.7 input.raw()
+8.4.11 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
@@ -1510,12 +1533,12 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
-8.4.8 input.keyhook(string key, boolean state)
+8.4.12 input.keyhook(string key, boolean state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
 
-8.4.9 input.joyget(number controller)
+8.4.13 input.joyget(number controller)
 
 Returns table for current controls for specified controller. The 
 names of fields vary by controller type.
@@ -1525,12 +1548,12 @@ names of fields vary by controller type.
 
 • The analog axes are “xaxis” and “yaxis”.
 
-8.4.10 input.joyset(number controller, table controls)
+8.4.14 input.joyset(number controller, table controls)
 
 Set the the state of specified controller to values specified in 
 specified table.
 
-8.4.11 input.lcid_to_pcid(number controller)
+8.4.15 input.lcid_to_pcid(number controller)
 
 Return the physical index, physical port and controller number in 
 port for specified (1-based) logical controller.

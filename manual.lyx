@@ -2884,6 +2884,48 @@ Uses physical controller numbering.
 \end_layout
 
 \begin_layout Subsubsection
+input.get2(number port, number controller, number index)
+\end_layout
+
+\begin_layout Standard
+Read the specified input tuple.
+\end_layout
+
+\begin_layout Itemize
+Port 0 is system port.
+\end_layout
+
+\begin_layout Subsubsection
+input.set2(number port, number controller, number index, number value)
+\end_layout
+
+\begin_layout Standard
+Write the specified input tuple.
+\end_layout
+
+\begin_layout Itemize
+Port 0 is system port.
+\end_layout
+
+\begin_layout Subsubsection
+input.lcid_to_pcid2(number lcid)
+\end_layout
+
+\begin_layout Standard
+Look up physical pcid pair (port, controller) corresponding to specified
+ logical controller (1-based).
+ Returns nothing if controller does not exist.
+\end_layout
+
+\begin_layout Subsubsection
+input.port_type(number port)
+\end_layout
+
+\begin_layout Standard
+Return type of specified port.
+\end_layout
+
+\begin_layout Subsubsection
 input.geta(number controller)
 \end_layout
 

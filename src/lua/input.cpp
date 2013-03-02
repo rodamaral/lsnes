@@ -201,4 +201,87 @@ namespace
 		lua_pushnumber(LS, pcid % 4);
 		return 3;
 	});
+
+	//THE NEW API.
+
+	function_ptr_luafun i2set("input.set2", [](lua_State* LS, const std::string& fname) -> int {
+		if(!lua_input_controllerdata)
+			return 0;
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		short value = get_numeric_argument<short>(LS, 4, fname.c_str());
+		if(port > 2 || controller > 3 || (port == 0 && controller > 0))
+			return 0;
+		if(port > 0) {
+			unsigned ctn = port * 4 + controller - 4;
+			lua_input_controllerdata->axis(ctn, index, value);
+		} else if(index == 0) {
+			lua_input_controllerdata->sync(value);
+		} else if(index == 1) {
+			lua_input_controllerdata->reset(value);
+		} else if(index == 3) {
+			auto d = lua_input_controllerdata->delay();
+			d.first = value;
+			lua_input_controllerdata->delay(d);
+		} else if(index == 2) {
+			auto d = lua_input_controllerdata->delay();
+			d.second = value;
+			lua_input_controllerdata->delay(d);
+		}
+		return 0;
+	});
+
+	function_ptr_luafun i2get("input.get2", [](lua_State* LS, const std::string& fname) -> int {
+		if(!lua_input_controllerdata)
+			return 0;
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		unsigned index = get_numeric_argument<unsigned>(LS, 3, fname.c_str());
+		if(port > 2 || controller > 3 || (port == 0 && controller > 0))
+			return 0;
+		if(port > 0) {
+			unsigned ctn = port * 4 + controller - 4;
+			lua_pushnumber(LS, lua_input_controllerdata->axis(ctn, index));
+			return 1;
+		} else if(port == 0) {
+			lua_pushnumber(LS, lua_input_controllerdata->sync());
+			return 1;
+		} else if(port == 1) {
+			lua_pushnumber(LS, lua_input_controllerdata->reset());
+			return 1;
+		} else if(port == 3) {
+			lua_pushnumber(LS, lua_input_controllerdata->delay().first);
+			return 1;
+		} else if(port == 2) {
+			lua_pushnumber(LS, lua_input_controllerdata->delay().second);
+			return 1;
+		}
+		return 0;
+	});
+
+	function_ptr_luafun ijlcid_to_pcid2("input.lcid_to_pcid2", [](lua_State* LS, const std::string& fname) ->
+		int {
+		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		int pcid = controls.lcid_to_pcid(lcid - 1);
+		if(pcid < 0)
+			return 0;
+		lua_pushnumber(LS, pcid / 4 + 1);
+		lua_pushnumber(LS, pcid % 4);
+		return 2;
+	});
+
+	function_ptr_luafun iporttype("input.port_type", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		if(port == 0) {
+			lua_pushstring(LS, "(system)");
+		} else if(port < 3) {
+			auto& m = get_movie();
+			controller_frame f = m.read_subframe(m.get_current_frame(), 0);
+			porttype_info& p = f.get_port_type(port - 1);
+			lua_pushstring(LS, p.name.c_str());
+		} else
+			lua_pushnil(LS);
+		return 1;
+	});
 }

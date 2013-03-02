@@ -33,7 +33,7 @@ namespace
 		}
 		return 1;
 	});
-	
+
 	function_ptr_luafun get_alias("get_alias", [](lua_State* LS, const std::string& fname) -> int {
 		std::string name = get_string_argument(LS, 1, fname.c_str());
 		std::string a = command::get_alias_for(name);
