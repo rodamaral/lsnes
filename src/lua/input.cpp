@@ -316,4 +316,81 @@ namespace
 		}
 		return 1;
 	});
+
+	const port_controller_set* lookup_ps(unsigned port)
+	{
+		auto& m = get_movie();
+		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
+		const port_type& p = f.get_port_type(port);
+		return p.controller_info;
+	}
+
+	function_ptr_luafun ictrlinfo(LS, "input.controller_info", [](lua_state& L, const std::string& fname) -> int {
+		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
+		const port_controller_set* ps;
+		unsigned lcid = 0;
+		unsigned classnum = 1;
+		ps = lookup_ps(port);
+		if(!ps || ps->controller_count <= controller)
+			return 0;
+		for(unsigned i = 0; i < 8; i++) {
+			auto pcid = controls.lcid_to_pcid(i);
+			if(pcid.first < 0)
+				continue;
+			if(pcid.first == port && pcid.second == controller) {
+				lcid = i + 1;
+				break;
+			}
+			const port_controller_set* ps2 = lookup_ps(pcid.first);
+			if(!strcmp(ps->controllers[controller]->cclass, ps2->controllers[pcid.second]->cclass))
+				classnum++;
+		}
+		port_controller* cs = ps->controllers[controller];
+		L.newtable();
+		L.pushstring("type");
+		L.pushstring(cs->type);
+		L.rawset(-3);
+		L.pushstring("class");
+		L.pushstring(cs->cclass);
+		L.rawset(-3);
+		L.pushstring("classnum");
+		L.pushnumber(classnum);
+		L.rawset(-3);
+		L.pushstring("lcid");
+		L.pushnumber(lcid);
+		L.rawset(-3);
+		L.pushstring("button_count");
+		L.pushnumber(cs->button_count);
+		L.rawset(-3);
+		L.pushstring("buttons");
+		L.newtable();
+		//Push the buttons.
+		for(unsigned i = 0; i < cs->button_count; i++) {
+			L.pushnumber(i + 1);
+			L.newtable();
+			L.pushstring("type");
+			switch(cs->buttons[i]->type) {
+				case port_controller_button::TYPE_NULL: L.pushstring("null"); break;
+				case port_controller_button::TYPE_BUTTON: L.pushstring("button"); break;
+				case port_controller_button::TYPE_AXIS: L.pushstring("axis"); break;
+				case port_controller_button::TYPE_RAXIS: L.pushstring("raxis"); break;
+			};
+			L.rawset(-3);
+			if(cs->buttons[i]->symbol) {
+				L.pushstring("symbol");
+				L.pushlstring(&cs->buttons[i]->symbol, 1);
+				L.rawset(-3);
+			}
+			L.pushstring("name");
+			L.pushstring(cs->buttons[i]->name);
+			L.rawset(-3);
+			L.pushstring("hidden");
+			L.pushboolean(cs->buttons[i]->shadow);
+			L.rawset(-3);
+			L.rawset(-3);
+		}
+		L.rawset(-3);
+		return 1;
+	});
 }
