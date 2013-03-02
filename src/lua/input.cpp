@@ -284,4 +284,190 @@ namespace
 			lua_pushnil(LS);
 		return 1;
 	});
+
+	struct button_struct
+	{
+		const char* type;
+		const char symbol;
+		const char* name;
+		bool hidden;
+	};
+
+	button_struct gamepad_buttons[] = {
+		{"button", 'B', "B", false},
+		{"button", 'Y', "Y", false},
+		{"button", 's', "select", false},
+		{"button", 'S', "start", false},
+		{"button", 'u', "up", false},
+		{"button", 'd', "down", false},
+		{"button", 'l', "left", false},
+		{"button", 'r', "right", false},
+		{"button", 'A', "A", false},
+		{"button", 'X', "X", false},
+		{"button", 'L', "L", false},
+		{"button", 'R', "R", false},
+		{"button", '0', "ext0", false},
+		{"button", '1', "ext1", false},
+		{"button", '2', "ext2", false},
+		{"button", '3', "ext3", false}
+	};
+
+	button_struct gbgamepad_buttons[] = {
+		{"button", 'A', "A", false},
+		{"button", 'B', "B", false},
+		{"button", 's', "select", false},
+		{"button", 'S', "start", false},
+		{"button", 'r', "right", false},
+		{"button", 'l', "left", false},
+		{"button", 'u', "up", false},
+		{"button", 'd', "down", false}
+	};
+
+	button_struct mouse_buttons[] = {
+		{"raxis", '\0', "xaxis", false},
+		{"raxis", '\0', "yaxis", false},
+		{"button", 'L', "L", false},
+		{"button", 'R', "R", false}
+	};
+
+	button_struct superscope_buttons[] = {
+		{"axis", '\0', "xaxis", false},
+		{"axis", '\0', "yaxis", false},
+		{"button", 'T', "trigger", false},
+		{"button", 'C', "cursor", false},
+		{"button", 'U', "turbo", false},
+		{"button", 'P', "pause", false}
+	};
+
+	button_struct justifier_buttons[] = {
+		{"axis", '\0', "xaxis", false},
+		{"axis", '\0', "yaxis", false},
+		{"button", 'T', "trigger", false},
+		{"button", 'S', "start", false}
+	};
+
+	button_struct system_buttons[] = {
+		{"button", 'F', "framesync", true},
+		{"button", 'R', "reset", true},
+		{"axis", '\0', "rhigh", true},
+		{"axis", '\0', "rlow", true}
+	};
+
+	struct controller_struct
+	{
+		const char* cclass;
+		const char* type;
+		unsigned button_count;
+		button_struct* buttons;
+	};
+
+	controller_struct system_controller = { "(system)", "(system)", 4, system_buttons};
+	controller_struct gbgamepad_controller = { "gb", "gamepad", 8, gbgamepad_buttons};
+	controller_struct gamepad_controller = { "gamepad", "gamepad", 12, gamepad_buttons};
+	controller_struct gamepad16_controller = { "gamepad", "gamepad16", 16, gamepad_buttons};
+	controller_struct mouse_controller = { "mouse", "mouse", 4, mouse_buttons};
+	controller_struct justifier_controller = { "justifier", "justifier", 4, justifier_buttons};
+	controller_struct superscope_controller = { "superscope", "superscope", 6, superscope_buttons};
+
+	struct port_struct
+	{
+		unsigned count;
+		controller_struct* ctrls;
+	};
+
+	port_struct system_port = {1, &system_controller};
+	port_struct none_port = {0, NULL};
+	port_struct gbgamepad_port = {1, &gbgamepad_controller};
+	port_struct gamepad_port = {1, &gamepad_controller};
+	port_struct gamepad16_port = {1, &gamepad16_controller};
+	port_struct multitap_port = {4, &gamepad_controller};
+	port_struct multitap16_port = {4, &gamepad16_controller};
+	port_struct mouse_port = {1, &mouse_controller};
+	port_struct justifier_port = {1, &justifier_controller};
+	port_struct justifiers_port = {2, &justifier_controller};
+	port_struct superscope_port = {1, &superscope_controller};
+
+	port_struct* lookup_ps(unsigned port)
+	{
+		if(port == 0)
+			return &system_port;
+		auto& m = get_movie();
+		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
+		porttype_info& p = f.get_port_type(port - 1);
+		if(p.name == "none") return &none_port;
+		if(p.name == "gamepad" && p.storage_size == 1) return &gbgamepad_port;
+		if(p.name == "gamepad" && p.storage_size > 1) return &gamepad_port;
+		if(p.name == "gamepad16") return &gamepad16_port;
+		if(p.name == "multitap") return &multitap_port;
+		if(p.name == "multitap16") return &multitap16_port;
+		if(p.name == "justifier") return &justifier_port;
+		if(p.name == "justifiers") return &justifiers_port;
+		if(p.name == "superscope") return &superscope_port;
+		if(p.name == "mouse") return &mouse_port;
+		return NULL;
+	}
+
+	function_ptr_luafun ictrlinfo("input.controller_info", [](lua_State* LS, const std::string& fname) -> int {
+		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
+		unsigned controller = get_numeric_argument<unsigned>(LS, 2, fname.c_str());
+		port_struct* ps;
+		unsigned lcid = 0;
+		unsigned classnum = 1;
+		ps = lookup_ps(port);
+		if(!ps || ps->count <= controller)
+			return 0;
+		for(unsigned i = 0; i < 8; i++) {
+			int pcid = controls.lcid_to_pcid(i);
+			if(pcid < 0)
+				continue;
+			if(pcid == 4 * port + controller - 4) {
+				lcid = i + 1;
+				break;
+			}
+			port_struct* ps2 = lookup_ps(pcid / 4 + 1);
+			if(!strcmp(ps->ctrls->cclass, ps2->ctrls->cclass))
+				classnum++;
+		}
+		controller_struct* cs = ps->ctrls;
+		lua_newtable(LS);
+		lua_pushstring(LS, "type");
+		lua_pushstring(LS, cs->type);
+		lua_rawset(LS, -3);
+		lua_pushstring(LS, "class");
+		lua_pushstring(LS, cs->cclass);
+		lua_rawset(LS, -3);
+		lua_pushstring(LS, "classnum");
+		lua_pushnumber(LS, classnum);
+		lua_rawset(LS, -3);
+		lua_pushstring(LS, "lcid");
+		lua_pushnumber(LS, lcid);
+		lua_rawset(LS, -3);
+		lua_pushstring(LS, "button_count");
+		lua_pushnumber(LS, cs->button_count);
+		lua_rawset(LS, -3);
+		lua_pushstring(LS, "buttons");
+		lua_newtable(LS);
+		//Push the buttons.
+		for(unsigned i = 0; i < cs->button_count; i++) {
+			lua_pushnumber(LS, i + 1);
+			lua_newtable(LS);
+			lua_pushstring(LS, "type");
+			lua_pushstring(LS, cs->buttons[i].type);
+			lua_rawset(LS, -3);
+			if(cs->buttons[i].symbol) {
+				lua_pushstring(LS, "symbol");
+				lua_pushlstring(LS, &cs->buttons[i].symbol, 1);
+				lua_rawset(LS, -3);
+			}
+			lua_pushstring(LS, "name");
+			lua_pushstring(LS, cs->buttons[i].name);
+			lua_rawset(LS, -3);
+			lua_pushstring(LS, "hidden");
+			lua_pushboolean(LS, cs->buttons[i].hidden);
+			lua_rawset(LS, -3);
+			lua_rawset(LS, -3);
+		}
+		lua_rawset(LS, -3);
+		return 1;
+	});
 }
