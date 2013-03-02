@@ -69,8 +69,8 @@ system_controller = {
 	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
 		{shadow, "F", "framesync"},
 		{shadow, "R", "reset"},
-		{shadow_axis, "rlow"},
-		{shadow_axis, "rhigh"}
+		{shadow_axis, "rhigh"},
+		{shadow_axis, "rlow"}
 	}
 };
 
@@ -78,8 +78,8 @@ system_controller_hreset = {
 	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
 		{shadow, "F", "framesync"},
 		{shadow, "R", "reset"},
-		{shadow_axis, "rlow"},
 		{shadow_axis, "rhigh"},
+		{shadow_axis, "rlow"},
 		{shadow, "H", "hard"}
 	}
 };
