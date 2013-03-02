@@ -42,9 +42,35 @@ namespace sky
 	port_controller_button X16 = {port_controller_button::TYPE_NULL, '\0', "", true};
 	port_controller_button X17 = {port_controller_button::TYPE_NULL, '\0', "", true};
 	port_controller_button* X7[] = {&X9,&X10,&X11,&X12,&X13,&X14,&X15,&X16,&X17};
-
 	port_controller X8 = {"sky", "sky", 7, X7};
 	port_controller* X1[] = {&X4,&X8};
+
+	port_controller_button A9 = {port_controller_button::TYPE_NULL, '\0', "", true};
+	port_controller_button A10 = {port_controller_button::TYPE_NULL, '\0', "", true};
+	port_controller_button A11 = {port_controller_button::TYPE_BUTTON, 's', "select", true};
+	port_controller_button A12 = {port_controller_button::TYPE_BUTTON, 'S', "start", true};
+	port_controller_button A13 = {port_controller_button::TYPE_BUTTON, 'A', "up", true};
+	port_controller_button A14 = {port_controller_button::TYPE_BUTTON, 'D', "down", true};
+	port_controller_button A15 = {port_controller_button::TYPE_BUTTON, 'L', "left", true};
+	port_controller_button A16 = {port_controller_button::TYPE_BUTTON, 'R', "right", true};
+	port_controller_button A17 = {port_controller_button::TYPE_BUTTON, 'J', "A", true};
+	port_controller_button* A7[] = {&A9,&A10,&A11,&A12,&A13,&A14,&A15,&A16,&A17};
+
+	port_controller_button B9 = {port_controller_button::TYPE_BUTTON, 'J', "A", true};
+	port_controller_button B10 = {port_controller_button::TYPE_NULL, '\0', "", true};
+	port_controller_button B11 = {port_controller_button::TYPE_BUTTON, 's', "select", true};
+	port_controller_button B12 = {port_controller_button::TYPE_BUTTON, 'S', "start", true};
+	port_controller_button B13 = {port_controller_button::TYPE_BUTTON, 'R', "right", true};
+	port_controller_button B14 = {port_controller_button::TYPE_BUTTON, 'L', "left", true};
+	port_controller_button B15 = {port_controller_button::TYPE_BUTTON, 'A', "up", true};
+	port_controller_button B16 = {port_controller_button::TYPE_BUTTON, 'D', "down", true};
+	port_controller_button B17 = {port_controller_button::TYPE_NULL, '\0', "", true};
+	port_controller_button* B7[] = {&B9,&B10,&B11,&B12,&B13,&B14,&B15,&B16,&B17};
+	port_controller_button* C7[] = {&B9,&B10,&B11,&B12,&B13,&B14,&B15,&B16,&B17};
+	port_controller A8 = {"gamepad", "sky", 9, A7};
+	port_controller B8 = {"gb", "sky", 9, B7};
+	port_controller C8 = {"gba", "sky", 9, C7};
+
 	port_controller_set X2 = {2, X1};
 
 	void port_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
@@ -326,16 +352,13 @@ namespace sky
 	void controller_magic()
 	{
 		if(magic_flags & 1) {
-			X8.cclass = "gamepad";
-			X8.button_count = 9;
+			X1[1] = &A8;
 			cstyle = 1;
 		} else if(magic_flags & 2) {
-			X8.cclass = "gb";
-			X8.button_count = 8;
+			X1[1] = &B8;
 			cstyle = 2;
 		} else if(magic_flags & 4) {
-			X8.cclass = "gba";
-			X8.button_count = 8;
+			X1[1] = &C8;
 			cstyle = 2;
 		} else {
 			cstyle = 0;
