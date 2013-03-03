@@ -232,20 +232,28 @@ namespace
 			return;
 		if(mode == 1) {
 			//Autohold.
-			controls.autohold2(x.port, x.controller, x.bind.control1, controls.autohold2(
-				x.port, x.controller, x.bind.control1) ^ newstate);
+			int16_t nstate = controls.autohold2(x.port, x.controller, x.bind.control1) ^ newstate;
+			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
+				return;
+			controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
 			information_dispatch::do_autohold_update(x.port, x.controller, x.bind.control1,
 				controls.autohold2(x.port, x.controller, x.bind.control1));
 		} else if(mode == 2) {
 			//Framehold.
 			bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
+			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "type" : "untype"))
+				return;
 			controls.framehold2(x.port, x.controller, x.bind.control1, nstate);
 			if(nstate)
 				messages << "Holding " << name << " for the next frame" << std::endl;
 			else
 				messages << "Not holding " << name << " for the next frame" << std::endl;
-		} else
+		} else {
+			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, newstate ? "press" :
+				"release"))
+				return;
 			controls.button2(x.port, x.controller, x.bind.control1, newstate);
+		}
 	}
 
 	void send_analog(const std::string& name, int32_t x, int32_t y)
@@ -261,6 +269,10 @@ namespace
 			std::cerr << name << " is not a axis." << std::endl;
 			return;
 		}
+		if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "analog"))
+			return;
+		if(lua_callback_do_button(z.port, z.controller, z.bind.control2, "analog"))
+			return;
 		auto g2 = get_framebuffer_size();
 		x = z.bind.xrel ? (x - g2.first / 2) : (x / 2);
 		y = z.bind.yrel ? (y - g2.second / 2) : (y / 2);

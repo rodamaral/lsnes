@@ -216,15 +216,16 @@ public:
  * Parameter args: Arguments to pass to the callback.
  */
 	template<typename... T>
-	void callback(const std::string& name, T... args)
+	bool callback(const std::string& name, T... args)
 	{
 		getglobal(name.c_str());
 		int t = type(-1);
 		if(t != LUA_TFUNCTION) {
 			pop(1);
-			return;
+			return false;
 		}
 		_callback(0, args...);
+		return true;
 	}
 /**
  * Do something just once per VM.

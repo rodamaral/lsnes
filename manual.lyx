@@ -2042,6 +2042,110 @@ Return type of specified port.
 \end_layout
 
 \begin_layout Subsubsection
+input.controller_info(number port, number controller)
+\end_layout
+
+\begin_layout Standard
+Get controller info for specified controller.
+ If controller does not exist, returns nil.
+ Otherwise returns a table with following fields:
+\end_layout
+
+\begin_layout Itemize
+type (string): Type of the controller.
+\end_layout
+
+\begin_layout Itemize
+class (string): Class of the controller.
+\end_layout
+
+\begin_layout Itemize
+classnum (number): Number of the controller within its class (1-based)
+\end_layout
+
+\begin_layout Itemize
+lcid (number): Logical controller number of the controller.
+\end_layout
+
+\begin_layout Itemize
+button_count (number): Number of buttons on controller
+\end_layout
+
+\begin_layout Itemize
+buttons (array): Array of following info about each button:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+type (string): Type of button.
+ Currently one of 
+\begin_inset Quotes eld
+\end_inset
+
+null
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+axis
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+raxis
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+name (string): Name of button.
+\end_layout
+
+\begin_layout Itemize
+symbol (string): Symbol of button.
+ Only present for type 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+hidden (boolean): True if hidden button.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Subsubsection
+input.veto_button()
+\end_layout
+
+\begin_layout Standard
+Signals that the button event should be vetoed.
+ Only valid in on_button callback.
+\end_layout
+
+\begin_layout Subsubsection
 input.geta(number controller)
 \end_layout
 
@@ -3094,6 +3198,20 @@ Called each time bsnes asks for input.
  Note: There is no way to modify the value to be sent.
 \end_layout
 
+\begin_layout Itemize
+Not called if callback on_snoop2 is defined.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_snoop2(number port, number controller, number index, number
+ value)
+\end_layout
+
+\begin_layout Standard
+Like on_snoop, but reserves port 0 for system, having first user port be
+ port 1.
+\end_layout
+
 \begin_layout Subsubsection
 Callback: on_keyhook(string keyname, table state)
 \end_layout
@@ -3146,6 +3264,110 @@ Callback: on_post_rewind()
 Called just after unsafe rewind has occured.
 \end_layout
 
+\begin_layout Subsubsection
+Callback: on_button(number port, number controller, number index, string
+ type)
+\end_layout
+
+\begin_layout Standard
+Called on controller button press, with following parameters:
+\end_layout
+
+\begin_layout Itemize
+port: Port number (0 is system)
+\end_layout
+
+\begin_layout Itemize
+controller: Controller within port
+\end_layout
+
+\begin_layout Itemize
+index: Index of button.
+\end_layout
+
+\begin_layout Itemize
+type: Type of event, one of:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+pressed
+\begin_inset Quotes erd
+\end_inset
+
+: Button was pressed.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+released
+\begin_inset Quotes erd
+\end_inset
+
+: Button was released.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+hold
+\begin_inset Quotes erd
+\end_inset
+
+: Held.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+unhold
+\begin_inset Quotes erd
+\end_inset
+
+: Released from hold.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+type
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input on button.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+untype
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input undone.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+analog
+\begin_inset Quotes erd
+\end_inset
+
+: Analog action on axis.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Movie editor
 \end_layout
@@ -3433,190 +3655,6 @@ Since the expression ends, the final memory watch result is the top one
 
 \begin_layout Section
 Modifier and key names:
-\end_layout
-
-\begin_layout Subsection
-SDL Platform
-\end_layout
-
-\begin_layout Subsubsection
-Modifier names
-\end_layout
-
-\begin_layout Standard
-Following modifier names are known:
-\end_layout
-
-\begin_layout Itemize
-ctrl, lctrl, rctrl: Control keys
-\end_layout
-
-\begin_layout Itemize
-alt, lalt, ralt: ALT keys.
-\end_layout
-
-\begin_layout Itemize
-shift, lshift, rshift: Shift keys.
-\end_layout
-
-\begin_layout Itemize
-meta, lmeta, rmeta: Meta keys.
-\end_layout
-
-\begin_layout Itemize
-num, caps: Numlock/Capslock (these are sticky!)
-\end_layout
-
-\begin_layout Itemize
-mode: Mode select.
-\end_layout
-
-\begin_layout Subsubsection
-Key names
-\end_layout
-
-\begin_layout Standard
-Following key names are known:
-\end_layout
-
-\begin_layout Itemize
-backspace, tab, clear, return, pause, escape, space, exclaim, quotedbl,
- hash, dollar, ampersand, quote, leftparen, rightparen, asterisk, plus,
- comma, minus, period, slash, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, colon, semicolon,
- less, equals, greater, question, at, leftbracket, backslash, rightbracket,
- caret, underscore, backquote, a, b, c, d, e, f, g, h, i, j, k, l, m, n,
- o, p, q, r, s, t, u, v, w, x, y, z, delete, world_0, world_1, world_2,
- world_3, world_4, world_5, world_6, world_7, world_8, world_9, world_10,
- world_11, world_12, world_13, world_14, world_15, world_16, world_17, world_18,
- world_19, world_20, world_21, world_22, world_23, world_24, world_25, world_26,
- world_27, world_28, world_29, world_30, world_31, world_32, world_33, world_34,
- world_35, world_36, world_37, world_38, world_39, world_40, world_41, world_42,
- world_43, world_44, world_45, world_46, world_47, world_48, world_49, world_50,
- world_51, world_52, world_53, world_54, world_55, world_56, world_57, world_58,
- world_59, world_60, world_61, world_62, world_63, world_64, world_65, world_66,
- world_67, world_68, world_69, world_70, world_71, world_72, world_73, world_74,
- world_75, world_76, world_77, world_78, world_79, world_80, world_81, world_82,
- world_83, world_84, world_85, world_86, world_87, world_88, world_89, world_90,
- world_91, world_92, world_93, world_94, world_95, kp0, kp1, kp2, kp3, kp4,
- kp5, kp6, kp7, kp8, kp9, kp_period, kp_divide, kp_multiply, kp_minus, kp_plus,
- kp_enter, kp_equals, up, down, right, left, insert, home, end, pageup,
- pagedown, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14,
- f15, numlock, capslock, scrollock, rshift, lshift, rctrl, lctrl, ralt,
- lalt, rmeta, lmeta, lsuper, rsuper, mode, compose, help, print, sysreq,
- break, menu, power, euro, undo
-\end_layout
-
-\begin_layout Itemize
-Names of form 'key<n>' where <n> is 0-255 are interpretted as key having
- hardware-dependent scan code of <n> (useful to bind those keys that don't
- have symbolic names).
-\end_layout
-
-\begin_layout Subsubsection
-Joystick pseudo-keys:
-\end_layout
-
-\begin_layout Itemize
-joystick<num>button<button>: Joystick <num> (0-based) button <button> (0-based).
-\end_layout
-
-\begin_layout Itemize
-joystick<num>hat<hat>n: Joystick <num> (0-based) hat <hat> (0-based) up.
-\end_layout
-
-\begin_layout Itemize
-joystick<num>hat<hat>w: Joystick <num> (0-based) hat <hat> (0-based) left.
-\end_layout
-
-\begin_layout Itemize
-joystick<num>hat<hat>s: Joystick <num> (0-based) hat <hat> (0-based) down.
-\end_layout
-
-\begin_layout Itemize
-joystick<num>hat<hat>e: Joystick <num> (0-based) hat <hat> (0-based) right.
-\end_layout
-
-\begin_layout Itemize
-joystick<num>axis<axis>-: Joystick <num> (0-based) axis <axis> negative
- position (axis modes axis and axis_inverse).
-\end_layout
-
-\begin_layout Itemize
-joystick<num>axis<axis>+: Joystick <num> (0-based) axis <axis> positive
- position (axis modes axis and axis_inverse).
-\end_layout
-
-\begin_layout Itemize
-joystick<num>axis<axis>: Joystick <num> (0-based) axis <axis> pressure (axis
- modes pressure_*).
-\end_layout
-
-\begin_layout Subsubsection
-Special buttons:
-\end_layout
-
-\begin_layout Itemize
-Escape: Enter/Exit Command mode, cancel modal dialogs.
-\end_layout
-
-\begin_layout Itemize
-Return (also KPEnter): Execute command, ok modal dialog.
-\end_layout
-
-\begin_layout Itemize
-Pgup/Up (also KP8/9 if no num lock, CTRL+P; command mode): Previous command
- in command history
-\end_layout
-
-\begin_layout Itemize
-Pgdn/Down(also KP2/3 if no num lock, CTRL+N; command mode): Next command
- in command history
-\end_layout
-
-\begin_layout Itemize
-Home (also KP7 if no num lock, CTRL+A; command mode): Beginning of command.
-\end_layout
-
-\begin_layout Itemize
-End (also KP1 if no num lock, CTRL+E; command mode): End of command.
-\end_layout
-
-\begin_layout Itemize
-Left (also KP4 if no num lock, CTRL+B; command mode): Move cursor left.
-\end_layout
-
-\begin_layout Itemize
-Right (also KP6 if no num lock, CTRL+F; command mode): Move cursor right.
-\end_layout
-
-\begin_layout Itemize
-Delete (also KP.
- if no num lock; command mode): Delete character to right of cursor.
-\end_layout
-
-\begin_layout Itemize
-Insert (also KP0 if no num lock; command mode): Toggle between insert /
- overwrite modes.
-\end_layout
-
-\begin_layout Itemize
-Backspace (command mode): Delete character to left of cursor.
-\end_layout
-
-\begin_layout Itemize
-CTRL+LEFT (also ALT+B; command mode): Previous word.
-\end_layout
-
-\begin_layout Itemize
-CTRL+RIGHT (also ALT+F; command mode): Next word.
-\end_layout
-
-\begin_layout Itemize
-ALT+D (also CTRL+W; command mode): Delete word.
-\end_layout
-
-\begin_layout Itemize
-LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump corrupted!).
 \end_layout
 
 \begin_layout Subsection

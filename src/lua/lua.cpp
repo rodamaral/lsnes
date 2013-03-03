@@ -18,6 +18,7 @@ extern "C" {
 
 uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+bool* lua_veto_flag = NULL;
 extern const char* lua_sysrc_script;
 
 lua_state LS;
@@ -173,15 +174,19 @@ namespace
 		run_lua_fragment(L);
 	}
 
-	template<typename... T> void run_callback(T... args)
+	template<typename... T> bool run_callback(T... args)
 	{
 		if(recursive_flag)
-			return;
+			return true;
 		recursive_flag = true;
 		try {
-			LS.callback(args...);
+			if(!LS.callback(args...)) {
+				recursive_flag = false;
+				return false;
+			}
 		} catch(std::exception& e) {
 			messages << e.what() << std::endl;
+			return true;
 		}
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
@@ -189,6 +194,7 @@ namespace
 			lsnes_cmd.invoke("repaint");
 		}
 		recursive_flag = false;
+		return true;
 	}
 
 	int system_write_error(lua_State* L)
@@ -323,8 +329,19 @@ void lua_callback_do_input(controller_frame& data, bool subframe) throw()
 
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw()
 {
+	if(run_callback("on_snoop2", lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
+		lua_state::numeric_tag(index), lua_state::numeric_tag(value)))
+		return;
 	run_callback("on_snoop", lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
 		lua_state::numeric_tag(index), lua_state::numeric_tag(value));
+}
+
+bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type)
+{
+	bool flag = false;
+	run_callback("on_button", lua_state::store_tag(lua_veto_flag, &flag), lua_state::numeric_tag(port),
+		lua_state::numeric_tag(controller), lua_state::numeric_tag(index), lua_state::string_tag(type));
+	return flag;
 }
 
 namespace

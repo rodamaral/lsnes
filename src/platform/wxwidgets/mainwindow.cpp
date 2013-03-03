@@ -254,8 +254,11 @@ namespace
 
 	void UI_change_autohold(unsigned port, unsigned controller, unsigned idx, bool newstate)
 	{
-		runemufn([port, controller, idx, newstate]() { controls.autohold2(port, controller, idx,
-			newstate); });
+		runemufn([port, controller, idx, newstate]() {
+			if(lua_callback_do_button(port, controller, idx, newstate ? "hold" : "unhold"))
+				return;
+			controls.autohold2(port, controller, idx, newstate);
+		});
 	}
 
 	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)

@@ -1032,7 +1032,41 @@ controller does not exist.
 
 Return type of specified port.
 
-7.4.7 input.geta(number controller)
+7.4.7 input.controller_info(number port, number controller)
+
+Get controller info for specified controller. If controller does 
+not exist, returns nil. Otherwise returns a table with following 
+fields:
+
+• type (string): Type of the controller.
+
+• class (string): Class of the controller.
+
+• classnum (number): Number of the controller within its class 
+  (1-based)
+
+• lcid (number): Logical controller number of the controller.
+
+• button_count (number): Number of buttons on controller
+
+• buttons (array): Array of following info about each button:
+
+  – type (string): Type of button. Currently one of “null”, “
+    button”, “axis”, “raxis”.
+
+  – name (string): Name of button.
+
+  – symbol (string): Symbol of button. Only present for type “
+    button”.
+
+  – hidden (boolean): True if hidden button. 
+
+7.4.8 input.veto_button()
+
+Signals that the button event should be vetoed. Only valid in 
+on_button callback.
+
+7.4.9 input.geta(number controller)
 
 Get input state for entiere controller. Returns 13 return values.
 
@@ -1041,13 +1075,13 @@ Get input state for entiere controller. Returns 13 return values.
 
 • 2nd-13th return value: value of i:th index.
 
-7.4.8 input.seta(number controller, number bitmask, number 
+7.4.10 input.seta(number controller, number bitmask, number 
   args...)
 
 Set state for entiere controller. args is up to 12 values for 
 indices (overriding values in bitmask if specified).
 
-7.4.9 input.controllertype(number controller)
+7.4.11 input.controllertype(number controller)
 
 Get the type of controller as string. Valid values are:
 
@@ -1059,14 +1093,14 @@ Get the type of controller as string. Valid values are:
 
 • superscope
 
-7.4.10 input.reset([number cycles])
+7.4.12 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-7.4.11 input.raw()
+7.4.13 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
@@ -1088,12 +1122,12 @@ table has the following fields:
   hat, pressure-m0, pressure-mp, pressure-0m, pressure-0p, 
   pressure-pm, pressure-p0).
 
-7.4.12 input.keyhook(string key, boolean state)
+7.4.14 input.keyhook(string key, boolean state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
 
-7.4.13 input.joyget(number controller)
+7.4.15 input.joyget(number controller)
 
 Returns table for current controls for specified controller. The 
 names of fields vary by controller type.
@@ -1103,12 +1137,12 @@ names of fields vary by controller type.
 
 • The analog axes are “xaxis” and “yaxis”.
 
-7.4.14 input.joyset(number controller, table controls)
+7.4.16 input.joyset(number controller, table controls)
 
 Set the the state of specified controller to values specified in 
 specified table.
 
-7.4.15 input.lcid_to_pcid(number controller)
+7.4.17 input.lcid_to_pcid(number controller)
 
 Return the physical index, physical port and controller number in 
 port for specified (1-based) logical controller.
@@ -1595,33 +1629,68 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-7.13.18 Callback: on_keyhook(string keyname, table state)
+• Not called if callback on_snoop2 is defined.
+
+7.13.18 Callback: on_snoop2(number port, number controller, 
+  number index, number value)
+
+Like on_snoop, but reserves port 0 for system, having first user 
+port be port 1.
+
+7.13.19 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-7.13.19 Callback: on_idle()
+7.13.20 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-7.13.20 Callback: on_timer()
+7.13.21 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-7.13.21 Callback: on_set_rewind(UNSAFEREWIND r)
+7.13.22 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-7.13.22 Callback: on_pre_rewind() 
+7.13.23 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-7.13.23 Callback: on_post_rewind() 
+7.13.24 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
+
+7.13.25 Callback: on_button(number port, number controller, 
+  number index, string type)
+
+Called on controller button press, with following parameters:
+
+• port: Port number (0 is system)
+
+• controller: Controller within port
+
+• index: Index of button.
+
+• type: Type of event, one of:
+
+  – “pressed”: Button was pressed.
+
+  – “released”: Button was released.
+
+  – “hold”: Held.
+
+  – “unhold”: Released from hold.
+
+  – “type”: Typing input on button.
+
+  – “untype”: Typing input undone.
+
+  – “analog”: Analog action on axis.
 
 8 Movie editor
 
@@ -1774,133 +1843,9 @@ C0x007e0878zWC0x007e002czW-
 
 10 Modifier and key names:
 
-10.1 SDL Platform
+10.1 wxWidgets platform
 
-10.1.1 Modifier names
-
-Following modifier names are known:
-
-• ctrl, lctrl, rctrl: Control keys
-
-• alt, lalt, ralt: ALT keys.
-
-• shift, lshift, rshift: Shift keys.
-
-• meta, lmeta, rmeta: Meta keys.
-
-• num, caps: Numlock/Capslock (these are sticky!)
-
-• mode: Mode select.
-
-10.1.2 Key names
-
-Following key names are known:
-
-• backspace, tab, clear, return, pause, escape, space, exclaim, 
-  quotedbl, hash, dollar, ampersand, quote, leftparen, 
-  rightparen, asterisk, plus, comma, minus, period, slash, 0, 1, 
-  2, 3, 4, 5, 6, 7, 8, 9, colon, semicolon, less, equals, 
-  greater, question, at, leftbracket, backslash, rightbracket, 
-  caret, underscore, backquote, a, b, c, d, e, f, g, h, i, j, k, 
-  l, m, n, o, p, q, r, s, t, u, v, w, x, y, z, delete, world_0, 
-  world_1, world_2, world_3, world_4, world_5, world_6, world_7, 
-  world_8, world_9, world_10, world_11, world_12, world_13, 
-  world_14, world_15, world_16, world_17, world_18, world_19, 
-  world_20, world_21, world_22, world_23, world_24, world_25, 
-  world_26, world_27, world_28, world_29, world_30, world_31, 
-  world_32, world_33, world_34, world_35, world_36, world_37, 
-  world_38, world_39, world_40, world_41, world_42, world_43, 
-  world_44, world_45, world_46, world_47, world_48, world_49, 
-  world_50, world_51, world_52, world_53, world_54, world_55, 
-  world_56, world_57, world_58, world_59, world_60, world_61, 
-  world_62, world_63, world_64, world_65, world_66, world_67, 
-  world_68, world_69, world_70, world_71, world_72, world_73, 
-  world_74, world_75, world_76, world_77, world_78, world_79, 
-  world_80, world_81, world_82, world_83, world_84, world_85, 
-  world_86, world_87, world_88, world_89, world_90, world_91, 
-  world_92, world_93, world_94, world_95, kp0, kp1, kp2, kp3, 
-  kp4, kp5, kp6, kp7, kp8, kp9, kp_period, kp_divide, 
-  kp_multiply, kp_minus, kp_plus, kp_enter, kp_equals, up, down, 
-  right, left, insert, home, end, pageup, pagedown, f1, f2, f3, 
-  f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, numlock, 
-  capslock, scrollock, rshift, lshift, rctrl, lctrl, ralt, lalt, 
-  rmeta, lmeta, lsuper, rsuper, mode, compose, help, print, 
-  sysreq, break, menu, power, euro, undo
-
-• Names of form 'key<n>' where <n> is 0-255 are interpretted as 
-  key having hardware-dependent scan code of <n> (useful to bind 
-  those keys that don't have symbolic names).
-
-10.1.3 Joystick pseudo-keys:
-
-• joystick<num>button<button>: Joystick <num> (0-based) button 
-  <button> (0-based).
-
-• joystick<num>hat<hat>n: Joystick <num> (0-based) hat <hat> 
-  (0-based) up.
-
-• joystick<num>hat<hat>w: Joystick <num> (0-based) hat <hat> 
-  (0-based) left.
-
-• joystick<num>hat<hat>s: Joystick <num> (0-based) hat <hat> 
-  (0-based) down.
-
-• joystick<num>hat<hat>e: Joystick <num> (0-based) hat <hat> 
-  (0-based) right.
-
-• joystick<num>axis<axis>-: Joystick <num> (0-based) axis <axis> 
-  negative position (axis modes axis and axis_inverse).
-
-• joystick<num>axis<axis>+: Joystick <num> (0-based) axis <axis> 
-  positive position (axis modes axis and axis_inverse).
-
-• joystick<num>axis<axis>: Joystick <num> (0-based) axis <axis> 
-  pressure (axis modes pressure_*).
-
-10.1.4 Special buttons:
-
-• Escape: Enter/Exit Command mode, cancel modal dialogs.
-
-• Return (also KPEnter): Execute command, ok modal dialog.
-
-• Pgup/Up (also KP8/9 if no num lock, CTRL+P; command mode): 
-  Previous command in command history
-
-• Pgdn/Down(also KP2/3 if no num lock, CTRL+N; command mode): 
-  Next command in command history
-
-• Home (also KP7 if no num lock, CTRL+A; command mode): Beginning 
-  of command.
-
-• End (also KP1 if no num lock, CTRL+E; command mode): End of 
-  command.
-
-• Left (also KP4 if no num lock, CTRL+B; command mode): Move 
-  cursor left.
-
-• Right (also KP6 if no num lock, CTRL+F; command mode): Move 
-  cursor right.
-
-• Delete (also KP. if no num lock; command mode): Delete 
-  character to right of cursor.
-
-• Insert (also KP0 if no num lock; command mode): Toggle between 
-  insert / overwrite modes.
-
-• Backspace (command mode): Delete character to left of cursor.
-
-• CTRL+LEFT (also ALT+B; command mode): Previous word.
-
-• CTRL+RIGHT (also ALT+F; command mode): Next word.
-
-• ALT+D (also CTRL+W; command mode): Delete word.
-
-• LCTRL+LALT+ESCAPE: Ungraceful shutdown (leaves dump 
-  corrupted!).
-
-10.2 wxWidgets platform
-
-10.2.1 Modifier names:
+10.1.1 Modifier names:
 
 Following modifier names are known:
 
@@ -1914,7 +1859,7 @@ Following modifier names are known:
 
 • cmd (Mac OS X only)
 
-10.2.2 Key names:
+10.1.2 Key names:
 
 Following key names are known:
 

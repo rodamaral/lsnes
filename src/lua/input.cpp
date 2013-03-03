@@ -6,6 +6,8 @@
 #include "interface/romtype.hpp"
 #include <iostream>
 
+extern bool* lua_veto_flag;
+
 namespace
 {
 	int input_set(lua_state& L, unsigned port, unsigned controller, unsigned index, short value)
@@ -324,6 +326,11 @@ namespace
 		const port_type& p = f.get_port_type(port);
 		return p.controller_info;
 	}
+
+	function_ptr_luafun iveto(LS, "input.veto_button", [](lua_state& LS, const std::string& fname) -> int {
+		if(lua_veto_flag) *lua_veto_flag = true;
+		return 0;
+	});
 
 	function_ptr_luafun ictrlinfo(LS, "input.controller_info", [](lua_state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
