@@ -2926,6 +2926,101 @@ Return type of specified port.
 \end_layout
 
 \begin_layout Subsubsection
+input.controller_info(number port, number controller)
+\end_layout
+
+\begin_layout Standard
+Get controller info for specified controller.
+ If controller does not exist, returns nil.
+ Otherwise returns a table with following fields:
+\end_layout
+
+\begin_layout Itemize
+type (string): Type of the controller.
+\end_layout
+
+\begin_layout Itemize
+class (string): Class of the controller.
+\end_layout
+
+\begin_layout Itemize
+classnum (number): Number of the controller within its class (1-based)
+\end_layout
+
+\begin_layout Itemize
+lcid (number): Logical controller number of the controller.
+\end_layout
+
+\begin_layout Itemize
+button_count (number): Number of buttons on controller
+\end_layout
+
+\begin_layout Itemize
+buttons (array): Array of following info about each button:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+type (string): Type of button.
+ Currently one of 
+\begin_inset Quotes eld
+\end_inset
+
+null
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+axis
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+raxis
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+name (string): Name of button.
+\end_layout
+
+\begin_layout Itemize
+symbol (string): Symbol of button.
+ Only present for type 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+hidden (boolean): True if hidden button.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Subsubsection
 input.geta(number controller)
 \end_layout
 
