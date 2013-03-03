@@ -19,6 +19,7 @@ extern "C" {
 
 uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
+bool* lua_veto_flag = NULL;
 extern const char* lua_sysrc_script;
 
 namespace
@@ -503,6 +504,20 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 	lua_pushnumber(L, index);
 	lua_pushnumber(L, value);
 	run_lua_cb(4);
+}
+
+bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type)
+{
+	bool flag = false;
+	lua_veto_flag = &flag;
+	if(!callback_exists("on_button"))
+		return false;
+	lua_pushnumber(L, port);
+	lua_pushnumber(L, controller);
+	lua_pushnumber(L, index);
+	lua_pushstring(L, type);
+	run_lua_cb(4);
+	return flag;
 }
 
 namespace

@@ -90,6 +90,7 @@ void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index
 void lua_callback_quit() throw();
 void lua_callback_keyhook(const std::string& key, const struct keygroup::parameters& p) throw();
 void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov, void* u);
+bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type);
 
 #define LUA_TIMED_HOOK_IDLE 0
 #define LUA_TIMED_HOOK_TIMER 1

@@ -1504,7 +1504,12 @@ fields:
 
   – hidden (boolean): True if hidden button. 
 
-8.4.8 input.geta(number controller)
+8.4.8 input.veto_button()
+
+Signals that the button event should be vetoed. Only valid in 
+on_button callback.
+
+8.4.9 input.geta(number controller)
 
 Get input state for entiere controller. Returns 13 return values.
 
@@ -1513,13 +1518,13 @@ Get input state for entiere controller. Returns 13 return values.
 
 • 2nd-13th return value: value of i:th index.
 
-8.4.9 input.seta(number controller, number bitmask, number 
+8.4.10 input.seta(number controller, number bitmask, number 
   args...)
 
 Set state for entiere controller. args is up to 12 values for 
 indices (overriding values in bitmask if specified).
 
-8.4.10 input.controllertype(number controller)
+8.4.11 input.controllertype(number controller)
 
 Get the type of controller as string. Valid values are:
 
@@ -1531,14 +1536,14 @@ Get the type of controller as string. Valid values are:
 
 • superscope
 
-8.4.11 input.reset([number cycles])
+8.4.12 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
 • Only available with subframe flag false.
 
-8.4.12 input.raw()
+8.4.13 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
@@ -1562,12 +1567,12 @@ table has the following fields:
 • cal_tolerance: Dead zone tolerance. Only meaningful with axis 
   and pressure types.
 
-8.4.13 input.keyhook(string key, boolean state)
+8.4.14 input.keyhook(string key, boolean state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
 
-8.4.14 input.joyget(number controller)
+8.4.15 input.joyget(number controller)
 
 Returns table for current controls for specified controller. The 
 names of fields vary by controller type.
@@ -1577,12 +1582,12 @@ names of fields vary by controller type.
 
 • The analog axes are “xaxis” and “yaxis”.
 
-8.4.15 input.joyset(number controller, table controls)
+8.4.16 input.joyset(number controller, table controls)
 
 Set the the state of specified controller to values specified in 
 specified table.
 
-8.4.16 input.lcid_to_pcid(number controller)
+8.4.17 input.lcid_to_pcid(number controller)
 
 Return the physical index, physical port and controller number in 
 port for specified (1-based) logical controller.
@@ -2087,6 +2092,33 @@ Called just before unsafe rewind is about to occur.
 8.12.24 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
+
+8.12.25 Callback: on_button(number port, number controller, 
+  number index, string type)
+
+Called on controller button press, with following parameters:
+
+• port: Port number (0 is system)
+
+• controller: Controller within port
+
+• index: Index of button.
+
+• type: Type of event, one of:
+
+  – “pressed”: Button was pressed.
+
+  – “released”: Button was released.
+
+  – “hold”: Held.
+
+  – “unhold”: Released from hold.
+
+  – “type”: Typing input on button.
+
+  – “untype”: Typing input undone.
+
+  – “analog”: Analog action on axis.
 
 9 Movie editor
 

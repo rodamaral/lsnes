@@ -3021,6 +3021,15 @@ hidden (boolean): True if hidden button.
 
 \end_deeper
 \begin_layout Subsubsection
+input.veto_button()
+\end_layout
+
+\begin_layout Standard
+Signals that the button event should be vetoed.
+ Only valid in on_button callback.
+\end_layout
+
+\begin_layout Subsubsection
 input.geta(number controller)
 \end_layout
 
@@ -4105,6 +4114,110 @@ Callback: on_post_rewind()
 Called just after unsafe rewind has occured.
 \end_layout
 
+\begin_layout Subsubsection
+Callback: on_button(number port, number controller, number index, string
+ type)
+\end_layout
+
+\begin_layout Standard
+Called on controller button press, with following parameters:
+\end_layout
+
+\begin_layout Itemize
+port: Port number (0 is system)
+\end_layout
+
+\begin_layout Itemize
+controller: Controller within port
+\end_layout
+
+\begin_layout Itemize
+index: Index of button.
+\end_layout
+
+\begin_layout Itemize
+type: Type of event, one of:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+pressed
+\begin_inset Quotes erd
+\end_inset
+
+: Button was pressed.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+released
+\begin_inset Quotes erd
+\end_inset
+
+: Button was released.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+hold
+\begin_inset Quotes erd
+\end_inset
+
+: Held.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+unhold
+\begin_inset Quotes erd
+\end_inset
+
+: Released from hold.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+type
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input on button.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+untype
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input undone.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+analog
+\begin_inset Quotes erd
+\end_inset
+
+: Analog action on axis.
+\end_layout
+
+\end_deeper
 \begin_layout Section
 Movie editor
 \end_layout

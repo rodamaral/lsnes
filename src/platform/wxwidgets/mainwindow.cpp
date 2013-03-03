@@ -248,7 +248,11 @@ namespace
 
 	void UI_change_autohold(unsigned pid, unsigned idx, bool newstate)
 	{
-		runemufn([pid, idx, newstate]() { controls.autohold(pid, idx, newstate); });
+		runemufn([pid, idx, newstate]() {
+			if(lua_callback_do_button(pid / 4 + 1, pid % 4, idx, newstate ? "hold" : "unhold"))
+				return;
+			controls.autohold(pid, idx, newstate); 
+		});
 	}
 
 	int UI_controller_index_by_logical(unsigned lid)

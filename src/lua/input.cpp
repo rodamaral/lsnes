@@ -6,6 +6,8 @@
 #include "core/controller.hpp"
 #include <iostream>
 
+extern bool* lua_veto_flag;
+
 namespace
 {
 	function_ptr_luafun iset("input.set", [](lua_State* LS, const std::string& fname) -> int {
@@ -406,6 +408,11 @@ namespace
 		if(p.name == "mouse") return &mouse_port;
 		return NULL;
 	}
+
+	function_ptr_luafun iveto("input.veto_button", [](lua_State* LS, const std::string& fname) -> int {
+		if(lua_veto_flag) *lua_veto_flag = true;
+		return 0;
+	});
 
 	function_ptr_luafun ictrlinfo("input.controller_info", [](lua_State* LS, const std::string& fname) -> int {
 		unsigned port = get_numeric_argument<unsigned>(LS, 1, fname.c_str());

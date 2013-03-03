@@ -46,11 +46,16 @@ namespace
 		}
 		if(mode == 1) {
 			//Autohold.
-			controls.autohold(x, bid, controls.autohold(x, bid) ^ newstate);
+			int16_t nstate = controls.autohold(x, bid) ^ newstate;
+			if(lua_callback_do_button(x / 4 + 1, x % 4, bid, nstate ? "hold" : "unhold"))
+				return;
+			controls.autohold(x, bid, nstate);
 			information_dispatch::do_autohold_update(x, bid, controls.autohold(x, bid));
 		} else if(mode == 2) {
 			//Framehold.
 			bool nstate = controls.framehold(x, bid) ^ newstate;
+			if(lua_callback_do_button(x / 4 + 1, x % 4, bid, nstate ? "type" : "untype"))
+				return;
 			controls.framehold(x, bid, nstate);
 			if(nstate)
 				messages << "Holding " << (ui_id + 1) << get_logical_button_name(button)
@@ -58,8 +63,11 @@ namespace
 			else
 				messages << "Not holding " << (ui_id + 1) << get_logical_button_name(button)
 					<< " for the next frame" << std::endl;
-		} else
+		} else {
+			if(lua_callback_do_button(x / 4 + 1, x % 4, bid, newstate ? "press" : "release"))
+				return;
 			controls.button(x, bid, newstate);
+		}
 	}
 
 	void send_analog(unsigned lcid, int32_t x, int32_t y)
@@ -73,6 +81,10 @@ namespace
 			messages << "Controller #" << (lcid + 1) << " is not analog" << std::endl;
 			return;
 		}
+		if(lua_callback_do_button(pcid / 4 + 1, x % 4, 0, "analog"))
+			return;
+		if(lua_callback_do_button(pcid / 4 + 1, x % 4, 1, "analog"))
+			return;
 		auto g2 = get_framebuffer_size();
 		if(controls.is_mouse(pcid)) {
 			controls.analog(pcid, x - g2.first / 2, y - g2.second / 2);
