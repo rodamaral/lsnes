@@ -2052,31 +2052,39 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-8.12.18 Callback: on_keyhook(string keyname, table state)
+• Not called if callback on_snoop2 is defined.
+
+8.12.18 Callback: on_snoop2(number port, number controller, 
+  number index, number value)
+
+Like on_snoop, but reserves port 0 for system, having first user 
+port be port 1.
+
+8.12.19 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-8.12.19 Callback: on_idle()
+8.12.20 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-8.12.20 Callback: on_timer()
+8.12.21 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-8.12.21 Callback: on_set_rewind(UNSAFEREWIND r)
+8.12.22 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-8.12.22 Callback: on_pre_rewind() 
+8.12.23 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-8.12.23 Callback: on_post_rewind() 
+8.12.24 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
 

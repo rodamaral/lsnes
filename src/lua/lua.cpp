@@ -488,9 +488,17 @@ void lua_callback_do_input(controller_frame& data, bool subframe) throw()
 
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw()
 {
-	if(!callback_exists("on_snoop"))
+	if(!callback_exists("on_snoop2")) {
+		if(!callback_exists("on_snoop"))
+			return;
+		lua_pushnumber(L, port);
+		lua_pushnumber(L, controller);
+		lua_pushnumber(L, index);
+		lua_pushnumber(L, value);
+		run_lua_cb(4);
 		return;
-	lua_pushnumber(L, port);
+	}
+	lua_pushnumber(L, port + 1);
 	lua_pushnumber(L, controller);
 	lua_pushnumber(L, index);
 	lua_pushnumber(L, value);

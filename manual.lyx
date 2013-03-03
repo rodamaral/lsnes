@@ -4039,6 +4039,20 @@ Called each time bsnes asks for input.
  Note: There is no way to modify the value to be sent.
 \end_layout
 
+\begin_layout Itemize
+Not called if callback on_snoop2 is defined.
+\end_layout
+
+\begin_layout Subsubsection
+Callback: on_snoop2(number port, number controller, number index, number
+ value)
+\end_layout
+
+\begin_layout Standard
+Like on_snoop, but reserves port 0 for system, having first user port be
+ port 1.
+\end_layout
+
 \begin_layout Subsubsection
 Callback: on_keyhook(string keyname, table state)
 \end_layout
