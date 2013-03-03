@@ -186,7 +186,6 @@ namespace
 			}
 		} catch(std::exception& e) {
 			messages << e.what() << std::endl;
-			return true;
 		}
 		lua_render_ctx = NULL;
 		if(lua_requests_repaint) {
