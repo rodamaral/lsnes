@@ -1,5 +1,6 @@
 #include "draw.hpp"
 #include <cmath>
+#include <cstdio>
 #include "romimage.hpp"
 #include "framebuffer.hpp"
 #include "messages.hpp"

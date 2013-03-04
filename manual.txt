@@ -3402,3 +3402,47 @@ set-axis joystick0axis19 disabled
 
 • Fix lots of compiler warnings.
 
+18.83 rr1-delta17epsilon1
+
+• Commentary tool: Set nominal bit rate and limit max bit rate.
+
+• Lua: Unconditionally reload host memory on loadstate
+
+• Lua: Query bindings, manipulate aliases, create inverse 
+  bindings
+
+• Lua: Fix crashes with resetting VM while some types of paint 
+  requests are in flight.
+
+• Lua: gui.text: Clip the text properly instead of corrupting 
+  memory in some cases.
+
+• Save screenshot header reliably
+
+• Lua: Backport input.get2 and input.set2
+
+• Lua: New controller info functions.
+
+• Movie editor: Fix reset delay counters to be the right way 
+  around.
+
+• Lua: on_snoop2
+
+• Lua: on_button and input.veto_button.
+
+18.84 rr2-beta4
+
+• Revert memory leak fix breaking input
+
+• Refactor Opus handling
+
+• Restrict member picking only to .zip files
+
+• Fix reading of host-endian VMAs.
+
+• Fix rlow and rhigh to be the right way around.
+
+• Lua: Don't wedge VM if callback fails with an exception
+
+• Refactor Ogg handling.
+

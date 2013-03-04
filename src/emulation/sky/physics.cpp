@@ -1,6 +1,7 @@
 #include "physics.hpp"
 #include "sound.hpp"
 #include "util.hpp"
+#include <cstdlib>
 
 namespace sky
 {
