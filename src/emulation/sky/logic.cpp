@@ -106,8 +106,9 @@ namespace sky
 
 	uint8_t do_level_fadein(gstate& s, uint16_t b)
 	{
-		faded_framebuffer(8 * s.fadecount);
-		return (++s.fadecount == 32) ? state_level_play : state_level_fadein;
+		uint8_t fadelimit = s.timeattack ? 144 : 32;
+		faded_framebuffer(256 * s.fadecount / fadelimit);
+		return (++s.fadecount == fadelimit) ? state_level_play : state_level_fadein;
 	}
 
 	uint8_t do_level_fadeout(gstate& s, uint16_t b)
@@ -156,14 +157,20 @@ namespace sky
 				draw_message(_lvlcomplete3_g, 0xFFFFFF, 0);
 			else
 				draw_message(_lvlcomplete_g, 0xFFFFFF, 0);
+			if(s.timeattack || s.demo_flag)
+				draw_timeattack_time(s.waited);
 			if(!s.demo_flag && s.stage > 0 && s.sram[s.stage] < 255)
 				s.sram[s.stage]++;
 			if(!s.demo_flag && s.stage > 0 && s.stage < 30)
 				s.stage++;
 		}
+		++s.fadecount;
+		//In timeattack mode, only start clears the screen.
+		if(s.timeattack)
+			return (b & 32) ? state_level_fadeout : state_level_complete;
 		if(b & 112)
 			return state_level_fadeout;
-		return (++s.fadecount == 48) ? state_level_fadeout : state_level_complete; 
+		return (s.fadecount == 48) ? state_level_fadeout : state_level_complete; 
 	}
 
 	uint8_t do_menu(gstate& s, uint16_t b)
@@ -243,8 +250,10 @@ namespace sky
 
 	uint8_t do_load_level(gstate& s, uint16_t b)
 	{
+		s.waited = 0;
 		s.secret = 0;
 		if(s.state == state_load_level) {
+			s.timeattack = (!s.demo_flag && b & 64) ? 1 : 0;
 			s.cursong = framecnt_to_songno(s.frames_ran);
 			reload_song(false, s.cursong);
 			mplayer.rewind();
@@ -304,7 +313,11 @@ namespace sky
 		if((b & 256) != 0) lr = 2;	//Cheat for demo.
 		if((b & 512) != 0) ad = 2;	//Cheat for demo.
 		uint8_t death = s.simulate_frame(lr, ad, jump);
+		if(!s.p.death && s.waited < 65535)
+			s.waited++;
 		draw_level(s);
+		if(s.timeattack)
+			draw_timeattack_time(s.waited);
 		draw_gauges(s);
 		if(death == physics::death_finished)
 			return state_level_complete;

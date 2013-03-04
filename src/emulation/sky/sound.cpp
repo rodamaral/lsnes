@@ -48,6 +48,22 @@ namespace sky
 		}
 	}
 
+	sounds::sounds(const sounds& s)
+	{
+		*this = s;
+	}
+
+	sounds& sounds::operator=(const sounds& s)
+	{
+		if(this == &s)
+			return *this;
+		sounddata = s.sounddata;
+		sfx.resize(s.sfx.size());
+		for(unsigned i = 0; i < s.sfx.size(); i++)
+			sfx[i] = sound(*this, s.sfx[i].get_rate(), s.sfx[i].get_pointer(), s.sfx[i].get_length());
+		return *this;
+	}
+
 	active_sfx_dma::active_sfx_dma()
 	{
 		//End of transfer.

@@ -1,5 +1,5 @@
-#ifndef _opus_hpp_included_
-#define _opus_hpp_included_
+#ifndef _library_opus_hpp_included_
+#define _library_opus_hpp_included_
 
 #include <cstdint>
 #include <cstdlib>

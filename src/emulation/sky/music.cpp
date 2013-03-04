@@ -68,24 +68,23 @@ namespace sky
 		//                 |           | 
 		//1: PPIIIIIILLLLLLC     LLLLLLC     LLLLLLC      LLLLLLC     L...
 		//2:               LLLLLLC     LLLLLLC      LLLLLLC     LLLLLLC...
-		uint64_t C = total - crossfade_start;
-		uint64_t L = total - loop_start;
+		uint64_t C = end_pts - xfade_pts;
+		uint64_t L = end_pts - loop_pts;
+		uint64_t T = end_pts - start_pts;
 		uint64_t LminusC = L - C;
 		uint64_t Lminus2C = L - 2 * C;
-
 		if(pcm == past_end)
 			return past_end;
-		pcm += pregap;
-		if(pcm < total)
-			return pcm;
-		pcm -= total;
+		if(pcm < T)
+			return pcm + start_pts;
+		pcm -= T;
 		pcm %= 2 * LminusC;
 		//There is first a gap.
 		if(pcm < Lminus2C)
 			return past_end;
 		pcm -= Lminus2C;
 		//Then there's a new looping section.
-		return pcm + loop_start;
+		return pcm + loop_pts;
 	}
 
 	uint64_t background_song::pcm_to_pts2(uint64_t pcm)
@@ -93,21 +92,21 @@ namespace sky
 		//                 |           | 
 		//1: PPIIIIIILLLLLLC     LLLLLLC     LLLLLLC      LLLLLLC     L...
 		//2:               LLLLLLC     LLLLLLC      LLLLLLC     LLLLLLC...
-		uint64_t C = total - crossfade_start;
-		uint64_t L = total - loop_start;
+		uint64_t C = end_pts - xfade_pts;
+		uint64_t L = end_pts - loop_pts;
+		uint64_t T = end_pts - start_pts;
 		uint64_t LminusC = L - C;
 		uint64_t Lminus2C = L - 2 * C;
 		if(pcm == past_end)
 			return past_end;
-		pcm += pregap;
 		//Before crossfade_start, there's nothing.
-		if(pcm < crossfade_start)
+		if(pcm < xfade_pts - start_pts)
 			return past_end;
-		pcm -= crossfade_start;
+		pcm -= (xfade_pts - start_pts);
 		pcm %= 2 * LminusC;
 		//First there is loop region.
 		if(pcm < L)
-			return pcm + loop_start;
+			return pcm + loop_pts;
 		//Then there's a gap.
 		return past_end;
 	}
@@ -122,92 +121,116 @@ namespace sky
 		return 256 * g;
 	}
 
+	void background_song::parse_oggopus_header(ogg_page& p, ogg_demuxer& demux)
+	{
+		struct oggopus_header h = ::parse_oggopus_header(p);
+		if(h.map_family != 0)
+			(stringfmt() << "Unsupported mapping family " << h.map_family).throwex();
+		opus_pregap = h.preskip;
+		gain = h.gain;
+		while(demux.wants_packet_out())
+			demux.discard_packet();
+	}
+
+	void background_song::parse_oggopus_tags(ogg_page& p, ogg_demuxer& demux)
+	{
+		struct oggopus_tags t = ::parse_oggopus_tags(p);
+		for(auto i : t.comments) {
+			regex_results r = regex("([^=]+)=(.*)", i);
+			if(!r)
+				continue;
+			if(r[1] == "SKY_START_PCM")
+				start_pts = parse_value<uint64_t>(r[2]) + opus_pregap;
+			else if(r[1] == "SKY_LOOP_PCM")
+				loop_pts = parse_value<uint64_t>(r[2]) + opus_pregap;
+			else if(r[1] == "SKY_XFADE_PCM")
+				xfade_pts = parse_value<uint64_t>(r[2]) + opus_pregap;
+			else if(r[1] == "SKY_END_PCM")
+				end_pts = parse_value<uint64_t>(r[2]) + opus_pregap;
+		}
+		while(demux.wants_packet_out())
+			demux.discard_packet();
+	}
+
+	void background_song::parse_oggopus_datapage(ogg_page& p, ogg_demuxer& demux, bool first)
+	{
+		while(demux.wants_packet_out()) {
+			ogg_packet p;
+			demux.packet_out(p);
+			std::vector<uint8_t> pkt = p.get_vector();
+			uint8_t tcnt = opus_packet_tick_count(&pkt[0], pkt.size());
+			if(tcnt > 0)
+				packets[packetpos] = pkt;
+			packetpos += 120 * tcnt;
+			datalen = packetpos;
+			if(p.get_last_page()) {
+				uint64_t samples = p.get_granulepos() - last_granulepos;
+				if(samples > p.get_granulepos())
+					samples = 0;
+				if(samples > datalen - last_datalen) {
+					if(!first)
+						messages << "Warning: Granulepos says there are " << samples
+							<< " samples, found " << datalen - last_datalen << std::endl;
+				} else if(p.get_on_eos_page())
+					//On EOS page, clip.
+					datalen = last_datalen + samples; 
+				else
+					messages << "Warning: Granulepos says there are " << samples
+						<< " samples, found " << datalen - last_datalen << std::endl;
+				last_datalen = datalen;
+				last_granulepos = p.get_granulepos();
+			}
+		}
+	}
+
 	background_song::background_song(std::istream& stream)
 	{
 		ogg_stream_reader_iostreams r(stream);
 		r.set_errors_to(messages);
 		ogg_page p;
-		uint64_t pnum = 0;
-		bool loop_spec = false, cf_spec = false;
-		loop_start = 0;
-		crossfade_start = 0;
-		std::vector<uint8_t> pending_data;
-		uint64_t last_gpos = ogg_page::granulepos_none;
-		uint64_t rpos = 0;
-		uint64_t old_rpos = 0;
-		while(r.get_page(p)) {
-			if(pnum == 0) {
-				//Header page.
-				struct oggopus_header h = parse_oggopus_header(p);
-				if(h.map_family != 0)
-					(stringfmt() << "Unsupported mapping family " << h.map_family).throwex();
-				pregap = h.preskip;
-				gain = h.gain;
-			} else if(pnum == 1) {
-				//Tags page.
-				struct oggopus_tags t = parse_oggopus_tags(p);
-				for(auto i : t.comments) {
-					regex_results r = regex("([^=]+)=(.*)", i);
-					if(!r)
-						continue;
-					if(r[1] == "LSNES_LOOP_START") {
-						loop_start = parse_value<uint64_t>(r[2]) + pregap;
-						loop_spec = true;
-					} else if(r[1] == "LSNES_XFADE_START") {
-						crossfade_start = parse_value<uint64_t>(r[2]) + pregap;
-						cf_spec = true;
-					}
-				}
-			} else {
-				//Data page.
-				uint64_t gpos = p.get_granulepos();
-				uint8_t pkts = p.get_packet_count();
-				bool e = p.get_eos();
-				bool c = p.get_continue();
-				bool i = p.get_last_packet_incomplete();
-				for(unsigned j = 0; j < pkts; j++) {
-					if(i > 0 || !c)
-						pending_data.clear();
-					size_t b = pending_data.size();
-					auto pkt = p.get_packet(j);
-					pending_data.resize(b + pkt.second);
-					memcpy(&pending_data[b], pkt.first, pkt.second);
-					if(i && j == pkts - 1)
-						break;	//Next page.
-					//Pending_data is now opus packet.
-					uint8_t tcnt = opus_packet_tick_count(&pending_data[0], pending_data.size());
-					if(tcnt > 0)
-						packets[rpos] = pending_data;
-					rpos += 120 * tcnt;
-					total = rpos;
-				}
-				if(e) {
-					uint64_t pscnt = gpos - ((last_gpos == ogg_page::granulepos_none) ? 0 :
-						last_gpos);
-					total = old_rpos + pscnt;
-					if(total > rpos)
-						total = rpos;
-					break;
-				}
-				if(gpos != ogg_page::granulepos_none) {
-					last_gpos = gpos;
-					old_rpos = rpos;
-				}
-			}
-			pnum++;
-		}
+		uint64_t packet_num = 0;
+		ogg_demuxer d(messages);
+		start_pts = past_end;
+		loop_pts = past_end;
+		xfade_pts = past_end;
+		end_pts = past_end;
+		packetpos = 0;
+		last_granulepos = 0;
+		last_datalen = 0;
+		datalen = 0;
 		
-		if(!cf_spec)
-			crossfade_start = total;
-		if(!loop_spec)
-			loop_start = pregap;
-		if(loop_start >= total) {
-			messages << "Bad loop point, assuming start of song" << std::endl;
-			loop_start = pregap;
+		while(r.get_page(p)) {
+			bool c = d.page_in(p);
+			if(!c)
+				continue;
+			if(packet_num == 0) {
+				parse_oggopus_header(p, d);
+			} else if(packet_num == 1) {
+				parse_oggopus_tags(p, d);
+			} else {
+				parse_oggopus_datapage(p, d, (packet_num == 2));
+			}
+			packet_num++;
 		}
-		if(crossfade_start - loop_start < total - crossfade_start) {
-			messages << "Bad XFADE point, assuming end of song." << std::endl;
-			crossfade_start = total;
+		if(packet_num < 2)
+			throw std::runtime_error("Required header packets missing");
+		if(datalen == 0)
+			throw std::runtime_error("Empty song");
+		if(start_pts == past_end)
+			start_pts = opus_pregap;
+		if(loop_pts == past_end)
+			loop_pts = start_pts;
+		if(end_pts == past_end)
+			end_pts = datalen;
+		if(xfade_pts == past_end)
+			xfade_pts = end_pts;
+		if(loop_pts >= end_pts || xfade_pts <= (loop_pts + end_pts) / 2 || xfade_pts > end_pts ||
+			end_pts > datalen) {
+			messages << "Explicit song timestamps bad, using defaults." << std::endl;
+			start_pts = opus_pregap;
+			loop_pts = start_pts;
+			xfade_pts = end_pts;
+			end_pts = datalen;
 		}
 	}
 
@@ -277,16 +300,16 @@ namespace sky
 		int32_t gfactor = builtin_gain ? 256 : song->gain_factor();
 		uint64_t pts1 = song->pcm_to_pts1(pcmpos);
 		uint64_t pts2 = song->pcm_to_pts2(pcmpos);
-		uint64_t cfstart = song->crossfade_start;
-		uint64_t cflen = song->total - song->crossfade_start;
+		uint64_t cfstart = song->xfade_pts;
+		uint64_t cflen = song->end_pts - song->xfade_pts;
 		for(; samples > 0; output++, samples--, pcmpos++) {
-			if(song->crossfade_start == pts1)
-				seek_channel(i2, pts2, song->loop_start);
-			if(song->crossfade_start == pts2)
-				seek_channel(i1, pts1, song->loop_start);
-			if(song->total == pts1)
+			if(song->xfade_pts == pts1)
+				seek_channel(i2, pts2, song->loop_pts);
+			if(song->xfade_pts == pts2)
+				seek_channel(i1, pts1, song->loop_pts);
+			if(song->end_pts == pts1)
 				seek_channel(i1, pts1, past_end);
-			if(song->total == pts2)
+			if(song->end_pts == pts2)
 				seek_channel(i2, pts2, past_end);
 			if(i1.pcmpos == i1.pcmlen && pts1 != past_end) {
 				uint64_t pts = song->find_timecode_up(pts1);
@@ -314,7 +337,7 @@ namespace sky
 			if(pts1 != past_end)
 				pts1++;
 			if(pts2 != past_end)
-				pts2++;			
+				pts2++;
 		}
 	}
 
@@ -339,4 +362,3 @@ namespace sky
 		song = NULL;
 	}
 }
-

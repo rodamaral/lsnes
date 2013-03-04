@@ -37,7 +37,7 @@ namespace sky
 		uint64_t pcmpos;		//PCM position in song.
 		uint64_t frames_ran;		//Number of frames run.
 		uint32_t cursong;		//Current song number.
-		uint16_t waited;		//Menu wait.
+		uint16_t waited;		//Menu wait / timeattack time.
 		uint8_t paused;			//Paused flag.
 		uint8_t speedind;		//Indicated speed.
 		uint8_t o2ind;			//Indicated amount of oxygen.
@@ -53,7 +53,7 @@ namespace sky
 		uint8_t demo_flag;		//Set to 1 to load demo.
 		uint8_t lastkeys;		//Last key state.
 		uint8_t secret;			//Secret flag.
-		uint8_t padB;			//Padding.
+		uint8_t timeattack;		//Timeattack flag
 		uint8_t padC;			//Padding.
 		uint8_t padD;			//Padding.
 		uint8_t sram[32];		//SRAM.

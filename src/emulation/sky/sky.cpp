@@ -3,6 +3,7 @@
 #include "framebuffer.hpp"
 #include "logic.hpp"
 #include "demo.hpp"
+#include "core/dispatch.hpp"
 #include "core/audioapi.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
@@ -335,6 +336,8 @@ namespace sky
 			int16_t sbuf[2668];
 			fetch_sfx(_gstate, sbuf, samples);
 			audioapi_submit_buffer(sbuf, samples, true, 48000);
+			for(unsigned i = 0; i < samples; i++)
+				information_dispatch::do_sample(sbuf[2 * i + 0], sbuf[2 * i + 1]);
 		},
 		[]() -> void {},
 		[]() -> bool { return pflag; },

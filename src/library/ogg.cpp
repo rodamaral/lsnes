@@ -84,6 +84,314 @@ namespace {
 }
 
 
+ogg_packet::ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, const std::vector<uint8_t>& d)
+{
+	data = d;
+	granulepos = granule;
+	first_page = first;
+	last_page = last;
+	spans_page = spans;
+	eos_page = eos;
+}
+
+ogg_demuxer::ogg_demuxer(std::ostream& _errors_to)
+	: errors_to(_errors_to)
+{
+	seen_page = false;
+	imprint_stream = 0;
+	page_seq = 0;
+	page_era = 0;
+	packet = 0;
+	packets = 0;
+	ended = false;
+	damaged_packet = false;
+	last_granulepos = 0;
+}
+
+uint64_t ogg_demuxer::page_fullseq(uint32_t seq)
+{
+	if(seq < page_seq)
+		return (static_cast<uint64_t>(page_era + 1) << 32) + seq;
+	else
+		return (static_cast<uint64_t>(page_era) << 32) + seq;
+}
+
+void ogg_demuxer::update_pageseq(uint32_t new_seq)
+{
+	if(new_seq < page_seq)
+		page_era++;
+	page_seq = new_seq;
+}
+
+bool ogg_demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
+{
+	if(new_seq != static_cast<uint32_t>(page_seq + 1)) {
+		//Some pages are missing!
+		uint64_t first_missing = page_fullseq(page_seq) + 1;
+		uint64_t last_missing = page_fullseq(new_seq) - 1;
+		if(first_missing == last_missing)
+			errors_to << "Warning: Ogg demux: Page " << first_missing << " missing on stream "
+				<< stream << std::endl;
+		else
+			errors_to << "Warning: Ogg demux: Pages " << first_missing << "-" << last_missing
+				<< " missing on stream " << stream << std::endl;
+		return true;
+	}
+	return false;
+}
+
+void ogg_demuxer::complain_continue_errors(unsigned flags, uint32_t seqno, uint32_t stream, uint32_t pkts,
+	uint64_t granule)
+{
+	bool continued = (flags & 1);
+	bool bos = (flags & 2);
+	bool eos = (flags & 4);
+	bool incomplete = (flags & 8);
+	bool damaged = (flags & 16);
+	bool gap = (flags & 32);
+	bool data = (flags & 64);
+	if(!continued) {
+		if(data && !damaged && !gap)
+			errors_to << "Warning: Ogg demux: Data spilled from previous page but not continued (page "
+				<< page_fullseq(seqno) << " of " << stream << ")" << std::endl;
+		if(data && !damaged && gap)
+			errors_to << "Warning: Ogg demux: Packet continues to lost page" << std::endl;
+	} else {
+		if(bos)
+			errors_to << "Warning: Ogg demux: BOS page has CONTINUED set (stream " << stream << ")."
+				<< std::endl;
+		else if(!data && !damaged && !gap)
+			errors_to << "Warning: Ogg demux: No Data spilled from previous page but continued (page "
+				<< page_fullseq(seqno) << " of " << stream << ")" << std::endl;
+		if(data && !damaged && gap)
+			errors_to << "Warning: Ogg demux: Packet continues to/from lost page" << std::endl;
+		if(!data && !damaged && gap)
+			errors_to << "Warning: Ogg demux: Packet continues from lost page" << std::endl;
+	}
+	if(incomplete && eos)
+		errors_to << "Warning: Ogg demux: EOS page with incomplete packet (stream " << stream << ")."
+			<< std::endl;
+	if(incomplete && pkts == 1 && granule != ogg_page::granulepos_none)
+		errors_to << "Warning: Ogg demux: Page should have granulepos NONE (page " << page_fullseq(seqno)
+			<< " of " << stream << ")" << std::endl;
+	if((!incomplete || pkts > 1) && granule == ogg_page::granulepos_none)
+		errors_to << "Warning: Ogg demux: Page should not have granulepos NONE (page " << page_fullseq(seqno)
+			<< " of " << stream << ")" << std::endl;
+}
+
+bool ogg_demuxer::page_in(const ogg_page& p)
+{
+	if(!wants_page_in())
+		throw std::runtime_error("Not ready for page");
+	std::vector<uint8_t> newbuffer;
+	uint32_t sequence = p.get_sequence();
+	uint32_t stream = p.get_stream();
+	uint32_t pkts = p.get_packet_count();
+	uint64_t granulepos = p.get_granulepos();
+	bool bos = p.get_bos();
+	bool eos = p.get_eos();
+	bool continued = p.get_continue();
+	bool incomplete = p.get_last_packet_incomplete();
+	//Is this from the right stream? If not, ignore page.
+	if(seen_page && stream != imprint_stream)
+		return false;		//Wrong stream.
+	//BOS flag can only be set on first page.
+	if(granulepos < last_granulepos && granulepos != ogg_page::granulepos_none)
+		errors_to << "Warning: Ogg demux: Non-monotonic granulepos" << std::endl;
+	if(!seen_page && !bos)
+		errors_to << "Warning: Ogg demux: First page does not have BOS set." << std::endl;
+	if(seen_page && bos)
+		errors_to << "Warning: Ogg demux: Seen another BOS on stream" << std::endl;
+	//Complain about any gaps in stream.
+	bool gap = seen_page && complain_lost_page(sequence, stream);
+	//Complain about continuation errors.
+	unsigned flags = 0;
+	flags |= continued ? 1 : 0;
+	flags |= bos ? 2 : 0;
+	flags |= eos ? 4 : 0;
+	flags |= incomplete ? 8 : 0;
+	flags |= damaged_packet ? 16 : 0;
+	flags |= gap ? 32 : 0;
+	flags |= !partial.empty() ? 64 : 0;
+	complain_continue_errors(flags, sequence, stream, pkts, granulepos);
+	if(continued) {
+		if(pkts == 1 && incomplete) {
+			//Nothing finishes on this page either.
+			auto frag = p.get_packet(0);
+			newbuffer.resize(partial.size() + frag.second);
+			memcpy(&newbuffer[0], &partial[0], partial.size());
+			memcpy(&newbuffer[partial.size()], frag.first, frag.second);
+			std::swap(newbuffer, partial);
+			damaged_packet = damaged_packet || gap;
+			seen_page = true;
+			imprint_stream = stream;
+			update_pageseq(sequence);
+			ended = eos;
+			if(granulepos != ogg_page::granulepos_none)
+				last_granulepos = granulepos;
+			return true;
+		} else if(pkts == 2 && incomplete && (partial.empty() || damaged_packet || gap)) {
+			//The first packet is busted and the second is incomplete. Load the rest.
+			auto frag = p.get_packet(1);
+			newbuffer.resize(frag.second);
+			memcpy(&newbuffer[0], frag.first, frag.second);
+			std::swap(newbuffer, partial);
+			seen_page = true;
+			imprint_stream = stream;
+			update_pageseq(sequence);
+			damaged_packet = false;
+			ended = eos;
+			packet = 1;
+			packets = 1;
+			if(granulepos != ogg_page::granulepos_none)
+				last_granulepos = granulepos;
+			return true;
+		}
+	}
+	packet = (continued && (partial.empty() || damaged_packet || gap)) ? 1 : 0;	//Busted?
+	packets = pkts;
+	if(incomplete)
+		packets--;
+	last_page = p;
+	damaged_packet = false;
+	seen_page = true;
+	imprint_stream = stream;
+	update_pageseq(sequence);
+	ended = eos;
+	if(granulepos != ogg_page::granulepos_none)
+		last_granulepos = granulepos;
+	return true;
+}
+
+void ogg_demuxer::packet_out(ogg_packet& pkt)
+{
+	if(!wants_packet_out())
+		throw std::runtime_error("Not ready for packet");
+	bool firstfrag = (packet == 0 && last_page.get_continue());
+	bool lastfrag = (packet == packets - 1 && last_page.get_last_packet_incomplete());
+	if(!firstfrag) {
+		//Wholly on this page.
+		std::vector<uint8_t> newbuffer;
+		auto frag = last_page.get_packet(packet);
+		newbuffer.resize(frag.second);
+		memcpy(&newbuffer[0], frag.first, frag.second);
+		pkt = ogg_packet(last_page.get_granulepos(), packet == 0, (packet == packets - 1), false,
+			last_page.get_eos(), newbuffer);
+	} else {
+		//Continued from the last page.
+		std::vector<uint8_t> newbuffer;
+		auto frag = last_page.get_packet(0);
+		newbuffer.resize(partial.size() + frag.second);
+		memcpy(&newbuffer[0], &partial[0], partial.size());
+		memcpy(&newbuffer[partial.size()], frag.first, frag.second);
+		pkt = ogg_packet(last_page.get_granulepos(), true, (packets == 1), true, last_page.get_eos(),
+			newbuffer);
+	}
+	if(lastfrag) {
+		//Load the next packet fragment
+		auto frag2 = last_page.get_packet(packet + 1);
+		std::vector<uint8_t> newbuffer;
+		newbuffer.resize(frag2.second);
+		memcpy(&newbuffer[0], frag2.first, frag2.second);
+		std::swap(newbuffer, partial);
+	}
+	packet++;
+}
+
+void ogg_demuxer::discard_packet()
+{
+	if(!wants_packet_out())
+		throw std::runtime_error("Not ready for packet");
+	bool lastfrag = (packet == packets - 1 && last_page.get_last_packet_incomplete());
+	if(lastfrag) {
+		//Load the next packet fragment
+		auto frag2 = last_page.get_packet(packet + 1);
+		std::vector<uint8_t> newbuffer;
+		newbuffer.resize(frag2.second);
+		memcpy(&newbuffer[0], frag2.first, frag2.second);
+		std::swap(newbuffer, partial);
+	}
+	packet++;
+}
+
+ogg_muxer::ogg_muxer(uint32_t streamid, uint64_t _seq)
+{
+	strmid = streamid;
+	written = 0;
+	eos_asserted = false;
+	seq = _seq;
+	granulepos = ogg_page::granulepos_none;
+	buffer.set_granulepos(ogg_page::granulepos_none);
+}
+
+
+bool ogg_muxer::packet_fits(size_t pktsize) const throw()
+{
+	return pktsize <= buffer.get_max_complete_packet();
+}
+
+bool ogg_muxer::wants_packet_in() const throw()
+{
+	return buffered.size() == written && !eos_asserted;
+}
+
+bool ogg_muxer::has_page_out() const throw()
+{
+	return buffer.get_packet_count() > 0;
+}
+
+void ogg_muxer::signal_eos()
+{
+	eos_asserted = true;
+}
+
+void ogg_muxer::packet_in(const std::vector<uint8_t>& data, uint64_t granule)
+{
+	if(!wants_packet_in() || eos_asserted)
+		throw std::runtime_error("Muxer not ready for packet");
+	buffered = data;
+	//Try direct write.
+	const uint8_t* _data = &data[0];
+	size_t _len = data.size();
+	bool r = buffer.append_packet_incomplete(_data, _len);
+	if(r) {
+		written = data.size();
+		buffer.set_granulepos(granule);
+		return;		//Complete write.
+	}
+	granulepos = granule;
+	written = data.size() - _len;
+}
+
+void ogg_muxer::page_out(ogg_page& p)
+{
+	if(!has_page_out())
+		throw std::runtime_error("Muxer not ready for page");
+	if(eos_asserted && written == buffered.size())
+		buffer.set_eos(true);	//This is the end.
+	buffer.set_bos(seq == 0);
+	buffer.set_sequence(seq);
+	buffer.set_stream(strmid);
+	p = buffer;
+	buffer = ogg_page();
+	seq++;
+	//Now we have a fresh page, flush buffer there.
+	if(written < buffered.size()) {
+		const uint8_t* _data = &buffered[written];
+		size_t _len = buffered.size() - written;
+		bool r = buffer.append_packet_incomplete(_data, _len);
+		if(r) {
+			written = buffered.size();
+			buffer.set_granulepos(granulepos);
+			buffer.set_continue(written != 0);
+			granulepos = ogg_page::granulepos_none;
+			return;
+		}
+		written = buffered.size() - _len;
+	}
+	buffer.set_granulepos(ogg_page::granulepos_none);
+}
+
 ogg_page::ogg_page() throw()
 {
 	version = 0;
@@ -228,6 +536,13 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 		advance += buffer_left;
 	}
 	return false;
+}
+
+size_t ogg_page::get_max_complete_packet() const throw()
+{
+	if(segment_count == 255)
+		return 0;
+	return (255 - segment_count) * 255 - 1;
 }
 
 bool ogg_page::append_packet(const uint8_t* _data, size_t datalen) throw()
@@ -468,6 +783,8 @@ ogg_stream_reader::ogg_stream_reader() throw()
 	eof = false;
 	left = 0;
 	errors_to = &std::cerr;
+	last_offset = 0;
+	start_offset = 0;
 }
 
 ogg_stream_reader::~ogg_stream_reader() throw()
@@ -497,6 +814,7 @@ try_again:
 	if(!f)
 		goto try_again;
 	page = ogg_page(buffer, advance);
+	last_offset = start_offset;
 	discard_buffer(advance);
 	return true;
 }
@@ -516,6 +834,7 @@ void ogg_stream_reader::discard_buffer(size_t amount)
 	if(amount < left)
 		memmove(buffer, buffer + amount, left - amount);
 	left -= amount;
+	start_offset += amount;
 }
 
 ogg_stream_writer::ogg_stream_writer() throw()

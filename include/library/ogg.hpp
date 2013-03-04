@@ -7,6 +7,65 @@
 #include <map>
 
 /**
+ * A packet in Ogg bitstream.
+ */
+class ogg_packet
+{
+public:
+/**
+ * Constructor.
+ */
+	ogg_packet() {}
+/**
+ * Constructor.
+ */
+	ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, const std::vector<uint8_t>& d);
+/**
+ * Is the packet first within its page?
+ */
+	bool get_first_page() const throw() { return first_page; }
+/**
+ * Is the packet last within its page?
+ */
+	bool get_last_page() const throw() { return last_page; }
+/**
+ * Is the packet spanning multiple pages?
+ */
+	bool get_spans_page() const throw() { return spans_page; }
+/**
+ * Is atomic (first, last and on one page)?
+ */
+	bool get_atomic() const throw() { return first_page && last_page && !spans_page; }
+/**
+ * Get the granule position within page the packet finished at.
+ */
+	uint64_t get_granulepos() const throw() { return granulepos; }
+/**
+ * Does the page this ends on have EOS set?
+ */
+	bool get_on_eos_page() const throw() { return eos_page; }
+/**
+ * Get the packet data.
+ */
+	const std::vector<uint8_t>& get_vector() const throw() { return data; }
+/**
+ * Get length of packet data.
+ */
+	size_t get_length() const throw() { return data.size(); }
+/**
+ * Get packet data.
+ */
+	const uint8_t* get_data() const throw() { return &data[0]; }
+private:
+	bool first_page;
+	bool last_page;
+	bool spans_page;
+	bool eos_page;
+	uint64_t granulepos;
+	std::vector<uint8_t> data;
+};
+
+/**
  * A page in Ogg bitstream.
  */
 class ogg_page
@@ -101,6 +160,10 @@ public:
  */
 	bool get_last_packet_incomplete() const throw() { return last_incomplete; }
 /**
+ * Get amount of data that can be written as a complete packet.
+ */
+	size_t get_max_complete_packet() const throw();
+/**
  * Append a complete packet to page.
  *
  * Parameter d: The data to append.
@@ -148,6 +211,101 @@ private:
 };
 
 /**
+ * Ogg demuxer.
+ */
+class ogg_demuxer
+{
+public:
+/**
+ * Create a new demuxer.
+ */
+	ogg_demuxer(std::ostream& _errors_to);
+/**
+ * Demuxer wants a page in?
+ */
+	bool wants_page_in() const throw() { return (packet == packets && !ended); }
+/**
+ * Demuxer wants a packet out?
+ */
+	bool wants_packet_out() const throw() { return (packet < packets); }
+/**
+ * Input a page.
+ */
+	bool page_in(const ogg_page& p);
+/**
+ * Output a packet.
+ */
+	void packet_out(ogg_packet& pkt);
+/**
+ * Discard a packet.
+ */
+	void discard_packet();
+private:
+	uint32_t inc1(uint32_t x) { return x + 1; }
+	uint64_t page_fullseq(uint32_t seq);
+	void update_pageseq(uint32_t new_seq);
+	bool complain_lost_page(uint32_t new_seq, uint32_t stream);
+	void complain_continue_errors(unsigned flags, uint32_t seqno, uint32_t stream, uint32_t pkts,
+		uint64_t granule);
+	std::ostream& errors_to;
+	std::vector<uint8_t> partial;
+	bool seen_page;
+	bool damaged_packet;
+	uint32_t imprint_stream;
+	uint32_t page_seq;
+	uint32_t page_era;
+	ogg_page last_page;
+	uint32_t packet;
+	uint32_t packets;
+	uint64_t last_granulepos;
+	bool ended;
+};
+
+/**
+ * Ogg muxer.
+ */
+class ogg_muxer
+{
+public:
+/**
+ * Create a muxer.
+ */
+	ogg_muxer(uint32_t streamid, uint64_t _seq = 0);
+/**
+ * Wants a packet?
+ */
+	bool wants_packet_in() const throw();
+/**
+ * Packet of this size fits on current page?
+ */
+	bool packet_fits(size_t pktsize) const throw();
+/**
+ * Has a page to output?
+ */
+	bool has_page_out() const throw();
+/**
+ * Input a packet.
+ */
+	void packet_in(const std::vector<uint8_t>& data, uint64_t granule);
+/**
+ * Signal end of stream.
+ */
+	void signal_eos();
+/**
+ * Output a page.
+ */
+	void page_out(ogg_page& p);
+private:
+	uint32_t strmid;
+	ogg_page buffer;
+	std::vector<uint8_t> buffered;
+	size_t written;
+	uint64_t seq;
+	bool eos_asserted;
+	uint64_t granulepos;
+};
+
+/**
  * Ogg stream reader.
  */
 class ogg_stream_reader
@@ -182,6 +340,10 @@ public:
  * Parameter strm: The stream.
  */
 	void set_errors_to(std::ostream& os);
+/**
+ * Starting offset of last packet returned.
+ */
+	uint64_t get_last_offset() { return last_offset; }
 private:
 	ogg_stream_reader(const ogg_stream_reader&);
 	ogg_stream_reader& operator=(const ogg_stream_reader&);
@@ -190,6 +352,8 @@ private:
 	bool eof;
 	char buffer[65536];
 	size_t left;
+	uint64_t last_offset;
+	uint64_t start_offset;
 	std::ostream* errors_to;
 };
 

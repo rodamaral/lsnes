@@ -37,6 +37,8 @@ namespace sky
 	{
 		sounds();
 		sounds(const std::vector<char>& snd, size_t samples);
+		sounds(const sounds& s);
+		sounds& operator=(const sounds& s);
 		const sound& operator[](size_t idx) const { return (idx < sfx.size()) ? sfx[idx] : dummy; }
 		uint8_t access(size_t idx) const { return (idx < sounddata.size()) ? sounddata[idx] : 0x80; }
 	private:

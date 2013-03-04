@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <map>
+#include "library/ogg.hpp"
 #ifdef WITH_OPUS_CODEC
 #include "library/opus.hpp"
 #endif
@@ -27,14 +28,11 @@ namespace sky
 		background_song(std::istream& stream);
 		//The song data.
 		std::map<uint64_t, std::vector<uint8_t>> packets;
-		//Pregap length.
-		uint64_t pregap;
-		//Song length, including pregap.
-		uint64_t total;
-		//Loop start start pts.
-		uint64_t loop_start;
-		//Start of crossfade pts.
-		uint64_t crossfade_start;
+		//Important points in song.
+		uint64_t start_pts;	//PTS for start of song.
+		uint64_t loop_pts;	//PTS for start of looping part.
+		uint64_t xfade_pts;	//PTS for start of crossfade.
+		uint64_t end_pts;	//PTS for end of song.
 		//Gain.
 		uint16_t gain;
 		//Find valid timecode, rounding down.
@@ -47,6 +45,15 @@ namespace sky
 		uint64_t pcm_to_pts2(uint64_t pcm);
 		//Translate gain into gain factor.
 		int32_t gain_factor();
+	private:
+		void parse_oggopus_header(ogg_page& p, ogg_demuxer& d);
+		void parse_oggopus_tags(ogg_page& p, ogg_demuxer& d);
+		void parse_oggopus_datapage(ogg_page& p, ogg_demuxer& d, bool first);
+		uint64_t packetpos;
+		uint64_t last_granulepos;
+		uint64_t last_datalen;
+		uint64_t datalen;
+		uint64_t opus_pregap;
 	};
 
 	extern background_song* bsong;

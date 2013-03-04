@@ -906,4 +906,48 @@ namespace sky
 		draw_sprite((s.p.hpos - 32768.0) / 5888.0, (s.p.vpos - 10240.0) / 2560.0,
 			ship_sprite(s.p));
 	}
+
+	const char* period = "%&(ccK";
+	const char* dash = "%'(cScS";
+	const char* vline = "%$(b";
+	const char* tback = "%F*ccccccccccccccccccccccccccccccccccccccccc";
+
+	void draw_timeattack_time(const char* msg)
+	{
+		uint16_t w = 321;
+		uint16_t nst = strlen(_numbers_g) / 10;
+		draw_block2(tback, 0, 0xFFFFFF, 0xFFFFFF, false);
+		while(*msg) {
+			if(*msg >= '0' && *msg <= '9') {
+				draw_block2(_numbers_g + (*msg - '0') * nst, w, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
+				w += 5;
+			} else if(*msg == ':') {
+				draw_block2(period, w, 0xFFFFFF, 0xFFFFFF, true);
+				w += 3;
+			} else if(*msg == '-') {
+				draw_block2(dash, w, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
+				w += 5;
+			}
+			msg++;
+		}
+		for(unsigned i = 0; i < 7; i++)
+			for(unsigned j = 0; j < 35; j++)
+				origbuffer[320 * i + j] ^= 0xFFFFFF;
+		render_framebuffer_update(0, 0, 35, 7);
+	}
+
+	void draw_timeattack_time(uint16_t frames)
+	{
+		char msg[8];
+		if(frames > 64807) {
+			strcpy(msg, "----:--");
+		} else {
+			unsigned seconds = 18227 * frames / 656250;
+			unsigned subseconds = 36454U * frames / 13125 - 100 * seconds;
+			sprintf(msg, "%u:%02u", seconds, subseconds);
+		}
+		draw_timeattack_time(msg);
+	}
 }
