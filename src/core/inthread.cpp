@@ -601,6 +601,8 @@ out:
 				throw std::runtime_error("Oggopus stream missing required tags page");
 			if(state == 2 || state == 3)
 				messages << "Warning: Incomplete Oggopus stream." << std::endl;
+			if(datalen <= pregap_length)
+				throw std::runtime_error("Stream too short (entiere pregap not present)");
 			write_trailier();
 		} catch(...) {
 			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);

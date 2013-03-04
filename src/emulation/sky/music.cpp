@@ -214,8 +214,8 @@ namespace sky
 		}
 		if(packet_num < 2)
 			throw std::runtime_error("Required header packets missing");
-		if(datalen == 0)
-			throw std::runtime_error("Empty song");
+		if(datalen <= opus_pregap)
+			throw std::runtime_error("Song length is not positive");
 		if(start_pts == past_end)
 			start_pts = opus_pregap;
 		if(loop_pts == past_end)
