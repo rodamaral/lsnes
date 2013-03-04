@@ -7947,5 +7947,55 @@ Fix various undefined return values.
 Show rates in VU meter window.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta17epsilon1
+\end_layout
+
+\begin_layout Itemize
+Commentary tool: Set nominal bit rate and limit max bit rate.
+\end_layout
+
+\begin_layout Itemize
+Lua: Unconditionally reload host memory on loadstate
+\end_layout
+
+\begin_layout Itemize
+Lua: Query bindings, manipulate aliases, create inverse bindings
+\end_layout
+
+\begin_layout Itemize
+Lua: Fix crashes with resetting VM while some types of paint requests are
+ in flight.
+\end_layout
+
+\begin_layout Itemize
+Lua: gui.text: Clip the text properly instead of corrupting memory in some
+ cases.
+\end_layout
+
+\begin_layout Itemize
+Save screenshot header reliably
+\end_layout
+
+\begin_layout Itemize
+Lua: Backport input.get2 and input.set2
+\end_layout
+
+\begin_layout Itemize
+Lua: New controller info functions.
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Fix reset delay counters to be the right way around.
+\end_layout
+
+\begin_layout Itemize
+Lua: on_snoop2
+\end_layout
+
+\begin_layout Itemize
+Lua: on_button and input.veto_button.
+\end_layout
+
 \end_body
 \end_document
