@@ -1,5 +1,6 @@
 #include "ogg.hpp"
 #include "serialization.hpp"
+#include "minmax.hpp"
 #include <cstring>
 #include <zlib.h>
 #include <algorithm>
@@ -888,25 +889,12 @@ void ogg_stream_writer_iostreams::write(const char* buffer, size_t size) throw(s
 		throw std::runtime_error("Error writing data");
 }
 
-namespace
-{
-	uint8_t ticks_per_frame[32] = {
-		4, 8, 16, 24,
-		4, 8, 16, 24,
-		4, 8, 16, 24,
-		4, 8, 4, 8,
-		1, 2, 4, 8,
-		1, 2, 4, 8,
-		1, 2, 4, 8,
-		1, 2, 4, 8
-	};
-}
-
 uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize)
 {
 	if(packetsize < 1)
 		return 0;
-	uint8_t x = ticks_per_frame[packet[0] >> 3];
+	uint8_t x = ((packet[0] >= 0x70) ? 1 : 4) << ((packet[0] >> 3) & 3);
+	x = min(x, (uint8_t)24);
 	uint8_t y = (packetsize < 2) ? 255 : (packet[1] & 0x3F);
 	uint16_t z = (uint16_t)x * y;
 	switch(packet[0] & 3) {
