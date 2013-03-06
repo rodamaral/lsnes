@@ -58,8 +58,6 @@ namespace sky
 
 	extern background_song* bsong;
 
-	uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize);
-
 #ifdef WITH_OPUS_CODEC
 	typedef opus::decoder opus_decoder;
 #else

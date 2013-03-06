@@ -562,10 +562,7 @@ out_parsing:
 						ogg_packet p;
 						d.packet_out(p);
 						std::vector<uint8_t> pkt = p.get_vector();
-						uint32_t frames = opus::packet_get_nb_frames(&pkt[0], pkt.size());
-						uint32_t samples_pf = opus::packet_get_samples_per_frame(&pkt[0], 	
-							opus::samplerate::r48k);
-						uint8_t tcnt = frames * samples_pf / 120;
+						uint8_t tcnt = opus_packet_tick_count(&pkt[0], pkt.size());
 						if(tcnt) {
 							write(tcnt, &pkt[0], pkt.size());
 							datalen += tcnt * 120;

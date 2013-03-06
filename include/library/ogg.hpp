@@ -494,4 +494,14 @@ struct oggopus_tags parse_oggopus_tags(struct ogg_page& page) throw(std::bad_all
  */
 struct ogg_page serialize_oggopus_tags(struct oggopus_tags& tags) throw(std::runtime_error);
 
+/**
+ * Get tick (2.5ms) count from opus packet.
+ *
+ * Parameter packet: The packet data.
+ * Parameter packetsize: The size of packet.
+ *
+ * Note: Guaranteed not to read more than 2 bytes from the packet.
+ */
+uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize);
+
 #endif

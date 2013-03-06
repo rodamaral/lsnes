@@ -887,3 +887,33 @@ void ogg_stream_writer_iostreams::write(const char* buffer, size_t size) throw(s
 	if(!os)
 		throw std::runtime_error("Error writing data");
 }
+
+namespace
+{
+	uint8_t ticks_per_frame[32] = {
+		4, 8, 16, 24,
+		4, 8, 16, 24,
+		4, 8, 16, 24,
+		4, 8, 4, 8,
+		1, 2, 4, 8,
+		1, 2, 4, 8,
+		1, 2, 4, 8,
+		1, 2, 4, 8
+	};
+}
+
+uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize)
+{
+	if(packetsize < 1)
+		return 0;
+	uint8_t x = ticks_per_frame[packet[0] >> 3];
+	uint8_t y = (packetsize < 2) ? 255 : (packet[1] & 0x3F);
+	uint16_t z = (uint16_t)x * y;
+	switch(packet[0] & 3) {
+	case 0:		return x;
+	case 1:		return x << 1;
+	case 2:		return x << 1;
+	case 3:		return (z <= 48) ? z : 0;
+	};
+}
+
