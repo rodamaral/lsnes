@@ -67,7 +67,7 @@ void save_png_data(const std::string& file, uint8_t* data24, uint32_t width, uin
 	std::runtime_error)
 {
 	char* data = reinterpret_cast<char*>(data24);
-	std::ofstream filp(file.c_str());
+	std::ofstream filp(file.c_str(), std::ios_base::binary);
 	if(!filp)
 		throw std::runtime_error("Can't open target PNG file");
 	char png_magic[] = {-119, 80, 78, 71, 13, 10, 26, 10};
