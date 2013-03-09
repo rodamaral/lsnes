@@ -190,6 +190,14 @@ public:
  */
 	void serialize(char* buffer) const throw();
 /**
+ * Get debugging info for stream this page is from.
+ */
+	std::string stream_debug_id() const throw(std::bad_alloc);
+/**
+ * Get debugging info for this page.
+ */
+	std::string page_debug_id() const throw(std::bad_alloc);
+/**
  * The special granule pos for nothing.
  */
 	const static uint64_t granulepos_none;

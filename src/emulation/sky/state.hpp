@@ -8,6 +8,7 @@
 #include "demo.hpp"
 #include "level.hpp"
 #include "sound.hpp"
+#include "random.hpp"
 
 namespace sky
 {
@@ -33,6 +34,8 @@ namespace sky
 		demo curdemo;
 		level curlevel;
 		active_sfx_dma dma;
+		random rng;
+		music_player_memory music;
 		physics p;
 		uint64_t pcmpos;		//PCM position in song.
 		uint64_t frames_ran;		//Number of frames run.

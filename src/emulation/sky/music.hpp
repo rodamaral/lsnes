@@ -5,100 +5,169 @@
 #include <cstdint>
 #include <vector>
 #include <map>
+#include <set>
+#include "random.hpp"
 #include "library/ogg.hpp"
 #ifdef WITH_OPUS_CODEC
 #include "library/opus.hpp"
 #endif
-
-//
-//
-//
-//
-//
-//
 
 namespace sky
 {
 	struct song_buffer;
 	extern const uint64_t past_end;		//Position past the end of song.
 
-	struct background_song
+	struct multistream_characteristics
+	{
+		multistream_characteristics();
+		uint8_t channels;
+		uint8_t streams;
+		uint8_t coupled;
+		uint8_t mapping[255];
+		float downmix_l[255];
+		float downmix_r[255];
+		int16_t gain;
+	};
+
+	struct subsong_transition
+	{
+		subsong_transition();
+		void fixup(uint64_t pregap, uint64_t datalen, const std::string& ssname);
+		//Starting PTS.
+		uint64_t start_pts;
+		//Crossfade start PTS.
+		uint64_t xfade_pts;
+		//Ending pts.
+		uint64_t end_pts;
+		//Set of next subsongs.
+		std::set<uint32_t> next_subsongs;
+	};
+
+	struct song_buffer
 	{
 		//Load song from stream.
-		background_song(std::istream& stream);
-		//The song data.
-		std::map<uint64_t, std::vector<uint8_t>> packets;
-		//Important points in song.
-		uint64_t start_pts;	//PTS for start of song.
-		uint64_t loop_pts;	//PTS for start of looping part.
-		uint64_t xfade_pts;	//PTS for start of crossfade.
-		uint64_t end_pts;	//PTS for end of song.
-		//Gain.
-		uint16_t gain;
-		//Find valid timecode, rounding down.
-		uint64_t find_timecode_down(uint64_t pts);
-		//Find valid timecode, rounding up. Returns past_end if called with too great pts.
-		uint64_t find_timecode_up(uint64_t pts);
-		//Translate pcm position to pts for track 1.
-		uint64_t pcm_to_pts1(uint64_t pcm);
-		//Translate pcm position to pts for track 2.
-		uint64_t pcm_to_pts2(uint64_t pcm);
-		//Translate gain into gain factor.
-		int32_t gain_factor();
+		song_buffer(std::istream& stream);
+		//Access a packet.
+		const std::vector<uint8_t>& get_packet(uint32_t subsong, uint64_t pts);
+		//Get packet pts at or after given pts.
+		uint64_t next_timecode(uint32_t subsong, uint64_t pts);
+		//Get packet pts at or before given pts.
+		uint64_t prev_timecode(uint32_t subsong, uint64_t pts);
+		//Fill structure with multistream characteristics of a subsong.
+		void fill_ms_characteristics(uint32_t subsong, struct multistream_characteristics& c);
+		//Get set of subsongs with entry flag set.
+		const std::set<uint32_t>& entrypoints() { return entry; }
+		//Get transition info for a subsong.
+		const struct subsong_transition& transitions(uint32_t subsong);
 	private:
-		void parse_oggopus_header(ogg_page& p, ogg_demuxer& d);
-		void parse_oggopus_tags(ogg_page& p, ogg_demuxer& d);
-		void parse_oggopus_datapage(ogg_page& p, ogg_demuxer& d, bool first);
-		uint64_t packetpos;
-		uint64_t last_granulepos;
-		uint64_t last_datalen;
-		uint64_t datalen;
-		uint64_t opus_pregap;
-	};
-
-	extern background_song* bsong;
-
-#ifdef WITH_OPUS_CODEC
-	typedef opus::decoder opus_decoder;
-#else
-	struct opus_decoder
-	{
-		size_t decode(const uint8_t* a, size_t b, int16_t* c, size_t d)
+		struct subsong_context
 		{
-			uint8_t t = opus_packet_tick_count(a, b);
-			if(!t)
-				throw std::runtime_error("Bad packet");
-			return 120 * t;
-		}
+			//Create a new subsong context.
+			//Note: Does not initialize psid.
+			subsong_context();
+			//Demuxer.
+			ogg_demuxer demux;
+			//Stream ID.
+			uint32_t psid;
+			//Ogg Stream ID.
+			uint32_t oggid;
+			//Last granule position recorded.
+			uint64_t last_granule;
+			//PTS at last granule position recorded.
+			uint64_t last_pts;
+			//Current PTS.
+			uint64_t pts;
+			//Number of pages seen.
+			uint64_t pages;
+			//Pregap.
+			uint32_t pregap;
+			//Gain
+			uint16_t gain;
+			//Seen EOS flag.
+			bool eos_seen;
+		};
+		bool page_starts_new_stream(ogg_page& p);
+		bool parse_ogg_page(ogg_page& p, subsong_context& ctx);
+		void parse_ogg_header(ogg_page& p, subsong_context& ctx);
+		void parse_ogg_tags(ogg_page& p, subsong_context& ctx);
+		void parse_ogg_data(ogg_page& p, subsong_context& ctx);
+		void parse_ogg_packet(ogg_packet& pkt, subsong_context& ctx);
+		void parse_ogg_pageend(ogg_page& p, subsong_context& ctx);
+		//Register a LSID.
+		uint32_t register_lsid(const std::string& ssid);
+		uint32_t register_lsid(const std::string& ssid, uint32_t psid);
+		void delete_stream(uint32_t psid);
+		void delete_undefined_substreams();
+		std::string reverse_lsid(uint32_t lsid);
+		//Mappings between ssid, lsid and psid.
+		std::map<std::string, uint32_t> ssid_to_lsid;
+		std::map<uint32_t, uint32_t> lsid_to_psid;
+		//Next LSID to allocate.
+		uint32_t next_lsid;
+		//LSIDs valid for entry.
+		std::set<uint32_t> entry;
+		//Multistream characteristics by PSID.
+		std::map<uint32_t, multistream_characteristics> mscharacteristics;
+		//Subsong transitions by LSID.
+		std::map<uint32_t, subsong_transition> stransitions;
+		//Packet data, indexed by (PSID,PTS).
+		std::map<std::pair<uint32_t, uint64_t>, std::vector<uint8_t>> packetdata;
+		//Dummy data.
+		subsong_transition dummy_transition;
+		std::vector<uint8_t> dummy_packet;
 	};
-#endif
 
-	struct music_player_int
+	extern song_buffer* bsong;
+
+	struct packet_decoder
 	{
-		music_player_int();
+		//Create a new packet decoder.
+		packet_decoder();
+		//Set multistream characteristics of packet decoder.
+		void set_multistream(const struct multistream_characteristics& c);
+		//Decode a packet, setting buffers.
 		void decode_packet(const std::vector<uint8_t>& data);
+		//Reset the opus codec.
+		void reset();
 		uint16_t pcmpos;
 		uint16_t pcmlen;
 		int16_t pcmbuf[11522];
-		opus_decoder d;
+	private:
+#ifdef WITH_OPUS_CODEC
+		opus::multistream_decoder* d;
+#endif
+		uint8_t channels;
+		float downmix_l[255];
+		float downmix_r[255];
+		std::vector<uint8_t> memory;
+		float* dmem;
+	};
+
+	struct music_player_memory
+	{
+		uint64_t pcmpos1;
+		uint64_t pcmpos2;
+		uint32_t subsong1;
+		uint32_t subsong2;
 	};
 
 	struct music_player
 	{
-		music_player(uint64_t& _pcmpos);
-		void set_song(background_song* _song) { song = _song; set_gain(); }
-		void rewind() { pcmpos = 0; do_preroll(); }
+		music_player(struct music_player_memory& m, random& _rng);
+		void set_song(song_buffer* _song) { song = _song; do_preroll(); }
+		void rewind() { song_to_beginning(); do_preroll(); }
 		void do_preroll();
 		void decode(std::pair<int16_t, int16_t>* output, size_t samples);
 	private:
-		void set_gain();
-		void seek_channel(music_player_int& i, uint64_t& spts, uint64_t pts);
-		bool builtin_gain;
-		uint64_t& pcmpos;
-		music_player_int i1;
-		music_player_int i2;
-		background_song* song;
+		void song_to_beginning();
+		void seek_channel(packet_decoder& i, uint64_t& spts, uint32_t subsong, uint64_t pts);
+		music_player_memory& mem;
+		packet_decoder i1;
+		packet_decoder i2;
+		song_buffer* song;
+		random& rng;
 	};
+
 }
 
 #endif

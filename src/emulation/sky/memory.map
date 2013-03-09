@@ -41,34 +41,35 @@
 20014	word		(unused)
 20016	byte		Current byte from sound data.
 20017	byte		Rate constant (256 - 1MHz / sampling_rate)
-20018	dword		Frame counter
-2001C	dword		Death frame number.
-20020	dword		Longitudial position.
-20024	dword		Projected longitudial position.
-20028	dword		Longitudial speed.
-2002C	dword		Longitudial speed bias.
-20030	word		Frame in explosion (0 => Not exploded).
-20032	word		Number of frames post death.
-20034	word		Acceleration of gravity (negative).
-20036	word		Horizontal position.
-20038	word		Vertical position.
-2003A	word		Horizontal projected position.
-2003C	word		Vertical projected position.
-2003E	word		Horizontal speed.
-20040	word		Vertical speed.
-20042	word		Drift speed.
-20044	word		Jump ground level.
-20046	word		Amount of no support.
-20048	word		Balance of no support.
-2004A	word		Fuel left.
-2004C	word		O2 left.
-2004E	word		Gravity.
-20050	word		O2 use per frame.
-20052	word		Fuel use factor.
-20054	word		Minimum speed for bounce.
-20056	word		Level amount of O2.
-20058	word		Level amount of fuel.
-2005A	byte		Cause of death:
+20018	32xByte		RNG state
+20038	dword		Frame counter
+2003C	dword		Death frame number.
+20040	dword		Longitudial position.
+20044	dword		Projected longitudial position.
+20048	dword		Longitudial speed.
+2004C	dword		Longitudial speed bias.
+20050	word		Frame in explosion (0 => Not exploded).
+20052	word		Number of frames post death.
+20054	word		Acceleration of gravity (negative).
+20056	word		Horizontal position.
+20058	word		Vertical position.
+2005A	word		Horizontal projected position.
+2005C	word		Vertical projected position.
+2005E	word		Horizontal speed.
+20060	word		Vertical speed.
+20062	word		Drift speed.
+20064	word		Jump ground level.
+20066	word		Amount of no support.
+20068	word		Balance of no support.
+2006A	word		Fuel left.
+2006C	word		O2 left.
+2006E	word		Gravity.
+20070	word		O2 use per frame.
+20072	word		Fuel use factor.
+20074	word		Minimum speed for bounce.
+20076	word		Level amount of O2.
+20078	word		Level amount of fuel.
+2007A	byte		Cause of death:
 			0 => Still alive.
 			1 => Burned by floor
 			2 => Fell into pit
@@ -77,7 +78,7 @@
 			5 => Collided with wall.
 			6 => Escaped the level.
 			255 => Finished the level.
-2005B	byte		Flags:
+2007B	byte		Flags:
 			Bit 0: In locked jump.
 			Bit 1: Tried to lock this jump.
 			Bit 2: In jump.
@@ -86,20 +87,20 @@
 			Bit 5: Sticky floor in effect.
 			Bit 6: On blank tile.
 			Bit 7: Level disables jumping.
-2005C	dword		(unused)
-20060	qword		Position in background music (samples)
-20068	qword		Total frames ran.
-20070	dowrd		Current background song number.
-20074	word		In menu: Amount of frames waited.
+2007C	dword		(unused)
+20080	qword		Position in background music (samples)
+20088	qword		Total frames ran.
+20090	dowrd		Current background song number.
+20094	word		In menu: Amount of frames waited.
 			In level: Timeattack frame count.
-20076	byte		Paused flag.
-20077	byte		Indicated speed.
-20078	byte		Indicated O2
-20079	byte		Indicated fuel.
-2007A	byte		Indicated distance
-2007B	byte		Lock indicator flag.
-2007C	byte		Out of O2/Fuel flash phase.
-2007D	byte		State of game.
+20096	byte		Paused flag.
+20097	byte		Indicated speed.
+20098	byte		Indicated O2
+20099	byte		Indicated fuel.
+2009A	byte		Indicated distance
+2009B	byte		Lock indicator flag.
+2009C	byte		Out of O2/Fuel flash phase.
+2009D	byte		State of game.
 			0 => Menu fading in
 			1 => In menu
 			2 => Menu fading out
@@ -114,17 +115,17 @@
 			11 => Level fading out (going to retry)
 			12 => Loading level (without reloading music)
 			13 => Lockup
-2007E	byte		Fade counter.
-2007F	byte		Current stage number (0-30)
-20080	byte		Menu old stage number
-20081	byte		Menu saved stage number.
-20082	byte		Demo flag.
+2009E	byte		Fade counter.
+2009F	byte		Current stage number (0-30)
+200A0	byte		Menu old stage number
+200A1	byte		Menu saved stage number.
+200A2	byte		Demo flag.
 			0 => Loaded level will have player control.
 			1 => Run level demo.
 			2 => Run DEMO.REC.
-20083	byte		Last frame pressed keys.
-20084	byte		Secret flag (bit 7 if active, bits 0-6 give level id).
-20085	byte		Time attack flag.
-20086	word		(unused)
-20088	32*byte		Number of times each level has been completed (SRAM).
-200A8
+200A3	byte		Last frame pressed keys.
+200A4	byte		Secret flag (bit 7 if active, bits 0-6 give level id).
+200A5	byte		Time attack flag.
+200A6	word		(unused)
+200A8	32*byte		Number of times each level has been completed (SRAM).
+200C8

@@ -22,11 +22,6 @@ namespace sky
 	uint32_t fadeffect_buffer[FB_WIDTH * FB_HEIGHT];
 	bool indirect_flag;
 
-	uint32_t framecnt_to_songno(uint64_t fc)
-	{
-		return fc;
-	}
-
 	void reload_song(bool menu, uint32_t num)
 	{
 		if(menu) {
@@ -38,12 +33,15 @@ namespace sky
 			std::istream* s = NULL;
 			try {
 				s = &open_file_relative(filename, "");
-				bsong = new background_song(*s);
+				messages << "Selected song: " << filename << std::endl;
+				bsong = new song_buffer(*s);
 				mplayer.set_song(bsong);
 				delete s;
 			} catch(std::exception& e) {
-				if(s)
+				if(s) {
+					messages << "Unable to load song: " << e.what() << std::endl;
 					delete s;
+				}
 			}
 		} else {
 			mplayer.set_song(NULL);
@@ -56,16 +54,18 @@ namespace sky
 				std::string iname;
 				std::vector<std::string> inames;
 				for(auto i : r)
-					if(regex_match("music[0-9]+.opus", i))
+					if(regex_match("music.+\\.opus", i))
 						inames.push_back(i);
 				if(inames.empty())
 					return;
 				iname = inames[num % inames.size()];
 				s = &r[iname];
-				bsong = new background_song(*s);
+				messages << "Selected song: " << iname << std::endl;
+				bsong = new song_buffer(*s);
 				mplayer.set_song(bsong);
 				delete s;
 			} catch(std::exception& e) {
+				messages << "Unable to load song: " << e.what() << std::endl;
 				if(s)
 					delete s;
 			}
@@ -231,7 +231,7 @@ namespace sky
 
 	uint8_t do_load_menu(gstate& s, uint16_t b)
 	{
-		s.cursong = framecnt_to_songno(s.frames_ran);
+		s.cursong = s.rng.pull();
 		reload_song(true, s.cursong);
 		mplayer.rewind();
 		s.oldstage = 0;
@@ -254,7 +254,7 @@ namespace sky
 		s.secret = 0;
 		if(s.state == state_load_level) {
 			s.timeattack = (!s.demo_flag && b & 64) ? 1 : 0;
-			s.cursong = framecnt_to_songno(s.frames_ran);
+			s.cursong = s.rng.pull();
 			reload_song(false, s.cursong);
 			mplayer.rewind();
 		}
@@ -270,7 +270,6 @@ namespace sky
 		combine_background(s.stage ? (s.stage - 1) / 3 : 0);
 		uint8_t hash[32];
 		levels[s.stage].sha256_hash(hash);
-		std::cerr << std::endl;
 		if(!memcmp(hash, hash1, 32)) s.secret = 1;
 		if(!memcmp(hash, hash2, 32)) s.secret = 2;
 		try {
@@ -421,6 +420,7 @@ namespace sky
 	void simulate_frame(gstate& s, uint16_t b)
 	{
 		uint8_t retstate;
+		s.rng.push(b);
 		s.frames_ran++;
 		if(s.state > state_lockup) {
 			messages << "Invalid state in simulate: " << (int)s.state << std::endl;

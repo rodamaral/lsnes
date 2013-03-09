@@ -387,6 +387,16 @@ void _reset::operator()(encoder& e) const
 	throwex(opus_encoder_ctl(E(e), OPUS_RESET_STATE));
 }
 
+void _reset::operator()(multistream_decoder& d) const
+{
+	throwex(opus_multistream_decoder_ctl(MD(d), OPUS_RESET_STATE));
+}
+
+void _reset::operator()(multistream_encoder& e) const
+{
+	throwex(opus_multistream_encoder_ctl(ME(e), OPUS_RESET_STATE));
+}
+
 _finalrange _finalrange::operator()(decoder& d) const
 {
 	return _finalrange(generic_ctl<uint32_t>(d, OPUS_GET_FINAL_RANGE_REQUEST));
@@ -831,7 +841,7 @@ size_t multistream_decoder::size(unsigned streams, unsigned coupled_streams)
 multistream_decoder::multistream_decoder(samplerate rate, unsigned _channels, unsigned _streams,
 	unsigned coupled_streams, const unsigned char* mapping, char* _memory)
 {
-	user = (memory != NULL);
+	user = (_memory != NULL);
 	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[size(streams, coupled_streams)];
 	set_params(_channels, _streams, coupled_streams);
 	try {

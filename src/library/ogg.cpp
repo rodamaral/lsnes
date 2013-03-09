@@ -5,6 +5,8 @@
 #include <zlib.h>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
+#include "string.hpp"
 
 namespace {
 	const uint32_t crc_lookup[256]= {
@@ -132,10 +134,12 @@ bool ogg_demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
 		uint64_t last_missing = page_fullseq(new_seq) - 1;
 		if(first_missing == last_missing)
 			errors_to << "Warning: Ogg demux: Page " << first_missing << " missing on stream "
-				<< stream << std::endl;
+				<< (stringfmt() << std::hex << std::setw(8) << std::setfill('0') << stream).str()
+				<< std::endl;
 		else
 			errors_to << "Warning: Ogg demux: Pages " << first_missing << "-" << last_missing
-				<< " missing on stream " << stream << std::endl;
+				<< " missing on stream " << (stringfmt() << std::hex << std::setw(8)
+				<< std::setfill('0') << stream).str() << std::endl;
 		return true;
 	}
 	return false;
@@ -182,20 +186,20 @@ void ogg_demuxer::complain_continue_errors(unsigned flags, uint32_t seqno, uint3
 
 bool ogg_demuxer::page_in(const ogg_page& p)
 {
+	//Is this from the right stream? If not, ignore page.
+	uint32_t stream = p.get_stream();
+	if(seen_page && stream != imprint_stream)
+		return false;		//Wrong stream.
 	if(!wants_page_in())
 		throw std::runtime_error("Not ready for page");
 	std::vector<uint8_t> newbuffer;
 	uint32_t sequence = p.get_sequence();
-	uint32_t stream = p.get_stream();
 	uint32_t pkts = p.get_packet_count();
 	uint64_t granulepos = p.get_granulepos();
 	bool bos = p.get_bos();
 	bool eos = p.get_eos();
 	bool continued = p.get_continue();
 	bool incomplete = p.get_last_packet_incomplete();
-	//Is this from the right stream? If not, ignore page.
-	if(seen_page && stream != imprint_stream)
-		return false;		//Wrong stream.
 	//BOS flag can only be set on first page.
 	if(granulepos < last_granulepos && granulepos != ogg_page::granulepos_none)
 		errors_to << "Warning: Ogg demux: Non-monotonic granulepos" << std::endl;
@@ -539,6 +543,16 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 	return false;
 }
 
+std::string ogg_page::stream_debug_id() const throw(std::bad_alloc)
+{
+	return (stringfmt() << "Stream " << std::hex << std::setfill('0') << std::setw(8) << stream).str();
+}
+
+std::string ogg_page::page_debug_id() const throw(std::bad_alloc)
+{
+	return (stringfmt() << stream_debug_id() << " page " << sequence).str();
+}
+
 size_t ogg_page::get_max_complete_packet() const throw()
 {
 	if(segment_count == 255)
@@ -639,7 +653,7 @@ struct oggopus_header parse_oggopus_header(struct ogg_page& page) throw(std::run
 	auto p = page.get_packet(0);
 	if(p.second < 8 || memcmp(p.first, "OpusHead", 8))
 		throw std::runtime_error("Bad OggOpus header magic");
-	if(p.second < 19 || (p.first[18] && p.second < 21U + p.first[5]))
+	if(p.second < 19 || (p.first[18] && p.second < 21U + p.first[9]))
 		throw std::runtime_error("OggOpus header packet truncated");
 	if(!p.first[9])
 		throw std::runtime_error("Zero channels not allowed");

@@ -59,7 +59,6 @@ namespace sky
 	unsigned left_palette[] = {64, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60};
 	double slopepoints[] = {-3.45, -2.45, -1.45, 0, 1.45, 2.45, 3.45};
 	double angles[] = {1.35, 1.07, 0.88, 0.745};
-	const char thruster_pn[80] ="BCAAABACBBABCABBCAACBBBACBCCBBCABACACABCBABCBBACBABCCABACCAAABBCBABCAACBAABBACC";
 
 	double calc_slope(double x)
 	{
@@ -116,24 +115,22 @@ namespace sky
 		return (frame < 42) ? (frame / 3) : -1;
 	}
 
-	int32_t ship_sprite(physics& p)
+	int32_t ship_sprite(gstate& s)
 	{
-		if(p.expframe)
-			return ship_sprite_explode(p.expframe);
-		if(p.death == physics::death_finished)
+		if(s.p.expframe)
+			return ship_sprite_explode(s.p.expframe);
+		if(s.p.death == physics::death_finished)
 			return -1;
 		int vdir;
 		uint16_t thruster;
-		if(p.vspeed > 300) vdir = 1;
-		else if(p.vspeed < -300) vdir = -1;
+		if(s.p.vspeed > 300) vdir = 1;
+		else if(s.p.vspeed < -300) vdir = -1;
 		else vdir = 0;
-		if(p.death == physics::death_fuel)
+		if(s.p.death == physics::death_fuel)
 			thruster = 0;
-		else {
-			//Some kind of PN sequence.
-			thruster = thruster_pn[p.framecounter % (sizeof(thruster_pn) - 1)] - 'A';
-		}
-		return ship_sprite_normal(p.hpos, vdir, thruster % 3);
+		else
+			thruster = s.rng.pull() % 3;
+		return ship_sprite_normal(s.p.hpos, vdir, thruster % 3);
 	}
 
 	void draw_sprite(double h, double v, int32_t num)
@@ -904,8 +901,7 @@ namespace sky
 				}
 			}
 		}
-		draw_sprite((s.p.hpos - 32768.0) / 5888.0, (s.p.vpos - 10240.0) / 2560.0,
-			ship_sprite(s.p));
+		draw_sprite((s.p.hpos - 32768.0) / 5888.0, (s.p.vpos - 10240.0) / 2560.0, ship_sprite(s));
 	}
 
 	const char* period = "%&(ccK";

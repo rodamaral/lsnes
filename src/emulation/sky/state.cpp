@@ -43,5 +43,5 @@ namespace sky
 	}
 
 	gstate _gstate;
-	music_player mplayer(_gstate.pcmpos);
+	music_player mplayer(_gstate.music, _gstate.rng);
 }
