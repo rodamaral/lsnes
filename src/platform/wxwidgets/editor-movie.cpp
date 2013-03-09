@@ -21,6 +21,7 @@ enum
 {
 	wxID_TOGGLE = wxID_HIGHEST + 1,
 	wxID_CHANGE,
+	wxID_SWEEP,
 	wxID_APPEND_FRAME,
 	wxID_CHANGE_LINECOUNT,
 	wxID_INSERT_AFTER,
@@ -362,6 +363,7 @@ private:
 		void on_mouse2(unsigned x, unsigned y, bool polarity);
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2);
+		void do_sweep_axis(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_append_frames(uint64_t count);
 		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
@@ -394,6 +396,7 @@ private:
 		int scroll_delta;
 		unsigned press_x;
 		uint64_t press_line;
+		uint64_t rpress_line;
 		unsigned press_index;
 		bool pressed;
 		bool recursing;
@@ -718,6 +721,49 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 	});
 }
 
+void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uint64_t row2)
+{
+	frame_controls* _fcontrols = &fcontrols;
+	uint64_t line = row1;
+	uint64_t line2 = row2;
+	short value;
+	short value2;
+	bool valid = true;
+	if(line > line2)
+		std::swap(line, line2);
+	runemufn([idx, line, line2, &value, &value2, _fcontrols, &valid]() {
+		if(!movb.get_movie().readonly_mode()) {
+			valid = false;
+			return;
+		}
+		uint64_t fedit = real_first_editable(*_fcontrols, idx);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		if(line2 < fedit || line2 >= fv.size()) {
+			valid = false;
+			return;
+		}
+		controller_frame cf = fv[line];
+		value = _fcontrols->read_index(cf, idx);
+		controller_frame cf2 = fv[line2];
+		value2 = _fcontrols->read_index(cf2, idx);
+	});
+	if(!valid)
+		return;
+	runemufn([idx, line, line2, value, value2, _fcontrols]() {
+		uint64_t fedit = real_first_editable(*_fcontrols, idx);
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		for(uint64_t i = line + 1; i <= line2 - 1; i++) {
+			if(i < fedit || i >= fv.size())
+				continue;
+			controller_frame cf = fv[i];
+			auto tmp2 = static_cast<int64_t>(i - line) * (value2 - value) /
+				static_cast<int64_t>(line2 - line);
+			short tmp = value + tmp2;
+			_fcontrols->write_index(cf, idx, tmp);
+		}
+	});
+}
+
 void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 {
 	recursing = true;
@@ -960,6 +1006,9 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 	case wxID_CHANGE:
 		do_alter_axis(press_index, press_line, press_line);
 		return;
+	case wxID_SWEEP:
+		do_sweep_axis(press_index, rpress_line, press_line);
+		return;
 	case wxID_APPEND_FRAME:
 		do_append_frames(1);
 		return;
@@ -1040,8 +1089,10 @@ uint64_t wxeditor_movie::_moviepanel::first_nextframe()
 void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarity) {}
 void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
 {
-	if(polarity)
+	if(polarity) {
+		rpress_line = spos + y - 3;
 		return;
+	}
 	wxMenu menu;
 	current_popup = &menu;
 	bool enable_toggle_button = false;
@@ -1083,6 +1134,8 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 		menu.Append(wxID_TOGGLE, towxstring("Toggle " + title));
 	if(enable_change_axis)
 		menu.Append(wxID_CHANGE, towxstring("Change " + title));
+	if(enable_change_axis && rpress_line != press_line)
+		menu.Append(wxID_SWEEP, towxstring("Sweep " + title));
 	if(enable_toggle_button || enable_change_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
