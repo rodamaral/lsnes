@@ -498,6 +498,38 @@ namespace
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
 
+	function_ptr_command<> load_jukebox_readwrite(lsnes_cmd, "load-jukebox-readwrite", "Load save from jukebox in"
+		" read-write mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in read-write mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RW);
+		});
+
+	function_ptr_command<> load_jukebox_readonly(lsnes_cmd, "load-jukebox-readonly", "Load save from jukebox in "
+		"read-only mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in read-only mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RO);
+		});
+
+	function_ptr_command<> load_jukebox_preserve(lsnes_cmd, "load-jukebox-preserve", "Load save from jukebox, "
+		"preserving input", "Syntax: load-jukebox-preserve\nLoad save from jukebox, preserving input\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_PRESERVE);
+		});
+
+	function_ptr_command<> load_jukebox_movie(lsnes_cmd, "load-jukebox-movie", "Load save from jukebox as movie",
+		"Syntax: load-jukebox-movie\nLoad save from jukebox as movie\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_MOVIE);
+		});
+
 	function_ptr_command<> save_jukebox_c(lsnes_cmd, "save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -712,6 +744,10 @@ namespace
 	inverse_bind ijback(lsnes_mapper, "cycle-jukebox-backward", "Slot select‣Cycle backwards");
 	inverse_bind ijforward(lsnes_mapper, "cycle-jukebox-forward", "Slot select‣Cycle forwards");
 	inverse_bind iloadj(lsnes_mapper, "load-jukebox", "Load‣Selected slot");
+	inverse_bind iloadjrw(lsnes_mapper, "load-jukebox-readwrite", "Load‣Selected slot (readwrite mode)");
+	inverse_bind iloadjro(lsnes_mapper, "load-jukebox-readonly", "Load‣Selected slot (readonly mode)");
+	inverse_bind iloadjp(lsnes_mapper, "load-jukebox-preserve", "Load‣Selected slot (preserve input)");
+	inverse_bind iloadjm(lsnes_mapper, "load-jukebox-movie", "Load‣Selected slot (as movie)");
 	inverse_bind isavej(lsnes_mapper, "save-jukebox", "Save‣Selected slot");
 	inverse_bind iadvframe(lsnes_mapper, "+advance-frame", "Speed‣Advance frame");
 	inverse_bind iadvsubframe(lsnes_mapper, "+advance-poll", "Speed‣Advance subframe");
