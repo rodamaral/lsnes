@@ -463,6 +463,38 @@ namespace
 			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_CURRENT);
 		});
 
+	function_ptr_command<> load_jukebox_readwrite("load-jukebox-readwrite", "Load save from jukebox in read-write"
+		" mode", "Syntax: load-jukebox-readwrite\nLoad save from jukebox in read-write mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RW);
+		});
+
+	function_ptr_command<> load_jukebox_readonly("load-jukebox-readonly", "Load save from jukebox in read-only"
+		" mode", "Syntax: load-jukebox-readonly\nLoad save from jukebox in read-only mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_RO);
+		});
+
+	function_ptr_command<> load_jukebox_preserve("load-jukebox-preserve", "Load save from jukebox, preserving "
+		"input", "Syntax: load-jukebox-preserve\nLoad save from jukebox, preserving input\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_PRESERVE);
+		});
+
+	function_ptr_command<> load_jukebox_movie("load-jukebox-movie", "Load save from jukebox as movie",
+		"Syntax: load-jukebox-movie\nLoad save from jukebox as movie\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(jukebox_size == 0)
+				throw std::runtime_error("No slot selected");
+			mark_pending_load(save_jukebox_name(save_jukebox_pointer), LOAD_STATE_MOVIE);
+		});
+
 	function_ptr_command<> save_jukebox_c("save-jukebox", "Save save to jukebox",
 		"Syntax: save-jukebox\nSave save to jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -656,6 +688,10 @@ namespace
 	inverse_key ijback("cycle-jukebox-backward", "Slot select‣Cycle backwards");
 	inverse_key ijforward("cycle-jukebox-forward", "Slot select‣Cycle forwards");
 	inverse_key iloadj("load-jukebox", "Load‣Selected slot");
+	inverse_key iloadjrw("load-jukebox-readwrite", "Load‣Selected slot (readwrite mode)");
+	inverse_key iloadjro("load-jukebox-readonly", "Load‣Selected slot (readonly mode)");
+	inverse_key iloadjp("load-jukebox-preserve", "Load‣Selected slot (preserve input)");
+	inverse_key iloadjm("load-jukebox-movie", "Load‣Selected slot (as movie)");
 	inverse_key isavej("save-jukebox", "Save‣Selected slot");
 	inverse_key iadvframe("+advance-frame", "Speed‣Advance frame");
 	inverse_key iadvsubframe("+advance-poll", "Speed‣Advance subframe");
