@@ -56,13 +56,16 @@ namespace sky
 		void reset(const struct sound& snd);
 		void fetch(struct sounds& snds, int16_t* buffer, size_t samples);	//Stereo!
 		bool busy() { return (left > 0); }
+		bool hipri() { return (_hipri > 0); }
+		void hipri(bool hi) { _hipri = hi ? 1 : 0; }
 	private:
 		uint8_t access(const struct sounds& snds, uint32_t addr) { snds.access(addr); }
 		int64_t left;
 		uint32_t pointer;
 		uint32_t subsample;
 		uint32_t padA;
-		uint16_t padB;
+		uint8_t padB;
+		uint8_t _hipri;
 		uint8_t mdr;
 		uint8_t rate;
 	};

@@ -72,6 +72,7 @@ namespace sky
 		subsample = 0;
 		mdr = 128;
 		rate = 128;
+		_hipri = 0;
 	}
 
 	void active_sfx_dma::reset(const struct sound& snd)
@@ -128,9 +129,10 @@ namespace sky
 	sound_noise_maker::~sound_noise_maker() {}
 	void sound_noise_maker::operator()(int sound, bool hipri)
 	{
-		if(!hipri && dma.busy())
+		if(!hipri && dma.hipri() && dma.busy())
 			return;
 		dma.reset(snds[sound]);
+		dma.hipri(hipri);
 	}
 
 	sound_noise_maker gsfx(soundfx, _gstate.dma);

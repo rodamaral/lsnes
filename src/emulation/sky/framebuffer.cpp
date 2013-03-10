@@ -143,7 +143,7 @@ namespace sky
 	{
 		uint16_t minline = 0x8f;
 		uint16_t maxline = 0x8f;
-		uint16_t ptr = 320 * 0x8f + 0x2a + (col / 3);
+		uint16_t ptr = 320 * 0x8f + 0x2a + (col / FB_SCALE);
 		uint32_t px = origbuffer[ptr] ;
 		while(origbuffer[ptr] == px)
 			ptr -= 320;
@@ -152,7 +152,7 @@ namespace sky
 		while(origbuffer[ptr] == px)
 			ptr += 320;
 		maxline = ptr / 320 - 1;
-		render_framebuffer_vline(col + 3 * 0x2a, minline, maxline, c | 0xFF000000U);
+		render_framebuffer_vline(col + FB_SCALE * 0x2a, minline, maxline, c | 0xFF000000U);
 	}
 
 	void blink_between(unsigned x, unsigned y, unsigned w, unsigned h, uint32_t c1, uint32_t c2)

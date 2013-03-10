@@ -282,7 +282,7 @@ namespace sky
 			return;
 		}
 		if(!death && vspeed < 0)
-			noise(sound_bounce);
+			noise(sound_bounce, false);
 		vspeed = -((5 * static_cast<int16_t>(vspeed)) / 10);
 	}
 	void physics::check_landing(level& stage) throw()

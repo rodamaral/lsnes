@@ -324,7 +324,7 @@ framebuffer<X>::~framebuffer() throw()
 		delete[] mem;
 }
 
-#define DECBUF_SIZE 1024
+#define DECBUF_SIZE 4096
 
 template<bool X>
 void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscale) throw()

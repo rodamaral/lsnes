@@ -571,6 +571,8 @@ namespace sky
 			int16_t nxe = ceil(sl2 * j + c2);
 			int16_t dstart = nxs;
 			int16_t dend = nxe;
+			if(nxs >= nxe)
+				continue;
 			uint32_t cstep = 255 * 65536 / (nxe - nxs + 1);
 			uint32_t color = 0;
 			if(true) {
@@ -634,6 +636,8 @@ namespace sky
 			int16_t nxe = ceil(sl2 * j + c2);
 			int16_t dstart = nxs;
 			int16_t dend = nxe;
+			if(nxe <= nxs)
+				continue;
 			uint32_t cstep = 255 * 65536 / (nxe - nxs + 1);
 			uint32_t color = 0;
 			int16_t cstart = ccenter;
@@ -720,6 +724,8 @@ namespace sky
 			int16_t nxe = ceil(sl2 * j + c2);
 			int16_t dstart = nxs;
 			int16_t dend = nxe;
+			if(nxe <= nxs)
+				continue;
 			uint32_t cstep = 255 * 65536 / (nxe - nxs + 1);
 			uint32_t color = 0;
 			if(j < ymin2 && p1.y != p2.y) {
