@@ -11,6 +11,7 @@
 #include "library/string.hpp"
 #include "library/utf8.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <wx/wx.h>
 #include <wx/event.h>
@@ -253,18 +254,7 @@ std::string frame_controls::vector_to_string(const std::vector<uint32_t>& cp)
 std::vector<uint32_t> frame_controls::string_to_vector(const std::string& str)
 {
 	std::vector<uint32_t> cp;
-	size_t spos = 0;
-	size_t slen = str.length();
-	uint16_t state = utf8_initial_state;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8_parse_byte(ch, state);
-		if(u >= 0)
-			cp.push_back(u);
-		if(ch < 0)
-			break;
-		spos++;
-	}
+	copy_from_utf8(str.begin(), str.end(), std::back_inserter(cp));
 	return cp;
 }
 

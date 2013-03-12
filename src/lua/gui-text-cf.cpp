@@ -4,6 +4,7 @@
 #include "library/framebuffer.hpp"
 #include "library/customfont.hpp"
 #include "library/utf8.hpp"
+#include <algorithm>
 
 
 namespace
@@ -24,20 +25,6 @@ DECLARE_LUACLASS(lua_customfont, "CUSTOMFONT");
 
 namespace
 {
-	std::vector<uint32_t> decode_utf8(const std::string& t)
-	{
-		std::vector<uint32_t> x;
-		size_t ts = t.length();
-		uint16_t s = utf8_initial_state;
-		for(size_t i = 0; i <= ts; i++) {
-			int ch = (i < ts) ? (int)(unsigned char)t[i] : -1;
-			int32_t cp = utf8_parse_byte(ch, s);
-			if(cp >= 0)
-				x.push_back(cp);
-		}
-		return x;
-	}
-	
 	struct render_object_text_cf : public render_object
 	{
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
@@ -52,7 +39,8 @@ namespace
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			const custom_font& fdata = font->object()->get_font();
-			std::vector<uint32_t> _text = decode_utf8(text);
+			std::vector<uint32_t> _text;
+			copy_from_utf8(text.begin(), text.end(), std::back_inserter(_text));
 			int32_t orig_x = x;
 			int32_t drawx = x;
 			int32_t drawy = y;
@@ -74,7 +62,6 @@ namespace
 					drawx += glyph.width;
 				}
 			}
-			
 		}
 		bool kill_request(void* obj) throw()
 		{
