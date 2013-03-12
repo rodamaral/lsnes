@@ -94,6 +94,7 @@ struct core_core_params
 	port_type** port_types;
 	framebuffer_raw& (*draw_cover)();
 	std::string (*get_core_shortname)();
+	void (*pre_emulate_frame)(controller_frame& cf);
 };
 
 struct core_region
@@ -165,6 +166,7 @@ struct core_core
 	framebuffer_raw& draw_cover();
 	port_type** get_port_types() { return port_types; }
 	std::string get_core_shortname();
+	void pre_emulate_frame(controller_frame& cf);
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
@@ -194,6 +196,7 @@ private:
 	port_type** port_types;
 	framebuffer_raw& (*_draw_cover)();
 	std::string (*_get_core_shortname)();
+	void (*_pre_emulate_frame)(controller_frame& cf);
 	bool hidden;
 };
 
@@ -252,6 +255,7 @@ public:
 	void request_reset(long delay, bool hard) { core->request_reset(delay, hard); }
 	framebuffer_raw& draw_cover() { return core->draw_cover(); }
 	bool is_hidden() { return core->is_hidden(); }
+	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

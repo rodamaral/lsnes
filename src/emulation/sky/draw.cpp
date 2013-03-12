@@ -218,9 +218,9 @@ namespace sky
 				gsfx(sound_beep);
 		}
 		//Distance gauge.
-		uint32_t res = s.curlevel.apparent_length() / 88;
+		uint32_t res = s.curlevel.apparent_length() / (29 * FB_SCALE + 1);
 		size_t tmp = (s.p.lpos - 3 * 65536) / res;
-		for(unsigned i = s.distind; i < tmp && i < 88; i++)
+		for(unsigned i = s.distind; i < tmp && i < (29 * FB_SCALE + 1); i++)
 			draw_distance_column(i, dashpalette[4]);
 		s.distind = tmp;
 		s.beep_phase = timermod;

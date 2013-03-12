@@ -381,7 +381,7 @@ namespace
 		[]() -> void {
 			if(!internal_rom)
 				return;
-			int16_t reset = ecore_callbacks->set_input(0, 0, 1, do_reset_flag ? 1 : 0);
+			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			if(reset) {
 				instance->reset();
 				messages << "GB(C) reset" << std::endl;
@@ -451,6 +451,10 @@ namespace
 		},
 		//short identifier.
 		[]() -> std::string { return "gambatte"+gambatte::GB::version(); },
+		//Pre-emulate frame.
+		[](controller_frame& cf) -> void {
+			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
+		}
 	};
 
 	core_core gambatte_core(_gambatte_core);

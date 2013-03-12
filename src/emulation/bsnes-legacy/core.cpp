@@ -747,13 +747,13 @@ namespace
 			if(!internal_rom)
 				return;
 			bool was_delay_reset = false;
-			int16_t reset = ecore_callbacks->set_input(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
+			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			int16_t hreset = 0;
 			if(support_hreset)
-				hreset = ecore_callbacks->set_input(0, 0, 4, do_hreset_flag ? 1 : 0);
+				hreset = ecore_callbacks->get_input(0, 0, 4);
 			if(reset) {
-				long hi = ecore_callbacks->set_input(0, 0, 2, do_reset_flag / 10000);
-				long lo = ecore_callbacks->set_input(0, 0, 3, do_reset_flag % 10000);
+				long hi = ecore_callbacks->get_input(0, 0, 2);
+				long lo = ecore_callbacks->get_input(0, 0, 3);
 				long delay = 10000 * hi + lo;
 				if(delay > 0) {
 					was_delay_reset = true;
@@ -861,6 +861,20 @@ again2:
 #else
 			return (stringfmt() << "bsnes" << BSNES_VERSION << "a").str();
 #endif
+		},
+		//Pre-emulate frame.
+		[](controller_frame& cf) -> void
+		{
+			cf.axis3(0, 0, 1, (do_reset_flag >= 0) ? 1 : 0);
+			if(support_hreset)
+				cf.axis3(0, 0, 4, do_hreset_flag ? 1 : 0);
+			if(do_reset_flag >= 0) {
+				cf.axis3(0, 0, 2, do_reset_flag / 10000);
+				cf.axis3(0, 0, 3, do_reset_flag % 10000);
+			} else {
+				cf.axis3(0, 0, 2, 0);
+				cf.axis3(0, 0, 3, 0);
+			}
 		}
 	};
 

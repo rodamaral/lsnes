@@ -187,6 +187,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	information_dispatch::do_status_update();
 	platform::flush_command_queue();
 	controller_frame tmp = controls.commit(movb.get_movie().get_current_frame());
+	our_rom->rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }

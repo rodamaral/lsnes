@@ -285,7 +285,6 @@ std::set<std::string> core_type::srams()
 	return _srams();
 }
 
-
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
 {
@@ -354,6 +353,7 @@ core_core::core_core(core_core_params& params)
 	port_types = params.port_types;
 	_draw_cover = params.draw_cover;
 	_get_core_shortname = params.get_core_shortname;
+	_pre_emulate_frame = params.pre_emulate_frame;
 	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
@@ -499,6 +499,11 @@ void core_core::request_reset(long delay, bool hard)
 framebuffer_raw& core_core::draw_cover()
 {
 	return _draw_cover();
+}
+
+void core_core::pre_emulate_frame(controller_frame& cf)
+{
+	_pre_emulate_frame(cf);
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

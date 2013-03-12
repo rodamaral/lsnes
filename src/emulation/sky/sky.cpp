@@ -348,7 +348,8 @@ namespace sky
 			static framebuffer_raw x(cover_fbinfo);
 			return x;
 		},
-		[]() -> std::string { return "sky"; }
+		[]() -> std::string { return "sky"; },
+		[](controller_frame& cf) -> void {}
 	};
 	struct core_core sky_core(sky_core_params);
 
