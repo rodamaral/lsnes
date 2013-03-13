@@ -143,7 +143,9 @@ namespace
 			return x;
 		},
 		//Short name.
-		[]() -> std::string { return "null"; }
+		[]() -> std::string { return "null"; },
+		//Pre-emulate.
+		[](controller_frame& cf) -> void {}
 	};
 	core_core core_null(_core_null);
 
