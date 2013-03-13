@@ -197,6 +197,22 @@ void information_dispatch::do_autohold_update(unsigned port, unsigned controller
 	}
 }
 
+void information_dispatch::on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+	unsigned cyclelen)
+{
+	//Do nothing.
+}
+
+void information_dispatch::do_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+	unsigned cyclelen) throw()
+{
+	for(auto& i : dispatch()) {
+		START_EH_BLOCK
+		i->on_autofire_update(port, controller, ctrlnum, duty, cyclelen);
+		END_EH_BLOCK(i, "on_autofire_update");
+	}
+}
+
 void information_dispatch::on_autohold_reconfigure()
 {
 	//Do nothing.

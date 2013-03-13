@@ -163,6 +163,24 @@ public:
  */
 	static void do_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate) throw();
 /**
+ * Autofire on button might have been changed.
+ *
+ * The default handler does nothing.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller
+ * Parameter ctrlnum: Physical control number (0-15).
+ * Parameter duty: Duty cycle.
+ * Parameter cyclelen: Cycle length.
+ */
+	virtual void on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+		unsigned cyclelen);
+/**
+ * Call all on_autohold_update() handlers.
+ */
+	static void do_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+		unsigned cyclelen) throw();
+/**
  * Controller configuration may have been changed.
  *
  * The default handler does nothing.

@@ -1,6 +1,7 @@
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "core/moviedata.hpp"
 #include "interface/romtype.hpp"
 
 #include <cstdio>
@@ -35,10 +36,11 @@ std::pair<int, int> controller_state::legacy_pcid_to_pair(unsigned pcid) throw()
 
 controller_frame controller_state::get(uint64_t framenum) throw()
 {
-	if(_autofire.size())
-		return _input ^ _framehold ^ _autohold ^ _autofire[framenum % _autofire.size()];
-	else
-		return _input ^ _framehold ^ _autohold;
+	controller_frame tmp =  _input ^ _framehold ^ _autohold;
+	for(auto i : _autofire)
+		if(i.second.eval_at(framenum))
+			tmp.axis2(i.first, tmp.axis2(i.first) ^ 1);
+	return tmp;
 }
 
 void controller_state::analog(unsigned port, unsigned controller, unsigned control, short x) throw()
@@ -55,6 +57,37 @@ void controller_state::autohold2(unsigned port, unsigned controller, unsigned pb
 bool controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid) throw()
 {
 	return (_autohold.axis3(port, controller, pbid) != 0);
+}
+
+void controller_state::autofire2(unsigned port, unsigned controller, unsigned pbid, unsigned duty, unsigned cyclelen)
+	throw()
+{
+	unsigned idx = _input.porttypes().triple_to_index(port, controller, pbid);
+	if(duty) {
+		_autofire[idx].first_frame = movb.get_movie().get_current_frame();
+		_autofire[idx].duty = duty;
+		_autofire[idx].cyclelen = cyclelen;
+	} else
+		_autofire.erase(idx);
+}
+
+std::pair<unsigned, unsigned> controller_state::autofire2(unsigned port, unsigned controller, unsigned pbid) throw()
+{
+	unsigned idx = _input.porttypes().triple_to_index(port, controller, pbid);
+	if(!_autofire.count(idx))
+		return std::make_pair(0, 1);
+	else
+		return std::make_pair(_autofire[idx].duty, _autofire[idx].cyclelen);
+}
+
+bool controller_state::autofire_info::eval_at(uint64_t frame)
+{
+	if(frame < first_frame) {
+		uint64_t diff = first_frame - frame;
+		frame += ((diff / cyclelen) + 1) * cyclelen;
+	}
+	uint64_t diff2 = frame - first_frame;
+	return frame % cyclelen < duty;
 }
 
 void controller_state::reset_framehold() throw()
@@ -80,11 +113,6 @@ void controller_state::button2(unsigned port, unsigned controller, unsigned pbid
 bool controller_state::button2(unsigned port, unsigned controller, unsigned pbid) throw()
 {
 	return (_input.axis3(port, controller, pbid) != 0);
-}
-
-void controller_state::autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc)
-{
-	_autofire = pattern;
 }
 
 void reread_active_buttons();

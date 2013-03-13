@@ -87,6 +87,14 @@ namespace
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name << " (type)").str());
 			promote_key(*k);
+			k = new controller_key(lsnes_mapper, (stringfmt() << "+autofire-controller " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name << " (autofire)").str());
+			promote_key(*k);
+			k = new controller_key(lsnes_mapper, (stringfmt() << "autofire-controller " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name << " (autofire toggle)").str());
+			promote_key(*k);
 		} else {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
@@ -236,8 +244,7 @@ namespace
 			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 				return;
 			controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
-			information_dispatch::do_autohold_update(x.port, x.controller, x.bind.control1,
-				controls.autohold2(x.port, x.controller, x.bind.control1));
+			information_dispatch::do_autohold_update(x.port, x.controller, x.bind.control1, nstate);
 		} else if(mode == 2) {
 			//Framehold.
 			bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
@@ -282,42 +289,6 @@ namespace
 			controls.analog(z.port, z.controller, z.bind.control2, y);
 	}
 
-	function_ptr_command<const std::string&> autofire(lsnes_cmd, "autofire", "Set autofire pattern",
-		"Syntax: autofire <buttons|->...\nSet autofire pattern\n",
-		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex(".*[^ \t].*", a, "Need at least one frame for autofire");
-			std::vector<controller_frame> new_autofire_pattern;
-			init_buttonmap();
-			std::string pattern = a;
-			while(pattern != "") {
-				std::string fpattern;
-				extract_token(pattern, fpattern, " \t", true);
-				if(fpattern == "-")
-					new_autofire_pattern.push_back(controls.get_blank());
-				else {
-					controller_frame c(controls.get_blank());
-					while(fpattern != "") {
-						size_t split = fpattern.find_first_of(",");
-						std::string button = fpattern;
-						std::string rest;
-						if(split < fpattern.length()) {
-							button = fpattern.substr(0, split);
-							rest = fpattern.substr(split + 1);
-						}
-						if(!active_buttons.count(button))
-							(stringfmt() << "Invalid button '" << button << "'").throwex();
-						auto g = active_buttons[button];
-						if(g.bind.is_axis)
-							(stringfmt() << "Invalid button '" << button << "'").throwex();
-						c.axis3(g.port, g.controller, g.bind.control1, true);
-						fpattern = rest;
-					}
-					new_autofire_pattern.push_back(c);
-				}
-			}
-			controls.autofire(new_autofire_pattern);
-		});
-
 	void do_action(const std::string& name, short state, int mode)
 	{
 		if(mode < 3)
@@ -333,26 +304,68 @@ namespace
 		}
 	}
 
+	void do_autofire_action(const std::string& a, int mode)
+	{
+		regex_results r = regex("([^ ]+)(([ \t]+([0-9]+))?[ \t]+([0-9]+))?[ \t]*", a,
+			"Invalid autofire parameters");
+		std::string name = r[1];
+		std::string _duty = r[4];
+		std::string _cyclelen = r[5];
+		if(_duty == "") _duty = "1";
+		if(_cyclelen == "") _cyclelen = "2";
+		uint32_t duty = parse_value<uint32_t>(_duty);
+		uint32_t cyclelen = parse_value<uint32_t>(_cyclelen);
+		if(duty >= cyclelen)
+			throw std::runtime_error("Invalid autofire parameters");
+		if(!all_buttons.count(name)) {
+			messages << "No such button " << name << std::endl;
+			return;
+		}
+		if(!active_buttons.count(name))
+			return;
+		auto z = active_buttons[name];
+		if(z.bind.is_axis) {
+			std::cerr << name << " is not a button." << std::endl;
+			return;
+		}
+		auto afire = controls.autofire2(z.port, z.controller, z.bind.control1);
+		if(mode == 1 || (mode == -1 && afire.first == 0)) {
+			//Turn on.
+			if(lua_callback_do_button(z.port, z.controller, z.bind.control1, (stringfmt() << "autofire "
+				<< duty << " " << cyclelen).str().c_str()))
+				return;
+			controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
+			information_dispatch::do_autofire_update(z.port, z.controller, z.bind.control1, duty,
+				cyclelen);
+		} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
+			//Turn off.
+			if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
+				return;
+			controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
+			information_dispatch::do_autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
+		}
+	}
+
 	function_ptr_command<const std::string&> button_p(lsnes_cmd, "+controller", "Press a button",
-		"Syntax: +button <button>...\nPress a button\n",
+		"Syntax: +controller<button>...\nPress a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 0);
 		});
 
 	function_ptr_command<const std::string&> button_r(lsnes_cmd, "-controller", "Release a button",
-		"Syntax: -button <button>...\nRelease a button\n",
+		"Syntax: -controller<button>...\nRelease a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 0);
 		});
 
 	function_ptr_command<const std::string&> button_h(lsnes_cmd, "hold-controller", "Autohold a button",
-		"Syntax: hold-button <button>...\nAutohold a button\n",
+		"Syntax: hold-controller<button>...\nAutohold a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 1);
 		});
 
 	function_ptr_command<const std::string&> button_t(lsnes_cmd, "type-controller", "Type a button",
-		"Syntax: type-button <button>...\nType a button\n",
+		"Syntax: type-controller<button>...\nType a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 1, 2);
 		});
@@ -361,6 +374,24 @@ namespace
 		"Syntax: designate-position <button>...\nDesignate position for an axis\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_action(a, 0, 3);
+		});
+
+	function_ptr_command<const std::string&> button_ap(lsnes_cmd, "+autofire-controller", "Start autofire",
+		"Syntax: +autofire-controller<button> [[<duty> ]<cyclelen>]...\nAutofire a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_autofire_action(a, 1);
+		});
+
+	function_ptr_command<const std::string&> button_an(lsnes_cmd, "-autofire-controller", "End autofire",
+		"Syntax: -autofire-controller<button> [[<duty> ]<cyclelen>]...\nEnd Autofire on a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_autofire_action(a, 0);
+		});
+
+	function_ptr_command<const std::string&> button_at(lsnes_cmd, "autofire-controller", "Toggle autofire",
+		"Syntax: autofire-controller<button> [[<duty> ]<cyclelen>]...\nToggle Autofire on a button\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_autofire_action(a, -1);
 		});
 
 	class new_core_snoop : public information_dispatch

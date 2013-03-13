@@ -161,23 +161,42 @@ public:
  */
 	bool button2(unsigned port, unsigned controller, unsigned pbid) throw();
 /**
- * Set autofire pattern.
+ * Manipulate autofire.
  *
- * Parameter pattern: The new pattern.
- * Throws std::bad_alloc: Not enough memory.
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter duty: The new duty cycle for autofire.
+ * Parameter cyclelen: The new cycle length.
  */
-	void autofire(std::vector<controller_frame> pattern) throw(std::bad_alloc);
+	void autofire2(unsigned port, unsigned controller, unsigned pbid, unsigned duty, unsigned cyclelen) throw();
+/**
+ * Query autofire.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of autofire.
+ */
+	std::pair<unsigned, unsigned> autofire2(unsigned port, unsigned controller, unsigned pbid) throw();
 /**
  * TODO: Document.
  */
 	bool is_present(unsigned port, unsigned controller) throw();
 private:
+	struct autofire_info
+	{
+		uint64_t first_frame;
+		unsigned duty;
+		unsigned cyclelen;
+		bool eval_at(uint64_t frame);
+	};
 	const port_type_set* types;
 	controller_frame _input;
 	controller_frame _autohold;
 	controller_frame _framehold;
+	std::map<unsigned, autofire_info> _autofire;
 	controller_frame _committed;
-	std::vector<controller_frame> _autofire;
 };
 
 /**

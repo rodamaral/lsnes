@@ -29,6 +29,8 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void on_checkbox(wxCommandEvent& e);
 	void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
+	void on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+		unsigned cyclelen);
 	void on_autohold_reconfigure();
 private:
 	struct control_triple
@@ -36,8 +38,10 @@ private:
 		unsigned port;
 		unsigned controller;
 		unsigned index;
+		int afid;
 		wxStaticText* label;	//Used only by UI version.
 		wxCheckBox* check;	//Used only by UI version.
+		wxCheckBox* afcheck;	//Used only by UI version.
 		bool status;		//Used only by internal version.
 		unsigned logical;	//Logical controller. Internal only.
 		std::string name;	//Name. Internal only.
@@ -67,7 +71,7 @@ namespace
 wxeditor_autohold::~wxeditor_autohold() throw() {}
 
 wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold"), wxDefaultPosition, wxSize(-1, -1)),
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1)),
 	information_dispatch("autohold-listener")
 {
 	closing = false;
@@ -93,6 +97,19 @@ void wxeditor_autohold::on_autohold_update(unsigned port, unsigned controller, u
 	});
 }
 
+void wxeditor_autohold::on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
+	unsigned cyclelen)
+{
+	runuifun([this, port, controller, ctrlnum, duty]() { 
+		for(auto i : this->autoholds) {
+			if(i.second.port != port) continue;
+			if(i.second.controller != controller) continue;
+			if(i.second.index != ctrlnum) continue;
+			i.second.afcheck->SetValue(duty != 0);
+		}
+	});
+}
+
 void wxeditor_autohold::on_autohold_reconfigure()
 {
 	runuifun([this]() { this->update_controls(); });
@@ -104,16 +121,30 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 	if(!autoholds.count(id))
 		return;
 	auto t = autoholds[id];
-	bool newstate = t.check->IsChecked();
+	bool isaf = (t.afid == id);
+	bool newstate = isaf ? t.afcheck->IsChecked() : t.check->IsChecked();
 	bool state = false;
-	runemufn([t, newstate, &state]() {
-		state = controls.autohold2(t.port, t.controller, t.index);
-		if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "hold" : "unhold"))
-			return;
-		controls.autohold2(t.port, t.controller, t.index, newstate);
-		state = newstate;
+	runemufn([t, newstate, &state, isaf]() {
+		if(isaf) {
+			auto _state = controls.autofire2(t.port, t.controller, t.index);
+			state = (_state.first != 0);
+			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "autofire 1 2" :
+				"autofire"))
+				return;
+			controls.autofire2(t.port, t.controller, t.index, newstate ? 1 : 0, newstate ? 2 : 1);
+			state = newstate;
+		} else {
+			state = controls.autohold2(t.port, t.controller, t.index);
+			if(lua_callback_do_button(t.port, t.controller, t.index, newstate ? "hold" : "unhold"))
+				return;
+			controls.autohold2(t.port, t.controller, t.index, newstate);
+			state = newstate;
+		}
 	});
-	t.check->SetValue(newstate);
+	if(isaf)
+		t.afcheck->SetValue(state);
+	else
+		t.check->SetValue(state);
 }
 
 void wxeditor_autohold::update_controls()
@@ -121,8 +152,12 @@ void wxeditor_autohold::update_controls()
 	if(nocontrollers)
 		nocontrollers->Destroy();
 	for(auto i : autoholds) {
-		i.second.label->Destroy();
-		i.second.check->Destroy();
+		if(i.first != i.second.afid)
+			i.second.label->Destroy();
+		if(i.first != i.second.afid)
+			i.second.check->Destroy();
+		if(i.first == i.second.afid)
+			i.second.afcheck->Destroy();
 	}
 	for(auto i : panels) {
 		hsizer->Detach(i.panel);
@@ -199,7 +234,7 @@ void wxeditor_autohold::update_controls()
 			d.label = new wxStaticText(d.panel, wxID_ANY, towxstring(_controller_labels[i.logical]));
 			d.top->Add(d.label);
 #endif
-			current = d.grid = new wxFlexGridSizer(0, 2, 0, 0);
+			current = d.grid = new wxFlexGridSizer(0, 3, 0, 0);
 			d.top->Add(d.grid);
 			d.rtop->Add(d.top);
 			hsizer->Add(d.panel);
@@ -208,17 +243,25 @@ void wxeditor_autohold::update_controls()
 		}
 		wxStaticText* label = new wxStaticText(current_p, wxID_ANY, towxstring(i.name));
 		wxCheckBox* check = new wxCheckBox(current_p, next_id, wxT("Hold"));
+		wxCheckBox* afcheck = new wxCheckBox(current_p, next_id + 1, wxT("Rapid"));
 		struct control_triple t;
 		t.port = i.port;
 		t.controller = i.controller;
 		t.index = i.index;
 		t.label = label;
 		t.check = check;
+		t.afcheck = afcheck;
+		t.afid = next_id + 1;
 		check->SetValue(i.status);
 		check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,  wxCommandEventHandler(wxeditor_autohold::on_checkbox),
 			NULL, this);
+		afcheck->SetValue(i.status);
+		afcheck->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
+			wxCommandEventHandler(wxeditor_autohold::on_checkbox), NULL, this);
 		current->Add(label);
 		current->Add(check);
+		current->Add(afcheck);
+		autoholds[next_id++] = t;
 		autoholds[next_id++] = t;
 	}
 	if(_autoholds.empty()) {

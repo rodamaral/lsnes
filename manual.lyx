@@ -663,23 +663,39 @@ Cauntion: Does not work properly if outside frame advance.
 \end_layout
 
 \begin_layout Subsubsection
++autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+\end_layout
+
+\begin_layout Standard
+Start autofire.
+ If duty is not specified, defaults to 1.
+ If <cyclelen> is not specified, defaults to 2.
+\end_layout
+
+\begin_layout Subsubsection
+-autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+\end_layout
+
+\begin_layout Standard
+End autofire.
+\end_layout
+
+\begin_layout Subsubsection
+autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+\end_layout
+
+\begin_layout Standard
+Toggle autofire.
+ If autofire is turned on, specified cycle is used.
+\end_layout
+
+\begin_layout Subsubsection
 designate-position <class>-<#>-analog<n>
 \end_layout
 
 \begin_layout Standard
 Designate position for analog pair.
  <n> is only there if there are multiple axis pairs.
-\end_layout
-
-\begin_layout Subsubsection
-autofire (<pattern>|-)...
-\end_layout
-
-\begin_layout Standard
-Set autofire pattern.
- Each parameter is comma-separated list of button names to hold on that
- frame.
- After reaching the end of pattern, the pattern restarts from the beginning.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3354,6 +3370,28 @@ untype
 \end_inset
 
 : Typing input undone.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+autofire <duty> <cycle>
+\begin_inset Quotes erd
+\end_inset
+
+: Autofire with specifie duty and cycle.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+autofire
+\begin_inset Quotes erd
+\end_inset
+
+: Stop autofire.
 \end_layout
 
 \begin_layout Itemize

@@ -305,30 +305,41 @@ for the next frame. See +controller for button names.
 
 Cauntion: Does not work properly if outside frame advance.
 
-5.3.22 designate-position <class>-<#>-analog<n>
+5.3.22 +autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
+
+Start autofire. If duty is not specified, defaults to 1. If 
+<cyclelen> is not specified, defaults to 2.
+
+5.3.23 -autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
+
+End autofire.
+
+5.3.24 autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
+
+Toggle autofire. If autofire is turned on, specified cycle is 
+used.
+
+5.3.25 designate-position <class>-<#>-analog<n>
 
 Designate position for analog pair. <n> is only there if there 
 are multiple axis pairs.
 
-5.3.23 autofire (<pattern>|-)...
-
-Set autofire pattern. Each parameter is comma-separated list of 
-button names to hold on that frame. After reaching the end of 
-pattern, the pattern restarts from the beginning.
-
-5.3.24 repaint
+5.3.26 repaint
 
 Force a repaint.
 
-5.3.25 toggle-pause-on-end
+5.3.27 toggle-pause-on-end
 
 Toggle pause on end flag.
 
-5.3.26 set-pause-on-end
+5.3.28 set-pause-on-end
 
 Set pause on end flag.
 
-5.3.27 clear-pause-on-end
+5.3.29 clear-pause-on-end
 
 Clear pause on end flag.
 
@@ -1689,6 +1700,11 @@ Called on controller button press, with following parameters:
   – “type”: Typing input on button.
 
   – “untype”: Typing input undone.
+
+  – “autofire <duty> <cycle>”: Autofire with specifie duty and 
+    cycle.
+
+  – “autofire”: Stop autofire.
 
   – “analog”: Analog action on axis.
 

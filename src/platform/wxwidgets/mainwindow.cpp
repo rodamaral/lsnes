@@ -701,7 +701,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
 	menu_separator();
-	menu_entry(wxID_AUTOHOLD, wxT("Autohold..."));
+	menu_entry(wxID_AUTOHOLD, wxT("Autohold/Autofire..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
