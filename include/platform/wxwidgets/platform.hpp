@@ -52,6 +52,7 @@ void open_vumeter_window(wxWindow* parent);
 void wxeditor_sounddev_display(wxWindow* parent);
 void wxeditor_movie_display(wxWindow* parent);
 void wxeditor_movie_update();
+void wxeditor_autohold_display(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();

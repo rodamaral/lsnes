@@ -65,8 +65,7 @@ enum
 	wxID_SAVE_SCREENSHOT,
 	wxID_READONLY_MODE,
 	wxID_EDIT_AUTHORS,
-	wxID_AUTOHOLD_FIRST,
-	wxID_AUTOHOLD_LAST = wxID_AUTOHOLD_FIRST + 1023,
+	wxID_AUTOHOLD,
 	wxID_EDIT_MEMORYWATCH,
 	wxID_SAVE_MEMORYWATCH,
 	wxID_LOAD_MEMORYWATCH,
@@ -245,22 +244,6 @@ namespace
 		return ret;
 	}
 
-	bool UI_get_autohold(unsigned port, unsigned controller, unsigned idx)
-	{
-		bool ret;
-		runemufn([&ret, port, controller, idx]() { ret = controls.autohold2(port, controller, idx); });
-		return ret;
-	}
-
-	void UI_change_autohold(unsigned port, unsigned controller, unsigned idx, bool newstate)
-	{
-		runemufn([port, controller, idx, newstate]() {
-			if(lua_callback_do_button(port, controller, idx, newstate ? "hold" : "unhold"))
-				return;
-			controls.autohold2(port, controller, idx, newstate);
-		});
-	}
-
 	std::pair<int, int> UI_controller_index_by_logical(unsigned lid)
 	{
 		std::pair<int, int> ret;
@@ -276,136 +259,17 @@ namespace
 			set_speed_multiplier(target / 100);
 	}
 
-	class autohold_menu;
-
-	class controller_autohold_menu : public wxMenu
-	{
-	public:
-		controller_autohold_menu(autohold_menu& amenu, unsigned port, unsigned controller);
-		void on_select(wxCommandEvent& e);
-		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
-	private:
-		unsigned our_port;
-		unsigned our_controller;
-		std::map<unsigned, wxMenuItem*> entries;
-		std::map<unsigned, unsigned> order;
-		std::map<unsigned, bool> autoholds;
-		std::map<int, unsigned> by_id;
-	};
-
-	class autohold_menu : public wxMenu
-	{
-	public:
-		autohold_menu(wxwin_mainwindow* win);
-		void reconfigure();
-		void on_select(wxCommandEvent& e);
-		void update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
-		int allocate_wxid() { return next_wxid++; }
-	private:
-		std::map<unsigned, controller_autohold_menu*> menus;
-		std::map<unsigned, wxMenuItem*> entries;
-		int next_wxid;
-	};
-
 	class broadcast_listener : public information_dispatch
 	{
 	public:
 		broadcast_listener(wxwin_mainwindow* win);
-		void set_autohold_menu(autohold_menu* ah);
 		void on_sound_unmute(bool unmute) throw();
 		void on_mode_change(bool readonly) throw();
-		void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
-		void on_autohold_reconfigure();
 		void on_core_change();
 		void on_new_core();
 	private:
 		wxwin_mainwindow* mainw;
-		autohold_menu* ahmenu;
 	};
-
-	controller_autohold_menu::controller_autohold_menu(autohold_menu& amenu, unsigned port, unsigned controller)
-	{
-		our_port = port;
-		our_controller = controller;
-		modal_pause_holder hld;
-		const port_type& pt = controls.get_blank().get_port_type(port);
-		const port_controller& ctrl = *pt.controller_info->controllers[controller];
-		unsigned j = 0;
-		for(unsigned i = 0; i < ctrl.button_count; i++) {
-			if(ctrl.buttons[i]->shadow)
-				continue;
-			if(ctrl.buttons[i]->type != port_controller_button::TYPE_BUTTON)
-				continue;
-			int id = amenu.allocate_wxid();
-			by_id[id] = i;
-			order[i] = j;
-			autoholds[j] = controls.autohold2(our_port, our_controller, i);
-			entries[j] = AppendCheckItem(id, towxstring(ctrl.buttons[i]->name));
-			entries[j]->Check(autoholds[i]);
-			j++;
-		}
-	}
-
-	void controller_autohold_menu::on_select(wxCommandEvent& e)
-	{
-		int x = e.GetId();
-		if(!by_id.count(x))
-			return;
-		modal_pause_holder hld;
-		bool newstate = entries[order[by_id[x]]]->IsChecked();
-		UI_change_autohold(our_port, our_controller, by_id[x], newstate);
-	}
-
-	void controller_autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
-	{
-		modal_pause_holder hld;
-		if(port != our_port || controller != our_controller || !order.count(ctrlnum))
-			return;
-		entries[order[ctrlnum]]->Check(newstate);
-	}
-
-	autohold_menu::autohold_menu(wxwin_mainwindow* win)
-	{
-		win->Connect(wxID_AUTOHOLD_FIRST, wxID_AUTOHOLD_LAST, wxEVT_COMMAND_MENU_SELECTED,
-			wxCommandEventHandler(autohold_menu::on_select), NULL, this);
-		reconfigure();
-	}
-
-	void autohold_menu::reconfigure()
-	{
-		modal_pause_holder hld;
-		next_wxid = wxID_AUTOHOLD_FIRST;
-		for(unsigned i = 0; i < menus.size(); i++)
-			Destroy(entries[i]);
-		std::map<std::string, unsigned> classnum;
-		for(unsigned i = 0;; i++) {
-			auto pcid = controls.lcid_to_pcid(i);
-			if(pcid.first < 0)
-				break;
-			const port_type& pt = controls.get_blank().get_port_type(pcid.first);
-			const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
-			if(!classnum.count(ctrl.cclass))
-				classnum[ctrl.cclass] = 1;
-			else
-				classnum[ctrl.cclass]++;
-			std::string name = (stringfmt() << ctrl.type << " #" << classnum[ctrl.cclass]).str();
-			menus[i] = new controller_autohold_menu(*this, pcid.first, pcid.second);
-			entries[i] = AppendSubMenu(menus[i], towxstring(name));
-			
-		}
-	}
-
-	void autohold_menu::on_select(wxCommandEvent& e)
-	{
-		for(unsigned i = 0; i < menus.size(); i++)
-			menus[i]->on_select(e);
-	}
-
-	void autohold_menu::update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
-	{
-		for(unsigned i = 0; i < menus.size(); i++)
-			menus[i]->update(port, controller, ctrlnum, newstate);
-	}
 
 	broadcast_listener::broadcast_listener(wxwin_mainwindow* win)
 		: information_dispatch("wxwidgets-broadcast-listener")
@@ -418,11 +282,6 @@ namespace
 		signal_core_change();
 	}
 
-	void broadcast_listener::set_autohold_menu(autohold_menu* ah)
-	{
-		ahmenu = ah;
-	}
-
 	void broadcast_listener::on_sound_unmute(bool unmute) throw()
 	{
 		runuifun([this, unmute]() { this->mainw->menu_check(wxID_AUDIO_ENABLED, unmute); });
@@ -431,18 +290,6 @@ namespace
 	void broadcast_listener::on_mode_change(bool readonly) throw()
 	{
 		runuifun([this, readonly]() { this->mainw->menu_check(wxID_READONLY_MODE, readonly); });
-	}
-
-	void broadcast_listener::on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum,
-		bool newstate)
-	{
-		runuifun([this, port, controller, ctrlnum, newstate]() { this->ahmenu->update(port, controller,
-			ctrlnum, newstate); });
-	}
-
-	void broadcast_listener::on_autohold_reconfigure()
-	{
-		runuifun([this]() { this->ahmenu->reconfigure(); });
 	}
 
 	void update_preferences()
@@ -829,10 +676,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
 
-	//Autohold menu: (ACOS)
-	menu_special(wxT("Autohold"), reinterpret_cast<autohold_menu*>(ahmenu = new autohold_menu(this)));
-	blistener->set_autohold_menu(reinterpret_cast<autohold_menu*>(ahmenu));
-
 	menu_start(wxT("Speed"));
 	menu_entry(wxID_SPEED_5, wxT("1/20x"));
 	menu_entry(wxID_SPEED_10, wxT("1/10x"));
@@ -857,6 +700,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_RUN_LUA, wxT("Run Lua script..."));
 	menu_separator();
 	menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
+	menu_separator();
+	menu_entry(wxID_AUTOHOLD, wxT("Autohold..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
@@ -1061,6 +906,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			update_movie_state();
 			graphics_driver_notify_status();
 		});
+		return;
+	case wxID_AUTOHOLD:
+		wxeditor_autohold_display(this);
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
