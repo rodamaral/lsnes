@@ -199,7 +199,8 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 					c++;
 				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, pcb.name, idx));
 				last_multibyte = false;
-			} else if(pcb.type == port_controller_button::TYPE_AXIS) {
+			} else if(pcb.type == port_controller_button::TYPE_AXIS ||
+				pcb.type == port_controller_button::TYPE_RAXIS) {
 				if(j)
 					c++;
 				controlinfo.push_back(control_info::axisinfo(c, pcb.name, idx));
