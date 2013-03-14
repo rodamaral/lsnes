@@ -57,7 +57,6 @@ private:
 	};
 	std::map<int, control_triple> autoholds;
 	std::vector<controller_double> panels;
-	wxStaticText* nocontrollers;
 	void update_controls();
 	bool closing;
 	wxBoxSizer* hsizer;
@@ -76,7 +75,6 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 {
 	closing = false;
 	Centre();
-	nocontrollers = NULL;
 	hsizer = new wxBoxSizer(wxHORIZONTAL);
 	SetSizer(hsizer);
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxeditor_autohold::on_wclose));
@@ -112,7 +110,18 @@ void wxeditor_autohold::on_autofire_update(unsigned port, unsigned controller, u
 
 void wxeditor_autohold::on_autohold_reconfigure()
 {
-	runuifun([this]() { this->update_controls(); });
+	runuifun([this]() {
+		try {
+			this->update_controls();
+		} catch(std::runtime_error& e) {
+			//Close the window.
+			bool wasc = closing;
+			closing = true;
+			autohold_open = NULL;
+			if(!wasc)
+				Destroy();
+		}
+	});
 }
 
 void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
@@ -149,8 +158,6 @@ void wxeditor_autohold::on_checkbox(wxCommandEvent& e)
 
 void wxeditor_autohold::update_controls()
 {
-	if(nocontrollers)
-		nocontrollers->Destroy();
 	for(auto i : autoholds) {
 		if(i.first != i.second.afid)
 			i.second.label->Destroy();
@@ -163,7 +170,6 @@ void wxeditor_autohold::update_controls()
 		hsizer->Detach(i.panel);
 		i.panel->Destroy();
 	}
-	nocontrollers = NULL;
 	autoholds.clear();
 	panels.clear();
 	std::vector<control_triple> _autoholds;
@@ -265,7 +271,7 @@ void wxeditor_autohold::update_controls()
 		autoholds[next_id++] = t;
 	}
 	if(_autoholds.empty()) {
-		hsizer->Add(nocontrollers = new wxStaticText(this, wxID_ANY, wxT("No controllers")));
+		throw std::runtime_error("No controlers");
 	}
 	Fit();
 }
@@ -285,7 +291,13 @@ void wxeditor_autohold_display(wxWindow* parent)
 {
 	if(autohold_open)
 		return;
-	wxeditor_autohold* v = new wxeditor_autohold(parent);
+	wxeditor_autohold* v;
+	try {
+		v = new wxeditor_autohold(parent);
+	} catch(std::runtime_error& e) {
+		wxMessageBox(_T("No controllers present"), _T("Error"), wxICON_EXCLAMATION | wxOK, parent);
+		return;
+	}
 	v->Show();
 	autohold_open = v;
 }
