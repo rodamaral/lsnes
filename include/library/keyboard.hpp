@@ -147,12 +147,21 @@ public:
  * Set exclusive listener for all keys at once.
  */
 	void set_exclusive(keyboard_event_listener* listener) throw();
+/**
+ * Set current key.
+ */
+	void set_current_key(keyboard_key* key) throw();
+/**
+ * Get current key.
+ */
+	keyboard_key* get_current_key() throw();
 private:
 	keyboard(const keyboard&);
 	keyboard& operator=(const keyboard&);
 	std::map<std::string, keyboard_modifier*> modifiers;
 	std::map<std::string, keyboard_key*> keys;
 	mutex_class mutex;
+	keyboard_key* current_key;
 };
 
 /**

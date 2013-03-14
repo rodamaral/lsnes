@@ -82,6 +82,18 @@ void keyboard::set_exclusive(keyboard_event_listener* listener) throw()
 		i.second->set_exclusive(listener);
 }
 
+void keyboard::set_current_key(keyboard_key* key) throw()
+{
+	umutex_class u(mutex);
+	current_key = key;
+}
+
+keyboard_key* keyboard::get_current_key() throw()
+{
+	umutex_class u(mutex);
+	return current_key;
+}
+
 keyboard::keyboard() throw(std::bad_alloc)
 	: modifier_proxy(*this), key_proxy(*this)
 {
@@ -368,11 +380,13 @@ void keyboard_key::set_exclusive(keyboard_event_listener* listener) throw()
 
 void keyboard_key::call_listeners(keyboard_modifier_set& mods, keyboard_event& event)
 {
+	kbd.set_current_key(this);
 	bool digital = (event.get_change_mask() & 0xAAAAAAAAUL) != 0;
 	mutex.lock();
 	if(exclusive_listener) {
 		mutex.unlock();
 		exclusive_listener->on_key_event(mods, *this, event);
+		kbd.set_current_key(NULL);
 		return;
 	}
 	keyboard_event_listener* itr = NULL;
@@ -396,6 +410,7 @@ void keyboard_key::call_listeners(keyboard_modifier_set& mods, keyboard_event& e
 		mutex.lock();
 	}
 	mutex.unlock();
+	kbd.set_current_key(NULL);
 }
 
 keyboard_key_axis* keyboard_key::cast_axis() throw()

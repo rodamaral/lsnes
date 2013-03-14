@@ -367,6 +367,19 @@ keyboard_mapper::triplet::triplet(keyboard& k, const key_specifier& spec)
 	index = false;
 }
 
+std::list<controller_key*> keyboard_mapper::get_controllerkeys_kbdkey(keyboard_key* kbdkey)
+	throw(std::bad_alloc)
+{
+	umutex_class u(mutex);
+	std::list<controller_key*> r;
+	for(auto i : ckeys) {
+		auto k = i.second->get();
+		if(k.first == kbdkey)
+			r.push_back(i.second);
+	}
+	return r;
+}
+
 inverse_bind::inverse_bind(keyboard_mapper& _mapper, const std::string& _command, const std::string& _name)
 	throw(std::bad_alloc)
 	: mapper(_mapper), cmd(_command), oname(_name)

@@ -226,6 +226,30 @@ namespace
 		}
 	}
 
+	//Check that button is active.
+	bool check_button_active(const std::string& name)
+	{
+		if(active_buttons.count(name))
+			return true;
+		//This isn't active. check if there are any other active buttons on the thingy and don't complain
+		//if there are.
+		bool complain = true;
+		auto ckey = lsnes_kbd.get_current_key();
+		if(ckey) {
+			auto cb = lsnes_mapper.get_controllerkeys_kbdkey(ckey);
+			for(auto i : cb) {
+				regex_results r = regex("[^ \t]+[ \t]+([^ \t]+)([ \t]+.*)?", i->get_command());
+				if(!r)
+					continue;
+				if(active_buttons.count(r[1]))
+					complain = false;
+			}
+		}
+		if(complain)
+			messages << "No such button " << name << std::endl;
+		return false;
+	}
+
 	//Do button action.
 	void do_button_action(const std::string& name, short newstate, int mode)
 	{
@@ -233,7 +257,7 @@ namespace
 			messages << "No such button " << name << std::endl;
 			return;
 		}
-		if(!active_buttons.count(name))
+		if(!check_button_active(name))
 			return;
 		auto x = active_buttons[name];
 		if(x.bind.is_axis)
@@ -269,7 +293,7 @@ namespace
 			messages << "No such action " << name << std::endl;
 			return;
 		}
-		if(!active_buttons.count(name))
+		if(!check_button_active(name))
 			return;
 		auto z = active_buttons[name];
 		if(!z.bind.is_axis) {
@@ -321,7 +345,7 @@ namespace
 			messages << "No such button " << name << std::endl;
 			return;
 		}
-		if(!active_buttons.count(name))
+		if(!check_button_active(name))
 			return;
 		auto z = active_buttons[name];
 		if(z.bind.is_axis) {

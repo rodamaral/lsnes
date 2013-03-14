@@ -146,6 +146,10 @@ public:
  */
 	controller_key* get_controllerkey(const std::string& command) throw(std::bad_alloc);
 /**
+ * Get list of controller keys for specific keyboard key.
+ */
+	std::list<controller_key*> get_controllerkeys_kbdkey(keyboard_key* kbdkey) throw(std::bad_alloc);
+/**
  * Proxy for inverse bind registrations.
  */
 	struct _inverse_proxy
