@@ -88,53 +88,33 @@ namespace
 	core_region* null_regions[] = {&null_region, NULL};
 	core_romimage_info* null_images[] = {NULL};
 	core_core_params _core_null = {
-		//Identifier
-		[]() -> std::string { return "null core"; },
-		//Set region.
-		[](core_region& reg) -> bool { return true; },
-		//Get video rate.
-		[]() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
-		//Get audio rate.
-		[]() -> std::pair<unsigned, unsigned> { return std::make_pair(48000, 1); },
-		//Get SNES CPU/APU rate.
-		NULL,
-		//Store SRAM
-		[]() -> std::map<std::string, std::vector<char>> {
+		.core_identifier = []() -> std::string { return "null core"; },
+		.set_region = [](core_region& reg) -> bool { return true; },
+		.video_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
+		.audio_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(48000, 1); },
+		.snes_rate = NULL,
+		.save_sram = []() -> std::map<std::string, std::vector<char>> {
 			std::map<std::string, std::vector<char>> x;
 			return x;
 		},
-		//Load SRAM.
-		[](std::map<std::string, std::vector<char>>& sram) -> void {},
-		//Serialize state.
-		[](std::vector<char>& out) -> void { out.clear(); },
-		//Unserialize state.
-		[](const char* in, size_t insize) -> void {},
-		//Get region.
-		[]() -> core_region& { return null_region; },
-		//Power the core.
-		[]() -> void {},
-		//Unload the cartridge.
-		[]() -> void {},
-		//Get scale factors.
-		[](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> { return std::make_pair(1, 1); },
-		//Install handler.
-		[]() -> void {},
-		//Uninstall handler.
-		[]() -> void {},
-		//Emulate frame.
-		[]() -> void {},
-		//Run to save.
-		[]() -> void {},
-		//Get poll flag.
-		[]() -> bool { return false; },
-		//Set poll flag.
-		[](bool pflag) -> void {},
-		//Request reset.
-		[](long delay, bool hard) -> void {},
-		//Port types.
-		port_types,
-		//Cover page.
-		[]() -> framebuffer_raw& {
+		.load_sram = [](std::map<std::string, std::vector<char>>& sram) -> void {},
+		.serialize = [](std::vector<char>& out) -> void { out.clear(); },
+		.unserialize = [](const char* in, size_t insize) -> void {},
+		.get_region = []() -> core_region& { return null_region; },
+		.power = []() -> void {},
+		.unload_cartridge = []() -> void {},
+		.get_scale_factors = [](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+			return std::make_pair(1, 1);
+		},
+		.install_handler = []() -> void {},
+		.uninstall_handler = []() -> void {},
+		.emulate = []() -> void {},
+		.runtosave = []() -> void {},
+		.get_pflag = []() -> bool { return false; },
+		.set_pflag = [](bool pflag) -> void {},
+		.request_reset = [](long delay, bool hard) -> void {},
+		.port_types = port_types,
+		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(null_fbinfo);
 			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
 				null_cover_fbmem[i] = 0x0000;
@@ -142,10 +122,8 @@ namespace
 			cover_render_string(null_cover_fbmem, 204, 220, message, 0xFFFF, 0x0000, 512, 448, 1024, 2);
 			return x;
 		},
-		//Short name.
-		[]() -> std::string { return "null"; },
-		//Pre-emulate.
-		[](controller_frame& cf) -> void {}
+		.get_core_shortname = []() -> std::string { return "null"; },
+		.pre_emulate_frame = [](controller_frame& cf) -> void {}
 	};
 	core_core core_null(_core_null);
 
