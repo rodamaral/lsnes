@@ -81,7 +81,6 @@ void wxeditor_conflict::add_option(wxWindow* win, wxSizer* sizer, const std::str
 	std::vector<wxString> v;
 	size_t dfltidx = 0;
 	v.push_back(wxT("(unspecified)"));
-	//TODO: Load selection.
 	regex_results r;
 	if(r = regex("ext:(.*)", key)) {
 		for(auto i : core_type::get_core_types()) {

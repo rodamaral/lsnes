@@ -180,16 +180,20 @@ struct port_controller_button
 		TYPE_NULL,	//Nothing (except takes the slot).
 		TYPE_BUTTON,	//Button.
 		TYPE_AXIS,	//Axis.
-		TYPE_RAXIS	//Relative Axis (mouse).
+		TYPE_RAXIS,	//Relative Axis (mouse).
+		TYPE_TAXIS	//Throttle Axis (does not pair).
 	};
 	enum _type type;
 	char symbol;
 	const char* name;
 	bool shadow;
+	int16_t rmin;		//Range min.
+	int16_t rmax;		//Range max.
+	bool centers;
 /**
  * Is analog?
  */
-	bool is_analog() const throw() { return type == (TYPE_AXIS) || (type == TYPE_RAXIS); }
+	bool is_analog() const throw() { return type == (TYPE_AXIS) || (type == TYPE_RAXIS) || (type == TYPE_TAXIS); }
 };
 
 /**

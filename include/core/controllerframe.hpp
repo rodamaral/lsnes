@@ -180,6 +180,28 @@ public:
  */
 	std::pair<unsigned, unsigned> autofire2(unsigned port, unsigned controller, unsigned pbid) throw();
 /**
+ * Manipulate TASinput.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter pbid: The physical button ID to manipulate.
+ * Parameter state: The new state.
+ */
+	void tasinput(unsigned port, unsigned controller, unsigned pbid, int16_t state) throw();
+/**
+ * Query tasinput.
+ *
+ * Parameter port: The port.
+ * Parameter controller: The controller.
+ * Parameter pbid: The physical button ID to query.
+ * Returns: The state of tasinput.
+ */
+	int16_t tasinput(unsigned port, unsigned controller, unsigned pbid) throw();
+/**
+ * Enage/Disenage tasinput.
+ */
+	void tasinput_enable(bool enabled);
+/**
  * TODO: Document.
  */
 	bool is_present(unsigned port, unsigned controller) throw();
@@ -191,11 +213,19 @@ private:
 		unsigned cyclelen;
 		bool eval_at(uint64_t frame);
 	};
+	struct tasinput_info
+	{
+		int mode;
+		int16_t state;
+	};
+	void reread_tasinput_mode(const port_type_set& ptype);
 	const port_type_set* types;
 	controller_frame _input;
 	controller_frame _autohold;
 	controller_frame _framehold;
 	std::map<unsigned, autofire_info> _autofire;
+	std::map<unsigned, tasinput_info> _tasinput;
+	bool tasinput_enaged;
 	controller_frame _committed;
 };
 

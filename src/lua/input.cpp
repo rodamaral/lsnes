@@ -382,6 +382,7 @@ namespace
 				case port_controller_button::TYPE_BUTTON: L.pushstring("button"); break;
 				case port_controller_button::TYPE_AXIS: L.pushstring("axis"); break;
 				case port_controller_button::TYPE_RAXIS: L.pushstring("raxis"); break;
+				case port_controller_button::TYPE_TAXIS: L.pushstring("axis"); break;
 			};
 			L.rawset(-3);
 			if(cs->buttons[i]->symbol) {

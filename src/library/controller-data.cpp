@@ -519,11 +519,21 @@ controller_frame::controller_frame() throw()
 
 unsigned port_controller::analog_actions() const
 {
-	unsigned r = 0;
-	for(unsigned i = 0; i < button_count; i++)
-		if(buttons[i]->is_analog() && !buttons[i]->shadow)
+	unsigned r = 0, s = 0;
+	for(unsigned i = 0; i < button_count; i++) {
+		if(buttons[i]->shadow)
+			continue;
+		switch(buttons[i]->type) {
+		case port_controller_button::TYPE_AXIS:
+		case port_controller_button::TYPE_RAXIS:
 			r++;
-	return (r + 1)/ 2;
+			break;
+		case port_controller_button::TYPE_TAXIS:
+			s++;
+			break;
+		};
+	}
+	return (r + 1)/ 2 + s;
 }
 
 std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
@@ -531,13 +541,36 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 	unsigned x1 = std::numeric_limits<unsigned>::max();
 	unsigned x2 = std::numeric_limits<unsigned>::max();
 	unsigned r = 0;
-	for(unsigned i = 0; i < button_count; i++)
-		if(buttons[i]->is_analog() && !buttons[i]->shadow) {
-			if(r == 2 * k)
-				x1 = i;
-			if(r == 2 * k + 1)
+	bool second = false;
+	bool selecting = false;
+	for(unsigned i = 0; i < button_count; i++) {
+		if(buttons[i]->shadow)
+			continue;
+		switch(buttons[i]->type) {
+		case port_controller_button::TYPE_AXIS:
+		case port_controller_button::TYPE_RAXIS:
+			if(selecting) {
 				x2 = i;
+				goto out;
+			}
+			if(r == k) {
+				//This and following.
+				x1 = i;
+				selecting = true;
+			}
+			if(!second)
+				r++;
+			second = !second;
+			break;
+		case port_controller_button::TYPE_TAXIS:
+			if(selecting)
+				break;
+			if(r == k)
+				x1 = i;
 			r++;
-		}
+			break;
+		};
+	}
+out:
 	return std::make_pair(x1, x2);
 }

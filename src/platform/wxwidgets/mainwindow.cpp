@@ -107,7 +107,8 @@ enum
 	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
 	wxID_CONFLICTRESOLUTION,
 	wxID_VUDISPLAY,
-	wxID_MOVIE_EDIT
+	wxID_MOVIE_EDIT,
+	wxID_TASINPUT
 };
 
 
@@ -702,6 +703,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_RESET_LUA, wxT("Reset Lua VM"));
 	menu_separator();
 	menu_entry(wxID_AUTOHOLD, wxT("Autohold/Autofire..."));
+	menu_entry(wxID_TASINPUT, wxT("TAS input plugin..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
@@ -972,6 +974,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_MEMORY_SEARCH:
 		wxwindow_memorysearch_display();
+		return;
+	case wxID_TASINPUT:
+		wxeditor_tasinput_display(this);
 		return;
 	case wxID_ABOUT: {
 		std::ostringstream str;
