@@ -133,7 +133,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	class wxdialog_pressbutton : public wxDialog
 	{
 	public:
-		wxdialog_pressbutton(wxWindow* parent, const std::string& title);
+		wxdialog_pressbutton(wxWindow* parent, const std::string& title, bool axis);
 		std::string getkey() { return key; }
 		void on_mouse(wxMouseEvent& e);
 		void on_keyboard_up(wxKeyEvent& e);
@@ -145,6 +145,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		std::string key;
 		int mouseflag;
 		int lastkbdkey;
+		bool axis;
 	};
 
 	void report_grab_key(const std::string& name)
@@ -155,9 +156,10 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 	int vert_padding = 40;
 	int horiz_padding = 60;
 
-	wxdialog_pressbutton::wxdialog_pressbutton(wxWindow* parent, const std::string& title)
+	wxdialog_pressbutton::wxdialog_pressbutton(wxWindow* parent, const std::string& title, bool _axis)
 		: wxDialog(parent, wxID_ANY, towxstring(title))
 	{
+		axis = _axis;
 		wxStaticText* t;
 		wxBoxSizer* s2 = new wxBoxSizer(wxVERTICAL);
 		wxPanel* p = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, -1), wxWANTS_CHARS);
@@ -240,10 +242,27 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 		}
 	}
 
-	void wxdialog_pressbutton::dismiss_with(const std::string& k)
+	void wxdialog_pressbutton::dismiss_with(const std::string& _k)
 	{
+		std::string k = _k;
 		if(k == "")
 			return;
+		if(axis) {
+			//Check that k is a valid axis.
+			try {
+				//Remove the +/- postfix if any.
+				if(k.length() > 1) {
+					char lch = k[k.length() - 1];
+					if(lch == '+' || lch == '-')
+						k = k.substr(0, k.length() - 1);
+				}
+				keyboard_key& key = lsnes_kbd.lookup_key(k);
+				if(key.get_type() != KBD_KEYTYPE_AXIS)
+					return;
+			} catch(...) {
+				return;
+			}
+		}
 		if(key == "") {
 			keygrab_active = false;
 			key = k;
@@ -452,7 +471,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 
 	void wxdialog_keyentry::on_pressbutton(wxCommandEvent& e)
 	{
-		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle);
+		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle, false);
 		p->ShowModal();
 		std::string key = p->getkey();
 		p->Destroy();
@@ -1519,8 +1538,9 @@ void wxeditor_esettings_controllers::on_setkey(wxCommandEvent& e)
 			refresh();
 			return;
 		}
-		std::string wtitle = "Specify key for " + name;
-		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle);
+		bool axis = ik->is_axis();
+		std::string wtitle = (axis ? "Specify axis for " : "Specify key for ") + name;
+		wxdialog_pressbutton* p = new wxdialog_pressbutton(this, wtitle, axis);
 		p->ShowModal();
 		std::string key = p->getkey();
 		p->Destroy();

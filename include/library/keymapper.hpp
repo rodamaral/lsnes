@@ -11,7 +11,7 @@
 class inverse_bind;
 class controller_key;
 
-std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name)
+std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name, bool axis)
 	throw(std::bad_alloc, std::runtime_error);
 
 /**
@@ -320,9 +320,10 @@ public:
  * Parameter mapper: The keyboard mapper to follow.
  * Parameter command: Command to run.
  * Parameter name: Name of controller key.
+ * Parameter axis: If true, create a axis-type key.
  */
-	controller_key(keyboard_mapper& mapper, const std::string& command, const std::string& name)
-		throw(std::bad_alloc);
+	controller_key(keyboard_mapper& mapper, const std::string& command, const std::string& name,
+		bool axis = false) throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -346,11 +347,15 @@ public:
 /**
  * Get the command.
  */
-	const std::string& get_command() const throw();
+	const std::string& get_command() const throw() { return cmd; }
 /**
  * Get the name.
  */
-	const std::string& get_name() const throw();
+	const std::string& get_name() const throw() { return oname; }
+/**
+ * Is axis-type?
+ */
+	bool is_axis() const throw() { return axis; }
 private:
 	void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event);
 	keyboard_mapper& mapper;
@@ -358,6 +363,7 @@ private:
 	std::string oname;
 	keyboard_key* key;
 	unsigned subkey;
+	bool axis;
 	mutex_class mutex;
 };
 

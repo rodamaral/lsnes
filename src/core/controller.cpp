@@ -21,11 +21,14 @@ namespace
 		std::string cclass;
 		unsigned number;
 		std::string name;
-		bool is_axis;
+		int mode;	//0 => Button, 1 => Axis pair, 2 => Single axis.
 		bool xrel;
 		bool yrel;
 		unsigned control1;
 		unsigned control2;	//Axis only, UINT_MAX if not valid.
+		int16_t rmin;
+		int16_t rmax;
+		bool centered;
 	};
 
 	struct active_bind
@@ -74,7 +77,7 @@ namespace
 	void add_button(const std::string& name, const controller_bind& binding)
 	{
 		controller_key* k;
-		if(!binding.is_axis) {
+		if(binding.mode == 0) {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name).str());
@@ -95,10 +98,15 @@ namespace
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name << " (autofire toggle)").str());
 			promote_key(*k);
-		} else {
+		} else if(binding.mode == 1) {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
 				<< binding.name).str());
+			promote_key(*k);
+		} else if(binding.mode == 2) {
+			k = new controller_key(lsnes_mapper, (stringfmt() << "controller-analog " << name).str(),
+				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				<< binding.name << " (axis)").str(), true);
 			promote_key(*k);
 		}
 	}
@@ -120,7 +128,30 @@ namespace
 			b.cclass = controller.cclass;
 			b.number = number;
 			b.name = controller.buttons[i]->name;
-			b.is_axis = false;
+			b.mode = 0;
+			b.xrel = b.yrel = false;
+			b.control1 = i;
+			b.control2 = std::numeric_limits<unsigned>::max();
+			if(!all_buttons.count(name)) {
+				all_buttons[name] = b;
+				add_button(name, b);
+			}
+		}
+		for(unsigned i = 0; i < controller.button_count; i++) {
+			if(controller.buttons[i]->shadow)
+				continue;
+			if(!controller.buttons[i]->is_analog())
+				continue;
+			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
+				<< controller.buttons[i]->name).str();
+			controller_bind b;
+			b.cclass = controller.cclass;
+			b.number = number;
+			b.name = controller.buttons[i]->name;
+			b.rmin = controller.buttons[i]->rmin;
+			b.rmax = controller.buttons[i]->rmax;
+			b.centered = controller.buttons[i]->centers;
+			b.mode = 2;
 			b.xrel = b.yrel = false;
 			b.control1 = i;
 			b.control2 = std::numeric_limits<unsigned>::max();
@@ -142,7 +173,7 @@ namespace
 			analog_num++;
 			b.cclass = controller.cclass;
 			b.number = number;
-			b.is_axis = true;
+			b.mode = 1;
 			b.xrel = (g.first < controller.button_count) &&
 				(controller.buttons[g.first]->type == raxis);
 			b.yrel = (g.second < controller.button_count) &&
@@ -260,7 +291,7 @@ namespace
 		if(!check_button_active(name))
 			return;
 		auto x = active_buttons[name];
-		if(x.bind.is_axis)
+		if(x.bind.mode != 0)
 			return;
 		if(mode == 1) {
 			//Autohold.
@@ -296,7 +327,7 @@ namespace
 		if(!check_button_active(name))
 			return;
 		auto z = active_buttons[name];
-		if(!z.bind.is_axis) {
+		if(!z.bind.mode != 1) {
 			std::cerr << name << " is not a axis." << std::endl;
 			return;
 		}
@@ -328,9 +359,34 @@ namespace
 		}
 	}
 
+	void do_analog_action(const std::string& a)
+	{
+		int _value;
+		regex_results r = regex("([^ \t]+)[ \t]+(-?[0-9]+)[ \t]*", a, "Invalid analog action");
+		std::string name = r[1];
+		int value = parse_value<int>(r[2]);
+		if(!all_buttons.count(name)) {
+			messages << "No such button " << name << std::endl;
+			return;
+		}
+		if(!check_button_active(name))
+			return;
+		auto x = active_buttons[name];
+		if(x.bind.mode != 2)
+			return;
+		if(lua_callback_do_button(x.port, x.controller, x.bind.control1, "analog"))
+			return;
+		int rmin = x.bind.rmin;
+		int rmax = x.bind.rmax;
+		bool centered = x.bind.centered;
+		int64_t pvalue = value + 32768;
+		_value = pvalue * (rmax - rmin) / 65535 + rmin;
+		controls.analog(x.port, x.controller, x.bind.control1, _value);
+	}
+
 	void do_autofire_action(const std::string& a, int mode)
 	{
-		regex_results r = regex("([^ ]+)(([ \t]+([0-9]+))?[ \t]+([0-9]+))?[ \t]*", a,
+		regex_results r = regex("([^ \t]+)(([ \t]+([0-9]+))?[ \t]+([0-9]+))?[ \t]*", a,
 			"Invalid autofire parameters");
 		std::string name = r[1];
 		std::string _duty = r[4];
@@ -348,7 +404,7 @@ namespace
 		if(!check_button_active(name))
 			return;
 		auto z = active_buttons[name];
-		if(z.bind.is_axis) {
+		if(z.bind.mode != 0) {
 			std::cerr << name << " is not a button." << std::endl;
 			return;
 		}
@@ -416,6 +472,12 @@ namespace
 		"Syntax: autofire-controller<button> [[<duty> ]<cyclelen>]...\nToggle Autofire on a button\n",
 		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
 			do_autofire_action(a, -1);
+		});
+
+	function_ptr_command<const std::string&> button_a(lsnes_cmd, "controller-analog", "Analog action",
+		"Syntax: controller-analog <button> <axis>\nAnalog action\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			do_analog_action(a);
 		});
 
 	class new_core_snoop : public information_dispatch

@@ -361,7 +361,7 @@ keyboard_mapper::triplet::triplet(keyboard& k, const key_specifier& spec)
 	mask = keyboard_modifier_set::construct(k, spec.mask);
 	if(!mod.valid(mask))
 		throw std::runtime_error("Bad modifiers");
-	auto g = keymapper_lookup_subkey(k, spec.key);
+	auto g = keymapper_lookup_subkey(k, spec.key, false);
 	key = g.first;
 	subkey = g.second;
 	index = false;
@@ -428,14 +428,15 @@ std::string inverse_bind::getname() throw(std::bad_alloc)
 }
 
 
-controller_key::controller_key(keyboard_mapper& _mapper, const std::string& _command, const std::string& _name)
-	throw(std::bad_alloc)
+controller_key::controller_key(keyboard_mapper& _mapper, const std::string& _command, const std::string& _name,
+	bool _axis) throw(std::bad_alloc)
 	: mapper(_mapper), cmd(_command), oname(_name)
 {
 	register_queue<keyboard_mapper::_controllerkey_proxy, controller_key>::do_register(mapper.controllerkey_proxy,
 		cmd, *this);
 	key = NULL;
 	subkey = 0;
+	axis = _axis;
 }
 
 controller_key::~controller_key() throw()
@@ -456,7 +457,7 @@ std::string controller_key::get_string() throw(std::bad_alloc)
 	if(!k.first)
 		return "";
 	auto s = k.first->get_subkeys();
-	if(subkey >= s.size())
+	if(subkey >= s.size() || axis)
 		return k.first->get_name();
 	return k.first->get_name() + s[k.second];
 }
@@ -465,7 +466,7 @@ void controller_key::set(keyboard_key* _key, unsigned _subkey) throw()
 {
 	umutex_class u(mutex);
 	if(key != _key) {
-		if(_key) _key->add_listener(*this, false);
+		if(_key) _key->add_listener(*this, axis);
 		if(key) key->remove_listener(*this);
 	}
 	key = _key;
@@ -474,11 +475,11 @@ void controller_key::set(keyboard_key* _key, unsigned _subkey) throw()
 
 void controller_key::set(const std::string& _key) throw(std::bad_alloc, std::runtime_error)
 {
-	auto g = keymapper_lookup_subkey(mapper.get_keyboard(), _key);
+	auto g = keymapper_lookup_subkey(mapper.get_keyboard(), _key, axis);
 	set(g.first, g.second);
 }
 
-std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name)
+std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name, bool axis)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(name == "")
@@ -487,6 +488,9 @@ std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const 
 	keyboard_key* key = kbd.try_lookup_key(name);
 	if(key)
 		return std::make_pair(key, 0);
+	//Axes only do direct lookup.
+	if(axis)
+		throw std::runtime_error("Invalid key");
 	std::string prefix = name;
 	char letter = prefix[prefix.length() - 1];
 	prefix = prefix.substr(0, prefix.length() - 1);
@@ -502,6 +506,11 @@ std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const 
 
 void controller_key::on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event)
 {
+	if(axis) {
+		//Axes work specially.
+		mapper.get_command_group().invoke((stringfmt() << cmd << " " << event.get_state()).str());
+		return;
+	}
 	auto mask = event.get_change_mask();
 	unsigned kmask = (mask >> (2 * subkey)) & 3;
 	std::string cmd2;
@@ -509,14 +518,4 @@ void controller_key::on_key_event(keyboard_modifier_set& mods, keyboard_key& key
 		cmd2 = keyboard_mapper::fixup_command_polarity(cmd, kmask == 3);
 	if(cmd2 != "")
 		mapper.get_command_group().invoke(cmd2);
-}
-
-const std::string& controller_key::get_command() const throw()
-{
-	return cmd;
-}
-
-const std::string& controller_key::get_name() const throw()
-{
-	return oname;
 }
