@@ -42,15 +42,6 @@
 
 #define SAMPLES_PER_FRAME 35112
 
-#define LOGICAL_BUTTON_LEFT 0
-#define LOGICAL_BUTTON_RIGHT 1
-#define LOGICAL_BUTTON_UP 2
-#define LOGICAL_BUTTON_DOWN 3
-#define LOGICAL_BUTTON_A 4
-#define LOGICAL_BUTTON_B 5
-#define LOGICAL_BUTTON_SELECT 6
-#define LOGICAL_BUTTON_START 7
-
 namespace
 {
 	bool do_reset_flag = false;
