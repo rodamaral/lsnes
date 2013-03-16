@@ -21,6 +21,53 @@
 #include <wx/statline.h>
 #include <wx/spinctrl.h>
 
+namespace
+{
+	const int padmajsize = 193;
+	const int padminsize = 16;
+
+	int32_t value_to_coordinate(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
+	{
+		//Scale the values to be zero-based.
+		val = min(max(val, rmin), rmax);
+		rmax -= rmin;
+		val -= rmin;
+		int32_t center = rmax / 2;
+		int32_t cc = (dim - 1) / 2;
+		if(val == center)
+			return cc;
+		if(val < center) {
+			//0 => 0, center => cc.
+			return (val * (int64_t)cc + (center / 2)) / center;
+		}
+		if(val > center) {
+			//center => cc, rmax => dim - 1.
+			val -= center;
+			rmax -= center;
+			int32_t cc2 = (dim - 1 - cc);
+			return (val * (int64_t)cc2 + (rmax / 2)) / rmax + cc;
+		}
+	}
+
+	int32_t coordinate_to_value(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
+	{
+		val = min(max(val, (int32_t)0), dim - 1);
+		int32_t center = (rmax + rmin) / 2;
+		int32_t cc = (dim - 1) / 2;
+		if(val == cc)
+			return center;
+		if(val < cc) {
+			//0 => rmin, cc => center.
+			return ((center - rmin) * (int64_t)val + cc / 2) / cc + rmin;
+		}
+		if(val > cc) {
+			//cc => center, dim - 1 => rmax.
+			uint32_t cc2 = (dim - 1 - cc);
+			return ((rmax - center) * (int64_t)(val - cc) + cc2 / 2) / cc2 + center;
+		}
+	}
+}
+
 class wxeditor_tasinput : public wxDialog, public information_dispatch
 {
 public:
@@ -106,11 +153,12 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 	t = _t;
 	s->Add(new wxStaticText(win, wxID_ANY, towxstring(t.name)));
 	s->Add(graphics = new wxPanel(win, wxID_ANY));
-	graphics->SetSize(128, (t.yindex != std::numeric_limits<unsigned>::max()) ? 128 : 16);
+	graphics->SetSize(padmajsize, (t.yindex != std::numeric_limits<unsigned>::max()) ? padmajsize : padminsize);
 	graphics->SetMinSize(graphics->GetSize());
 	graphics->SetMaxSize(graphics->GetSize());
 	graphics->Connect(wxEVT_PAINT, wxPaintEventHandler(xypanel::on_paint), NULL, this);
 	graphics->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(xypanel::on_click), NULL, this);
+	graphics->Connect(wxEVT_MOTION, wxMouseEventHandler(xypanel::on_click), NULL, this);
 	x = t.xcenter ? ((int)t.xmin + t.xmax) / 2 : t.xmin;
 	y = t.ycenter ? ((int)t.ymin + t.ymax) / 2 : t.ymin;
 	s->Add(xnum = new wxSpinCtrl(win, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS,
@@ -125,12 +173,14 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 
 void wxeditor_tasinput::xypanel::on_click(wxMouseEvent& e)
 {
+	if(!e.Dragging() && !e.LeftDown())
+		return;
 	wxCommandEvent e2(0, wxid);
 	unsigned xrange = t.xmax - t.xmin;
 	unsigned yrange = t.ymax - t.ymin;
 	wxSize ps = graphics->GetSize();
-	x = t.xmin + (int32_t)(t.xmax - t.xmin) * e.GetX() / ps.GetWidth();
-	y = t.ymin + (int32_t)(t.ymax - t.ymin) * e.GetY() / ps.GetHeight();
+	x = coordinate_to_value(t.xmin, t.xmax, e.GetX(), ps.GetWidth());
+	y = coordinate_to_value(t.ymin, t.ymax, e.GetY(), ps.GetHeight());
 	if(xnum) xnum->SetValue(x);
 	if(ynum) ynum->SetValue(y);
 	do_redraw();
@@ -162,13 +212,15 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 	dc.DrawLine(0, 0, 0, ps.GetHeight());
 	dc.DrawLine(0, ps.GetHeight() - 1, ps.GetWidth(), ps.GetHeight() - 1);
 	dc.DrawLine(ps.GetWidth() - 1, 0, ps.GetWidth() - 1, ps.GetHeight());
+	int xcenter = (ps.GetWidth() - 1) / 2;
+	int ycenter = (ps.GetHeight() - 1) / 2;
 	if(t.xcenter)
-		dc.DrawLine(ps.GetWidth() / 2, 0, ps.GetWidth() / 2, ps.GetHeight());
+		dc.DrawLine(xcenter, 0, xcenter, ps.GetHeight());
 	if((t.yindex != std::numeric_limits<unsigned>::max()) && t.ycenter)
-		dc.DrawLine(0, ps.GetHeight() / 2, ps.GetWidth(), ps.GetHeight() / 2);
+		dc.DrawLine(0, ycenter, ps.GetWidth(), ycenter);
 	dc.SetPen(*wxRED_PEN);
-	int xdraw = (x - t.xmin) * ps.GetWidth() / (t.xmax - t.xmin);
-	int ydraw = (y - t.ymin) * ps.GetHeight() / (t.ymax - t.ymin);
+	int xdraw = value_to_coordinate(t.xmin, t.xmax, x, ps.GetWidth());
+	int ydraw = value_to_coordinate(t.ymin, t.ymax, y, ps.GetHeight());
 	dc.DrawLine(xdraw, 0, xdraw, ps.GetHeight());
 	if((t.yindex != std::numeric_limits<unsigned>::max()) || t.ycenter)
 		dc.DrawLine(0, ydraw, ps.GetWidth(), ydraw);
