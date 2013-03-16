@@ -1,0 +1,14 @@
+slots = {
+	{
+		["symbol"] = "test_images",
+		["slots"] = {
+			{
+				["iname"] = "rom",
+				["hname"] = "Cartridge ROM",
+				["mandatory"] = 1,
+				["mode"] = 0,
+				["header"] = 0
+			}
+		}
+	}
+};

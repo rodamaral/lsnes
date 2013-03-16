@@ -553,7 +553,7 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 				x2 = i;
 				goto out;
 			}
-			if(r == k) {
+			if(r == k && !second) {
 				//This and following.
 				x1 = i;
 				selecting = true;
@@ -565,8 +565,10 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 		case port_controller_button::TYPE_TAXIS:
 			if(selecting)
 				break;
-			if(r == k)
+			if(r == k) {
 				x1 = i;
+				goto out;
+			}
 			r++;
 			break;
 		};

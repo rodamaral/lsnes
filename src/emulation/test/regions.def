@@ -1,0 +1,18 @@
+world = {
+	["symbol"] = "region_world",
+	["iname"] = "world",
+	["hname"] = "World",
+	["priority"] = 0,
+	["id"] = 0,
+	["temporary"] = false,
+	["fps"] = {60, 1},
+	["compatible"] = {0}
+};
+
+regions = {
+	{
+		["symbol"] = "test_regions",
+		["core"] = "type_test",
+		["regions"] = {["test"] = world}
+	}
+};

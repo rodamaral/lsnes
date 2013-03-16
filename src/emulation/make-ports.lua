@@ -131,7 +131,7 @@ for i = 1,#ports do
 					"buffer["..bidx.."] &= ~"..bmask..";");
 				bit_l = bit_l + 1;
 			end
-			if (bt == axis) or (bt == raxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
 				print("\t\t\t\t\tbuffer["..int_l.."] = (unsigned short)x;");
 				print("\t\t\t\t\tbuffer["..(int_l + 1).."] = ((unsigned short)x >> 8);");
 				int_l = int_l + 2;
@@ -161,7 +161,7 @@ for i = 1,#ports do
 				print("\t\t\t\t\treturn (buffer["..bidx.."] & "..bmask..") ? 1 : 0;");
 				bit_l = bit_l + 1;
 			end
-			if (bt == axis) or (bt == raxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
 				print("\t\t\t\t\treturn (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				int_l = int_l + 2;
@@ -191,7 +191,7 @@ for i = 1,#ports do
 					xbutton[2].."' : '-';");
 				bit_l = bit_l + 1;
 			end
-			if (bt == axis) or (bt == raxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
 				print("\t\t\t\ttmp = (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				print("\t\t\t\tptr += sprintf(buf + ptr, \"%i \", tmp);");
@@ -227,7 +227,7 @@ for i = 1,#ports do
 		for k = 1,#(controller.buttons) do
 			local xbutton = controller.buttons[k];
 			local bt = xbutton[1];
-			if (bt == axis) or (bt == raxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
 				print("\t\t\t\ttmp = (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				print("\t\t\t\tptr += sprintf(textbuf + ptr, \" %i\", tmp);");
@@ -263,7 +263,7 @@ for i = 1,#ports do
 			for k = 1,#(controller.buttons) do
 				local xbutton = controller.buttons[k];
 				local bt = xbutton[1];
-				if (bt == axis) or (bt == raxis) or (bt == shadow_axis) then
+				if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
 					print("\t\t\ttmp = read_axis_value(textbuf, ptr);");
 					print("\t\t\tbuffer["..int_l.."] = (unsigned short)tmp;");
 					print("\t\t\tbuffer["..(int_l + 1).."] = ((unsigned short)tmp >> 8);");

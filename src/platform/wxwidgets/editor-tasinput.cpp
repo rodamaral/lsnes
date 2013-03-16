@@ -132,7 +132,7 @@ void wxeditor_tasinput::xypanel::on_click(wxMouseEvent& e)
 	x = t.xmin + (int32_t)(t.xmax - t.xmin) * e.GetX() / ps.GetWidth();
 	y = t.ymin + (int32_t)(t.ymax - t.ymin) * e.GetY() / ps.GetHeight();
 	if(xnum) xnum->SetValue(x);
-	if(xnum) ynum->SetValue(y);
+	if(ynum) ynum->SetValue(y);
 	do_redraw();
 	(obj->*fun)(e2);
 }
@@ -346,7 +346,6 @@ void wxeditor_tasinput::update_controls()
 	for(auto i : _inputs) {
 		if(i.logical != last_logical) {
 			//New controller starts.
-			std::cerr << "Controller: " << _controller_labels[i.logical] << std::endl;
 			controller_double d;
 			current_p = d.panel = new wxPanel(this, wxID_ANY);
 			d.rtop = new wxBoxSizer(wxVERTICAL);
@@ -365,7 +364,6 @@ void wxeditor_tasinput::update_controls()
 		struct control_triple t = i;
 		t.check = NULL;
 		t.panel = NULL;
-		std::cerr << "Control: " << i.name << std::endl;
 		if(i.type == port_controller_button::TYPE_BUTTON) {
 			t.check = new wxCheckBox(current_p, next_id, towxstring(i.name));
 			current->Add(t.check);
