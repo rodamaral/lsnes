@@ -327,7 +327,7 @@ namespace
 		if(!check_button_active(name))
 			return;
 		auto z = active_buttons[name];
-		if(!z.bind.mode != 1) {
+		if(z.bind.mode != 1) {
 			std::cerr << name << " is not a axis." << std::endl;
 			return;
 		}
