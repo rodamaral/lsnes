@@ -77,6 +77,8 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void on_control(wxCommandEvent& e);
 	void on_autohold_reconfigure();
+	void on_keyboard_up(wxKeyEvent& e);
+	void on_keyboard_down(wxKeyEvent& e);
 private:
 	struct xypanel;
 	struct control_triple
@@ -131,6 +133,7 @@ private:
 	std::map<int, control_triple> inputs;
 	std::vector<controller_double> panels;
 	void update_controls();
+	void connect_keyboard_recursive(wxWindow* win);
 	bool closing;
 	wxBoxSizer* hsizer;
 };
@@ -237,7 +240,7 @@ wxeditor_tasinput::~wxeditor_tasinput() throw() {}
 
 wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1)),
-	information_dispatch("tasinput-listener")
+		information_dispatch("tasinput-listener")
 {
 	closing = false;
 	Centre();
@@ -247,6 +250,17 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	update_controls();
 	hsizer->SetSizeHints(this);
 	Fit();
+}
+
+void wxeditor_tasinput::connect_keyboard_recursive(wxWindow* win)
+{
+	win->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxeditor_tasinput::on_keyboard_down), NULL, this);
+	win->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxeditor_tasinput::on_keyboard_up), NULL, this);
+	auto i = win->GetChildren().GetFirst();
+	while(i) {
+		connect_keyboard_recursive(i->GetData());
+		i = i->GetNext();
+	}
 }
 
 void wxeditor_tasinput::on_autohold_reconfigure()
@@ -430,6 +444,8 @@ void wxeditor_tasinput::update_controls()
 	if(_inputs.empty()) {
 		throw std::runtime_error("No controlers");
 	}
+	//Connect the keyboard.
+	connect_keyboard_recursive(this);
 	Fit();
 }
 
@@ -444,6 +460,17 @@ void wxeditor_tasinput::on_wclose(wxCloseEvent& e)
 	if(!wasc)
 		Destroy();
 }
+
+void wxeditor_tasinput::on_keyboard_down(wxKeyEvent& e)
+{
+	handle_wx_keyboard(e, true);
+}
+
+void wxeditor_tasinput::on_keyboard_up(wxKeyEvent& e)
+{
+	handle_wx_keyboard(e, false);
+}
+
 
 void wxeditor_tasinput_display(wxWindow* parent)
 {
