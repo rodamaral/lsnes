@@ -428,7 +428,7 @@ wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
 wxeditor_movie::~wxeditor_movie() throw() {}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
-	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100)),
+	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS),
 	information_dispatch("movieeditor-listener")
 {
 	m = v;
