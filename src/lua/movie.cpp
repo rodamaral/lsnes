@@ -35,8 +35,38 @@ namespace
 	function_ptr_luafun mrw("movie.readwrite", [](lua_State* LS, const std::string& fname) -> int {
 		auto& m = get_movie();
 		m.readonly_mode(false);
+		m.set_reload_mode(false);
 		return 0;
 	});
+
+	function_ptr_luafun mgm("movie.getmode", [](lua_State* LS, const std::string& fname) -> int {
+		auto& m = get_movie();
+		if(m.readonly_mode())
+			if(m.get_reload_mode())
+				lua_pushstring(LS, "reload");
+			else
+				lua_pushstring(LS, "readonly");
+		else
+			lua_pushstring(LS, "readwrite");
+		return 1;
+	});
+
+	function_ptr_luafun msm("movie.setmode", [](lua_State* LS, const std::string& fname) -> int {
+		auto& m = get_movie();
+		std::string mod = get_string_argument(LS, 1, fname.c_str());
+		if(mod == "reload") {
+			m.readonly_mode(true);
+			m.set_reload_mode(true);
+		} else if(mod == "readonly") {
+			m.readonly_mode(true);
+			m.set_reload_mode(false);
+		} else if(mod == "readwrite") {
+			m.readonly_mode(false);
+			m.set_reload_mode(false);
+		}
+		return 0;
+	});
+	
 
 	function_ptr_luafun mfs("movie.frame_subframes", [](lua_State* LS, const std::string& fname) -> int {
 		uint64_t frame = get_numeric_argument<uint64_t>(LS, 1, "movie.frame_subframes");

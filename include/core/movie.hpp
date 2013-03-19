@@ -268,6 +268,18 @@ public:
  * Adjust frame count.
  */
 	void adjust_frame_count(int64_t adjust) { frames_in_movie += adjust; }
+/**
+ * Set reload mode flag (only effective in readonly mode).
+ */
+	void set_reload_mode(bool newstate) throw() { reload_mode = newstate; }
+/**
+ * Get reload mode flag.
+ */
+	bool get_reload_mode() const throw() { return reload_mode; }
+/**
+ * Read the current subframe.
+ */
+	controller_frame current_subframe() throw(std::bad_alloc);
 private:
 	//TRUE if readonly mode is active.
 	bool readonly;
@@ -296,6 +308,8 @@ private:
 	uint32_t count_changes(uint64_t first_subframe) throw();
 	//Sequence number.
 	uint64_t seqno;
+	//Reload mode flag.
+	bool reload_mode;
 };
 
 /**

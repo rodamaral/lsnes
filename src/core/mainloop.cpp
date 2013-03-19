@@ -173,7 +173,14 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		controls.reset(pending_reset_cycles);
 	else if(!subframe)
 		controls.reset(-1);
-	controller_frame tmp = controls.commit(movb.get_movie().get_current_frame());
+	auto& mov = movb.get_movie();
+	controller_frame tmp = controls.commit(mov.get_current_frame());
+	if(mov.get_reload_mode() && mov.readonly_mode()) {
+		//In reload mode, read the present frame and XOR it.
+		controller_frame pframe;
+		pframe = mov.current_subframe();
+		tmp = tmp ^ pframe;
+	}
 	lua_callback_do_input(tmp, subframe);
 	return tmp;
 }
@@ -270,6 +277,8 @@ void update_movie_state()
 			x << "C";
 		else if(!mo.readonly_mode())
 			x << "R";
+		else if(mo.get_reload_mode())
+			x << "L";
 		else if(mo.get_frame_count() >= mo.get_current_frame())
 			x << "P";
 		else
@@ -636,6 +645,20 @@ namespace
 			information_dispatch::do_status_update();
 		});
 
+	function_ptr_command<> toggle_rlmode("toggle-rlmode", "Toggle reload mode",
+		"Syntax: toggle-rlmode\nToggles reload mode\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			bool c = movb.get_movie().get_reload_mode();
+			if(!c && !movb.get_movie().readonly_mode()) {
+				//If in read-write mode, set readonly mode.
+				movb.get_movie().readonly_mode(true);
+				information_dispatch::do_mode_change(true);
+			}
+			movb.get_movie().set_reload_mode(!c);
+			update_movie_state();
+			information_dispatch::do_status_update();
+		});
+
 	function_ptr_command<> repaint("repaint", "Redraw the screen",
 		"Syntax: repaint\nRedraws the screen\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -700,6 +723,7 @@ namespace
 	inverse_key iset_rwmode("set-rwmode", "Movie‣Switch to read/write");
 	inverse_key itoggle_romode("set-romode", "Movie‣Switch to read-only");
 	inverse_key itoggle_rwmode("toggle-rwmode", "Movie‣Toggle read-only");
+	inverse_key itoggle_rlmode("toggle-rlmode", "Movie‣Toggle reload mode");
 	inverse_key irepaint("repaint", "System‣Repaint screen");
 	inverse_key itogglepause("toggle-pause-on-end", "Movie‣Toggle pause-on-end");
 	inverse_key irewind_movie("rewind-movie", "Movie‣Rewind movie");

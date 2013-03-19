@@ -338,6 +338,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 void do_load_state(struct moviefile& _movie, int lmode)
 {
 	bool current_mode = movb.get_movie().readonly_mode();
+	bool in_reload = movb.get_movie().get_reload_mode();
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
@@ -457,6 +458,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode == LOAD_STATE_CURRENT && !current_mode)
 		movb.get_movie().readonly_mode(false);
 	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
+	//Anything except load_state_preserve disenages reload mode.
+	if(lmode != LOAD_STATE_PRESERVE)
+		movb.get_movie().set_reload_mode(false);
 	if(our_rom->rtype)
 		messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()
 			<< std::endl;

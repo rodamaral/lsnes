@@ -220,11 +220,32 @@ bool movie::get_DRDY(unsigned pid, unsigned ctrl) throw(std::logic_error)
 	return pollcounters.get_DRDY(pid, ctrl);
 }
 
+controller_frame movie::current_subframe() throw(std::bad_alloc)
+{
+	//Reload mode works like readwrite once movie end is reached.
+	if(readonly && (!reload_mode || current_frame_first_subframe < movie_data.size())) {
+		//In readonly mode...
+		//If at the end of the movie, return released / neutral...
+		//Before the beginning? Somebody screwed up (but return released / neutral anyway)...
+		if(current_frame_first_subframe >= movie_data.size() || current_frame == 0)
+			return movie_data.blank_frame(false);
+		//Otherwise find the last valid frame of input.
+		uint32_t changes = count_changes(current_frame_first_subframe);
+		uint32_t polls = pollcounters.max_polls();
+		uint32_t index = (changes >= polls) ? polls : changes - 1;
+		return movie_data[current_frame_first_subframe + index].copy(index == 0);
+	} else {
+		//Readwrite mode. The frame is always empty.
+		return movie_data.blank_frame(false);
+	}
+}
+
 short movie::next_input(unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::logic_error)
 {
 	pollcounters.clear_DRDY(pid, ctrl);
 
-	if(readonly) {
+	//Reload mode works like readwrite once movie end is reached.
+	if(readonly && (!reload_mode || current_frame_first_subframe < movie_data.size())) {
 		//In readonly mode...
 		//If at the end of the movie, return released / neutral (but also record the poll)...
 		if(current_frame_first_subframe >= movie_data.size()) {
@@ -237,8 +258,11 @@ short movie::next_input(unsigned pid, unsigned ctrl) throw(std::bad_alloc, std::
 		//Otherwise find the last valid frame of input.
 		uint32_t changes = count_changes(current_frame_first_subframe);
 		uint32_t polls = pollcounters.increment_polls(pid, ctrl);
-		uint32_t index = (changes > polls) ? polls : changes - 1;
+		uint32_t index = (changes >= polls) ? polls : changes - 1;
 		//debuglog << "Frame=" << current_frame << " Subframe=" << polls << " control=" << controlindex << " value=" << movie_data[current_frame_first_subframe + index](controlindex) << " fetchrow=" << current_frame_first_subframe + index << std::endl << std::flush;
+		//Reload mode reloads the frames.
+		if(reload_mode && changes < polls)
+			movie_data[current_frame_first_subframe + index] = current_controls.copy(index == 0);
 		return movie_data[current_frame_first_subframe + index].axis(pid, ctrl);
 	} else {
 		//Readwrite mode.
@@ -283,6 +307,7 @@ movie::movie() throw(std::bad_alloc)
 {
 	seqno = 0;
 	readonly = false;
+	reload_mode = false;
 	rerecords = "0";
 	_project_id = "";
 	current_frame = 0;
@@ -548,6 +573,7 @@ movie& movie::operator=(const movie& m)
 {
 	seqno++;
 	readonly = m.readonly;
+	reload_mode = m.reload_mode;
 	rerecords = m.rerecords;
 	_project_id = m._project_id;
 	movie_data = m.movie_data;
