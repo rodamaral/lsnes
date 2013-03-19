@@ -2352,6 +2352,18 @@ keyboard.unbind(string mod, string mask, string key)
 Unbind specified key with specified modifers.
 \end_layout
 
+\begin_layout Itemize
+nil does not change value
+\end_layout
+
+\begin_layout Itemize
+true/false (buttons) and integers (axes) force value.
+\end_layout
+
+\begin_layout Itemize
+string (button) inverts the input.
+\end_layout
+
 \begin_layout Subsubsection
 keyboard.alias(string alias, string expansion)
 \end_layout
@@ -2630,7 +2642,7 @@ Count number of subframes in specified frame (frame numbers are 1-based)
 \end_layout
 
 \begin_layout Subsubsection
-movie.read_subframe(number frame, number subframe)
+movie.read_subframes(number frame, number subframe)
 \end_layout
 
 \begin_layout Standard

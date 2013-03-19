@@ -257,10 +257,19 @@ namespace
 			L.pushstring(ctrl.buttons[i]->name);
 			L.gettable(2);
 			int s;
-			if(ctrl.buttons[i]->is_analog())
-				s = L.tonumber(-1);
-			else
-				s = L.toboolean(-1) ? 1 : 0;
+			if(ctrl.buttons[i]->is_analog()) {
+				if(L.type(-1) == LUA_TNIL)
+					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i);
+				else
+					s = L.tonumber(-1);
+			} else {
+				if(L.type(-1) == LUA_TNIL)
+					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i);
+				else if(L.type(-1) == LUA_TSTRING)
+					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i) ^ 1;
+				else
+					s = L.toboolean(-1) ? 1 : 0;
+			}
 			lua_input_controllerdata->axis3(pcid.first, pcid.second, i, s);
 			L.pop(1);
 		}

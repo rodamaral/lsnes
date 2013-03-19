@@ -1171,6 +1171,12 @@ Bind specified key with specified modifers to specified command.
 
 Unbind specified key with specified modifers.
 
+• nil does not change value
+
+• true/false (buttons) and integers (axes) force value.
+
+• string (button) inverts the input.
+
 7.5.3 keyboard.alias(string alias, string expansion)
 
 Set expansion of given command.
@@ -1320,7 +1326,7 @@ Set readwrite mode (does not cause on_readwrite callback).
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-7.8.7 movie.read_subframe(number frame, number subframe)
+7.8.7 movie.read_subframes(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
