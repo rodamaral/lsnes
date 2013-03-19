@@ -1587,6 +1587,12 @@ names of fields vary by controller type.
 Set the the state of specified controller to values specified in 
 specified table.
 
+• nil does not change value
+
+• true/false (buttons) and integers (axes) force value.
+
+• string (button) inverts the input.
+
 8.4.17 input.lcid_to_pcid(number controller)
 
 Return the physical index, physical port and controller number in 
@@ -1737,7 +1743,7 @@ Set readwrite mode (does not cause on_readwrite callback).
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-8.7.7 movie.read_subframe(number frame, number subframe)
+8.7.7 movie.read_subframes(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).

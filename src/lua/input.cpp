@@ -174,20 +174,28 @@ namespace
 				continue;
 			lua_pushstring(LS, n.c_str());
 			lua_gettable(LS, 2);
-			int s = lua_toboolean(LS, -1) ? 1 : 0;
-			lua_input_controllerdata->axis(pcid, y, s);
+			if(lua_type(LS, -1) == LUA_TBOOLEAN) {
+				int s = lua_toboolean(LS, -1) ? 1 : 0;
+				lua_input_controllerdata->axis(pcid, y, s);
+			} else if(lua_type(LS, -1) == LUA_TSTRING) {
+				lua_input_controllerdata->axis(pcid, y, lua_input_controllerdata->axis(pcid, y) ^ 1);
+			}
 			lua_pop(LS, 1);
 		}
 		if(lua_input_controllerdata->is_analog(pcid)) {
 			lua_pushstring(LS, "xaxis");
 			lua_gettable(LS, 2);
-			int s = lua_tonumber(LS, -1);
-			lua_input_controllerdata->axis(pcid, 0, s);
+			if(lua_type(LS, -1) != LUA_TNIL) {
+				int s = lua_tonumber(LS, -1);
+				lua_input_controllerdata->axis(pcid, 0, s);
+			}
 			lua_pop(LS, 1);
 			lua_pushstring(LS, "yaxis");
 			lua_gettable(LS, 2);
-			s = lua_tonumber(LS, -1);
-			lua_input_controllerdata->axis(pcid, 1, s);
+			if(lua_type(LS, -1) != LUA_TNIL) {
+				int s = lua_tonumber(LS, -1);
+				lua_input_controllerdata->axis(pcid, 1, s);
+			}
 			lua_pop(LS, 1);
 		}
 		return 0;

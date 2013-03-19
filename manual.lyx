@@ -3185,6 +3185,18 @@ Set the the state of specified controller to values specified in specified
  table.
 \end_layout
 
+\begin_layout Itemize
+nil does not change value
+\end_layout
+
+\begin_layout Itemize
+true/false (buttons) and integers (axes) force value.
+\end_layout
+
+\begin_layout Itemize
+string (button) inverts the input.
+\end_layout
+
 \begin_layout Subsubsection
 input.lcid_to_pcid(number controller)
 \end_layout
@@ -3464,7 +3476,7 @@ Count number of subframes in specified frame (frame numbers are 1-based)
 \end_layout
 
 \begin_layout Subsubsection
-movie.read_subframe(number frame, number subframe)
+movie.read_subframes(number frame, number subframe)
 \end_layout
 
 \begin_layout Standard
