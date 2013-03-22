@@ -213,6 +213,11 @@ namespace
 			do_save_movie(filename);
 			return;
 		}
+		if(location_special == SPECIAL_SAVEPOINT) {
+			//We can save immediately here.
+			do_save_state(filename);
+			return;
+		}
 		queued_saves.insert(filename);
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
