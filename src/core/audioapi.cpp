@@ -311,13 +311,22 @@ void audioapi_get_voice(float* samples, size_t count)
 {
 	unsigned g = voicep_get;
 	unsigned p = voicep_put;
-	for(size_t i = 0; i < count; i++) {
-		if(g != p)
-			samples[i] = voicep_volume * voicep_buffer[g++];
-		else
-			samples[i] = 0.0;
-		if(g == voicep_bufsize)
-			g = 0;
+	if(samples) {
+		for(size_t i = 0; i < count; i++) {
+			if(g != p)
+				samples[i] = voicep_volume * voicep_buffer[g++];
+			else
+				samples[i] = 0.0;
+			if(g == voicep_bufsize)
+				g = 0;
+		}
+	} else {
+		for(size_t i = 0; i < count; i++) {
+			if(g != p)
+				g++;
+			if(g == voicep_bufsize)
+				g = 0;
+		}
 	}
 	voicep_get = g;
 }
