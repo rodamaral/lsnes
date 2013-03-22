@@ -1,8 +1,8 @@
-From f22d7a2b57d57959ac947465323870a8772d15ad Mon Sep 17 00:00:00 2001
+From e9a9d78c5ec20aadd42bc7433af236e413eea787 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Mon, 24 Sep 2012 21:46:09 +0300
-Subject: [PATCH] Add needed support for detecting true polls as opposed to
- just autopolling
+Subject: [PATCH 5/6] Add needed support for detecting true polls as opposed
+ to just autopolling
 
 ---
  snes/cpu/cpu.hpp       |    1 +
@@ -65,5 +65,5 @@ index 8b6aaa6..c5ee930 100755
  //DMAPx
  uint8 CPU::mmio_r43x0(uint8 i) {
 -- 
-1.7.10.4
+1.7.9.48.g85da4d
 
