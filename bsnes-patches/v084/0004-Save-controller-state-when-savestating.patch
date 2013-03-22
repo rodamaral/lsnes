@@ -1,7 +1,7 @@
-From 8d990991d97eb7742c4daa461b158d1aa9f6dce4 Mon Sep 17 00:00:00 2001
+From 0e21eb89711c7254bdcbf7054b4bcd3abe815c6f Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 01:52:08 +0200
-Subject: [PATCH 4/7] Save controller state when savestating
+Subject: [PATCH 4/8] Save controller state when savestating
 
 When savestating, save the controller state and restore it upon loadstate.
 Prevents libsnes from mixing up buttons.

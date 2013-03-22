@@ -1,12 +1,12 @@
-From 919c8935121c2ec7cb96ce561044981526c1ca7e Mon Sep 17 00:00:00 2001
+From f3e7cdb3815a3e0cc5beca79c78726d8f5f9b3ae Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 14 Oct 2012 23:29:40 +0300
-Subject: [PATCH] Fix compiling on GCC 4.7
+Subject: [PATCH 6/6] Fix compiling on GCC 4.7
 
 ---
  nall/string.hpp        |    2 +-
  ui-libsnes/libsnes.cpp |    1 +
- 2 files changed, 2 insertions(+), 1 deletion(-)
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/nall/string.hpp b/nall/string.hpp
 index 996cd68..4747e4c 100755
@@ -34,5 +34,5 @@ index 3b2be7a..ca90762 100755
  #include <nall/snes/cartridge.hpp>
  #include <nall/gameboy/cartridge.hpp>
 -- 
-1.7.10.4
+1.7.9.48.g85da4d
 

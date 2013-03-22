@@ -1,7 +1,7 @@
-From 3761a50c0faed2d9252781c5508bf91cc84ad493 Mon Sep 17 00:00:00 2001
+From 14aaecac2238a00d51f295d29e1ebc283ca9ec79 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 1 Sep 2012 11:23:34 +0300
-Subject: [PATCH] Fix uninitialized variables
+Subject: [PATCH 08/10] Fix uninitialized variables
 
 These uninitialized variables cause a lot of desyncs in Shadowrun.
 ---

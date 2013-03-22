@@ -1,7 +1,7 @@
-From 637952f6b97bef882ca3870be8d434c31aeacf77 Mon Sep 17 00:00:00 2001
+From d5898559fdf6bb52bbe38c509e3d80ea46107ced Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:31:59 +0200
-Subject: [PATCH 2/7] Fix bsnes version number in libsnes to be v084, not v083
+Subject: [PATCH 2/8] Fix bsnes version number in libsnes to be v084, not v083
 
 ---
  ui-libsnes/libsnes.cpp |    2 +-
