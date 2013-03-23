@@ -227,12 +227,18 @@ void wxeditor_autohold::update_controls()
 	unsigned last_logical = 0xFFFFFFFFUL;
 	wxSizer* current;
 	wxPanel* current_p;
+	wxSizer* current_t = NULL;
 	for(auto i : _autoholds) {
 		if(i.logical != last_logical) {
 			//New controller starts.
+			if(current_t) {
+				hsizer->Add(current_p);
+				current_t->SetSizeHints(current_p);
+				current_t->Fit(current_p);
+			}
 			controller_double d;
 			current_p = d.panel = new wxPanel(this, wxID_ANY);
-			d.rtop = new wxBoxSizer(wxVERTICAL);
+			current_t = d.rtop = new wxBoxSizer(wxVERTICAL);
 			d.panel->SetSizer(d.rtop);
 			d.box = new wxStaticBox(d.panel, wxID_ANY, towxstring(_controller_labels[i.logical]));
 			d.top = new wxStaticBoxSizer(d.box, wxVERTICAL);
@@ -243,7 +249,6 @@ void wxeditor_autohold::update_controls()
 			current = d.grid = new wxFlexGridSizer(0, 3, 0, 0);
 			d.top->Add(d.grid);
 			d.rtop->Add(d.top);
-			hsizer->Add(d.panel);
 			panels.push_back(d);
 			last_logical = i.logical;
 		}
@@ -270,9 +275,17 @@ void wxeditor_autohold::update_controls()
 		autoholds[next_id++] = t;
 		autoholds[next_id++] = t;
 	}
+	if(current_t) {
+		hsizer->Add(current_p);
+		current_t->SetSizeHints(current_p);
+		current_t->Fit(current_p);
+	}
 	if(_autoholds.empty()) {
 		throw std::runtime_error("No controlers");
 	}
+	hsizer->SetSizeHints(this);
+	hsizer->Layout();
+	hsizer->Fit(this);
 	Fit();
 }
 
