@@ -39,14 +39,13 @@ namespace
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			const custom_font& fdata = font->object()->get_font();
-			std::vector<uint32_t> _text;
-			copy_from_utf8(text.begin(), text.end(), std::back_inserter(_text));
+			std::u32string _text = to_u32string(text);
 			int32_t orig_x = x;
 			int32_t drawx = x;
 			int32_t drawy = y;
 			for(size_t i = 0; i < _text.size();) {
 				uint32_t cp = _text[i];
-				ligature_key k = fdata.best_ligature_match(_text, i);
+				std::u32string k = fdata.best_ligature_match(_text, i);
 				const font_glyph_data& glyph = fdata.lookup_glyph(k);
 				if(k.length())
 					i += k.length();

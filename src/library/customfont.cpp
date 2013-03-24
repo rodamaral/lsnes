@@ -4,29 +4,6 @@
 #include "zip.hpp"
 #include "string.hpp"
 
-ligature_key::ligature_key(const std::vector<uint32_t>& key) throw(std::bad_alloc)
-{
-	ikey = key;
-}
-
-bool ligature_key::operator<(const ligature_key& key) const throw()
-{
-	for(size_t i = 0; i < ikey.size() && i < key.ikey.size(); i++)
-		if(ikey[i] < key.ikey[i])
-			return true;
-		else if(ikey[i] > key.ikey[i])
-			return false;
-	return (ikey.size() < key.ikey.size());
-}
-
-bool ligature_key::operator==(const ligature_key& key) const throw()
-{
-	for(size_t i = 0; i < ikey.size() && i < key.ikey.size(); i++)
-		if(ikey[i] != key.ikey[i])
-			return false;
-	return (ikey.size() == key.ikey.size());
-}
-
 namespace
 {
 	void bound(int32_t c, uint32_t odim, uint32_t dim, uint32_t& dc, uint32_t& off, uint32_t& size)
@@ -182,7 +159,7 @@ custom_font::custom_font(const std::string& file)
 		zip_reader r(file);
 		for(auto member : r) {
 			//Parse the key out of filename.
-			std::vector<uint32_t> k;
+			std::u32string key;
 			std::string tname = member;
 			std::string tmp;
 			if(tname == "bad") {
@@ -190,14 +167,13 @@ custom_font::custom_font(const std::string& file)
 			} else if(regex_match("[0-9]+(-[0-9]+)*", tname))
 				while(tname != "") {
 					extract_token(tname, tmp, "-");
-					k.push_back(parse_value<uint32_t>(tmp));
+					key.append(1, parse_value<uint32_t>(tmp));
 				}
 			else {
 				delete toclose;
 				toclose = NULL;
 				continue;
 			}
-			ligature_key key(k);
 			std::istream& s = r[member];
 			toclose = &s;
 			try {
@@ -221,44 +197,44 @@ custom_font::custom_font(const std::string& file)
 	}
 }
 
-std::ostream& operator<<(std::ostream& os, const ligature_key& lkey)
+std::ostream& operator<<(std::ostream& os, const std::u32string& lkey)
 {
 	if(!lkey.length())
 		return (os << "bad");
 	for(size_t i = 0; i < lkey.length(); i++) {
 		if(i)
 			os << "-";
-		os << lkey.get()[i];
+		os << static_cast<uint32_t>(lkey[i]);
 	}
 	return os;
 }
 
-void custom_font::add(const ligature_key& key, const font_glyph_data& glyph) throw(std::bad_alloc)
+void custom_font::add(const std::u32string& key, const font_glyph_data& glyph) throw(std::bad_alloc)
 {
 	glyphs[key] = glyph;
 	if(glyph.height > rowadvance)
 		rowadvance = glyph.height;
 }
 
-ligature_key custom_font::best_ligature_match(const std::vector<uint32_t>& codepoints, size_t start) const
+std::u32string custom_font::best_ligature_match(const std::u32string& codepoints, size_t start) const
 	throw(std::bad_alloc)
 {
-	std::vector<uint32_t> tmp;
-	if(start >= codepoints.size())
-		return ligature_key(tmp);	//Bad.
-	ligature_key best(tmp);
+	std::u32string tmp;
+	if(start >= codepoints.length())
+		return tmp;		//Bad.
+	std::u32string best = tmp;
 	for(size_t i = 1; i <= codepoints.size() - start; i++) {
-		tmp.push_back(codepoints[start + i - 1]);
-		ligature_key lkey(tmp);
+		tmp.append(1, codepoints[start + i - 1]);
+		std::u32string lkey = tmp;
 		if(glyphs.count(lkey))
 			best = lkey;
 		auto j = glyphs.lower_bound(lkey);
 		//If lower_bound is greater than equivalent length of string, there can be no better match.
 		if(j == glyphs.end())
 			break;
-		const std::vector<uint32_t>& tmp2 = j->first.get();
+		const std::u32string& tmp2 = j->first;
 		bool best_found = false;
-		for(size_t k = 0; k < tmp2.size() && start + k < codepoints.size(); k++)
+		for(size_t k = 0; k < tmp2.length() && start + k < codepoints.length(); k++)
 			if(tmp2[k] > codepoints[start + k]) {
 				best_found = true;
 				break;
@@ -270,7 +246,7 @@ ligature_key custom_font::best_ligature_match(const std::vector<uint32_t>& codep
 	return best;
 }
 
-const font_glyph_data& custom_font::lookup_glyph(const ligature_key& key) const throw()
+const font_glyph_data& custom_font::lookup_glyph(const std::u32string& key) const throw()
 {
 	static font_glyph_data empty_glyph;
 	auto i = glyphs.find(key);

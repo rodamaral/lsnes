@@ -153,8 +153,6 @@ private:
 	std::string _line2;
 	void format_lines();
 	void add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts);
-	std::string vector_to_string(const std::vector<uint32_t>& cp);
-	std::vector<uint32_t> string_to_vector(const std::string& str);
 	std::list<control_info> controlinfo;
 };
 
@@ -234,32 +232,6 @@ uint32_t frame_controls::read_pollcount(pollcounter_vector& v, unsigned idx)
 	return v.get_polls(idx);
 }
 
-std::string frame_controls::vector_to_string(const std::vector<uint32_t>& cp)
-{
-	std::ostringstream s;
-	for(auto i : cp) {
-		if(i < 0x80)
-			s << (unsigned char)i;
-		else if(i < 0x800)
-			s << (unsigned char)(0xC0 + (i >> 6)) << (unsigned char)(0x80 + (i & 0x3F));
-		else if(i < 0x10000)
-			s << (unsigned char)(0xE0 + (i >> 12)) << (unsigned char)(0x80 + ((i >> 6) & 0x3F))
-				 << (unsigned char)(0x80 + (i & 0x3F));
-		else if(i < 0x10FFFF)
-			s << (unsigned char)(0xF0 + (i >> 18)) << (unsigned char)(0x80 + ((i >> 12) & 0x3F))
-				<< (unsigned char)(0x80 + ((i >> 6) & 0x3F))
-				<< (unsigned char)(0x80 + (i & 0x3F));
-	}
-	return s.str();
-}
-
-std::vector<uint32_t> frame_controls::string_to_vector(const std::string& str)
-{
-	std::vector<uint32_t> cp;
-	copy_from_utf8(str.begin(), str.end(), std::back_inserter(cp));
-	return cp;
-}
-
 void frame_controls::format_lines()
 {
 	_width = 0;
@@ -267,8 +239,8 @@ void frame_controls::format_lines()
 		if(i.position_left + i.reserved > _width)
 			_width = i.position_left + i.reserved;
 	}
-	std::vector<uint32_t> cp1;
-	std::vector<uint32_t> cp2;
+	std::u32string cp1;
+	std::u32string cp2;
 	uint32_t off = divcnt + 1;
 	cp1.resize(_width + divcnt + 1);
 	cp2.resize(_width + divcnt + 1);
@@ -280,23 +252,23 @@ void frame_controls::format_lines()
 	//For every port-controller, find the least coordinate.
 	for(auto i : controlinfo) {
 		if(i.type == -1) {
-			auto _title = string_to_vector(i.title);
+			auto _title = to_u32string(i.title);
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		} else if(i.type == -2) {
-			auto _title = string_to_vector((stringfmt() << i.port << "-" << i.controller).str());
+			auto _title = to_u32string((stringfmt() << i.port << "-" << i.controller).str());
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		}
 	}
 	//Line2
 	for(auto i : controlinfo) {
-		auto _title = string_to_vector(i.title);
+		auto _title = to_u32string(i.title);
 		if(i.type == -1 || i.type == 1)
 			std::copy(_title.begin(), _title.end(), &cp2[i.position_left + off]);
 		if(i.type == 0)
 			cp2[i.position_left + off] = i.ch;
 	}
-	_line1 = vector_to_string(cp1);
-	_line2 = vector_to_string(cp2);
+	_line1 = to_u8string(cp1);
+	_line2 = to_u8string(cp2);
 }
 
 

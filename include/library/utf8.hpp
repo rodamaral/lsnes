@@ -1,6 +1,7 @@
 #ifndef _library__utf8__hpp__included__
 #define _library__utf8__hpp__included__
 
+#include <iostream>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -28,6 +29,16 @@ int32_t utf8_parse_byte(int ch, uint16_t& state) throw();
 size_t utf8_strlen(const std::string& str) throw();
 
 /**
+ * Transform UTF-8 into UTF-32.
+ */
+std::u32string to_u32string(const std::string& utf8);
+
+/**
+ * Transform UTF-32 into UTF-8.
+ */
+std::string to_u8string(const std::u32string& utf32);
+
+/**
  * Iterator copy from UTF-8 to UTF-32
  */
 template<typename srcitr, typename dstitr>
@@ -35,7 +46,7 @@ inline void copy_from_utf8(srcitr begin, srcitr end, dstitr target)
 {
 	uint16_t state = utf8_initial_state;
 	for(srcitr i = begin; i != end; i++) {
-		int32_t x = utf8_parse_byte(*i, state);
+		int32_t x = utf8_parse_byte((unsigned char)*i, state);
 		if(x >= 0) {
 			*target = x;
 			++target;

@@ -9,22 +9,6 @@
 #include <map>
 #include "framebuffer.hpp"
 
-class ligature_key
-{
-public:
-	ligature_key(const std::vector<uint32_t>& key) throw(std::bad_alloc);
-	const std::vector<uint32_t>& get() const throw() { return ikey; }
-	size_t length() const throw() { return ikey.size(); }
-	bool operator<(const ligature_key& key) const throw();
-	bool operator<=(const ligature_key& key) const throw() { return !(key < *this); }
-	bool operator==(const ligature_key& key) const throw();
-	bool operator!=(const ligature_key& key) const throw() { return !(key == *this); }
-	bool operator>=(const ligature_key& key) const throw() { return !(*this < key); }
-	bool operator>(const ligature_key& key) const throw() { return key < *this; }
-private:
-	std::vector<uint32_t> ikey;
-};
-
 struct font_glyph_data
 {
 	font_glyph_data();
@@ -43,13 +27,13 @@ struct custom_font
 public:
 	custom_font();
 	custom_font(const std::string& file);
-	void add(const ligature_key& key, const font_glyph_data& glyph) throw(std::bad_alloc);
-	ligature_key best_ligature_match(const std::vector<uint32_t>& codepoints, size_t start) const
+	void add(const std::u32string& key, const font_glyph_data& glyph) throw(std::bad_alloc);
+	std::u32string best_ligature_match(const std::u32string& codepoints, size_t start) const
 		throw(std::bad_alloc);
-	const font_glyph_data& lookup_glyph(const ligature_key& key) const throw();
+	const font_glyph_data& lookup_glyph(const std::u32string& key) const throw();
 	unsigned get_rowadvance() const throw() { return rowadvance; }
 private:
-	std::map<ligature_key, font_glyph_data> glyphs;
+	std::map<std::u32string, font_glyph_data> glyphs;
 	unsigned rowadvance;
 };
 
