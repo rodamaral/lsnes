@@ -20,6 +20,7 @@
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
 #include "library/threadtypes.hpp"
+#include "library/utf8.hpp"
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
@@ -363,6 +364,16 @@ wxString towxstring(const std::string& str) throw(std::bad_alloc)
 std::string tostdstring(const wxString& str) throw(std::bad_alloc)
 {
 	return std::string(str.mb_str(wxConvUTF8));
+}
+
+wxString towxstring(const std::u32string& str) throw(std::bad_alloc)
+{
+	return wxString(to_u8string(str).c_str(), wxConvUTF8);
+}
+
+std::u32string tou32string(const wxString& str) throw(std::bad_alloc)
+{
+	return to_u32string(std::string(str.mb_str(wxConvUTF8)));
 }
 
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc)

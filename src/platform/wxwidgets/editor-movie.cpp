@@ -64,35 +64,35 @@ struct control_info
 	unsigned index;		//Index in poll vector.
 	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis.
 	char ch;
-	std::string title;
+	std::u32string title;
 	unsigned port;
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
-	static control_info fixedinfo(unsigned& p, const std::string& str);
-	static control_info buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx);
-	static control_info axisinfo(unsigned& p, const std::string& title, unsigned idx);
+	static control_info fixedinfo(unsigned& p, const std::u32string& str);
+	static control_info buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx);
+	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx);
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen((stringfmt() << port << "-" << controller).str());
+	i.reserved = (stringfmt() << port << "-" << controller).str32().length();
 	p += i.reserved;
 	i.index = 0;
 	i.type = -2;
 	i.ch = 0;
-	i.title = "";
+	i.title = U"";
 	i.port = port;
 	i.controller = controller;
 	return i;
 }
 
-control_info control_info::fixedinfo(unsigned& p, const std::string& str)
+control_info control_info::fixedinfo(unsigned& p, const std::u32string& str)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen(str);
+	i.reserved = str.length();
 	p += i.reserved;
 	i.index = 0;
 	i.type = -1;
@@ -103,7 +103,7 @@ control_info control_info::fixedinfo(unsigned& p, const std::string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
@@ -118,11 +118,11 @@ control_info control_info::buttoninfo(unsigned& p, char character, const std::st
 	return i;
 }
 
-control_info control_info::axisinfo(unsigned& p, const std::string& title, unsigned idx)
+control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen(title);
+	i.reserved = title.length();
 	if(i.reserved < 6)
 		i.reserved = 6;
 	p += i.reserved;
@@ -144,13 +144,13 @@ public:
 	void write_index(controller_frame& f, unsigned idx, short value);
 	uint32_t read_pollcount(pollcounter_vector& v, unsigned idx);
 	const std::list<control_info>& get_controlinfo() { return controlinfo; }
-	std::string line1() { return _line1; }
-	std::string line2() { return _line2; }
+	std::u32string line1() { return _line1; }
+	std::u32string line2() { return _line2; }
 	size_t width() { return _width; }
 private:
 	size_t _width;
-	std::string _line1;
-	std::string _line2;
+	std::u32string _line1;
+	std::u32string _line2;
 	void format_lines();
 	void add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts);
 	std::list<control_info> controlinfo;
@@ -181,7 +181,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			continue;
 		const port_controller& pc = *(pci.controllers[i]);
 		if(pid || i)
-			controlinfo.push_back(control_info::fixedinfo(c, "│"));
+			controlinfo.push_back(control_info::fixedinfo(c, U"\u2502"));
 		unsigned nextp = c;
 		controlinfo.push_back(control_info::portinfo(nextp, pid, i + 1));
 		bool last_multibyte = false;
@@ -195,14 +195,15 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			if(pcb.type == port_controller_button::TYPE_BUTTON) {
 				if(last_multibyte)
 					c++;
-				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, pcb.name, idx));
+				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, to_u32string(pcb.name),
+					idx));
 				last_multibyte = false;
 			} else if(pcb.type == port_controller_button::TYPE_AXIS ||
 				pcb.type == port_controller_button::TYPE_RAXIS ||
 				pcb.type == port_controller_button::TYPE_TAXIS) {
 				if(j)
 					c++;
-				controlinfo.push_back(control_info::axisinfo(c, pcb.name, idx));
+				controlinfo.push_back(control_info::axisinfo(c, to_u32string(pcb.name), idx));
 				last_multibyte = true;
 			}
 		}
@@ -252,23 +253,23 @@ void frame_controls::format_lines()
 	//For every port-controller, find the least coordinate.
 	for(auto i : controlinfo) {
 		if(i.type == -1) {
-			auto _title = to_u32string(i.title);
+			auto _title = i.title;
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		} else if(i.type == -2) {
-			auto _title = to_u32string((stringfmt() << i.port << "-" << i.controller).str());
+			auto _title = (stringfmt() << i.port << "-" << i.controller).str32();
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		}
 	}
 	//Line2
 	for(auto i : controlinfo) {
-		auto _title = to_u32string(i.title);
+		auto _title = i.title;
 		if(i.type == -1 || i.type == 1)
 			std::copy(_title.begin(), _title.end(), &cp2[i.position_left + off]);
 		if(i.type == 0)
 			cp2[i.position_left + off] = i.ch;
 	}
-	_line1 = to_u8string(cp1);
-	_line2 = to_u8string(cp2);
+	_line1 = cp1;
+	_line2 = cp2;
 }
 
 
@@ -315,8 +316,8 @@ private:
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
-		std::string render_line1(controller_frame& f);
-		std::string render_line2(controller_frame& f);
+		std::u32string render_line1(controller_frame& f);
+		std::u32string render_line2(controller_frame& f);
 		void render_linen(text_framebuffer& fb, controller_frame& f, uint64_t sfn, int y);
 		unsigned long long spos;
 		void* prev_obj;
@@ -468,13 +469,13 @@ int wxeditor_movie::_moviepanel::width(controller_frame& f)
 	return divcnt + 1 + fcontrols.width();
 }
 
-std::string wxeditor_movie::_moviepanel::render_line1(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line1(controller_frame& f)
 {
 	update_cache();
 	return fcontrols.line1();
 }
 
-std::string wxeditor_movie::_moviepanel::render_line2(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line2(controller_frame& f)
 {
 	update_cache();
 	return fcontrols.line2();
@@ -1036,7 +1037,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	bool enable_insert_frame = false;
 	bool enable_delete_frame = false;
 	bool enable_delete_subframe = false;
-	std::string title;
+	std::u32string title;
 	if(y < 3)
 		goto outrange;
 	if(!movb.get_movie().readonly_mode())
@@ -1067,11 +1068,11 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(press_line >= first_nextframe() && press_line < linecount)
 		enable_delete_frame = true;
 	if(enable_toggle_button)
-		menu.Append(wxID_TOGGLE, towxstring("Toggle " + title));
+		menu.Append(wxID_TOGGLE, towxstring(U"Toggle " + title));
 	if(enable_change_axis)
-		menu.Append(wxID_CHANGE, towxstring("Change " + title));
+		menu.Append(wxID_CHANGE, towxstring(U"Change " + title));
 	if(enable_change_axis && rpress_line != press_line)
-		menu.Append(wxID_SWEEP, towxstring("Sweep " + title));
+		menu.Append(wxID_SWEEP, towxstring(U"Sweep " + title));
 	if(enable_toggle_button || enable_change_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);

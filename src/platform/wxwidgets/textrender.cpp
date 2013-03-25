@@ -175,3 +175,30 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 	return x;
 }
 
+size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
+{
+	size_t pused = 0;
+	for(auto u : str) {
+		const bitmap_font::glyph& g = main_font.get_glyph(u);
+		if(x < width) {
+			element& e = buffer[y * width + x];
+			e.ch = u;
+			e.fg = fg;
+			e.bg = bg;
+		}
+		x++;
+		pused += (g.wide ? 2 : 1);
+	}
+	while(pused < w) {
+		//Pad with spaces.
+		if(x < width) {
+			element& e = buffer[y * width + x];
+			e.ch = 32;
+			e.fg = fg;
+			e.bg = bg;
+		}
+		pused++;
+		x++;
+	}
+	return x;
+}

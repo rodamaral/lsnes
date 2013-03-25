@@ -26,6 +26,8 @@ extern bool rotate_enabled;
 
 wxString towxstring(const std::string& str) throw(std::bad_alloc);
 std::string tostdstring(const wxString& str) throw(std::bad_alloc);
+wxString towxstring(const std::u32string& str) throw(std::bad_alloc);
+std::u32string tou32string(const wxString& str) throw(std::bad_alloc);
 void bring_app_foreground();
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc);
 void boot_emulator(loaded_rom& rom, moviefile& movie);
