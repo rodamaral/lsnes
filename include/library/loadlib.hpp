@@ -41,6 +41,12 @@ public:
  * Returns: The name of library.
  */
 	static const std::string& call_library() throw();
+/**
+ * See what standard library extension is on this platform.
+ *
+ * Returns: The extension of library.
+ */
+	static const std::string& call_library_ext() throw();
 private:
 	loaded_library(const loaded_library&);
 	loaded_library& operator=(const loaded_library&);

@@ -10,11 +10,14 @@ namespace
 {
 #if defined(_WIN32) || defined(_WIN64)
 	std::string callsign = "dynamic link library";
+	std::string callsign_ext = "dll";
 #elif !defined(NO_DLFCN)
 #if defined(__APPLE__)
 	std::string callsign = "dynamic library";
+	std::string callsign_ext = "bundle";
 #else
 	std::string callsign = "shared object";
+	std::string callsign_ext = "so";
 #endif
 #else
 	std::string callsign = "";
@@ -98,4 +101,9 @@ void* loaded_library::operator[](const std::string& symbol) throw(std::bad_alloc
 const std::string& loaded_library::call_library() throw()
 {
 	return callsign;
+}
+
+const std::string& loaded_library::call_library_ext() throw()
+{
+	return callsign_ext;
 }

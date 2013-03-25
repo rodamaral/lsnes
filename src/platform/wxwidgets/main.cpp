@@ -673,18 +673,31 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 
 canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled") {}
 
-std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave)
+std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave,
+	std::string ext)
 {
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
-	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), wxT("All files|*"), forsave ?
+	std::string filespec;
+	if(ext != "")
+		filespec = ext + " files|*." + ext + "|All files|*";
+	else
+		filespec = "All files|*";
+	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), towxstring(filespec), forsave ?
 		wxFD_SAVE : wxFD_OPEN);
 	if(d->ShowModal() == wxID_CANCEL)
 		throw canceled_exception();
 	std::string filename = tostdstring(d->GetPath());
+	int findex = d->GetFilterIndex();
 	d->Destroy();
 	if(filename == "")
 		throw canceled_exception();
+	if(forsave && ext != "" && findex == 0) {
+		//Append extension if needed.
+		size_t dpos = filename.find_first_of(".");
+		if(dpos > filename.length() || filename.substr(dpos + 1) != ext)
+			filename = filename + "." + ext;
+	}
 	return filename;
 }
 

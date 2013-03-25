@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 #include <boost/lexical_cast.hpp>
-#include <library/utf8.hpp>
+#include "utf8.hpp"
 
 /**
  * Strip trailing CR if any.
