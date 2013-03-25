@@ -1049,27 +1049,27 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = pick_file(this, "Load Movie", movie_path(), false);
+		filename = pick_file(this, "Load Movie", movie_path(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename = pick_file(this, "Load State", movie_path(), false);
+		filename = pick_file(this, "Load State", movie_path(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load " + filename);
 		return;
 	case wxID_LOAD_STATE_RO:
-		filename = pick_file(this, "Load State (Read-Only)", movie_path(), false);
+		filename = pick_file(this, "Load State (Read-Only)", movie_path(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load-readonly " + filename);
 		return;
 	case wxID_LOAD_STATE_RW:
-		filename = pick_file(this, "Load State (Read-Write)", movie_path(), false);
+		filename = pick_file(this, "Load State (Read-Write)", movie_path(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load-state " + filename);
 		return;
 	case wxID_LOAD_STATE_P:
-		filename = pick_file(this, "Load State (Preserve)", movie_path(), false);
+		filename = pick_file(this, "Load State (Preserve)", movie_path(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load-preserve " + filename);
 		return;
@@ -1077,26 +1077,27 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename = pick_file(this, "Save Movie", movie_path(), true);
+		filename = pick_file(this, "Save Movie", movie_path(), true, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("save-movie " + filename);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", movie_path(), true));
+		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", movie_path(), true,
+			"sub"));
 		return;
 	case wxID_SAVE_STATE:
-		filename = pick_file(this, "Save State", movie_path(), true);
+		filename = pick_file(this, "Save State", movie_path(), true, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("save-state " + filename);
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path(), true));
+		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path(), true, "png"));
 		return;
 	case wxID_RUN_SCRIPT:
 		platform::queue("run-script " + pick_file_member(this, "Select Script", "."));
 		return;
 	case wxID_RUN_LUA:
-		platform::queue("run-lua " + pick_file(this, "Select Lua Script", ".", false));
+		platform::queue("run-lua " + pick_file(this, "Select Lua Script", ".", false, "lua"));
 		return;
 	case wxID_RESET_LUA:
 		platform::queue("reset-lua");
@@ -1132,7 +1133,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
-		std::string filename = pick_file(this, "Save watches to file", ".", true);
+		std::string filename = pick_file(this, "Save watches to file", ".", true, "lwch");
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
@@ -1269,7 +1270,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + library_is_called;
-		load_library(pick_file(this, name, ".", false));
+		load_library(pick_file(this, name, ".", false, library_extension));
 		break;
 	}
 	case wxID_SETTINGS:

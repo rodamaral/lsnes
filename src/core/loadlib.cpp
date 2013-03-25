@@ -34,8 +34,10 @@ void load_library(const std::string& filename)
 extern const bool load_library_supported = true;
 #ifdef __APPLE__
 const char* library_is_called = "Dynamic Library";
+const char* library_extension = "bundle";
 #else
 const char* library_is_called = "Shared Object";
+const char* library_extension = "so";
 #endif
 #elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -62,6 +64,7 @@ void load_library(const std::string& filename)
 }
 extern const bool load_library_supported = true;
 const char* library_is_called = "Dynamic Link Library";
+const char* library_extension = "dll";
 #else
 void load_library(const std::string& filename)
 {
@@ -69,6 +72,7 @@ void load_library(const std::string& filename)
 }
 extern const bool load_library_supported = false;
 const char* library_is_called = NULL;
+const char* library_extension = NULL;
 #endif
 
 

@@ -229,7 +229,7 @@ void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		filename = pick_file(this, "Select opus file to export", ".", true);
+		filename = pick_file(this, "Select opus file to export", ".", true, "odm");
 		voicesub_export_stream(id, filename, EXTFMT_OPUSDEMO);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -244,7 +244,7 @@ void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		filename = pick_file(this, "Select sox file to export", ".", true);
+		filename = pick_file(this, "Select sox file to export", ".", true, "sox");
 		voicesub_export_stream(id, filename, EXTFMT_SOX);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -259,7 +259,7 @@ void wxeditor_voicesub::on_export_q(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-			filename = pick_file(this, "Select Ogg (Opus) file to export", ".", true);
+			filename = pick_file(this, "Select Ogg (Opus) file to export", ".", true, "opus");
 		voicesub_export_stream(id, filename, EXTFMT_OGGOPUS);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -271,7 +271,7 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 {
 	try {
 		std::string filename;
-		filename = pick_file(this, "Select sox file to export (superstream)", ".", true);
+		filename = pick_file(this, "Select sox file to export (superstream)", ".", true, "sox");
 		voicesub_export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -286,7 +286,7 @@ void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
 		uint64_t ts;
 		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
 			"imported stream"));
-		filename = pick_file(this, "Select opus file to import", ".", false);
+		filename = pick_file(this, "Select opus file to import", ".", false, "odm");
 		voicesub_import_stream(ts, filename, EXTFMT_OPUSDEMO);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -301,7 +301,7 @@ void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
 		uint64_t ts;
 		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
 			"imported stream"));
-		filename = pick_file(this, "Select sox file to import", ".", false);
+		filename = pick_file(this, "Select sox file to import", ".", false, "sox");
 		voicesub_import_stream(ts, filename, EXTFMT_SOX);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -316,7 +316,7 @@ void wxeditor_voicesub::on_import_q(wxCommandEvent& e)
 		uint64_t ts;
 		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
 			"imported stream"));
-		filename = pick_file(this, "Select Ogg (Opus) file to import", ".", false);
+		filename = pick_file(this, "Select Ogg (Opus) file to import", ".", false, "opus");
 		voicesub_import_stream(ts, filename, EXTFMT_OGGOPUS);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -361,7 +361,7 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 	try {
 		std::string filename;
 		try {
-			filename = pick_file(this, "Select collection to load", ".", false);
+			filename = pick_file(this, "Select collection to load", ".", false, "lsvs");
 		} catch(...) {
 			return;
 		}
