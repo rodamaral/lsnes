@@ -620,8 +620,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	Fit();
 	gpanel->SetFocus();
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_mainwindow::on_close));
-	menubar = new wxMenuBar;
-	SetMenuBar(menubar);
+	SetMenuBar(menubar = new wxMenuBar);
+	SetStatusBar(statusbar = new wxStatusBar(this));
 
 	menu_start(wxT("File"));
 	menu_start_sub(wxT("New"));
@@ -782,6 +782,40 @@ void wxwin_mainwindow::notify_exit() throw()
 	wxwidgets_exiting = true;
 	join_emulator_thread();
 	Destroy();
+}
+
+void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::string>& vars)
+{
+	if(vars.empty())
+		return;
+	try {
+		std::ostringstream s;
+		bool recording = (vars.find("!mode")->second == "R");
+		if(recording)
+			s << "Frame: " << vars.find("!frame")->second;
+		else
+			s << "Frame: " << vars.find("!frame")->second << "/" << vars.find("!length")->second;
+		s << "  Lag: " << vars.find("!lag")->second;
+		s << "  Subframe: " << vars.find("!subframe")->second;
+		if(vars.count("!saveslot"))
+			s << "  Slot: " << vars.find("!saveslot")->second;
+		s << "  Speed: " << vars.find("!speed")->second << "%";
+		s << " ";
+		if(vars.find("!dumping")->second != "")
+			s << " Dumping";
+		if(vars.find("!mode")->second == "C")
+			s << " Corrupt";
+		else if(vars.find("!mode")->second == "R")
+			s << " Recording";
+		else if(vars.find("!mode")->second == "P")
+			s << " Playback";
+		else if(vars.find("!mode")->second == "F")
+			s << " Finished";
+		else 
+			s << " Unknown";
+		statusbar->SetStatusText(towxstring(s.str()));
+	} catch(std::exception& e) {
+	}
 }
 
 #define NEW_KEYBINDING "A new binding..."

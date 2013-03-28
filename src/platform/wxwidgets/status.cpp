@@ -1,6 +1,7 @@
 #include "core/window.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_status.hpp"
+#include "platform/wxwidgets/window_mainwindow.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
 #include <iostream>
@@ -79,6 +80,8 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	size_t oth_count = 0;
 	bool single = false;
 	for(auto i : newstatus) {
+		if(i.first.length() > 0 && i.first[0] == '!')
+			continue;
 		bool x = regex_match("M\\[.*\\]", i.first);
 		if(x) {
 			mem_width = max(mem_width, text_framebuffer::text_width(i.first) - 3);
@@ -102,6 +105,8 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		if(!single)
 			memorywatches.write("Memory watches:", 0, 0, 0, 0, 0xFFFFFF);
 		for(auto i : newstatus) {
+			if(i.first.length() > 0 && i.first[0] == '!')
+				continue;
 			if(r = regex("M\\[(.*)\\]", i.first)) {
 				size_t n = memorywatches.write(r[1], mem_width + 1, 0, p, 0, 0xFFFFFF);
 				memorywatches.write(i.second, 0, n, p, 0, 0xFFFFFF);
@@ -116,12 +121,22 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		if(!single)
 			statusvars.write("Status:", 0, 0, 0, 0, 0xFFFFFF);
 		for(auto i : newstatus) {
+			if(i.first.length() > 0 && i.first[0] == '!')
+				continue;
 			if(regex_match("M\\[.*\\]", i.first))
 				continue;
 			size_t n = statusvars.write(i.first, oth_width + 1, 0, p, 0, 0xFFFFFF);
 			statusvars.write(i.second, 0, n, p, 0, 0xFFFFFF);
 			p++;
 		}
+	}
+
+	{
+		std::map<std::string, std::string> specials;
+		for(auto i : newstatus)
+			if(i.first.length() > 0 && i.first[0] == '!')
+				specials[i.first] = i.second;
+		main_window->update_statusbar(specials);
 	}
 
 	auto ssize = statusvars.get_pixels();

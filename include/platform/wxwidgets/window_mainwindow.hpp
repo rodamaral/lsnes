@@ -42,6 +42,7 @@ public:
 	void menu_check(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
+	void update_statusbar(const std::map<std::string, std::string>& vars);
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:
@@ -49,6 +50,7 @@ private:
 	panel* gpanel;
 	wxMenu* current_menu;
 	wxMenuBar* menubar;
+	wxStatusBar* statusbar;
 	wxwin_status::panel* spanel;
 	bool spanel_shown;
 	wxwin_status* mwindow;

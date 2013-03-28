@@ -259,20 +259,41 @@ void update_movie_state()
 	}
 	auto& _status = platform::get_emustatus();
 	if(!system_corrupt) {
-		std::ostringstream x;
-		x << movb.get_movie().get_current_frame() << "(";
+		_status.set("!frame", (stringfmt() << movb.get_movie().get_current_frame()).str());
+		_status.set("!length", (stringfmt() << movb.get_movie().get_frame_count()).str());
+		_status.set("!lag", (stringfmt() << movb.get_movie().get_lag_frames()).str());
 		if(location_special == SPECIAL_FRAME_START)
-			x << "0";
+			_status.set("!subframe", "0");
 		else if(location_special == SPECIAL_SAVEPOINT)
-			x << "S";
+			_status.set("!subframe", "S");
 		else if(location_special == SPECIAL_FRAME_VIDEO)
-			x << "V";
+			_status.set("!subframe", "V");
+		else if(location_special == SPECIAL_FRAME_VIDEO)
+			_status.set("!subframe", (stringfmt() << movb.get_movie().next_poll_number()).str());
+	} else {
+		_status.set("!frame", "N/A");
+		_status.set("!length", "N/A");
+		_status.set("!lag", "N/A");
+		_status.set("!subframe", "N/A");
+	}
+	{
+		_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
+		auto& mo = movb.get_movie();
+		if(system_corrupt)
+			_status.set("!mode", "C");
+		else if(!mo.readonly_mode())
+			_status.set("!mode", "R");
+		else if(mo.get_frame_count() >= mo.get_current_frame())
+			_status.set("!mode", "P");
 		else
-			x << movb.get_movie().next_poll_number();
-		x << ";" << movb.get_movie().get_lag_frames() << ")/" << movb.get_movie().get_frame_count();
-		_status.set("Frame", x.str());
-	} else
-		_status.set("Frame", "N/A");
+			_status.set("!mode", "F");
+	}
+	if(jukebox_size > 0)
+		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str()); 
+	else
+		_status.erase("!saveslot");
+	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
+	
 	if(!system_corrupt) {
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
@@ -282,27 +303,6 @@ void update_movie_state()
 	} else {
 		_status.set("RTC", "N/A");
 	}
-	{
-		std::ostringstream x;
-		auto& mo = movb.get_movie();
-		x << (information_dispatch::get_dumper_count() ? "D" : "-");
-		x << (last_hires ? "H" : "-");
-		x << (last_interlace ? "I" : "-");
-		if(system_corrupt)
-			x << "C";
-		else if(!mo.readonly_mode())
-			x << "R";
-		else if(mo.get_frame_count() >= mo.get_current_frame())
-			x << "P";
-		else
-			x << "F";
-		_status.set("Flags", x.str());
-	}
-	if(jukebox_size > 0)
-		_status.set("Saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str()); 
-	else
-		_status.erase("Saveslot");
-	_status.set("SPD%", (stringfmt() << (100 * get_realized_multiplier())).str());
 	do_watch_memory();
 
 	controller_frame c;
