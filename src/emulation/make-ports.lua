@@ -273,6 +273,7 @@ for i = 1,#ports do
 			print("\t\t\tskip_rest_of_field(textbuf, ptr, "..((j < #(port.controllers)) and 'true' or
 				'false')..");");
 		end
+		print("\t\t\treturn ptr;");
 	end
 	print("\t\t};");
 	print("\t\tlegal = [](unsigned c) -> int {");
