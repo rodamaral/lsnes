@@ -995,10 +995,11 @@ queue.
 Loads font from specified file (CUSTOMFONT object).
 
 7.3.34 CUSTOMFONT(number x, number y, string text[, number fgc[, 
-  number bgc]])
+  number bgc[, number hlc]]])
 
 Draw string with custom font to screen. The parameters are the 
-same as in gui.text.
+same as in gui.text, except hlc is the halo color (default is no 
+halo). 
 
 7.4 table input
 

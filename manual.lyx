@@ -1969,12 +1969,15 @@ Loads font from specified file (CUSTOMFONT object).
 \end_layout
 
 \begin_layout Subsubsection
-CUSTOMFONT(number x, number y, string text[, number fgc[, number bgc]])
+CUSTOMFONT(number x, number y, string text[, number fgc[, number bgc[, number
+ hlc]]])
 \end_layout
 
 \begin_layout Standard
 Draw string with custom font to screen.
- The parameters are the same as in gui.text.
+ The parameters are the same as in gui.text, except hlc is the halo color
+ (default is no halo).
+ 
 \end_layout
 
 \begin_layout Subsection

@@ -26,24 +26,63 @@ namespace
 			size = dim - dc;
 	}
 
+	inline bool readfont(const font_glyph_data& glyph, uint32_t xp1, uint32_t yp1)
+	{
+		if(xp1 < 1 || xp1 > glyph.width || yp1 < 1 || yp1 > glyph.height)
+			return false;
+		xp1--;
+		yp1--;
+		size_t ge = yp1 * glyph.stride + (xp1 / 32);
+		size_t gb = 31 - xp1 % 32;
+		return ((glyph.glyph[ge] >> gb) & 1);
+	}
+
 	template<bool T> void _render(const font_glyph_data& glyph, framebuffer<T>& fb, int32_t x, int32_t y,
-		premultiplied_color fg, premultiplied_color bg)
+		premultiplied_color fg, premultiplied_color bg, premultiplied_color hl)
 	{
 		uint32_t xdc, xoff, xsize;
 		uint32_t ydc, yoff, ysize;
-		bound(x, glyph.width, fb.get_width(), xdc, xoff, xsize);
-		bound(y, glyph.height, fb.get_height(), ydc, yoff, ysize);
-		if(!xsize || !ysize)
-			return;
-		for(unsigned i = 0; i < ysize; i++) {
-			auto p = fb.rowptr(i + ydc);
-			for(unsigned j = 0; j < xsize; j++) {
-				size_t ge = (i + yoff) * glyph.stride + ((j + xoff) / 32);
-				size_t gb = 31 - (j + xoff) % 32;
-				if((glyph.glyph[ge] >> gb) & 1)
-					fg.apply(p[j + xdc]);
-				else
-					bg.apply(p[j + xdc]);
+		if(hl) {
+			bound(x - 1, glyph.width + 2, fb.get_width(), xdc, xoff, xsize);
+			bound(y - 1, glyph.height + 2, fb.get_height(), ydc, yoff, ysize);
+			if(!xsize || !ysize)
+				return;
+			for(unsigned i = 0; i < ysize; i++) {
+				auto p = fb.rowptr(i + ydc) + xdc;
+				for(unsigned j = 0; j < xsize; j++) {
+					bool in_halo = false;
+					in_halo |= readfont(glyph, j + xoff - 1, i + yoff - 1);
+					in_halo |= readfont(glyph, j + xoff, i + yoff - 1);
+					in_halo |= readfont(glyph, j + xoff + 1, i + yoff - 1);
+					in_halo |= readfont(glyph, j + xoff - 1, i + yoff);
+					in_halo |= readfont(glyph, j + xoff + 1, i + yoff);
+					in_halo |= readfont(glyph, j + xoff - 1, i + yoff + 1);
+					in_halo |= readfont(glyph, j + xoff, i + yoff + 1);
+					in_halo |= readfont(glyph, j + xoff + 1, i + yoff + 1);
+					if(readfont(glyph, j + xoff, i + yoff))
+						fg.apply(p[j]);
+					else if(in_halo)
+						hl.apply(p[j]);
+					else
+						bg.apply(p[j]);
+					
+				}
+			}
+		} else {
+			bound(x, glyph.width, fb.get_width(), xdc, xoff, xsize);
+			bound(y, glyph.height, fb.get_height(), ydc, yoff, ysize);
+			if(!xsize || !ysize)
+				return;
+			for(unsigned i = 0; i < ysize; i++) {
+				auto p = fb.rowptr(i + ydc) + xdc;
+				for(unsigned j = 0; j < xsize; j++) {
+					size_t ge = (i + yoff) * glyph.stride + ((j + xoff) / 32);
+					size_t gb = 31 - (j + xoff) % 32;
+					if((glyph.glyph[ge] >> gb) & 1)
+						fg.apply(p[j]);
+					else
+						bg.apply(p[j]);
+				}
 			}
 		}
 	}
@@ -134,15 +173,15 @@ font_glyph_data::font_glyph_data(std::istream& s)
 }
 
 void font_glyph_data::render(framebuffer<false>& fb, int32_t x, int32_t y, premultiplied_color fg,
-	premultiplied_color bg) const
+	premultiplied_color bg, premultiplied_color hl) const
 {
-	_render(*this, fb, x, y, fg, bg);
+	_render(*this, fb, x, y, fg, bg, hl);
 }
 
 void font_glyph_data::render(framebuffer<true>& fb, int32_t x, int32_t y, premultiplied_color fg,
-	premultiplied_color bg) const
+	premultiplied_color bg, premultiplied_color hl) const
 {
-	_render(*this, fb, x, y, fg, bg);
+	_render(*this, fb, x, y, fg, bg, hl);
 }
 
 

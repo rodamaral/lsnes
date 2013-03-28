@@ -396,6 +396,9 @@ struct premultiplied_color
 	uint16_t inv;
 	uint32_t invHI;
 
+	operator bool() const throw() { return (origa != 0); }
+	bool operator!() const throw() { return (origa == 0); }
+
 	premultiplied_color() throw()
 	{
 		hi = lo = 0;
