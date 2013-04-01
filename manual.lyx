@@ -7168,5 +7168,113 @@ Lua: Don't wedge VM if callback fails with an exception
 Refactor Ogg handling.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta17epsilon2
+\end_layout
+
+\begin_layout Itemize
+Fix saving PNG screenshots on Win32.
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Sweep axis.
+\end_layout
+
+\begin_layout Itemize
+Load selected slot in ro/rw/preserve/movie mode.
+\end_layout
+
+\begin_layout Itemize
+input.joyset: Preserve and invert user input.
+\end_layout
+
+\begin_layout Itemize
+Allow immediate saving at point of save (transfer saves).
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Filter filenames in dialogs, autoappend extensions.
+\end_layout
+
+\begin_layout Itemize
+data/verysmall.font: Add missing glyph 70 (
+\begin_inset Quotes eld
+\end_inset
+
+F
+\begin_inset Quotes erd
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+Lua: Allow painting custom fonts with halo.
+\end_layout
+
+\begin_layout Itemize
+Fix memory value search to work on byte types.
+\end_layout
+
+\begin_layout Subsection
+rr2-beta5
+\end_layout
+
+\begin_layout Itemize
+Reject oggopus files with incomplete pregap
+\end_layout
+
+\begin_layout Itemize
+Fix multistream and ogg demuxing
+\end_layout
+
+\begin_layout Itemize
+Workaround bug with screen >1024 pixels wide.
+\end_layout
+
+\begin_layout Itemize
+Allow on_input to force/veto system controls.
+\end_layout
+
+\begin_layout Itemize
+Dedicated autohold/autofire window.
+\end_layout
+
+\begin_layout Itemize
+Support per-button autofire.
+\end_layout
+
+\begin_layout Itemize
+Fix crash on trying to frameadvance/exit with no ROM loaded.
+\end_layout
+
+\begin_layout Itemize
+Fix nonexistent controller key warnings.
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Fix mouse editing (TYPE_RAXIS)
+\end_layout
+
+\begin_layout Itemize
+TAS input plugin
+\end_layout
+
+\begin_layout Itemize
+Analog passthrough.
+\end_layout
+
+\begin_layout Itemize
+Add throttle axes (TYPE_TAXIS).
+\end_layout
+
+\begin_layout Itemize
+Fix movie reading with first port having multiple controllers.
+\end_layout
+
+\begin_layout Itemize
+Move some info from status panel to statusbar.
+\end_layout
+
 \end_body
 \end_document

@@ -3469,3 +3469,53 @@ set-axis joystick0axis19 disabled
 
 • Refactor Ogg handling.
 
+18.85 rr1-delta17epsilon2
+
+• Fix saving PNG screenshots on Win32.
+
+• Movie editor: Sweep axis.
+
+• Load selected slot in ro/rw/preserve/movie mode.
+
+• input.joyset: Preserve and invert user input.
+
+• Allow immediate saving at point of save (transfer saves).
+
+• Wxwidgets: Filter filenames in dialogs, autoappend extensions.
+
+• data/verysmall.font: Add missing glyph 70 (“F”).
+
+• Lua: Allow painting custom fonts with halo.
+
+• Fix memory value search to work on byte types.
+
+18.86 rr2-beta5
+
+• Reject oggopus files with incomplete pregap
+
+• Fix multistream and ogg demuxing
+
+• Workaround bug with screen >1024 pixels wide.
+
+• Allow on_input to force/veto system controls.
+
+• Dedicated autohold/autofire window.
+
+• Support per-button autofire.
+
+• Fix crash on trying to frameadvance/exit with no ROM loaded.
+
+• Fix nonexistent controller key warnings.
+
+• Movie editor: Fix mouse editing (TYPE_RAXIS)
+
+• TAS input plugin
+
+• Analog passthrough.
+
+• Add throttle axes (TYPE_TAXIS).
+
+• Fix movie reading with first port having multiple controllers.
+
+• Move some info from status panel to statusbar.
+
