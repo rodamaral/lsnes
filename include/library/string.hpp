@@ -103,7 +103,15 @@ template<typename T> inline T parse_value(const std::string& value) throw(std::b
 		if(!std::numeric_limits<T>::is_signed && value.length() && value[0] == '-') {
 			throw std::runtime_error("Unsigned values can't be negative");
 		}
-		return boost::lexical_cast<T>(value);
+		//Hack for inability of lexical_cast to deal with chars like we want.
+		if(sizeof(T) > 1)
+			return boost::lexical_cast<T>(value);
+		else {
+			short v = boost::lexical_cast<short>(value);
+			if(v > 255 || v < -128 || (v > 127 && std::numeric_limits<T>::is_signed))
+				throw std::runtime_error("Value out of range");
+			return static_cast<T>(v);
+		}
 	} catch(std::exception& e) {
 		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
 	}
