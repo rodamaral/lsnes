@@ -3927,3 +3927,23 @@ set-axis joystick0axis19 disabled
 
 • Lua: on_button and input.veto_button.
 
+19.80 rr1-delta17epsilon2
+
+• Fix saving PNG screenshots on Win32.
+
+• Movie editor: Sweep axis.
+
+• Load selected slot in ro/rw/preserve/movie mode.
+
+• input.joyset: Preserve and invert user input.
+
+• Allow immediate saving at point of save (transfer saves).
+
+• Wxwidgets: Filter filenames in dialogs, autoappend extensions.
+
+• data/verysmall.font: Add missing glyph 70 (“F”).
+
+• Lua: Allow painting custom fonts with halo.
+
+• Fix memory value search to work on byte types.
+

@@ -8012,5 +8012,53 @@ Lua: on_snoop2
 Lua: on_button and input.veto_button.
 \end_layout
 
+\begin_layout Subsection
+rr1-delta17epsilon2
+\end_layout
+
+\begin_layout Itemize
+Fix saving PNG screenshots on Win32.
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Sweep axis.
+\end_layout
+
+\begin_layout Itemize
+Load selected slot in ro/rw/preserve/movie mode.
+\end_layout
+
+\begin_layout Itemize
+input.joyset: Preserve and invert user input.
+\end_layout
+
+\begin_layout Itemize
+Allow immediate saving at point of save (transfer saves).
+\end_layout
+
+\begin_layout Itemize
+Wxwidgets: Filter filenames in dialogs, autoappend extensions.
+\end_layout
+
+\begin_layout Itemize
+data/verysmall.font: Add missing glyph 70 (
+\begin_inset Quotes eld
+\end_inset
+
+F
+\begin_inset Quotes erd
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+Lua: Allow painting custom fonts with halo.
+\end_layout
+
+\begin_layout Itemize
+Fix memory value search to work on byte types.
+\end_layout
+
 \end_body
 \end_document
