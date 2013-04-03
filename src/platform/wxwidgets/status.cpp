@@ -30,9 +30,15 @@ wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines
 	auto s = statusvars.get_pixels();
 	SetMinSize(wxSize(s.first, s.second));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
+	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(panel::on_erase), NULL, this);
 	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 	watch_flag = 0;
 	previous_size = 0;
+}
+
+void wxwin_status::panel::on_erase(wxEraseEvent& e)
+{
+	//Blank.
 }
 
 bool wxwin_status::panel::AcceptsFocus () const

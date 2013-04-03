@@ -16,6 +16,7 @@ public:
 		bool AcceptsFocus () const;
 		void on_focus(wxFocusEvent& e);
 		void on_paint(wxPaintEvent& e);
+		void on_erase(wxEraseEvent& e);
 		bool dirty;
 		wxWindow* parent;
 		wxWindow* tfocuswin;
