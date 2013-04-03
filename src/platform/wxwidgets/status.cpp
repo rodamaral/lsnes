@@ -33,6 +33,7 @@ wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 	watch_flag = 0;
+	previous_size = 0;
 }
 
 bool wxwin_status::panel::AcceptsFocus () const
@@ -141,14 +142,13 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 
 	auto ssize = statusvars.get_pixels();
 	auto msize = memorywatches.get_pixels();
-	size_t y2 = !single ? ssize.second + 3 : 0;
+	size_t y2 = ssize.second + (!single ? 3 : 0);
 	size_t yl = ssize.second + 1;
 	std::vector<char> buffer1, buffer2;
 	buffer1.resize(msize.first * msize.second * 3);
 	buffer2.resize(ssize.first * ssize.second * 3);
 
 	wxPaintDC dc(this);
-	dc.Clear();
 	if(oth_count) {
 		statusvars.render(&buffer2[0]);
 		wxBitmap bmp2(wxImage(ssize.first, ssize.second, reinterpret_cast<unsigned char*>(&buffer2[0]),
@@ -156,7 +156,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		dc.DrawBitmap(bmp2, 0, 0, false);
 	}
 	if(!single) {
-		dc.SetPen(wxPen(wxColour(0, 0, 0)));
+		dc.SetPen(*wxBLACK_PEN);
 		dc.DrawLine(0, yl, msize.first, yl);
 	}
 	if(mem_count) {
@@ -165,6 +165,13 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 			true));
 		dc.DrawBitmap(bmp1, 0, y2, false);
 	}
+	auto psize = GetSize();
+	dc.SetPen(*wxWHITE_PEN);
+	dc.SetBrush(*wxWHITE_BRUSH);
+	size_t minsize = max(static_cast<size_t>(psize.y), previous_size);
+	size_t maxuse = y2 + 16 * (mem_count + (!single ? 1 : 0));
+	dc.DrawRectangle(0, maxuse, psize.x, minsize);
+	previous_size = maxuse;
 	dirty = false;
 }
 

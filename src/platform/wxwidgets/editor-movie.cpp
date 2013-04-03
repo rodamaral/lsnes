@@ -1213,7 +1213,6 @@ void wxeditor_movie::_moviepanel::on_paint(wxPaintEvent& e)
 		return;
 	}
 	wxPaintDC dc(this);
-	dc.Clear();
 	wxBitmap bmp(wxImage(size.first, size.second, &pixels[0], true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	requested = false;
