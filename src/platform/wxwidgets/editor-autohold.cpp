@@ -43,6 +43,7 @@ private:
 		wxCheckBox* check;	//Used only by UI version.
 		wxCheckBox* afcheck;	//Used only by UI version.
 		bool status;		//Used only by internal version.
+		bool afstatus;		//Used only by internal version.
 		unsigned logical;	//Logical controller. Internal only.
 		std::string name;	//Name. Internal only.
 	};
@@ -216,6 +217,8 @@ void wxeditor_autohold::update_controls()
 				t.controller = pcid.second;
 				t.index = k;
 				t.status = controls.autohold2(pcid.first, pcid.second, k);
+				auto h = controls.autofire2(pcid.first, pcid.second, k);
+				t.afstatus = (h.first > 0);
 				t.logical = cnum_g;
 				t.name = pcb.name;
 				_autoholds.push_back(t);
@@ -266,7 +269,7 @@ void wxeditor_autohold::update_controls()
 		check->SetValue(i.status);
 		check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,  wxCommandEventHandler(wxeditor_autohold::on_checkbox),
 			NULL, this);
-		afcheck->SetValue(i.status);
+		afcheck->SetValue(i.afstatus);
 		afcheck->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 			wxCommandEventHandler(wxeditor_autohold::on_checkbox), NULL, this);
 		current->Add(label);
