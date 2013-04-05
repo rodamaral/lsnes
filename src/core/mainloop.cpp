@@ -173,8 +173,9 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		controls.reset(pending_reset_cycles);
 	else if(!subframe)
 		controls.reset(-1);
-	controller_frame tmp = controls.commit(movb.get_movie().get_current_frame());
+	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
 	lua_callback_do_input(tmp, subframe);
+	controls.commit(tmp);
 	return tmp;
 }
 
