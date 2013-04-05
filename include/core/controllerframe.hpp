@@ -71,19 +71,11 @@ public:
  */
 	controller_frame get(uint64_t framenum) throw();
 /**
- * Commit given controls (autohold/autofire is factored in).
- *
- * Parameter framenum: Number of current frame (for evaluating autofire).
- * Returns: The committed controls.
- */
-	controller_frame commit(uint64_t framenum) throw();
-/**
  * Commit given controls (autohold/autofire is ignored).
  *
  * Parameter controls: The controls to commit
- * Returns: The committed controls.
  */
-	controller_frame commit(controller_frame controls) throw();
+	void commit(controller_frame controls) throw();
 /**
  * Get status of committed controls.
  * Returns: The committed controls.

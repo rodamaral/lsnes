@@ -194,22 +194,14 @@ controller_frame controller_state::get_blank() throw()
 	return _input.blank_frame();
 }
 
-controller_frame controller_state::commit(uint64_t framenum) throw()
-{
-	controller_frame f = get(framenum);
-	_committed = f;
-	return _committed;
-}
-
 controller_frame controller_state::get_committed() throw()
 {
 	return _committed;
 }
 
-controller_frame controller_state::commit(controller_frame controls) throw()
+void controller_state::commit(controller_frame controls) throw()
 {
 	_committed = controls;
-	return _committed;
 }
 
 bool controller_state::is_present(unsigned port, unsigned controller) throw()
