@@ -15,4 +15,5 @@ const char* lua_sysrc_script =
 "	end\n"
 "	resume(yield, ...);\n"
 "	return resume;\n"
-"end\n";
+"end;\n"
+"print=print2;\n";

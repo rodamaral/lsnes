@@ -8,7 +8,7 @@
 
 namespace
 {
-	function_ptr_luafun lua_print(LS, "print", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_print(LS, "print2", [](lua_state& L, const std::string& fname) -> int {
 		int stacksize = 0;
 		while(!L.isnone(stacksize + 1))
 		stacksize++;

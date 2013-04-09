@@ -395,9 +395,7 @@ void init_lua(bool soft) throw()
 			return;
 		fatal_error();	
 	}
-	LS.getglobal("print");
 	luaL_openlibs(LS.handle());
-	LS.setglobal("print");
 	run_sysrc_lua(LS);
 	copy_system_tables(LS);
 }
