@@ -269,7 +269,7 @@ void update_movie_state()
 			_status.set("!subframe", "S");
 		else if(location_special == SPECIAL_FRAME_VIDEO)
 			_status.set("!subframe", "V");
-		else if(location_special == SPECIAL_FRAME_VIDEO)
+		else
 			_status.set("!subframe", (stringfmt() << movb.get_movie().next_poll_number()).str());
 	} else {
 		_status.set("!frame", "N/A");
