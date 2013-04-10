@@ -353,6 +353,7 @@ private:
 		void signal_repaint();
 		void on_scroll(wxScrollEvent& e);
 		void on_paint(wxPaintEvent& e);
+		void on_erase(wxEraseEvent& e);
 		void on_mouse(wxMouseEvent& e);
 		void on_popup_menu(wxCommandEvent& e);
 	private:
@@ -465,6 +466,7 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 {
 	m = v;
 	Connect(wxEVT_PAINT, wxPaintEventHandler(_moviepanel::on_paint), NULL, this);
+	Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(_moviepanel::on_erase), NULL, this);
 	new_width = 0;
 	new_height = 0;
 	moviepos = 0;
@@ -1265,6 +1267,11 @@ void wxeditor_movie::_moviepanel::on_scroll(wxScrollEvent& e)
 	signal_repaint();
 }
 
+void wxeditor_movie::_moviepanel::on_erase(wxEraseEvent& e)
+{
+	//Blank.
+}
+
 void wxeditor_movie::_moviepanel::on_paint(wxPaintEvent& e)
 {
 	auto size = fb.get_pixels();
@@ -1275,7 +1282,6 @@ void wxeditor_movie::_moviepanel::on_paint(wxPaintEvent& e)
 		return;
 	}
 	wxPaintDC dc(this);
-	dc.Clear();
 	wxBitmap bmp(wxImage(size.first, size.second, &pixels[0], true));
 	dc.DrawBitmap(bmp, 0, 0, false);
 	requested = false;

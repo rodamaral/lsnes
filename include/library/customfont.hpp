@@ -33,9 +33,10 @@ struct font_glyph_data
 	unsigned height;
 	unsigned stride;
 	std::vector<uint32_t> glyph;	//Bitpacked, element breaks between rows.
-	void render(framebuffer<false>& fb, int32_t x, int32_t y, premultiplied_color fg, premultiplied_color bg)
-		const;
-	void render(framebuffer<true>& fb, int32_t x, int32_t y, premultiplied_color fg, premultiplied_color bg) const;
+	void render(framebuffer<false>& fb, int32_t x, int32_t y, premultiplied_color fg, premultiplied_color bg,
+		premultiplied_color hl) const;
+	void render(framebuffer<true>& fb, int32_t x, int32_t y, premultiplied_color fg, premultiplied_color bg,
+		premultiplied_color hl) const;
 };
 
 struct custom_font

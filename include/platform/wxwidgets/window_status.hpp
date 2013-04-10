@@ -16,6 +16,7 @@ public:
 		bool AcceptsFocus () const;
 		void on_focus(wxFocusEvent& e);
 		void on_paint(wxPaintEvent& e);
+		void on_erase(wxEraseEvent& e);
 		bool dirty;
 		wxWindow* parent;
 		wxWindow* tfocuswin;
@@ -25,6 +26,7 @@ public:
 		text_framebuffer statusvars;
 		text_framebuffer memorywatches;
 		int watch_flag;
+		size_t previous_size;
 	};
 	wxwin_status(int flag, const std::string& title);
 	~wxwin_status();
