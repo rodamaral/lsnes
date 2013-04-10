@@ -547,7 +547,9 @@ std::string pick_file(wxWindow* parent, const std::string& title, const std::str
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
 	std::string filespec;
-	if(ext != "")
+	if(ext == "lsmv" && !forsave)
+		filespec = "lsmv files|*.lsmv|lsmv backup files|*.lsmv.backup|All files|*";
+	else if(ext != "")
 		filespec = ext + " files|*." + ext + "|All files|*";
 	else
 		filespec = "All files|*";
