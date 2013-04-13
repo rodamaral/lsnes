@@ -22,6 +22,7 @@ extern bool system_corrupt;
 std::vector<char>& get_host_memory();
 movie& get_movie();
 
+std::string resolve_relative_path(const std::string& path);
 std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
 	std::runtime_error);
 

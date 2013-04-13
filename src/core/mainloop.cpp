@@ -22,6 +22,7 @@
 #include "interface/romtype.hpp"
 #include "library/framebuffer.hpp"
 #include "library/pixfmt-lrgb.hpp"
+#include "library/zip.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -44,6 +45,8 @@ namespace
 {
 	setting_var<setting_var_model_int<0,999999>> advance_timeout_first(lsnes_vset, "advance-timeout",
 		"Delays‣First frame advance", 500);
+	setting_var<setting_var_model_int<0,999999>> advance_timeout_subframe(lsnes_vset, "advance-subframe-timeout",
+		"Delays‣Subframe advance", 100);
 	setting_var<setting_var_model_bool> pause_on_end(lsnes_vset, "pause-on-end", "Movie‣Pause on end", false);
 	setting_var<setting_var_model_int<0,999>> jukebox_size(lsnes_vset, "jukebox-size",
 		"Movie‣Number of save slots", 12);
@@ -76,7 +79,6 @@ namespace
 	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
-	//Few settings.
 	//Last frame params.
 	bool last_hires = false;
 	bool last_interlace = false;
@@ -92,6 +94,49 @@ namespace
 	std::string save_jukebox_name(size_t i)
 	{
 		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
+	}
+
+	std::map<std::string, std::string> slotinfo_cache;
+
+	std::string vector_to_string(const std::vector<char>& x)
+	{
+		std::string y(x.begin(), x.end());
+		while(y.length() > 0 && y[y.length() - 1] < 32)
+			y = y.substr(0, y.length() - 1);
+		return y;
+	}
+
+	std::string get_slotinfo(const std::string& _filename)
+	{
+		std::string filename = resolve_relative_path(_filename);
+		if(!slotinfo_cache.count(filename)) {
+			std::ostringstream out;
+			try {
+				std::string projid = vector_to_string(read_file_relative(filename + "/projectid",
+					""));
+				std::string rerecords = vector_to_string(read_file_relative(filename + "/rerecords",
+					""));
+				std::string frame = vector_to_string(read_file_relative(filename + "/saveframe", ""));
+				if(our_movie.projectid == projid)
+					out << rerecords << "R/" << frame << "F";
+				else
+					out << "Wrong movie";
+			} catch(...) {
+				out << "Nonexistent";
+			}
+			slotinfo_cache[filename] = out.str();
+		}
+		return slotinfo_cache[filename];
+	}
+
+	void flush_slotinfo(const std::string& filename)
+	{
+		slotinfo_cache.erase(resolve_relative_path(filename));
+	}
+
+	void flush_slotinfo()
+	{
+		slotinfo_cache.clear();
 	}
 
 	class _lsnes_pflag_handler : public movie::poll_flag
@@ -128,8 +173,11 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
-			if(!cancel_advance && !advanced_once) {
-				platform::wait(advance_timeout_first * 1000);
+			if(!cancel_advance) {
+				if(!advanced_once)
+					platform::wait(advance_timeout_first * 1000);
+				else
+					platform::wait(advance_timeout_subframe * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -155,8 +203,14 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
-				platform::wait(advanced_once ? to_wait_frame(get_utime()) :
-					(advance_timeout_first * 1000));
+				uint64_t wait = 0;
+				if(!advanced_once)
+					wait = advance_timeout_first * 1000;
+				else if(amode == ADVANCE_SUBFRAME)
+					wait = advance_timeout_subframe * 1000;
+				else
+					wait = to_wait_frame(get_utime());
+				platform::wait(wait);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -214,11 +268,13 @@ namespace
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename);
+			flush_slotinfo(filename);
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename);
+			flush_slotinfo(filename);
 			return;
 		}
 		queued_saves.insert(filename);
@@ -310,10 +366,14 @@ void update_movie_state()
 		else
 			_status.set("!mode", "F");
 	}
-	if(jukebox_size > 0)
-		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str()); 
-	else
+	if(jukebox_size > 0) {
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer));
+		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
+		_status.set("!saveslotinfo", get_slotinfo(sfilen));
+	} else {
 		_status.erase("!saveslot");
+		_status.erase("!saveslotinfo");
+	}
 	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
 	
 	if(!system_corrupt) {
@@ -742,6 +802,12 @@ namespace
 			messages << "Pending saves canceled." << std::endl;
 		});
 
+	function_ptr_command<> flushslots(lsnes_cmd, "flush-slotinfo", "Flush slotinfo cache",
+		"Flush slotinfo cache\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			flush_slotinfo();
+		});
+
 	inverse_bind ipause_emulator(lsnes_mapper, "pause-emulator", "Speed‣(Un)pause");
 	inverse_bind ijback(lsnes_mapper, "cycle-jukebox-backward", "Slot select‣Cycle backwards");
 	inverse_bind ijforward(lsnes_mapper, "cycle-jukebox-forward", "Slot select‣Cycle forwards");
@@ -876,6 +942,7 @@ namespace
 			return 1;
 		}
 		if(pending_load != "") {
+			std::string old_project = our_movie.projectid;
 			system_corrupt = false;
 			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
 				!do_load_state(pending_load, loadmode)) {
@@ -902,6 +969,8 @@ namespace
 				information_dispatch::do_status_update();
 				platform::flush_command_queue();
 			}
+			if(old_project != our_movie.projectid)
+				flush_slotinfo();	//Wrong movie may be stale.
 			return 1;
 		}
 		return 0;
@@ -912,8 +981,10 @@ namespace
 	{
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			our_rom->rtype->runtosave();
-			for(auto i : queued_saves)
+			for(auto i : queued_saves) {
 				do_save_state(i);
+				flush_slotinfo(i);
+			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
 				std::vector<char> s = our_rom->save_core_state(true);

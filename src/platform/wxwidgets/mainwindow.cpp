@@ -797,6 +797,8 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::string>
 		s << "  Subframe: " << vars.find("!subframe")->second;
 		if(vars.count("!saveslot"))
 			s << "  Slot: " << vars.find("!saveslot")->second;
+		if(vars.count("!saveslotinfo"))
+			s << " [" << vars.find("!saveslotinfo")->second << "]";
 		s << "  Speed: " << vars.find("!speed")->second << "%";
 		s << " ";
 		if(vars.find("!dumping")->second != "")
