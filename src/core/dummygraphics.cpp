@@ -1,4 +1,3 @@
-#define GRAPHICS_WEAK
 #include "core/window.hpp"
 
 #include <cstdlib>

@@ -5,7 +5,6 @@
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
-#include "core/threaddebug.hpp"
 #include "core/window.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -250,7 +249,6 @@ void reached_main()
 {
 	new_core_flag = false;	//We'll process the static cores anyway.
 	reached_main_flag = true;
-	init_threaded_malloc();
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
 }

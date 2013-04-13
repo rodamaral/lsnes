@@ -18,12 +18,6 @@
 #include "library/controller-data.hpp"
 
 /**
- * Analog indices.
- */
-#define MAX_ANALOG 3
-
-
-/**
  * Controllers state.
  */
 class controller_state
