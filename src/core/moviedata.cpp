@@ -214,6 +214,15 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 	return std::make_pair(fullname, nickname);
 }
 
+//Resolve relative path.
+std::string resolve_relative_path(const std::string& path)
+{
+	try {
+		return boost_fs::absolute(boost_fs::path(path)).string();
+	} catch(...) {
+		return path;
+	}
+}
 
 //Save state.
 void do_save_state(const std::string& filename) throw(std::bad_alloc,
@@ -251,7 +260,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
-	last_save = boost_fs::absolute(boost_fs::path(filename2)).string();
+	last_save = resolve_relative_path(filename2);
 }
 
 //Save movie.
@@ -279,7 +288,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
-	last_save = boost_fs::absolute(boost_fs::path(filename2)).string();
+	last_save = resolve_relative_path(filename2);
 }
 
 extern time_t random_seed_value;

@@ -21,6 +21,7 @@
 #include "core/window.hpp"
 #include "library/framebuffer.hpp"
 #include "library/pixfmt-lrgb.hpp"
+#include "library/zip.hpp"
 
 #include <iomanip>
 #include <cassert>
@@ -88,6 +89,49 @@ namespace
 	std::string save_jukebox_name(size_t i)
 	{
 		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
+	}
+
+	std::map<std::string, std::string> slotinfo_cache;
+	
+	std::string vector_to_string(const std::vector<char>& x)
+	{
+		std::string y(x.begin(), x.end());
+		while(y.length() > 0 && y[y.length() - 1] < 32)
+			y = y.substr(0, y.length() - 1);
+		return y;
+	}
+	
+	std::string get_slotinfo(const std::string& _filename)
+	{
+		std::string filename = resolve_relative_path(_filename);
+		if(!slotinfo_cache.count(filename)) {
+			std::ostringstream out;
+			try {
+				std::string projid = vector_to_string(read_file_relative(filename + "/projectid",
+					""));
+				std::string rerecords = vector_to_string(read_file_relative(filename + "/rerecords",
+					""));
+				std::string frame = vector_to_string(read_file_relative(filename + "/saveframe", ""));
+				if(our_movie.projectid == projid)
+					out << rerecords << "R/" << frame << "F";
+				else
+					out << "Wrong movie";
+			} catch(...) {
+				out << "Nonexistent";
+			}
+			slotinfo_cache[filename] = out.str();
+		}
+		return slotinfo_cache[filename];
+	}
+
+	void flush_slotinfo(const std::string& filename)
+	{
+		slotinfo_cache.erase(resolve_relative_path(filename));
+	}
+	
+	void flush_slotinfo()
+	{
+		slotinfo_cache.clear();
 	}
 }
 
@@ -208,11 +252,13 @@ namespace
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename);
+			flush_slotinfo(filename);
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename);
+			flush_slotinfo(filename);
 			return;
 		}
 		queued_saves.insert(filename);
@@ -292,10 +338,14 @@ void update_movie_state()
 			x << "F";
 		_status.set("Flags", x.str());
 	}
-	if(jukebox_size > 0)
-		_status.set("Saveslot", translate_name_mprefix(save_jukebox_name(save_jukebox_pointer)));
-	else
-		_status.erase("Saveslot");
+	if(jukebox_size > 0) {
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer));
+		_status.set("Slot", sfilen);
+		_status.set("Slotinf", get_slotinfo(sfilen));
+	} else {
+		_status.erase("Slot");
+		_status.erase("Slotinf");
+	}
 	{
 		std::ostringstream x;
 		x << get_framerate();
@@ -685,6 +735,11 @@ namespace
 			messages << "Pending saves canceled." << std::endl;
 		});
 
+	function_ptr_command<> flushslots("flush-slotinfo", "Flush slotinfo cache", "Flush slotinfo cache\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			flush_slotinfo();
+		});
+
 	function_ptr_command<> test1("test-1", "no description available", "No help available\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			redraw_framebuffer(screen_nosignal);
@@ -834,6 +889,7 @@ namespace
 			return 1;
 		}
 		if(pending_load != "") {
+			std::string old_project = our_movie.projectid;
 			system_corrupt = false;
 			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
 				!do_load_state(pending_load, loadmode)) {
@@ -859,6 +915,8 @@ namespace
 				information_dispatch::do_status_update();
 				platform::flush_command_queue();
 			}
+			if(old_project != our_movie.projectid)
+				flush_slotinfo();	//Wrong movie may be stale.
 			return 1;
 		}
 		return 0;
@@ -869,8 +927,10 @@ namespace
 	{
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			core_runtosave();
-			for(auto i : queued_saves)
+			for(auto i : queued_saves) {
 				do_save_state(i);
+				flush_slotinfo(i);
+			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
 				std::vector<char> s = save_core_state(true);
