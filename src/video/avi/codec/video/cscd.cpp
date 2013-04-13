@@ -10,8 +10,9 @@
 
 namespace
 {
-	numeric_setting clvl(lsnes_set, "avi-cscd-compression", 0, 9, 7);
-	numeric_setting kint(lsnes_set, "avi-cscd-keyint", 0, 999999999, 0);
+	setting_var<setting_var_model_int<0,9>> clvl(lsnes_vset, "avi-cscd-compression", "AVI‣CSCD‣Compression", 7);
+	setting_var<setting_var_model_int<0,999999999>> kint(lsnes_vset, "avi-cscd-keyint",
+		"AVI‣CSCD‣Keyframe interval", 0);
 
 	struct avi_codec_cscd : public avi_video_codec
 	{

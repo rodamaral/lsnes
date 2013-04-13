@@ -17,7 +17,7 @@
 
 namespace
 {
-	numeric_setting clevel(lsnes_set, "jmd-compression", 0, 9, 7);
+	setting_var<setting_var_model_int<0,9>> clevel(lsnes_vset, "jmd-compression", "JMD‣Compression", 7);
 
 	void deleter_fn(void* f)
 	{

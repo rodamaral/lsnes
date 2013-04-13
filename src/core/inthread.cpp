@@ -43,6 +43,8 @@
 #define ITERATION_TIME 15000
 //Opus bitrate to use.
 #define OPUS_BITRATE 48000
+//Opus min bitrate to use.
+#define OPUS_MIN_BITRATE 8000
 //Opus max bitrate to use.
 #define OPUS_MAX_BITRATE 255000
 //Ogg Opus granule rate.
@@ -60,44 +62,10 @@ namespace
 	class opus_stream;
 	class stream_collection;
 
-	volatile unsigned opus_bitrate = OPUS_BITRATE;
-	volatile unsigned opus_max_bitrate = OPUS_MAX_BITRATE;
-	struct _bitrate_setting : public setting
-	{
-		_bitrate_setting() : setting(lsnes_set, "opus-bitrate") {}
-		~_bitrate_setting() {}
-		bool blank(bool x) throw (std::bad_alloc, std::runtime_error)
-		{
-			throw std::runtime_error("This setting can't be blanked");
-		}
-		bool is_set() throw() { return true; }
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			unsigned tmp = parse_value<unsigned>(value);
-			if(tmp < 8000 || tmp > 255000)
-				throw std::runtime_error("Bitrate out of range");
-			opus_bitrate = tmp;
-		}
-		std::string get() throw(std::bad_alloc) { return (stringfmt() << opus_bitrate).str(); }
-	} bitrate_setting;
-	struct _max_bitrate_setting : public setting
-	{
-		_max_bitrate_setting() : setting(lsnes_set, "opus-max-bitrate") {}
-		~_max_bitrate_setting() {}
-		bool blank(bool x) throw (std::bad_alloc, std::runtime_error)
-		{
-			throw std::runtime_error("This setting can't be blanked");
-		}
-		bool is_set() throw() { return true; }
-		void set(const std::string& value) throw(std::bad_alloc, std::runtime_error)
-		{
-			unsigned tmp = parse_value<unsigned>(value);
-			if(tmp < 8000 || tmp > 255000)
-				throw std::runtime_error("Bitrate out of range");
-			opus_max_bitrate = tmp;
-		}
-		std::string get() throw(std::bad_alloc) { return (stringfmt() << opus_max_bitrate).str(); }
-	} max_bitrate_setting;
+	setting_var<setting_var_model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_vset, "opus-bitrate",
+		"commentary‣Bitrate", OPUS_BITRATE);
+	setting_var<setting_var_model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(lsnes_vset,
+		"opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
 
 	//Recording active flag.
 	volatile bool active_flag = false;
@@ -630,7 +598,7 @@ out:
 			throw std::runtime_error("Only mono streams are supported");
 		uint64_t samples = read64ule(header + 8);
 		opus::encoder enc(opus::samplerate::r48k, false, opus::application::voice);
-		enc.ctl(opus::bitrate(opus_bitrate));
+		enc.ctl(opus::bitrate(opus_bitrate.get()));
 		int32_t pregap = enc.ctl(opus::lookahead);
 		pregap_length = pregap;
 		for(uint64_t i = 0; i < samples + pregap; i += OPUS_BLOCK_SIZE) {
@@ -657,7 +625,7 @@ out:
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
 				tmp[j] = 0;
 			try {
-				const size_t opus_out_max2 = opus_max_bitrate * OPUS_BLOCK_SIZE / 384000;
+				const size_t opus_out_max2 = opus_max_bitrate.get() * OPUS_BLOCK_SIZE / 384000;
 				size_t r = enc.encode(tmp, OPUS_BLOCK_SIZE, tmpi, opus_out_max2);
 				write(OPUS_BLOCK_SIZE / 120, tmpi, r);
 				brtrack.submit(r, bs);
@@ -1516,7 +1484,7 @@ out:
 			cblock = 120;
 		else
 			return;		//No valid data to compress.
-		const size_t opus_out_max2 = opus_max_bitrate * cblock / 384000;
+		const size_t opus_out_max2 = opus_max_bitrate.get() * cblock / 384000;
 		try {
 			size_t c = e.encode(buf, cblock, opus_output, opus_out_max2);
 			//Successfully compressed a block.
@@ -1598,7 +1566,7 @@ out:
 			return;
 		try {
 			e.ctl(opus::reset);
-			e.ctl(opus::bitrate(opus_bitrate));
+			e.ctl(opus::bitrate(opus_bitrate.get()));
 			brtrack.reset();
 			uint64_t ctime;
 			{
@@ -1671,7 +1639,7 @@ out:
 		{
 			int err;
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
-			oenc.ctl(opus::bitrate(opus_bitrate));
+			oenc.ctl(opus::bitrate(opus_bitrate.get()));
 			audioapi_resampler rin;
 			audioapi_resampler rout;
 			const unsigned buf_max = 6144;	//These buffers better be large.

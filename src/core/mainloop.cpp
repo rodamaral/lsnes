@@ -39,11 +39,15 @@
 void update_movie_state();
 time_t random_seed_value = 0;
 
-volatile uint32_t advance_timeout_first = 500;
-volatile bool pause_on_end = false;
 
 namespace
 {
+	setting_var<setting_var_model_int<0,999999>> advance_timeout_first(lsnes_vset, "advance-timeout",
+		"Delays‣First frame advance", 500);
+	setting_var<setting_var_model_bool> pause_on_end(lsnes_vset, "pause-on-end", "Movie‣Pause on end", false);
+	setting_var<setting_var_model_int<0,999>> jukebox_size(lsnes_vset, "jukebox-size",
+		"Movie‣Number of save slots", 12);
+
 	enum advance_mode
 	{
 		ADVANCE_QUIT,			//Quit the emulator.
@@ -56,6 +60,8 @@ namespace
 		ADVANCE_PAUSE,			//Unconditional pause.
 	};
 
+	//Our thread.
+	threadid_class emulation_thread;
 	//Flags related to repeating advance.
 	bool advanced_once;
 	bool cancel_advance;
@@ -67,7 +73,6 @@ namespace
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
 	//Save jukebox.
-	size_t jukebox_size = 12;
 	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
 	int location_special;
@@ -81,9 +86,6 @@ namespace
 	//Stop at frame.
 	bool stop_at_frame_active = false;
 	uint64_t stop_at_frame = 0;
-	//Firmware path.
-	mutex_class firmwarepath_lock;
-	std::string firmwarepath = ".";
 
 	enum advance_mode old_mode;
 
@@ -248,6 +250,25 @@ namespace
 		information_dispatch::do_core_change();
 		return true;
 	}
+
+	struct jukebox_size_listener : public setting_var_listener
+	{
+		jukebox_size_listener() { lsnes_vset.add_listener(*this); }
+		~jukebox_size_listener() throw() {lsnes_vset.remove_listener(*this); };
+		void on_setting_change(setting_var_group& grp, const setting_var_base& val)
+		{
+			if(val.get_iname() == "jukebox-size") {
+				if(save_jukebox_pointer >= jukebox_size)
+					save_jukebox_pointer = 0;
+				
+			}
+			if(emulation_thread == this_thread_id())
+				update_movie_state();
+			else
+				runemufn([]() { update_movie_state(); });
+			information_dispatch::do_status_update();
+		}
+	};
 }
 
 void update_movie_state()
@@ -365,8 +386,7 @@ public:
 
 	std::string get_firmware_path()
 	{
-		umutex_class h(firmwarepath_lock);
-		return firmwarepath;
+		return lsnes_vset["firmwarepath"].str();
 	}
 	
 	std::string get_base_path()
@@ -396,32 +416,6 @@ public:
 		information_dispatch::do_frame(screen, fps_n, fps_d);
 	}
 };
-
-void set_firmwarepath(const std::string& fwp)
-{
-	umutex_class h(firmwarepath_lock);
-	if(fwp == "")
-		firmwarepath = ".";
-	else
-		firmwarepath = fwp;
-}
-
-std::string get_firmwarepath()
-{
-	return firmwarepath;
-}
-
-void set_jukebox_size(size_t size)
-{
-	jukebox_size = size;
-	if(save_jukebox_pointer >= jukebox_size)
-		save_jukebox_pointer = 0;
-}
-
-size_t get_jukebox_size()
-{
-	return jukebox_size;
-}
 
 namespace
 {
@@ -487,7 +481,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
 				return;
-			if(save_jukebox_pointer == jukebox_size - 1)
+			if(save_jukebox_pointer >= jukebox_size - 1)
 				save_jukebox_pointer = 0;
 			else
 				save_jukebox_pointer++;
@@ -711,19 +705,20 @@ namespace
 
 	function_ptr_command<> tpon(lsnes_cmd, "toggle-pause-on-end", "Toggle pause on end", "Toggle pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			pause_on_end = !pause_on_end;
-			messages << "Pause-on-end is now " << (pause_on_end ? "ON" : "OFF") << std::endl;
+			bool tmp = pause_on_end;
+			pause_on_end.set(!tmp);
+			messages << "Pause-on-end is now " << (tmp ? "OFF" : "ON") << std::endl;
 		});
 
 	function_ptr_command<> spon(lsnes_cmd, "set-pause-on-end", "Set pause on end", "Set pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			pause_on_end = true;
+			pause_on_end.set(true);
 			messages << "Pause-on-end is now ON" << std::endl;
 		});
 
 	function_ptr_command<> cpon(lsnes_cmd, "clear-pause-on-end", "Clear pause on end", "Clear pause on end\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			pause_on_end = false;
+			pause_on_end.set(false);
 			messages << "Pause-on-end is now OFF" << std::endl;
 		});
 
@@ -952,6 +947,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	//Basic initialization.
+	emulation_thread = this_thread_id();
+	jukebox_size_listener jlistener;
 	voicethread_task();
 	init_special_screens();
 	our_rom = &rom;

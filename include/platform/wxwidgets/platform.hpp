@@ -100,7 +100,5 @@ extern bool wxwidgets_exiting;
 
 //Some important settings.
 extern std::map<std::string, std::string> core_selections;
-extern std::string rompath_setting;
-extern std::string moviepath_setting;
 
 #endif

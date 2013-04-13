@@ -80,16 +80,17 @@ namespace
 		return 48000;
 	}
 
-	boolean_setting dump_large(lsnes_set, "avi-large", false);
-	numeric_setting dtb(lsnes_set, "avi-top-border", 0, 8191, 0);
-	numeric_setting dbb(lsnes_set, "avi-bottom-border", 0, 8191, 0);
-	numeric_setting dlb(lsnes_set, "avi-left-border", 0, 8191, 0);
-	numeric_setting drb(lsnes_set, "avi-right-border", 0, 8191, 0);
-	numeric_setting max_frames_per_segment(lsnes_set, "avi-maxframes", 0, 999999999, 0);
+	setting_var<setting_var_model_bool> dump_large(lsnes_vset, "avi-large", "AVI‣Large dump", false);
+	setting_var<setting_var_model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
+	setting_var<setting_var_model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border", "AVI‣Bottom padding", 0);
+	setting_var<setting_var_model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border", "AVI‣Left padding", 0);
+	setting_var<setting_var_model_int<0, 8191>> drb(lsnes_vset, "avi-right-border", "AVI‣Right padding", 0);
+	setting_var<setting_var_model_int<0, 999999999>> max_frames_per_segment(lsnes_vset, "avi-maxframes",
+		"AVI‣Max frames per segment", 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	numeric_setting soundrate_setting(lsnes_set, "avi-soundrate", 0, 5, 5);
+	setting_var<setting_var_model_int<0, 5>> soundrate_setting(lsnes_vset, "avi-soundrate", "AVI‣Sound mode", 5);
 #else
-	numeric_setting soundrate_setting(lsnes_set, "avi-soundrate", 0, 3, 2);
+	setting_var<setting_var_model_int<0, 3>> soundrate_setting(lsnes_vset, "avi-soundrate", "AVI‣Sound mode", 2);
 #endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)

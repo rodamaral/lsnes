@@ -318,7 +318,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
-			std::string basename = get_firmwarepath() + "/" + bios;
+			std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
 			romimg[0] = loaded_slot(basename, "", coretype->get_image_info(0), false);
 			if(file_exists(basename + ".xml"))
 				romxml[0] = loaded_slot(basename + ".xml", "", coretype->get_image_info(0), true);

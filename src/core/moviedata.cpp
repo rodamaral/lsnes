@@ -51,13 +51,13 @@ movie& get_movie()
 	return movb.get_movie();
 }
 
-volatile uint8_t savecompression = 7;
-volatile bool readonly_load_preserves = true;
-
 namespace
 {
+	setting_var<setting_var_model_int<0, 9>> savecompression(lsnes_vset, "savecompression", "Movie‣Compression",
+		7);
+	setting_var<setting_var_model_bool> readonly_load_preserves(lsnes_vset, "preserve_on_readonly_load",
+		"Movie‣Preserve on readonly load", true);
 	mutex_class mprefix_lock;
-	std::string slotpath_setting = ".";
 	std::string mprefix;
 	bool mprefix_valid;
 
@@ -118,21 +118,6 @@ namespace
 	}
 }
 
-void set_slotpath(const std::string& pfx)
-{
-	umutex_class h(mprefix_lock);
-	if(pfx != "")
-		slotpath_setting = pfx;
-	else
-		slotpath_setting = ".";
-}
-
-std::string get_slotpath()
-{
-	umutex_class h(mprefix_lock);
-	return slotpath_setting;
-}
-
 std::string get_mprefix_for_project()
 {
 	return get_mprefix_for_project(our_movie.projectid);
@@ -155,7 +140,7 @@ std::string translate_name_mprefix(std::string original, bool forio)
 {
 	size_t prefixloc = original.find("${project}");
 	if(prefixloc < original.length()) {
-		std::string pprf = forio ? (slotpath_setting + "/") : std::string("");
+		std::string pprf = forio ? (lsnes_vset["slotpath"].str() + "/") : std::string("");
 		if(prefixloc == 0)
 			return pprf + get_mprefix() + original.substr(prefixloc + 10);
 		else

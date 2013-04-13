@@ -14,8 +14,9 @@ const void* check;
 
 namespace
 {
-	numeric_setting clvl(lsnes_set, "avi-tscc-compression", 0, 9, 7);
-	numeric_setting kint(lsnes_set, "avi-tscc-keyint", 0, 999999999, 0);
+	setting_var<setting_var_model_int<0,9>> clvl(lsnes_vset, "avi-tscc-compression", "AVI‣TSCC‣Compression", 7);
+	setting_var<setting_var_model_int<0,999999999>> kint(lsnes_vset, "avi-tscc-keyint",
+		"AVI‣TSCC‣Keyframe interval", 299);
 
 	struct msrle_compressor
 	{

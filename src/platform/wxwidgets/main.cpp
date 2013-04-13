@@ -205,34 +205,8 @@ end:
 			messages << "Calibration of " << r[1] << " changed: mode=" << calibration_to_mode(c)
 				<< " limits=" << c.left << "(" << c.center << ")" << c.right
 				<< " null=" << c.nullwidth << std::endl;
-		} else if(r = regex("SET[ \t]+jukebox-size[ \t]+([0-9]+)", line)) {
-			set_jukebox_size(parse_value<size_t>(r[1]));
-			messages << "Number of save slots set to " << r[1] << std::endl;
-		} else if(r = regex("SET[ \t]+advance-timeout[ \t]+([0-9]+)", line)) {
-			advance_timeout_first = parse_value<uint32_t>(r[1]);
-			messages << "Advance timeout set to " << r[1] << std::endl;
-		} else if(r = regex("SET[ \t]+pause-on-end[ \t]+(true|false)", line)) {
-			pause_on_end = (r[1] == "true");
-			messages << "Pause on end set to " << (pause_on_end ? "ON" : "OFF") << std::endl;
-		} else if(r = regex("SET[ \t]+preserve_on_readonly_load[ \t]+(true|false)", line)) {
-			readonly_load_preserves = (r[1] == "true");
-			messages << "Preserve on readonly set to " << (pause_on_end ? "ON" : "OFF") << std::endl;
-		} else if(r = regex("SET[ \t]+savecompression[ \t]+([0-9])", line)) {
-			savecompression = (uint8_t)parse_value<uint32_t>(r[1]);
-			messages << "Save compression set to " << r[1] << std::endl;
-		} else if(r = regex("SET[ \t]+firmwarepath[ \t]+(.*)", line)) {
-			set_firmwarepath(r[1]);
-		} else if(r = regex("SET[ \t]+slotpath[ \t]+(.*)", line)) {
-			set_slotpath(r[1]);
-		} else if(r = regex("SET[ \t]+rompath[ \t]+(.*)", line)) {
-			rompath_setting = (r[1] != "") ? r[1] : "";
-		} else if(r = regex("SET[ \t]+moviepath[ \t]+(.*)", line)) {
-			moviepath_setting = (r[1] != "") ? r[1] : "";
-		} else if(r = regex("UNSET[ \t]+([^ \t]+)[ \t]*", line)) {
-			lsnes_set.blank(r[1]);
-			messages << "Setting " << r[1] << " unset" << std::endl;
 		} else if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
-			lsnes_set.set(r[1], r[2]);
+			lsnes_vsetc.set(r[1], r[2], true);
 			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
 			if(!lsnes_cmd.valid_alias_name(r[1])) {
@@ -295,24 +269,8 @@ end:
 				<< std::endl;
 		}
 		//Settings.
-		for(auto i : lsnes_set.get_settings_set()) {
-			if(!lsnes_set.is_set(i))
-				cfgfile << "UNSET " << i << std::endl;
-			else
-				cfgfile << "SET " << i << " " << lsnes_set.get(i) << std::endl;
-		}
-		for(auto i : lsnes_set.get_invalid_values())
+		for(auto i : lsnes_vsetc.get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;
-		cfgfile << "SET jukebox-size " << get_jukebox_size() << std::endl;
-		cfgfile << "SET advance-timeout " << advance_timeout_first << std::endl;
-		cfgfile << "SET pause-on-end " << (pause_on_end ? "true" : "false") << std::endl;
-		cfgfile << "SET firmwarepath " << get_firmwarepath() << std::endl;
-		cfgfile << "SET moviepath " << moviepath_setting << std::endl;
-		cfgfile << "SET rompath " << rompath_setting << std::endl;
-		cfgfile << "SET slotpath " << get_slotpath() << std::endl;
-		cfgfile << "SET savecompression " << (uint32_t)savecompression << std::endl;
-		cfgfile << "SET preserve_on_readonly_load " << (readonly_load_preserves ? "true" : "false")
-			<< std::endl;
 		//Aliases.
 		for(auto i : lsnes_cmd.get_aliases()) {
 			std::string old_alias_value = lsnes_cmd.get_alias_for(i);
@@ -511,9 +469,7 @@ bool lsnes_app::OnInit()
 	autoload_libraries();
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Loading configuration --- " << std::endl;
-	lsnes_set.set_storage_mode(true);
 	load_configuration();
-	lsnes_set.set_storage_mode(false);
 	messages << "--- End running lsnesrc --- " << std::endl;
 
 	if(settings_mode) {

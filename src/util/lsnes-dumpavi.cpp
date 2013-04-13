@@ -157,7 +157,7 @@ namespace
 				std::string name = nameval.substr(0, s);
 				std::string val = nameval.substr(s + 1);
 				try {
-					lsnes_set.set(name, val);
+					lsnes_vset[name].str(val);
 				} catch(std::exception& e) {
 					std::cerr << "Can't set '" << name << "' to '" << val << "': " << e.what()
 						<< std::endl;
@@ -260,7 +260,7 @@ int main(int argc, char** argv)
 		regex_results r;
 		if(r = regex("--firmware-path=(.*)", i)) {
 			try {
-				set_firmwarepath(r[1]);
+				lsnes_vsetc.set("firmwarepath", r[1]);
 				std::cerr << "Set firmware path to '" << r[1] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set firmware path to '" << r[1] << "': " << e.what() << std::endl;
@@ -268,18 +268,10 @@ int main(int argc, char** argv)
 		}
 		if(r = regex("--setting-(.*)=(.*)", i)) {
 			try {
-				lsnes_set.set(r[1], r[2]);
+				lsnes_vset[r[1]].str(r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
 				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what() << std::endl;
-			}
-		}
-		if(r = regex("--clear-setting-(.*)", i)) {
-			try {
-				lsnes_set.blank(r[1]);
-				std::cerr << "Blanked " << r[1] << std::endl;
-			} catch(std::exception& e) {
-				std::cerr << "Can't blank " << r[1] << ": " << e.what() << std::endl;
 			}
 		}
 	}
