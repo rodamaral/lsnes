@@ -71,6 +71,7 @@ namespace
 	int location_special;
 	//Few settings.
 	numeric_setting advance_timeout_first("advance-timeout", 0, 999999999, 500);
+	numeric_setting advance_timeout_subframe("advance-subframe-timeout", 0, 999999999, 100);
 	boolean_setting pause_on_end("pause-on-end", false);
 	//Last frame params.
 	bool last_hires = false;
@@ -109,8 +110,11 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 
 	if(subframe) {
 		if(amode == ADVANCE_SUBFRAME) {
-			if(!cancel_advance && !advanced_once) {
-				platform::wait(advance_timeout_first * 1000);
+			if(!cancel_advance) {
+				if(!advanced_once)
+					platform::wait(advance_timeout_first * 1000);
+				else
+					platform::wait(advance_timeout_subframe * 1000);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
@@ -136,8 +140,14 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 			amode = ADVANCE_SKIPLAG;
 		if(amode == ADVANCE_FRAME || amode == ADVANCE_SUBFRAME) {
 			if(!cancel_advance) {
-				platform::wait(advanced_once ? to_wait_frame(get_utime()) :
-					(advance_timeout_first * 1000));
+				uint64_t wait = 0;
+				if(!advanced_once)
+					wait = advance_timeout_first * 1000;
+				else if(amode == ADVANCE_SUBFRAME)
+					wait = advance_timeout_subframe * 1000;
+				else
+					wait = to_wait_frame(get_utime());
+				platform::wait(wait);
 				advanced_once = true;
 			}
 			if(cancel_advance) {
