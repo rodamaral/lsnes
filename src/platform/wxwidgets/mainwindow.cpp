@@ -782,34 +782,42 @@ void wxwin_mainwindow::notify_exit() throw()
 	Destroy();
 }
 
+std::string read_variable_map(const std::map<std::string, std::string>& vars, const std::string& key)
+{
+	if(!vars.count(key))
+		return "";
+	return vars.find(key)->second;
+}
+
 void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::string>& vars)
 {
 	if(vars.empty())
 		return;
 	try {
 		std::ostringstream s;
-		bool recording = (vars.find("!mode")->second == "R");
+		bool recording = (read_variable_map(vars, "!mode") == "R");
 		if(recording)
-			s << "Frame: " << vars.find("!frame")->second;
+			s << "Frame: " << read_variable_map(vars, "!frame");
 		else
-			s << "Frame: " << vars.find("!frame")->second << "/" << vars.find("!length")->second;
-		s << "  Lag: " << vars.find("!lag")->second;
-		s << "  Subframe: " << vars.find("!subframe")->second;
+			s << "Frame: " << read_variable_map(vars, "!frame") << "/" <<
+				read_variable_map(vars, "!length");
+		s << "  Lag: " << read_variable_map(vars, "!lag");
+		s << "  Subframe: " << read_variable_map(vars, "!subframe");
 		if(vars.count("!saveslot"))
-			s << "  Slot: " << vars.find("!saveslot")->second;
+			s << "  Slot: " << read_variable_map(vars, "!saveslot");
 		if(vars.count("!saveslotinfo"))
-			s << " [" << vars.find("!saveslotinfo")->second << "]";
-		s << "  Speed: " << vars.find("!speed")->second << "%";
+			s << " [" << read_variable_map(vars, "!saveslotinfo") << "]";
+		s << "  Speed: " << read_variable_map(vars, "!speed") << "%";
 		s << " ";
-		if(vars.find("!dumping")->second != "")
+		if(read_variable_map(vars, "!dumping") != "")
 			s << " Dumping";
-		if(vars.find("!mode")->second == "C")
+		if(read_variable_map(vars, "!mode") == "C")
 			s << " Corrupt";
-		else if(vars.find("!mode")->second == "R")
+		else if(read_variable_map(vars, "!mode") == "R")
 			s << " Recording";
-		else if(vars.find("!mode")->second == "P")
+		else if(read_variable_map(vars, "!mode") == "P")
 			s << " Playback";
-		else if(vars.find("!mode")->second == "F")
+		else if(read_variable_map(vars, "!mode") == "F")
 			s << " Finished";
 		else 
 			s << " Unknown";
