@@ -1916,6 +1916,7 @@ wxeditor_esettings::~wxeditor_esettings()
 	if(controllertab) controllertab->prepare_destroy();
 	if(bindtab) bindtab->prepare_destroy();
 	if(advtab) advtab->prepare_destroy();
+	lsnes_kbd.set_exclusive(NULL);
 }
 
 bool wxeditor_esettings::ShouldPreventAppExit() const
@@ -1930,7 +1931,6 @@ void wxeditor_esettings::on_close(wxCommandEvent& e)
 		vflip_enabled = settingstab->vflip->GetValue();
 		rotate_enabled = settingstab->rotate->GetValue();
 	}
-	lsnes_kbd.set_exclusive(NULL);
 	EndModal(wxID_OK);
 }
 
