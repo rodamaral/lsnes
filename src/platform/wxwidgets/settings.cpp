@@ -1809,6 +1809,7 @@ wxeditor_esettings::~wxeditor_esettings()
 	if(hotkeytab) hotkeytab->prepare_destroy();
 	if(bindtab) bindtab->prepare_destroy();
 	if(advtab) advtab->prepare_destroy();
+	keygrabber.ungrab_keys();
 }
 
 bool wxeditor_esettings::ShouldPreventAppExit() const
@@ -1818,7 +1819,6 @@ bool wxeditor_esettings::ShouldPreventAppExit() const
 
 void wxeditor_esettings::on_close(wxCommandEvent& e)
 {
-	keygrabber.ungrab_keys();
 	if(screentab) {
 		hflip_enabled = screentab->hflip->GetValue();
 		vflip_enabled = screentab->vflip->GetValue();
