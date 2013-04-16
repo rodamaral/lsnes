@@ -468,7 +468,7 @@ void movie::adjust_frame_count(int64_t adjust)
 				current_frame_first_subframe += count_changes(current_frame_first_subframe);
 	}
 	//Nobody is this stupid, right?
-	current_frame_first_subframe = min(current_frame_first_subframe, movie_data.size());
+	current_frame_first_subframe = min(current_frame_first_subframe, static_cast<uint64_t>(movie_data.size()));
 }
 
 void movie::set_pflag_handler(poll_flag* handler)
