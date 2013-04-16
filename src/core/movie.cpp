@@ -561,4 +561,17 @@ movie& movie::operator=(const movie& m)
 	cached_subframe = m.cached_subframe;
 }
 
+void movie::adjust_frame_count(int64_t adjust)
+{
+	uint64_t old_frames = frames_in_movie;
+	frames_in_movie += adjust;
+	//If current_frame_first_subframe is in part extended, recompute it.
+	if(current_frame > old_frames + 1) {
+		current_frame_first_subframe = 0;
+		if(current_frame > 0)
+			for(uint64_t i = 0; i < current_frame - 1; i++)
+				current_frame_first_subframe += count_changes(current_frame_first_subframe);
+	}
+}
+
 unsigned extended_mode = 0;
