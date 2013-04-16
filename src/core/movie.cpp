@@ -4,6 +4,7 @@
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/rom.hpp"
+#include "library/minmax.hpp"
 
 #include <stdexcept>
 #include <cassert>
@@ -559,6 +560,21 @@ movie& movie::operator=(const movie& m)
 	frames_in_movie = m.frames_in_movie;
 	cached_frame = m.cached_frame;
 	cached_subframe = m.cached_subframe;
+}
+
+void movie::adjust_frame_count(int64_t adjust)
+{
+	uint64_t old_frames = frames_in_movie;
+	frames_in_movie += adjust;
+	//If current_frame_first_subframe is in part extended, recompute it.
+	if(current_frame > old_frames + 1) {
+		current_frame_first_subframe = 0;
+		if(current_frame > 0)
+			for(uint64_t i = 0; i < current_frame - 1; i++)
+				current_frame_first_subframe += count_changes(current_frame_first_subframe);
+	}
+	//Nobody is this stupid, right?
+	current_frame_first_subframe = min(current_frame_first_subframe, movie_data.size());
 }
 
 unsigned extended_mode = 0;
