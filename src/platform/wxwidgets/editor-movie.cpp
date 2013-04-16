@@ -1217,17 +1217,17 @@ do_again:
 void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 {
 	auto cell = fb.get_cell();
-	if(e.LeftDown())
+	if(e.LeftDown() && !e.ControlDown())
 		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, true);
-	if(e.LeftUp())
+	if(e.LeftUp() && !e.ControlDown())
 		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, false);
 	if(e.MiddleDown())
 		on_mouse1(e.GetX() / cell.first, e.GetY() / cell.second, true);
 	if(e.MiddleUp())
 		on_mouse1(e.GetX() / cell.first, e.GetY() / cell.second, false);
-	if(e.RightDown())
+	if(e.RightDown() || (e.LeftDown() && e.ControlDown()))
 		on_mouse2(e.GetX() / cell.first, e.GetY() / cell.second, true);
-	if(e.RightUp())
+	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
 		on_mouse2(e.GetX() / cell.first, e.GetY() / cell.second, false);
 	int wrotate = e.GetWheelRotation();
 	int threshold = e.GetWheelDelta();
