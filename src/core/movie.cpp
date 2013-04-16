@@ -4,6 +4,7 @@
 #include "core/misc.hpp"
 #include "core/movie.hpp"
 #include "core/rom.hpp"
+#include "library/minmax.hpp"
 
 #include <stdexcept>
 #include <cassert>
@@ -572,6 +573,8 @@ void movie::adjust_frame_count(int64_t adjust)
 			for(uint64_t i = 0; i < current_frame - 1; i++)
 				current_frame_first_subframe += count_changes(current_frame_first_subframe);
 	}
+	//Nobody is this stupid, right?
+	current_frame_first_subframe = min(current_frame_first_subframe, movie_data.size());
 }
 
 unsigned extended_mode = 0;
