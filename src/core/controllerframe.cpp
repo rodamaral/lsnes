@@ -158,7 +158,7 @@ void controller_state::reread_tasinput_mode(const port_type_set& ptype)
 		if(pci.controller_count <= t.controller || !pci.controllers[t.controller])
 			continue;
 		const port_controller& pc = *(pci.controllers[t.controller]);
-		if(!pc.buttons[t.control])
+		if(pc.button_count <= t.control || !pc.buttons[t.control])
 			continue;
 		const port_controller_button& pcb = *(pc.buttons[t.control]);
 		if(pcb.shadow)
