@@ -1217,3 +1217,7 @@ rr2-β6 [Wednesday April 17th 2013]
 * Fix race condition causing possible crash on startup
 * Fix compiling if uint64_t and size_t are not compatible
 * Lua: Don't crash if input.[gs]et{,a} is called outside on_input
+
+rr2-β7 [Wednesday April 17th 2013]
+==================================
+* Fix crash on loading GB(c) ROMs.

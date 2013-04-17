@@ -3546,3 +3546,25 @@ set-axis joystick0axis19 disabled
 
 • Movie editor: Interpret ctrl+click as right click 
 
+18.88 rr2-beta6
+
+• Autofire: Fix false status indications
+
+• Fix subframe counter
+
+• Fix print() after Lua reset
+
+• New settings framework
+
+• Remove some unused leftover stuff
+
+• Fix race condition causing possible crash on startup
+
+• Fix compiling if uint64_t and size_t are not compatible
+
+• Lua: Don't crash if input.[gs]et{,a} is called outside on_input
+
+18.89 rr2-beta7
+
+• Fix bug causing crash if triple has invalid button
+

@@ -7329,5 +7329,49 @@ Cap current_frame_first_subframe to movie size when recounting movie
 Movie editor: Interpret ctrl+click as right click 
 \end_layout
 
+\begin_layout Subsection
+rr2-beta6
+\end_layout
+
+\begin_layout Itemize
+Autofire: Fix false status indications
+\end_layout
+
+\begin_layout Itemize
+Fix subframe counter
+\end_layout
+
+\begin_layout Itemize
+Fix print() after Lua reset
+\end_layout
+
+\begin_layout Itemize
+New settings framework
+\end_layout
+
+\begin_layout Itemize
+Remove some unused leftover stuff
+\end_layout
+
+\begin_layout Itemize
+Fix race condition causing possible crash on startup
+\end_layout
+
+\begin_layout Itemize
+Fix compiling if uint64_t and size_t are not compatible
+\end_layout
+
+\begin_layout Itemize
+Lua: Don't crash if input.[gs]et{,a} is called outside on_input
+\end_layout
+
+\begin_layout Subsection
+rr2-beta7
+\end_layout
+
+\begin_layout Itemize
+Fix bug causing crash if triple has invalid button
+\end_layout
+
 \end_body
 \end_document
