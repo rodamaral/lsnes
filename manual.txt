@@ -404,6 +404,10 @@ Reloads the main ROM image from <file>.
 Tangent for recording voice for commentary track. While pressed, 
 record a stream.
 
+5.8.3 advance-subframe-timeout
+
+Subframe advance timeout in milliseconds. Default is 100.
+
 6 Settings
 
 6.1 Core settings
@@ -3518,4 +3522,27 @@ set-axis joystick0axis19 disabled
 • Fix movie reading with first port having multiple controllers.
 
 • Move some info from status panel to statusbar.
+
+18.87 rr1-delta17epsilon3
+
+• Fix status panel (and movie editor) flicker
+
+• Show effects of Lua in input display
+
+• Offer lsmv.backup as file filter too for load lsmv
+
+• Allow slowing down subframe advance 
+
+• Display current save slot information
+
+• Add snes9x fonts
+
+• Fix hotkeys stopping working after X-ing settings dialog
+
+• Movie editor: Fix bug if extending finished movie
+
+• Cap current_frame_first_subframe to movie size when recounting 
+  movie
+
+• Movie editor: Interpret ctrl+click as right click 
 

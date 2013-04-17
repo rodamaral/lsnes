@@ -851,6 +851,15 @@ Tangent for recording voice for commentary track.
  While pressed, record a stream.
 \end_layout
 
+\begin_layout Subsubsection
+advance-subframe-timeout
+\end_layout
+
+\begin_layout Standard
+Subframe advance timeout in milliseconds.
+ Default is 100.
+\end_layout
+
 \begin_layout Section
 Settings
 \end_layout
@@ -7274,6 +7283,50 @@ Fix movie reading with first port having multiple controllers.
 
 \begin_layout Itemize
 Move some info from status panel to statusbar.
+\end_layout
+
+\begin_layout Subsection
+rr1-delta17epsilon3
+\end_layout
+
+\begin_layout Itemize
+Fix status panel (and movie editor) flicker
+\end_layout
+
+\begin_layout Itemize
+Show effects of Lua in input display
+\end_layout
+
+\begin_layout Itemize
+Offer lsmv.backup as file filter too for load lsmv
+\end_layout
+
+\begin_layout Itemize
+Allow slowing down subframe advance 
+\end_layout
+
+\begin_layout Itemize
+Display current save slot information
+\end_layout
+
+\begin_layout Itemize
+Add snes9x fonts
+\end_layout
+
+\begin_layout Itemize
+Fix hotkeys stopping working after X-ing settings dialog
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Fix bug if extending finished movie
+\end_layout
+
+\begin_layout Itemize
+Cap current_frame_first_subframe to movie size when recounting movie
+\end_layout
+
+\begin_layout Itemize
+Movie editor: Interpret ctrl+click as right click 
 \end_layout
 
 \end_body

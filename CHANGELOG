@@ -1,0 +1,1219 @@
+rr0-β0 [Tuesday September 13th 2011]
+====================================
+* Initial version.
+
+rr0-β1 [Tuesday September 13th 2011]
+====================================
+* Fix all warnings -Wall spews
+* Fix race condition bug that causes video corruption
+
+rr0-β2 [Saturday September 17th 2011]
+=====================================
+* Faster movie loading and saving
+* Major reorganization of command handling
+* Allow dynamic loading of Lua functions
+* Use render_text in render_object_text and not vice versa
+* Migrate gui.* stuff to the new framework
+* Migrate memory.*
+* Migrate the rest of Lua functions to the new framework
+* Add large-video option to force hires dumping
+* Compact dummy lua code a bit
+* Add on_snoop Lua callback
+* Describe the new on_snoop callback
+* Clean up some header files
+* Make video dumping to go through generic A/V snooping interface
+* Describe command changes from last commit
+* screen::copy_from fix bug if vscale > 1 and originx > 0
+* Allow adding borders to dumps even without lua
+* Make git diff --check happy
+* Add lua functions to manipulate emulator settings
+* Factor stuff related to our_movie into separate file
+* Refactor mainloop.cpp a lot
+* Refactor .avi dumping
+* Allow forcing maximum number of frames per segment
+* More cleanups
+* Settings: Use std::ostream& instead of window*
+* More code cleanups
+* Since window is singleton anyway, get rid of window* parameters
+* Migrate settings.cpp to function_ptr_command
+* More random cleanups
+* Get rid of fieldsplitter
+* Migrate the rest to function_ptr_command
+* Make AVI dumper setting names more specific
+* Move take-screenshot: mainloop.cpp -> framebuffer.cpp
+* Allow variable arguments to command functions
+* Fix crash on invalid Lua function arguments
+* Create function pointer to lua function adapter and migrate what we can
+* Pass tokensplitter& as argument to command handler
+* Autofire support
+
+rr0-β3 [Sunday September 18th 2011]
+===================================
+* Make joysticks actually work
+
+rr0-β4 [Sunday September 18th 2011]
+===================================
+* Fix binding to multi-button keygroup
+* Add some missing changelog entries.
+* Implement save jukebox
+
+rr0-β5 [Sunday September 18th 2011]
+===================================
+* Try to fix nasty corner cases of failing loads
+* Support specifying extra configuration files to run from commmand line
+
+rr0-β6 [Sunday September 18th 2011]
+===================================
+* Major source reorganization
+* Backup savestates before overwriting
+* Don't crash if initial savestate can't be loaded
+
+rr0-β7 [Tuesday September 20th 2011]
+====================================
+* Fix firmware lookup
+* Fix author name parsing
+* Fix rerecord counting
+* Print messages to console if SDL is not initialized
+* Add movieinfo program
+* Load movie SRAM as movie SRAM, not save SRAM
+
+rr0-β8 [Wednesday September 21st 2011]
+======================================
+* Unattended dumping support
+* Some documentation & makefile tweaks
+* Various fixups from trying to compile this for win32
+* Work even if sound can't be initialized
+* Strip trailing CRs from commands
+* Don't initialize coreversion and projectid in moviefile ctor
+
+rr0-β9 [Thursday September 22nd 2011]
+=====================================
+* Small documentation tweaks
+* Fix make clean
+* Rewrite modifier matching algorithm
+
+rr0-β10 [Friday September 23rd 2011]
+====================================
+* Use dedicated callbacks for mouse/close, not commands
+* Don't hit the watchdog during executing delayed reset
+* Small documentation fixups regarding joysticks/gamepads
+* Remove errant tab from joystick message
+* Major documentation rewamp
+
+rr0-β11 [Saturday September 24th 2011]
+======================================
+* Make autofire pattern repeat in absolute time, not linear time
+* Reinitialize controls after continuing from loadstate
+* Create helper class for globals/module-locals used in global ctors
+* Panic if Lua runs out of memory
+* Add functions to read/write multibyte values from/to host memory
+* Take interlace into account when determining framerate
+
+rr0-β12 [Saturday September 24th 2011]
+======================================
+* Major oops, forgot one source code file
+* Keep track of RTC
+
+rr0-β13 [Sunday September 25th 2011]
+====================================
+* Document {start,save}time.{,sub}second
+* Forgot to note savetime.* is only present in savestates
+* Use ld --wrap to intercept time() by bsnes core
+
+rr0-β14 [Saturday October 1st 2011]
+===================================
+* Allow disabling time() interception
+* Use SDLMain on Mac OS X
+* Remove delayed reset support
+* Function comment cleanups
+* Remove some unused defines
+* Switch internally to 16-bit graphics instead of 32-bit
+* Implement gui.rectangle and gui.pixel
+* Refactor gui.text, gui.rectangle and gui.pixel
+* Refactor rectangle clipping calculation
+* New gui primitive: crosshair
+* Switch to CSCD implementation from JPC-RR streamtools
+
+rr0-β15 [Wednesday October 5th 2011]
+====================================
+* Fix interaction of * and + in commands
+* Some manual fixups
+* All supported platforms support gettimeofday and usleep
+* Move joystick axis manipulation from SDL to keymapper code
+* Changes to how read-only works
+* Refactor current controls code from mainloop.cpp to controller.cpp
+
+rr0-β16 [Monday October 10th 2011]
+==================================
+* Fix scaling compensation in mouse clicking
+* Fix drawing SDL area boundaries
+* Add gui.screenshot Lua function.
+* Fix CSCD output
+
+rr0-β17 [Friday October 21st 2011]
+==================================
+* JMD dumping support
+* Allow unattended dumping to JMD
+* Bump minimum bsnes version to v083.
+* Switch back to 32-bit colors
+* New Lua function gui.color
+* Fix wrong offsets in SDL code
+* Cursor should be white, not usually yellow
+* Fix all sorts of color fsckups from 16bit to 32bit change
+* Use C++11 isms new in G++ 4.6.
+* Be ready if some clown decides to change core frequencies
+* Change color notation to allow Lua scripts use full truecolor
+
+
+rr0-β18 [Tuesday November 1st 2011]
+===================================
+* Add new Lua function gui.line()
+* Add Lua function gui.circle()
+* Add errata entry about slow screen drawing
+* Image data is 24-bit, not 15-bit
+* New Lua function: gui.status()
+* Change the RTC time format
+* Reformat the flags display (adding new flags for hires and interlace)
+* Add makefile option to override Lua package name.
+* SDUMP support
+* Split platform sound and graphics parts
+* Add dummy enable-sound command to sound-dummy
+* Add command to show plugins in use
+* Rework how graphics/sound/joystick is built in makefile
+* Portaudio support for sound
+* Make sound manipulation commands platform-independent
+* Portaudio: Mix channels if mono (don't just output left channel)
+* Allow using different joystick driver with SDL
+* Allow disabling Lua/SDL searching
+* Make it possible to compile this thing for win32 with stock makefile
+* Do color upconversion when copying lcscreen -> screen
+* Oops, remove some mistakenly left in debug prints
+* sdmp2sox: Add blend 512x224/240 and enlarge to 512x448/480 mode
+* Refactor sdmp2sox a lot
+* sdmp2sox: Fix 448/480 -> 448/480 output
+* Oops, missed the fakeexpand case in last change. Fix that.
+* Add joystick init/quit functions and split some SDL joystick funs
+* Reorganize the source tree a bit
+* Fix SDL key identify so it works with other joystick plugins
+* Evdev joystick plugin
+* Evdev: Add a feature to show joystick info
+* Lua: Add memory.* functions for reading the VMA table
+* Minor lua documentation fixups
+* More small documentation fixups
+* Reorganize the window code a bit
+* Move mouse compensation code to generic window code
+* Correct documentation of --rtc-subsecond
+
+rr0-β19 [Saturday November 5th 2011]
+====================================
+* Refactor message handling
+* Oops, add missing files for EVDEV joystick plugin
+* Backport some improvements to other stuff from Wxwidgets work
+* Whitespace fixes
+* Rework makefile
+* Mention EVDEV for joystick plugin
+* More backporting changes to core from wxwidgets work
+* More backports of stuff from the wxwidgets branch
+* Various improvements and cleanups to video dumping
+* Make emulator finish pending saves if loading/quitting
+* Port the generic control stuff from wxwidgets work
+* Wxwidgets graphics plugin
+* Remove debug print left there
+
+rr0-β20 [Wednesday November 9th 2011]
+=====================================
+* Get rid of win32-crap.[ch]pp
+* Move the wxwidgets stuff to one directory
+* Move files around a lot
+* Make find_glyph return a pointer to glyph data, not offset
+* Get rid of need for host C++ compiler
+* Bump bsnes core version to v084
+* Concentrate inter-component communication to one place
+* Fix zero luma corner case
+* Fix crash on multiline aliases
+* Make wxwidgets gui load and save various settings
+
+rr0-β21 [Wednesday November 9th 2011]
+=====================================
+* Patch problems in libsnes
+* SNES is little-endian, not big-endian!
+* Fix memory corruption bug in lcscreen::load()
+
+rr0-β22 [Saturday November 12th 2011]
+=====================================
+* Fix signedness mixup in loading rrdata
+* Don't misdecode 1 byte repeat counts 0xFE and 0xFF
+* Lua on_frame() callback
+* save_core_state() is not supposed to call runtosave!
+* Add Lua function movie.read_rtc()
+* Fix wrong variable in commented out debug code in rrdata.cpp
+* Add missing ignore for src/fonts/font.cpp
+* Add patch to fix unserialization of 64-bit integers
+* Control bsnes random seeding
+* Add pause-on-movie-end
+* Some core debugging features:
+* Fix the version number in window title
+
+rr0-β23 [Sunday November 20th 2011]
+===================================
+* Fix mixup between macro and field
+* search-memory update
+* Direct framebuffer
+* Try to use SDL_ANYFORMAT if possible
+* sdmp2sox: Add offset by 2s and offset by 2s with 10 frames modes
+* Some wxwidgets code cleanup
+* Fix makefile
+* Wxwidgets: Save jukebox on exit
+* Load RTC correctly if loading savesate as a movie
+* Fix crash upon enter/leave full console followed by repaint
+
+rr0-β24 [Saturday November 26th 2011]
+=====================================
+* Wxwidgets: Allow application to bought to foreground on Mac OS X
+* Wxwidgets: Allow compiling on Mac OS X
+* Don't hash movies
+* Be backwards compatible with old savestates
+* Fix two bugs in new movie checking code
+* Lua: Add table _SYSTEM
+
+rr0-β25 [Saturday December 3rd 2011]
+====================================
+* sdmp2sox: Write silence to sound track when using -l or -L
+* sdmp2sox: Fix NTSC overscan handling
+* sdmp2sox: Refactor a lot and add AR correction mode
+* Oops, last version was missing some files
+* Call lua_close()
+* Fix zip_writer
+
+rr0-β26 [Monday December 12th 2011]
+===================================
+* Move ROM patcher to its own source code file
+* Use bsnes core internal IPS and BPS patchers
+* Allow direct loading of headered ROMs
+* Fix IPS patching
+
+rr0-β27 [Wednesday December 14th 2011]
+======================================
+* Fix show-bindings to show the commands bound.
+
+rr0 [Sunday December 18th 2011]
+===============================
+* Make pause-on-end actually controllable
+* Poll all events in poll_inputs_internal, not just the first in queue
+* wxwidgets: Fix loading of ROMs
+
+rr0-Δ1 [Friday January 6th 2012]
+================================
+* Lua: Add gui.textH, gui.textV, gui.textHV
+* Don't assume that rshift=16, gshift=8, bshift=0 in blending code
+* Add documentation for gui.textH, gui.textV and gui.textHV
+* Show distinction between readonly-in-movie and finished in status flags
+* Fix whitespace errors
+* Fix bug in skip to next poll function
+* Fix controller logical numbers
+
+rr0-Δ1ε1 [Friday January 6th 2012]
+==================================
+* Oops, update manual
+* Add BSNES patches for v085
+
+rr1-β0 [Friday January 6th 2012]
+================================
+* lsnes rr1-β0
+
+rr1-β1 [Friday January 6th 2012]
+================================
+* Remove dummy test SRAM
+* Fix controller logical numbers
+
+rr1-β2 [Tuesday January 10th 2012]
+==================================
+* Fix lsnes-dumpavi
+* Pack movie data in memory
+
+rr1-β3 [Tuesday January 10th 2012]
+==================================
+* Fix framecount/length given when loading movies
+* Controller command memory leak fixes
+* Don't leak palette if freeing screen object
+
+rr1-β4 [Wednesday January 11th 2012]
+====================================
+* Detect git revision and have version shown
+* Reformat the version message a bit
+* Wxwidgets: Allow controlling dumper start/stop from menu
+
+rr1-β5 [Wednesday January 11th 2012]
+====================================
+* Partially rewrite the manual
+* Finish the manual modifications
+* Lua: Support Lua 5.2.X too
+
+rr1-β6 [Wednesday January 11th 2012]
+====================================
+* Win32: Fix compile errors
+
+rr1-β7 [Thursday January 12th 2012]
+==================================
+* Refactor controller input code
+* Don't fall off commandline processing routine
+
+rr0-Δ1ε2 [Thursday January 12th 2012]
+=====================================
+* Support Lua 5.2
+
+rr1-β8 [Friday January 13th 2012]
+=================================
+* Remove core/coroutine
+* When showing input in readwrite mode, show last sent input
+* Rewind movie to beginning function
+* Fix frame number reported to Lua in repaint after load
+* Fix desyncs with rewind movie to begnning function
+* wxwidgets: Allow editing jukebox from the GUI
+* wxwidgets: Save settings on exit, load settings on startup
+* Support ${project} for filenames
+* SDL: Fix command history
+
+rr1-β9 [Saturday January 14th 2012]
+===================================
+* SDL: Fix order-of-global-ctor bug
+* Fix another order-of-global-ctor bug
+
+rr1-β10 [Saturday January 14th 2012]
+====================================
+* NULL some window pointers when quitting
+* Wxwidgets: Fix thread memory managment
+
+rr1-β11 [Sunday January 15th 2012]
+==================================
+* Evdev: Don't call keygroup::set_position in invalid thread
+* wxwidgets: Actually implement load state preserving input
+
+rr1-β12 [Sunday January 15th 2012]
+==================================
+* wxwidgets: GUI for memory search
+* Add warning about calling synchronous queue in callback to UI
+
+rr1-β13 [Wednesday January 18th 2012]
+=====================================
+* Remember last saved file when populating file to load
+* Remember absolute path for last save
+* Suppost boost threads for MT dumping
+* Fix compiling on win32
+* Lua: New function input.raw, which gives data for all buttons
+* Lua: input.keyhook
+* Make mouse be ordinary keys instead of being special
+* SDL: Fix NUL codepoints in commands (fix weird cursor behaviour)
+
+rr1-β14 [Thursday January 19th 2012]
+====================================
+* Merge status panel and main window
+* True movie slot support
+* SDL: Fix compilation error
+* Fix cross calls in dumper menu code
+
+rr1-β15 [Friday January 20th 2012]
+==================================
+* Cancel pending saves function
+* Wxwidgets: Inline some menu handling
+* Use RAII for modal pauses
+* Some more modal pause RAII stuff
+* Wxwidgets: Refactor dialog code
+* Wxwidgets: Fix system -> reset
+* Wxwidgets: Read the watch expressions in the right thread
+
+rr1-β16 [Saturday January 21th 2012]
+====================================
+* Wxwidgets: No, Lua code does not support reading script from .zip
+* Wxwidgets: Increase number of autohold slots (in case more are needed)
+* Don't append trailing '-' to prefix when saving movie.
+* ROM/savestate handling fixes
+
+rr1 [Saturday January 21th 2012]
+================================
+* Document the memory watch expression syntax
+
+rr1-Δ1 [Monday January 23rd 2012]
+=================================
+* Fix compression settings in lsnes-dumpavi
+* Fix unattended dumping
+* Raw dumping support
+* Documentation for the raw dump mode
+* Rewrite lsnes-dumpavi to use adv_dumper interface
+* Let one control the method AVI dumper preturbs the sampling rate
+
+rr1-Δ2 [Monday February 6th 2012]
+=================================
+* Wxwidgets: Pass correct mode when dumping
+* Also set core ports when loading savestate
+
+rr1-Δ2ε1 [Monday February 6th 2012]
+===================================
+* Add header file in order to make it compile with bsnes v086
+* Allow compiling against bsnes v086
+
+rr1-Δ3 [Monday February 21st 2012]
+==================================
+* Don't prompt before quitting
+* Start unpaused and preserve pause/unpause over load-type ops
+* Try to autodetect headered ROMs
+* Add option to skip the ROM patching screen
+* Fix SDL event polling
+* Fix the speed throttle
+* Wxwidgets: Reposition buttons a bit
+* wxwidgets: Hotkey configuration
+* Wxwidgets: Improve key selector by loading the existing key if available
+
+rr1-Δ4 [Monday March 4th 2012]
+==============================
+* Code cleanup
+* Fix (i)strip_CR
+* Fix generic_port_read()
+* Introduce some string functions to refactor the rest of code with
+* Get rid of setting::print_all()
+* Use standard boolean parser for parsing booleans
+* Remove SHA-256 indices
+* Refactor some generic platform code
+* Refactor settings commands
+* Don't dump JMD at undefined compression level
+* Remove unnecressary conversions in dumper control
+* Refactor ROM option parsing
+* Refactor some moviedata commands
+* Refactor edit-author
+* Refactor memory watch commands
+* Fix a bug in extract_token()
+* Refactor keymapper.cpp command parsing
+* Refactor remaining tokensplitters
+* Don't do anything undefined if Lua C function throws an exception
+* Premultiplied_color default constructor (transparent color)
+* Lua class system
+* Lua Bitmap
+* Oops, bsnes v085/v086 patchseries was incomplete, fix that
+* Debug multithreading-related errors
+
+rr1-Δ4ε1 [Monday March 4th 2012]
+================================
+* Fix movie corruption in certain cases
+
+rr1-Δ5 [Thursday March 8th 2012]
+================================
+* Add new lua hooks
+* Add emulator_ready() lua function
+* Lua: utime(): Microsecond-resolution time
+* Update manuals for changes
+* Lua: Add on_idle() and on_timer()
+* Don't call subframe poll on first poll (only if needed)
+* Fix double-polling for real
+* Lua: input.geta/input.seta
+* Add documentation for added lua stuff
+* Fix compilation
+* Wxwidgets: Fix the "internal focus lost" problem
+* Wxwidgets: Fix broken modifiers
+* Shorten maxwait from 5s to 0.1s
+* Lua: bit.extract
+* Refactor render queue management
+* Allow optional initial fill color for bitmaps
+* Lock palettes to protect color array structure
+* Special-case render object allocation
+* Add patchseries for v087
+* Lua: bit.value
+* Lua: input.controllertype()
+
+rr1-Δ5ε1 [Saturday March 10th 2012]
+===================================
+* Movieinfo: Print port 2 type right
+* Reread controls after loadstate
+* Actually fix the "on_input() not called after loadstate" correctly
+
+rr1-Δ5ε2 [Tuesday March 13th 2012]
+==================================
+* Fix saving of movie data for port2
+* Fix SRAM handling with Bsnes v087
+
+rr1-Δ6 [Wednesday April 11th 2012]
+==================================
+* Do some small fixups with dumpers
+* Split AVI file structure related classes to dedicated file
+* Refactor makefile
+* More code file moving
+* Switch to dedicated SHA-256 implementation
+* Fix Win32 building
+* Library loading support
+* Refactor AVI dumping a lot (WIP)
+* Add the needed support for internal buffering by audio codec
+* Add missing LF in cscd.cpp
+* Some dumping improvements
+* AVI dumping fixups
+* TSCC video codec
+* Don't corrupt AVI if emulator is closed while dumping
+* Make settings window scrollable so it doesn't grow excessively large
+* Hicolor raw dumping
+* Refactor codec zlib handling
+* RAW dump over TCP/IP support
+* Fix compilation (missing header)
+* Some makefile fixes
+* Fix dumper modes and remove some dead code
+* Support hiding the status panel
+* Turbo on hold/turbo toggle
+* Way simpler turbo implementation
+* Change targetfps to be percentage
+* Speed and volume adjustment
+* Command for changing volume
+* Implement screen scaling
+* Fix the "re-show too short" problem with status panel
+* Allow drag'n'drop of file to ROM select dialog / rom patch dialog
+* Configurable movie/ROM paths
+* Lua: gui.rainbow
+* Portaudio: Fix speaker popping
+* Wxwidgets: Move some menu entries around
+* Wxwidgets: UI speed adjustment
+* Wxwidgets: More menu twiddling
+* Some more twiddling with the menus
+* Refactor TCP dumping
+* Split cases for prefix and special for dumper targets
+* Also support dumping JMD and SDMP over TCP/IP
+* Win32 joystick support
+* Wxwidgets: Make scaling factors be global variables
+* Wxwidgets: New settings dialog: Axes and paths
+* Wxwidgets: Some more menu shuffling
+* Lua: gui.box
+* Wxwidgets: Move screen scaling into main settings dialog
+* Internally classify keys
+* Rework jukebox
+* Wxwidgets: Move settings to main configuration dialog
+* Fix error with settings avi-tscc-keyint and avi-cscd-keyint
+* Wxwidgets: Move the rest of config to main configuration dialog
+* Set wxTR_HIDE_ROOT on hotkey tree
+* Split keys in classes
+* Refactor path handling
+* Fix title and prompt in slot count changing
+* Try to fix the "key does not change" problem with Win32
+* Win32: Fix the hotkeys tree by adding wxTR_LINES_AT_ROOT
+* Note WIN32MM joystick driver
+* Wxwidgets: Configuration dialog: Disable buttons that make no sense
+* Wxwidgets: Disable clear buttons on nonclearable settings
+* Wxwidgets: New ROM select dialog
+* Wxwidgets: Change name of SNES cartridge ROM
+* Wxwidgets: Make DnD to SRAM filename boxes work properly
+* Wxwidgets: New project options dialog
+* Fix the project options dialog on Win32
+* Wxwidgets: Fix ROM select dialog with wxwidgets 2.9
+* Wxwidgets: Project options dialog improvements:
+* Make settings dialog saner size if there are no joysticks
+* Wxwidgets: Some more attempts at fixing settings dialog sizing
+* Wxwidgets: Mention lack of joysticks in joystick config
+* Wxwidgets: Finally fix the settings dialog size
+* Wxwidgets: Fix key entry dialog key box sizing to behave
+* Wxwidgets joystick support
+
+rr1-Δ7 [Saturday April 21th 2012]
+=================================
+* Refactor joystick support
+* Refactor joystick support more
+* Evdev: Fix pressure-sensitive buttons not showing up
+* Print joystick driver name for show-joysticks
+* Evdev: Add BTN_TOOL_QUINTTAP
+* Evdev: Move name tables to joystick.cpp
+* Evdev: Remove some unused variables
+* Wxwidgets: Don't print disabled axis as unknown type
+* Make keymapper threadsafe
+* Make command interface threadsafe too
+* Make settings threadsafe
+* Add option to open the config dialog without opening a ROM
+* Wxwidgets: Fix compiling on Win32
+* Wxwidgets: Kill internal hotkeys data before exiting the config dialog
+* Wxwidgets: Add option to prompt for key in key select dialogs
+* Wxwidgets: Fix the "key goes away underneath" crash.
+* Add unistd.h to src/core/loadlib.cpp
+* Wxwdigets: Fix mouse coordinates in presence of scaling
+* AVI dumper: Always flush as much as possible, not just 1 frame
+* AVI dumper: Add mode 4: Upcovert to next common rate using SRC
+* New hotkeys config dialog
+* Add manual changes for SRC
+* Add start paused option
+* Wxwidgets: Start paused applies even to new project
+
+rr1-Δ7ε1 [Wednesday April 25th 2012]
+====================================
+* AVI dumper: ZMBV support
+* AVI ZMBV: Lots of refactoring
+* AVI dumper: Performance counters
+* lsnes-dumpavi: Change order of dumper startup and lua startup
+* AVI dumper: Fix secondary audio in mode 4
+* AVI dumper: Do high-quality audio resampling in dedicated thread
+* AVI ZMBV: Pad the buffers instead of doing OOB access
+
+rr1-Δ7ε2 [Monday May 7th 2012]
+==============================
+* Extend zlibstream to support Z_SYNC_FLUSH and simplify zmbv code
+* Fix reading analog values
+
+rr1-Δ8 [Thursday May 10th 2012]
+===============================
+* Reintroduce delay reset support
+* Lua: memory.hash_region
+
+rr1-Δ8ε1 [Wednesday May 16th 2012]
+==================================
+* Revamp the build system
+* Add autohold for 1 frame (framehold) commands
+* Framehold: Fix a bug where loading savestate didn't reset the holds
+* Framehold: Add corresponding hotkeys and fix spurious autohold signal
+* More build system work
+* Ranlib the built bsnes archive
+* Build: Fix wrong polarity on BOOST mt postfix
+* Small build instructions rewording
+* Some rewording on options.build
+* Add missing bsnes version define
+* Apparently delayreset only compiles with bsnes v085.
+* Support v086 and v087 (but without delayresets)
+* SDL: Save settings on exit
+* SDL: Add command to enter command line with specified text
+* SDL: More advanced editing
+
+rr1-Δ9 [Tuesday May 22nd 2012]
+==============================
+* Try to fix the "arrow keys get lost" problem
+* MSU-1 support
+* Fix bug where mode change due to rewind is not shown
+* Unsafe rewinding
+* Fix lua_callback_do_unsafe_rewind in no-Lua case
+* Fix directory transversal in handling rerecord counting
+
+rr1-Δ10 [Thursday June 7th 2012]
+================================
+* AVI dumper: Sound mode 5: Fixed high-quality 48kHz
+* Lua: Reset Lua VM function
+* wxWidgets: Run script -> Run batch file
+* Expand memory addresses from 32 to 64 bits
+* Support pure virtual mappings
+* Export the iospace flag to Lua.
+* Fix bug with loading memory watches under Win32
+
+rr1-Δ10ε1 [Friday July 6th 2012]
+================================
+* Mirror some internal BSNES structures into virtual memory space
+* Add support of DnD movies/saves into the main window
+* Fix the "click on panel locks up keyboard" for real
+
+rr1-Δ11 [Sunday July 15th 2012]
+===============================
+* Librarify screen rendering
+* Split all references to bsnes core to dedicated file
+* Merge the new framebuffer code
+* Delete include/core/bsnes.hpp
+* Obtain the maximum number of logical controllers from the core defs
+* Get rid of porttype_t and devicetype_t
+* Move controller types to bsnes core, get rid of *LOGICAL* constants
+* Move prototypes for controller-specific functions from emucore.hpp
+* Reload ROM image on the fly
+* Move core-specific code to core bindings
+* Allow binding methods in Lua classes
+* Get rid of nall
+* Move button symbols to core specific code
+* Backport changes to generic stuff from gambatte core bindings work
+* Fix compile errors for Win32
+* More compile error fixing
+* Remove some debug spam on startup
+* Fix some display scaling related bugs
+* Fix sorting of various comboboxes
+* Update the manual (common for both versions)
+* Remember invalid settings
+* Fix mistake in settings dialog (not printing errors)
+* [GB] Gambatte core support
+* [GB] Fix ridiculous resolutions for special screens
+* [GB] max, not min!
+* [GB] Get gambatte version from the core itself
+* [GB] Updated manual for gambatte version
+* [GB] Fix savestate-related bugs
+* [GB] Fix saving of channel 1 sweep unit
+* [GB] Fix dumping (wrong framerate)
+
+* lsnes rr1-Δ11ε1 [Wednesday July 18th 2012]
+====================================
+* Fix bug in skip poll feature
+
+rr1-Δ12 [Friday July 20th 2012]
+===============================
+* Non-insane savestate anchoring
+
+rr1-Δ13 [Thursday August 30th 2012]
+===================================
+* Don't try to call methods from uninitialized pointers
+* Memory search extensions
+* Preserve the movie if loading state in readonly mode
+* Add option to use the older read-only load behavior
+* Fix timeline check in one special case
+* Revamp ROM loading
+* Update manual
+* Fix various bugs introduced in ROM changes
+* wxwidgets: New menu layout
+* Don't throw exceptions from ROM loading out of main loop
+* Standalone hotkey configuration dialog
+* wxwidgets: Cleanup the shown bindings a bit
+* wxwidgets: Clean up key configuration dialog
+* wxwidgets: Use comboboxes instead of 3state checkboxes
+* wxwidgets: Also unpause on ROM DnD
+
+rr1-Δ13ε1 [Saturday September 1st 2012]
+=======================================
+* Video dumping: Add pipedec
+* Fix uninitialized variables in bsnes core
+* [GB] Fix a crash when loading a ROM
+
+rr1-Δ14 [Sunday September 9th 2012]
+===================================
+* Fold Gambatte code to mainline rr1 maintenance branch
+* Say what file extension is expected from dump file
+* Memory watch computation data typing
+* Memory watch: lsnes internal mmio area
+* New memory watch editor
+* Allow adding addresses directly from memory search
+* Wxwidgets: Split memory watches in panel
+* Hexadecimal memory watch support
+* Wxwidgets: Refactor memory search code
+* Wxwidgets: Make status panel monospaced
+* Wxwidgets: Memory search: Add an option to disable VMAs
+* Make / in memory watches mean FP division.
+* lsnes-dumpavi: Don't hold back on emulation speed
+* Base subtitle support
+* Wxwidgets: Basic subtitles editor
+* Document subtitle-related stuff
+* Subtitle management from Lua
+* Allow dumping subtitles as .sub file
+* Export the rerecord count via MMIO and Lua
+* Fix rerecord count reporting when loading movies
+* Don't trash movie data when loading in readonly mode
+
+rr1-Δ14ε1 [Friday September 21st 2012]
+======================================
+* Fix crashes when closing settings dialog on Mac OS X
+* Fix build on Mac OS X
+* Lua: loopwarapper
+* Fix syntax bug in serialization.hpp
+* Allow hiding the messages window
+* Lua: input.joyset
+* Allow inconsistent savestates
+* lsnes-dumpavi: Allow setting settings
+* Implement mode where emulator saves every frame
+* Fix desync on loading savestate in readonly mode after movie
+* Fix save dialogs not working right on Mac OS X.
+* Fix insane status width on Win32
+* Make autohold not hang the emulator for a long time
+* Wxwidgets: Allow loading ROMs and movies from commandline
+* Update manual
+
+rr1-Δ15 [Wednesday September 26th 2012]
+=======================================
+* Be bit smarter with --load
+* New audio API WIP
+* Fix building after the commentary track thingy
+* Some more build fixing for Win32
+* Lua: input.joyget
+* Also add support for Gambatte SVN 358
+* Use builtin font for rendering status panel
+* Fix the new status area code
+* Add option to detach memory watch to its own window
+* Recent ROMs / Movies menu
+* Libao support
+* Update manuals about libao
+* Make lag counter useful in SNES games that autopoll
+* Fix a syntax error in gambatte patche
+* Fix missing wxT in recentmenu
+* Fix gambatte core bindings
+
+rr1-Δ15ε1 [Thursday September 27th 2012]
+========================================
+* Wxwidgets: Don't resize in paint handler, it makes wxwidgets blow up
+* If a ROM and movie are dropped at once, load both
+* Gambatte: Don't save spurious movie SRAMs in movie files
+* Make SGB ROMs actually usable
+* Don't probe for existence for filename to in recent_files::add/get
+* Only one commentary track editor at a time please
+* Commentary editor: Allow reopening the editor after close
+
+rr1-Δ15ε2 [Saturday September 29th 2012]
+========================================
+* Lua: memory.readregion / memory.writeregion
+* Lua: memory.map*
+* Lua: memory.map_structure
+* Fix bus_address for gambatte
+* Fix features dependent on bsnes debugger
+* Cleanup bsnes debugger logic
+* Fix resets in presence of save every frame
+
+rr1-Δ15ε3 [Saturday October 27th 2012]
+======================================
+* Lua: input.lcid_to_pcid
+* Fix off-by-one bug with slot hashes
+* Fix crashes on certain memory watch expressions
+* Lua: memory.read_expr
+* Lua: Fix memory.read_expr on nil argument
+* Fix the code to compile on G++ 4.7
+* Change button_id to be a function pointer field, not a virtual method
+* Refactor porttype_info into library/ (as port_type)
+* Add bsnes patches to fix libsnes to compile on GCC 4.7
+* Revert "Refactor porttype_info into library/ (as port_type)"
+* Gambatte: Always use legacy lag counting
+* Memory commands: Memory addresses are up to 16 hex digits, not up to 8
+* Fix analog controllers
+* Fix autohold menus
+* Fix button symbols in input display
+* Compensate for nuts bsnes superscope/justifier handling
+* Lua: Fix bit.extract with booleans
+
+rr2-β0 [Wednesday January 16th 2013]
+====================================
+* Refactor bsnes core version handling
+* Refactor SNES::system_*pu_frequency() calls to interface/bsnes.cpp
+* Refactor dummy interfaces to interface/bsnes.cpp
+* Refactor SRAM handling to interface/bsnes.cpp
+* Split VMA handling
+* Get rid of bsnes headers for memorymanip.cpp
+* Move core save/load routines to bsnes.cpp
+* Built-in ROM patcher
+* Some build fixes for Mac OS X
+* Fix compile error in src/video/sdmp.cpp
+* Fix compile errors in src/platform/wxwidgets/romselect.cpp
+* Refactor ROM slots handling
+* Refactor internal interfaces to support arbitrary number of controllers
+* MAX_ANALOG is no longer used, remove it
+* Support systems with !=2 ports
+* Fix segfault in controllerframe::deserialize
+* Fix case where deserialize doesn't read whole last field
+* Fix byte order of system field
+* Actually fix system byte order for gambatte
+* Change the pollcounter type to avoid errors on movie load
+* Refactor movie class to library/
+* Move globalwrap.hpp to library/
+* Use globalwrap in controller-data.cpp
+* globalwrap: Warn about recursive initialization
+* Refactor command handling to library/
+* Refactor settings to library/
+* Plug memory leaks
+* Don't leak command group internal management commands
+* Move bridging between commands and settings to library/
+* Move messagebuffer to library/
+* Move emulator_status to library/
+* Unify registration queue handling of commands and settings
+* Refactor and extend library loading
+* Fix some compile errors (throw specifiers)
+* Add a missing header file and correct win32 build error
+* Merge core controller setting code
+* Remove optionality of Lua support
+* Refactor Lua support
+* Fix some really retarded code in library/movie
+* Have cores generate controller index maps
+* Some movie code cleaning up
+* Avoid spurious polls arising from DRDY of nonexistent tuples
+* Move reset handling to cores
+* Have core-specific code build the legacy PCID maps
+* Allow multiple types of controllers on one port
+* Extern references in library/controller-data.hpp are no-no
+* Don't poll for / write non-valid control indices
+* Gambatte: Fold port0 and port1 together
+* Split lua_render_context into library/
+* Lua: Clean up callback code
+* Refactor memory mappings & memory search to library/
+* Split thread type defines to own header file
+* Fix button symbols in input display
+* Fix autohold menu
+* Compensate for nuts bsnes superscope/justifier handling
+* Clean up library includes
+* Sort out the fucking messages mess
+* Allow passing ROMs by filename instead by data
+* SNES: New controller types gamepad16 and multitap16
+* Fix some misc. compile errors in G++ 4.6
+* Lua: memory.getregister for SNES
+* SNES: Breakpoint support (still preliminary)
+* SNES: Add trace logging and step hooks
+* Refactor keyboard modifiers into library/
+* Refactor keygroup into library/
+* Remove obsolete SDL stuff
+* Remove more old crapola
+* Refactor keymapping to library/
+* Refactor generic_port_* functions and get rid of button_symbols
+* Also get rid of controller_names (using template magic)
+* Data-driven controller buttons
+* Use controller names instead of classes in autohold menu
+* Remove obsolete unused functions
+* Settings-based controllers
+* Remove export for core_set_region, there's no such function anymore
+* Move get_{audio,video}_rate() to rom type methods
+* Make the SNES rate specials methods
+* More making core functions into methods
+* Use lambda functions in core bindings
+* More refactoring core functions into methods
+* Remove set_preload_settings(), do the things at ROM load if needed
+* Remove do_basic_core_init (do equivalent tasks on demand)
+* More making core functions into methods
+* Yet more moving of core functions to methods
+* Make set of port types for core a field
+* Support multiple cores at once
+* controller mapping: Remove dangerous order assumption
+* Handle buttons when dynamically loading cores
+* Fix warnings about variable scope
+* Support autoloading stuff on startup
+* Support per-core cover pages
+* Do something sightly more interesting with covers
+* Display internal ROM name in cover page
+* Show region on cover page
+* Cover page: Characters 9 and 10 are supposed to be invisible
+* bsnes: system_name is unused, remove it
+* Replace region with full system
+* Handle conflicting sysregions
+* Remove legacy lag counting
+* Move emulation core bindings to their own directories
+* Show all supported cores in about window
+* Auto-generate port type code from defines
+* More core defines auto-generation
+* Allow null buttons in input maps
+* Fix make clean if bsnes and/or gambatte is missing
+* Fix compiling with gambatte and/or bsnes missing
+* Add button type TYPE_NULL
+* Change all systypes from map to set
+* Refactor finding systype by extension/name
+* Core conflict resolution
+* Fix Win32 compile errors
+
+rr2-β1 [Saturday January 19th 2013]
+===================================
+* Cores: Blurb
+* Update libgambatte to SVN 364
+* Get rid of partial linking
+* Load XML even without gamepack files
+* Support screen rotation & flipping
+* Fix bug when changing controller key to another subkey of the same key
+
+rr1-Δ16 [Thursday January 24th 2013]
+====================================
+* Stop on movie end: Stop at correct frame, not one frame too late
+* Clean up library includes
+* Backport library updates and sort out the fucking messages mess
+* Portaudio: Re-enable blacklisting of default and sysdefault
+* Fix crashes when closing lsnes with voice playback active
+* Refactor voice import/export and support pregap, postgap and gain
+* Support voice OggOpus import/export
+* Hack to allow using 16-button controllers
+* Remove nonexistent controllers from input display
+* Don't use constructs not implemented in gcc 4.6
+* Wxwidgets: Allow setting voice/record volumes from the UI
+* Cores: Blurb
+* Update libgambatte to SVN 364
+* Load XML even without gamepack
+* Support screen rotation & flipping
+* Backport the new bit functions
+* Lua: Backport new Lua functions from master and add bit.rflagdecode
+* Real-time updates for voice streams in editor
+* Live subtitle editing
+* Actually honor music volume setting
+
+rr2-β2 [Thursday January 24th 2013]
+===================================
+* Use system mutex/condition types instead of platform ones
+* Get rid of platform thread_id
+* Get rid of platform threads
+* joystick_plugin:: -> joystick_driver_
+* Joystick: use weak functions
+* Audio drivers: Use weak functions
+* graphics_plugin:: -> graphics_driver_
+* Graphics driver: Use weak functions
+* Windows apparently doesn't support weak functions
+* Lua: bit.test_any, bit.test_all
+* Lua: bit.popcount
+* Bit.{test_any,test_all,popcount}: Fix wrong datatype
+* Lua: bit.clshift / bit.crshift
+* Lua: bit.flagdecode
+* Emulate weak dummy driver in a way compatible with Win32
+* Lua: bit.rflagdecode
+* Split duplex support
+
+rr1-Δ16ε1 [Sunday February 3rd 2013]
+====================================
+* Wxwidgets: Fix memory watch rendering
+* Allow setting stream gain
+* Wxwidgets: VU meters & volume adjustment window
+* Lua: Custom fonts support
+* Lua: Fix bug with methods and resetting Lua VM
+* Fix rerecord count when loading movies
+* Fix paths in bsnes patches
+* Change AVI default sound mode
+* Fix loading standard-mode movies
+
+rr1-Δ17 [Monday February 11th 2013]
+===================================
+* Very basic movie editing support
+* Movie editor: Refactoring
+* Movie editor: Popup menu
+* Movie editor: Don't offer popup menu items that make no sense
+* Movie editor: Show button/axis names in popup menu
+* Movie editor: Don't offer out-of-movie edits in menu
+* Movie editor: Allow changing window size
+* Movie editor: Sanity-limit number of rows
+* Movie editor: Don't recount the entire movie when change is known
+* Movie editor: Insert frame after
+* Movie editor: Handle partially stored frames properly
+* Fix all sorts of wacky behavior with dummy audio callback
+* Show nominal and actual sample rates in VU window
+* Movie editor: Delete (sub)frame
+* Movie editor: Fix deleting the leading subframe
+* Movie editor: Locked scrolling mode
+* Movie editor: Reorganize the popup menu a bit
+* Movie editor: Show movie length
+* Win32: Use MoveFileEx to replace the target in one operation
+* Movie editor: Fix compilation on Win32
+* Wxwidgets: Repaint the status panel after RW/RO switch
+* Movie editor: Run to frame function
+* Movie editor: Append multiple frames at once
+* Movie editor: Truncate movie
+* Movie editor: Scroll to specified frame
+* Movie editor: Scrolling fixes
+* Movie editor: Handle scrolling when rewinding
+* Movie editor: Tweak colors
+* Movie editor: Scroll to current frame
+* Update manual
+* Movie editor: Allow toggling whole sequence of axis values at once
+* Movie editor: Show buttons even when released
+* Backport some bugfixes from compiler warning fixing
+* Fix compiling on Win32
+* Allow changing the Opus bitrate at runtime
+* Wxwidgets: Load filenames as ROMs and support --lua=<file>
+* Wxwidgets: Support -h and --help
+
+rr2-β3 [Monday February 11th 2013]
+==================================
+* Lua: Render queues as objects
+* Render queue documentation
+* Support for hard resets and make some stuff movie settings
+* Dedicated sound devices dialog
+* Oops, missing file.
+* Oops, set the sound mode default to 2 not 3
+* Movie editor: Add space before axis fields
+* Movie editor: Properly space in presence of axis fields
+* Fix serializing multi-controller ports
+* Fix serializing multiple ports
+* Fix saving unconnected ports to movie
+* Wxwidgets: Don't save or load blank core preferences
+* Portaudio: Do split duplex with different I/O devices
+* Portaudio: Fix buggy full-duplex mode
+* Fix controls with gambatte core
+* Remove lsnesrc-related code (since what it was used for is long gone)
+* Clean up framerate handling
+* Clean up save slots handling
+* Fix some uninitialized variables caught by Valgrind
+* Cleanup many settings (all from core)
+* lsnes-dumpavi: --firmware-path
+* Fix breakage in last commit
+* {set,clear}-pause-on-end
+* Fix lots of -Wall compiler warnings
+
+rr1-Δ17ε1 [Monday March 4th 2013]
+=================================
+* Commentary: Max bitrate limiting
+* Unconditionally reload hostmemory on loadstate
+* Lua: Query bindings, manipulate aliases, create inverse bindings
+* Fix crash with bitmaps and resetting Lua VM
+* More paint / reset fixes
+* Voicesubs: Don't access uninitialized variables
+* gui.text: Don't corrupt memory on rendering off bottom
+* Fix writing of screenshot magic to be reliable
+* Lua: Some new and backported input functions
+* Lua: input.port_type: Be consistent on type of port 0
+* Movie editor: Fix the reset delay counters to be right way around
+* Lua: input.controller_info
+* Lua: Document input.controller_info
+* Lua: on_snoop2
+* Lua: on_button and input.veto_button
+
+rr2-β4 [Monday March 4th 2013]
+==============================
+* Revert memory leak fix breaking input
+* Allow cores to create big-endian VMAs
+* Refactor Opus handing
+* Opus support: Repacketizer
+* Opus support: Ignore errors ctls
+* Better error handling in opus code
+* Opus support: Fix all sorts of mistakes
+* Make some things unsigned and fix on platforms where int is not 32 bits
+* Opus support: Support multistream
+* Fix memory search bug with host-endian VMAs
+* Restrict member picking to only .zip files
+* Fix reading of host-endian VMAs.
+* Some bizarre stuff...
+* Fix rlow and rhigh to be right way around
+* Fix movie editor in obscure case
+* Lua: Don't wedge VM if callback fails with exception
+* Refactor Oggopus support
+
+rr1-Δ17ε2 [Monday April 1st 2013]
+=================================
+* Fix saving PNG screenshots
+* Movie editor: Sweep axis
+* Load selected slot in ro/rw/preserve/movie mode
+* input.joyset: Preserve and invert user input
+* Allow immediate saving at point of save
+* Fix mouse movement
+* Wxwidgets: Filter filenames in load/save dialogs, autoappend extensions
+* data/verysmall.font is mising glyph 70 (F)
+* Lua: CUSTOMFONT: Allow painting with halo
+* Fix value search to work with byte types
+
+rr2-β5 [Monday April 1st 2013]
+==============================
+* Reject Oggopus files that don't have complete pregap
+* Make opus_packet_tick_count a common function
+* Rewrite opus_packet_tick_count without lookup tables
+* Multistream and demuxing fixes
+* Workaround framebuffer bug if screen width >1024
+* Allow on_input to veto/force system controls (including reset line)
+* Refactoring: copy_from_utf8()
+* Use named field initializers in cores
+* Have dedicated window for autohold instead of menu
+* Support per-button autofire
+* Fix crashes trying to frameadvance or exit with no ROM loaded
+* Also use named initializers for null core
+* Wxwidgets: Autohold: Don't open with no controllers
+* Warn about nonexistent controller keys more aggressively
+* Movie editor: Fix mouse
+* TAS input plugin
+* Analog passthrough
+* Gambatte: Clean up unused stuff
+* Add tests for throttle axes and fix numerious mistakes
+* TAS input plugin: Tweak coordinate transforms and pad sizes
+* Movie editor: Mark the panel as wxWANTS_CHARS
+* TAS input plugin: Accept keyboard hotkeys
+* Fix analog input using mouse (got broken with analog passthrough)
+* Don't crash if somebody calls audioapi_get_voice with samples=NULL
+* Autohold/Autofire: Try fix the "ga" bug
+* Add missing $(CROSS_PREFIX) to pkg-config for libopus
+* Use std::u32string instead of std::vector<uint32_t> for UTF-32 strings
+* Movie editor: Use UTF-32 internally
+* Fix undefined return value from port unserialization
+* Move some info from status panel to statusbar
+* data/verysmall.font is mising glyph 70 (F)
+* Lua: CUSTOMFONT: Allow painting with halo
+
+rr1-Δ17ε3 [Wednesday April 17th 2013]
+=====================================
+* Fix status panel (and movie editor) flicker
+* Actually fix the statuspane/movie-editor flicker
+* Show effects of Lua in input display
+* Offer lsmv.backup as file filter too for load lsmv
+* Allow slowing down subframe advance (it used to always be very fast)
+* Display current save slot information
+* Add snes9x fonts
+* Fix hotkeys stopping working after X-ing settings dialog
+* Movie editor: Fix bug if extending finished movie
+* Cap current_frame_first_subframe to movie size when recounting movie
+* Movie editor: Interpret ctrl+click as right click
+
+rr2-β6 [Wednesday April 17th 2013]
+==================================
+* Autofire: Fix false status indications
+* Fix subframe counter
+* Fix print() after Lua VM reset
+* New settings framework
+* Remove some unused leftover stuff
+* Fix race condition causing possible crash on startup
+* Fix compiling if uint64_t and size_t are not compatible
+* Lua: Don't crash if input.[gs]et{,a} is called outside on_input
