@@ -29,6 +29,7 @@ struct loaded_rom* our_rom;
 bool system_corrupt;
 movie_logic movb;
 std::string last_save;
+void update_movie_state();
 
 extern "C"
 {
@@ -101,9 +102,13 @@ namespace
 
 	void set_mprefix(const std::string& pfx)
 	{
-		umutex_class h(mprefix_lock);
-		mprefix_valid = (pfx != "");
-		mprefix = pfx;
+		{
+			umutex_class h(mprefix_lock);
+			mprefix_valid = (pfx != "");
+			mprefix = pfx;
+		}
+		update_movie_state();
+		information_dispatch::do_status_update();
 	}
 
 	std::string get_mprefix_for_project(const std::string& prjid)

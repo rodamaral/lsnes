@@ -268,13 +268,13 @@ namespace
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename);
-			flush_slotinfo(filename);
+			flush_slotinfo(translate_name_mprefix(filename, true));
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename);
-			flush_slotinfo(filename);
+			flush_slotinfo(translate_name_mprefix(filename, true));
 			return;
 		}
 		queued_saves.insert(filename);
@@ -367,7 +367,7 @@ void update_movie_state()
 			_status.set("!mode", "F");
 	}
 	if(jukebox_size > 0) {
-		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer));
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), true);
 		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
 		_status.set("!saveslotinfo", get_slotinfo(sfilen));
 	} else {
@@ -983,7 +983,7 @@ namespace
 			our_rom->rtype->runtosave();
 			for(auto i : queued_saves) {
 				do_save_state(i);
-				flush_slotinfo(i);
+				flush_slotinfo(translate_name_mprefix(i, true));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
