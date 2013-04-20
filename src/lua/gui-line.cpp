@@ -52,7 +52,7 @@ nodraw1:
 				}
 			} else {
 				//Y-major line.
-				if(_x2 < _x1) {
+				if(_y2 < _y1) {
 					//Swap points so that y1 < y2.
 					std::swap(_x1, _x2);
 					std::swap(_y1, _y2);
