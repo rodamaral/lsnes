@@ -2825,7 +2825,7 @@ Finds the VMA containing specified address.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readbyte(number address)
+memory.readbyte([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2833,7 +2833,7 @@ Reads the specified address as unsigned byte and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readsbyte(number address)
+memory.readsbyte([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2841,7 +2841,7 @@ Reads the specified address as signed byte and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.writebyte(number address, number value)
+memory.writebyte([string vma, ]number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2850,7 +2850,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-memory.readword(number address)
+memory.readword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2858,7 +2858,7 @@ Reads the specified address as unsigned word and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readsword(number address)
+memory.readsword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2866,7 +2866,7 @@ Reads the specified address as signed word and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.writeword(number address, number value)
+memory.writeword([string vma, ]number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2875,7 +2875,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-memory.readdword(number address)
+memory.readdword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2883,7 +2883,7 @@ Reads the specified address as unsigned doubleword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readsdword(number address)
+memory.readsdword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2891,7 +2891,7 @@ Reads the specified address as signed doubleword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.writedword(number address, number value)
+memory.writedword([string vma, ]number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2900,7 +2900,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-memory.readqword(number address)
+memory.readqword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2908,7 +2908,7 @@ Reads the specified address as unsigned quadword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readsqword(number address)
+memory.readsqword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -2916,7 +2916,7 @@ Reads the specified address as signed quadword and returns the result.
 \end_layout
 
 \begin_layout Subsubsection
-memory.writeqword(number address, number value)
+memory.writeqword([string vma, ]number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -2925,7 +2925,7 @@ Writes the specified value (negative values undergo 2's complement) to specified
 \end_layout
 
 \begin_layout Subsubsection
-memory.hash_region(number base, number size)
+memory.hash_region([string vma, ]number base, number size)
 \end_layout
 
 \begin_layout Standard
@@ -2943,7 +2943,7 @@ Hash the current system state.
 \end_layout
 
 \begin_layout Subsubsection
-memory.readregion(number base, number size)
+memory.readregion([string vma, ]number base, number size)
 \end_layout
 
 \begin_layout Standard
@@ -2955,7 +2955,7 @@ Warning: If the region crosses VMA boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsubsection
-memory.map<type>([number base, number size])
+memory.map<type>([[string vma, ]number base, number size])
 \end_layout
 
 \begin_layout Standard
@@ -2968,7 +2968,7 @@ Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
 \end_layout
 
 \begin_layout Subsubsection
-memory.writeregion(number base, number size, table data)
+memory.writeregion([string vma, ]number base, number size, table data)
 \end_layout
 
 \begin_layout Standard
@@ -2988,7 +2988,7 @@ Returns a new mapping structure (MMAP_STRUCT)
 \end_layout
 
 \begin_layout Subsubsection
-MMAP_STRUCT(string key, number address, string type)
+MMAP_STRUCT(string key, [string vma, ]number address, string type)
 \end_layout
 
 \begin_layout Standard

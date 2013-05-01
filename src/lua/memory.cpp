@@ -10,6 +10,15 @@
 
 namespace
 {
+	uint64_t get_vmabase(lua_state& L, const std::string& vma)
+	{
+		for(auto i : lsnes_memory.get_regions())
+			if(i->name == vma)
+				return i->base;
+		L.pushstring("No such VMA");
+		L.error();
+	}
+
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	class lua_read_memory : public lua_function
 	{
@@ -17,7 +26,13 @@ namespace
 		lua_read_memory(const std::string& name) : lua_function(LS, name) {}
 		int invoke(lua_state& L)
 		{
-			uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+			int base = 0;
+			uint64_t vmabase = 0;
+			if(L.type(1) == LUA_TSTRING) {
+				vmabase = get_vmabase(L, L.get_string(1, "lua_read_memory"));
+				base = 1;
+			}
+			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
 			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 			return 1;
 		}
@@ -30,8 +45,14 @@ namespace
 		lua_write_memory(const std::string& name) : lua_function(LS, name) {}
 		int invoke(lua_state& L)
 		{
-			uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-			T value = L.get_numeric_argument<T>(2, fname.c_str());
+			int base = 0;
+			uint64_t vmabase = 0;
+			if(L.type(1) == LUA_TSTRING) {
+				vmabase = get_vmabase(L, L.get_string(1, "lua_read_memory"));
+				base = 1;
+			}
+			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+			T value = L.get_numeric_argument<T>(base + 2, fname.c_str());
 			(lsnes_memory.*wfun)(addr, value);
 			return 0;
 		}
@@ -181,8 +202,14 @@ namespace
 				aperture_make_fun(L, 0, 0xFFFFFFFFFFFFFFFFULL, h);
 				return 1;
 			}
-			uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-			uint64_t size = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+			int base = 0;
+			uint64_t vmabase = 0;
+			if(L.type(1) == LUA_TSTRING) {
+				vmabase = get_vmabase(L, L.get_string(1, "lua_mmap_memory"));
+				base = 1;
+			}
+			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+			uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
 			if(!size) {
 				L.pushstring("Aperture with zero size is not valid");
 				L.error();
@@ -267,8 +294,14 @@ namespace
 
 	function_ptr_luafun hashmemory(LS, "memory.hash_region", [](lua_state& L, const std::string& fname) -> int {
 		std::string hash;
-		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		uint64_t size = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		int base = 0;
+		uint64_t vmabase = 0;
+		if(L.type(1) == LUA_TSTRING) {
+			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
+			base = 1;
+		}
+		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
 		char buffer[BLOCKSIZE];
 		sha256 h;
 		while(size > BLOCKSIZE) {
@@ -288,8 +321,14 @@ namespace
 
 	function_ptr_luafun readmemoryr(LS, "memory.readregion", [](lua_state& L, const std::string& fname) -> int {
 		std::string hash;
-		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		uint64_t size = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		int base = 0;
+		uint64_t vmabase = 0;
+		if(L.type(1) == LUA_TSTRING) {
+			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
+			base = 1;
+		}
+		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
 		L.newtable();
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
@@ -309,8 +348,14 @@ namespace
 
 	function_ptr_luafun writememoryr(LS, "memory.writeregion", [](lua_state& L, const std::string& fname) -> int {
 		std::string hash;
-		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		uint64_t size = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		int base = 0;
+		uint64_t vmabase = 0;
+		if(L.type(1) == LUA_TSTRING) {
+			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
+			base = 1;
+		}
+		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
 		while(size > 0) {
@@ -375,8 +420,14 @@ namespace
 int lua_mmap_struct::map(lua_state& L)
 {
 	const char* name = L.tostring(2);
-	uint64_t addr = L.get_numeric_argument<uint64_t>(3, "lua_mmap_struct::map");
-	const char* type = L.tostring(4);
+	int base = 0;
+	uint64_t vmabase = 0;
+	if(L.type(3) == LUA_TSTRING) {
+		vmabase = get_vmabase(L, L.get_string(3, "lua_mmap_struct::map"));
+		base = 1;
+	}
+	uint64_t addr = L.get_numeric_argument<uint64_t>(base + 3, "lua_mmap_struct::map");
+	const char* type = L.tostring(base + 4);
 	if(!name) {
 		L.pushstring("lua_mmap_struct::map: Bad name");
 		L.error();

@@ -1421,67 +1421,72 @@ fields:
 Finds the VMA containing specified address. Returns table in the 
 same format as read_vma or nil if not found.
 
-7.10.4 memory.readbyte(number address)
+7.10.4 memory.readbyte([string vma, ]number address)
 
 Reads the specified address as unsigned byte and returns the 
 result.
 
-7.10.5 memory.readsbyte(number address)
+7.10.5 memory.readsbyte([string vma, ]number address)
 
 Reads the specified address as signed byte and returns the 
 result.
 
-7.10.6 memory.writebyte(number address, number value)
+7.10.6 memory.writebyte([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a byte).
 
-7.10.7 memory.readword(number address)
+7.10.7 memory.readword([string vma, ]number address)
 
 Reads the specified address as unsigned word and returns the 
 result.
 
-7.10.8 memory.readsword(number address)
+7.10.8 memory.readsword([string vma, ]number address)
 
 Reads the specified address as signed word and returns the 
 result.
 
-7.10.9 memory.writeword(number address, number value)
+7.10.9 memory.writeword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a word).
 
-7.10.10 memory.readdword(number address)
+7.10.10 memory.readdword([string vma, ]number address)
 
 Reads the specified address as unsigned doubleword and returns 
 the result.
 
-7.10.11 memory.readsdword(number address)
+7.10.11 memory.readsdword([string vma, ]number address)
 
 Reads the specified address as signed doubleword and returns the 
 result.
 
-7.10.12 memory.writedword(number address, number value)
+7.10.12 memory.writedword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a doubleword).
 
-7.10.13 memory.readqword(number address)
+7.10.13 memory.readqword([string vma, ]number address)
 
 Reads the specified address as unsigned quadword and returns the 
 result.
 
-7.10.14 memory.readsqword(number address)
+7.10.14 memory.readsqword([string vma, ]number address)
 
 Reads the specified address as signed quadword and returns the 
 result.
 
-7.10.15 memory.writeqword(number address, number value)
+7.10.15 memory.writeqword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
-7.10.16 memory.hash_region(number base, number size)
+7.10.16 memory.hash_region([string vma, ]number base, number 
+  size)
 
 Hash specified number of bytes starting from specified address 
 and return the SHA-256.
@@ -1491,14 +1496,15 @@ and return the SHA-256.
 Hash the current system state. Mainly useful for debugging 
 savestates.
 
-7.10.18 memory.readregion(number base, number size)
+7.10.18 memory.readregion([string vma, ]number base, number size)
 
 Read a region of memory.
 
 • Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
-7.10.19 memory.map<type>([number base, number size])
+7.10.19 memory.map<type>([[string vma, ]number base, number 
+  size])
 
 Returns a table mapping specified memory aperture for read/write. 
 If parameters are omitted, entiere map space is the aperture.
@@ -1506,7 +1512,8 @@ If parameters are omitted, entiere map space is the aperture.
 • Type may be one of: byte, sbyte, word, sword, dword, sdword, 
   qword or sqword.
 
-7.10.20 memory.writeregion(number base, number size, table data)
+7.10.20 memory.writeregion([string vma, ]number base, number 
+  size, table data)
 
 Write a region of memory.
 
@@ -1517,7 +1524,8 @@ Write a region of memory.
 
 Returns a new mapping structure (MMAP_STRUCT)
 
-7.10.22 MMAP_STRUCT(string key, number address, string type)
+7.10.22 MMAP_STRUCT(string key, [string vma, ]number address, 
+  string type)
 
 Bind key in mmap structure to specified address with specified 
 type.
