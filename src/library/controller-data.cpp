@@ -1,5 +1,4 @@
 #include "controller-data.hpp"
-#include "portfn.hpp"
 #include "threadtypes.hpp"
 #include "minmax.hpp"
 #include "globalwrap.hpp"
@@ -17,23 +16,40 @@ namespace
 
 	struct porttype_basecontrol : public port_type
 	{
-		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 999998, 0)
+		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 999998, 1)
 		{
-			write = generic_port_write<1, 0, 1>;
-			read = generic_port_read<1, 0, 1>;
-			display = generic_port_display<1, 0, 1, &basecontrol_chars>;
-			serialize = generic_port_serialize<1, 0, 1, &basecontrol_chars>;
-			deserialize = generic_port_deserialize<1, 0, 1>;
-			legal = generic_port_legal<1>;
+			write = [](unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> void {
+				if(idx > 0 || ctrl > 0) return;
+				buffer[0] = x ? 1 : 0;
+			};
+			read = [](const unsigned char* buffer, unsigned idx, unsigned ctrl) -> short {
+				if(idx > 0 || ctrl > 0) return 0;
+				return buffer[0] ? 1 : 0;
+			};
+			serialize = [](const unsigned char* buffer, char* textbuf) -> size_t {
+				textbuf[0] = buffer[0] ? 'F' : '-';
+				textbuf[1] = '\0';
+				return 1;
+			};
+			deserialize = [](unsigned char* buffer, const char* textbuf) -> size_t {
+				size_t ptr = 0;
+				buffer[0] = 0;
+				if(read_button_value(textbuf, ptr))
+					buffer[0] = 1;
+				skip_rest_of_field(textbuf, ptr, false);
+				return ptr;
+			};
+			legal = [](unsigned port) -> int { return (port == 0); };
 			controller_info = &simple_port;
-			used_indices = generic_used_indices<1, 1>;
-		}
-		static port_type& get()
-		{
-			static porttype_basecontrol x;
-			return x;
+			used_indices = [](unsigned controller) -> unsigned { return (controller == 0) ? 1 : 0; };
 		}
 	};
+}
+
+port_type& get_default_system_port_type()
+{
+	static porttype_basecontrol x;
+	return x;
 }
 
 port_type::port_type(const std::string& iname, const std::string& _hname,  unsigned id,
@@ -54,7 +70,7 @@ bool port_type::is_present(unsigned controller) const throw()
 namespace
 {
 	size_t dummy_offset = 0;
-	port_type* dummy_type = &porttype_basecontrol::get();
+	port_type* dummy_type = &get_default_system_port_type();
 	unsigned dummy_index = 0;
 	struct binding
 	{
@@ -196,6 +212,45 @@ namespace
 		static port_type_set x;
 		return x;
 	}
+}
+
+void controller_frame::display(unsigned port, unsigned controller, char* buf) throw()
+{
+	if(port >= types->ports()) {
+		//Bad port.
+		*buf = '\0';
+		return;
+	}
+	uint8_t* backingmem = backing + types->port_offset(port);
+	const port_type& ptype = types->port_type(port);
+	if(controller >= ptype.controller_info->controller_count) {
+		//Bad controller.
+		*buf = '\0';
+		return;
+	}
+	const port_controller* pc = ptype.controller_info->controllers[controller];
+	bool need_space = false;
+	for(unsigned i = 0; i < pc->button_count; i++) {
+		const port_controller_button* pcb = pc->buttons[i];
+		if(need_space && pcb->type != port_controller_button::TYPE_NULL) {
+			need_space = false;
+			*(buf++) = ' ';
+		}
+		switch(pcb->type) {
+		case port_controller_button::TYPE_NULL:
+			break;
+		case port_controller_button::TYPE_BUTTON:
+			*(buf++) = ptype.read(backingmem, controller, i) ? pcb->symbol : '-';
+			break;
+		case port_controller_button::TYPE_AXIS:
+		case port_controller_button::TYPE_RAXIS:
+		case port_controller_button::TYPE_TAXIS:
+			buf += sprintf(buf, "%d", ptype.read(backingmem, controller, i));
+			need_space = true;
+			break;
+		}
+	}
+	*buf = '\0';
 }
 
 pollcounter_vector::pollcounter_vector() throw(std::bad_alloc)

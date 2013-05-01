@@ -33,7 +33,7 @@
 #include "interface/romtype.hpp"
 #include "library/pixfmt-rgb32.hpp"
 #include "library/string.hpp"
-#include "library/portfn.hpp"
+#include "library/controller-data.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"

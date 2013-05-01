@@ -12,7 +12,7 @@
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "library/pixfmt-rgb16.hpp"
-#include "library/portfn.hpp"
+#include "library/controller-data.hpp"
 #include "library/patch.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -54,29 +54,8 @@ namespace
 		0, 0				//Offset.
 	};
 
-	port_controller_button* null_buttons[] = {};
-	port_controller simple_controller = {"system", "system", 0, null_buttons};
-	port_controller* simple_controllers[] = {&simple_controller};
-	port_controller_set simple_port = {1, simple_controllers};
-
-	struct porttype_null : public port_type
-	{
-		porttype_null() : port_type("null", "null", 999997, 1)
-		{
-			write = generic_port_write<1, 0, 1>;
-			read = generic_port_read<1, 0, 1>;
-			display = generic_port_display<1, 0, 1, &null_chars>;
-			serialize = generic_port_serialize<1, 0, 1, &null_chars>;
-			deserialize = generic_port_deserialize<1, 0, 1>;
-			legal = generic_port_legal<1>;
-			controller_info = &simple_port;
-			used_indices = generic_used_indices<1, 1>;
-		}
-	} pnull;
-
 	port_type* port_types[] = {NULL};
 	port_index_triple sync_triple = {true, 0, 0, 0 };
-	
 
 	core_setting_group null_settings;
 
@@ -135,7 +114,7 @@ namespace
 		},
 		[](std::map<std::string, std::string>& settings) -> controller_set {
 			controller_set x;
-			x.ports.push_back(&pnull);
+			x.ports.push_back(&get_default_system_port_type());
 			x.portindex.indices.push_back(sync_triple);
 			return x;
 		},

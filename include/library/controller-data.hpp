@@ -276,14 +276,6 @@ public:
  */
 	short (*read)(const unsigned char* buffer, unsigned idx, unsigned ctrl);
 /**
- * Format compressed controller data into input display.
- *
- * Parameter buffer: The buffer storing compressed representation of controller state.
- * Parameter idx: Index of controller.
- * Parameter buf: The buffer to write NUL-terminated display string to. Assumed to be MAX_DISPLAY_LENGTH bytes in size.
- */
-	void (*display)(const unsigned char* buffer, unsigned idx, char* buf);
-/**
  * Take compressed controller data and serialize it into textual representation.
  *
  * - The initial '|' is also written.
@@ -892,14 +884,7 @@ public:
  * Parameter controller: The controller
  * Parameter buf: Buffer to write nul-terminated display to.
  */
-	void display(unsigned port, unsigned controller, char* buf) throw()
-	{
-		if(port >= types->ports()) {
-			*buf = '\0';
-			return;
-		}
-		types->port_type(port).display(backing + types->port_offset(port), controller, buf);
-	}
+	void display(unsigned port, unsigned controller, char* buf) throw();
 /**
  * Is device present?
  *
@@ -1162,31 +1147,8 @@ private:
 };
 
 /**
- * Generic port control index function.
+ * Get generic default system port type.
  */
-template<unsigned controllers, unsigned indices>
-inline unsigned generic_used_indices(unsigned controller)
-{
-	if(controller >= controllers)
-		return 0;
-	return indices;
-}
-
-template<unsigned mask>
-inline int generic_port_legal(unsigned port) throw()
-{
-	if(port >= CHAR_BIT * sizeof(unsigned))
-		port = CHAR_BIT * sizeof(unsigned) - 1;
-	return ((mask >> port) & 1);
-}
-
-/**
- * Generic port type function.
- */
-template<unsigned controllers, unsigned flags>
-inline unsigned generic_port_deviceflags(unsigned idx) throw()
-{
-	return (idx < controllers) ? flags : 0;
-}
+port_type& get_default_system_port_type();
 
 #endif

@@ -149,26 +149,6 @@ namespace sky
 		};
 		return 0;
 	}
-	void port_display(const unsigned char* buffer, unsigned idx, char* buf)
-	{
-		size_t ptr = 0;
-		short tmp;
-		switch(idx) {
-		case 0:
-			buf[ptr++] = (buffer[0] & 1) ? 'F' : '-';
-			break;
-		case 1:
-			buf[ptr++] = (buffer[0] & 2) ? 'L' : '-';
-			buf[ptr++] = (buffer[0] & 4) ? 'R' : '-';
-			buf[ptr++] = (buffer[0] & 8) ? 'A' : '-';
-			buf[ptr++] = (buffer[0] & 16) ? 'D' : '-';
-			buf[ptr++] = (buffer[0] & 32) ? 'J' : '-';
-			buf[ptr++] = (buffer[0] & 64) ? 'S' : '-';
-			buf[ptr++] = (buffer[0] & 128) ? 's' : '-';
-			break;
-		};
-		buf[ptr] = '\0';
-	};
 	size_t port_serialize(const unsigned char* buffer, char* textbuf)
 	{
 		size_t ptr = 0;
@@ -219,7 +199,6 @@ namespace sky
 		{
 			write = port_write;
 			read = port_read;
-			display = port_display;
 			serialize = port_serialize;
 			deserialize = port_deserialize;
 			legal = port_legal;

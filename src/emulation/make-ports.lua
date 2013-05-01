@@ -172,37 +172,6 @@ for i = 1,#ports do
 	end
 	print("\t\t\t};");
 	print("\t\t};");
-	print("\t\tdisplay = [](const unsigned char* buffer, unsigned idx, char* buf) -> void {");
-	local bit_l = 0;
-	local int_l = math.floor((bits + 7) / 8);
-	print("\t\tsize_t ptr = 0;");
-	print("\t\tshort tmp;");
-	print("\t\t\tswitch(idx) {");
-	for j = 1,#(port.controllers) do
-		local controller = port.controllers[j];
-		print("\t\t\tcase "..(j-1)..":");
-		for k = 1,#(controller.buttons) do
-			local xbutton = controller.buttons[k];
-			local bt = xbutton[1];
-			if (bt == button) or (bt == shadow) then
-				local bidx = math.floor(bit_l / 8);
-				local bmask = math.pow(2, bit_l % 8);
-				print("\t\t\t\tbuf[ptr++] = (buffer["..bidx.."] & "..bmask..") ? '"..
-					xbutton[2].."' : '-';");
-				bit_l = bit_l + 1;
-			end
-			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
-				print("\t\t\t\ttmp = (short)((unsigned short)buffer["..int_l.."] + ("..
-					"(unsigned short)buffer["..(int_l+1).."] << 8));");
-				print("\t\t\t\tptr += sprintf(buf + ptr, \"%i \", tmp);");
-				int_l = int_l + 2;
-			end
-		end
-		print("\t\t\t\tbreak;");
-	end
-	print("\t\t\t};");
-	print("\t\t\tbuf[ptr] = '\\0';");
-	print("\t\t};");
 	print("\t\tserialize = [](const unsigned char* buffer, char* textbuf) -> size_t {");
 	local bit_l = 0;
 	local int_l = math.floor((bits + 7) / 8);
