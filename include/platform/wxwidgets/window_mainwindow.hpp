@@ -42,7 +42,7 @@ public:
 	void menu_check(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
-	void update_statusbar(const std::map<std::string, std::string>& vars);
+	void update_statusbar(const std::map<std::string, std::u32string>& vars);
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:

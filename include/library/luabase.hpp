@@ -6,6 +6,7 @@
 #include <map>
 #include <cassert>
 #include "string.hpp"
+#include "utf8.hpp"
 extern "C"
 {
 #include <lua.h>
@@ -276,6 +277,8 @@ public:
 	const char* tostring(int index) { return lua_tostring(lua_handle, index); }
 	const char* tolstring(int index, size_t& len) { return lua_tolstring(lua_handle, index, &len); }
 	void pushlstring(const char* s, size_t len) { lua_pushlstring(lua_handle, s, len); }
+	void pushlstring(const std::string& s) { lua_pushlstring(lua_handle, s.c_str(), s.length()); }
+	void pushlstring(const char32_t* s, size_t len) { pushlstring(to_u8string(std::u32string(s, len))); }
 	int pcall(int nargs, int nresults, int errfunc) { return lua_pcall(lua_handle, nargs, nresults, errfunc); }
 	int next(int index) { return lua_next(lua_handle, index); }
 	int isnoneornil(int index) { return lua_isnoneornil(lua_handle, index); }

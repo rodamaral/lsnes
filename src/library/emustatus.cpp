@@ -11,6 +11,12 @@ emulator_status::~emulator_status() throw()
 void emulator_status::set(const std::string& key, const std::string& value) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
+	content[key] = to_u32string(value);
+}
+
+void emulator_status::set(const std::string& key, const std::u32string& value) throw(std::bad_alloc)
+{
+	umutex_class h(lock);
 	content[key] = value;
 }
 
@@ -26,7 +32,7 @@ void emulator_status::erase(const std::string& key) throw()
 	content.erase(key);
 }
 
-std::string emulator_status::get(const std::string& key) throw(std::bad_alloc)
+std::u32string emulator_status::get(const std::string& key) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
 	return content[key];
@@ -42,7 +48,7 @@ emulator_status::iterator emulator_status::first() throw(std::bad_alloc)
 bool emulator_status::next(iterator& itr) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
-	std::map<std::string, std::string>::iterator j;
+	std::map<std::string, std::u32string>::iterator j;
 	if(itr.not_valid)
 		j = content.lower_bound("");
 	else
@@ -50,7 +56,7 @@ bool emulator_status::next(iterator& itr) throw(std::bad_alloc)
 	if(j == content.end()) {
 		itr.not_valid = true;
 		itr.key = "";
-		itr.value = "";
+		itr.value = U"";
 		return false;
 	} else {
 		itr.not_valid = false;

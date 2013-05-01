@@ -400,7 +400,7 @@ void update_movie_state()
 			last_controllers = i;
 			break;
 		}
-		char buffer[MAX_DISPLAY_LENGTH];
+		char32_t buffer[MAX_DISPLAY_LENGTH];
 		c.display(pindex.first, pindex.second, buffer);
 		_status.set((stringfmt() << "P" << (i + 1)).str(), buffer);
 	}

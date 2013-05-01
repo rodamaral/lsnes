@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include "utf8.hpp"
 
 class emulator_status
 {
@@ -28,6 +29,14 @@ public:
  */
 	void set(const std::string& key, const std::string& value) throw(std::bad_alloc);
 /**
+ * Insert/Replace key.
+ *
+ * Parameter key: Key to insert/replace.
+ * Parameter value: The value to assign.
+ * Throws std::bad_alloc: Not enough memory.
+ */
+	void set(const std::string& key, const std::u32string& value) throw(std::bad_alloc);
+/**
  * Has key?
  *
  * Parameter key: Key to check.
@@ -46,7 +55,7 @@ public:
  * Parameter key: The key to read.
  * Returns: The value of key ("" if not found).
  */
-	std::string get(const std::string& key) throw(std::bad_alloc);
+	std::u32string get(const std::string& key) throw(std::bad_alloc);
 /**
  * Iterator.
  */
@@ -63,7 +72,7 @@ public:
 /**
  * Value.
  */
-		std::string value;
+		std::u32string value;
 	};
 /**
  * Get first iterator
@@ -84,7 +93,7 @@ private:
 	emulator_status(const emulator_status&);
 	emulator_status& operator=(const emulator_status&);
 	mutex_class lock;
-	std::map<std::string, std::string> content;
+	std::map<std::string, std::u32string> content;
 };
 
 #endif

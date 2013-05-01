@@ -184,7 +184,7 @@ struct port_controller_button
 		TYPE_TAXIS	//Throttle Axis (does not pair).
 	};
 	enum _type type;
-	char symbol;
+	char32_t symbol;
 	const char* name;
 	bool shadow;
 	int16_t rmin;		//Range min.
@@ -884,7 +884,7 @@ public:
  * Parameter controller: The controller
  * Parameter buf: Buffer to write nul-terminated display to.
  */
-	void display(unsigned port, unsigned controller, char* buf) throw();
+	void display(unsigned port, unsigned controller, char32_t* buf) throw();
 /**
  * Is device present?
  *

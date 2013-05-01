@@ -38,7 +38,7 @@ for i = 1,#ports do
 			if xbutton[1] == button then
 				table.insert(bsyms, bsym);
 				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
-					"'" .. xbutton[2] .. "', \""..xbutton[3].."\", false, 0, 0, false};");
+					"U'" .. xbutton[2] .. "', \""..xbutton[3].."\", false, 0, 0, false};");
 				bits = bits + 1;
 			end
 			if xbutton[1] == axis then
@@ -65,7 +65,7 @@ for i = 1,#ports do
 			if xbutton[1] == shadow then
 				table.insert(bsyms, bsym);
 				print("\tport_controller_button "..bsym.." = {port_controller_button::TYPE_BUTTON, "..
-					"'" .. xbutton[2] .. "', \""..xbutton[3].."\", true};");
+					"U'" .. xbutton[2] .. "', \""..xbutton[3].."\", true};");
 				bits = bits + 1;
 			end
 			if xbutton[1] == shadow_axis then
@@ -189,7 +189,7 @@ for i = 1,#ports do
 				local bidx = math.floor(bit_l / 8);
 				local bmask = math.pow(2, bit_l % 8);
 				print("\t\t\ttextbuf[ptr++] = (buffer["..bidx.."] & "..bmask..") ? '"..
-					xbutton[2].."' : '.';");
+					(xbutton[4] or xbutton[2]).."' : '.';");
 				bit_l = bit_l + 1;
 			end
 		end

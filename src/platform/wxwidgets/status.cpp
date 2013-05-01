@@ -73,7 +73,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 {
 	//Quickly copy the status area.
 	auto& s = platform::get_emustatus();
-	std::map<std::string, std::string> newstatus;
+	std::map<std::string, std::u32string> newstatus;
 	emulator_status::iterator i = s.first();
 	while(s.next(i))
 		newstatus[i.key] = i.value;
@@ -139,7 +139,7 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	}
 
 	{
-		std::map<std::string, std::string> specials;
+		std::map<std::string, std::u32string> specials;
 		for(auto i : newstatus)
 			if(i.first.length() > 0 && i.first[0] == '!')
 				specials[i.first] = i.second;

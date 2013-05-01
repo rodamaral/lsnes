@@ -212,9 +212,19 @@ namespace
 		static port_type_set x;
 		return x;
 	}
+
+	size_t writeu32val(char32_t* buf, int val)
+	{
+		char c[12];
+		size_t i;
+		sprintf(c, "%d", val);
+		for(i = 0; c[i]; i++)
+			buf[i] = c[i];
+		return i;
+	}
 }
 
-void controller_frame::display(unsigned port, unsigned controller, char* buf) throw()
+void controller_frame::display(unsigned port, unsigned controller, char32_t* buf) throw()
 {
 	if(port >= types->ports()) {
 		//Bad port.
@@ -230,6 +240,7 @@ void controller_frame::display(unsigned port, unsigned controller, char* buf) th
 	}
 	const port_controller* pc = ptype.controller_info->controllers[controller];
 	bool need_space = false;
+	short val;
 	for(unsigned i = 0; i < pc->button_count; i++) {
 		const port_controller_button* pcb = pc->buttons[i];
 		if(need_space && pcb->type != port_controller_button::TYPE_NULL) {
@@ -240,12 +251,13 @@ void controller_frame::display(unsigned port, unsigned controller, char* buf) th
 		case port_controller_button::TYPE_NULL:
 			break;
 		case port_controller_button::TYPE_BUTTON:
-			*(buf++) = ptype.read(backingmem, controller, i) ? pcb->symbol : '-';
+			*(buf++) = ptype.read(backingmem, controller, i) ? pcb->symbol : U'-';
 			break;
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
 		case port_controller_button::TYPE_TAXIS:
-			buf += sprintf(buf, "%d", ptype.read(backingmem, controller, i));
+			val = ptype.read(backingmem, controller, i);
+			buf += writeu32val(buf, val);
 			need_space = true;
 			break;
 		}

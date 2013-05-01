@@ -782,45 +782,45 @@ void wxwin_mainwindow::notify_exit() throw()
 	Destroy();
 }
 
-std::string read_variable_map(const std::map<std::string, std::string>& vars, const std::string& key)
+std::u32string read_variable_map(const std::map<std::string, std::u32string>& vars, const std::string& key)
 {
 	if(!vars.count(key))
-		return "";
+		return U"";
 	return vars.find(key)->second;
 }
 
-void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::string>& vars)
+void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32string>& vars)
 {
 	if(vars.empty())
 		return;
 	try {
-		std::ostringstream s;
-		bool recording = (read_variable_map(vars, "!mode") == "R");
+		std::basic_ostringstream<char32_t> s;
+		bool recording = (read_variable_map(vars, "!mode") == U"R");
 		if(recording)
-			s << "Frame: " << read_variable_map(vars, "!frame");
+			s << U"Frame: " << read_variable_map(vars, "!frame");
 		else
-			s << "Frame: " << read_variable_map(vars, "!frame") << "/" <<
+			s << U"Frame: " << read_variable_map(vars, "!frame") << "/" <<
 				read_variable_map(vars, "!length");
-		s << "  Lag: " << read_variable_map(vars, "!lag");
-		s << "  Subframe: " << read_variable_map(vars, "!subframe");
+		s << U"  Lag: " << read_variable_map(vars, "!lag");
+		s << U"  Subframe: " << read_variable_map(vars, "!subframe");
 		if(vars.count("!saveslot"))
-			s << "  Slot: " << read_variable_map(vars, "!saveslot");
+			s << U"  Slot: " << read_variable_map(vars, "!saveslot");
 		if(vars.count("!saveslotinfo"))
-			s << " [" << read_variable_map(vars, "!saveslotinfo") << "]";
-		s << "  Speed: " << read_variable_map(vars, "!speed") << "%";
+			s << U" [" << read_variable_map(vars, "!saveslotinfo") << U"]";
+		s << U"  Speed: " << read_variable_map(vars, "!speed") << "%";
 		s << " ";
-		if(read_variable_map(vars, "!dumping") != "")
-			s << " Dumping";
-		if(read_variable_map(vars, "!mode") == "C")
-			s << " Corrupt";
-		else if(read_variable_map(vars, "!mode") == "R")
-			s << " Recording";
-		else if(read_variable_map(vars, "!mode") == "P")
-			s << " Playback";
-		else if(read_variable_map(vars, "!mode") == "F")
-			s << " Finished";
+		if(read_variable_map(vars, "!dumping") != U"")
+			s << U" Dumping";
+		if(read_variable_map(vars, "!mode") == U"C")
+			s << U" Corrupt";
+		else if(read_variable_map(vars, "!mode") == U"R")
+			s << U" Recording";
+		else if(read_variable_map(vars, "!mode") == U"P")
+			s << U" Playback";
+		else if(read_variable_map(vars, "!mode") == U"F")
+			s << U" Finished";
 		else 
-			s << " Unknown";
+			s << U" Unknown";
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
 	}

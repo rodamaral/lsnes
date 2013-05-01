@@ -63,13 +63,13 @@ struct control_info
 	unsigned reserved;	//Must be at least 6 for axes.
 	unsigned index;		//Index in poll vector.
 	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis.
-	char ch;
+	char32_t ch;
 	std::u32string title;
 	unsigned port;
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
 	static control_info fixedinfo(unsigned& p, const std::u32string& str);
-	static control_info buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx);
+	static control_info buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx);
 	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx);
 };
 
@@ -103,7 +103,7 @@ control_info control_info::fixedinfo(unsigned& p, const std::u32string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
