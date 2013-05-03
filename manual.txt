@@ -850,10 +850,9 @@ compression).
 Set the frame advance timeout in milliseconds. Numeric integer, 
 range is 0-999999999. Default is 500.
 
-7.1.5 allow-inconsistent-saves (bsnes only)
+7.1.5 advance-subframe-timeout
 
-If true, save without synchronization. Makes games seriously 
-unstable.
+Subframe advance timeout in milliseconds. Default is 100.
 
 7.1.6 save-every-frame (bsnes only)
 
@@ -3946,4 +3945,27 @@ set-axis joystick0axis19 disabled
 • Lua: Allow painting custom fonts with halo.
 
 • Fix memory value search to work on byte types.
+
+19.81 rr1-delta17epsilon3
+
+• Fix status panel (and movie editor) flicker
+
+• Show effects of Lua in input display
+
+• Offer lsmv.backup as file filter too for load lsmv
+
+• Allow slowing down subframe advance 
+
+• Display current save slot information
+
+• Add snes9x fonts
+
+• Fix hotkeys stopping working after X-ing settings dialog
+
+• Movie editor: Fix bug if extending finished movie
+
+• Cap current_frame_first_subframe to movie size when recounting 
+  movie
+
+• Movie editor: Interpret ctrl+click as right click 
 
