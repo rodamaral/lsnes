@@ -29,6 +29,7 @@ struct text_framebuffer
 	std::pair<size_t, size_t> get_pixels();
 	void render(char* buffer);
 	size_t write(const std::string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg);
+	size_t write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg);
 	static size_t text_width(const std::string& text);
 private:
 	std::vector<element> buffer;

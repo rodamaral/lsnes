@@ -1,3 +1,4 @@
+#include <sstream>
 #include "utf8.hpp"
 
 namespace
@@ -142,6 +143,7 @@ int32_t utf8_parse_byte(int ch, uint16_t& state) throw()
 			return -1;
 		}
 	};
+	return -1;
 }
 
 size_t utf8_strlen(const std::string& str) throw()
@@ -154,6 +156,33 @@ size_t utf8_strlen(const std::string& str) throw()
 	if(utf8_parse_byte(-1, s) >= 0)
 		r++;
 	return r;
+}
+
+std::u32string to_u32string(const std::string& utf8)
+{
+	std::u32string x;
+	x.resize(utf8_strlen(utf8));
+	copy_from_utf8(utf8.begin(), utf8.end(), x.begin());
+	return x;
+}
+
+std::string to_u8string(const std::u32string& utf32)
+{
+	std::ostringstream s;
+	for(auto i : utf32) {
+		if(i < 0x80)
+			s << (unsigned char)i;
+		else if(i < 0x800)
+			s << (unsigned char)(0xC0 + (i >> 6)) << (unsigned char)(0x80 + (i & 0x3F));
+		else if(i < 0x10000)
+			s << (unsigned char)(0xE0 + (i >> 12)) << (unsigned char)(0x80 + ((i >> 6) & 0x3F))
+				 << (unsigned char)(0x80 + (i & 0x3F));
+		else if(i < 0x10FFFF)
+			s << (unsigned char)(0xF0 + (i >> 18)) << (unsigned char)(0x80 + ((i >> 12) & 0x3F))
+				<< (unsigned char)(0x80 + ((i >> 6) & 0x3F))
+				<< (unsigned char)(0x80 + (i & 0x3F));
+	}
+	return s.str();
 }
 
 #ifdef TEST_UTF8

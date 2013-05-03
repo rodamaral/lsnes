@@ -11,6 +11,7 @@
 #include "library/string.hpp"
 #include "library/utf8.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <wx/wx.h>
 #include <wx/event.h>
@@ -63,35 +64,35 @@ struct control_info
 	unsigned index;		//Index in poll vector.
 	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis.
 	char ch;
-	std::string title;
+	std::u32string title;
 	unsigned port;
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
-	static control_info fixedinfo(unsigned& p, const std::string& str);
-	static control_info buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx);
-	static control_info axisinfo(unsigned& p, const std::string& title, unsigned idx);
+	static control_info fixedinfo(unsigned& p, const std::u32string& str);
+	static control_info buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx);
+	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx);
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen((stringfmt() << port << "-" << controller).str());
+	i.reserved = (stringfmt() << port << "-" << controller).str32().length();
 	p += i.reserved;
 	i.index = 0;
 	i.type = -2;
 	i.ch = 0;
-	i.title = "";
+	i.title = U"";
 	i.port = port;
 	i.controller = controller;
 	return i;
 }
 
-control_info control_info::fixedinfo(unsigned& p, const std::string& str)
+control_info control_info::fixedinfo(unsigned& p, const std::u32string& str)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen(str);
+	i.reserved = str.length();
 	p += i.reserved;
 	i.index = 0;
 	i.type = -1;
@@ -102,7 +103,7 @@ control_info control_info::fixedinfo(unsigned& p, const std::string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, const std::string& title, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
@@ -117,11 +118,11 @@ control_info control_info::buttoninfo(unsigned& p, char character, const std::st
 	return i;
 }
 
-control_info control_info::axisinfo(unsigned& p, const std::string& title, unsigned idx)
+control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx)
 {
 	control_info i;
 	i.position_left = p;
-	i.reserved = utf8_strlen(title);
+	i.reserved = title.length();
 	if(i.reserved < 6)
 		i.reserved = 6;
 	p += i.reserved;
@@ -143,17 +144,15 @@ public:
 	void write_index(controller_frame& f, unsigned idx, short value);
 	uint32_t read_pollcount(pollcounter_vector& v, unsigned idx);
 	const std::list<control_info>& get_controlinfo() { return controlinfo; }
-	std::string line1() { return _line1; }
-	std::string line2() { return _line2; }
+	std::u32string line1() { return _line1; }
+	std::u32string line2() { return _line2; }
 	size_t width() { return _width; }
 private:
 	size_t _width;
-	std::string _line1;
-	std::string _line2;
+	std::u32string _line1;
+	std::u32string _line2;
 	void format_lines();
 	void add_port(unsigned& c, unsigned pid, porttype_info& p);
-	std::string vector_to_string(const std::vector<uint32_t>& cp);
-	std::vector<uint32_t> string_to_vector(const std::string& str);
 	std::list<control_info> controlinfo;
 };
 
@@ -169,12 +168,12 @@ void frame_controls::set_types(controller_frame& f)
 	unsigned nextc = 0;
 	controlinfo.clear();
 	controlinfo.push_back(control_info::portinfo(nextp, 0, 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', "Framesync", 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', "Reset", 1));
+	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', U"Framesync", 0));
+	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', U"Reset", 1));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, " rhigh", 2));
+	controlinfo.push_back(control_info::axisinfo(nextc, U" rhigh", 2));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, "  rlow", 3));
+	controlinfo.push_back(control_info::axisinfo(nextc, U"  rlow", 3));
 	if(nextp > nextc)
 		nextc = nextp;
 	nextp = nextc;
@@ -189,15 +188,15 @@ void frame_controls::add_port(unsigned& c, unsigned pid, porttype_info& p)
 	unsigned ccount = MAX_CONTROLLERS_PER_PORT * MAX_CONTROLS_PER_CONTROLLER;
 	auto limits = get_core_logical_controller_limits();
 	while(p.is_present(i)) {
-		controlinfo.push_back(control_info::fixedinfo(c, "│"));
+		controlinfo.push_back(control_info::fixedinfo(c, U"\u2502"));
 		unsigned nextp = c;
 		controlinfo.push_back(control_info::portinfo(nextp, pid, i + 1));
 		unsigned b = 0;
 		if(p.is_analog(i)) {
-			controlinfo.push_back(control_info::axisinfo(c, " xaxis", 4 + ccount * pid + i *
+			controlinfo.push_back(control_info::axisinfo(c, U" xaxis", 4 + ccount * pid + i *
 				MAX_CONTROLS_PER_CONTROLLER - ccount));
 			c++;
-			controlinfo.push_back(control_info::axisinfo(c, " yaxis", 5 + ccount * pid + i *
+			controlinfo.push_back(control_info::axisinfo(c, U" yaxis", 5 + ccount * pid + i *
 				MAX_CONTROLS_PER_CONTROLLER - ccount));
 			if(p.button_symbols[0])
 				c++;
@@ -210,7 +209,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, porttype_info& p)
 					break;
 			if(lbid == limits.second)
 				lbid = 0;
-			std::string name = get_logical_button_name(lbid);
+			std::u32string name = to_u32string(get_logical_button_name(lbid));
 			controlinfo.push_back(control_info::buttoninfo(c, p.button_symbols[j], name, 4 + b + ccount *
 				pid + i * MAX_CONTROLS_PER_CONTROLLER - ccount));
 		}
@@ -255,43 +254,6 @@ uint32_t frame_controls::read_pollcount(pollcounter_vector& v, unsigned idx)
 	return v.get_polls(idx - 4);
 }
 
-std::string frame_controls::vector_to_string(const std::vector<uint32_t>& cp)
-{
-	std::ostringstream s;
-	for(auto i : cp) {
-		if(i < 0x80)
-			s << (unsigned char)i;
-		else if(i < 0x800)
-			s << (unsigned char)(0xC0 + (i >> 6)) << (unsigned char)(0x80 + (i & 0x3F));
-		else if(i < 0x10000)
-			s << (unsigned char)(0xE0 + (i >> 12)) << (unsigned char)(0x80 + ((i >> 6) & 0x3F))
-				 << (unsigned char)(0x80 + (i & 0x3F));
-		else if(i < 0x10FFFF)
-			s << (unsigned char)(0xF0 + (i >> 18)) << (unsigned char)(0x80 + ((i >> 12) & 0x3F))
-				<< (unsigned char)(0x80 + ((i >> 6) & 0x3F))
-				<< (unsigned char)(0x80 + (i & 0x3F));
-	}
-	return s.str();
-}
-
-std::vector<uint32_t> frame_controls::string_to_vector(const std::string& str)
-{
-	std::vector<uint32_t> cp;
-	size_t spos = 0;
-	size_t slen = str.length();
-	uint16_t state = utf8_initial_state;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8_parse_byte(ch, state);
-		if(u >= 0)
-			cp.push_back(u);
-		if(ch < 0)
-			break;
-		spos++;
-	}
-	return cp;
-}
-
 void frame_controls::format_lines()
 {
 	_width = 0;
@@ -299,8 +261,8 @@ void frame_controls::format_lines()
 		if(i.position_left + i.reserved > _width)
 			_width = i.position_left + i.reserved;
 	}
-	std::vector<uint32_t> cp1;
-	std::vector<uint32_t> cp2;
+	std::u32string cp1;
+	std::u32string cp2;
 	uint32_t off = divcnt + 1;
 	cp1.resize(_width + divcnt + 1);
 	cp2.resize(_width + divcnt + 1);
@@ -312,23 +274,23 @@ void frame_controls::format_lines()
 	//For every port-controller, find the least coordinate.
 	for(auto i : controlinfo) {
 		if(i.type == -1) {
-			auto _title = string_to_vector(i.title);
+			auto _title = i.title;
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		} else if(i.type == -2) {
-			auto _title = string_to_vector((stringfmt() << i.port << "-" << i.controller).str());
+			auto _title = (stringfmt() << i.port << "-" << i.controller).str32();
 			std::copy(_title.begin(), _title.end(), &cp1[i.position_left + off]);
 		}
 	}
 	//Line2
 	for(auto i : controlinfo) {
-		auto _title = string_to_vector(i.title);
+		auto _title = i.title;
 		if(i.type == -1 || i.type == 1)
 			std::copy(_title.begin(), _title.end(), &cp2[i.position_left + off]);
 		if(i.type == 0)
 			cp2[i.position_left + off] = i.ch;
 	}
-	_line1 = vector_to_string(cp1);
-	_line2 = vector_to_string(cp2);
+	_line1 = cp1;
+	_line2 = cp2;
 }
 
 
@@ -376,8 +338,8 @@ private:
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
-		std::string render_line1(controller_frame& f);
-		std::string render_line2(controller_frame& f);
+		std::u32string render_line1(controller_frame& f);
+		std::u32string render_line2(controller_frame& f);
 		void render_linen(text_framebuffer& fb, controller_frame& f, uint64_t sfn, int y);
 		unsigned long long spos;
 		void* prev_obj;
@@ -389,8 +351,8 @@ private:
 		wxeditor_movie* m;
 		bool requested;
 		text_framebuffer fb;
-		int movielines;
-		int moviepos;
+		uint64_t movielines;
+		uint64_t moviepos;
 		unsigned new_width;
 		unsigned new_height;
 		std::vector<uint8_t> pixels;
@@ -461,7 +423,7 @@ wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
 wxeditor_movie::~wxeditor_movie() throw() {}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
-	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100)),
+	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS),
 	information_dispatch("movieeditor-listener")
 {
 	m = v;
@@ -530,13 +492,13 @@ int wxeditor_movie::_moviepanel::width(controller_frame& f)
 	return divcnt + 1 + fcontrols.width();
 }
 
-std::string wxeditor_movie::_moviepanel::render_line1(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line1(controller_frame& f)
 {
 	update_cache();
 	return fcontrols.line1();
 }
 
-std::string wxeditor_movie::_moviepanel::render_line2(controller_frame& f)
+std::u32string wxeditor_movie::_moviepanel::render_line2(controller_frame& f)
 {
 	update_cache();
 	return fcontrols.line2();
@@ -546,7 +508,6 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 {
 	update_cache();
 	size_t fbstride = fb.get_stride();
-	auto fbsize = fb.get_characters();
 	text_framebuffer::element* _fb = fb.get_buffer();
 	text_framebuffer::element e;
 	e.bg = 0xFFFFFF;
@@ -571,15 +532,13 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 	else if(subframe_to_frame[sfn] > curframe)
 		past = 0;
 	bool now = (subframe_to_frame[sfn] == curframe);
-	int xcord = -32768;
+	unsigned xcord = 32768;
 	if(pressed)
 		xcord = press_x;
 
 	for(auto i : ctrlinfo) {
 		int rpast = past;
 		unsigned off = divcnt + 1;
-		unsigned idx = i.index;
-		frame_controls* _fcontrols = &fcontrols;
 		bool cselected = (xcord >= i.position_left + off && xcord < i.position_left + i.reserved + off);
 		if(rpast == -1) {
 			unsigned polls = fcontrols.read_pollcount(pv, i.index);
@@ -950,7 +909,6 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 	for(auto i : fcontrols.get_controlinfo()) {
 		unsigned off = divcnt + 1;
 		unsigned idx = i.index;
-		frame_controls* _fcontrols = &fcontrols;
 		if((press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) &&
 			(x >= i.position_left + off && x < i.position_left + i.reserved + off)) {
 			if(i.type == 0)
@@ -1102,7 +1060,7 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	bool enable_insert_frame = false;
 	bool enable_delete_frame = false;
 	bool enable_delete_subframe = false;
-	std::string title;
+	std::u32string title;
 	if(y < 3)
 		goto outrange;
 	if(!movb.get_movie().readonly_mode())
@@ -1133,11 +1091,11 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	if(press_line >= first_nextframe() && press_line < linecount)
 		enable_delete_frame = true;
 	if(enable_toggle_button)
-		menu.Append(wxID_TOGGLE, towxstring("Toggle " + title));
+		menu.Append(wxID_TOGGLE, towxstring(U"Toggle " + title));
 	if(enable_change_axis)
-		menu.Append(wxID_CHANGE, towxstring("Change " + title));
+		menu.Append(wxID_CHANGE, towxstring(U"Change " + title));
 	if(enable_change_axis && rpress_line != press_line)
-		menu.Append(wxID_SWEEP, towxstring("Sweep " + title));
+		menu.Append(wxID_SWEEP, towxstring(U"Sweep " + title));
 	if(enable_toggle_button || enable_change_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
@@ -1172,10 +1130,11 @@ void wxeditor_movie::_moviepanel::signal_repaint()
 		return;
 	auto s = m->get_scroll();
 	requested = true;
-	int lines, width, height;
+	uint32_t width, height;
+	uint64_t lines;
 	wxeditor_movie* m2 = m;
 	uint64_t old_cached_cffs = cached_cffs;
-	int prev_width, prev_height;
+	uint32_t prev_width, prev_height;
 	bool done_again = false;
 do_again:
 	runemufn([&lines, &width, &height, m2, this]() {

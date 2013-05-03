@@ -136,20 +136,16 @@ size_t text_framebuffer::text_width(const std::string& text)
 
 size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
 {
+	return this->write(to_u32string(str), w, x, y, fg, bg);
+}
+
+size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
+{
 	size_t spos = 0;
 	size_t slen = str.length();
 	size_t pused = 0;
-	uint16_t state = utf8_initial_state;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8_parse_byte(ch, state);
-		if(u < 0) {
-			if(ch < 0)
-				break;
-			spos++;
-			continue;
-		}
-		//Okay, got u to write...
+	while(spos < slen) {
+		int32_t u = str[spos++];
 		const bitmap_font::glyph& g = main_font.get_glyph(u);
 		if(x < width) {
 			element& e = buffer[y * width + x];
@@ -159,7 +155,6 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 		}
 		x++;
 		pused += (g.wide ? 2 : 1);
-		spos++;
 	}
 	while(pused < w) {
 		//Pad with spaces.

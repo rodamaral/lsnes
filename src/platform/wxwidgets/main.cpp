@@ -252,6 +252,11 @@ wxString towxstring(const std::string& str) throw(std::bad_alloc)
 	return wxString(str.c_str(), wxConvUTF8);
 }
 
+wxString towxstring(const std::u32string& str) throw(std::bad_alloc)
+{
+	return wxString(to_u8string(str).c_str(), wxConvUTF8);
+}
+
 std::string tostdstring(const wxString& str) throw(std::bad_alloc)
 {
 	return std::string(str.mb_str(wxConvUTF8));
