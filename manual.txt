@@ -555,6 +555,19 @@ and specified command.
 
 • Keep the returned object around.
 
+7.1.13 create_command(string name, function a[, function b])
+
+Return object representing a command (pair).
+
+• If b is NIL, the command is level-sensitive, a is callback.
+
+• If b is function, the function is edge-sensitive, a is positive 
+  edge callback and b is negative edge callback.
+
+• All callbacks get single argument: The parameters passed.
+
+• Keep the returned object around.
+
 7.2 Table bit:
 
 Bitwise logical functions and related.

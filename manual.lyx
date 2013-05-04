@@ -1155,6 +1155,31 @@ To create press/release commands, use aliases +foo and -foo .
 Keep the returned object around.
 \end_layout
 
+\begin_layout Subsubsection
+create_command(string name, function a[, function b])
+\end_layout
+
+\begin_layout Standard
+Return object representing a command (pair).
+\end_layout
+
+\begin_layout Itemize
+If b is NIL, the command is level-sensitive, a is callback.
+\end_layout
+
+\begin_layout Itemize
+If b is function, the function is edge-sensitive, a is positive edge callback
+ and b is negative edge callback.
+\end_layout
+
+\begin_layout Itemize
+All callbacks get single argument: The parameters passed.
+\end_layout
+
+\begin_layout Itemize
+Keep the returned object around.
+\end_layout
+
 \begin_layout Subsection
 Table bit:
 \end_layout

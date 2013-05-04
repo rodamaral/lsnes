@@ -6,14 +6,74 @@
 class lua_inverse_bind
 {
 public:
-	lua_inverse_bind(const std::string name, const std::string cmd);
+	lua_inverse_bind(const std::string& name, const std::string& cmd);
 private:
 	inverse_bind ikey;
 };
 
-lua_inverse_bind::lua_inverse_bind(const std::string name, const std::string cmd)
+class lua_command_binding : public command
+{
+public:
+	lua_command_binding(lua_state& _L, const std::string& cmd, int idx)
+		: command(lsnes_cmd, cmd), L(_L)
+	{
+		L.pushlightuserdata(this);
+		L.pushvalue(idx);
+		L.rawset(LUA_REGISTRYINDEX);
+	}
+	void invoke(const std::string& arguments) throw(std::bad_alloc, std::runtime_error)
+	{
+		L.pushlightuserdata(this);
+		L.rawget(LUA_REGISTRYINDEX);
+		L.pushstring(arguments.c_str());
+		int r = L.pcall(1, 0, 0);
+		std::string err;
+		if(r == LUA_ERRRUN)
+			err = L.get_string(-1, "Lua command callback");
+		else if(r == LUA_ERRMEM)
+			err = "Out of memory";
+		else if(r == LUA_ERRERR)
+			err = "Double fault";
+		else
+			err = "Unknown error";
+		if(r) {
+			messages << "Error running lua command hook: " << err << std::endl;
+		}
+	}
+private:
+	lua_state& L;
+};
+
+class lua_command_bind
+{
+public:
+	lua_command_bind(lua_state* L, const std::string& cmd, int idx1, int idx2);
+	~lua_command_bind();
+private:
+	lua_command_binding* a;
+	lua_command_binding* b;
+};
+
+lua_inverse_bind::lua_inverse_bind(const std::string& name, const std::string& cmd)
 	: ikey(lsnes_mapper, cmd, "Lua‣" + name)
 {
+}
+
+lua_command_bind::lua_command_bind(lua_state* L, const std::string& cmd, int idx1, int idx2)
+{
+	if(L->type(idx2) == LUA_TFUNCTION) {
+		a = new lua_command_binding(*L, "+" + cmd, idx1);
+		b = new lua_command_binding(*L, "-" + cmd, idx2);
+	} else {
+		a = new lua_command_binding(*L, cmd, idx1);
+		b = NULL;
+	}
+}
+
+lua_command_bind::~lua_command_bind()
+{
+	delete a;
+	delete b;
 }
 
 namespace
@@ -73,6 +133,18 @@ namespace
 		lua_inverse_bind* b = lua_class<lua_inverse_bind>::create(L, name, command);
 		return 1;
 	});
+
+	function_ptr_luafun create_cmd(LS, "create_command", [](lua_state& L, const std::string& fname) -> int {
+		if(L.type(2) != LUA_TFUNCTION)
+			throw std::runtime_error("Argument 2 of create_command must be function");
+		if(L.type(3) != LUA_TFUNCTION && L.type(3) != LUA_TNIL && L.type(3) != LUA_TNONE)
+			throw std::runtime_error("Argument 2 of create_command must be function or nil");
+		std::string name = L.get_string(1, fname.c_str());
+		lua_command_bind* b = lua_class<lua_command_bind>::create(L, &L, name, 2, 3);
+		return 1;
+	});
+
 }
 
 DECLARE_LUACLASS(lua_inverse_bind, "INVERSEBIND");
+DECLARE_LUACLASS(lua_command_bind, "COMMANDBIND");
