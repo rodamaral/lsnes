@@ -537,7 +537,7 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 			fb.write(i.title, 0, divcnt + 1 + i.position_left, y, 0x000000, 0xFFFFFF);
 		} else if(i.type == 0) {
 			//Button.
-			char c[2];
+			char32_t c[2];
 			bool v = (fcontrols.read_index(f, i.index) != 0);
 			c[0] = i.ch;
 			c[1] = 0;
