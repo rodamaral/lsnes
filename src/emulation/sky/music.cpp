@@ -465,8 +465,6 @@ namespace sky
 	void song_buffer::parse_ogg_pageend(ogg_page& p, subsong_context& ctx)
 	{
 		uint64_t samples = p.get_granulepos() - ctx.last_granule;
-		if(samples > p.get_granulepos())
-			samples = 0;
 		if(samples > ctx.pts - ctx.last_pts) {
 			if(ctx.pages > 2)
 				messages << "Warning: " << p.page_debug_id() << " Granulepos says there are "

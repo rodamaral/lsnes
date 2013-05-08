@@ -631,19 +631,23 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled") {}
 
 std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave,
-	std::string ext)
+	std::string ext, std::string dfltname)
 {
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
 	std::string filespec;
 	if(ext == "lsmv" && !forsave)
 		filespec = "lsmv files|*.lsmv|lsmv backup files|*.lsmv.backup|All files|*";
+	else if(ext == "lss" && !forsave)
+		filespec = "lss files|*.lss|lss backup files|*.lss.backup|All files|*";
 	else if(ext != "")
 		filespec = ext + " files|*." + ext + "|All files|*";
 	else
 		filespec = "All files|*";
 	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), towxstring(filespec), forsave ?
 		wxFD_SAVE : wxFD_OPEN);
+	if(dfltname != "")
+		d->SetFilename(towxstring(dfltname));
 	if(d->ShowModal() == wxID_CANCEL)
 		throw canceled_exception();
 	std::string filename = tostdstring(d->GetPath());

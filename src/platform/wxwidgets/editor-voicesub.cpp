@@ -1,5 +1,6 @@
 #ifdef WITH_OPUS_CODEC
 #include "core/inthread.hpp"
+#include "core/project.hpp"
 #include <stdexcept>
 
 #include "platform/wxwidgets/platform.hpp"
@@ -51,6 +52,11 @@ private:
 			obj = v;
 		}
 		void on_voice_stream_change()
+		{
+			wxeditor_voicesub* _obj = obj;
+			runuifun([_obj]() -> void { _obj->refresh(); });
+		}
+		void on_core_change()
 		{
 			wxeditor_voicesub* _obj = obj;
 			runuifun([_obj]() -> void { _obj->refresh(); });
@@ -218,7 +224,7 @@ void wxeditor_voicesub::on_export_p(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-		filename = pick_file(this, "Select sox file to export", ".", true, "sox");
+		filename = pick_file(this, "Select sox file to export", project_otherpath(), true, "sox");
 		voicesub_export_stream(id, filename, EXTFMT_SOX);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -233,7 +239,8 @@ void wxeditor_voicesub::on_export_q(wxCommandEvent& e)
 		return;
 	try {
 		std::string filename;
-			filename = pick_file(this, "Select Ogg (Opus) file to export", ".", true, "opus");
+			filename = pick_file(this, "Select Ogg (Opus) file to export", project_otherpath(), true,
+				"opus");
 		voicesub_export_stream(id, filename, EXTFMT_OGGOPUS);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -245,7 +252,8 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 {
 	try {
 		std::string filename;
-		filename = pick_file(this, "Select sox file to export (superstream)", ".", true, "sox");
+		filename = pick_file(this, "Select sox file to export (superstream)", project_otherpath(), true,
+			"sox");
 		voicesub_export_superstream(filename);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -260,7 +268,7 @@ void wxeditor_voicesub::on_import_p(wxCommandEvent& e)
 		uint64_t ts;
 		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
 			"imported stream"));
-		filename = pick_file(this, "Select sox file to import", ".", false, "sox");
+		filename = pick_file(this, "Select sox file to import", project_otherpath(), false, "sox");
 		voicesub_import_stream(ts, filename, EXTFMT_SOX);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -275,7 +283,7 @@ void wxeditor_voicesub::on_import_q(wxCommandEvent& e)
 		uint64_t ts;
 		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
 			"imported stream"));
-		filename = pick_file(this, "Select Ogg (Opus) file to import", ".", false, "opus");
+		filename = pick_file(this, "Select Ogg (Opus) file to import", project_otherpath(), false, "opus");
 		voicesub_import_stream(ts, filename, EXTFMT_OGGOPUS);
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
@@ -317,9 +325,12 @@ void wxeditor_voicesub::on_change_gain(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_load(wxCommandEvent& e)
 {
+	if(project_get() != NULL)
+		return;
 	try {
 		std::string filename;
 		try {
+			//Use "." here because there can't be active project.
 			filename = pick_file(this, "Select collection to load", ".", false, "lsvs");
 		} catch(...) {
 			return;
@@ -333,6 +344,8 @@ void wxeditor_voicesub::on_load(wxCommandEvent& e)
 
 void wxeditor_voicesub::on_unload(wxCommandEvent& e)
 {
+	if(project_get() != NULL)
+		return;
 	voicesub_unload_collection();
 }
 
@@ -352,7 +365,9 @@ void wxeditor_voicesub::refresh()
 	if(closing)
 		return;
 	bool cflag = voicesub_collection_loaded();
-	unloadbutton->Enable(cflag);
+	bool pflag = (project_get() != NULL);
+	unloadbutton->Enable(cflag && !pflag);
+	loadbutton->Enable(!pflag);
 	exportsbutton->Enable(cflag);
 	importpbutton->Enable(cflag);
 	importqbutton->Enable(cflag);

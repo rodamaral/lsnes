@@ -40,6 +40,7 @@ public:
 	void menu_end_sub();
 	bool menu_ischecked(int id);
 	void menu_check(int id, bool newstate);
+	void menu_enable(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
 	void update_statusbar(const std::map<std::string, std::u32string>& vars);

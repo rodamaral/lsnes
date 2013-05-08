@@ -8,6 +8,7 @@
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
+#include "core/project.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
@@ -141,11 +142,16 @@ void set_mprefix_for_project(const std::string& pfx)
 	set_mprefix(pfx);
 }
 
-std::string translate_name_mprefix(std::string original, bool forio)
+std::string translate_name_mprefix(std::string original)
 {
+	auto p = project_get();
+	regex_results r;
+	if(p && (r = regex("\\$\\{project\\}([0-9]+).lsmv", original))) {
+		return p->directory + "/" + p->prefix + "-" + r[1] + ".lss";
+	}
 	size_t prefixloc = original.find("${project}");
 	if(prefixloc < original.length()) {
-		std::string pprf = forio ? (lsnes_vset["slotpath"].str() + "/") : std::string("");
+		std::string pprf = lsnes_vset["slotpath"].str() + "/";
 		if(prefixloc == 0)
 			return pprf + get_mprefix() + original.substr(prefixloc + 10);
 		else
@@ -190,7 +196,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename, true);
+	std::string filename2 = translate_name_mprefix(filename);
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
@@ -205,8 +211,13 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
 		our_movie.input = movb.get_movie().save();
-		our_movie.save(filename2, savecompression);
 		our_movie.poll_flag = our_rom->rtype->get_pflag();
+		auto prj = project_get();
+		if(prj) {
+			our_movie.gamename = prj->gamename;
+			our_movie.authors = prj->authors;
+		}
+		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
 		lua_callback_post_save(filename2, true);
@@ -217,6 +228,11 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		lua_callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
+	auto p = project_get();
+	if(p) {
+		p->last_save = last_save;
+		project_flush(p);
+	}
 }
 
 //Save movie.
@@ -226,12 +242,17 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename, true);
+	std::string filename2 = translate_name_mprefix(filename);
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
 		our_movie.is_savestate = false;
 		our_movie.input = movb.get_movie().save();
+		auto prj = project_get();
+		if(prj) {
+			our_movie.gamename = prj->gamename;
+			our_movie.authors = prj->authors;
+		}
 		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved movie '" << filename2 << "' in " << took << " microseconds." << std::endl;
@@ -243,6 +264,11 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 		lua_callback_err_save(filename2);
 	}
 	last_save = resolve_relative_path(filename2);
+	auto p = project_get();
+	if(p) {
+		p->last_save = last_save;
+		project_flush(p);
+	}
 }
 
 extern time_t random_seed_value;
@@ -457,7 +483,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
-	std::string filename2 = translate_name_mprefix(filename, true);
+	std::string filename2 = translate_name_mprefix(filename);
 	uint64_t origtime = get_utime();
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;

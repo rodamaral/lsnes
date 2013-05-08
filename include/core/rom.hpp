@@ -105,10 +105,12 @@ struct loaded_rom
  * Take in ROM filename (or a bundle) and load it to memory.
  *
  * parameter file: The file to load
+ * parameter tmpprefer: The core name to prefer.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Loading ROM file failed.
  */
-	loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error);
+	loaded_rom(const std::string& file, const std::string& tmpprefer = "") throw(std::bad_alloc,
+		std::runtime_error);
 /**
  * ROM type
  */
@@ -185,5 +187,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 extern std::map<std::string, core_type*> preferred_core;
 //Preferred overall core.
 extern std::string preferred_core_default;
+//Currently active ROM.
+extern std::string current_romfile;
 
 #endif

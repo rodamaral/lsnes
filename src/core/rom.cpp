@@ -135,12 +135,17 @@ namespace
 	core_type* current_rom_type = &type_null;
 	core_region* current_region = &null_region;
 
-	core_type* find_core_by_extension(const std::string& ext)
+	core_type* find_core_by_extension(const std::string& ext, const std::string& tmpprefer)
 	{
 		std::string key = "ext:" + ext;
 		std::list<core_type*> possible = core_type::get_core_types();
 		core_type* fallback = NULL;
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
+		//Tmpprefer overrides normal preferred core.
+		if(tmpprefer != "")
+			for(auto i : possible)
+				if(i->get_iname() == tmpprefer)
+					preferred = i;
 		for(auto i : possible)
 			if(i->is_known_extension(ext)) {
 				fallback = i;
@@ -152,12 +157,17 @@ namespace
 		return fallback;
 	}
 
-	core_type* find_core_by_name(const std::string& name)
+	core_type* find_core_by_name(const std::string& name, const std::string& tmpprefer)
 	{
 		std::string key = "type:" + name;
 		std::list<core_type*> possible = core_type::get_core_types();
 		core_type* fallback = NULL;
 		core_type* preferred = preferred_core.count(key) ? preferred_core[key] : NULL;
+		//Tmpprefer overrides normal preferred core.
+		if(tmpprefer != "")
+			for(auto i : possible)
+				if(i->get_iname() == tmpprefer)
+					preferred = i;
 		for(auto i : possible)
 			if(i->get_iname() == name) {
 				fallback = i;
@@ -276,7 +286,8 @@ loaded_rom::loaded_rom() throw()
 	region = orig_region = &null_region;
 }
 
-loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runtime_error)
+loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
+	std::runtime_error)
 {
 	std::istream& spec = open_file_relative(file, "");
 	std::string s;
@@ -287,7 +298,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 		//This is a Raw ROM image.
 		regex_results tmp;
 		std::string ext = regex(".*\\.([^.]*)?", file, "Unknown ROM file type")[1];
-		core_type* coretype = find_core_by_extension(ext);
+		core_type* coretype = find_core_by_extension(ext, tmpprefer);
 		if(!coretype)
 			throw std::runtime_error("Unknown ROM file type");
 		rtype = coretype;
@@ -322,7 +333,7 @@ loaded_rom::loaded_rom(const std::string& file) throw(std::bad_alloc, std::runti
 	}
 
 	//Detect type.
-	rtype = find_core_by_name(platname);
+	rtype = find_core_by_name(platname, tmpprefer);
 	if(!rtype)
 		(stringfmt() << "Not a valid system type '" << platname << "'").throwex();
 
@@ -434,6 +445,7 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;
+	current_romfile = load_filename;
 	refresh_cart_mappings();
 }
 
@@ -507,3 +519,4 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 
 std::map<std::string, core_type*> preferred_core;
 std::string preferred_core_default;
+std::string current_romfile;

@@ -1,5 +1,5 @@
-#ifndef _customfont__hpp__included__
-#define _customfont__hpp__included__
+#ifndef _library__customfont__hpp__included__
+#define _library__customfont__hpp__included__
 
 #include <vector>
 #include <cstdint>

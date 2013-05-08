@@ -14,6 +14,7 @@
 #include "core/moviefile.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/project.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
@@ -268,13 +269,13 @@ namespace
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename);
-			flush_slotinfo(translate_name_mprefix(filename, true));
+			flush_slotinfo(translate_name_mprefix(filename));
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename);
-			flush_slotinfo(translate_name_mprefix(filename, true));
+			flush_slotinfo(translate_name_mprefix(filename));
 			return;
 		}
 		queued_saves.insert(filename);
@@ -283,6 +284,10 @@ namespace
 
 	bool reload_rom(const std::string& filename)
 	{
+		if(project_get()) {
+			std::cerr << "Can't switch ROM with project active." << std::endl;
+			return false;
+		}
 		std::string filenam = filename;
 		if(filenam == "")
 			filenam = our_rom->load_filename;
@@ -367,7 +372,7 @@ void update_movie_state()
 			_status.set("!mode", "F");
 	}
 	if(jukebox_size > 0) {
-		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), true);
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer));
 		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
 		_status.set("!saveslotinfo", get_slotinfo(sfilen));
 	} else {
@@ -983,7 +988,7 @@ namespace
 			our_rom->rtype->runtosave();
 			for(auto i : queued_saves) {
 				do_save_state(i);
-				flush_slotinfo(translate_name_mprefix(i, true));
+				flush_slotinfo(translate_name_mprefix(i));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
@@ -1123,4 +1128,9 @@ void set_stop_at_frame(uint64_t frame)
 	stop_at_frame_active = (frame != 0);
 	amode = ADVANCE_AUTO;
 	platform::set_paused(false);
+}
+
+void do_flush_slotinfo()
+{
+	flush_slotinfo();
 }

@@ -21,11 +21,16 @@
 #include "core/memorywatch.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
+#include "core/project.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/directory.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+#define FUCKED_SYSTEM
+#endif
 
 #include <cmath>
 #include <vector>
@@ -108,7 +113,10 @@ enum
 	wxID_CONFLICTRESOLUTION,
 	wxID_VUDISPLAY,
 	wxID_MOVIE_EDIT,
-	wxID_TASINPUT
+	wxID_TASINPUT,
+	wxID_NEW_PROJECT,
+	wxID_LOAD_PROJECT,
+	wxID_CLOSE_PROJECT,
 };
 
 
@@ -134,6 +142,90 @@ namespace
 	bool old_rotate = false;
 	bool main_window_dirty;
 	thread_class* emulation_thread;
+
+	std::string munge_name(const std::string& orig)
+	{
+		std::string newname;
+		regex_results r;
+		if(r = regex("(.*)\\(([0-9]+)\\)", newname)) {
+			uint64_t sequence;
+			try {
+				sequence = parse_value<uint64_t>(r[2]);
+				newname = (stringfmt() << r[1] << "(" << sequence + 1 << ")").str();
+			} catch(...) {
+				newname = newname + "(2)";
+			}
+		} else {
+			newname = newname + "(2)";
+		}
+		return newname;
+	}
+
+	void handle_watch_load(std::map<std::string, std::string>& new_watches, std::set<std::string>& old_watches)
+	{
+		auto proj = project_get();
+		if(proj) {
+			for(auto i : new_watches) {
+				std::string name = i.first;
+				while(true) {
+					if(!old_watches.count(name)) {
+						set_watchexpr_for(name, i.second);
+						break;
+					} else if(get_watchexpr_for(name) == i.second)
+						break;
+					else
+						name = munge_name(name);
+				}
+			}
+		} else {
+			for(auto i : new_watches)
+				set_watchexpr_for(i.first, i.second);
+			for(auto i : old_watches)
+				if(!new_watches.count(i))
+					set_watchexpr_for(i, "");
+		}
+	}
+
+	std::string get_default_screenshot_name()
+	{
+		auto p = project_get();
+		if(!p)
+			return "";
+		else {
+			auto files = enumerate_directory(p->directory, ".*-[0-9]+\\.png");
+			std::set<std::string> numbers;
+			for(auto i : files) {
+				size_t split;
+#ifdef FUCKED_SYSTEM
+				split = i.find_last_of("\\/");
+#else
+				split = i.find_last_of("/");
+#endif
+				std::string name = i;
+				if(split < name.length())
+					name = name.substr(split + 1);
+				regex_results r = regex("(.*)-([0-9]+)\\.png", name);
+				if(r[1] != p->prefix)
+					continue;
+				numbers.insert(r[2]);
+			}
+			for(uint64_t i = 1;; i++) {
+				std::string candidate = (stringfmt() << i).str();
+				if(!numbers.count(candidate))
+					return p->prefix + "-" + candidate + ".png";
+			}
+		}
+	}
+
+	std::string project_prefixname(const std::string ext)
+	{
+		auto p = project_get();
+		if(!p)
+			return "";
+		else
+			return p->prefix + "." + ext;
+		
+	}
 
 	double pick_volume(wxWindow* win, const std::string& title, std::string& last)
 	{
@@ -169,8 +261,13 @@ namespace
 
 	wxString getname()
 	{
-		std::string windowname = "lsnes rr" + lsnes_version + " [" + our_rom->rtype->get_core_identifier()
-			+ "]";
+		std::string windowname = "lsnes rr" + lsnes_version + " [";
+		auto p = project_get();
+		if(p)
+			windowname = windowname + p->name;
+		else
+			windowname = windowname + our_rom->rtype->get_core_identifier();
+		windowname = windowname + "]";
 		return towxstring(windowname);
 	}
 
@@ -480,6 +577,14 @@ void wxwin_mainwindow::menu_check(int id, bool newstate)
 		return;
 }
 
+void wxwin_mainwindow::menu_enable(int id, bool newstate)
+{
+	auto item = menubar->FindItem(id);
+	if(!item)
+		return;
+	item->Enable(newstate);
+}
+
 void wxwin_mainwindow::menu_separator()
 {
 	current_menu->AppendSeparator();
@@ -624,6 +729,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("File"));
 	menu_start_sub(wxT("New"));
 	menu_entry(wxID_NEW_MOVIE, wxT("Movie..."));
+	menu_entry(wxID_NEW_PROJECT, wxT("Project..."));
 	menu_end_sub();
 	menu_start_sub(wxT("Load"));
 	menu_entry(wxID_LOAD_STATE, wxT("State..."));
@@ -638,6 +744,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
 	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("ROM..."));
+	menu_entry(wxID_LOAD_PROJECT, wxT("Project..."));
 	menu_separator();
 	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu(this, wxID_RROM_FIRST, wxID_RROM_LAST,
 		get_config_path() + "/recent-roms.txt", recent_rom_selected));
@@ -652,6 +759,10 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Screenshot..."));
 	menu_entry(wxID_SAVE_SUBTITLES, wxT("Subtitles..."));
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
+	menu_end_sub();
+	menu_start_sub(wxT("Close"));
+	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));
+	menu_enable(wxID_CLOSE_PROJECT, project_get() != NULL);
 	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
@@ -843,6 +954,10 @@ void wxwin_mainwindow::handle_menu_click(wxCommandEvent& e)
 void wxwin_mainwindow::refresh_title() throw()
 {
 	SetTitle(getname());
+	auto p = project_get();
+	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
+	menu_enable(wxID_LOAD_ROM_IMAGE, !p);
+	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
 }
 
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
@@ -883,27 +998,30 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = pick_file(this, "Load Movie", movie_path(), false, "lsmv");
+		filename = pick_file(this, "Load Movie", project_moviepath(), false, "lsmv");
 		recent_movies->add(filename);
 		platform::queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename = pick_file(this, "Load State", movie_path(), false, "lsmv");
+		filename = pick_file(this, "Load State", project_moviepath(), false, project_savestate_ext());
 		recent_movies->add(filename);
 		platform::queue("load " + filename);
 		return;
 	case wxID_LOAD_STATE_RO:
-		filename = pick_file(this, "Load State (Read-Only)", movie_path(), false, "lsmv");
+		filename = pick_file(this, "Load State (Read-Only)", project_moviepath(), false,
+			project_savestate_ext());
 		recent_movies->add(filename);
 		platform::queue("load-readonly " + filename);
 		return;
 	case wxID_LOAD_STATE_RW:
-		filename = pick_file(this, "Load State (Read-Write)", movie_path(), false, "lsmv");
+		filename = pick_file(this, "Load State (Read-Write)", project_moviepath(), false,
+			project_savestate_ext());
 		recent_movies->add(filename);
 		platform::queue("load-state " + filename);
 		return;
 	case wxID_LOAD_STATE_P:
-		filename = pick_file(this, "Load State (Preserve)", movie_path(), false, "lsmv");
+		filename = pick_file(this, "Load State (Preserve)", project_moviepath(), false,
+			project_savestate_ext());
 		recent_movies->add(filename);
 		platform::queue("load-preserve " + filename);
 		return;
@@ -911,27 +1029,29 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename = pick_file(this, "Save Movie", movie_path(), true, "lsmv");
+		filename = pick_file(this, "Save Movie", project_moviepath(), true, "lsmv",
+			project_prefixname("lsmv"));
 		recent_movies->add(filename);
 		platform::queue("save-movie " + filename);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", movie_path(), true,
-			"sub"));
+		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", project_moviepath(), true,
+			"sub", project_prefixname("sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename = pick_file(this, "Save State", movie_path(), true, "lsmv");
+		filename = pick_file(this, "Save State", project_moviepath(), true, project_savestate_ext());
 		recent_movies->add(filename);
 		platform::queue("save-state " + filename);
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", movie_path(), true, "png"));
+		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", project_moviepath(), true,
+			"png", get_default_screenshot_name()));
 		return;
 	case wxID_RUN_SCRIPT:
-		platform::queue("run-script " + pick_file_member(this, "Select Script", "."));
+		platform::queue("run-script " + pick_file_member(this, "Select Script", project_otherpath()));
 		return;
 	case wxID_RUN_LUA:
-		platform::queue("run-lua " + pick_file(this, "Select Lua Script", ".", false, "lua"));
+		platform::queue("run-lua " + pick_file(this, "Select Lua Script", project_otherpath(), false, "lua"));
 		return;
 	case wxID_RESET_LUA:
 		platform::queue("reset-lua");
@@ -970,7 +1090,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
-		std::string filename = pick_file(this, "Save watches to file", ".", true, "lwch");
+		std::string filename = pick_file(this, "Save watches to file", project_otherpath(), true, "lwch");
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
@@ -985,8 +1105,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
 		std::map<std::string, std::string> new_watches;
-		std::string filename = pick_file_member(this, "Choose memory watch file", ".");
-
+		std::string filename = pick_file(this, "Choose memory watch file", project_otherpath(), "lwch");
 		try {
 			std::istream& in = open_file_relative(filename, "");
 			while(in) {
@@ -1004,12 +1123,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 
 		runemufn([&new_watches, &old_watches]() {
-			for(auto i : new_watches)
-				set_watchexpr_for(i.first, i.second);
-			for(auto i : old_watches)
-				if(!new_watches.count(i))
-					set_watchexpr_for(i, "");
-			});
+			handle_watch_load(new_watches, old_watches);
+		});
 		return;
 	}
 	case wxID_MEMORY_SEARCH:
@@ -1121,7 +1236,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loaded_library::call_library();
-		new loaded_library(pick_file(this, name, ".", false, loaded_library::call_library_ext()));
+		new loaded_library(pick_file(this, name, project_otherpath(), false,
+			loaded_library::call_library_ext()));
 		handle_post_loadlibrary();
 		break;
 	}
@@ -1158,6 +1274,46 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_MOVIE_EDIT:
 		wxeditor_movie_display(this);
+		return;
+	case wxID_NEW_PROJECT:
+		open_new_project_window(this);
+		return;
+	case wxID_LOAD_PROJECT: {
+		auto projects = project_enumerate();
+		std::vector<std::string> a;
+		std::vector<wxString> b;
+		for(auto i : projects) {
+			a.push_back(i.first);
+			b.push_back(towxstring(i.second));
+		}
+		if(a.empty()) {
+			show_message_ok(this, "Load project", "No projects available", wxICON_EXCLAMATION);
+			return;
+		}
+		wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this, wxT("Select project to switch to:"),
+			wxT("Load project"), b.size(), &b[0]);
+		if(d2->ShowModal() == wxID_CANCEL) {
+			d2->Destroy();
+			throw canceled_exception();
+		}
+		std::string id = a[d2->GetSelection()];
+		runemufn([id]() -> void {
+			project_info* old_proj = project_get();
+			if(old_proj && old_proj->id == id)
+				return;
+			try {
+				project_info& proj = project_load(id);
+				if(project_set(&proj))
+					delete old_proj;
+			} catch(std::exception& e) {
+				messages << "Failed to change project: " << e.what() << std::endl;
+			}
+			
+		});
+		return;
+	}
+	case wxID_CLOSE_PROJECT:
+		runemufn([]() -> void { project_set(NULL); });
 		return;
 	};
 }

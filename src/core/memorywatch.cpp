@@ -2,6 +2,7 @@
 #include "core/dispatch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/project.hpp"
 #include "core/window.hpp"
 #include <library/string.hpp>
 
@@ -368,15 +369,27 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 std::set<std::string> get_watches() throw(std::bad_alloc)
 {
 	std::set<std::string> r;
-	for(auto i : watches)
+	auto p = project_get();
+	std::map<std::string, std::string>* ws;
+	if(p)
+		ws = &p->watches;
+	else
+		ws = &watches;
+	for(auto i : *ws)
 		r.insert(i.first);
 	return r;
 }
 
 std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc)
 {
-	if(watches.count(w))
-		return watches[w];
+	auto p = project_get();
+	std::map<std::string, std::string>* ws;
+	if(p)
+		ws = &p->watches;
+	else
+		ws = &watches;
+	if(ws->count(w))
+		return (*ws)[w];
 	else
 		return "";
 }
@@ -384,13 +397,22 @@ std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc)
 void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std::bad_alloc)
 {
 	auto& status = platform::get_emustatus();
+	auto p = project_get();
 	if(expr != "") {
-		watches[w] = expr;
+		if(p)
+			p->watches[w] = expr;
+		else 
+			watches[w] = expr;
 		status.set("M[" + w + "]", evaluate_watch(expr));
 	} else {
-		watches.erase(w);
+		if(p)
+			p->watches.erase(w);
+		else
+			watches.erase(w);
 		status.erase("M[" + w + "]");
 	}
+	if(p)
+		project_flush(p);
 	information_dispatch::do_status_update();
 }
 

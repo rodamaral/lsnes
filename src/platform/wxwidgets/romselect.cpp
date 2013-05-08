@@ -7,7 +7,10 @@
 #include "lsnes.hpp"
 
 #include "core/moviedata.hpp"
+#include "core/moviedata.hpp"
 #include "core/framerate.hpp"
+#include "core/project.hpp"
+#include "core/rom.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
@@ -15,24 +18,20 @@
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 
 #include "platform/wxwidgets/platform.hpp"
 
-#define ROM_SELECTS_BASE	(wxID_HIGHEST + 0)
-#define ROM_SELECTS_LAST	(wxID_HIGHEST + 127)
-#define ASK_FILENAME_BUTTON	(wxID_HIGHEST + 128)
 #define ASK_SRAMS_BASE		(wxID_HIGHEST + 129)
 #define ASK_SRAMS_LAST		(wxID_HIGHEST + 255)
 
-#define MARKUP_POSTFIX " Markup"
-
-
-void patching_done(struct loaded_rom& rom, wxWindow* modwin);
-
-#define ROMSELECT_ROM_COUNT 27
-
 namespace
 {
+	std::string generate_project_id()
+	{
+		return (stringfmt() << time(NULL) << "_" << get_random_hexstring(4)).str();
+	}
+
 	class textboxloadfilename : public wxFileDropTarget
 	{
 	public:
@@ -108,6 +107,289 @@ namespace
 		if(check) return check->GetValue() ? "1" : "0";
 		if(combo) return setting->hvalue_to_ivalue(tostdstring(combo->GetValue()));
 		return "";
+	}
+
+	class wxwin_newproject : public wxDialog
+	{
+	public:
+		wxwin_newproject(wxWindow* parent);
+		~wxwin_newproject();
+		void on_ok(wxCommandEvent& e);
+		void on_cancel(wxCommandEvent& e);
+		void on_projname_edit(wxCommandEvent& e);
+		void on_memorywatch_select(wxCommandEvent& e);
+		void on_directory_select(wxCommandEvent& e);
+		void on_add(wxCommandEvent& e);
+		void on_remove(wxCommandEvent& e);
+		void on_up(wxCommandEvent& e);
+		void on_down(wxCommandEvent& e);
+		void on_luasel(wxCommandEvent& e);
+	private:
+		void reorder_scripts(int delta);
+		wxTextCtrl* projname;
+		wxTextCtrl* memwatch;
+		wxTextCtrl* projdir;
+		wxTextCtrl* projpfx;
+		wxListBox* luascripts;
+		wxButton* swatch;
+		wxButton* sdir;
+		wxButton* addbutton;
+		wxButton* removebutton;
+		wxButton* upbutton;
+		wxButton* downbutton;
+		wxButton* okbutton;
+		wxButton* cancel;
+	};
+
+	wxwin_newproject::~wxwin_newproject()
+	{
+	}
+
+	wxwin_newproject::wxwin_newproject(wxWindow* parent)
+		: wxDialog(parent, wxID_ANY, wxT("New Project"), wxDefaultPosition, wxSize(-1, -1),
+			wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
+	{
+		Centre();
+		wxBoxSizer* toplevel = new wxBoxSizer(wxVERTICAL);
+		SetSizer(toplevel);
+
+		wxFlexGridSizer* c_s = new wxFlexGridSizer(1, 2, 0, 0);
+		c_s->Add(new wxStaticText(this, wxID_ANY, wxT("Project name:")), 0, wxGROW);
+		c_s->Add(projname = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+			wxGROW);
+		projname->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxwin_newproject::on_projname_edit), NULL, this);
+		toplevel->Add(c_s);
+
+		wxFlexGridSizer* c4_s = new wxFlexGridSizer(1, 3, 0, 0);
+		c4_s->Add(new wxStaticText(this, wxID_ANY, wxT("Directory:")), 0, wxGROW);
+		c4_s->Add(projdir = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+			wxGROW);
+		projdir->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxwin_newproject::on_projname_edit), NULL, this);
+		c4_s->Add(sdir = new wxButton(this, wxID_ANY, wxT("...")), 1, wxGROW);
+		sdir->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_directory_select), NULL, this);
+		toplevel->Add(c4_s);
+
+		wxFlexGridSizer* c5_s = new wxFlexGridSizer(1, 2, 0, 0);
+		c5_s->Add(new wxStaticText(this, wxID_ANY, wxT("Prefix:")), 0, wxGROW);
+		c5_s->Add(projpfx = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(400, -1)), 1,
+			wxGROW);
+		projpfx->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxwin_newproject::on_projname_edit), NULL, this);
+		toplevel->Add(c5_s);
+
+		wxFlexGridSizer* c2_s = new wxFlexGridSizer(1, 3, 0, 0);
+		c2_s->Add(new wxStaticText(this, wxID_ANY, wxT("Memory watch:")), 0, wxGROW);
+		c2_s->Add(memwatch = new wxTextCtrl(this, wxID_ANY, wxT(""),
+			wxDefaultPosition, wxSize(350, -1)), 1, wxGROW);
+		wxButton* pdir;
+		c2_s->Add(swatch = new wxButton(this, wxID_ANY, wxT("...")), 1, wxGROW);
+		swatch->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_memorywatch_select), NULL, this);
+		toplevel->Add(c2_s);
+
+		toplevel->Add(new wxStaticText(this, wxID_ANY, wxT("Autoload lua scripts:")), 0, wxGROW);
+		toplevel->Add(luascripts = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(400, 100)), 1,
+			wxEXPAND);
+		luascripts->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+			wxCommandEventHandler(wxwin_newproject::on_luasel), NULL, this);
+
+		wxFlexGridSizer* c3_s = new wxFlexGridSizer(1, 4, 0, 0);
+		c3_s->Add(addbutton = new wxButton(this, wxID_ANY, wxT("Add")), 1, wxGROW);
+		addbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_add), NULL, this);
+		c3_s->Add(removebutton = new wxButton(this, wxID_ANY, wxT("Remove")), 1, wxGROW);
+		removebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_remove), NULL, this);
+		removebutton->Disable();
+		c3_s->Add(upbutton = new wxButton(this, wxID_ANY, wxT("Up")), 1, wxGROW);
+		upbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_up), NULL, this);
+		upbutton->Disable();
+		c3_s->Add(downbutton = new wxButton(this, wxID_ANY, wxT("Down")), 1, wxGROW);
+		downbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_down), NULL, this);
+		downbutton->Disable();
+		toplevel->Add(c3_s);
+
+		wxBoxSizer* buttonbar = new wxBoxSizer(wxHORIZONTAL);
+		buttonbar->Add(okbutton = new wxButton(this, wxID_ANY, wxT("OK")), 0, wxGROW);
+		buttonbar->AddStretchSpacer();
+		buttonbar->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+		okbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_ok), NULL, this);
+		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_newproject::on_cancel), NULL, this);
+		toplevel->Add(buttonbar, 0, wxGROW);
+		//This gets re-enabled later if needed.
+		okbutton->Disable();
+
+		toplevel->SetSizeHints(this);
+		Fit();
+	}
+
+	void wxwin_newproject::on_ok(wxCommandEvent& e)
+	{
+		project_info pinfo;
+		pinfo.id = generate_project_id();
+		pinfo.name = tostdstring(projname->GetValue());
+		pinfo.rom = current_romfile;
+		pinfo.last_save = "";
+		pinfo.directory = tostdstring(projdir->GetValue());
+		pinfo.prefix = tostdstring(projpfx->GetValue());
+		pinfo.gametype = our_movie.gametype->get_name();
+		pinfo.settings = our_movie.settings;
+		pinfo.coreversion = our_movie.coreversion;
+		pinfo.gamename = our_movie.gamename;
+		pinfo.authors = our_movie.authors;
+		pinfo.movie_sram = our_movie.movie_sram;
+		pinfo.anchor_savestate = our_movie.anchor_savestate;
+		pinfo.movie_rtc_second = our_movie.movie_rtc_second;
+		pinfo.movie_rtc_subsecond = our_movie.movie_rtc_subsecond;
+		pinfo.projectid = our_movie.projectid;
+		for(unsigned i = 0; i < 27; i++) {
+			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
+			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];
+		}
+		for(unsigned i = 0; i < luascripts->GetCount(); i++)
+			pinfo.luascripts.push_back(tostdstring(luascripts->GetString(i)));
+		if(memwatch->GetValue().length() == 0)
+			goto no_watch;
+		try {
+			std::istream& in = open_file_relative(tostdstring(memwatch->GetValue()), "");
+			while(in) {
+				std::string wname;
+				std::string wexpr;
+				std::getline(in, wname);
+				std::getline(in, wexpr);
+				pinfo.watches[strip_CR(wname)] = strip_CR(wexpr);
+			}
+			delete &in;
+		} catch(std::exception& e) {
+			show_message_ok(this, "Error", std::string("Can't load memory watch: ") + e.what(),
+				wxICON_EXCLAMATION);
+			return;
+		}
+no_watch:
+		project_info* pinfo2 = new project_info(pinfo);
+		project_flush(pinfo2);
+		project_info* old_proj = project_get();
+		project_set(pinfo2, true);
+		if(old_proj)
+			delete old_proj;
+		EndModal(wxID_OK);
+	}
+
+	void wxwin_newproject::on_cancel(wxCommandEvent& e)
+	{
+		EndModal(wxID_CANCEL);
+	}
+
+	void wxwin_newproject::on_memorywatch_select(wxCommandEvent& e)
+	{
+		try {
+			std::string lwch = pick_file(this, "Select memory watch file", ".", false, "lwch");
+			try {
+				auto& p = open_file_relative(lwch, "");
+				delete &p;
+			} catch(std::exception& e) {
+				show_message_ok(this, "File not found", "File '" + lwch + "' can't be opened",
+					wxICON_EXCLAMATION);
+				return;
+			}
+			memwatch->SetValue(towxstring(lwch));
+		} catch(...) {
+		}
+	}
+
+	void wxwin_newproject::on_projname_edit(wxCommandEvent& e)
+	{
+		bool ok = true;
+		ok = ok && (projname->GetValue().length() > 0);
+		ok = ok && (projdir->GetValue().length() > 0);
+		ok = ok && (projpfx->GetValue().length() > 0);
+		boost::filesystem::path p(tostdstring(projdir->GetValue()));
+		ok = ok && boost::filesystem::is_directory(p);
+		okbutton->Enable(ok);
+	}
+
+	void wxwin_newproject::on_add(wxCommandEvent& e)
+	{
+		try {
+			std::string luascript = pick_file(this, "Pick lua script", ".", false, "lua");
+			try {
+				auto& p = open_file_relative(luascript, "");
+				delete &p;
+			} catch(std::exception& e) {
+				show_message_ok(this, "File not found", "File '" + luascript + "' can't be opened",
+					wxICON_EXCLAMATION);
+				return;
+			}
+			luascripts->Append(towxstring(luascript));
+		} catch(...) {
+		}
+	}
+
+	void wxwin_newproject::on_remove(wxCommandEvent& e)
+	{
+		int sel = luascripts->GetSelection();
+		int count = luascripts->GetCount();
+		luascripts->Delete(sel);
+		if(sel < count - 1)
+			luascripts->SetSelection(sel);
+		else if(count > 1)
+			luascripts->SetSelection(count - 2);
+		else
+			luascripts->SetSelection(wxNOT_FOUND);
+		on_luasel(e);
+	}
+	
+	void wxwin_newproject::reorder_scripts(int delta)
+	{
+		int sel = luascripts->GetSelection();
+		int count = luascripts->GetCount();
+		if(sel == wxNOT_FOUND || sel + delta >= count || sel + delta < 0)
+			return;
+		wxString a = luascripts->GetString(sel);
+		wxString b = luascripts->GetString(sel + delta);
+		luascripts->SetString(sel, b);
+		luascripts->SetString(sel + delta, a);
+		luascripts->SetSelection(sel + delta);
+	}
+	
+	void wxwin_newproject::on_up(wxCommandEvent& e)
+	{
+		reorder_scripts(-1);
+		on_luasel(e);
+	}
+	
+	void wxwin_newproject::on_down(wxCommandEvent& e)
+	{
+		reorder_scripts(1);
+		on_luasel(e);
+	}
+
+	void wxwin_newproject::on_luasel(wxCommandEvent& e)
+	{
+		int sel = luascripts->GetSelection();
+		int count = luascripts->GetCount();
+		removebutton->Enable(sel != wxNOT_FOUND);
+		upbutton->Enable(sel != wxNOT_FOUND && sel > 0);
+		downbutton->Enable(sel != wxNOT_FOUND && sel < count - 1);
+	}
+
+	void wxwin_newproject::on_directory_select(wxCommandEvent& e)
+	{
+		wxDirDialog* d = new wxDirDialog(this, wxT("Select project directory"), projdir->GetValue(),
+			wxDD_DIR_MUST_EXIST);
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			return;
+		}
+		projdir->SetValue(d->GetPath());
+		d->Destroy();
 	}
 }
 
@@ -234,7 +516,7 @@ wxwin_project::wxwin_project()
 	wxBoxSizer* buttonbar = new wxBoxSizer(wxHORIZONTAL);
 	buttonbar->Add(load = new wxButton(this, wxID_ANY, wxT("Load")), 0, wxGROW);
 	buttonbar->AddStretchSpacer();
-	buttonbar->Add(quit = new wxButton(this, wxID_EXIT, wxT("Quit")), 0, wxGROW);
+	buttonbar->Add(quit = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
 	load->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_project::on_load), NULL, this);
 	quit->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -352,3 +634,13 @@ struct moviefile wxwin_project::make_movie()
 	return f;
 }
 
+void open_new_project_window(wxWindow* parent)
+{
+	if(current_romfile == "") {
+		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
+		return;
+	}
+	wxwin_newproject* projwin = new wxwin_newproject(parent);
+	projwin->ShowModal();
+	projwin->Destroy();
+}

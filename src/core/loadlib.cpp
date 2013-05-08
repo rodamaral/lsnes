@@ -3,28 +3,10 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
+#include "library/directory.hpp"
 #include <stdexcept>
 #include <sstream>
 #include <dirent.h>
-
-namespace
-{
-	std::set<std::string> enumerate_directory(const std::string& dir)
-	{
-		std::set<std::string> x;
-		DIR* d;
-		dirent* d2;
-		d = opendir(dir.c_str());
-		if(!d) {
-			messages << "Can't read directory '" << dir << "'" << std::endl;
-			return x;
-		}
-		while((d2 = readdir(d)))
-			x.insert(dir + "/" + d2->d_name);
-		closedir(d);
-		return x;
-	}
-}
 
 void handle_post_loadlibrary()
 {
@@ -36,12 +18,16 @@ void handle_post_loadlibrary()
 
 void autoload_libraries()
 {
-	auto libs = enumerate_directory(get_config_path() + "/autoload");
-	for(auto i : libs)
-		try {
-			new loaded_library(i);
-			messages << "Autoloaded '" << i << "'" << std::endl;
-		} catch(...) {
-		}
-	handle_post_loadlibrary();
+	try {
+		auto libs = enumerate_directory(get_config_path() + "/autoload", ".*");
+		for(auto i : libs)
+			try {
+				new loaded_library(i);
+				messages << "Autoloaded '" << i << "'" << std::endl;
+			} catch(...) {
+			}
+		handle_post_loadlibrary();
+	} catch(std::exception& e) {
+		messages << e.what() << std::endl;
+	}
 }

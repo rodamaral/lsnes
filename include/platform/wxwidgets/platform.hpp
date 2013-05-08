@@ -49,6 +49,7 @@ std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void wxsetingsdialog_display(wxWindow* parent, int mode);
 void show_wxeditor_voicesub(wxWindow* parent);
 void open_rom_select_window();
+void open_new_project_window(wxWindow* parent);
 void show_conflictwindow(wxWindow* parent);
 void open_vumeter_window(wxWindow* parent);
 void wxeditor_sounddev_display(wxWindow* parent);
@@ -83,7 +84,7 @@ public:
 
 //Prompt for stuff. These all can throw canceled_exception.
 std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave,
-	std::string ext = "");
+	std::string ext = "", std::string dfltname = "");
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir);
 std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
 	const std::vector<std::string>& choices);

@@ -1,5 +1,6 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
+#include "core/project.hpp"
 
 #include "platform/wxwidgets/menu_dump.hpp"
 #include "platform/wxwidgets/platform.hpp"
@@ -118,14 +119,22 @@ void dumper_menu::on_select(wxCommandEvent& e)
 			unsigned d = t->mode_details(mode);
 			std::string prefix;
 			if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_file) {
-				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"), wxT("."));
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose file"),
+					towxstring(project_otherpath()), wxT(""), wxT("*.*"), wxFD_SAVE);
 				std::string modext = t->mode_extension(mode);
-				d->SetWildcard(towxstring(modext + " files|*." + modext));
+					d->SetWildcard(towxstring(modext + " files|*." + modext));
+				auto p = project_get();
+				if(p)
+					d->SetFilename(towxstring(p->prefix + "." + modext));
 				if(d->ShowModal() == wxID_OK)
 					prefix = tostdstring(d->GetPath());
 				d->Destroy();
 			} else if((d & adv_dumper::target_type_mask) == adv_dumper::target_type_prefix) {
-				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"), wxT("."));
+				wxFileDialog* d = new wxFileDialog(pwin, wxT("Choose prefix"),
+					towxstring(project_otherpath()), wxT(""), wxT("*.*"), wxFD_SAVE);
+				auto p = project_get();
+				if(p)
+					d->SetFilename(towxstring(p->prefix));
 				if(d->ShowModal() == wxID_OK)
 					prefix = tostdstring(d->GetPath());
 				d->Destroy();
