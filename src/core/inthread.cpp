@@ -287,10 +287,8 @@ namespace
 		//Get clusters.
 		std::pair<uint32_t, uint32_t> get_clusters() { return std::make_pair(ctrl_cluster, data_cluster); }
 	private:
-		void export_stream_opusdemo(std::ofstream& data);
 		void export_stream_sox(std::ofstream& data);
 		void export_stream_oggopus(std::ofstream& data);
-		void import_stream_opusdemo(std::ifstream& data);
 		void import_stream_sox(std::ifstream& data);
 		void import_stream_oggopus(std::ifstream& data);
 
@@ -435,56 +433,10 @@ out_parsing:
 		pregap_length = 0;
 		postgap_length = 0;
 		gain = 0;
-		if(extfmt == EXTFMT_OPUSDEMO)
-			import_stream_opusdemo(data);
-		else if(extfmt == EXTFMT_OGGOPUS)
+		if(extfmt == EXTFMT_OGGOPUS)
 			import_stream_oggopus(data);
 		else if(extfmt == EXTFMT_SOX)
 			import_stream_sox(data);
-	}
-
-	void opus_stream::import_stream_opusdemo(std::ifstream& data)
-	{
-		int err;
-		unsigned char tmpi[65536];
-		float tmp[OPUS_MAX_OUT];
-		opus::decoder dec(opus::samplerate::r48k, false);
-		while(data) {
-			char head[8];
-			data.read(head, 8);
-			if(!data)
-				continue;
-			uint32_t psize = read32ube(head);
-			uint32_t pstate = read32ube(head + 4);
-			size_t r;
-			try {
-				if(psize > sizeof(tmpi))
-					throw std::runtime_error("Packet too large to decode");
-				data.read(reinterpret_cast<char*>(tmpi), psize);
-				if(!data)
-					throw std::runtime_error("Error reading opus packet");
-				r = dec.decode(tmpi, psize, tmp, OPUS_MAX_OUT);
-				uint32_t cstate = dec.ctl(opus::finalrange);
-				if(cstate != pstate)
-					throw std::runtime_error("Opus packet checksum mismatch");
-				r = dec.get_nb_samples(tmpi, psize);
-				if(r % 120)
-					throw std::runtime_error("Invalid packet decoded length");
-				uint8_t plen = r / 120;
-				write(plen, tmpi, psize);
-			} catch(std::exception& e) {
-				if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-				if(data_cluster) fs.free_cluster_chain(data_cluster);
-				(stringfmt() << "Error decoding opus packet: " << e.what()).throwex();
-			}
-		}
-		try {
-			write_trailier();
-		} catch(...) {
-			if(ctrl_cluster) fs.free_cluster_chain(ctrl_cluster);
-			if(data_cluster) fs.free_cluster_chain(data_cluster);
-			throw;
-		}
 	}
 
 	void opus_stream::import_stream_oggopus(std::ifstream& data)
@@ -664,29 +616,6 @@ out:
 		delete this;
 	}
 
-	void opus_stream::export_stream_opusdemo(std::ofstream& data)
-	{
-		int err;
-		opus::decoder dec(opus::samplerate::r48k, false);
-		float tmp[OPUS_MAX_OUT];
-		for(size_t i = 0; i < packets.size(); i++) {
-			try {
-				char head[8];
-				std::vector<unsigned char> p = packet(i);
-				uint32_t r = dec.decode(&p[0], p.size(), tmp, OPUS_MAX_OUT);
-				uint32_t state = dec.ctl(opus::finalrange);
-				write32ube(head + 0, p.size());
-				write32ube(head + 4, state);
-				data.write(head, 8);
-				data.write(reinterpret_cast<char*>(&p[0]), p.size());
-				if(!data)
-					throw std::runtime_error("Error writing opus packet");
-			} catch(std::exception& e) {
-				(stringfmt() << "Error decoding opus packet: " << e.what()).throwex();
-			}
-		}
-	}
-
 	void opus_stream::export_stream_oggopus(std::ofstream& data)
 	{
 		oggopus_header header;
@@ -804,9 +733,7 @@ out:
 
 	void opus_stream::export_stream(std::ofstream& data, external_stream_format extfmt)
 	{
-		if(extfmt == EXTFMT_OPUSDEMO)
-			export_stream_opusdemo(data);
-		else if(extfmt == EXTFMT_OGGOPUS)
+		if(extfmt == EXTFMT_OGGOPUS)
 			export_stream_oggopus(data);
 		else if(extfmt == EXTFMT_SOX)
 			export_stream_sox(data);

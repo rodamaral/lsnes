@@ -11,7 +11,6 @@ void voice_frame_number(uint64_t newframe, double rate);
 
 enum external_stream_format
 {
-	EXTFMT_OPUSDEMO,
 	EXTFMT_SOX,
 	EXTFMT_OGGOPUS
 };

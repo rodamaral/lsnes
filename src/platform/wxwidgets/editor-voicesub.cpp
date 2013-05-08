@@ -29,11 +29,9 @@ public:
 	void on_select(wxCommandEvent& e);
 	void on_play(wxCommandEvent& e);
 	void on_delete(wxCommandEvent& e);
-	void on_export_o(wxCommandEvent& e);
 	void on_export_p(wxCommandEvent& e);
 	void on_export_q(wxCommandEvent& e);
 	void on_export_s(wxCommandEvent& e);
-	void on_import_o(wxCommandEvent& e);
 	void on_import_p(wxCommandEvent& e);
 	void on_import_q(wxCommandEvent& e);
 	void on_change_ts(wxCommandEvent& e);
@@ -65,11 +63,9 @@ private:
 	wxListBox* subtitles;
 	wxButton* playbutton;
 	wxButton* deletebutton;
-	wxButton* exportobutton;
 	wxButton* exportpbutton;
 	wxButton* exportqbutton;
 	wxButton* exportsbutton;
-	wxButton* importobutton;
 	wxButton* importpbutton;
 	wxButton* importqbutton;
 	wxButton* changetsbutton;
@@ -102,7 +98,6 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->Add(new wxStaticText(this, wxID_ANY, wxT("Export")), 0, wxGROW);
-	pbutton_s->Add(exportobutton = new wxButton(this, wxID_ANY, wxT("Opus")), 0, wxGROW);
 	pbutton_s->Add(exportqbutton = new wxButton(this, wxID_ANY, wxT("Ogg")), 0, wxGROW);
 	pbutton_s->Add(exportpbutton = new wxButton(this, wxID_ANY, wxT("Sox")), 0, wxGROW);
 	pbutton_s->Add(exportsbutton = new wxButton(this, wxID_ANY, wxT("Superstream")), 0, wxGROW);
@@ -111,7 +106,6 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->Add(new wxStaticText(this, wxID_ANY, wxT("Import")), 0, wxGROW);
-	pbutton_s->Add(importobutton = new wxButton(this, wxID_ANY, wxT("Opus")), 0, wxGROW);
 	pbutton_s->Add(importqbutton = new wxButton(this, wxID_ANY, wxT("Ogg")), 0, wxGROW);
 	pbutton_s->Add(importpbutton = new wxButton(this, wxID_ANY, wxT("Sox")), 0, wxGROW);
 	top_s->Add(pbutton_s, 1, wxGROW);
@@ -142,16 +136,12 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 		wxCommandEventHandler(wxeditor_voicesub::on_play), NULL, this);
 	deletebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_delete), NULL, this);
-	exportobutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wxeditor_voicesub::on_export_o), NULL, this);
 	exportpbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_export_p), NULL, this);
 	exportqbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_export_q), NULL, this);
 	exportsbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_export_s), NULL, this);
-	importobutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-		wxCommandEventHandler(wxeditor_voicesub::on_import_o), NULL, this);
 	importpbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_voicesub::on_import_p), NULL, this);
 	importqbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
@@ -191,7 +181,6 @@ void wxeditor_voicesub::on_select(wxCommandEvent& e)
 	bool valid = (id != NOTHING);
 	playbutton->Enable(valid);
 	deletebutton->Enable(valid);
-	exportobutton->Enable(valid);
 	exportpbutton->Enable(valid);
 	exportqbutton->Enable(valid);
 	changetsbutton->Enable(valid);
@@ -219,21 +208,6 @@ void wxeditor_voicesub::on_delete(wxCommandEvent& e)
 		voicesub_delete_stream(id);
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error deleting", e.what(), wxICON_EXCLAMATION);
-	}
-}
-
-void wxeditor_voicesub::on_export_o(wxCommandEvent& e)
-{
-	uint64_t id = get_id();
-	if(id == NOTHING)
-		return;
-	try {
-		std::string filename;
-		filename = pick_file(this, "Select opus file to export", ".", true, "odm");
-		voicesub_export_stream(id, filename, EXTFMT_OPUSDEMO);
-	} catch(canceled_exception& e) {
-	} catch(std::exception& e) {
-		show_message_ok(this, "Error exporting", e.what(), wxICON_EXCLAMATION);
 	}
 }
 
@@ -276,21 +250,6 @@ void wxeditor_voicesub::on_export_s(wxCommandEvent& e)
 	} catch(canceled_exception& e) {
 	} catch(std::exception& e) {
 		show_message_ok(this, "Error exporting superstream", e.what(), wxICON_EXCLAMATION);
-	}
-}
-
-void wxeditor_voicesub::on_import_o(wxCommandEvent& e)
-{
-	try {
-		std::string filename;
-		uint64_t ts;
-		ts = voicesub_parse_timebase(pick_text(this, "Enter timebase", "Enter position for newly "
-			"imported stream"));
-		filename = pick_file(this, "Select opus file to import", ".", false, "odm");
-		voicesub_import_stream(ts, filename, EXTFMT_OPUSDEMO);
-	} catch(canceled_exception& e) {
-	} catch(std::exception& e) {
-		show_message_ok(this, "Error importing", e.what(), wxICON_EXCLAMATION);
 	}
 }
 
@@ -395,7 +354,6 @@ void wxeditor_voicesub::refresh()
 	bool cflag = voicesub_collection_loaded();
 	unloadbutton->Enable(cflag);
 	exportsbutton->Enable(cflag);
-	importobutton->Enable(cflag);
 	importpbutton->Enable(cflag);
 	importqbutton->Enable(cflag);
 	int sel = subtitles->GetSelection();
