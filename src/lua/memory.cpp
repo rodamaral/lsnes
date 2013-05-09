@@ -15,8 +15,7 @@ namespace
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
 				return i->base;
-		L.pushstring("No such VMA");
-		L.error();
+		throw std::runtime_error("No such VMA");
 	}
 
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
