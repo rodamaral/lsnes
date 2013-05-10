@@ -20,6 +20,7 @@
 #define wxID_ADD (wxID_HIGHEST + 5)
 #define wxID_SET_REGIONS (wxID_HIGHEST + 6)
 #define wxID_AUTOUPDATE (wxID_HIGHEST + 7)
+#define wxID_DISQUALIFY (wxID_HIGHEST + 8)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 8
@@ -247,7 +248,6 @@ void wxwindow_memorysearch_vmasel::on_cancel(wxCommandEvent& e)
 }
 
 
-
 class wxwindow_memorysearch : public wxFrame
 {
 public:
@@ -257,12 +257,14 @@ public:
 	void on_close(wxCloseEvent& e);
 	void on_button_click(wxCommandEvent& e);
 	void auto_update();
+	void on_mouse(wxMouseEvent& e);
 	bool update_queued;
 private:
 	template<typename T> void valuesearch(bool diff);
 	template<typename T> void valuesearch2(T value);
 	template<typename T> void valuesearch3(T value);
 	void update();
+	void on_mouse2();
 	memorysearch* msearch;
 	wxStaticText* count;
 	wxTextCtrl* matches;
@@ -290,15 +292,6 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 
 	wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
 	buttons->Add(tmp = new wxButton(this, wxID_RESET, wxT("Reset")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
-		NULL, this);
-	buttons->Add(tmp = new wxButton(this, wxID_UPDATE, wxT("Update")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
-		NULL, this);
-	buttons->Add(tmp = new wxButton(this, wxID_ADD, wxT("Add watch")), 0, wxGROW);
-	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
-		NULL, this);
-	buttons->Add(tmp = new wxButton(this, wxID_SET_REGIONS, wxT("Disable regions")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
 		NULL, this);
 	buttons->Add(new wxStaticText(this, wxID_ANY, wxT("Data type:")), 0, wxGROW);
@@ -333,6 +326,14 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 		if(!i.readonly && !i.iospace)
 			vmas_enabled.insert(i.region_name);
 
+	//matches->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	//matches->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	//matches->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	//matches->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	//matches->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+
 	toplevel->SetSizeHints(this);
 	Fit();
 	update();
@@ -349,6 +350,30 @@ wxwindow_memorysearch::~wxwindow_memorysearch()
 bool wxwindow_memorysearch::ShouldPreventAppExit() const
 {
 	return false;
+}
+
+void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
+{
+	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
+		on_mouse2();
+}
+
+void wxwindow_memorysearch::on_mouse2()
+{
+	wxMenu menu;
+	bool some_selected;
+	long start, end;
+	matches->GetSelection(&start, &end);
+	some_selected = (start < end);
+	menu.Append(wxID_ADD, wxT("Add watch..."))->Enable(some_selected);
+	menu.AppendSeparator();
+	menu.Append(wxID_DISQUALIFY, wxT("Disqualify"))->Enable(some_selected);
+	menu.AppendSeparator();
+	menu.Append(wxID_UPDATE, wxT("Update"));
+	menu.Append(wxID_SET_REGIONS, wxT("Enabled VMAs"));
+	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
+		NULL, this);
+	PopupMenu(&menu);
 }
 
 void wxwindow_memorysearch::on_close(wxCloseEvent& e)
@@ -463,6 +488,25 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 				runemufn([n, e]() { set_watchexpr_for(n, e); });
 			} catch(canceled_exception& e) {
 			}
+		}
+	} else if(id == wxID_DISQUALIFY) {
+		long start, end;
+		long startx, starty, endx, endy;
+		matches->GetSelection(&start, &end);
+		if(start == end)
+			return;
+		if(!matches->PositionToXY(start, &startx, &starty))
+			return;
+		if(!matches->PositionToXY(end, &endx, &endy))
+			return;
+		if(endx == 0 && endy != 0)
+			endy--;
+		for(long r = starty; r <= endy; r++) {
+			if(!addresses.count(r))
+				return;
+			uint64_t addr = addresses[r];
+			auto ms = msearch;
+			runemufn([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 	} else if(id == wxID_SET_REGIONS) {
 		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
