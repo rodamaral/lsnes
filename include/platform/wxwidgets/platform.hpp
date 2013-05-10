@@ -53,6 +53,7 @@ void wxeditor_movie_update();
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
+void wxwindow_memorysearch_update();
 
 template<typename T>
 void functor_call_helper2(void* args)

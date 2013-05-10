@@ -932,7 +932,6 @@ std::list<uint64_t> memorysearch::get_candidates() throw(std::bad_alloc)
 		if((still_in[i / 64] >> (i % 64)) & 1)
 			out.push_back(i - base + rbase);
 	}
-	std::cout << "out=" << out.size() << " candidates=" << candidates << std::endl;
 	return out;
 }
 

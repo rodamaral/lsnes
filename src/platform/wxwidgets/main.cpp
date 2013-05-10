@@ -136,6 +136,7 @@ namespace
 		} else if(c == UISERV_UPDATE_SCREEN) {
 			if(main_window)
 				main_window->notify_update();
+			wxwindow_memorysearch_update();
 		} else if(c == UISERV_EXIT) {
 			if(main_window)
 				main_window->notify_exit();

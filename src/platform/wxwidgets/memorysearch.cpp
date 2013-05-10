@@ -19,6 +19,7 @@
 #define wxID_HEX_SELECT (wxID_HIGHEST + 4)
 #define wxID_ADD (wxID_HIGHEST + 5)
 #define wxID_SET_REGIONS (wxID_HIGHEST + 6)
+#define wxID_AUTOUPDATE (wxID_HIGHEST + 7)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 8
@@ -255,6 +256,7 @@ public:
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCloseEvent& e);
 	void on_button_click(wxCommandEvent& e);
+	void auto_update();
 	bool update_queued;
 private:
 	template<typename T> void valuesearch(bool diff);
@@ -266,6 +268,7 @@ private:
 	wxTextCtrl* matches;
 	wxComboBox* type;
 	wxCheckBox* hexmode2;
+	wxCheckBox* autoupdate;
 	std::map<long, uint64_t> addresses;
 	unsigned typecode;
 	bool hexmode;
@@ -285,7 +288,7 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	wxFlexGridSizer* toplevel = new wxFlexGridSizer(4, 1, 0, 0);
 	SetSizer(toplevel);
 
-	wxFlexGridSizer* buttons = new wxFlexGridSizer(1, 7, 0, 0);
+	wxBoxSizer* buttons = new wxBoxSizer(wxHORIZONTAL);
 	buttons->Add(tmp = new wxButton(this, wxID_RESET, wxT("Reset")), 0, wxGROW);
 	tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwindow_memorysearch::on_button_click),
 		NULL, this);
@@ -308,11 +311,13 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	type->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 		wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
 	buttons->Add(hexmode2 = new wxCheckBox(this, wxID_HEX_SELECT, wxT("Hex display")), 0, wxGROW);
+	buttons->Add(autoupdate = new wxCheckBox(this, wxID_AUTOUPDATE, wxT("Update automatically")), 0, wxGROW);
+	autoupdate->SetValue(true);
 	hexmode2->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 		wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
 	toplevel->Add(buttons);
 
-	wxFlexGridSizer* searches = new wxFlexGridSizer(1, BROW_SIZE, 0, 0);
+	wxFlexGridSizer* searches = new wxFlexGridSizer(2, 7, 0, 0);
 	for(unsigned j = 0; j < BROW_SIZE; j++) {
 		searches->Add(tmp = new wxButton(this, wxID_BUTTONS_BASE + j, towxstring(searchtypes[j])), 1, wxGROW);
 		tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
@@ -350,6 +355,12 @@ void wxwindow_memorysearch::on_close(wxCloseEvent& e)
 {
 	Destroy();
 	mwatch = NULL;
+}
+
+void wxwindow_memorysearch::auto_update()
+{
+	if(autoupdate->GetValue())
+		update();
 }
 
 void wxwindow_memorysearch::update()
@@ -592,4 +603,10 @@ void wxwindow_memorysearch_display()
 	}
 	mwatch = new wxwindow_memorysearch();
 	mwatch->Show();
+}
+
+void wxwindow_memorysearch_update()
+{
+	if(mwatch)
+		mwatch->auto_update();
 }
