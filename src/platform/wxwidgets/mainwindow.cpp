@@ -767,10 +767,7 @@ void wxwin_mainwindow::notify_resized() throw()
 
 void wxwin_mainwindow::notify_update_status() throw()
 {
-	if(!spanel->dirty) {
-		spanel->dirty = true;
-		spanel->Refresh();
-	}
+	spanel->request_paint();
 	if(mwindow)
 		mwindow->notify_update();
 }

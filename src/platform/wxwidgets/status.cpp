@@ -22,35 +22,9 @@ namespace
 }
 
 wxwin_status::panel::panel(wxWindow* _parent, wxWindow* focuswin, unsigned lines)
-	: wxPanel(_parent)
+	: text_framebuffer_panel(_parent, STATWIDTH, lines ? lines : MAXSTATUS, wxID_ANY, focuswin)
 {
-	tfocuswin = focuswin;
-	parent = _parent;
-	dirty = false;
-	statusvars.set_size(STATWIDTH, lines ? lines : MAXSTATUS);
-	auto s = statusvars.get_pixels();
-	SetMinSize(wxSize(s.first, s.second));
-	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_status::panel::on_paint), NULL, this);
-	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(panel::on_erase), NULL, this);
-	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(wxwin_status::panel::on_focus), NULL, this);
 	watch_flag = 0;
-	previous_size = 0;
-}
-
-void wxwin_status::panel::on_erase(wxEraseEvent& e)
-{
-	//Blank.
-}
-
-bool wxwin_status::panel::AcceptsFocus () const
-{
-	return false;
-}
-
-void wxwin_status::panel::on_focus(wxFocusEvent& e)
-{
-	if(tfocuswin)
-		tfocuswin->SetFocus();
 }
 
 wxwin_status::wxwin_status(int flag, const std::string& title)
@@ -69,7 +43,7 @@ wxwin_status::~wxwin_status()
 {
 }
 
-void wxwin_status::panel::on_paint(wxPaintEvent& e)
+void wxwin_status::panel::prepare_paint()
 {
 	//Quickly copy the status area.
 	auto& s = platform::get_emustatus();
@@ -78,9 +52,8 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 	while(s.next(i))
 		newstatus[i.key] = i.value;
 
-	memorywatches.clear();
-	statusvars.clear();
-	
+	clear();
+
 	size_t mem_width = 0;
 	size_t oth_width = 0;
 	size_t mem_count = 0;
@@ -106,35 +79,36 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		single = true;
 
 	regex_results r;
+	size_t p = 0;
 	if(mem_count) {
-		size_t p = single ? 0 : 1;
-		memorywatches.set_size(STATWIDTH, mem_count + p);
 		if(!single)
-			memorywatches.write("Memory watches:", 0, 0, 0, 0, 0xFFFFFF);
+			write("Memory watches:", 0, 0, p++, 0, 0xFFFFFF);
 		for(auto i : newstatus) {
 			if(i.first.length() > 0 && i.first[0] == '!')
 				continue;
 			if(r = regex("M\\[(.*)\\]", i.first)) {
-				size_t n = memorywatches.write(r[1], mem_width + 1, 0, p, 0, 0xFFFFFF);
-				memorywatches.write(i.second, 0, n, p, 0, 0xFFFFFF);
-				p++;
+				size_t n = write(r[1], mem_width + 1, 0, p, 0, 0xFFFFFF);
+				write(i.second, 0, n, p++, 0, 0xFFFFFF);
 			}
 		}
 	}
-
+	if(mem_count && oth_count) {
+		auto s = get_characters();
+		for(unsigned i = 0; i < s.first; i++)
+			write(U"\u2500", 0, i, p, 0, 0xFFFFFF);
+		p++;
+	}
+	
 	if(oth_count) {
-		size_t p = single ? 0 : 1;
-		statusvars.set_size(STATWIDTH, oth_count + p);
 		if(!single)
-			statusvars.write("Status:", 0, 0, 0, 0, 0xFFFFFF);
+			write("Status:", 0, 0, p++, 0, 0xFFFFFF);
 		for(auto i : newstatus) {
 			if(i.first.length() > 0 && i.first[0] == '!')
 				continue;
 			if(regex_match("M\\[.*\\]", i.first))
 				continue;
-			size_t n = statusvars.write(i.first, oth_width + 1, 0, p, 0, 0xFFFFFF);
-			statusvars.write(i.second, 0, n, p, 0, 0xFFFFFF);
-			p++;
+			size_t n = write(i.first, oth_width + 1, 0, p, 0, 0xFFFFFF);
+			write(i.second, 0, n, p++, 0, 0xFFFFFF);
 		}
 	}
 
@@ -146,47 +120,11 @@ void wxwin_status::panel::on_paint(wxPaintEvent& e)
 		main_window->update_statusbar(specials);
 	}
 
-	auto ssize = statusvars.get_pixels();
-	auto msize = memorywatches.get_pixels();
-	size_t y2 = ssize.second + (!single ? 3 : 0);
-	size_t yl = ssize.second + 1;
-	std::vector<char> buffer1, buffer2;
-	buffer1.resize(msize.first * msize.second * 3);
-	buffer2.resize(ssize.first * ssize.second * 3);
-
-	wxPaintDC dc(this);
-	if(oth_count) {
-		statusvars.render(&buffer2[0]);
-		wxBitmap bmp2(wxImage(ssize.first, ssize.second, reinterpret_cast<unsigned char*>(&buffer2[0]),
-			true));
-		dc.DrawBitmap(bmp2, 0, 0, false);
-	}
-	if(!single) {
-		dc.SetPen(*wxBLACK_PEN);
-		dc.DrawLine(0, yl, msize.first, yl);
-	}
-	if(mem_count) {
-		memorywatches.render(&buffer1[0]);
-		wxBitmap bmp1(wxImage(msize.first, msize.second, reinterpret_cast<unsigned char*>(&buffer1[0]),
-			true));
-		dc.DrawBitmap(bmp1, 0, y2, false);
-	}
-	auto psize = GetSize();
-	dc.SetPen(*wxWHITE_PEN);
-	dc.SetBrush(*wxWHITE_BRUSH);
-	size_t minsize = max(static_cast<size_t>(psize.y), previous_size);
-	size_t maxuse = y2 + 16 * (mem_count + (!single ? 1 : 0));
-	dc.DrawRectangle(0, maxuse, psize.x, minsize);
-	previous_size = maxuse;
-	dirty = false;
 }
 
 void wxwin_status::notify_update() throw()
 {
-	if(spanel->dirty)
-		return;
-	spanel->dirty = true;
-	spanel->Refresh();
+	spanel->request_paint();
 }
 
 bool wxwin_status::ShouldPreventAppExit() const

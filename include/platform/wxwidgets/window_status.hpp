@@ -9,22 +9,16 @@
 class wxwin_status : public wxFrame
 {
 public:
-	class panel : public wxPanel
+	class panel : public text_framebuffer_panel
 	{
 	public:
 		panel(wxWindow* _parent, wxWindow* tfocus, unsigned lines);
-		bool AcceptsFocus () const;
-		void on_focus(wxFocusEvent& e);
-		void on_paint(wxPaintEvent& e);
-		void on_erase(wxEraseEvent& e);
-		bool dirty;
-		wxWindow* parent;
-		wxWindow* tfocuswin;
 		//-1: memory watch only, 0: Both, 1: Status only.
 		void set_watch_flag(int f) { watch_flag = f; }
+	protected:
+		void prepare_paint();
 	private:
-		text_framebuffer statusvars;
-		text_framebuffer memorywatches;
+		text_framebuffer fb;
 		int watch_flag;
 		size_t previous_size;
 	};

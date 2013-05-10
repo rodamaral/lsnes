@@ -1,6 +1,8 @@
 #include "platform/wxwidgets/textrender.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/utf8.hpp"
+#include <wx/dc.h>
+#include <wx/dcclient.h>
 
 extern const uint32_t text_framebuffer::element::white = 0xFFFFFF;
 extern const uint32_t text_framebuffer::element::black = 0x000000;
@@ -177,6 +179,10 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 
 size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
 {
+	if(y >= height)
+		return 0;
+	size_t spos = 0;
+	size_t slen = str.length();
 	size_t pused = 0;
 	for(auto u : str) {
 		const bitmap_font::glyph& g = main_font.get_glyph(u);
@@ -201,4 +207,74 @@ size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, si
 		x++;
 	}
 	return x;
+}
+
+text_framebuffer_panel::text_framebuffer_panel(wxWindow* parent, size_t w, size_t h, wxWindowID id,
+	wxWindow* _redirect)
+	: wxPanel(parent, id), text_framebuffer(w, h)
+{
+	redirect = _redirect;
+	auto psize = get_pixels();
+	SetMinSize(wxSize(psize.first, psize.second));
+	this->Connect(wxEVT_PAINT, wxPaintEventHandler(text_framebuffer_panel::on_paint), NULL, this);
+	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(text_framebuffer_panel::on_erase), NULL, this);
+	this->Connect(wxEVT_SET_FOCUS, wxFocusEventHandler(text_framebuffer_panel::on_focus), NULL, this);
+}
+
+text_framebuffer_panel::~text_framebuffer_panel()
+{
+}
+
+void text_framebuffer_panel::set_size(size_t _width, size_t _height)
+{
+	text_framebuffer::set_size(_width, _height);
+	auto psize = get_pixels();
+	buffer.resize(psize.first * psize.second * 3);
+	if(!locked) {
+		SetMinSize(wxSize(psize.first, psize.second));
+	} else
+		size_changed = true;
+	request_paint();
+}
+
+void text_framebuffer_panel::request_paint()
+{
+	if(size_changed) {
+		auto psize = get_pixels();
+		SetMinSize(wxSize(psize.first, psize.second));
+		size_changed = false;
+		paint_requested = true;
+		Refresh();
+	} else if(!paint_requested) {
+		paint_requested = true;
+		Refresh();
+	}
+}
+
+void text_framebuffer_panel::on_erase(wxEraseEvent& e)
+{
+}
+
+void text_framebuffer_panel::on_paint(wxPaintEvent& e)
+{
+	locked = true;
+	auto size = GetSize();
+	text_framebuffer::set_size((size.x + 7) / 8, (size.y + 15) / 16);
+	auto psize = get_pixels();
+	buffer.resize(psize.first * psize.second * 3);
+	prepare_paint();
+	locked = false;
+	psize = get_pixels();
+	wxPaintDC dc(this);
+	render(&buffer[0]);
+	wxBitmap bmp1(wxImage(psize.first, psize.second, reinterpret_cast<unsigned char*>(&buffer[0]),
+		true));
+	dc.DrawBitmap(bmp1, 0, 0, false);
+	paint_requested = false;
+}
+
+void text_framebuffer_panel::on_focus(wxFocusEvent& e)
+{
+	if(redirect)
+		redirect->SetFocus();
 }
