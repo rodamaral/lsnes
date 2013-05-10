@@ -4,6 +4,7 @@
 #include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/textrender.hpp"
 
 #include <sstream>
 #include <iomanip>
@@ -33,6 +34,17 @@ class wxwindow_memorysearch;
 
 namespace
 {
+	void connect_events(wxScrollBar* s, wxObjectEventFunction fun, wxEvtHandler* obj)
+	{
+		s->Connect(wxEVT_SCROLL_THUMBTRACK, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_PAGEDOWN, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_PAGEUP, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_LINEDOWN, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_LINEUP, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_TOP, fun, NULL, obj);
+		s->Connect(wxEVT_SCROLL_BOTTOM, fun, NULL, obj);
+	}
+
 	const char* watchchars = "bBwWdDqQ";
 
 	wxwindow_memorysearch* mwatch;
@@ -251,29 +263,54 @@ void wxwindow_memorysearch_vmasel::on_cancel(wxCommandEvent& e)
 class wxwindow_memorysearch : public wxFrame
 {
 public:
+	class panel : public text_framebuffer_panel
+	{
+	public:
+		panel(wxwindow_memorysearch* parent);
+		void set_selection(uint64_t first, uint64_t last);
+		void get_selection(uint64_t& first, uint64_t& last);
+	protected:
+		void prepare_paint();
+	private:
+		wxwindow_memorysearch* parent;
+		uint64_t first_sel;
+		uint64_t last_sel;
+	};
 	wxwindow_memorysearch();
 	~wxwindow_memorysearch();
 	bool ShouldPreventAppExit() const;
 	void on_close(wxCloseEvent& e);
 	void on_button_click(wxCommandEvent& e);
 	void auto_update();
+	void on_mousedrag(wxMouseEvent& e);
 	void on_mouse(wxMouseEvent& e);
+	void on_scroll(wxScrollEvent& e);
 	bool update_queued;
 private:
+	friend class panel;
 	template<typename T> void valuesearch(bool diff);
 	template<typename T> void valuesearch2(T value);
 	template<typename T> void valuesearch3(T value);
 	void update();
-	void on_mouse2();
+	void on_mouse0(wxMouseEvent& e, bool polarity);
+	void on_mousedrag();
+	void on_mouse2(wxMouseEvent& e);
 	memorysearch* msearch;
 	wxStaticText* count;
-	wxTextCtrl* matches;
+	wxScrollBar* scroll;
+	panel* matches;
 	wxComboBox* type;
 	wxCheckBox* hexmode2;
 	wxCheckBox* autoupdate;
-	std::map<long, uint64_t> addresses;
+	std::map<uint64_t, uint64_t> addresses;
+	uint64_t act_line;
+	uint64_t drag_startline;
+	bool dragging;
+	int mpx, mpy;
 	unsigned typecode;
 	bool hexmode;
+	bool toomany;
+	int scroll_delta;
 	std::set<std::string> vmas_enabled;
 };
 
@@ -318,27 +355,145 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	}
 	toplevel->Add(searches);
 
-	toplevel->Add(count = new wxStaticText(this, wxID_ANY, wxT("XXX candidates")), 0, wxGROW);
-	toplevel->Add(matches = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(500, 300),
-		wxTE_MULTILINE | wxTE_READONLY | wxTE_DONTWRAP | wxTE_NOHIDESEL), 1, wxGROW);
+	toplevel->Add(count = new wxStaticText(this, wxID_ANY, wxT("XXXXXX candidates")), 0, wxGROW);
+	wxBoxSizer* matchesb = new wxBoxSizer(wxHORIZONTAL);
+	matchesb->Add(matches = new panel(this), 1, wxGROW);
+	matchesb->Add(scroll = new wxScrollBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSB_VERTICAL), 0,
+		wxGROW);
+	toplevel->Add(matchesb, 1, wxGROW);
+
+	scroll->SetScrollbar(0, 0, 0, 0);
 
 	for(auto i : get_regions())
 		if(!i.readonly && !i.iospace)
 			vmas_enabled.insert(i.region_name);
 
-	//matches->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
-	//matches->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
-	//matches->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
-	//matches->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	dragging = false;
+	toomany = true;
+	matches->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_MIDDLE_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_MIDDLE_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
 	matches->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
 	matches->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
-	//matches->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	matches->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwindow_memorysearch::on_mousedrag), NULL, this);
+	matches->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
+	connect_events(scroll, wxScrollEventHandler(wxwindow_memorysearch::on_scroll), this);
 
 	toplevel->SetSizeHints(this);
 	Fit();
 	update();
 	Fit();
 	hexmode = false;
+}
+
+wxwindow_memorysearch::panel::panel(wxwindow_memorysearch* _parent)
+	: text_framebuffer_panel(_parent, 40, 25, wxID_ANY, NULL)
+{
+	parent = _parent;
+	first_sel = 0;
+	last_sel = 0;
+}
+
+void wxwindow_memorysearch::panel::prepare_paint()
+{
+	uint64_t first = parent->scroll->GetThumbPosition();
+	auto ssize = get_characters();
+	uint64_t last = first + ssize.second;
+	std::vector<std::string> lines;
+	lines.reserve(ssize.second);
+	std::map<uint64_t, uint64_t> addrs;
+	auto* ms = parent->msearch;
+	uint64_t addr_count;
+	bool toomany = false;
+	auto _parent = parent;
+	runemufn([&toomany, &first, &last, ms, &lines, &addrs, &addr_count, _parent]() {
+		addr_count = ms->get_candidate_count();
+		if(last > addr_count) {
+			uint64_t delta = last - addr_count;
+			if(first > delta) {
+				first -= delta;
+				last -= delta;
+			} else {
+				last -= first;
+				first = 0;
+			}
+		}
+		if(addr_count <= CANDIDATE_LIMIT) {
+			std::list<uint64_t> addrs2 = ms->get_candidates();
+			long j = 0;
+			for(auto i : addrs2) {
+				std::string row = hexformat_address(i) + " ";
+				switch(_parent->typecode) {
+				case 0:
+					row += format_number_signed(memory_read_byte(i), _parent->hexmode);
+					break;
+				case 1:
+					row += format_number_unsigned(memory_read_byte(i), _parent->hexmode);
+					break;
+				case 2:
+					row += format_number_signed(memory_read_word(i), _parent->hexmode);
+					break;
+				case 3:
+					row += format_number_unsigned(memory_read_word(i), _parent->hexmode);
+					break;
+				case 4:
+					row += format_number_signed(memory_read_dword(i), _parent->hexmode);
+					break;
+				case 5:
+					row += format_number_unsigned(memory_read_dword(i), _parent->hexmode);
+					break;
+				case 6:
+					row +=  format_number_signed(memory_read_qword(i), _parent->hexmode);
+					break;
+				case 7:
+					row += format_number_unsigned(memory_read_qword(i), _parent->hexmode);
+					break;
+				};
+				if(j >= first && j < last)
+					lines.push_back(row);
+				addrs[j++] = i;
+			}
+		} else {
+			lines.push_back("Too many candidates to display");
+			toomany = true;
+		}
+	});
+	std::swap(parent->addresses, addrs);
+
+	std::ostringstream x;
+	x << addr_count << " " << ((addr_count != 1) ? "candidates" : "candidate");
+	parent->count->SetLabel(towxstring(x.str()));
+
+	clear();
+	for(unsigned i = 0; i < lines.size(); i++) {
+		bool sel = (first + i) >= first_sel && (first + i) < last_sel;
+		write(lines[i], 0, 0, i, sel ? 0xFFFFFF : 0, sel ? 0 : 0xFFFFFF);
+	}
+
+	if(last_sel > last)
+		last_sel = last;
+	if(first_sel > last)
+		first_sel = last;
+
+	parent->toomany = toomany;
+	if(!toomany && addr_count > ssize.second)
+		parent->scroll->SetScrollbar(first, ssize.second, addr_count, ssize.second);
+	else
+		parent->scroll->SetScrollbar(0, 0, 0, 0);
+}
+
+void wxwindow_memorysearch::panel::set_selection(uint64_t first, uint64_t last)
+{
+	first_sel = first;
+	last_sel = last;
+	request_paint();
+}
+
+void wxwindow_memorysearch::panel::get_selection(uint64_t& first, uint64_t& last)
+{
+	first = first_sel;
+	last = last_sel;
 }
 
 wxwindow_memorysearch::~wxwindow_memorysearch()
@@ -352,19 +507,79 @@ bool wxwindow_memorysearch::ShouldPreventAppExit() const
 	return false;
 }
 
+void wxwindow_memorysearch::on_scroll(wxScrollEvent& e)
+{
+	matches->request_paint();
+}
+
 void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
 {
 	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
-		on_mouse2();
+		on_mouse2(e);
+	else if(e.LeftDown())
+		on_mouse0(e, true);
+	else if(e.LeftUp())
+		on_mouse0(e, false);
+
+	int wrotate = e.GetWheelRotation();
+	int threshold = e.GetWheelDelta();
+	if(threshold)
+		scroll_delta += wrotate;
+	while(wrotate && threshold && scroll_delta <= -threshold) {
+		//Scroll down by line.
+		uint64_t first = scroll->GetThumbPosition();
+		if(addresses.count(first + matches->get_characters().second))
+			scroll->SetThumbPosition(first + 1);
+		scroll_delta += threshold;
+	}
+	while(wrotate && threshold && scroll_delta >= threshold) {
+		//Scroll up by line.
+		//Scroll down by line.
+		uint64_t first = scroll->GetThumbPosition();
+		if(first > 0 && addresses.count(first - 1))
+			scroll->SetThumbPosition(first - 1);
+		scroll_delta -= threshold;
+	}
 }
 
-void wxwindow_memorysearch::on_mouse2()
+void wxwindow_memorysearch::on_mouse0(wxMouseEvent& e, bool polarity)
+{
+	dragging = polarity && !toomany;
+	if(dragging) {
+		mpx = e.GetX();
+		mpy = e.GetY();
+		uint64_t first = scroll->GetThumbPosition();
+		drag_startline = first + e.GetY() / matches->get_cell().second;
+	} else if(mpx == e.GetX() && mpy == e.GetY()) {
+		matches->set_selection(0, 0);
+	}
+}
+
+void wxwindow_memorysearch::on_mousedrag(wxMouseEvent& e)
+{
+	if(!dragging)
+		return;
+	uint64_t first = scroll->GetThumbPosition();
+	uint64_t linenow = first + e.GetY() / matches->get_cell().second;
+	if(drag_startline < linenow)
+		matches->set_selection(drag_startline, linenow + 1);
+	else
+		matches->set_selection(linenow, drag_startline + 1);
+}
+
+void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 {
 	wxMenu menu;
 	bool some_selected;
-	long start, end;
-	matches->GetSelection(&start, &end);
+	uint64_t start, end;
+	matches->get_selection(start, end);
 	some_selected = (start < end);
+	if(!some_selected) {
+		uint64_t first = scroll->GetThumbPosition();
+		act_line = first + e.GetY() / matches->get_cell().second;
+		if(addresses.count(act_line))
+			some_selected = true;
+	}
 	menu.Append(wxID_ADD, wxT("Add watch..."))->Enable(some_selected);
 	menu.AppendSeparator();
 	menu.Append(wxID_DISQUALIFY, wxT("Disqualify"))->Enable(some_selected);
@@ -390,58 +605,7 @@ void wxwindow_memorysearch::auto_update()
 
 void wxwindow_memorysearch::update()
 {
-	std::string ret;
-	uint64_t addr_count;
-	runemufn([this, &ret, &addr_count]() {
-		addr_count = this->msearch->get_candidate_count();
-		if(addr_count <= CANDIDATE_LIMIT) {
-			this->addresses.clear();
-			std::list<uint64_t> addrs = this->msearch->get_candidates();
-			long j = 0;
-			for(auto i : addrs) {
-				std::ostringstream row;
-				row << hexformat_address(i) << " ";
-				switch(this->typecode) {
-				case 0:
-					row << format_number_signed(memory_read_byte(i), this->hexmode);
-		 			break;
-				case 1:
-					row << format_number_unsigned(memory_read_byte(i), this->hexmode);
-					break;
-				case 2:
-					row << format_number_signed(memory_read_word(i), this->hexmode);
-					break;
-				case 3:
-					row << format_number_unsigned(memory_read_word(i), this->hexmode);
-					break;
-				case 4:
-					row << format_number_signed(memory_read_dword(i), this->hexmode);
-					break;
-				case 5:
-					row << format_number_unsigned(memory_read_dword(i), this->hexmode);
-					break;
-				case 6:
-					row << format_number_signed(memory_read_qword(i), this->hexmode);
-					break;
-				case 7:
-					row << format_number_unsigned(memory_read_qword(i), this->hexmode);
-					break;
-				};
-				row << std::endl;
-				ret = ret + row.str();
-				this->addresses[j++] = i;
-			}
-		} else {
-			ret = "Too many candidates to display";
-			this->addresses.clear();
-		}
-	});
-	std::ostringstream x;
-	x << addr_count << " " << ((addr_count != 1) ? "candidates" : "candidate");
-	count->SetLabel(towxstring(x.str()));
-	matches->SetValue(towxstring(ret));
-	Fit();
-	update_queued = false;
+	matches->request_paint();
 }
 
 void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
@@ -463,19 +627,14 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 	} else if(id == wxID_HEX_SELECT) {
 		hexmode = hexmode2->GetValue();
 	} else if(id == wxID_ADD) {
-		long start, end;
-		long startx, starty, endx, endy;
-		matches->GetSelection(&start, &end);
-		if(start == end)
-			return;
-		if(!matches->PositionToXY(start, &startx, &starty))
-			return;
-		if(!matches->PositionToXY(end, &endx, &endy))
-			return;
-		if(endx == 0 && endy != 0)
-			endy--;
+		uint64_t start, end;
+		matches->get_selection(start, end);
+		if(start == end) {
+			start = act_line;
+			end = act_line + 1;
+		}
 		char wch = watchchars[typecode];
-		for(long r = starty; r <= endy; r++) {
+		for(long r = start; r < end; r++) {
 			if(!addresses.count(r))
 				return;
 			uint64_t addr = addresses[r];
@@ -489,25 +648,22 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			} catch(canceled_exception& e) {
 			}
 		}
+		matches->set_selection(0, 0);
 	} else if(id == wxID_DISQUALIFY) {
-		long start, end;
-		long startx, starty, endx, endy;
-		matches->GetSelection(&start, &end);
-		if(start == end)
-			return;
-		if(!matches->PositionToXY(start, &startx, &starty))
-			return;
-		if(!matches->PositionToXY(end, &endx, &endy))
-			return;
-		if(endx == 0 && endy != 0)
-			endy--;
-		for(long r = starty; r <= endy; r++) {
+		uint64_t start, end;
+		matches->get_selection(start, end);
+		if(start == end) {
+			start = act_line;
+			end = act_line + 1;
+		}
+		for(long r = start; r < end; r++) {
 			if(!addresses.count(r))
 				return;
 			uint64_t addr = addresses[r];
 			auto ms = msearch;
 			runemufn([addr, ms]() { ms->dq_range(addr, addr); });
 		}
+		matches->set_selection(0, 0);
 	} else if(id == wxID_SET_REGIONS) {
 		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
 		if(d->ShowModal() == wxID_OK)

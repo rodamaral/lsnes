@@ -1,6 +1,7 @@
 #ifndef _textrender__hpp__included__
 #define _textrender__hpp__included__
 
+#include <wx/panel.h>
 #include <cstdint>
 #include <map>
 #include <cstdlib>
@@ -35,6 +36,27 @@ private:
 	std::vector<element> buffer;
 	size_t width;
 	size_t height;
+};
+
+struct text_framebuffer_panel : public wxPanel, public text_framebuffer
+{
+public:
+	text_framebuffer_panel(wxWindow* parent, size_t w, size_t h, wxWindowID id, wxWindow* redirect);
+	~text_framebuffer_panel();
+	void set_size(size_t _width, size_t _height);
+	void request_paint();
+	bool AcceptsFocus() { return (redirect != NULL); }
+protected:
+	virtual void prepare_paint() = 0;
+private:
+	void on_erase(wxEraseEvent& e);
+	void on_paint(wxPaintEvent& e);
+	void on_focus(wxFocusEvent& e);
+	bool paint_requested;
+	bool locked;
+	bool size_changed;
+	std::vector<char> buffer;
+	wxWindow* redirect;
 };
 
 #endif
