@@ -113,8 +113,11 @@ ogg_page::ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error
 		throw std::runtime_error("Bad Ogg page flags");
 	//Compute length.
 	size_t b = 27 + (unsigned char)buffer[26];
-	for(unsigned i = 0; i < (unsigned char)buffer[26]; i++)
+	data_count = 0;
+	for(unsigned i = 0; i < (unsigned char)buffer[26]; i++) {
 		b += (unsigned char)buffer[27 + i];
+		data_count += (unsigned char)buffer[27 + i];
+	}
 	//Check the CRC.
 	uint32_t claimed = read32ule(buffer + 22);
 	uint32_t x = 0;
