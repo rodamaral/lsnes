@@ -6,6 +6,7 @@
 #include "interface/controller.hpp"
 #include "core/mainloop.hpp"
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
@@ -44,17 +45,6 @@ namespace
 	uint64_t divs[] = {1000000, 100000, 10000, 1000, 100, 10, 1};
 	uint64_t divsl[] = {1000000, 100000, 10000, 1000, 100, 10, 0};
 	const unsigned divcnt = sizeof(divs)/sizeof(divs[0]);
-
-	void connect_events(wxScrollBar* s, wxObjectEventFunction fun, wxEvtHandler* obj)
-	{
-		s->Connect(wxEVT_SCROLL_THUMBTRACK, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_PAGEDOWN, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_PAGEUP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_LINEDOWN, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_LINEUP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_TOP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_BOTTOM, fun, NULL, obj);
-	}
 }
 
 struct control_info
@@ -284,7 +274,7 @@ public:
 	void on_focus_wrong(wxFocusEvent& e);
 	void on_keyboard_down(wxKeyEvent& e);
 	void on_keyboard_up(wxKeyEvent& e);
-	wxScrollBar* get_scroll();
+	scroll_bar* get_scroll();
 	void update();
 private:
 	struct _moviepanel : public wxPanel, public information_dispatch
@@ -292,11 +282,11 @@ private:
 		_moviepanel(wxeditor_movie* v);
 		~_moviepanel() throw();
 		void signal_repaint();
-		void on_scroll(wxScrollEvent& e);
 		void on_paint(wxPaintEvent& e);
 		void on_erase(wxEraseEvent& e);
 		void on_mouse(wxMouseEvent& e);
 		void on_popup_menu(wxCommandEvent& e);
+		uint64_t moviepos;
 	private:
 		int get_lines();
 		void render(text_framebuffer& fb, unsigned long long pos);
@@ -331,11 +321,9 @@ private:
 		bool requested;
 		text_framebuffer fb;
 		uint64_t movielines;
-		uint64_t moviepos;
 		unsigned new_width;
 		unsigned new_height;
 		std::vector<uint8_t> pixels;
-		int scroll_delta;
 		unsigned press_x;
 		uint64_t press_line;
 		uint64_t rpress_line;
@@ -349,7 +337,7 @@ private:
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
-	wxScrollBar* moviescroll;
+	scroll_bar* moviescroll;
 	bool closing;
 };
 
@@ -411,7 +399,6 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 	new_width = 0;
 	new_height = 0;
 	moviepos = 0;
-	scroll_delta = 0;
 	spos = 0;
 	prev_obj = NULL;
 	prev_seqno = 0;
@@ -989,6 +976,7 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 			if(tmp < 1 || tmp > 255)
 				throw std::runtime_error("Value out of range");
 			lines_to_display = tmp;
+			m->get_scroll()->set_page_size(lines_to_display);
 		} catch(canceled_exception& e) {
 			return;
 		} catch(std::exception& e) {
@@ -1137,8 +1125,10 @@ do_again:
 	new_width = width;
 	new_height = height;
 	movielines = lines;
-	if(s)
-		s->SetScrollbar(moviepos, lines_to_display, lines, lines_to_display - 1);
+	if(s) {
+		s->set_range(lines);
+		s->set_position(moviepos);
+	}
 	auto size = fb.get_pixels();
 	pixels.resize(size.first * size.second * 3);
 	fb.render((char*)&pixels[0]);
@@ -1167,42 +1157,13 @@ void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 		on_mouse2(e.GetX() / cell.first, e.GetY() / cell.second, true);
 	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
 		on_mouse2(e.GetX() / cell.first, e.GetY() / cell.second, false);
-	int wrotate = e.GetWheelRotation();
-	int threshold = e.GetWheelDelta();
-	bool scrolled = false;
 	auto s = m->get_scroll();
-	if(threshold)
-		scroll_delta += wrotate;
-	while(wrotate && threshold && scroll_delta <= -threshold) {
-		//Scroll down by line.
-		moviepos++;
-		if(movielines <= lines_to_display)
-			moviepos = 0;
-		else if(moviepos > movielines - lines_to_display + 1)
-			moviepos = movielines - lines_to_display + 1;
-		scrolled = true;
-		scroll_delta += threshold;
-	}
-	while(wrotate && threshold && scroll_delta >= threshold) {
-		//Scroll up by line.
-		if(moviepos > 0)
-			moviepos--;
-		scrolled = true;
-		scroll_delta -= threshold;
-	}
-	if(scrolled)
-		s->SetThumbPosition(moviepos);
-	signal_repaint();
-}
-
-void wxeditor_movie::_moviepanel::on_scroll(wxScrollEvent& e)
-{
-	auto s = m->get_scroll();
-	if(s)
-		moviepos = s->GetThumbPosition();
-	else
-		moviepos = 0;
-	signal_repaint();
+	unsigned speed = 1;
+	if(e.ShiftDown())
+		speed = 10;
+	if(e.ShiftDown() && e.ControlDown())
+		speed = 50;
+	s->apply_wheel(e.GetWheelRotation(), e.GetWheelDelta(), speed);
 }
 
 void wxeditor_movie::_moviepanel::on_erase(wxEraseEvent& e)
@@ -1236,10 +1197,14 @@ wxeditor_movie::wxeditor_movie(wxWindow* parent)
 	wxBoxSizer* panel_s = new wxBoxSizer(wxHORIZONTAL);
 	moviescroll = NULL;
 	panel_s->Add(moviepanel = new _moviepanel(this), 1, wxGROW);
-	panel_s->Add(moviescroll = new wxScrollBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-		wxSB_VERTICAL), 0, wxGROW);
+	panel_s->Add(moviescroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 	top_s->Add(panel_s, 1, wxGROW);
-	connect_events(moviescroll, wxScrollEventHandler(wxeditor_movie::_moviepanel::on_scroll), moviepanel);
+	
+	moviescroll->set_page_size(lines_to_display);
+	moviescroll->set_handler([this](scroll_bar& s) {
+		this->moviepanel->moviepos = s.get_position();
+		this->moviepanel->signal_repaint();
+	});
 	moviepanel->Connect(wxEVT_KEY_DOWN, wxKeyEventHandler(wxeditor_movie::on_keyboard_down), NULL, this);
 	moviepanel->Connect(wxEVT_KEY_UP, wxKeyEventHandler(wxeditor_movie::on_keyboard_up), NULL, this);
 
@@ -1287,7 +1252,7 @@ void wxeditor_movie::update()
 	moviepanel->signal_repaint();
 }
 
-wxScrollBar* wxeditor_movie::get_scroll()
+scroll_bar* wxeditor_movie::get_scroll()
 {
 	return moviescroll;
 }
