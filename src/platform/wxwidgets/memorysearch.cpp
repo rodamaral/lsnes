@@ -27,9 +27,6 @@
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 8
-#define BROW_SIZE 13
-#define PRIMITIVES 12
-
 #define CANDIDATE_LIMIT 512
 
 class wxwindow_memorysearch;
@@ -39,6 +36,7 @@ namespace
 	const char* watchchars = "bBwWdDqQ";
 
 	wxwindow_memorysearch* mwatch;
+
 	const char* datatypes[] = {
 		"signed byte",
 		"unsigned byte",
@@ -50,57 +48,12 @@ namespace
 		"unsigned qword"
 	};
 
-	const char* searchtypes[] = {
-		"value",
-		"diff.",
-		"<",
-		"<=",
-		"==",
-		"!=",
-		">=",
-		">",
-		"seq<",
-		"seq<=",
-		"seq>=",
-		"seq>",
-		"true"
-	};
+	typedef void (wxwindow_memorysearch::*search_fn_t)();
 
-	typedef void (memory_search::*primitive_search_t)();
-	
-	primitive_search_t primitive_searches[DATATYPES][PRIMITIVES] = {
-		{ &memory_search::byte_slt, &memory_search::byte_sle, &memory_search::byte_seq,
-		&memory_search::byte_sne, &memory_search::byte_sge, &memory_search::byte_sgt,
-		&memory_search::byte_seqlt, &memory_search::byte_seqle, &memory_search::byte_seqge,
-		&memory_search::byte_seqgt, &memory_search::update },
-		{ &memory_search::byte_ult, &memory_search::byte_ule, &memory_search::byte_ueq,
-		&memory_search::byte_une, &memory_search::byte_uge, &memory_search::byte_ugt,
-		&memory_search::byte_seqlt, &memory_search::byte_seqle, &memory_search::byte_seqge,
-		&memory_search::byte_seqgt, &memory_search::update },
-		{ &memory_search::word_slt, &memory_search::word_sle, &memory_search::word_seq,
-		&memory_search::word_sne, &memory_search::word_sge, &memory_search::word_sgt,
-		&memory_search::word_seqlt, &memory_search::word_seqle, &memory_search::word_seqge,
-		&memory_search::word_seqgt, &memory_search::update },
-		{ &memory_search::word_ult, &memory_search::word_ule, &memory_search::word_ueq,
-		&memory_search::word_une, &memory_search::word_uge, &memory_search::word_ugt,
-		&memory_search::word_seqlt, &memory_search::word_seqle, &memory_search::word_seqge,
-		&memory_search::word_seqgt, &memory_search::update },
-		{ &memory_search::dword_slt, &memory_search::dword_sle, &memory_search::dword_seq,
-		&memory_search::dword_sne, &memory_search::dword_sge, &memory_search::dword_sgt,
-		&memory_search::dword_seqlt, &memory_search::dword_seqle, &memory_search::dword_seqge,
-		&memory_search::dword_seqgt, &memory_search::update },
-		{ &memory_search::dword_ult, &memory_search::dword_ule, &memory_search::dword_ueq,
-		&memory_search::dword_une, &memory_search::dword_uge, &memory_search::dword_ugt,
-		&memory_search::dword_seqlt, &memory_search::dword_seqle, &memory_search::dword_seqge,
-		&memory_search::dword_seqgt, &memory_search::update },
-		{ &memory_search::qword_slt, &memory_search::qword_sle, &memory_search::qword_seq,
-		&memory_search::qword_sne, &memory_search::qword_sge, &memory_search::qword_sgt,
-		&memory_search::qword_seqlt, &memory_search::qword_seqle, &memory_search::qword_seqge,
-		&memory_search::qword_seqgt, &memory_search::update },
-		{ &memory_search::qword_ult, &memory_search::qword_ule, &memory_search::qword_ueq,
-		&memory_search::qword_une, &memory_search::qword_uge, &memory_search::qword_ugt,
-		&memory_search::qword_seqlt, &memory_search::qword_seqle, &memory_search::qword_seqge,
-		&memory_search::qword_seqgt, &memory_search::update }
+	struct searchtype
+	{
+		const char* name;
+		search_fn_t searches[DATATYPES];
 	};
 
 	std::string hexformat_address(uint64_t addr)
@@ -276,11 +229,11 @@ public:
 	void on_mousedrag(wxMouseEvent& e);
 	void on_mouse(wxMouseEvent& e);
 	bool update_queued;
+	template<void(memory_search::*sfn)()> void search_0();
+	template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void search_1();
 private:
 	friend class panel;
-	template<typename T> void valuesearch(bool diff);
-	template<typename T> void valuesearch2(T value);
-	template<typename T> void valuesearch3(T value);
+	template<typename T> T promptvalue(bool& bad);
 	void update();
 	memory_search* msearch;
 	void on_mouse0(wxMouseEvent& e, bool polarity);
@@ -303,6 +256,172 @@ private:
 	int scroll_delta;
 	std::set<std::string> vmas_enabled;
 };
+
+namespace
+{
+	struct searchtype searchtbl[] = {
+		{
+			"value", {
+				&wxwindow_memorysearch::search_1<int8_t, uint8_t,
+					&memory_search::byte_value>,
+				&wxwindow_memorysearch::search_1<uint8_t, uint8_t,
+					&memory_search::byte_value>,
+				&wxwindow_memorysearch::search_1<int16_t, uint16_t,
+					&memory_search::word_value>,
+				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
+					&memory_search::word_value>,
+				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
+					&memory_search::dword_value>,
+				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
+					&memory_search::dword_value>,
+				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
+					&memory_search::qword_value>,
+				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
+					&memory_search::qword_value>
+			}
+		},{
+			"diff.", {
+				&wxwindow_memorysearch::search_1<int8_t, uint8_t,
+					&memory_search::byte_difference>,
+				&wxwindow_memorysearch::search_1<uint8_t, uint8_t,
+					&memory_search::byte_difference>,
+				&wxwindow_memorysearch::search_1<int16_t, uint16_t,
+					&memory_search::word_difference>,
+				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
+					&memory_search::word_difference>,
+				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
+					&memory_search::dword_difference>,
+				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
+					&memory_search::dword_difference>,
+				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
+					&memory_search::qword_difference>,
+				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
+					&memory_search::qword_difference>
+			}
+		},{
+			"<", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_slt>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_ult>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_slt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_ult>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_slt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_ult>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_slt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_ult>
+			}
+		},{
+			"<=", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_sle>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_ule>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_sle>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_ule>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_sle>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_ule>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_sle>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_ule>
+			}
+		},{
+			"==", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seq>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_ueq>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seq>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_ueq>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seq>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_ueq>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seq>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_ueq>
+			}
+		},{
+			"!=", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_sne>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_une>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_sne>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_une>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_sne>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_une>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_sne>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_une>
+			}
+		},{
+			">=", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_sge>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_uge>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_sge>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_uge>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_sge>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_uge>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_sge>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_uge>
+			}
+		},{
+			">", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_sgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_ugt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_sgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_ugt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_sgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_ugt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_sgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_ugt>
+			}
+		},{
+			"seq<", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqlt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqlt>
+			}
+		},{
+			"seq<=", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqle>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqle>
+			}
+		},{
+			"seq>=", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqge>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqge>
+			}
+		},{
+			"seq>", {
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::byte_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::word_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::dword_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqgt>,
+				&wxwindow_memorysearch::search_0<&memory_search::qword_seqgt>
+			}
+		},{
+			"true", {
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>
+			}
+		}
+	};
+}
 
 wxwindow_memorysearch::wxwindow_memorysearch()
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Memory Search"), wxDefaultPosition, wxSize(-1, -1),
@@ -337,10 +456,11 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 		wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
 	toplevel->Add(buttons);
 
-	wxFlexGridSizer* searches = new wxFlexGridSizer(2, 7, 0, 0);
-	for(unsigned j = 0; j < BROW_SIZE; j++) {
-		searches->Add(tmp = new wxButton(this, wxID_BUTTONS_BASE + j, towxstring(searchtypes[j])), 1, wxGROW);
-		tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED, 
+	wxFlexGridSizer* searches = new wxFlexGridSizer(0, 6, 0, 0);
+	for(unsigned j = 0; j < sizeof(searchtbl)/sizeof(searchtbl[0]); j++) {
+		std::string name = searchtbl[j].name;
+		searches->Add(tmp = new wxButton(this, wxID_BUTTONS_BASE + j, towxstring(name)), 1, wxGROW);
+		tmp->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxwindow_memorysearch::on_button_click), NULL, this);
 	}
 	toplevel->Add(searches);
@@ -643,34 +763,36 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		for(auto i : lsnes_memory.get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
-	} else if(id == wxID_BUTTONS_BASE || id == wxID_BUTTONS_BASE + 1) {
-		//Value search.
-		bool diff = (id == wxID_BUTTONS_BASE + 1);
-		switch(typecode)
-		{
-		case 0:		valuesearch<int8_t>(diff);	break;
-		case 1:		valuesearch<uint8_t>(diff);	break;
-		case 2:		valuesearch<int16_t>(diff);	break;
-		case 3:		valuesearch<uint16_t>(diff);	break;
-		case 4:		valuesearch<int32_t>(diff);	break;
-		case 5:		valuesearch<uint32_t>(diff);	break;
-		case 6:		valuesearch<int64_t>(diff);	break;
-		case 7:		valuesearch<uint64_t>(diff);	break;
-		};
-	} else if(id > wxID_BUTTONS_BASE + 1 && id < wxID_BUTTONS_BASE + 2 + PRIMITIVES ) {
-		int button = id - wxID_BUTTONS_BASE - 2;
-		(msearch->*(primitive_searches[typecode][button]))();
+	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
+		int button = id - wxID_BUTTONS_BASE;
+		(this->*(searchtbl[button].searches[typecode]))();
 	}
 	update();
 }
 
-template<typename T> void wxwindow_memorysearch::valuesearch(bool diff)
+template<void(memory_search::*sfn)()> void wxwindow_memorysearch::search_0()
+{
+	(msearch->*sfn)();
+}
+
+template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void wxwindow_memorysearch::search_1()
+{
+	bool bad = false;
+	T val = promptvalue<T>(bad);
+	if(bad)
+		return;
+	(msearch->*sfn)(static_cast<T2>(val));
+}
+
+template<typename T> T wxwindow_memorysearch::promptvalue(bool& bad)
 {
 	std::string v;
 	wxTextEntryDialog* d = new wxTextEntryDialog(this, wxT("Enter value to search for:"), wxT("Memory search"),
 		wxT(""));
-	if(d->ShowModal() == wxID_CANCEL)
-		return;
+	if(d->ShowModal() == wxID_CANCEL) {
+		bad = true;
+		return 0;
+	}
 	v = tostdstring(d->GetValue());
 	d->Destroy();
 	T val2;
@@ -678,92 +800,10 @@ template<typename T> void wxwindow_memorysearch::valuesearch(bool diff)
 		val2 = parse_value<T>(v);
 	} catch(...) {
 		wxMessageBox(towxstring("Bad value '" + v + "'"), _T("Error"), wxICON_WARNING | wxOK, this);
+		bad = true;
+		return 0;
 	}
-	if(diff)
-		valuesearch3(val2);
-	else
-		valuesearch2(val2);
-	update();
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<int8_t>(int8_t val)
-{
-	msearch->byte_difference(static_cast<uint8_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<uint8_t>(uint8_t val)
-{
-	msearch->byte_difference(static_cast<uint8_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<int16_t>(int16_t val)
-{
-	msearch->word_difference(static_cast<uint16_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<uint16_t>(uint16_t val)
-{
-	msearch->word_difference(static_cast<uint16_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<int32_t>(int32_t val)
-{
-	msearch->dword_difference(static_cast<uint32_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<uint32_t>(uint32_t val)
-{
-	msearch->dword_difference(static_cast<uint32_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<int64_t>(int64_t val)
-{
-	msearch->qword_difference(static_cast<uint64_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch3<uint64_t>(uint64_t val)
-{
-	msearch->qword_difference(static_cast<uint64_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<int8_t>(int8_t val)
-{
-	msearch->byte_value(static_cast<uint8_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<uint8_t>(uint8_t val)
-{
-	msearch->byte_value(static_cast<uint8_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<int16_t>(int16_t val)
-{
-	msearch->word_value(static_cast<uint16_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<uint16_t>(uint16_t val)
-{
-	msearch->word_value(static_cast<uint16_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<int32_t>(int32_t val)
-{
-	msearch->dword_value(static_cast<uint32_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<uint32_t>(uint32_t val)
-{
-	msearch->dword_value(static_cast<uint32_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<int64_t>(int64_t val)
-{
-	msearch->qword_value(static_cast<uint64_t>(val));
-}
-
-template<> void wxwindow_memorysearch::valuesearch2<uint64_t>(uint64_t val)
-{
-	msearch->qword_value(static_cast<uint64_t>(val));
+	return val2;
 }
 
 void wxwindow_memorysearch_display()
