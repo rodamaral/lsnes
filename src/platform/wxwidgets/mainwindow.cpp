@@ -796,7 +796,7 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 		if(recording)
 			s << U"Frame: " << read_variable_map(vars, "!frame");
 		else
-			s << U"Frame: " << read_variable_map(vars, "!frame") << "/" <<
+			s << U"Frame: " << read_variable_map(vars, "!frame") << U"/" <<
 				read_variable_map(vars, "!length");
 		s << U"  Lag: " << read_variable_map(vars, "!lag");
 		s << U"  Subframe: " << read_variable_map(vars, "!subframe");
