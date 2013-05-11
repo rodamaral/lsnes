@@ -4,6 +4,7 @@
 #include "library/string.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 
 #include <sstream>
@@ -28,23 +29,12 @@
 #define BROW_SIZE 13
 #define PRIMITIVES 12
 
-#define CANDIDATE_LIMIT 200
+#define CANDIDATE_LIMIT 512
 
 class wxwindow_memorysearch;
 
 namespace
 {
-	void connect_events(wxScrollBar* s, wxObjectEventFunction fun, wxEvtHandler* obj)
-	{
-		s->Connect(wxEVT_SCROLL_THUMBTRACK, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_PAGEDOWN, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_PAGEUP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_LINEDOWN, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_LINEUP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_TOP, fun, NULL, obj);
-		s->Connect(wxEVT_SCROLL_BOTTOM, fun, NULL, obj);
-	}
-
 	const char* watchchars = "bBwWdDqQ";
 
 	wxwindow_memorysearch* mwatch;
@@ -284,7 +274,6 @@ public:
 	void auto_update();
 	void on_mousedrag(wxMouseEvent& e);
 	void on_mouse(wxMouseEvent& e);
-	void on_scroll(wxScrollEvent& e);
 	bool update_queued;
 private:
 	friend class panel;
@@ -295,9 +284,9 @@ private:
 	void on_mouse0(wxMouseEvent& e, bool polarity);
 	void on_mousedrag();
 	void on_mouse2(wxMouseEvent& e);
-	memorysearch* msearch;
 	wxStaticText* count;
-	wxScrollBar* scroll;
+	memorysearch* msearch;
+	scroll_bar* scroll;
 	panel* matches;
 	wxComboBox* type;
 	wxCheckBox* hexmode2;
@@ -358,11 +347,10 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	toplevel->Add(count = new wxStaticText(this, wxID_ANY, wxT("XXXXXX candidates")), 0, wxGROW);
 	wxBoxSizer* matchesb = new wxBoxSizer(wxHORIZONTAL);
 	matchesb->Add(matches = new panel(this), 1, wxGROW);
-	matchesb->Add(scroll = new wxScrollBar(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxSB_VERTICAL), 0,
-		wxGROW);
+	matchesb->Add(scroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 	toplevel->Add(matchesb, 1, wxGROW);
 
-	scroll->SetScrollbar(0, 0, 0, 0);
+	scroll->set_page_size(matches->get_characters().second);
 
 	for(auto i : get_regions())
 		if(!i.readonly && !i.iospace)
@@ -378,7 +366,7 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 	matches->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
 	matches->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwindow_memorysearch::on_mousedrag), NULL, this);
 	matches->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
-	connect_events(scroll, wxScrollEventHandler(wxwindow_memorysearch::on_scroll), this);
+	scroll->set_handler([this](scroll_bar& s) { this->matches->request_paint(); });
 
 	toplevel->SetSizeHints(this);
 	Fit();
@@ -397,7 +385,7 @@ wxwindow_memorysearch::panel::panel(wxwindow_memorysearch* _parent)
 
 void wxwindow_memorysearch::panel::prepare_paint()
 {
-	uint64_t first = parent->scroll->GetThumbPosition();
+	uint64_t first = parent->scroll->get_position();
 	auto ssize = get_characters();
 	uint64_t last = first + ssize.second;
 	std::vector<std::string> lines;
@@ -477,10 +465,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 		first_sel = last;
 
 	parent->toomany = toomany;
-	if(!toomany && addr_count > ssize.second)
-		parent->scroll->SetScrollbar(first, ssize.second, addr_count, ssize.second);
-	else
-		parent->scroll->SetScrollbar(0, 0, 0, 0);
+	parent->scroll->set_range(toomany ? 0 : addr_count);
 }
 
 void wxwindow_memorysearch::panel::set_selection(uint64_t first, uint64_t last)
@@ -507,11 +492,6 @@ bool wxwindow_memorysearch::ShouldPreventAppExit() const
 	return false;
 }
 
-void wxwindow_memorysearch::on_scroll(wxScrollEvent& e)
-{
-	matches->request_paint();
-}
-
 void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
 {
 	if(e.RightUp() || (e.LeftUp() && e.ControlDown()))
@@ -520,26 +500,12 @@ void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
 		on_mouse0(e, true);
 	else if(e.LeftUp())
 		on_mouse0(e, false);
-
-	int wrotate = e.GetWheelRotation();
-	int threshold = e.GetWheelDelta();
-	if(threshold)
-		scroll_delta += wrotate;
-	while(wrotate && threshold && scroll_delta <= -threshold) {
-		//Scroll down by line.
-		uint64_t first = scroll->GetThumbPosition();
-		if(addresses.count(first + matches->get_characters().second))
-			scroll->SetThumbPosition(first + 1);
-		scroll_delta += threshold;
-	}
-	while(wrotate && threshold && scroll_delta >= threshold) {
-		//Scroll up by line.
-		//Scroll down by line.
-		uint64_t first = scroll->GetThumbPosition();
-		if(first > 0 && addresses.count(first - 1))
-			scroll->SetThumbPosition(first - 1);
-		scroll_delta -= threshold;
-	}
+	unsigned speed = 1;
+	if(e.ShiftDown())
+		speed = 10;
+	if(e.ShiftDown() && e.ControlDown())
+		speed = 50;
+	scroll->apply_wheel(e.GetWheelRotation(), e.GetWheelDelta(), speed);
 }
 
 void wxwindow_memorysearch::on_mouse0(wxMouseEvent& e, bool polarity)
@@ -548,7 +514,7 @@ void wxwindow_memorysearch::on_mouse0(wxMouseEvent& e, bool polarity)
 	if(dragging) {
 		mpx = e.GetX();
 		mpy = e.GetY();
-		uint64_t first = scroll->GetThumbPosition();
+		uint64_t first = scroll->get_position();
 		drag_startline = first + e.GetY() / matches->get_cell().second;
 	} else if(mpx == e.GetX() && mpy == e.GetY()) {
 		matches->set_selection(0, 0);
@@ -559,7 +525,7 @@ void wxwindow_memorysearch::on_mousedrag(wxMouseEvent& e)
 {
 	if(!dragging)
 		return;
-	uint64_t first = scroll->GetThumbPosition();
+	uint64_t first = scroll->get_position();
 	uint64_t linenow = first + e.GetY() / matches->get_cell().second;
 	if(drag_startline < linenow)
 		matches->set_selection(drag_startline, linenow + 1);
@@ -575,7 +541,7 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 	matches->get_selection(start, end);
 	some_selected = (start < end);
 	if(!some_selected) {
-		uint64_t first = scroll->GetThumbPosition();
+		uint64_t first = scroll->get_position();
 		act_line = first + e.GetY() / matches->get_cell().second;
 		if(addresses.count(act_line))
 			some_selected = true;
