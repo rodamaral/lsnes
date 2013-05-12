@@ -171,6 +171,7 @@ for i = 1,#ports do
 		print("\t\t\t\tbreak;");
 	end
 	print("\t\t\t};");
+	print("\t\t\treturn 0;");
 	print("\t\t};");
 	print("\t\tserialize = [](const unsigned char* buffer, char* textbuf) -> size_t {");
 	local bit_l = 0;
