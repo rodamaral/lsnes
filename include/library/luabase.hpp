@@ -293,7 +293,7 @@ public:
  * Do something just once per VM.
  *
  * Parameter key: The do-once key value.
- * Returns: 
+ * Returns: True if called the first time for given key on given VM, false otherwise.
  */
 	bool do_once(void* key);
 

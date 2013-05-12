@@ -174,6 +174,6 @@ bool lua_state::do_once(void* key)
 		return true;
 	} else {
 		pop(1);
-		return true;
+		return false;
 	}
 }
