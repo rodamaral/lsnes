@@ -1550,39 +1550,67 @@ type.
 
 Evaluate specified watch expression and return result
 
-7.11 Table subtitle
+7.11 Table memory2
+
+Contains newer memory functions.
+
+7.11.1 memory2()
+
+Returns array of all valid VMA names.
+
+7.11.2 memory2.<vma>:info()
+
+Return table describing given VMA. Includes fields address, size, 
+last, readonly, special and endian.
+
+7.11.3 memory2.<vma>:<op>(number offset)
+
+Read from given VMA at given offset (must be in-range). Op is of 
+form:
+
+• [i][s]<type>, where <type> is one of 'byte', 'word', 'dword', 
+  'qword'. 'i' signifies that the value is treated as 
+  opposite-to-normal endianess, 's' signifies that value is 
+  treated as signed.
+
+7.11.4 memory2.<vma>:<op>(number offset, number value)
+
+Write value to given VMA at given offset (must be in-range). See 
+above for form of op.
+
+7.12 Table subtitle
 
 Contains functions for manipulating subtitles.
 
-7.11.1 subtitle.byindex(number index)
+7.12.1 subtitle.byindex(number index)
 
 Get (basetime, length) pair of specified subtitle index or 
 nothing if index isn't valid.
 
-7.11.2 subtitle.get(number basetime, number length)
+7.12.2 subtitle.get(number basetime, number length)
 
 Read the specified subtitle. Returns “” if the subtitle does not 
 exist.
 
-7.11.3 subtitle.set(number basetime, number length, string 
+7.12.3 subtitle.set(number basetime, number length, string 
   content)
 
 Set the specified subtitle.
 
-7.11.4 subtitle.deltete(number basetime, number length)
+7.12.4 subtitle.deltete(number basetime, number length)
 
 Delete the specified subtitle.
 
-7.12 Table _SYSTEM
+7.13 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-7.13 Callbacks
+7.14 Callbacks
 
 Various callbacks to Lua that can occur.
 
-7.13.1 Callback: on_paint(bool not_synth)
+7.14.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
@@ -1590,80 +1618,80 @@ graphic context draw on the screen.
 not_synth is true if this hook is being called in response to 
 received frame, false otherwise.
 
-7.13.2 Callback: on_video()
+7.14.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-7.13.3 Callback: on_frame_emulated()
+7.14.3 Callback: on_frame_emulated()
 
 Called when emulating frame has completed and 
 on_paint()/on_video() calls are about to be issued.
 
-7.13.4 Callback: on_frame()
+7.14.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-7.13.5 Callback: on_startup()
+7.14.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-7.13.6 Callback: on_rewind()
+7.14.6 Callback: on_rewind()
 
 Called when rewind movie to beginning has completed.
 
-7.13.7 Callback: on_pre_load(string name)
+7.14.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-7.13.8 Callback: on_err_load(string name)
+7.14.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-7.13.9 Callback: on_post_load(string name, boolean was_savestate)
+7.14.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-7.13.10 Callback: on_pre_save(string name, boolean is_savestate)
+7.14.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-7.13.11 Callback: on_err_save(string name)
+7.14.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-7.13.12 Callback: on_post_save(string name, boolean is_savestate)
+7.14.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-7.13.13 Callback: on_quit()
+7.14.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-7.13.14 Callback: on_input(boolean subframe)
+7.14.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-7.13.15 Callback: on_reset()
+7.14.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-7.13.16 Callback: on_readwrite()
+7.14.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-7.13.17 Callback: on_snoop(number port, number controller, number 
+7.14.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1674,41 +1702,41 @@ Note: There is no way to modify the value to be sent.
 
 • Not called if callback on_snoop2 is defined.
 
-7.13.18 Callback: on_snoop2(number port, number controller, 
+7.14.18 Callback: on_snoop2(number port, number controller, 
   number index, number value)
 
 Like on_snoop, but reserves port 0 for system, having first user 
 port be port 1.
 
-7.13.19 Callback: on_keyhook(string keyname, table state)
+7.14.19 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-7.13.20 Callback: on_idle()
+7.14.20 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-7.13.21 Callback: on_timer()
+7.14.21 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-7.13.22 Callback: on_set_rewind(UNSAFEREWIND r)
+7.14.22 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-7.13.23 Callback: on_pre_rewind() 
+7.14.23 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-7.13.24 Callback: on_post_rewind() 
+7.14.24 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
 
-7.13.25 Callback: on_button(number port, number controller, 
+7.14.25 Callback: on_button(number port, number controller, 
   number index, string type)
 
 Called on controller button press, with following parameters:

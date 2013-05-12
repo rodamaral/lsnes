@@ -3033,6 +3033,55 @@ Evaluate specified watch expression and return result
 \end_layout
 
 \begin_layout Subsection
+Table memory2
+\end_layout
+
+\begin_layout Standard
+Contains newer memory functions.
+\end_layout
+
+\begin_layout Subsubsection
+memory2()
+\end_layout
+
+\begin_layout Standard
+Returns array of all valid VMA names.
+\end_layout
+
+\begin_layout Subsubsection
+memory2.<vma>:info()
+\end_layout
+
+\begin_layout Standard
+Return table describing given VMA.
+ Includes fields address, size, last, readonly, special and endian.
+\end_layout
+
+\begin_layout Subsubsection
+memory2.<vma>:<op>(number offset)
+\end_layout
+
+\begin_layout Standard
+Read from given VMA at given offset (must be in-range).
+ Op is of form:
+\end_layout
+
+\begin_layout Itemize
+[i][s]<type>, where <type> is one of 'byte', 'word', 'dword', 'qword'.
+ 'i' signifies that the value is treated as opposite-to-normal endianess,
+ 's' signifies that value is treated as signed.
+\end_layout
+
+\begin_layout Subsubsection
+memory2.<vma>:<op>(number offset, number value)
+\end_layout
+
+\begin_layout Standard
+Write value to given VMA at given offset (must be in-range).
+ See above for form of op.
+\end_layout
+
+\begin_layout Subsection
 Table subtitle
 \end_layout
 
