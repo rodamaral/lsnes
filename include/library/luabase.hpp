@@ -20,43 +20,104 @@ struct lua_function;
 class lua_state
 {
 public:
+	//Auxillary type for store-tag.
 	template<typename T> struct _store_tag
 	{
 		T& addr;
 		T val;
 		_store_tag(T& a, T v) : addr(a), val(v) {}
 	};
-	template<typename T> static struct _store_tag<T> store_tag(T& a, T v) { return _store_tag<T>(a, v); }
+
+	//Auxillary type for numeric-tag.
 	template<typename T> struct _numeric_tag
 	{
 		T val;
 		_numeric_tag(T v) : val(v) {}
 	};
-	template<typename T> static struct _numeric_tag<T> numeric_tag(T v) { return _numeric_tag<T>(v); }
+
+	//Auxillary type for fnptr-tag.
 	template<typename T> struct _fnptr_tag
 	{
 		int(*fn)(lua_state& L, T v);
 		T val;
 		_fnptr_tag(int (*f)(lua_state& L, T v), T v) : fn(f), val(v) {}
 	};
-	template<typename T> static struct _fnptr_tag<T> fnptr_tag(int (*f)(lua_state& L, T v), T v)
-	{
-		return _fnptr_tag<T>(f, v);
-	}
+
+	//Auxillary type for fn-tag.
 	template<typename T> struct _fn_tag
 	{
 		T fn;
 		_fn_tag(T f) : fn(f) {}
 	};
+
+	/**
+	 * Callback parameter: Don't pass any real parameter, but instead store specified value in specified
+	 * location.
+	 *
+	 * Parameter a: The location to store value to.
+	 * Parameter v: The value to store.
+	 * Returns: The parameter structure.
+	 */
+	template<typename T> static struct _store_tag<T> store_tag(T& a, T v) { return _store_tag<T>(a, v); }
+	/**
+	 * Callback parameter: Pass numeric value.
+	 *
+	 * Parameter v: The value to pass.
+	 * Returns: The parameter structure.
+	 */
+	template<typename T> static struct _numeric_tag<T> numeric_tag(T v) { return _numeric_tag<T>(v); }
+	
+	/**
+	 * Callback parameter: Execute function to push more parameters.
+	 *
+	 * Parameter f: The function to execute. The return value is number of additional parameters pushed.
+	 * Parameter v: The value to pass to function.
+	 * Returns: The parameter structure.
+	 */
+	template<typename T> static struct _fnptr_tag<T> fnptr_tag(int (*f)(lua_state& L, T v), T v)
+	{
+		return _fnptr_tag<T>(f, v);
+	}
+
+	/**
+	 * Callback parameter: Execute function to push more parameters.
+	 *
+	 * Parameter v: The functor to execute. Passed reference to the Lua state. The return value is number of
+	 *	additional parameters pushed.
+	 * Returns: The parameter structure.
+	 */
 	template<typename T> static struct _fn_tag<T> fn_tag(T v) { return _fn_tag<T>(v); }
+
+	/**
+	 * Callback parameter: Pass boolean argument.
+	 *
+	 * Parameter v: The boolean value to pass.
+	 */
 	struct boolean_tag { bool val; boolean_tag(bool v) : val(v) {}};
+
+	/**
+	 * Callback parameter: Pass string argument.
+	 *
+	 * Parameter v: The string value to pass.
+	 */
 	struct string_tag { std::string val; string_tag(const std::string& v) : val(v) {}};
+
+	/**
+	 * Callback parameter: Pass nil argument.
+	 */
+	struct nil_tag { nil_tag() {}};
 private:
 	template<typename U, typename... T> void _callback(int argc, _store_tag<U> tag, T... args)
 	{
 		tag.addr = tag.val;
 		_callback(argc, args...);
 		tag.addr = NULL;
+	}
+
+	template<typename... T> void _callback(int argc, nil_tag tag, T... args)
+	{
+		pushnil();
+		_callback(argc + 1, args...);
 	}
 
 	template<typename... T> void _callback(int argc, boolean_tag tag, T... args)
@@ -230,9 +291,13 @@ public:
 	}
 /**
  * Do something just once per VM.
+ *
+ * Parameter key: The do-once key value.
+ * Returns: 
  */
 	bool do_once(void* key);
 
+	//All kinds of Lua API functions.
 	void pop(int n) { lua_pop(lua_handle, n); }
 	void* newuserdata(size_t size) { return lua_newuserdata(lua_handle, size); }
 	int setmetatable(int index) { return lua_setmetatable(lua_handle, index); }

@@ -446,22 +446,6 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 	}
 }
 
-bool lua_state::do_once(void* key)
-{
-	pushlightuserdata(key);
-	rawget(LUA_REGISTRYINDEX);
-	if(type(-1) == LUA_TNIL) {
-		pop(1);
-		pushlightuserdata(key);
-		pushlightuserdata(key);
-		rawset(LUA_REGISTRYINDEX);
-		return true;
-	} else {
-		pop(1);
-		return true;
-	}
-}
-
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 
