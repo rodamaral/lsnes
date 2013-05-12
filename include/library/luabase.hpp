@@ -448,9 +448,15 @@ template<class T> class lua_class
 
 	static int class_bind_trampoline(lua_State* LS)
 	{
-		lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
-		T* p = lua_class<T>::get(*b->state, 1, b->fname);
-		return (p->*(b->fn))(*b->state);
+		try {
+			lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
+			T* p = lua_class<T>::get(*b->state, 1, b->fname);
+			return (p->*(b->fn))(*b->state);
+		} catch(std::exception& e) {
+			std::string err = e.what();
+			lua_pushlstring(LS, err.c_str(), err.length());
+			lua_error(LS);
+		}
 	}
 
 	T* _get(lua_state& state, int arg, const std::string& fname, bool optional = false)
