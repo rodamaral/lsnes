@@ -419,7 +419,9 @@ void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std:
 void do_watch_memory()
 {
 	auto& status = platform::get_emustatus();
-	for(auto i : watches)
+	auto p = project_get();
+	auto w = p ? &(p->watches) : &watches;
+	for(auto i : *w)
 		status.set("M[" + i.first + "]", evaluate_watch(i.second));
 }
 
