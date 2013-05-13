@@ -621,6 +621,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 	recursing = false;
 	if(idx == 0)
 		max_subframe = _press_line;	//Reparse.
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2)
@@ -667,6 +668,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 			_fcontrols->write_index(cf, idx, value);
 		}
 	});
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uint64_t row2)
@@ -710,6 +712,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 			_fcontrols->write_index(cf, idx, tmp);
 		}
 	});
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
@@ -725,6 +728,7 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 		movie_framecount_change(_count);
 	});
 	recursing = false;
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_append_frames()
@@ -740,6 +744,7 @@ void wxeditor_movie::_moviepanel::do_append_frames()
 		return;
 	}
 	do_append_frames(value);
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
@@ -770,6 +775,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 	});
 	max_subframe = row;
 	recursing = false;
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
@@ -822,6 +828,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 	});
 	max_subframe = row;
 	recursing = false;
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
@@ -845,6 +852,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 	});
 	max_subframe = row;
 	recursing = false;
+	signal_repaint();
 }
 
 void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
