@@ -375,6 +375,9 @@ bool project_set(project_info* p, bool current)
 		delete newrom;
 		newrom = NULL;
 		do_load_state(newmovie, LOAD_STATE_DEFAULT);
+		//If the thing is movie, we have to load the first frame to avoid desyncs.
+		if(movb.get_movie().get_current_frame() == 0)
+			movb.get_movie().next_frame();
 skip_rom_movie:
 		active_project = p;
 		switched = true;
