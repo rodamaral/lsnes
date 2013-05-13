@@ -3,6 +3,7 @@
 #include "library/utf8.hpp"
 #include <wx/dc.h>
 #include <wx/dcclient.h>
+#include <wx/image.h>
 
 extern const uint32_t text_framebuffer::element::white = 0xFFFFFF;
 extern const uint32_t text_framebuffer::element::black = 0x000000;

@@ -2,6 +2,7 @@
 #define _scrollbar__hpp__defined__
 
 #include <wx/scrolbar.h>
+#include <functional>
 
 class scroll_bar : public wxScrollBar
 {
