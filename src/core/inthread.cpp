@@ -635,7 +635,8 @@ out:
 		header.coupled = 0;
 		header.chanmap[0] = 0;
 		memset(header.chanmap + 1, 255, 254);
-		tags.vendor = "lsnes rr" + lsnes_version;
+		tags.vendor = opus::version();
+		tags.comments.push_back((stringfmt() << "ENCODER=lsnes rr" + lsnes_version).str());
 		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
 		struct ogg_page hpage = serialize_oggopus_header(header);
 		struct ogg_page tpage = serialize_oggopus_tags(tags);
