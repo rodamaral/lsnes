@@ -697,9 +697,15 @@ Returns 2-tuple (hresolution, vresolution).
 7.3.2 gui.<class>_gap(number gap)
 
 Set the <class> (left, right, top, bottom) gap to specified value 
-(max gap is 8191).
+(max gap is 8191). If successful, old gap is returned.
 
-7.3.3 gui.text(number x, number y, string text[, number fgc[, 
+7.3.3 gui.delta_<class>_gap(number gap)
+
+Increase the <class> (left, right, top, bottom) gap by specified 
+value (max gap is 8191) and return the old gap (returns nothing 
+on error).
+
+7.3.4 gui.text(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Draw specified text on the GUI (each character cell is 8 or 16 
@@ -716,22 +722,22 @@ wide and 16 high). Parameters:
 
 • bgc: Background color (default is -1 (transparent))
 
-7.3.4 gui.textH(number x, number y, string text[, number fgc[, 
+7.3.5 gui.textH(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-width.
 
-7.3.5 gui.textV(number x, number y, string text[, number fgc[, 
+7.3.6 gui.textV(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-height.
 
-7.3.6 gui.textHV(number x, number y, string text[, number fgc[, 
+7.3.7 gui.textHV(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-width/double-height.
 
-7.3.7 gui.rectangle(number x, number y, number width, number 
+7.3.8 gui.rectangle(number x, number y, number width, number 
   height[, number thickness[, number outline[, number fill]]])
 
 Draw rectangle on the GUI. Parameters:
@@ -750,7 +756,7 @@ Draw rectangle on the GUI. Parameters:
 
 • fill: Color of fill (default is -1 (transparent))
 
-7.3.8 gui.box(number x, number y, number width, number height[, 
+7.3.9 gui.box(number x, number y, number width, number height[, 
   number thickness[, number outline1[,number outline2[, number 
   fill]]]])
 
@@ -773,7 +779,7 @@ Draw rectangle with 3D effect on the GUI. Parameters:
 
 • fill: Color of fill (default is 0xC0C0C0 (light grayy))
 
-7.3.9 gui.pixel(number x, number y[, number color])
+7.3.10 gui.pixel(number x, number y[, number color])
 
 Draw one pixel on the GUI. Parameters:
 
@@ -783,7 +789,7 @@ Draw one pixel on the GUI. Parameters:
 
 • color: Color of the pixel (default is 0xFFFFFF (white))
 
-7.3.10 gui.crosshair(number x, number y[, number length[, number 
+7.3.11 gui.crosshair(number x, number y[, number length[, number 
   color]])
 
 Draw a crosshair. Parameters:
@@ -796,7 +802,7 @@ Draw a crosshair. Parameters:
 
 • color: Color of the crosshair (default is 0xFFFFFF (white))
 
-7.3.11 gui.line(number x1, number y1, number x2, number y2[, 
+7.3.12 gui.line(number x1, number y1, number x2, number y2[, 
   number color])
 
 Draw a thin line. Parameters:
@@ -811,7 +817,7 @@ Draw a thin line. Parameters:
 
 • color: Color of the line (default is 0xFFFFFF (white)).
 
-7.3.12 gui.circle(number x, number y, number r[, number thick[, 
+7.3.13 gui.circle(number x, number y, number r[, number thick[, 
   number border[, number fil]]])
 
 Draw a circle. Parameters.
@@ -828,7 +834,7 @@ Draw a circle. Parameters.
 
 • fill: Fill color (default is -1 (transparent)).
 
-7.3.13 gui.bitmap_draw(number x, number y, bitmap bitmap, palette 
+7.3.14 gui.bitmap_draw(number x, number y, bitmap bitmap, palette 
   palette)
 
 Draw a bitmap on screen with specified palette. Parameters:
@@ -841,7 +847,7 @@ Draw a bitmap on screen with specified palette. Parameters:
 
 • palette: The palette to draw the bitmap using.
 
-7.3.14 gui.bitmap_draw(number x, number y, dbitmap bitmap)
+7.3.15 gui.bitmap_draw(number x, number y, dbitmap bitmap)
 
 Draw a bitmap on screen. Parameters:
 
@@ -851,12 +857,12 @@ Draw a bitmap on screen. Parameters:
 
 • bitmap: The bitmap to draw
 
-7.3.15 gui.palette_new()
+7.3.16 gui.palette_new()
 
 Returns a new palette (initially all transparent). Can be used 
 anywhere.
 
-7.3.16 gui.bitmap_new(number w, number h, boolean direct[, bool 
+7.3.17 gui.bitmap_new(number w, number h, boolean direct[, bool 
   icolor])
 
 Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
@@ -871,14 +877,14 @@ Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
 • icolor: Initital fill color (defaults to 0 on BITMAP, -1 on 
   DBITMAP)
 
-7.3.17 gui.bitmap_load(string file)
+7.3.18 gui.bitmap_load(string file)
 
 Returns loaded bitmap/dbitmap (if bitmap, the second return value 
 is palette for bitmap). Can be used anywhere. Parameters:
 
 • file: The name of file to load.
 
-7.3.18 gui.palette_set(palette palette, number index, number 
+7.3.19 gui.palette_set(palette palette, number index, number 
   color)
 
 Sets color in palette. Can be used anywhere. Parameters:
@@ -889,7 +895,7 @@ Sets color in palette. Can be used anywhere. Parameters:
 
 • color: The color value.
 
-7.3.19 gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, 
+7.3.20 gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, 
   number color)
 
 Sets specified pixel in bitmap. Can be used anywhere. Parameters:
@@ -903,7 +909,7 @@ Sets specified pixel in bitmap. Can be used anywhere. Parameters:
 • color: If bitmap is a bitmap, color index (0-65535). Otherwise 
   color value.
 
-7.3.20 gui.bitmap_size(bitmap/dbitmap bitmap)
+7.3.21 gui.bitmap_size(bitmap/dbitmap bitmap)
 
 Get size of bitmap. Can be used anywhere. Parameters:
 
@@ -911,7 +917,7 @@ Get size of bitmap. Can be used anywhere. Parameters:
 
 The first return is the width, the second is the height.
 
-7.3.21 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
+7.3.22 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
   bitmap/dbitmap src, number sx, number sy, number w, number h[, 
   number ck])
 
@@ -945,34 +951,34 @@ Parameters:
 
   – May be absent or nil for no colorkey blit.
 
-7.3.22 gui.repaint()
+7.3.23 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-7.3.23 gui.subframe_update(boolean on)
+7.3.24 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-7.3.24 gui.screenshot(string filename)
+7.3.25 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-7.3.25 gui.color(number r, number g, number b[, number a])
+7.3.26 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-7.3.26 gui.status(string name, string value)
+7.3.27 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
-7.3.27 gui.rainbow(number step, number steps[, number color])
+7.3.28 gui.rainbow(number step, number steps[, number color])
 
 Perform hue rotation of color <color> (default bright red), by 
 <step> steps. The number of steps per full rotation is given by 
@@ -980,19 +986,19 @@ absolute value of <steps>.
 
 If <steps> is negative, the rotation will be counterclockwise.
 
-7.3.28 gui.screenshot(string filename)
+7.3.29 gui.screenshot(string filename)
 
 Saves a screenshot into specified file.
 
-7.3.29 gui.renderq_new(number width, number height)
+7.3.30 gui.renderq_new(number width, number height)
 
 Create render queue with specified reported size and return it.
 
-7.3.30 gui.renderq_clear(RENDERQUEUE queue)
+7.3.31 gui.renderq_clear(RENDERQUEUE queue)
 
 Clear specified render queue.
 
-7.3.31 gui.renderq_set(RENDERQUEUE queue)
+7.3.32 gui.renderq_set(RENDERQUEUE queue)
 
 Switch to specified render queue. Use nil as queue to switch to 
 default queue.
@@ -1000,18 +1006,18 @@ default queue.
 • When switched to another queue, all drawing functions work and 
   draw there, even outside on_video/on_paint.
 
-7.3.32 gui.renderq_run(RENDERQUEUE queue)
+7.3.33 gui.renderq_run(RENDERQUEUE queue)
 
 Run specified render queue, copying the objects to current render 
 queue. 
 
 • Warning: Don't try to run the current render queue.
 
-7.3.33 gui.loadfont(string filename)
+7.3.34 gui.loadfont(string filename)
 
 Loads font from specified file (CUSTOMFONT object).
 
-7.3.34 CUSTOMFONT(number x, number y, string text[, number fgc[, 
+7.3.35 CUSTOMFONT(number x, number y, string text[, number fgc[, 
   number bgc[, number hlc]]])
 
 Draw string with custom font to screen. The parameters are the 

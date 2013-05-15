@@ -1400,6 +1400,16 @@ gui.<class>_gap(number gap)
 \begin_layout Standard
 Set the <class> (left, right, top, bottom) gap to specified value (max gap
  is 8191).
+ If successful, old gap is returned.
+\end_layout
+
+\begin_layout Subsubsection
+gui.delta_<class>_gap(number gap)
+\end_layout
+
+\begin_layout Standard
+Increase the <class> (left, right, top, bottom) gap by specified value (max
+ gap is 8191) and return the old gap (returns nothing on error).
 \end_layout
 
 \begin_layout Subsubsection

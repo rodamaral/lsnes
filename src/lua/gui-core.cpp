@@ -18,7 +18,7 @@ namespace
 		}
 	} gui_resolution;
 
-	template<uint32_t lua_render_context::*gap>
+	template<uint32_t lua_render_context::*gap, bool delta>
 	class lua_gui_set_gap : public lua_function
 	{
 	public:
@@ -27,18 +27,25 @@ namespace
 		{
 			if(!lua_render_ctx)
 				return 0;
-			uint32_t g = L.get_numeric_argument<uint32_t>(1, fname.c_str());
-			if(g > 8192)
+			int32_t g = L.get_numeric_argument<int32_t>(1, fname.c_str());
+			if(delta) g += lua_render_ctx->*gap;
+			if(g < 0 || g > 8192)
 				return 0;	//Ignore ridiculous gap.
+			uint32_t old = lua_render_ctx->*gap;
 			lua_render_ctx->*gap = g;
-			return 0;
+			L.pushnumber(old);
+			return 1;
 		}
 	};
 
-	lua_gui_set_gap<&lua_render_context::left_gap> lg("gui.left_gap");
-	lua_gui_set_gap<&lua_render_context::right_gap> rg("gui.right_gap");
-	lua_gui_set_gap<&lua_render_context::top_gap> tg("gui.top_gap");
-	lua_gui_set_gap<&lua_render_context::bottom_gap> bg("gui.bottom_gap");
+	lua_gui_set_gap<&lua_render_context::left_gap, false> lg("gui.left_gap");
+	lua_gui_set_gap<&lua_render_context::right_gap, false> rg("gui.right_gap");
+	lua_gui_set_gap<&lua_render_context::top_gap, false> tg("gui.top_gap");
+	lua_gui_set_gap<&lua_render_context::bottom_gap, false> bg("gui.bottom_gap");
+	lua_gui_set_gap<&lua_render_context::left_gap, true> dlg("gui.delta_left_gap");
+	lua_gui_set_gap<&lua_render_context::right_gap, true> drg("gui.delta_right_gap");
+	lua_gui_set_gap<&lua_render_context::top_gap, true> dtg("gui.delta_top_gap");
+	lua_gui_set_gap<&lua_render_context::bottom_gap, true> dbg("gui.delta_bottom_gap");
 
 	function_ptr_luafun gui_repaint(LS, "gui.repaint", [](lua_state& L, const std::string& fname) -> int {
 		lua_requests_repaint = true;
