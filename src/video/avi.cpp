@@ -89,9 +89,14 @@ namespace
 	setting_var<setting_var_model_int<0, 999999999>> max_frames_per_segment(lsnes_vset, "avi-maxframes",
 		"AVI‣Max frames per segment", 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	setting_var<setting_var_model_int<0, 5>> soundrate_setting(lsnes_vset, "avi-soundrate", "AVI‣Sound mode", 5);
+	setting_enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply",
+		"High quality 44.1kHz", "High quality 48kHz"};
+	setting_var<setting_var_model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
+		"AVI‣Sound mode", 5);
 #else
-	setting_var<setting_var_model_int<0, 3>> soundrate_setting(lsnes_vset, "avi-soundrate", "AVI‣Sound mode", 2);
+	setting_enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply"};
+	setting_var<setting_var_model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
+		"AVI‣Sound mode", 2);
 #endif
 
 	std::pair<avi_video_codec_type*, avi_audio_codec_type*> find_codecs(const std::string& mode)

@@ -686,13 +686,14 @@ std::string pick_file_member(wxWindow* parent, const std::string& title, const s
 }
 
 std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
-	const std::vector<std::string>& choices)
+	const std::vector<std::string>& choices, unsigned defaultchoice)
 {
 	std::vector<wxString> _choices;
 	for(auto i : choices)
 		_choices.push_back(towxstring(i));
 	wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(parent, towxstring(prompt), towxstring(title),
 		_choices.size(), &_choices[0]);
+	d2->SetSelection(defaultchoice);
 	if(d2->ShowModal() == wxID_CANCEL) {
 		d2->Destroy();
 		throw canceled_exception();

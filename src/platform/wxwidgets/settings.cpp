@@ -1772,8 +1772,23 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	std::string err;
 	value = lsnes_vsetc.get(name);
 	auto model = lsnes_vsetc.get_description(name);
-	if(model.type == setting_var_description::T_BOOLEAN) {
+	if(model.type == setting_var_description::T_BOOLEAN)
 		value = string_to_bool(value) ? "0" : "1";
+	else if(model.type == setting_var_description::T_ENUMERATION) {
+		try {
+			std::vector<std::string> valset;
+			for(unsigned i = 0; i <= model.enumeration->max_val(); i++)
+				valset.push_back(model.enumeration->get(i));
+			std::string tvalue = pick_among(this, "Set value to", "Set " + name + " to value:", valset,
+				parse_value<unsigned>(value));
+			unsigned val = 0;
+			for(unsigned i = 0; i <= model.enumeration->max_val(); i++)
+				if(tvalue == valset[i])
+					val = i;
+			value = (stringfmt() << val).str();
+		} catch(...) {
+			return;
+		}
 	} else {
 		try {
 			value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
@@ -1850,7 +1865,12 @@ void wxeditor_esettings_advanced::_refresh()
 	for(auto i : settings)
 		sort.insert(std::make_pair(names[i], i));
 	for(auto i : sort) {
-		strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
+		auto description = lsnes_vsetc.get_description(i.second);
+		if(description.type == setting_var_description::T_ENUMERATION) {
+			std::string value = description.enumeration->get(parse_value<unsigned>(values[i.second]));
+			strings.push_back(towxstring(names[i.second] + " (Value: " + value + ")"));
+		} else
+			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 		selections[k++] = i.second;
 	}
 	_settings->Set(strings.size(), &strings[0]);

@@ -87,7 +87,7 @@ std::string pick_file(wxWindow* parent, const std::string& title, const std::str
 	std::string ext = "", std::string dfltname = "");
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir);
 std::string pick_among(wxWindow* parent, const std::string& title, const std::string& prompt,
-	const std::vector<std::string>& choices);
+	const std::vector<std::string>& choices, unsigned defaultchoice = 0);
 std::string pick_text(wxWindow* parent, const std::string& title, const std::string& prompt,
 	const std::string& dflt = "", bool multiline = false);
 //Show message box with OK button.

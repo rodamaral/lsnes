@@ -129,6 +129,25 @@ private:
 };
 
 /**
+ * Enumeration.
+ */
+struct setting_enumeration
+{
+	setting_enumeration(std::initializer_list<const char*> v)
+	{
+		unsigned x = 0;
+		for(auto i : v) {
+			values[bound = x++] = i;
+		}
+	}
+	std::string get(unsigned val) { return values.count(val) ? values[val] : ""; }
+	unsigned max_val() { return bound; }
+private:
+	std::map<unsigned, std::string> values;
+	unsigned bound;
+};
+
+/**
  * Description of setting.
  */
 struct setting_var_description
@@ -138,11 +157,13 @@ struct setting_var_description
 		T_BOOLEAN,
 		T_NUMERIC,
 		T_STRING,
-		T_PATH
+		T_PATH,
+		T_ENUMERATION
 	};
 	_type type;
 	int64_t min_val;
 	int64_t max_val;
+	setting_enumeration* enumeration;
 };
 
 /**
@@ -381,5 +402,40 @@ template<> setting_var_description& setting_var_description_get(setting_var_mode
 	}
 	return x;
 }
+
+/**
+ * Model: Enumerated.
+ */
+template<setting_enumeration* e> struct setting_var_model_enumerated
+{
+	typedef unsigned valtype_t;
+	static bool valid(unsigned val) { return (val <= e->max_val()); }
+	static int32_t read(const std::string& val)
+	{
+		unsigned x = parse_value<unsigned>(val);
+		if(x > e->max_val())
+			(stringfmt() << "Value out of range (0  to " << e->max_val() << ")").throwex();
+		return x;
+	}
+	static std::string write(unsigned val)
+	{
+		return (stringfmt() << val).str();
+	}
+	static int transform(int val) { return val; }
+};
+
+template<setting_enumeration* e> setting_var_description& setting_var_description_get(
+	setting_var_model_enumerated<e> X)
+{
+	static setting_var_description x;
+	static bool init = false;
+	if(!init) {
+		x.type = setting_var_description::T_ENUMERATION;
+		x.enumeration = e;
+		init = true;
+	}
+	return x;
+}
+
 
 #endif
