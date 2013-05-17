@@ -10,6 +10,7 @@
 
 class setting_var_base;
 class setting_var_group;
+class setting_var_description;
 
 /**
  * A settings listener.
@@ -116,6 +117,11 @@ public:
  * Throws std::runtime_error: Setting doesn't exist.
  */
 	std::string get(const std::string& name) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Get descriptor for.
+ */
+	const setting_var_description& get_description(const std::string& name) throw(std::bad_alloc,
+		std::runtime_error);
 private:
 	setting_var_group& grp;
 	mutex_class lock;
@@ -125,9 +131,18 @@ private:
 /**
  * Description of setting.
  */
-class setting_var_description
+struct setting_var_description
 {
-	
+	enum _type
+	{
+		T_BOOLEAN,
+		T_NUMERIC,
+		T_STRING,
+		T_PATH
+	};
+	_type type;
+	int64_t min_val;
+	int64_t max_val;
 };
 
 /**
@@ -293,6 +308,11 @@ template<typename values> setting_var_description& setting_var_description_get(
 	setting_var_model_bool<values> X)
 {
 	static setting_var_description x;
+	static bool init = false;
+	if(!init) {
+		x.type = setting_var_description::T_BOOLEAN;
+		init = true;
+	}
 	return x;
 }
 
@@ -320,6 +340,13 @@ template<int32_t minimum, int32_t maximum> struct setting_var_model_int
 template<int32_t m, int32_t M> setting_var_description& setting_var_description_get(setting_var_model_int<m, M> X)
 {
 	static setting_var_description x;
+	static bool init = false;
+	if(!init) {
+		x.type = setting_var_description::T_NUMERIC;
+		x.min_val = m;
+		x.max_val = M;
+		init = true;
+	}
 	return x;
 }
 
@@ -347,6 +374,11 @@ struct setting_var_model_path
 template<> setting_var_description& setting_var_description_get(setting_var_model_path X)
 {
 	static setting_var_description x;
+	static bool init = false;
+	if(!init) {
+		x.type = setting_var_description::T_PATH;
+		init = true;
+	}
 	return x;
 }
 

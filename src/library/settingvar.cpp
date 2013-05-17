@@ -132,5 +132,12 @@ std::string setting_var_cache::get(const std::string& name) throw(std::bad_alloc
 	return grp[name].str();
 }
 
+const setting_var_description& setting_var_cache::get_description(const std::string& name) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	return grp[name].get_description();
+}
+
+
 const char* setting_yes_no::enable = "yes";
 const char* setting_yes_no::disable = "no";

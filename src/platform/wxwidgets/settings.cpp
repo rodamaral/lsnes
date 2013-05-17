@@ -1771,10 +1771,15 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	std::string value;
 	std::string err;
 	value = lsnes_vsetc.get(name);
-	try {
-		value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
-	} catch(...) {
-		return;
+	auto model = lsnes_vsetc.get_description(name);
+	if(model.type == setting_var_description::T_BOOLEAN) {
+		value = string_to_bool(value) ? "0" : "1";
+	} else {
+		try {
+			value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
+		} catch(...) {
+			return;
+		}
 	}
 	bool error = false;
 	std::string errorstr;
