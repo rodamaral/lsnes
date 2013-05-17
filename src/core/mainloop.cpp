@@ -322,12 +322,8 @@ namespace
 			if(val.get_iname() == "jukebox-size") {
 				if(save_jukebox_pointer >= jukebox_size)
 					save_jukebox_pointer = 0;
-				
 			}
-			if(emulation_thread == this_thread_id())
-				update_movie_state();
-			else
-				runemufn([]() { update_movie_state(); });
+			update_movie_state();
 			information_dispatch::do_status_update();
 		}
 	};

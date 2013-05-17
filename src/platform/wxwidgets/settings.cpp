@@ -1776,11 +1776,18 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	} catch(...) {
 		return;
 	}
-	try {
-		lsnes_vsetc.set(name, value);
-	} catch(std::exception& e) {
-		wxMessageBox(towxstring(e.what()), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
-	}
+	bool error = false;
+	std::string errorstr;
+	runemufn([&error, &errorstr, name, value]() {
+		try {
+			lsnes_vsetc.set(name, value);
+		} catch(std::exception& e) {
+			error = true;
+			errorstr = e.what();
+		}
+	});
+	if(error)
+		wxMessageBox(towxstring(errorstr), wxT("Error setting value"), wxICON_EXCLAMATION | wxOK);
 }
 
 void wxeditor_esettings_advanced::on_selchange(wxCommandEvent& e)
