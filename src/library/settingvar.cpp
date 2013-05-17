@@ -131,3 +131,6 @@ std::string setting_var_cache::get(const std::string& name) throw(std::bad_alloc
 {
 	return grp[name].str();
 }
+
+const char* setting_yes_no::enable = "yes";
+const char* setting_yes_no::disable = "no";

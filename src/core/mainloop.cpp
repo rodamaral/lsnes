@@ -48,7 +48,8 @@ namespace
 		"Delays‣First frame advance", 500);
 	setting_var<setting_var_model_int<0,999999>> advance_timeout_subframe(lsnes_vset, "advance-subframe-timeout",
 		"Delays‣Subframe advance", 100);
-	setting_var<setting_var_model_bool> pause_on_end(lsnes_vset, "pause-on-end", "Movie‣Pause on end", false);
+	setting_var<setting_var_model_bool<setting_yes_no>> pause_on_end(lsnes_vset, "pause-on-end",
+		"Movie‣Pause on end", false);
 	setting_var<setting_var_model_int<0,999>> jukebox_size(lsnes_vset, "jukebox-size",
 		"Movie‣Number of save slots", 12);
 

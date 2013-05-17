@@ -260,9 +260,18 @@ private:
 };
 
 /**
+ * Yes-no.
+ */
+struct setting_yes_no
+{
+	static const char* enable;
+	static const char* disable;
+};
+
+/**
  * Model: Boolean.
  */
-struct setting_var_model_bool
+template<typename values> struct setting_var_model_bool
 {
 	typedef bool valtype_t;
 	static bool valid(bool val) { return true; /* Any boolean is valid boolean. */ }
@@ -275,12 +284,13 @@ struct setting_var_model_bool
 	}
 	static std::string write(bool val)
 	{
-		return val ? "true" : "false";
+		return val ? values::enable : values::disable;
 	}
 	static bool transform(bool val) { return val; }
 };
 
-template<> setting_var_description& setting_var_description_get(setting_var_model_bool X)
+template<typename values> setting_var_description& setting_var_description_get(
+	setting_var_model_bool<values> X)
 {
 	static setting_var_description x;
 	return x;

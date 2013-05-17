@@ -80,7 +80,8 @@ namespace
 		return 48000;
 	}
 
-	setting_var<setting_var_model_bool> dump_large(lsnes_vset, "avi-large", "AVI‣Large dump", false);
+	setting_var<setting_var_model_bool<setting_yes_no>> dump_large(lsnes_vset, "avi-large", "AVI‣Large dump",
+		false);
 	setting_var<setting_var_model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
 	setting_var<setting_var_model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border", "AVI‣Bottom padding", 0);
 	setting_var<setting_var_model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border", "AVI‣Left padding", 0);
