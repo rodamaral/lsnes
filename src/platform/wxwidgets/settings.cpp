@@ -12,6 +12,7 @@
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
+#include <wx/spinctrl.h>
 #include <vector>
 #include <string>
 
@@ -1761,6 +1762,152 @@ wxeditor_esettings_advanced::~wxeditor_esettings_advanced()
 {
 }
 
+namespace
+{
+	std::string change_value_of_boolean(const std::string& name, const setting_var_description& desc,
+		const std::string& current)
+	{
+		return string_to_bool(current) ? "0" : "1";
+	}
+
+	std::string change_value_of_enumeration(wxWindow* parent, const std::string& name,
+		const setting_var_description& desc, const std::string& current)
+	{
+		std::vector<std::string> valset;
+		unsigned dflt = 0;
+		for(unsigned i = 0; i <= desc.enumeration->max_val(); i++) {
+			valset.push_back(desc.enumeration->get(i));
+			if(desc.enumeration->get(i) == current)
+				dflt = i;
+		}
+		return pick_among(parent, "Set value to", "Set " + name + " to value:", valset, dflt);
+	}
+
+	std::string change_value_of_string(wxWindow* parent, const std::string& name,
+		const setting_var_description& desc, const std::string& current)
+	{
+		return pick_text(parent, "Set value to", "Set " + name + " to value:", current);
+	}
+
+	class numeric_inputbox : public wxDialog
+	{
+	public:
+		numeric_inputbox(wxWindow* parent, const std::string& name, int64_t minval, int64_t maxval,
+			const std::string& val)
+			: wxDialog(parent, wxID_ANY, wxT("Set value to"))
+		{
+			wxSizer* s1 = new wxBoxSizer(wxVERTICAL);
+			SetSizer(s1);
+			s1->Add(new wxStaticText(this, wxID_ANY, towxstring("Set " + name + " to value:")), 0,
+				wxGROW);
+			
+			s1->Add(sp = new wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+				wxSP_ARROW_KEYS, minval, maxval, parse_value<int64_t>(val)), 1, wxGROW);
+
+			wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+			pbutton_s->AddStretchSpacer();
+			wxButton* t;
+			pbutton_s->Add(t = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+			t->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(numeric_inputbox::on_button), NULL, this);
+			pbutton_s->Add(t = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
+			t->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(numeric_inputbox::on_button), NULL, this);
+			s1->Add(pbutton_s, 0, wxGROW);
+
+			s1->SetSizeHints(this);
+		}
+		std::string get_value() { return (stringfmt() << sp->GetValue()).str(); }
+		void on_button(wxCommandEvent& e) { EndModal(e.GetId()); }
+	private:
+		wxSpinCtrl* sp;
+	};
+
+	class path_inputbox : public wxDialog
+	{
+	public:
+		path_inputbox(wxWindow* parent, const std::string& name, const std::string& val)
+			: wxDialog(parent, wxID_ANY, wxT("Set path to"))
+		{
+			wxButton* t;
+			wxSizer* s1 = new wxBoxSizer(wxVERTICAL);
+			SetSizer(s1);
+			s1->Add(new wxStaticText(this, wxID_ANY, towxstring("Set " + name + " to value:")), 0,
+				wxGROW);
+			wxSizer* s2 = new wxBoxSizer(wxHORIZONTAL);
+			s2->Add(pth = new wxTextCtrl(this, wxID_ANY, towxstring(val), wxDefaultPosition,
+				wxSize(400, -1)), 1, wxGROW);
+			s2->Add(t = new wxButton(this, wxID_HIGHEST + 1, wxT("...")), 0, wxGROW);
+			t->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(path_inputbox::on_pbutton), NULL, this);
+			s1->Add(s2, 1, wxGROW);
+
+			wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+			pbutton_s->AddStretchSpacer();
+			pbutton_s->Add(t = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+			t->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(path_inputbox::on_button), NULL, this);
+			pbutton_s->Add(t = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
+			t->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(path_inputbox::on_button), NULL, this);
+			s1->Add(pbutton_s, 0, wxGROW);
+
+			s1->SetSizeHints(this);
+		}
+		std::string get_value() { return towxstring(pth->GetValue()); }
+		void on_pbutton(wxCommandEvent& e) {
+			wxDirDialog* d;
+			d = new wxDirDialog(this, wxT("Select project directory"),
+				pth->GetValue(), wxDD_DIR_MUST_EXIST);
+			if(d->ShowModal() == wxID_CANCEL) {
+				d->Destroy();
+				return;
+			}
+			pth->SetValue(d->GetPath());
+			d->Destroy();
+		}
+		void on_button(wxCommandEvent& e) {
+			wxDirDialog* d;
+			switch(e.GetId()) {
+			case wxID_OK:
+			case wxID_CANCEL:
+				EndModal(e.GetId());
+				break;
+			};
+		}
+	private:
+		wxTextCtrl* pth;
+	};
+
+	std::string change_value_of_numeric(wxWindow* parent, const std::string& name,
+		const setting_var_description& desc, const std::string& current)
+	{
+		auto d = new numeric_inputbox(parent, name, desc.min_val, desc.max_val, current);
+		int x = d->ShowModal();
+		if(x == wxID_CANCEL) {
+			d->Destroy();
+			throw canceled_exception();
+		}
+		std::string v = d->get_value();
+		d->Destroy();
+		return v;
+	}
+
+	std::string change_value_of_path(wxWindow* parent, const std::string& name,
+		const setting_var_description& desc, const std::string& current)
+	{
+		auto d = new path_inputbox(parent, name, current);
+		int x = d->ShowModal();
+		if(x == wxID_CANCEL) {
+			d->Destroy();
+			throw canceled_exception();
+		}
+		std::string v = d->get_value();
+		d->Destroy();
+		return v;
+	}
+}
+
 void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 {
 	if(destruction_underway)
@@ -1772,29 +1919,23 @@ void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
 	std::string err;
 	value = lsnes_vsetc.get(name);
 	auto model = lsnes_vsetc.get_description(name);
-	if(model.type == setting_var_description::T_BOOLEAN)
-		value = string_to_bool(value) ? "0" : "1";
-	else if(model.type == setting_var_description::T_ENUMERATION) {
-		try {
-			std::vector<std::string> valset;
-			for(unsigned i = 0; i <= model.enumeration->max_val(); i++)
-				valset.push_back(model.enumeration->get(i));
-			std::string tvalue = pick_among(this, "Set value to", "Set " + name + " to value:", valset,
-				parse_value<unsigned>(value));
-			unsigned val = 0;
-			for(unsigned i = 0; i <= model.enumeration->max_val(); i++)
-				if(tvalue == valset[i])
-					val = i;
-			value = (stringfmt() << val).str();
-		} catch(...) {
-			return;
-		}
-	} else {
-		try {
-			value = pick_text(this, "Set value to", "Set " + name + " to value:", value);
-		} catch(...) {
-			return;
-		}
+	try {
+		switch(model.type) {
+		case setting_var_description::T_BOOLEAN:
+			value = change_value_of_boolean(name, model, value); break;
+		case setting_var_description::T_NUMERIC:
+			value = change_value_of_numeric(this, name, model, value); break;
+		case setting_var_description::T_STRING:
+			value = change_value_of_string(this, name, model, value); break;
+		case setting_var_description::T_PATH:
+			value = change_value_of_path(this, name, model, value); break;
+		case setting_var_description::T_ENUMERATION:
+			value = change_value_of_enumeration(this, name, model, value); break;
+		default:
+			value = change_value_of_string(this, name, model, value); break;
+		};
+	} catch(...) {
+		return;
 	}
 	bool error = false;
 	std::string errorstr;
@@ -1866,11 +2007,7 @@ void wxeditor_esettings_advanced::_refresh()
 		sort.insert(std::make_pair(names[i], i));
 	for(auto i : sort) {
 		auto description = lsnes_vsetc.get_description(i.second);
-		if(description.type == setting_var_description::T_ENUMERATION) {
-			std::string value = description.enumeration->get(parse_value<unsigned>(values[i.second]));
-			strings.push_back(towxstring(names[i.second] + " (Value: " + value + ")"));
-		} else
-			strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
+		strings.push_back(towxstring(names[i.second] + " (Value: " + values[i.second] + ")"));
 		selections[k++] = i.second;
 	}
 	_settings->Set(strings.size(), &strings[0]);

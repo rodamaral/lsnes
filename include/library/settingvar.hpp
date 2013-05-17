@@ -410,8 +410,11 @@ template<setting_enumeration* e> struct setting_var_model_enumerated
 {
 	typedef unsigned valtype_t;
 	static bool valid(unsigned val) { return (val <= e->max_val()); }
-	static int32_t read(const std::string& val)
+	static unsigned read(const std::string& val)
 	{
+		for(unsigned i = 0; i <= e->max_val(); i++)
+			if(val == e->get(i))
+				return i;
 		unsigned x = parse_value<unsigned>(val);
 		if(x > e->max_val())
 			(stringfmt() << "Value out of range (0  to " << e->max_val() << ")").throwex();
@@ -419,7 +422,7 @@ template<setting_enumeration* e> struct setting_var_model_enumerated
 	}
 	static std::string write(unsigned val)
 	{
-		return (stringfmt() << val).str();
+		return e->get(val);
 	}
 	static int transform(int val) { return val; }
 };
