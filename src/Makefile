@@ -18,6 +18,9 @@ endif
 ifdef OPUS_CODEC
 CFLAGS += -DWITH_OPUS_CODEC $(shell $(CROSS_PREFIX)pkg-config --cflags opus)
 LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config --libs opus)
+ifdef OPUS_CODEC_SUPPORTS_SURROUND
+CFLAGS += -DOPUS_SUPPORTS_SURROUND
+endif
 endif
 
 COMMON_LIBRARY=core lua fonts library interface video emulation

@@ -88,6 +88,34 @@ unimplemented::unimplemented()
 invalid_state::invalid_state()
 	: std::runtime_error("Invalid state") {}
 
+const unsigned f1_streams[] = {0, 1, 1, 2, 2, 3, 4, 4, 5};
+const unsigned f1_coupled[] = {0, 0, 1, 1, 2, 2, 2, 3, 3};
+const char* chanmap[] = {"", "A", "AB", "ACB", "ABCD", "ACDEB", "ACDEBF", "ACBFDEG", "ACDEFGBH"};
+
+void lookup_params(unsigned channels, unsigned family, int& streams, int& coupled)
+{
+	if(channels == 0)
+		throw bad_argument();
+	if(family == 0) {
+		if(channels > 2)
+			throw unimplemented();
+		streams = 1;
+		coupled = (channels == 2) ? 1 : 0;
+	} else if(family == 1) {
+		if(channels > 8)
+			throw unimplemented();
+		streams = f1_streams[channels];
+		coupled = f1_coupled[channels];
+	} else
+		throw unimplemented();
+}
+
+void generate_mapping(unsigned channels, unsigned family, unsigned char* mapping)
+{
+	for(unsigned i = 0; i < channels; i++)
+		mapping[i] = chanmap[channels][i] - 'A';
+}
+
 char* alignptr(char* ptr, size_t align)
 {
 	while((intptr_t)ptr % align)
@@ -155,6 +183,7 @@ OpusEncoder* E(encoder& e) { return reinterpret_cast<OpusEncoder*>(e.getmem()); 
 OpusDecoder* D(decoder& d) { return reinterpret_cast<OpusDecoder*>(d.getmem()); }
 OpusRepacketizer* R(repacketizer& r) { return reinterpret_cast<OpusRepacketizer*>(r.getmem()); }
 OpusMSEncoder* ME(multistream_encoder& e) { return reinterpret_cast<OpusMSEncoder*>(e.getmem()); }
+OpusMSEncoder* ME(surround_encoder& e) { return reinterpret_cast<OpusMSEncoder*>(e.getmem()); }
 OpusMSDecoder* MD(multistream_decoder& d) { return reinterpret_cast<OpusMSDecoder*>(d.getmem()); }
 
 template<typename T> T generic_ctl(encoder& e, int32_t ctl)
@@ -186,12 +215,25 @@ template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl, T val)
 	throwex(opus_multistream_encoder_ctl(ME(e), ctl, val));
 }
 
+template<typename T> T generic_ctl(surround_encoder& e, int32_t ctl, T val)
+{
+	throwex(opus_multistream_encoder_ctl(ME(e), ctl, val));
+}
+
 template<typename T> T generic_ctl(multistream_encoder& e, int32_t ctl)
 {
 	T val;
 	throwex(opus_multistream_encoder_ctl(ME(e), ctl, &val));
 	return val;
 }
+
+template<typename T> T generic_ctl(surround_encoder& e, int32_t ctl)
+{
+	T val;
+	throwex(opus_multistream_encoder_ctl(ME(e), ctl, &val));
+	return val;
+}
+
 
 template<typename T> T generic_ctl(multistream_decoder& d, int32_t ctl, T val)
 {
@@ -221,6 +263,11 @@ template<typename T> T generic_meget<T>::operator()(multistream_encoder& e) cons
 	return do_generic_get<T>(e);
 }
 
+template<typename T> T generic_meget<T>::operator()(surround_encoder& e) const
+{
+	return do_generic_get<T>(e);
+}
+
 template<typename T> T generic_dget<T>::operator()(decoder& d) const
 {
 	return do_generic_get<T>(d);
@@ -242,6 +289,11 @@ template<typename T> T generic_get<T>::operator()(encoder& e) const
 }
 
 template<typename T> T generic_mget<T>::operator()(multistream_encoder& e) const
+{
+	return do_generic_get<T>(e);
+}
+
+template<typename T> T generic_mget<T>::operator()(surround_encoder& e) const
 {
 	return do_generic_get<T>(e);
 }
@@ -284,6 +336,11 @@ void bitrate::operator()(encoder& e) const
 }
 
 void bitrate::operator()(multistream_encoder& e) const
+{
+	generic_ctl(e, OPUS_SET_BITRATE_REQUEST, b);
+}
+
+void bitrate::operator()(surround_encoder& e) const
 {
 	generic_ctl(e, OPUS_SET_BITRATE_REQUEST, b);
 }
@@ -397,6 +454,11 @@ void _reset::operator()(multistream_encoder& e) const
 	throwex(opus_multistream_encoder_ctl(ME(e), OPUS_RESET_STATE));
 }
 
+void _reset::operator()(surround_encoder& e) const
+{
+	throwex(opus_multistream_encoder_ctl(ME(e), OPUS_RESET_STATE));
+}
+
 _finalrange _finalrange::operator()(decoder& d) const
 {
 	return _finalrange(generic_ctl<uint32_t>(d, OPUS_GET_FINAL_RANGE_REQUEST));
@@ -439,6 +501,11 @@ void set_control_int::operator()(multistream_encoder& e) const
 	generic_ctl(e, ctl, val);
 }
 
+void set_control_int::operator()(surround_encoder& e) const
+{
+	generic_ctl(e, ctl, val);
+}
+
 void set_control_int::operator()(multistream_decoder& d) const
 {
 	generic_ctl(d, ctl, val);
@@ -459,6 +526,11 @@ int32_t get_control_int::operator()(multistream_encoder& e) const
 	return generic_ctl<int32_t>(e, ctl);
 }
 
+int32_t get_control_int::operator()(surround_encoder& e) const
+{
+	return generic_ctl<int32_t>(e, ctl);
+}
+
 int32_t get_control_int::operator()(multistream_decoder& d) const
 {
 	return generic_ctl<int32_t>(d, ctl);
@@ -466,10 +538,12 @@ int32_t get_control_int::operator()(multistream_decoder& d) const
 
 void force_instantiate()
 {
+	surround_encoder::stream_format sf;
 	encoder e(samplerate::r48k, true, application::audio);
 	decoder d(samplerate::r48k, true);
 	multistream_encoder me(samplerate::r48k, 1, 1, 0, NULL, application::audio);
 	multistream_decoder md(samplerate::r48k, 1, 1, 0, NULL);
+	surround_encoder se(samplerate::r48k, 1, 0, application::audio, sf);
 
 	complexity::get(e);
 	bitrate::get(e);
@@ -499,6 +573,18 @@ void force_instantiate()
 	signal::get(me);
 	fec::get(me);
 	force_channels::get(me);
+	bitrate::get(se);
+	lsbdepth::get(se);
+	vbr::get(se);
+	vbr_constraint::get(se);
+	application::get(se);
+	bandwidth::get(se);
+	complexity::get(se);
+	lossperc::get(se);
+	dtx::get(se);
+	signal::get(se);
+	fec::get(se);
+	force_channels::get(se);
 
 	complexity::get.errordefault();
 	bitrate::get.errordefault();
@@ -746,7 +832,7 @@ size_t multistream_encoder::size(unsigned streams, unsigned coupled_streams)
 multistream_encoder::~multistream_encoder()
 {
 	if(!user)
-		delete memory;
+		delete[] memory;
 }
 
 multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, unsigned _streams, 
@@ -754,10 +840,11 @@ multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, un
 {
 	user = (_memory != NULL);
 	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[size(streams, coupled_streams)];
-	set_params(_channels, _streams, coupled_streams);
 	try {
+		offset = _streams * sizeof(encoder);
 		throwex(opus_multistream_encoder_init(ME(*this), rate, channels, _streams, coupled_streams, mapping,
 			app));
+		init_structures(_channels, _streams, coupled_streams);
 	} catch(...) {
 		if(!user)
 			delete[] memory;
@@ -788,17 +875,26 @@ multistream_encoder& multistream_encoder::operator=(const multistream_encoder& e
 	return *this;
 }
 
-void multistream_encoder::init_copy(const multistream_encoder& e, char* _memory)
+void multistream_encoder::init_structures(unsigned _channels, unsigned _streams, unsigned _coupled)
 {
-	user = (_memory != NULL);
-	set_params(e.channels, e.streams, e.coupled);
-	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[e.size()];
-	memcpy(ME(*this), e.memory + e.offset, opussize);
+	channels = _channels;
+	streams = _streams;
+	coupled = _coupled;
+	opussize = opus_multistream_encoder_get_size(streams, coupled);
 	for(int32_t i = 0; i < streams; i++) {
 		OpusEncoder* e;
 		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE(i, &e));
 		new(substream(i)) encoder(e, i < coupled);
 	}
+}
+
+void multistream_encoder::init_copy(const multistream_encoder& e, char* _memory)
+{
+	user = (_memory != NULL);
+	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[e.size()];
+	offset = e.offset;
+	memcpy(ME(*this), e.memory + e.offset, e.opussize);
+	init_structures(e.channels, e.streams, e.coupled);
 }
 
 size_t multistream_encoder::encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout)
@@ -816,13 +912,125 @@ char* multistream_encoder::substream(size_t idx)
 	return memory + idx * sizeof(encoder);
 }
 
-void multistream_encoder::set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled)
+encoder& surround_encoder::operator[](size_t idx)
+{
+	if(idx > (size_t)streams)
+		throw opus::bad_argument();
+	return *reinterpret_cast<encoder*>(substream(idx));
+}
+
+size_t surround_encoder::size(unsigned channels, unsigned family)
+{
+	//Be conservative with memory, as stream count is not known.
+#ifdef OPUS_SUPPORTS_SURROUND
+	return alignof(encoder) + channels * sizeof(encoder) + opus_multistream_surround_encoder_get_size(channels,
+		family);
+#else
+	int streams, coupled;
+	lookup_params(channels, family, streams, coupled);
+	//We use channels and not streams here to keep compatiblity on fallback.
+	return alignof(encoder) + channels * sizeof(encoder) + opus_multistream_encoder_get_size(streams, coupled);
+#endif
+}
+
+surround_encoder::~surround_encoder()
+{
+	if(!user)
+		delete[] memory;
+}
+
+surround_encoder::surround_encoder(samplerate rate, unsigned _channels, unsigned _family, application app,
+	stream_format& format, char* _memory)
+{
+	user = (_memory != NULL);
+	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[size(channels, family)];
+	try {
+		int rstreams, rcoupled;
+		unsigned char rmapping[256];
+		offset = _channels * sizeof(encoder);  //Conservative.
+#ifdef OPUS_SUPPORTS_SURROUND
+		throwex(opus_multistream_surround_encoder_init(ME(*this), rate, _channels, _family, &rstreams, 
+			&rcoupled, rmapping, app));
+#else
+		lookup_params(_channels, _family, rstreams, rcoupled);
+		generate_mapping(_channels, _family, rmapping);
+		throwex(opus_multistream_encoder_init(ME(*this), rate, channels, rstreams, rcoupled, rmapping, app));
+#endif
+		init_structures(_channels, rstreams, rcoupled, _family);
+		format.channels = channels;
+		format.family = family;
+		format.streams = streams;
+		format.coupled = coupled;
+		memcpy(format.mapping, rmapping, channels);
+	} catch(...) {
+		if(!user)
+			delete[] memory;
+		throw;
+	}
+}
+
+surround_encoder::surround_encoder(const surround_encoder& e)
+{
+	init_copy(e, new char[e.size()]);
+	user = false;
+}
+
+surround_encoder::surround_encoder(const surround_encoder& e, char* memory)
+{
+	init_copy(e, memory);
+	user = true;
+}
+
+surround_encoder& surround_encoder::operator=(const surround_encoder& e)
+{
+	if(this == &e)
+		return *this;
+	if(channels != e.channels || family != e.family)
+		throw std::runtime_error("Stream mismatch in assignment");
+	memcpy(ME(*this), e.memory + e.offset, opussize);
+	return *this;
+}
+
+void surround_encoder::init_structures(unsigned _channels, unsigned _streams, unsigned _coupled, unsigned _family)
 {
 	channels = _channels;
 	streams = _streams;
 	coupled = _coupled;
-	offset = _streams * sizeof(encoder);
-	opussize = opus_multistream_encoder_get_size(_streams, _coupled);
+	family = _family;
+#if OPUS_SUPPORTS_SURROUND
+	opussize = opus_multistream_surround_encoder_get_size(_channels, family);
+#else
+	opussize = opus_multistream_encoder_get_size(streams, coupled);
+#endif
+	for(int32_t i = 0; i < streams; i++) {
+		OpusEncoder* e;
+		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE(i, &e));
+		new(substream(i)) encoder(e, i < coupled);
+	}
+}
+
+void surround_encoder::init_copy(const surround_encoder& e, char* _memory)
+{
+	user = (_memory != NULL);
+	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[e.size()];
+	offset = e.offset;
+	memcpy(ME(*this), e.memory + e.offset, e.opussize);
+	init_structures(e.channels, e.streams, e.coupled, e.family);
+}
+
+size_t surround_encoder::encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout)
+{
+	return throwex(opus_multistream_encode(ME(*this), in, inframes, out, maxout));
+}
+
+size_t surround_encoder::encode(const float* in, uint32_t inframes, unsigned char* out, uint32_t maxout)
+{
+	return throwex(opus_multistream_encode_float(ME(*this), in, inframes, out, maxout));
+}
+
+char* surround_encoder::substream(size_t idx)
+{
+	return memory + idx * sizeof(encoder);
 }
 
 decoder& multistream_decoder::operator[](size_t idx)
@@ -843,9 +1051,9 @@ multistream_decoder::multistream_decoder(samplerate rate, unsigned _channels, un
 {
 	user = (_memory != NULL);
 	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[size(streams, coupled_streams)];
-	set_params(_channels, _streams, coupled_streams);
 	try {
 		throwex(opus_multistream_decoder_init(MD(*this), rate, channels, streams, coupled_streams, mapping));
+		init_structures(_channels, _streams, coupled_streams);
 	} catch(...) {
 		if(!user)
 			delete[] memory;
@@ -865,7 +1073,7 @@ multistream_decoder::multistream_decoder(const multistream_decoder& e, char* mem
 multistream_decoder::~multistream_decoder()
 {
 	if(!user)
-		delete memory;
+		delete[] memory;
 }
 
 multistream_decoder& multistream_decoder::operator=(const multistream_decoder& d)
@@ -879,17 +1087,26 @@ multistream_decoder& multistream_decoder::operator=(const multistream_decoder& d
 	return *this;
 }
 
+void multistream_decoder::init_structures(unsigned _channels, unsigned _streams, unsigned _coupled)
+{
+	channels = _channels;
+	streams = _streams;
+	coupled = _coupled;
+	opussize = opus_multistream_decoder_get_size(streams, coupled);
+	for(int32_t i = 0; i < (size_t)streams; i++) {
+		OpusDecoder* d;
+		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE(i, &d));
+		new(substream(i)) decoder(d, i < coupled);
+	}
+}
+
 void multistream_decoder::init_copy(const multistream_decoder& e, char* _memory)
 {
 	user = (_memory != NULL);
-	set_params(e.channels, e.streams, e.coupled);
 	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[e.size()];
-	memcpy(MD(*this), e.memory + e.offset, opussize);
-	for(int32_t i = 0; i < (size_t)streams; i++) {
-		OpusDecoder* e;
-		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE(i, &e));
-		new(substream(i)) decoder(e, i < coupled);
-	}
+	offset = e.offset;
+	memcpy(MD(*this), e.memory + e.offset, e.opussize);
+	init_structures(e.channels, e.streams, e.coupled);
 }
 
 size_t multistream_decoder::decode(const unsigned char* in, uint32_t insize, int16_t* out, uint32_t maxframes,
@@ -902,15 +1119,6 @@ size_t multistream_decoder::decode(const unsigned char* in, uint32_t insize, flo
 	bool decode_fec)
 {
 	return throwex(opus_multistream_decode_float(MD(*this), in, insize, out, maxframes, decode_fec));
-}
-
-void multistream_decoder::set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled)
-{
-	channels = _channels;
-	streams = _streams;
-	coupled = _coupled;
-	offset = _streams * sizeof(encoder);
-	opussize = opus_multistream_decoder_get_size(_streams, _coupled);
 }
 
 char* multistream_decoder::substream(size_t idx)

@@ -125,3 +125,6 @@ BOOST_FILESYSTEM3=
 
 # Set to non-empty value (e.g. 'yes') to enable commentary track support (requires Opus codec).
 OPUS_CODEC=
+
+# Set to non-empty value (e.g. 'yes') to use Opus codec surround encoding support.
+OPUS_CODEC_SUPPORTS_SURROUND=

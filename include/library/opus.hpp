@@ -19,6 +19,7 @@ class encoder;
 class decoder;
 class multistream_encoder;
 class multistream_decoder;
+class surround_encoder;
 
 template<typename T> struct generic_eget
 {
@@ -31,6 +32,7 @@ template<typename T> struct generic_meget : public generic_eget<T>
 {
 	using generic_eget<T>::operator();
 	T operator()(multistream_encoder& e) const;
+	T operator()(surround_encoder& e) const;
 };
 
 template<typename T> struct generic_get
@@ -47,6 +49,7 @@ template<typename T> struct generic_mget : public generic_get<T>
 	using generic_get<T>::operator();
 	T operator()(multistream_decoder& e) const;
 	T operator()(multistream_encoder& e) const;
+	T operator()(surround_encoder& e) const;
 };
 
 template<typename T> struct generic_dget
@@ -89,6 +92,7 @@ struct complexity
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t c;
@@ -104,6 +108,7 @@ struct bitrate
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t b;
@@ -119,6 +124,7 @@ struct vbr
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool v;
@@ -134,6 +140,7 @@ struct vbr_constraint
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool c;
@@ -150,6 +157,7 @@ struct force_channels
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t f;
@@ -186,6 +194,7 @@ struct bandwidth
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t bw;
@@ -202,6 +211,7 @@ struct signal
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t s;
@@ -218,6 +228,7 @@ struct application
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t app;
@@ -231,6 +242,7 @@ struct _lookahead
 	typedef _lookahead erettype;
 	_lookahead operator()(encoder& e) const;
 	_lookahead operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	_lookahead errordefault() const { return _lookahead(0);}
 private:
 	uint32_t l;
@@ -247,6 +259,7 @@ struct fec
 	typedef void erettype;
 	void operator()(encoder& e) const;	
 	void operator()(multistream_encoder& e) const;	
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool f;
@@ -260,6 +273,7 @@ struct lossperc
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	uint32_t loss;
@@ -275,6 +289,7 @@ struct dtx
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	bool d;
@@ -291,6 +306,7 @@ struct lsbdepth
 	typedef void erettype;
 	void operator()(encoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	uint32_t depth;
@@ -304,6 +320,7 @@ struct _pktduration
 	typedef _pktduration drettype;
 	_pktduration operator()(decoder& e) const;
 	_pktduration operator()(multistream_decoder& e) const;
+	void operator()(surround_encoder& e) const;
 	_pktduration errordefault() const; /*{ return _pktduration(0); }*/
 private:
 	uint32_t d;
@@ -318,6 +335,7 @@ struct _reset
 	void operator()(encoder& e) const;
 	void operator()(multistream_decoder& e) const;
 	void operator()(multistream_encoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 };
 extern _reset reset;
@@ -333,6 +351,7 @@ struct _finalrange
 	_finalrange operator()(encoder& e) const;
 	_finalrange operator()(multistream_decoder& e) const;
 	_finalrange operator()(multistream_encoder& e) const;
+	_finalrange operator()(surround_encoder& e) const;
 	_finalrange errordefault() const { return _finalrange(0); }
 private:
 	uint32_t f;
@@ -376,6 +395,7 @@ struct set_control_int
 	void operator()(decoder& e) const;
 	void operator()(multistream_encoder& e) const;
 	void operator()(multistream_decoder& e) const;
+	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
 	int32_t ctl;
@@ -391,6 +411,7 @@ struct get_control_int
 	int32_t operator()(decoder& e) const;
 	int32_t operator()(multistream_encoder& e) const;
 	int32_t operator()(multistream_decoder& e) const;
+	int32_t operator()(surround_encoder& e) const;
 	int32_t errordefault() const { return -1; }
 private:
 	int32_t ctl;
@@ -495,12 +516,56 @@ public:
 private:
 	void init_copy(const multistream_encoder& e, char* memory);
 	char* substream(size_t idx);
-	void set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled);
+	void init_structures(unsigned _channels, unsigned _streams, unsigned _coupled);
 	char* memory;
 	bool user;
 	uint8_t channels;
 	uint8_t streams;
 	uint8_t coupled;
+	size_t offset;
+	size_t opussize;
+};
+
+class surround_encoder
+{
+public:
+	struct stream_format
+	{
+		unsigned family;
+		unsigned channels;
+		unsigned streams;
+		unsigned coupled;
+		unsigned char mapping[256];
+	};
+	surround_encoder(samplerate rate, unsigned channels, unsigned family, application app,
+		stream_format& format, char* memory = NULL);
+	static size_t size(unsigned channels, unsigned family);
+	size_t size() const { return size(channels, family); }
+	surround_encoder(const surround_encoder& e);
+	surround_encoder(const surround_encoder& e, char* memory);
+	surround_encoder& operator=(const surround_encoder& e);
+	~surround_encoder();
+	encoder& operator[](size_t idx);
+	size_t encode(const int16_t* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
+	size_t encode(const float* in, uint32_t inframes, unsigned char* out, uint32_t maxout);
+	template<typename T> typename T::erettype ctl(const T& c) { return c(*this); }
+	template<typename T> typename T::erettype ctl_quiet(const T& c)
+	{
+		try { return c(*this); } catch(...) { return c.errordefault(); }
+	}
+	uint8_t get_channels() { return channels; }
+	uint8_t get_streams() { return streams; }
+	void* getmem() { return memory + offset; }
+private:
+	void init_copy(const surround_encoder& e, char* memory);
+	char* substream(size_t idx);
+	void init_structures(unsigned _channels, unsigned _streams, unsigned _coupled, unsigned _family);
+	char* memory;
+	bool user;
+	uint8_t channels;
+	uint8_t streams;
+	uint8_t coupled;
+	uint8_t family;
 	size_t offset;
 	size_t opussize;
 };
@@ -532,7 +597,7 @@ public:
 private:
 	void init_copy(const multistream_decoder& e, char* memory);
 	char* substream(size_t idx);
-	void set_params(uint8_t _channels, uint8_t _streams, uint8_t _coupled);
+	void init_structures(unsigned _channels, unsigned _streams, unsigned _coupled);
 	char* memory;
 	bool user;
 	uint8_t channels;
