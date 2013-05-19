@@ -481,7 +481,6 @@ namespace sky
 
 	song_buffer* bsong;
 
-#ifdef WITH_OPUS_CODEC
 	packet_decoder::packet_decoder()
 	{
 		d = NULL;
@@ -490,24 +489,29 @@ namespace sky
 
 	void packet_decoder::set_multistream(const struct multistream_characteristics& c)
 	{
-		size_t msstate_size = opus::multistream_decoder::size(c.streams, c.coupled);
-		msstate_size += sizeof(opus::multistream_decoder) + alignof(opus::multistream_decoder);
-		size_t dmix_offset = msstate_size;
-		msstate_size += 5760 * c.channels * sizeof(float);
-		if(memory.size() < msstate_size)
-			memory.resize(msstate_size);
-		uint8_t* a = &memory[0];
-		if(reinterpret_cast<uint64_t>(a) % alignof(opus::multistream_decoder))
-			a++;
-		uint8_t* b = a + sizeof(opus::multistream_decoder);
-		d = new(a) opus::multistream_decoder(opus::samplerate::r48k, c.channels, c.streams, c.coupled,
-			c.mapping, reinterpret_cast<char*>(b));
-		dmem = reinterpret_cast<float*>(a + dmix_offset);
-		channels = c.channels;
-		float gain_factor = 2 * pow(10, c.gain / 5120.0);
-		for(unsigned i = 0; i < channels; i++) {
-			downmix_l[i] = gain_factor * c.downmix_l[i];
-			downmix_r[i] = gain_factor * c.downmix_r[i];
+		try {
+			size_t msstate_size = opus::multistream_decoder::size(c.streams, c.coupled);
+			msstate_size += sizeof(opus::multistream_decoder) + alignof(opus::multistream_decoder);
+			size_t dmix_offset = msstate_size;
+			msstate_size += 5760 * c.channels * sizeof(float);
+			if(memory.size() < msstate_size)
+				memory.resize(msstate_size);
+			uint8_t* a = &memory[0];
+			if(reinterpret_cast<uint64_t>(a) % alignof(opus::multistream_decoder))
+				a++;
+			uint8_t* b = a + sizeof(opus::multistream_decoder);
+			d = new(a) opus::multistream_decoder(opus::samplerate::r48k, c.channels, c.streams, c.coupled,
+				c.mapping, reinterpret_cast<char*>(b));
+			dmem = reinterpret_cast<float*>(a + dmix_offset);
+			channels = c.channels;
+			float gain_factor = 2 * pow(10, c.gain / 5120.0);
+			for(unsigned i = 0; i < channels; i++) {
+				downmix_l[i] = gain_factor * c.downmix_l[i];
+				downmix_r[i] = gain_factor * c.downmix_r[i];
+			}
+		} catch(opus::not_loaded l) {
+			d = NULL;
+			channels = c.channels;
 		}
 	}
 
@@ -515,7 +519,18 @@ namespace sky
 	{
 		size_t s = 120;
 		try {
-			s = d->decode(&data[0], data.size(), dmem, 5760);
+			if(d)
+				s = d->decode(&data[0], data.size(), dmem, 5760);
+			else {
+				//Insert silence.
+				uint8_t ticks = opus_packet_tick_count(&data[0], data.size());
+				if(!ticks)
+					ticks = 1;	//Try to recover.
+				memset(pcmbuf, 0, 240 * ticks * sizeof(int16_t));
+				pcmpos = 0;
+				pcmlen = 120 * ticks;
+				return;
+			}
 		} catch(std::exception& e) {
 			//Try to insert silence.
 			messages << "Failed to decode opus packet: " << e.what() << std::endl;
@@ -543,32 +558,12 @@ namespace sky
 
 	void packet_decoder::reset()
 	{
-		d->ctl(opus::reset);
+		try {
+			if(d)
+				d->ctl(opus::reset);
+		} catch(opus::not_loaded e) {
+		}
 	}
-#else
-	packet_decoder::packet_decoder()
-	{
-		channels = 0;
-	}
-
-	void packet_decoder::set_multistream(const struct multistream_characteristics& c)
-	{
-	}
-
-	void packet_decoder::decode_packet(const std::vector<uint8_t>& data)
-	{
-		uint32_t ticks = opus_packet_tick_count(&data[0], data.size());
-		if(!ticks)
-			ticks = 1;	//Stream damaged, try to recover.
-		pcmpos = 0;
-		pcmlen = 120 * ticks;
-		memset(pcmbuf, 0, 240 * ticks * sizeof(int16_t));
-	}
-
-	void packet_decoder::reset()
-	{
-	}
-#endif
 
 	music_player::music_player(struct music_player_memory& m, random& _rng)
 		: mem(m), rng(_rng)

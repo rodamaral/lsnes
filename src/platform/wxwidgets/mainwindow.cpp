@@ -780,9 +780,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_check(wxID_READONLY_MODE, is_readonly_mode());
 	menu_entry(wxID_EDIT_AUTHORS, wxT("Edit game name && authors..."));
 	menu_entry(wxID_EDIT_SUBTITLES, wxT("Edit subtitles..."));
-#ifdef WITH_OPUS_CODEC
 	menu_entry(wxID_EDIT_VSUBTITLES, wxT("Edit commantary track..."));
-#endif
 	menu_separator();
 	menu_entry(wxID_REWIND_MOVIE, wxT("Rewind to start"));
 
@@ -1078,11 +1076,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_EDIT_SUBTITLES:
 		wxeditor_subtitles_display(this);
 		return;
-#ifdef WITH_OPUS_CODEC
 	case wxID_EDIT_VSUBTITLES:
 		show_wxeditor_voicesub(this);
 		return;
-#endif
 	case wxID_EDIT_MEMORYWATCH:
 		wxeditor_memorywatch_display(this);
 		return;
@@ -1236,8 +1232,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loaded_library::call_library();
-		new loaded_library(pick_file(this, name, project_otherpath(), false,
-			loaded_library::call_library_ext()));
+		with_loaded_library(new loaded_library(pick_file(this, name, project_otherpath(), false,
+			loaded_library::call_library_ext())));
 		handle_post_loadlibrary();
 		break;
 	}

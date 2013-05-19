@@ -4,6 +4,7 @@
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
 #include "library/directory.hpp"
+#include "library/opus.hpp"
 #include <stdexcept>
 #include <sstream>
 #include <dirent.h>
@@ -16,16 +17,22 @@ void handle_post_loadlibrary()
 	}
 }
 
+void with_loaded_library(loaded_library* l)
+{
+	try {
+		if(!opus::libopus_loaded())
+			opus::load_libopus(*l);
+	} catch(...) {
+		//This wasn't libopus.
+	}
+}
+
 void autoload_libraries()
 {
 	try {
 		auto libs = enumerate_directory(get_config_path() + "/autoload", ".*");
 		for(auto i : libs)
-			try {
-				new loaded_library(i);
-				messages << "Autoloaded '" << i << "'" << std::endl;
-			} catch(...) {
-			}
+			with_loaded_library(new loaded_library(i));
 		handle_post_loadlibrary();
 	} catch(std::exception& e) {
 		messages << e.what() << std::endl;

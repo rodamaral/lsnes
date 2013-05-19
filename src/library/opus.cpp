@@ -1,11 +1,82 @@
-#ifdef WITH_OPUS_CODEC
+#ifndef WITH_OPUS_CODEC
+#define RUNTIME_LIBOPUS
+#endif
 #define OPUS_BUILD
 #include "opus.hpp"
+#ifndef RUNTIME_LIBOPUS
 #include <opus.h>
 #include <opus_defines.h>
 #include <opus_multistream.h>
+#else
+#include "loadlib.hpp"
+#include "threadtypes.hpp"
+#endif
 #include <sstream>
 #include <cstring>
+#include <map>
+#include <functional>
+
+#ifdef RUNTIME_LIBOPUS
+#define OPUS_AUTO -1000
+#define OPUS_ALLOC_FAIL -7
+#define OPUS_APPLICATION_AUDIO 2049
+#define OPUS_APPLICATION_RESTRICTED_LOWDELAY 2051
+#define OPUS_APPLICATION_VOIP 2048
+#define OPUS_AUTO -1000
+#define OPUS_BAD_ARG -1
+#define OPUS_BANDWIDTH_FULLBAND 1105
+#define OPUS_BANDWIDTH_MEDIUMBAND 1102
+#define OPUS_BANDWIDTH_NARROWBAND 1101
+#define OPUS_BANDWIDTH_SUPERWIDEBAND 1104
+#define OPUS_BANDWIDTH_WIDEBAND 1103
+#define OPUS_BITRATE_MAX -1
+#define OPUS_BUFFER_TOO_SMALL -2
+#define OPUS_GET_APPLICATION_REQUEST 4001
+#define OPUS_GET_BANDWIDTH_REQUEST 4009
+#define OPUS_GET_BITRATE_REQUEST 4003
+#define OPUS_GET_COMPLEXITY_REQUEST 4011
+#define OPUS_GET_DTX_REQUEST 4017
+#define OPUS_GET_FINAL_RANGE_REQUEST 4031
+#define OPUS_GET_FORCE_CHANNELS_REQUEST 4023
+#define OPUS_GET_INBAND_FEC_REQUEST 4013
+#define OPUS_GET_LOOKAHEAD_REQUEST 4027
+#define OPUS_GET_MAX_BANDWIDTH_REQUEST 4005
+#define OPUS_GET_PACKET_LOSS_PERC_REQUEST 4015
+#define OPUS_GET_PITCH_REQUEST 4033
+#define OPUS_GET_SAMPLE_RATE_REQUEST 4029
+#define OPUS_GET_SIGNAL_REQUEST 4025
+#define OPUS_GET_VBR_CONSTRAINT_REQUEST 4021
+#define OPUS_GET_VBR_REQUEST 4007
+#define OPUS_INTERNAL_ERROR -3
+#define OPUS_INVALID_PACKET -4
+#define OPUS_INVALID_STATE -6
+#define OPUS_RESET_STATE 4028
+#define OPUS_SET_APPLICATION_REQUEST 4000
+#define OPUS_SET_BANDWIDTH_REQUEST 4008
+#define OPUS_SET_BITRATE_REQUEST 4002
+#define OPUS_SET_COMPLEXITY_REQUEST 4010
+#define OPUS_SET_DTX_REQUEST 4016
+#define OPUS_SET_FORCE_CHANNELS_REQUEST 4022
+#define OPUS_SET_INBAND_FEC_REQUEST 4012
+#define OPUS_SET_MAX_BANDWIDTH_REQUEST 4004
+#define OPUS_SET_PACKET_LOSS_PERC_REQUEST 4014
+#define OPUS_SET_SIGNAL_REQUEST 4024
+#define OPUS_SET_VBR_CONSTRAINT_REQUEST 4020
+#define OPUS_SET_VBR_REQUEST 4006
+#define OPUS_SIGNAL_MUSIC 3002
+#define OPUS_SIGNAL_VOICE 3001
+#define OPUS_UNIMPLEMENTED -5
+#define OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST 5120
+#define OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST 5122
+#define OPUS_SUPPORTS_SURROUND
+#define SURROUND_SUPPORTED opus_surround_supported() 
+#else
+#ifdef OPUS_SUPPORTS_SURROUND
+#define SURROUND_SUPPORTED 1
+#else
+#define SURROUND_SUPPORTED 0
+#endif
+#endif
 
 //Some of these might not be in stable.
 #ifndef OPUS_SET_GAIN_REQUEST
@@ -26,6 +97,477 @@
 
 namespace opus
 {
+#ifdef RUNTIME_LIBOPUS
+struct OpusEncoder { int dummy; };
+struct OpusDecoder { int dummy; };
+struct OpusMSEncoder { int dummy; };
+struct OpusMSDecoder { int dummy; };
+struct OpusRepacketizer { int dummy; };
+
+int dummy_encoder_ctl(OpusEncoder* e, int request, ...) { throw not_loaded(); }
+int dummy_decoder_ctl(OpusDecoder* e, int request, ...) { throw not_loaded(); }
+int dummy_multistream_encoder_ctl(OpusMSEncoder* e, int request, ...) { throw not_loaded(); }
+int dummy_multistream_decoder_ctl(OpusMSDecoder* e, int request, ...) { throw not_loaded(); }
+
+struct functions
+{
+	int (*encoder_ctl)(OpusEncoder* e, int request, ...);
+	int (*decoder_ctl)(OpusDecoder* e, int request, ...);
+	int (*multistream_encoder_ctl)(OpusMSEncoder* e, int request, ...);
+	int (*multistream_decoder_ctl)(OpusMSDecoder* e, int request, ...);
+	int (*encoder_init)(OpusEncoder* e, int32_t fs, int ch, int app);
+	int (*decoder_init)(OpusDecoder* e, int32_t fs, int ch);
+	int (*encoder_get_size)(int ch);
+	int (*decoder_get_size)(int ch);
+	int32_t (*encode)(OpusEncoder* e, const int16_t* pcm, int frames, unsigned char* data, int32_t maxout);
+	int32_t (*encode_float)(OpusEncoder* e, const float* pcm, int frames, unsigned char* data, int32_t maxout);
+	int32_t (*decode)(OpusDecoder* e, const unsigned char* data, int32_t datasize, int16_t* pcm, int frames,
+		int fec);
+	int32_t (*decode_float)(OpusDecoder* e, const unsigned char* data, int32_t datasize, float* pcm, int frames,
+		int fec);
+	int (*decoder_get_nb_samples)(const OpusDecoder* dec, const unsigned char packet[], int32_t len);
+	OpusRepacketizer *(*repacketizer_init)(OpusRepacketizer* r);
+	int (*repacketizer_get_size)();
+	int (*repacketizer_cat)(OpusRepacketizer* r, const unsigned char* data, int32_t len);
+	int32_t (*repacketizer_out_range)(OpusRepacketizer* r, int begin, int end, unsigned char* data,
+		int32_t maxlen);
+	int32_t (*repacketizer_out)(OpusRepacketizer* r, unsigned char* data, int32_t maxlen);
+	int (*repacketizer_get_nb_frames)(OpusRepacketizer* r);
+	const char* (*get_version_string)();
+	int (*multistream_decode)(OpusMSDecoder* d, const unsigned char* data, int32_t datasize, int16_t* pcm,
+		int pcmlen, int fec);
+	int (*multistream_decode_float)(OpusMSDecoder* d, const unsigned char* data, int32_t datasize, float* pcm,
+		int pcmlen, int fec);
+	int32_t (*multistream_decoder_get_size)(int streams, int coupled);
+	int (*multistream_decoder_init)(OpusMSDecoder* d, int32_t fs, int ch, int st, int co,
+		const unsigned char* map);
+	int (*multistream_encode)(OpusMSEncoder* d, const int16_t* pcm, int pcmlen, unsigned char* data,
+		int32_t datasize);
+	int (*multistream_encode_float)(OpusMSEncoder* d, const float* pcm, int pcmlen, unsigned char* data,
+		int32_t datasize);
+	int32_t (*multistream_encoder_get_size)(int streams, int coupled);
+	int (*multistream_encoder_init)(OpusMSEncoder* d, int32_t fs, int ch, int st, int co,
+		const unsigned char* map, int app);
+	int (*packet_get_bandwidth)(const unsigned char* p);
+	int (*packet_get_nb_channels)(const unsigned char* p);
+	int (*packet_get_nb_frames)(const unsigned char* p, int32_t psize);
+	int (*packet_get_samples_per_frame)(const unsigned char* p, int32_t fs);
+	int (*packet_parse)(const unsigned char* data, int32_t dsize, unsigned char* toc,
+		const unsigned char* fdata[48], short fsize[48], int* poffset);
+	int32_t (*multistream_surround_encoder_get_size)(int ch, int f);
+	int (*multistream_surround_encoder_init)(OpusMSEncoder* e, int32_t fs, int ch, int f, int* st, int* co,
+		unsigned char* map, int app);
+};
+
+struct functions dummy_functions = {
+	.encoder_ctl = dummy_encoder_ctl,
+	.decoder_ctl = dummy_decoder_ctl,
+	.multistream_encoder_ctl = dummy_multistream_encoder_ctl,
+	.multistream_decoder_ctl = dummy_multistream_decoder_ctl,
+	.encoder_init = [](OpusEncoder* e, int32_t fs, int ch, int app) -> int { throw not_loaded(); },
+	.decoder_init = [](OpusDecoder* e, int32_t fs, int ch) -> int { throw not_loaded(); },
+	.encoder_get_size = [](int ch) -> int { throw not_loaded(); },
+	.decoder_get_size = [](int ch) -> int { throw not_loaded(); },
+	.encode = [](OpusEncoder* e, const int16_t* pcm, int frames, unsigned char* data, int32_t maxout)
+		-> int32_t { throw not_loaded(); },
+	.encode_float = [](OpusEncoder* e, const float* pcm, int frames, unsigned char* data, int32_t maxout)
+		-> int32_t { throw not_loaded(); },
+	.decode = [](OpusDecoder* e, const unsigned char* data, int32_t datasize, int16_t* pcm, int frames, int fec)
+		-> int32_t { throw not_loaded(); },
+	.decode_float = [](OpusDecoder* e, const unsigned char* data, int32_t datasize, float* pcm, int frames,
+		int fec) -> int32_t { throw not_loaded(); },
+	.decoder_get_nb_samples = [](const OpusDecoder* dec, const unsigned char packet[], int32_t len)
+		-> int { throw not_loaded(); },
+	.repacketizer_init = [](OpusRepacketizer* r) -> OpusRepacketizer* { throw not_loaded(); },
+	.repacketizer_get_size = []() -> int { throw not_loaded(); },
+	.repacketizer_cat = [](OpusRepacketizer* r, const unsigned char* data, int32_t len)
+		-> int { throw not_loaded(); },
+	.repacketizer_out_range = [](OpusRepacketizer* r, int begin, int end, unsigned char* data, int32_t maxlen)
+		-> int32_t { throw not_loaded(); },
+	.repacketizer_out = [](OpusRepacketizer* r, unsigned char* data, int32_t maxlen)
+		-> int32_t { throw not_loaded(); },
+	.repacketizer_get_nb_frames = [](OpusRepacketizer* r) -> int { throw not_loaded(); },
+	.get_version_string = []() -> const char* { throw not_loaded(); },
+	.multistream_decode = [](OpusMSDecoder* d, const unsigned char* data, int32_t datasize, int16_t* pcm,
+		int pcmlen, int fec) -> int { throw not_loaded(); },
+	.multistream_decode_float = [](OpusMSDecoder* d, const unsigned char* data, int32_t datasize, float* pcm,
+		int pcmlen, int fec) -> int { throw not_loaded(); },
+	.multistream_decoder_get_size = [](int streams, int coupled) -> int32_t { throw not_loaded(); },
+	.multistream_decoder_init = [](OpusMSDecoder* d, int32_t fs, int ch, int st, int co, const unsigned char* map)
+		-> int { throw not_loaded(); },
+	.multistream_encode = [](OpusMSEncoder* d, const int16_t* pcm, int pcmlen, unsigned char* data,
+		int32_t datasize) -> int { throw not_loaded(); },
+	.multistream_encode_float = [](OpusMSEncoder* d, const float* pcm, int pcmlen, unsigned char* data,
+		int32_t datasize) -> int { throw not_loaded(); },
+	.multistream_encoder_get_size = [](int streams, int coupled) -> int32_t { throw not_loaded(); },
+	.multistream_encoder_init = [](OpusMSEncoder* d, int32_t fs, int ch, int st, int co, const unsigned char* map,
+		int app) -> int { throw not_loaded(); },
+	.packet_get_bandwidth = [](const unsigned char* p) -> int { throw not_loaded(); },
+	.packet_get_nb_channels = [](const unsigned char* p) -> int { throw not_loaded(); },
+	.packet_get_nb_frames = [](const unsigned char* p, int32_t psize) -> int { throw not_loaded(); },
+	.packet_get_samples_per_frame = [](const unsigned char* p, int32_t fs) -> int { throw not_loaded(); },
+	.packet_parse = [](const unsigned char* data, int32_t dsize, unsigned char* toc,
+		const unsigned char* fdata[48], short fsize[48], int* poffset) -> int { throw not_loaded(); },
+	.multistream_surround_encoder_get_size = [](int ch, int f) -> int32_t { throw not_loaded(); },
+	.multistream_surround_encoder_init = [](OpusMSEncoder* e, int32_t fs, int ch, int f, int* st, int* co,
+		unsigned char* map, int app) -> int { throw not_loaded(); }
+};
+
+struct functions* opus_functions = &dummy_functions;
+
+std::map<size_t, std::function<void()>> lcbs;
+mutex_class mut;
+
+template<typename T> void CA(T& d, void* s)
+{
+	d = reinterpret_cast<T>(s);
+}
+
+void load_libopus(loaded_library& lib)
+{
+	static functions lfun;
+	functions tmp;
+
+	CA(tmp.encoder_ctl, lib["opus_encoder_ctl"]);
+	CA(tmp.decoder_ctl, lib["opus_decoder_ctl"]);
+	CA(tmp.multistream_encoder_ctl, lib["opus_multistream_encoder_ctl"]);
+	CA(tmp.multistream_decoder_ctl, lib["opus_multistream_decoder_ctl"]);
+	CA(tmp.encoder_init, lib["opus_encoder_init"]);
+	CA(tmp.decoder_init, lib["opus_decoder_init"]);
+	CA(tmp.encoder_get_size, lib["opus_encoder_get_size"]);
+	CA(tmp.decoder_get_size, lib["opus_decoder_get_size"]);
+	CA(tmp.encode, lib["opus_encode"]);
+	CA(tmp.encode_float, lib["opus_encode_float"]);
+	CA(tmp.decode, lib["opus_decode"]);
+	CA(tmp.decode_float, lib["opus_decode_float"]);
+	CA(tmp.decoder_get_nb_samples, lib["opus_decoder_get_nb_samples"]);
+	CA(tmp.repacketizer_init, lib["opus_repacketizer_init"]);
+	CA(tmp.repacketizer_get_size, lib["opus_repacketizer_get_size"]);
+	CA(tmp.repacketizer_cat, lib["opus_repacketizer_cat"]);
+	CA(tmp.repacketizer_out_range, lib["opus_repacketizer_out_range"]);
+	CA(tmp.repacketizer_out, lib["opus_repacketizer_out"]);
+	CA(tmp.repacketizer_get_nb_frames, lib["opus_repacketizer_get_nb_frames"]);
+	CA(tmp.get_version_string, lib["opus_get_version_string"]);
+	CA(tmp.multistream_decode, lib["opus_multistream_decode"]);
+	CA(tmp.multistream_decode_float, lib["opus_multistream_decode_float"]);
+	CA(tmp.multistream_decoder_get_size, lib["opus_multistream_decoder_get_size"]);
+	CA(tmp.multistream_decoder_init, lib["opus_multistream_decoder_init"]);
+	CA(tmp.multistream_encode, lib["opus_multistream_encode"]);
+	CA(tmp.multistream_encode_float, lib["opus_multistream_encode_float"]);
+	CA(tmp.multistream_encoder_get_size, lib["opus_multistream_encoder_get_size"]);
+	CA(tmp.multistream_encoder_init, lib["opus_multistream_encoder_init"]);
+	CA(tmp.packet_get_bandwidth, lib["opus_packet_get_bandwidth"]);
+	CA(tmp.packet_get_nb_channels, lib["opus_packet_get_nb_channels"]);
+	CA(tmp.packet_get_nb_frames, lib["opus_packet_get_nb_frames"]);
+	CA(tmp.packet_get_samples_per_frame, lib["opus_packet_get_samples_per_frame"]);
+	CA(tmp.packet_parse, lib["opus_packet_parse"]);
+	try {
+		CA(tmp.multistream_surround_encoder_get_size, lib["opus_multistream_surround_encoder_get_size"]);
+		CA(tmp.multistream_surround_encoder_init, lib["opus_multistream_surround_encoder_init"]);
+	} catch(...) {
+		tmp.multistream_surround_encoder_get_size = dummy_functions.multistream_surround_encoder_get_size;
+		tmp.multistream_surround_encoder_init = dummy_functions.multistream_surround_encoder_init;
+	}
+
+	lfun = tmp;
+	umutex_class h(mut);
+	opus_functions = &lfun;
+	for(auto i : lcbs)
+		(i.second)();
+}
+
+bool libopus_loaded()
+{
+	umutex_class h(mut);
+	return (opus_functions != &dummy_functions);
+}
+
+size_t add_callback(std::function<void()> fun)
+{
+	umutex_class h(mut);
+	static size_t var = 0;
+	size_t hd = 0;
+	if(opus_functions != &dummy_functions)
+		fun();
+	else
+		lcbs[hd = var++] = fun;
+	return hd;
+}
+
+void cancel_callback(size_t handle)
+{
+	umutex_class h(mut);
+	lcbs.erase(handle);
+}
+
+int opus_encoder_ctl(OpusEncoder* e, int req)
+{
+	return opus_functions->encoder_ctl(e, req);
+}
+
+int opus_decoder_ctl(OpusDecoder* e, int req)
+{
+	return opus_functions->decoder_ctl(e, req);
+}
+
+int opus_encoder_ctl(OpusEncoder* e, int req, int* arg)
+{
+	return opus_functions->encoder_ctl(e, req, arg);
+}
+
+int opus_decoder_ctl(OpusDecoder* e, int req, int* arg)
+{
+	return opus_functions->decoder_ctl(e, req, arg);
+}
+
+int opus_encoder_ctl(OpusEncoder* e, int req, int arg)
+{
+	return opus_functions->encoder_ctl(e, req, arg);
+}
+
+int opus_decoder_ctl(OpusDecoder* e, int req, int arg)
+{
+	return opus_functions->decoder_ctl(e, req, arg);
+}
+
+int opus_encoder_ctl(OpusEncoder* e, int req, uint32_t* arg)
+{
+	return opus_functions->encoder_ctl(e, req, arg);
+}
+
+int opus_decoder_ctl(OpusDecoder* e, int req, uint32_t* arg)
+{
+	return opus_functions->decoder_ctl(e, req, arg);
+}
+
+int opus_multistream_encoder_ctl(OpusMSEncoder* e, int req)
+{
+	return opus_functions->multistream_encoder_ctl(e, req);
+}
+
+int opus_multistream_decoder_ctl(OpusMSDecoder* e, int req)
+{
+	return opus_functions->multistream_decoder_ctl(e, req);
+}
+
+int opus_multistream_encoder_ctl(OpusMSEncoder* e, int req, int arg)
+{
+	return opus_functions->multistream_encoder_ctl(e, req, arg);
+}
+
+int opus_multistream_decoder_ctl(OpusMSDecoder* e, int req, int arg)
+{
+	return opus_functions->multistream_decoder_ctl(e, req, arg);
+}
+
+int opus_multistream_encoder_ctl(OpusMSEncoder* e, int req, int* arg)
+{
+	return opus_functions->multistream_encoder_ctl(e, req, arg);
+}
+
+int opus_multistream_decoder_ctl(OpusMSDecoder* e, int req, int* arg)
+{
+	return opus_functions->multistream_decoder_ctl(e, req, arg);
+}
+
+int opus_multistream_encoder_ctl(OpusMSEncoder* e, int req, int arg, OpusEncoder** arg2)
+{
+	return opus_functions->multistream_encoder_ctl(e, req, arg, arg2);
+}
+
+int opus_multistream_decoder_ctl(OpusMSDecoder* e, int req, int arg, OpusDecoder** arg2)
+{
+	return opus_functions->multistream_decoder_ctl(e, req, arg, arg2);
+}
+
+int opus_encoder_init(OpusEncoder* e, int32_t fs, int ch, int app)
+{
+	return opus_functions->encoder_init(e, fs, ch, app);
+}
+
+int opus_decoder_init(OpusDecoder* e, int32_t fs, int ch)
+{
+	return opus_functions->decoder_init(e, fs, ch);
+}
+
+int opus_encoder_get_size(int ch)
+{
+	return opus_functions->encoder_get_size(ch);
+}
+
+int opus_decoder_get_size(int ch)
+{
+	return opus_functions->decoder_get_size(ch);
+}
+
+int32_t opus_encode(OpusEncoder* e, const int16_t* pcm, int frames, unsigned char* data, int32_t maxout)
+{
+	return opus_functions->encode(e, pcm, frames, data, maxout);
+}
+
+int32_t opus_encode_float(OpusEncoder* e, const float* pcm, int frames, unsigned char* data, int32_t maxout)
+{
+	return opus_functions->encode_float(e, pcm, frames, data, maxout);
+}
+
+int32_t opus_decode(OpusDecoder* e, const unsigned char* data, int32_t datasize, int16_t* pcm, int frames, int fec)
+{
+	return opus_functions->decode(e, data, datasize, pcm, frames, fec);
+}
+
+int32_t opus_decode_float(OpusDecoder* e, const unsigned char* data, int32_t datasize, float* pcm, int frames,
+	int fec)
+{
+	return opus_functions->decode_float(e, data, datasize, pcm, frames, fec);
+}
+
+int opus_decoder_get_nb_samples(const OpusDecoder* dec, const unsigned char packet[], int32_t len)
+{
+	return opus_functions->decoder_get_nb_samples(dec, packet, len);
+}
+
+OpusRepacketizer *opus_repacketizer_init(OpusRepacketizer* r)
+{
+	return opus_functions->repacketizer_init(r);
+}
+
+int opus_repacketizer_get_size()
+{
+	return opus_functions->repacketizer_get_size();
+}
+
+int opus_repacketizer_cat(OpusRepacketizer* r, const unsigned char* data, int32_t len)
+{
+	return opus_functions->repacketizer_cat(r, data, len);
+}
+
+int32_t opus_repacketizer_out_range(OpusRepacketizer* r, int begin, int end, unsigned char* data, int32_t maxlen)
+{
+	return opus_functions->repacketizer_out_range(r, begin, end, data, maxlen);
+}
+
+int32_t opus_repacketizer_out(OpusRepacketizer* r, unsigned char* data, int32_t maxlen)
+{
+	return opus_functions->repacketizer_out(r, data, maxlen);
+}
+
+int opus_repacketizer_get_nb_frames(OpusRepacketizer* r)
+{
+	return opus_functions->repacketizer_get_nb_frames(r);
+}
+
+const char* opus_get_version_string()
+{
+	return opus_functions->get_version_string();
+}
+
+int opus_multistream_decode(OpusMSDecoder* d, const unsigned char* data, int32_t datasize, int16_t* pcm, int pcmlen,
+	int fec)
+{
+	return opus_functions->multistream_decode(d, data, datasize, pcm, pcmlen, fec);
+}
+
+int opus_multistream_decode_float(OpusMSDecoder* d, const unsigned char* data, int32_t datasize, float* pcm,
+	int pcmlen, int fec)
+{
+	return opus_functions->multistream_decode_float(d, data, datasize, pcm, pcmlen, fec);
+}
+
+int32_t opus_multistream_decoder_get_size(int streams, int coupled)
+{
+	return opus_functions->multistream_decoder_get_size(streams, coupled);
+}
+
+int opus_multistream_decoder_init(OpusMSDecoder* d, int32_t fs, int ch, int st, int co, const unsigned char* map)
+{
+	return opus_functions->multistream_decoder_init(d, fs, ch, st, co, map);
+}
+
+int opus_multistream_encode(OpusMSEncoder* d, const int16_t* pcm, int pcmlen, unsigned char* data, int32_t datasize)
+{
+	return opus_functions->multistream_encode(d, pcm, pcmlen, data, datasize);
+}
+
+int opus_multistream_encode_float(OpusMSEncoder* d, const float* pcm, int pcmlen, unsigned char* data,
+	int32_t datasize)
+{
+	return opus_functions->multistream_encode_float(d, pcm, pcmlen, data, datasize);
+}
+
+int32_t opus_multistream_encoder_get_size(int streams, int coupled)
+{
+	return opus_functions->multistream_encoder_get_size(streams, coupled);
+}
+
+int opus_multistream_encoder_init(OpusMSEncoder* d, int32_t fs, int ch, int st, int co, const unsigned char* map,
+	int app)
+{
+	return opus_functions->multistream_encoder_init(d, fs, ch, st, co, map, app);
+}
+
+int opus_packet_get_bandwidth(const unsigned char* p)
+{
+	return opus_functions->packet_get_bandwidth(p);
+}
+
+int opus_packet_get_nb_channels(const unsigned char* p)
+{
+	return opus_functions->packet_get_nb_channels(p);
+}
+
+int opus_packet_get_nb_frames(const unsigned char* p, int32_t psize)
+{
+	return opus_functions->packet_get_nb_frames(p, psize);
+}
+
+int opus_packet_get_samples_per_frame(const unsigned char* p, int32_t fs)
+{
+	return opus_functions->packet_get_samples_per_frame(p, fs);
+}
+
+int opus_packet_parse(const unsigned char* data, int32_t dsize, unsigned char* toc, const unsigned char* fdata[48],
+	short fsize[48], int* poffset)
+{
+	return opus_functions->packet_parse(data, dsize, toc, fdata, fsize, poffset);
+}
+
+bool opus_surround_supported()
+{
+	return (opus_functions->multistream_surround_encoder_get_size !=
+		dummy_functions.multistream_surround_encoder_get_size);
+}
+
+int32_t opus_multistream_surround_encoder_get_size(int ch, int f)
+{
+	return opus_functions->multistream_surround_encoder_get_size(ch, f);
+}
+
+int opus_multistream_surround_encoder_init(OpusMSEncoder* e, int32_t fs, int ch, int f, int* st, int* co,
+	unsigned char* map, int app)
+{
+	return opus_functions->multistream_surround_encoder_init(e, fs, ch, f, st, co, map, app);
+}
+#else
+void load_libopus(loaded_library& lib)
+{
+}
+
+bool libopus_loaded()
+{
+	return true;
+}
+
+size_t add_callback(std::function<void()> fun)
+{
+	fun();
+	return 0;
+}
+
+void cancel_callback(size_t handle)
+{
+}
+
+#endif
 samplerate samplerate::r8k(8000);
 samplerate samplerate::r12k(12000);
 samplerate samplerate::r16k(16000);
@@ -87,6 +629,9 @@ unimplemented::unimplemented()
 
 invalid_state::invalid_state()
 	: std::runtime_error("Invalid state") {}
+
+not_loaded::not_loaded()
+	: std::runtime_error("Library not loaded") {}
 
 const unsigned f1_streams[] = {0, 1, 1, 2, 2, 3, 4, 4, 5};
 const unsigned f1_coupled[] = {0, 0, 1, 1, 2, 2, 2, 3, 3};
@@ -513,27 +1058,27 @@ void set_control_int::operator()(multistream_decoder& d) const
 
 int32_t get_control_int::operator()(encoder& e) const
 {
-	return generic_ctl<int32_t>(e, ctl);
+	return generic_ctl<int>(e, ctl);
 }
 
 int32_t get_control_int::operator()(decoder& d) const
 {
-	return generic_ctl<int32_t>(d, ctl);
+	return generic_ctl<int>(d, ctl);
 }
 
 int32_t get_control_int::operator()(multistream_encoder& e) const
 {
-	return generic_ctl<int32_t>(e, ctl);
+	return generic_ctl<int>(e, ctl);
 }
 
 int32_t get_control_int::operator()(surround_encoder& e) const
 {
-	return generic_ctl<int32_t>(e, ctl);
+	return generic_ctl<int>(e, ctl);
 }
 
 int32_t get_control_int::operator()(multistream_decoder& d) const
 {
-	return generic_ctl<int32_t>(d, ctl);
+	return generic_ctl<int>(d, ctl);
 }
 
 void force_instantiate()
@@ -842,7 +1387,7 @@ multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, un
 	memory = _memory ? alignptr(_memory, alignof(encoder)) : new char[size(streams, coupled_streams)];
 	try {
 		offset = _streams * sizeof(encoder);
-		throwex(opus_multistream_encoder_init(ME(*this), rate, channels, _streams, coupled_streams, mapping,
+		throwex(opus_multistream_encoder_init(ME(*this), rate, _channels, _streams, coupled_streams, mapping,
 			app));
 		init_structures(_channels, _streams, coupled_streams);
 	} catch(...) {
@@ -883,7 +1428,7 @@ void multistream_encoder::init_structures(unsigned _channels, unsigned _streams,
 	opussize = opus_multistream_encoder_get_size(streams, coupled);
 	for(int32_t i = 0; i < streams; i++) {
 		OpusEncoder* e;
-		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE(i, &e));
+		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST, (int)i, &e);
 		new(substream(i)) encoder(e, i < coupled);
 	}
 }
@@ -923,14 +1468,14 @@ size_t surround_encoder::size(unsigned channels, unsigned family)
 {
 	//Be conservative with memory, as stream count is not known.
 #ifdef OPUS_SUPPORTS_SURROUND
+	if(SURROUND_SUPPORTED)
 	return alignof(encoder) + channels * sizeof(encoder) + opus_multistream_surround_encoder_get_size(channels,
 		family);
-#else
+#endif
 	int streams, coupled;
 	lookup_params(channels, family, streams, coupled);
 	//We use channels and not streams here to keep compatiblity on fallback.
 	return alignof(encoder) + channels * sizeof(encoder) + opus_multistream_encoder_get_size(streams, coupled);
-#endif
 }
 
 surround_encoder::~surround_encoder()
@@ -949,13 +1494,16 @@ surround_encoder::surround_encoder(samplerate rate, unsigned _channels, unsigned
 		unsigned char rmapping[256];
 		offset = _channels * sizeof(encoder);  //Conservative.
 #ifdef OPUS_SUPPORTS_SURROUND
+		if(SURROUND_SUPPORTED)
 		throwex(opus_multistream_surround_encoder_init(ME(*this), rate, _channels, _family, &rstreams, 
 			&rcoupled, rmapping, app));
-#else
+		else
+#endif
+		{
 		lookup_params(_channels, _family, rstreams, rcoupled);
 		generate_mapping(_channels, _family, rmapping);
 		throwex(opus_multistream_encoder_init(ME(*this), rate, channels, rstreams, rcoupled, rmapping, app));
-#endif
+		}
 		init_structures(_channels, rstreams, rcoupled, _family);
 		format.channels = channels;
 		format.family = family;
@@ -997,14 +1545,15 @@ void surround_encoder::init_structures(unsigned _channels, unsigned _streams, un
 	streams = _streams;
 	coupled = _coupled;
 	family = _family;
-#if OPUS_SUPPORTS_SURROUND
+#ifdef OPUS_SUPPORTS_SURROUND
+	if(SURROUND_SUPPORTED)
 	opussize = opus_multistream_surround_encoder_get_size(_channels, family);
-#else
-	opussize = opus_multistream_encoder_get_size(streams, coupled);
+	else
 #endif
+	opussize = opus_multistream_encoder_get_size(streams, coupled);
 	for(int32_t i = 0; i < streams; i++) {
 		OpusEncoder* e;
-		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE(i, &e));
+		opus_multistream_encoder_ctl(ME(*this), OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST, (int)i, &e);
 		new(substream(i)) encoder(e, i < coupled);
 	}
 }
@@ -1052,7 +1601,9 @@ multistream_decoder::multistream_decoder(samplerate rate, unsigned _channels, un
 	user = (_memory != NULL);
 	memory = _memory ? alignptr(_memory, alignof(decoder)) : new char[size(streams, coupled_streams)];
 	try {
-		throwex(opus_multistream_decoder_init(MD(*this), rate, channels, streams, coupled_streams, mapping));
+		offset = _streams * sizeof(encoder);
+		throwex(opus_multistream_decoder_init(MD(*this), rate, _channels, _streams, coupled_streams,
+			mapping));
 		init_structures(_channels, _streams, coupled_streams);
 	} catch(...) {
 		if(!user)
@@ -1095,7 +1646,7 @@ void multistream_decoder::init_structures(unsigned _channels, unsigned _streams,
 	opussize = opus_multistream_decoder_get_size(streams, coupled);
 	for(int32_t i = 0; i < (size_t)streams; i++) {
 		OpusDecoder* d;
-		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE(i, &d));
+		opus_multistream_decoder_ctl(MD(*this), OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST, (int)i, &d);
 		new(substream(i)) decoder(d, i < coupled);
 	}
 }
@@ -1175,4 +1726,3 @@ std::string version()
 }
 
 }
-#endif

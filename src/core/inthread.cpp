@@ -1,6 +1,5 @@
 #include <lsnes.hpp>
 #include <cstdint>
-#ifdef WITH_OPUS_CODEC
 #include "library/filesys.hpp"
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
@@ -635,7 +634,7 @@ out:
 		header.coupled = 0;
 		header.chanmap[0] = 0;
 		memset(header.chanmap + 1, 255, 254);
-		tags.vendor = opus::version();
+		tags.vendor = "unknown";
 		tags.comments.push_back((stringfmt() << "ENCODER=lsnes rr" + lsnes_version).str());
 		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
 		struct ogg_page hpage = serialize_oggopus_header(header);
@@ -658,9 +657,7 @@ out:
 			}
 			if(!p.size())
 				(stringfmt() << "Empty Opus packet is not valid").throwex();
-			uint32_t frames = opus::packet_get_nb_frames(&p[0], p.size());
-			uint32_t samples_pf = opus::packet_get_samples_per_frame(&p[0], opus::samplerate::r48k);
-			uint32_t samples = frames * samples_pf;
+			uint32_t samples = static_cast<uint32_t>(opus_packet_tick_count(&p[0], p.size())) * 120;
 			if(i + 1 < packets.size())
 				true_granule += samples;
 			else
@@ -1547,6 +1544,10 @@ out:
 		void kill()
 		{
 			quit = true;
+			{
+				umutex_class h(lmut);
+				lcond.notify_all();
+			}
 			while(!quit_ack)
 				usleep(100000);
 			usleep(100000);
@@ -1565,6 +1566,21 @@ out:
 		}
 		void entry2()
 		{
+			//Wait for libopus to load...
+			size_t cbh = opus::add_callback([this]() {
+				umutex_class h(this->lmut);
+				this->lcond.notify_all();
+			});
+			while(true) {
+				umutex_class h(lmut);
+				if(opus::libopus_loaded() || quit)
+					break;
+				lcond.wait(h);
+			}
+			opus::cancel_callback(cbh);
+			if(quit)
+				return;
+
 			int err;
 			opus::encoder oenc(opus::samplerate::r48k, false, opus::application::voice);
 			oenc.ctl(opus::bitrate(opus_bitrate.get()));
@@ -1645,6 +1661,8 @@ out:
 		double position;
 		volatile bool quit;
 		volatile bool quit_ack;
+		mutex_class lmut;
+		cv_class lcond;
 	};
 
 	//The tangent function.
@@ -1861,8 +1879,3 @@ double voicesub_ts_seconds(uint64_t ts)
 {
 	return ts / 48000.0;
 }
-#else
-void voicethread_task() {}
-void voice_frame_number(uint64_t newframe, double rate) {}
-void voicethread_kill() {}
-#endif

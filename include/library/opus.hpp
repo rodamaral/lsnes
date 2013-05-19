@@ -5,15 +5,24 @@
 #include <cstdlib>
 #include <stdexcept>
 #include <vector>
+#include <functional>
+
+class loaded_library;
 
 namespace opus
 {
+void load_libopus(loaded_library& lib);
+bool libopus_loaded();
+size_t add_callback(std::function<void()> fun);
+void cancel_callback(size_t handle);
+
 struct bad_argument : public std::runtime_error { bad_argument(); };
 struct buffer_too_small : public std::runtime_error { buffer_too_small(); };
 struct internal_error : public std::runtime_error { internal_error(); };
 struct invalid_packet : public std::runtime_error { invalid_packet(); };
 struct unimplemented : public std::runtime_error { unimplemented(); };
 struct invalid_state : public std::runtime_error { invalid_state(); };
+struct not_loaded : public std::runtime_error { not_loaded(); };
 
 class encoder;
 class decoder;

@@ -8,9 +8,7 @@
 #include <set>
 #include "random.hpp"
 #include "library/ogg.hpp"
-#ifdef WITH_OPUS_CODEC
 #include "library/opus.hpp"
-#endif
 
 namespace sky
 {
@@ -133,9 +131,7 @@ namespace sky
 		uint16_t pcmlen;
 		int16_t pcmbuf[11522];
 	private:
-#ifdef WITH_OPUS_CODEC
 		opus::multistream_decoder* d;
-#endif
 		uint8_t channels;
 		float downmix_l[255];
 		float downmix_r[255];
