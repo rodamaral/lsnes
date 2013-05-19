@@ -329,7 +329,7 @@ namespace
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		try {
 			const port_type& p = s.port_type(port);
-			L.pushstring(p.hname.c_str());
+			L.pushlstring(p.name);
 		} catch(...) {
 			return 0;
 		}
