@@ -216,6 +216,7 @@ text_framebuffer_panel::text_framebuffer_panel(wxWindow* parent, size_t w, size_
 {
 	redirect = _redirect;
 	auto psize = get_pixels();
+	size_changed = false;
 	SetMinSize(wxSize(psize.first, psize.second));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(text_framebuffer_panel::on_paint), NULL, this);
 	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(text_framebuffer_panel::on_erase), NULL, this);
