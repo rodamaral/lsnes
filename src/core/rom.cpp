@@ -418,6 +418,7 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 	throw(std::bad_alloc, std::runtime_error)
 {
+	core_core* old_core = current_rom_type->get_core();
 	current_rom_type = &type_null;
 	if(!orig_region && rtype != &type_null)
 		orig_region = &rtype->get_preferred_region();
@@ -446,6 +447,9 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	current_rom_type = rtype;
 	current_region = region;
 	current_romfile = load_filename;
+	//If core changes, unload the cartridge.
+	if(old_core != current_rom_type->get_core())
+		try { old_core->unload_cartridge(); } catch(...) {}
 	refresh_cart_mappings();
 }
 

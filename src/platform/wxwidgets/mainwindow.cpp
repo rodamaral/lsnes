@@ -117,6 +117,7 @@ enum
 	wxID_NEW_PROJECT,
 	wxID_LOAD_PROJECT,
 	wxID_CLOSE_PROJECT,
+	wxID_CLOSE_ROM,
 };
 
 
@@ -762,7 +763,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_end_sub();
 	menu_start_sub(wxT("Close"));
 	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));
+	menu_entry(wxID_CLOSE_ROM, wxT("ROM"));
 	menu_enable(wxID_CLOSE_PROJECT, project_get() != NULL);
+	menu_enable(wxID_CLOSE_ROM, project_get() == NULL);
 	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
@@ -956,6 +959,7 @@ void wxwin_mainwindow::refresh_title() throw()
 	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
 	menu_enable(wxID_LOAD_ROM_IMAGE, !p);
 	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
+	menu_enable(wxID_CLOSE_ROM, p == NULL);
 }
 
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
@@ -1306,6 +1310,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	}
 	case wxID_CLOSE_PROJECT:
 		runemufn([]() -> void { project_set(NULL); });
+		return;
+	case wxID_CLOSE_ROM:
+		runemufn([]() -> void { close_rom(); });
 		return;
 	};
 }

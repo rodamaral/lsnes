@@ -73,6 +73,7 @@ namespace
 	//Emulator advance mode. Detemines pauses at start of frame / subframe, etc..
 	enum advance_mode amode;
 	//Mode and filename of pending load, one of LOAD_* constants.
+	bool load_paused;
 	int loadmode;
 	std::string pending_load;
 	std::string pending_new_project;
@@ -282,6 +283,22 @@ namespace
 		}
 		queued_saves.insert(filename);
 		messages << "Pending save on '" << filename << "'" << std::endl;
+	}
+
+	bool reload_null_rom()
+	{
+		if(project_get()) {
+			std::cerr << "Can't switch ROM with project active." << std::endl;
+			return false;
+		}
+		loaded_rom newrom;
+		*our_rom = newrom;
+		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+			our_movie.romimg_sha256[i] = "";
+			our_movie.romxml_sha256[i] = "";
+		}
+		information_dispatch::do_core_change();
+		return true;
 	}
 
 	bool reload_rom(const std::string& filename)
@@ -986,8 +1003,9 @@ nothing_to_do:
 			}
 			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 			pending_load = "";
-			amode = ADVANCE_AUTO;
-			platform::set_paused(false);
+			amode = load_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
+			platform::set_paused(load_paused);
+			load_paused = false;
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
@@ -1160,4 +1178,12 @@ void switch_projects(const std::string& newproj)
 	old_mode = ADVANCE_PAUSE;
 	platform::cancel_wait();
 	platform::set_paused(false);
+}
+
+void close_rom()
+{
+	if(reload_null_rom()) {
+		load_paused = true;
+		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+	}
 }

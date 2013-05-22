@@ -226,6 +226,7 @@ public:
 	std::pair<uint64_t, uint64_t> get_bus_map();
 	std::list<core_vma_info> vma_list();
 	std::set<std::string> srams();
+	core_core* get_core() { return core; }
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
