@@ -24,6 +24,6 @@ extern std::string msu1_base_path;
 void mainloop_signal_need_rewind(void* ptr);
 
 void set_stop_at_frame(uint64_t frame = 0);
-
+void switch_projects(const std::string& newproj);
 
 #endif

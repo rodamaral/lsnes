@@ -75,6 +75,7 @@ namespace
 	//Mode and filename of pending load, one of LOAD_* constants.
 	int loadmode;
 	std::string pending_load;
+	std::string pending_new_project;
 	//Queued saves (all savestates).
 	std::set<std::string> queued_saves;
 	//Save jukebox.
@@ -943,6 +944,29 @@ namespace
 			messages << "Rewind done in " << (get_utime() - t) << " usec." << std::endl;
 			return 1;
 		}
+		if(pending_new_project != "") {
+			std::string id = pending_new_project;
+			pending_new_project = "";
+			project_info* old = project_get();
+			if(old && old->id == id)
+				goto nothing_to_do;
+			try {
+				auto& p = project_load(id);
+				project_set(&p);
+				if(project_get() != old)
+					delete old;
+				flush_slotinfo();	//Wrong movie may be stale.
+				return 1;
+			} catch(std::exception& e) {
+				messages << "Can't switch projects: " << e.what() << std::endl;
+				goto nothing_to_do;
+			}
+nothing_to_do:
+			amode = old_mode;
+			platform::set_paused(amode == ADVANCE_PAUSE);
+			platform::flush_command_queue();
+			return 0;
+		}
 		if(pending_load != "") {
 			std::string old_project = our_movie.projectid;
 			system_corrupt = false;
@@ -963,7 +987,6 @@ namespace
 			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 			pending_load = "";
 			amode = ADVANCE_AUTO;
-			platform::cancel_wait();
 			platform::set_paused(false);
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
@@ -1005,7 +1028,6 @@ namespace
 		if(!system_corrupt)
 			return false;
 		while(system_corrupt) {
-			platform::cancel_wait();
 			platform::set_paused(true);
 			platform::flush_command_queue();
 			handle_load();
@@ -1098,7 +1120,6 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			//If we just loadstated, we are up to date.
 			if(amode == ADVANCE_QUIT)
 				break;
-			platform::cancel_wait();
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
 			//We already have done the reset this frame if we are going to do one at all.
@@ -1130,4 +1151,13 @@ void set_stop_at_frame(uint64_t frame)
 void do_flush_slotinfo()
 {
 	flush_slotinfo();
+}
+
+void switch_projects(const std::string& newproj)
+{
+	pending_new_project = newproj;
+	amode = ADVANCE_LOAD;
+	old_mode = ADVANCE_PAUSE;
+	platform::cancel_wait();
+	platform::set_paused(false);
 }

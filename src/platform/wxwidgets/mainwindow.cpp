@@ -1294,13 +1294,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		}
 		std::string id = a[d2->GetSelection()];
 		runemufn([id]() -> void {
-			project_info* old_proj = project_get();
-			if(old_proj && old_proj->id == id)
-				return;
 			try {
-				project_info& proj = project_load(id);
-				if(project_set(&proj))
-					delete old_proj;
+				delete &project_load(id);	//Check.
+				switch_projects(id);
 			} catch(std::exception& e) {
 				messages << "Failed to change project: " << e.what() << std::endl;
 			}
