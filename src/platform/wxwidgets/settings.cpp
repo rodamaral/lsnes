@@ -1801,7 +1801,7 @@ namespace
 			s1->Add(new wxStaticText(this, wxID_ANY, towxstring("Set " + name + " to value:")), 0,
 				wxGROW);
 			
-			s1->Add(sp = new wxSpinCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize,
+			s1->Add(sp = new wxSpinCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 				wxSP_ARROW_KEYS, minval, maxval, parse_value<int64_t>(val)), 1, wxGROW);
 
 			wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -1854,7 +1854,7 @@ namespace
 
 			s1->SetSizeHints(this);
 		}
-		std::string get_value() { return towxstring(pth->GetValue()); }
+		std::string get_value() { return tostdstring(pth->GetValue()); }
 		void on_pbutton(wxCommandEvent& e) {
 			wxDirDialog* d;
 			d = new wxDirDialog(this, wxT("Select project directory"),
