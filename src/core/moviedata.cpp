@@ -417,8 +417,10 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode != LOAD_STATE_PRESERVE)
 		our_movie = _movie;
 	else {
-		//The is_savestate MUST be taken from movie (except LOAD_STATE_MOVIE), or one gets desyncs.
+		//Some fields MUST be taken from movie or one gets desyncs.
 		our_movie.is_savestate = _movie.is_savestate;
+		our_movie.rtc_second = _movie.rtc_second;
+		our_movie.rtc_subsecond = _movie.rtc_subsecond;
 	}
 	if(!our_movie.is_savestate || lmode == LOAD_STATE_MOVIE) {
 		our_movie.is_savestate = false;
