@@ -10,6 +10,7 @@ struct lua_unsaferewind
 	uint64_t secs;
 	uint64_t ssecs;
 	std::vector<uint32_t> pollcounters;
+	std::vector<char> hostmemory;
 };
 
 #endif
