@@ -616,6 +616,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 				run_lua_cb(0);
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
+			try { get_host_memory() = u2->hostmemory; } catch(...) {}
 			if(callback_exists("on_post_rewind"))
 				run_lua_cb(0);
 		} catch(...) {
@@ -628,6 +629,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
+			u2->hostmemory = get_host_memory();
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			run_lua_cb(1);
 		}
