@@ -811,8 +811,8 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 			if(gy < 0)	ystart = -gy;
 			xlength -= xstart;
 			ylength -= ystart;
-			if(gx + xlength > swidth)	xlength = swidth - gx;
-			if(gy + ylength > sheight)	ylength = sheight - gy;
+			if(gx + xstart + xlength > swidth)	xlength = swidth - (gx + xstart);
+			if(gy + ystart + ylength > sheight)	ylength = sheight - (gy + ystart);
 			if(g.data)
 				for(size_t i = 0; i < ylength; i++) {
 					typename framebuffer<X>::element_t* r = scr.rowptr(gy + ystart + i) +
