@@ -50,7 +50,7 @@ namespace
 		"Delays‣Subframe advance", 100);
 	setting_var<setting_var_model_bool<setting_yes_no>> pause_on_end(lsnes_vset, "pause-on-end",
 		"Movie‣Pause on end", false);
-	setting_var<setting_var_model_int<0,999>> jukebox_size(lsnes_vset, "jukebox-size",
+	setting_var<setting_var_model_int<0,999999999>> jukebox_size(lsnes_vset, "jukebox-size",
 		"Movie‣Number of save slots", 12);
 
 	enum advance_mode
