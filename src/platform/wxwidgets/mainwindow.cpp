@@ -916,8 +916,8 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 			s << U"  Slot: " << read_variable_map(vars, "!saveslot");
 		if(vars.count("!saveslotinfo"))
 			s << U" [" << read_variable_map(vars, "!saveslotinfo") << U"]";
-		s << U"  Speed: " << read_variable_map(vars, "!speed") << "%";
-		s << " ";
+		s << U"  Speed: " << read_variable_map(vars, "!speed") << U"%";
+		s << U" ";
 		if(read_variable_map(vars, "!dumping") != U"")
 			s << U" Dumping";
 		if(read_variable_map(vars, "!mode") == U"C")
