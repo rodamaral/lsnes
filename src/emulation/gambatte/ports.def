@@ -12,10 +12,10 @@ ports = {
 					{button, "B", "B"},
 					{button, "s", "select"},
 					{button, "S", "start"},
-					{button, "\\u2192", "right", "r"},
-					{button, "\\u2190", "left", "l"},
-					{button, "\\u2191", "up", "u"},
-					{button, "\\u2193", "down", "d"},
+					{button, "\\u2192", "right", "r", ">"},
+					{button, "\\u2190", "left", "l", "<"},
+					{button, "\\u2191", "up", "u", "^"},
+					{button, "\\u2193", "down", "d", "v"},
 				}
 			}
 		}, ["legal"] = {0}

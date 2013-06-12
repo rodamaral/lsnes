@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 
 #include "core/command.hpp"
+#include "core/controller.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
@@ -252,3 +253,32 @@ void reached_main()
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
 }
+
+
+
+function_ptr_command<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",
+	[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		regex_results r = regex("([0-9]+)[ \t](.*)", args);
+		if(!r) {
+			messages << "Bad syntax" << std::endl;
+			return;
+		}
+		unsigned ctrl = parse_value<unsigned>(r[1]);
+		auto pcid = controls.lcid_to_pcid(ctrl);
+		if(pcid.first < 0) {
+			messages << "Bad controller" << std::endl;
+			return;
+		}
+		try {
+			const port_controller* _ctrl = controls.get_blank().porttypes().port_type(pcid.first).
+				controller_info->get(pcid.second);
+			if(!_ctrl) {
+				messages << "No controller data for controller" << std::endl;
+				return;
+			}
+			controller_macro_data mdata(r[2].c_str(), controller_macro_data::make_descriptor(*_ctrl));
+			messages << "Macro: " << mdata.dump(*_ctrl) << std::endl;
+		} catch(std::exception& e) {
+			messages << "Exception: " << e.what() << std::endl;
+		}
+	});

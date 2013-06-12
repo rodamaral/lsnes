@@ -1,4 +1,5 @@
 #include "core/command.hpp"
+#include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/inthread.hpp"
 #include "core/project.hpp"
@@ -177,6 +178,8 @@ namespace
 			s << "setting." << i.first << "=" << i.second << std::endl;
 		for(auto i : p.watches)
 			s << "watch." << eq_escape(i.first) << "=" << i.second << std::endl;
+		for(auto i : p.macros)
+			s << "macro." + i.first << "=" << i.second.serialize() << std::endl;
 		for(auto i : p.movie_sram)
 			save_binary(s, "sram." + i.first, i.second);
 		if(p.anchor_savestate.size())
@@ -286,6 +289,12 @@ project_info& project_load(const std::string& id)
 			pi.watches[eq_unescape(r[1])] = r[2];
 		else if(r = regex("sram.([^=]+)=(.*)", tmp))
 			concatenate(pi.movie_sram[r[1]], base_decode(r[2]));
+		else if(r = regex("macro.([^=]+)=(.*)", tmp))
+			try {
+				pi.macros[r[1]] = JSON::node(r[2]);
+			} catch(std::exception& e) {
+				messages << "Unable to load macro '" << r[1] << "': " << e.what() << std::endl;
+			}
 		else if(r = regex("anchor=(.*)", tmp))
 			concatenate(pi.anchor_savestate, base_decode(r[1]));
 		else if(r = regex("time=([0-9]+):([0-9]+)", tmp)) {
@@ -387,6 +396,7 @@ skip_rom_movie:
 		lsnes_cmd.invoke("reset-lua");
 		for(auto i : p->luascripts)
 			lsnes_cmd.invoke("run-lua " + i);
+		load_project_macros(controls, *active_project);
 	} catch(std::exception& e) {
 		messages << "Can't switch projects: " << e.what() << std::endl;
 		delete newrom;
@@ -451,4 +461,10 @@ void project_copy_watches(project_info& p)
 {
 	for(auto i : get_watches())
 		p.watches[i] = get_watchexpr_for(i);
+}
+
+void project_copy_macros(project_info& p, controller_state& s)
+{
+	for(auto i : s.enumerate_macro())
+		p.macros[i] = s.get_macro(i).serialize();
 }

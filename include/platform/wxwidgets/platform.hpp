@@ -57,6 +57,7 @@ void wxeditor_movie_display(wxWindow* parent);
 void wxeditor_movie_update();
 void wxeditor_autohold_display(wxWindow* parent);
 void wxeditor_tasinput_display(wxWindow* parent);
+void wxeditor_macro_display(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();

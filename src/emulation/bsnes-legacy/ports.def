@@ -4,10 +4,10 @@ gamepad_controller = {
 		{button, "Y", "Y"},
 		{button, "s", "select"},
 		{button, "S", "start"},
-		{button, "\\u2191", "up", "u"},
-		{button, "\\u2193", "down", "d"},
-		{button, "\\u2190", "left", "l"},
-		{button, "\\u2192", "right", "r"},
+		{button, "\\u2191", "up", "u", "^"},
+		{button, "\\u2193", "down", "d", "v"},
+		{button, "\\u2190", "left", "l", "<"},
+		{button, "\\u2192", "right", "r", ">"},
 		{button, "A", "A"},
 		{button, "X", "X"},
 		{button, "L", "L"},
@@ -21,18 +21,18 @@ gamepad16_controller = {
 		{button, "Y", "Y"},
 		{button, "s", "select"},
 		{button, "S", "start"},
-		{button, "\\u2191", "up", "u"},
-		{button, "\\u2193", "down", "d"},
-		{button, "\\u2190", "left", "l"},
-		{button, "\\u2192", "right", "r"},
+		{button, "\\u2191", "up", "u", "^"},
+		{button, "\\u2193", "down", "d", "v"},
+		{button, "\\u2190", "left", "l", "<"},
+		{button, "\\u2192", "right", "r", ">"},
 		{button, "A", "A"},
 		{button, "X", "X"},
 		{button, "L", "L"},
 		{button, "R", "R"},
-		{button, "0", "ext0"},
-		{button, "1", "ext1"},
-		{button, "2", "ext2"},
-		{button, "3", "ext3"}
+		{button, "0", "ext0", nil, "E0"},
+		{button, "1", "ext1", nil, "E1"},
+		{button, "2", "ext2", nil, "E2"},
+		{button, "3", "ext3", nil, "E3"}
 	}
 };
 
@@ -58,10 +58,10 @@ superscope_controller = {
 	["name"] = "superscope", ["class"] = "superscope", ["buttons"] = {
 		{axis, "xaxis", -16, 271, false},
 		{axis, "yaxis", -16, 255, false},
-		{button, "T", "trigger"},
-		{button, "C", "cursor"},
-		{button, "U", "turbo"},
-		{button, "P", "pause"}
+		{button, "T", "trigger", "T"},
+		{button, "C", "cursor", "C"},
+		{button, "U", "turbo", "U"},
+		{button, "P", "pause", "P"}
 	}
 };
 

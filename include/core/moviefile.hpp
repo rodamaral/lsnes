@@ -163,6 +163,10 @@ struct moviefile
  */
 	std::map<moviefile_subtiming, std::string> subtitles;
 /**
+ * Active macros at savestate.
+ */
+	std::map<std::string, uint64_t> active_macros;
+/**
  * Get number of frames in movie.
  *
  * returns: Number of frames.

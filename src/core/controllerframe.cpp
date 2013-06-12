@@ -1,3 +1,4 @@
+#include "core/controller.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
@@ -6,6 +7,8 @@
 
 #include <cstdio>
 #include <iostream>
+
+void update_movie_state();
 
 namespace
 {
@@ -48,6 +51,7 @@ controller_frame controller_state::get(uint64_t framenum) throw()
 			else if(i.second.mode == 1)
 				tmp.axis2(i.first, i.second.state);
 		}
+	apply_macro(tmp);
 	return tmp;
 }
 
@@ -207,4 +211,168 @@ void controller_state::commit(controller_frame controls) throw()
 bool controller_state::is_present(unsigned port, unsigned controller) throw()
 {
 	return _input.is_present(port, controller);
+}
+
+void controller_state::erase_macro(const std::string& macro)
+{
+	{
+		umutex_class h(macro_lock);
+		if(!all_macros.count(macro))
+			return;
+		auto m = &all_macros[macro];
+		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
+			if(i->second == m) {
+				active_macros.erase(i);
+				break;
+			}
+		}
+		all_macros.erase(macro);
+		project_info* p = project_get();
+		if(p) {
+			p->macros.erase(macro);
+			project_flush(p);
+		}
+	}
+	load_macros(*this);
+}
+
+std::set<std::string> controller_state::enumerate_macro()
+{
+	umutex_class h(macro_lock);
+	std::set<std::string> r;
+	for(auto i : all_macros)
+		r.insert(i.first);
+	return r;
+}
+
+controller_macro& controller_state::get_macro(const std::string& macro)
+{
+	umutex_class h(macro_lock);
+	if(!all_macros.count(macro))
+		throw std::runtime_error("No such macro");
+	return all_macros[macro];
+}
+
+void controller_state::set_macro(const std::string& macro, const controller_macro& m)
+{
+	{
+		umutex_class h(macro_lock);
+		controller_macro* old = NULL;
+		if(all_macros.count(macro))
+			old = &all_macros[macro];
+		all_macros[macro] = m;
+		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
+			if(i->second == old) {
+				i->second = &all_macros[macro];
+				break;
+			}
+		}
+		project_info* p = project_get();
+		if(p) {
+			p->macros[macro] = all_macros[macro].serialize();
+			project_flush(p);
+		}
+	}
+	load_macros(*this);
+}
+
+void controller_state::apply_macro(controller_frame& f)
+{
+	umutex_class h(macro_lock);
+	for(auto i : active_macros)
+		i.second->write(f, i.first);
+}
+
+void controller_state::advance_macros()
+{
+	umutex_class h(macro_lock);
+	for(auto& i : active_macros)
+		i.first++;
+}
+
+std::map<std::string, uint64_t> controller_state::get_macro_frames()
+{
+	umutex_class h(macro_lock);
+	std::map<std::string, uint64_t> r;
+	for(auto i : active_macros) {
+		for(auto& j : all_macros)
+			if(i.second == &j.second) {
+				r[j.first] = i.first;
+			}
+	}
+	return r;
+}
+
+void controller_state::set_macro_frames(const std::map<std::string, uint64_t>& f)
+{
+	umutex_class h(macro_lock);
+	std::list<std::pair<uint64_t, controller_macro*>> new_active_macros;
+	for(auto i : f)
+		if(all_macros.count(i.first))
+			new_active_macros.push_back(std::make_pair(i.second, &all_macros[i.first]));
+		else
+			messages << "Warning: Can't find defintion for '" << i.first << "'" << std::endl;
+	std::swap(active_macros, new_active_macros);
+}
+
+void controller_state::rename_macro(const std::string& old, const std::string& newn)
+{
+	{
+		umutex_class h(macro_lock);
+		if(!all_macros.count(old))
+			throw std::runtime_error("Old macro doesn't exist");
+		if(all_macros.count(newn))
+			throw std::runtime_error("Target name already exists");
+		if(old == newn)
+			return;
+		all_macros[newn] = all_macros[old];
+		controller_macro* _old = &all_macros[old];
+		all_macros.erase(old);
+		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
+			if(i->second == _old) {
+				i->second = &all_macros[newn];
+				break;
+			}
+		}
+		project_info* p = project_get();
+		if(p) {
+			p->macros[newn] = p->macros[old];
+			p->macros.erase(old);
+		}
+	}
+	load_macros(*this);
+}
+
+void controller_state::do_macro(const std::string& a, int mode) {
+	{
+		umutex_class h(macro_lock);
+		if(!all_macros.count(a)) {
+			if(mode & 1) messages << "No such macro '" << a << "'" << std::endl;
+			return;
+		}
+		controller_macro* m = &all_macros[a];
+		for(auto i = active_macros.begin(); i != active_macros.end(); i++) {
+			if(i->second == m) {
+				if(mode & 2) active_macros.erase(i);
+				goto end;
+			}
+		}
+		if(mode & 4) active_macros.push_back(std::make_pair(0, m));
+	}
+end:
+	update_movie_state();
+	information_dispatch::do_status_update();
+}
+
+std::set<std::string> controller_state::active_macro_set()
+{
+	umutex_class h(macro_lock);
+	std::set<std::string> r;
+	for(auto i : active_macros) {
+		for(auto& j : all_macros)
+			if(i.second == &j.second) {
+				r.insert(j.first);
+			}
+	}
+	return r;
 }

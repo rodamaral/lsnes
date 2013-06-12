@@ -6,6 +6,7 @@
 #include "core/framebuffer.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
+#include "core/moviedata.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
@@ -59,6 +60,8 @@ namespace
 		}
 	};
 
+	std::map<std::string, inverse_bind*> macro_binds;
+	std::map<std::string, inverse_bind*> macro_binds2;
 	std::map<std::string, controller_bind> all_buttons;
 	std::map<std::string, active_bind> active_buttons;
 
@@ -480,6 +483,24 @@ namespace
 			do_analog_action(a);
 		});
 
+	function_ptr_command<const std::string&> macro_t(lsnes_cmd, "macro", "Toggle a macro",
+		"Syntax: macro <macroname>\nToggle a macro.\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			controls.do_macro(a, 7);
+		});
+
+	function_ptr_command<const std::string&> macro_e(lsnes_cmd, "+macro", "Enable a macro",
+		"Syntax: +macro <macroname>\nEnable a macro.\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			controls.do_macro(a, 5);
+		});
+
+	function_ptr_command<const std::string&> macro_d(lsnes_cmd, "-macro", "Disable a macro",
+		"Syntax: -macro <macroname>\nDisable a macro.\n",
+		[](const std::string& a) throw(std::bad_alloc, std::runtime_error) {
+			controls.do_macro(a, 2);
+		});
+
 	class new_core_snoop : public information_dispatch
 	{
 	public:
@@ -541,6 +562,41 @@ void reread_active_buttons()
 			}
 		}
 	}
+}
+
+void load_macros(controller_state& ctrlstate)
+{
+	auto s = ctrlstate.enumerate_macro();
+	for(auto i : s) {
+		if(!macro_binds.count(i)) {
+			//New macro, create inverse bind.
+			macro_binds[i] = new inverse_bind(lsnes_mapper, "macro " + i , "Macro‣" + i + " (toggle)");
+			macro_binds2[i] = new inverse_bind(lsnes_mapper, "+macro " + i , "Macro‣" + i + " (hold)");
+		}
+	}
+	for(auto i : macro_binds) {
+		if(!s.count(i.first)) {
+			//Removed macro, delete inverse bind.
+			delete macro_binds[i.first];
+			delete macro_binds2[i.first];
+			macro_binds.erase(i.first);
+			macro_binds2.erase(i.first);
+		}
+	}
+}
+
+void load_project_macros(controller_state& ctrlstate, project_info& pinfo)
+{
+	for(auto i : pinfo.macros)
+		try {
+			ctrlstate.set_macro(i.first, controller_macro(i.second));
+		} catch(std::exception& e) {
+			messages << "Unable to load macro " << i.first << ": " << e.what() << std::endl;
+		}
+	for(auto i : ctrlstate.enumerate_macro())
+		if(!pinfo.macros.count(i))
+			ctrlstate.erase_macro(i);
+	load_macros(ctrlstate);
 }
 
 controller_state controls;

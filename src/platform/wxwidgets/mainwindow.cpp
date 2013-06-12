@@ -118,6 +118,7 @@ enum
 	wxID_LOAD_PROJECT,
 	wxID_CLOSE_PROJECT,
 	wxID_CLOSE_ROM,
+	wxID_EDIT_MACROS,
 };
 
 
@@ -814,6 +815,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_AUTOHOLD, wxT("Autohold/Autofire..."));
 	menu_entry(wxID_TASINPUT, wxT("TAS input plugin..."));
+	menu_entry(wxID_EDIT_MACROS, wxT("Edit macros..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
 	menu_separator();
@@ -930,6 +932,10 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 			s << U" Finished";
 		else 
 			s << U" Unknown";
+		std::u32string macros = read_variable_map(vars, "!macros");
+		if(macros.length())
+			s << U"  Macros: " << macros;
+
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
 	}
@@ -1076,6 +1082,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_EDIT_AUTHORS:
 		wxeditor_authors_display(this);
+		return;
+	case wxID_EDIT_MACROS:
+		wxeditor_macro_display(this);
 		return;
 	case wxID_EDIT_SUBTITLES:
 		wxeditor_subtitles_display(this);

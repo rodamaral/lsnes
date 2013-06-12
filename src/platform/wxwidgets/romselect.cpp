@@ -6,6 +6,7 @@
 
 #include "lsnes.hpp"
 
+#include "core/controller.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviedata.hpp"
 #include "core/framerate.hpp"
@@ -250,6 +251,7 @@ namespace
 		pinfo.movie_rtc_subsecond = our_movie.movie_rtc_subsecond;
 		pinfo.projectid = our_movie.projectid;
 		project_copy_watches(pinfo);
+		project_copy_macros(pinfo, controls);
 		for(unsigned i = 0; i < 27; i++) {
 			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];

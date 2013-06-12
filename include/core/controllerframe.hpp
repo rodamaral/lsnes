@@ -16,6 +16,7 @@
 #include <map>
 #include <list>
 #include "library/controller-data.hpp"
+#include "library/threadtypes.hpp"
 
 /**
  * Controllers state.
@@ -191,6 +192,17 @@ public:
  * TODO: Document.
  */
 	bool is_present(unsigned port, unsigned controller) throw();
+	void erase_macro(const std::string& macro);
+	std::set<std::string> enumerate_macro();
+	controller_macro& get_macro(const std::string& macro);
+	void set_macro(const std::string& macro, const controller_macro& m);
+	void apply_macro(controller_frame& f);
+	void rename_macro(const std::string& old, const std::string& newn);
+	void do_macro(const std::string& a, int mode);
+	std::set<std::string> active_macro_set();
+	void advance_macros();
+	std::map<std::string, uint64_t> get_macro_frames();
+	void set_macro_frames(const std::map<std::string, uint64_t>& f);
 private:
 	struct autofire_info
 	{
@@ -213,6 +225,9 @@ private:
 	std::map<unsigned, tasinput_info> _tasinput;
 	bool tasinput_enaged;
 	controller_frame _committed;
+	std::map<std::string, controller_macro> all_macros;
+	std::list<std::pair<uint64_t, controller_macro*>> active_macros;
+	mutex_class macro_lock;
 };
 
 /**

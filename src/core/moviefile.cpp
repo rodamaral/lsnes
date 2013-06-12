@@ -77,6 +77,55 @@ namespace
 				write_linefile(w, "setting." + i.first, i.second);
 		}
 	}
+
+	std::map<std::string, uint64_t> read_active_macros(zip_reader& r, const std::string& member)
+	{
+		std::map<std::string, uint64_t> x;
+		if(!r.has_member(member))
+			return x;
+		std::istream& m = r[member];
+		try {
+			while(m) {
+				std::string out;
+				std::getline(m, out);
+				istrip_CR(out);
+				if(out == "")
+					continue;
+				regex_results rx = regex("([0-9]+) +(.*)", out);
+				if(!rx) {
+					messages << "Warning: Bad macro state: '" << out << "'" << std::endl;
+					continue;
+				}
+				try {
+					uint64_t f = parse_value<uint64_t>(rx[1]);
+					x[rx[2]] = f;
+				} catch(...) {
+				}
+			}
+			delete &m;
+		} catch(...) {
+			delete &m;
+			throw;
+		}
+		return x;
+	}
+
+	void write_active_macros(zip_writer& w, const std::string& member, const std::map<std::string, uint64_t>& ma)
+	{
+		if(ma.empty())
+			return;
+		std::ostream& m = w.create_file(member);
+		try {
+			for(auto i : ma)
+				m << i.second << " " << i.first << std::endl;
+			if(!m)
+				throw std::runtime_error("Can't write ZIP file member");
+			w.close_file();
+		} catch(...) {
+			w.close_file();
+			throw;
+		}
+	}
 }
 
 
@@ -448,6 +497,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		uint64_t _poll_flag = 2;	//Legacy behaviour is the default.
 		read_numeric_file(r, "pollflag", _poll_flag, true);
 		poll_flag = _poll_flag;
+		active_macros = read_active_macros(r, "macros");
 	}
 	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
@@ -498,6 +548,7 @@ void moviefile::save(const std::string& movie, unsigned compression) throw(std::
 		write_numeric_file(w, "savetime.second", rtc_second);
 		write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
 		write_numeric_file(w, "pollflag", poll_flag);
+		write_active_macros(w, "macros", active_macros);
 	}
 	write_authors_file(w, authors);
 	write_input(w, input);

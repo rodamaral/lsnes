@@ -2,8 +2,13 @@
 #include "threadtypes.hpp"
 #include "minmax.hpp"
 #include "globalwrap.hpp"
+#include "serialization.hpp"
+#include "string.hpp"
 #include <iostream>
+#include <sstream>
 #include <list>
+#include <deque>
+#include <complex>
 
 namespace
 {
@@ -642,4 +647,529 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 	}
 out:
 	return std::make_pair(x1, x2);
+}
+
+controller_macro_data::controller_macro_data(const std::string& spec, const JSON::node& desc)
+{
+	_descriptor = desc;
+	unsigned btnnum = 0;
+	std::map<std::string, unsigned> symbols;
+	for(auto i = desc.begin(); i != desc.end(); ++i) {
+		if(i->type() == JSON::string) {
+			symbols[i->as_string8()] = btnnum++;
+			btnmap.push_back(i.index());
+		} else if(i->type() == JSON::number) {
+			uint64_t anum = i->as_uint();
+			if(anum > aaxes.size())
+				throw std::runtime_error("Descriptor axis number out of range");
+			else if(anum == aaxes.size())
+				aaxes.push_back(std::make_pair(i.index(), std::numeric_limits<unsigned>::max()));
+			else
+				aaxes[anum].second = i.index();
+		}
+	}
+	buttons = symbols.size();
+	orig = spec;
+	enabled = true;
+	autoterminate = false;
+
+	std::deque<size_t> stack;
+	bool in_sparen = false;
+	bool first = true;
+	size_t last_size = 0;
+	size_t astride = aaxes.size();
+	size_t stride = get_stride();
+	size_t idx = 0;
+	size_t len = spec.length();
+	while(idx < len) {
+		unsigned char ch = spec[idx];
+		if(autoterminate)
+			throw std::runtime_error("Asterisk must be the last thing");
+		if(ch == '(') {
+			if(in_sparen)
+				throw std::runtime_error("Parentheses in square brackets not allowed");
+			stack.push_back(data.size());
+		} else if(ch == ')') {
+			if(in_sparen)
+				throw std::runtime_error("Parentheses in square brackets not allowed");
+			if(stack.empty())
+				throw std::runtime_error("Unmatched right parenthesis");
+			size_t x = stack.back();
+			stack.pop_back();
+			last_size = (data.size() - x) / stride;
+		} else if(ch == '*') {
+			autoterminate = true;
+		} else if(ch == '[') {
+			if(in_sparen)
+				throw std::runtime_error("Nested square brackets not allowed");
+			in_sparen = true;
+			data.resize(data.size() + stride);
+			adata.resize(adata.size() + astride);
+			last_size = 1;
+		} else if(ch == ']') {
+			if(!in_sparen)
+				throw std::runtime_error("Unmatched right square bracket");
+			in_sparen = false;
+		} else if(ch == '.') {
+			if(!in_sparen) {
+				data.resize(data.size() + stride);
+				adata.resize(adata.size() + astride);
+				last_size = 1;
+			}
+		} else if(spec[idx] >= '0' && spec[idx] <= '9') {
+			size_t rep = 0;
+			unsigned i = 0;
+			while(spec[idx + i] >= '0' && spec[idx + i] <= '9') {
+				rep = 10 * rep + (spec[idx + i] - '0');
+				i++;
+			}
+			if(in_sparen) {
+				//This has special meaning: Axis transform.
+				//Rep is the axis pair to operate on.
+				if(spec[idx + i] != ':')
+					throw std::runtime_error("Expected ':' in axis transform");
+				size_t sep = i;
+				while(idx + i < len && spec[idx + i] != '@')
+					i++;
+				if(idx + i >= len)
+					throw std::runtime_error("Expected '@' in axis transform");
+				std::string aexpr = spec.substr(idx + sep + 1, i - sep - 1);
+				if(rep >= astride)
+					throw std::runtime_error("Axis transform refers to invalid axis");
+				adata[adata.size() - astride + rep] = axis_transform(aexpr);
+				i++;
+			} else {
+				if(first)
+					throw std::runtime_error("Repeat not allowed without frame to repeat");
+				size_t o = data.size();
+				size_t ao = adata.size();
+				data.resize(o + (rep - 1) * last_size * stride);
+				adata.resize(ao + (rep - 1) * last_size * astride);
+				for(unsigned i = 1; i < rep; i++) {
+					memcpy(&data[o + (i - 1) * last_size * stride], &data[o - last_size * stride],
+						last_size * stride);
+					memcpy(&data[ao + (i - 1) * last_size * astride], &data[ao - last_size *
+						astride], last_size * astride);
+				}
+				last_size = last_size * rep;
+			}
+			idx = idx + (i - 1);
+		} else {	//Symbol.
+			bool found = false;
+			for(auto k : symbols) {
+				std::string key = k.first;
+				size_t j;
+				for(j = 0; idx + j < len && j < key.length(); j++)
+					if(spec[idx + j] != key[j])
+						break;
+				if(j == key.length()) {
+					idx += key.length() - 1;
+					found = true;
+					if(!in_sparen) {
+						data.resize(data.size() + stride);
+						adata.resize(adata.size() + astride);
+					}
+					data[data.size() - stride + k.second / 8] |= (1 << (k.second % 8));
+					if(!in_sparen)
+						last_size = 1;
+				}
+			}
+			if(!found)
+				throw std::runtime_error("Unknown character or button");
+		}
+		idx++;
+		first = false;
+	}
+	if(in_sparen)
+		throw std::runtime_error("Unmatched left square bracket");
+	if(!stack.empty())
+		throw std::runtime_error("Unmatched left parenthesis");
+}
+
+bool controller_macro_data::syntax_check(const std::string& spec, const JSON::node& desc)
+{
+	unsigned buttons = 0;
+	size_t astride = 0;
+	for(auto i = desc.begin(); i != desc.end(); ++i) {
+		if(i->type() == JSON::string)
+			buttons++;
+		else if(i->type() == JSON::number) {
+			uint64_t anum = i->as_uint();
+			if(anum > astride)
+				return false;
+			else if(anum == astride)
+				astride++;
+		}
+	}
+	bool autoterminate = false;
+	size_t depth = 0;
+	bool in_sparen = false;
+	bool first = true;
+	size_t idx = 0;
+	size_t len = spec.length();
+	while(idx < len) {
+		unsigned char ch = spec[idx];
+		if(autoterminate)
+			return false;
+		if(ch == '(') {
+			if(in_sparen)
+				return false;
+			depth++;
+		} else if(ch == ')') {
+			if(in_sparen)
+				return false;
+			if(!depth)
+				return false;
+			depth--;
+		} else if(ch == '*') {
+			autoterminate = true;
+		} else if(ch == '[') {
+			if(in_sparen)
+				return false;
+			in_sparen = true;
+		} else if(ch == ']') {
+			if(!in_sparen)
+				return false;
+			in_sparen = false;
+		} else if(ch == '.') {
+		} else if(spec[idx] >= '0' && spec[idx] <= '9') {
+			size_t rep = 0;
+			unsigned i = 0;
+			while(spec[idx + i] >= '0' && spec[idx + i] <= '9') {
+				rep = 10 * rep + (spec[idx + i] - '0');
+				i++;
+			}
+			if(in_sparen) {
+				//This has special meaning: Axis transform.
+				//Rep is the axis pair to operate on.
+				if(spec[idx + i] != ':')
+					return false;
+				size_t sep = i;
+				while(idx + i < len && spec[idx + i] != '@')
+					i++;
+				if(idx + i >= len)
+					return false;
+				if(rep >= astride)
+					return false;
+				try {
+					std::string aexpr = spec.substr(idx + sep + 1, i - sep - 1);
+					axis_transform x(aexpr);
+				} catch(...) {
+					return false;
+				}
+				i++;
+			} else {
+				if(first)
+					return false;
+			}
+			idx = idx + (i - 1);
+		} else {	//Symbol.
+			bool found = false;
+			for(auto i = desc.begin(); i != desc.end(); ++i) {
+				if(i->type() != JSON::string)
+					continue;
+				std::string key = i->as_string8();
+				size_t j;
+				for(j = 0; idx + j < len && j < key.length(); j++)
+					if(spec[idx + j] != key[j])
+						break;
+				if(j == key.length()) {
+					idx += key.length() - 1;
+					found = true;
+				}
+			}
+			if(!found)
+				return false;
+		}
+		idx++;
+		first = false;
+	}
+	if(in_sparen)
+		return false;
+	if(depth)
+		return false;
+	return true;
+}
+
+void controller_macro_data::write(controller_frame& frame, unsigned port, unsigned controller, int64_t nframe,
+	apply_mode amode)
+{
+	if(!enabled)
+		return;
+	if(autoterminate && (nframe < 0 || nframe >= get_frames()))
+		return;
+	if(nframe < 0)
+		nframe += ((-nframe / get_frames()) + 3) * get_frames();
+	nframe %= get_frames();
+	for(size_t i = 0; i < buttons; i++) {
+		unsigned lb = btnmap[i];
+		if((data[nframe * get_stride() + i / 8] >> (i % 8)) & 1)
+			switch(amode) {
+			case AM_OVERWRITE:
+			case AM_OR:
+				frame.axis3(port, controller, lb, 1);
+				break;
+			case AM_XOR:
+				frame.axis3(port, controller, lb, frame.axis3(port, controller, lb) ^ 1);
+				break;
+			}
+		else
+			switch(amode) {
+			case AM_OVERWRITE:
+				frame.axis3(port, controller, lb, 0);
+				break;
+			}
+	}
+	const port_controller* _ctrl = frame.porttypes().port_type(port).controller_info->get(controller);
+	if(!_ctrl)
+		return;
+	size_t abuttons = aaxes.size();
+	for(size_t i = 0; i < abuttons; i++) {
+		unsigned ax = aaxes[i].first;
+		unsigned ay = aaxes[i].second;
+		if(ay != std::numeric_limits<unsigned>::max()) {
+			if(ax > _ctrl->button_count) continue;
+			if(ay > _ctrl->button_count) continue;
+			auto g = adata[nframe * abuttons + i].transform(*_ctrl->buttons[ax], *_ctrl->buttons[ay],
+				frame.axis3(port, controller, ax), frame.axis3(port, controller, ay));
+			frame.axis3(port, controller, ax, g.first);
+			frame.axis3(port, controller, ay, g.second);
+		} else {
+			if(ax > _ctrl->button_count) continue;
+			int16_t g = adata[nframe * abuttons + i].transform(*_ctrl->buttons[ax],
+				frame.axis3(port, controller, ax));
+			frame.axis3(port, controller, ax, g);
+		}
+	}
+}
+
+std::string controller_macro_data::dump(const port_controller& ctrl)
+{
+	std::ostringstream o;
+	for(size_t i = 0; i < get_frames(); i++) {
+		o << "[";
+		for(size_t j = 0; j < aaxes.size(); j++) {
+			controller_macro_data::axis_transform& t = adata[i * aaxes.size() + j];
+			o << j << ":";
+			o << t.coeffs[0] << "," << t.coeffs[1] << "," << t.coeffs[2] << ",";
+			o << t.coeffs[3] << "," << t.coeffs[4] << "," << t.coeffs[5] << "@";
+		}
+		for(size_t j = 0; j < buttons && j < ctrl.button_count; j++)
+			if(((data[i * get_stride() + j / 8] >> (j % 8)) & 1) && ctrl.buttons[j]->macro)
+				o << ctrl.buttons[j]->macro;
+		o << "]";
+	}
+	if(autoterminate)
+		o << "*";
+	return o.str();
+}
+
+void controller_macro::write(controller_frame& frame, int64_t nframe)
+{
+	for(auto& i : macros) {
+		unsigned port;
+		unsigned controller;
+		try {
+			auto g = frame.porttypes().lcid_to_pcid(i.first);
+			port = g.first;
+			controller = g.second;
+		} catch(...) {
+			continue;
+		}
+		i.second.write(frame, port, controller, nframe, amode);
+	}
+}
+
+int16_t controller_macro_data::axis_transform::transform(const port_controller_button& b, int16_t v)
+{
+	return scale_axis(b, coeffs[0] * unscale_axis(b, v) + coeffs[4]);
+}
+
+std::pair<int16_t, int16_t> controller_macro_data::axis_transform::transform(const port_controller_button& b1,
+	const port_controller_button& b2, int16_t v1, int16_t v2)
+{
+	double x, y, u, v;
+	x = unscale_axis(b1, v1);
+	y = unscale_axis(b2, v2);
+	u = coeffs[0] * x + coeffs[1] * y + coeffs[4];
+	v = coeffs[2] * x + coeffs[3] * y + coeffs[5];
+	auto g = std::make_pair(scale_axis(b1, u), scale_axis(b2, v));
+	return g;
+}
+
+double controller_macro_data::axis_transform::unscale_axis(const port_controller_button& b, int16_t v)
+{
+	if(b.centers) {
+		int32_t center = ((int32_t)b.rmin + (int32_t)b.rmax) / 2;
+		if(v <= b.rmin)
+			return -1;
+		if(v < center)
+			return -(center - (double)v) / (center - b.rmin);
+		if(v == center)
+			return 0;
+		if(v < b.rmax)
+			return ((double)v - center) / (b.rmax - center);
+		return 1;
+	} else {
+		if(v <= b.rmin)
+			return 0;
+		if(v >= b.rmax)
+			return 1;
+		return ((double)v - b.rmin) / (b.rmax - b.rmin);
+	}
+}
+
+int16_t controller_macro_data::axis_transform::scale_axis(const port_controller_button& b, double v)
+{
+	if(b.centers) {
+		int32_t center = ((int32_t)b.rmin + (int32_t)b.rmax) / 2;
+		if(v == 0)
+			return center;
+		if(v < 0) {
+			double v2 = v * (center - b.rmin) + center;
+			if(v2 < b.rmin)
+				return b.rmin;
+			return v2;
+		}
+		double v2 = v * (b.rmax - center) + center;
+		if(v2 > b.rmax)
+			return b.rmax;
+		return v2;
+	} else {
+		double v2 = v * (b.rmax - b.rmin) + b.rmin;
+		if(v2 < b.rmin)
+			return b.rmin;
+		if(v2 > b.rmax)
+			return b.rmax;
+		return v2;
+	}
+}
+
+namespace
+{
+	std::complex<double> parse_complex(const std::string& expr)
+	{
+		regex_results r;
+		if(r = regex("\\((.*),(.*)\\)", expr)) {
+			//Real,Imaginary.
+			return std::complex<double>(parse_value<double>(r[1]), parse_value<double>(r[2]));
+		} else if(r = regex("\\((.*)<(.*)\\)", expr)) {
+			return std::polar(parse_value<double>(r[1]), parse_value<double>(r[2]) * M_PI / 180);
+		} else {
+			return std::complex<double>(parse_value<double>(expr), 0.0);
+		}
+	}
+}
+
+controller_macro_data::axis_transform::axis_transform(const std::string& expr)
+{
+	regex_results r;
+	if(r = regex("\\*(.*)\\+(.*)", expr)) {
+		//Affine transform.
+		std::complex<double> a = parse_complex(r[1]);
+		std::complex<double> b = parse_complex(r[2]);
+		coeffs[0] = a.real();
+		coeffs[1] = -a.imag();
+		coeffs[2] = a.imag();
+		coeffs[3] = a.real();
+		coeffs[4] = b.real();
+		coeffs[5] = b.imag();
+	} else if(r = regex("\\*(.*)", expr)) {
+		//Linear transform.
+		std::complex<double> a = parse_complex(r[1]);
+		coeffs[0] = a.real();
+		coeffs[1] = -a.imag();
+		coeffs[2] = a.imag();
+		coeffs[3] = a.real();
+		coeffs[4] = 0;
+		coeffs[5] = 0;
+	} else if(r = regex("\\+(.*)", expr)) {
+		//Relative
+		std::complex<double> b = parse_complex(r[1]);
+		coeffs[0] = 1;
+		coeffs[1] = 0;
+		coeffs[2] = 0;
+		coeffs[3] = 1;
+		coeffs[4] = b.real();
+		coeffs[5] = b.imag();
+	} else if(r = regex("(.*),(.*),(.*),(.*),(.*),(.*)", expr)) {
+		//Full affine.
+		coeffs[0] = parse_value<double>(r[1]);
+		coeffs[1] = parse_value<double>(r[2]);
+		coeffs[2] = parse_value<double>(r[3]);
+		coeffs[3] = parse_value<double>(r[4]);
+		coeffs[4] = parse_value<double>(r[5]);
+		coeffs[5] = parse_value<double>(r[6]);
+	} else {
+		//Absolute.
+		std::complex<double> b = parse_complex(expr);
+		coeffs[0] = 0;
+		coeffs[1] = 0;
+		coeffs[2] = 0;
+		coeffs[3] = 0;
+		coeffs[4] = b.real();
+		coeffs[5] = b.imag();
+	}
+}
+
+JSON::node controller_macro::serialize()
+{
+	JSON::node v(JSON::object);
+	switch(amode) {
+	case controller_macro_data::AM_OVERWRITE:	v.insert("mode", JSON::s("overwrite")); break;
+	case controller_macro_data::AM_OR:		v.insert("mode", JSON::s("or")); break;
+	case controller_macro_data::AM_XOR:		v.insert("mode", JSON::s("xor")); break;
+	};
+	JSON::node& c = v.insert("data", JSON::array());
+	for(auto& i : macros) {
+		while(i.first > c.index_count())
+			c.append(JSON::n());
+		i.second.serialize(c.append(JSON::n()));
+	}
+	return v;
+}
+
+void controller_macro_data::serialize(JSON::node& v)
+{
+	v = JSON::object();
+	v.insert("enable", JSON::b(enabled));
+	v.insert("expr", JSON::s(orig));
+	v.insert("desc", _descriptor);
+}
+
+JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
+{
+	JSON::node n(JSON::array);
+	for(size_t i = 0; i < ctrl.button_count; i++) {
+		if(ctrl.buttons[i]->macro)
+			n.append(JSON::s(ctrl.buttons[i]->macro));
+		else
+			n.append(JSON::n()); //Placeholder.
+	}
+	for(size_t i = 0; i < ctrl.analog_actions(); i++) {
+		auto g = ctrl.analog_action(i);
+		n.index(g.first) = JSON::u(i);
+		if(g.second != std::numeric_limits<unsigned>::max())
+			n.index(g.second) = JSON::u(i);
+	}
+	return n;
+}
+
+controller_macro::controller_macro(const JSON::node& v)
+{
+	std::string mode = v["mode"].as_string8();
+	if(mode == "overwrite") amode = controller_macro_data::AM_OVERWRITE;
+	if(mode == "or") amode = controller_macro_data::AM_OR;
+	if(mode == "xor") amode = controller_macro_data::AM_XOR;
+	const JSON::node& c = v["data"];
+	for(auto i = c.begin(); i != c.end(); ++i) {
+		if(i->type() != JSON::null)
+			macros[i.index()] = controller_macro_data(*i);
+	}
+}
+
+controller_macro_data::controller_macro_data(const JSON::node& v)
+	: controller_macro_data(v["expr"].as_string8(), v["desc"])
+{
+	enabled = v["enable"].as_bool();
 }

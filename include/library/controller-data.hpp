@@ -16,6 +16,7 @@
 #include <map>
 #include <list>
 #include <set>
+#include "json.hpp"
 
 /**
  * Memory to allocate for controller frame.
@@ -190,6 +191,7 @@ struct port_controller_button
 	int16_t rmin;		//Range min.
 	int16_t rmax;		//Range max.
 	bool centers;
+	const char* macro;	//Name in macro (must be prefix-free).
 /**
  * Is analog?
  */
@@ -229,7 +231,12 @@ struct port_controller_set
 /**
  * Get specified controller, or NULL if it doesn't exist.
  */
-	struct port_controller* get(unsigned c) throw();
+	struct port_controller* get(unsigned c) throw()
+	{
+		if(c >= controller_count)
+			return NULL;
+		return controllers[c];
+	}
 /**
  * Get specified button, or NULL if it doesn't exist.
  */
@@ -1145,6 +1152,59 @@ private:
 		cache_page = NULL;
 	}
 };
+
+//Parse a controller macro.
+struct controller_macro_data
+{
+	struct axis_transform
+	{
+		axis_transform() { coeffs[0] = coeffs[3] = 1; coeffs[1] = coeffs[2] = coeffs[4] = coeffs[5] = 0; }
+		axis_transform(const std::string& expr);
+		double coeffs[6];
+		int16_t transform(const port_controller_button& b, int16_t v);
+		std::pair<int16_t, int16_t> transform(const port_controller_button& b1,
+			const port_controller_button& b2, int16_t v1, int16_t v2);
+		static double unscale_axis(const port_controller_button& b, int16_t v);
+		static int16_t scale_axis(const port_controller_button& b, double v);
+	};
+	enum apply_mode
+	{
+		AM_OVERWRITE,
+		AM_OR,
+		AM_XOR
+	};
+	controller_macro_data() { buttons = 0; }
+	controller_macro_data(const std::string& spec, const JSON::node& desc);
+	controller_macro_data(const JSON::node& ser);
+	void serialize(JSON::node& v);
+	static JSON::node make_descriptor(const port_controller& ctrl);
+	const JSON::node& get_descriptor() { return _descriptor; }
+	static bool syntax_check(const std::string& spec, const JSON::node& ctrl);
+	void write(controller_frame& frame, unsigned port, unsigned controller, int64_t nframe, apply_mode amode);
+	std::string dump(const port_controller& ctrl); //Mainly for debugging.
+	size_t get_frames() { return data.size() / get_stride(); }
+	size_t get_stride() { return (buttons + 7) / 8; }
+	size_t buttons;
+	std::vector<unsigned char> data;
+	std::vector<std::pair<unsigned, unsigned>> aaxes;
+	std::vector<unsigned> btnmap;
+	std::vector<axis_transform> adata;
+	std::string orig;
+	JSON::node _descriptor;
+	bool enabled;
+	bool autoterminate;
+};
+
+struct controller_macro
+{
+	controller_macro_data::apply_mode amode;
+	std::map<unsigned, controller_macro_data> macros;
+	void write(controller_frame& frame, int64_t nframe);
+	controller_macro() { amode = controller_macro_data::AM_XOR; }
+	controller_macro(const JSON::node& ser);
+	JSON::node serialize();
+};
+
 
 /**
  * Get generic default system port type.

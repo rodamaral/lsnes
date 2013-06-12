@@ -92,6 +92,9 @@ namespace
 	//Stop at frame.
 	bool stop_at_frame_active = false;
 	uint64_t stop_at_frame = 0;
+	//Macro hold.
+	bool macro_hold_1;
+	bool macro_hold_2;
 
 	enum advance_mode old_mode;
 
@@ -405,6 +408,17 @@ void update_movie_state()
 	} else {
 		_status.set("RTC", "N/A");
 	}
+
+	auto mset = controls.active_macro_set();
+	bool mfirst = true;
+	std::ostringstream mss;
+	for(auto i: mset) {
+		if(!mfirst) mss << ",";
+		mss << i;
+		mfirst = false;
+	}
+	_status.set("!macros", mss.str());
+
 	do_watch_memory();
 
 	controller_frame c;
@@ -828,6 +842,27 @@ namespace
 			flush_slotinfo();
 		});
 
+	function_ptr_command<> mhold1(lsnes_cmd, "+hold-macro", "Hold macro (hold)",
+		"Hold macros enable\n", []() throw(std::bad_alloc, std::runtime_error) {
+			macro_hold_1 = true;
+		});
+
+	function_ptr_command<> mhold2(lsnes_cmd, "-hold-macro", "Hold macro (hold)",
+		"Hold macros disable\n", []() throw(std::bad_alloc, std::runtime_error) {
+			macro_hold_1 = false;
+		});
+
+	function_ptr_command<> mhold3(lsnes_cmd, "hold-macro", "Hold macro (toggle)",
+		"Hold macros toggle\n", []() throw(std::bad_alloc, std::runtime_error) {
+			macro_hold_2 = !macro_hold_2;
+			if(macro_hold_2)
+				messages << "Macros are held for next frame." << std::endl;
+			else
+				messages << "Macros are not held for next frame." << std::endl;
+		});
+
+	inverse_bind imhold1(lsnes_mapper, "+hold-macro", "Macro‣Hold all macros");
+	inverse_bind imhold2(lsnes_mapper, "hold-macro", "Macro‣Hold all macros (typed)");
 	inverse_bind ipause_emulator(lsnes_mapper, "pause-emulator", "Speed‣(Un)pause");
 	inverse_bind ijback(lsnes_mapper, "cycle-jukebox-backward", "Slot select‣Cycle backwards");
 	inverse_bind ijforward(lsnes_mapper, "cycle-jukebox-forward", "Slot select‣Cycle forwards");
@@ -1112,6 +1147,10 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		if(!first_round) {
 			controls.reset_framehold();
 			movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
+			if(!macro_hold_1 && !macro_hold_2) {
+				controls.advance_macros();
+			}
+			macro_hold_2 = false;
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
 			handle_saves();

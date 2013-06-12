@@ -217,6 +217,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.gamename = prj->gamename;
 			our_movie.authors = prj->authors;
 		}
+		our_movie.active_macros = controls.get_macro_frames();
 		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
@@ -253,6 +254,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 			our_movie.gamename = prj->gamename;
 			our_movie.authors = prj->authors;
 		}
+		our_movie.active_macros.clear();
 		our_movie.save(filename2, savecompression);
 		uint64_t took = get_utime() - origtime;
 		messages << "Saved movie '" << filename2 << "' in " << took << " microseconds." << std::endl;
@@ -312,6 +314,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		if(!our_movie.anchor_savestate.empty())
 			our_rom->load_core_state(our_movie.anchor_savestate);
 		our_rom->rtype->set_pflag(0);
+		controls.set_macro_frames(std::map<std::string, uint64_t>());
 		redraw_framebuffer(our_rom->rtype->draw_cover());
 		lua_callback_do_rewind();
 	} catch(std::bad_alloc& e) {
@@ -396,6 +399,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			controls.set_ports(portset);
 			our_rom->load_core_state(_movie.savestate);
 			our_rom->rtype->set_pflag(_movie.poll_flag);
+			controls.set_macro_frames(_movie.active_macros);
 		} else {
 			our_rom->rtype->load_sram(_movie.movie_sram);
 			controls.set_ports(portset);
@@ -404,6 +408,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			if(!_movie.anchor_savestate.empty())
 				our_rom->load_core_state(_movie.anchor_savestate);
 			our_rom->rtype->set_pflag(0);
+			controls.set_macro_frames(std::map<std::string, uint64_t>());
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

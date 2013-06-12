@@ -5,6 +5,8 @@
 #include <map>
 #include <list>
 #include <vector>
+#include "library/json.hpp"
+#include "core/controller.hpp"
 
 //Information about project.
 struct project_info
@@ -25,6 +27,8 @@ struct project_info
 	std::list<std::string> luascripts;
 	//Memory watches.
 	std::map<std::string, std::string> watches;
+	//Macros.
+	std::map<std::string, JSON::node> macros;
 	//Stub movie data.
 	std::string gametype;
 	std::map<std::string, std::string> settings;
@@ -94,5 +98,9 @@ std::string project_savestate_ext();
  * Copy watches to project
  */
 void project_copy_watches(project_info& p);
+/**
+ * Copy macros to project.
+ */
+void project_copy_macros(project_info& p, controller_state& s);
 
 #endif
