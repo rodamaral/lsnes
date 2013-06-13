@@ -1157,6 +1157,15 @@ again2:
 			snesdbg_settrace(r);
 		});
 
+	function_ptr_luafun lua_layerenabled(LS, "snes.enablelayer", [](lua_state& L, const std::string& fname) ->
+		int {
+		unsigned layer = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		unsigned priority = L.get_numeric_argument<unsigned>(2, fname.c_str());
+		bool enabled = L.toboolean(3);
+		SNES::ppu.layer_enable(layer, priority, enabled);
+		return 0;
+	});
+
 #else
 	void snesdbg_on_break() {}
 	void snesdbg_on_trace() {}
