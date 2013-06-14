@@ -161,4 +161,6 @@ private:
 	std::string help;
 };
 
+void refresh_alias_binds();
+
 #endif

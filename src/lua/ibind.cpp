@@ -50,6 +50,7 @@ namespace
 		if(lua_type(LS, 2) != LUA_TNIL)
 			value = get_string_argument(LS, 2, fname.c_str());
 		command::set_alias_for(name, value);
+		refresh_alias_binds();
 		return 0;
 	});
 

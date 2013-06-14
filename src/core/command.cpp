@@ -4,6 +4,7 @@
 #include "core/window.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
+#include "library/threadtypes.hpp"
 #include "library/zip.hpp"
 
 #include <set>
@@ -11,6 +12,8 @@
 
 namespace
 {
+	mutex_class alias_ibind_mutex;
+	std::map<std::string, inverse_key*> alias_binds;
 	globalwrap<std::map<std::string, command*>> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
@@ -67,6 +70,7 @@ namespace
 				throw std::runtime_error("Illegal alias name");
 			cmlock_hold lck;
 			aliases[r[1]].clear();
+			refresh_alias_binds();
 			messages << "Command '" << r[1] << "' unaliased" << std::endl;
 		});
 
@@ -79,6 +83,7 @@ namespace
 				throw std::runtime_error("Illegal alias name");
 			cmlock_hold lck;
 			aliases[r[1]].push_back(r[2]);
+			refresh_alias_binds();
 			messages << "Command '" << r[1] << "' aliased to '" << r[2] << "'" << std::endl;
 		});
 }
@@ -265,3 +270,22 @@ void invoke_command_fn(void (*fn)(struct arg_filename a), const std::string& arg
 	b.v = args;
 	fn(b);
 }
+
+void refresh_alias_binds()
+{
+	umutex_class h(alias_ibind_mutex);
+	auto a = command::get_aliases();
+	for(auto i : alias_binds) {
+		if(!a.count(i.first)) {
+			delete i.second;
+			alias_binds[i.first] = NULL;
+		}
+	}
+	for(auto i : a) {
+		if(i == "" || i[0] == '-')
+			continue;
+		if(!alias_binds.count(i) || alias_binds[i] == NULL)
+			alias_binds[i] = new inverse_key(i, "Alias‣" + i);
+	}
+}
+
