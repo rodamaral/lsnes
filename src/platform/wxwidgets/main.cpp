@@ -253,6 +253,7 @@ end:
 			}
 			lineno++;
 		}
+		refresh_alias_binds();
 	}
 	
 	void save_configuration()

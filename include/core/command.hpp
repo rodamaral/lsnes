@@ -8,4 +8,6 @@
 
 extern command_group lsnes_cmd;
 
+void refresh_alias_binds();
+
 #endif

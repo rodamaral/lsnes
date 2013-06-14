@@ -124,6 +124,7 @@ namespace
 		if(L.type(2) != LUA_TNIL)
 			value = L.get_string(2, fname.c_str());
 		lsnes_cmd.set_alias_for(name, value);
+		refresh_alias_binds();
 		return 0;
 	});
 

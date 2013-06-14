@@ -39,6 +39,7 @@ namespace
 		std::string cmds = L.get_string(2, fname.c_str());
 		try {
 			lsnes_cmd.set_alias_for(alias, cmds);
+			refresh_alias_binds();
 		} catch(std::exception& e) {
 			L.pushstring(e.what());
 			L.error();
