@@ -35,7 +35,7 @@ namespace
 			return 1;
 		}
 		const port_type& p = f.get_port_type(port);
-		if(controller >= p.controller_info->controller_count)
+		if(controller >= p.controller_info->controllers.size())
 			L.pushnil();
 		else
 			L.pushstring(p.controller_info->controllers[controller]->type);
@@ -50,9 +50,9 @@ namespace
 		if(port >= lua_input_controllerdata->get_port_count())
 			return 0;
 		const port_type& pt = lua_input_controllerdata->get_port_type(port);
-		if(controller >= pt.controller_info->controller_count)
+		if(controller >= pt.controller_info->controllers.size())
 			return 0;
-		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++) {
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->buttons.size(); i++) {
 			val = (base >> i) & 1;
 			L.get_numeric_argument<short>(i + base, val, fname);
 			lua_input_controllerdata->axis3(port, controller, i, val);
@@ -67,16 +67,16 @@ namespace
 		if(port >= lua_input_controllerdata->get_port_count())
 			return 0;
 		const port_type& pt = lua_input_controllerdata->get_port_type(port);
-		if(controller >= pt.controller_info->controller_count)
+		if(controller >= pt.controller_info->controllers.size())
 			return 0;
 		uint64_t fret = 0;
-		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++)
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->buttons.size(); i++)
 			if(lua_input_controllerdata->axis3(port, controller, i))
 				fret |= (1ULL << i);
 		L.pushnumber(fret);
-		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->button_count; i++)
+		for(unsigned i = 0; i < pt.controller_info->controllers[controller]->buttons.size(); i++)
 			L.pushnumber(lua_input_controllerdata->axis3(port, controller, i));
-		return pt.controller_info->controllers[controller]->button_count + 1;
+		return pt.controller_info->controllers[controller]->buttons.size() + 1;
 	}
 
 	function_ptr_luafun iset(LS, "input.set", [](lua_state& L, const std::string& fname) -> int {
@@ -227,14 +227,14 @@ namespace
 		L.newtable();
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
-		unsigned lcnt = ctrl.button_count;
+		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
-			if(ctrl.buttons[i]->type == port_controller_button::TYPE_NULL)
+			if(ctrl.buttons[i].type == port_controller_button::TYPE_NULL)
 				continue;
-			L.pushstring(ctrl.buttons[i]->name);
-			if(ctrl.buttons[i]->is_analog())
+			L.pushstring(ctrl.buttons[i].name);
+			if(ctrl.buttons[i].is_analog())
 				L.pushnumber(lua_input_controllerdata->axis3(pcid.first, pcid.second, i));
-			else if(ctrl.buttons[i]->type == port_controller_button::TYPE_BUTTON)
+			else if(ctrl.buttons[i].type == port_controller_button::TYPE_BUTTON)
 				L.pushboolean(lua_input_controllerdata->axis3(pcid.first, pcid.second, i) != 0);
 			L.settable(-3);
 		}
@@ -258,14 +258,14 @@ namespace
 		}
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
-		unsigned lcnt = ctrl.button_count;
+		unsigned lcnt = ctrl.buttons.size();
 		for(unsigned i = 0; i < lcnt; i++) {
-			if(ctrl.buttons[i]->type == port_controller_button::TYPE_NULL)
+			if(ctrl.buttons[i].type == port_controller_button::TYPE_NULL)
 				continue;
-			L.pushstring(ctrl.buttons[i]->name);
+			L.pushstring(ctrl.buttons[i].name);
 			L.gettable(2);
 			int s;
-			if(ctrl.buttons[i]->is_analog()) {
+			if(ctrl.buttons[i].is_analog()) {
 				if(L.type(-1) == LUA_TNIL)
 					s = lua_input_controllerdata->axis3(pcid.first, pcid.second, i);
 				else
@@ -356,7 +356,7 @@ namespace
 		unsigned lcid = 0;
 		unsigned classnum = 1;
 		ps = lookup_ps(port);
-		if(!ps || ps->controller_count <= controller)
+		if(!ps || ps->controllers.size() <= controller)
 			return 0;
 		for(unsigned i = 0; i < 8; i++) {
 			auto pcid = controls.lcid_to_pcid(i);
@@ -385,16 +385,16 @@ namespace
 		L.pushnumber(lcid);
 		L.rawset(-3);
 		L.pushstring("button_count");
-		L.pushnumber(cs->button_count);
+		L.pushnumber(cs->buttons.size());
 		L.rawset(-3);
 		L.pushstring("buttons");
 		L.newtable();
 		//Push the buttons.
-		for(unsigned i = 0; i < cs->button_count; i++) {
+		for(unsigned i = 0; i < cs->buttons.size(); i++) {
 			L.pushnumber(i + 1);
 			L.newtable();
 			L.pushstring("type");
-			switch(cs->buttons[i]->type) {
+			switch(cs->buttons[i].type) {
 				case port_controller_button::TYPE_NULL: L.pushstring("null"); break;
 				case port_controller_button::TYPE_BUTTON: L.pushstring("button"); break;
 				case port_controller_button::TYPE_AXIS: L.pushstring("axis"); break;
@@ -402,16 +402,21 @@ namespace
 				case port_controller_button::TYPE_TAXIS: L.pushstring("axis"); break;
 			};
 			L.rawset(-3);
-			if(cs->buttons[i]->symbol) {
+			if(cs->buttons[i].symbol) {
 				L.pushstring("symbol");
-				L.pushlstring(&cs->buttons[i]->symbol, 1);
+				L.pushlstring(&cs->buttons[i].symbol, 1);
+				L.rawset(-3);
+			}
+			if(cs->buttons[i].macro) {
+				L.pushstring("macro");
+				L.pushstring(cs->buttons[i].macro);
 				L.rawset(-3);
 			}
 			L.pushstring("name");
-			L.pushstring(cs->buttons[i]->name);
+			L.pushstring(cs->buttons[i].name);
 			L.rawset(-3);
 			L.pushstring("hidden");
-			L.pushboolean(cs->buttons[i]->shadow);
+			L.pushboolean(cs->buttons[i].shadow);
 			L.rawset(-3);
 			L.rawset(-3);
 		}

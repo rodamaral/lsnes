@@ -330,15 +330,13 @@ void wxeditor_tasinput::update_controls()
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
 			const port_controller_set& pci = *(pt.controller_info);
-			if(pci.controller_count <= pcid.second || !pci.controllers[pcid.second])
+			if(pci.controllers.size() <= pcid.second)
 				continue;
 			const port_controller& pc = *(pci.controllers[pcid.second]);
 			//First check that this has non-hidden stuff.
 			bool has_buttons = false;
-			for(unsigned k = 0; k < pc.button_count; k++) {
-				if(!pc.buttons[k])
-					continue;
-				const port_controller_button& pcb = *(pc.buttons[k]);
+			for(unsigned k = 0; k < pc.buttons.size(); k++) {
+				const port_controller_button& pcb = pc.buttons[k];
 				if(!pcb.shadow)
 					has_buttons = true;
 			}
@@ -352,35 +350,33 @@ void wxeditor_tasinput::update_controls()
 			//Go through all controller pairs.
 			for(unsigned k = 0; k < pc.analog_actions(); k++) {
 				std::pair<unsigned, unsigned> indices = pc.analog_action(k);
-				if(pc.buttons[indices.first]->shadow)
+				if(pc.buttons[indices.first].shadow)
 					continue;
 				struct control_triple t;
 				t.port = pcid.first;
 				t.controller = pcid.second;
 				t.xindex = indices.first;
 				t.yindex = indices.second;
-				t.xmin = pc.buttons[t.xindex]->rmin;
-				t.xmax = pc.buttons[t.xindex]->rmax;
-				t.xcenter = pc.buttons[t.xindex]->centers;
+				t.xmin = pc.buttons[t.xindex].rmin;
+				t.xmax = pc.buttons[t.xindex].rmax;
+				t.xcenter = pc.buttons[t.xindex].centers;
 				t.ymin = 0;
 				t.ymax = 1;
 				t.ycenter = false;
-				t.type = pc.buttons[t.xindex]->type;
-				t.name = pc.buttons[t.xindex]->name;
+				t.type = pc.buttons[t.xindex].type;
+				t.name = pc.buttons[t.xindex].name;
 				t.logical = cnum_g;
 				if(t.yindex != std::numeric_limits<unsigned>::max()) {
-					t.ymin = pc.buttons[t.yindex]->rmin;
-					t.ymax = pc.buttons[t.yindex]->rmax;
-					t.ycenter = pc.buttons[t.yindex]->centers;
-					t.name = t.name + "/" + pc.buttons[t.yindex]->name;
+					t.ymin = pc.buttons[t.yindex].rmin;
+					t.ymax = pc.buttons[t.yindex].rmax;
+					t.ycenter = pc.buttons[t.yindex].centers;
+					t.name = t.name + "/" + pc.buttons[t.yindex].name;
 				}
 				_inputs.push_back(t);
 			}
 			//Go through all buttons.
-			for(unsigned k = 0; k < pc.button_count; k++) {
-				if(!pc.buttons[k])
-					continue;
-				const port_controller_button& pcb = *(pc.buttons[k]);
+			for(unsigned k = 0; k < pc.buttons.size(); k++) {
+				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type != port_controller_button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				struct control_triple t;
@@ -393,10 +389,8 @@ void wxeditor_tasinput::update_controls()
 				t.name = pcb.name;
 				_inputs.push_back(t);
 			}
-			for(unsigned k = 0; k < pc.button_count; k++) {
-				if(!pc.buttons[k])
-					continue;
-				const port_controller_button& pcb = *(pc.buttons[k]);
+			for(unsigned k = 0; k < pc.buttons.size(); k++) {
+				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type == port_controller_button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				controls.tasinput(pcid.first, pcid.second, k, pcb.centers ? ((int)pcb.rmin +

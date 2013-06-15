@@ -159,12 +159,12 @@ void controller_state::reread_tasinput_mode(const port_type_set& ptype)
 		//See what the heck that is...
 		const port_type& pt = ptype.port_type(t.port);
 		const port_controller_set& pci = *(pt.controller_info);
-		if(pci.controller_count <= t.controller || !pci.controllers[t.controller])
+		if(pci.controllers.size() <= t.controller)
 			continue;
 		const port_controller& pc = *(pci.controllers[t.controller]);
-		if(pc.button_count <= t.control || !pc.buttons[t.control])
+		if(pc.buttons.size() <= t.control)
 			continue;
-		const port_controller_button& pcb = *(pc.buttons[t.control]);
+		const port_controller_button& pcb = pc.buttons[t.control];
 		if(pcb.shadow)
 			continue;
 		if(pcb.type == port_controller_button::TYPE_BUTTON)

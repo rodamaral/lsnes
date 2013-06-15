@@ -187,15 +187,13 @@ void wxeditor_autohold::update_controls()
 				break;
 			const port_type& pt = pts.port_type(pcid.first);
 			const port_controller_set& pci = *(pt.controller_info);
-			if(pci.controller_count <= pcid.second || !pci.controllers[pcid.second])
+			if(pci.controllers.size() <= pcid.second)
 				continue;
 			const port_controller& pc = *(pci.controllers[pcid.second]);
 			//First check that this has non-hidden buttons.
 			bool has_buttons = false;
-			for(unsigned k = 0; k < pc.button_count; k++) {
-				if(!pc.buttons[k])
-					continue;
-				const port_controller_button& pcb = *(pc.buttons[k]);
+			for(unsigned k = 0; k < pc.buttons.size(); k++) {
+				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type == port_controller_button::TYPE_BUTTON && !pcb.shadow)
 					has_buttons = true;
 			}
@@ -206,10 +204,8 @@ void wxeditor_autohold::update_controls()
 				next_in_class[pc.cclass] = 1;
 			uint32_t cnum = next_in_class[pc.cclass]++;
 			_controller_labels.push_back((stringfmt() << pc.cclass << "-" << cnum).str());
-			for(unsigned k = 0; k < pc.button_count; k++) {
-				if(!pc.buttons[k])
-					continue;
-				const port_controller_button& pcb = *(pc.buttons[k]);
+			for(unsigned k = 0; k < pc.buttons.size(); k++) {
+				const port_controller_button& pcb = pc.buttons[k];
 				if(pcb.type != port_controller_button::TYPE_BUTTON || pcb.shadow)
 					continue;
 				struct control_triple t;

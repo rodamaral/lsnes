@@ -26,7 +26,7 @@ namespace
 			if(g.first < 0)
 				continue;
 			port_controller_set* pcs = s.port_type(g.first).controller_info;
-			if(g.second >= pcs->controller_count)
+			if(g.second >= pcs->controllers.size())
 				continue;
 			r[i] = pcs->controllers[g.second];
 		}

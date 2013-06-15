@@ -25,6 +25,8 @@ if not arg[1] then
 end
 dofile(arg[1]);
 
+buttonsymbols = {};
+
 for i = 1,#ports do
 	local port = ports[i];
 	print("namespace portdefs {");
@@ -44,110 +46,57 @@ for i = 1,#ports do
 			local bsym = makesymbol();
 			if xbutton[1] == button then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_BUTTON,");
-				print("\t\tU'" .. xbutton[2] .. "',");
-				print("\t\t\"" .. xbutton[3] .. "\",");
-				print("\t\tfalse,");
-				print("\t\t0,0,");
-				print("\t\tfalse,");
-				print("\t\t\"" .. (xbutton[5] or xbutton[2]) .. "\"");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_BUTTON, U'" .. xbutton[2] ..
+					"', \"" .. xbutton[3] .. "\", false, 0, 0, false, \"" ..
+					(xbutton[5] or xbutton[2]) .. "\"}";
 				bits = bits + 1;
 			end
 			if xbutton[1] == axis then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_AXIS,");
-				print("\t\tU'\\0',");
-				print("\t\t\"" .. xbutton[2] .. "\",");
-				print("\t\tfalse,");
-				print("\t\t".. xbutton[3] .. ", ".. xbutton[4] .. ",");
-				print("\t\t".. (xbutton[5] and "true" or "false") .. ",");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_AXIS, U'\\0',\"" .. xbutton[2]
+					.. "\", false, ".. xbutton[3] .. ", ".. xbutton[4] .. "," ..
+					(xbutton[5] and "true" or "false") .. ", NULL}";
 				ints = ints + 1;
 			end
 			if xbutton[1] == raxis then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_RAXIS,");
-				print("\t\tU'\\0',");
-				print("\t\t\"" .. xbutton[2] .. "\",");
-				print("\t\tfalse,");
-				print("\t\t".. xbutton[3] .. ", ".. xbutton[4] .. ",");
-				print("\t\t".. (xbutton[5] and "true" or "false") .. ",");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_RAXIS, U'\\0',\"" .. xbutton[2]
+					.. "\", false, ".. xbutton[3] .. ", ".. xbutton[4] .. "," ..
+					(xbutton[5] and "true" or "false") .. ", NULL}";
 				ints = ints + 1;
 			end
 			if xbutton[1] == taxis then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_TAXIS,");
-				print("\t\tU'\\0',");
-				print("\t\t\"" .. xbutton[2] .. "\",");
-				print("\t\tfalse,");
-				print("\t\t".. xbutton[3] .. ", ".. xbutton[4] .. ",");
-				print("\t\t".. (xbutton[5] and "true" or "false") .. ",");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_TAXIS, U'\\0',\"" .. xbutton[2]
+					.. "\", false, ".. xbutton[3] .. ", ".. xbutton[4] .. "," ..
+					(xbutton[5] and "true" or "false") .. ", NULL}";
 				ints = ints + 1;
 			end
 			if xbutton[1] == shadow then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_BUTTON,");
-				print("\t\tU'" .. xbutton[2] .. "',");
-				print("\t\t\"" .. xbutton[3] .. "\",");
-				print("\t\ttrue,");
-				print("\t\t0,0,");
-				print("\t\tfalse,");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_BUTTON, U'" .. xbutton[2] ..
+						"', \"" .. xbutton[3] .. "\", true, 0, 0, false, NULL}";
 				bits = bits + 1;
 			end
 			if xbutton[1] == shadow_axis then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_AXIS,");
-				print("\t\tU'\\0',");
-				print("\t\t\"" .. xbutton[2] .. "\",");
-				print("\t\ttrue,");
-				print("\t\t0,0,");
-				print("\t\tfalse,");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_AXIS, U'\\0', \"" .. xbutton[2]
+					.. "\", true, 0, 0, false, NULL}";
 				ints = ints + 1;
 			end
 			if xbutton[1] == null then
 				table.insert(bsyms, bsym);
-				print("\tport_controller_button "..bsym.." = {");
-				print("\t\tport_controller_button::TYPE_NULL,");
-				print("\t\tU'\0',");
-				print("\t\tNULL,");
-				print("\t\tfalse,");
-				print("\t\t0,0,");
-				print("\t\tfalse,");
-				print("\t\tNULL");
-				print("\t};");
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_NULL, U'\0', NULL, false, 0, 0,"
+					.. "false, NULL}";
 			end
 		end
-		local s = "\tport_controller_button* "..csym.."[] = {";
-		local f = true;
+		print("\tport_controller "..csym2.." = {\""..controller.class.."\", \""..controller.name.."\", {");
 		for k = 1,#bsyms do
-			if not f then
-				s = s .. ",";
-			end
-			f = false;
-			s = s .."&"..bsyms[k];
+			print("\t\t" .. buttonsymbols[bsyms[k]] .. ",");
 		end
-		s = s .. "};"
-		print(s);
-		print("\tport_controller "..csym2.." = {\""..controller.class.."\", \""..controller.name.."\", "..
-			#bsyms..", "..csym.."};");
+		print("\t}};");
 	end
-	local s = "\tport_controller* "..psym.."[] = {";
+	local s = "{";
 	local f = true;
 	for j = 1,#csyms do
 		if not f then
@@ -156,9 +105,8 @@ for i = 1,#ports do
 		f = false;
 		s = s .."&"..csyms[j];
 	end
-	s = s .. "};"
-	print(s);
-	print("\tport_controller_set "..psym2.." = {"..#(port.controllers)..", "..psym.."};");
+	s = s .. "}"
+	print("\tport_controller_set "..psym2.." = {"..s.."};");
 	print("}");
 	print("struct _"..port.symbol.." : public port_type");
 	print("{");

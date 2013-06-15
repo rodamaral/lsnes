@@ -166,7 +166,7 @@ void frame_controls::set_types(controller_frame& f)
 void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, const port_type_set& pts)
 {
 	const port_controller_set& pci = *(p.controller_info);
-	for(unsigned i = 0; i < pci.controller_count; i++) {
+	for(unsigned i = 0; i < pci.controllers.size(); i++) {
 		if(!pci.controllers[i])
 			continue;
 		const port_controller& pc = *(pci.controllers[i]);
@@ -175,10 +175,8 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 		unsigned nextp = c;
 		controlinfo.push_back(control_info::portinfo(nextp, pid, i + 1));
 		bool last_multibyte = false;
-		for(unsigned j = 0; j < pc.button_count; j++) {
-			if(!pc.buttons[j])
-				continue;
-			const port_controller_button& pcb = *(pc.buttons[j]);
+		for(unsigned j = 0; j < pc.buttons.size(); j++) {
+			const port_controller_button& pcb = pc.buttons[j];
 			unsigned idx = pts.triple_to_index(pid, i, j);
 			if(idx == 0xFFFFFFFFUL)
 				continue;

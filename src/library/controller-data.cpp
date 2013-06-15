@@ -12,12 +12,8 @@
 
 namespace
 {
-	const char* basecontrol_chars = "F";
-
-	port_controller_button* null_buttons[] = {};
-	port_controller simple_controller = {"(system)", "system", 0, null_buttons};
-	port_controller* simple_controllers[] = {&simple_controller};
-	port_controller_set simple_port = {1, simple_controllers};
+	port_controller simple_controller = {"(system)", "system", {}};
+	port_controller_set simple_port = {{&simple_controller}};
 
 	struct porttype_basecontrol : public port_type
 	{
@@ -69,7 +65,7 @@ port_type::~port_type() throw()
 
 bool port_type::is_present(unsigned controller) const throw()
 {
-	return controller_info->controller_count > controller;
+	return controller_info->controllers.size() > controller;
 }
 
 namespace
@@ -142,13 +138,13 @@ port_type_set::port_type_set(std::vector<class port_type*> types, struct port_in
 	//Count maximum number of controller indices to determine the controller multiplier.
 	controller_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
-		for(unsigned j = 0; j < types[i]->controller_info->controller_count; j++)
+		for(unsigned j = 0; j < types[i]->controller_info->controllers.size(); j++)
 			controller_multiplier = max(controller_multiplier, (size_t)types[i]->used_indices(j));
 	//Count maximum number of controllers to determine the port multiplier.
 	port_multiplier = 1;
 	for(size_t i = 0; i < port_count; i++)
 		port_multiplier = max(port_multiplier, controller_multiplier *
-		(size_t)types[i]->controller_info->controller_count);
+		(size_t)types[i]->controller_info->controllers.size());
 	//Allocate the per-port tables.
 	port_offsets = new size_t[types.size()];
 	port_types = new class port_type*[types.size()];
@@ -238,7 +234,7 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 	}
 	uint8_t* backingmem = backing + types->port_offset(port);
 	const port_type& ptype = types->port_type(port);
-	if(controller >= ptype.controller_info->controller_count) {
+	if(controller >= ptype.controller_info->controllers.size()) {
 		//Bad controller.
 		*buf = '\0';
 		return;
@@ -246,17 +242,17 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 	const port_controller* pc = ptype.controller_info->controllers[controller];
 	bool need_space = false;
 	short val;
-	for(unsigned i = 0; i < pc->button_count; i++) {
-		const port_controller_button* pcb = pc->buttons[i];
-		if(need_space && pcb->type != port_controller_button::TYPE_NULL) {
+	for(unsigned i = 0; i < pc->buttons.size(); i++) {
+		const port_controller_button& pcb = pc->buttons[i];
+		if(need_space && pcb.type != port_controller_button::TYPE_NULL) {
 			need_space = false;
 			*(buf++) = ' ';
 		}
-		switch(pcb->type) {
+		switch(pcb.type) {
 		case port_controller_button::TYPE_NULL:
 			break;
 		case port_controller_button::TYPE_BUTTON:
-			*(buf++) = ptype.read(backingmem, controller, i) ? pcb->symbol : U'-';
+			*(buf++) = ptype.read(backingmem, controller, i) ? pcb.symbol : U'-';
 			break;
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
@@ -592,10 +588,10 @@ controller_frame::controller_frame() throw()
 unsigned port_controller::analog_actions() const
 {
 	unsigned r = 0, s = 0;
-	for(unsigned i = 0; i < button_count; i++) {
-		if(buttons[i]->shadow)
+	for(unsigned i = 0; i < buttons.size(); i++) {
+		if(buttons[i].shadow)
 			continue;
-		switch(buttons[i]->type) {
+		switch(buttons[i].type) {
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
 			r++;
@@ -615,10 +611,10 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 	unsigned r = 0;
 	bool second = false;
 	bool selecting = false;
-	for(unsigned i = 0; i < button_count; i++) {
-		if(buttons[i]->shadow)
+	for(unsigned i = 0; i < buttons.size(); i++) {
+		if(buttons[i].shadow)
 			continue;
-		switch(buttons[i]->type) {
+		switch(buttons[i].type) {
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
 			if(selecting) {
@@ -928,15 +924,15 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 		unsigned ax = aaxes[i].first;
 		unsigned ay = aaxes[i].second;
 		if(ay != std::numeric_limits<unsigned>::max()) {
-			if(ax > _ctrl->button_count) continue;
-			if(ay > _ctrl->button_count) continue;
-			auto g = adata[nframe * abuttons + i].transform(*_ctrl->buttons[ax], *_ctrl->buttons[ay],
+			if(ax > _ctrl->buttons.size()) continue;
+			if(ay > _ctrl->buttons.size()) continue;
+			auto g = adata[nframe * abuttons + i].transform(_ctrl->buttons[ax], _ctrl->buttons[ay],
 				frame.axis3(port, controller, ax), frame.axis3(port, controller, ay));
 			frame.axis3(port, controller, ax, g.first);
 			frame.axis3(port, controller, ay, g.second);
 		} else {
-			if(ax > _ctrl->button_count) continue;
-			int16_t g = adata[nframe * abuttons + i].transform(*_ctrl->buttons[ax],
+			if(ax > _ctrl->buttons.size()) continue;
+			int16_t g = adata[nframe * abuttons + i].transform(_ctrl->buttons[ax],
 				frame.axis3(port, controller, ax));
 			frame.axis3(port, controller, ax, g);
 		}
@@ -954,9 +950,9 @@ std::string controller_macro_data::dump(const port_controller& ctrl)
 			o << t.coeffs[0] << "," << t.coeffs[1] << "," << t.coeffs[2] << ",";
 			o << t.coeffs[3] << "," << t.coeffs[4] << "," << t.coeffs[5] << "@";
 		}
-		for(size_t j = 0; j < buttons && j < ctrl.button_count; j++)
-			if(((data[i * get_stride() + j / 8] >> (j % 8)) & 1) && ctrl.buttons[j]->macro)
-				o << ctrl.buttons[j]->macro;
+		for(size_t j = 0; j < buttons && j < ctrl.buttons.size(); j++)
+			if(((data[i * get_stride() + j / 8] >> (j % 8)) & 1) && ctrl.buttons[j].macro)
+				o << ctrl.buttons[j].macro;
 		o << "]";
 	}
 	if(autoterminate)
@@ -1140,9 +1136,9 @@ void controller_macro_data::serialize(JSON::node& v)
 JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
 {
 	JSON::node n(JSON::array);
-	for(size_t i = 0; i < ctrl.button_count; i++) {
-		if(ctrl.buttons[i]->macro)
-			n.append(JSON::s(ctrl.buttons[i]->macro));
+	for(size_t i = 0; i < ctrl.buttons.size(); i++) {
+		if(ctrl.buttons[i].macro)
+			n.append(JSON::s(ctrl.buttons[i].macro));
 		else
 			n.append(JSON::n()); //Placeholder.
 	}

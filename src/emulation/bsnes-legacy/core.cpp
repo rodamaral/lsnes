@@ -230,9 +230,9 @@ namespace
 
 	void push_port_indices(std::vector<port_index_triple>& tab, unsigned p, port_type& pt)
 	{
-		unsigned ctrls = pt.controller_info->controller_count;
+		unsigned ctrls = pt.controller_info->controllers.size();
 		for(unsigned i = 0; i < ctrls; i++)
-			for(unsigned j = 0; j < pt.controller_info->controllers[i]->button_count; j++)
+			for(unsigned j = 0; j < pt.controller_info->controllers[i]->buttons.size(); j++)
 				tab.push_back(t(p, i, j, true));
 	}
 
@@ -250,8 +250,8 @@ namespace
 			r.ports.push_back(&psystem);
 		r.ports.push_back(index_to_ptype[type1]);
 		r.ports.push_back(index_to_ptype[type2]);
-		unsigned p1controllers = r.ports[1]->controller_info->controller_count;
-		unsigned p2controllers = r.ports[2]->controller_info->controller_count;
+		unsigned p1controllers = r.ports[1]->controller_info->controllers.size();
+		unsigned p2controllers = r.ports[2]->controller_info->controllers.size();
 		for(unsigned i = 0; i < (hreset ? 5 : 4); i++)
 			r.portindex.indices.push_back(t(0, 0, i, false));
 		push_port_indices(r.portindex.indices, 1, *r.ports[1]);

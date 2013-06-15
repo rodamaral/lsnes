@@ -120,17 +120,17 @@ namespace
 		unsigned analog_num = 1;
 		bool multi_analog = (controller.analog_actions() > 1);
 		//This controller might be processed already, but perhaps only partially.
-		for(unsigned i = 0; i < controller.button_count; i++) {
-			if(controller.buttons[i]->shadow)
+		for(unsigned i = 0; i < controller.buttons.size(); i++) {
+			if(controller.buttons[i].shadow)
 				continue;
-			if(controller.buttons[i]->type != port_controller_button::TYPE_BUTTON)
+			if(controller.buttons[i].type != port_controller_button::TYPE_BUTTON)
 				continue;
 			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
-				<< controller.buttons[i]->name).str();
+				<< controller.buttons[i].name).str();
 			controller_bind b;
 			b.cclass = controller.cclass;
 			b.number = number;
-			b.name = controller.buttons[i]->name;
+			b.name = controller.buttons[i].name;
 			b.mode = 0;
 			b.xrel = b.yrel = false;
 			b.control1 = i;
@@ -140,20 +140,20 @@ namespace
 				add_button(name, b);
 			}
 		}
-		for(unsigned i = 0; i < controller.button_count; i++) {
-			if(controller.buttons[i]->shadow)
+		for(unsigned i = 0; i < controller.buttons.size(); i++) {
+			if(controller.buttons[i].shadow)
 				continue;
-			if(!controller.buttons[i]->is_analog())
+			if(!controller.buttons[i].is_analog())
 				continue;
 			std::string name = (stringfmt() << controller.cclass << "-" << number << "-"
-				<< controller.buttons[i]->name).str();
+				<< controller.buttons[i].name).str();
 			controller_bind b;
 			b.cclass = controller.cclass;
 			b.number = number;
-			b.name = controller.buttons[i]->name;
-			b.rmin = controller.buttons[i]->rmin;
-			b.rmax = controller.buttons[i]->rmax;
-			b.centered = controller.buttons[i]->centers;
+			b.name = controller.buttons[i].name;
+			b.rmin = controller.buttons[i].rmin;
+			b.rmax = controller.buttons[i].rmax;
+			b.centered = controller.buttons[i].centers;
 			b.mode = 2;
 			b.xrel = b.yrel = false;
 			b.control1 = i;
@@ -177,10 +177,10 @@ namespace
 			b.cclass = controller.cclass;
 			b.number = number;
 			b.mode = 1;
-			b.xrel = (g.first < controller.button_count) &&
-				(controller.buttons[g.first]->type == raxis);
-			b.yrel = (g.second < controller.button_count) &&
-				(controller.buttons[g.second]->type == raxis);
+			b.xrel = (g.first < controller.buttons.size()) &&
+				(controller.buttons[g.first].type == raxis);
+			b.yrel = (g.second < controller.buttons.size()) &&
+				(controller.buttons[g.second].type == raxis);
 			b.control1 = g.first;
 			b.control2 = g.second;
 			if(!all_buttons.count(name))
@@ -227,7 +227,7 @@ namespace
 		//What makes this nasty: Separate ports are always processed, but the same controllers can come
 		//multiple times, including with partial reprocessing.
 		std::map<std::string, unsigned> counts;
-		for(unsigned i = 0; i < ptype.controller_info->controller_count; i++) {
+		for(unsigned i = 0; i < ptype.controller_info->controllers.size(); i++) {
 			//No, n might not equal i + 1, since some ports have heterogenous controllers (e.g.
 			//gameboy-gambatte system port).
 			unsigned n = next_id_from_map(counts, ptype.controller_info->controllers[i]->cclass, 1);
@@ -533,9 +533,9 @@ void reread_active_buttons()
 			classnum[ctrl.cclass] = 1;
 		else
 			classnum[ctrl.cclass]++;
-		for(unsigned j = 0; j < ctrl.button_count; j++) {
+		for(unsigned j = 0; j < ctrl.buttons.size(); j++) {
 			std::string name = (stringfmt() << ctrl.cclass << "-" << classnum[ctrl.cclass] << "-"
-				<< ctrl.buttons[j]->name).str();
+				<< ctrl.buttons[j].name).str();
 			if(all_buttons.count(name)) {
 				active_bind a;
 				a.port = x.first;

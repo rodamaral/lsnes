@@ -205,8 +205,7 @@ struct port_controller
 {
 	const char* cclass;				//Controller class.
 	const char* type;				//Controller type.
-	unsigned button_count;				//Number of buttons / axes.
-	struct port_controller_button** buttons;	//Buttons.
+	std::vector<port_controller_button> buttons;	//Buttons.
 /**
  * Count number of analog actions on this controller.
  */
@@ -226,14 +225,13 @@ struct port_controller
  */
 struct port_controller_set
 {
-	unsigned controller_count;			//Number of controllers.
-	struct port_controller** controllers;		//Controllers.
+	std::vector<port_controller*> controllers;	//Controllers.
 /**
  * Get specified controller, or NULL if it doesn't exist.
  */
 	struct port_controller* get(unsigned c) throw()
 	{
-		if(c >= controller_count)
+		if(c >= controllers.size())
 			return NULL;
 		return controllers[c];
 	}
