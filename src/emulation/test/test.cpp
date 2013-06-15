@@ -123,7 +123,7 @@ namespace
 
 	extern core_core test_core;
 
-	core_core_params _test_core = {
+	core_core test_core{{
 		.core_identifier = []() -> std::string { return "TEST"; },
 		.set_region = [](core_region& region) -> bool { return (&region == &region_world); },
 		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(60, 1); },
@@ -173,11 +173,9 @@ namespace
 		},
 		.get_core_shortname = []() -> std::string { return "test"; },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {}
-	};
+	}};
 
-	core_core test_core(_test_core);
-	
-	core_type_params  _type_test = {
+	core_type type_test{{
 		.iname = "test", .hname = "test", .id = 0, .reset_support = 0,
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int { return 0; },
@@ -186,7 +184,5 @@ namespace
 		.get_bus_map = []() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0, 0); }, 
 		.vma_list = []() -> std::list<core_vma_info> { return std::list<core_vma_info>();},
 		.srams = []() -> std::set<std::string> { return std::set<std::string>();}
-	};
-
-	core_type type_test(_type_test);
+	}};
 }

@@ -207,8 +207,6 @@ namespace sky
 		}
 	} psystem;
 	
-	port_type* port_types[] = {&psystem, NULL};
-
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
 		port_index_triple x;
@@ -221,23 +219,15 @@ namespace sky
 
 	struct core_setting_group sky_settings;
 	
-	unsigned world_compat[2] = {0, UINT_MAX};
-	struct core_region_params world_region_params = {
+	core_region world_region{{
 		.iname = "world", .hname = "World", .priority = 0, .handle = 0, .multi = false,
-		.framemagic = {656250, 18227}, .compatible_runs = world_compat
-	};
-	struct core_region world_region(world_region_params);
-	struct core_region* regions[] = {&world_region, NULL};
-	
-	struct core_romimage_info_params skyzip_params = {
-		"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0
-	};
-	struct core_romimage_info skyzip(skyzip_params);
-	struct core_romimage_info* images[] = {&skyzip, NULL};
+		.framemagic = {656250, 18227}, .compatible_runs = {0, UINT_MAX}
+	}};
+	struct core_romimage_info skyzip{{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}};
 
 	extern struct core_core sky_core;
 	
-	struct core_core_params sky_core_params = {
+	struct core_core sky_core{{
 		.core_identifier = []() -> std::string { return "Sky"; },
 		.set_region = [](core_region& region) -> bool { return (&region == &world_region); },
 		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(656250, 18227); },
@@ -323,15 +313,14 @@ namespace sky
 		.get_pflag = []() -> bool { return pflag; },
 		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
 		.request_reset = [](long delay, bool hard) -> void {},
-		.port_types = port_types,
+		.port_types = {&psystem},
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
 			return x;
 		},
 		.get_core_shortname = []() -> std::string { return "sky"; },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {}
-	};
-	struct core_core sky_core(sky_core_params);
+	}};
 
 	void controller_magic()
 	{
@@ -349,7 +338,7 @@ namespace sky
 		}
 	}
 
-	struct core_type_params skytype_params = {
+	core_type skytype{{
 		.iname = "sky", .hname = "Sky", .id = 3522, .reset_support = 0,
 		.load_rom = [](core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
@@ -378,8 +367,8 @@ namespace sky
 			r.portindex.pcid_map.push_back(std::make_pair(0, 1));
 			return r;
 		},
-		.extensions = "sky", .bios = NULL, .regions = regions, .images = images, .settings = &sky_settings,
-		.core = &sky_core,
+		.extensions = "sky", .bios = NULL, .regions = {&world_region}, .images = {&skyzip},
+		.settings = &sky_settings, .core = &sky_core,
 		.get_bus_map = []() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0, 0); },
 		.vma_list = []() -> std::list<core_vma_info> {
 			std::list<core_vma_info> r;
@@ -401,7 +390,6 @@ namespace sky
 			r.insert("sram");
 			return r;
 		}
-	};
-	struct core_type skytype(skytype_params);
+	}};
 	core_sysregion X24("sky", skytype, world_region);
 }

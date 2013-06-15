@@ -61,11 +61,7 @@ core_region::core_region(const core_region_params& params)
 	magic[1] = params.framemagic[1];
 	magic[2] = 1000000000 * params.framemagic[0] / params.framemagic[1];
 	magic[3] = 1000000000 * params.framemagic[0] % params.framemagic[1];
-	for(size_t i = 0;; i++)
-		if(params.compatible_runs[i] == std::numeric_limits<unsigned>::max())
-			break;
-		else
-			compatible.push_back(params.compatible_runs[i]);
+	compatible = params.compatible_runs;
 }
 
 
@@ -129,7 +125,7 @@ size_t core_romimage_info::get_headnersize(size_t imagesize)
 	return 0;
 }
 
-core_type::core_type(core_type_params& params)
+core_type::core_type(const core_type_params& params)
 {
 	iname = params.iname;
 	hname = params.hname;
@@ -144,10 +140,10 @@ core_type::core_type(core_type_params& params)
 	settings = params.settings;
 	if(params.bios)
 		biosname = params.bios;
-	for(size_t i = 0; params.regions[i]; i++)
-		regions.push_back(params.regions[i]);
-	for(size_t i = 0; params.images[i]; i++)
-		imageinfo.push_back(params.images[i]);
+	for(auto i : params.regions)
+		regions.push_back(i);
+	for(auto i : params.images)
+		imageinfo.push_back(i);
 	if(params.extensions) {
 		std::string tmp = params.extensions;
 		while(tmp != "") {
@@ -328,7 +324,7 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 	region.fill_framerate_magic(magic);
 }
 
-core_core::core_core(core_core_params& params)
+core_core::core_core(const core_core_params& params)
 {
 	_core_identifier = params.core_identifier;
 	_set_region = params.set_region;

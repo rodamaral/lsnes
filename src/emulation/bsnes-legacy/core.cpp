@@ -158,7 +158,7 @@ namespace
 	}
 
 	core_type* internal_rom = NULL;
-	extern core_core_params _bsnes_core;
+	extern core_core bsnes_core;
 
 	template<bool(*T)(const char*,const unsigned char*, unsigned)>
 	bool load_rom_X1(core_romimage* img)
@@ -327,7 +327,7 @@ namespace
 				messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 			video_refresh_done = true;
 			uint32_t fps_n, fps_d;
-			auto fps = _bsnes_core.video_rate();
+			auto fps = bsnes_core.get_video_rate();
 			fps_n = fps.first;
 			fps_d = fps.second;
 			uint32_t g = gcd(fps_n, fps_d);
@@ -593,7 +593,7 @@ namespace
 	{
 		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
 			cover_fbmem[i] = 0;
-		std::string ident = _bsnes_core.core_identifier();
+		std::string ident = bsnes_core.get_core_identifier();
 		cover_render_string(cover_fbmem, 0, 0, ident, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
 		std::ostringstream name;
 		name << "Internal ROM name: ";
@@ -613,7 +613,7 @@ namespace
 		}
 	}
 
-	core_core_params _bsnes_core = {
+	core_core bsnes_core{{
 		.core_identifier = []() -> std::string {
 			return (stringfmt()  << snes_library_id() << " (" << SNES::Info::Profile << " core)").str();
 		},
@@ -850,11 +850,9 @@ again2:
 				cf.axis3(0, 0, 3, 0);
 			}
 		}
-	};
+	}};
 
-	core_core bsnes_core(_bsnes_core);
-
-	core_type_params _type_snes = {
+	core_type type_snes{{
 		.iname = "snes", .hname = "SNES", .id = 0, .reset_support = BSNES_RESET_LEVEL ,
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
@@ -865,8 +863,8 @@ again2:
 		.bios = NULL, .regions = snes_regions, .images = snes_images,
 		.settings = &bsnes_settings, .core = &bsnes_core, .get_bus_map = bsnes_get_bus_map,
 		.vma_list = get_VMAlist, .srams = srams
-	};
-	core_type_params _type_bsx = {
+	}};
+	core_type type_bsx{{
 		.iname = "bsx", .hname = "BS-X (non-slotted)", .id = 1, .reset_support = BSNES_RESET_LEVEL , 
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
@@ -876,8 +874,8 @@ again2:
 		.controllerconfig = _controllerconfig, .extensions = "bs", .bios = "bsx.sfc", .regions = bsx_regions,
 		.images = bsx_images, .settings = &bsnes_settings, .core = &bsnes_core,
 		.get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
-	};
-	core_type_params _type_bsxslotted = {
+	}};
+	core_type type_bsxslotted{{
 		.iname = "bsxslotted", .hname = "BS-X (slotted)", .id = 2, .reset_support = BSNES_RESET_LEVEL ,
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs) -> int {
@@ -887,8 +885,8 @@ again2:
 		.controllerconfig = _controllerconfig, .extensions = "bss", .bios = "bsxslotted.sfc",
 		.regions = bsxs_regions, .images = bsxs_images, .settings = &bsnes_settings, .core = &bsnes_core,
 		.get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
-	};
-	core_type_params _type_sufamiturbo = {
+	}};
+	core_type type_sufamiturbo{{
 		.iname = "sufamiturbo", .hname = "Sufami Turbo", .id = 3, .reset_support = BSNES_RESET_LEVEL ,
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
@@ -898,8 +896,8 @@ again2:
 		.controllerconfig = _controllerconfig, .extensions = "st", .bios = "sufamiturbo.sfc",
 		.regions = sufamiturbo_regions, .images = sufamiturbo_images, .settings = &bsnes_settings,
 		.core = &bsnes_core, .get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
-	};
-	core_type_params _type_sgb = {
+	}};
+	core_type type_sgb{{
 		.iname = "sgb", .hname = "Super Game Boy", .id = 4, .reset_support = BSNES_RESET_LEVEL ,
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int
@@ -910,19 +908,13 @@ again2:
 		.controllerconfig = _controllerconfig, .extensions = "gb;dmg;sgb", .bios = "sgb.sfc",
 		.regions = sgb_regions, .images = sgb_images, .settings = &bsnes_settings, .core = &bsnes_core,
 		.get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
-	};
-
-	core_type type_snes(_type_snes);
-	core_type type_bsx(_type_bsx);
-	core_type type_bsxslotted(_type_bsxslotted);
-	core_type type_sufamiturbo(_type_sufamiturbo);
-	core_type type_sgb(_type_sgb);
+	}};
 
 	function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
 		"No description available\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> out;
-			_bsnes_core.serialize(out);
+			bsnes_core.serialize(out);
 			std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
 			x.write(&out[0], out.size());
 		});

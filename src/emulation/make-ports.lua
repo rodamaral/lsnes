@@ -1,5 +1,12 @@
 nextsym = 0;
 
+stripcomma = function(y)
+	if #y > 0 and string.sub(y, #y - 1) == "," then
+		return string.sub(y, 0, #y - 1);
+	end
+	return y;
+end
+
 makesymbol = function()
 	nextsym = nextsym + 1;
 	return "X"..nextsym;
@@ -262,9 +269,10 @@ for i = 1,#ports do
 	print("\t}");
 	print("} "..port.symbol..";");
 end
-local s = "port_type* port_types[] = { ";
+local s = "std::vector<port_type*> port_types{ ";
 for i = 1,#ports do
 	s = s .."&"..ports[i].symbol..", ";
 end
-s = s .. "NULL};";
+s = stripcomma(s);
+s = s .. "};";
 print(s);

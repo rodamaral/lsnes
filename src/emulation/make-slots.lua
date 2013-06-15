@@ -1,5 +1,12 @@
 nextsym = 0;
 
+stripcomma = function(y)
+	if #y > 0 and string.sub(y, #y - 1) == "," then
+		return string.sub(y, 0, #y - 1);
+	end
+	return y;
+end
+
 makesymbol = function()
 	nextsym = nextsym + 1;
 	return "X"..nextsym;
@@ -21,22 +28,22 @@ for i = 1,#slots do
 		local ssym2 = makesymbol();
 		table.insert(ssyms, ssym2);
 		local s;
-		s = "\tstruct core_romimage_info_params "..ssym.." = {";
+		s = "\tcore_romimage_info "..ssym2.."{{";
 		s = s .. "\"" .. xslot.iname .. "\", ";
 		s = s .. "\"" .. xslot.hname .. "\", ";
 		s = s .. xslot.mandatory .. ", ";
 		s = s .. xslot.mode .. ", ";
 		s = s .. xslot.header;
-		s = s .. "};";
+		s = s .. "}};";
 		print(s);
-		print("\tcore_romimage_info "..ssym2.."("..ssym..");");
 	end
 	print("}");
 	local s;
-	s = "core_romimage_info* "..slot.symbol.."[] = {";
+	s = "std::vector<core_romimage_info*> "..slot.symbol.."{";
 	for j = 1,#ssyms do
 		s = s .. "&slotdefs::" .. ssyms[j] .. ",";
 	end
-	s = s .. "NULL};";
+	s = stripcomma(s);
+	s = s .. "};";
 	print(s);
 end

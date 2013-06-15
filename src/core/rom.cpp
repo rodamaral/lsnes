@@ -54,19 +54,12 @@ namespace
 		0, 0				//Offset.
 	};
 
-	port_type* port_types[] = {NULL};
 	port_index_triple sync_triple = {true, 0, 0, 0 };
 
 	core_setting_group null_settings;
 
-	unsigned null_compatible[] = {0, UINT_MAX};
-	struct core_region_params _null_region = {
-		"null", "(null)", 0, 0, false, {1, 60}, null_compatible
-	};
-	core_region null_region(_null_region);
-	core_region* null_regions[] = {&null_region, NULL};
-	core_romimage_info* null_images[] = {NULL};
-	core_core_params _core_null = {
+	core_region null_region{{"null", "(null)", 0, 0, false, {1, 60}, {0}}};
+	core_core core_null{{
 		.core_identifier = []() -> std::string { return "null core"; },
 		.set_region = [](core_region& reg) -> bool { return true; },
 		.video_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
@@ -92,7 +85,7 @@ namespace
 		.get_pflag = []() -> bool { return false; },
 		.set_pflag = [](bool pflag) -> void {},
 		.request_reset = [](long delay, bool hard) -> void {},
-		.port_types = port_types,
+		.port_types = {},
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(null_fbinfo);
 			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
@@ -103,10 +96,9 @@ namespace
 		},
 		.get_core_shortname = []() -> std::string { return "null"; },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {}
-	};
-	core_core core_null(_core_null);
+	}};
 
-	core_type_params _type_null = {
+	core_type type_null{{
 		"null", "(null)", 9999, 0,
 		[](core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs) -> int {
@@ -118,7 +110,7 @@ namespace
 			x.portindex.indices.push_back(sync_triple);
 			return x;
 		},
-		"", NULL, null_regions, null_images, &null_settings, &core_null,
+		"", NULL, {&null_region}, {}, &null_settings, &core_null,
 		[]() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0ULL, 0ULL); },
 		[]() -> std::list<core_vma_info> {
 			std::list<core_vma_info> x;
@@ -128,8 +120,7 @@ namespace
 			std::set<std::string> x;
 			return x;
 		}
-	};
-	core_type type_null(_type_null);
+	}};
 	core_sysregion sysregion_null("null", type_null, null_region);
 
 	core_type* current_rom_type = &type_null;

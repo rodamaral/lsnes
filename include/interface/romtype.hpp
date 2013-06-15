@@ -24,8 +24,7 @@ struct core_region_params
 	unsigned handle;
 	bool multi;
 	uint64_t framemagic[2];
-	//Ended by UINT_MAX.
-	unsigned* compatible_runs;
+	std::vector<unsigned> compatible_runs;
 };
 
 struct core_romimage_info_params
@@ -60,8 +59,8 @@ struct core_type_params
 	controller_set (*controllerconfig)(std::map<std::string, std::string>& settings);
 	const char* extensions;		//Separate by ;
 	const char* bios;		//Name of BIOS. NULL if none.
-	core_region** regions;		//Terminate with NULL.
-	core_romimage_info** images;	//Terminate with NULL.
+	std::vector<core_region*> regions;		//Terminate with NULL.
+	std::vector<core_romimage_info*> images;	//Terminate with NULL.
 	core_setting_group* settings;
 	core_core* core;
 	std::pair<uint64_t, uint64_t> (*get_bus_map)();
@@ -91,7 +90,7 @@ struct core_core_params
 	bool (*get_pflag)();
 	void (*set_pflag)(bool pflag);
 	void (*request_reset)(long delay, bool hard);
-	port_type** port_types;
+	std::vector<port_type*> port_types;
 	framebuffer_raw& (*draw_cover)();
 	std::string (*get_core_shortname)();
 	void (*pre_emulate_frame)(controller_frame& cf);
@@ -101,6 +100,7 @@ struct core_region
 {
 public:
 	core_region(const core_region_params& params);
+	core_region(std::initializer_list<core_region_params> p) : core_region(*p.begin()) {}
 	const std::string& get_iname();
 	const std::string& get_hname();
 	unsigned get_priority();
@@ -124,6 +124,7 @@ private:
 struct core_romimage_info
 {
 	core_romimage_info(const core_romimage_info_params& params);
+	core_romimage_info(std::initializer_list<core_romimage_info_params> p) : core_romimage_info(*p.begin()) {};
 	std::string iname;
 	std::string hname;
 	unsigned mandatory;
@@ -141,7 +142,8 @@ struct core_romimage
 
 struct core_core
 {
-	core_core(core_core_params& params);
+	core_core(const core_core_params& params);
+	core_core(std::initializer_list<core_core_params> p) : core_core(*p.begin()) {}
 	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
@@ -164,7 +166,7 @@ struct core_core
 	void set_pflag(bool pflag);
 	void request_reset(long delay, bool hard);
 	framebuffer_raw& draw_cover();
-	port_type** get_port_types() { return port_types; }
+	std::vector<port_type*> get_port_types() { return port_types; }
 	std::string get_core_shortname();
 	void pre_emulate_frame(controller_frame& cf);
 	static std::set<core_core*> all_cores();
@@ -193,7 +195,7 @@ private:
 	bool (*_get_pflag)();
 	void (*_set_pflag)(bool pflag);
 	void (*_request_reset)(long delay, bool hard);
-	port_type** port_types;
+	std::vector<port_type*> port_types;
 	framebuffer_raw& (*_draw_cover)();
 	std::string (*_get_core_shortname)();
 	void (*_pre_emulate_frame)(controller_frame& cf);
@@ -203,7 +205,8 @@ private:
 struct core_type
 {
 public:
-	core_type(core_type_params& params);
+	core_type(const core_type_params& params);
+	core_type(std::initializer_list<core_type_params> p) : core_type(*p.begin()) {}
 	~core_type() throw();
 	static std::list<core_type*> get_core_types();
 	core_region& get_preferred_region();

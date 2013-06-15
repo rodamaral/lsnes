@@ -242,9 +242,9 @@ namespace
 			std::map<std::string, unsigned> allocated;
 			std::map<controller_triple, unsigned> assigned;
 			auto ptypes = k->get_port_types();
-			for(unsigned i = 0;; i++) {
+			for(unsigned i = 0; i < ptypes.size(); i++) {
 				bool any = false;
-				for(unsigned j = 0; ptypes[j]; j++) {
+				for(unsigned j = 0; j < ptypes.size(); j++) {
 					if(!ptypes[j]->legal(i))
 						continue;
 					any = true;
