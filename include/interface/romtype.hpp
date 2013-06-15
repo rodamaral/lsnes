@@ -16,83 +16,322 @@ struct core_romimage;
 struct core_romimage_info;
 struct core_core;
 
+/**
+ * Parameters about a region (e.g. NTSC, PAL, World).
+ *
+ * Both movies ("run region") and ROMs ("cart region") have regions. The set of regions allowed for latter is superset
+ * of former, since autodetection regions are allowed for carts but not runs.
+ */
 struct core_region_params
 {
+/**
+ * Internal name of the region. Should be all-lowercase.
+ */
 	const char* iname;
+/**
+ * Human-readable name of the region.
+ */
 	const char* hname;
+/**
+ * Priority of region. Higher numbers are more preferred when tiebreaking.
+ */
 	unsigned priority;
+/**
+ * ID number of region. Unique among regions allowed for given core type.
+ */
 	unsigned handle;
+/**
+ * Multi-region flag. If set, this region gets further resolved by autodetection.
+ */
 	bool multi;
+/**
+ * Nominal framerate. The first number is numerator, the second is denominator.
+ */
 	uint64_t framemagic[2];
+/**
+ * ID numbers of regions of runs compatible with this cartridge region.
+ */
 	std::vector<unsigned> compatible_runs;
 };
 
+/**
+ * Parameters about individual ROM image.
+ */
 struct core_romimage_info_params
 {
+/**
+ * Internal name of ROM image.
+ */
 	const char* iname;
+/**
+ * Human-readable name of ROM image.
+ */
 	const char* hname;
+/**
+ * Upon loading a set of ROM images, the OR of mandatory fields of all present ROM images must equal OR of mandatory
+ * fields of all possible ROM images.
+ */
 	unsigned mandatory;
-	int pass_mode;		//0 => Content, 1 => File, 2 => Directory.
-	unsigned headersize;	//Header size to remove (0 if there is never header to remove).
+/**
+ * The way image is passed:
+ * 0 => Pass by content.
+ * 1 => Pass by filename.
+ * 2 => Pass by directory.
+ */
+	int pass_mode;
+/**
+ * Size of optional copier header to remove. 0 means there never is copier header.
+ */
+	unsigned headersize;
 };
 
-//A VMA.
+/**
+ * A Virtual Memory Area (VMA), which is a chunk of lsnes memory space.
+ *
+ * Mapping stuff above 4PB should be avoided.
+ */
 struct core_vma_info
 {
+/**
+ * Name of the VMA.
+ */
 	std::string name;
+/**
+ * Base address of the VMA.
+ */
 	uint64_t base;
+/**
+ * Size of the VMA.
+ */
 	uint64_t size;
+/**
+ * Direct backing RAM for the VMA. May be NULL.
+ */
 	void* backing_ram;
+/**
+ * If true, the VMA can't be written to.
+ */
 	bool readonly;
+/**
+ * Default endianess. -1 => Little endian, 0 => The same as host system, 1 => Big endian.
+ */
 	int endian;
+/**
+ * If backing_ram is NULL, this routine is used to access the memory one byte at a time.
+ *
+ * Parameter offset: The offset into VMA to access.
+ * Parameter data: Byte to write. Ignored if write = false.
+ * Parameter write: If true, do write, otherwise do read.
+ * Returns: The read value. Only valid if write = false.
+ */
 	uint8_t (*iospace_rw)(uint64_t offset, uint8_t data, bool write);
 };
 
+/**
+ * Parameters about system type.
+ *
+ * Each system type may have its own regions, image slots and controller configuration.
+ */
 struct core_type_params
 {
+/**
+ * Internal name of the system type.
+ */
 	const char* iname;
+/**
+ * Human-readable name of the system type.
+ */
 	const char* hname;
+/**
+ * ID of system type. Must be unique among core system is valid for.
+ */
 	unsigned id;
+/**
+ * Reset support flags:
+ * 1 => System supports soft resets.
+ * 2 => System supports delayed resets.
+ * 4 => System supports hard resets.
+ */
 	unsigned reset_support;
+/**
+ * Load a ROM slot set. Changes the ROM currently loaded for core.
+ *
+ * Parameter images: The set of images to load.
+ * Parameter settings: The settings to use.
+ * Parameter rtc_sec: The initial RTC seconds value.
+ * Parameter rtc_subsec: The initial RTC subseconds value.
+ * Returns: -1 on failure, 0 on success.
+ */
 	int (*load_rom)(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
+/**
+ * Obtain controller config for given settings.
+ *
+ * Parameter settings: The settings to use.
+ * Returns: The controller configuration.
+ */
 	controller_set (*controllerconfig)(std::map<std::string, std::string>& settings);
-	const char* extensions;		//Separate by ;
-	const char* bios;		//Name of BIOS. NULL if none.
-	std::vector<core_region*> regions;		//Terminate with NULL.
-	std::vector<core_romimage_info*> images;	//Terminate with NULL.
+/**
+ * Semicolon-separated list of extensions this system type uses.
+ */
+	const char* extensions;
+/**
+ * The name of BIOS for this system. NULL if there is no bios.
+ */
+	const char* bios;
+/**
+ * List of regions valid for this system type.
+ */
+	std::vector<core_region*> regions;
+/**
+ * List of image slots for this system type.
+ */
+	std::vector<core_romimage_info*> images;
+/**
+ * Description of settings for this system type.
+ */
 	core_setting_group* settings;
+/**
+ * Core this system is emulated by.
+ */
 	core_core* core;
+/**
+ * Get bus mapping.
+ *
+ * Returns: The bus mapping (base,size), or (0,0) if this system does not have bus mapping.
+ */
 	std::pair<uint64_t, uint64_t> (*get_bus_map)();
+/**
+ * Get list of valid VMAs. ROM must be loaded.
+ *
+ * Returns: The list of VMAs.
+ */
 	std::list<core_vma_info> (*vma_list)();
+/**
+ * Get list of valid SRAM names. ROM must be loaded.
+ *
+ * Returns: The list of SRAMs.
+ */
 	std::set<std::string> (*srams)();
 };
 
+/**
+ * Core type parameters.
+ *
+ * Each core type has its own loaded ROM.
+ */
 struct core_core_params
 {
+/**
+ * Get the name of the core.
+ */
 	std::string (*core_identifier)();
+/**
+ * Set the current region.
+ *
+ * Parameter region: The new region.
+ * Returns: True on success, false on failure (bad region).
+ */
 	bool (*set_region)(core_region& region);
+/**
+ * Get current video frame rate as (numerator, denominator).
+ */
 	std::pair<uint32_t, uint32_t> (*video_rate)();
+/**
+ * Get audio sampling rate as (numerator, denominator).
+ *
+ * Note: This value should not be changed while ROM is running, since video dumper may malfunction.
+ */
 	std::pair<uint32_t, uint32_t> (*audio_rate)();
+/**
+ * Get SNES CPU and SMP rates. If not SNES, this should be NULL.
+ */
 	std::pair<uint32_t, uint32_t> (*snes_rate)();
+/**
+ * Save all SRAMs.
+ */
 	std::map<std::string, std::vector<char>> (*save_sram)() throw(std::bad_alloc);
+/**
+ * Load all SRAMs.
+ *
+ * Note: Must handle SRAM being missing or shorter or longer than expected.
+ */
 	void (*load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
+/**
+ * Serialize the system state.
+ */
 	void (*serialize)(std::vector<char>& out);
+/**
+ * Unserialize the system state.
+ */
 	void (*unserialize)(const char* in, size_t insize);
+/**
+ * Get current region.
+ */
 	core_region& (*get_region)();
+/**
+ * Poweron the console.
+ */
 	void (*power)();
+/**
+ * Unload the cartridge from the console.
+ */
 	void (*unload_cartridge)();
+/**
+ * Get the current scale factors for screen as (xscale, yscale).
+ */
 	std::pair<uint32_t, uint32_t> (*get_scale_factors)(uint32_t width, uint32_t height);
+/**
+ * Do basic core initialization. Called on lsnes startup.
+ */
 	void (*install_handler)();
+/**
+ * Do basic core uninitialization. Called on lsnes shutdown.
+ */
 	void (*uninstall_handler)();
+/**
+ * Emulate one frame.
+ */
 	void (*emulate)();
+/**
+ * Get core into state where saving is possible. Must run less than one frame.
+ */
 	void (*runtosave)();
+/**
+ * Get the polled flag.
+ *
+ * The emulator core sets polled flag when the game asks for input.
+ *
+ * If polled flag is clear when frame ends, the frame is marked as lag.
+ */
 	bool (*get_pflag)();
+/**
+ * Set the polled flag.
+ */
 	void (*set_pflag)(bool pflag);
+/**
+ * Request reset to happen next time emulate is called.
+ */
 	void (*request_reset)(long delay, bool hard);
+/**
+ * Set of valid port types for the core.
+ */
 	std::vector<port_type*> port_types;
+/**
+ * Draw run cover screen.
+ *
+ * Should display information about the ROM loaded.
+ */
 	framebuffer_raw& (*draw_cover)();
+/**
+ * Get shortened name of the core.
+ */
 	std::string (*get_core_shortname)();
+/**
+ * Set the system controls to appropriate values for next frame.
+ *
+ * E.g. if core supports resetting, set the reset button in the frame to pressed if reset is wanted.
+ */
 	void (*pre_emulate_frame)(controller_frame& cf);
 };
 
@@ -281,9 +520,21 @@ private:
 	core_core* core;
 };
 
+/**
+ * System type / region pair.
+ *
+ * All run regions for given system must have valid pairs.
+ */
 struct core_sysregion
 {
 public:
+/**
+ * Create a new system type / region pair.
+ *
+ * Parameter name: The internal name of the pair.
+ * Parameter type: The system.
+ * Parameter region: The region.
+ */
 	core_sysregion(const std::string& name, core_type& type, core_region& region);
 	~core_sysregion() throw();
 	const std::string& get_name();
