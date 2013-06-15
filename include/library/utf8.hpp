@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <functional>
 
 /**
  * Initial state for UTF-8 parser.
@@ -39,24 +40,30 @@ std::u32string to_u32string(const std::string& utf8);
 std::string to_u8string(const std::u32string& utf32);
 
 /**
+ * Iterator to function copy from UTF-8 to UTF-32
+ */
+template<typename srcitr>
+inline void copy_from_utf8_2(srcitr begin, srcitr end, std::function<void(int32_t)> target)
+{
+	uint16_t state = utf8_initial_state;
+	for(srcitr i = begin; i != end; i++) {
+		int32_t x = utf8_parse_byte((unsigned char)*i, state);
+		if(x >= 0)
+			target(x);
+	}
+	int32_t x = utf8_parse_byte(-1, state);
+	if(x >= 0)
+		target(x);
+}
+
+/**
  * Iterator copy from UTF-8 to UTF-32
  */
 template<typename srcitr, typename dstitr>
 inline void copy_from_utf8(srcitr begin, srcitr end, dstitr target)
 {
-	uint16_t state = utf8_initial_state;
-	for(srcitr i = begin; i != end; i++) {
-		int32_t x = utf8_parse_byte((unsigned char)*i, state);
-		if(x >= 0) {
-			*target = x;
-			++target;
-		}
-	}
-	int32_t x = utf8_parse_byte(-1, state);
-	if(x >= 0) {
-		*target = x;
-		++target;
-	}
+	copy_from_utf8_2(begin, end, [&target](int32_t x) { *target = x; ++target; });
 }
+
 
 #endif
