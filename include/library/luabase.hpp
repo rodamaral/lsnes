@@ -172,6 +172,10 @@ public:
  */
 	lua_state() throw(std::bad_alloc);
 /**
+ * Create a new state with specified master state.
+ */
+	lua_state(lua_state& _master, lua_State* L);
+/**
  * Destroy a state.
  */
 	~lua_state() throw();
@@ -181,6 +185,14 @@ public:
  * Return value: Internal state.
  */
 	lua_State* handle() { return lua_handle; }
+/**
+ * Get the master state.
+ */
+	lua_state& get_master() { return master ? *master : *this; }
+/**
+ * Set the internal state object.
+ */
+	void handle(lua_State* l) { lua_handle = l; }
 /**
  * Set OOM handler.
  */
@@ -353,6 +365,7 @@ private:
 	static void builtin_oom();
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
 	void (*oom_handler)();
+	lua_state* master;
 	lua_State* lua_handle;
 	std::map<std::string, lua_function*> functions;
 	lua_state(lua_state&);
@@ -371,11 +384,11 @@ template<typename T> struct lua_obj_pin
  * Parameter _object: The object to pin.
  */
 	lua_obj_pin(lua_state& _state, T* _object)
-		: state(_state)
+		: state(_state.get_master())
 	{
-		state.pushlightuserdata(this);
-		state.pushvalue(-2);
-		state.rawset(LUA_REGISTRYINDEX);
+		_state.pushlightuserdata(this);
+		_state.pushvalue(-2);
+		_state.rawset(LUA_REGISTRYINDEX);
 		obj = _object;
 	}
 /**
@@ -450,8 +463,9 @@ template<class T> class lua_class
 	{
 		try {
 			lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
-			T* p = lua_class<T>::get(*b->state, 1, b->fname);
-			return (p->*(b->fn))(*b->state);
+			lua_state L(*b->state, LS);
+			T* p = lua_class<T>::get(L, 1, b->fname);
+			return (p->*(b->fn))(L);
 		} catch(std::exception& e) {
 			std::string err = e.what();
 			lua_pushlstring(LS, err.c_str(), err.length());

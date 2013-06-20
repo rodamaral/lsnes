@@ -10,8 +10,9 @@ namespace
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
 		lua_state* state = reinterpret_cast<lua_state*>(lua_touserdata(L, lua_upvalueindex(2)));
 		lua_function* f = reinterpret_cast<lua_function*>(ptr);
+		lua_state _L(*state, L);
 		try {
-			return f->invoke(*state);
+			return f->invoke(_L);
 		} catch(std::exception& e) {
 			lua_pushfstring(L, "%s", e.what());
 			lua_error(L);
@@ -84,13 +85,22 @@ namespace
 
 lua_state::lua_state() throw(std::bad_alloc)
 {
+	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
 	regqueue_t::do_ready(*this, true);
 }
 
+lua_state::lua_state(lua_state& _master, lua_State* L)
+{
+	master = &_master;
+	lua_handle = L;
+}
+
 lua_state::~lua_state() throw()
 {
+	if(master)
+		return;
 	regqueue_t::do_ready(*this, false);
 	if(lua_handle)
 		lua_close(lua_handle);
@@ -128,6 +138,8 @@ lua_function::~lua_function() throw()
 
 void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
 {
+	if(master)
+		return master->reset();
 	if(lua_handle) {
 		lua_State* tmp = lua_newstate(lua_state::builtin_alloc, this);
 		if(!tmp)
@@ -145,6 +157,8 @@ void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
 
 void lua_state::deinit() throw()
 {
+	if(master)
+		return master->deinit();
 	if(lua_handle)
 		lua_close(lua_handle);
 	lua_handle = NULL;
@@ -152,6 +166,8 @@ void lua_state::deinit() throw()
 
 void lua_state::do_register(const std::string& name, lua_function& fun) throw(std::bad_alloc)
 {
+	if(master)
+		return master->do_register(name, fun);
 	functions[name] = &fun;
 	if(lua_handle)
 		register_lua_function(*this, name, fun);
@@ -159,11 +175,15 @@ void lua_state::do_register(const std::string& name, lua_function& fun) throw(st
 
 void lua_state::do_unregister(const std::string& name) throw()
 {
+	if(master)
+		return master->do_unregister(name);
 	functions.erase(name);
 }
 
 bool lua_state::do_once(void* key)
 {
+	if(master)
+		return master->do_once(key);
 	pushlightuserdata(key);
 	rawget(LUA_REGISTRYINDEX);
 	if(type(-1) == LUA_TNIL) {
