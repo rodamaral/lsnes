@@ -1158,6 +1158,15 @@ again2:
 		return 0;
 	});
 
+	function_ptr_luafun lua_smpdiasm(LS, "snes.smpdisasm", [](lua_state& L, const std::string& fname) ->
+		int {
+		unsigned addr = L.get_numeric_argument<unsigned>(1, fname.c_str());
+		nall::string _disasm = SNES::smp.disassemble_opcode(addr);
+		std::string disasm(_disasm, _disasm.length());
+		L.pushlstring(disasm);
+		return 1;
+	});
+
 #else
 	void snesdbg_on_break() {}
 	void snesdbg_on_trace() {}
