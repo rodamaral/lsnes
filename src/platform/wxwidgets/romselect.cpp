@@ -249,6 +249,7 @@ namespace
 		pinfo.movie_rtc_second = our_movie.movie_rtc_second;
 		pinfo.movie_rtc_subsecond = our_movie.movie_rtc_subsecond;
 		pinfo.projectid = our_movie.projectid;
+		project_copy_watches(pinfo);
 		for(unsigned i = 0; i < 27; i++) {
 			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];

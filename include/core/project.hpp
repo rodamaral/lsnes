@@ -90,5 +90,9 @@ std::string project_otherpath();
  * Returns: The savestate extension.
  */
 std::string project_savestate_ext();
+/**
+ * Copy watches to project
+ */
+void project_copy_watches(project_info& p);
 
 #endif

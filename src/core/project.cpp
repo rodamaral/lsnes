@@ -446,3 +446,9 @@ std::string project_savestate_ext()
 {
 	return active_project ? "lss" : "lsmv";
 }
+
+void project_copy_watches(project_info& p)
+{
+	for(auto i : get_watches())
+		p.watches[i] = get_watchexpr_for(i);
+}
