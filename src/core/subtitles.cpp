@@ -140,14 +140,14 @@ namespace
 			for(uint64_t i = 1; i < lastframe; i++) {
 				moviefile_subtiming posmarker(i);
 				auto j = our_movie.subtitles.upper_bound(posmarker);
-				if(j == our_movie.subtitles.end() || !j->first.inrange(i))
+				if(j == our_movie.subtitles.end())
 					continue;
-				if(lasttxt != j->second) {
+				if(lasttxt != j->second || !j->first.inrange(i)) {
 					if(lasttxt != "")
 						y << "{" << since << "}{" << i - 1 << "}" << s_subescape(lasttxt)
 							<< std::endl;
 					since = i;
-					lasttxt = j->second;
+					lasttxt = j->first.inrange(i) ? j->second : "";
 				}
 			}
 			if(lasttxt != "")
