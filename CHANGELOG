@@ -1221,3 +1221,58 @@ rr2-β6 [Wednesday April 17th 2013]
 rr2-β7 [Wednesday April 17th 2013]
 ==================================
 * Fix crash on loading GB(c) ROMs.
+
+rr1-Δ17ε4 [Monday June 24th 2013]
+=================================
+* Lua: Fix drawing lines in some angles.
+* Fix compilation error if size_t != uint64_t.
+* Ogg: Properly initialize data_count on read ogg pages.
+* Memory search: Autoupdate memory search by default.
+* Memory search: Move buttons to context menu, add disqualify address.
+* Memory search: Use text panels instead of textbox.
+* Backport Mac OS X build fix.
+* OggOpus: Fix Vendor vs. ENCODER.
+* Lua: gui.delta_<class>_gap.
+* Fix RTC on loadstate in readonly mode.
+* Save/Restore host memory across unsafe rewinds.
+* gui.text: Fix clipping to left/top border.
+* Implicit creation of inverse binds for aliases.
+* Fix subtitle generation.
+
+rr2-β8 [Monday June 24th 2013]
+==============================
+* Make save slot info work correctly with prefixes.
+* Cleanup port defintions.
+* Allow button display symbols to be Unicode characters.
+* Make all Lua memory functions optionally take VMA.
+* Lua: Allow creation of commands.
+* Commentary: Remove support for old Opus format.
+* Lua: Throw instead of raising error if VMA is invalid.
+* Fix statusbar breakage when not recording.
+* Projects support.
+* Lua: Don't crash if method execution throws.
+* Lua: memory2.
+* Fix bug causing ext0...ext3 to appear pressed on normal gamepad.
+* Mac OS X compile fix.
+* Fix desync on loading movie via project load.
+* Fix memory watch with project active.
+* Allow per-variable names for booleans.
+* Don't change settings in UI thread.
+* Change booleans without prompting.
+* Support enumerated settings.
+* Special dialogs for numeric and path settings.
+* Support loading libopus at runtime.
+* Lua: Report port internal names instead of hnames
+* Wxwidgets: Initialize panel renderer variables properly.
+* Handle project switch as loadstate.
+* Close ROM.
+* Fix compilation if wxstring is wide.
+* Bump max savestate slot count to 999,999,999.
+* wxwidgets: Don't print narrow characters into wide stream.
+* SNES: Layer hiding.
+* Simplify stuff with initializer lists.
+* Lua: Fix coroutines.
+* SNES: SMP disasm.
+* Fix subtitle generation.
+* Keep memory watches on project creation.
+* Macro support.
