@@ -981,3 +981,20 @@ rr1-Δ17ε3 [Wednesday April 17st 2013]
 * Movie editor: Fix bug if extending finished movie
 * Cap current_frame_first_subframe to movie size when recounting movie
 * Movie editor: Interpret ctrl+click as right click
+
+rr1-Δ17ε4 [Monday June 24th 2013]
+=================================
+* Lua: Fix drawing lines in some angles.
+* Fix compilation error if size_t != uint64_t.
+* Ogg: Properly initialize data_count on read ogg pages.
+* Memory search: Autoupdate memory search by default.
+* Memory search: Move buttons to context menu, add disqualify address.
+* Memory search: Use text panels instead of textbox.
+* Backport Mac OS X build fix.
+* OggOpus: Fix Vendor vs. ENCODER.
+* Lua: gui.delta_<class>_gap.
+* Fix RTC on loadstate in readonly mode.
+* Save/Restore host memory across unsafe rewinds.
+* gui.text: Fix clipping to left/top border.
+* Implicit creation of inverse binds for aliases.
+* Fix subtitle generation.
