@@ -1293,10 +1293,10 @@ namespace
 	read_command<uint64_t, uint16_t, uint16_t> ru2("read-word", memory_read_word);
 	read_command<uint64_t, uint32_t, uint32_t> ru4("read-dword", memory_read_dword);
 	read_command<uint64_t, uint64_t, uint64_t> ru8("read-qword", memory_read_qword);
-	read_command<uint64_t, int8_t, uint8_t> rs1("read-sbyte", memory_read_byte);
-	read_command<uint64_t, int16_t, uint16_t> rs2("read-sword", memory_read_word);
-	read_command<uint64_t, int32_t, uint32_t> rs4("read-sdword", memory_read_dword);
-	read_command<uint64_t, int64_t, uint64_t> rs8("read-sqword", memory_read_qword);
+	read_command<int64_t, int8_t, uint8_t> rs1("read-sbyte", memory_read_byte);
+	read_command<int64_t, int16_t, uint16_t> rs2("read-sword", memory_read_word);
+	read_command<int64_t, int32_t, uint32_t> rs4("read-sdword", memory_read_dword);
+	read_command<int64_t, int64_t, uint64_t> rs8("read-sqword", memory_read_qword);
 	write_command<uint8_t, -128, 0xFF> w1("write-byte", memory_write_byte);
 	write_command<uint16_t, -32768, 0xFFFF> w2("write-word", memory_write_word);
 	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL> w4("write-dword", memory_write_dword);
