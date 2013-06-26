@@ -277,6 +277,27 @@ loaded_rom::loaded_rom() throw()
 	region = orig_region = &null_region;
 }
 
+loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
+{
+	rtype = &ctype;
+	region = orig_region = &rtype->get_preferred_region();
+	unsigned romidx = 0;
+	std::string bios;
+	if((bios = ctype.get_biosname()) != "") {
+		//This thing has a BIOS.
+		romidx = 1;
+		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
+		romimg[0] = loaded_slot(basename, "", ctype.get_image_info(0), false);
+		if(file_exists(basename + ".xml"))
+			romxml[0] = loaded_slot(basename + ".xml", "", ctype.get_image_info(0), true);
+	}
+	romimg[romidx] = loaded_slot(file, "", ctype.get_image_info(romidx), false);
+	if(file_exists(file + ".xml"))
+		romxml[romidx] = loaded_slot(file + ".xml", "", ctype.get_image_info(romidx), true);
+	msu1_base = resolve_file_relative(file, "");
+	return;
+}
+
 loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
 	std::runtime_error)
 {

@@ -47,6 +47,7 @@ public:
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:
+	void do_load_rom_image();
 	void handle_menu_click_cancelable(wxCommandEvent& e);
 	panel* gpanel;
 	wxMenu* current_menu;

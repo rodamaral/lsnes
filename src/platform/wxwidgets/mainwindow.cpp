@@ -6,6 +6,7 @@
 #include "platform/wxwidgets/window_mainwindow.hpp"
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
+#include "platform/wxwidgets/window-romload.hpp"
 
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -1260,10 +1261,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxsetingsdialog_display(this, 2);
 		break;
 	case wxID_LOAD_ROM_IMAGE:
-		filename = pick_file_member(this, "Select new ROM image", rom_path());
-		recent_roms->add(filename);
-		platform::queue("unpause-emulator");
-		platform::queue("reload-rom " + filename);
+		do_load_rom_image();
 		return;
 	case wxID_RELOAD_ROM_IMAGE:
 		platform::queue("unpause-emulator");
@@ -1324,4 +1322,22 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		runemufn([]() -> void { close_rom(); });
 		return;
 	};
+}
+
+void wxwin_mainwindow::do_load_rom_image()
+{
+	wxwindow_romload r(rom_path());
+	if(!r.show(this))
+		return;
+	std::string file = r.get_filename();
+	std::string core = r.get_core();
+	std::string type = r.get_type();
+	std::string filename;
+	if(core != "")
+		filename = file + " <" + mangle_name(core) + "/" + mangle_name(type) + ">";
+	else
+		filename = file;
+	recent_roms->add(filename);
+	platform::queue("unpause-emulator");
+	platform::queue("reload-rom " + filename);
 }

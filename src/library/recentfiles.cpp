@@ -1,5 +1,6 @@
 #include "recentfiles.hpp"
 #include "zip.hpp"
+#include "string.hpp"
 #include <fstream>
 
 recent_files::recent_files(const std::string& _cfgfile, size_t _maxcount)
@@ -21,7 +22,11 @@ void recent_files::add(const std::string& file)
 				bool exists = true;
 				try {
 					//Probe for existence.
-					delete &open_file_relative(f, "");
+					std::string g = f;
+					regex_results r = regex("(.*) <.*>", f);
+					if(r)
+						g = r[1];
+					delete &open_file_relative(g, "");
 				} catch(std::exception& e) {
 					exists = false;
 				}

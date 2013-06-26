@@ -311,16 +311,37 @@ namespace
 			return false;
 		}
 		std::string filenam = filename;
-		if(filenam == "")
+		bool no_switch = false;
+		if(filenam == "") {
 			filenam = our_rom->load_filename;
+			no_switch = true;
+		}
 		if(filenam == "") {
 			messages << "No ROM loaded" << std::endl;
 			return false;
 		}
 		try {
 			messages << "Loading ROM " << filenam << std::endl;
-			loaded_rom newrom(filenam);
-			*our_rom = newrom;
+			regex_results r = regex("(.*) <([^/<>]+)/([^/<>]+)>", filenam);
+			if(!r) {
+				loaded_rom newrom(filenam);
+				*our_rom = newrom;
+			} else {
+				core_type* t = NULL;
+				for(auto i : core_type::get_core_types()) {
+					if(mangle_name(i->get_hname()) != r[3])
+						continue;
+					if(mangle_name(i->get_core_identifier()) != r[2])
+						continue;
+					t = i;
+				}
+				if(!t) {
+					messages << "Can't find matching core type" << std::endl;
+					return false;
+				}
+				loaded_rom newrom(r[1], *t);
+				*our_rom = newrom;
+			}
 			for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
 				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256;
 				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256;

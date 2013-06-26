@@ -117,4 +117,10 @@ void reached_main();
  */
 std::string safe_filename(const std::string& str);
 
+/**
+ * Mangle some characters ()|/
+ */
+std::string mangle_name(const std::string& orig);
+
+
 #endif

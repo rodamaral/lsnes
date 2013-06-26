@@ -254,6 +254,24 @@ void reached_main()
 	lsnes_cmd.set_output(platform::out());
 }
 
+std::string mangle_name(const std::string& orig)
+{
+	std::ostringstream out;
+	for(auto i : orig) {
+		if(i == '(')
+			out << "[";
+		else if(i == ')')
+			out << "]";
+		else if(i == '|')
+			out << "\xE2\x8F\xBF";
+		else if(i == '/')
+			out << "\xE2\x8B\xBF";
+		else
+			out << i;
+	}
+	return out.str();
+}
+
 
 
 function_ptr_command<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",

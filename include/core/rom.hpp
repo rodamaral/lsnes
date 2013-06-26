@@ -112,6 +112,15 @@ struct loaded_rom
 	loaded_rom(const std::string& file, const std::string& tmpprefer = "") throw(std::bad_alloc,
 		std::runtime_error);
 /**
+ * Take in ROM filename and load it to memory with specified type.
+ *
+ * parameter file: The file to load
+ * parameter ctype: The core type to use.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Loading ROM file failed.
+ */
+	loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error);
+/**
  * ROM type
  */
 	core_type* rtype;
