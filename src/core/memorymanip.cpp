@@ -209,8 +209,12 @@ namespace
 				throw std::runtime_error("Syntax: " + _command + " <address>");
 			{
 				std::ostringstream x;
-				x << "0x" << std::hex << address << " -> " << std::dec
-					<< (lsnes_memory.*_rfn)(address);
+				if(sizeof(ret) > 1)
+					x << "0x" << std::hex << address << " -> " << std::dec
+						<< (lsnes_memory.*_rfn)(address);
+				else
+					x << "0x" << std::hex << address << " -> " << std::dec
+						<< (int)(lsnes_memory.*_rfn)(address);
 				messages << x.str() << std::endl;
 			}
 		}
