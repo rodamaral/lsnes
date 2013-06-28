@@ -99,32 +99,19 @@ namespace
 #include "regions.inc"
 
 	core_setting_group bsnes_settings;
-	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad");
-	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none");
-	core_setting setting_hardreset(bsnes_settings, "hardreset", "Support hard resets", "0");
-	core_setting setting_saveevery(bsnes_settings, "saveevery", "Emulate saving each frame", "0");
-	core_setting setting_randinit(bsnes_settings, "radominit", "Random initial state", "0");
-	core_setting_value setting_port1_none(setting_port1, "none", "None", 0);
-	core_setting_value setting_port2_none(setting_port2, "none", "None", 0);
-	core_setting_value setting_port2_gamepad(setting_port2, "gamepad", "Gamepad", 1);
-	core_setting_value setting_port1_gamepad(setting_port1, "gamepad", "Gamepad", 1);
-	core_setting_value setting_port1_gamepad16(setting_port1, "gamepad16", "Gamepad (16-button)", 2);
-	core_setting_value setting_port2_gamepad16(setting_port2, "gamepad16", "Gamepad (16-button)", 2);
-	core_setting_value setting_port2_multitap(setting_port2, "multitap", "Multitap", 3);
-	core_setting_value setting_port1_multitap(setting_port1, "multitap", "Multitap", 3);
-	core_setting_value setting_port2_multitap16(setting_port2, "multitap16", "Multitap (16-button)", 4);
-	core_setting_value setting_port1_multitap16(setting_port1, "multitap16", "Multitap (16-button)", 4);
-	core_setting_value setting_port2_mouse(setting_port2, "mouse", "Mouse", 5);
-	core_setting_value setting_port1_mouse(setting_port1, "mouse", "Mouse", 5);
-	core_setting_value setting_port2_superscope(setting_port2, "superscope", "Super Scope", 8);
-	core_setting_value setting_port2_justifier(setting_port2, "justifier", "Justifier", 6);
-	core_setting_value setting_port2_justifiers(setting_port2, "justifiers", "2 Justifiers", 7);
-	core_setting_value setting_hardreset_0(setting_hardreset, "0", "False", 0);
-	core_setting_value setting_hardreset_1(setting_hardreset, "1", "True", 1);
-	core_setting_value setting_saveevery_0(setting_saveevery, "0", "False", 0);
-	core_setting_value setting_saveevery_1(setting_saveevery, "1", "True", 1);
-	core_setting_value setting_randinit_0(setting_randinit, "0", "False", 0);
-	core_setting_value setting_randinit_1(setting_randinit, "1", "True", 1);
+	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad", {
+		{"none", "None", 0}, {"gamepad", "Gamepad", 1}, {"gamepad16", "Gamepad (16-button)", 2},
+		{"multitap", "Multitap", 3}, {"multitap16", "Multitap (16-button)", 4}, {"mouse", "Mouse", 5}});
+	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none", {
+		{"none", "None", 0}, {"gamepad", "Gamepad", 1}, {"gamepad16", "Gamepad (16-button)", 2},
+		{"multitap", "Multitap", 3}, {"multitap16", "Multitap (16-button)", 4}, {"mouse", "Mouse", 5},
+		{"superscope", "Super Scope", 8}, {"justifier", "Justifier", 6}, {"justifiers", "2 Justifiers", 7}});
+	core_setting setting_hardreset(bsnes_settings, "hardreset", "Support hard resets", "0", {
+		{"0", "False", 0}, {"1", "True", 1}});
+	core_setting setting_saveevery(bsnes_settings, "saveevery", "Emulate saving each frame", "0", {
+		{"0", "False", 0}, {"1", "True", 1}});
+	core_setting setting_randinit(bsnes_settings, "radominit", "Random initial state", "0", {
+		{"0", "False", 0}, {"1", "True", 1}});
 	
 	////////////////// PORTS COMMON ///////////////////
 	port_type* index_to_ptype[] = {

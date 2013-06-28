@@ -11,6 +11,16 @@ struct core_setting;
 struct core_setting_group;
 
 /**
+ * A value for setting (structure).
+ */
+struct core_setting_value_param
+{
+	const char* iname;
+	const char* hname;
+	signed index;
+};
+
+/**
  * A value for setting.
  */
 struct core_setting_value
@@ -65,6 +75,18 @@ struct core_setting
  */
 	core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
 		const std::string& _dflt) throw(std::bad_alloc);
+/**
+ * Create a new setting.
+ *
+ * Parameter _group: The group setting is in.
+ * Parameter _iname: The internal name of setting.
+ * Parameter _hname: The human-readable name of setting.
+ * Parameter _dflt: The default value.
+ * Parameter _values: Valid values.
+ */
+	core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
+		const std::string& _dflt, std::initializer_list<core_setting_value_param> _values)
+		throw(std::bad_alloc);
 /**
  * Create a new setting with regex.
  *

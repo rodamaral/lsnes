@@ -23,6 +23,19 @@ core_setting::core_setting(core_setting_group& _group, const std::string& _iname
 }
 
 core_setting::core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
+	const std::string& _dflt, std::initializer_list<core_setting_value_param> _values)
+	throw(std::bad_alloc)
+	: iname(_iname), hname(_hname), regex(".*"), dflt(_dflt), group(_group)
+{
+	register_queue<core_setting, core_setting_value>::do_ready(*this, true);
+	register_queue<core_setting_group, core_setting>::do_register(group, iname, *this);
+	for(auto i : _values) {
+		new core_setting_value(*this, i.iname, i.hname, i.index);
+	}
+}
+
+
+core_setting::core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
 	const std::string& _dflt, const std::string& _regex) throw(std::bad_alloc)
 	: iname(_iname), hname(_hname), regex(_regex), dflt(_dflt), group(_group)
 {
