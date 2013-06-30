@@ -608,7 +608,11 @@ namespace
 				while(!panic_ack);
 			}
 		},
-		.name = []() -> const char* { return "wxwidgets graphics plugin"; }
+		.name = []() -> const char* { return "wxwidgets graphics plugin"; },
+		.action_enabled = [](unsigned id, bool enabled)
+		{
+			runuifun([id, enabled]() -> void { main_window->action_enabled(id, enabled); });
+		}
 	};
 	struct graphics_driver _drv(drv);
 }

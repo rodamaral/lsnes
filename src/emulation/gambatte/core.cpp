@@ -59,6 +59,8 @@ namespace
 	unsigned accumulator_s = 0;
 	bool pflag = false;
 
+	interface_action act_reset(gambatte_core, 0, "Soft reset", {});
+
 	//Framebuffer.
 	struct framebuffer_info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
@@ -141,6 +143,7 @@ namespace
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
 		do_reset_flag = false;
+		ecore_callbacks->set_reset_actions(0, -1);
 		return 1;
 	}
 
@@ -421,10 +424,19 @@ namespace
 		.pre_emulate_frame = [](controller_frame& cf) -> void {
 			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
 		}
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void
+		{
+			switch(id) {
+			case 0:		//Soft reset.
+				do_reset_flag = 0;
+				do_hreset_flag = false;
+				break;
+			}
+		}
 	}};
 	
 	core_type type_dmg{{
-		.iname = "dmg", .hname = "Game Boy", .id = 1, .reset_support = 1,
+		.iname = "dmg", .hname = "Game Boy", .id = 1, .sysname = "Gameboy",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
@@ -434,7 +446,7 @@ namespace
 		.get_bus_map = gambatte_bus_map, .vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_gbc{{
-		.iname = "gbc", .hname = "Game Boy Color", .id = 0, .reset_support = 1,
+		.iname = "gbc", .hname = "Game Boy Color", .id = 0, .sysname = "Gameboy",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
@@ -444,7 +456,7 @@ namespace
 		.get_bus_map = gambatte_bus_map, .vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_gbca{{
-		.iname = "gbc_gba", .hname = "Game Boy Color (GBA)", .id = 2, .reset_support = 1,
+		.iname = "gbc_gba", .hname = "Game Boy Color (GBA)", .id = 2, .sysname = "Gameboy",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
 			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbca);

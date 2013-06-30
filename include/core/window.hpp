@@ -58,6 +58,7 @@ struct _graphics_driver
 	bool (*modal_message)(const std::string& text, bool confirm);
 	void (*fatal_error)();
 	const char* (*name)();
+	void (*action_enabled)(unsigned id, bool enabled);
 };
 
 struct graphics_driver
@@ -110,6 +111,11 @@ void graphics_driver_fatal_error() throw();
  * Identification for graphics plugin.
  */
 const char* graphics_driver_name();
+/**
+ * Enable/Disable an action.
+ */
+void graphics_driver_action_enabled(unsigned id, bool enabled);
+
 
 /**
  * Platform-specific-related functions.

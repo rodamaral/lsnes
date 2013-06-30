@@ -95,6 +95,9 @@ namespace
 	//Macro hold.
 	bool macro_hold_1;
 	bool macro_hold_2;
+	//Reset actions.
+	signed sreset_action = -1;
+	signed hreset_action = -1;
 
 	enum advance_mode old_mode;
 
@@ -530,6 +533,17 @@ public:
 		fps_d /= g;
 		information_dispatch::do_frame(screen, fps_n, fps_d);
 	}
+
+	void set_action_state(unsigned id, bool enabled)
+	{
+		graphics_driver_action_enabled(id, enabled);
+	}
+
+	void set_reset_actions(signed soft, signed hard)
+	{
+		sreset_action = soft;
+		hreset_action = hard;
+	}
 };
 
 namespace
@@ -698,38 +712,24 @@ namespace
 			platform::set_paused(false);
 		});
 
-	function_ptr_command<const std::string&> reset_c(lsnes_cmd, "reset", "Reset the system",
-		"Syntax: reset\nReset <delay>\nResets the system in beginning of the next frame.\n",
-		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			if(!our_rom->rtype->get_reset_support()) {
+	function_ptr_command<> reset_c(lsnes_cmd, "reset", "Reset the system",
+		"Syntax: reset\nReset\nResets the system in beginning of the next frame.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(sreset_action < 0) {
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
 			}
-			if((our_rom->rtype->get_reset_support() & 3) < 2 && x != "") {
-				messages << "Emulator core does not support delayed resets" << std::endl;
-				return;
-			}
-			if(x == "")
-				our_rom->rtype->request_reset(0, false);
-			else
-				our_rom->rtype->request_reset(parse_value<uint32_t>(x), false);
+			our_rom->rtype->execute_action(sreset_action, std::vector<interface_action_paramval>());
 		});
 
-	function_ptr_command<const std::string&> hreset_c(lsnes_cmd, "reset-hard", "Reset the system",
-		"Syntax: reset-hard\nReset-hard <delay>\nHard resets the system in beginning of the next frame.\n",
-		[](const std::string& x) throw(std::bad_alloc, std::runtime_error) {
-			if((our_rom->rtype->get_reset_support() & 4) == 0) {
+	function_ptr_command<> hreset_c(lsnes_cmd, "reset-hard", "Reset the system",
+		"Syntax: reset-hard\nReset-hard\nHard resets the system in beginning of the next frame.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			if(hreset_action < 0) {
 				messages << "Emulator core does not support hard resets" << std::endl;
 				return;
 			}
-			if((our_rom->rtype->get_reset_support() & 3) < 2 && x != "") {
-				messages << "Emulator core does not support delayed hard resets" << std::endl;
-				return;
-			}
-			if(x == "")
-				our_rom->rtype->request_reset(0, true);
-			else
-				our_rom->rtype->request_reset(parse_value<uint32_t>(x), true);
+			our_rom->rtype->execute_action(hreset_action, std::vector<interface_action_paramval>());
 		});
 
 	function_ptr_command<arg_filename> load_c(lsnes_cmd, "load", "Load savestate (current mode)",

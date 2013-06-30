@@ -40,6 +40,10 @@ void _runuifun_async(void (*fn)(void*), void* arg);
 void show_projectwindow(wxWindow* modwin);
 void signal_core_change();
 
+std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, const std::string& label,
+	const std::list<interface_action_param>& params);
+
+
 //Editor dialogs.
 void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);

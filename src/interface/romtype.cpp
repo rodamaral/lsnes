@@ -3,6 +3,7 @@
 #include "interface/callbacks.hpp"
 #include "library/minmax.hpp"
 #include "library/string.hpp"
+#include "library/register-queue.hpp"
 #include <set>
 #include <map>
 #include <string>
@@ -48,6 +49,25 @@ namespace
 	{
 		return 0;
 	}
+}
+
+interface_action::interface_action(struct core_core& _core, unsigned _id, const std::string& _title,
+	const std::string& _sym, std::initializer_list<interface_action_param> p)
+	: core(_core)
+{
+	id = _id;
+	title = _title;
+	symbol = _sym;
+	for(auto i : p)
+		params.push_back(i);
+        register_queue<core_core::_param_register_proxy, interface_action>::do_register(core.param_register_proxy,
+		symbol, *this);
+}
+
+interface_action::~interface_action()
+{
+        register_queue<core_core::_param_register_proxy, interface_action>::do_unregister(core.param_register_proxy,
+		symbol);
 }
 
 core_region::core_region(const core_region_params& params)
@@ -129,8 +149,8 @@ core_type::core_type(const core_type_params& params)
 {
 	iname = params.iname;
 	hname = params.hname;
+	sysname = params.sysname;
 	id = params.id;
-	reset_support = params.reset_support;
 	loadimg = params.load_rom;
 	_controllerconfig = params.controllerconfig;
 	_get_bus_map = params.get_bus_map;
@@ -199,11 +219,6 @@ std::list<core_type*> core_type::get_core_types()
 		ret.push_back(i);
 	ret.sort(compare_coretype);
 	return ret;
-}
-
-unsigned core_type::get_reset_support()
-{
-	return reset_support;
 }
 
 std::list<core_region*> core_type::get_regions()
@@ -325,6 +340,7 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 }
 
 core_core::core_core(const core_core_params& params)
+	: param_register_proxy(*this)
 {
 	_core_identifier = params.core_identifier;
 	_set_region = params.set_region;
@@ -345,22 +361,24 @@ core_core::core_core(const core_core_params& params)
 	_runtosave = params.runtosave;
 	_get_pflag = params.get_pflag;
 	_set_pflag = params.set_pflag;
-	_request_reset = params.request_reset;
 	port_types = params.port_types;
 	_draw_cover = params.draw_cover;
 	_get_core_shortname = params.get_core_shortname;
 	_pre_emulate_frame = params.pre_emulate_frame;
+	_execute_action = params.execute_action;
 	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
 	new_core_flag = true;
+	register_queue<core_core::_param_register_proxy, interface_action>::do_ready(param_register_proxy, true);
 	if(!in_global_ctors())
 		messages << "Loaded core: " << _core_identifier() << std::endl;
 }
 
 core_core::~core_core() throw()
 {
+	register_queue<core_core::_param_register_proxy, interface_action>::do_ready(param_register_proxy, false);
 	all_cores().erase(this);
 }
 
@@ -486,12 +504,6 @@ void core_core::set_pflag(bool pflag)
 	return _set_pflag(pflag);
 }
 
-void core_core::request_reset(long delay, bool hard)
-{
-	if(_request_reset)
-		_request_reset(delay, hard);
-}
-
 framebuffer_raw& core_core::draw_cover()
 {
 	return _draw_cover();
@@ -500,6 +512,32 @@ framebuffer_raw& core_core::draw_cover()
 void core_core::pre_emulate_frame(controller_frame& cf)
 {
 	_pre_emulate_frame(cf);
+}
+
+void core_core::execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
+{
+	return _execute_action(id, p);
+}
+
+void core_core::do_register_action(const std::string& key, interface_action& act)
+{
+	umutex_class h(actions_lock);
+	actions[key] = &act;
+}
+
+void core_core::do_unregister_action(const std::string& key)
+{
+	umutex_class h(actions_lock);
+	actions.erase(key);
+}
+
+std::set<const interface_action*> core_core::get_actions()
+{
+	umutex_class h(actions_lock);
+	std::set<const interface_action*> r;
+	for(auto i : actions)
+		r.insert(i.second);
+	return r;
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

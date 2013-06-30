@@ -11,6 +11,7 @@
 #include "core/window.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
+#include "interface/callbacks.hpp"
 #include "library/pixfmt-rgb16.hpp"
 #include "library/controller-data.hpp"
 #include "library/patch.hpp"
@@ -84,7 +85,6 @@ namespace
 		.runtosave = []() -> void {},
 		.get_pflag = []() -> bool { return false; },
 		.set_pflag = [](bool pflag) -> void {},
-		.request_reset = [](long delay, bool hard) -> void {},
 		.port_types = {},
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(null_fbinfo);
@@ -95,13 +95,15 @@ namespace
 			return x;
 		},
 		.get_core_shortname = []() -> std::string { return "null"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {}
+		.pre_emulate_frame = [](controller_frame& cf) -> void {},
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
 	}};
 
 	core_type type_null{{
-		"null", "(null)", 9999, 0,
+		"null", "(null)", 9999, "System",
 		[](core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs) -> int {
+			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
 		},
 		[](std::map<std::string, std::string>& settings) -> controller_set {
