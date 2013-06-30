@@ -52,8 +52,6 @@ enum
 	wxID_FRAMEADVANCE,
 	wxID_SUBFRAMEADVANCE,
 	wxID_NEXTPOLL,
-	wxID_ERESET,
-	wxID_EHRESET,
 	wxID_AUDIO_ENABLED,
 	wxID_AUDIO_DEVICE,
 	wxID_SAVE_STATE,
@@ -120,6 +118,8 @@ enum
 	wxID_CLOSE_PROJECT,
 	wxID_CLOSE_ROM,
 	wxID_EDIT_MACROS,
+	wxID_ACTIONS_FIRST,
+	wxID_ACTIONS_LAST = wxID_ACTIONS_FIRST + 256,
 };
 
 
@@ -145,6 +145,92 @@ namespace
 	bool old_rotate = false;
 	bool main_window_dirty;
 	thread_class* emulation_thread;
+
+	class system_menu : public wxMenu
+	{
+	public:
+		system_menu(wxWindow* win);
+		~system_menu();
+		void on_select(wxCommandEvent& e);
+		void update();
+	private:
+		wxWindow* pwin;
+		void insert_pass(int id, const std::string& label);
+		void insert_act(unsigned id, const std::string& label, bool dots);
+		wxMenuItem* sep;
+		std::map<int, unsigned> acts_map;
+		std::set<wxMenuItem*> ents;
+		int next_id;
+	};
+
+	void system_menu::insert_act(unsigned id, const std::string& label, bool dots)
+	{
+		if(!sep)
+			sep = AppendSeparator();
+		acts_map[next_id] = id;
+		ents.insert(Append(next_id, towxstring(label + (dots ? "..." : ""))));
+		pwin->Connect(next_id++, wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(system_menu::on_select), NULL, this);
+	}
+
+	void system_menu::insert_pass(int id, const std::string& label)
+	{
+		pwin->Connect(id, wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxwin_mainwindow::handle_menu_click), NULL, pwin);
+		Append(id, towxstring(label));
+	}
+
+	system_menu::system_menu(wxWindow* win)
+	{
+		pwin = win;
+		insert_pass(wxID_PAUSE, "Pause/Unpause");
+		insert_pass(wxID_FRAMEADVANCE, "Step frame");
+		insert_pass(wxID_SUBFRAMEADVANCE, "Step subframe");
+		insert_pass(wxID_NEXTPOLL, "Step poll");
+		sep = NULL;
+	}
+
+	system_menu::~system_menu()
+	{
+	}
+
+	void system_menu::on_select(wxCommandEvent& e)
+	{
+		if(!acts_map.count(e.GetId()))
+			return;
+		unsigned act_id = acts_map[e.GetId()];
+		const interface_action* act = NULL;
+		for(auto i : our_rom->rtype->get_actions())
+			if(i->id == act_id) {
+				act = i;
+				break;
+			}
+		if(!act)
+			return;
+		try {
+			auto p = prompt_action_params(pwin, act->title, act->params);
+			runemufn([act_id,p]() { our_rom->rtype->execute_action(act_id, p); });
+		} catch(canceled_exception& e) {
+		} catch(std::bad_alloc& e) {
+			OOM_panic();
+		}
+	}
+
+	void system_menu::update()
+	{
+		next_id = wxID_ACTIONS_FIRST;
+		if(sep) {
+			Destroy(sep);
+			sep = NULL;
+		}
+		for(auto i : ents)
+			Destroy(i);
+		acts_map.clear();
+		ents.clear();
+		for(auto i : our_rom->rtype->get_actions()) {
+			insert_act(i->id, i->title, !i->params.empty());
+		}
+	}
 
 	std::string munge_name(const std::string& orig)
 	{
@@ -772,13 +858,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
 
-	menu_start(wxT("System"));
-	menu_entry(wxID_PAUSE, wxT("Pause/Unpause"));
-	menu_entry(wxID_FRAMEADVANCE, wxT("Step frame"));
-	menu_entry(wxID_SUBFRAMEADVANCE, wxT("Step subframe"));
-	menu_entry(wxID_NEXTPOLL, wxT("Step poll"));
-	menu_entry(wxID_ERESET, wxT("Reset"));
-	menu_entry(wxID_EHRESET, wxT("Power cycle"));
+	menu_special(wxT("System"), reinterpret_cast<wxMenu*>(sysmenu = new system_menu(this)));
 
 	menu_start(wxT("Movie"));
 	menu_entry_check(wxID_READONLY_MODE, wxT("Readonly mode"));
@@ -967,6 +1047,8 @@ void wxwin_mainwindow::refresh_title() throw()
 	menu_enable(wxID_LOAD_ROM_IMAGE, !p);
 	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
 	menu_enable(wxID_CLOSE_ROM, p == NULL);
+	reinterpret_cast<system_menu*>(sysmenu)->update();
+	menubar->SetMenuLabel(1, towxstring(our_rom->rtype->get_systemmenu_name()));
 }
 
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
@@ -987,12 +1069,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_PAUSE:
 		platform::queue("pause-emulator");
-		return;
-	case wxID_ERESET:
-		platform::queue("reset");
-		return;
-	case wxID_EHRESET:
-		platform::queue("reset-hard");
 		return;
 	case wxID_EXIT:
 		platform::queue("quit-emulator");
@@ -1340,4 +1416,9 @@ void wxwin_mainwindow::do_load_rom_image()
 	recent_roms->add(filename);
 	platform::queue("unpause-emulator");
 	platform::queue("reload-rom " + filename);
+}
+
+void wxwin_mainwindow::action_enabled(unsigned id, bool enabled)
+{
+	//TODO.
 }

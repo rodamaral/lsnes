@@ -44,6 +44,7 @@ public:
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
 	void update_statusbar(const std::map<std::string, std::u32string>& vars);
+	void action_enabled(unsigned id, bool enabled);
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:
@@ -59,6 +60,7 @@ private:
 	wxFlexGridSizer* toplevel;
 	std::map<int, wxMenuItem*> checkitems;
 	std::stack<wxMenu*> upper;
+	void* sysmenu;
 	void* ahmenu;
 	void* sounddev1;
 	void* sounddev2;

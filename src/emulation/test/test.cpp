@@ -164,7 +164,6 @@ namespace
 		.runtosave = []() -> void {},
 		.get_pflag = []() -> bool { return pflag; },
 		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.request_reset = [](long delay, bool hard) -> void {},
 		.port_types = port_types,
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
@@ -172,13 +171,14 @@ namespace
 			return x;
 		},
 		.get_core_shortname = []() -> std::string { return "test"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {}
+		.pre_emulate_frame = [](controller_frame& cf) -> void {},
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
 	}};
 
 	core_type type_test{{
-		.iname = "test", .hname = "test", .id = 0, .reset_support = 0,
+		.iname = "test", .hname = "test", .id = 0, .sysname = "Test",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int { return 0; },
+			uint64_t rtc_subsec) -> int { ecore_callbacks->set_reset_actions(-1, -1); return 0; },
 		.controllerconfig = _controllerconfig, .extensions = "test", .bios = NULL, .regions = test_regions,
 		.images = test_images, .settings = &test_settings, .core = &test_core,
 		.get_bus_map = []() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0, 0); }, 

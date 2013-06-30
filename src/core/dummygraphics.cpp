@@ -47,6 +47,10 @@ namespace
 		std::cerr << "Exiting on fatal error." << std::endl;
 	}
 
+	void dummy_action_enabled(unsigned id, bool enabled)
+	{
+	}
+
 	const char* dummy_name() { return "Dummy graphics plugin"; }
 
 	struct _graphics_driver driver = {
@@ -57,7 +61,8 @@ namespace
 		.notify_screen = dummy_notify_screen,
 		.modal_message = dummy_modal_message,
 		.fatal_error = dummy_fatal_error,
-		.name = dummy_name
+		.name = dummy_name,
+		.action_enabled = dummy_action_enabled,
 	};
 
 }
@@ -113,4 +118,8 @@ const char* graphics_driver_name()
 	return driver.name();
 }
 
+void graphics_driver_action_enabled(unsigned id, bool enabled)
+{
+	driver.action_enabled(id, enabled);
+}
 

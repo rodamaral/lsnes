@@ -147,6 +147,14 @@ namespace
 	core_type* internal_rom = NULL;
 	extern core_core bsnes_core;
 
+	interface_action act_reset(bsnes_core, 0, "Soft reset", "reset", {});
+	interface_action act_hreset(bsnes_core, 1, "Hard reset", "hardreset", {});
+#ifdef BSNES_HAS_DEBUGGER
+	interface_action act_dreset(bsnes_core, 2, "Delayed soft reset", "delayreset", {{"Delay","int:0,99999999"}});
+	interface_action act_dhreset(bsnes_core, 3, "Delayed hard reset", "delayhardreset",
+		{{"Delay","int:0,99999999"}});
+#endif
+
 	template<bool(*T)(const char*,const unsigned char*, unsigned)>
 	bool load_rom_X1(core_romimage* img)
 	{
@@ -196,6 +204,9 @@ namespace
 			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
 			have_saved_this_frame = false;
 			do_reset_flag = -1;
+			ecore_callbacks->set_action_state(1, support_hreset);
+			ecore_callbacks->set_action_state(3, support_hreset);
+			ecore_callbacks->set_reset_actions(0, support_hreset ? 1 : -1);
 		}
 		return r ? 0 : -1;
 	}
@@ -809,7 +820,6 @@ again2:
 		},
 		.get_pflag = []() -> bool { return SNES::cpu.controller_flag; },
 		.set_pflag = [](bool pflag) -> void { SNES::cpu.controller_flag = pflag; },
-		.request_reset = [](long delay, bool hard) -> void { do_reset_flag = delay; do_hreset_flag = hard; },
 		.port_types = port_types,
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
@@ -836,11 +846,32 @@ again2:
 				cf.axis3(0, 0, 2, 0);
 				cf.axis3(0, 0, 3, 0);
 			}
+		},
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void
+		{
+			switch(id) {
+			case 0:		//Soft reset.
+				do_reset_flag = 0;
+				do_hreset_flag = false;
+				break;
+			case 1:		//Hard reset.
+				do_reset_flag = 0;
+				do_hreset_flag = true;
+				break;
+			case 2:		//Delayed soft reset.
+				do_reset_flag = p[0].i;
+				do_hreset_flag = false;
+				break;
+			case 3:		//Delayed hard reset.
+				do_reset_flag = p[0].i;
+				do_hreset_flag = true;
+				break;
+			}
 		}
 	}};
 
 	core_type type_snes{{
-		.iname = "snes", .hname = "SNES", .id = 0, .reset_support = BSNES_RESET_LEVEL ,
+		.iname = "snes", .hname = "SNES", .id = 0, .sysname = "SNES",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
 			return load_rom<&type_snes>(img, settings, secs, subsecs,
@@ -852,7 +883,7 @@ again2:
 		.vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_bsx{{
-		.iname = "bsx", .hname = "BS-X (non-slotted)", .id = 1, .reset_support = BSNES_RESET_LEVEL , 
+		.iname = "bsx", .hname = "BS-X (non-slotted)", .id = 1, .sysname = "BS-X",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
 			return load_rom<&type_bsx>(img, settings, secs, subsecs,
@@ -863,7 +894,7 @@ again2:
 		.get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_bsxslotted{{
-		.iname = "bsxslotted", .hname = "BS-X (slotted)", .id = 2, .reset_support = BSNES_RESET_LEVEL ,
+		.iname = "bsxslotted", .hname = "BS-X (slotted)", .id = 2, .sysname = "BS-X",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs) -> int {
 			return load_rom<&type_bsxslotted>(img, settings, secs, subsecs,
@@ -874,7 +905,7 @@ again2:
 		.get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_sufamiturbo{{
-		.iname = "sufamiturbo", .hname = "Sufami Turbo", .id = 3, .reset_support = BSNES_RESET_LEVEL ,
+		.iname = "sufamiturbo", .hname = "Sufami Turbo", .id = 3, .sysname = "SufamiTurbo",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int {
 			return load_rom<&type_sufamiturbo>(img, settings, secs, subsecs,
@@ -885,7 +916,7 @@ again2:
 		.core = &bsnes_core, .get_bus_map = bsnes_get_bus_map, .vma_list = get_VMAlist, .srams = srams
 	}};
 	core_type type_sgb{{
-		.iname = "sgb", .hname = "Super Game Boy", .id = 4, .reset_support = BSNES_RESET_LEVEL ,
+		.iname = "sgb", .hname = "Super Game Boy", .id = 4, .sysname = "SGB",
 		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t secs,
 			uint64_t subsecs) -> int
 		{

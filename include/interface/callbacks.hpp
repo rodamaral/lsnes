@@ -45,6 +45,14 @@ public:
  * Output a frame. Call once for each call to emulate().
  */
 	virtual void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d) = 0;
+/**
+ * Set state of action.
+ */
+	virtual void set_action_state(unsigned id, bool enabled) = 0;
+/**
+ * Set reset actions.
+ */
+	virtual void set_reset_actions(signed soft, signed hard) = 0;
 };
 
 extern struct emucore_callbacks* ecore_callbacks;

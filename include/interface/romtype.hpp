@@ -8,6 +8,7 @@
 #include "interface/controller.hpp"
 #include "interface/setting.hpp"
 #include "library/framebuffer.hpp"
+#include "library/threadtypes.hpp"
 
 struct core_region;
 struct core_type;
@@ -15,6 +16,46 @@ struct core_sysregion;
 struct core_romimage;
 struct core_romimage_info;
 struct core_core;
+
+/**
+ * An parameter for action in interface.
+ */
+struct interface_action_param
+{
+	//Name of the action parameter.
+	const char* name;
+	//Model of the action parameter.
+	//bool: Boolean.
+	//int:<val>,<val>: Integer in specified range.
+	//string[:<regex>]: String with regex.
+	const char* model;
+};
+
+/**
+ * Value for action in interface.
+ */
+struct interface_action_paramval
+{
+	std::string s;
+	int64_t i;
+	bool b;
+};
+
+/**
+ * An action for interface.
+ */
+struct interface_action
+{
+	interface_action(struct core_core& _core, unsigned id, const std::string& title, const std::string& symbol,
+		std::initializer_list<interface_action_param> p);
+	~interface_action();
+	unsigned id;
+	std::string title;
+	std::string symbol;
+	std::list<interface_action_param> params;
+	struct core_core& core;
+};
+
 
 /**
  * Parameters about a region (e.g. NTSC, PAL, World).
@@ -147,12 +188,9 @@ struct core_type_params
  */
 	unsigned id;
 /**
- * Reset support flags:
- * 1 => System supports soft resets.
- * 2 => System supports delayed resets.
- * 4 => System supports hard resets.
+ * System menu name.
  */
-	unsigned reset_support;
+	const char* sysname;
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.
  *
@@ -310,10 +348,6 @@ struct core_core_params
  */
 	void (*set_pflag)(bool pflag);
 /**
- * Request reset to happen next time emulate is called.
- */
-	void (*request_reset)(long delay, bool hard);
-/**
  * Set of valid port types for the core.
  */
 	std::vector<port_type*> port_types;
@@ -333,6 +367,10 @@ struct core_core_params
  * E.g. if core supports resetting, set the reset button in the frame to pressed if reset is wanted.
  */
 	void (*pre_emulate_frame)(controller_frame& cf);
+/**
+ * Execute action.
+ */
+	void (*execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
 };
 
 struct core_region
@@ -403,16 +441,34 @@ struct core_core
 	void runtosave();
 	bool get_pflag();
 	void set_pflag(bool pflag);
-	void request_reset(long delay, bool hard);
 	framebuffer_raw& draw_cover();
 	std::vector<port_type*> get_port_types() { return port_types; }
 	std::string get_core_shortname();
 	void pre_emulate_frame(controller_frame& cf);
+	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
 	void hide() { hidden = true; }
 	bool is_hidden() { return hidden; }
+	struct _param_register_proxy
+	{
+		_param_register_proxy(core_core& _c) : cre(_c) {}
+		void do_register(const std::string& key, interface_action& act)
+		{
+			cre.do_register_action(key, act);
+		}
+		void do_unregister(const std::string& key)
+		{
+			cre.do_unregister_action(key);
+		}
+	private:
+		core_core& cre;
+	};
+	void do_register_action(const std::string& key, interface_action& act);
+	void do_unregister_action(const std::string& key);
+	std::set<const interface_action*> get_actions();
+	_param_register_proxy param_register_proxy;
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -433,12 +489,14 @@ private:
 	void (*_runtosave)();
 	bool (*_get_pflag)();
 	void (*_set_pflag)(bool pflag);
-	void (*_request_reset)(long delay, bool hard);
 	std::vector<port_type*> port_types;
 	framebuffer_raw& (*_draw_cover)();
 	std::string (*_get_core_shortname)();
 	void (*_pre_emulate_frame)(controller_frame& cf);
+	void (*_execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
 	bool hidden;
+	std::map<std::string, interface_action*> actions;
+	mutex_class actions_lock;
 };
 
 struct core_type
@@ -463,7 +521,6 @@ public:
 	bool load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 		uint64_t rtc_subsec);
 	controller_set controllerconfig(std::map<std::string, std::string>& settings);
-	unsigned get_reset_support();
 	core_setting_group& get_settings();
 	std::pair<uint64_t, uint64_t> get_bus_map();
 	std::list<core_vma_info> vma_list();
@@ -495,10 +552,15 @@ public:
 	void runtosave() { core->runtosave(); }
 	bool get_pflag() { return core->get_pflag(); }
 	void set_pflag(bool pflag) { core->set_pflag(pflag); }
-	void request_reset(long delay, bool hard) { core->request_reset(delay, hard); }
 	framebuffer_raw& draw_cover() { return core->draw_cover(); }
+	std::string get_systemmenu_name() { return sysname; }
+	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
+	{
+		return core->execute_action(id, p);
+	}
 	bool is_hidden() { return core->is_hidden(); }
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
+	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
@@ -509,10 +571,10 @@ private:
 	std::list<core_vma_info> (*_vma_list)();
 	std::set<std::string> (*_srams)();
 	unsigned id;
-	unsigned reset_support;
 	std::string iname;
 	std::string hname;
 	std::string biosname;
+	std::string sysname;
 	std::list<std::string> extensions;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info*> imageinfo;

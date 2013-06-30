@@ -319,14 +319,14 @@ namespace sky
 		.runtosave = []() -> void {},
 		.get_pflag = []() -> bool { return pflag; },
 		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.request_reset = [](long delay, bool hard) -> void {},
 		.port_types = {&psystem},
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
 			return x;
 		},
 		.get_core_shortname = []() -> std::string { return "sky"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {}
+		.pre_emulate_frame = [](controller_frame& cf) -> void {},
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
 	}};
 
 	void controller_magic()
@@ -346,7 +346,7 @@ namespace sky
 	}
 
 	core_type skytype{{
-		.iname = "sky", .hname = "Sky", .id = 3522, .reset_support = 0,
+		.iname = "sky", .hname = "Sky", .id = 3522, .sysname = "Sky",
 		.load_rom = [](core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 			uint64_t rtc_subsec) -> int {
 			controller_magic();
@@ -360,6 +360,7 @@ namespace sky
 				return -1;
 			}
 			rom_boot_vector(_gstate);
+			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
 		},
 		.controllerconfig = [](std::map<std::string, std::string>& settings) -> controller_set
