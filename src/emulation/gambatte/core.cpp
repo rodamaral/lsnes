@@ -59,7 +59,7 @@ namespace
 	unsigned accumulator_s = 0;
 	bool pflag = false;
 
-	interface_action act_reset(gambatte_core, 0, "Soft reset", {});
+	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
 
 	//Framebuffer.
 	struct framebuffer_info cover_fbinfo = {
@@ -413,7 +413,6 @@ namespace
 		.runtosave = []() -> void {},
 		.get_pflag = []() -> bool { return pflag; },
 		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.request_reset = [](long delay, bool hard) -> void { do_reset_flag = true; },
 		.port_types = port_types,
 		.draw_cover = []() -> framebuffer_raw& {
 			static framebuffer_raw x(cover_fbinfo);
@@ -423,13 +422,12 @@ namespace
 		.get_core_shortname = []() -> std::string { return "gambatte"+gambatte::GB::version(); },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {
 			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
-		}
+		},
 		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void
 		{
 			switch(id) {
 			case 0:		//Soft reset.
-				do_reset_flag = 0;
-				do_hreset_flag = false;
+				do_reset_flag = true;
 				break;
 			}
 		}
