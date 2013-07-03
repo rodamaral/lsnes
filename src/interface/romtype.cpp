@@ -151,11 +151,6 @@ core_type::core_type(const core_type_params& params)
 	hname = params.hname;
 	sysname = params.sysname;
 	id = params.id;
-	loadimg = params.load_rom;
-	_controllerconfig = params.controllerconfig;
-	_get_bus_map = params.get_bus_map;
-	_vma_list = params.vma_list;
-	_srams = params.srams;
 	core = params.core;
 	settings = params.settings;
 	if(params.bios)
@@ -245,7 +240,7 @@ core_region& core_type::get_preferred_region()
 bool core_type::load(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
 	uint64_t rtc_subsec)
 {
-	return (loadimg(images, settings, rtc_sec, rtc_subsec) >= 0);
+	return (t_load_rom(images, settings, rtc_sec, rtc_subsec) >= 0);
 }
 
 core_sysregion& core_type::combine_region(core_region& reg)
@@ -278,22 +273,22 @@ bool core_type::is_known_extension(const std::string& ext)
 
 controller_set core_type::controllerconfig(std::map<std::string, std::string>& settings)
 {
-	return _controllerconfig(settings);
+	return t_controllerconfig(settings);
 }
 
 std::pair<uint64_t, uint64_t> core_type::get_bus_map()
 {
-	return _get_bus_map();
+	return t_get_bus_map();
 }
 
 std::list<core_vma_info> core_type::vma_list()
 {
-	return _vma_list();
+	return t_vma_list();
 }
 
 std::set<std::string> core_type::srams()
 {
-	return _srams();
+	return t_srams();
 }
 
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
@@ -342,38 +337,13 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 core_core::core_core(const core_core_params& params)
 	: param_register_proxy(*this)
 {
-	_core_identifier = params.core_identifier;
-	_set_region = params.set_region;
-	_video_rate = params.video_rate;
-	_audio_rate = params.audio_rate;
-	_save_sram = params.save_sram;
-	_load_sram = params.load_sram;
-	_serialize = params.serialize;
-	_unserialize = params.unserialize;
-	_get_region = params.get_region;
-	_power = params.power;
-	_unload_cartridge = params.unload_cartridge;
-	_get_scale_factors = params.get_scale_factors;
-	_install_handler = params.install_handler;
-	_uninstall_handler = params.uninstall_handler;
-	_emulate = params.emulate;
-	_runtosave = params.runtosave;
-	_get_pflag = params.get_pflag;
-	_set_pflag = params.set_pflag;
 	port_types = params.port_types;
-	_draw_cover = params.draw_cover;
-	_get_core_shortname = params.get_core_shortname;
-	_pre_emulate_frame = params.pre_emulate_frame;
-	_execute_action = params.execute_action;
-	_get_registers = params.get_registers;
 	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
 	new_core_flag = true;
 	register_queue<core_core::_param_register_proxy, interface_action>::do_ready(param_register_proxy, true);
-	if(!in_global_ctors())
-		messages << "Loaded core: " << _core_identifier() << std::endl;
 }
 
 core_core::~core_core() throw()
@@ -384,27 +354,27 @@ core_core::~core_core() throw()
 
 std::string core_core::get_core_shortname()
 {
-	return _get_core_shortname();
+	return c_get_core_shortname();
 }
 
 bool core_core::set_region(core_region& region)
 {
-	return _set_region(region);
+	return c_set_region(region);
 }
 
 std::pair<uint32_t, uint32_t> core_core::get_video_rate()
 {
-	return _video_rate();
+	return c_video_rate();
 }
 
 std::pair<uint32_t, uint32_t> core_core::get_audio_rate()
 {
-	return _audio_rate();
+	return c_audio_rate();
 }
 
 std::string core_core::get_core_identifier()
 {
-	return _core_identifier();
+	return c_core_identifier();
 }
 
 std::set<core_core*> core_core::all_cores()
@@ -428,92 +398,92 @@ void core_core::uninstall_all_handlers()
 
 std::map<std::string, std::vector<char>> core_core::save_sram() throw(std::bad_alloc)
 {
-	return _save_sram();
+	return c_save_sram();
 }
 
 void core_core::load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc)
 {
-	_load_sram(sram);
+	c_load_sram(sram);
 }
 
 void core_core::serialize(std::vector<char>& out)
 {
-	_serialize(out);
+	c_serialize(out);
 }
 
 void core_core::unserialize(const char* in, size_t insize)
 {
-	_unserialize(in, insize);
+	c_unserialize(in, insize);
 }
 
 core_region& core_core::get_region()
 {
-	return _get_region();
+	return c_get_region();
 }
 
 void core_core::power()
 {
-	_power();
+	c_power();
 }
 
 void core_core::unload_cartridge()
 {
-	_unload_cartridge();
+	c_unload_cartridge();
 }
 
 std::pair<uint32_t, uint32_t> core_core::get_scale_factors(uint32_t width, uint32_t height)
 {
-	return _get_scale_factors(width, height);
+	return c_get_scale_factors(width, height);
 }
 
 void core_core::install_handler()
 {
-	_install_handler();
+	c_install_handler();
 }
 
 void core_core::uninstall_handler()
 {
-	_uninstall_handler();
+	c_uninstall_handler();
 }
 
 void core_core::emulate()
 {
-	_emulate();
+	c_emulate();
 }
 
 void core_core::runtosave()
 {
-	_runtosave();
+	c_runtosave();
 }
 
 bool core_core::get_pflag()
 {
-	return _get_pflag();
+	return c_get_pflag();
 }
 
 void core_core::set_pflag(bool pflag)
 {
-	return _set_pflag(pflag);
+	return c_set_pflag(pflag);
 }
 
 framebuffer_raw& core_core::draw_cover()
 {
-	return _draw_cover();
+	return c_draw_cover();
 }
 
 void core_core::pre_emulate_frame(controller_frame& cf)
 {
-	_pre_emulate_frame(cf);
+	c_pre_emulate_frame(cf);
 }
 
 void core_core::execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 {
-	return _execute_action(id, p);
+	return c_execute_action(id, p);
 }
 
 const struct interface_device_reg* core_core::get_registers()
 {
-	return _get_registers();
+	return c_get_registers();
 }
 
 void core_core::do_register_action(const std::string& key, interface_action& act)
