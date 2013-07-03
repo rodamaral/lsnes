@@ -18,6 +18,17 @@ struct core_romimage_info;
 struct core_core;
 
 /**
+ * Interface device register.
+ */
+struct interface_device_reg
+{
+	const char* name;
+	uint64_t (*read)();
+	void (*write)(uint64_t v);
+	bool boolean;
+};
+
+/**
  * An parameter for action in interface.
  */
 struct interface_action_param
@@ -371,6 +382,10 @@ struct core_core_params
  * Execute action.
  */
 	void (*execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
+/**
+ * Get set of interface device registers.
+ */
+	const struct interface_device_reg* (*get_registers)();
 };
 
 struct core_region
@@ -469,6 +484,7 @@ struct core_core
 	void do_unregister_action(const std::string& key);
 	std::set<const interface_action*> get_actions();
 	_param_register_proxy param_register_proxy;
+	const interface_device_reg* get_registers();
 private:
 	std::string (*_core_identifier)();
 	bool (*_set_region)(core_region& region);
@@ -494,6 +510,7 @@ private:
 	std::string (*_get_core_shortname)();
 	void (*_pre_emulate_frame)(controller_frame& cf);
 	void (*_execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
+	const interface_device_reg* (*_get_registers)();
 	bool hidden;
 	std::map<std::string, interface_action*> actions;
 	mutex_class actions_lock;
@@ -561,6 +578,7 @@ public:
 	bool is_hidden() { return core->is_hidden(); }
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
+	const interface_device_reg* get_registers() { return core->get_registers(); }
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

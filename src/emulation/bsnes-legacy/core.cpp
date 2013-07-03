@@ -94,6 +94,56 @@ namespace
 		0, 0				//Offset.
 	};
 
+	struct interface_device_reg snes_registers[] = {
+		{"pbpc", []() -> uint64_t { return SNES::cpu.regs.pc; }, [](uint64_t v) { SNES::cpu.regs.pc = v; }},
+		{"pb", []() -> uint64_t { return SNES::cpu.regs.pc >> 16; },
+			[](uint64_t v) { SNES::cpu.regs.pc = (v << 16) | (SNES::cpu.regs.pc & 0xFFFF); }},
+		{"pc", []() -> uint64_t { return SNES::cpu.regs.pc & 0xFFFF; },
+			[](uint64_t v) { SNES::cpu.regs.pc = (v & 0xFFFF) | (SNES::cpu.regs.pc & ~0xFFFF); }},
+		{"r0", []() -> uint64_t { return SNES::cpu.regs.r[0]; }, [](uint64_t v) { SNES::cpu.regs.r[0] = v; }},
+		{"r1", []() -> uint64_t { return SNES::cpu.regs.r[1]; }, [](uint64_t v) { SNES::cpu.regs.r[1] = v; }},
+		{"r2", []() -> uint64_t { return SNES::cpu.regs.r[2]; }, [](uint64_t v) { SNES::cpu.regs.r[2] = v; }},
+		{"r3", []() -> uint64_t { return SNES::cpu.regs.r[3]; }, [](uint64_t v) { SNES::cpu.regs.r[3] = v; }},
+		{"r4", []() -> uint64_t { return SNES::cpu.regs.r[4]; }, [](uint64_t v) { SNES::cpu.regs.r[4] = v; }},
+		{"r5", []() -> uint64_t { return SNES::cpu.regs.r[5]; }, [](uint64_t v) { SNES::cpu.regs.r[5] = v; }},
+		{"a", []() -> uint64_t { return SNES::cpu.regs.a; }, [](uint64_t v) { SNES::cpu.regs.a = v; }},
+		{"x", []() -> uint64_t { return SNES::cpu.regs.x; }, [](uint64_t v) { SNES::cpu.regs.x = v; }},
+		{"y", []() -> uint64_t { return SNES::cpu.regs.y; }, [](uint64_t v) { SNES::cpu.regs.y = v; }},
+		{"z", []() -> uint64_t { return SNES::cpu.regs.z; }, [](uint64_t v) { SNES::cpu.regs.z = v; }},
+		{"s", []() -> uint64_t { return SNES::cpu.regs.s; }, [](uint64_t v) { SNES::cpu.regs.s = v; }},
+		{"d", []() -> uint64_t { return SNES::cpu.regs.d; }, [](uint64_t v) { SNES::cpu.regs.d = v; }},
+		{"db", []() -> uint64_t { return SNES::cpu.regs.db; }, [](uint64_t v) { SNES::cpu.regs.db = v; }},
+		{"p", []() -> uint64_t { return SNES::cpu.regs.p; }, [](uint64_t v) { SNES::cpu.regs.p = v; }},
+		{"e", []() -> uint64_t { return SNES::cpu.regs.e; }, [](uint64_t v) { SNES::cpu.regs.e = v; }},
+		{"irq", []() -> uint64_t { return SNES::cpu.regs.irq; }, [](uint64_t v) { SNES::cpu.regs.irq = v; }},
+		{"wai", []() -> uint64_t { return SNES::cpu.regs.wai; }, [](uint64_t v) { SNES::cpu.regs.wai = v; }},
+		{"mdr", []() -> uint64_t { return SNES::cpu.regs.mdr; }, [](uint64_t v) { SNES::cpu.regs.mdr = v; }},
+		{"vector", []() -> uint64_t { return SNES::cpu.regs.vector; },
+			[](uint64_t v) { SNES::cpu.regs.vector = v; }},
+		{"aa", []() -> uint64_t { return SNES::cpu.aa; }, [](uint64_t v) { SNES::cpu.aa = v; }},
+		{"rd", []() -> uint64_t { return SNES::cpu.rd; }, [](uint64_t v) { SNES::cpu.rd = v; }},
+		{"sp", []() -> uint64_t { return SNES::cpu.sp; }, [](uint64_t v) { SNES::cpu.sp = v; }},
+		{"dp", []() -> uint64_t { return SNES::cpu.dp; }, [](uint64_t v) { SNES::cpu.dp = v; }},
+		{"p_n", []() -> uint64_t { return SNES::cpu.regs.p.n; }, [](uint64_t v) { SNES::cpu.regs.p.n = v; },
+			true},
+		{"p_v", []() -> uint64_t { return SNES::cpu.regs.p.v; }, [](uint64_t v) { SNES::cpu.regs.p.v = v; },
+			true},
+		{"p_m", []() -> uint64_t { return SNES::cpu.regs.p.m; }, [](uint64_t v) { SNES::cpu.regs.p.m = v; },
+			true},
+		{"p_x", []() -> uint64_t { return SNES::cpu.regs.p.x; }, [](uint64_t v) { SNES::cpu.regs.p.x = v; },
+			true},
+		{"p_d", []() -> uint64_t { return SNES::cpu.regs.p.d; }, [](uint64_t v) { SNES::cpu.regs.p.d = v; },
+			true},
+		{"p_i", []() -> uint64_t { return SNES::cpu.regs.p.i; }, [](uint64_t v) { SNES::cpu.regs.p.i = v; },
+			true},
+		{"p_z", []() -> uint64_t { return SNES::cpu.regs.p.z; }, [](uint64_t v) { SNES::cpu.regs.p.z = v; },
+			true},
+		{"p_c", []() -> uint64_t { return SNES::cpu.regs.p.c; }, [](uint64_t v) { SNES::cpu.regs.p.c = v; },
+			true},
+		//TODO: SMP registers, DSP registers, chip registers.
+		{NULL, NULL, NULL}
+	};
+
 #include "ports.inc"
 #include "slots.inc"
 #include "regions.inc"
@@ -867,7 +917,8 @@ again2:
 				do_hreset_flag = true;
 				break;
 			}
-		}
+		},
+		.get_registers = []() -> const interface_device_reg* { return snes_registers; },
 	}};
 
 	core_type type_snes{{
@@ -936,49 +987,6 @@ again2:
 			std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
 			x.write(&out[0], out.size());
 		});
-
-	function_ptr_luafun lua_memory_readreg(LS, "memory.getregister", [](lua_state& L, const std::string& fname) ->
-		int {
-		std::string r = L.get_string(1, fname.c_str());
-		auto& c = SNES::cpu.regs;
-		auto& c2 = SNES::cpu;
-		if(r == "pbpc")		L.pushnumber((unsigned)c.pc);
-		else if(r == "pb")	L.pushnumber((unsigned)c.pc >> 16);
-		else if(r == "pc")	L.pushnumber((unsigned)c.pc & 0xFFFF);
-		else if(r == "r0")	L.pushnumber((unsigned)c.r[0]);
-		else if(r == "r1")	L.pushnumber((unsigned)c.r[1]);
-		else if(r == "r2")	L.pushnumber((unsigned)c.r[2]);
-		else if(r == "r3")	L.pushnumber((unsigned)c.r[3]);
-		else if(r == "r4")	L.pushnumber((unsigned)c.r[4]);
-		else if(r == "r5")	L.pushnumber((unsigned)c.r[5]);
-		else if(r == "a")	L.pushnumber((unsigned)c.a);
-		else if(r == "x")	L.pushnumber((unsigned)c.x);
-		else if(r == "y")	L.pushnumber((unsigned)c.y);
-		else if(r == "z")	L.pushnumber((unsigned)c.z);
-		else if(r == "s")	L.pushnumber((unsigned)c.s);
-		else if(r == "d")	L.pushnumber((unsigned)c.d);
-		else if(r == "db")	L.pushnumber((unsigned)c.db);
-		else if(r == "p")	L.pushnumber((unsigned)c.p);
-		else if(r == "p_n")	L.pushboolean(c.p.n);
-		else if(r == "p_v")	L.pushboolean(c.p.v);
-		else if(r == "p_m")	L.pushboolean(c.p.m);
-		else if(r == "p_x")	L.pushboolean(c.p.x);
-		else if(r == "p_d")	L.pushboolean(c.p.d);
-		else if(r == "p_i")	L.pushboolean(c.p.i);
-		else if(r == "p_z")	L.pushboolean(c.p.z);
-		else if(r == "p_c")	L.pushboolean(c.p.c);
-		else if(r == "e")	L.pushboolean(c.e);
-		else if(r == "irq")	L.pushboolean(c.irq);
-		else if(r == "wai")	L.pushboolean(c.wai);
-		else if(r == "mdr")	L.pushnumber((unsigned)c.mdr);
-		else if(r == "vector")	L.pushnumber((unsigned)c.vector);
-		else if(r == "aa")	L.pushnumber((unsigned)c2.aa);
-		else if(r == "rd")	L.pushnumber((unsigned)c2.rd);
-		else if(r == "sp")	L.pushnumber((unsigned)c2.sp);
-		else if(r == "dp")	L.pushnumber((unsigned)c2.dp);
-		else			L.pushnil();
-		return 1;
-	});
 
 #ifdef BSNES_HAS_DEBUGGER
 	char snes_debug_cb_keys[SNES::Debugger::Breakpoints];

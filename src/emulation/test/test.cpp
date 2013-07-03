@@ -52,6 +52,10 @@ namespace
 		0, 0				//Offset.
 	};
 
+	struct interface_device_reg test_registers[] = {
+		{NULL, NULL, NULL}
+	};
+
 #include "ports.inc"
 #include "slots.inc"
 #include "regions.inc"
@@ -172,7 +176,8 @@ namespace
 		},
 		.get_core_shortname = []() -> std::string { return "test"; },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {},
+		.get_registers = []() -> const interface_device_reg* { return test_registers; },
 	}};
 
 	core_type type_test{{

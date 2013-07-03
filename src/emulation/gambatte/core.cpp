@@ -61,6 +61,10 @@ namespace
 
 	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
 
+	struct interface_device_reg gb_registers[] = {
+		{NULL, NULL, NULL}
+	};
+
 	//Framebuffer.
 	struct framebuffer_info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
@@ -430,7 +434,8 @@ namespace
 				do_reset_flag = true;
 				break;
 			}
-		}
+		},
+		.get_registers = []() -> const interface_device_reg* { return gb_registers; },
 	}};
 	
 	core_type type_dmg{{

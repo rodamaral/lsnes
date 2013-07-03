@@ -20,6 +20,10 @@ namespace sky
 		{5, 4, 6, 7, 0, 3, 2}
 	};
 
+	struct interface_device_reg sky_registers[] = {
+		{NULL, NULL, NULL}
+	};
+
 	//Framebuffer.
 	uint32_t cover_fbmem[320*200];
 	struct framebuffer_info cover_fbinfo = {
@@ -326,7 +330,8 @@ namespace sky
 		},
 		.get_core_shortname = []() -> std::string { return "sky"; },
 		.pre_emulate_frame = [](controller_frame& cf) -> void {},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
+		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {},
+		.get_registers = []() -> const interface_device_reg* { return sky_registers; },
 	}};
 
 	void controller_magic()

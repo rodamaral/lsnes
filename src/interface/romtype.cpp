@@ -366,6 +366,7 @@ core_core::core_core(const core_core_params& params)
 	_get_core_shortname = params.get_core_shortname;
 	_pre_emulate_frame = params.pre_emulate_frame;
 	_execute_action = params.execute_action;
+	_get_registers = params.get_registers;
 	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
@@ -517,6 +518,11 @@ void core_core::pre_emulate_frame(controller_frame& cf)
 void core_core::execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 {
 	return _execute_action(id, p);
+}
+
+const struct interface_device_reg* core_core::get_registers()
+{
+	return _get_registers();
 }
 
 void core_core::do_register_action(const std::string& key, interface_action& act)
