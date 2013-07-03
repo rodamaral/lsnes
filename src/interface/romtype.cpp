@@ -346,7 +346,6 @@ core_core::core_core(const core_core_params& params)
 	_set_region = params.set_region;
 	_video_rate = params.video_rate;
 	_audio_rate = params.audio_rate;
-	_snes_rate = params.snes_rate;
 	_save_sram = params.save_sram;
 	_load_sram = params.load_sram;
 	_serialize = params.serialize;
@@ -401,14 +400,6 @@ std::pair<uint32_t, uint32_t> core_core::get_video_rate()
 std::pair<uint32_t, uint32_t> core_core::get_audio_rate()
 {
 	return _audio_rate();
-}
-
-std::pair<uint32_t, uint32_t> core_core::get_snes_rate()
-{
-	if(_snes_rate)
-		return _snes_rate();
-	else
-		return std::make_pair(0, 0);
 }
 
 std::string core_core::get_core_identifier()

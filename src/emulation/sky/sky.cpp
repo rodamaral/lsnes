@@ -243,7 +243,6 @@ namespace sky
 		.set_region = [](core_region& region) -> bool { return (&region == &world_region); },
 		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(656250, 18227); },
 		.audio_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(48000, 1); },
-		.snes_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(0, 0); },
 		.save_sram = []() -> std::map<std::string, std::vector<char>> {
 			std::map<std::string, std::vector<char>> r;
 			std::vector<char> sram;

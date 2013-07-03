@@ -691,9 +691,6 @@ namespace
 				return std::make_pair(64081, 2);
 			return std::make_pair(SNES::system.apu_frequency(), static_cast<uint32_t>(768));
 		},
-		.snes_rate = []() -> std::pair<uint32_t, uint32_t> {
-			return std::make_pair(SNES::system.cpu_frequency(), SNES::system.apu_frequency());
-		},
 		.save_sram = []() -> std::map<std::string, std::vector<char>> {
 			std::map<std::string, std::vector<char>> out;
 			if(!internal_rom)

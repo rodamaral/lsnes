@@ -293,10 +293,6 @@ struct core_core_params
  */
 	std::pair<uint32_t, uint32_t> (*audio_rate)();
 /**
- * Get SNES CPU and SMP rates. If not SNES, this should be NULL.
- */
-	std::pair<uint32_t, uint32_t> (*snes_rate)();
-/**
  * Save all SRAMs.
  */
 	std::map<std::string, std::vector<char>> (*save_sram)() throw(std::bad_alloc);
@@ -440,7 +436,6 @@ struct core_core
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
-	std::pair<uint32_t, uint32_t> get_snes_rate();	//(0,0) for non-SNES.
 	std::string get_core_identifier();
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
 	void load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
@@ -490,7 +485,6 @@ private:
 	bool (*_set_region)(core_region& region);
 	std::pair<uint32_t, uint32_t> (*_video_rate)();
 	std::pair<uint32_t, uint32_t> (*_audio_rate)();
-	std::pair<uint32_t, uint32_t> (*_snes_rate)();
 	std::map<std::string, std::vector<char>> (*_save_sram)() throw(std::bad_alloc);
 	void (*_load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
 	void (*_serialize)(std::vector<char>& out);
@@ -546,7 +540,6 @@ public:
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
 	std::pair<uint32_t, uint32_t> get_audio_rate() { return core->get_audio_rate(); }
-	std::pair<uint32_t, uint32_t> get_snes_rate() { return core->get_snes_rate(); }
 	std::string get_core_identifier() { return core->get_core_identifier(); }
 	std::string get_core_shortname() { return core->get_core_shortname(); }
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc) { return core->save_sram(); }

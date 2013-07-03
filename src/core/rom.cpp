@@ -65,7 +65,6 @@ namespace
 		.set_region = [](core_region& reg) -> bool { return true; },
 		.video_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
 		.audio_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(48000, 1); },
-		.snes_rate = NULL,
 		.save_sram = []() -> std::map<std::string, std::vector<char>> {
 			std::map<std::string, std::vector<char>> x;
 			return x;

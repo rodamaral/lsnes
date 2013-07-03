@@ -290,7 +290,6 @@ namespace
 		.set_region = [](core_region& region) -> bool { return (&region == &region_world); },
 		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(262144, 4389); },
 		.audio_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(32768, 1); },
-		.snes_rate = NULL,
 		.save_sram = []() -> std::map<std::string, std::vector<char>> {
 			std::map<std::string, std::vector<char>> s;
 			if(!internal_rom)
