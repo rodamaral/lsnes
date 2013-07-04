@@ -21,10 +21,7 @@ ports.inc: ports.def ../make-ports.lua
 slots.inc: slots.def ../make-slots.lua
 	lua ../make-slots.lua $< >$@
 
-regions.inc: regions.def ../make-regions.lua
-	lua ../make-regions.lua $< >$@
-
-%.$(OBJECT_SUFFIX): %.cpp ports.inc slots.inc regions.inc
+%.$(OBJECT_SUFFIX): %.cpp ports.inc slots.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
 
 else

@@ -1050,8 +1050,6 @@ again2:
 		framebuffer_raw ls(inf);
 
 		ecore_callbacks->output_frame(ls, fps_n, fps_d);
-		information_dispatch::do_raw_frame(data, hires, interlace, overscan, region ?
-			VIDEO_REGION_PAL : VIDEO_REGION_NTSC);
 		if(soundbuf_fill > 0) {
 			auto freq = SNES::system.apu_frequency();
 			audioapi_submit_buffer(soundbuf, soundbuf_fill / 2, true, freq / 768.0);

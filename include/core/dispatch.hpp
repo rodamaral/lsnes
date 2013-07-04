@@ -191,25 +191,6 @@ public:
  */
 	static void do_autohold_reconfigure() throw();
 /**
- * A raw frame has been received.
- *
- * The default handler does nothing.
- *
- * Parameter raw: The raw frame data. 512*512 element array.
- * Parameter hires: True if in hires mode (512 wide), false if not (256-wide).
- * Parameter interlaced: True if in interlaced mode (448/478 high), false if not (224/239 high).
- * Parameter overscan: True if overscan is active, false if not.
- * Parameter region: One of VIDEO_REGION_* contstants, giving the region this frame is from.
- */
-	virtual void on_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan, unsigned region);
-/**
- * Call all on_raw_frame() handlers.
- *
- * Calls on_new_dumper() on dumpers that had that not yet called.
- */
-	static void do_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan, unsigned region)
-		throw();
-/**
  * A frame has been received.
  *
  * The default handler does nothing.

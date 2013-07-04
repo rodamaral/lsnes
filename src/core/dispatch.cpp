@@ -227,23 +227,6 @@ void information_dispatch::do_autohold_reconfigure() throw()
 	}
 }
 
-void information_dispatch::on_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan,
-	unsigned region)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_raw_frame(const uint32_t* raw, bool hires, bool interlaced, bool overscan,
-	unsigned region) throw()
-{
-	update_dumpers();
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_raw_frame(raw, hires, interlaced, overscan, region);
-		END_EH_BLOCK(i, "on_raw_frame");
-	}
-}
-
 void information_dispatch::on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 {
 	//Do nothing.
