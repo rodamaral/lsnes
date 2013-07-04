@@ -263,7 +263,7 @@ for i = 1,#ports do
 	print("\t}");
 	print("} "..port.symbol..";");
 end
-local s = "std::vector<port_type*> port_types{ ";
+local s = "std::vector<port_type*> _port_types{ ";
 for i = 1,#ports do
 	s = s .."&"..ports[i].symbol..", ";
 end

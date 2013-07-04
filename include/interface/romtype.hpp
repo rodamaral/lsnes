@@ -203,24 +203,6 @@ struct core_type_params
  */
 	const char* sysname;
 /**
- * Load a ROM slot set. Changes the ROM currently loaded for core.
- *
- * Parameter images: The set of images to load.
- * Parameter settings: The settings to use.
- * Parameter rtc_sec: The initial RTC seconds value.
- * Parameter rtc_subsec: The initial RTC subseconds value.
- * Returns: -1 on failure, 0 on success.
- */
-	int (*load_rom)(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-		uint64_t rtc_subsec);
-/**
- * Obtain controller config for given settings.
- *
- * Parameter settings: The settings to use.
- * Returns: The controller configuration.
- */
-	controller_set (*controllerconfig)(std::map<std::string, std::string>& settings);
-/**
  * Semicolon-separated list of extensions this system type uses.
  */
 	const char* extensions;
@@ -244,24 +226,6 @@ struct core_type_params
  * Core this system is emulated by.
  */
 	core_core* core;
-/**
- * Get bus mapping.
- *
- * Returns: The bus mapping (base,size), or (0,0) if this system does not have bus mapping.
- */
-	std::pair<uint64_t, uint64_t> (*get_bus_map)();
-/**
- * Get list of valid VMAs. ROM must be loaded.
- *
- * Returns: The list of VMAs.
- */
-	std::list<core_vma_info> (*vma_list)();
-/**
- * Get list of valid SRAM names. ROM must be loaded.
- *
- * Returns: The list of SRAMs.
- */
-	std::set<std::string> (*srams)();
 };
 
 /**
@@ -272,116 +236,9 @@ struct core_type_params
 struct core_core_params
 {
 /**
- * Get the name of the core.
- */
-	std::string (*core_identifier)();
-/**
- * Set the current region.
- *
- * Parameter region: The new region.
- * Returns: True on success, false on failure (bad region).
- */
-	bool (*set_region)(core_region& region);
-/**
- * Get current video frame rate as (numerator, denominator).
- */
-	std::pair<uint32_t, uint32_t> (*video_rate)();
-/**
- * Get audio sampling rate as (numerator, denominator).
- *
- * Note: This value should not be changed while ROM is running, since video dumper may malfunction.
- */
-	std::pair<uint32_t, uint32_t> (*audio_rate)();
-/**
- * Save all SRAMs.
- */
-	std::map<std::string, std::vector<char>> (*save_sram)() throw(std::bad_alloc);
-/**
- * Load all SRAMs.
- *
- * Note: Must handle SRAM being missing or shorter or longer than expected.
- */
-	void (*load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
-/**
- * Serialize the system state.
- */
-	void (*serialize)(std::vector<char>& out);
-/**
- * Unserialize the system state.
- */
-	void (*unserialize)(const char* in, size_t insize);
-/**
- * Get current region.
- */
-	core_region& (*get_region)();
-/**
- * Poweron the console.
- */
-	void (*power)();
-/**
- * Unload the cartridge from the console.
- */
-	void (*unload_cartridge)();
-/**
- * Get the current scale factors for screen as (xscale, yscale).
- */
-	std::pair<uint32_t, uint32_t> (*get_scale_factors)(uint32_t width, uint32_t height);
-/**
- * Do basic core initialization. Called on lsnes startup.
- */
-	void (*install_handler)();
-/**
- * Do basic core uninitialization. Called on lsnes shutdown.
- */
-	void (*uninstall_handler)();
-/**
- * Emulate one frame.
- */
-	void (*emulate)();
-/**
- * Get core into state where saving is possible. Must run less than one frame.
- */
-	void (*runtosave)();
-/**
- * Get the polled flag.
- *
- * The emulator core sets polled flag when the game asks for input.
- *
- * If polled flag is clear when frame ends, the frame is marked as lag.
- */
-	bool (*get_pflag)();
-/**
- * Set the polled flag.
- */
-	void (*set_pflag)(bool pflag);
-/**
  * Set of valid port types for the core.
  */
 	std::vector<port_type*> port_types;
-/**
- * Draw run cover screen.
- *
- * Should display information about the ROM loaded.
- */
-	framebuffer_raw& (*draw_cover)();
-/**
- * Get shortened name of the core.
- */
-	std::string (*get_core_shortname)();
-/**
- * Set the system controls to appropriate values for next frame.
- *
- * E.g. if core supports resetting, set the reset button in the frame to pressed if reset is wanted.
- */
-	void (*pre_emulate_frame)(controller_frame& cf);
-/**
- * Execute action.
- */
-	void (*execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
-/**
- * Get set of interface device registers.
- */
-	const struct interface_device_reg* (*get_registers)();
 };
 
 struct core_region
@@ -480,31 +337,116 @@ struct core_core
 	std::set<const interface_action*> get_actions();
 	_param_register_proxy param_register_proxy;
 	const interface_device_reg* get_registers();
+protected:
+/**
+ * Get the name of the core.
+ */
+	virtual std::string c_core_identifier() = 0;
+/**
+ * Set the current region.
+ *
+ * Parameter region: The new region.
+ * Returns: True on success, false on failure (bad region).
+ */
+	virtual bool c_set_region(core_region& region) = 0;
+/**
+ * Get current video frame rate as (numerator, denominator).
+ */
+	virtual std::pair<uint32_t, uint32_t> c_video_rate() = 0;
+/**
+ * Get audio sampling rate as (numerator, denominator).
+ *
+ * Note: This value should not be changed while ROM is running, since video dumper may malfunction.
+ */
+	virtual std::pair<uint32_t, uint32_t> c_audio_rate() = 0;
+/**
+ * Save all SRAMs.
+ */
+	virtual std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) = 0;
+/**
+ * Load all SRAMs.
+ *
+ * Note: Must handle SRAM being missing or shorter or longer than expected.
+ */
+	virtual void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) = 0;
+/**
+ * Serialize the system state.
+ */
+	virtual void c_serialize(std::vector<char>& out) = 0;
+/**
+ * Unserialize the system state.
+ */
+	virtual void c_unserialize(const char* in, size_t insize) = 0;
+/**
+ * Get current region.
+ */
+	virtual core_region& c_get_region() = 0;
+/**
+ * Poweron the console.
+ */
+	virtual void c_power() = 0;
+/**
+ * Unload the cartridge from the console.
+ */
+	virtual void c_unload_cartridge() = 0;
+/**
+ * Get the current scale factors for screen as (xscale, yscale).
+ */
+	virtual std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) = 0;
+/**
+ * Do basic core initialization. Called on lsnes startup.
+ */
+	virtual void c_install_handler() = 0;
+/**
+ * Do basic core uninitialization. Called on lsnes shutdown.
+ */
+	virtual void c_uninstall_handler() = 0;
+/**
+ * Emulate one frame.
+ */
+	virtual void c_emulate() = 0;
+/**
+ * Get core into state where saving is possible. Must run less than one frame.
+ */
+	virtual void c_runtosave() = 0;
+/**
+ * Get the polled flag.
+ *
+ * The emulator core sets polled flag when the game asks for input.
+ *
+ * If polled flag is clear when frame ends, the frame is marked as lag.
+ */
+	virtual bool c_get_pflag() = 0;
+/**
+ * Set the polled flag.
+ */
+	virtual void c_set_pflag(bool pflag) = 0;
+/**
+ * Draw run cover screen.
+ *
+ * Should display information about the ROM loaded.
+ */
+	virtual framebuffer_raw& c_draw_cover() = 0;
+/**
+ * Get shortened name of the core.
+ */
+	virtual std::string c_get_core_shortname() = 0;
+/**
+ * Set the system controls to appropriate values for next frame.
+ *
+ * E.g. if core supports resetting, set the reset button in the frame to pressed if reset is wanted.
+ */
+	virtual void c_pre_emulate_frame(controller_frame& cf) = 0;
+/**
+ * Execute action.
+ */
+	virtual void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) = 0;
+/**
+ * Get set of interface device registers.
+ */
+	virtual const struct interface_device_reg* c_get_registers() = 0;
 private:
-	std::string (*_core_identifier)();
-	bool (*_set_region)(core_region& region);
-	std::pair<uint32_t, uint32_t> (*_video_rate)();
-	std::pair<uint32_t, uint32_t> (*_audio_rate)();
-	std::map<std::string, std::vector<char>> (*_save_sram)() throw(std::bad_alloc);
-	void (*_load_sram)(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc);
-	void (*_serialize)(std::vector<char>& out);
-	void (*_unserialize)(const char* in, size_t insize);
-	core_region& (*_get_region)();
-	void (*_power)();
-	void (*_unload_cartridge)();
-	std::pair<uint32_t, uint32_t> (*_get_scale_factors)(uint32_t width, uint32_t height);
-	void (*_install_handler)();
-	void (*_uninstall_handler)();
-	void (*_emulate)();
-	void (*_runtosave)();
-	bool (*_get_pflag)();
-	void (*_set_pflag)(bool pflag);
 	std::vector<port_type*> port_types;
-	framebuffer_raw& (*_draw_cover)();
-	std::string (*_get_core_shortname)();
-	void (*_pre_emulate_frame)(controller_frame& cf);
-	void (*_execute_action)(unsigned id, const std::vector<interface_action_paramval>& p);
-	const interface_device_reg* (*_get_registers)();
 	bool hidden;
 	std::map<std::string, interface_action*> actions;
 	mutex_class actions_lock;
@@ -515,7 +457,7 @@ struct core_type
 public:
 	core_type(const core_type_params& params);
 	core_type(std::initializer_list<core_type_params> p) : core_type(*p.begin()) {}
-	~core_type() throw();
+	virtual ~core_type() throw();
 	static std::list<core_type*> get_core_types();
 	core_region& get_preferred_region();
 	std::list<core_region*> get_regions();
@@ -572,15 +514,46 @@ public:
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }
+protected:
+/**
+ * Load a ROM slot set. Changes the ROM currently loaded for core.
+ *
+ * Parameter images: The set of images to load.
+ * Parameter settings: The settings to use.
+ * Parameter rtc_sec: The initial RTC seconds value.
+ * Parameter rtc_subsec: The initial RTC subseconds value.
+ * Returns: -1 on failure, 0 on success.
+ */
+	virtual int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec) = 0;
+/**
+ * Obtain controller config for given settings.
+ *
+ * Parameter settings: The settings to use.
+ * Returns: The controller configuration.
+ */
+	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
+/**
+ * Get bus mapping.
+ *
+ * Returns: The bus mapping (base,size), or (0,0) if this system does not have bus mapping.
+ */
+	virtual std::pair<uint64_t, uint64_t> t_get_bus_map() = 0;
+/**
+ * Get list of valid VMAs. ROM must be loaded.
+ *
+ * Returns: The list of VMAs.
+ */
+	virtual std::list<core_vma_info> t_vma_list() = 0;
+/**
+ * Get list of valid SRAM names. ROM must be loaded.
+ *
+ * Returns: The list of SRAMs.
+ */
+	virtual std::set<std::string> t_srams() = 0;
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);
-	int (*loadimg)(core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-		uint64_t rtc_subsec);
-	controller_set (*_controllerconfig)(std::map<std::string, std::string>& settings);
-	std::pair<uint64_t, uint64_t> (*_get_bus_map)();
-	std::list<core_vma_info> (*_vma_list)();
-	std::set<std::string> (*_srams)();
 	unsigned id;
 	std::string iname;
 	std::string hname;

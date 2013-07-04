@@ -46,7 +46,6 @@ namespace
 {
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
-	extern core_core gambatte_core;
 	bool rtc_fixed;
 	time_t rtc_fixed_val;
 	gambatte::GB* instance;
@@ -59,7 +58,6 @@ namespace
 	unsigned accumulator_s = 0;
 	bool pflag = false;
 
-	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
 
 	struct interface_device_reg gb_registers[] = {
 		{NULL, NULL, NULL}
@@ -76,7 +74,6 @@ namespace
 
 #include "ports.inc"
 #include "slots.inc"
-#include "regions.inc"
 
 	core_setting_group gambatte_settings;
 
@@ -161,7 +158,7 @@ namespace
 		return x;
 	}
 
-	controller_set _controllerconfig(std::map<std::string, std::string>& settings)
+	controller_set gambatte_controllerconfig(std::map<std::string, std::string>& settings)
 	{
 		std::map<std::string, std::string> _settings = settings;
 		controller_set r;
@@ -244,7 +241,7 @@ namespace
 		return vmas;
 	}
 
-	std::set<std::string> srams()
+	std::set<std::string> gambatte_srams()
 	{
 		std::set<std::string> s;
 		if(!internal_rom)
@@ -270,27 +267,17 @@ namespace
 		return name.str();
 	}
 
-	void redraw_cover_fbinfo()
-	{
-		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
-			cover_fbmem[i] = 0x00000000;
-		std::string ident = gambatte_core.get_core_identifier();
-		cover_render_string(cover_fbmem, 0, 0, ident, 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
-		cover_render_string(cover_fbmem, 0, 16, "Internal ROM name: " + get_cartridge_name(),
-			0xFFFFFF, 0x00000, 480, 432, 1920, 4);
-		unsigned y = 32;
-		for(auto i : cover_information()) {
-			cover_render_string(cover_fbmem, 0, y, i, 0xFFFFFF, 0x000000, 480, 432, 1920, 4);
-			y += 16;
-		}
-	}
+	void redraw_cover_fbinfo();
 
-	core_core gambatte_core{{
-		.core_identifier = []() -> std::string { return "libgambatte "+gambatte::GB::version(); },
-		.set_region = [](core_region& region) -> bool { return (&region == &region_world); },
-		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(262144, 4389); },
-		.audio_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(32768, 1); },
-		.save_sram = []() -> std::map<std::string, std::vector<char>> {
+	struct _gambatte_core : public core_core, public core_region
+	{
+		_gambatte_core() : core_core({{_port_types}}),
+			core_region({{"world", "World", 0, 0, false, {4389, 262144}, {0}}}) {}
+		std::string c_core_identifier() { return "libgambatte "+gambatte::GB::version(); }
+		bool c_set_region(core_region& region) { return (&region == this); }
+		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(262144, 4389); }
+		std::pair<uint32_t, uint32_t> c_audio_rate() { return std::make_pair(32768, 1); }
+		std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) {
 			std::map<std::string, std::vector<char>> s;
 			if(!internal_rom)
 				return s;
@@ -302,8 +289,8 @@ namespace
 			for(size_t i = 0; i < 8; i++)
 				s["rtc"][i] = ((unsigned long long)timebase >> (8 * i));
 			return s;
-		},
-		.load_sram = [](std::map<std::string, std::vector<char>>& sram) -> void {
+		}
+		void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {
 			if(!internal_rom)
 				return;
 			std::vector<char> x = sram.count("main") ? sram["main"] : std::vector<char>();
@@ -321,8 +308,8 @@ namespace
 					timebase |= (unsigned long long)(unsigned char)x2[i] << (8 * i);
 				instance->setRtcBase(timebase);
 			}
-		},
-		.serialize = [](std::vector<char>& out) -> void {
+		}
+		void c_serialize(std::vector<char>& out) {
 			if(!internal_rom)
 				throw std::runtime_error("Can't save without ROM");
 			instance->saveState(out);
@@ -332,8 +319,8 @@ namespace
 				write32ube(&out[osize + 4 * i], primary_framebuffer[i]);
 			out.push_back(frame_overflow >> 8);
 			out.push_back(frame_overflow);
-		},
-		.unserialize = [](const char* in, size_t insize) -> void {
+		}
+		void c_unserialize(const char* in, size_t insize) {
 			if(!internal_rom)
 				throw std::runtime_error("Can't load without ROM");
 			size_t foffset = insize - 2 - 4 * sizeof(primary_framebuffer) /
@@ -349,16 +336,16 @@ namespace
 			unsigned x2 = (unsigned char)in[insize - 1];
 			frame_overflow = x1 * 256 + x2;
 			do_reset_flag = false;
-		},
-		.get_region = []() -> core_region& { return region_world; },
-		.power = []() -> void {},
-		.unload_cartridge = []() -> void {},
-		.get_scale_factors = [](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+		}
+		core_region& c_get_region() { return *this; }
+		void c_power() {}
+		void c_unload_cartridge() {}
+		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) {
 			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
-		},
-		.install_handler = []() -> void  { magic_flags |= 2; },
-		.uninstall_handler = []() -> void {},
-		.emulate = []() -> void {
+		}
+		void  c_install_handler() { magic_flags |= 2; }
+		void c_uninstall_handler() {}
+		void c_emulate() {
 			if(!internal_rom)
 				return;
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
@@ -412,61 +399,129 @@ namespace
 
 			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, 262144, 4389);
-		},
-		.runtosave = []() -> void {},
-		.get_pflag = []() -> bool { return pflag; },
-		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.port_types = port_types,
-		.draw_cover = []() -> framebuffer_raw& {
+		}
+		void c_runtosave() {}
+		bool c_get_pflag() { return pflag; }
+		void c_set_pflag(bool _pflag) { pflag = _pflag; }
+		framebuffer_raw& c_draw_cover() {
 			static framebuffer_raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
-		},
-		.get_core_shortname = []() -> std::string { return "gambatte"+gambatte::GB::version(); },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {
+		}
+		std::string c_get_core_shortname() { return "gambatte"+gambatte::GB::version(); }
+		void c_pre_emulate_frame(controller_frame& cf) {
 			cf.axis3(0, 0, 1, do_reset_flag ? 1 : 0);
-		},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void
+		}
+		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 		{
 			switch(id) {
 			case 0:		//Soft reset.
 				do_reset_flag = true;
 				break;
 			}
-		},
-		.get_registers = []() -> const interface_device_reg* { return gb_registers; },
-	}};
-	
-	core_type type_dmg{{
-		.iname = "dmg", .hname = "Game Boy", .id = 1, .sysname = "Gameboy",
-		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int {
-			return load_rom_common(img, gambatte::GB::FORCE_DMG, rtc_sec, rtc_subsec, &type_dmg);
-		},
-		.controllerconfig = _controllerconfig, .extensions = "gb;dmg", .bios = NULL, .regions = dmg_regions,
-		.images = dmg_images, .settings = &gambatte_settings, .core = &gambatte_core,
-		.get_bus_map = gambatte_bus_map, .vma_list = get_VMAlist, .srams = srams
-	}};
-	core_type type_gbc{{
-		.iname = "gbc", .hname = "Game Boy Color", .id = 0, .sysname = "Gameboy",
-		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int {
-			return load_rom_common(img, 0, rtc_sec, rtc_subsec, &type_gbc);
-		},
-		.controllerconfig = _controllerconfig, .extensions = "gbc;cgb", .bios = NULL, .regions = gbc_regions,
-		.images = gbc_images, .settings = &gambatte_settings, .core = &gambatte_core,
-		.get_bus_map = gambatte_bus_map, .vma_list = get_VMAlist, .srams = srams
-	}};
-	core_type type_gbca{{
-		.iname = "gbc_gba", .hname = "Game Boy Color (GBA)", .id = 2, .sysname = "Gameboy",
-		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int {
-			return load_rom_common(img, gambatte::GB::GBA_CGB, rtc_sec, rtc_subsec, &type_gbca);
-		},
-		.controllerconfig = _controllerconfig, .extensions = "", .bios = NULL, .regions = gbca_regions,
-		.images = gbca_images, .settings = &gambatte_settings, .core = &gambatte_core,
-		.get_bus_map = gambatte_bus_map, .vma_list = get_VMAlist, .srams = srams
-	}};
+		}
+		const interface_device_reg* c_get_registers() { return gb_registers; }
+	} gambatte_core;
+	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
+
+	struct _type_dmg : public core_type, public core_sysregion
+	{
+		_type_dmg() : core_type({{
+			.iname = "dmg",
+			.hname = "Game Boy",
+			.id = 1,
+			.sysname = "Gameboy",
+			.extensions = "gb;dmg",
+			.bios = NULL,
+			.regions = {&gambatte_core},
+			.images = dmg_images,
+			.settings = &gambatte_settings,
+			.core = &gambatte_core,
+		}}), core_sysregion("gdmg", *this, gambatte_core) {}
+		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
+			uint64_t secs, uint64_t subsecs)
+		{
+			return load_rom_common(img, gambatte::GB::FORCE_DMG, secs, subsecs, this);
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
+		{
+			return gambatte_controllerconfig(settings);
+		}
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return gambatte_bus_map(); }
+		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
+		std::set<std::string> t_srams() { return gambatte_srams(); }
+	} type_dmg;
+
+	struct _type_gbc : public core_type, public core_sysregion
+	{
+		_type_gbc() : core_type({{
+			.iname = "gbc",
+			.hname = "Game Boy Color",
+			.id = 0,
+			.sysname = "Gameboy",
+			.extensions = "gbc;cgb",
+			.bios = NULL,
+			.regions = {&gambatte_core},
+			.images = gbc_images,
+			.settings = &gambatte_settings,
+			.core = &gambatte_core,
+		}}), core_sysregion("ggbc", *this, gambatte_core) {}
+		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
+			uint64_t secs, uint64_t subsecs)
+		{
+			return load_rom_common(img, 0, secs, subsecs, this);
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
+		{
+			return gambatte_controllerconfig(settings);
+		}
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return gambatte_bus_map(); }
+		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
+		std::set<std::string> t_srams() { return gambatte_srams(); }
+	} type_gbc;
+
+	struct _type_gbca : public core_type, public core_sysregion
+	{
+		_type_gbca() : core_type({{
+			.iname = "gbc_gba",
+			.hname = "Game Boy Color (GBA)",
+			.id = 2,
+			.sysname = "Gameboy",
+			.extensions = "",
+			.bios = NULL,
+			.regions = {&gambatte_core},
+			.images = gbca_images,
+			.settings = &gambatte_settings,
+			.core = &gambatte_core,
+		}}), core_sysregion("ggbca", *this, gambatte_core) {}
+		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
+			uint64_t secs, uint64_t subsecs)
+		{
+			return load_rom_common(img, gambatte::GB::GBA_CGB, secs, subsecs, this);
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
+		{
+			return gambatte_controllerconfig(settings);
+		}
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return gambatte_bus_map(); }
+		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
+		std::set<std::string> t_srams() { return gambatte_srams(); }
+	} type_gbca;
+
+	void redraw_cover_fbinfo()
+	{
+		for(size_t i = 0; i < sizeof(cover_fbmem) / sizeof(cover_fbmem[0]); i++)
+			cover_fbmem[i] = 0x00000000;
+		std::string ident = gambatte_core.get_core_identifier();
+		cover_render_string(cover_fbmem, 0, 0, ident, 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
+		cover_render_string(cover_fbmem, 0, 16, "Internal ROM name: " + get_cartridge_name(),
+			0xFFFFFF, 0x00000, 480, 432, 1920, 4);
+		unsigned y = 32;
+		for(auto i : cover_information()) {
+			cover_render_string(cover_fbmem, 0, y, i, 0xFFFFFF, 0x000000, 480, 432, 1920, 4);
+			y += 16;
+		}
+	}
 
 	std::vector<char> cmp_save;
 

@@ -58,7 +58,6 @@ namespace
 
 #include "ports.inc"
 #include "slots.inc"
-#include "regions.inc"
 
 	core_setting_group test_settings;
 
@@ -72,7 +71,7 @@ namespace
 		return x;
 	}
 
-	controller_set _controllerconfig(std::map<std::string, std::string>& settings)
+	controller_set test_controllerconfig(std::map<std::string, std::string>& settings)
 	{
 		std::map<std::string, std::string> _settings = settings;
 		controller_set r;
@@ -125,29 +124,41 @@ namespace
 		}
 	}
 
-	extern core_core test_core;
-
-	core_core test_core{{
-		.core_identifier = []() -> std::string { return "TEST"; },
-		.set_region = [](core_region& region) -> bool { return (&region == &region_world); },
-		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(60, 1); },
-		.audio_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(48000, 1); },
-		.save_sram = []() -> std::map<std::string, std::vector<char>> {
+	struct _test_core : public core_core, public core_type, public core_region, public core_sysregion
+	{
+		_test_core() : core_core({{_port_types}}), core_type({{
+			.iname = "test",
+			.hname = "test",
+			.id = 0,
+			.sysname = "Test",
+			.extensions = "test",
+			.bios = NULL,
+			.regions = {this},
+			.images = test_images,
+			.settings = &test_settings,
+			.core = this,
+		}}), core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
+		core_sysregion("test", *this, *this) {}
+		std::string c_core_identifier() { return "TEST"; }
+		bool c_set_region(core_region& region) { return (&region == this); }
+		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(60, 1); }
+		std::pair<uint32_t, uint32_t> c_audio_rate() { return std::make_pair(48000, 1); }
+		std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) {
 			std::map<std::string, std::vector<char>> s;
 			return s;
-		},
-		.load_sram = [](std::map<std::string, std::vector<char>>& sram) -> void {},
-		.serialize = [](std::vector<char>& out) -> void { out.clear(); },
-		.unserialize = [](const char* in, size_t insize) -> void {},
-		.get_region = []() -> core_region& { return region_world; },
-		.power = []() -> void {},
-		.unload_cartridge = []() -> void {},
-		.get_scale_factors = [](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+		}
+		void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {}
+		void c_serialize(std::vector<char>& out) { out.clear(); }
+		void c_unserialize(const char* in, size_t insize) {}
+		core_region& c_get_region() { return *this; }
+		void c_power() {}
+		void c_unload_cartridge() {}
+		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) {
 			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
-		},
-		.install_handler = []() -> void  { test_core.hide(); },
-		.uninstall_handler = []() -> void {},
-		.emulate = []() -> void {
+		}
+		void  c_install_handler() { hide(); }
+		void c_uninstall_handler() {}
+		void c_emulate() {
 			pflag = false;
 			redraw_screen();
 			framebuffer_info inf;
@@ -163,30 +174,31 @@ namespace
 			inf.offset_y = 0;
 			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, 60,1);
-		},
-		.runtosave = []() -> void {},
-		.get_pflag = []() -> bool { return pflag; },
-		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.port_types = port_types,
-		.draw_cover = []() -> framebuffer_raw& {
+		}
+		void c_runtosave() {}
+		bool c_get_pflag() { return pflag; }
+		void c_set_pflag(bool _pflag) { pflag = _pflag; }
+		framebuffer_raw& c_draw_cover() {
 			static framebuffer_raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
-		},
-		.get_core_shortname = []() -> std::string { return "test"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {},
-		.get_registers = []() -> const interface_device_reg* { return test_registers; },
-	}};
-
-	core_type type_test{{
-		.iname = "test", .hname = "test", .id = 0, .sysname = "Test",
-		.load_rom = [](core_romimage* img, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int { ecore_callbacks->set_reset_actions(-1, -1); return 0; },
-		.controllerconfig = _controllerconfig, .extensions = "test", .bios = NULL, .regions = test_regions,
-		.images = test_images, .settings = &test_settings, .core = &test_core,
-		.get_bus_map = []() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0, 0); }, 
-		.vma_list = []() -> std::list<core_vma_info> { return std::list<core_vma_info>();},
-		.srams = []() -> std::set<std::string> { return std::set<std::string>();}
-	}};
+		}
+		std::string c_get_core_shortname() { return "test"; }
+		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
+		const interface_device_reg* c_get_registers() { return test_registers; }
+		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,
+			uint64_t rtc_sec, uint64_t rtc_subsec)
+		{
+			ecore_callbacks->set_reset_actions(-1, -1);
+			return 0;
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
+		{
+			return test_controllerconfig(settings);
+		}
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0, 0); }
+		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
+		std::set<std::string> t_srams() { return std::set<std::string>(); }
+	} test_core;
 }

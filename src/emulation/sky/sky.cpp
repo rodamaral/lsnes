@@ -217,7 +217,7 @@ namespace sky
 			controller_info = &X2;
 		}
 	} psystem;
-	
+
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
 		port_index_triple x;
@@ -228,56 +228,87 @@ namespace sky
 		return x;
 	}
 
+	void controller_magic()
+	{
+		if(magic_flags & 1) {
+			X2.controllers[1] = &A8;
+			cstyle = 1;
+		} else if(magic_flags & 2) {
+			X2.controllers[1] = &B8;
+			cstyle = 2;
+		} else if(magic_flags & 4) {
+			X2.controllers[1] = &C8;
+			cstyle = 2;
+		} else {
+			cstyle = 0;
+		}
+	}
+
 	struct core_setting_group sky_settings;
-	
-	core_region world_region{{
-		.iname = "world", .hname = "World", .priority = 0, .handle = 0, .multi = false,
-		.framemagic = {656250, 18227}, .compatible_runs = {0, UINT_MAX}
-	}};
+
 	struct core_romimage_info skyzip{{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}};
 
-	extern struct core_core sky_core;
-	
-	struct core_core sky_core{{
-		.core_identifier = []() -> std::string { return "Sky"; },
-		.set_region = [](core_region& region) -> bool { return (&region == &world_region); },
-		.video_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(656250, 18227); },
-		.audio_rate = []() -> std::pair<uint32_t, uint32_t> { return std::make_pair(48000, 1); },
-		.save_sram = []() -> std::map<std::string, std::vector<char>> {
+	struct _sky_core : public core_core, public core_type, public core_region, public core_sysregion
+	{
+		_sky_core() : core_core({{{&psystem}}}), core_type({{
+			.iname = "sky",
+			.hname = "Sky",
+			.id = 3522,
+			.sysname = "Sky",
+			.extensions = "sky",
+			.bios = NULL,
+			.regions = {this},
+			.images = {&skyzip},
+			.settings = &sky_settings,
+			.core = this,
+		}}), core_region({{
+			.iname = "world",
+			.hname = "World",
+			.priority = 0,
+			.handle = 0,
+			.multi = false,
+			.framemagic = {656250, 18227},
+			.compatible_runs = {0}
+		}}), core_sysregion("sky", *this, *this) {}
+		std::string c_core_identifier() { return "Sky"; }
+		bool c_set_region(core_region& region) { return (&region == this); }
+		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(656250, 18227); }
+		std::pair<uint32_t, uint32_t> c_audio_rate() { return std::make_pair(48000, 1); }
+		std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) {
 			std::map<std::string, std::vector<char>> r;
 			std::vector<char> sram;
 			sram.resize(32);
 			memcpy(&sram[0], _gstate.sram, 32);
 			r["sram"] = sram;
 			return r;
-		},
-		.load_sram = [](std::map<std::string, std::vector<char>>& sram) -> void {
+		}
+		void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {
 			if(sram.count("sram") && sram["sram"].size() == 32)
 				memcpy(_gstate.sram, &sram["sram"][0], 32);
 			else
 				memset(_gstate.sram, 0, 32);
-		},
-		.serialize = [](std::vector<char>& out) -> void {
+		}
+		void c_serialize(std::vector<char>& out) {
 			auto wram = _gstate.as_ram();
 			out.resize(wram.second);
 			memcpy(&out[0], wram.first, wram.second);
-		},
-		.unserialize =[](const char* in, size_t insize) -> void {
+		}
+		void c_unserialize(const char* in, size_t insize) {
 			auto wram = _gstate.as_ram();
 			if(insize != wram.second)
 				throw std::runtime_error("Save is of wrong size");
 			memcpy(wram.first, in, wram.second);
 			handle_loadstate(_gstate);
-		},
-		.get_region = []() -> core_region& { return world_region; },
-		.power = []() -> void {},
-		.unload_cartridge = []() -> void {},
-		.get_scale_factors = [](uint32_t w, uint32_t h) -> std::pair<uint32_t, uint32_t> {
+		}
+		core_region& c_get_region() { return *this; }
+		void c_power() {}
+		void c_unload_cartridge() {}
+		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t w, uint32_t h) {
 			return std::make_pair(FB_WIDTH / w, FB_HEIGHT / h);
-		},
-		.install_handler = []() -> void { sky_core.hide(); },
-		.uninstall_handler = []() -> void {},
-		.emulate = []() -> void {
+		}
+		void c_install_handler() { hide(); }
+		void c_uninstall_handler() {}
+		void c_emulate() {
 			static unsigned count[4];
 			static unsigned tcount[4] = {5, 7, 8, 25};
 			uint16_t x = 0;
@@ -318,41 +349,21 @@ namespace sky
 			audioapi_submit_buffer(sbuf, samples, true, 48000);
 			for(unsigned i = 0; i < samples; i++)
 				information_dispatch::do_sample(sbuf[2 * i + 0], sbuf[2 * i + 1]);
-		},
-		.runtosave = []() -> void {},
-		.get_pflag = []() -> bool { return pflag; },
-		.set_pflag = [](bool _pflag) -> void { pflag = _pflag; },
-		.port_types = {&psystem},
-		.draw_cover = []() -> framebuffer_raw& {
+		}
+		void c_runtosave() {}
+		bool c_get_pflag() { return pflag; }
+		void c_set_pflag(bool _pflag) { pflag = _pflag; }
+		framebuffer_raw& c_draw_cover() {
 			static framebuffer_raw x(cover_fbinfo);
 			return x;
-		},
-		.get_core_shortname = []() -> std::string { return "sky"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {},
-		.get_registers = []() -> const interface_device_reg* { return sky_registers; },
-	}};
-
-	void controller_magic()
-	{
-		if(magic_flags & 1) {
-			X2.controllers[1] = &A8;
-			cstyle = 1;
-		} else if(magic_flags & 2) {
-			X2.controllers[1] = &B8;
-			cstyle = 2;
-		} else if(magic_flags & 4) {
-			X2.controllers[1] = &C8;
-			cstyle = 2;
-		} else {
-			cstyle = 0;
 		}
-	}
-
-	core_type skytype{{
-		.iname = "sky", .hname = "Sky", .id = 3522, .sysname = "Sky",
-		.load_rom = [](core_romimage* images, std::map<std::string, std::string>& settings, uint64_t rtc_sec,
-			uint64_t rtc_subsec) -> int {
+		std::string c_get_core_shortname() { return "sky"; }
+		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
+		const interface_device_reg* c_get_registers() { return sky_registers; }
+		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,
+			uint64_t rtc_sec, uint64_t rtc_subsec)
+		{
 			controller_magic();
 			const unsigned char* _filename = images[0].data;
 			size_t size = images[0].size;
@@ -366,8 +377,8 @@ namespace sky
 			rom_boot_vector(_gstate);
 			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
-		},
-		.controllerconfig = [](std::map<std::string, std::string>& settings) -> controller_set
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
 		{
 			controller_magic();
 			controller_set r;
@@ -378,13 +389,11 @@ namespace sky
 			r.portindex.logical_map.push_back(std::make_pair(0, 1));
 			r.portindex.pcid_map.push_back(std::make_pair(0, 1));
 			return r;
-		},
-		.extensions = "sky", .bios = NULL, .regions = {&world_region}, .images = {&skyzip},
-		.settings = &sky_settings, .core = &sky_core,
-		.get_bus_map = []() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0, 0); },
-		.vma_list = []() -> std::list<core_vma_info> {
+		}
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0, 0); }
+		std::list<core_vma_info> t_vma_list()
+		{
 			std::list<core_vma_info> r;
-
 			core_vma_info ram;
 			ram.name = "RAM";
 			ram.backing_ram = _gstate.as_ram().first;
@@ -394,14 +403,13 @@ namespace sky
 			ram.endian = 0;
 			ram.iospace_rw = NULL;
 			r.push_back(ram);
-
 			return r;
-		},
-		.srams = []() -> std::set<std::string> {
+		}
+		std::set<std::string> t_srams()
+		{
 			std::set<std::string> r;
 			r.insert("sram");
 			return r;
 		}
-	}};
-	core_sysregion X24("sky", skytype, world_region);
+	} sky_core;
 }

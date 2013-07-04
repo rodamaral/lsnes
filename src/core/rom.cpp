@@ -59,73 +59,80 @@ namespace
 
 	core_setting_group null_settings;
 
-	core_region null_region{{"null", "(null)", 0, 0, false, {1, 60}, {0}}};
-	core_core core_null{{
-		.core_identifier = []() -> std::string { return "null core"; },
-		.set_region = [](core_region& reg) -> bool { return true; },
-		.video_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(60, 1); },
-		.audio_rate = []() -> std::pair<unsigned, unsigned> { return std::make_pair(48000, 1); },
-		.save_sram = []() -> std::map<std::string, std::vector<char>> {
+	struct interface_device_reg null_registers[] = {
+		{NULL, NULL, NULL}
+	};
+
+	struct _core_null : public core_core, public core_type, public core_region, public core_sysregion
+	{
+		_core_null() : core_core({{{}}}), core_type({{
+			.iname = "null",
+			.hname = "(null)",
+			.id = 9999,
+			.sysname = "System",
+			.extensions = "",
+			.bios = NULL,
+			.regions = {this},
+			.images = {},
+			.settings = &null_settings,
+			.core = this,
+		}}), core_region({{"null", "(null)", 0, 0, false, {1, 60}, {0}}}),
+		core_sysregion("null", *this, *this) {}
+		std::string c_core_identifier() { return "null core"; }
+		bool c_set_region(core_region& reg) { return true; }
+		std::pair<unsigned, unsigned> c_video_rate() { return std::make_pair(60, 1); }
+		std::pair<unsigned, unsigned> c_audio_rate() { return std::make_pair(48000, 1); }
+		std::map<std::string, std::vector<char>> c_save_sram() throw (std::bad_alloc) {
 			std::map<std::string, std::vector<char>> x;
 			return x;
-		},
-		.load_sram = [](std::map<std::string, std::vector<char>>& sram) -> void {},
-		.serialize = [](std::vector<char>& out) -> void { out.clear(); },
-		.unserialize = [](const char* in, size_t insize) -> void {},
-		.get_region = []() -> core_region& { return null_region; },
-		.power = []() -> void {},
-		.unload_cartridge = []() -> void {},
-		.get_scale_factors = [](uint32_t width, uint32_t height) -> std::pair<uint32_t, uint32_t> {
+		}
+		void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw (std::bad_alloc) {}
+		void c_serialize(std::vector<char>& out) { out.clear(); }
+		void c_unserialize(const char* in, size_t insize) {}
+		core_region& c_get_region() { return *this; }
+		void c_power() {}
+		void c_unload_cartridge() {}
+		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) {
 			return std::make_pair(1, 1);
-		},
-		.install_handler = []() -> void {},
-		.uninstall_handler = []() -> void {},
-		.emulate = []() -> void {},
-		.runtosave = []() -> void {},
-		.get_pflag = []() -> bool { return false; },
-		.set_pflag = [](bool pflag) -> void {},
-		.port_types = {},
-		.draw_cover = []() -> framebuffer_raw& {
+		}
+		void c_install_handler() {}
+		void c_uninstall_handler() {}
+		void c_emulate() {}
+		void c_runtosave() {}
+		bool c_get_pflag() { return false; }
+		void c_set_pflag(bool pflag) {}
+		framebuffer_raw& c_draw_cover() {
 			static framebuffer_raw x(null_fbinfo);
 			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
 				null_cover_fbmem[i] = 0x0000;
 			std::string message = "NO ROM LOADED";
 			cover_render_string(null_cover_fbmem, 204, 220, message, 0xFFFF, 0x0000, 512, 448, 1024, 2);
 			return x;
-		},
-		.get_core_shortname = []() -> std::string { return "null"; },
-		.pre_emulate_frame = [](controller_frame& cf) -> void {},
-		.execute_action = [](unsigned id, const std::vector<interface_action_paramval>& p) -> void {}
-	}};
-
-	core_type type_null{{
-		"null", "(null)", 9999, "System",
-		[](core_romimage* img, std::map<std::string, std::string>& settings,
-			uint64_t secs, uint64_t subsecs) -> int {
+		}
+		std::string c_get_core_shortname() { return "null"; }
+		void c_pre_emulate_frame(controller_frame& cf) {}
+		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
+		const interface_device_reg* c_get_registers() { return null_registers; }
+		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
+			uint64_t secs, uint64_t subsecs)
+		{
 			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
-		},
-		[](std::map<std::string, std::string>& settings) -> controller_set {
+		}
+		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
+		{
 			controller_set x;
 			x.ports.push_back(&get_default_system_port_type());
 			x.portindex.indices.push_back(sync_triple);
 			return x;
-		},
-		"", NULL, {&null_region}, {}, &null_settings, &core_null,
-		[]() -> std::pair<uint64_t, uint64_t> { return std::make_pair(0ULL, 0ULL); },
-		[]() -> std::list<core_vma_info> {
-			std::list<core_vma_info> x;
-			return x;
-		},
-		[]() -> std::set<std::string> {
-			std::set<std::string> x;
-			return x;
 		}
-	}};
-	core_sysregion sysregion_null("null", type_null, null_region);
+		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0ULL, 0ULL); }
+		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
+		std::set<std::string> t_srams() { return std::set<std::string>(); }
+	} core_null;
 
-	core_type* current_rom_type = &type_null;
-	core_region* current_region = &null_region;
+	core_type* current_rom_type = &core_null;
+	core_region* current_region = &core_null;
 
 	core_type* find_core_by_extension(const std::string& ext, const std::string& tmpprefer)
 	{
@@ -274,8 +281,8 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw()
 
 loaded_rom::loaded_rom() throw()
 {
-	rtype = &type_null;
-	region = orig_region = &null_region;
+	rtype = &core_null;
+	region = orig_region = &core_null;
 }
 
 loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad_alloc, std::runtime_error)
@@ -432,8 +439,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	throw(std::bad_alloc, std::runtime_error)
 {
 	core_core* old_core = current_rom_type->get_core();
-	current_rom_type = &type_null;
-	if(!orig_region && rtype != &type_null)
+	current_rom_type = &core_null;
+	if(!orig_region && rtype != &core_null)
 		orig_region = &rtype->get_preferred_region();
 	if(!region)
 		region = orig_region;
