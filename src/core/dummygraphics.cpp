@@ -47,7 +47,7 @@ namespace
 		std::cerr << "Exiting on fatal error." << std::endl;
 	}
 
-	void dummy_action_enabled(unsigned id, bool enabled)
+	void dummy_action_updated()
 	{
 	}
 
@@ -62,7 +62,7 @@ namespace
 		.modal_message = dummy_modal_message,
 		.fatal_error = dummy_fatal_error,
 		.name = dummy_name,
-		.action_enabled = dummy_action_enabled,
+		.action_updated = dummy_action_updated,
 	};
 
 }
@@ -118,8 +118,8 @@ const char* graphics_driver_name()
 	return driver.name();
 }
 
-void graphics_driver_action_enabled(unsigned id, bool enabled)
+void graphics_driver_action_updated()
 {
-	driver.action_enabled(id, enabled);
+	driver.action_updated();
 }
 

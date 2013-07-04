@@ -39,6 +39,8 @@ struct interface_action_param
 	//bool: Boolean.
 	//int:<val>,<val>: Integer in specified range.
 	//string[:<regex>]: String with regex.
+	//enum:<json-array>: Enumeration.
+	//toggle: Not a real parameter, boolean toggle, must be the first.
 	const char* model;
 };
 
@@ -65,6 +67,7 @@ struct interface_action
 	std::string symbol;
 	std::list<interface_action_param> params;
 	struct core_core& core;
+	bool is_toggle() const;
 };
 
 
@@ -313,6 +316,7 @@ struct core_core
 	std::string get_core_shortname();
 	void pre_emulate_frame(controller_frame& cf);
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
+	unsigned action_flags(unsigned id);
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
@@ -445,6 +449,13 @@ protected:
  * Get set of interface device registers.
  */
 	virtual const struct interface_device_reg* c_get_registers() = 0;
+/**
+ * Get action flags on specified action.
+ *
+ * Bit 0: Enabled.
+ * Bit 1: Selected.
+ */
+	virtual unsigned c_action_flags(unsigned id) = 0;
 private:
 	std::vector<port_type*> port_types;
 	bool hidden;
@@ -510,6 +521,7 @@ public:
 	{
 		return core->execute_action(id, p);
 	}
+	unsigned action_flags(unsigned id) { return core->action_flags(id); }
 	bool is_hidden() { return core->is_hidden(); }
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }

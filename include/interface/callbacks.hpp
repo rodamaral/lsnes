@@ -46,9 +46,9 @@ public:
  */
 	virtual void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d) = 0;
 /**
- * Set state of action.
+ * Notify that action states have been updated.
  */
-	virtual void set_action_state(unsigned id, bool enabled) = 0;
+	virtual void action_state_updated() = 0;
 /**
  * Set reset actions.
  */

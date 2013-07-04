@@ -343,6 +343,10 @@ Set pause on end flag.
 
 Clear pause on end flag.
 
+5.3.30 action <action> [<parameters>]
+
+Run specified core action.
+
 5.4 Save jukebox 
 
 5.4.1 cycle-jukebox-backward
@@ -362,8 +366,6 @@ Do load from jukebox (current mode).
 Do state save to jukebox.
 
 5.5 Lua 
-
-Only available if lua support is compiled in.
 
 5.5.1 evaluate-lua <luacode>
 
@@ -1555,6 +1557,20 @@ type.
 7.10.23 memory.read_expr(string expr)
 
 Evaluate specified watch expression and return result
+
+7.10.24 memory.action(string action, [<params>])
+
+Run core action. The different models expect parameters as:
+
+• string: String
+
+• numeric: numeric
+
+• enumeration: String
+
+• boolean: String
+
+• toggle: None.
 
 7.11 Table memory2
 

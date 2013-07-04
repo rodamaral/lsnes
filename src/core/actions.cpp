@@ -21,8 +21,21 @@ namespace
 					act = i;
 					break;
 				}
+			if(!act) {
+				messages << "No such action." << std::endl;
+				return;
+			}
+			if(!(our_rom->rtype->action_flags(act->id) & 1)) {
+				messages << "Action not enabled." << std::endl;
+				return;
+			}
 			std::vector<interface_action_paramval> params;
 			for(auto i : act->params) {
+				if(regex_match("toggle", i.model)) {
+					interface_action_paramval pv;
+					params.push_back(pv);
+					continue;
+				}
 				if(args == "") {
 					messages << "Action needs more parameters." << std::endl;
 					return;
@@ -30,6 +43,7 @@ namespace
 				std::string p;
 				extract_token(args, p, " \t");
 				regex_results r;
+				interface_action_paramval pv;
 				if(r = regex("string(:(.*))?", i.model)) {
 					try {
 						if(r[2] != "" && !regex_match(r[2], p)) {
@@ -42,9 +56,7 @@ namespace
 							<< std::endl;
 						return;
 					}
-					interface_action_paramval pv;
 					pv.s = p;
-					params.push_back(pv);
 				} else if(r = regex("int:([0-9]+),([0-9]+)", i.model)) {
 					int64_t low, high, v;
 					try {
@@ -65,23 +77,47 @@ namespace
 						messages << "Parameter out of limits." << std::endl;
 						return;
 					}
-					interface_action_paramval pv;
 					pv.i = v;
-					params.push_back(pv);
-				} else if(i.model == "bool") {
+				} else if(r = regex("enum:(.*)", i.model)) {
+					try {
+						JSON::node e(r[1]);
+						unsigned num = 0;
+						for(auto i : e) {
+							std::string n;
+							if(i.type() == JSON::string)
+								n = i.as_string8();
+							else if(i.type() == JSON::array)
+								n = i.index(0).as_string8();
+							else
+								throw std::runtime_error("Choice not array nor "
+									"string");
+							if(n == p)
+								goto out;
+							num++;
+						}
+						messages << "Invalid choice for enumeration." << std::endl;
+						return;
+out:
+						pv.i = num;
+					} catch(std::exception& e) {
+						messages << "JSON parse error parsing " << "model: "
+							<< e.what() << std::endl;
+						return;
+					}
+				} else if(regex_match("bool", i.model)) {
 					int r = string_to_bool(p);
 					if(r < 0) {
 						messages << "Bad value for boolean parameter." << std::endl;
 						return;
 					}
-					interface_action_paramval pv;
 					pv.b = (r > 0);
-					params.push_back(pv);
+				} else if(regex_match("toggle", i.model)) {
 				} else {
 					messages << "Internal error: Unknown parameter model '" << i.model << "'."
 						<< std::endl;
 					return;
 				}
+				params.push_back(pv);
 			}
 			if(args != "") {
 				messages << "Excess parameters for action." << std::endl;

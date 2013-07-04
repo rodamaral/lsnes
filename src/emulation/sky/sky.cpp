@@ -411,5 +411,6 @@ namespace sky
 			r.insert("sram");
 			return r;
 		}
+		unsigned c_action_flags(unsigned id) { return 0; }
 	} sky_core;
 }

@@ -421,6 +421,7 @@ namespace
 			}
 		}
 		const interface_device_reg* c_get_registers() { return gb_registers; }
+		unsigned c_action_flags(unsigned id) { return (id == 0) ? 1 : 0; }
 	} gambatte_core;
 	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
 

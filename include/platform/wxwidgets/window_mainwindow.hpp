@@ -44,7 +44,7 @@ public:
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
 	void update_statusbar(const std::map<std::string, std::u32string>& vars);
-	void action_enabled(unsigned id, bool enabled);
+	void action_updated();
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:

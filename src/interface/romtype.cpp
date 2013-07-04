@@ -70,6 +70,14 @@ interface_action::~interface_action()
 		symbol);
 }
 
+bool interface_action::is_toggle() const
+{
+	for(auto i : params)
+		if(!strcmp(i.model, "toggle"))
+			return true;
+	return false;
+}
+
 core_region::core_region(const core_region_params& params)
 {
 	iname = params.iname;
@@ -484,6 +492,11 @@ void core_core::execute_action(unsigned id, const std::vector<interface_action_p
 const struct interface_device_reg* core_core::get_registers()
 {
 	return c_get_registers();
+}
+
+unsigned core_core::action_flags(unsigned id)
+{
+	return c_action_flags(id);
 }
 
 void core_core::do_register_action(const std::string& key, interface_action& act)

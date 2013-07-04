@@ -129,6 +129,7 @@ namespace
 		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0ULL, 0ULL); }
 		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
 		std::set<std::string> t_srams() { return std::set<std::string>(); }
+		unsigned c_action_flags(unsigned id) { return 0; }
 	} core_null;
 
 	core_type* current_rom_type = &core_null;

@@ -185,7 +185,11 @@ namespace
 		}
 		std::string c_get_core_shortname() { return "test"; }
 		void c_pre_emulate_frame(controller_frame& cf) {}
-		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p) {}
+		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
+		{
+			if(id == 0)
+				messages << "ID #0, choice: " << p[0].i << std::endl;
+		}
 		const interface_device_reg* c_get_registers() { return test_registers; }
 		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,
 			uint64_t rtc_sec, uint64_t rtc_subsec)
@@ -200,5 +204,8 @@ namespace
 		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0, 0); }
 		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
 		std::set<std::string> t_srams() { return std::set<std::string>(); }
+		unsigned c_action_flags(unsigned id) { return 1; }
 	} test_core;
+	interface_action act_test1(test_core, 0, "xyzzy", "xyzzy",
+		{{"Magic", "enum:[\"foo\",\"bar\",\"baz\",[\"qux\",\"zot\"]]"}});
 }

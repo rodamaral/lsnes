@@ -58,7 +58,7 @@ struct _graphics_driver
 	bool (*modal_message)(const std::string& text, bool confirm);
 	void (*fatal_error)();
 	const char* (*name)();
-	void (*action_enabled)(unsigned id, bool enabled);
+	void (*action_updated)();
 };
 
 struct graphics_driver
@@ -114,7 +114,7 @@ const char* graphics_driver_name();
 /**
  * Enable/Disable an action.
  */
-void graphics_driver_action_enabled(unsigned id, bool enabled);
+void graphics_driver_action_updated();
 
 
 /**

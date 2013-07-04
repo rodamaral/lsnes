@@ -534,9 +534,9 @@ public:
 		information_dispatch::do_frame(screen, fps_n, fps_d);
 	}
 
-	void set_action_state(unsigned id, bool enabled)
+	void action_state_updated()
 	{
-		graphics_driver_action_enabled(id, enabled);
+		graphics_driver_action_updated();
 	}
 
 	void set_reset_actions(signed soft, signed hard)

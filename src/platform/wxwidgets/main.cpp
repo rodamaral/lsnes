@@ -609,9 +609,9 @@ namespace
 			}
 		},
 		.name = []() -> const char* { return "wxwidgets graphics plugin"; },
-		.action_enabled = [](unsigned id, bool enabled)
+		.action_updated = []()
 		{
-			runuifun([id, enabled]() -> void { main_window->action_enabled(id, enabled); });
+			runuifun([]() -> void { main_window->action_updated(); });
 		}
 	};
 	struct graphics_driver _drv(drv);

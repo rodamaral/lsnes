@@ -4,6 +4,8 @@
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "library/zip.hpp"
+#include "library/json.hpp"
+#include <stdexcept>
 
 #include "platform/wxwidgets/platform.hpp"
 
@@ -69,10 +71,38 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 			tmp2->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 				wxCommandEventHandler(wxeditor_action::on_change), NULL, this);
 			top_s->Add(tmp1, 0, wxGROW);
-		} else if(i.model == "bool") {
+		} else if(r = regex("enum:(.*)", i.model)) {
+			std::vector<wxString> choices;
+			try {
+				JSON::node e(r[1]);
+				for(auto i : e) {
+					if(i.type() == JSON::string)
+						choices.push_back(towxstring(i.as_string8()));
+					else if(i.type() == JSON::array)
+						choices.push_back(towxstring(i.index(1).as_string8()));
+					else
+						throw std::runtime_error("Choice not array nor string");
+				}
+			} catch(std::exception& e) {
+				show_message_ok(this, "Internal error", (stringfmt() << "JSON parse error parsing "
+					<< "model: " << e.what()).str(), wxICON_EXCLAMATION);
+				return;
+			}
+			wxBoxSizer* tmp1 = new wxBoxSizer(wxHORIZONTAL);
+			tmp1->Add(new wxStaticText(this, wxID_ANY, towxstring(i.name)), 0, wxGROW);
+			wxComboBox* tmp2 = new wxComboBox(this, wxID_ANY, choices[0], wxDefaultPosition,
+				wxDefaultSize, choices.size(), &choices[0], wxCB_READONLY);
+			controls.push_back(tmp2);
+			tmp1->Add(tmp2, 1, wxGROW);
+			tmp2->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+				wxCommandEventHandler(wxeditor_action::on_change), NULL, this);
+			top_s->Add(tmp1, 0, wxGROW);
+		} else if(regex_match("bool", i.model)) {
 			wxCheckBox* tmp2 = new wxCheckBox(this, wxID_ANY, towxstring(i.name));
 			controls.push_back(tmp2);
 			top_s->Add(tmp2, 0, wxGROW);
+		} else if(regex_match("toggle", i.model)) {
+			//Nothing for toggles.
 		} else {
 			show_message_ok(this, "Internal error", (stringfmt() << "Unknown parameter model in '"
 				<< i.model << "'.").str(), wxICON_EXCLAMATION);
@@ -95,13 +125,13 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 	on_change(d);
 }
 
-
 void wxeditor_action::on_ok(wxCommandEvent& e)
 {
 	std::list<interface_action_param>::iterator i;
 	std::list<wxWindow*>::iterator j;
 	for(i = params.begin(), j = controls.begin(); i != params.end() && j != controls.end(); i++, j++) {
 		regex_results r;
+		interface_action_paramval pv;
 		if(r = regex("string(:(.*))?", i->model)) {
 			std::string p;
 			try {
@@ -117,9 +147,7 @@ void wxeditor_action::on_ok(wxCommandEvent& e)
 					<< i->model << "'.").str(), wxICON_EXCLAMATION);
 				return;
 			}
-			interface_action_paramval pv;
 			pv.s = p;
-			results.push_back(pv);
 		} else if(r = regex("int:([0-9]+),([0-9]+)", i->model)) {
 			int64_t low, high, v;
 			try {
@@ -137,19 +165,26 @@ void wxeditor_action::on_ok(wxCommandEvent& e)
 					wxICON_EXCLAMATION);
 				return;
 			}
-			interface_action_paramval pv;
 			pv.i = v;
-			results.push_back(pv);
-		} else if(i->model == "bool") {
-			bool b = reinterpret_cast<wxCheckBox*>(*j)->GetValue();
-			interface_action_paramval pv;
-			pv.b = b;
-			results.push_back(pv);
+		} else if(r = regex("enum:(.*)", i->model)) {
+			int v = reinterpret_cast<wxComboBox*>(*j)->GetSelection();
+			if(v == wxNOT_FOUND) {
+				show_message_ok(this, "Error in parameters",
+					(stringfmt() << "No selection for '" << i->name << "'.").str(),
+					wxICON_EXCLAMATION);
+				return;
+			}
+			pv.i = v;
+		} else if(regex_match("bool", i->model)) {
+			pv.b = reinterpret_cast<wxCheckBox*>(*j)->GetValue();
+		} else if(regex_match("toggle", i->model)) {
+			//Empty.
 		} else {
 			show_message_ok(this, "Internal error", (stringfmt() << "Unknown parameter model in '"
 				<< i->model << "'.").str(), wxICON_EXCLAMATION);
 			return;
 		}		
+		results.push_back(pv);
 	}
 	EndModal(wxID_OK);
 }
@@ -185,7 +220,11 @@ void wxeditor_action::on_change(wxCommandEvent& e)
 			v = reinterpret_cast<wxSpinCtrl*>(*j)->GetValue();
 			if(v < low || v > high)
 				goto bad;
-		} else if(i->model == "bool") {
+		} else if(r = regex("enum:(.*)", i->model)) {
+			if(reinterpret_cast<wxComboBox*>(*j)->GetSelection() == wxNOT_FOUND)
+				goto bad;
+		} else if(regex_match("bool", i->model)) {
+		} else if(regex_match("toggle", i->model)) {
 		} else {
 			goto bad;
 		}		
@@ -203,6 +242,12 @@ std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, co
 	//Empty special case.
 	if(params.empty())
 		return std::vector<interface_action_paramval>();
+	//Another special case.
+	if(params.size() == 1 && params.begin()->model == std::string("toggle")) {
+		std::vector<interface_action_paramval> x;
+		x.push_back(interface_action_paramval());
+		return x;
+	}
 	modal_pause_holder hld;	
 	try {
 		wxeditor_action* f = new wxeditor_action(parent, label, params);

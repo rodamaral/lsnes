@@ -730,6 +730,14 @@ clear-pause-on-end
 Clear pause on end flag.
 \end_layout
 
+\begin_layout Subsubsection
+action <action> [<parameters>]
+\end_layout
+
+\begin_layout Standard
+Run specified core action.
+\end_layout
+
 \begin_layout Subsection
 Save jukebox 
 \end_layout
@@ -768,10 +776,6 @@ Do state save to jukebox.
 
 \begin_layout Subsection
 Lua 
-\end_layout
-
-\begin_layout Standard
-Only available if lua support is compiled in.
 \end_layout
 
 \begin_layout Subsubsection
@@ -3040,6 +3044,35 @@ memory.read_expr(string expr)
 
 \begin_layout Standard
 Evaluate specified watch expression and return result
+\end_layout
+
+\begin_layout Subsubsection
+memory.action(string action, [<params>])
+\end_layout
+
+\begin_layout Standard
+Run core action.
+ The different models expect parameters as:
+\end_layout
+
+\begin_layout Itemize
+string: String
+\end_layout
+
+\begin_layout Itemize
+numeric: numeric
+\end_layout
+
+\begin_layout Itemize
+enumeration: String
+\end_layout
+
+\begin_layout Itemize
+boolean: String
+\end_layout
+
+\begin_layout Itemize
+toggle: None.
 \end_layout
 
 \begin_layout Subsection

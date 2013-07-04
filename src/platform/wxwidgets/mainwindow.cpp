@@ -146,29 +146,69 @@ namespace
 	bool main_window_dirty;
 	thread_class* emulation_thread;
 
+	std::pair<std::string, std::string> lsplit(std::string l)
+	{
+		for(unsigned i = 0; i < l.length() - 3; i++)
+			if((uint8_t)l[i] == 0xE2 && (uint8_t)l[i + 1] == 0x80 && (uint8_t)l[i + 2] == 0xA3)
+				return std::make_pair(l.substr(0, i), l.substr(i + 3));
+		return std::make_pair("", l);
+	}
+	
 	class system_menu : public wxMenu
 	{
 	public:
 		system_menu(wxWindow* win);
 		~system_menu();
 		void on_select(wxCommandEvent& e);
-		void update();
+		void update(bool light);
 	private:
 		wxWindow* pwin;
 		void insert_pass(int id, const std::string& label);
-		void insert_act(unsigned id, const std::string& label, bool dots);
+		void insert_act(unsigned id, const std::string& label, bool dots, bool check);
+		wxMenu* lookup_menu(const std::string& key);
 		wxMenuItem* sep;
-		std::map<int, unsigned> acts_map;
-		std::set<wxMenuItem*> ents;
+		std::map<int, unsigned> action_by_id;
+		std::map<unsigned, wxMenuItem*> item_by_action;
+		std::map<wxMenuItem*, wxMenu*> menu_by_item;
+		std::map<std::string, wxMenu*> submenu_by_name;
+		std::map<std::string, wxMenuItem*> submenui_by_name;
+		std::set<unsigned> toggles;
 		int next_id;
 	};
 
-	void system_menu::insert_act(unsigned id, const std::string& label, bool dots)
+	wxMenu* system_menu::lookup_menu(const std::string& key)
+	{
+		if(key == "")
+			return this;
+		if(submenu_by_name.count(key))
+			return submenu_by_name[key];
+		//Not found, create.
+		if(!sep)
+			sep = AppendSeparator();
+		auto p = lsplit(key);
+		wxMenu* into = lookup_menu(p.first);
+		submenu_by_name[key] = new wxMenu();
+		submenui_by_name[key] = into->AppendSubMenu(submenu_by_name[key], towxstring(p.second));
+		menu_by_item[submenui_by_name[key]] = into;
+		return submenu_by_name[key];
+	}
+
+	void system_menu::insert_act(unsigned id, const std::string& label, bool dots, bool check)
 	{
 		if(!sep)
 			sep = AppendSeparator();
-		acts_map[next_id] = id;
-		ents.insert(Append(next_id, towxstring(label + (dots ? "..." : ""))));
+
+		auto p = lsplit(label);
+		wxMenu* into = lookup_menu(p.first);
+
+		action_by_id[next_id] = id;
+		std::string use_label = p.second + (dots ? "..." : "");
+		if(check) {
+			item_by_action[id] = into->AppendCheckItem(next_id, towxstring(use_label));
+			toggles.insert(id);
+		} else
+			item_by_action[id] = into->Append(next_id, towxstring(use_label));
+		menu_by_item[item_by_action[id]] = into;
 		pwin->Connect(next_id++, wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(system_menu::on_select), NULL, this);
 	}
@@ -196,9 +236,9 @@ namespace
 
 	void system_menu::on_select(wxCommandEvent& e)
 	{
-		if(!acts_map.count(e.GetId()))
+		if(!action_by_id.count(e.GetId()))
 			return;
-		unsigned act_id = acts_map[e.GetId()];
+		unsigned act_id = action_by_id[e.GetId()];
 		const interface_action* act = NULL;
 		for(auto i : our_rom->rtype->get_actions())
 			if(i->id == act_id) {
@@ -216,20 +256,32 @@ namespace
 		}
 	}
 
-	void system_menu::update()
+	void system_menu::update(bool light)
 	{
-		next_id = wxID_ACTIONS_FIRST;
-		if(sep) {
-			Destroy(sep);
-			sep = NULL;
+		if(!light) {
+			next_id = wxID_ACTIONS_FIRST;
+			if(sep) {
+				Destroy(sep);
+				sep = NULL;
+			}
+			for(auto i = item_by_action.begin(); i != item_by_action.end(); i++)
+				menu_by_item[i->second]->Destroy(i->second);
+			for(auto i = submenui_by_name.rbegin(); i != submenui_by_name.rend(); i++)
+				menu_by_item[i->second]->Destroy(i->second);
+			action_by_id.clear();
+			item_by_action.clear();
+			menu_by_item.clear();
+			submenu_by_name.clear();
+			submenui_by_name.clear();
+			toggles.clear();
+
+			for(auto i : our_rom->rtype->get_actions())
+				insert_act(i->id, i->title, !i->params.empty(), i->is_toggle());
 		}
-		for(auto i : ents)
-			Destroy(i);
-		acts_map.clear();
-		ents.clear();
-		for(auto i : our_rom->rtype->get_actions()) {
-			insert_act(i->id, i->title, !i->params.empty());
-		}
+		for(auto i : item_by_action)
+			i.second->Enable(our_rom->rtype->action_flags(i.first) & 1);
+		for(auto i : toggles)
+			item_by_action[i]->Check(our_rom->rtype->action_flags(i) & 2);
 	}
 
 	std::string munge_name(const std::string& orig)
@@ -1047,7 +1099,7 @@ void wxwin_mainwindow::refresh_title() throw()
 	menu_enable(wxID_LOAD_ROM_IMAGE, !p);
 	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
 	menu_enable(wxID_CLOSE_ROM, p == NULL);
-	reinterpret_cast<system_menu*>(sysmenu)->update();
+	reinterpret_cast<system_menu*>(sysmenu)->update(false);
 	menubar->SetMenuLabel(1, towxstring(our_rom->rtype->get_systemmenu_name()));
 }
 
@@ -1418,7 +1470,7 @@ void wxwin_mainwindow::do_load_rom_image()
 	platform::queue("reload-rom " + filename);
 }
 
-void wxwin_mainwindow::action_enabled(unsigned id, bool enabled)
+void wxwin_mainwindow::action_updated()
 {
-	//TODO.
+	reinterpret_cast<system_menu*>(sysmenu)->update(true);
 }

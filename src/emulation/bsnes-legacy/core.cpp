@@ -247,9 +247,8 @@ namespace
 			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
 			have_saved_this_frame = false;
 			do_reset_flag = -1;
-			ecore_callbacks->set_action_state(1, support_hreset);
-			ecore_callbacks->set_action_state(3, support_hreset);
 			ecore_callbacks->set_reset_actions(0, support_hreset ? 1 : -1);
+			ecore_callbacks->action_state_updated();
 		}
 		return r ? 0 : -1;
 	}
@@ -802,8 +801,24 @@ again2:
 				do_hreset_flag = true;
 				break;
 			}
+			if(id >= 4 && id <= 23) {
+				unsigned y = (id - 4) / 4;
+				SNES::ppu.layer_enabled[y][id % 4] = !SNES::ppu.layer_enabled[y][id % 4];
+				ecore_callbacks->action_state_updated();
+			}
 		}
 		const interface_device_reg* c_get_registers() { return snes_registers; }
+		unsigned c_action_flags(unsigned id)
+		{
+			if(id == 0 || id == 2)
+				return 1;
+			if(id == 1 || id == 3)
+				return support_hreset ? 1 : 0;
+			if(id >= 4 && id <= 23) {
+				unsigned y = (id - 4) / 4;
+				return SNES::ppu.layer_enabled[y][id % 4] ? 3 : 1;
+			}
+		}
 	} bsnes_core;
 
 	interface_action act_reset(bsnes_core, 0, "Soft reset", "reset", {});
@@ -813,6 +828,18 @@ again2:
 	interface_action act_dhreset(bsnes_core, 3, "Delayed hard reset", "delayhardreset",
 		{{"Delay","int:0,99999999"}});
 #endif
+	interface_action act_bg1pri0(bsnes_core, 4, "Layers‣BG1 Priority 0", "bg1pri0", {{"", "toggle"}});
+	interface_action act_bg1pri1(bsnes_core, 5, "Layers‣BG1 Priority 1", "bg1pri1", {{"", "toggle"}});
+	interface_action act_bg2pri0(bsnes_core, 8, "Layers‣BG2 Priority 0", "bg2pri0", {{"", "toggle"}});
+	interface_action act_bg2pri1(bsnes_core, 9, "Layers‣BG2 Priority 1", "bg2pri1", {{"", "toggle"}});
+	interface_action act_bg3pri0(bsnes_core, 12, "Layers‣BG3 Priority 0", "bg3pri0", {{"", "toggle"}});
+	interface_action act_bg3pri1(bsnes_core, 13, "Layers‣BG3 Priority 1", "bg3pri1", {{"", "toggle"}});
+	interface_action act_bg4pri0(bsnes_core, 16, "Layers‣BG4 Priority 0", "bg4pri0", {{"", "toggle"}});
+	interface_action act_bg4pri1(bsnes_core, 17, "Layers‣BG4 Priority 1", "bg4pri1", {{"", "toggle"}});
+	interface_action act_oampri0(bsnes_core, 20, "Layers‣Sprite Priority 0", "oampri0", {{"", "toggle"}});
+	interface_action act_oampri1(bsnes_core, 21, "Layers‣Sprite Priority 1", "oampri1", {{"", "toggle"}});
+	interface_action act_oampri2(bsnes_core, 22, "Layers‣Sprite Priority 2", "oampri2", {{"", "toggle"}});
+	interface_action act_oampri3(bsnes_core, 23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}});
 
 	struct _type_snes : public core_type
 	{
