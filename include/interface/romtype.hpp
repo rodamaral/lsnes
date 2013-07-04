@@ -341,6 +341,7 @@ struct core_core
 	std::set<const interface_action*> get_actions();
 	_param_register_proxy param_register_proxy;
 	const interface_device_reg* get_registers();
+	int reset_action(bool hard);
 protected:
 /**
  * Get the name of the core.
@@ -456,6 +457,13 @@ protected:
  * Bit 1: Selected.
  */
 	virtual unsigned c_action_flags(unsigned id) = 0;
+/**
+ * Get reset action.
+ *
+ * Parameter hard: If true, get info for hard reset instead of soft.
+ * Retunrs: The ID of action. -1 if not supported.
+ */
+	virtual int c_reset_action(bool hard) = 0;
 private:
 	std::vector<port_type*> port_types;
 	bool hidden;
@@ -526,6 +534,7 @@ public:
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }
+	int reset_action(bool hard) { return core->reset_action(hard); }
 protected:
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.

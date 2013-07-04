@@ -520,6 +520,11 @@ std::set<const interface_action*> core_core::get_actions()
 	return r;
 }
 
+int core_core::reset_action(bool hard)
+{
+	return c_reset_action(hard);
+}
+
 emucore_callbacks::~emucore_callbacks() throw()
 {
 }

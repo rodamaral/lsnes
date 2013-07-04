@@ -116,7 +116,6 @@ namespace
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
-			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
@@ -130,6 +129,7 @@ namespace
 		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
 		std::set<std::string> t_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 0; }
+		int c_reset_action(bool hard) { return -1; }
 	} core_null;
 
 	core_type* current_rom_type = &core_null;

@@ -247,7 +247,6 @@ namespace
 			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
 			have_saved_this_frame = false;
 			do_reset_flag = -1;
-			ecore_callbacks->set_reset_actions(0, support_hreset ? 1 : -1);
 			ecore_callbacks->action_state_updated();
 		}
 		return r ? 0 : -1;
@@ -818,6 +817,10 @@ again2:
 				unsigned y = (id - 4) / 4;
 				return SNES::ppu.layer_enabled[y][id % 4] ? 3 : 1;
 			}
+		}
+		int c_reset_action(bool hard)
+		{
+			return hard ? (support_hreset ? 1 : -1) : 0;
 		}
 	} bsnes_core;
 

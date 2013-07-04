@@ -375,7 +375,6 @@ namespace sky
 				return -1;
 			}
 			rom_boot_vector(_gstate);
-			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
@@ -412,5 +411,6 @@ namespace sky
 			return r;
 		}
 		unsigned c_action_flags(unsigned id) { return 0; }
+		int c_reset_action(bool hard) { return -1; }
 	} sky_core;
 }

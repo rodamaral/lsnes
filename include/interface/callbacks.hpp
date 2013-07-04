@@ -49,10 +49,6 @@ public:
  * Notify that action states have been updated.
  */
 	virtual void action_state_updated() = 0;
-/**
- * Set reset actions.
- */
-	virtual void set_reset_actions(signed soft, signed hard) = 0;
 };
 
 extern struct emucore_callbacks* ecore_callbacks;

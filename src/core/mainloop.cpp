@@ -95,9 +95,6 @@ namespace
 	//Macro hold.
 	bool macro_hold_1;
 	bool macro_hold_2;
-	//Reset actions.
-	signed sreset_action = -1;
-	signed hreset_action = -1;
 
 	enum advance_mode old_mode;
 
@@ -538,12 +535,6 @@ public:
 	{
 		graphics_driver_action_updated();
 	}
-
-	void set_reset_actions(signed soft, signed hard)
-	{
-		sreset_action = soft;
-		hreset_action = hard;
-	}
 };
 
 namespace
@@ -715,6 +706,7 @@ namespace
 	function_ptr_command<> reset_c(lsnes_cmd, "reset", "Reset the system",
 		"Syntax: reset\nReset\nResets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			int sreset_action = our_rom->rtype->reset_action(false);
 			if(sreset_action < 0) {
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
@@ -725,6 +717,7 @@ namespace
 	function_ptr_command<> hreset_c(lsnes_cmd, "reset-hard", "Reset the system",
 		"Syntax: reset-hard\nReset-hard\nHard resets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			int hreset_action = our_rom->rtype->reset_action(true);
 			if(hreset_action < 0) {
 				messages << "Emulator core does not support hard resets" << std::endl;
 				return;

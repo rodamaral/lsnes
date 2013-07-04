@@ -144,7 +144,6 @@ namespace
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
 		do_reset_flag = false;
-		ecore_callbacks->set_reset_actions(0, -1);
 		return 1;
 	}
 
@@ -422,6 +421,7 @@ namespace
 		}
 		const interface_device_reg* c_get_registers() { return gb_registers; }
 		unsigned c_action_flags(unsigned id) { return (id == 0) ? 1 : 0; }
+		int c_reset_action(bool hard) { return hard ? -1 : 0; }
 	} gambatte_core;
 	interface_action act_reset(gambatte_core, 0, "Soft reset", "reset", {});
 

@@ -194,7 +194,6 @@ namespace
 		int t_load_rom(core_romimage* images, std::map<std::string, std::string>& settings,
 			uint64_t rtc_sec, uint64_t rtc_subsec)
 		{
-			ecore_callbacks->set_reset_actions(-1, -1);
 			return 0;
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
@@ -205,6 +204,7 @@ namespace
 		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
 		std::set<std::string> t_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 1; }
+		int c_reset_action(bool hard) { return -1; }
 	} test_core;
 	interface_action act_test1(test_core, 0, "xyzzy", "xyzzy",
 		{{"Magic", "enum:[\"foo\",\"bar\",\"baz\",[\"qux\",\"zot\"]]"}});
