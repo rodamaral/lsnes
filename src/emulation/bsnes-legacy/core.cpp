@@ -854,7 +854,7 @@ again2:
 			.extensions = "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh",
 			.bios = NULL,
 			.regions = {&region_auto, &region_ntsc, &region_pal},
-			.images = snes_images,
+			.images = {{"rom", "Cartridge ROM", 1, 0, 512}},
 			.settings = &bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
@@ -885,7 +885,7 @@ again2:
 			.extensions = "bs",
 			.bios = "bsx.sfc",
 			.regions = {&region_ntsc},
-			.images = bsx_images,
+			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
 			.settings = &bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
@@ -915,7 +915,7 @@ again2:
 			.extensions = "bss",
 			.bios = "bsxslotted.sfc",
 			.regions = {&region_ntsc},
-			.images = bsxs_images,
+			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
 			.settings = &bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
@@ -945,7 +945,8 @@ again2:
 			.extensions = "st",
 			.bios = "sufamiturbo.sfc",
 			.regions = {&region_ntsc},
-			.images = sufamiturbo_images,
+			.images = {{"rom", "ST BIOS", 1, 0, 512},{"slot-a", "ST SLOT A ROM", 2, 0, 512},
+				{"slot-b", "ST SLOT B ROM", 2, 0, 512}},
 			.settings = &bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
@@ -975,7 +976,7 @@ again2:
 			.extensions = "gb;dmg;sgb",
 			.bios = "sgb.sfc",
 			.regions = {&region_auto, &region_ntsc, &region_pal},
-			.images = sgb_images,
+			.images = {{"rom", "SGB BIOS", 1, 0, 512},{"dmg", "DMG ROM", 2, 0, 512}},
 			.settings = &bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}

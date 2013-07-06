@@ -246,8 +246,6 @@ namespace sky
 
 	struct core_setting_group sky_settings;
 
-	struct core_romimage_info skyzip{{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}};
-
 	struct _sky_core : public core_core, public core_type, public core_region, public core_sysregion
 	{
 		_sky_core() : core_core({{{&psystem}}}), core_type({{
@@ -258,7 +256,7 @@ namespace sky
 			.extensions = "sky",
 			.bios = NULL,
 			.regions = {this},
-			.images = {&skyzip},
+			.images = {{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}},
 			.settings = &sky_settings,
 			.core = this,
 		}}), core_region({{

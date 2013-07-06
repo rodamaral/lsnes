@@ -435,7 +435,7 @@ namespace
 			.extensions = "gb;dmg",
 			.bios = NULL,
 			.regions = {&gambatte_core},
-			.images = dmg_images,
+			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
 			.settings = &gambatte_settings,
 			.core = &gambatte_core,
 		}}), core_sysregion("gdmg", *this, gambatte_core) {}
@@ -463,7 +463,7 @@ namespace
 			.extensions = "gbc;cgb",
 			.bios = NULL,
 			.regions = {&gambatte_core},
-			.images = gbc_images,
+			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
 			.settings = &gambatte_settings,
 			.core = &gambatte_core,
 		}}), core_sysregion("ggbc", *this, gambatte_core) {}
@@ -491,7 +491,7 @@ namespace
 			.extensions = "",
 			.bios = NULL,
 			.regions = {&gambatte_core},
-			.images = gbca_images,
+			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
 			.settings = &gambatte_settings,
 			.core = &gambatte_core,
 		}}), core_sysregion("ggbca", *this, gambatte_core) {}

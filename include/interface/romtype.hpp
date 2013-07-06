@@ -140,6 +140,28 @@ struct core_romimage_info_params
 	unsigned headersize;
 };
 
+struct core_romimage_info
+{
+	core_romimage_info(const core_romimage_info_params& params);
+	std::string iname;
+	std::string hname;
+	unsigned mandatory;
+	int pass_mode;
+	unsigned headersize;
+	size_t get_headnersize(size_t imagesize);
+};
+
+/**
+ * Collection of ROM images.
+ */
+struct core_romimage_info_collection
+{
+	core_romimage_info_collection(std::initializer_list<core_romimage_info_params> idata);
+	std::vector<core_romimage_info> get() const { return data; }
+private:
+	std::vector<core_romimage_info> data;
+};
+
 /**
  * A Virtual Memory Area (VMA), which is a chunk of lsnes memory space.
  *
@@ -220,7 +242,7 @@ struct core_type_params
 /**
  * List of image slots for this system type.
  */
-	std::vector<core_romimage_info*> images;
+	core_romimage_info_collection images;
 /**
  * Description of settings for this system type.
  */
@@ -267,18 +289,6 @@ private:
 	unsigned priority;
 	uint64_t magic[4];
 	std::vector<unsigned> compatible;
-};
-
-struct core_romimage_info
-{
-	core_romimage_info(const core_romimage_info_params& params);
-	core_romimage_info(std::initializer_list<core_romimage_info_params> p) : core_romimage_info(*p.begin()) {};
-	std::string iname;
-	std::string hname;
-	unsigned mandatory;
-	int pass_mode;
-	unsigned headersize;
-	size_t get_headnersize(size_t imagesize);
 };
 
 struct core_romimage
@@ -582,7 +592,7 @@ private:
 	std::string sysname;
 	std::list<std::string> extensions;
 	std::list<core_region*> regions;
-	std::vector<core_romimage_info*> imageinfo;
+	std::vector<core_romimage_info> imageinfo;
 	core_setting_group* settings;
 	core_core* core;
 };

@@ -134,7 +134,7 @@ namespace
 			.extensions = "test",
 			.bios = NULL,
 			.regions = {this},
-			.images = test_images,
+			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
 			.settings = &test_settings,
 			.core = this,
 		}}), core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),

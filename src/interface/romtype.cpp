@@ -165,8 +165,7 @@ core_type::core_type(const core_type_params& params)
 		biosname = params.bios;
 	for(auto i : params.regions)
 		regions.push_back(i);
-	for(auto i : params.images)
-		imageinfo.push_back(i);
+	imageinfo = params.images.get();
 	if(params.extensions) {
 		std::string tmp = params.extensions;
 		while(tmp != "") {
@@ -212,7 +211,7 @@ core_romimage_info core_type::get_image_info(unsigned index)
 {
 	if(index >= imageinfo.size())
 		throw std::runtime_error("Requested invalid image index");
-	return *imageinfo[index];
+	return imageinfo[index];
 }
 
 std::list<core_type*> core_type::get_core_types()
@@ -527,6 +526,12 @@ int core_core::reset_action(bool hard)
 
 emucore_callbacks::~emucore_callbacks() throw()
 {
+}
+
+core_romimage_info_collection::core_romimage_info_collection(std::initializer_list<core_romimage_info_params> idata)
+{
+	for(auto i : idata)
+		data.push_back(core_romimage_info(i));
 }
 
 struct emucore_callbacks* ecore_callbacks;

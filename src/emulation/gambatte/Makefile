@@ -18,10 +18,7 @@ __all__.files: $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
 ports.inc: ports.def ../make-ports.lua
 	lua ../make-ports.lua $< >$@
 
-slots.inc: slots.def ../make-slots.lua
-	lua ../make-slots.lua $< >$@
-
-%.$(OBJECT_SUFFIX): %.cpp ports.inc slots.inc
+%.$(OBJECT_SUFFIX): %.cpp ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
 
 else
