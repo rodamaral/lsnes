@@ -248,7 +248,7 @@ namespace
 		if(!act)
 			return;
 		try {
-			auto p = prompt_action_params(pwin, act->title, act->params);
+			auto p = prompt_action_params(pwin, act->get_title(), act->params);
 			runemufn([act_id,p]() { our_rom->rtype->execute_action(act_id, p); });
 		} catch(canceled_exception& e) {
 		} catch(std::bad_alloc& e) {
@@ -276,7 +276,7 @@ namespace
 			toggles.clear();
 
 			for(auto i : our_rom->rtype->get_actions())
-				insert_act(i->id, i->title, !i->params.empty(), i->is_toggle());
+				insert_act(i->id, i->get_title(), !i->params.empty(), i->is_toggle());
 		}
 		for(auto i : item_by_action)
 			i.second->Enable(our_rom->rtype->action_flags(i.first) & 1);

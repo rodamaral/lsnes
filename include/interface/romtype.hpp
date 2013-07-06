@@ -59,14 +59,12 @@ struct interface_action_paramval
  */
 struct interface_action
 {
-	interface_action(struct core_core& _core, unsigned id, const std::string& title, const std::string& symbol,
-		std::initializer_list<interface_action_param> p);
-	~interface_action();
 	unsigned id;
-	std::string title;
-	std::string symbol;
+	const char* _title;
+	const char* _symbol;
 	std::list<interface_action_param> params;
-	struct core_core& core;
+	std::string get_title() const { return _title; }
+	std::string get_symbol() const { return _symbol; }
 	bool is_toggle() const;
 };
 
@@ -253,19 +251,6 @@ struct core_type_params
 	core_core* core;
 };
 
-/**
- * Core type parameters.
- *
- * Each core type has its own loaded ROM.
- */
-struct core_core_params
-{
-/**
- * Set of valid port types for the core.
- */
-	std::vector<port_type*> port_types;
-};
-
 struct core_region
 {
 public:
@@ -300,8 +285,7 @@ struct core_romimage
 
 struct core_core
 {
-	core_core(const core_core_params& params);
-	core_core(std::initializer_list<core_core_params> p) : core_core(*p.begin()) {}
+	core_core(std::initializer_list<port_type*> ports, std::initializer_list<interface_action> actions);
 	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
@@ -327,29 +311,15 @@ struct core_core
 	void pre_emulate_frame(controller_frame& cf);
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p);
 	unsigned action_flags(unsigned id);
+	std::pair<uint64_t, uint64_t> get_bus_map();
+	std::list<core_vma_info> vma_list();
+	std::set<std::string> srams();
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
 	void hide() { hidden = true; }
 	bool is_hidden() { return hidden; }
-	struct _param_register_proxy
-	{
-		_param_register_proxy(core_core& _c) : cre(_c) {}
-		void do_register(const std::string& key, interface_action& act)
-		{
-			cre.do_register_action(key, act);
-		}
-		void do_unregister(const std::string& key)
-		{
-			cre.do_unregister_action(key);
-		}
-	private:
-		core_core& cre;
-	};
-	void do_register_action(const std::string& key, interface_action& act);
-	void do_unregister_action(const std::string& key);
 	std::set<const interface_action*> get_actions();
-	_param_register_proxy param_register_proxy;
 	const interface_device_reg* get_registers();
 	int reset_action(bool hard);
 protected:
@@ -474,10 +444,28 @@ protected:
  * Retunrs: The ID of action. -1 if not supported.
  */
 	virtual int c_reset_action(bool hard) = 0;
+/**
+ * Get bus mapping.
+ *
+ * Returns: The bus mapping (base,size), or (0,0) if this system does not have bus mapping.
+ */
+	virtual std::pair<uint64_t, uint64_t> c_get_bus_map() = 0;
+/**
+ * Get list of valid VMAs. ROM must be loaded.
+ *
+ * Returns: The list of VMAs.
+ */
+	virtual std::list<core_vma_info> c_vma_list() = 0;
+/**
+ * Get list of valid SRAM names. ROM must be loaded.
+ *
+ * Returns: The list of SRAMs.
+ */
+	virtual std::set<std::string> c_srams() = 0;
 private:
 	std::vector<port_type*> port_types;
 	bool hidden;
-	std::map<std::string, interface_action*> actions;
+	std::map<std::string, interface_action> actions;
 	mutex_class actions_lock;
 };
 
@@ -504,9 +492,9 @@ public:
 		uint64_t rtc_subsec);
 	controller_set controllerconfig(std::map<std::string, std::string>& settings);
 	core_setting_group& get_settings();
-	std::pair<uint64_t, uint64_t> get_bus_map();
-	std::list<core_vma_info> vma_list();
-	std::set<std::string> srams();
+	std::pair<uint64_t, uint64_t> get_bus_map() { return core->get_bus_map(); }
+	std::list<core_vma_info> vma_list() { return core->vma_list(); }
+	std::set<std::string> srams() { return core->srams(); }
 	core_core* get_core() { return core; }
 	bool set_region(core_region& region) { return core->set_region(region); }
 	std::pair<uint32_t, uint32_t> get_video_rate() { return core->get_video_rate(); }
@@ -564,24 +552,6 @@ protected:
  * Returns: The controller configuration.
  */
 	virtual controller_set t_controllerconfig(std::map<std::string, std::string>& settings) = 0;
-/**
- * Get bus mapping.
- *
- * Returns: The bus mapping (base,size), or (0,0) if this system does not have bus mapping.
- */
-	virtual std::pair<uint64_t, uint64_t> t_get_bus_map() = 0;
-/**
- * Get list of valid VMAs. ROM must be loaded.
- *
- * Returns: The list of VMAs.
- */
-	virtual std::list<core_vma_info> t_vma_list() = 0;
-/**
- * Get list of valid SRAM names. ROM must be loaded.
- *
- * Returns: The list of SRAMs.
- */
-	virtual std::set<std::string> t_srams() = 0;
 private:
 	core_type(const core_type&);
 	core_type& operator=(const core_type&);

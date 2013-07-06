@@ -63,7 +63,7 @@ namespace
 
 	struct _core_null : public core_core, public core_type, public core_region, public core_sysregion
 	{
-		_core_null() : core_core({{{}}}), core_type({{
+		_core_null() : core_core({}, {}), core_type({{
 			.iname = "null",
 			.hname = "(null)",
 			.id = 9999,
@@ -123,9 +123,9 @@ namespace
 			x.portindex.indices.push_back(sync_triple);
 			return x;
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0ULL, 0ULL); }
-		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
-		std::set<std::string> t_srams() { return std::set<std::string>(); }
+		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0ULL, 0ULL); }
+		std::list<core_vma_info> c_vma_list() { return std::list<core_vma_info>(); }
+		std::set<std::string> c_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 0; }
 		int c_reset_action(bool hard) { return -1; }
 	} core_null;

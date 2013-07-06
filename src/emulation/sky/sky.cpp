@@ -246,26 +246,31 @@ namespace sky
 
 	struct _sky_core : public core_core, public core_type, public core_region, public core_sysregion
 	{
-		_sky_core() : core_core({{{&psystem}}}), core_type({{
-			.iname = "sky",
-			.hname = "Sky",
-			.id = 3522,
-			.sysname = "Sky",
-			.extensions = "sky",
-			.bios = NULL,
-			.regions = {this},
-			.images = {{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}},
-			.settings = {},
-			.core = this,
-		}}), core_region({{
-			.iname = "world",
-			.hname = "World",
-			.priority = 0,
-			.handle = 0,
-			.multi = false,
-			.framemagic = {656250, 18227},
-			.compatible_runs = {0}
-		}}), core_sysregion("sky", *this, *this) {}
+		_sky_core()
+			: core_core({&psystem},{}),
+			core_type({{
+				.iname = "sky",
+				.hname = "Sky",
+				.id = 3522,
+				.sysname = "Sky",
+				.extensions = "sky",
+				.bios = NULL,
+				.regions = {this},
+				.images = {{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}},
+				.settings = {},
+				.core = this,
+			}}),
+			core_region({{
+				.iname = "world",
+				.hname = "World",
+				.priority = 0,
+				.handle = 0,
+				.multi = false,
+				.framemagic = {656250, 18227},
+				.compatible_runs = {0}
+			}}),
+			core_sysregion("sky", *this, *this) {}
+
 		std::string c_core_identifier() { return "Sky"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(656250, 18227); }
@@ -385,8 +390,8 @@ namespace sky
 			r.portindex.pcid_map.push_back(std::make_pair(0, 1));
 			return r;
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0, 0); }
-		std::list<core_vma_info> t_vma_list()
+		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0, 0); }
+		std::list<core_vma_info> c_vma_list()
 		{
 			std::list<core_vma_info> r;
 			core_vma_info ram;
@@ -400,7 +405,7 @@ namespace sky
 			r.push_back(ram);
 			return r;
 		}
-		std::set<std::string> t_srams()
+		std::set<std::string> c_srams()
 		{
 			std::set<std::string> r;
 			r.insert("sram");

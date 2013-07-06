@@ -123,19 +123,27 @@ namespace
 
 	struct _test_core : public core_core, public core_type, public core_region, public core_sysregion
 	{
-		_test_core() : core_core({{_port_types}}), core_type({{
-			.iname = "test",
-			.hname = "test",
-			.id = 0,
-			.sysname = "Test",
-			.extensions = "test",
-			.bios = NULL,
-			.regions = {this},
-			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
-			.settings = {},
-			.core = this,
-		}}), core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
-		core_sysregion("test", *this, *this) {}
+		_test_core()
+			: core_core({&psystem, &ptype1, &ptype2}, {
+				{0, "xyzzy", "xyzzy", {
+					{"Magic", "enum:[\"foo\",\"bar\",\"baz\",[\"qux\",\"zot\"]]"}
+				}}
+			}),
+			core_type({{
+				.iname = "test",
+				.hname = "test",
+				.id = 0,
+				.sysname = "Test",
+				.extensions = "test",
+				.bios = NULL,
+				.regions = {this},
+				.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
+				.settings = {},
+				.core = this,
+			}}),
+			core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
+			core_sysregion("test", *this, *this) {}
+
 		std::string c_core_identifier() { return "TEST"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(60, 1); }
@@ -197,12 +205,10 @@ namespace
 		{
 			return test_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return std::make_pair(0, 0); }
-		std::list<core_vma_info> t_vma_list() { return std::list<core_vma_info>(); }
-		std::set<std::string> t_srams() { return std::set<std::string>(); }
+		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0, 0); }
+		std::list<core_vma_info> c_vma_list() { return std::list<core_vma_info>(); }
+		std::set<std::string> c_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 1; }
 		int c_reset_action(bool hard) { return -1; }
 	} test_core;
-	interface_action act_test1(test_core, 0, "xyzzy", "xyzzy",
-		{{"Magic", "enum:[\"foo\",\"bar\",\"baz\",[\"qux\",\"zot\"]]"}});
 }

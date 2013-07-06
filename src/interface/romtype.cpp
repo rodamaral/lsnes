@@ -51,25 +51,6 @@ namespace
 	}
 }
 
-interface_action::interface_action(struct core_core& _core, unsigned _id, const std::string& _title,
-	const std::string& _sym, std::initializer_list<interface_action_param> p)
-	: core(_core)
-{
-	id = _id;
-	title = _title;
-	symbol = _sym;
-	for(auto i : p)
-		params.push_back(i);
-        register_queue<core_core::_param_register_proxy, interface_action>::do_register(core.param_register_proxy,
-		symbol, *this);
-}
-
-interface_action::~interface_action()
-{
-        register_queue<core_core::_param_register_proxy, interface_action>::do_unregister(core.param_register_proxy,
-		symbol);
-}
-
 bool interface_action::is_toggle() const
 {
 	for(auto i : params)
@@ -283,19 +264,19 @@ controller_set core_type::controllerconfig(std::map<std::string, std::string>& s
 	return t_controllerconfig(settings);
 }
 
-std::pair<uint64_t, uint64_t> core_type::get_bus_map()
+std::pair<uint64_t, uint64_t> core_core::get_bus_map()
 {
-	return t_get_bus_map();
+	return c_get_bus_map();
 }
 
-std::list<core_vma_info> core_type::vma_list()
+std::list<core_vma_info> core_core::vma_list()
 {
-	return t_vma_list();
+	return c_vma_list();
 }
 
-std::set<std::string> core_type::srams()
+std::set<std::string> core_core::srams()
 {
-	return t_srams();
+	return c_srams();
 }
 
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
@@ -341,21 +322,22 @@ void core_sysregion::fill_framerate_magic(uint64_t* magic)
 	region.fill_framerate_magic(magic);
 }
 
-core_core::core_core(const core_core_params& params)
-	: param_register_proxy(*this)
+core_core::core_core(std::initializer_list<port_type*> ports, std::initializer_list<interface_action> x_actions)
 {
-	port_types = params.port_types;
+	for(auto i : ports)
+		port_types.push_back(i);
+	for(auto i : x_actions)
+		actions[i._symbol] = i;
+
 	hidden = false;
 	all_cores_set().insert(this);
 	if(install_handlers_automatically)
 		install_handler();
 	new_core_flag = true;
-	register_queue<core_core::_param_register_proxy, interface_action>::do_ready(param_register_proxy, true);
 }
 
 core_core::~core_core() throw()
 {
-	register_queue<core_core::_param_register_proxy, interface_action>::do_ready(param_register_proxy, false);
 	all_cores().erase(this);
 }
 
@@ -498,24 +480,12 @@ unsigned core_core::action_flags(unsigned id)
 	return c_action_flags(id);
 }
 
-void core_core::do_register_action(const std::string& key, interface_action& act)
-{
-	umutex_class h(actions_lock);
-	actions[key] = &act;
-}
-
-void core_core::do_unregister_action(const std::string& key)
-{
-	umutex_class h(actions_lock);
-	actions.erase(key);
-}
-
 std::set<const interface_action*> core_core::get_actions()
 {
 	umutex_class h(actions_lock);
 	std::set<const interface_action*> r;
-	for(auto i : actions)
-		r.insert(i.second);
+	for(auto& i : actions)
+		r.insert(&i.second);
 	return r;
 }
 

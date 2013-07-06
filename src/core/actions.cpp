@@ -17,7 +17,7 @@ namespace
 			extract_token(args, sym, " \t");
 			const interface_action* act = NULL;
 			for(auto i : our_rom->rtype->get_actions())
-				if(i->symbol == sym) {
+				if(i->get_symbol() == sym) {
 					act = i;
 					break;
 				}

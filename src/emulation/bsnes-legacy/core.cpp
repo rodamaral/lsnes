@@ -158,8 +158,8 @@ namespace
 			{"gamepad16", "Gamepad (16-button)", 2},
 			{"multitap", "Multitap", 3},
 			{"multitap16", "Multitap (16-button)", 4},
-			{"mouse", "Mouse", 5}}
-		},
+			{"mouse", "Mouse", 5}
+		}},
 		{"port2", "Port 2 Type", "none", {
 			{"none", "None", 0},
 			{"gamepad", "Gamepad", 1},
@@ -169,8 +169,8 @@ namespace
 			{"mouse", "Mouse", 5},
 			{"superscope", "Super Scope", 8},
 			{"justifier", "Justifier", 6},
-			{"justifiers", "2 Justifiers", 7}}
-		},
+			{"justifiers", "2 Justifiers", 7}
+		}},
 		{"hardreset", "Support hard resets", "0", boolean_values},
 		{"saveevery", "Emulate saving each frame", "0", boolean_values},
 		{"radominit", "Random initial state", "0", boolean_values}
@@ -260,11 +260,6 @@ namespace
 			ecore_callbacks->action_state_updated();
 		}
 		return r ? 0 : -1;
-	}
-
-	std::pair<uint64_t, uint64_t> bsnes_get_bus_map()
-	{
-		return std::make_pair(0x1000000, 0x1000000);
 	}
 
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
@@ -558,7 +553,32 @@ namespace
 
 	struct _bsnes_core : public core_core
 	{
-		_bsnes_core() : core_core({{_port_types}}) {}
+		_bsnes_core() : core_core({&gamepad, &gamepad16, &justifier, &justifiers, &mouse, &multitap,
+			&multitap16, &none, &superscope, &psystem, &psystem_hreset}, {
+				{0, "Soft reset", "reset", {}},
+				{1, "Hard reset", "hardreset", {}},
+#ifdef BSNES_HAS_DEBUGGER
+				{2, "Delayed soft reset", "delayreset", {
+					{"Delay","int:0,99999999"}
+				}},
+				{3, "Delayed hard reset", "delayhardreset", {
+					{"Delay","int:0,99999999"}
+				}},
+#endif
+				{4, "Layers‣BG1 Priority 0", "bg1pri0", {{"", "toggle"}}},
+				{5, "Layers‣BG1 Priority 1", "bg1pri1", {{"", "toggle"}}},
+				{8, "Layers‣BG2 Priority 0", "bg2pri0", {{"", "toggle"}}},
+				{9, "Layers‣BG2 Priority 1", "bg2pri1", {{"", "toggle"}}},
+				{12, "Layers‣BG3 Priority 0", "bg3pri0", {{"", "toggle"}}},
+				{13, "Layers‣BG3 Priority 1", "bg3pri1", {{"", "toggle"}}},
+				{16, "Layers‣BG4 Priority 0", "bg4pri0", {{"", "toggle"}}},
+				{17, "Layers‣BG4 Priority 1", "bg4pri1", {{"", "toggle"}}},
+				{20, "Layers‣Sprite Priority 0", "oampri0", {{"", "toggle"}}},
+				{21, "Layers‣Sprite Priority 1", "oampri1", {{"", "toggle"}}},
+				{22, "Layers‣Sprite Priority 2", "oampri2", {{"", "toggle"}}},
+				{23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}}}
+			}) {}
+
 		std::string c_core_identifier() {
 			return (stringfmt()  << snes_library_id() << " (" << SNES::Info::Profile << " core)").str();
 		}
@@ -832,42 +852,30 @@ again2:
 		{
 			return hard ? (support_hreset ? 1 : -1) : 0;
 		}
+		std::pair<uint64_t, uint64_t> c_get_bus_map()
+		{
+			return std::make_pair(0x1000000, 0x1000000);
+		}
+		std::list<core_vma_info> c_vma_list() { return get_VMAlist(); }
+		std::set<std::string> c_srams() { return bsnes_srams(); }
 	} bsnes_core;
-
-	interface_action act_reset(bsnes_core, 0, "Soft reset", "reset", {});
-	interface_action act_hreset(bsnes_core, 1, "Hard reset", "hardreset", {});
-#ifdef BSNES_HAS_DEBUGGER
-	interface_action act_dreset(bsnes_core, 2, "Delayed soft reset", "delayreset", {{"Delay","int:0,99999999"}});
-	interface_action act_dhreset(bsnes_core, 3, "Delayed hard reset", "delayhardreset",
-		{{"Delay","int:0,99999999"}});
-#endif
-	interface_action act_bg1pri0(bsnes_core, 4, "Layers‣BG1 Priority 0", "bg1pri0", {{"", "toggle"}});
-	interface_action act_bg1pri1(bsnes_core, 5, "Layers‣BG1 Priority 1", "bg1pri1", {{"", "toggle"}});
-	interface_action act_bg2pri0(bsnes_core, 8, "Layers‣BG2 Priority 0", "bg2pri0", {{"", "toggle"}});
-	interface_action act_bg2pri1(bsnes_core, 9, "Layers‣BG2 Priority 1", "bg2pri1", {{"", "toggle"}});
-	interface_action act_bg3pri0(bsnes_core, 12, "Layers‣BG3 Priority 0", "bg3pri0", {{"", "toggle"}});
-	interface_action act_bg3pri1(bsnes_core, 13, "Layers‣BG3 Priority 1", "bg3pri1", {{"", "toggle"}});
-	interface_action act_bg4pri0(bsnes_core, 16, "Layers‣BG4 Priority 0", "bg4pri0", {{"", "toggle"}});
-	interface_action act_bg4pri1(bsnes_core, 17, "Layers‣BG4 Priority 1", "bg4pri1", {{"", "toggle"}});
-	interface_action act_oampri0(bsnes_core, 20, "Layers‣Sprite Priority 0", "oampri0", {{"", "toggle"}});
-	interface_action act_oampri1(bsnes_core, 21, "Layers‣Sprite Priority 1", "oampri1", {{"", "toggle"}});
-	interface_action act_oampri2(bsnes_core, 22, "Layers‣Sprite Priority 2", "oampri2", {{"", "toggle"}});
-	interface_action act_oampri3(bsnes_core, 23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}});
 
 	struct _type_snes : public core_type
 	{
-		_type_snes() : core_type({{
-			.iname = "snes",
-			.hname = "SNES",
-			.id = 0,
-			.sysname = "SNES",
-			.extensions = "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh",
-			.bios = NULL,
-			.regions = {&region_auto, &region_ntsc, &region_pal},
-			.images = {{"rom", "Cartridge ROM", 1, 0, 512}},
-			.settings = bsnes_settings,
-			.core = &bsnes_core,
-		}}) {}
+		_type_snes()
+			: core_type({{
+				.iname = "snes",
+				.hname = "SNES",
+				.id = 0,
+				.sysname = "SNES",
+				.extensions = "sfc;smc;swc;fig;ufo;sf2;gd3;gd7;dx2;mgd;mgh",
+				.bios = NULL,
+				.regions = {&region_auto, &region_ntsc, &region_pal},
+				.images = {{"rom", "Cartridge ROM", 1, 0, 512}},
+				.settings = bsnes_settings,
+				.core = &bsnes_core,
+			}}) {}
+
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
@@ -878,27 +886,27 @@ again2:
 		{
 			return bsnes_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return bsnes_get_bus_map(); }
-		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
-		std::set<std::string> t_srams() { return bsnes_srams(); }
 	} type_snes;
 	core_sysregion snes_pal("snes_pal", type_snes, region_pal);
 	core_sysregion snes_ntsc("snes_ntsc", type_snes, region_ntsc);
 
-	struct _type_bsx : public core_type
+	struct _type_bsx : public core_type, public core_sysregion
 	{
-		_type_bsx() : core_type({{
-			.iname = "bsx",
-			.hname = "BS-X (non-slotted)",
-			.id = 1,
-			.sysname = "BS-X",
-			.extensions = "bs",
-			.bios = "bsx.sfc",
-			.regions = {&region_ntsc},
-			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
-			.settings = bsnes_settings,
-			.core = &bsnes_core,
-		}}) {}
+		_type_bsx()
+			: core_type({{
+				.iname = "bsx",
+				.hname = "BS-X (non-slotted)",
+				.id = 1,
+				.sysname = "BS-X",
+				.extensions = "bs",
+				.bios = "bsx.sfc",
+				.regions = {&region_ntsc},
+				.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
+				.settings = bsnes_settings,
+				.core = &bsnes_core,
+			}}),
+			core_sysregion("bsx", *this, region_ntsc) {}
+
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
@@ -909,26 +917,24 @@ again2:
 		{
 			return bsnes_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return bsnes_get_bus_map(); }
-		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
-		std::set<std::string> t_srams() { return bsnes_srams(); }
 	} type_bsx;
-	core_sysregion bsx_sr("bsx", type_bsx, region_ntsc);
 
-	struct _type_bsxslotted : public core_type
+	struct _type_bsxslotted : public core_type, public core_sysregion
 	{
-		_type_bsxslotted() : core_type({{
-			.iname = "bsxslotted",
-			.hname = "BS-X (slotted)",
-			.id = 2,
-			.sysname = "BS-X",
-			.extensions = "bss",
-			.bios = "bsxslotted.sfc",
-			.regions = {&region_ntsc},
-			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
-			.settings = bsnes_settings,
-			.core = &bsnes_core,
-		}}) {}
+		_type_bsxslotted()
+			: core_type({{
+				.iname = "bsxslotted",
+				.hname = "BS-X (slotted)",
+				.id = 2,
+				.sysname = "BS-X",
+				.extensions = "bss",
+				.bios = "bsxslotted.sfc",
+				.regions = {&region_ntsc},
+				.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
+				.settings = bsnes_settings,
+				.core = &bsnes_core,
+			}}),
+			core_sysregion("bsxslotted", *this, region_ntsc) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
@@ -939,27 +945,28 @@ again2:
 		{
 			return bsnes_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return bsnes_get_bus_map(); }
-		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
-		std::set<std::string> t_srams() { return bsnes_srams(); }
 	} type_bsxslotted;
-	core_sysregion bsxslotted_sr("bsxslotted", type_bsxslotted, region_ntsc);
 
-	struct _type_sufamiturbo : public core_type
+	struct _type_sufamiturbo : public core_type, public core_sysregion
 	{
-		_type_sufamiturbo() : core_type({{
-			.iname = "sufamiturbo",
-			.hname = "Sufami Turbo",
-			.id = 3,
-			.sysname = "SufamiTurbo",
-			.extensions = "st",
-			.bios = "sufamiturbo.sfc",
-			.regions = {&region_ntsc},
-			.images = {{"rom", "ST BIOS", 1, 0, 512},{"slot-a", "ST SLOT A ROM", 2, 0, 512},
-				{"slot-b", "ST SLOT B ROM", 2, 0, 512}},
-			.settings = bsnes_settings,
-			.core = &bsnes_core,
-		}}) {}
+		_type_sufamiturbo()
+			: core_type({{
+				.iname = "sufamiturbo",
+				.hname = "Sufami Turbo",
+				.id = 3,
+				.sysname = "SufamiTurbo",
+				.extensions = "st",
+				.bios = "sufamiturbo.sfc",
+				.regions = {&region_ntsc},
+				.images = {
+					{"rom", "ST BIOS", 1, 0, 512},
+					{"slot-a", "ST SLOT A ROM", 2, 0, 512},
+					{"slot-b", "ST SLOT B ROM", 2, 0, 512}
+				},
+				.settings = bsnes_settings,
+				.core = &bsnes_core,
+			}}),
+			core_sysregion("sufamiturbo", *this, region_ntsc) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
@@ -970,26 +977,23 @@ again2:
 		{
 			return bsnes_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return bsnes_get_bus_map(); }
-		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
-		std::set<std::string> t_srams() { return bsnes_srams(); }
 	} type_sufamiturbo;
-	core_sysregion sufamiturbo_sr("sufamiturbo", type_sufamiturbo, region_ntsc);
 
 	struct _type_sgb : public core_type
 	{
-		_type_sgb() : core_type({{
-			.iname = "sgb",
-			.hname = "Super Game Boy",
-			.id = 4,
-			.sysname = "SGB",
-			.extensions = "gb;dmg;sgb",
-			.bios = "sgb.sfc",
-			.regions = {&region_auto, &region_ntsc, &region_pal},
-			.images = {{"rom", "SGB BIOS", 1, 0, 512},{"dmg", "DMG ROM", 2, 0, 512}},
-			.settings = bsnes_settings,
-			.core = &bsnes_core,
-		}}) {}
+		_type_sgb()
+			: core_type({{
+				.iname = "sgb",
+				.hname = "Super Game Boy",
+				.id = 4,
+				.sysname = "SGB",
+				.extensions = "gb;dmg;sgb",
+				.bios = "sgb.sfc",
+				.regions = {&region_auto, &region_ntsc, &region_pal},
+				.images = {{"rom", "SGB BIOS", 1, 0, 512},{"dmg", "DMG ROM", 2, 0, 512}},
+				.settings = bsnes_settings,
+				.core = &bsnes_core,
+			}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
@@ -1000,9 +1004,6 @@ again2:
 		{
 			return bsnes_controllerconfig(settings);
 		}
-		std::pair<uint64_t, uint64_t> t_get_bus_map() { return bsnes_get_bus_map(); }
-		std::list<core_vma_info> t_vma_list() { return get_VMAlist(); }
-		std::set<std::string> t_srams() { return bsnes_srams(); }
 	} type_sgb;
 	core_sysregion sgb_pal("sgb_pal", type_sgb, region_pal);
 	core_sysregion sgb_ntsc("sgb_ntsc", type_sgb, region_ntsc);

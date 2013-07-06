@@ -8,7 +8,7 @@ namespace
 		std::string name = L.get_string(1, fname.c_str());
 		const interface_action* act = NULL;
 		for(auto i : our_rom->rtype->get_actions())
-			if(i->symbol == name) {
+			if(i->get_symbol() == name) {
 				act = i;
 				break;
 			}
