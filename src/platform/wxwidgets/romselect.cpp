@@ -54,40 +54,39 @@ namespace
 
 	struct setting_select
 	{
-		setting_select() {}
 		setting_select(wxWindow* parent, const core_setting& s);
 		wxWindow* get_label() { return label; }
 		wxWindow* get_control();
-		const core_setting* get_setting() { return setting; }
+		const core_setting& get_setting() { return setting; }
 		std::string read();
 	private:
 		wxStaticText* label;
 		wxTextCtrl* text;
 		wxCheckBox* check;
 		wxComboBox* combo;
-		const core_setting* setting;
+		core_setting setting;
 	};
 
 	setting_select::setting_select(wxWindow* parent, const core_setting& s)
-		: setting(&s)
+		: setting(s)
 	{
-		label = new wxStaticText(parent, wxID_ANY, towxstring(setting->hname));
+		label = new wxStaticText(parent, wxID_ANY, towxstring(setting.hname));
 		text = NULL;
 		combo = NULL;
 		check = NULL;
-		if(setting->is_boolean()) {
+		if(setting.is_boolean()) {
 			check = new wxCheckBox(parent, wxID_ANY, towxstring(""));
 			check->SetValue(s.dflt != "0");
-		} else if(setting->is_freetext()) {
-			text = new wxTextCtrl(parent, wxID_ANY, towxstring(setting->dflt), wxDefaultPosition,
+		} else if(setting.is_freetext()) {
+			text = new wxTextCtrl(parent, wxID_ANY, towxstring(setting.dflt), wxDefaultPosition,
 				wxSize(400, -1));
 		} else {
 			std::vector<wxString> _hvalues;
 			std::string dflt = "";
-			for(auto i : setting->values) {
-				_hvalues.push_back(towxstring(i->hname));
-				if(i->iname == setting->dflt)
-					dflt = i->hname;
+			for(auto i : setting.values) {
+				_hvalues.push_back(towxstring(i.hname));
+				if(i.iname == setting.dflt)
+					dflt = i.hname;
 			}
 			combo = new wxComboBox(parent, wxID_ANY, towxstring(dflt), wxDefaultPosition,
 				wxDefaultSize, _hvalues.size(), &_hvalues[0], wxCB_READONLY);
@@ -106,7 +105,7 @@ namespace
 	{
 		if(text) return tostdstring(text->GetValue());
 		if(check) return check->GetValue() ? "1" : "0";
-		if(combo) return setting->hvalue_to_ivalue(tostdstring(combo->GetValue()));
+		if(combo) return setting.hvalue_to_ivalue(tostdstring(combo->GetValue()));
 		return "";
 	}
 
@@ -464,9 +463,9 @@ wxwin_project::wxwin_project()
 	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + our_rom->rtype->get_settings().settings.size() +
 		sram_set.size(), 2, 0, 0);
 	for(auto i : our_rom->rtype->get_settings().settings) {
-		settings[i.second->iname] = setting_select(new_panel, *i.second);
-		mainblock->Add(settings[i.second->iname].get_label());
-		mainblock->Add(settings[i.second->iname].get_control());
+		settings.insert(std::make_pair(i.second.iname, setting_select(new_panel, i.second)));
+		mainblock->Add(settings.find(i.second.iname)->second.get_label());
+		mainblock->Add(settings.find(i.second.iname)->second.get_control());
 	}
 	mainblock->Add(new wxStaticText(new_panel, wxID_ANY, wxT("Initial RTC value:")), 0, wxGROW);
 	wxFlexGridSizer* initrtc = new wxFlexGridSizer(1, 3, 0, 0);
@@ -598,7 +597,7 @@ struct moviefile wxwin_project::make_movie()
 	f.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 	for(auto i : settings) {
 		f.settings[i.first] = i.second.read();
-		if(!i.second.get_setting()->validate(f.settings[i.first]))
+		if(!i.second.get_setting().validate(f.settings[i.first]))
 			throw std::runtime_error((stringfmt() << "Bad value for setting " << i.first).str());
 	}
 	f.coreversion = our_rom->rtype->get_core_identifier();

@@ -150,20 +150,31 @@ namespace
 	core_region region_pal{{"pal", "PAL", 0, 2, false, {6448, 322445}, {2}}};
 	core_region region_ntsc{{"ntsc", "NTSC", 0, 1, false, {178683, 10738636}, {1}}};
 
-	core_setting_group bsnes_settings;
-	core_setting setting_port1(bsnes_settings, "port1", "Port 1 Type", "gamepad", {
-		{"none", "None", 0}, {"gamepad", "Gamepad", 1}, {"gamepad16", "Gamepad (16-button)", 2},
-		{"multitap", "Multitap", 3}, {"multitap16", "Multitap (16-button)", 4}, {"mouse", "Mouse", 5}});
-	core_setting setting_port2(bsnes_settings, "port2", "Port 2 Type", "none", {
-		{"none", "None", 0}, {"gamepad", "Gamepad", 1}, {"gamepad16", "Gamepad (16-button)", 2},
-		{"multitap", "Multitap", 3}, {"multitap16", "Multitap (16-button)", 4}, {"mouse", "Mouse", 5},
-		{"superscope", "Super Scope", 8}, {"justifier", "Justifier", 6}, {"justifiers", "2 Justifiers", 7}});
-	core_setting setting_hardreset(bsnes_settings, "hardreset", "Support hard resets", "0", {
-		{"0", "False", 0}, {"1", "True", 1}});
-	core_setting setting_saveevery(bsnes_settings, "saveevery", "Emulate saving each frame", "0", {
-		{"0", "False", 0}, {"1", "True", 1}});
-	core_setting setting_randinit(bsnes_settings, "radominit", "Random initial state", "0", {
-		{"0", "False", 0}, {"1", "True", 1}});
+	std::vector<core_setting_value_param> boolean_values = {{"0", "False", 0}, {"1", "True", 1}};
+	core_setting_group bsnes_settings = {
+		{"port1", "Port 1 Type", "gamepad", {
+			{"none", "None", 0},
+			{"gamepad", "Gamepad", 1},
+			{"gamepad16", "Gamepad (16-button)", 2},
+			{"multitap", "Multitap", 3},
+			{"multitap16", "Multitap (16-button)", 4},
+			{"mouse", "Mouse", 5}}
+		},
+		{"port2", "Port 2 Type", "none", {
+			{"none", "None", 0},
+			{"gamepad", "Gamepad", 1},
+			{"gamepad16", "Gamepad (16-button)", 2},
+			{"multitap", "Multitap", 3},
+			{"multitap16", "Multitap (16-button)", 4},
+			{"mouse", "Mouse", 5},
+			{"superscope", "Super Scope", 8},
+			{"justifier", "Justifier", 6},
+			{"justifiers", "2 Justifiers", 7}}
+		},
+		{"hardreset", "Support hard resets", "0", boolean_values},
+		{"saveevery", "Emulate saving each frame", "0", boolean_values},
+		{"radominit", "Random initial state", "0", boolean_values}
+	};
 
 	////////////////// PORTS COMMON ///////////////////
 	port_type* index_to_ptype[] = {
@@ -226,11 +237,11 @@ namespace
 	{
 		std::map<std::string, std::string> _settings = settings;
 		bsnes_settings.fill_defaults(_settings);
-		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
-		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
-		signed hreset = setting_hardreset.ivalue_to_index(_settings[setting_hardreset.iname]);
-		signed esave = setting_saveevery.ivalue_to_index(_settings[setting_saveevery.iname]);
-		signed irandom = setting_randinit.ivalue_to_index(_settings[setting_randinit.iname]);
+		signed type1 = bsnes_settings.ivalue_to_index(_settings, "port1");
+		signed type2 = bsnes_settings.ivalue_to_index(_settings, "port2");
+		signed hreset = bsnes_settings.ivalue_to_index(_settings, "hardreset");
+		signed esave = bsnes_settings.ivalue_to_index(_settings, "saveevery");
+		signed irandom = bsnes_settings.ivalue_to_index(_settings, "radominit");
 
 		basic_init();
 		snes_term();
@@ -278,9 +289,9 @@ namespace
 	{
 		std::map<std::string, std::string> _settings = settings;
 		bsnes_settings.fill_defaults(_settings);
-		signed type1 = setting_port1.ivalue_to_index(_settings[setting_port1.iname]);
-		signed type2 = setting_port2.ivalue_to_index(_settings[setting_port2.iname]);
-		signed hreset = setting_hardreset.ivalue_to_index(_settings[setting_hardreset.iname]);
+		signed type1 = bsnes_settings.ivalue_to_index(_settings, "port1");
+		signed type2 = bsnes_settings.ivalue_to_index(_settings, "port2");
+		signed hreset = bsnes_settings.ivalue_to_index(_settings, "hardreset");
 		controller_set r;
 		if(hreset)
 			r.ports.push_back(&psystem_hreset);
@@ -854,7 +865,7 @@ again2:
 			.bios = NULL,
 			.regions = {&region_auto, &region_ntsc, &region_pal},
 			.images = {{"rom", "Cartridge ROM", 1, 0, 512}},
-			.settings = &bsnes_settings,
+			.settings = bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -885,7 +896,7 @@ again2:
 			.bios = "bsx.sfc",
 			.regions = {&region_ntsc},
 			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
-			.settings = &bsnes_settings,
+			.settings = bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -915,7 +926,7 @@ again2:
 			.bios = "bsxslotted.sfc",
 			.regions = {&region_ntsc},
 			.images = {{"rom", "BS-X BIOS", 1, 0, 512},{"bsx", "BS-X Flash", 2, 0, 512}},
-			.settings = &bsnes_settings,
+			.settings = bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -946,7 +957,7 @@ again2:
 			.regions = {&region_ntsc},
 			.images = {{"rom", "ST BIOS", 1, 0, 512},{"slot-a", "ST SLOT A ROM", 2, 0, 512},
 				{"slot-b", "ST SLOT B ROM", 2, 0, 512}},
-			.settings = &bsnes_settings,
+			.settings = bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -976,7 +987,7 @@ again2:
 			.bios = "sgb.sfc",
 			.regions = {&region_auto, &region_ntsc, &region_pal},
 			.images = {{"rom", "SGB BIOS", 1, 0, 512},{"dmg", "DMG ROM", 2, 0, 512}},
-			.settings = &bsnes_settings,
+			.settings = bsnes_settings,
 			.core = &bsnes_core,
 		}}) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,

@@ -154,13 +154,13 @@ size_t core_romimage_info::get_headnersize(size_t imagesize)
 }
 
 core_type::core_type(const core_type_params& params)
+	: settings(params.settings)
 {
 	iname = params.iname;
 	hname = params.hname;
 	sysname = params.sysname;
 	id = params.id;
 	core = params.core;
-	settings = params.settings;
 	if(params.bios)
 		biosname = params.bios;
 	for(auto i : params.regions)
@@ -204,7 +204,7 @@ unsigned core_type::get_image_count()
 
 core_setting_group& core_type::get_settings()
 {
-	return *settings;
+	return settings;
 }
 
 core_romimage_info core_type::get_image_info(unsigned index)

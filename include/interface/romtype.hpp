@@ -246,7 +246,7 @@ struct core_type_params
 /**
  * Description of settings for this system type.
  */
-	core_setting_group* settings;
+	core_setting_group settings;
 /**
  * Core this system is emulated by.
  */
@@ -593,7 +593,7 @@ private:
 	std::list<std::string> extensions;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info> imageinfo;
-	core_setting_group* settings;
+	core_setting_group settings;
 	core_core* core;
 };
 

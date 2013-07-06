@@ -69,7 +69,7 @@ namespace
 		for(auto i : settings) {
 			if(!sgroup.settings.count(i.first))
 				continue;
-			if(sgroup.settings[i.first]->dflt == i.second)
+			if(sgroup.settings.find(i.first)->second.dflt == i.second)
 				continue;
 			if(regex_match("port[0-9]+", i.first))
 				write_linefile(w, i.first, i.second);

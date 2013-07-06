@@ -21,28 +21,26 @@ struct core_setting_value_param
 };
 
 /**
+ * A setting (structure)
+ */
+struct core_setting_param
+{
+	const char* iname;
+	const char* hname;
+	const char* dflt;
+	std::vector<core_setting_value_param> values;
+	const char* regex;
+};
+
+/**
  * A value for setting.
  */
 struct core_setting_value
 {
 /**
  * Create a new setting value.
- *
- * Parameter _setting: The setting this value is for.
- * Parameter _iname: The internal value for setting.
- * Parameter _hname: The human-readable value for setting.
  */
-	core_setting_value(struct core_setting& _setting, const std::string& _iname, const std::string& _hname,
-		signed index)
-		throw(std::bad_alloc);
-/**
- * Destructor.
- */
-	~core_setting_value();
-/**
- * Setting this is for.
- */
-	core_setting& setting;
+	core_setting_value(const core_setting_value_param& p) throw(std::bad_alloc);
 /**
  * Internal value.
  */
@@ -55,9 +53,6 @@ struct core_setting_value
  * Index.
  */
 	signed index;
-private:
-	core_setting_value(core_setting_value&);
-	core_setting_value& operator=(core_setting_value&);
 };
 
 /**
@@ -67,41 +62,8 @@ struct core_setting
 {
 /**
  * Create a new setting.
- *
- * Parameter _group: The group setting is in.
- * Parameter _iname: The internal name of setting.
- * Parameter _hname: The human-readable name of setting.
- * Parameter _dflt: The default value.
  */
-	core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
-		const std::string& _dflt) throw(std::bad_alloc);
-/**
- * Create a new setting.
- *
- * Parameter _group: The group setting is in.
- * Parameter _iname: The internal name of setting.
- * Parameter _hname: The human-readable name of setting.
- * Parameter _dflt: The default value.
- * Parameter _values: Valid values.
- */
-	core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
-		const std::string& _dflt, std::initializer_list<core_setting_value_param> _values)
-		throw(std::bad_alloc);
-/**
- * Create a new setting with regex.
- *
- * Parameter _group: The group setting is in.
- * Parameter _iname: The internal name of setting.
- * Parameter _hname: The human-readable name of setting.
- * Parameter _dflt: The default value.
- * Parameter _regex: The regular expression used for validation.
- */
-	core_setting(core_setting_group& _group, const std::string& _iname, const std::string& _hname,
-		const std::string& _dflt, const std::string& _regex) throw(std::bad_alloc);
-/**
- * Destructor.
- */
-	~core_setting();
+	core_setting(const core_setting_param& p);
 /**
  * Internal name.
  */
@@ -121,7 +83,7 @@ struct core_setting
 /**
  * The values.
  */
-	std::vector<core_setting_value*> values;
+	std::vector<core_setting_value> values;
 /**
  * Is this setting a boolean?
  */
@@ -148,21 +110,6 @@ struct core_setting
  * Parameter value: The value to validate.
  */
 	bool validate(const std::string& value) const;
-/**
- * Register a value.
- */
-	void do_register(const std::string& name, core_setting_value& value);
-/**
- * Unregister a value.
- */
-	void do_unregister(const std::string& name);
-/**
- * The group setting belongs to.
- */
-	struct core_setting_group& group;
-private:
-	core_setting(core_setting&);
-	core_setting& operator=(core_setting&);
 };
 
 /**
@@ -173,23 +120,27 @@ struct core_setting_group
 /**
  * Create a new group of settings.
  */
-	core_setting_group() throw();
+	core_setting_group(std::initializer_list<core_setting_param> settings);
 /**
- * Destructor.
+ * Create a new group of settings.
  */
-	~core_setting_group() throw();
-/**
- * Register a setting.
- */
-	void do_register(const std::string& name, core_setting& setting);
-/**
- * Unregister a setting.
- */
-	void do_unregister(const std::string& name);
+	core_setting_group(std::vector<core_setting_param> settings);
 /**
  * The settings.
  */
-	std::map<std::string, core_setting*> settings;
+	std::map<std::string, core_setting> settings;
+/**
+ * Get specified setting.
+ */
+	core_setting& operator[](const std::string& name) { return settings.find(name)->second; }
+/**
+ * Translate ivalue to index.
+ */
+	signed ivalue_to_index(std::map<std::string, std::string>& values, const std::string& name) const
+		throw(std::runtime_error)
+	{
+		return settings.find(name)->second.ivalue_to_index(values[name]);
+	}
 /**
  * Fill a map of settings with defaults.
  */
@@ -198,9 +149,6 @@ struct core_setting_group
  * Get set of settings.
  */
 	std::set<std::string> get_setting_set();
-private:
-	core_setting_group(core_setting_group&);
-	core_setting_group& operator=(core_setting_group&);
 };
 
 #endif

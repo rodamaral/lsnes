@@ -74,8 +74,6 @@ namespace
 
 #include "ports.inc"
 
-	core_setting_group gambatte_settings;
-
 	time_t walltime_fn()
 	{
 		if(rtc_fixed)
@@ -435,7 +433,7 @@ namespace
 			.bios = NULL,
 			.regions = {&gambatte_core},
 			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
-			.settings = &gambatte_settings,
+			.settings = {},
 			.core = &gambatte_core,
 		}}), core_sysregion("gdmg", *this, gambatte_core) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -463,7 +461,7 @@ namespace
 			.bios = NULL,
 			.regions = {&gambatte_core},
 			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
-			.settings = &gambatte_settings,
+			.settings = {},
 			.core = &gambatte_core,
 		}}), core_sysregion("ggbc", *this, gambatte_core) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
@@ -491,7 +489,7 @@ namespace
 			.bios = NULL,
 			.regions = {&gambatte_core},
 			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
-			.settings = &gambatte_settings,
+			.settings = {},
 			.core = &gambatte_core,
 		}}), core_sysregion("ggbca", *this, gambatte_core) {}
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,

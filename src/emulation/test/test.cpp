@@ -58,8 +58,6 @@ namespace
 
 #include "ports.inc"
 
-	core_setting_group test_settings;
-
 	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
 	{
 		port_index_triple x;
@@ -134,7 +132,7 @@ namespace
 			.bios = NULL,
 			.regions = {this},
 			.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
-			.settings = &test_settings,
+			.settings = {},
 			.core = this,
 		}}), core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
 		core_sysregion("test", *this, *this) {}

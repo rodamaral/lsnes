@@ -57,8 +57,6 @@ namespace
 
 	port_index_triple sync_triple = {true, 0, 0, 0 };
 
-	core_setting_group null_settings;
-
 	struct interface_device_reg null_registers[] = {
 		{NULL, NULL, NULL}
 	};
@@ -74,7 +72,7 @@ namespace
 			.bios = NULL,
 			.regions = {this},
 			.images = {},
-			.settings = &null_settings,
+			.settings = {},
 			.core = this,
 		}}), core_region({{"null", "(null)", 0, 0, false, {1, 60}, {0}}}),
 		core_sysregion("null", *this, *this) {}
