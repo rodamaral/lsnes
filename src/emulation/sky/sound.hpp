@@ -16,7 +16,7 @@ namespace sky
 	const int sound_beep = 3;		//O2/fuel exhausted.
 	const int sound_suppiles = 4;		//Suppiles received.
 
-	struct sounds; 
+	struct sounds;
 
 	struct sound
 	{

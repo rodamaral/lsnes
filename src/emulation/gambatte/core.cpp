@@ -132,7 +132,7 @@ namespace
 		instance->set_walltime_fn(walltime_fn);
 		memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
 		frame_overflow = 0;
-		
+
 		rtc_fixed = true;
 		rtc_fixed_val = rtc_sec;
 		instance->load(data, size, flags);

@@ -11,7 +11,7 @@ namespace sky
 
 	void render_backbuffer()
 	{
-		
+
 		for(unsigned i = 0; i < 200; i++) {
 			for(unsigned j = 0; j < 320; j++) {
 				for(unsigned k = 0; k < FB_SCALE; k++)
@@ -138,7 +138,7 @@ namespace sky
 		uint16_t p = 320 * y + x;
 		draw_block2(op, p, c1, c2);
 	}
-	
+
 	void draw_distance_column(uint16_t col, uint32_t c)
 	{
 		uint16_t minline = 0x8f;

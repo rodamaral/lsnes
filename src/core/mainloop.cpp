@@ -419,7 +419,7 @@ void update_movie_state()
 		_status.erase("!saveslotinfo");
 	}
 	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
-	
+
 	if(!system_corrupt) {
 		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
@@ -471,7 +471,7 @@ public:
 	~lsnes_callbacks() throw()
 	{
 	}
-	
+
 	int16_t get_input(unsigned port, unsigned index, unsigned control)
 	{
 		int16_t x;
@@ -503,7 +503,7 @@ public:
 	{
 		return lsnes_vset["firmwarepath"].str();
 	}
-	
+
 	std::string get_base_path()
 	{
 		return our_rom->msu1_base;

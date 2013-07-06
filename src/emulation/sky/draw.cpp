@@ -10,7 +10,7 @@
 	Point of escape is approximately at normalized y=0.16.
 	Baseline is approximately at normalized y=0.52
 	1st tile after starts approximately at y=0.38
-	
+
 
 
 
@@ -39,7 +39,7 @@ namespace sky
 		double x;
 		double y;
 	};
-	
+
 	struct pipe_cache
 	{
 		double min_h;
@@ -52,7 +52,7 @@ namespace sky
 		uint32_t colors[pipe_slices];
 	};
 	struct pipe_cache pipecache[7];
-	
+
 	unsigned top_palette[] = {61, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 	unsigned front_palette[] = {62, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
 	unsigned right_palette[] = {63, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45};
@@ -507,7 +507,7 @@ namespace sky
 			signed x = 255 * (xp - gmin) / (gmax - gmin);
 			c2 = max(min(c2, 1280), 0);
 			x = max(min(x, 255), 0);
-			p.colors[x] = mix_color(c, c2); 
+			p.colors[x] = mix_color(c, c2);
 		}
 		for(unsigned i = 0; i < 256; i++) {
 			if(p.colors[i] == 0xFFFFFFFF)
@@ -666,7 +666,7 @@ namespace sky
 						dist = cstart - dstart;
 					if(x > 0)
 						dist = dend - cend;
-						
+
 					if(dist > mindist)
 						hclip = true;
 					else

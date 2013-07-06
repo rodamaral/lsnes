@@ -971,7 +971,7 @@ node& node::insert_node(const std::u32string& pointer, const node& nwn) throw(st
 				base->xobject.erase(rest);
 				throw;
 			}
-		}		
+		}
 	} else
 		throw error(ERR_NOT_ARRAY_NOR_OBJECT);
 }
@@ -1420,4 +1420,3 @@ bool operator!=(const int& n, const JSON::boolean_tag& v) { return v != n; }
 bool operator!=(const int& n, const JSON::array_tag& v) { return v != n; }
 bool operator!=(const int& n, const JSON::object_tag& v) { return v != n; }
 bool operator!=(const int& n, const JSON::null_tag& v) { return v != n; }
-

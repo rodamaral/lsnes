@@ -69,7 +69,7 @@
 #define OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST 5120
 #define OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST 5122
 #define OPUS_SUPPORTS_SURROUND
-#define SURROUND_SUPPORTED opus_surround_supported() 
+#define SURROUND_SUPPORTED opus_surround_supported()
 #else
 #ifdef OPUS_SUPPORTS_SURROUND
 #define SURROUND_SUPPORTED 1
@@ -1380,7 +1380,7 @@ multistream_encoder::~multistream_encoder()
 		delete[] memory;
 }
 
-multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, unsigned _streams, 
+multistream_encoder::multistream_encoder(samplerate rate, unsigned _channels, unsigned _streams,
 	unsigned coupled_streams, const unsigned char* mapping, application app, char* _memory)
 {
 	user = (_memory != NULL);
@@ -1495,7 +1495,7 @@ surround_encoder::surround_encoder(samplerate rate, unsigned _channels, unsigned
 		offset = _channels * sizeof(encoder);  //Conservative.
 #ifdef OPUS_SUPPORTS_SURROUND
 		if(SURROUND_SUPPORTED)
-		throwex(opus_multistream_surround_encoder_init(ME(*this), rate, _channels, _family, &rstreams, 
+		throwex(opus_multistream_surround_encoder_init(ME(*this), rate, _channels, _family, &rstreams,
 			&rcoupled, rmapping, app));
 		else
 #endif

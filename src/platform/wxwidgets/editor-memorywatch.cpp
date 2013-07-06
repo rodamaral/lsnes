@@ -61,7 +61,7 @@ wxeditor_watchexpr::wxeditor_watchexpr(wxWindow* parent, const std::string& name
 		wxT("Signed byte"), wxT("Unsigned byte"), wxT("Signed word"), wxT("Unsigned word"),
 		wxT("Signed doubleword"), wxT("Unsigned doubleword"), wxT("Signed quadword"), wxT("Unsigned quadword")
 	};
-	
+
 	Centre();
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(9, 1, 0, 0);
 	SetSizer(top_s);
@@ -396,7 +396,7 @@ void wxeditor_memorywatch::on_close(wxCommandEvent& e)
 void wxeditor_memorywatch::refresh()
 {
 	std::map<std::string, std::string> bind;
-	runemufn([&bind]() { 
+	runemufn([&bind]() {
 		std::set<std::string> x = get_watches();
 		for(auto i : x)
 			bind[i] = get_watchexpr_for(i);

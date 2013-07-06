@@ -17,7 +17,7 @@ namespace sky
 		write64ule(state, ecore_callbacks->get_randomseed());
 		initialized = true;
 	}
-	
+
 	void random::push(uint32_t x)
 	{
 		if(!initialized)

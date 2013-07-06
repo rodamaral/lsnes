@@ -255,7 +255,7 @@ end:
 		}
 		refresh_alias_binds();
 	}
-	
+
 	void save_configuration()
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";
@@ -490,7 +490,7 @@ bool lsnes_app::OnInit()
 	init_lua();
 
 	joystick_thread_handle = new thread_class(joystick_thread, 7);
-	
+
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
@@ -573,7 +573,7 @@ namespace
 			initialize_wx_keyboard();
 		},
 		.quit = []() -> void {},
-		.notify_message = []() -> void 
+		.notify_message = []() -> void
 		{
 			post_ui_event(UISERV_UPDATE_MESSAGES);
 		},
@@ -724,7 +724,7 @@ std::string pick_text(wxWindow* parent, const std::string& title, const std::str
 
 void show_message_ok(wxWindow* parent, const std::string& title, const std::string& text, int icon)
 {
-	wxMessageDialog* d3 = new wxMessageDialog(parent, towxstring(text), towxstring(title), wxOK | icon); 
+	wxMessageDialog* d3 = new wxMessageDialog(parent, towxstring(text), towxstring(title), wxOK | icon);
 	d3->ShowModal();
 	d3->Destroy();
 }

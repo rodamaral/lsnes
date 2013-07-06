@@ -62,11 +62,11 @@ void cover_render_character(void* fb, unsigned x, unsigned y, uint32_t ch, uint3
 	size_t h, size_t istride, size_t pstride)
 {
 	if(pstride == 2)
-		cover_render_character<2>(fb, x, y, ch, fg, bg, w, h, istride); 
+		cover_render_character<2>(fb, x, y, ch, fg, bg, w, h, istride);
 	if(pstride == 3)
-		cover_render_character<3>(fb, x, y, ch, fg, bg, w, h, istride); 
+		cover_render_character<3>(fb, x, y, ch, fg, bg, w, h, istride);
 	if(pstride == 4)
-		cover_render_character<4>(fb, x, y, ch, fg, bg, w, h, istride); 
+		cover_render_character<4>(fb, x, y, ch, fg, bg, w, h, istride);
 }
 
 void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& str, uint32_t fg, uint32_t bg,

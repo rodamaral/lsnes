@@ -278,4 +278,3 @@ void avi_file_structure::finish_avi()
 	if(!*outstream)
 		throw std::runtime_error("Can't finish AVI");
 }
-

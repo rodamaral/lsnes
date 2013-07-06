@@ -43,7 +43,7 @@ template<bool uvswap>
 void pixel_format_rgb15<uvswap>::set_palette(pixel_format_aux_palette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
-	auxp.pcache.resize(0x8000); 
+	auxp.pcache.resize(0x8000);
 	for(size_t i = 0; i < 0x8000; i++) {
 		uint32_t r = ((i >> (uvswap ? 10 : 0)) & 0x1F);
 		uint32_t g = ((i >> 5) & 0x1F);
@@ -61,7 +61,7 @@ template<bool uvswap>
 void pixel_format_rgb15<uvswap>::set_palette(pixel_format_aux_palette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
-	auxp.pcache.resize(0x8000); 
+	auxp.pcache.resize(0x8000);
 	for(size_t i = 0; i < 0x8000; i++) {
 		uint64_t r = ((i >> (uvswap ? 10 : 0)) & 0x1F);
 		uint64_t g = ((i >> 5) & 0x1F);

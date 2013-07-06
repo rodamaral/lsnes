@@ -153,7 +153,7 @@ namespace
 				return std::make_pair(l.substr(0, i), l.substr(i + 3));
 		return std::make_pair("", l);
 	}
-	
+
 	class system_menu : public wxMenu
 	{
 	public:
@@ -365,7 +365,7 @@ namespace
 			return "";
 		else
 			return p->prefix + "." + ext;
-		
+
 	}
 
 	double pick_volume(wxWindow* win, const std::string& title, std::string& last)
@@ -542,7 +542,7 @@ namespace
 			std::string key2 = "type:" + i->get_iname();
 			if(core_selections.count(key2) && core_selections[key2] == val)
 				preferred_core[key2] = i;
-			
+
 		}
 	}
 
@@ -677,14 +677,14 @@ void wxwin_mainwindow::menu_special_sub(wxString name, wxMenu* menu)
 void wxwin_mainwindow::menu_entry(int id, wxString name)
 {
 	current_menu->Append(id, name);
-	Connect(id, wxEVT_COMMAND_MENU_SELECTED, 
+	Connect(id, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(wxwin_mainwindow::wxwin_mainwindow::handle_menu_click), NULL, this);
 }
 
 void wxwin_mainwindow::menu_entry_check(int id, wxString name)
 {
 	checkitems[id] = current_menu->AppendCheckItem(id, name);
-	Connect(id, wxEVT_COMMAND_MENU_SELECTED, 
+	Connect(id, wxEVT_COMMAND_MENU_SELECTED,
 		wxCommandEventHandler(wxwin_mainwindow::wxwin_mainwindow::handle_menu_click), NULL, this);
 }
 
@@ -1063,7 +1063,7 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 			s << U" Playback";
 		else if(read_variable_map(vars, "!mode") == U"F")
 			s << U" Finished";
-		else 
+		else
 			s << U" Unknown";
 		std::u32string macros = read_variable_map(vars, "!macros");
 		if(macros.length())
@@ -1439,7 +1439,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			} catch(std::exception& e) {
 				messages << "Failed to change project: " << e.what() << std::endl;
 			}
-			
+
 		});
 		return;
 	}

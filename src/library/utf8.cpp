@@ -57,7 +57,7 @@ int32_t utf8_parse_byte(int ch, uint16_t& state) throw()
 	else if(ch < 248)	iclass = 5;
 	else			iclass = 6;
 	unsigned char ctrl = transitions[astate * 7 + iclass];
-	
+
 	switch(ctrl & 0xF) {
 	case 0x0:
 		state = (ctrl & 0xF0) * 256;

@@ -107,11 +107,11 @@ void filesystem::free_cluster_chain(uint32_t cluster)
 		throw std::runtime_error("Bad cluster to free");
 	uint32_t oldnext = superclusters[cluster / CLUSTERS_PER_SUPER].clusters[cluster % CLUSTERS_PER_SUPER];
 	if(oldnext == 0)
-		throw std::runtime_error("Attempted to free free cluster");	
+		throw std::runtime_error("Attempted to free free cluster");
 	if(oldnext == 0xFFFFFFFFU)
 		throw std::runtime_error("Attempted to free system cluster");
 	superclusters[cluster / CLUSTERS_PER_SUPER].clusters[cluster % CLUSTERS_PER_SUPER] = 0;
-	//If there is no next block, or the next block is in different supercluster, save the cluster table. 
+	//If there is no next block, or the next block is in different supercluster, save the cluster table.
 	if(oldnext == 1 || oldnext / CLUSTERS_PER_SUPER != cluster / CLUSTERS_PER_SUPER)
 		superclusters[cluster / CLUSTERS_PER_SUPER].save(backing, cluster / CLUSTERS_PER_SUPER);
 	if(oldnext != 1)
@@ -141,7 +141,7 @@ size_t filesystem::skip_data(uint32_t& cluster, uint32_t& ptr, uint32_t length)
 			else if(n == 1 || n == 0xFFFFFFFFU) {
 				//Cluster is right.
 				ptr = CLUSTER_SIZE;
-				return r; 
+				return r;
 			} else {
 				cluster = n;
 				ptr = 0;
@@ -181,7 +181,7 @@ size_t filesystem::read_data(uint32_t& cluster, uint32_t& ptr, void* data, uint3
 			else if(n == 1 || n == 0xFFFFFFFFU) {
 				//Cluster is right.
 				ptr = CLUSTER_SIZE;
-				return r; 
+				return r;
 			} else {
 				cluster = n;
 				ptr = 0;
@@ -246,7 +246,7 @@ void filesystem::write_data(uint32_t& cluster, uint32_t& ptr, const void* data, 
 				n = allocate_cluster();
 				link_cluster(cluster, n);
 				cluster = n;
-				ptr = 0; 
+				ptr = 0;
 			} else {
 				cluster = n;
 				ptr = 0;
@@ -283,4 +283,3 @@ void filesystem::supercluster::save(std::fstream& s, uint32_t index)
 	if(!s)
 		throw std::runtime_error("Can't write cluster table");
 }
-

@@ -7,7 +7,7 @@ namespace sky
 		"MENU_FADEIN", "MENU", "MENU_FADEOUT", "LOAD_LEVEL", "LEVEL_FADEIN", "LEVEL_PLAY", "LEVEL_COMPLETE",
 		"LEVEL_FADEOUT", "LOAD_MENU", "LEVEL_UNAVAIL", "DEMO_UNAVAIL", "LEVEL_FADEOUT_RETRY"
 	};
-	
+
 	void gstate::level_init(uint8_t _stage)
 	{
 		stage = _stage;

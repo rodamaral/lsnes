@@ -76,7 +76,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 		c3_s->Add(projectpfx = new wxTextCtrl(this, wxID_ANY, towxstring(proj->prefix),
 			wxDefaultPosition, wxSize(300, -1)), 1, wxGROW);
 		top_s->Add(c3_s);
-		
+
 	} else {
 		directory = NULL;
 		pname = NULL;
@@ -162,7 +162,7 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 			for(auto i : our_movie.authors)
 				x = x + i.first + "|" + i.second + "\n";
 		}
-		
+
 	});
 	for(auto i : luascriptlist)
 		luascripts->Append(towxstring(i));
@@ -332,4 +332,3 @@ void wxeditor_authors_display(wxWindow* parent)
 	}
 	editor->Destroy();
 }
-

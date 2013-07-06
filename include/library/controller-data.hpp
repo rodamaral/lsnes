@@ -1090,7 +1090,7 @@ public:
  *   after given frame.
  * - If frame is in range, but there are no more sync subframes after it, the length of vector is returned.
  * - If frame is out of range, the given frame is returned.
- * 
+ *
  * Parameter frame: The frame number to start search from.
  * Returns: Index of next sync frame.
  */
@@ -1102,7 +1102,7 @@ public:
  * Get number of subframes in frame. The given subframe is assumed to be sync subframe.
  *
  * - The return value is the same as (walk_sync(frame) - frame).
- * 
+ *
  * Parameter frame: The frame number to start search from.
  * Returns: Number of subframes in this frame.
  */

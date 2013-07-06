@@ -39,7 +39,7 @@ void pixel_format_lrgb::decode(uint64_t* target, const uint8_t* src, size_t widt
 void pixel_format_lrgb::set_palette(pixel_format_aux_palette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
-	auxp.pcache.resize(0x80000); 
+	auxp.pcache.resize(0x80000);
 	for(size_t i = 0; i < 0x80000; i++) {
 		uint32_t l = 1 + ((i >> 15) & 0xF);
 		uint32_t r = l * ((i >> 0) & 0x1F);
@@ -57,7 +57,7 @@ void pixel_format_lrgb::set_palette(pixel_format_aux_palette<false>& auxp, uint8
 void pixel_format_lrgb::set_palette(pixel_format_aux_palette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
-	auxp.pcache.resize(0x80000); 
+	auxp.pcache.resize(0x80000);
 	for(size_t i = 0; i < 0x80000; i++) {
 		uint64_t l = 1 + ((i >> 15) & 0xF);
 		uint64_t r = l * ((i >> 0) & 0x1F);

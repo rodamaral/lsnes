@@ -13,7 +13,7 @@ namespace sky
 		virtual ~noise_maker();
 		virtual void operator()(int sound, bool hipri = true) = 0;
 	};
-	
+
 	struct physics
 	{
 		const static uint8_t death_none = 0;		//Playing.

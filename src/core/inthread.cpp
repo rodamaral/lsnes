@@ -82,7 +82,7 @@ namespace
 	//are started.
 	bool time_jump;
 	//Lock protecting active_playback_streams.
-	mutex_class active_playback_streams_lock; 
+	mutex_class active_playback_streams_lock;
 	//List of streams currently playing.
 	std::list<opus_playback_stream*> active_playback_streams;
 	//The collection of streams.
@@ -458,7 +458,7 @@ out_parsing:
 				case 0:		//Not locked.
 					h = parse_oggopus_header(page);
 					if(h.streams != 1)
-						throw std::runtime_error("Multistream OggOpus streams are not " 
+						throw std::runtime_error("Multistream OggOpus streams are not "
 							"supported");
 					state = 1;	//Expecting comment.
 					pregap_length = h.preskip;

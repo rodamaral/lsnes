@@ -346,7 +346,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 			keyentry_mod_data m;
 			std::string i = i2->get_name();
 			t2_s->Add(new wxStaticText(this, wxID_ANY, towxstring(i)), 0, wxGROW);
-			t2_s->Add(m.pressed = new wxComboBox(this, wxID_ANY, boxchoices[1], wxDefaultPosition, 
+			t2_s->Add(m.pressed = new wxComboBox(this, wxID_ANY, boxchoices[1], wxDefaultPosition,
 				wxDefaultSize, 3, boxchoices, wxCB_READONLY), 1, wxGROW);
 			m.pressed->SetSelection(1);
 			modifiers[i] = m;
@@ -411,7 +411,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 			modifiers[mod].pressed->SetSelection(0);
 			on_change_setting(e);
 		}
-	}	
+	}
 
 	void wxdialog_keyentry::set_mod(const std::string& mod)
 	{
@@ -422,7 +422,7 @@ int extract_token(std::string& str, std::string& tok, const char* sep, bool seq 
 			modifiers[mod].pressed->SetSelection(2);
 			on_change_setting(e);
 		}
-	}	
+	}
 
 	void wxdialog_keyentry::set_set(const std::string& mset,
 		void (wxdialog_keyentry::*fn)(const std::string& mod))
@@ -657,7 +657,7 @@ void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
 	std::string _tol = tostdstring(tol->GetValue());
 	keyboard_key_axis* k = NULL;
 	keyboard_key* _k;
-	
+
 	_k = lsnes_kbd.try_lookup_key(aname);
 	if(_k)
 		k = _k->cast_axis();
@@ -1208,7 +1208,7 @@ void wxeditor_esettings_hotkeys::change_category(int cat)
 	for(auto i : itemlabels)
 		if(i.first.first == cat)
 			n[i.first.second] = i.second;
-	
+
 	for(size_t i = 0; i < control->GetCount(); i++)
 		if(n.count(i))
 			control->SetString(i, towxstring(n[i]));
@@ -1252,7 +1252,7 @@ void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
 			ik->set(key, true);
 		else
 			ik->clear(true);
-		
+
 	} catch(...) {
 	}
 	refresh();
@@ -1433,7 +1433,7 @@ void wxeditor_esettings_controllers::change_category(int cat)
 	for(auto i : itemlabels)
 		if(i.first.first == cat)
 			n[i.first.second] = i.second;
-	
+
 	for(size_t i = 0; i < control->GetCount(); i++)
 		if(n.count(i))
 			control->SetString(i, towxstring(n[i]));
@@ -1829,7 +1829,7 @@ namespace
 			SetSizer(s1);
 			s1->Add(new wxStaticText(this, wxID_ANY, towxstring("Set " + name + " to value:")), 0,
 				wxGROW);
-			
+
 			s1->Add(sp = new wxSpinCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
 				wxSP_ARROW_KEYS, minval, maxval, parse_value<int64_t>(val)), 1, wxGROW);
 
@@ -2099,7 +2099,7 @@ wxeditor_esettings::wxeditor_esettings(wxWindow* parent, int mode)
 		tabset->AddPage(advtab = new wxeditor_esettings_advanced(tabset), wxT("Advanced"));
 		top_s->Add(tabset, 1, wxGROW);
 	}
-	
+
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(closebutton = new wxButton(this, wxID_ANY, wxT("Close")), 0, wxGROW);

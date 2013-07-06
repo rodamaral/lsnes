@@ -921,4 +921,3 @@ uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize)
 	case 3:		return (z <= 48) ? z : 0;
 	};
 }
-

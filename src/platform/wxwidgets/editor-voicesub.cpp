@@ -80,7 +80,7 @@ private:
 	wxButton* refreshbutton;
 	wxButton* closebutton;
 	refresh_listener* rlistener;
-	
+
 };
 
 wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)

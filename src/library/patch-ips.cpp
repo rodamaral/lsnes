@@ -42,7 +42,7 @@ namespace
 		out = original;
 		const char* _patch = &patch[0];
 		size_t psize = patch.size();
-		
+
 		uint64_t ioffset = 5;
 		while(true) {
 			bool rle = false;

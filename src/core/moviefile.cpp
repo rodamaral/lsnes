@@ -321,7 +321,7 @@ void read_subtitles(zip_reader& r, const std::string& file, std::map<moviefile_s
 		delete &m;
 		throw;
 	}
-	
+
 }
 
 void write_subtitles(zip_writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)

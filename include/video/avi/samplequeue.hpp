@@ -47,7 +47,7 @@ private:
 	size_t rptr;
 	size_t wptr;
 	size_t size;
-	mutex_class lock; 
+	mutex_class lock;
 };
 
 struct frame_object

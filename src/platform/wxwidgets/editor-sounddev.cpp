@@ -53,7 +53,7 @@ wxeditor_sounddev::wxeditor_sounddev(wxWindow* parent)
 		pdev->Disable();
 	if(available_rdevs.size() < 2)
 		rdev->Disable();
-	
+
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(okbutton = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
@@ -106,4 +106,3 @@ void wxeditor_sounddev_display(wxWindow* parent)
 	}
 	editor->Destroy();
 }
-

@@ -109,7 +109,7 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 			return;
 		}
 	}
-	
+
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
@@ -119,7 +119,7 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 	cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxeditor_action::on_cancel), NULL, this);
 	top_s->Add(pbutton_s, 0, wxGROW);
-	
+
 	top_s->SetSizeHints(this);
 	wxCommandEvent d;
 	on_change(d);
@@ -183,7 +183,7 @@ void wxeditor_action::on_ok(wxCommandEvent& e)
 			show_message_ok(this, "Internal error", (stringfmt() << "Unknown parameter model in '"
 				<< i->model << "'.").str(), wxICON_EXCLAMATION);
 			return;
-		}		
+		}
 		results.push_back(pv);
 	}
 	EndModal(wxID_OK);
@@ -227,7 +227,7 @@ void wxeditor_action::on_change(wxCommandEvent& e)
 		} else if(regex_match("toggle", i->model)) {
 		} else {
 			goto bad;
-		}		
+		}
 	}
 	ok->Enable();
 	return;
@@ -248,7 +248,7 @@ std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, co
 		x.push_back(interface_action_paramval());
 		return x;
 	}
-	modal_pause_holder hld;	
+	modal_pause_holder hld;
 	try {
 		wxeditor_action* f = new wxeditor_action(parent, label, params);
 		int r = f->ShowModal();
@@ -265,4 +265,3 @@ std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, co
 		throw canceled_exception();
 	}
 }
-

@@ -71,7 +71,7 @@ namespace sky
 			}
 		}
 	}
-	
+
 	void faded_framebuffer(uint16_t alpha)
 	{
 		indirect_flag = true;
@@ -134,7 +134,7 @@ namespace sky
 		s.fadecount = 1;
 		return ((b & ~s.lastkeys) & 0x30) ? state_load_menu : state_level_unavail;
 	}
-	
+
 	uint8_t do_demo_unavail(gstate& s, uint16_t b)
 	{
 		indirect_flag = false;
@@ -170,7 +170,7 @@ namespace sky
 			return (b & 32) ? state_level_fadeout : state_level_complete;
 		if(b & 112)
 			return state_level_fadeout;
-		return (s.fadecount == 48) ? state_level_fadeout : state_level_complete; 
+		return (s.fadecount == 48) ? state_level_fadeout : state_level_complete;
 	}
 
 	uint8_t do_menu(gstate& s, uint16_t b)

@@ -86,7 +86,7 @@ private:
 
 //The following are intended to be used by the emulator core.
 
-/** 
+/**
  * Submit a buffer for playback on music channel.
  *
  * Parameter samples: The samples in the buffer. If stereo is true, each sample takes two elements (L, R).

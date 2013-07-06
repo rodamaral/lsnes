@@ -1,5 +1,5 @@
 ifeq ($(SOUND), PORTAUDIO)
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) 
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 PA_CFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --cflags)
 PA_LDFLAGS += $(shell $(CROSS_PREFIX)pkg-config portaudio-2.0 --libs)
 else

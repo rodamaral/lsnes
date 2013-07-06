@@ -266,8 +266,8 @@ struct fec
 	operator bool() { return f; }
 	static generic_meget<fec> get;
 	typedef void erettype;
-	void operator()(encoder& e) const;	
-	void operator()(multistream_encoder& e) const;	
+	void operator()(encoder& e) const;
+	void operator()(multistream_encoder& e) const;
 	void operator()(surround_encoder& e) const;
 	void errordefault() const {}
 private:
@@ -503,7 +503,7 @@ private:
 class multistream_encoder
 {
 public:
-	multistream_encoder(samplerate rate, unsigned channels, unsigned streams, 
+	multistream_encoder(samplerate rate, unsigned channels, unsigned streams,
 		unsigned coupled_streams, const unsigned char* mapping, application app, char* memory = NULL);
 	static size_t size(unsigned streams, unsigned coupled_streams);
 	size_t size() const { return size(streams, coupled); }

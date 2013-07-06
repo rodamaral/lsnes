@@ -30,7 +30,7 @@ namespace sky
 		{7459,0},{5275,5275},{0,7459},{6460,3731},{3731,6460},{4568,4568},{5275,5275},
 		{6368,0},{4502,4502},{0,6368},{5515,3183},{3183,5515},{5515,3183},{3183,5515},{4502,4502}
 	};
-	
+
 	size_t downmix_idx[9] = {0, 0, 1, 3, 6, 10, 15, 21, 28};
 
 	uint32_t pick_subsong(random& rng, const std::set<uint32_t>& candidates)
@@ -97,7 +97,7 @@ namespace sky
 		xfade_pts = past_end;
 		end_pts = past_end;
 	}
-	
+
 	void subsong_transition::fixup(uint64_t pregap, uint64_t datalen, const std::string& ssname)
 	{
 		if(start_pts == past_end)
@@ -314,7 +314,7 @@ namespace sky
 		}
 /*
 		for(auto& i : ssid_to_lsid) {
-			std::cerr << "SSID: " << i.first << " (#" << i.second << ") Start: " 
+			std::cerr << "SSID: " << i.first << " (#" << i.second << ") Start: "
 				<< stransitions[i.second].start_pts / 48 << "ms Fade:"
 				<< stransitions[i.second].xfade_pts / 48 << "ms End:"
 				<< stransitions[i.second].end_pts / 48 << "ms"
@@ -389,7 +389,7 @@ namespace sky
 			parse_ogg_header(p, ctx);
 		else if(ctx.pages == 1)
 			parse_ogg_tags(p, ctx);
-		else 
+		else
 			parse_ogg_data(p, ctx);
 		ctx.pages++;
 		return true;
@@ -471,7 +471,7 @@ namespace sky
 					<< samples << " samples, found " << ctx.pts - ctx.last_pts << std::endl;
 		} else if(p.get_eos())
 			//On EOS page, clip.
-			ctx.pts = ctx.last_pts + samples; 
+			ctx.pts = ctx.last_pts + samples;
 		else if(samples < ctx.pts - ctx.last_pts)
 			messages << "Warning: " << p.page_debug_id() << " Granulepos says there are " << samples
 				<< " samples, found " << ctx.pts - ctx.last_pts << std::endl;
@@ -691,4 +691,3 @@ namespace sky
 		}
 	}
 }
-

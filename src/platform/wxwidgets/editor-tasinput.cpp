@@ -427,7 +427,7 @@ void wxeditor_tasinput::update_controls()
 		if(i.type == port_controller_button::TYPE_BUTTON) {
 			t.check = new wxCheckBox(current_p, next_id, towxstring(i.name));
 			current->Add(t.check);
-			t.check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,  
+			t.check->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 				wxCommandEventHandler(wxeditor_tasinput::on_control), NULL, this);
 		} else {
 			t.panel = new xypanel(current_p, current, i, this,

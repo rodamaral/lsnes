@@ -12,7 +12,7 @@
 
 namespace sky
 {
-	bool pflag; 
+	bool pflag;
 	int cstyle = 0;
 	const unsigned iindexes[3][7] = {
 		{0, 1, 2, 3, 4, 5, 6},

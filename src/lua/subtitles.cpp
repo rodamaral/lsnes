@@ -40,4 +40,3 @@ namespace
 		return 0;
 	});
 }
-

@@ -401,7 +401,7 @@ void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std:
 	if(expr != "") {
 		if(p)
 			p->watches[w] = expr;
-		else 
+		else
 			watches[w] = expr;
 		status.set("M[" + w + "]", evaluate_watch(expr));
 	} else {

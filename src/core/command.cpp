@@ -33,4 +33,3 @@ void refresh_alias_binds()
 			alias_binds[i] = new inverse_bind(lsnes_mapper, i, "Alias‣" + i);
 	}
 }
-

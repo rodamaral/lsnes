@@ -103,7 +103,7 @@ namespace
 			L.pushlstring(_key.c_str(), _key.length());
 			L.pushlstring(cmd.c_str(), cmd.length());
 			L.rawset(-3);
-			
+
 		}
 		return 1;
 	});

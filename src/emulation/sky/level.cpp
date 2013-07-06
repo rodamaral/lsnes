@@ -133,7 +133,7 @@ namespace sky
 		buf[1] = v >> 8;
 		h.write(buf, 2);
 	}
-	
+
 	void rom_level::sha256_hash(uint8_t* buffer)
 	{
 		sha256 h;

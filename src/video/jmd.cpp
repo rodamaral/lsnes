@@ -350,7 +350,7 @@ namespace
 		{
 			return "JMD";
 		}
-		
+
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			return (mode == "tcp") ? "over TCP/IP" : "to file";
@@ -398,7 +398,7 @@ namespace
 			information_dispatch::do_dumper_update();
 		}
 	} adv;
-	
+
 	adv_jmd_dumper::~adv_jmd_dumper() throw()
 	{
 	}

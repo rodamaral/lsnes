@@ -65,7 +65,7 @@ namespace
 						hl.apply(p[j]);
 					else
 						bg.apply(p[j]);
-					
+
 				}
 			}
 		} else {

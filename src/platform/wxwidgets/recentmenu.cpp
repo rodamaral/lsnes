@@ -57,4 +57,3 @@ void recent_menu::add(const std::string& file)
 {
 	rfiles.add(file);
 }
-

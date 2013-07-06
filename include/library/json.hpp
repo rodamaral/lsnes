@@ -11,7 +11,7 @@
 
 namespace JSON
 {
-class node;	
+class node;
 
 struct number_tag
 {
@@ -37,7 +37,7 @@ struct string_tag
 struct boolean_tag
 {
 	const static int id = 1;
-	node operator()(bool v);	
+	node operator()(bool v);
 	bool operator==(const int& n) const { return n == id; }
 	bool operator!=(const int& n) const { return !(*this == n); }
 	operator int() { return id; }
@@ -64,8 +64,8 @@ struct null_tag
 {
 	const static int id = 0;
 	node operator()() const;
-	bool operator==(const int& n) const { return n == id; }	
-	bool operator!=(const int& n) const { return !(*this == n); }	
+	bool operator==(const int& n) const { return n == id; }
+	bool operator!=(const int& n) const { return !(*this == n); }
 	operator int() { return id; }
 };
 
@@ -165,8 +165,8 @@ public:
 /**
  * Compare nodes.
  */
- 	bool operator==(const node& n) const;
- 	bool operator!=(const node& n) const { return !(*this == n); }
+	bool operator==(const node& n) const;
+	bool operator!=(const node& n) const { return !(*this == n); }
 /**
  * Copy Constructor.
  */

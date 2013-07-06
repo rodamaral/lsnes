@@ -122,4 +122,3 @@ void graphics_driver_action_updated()
 {
 	driver.action_updated();
 }
-

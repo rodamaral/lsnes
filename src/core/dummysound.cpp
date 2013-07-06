@@ -104,4 +104,3 @@ const char* audioapi_driver_name() throw()
 {
 	return driver.name();
 }
-

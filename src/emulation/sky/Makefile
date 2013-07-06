@@ -1,4 +1,4 @@
-OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp)) 
+OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files
 

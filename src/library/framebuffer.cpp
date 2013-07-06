@@ -419,7 +419,7 @@ void framebuffer<X>::reallocate(size_t _width, size_t _height, bool _upside_down
 			element_t* newmem = new element_t[_width * _height];
 			delete[] mem;
 			mem = newmem;
-		} else 
+		} else
 			mem = new element_t[_width * _height];
 	}
 	memset(mem, 0, sizeof(element_t) * _width * _height);

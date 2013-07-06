@@ -80,4 +80,3 @@ namespace
 		return 0;
 	});
 }
-

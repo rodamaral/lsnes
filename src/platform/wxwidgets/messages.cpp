@@ -17,7 +17,7 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 
 
 wxwin_messages::wxwin_messages()
-	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Messages"), wxDefaultPosition, wxSize(-1, -1), 
+	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Messages"), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
 {
 	wxFlexGridSizer* top_s = new wxFlexGridSizer(3, 1, 0, 0);

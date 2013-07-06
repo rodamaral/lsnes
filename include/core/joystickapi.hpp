@@ -48,5 +48,3 @@ void joystick_driver_signal() throw();
 const char* joystick_driver_name();
 
 #endif
-
-

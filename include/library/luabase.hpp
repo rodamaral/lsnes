@@ -66,7 +66,7 @@ public:
 	 * Returns: The parameter structure.
 	 */
 	template<typename T> static struct _numeric_tag<T> numeric_tag(T v) { return _numeric_tag<T>(v); }
-	
+
 	/**
 	 * Callback parameter: Execute function to push more parameters.
 	 *

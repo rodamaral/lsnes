@@ -91,7 +91,7 @@ void avi_output_stream::start(std::ostream& out, avi_video_codec& _vcodec, avi_a
 	if(in_segment)
 		end();
 	in_segment = false;
-	
+
 	avi_audio_codec::format afmt = _acodec.reset(samplerate, channels);
 	avi_video_codec::format vfmt = _vcodec.reset(width, height, fps_n, fps_d);
 
@@ -145,7 +145,7 @@ void avi_output_stream::start(std::ostream& out, avi_video_codec& _vcodec, avi_a
 	achans = channels;
 	video_timer.rate(fps_n, fps_d);
 	audio_timer.rate(samplerate);
-	
+
 	while(!vcodec->ready())
 		write_pkt(avifile, vcodec->getpacket(), 0);
 	while(!acodec->ready())

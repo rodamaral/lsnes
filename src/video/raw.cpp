@@ -171,7 +171,7 @@ namespace
 		{
 			return "RAW";
 		}
-		
+
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			unsigned _mode = strhash(mode);
@@ -227,7 +227,7 @@ namespace
 			information_dispatch::do_dumper_update();
 		}
 	} adv;
-	
+
 	adv_raw_dumper::~adv_raw_dumper() throw()
 	{
 	}

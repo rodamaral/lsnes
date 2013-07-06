@@ -96,7 +96,7 @@ namespace
 
 port_type_set::port_type_set() throw()
 {
-	
+
 	port_offsets = &dummy_offset;
 	port_types = &dummy_type;
 	port_count = 1;
@@ -106,7 +106,7 @@ port_type_set::port_type_set() throw()
 	_indices[0].port = 0;
 	_indices[0].controller = 0;
 	_indices[0].control = 0;
-	
+
 	port_multiplier = 1;
 	controller_multiplier = 1;
 	indices_size = 1;
@@ -458,7 +458,7 @@ size_t controller_frame_vector::count_frames() throw()
 			ret++;
 		index++;
 		offset += frame_size;
-		
+
 	}
 	return ret;
 }

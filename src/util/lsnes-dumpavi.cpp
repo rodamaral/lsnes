@@ -113,11 +113,11 @@ namespace
 			r = r + "TARGET_PREFIX";
 		else if((detail & adv_dumper::target_type_mask) == adv_dumper::target_type_special)
 			r = r + "TARGET_SPECIAL";
-		else 
+		else
 			r = r + "TARGET_UNKNOWN";
 		return r;
 	}
-	
+
 	adv_dumper& get_dumper(const std::vector<std::string>& cmdline, std::string& mode, std::string& prefix,
 		uint64_t& length)
 	{
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
 		cmdline.push_back(argv[i]);
 	uint64_t length;
 	std::string mode, prefix;
-	
+
 	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
 
 	set_random_seed();

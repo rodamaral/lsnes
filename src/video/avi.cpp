@@ -191,7 +191,7 @@ namespace
 		set_busy();
 		set_workflag(WORKFLAG_QUEUE_FRAME);
 	}
-	
+
 	void avi_worker::queue_audio(int16_t* data, size_t samples)
 	{
 		rethrow();
@@ -450,7 +450,7 @@ again:
 		{
 			return "AVI (internal)";
 		}
-		
+
 		std::string modename(const std::string& mode) throw(std::bad_alloc)
 		{
 			auto c = find_codecs(mode);
@@ -508,7 +508,7 @@ again:
 			information_dispatch::do_dumper_update();
 		}
 	} adv;
-	
+
 	adv_avi_dumper::~adv_avi_dumper() throw()
 	{
 	}

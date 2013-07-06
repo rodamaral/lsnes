@@ -381,7 +381,7 @@ namespace
 			movb.get_movie().recount_frames();
 		update_movie_state();
 		graphics_driver_notify_status();
-	}	
+	}
 }
 
 wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
@@ -801,7 +801,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
 					movie_framecount_change(-1);
 			}
 		}
-		
+
 	});
 	max_subframe = row;
 	recursing = false;
@@ -1205,7 +1205,7 @@ wxeditor_movie::wxeditor_movie(wxWindow* parent)
 	panel_s->Add(moviepanel = new _moviepanel(this), 1, wxGROW);
 	panel_s->Add(moviescroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 	top_s->Add(panel_s, 1, wxGROW);
-	
+
 	moviescroll->set_page_size(lines_to_display);
 	moviescroll->set_handler([this](scroll_bar& s) {
 		this->moviepanel->moviepos = s.get_position();

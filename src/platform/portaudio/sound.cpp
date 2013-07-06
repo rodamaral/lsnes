@@ -198,7 +198,7 @@ namespace
 		current_rfreq = 0;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 	}
-	
+
 	void close_all()
 	{
 		if(current_rdev == current_pdev && current_rdev != paNoDevice)
@@ -228,7 +228,7 @@ namespace
 				messages << "Portaudio: No sound input" << std::endl;
 		}
 	}
-	
+
 	//Switch output device only in split-duplex configuration.
 	unsigned switch_devices_outonly(PaDeviceIndex dev)
 	{
@@ -559,4 +559,3 @@ namespace
 	};
 	struct audioapi_driver _drv(drv);
 }
-

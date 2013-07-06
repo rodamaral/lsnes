@@ -54,4 +54,3 @@ bool wxwindow_romload::show(wxWindow* parent)
 	delete d;
 	return true;
 }
-

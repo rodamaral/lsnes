@@ -82,7 +82,7 @@ namespace
 	dummy_cb_proc* dummy_cb_proc_obj;
 	thread_class* dummy_cb_thread;
 
-	
+
 //  | -1  1 -1  1 | 1  0  0  0 |
 //  |  0  0  0  1 | 0  1  0  0 |
 //  |  1  1  1  1 | 0  0  1  0 |
@@ -200,7 +200,6 @@ unsigned audioapi_voice_r_status()
 		return voicer_bufsize - (g - p);
 	else
 		return (p - g);
-	
 }
 
 void audioapi_play_voice(float* samples, size_t count)

@@ -61,7 +61,7 @@ namespace
 		L.pushnumber(t % 1000000);
 		return 2;
 	});
-	
+
 	function_ptr_luafun lua_idle_time(LS, "set_idle_timeout", [](lua_state& L, const std::string& fname) -> int {
 		lua_idle_hook_time = get_utime() + L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		return 0;

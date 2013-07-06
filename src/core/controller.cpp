@@ -204,7 +204,7 @@ namespace
 	//The rules for class number allocations are:
 	//- Different cores allocate numbers independently.
 	//- Within the same core, the allocations for higher port start after the previous port ends.
-	
+
 
 	void process_controller(std::map<std::string, unsigned>& allocated,
 		std::map<controller_triple, unsigned>& assigned,  port_controller& controller, unsigned port,

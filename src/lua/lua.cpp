@@ -270,7 +270,7 @@ void lua_callback_do_idle() throw()
 
 void lua_callback_do_timer() throw()
 {
-	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;	
+	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 	run_callback("on_timer");
 }
 
@@ -393,7 +393,7 @@ void init_lua(bool soft) throw()
 		messages << "Can't initialize Lua." << std::endl;
 		if(soft)
 			return;
-		fatal_error();	
+		fatal_error();
 	}
 	luaL_openlibs(LS.handle());
 	run_sysrc_lua(LS);

@@ -167,7 +167,7 @@ namespace
 			}
 		}
 	}
-	
+
 	inline void dq_entry(uint64_t* still_in, uint64_t& candidates, uint64_t i)
 	{
 		if((still_in[i / 64] >> (i % 64)) & 1) {

@@ -347,7 +347,7 @@ no_watch:
 			luascripts->SetSelection(wxNOT_FOUND);
 		on_luasel(e);
 	}
-	
+
 	void wxwin_newproject::reorder_scripts(int delta)
 	{
 		int sel = luascripts->GetSelection();
@@ -360,13 +360,13 @@ no_watch:
 		luascripts->SetString(sel + delta, a);
 		luascripts->SetSelection(sel + delta);
 	}
-	
+
 	void wxwin_newproject::on_up(wxCommandEvent& e)
 	{
 		reorder_scripts(-1);
 		on_luasel(e);
 	}
-	
+
 	void wxwin_newproject::on_down(wxCommandEvent& e)
 	{
 		reorder_scripts(1);

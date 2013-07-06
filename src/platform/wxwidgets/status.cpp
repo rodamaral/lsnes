@@ -98,7 +98,7 @@ void wxwin_status::panel::prepare_paint()
 			write(U"\u2500", 0, i, p, 0, 0xFFFFFF);
 		p++;
 	}
-	
+
 	if(oth_count) {
 		if(!single)
 			write("Status:", 0, 0, p++, 0, 0xFFFFFF);

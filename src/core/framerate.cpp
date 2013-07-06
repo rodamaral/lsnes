@@ -39,9 +39,9 @@ namespace
 		if(update) {
 			time_at_last_update += (curtime - last_time_update);
 			last_time_update = curtime;
-			return time_at_last_update; 
+			return time_at_last_update;
 		} else
-			return time_at_last_update + (curtime - last_time_update); 
+			return time_at_last_update + (curtime - last_time_update);
 	}
 
 	double get_realized_fps()
@@ -121,7 +121,7 @@ void unfreeze_time(uint64_t curtime)
 {
 	if(time_frozen)
 		last_time_update = curtime;
-	time_frozen = false;	
+	time_frozen = false;
 }
 
 void set_nominal_framerate(double fps) throw()

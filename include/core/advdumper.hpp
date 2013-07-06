@@ -94,7 +94,7 @@ public:
 	virtual void start(const std::string& mode, const std::string& targetname) throw(std::bad_alloc,
 		std::runtime_error) = 0;
 /**
- * End current dump. 
+ * End current dump.
  */
 	virtual void end() throw() = 0;
 private:

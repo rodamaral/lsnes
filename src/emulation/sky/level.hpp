@@ -36,7 +36,7 @@ namespace sky
 		uint32_t palette[72];
 		uint16_t tiles[32620];
 	};
-	
+
 	struct rom_level
 	{
 		rom_level(const std::vector<char>& data, size_t offset, size_t length);

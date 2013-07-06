@@ -86,7 +86,7 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 
 void wxeditor_autohold::on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
 {
-	runuifun([this, port, controller, ctrlnum, newstate]() { 
+	runuifun([this, port, controller, ctrlnum, newstate]() {
 		for(auto i : this->autoholds) {
 			if(i.second.port != port) continue;
 			if(i.second.controller != controller) continue;
@@ -99,7 +99,7 @@ void wxeditor_autohold::on_autohold_update(unsigned port, unsigned controller, u
 void wxeditor_autohold::on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
 	unsigned cyclelen)
 {
-	runuifun([this, port, controller, ctrlnum, duty]() { 
+	runuifun([this, port, controller, ctrlnum, duty]() {
 		for(auto i : this->autoholds) {
 			if(i.second.port != port) continue;
 			if(i.second.controller != controller) continue;
