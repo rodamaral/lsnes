@@ -145,7 +145,6 @@ namespace
 	};
 
 #include "ports.inc"
-#include "slots.inc"
 
 	core_region region_auto{{"autodetect", "Autodetect", 1, 0, true, {178683, 10738636}, {0,1,2}}};
 	core_region region_pal{{"pal", "PAL", 0, 2, false, {6448, 322445}, {2}}};

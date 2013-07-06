@@ -57,7 +57,6 @@ namespace
 	};
 
 #include "ports.inc"
-#include "slots.inc"
 
 	core_setting_group test_settings;
 
