@@ -496,39 +496,6 @@ namespace
 			set_speed_multiplier(target / 100);
 	}
 
-	class broadcast_listener : public information_dispatch
-	{
-	public:
-		broadcast_listener(wxwin_mainwindow* win);
-		void on_sound_unmute(bool unmute) throw();
-		void on_mode_change(bool readonly) throw();
-		void on_core_change();
-		void on_new_core();
-	private:
-		wxwin_mainwindow* mainw;
-	};
-
-	broadcast_listener::broadcast_listener(wxwin_mainwindow* win)
-		: information_dispatch("wxwidgets-broadcast-listener")
-	{
-		mainw = win;
-	}
-
-	void broadcast_listener::on_core_change()
-	{
-		signal_core_change();
-	}
-
-	void broadcast_listener::on_sound_unmute(bool unmute) throw()
-	{
-		runuifun([this, unmute]() { this->mainw->menu_check(wxID_AUDIO_ENABLED, unmute); });
-	}
-
-	void broadcast_listener::on_mode_change(bool readonly) throw()
-	{
-		runuifun([this, readonly]() { this->mainw->menu_check(wxID_READONLY_MODE, readonly); });
-	}
-
 	void update_preferences()
 	{
 		preferred_core.clear();
@@ -542,13 +509,7 @@ namespace
 			std::string key2 = "type:" + i->get_iname();
 			if(core_selections.count(key2) && core_selections[key2] == val)
 				preferred_core[key2] = i;
-
 		}
-	}
-
-	void broadcast_listener::on_new_core()
-	{
-		update_preferences();
 	}
 
 	std::string movie_path()
@@ -852,7 +813,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	: wxFrame(NULL, wxID_ANY, getname(), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
-	broadcast_listener* blistener = new broadcast_listener(this);
 	Centre();
 	mwindow = NULL;
 	toplevel = new wxFlexGridSizer(1, 2, 0, 0);
@@ -981,6 +941,14 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start(wxT("Help"));
 	menu_entry(wxID_ABOUT, wxT("About..."));
 
+	corechange.set(notify_core_change, []() { signal_core_change(); });
+	newcore.set(notify_new_core, []() { update_preferences(); });
+	unmuted.set(notify_sound_unmute, [this](bool unmute) {
+		runuifun([this, unmute]() { this->menu_check(wxID_AUDIO_ENABLED, unmute); });
+	});
+	modechange.set(notify_mode_change, [this](bool readonly) {
+		runuifun([this, readonly]() { this->menu_check(wxID_READONLY_MODE, readonly); });
+	});
 	gpanel->SetDropTarget(new loadfile(this));
 	spanel->SetDropTarget(new loadfile(this));
 }

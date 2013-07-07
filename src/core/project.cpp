@@ -352,7 +352,7 @@ bool project_set(project_info* p, bool current)
 		if(active_project)
 			voicesub_unload_collection();
 		active_project = p;
-		information_dispatch::do_core_change();
+		notify_core_change();
 		return true;
 	}
 
@@ -404,8 +404,7 @@ skip_rom_movie:
 	if(switched) {
 		do_flush_slotinfo();
 		update_movie_state();
-		information_dispatch::do_status_update();
-		information_dispatch::do_core_change();
+		notify_core_change();
 	}
 	return switched;
 }

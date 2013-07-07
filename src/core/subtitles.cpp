@@ -112,7 +112,7 @@ namespace
 				our_movie.subtitles.erase(key);
 			else
 				our_movie.subtitles[key] = s_unescape(text);
-			information_dispatch::do_subtitle_change();
+			notify_subtitle_change();
 			redraw_framebuffer();
 		});
 
@@ -234,6 +234,6 @@ void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x)
 		our_movie.subtitles.erase(key);
 	else
 		our_movie.subtitles[key] = s_unescape(x);
-	information_dispatch::do_subtitle_change();
+	notify_subtitle_change();
 	redraw_framebuffer();
 }

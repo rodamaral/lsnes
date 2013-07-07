@@ -302,7 +302,7 @@ namespace
 			if(lua_callback_do_button(x.port, x.controller, x.bind.control1, nstate ? "hold" : "unhold"))
 				return;
 			controls.autohold2(x.port, x.controller, x.bind.control1, nstate);
-			information_dispatch::do_autohold_update(x.port, x.controller, x.bind.control1, nstate);
+			notify_autohold_update(x.port, x.controller, x.bind.control1, nstate);
 		} else if(mode == 2) {
 			//Framehold.
 			bool nstate = controls.framehold2(x.port, x.controller, x.bind.control1) ^ newstate;
@@ -418,14 +418,14 @@ namespace
 				<< duty << " " << cyclelen).str().c_str()))
 				return;
 			controls.autofire2(z.port, z.controller, z.bind.control1, duty, cyclelen);
-			information_dispatch::do_autofire_update(z.port, z.controller, z.bind.control1, duty,
+			notify_autofire_update(z.port, z.controller, z.bind.control1, duty,
 				cyclelen);
 		} else if(mode == 0 || (mode == -1 && afire.first != 0)) {
 			//Turn off.
 			if(lua_callback_do_button(z.port, z.controller, z.bind.control1, "autofire"))
 				return;
 			controls.autofire2(z.port, z.controller, z.bind.control1, 0, 1);
-			information_dispatch::do_autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
+			notify_autofire_update(z.port, z.controller, z.bind.control1, 0, 1);
 		}
 	}
 
@@ -501,16 +501,14 @@ namespace
 			controls.do_macro(a, 2);
 		});
 
-	class new_core_snoop : public information_dispatch
+	class new_core_snoop
 	{
 	public:
-		new_core_snoop() : information_dispatch("controller-newcore")
+		new_core_snoop()
 		{
+			ncore.set(notify_new_core, []() { init_buttonmap(); });
 		}
-		void on_new_core()
-		{
-			init_buttonmap();
-		}
+		struct dispatch_target<> ncore;
 	} coresnoop;
 }
 

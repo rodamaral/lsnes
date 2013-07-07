@@ -193,27 +193,10 @@ private:
 			}
 		}
 	};
-	struct refresh_listener : public information_dispatch
-	{
-		refresh_listener(wxwin_vumeter* v)
-			: information_dispatch("voicesub-editor-change-listner")
-		{
-			obj = v;
-		}
-		void on_vu_change()
-		{
-			wxwin_vumeter* _obj = obj;
-			if(!obj->update_sent) {
-				obj->update_sent = true;
-				runuifun([_obj]() -> void { _obj->refresh(); });
-			}
-		}
-		wxwin_vumeter* obj;
-	};
 	volatile bool update_sent;
 	bool closing;
 	wxButton* closebutton;
-	refresh_listener* rlistener;
+	struct dispatch_target<> vulistener;
 	_vupanel* vupanel;
 	wxStaticText* rate;
 	wxSlider* gamevol;
@@ -267,13 +250,17 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	rlistener = new refresh_listener(this);
+	vulistener.set(notify_vu_change, [this]() {
+		if(!this->update_sent) {
+			this->update_sent = true;
+			runuifun([this]() -> void { this->refresh(); });
+		}
+	});
 	refresh();
 }
 
 wxwin_vumeter::~wxwin_vumeter() throw()
 {
-	delete rlistener;
 }
 
 void wxwin_vumeter::on_game_change(wxScrollEvent& e)

@@ -13,7 +13,7 @@ void handle_post_loadlibrary()
 {
 	if(new_core_flag) {
 		new_core_flag = false;
-		information_dispatch::do_new_core();
+		notify_new_core();
 	}
 }
 

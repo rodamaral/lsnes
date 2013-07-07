@@ -413,7 +413,7 @@ void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std:
 	}
 	if(p)
 		project_flush(p);
-	information_dispatch::do_status_update();
+	notify_status_update();
 }
 
 void do_watch_memory()

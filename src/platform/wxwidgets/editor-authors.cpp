@@ -229,8 +229,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			//For save status to immediately update.
 			do_flush_slotinfo();
 			update_movie_state();
-			information_dispatch::do_status_update();
-			information_dispatch::do_core_change();
+			notify_core_change();
 		} else {
 			our_movie.gamename = gamename;
 			our_movie.authors = newauthors;

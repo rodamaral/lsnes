@@ -3,6 +3,7 @@
 
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/menu_recent.hpp"
+#include "library/dispatch.hpp"
 
 #include <stack>
 
@@ -65,6 +66,10 @@ private:
 	void* sounddev1;
 	void* sounddev2;
 	void* dmenu;
+	struct dispatch_target<> corechange;
+	struct dispatch_target<> newcore;
+	struct dispatch_target<bool> unmuted;
+	struct dispatch_target<bool> modechange;
 };
 
 #endif

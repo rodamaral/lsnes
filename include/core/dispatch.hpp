@@ -3,6 +3,7 @@
 
 #include "core/keymapper.hpp"
 #include "library/framebuffer.hpp"
+#include "library/dispatch.hpp"
 
 #include <cstdint>
 #include <string>
@@ -101,95 +102,6 @@ public:
  * Destroy object.
  */
 	virtual ~information_dispatch() throw();
-/**
- * Window close event received (this is not emulator close!)
- *
- * The default handler does nothing.
- */
-	virtual void on_close();
-/**
- * Call all on_close() handlers.
- */
-	static void do_close() throw();
-/**
- * Sound mute/unmute status might have been changed.
- *
- * The default handler does nothing.
- *
- * Parameter unmuted: If true, the sound is now enabled. If false, the sound is now disabled.
- */
-	virtual void on_sound_unmute(bool unmuted);
-/**
- * Call all on_sound_unmute() handlers.
- */
-	static void do_sound_unmute(bool unmuted) throw();
-/**
- * Sound device might have been changed.
- *
- * The default handler does nothing.
- *
- * Parameter dev: The device name sound is now playing (if enabled) from.
- */
-	virtual void on_sound_change(std::pair<std::string, std::string> dev);
-/**
- * Call all on_sound_change() handlers.
- */
-	static void do_sound_change(std::pair<std::string, std::string> dev) throw();
-/**
- * Emulator mode might have been changed.
- *
- * The default handler does nothing.
- *
- * Parameter readonly: True if readonly mode is now active, false if now in readwrite mode.
- */
-	virtual void on_mode_change(bool readonly);
-/**
- * Call all on_mode_change() handlers.
- */
-	static void do_mode_change(bool readonly) throw();
-/**
- * Autohold on button might have been changed.
- *
- * The default handler does nothing.
- *
- * Parameter port: The port.
- * Parameter controller: The controller
- * Parameter ctrlnum: Physical control number (0-15).
- * Parameter newstate: True if autohold is now active, false if autohold is now inactive.
- */
-	virtual void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
-/**
- * Call all on_autohold_update() handlers.
- */
-	static void do_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate) throw();
-/**
- * Autofire on button might have been changed.
- *
- * The default handler does nothing.
- *
- * Parameter port: The port.
- * Parameter controller: The controller
- * Parameter ctrlnum: Physical control number (0-15).
- * Parameter duty: Duty cycle.
- * Parameter cyclelen: Cycle length.
- */
-	virtual void on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-		unsigned cyclelen);
-/**
- * Call all on_autohold_update() handlers.
- */
-	static void do_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-		unsigned cyclelen) throw();
-/**
- * Controller configuration may have been changed.
- *
- * The default handler does nothing.
- */
-	virtual void on_autohold_reconfigure();
-/**
- * Call all on_autohold_reconfigure() handlers.
- */
-	static void do_autohold_reconfigure() throw();
 /**
  * A frame has been received.
  *
@@ -319,38 +231,6 @@ public:
  */
 	const std::string& get_name() throw();
 /**
- * Render buffer needs to be (possibly) resized, so that graphics plugin can update the mappings.
- *
- * Default implementation does nothing.
- *
- * parameter scr: The render buffer object.
- */
-	virtual void on_set_screen(framebuffer<false>& scr);
-/**
- * Call on_set_screen on all objects.
- */
-	static void do_set_screen(framebuffer<false>& scr) throw();
-/**
- * Notify that new frame is available.
- *
- * Default implementation does nothing.
- */
-	virtual void on_screen_update();
-/**
- * Call on_screen_update() in all objects.
- */
-	static void do_screen_update() throw();
-/**
- * Notify that status buffer has been updated.
- *
- * Default implementation does nothing.
- */
-	virtual void on_status_update();
-/**
- * Call on_status_update() in all objects.
- */
-	static void do_status_update() throw();
-/**
  * Notify that some dumper has attached, deattached, popped into existence or disappeared.
  *
  * Default implementation does nothing.
@@ -360,57 +240,6 @@ public:
  * Call on_dumper_update on on all objects.
  */
 	static void do_dumper_update() throw();
-/**
- * Notify that core changed.
- *
- * Default implementation does nothing.
- */
-	virtual void on_core_change();
-/**
- * Call on_core_change on on all objects.
- */
-	static void do_core_change() throw();
-/**
- * Notify that there is a new core.
- *
- * Default implementation does nothing.
- */
-	virtual void on_new_core();
-/**
- * Call on_new_core on on all objects.
- */
-	static void do_new_core() throw();
-/**
- * Notify about changes to voice streams.
- *
- * Default implementation does nothing.
- */
-	virtual void on_voice_stream_change();
-/**
- * Call on_voice_stream_change on all objects.
- */
-	static void do_voice_stream_change() throw();
-/**
- * Notify about changes to subtitles.
- *
- * Default implementation does nothing.
- */
-	virtual void on_subtitle_change();
-/**
- * Call on_subtitle_change on all objects.
- */
-	static void do_subtitle_change() throw();
-/**
- * Notify about changes to VU levels.
- *
- * Default implementation does nothing.
- */
-	virtual void on_vu_change();
-/**
- * Call on_vu_change on all objects.
- */
-	static void do_vu_change() throw();
-
 protected:
 /**
  * Call to indicate this target is interested in sound sample data.
@@ -423,5 +252,23 @@ private:
 	std::string target_name;
 	bool notified_as_dumper;
 };
+
+void dispatch_set_error_streams(std::ostream* stream);
+
+extern struct dispatcher<> notify_autohold_reconfigure;
+extern struct dispatcher<unsigned, unsigned, unsigned, bool> notify_autohold_update;
+extern struct dispatcher<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update;
+extern struct dispatcher<> notify_close;
+extern struct dispatcher<framebuffer<false>&> notify_set_screen;
+extern struct dispatcher<std::pair<std::string, std::string>> notify_sound_change;
+extern struct dispatcher<> notify_screen_update;
+extern struct dispatcher<> notify_status_update;
+extern struct dispatcher<bool> notify_sound_unmute;
+extern struct dispatcher<bool> notify_mode_change;
+extern struct dispatcher<> notify_core_change;
+extern struct dispatcher<> notify_new_core;
+extern struct dispatcher<> notify_voice_stream_change;
+extern struct dispatcher<> notify_vu_change;
+extern struct dispatcher<> notify_subtitle_change;
 
 #endif

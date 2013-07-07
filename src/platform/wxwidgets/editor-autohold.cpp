@@ -20,7 +20,7 @@
 #include <wx/combobox.h>
 #include <wx/statline.h>
 
-class wxeditor_autohold : public wxDialog, public information_dispatch
+class wxeditor_autohold : public wxDialog
 {
 public:
 	wxeditor_autohold(wxWindow* parent);
@@ -28,11 +28,11 @@ public:
 	bool ShouldPreventAppExit() const;
 	void on_wclose(wxCloseEvent& e);
 	void on_checkbox(wxCommandEvent& e);
-	void on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate);
-	void on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-		unsigned cyclelen);
-	void on_autohold_reconfigure();
 private:
+	struct dispatch_target<unsigned, unsigned, unsigned, bool> ahupdate;
+	struct dispatch_target<unsigned, unsigned, unsigned, unsigned, unsigned> afupdate;
+	struct dispatch_target<> ahreconfigure;
+
 	struct control_triple
 	{
 		unsigned port;
@@ -71,8 +71,7 @@ namespace
 wxeditor_autohold::~wxeditor_autohold() throw() {}
 
 wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1)),
-	information_dispatch("autohold-listener")
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: Autohold/Autofire"), wxDefaultPosition, wxSize(-1, -1))
 {
 	closing = false;
 	Centre();
@@ -82,46 +81,42 @@ wxeditor_autohold::wxeditor_autohold(wxWindow* parent)
 	update_controls();
 	hsizer->SetSizeHints(this);
 	Fit();
-}
 
-void wxeditor_autohold::on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
-{
-	runuifun([this, port, controller, ctrlnum, newstate]() {
-		for(auto i : this->autoholds) {
-			if(i.second.port != port) continue;
-			if(i.second.controller != controller) continue;
-			if(i.second.index != ctrlnum) continue;
-			i.second.check->SetValue(newstate);
-		}
+	ahupdate.set(notify_autohold_update, [this](unsigned port, unsigned controller, unsigned ctrlnum,
+		bool newstate) {
+		runuifun([this, port, controller, ctrlnum, newstate]() {
+			for(auto i : this->autoholds) {
+				if(i.second.port != port) continue;
+				if(i.second.controller != controller) continue;
+				if(i.second.index != ctrlnum) continue;
+				i.second.check->SetValue(newstate);
+			}
+		});
 	});
-}
-
-void wxeditor_autohold::on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-	unsigned cyclelen)
-{
-	runuifun([this, port, controller, ctrlnum, duty]() {
-		for(auto i : this->autoholds) {
-			if(i.second.port != port) continue;
-			if(i.second.controller != controller) continue;
-			if(i.second.index != ctrlnum) continue;
-			i.second.afcheck->SetValue(duty != 0);
-		}
+	afupdate.set(notify_autofire_update, [this](unsigned port, unsigned controller, unsigned ctrlnum,
+		unsigned duty, unsigned cyclelen) {
+		runuifun([this, port, controller, ctrlnum, duty]() {
+			for(auto i : this->autoholds) {
+				if(i.second.port != port) continue;
+				if(i.second.controller != controller) continue;
+				if(i.second.index != ctrlnum) continue;
+				i.second.afcheck->SetValue(duty != 0);
+			}
+		});
 	});
-}
-
-void wxeditor_autohold::on_autohold_reconfigure()
-{
-	runuifun([this]() {
-		try {
-			this->update_controls();
-		} catch(std::runtime_error& e) {
-			//Close the window.
-			bool wasc = closing;
-			closing = true;
-			autohold_open = NULL;
-			if(!wasc)
-				Destroy();
-		}
+	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
+		runuifun([this]() {
+			try {
+				this->update_controls();
+			} catch(std::runtime_error& e) {
+				//Close the window.
+				bool wasc = closing;
+				closing = true;
+				autohold_open = NULL;
+				if(!wasc)
+					Destroy();
+			}
+		});
 	});
 }
 

@@ -127,106 +127,6 @@ information_dispatch::~information_dispatch() throw()
 		}
 }
 
-void information_dispatch::on_close()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_close() throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_close();
-		END_EH_BLOCK(i, "on_close");
-	}
-}
-
-void information_dispatch::on_sound_unmute(bool unmuted)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_sound_unmute(bool unmuted) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_sound_unmute(unmuted);
-		END_EH_BLOCK(i, "on_sound_unmute");
-	}
-}
-
-void information_dispatch::on_sound_change(std::pair<std::string, std::string> dev)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_sound_change(std::pair<std::string,std::string> dev) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_sound_change(dev);
-		END_EH_BLOCK(i, "on_sound_change");
-	}
-}
-
-void information_dispatch::on_mode_change(bool readonly)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_mode_change(bool readonly) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_mode_change(readonly);
-		END_EH_BLOCK(i, "on_mode_change");
-	}
-}
-
-void information_dispatch::on_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_autohold_update(unsigned port, unsigned controller, unsigned ctrlnum, bool newstate) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_autohold_update(port, controller, ctrlnum, newstate);
-		END_EH_BLOCK(i, "on_autohold_update");
-	}
-}
-
-void information_dispatch::on_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-	unsigned cyclelen)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_autofire_update(unsigned port, unsigned controller, unsigned ctrlnum, unsigned duty,
-	unsigned cyclelen) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_autofire_update(port, controller, ctrlnum, duty, cyclelen);
-		END_EH_BLOCK(i, "on_autofire_update");
-	}
-}
-
-void information_dispatch::on_autohold_reconfigure()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_autohold_reconfigure() throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_autohold_reconfigure();
-		END_EH_BLOCK(i, "on_autohold_reconfigure");
-	}
-}
-
 void information_dispatch::on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 {
 	//Do nothing.
@@ -399,48 +299,6 @@ void information_dispatch::update_dumpers(bool nocalls) throw()
 	}
 }
 
-void information_dispatch::on_set_screen(framebuffer<false>& scr)
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_set_screen(framebuffer<false>& scr) throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_set_screen(scr);
-		END_EH_BLOCK(i, "on_set_screen");
-	}
-}
-
-void information_dispatch::on_screen_update()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_screen_update() throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_screen_update();
-		END_EH_BLOCK(i, "on_screen_update");
-	}
-}
-
-void information_dispatch::on_status_update()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_status_update() throw()
-{
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_status_update();
-		END_EH_BLOCK(i, "on_status_update");
-	}
-}
-
 void information_dispatch::enable_send_sound() throw(std::bad_alloc)
 {
 	dispatch_audio().push_back(this);
@@ -462,82 +320,37 @@ void information_dispatch::do_dumper_update() throw()
 	}
 }
 
-void information_dispatch::on_core_change()
+void dispatch_set_error_streams(std::ostream* stream)
 {
-	//Do nothing.
+	notify_autofire_update.errors_to(stream);
+	notify_autohold_reconfigure.errors_to(stream);
+	notify_autohold_update.errors_to(stream);
+	notify_close.errors_to(stream);
+	notify_core_change.errors_to(stream);
+	notify_mode_change.errors_to(stream);
+	notify_new_core.errors_to(stream);
+	notify_screen_update.errors_to(stream);
+	notify_set_screen.errors_to(stream);
+	notify_sound_change.errors_to(stream);
+	notify_sound_unmute.errors_to(stream);
+	notify_status_update.errors_to(stream);
+	notify_subtitle_change.errors_to(stream);
+	notify_voice_stream_change.errors_to(stream);
+	notify_vu_change.errors_to(stream);
 }
 
-void information_dispatch::do_core_change() throw()
-{
-	if(in_global_ctors())
-		return;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_core_change();
-		END_EH_BLOCK(i, "on_core_change");
-	}
-}
-
-void information_dispatch::on_new_core()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_new_core() throw()
-{
-	if(in_global_ctors())
-		return;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_new_core();
-		END_EH_BLOCK(i, "on_new_core");
-	}
-}
-
-void information_dispatch::on_voice_stream_change()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_voice_stream_change() throw()
-{
-	if(in_global_ctors())
-		return;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_voice_stream_change();
-		END_EH_BLOCK(i, "on_voice_stream_change");
-	}
-}
-
-void information_dispatch::on_subtitle_change()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_subtitle_change() throw()
-{
-	if(in_global_ctors())
-		return;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_subtitle_change();
-		END_EH_BLOCK(i, "on_subtitle_change");
-	}
-}
-
-void information_dispatch::on_vu_change()
-{
-	//Do nothing.
-}
-
-void information_dispatch::do_vu_change() throw()
-{
-	if(in_global_ctors())
-		return;
-	for(auto& i : dispatch()) {
-		START_EH_BLOCK
-		i->on_vu_change();
-		END_EH_BLOCK(i, "on_vu_change");
-	}
-}
+struct dispatcher<> notify_autohold_reconfigure("autohold_reconfigure");
+struct dispatcher<unsigned, unsigned, unsigned, bool> notify_autohold_update("autohold_update");
+struct dispatcher<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update("autofire_update");
+struct dispatcher<> notify_close("notify_close");
+struct dispatcher<framebuffer<false>&> notify_set_screen("set_screen");
+struct dispatcher<std::pair<std::string, std::string>> notify_sound_change("sound_change");
+struct dispatcher<> notify_screen_update("screen_update");
+struct dispatcher<> notify_status_update("status_update");
+struct dispatcher<bool> notify_sound_unmute("sound_unmute");
+struct dispatcher<bool> notify_mode_change("mode_change");
+struct dispatcher<> notify_core_change("core_change");
+struct dispatcher<> notify_new_core("new_core");
+struct dispatcher<> notify_voice_stream_change("voice_stream_change");
+struct dispatcher<> notify_vu_change("vu_change");
+struct dispatcher<> notify_subtitle_change("subtitle_change");

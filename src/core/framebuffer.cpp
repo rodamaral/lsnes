@@ -190,7 +190,7 @@ void redraw_framebuffer(framebuffer_raw& todraw, bool no_lua, bool spontaneous)
 	ri.tgap = lrc.top_gap;
 	ri.bgap = lrc.bottom_gap;
 	buffering.end_write();
-	information_dispatch::do_screen_update();
+	notify_screen_update();
 	last_redraw_no_lua = no_lua;
 }
 
@@ -212,7 +212,7 @@ void render_framebuffer()
 	main_screen.set_origin(ri.lgap, ri.tgap);
 	main_screen.copy_from(ri.fbuf, ri.hscl, ri.vscl);
 	ri.rq.run(main_screen);
-	information_dispatch::do_set_screen(main_screen);
+	notify_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
 	keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
 	keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");

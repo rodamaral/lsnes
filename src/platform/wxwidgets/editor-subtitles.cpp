@@ -37,20 +37,6 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void refresh();
 private:
-	struct refresh_listener : public information_dispatch
-	{
-		refresh_listener(wxeditor_subtitles* v)
-			: information_dispatch("subtitle-editor-change-listener")
-		{
-			obj = v;
-		}
-		void on_subtitle_change()
-		{
-			wxeditor_subtitles* _obj = obj;
-			runuifun([_obj]() -> void { _obj->refresh(); });
-		}
-		wxeditor_subtitles* obj;
-	};
 	bool closing;
 	wxListBox* subs;
 	wxTextCtrl* subtext;
@@ -59,7 +45,7 @@ private:
 	wxButton* _delete;
 	wxButton* close;
 	std::map<int, subdata> subtexts;
-	refresh_listener* rlistener;
+	struct dispatch_target<> subchange;
 };
 
 namespace
@@ -205,13 +191,12 @@ wxeditor_subtitles::wxeditor_subtitles(wxWindow* parent)
 	pbutton_s->SetSizeHints(this);
 	top_s->SetSizeHints(this);
 	Fit();
-	rlistener = new refresh_listener(this);
+	subchange.set(notify_subtitle_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
 	refresh();
 }
 
 wxeditor_subtitles::~wxeditor_subtitles() throw()
 {
-	delete rlistener;
 }
 
 bool wxeditor_subtitles::ShouldPreventAppExit() const

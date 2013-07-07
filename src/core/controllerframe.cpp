@@ -63,7 +63,7 @@ void controller_state::analog(unsigned port, unsigned controller, unsigned contr
 void controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid, bool newstate) throw()
 {
 	_autohold.axis3(port, controller, pbid, newstate ? 1 : 0);
-	information_dispatch::do_autohold_update(port, controller, pbid, newstate);
+	notify_autohold_update(port, controller, pbid, newstate);
 }
 
 bool controller_state::autohold2(unsigned port, unsigned controller, unsigned pbid) throw()
@@ -190,7 +190,7 @@ void controller_state::set_ports(const port_type_set& ptype) throw(std::runtime_
 		_autohold = _autohold.blank_frame();
 	}
 	reread_active_buttons();
-	information_dispatch::do_autohold_reconfigure();
+	notify_autohold_reconfigure();
 }
 
 controller_frame controller_state::get_blank() throw()
@@ -361,7 +361,7 @@ void controller_state::do_macro(const std::string& a, int mode) {
 	}
 end:
 	update_movie_state();
-	information_dispatch::do_status_update();
+	notify_status_update();
 }
 
 std::set<std::string> controller_state::active_macro_set()

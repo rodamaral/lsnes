@@ -245,9 +245,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 		}
 		location_special = SPECIAL_FRAME_START;
 		update_movie_state();
-
 	}
-	information_dispatch::do_status_update();
 	platform::flush_command_queue();
 	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
 	our_rom->rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
@@ -300,7 +298,7 @@ namespace
 			our_movie.romimg_sha256[i] = "";
 			our_movie.romxml_sha256[i] = "";
 		}
-		information_dispatch::do_core_change();
+		notify_core_change();
 		return true;
 	}
 
@@ -351,7 +349,7 @@ namespace
 			return false;
 		}
 		messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
-		information_dispatch::do_core_change();
+		notify_core_change();
 		return true;
 	}
 
@@ -366,7 +364,6 @@ namespace
 					save_jukebox_pointer = 0;
 			}
 			update_movie_state();
-			information_dispatch::do_status_update();
 		}
 	};
 }
@@ -459,6 +456,7 @@ void update_movie_state()
 		c.display(pindex.first, pindex.second, buffer);
 		_status.set((stringfmt() << "P" << (i + 1)).str(), buffer);
 	}
+	notify_status_update();
 }
 
 uint64_t audio_irq_time;
@@ -593,7 +591,6 @@ namespace
 			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
-			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> save_jukebox_next(lsnes_cmd, "cycle-jukebox-forward", "Cycle save jukebox forwards",
@@ -608,7 +605,6 @@ namespace
 			if(save_jukebox_pointer >= jukebox_size)
 				save_jukebox_pointer = 0;
 			update_movie_state();
-			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> load_jukebox(lsnes_cmd, "load-jukebox", "Load save from jukebox",
@@ -778,19 +774,17 @@ namespace
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(false);
-			information_dispatch::do_mode_change(false);
+			notify_mode_change(false);
 			lua_callback_do_readwrite();
 			update_movie_state();
-			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> set_romode(lsnes_cmd, "set-romode", "Switch to read-only mode",
 		"Syntax: set-romode\nSwitches to read-only mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			movb.get_movie().readonly_mode(true);
-			information_dispatch::do_mode_change(true);
+			notify_mode_change(true);
 			update_movie_state();
-			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> toggle_rwmode(lsnes_cmd, "toggle-rwmode", "Toggle read/write mode",
@@ -798,11 +792,10 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = movb.get_movie().readonly_mode();
 			movb.get_movie().readonly_mode(!c);
-			information_dispatch::do_mode_change(!c);
+			notify_mode_change(!c);
 			if(c)
 				lua_callback_do_readwrite();
 			update_movie_state();
-			information_dispatch::do_status_update();
 		});
 
 	function_ptr_command<> repaint(lsnes_cmd, "repaint", "Redraw the screen",
@@ -966,7 +959,26 @@ namespace
 	class mywindowcallbacks : public information_dispatch
 	{
 	public:
-		mywindowcallbacks() : information_dispatch("mainloop-window-callbacks") {}
+		mywindowcallbacks() : information_dispatch("mainloop-window-callbacks")
+		{
+			closenotify.set(notify_close, [this]() {
+				if(on_quit_prompt) {
+					amode = ADVANCE_QUIT;
+					platform::set_paused(false);
+					platform::cancel_wait();
+					return;
+				}
+				on_quit_prompt = true;
+				try {
+					amode = ADVANCE_QUIT;
+					platform::set_paused(false);
+					platform::cancel_wait();
+				} catch(...) {
+				}
+				on_quit_prompt = false;
+			});
+		}
+		~mywindowcallbacks() throw() {}
 		void on_new_dumper(const std::string& n)
 		{
 			update_movie_state();
@@ -975,23 +987,8 @@ namespace
 		{
 			update_movie_state();
 		}
-		void on_close() throw()
-		{
-			if(on_quit_prompt) {
-				amode = ADVANCE_QUIT;
-				platform::set_paused(false);
-				platform::cancel_wait();
-				return;
-			}
-			on_quit_prompt = true;
-			try {
-				amode = ADVANCE_QUIT;
-				platform::set_paused(false);
-				platform::cancel_wait();
-			} catch(...) {
-			}
-			on_quit_prompt = false;
-		}
+	private:
+		struct dispatch_target<> closenotify;
 	} mywcb;
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load
@@ -1002,7 +999,7 @@ namespace
 			uint64_t t = get_utime();
 			std::vector<char> s;
 			lua_callback_do_unsafe_rewind(s, 0, 0, movb.get_movie(), unsafe_rewind_obj);
-			information_dispatch::do_mode_change(false);
+			notify_mode_change(false);
 			do_unsafe_rewind = false;
 			our_movie.is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
@@ -1058,7 +1055,6 @@ nothing_to_do:
 			if(!system_corrupt) {
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
-				information_dispatch::do_status_update();
 				platform::flush_command_queue();
 			}
 			if(old_project != our_movie.projectid)
@@ -1109,6 +1105,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	std::runtime_error)
 {
 	//Basic initialization.
+	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = this_thread_id();
 	jukebox_size_listener jlistener;
 	voicethread_task();

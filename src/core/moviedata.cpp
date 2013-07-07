@@ -109,7 +109,6 @@ namespace
 			mprefix = pfx;
 		}
 		update_movie_state();
-		information_dispatch::do_status_update();
 	}
 
 	std::string get_mprefix_for_project(const std::string& prjid)
@@ -324,7 +323,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		redraw_framebuffer(screen_corrupt, true);
 		throw;
 	}
-	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
+	notify_mode_change(movb.get_movie().readonly_mode());
 	our_movie.is_savestate = false;
 	our_movie.host_memory.clear();
 	if(reload)
@@ -457,7 +456,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		} else
 			redraw_framebuffer(our_rom->rtype->draw_cover());
 	}
-	information_dispatch::do_mode_change(movb.get_movie().readonly_mode());
+	notify_mode_change(movb.get_movie().readonly_mode());
 	if(our_rom->rtype)
 		messages << "ROM Type " << our_rom->rtype->get_hname() << " region " << our_rom->region->get_hname()
 			<< std::endl;

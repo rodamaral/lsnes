@@ -68,7 +68,7 @@ namespace
 	}
 }
 
-class wxeditor_tasinput : public wxDialog, public information_dispatch
+class wxeditor_tasinput : public wxDialog
 {
 public:
 	wxeditor_tasinput(wxWindow* parent);
@@ -76,10 +76,10 @@ public:
 	bool ShouldPreventAppExit() const;
 	void on_wclose(wxCloseEvent& e);
 	void on_control(wxCommandEvent& e);
-	void on_autohold_reconfigure();
 	void on_keyboard_up(wxKeyEvent& e);
 	void on_keyboard_down(wxKeyEvent& e);
 private:
+	struct dispatch_target<> ahreconfigure;
 	struct xypanel;
 	struct control_triple
 	{
@@ -239,8 +239,7 @@ void wxeditor_tasinput::xypanel::Destroy()
 wxeditor_tasinput::~wxeditor_tasinput() throw() {}
 
 wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
-	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1)),
-		information_dispatch("tasinput-listener")
+	: wxDialog(parent, wxID_ANY, wxT("lsnes: TAS input plugin"), wxDefaultPosition, wxSize(-1, -1))
 {
 	closing = false;
 	Centre();
@@ -250,6 +249,22 @@ wxeditor_tasinput::wxeditor_tasinput(wxWindow* parent)
 	update_controls();
 	hsizer->SetSizeHints(this);
 	Fit();
+
+	ahreconfigure.set(notify_autohold_reconfigure, [this]() {
+		runuifun([this]() {
+			try {
+				this->update_controls();
+			} catch(std::runtime_error& e) {
+				//Close the window.
+				bool wasc = closing;
+				closing = true;
+				tasinput_open = NULL;
+				controls.tasinput_enable(false);
+				if(!wasc)
+					Destroy();
+			}
+		});
+	});
 }
 
 void wxeditor_tasinput::connect_keyboard_recursive(wxWindow* win)
@@ -261,23 +276,6 @@ void wxeditor_tasinput::connect_keyboard_recursive(wxWindow* win)
 		connect_keyboard_recursive(i->GetData());
 		i = i->GetNext();
 	}
-}
-
-void wxeditor_tasinput::on_autohold_reconfigure()
-{
-	runuifun([this]() {
-		try {
-			this->update_controls();
-		} catch(std::runtime_error& e) {
-			//Close the window.
-			bool wasc = closing;
-			closing = true;
-			tasinput_open = NULL;
-			controls.tasinput_enable(false);
-			if(!wasc)
-				Destroy();
-		}
-	});
 }
 
 void wxeditor_tasinput::on_control(wxCommandEvent& e)

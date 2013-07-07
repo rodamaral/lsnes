@@ -275,7 +275,7 @@ public:
 	scroll_bar* get_scroll();
 	void update();
 private:
-	struct _moviepanel : public wxPanel, public information_dispatch
+	struct _moviepanel : public wxPanel
 	{
 		_moviepanel(wxeditor_movie* v);
 		~_moviepanel() throw();
@@ -388,8 +388,7 @@ wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
 wxeditor_movie::~wxeditor_movie() throw() {}
 
 wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
-	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS),
-	information_dispatch("movieeditor-listener")
+	: wxPanel(v, wxID_ANY, wxDefaultPosition, wxSize(100, 100), wxWANTS_CHARS)
 {
 	m = v;
 	Connect(wxEVT_PAINT, wxPaintEventHandler(_moviepanel::on_paint), NULL, this);

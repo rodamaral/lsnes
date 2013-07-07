@@ -1525,7 +1525,7 @@ out:
 				messages << "Can't add stream: " << e.what() << std::endl;
 				active_stream->put_ref();
 			}
-			information_dispatch::do_voice_stream_change();
+			notify_voice_stream_change();
 		} else
 			active_stream->put_ref();
 		active_stream = NULL;
@@ -1800,7 +1800,7 @@ uint64_t voicesub_import_stream(uint64_t ts, const std::string& filename, extern
 		throw;
 	}
 	st->unlock();	//Not locked.
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 	return id;
 }
 
@@ -1810,7 +1810,7 @@ void voicesub_delete_stream(uint64_t id)
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->delete_stream(id);
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 }
 
 void voicesub_export_superstream(const std::string& filename)
@@ -1834,7 +1834,7 @@ void voicesub_load_collection(const std::string& filename)
 	if(current_collection)
 		delete current_collection;
 	current_collection = newc;
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 }
 
 void voicesub_unload_collection()
@@ -1843,7 +1843,7 @@ void voicesub_unload_collection()
 	if(current_collection)
 		delete current_collection;
 	current_collection = NULL;
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 }
 
 void voicesub_alter_timebase(uint64_t id, uint64_t ts)
@@ -1852,7 +1852,7 @@ void voicesub_alter_timebase(uint64_t id, uint64_t ts)
 	if(!current_collection)
 		throw std::runtime_error("No collection loaded");
 	current_collection->alter_stream_timebase(id, ts);
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 }
 
 float voicesub_get_gain(uint64_t id)
@@ -1872,7 +1872,7 @@ void voicesub_set_gain(uint64_t id, float gain)
 	if(_gain < -32768 || _gain > 32767)
 		throw std::runtime_error("Gain out of range (+-128dB)");
 	current_collection->alter_stream_gain(id, _gain);
-	information_dispatch::do_voice_stream_change();
+	notify_voice_stream_change();
 }
 
 double voicesub_ts_seconds(uint64_t ts)

@@ -43,25 +43,6 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void refresh();
 private:
-	struct refresh_listener : public information_dispatch
-	{
-		refresh_listener(wxeditor_voicesub* v)
-			: information_dispatch("voicesub-editor-change-listner")
-		{
-			obj = v;
-		}
-		void on_voice_stream_change()
-		{
-			wxeditor_voicesub* _obj = obj;
-			runuifun([_obj]() -> void { _obj->refresh(); });
-		}
-		void on_core_change()
-		{
-			wxeditor_voicesub* _obj = obj;
-			runuifun([_obj]() -> void { _obj->refresh(); });
-		}
-		wxeditor_voicesub* obj;
-	};
 	bool closing;
 	uint64_t get_id();
 	std::map<int, uint64_t> smap;
@@ -79,8 +60,8 @@ private:
 	wxButton* unloadbutton;
 	wxButton* refreshbutton;
 	wxButton* closebutton;
-	refresh_listener* rlistener;
-
+	struct dispatch_target<> corechange;
+	struct dispatch_target<> vstreamchange;
 };
 
 wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
@@ -169,13 +150,13 @@ wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)
 
 	top_s->SetSizeHints(this);
 	Fit();
-	rlistener = new refresh_listener(this);
+	vstreamchange.set(notify_voice_stream_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
+	corechange.set(notify_core_change, [this]() { runuifun([this]() -> void { this->refresh(); }); });
 	refresh();
 }
 
 wxeditor_voicesub::~wxeditor_voicesub() throw()
 {
-	delete rlistener;
 }
 
 void wxeditor_voicesub::on_select(wxCommandEvent& e)
