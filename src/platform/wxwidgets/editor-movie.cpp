@@ -14,10 +14,12 @@
 
 #include <algorithm>
 #include <cstring>
+#include <limits>
 #include <wx/wx.h>
 #include <wx/event.h>
 #include <wx/control.h>
 #include <wx/combobox.h>
+#include <wx/clipbrd.h>
 
 enum
 {
@@ -34,7 +36,13 @@ enum
 	wxID_APPEND_FRAMES,
 	wxID_TRUNCATE,
 	wxID_SCROLL_FRAME,
-	wxID_SCROLL_CURRENT_FRAME
+	wxID_SCROLL_CURRENT_FRAME,
+	wxID_COPY_FRAMES,
+	wxID_CUT_FRAMES,
+	wxID_PASTE_FRAMES,
+	wxID_PASTE_APPEND,
+	wxID_INSERT_CONTROLLER_AFTER,
+	wxID_DELETE_CONTROLLER_SUBFRAMES,
 };
 
 void update_movie_state();
@@ -53,14 +61,16 @@ struct control_info
 	unsigned reserved;	//Must be at least 6 for axes.
 	unsigned index;		//Index in poll vector.
 	int type;		//-2 => Port, -1 => Fixed, 0 => Button, 1 => axis.
-	char ch;
+	char32_t ch;
 	std::u32string title;
 	unsigned port;
 	unsigned controller;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
 	static control_info fixedinfo(unsigned& p, const std::u32string& str);
-	static control_info buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx);
-	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx);
+	static control_info buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx,
+		unsigned port, unsigned controller);
+	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
+		unsigned port, unsigned controller);
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
@@ -93,7 +103,8 @@ control_info control_info::fixedinfo(unsigned& p, const std::u32string& str)
 	return i;
 }
 
-control_info control_info::buttoninfo(unsigned& p, char character, const std::u32string& title, unsigned idx)
+control_info control_info::buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx,
+	unsigned port, unsigned controller)
 {
 	control_info i;
 	i.position_left = p;
@@ -103,12 +114,13 @@ control_info control_info::buttoninfo(unsigned& p, char character, const std::u3
 	i.type = 0;
 	i.ch = character;
 	i.title = title;
-	i.port = 0;
-	i.controller = 0;
+	i.port = port;
+	i.controller = controller;
 	return i;
 }
 
-control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx)
+control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
+	unsigned port, unsigned controller)
 {
 	control_info i;
 	i.position_left = p;
@@ -120,8 +132,8 @@ control_info control_info::axisinfo(unsigned& p, const std::u32string& title, un
 	i.type = 1;
 	i.ch = 0;
 	i.title = title;
-	i.port = 0;
-	i.controller = 0;
+	i.port = port;
+	i.controller = controller;
 	return i;
 }
 
@@ -158,12 +170,12 @@ void frame_controls::set_types(controller_frame& f)
 	unsigned nextc = 0;
 	controlinfo.clear();
 	controlinfo.push_back(control_info::portinfo(nextp, 0, 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'F', U"Framesync", 0));
-	controlinfo.push_back(control_info::buttoninfo(nextc, 'R', U"Reset", 1));
+	controlinfo.push_back(control_info::buttoninfo(nextc, U'F', U"Framesync", 0, 0, 0));
+	controlinfo.push_back(control_info::buttoninfo(nextc, U'R', U"Reset", 1, 0, 0));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, U" rhigh", 2));
+	controlinfo.push_back(control_info::axisinfo(nextc, U" rhigh", 2, 0, 0));
 	nextc++;
-	controlinfo.push_back(control_info::axisinfo(nextc, U"  rlow", 3));
+	controlinfo.push_back(control_info::axisinfo(nextc, U"  rlow", 3, 0, 0));
 	if(nextp > nextc)
 		nextc = nextp;
 	nextp = nextc;
@@ -184,10 +196,10 @@ void frame_controls::add_port(unsigned& c, unsigned pid, porttype_info& p)
 		unsigned b = 0;
 		if(p.is_analog(i)) {
 			controlinfo.push_back(control_info::axisinfo(c, U" xaxis", 4 + ccount * pid + i *
-				MAX_CONTROLS_PER_CONTROLLER - ccount));
+				MAX_CONTROLS_PER_CONTROLLER - ccount, pid, i));
 			c++;
 			controlinfo.push_back(control_info::axisinfo(c, U" yaxis", 5 + ccount * pid + i *
-				MAX_CONTROLS_PER_CONTROLLER - ccount));
+				MAX_CONTROLS_PER_CONTROLLER - ccount, pid, i));
 			if(p.button_symbols[0])
 				c++;
 			b = 2;
@@ -201,7 +213,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, porttype_info& p)
 				lbid = 0;
 			std::u32string name = to_u32string(get_logical_button_name(lbid));
 			controlinfo.push_back(control_info::buttoninfo(c, p.button_symbols[j], name, 4 + b + ccount *
-				pid + i * MAX_CONTROLS_PER_CONTROLLER - ccount));
+				pid + i * MAX_CONTROLS_PER_CONTROLLER - ccount, pid, i));
 		}
 		if(nextp > c)
 			c = nextp;
@@ -283,6 +295,218 @@ void frame_controls::format_lines()
 	_line2 = cp2;
 }
 
+namespace
+{
+	//TODO: Use real clipboard.
+	std::string clipboard;
+
+	void copy_to_clipboard(const std::string& text)
+	{
+		clipboard = text;
+	}
+
+	bool clipboard_has_text()
+	{
+		return (clipboard.length() > 0);
+	}
+
+	void clear_clipboard()
+	{
+		clipboard = "";
+	}
+
+	std::string copy_from_clipboard()
+	{
+		return clipboard;
+	}
+
+	std::string encode_line(controller_frame& f)
+	{
+		char buffer[512];
+		f.serialize(buffer);
+		return buffer;
+	}
+
+	std::string encode_line(frame_controls& info, controller_frame& f, unsigned port, unsigned controller)
+	{
+		std::ostringstream x;
+		bool last_axis = false;
+		bool first = true;
+		for(auto i : info.get_controlinfo()) {
+			if(i.port != port)
+				continue;
+			if(i.controller != controller)
+				continue;
+			switch(i.type) {
+			case 0:		//Button.
+				if(last_axis)
+					x << " ";
+				if(info.read_index(f, i.index)) {
+					char32_t tmp1[2];
+					tmp1[0] = i.ch;
+					tmp1[1] = 0;
+					x << to_u8string(std::u32string(tmp1));
+				} else
+					x << "-";
+				last_axis = false;
+				first = false;
+				break;
+			case 1:		//Axis.
+				if(!first)
+					x << " ";
+				x << info.read_index(f, i.index);
+				first = false;
+				last_axis = true;
+				break;
+			}
+		}
+		return x.str();
+	}
+
+	short read_short(const std::u32string& s, size_t& r)
+	{
+		unsigned short _res = 0;
+		bool negative = false;
+		if(r < s.length() && s[r] == '-') {
+			negative = true;
+			r++;
+		}
+		while(r < s.length() && s[r] >= 48 && s[r] <= 57) {
+			_res = _res * 10 + (s[r] - 48);
+			r++;
+		}
+		return negative ? -_res : _res;
+	}
+
+	void decode_line(frame_controls& info, controller_frame& f, std::string line, unsigned port,
+		unsigned controller)
+	{
+		std::u32string _line = to_u32string(line);
+		bool last_axis = false;
+		bool first = true;
+		short y;
+		char32_t y2;
+		size_t ridx = 0;
+		for(auto i : info.get_controlinfo()) {
+			if(i.port != port)
+				continue;
+			if(i.controller != controller)
+				continue;
+			switch(i.type) {
+			case 0:		//Button.
+				if(last_axis) {
+					ridx++;
+					while(ridx < _line.length() && (_line[ridx] == 9 || _line[ridx] == 10 ||
+						_line[ridx] == 13 || _line[ridx] == 32))
+						ridx++;
+				}
+				y2 = (ridx < _line.length()) ? _line[ridx++] : 0;
+				if(y2 == U'-' || y2 == 0)
+					info.write_index(f, i.index, 0);
+				else
+					info.write_index(f, i.index, 1);
+				last_axis = false;
+				first = false;
+				break;
+			case 1:		//Axis.
+				if(!first)
+					ridx++;
+				while(ridx < _line.length() && (_line[ridx] == 9 || _line[ridx] == 10 ||
+					_line[ridx] == 13 || _line[ridx] == 32))
+					ridx++;
+				y = read_short(_line, ridx);
+				info.write_index(f, i.index, y);
+				first = false;
+				last_axis = true;
+				break;
+			}
+		}
+	}
+
+	std::string encode_lines(controller_frame_vector& fv, uint64_t start, uint64_t end)
+	{
+		std::ostringstream x;
+		x << "lsnes-moviedata-whole" << std::endl;
+		for(uint64_t i = start; i < end; i++) {
+			controller_frame tmp = fv[i];
+			x << encode_line(tmp) << std::endl;
+		}
+		return x.str();
+	}
+
+	std::string encode_lines(frame_controls& info, controller_frame_vector& fv, uint64_t start, uint64_t end,
+		unsigned port, unsigned controller)
+	{
+		std::ostringstream x;
+		x << "lsnes-moviedata-controller" << std::endl;
+		for(uint64_t i = start; i < end; i++) {
+			controller_frame tmp = fv[i];
+			x << encode_line(info, tmp, port, controller) << std::endl;
+		}
+		return x.str();
+	}
+
+	int clipboard_get_data_type()
+	{
+		if(!clipboard_has_text())
+			return -1;
+		std::string y = copy_from_clipboard();
+		std::istringstream x(y);
+		std::string hdr;
+		std::getline(x, hdr);
+		if(hdr == "lsnes-moviedata-whole")
+			return 1;
+		if(hdr == "lsnes-moviedata-controller")
+			return 0;
+		return -1;
+	}
+
+	std::set<unsigned> controller_index_set(frame_controls& info, unsigned port, unsigned controller)
+	{
+		std::set<unsigned> r;
+		for(auto i : info.get_controlinfo()) {
+			if(i.port == port && i.controller == controller && (i.type == 0 || i.type == 1))
+				r.insert(i.index);
+		}
+		return r;
+	}
+
+	void move_index_set(frame_controls& info, controller_frame_vector& fv, uint64_t src, uint64_t dst,
+		uint64_t len, const std::set<unsigned>& indices)
+	{
+		if(src == dst)
+			return;
+		if(src > dst) {
+			//Copy forwards.
+			uint64_t shift = src - dst;
+			for(uint64_t i = dst; i < dst + len; i++) {
+				controller_frame _src = fv[i + shift];
+				controller_frame _dst = fv[i];
+				for(auto j : indices)
+					info.write_index(_dst, j, info.read_index(_src, j));
+			}
+		} else {
+			//Copy backwards.
+			uint64_t shift = dst - src;
+			for(uint64_t i = src + len - 1; i >= src && i < src + len; i--) {
+				controller_frame _src = fv[i];
+				controller_frame _dst = fv[i + shift];
+				for(auto j : indices)
+					info.write_index(_dst, j, info.read_index(_src, j));
+			}
+		}
+	}
+
+	void zero_index_set(frame_controls& info, controller_frame_vector& fv, uint64_t dst, uint64_t len,
+		const std::set<unsigned>& indices)
+	{
+		for(uint64_t i = dst; i < dst + len; i++) {
+			controller_frame _dst = fv[i];
+			for(auto j : indices)
+				info.write_index(_dst, j, 0);
+		}
+	}
+}
 
 class wxeditor_movie : public wxDialog
 {
@@ -320,11 +544,19 @@ private:
 		void do_append_frames(uint64_t count);
 		void do_append_frames();
 		void do_insert_frame_after(uint64_t row);
-		void do_delete_frame(uint64_t row, bool wholeframe);
+		void do_delete_frame(uint64_t row1, uint64_t row2, bool wholeframe);
 		void do_truncate(uint64_t row);
 		void do_set_stop_at_frame();
 		void do_scroll_to_frame();
 		void do_scroll_to_current_frame();
+		void do_copy(uint64_t row1, uint64_t row2, unsigned port, unsigned controller);
+		void do_copy(uint64_t row1, uint64_t row2);
+		void do_cut(uint64_t row1, uint64_t row2, unsigned port, unsigned controller);
+		void do_cut(uint64_t row1, uint64_t row2);
+		void do_paste(uint64_t row, unsigned port, unsigned controller, bool append);
+		void do_paste(uint64_t row, bool append);
+		void do_insert_controller(uint64_t row, unsigned port, unsigned controller);
+		void do_delete_controller(uint64_t row1, uint64_t row2, unsigned port, unsigned controller);
 		uint64_t first_editable(unsigned index);
 		uint64_t first_nextframe();
 		int width(controller_frame& f);
@@ -379,6 +611,14 @@ namespace
 			if(cffs + i >= vsize || fv[cffs + i].sync())
 				return cffs + i;
 		return cffs + pc;
+	}
+
+	uint64_t real_first_editable(frame_controls& fc, std::set<unsigned> idx)
+	{
+		uint64_t m = 0;
+		for(auto i : idx)
+			m = max(m, real_first_editable(fc, i));
+		return m;
 	}
 
 	//Find the first real editable whole frame.
@@ -778,55 +1018,75 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 	signal_repaint();
 }
 
-void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row, bool wholeframe)
+void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, bool wholeframe)
 {
 	recursing = true;
-	uint64_t _row = row;
+	uint64_t _row1 = row1;
+	uint64_t _row2 = row2;
 	bool _wholeframe = wholeframe;
 	frame_controls* _fcontrols = &fcontrols;
-	runemufn([_row, _wholeframe, _fcontrols]() {
+	if(_row1 > _row2) std::swap(_row1, _row2);
+	runemufn([_row1, _row2, _wholeframe, _fcontrols]() {
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
 		uint64_t vsize = fv.size();
-		if(_row >= vsize)
-			return;
+		if(_row1 >= vsize)
+			return;		//Nothing to do.
+		uint64_t row2 = min(_row2, vsize - 1);
+		uint64_t row1 = min(_row1, vsize - 1);
+		row1 = max(row1, real_first_editable(*_fcontrols, 0));
 		if(_wholeframe) {
-			if(_row < real_first_nextframe(*_fcontrols))
-				return;
+			if(_row2 < real_first_nextframe(*_fcontrols))
+				return;		//Nothing to do.
 			//Scan backwards for the first subframe of this frame and forwards for the last.
-			uint64_t fsf = _row;
-			uint64_t lsf = _row;
-			if(fv[_row].sync())
+			uint64_t fsf = row1;
+			uint64_t lsf = row2;
+			if(fv[_row2].sync())
 				lsf++;		//Bump by one so it finds the end.
 			while(fsf < vsize && !fv[fsf].sync())
 				fsf--;
 			while(lsf < vsize && !fv[lsf].sync())
 				lsf++;
+			fsf = max(fsf, real_first_editable(*_fcontrols, 0));
 			uint64_t tonuke = lsf - fsf;
+			int64_t frames_tonuke = 0;
+			//Count frames nuked.
+			for(uint64_t i = fsf; i < lsf; i++)
+				if(fv[i].sync())
+					frames_tonuke++;
 			//Nuke from fsf to lsf.
 			for(uint64_t i = fsf; i < vsize - tonuke; i++)
 				fv[i] = fv[i + tonuke];
 			fv.resize(vsize - tonuke);
-			movie_framecount_change(-1);
+			movie_framecount_change(-frames_tonuke);
 		} else {
-			if(_row < real_first_editable(*_fcontrols, 0))
-				return;
-			//Is the nuked frame a first subframe?
-			bool is_first = fv[_row].sync();
-			//Nuke the subframe.
-			for(uint64_t i = _row; i < vsize - 1; i++)
-				fv[i] = fv[i + 1];
-			fv.resize(vsize - 1);
+			if(row2 < real_first_editable(*_fcontrols, 0))
+				return;		//Nothing to do.
+			//The sync flag needs to be inherited if:
+			//1) Some deleted subframe has sync flag AND
+			//2) The subframe immediately after deleted region doesn't.
+			bool inherit_sync = false;
+			for(uint64_t i = row1; i <= row2; i++)
+				inherit_sync = inherit_sync || fv[i].sync();
+			inherit_sync = inherit_sync && (row2 + 1 < vsize && !fv[_row2 + 1].sync());
+			int64_t frames_tonuke = 0;
+			//Count frames nuked.
+			for(uint64_t i = row1; i <= row2; i++)
+				if(fv[i].sync())
+					frames_tonuke++;
+			//If sync is inherited, one less frame is nuked.
+			if(inherit_sync) frames_tonuke--;
+			//Nuke the subframes.
+			uint64_t tonuke = row2 - row1 + 1;
+			for(uint64_t i = row1; i < vsize - tonuke; i++)
+				fv[i] = fv[i + tonuke];
+			fv.resize(vsize - tonuke);
 			//Next subframe inherits the sync flag.
-			if(is_first) {
-				if(_row < vsize - 1 && !fv[_row].sync())
-					fv[_row].sync(true);
-				else
-					movie_framecount_change(-1);
-			}
+			if(inherit_sync)
+				fv[row1].sync(true);
+			movie_framecount_change(-frames_tonuke);
 		}
-		
 	});
-	max_subframe = row;
+	max_subframe = _row1;
 	recursing = false;
 	signal_repaint();
 }
@@ -954,12 +1214,21 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 {
 	wxMenuItem* tmpitem;
 	int id = e.GetId();
+
+	unsigned port = 0;
+	unsigned controller = 0;
+	for(auto i : fcontrols.get_controlinfo())
+		if(i.index == press_index) {
+		port = i.port;
+		controller = i.controller;
+	}
+
 	switch(id) {
 	case wxID_TOGGLE:
-		do_toggle_buttons(press_index, press_line, press_line);
+		do_toggle_buttons(press_index, rpress_line, press_line);
 		return;
 	case wxID_CHANGE:
-		do_alter_axis(press_index, press_line, press_line);
+		do_alter_axis(press_index, rpress_line, press_line);
 		return;
 	case wxID_SWEEP:
 		do_sweep_axis(press_index, rpress_line, press_line);
@@ -974,10 +1243,10 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		do_insert_frame_after(press_line);
 		return;
 	case wxID_DELETE_FRAME:
-		do_delete_frame(press_line, true);
+		do_delete_frame(press_line, rpress_line, true);
 		return;
 	case wxID_DELETE_SUBFRAME:
-		do_delete_frame(press_line, false);
+		do_delete_frame(press_line, rpress_line, false);
 		return;
 	case wxID_TRUNCATE:
 		do_truncate(press_line);
@@ -1014,6 +1283,42 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		}
 		signal_repaint();
 		return;
+	case wxID_COPY_FRAMES:
+		if(press_index == std::numeric_limits<unsigned>::max())
+			do_copy(rpress_line, press_line);
+		else
+			do_copy(rpress_line, press_line, port, controller);
+		return;
+	case wxID_CUT_FRAMES:
+		if(press_index == std::numeric_limits<unsigned>::max())
+			do_cut(rpress_line, press_line);
+		else
+			do_cut(rpress_line, press_line, port, controller);
+		return;
+	case wxID_PASTE_FRAMES:
+		if(press_index == std::numeric_limits<unsigned>::max() || clipboard_get_data_type() == 1)
+			do_paste(press_line, false);
+		else
+			do_paste(press_line, port, controller, false);
+		return;
+	case wxID_PASTE_APPEND:
+		if(press_index == std::numeric_limits<unsigned>::max() || clipboard_get_data_type() == 1)
+			do_paste(press_line, true);
+		else
+			do_paste(press_line, port, controller, true);
+		return;
+	case wxID_INSERT_CONTROLLER_AFTER:
+		if(press_index == std::numeric_limits<unsigned>::max())
+			;
+		else
+			do_insert_controller(press_line, port, controller);
+		return;
+	case wxID_DELETE_CONTROLLER_SUBFRAMES:
+		if(press_index == std::numeric_limits<unsigned>::max())
+			;
+		else
+			do_delete_controller(press_line, rpress_line, port, controller);
+		return;
 	};
 }
 
@@ -1046,64 +1351,145 @@ void wxeditor_movie::_moviepanel::on_mouse1(unsigned x, unsigned y, bool polarit
 void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarity)
 {
 	if(polarity) {
+		//Pressing mouse, just record line it was pressed on.
 		rpress_line = spos + y - 3;
 		return;
 	}
+	//Releasing mouse, open popup menu.
+	unsigned off = divcnt + 1;
+	press_x = x;
+	if(y < 3)
+		return;
+	press_line = spos + y - 3;
 	wxMenu menu;
 	current_popup = &menu;
+	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
+		NULL, this);
+
+	//Find what controller is the click on.
+	bool clicked_button = false;
+	control_info clicked;
+	std::string controller_name;
+	if(press_x < off) {
+		clicked_button = false;
+		press_index = std::numeric_limits<unsigned>::max();
+	} else {
+		for(auto i : fcontrols.get_controlinfo())
+			if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
+				if(i.type == 0 || i.type == 1) {
+					clicked_button = true;
+					clicked = i;
+					controller_name = (stringfmt() << "controller " << i.port << "-"
+						<< (i.controller + 1)).str();
+					press_index = i.index;
+				}
+			}
+	}
+
+	//Find first editable frame, controllerframe and buttonframe.
+	bool not_editable = !movb.get_movie().readonly_mode();
+	uint64_t eframe_low = first_editable(0);
+	uint64_t ebutton_low = clicked_button ? first_editable(clicked.index) : std::numeric_limits<uint64_t>::max();
+	uint64_t econtroller_low = ebutton_low;
+	for(auto i : fcontrols.get_controlinfo())
+		if(i.port == clicked.port && i.controller == clicked.controller && (i.type == 0 || i.type == 1))
+			econtroller_low = max(econtroller_low, first_editable(i.index));
+
+	bool click_zero = (clicked_button && !clicked.port && !clicked.controller);
+	bool enable_append_frame = !not_editable;
 	bool enable_toggle_button = false;
 	bool enable_change_axis = false;
+	bool enable_sweep_axis = false;
 	bool enable_insert_frame = false;
+	bool enable_insert_controller = false;
 	bool enable_delete_frame = false;
 	bool enable_delete_subframe = false;
-	std::u32string title;
-	if(y < 3)
-		goto outrange;
-	if(!movb.get_movie().readonly_mode())
-		goto outrange;
-	press_x = x;
-	press_line = spos + y - 3;
-	for(auto i : fcontrols.get_controlinfo()) {
-		unsigned off = divcnt + 1;
-		if(press_x >= i.position_left + off && press_x < i.position_left + i.reserved + off) {
-			if(i.type == 0 && press_line >= first_editable(i.index) &&
-				press_line < linecount) {
-				enable_toggle_button = true;
-				press_index = i.index;
-				title = i.title;
-			}
-			if(i.type == 1 && press_line >= first_editable(i.index) &&
-				press_line < linecount) {
-				enable_change_axis = true;
-				press_index = i.index;
-				title = i.title;
-			}
-		}
+	bool enable_delete_controller_subframe = false;
+	bool enable_truncate_movie = false;
+	bool enable_cut_frame = false;
+	bool enable_copy_frame = false;
+	bool enable_paste_frame = false;
+	bool enable_paste_append = false;
+	std::string copy_title;
+	std::string paste_title;
+
+	//Toggle button is enabled if clicked on button and either end is in valid range.
+	enable_toggle_button = (!not_editable && clicked_button && clicked.type == 0 && ((press_line >= ebutton_low &&
+		press_line < linecount) || (rpress_line >= ebutton_low && rpress_line < linecount)));
+	//Change axis is enabled in similar conditions, except if type is axis.
+	enable_change_axis = (!not_editable && clicked_button && clicked.type == 1 && ((press_line >= ebutton_low &&
+		press_line < linecount) || (rpress_line >= ebutton_low && rpress_line < linecount)));
+	//Sweep axis is enabled if change axis is enabled and lines don't match.
+	enable_sweep_axis = (enable_change_axis && press_line != rpress_line);
+	//Insert frame is enabled if this frame is completely editable and press and release lines match.
+	enable_insert_frame = (!not_editable && press_line + 1 >= eframe_low && press_line < linecount &&
+		press_line == rpress_line);
+	//Insert controller frame is enabled if controller is completely editable and lines match.
+	enable_insert_controller = (!not_editable && clicked_button && press_line >= econtroller_low &&
+		press_line < linecount && press_line == rpress_line);
+	enable_insert_controller = enable_insert_controller && (clicked.port || clicked.controller);
+	//Delete frame is enabled if range is completely editable (relative to next-frame).
+	enable_delete_frame = (!not_editable && press_line >= first_nextframe() && press_line < linecount &&
+		rpress_line >= first_nextframe() && rpress_line < linecount);
+	//Delete subframe is enabled if range is completely editable.
+	enable_delete_subframe = (!not_editable && press_line >= eframe_low && press_line < linecount &&
+		rpress_line >= eframe_low && rpress_line < linecount);
+	//Delete controller subframe is enabled if range is completely controller-editable.
+	enable_delete_controller_subframe = (!not_editable && clicked_button && press_line >= econtroller_low &&
+		press_line < linecount && rpress_line >= econtroller_low && rpress_line < linecount);
+	enable_delete_controller_subframe = enable_delete_controller_subframe && (clicked.port || clicked.controller);
+	//Truncate movie is enabled if lines match and is completely editable.
+	enable_truncate_movie = (!not_editable && press_line == rpress_line && press_line >= eframe_low &&
+		press_line < linecount);
+	//Cut frames is enabled if range is editable (possibly controller-editable).
+	if(clicked_button)
+		enable_cut_frame = (!not_editable && press_line >= econtroller_low && press_line < linecount
+			&& rpress_line >= econtroller_low && rpress_line < linecount && !click_zero);
+	else
+		enable_cut_frame = (!not_editable && press_line >= eframe_low & press_line < linecount
+			&& rpress_line >= eframe_low && rpress_line < linecount);
+	if(clicked_button && clipboard_get_data_type() == 0) {
+		enable_paste_append = (!not_editable && linecount >= eframe_low);
+		enable_paste_frame = (!not_editable && press_line >= econtroller_low && press_line < linecount
+			&& rpress_line >= econtroller_low && rpress_line < linecount && !click_zero);
+	} else if(clipboard_get_data_type() == 1) {
+		enable_paste_append = (!not_editable && linecount >= econtroller_low);
+		enable_paste_frame = (!not_editable && press_line >= eframe_low & press_line < linecount
+			&& rpress_line >= eframe_low && rpress_line < linecount);
 	}
-	if(press_line + 1 >= first_editable(0) && press_line < linecount)
-		enable_insert_frame = true;
-	if(press_line >= first_editable(0) && press_line < linecount)
-		enable_delete_subframe = true;
-	if(press_line >= first_nextframe() && press_line < linecount)
-		enable_delete_frame = true;
+	//Copy frames is enabled if range exists.
+	enable_copy_frame = (press_line < linecount && rpress_line < linecount);
+	copy_title = (clicked_button ? controller_name : "frames");
+	paste_title = ((clipboard_get_data_type() == 0) ? copy_title : "frames");
+
+	if(clipboard_get_data_type() == 0 && click_zero) enable_paste_append = enable_paste_frame = false;
+
 	if(enable_toggle_button)
-		menu.Append(wxID_TOGGLE, towxstring(U"Toggle " + title));
+		menu.Append(wxID_TOGGLE, towxstring(U"Toggle " + clicked.title));
 	if(enable_change_axis)
-		menu.Append(wxID_CHANGE, towxstring(U"Change " + title));
-	if(enable_change_axis && rpress_line != press_line)
-		menu.Append(wxID_SWEEP, towxstring(U"Sweep " + title));
-	if(enable_toggle_button || enable_change_axis)
+		menu.Append(wxID_CHANGE, towxstring(U"Change " + clicked.title));
+	if(enable_sweep_axis)
+		menu.Append(wxID_SWEEP, towxstring(U"Sweep " + clicked.title));
+	if(enable_toggle_button || enable_change_axis || enable_sweep_axis)
 		menu.AppendSeparator();
 	menu.Append(wxID_INSERT_AFTER, wxT("Insert frame after"))->Enable(enable_insert_frame);
-	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"));
-	menu.Append(wxID_APPEND_FRAMES, wxT("Append frames..."));
+	menu.Append(wxID_INSERT_CONTROLLER_AFTER, wxT("Insert controller frame"))
+		->Enable(enable_insert_controller);
+	menu.Append(wxID_APPEND_FRAME, wxT("Append frame"))->Enable(enable_append_frame);
+	menu.Append(wxID_APPEND_FRAMES, wxT("Append frames..."))->Enable(enable_append_frame);
 	menu.AppendSeparator();
-	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame"))->Enable(enable_delete_frame);
-	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe"))->Enable(enable_delete_subframe);
+	menu.Append(wxID_DELETE_FRAME, wxT("Delete frame(s)"))->Enable(enable_delete_frame);
+	menu.Append(wxID_DELETE_SUBFRAME, wxT("Delete subframe(s)"))->Enable(enable_delete_subframe);
+	menu.Append(wxID_DELETE_CONTROLLER_SUBFRAMES, wxT("Delete controller subframes(s)"))
+		->Enable(enable_delete_controller_subframe);
 	menu.AppendSeparator();
-	menu.Append(wxID_TRUNCATE, wxT("Truncate movie"))->Enable(enable_delete_subframe);
+	menu.Append(wxID_TRUNCATE, wxT("Truncate movie"))->Enable(enable_truncate_movie);
 	menu.AppendSeparator();
-outrange:
+	menu.Append(wxID_CUT_FRAMES, towxstring("Cut " + copy_title))->Enable(enable_cut_frame);
+	menu.Append(wxID_COPY_FRAMES, towxstring("Copy " + copy_title))->Enable(enable_copy_frame);
+	menu.Append(wxID_PASTE_FRAMES, towxstring("Paste " + paste_title))->Enable(enable_paste_frame);
+	menu.Append(wxID_PASTE_APPEND, towxstring("Paste append " + paste_title))->Enable(enable_paste_append);
+	menu.AppendSeparator();
 	menu.Append(wxID_SCROLL_FRAME, wxT("Scroll to frame..."));
 	menu.Append(wxID_SCROLL_CURRENT_FRAME, wxT("Scroll to current frame"));
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
@@ -1215,6 +1601,225 @@ void wxeditor_movie::_moviepanel::on_paint(wxPaintEvent& e)
 	requested = false;
 }
 
+void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2, unsigned port, unsigned controller)
+{
+	frame_controls* _fcontrols = &fcontrols;
+	uint64_t line = row1;
+	uint64_t line2 = row2;
+	if(line2 < line)
+		std::swap(line, line2);
+	std::string copied;
+	runemufn([port, controller, line, line2, _fcontrols, &copied]() {
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(!vsize)
+			return;
+		uint64_t _line = min(line, vsize - 1);
+		uint64_t _line2 = min(line2, vsize - 1);
+		copied = encode_lines(*_fcontrols, fv, _line, _line2 + 1, port, controller);
+	});
+	copy_to_clipboard(copied);
+}
+
+void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2)
+{
+	uint64_t line = row1;
+	uint64_t line2 = row2;
+	if(line2 < line)
+		std::swap(line, line2);
+	std::string copied;
+	runemufn([line, line2, &copied]() {
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(!vsize)
+			return;
+		uint64_t _line = min(line, vsize - 1);
+		uint64_t _line2 = min(line2, vsize - 1);
+		copied = encode_lines(fv, _line, _line2 + 1);
+	});
+	copy_to_clipboard(copied);
+}
+
+void wxeditor_movie::_moviepanel::do_cut(uint64_t row1, uint64_t row2, unsigned port, unsigned controller)
+{
+	do_copy(row1, row2, port, controller);
+	do_delete_controller(row1, row2, port, controller);
+}
+
+void wxeditor_movie::_moviepanel::do_cut(uint64_t row1, uint64_t row2)
+{
+	do_copy(row1, row2);
+	do_delete_frame(row1, row2, false);
+}
+
+void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
+{
+	frame_controls* _fcontrols = &fcontrols;
+	recursing = true;
+	uint64_t _gapstart = row;
+	std::string cliptext = copy_from_clipboard();
+	runemufn([_fcontrols, &cliptext, _gapstart, append]() {
+		//Insert enough lines for the pasted content.
+		uint64_t gapstart = _gapstart;
+		if(!movb.get_movie().readonly_mode())
+			return;
+		uint64_t gaplen = 0;
+		int64_t newframes = 0;
+		{
+			std::istringstream y(cliptext);
+			std::string z;
+			if(!std::getline(y, z))
+				return;
+			istrip_CR(z);
+			if(z != "lsnes-moviedata-whole")
+				return;
+			while(std::getline(y, z))
+				gaplen++;
+		}
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(gapstart < real_first_editable(*_fcontrols, 0))
+			return;
+		if(gapstart > vsize)
+			return;
+		if(append) gapstart = vsize;
+		for(uint64_t i = 0; i < gaplen; i++)
+			fv.append(fv.blank_frame(false));
+		for(uint64_t i = vsize - 1; i >= gapstart && i <= vsize; i--)
+			fv[i + gaplen] = fv[i];
+		//Write the pasted frames.
+		{
+			std::istringstream y(cliptext);
+			std::string z;
+			std::getline(y, z);
+			uint64_t idx = gapstart;
+			while(std::getline(y, z)) {
+				fv[idx++].deserialize(z.c_str());
+				if(fv[idx - 1].sync())
+					newframes++;
+			}
+		}
+		movie_framecount_change(newframes);
+	});
+	recursing = false;
+	signal_repaint();
+}
+
+void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned controller, bool append)
+{
+	if(!port && !controller)
+		return;
+	frame_controls* _fcontrols = &fcontrols;
+	auto iset = controller_index_set(fcontrols, port, controller);
+	recursing = true;
+	uint64_t _gapstart = row;
+	std::string cliptext = copy_from_clipboard();
+	runemufn([_fcontrols, iset, &cliptext, _gapstart, port, controller, append]() {
+		//Insert enough lines for the pasted content.
+		//TODO: Check that this won't alter the past.
+		uint64_t gapstart = _gapstart;
+		if(!movb.get_movie().readonly_mode())
+			return;
+		uint64_t gaplen = 0;
+		int64_t newframes = 0;
+		{
+			std::istringstream y(cliptext);
+			std::string z;
+			if(!std::getline(y, z))
+				return;
+			istrip_CR(z);
+			if(z != "lsnes-moviedata-controller")
+				return;
+			while(std::getline(y, z)) {
+				gaplen++;
+				newframes++;
+			}
+		}
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(gapstart < real_first_editable(*_fcontrols, iset))
+			return;
+		if(gapstart > vsize)
+			return;
+		if(append) gapstart = vsize;
+		for(uint64_t i = 0; i < gaplen; i++)
+			fv.append(fv.blank_frame(true));
+		move_index_set(*_fcontrols, fv, gapstart, gapstart + gaplen, vsize - gapstart, iset);
+		//Write the pasted frames.
+		{
+			std::istringstream y(cliptext);
+			std::string z;
+			std::getline(y, z);
+			uint64_t idx = gapstart;
+			while(std::getline(y, z)) {
+				controller_frame f = fv[idx++];
+				decode_line(*_fcontrols, f, z, port, controller);
+			}
+		}
+		movie_framecount_change(newframes);
+	});
+	recursing = false;
+	signal_repaint();
+}
+
+void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned port, unsigned controller)
+{
+	if(!port && !controller)
+		return;
+	frame_controls* _fcontrols = &fcontrols;
+	auto iset = controller_index_set(fcontrols, port, controller);
+	recursing = true;
+	uint64_t gapstart = row;
+	runemufn([_fcontrols, iset, gapstart, port, controller]() {
+		//Insert enough lines for the pasted content.
+		//TODO: Check that this won't alter the past.
+		if(!movb.get_movie().readonly_mode())
+			return;
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(gapstart < real_first_editable(*_fcontrols, iset))
+			return;
+		if(gapstart > vsize)
+			return;
+		fv.append(fv.blank_frame(true));
+		move_index_set(*_fcontrols, fv, gapstart, gapstart + 1, vsize - gapstart, iset);
+		zero_index_set(*_fcontrols, fv, gapstart, 1, iset);
+		movie_framecount_change(1);
+	});
+	recursing = false;
+	signal_repaint();
+}
+
+void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t row2, unsigned port,
+	unsigned controller)
+{
+	if(!port && !controller)
+		return;
+	frame_controls* _fcontrols = &fcontrols;
+	auto iset = controller_index_set(fcontrols, port, controller);
+	recursing = true;
+	if(row1 > row2) std::swap(row1, row2);
+	uint64_t gapstart = row1;
+	uint64_t gaplen = row2 - row1 + 1;
+	runemufn([_fcontrols, iset, gapstart, gaplen, port, controller]() {
+		//Insert enough lines for the pasted content.
+		//TODO: Check that this won't alter the past.
+		if(!movb.get_movie().readonly_mode())
+			return;
+		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		uint64_t vsize = fv.size();
+		if(gapstart < real_first_editable(*_fcontrols, iset))
+			return;
+		if(gapstart > vsize)
+			return;
+		move_index_set(*_fcontrols, fv, gapstart + gaplen, gapstart, vsize - gapstart - gaplen, iset);
+		zero_index_set(*_fcontrols, fv, vsize - gaplen, gaplen, iset);
+	});
+	recursing = false;
+	signal_repaint();
+}
+
+
 wxeditor_movie::wxeditor_movie(wxWindow* parent)
 	: wxDialog(parent, wxID_ANY, wxT("lsnes: Edit movie"), wxDefaultPosition, wxSize(-1, -1))
 {
@@ -1228,7 +1833,7 @@ wxeditor_movie::wxeditor_movie(wxWindow* parent)
 	panel_s->Add(moviepanel = new _moviepanel(this), 1, wxGROW);
 	panel_s->Add(moviescroll = new scroll_bar(this, wxID_ANY, true), 0, wxGROW);
 	top_s->Add(panel_s, 1, wxGROW);
-	
+
 	moviescroll->set_page_size(lines_to_display);
 	moviescroll->set_handler([this](scroll_bar& s) {
 		this->moviepanel->moviepos = s.get_position();
