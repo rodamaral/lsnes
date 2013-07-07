@@ -301,6 +301,7 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 	romimg[romidx] = loaded_slot(file, "", ctype.get_image_info(romidx), false);
 	if(file_exists(file + ".xml"))
 		romxml[romidx] = loaded_slot(file + ".xml", "", ctype.get_image_info(romidx), true);
+	load_filename = file;
 	msu1_base = resolve_file_relative(file, "");
 	return;
 }
