@@ -1572,6 +1572,19 @@ Run core action. The different models expect parameters as:
 
 • toggle: None.
 
+7.10.25 memory.get_lag_flag()
+
+Get the value of core lag flag. True if this frame has been lag 
+so far, false if poll has been detected.
+
+7.10.26 memory.set_lag_flag(boolean flag)
+
+Set the value of core lag flag. This flag automatically gets 
+cleared if poll is detected, but can be forcibly set if game so 
+requires. Should only be used in on_frame_emulated callback.
+
+Setting or clearing this affects the emulator lag counter.
+
 7.11 Table memory2
 
 Contains newer memory functions.

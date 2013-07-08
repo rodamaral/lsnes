@@ -84,4 +84,17 @@ namespace
 		L.pushnumber(busrange.first + (addr % busrange.second));
 		return 1;
 	});
+
+	function_ptr_luafun mgetlagflag(LS, "memory.get_lag_flag", [](lua_state& L, const std::string& fname) ->
+		int {
+		L.pushboolean(!(our_rom->rtype && our_rom->rtype->get_pflag()));
+		return 1;
+	});
+
+	function_ptr_luafun msetlagflag(LS, "memory.set_lag_flag", [](lua_state& L, const std::string& fname) ->
+		int {
+		if(our_rom->rtype)
+			our_rom->rtype->set_pflag(!L.get_bool(1, fname.c_str()));
+		return 0;
+	});
 }

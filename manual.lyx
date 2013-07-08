@@ -3075,6 +3075,30 @@ boolean: String
 toggle: None.
 \end_layout
 
+\begin_layout Subsubsection
+memory.get_lag_flag()
+\end_layout
+
+\begin_layout Standard
+Get the value of core lag flag.
+ True if this frame has been lag so far, false if poll has been detected.
+\end_layout
+
+\begin_layout Subsubsection
+memory.set_lag_flag(boolean flag)
+\end_layout
+
+\begin_layout Standard
+Set the value of core lag flag.
+ This flag automatically gets cleared if poll is detected, but can be forcibly
+ set if game so requires.
+ Should only be used in on_frame_emulated callback.
+\end_layout
+
+\begin_layout Standard
+Setting or clearing this affects the emulator lag counter.
+\end_layout
+
 \begin_layout Subsection
 Table memory2
 \end_layout
