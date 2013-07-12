@@ -93,6 +93,7 @@ SOUND=PORTAUDIO
 # - WIN32MM: Windows Multimedia (Win32 only).
 # - SDL: Simple Directmedia Layer (GRAPHICS=SDL only).
 # - WXWIDGETS: wxWidgets (GRAPHICS=WXWIDGETS only)
+# - MACOSX: Mac OS X (Mac OS X only).
 JOYSTICK=DUMMY
 
 # Set to non-empty value (e.g. 'yes') to enable use of Secret Rabbit Code (a.k.a. libsamperate).
