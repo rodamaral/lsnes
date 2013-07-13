@@ -254,16 +254,16 @@ namespace
 			unsigned ctn = port * 4 + controller - 4;
 			lua_pushnumber(LS, lua_input_controllerdata->axis(ctn, index));
 			return 1;
-		} else if(port == 0) {
+		} else if(index == 0) {
 			lua_pushnumber(LS, lua_input_controllerdata->sync());
 			return 1;
-		} else if(port == 1) {
+		} else if(index == 1) {
 			lua_pushnumber(LS, lua_input_controllerdata->reset());
 			return 1;
-		} else if(port == 3) {
+		} else if(index == 3) {
 			lua_pushnumber(LS, lua_input_controllerdata->delay().first);
 			return 1;
-		} else if(port == 2) {
+		} else if(index == 2) {
 			lua_pushnumber(LS, lua_input_controllerdata->delay().second);
 			return 1;
 		}
