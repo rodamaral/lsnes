@@ -953,34 +953,86 @@ Parameters:
 
   – May be absent or nil for no colorkey blit.
 
-7.3.23 gui.repaint()
+7.3.23 gui.bitmap_load_png(string filename)
+
+Load a bitmap from PNG file. Parameters:
+
+• filename: The name of file to load the bitmap frame.
+
+Return value:
+
+• If the PNG is of color type 3 (PALETTE), returns two value. 
+  First is BITMAP containing the image data from the PNG and 
+  second is PALETTE containg the palette data from the PNG.
+
+• For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), 
+  returns one DBITMAP containg the image data loaded from the 
+  PNG.
+
+7.3.24 gui.bitmap_load_pal(string filename)
+
+Load a palette from file. Parameters:
+
+• filename: The name of the file.
+
+The kinds of lines supported
+
+• Blank or just whitespace: Ignored
+
+• First non-whitespace is '#': Ignored
+
+• <r> <g> <b>: Fully opaque color with specified RGB values 
+  (0-255)
+
+• <r> <g> <b> <a>: Color with specified RGB values (0-255) and 
+  specified alpha (0-256, 0 being fully transparent and 256 fully 
+  opaque).
+
+• transparent: Fully transparent color
+
+7.3.25 gui.bitmap_load_str(string content)
+
+Like gui.bitmap_load, but reads the specified string directly as 
+content.
+
+7.3.26 gui.bitmap_load_png_str(string base64content)
+
+Like gui.bitmap_load_png, but reads the specified string (as 
+base64-encoded) directly as content.
+
+7.3.27 gui.bitmap_load_pal_str(string content)
+
+Like gui.bitmap_load_pal, but reads the specified string directly 
+as content.
+
+7.3.28 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-7.3.24 gui.subframe_update(boolean on)
+7.3.29 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-7.3.25 gui.screenshot(string filename)
+7.3.30 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-7.3.26 gui.color(number r, number g, number b[, number a])
+7.3.31 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-7.3.27 gui.status(string name, string value)
+7.3.32 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
-7.3.28 gui.rainbow(number step, number steps[, number color])
+7.3.33 gui.rainbow(number step, number steps[, number color])
 
 Perform hue rotation of color <color> (default bright red), by 
 <step> steps. The number of steps per full rotation is given by 
@@ -988,19 +1040,19 @@ absolute value of <steps>.
 
 If <steps> is negative, the rotation will be counterclockwise.
 
-7.3.29 gui.screenshot(string filename)
+7.3.34 gui.screenshot(string filename)
 
 Saves a screenshot into specified file.
 
-7.3.30 gui.renderq_new(number width, number height)
+7.3.35 gui.renderq_new(number width, number height)
 
 Create render queue with specified reported size and return it.
 
-7.3.31 gui.renderq_clear(RENDERQUEUE queue)
+7.3.36 gui.renderq_clear(RENDERQUEUE queue)
 
 Clear specified render queue.
 
-7.3.32 gui.renderq_set(RENDERQUEUE queue)
+7.3.37 gui.renderq_set(RENDERQUEUE queue)
 
 Switch to specified render queue. Use nil as queue to switch to 
 default queue.
@@ -1008,18 +1060,18 @@ default queue.
 • When switched to another queue, all drawing functions work and 
   draw there, even outside on_video/on_paint.
 
-7.3.33 gui.renderq_run(RENDERQUEUE queue)
+7.3.38 gui.renderq_run(RENDERQUEUE queue)
 
 Run specified render queue, copying the objects to current render 
 queue. 
 
 • Warning: Don't try to run the current render queue.
 
-7.3.34 gui.loadfont(string filename)
+7.3.39 gui.loadfont(string filename)
 
 Loads font from specified file (CUSTOMFONT object).
 
-7.3.35 CUSTOMFONT(number x, number y, string text[, number fgc[, 
+7.3.40 CUSTOMFONT(number x, number y, string text[, number fgc[, 
   number bgc[, number hlc]]])
 
 Draw string with custom font to screen. The parameters are the 
