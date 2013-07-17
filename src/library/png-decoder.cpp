@@ -690,127 +690,127 @@ badtype:
 		if(interlace == 1) return *new png_interlacing_adam(3);
 		throw std::runtime_error("Unknown interlace type");
 	}
+}
 
-	void decode_png(std::istream& stream, png_decoded_image& out)
-	{
-		png_dechunker dechunk(stream);
-		if(!dechunk.next_chunk())
-			throw std::runtime_error("PNG file has no chunks");
-		ihdr_chunk hdr(dechunk);
-		autorelease<png_decompressor> idat_decomp(png_decompressor::get(dechunk, hdr.compression));
-		autorelease<png_filterbank> filterbank(png_filterbank::get(*idat_decomp, hdr.filter, hdr.type,
-			hdr.depth, hdr.width));
-		autorelease<png_pixel_decoder> pixdecoder(png_pixel_decoder::get(*filterbank, hdr.type, hdr.depth,
-			hdr.width));
-		autorelease<png_interlacing> interlace(png_interlacing::get(hdr.interlace));
-		std::vector<uint32_t> ndata;
-		std::vector<uint32_t> npalette;
-		ndata.resize(hdr.width * hdr.height);
-		if(ndata.size() / hdr.width != hdr.height)
-			throw std::bad_alloc();
-		if(hdr.type == 3) {
-			npalette.resize(1 << hdr.depth);
-			for(size_t i = 0; i < npalette.size(); i++)
-				npalette[i] = 0xFF000000U;
-		}
-		if(!dechunk.next_chunk())
-			throw std::runtime_error("PNG file has no chunks besides header");
-		uint8_t trans[6];
-		uint8_t* _trans = NULL;
-		for(size_t pass = 0; pass < interlace->passes(); pass++) {
-			size_t scanline = 0;
-			png_interlacing::pass_info pinfo = interlace->pass(pass);
-			auto resolution = png_interlacing::pass_size(hdr.width, hdr.height, pinfo);
-			pixdecoder->adjust_row(resolution.first);
-			std::vector<uint32_t> scanlineb;
-			scanlineb.resize(resolution.first);
-			while(true) {
-				switch(dechunk.chunk_type()) {
-				case 0x49454E44:	//IEND.
-					throw std::runtime_error("Unexpected IEND chunk");
-				case 0x504C5445:	//PLTE.
-					if(hdr.type == 0 || hdr.type == 4)
-						throw std::runtime_error("Illegal PLTE in types 0/4");
-					if(hdr.type == 2 || hdr.type == 6)
-						break;	//Advisory.
-					if(dechunk.chunk_size() > 3 * npalette.size())
-						throw std::runtime_error("PLTE too large");
-					for(size_t i = 0; i < dechunk.chunk_size() / 3; i++) {
-						uint8_t buf[3];
-						dechunk.chunk_read(buf, 3);
-						npalette[i] = (npalette[i] & 0xFF000000U) |
-							((uint32_t)buf[0] << 16) |
-							((uint32_t)buf[1] << 8) |
-							((uint32_t)buf[2]);
-					}
-					break;
-				case 0x74524E53:	//tRNS.
-					if(hdr.type == 4 || hdr.type == 6)
-						throw std::runtime_error("Illegal tRNS in types 4/6");
-					else if(hdr.type == 0) {
-						if(dechunk.chunk_size() != 2)
-							throw std::runtime_error("Expected 2-byte tRNS for type0");
-						dechunk.chunk_read(trans, 2);
-					} else if(hdr.type == 2) {
-						if(dechunk.chunk_size() != 6)
-							throw std::runtime_error("Expected 6-byte tRNS for type2");
-						dechunk.chunk_read(trans, 6);
-					} else if(hdr.type == 3) {
-						if(dechunk.chunk_size() > npalette.size())
-							throw std::runtime_error("tRNS too large");
-						for(size_t i = 0; i < dechunk.chunk_size(); i++) {
-							uint8_t buf[1];
-							dechunk.chunk_read(buf, 1);
-							npalette[i] = (npalette[i] & 0x00FFFFFFU) |
-								((uint32_t)buf[0] << 24);
-						}
-					}
-					_trans = trans;
-					break;
-				case 0x49444154:	//IDAT.
-					if(scanline == resolution.second)
-						goto next_pass;
-					while(pixdecoder->decode(&scanlineb[0], _trans)) {
-						size_t rline = scanline * pinfo.ymod + pinfo.yoff;
-						for(size_t i = 0; i < resolution.first; i++) {
-							ndata[rline * hdr.width + (i * pinfo.xmod + pinfo.xoff)] =
-								scanlineb[i];
-						}
-						scanline++;
-						if(scanline == resolution.second)
-							goto next_pass;
-					}
-					break;
-				default:
-					if((dechunk.chunk_type() & 0x20000000U) == 0)
-						throw std::runtime_error("Unknown critical chunk");
-					break;
-				}
-				dechunk.next_chunk();
-			}
-next_pass:
-			;
-		}
-		while(dechunk.next_chunk()) {
+void decode_png(std::istream& stream, png_decoded_image& out)
+{
+	png_dechunker dechunk(stream);
+	if(!dechunk.next_chunk())
+		throw std::runtime_error("PNG file has no chunks");
+	ihdr_chunk hdr(dechunk);
+	autorelease<png_decompressor> idat_decomp(png_decompressor::get(dechunk, hdr.compression));
+	autorelease<png_filterbank> filterbank(png_filterbank::get(*idat_decomp, hdr.filter, hdr.type,
+		hdr.depth, hdr.width));
+	autorelease<png_pixel_decoder> pixdecoder(png_pixel_decoder::get(*filterbank, hdr.type, hdr.depth,
+		hdr.width));
+	autorelease<png_interlacing> interlace(png_interlacing::get(hdr.interlace));
+	std::vector<uint32_t> ndata;
+	std::vector<uint32_t> npalette;
+	ndata.resize(hdr.width * hdr.height);
+	if(ndata.size() / hdr.width != hdr.height)
+		throw std::bad_alloc();
+	if(hdr.type == 3) {
+		npalette.resize(1 << hdr.depth);
+		for(size_t i = 0; i < npalette.size(); i++)
+			npalette[i] = 0xFF000000U;
+	}
+	if(!dechunk.next_chunk())
+		throw std::runtime_error("PNG file has no chunks besides header");
+	uint8_t trans[6];
+	uint8_t* _trans = NULL;
+	for(size_t pass = 0; pass < interlace->passes(); pass++) {
+		size_t scanline = 0;
+		png_interlacing::pass_info pinfo = interlace->pass(pass);
+		auto resolution = png_interlacing::pass_size(hdr.width, hdr.height, pinfo);
+		pixdecoder->adjust_row(resolution.first);
+		std::vector<uint32_t> scanlineb;
+		scanlineb.resize(resolution.first);
+		while(true) {
 			switch(dechunk.chunk_type()) {
 			case 0x49454E44:	//IEND.
-				goto out;
-			case 0x504C5445:	//PLTE
-				throw std::runtime_error("PLTE not allowed after image data");
+				throw std::runtime_error("Unexpected IEND chunk");
+			case 0x504C5445:	//PLTE.
+				if(hdr.type == 0 || hdr.type == 4)
+					throw std::runtime_error("Illegal PLTE in types 0/4");
+				if(hdr.type == 2 || hdr.type == 6)
+					break;	//Advisory.
+				if(dechunk.chunk_size() > 3 * npalette.size())
+					throw std::runtime_error("PLTE too large");
+				for(size_t i = 0; i < dechunk.chunk_size() / 3; i++) {
+					uint8_t buf[3];
+					dechunk.chunk_read(buf, 3);
+					npalette[i] = (npalette[i] & 0xFF000000U) |
+						((uint32_t)buf[0] << 16) |
+						((uint32_t)buf[1] << 8) |
+						((uint32_t)buf[2]);
+				}
+				break;
+			case 0x74524E53:	//tRNS.
+				if(hdr.type == 4 || hdr.type == 6)
+					throw std::runtime_error("Illegal tRNS in types 4/6");
+				else if(hdr.type == 0) {
+					if(dechunk.chunk_size() != 2)
+						throw std::runtime_error("Expected 2-byte tRNS for type0");
+					dechunk.chunk_read(trans, 2);
+				} else if(hdr.type == 2) {
+					if(dechunk.chunk_size() != 6)
+						throw std::runtime_error("Expected 6-byte tRNS for type2");
+					dechunk.chunk_read(trans, 6);
+				} else if(hdr.type == 3) {
+					if(dechunk.chunk_size() > npalette.size())
+						throw std::runtime_error("tRNS too large");
+					for(size_t i = 0; i < dechunk.chunk_size(); i++) {
+						uint8_t buf[1];
+						dechunk.chunk_read(buf, 1);
+						npalette[i] = (npalette[i] & 0x00FFFFFFU) |
+							((uint32_t)buf[0] << 24);
+					}
+				}
+				_trans = trans;
+				break;
 			case 0x49444154:	//IDAT.
+				if(scanline == resolution.second)
+					goto next_pass;
+				while(pixdecoder->decode(&scanlineb[0], _trans)) {
+					size_t rline = scanline * pinfo.ymod + pinfo.yoff;
+					for(size_t i = 0; i < resolution.first; i++) {
+						ndata[rline * hdr.width + (i * pinfo.xmod + pinfo.xoff)] =
+							scanlineb[i];
+					}
+					scanline++;
+					if(scanline == resolution.second)
+						goto next_pass;
+				}
 				break;
 			default:
 				if((dechunk.chunk_type() & 0x20000000U) == 0)
 					throw std::runtime_error("Unknown critical chunk");
+				break;
 			}
+			dechunk.next_chunk();
 		}
-out:
-		std::swap(out.data, ndata);
-		std::swap(out.palette, npalette);
-		out.has_palette = (hdr.type == 3);
-		out.width = hdr.width;
-		out.height = hdr.height;
+next_pass:
+		;
 	}
+	while(dechunk.next_chunk()) {
+		switch(dechunk.chunk_type()) {
+		case 0x49454E44:	//IEND.
+			goto out;
+		case 0x504C5445:	//PLTE
+			throw std::runtime_error("PLTE not allowed after image data");
+		case 0x49444154:	//IDAT.
+			break;
+		default:
+			if((dechunk.chunk_type() & 0x20000000U) == 0)
+				throw std::runtime_error("Unknown critical chunk");
+		}
+	}
+out:
+	std::swap(out.data, ndata);
+	std::swap(out.palette, npalette);
+	out.has_palette = (hdr.type == 3);
+	out.width = hdr.width;
+	out.height = hdr.height;
 }
 
 void decode_png(const std::string& file, png_decoded_image& out)
@@ -849,6 +849,5 @@ int main(int argc, char** argv)
 	std::cout << std::endl;
 }
 //evaluate-lua b,p=gui.bitmap_load_png("/tmp/tbgn2c16.png"); on_paint = function() gui.bitmap_draw(0,0,b,p); end
-
 
 */

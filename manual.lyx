@@ -2827,6 +2827,31 @@ transparent: Fully transparent color
 \end_layout
 
 \begin_layout Subsubsection
+gui.bitmap_load_str(string content)
+\end_layout
+
+\begin_layout Standard
+Like gui.bitmap_load, but reads the specified string directly as content.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_load_png_str(string base64content)
+\end_layout
+
+\begin_layout Standard
+Like gui.bitmap_load_png, but reads the specified string (as base64-encoded)
+ directly as content.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_load_pal_str(string content)
+\end_layout
+
+\begin_layout Standard
+Like gui.bitmap_load_pal, but reads the specified string directly as content.
+\end_layout
+
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 

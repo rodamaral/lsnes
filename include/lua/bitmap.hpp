@@ -40,6 +40,7 @@ struct lua_loaded_bitmap
 	bool d;
 	std::vector<int64_t> bitmap;
 	std::vector<int64_t> palette;
+	static struct lua_loaded_bitmap load(std::istream& stream);
 	static struct lua_loaded_bitmap load(const std::string& name);
 };
 

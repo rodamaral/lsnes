@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 #include <string>
+#include <iostream>
 
 struct png_decoded_image
 {
@@ -15,6 +16,7 @@ struct png_decoded_image
 	std::vector<uint32_t> palette;
 };
 
+void decode_png(std::istream& file, png_decoded_image& out);
 void decode_png(const std::string& file, png_decoded_image& out);
 
 #endif

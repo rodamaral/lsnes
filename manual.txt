@@ -1404,34 +1404,70 @@ Return value:
   returns one DBITMAP containg the image data loaded from the 
   PNG.
 
-8.3.24 gui.repaint()
+8.3.24 gui.bitmap_load_pal(string filename)
+
+Load a palette from file. Parameters:
+
+• filename: The name of the file.
+
+The kinds of lines supported
+
+• Blank or just whitespace: Ignored
+
+• First non-whitespace is '#': Ignored
+
+• <r> <g> <b>: Fully opaque color with specified RGB values 
+  (0-255)
+
+• <r> <g> <b> <a>: Color with specified RGB values (0-255) and 
+  specified alpha (0-256, 0 being fully transparent and 256 fully 
+  opaque).
+
+• transparent: Fully transparent color
+
+8.3.25 gui.bitmap_load_str(string content)
+
+Like gui.bitmap_load, but reads the specified string directly as 
+content.
+
+8.3.26 gui.bitmap_load_png_str(string base64content)
+
+Like gui.bitmap_load_png, but reads the specified string (as 
+base64-encoded) directly as content.
+
+8.3.27 gui.bitmap_load_pal_str(string content)
+
+Like gui.bitmap_load_pal, but reads the specified string directly 
+as content.
+
+8.3.28 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-8.3.25 gui.subframe_update(boolean on)
+8.3.29 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-8.3.26 gui.screenshot(string filename)
+8.3.30 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-8.3.27 gui.color(number r, number g, number b[, number a])
+8.3.31 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-8.3.28 gui.status(string name, string value)
+8.3.32 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
-8.3.29 gui.rainbow(number step, number steps[, number color])
+8.3.33 gui.rainbow(number step, number steps[, number color])
 
 Perform hue rotation of color <color> (default bright red), by 
 <step> steps. The number of steps per full rotation is given by 
@@ -1439,15 +1475,15 @@ absolute value of <steps>.
 
 If <steps> is negative, the rotation will be counterclockwise.
 
-8.3.30 gui.screenshot(string filename)
+8.3.34 gui.screenshot(string filename)
 
 Saves a screenshot into specified file.
 
-8.3.31 gui.loadfont(string filename)
+8.3.35 gui.loadfont(string filename)
 
 Loads font from specified file (CUSTOMFONT object).
 
-8.3.32 CUSTOMFONT(number x, number y, string text[, number fgc[, 
+8.3.36 CUSTOMFONT(number x, number y, string text[, number fgc[, 
   number bgc[, number hlc]]])
 
 Draw string with custom font to screen. The parameters are the 

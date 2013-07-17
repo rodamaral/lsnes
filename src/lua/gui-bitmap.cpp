@@ -6,6 +6,7 @@
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
 #include <vector>
+#include <sstream>
 
 lua_bitmap::lua_bitmap(uint32_t w, uint32_t h)
 {
@@ -300,10 +301,10 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun gui_loadbitmap("gui.bitmap_load", [](lua_State* LS, const std::string& fname) -> int {
-		std::string name = get_string_argument(LS, 1, fname.c_str());
+	int bitmap_load_fn(lua_State* LS, std::function<lua_loaded_bitmap()> src)
+	{
 		uint32_t w, h;
-		auto bitmap = lua_loaded_bitmap::load(name);
+		auto bitmap = src();
 		if(bitmap.d) {
 			lua_dbitmap* b = lua_class<lua_dbitmap>::create(LS, bitmap.w, bitmap.h);
 			for(size_t i = 0; i < bitmap.w * bitmap.h; i++)
@@ -319,6 +320,19 @@ namespace
 				p->colors[i] = premultiplied_color(bitmap.palette[i]);
 			return 2;
 		}
+	}
+
+	function_ptr_luafun gui_loadbitmap("gui.bitmap_load", [](lua_State* LS, const std::string& fname) -> int {
+		std::string name = get_string_argument(LS, 1, fname.c_str());
+		return bitmap_load_fn(LS, [&name]() -> lua_loaded_bitmap { return lua_loaded_bitmap::load(name); });
+	});
+
+	function_ptr_luafun gui_loadbitmap2("gui.bitmap_load_str", [](lua_State* LS, const std::string& fname) -> int {
+		std::string contents = get_string_argument(LS, 1, fname.c_str());
+		return bitmap_load_fn(LS, [&contents]() -> lua_loaded_bitmap {
+			std::istringstream strm(contents);
+			return lua_loaded_bitmap::load(strm);
+		});
 	});
 
 	inline int64_t mangle_color(uint32_t c)
@@ -329,11 +343,60 @@ namespace
 			return ((256 - (c >> 24) - (c >> 31)) << 24) | (c & 0xFFFFFF);
 	}
 
-	function_ptr_luafun gui_loadbitmappng("gui.bitmap_load_png", [](lua_State* LS, const std::string& fname)
-		-> int {
-		std::string name = get_string_argument(LS, 1, fname.c_str());
+	int base64val(char ch)
+	{
+		if(ch >= 'A' && ch <= 'Z')
+			return ch - 65;
+		if(ch >= 'a' && ch <= 'z')
+			return ch - 97 + 26;
+		if(ch >= '0' && ch <= '9')
+			return ch - 48 + 52;
+		if(ch == '+')
+			return 62;
+		if(ch == '/')
+			return 63;
+		if(ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
+			return -1;
+		if(ch == '=')
+			return -2;
+		return -3;
+	}
+
+	std::string base64_decode(const std::string& str)
+	{
+		bool end = 0;
+		uint32_t memory = 0;
+		uint32_t memsize = 1;
+		int posmod = 0;
+		std::ostringstream x;
+		for(auto i : str) {
+			int v = base64val(i);
+			if(v == -1)
+				continue;
+			posmod = (posmod + 1) & 3;
+			if(v == -2 && (posmod == 1 || posmod == 2))
+				throw std::runtime_error("Invalid Base64");
+			if(v == -2) {
+				end = true;
+				continue;
+			}
+			if(v == -3 || end)
+				throw std::runtime_error("Invalid Base64");
+			memory = memory * 64 + v;
+			memsize = memsize * 64;
+			if(memsize >= 256) {
+				memsize >>= 8;
+				x << static_cast<uint8_t>(memory / memsize);
+				memory %= memsize;
+			}
+		}
+		return x.str();
+	}
+
+	int bitmap_load_png_fn(lua_State* LS, std::function<void(png_decoded_image&)> src)
+	{
 		png_decoded_image img;
-		decode_png(name, img);
+		src(img);
 		if(img.has_palette) {
 			lua_bitmap* b = lua_class<lua_bitmap>::create(LS, img.width, img.height);
 			lua_palette* p = lua_class<lua_palette>::create(LS);
@@ -349,48 +412,76 @@ namespace
 				b->pixels[i] = premultiplied_color(mangle_color(img.data[i]));
 			return 1;
 		}
+	}
+
+	function_ptr_luafun gui_loadbitmappng("gui.bitmap_load_png", [](lua_State* LS, const std::string& fname)
+		-> int {
+		std::string name = get_string_argument(LS, 1, fname.c_str());
+		return bitmap_load_png_fn(LS, [&name](png_decoded_image& img) { decode_png(name, img); });
 	});
 
+	function_ptr_luafun gui_loadbitmappng2("gui.bitmap_load_png_str", [](lua_State* LS, const std::string& fname)
+		-> int {
+		std::string contents = base64_decode(get_string_argument(LS, 1, fname.c_str()));
+		return bitmap_load_png_fn(LS, [&contents](png_decoded_image& img) {
+			std::istringstream strm(contents);
+			decode_png(strm, img);
+		});
+	});
+
+	int bitmap_palette_fn(lua_State* LS, std::istream& s)
+	{
+		lua_palette* p = lua_class<lua_palette>::create(LS);
+		while(s) {
+			std::string line;
+			std::getline(s, line);
+			istrip_CR(line);
+			regex_results r;
+			if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
+				int64_t cr, cg, cb, ca;
+				cr = parse_value<uint8_t>(r[1]);
+				cg = parse_value<uint8_t>(r[2]);
+				cb = parse_value<uint8_t>(r[3]);
+				ca = 256 - parse_value<uint16_t>(r[4]);
+				int64_t clr;
+				if(ca == 256)
+					p->colors.push_back(premultiplied_color(-1));
+				else
+					p->colors.push_back(premultiplied_color((ca << 24) | (cr << 16)
+						| (cg << 8) | cb));
+			} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
+				int64_t cr, cg, cb;
+				cr = parse_value<uint8_t>(r[1]);
+				cg = parse_value<uint8_t>(r[2]);
+				cb = parse_value<uint8_t>(r[3]);
+				p->colors.push_back(premultiplied_color((cr << 16) | (cg << 8) | cb));
+			} else if(regex_match("[ \t]*transparent[ \t]*", line)) {
+				p->colors.push_back(premultiplied_color(-1));
+			} else if(!regex_match("[ \t]*(#.*)?", line))
+				throw std::runtime_error("Invalid line format (" + line + ")");
+		}
+		return 1;
+	}
+	
 	function_ptr_luafun gui_loadpalette("gui.bitmap_load_pal", [](lua_State* LS, const std::string& fname)
 		-> int {
 		std::string name = get_string_argument(LS, 1, fname.c_str());
 		std::istream& s = open_file_relative(name, "");
 		try {
-			lua_palette* p = lua_class<lua_palette>::create(LS);
-			while(s) {
-				std::string line;
-				std::getline(s, line);
-				istrip_CR(line);
-				regex_results r;
-				if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
-					int64_t cr, cg, cb, ca;
-					cr = parse_value<uint8_t>(r[1]);
-					cg = parse_value<uint8_t>(r[2]);
-					cb = parse_value<uint8_t>(r[3]);
-					ca = 256 - parse_value<uint16_t>(r[4]);
-					int64_t clr;
-					if(ca == 256)
-						p->colors.push_back(premultiplied_color(-1));
-					else
-						p->colors.push_back(premultiplied_color((ca << 24) | (cr << 16)
-							| (cg << 8) | cb));
-				} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
-					int64_t cr, cg, cb;
-					cr = parse_value<uint8_t>(r[1]);
-					cg = parse_value<uint8_t>(r[2]);
-					cb = parse_value<uint8_t>(r[3]);
-					p->colors.push_back(premultiplied_color((cr << 16) | (cg << 8) | cb));
-				} else if(regex_match("[ \t]*transparent[ \t]*", line)) {
-					p->colors.push_back(premultiplied_color(-1));
-				} else if(!regex_match("[ \t]*(#.*)?", line))
-					throw std::runtime_error("Invalid line format (" + line + ")");
-			}
+			int r = bitmap_palette_fn(LS, s);
 			delete &s;
-			return 1;
+			return r;
 		} catch(...) {
 			delete &s;
 			throw;
 		}
+	});
+
+	function_ptr_luafun gui_loadpalette2("gui.bitmap_load_pal_str", [](lua_State* LS, const std::string& fname)
+		-> int {
+		std::string content = get_string_argument(LS, 1, fname.c_str());
+		std::istringstream s(content);
+		return bitmap_palette_fn(LS, s);
 	});
 
 	function_ptr_luafun gui_dpalette("gui.palette_debug", [](lua_State* LS, const std::string& fname) -> int {
