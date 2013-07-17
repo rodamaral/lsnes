@@ -2761,6 +2761,72 @@ May be absent or nil for no colorkey blit.
 
 \end_deeper
 \begin_layout Subsubsection
+gui.bitmap_load_png(string filename)
+\end_layout
+
+\begin_layout Standard
+Load a bitmap from PNG file.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+filename: The name of file to load the bitmap frame.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+If the PNG is of color type 3 (PALETTE), returns two value.
+ First is BITMAP containing the image data from the PNG and second is PALETTE
+ containg the palette data from the PNG.
+\end_layout
+
+\begin_layout Itemize
+For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), returns
+ one DBITMAP containg the image data loaded from the PNG.
+\end_layout
+
+\begin_layout Subsubsection
+gui.bitmap_load_pal(string filename)
+\end_layout
+
+\begin_layout Standard
+Load a palette from file.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+filename: The name of the file.
+\end_layout
+
+\begin_layout Standard
+The kinds of lines supported
+\end_layout
+
+\begin_layout Itemize
+Blank or just whitespace: Ignored
+\end_layout
+
+\begin_layout Itemize
+First non-whitespace is '#': Ignored
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b>: Fully opaque color with specified RGB values (0-255)
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b> <a>: Color with specified RGB values (0-255) and specified alpha
+ (0-256, 0 being fully transparent and 256 fully opaque).
+\end_layout
+
+\begin_layout Itemize
+transparent: Fully transparent color
+\end_layout
+
+\begin_layout Subsubsection
 gui.repaint()
 \end_layout
 
