@@ -1,6 +1,9 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
+#include "library/png-decoder.hpp"
+#include "library/string.hpp"
+#include "library/zip.hpp"
 #include "lua/bitmap.hpp"
 #include "library/threadtypes.hpp"
 #include <vector>
@@ -314,6 +317,78 @@ namespace
 			for(size_t i = 0; i < bitmap.palette.size(); i++)
 				p->colors[i] = premultiplied_color(bitmap.palette[i]);
 			return 2;
+		}
+	});
+
+	inline int64_t mangle_color(uint32_t c)
+	{
+		if(c < 0x1000000)
+			return -1;
+		else
+			return ((256 - (c >> 24) - (c >> 31)) << 24) | (c & 0xFFFFFF);
+	}
+
+	function_ptr_luafun gui_loadbitmappng(LS, "gui.bitmap_load_png", [](lua_state& L, const std::string& fname)
+		-> int {
+		std::string name = L.get_string(1, fname.c_str());
+		png_decoded_image img;
+		decode_png(name, img);
+		if(img.has_palette) {
+			lua_bitmap* b = lua_class<lua_bitmap>::create(L, img.width, img.height);
+			lua_palette* p = lua_class<lua_palette>::create(L);
+			for(size_t i = 0; i < img.width * img.height; i++)
+				b->pixels[i] = img.data[i];
+			p->colors.resize(img.palette.size());
+			for(size_t i = 0; i < img.palette.size(); i++)
+				p->colors[i] = premultiplied_color(mangle_color(img.palette[i]));
+			return 2;
+		} else {
+			lua_dbitmap* b = lua_class<lua_dbitmap>::create(L, img.width, img.height);
+			for(size_t i = 0; i < img.width * img.height; i++)
+				b->pixels[i] = premultiplied_color(mangle_color(img.data[i]));
+			return 1;
+		}
+	});
+
+	function_ptr_luafun gui_loadpalette(LS, "gui.bitmap_load_pal", [](lua_state& L, const std::string& fname)
+		-> int {
+		std::string name = L.get_string(1, fname.c_str());
+		std::istream& s = open_file_relative(name, "");
+		try {
+			lua_palette* p = lua_class<lua_palette>::create(L);
+			while(s) {
+				std::string line;
+				std::getline(s, line);
+				istrip_CR(line);
+				regex_results r;
+				if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
+					int64_t cr, cg, cb, ca;
+					cr = parse_value<uint8_t>(r[1]);
+					cg = parse_value<uint8_t>(r[2]);
+					cb = parse_value<uint8_t>(r[3]);
+					ca = 256 - parse_value<uint16_t>(r[4]);
+					int64_t clr;
+					if(ca == 256)
+						p->colors.push_back(premultiplied_color(-1));
+					else
+						p->colors.push_back(premultiplied_color((ca << 24) | (cr << 16)
+							| (cg << 8) | cb));
+				} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
+					int64_t cr, cg, cb;
+					cr = parse_value<uint8_t>(r[1]);
+					cg = parse_value<uint8_t>(r[2]);
+					cb = parse_value<uint8_t>(r[3]);
+					p->colors.push_back(premultiplied_color((cr << 16) | (cg << 8) | cb));
+				} else if(regex_match("[ \t]*transparent[ \t]*", line)) {
+					p->colors.push_back(premultiplied_color(-1));
+				} else if(!regex_match("[ \t]*(#.*)?", line))
+					throw std::runtime_error("Invalid line format (" + line + ")");
+			}
+			delete &s;
+			return 1;
+		} catch(...) {
+			delete &s;
+			throw;
 		}
 	});
 
