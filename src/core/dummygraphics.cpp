@@ -36,10 +36,9 @@ namespace
 	{
 	}
 
-	bool dummy_modal_message(const std::string& text, bool confirm) throw()
+	void dummy_error_message(const std::string& text) throw()
 	{
-		std::cerr << "Modal message: " << text << std::endl;
-		return confirm;
+		std::cerr << "Error message: " << text << std::endl;
 	}
 
 	void dummy_fatal_error() throw()
@@ -59,7 +58,7 @@ namespace
 		.notify_message = dummy_notify_message,
 		.notify_status = dummy_notify_status,
 		.notify_screen = dummy_notify_screen,
-		.modal_message = dummy_modal_message,
+		.error_message = dummy_error_message,
 		.fatal_error = dummy_fatal_error,
 		.name = dummy_name,
 		.action_updated = dummy_action_updated,
@@ -103,9 +102,9 @@ void graphics_driver_notify_screen() throw()
 	driver.notify_screen();
 }
 
-bool graphics_driver_modal_message(const std::string& text, bool confirm) throw()
+void graphics_driver_error_message(const std::string& text) throw()
 {
-	return driver.modal_message(text, confirm);
+	driver.error_message(text);
 }
 
 void graphics_driver_fatal_error() throw()

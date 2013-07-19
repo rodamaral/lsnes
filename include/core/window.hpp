@@ -55,7 +55,7 @@ struct _graphics_driver
 	void (*notify_message)();
 	void (*notify_status)();
 	void (*notify_screen)();
-	bool (*modal_message)(const std::string& text, bool confirm);
+	void (*error_message)(const std::string& text);
 	void (*fatal_error)();
 	const char* (*name)();
 	void (*action_updated)();
@@ -93,13 +93,11 @@ void graphics_driver_notify_status() throw();
  */
 void graphics_driver_notify_screen() throw();
 /**
- * Show modal message dialog.
+ * Show error message dialog when UI thread is free.
  *
  * Parameter text: The text for dialog.
- * Parameter confirm: If true, display confirmation dialog, if false, display notification dialog.
- * Returns: True if confirmation dialog was confirmed, otherwise false.
  */
-bool graphics_driver_modal_message(const std::string& text, bool confirm = false) throw();
+void graphics_driver_error_message(const std::string& text) throw();
 /**
  * Displays fatal error message.
  *
@@ -193,15 +191,13 @@ struct platform
  */
 	static void set_sound_device(const std::string& pdev, const std::string& rdev) throw();
 /**
- * Show modal message dialog.
+ * Show error message dialog after UI thread becomes free.
  *
  * Parameter text: The text for dialog.
- * Parameter confirm: If true, display confirmation dialog, if false, display notification dialog.
- * Returns: True, if confirmation dialog was confirmed, otherwise false.
  */
-	static bool modal_message(const std::string& text, bool confirm = false) throw()
+	static void error_message(const std::string& text) throw()
 	{
-		return graphics_driver_modal_message(text, confirm);
+		return graphics_driver_error_message(text);
 	}
 /**
  * Process command and keypress queues.

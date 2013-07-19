@@ -47,7 +47,7 @@
 #define UISERV_UPDATE_MESSAGES 9996
 #define UISERV_UPDATE_SCREEN 9997
 #define UISERV_PANIC 9998
-#define UISERV_MODAL 9999
+#define UISERV_ERROR 9999
 
 wxwin_messages* msg_window;
 wxwin_mainwindow* main_window;
@@ -59,7 +59,7 @@ namespace
 {
 	threadid_class ui_thread;
 	volatile bool panic_ack = false;
-	std::string modal_dialog_text;
+	std::string error_message_text;
 	volatile bool modal_dialog_confirm;
 	volatile bool modal_dialog_active;
 	mutex_class ui_mutex;
@@ -112,28 +112,9 @@ namespace
 		} else if(c == UISERV_RESIZED) {
 			if(main_window)
 				main_window->notify_resized();
-		} else if(c == UISERV_MODAL) {
-			std::string text;
-			bool confirm;
-			{
-				umutex_class h(ui_mutex);
-				text = modal_dialog_text;
-				confirm = modal_dialog_confirm;
-			}
-			if(confirm) {
-				int ans = wxMessageBox(towxstring(text), _T("Question"), wxICON_QUESTION | wxOK |
-					wxCANCEL, main_window);
-				confirm = (ans == wxOK);
-			} else {
-				wxMessageBox(towxstring(text), _T("Notification"), wxICON_INFORMATION | wxOK,
-					main_window);
-			}
-			{
-				umutex_class h(ui_mutex);
-				modal_dialog_confirm = confirm;
-				modal_dialog_active = false;
-				ui_condition.notify_all();
-			}
+		} else if(c == UISERV_ERROR) {
+			std::string text = error_message_text;
+			wxMessageBox(towxstring(text), _T("lsnes: Error"), wxICON_EXCLAMATION | wxOK, main_window);
 		} else if(c == UISERV_UPDATE_MESSAGES) {
 			if(msg_window)
 				msg_window->notify_update();
@@ -585,15 +566,9 @@ namespace
 		{
 			post_ui_event(UISERV_UPDATE_SCREEN);
 		},
-		.modal_message = [](const std::string& text, bool confirm) -> bool {
-			umutex_class h(ui_mutex);
-			modal_dialog_active = true;
-			modal_dialog_confirm = confirm;
-			modal_dialog_text = text;
-			post_ui_event(UISERV_MODAL);
-			while(modal_dialog_active)
-				cv_timed_wait(ui_condition, h, microsec_class(10000));
-			return modal_dialog_confirm;
+		.error_message = [](const std::string& text) -> void {
+			error_message_text = text;
+			post_ui_event(UISERV_ERROR);
 		},
 		.fatal_error = []() -> void {
 			//Fun: This can be called from any thread!

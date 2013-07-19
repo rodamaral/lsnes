@@ -317,10 +317,10 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 	if(!spec || s != "[GAMEPACK FILE]") {
 		//This is a Raw ROM image.
 		regex_results tmp;
-		std::string ext = regex(".*\\.([^.]*)?", file, "Unknown ROM file type")[1];
+		std::string ext = regex(".*\\.([^.]*)?", file, "Can't read file extension")[1];
 		core_type* coretype = find_core_by_extension(ext, tmpprefer);
 		if(!coretype)
-			throw std::runtime_error("Unknown ROM file type");
+			(stringfmt() << "Extension '" << ext << "' unknown").throwex();
 		rtype = coretype;
 		region = orig_region = &rtype->get_preferred_region();
 		unsigned romidx = 0;

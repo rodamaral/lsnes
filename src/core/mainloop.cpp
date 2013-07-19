@@ -315,6 +315,7 @@ namespace
 			no_switch = true;
 		}
 		if(filenam == "") {
+			platform::error_message("Can't reload ROM: No existing ROM");
 			messages << "No ROM loaded" << std::endl;
 			return false;
 		}
@@ -334,6 +335,7 @@ namespace
 					t = i;
 				}
 				if(!t) {
+					platform::error_message("Can't load ROM: Can't find matching core");
 					messages << "Can't find matching core type" << std::endl;
 					return false;
 				}
@@ -345,6 +347,7 @@ namespace
 				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256;
 			}
 		} catch(std::exception& e) {
+			platform::error_message(std::string("Can't load ROM: ") + e.what());
 			messages << "Can't reload ROM: " << e.what() << std::endl;
 			return false;
 		}
@@ -704,6 +707,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			int sreset_action = our_rom->rtype->reset_action(false);
 			if(sreset_action < 0) {
+				platform::error_message("Core does not support resets");
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
 			}
@@ -715,6 +719,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			int hreset_action = our_rom->rtype->reset_action(true);
 			if(hreset_action < 0) {
+				platform::error_message("Core does not support hard resets");
 				messages << "Emulator core does not support hard resets" << std::endl;
 				return;
 			}
@@ -1021,6 +1026,7 @@ namespace
 				flush_slotinfo();	//Wrong movie may be stale.
 				return 1;
 			} catch(std::exception& e) {
+				platform::error_message(std::string("Can't switch projects: ") + e.what());
 				messages << "Can't switch projects: " << e.what() << std::endl;
 				goto nothing_to_do;
 			}
@@ -1045,6 +1051,7 @@ nothing_to_do:
 				if(loadmode == LOAD_STATE_ROMRELOAD)
 					do_load_beginning(true);
 			} catch(std::exception& e) {
+				platform::error_message(std::string("Load failed: ") + e.what());
 				messages << "Load failed: " << e.what() << std::endl;
 			}
 			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
@@ -1128,6 +1135,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
+		platform::error_message(std::string("Can't load initial state: ") + e.what());
 		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
 		if(load_has_to_succeed) {
 			messages << "FATAL: Can't load movie" << std::endl;

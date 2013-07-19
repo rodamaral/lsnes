@@ -94,6 +94,7 @@ namespace
 				<< "\tOur ROM: " << slot.sha_256 << std::endl;
 			return true;
 		} else {
+			platform::error_message("Can't load state because hashes mismatch");
 			messages << "ERROR: " << name << " hash mismatch!" << std::endl
 				<< "\tMovie:   " << mhash << std::endl
 				<< "\tOur ROM: " << slot.sha_256 << std::endl;
@@ -192,6 +193,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	if(!our_movie.gametype) {
+		platform::error_message("Can't save movie without a ROM");
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
@@ -224,6 +226,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
+		platform::error_message(std::string("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
@@ -239,6 +242,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!our_movie.gametype) {
+		platform::error_message("Can't save movie without a ROM");
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
@@ -261,6 +265,7 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
+		platform::error_message(std::string("Save failed: ") + e.what());
 		messages << "Save failed: " << e.what() << std::endl;
 		lua_callback_err_save(filename2);
 	}
@@ -278,6 +283,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
 	bool force_rw = false;
 	if(!our_movie.gametype && !reload) {
+		platform::error_message("Can't load movie without a ROM");
 		messages << "Can't load movie without a ROM" << std::endl;
 		return;
 	}
@@ -498,6 +504,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
+		platform::error_message(std::string("Can't read movie/savestate: ") + e.what());
 		messages << "Can't read movie/savestate '" << filename2 << "': " << e.what() << std::endl;
 		lua_callback_err_load(filename2);
 		return false;
@@ -510,6 +517,7 @@ bool do_load_state(const std::string& filename, int lmode)
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
+		platform::error_message(std::string("Can't load movie/savestate: ") + e.what());
 		messages << "Can't load movie/savestate '" << filename2 << "': " << e.what() << std::endl;
 		lua_callback_err_load(filename2);
 		return false;
