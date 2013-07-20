@@ -120,7 +120,6 @@ namespace
 		{
 			controller_set x;
 			x.ports.push_back(&get_default_system_port_type());
-			x.portindex.indices.push_back(sync_triple);
 			return x;
 		}
 		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0ULL, 0ULL); }

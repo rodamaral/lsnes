@@ -58,16 +58,6 @@ namespace
 
 #include "ports.inc"
 
-	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
-	{
-		port_index_triple x;
-		x.valid = true;
-		x.port = p;
-		x.controller = c;
-		x.control = i;
-		return x;
-	}
-
 	controller_set test_controllerconfig(std::map<std::string, std::string>& settings)
 	{
 		std::map<std::string, std::string> _settings = settings;
@@ -75,16 +65,8 @@ namespace
 		r.ports.push_back(&psystem);
 		r.ports.push_back(&ptype1);
 		r.ports.push_back(&ptype2);
-		for(unsigned i = 0; i < 5; i++)
-			r.portindex.indices.push_back(t(0, 0, i, false));
-		for(unsigned i = 0; i < 21; i++)
-			r.portindex.indices.push_back(t(1, 0, i, true));
-		for(unsigned i = 0; i < 21; i++)
-			r.portindex.indices.push_back(t(2, 0, i, true));
-		r.portindex.logical_map.push_back(std::make_pair(1, 0));
-		r.portindex.logical_map.push_back(std::make_pair(2, 0));
-		r.portindex.pcid_map.push_back(std::make_pair(1, 0));
-		r.portindex.pcid_map.push_back(std::make_pair(2, 0));
+		r.logical_map.push_back(std::make_pair(1, 0));
+		r.logical_map.push_back(std::make_pair(2, 0));
 		return r;
 	}
 

@@ -295,7 +295,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		rrdata::add_internal();
 	} else {
 		auto ctrldata = our_rom->rtype->controllerconfig(our_movie.settings);
-		port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+		port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 		controls.set_ports(portset);
 		if(our_movie.input.get_types() != portset) {
 			//The input type changes, so set the types.
@@ -387,7 +387,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			(lmode == LOAD_STATE_PRESERVE) ? &_movie.input : NULL, _movie.projectid);
 
 	auto ctrldata = our_rom->rtype->controllerconfig(_movie.settings);
-	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	//Negative return.
 	rrdata::read_base(_movie.projectid, _movie.lazy_project_create);

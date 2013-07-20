@@ -262,24 +262,6 @@ namespace
 		return r ? 0 : -1;
 	}
 
-	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
-	{
-		port_index_triple x;
-		x.valid = true;
-		x.port = p;
-		x.controller = c;
-		x.control = i;
-		return x;
-	}
-
-	void push_port_indices(std::vector<port_index_triple>& tab, unsigned p, port_type& pt)
-	{
-		unsigned ctrls = pt.controller_info->controllers.size();
-		for(unsigned i = 0; i < ctrls; i++)
-			for(unsigned j = 0; j < pt.controller_info->controllers[i]->buttons.size(); j++)
-				tab.push_back(t(p, i, j, true));
-	}
-
 	controller_set bsnes_controllerconfig(std::map<std::string, std::string>& settings)
 	{
 		std::map<std::string, std::string> _settings = settings;
@@ -296,25 +278,19 @@ namespace
 		r.ports.push_back(index_to_ptype[type2]);
 		unsigned p1controllers = r.ports[1]->controller_info->controllers.size();
 		unsigned p2controllers = r.ports[2]->controller_info->controllers.size();
-		for(unsigned i = 0; i < (hreset ? 5 : 4); i++)
-			r.portindex.indices.push_back(t(0, 0, i, false));
-		push_port_indices(r.portindex.indices, 1, *r.ports[1]);
-		push_port_indices(r.portindex.indices, 2, *r.ports[2]);
-		r.portindex.logical_map.resize(p1controllers + p2controllers);
+		r.logical_map.resize(p1controllers + p2controllers);
 		if(p1controllers == 4) {
-			r.portindex.logical_map[0] = std::make_pair(1, 0);
+			r.logical_map[0] = std::make_pair(1, 0);
 			for(size_t j = 0; j < p2controllers; j++)
-				r.portindex.logical_map[j + 1] = std::make_pair(2U, j);
+				r.logical_map[j + 1] = std::make_pair(2U, j);
 			for(size_t j = 1; j < p1controllers; j++)
-				r.portindex.logical_map[j + p2controllers]  = std::make_pair(1U, j);
+				r.logical_map[j + p2controllers]  = std::make_pair(1U, j);
 		} else {
 			for(size_t j = 0; j < p1controllers; j++)
-				r.portindex.logical_map[j] = std::make_pair(1, j);
+				r.logical_map[j] = std::make_pair(1, j);
 			for(size_t j = 0; j < p2controllers; j++)
-				r.portindex.logical_map[j + p1controllers]  = std::make_pair(2U, j);
+				r.logical_map[j + p1controllers]  = std::make_pair(2U, j);
 		}
-		for(unsigned i = 0; i < 8; i++)
-			r.portindex.pcid_map.push_back(std::make_pair(i / 4 + 1, i % 4));
 		return r;
 	}
 

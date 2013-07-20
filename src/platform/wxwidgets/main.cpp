@@ -443,7 +443,7 @@ bool lsnes_app::OnInit()
 	loaded_rom dummy_rom;
 	std::map<std::string, std::string> settings;
 	auto ctrldata = dummy_rom.rtype->controllerconfig(settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	reinitialize_buttonmap();
 	controls.set_ports(ports);
@@ -503,7 +503,7 @@ bool lsnes_app::OnInit()
 		mov = new moviefile;
 		mov->settings = c_settings;
 		auto ctrldata = rom->rtype->controllerconfig(mov->settings);
-		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 		mov->input.clear(ports);
 		mov->coreversion = rom->rtype->get_core_identifier();
 		mov->projectid = get_random_hexstring(40);

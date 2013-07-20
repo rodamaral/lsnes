@@ -4,7 +4,9 @@ ports = {
 			{
 				["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
 					{shadow, "F", "framesync"},
-					{shadow, "R", "reset"}
+					{shadow, "R", "reset"},
+					{shadow_null},
+					{shadow_null},
 				}
 			},{
 				["name"] = "gamepad", ["class"] = "gb", ["buttons"] = {

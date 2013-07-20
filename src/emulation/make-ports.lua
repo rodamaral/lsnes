@@ -19,6 +19,7 @@ taxis="TAXIS";
 shadow="SHADOW";
 shadow_axis="SHADOW_AXIS";
 null="NULL";
+shadow_null="SHADOW_NULL";
 
 if not arg[1] then
 	error("Expected input file");
@@ -86,7 +87,12 @@ for i = 1,#ports do
 			end
 			if xbutton[1] == null then
 				table.insert(bsyms, bsym);
-				buttonsymbols[bsym] = "{port_controller_button::TYPE_NULL, U'\0', NULL, false, 0, 0,"
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_NULL, U'\\0', NULL, false, 0, 0,"
+					.. "false, NULL}";
+			end
+			if xbutton[1] == shadow_null then
+				table.insert(bsyms, bsym);
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_NULL, U'\\0', NULL, true, 0, 0,"
 					.. "false, NULL}";
 			end
 		end
@@ -166,6 +172,9 @@ for i = 1,#ports do
 				print("\t\t\t\t\treturn (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				int_l = int_l + 2;
+			end
+			if (bt == null) or (bt == shadow_null) then
+				print("\t\t\t\t\treturn 0;");
 			end
 		end
 		print("\t\t\t\t};");

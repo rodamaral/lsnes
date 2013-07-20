@@ -447,7 +447,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	}
 	settings = read_settings(r);
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
-	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	input.clear(ports);
 	read_linefile(r, "gamename", gamename, true);

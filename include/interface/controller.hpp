@@ -5,8 +5,9 @@
 
 struct controller_set
 {
-	struct port_index_map portindex;
+	struct port_index_map portindex();
 	std::vector<port_type*> ports;
+	std::vector<std::pair<unsigned, unsigned>> logical_map;
 };
 
 extern uint32_t magic_flags;

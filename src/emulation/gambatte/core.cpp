@@ -144,27 +144,12 @@ namespace
 		return 1;
 	}
 
-	port_index_triple t(unsigned p, unsigned c, unsigned i, bool nl)
-	{
-		port_index_triple x;
-		x.valid = true;
-		x.port = p;
-		x.controller = c;
-		x.control = i;
-		return x;
-	}
-
 	controller_set gambatte_controllerconfig(std::map<std::string, std::string>& settings)
 	{
 		std::map<std::string, std::string> _settings = settings;
 		controller_set r;
 		r.ports.push_back(&psystem);
-		for(unsigned i = 0; i < 4; i++)
-			r.portindex.indices.push_back(t(0, 0, i, false));
-		for(unsigned i = 0; i < 8; i++)
-			r.portindex.indices.push_back(t(0, 1, i, true));
-		r.portindex.logical_map.push_back(std::make_pair(0, 1));
-		r.portindex.pcid_map.push_back(std::make_pair(0, 1));
+		r.logical_map.push_back(std::make_pair(0, 1));
 		return r;
 	}
 

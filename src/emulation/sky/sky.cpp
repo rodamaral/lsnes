@@ -376,11 +376,7 @@ namespace sky
 			controller_magic();
 			controller_set r;
 			r.ports.push_back(&psystem);
-				r.portindex.indices.push_back(t(0, 0, 0, false));
-			for(unsigned i = 0; i < 9; i++)
-				r.portindex.indices.push_back(t(0, 1, i, true));
-			r.portindex.logical_map.push_back(std::make_pair(0, 1));
-			r.portindex.pcid_map.push_back(std::make_pair(0, 1));
+			r.logical_map.push_back(std::make_pair(0, 1));
 			return r;
 		}
 		std::pair<uint64_t, uint64_t> c_get_bus_map() { return std::make_pair(0, 0); }
