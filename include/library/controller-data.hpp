@@ -318,7 +318,11 @@ public:
  * Parameter controller: Number of controller.
  * Returns: Number of used control indices.
  */
-	unsigned (*used_indices)(unsigned controller);
+	unsigned used_indices(unsigned controller)
+	{
+		auto c = controller_info->get(controller);
+		return c ? c->buttons.size() : 0;
+	}
 /**
  * Human-readable name.
  */

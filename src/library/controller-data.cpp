@@ -42,7 +42,6 @@ namespace
 			};
 			legal = [](unsigned port) -> int { return (port == 0); };
 			controller_info = &simple_port;
-			used_indices = [](unsigned controller) -> unsigned { return (controller == 0) ? 1 : 0; };
 		}
 	};
 }

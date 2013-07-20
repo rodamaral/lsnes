@@ -253,12 +253,6 @@ for i = 1,#ports do
 	end
 	print("\t\t\treturn false;");
 	print("\t\t};");
-	print("\t\tused_indices = [](unsigned c) -> unsigned {");
-	for j = 1,#(port.controllers) do
-		print("\t\t\tif(c == "..(j-1)..") return "..#(port.controllers[j].buttons)..";");
-	end
-	print("\t\t\treturn 0;");
-	print("\t\t};");
 	print("\t\tcontroller_info = &portdefs::"..psym2..";");
 	print("\t}");
 	print("} "..port.symbol..";");

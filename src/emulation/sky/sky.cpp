@@ -197,12 +197,6 @@ namespace sky
 		if(c == 0) return true;
 		return false;
 	};
-	unsigned port_used_indices(unsigned c)
-	{
-		if(c == 0) return 1;
-		if(c == 1) return 9;
-		return 0;
-	};
 
 	struct _psystem : public port_type
 	{
@@ -213,7 +207,6 @@ namespace sky
 			serialize = port_serialize;
 			deserialize = port_deserialize;
 			legal = port_legal;
-			used_indices = port_used_indices;
 			controller_info = &X2;
 		}
 	} psystem;
