@@ -95,6 +95,12 @@ ports = {
 			gamepad16_controller
 		}, ["legal"] = {1, 2}
 	},{
+		["symbol"] = "ygamepad16", ["iname"] = "ygamepad16", ["hname"] = "Y-cabled gamepad (16 buttons)",
+		["controllers"] = {
+			gamepad16_controller,
+			gamepad16_controller
+		}, ["legal"] = {1, 2}
+	},{
 		["symbol"] = "justifier", ["iname"] = "justifier", ["hname"] = "Justifier", ["controllers"] = {
 			justifier_controller
 		}, ["legal"] = {2}

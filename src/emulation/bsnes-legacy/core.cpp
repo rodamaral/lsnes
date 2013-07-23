@@ -156,6 +156,7 @@ namespace
 			{"none", "None", 0},
 			{"gamepad", "Gamepad", 1},
 			{"gamepad16", "Gamepad (16-button)", 2},
+			{"ygamepad16", "Y-cabled gamepad (16-button)", 9},
 			{"multitap", "Multitap", 3},
 			{"multitap16", "Multitap (16-button)", 4},
 			{"mouse", "Mouse", 5}
@@ -164,6 +165,7 @@ namespace
 			{"none", "None", 0},
 			{"gamepad", "Gamepad", 1},
 			{"gamepad16", "Gamepad (16-button)", 2},
+			{"ygamepad16", "Y-cabled gamepad (16-button)", 9},
 			{"multitap", "Multitap", 3},
 			{"multitap16", "Multitap (16-button)", 4},
 			{"mouse", "Mouse", 5},
@@ -178,13 +180,16 @@ namespace
 
 	////////////////// PORTS COMMON ///////////////////
 	port_type* index_to_ptype[] = {
-		&none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers, &superscope
+		&none, &gamepad, &gamepad16, &multitap, &multitap16, &mouse, &justifier, &justifiers, &superscope,
+		&ygamepad16
 	};
 	unsigned index_to_bsnes_type[] = {
 		SNES_DEVICE_NONE, SNES_DEVICE_JOYPAD, SNES_DEVICE_JOYPAD, SNES_DEVICE_MULTITAP, SNES_DEVICE_MULTITAP,
-		SNES_DEVICE_MOUSE, SNES_DEVICE_JUSTIFIER, SNES_DEVICE_JUSTIFIERS, SNES_DEVICE_SUPER_SCOPE
+		SNES_DEVICE_MOUSE, SNES_DEVICE_JUSTIFIER, SNES_DEVICE_JUSTIFIERS, SNES_DEVICE_SUPER_SCOPE,
+		SNES_DEVICE_JOYPAD
 	};
 
+	bool port_is_ycable[2];
 
 	void snesdbg_on_break();
 	void snesdbg_on_trace();
@@ -255,6 +260,8 @@ namespace
 			internal_rom = ctype;
 			snes_set_controller_port_device(false, index_to_bsnes_type[type1]);
 			snes_set_controller_port_device(true, index_to_bsnes_type[type2]);
+			port_is_ycable[0] = (type1 == 9);
+			port_is_ycable[1] = (type2 == 9);
 			have_saved_this_frame = false;
 			do_reset_flag = -1;
 			ecore_callbacks->action_state_updated();
@@ -354,6 +361,11 @@ namespace
 
 		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 		{
+			if(port_is_ycable[port ? 1 : 0]) {
+				int16_t bit0 = ecore_callbacks->get_input(port ? 2 : 1, 0, id);
+				int16_t bit1 = ecore_callbacks->get_input(port ? 2 : 1, 1, id);
+				return bit0 + 2 * bit1;
+			}
 			int16_t offset = 0;
 			//The superscope/justifier handling is nuts.
 			if(port && SNES::input.port2) {
