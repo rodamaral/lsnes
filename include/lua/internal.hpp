@@ -130,7 +130,13 @@ public:
 		lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
 		const char* fname = lua_tostring(LS, lua_upvalueindex(2));
 		T* p = lua_class<T>::get(LS, 1, fname);
-		return (p->*(b->fn))(LS);
+		try {
+			return (p->*(b->fn))(LS);
+		} catch(std::exception& e) {
+			lua_pushstring(LS, e.what());
+			lua_error(LS);
+			return 0;
+		}
 	}
 
 	void bind(lua_State* LS, const char* keyname, int (T::*fn)(lua_State* LS), bool force = false)
