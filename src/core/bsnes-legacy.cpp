@@ -235,6 +235,8 @@ namespace
 	//Delay reset.
 	unsigned long long delayreset_cycles_run;
 	unsigned long long delayreset_cycles_target;
+	//Y-cable hack.
+	bool port_is_ycable[2];
 	
 	bool p1disable = false;
 	std::map<int16_t, std::pair<uint64_t, uint64_t>> ptrmap;
@@ -437,6 +439,11 @@ namespace
 
 		int16_t inputPoll(bool port, SNES::Input::Device device, unsigned index, unsigned id)
 		{
+			if(port_is_ycable[port ? 1 : 0]) {
+				int16_t bit0 = ecore_callbacks->get_input(port ? 1 : 0, 0, id);
+				int16_t bit1 = ecore_callbacks->get_input(port ? 1 : 0, 1, id);
+				return (bit0 + 2 * bit1);
+			}
 			int16_t offset = 0;
 			//The superscope/justifier handling is nuts.
 			if(port && SNES::input.port2) {
@@ -485,6 +492,7 @@ namespace
 
 	void set_core_controller_none(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_NONE, false);
 		
@@ -492,48 +500,63 @@ namespace
 
 	void set_core_controller_gamepad(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
 	}
 
 	void set_core_controller_gamepad16(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
+		set_needext(port, true);
+		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
+	}
+
+	void set_core_controller_ygamepad16(unsigned port) throw()
+	{
+		port_is_ycable[port] = true;
 		set_needext(port, true);
 		set_core_controller_generic(port, SNES_DEVICE_JOYPAD, false);
 	}
 
 	void set_core_controller_mouse(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_MOUSE, false);
 	}
 
 	void set_core_controller_multitap(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
 	}
 
 	void set_core_controller_multitap16(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, true);
 		set_core_controller_generic(port, SNES_DEVICE_MULTITAP, false);
 	}
 
 	void set_core_controller_superscope(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_SUPER_SCOPE, true);
 	}
 
 	void set_core_controller_justifier(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIER, true);
 	}
 
 	void set_core_controller_justifiers(unsigned port) throw()
 	{
+		port_is_ycable[port] = false;
 		set_needext(port, false);
 		set_core_controller_generic(port, SNES_DEVICE_JUSTIFIERS, true);
 	}
@@ -543,9 +566,10 @@ namespace
 		return -1;
 	}
 
+	template<unsigned limit>
 	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
 	{
-		if(controller > 0)
+		if(controller >= limit)
 			return -1;
 		switch(lbid) {
 		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
@@ -575,27 +599,6 @@ namespace
 		switch(lbid) {
 		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_MOUSE_LEFT;
 		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_MOUSE_RIGHT;
-		default:			return -1;
-		}
-	}
-
-	int get_button_id_multitap(unsigned controller, unsigned lbid) throw()
-	{
-		if(controller > 3)
-			return -1;
-		switch(lbid) {
-		case LOGICAL_BUTTON_LEFT:	return SNES_DEVICE_ID_JOYPAD_LEFT;
-		case LOGICAL_BUTTON_RIGHT:	return SNES_DEVICE_ID_JOYPAD_RIGHT;
-		case LOGICAL_BUTTON_UP:		return SNES_DEVICE_ID_JOYPAD_UP;
-		case LOGICAL_BUTTON_DOWN:	return SNES_DEVICE_ID_JOYPAD_DOWN;
-		case LOGICAL_BUTTON_A:		return SNES_DEVICE_ID_JOYPAD_A;
-		case LOGICAL_BUTTON_B:		return SNES_DEVICE_ID_JOYPAD_B;
-		case LOGICAL_BUTTON_X:		return SNES_DEVICE_ID_JOYPAD_X;
-		case LOGICAL_BUTTON_Y:		return SNES_DEVICE_ID_JOYPAD_Y;
-		case LOGICAL_BUTTON_L:		return SNES_DEVICE_ID_JOYPAD_L;
-		case LOGICAL_BUTTON_R:		return SNES_DEVICE_ID_JOYPAD_R;
-		case LOGICAL_BUTTON_SELECT:	return SNES_DEVICE_ID_JOYPAD_SELECT;
-		case LOGICAL_BUTTON_START:	return SNES_DEVICE_ID_JOYPAD_START;
 		default:			return -1;
 		}
 	}
@@ -646,7 +649,7 @@ namespace
 			deserialize = generic_port_deserialize<1, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
-			button_id = get_button_id_gamepad;
+			button_id = get_button_id_gamepad<1>;
 			ctrlname = "gamepad";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad;
@@ -666,13 +669,33 @@ namespace
 			deserialize = generic_port_deserialize<1, 0, 16>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<1, 1>;
-			button_id = get_button_id_gamepad;
+			button_id = get_button_id_gamepad<1>;
 			ctrlname = "gamepad16";
 			controllers = 1;
 			set_core_controller = set_core_controller_gamepad16;
 			button_symbols = "BYsSudlrAXLR0123";
 		}
 	} gamepad16;
+
+	struct porttype_ygamepad16 : public porttype_info
+	{
+		porttype_ygamepad16() : porttype_info("ygamepad16", "Y-cabled gamepad (16 buttons)", 1,
+			generic_port_size<2, 0, 16>())
+		{
+			write = generic_port_write<2, 0, 16>;
+			read = generic_port_read<2, 0, 16>;
+			display = generic_port_display<2, 0, 16, 0>;
+			serialize = generic_port_serialize<2, 0, 16, 0>;
+			deserialize = generic_port_deserialize<2, 0, 16>;
+			legal = generic_port_legal<3>;
+			deviceflags = generic_port_deviceflags<2, 1>;
+			button_id = get_button_id_gamepad<2>;
+			ctrlname = "gamepad16";
+			controllers = 2;
+			set_core_controller = set_core_controller_ygamepad16;
+			button_symbols = "BYsSudlrAXLR0123";
+		}
+	} ygamepad16;
 
 	struct porttype_justifier : public porttype_info
 	{
@@ -743,7 +766,7 @@ namespace
 			deserialize = generic_port_deserialize<4, 0, 16>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
-			button_id = get_button_id_multitap;
+			button_id = get_button_id_gamepad<4>;
 			ctrlname = "multitap16";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap16;
@@ -762,7 +785,7 @@ namespace
 			deserialize = generic_port_deserialize<4, 0, 12>;
 			legal = generic_port_legal<3>;
 			deviceflags = generic_port_deviceflags<4, 1>;
-			button_id = get_button_id_multitap;
+			button_id = get_button_id_gamepad<4>;
 			ctrlname = "multitap";
 			controllers = 4;
 			set_core_controller = set_core_controller_multitap;
