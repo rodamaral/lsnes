@@ -1837,6 +1837,153 @@ The following warnings apply to unsafe rewinding:
 
 • Only call rewind from after the rewind point was set.
 
+8.7.10 movie.copy_movie([INPUTMOVIE movie])
+
+Copies specified movie (if none or nil, the active movie) as new 
+movie object (INPUTMOVIE).
+
+Also available as method in INPUTFRAME.
+
+8.7.11 movie.get_frame([INPUTMOVIE movie,] number frame)
+
+Get INPUTFRAME object corresponding to specified frame in 
+specified movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.12 movie.set_frame([INPUTMOVIE movie,] number frame, 
+  INPUTFRAME data)
+
+Set data in specified frame. Note: Past can't be edited in active 
+movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.13 movie.get_size([INPUTMOVIE movie])
+
+Return number of subframes in specified movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.14 movie.count_frames([INPUTMOVIE movie])
+
+Return number of frames in movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.15 movie.find_frame([INPUTMOVIE movie], number frame)
+
+Returns starting subframe of given frame (frame numbers are 
+1-based). Returns -1 if frame number is bad.
+
+Also available as method in INPUTFRAME.
+
+8.7.16 movie.blank_frame([INPUTMOVIE movie])
+
+Return blank INPUTFRAME with frame type from specified movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.17 movie.append_frames([INPUTMOVIE movie,] number frames)
+
+Append specified number of frames.
+
+Also available as method in INPUTFRAME.
+
+8.7.18 movie.append_frame([INPUTMOVIE movie,] INPUTFRAME frame)
+
+Append specified frame. Past of current movie can't be edited.
+
+Also available as method in INPUTFRAME.
+
+8.7.19 movie.truncate([INPUTMOVIE movie,] number frames)
+
+Truncate the specified movie to specified number of frames.
+
+Also available as method in INPUTFRAME.
+
+8.7.20 movie.edit([INPUTMOVIE movie,] number frame, number port, 
+  number controller, number control, number/bool value)
+
+Change specified control in specified frame in specified movie. 
+Past can't be edited in active movie.
+
+Also available as method in INPUTFRAME.
+
+8.7.21 movie.copy_frames2([INPUTMOVIE dstmov,] number dst, 
+  [INPUTMOVIE srcmov,] number src, number count)
+
+Copy specified number of frames between two movies. The copy 
+proceeeds in forward direction.
+
+8.7.22 movie.copy_frames([INPUTMOVIE mov,] number dst, number 
+  src, number count, bool backwards)
+
+Copy specified number of frames from one point in movie to 
+another. If backwards is true, the copy will be done backwards.
+
+Also available as method in INPUTFRAME.
+
+8.7.23 movie.serialize([INPUTMOVIE movie,] string filename, bool 
+  binary)
+
+Serialize given movie into file. If binary is true, binary format 
+(more compact and much faster) is used.
+
+Also available as method in INPUTFRAME.
+
+8.7.24 movie.unserialize(INPUTFRAME template, string filename, 
+  bool binary)
+
+Unserialize movie from file. The given frame is used as template 
+to decide the frame type. If binary is true, binary format is 
+decoded (much faster).
+
+Also available as method in INPUTFRAME.
+
+8.7.25 movie.current_first_subframe()
+
+Returns first subframe in current frame.
+
+8.7.26 movie.pollcounter(number port, number controller, number 
+  control)
+
+Returns number of times the specified control has been polled 
+this frame.
+
+8.7.27 INPUTFRAME::get_button(number port, number controller, 
+  number control)
+
+Returns state of given button as boolean.
+
+8.7.28 INPUTFRAME::get_axis(number port, number controller, 
+  number control)
+
+Returns state of given axis as number.
+
+8.7.29 INPUTFRAME::set_button(number port, number controller, 
+  number control, number/bool value)
+
+Set the given button/axis to given value.
+
+8.7.30 INPUTFRAME::set_axis(number port, number controller, 
+  number control)
+
+Same as set_button.
+
+8.7.31 INPUTFRAME::serialize()
+
+Return string representation of frame.
+
+8.7.32 INPUTFRAME::unserialize(string data)
+
+Set current frame from given data.
+
+8.7.33 INPUTFRAME::get_stride()
+
+Return number of bytes needed to store the input frame. Mainly 
+useful for some debugging.
+
 8.8 Table settings
 
 Routines for settings manipulation
@@ -2187,6 +2334,19 @@ Called on controller button press, with following parameters:
   – “untype”: Typing input undone.
 
   – “analog”: Analog action on axis.
+
+8.12.26 Callback: on_movie_lost(STRING kind)
+
+Called just before something would happen that could lose movie 
+data. Kind can be:
+
+• readwrite: Switching to readwrite mode.
+
+• reload: ROM is being reloaded in readwrite mode.
+
+• load: New movie is being loaded.
+
+• unsaferewind: Unsafe rewind is happening.
 
 9 Movie editor
 

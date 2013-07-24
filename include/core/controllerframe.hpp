@@ -929,6 +929,22 @@ public:
 		c.sync(sync);
 		return c;
 	}
+/**
+ * Return number of pages in movie.
+ */
+	size_t get_page_count() { return pages.size(); }
+/**
+ * Return the stride.
+ */
+	size_t get_stride() { return frame_size; }
+/**
+ * Return number of frames per page.
+ */
+	size_t get_frames_per_page() { return frames_per_page; }
+/**
+ * Get content of given page.
+ */
+	unsigned char* get_page_buffer(size_t page) { return pages[page].content; }
 private:
 	class page
 	{

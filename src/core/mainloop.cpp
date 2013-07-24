@@ -674,6 +674,7 @@ namespace
 	function_ptr_command<> set_rwmode("set-rwmode", "Switch to read/write mode",
 		"Syntax: set-rwmode\nSwitches to read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
+			lua_callback_movie_lost("readwrite");
 			movb.get_movie().readonly_mode(false);
 			information_dispatch::do_mode_change(false);
 			lua_callback_do_readwrite();
@@ -694,6 +695,8 @@ namespace
 		"Syntax: toggle-rwmode\nToggles read/write mode\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			bool c = movb.get_movie().readonly_mode();
+			if(c)
+				lua_callback_movie_lost("readwrite");
 			movb.get_movie().readonly_mode(!c);
 			information_dispatch::do_mode_change(!c);
 			if(c)

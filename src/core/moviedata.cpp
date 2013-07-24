@@ -316,8 +316,11 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 			our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 		else
 			our_movie.gametype = NULL;
-		if(reload)
+		if(reload) {
+			if(!ro)
+				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
+		}
 
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
@@ -447,6 +450,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		mprefix.prefix = our_movie.prefix;
 		mprefix._set = true;
 	}
+	if(lmode != LOAD_STATE_PRESERVE)
+		lua_callback_movie_lost("load");
 	movb.get_movie() = newmovie;
 	//Paint the screen.
 	{
