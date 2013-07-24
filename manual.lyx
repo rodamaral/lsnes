@@ -2853,6 +2853,269 @@ Only call rewind from timeline rewind point was set from.
 Only call rewind from after the rewind point was set.
 \end_layout
 
+\begin_layout Subsubsection
+movie.copy_movie([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Standard
+Copies specified movie (if none or nil, the active movie) as new movie object
+ (INPUTMOVIE).
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.get_frame([INPUTMOVIE movie,] number frame)
+\end_layout
+
+\begin_layout Standard
+Get INPUTFRAME object corresponding to specified frame in specified movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.set_frame([INPUTMOVIE movie,] number frame, INPUTFRAME data)
+\end_layout
+
+\begin_layout Standard
+Set data in specified frame.
+ Note: Past can't be edited in active movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.get_size([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Standard
+Return number of subframes in specified movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.count_frames([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Standard
+Return number of frames in movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.find_frame([INPUTMOVIE movie], number frame)
+\end_layout
+
+\begin_layout Standard
+Returns starting subframe of given frame (frame numbers are 1-based).
+ Returns -1 if frame number is bad.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.blank_frame([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Standard
+Return blank INPUTFRAME with frame type from specified movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.append_frames([INPUTMOVIE movie,] number frames)
+\end_layout
+
+\begin_layout Standard
+Append specified number of frames.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.append_frame([INPUTMOVIE movie,] INPUTFRAME frame)
+\end_layout
+
+\begin_layout Standard
+Append specified frame.
+ Past of current movie can't be edited.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.truncate([INPUTMOVIE movie,] number frames)
+\end_layout
+
+\begin_layout Standard
+Truncate the specified movie to specified number of frames.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.edit([INPUTMOVIE movie,] number frame, number port, number controller,
+ number control, number/bool value)
+\end_layout
+
+\begin_layout Standard
+Change specified control in specified frame in specified movie.
+ Past can't be edited in active movie.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.copy_frames2([INPUTMOVIE dstmov,] number dst, [INPUTMOVIE srcmov,]
+ number src, number count)
+\end_layout
+
+\begin_layout Standard
+Copy specified number of frames between two movies.
+ The copy proceeeds in forward direction.
+\end_layout
+
+\begin_layout Subsubsection
+movie.copy_frames([INPUTMOVIE mov,] number dst, number src, number count,
+ bool backwards)
+\end_layout
+
+\begin_layout Standard
+Copy specified number of frames from one point in movie to another.
+ If backwards is true, the copy will be done backwards.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.serialize([INPUTMOVIE movie,] string filename, bool binary)
+\end_layout
+
+\begin_layout Standard
+Serialize given movie into file.
+ If binary is true, binary format (more compact and much faster) is used.
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.unserialize(INPUTFRAME template, string filename, bool binary)
+\end_layout
+
+\begin_layout Standard
+Unserialize movie from file.
+ The given frame is used as template to decide the frame type.
+ If binary is true, binary format is decoded (much faster).
+\end_layout
+
+\begin_layout Standard
+Also available as method in INPUTFRAME.
+\end_layout
+
+\begin_layout Subsubsection
+movie.current_first_subframe()
+\end_layout
+
+\begin_layout Standard
+Returns first subframe in current frame.
+\end_layout
+
+\begin_layout Subsubsection
+movie.pollcounter(number port, number controller, number control)
+\end_layout
+
+\begin_layout Standard
+Returns number of times the specified control has been polled this frame.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::get_button(number port, number controller, number control)
+\end_layout
+
+\begin_layout Standard
+Returns state of given button as boolean.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::get_axis(number port, number controller, number control)
+\end_layout
+
+\begin_layout Standard
+Returns state of given axis as number.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::set_button(number port, number controller, number control, number/bo
+ol value)
+\end_layout
+
+\begin_layout Standard
+Set the given button/axis to given value.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::set_axis(number port, number controller, number control)
+\end_layout
+
+\begin_layout Standard
+Same as set_button.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::serialize()
+\end_layout
+
+\begin_layout Standard
+Return string representation of frame.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::unserialize(string data)
+\end_layout
+
+\begin_layout Standard
+Set current frame from given data.
+\end_layout
+
+\begin_layout Subsubsection
+INPUTFRAME::get_stride()
+\end_layout
+
+\begin_layout Standard
+Return number of bytes needed to store the input frame.
+ Mainly useful for some debugging.
+\end_layout
+
 \begin_layout Subsection
 Table settings
 \end_layout
@@ -3670,6 +3933,31 @@ analog
 \end_layout
 
 \end_deeper
+\begin_layout Subsubsection
+Callback: on_movie_lost(STRING kind)
+\end_layout
+
+\begin_layout Standard
+Called just before something would happen that could lose movie data.
+ Kind can be:
+\end_layout
+
+\begin_layout Itemize
+readwrite: Switching to readwrite mode.
+\end_layout
+
+\begin_layout Itemize
+reload: ROM is being reloaded in readwrite mode.
+\end_layout
+
+\begin_layout Itemize
+load: New movie is being loaded.
+\end_layout
+
+\begin_layout Itemize
+unsaferewind: Unsafe rewind is happening.
+\end_layout
+
 \begin_layout Section
 Movie editor
 \end_layout

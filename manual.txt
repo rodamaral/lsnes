@@ -1,170 +1,170 @@
-  Introduction
+1 Introduction
 
 lsnes is SNES rerecording emulator based on bsnes core.
 
-  Dependencies
+2 Dependencies
 
-  bsnes libsnes (for bsnes SNES core)
+1. bsnes libsnes (for bsnes SNES core)
 
-  v084-v087 (v084 or v085 for delayreset support)
+  (a) v084-v087 (v084 or v085 for delayreset support)
 
-  accuracy or compatiblity core with debugger enabled.
+  (b) accuracy or compatiblity core with debugger enabled.
 
-  Patched version (using included 7 patches)
+  (c) Patched version (using included 7 patches)
 
-  gambatte (for gambatte core)
+2. gambatte (for gambatte core)
 
-  SVN r320, r358 or r364
+  (a) SVN r320, r358 or r364
 
-  Patched with included patches
+  (b) Patched with included patches
 
-  Zlib
+3. Zlib
 
-  boost_iostreams
+4. boost_iostreams
 
-  boost_filesystem
+5. boost_filesystem
 
-  boost_thread (if native std::thread is not available)
+6. boost_thread (if native std::thread is not available)
 
-  libsdl (SDL only)
+7. libsdl (SDL only)
 
-  sdlmain (SDL only, part of SDL)
+8. sdlmain (SDL only, part of SDL)
 
-  boost_conversion (this is header-only library)
+9. boost_conversion (this is header-only library)
 
-  libswscale (wxwidgets graphics only)
+10. libswscale (wxwidgets graphics only)
 
-  Portaudio (portaudio sound only)
+11. Portaudio (portaudio sound only)
 
-  libao (libao sound only)
+12. libao (libao sound only)
 
-  Lua version 5.1.X or 5.2.X
+13. Lua version 5.1.X or 5.2.X
 
-  G++ 4.6 or 4.7
+14. G++ 4.6 or 4.7
 
-  libopus (optional, for commentary track tool)
+15. libopus (optional, for commentary track tool)
 
-  Building
+3 Building
 
-  Copy bsnes sources (the bsnes subdirectory) to subdirectory 
+• Copy bsnes sources (the bsnes subdirectory) to subdirectory 
   'bsnes' (for bsnes core).
 
-  Copy gambatte sources to subdirectory 'gambatte' (for gambatte 
+• Copy gambatte sources to subdirectory 'gambatte' (for gambatte 
   core).
 
-  Patch the bsnes sources with included patches (directory 
+• Patch the bsnes sources with included patches (directory 
   'bsnes-patches/<version>', bsnes core)
 
-  Patch the gambatte sources with included patches (directory 
+• Patch the gambatte sources with included patches (directory 
   'gambatte-patches/<version>', gambatte core)
 
-  Edit options.build (or copy of that file)
+• Edit options.build (or copy of that file)
 
-  Run make (passing 'OPTIONS=<filename>' if using something else 
+• Run make (passing 'OPTIONS=<filename>' if using something else 
   than options.build).
 
-  Command line options
+4 Command line options
 
-  Wxwidgets options
+4.1 Wxwidgets options
 
-  --rom=<file>
-
-Load <file> as ROM.
-
-  <file>
+4.1.1 --rom=<file>
 
 Load <file> as ROM.
 
-  --load=<file>
+4.1.2 <file>
+
+Load <file> as ROM.
+
+4.1.3 --load=<file>
 
 Load <file> as movie or savestate file on startup.
 
-  --settings
+4.1.4 --settings
 
 Instead of starting the emulator, only display the settings.
 
-  --lua=<file>
+4.1.5 --lua=<file>
 
 Run this Lua file on startup
 
-  dump options (lsnes-dumpavi only)
+4.2 dump options (lsnes-dumpavi only)
 
-  --rom=<file>
+4.2.1 --rom=<file>
 
 Load <file> as ROM. Required.
 
-  <filename>
+4.2.2 <filename>
 
 Load <filename> as movie or savestate file on startup. Required.
 
-  --dumper=<dumper>
+4.2.3 --dumper=<dumper>
 
 Set the dumper to use (required). Use 'list' for listing of known 
 dumpers.
 
-  --firmware-path=<path>
+4.2.4 --firmware-path=<path>
 
 Set path to look for firmware.
 
-  --mode=<mode>
+4.2.5 --mode=<mode>
 
 Set the mode to use (required for dumpers with multiple modes, 
 forbidden otherwise). Use 'list' for known modes.
 
-  --prefix=<prefix>
+4.2.6 --prefix=<prefix>
 
 Set dump prefix. Default is “avidump”.
 
-  --option=<name>=<value>
+4.2.7 --option=<name>=<value>
 
 Set option <name> to value <value>.
 
-  --length=<length>
+4.2.8 --length=<length>
 
 Set number of frames to dump. Mandatory.
 
-  --lua=<script>
+4.2.9 --lua=<script>
 
 Run specified lua script (lsnes-dumpavi does not have 
 initialization files).
 
-  --load-library=<library>
+4.2.10 --load-library=<library>
 
 Load the specified shared object / dynamic library / dynamic link 
 library.
 
-  lsnes settings directory
+4.3 lsnes settings directory
 
 The lsnes settings directory is (in order of decreasing 
 perference):
 
-  Windows: %APPDATA%\lsnes (if %APPDATA% exists)
+• Windows: %APPDATA%\lsnes (if %APPDATA% exists)
 
-  Unix: $XDG_CONFIG_HOME/lsnes (if $XDG_CONFIG_HOME exists)
+• Unix: $XDG_CONFIG_HOME/lsnes (if $XDG_CONFIG_HOME exists)
 
-  Unix: $HOME/.config/lsnes (if $HOME exists)
+• Unix: $HOME/.config/lsnes (if $HOME exists)
 
-  All: . (fallback default).
+• All: . (fallback default).
 
 If leading directories do not exist, attempt to create them is 
 made.
 
-  Internal commands
+5 Internal commands
 
-  Commands beginning with '*' invoke the corresponding command 
+• Commands beginning with '*' invoke the corresponding command 
   without alias expansion.
 
-  If command starts with '+' (after possible '*'), the command is 
+• If command starts with '+' (after possible '*'), the command is 
   executed as-is when button is pressed, and when button is 
   released, it is executed with '+' replaced by '-'.
 
-  Commands without '+' execute only on negative edge (release).
+• Commands without '+' execute only on negative edge (release).
 
-  run-script <script>
+5.1 run-script <script>
 
 Run <script> as if commands were entered on the command line.
 
-  Memory manipulation
+5.2 Memory manipulation
 
 <address> may be decimal or hexadecimal (prefixed with '0x'). 
 <value> can be hexadecimal (prefixed with '0x'), unsigned or 
@@ -172,351 +172,354 @@ signed (prefixed with '-') decimal.
 
 The available element <sizes> are:
 
-  byte: 1 byte
+• byte: 1 byte
 
-  word: 2 bytes
+• word: 2 bytes
 
-  dword: 4 bytes
+• dword: 4 bytes
 
-  qword: 8 bytes
+• qword: 8 bytes
 
 When reading RAM and ROM, multi-byte reads/writes are big-endian. 
 When dealing with DSP memory, multi-byte reads/writes are 
 native-endian (do not use operand sizes exceeding DSP bitness, 
 except dword is OK for 24-bit memory).
 
-  read-<size> <address>
+5.2.1 read-<size> <address>
 
 Read the value of byte in <address>.
 
-  read-s<size> <address>
+5.2.2 read-s<size> <address>
 
 Read the value of signed byte in <address>.
 
-  write-<size> <address> <value>
+5.2.3 write-<size> <address> <value>
 
 Write <value> to byte in address <address>.
 
-  Main commands
+5.3 Main commands
 
 These commands are not available in lsnesrc, but are available 
 after ROM has been loaded.
 
-  quit-emulator
+5.3.1 quit-emulator
 
 Quits the emulator.
 
-  pause-emulator
+5.3.2 pause-emulator
 
 Toggle paused/unpaused
 
-  +advance-frame 
+5.3.3 +advance-frame 
 
 Advance frame. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-  +advance-poll 
+5.3.4 +advance-poll 
 
 Advance subframe. If the button is still held after configurable 
 timeout expires, game unpauses for the duration frame advance is 
 held.
 
-  advance-skiplag 
+5.3.5 advance-skiplag 
 
 Skip to first poll in frame after current.
 
-  reset 
+5.3.6 reset 
 
 Reset the SNES after this frame.
 
-  load <filename> 
+5.3.7 load <filename> 
 
 Load savestate <filename> in current mode.
 
-  load-state <filename> 
+5.3.8 load-state <filename> 
 
 Load savestate <filename> in readwrite mode.
 
-  load-readonly <filename> 
+5.3.9 load-readonly <filename> 
 
 Load savestate <filename> in readonly mode.
 
-  load-preserve <filename> 
+5.3.10 load-preserve <filename> 
 
 Load savestate <filename> in readonly mode, preserving current 
 events.
 
-  load-movie <filename> 
+5.3.11 load-movie <filename> 
 
 Load savestate <filename>, ignoring save part in readonly mode.
 
-  save-state <filename> 
+5.3.12 save-state <filename> 
 
 Save system state to <filename> as soon as possible.
 
-  save-movie <filename> 
+5.3.13 save-movie <filename> 
 
 Save movie to <filename>.
 
-  set-rwmode 
+5.3.14 set-rwmode 
 
 Set read-write mode.
 
-  set-romode 
+5.3.15 set-romode 
 
 Set read-only mode
 
-  toggle-rwmode 
+5.3.16 toggle-rwmode 
 
 Toggle between read-only and read-write modes.
 
-  test-1, test-2, test-3
+5.3.17 test-1, test-2, test-3
 
 Internal test commands. Don't use.
 
-  take-screenshot <filename> 
+5.3.18 take-screenshot <filename> 
 
 Save screenshot to <filename>.
 
-  +controller <class>-<#>-<button>
+5.3.19 +controller <class>-<#>-<button>
 
 Press button <button> on controller <num> of class <class>.
 
-  Class 'gamepad': A, B, X, Y, L, R, select, start, up, down, 
+• Class 'gamepad': A, B, X, Y, L, R, select, start, up, down, 
   left, right, ext0, ext1, ext2, ext3
 
-  Class 'mouse': L, R
+• Class 'mouse': L, R
 
-  Class 'superscope': trigger, cursor, turbo, pause
+• Class 'superscope': trigger, cursor, turbo, pause
 
-  Class 'justifier': trigger, start
+• Class 'justifier': trigger, start
 
-  Class 'gb': A, B, select, start, up, down, left, right
+• Class 'gb': A, B, select, start, up, down, left, right
 
-  hold-controller <class>-<#>-<button>
+5.3.20 hold-controller <class>-<#>-<button>
 
 Hold/unhold button <button> on controller <num> of class <class>.
 
-  type-controller <class>-<#>-<button>
+5.3.21 type-controller <class>-<#>-<button>
 
 Hold/unhold button <button> on controller <num> of class <class> 
 for the next frame. See +controller for button names.
 
 Cauntion: Does not work properly if outside frame advance.
 
-  +autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+5.3.22 +autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
 
 Start autofire. If duty is not specified, defaults to 1. If 
 <cyclelen> is not specified, defaults to 2.
 
-  -autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+5.3.23 -autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
 
 End autofire.
 
-  autofire-controller <class>-<#>-<button> [[<duty>] <cyclelen>]
+5.3.24 autofire-controller <class>-<#>-<button> [[<duty>] 
+  <cyclelen>]
 
 Toggle autofire. If autofire is turned on, specified cycle is 
 used.
 
-  designate-position <class>-<#>-analog<n>
+5.3.25 designate-position <class>-<#>-analog<n>
 
 Designate position for analog pair. <n> is only there if there 
 are multiple axis pairs.
 
-  repaint
+5.3.26 repaint
 
 Force a repaint.
 
-  toggle-pause-on-end
+5.3.27 toggle-pause-on-end
 
 Toggle pause on end flag.
 
-  set-pause-on-end
+5.3.28 set-pause-on-end
 
 Set pause on end flag.
 
-  clear-pause-on-end
+5.3.29 clear-pause-on-end
 
 Clear pause on end flag.
 
-  action <action> [<parameters>]
+5.3.30 action <action> [<parameters>]
 
 Run specified core action.
 
-  Save jukebox 
+5.4 Save jukebox 
 
-  cycle-jukebox-backward
+5.4.1 cycle-jukebox-backward
 
 Cycle save jukebox backwards.
 
-  cycle-jukebox-forward
+5.4.2 cycle-jukebox-forward
 
 Cycle save jukebox forwards
 
-  load-jukebox
+5.4.3 load-jukebox
 
 Do load from jukebox (current mode).
 
-  save-jukebox
+5.4.4 save-jukebox
 
 Do state save to jukebox.
 
-  Lua 
+5.5 Lua 
 
-  evaluate-lua <luacode>
+5.5.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-  L <luacode>
+5.5.2 L <luacode>
 
 Synonym for evaluate-lua.
 
-  run-lua <script>
+5.5.3 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-  reset-lua
+5.5.4 reset-lua
 
 Clear the Lua VM state and restore to factory defaults.
 
-  Memory watch
+5.6 Memory watch
 
-  add-watch <name> <expression>
+5.6.1 add-watch <name> <expression>
 
 Adds new watch (or modifies old one).
 
-  remove-watch <name>
+5.6.2 remove-watch <name>
 
 Remove a watch.
 
-  Sound 
+5.7 Sound 
 
-  enable-sound <on/off> 
+5.7.1 enable-sound <on/off> 
 
 Enable/Disable sound.
 
-  Misc.
+5.8 Misc.
 
-  reload-rom [<file>]
+5.8.1 reload-rom [<file>]
 
 Reloads the main ROM image from <file>.
 
-  +tangent
+5.8.2 +tangent
 
 Tangent for recording voice for commentary track. While pressed, 
 record a stream.
 
-  advance-subframe-timeout
+5.8.3 advance-subframe-timeout
 
 Subframe advance timeout in milliseconds. Default is 100.
 
-  Settings
+6 Settings
 
-  Core settings
+6.1 Core settings
 
-  AVI dumper settings
+6.2 AVI dumper settings
 
-  avi-large
+6.2.1 avi-large
 
 AVI dumper: Always dump at 512x448 or 512x478 regardless of what 
 the console outputs.
 
-  avi-left-border
+6.2.2 avi-left-border
 
 AVI dumper: Set the default left border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-  avi-right-border
+6.2.3 avi-right-border
 
 AVI dumper: Set the default right border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-  avi-top-border
+6.2.4 avi-top-border
 
 AVI dumper: Set the default top border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-  avi-bottom-border
+6.2.5 avi-bottom-border
 
 AVI dumper: Set the default bottom border thickness (unless lua 
 overrides) for dumps. Range 0-8191. Default is 0.
 
-  avi-maxframes
+6.2.6 avi-maxframes
 
 AVI dumper: Maximum number of frames per dump segment (0 => 
 unlimited). Range 0-999999999. Default is 0.
 
-  avi-compresison
+6.2.7 avi-compresison
 
 AVI dumper: Compression level (0-18).
 
-  Compression levels 10 and above are not compatible with stock 
+• Compression levels 10 and above are not compatible with stock 
   CSCD codec.
 
-  Recomended level is 7.
+• Recomended level is 7.
 
-  avi-soundrate
+6.2.8 avi-soundrate
 
 AVI dumper: Set method of determining the sound rate.
 
-  0: Pick nearest of 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 
+• 0: Pick nearest of 8, 11.025, 12, 16, 22.05, 24, 32, 44.1, 48, 
   64, 88.2, 96, 128, 176.4 and 192 kHz.
 
-  1: Round down to nearest integer.
+• 1: Round down to nearest integer.
 
-  2: Round up to nearest ingeter.
+• 2: Round up to nearest ingeter.
 
-  3: Multiply by denominator.
+• 3: Multiply by denominator.
 
-  4: High quality 44.1kHz (SRC needed).
+• 4: High quality 44.1kHz (SRC needed).
 
-  5: High quality 48kHz (SRC needed).
+• 5: High quality 48kHz (SRC needed).
 
-  JMD options
+6.3 JMD options
 
-  jmd-compression
+6.3.1 jmd-compression
 
 JMD dumper: Compression level (0-9).
 
-  Lua functions
+7 Lua functions
 
-  Core (in main table)
+7.1 Core (in main table)
 
-  print
+7.1.1 print
 
 Print line to message console.
 
-  exec(string command)
+7.1.2 exec(string command)
 
 Run command as it was entered on the command line
 
-  utime()
+7.1.3 utime()
 
 Returns two values. First is time since some epoch in seconds, 
 the second is microseconds mod 10^6 since that epoch.
 
-  emulator_ready()
+7.1.4 emulator_ready()
 
 Returns true if emulator has finished booting, false if not 
 (on_startup() will be issued later).
 
-  set_idle_timeout(number timeout)
+7.1.5 set_idle_timeout(number timeout)
 
 Set number of microseconds to block idle for. After this timeout 
 has expired, on_idle() will be called once.
 
-  set_timer_timeout(number timeout)
+7.1.6 set_timer_timeout(number timeout)
 
 Set number of microseconds to block timer for. After this timeout 
 has expired, on_timer() will be called once.
 
-  bus_address(number snesaddr)
+7.1.7 bus_address(number snesaddr)
 
 Returns virtual address corresponding to specified address on 
 SNES bus.
 
-  loopwrapper(function fun, ...)
+7.1.8 loopwrapper(function fun, ...)
 
 Calls function fun with function and specified arguments. The 
 function passed suspends execution until the function returned is 
@@ -535,149 +538,151 @@ on_paint = loopwrapper(function(wait)
 
 end);
 
-  list_bindings([string cmd])
+7.1.9 list_bindings([string cmd])
 
 Get table of all keybindings, indexed by keyspec 
 (modifiers|mask/key). If command is specified, the table is 
 limited to that command. Also searches for controller keys.
 
-  get_alias(string aname)
+7.1.10 get_alias(string aname)
 
 Get expansion of given alias.
 
-  set_alias(string aname, string value)
+7.1.11 set_alias(string aname, string value)
 
 Set expansion of given alias.
 
-  create_ibind(string name, string cmd)
+7.1.12 create_ibind(string name, string cmd)
 
 Return object representing inverse binding with specified name 
 and specified command.
 
-  To create press/release commands, use aliases +foo and -foo .
+• To create press/release commands, use aliases +foo and -foo .
 
-  Keep the returned object around.
+• Keep the returned object around.
 
-  create_command(string name, function a[, function b])
+7.1.13 create_command(string name, function a[, function b])
 
 Return object representing a command (pair).
 
-  If b is NIL, the command is level-sensitive, a is callback.
+• If b is NIL, the command is level-sensitive, a is callback.
 
-  If b is function, the function is edge-sensitive, a is positive 
+• If b is function, the function is edge-sensitive, a is positive 
   edge callback and b is negative edge callback.
 
-  All callbacks get single argument: The parameters passed.
+• All callbacks get single argument: The parameters passed.
 
-  Keep the returned object around.
+• Keep the returned object around.
 
-  Table bit:
+7.2 Table bit:
 
 Bitwise logical functions and related.
 
-  bit.none(number...) / bit.bnot(number...)
+7.2.1 bit.none(number...) / bit.bnot(number...)
 
 48-bit bitwise NOT / NONE function (set bits that are set in none 
 of the arguments).
 
-  bit.any(number...) / bit.bor(number...)
+7.2.2 bit.any(number...) / bit.bor(number...)
 
 48-bit bitwise OR / ANY function (set bits that are set in any of 
 the arguments).
 
-  bit.all(number...) / bit.band(number...)
+7.2.3 bit.all(number...) / bit.band(number...)
 
 48-bit bitwise AND / ALL function (set bits that are set in all 
 of the arguments).
 
-  bit.parity(number...) / bit.bxor(number...)
+7.2.4 bit.parity(number...) / bit.bxor(number...)
 
 48-bit bitwise XOR / PARITY function (set bits that are set in 
 odd number of the arguments).
 
-  bit.lrotate(number base[, number amount[, number bits]])
+7.2.5 bit.lrotate(number base[, number amount[, number bits]])
 
 Rotate bits-bit (max 48, default 48) number left by amount 
 (default 1) places.
 
-  bit.rrotate(number base[, number amount[, number bits]])
+7.2.6 bit.rrotate(number base[, number amount[, number bits]])
 
 Rotate bits-bit (max 48, default 48) number right by amount 
 (default 1) places.
 
-  bit.lshift(number base[, number amount[, number bits]])
+7.2.7 bit.lshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number left by amount 
 (default 1) places. The new bits are filled with zeroes.
 
-  bit.lrshift(number base[, number amount[, number bits]])
+7.2.8 bit.lrshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number logically right by 
 amount (default 1) places. The new bits are filled with zeroes.
 
-  bit.arshift(number base[, number amount[, number bits]])
+7.2.9 bit.arshift(number base[, number amount[, number bits]])
 
 Shift bits-bit (max 48, default 48) number arithmetically right 
 by amount (default 1) places. The new bits are shifted in with 
 copy of the high bit.
 
-  bit.extract(number base[, number bit0[, number bit1,...]])
+7.2.10 bit.extract(number base[, number bit0[, number bit1,...]])
 
 Returns number that has bit0-th bit as bit 0, bit1-th bit as 1 
 and so on.
 
 Notes: 
 
-  Bit numbers up to 51 should work reliably (then things start 
+• Bit numbers up to 51 should work reliably (then things start 
   falling apart due to double precision issues).
 
-  There are two special bit positions, true and false, standing 
+• There are two special bit positions, true and false, standing 
   for always set bit and always clear bit.
 
-  bit.value([number bit1[, number bit2,...]])
+7.2.11 bit.value([number bit1[, number bit2,...]])
 
 Returns bitwise OR of 1 left shifted by bit1 places, 1 left 
 shifted by bit2 places and so on. As special value, nil argument 
 is no-op.
 
-  bit.test_any(number a, number b)
+7.2.12 bit.test_any(number a, number b)
 
 Returns true if bitwise and of a and b is nonzero, otherwise 
 false.
 
-  bit.test_all(number a, number b)
+7.2.13 bit.test_all(number a, number b)
 
 Returns true if bitwise and of a and b is equals b, otherwise 
 false.
 
-  bit.popcount(number a)
+7.2.14 bit.popcount(number a)
 
 Returns number of set bits in a.
 
-  bit.clshift(number a, number b, [number amount,[number bits]])
+7.2.15 bit.clshift(number a, number b, [number amount,[number 
+  bits]])
 
 Does chained left shift on a, b by amount positions, assuming 
 numbers to be of specified number of bits.
 
-  bit.crshift(number a, number b, [number amount,[number bits]])
+7.2.16 bit.crshift(number a, number b, [number amount,[number 
+  bits]])
 
 Does chained right shift on a, b by amount positions, assuming 
 numbers to be of specified number of bits.
 
-  bit.flagdecode(number a, number bits, [string on, [string 
+7.2.17 bit.flagdecode(number a, number bits, [string on, [string 
   off]])
 
 Return string of length bits where ith character is ith character 
 of on if bit i is on, otherwise ith character of off. Out of 
 range reads give last character, or '*'/'-' if empty.
 
-  bit.rflagdecode(number a, number bits, [string on, [string 
+7.2.18 bit.rflagdecode(number a, number bits, [string on, [string 
   off]])
 
 Like bit.flagdecode, but outputs the string in the opposite order 
 (most significant bit first).
 
-  Table gui:
+7.3 Table gui:
 
 Most of these functions can only be called in on_paint and 
 on_video callbacks. Exceptions are noted.
@@ -691,345 +696,347 @@ greater than 127 do work.
 Origin of coordinates is at top left corner of game display area. 
 Left and top gaps correspond to negative coordinates.
 
-  gui.resolution()
+7.3.1 gui.resolution()
 
 Returns 2-tuple (hresolution, vresolution).
 
-  gui.<class>_gap(number gap)
+7.3.2 gui.<class>_gap(number gap)
 
 Set the <class> (left, right, top, bottom) gap to specified value 
 (max gap is 8191). If successful, old gap is returned.
 
-  gui.delta_<class>_gap(number gap)
+7.3.3 gui.delta_<class>_gap(number gap)
 
 Increase the <class> (left, right, top, bottom) gap by specified 
 value (max gap is 8191) and return the old gap (returns nothing 
 on error).
 
-  gui.text(number x, number y, string text[, number fgc[, number 
-  bgc]])
+7.3.4 gui.text(number x, number y, string text[, number fgc[, 
+  number bgc]])
 
 Draw specified text on the GUI (each character cell is 8 or 16 
 wide and 16 high). Parameters:
 
-  x: X-coordinate to start the drawing from (and x-coordinate at 
+• x: X-coordinate to start the drawing from (and x-coordinate at 
   begining of the lines).
 
-  y: Y-coordinate to start the drawing from.
+• y: Y-coordinate to start the drawing from.
 
-  text: The text to draw.
+• text: The text to draw.
 
-  fgc: Text color (default is 0xFFFFFF (white))
+• fgc: Text color (default is 0xFFFFFF (white))
 
-  bgc: Background color (default is -1 (transparent))
+• bgc: Background color (default is -1 (transparent))
 
-  gui.textH(number x, number y, string text[, number fgc[, number 
-  bgc]])
+7.3.5 gui.textH(number x, number y, string text[, number fgc[, 
+  number bgc]])
 
 Like gui.text, but draw using double-width.
 
-  gui.textV(number x, number y, string text[, number fgc[, number 
-  bgc]])
+7.3.6 gui.textV(number x, number y, string text[, number fgc[, 
+  number bgc]])
 
 Like gui.text, but draw using double-height.
 
-  gui.textHV(number x, number y, string text[, number fgc[, 
+7.3.7 gui.textHV(number x, number y, string text[, number fgc[, 
   number bgc]])
 
 Like gui.text, but draw using double-width/double-height.
 
-  gui.rectangle(number x, number y, number width, number height[, 
-  number thickness[, number outline[, number fill]]])
+7.3.8 gui.rectangle(number x, number y, number width, number 
+  height[, number thickness[, number outline[, number fill]]])
 
 Draw rectangle on the GUI. Parameters:
 
-  x: X-coordinate of left edge.
+• x: X-coordinate of left edge.
 
-  y: Y-coordinate of upper edge.
+• y: Y-coordinate of upper edge.
 
-  width: Width of rectangle.
+• width: Width of rectangle.
 
-  height: Height of rectangle.
+• height: Height of rectangle.
 
-  thickness: Thickness of outline (default is 1).
+• thickness: Thickness of outline (default is 1).
 
-  outline: Color of outline (default is 0xFFFFFF (white))
+• outline: Color of outline (default is 0xFFFFFF (white))
 
-  fill: Color of fill (default is -1 (transparent))
+• fill: Color of fill (default is -1 (transparent))
 
-  gui.box(number x, number y, number width, number height[, 
+7.3.9 gui.box(number x, number y, number width, number height[, 
   number thickness[, number outline1[,number outline2[, number 
   fill]]]])
 
 Draw rectangle with 3D effect on the GUI. Parameters:
 
-  x: X-coordinate of left edge.
+• x: X-coordinate of left edge.
 
-  y: Y-coordinate of upper edge.
+• y: Y-coordinate of upper edge.
 
-  width: Width of rectangle.
+• width: Width of rectangle.
 
-  height: Height of rectangle.
+• height: Height of rectangle.
 
-  thickness: Thickness of outline (default is 1).
+• thickness: Thickness of outline (default is 1).
 
-  outline1: First color of outline (default is 0xFFFFFF (white))
+• outline1: First color of outline (default is 0xFFFFFF (white))
 
-  outline2: First color of outline (default is 0x808080 (dark 
+• outline2: First color of outline (default is 0x808080 (dark 
   gray))
 
-  fill: Color of fill (default is 0xC0C0C0 (light grayy))
+• fill: Color of fill (default is 0xC0C0C0 (light grayy))
 
-  gui.pixel(number x, number y[, number color])
+7.3.10 gui.pixel(number x, number y[, number color])
 
 Draw one pixel on the GUI. Parameters:
 
-  x: X-coordinate of the pixel
+• x: X-coordinate of the pixel
 
-  y: Y-coordinate of the pixel
+• y: Y-coordinate of the pixel
 
-  color: Color of the pixel (default is 0xFFFFFF (white))
+• color: Color of the pixel (default is 0xFFFFFF (white))
 
-  gui.crosshair(number x, number y[, number length[, number 
+7.3.11 gui.crosshair(number x, number y[, number length[, number 
   color]])
 
 Draw a crosshair. Parameters:
 
-  x: X-coordinate of the crosshair
+• x: X-coordinate of the crosshair
 
-  y: Y-coordinate of the crosshair
+• y: Y-coordinate of the crosshair
 
-  length: Length of the crosshair lines (default 10).
+• length: Length of the crosshair lines (default 10).
 
-  color: Color of the crosshair (default is 0xFFFFFF (white))
+• color: Color of the crosshair (default is 0xFFFFFF (white))
 
-  gui.line(number x1, number y1, number x2, number y2[, number 
-  color])
+7.3.12 gui.line(number x1, number y1, number x2, number y2[, 
+  number color])
 
 Draw a thin line. Parameters:
 
-  x1: X-coordinate of one end.
+• x1: X-coordinate of one end.
 
-  y1: Y-coordinate of one end.
+• y1: Y-coordinate of one end.
 
-  x2: X-coordinate of the other end.
+• x2: X-coordinate of the other end.
 
-  y2: Y-coordinate of the other end.
+• y2: Y-coordinate of the other end.
 
-  color: Color of the line (default is 0xFFFFFF (white)).
+• color: Color of the line (default is 0xFFFFFF (white)).
 
-  gui.circle(number x, number y, number r[, number thick[, number 
-  border[, number fil]]])
+7.3.13 gui.circle(number x, number y, number r[, number thick[, 
+  number border[, number fil]]])
 
 Draw a circle. Parameters.
 
-  x: X-coordinate of the center
+• x: X-coordinate of the center
 
-  y: Y-coordinate of the center
+• y: Y-coordinate of the center
 
-  r: The radius of the circle
+• r: The radius of the circle
 
-  thick: Border thickness
+• thick: Border thickness
 
-  border: Border color (default is 0xFFFFFF (white))
+• border: Border color (default is 0xFFFFFF (white))
 
-  fill: Fill color (default is -1 (transparent)).
+• fill: Fill color (default is -1 (transparent)).
 
-  gui.bitmap_draw(number x, number y, bitmap bitmap, palette 
+7.3.14 gui.bitmap_draw(number x, number y, bitmap bitmap, palette 
   palette)
 
 Draw a bitmap on screen with specified palette. Parameters:
 
-  x: X-coordinate of left edge.
+• x: X-coordinate of left edge.
 
-  y: Y-coordinate of top edge.
+• y: Y-coordinate of top edge.
 
-  bitmap: The bitmap to draw
+• bitmap: The bitmap to draw
 
-  palette: The palette to draw the bitmap using.
+• palette: The palette to draw the bitmap using.
 
-  gui.bitmap_draw(number x, number y, dbitmap bitmap)
+7.3.15 gui.bitmap_draw(number x, number y, dbitmap bitmap)
 
 Draw a bitmap on screen. Parameters:
 
-  x: X-coordinate of left edge.
+• x: X-coordinate of left edge.
 
-  y: Y-coordinate of top edge.
+• y: Y-coordinate of top edge.
 
-  bitmap: The bitmap to draw
+• bitmap: The bitmap to draw
 
-  gui.palette_new()
+7.3.16 gui.palette_new()
 
 Returns a new palette (initially all transparent). Can be used 
 anywhere.
 
-  gui.bitmap_new(number w, number h, boolean direct[, bool 
+7.3.17 gui.bitmap_new(number w, number h, boolean direct[, bool 
   icolor])
 
 Returns a new bitmap/dbitmap. Can be used anywhere. Parameters:
 
-  w: The width of new bitmap
+• w: The width of new bitmap
 
-  h: The height of new bitmap
+• h: The height of new bitmap
 
-  direct: If true, the returned bitmap is dbitmap, otherwise 
+• direct: If true, the returned bitmap is dbitmap, otherwise 
   bitmap.
 
-  icolor: Initital fill color (defaults to 0 on BITMAP, -1 on 
+• icolor: Initital fill color (defaults to 0 on BITMAP, -1 on 
   DBITMAP)
 
-  gui.bitmap_load(string file)
+7.3.18 gui.bitmap_load(string file)
 
 Returns loaded bitmap/dbitmap (if bitmap, the second return value 
 is palette for bitmap). Can be used anywhere. Parameters:
 
-  file: The name of file to load.
+• file: The name of file to load.
 
-  gui.palette_set(palette palette, number index, number color)
+7.3.19 gui.palette_set(palette palette, number index, number 
+  color)
 
 Sets color in palette. Can be used anywhere. Parameters:
 
-  palette: The palette to manipulate
+• palette: The palette to manipulate
 
-  index: Index of color (0-65535).
+• index: Index of color (0-65535).
 
-  color: The color value.
+• color: The color value.
 
-  gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, 
+7.3.20 gui.bitmap_pset(bitmap/dbitmap bitmap, number x, number y, 
   number color)
 
 Sets specified pixel in bitmap. Can be used anywhere. Parameters:
 
-  bitmap: The bitmap to manipulate
+• bitmap: The bitmap to manipulate
 
-  x: The x-coordinate of the pixel.
+• x: The x-coordinate of the pixel.
 
-  y: The y-coordinate of the pixel.
+• y: The y-coordinate of the pixel.
 
-  color: If bitmap is a bitmap, color index (0-65535). Otherwise 
+• color: If bitmap is a bitmap, color index (0-65535). Otherwise 
   color value.
 
-  gui.bitmap_size(bitmap/dbitmap bitmap)
+7.3.21 gui.bitmap_size(bitmap/dbitmap bitmap)
 
 Get size of bitmap. Can be used anywhere. Parameters:
 
-  bitmap: The bitmap to query.
+• bitmap: The bitmap to query.
 
 The first return is the width, the second is the height.
 
-  gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
+7.3.22 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
   bitmap/dbitmap src, number sx, number sy, number w, number h[, 
   number ck])
 
 Blit a part of bitmap to another. Can be used anywhere. 
 Parameters:
 
-  dest: Destination to blit to.
+• dest: Destination to blit to.
 
-  dx: left edge of target
+• dx: left edge of target
 
-  dy: Top edge of target
+• dy: Top edge of target
 
-  src: The source to blit from. Must be of the same type as 
+• src: The source to blit from. Must be of the same type as 
   destination.
 
-  sx: left edge of source
+• sx: left edge of source
 
-  sy: Top edge of source
+• sy: Top edge of source
 
-  w: Width of region
+• w: Width of region
 
-  h: Height of region.
+• h: Height of region.
 
-  ck: Color key. Pixels of this color are not blitted.
+• ck: Color key. Pixels of this color are not blitted.
 
-  If bitmaps are bitmaps, this is color index of colorkey. Values 
-    outside range 0-65535 cause no key to be used as colorkey.
+  – If bitmaps are bitmaps, this is color index of colorkey. 
+    Values outside range 0-65535 cause no key to be used as 
+    colorkey.
 
-  If bitmaps are dbitmaps, this color value of colorkey.
+  – If bitmaps are dbitmaps, this color value of colorkey.
 
-  May be absent or nil for no colorkey blit.
+  – May be absent or nil for no colorkey blit.
 
-  gui.bitmap_load_png(string filename)
+7.3.23 gui.bitmap_load_png(string filename)
 
 Load a bitmap from PNG file. Parameters:
 
-  filename: The name of file to load the bitmap frame.
+• filename: The name of file to load the bitmap frame.
 
 Return value:
 
-  If the PNG is of color type 3 (PALETTE), returns two value. 
+• If the PNG is of color type 3 (PALETTE), returns two value. 
   First is BITMAP containing the image data from the PNG and 
   second is PALETTE containg the palette data from the PNG.
 
-  For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), 
+• For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), 
   returns one DBITMAP containg the image data loaded from the 
   PNG.
 
-  gui.bitmap_load_pal(string filename)
+7.3.24 gui.bitmap_load_pal(string filename)
 
 Load a palette from file. Parameters:
 
-  filename: The name of the file.
+• filename: The name of the file.
 
 The kinds of lines supported
 
-  Blank or just whitespace: Ignored
+• Blank or just whitespace: Ignored
 
-  First non-whitespace is '#': Ignored
+• First non-whitespace is '#': Ignored
 
-  <r> <g> <b>: Fully opaque color with specified RGB values 
+• <r> <g> <b>: Fully opaque color with specified RGB values 
   (0-255)
 
-  <r> <g> <b> <a>: Color with specified RGB values (0-255) and 
+• <r> <g> <b> <a>: Color with specified RGB values (0-255) and 
   specified alpha (0-256, 0 being fully transparent and 256 fully 
   opaque).
 
-  transparent: Fully transparent color
+• transparent: Fully transparent color
 
-  gui.bitmap_load_str(string content)
+7.3.25 gui.bitmap_load_str(string content)
 
 Like gui.bitmap_load, but reads the specified string directly as 
 content.
 
-  gui.bitmap_load_png_str(string base64content)
+7.3.26 gui.bitmap_load_png_str(string base64content)
 
 Like gui.bitmap_load_png, but reads the specified string (as 
 base64-encoded) directly as content.
 
-  gui.bitmap_load_pal_str(string content)
+7.3.27 gui.bitmap_load_pal_str(string content)
 
 Like gui.bitmap_load_pal, but reads the specified string directly 
 as content.
 
-  gui.repaint()
+7.3.28 gui.repaint()
 
 Request on_repaint() to happen as soon as possible. Can be used 
 anywhere.
 
-  gui.subframe_update(boolean on)
+7.3.29 gui.subframe_update(boolean on)
 
 Request subframe updates (calling on_paint() on subframes) to 
 happen (on=true) or not happen (on=false). Can be used anywhere.
 
-  gui.screenshot(string filename)
+7.3.30 gui.screenshot(string filename)
 
 Write PNG screenshot of the current frame (no drawings) to 
 specified file. Can be used anywhere.
 
-  gui.color(number r, number g, number b[, number a])
+7.3.31 gui.color(number r, number g, number b[, number a])
 
 Returns color (in notation Lua scripts use) corresponding to 
 color (r,g,b), each component in scale 0-255. If a is specified, 
 that is alpha (0 is fully transparent, 256(sic) is fully opaque). 
 The default alpha is 256.
 
-  gui.status(string name, string value)
+7.3.32 gui.status(string name, string value)
 
 Set status field “L[<name>]” to <value> in status area. Can be 
 used anywhere.
 
-  gui.rainbow(number step, number steps[, number color])
+7.3.33 gui.rainbow(number step, number steps[, number color])
 
 Perform hue rotation of color <color> (default bright red), by 
 <step> steps. The number of steps per full rotation is given by 
@@ -1037,588 +1044,743 @@ absolute value of <steps>.
 
 If <steps> is negative, the rotation will be counterclockwise.
 
-  gui.screenshot(string filename)
+7.3.34 gui.screenshot(string filename)
 
 Saves a screenshot into specified file.
 
-  gui.renderq_new(number width, number height)
+7.3.35 gui.renderq_new(number width, number height)
 
 Create render queue with specified reported size and return it.
 
-  gui.renderq_clear(RENDERQUEUE queue)
+7.3.36 gui.renderq_clear(RENDERQUEUE queue)
 
 Clear specified render queue.
 
-  gui.renderq_set(RENDERQUEUE queue)
+7.3.37 gui.renderq_set(RENDERQUEUE queue)
 
 Switch to specified render queue. Use nil as queue to switch to 
 default queue.
 
-  When switched to another queue, all drawing functions work and 
+• When switched to another queue, all drawing functions work and 
   draw there, even outside on_video/on_paint.
 
-  gui.renderq_run(RENDERQUEUE queue)
+7.3.38 gui.renderq_run(RENDERQUEUE queue)
 
 Run specified render queue, copying the objects to current render 
 queue. 
 
-  Warning: Don't try to run the current render queue.
+• Warning: Don't try to run the current render queue.
 
-  gui.loadfont(string filename)
+7.3.39 gui.loadfont(string filename)
 
 Loads font from specified file (CUSTOMFONT object).
 
-  CUSTOMFONT(number x, number y, string text[, number fgc[, 
+7.3.40 CUSTOMFONT(number x, number y, string text[, number fgc[, 
   number bgc[, number hlc]]])
 
 Draw string with custom font to screen. The parameters are the 
 same as in gui.text, except hlc is the halo color (default is no 
 halo). 
 
-  table input
+7.4 table input
 
 Input handling. Only available in on_input callback.
 
-  input.get(number controller, number index)
+7.4.1 input.get(number controller, number index)
 
 Read the specified index (0-11) from specified controller (0-7). 
 Notes:
 
-  Uses physical controller numbering. Gamepad in port 2 is 
+• Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-  input.set(number controller, number index, number value)
+7.4.2 input.set(number controller, number index, number value)
 
 Write the specified index (0-11) from specified controller (0-7), 
 storing value. Notes:
 
-  Uses physical controller numbering. Gamepad in port 2 is 
+• Uses physical controller numbering. Gamepad in port 2 is 
   controller 4, not 1!
 
-  input.get2(number port, number controller, number index)
+7.4.3 input.get2(number port, number controller, number index)
 
 Read the specified input tuple.
 
-  Port 0 is system port.
+• Port 0 is system port.
 
-  input.set2(number port, number controller, number index, number 
-  value)
+7.4.4 input.set2(number port, number controller, number index, 
+  number value)
 
 Write the specified input tuple.
 
-  Port 0 is system port.
+• Port 0 is system port.
 
-  input.lcid_to_pcid2(number lcid)
+7.4.5 input.lcid_to_pcid2(number lcid)
 
 Look up physical pcid pair (port, controller) corresponding to 
 specified logical controller (1-based). Returns nothing if 
 controller does not exist.
 
-  input.port_type(number port)
+7.4.6 input.port_type(number port)
 
 Return type of specified port.
 
-  input.controller_info(number port, number controller)
+7.4.7 input.controller_info(number port, number controller)
 
 Get controller info for specified controller. If controller does 
 not exist, returns nil. Otherwise returns a table with following 
 fields:
 
-  type (string): Type of the controller.
+• type (string): Type of the controller.
 
-  class (string): Class of the controller.
+• class (string): Class of the controller.
 
-  classnum (number): Number of the controller within its class 
+• classnum (number): Number of the controller within its class 
   (1-based)
 
-  lcid (number): Logical controller number of the controller.
+• lcid (number): Logical controller number of the controller.
 
-  button_count (number): Number of buttons on controller
+• button_count (number): Number of buttons on controller
 
-  buttons (array): Array of following info about each button:
+• buttons (array): Array of following info about each button:
 
-  type (string): Type of button. Currently one of “null”, “button”
-    , “axis”, “raxis”.
+  – type (string): Type of button. Currently one of “null”, “
+    button”, “axis”, “raxis”.
 
-  name (string): Name of button.
+  – name (string): Name of button.
 
-  symbol (string): Symbol of button. Only present for type “
+  – symbol (string): Symbol of button. Only present for type “
     button”.
 
-  hidden (boolean): True if hidden button. 
+  – hidden (boolean): True if hidden button. 
 
-  input.veto_button()
+7.4.8 input.veto_button()
 
 Signals that the button event should be vetoed. Only valid in 
 on_button callback.
 
-  input.geta(number controller)
+7.4.9 input.geta(number controller)
 
 Get input state for entiere controller. Returns 13 return values.
 
-  1st return value: Bitmask: bit i is set if i:th index is 
+• 1st return value: Bitmask: bit i is set if i:th index is 
   nonzero
 
-  2nd-13th return value: value of i:th index.
+• 2nd-13th return value: value of i:th index.
 
-  input.seta(number controller, number bitmask, number args...)
+7.4.10 input.seta(number controller, number bitmask, number 
+  args...)
 
 Set state for entiere controller. args is up to 12 values for 
 indices (overriding values in bitmask if specified).
 
-  input.controllertype(number controller)
+7.4.11 input.controllertype(number controller)
 
 Get the type of controller as string. Valid values are:
 
-  gamepad
+• gamepad
 
-  mouse
+• mouse
 
-  justifier
+• justifier
 
-  superscope
+• superscope
 
-  input.reset([number cycles])
+7.4.12 input.reset([number cycles])
 
 Execute reset. If cycles is greater than zero, do delayed reset. 
 0 (or no value) causes immediate reset.
 
-  Only available with subframe flag false.
+• Only available with subframe flag false.
 
-  input.raw()
+7.4.13 input.raw()
 
 Returns table of tables of all available keys and axes. The first 
 table is indexed by key name (platform-dependent!), and the inner 
 table has the following fields:
 
-  value: Last reported value for control
+• value: Last reported value for control
 
-  For keys: 1 for pressed, 0 for released.
+  – For keys: 1 for pressed, 0 for released.
 
-  For axes: -32767...32767.
+  – For axes: -32767...32767.
 
-  For presure-sensitive buttons: 0...32767.
+  – For presure-sensitive buttons: 0...32767.
 
-  For hats: Bitmask: 1=>Up, 2=>Right, 4=>Down, 8=>Left.
+  – For hats: Bitmask: 1=>Up, 2=>Right, 4=>Down, 8=>Left.
 
-  For mouse: Coordinates relative to game area.
+  – For mouse: Coordinates relative to game area.
 
-  ktype: Type of key (disabled, key, mouse, axis, axis-inverse, 
+• ktype: Type of key (disabled, key, mouse, axis, axis-inverse, 
   hat, pressure-m0, pressure-mp, pressure-0m, pressure-0p, 
   pressure-pm, pressure-p0).
 
-  input.keyhook(string key, boolean state)
+7.4.14 input.keyhook(string key, boolean state)
 
 Requests that keyhook events to be sent for key (state=true) or 
 not sent (state=false).
 
-  input.joyget(number controller)
+7.4.15 input.joyget(number controller)
 
 Returns table for current controls for specified controller. The 
 names of fields vary by controller type.
 
-  The buttons have the same name as those are referred to in 
+• The buttons have the same name as those are referred to in 
   other contexts in the emulator
 
-  The analog axes are “xaxis” and “yaxis”.
+• The analog axes are “xaxis” and “yaxis”.
 
-  input.joyset(number controller, table controls)
+7.4.16 input.joyset(number controller, table controls)
 
 Set the the state of specified controller to values specified in 
 specified table.
 
-  input.lcid_to_pcid(number controller)
+7.4.17 input.lcid_to_pcid(number controller)
 
 Return the physical index, physical port and controller number in 
 port for specified (1-based) logical controller.
 
-  Table keyboard
+7.5 Table keyboard
 
 Various keybinding-related functions
 
-  keyboard.bind(string mod, string mask, string key, string cmd)
+7.5.1 keyboard.bind(string mod, string mask, string key, string 
+  cmd)
 
 Bind specified key with specified modifers to specified command.
 
-  keyboard.unbind(string mod, string mask, string key)
+7.5.2 keyboard.unbind(string mod, string mask, string key)
 
 Unbind specified key with specified modifers.
 
-  nil does not change value
+• nil does not change value
 
-  true/false (buttons) and integers (axes) force value.
+• true/false (buttons) and integers (axes) force value.
 
-  string (button) inverts the input.
+• string (button) inverts the input.
 
-  keyboard.alias(string alias, string expansion)
+7.5.3 keyboard.alias(string alias, string expansion)
 
 Set expansion of given command.
 
-  Table subtitle
+7.6 Table subtitle
 
 Subtitle handling
 
-  subtitle.byindex(number i)
+7.6.1 subtitle.byindex(number i)
 
 Read the frame and length of ith subtitle. Returns nothing if not 
 present.
 
-  subtitle.set(number f, number l, string txt)
+7.6.2 subtitle.set(number f, number l, string txt)
 
 Set the text of subtitle.
 
-  subtitle.get(number f, number l)
+7.6.3 subtitle.get(number f, number l)
 
 Get the text of subtitle.
 
-  subtitle.delete(number f, number l)
+7.6.4 subtitle.delete(number f, number l)
 
 Delete specified subtitle.
 
-  Table hostmemory
+7.7 Table hostmemory
 
 Host memory handling (extra memory saved to savestates). Host 
 memory starts empty.
 
-  hostmemory.read(number address)
+7.7.1 hostmemory.read(number address)
 
 Reads hostmemory slot address. Slot numbers out of range return 
 false instead of numeric.
 
-  hostmemory.write(number address, number value)
+7.7.2 hostmemory.write(number address, number value)
 
 Writes hostmemory slot with 0-255. Slot numbers out of range 
 cause extension of host memory slot space.
 
-  hostmemory.readbyte(number address)
+7.7.3 hostmemory.readbyte(number address)
 
 Read unsigned byte (1 element) from given address. Slots out of 
 range return false.
 
-  hostmemory.writebyte(number address, number value)
+7.7.4 hostmemory.writebyte(number address, number value)
 
 Write unsigned byte (1 element) to given slot. Slot numbers out 
 of range cause extension.
 
-  hostmemory.readsbyte(number address)
+7.7.5 hostmemory.readsbyte(number address)
 
 Read signed byte (1 element) from given address. Slots out of 
 range return false.
 
-  hostmemory.writesbyte(number address, number value)
+7.7.6 hostmemory.writesbyte(number address, number value)
 
 Write signed byte (1 element) to given slot. Slot numbers out of 
 range cause extension.
 
-  hostmemory.readword(number address)
+7.7.7 hostmemory.readword(number address)
 
 Read unsigned word (2 elements) from given address. Slots out of 
 range return false.
 
-  hostmemory.writeword(number address, number value)
+7.7.8 hostmemory.writeword(number address, number value)
 
 Write unsigned word (2 elements) to given slot. Slot numbers out 
 of range cause extension.
 
-  hostmemory.readsword(number address)
+7.7.9 hostmemory.readsword(number address)
 
 Read signed word (2 elements) from given address. Slots out of 
 range return false.
 
-  hostmemory.writesword(number address, number value)
+7.7.10 hostmemory.writesword(number address, number value)
 
 Write signed word (2 elements) to given slot. Slot numbers out of 
 range cause extension.
 
-  hostmemory.readdword(number address)
+7.7.11 hostmemory.readdword(number address)
 
 Read unsigned doubleword (4 elements) from given address. Slots 
 out of range return false.
 
-  hostmemory.writedword(number address, number value)
+7.7.12 hostmemory.writedword(number address, number value)
 
 Write unsigned doubleword (4 elements) to given slot. Slot 
 numbers out of range cause extension.
 
-  hostmemory.readsdword(number address)
+7.7.13 hostmemory.readsdword(number address)
 
 Read signed doubleword (4 elements) from given address. Slots out 
 of range return false.
 
-  hostmemory.writesdword(number address, number value)
+7.7.14 hostmemory.writesdword(number address, number value)
 
 Write signed doubleword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-  hostmemory.readqword(number address)
+7.7.15 hostmemory.readqword(number address)
 
 Read unsigned quadword (8 elements) from given address. Slots out 
 of range return false.
 
-  hostmemory.writeqword(number address, number value)
+7.7.16 hostmemory.writeqword(number address, number value)
 
 Write unsigned quadword (4 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-  hostmemory.readsqword(number address)
+7.7.17 hostmemory.readsqword(number address)
 
 Read signed quadword (8 elements) from given address. Slots out 
 of range return false.
 
-  hostmemory.writesqword(number address, number value)
+7.7.18 hostmemory.writesqword(number address, number value)
 
 Write signed quadword (8 elements) to given slot. Slot numbers 
 out of range cause extension.
 
-  Table movie
+7.8 Table movie
 
 Movie handling
 
-  movie.currentframe()
+7.8.1 movie.currentframe()
 
 Return number of current frame.
 
-  movie.framecount()
+7.8.2 movie.framecount()
 
 Return number of frames in movie.
 
-  movie.readonly()
+7.8.3 movie.readonly()
 
 Return true if in readonly mode, false if in readwrite.
 
-  movie.rerecords()
+7.8.4 movie.rerecords()
 
 Returns the current value of rerecord count.
 
-  movie.set_readwrite()
+7.8.5 movie.set_readwrite()
 
 Set readwrite mode (does not cause on_readwrite callback).
 
-  movie.frame_subframes(number frame)
+7.8.6 movie.frame_subframes(number frame)
 
 Count number of subframes in specified frame (frame numbers are 
 1-based) and return that.
 
-  movie.read_subframes(number frame, number subframe)
+7.8.7 movie.read_subframes(number frame, number subframe)
 
 Read specifed subframe in specified frame and return data as 
 array (100 elements, numbered 0-99 currently).
 
-  movie.read_rtc()
+7.8.8 movie.read_rtc()
 
 Returns the current value of the RTC as a pair (second, 
 subsecond).
 
-  movie.unsafe_rewind([UNSAFEREWIND state])
+7.8.9 movie.unsafe_rewind([UNSAFEREWIND state])
 
 Start setting point for unsafe rewind or jump to point of unsafe 
 rewind.
 
-  If called without argument, causes emulator to start process of 
+• If called without argument, causes emulator to start process of 
   setting unsafe rewind point. When this has finished, callback 
   on_set_rewind occurs, passing the rewind state to lua script.
 
-  If called with argument, causes emulator rewind to passed 
+• If called with argument, causes emulator rewind to passed 
   rewind point as soon as possible. Readwrite mode is implicitly 
   activated.
 
 The following warnings apply to unsafe rewinding:
 
-  There are no safety checks against misuse (that's what “unsafe” 
+• There are no safety checks against misuse (that's what “unsafe” 
   comes from)!
 
-  Only call rewind from timeline rewind point was set from.
+• Only call rewind from timeline rewind point was set from.
 
-  Only call rewind from after the rewind point was set.
+• Only call rewind from after the rewind point was set.
 
-  Table settings
+7.8.10 movie.copy_movie([INPUTMOVIE movie])
+
+Copies specified movie (if none or nil, the active movie) as new 
+movie object (INPUTMOVIE).
+
+Also available as method in INPUTFRAME.
+
+7.8.11 movie.get_frame([INPUTMOVIE movie,] number frame)
+
+Get INPUTFRAME object corresponding to specified frame in 
+specified movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.12 movie.set_frame([INPUTMOVIE movie,] number frame, 
+  INPUTFRAME data)
+
+Set data in specified frame. Note: Past can't be edited in active 
+movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.13 movie.get_size([INPUTMOVIE movie])
+
+Return number of subframes in specified movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.14 movie.count_frames([INPUTMOVIE movie])
+
+Return number of frames in movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.15 movie.find_frame([INPUTMOVIE movie], number frame)
+
+Returns starting subframe of given frame (frame numbers are 
+1-based). Returns -1 if frame number is bad.
+
+Also available as method in INPUTFRAME.
+
+7.8.16 movie.blank_frame([INPUTMOVIE movie])
+
+Return blank INPUTFRAME with frame type from specified movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.17 movie.append_frames([INPUTMOVIE movie,] number frames)
+
+Append specified number of frames.
+
+Also available as method in INPUTFRAME.
+
+7.8.18 movie.append_frame([INPUTMOVIE movie,] INPUTFRAME frame)
+
+Append specified frame. Past of current movie can't be edited.
+
+Also available as method in INPUTFRAME.
+
+7.8.19 movie.truncate([INPUTMOVIE movie,] number frames)
+
+Truncate the specified movie to specified number of frames.
+
+Also available as method in INPUTFRAME.
+
+7.8.20 movie.edit([INPUTMOVIE movie,] number frame, number port, 
+  number controller, number control, number/bool value)
+
+Change specified control in specified frame in specified movie. 
+Past can't be edited in active movie.
+
+Also available as method in INPUTFRAME.
+
+7.8.21 movie.copy_frames2([INPUTMOVIE dstmov,] number dst, 
+  [INPUTMOVIE srcmov,] number src, number count)
+
+Copy specified number of frames between two movies. The copy 
+proceeeds in forward direction.
+
+7.8.22 movie.copy_frames([INPUTMOVIE mov,] number dst, number 
+  src, number count, bool backwards)
+
+Copy specified number of frames from one point in movie to 
+another. If backwards is true, the copy will be done backwards.
+
+Also available as method in INPUTFRAME.
+
+7.8.23 movie.serialize([INPUTMOVIE movie,] string filename, bool 
+  binary)
+
+Serialize given movie into file. If binary is true, binary format 
+(more compact and much faster) is used.
+
+Also available as method in INPUTFRAME.
+
+7.8.24 movie.unserialize(INPUTFRAME template, string filename, 
+  bool binary)
+
+Unserialize movie from file. The given frame is used as template 
+to decide the frame type. If binary is true, binary format is 
+decoded (much faster).
+
+Also available as method in INPUTFRAME.
+
+7.8.25 movie.current_first_subframe()
+
+Returns first subframe in current frame.
+
+7.8.26 movie.pollcounter(number port, number controller, number 
+  control)
+
+Returns number of times the specified control has been polled 
+this frame.
+
+7.8.27 INPUTFRAME::get_button(number port, number controller, 
+  number control)
+
+Returns state of given button as boolean.
+
+7.8.28 INPUTFRAME::get_axis(number port, number controller, 
+  number control)
+
+Returns state of given axis as number.
+
+7.8.29 INPUTFRAME::set_button(number port, number controller, 
+  number control, number/bool value)
+
+Set the given button/axis to given value.
+
+7.8.30 INPUTFRAME::set_axis(number port, number controller, 
+  number control)
+
+Same as set_button.
+
+7.8.31 INPUTFRAME::serialize()
+
+Return string representation of frame.
+
+7.8.32 INPUTFRAME::unserialize(string data)
+
+Set current frame from given data.
+
+7.8.33 INPUTFRAME::get_stride()
+
+Return number of bytes needed to store the input frame. Mainly 
+useful for some debugging.
+
+7.9 Table settings
 
 Routines for settings manipulation
 
-  settings.get(string name)
+7.9.1 settings.get(string name)
 
 Get value of setting. If setting is blank, returns false. If 
 setting value can't be obtained, returns (nil, error message).
 
-  settings.set(string name, string value)
+7.9.2 settings.set(string name, string value)
 
 Set value of setting. If setting can't be set, returns (nil, 
 error message).
 
-  settings.is_set(string name)
+7.9.3 settings.is_set(string name)
 
 Returns if setting is set. If setting does not exist, returns 
 (nil, error message).
 
-  settings.blank(string name)
+7.9.4 settings.blank(string name)
 
 Blanks a setting and returns true. If setting can't be blanked, 
 returns (nil, error message).
 
-  Table memory
+7.10 Table memory
 
 Contains various functions for managing memory
 
-  memory.vma_count()
+7.10.1 memory.vma_count()
 
 Returns the number of VMAs
 
-  memory.read_vma(number index)
+7.10.2 memory.read_vma(number index)
 
 Reads the specified VMA (indices start from zero). Trying to read 
 invalid VMA gives nil. The read VMA is table with the following 
 fields:
 
-  region_name (string): The readable name of the VMA
+• region_name (string): The readable name of the VMA
 
-  baseaddr (number): Base address of the VMA
+• baseaddr (number): Base address of the VMA
 
-  lastaddr (number): Last address in the VMA.
+• lastaddr (number): Last address in the VMA.
 
-  size (number): The size of VMA in bytes.
+• size (number): The size of VMA in bytes.
 
-  readonly (boolean): True of the VMA corresponds to ROM.
+• readonly (boolean): True of the VMA corresponds to ROM.
 
-  iospace (boolean): True if the VMA is I/O space.
+• iospace (boolean): True if the VMA is I/O space.
 
-  native_endian (boolean): True if the VMA has native endian as 
+• native_endian (boolean): True if the VMA has native endian as 
   opposed to little endian.
 
-  memory.find_vma(number address)
+7.10.3 memory.find_vma(number address)
 
 Finds the VMA containing specified address. Returns table in the 
 same format as read_vma or nil if not found.
 
-  memory.readbyte([string vma, ]number address)
+7.10.4 memory.readbyte([string vma, ]number address)
 
 Reads the specified address as unsigned byte and returns the 
 result.
 
-  memory.readsbyte([string vma, ]number address)
+7.10.5 memory.readsbyte([string vma, ]number address)
 
 Reads the specified address as signed byte and returns the 
 result.
 
-  memory.writebyte([string vma, ]number address, number value)
+7.10.6 memory.writebyte([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a byte).
 
-  memory.readword([string vma, ]number address)
+7.10.7 memory.readword([string vma, ]number address)
 
 Reads the specified address as unsigned word and returns the 
 result.
 
-  memory.readsword([string vma, ]number address)
+7.10.8 memory.readsword([string vma, ]number address)
 
 Reads the specified address as signed word and returns the 
 result.
 
-  memory.writeword([string vma, ]number address, number value)
+7.10.9 memory.writeword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a word).
 
-  memory.readdword([string vma, ]number address)
+7.10.10 memory.readdword([string vma, ]number address)
 
 Reads the specified address as unsigned doubleword and returns 
 the result.
 
-  memory.readsdword([string vma, ]number address)
+7.10.11 memory.readsdword([string vma, ]number address)
 
 Reads the specified address as signed doubleword and returns the 
 result.
 
-  memory.writedword([string vma, ]number address, number value)
+7.10.12 memory.writedword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a doubleword).
 
-  memory.readqword([string vma, ]number address)
+7.10.13 memory.readqword([string vma, ]number address)
 
 Reads the specified address as unsigned quadword and returns the 
 result.
 
-  memory.readsqword([string vma, ]number address)
+7.10.14 memory.readsqword([string vma, ]number address)
 
 Reads the specified address as signed quadword and returns the 
 result.
 
-  memory.writeqword([string vma, ]number address, number value)
+7.10.15 memory.writeqword([string vma, ]number address, number 
+  value)
 
 Writes the specified value (negative values undergo 2's 
 complement) to specified address (as a quadword).
 
-  memory.hash_region([string vma, ]number base, number size)
+7.10.16 memory.hash_region([string vma, ]number base, number 
+  size)
 
 Hash specified number of bytes starting from specified address 
 and return the SHA-256.
 
-  memory.hash_state()
+7.10.17 memory.hash_state()
 
 Hash the current system state. Mainly useful for debugging 
 savestates.
 
-  memory.readregion([string vma, ]number base, number size)
+7.10.18 memory.readregion([string vma, ]number base, number size)
 
 Read a region of memory.
 
-  Warning: If the region crosses VMA boundary, the results are 
+• Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
-  memory.map<type>([[string vma, ]number base, number size])
+7.10.19 memory.map<type>([[string vma, ]number base, number 
+  size])
 
 Returns a table mapping specified memory aperture for read/write. 
 If parameters are omitted, entiere map space is the aperture.
 
-  Type may be one of: byte, sbyte, word, sword, dword, sdword, 
+• Type may be one of: byte, sbyte, word, sword, dword, sdword, 
   qword or sqword.
 
-  memory.writeregion([string vma, ]number base, number size, 
-  table data)
+7.10.20 memory.writeregion([string vma, ]number base, number 
+  size, table data)
 
 Write a region of memory.
 
-  Warning: If the region crosses VMA boundary, the results are 
+• Warning: If the region crosses VMA boundary, the results are 
   undefined.
 
-  memory.map_structure()
+7.10.21 memory.map_structure()
 
 Returns a new mapping structure (MMAP_STRUCT)
 
-  MMAP_STRUCT(string key, [string vma, ]number address, string 
-  type)
+7.10.22 MMAP_STRUCT(string key, [string vma, ]number address, 
+  string type)
 
 Bind key in mmap structure to specified address with specified 
 type.
 
-  Type may be one of: byte, sbyte, word, sword, dword, sdword, 
+• Type may be one of: byte, sbyte, word, sword, dword, sdword, 
   qword or sqword.
 
-  memory.read_expr(string expr)
+7.10.23 memory.read_expr(string expr)
 
 Evaluate specified watch expression and return result
 
-  memory.action(string action, [<params>])
+7.10.24 memory.action(string action, [<params>])
 
 Run core action. The different models expect parameters as:
 
-  string: String
+• string: String
 
-  numeric: numeric
+• numeric: numeric
 
-  enumeration: String
+• enumeration: String
 
-  boolean: String
+• boolean: String
 
-  toggle: None.
+• toggle: None.
 
-  memory.get_lag_flag()
+7.10.25 memory.get_lag_flag()
 
 Get the value of core lag flag. True if this frame has been lag 
 so far, false if poll has been detected.
 
-  memory.set_lag_flag(boolean flag)
+7.10.26 memory.set_lag_flag(boolean flag)
 
 Set the value of core lag flag. This flag automatically gets 
 cleared if poll is detected, but can be forcibly set if game so 
@@ -1626,66 +1788,67 @@ requires. Should only be used in on_frame_emulated callback.
 
 Setting or clearing this affects the emulator lag counter.
 
-  Table memory2
+7.11 Table memory2
 
 Contains newer memory functions.
 
-  memory2()
+7.11.1 memory2()
 
 Returns array of all valid VMA names.
 
-  memory2.<vma>:info()
+7.11.2 memory2.<vma>:info()
 
 Return table describing given VMA. Includes fields address, size, 
 last, readonly, special and endian.
 
-  memory2.<vma>:<op>(number offset)
+7.11.3 memory2.<vma>:<op>(number offset)
 
 Read from given VMA at given offset (must be in-range). Op is of 
 form:
 
-  [i][s]<type>, where <type> is one of 'byte', 'word', 'dword', 
+• [i][s]<type>, where <type> is one of 'byte', 'word', 'dword', 
   'qword'. 'i' signifies that the value is treated as 
   opposite-to-normal endianess, 's' signifies that value is 
   treated as signed.
 
-  memory2.<vma>:<op>(number offset, number value)
+7.11.4 memory2.<vma>:<op>(number offset, number value)
 
 Write value to given VMA at given offset (must be in-range). See 
 above for form of op.
 
-  Table subtitle
+7.12 Table subtitle
 
 Contains functions for manipulating subtitles.
 
-  subtitle.byindex(number index)
+7.12.1 subtitle.byindex(number index)
 
 Get (basetime, length) pair of specified subtitle index or 
 nothing if index isn't valid.
 
-  subtitle.get(number basetime, number length)
+7.12.2 subtitle.get(number basetime, number length)
 
 Read the specified subtitle. Returns “” if the subtitle does not 
 exist.
 
-  subtitle.set(number basetime, number length, string content)
+7.12.3 subtitle.set(number basetime, number length, string 
+  content)
 
 Set the specified subtitle.
 
-  subtitle.deltete(number basetime, number length)
+7.12.4 subtitle.deltete(number basetime, number length)
 
 Delete the specified subtitle.
 
-  Table _SYSTEM
+7.13 Table _SYSTEM
 
 Contains copy of global variables from time of Lua 
 initialization. Non-writeable.
 
-  Callbacks
+7.14 Callbacks
 
 Various callbacks to Lua that can occur.
 
-  Callback: on_paint(bool not_synth)
+7.14.1 Callback: on_paint(bool not_synth)
 
 Called when screen is being painted. Any gui.* calls requiring 
 graphic context draw on the screen.
@@ -1693,80 +1856,80 @@ graphic context draw on the screen.
 not_synth is true if this hook is being called in response to 
 received frame, false otherwise.
 
-  Callback: on_video()
+7.14.2 Callback: on_video()
 
 Called when video dump frame is being painted. Any gui.* calls 
 requiring graphic context draw on the video.
 
-  Callback: on_frame_emulated()
+7.14.3 Callback: on_frame_emulated()
 
 Called when emulating frame has completed and 
 on_paint()/on_video() calls are about to be issued.
 
-  Callback: on_frame()
+7.14.4 Callback: on_frame()
 
 Called on each starting whole frame.
 
-  Callback: on_startup()
+7.14.5 Callback: on_startup()
 
 Called when the emulator is starting (lsnes.rc and --run files 
 has been run).
 
-  Callback: on_rewind()
+7.14.6 Callback: on_rewind()
 
 Called when rewind movie to beginning has completed.
 
-  Callback: on_pre_load(string name)
+7.14.7 Callback: on_pre_load(string name)
 
 Called just before savestate/movie load occurs (note: loads are 
 always delayed, so this occurs even when load was initiated by 
 lua).
 
-  Callback: on_err_load(string name)
+7.14.8 Callback: on_err_load(string name)
 
 Called if loadstate goes wrong.
 
-  Callback: on_post_load(string name, boolean was_savestate)
+7.14.9 Callback: on_post_load(string name, boolean was_savestate)
 
 Called on successful loadstate. was_savestate gives if this was a 
 savestate or a movie.
 
-  Callback: on_pre_save(string name, boolean is_savestate)
+7.14.10 Callback: on_pre_save(string name, boolean is_savestate)
 
 Called just before savestate save occurs (note: movie saves are 
 synchronous and won't trigger these callbacks if called from 
 Lua).
 
-  Callback: on_err_save(string name)
+7.14.11 Callback: on_err_save(string name)
 
 Called if savestate goes wrong.
 
-  Callback: on_post_save(string name, boolean is_savestate)
+7.14.12 Callback: on_post_save(string name, boolean is_savestate)
 
 Called on successful savaestate. is_savestate gives if this was a 
 savestate or a movie.
 
-  Callback: on_quit()
+7.14.13 Callback: on_quit()
 
 Called when emulator is shutting down.
 
-  Callback: on_input(boolean subframe)
+7.14.14 Callback: on_input(boolean subframe)
 
 Called when emulator is just sending input to bsnes core. 
 Warning: This is called even in readonly mode, but the results 
 are ignored.
 
-  Callback: on_reset()
+7.14.15 Callback: on_reset()
 
 Called when SNES is reset.
 
-  Callback: on_readwrite()
+7.14.16 Callback: on_readwrite()
 
 Called when moving into readwrite mode as result of “set-rwmode” 
 command (note: moving to rwmode by Lua won't trigger this, as per 
 recursive entry protection).
 
-  Callback: on_snoop(number port, number controller, number 
+7.14.17 Callback: on_snoop(number port, number controller, number 
   index, number value)
 
 Called each time bsnes asks for input. The value is the final 
@@ -1775,127 +1938,140 @@ autofire have been taken into account). Might be useful when
 translating movies to format suitable for console verification. 
 Note: There is no way to modify the value to be sent.
 
-  Not called if callback on_snoop2 is defined.
+• Not called if callback on_snoop2 is defined.
 
-  Callback: on_snoop2(number port, number controller, number 
-  index, number value)
+7.14.18 Callback: on_snoop2(number port, number controller, 
+  number index, number value)
 
 Like on_snoop, but reserves port 0 for system, having first user 
 port be port 1.
 
-  Callback: on_keyhook(string keyname, table state)
+7.14.19 Callback: on_keyhook(string keyname, table state)
 
 Sent when key that has keyhook events requested changes state. 
 Keyname is name of the key (group) and state is the state (same 
 kind as table values in input.raw).
 
-  Callback: on_idle()
+7.14.20 Callback: on_idle()
 
 Called when requested by set_idle_timeout(), the timeout has 
 expired and emulator is waiting.
 
-  Callback: on_timer()
+7.14.21 Callback: on_timer()
 
 Called when requested by set_idle_timeout() and the timeout has 
 expired (regardless if emulator is waiting).
 
-  Callback: on_set_rewind(UNSAFEREWIND r)
+7.14.22 Callback: on_set_rewind(UNSAFEREWIND r)
 
 Called when unsafe rewind object has been constructed.
 
-  Callback: on_pre_rewind() 
+7.14.23 Callback: on_pre_rewind() 
 
 Called just before unsafe rewind is about to occur.
 
-  Callback: on_post_rewind() 
+7.14.24 Callback: on_post_rewind() 
 
 Called just after unsafe rewind has occured.
 
-  Callback: on_button(number port, number controller, number 
-  index, string type)
+7.14.25 Callback: on_button(number port, number controller, 
+  number index, string type)
 
 Called on controller button press, with following parameters:
 
-  port: Port number (0 is system)
+• port: Port number (0 is system)
 
-  controller: Controller within port
+• controller: Controller within port
 
-  index: Index of button.
+• index: Index of button.
 
-  type: Type of event, one of:
+• type: Type of event, one of:
 
-  “pressed”: Button was pressed.
+  – “pressed”: Button was pressed.
 
-  “released”: Button was released.
+  – “released”: Button was released.
 
-  “hold”: Held.
+  – “hold”: Held.
 
-  “unhold”: Released from hold.
+  – “unhold”: Released from hold.
 
-  “type”: Typing input on button.
+  – “type”: Typing input on button.
 
-  “untype”: Typing input undone.
+  – “untype”: Typing input undone.
 
-  “autofire <duty> <cycle>”: Autofire with specifie duty and 
+  – “autofire <duty> <cycle>”: Autofire with specifie duty and 
     cycle.
 
-  “autofire”: Stop autofire.
+  – “autofire”: Stop autofire.
 
-  “analog”: Analog action on axis.
+  – “analog”: Analog action on axis.
 
-  Movie editor
+7.14.26 Callback: on_movie_lost(STRING kind)
 
-  The editor edits in-memory movie.
+Called just before something would happen that could lose movie 
+data. Kind can be:
 
-  Because past can't be edited and readwrite mode doesn't allow 
+• readwrite: Switching to readwrite mode.
+
+• reload: ROM is being reloaded in readwrite mode.
+
+• load: New movie is being loaded.
+
+• unsaferewind: Unsafe rewind is happening.
+
+8 Movie editor
+
+• The editor edits in-memory movie.
+
+• Because past can't be edited and readwrite mode doesn't allow 
   future, editing only works in read only mode.
 
-  Keyboard triggers the normal hotkeys and bindings.
+• Keyboard triggers the normal hotkeys and bindings.
 
-  Left button actions
+8.1 Left button actions
 
-  Clicking on cell in future (indicated by lack of redish 
+• Clicking on cell in future (indicated by lack of redish 
   background) toggles it (if it is a button) or prompts for a 
   value (if it is an axis)
 
-  Dragging vertically toggles sequence of buttons or changes a 
+• Dragging vertically toggles sequence of buttons or changes a 
   sequence of axis values.
 
-  Right button actions
+8.2 Right button actions
 
 The right mouse button pops up a context-sensitive menu:
 
-  Toggle <something>: Toggle this button
+• Toggle <something>: Toggle this button
 
-  Change <something>: Change this axis value
+• Change <something>: Change this axis value
 
-  Insert frame after: Insert a frame after this frame
+• Insert frame after: Insert a frame after this frame
 
-  Append frame: Append a frame to movie
+• Append frame: Append a frame to movie
 
-  Append frames: Append specified number of frames to movie
+• Append frames: Append specified number of frames to movie
 
-  Delete frame: Delete this frame
+• Delete frame: Delete this frame
 
-  Delete subframe: Delete this subframe
+• Delete subframe: Delete this subframe
 
-  Truncate movie: Delete this subframe and everything after it.
+• Truncate movie: Delete this subframe and everything after it.
 
-  Scroll to frame: Prompt for a frame and scroll the display to 
+• Scroll to frame: Prompt for a frame and scroll the display to 
   that frame.
 
-  Scroll to current frame: Scroll the display to current position
+• Scroll to current frame: Scroll the display to current position
 
-  Run to frame: Prompts for frame and runs the emulation to that 
+• Run to frame: Prompts for frame and runs the emulation to that 
   frame.
 
-  Change number of lines visible: Change the height of the movie 
+• Change number of lines visible: Change the height of the movie 
   display (1 to 255).
 
-  Lock scroll to playback: While playing back or rewinding 
+• Lock scroll to playback: While playing back or rewinding 
   movies, the display will follow if enabled.
 
-  Memory watch expression syntax
+9 Memory watch expression syntax
 
 Memory watch expressions are in RPN (Reverse Polish Notation). At 
 the end of expression, the top entry on stack is taken as the 
@@ -1903,118 +2079,118 @@ final result.
 
 Notations:
 
-  Evaluation order is strictly left to right.
+• Evaluation order is strictly left to right.
 
-  a is the entry on top of stack
+• a is the entry on top of stack
 
-  b is the entry immediately below top of stack
+• b is the entry immediately below top of stack
 
-  ; separates values to be pushed (no intermediate pop).
+• ; separates values to be pushed (no intermediate pop).
 
-  After end of element, all used stack slots are popped and all 
+• After end of element, all used stack slots are popped and all 
   results are pushed.
 
-  When pushing multiple values, the pushes occur in order shown.
+• When pushing multiple values, the pushes occur in order shown.
 
 The following operators are available:
 
-  + : a + b
+• + : a + b
 
-  - : a - b
+• - : a - b
 
-  * : a * b
+• * : a * b
 
-  / : a / b
+• / : a / b
 
-  % : a % b
+• % : a % b
 
-  a : atan(a)
+• a : atan(a)
 
-  b : read_signed_byte(a)
+• b : read_signed_byte(a)
 
-  c : cos(a)
+• c : cos(a)
 
-  d : read_signed_dword(a)
+• d : read_signed_dword(a)
 
-  i : quotent(a / b)
+• i : quotent(a / b)
 
-  p :\pi
+• p :\pi
 
 
-  q : read_signed_qword(a)
+• q : read_signed_qword(a)
 
-  r : sqrt(a)
+• r : sqrt(a)
 
-  s : sin(a)
+• s : sin(a)
 
-  t : tan(a)
+• t : tan(a)
 
-  u : a; a
+• u : a; a
 
-  w : read_signed_word(a)
+• w : read_signed_word(a)
 
-  A : atan2(a, b)
+• A : atan2(a, b)
 
-  B : read_unsigned_byte(a)
+• B : read_unsigned_byte(a)
 
-  C<number>z : Push number <number> to stack.
+• C<number>z : Push number <number> to stack.
 
-  D : read_unsigned_dword(a)
+• D : read_unsigned_dword(a)
 
-  C0x<number>z : Push number <number> (hexadecimal) to stack.
+• C0x<number>z : Push number <number> (hexadecimal) to stack.
 
-  H<digit> : Set hexadecimal mode with specified number of digits 
+• H<digit> : Set hexadecimal mode with specified number of digits 
   (use A-G for 10-16 digits).
 
-  Q : read_unsigned_qword(a)
+• Q : read_unsigned_qword(a)
 
-  R<digit> : round a to <digit> digits.
+• R<digit> : round a to <digit> digits.
 
-  W : read_unsigned_word(a)
+• W : read_unsigned_word(a)
 
-  Example:
+9.1 Example:
 
 C0x007e0878zWC0x007e002czW-
 
-  Push value 0x7e0878 on top of stack (C0x007e0878z).
+1. Push value 0x7e0878 on top of stack (C0x007e0878z).
 
-  Pop the value on top of stack (0x7e0878), read word value at 
+2. Pop the value on top of stack (0x7e0878), read word value at 
   that address and push the result,call it x1 (W).
 
-  Push value 0x7e002c on top of stack (C0x007e002cz).
+3. Push value 0x7e002c on top of stack (C0x007e002cz).
 
-  Pop the value on top of stack (0x7e002c), read word value at 
+4. Pop the value on top of stack (0x7e002c), read word value at 
   that address and push the result,call it x2 (W).
 
-  Pop the two top numbers on stack, x1 and x2, substract x1 from 
+5. Pop the two top numbers on stack, x1 and x2, substract x1 from 
   x2 and push x2 - x1 (-).
 
-  Since the expression ends, the final memory watch result is the 
-  top one on stack, which is x2 - x1.
+6. Since the expression ends, the final memory watch result is 
+  the top one on stack, which is x2 - x1.
 
-  Modifier and key names:
+10 Modifier and key names:
 
-  wxWidgets platform
+10.1 wxWidgets platform
 
-  Modifier names:
+10.1.1 Modifier names:
 
 Following modifier names are known:
 
-  alt
+• alt
 
-  ctrl
+• ctrl
 
-  shift 
+• shift 
 
-  meta
+• meta
 
-  cmd (Mac OS X only)
+• cmd (Mac OS X only)
 
-  Key names:
+10.1.2 Key names:
 
 Following key names are known:
 
-  back, tab, return, escape, space, exclaim, quotedbl, hash, 
+• back, tab, return, escape, space, exclaim, quotedbl, hash, 
   dollar, percent, ampersand, quote, leftparen, rightparen, 
   asterisk, plus, comma, minus, period, slash, 0, 1, 2, 3, 4, 5, 
   6, 7, 8, 9, colon, semicolon, less, equals, greater, question, 
@@ -2042,23 +2218,23 @@ Following key names are known:
   special14, special15, special16, special17, special18, 
   special19, special20
 
-  Movie file format
+11 Movie file format
 
 Movie file is .zip archive in itself, normal ZIP archive tools 
 work on it (note: If you recompress it, do not use compression 
 methods other than store and deflate and especially do not use 
 encryption of any kind).
 
-  Detecting clean start/SRAM/Savestate
+11.1 Detecting clean start/SRAM/Savestate
 
-  If file has member “savestate” it is savestate, otherwise:
+• If file has member “savestate” it is savestate, otherwise:
 
-  If file has members with names starting “moviesram.” it is 
+• If file has members with names starting “moviesram.” it is 
   movie starting from SRAM, otherwise:
 
-  It is movie starting from clear state.
+• It is movie starting from clear state.
 
-  Member: gametype
+11.2 Member: gametype
 
 Type of game ROM and region (as one line). Valid values are:
 
@@ -2096,353 +2272,354 @@ Frame rates are:
 +---------+-----------------+
 
 
-  Member: port1
+11.3 Member: port1
 
 Contains type of port #1 (as one line). Valid values are 'none', 
 'gamepad', 'multitap' and 'mouse'. If not present, defaults to 
 'gamepad'.
 
-  Member: port2
+11.4 Member: port2
 
 Contains type of port #2 (as one line). Valid values are 'none', 
 'gamepad', 'multitap', 'mouse', 'superscope', 'justifier' and 
 'justifiers'. If not present, defaults to 'none'.
 
-  Member: gamename
+11.5 Member: gamename
 
 Contains name of the game (as one line).
 
-  Member: authors
+11.6 Member: authors
 
 Contains authors, one per line. Part before '|' is the full name, 
 part after is the nickname.
 
-  Member: systemid
+11.7 Member: systemid
 
 Always “lsnes-rr1” (one line). Used to reject other saves.
 
-  Member: controlsversion
+11.8 Member: controlsversion
 
 Always “0” (one line). Used to identify what controls are there.
 
-  Member: “coreversion”
+11.9 Member: “coreversion”
 
 Contains bsnes core version number (as one line).
 
-  Member: projectid
+11.10 Member: projectid
 
 Contains project ID (as one line). Used to identify if two movies 
 are part of the same project.
 
-  Member: {rom,slota,slotb}{,xml}.sha256
+11.11 Member: {rom,slota,slotb}{,xml}.sha256
 
 Contains SHA-256 of said ROM or ROM mapping file (as one line). 
 Absent if corresponding file is absent.
 
-  Member: moviesram.<name>
+11.12 Member: moviesram.<name>
 
 Raw binary startup SRAM of kind <name>. Only present in 
 savestates and movies starting from SRAM.
 
-  Member: saveframe
+11.13 Member: saveframe
 
 Contains frame number (as one line) of frame movie was saved on. 
 Only present in savestates.
 
-  Member: lagcounter
+11.14 Member: lagcounter
 
 Current value of lag counter (as one line). Only present in 
 savestates.
 
-  Member: pollcounters
+11.15 Member: pollcounters
 
 Contains poll counters (currently 100 of them), one per line. 
 Each line is raw poll count if DRDY is set for it. Otherwise it 
 is negative poll count minus one. Only present in savestates.
 
-  Member: hostmemory
+11.16 Member: hostmemory
 
 Raw binary dump of host memory. Only present in savestates.
 
-  Member: savestate
+11.17 Member: savestate
 
 The raw binary savestate itself. Savestate detection uses this 
 file, only present in savestates.
 
-  Member: screenshot
+11.18 Member: screenshot
 
 Screenshot of current frame. Only present in savestates. First 2 
 bytes are big-endian width of image, rest are 24-bit RGB image 
 data. Height of image is inferred from the width and size of 
 data.
 
-  Member: sram.<name>
+11.19 Member: sram.<name>
 
 Raw binary SRAM of kind <name> at time of savestate. Only present 
 in savestates.
 
-  Member: input
+11.20 Member: input
 
 The actual input track, one line per subframe (blank lines are 
 skipped).
 
-  If the first byte of each line is '.', ' ', <tab> or '|', then 
+• If the first byte of each line is '.', ' ', <tab> or '|', then 
   the line is part of same frame as previous, otherwise it starts 
   a new frame.
 
-  First subframe must start a new frame.
+• First subframe must start a new frame.
 
 Length of movie in frames is number of lines in input file that 
 start a new frame.
 
-  Member: subtitles
+11.21 Member: subtitles
 
 Subtitle track. Optional.
 
-  Each line is in form <firstframe> <numframes> <text>.
+• Each line is in form <firstframe> <numframes> <text>.
 
-  Linefeed is encoded as \n, backslash is encoded as \\.
+• Linefeed is encoded as \n, backslash is encoded as \\.
 
-  Member: rerecords
+11.22 Member: rerecords
 
 Contains textual base-10 rerecord count (as one line; emulator 
 just writes this, it doesn't read it) + 1.
 
-  Member: rrdata
+11.23 Member: rrdata
 
 This member stores set of load IDs. There is one load ID per 
 rerecord (plus one corresponding to start of project).
 
-  This member constists of concatenation of records
+• This member constists of concatenation of records
 
-  Each record is 2-36 bytes long and can represent 1-16,843,009 
+• Each record is 2-36 bytes long and can represent 1-16,843,009 
   consequtive IDs.
 
-  IDs are interpretted as 256-bit big-endian integers with 
+• IDs are interpretted as 256-bit big-endian integers with 
   warparound.
 
-  Initial predicted ID is all zeroes.
+• Initial predicted ID is all zeroes.
 
 Format of each record is:
 
-  1 byte: Opcode byte. Bits 0-4 are prefix length (prefixlen), 
+• 1 byte: Opcode byte. Bits 0-4 are prefix length (prefixlen), 
   bits 5-6 are count length (countlen). Bit 7 is unused.
 
-  32-prefixlen bytes of ID.
+• 32-prefixlen bytes of ID.
 
-  countlen bytes of big-endian count (count).
+• countlen bytes of big-endian count (count).
 
 Records are processed as follows:
 
-  To form the first ID encoded by record, take the first 
+• To form the first ID encoded by record, take the first 
   prefixlen bytes predicted ID and append the read ID value to 
   it. The result is the first ID encoded.
 
-  If countlen is 0, record encodes 1 ID.
+• If countlen is 0, record encodes 1 ID.
 
-  If countlen is 1, record encodes 2+count IDs.
+• If countlen is 1, record encodes 2+count IDs.
 
-  If countlen is 2, record encodes 258+count IDs.
+• If countlen is 2, record encodes 258+count IDs.
 
-  If countlen is 3, record encodes 65794+count IDs.
+• If countlen is 3, record encodes 65794+count IDs.
 
-  The new predicted ID is the next ID after last one encoded by 
+• The new predicted ID is the next ID after last one encoded by 
   the record.
 
 The number of rerecords + 1 is equal to the sum of number of IDs 
 encoded by all records.
 
-  Member: starttime.second
+11.24 Member: starttime.second
 
 Movie starting time, second part. Epoch is Unix epoch. Default is 
 1,000,000,000.
 
-  Member: starttime.subsecond
+11.25 Member: starttime.subsecond
 
 Movie starting time, subsecond part. Unit is CPU clocks. Default 
 is 0.
 
-  Member: savetime.second
+11.26 Member: savetime.second
 
 Movie saving time, second part. Default is starttime.second. Only 
 present in savestates.
 
-  Member: savetime.subsecond
+11.27 Member: savetime.subsecond
 
 Movie saving time, subsecond part. Default is 
 starttime.subsecond. Only present in savestates.
 
-  lsvs file format (commentary tracks)
+12 lsvs file format (commentary tracks)
 
-  Clusters
+12.1 Clusters
 
-  Each cluster is 8kB (8192 bytes) in size.
+• Each cluster is 8kB (8192 bytes) in size.
 
-  Cluster n starts at offset 8192*n in file.
+• Cluster n starts at offset 8192*n in file.
 
-  The following clusters are system special:
+• The following clusters are system special:
 
-  Cluster 0 and all clusters with number multiple of 2048 
+  – Cluster 0 and all clusters with number multiple of 2048 
     (cluster tables)
 
-  Cluster 1 (superblock)
+  – Cluster 1 (superblock)
 
-  Cluster tables
+12.2 Cluster tables
 
-  The cluster table describing cluster n is stored in cluster n & 
+• The cluster table describing cluster n is stored in cluster n & 
   ~0x7FF (zero last 11 bits of n).
 
-  This cluster table consists of 2048 4-byte big-endian integers.
+• This cluster table consists of 2048 4-byte big-endian integers.
 
-  Each entry describes a cluster in 16MB supercluster, in order.
+• Each entry describes a cluster in 16MB supercluster, in order.
 
-  The valid values for entries are:
+• The valid values for entries are:
 
-  0x00000000: Free cluster
+  – 0x00000000: Free cluster
 
-  0x00000001: Last cluster in chain.
+  – 0x00000001: Last cluster in chain.
 
-  0xFFFFFFFF: System cluster (cluster tables and superblock)
+  – 0xFFFFFFFF: System cluster (cluster tables and superblock)
 
-  (anything else): Number of next cluster in chain. Must not be 
+  – (anything else): Number of next cluster in chain. Must not be 
     multiple of 2048.
 
-  Due to limitations of the format, there can be at most 2097052 
+• Due to limitations of the format, there can be at most 2097052 
   superclusters, giving maximum file size of 16TB.
 
-  Stream table
+12.3 Stream table
 
-  The stream table chain always starts in cluster 2.
+• The stream table chain always starts in cluster 2.
 
-  Otherwise, it follows normal chaining.
+• Otherwise, it follows normal chaining.
 
-  The stream table consists of 16-byte entries:
+• The stream table consists of 16-byte entries:
 
-  The first 8 bytes of entry give big-endian beginning position 
+  – The first 8 bytes of entry give big-endian beginning position 
     of stream in units of 1/48000 s.
 
-  The next 4 bytes of entry give big-endian beginning cluster for 
-    control data. 0 here marks the entry as not present.
+  – The next 4 bytes of entry give big-endian beginning cluster 
+    for control data. 0 here marks the entry as not present.
 
-  The last 4 bytes of entry give big-endian beginning cluster for 
-    codec data.
+  – The last 4 bytes of entry give big-endian beginning cluster 
+    for codec data.
 
-  Stream table clusters are normal clusters, following normal 
+• Stream table clusters are normal clusters, following normal 
   chaining.
 
-  The stream begnning position is not guarenteed unique. There 
+• The stream begnning position is not guarenteed unique. There 
   can be multiple streams with the same starting position in the 
   file.
 
-  Stream control data
+12.4 Stream control data
 
-  The stream control data consists of entries 4 bytes each:
+• The stream control data consists of entries 4 bytes each:
 
-  The first 2 bytes of entry gives big-endian length of packet
+  – The first 2 bytes of entry gives big-endian length of packet
 
-  The next byte of entry gives audio length of packet in units of 
-    1/400 s.
+  – The next byte of entry gives audio length of packet in units 
+    of 1/400 s.
 
-  The last byte is control byte.
+  – The last byte is control byte.
 
-    0 means this entry is not present and the control data ends.
+    ∗ 0 means this entry is not present and the control data 
+      ends.
 
-    1 is valid control entry.
+    ∗ 1 is valid control entry.
 
-  The stream control data can also end by running into end of the 
+• The stream control data can also end by running into end of the 
   readable chain.
 
-  This happens if there happens to be exact multiple of 2048 
+  – This happens if there happens to be exact multiple of 2048 
     packets in stream and number of packets is nonzero.
 
-  These clusters follow normal chaining.
+• These clusters follow normal chaining.
 
-  Stream codec data
+12.5 Stream codec data
 
-  Stream codec data consists of raw Opus data packets packed back 
+• Stream codec data consists of raw Opus data packets packed back 
   to back with nothing in between.
 
-  Warning: Due to internal limitations, this data must reside in 
+• Warning: Due to internal limitations, this data must reside in 
   the first 65536 superclusters (that is, the first 1TB of the 
   file).
 
-  Superblock
+12.6 Superblock
 
-  The superblock is stored in cluster 1. 
+• The superblock is stored in cluster 1. 
 
-  The first 11 bytes are “sefs-magic”<NUL>.
+• The first 11 bytes are “sefs-magic”<NUL>.
 
-  The rest are unused.
+• The rest are unused.
 
-  This cluster 1 is marked as system special.
+• This cluster 1 is marked as system special.
 
-  Known ROM extensions
+13 Known ROM extensions
 
-  SNES cartridge ROMs: sfc, smc, swc, fig, ufo, sf2, gd3, gd7, 
+• SNES cartridge ROMs: sfc, smc, swc, fig, ufo, sf2, gd3, gd7, 
   dx2, mgd, mgh.
 
-  DMG cartridge ROMs: dmg, gb.
+• DMG cartridge ROMs: dmg, gb.
 
-  GBC cartridge ROMs: cgb, gbc.
+• GBC cartridge ROMs: cgb, gbc.
 
-  Gamepack files
+14 Gamepack files
 
-  The first line must be: “[GAMEPACK FILE]”.
+• The first line must be: “[GAMEPACK FILE]”.
 
-  There is one needed line: “type <systype>”. This sets system 
+• There is one needed line: “type <systype>”. This sets system 
   type to <systype>. The following system types are valid:
 
-  snes (SNES)
+  – snes (SNES)
 
-  bsx (BS-X non-slotted)
+  – bsx (BS-X non-slotted)
 
-  bsxslotted (BS-X slotted)
+  – bsxslotted (BS-X slotted)
 
-  sufamiturbo (Sufami Turbo)
+  – sufamiturbo (Sufami Turbo)
 
-  sgb (Super Game Boy)
+  – sgb (Super Game Boy)
 
-  dmg (Game Boy)
+  – dmg (Game Boy)
 
-  gbc (Game Boy Color)
+  – gbc (Game Boy Color)
 
-  gbc_gba (Game Boy Color with GBA initial register values)
+  – gbc_gba (Game Boy Color with GBA initial register values)
 
-  Optionally a region can be specified: “region <region>”. The 
+• Optionally a region can be specified: “region <region>”. The 
   following values are valid:
 
-  autodetect (Autodetect region: snes and sgb only)
+  – autodetect (Autodetect region: snes and sgb only)
 
-  ntsc (NTSC: snes, bsx, bsxslotted, sufamiturbo, sgb)
+  – ntsc (NTSC: snes, bsx, bsxslotted, sufamiturbo, sgb)
 
-  pal (PAL: snes, sgb)
+  – pal (PAL: snes, sgb)
 
-  world (World: dmg, gbc, gbc_gba)
+  – world (World: dmg, gbc, gbc_gba)
 
-  ROM images are loaded as: “rom <type> <file>”. The following 
+• ROM images are loaded as: “rom <type> <file>”. The following 
   types are valid:
 
-  rom (Cartridge ROM in snes, dmg, gbc, gbc_gba. BIOS in bsx, 
+  – rom (Cartridge ROM in snes, dmg, gbc, gbc_gba. BIOS in bsx, 
     bsxslotted, sufamiturbo)
 
-  bsx (Cartridge ROM in bsx, bsxslotted)
+  – bsx (Cartridge ROM in bsx, bsxslotted)
 
-  slot-a (Cartridge ROM in sufamiturbo)
+  – slot-a (Cartridge ROM in sufamiturbo)
 
-  slot-b (Cartridge ROM in sufamiturbo)
+  – slot-b (Cartridge ROM in sufamiturbo)
 
-  ROM markup can be loaded as: “xml <type> <file>”. The types 
+• ROM markup can be loaded as: “xml <type> <file>”. The types 
   valid are the same as for ROMs.
 
-  Patches can be loaded as “patch[<offset>] <type> <file>”. The 
+• Patches can be loaded as “patch[<offset>] <type> <file>”. The 
   types are the same as for ROMs.
 
-  Offset is given in form [+-]<number>. Usually offset is either 
-    +0 or -512.
+  – Offset is given in form [+-]<number>. Usually offset is 
+    either +0 or -512.
 
-  Default offset is +0.
+  – Default offset is +0.
 
-  Example:
+14.1 Example:
 
 [GAMEPACK FILE]
 
@@ -2452,7 +2629,7 @@ rom rom speedygonzales.sfc
 
 patch-512 rom sonicthehedgehog.ips
 
-  Example 2:
+14.2 Example 2:
 
 [GAMEPACK FILE]
 
@@ -2462,34 +2639,34 @@ rom rom supergameboy.sfc
 
 rom dmg megamanV.dmg
 
-  Quick'n'dirty encode guide
+15 Quick'n'dirty encode guide
 
-  Start the emulator and load the ROM and movie file.
+1. Start the emulator and load the ROM and movie file.
 
-  Set large AVI option 'set-setting avi-large on'
+2. Set large AVI option 'set-setting avi-large on'
 
-  Enable dumping 'dump-avi tmpdump' 
+3. Enable dumping 'dump-avi tmpdump' 
 
-  Unpause and let it run until you want to end dumping.
+4. Unpause and let it run until you want to end dumping.
 
-  Close the emulator (closing the window is the easiest way). Or 
+5. Close the emulator (closing the window is the easiest way). Or 
   use 'end-avi'.
 
-  For each tmpdump*.avi file created, on command prompt, do 'x264 
-  --crf 10 -o tmpdump_<numbers>.mkv tmpdump_<numbers>.avi'.
+6. For each tmpdump*.avi file created, on command prompt, do 
+  'x264 --crf 10 -o tmpdump_<numbers>.mkv tmpdump_<numbers>.avi'.
 
-  Do 'sox tmpdump.sox tmpdump.ogg rate -v 32000'
+7. Do 'sox tmpdump.sox tmpdump.ogg rate -v 32000'
 
-  Do 'mkvmerge -o tmpdump_video.mkv tmpdump_0000000.mkv + 
+8. Do 'mkvmerge -o tmpdump_video.mkv tmpdump_0000000.mkv + 
   tmpdump_0000001.mkv + tmpdump_0000002.mkv' (list every 
   tmpdump_<numbers>.mkv, with + in between).
 
-  Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'. Now 
+9. Do 'mkvmerge -o final.mkv tmpdump_video.mkv tmpdump.ogg'. Now 
   final.mkv contains quick'n'dirty encode.
 
-  Axis configurations for some gamepad types:
+16 Axis configurations for some gamepad types:
 
-  XBox360 controller:
+16.1 XBox360 controller:
 
 Axes 2 and 5 (joystick<n>axis2 and joystick<n>axis5) should be 
 set to pressure-+.
@@ -2498,9 +2675,9 @@ set-axis joystick0axis2 pressure-+
 
 set-axis joystick0axis5 pressure-+
 
-  This is needed for SDL only. EVDEV sets those types correctly.
+• This is needed for SDL only. EVDEV sets those types correctly.
 
-  PS3 “sixaxis” controller:
+16.2 PS3 “sixaxis” controller:
 
 Axes 8-19 should be disabled.
 
@@ -2528,1166 +2705,1166 @@ set-axis joystick0axis18 disabled
 
 set-axis joystick0axis19 disabled
 
-  Errata:
+17 Errata:
 
-  Problems from BSNES core:
+17.1 Problems from BSNES core:
 
-  The whole pending save stuff.
+• The whole pending save stuff.
 
-  Lack of layer hiding.
+• Lack of layer hiding.
 
-  It is slow (especially accuracy).
+• It is slow (especially accuracy).
 
-  Firmwares can't be loaded from ZIP archives.
+• Firmwares can't be loaded from ZIP archives.
 
-  Other problems:
+17.2 Other problems:
 
-  Modifiers don't work with pseudo-keys (SDL, EVDEV).
+• Modifiers don't work with pseudo-keys (SDL, EVDEV).
 
-  Audio for last dumped frame is not itself dumped.
+• Audio for last dumped frame is not itself dumped.
 
-  Audio in UI is pretty bad in quality if game doesn't run at 
+• Audio in UI is pretty bad in quality if game doesn't run at 
   full speed.
 
-  No menus, command based interface (SDL).
+• No menus, command based interface (SDL).
 
-  Long commands don't scroll.
+• Long commands don't scroll.
 
-  Changelog:
+18 Changelog:
 
-  rr0-beta1
+18.1 rr0-beta1
 
-  Fix -Wall warnings
+• Fix -Wall warnings
 
-  Fix dumper video corruption with levels 10-18.
+• Fix dumper video corruption with levels 10-18.
 
-  rr0-beta2
+18.2 rr0-beta2
 
-  Autofire
+• Autofire
 
-  Lots of code cleanups
+• Lots of code cleanups
 
-  Lua interface to settings
+• Lua interface to settings
 
-  Allow specifying AVI borders without Lua
+• Allow specifying AVI borders without Lua
 
-  Fix scaling if vscale > 1 and originx > 0 (left border exists)
+• Fix scaling if vscale > 1 and originx > 0 (left border exists)
 
-  on_snoop lua callback
+• on_snoop lua callback
 
-  Faster movie loading and saving.
+• Faster movie loading and saving.
 
-  rr0-beta3
+18.3 rr0-beta3
 
-  Joystick support
+• Joystick support
 
-  rr0-beta4
+18.4 rr0-beta4
 
-  Fix multi-buttons
+• Fix multi-buttons
 
-  Save jukebox functionality.
+• Save jukebox functionality.
 
-  rr0-beta5
+18.5 rr0-beta5
 
-  Try to fix some nasty failing movie load edge cases
+• Try to fix some nasty failing movie load edge cases
 
-  Allow specifying scripts to run on command line.
+• Allow specifying scripts to run on command line.
 
-  rr0-beta6
+18.6 rr0-beta6
 
-  Major source code reorganization.
+• Major source code reorganization.
 
-  Backup savestates before overwriting.
+• Backup savestates before overwriting.
 
-  Don't crash if loading initial state fails.
+• Don't crash if loading initial state fails.
 
-  rr0-beta7
+18.7 rr0-beta7
 
-  Fix firmware lookup
+• Fix firmware lookup
 
-  Fix author name parsing
+• Fix author name parsing
 
-  Fix rerecord counting
+• Fix rerecord counting
 
-  (SDL) Print messages to console if SDL is uninitialized
+• (SDL) Print messages to console if SDL is uninitialized
 
-  Add movieinfo program
+• Add movieinfo program
 
-  Fix loading movies starting from SRAM.
+• Fix loading movies starting from SRAM.
 
-  rr0-beta8
+18.8 rr0-beta8
 
-  Add support for unattended dumping
+• Add support for unattended dumping
 
-  Fix compiling for Win32
+• Fix compiling for Win32
 
-  Don't lock up if sound can't be initialized
+• Don't lock up if sound can't be initialized
 
-  Strip trailing CR from commands
+• Strip trailing CR from commands
 
-  Don't try to do dubious things in global ctors (fix crash on 
+• Don't try to do dubious things in global ctors (fix crash on 
   startup)
 
-  rr0-beta9
+18.9 rr0-beta9
 
-  Small documentation tweaking
+• Small documentation tweaking
 
-  Fix make clean
+• Fix make clean
 
-  Fix major bug in modifier matching
+• Fix major bug in modifier matching
 
-  rr0-beta10
+18.10 rr0-beta10
 
-  Lots of documentation fixes
+• Lots of documentation fixes
 
-  Use dedicated callbacks for event backcomm., not commands.
+• Use dedicated callbacks for event backcomm., not commands.
 
-  Ensure that the watchdog is not hit when executing delayed 
+• Ensure that the watchdog is not hit when executing delayed 
   reset.
 
-  Remove errant tab from joystick message.
+• Remove errant tab from joystick message.
 
-  rr0-beta11
+18.11 rr0-beta11
 
-  Make autofire operate in absolute time, not linear time
+• Make autofire operate in absolute time, not linear time
 
-  Reinitialize controls when resuming from loadstate
+• Reinitialize controls when resuming from loadstate
 
-  Some more code cleanups
+• Some more code cleanups
 
-  If Lua allocator fails, call OOM_panic()
+• If Lua allocator fails, call OOM_panic()
 
-  Byte/word/dword/qword sized host memory write/read functions.
+• Byte/word/dword/qword sized host memory write/read functions.
 
-  Dump at correct framerate if dumping interlaced NTSC 
+• Dump at correct framerate if dumping interlaced NTSC 
   (height=448).
 
-  rr0-beta12
+18.12 rr0-beta12
 
-  Actually include the complete source code
+• Actually include the complete source code
 
-  Keep track of RTC
+• Keep track of RTC
 
-  rr0-beta13
+18.13 rr0-beta13
 
-  Document {save,start}time.{,sub}second.
+• Document {save,start}time.{,sub}second.
 
-  Intercept time() from bsnes core.
+• Intercept time() from bsnes core.
 
-  rr0-beta14
+18.14 rr0-beta14
 
-  Allow disabling time() interception (allow build on Mac OS X)
+• Allow disabling time() interception (allow build on Mac OS X)
 
-  Use SDLMain on Mac OS X (make SDL not crash)
+• Use SDLMain on Mac OS X (make SDL not crash)
 
-  Disable delayed resets (just plain too buggy for now).
+• Disable delayed resets (just plain too buggy for now).
 
-  Code cleanups
+• Code cleanups
 
-  Use 16-bit for graphics/video instead of 32-bit.
+• Use 16-bit for graphics/video instead of 32-bit.
 
-  gui.rectangle/gui.pixel
+• gui.rectangle/gui.pixel
 
-  gui.crosshair
+• gui.crosshair
 
-  New CSCD writer implementation.
+• New CSCD writer implementation.
 
-  rr0-beta15
+18.15 rr0-beta15
 
-  Fix interaction of * and +.
+• Fix interaction of * and +.
 
-  Manual improvements
+• Manual improvements
 
-  Use gettimeofday()/usleep(), these seem portable enough.
+• Use gettimeofday()/usleep(), these seem portable enough.
 
-  Move joystick axis manipulation to keymapper code.
+• Move joystick axis manipulation to keymapper code.
 
-  Changes to how read-only works.
+• Changes to how read-only works.
 
-  Refactor controller input code.
+• Refactor controller input code.
 
-  rr0-beta16
+18.16 rr0-beta16
 
-  Fix mouseclick scale compensation.
+• Fix mouseclick scale compensation.
 
-  Draw area boundaries correctly in SDL code.
+• Draw area boundaries correctly in SDL code.
 
-  gui.screenshot.
+• gui.screenshot.
 
-  Fix CSCD output (buffer overrun and race condition).
+• Fix CSCD output (buffer overrun and race condition).
 
-  rr0-beta17
+18.17 rr0-beta17
 
-  JMD dumping support.
+• JMD dumping support.
 
-  Allow unattended dumping to JMD.
+• Allow unattended dumping to JMD.
 
-  Move to BSNES v083.
+• Move to BSNES v083.
 
-  Switch back to 32-bit colors.
+• Switch back to 32-bit colors.
 
-  Add Lua function gui.color.
+• Add Lua function gui.color.
 
-  Use some new C++11 features in GCC 4.6.
+• Use some new C++11 features in GCC 4.6.
 
-  Be prepared for core frequency changes.
+• Be prepared for core frequency changes.
 
-  Pass colors in one chunk from Lua.
+• Pass colors in one chunk from Lua.
 
-  rr0-beta18
+18.18 rr0-beta18
 
-  New lua functions gui.line(), gui.status() and gui.circle(), 
+• New lua functions gui.line(), gui.status() and gui.circle(), 
   memory.vma_count(), memory.read_vma() and memory.find_vma().
 
-  Numerious documentation fixups
+• Numerious documentation fixups
 
-  RTC time format changed
+• RTC time format changed
 
-  Reformat flags display
+• Reformat flags display
 
-  Allow lua package name to be overridden
+• Allow lua package name to be overridden
 
-  SDUMP (high-quality dumping).
+• SDUMP (high-quality dumping).
 
-  Split platform support to plugins.
+• Split platform support to plugins.
 
-  Make all sound plugins support basic sound commands
+• Make all sound plugins support basic sound commands
 
-  Support portaudio for sound.
+• Support portaudio for sound.
 
-  Allow disable Lua/SDL searching.
+• Allow disable Lua/SDL searching.
 
-  Upconvert colors when copying lcscreen to screen.
+• Upconvert colors when copying lcscreen to screen.
 
-  Reorganize source tree.
+• Reorganize source tree.
 
-  Evdev joystick support.
+• Evdev joystick support.
 
-  Refactor more code into generic window code.
+• Refactor more code into generic window code.
 
-  rr0-beta19
+18.19 rr0-beta19
 
-  Refactor message handling.
+• Refactor message handling.
 
-  Rework makefile
+• Rework makefile
 
-  Documentation fixes
+• Documentation fixes
 
-  Finish pending saves before load/quit.
+• Finish pending saves before load/quit.
 
-  Wxwidgets graphics plugin.
+• Wxwidgets graphics plugin.
 
-  rr0-beta20
+18.20 rr0-beta20
 
-  Get rid of win32-crap.[ch]pp.
+• Get rid of win32-crap.[ch]pp.
 
-  Move files around a lot.
+• Move files around a lot.
 
-  Get rid of need for host C++ compiler.
+• Get rid of need for host C++ compiler.
 
-  Bsnes v084 core.
+• Bsnes v084 core.
 
-  Refactor inter-component communication.
+• Refactor inter-component communication.
 
-  Fix zero luma.
+• Fix zero luma.
 
-  Fix crash on multiline aliases.
+• Fix crash on multiline aliases.
 
-  Load/Save settings in wxwidgets gui.
+• Load/Save settings in wxwidgets gui.
 
-  rr0-beta21
+18.21 rr0-beta21
 
-  Patch problems in bsnes core
+• Patch problems in bsnes core
 
-  SNES is little-endian, not big-endian!
+• SNES is little-endian, not big-endian!
 
-  Fix memory corruption in lcscreen::load()
+• Fix memory corruption in lcscreen::load()
 
-  rr0-beta22
+18.22 rr0-beta22
 
-  Fix interpretting repeat counts in rrdata loading.
+• Fix interpretting repeat counts in rrdata loading.
 
-  New lua callback: on_frame()
+• New lua callback: on_frame()
 
-  Remove calls to runtosave() that aren't supposed to be there
+• Remove calls to runtosave() that aren't supposed to be there
 
-  Lua function: movie.read_rtc()
+• Lua function: movie.read_rtc()
 
-  Ignore src/fonts/font.cpp
+• Ignore src/fonts/font.cpp
 
-  Fix more bsnes core problems
+• Fix more bsnes core problems
 
-  Control bsnes random seeding
+• Control bsnes random seeding
 
-  Pause-on-end
+• Pause-on-end
 
-  Some bsnes core debugging features (state dump and state hash)
+• Some bsnes core debugging features (state dump and state hash)
 
-  Fix titlebar version number (no, the last version wasn't 
+• Fix titlebar version number (no, the last version wasn't 
   'lsnes-0-beta21', it was 'lsnes rr0-beta21').
 
-  rr0-beta23
+18.23 rr0-beta23
 
-  Fix memory corruption due to macro/field mixup
+• Fix memory corruption due to macro/field mixup
 
-  search-memory update
+• search-memory update
 
-  Allow direct-mapped framebuffer
+• Allow direct-mapped framebuffer
 
-  SDL: Use SDL_ANYFORMAT if possible
+• SDL: Use SDL_ANYFORMAT if possible
 
-  SDMP2SOX: 2s delay modes.
+• SDMP2SOX: 2s delay modes.
 
-  Wxwidgets: Cleanups
+• Wxwidgets: Cleanups
 
-  Use sed -E, not sed -r. Fixes building on Mac OS X.
+• Use sed -E, not sed -r. Fixes building on Mac OS X.
 
-  Wxwidgets: Save jukebox on exit
+• Wxwidgets: Save jukebox on exit
 
-  Fix RTC if using load-movie on savestate.
+• Fix RTC if using load-movie on savestate.
 
-  Fix crash related to full console mode.
+• Fix crash related to full console mode.
 
-  rr0-beta24
+18.24 rr0-beta24
 
-  Wxwidgets: Allow bringing application to foreground on Mac OS 
+• Wxwidgets: Allow bringing application to foreground on Mac OS 
   X.
 
-  Wxwidgets: Allow compiling on Mac OS X.
+• Wxwidgets: Allow compiling on Mac OS X.
 
-  Use movie compare instead of movie hashing (faster save/load).
+• Use movie compare instead of movie hashing (faster save/load).
 
-  Lua: _SYSTEM table.
+• Lua: _SYSTEM table.
 
-  rr0-beta25
+18.25 rr0-beta25
 
-  sdmp2sox: Pad soundtrack if using -l or -L.
+• sdmp2sox: Pad soundtrack if using -l or -L.
 
-  sdmp2sox: Fix NTSC overscan.
+• sdmp2sox: Fix NTSC overscan.
 
-  sdmp2sox: Add AR correction mode.
+• sdmp2sox: Add AR correction mode.
 
-  call lua_close() when exiting.
+• call lua_close() when exiting.
 
-  Fix zip_writer bug causing warnings from info-zip and error 
+• Fix zip_writer bug causing warnings from info-zip and error 
   from advzip.
 
-  rr0-beta26
+18.26 rr0-beta26
 
-  Fix IPS patching code (use bsnes core IPS patcher).
+• Fix IPS patching code (use bsnes core IPS patcher).
 
-  Implement BPS patching (using bsnes core IPS patcher).
+• Implement BPS patching (using bsnes core IPS patcher).
 
-  Add feature to load headered ROMs.
+• Add feature to load headered ROMs.
 
-  rr0-beta27
+18.27 rr0-beta27
 
-  Show command names when showing keybindings
+• Show command names when showing keybindings
 
-  rr0
+18.28 rr0
 
-  Fix pause-on-end to be actually controllable
+• Fix pause-on-end to be actually controllable
 
-  SDL: Poll all events in queue, not just first one (fixes 
+• SDL: Poll all events in queue, not just first one (fixes 
   slowness in command typing)
 
-  Wxwidgets: Fix ROM loading.
+• Wxwidgets: Fix ROM loading.
 
-  rr1-beta0
+18.29 rr1-beta0
 
-  Lua: Add gui.textH, gui.textV, gui.textHV
+• Lua: Add gui.textH, gui.textV, gui.textHV
 
-  Fix text colors on SDL on Mac OS X
+• Fix text colors on SDL on Mac OS X
 
-  Mode 'F' for finished in readonly mode.
+• Mode 'F' for finished in readonly mode.
 
-  Fix some WS errors.
+• Fix some WS errors.
 
-  Reliably pause after skip poll
+• Reliably pause after skip poll
 
-  Split UI and core into their own threads
+• Split UI and core into their own threads
 
-  rr1-beta1
+18.30 rr1-beta1
 
-  Remove leftover dummy SRAM slot
+• Remove leftover dummy SRAM slot
 
-  Fix controller numbers.
+• Fix controller numbers.
 
-  rr1-beta2
+18.31 rr1-beta2
 
-  Fix lsnes-dumpavi after interface change.
+• Fix lsnes-dumpavi after interface change.
 
-  Also give BSNES patches for v085.
+• Also give BSNES patches for v085.
 
-  Pack movie data in memory.
+• Pack movie data in memory.
 
-  rr1-beta3
+18.32 rr1-beta3
 
-  Fix framecount/length given when loading movies.
+• Fix framecount/length given when loading movies.
 
-  Controller command memory leak fixes.
+• Controller command memory leak fixes.
 
-  Don't leak palette if freeing screen object.
+• Don't leak palette if freeing screen object.
 
-  rr1-beta4
+18.33 rr1-beta4
 
-  Detect revisions.
+• Detect revisions.
 
-  Wxwidgets: Allow controlling dumper from the menu.
+• Wxwidgets: Allow controlling dumper from the menu.
 
-  rr1-beta5
+18.34 rr1-beta5
 
-  Rewrite parts of manual
+• Rewrite parts of manual
 
-  Lua: Make it work with Lua 5.2.
+• Lua: Make it work with Lua 5.2.
 
-  rr1-beta6
+18.35 rr1-beta6
 
-  Win32: Fix compile errors.
+• Win32: Fix compile errors.
 
-  rr1-beta7
+18.36 rr1-beta7
 
-  Refactor controller input code.
+• Refactor controller input code.
 
-  Fix crash when using command line on SDL / Mac OS X.
+• Fix crash when using command line on SDL / Mac OS X.
 
-  rr1-beta8
+18.37 rr1-beta8
 
-  Delete core/coroutine (obsolete)
+• Delete core/coroutine (obsolete)
 
-  Lag input display by one frame.
+• Lag input display by one frame.
 
-  Rewind movie to beginning function.
+• Rewind movie to beginning function.
 
-  Fix wrong frame number reported to Lua when repainting after 
+• Fix wrong frame number reported to Lua when repainting after 
   loadstate
 
-  Support UI editing of jukebox
+• Support UI editing of jukebox
 
-  Wxwidgets: Save settings on exit.
+• Wxwidgets: Save settings on exit.
 
-  Support ${project} for filenames
+• Support ${project} for filenames
 
-  SDL: Fix command history
+• SDL: Fix command history
 
-  rr1-beta9
+18.38 rr1-beta9
 
-  Fix some order-of-global-ctor bugs.
+• Fix some order-of-global-ctor bugs.
 
-  rr1-beta10
+18.39 rr1-beta10
 
-  Fix crashes when quitting on Win32.
+• Fix crashes when quitting on Win32.
 
-  rr1-beta11
+18.40 rr1-beta11
 
-  EVDEV: Queue keypresses from joystick, don't send directly
+• EVDEV: Queue keypresses from joystick, don't send directly
 
-  Wxwidgets: Load-Preserve that actually works.
+• Wxwidgets: Load-Preserve that actually works.
 
-  rr1-beta12
+18.41 rr1-beta12
 
-  Wxwidgets: GUI for memory search.
+• Wxwidgets: GUI for memory search.
 
-  Warn about using synchronous queue in UI callback.
+• Warn about using synchronous queue in UI callback.
 
-  rr1-beta13
+18.42 rr1-beta13
 
-  Remember last saved file for each ROM
+• Remember last saved file for each ROM
 
-  Support MT dumping via boost.
+• Support MT dumping via boost.
 
-  Lua: input.raw
+• Lua: input.raw
 
-  Lua: input.keyhook
+• Lua: input.keyhook
 
-  Make mouse be ordinary input instead of special-casing
+• Make mouse be ordinary input instead of special-casing
 
-  SDL: Don't screw up commands with NUL codepoints.
+• SDL: Don't screw up commands with NUL codepoints.
 
-  rr1-beta14
+18.43 rr1-beta14
 
-  Merge status panel and main window
+• Merge status panel and main window
 
-  True movie slot support (the rest of it)
+• True movie slot support (the rest of it)
 
-  SDL: Fix compilation error
+• SDL: Fix compilation error
 
-  Elminate cross calls in dump menu code.
+• Elminate cross calls in dump menu code.
 
-  rr1-beta15
+18.44 rr1-beta15
 
-  Cancel pending saves command
+• Cancel pending saves command
 
-  Wxwidgets: Code refactoring
+• Wxwidgets: Code refactoring
 
-  Wxwidgets: Fix system -> reset
+• Wxwidgets: Fix system -> reset
 
-  Wxwidgets: Read watch expressions in the right thread
+• Wxwidgets: Read watch expressions in the right thread
 
-  rr1-beta16
+18.45 rr1-beta16
 
-  Wxwidgets: Don't prompt for member when running Lua script (Lua 
+• Wxwidgets: Don't prompt for member when running Lua script (Lua 
   doesn't support that).
 
-  Wxwidgets: 128 -> 1024 Autohold slots (in case more are 
+• Wxwidgets: 128 -> 1024 Autohold slots (in case more are 
   needed).
 
-  Don't append trailing '-' to prefix when saving movie.
+• Don't append trailing '-' to prefix when saving movie.
 
-  Fix ROM/savestate handling (don't let user mismatch ROM and 
+• Fix ROM/savestate handling (don't let user mismatch ROM and 
   savestates).
 
-  rr1
+18.46 rr1
 
-  Document memory watch syntax.
+• Document memory watch syntax.
 
-  rr1-delta1
+18.47 rr1-delta1
 
-  Fix unattended dumping (lsnes-dumpavi)
+• Fix unattended dumping (lsnes-dumpavi)
 
-  Support RAW dumping
+• Support RAW dumping
 
-  Use adv_dumper instead of the old interface in lsnes-dumpavi 
+• Use adv_dumper instead of the old interface in lsnes-dumpavi 
   (changes syntax)
 
-  Add option to control sample rate preturbation in AVI dumper
+• Add option to control sample rate preturbation in AVI dumper
 
-  rr1-delta2
+18.48 rr1-delta2
 
-  Wxwidgets: Fix dumper submodes
+• Wxwidgets: Fix dumper submodes
 
-  Set core controller types before loadstate
+• Set core controller types before loadstate
 
-  rr1-delta2epsilon1
+18.49 rr1-delta2epsilon1
 
-  Fix compiling with bsnes v086.
+• Fix compiling with bsnes v086.
 
-  rr1-delta3
+18.50 rr1-delta3
 
-  Don't prompt before quitting
+• Don't prompt before quitting
 
-  Start unpaused, preserve pause/unpause over load.
+• Start unpaused, preserve pause/unpause over load.
 
-  Try to autodetect if ROM is headered.
+• Try to autodetect if ROM is headered.
 
-  Wxwidgets: Only bring up ROM patching screen if specifically 
+• Wxwidgets: Only bring up ROM patching screen if specifically 
   requested.
 
-  Allow configuring some hotkeys.
+• Allow configuring some hotkeys.
 
-  rr1-delta4
+18.51 rr1-delta4
 
-  Lots of code cleanups
+• Lots of code cleanups
 
-  Fix JMD compression (JMD dumping was broken)
+• Fix JMD compression (JMD dumping was broken)
 
-  Don't crash if Lua C function throws an exception.
+• Don't crash if Lua C function throws an exception.
 
-  Support bitmap drawing in Lua.
+• Support bitmap drawing in Lua.
 
-  Fix bsnes v085/v086 patches.
+• Fix bsnes v085/v086 patches.
 
-  Improve stability on win32.
+• Improve stability on win32.
 
-  rr1-delta4epsilon1
+18.52 rr1-delta4epsilon1
 
-  Don't corrupt movie if movie length is integer multiple of 
+• Don't corrupt movie if movie length is integer multiple of 
   frames per page.
 
-  rr1-delta5
+18.53 rr1-delta5
 
-  New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
+• New Lua hooks: on_rewind, on_frame_emulated, on_idle, on_timer
 
-  New Lua functions: emulator_ready(), utime(), 
+• New Lua functions: emulator_ready(), utime(), 
   set_idle_timeout(), set_timer_timeout(), bit.extract(), 
   bit.value(), input.geta(), input.seta() and 
   input.controllertype()
 
-  Wxwidgets: Fix internal focus lost (hotkeys stop working)
+• Wxwidgets: Fix internal focus lost (hotkeys stop working)
 
-  Wxwidgets: Fix broken modifiers
+• Wxwidgets: Fix broken modifiers
 
-  on_paint has parameter now.
+• on_paint has parameter now.
 
-  Optional initital fill for bitmaps
+• Optional initital fill for bitmaps
 
-  Fix palette changing.
+• Fix palette changing.
 
-  Optimize rendering a bit.
+• Optimize rendering a bit.
 
-  Bsnes v087 support.
+• Bsnes v087 support.
 
-  rr1-delta5epsilon1
+18.54 rr1-delta5epsilon1
 
-  Movieinfo: Fix display of port #2 type.
+• Movieinfo: Fix display of port #2 type.
 
-  Call on_input() after loadstate.
+• Call on_input() after loadstate.
 
-  rr1-delta5epsilon2
+18.55 rr1-delta5epsilon2
 
-  Fix writing port2 data to movie.
+• Fix writing port2 data to movie.
 
-  Fix SRAM handling with Bsnes v087.
+• Fix SRAM handling with Bsnes v087.
 
-  rr1-delta6
+18.56 rr1-delta6
 
-  Library loading support
+• Library loading support
 
-  Built-in TSCC encoder
+• Built-in TSCC encoder
 
-  Hi-color (256T colors) dumping.
+• Hi-color (256T colors) dumping.
 
-  Dump over TCP/IP(v6)
+• Dump over TCP/IP(v6)
 
-  Hidable status panel
+• Hidable status panel
 
-  Turbo toggle/hold
+• Turbo toggle/hold
 
-  Adjustable sound volume
+• Adjustable sound volume
 
-  Screen scaling
+• Screen scaling
 
-  Allow DnD into filename boxes
+• Allow DnD into filename boxes
 
-  Configurable paths
+• Configurable paths
 
-  Portaudio: Fix speaker popping at start
+• Portaudio: Fix speaker popping at start
 
-  Lots of UI changes
+• Lots of UI changes
 
-  Speed adjustment menu
+• Speed adjustment menu
 
-  Win32 joystick support
+• Win32 joystick support
 
-  Lua: gui.rainbow and gui.box
+• Lua: gui.rainbow and gui.box
 
-  Split key lists into classes (the key list was large!)
+• Split key lists into classes (the key list was large!)
 
-  More save slots support
+• More save slots support
 
-  Wxwidgets (wxJoystick) joystick support
+• Wxwidgets (wxJoystick) joystick support
 
-  rr1-delta7
+18.57 rr1-delta7
 
-  Lots of internal joystick refactoring
+• Lots of internal joystick refactoring
 
-  Evdev: Add mapping for BTN_TOOL_QUINTTAP
+• Evdev: Add mapping for BTN_TOOL_QUINTTAP
 
-  Wxwidgets: Settings mode (open settings without ROM)
+• Wxwidgets: Settings mode (open settings without ROM)
 
-  Wxwidgets: Prompt key to use option
+• Wxwidgets: Prompt key to use option
 
-  Wxwidgets: Fix crash if key goes away underneath
+• Wxwidgets: Fix crash if key goes away underneath
 
-  Wxwidgets: Fix mouse position in presence of scaling
+• Wxwidgets: Fix mouse position in presence of scaling
 
-  AVI dumper: Mode 4 (high-quality resampling to common rate 
+• AVI dumper: Mode 4 (high-quality resampling to common rate 
   using SRC)
 
-  Wxwidgets: Redesign hotkeys dialog to avoid tree control (tree 
+• Wxwidgets: Redesign hotkeys dialog to avoid tree control (tree 
   control doesn't seem to work well on WinXP)
 
-  Start paused option.
+• Start paused option.
 
-  rr1-delta7epsilon1
+18.58 rr1-delta7epsilon1
 
-  AVI: ZMBV support
+• AVI: ZMBV support
 
-  lsnes-dumpavi: Start Lua before starting dumper
+• lsnes-dumpavi: Start Lua before starting dumper
 
-  AVI: Fix secondary audio in mode 4.
+• AVI: Fix secondary audio in mode 4.
 
-  rr1-delta7epsilon2
+18.59 rr1-delta7epsilon2
 
-  AVI: Refactor ZMBV a bit.
+• AVI: Refactor ZMBV a bit.
 
-  Fix error reading analog values from movie file
+• Fix error reading analog values from movie file
 
-  rr1-delta8
+18.60 rr1-delta8
 
-  Delayed reset support
+• Delayed reset support
 
-  Lua: memory.hash_region
+• Lua: memory.hash_region
 
-  rr1-delta8epsilon1
+18.61 rr1-delta8epsilon1
 
-  Rework the build system
+• Rework the build system
 
-  Typing input support
+• Typing input support
 
-  Fix building with bsnes v086 and v087.
+• Fix building with bsnes v086 and v087.
 
-  SDL: Save settings on exit
+• SDL: Save settings on exit
 
-  SDL: Command to enter command line mode with given command.
+• SDL: Command to enter command line mode with given command.
 
-  SDL: More advanced command editing.
+• SDL: More advanced command editing.
 
-  rr1-delta9
+18.62 rr1-delta9
 
-  wxMSW: Fix the “arrow keys and enter don't work” problem
+• wxMSW: Fix the “arrow keys and enter don't work” problem
 
-  MSU-1 support
+• MSU-1 support
 
-  Show mode changes due to rewinding.
+• Show mode changes due to rewinding.
 
-  Unsafe rewind support
+• Unsafe rewind support
 
-  Fix directory transversal.
+• Fix directory transversal.
 
-  rr1-delta10
+18.63 rr1-delta10
 
-  AVI: Sound mode 5 (48kHz high-quality)
+• AVI: Sound mode 5 (48kHz high-quality)
 
-  Lua: Reset Lua VM
+• Lua: Reset Lua VM
 
-  Map the SNES bus into address space
+• Map the SNES bus into address space
 
-  Fix loading memory watch files with CRLF line endings
+• Fix loading memory watch files with CRLF line endings
 
-  rr1-delta10epsilon1
+18.64 rr1-delta10epsilon1
 
-  Map bsnes internal state into memory space
+• Map bsnes internal state into memory space
 
-  Fix the “click on panel wedges the emulator” for real.
+• Fix the “click on panel wedges the emulator” for real.
 
-  DnD movies/saves on the main window.
+• DnD movies/saves on the main window.
 
-  rr1-delta11
+18.65 rr1-delta11
 
-  Split core bindings into own module.
+• Split core bindings into own module.
 
-  Remember invalid settings
+• Remember invalid settings
 
-  Support for modified Gambatte core for GB/GBC emulation.
+• Support for modified Gambatte core for GB/GBC emulation.
 
-  Reload/swap ROM function
+• Reload/swap ROM function
 
-  rr1-delta11epsilon1
+18.66 rr1-delta11epsilon1
 
-  Fix step poll function
+• Fix step poll function
 
-  rr1-delta12
+18.67 rr1-delta12
 
-  Non-insane savestate anchoring
+• Non-insane savestate anchoring
 
-  rr1-delta13
+18.68 rr1-delta13
 
-  More Memory search methods
+• More Memory search methods
 
-  Preserve movie if loading in RO mode.
+• Preserve movie if loading in RO mode.
 
-  Fix a obscure case in timeline check
+• Fix a obscure case in timeline check
 
-  Revamp the entiere ROM loading code
+• Revamp the entiere ROM loading code
 
-  Support DnD on ROMs
+• Support DnD on ROMs
 
-  Revamp menu layout
+• Revamp menu layout
 
-  Standalone hotkey config dialog
+• Standalone hotkey config dialog
 
-  Show bindings in more user-friendly format
+• Show bindings in more user-friendly format
 
-  rr1-delta13epsilon1
+18.69 rr1-delta13epsilon1
 
-  Pipedec support
+• Pipedec support
 
-  Fix uninitialized variables in bsnes v085
+• Fix uninitialized variables in bsnes v085
 
-  rr1-delta14
+18.70 rr1-delta14
 
-  Merge gambatte core into mainline (from its own branch)
+• Merge gambatte core into mainline (from its own branch)
 
-  Wxwidgets: Show expected dump file formats
+• Wxwidgets: Show expected dump file formats
 
-  Memory watch: Data typing
+• Memory watch: Data typing
 
-  lsnes internal MMIO area.
+• lsnes internal MMIO area.
 
-  Wxwidgets: New memory watch editor
+• Wxwidgets: New memory watch editor
 
-  Hexadecimal memory watches
+• Hexadecimal memory watches
 
-  Wxwidgets: Monospaced panel
+• Wxwidgets: Monospaced panel
 
-  Wxwidgets: Split memory watches in panel
+• Wxwidgets: Split memory watches in panel
 
-  Wxwidgets: Disable VMAs in memory search
+• Wxwidgets: Disable VMAs in memory search
 
-  lsnes-dumpavi: Fix speed bug
+• lsnes-dumpavi: Fix speed bug
 
-  Movie subtitle support
+• Movie subtitle support
 
-  Fix rerecord count reporting
+• Fix rerecord count reporting
 
-  Don't trash movie when loading in readonly mode.
+• Don't trash movie when loading in readonly mode.
 
-  rr1-delta14epsilon1
+18.71 rr1-delta14epsilon1
 
-  Wxwidgets: Fix crashes on closing settings dialogs on Mac OS X.
+• Wxwidgets: Fix crashes on closing settings dialogs on Mac OS X.
 
-  Fix build on Mac OS X.
+• Fix build on Mac OS X.
 
-  Lua: loopwrapper
+• Lua: loopwrapper
 
-  Wxwidgets: Hidable messages window
+• Wxwidgets: Hidable messages window
 
-  Lua: input.joyset
+• Lua: input.joyset
 
-  Bsnes: Support inconsistent saves
+• Bsnes: Support inconsistent saves
 
-  Bsnes: Allow simulating saving every frame
+• Bsnes: Allow simulating saving every frame
 
-  Fix desync if savestate is loaded in readonly mode in certain 
+• Fix desync if savestate is loaded in readonly mode in certain 
   conditions.
 
-  Wxwidgets: Fix save dialogs on Mac OS X.
+• Wxwidgets: Fix save dialogs on Mac OS X.
 
-  Wxwidgets: Fix insane status width on Win32.
+• Wxwidgets: Fix insane status width on Win32.
 
-  Wxwidgets: Fix autohold processing to be faster.
+• Wxwidgets: Fix autohold processing to be faster.
 
-  Wxwidgets: Allow loading ROMs and movies from commandline.
+• Wxwidgets: Allow loading ROMs and movies from commandline.
 
-  rr1-delta15
+18.72 rr1-delta15
 
-  Be a bit smarter with --load
+• Be a bit smarter with --load
 
-  Rewrote higher-level parts of audio system
+• Rewrote higher-level parts of audio system
 
-  Tool to build commentary tracks
+• Tool to build commentary tracks
 
-  Lua: input.joyget
+• Lua: input.joyget
 
-  Gambatte: Add support for SVN358
+• Gambatte: Add support for SVN358
 
-  Use builtin font when rendering status panel.
+• Use builtin font when rendering status panel.
 
-  Option to detach memory watch to its own window.
+• Option to detach memory watch to its own window.
 
-  Recent ROMs/Movies menu
+• Recent ROMs/Movies menu
 
-  Libao support
+• Libao support
 
-  Useful lag counter for SNES games that autopoll
+• Useful lag counter for SNES games that autopoll
 
-  Fix buffer overflow in gambatte sound output
+• Fix buffer overflow in gambatte sound output
 
-  rr1-delta15epsilon1
+18.73 rr1-delta15epsilon1
 
-  Don't blow up on wxGTK if the window is hidden somehow
+• Don't blow up on wxGTK if the window is hidden somehow
 
-  Support simultaneous drop of ROM and movie.
+• Support simultaneous drop of ROM and movie.
 
-  Gambatte: Don't save spurious SRAMs.
+• Gambatte: Don't save spurious SRAMs.
 
-  Make SGB ROMs actually usable.
+• Make SGB ROMs actually usable.
 
-  Fix so that saved movies appear in recent movies.
+• Fix so that saved movies appear in recent movies.
 
-  Don't open multiple commentary editors at once.
+• Don't open multiple commentary editors at once.
 
-  rr1-delta15epsilon2
+18.74 rr1-delta15epsilon2
 
-  Lua: memory.readregion/memory.writeregion
+• Lua: memory.readregion/memory.writeregion
 
-  Lua: memory.map{,s}{byte,word,dword,qword}
+• Lua: memory.map{,s}{byte,word,dword,qword}
 
-  Lua: memory.map_structure
+• Lua: memory.map_structure
 
-  Lua: Fix bus_address for gambatte
+• Lua: Fix bus_address for gambatte
 
-  Fix features dependent of bsnes debugger
+• Fix features dependent of bsnes debugger
 
-  Cleanup bsnes debugger logic
+• Cleanup bsnes debugger logic
 
-  Fix resets in presence of save every frame
+• Fix resets in presence of save every frame
 
-  rr1-delta15epsilon3
+18.75 rr1-delta15epsilon3
 
-  Lua: input.lcid_to_pcid
+• Lua: input.lcid_to_pcid
 
-  Fix off-by-one bug with slot hashes
+• Fix off-by-one bug with slot hashes
 
-  Fix crashes on certain memory watch expressions
+• Fix crashes on certain memory watch expressions
 
-  Lua: memory.read_expr
+• Lua: memory.read_expr
 
-  Lua: Fix memory.read_expr on nil argument
+• Lua: Fix memory.read_expr on nil argument
 
-  Fix the code to compile on G++ 4.7
+• Fix the code to compile on G++ 4.7
 
-  Change button_id to be a function pointer field, not a virtual 
+• Change button_id to be a function pointer field, not a virtual 
   method
 
-  Add bsnes patches to fix libsnes to compile on GCC 4.7
+• Add bsnes patches to fix libsnes to compile on GCC 4.7
 
-  Gambatte: Always use legacy lag counting
+• Gambatte: Always use legacy lag counting
 
-  Memory commands: Memory addresses are up to 16 hex digits, not 
+• Memory commands: Memory addresses are up to 16 hex digits, not 
   up to 8
 
-  Fix analog controllers
+• Fix analog controllers
 
-  Fix autohold menus
+• Fix autohold menus
 
-  Fix button symbols in input display
+• Fix button symbols in input display
 
-  Compensate for nuts bsnes superscope/justifier handling
+• Compensate for nuts bsnes superscope/justifier handling
 
-  Lua: Fix bit.extract boolean handling
+• Lua: Fix bit.extract boolean handling
 
-  rr2-beta0
+18.76 rr2-beta0
 
-  Split emulation cores more from the rest
+• Split emulation cores more from the rest
 
-  Support having multiple emulation cores compiled at once
+• Support having multiple emulation cores compiled at once
 
-  Support arbitrary number of ports (well, up to 31 anyway).
+• Support arbitrary number of ports (well, up to 31 anyway).
 
-  SNES debugger support
+• SNES debugger support
 
-  Support 16-button controllers
+• Support 16-button controllers
 
-  Remove old SDL front end
+• Remove old SDL front end
 
-  Data-driven controller buttons
+• Data-driven controller buttons
 
-  Generate the port code from defines
+• Generate the port code from defines
 
-  rr2-beta1
+18.77 rr2-beta1
 
-  Update libgambatte to SVN364
+• Update libgambatte to SVN364
 
-  Get rid of partial linking (building with MXE works)
+• Get rid of partial linking (building with MXE works)
 
-  Load XML even without gamepack files
+• Load XML even without gamepack files
 
-  Support screen rotate & flip
+• Support screen rotate & flip
 
-  Fix bug when changing controller key to another subkey of the 
+• Fix bug when changing controller key to another subkey of the 
   same key
 
-  rr1-delta16
+18.78 rr1-delta16
 
-  Stop at movie end: Don't off-by-one
+• Stop at movie end: Don't off-by-one
 
-  Fix crash closing lsnes with voice playback active.
+• Fix crash closing lsnes with voice playback active.
 
-  Import/Export OggOpus for commentary tracks
+• Import/Export OggOpus for commentary tracks
 
-  16-button controllers.
+• 16-button controllers.
 
-  Don't show nonexistent controllers in input display
+• Don't show nonexistent controllers in input display
 
-  Set voice record/playback volume from UI
+• Set voice record/playback volume from UI
 
-  Patches for gambatte SVN364.
+• Patches for gambatte SVN364.
 
-  Load markup (if exists) even without gamepack file.
+• Load markup (if exists) even without gamepack file.
 
-  Screen rotation & flipping
+• Screen rotation & flipping
 
-  Lua: Some new bit functions
+• Lua: Some new bit functions
 
-  Auto-refresh voice streams on change.
+• Auto-refresh voice streams on change.
 
-  Auto-refresh subtitles on change & new subtitle editor.
+• Auto-refresh subtitles on change & new subtitle editor.
 
-  Fix music volume adjustment.
+• Fix music volume adjustment.
 
-  rr2-beta2
+18.79 rr2-beta2
 
-  Use system threads instead of platform threads
+• Use system threads instead of platform threads
 
-  Cleanup build by allowing dummy and real drivers to link 
+• Cleanup build by allowing dummy and real drivers to link 
   together.
 
-  Split duplex support
+• Split duplex support
 
-  rr1-delta16epsilon1
+18.80 rr1-delta16epsilon1
 
-  Wxwidgets: Fix memory watch rendering.
+• Wxwidgets: Fix memory watch rendering.
 
-  Wxwidgets: Allow setting voice stream gain.
+• Wxwidgets: Allow setting voice stream gain.
 
-  Wxwidgets: VU meters and volume adjustment.
+• Wxwidgets: VU meters and volume adjustment.
 
-  Lua: Custom fonts support.
+• Lua: Custom fonts support.
 
-  Lua: Fix methods stopping working when resetting Lua.
+• Lua: Fix methods stopping working when resetting Lua.
 
-  Fix loading standard-format movies in preserve (readonly) mode.
+• Fix loading standard-format movies in preserve (readonly) mode.
 
-  rr1-delta17
+18.81 rr1-delta17
 
-  Primitive movie editor
+• Primitive movie editor
 
-  Fix VU meter with no sound device.
+• Fix VU meter with no sound device.
 
-  Fix various undefined return values.
+• Fix various undefined return values.
 
-  Show rates in VU meter window.
+• Show rates in VU meter window.
 
-  rr2-beta3
+18.82 rr2-beta3
 
-  Lua: Render queues as objects
+• Lua: Render queues as objects
 
-  Bsnes: support hard resets
+• Bsnes: support hard resets
 
-  Dedicated sound devices dialog
+• Dedicated sound devices dialog
 
-  Change the default AVI sound mode to 2 or 5.
+• Change the default AVI sound mode to 2 or 5.
 
-  Fix totally borked movie saving.
+• Fix totally borked movie saving.
 
-  Portaudio: Use split duplex with different devices.
+• Portaudio: Use split duplex with different devices.
 
-  Fix controls with gambatte core.
+• Fix controls with gambatte core.
 
-  Modify save slot set handling.
+• Modify save slot set handling.
 
-  lsnes-dumpavi: --firmware-path.
+• lsnes-dumpavi: --firmware-path.
 
-  Fix lots of compiler warnings.
+• Fix lots of compiler warnings.
 
-  rr1-delta17epsilon1
+18.83 rr1-delta17epsilon1
 
-  Commentary tool: Set nominal bit rate and limit max bit rate.
+• Commentary tool: Set nominal bit rate and limit max bit rate.
 
-  Lua: Unconditionally reload host memory on loadstate
+• Lua: Unconditionally reload host memory on loadstate
 
-  Lua: Query bindings, manipulate aliases, create inverse 
+• Lua: Query bindings, manipulate aliases, create inverse 
   bindings
 
-  Lua: Fix crashes with resetting VM while some types of paint 
+• Lua: Fix crashes with resetting VM while some types of paint 
   requests are in flight.
 
-  Lua: gui.text: Clip the text properly instead of corrupting 
+• Lua: gui.text: Clip the text properly instead of corrupting 
   memory in some cases.
 
-  Save screenshot header reliably
+• Save screenshot header reliably
 
-  Lua: Backport input.get2 and input.set2
+• Lua: Backport input.get2 and input.set2
 
-  Lua: New controller info functions.
+• Lua: New controller info functions.
 
-  Movie editor: Fix reset delay counters to be the right way 
+• Movie editor: Fix reset delay counters to be the right way 
   around.
 
-  Lua: on_snoop2
+• Lua: on_snoop2
 
-  Lua: on_button and input.veto_button.
+• Lua: on_button and input.veto_button.
 
-  rr2-beta4
+18.84 rr2-beta4
 
-  Revert memory leak fix breaking input
+• Revert memory leak fix breaking input
 
-  Refactor Opus handling
+• Refactor Opus handling
 
-  Restrict member picking only to .zip files
+• Restrict member picking only to .zip files
 
-  Fix reading of host-endian VMAs.
+• Fix reading of host-endian VMAs.
 
-  Fix rlow and rhigh to be the right way around.
+• Fix rlow and rhigh to be the right way around.
 
-  Lua: Don't wedge VM if callback fails with an exception
+• Lua: Don't wedge VM if callback fails with an exception
 
-  Refactor Ogg handling.
+• Refactor Ogg handling.
 
-  rr1-delta17epsilon2
+18.85 rr1-delta17epsilon2
 
-  Fix saving PNG screenshots on Win32.
+• Fix saving PNG screenshots on Win32.
 
-  Movie editor: Sweep axis.
+• Movie editor: Sweep axis.
 
-  Load selected slot in ro/rw/preserve/movie mode.
+• Load selected slot in ro/rw/preserve/movie mode.
 
-  input.joyset: Preserve and invert user input.
+• input.joyset: Preserve and invert user input.
 
-  Allow immediate saving at point of save (transfer saves).
+• Allow immediate saving at point of save (transfer saves).
 
-  Wxwidgets: Filter filenames in dialogs, autoappend extensions.
+• Wxwidgets: Filter filenames in dialogs, autoappend extensions.
 
-  data/verysmall.font: Add missing glyph 70 (“F”).
+• data/verysmall.font: Add missing glyph 70 (“F”).
 
-  Lua: Allow painting custom fonts with halo.
+• Lua: Allow painting custom fonts with halo.
 
-  Fix memory value search to work on byte types.
+• Fix memory value search to work on byte types.
 
-  rr2-beta5
+18.86 rr2-beta5
 
-  Reject oggopus files with incomplete pregap
+• Reject oggopus files with incomplete pregap
 
-  Fix multistream and ogg demuxing
+• Fix multistream and ogg demuxing
 
-  Workaround bug with screen >1024 pixels wide.
+• Workaround bug with screen >1024 pixels wide.
 
-  Allow on_input to force/veto system controls.
+• Allow on_input to force/veto system controls.
 
-  Dedicated autohold/autofire window.
+• Dedicated autohold/autofire window.
 
-  Support per-button autofire.
+• Support per-button autofire.
 
-  Fix crash on trying to frameadvance/exit with no ROM loaded.
+• Fix crash on trying to frameadvance/exit with no ROM loaded.
 
-  Fix nonexistent controller key warnings.
+• Fix nonexistent controller key warnings.
 
-  Movie editor: Fix mouse editing (TYPE_RAXIS)
+• Movie editor: Fix mouse editing (TYPE_RAXIS)
 
-  TAS input plugin
+• TAS input plugin
 
-  Analog passthrough.
+• Analog passthrough.
 
-  Add throttle axes (TYPE_TAXIS).
+• Add throttle axes (TYPE_TAXIS).
 
-  Fix movie reading with first port having multiple controllers.
+• Fix movie reading with first port having multiple controllers.
 
-  Move some info from status panel to statusbar.
+• Move some info from status panel to statusbar.
 
-  rr1-delta17epsilon3
+18.87 rr1-delta17epsilon3
 
-  Fix status panel (and movie editor) flicker
+• Fix status panel (and movie editor) flicker
 
-  Show effects of Lua in input display
+• Show effects of Lua in input display
 
-  Offer lsmv.backup as file filter too for load lsmv
+• Offer lsmv.backup as file filter too for load lsmv
 
-  Allow slowing down subframe advance 
+• Allow slowing down subframe advance 
 
-  Display current save slot information
+• Display current save slot information
 
-  Add snes9x fonts
+• Add snes9x fonts
 
-  Fix hotkeys stopping working after X-ing settings dialog
+• Fix hotkeys stopping working after X-ing settings dialog
 
-  Movie editor: Fix bug if extending finished movie
+• Movie editor: Fix bug if extending finished movie
 
-  Cap current_frame_first_subframe to movie size when recounting 
+• Cap current_frame_first_subframe to movie size when recounting 
   movie
 
-  Movie editor: Interpret ctrl+click as right click 
+• Movie editor: Interpret ctrl+click as right click 
 
-  rr2-beta6
+18.88 rr2-beta6
 
-  Autofire: Fix false status indications
+• Autofire: Fix false status indications
 
-  Fix subframe counter
+• Fix subframe counter
 
-  Fix print() after Lua reset
+• Fix print() after Lua reset
 
-  New settings framework
+• New settings framework
 
-  Remove some unused leftover stuff
+• Remove some unused leftover stuff
 
-  Fix race condition causing possible crash on startup
+• Fix race condition causing possible crash on startup
 
-  Fix compiling if uint64_t and size_t are not compatible
+• Fix compiling if uint64_t and size_t are not compatible
 
-  Lua: Don't crash if input.[gs]et{,a} is called outside on_input
+• Lua: Don't crash if input.[gs]et{,a} is called outside on_input
 
-  rr2-beta7
+18.89 rr2-beta7
 
-  Fix bug causing crash if triple has invalid button
+• Fix bug causing crash if triple has invalid button
 

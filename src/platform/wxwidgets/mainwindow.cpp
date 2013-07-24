@@ -1167,6 +1167,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_READONLY_MODE:
 		s = menu_ischecked(wxID_READONLY_MODE);
 		runemufn([s]() {
+			if(!s)
+				lua_callback_movie_lost("readwrite");
 			movb.get_movie().readonly_mode(s);
 			if(!s)
 				lua_callback_do_readwrite();

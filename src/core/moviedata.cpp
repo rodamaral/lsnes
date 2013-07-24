@@ -310,8 +310,11 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		random_seed_value = our_movie.movie_rtc_second;
 		our_rom->load(our_movie.settings, our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
 		our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
-		if(reload)
+		if(reload) {
+			if(!ro)
+				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
+		}
 
 		our_rom->rtype->load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
@@ -442,6 +445,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode != LOAD_STATE_PRESERVE) {
 		set_mprefix(get_mprefix_for_project(our_movie.projectid));
 	}
+	if(lmode != LOAD_STATE_PRESERVE)
+		lua_callback_movie_lost("load");
 	movb.get_movie() = newmovie;
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)

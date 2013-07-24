@@ -188,7 +188,7 @@ public:
 /**
  * Get the master state.
  */
-	lua_state& get_master() { return master ? *master : *this; }
+	lua_state& get_master() { return master ? master->get_master() : *this; }
 /**
  * Set the internal state object.
  */
@@ -557,7 +557,7 @@ public:
 		lua_class_bind_data<T>* bdata = new lua_class_bind_data<T>;
 		bdata->fn = fn;
 		bdata->fname = std::string("Method ") + keyname;
-		bdata->state = &state;
+		bdata->state = &state.get_master();
 		state.pushstring(keyname);
 		state.pushlightuserdata(bdata);
 		state.pushcclosure(class_bind_trampoline, 1);
