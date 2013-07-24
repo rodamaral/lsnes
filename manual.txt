@@ -673,11 +673,15 @@ Only available if lua support is compiled in.
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-6.9.2 run-lua <script>
+6.9.2 L <luacode>
+
+Synonym for evaluate-lua.
+
+6.9.3 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-6.9.3 reset-lua
+6.9.4 reset-lua
 
 Clear the Lua VM state and restore to factory defaults.
 
