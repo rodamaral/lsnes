@@ -353,6 +353,14 @@ namespace
 			do_eval_lua(LS, args);
 		});
 
+	function_ptr_command<const std::string&> evaluate_lua2(lsnes_cmd, "L", "Evaluate expression in "
+		"Lua VM", "Syntax: evaluate-lua <expression>\nEvaluates <expression> in Lua VM.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			if(args == "")
+				throw std::runtime_error("Expected expression to evaluate");
+			do_eval_lua(LS, args);
+		});
+
 	function_ptr_command<arg_filename> run_lua(lsnes_cmd, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error)

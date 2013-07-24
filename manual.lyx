@@ -787,6 +787,14 @@ Run Lua code <luacode> using built-in Lua interpretter.
 \end_layout
 
 \begin_layout Subsubsection
+L <luacode>
+\end_layout
+
+\begin_layout Standard
+Synonym for evaluate-lua.
+\end_layout
+
+\begin_layout Subsubsection
 run-lua <script>
 \end_layout
 
