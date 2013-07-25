@@ -3,6 +3,7 @@
 #include <wx/dnd.h>
 #include "platform/wxwidgets/menu_dump.hpp"
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
@@ -58,9 +59,6 @@ enum
 	wxID_SAVE_MOVIE,
 	wxID_SAVE_SUBTITLES,
 	wxID_LOAD_STATE,
-	wxID_LOAD_STATE_RO,
-	wxID_LOAD_STATE_RW,
-	wxID_LOAD_STATE_P,
 	wxID_LOAD_MOVIE,
 	wxID_RUN_SCRIPT,
 	wxID_RUN_LUA,
@@ -834,9 +832,6 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_end_sub();
 	menu_start_sub(wxT("Load"));
 	menu_entry(wxID_LOAD_STATE, wxT("State..."));
-	menu_entry(wxID_LOAD_STATE_RO, wxT("State (readonly)..."));
-	menu_entry(wxID_LOAD_STATE_RW, wxT("State (read-write)..."));
-	menu_entry(wxID_LOAD_STATE_P, wxT("State (preserve input)..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
 	if(loaded_library::call_library() != "") {
 		menu_separator();
@@ -1071,9 +1066,59 @@ void wxwin_mainwindow::refresh_title() throw()
 	menubar->SetMenuLabel(1, towxstring(our_rom->rtype->get_systemmenu_name()));
 }
 
+namespace
+{
+	struct movie_or_savestate
+	{
+	public:
+		typedef std::pair<std::string,std::string> returntype;
+		movie_or_savestate(bool is_state)
+		{
+			state = is_state;
+		}
+		filedialog_input_params input(bool save) const
+		{
+			filedialog_input_params p;
+			std::string ext = state ? project_savestate_ext() : "lsmv";
+			if(save)
+				p.types.push_back(filedialog_type_entry(state ? "Savestates" : "Movies", "*." + ext,
+					ext));
+			else
+				p.types.push_back(filedialog_type_entry(state ? "Savestates" : "Movies", "*." + ext +
+					";*." + ext + ".backup", ext));
+			if(!save && state) {
+				p.types.push_back(filedialog_type_entry("Savestates [read only]", "*." + ext +
+					";*." + ext + ".backup", ext));
+				p.types.push_back(filedialog_type_entry("Savestates [read-write]", "*." + ext +
+					";*." + ext + ".backup", ext));
+				p.types.push_back(filedialog_type_entry("Savestates [preserve]", "*." + ext +
+					";*." + ext + ".backup", ext));
+			}
+			p.default_type = 0;
+			return p;
+		}
+		std::pair<std::string, std::string> output(const filedialog_output_params& p, bool save) const
+		{
+			std::string cmdmod;
+			switch(p.typechoice) {
+			case 0: cmdmod = ""; break;
+			case 1: cmdmod = "-readonly"; break;
+			case 2: cmdmod = "-state"; break;
+			case 3: cmdmod = "-preserve"; break;
+			}
+			return std::make_pair(cmdmod, p.path);
+		}
+	private:
+		bool state;
+	};
+	struct movie_or_savestate filetype_movie(false);
+	struct movie_or_savestate filetype_savestate(true);
+}
+
 void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 {
 	std::string filename;
+	std::pair<std::string, std::string> filename2;
 	bool s;
 	switch(e.GetId()) {
 	case wxID_FRAMEADVANCE:
@@ -1103,60 +1148,43 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("cancel-saves");
 		return;
 	case wxID_LOAD_MOVIE:
-		filename = pick_file(this, "Load Movie", project_moviepath(), false, "lsmv");
+		filename = choose_file_load(this, "Load Movie", project_moviepath(), filetype_movie).second;
 		recent_movies->add(filename);
 		platform::queue("load-movie " + filename);
 		return;
 	case wxID_LOAD_STATE:
-		filename = pick_file(this, "Load State", project_moviepath(), false, project_savestate_ext());
-		recent_movies->add(filename);
-		platform::queue("load " + filename);
-		return;
-	case wxID_LOAD_STATE_RO:
-		filename = pick_file(this, "Load State (Read-Only)", project_moviepath(), false,
-			project_savestate_ext());
-		recent_movies->add(filename);
-		platform::queue("load-readonly " + filename);
-		return;
-	case wxID_LOAD_STATE_RW:
-		filename = pick_file(this, "Load State (Read-Write)", project_moviepath(), false,
-			project_savestate_ext());
-		recent_movies->add(filename);
-		platform::queue("load-state " + filename);
-		return;
-	case wxID_LOAD_STATE_P:
-		filename = pick_file(this, "Load State (Preserve)", project_moviepath(), false,
-			project_savestate_ext());
-		recent_movies->add(filename);
-		platform::queue("load-preserve " + filename);
+		filename2 = choose_file_load(this, "Load State", project_moviepath(), filetype_savestate);
+		recent_movies->add(filename2.second);
+		platform::queue("load" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_REWIND_MOVIE:
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename = pick_file(this, "Save Movie", project_moviepath(), true, "lsmv",
-			project_prefixname("lsmv"));
+		filename = choose_file_save(this, "Save Movie", project_moviepath(), filetype_movie,
+			project_prefixname("lsmv")).second;
 		recent_movies->add(filename);
 		platform::queue("save-movie " + filename);
 		return;
 	case wxID_SAVE_SUBTITLES:
-		platform::queue("save-subtitle " + pick_file(this, "Save Subtitle (.sub)", project_moviepath(), true,
-			"sub", project_prefixname("sub")));
+		platform::queue("save-subtitle " + choose_file_save(this, "Save subtitles", project_moviepath(),
+			filetype_sub, project_prefixname("sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename = pick_file(this, "Save State", project_moviepath(), true, project_savestate_ext());
+		filename = choose_file_save(this, "Save State", project_moviepath(), filetype_savestate).second;
 		recent_movies->add(filename);
 		platform::queue("save-state " + filename);
 		return;
 	case wxID_SAVE_SCREENSHOT:
-		platform::queue("take-screenshot " + pick_file(this, "Save Screenshot", project_moviepath(), true,
-			"png", get_default_screenshot_name()));
+		platform::queue("take-screenshot " + choose_file_save(this, "Save Screenshot", project_moviepath(),
+			filetype_png, get_default_screenshot_name()));
 		return;
 	case wxID_RUN_SCRIPT:
 		platform::queue("run-script " + pick_file_member(this, "Select Script", project_otherpath()));
 		return;
 	case wxID_RUN_LUA:
-		platform::queue("run-lua " + pick_file(this, "Select Lua Script", project_otherpath(), false, "lua"));
+		platform::queue("run-lua " + choose_file_load(this, "Select Lua Script", project_otherpath(),
+			filetype_lua_script));
 		return;
 	case wxID_RESET_LUA:
 		platform::queue("reset-lua");
@@ -1198,7 +1226,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		modal_pause_holder hld;
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
-		std::string filename = pick_file(this, "Save watches to file", project_otherpath(), true, "lwch");
+		std::string filename = choose_file_save(this, "Save watches to file", project_otherpath(),
+			filetype_watch);
 		std::ofstream out(filename.c_str());
 		for(auto i : old_watches) {
 			std::string val;
@@ -1213,7 +1242,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::set<std::string> old_watches;
 		runemufn([&old_watches]() { old_watches = get_watches(); });
 		std::map<std::string, std::string> new_watches;
-		std::string filename = pick_file(this, "Choose memory watch file", project_otherpath(), "lwch");
+		std::string filename = choose_file_load(this, "Choose memory watch file", project_otherpath(),
+			filetype_watch);
 		try {
 			std::istream& in = open_file_relative(filename, "");
 			while(in) {
@@ -1344,8 +1374,8 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		break;
 	case wxID_LOAD_LIBRARY: {
 		std::string name = std::string("load ") + loaded_library::call_library();
-		with_loaded_library(new loaded_library(pick_file(this, name, project_otherpath(), false,
-			loaded_library::call_library_ext())));
+		with_loaded_library(new loaded_library(choose_file_load(this, name, project_otherpath(),
+			single_type(loaded_library::call_library_ext(), loaded_library::call_library()))));
 		handle_post_loadlibrary();
 		break;
 	}

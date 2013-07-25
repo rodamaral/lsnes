@@ -9,6 +9,7 @@
 #include "library/json.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
 
 #include <wx/wx.h>
 #include <wx/event.h>
@@ -378,7 +379,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		std::string mname = pick_text(this, "Name new macro", "Enter name for the new macro:", "");
 		if(mname == "")
 			return;
-		std::string file = pick_file(this, "Select macro", project_otherpath(), false, "lmc");
+		std::string file = choose_file_load(this, "Load macro from", project_otherpath(), filetype_macro);
 		std::vector<char> contents = read_file_relative(file, "");
 		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
 		controls.set_macro(mname, m);
@@ -404,7 +405,7 @@ void wxeditor_macro::on_save(wxCommandEvent& e)
 	std::string mdata = _macro->serialize().serialize();
 	//Okay, have the macro data, now prompt for file and save.
 	try {
-		std::string tfile = pick_file(this, "Save macro (.lmc)", project_otherpath(), true, "lmc");
+		std::string tfile = choose_file_save(this, "Save macro to", project_otherpath(), filetype_macro);
 		std::ofstream f(tfile);
 		f << mdata;
 		if(!f)
@@ -445,3 +446,4 @@ void wxeditor_macro_display(wxWindow* parent)
 	}
 	editor->Destroy();
 }
+

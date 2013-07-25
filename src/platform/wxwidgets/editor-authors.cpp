@@ -6,6 +6,7 @@
 #include "library/zip.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
 
 #include <wx/wx.h>
 #include <wx/event.h>
@@ -258,7 +259,7 @@ void wxeditor_authors::on_dir_select(wxCommandEvent& e)
 void wxeditor_authors::on_add(wxCommandEvent& e)
 {
 	try {
-		std::string luascript = pick_file(this, "Pick lua script", ".", false, "lua");
+		std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 		try {
 			auto& p = open_file_relative(luascript, "");
 			delete &p;

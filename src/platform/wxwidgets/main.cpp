@@ -1,4 +1,3 @@
-//Gaah... wx/wx.h (contains something that breaks if included after snes/snes.hpp from bsnes v085.
 #include <wx/wx.h>
 
 #include "lsnes.hpp"
@@ -610,43 +609,25 @@ void _runuifun_async(void (*fn)(void*), void* arg)
 
 canceled_exception::canceled_exception() : std::runtime_error("Dialog canceled") {}
 
-std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir, bool forsave,
-	std::string ext, std::string dfltname)
+std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir)
 {
 	wxString _title = towxstring(title);
 	wxString _startdir = towxstring(startdir);
 	std::string filespec;
-	if(ext == "lsmv" && !forsave)
-		filespec = "lsmv files|*.lsmv|lsmv backup files|*.lsmv.backup|All files|*";
-	else if(ext == "lss" && !forsave)
-		filespec = "lss files|*.lss|lss backup files|*.lss.backup|All files|*";
-	else if(ext != "")
-		filespec = ext + " files|*." + ext + "|All files|*";
-	else
-		filespec = "All files|*";
-	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), towxstring(filespec), forsave ?
-		wxFD_SAVE : wxFD_OPEN);
-	if(dfltname != "")
-		d->SetFilename(towxstring(dfltname));
+	filespec = "All files|*";
+	wxFileDialog* d = new wxFileDialog(parent, _title, _startdir, wxT(""), towxstring(filespec), wxFD_OPEN);
 	if(d->ShowModal() == wxID_CANCEL)
 		throw canceled_exception();
 	std::string filename = tostdstring(d->GetPath());
-	int findex = d->GetFilterIndex();
 	d->Destroy();
 	if(filename == "")
 		throw canceled_exception();
-	if(forsave && ext != "" && findex == 0) {
-		//Append extension if needed.
-		size_t dpos = filename.find_first_of(".");
-		if(dpos > filename.length() || filename.substr(dpos + 1) != ext)
-			filename = filename + "." + ext;
-	}
 	return filename;
 }
 
 std::string pick_file_member(wxWindow* parent, const std::string& title, const std::string& startdir)
 {
-	std::string filename = pick_file(parent, title, startdir, false);
+	std::string filename = pick_file(parent, title, startdir);
 	//Did we pick a .zip file?
 	if(!regex_match(".*\\.[zZ][iI][pP]", filename))
 		return filename;	//Not a ZIP.

@@ -22,6 +22,8 @@
 #include <boost/filesystem.hpp>
 
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
+
 
 #define ASK_SRAMS_BASE		(wxID_HIGHEST + 129)
 #define ASK_SRAMS_LAST		(wxID_HIGHEST + 255)
@@ -292,7 +294,7 @@ no_watch:
 	void wxwin_newproject::on_memorywatch_select(wxCommandEvent& e)
 	{
 		try {
-			std::string lwch = pick_file(this, "Select memory watch file", ".", false, "lwch");
+			std::string lwch = choose_file_load(this, "Select memory watch file", ".", filetype_watch);
 			try {
 				auto& p = open_file_relative(lwch, "");
 				delete &p;
@@ -320,7 +322,7 @@ no_watch:
 	void wxwin_newproject::on_add(wxCommandEvent& e)
 	{
 		try {
-			std::string luascript = pick_file(this, "Pick lua script", ".", false, "lua");
+			std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 			try {
 				auto& p = open_file_relative(luascript, "");
 				delete &p;
