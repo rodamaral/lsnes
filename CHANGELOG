@@ -998,3 +998,15 @@ rr1-Δ17ε4 [Monday June 24th 2013]
 * gui.text: Fix clipping to left/top border.
 * Implicit creation of inverse binds for aliases.
 * Fix subtitle generation.
+
+rr1-Δ18 [Thursday July 25th 2013]
+=================================
+* Fix reading signed values via read-s*
+* Movie editor copy&paste
+* Fix reading system controls using input.get2.
+* (D)Bitmap decoding from PNG support.
+* Allow loading PNG/PAL/BITMAP from string.
+* Lua: Don't crash if some method throws.
+* Support Y-cabled gamepad16.
+* Lua: Allow shortening evaluate-lua to L.
+* Lua: Methods for handling movies as objects.
