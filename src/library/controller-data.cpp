@@ -983,11 +983,19 @@ int16_t controller_macro_data::axis_transform::transform(const port_controller_b
 std::pair<int16_t, int16_t> controller_macro_data::axis_transform::transform(const port_controller_button& b1,
 	const port_controller_button& b2, int16_t v1, int16_t v2)
 {
-	double x, y, u, v;
+	double x, y, u, v, au, av, s;
 	x = unscale_axis(b1, v1);
 	y = unscale_axis(b2, v2);
 	u = coeffs[0] * x + coeffs[1] * y + coeffs[4];
 	v = coeffs[2] * x + coeffs[3] * y + coeffs[5];
+	au = abs(u);
+	av = abs(v);
+	s = max(max(au, 1.0), max(av, 1.0));
+	//If u and v exceed nominal range of [-1,1], those need to be projected to the edge.
+	if(s > 1) {
+		u /= s;
+		v /= s;
+	}
 	auto g = std::make_pair(scale_axis(b1, u), scale_axis(b2, v));
 	return g;
 }
