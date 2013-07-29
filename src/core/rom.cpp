@@ -46,6 +46,9 @@ namespace
 	const char* null_chars = "F";
 	uint16_t null_cover_fbmem[512 * 448];
 
+	setting_var<setting_var_model_bool<setting_yes_no>> savestate_no_check(lsnes_vset, "dont-check-savestate",
+		"Movie‣Loading‣Don't check savestates", false);
+
 	//Framebuffer.
 	struct framebuffer_info null_fbinfo = {
 		&_pixel_format_bgr16,		//Format.
@@ -533,10 +536,12 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 
 	if(buf.size() < 32)
 		throw std::runtime_error("Savestate corrupt");
-	unsigned char tmp[32];
-	sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
-	if(memcmp(tmp, &buf[buf.size() - 32], 32))
-		throw std::runtime_error("Savestate corrupt");
+	if(!savestate_no_check) {
+		unsigned char tmp[32];
+		sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
+		if(memcmp(tmp, &buf[buf.size() - 32], 32))
+			throw std::runtime_error("Savestate corrupt");
+	}
 	rtype->unserialize(&buf[0], buf.size() - 32);;
 }
 

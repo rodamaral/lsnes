@@ -583,7 +583,7 @@ void wxwin_project::on_load(wxCommandEvent& e)
 	try {
 		moviefile mov = make_movie();
 		mov.start_paused = false;
-		mov.save(get_config_path() + "/movie.tmp", 0);
+		mov.save(get_config_path() + "/movie.tmp", 0, true);
 		platform::queue("load-state " + get_config_path() + "/movie.tmp");
 		EndModal(0);
 	} catch(std::exception& e) {

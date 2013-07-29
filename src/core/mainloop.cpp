@@ -41,6 +41,12 @@
 void update_movie_state();
 time_t random_seed_value = 0;
 
+setting_var<setting_var_model_bool<setting_yes_no>> jukebox_dflt_binary(lsnes_vset, "jukebox-default-binary",
+	"Movie‣Saving‣Saveslots binary", true);
+setting_var<setting_var_model_bool<setting_yes_no>> movie_dflt_binary(lsnes_vset, "movie-default-binary",
+	"Movie‣Saving‣Movies binary", false);
+setting_var<setting_var_model_bool<setting_yes_no>> save_dflt_binary(lsnes_vset, "savestate-default-binary",
+	"Movie‣Saving‣Savestates binary", false);
 
 namespace
 {
@@ -78,7 +84,7 @@ namespace
 	std::string pending_load;
 	std::string pending_new_project;
 	//Queued saves (all savestates).
-	std::set<std::string> queued_saves;
+	std::set<std::pair<std::string, int>> queued_saves;
 	//Save jukebox.
 	size_t save_jukebox_pointer;
 	//Special subframe location. One of SPECIAL_* constants.
@@ -268,21 +274,22 @@ namespace
 		platform::set_paused(false);
 	}
 
-	void mark_pending_save(const std::string& filename, int smode)
+	void mark_pending_save(const std::string& filename, int smode, int binary)
 	{
+		int tmp = -1;
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
-			do_save_movie(filename);
-			flush_slotinfo(translate_name_mprefix(filename));
+			do_save_movie(filename, binary);
+			flush_slotinfo(translate_name_mprefix(filename, tmp, false));
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
-			do_save_state(filename);
-			flush_slotinfo(translate_name_mprefix(filename));
+			do_save_state(filename, binary);
+			flush_slotinfo(translate_name_mprefix(filename, tmp, false));
 			return;
 		}
-		queued_saves.insert(filename);
+		queued_saves.insert(std::make_pair(filename, binary));
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
 
@@ -411,7 +418,8 @@ void update_movie_state()
 			_status.set("!mode", "F");
 	}
 	if(jukebox_size > 0) {
-		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer));
+		int tmp = -1;
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, false);
 		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
 		_status.set("!saveslotinfo", get_slotinfo(sfilen));
 	} else {
@@ -655,7 +663,7 @@ namespace
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			if(jukebox_size == 0)
 				throw std::runtime_error("No slot selected");
-			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE);
+			mark_pending_save(save_jukebox_name(save_jukebox_pointer), SAVE_STATE, -1);
 		});
 
 	function_ptr_command<> padvance_frame(lsnes_cmd, "+advance-frame", "Advance one frame",
@@ -766,13 +774,37 @@ namespace
 	function_ptr_command<arg_filename> save_state(lsnes_cmd, "save-state", "Save state",
 		"Syntax: save-state <file>\nSaves SNES state to <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-			mark_pending_save(args, SAVE_STATE);
+			mark_pending_save(args, SAVE_STATE, -1);
+		});
+
+	function_ptr_command<arg_filename> save_state2(lsnes_cmd, "save-state-binary", "Save state (binary)",
+		"Syntax: save-state-binary <file>\nSaves binary state to <file>\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_save(args, SAVE_STATE, 1);
+		});
+
+	function_ptr_command<arg_filename> save_state3(lsnes_cmd, "save-state-zip", "Save state (zip)",
+		"Syntax: save-state-zip <file>\nSaves zip state to <file>\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_save(args, SAVE_STATE, 0);
 		});
 
 	function_ptr_command<arg_filename> save_movie(lsnes_cmd, "save-movie", "Save movie",
 		"Syntax: save-movie <file>\nSaves SNES movie to <file>\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-			mark_pending_save(args, SAVE_MOVIE);
+			mark_pending_save(args, SAVE_MOVIE, -1);
+		});
+
+	function_ptr_command<arg_filename> save_movie2(lsnes_cmd, "save-movie-binary", "Save movie (binary)",
+		"Syntax: save-movie-binary <file>\nSaves binary movie to <file>\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_save(args, SAVE_MOVIE, 1);
+		});
+
+	function_ptr_command<arg_filename> save_movie3(lsnes_cmd, "save-movie-zip", "Save movie (zip)",
+		"Syntax: save-movie-zip <file>\nSaves zip movie to <file>\n",
+		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_save(args, SAVE_MOVIE, 0);
 		});
 
 	function_ptr_command<> set_rwmode(lsnes_cmd, "set-rwmode", "Switch to read/write mode",
@@ -1080,8 +1112,9 @@ nothing_to_do:
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			our_rom->rtype->runtosave();
 			for(auto i : queued_saves) {
-				do_save_state(i);
-				flush_slotinfo(translate_name_mprefix(i));
+				do_save_state(i.first, i.second);
+				int tmp = -1;
+				flush_slotinfo(translate_name_mprefix(i.first, tmp, false));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();

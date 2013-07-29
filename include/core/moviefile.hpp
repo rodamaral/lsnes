@@ -37,10 +37,12 @@ struct moviefile
  *
  * parameter filename: The file to save to.
  * parameter compression: The compression level 0-9. 0 is uncompressed.
+ * parameter binary: Save in binary form if true.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't save the movie file.
  */
-	void save(const std::string& filename, unsigned compression) throw(std::bad_alloc, std::runtime_error);
+	void save(const std::string& filename, unsigned compression, bool binary) throw(std::bad_alloc,
+		std::runtime_error);
 
 /**
  * Force loading as corrupt.
@@ -178,6 +180,9 @@ struct moviefile
  * returns: Length of the movie in nanoseconds.
  */
 	uint64_t get_movie_length() throw();
+private:
+	void binary_io(std::ostream& stream) throw(std::bad_alloc, std::runtime_error);
+	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 };
 
 #endif

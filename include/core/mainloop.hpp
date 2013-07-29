@@ -1,6 +1,7 @@
 #ifndef _mainloop__hpp__included__
 #define _mainloop__hpp__included__
 
+#include "settings.hpp"
 #include "rom.hpp"
 #include "moviefile.hpp"
 #include "movie.hpp"
@@ -26,5 +27,9 @@ void mainloop_signal_need_rewind(void* ptr);
 void set_stop_at_frame(uint64_t frame = 0);
 void switch_projects(const std::string& newproj);
 void close_rom();
+
+extern setting_var<setting_var_model_bool<setting_yes_no>> jukebox_dflt_binary;
+extern setting_var<setting_var_model_bool<setting_yes_no>> movie_dflt_binary;
+extern setting_var<setting_var_model_bool<setting_yes_no>> save_dflt_binary;
 
 #endif

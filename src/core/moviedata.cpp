@@ -7,6 +7,7 @@
 #include "core/framerate.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
+#include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
 #include "core/rrdata.hpp"
@@ -55,10 +56,10 @@ movie& get_movie()
 
 namespace
 {
-	setting_var<setting_var_model_int<0, 9>> savecompression(lsnes_vset, "savecompression", "Movie‣Compression",
-		7);
+	setting_var<setting_var_model_int<0, 9>> savecompression(lsnes_vset, "savecompression",
+		"Movie‣Saving‣Compression",  7);
 	setting_var<setting_var_model_bool<setting_yes_no>> readonly_load_preserves(lsnes_vset,
-		"preserve_on_readonly_load", "Movie‣Preserve on readonly load", true);
+		"preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
 	mutex_class mprefix_lock;
 	std::string mprefix;
 	bool mprefix_valid;
@@ -142,7 +143,7 @@ void set_mprefix_for_project(const std::string& pfx)
 	set_mprefix(pfx);
 }
 
-std::string translate_name_mprefix(std::string original)
+std::string translate_name_mprefix(std::string original, int& binary, bool save)
 {
 	auto p = project_get();
 	regex_results r;
@@ -151,13 +152,18 @@ std::string translate_name_mprefix(std::string original)
 	}
 	size_t prefixloc = original.find("${project}");
 	if(prefixloc < original.length()) {
+		if(binary < 0)
+			binary = jukebox_dflt_binary ? 1 : 0;
 		std::string pprf = lsnes_vset["slotpath"].str() + "/";
 		if(prefixloc == 0)
 			return pprf + get_mprefix() + original.substr(prefixloc + 10);
 		else
 			return original.substr(0, prefixloc) + get_mprefix() + original.substr(prefixloc + 10);
-	} else
+	} else {
+		if(binary < 0)
+			binary = (save ? save_dflt_binary : movie_dflt_binary) ? 1 : 0;
 		return original;
+	}
 }
 
 std::pair<std::string, std::string> split_author(const std::string& author) throw(std::bad_alloc,
@@ -189,7 +195,7 @@ std::string resolve_relative_path(const std::string& path)
 }
 
 //Save state.
-void do_save_state(const std::string& filename) throw(std::bad_alloc,
+void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	if(!our_movie.gametype) {
@@ -197,7 +203,7 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename);
+	std::string filename2 = translate_name_mprefix(filename, binary, true);
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
@@ -219,9 +225,11 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 			our_movie.authors = prj->authors;
 		}
 		our_movie.active_macros = controls.get_macro_frames();
-		our_movie.save(filename2, savecompression);
+		our_movie.save(filename2, savecompression, binary > 0);
 		uint64_t took = get_utime() - origtime;
-		messages << "Saved state '" << filename2 << "' in " << took << " microseconds." << std::endl;
+		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
+		messages << "Saved state " << kind << " '" << filename2 << "' in " << took << " microseconds."
+			<< std::endl;
 		lua_callback_post_save(filename2, true);
 	} catch(std::bad_alloc& e) {
 		throw;
@@ -239,14 +247,14 @@ void do_save_state(const std::string& filename) throw(std::bad_alloc,
 }
 
 //Save movie.
-void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!our_movie.gametype) {
 		platform::error_message("Can't save movie without a ROM");
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename);
+	std::string filename2 = translate_name_mprefix(filename, binary, false);
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
@@ -258,9 +266,11 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 			our_movie.authors = prj->authors;
 		}
 		our_movie.active_macros.clear();
-		our_movie.save(filename2, savecompression);
+		our_movie.save(filename2, savecompression, binary > 0);
 		uint64_t took = get_utime() - origtime;
-		messages << "Saved movie '" << filename2 << "' in " << took << " microseconds." << std::endl;
+		std::string kind = (binary > 0) ? "(binary format)" : "(zip format)";
+		messages << "Saved movie " << kind << " '" << filename2 << "' in " << took << " microseconds."
+			<< std::endl;
 		lua_callback_post_save(filename2, false);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -399,7 +409,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	try {
 		our_rom->region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		random_seed_value = _movie.movie_rtc_second;
-		our_rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
+		if(!will_load_state || our_movie.projectid != _movie.projectid)
+			our_rom->load(_movie.settings, _movie.movie_rtc_second, _movie.movie_rtc_subsecond);
 
 		if(will_load_state) {
 			//Load the savestate and movie state.
@@ -500,7 +511,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
-	std::string filename2 = translate_name_mprefix(filename);
+	int tmp = -1;
+	std::string filename2 = translate_name_mprefix(filename, tmp, false);
 	uint64_t origtime = get_utime();
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;

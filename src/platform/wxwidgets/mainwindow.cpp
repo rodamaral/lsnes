@@ -1080,12 +1080,13 @@ namespace
 		{
 			filedialog_input_params p;
 			std::string ext = state ? project_savestate_ext() : "lsmv";
-			if(save)
-				p.types.push_back(filedialog_type_entry(state ? "Savestates" : "Movies", "*." + ext,
+			std::string name = state ? "Savestates" : "Movies";
+			if(save) {
+				p.types.push_back(filedialog_type_entry(name, "*." + ext, ext));
+				p.types.push_back(filedialog_type_entry(name + " (binary)", "*." + ext, ext));
+			} else
+				p.types.push_back(filedialog_type_entry(name, "*." + ext + ";*." + ext + ".backup",
 					ext));
-			else
-				p.types.push_back(filedialog_type_entry(state ? "Savestates" : "Movies", "*." + ext +
-					";*." + ext + ".backup", ext));
 			if(!save && state) {
 				p.types.push_back(filedialog_type_entry("Savestates [read only]", "*." + ext +
 					";*." + ext + ".backup", ext));
@@ -1094,17 +1095,20 @@ namespace
 				p.types.push_back(filedialog_type_entry("Savestates [preserve]", "*." + ext +
 					";*." + ext + ".backup", ext));
 			}
-			p.default_type = 0;
+			p.default_type = save ? (state ? save_dflt_binary : movie_dflt_binary) : 0;
 			return p;
 		}
 		std::pair<std::string, std::string> output(const filedialog_output_params& p, bool save) const
 		{
 			std::string cmdmod;
-			switch(p.typechoice) {
-			case 0: cmdmod = ""; break;
-			case 1: cmdmod = "-readonly"; break;
-			case 2: cmdmod = "-state"; break;
-			case 3: cmdmod = "-preserve"; break;
+			if(save)
+				cmdmod = p.typechoice ? "-binary" : "-zip";
+			else if(state)
+				switch(p.typechoice) {
+				case 0: cmdmod = ""; break;
+				case 1: cmdmod = "-readonly"; break;
+				case 2: cmdmod = "-state"; break;
+				case 3: cmdmod = "-preserve"; break;
 			}
 			return std::make_pair(cmdmod, p.path);
 		}
@@ -1161,19 +1165,19 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		platform::queue("rewind-movie");
 		return;
 	case wxID_SAVE_MOVIE:
-		filename = choose_file_save(this, "Save Movie", project_moviepath(), filetype_movie,
-			project_prefixname("lsmv")).second;
-		recent_movies->add(filename);
-		platform::queue("save-movie " + filename);
+		filename2 = choose_file_save(this, "Save Movie", project_moviepath(), filetype_movie,
+			project_prefixname("lsmv"));
+		recent_movies->add(filename2.second);
+		platform::queue("save-movie" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SUBTITLES:
 		platform::queue("save-subtitle " + choose_file_save(this, "Save subtitles", project_moviepath(),
 			filetype_sub, project_prefixname("sub")));
 		return;
 	case wxID_SAVE_STATE:
-		filename = choose_file_save(this, "Save State", project_moviepath(), filetype_savestate).second;
-		recent_movies->add(filename);
-		platform::queue("save-state " + filename);
+		filename2 = choose_file_save(this, "Save State", project_moviepath(), filetype_savestate);
+		recent_movies->add(filename2.second);
+		platform::queue("save-state" + filename2.first + " " + filename2.second);
 		return;
 	case wxID_SAVE_SCREENSHOT:
 		platform::queue("take-screenshot " + choose_file_save(this, "Save Screenshot", project_moviepath(),
