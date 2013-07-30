@@ -13,6 +13,9 @@
 #include <sstream>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+#include <windows.h>
+#endif
 
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
