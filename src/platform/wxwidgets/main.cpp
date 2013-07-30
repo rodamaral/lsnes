@@ -22,6 +22,7 @@
 #include "library/utf8.hpp"
 #include "library/zip.hpp"
 
+#include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
@@ -459,7 +460,7 @@ bool lsnes_app::OnInit()
 		//In practicular, we need joystick thread and emulator thread in pause.
 		joystick_thread_handle = new thread_class(joystick_thread, 6);
 		thread_class* dummy_loop = new thread_class(eloop_helper, 8);
-		wxsetingsdialog_display(NULL, false);
+		display_settings_dialog(NULL, NULL);
 		platform::exit_dummy_event_loop();
 		joystick_driver_signal();
 		joystick_thread_handle->join();

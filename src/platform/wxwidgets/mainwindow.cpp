@@ -8,6 +8,7 @@
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/window-romload.hpp"
+#include "platform/wxwidgets/settings-common.hpp"
 
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -95,9 +96,6 @@ enum
 	wxID_SPEED_1000,
 	wxID_SPEED_TURBO,
 	wxID_LOAD_LIBRARY,
-	wxID_SETTINGS,
-	wxID_SETTINGS_HOTKEYS,
-	wxID_SETTINGS_CONTROLLERS,
 	wxID_RELOAD_ROM_IMAGE,
 	wxID_LOAD_ROM_IMAGE,
 	wxID_NEW_MOVIE,
@@ -118,6 +116,8 @@ enum
 	wxID_EDIT_MACROS,
 	wxID_ACTIONS_FIRST,
 	wxID_ACTIONS_LAST = wxID_ACTIONS_FIRST + 256,
+	wxID_SETTINGS_FIRST,
+	wxID_SETTINGS_LAST = wxID_SETTINGS_FIRST + 256,
 };
 
 
@@ -922,9 +922,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_check(wxID_SHOW_STATUS, true);
 	menu_entry_check(wxID_DEDICATED_MEMORY_WATCH, wxT("Dedicated memory watch"));
 	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
-	menu_entry(wxID_SETTINGS, wxT("Configure emulator..."));
-	menu_entry(wxID_SETTINGS_HOTKEYS, wxT("Configure hotkeys..."));
-	menu_entry(wxID_SETTINGS_CONTROLLERS, wxT("Configure controllers..."));
+	menu_special_sub(wxT("Configure"), new settings_menu(this, wxID_SETTINGS_FIRST));
 	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
@@ -1383,15 +1381,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		handle_post_loadlibrary();
 		break;
 	}
-	case wxID_SETTINGS:
-		wxsetingsdialog_display(this, 0);
-		break;
-	case wxID_SETTINGS_HOTKEYS:
-		wxsetingsdialog_display(this, 1);
-		break;
-	case wxID_SETTINGS_CONTROLLERS:
-		wxsetingsdialog_display(this, 2);
-		break;
 	case wxID_LOAD_ROM_IMAGE:
 		do_load_rom_image();
 		return;
