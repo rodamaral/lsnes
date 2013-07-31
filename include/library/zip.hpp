@@ -351,4 +351,6 @@ private:
 	bool committed;
 };
 
+int rename_file_overwrite(const char* oldname, const char* newname);
+
 #endif

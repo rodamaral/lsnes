@@ -78,8 +78,10 @@ namespace
 	int lsnes_rename(const char* oldname, const char* newname)
 	{
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+		std::cerr << "Win32 rename: \"" << oldname << "\" -> \"" << newname << "\"." << std::endl;
 		return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
 #else
+		std::cerr << "generic rename: \"" << oldname << "\" -> \"" << newname << "\"." << std::endl;
 		return rename(oldname, newname);
 #endif
 	}
@@ -769,8 +771,9 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 			throw std::runtime_error("Failed to write to output file");
 		strm.close();
 		std::string backup = movie + ".backup";
-		lsnes_rename(movie.c_str(), backup.c_str());
-		lsnes_rename(tmp.c_str(), movie.c_str());
+		rename_file_overwrite(movie.c_str(), backup.c_str());
+		if(rename_file_overwrite(tmp.c_str(), movie.c_str()) < 0)
+			throw std::runtime_error("Can't rename '" + tmp + "' -> '" + movie + "'");
 		return;
 	}
 	zip_writer w(movie, compression);

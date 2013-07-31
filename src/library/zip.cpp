@@ -16,16 +16,17 @@
 #include <windows.h>
 #endif
 
+int rename_file_overwrite(const char* oldname, const char* newname)
+{
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
+#else
+	return rename(oldname, newname);
+#endif
+}
+
 namespace
 {
-	int lsnes_rename(const char* oldname, const char* newname)
-	{
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-		return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
-#else
-		return rename(oldname, newname);
-#endif
-	}
 
 	uint32_t read32(const unsigned char* buf, unsigned offset = 0, unsigned modulo = 4) throw()
 	{
@@ -451,8 +452,8 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		throw std::runtime_error("Failed to write central directory end marker to output file");
 	zipstream.close();
 	std::string backup = zipfile_path + ".backup";
-	lsnes_rename(zipfile_path.c_str(), backup.c_str());
-	if(lsnes_rename(temp_path.c_str(), zipfile_path.c_str()) < 0)
+	rename_file_overwrite(zipfile_path.c_str(), backup.c_str());
+	if(rename_file_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
 		throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
 	committed = true;
 }
