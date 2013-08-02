@@ -41,8 +41,8 @@ namespace
 			if(!ready)
 				return;
 			for(auto i : objs) {
-				wxJoystick& j = i.second;
-				joystick_report_pov(i, 0, j.GetPOVCTSPosition());
+				wxJoystick& j = *i.second;
+				lsnes_gamepads[i.first].report_hat(0, j.GetPOVCTSPosition());
 				uint32_t bmask = j.GetButtonState();
 				for(unsigned j = 0; j < 32; j++)
 					lsnes_gamepads[i.first].report_button(j, (bmask >> j) & 1);

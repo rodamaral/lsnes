@@ -250,14 +250,17 @@ void hw_gamepad::report_axis(uint64_t id, int64_t val)
 		mutex.unlock();
 		if(ostate != nstate)
 			hat_fn(jid, inum, nstate);
-	}
+	} else
+		mutex.unlock();
 }
 
 void hw_gamepad::report_button(uint64_t id, bool val)
 {
 	mutex.lock();
-	if(!_buttons.count(id))
+	if(!_buttons.count(id)) {
+		mutex.unlock();
 		return;
+	}
 	button_info& i = _buttons[id];
 	bool ostate = i.state;
 	i.state = val;
@@ -272,8 +275,10 @@ void hw_gamepad::report_hat(uint64_t id, int angle)
 {
 	mutex.lock();
 	unsigned h = angle_to_bitmask(angle);
-	if(!_hats.count(id))
+	if(!_hats.count(id)) {
+		mutex.unlock();
 		return;
+	}
 	hat_info& i = _hats[id];
 	unsigned ostate = i.state;
 	i.state = h;
