@@ -241,57 +241,6 @@ bool keyboard_modifier_set::triggers(const keyboard_modifier_set& trigger, const
 	return true;
 }
 
-int32_t keyboard_axis_calibration::get_calibrated_value(int32_t x) const throw()
-{
-	if(x < left)
-		return -32767;
-	if(x > right)
-		return 32767;
-	if(x == center)
-		return 0;
-	double width;
-	if(x < center)
-		width = center - (double)left;
-	else if(x > center)
-		width = (double)right - center;
-	return 32767.0 * (x - (double)center) / width;
-}
-
-int keyboard_axis_calibration::get_digital_state(int32_t x) const throw()
-{
-	if(mode < 0)
-		return 0;
-	if(mode == 0) {
-		int m = (esign_a + 1) * 3 + esign_b + 1;
-		bool dwidth;
-		bool negative;
-		int32_t shift;
-		switch(m) {
-		case 0: case 4: case 8:	break;		//These are not legal.
-		case 1: dwidth = false; negative = false; shift=32767; break;	//- to 0.
-		case 2: dwidth = true;  negative = false; shift=32767; break;	//- to +.
-		case 3: dwidth = false; negative = true;  shift=0; break;	//0 to -.
-		case 5: dwidth = false; negative = false; shift=0; break;	//0 to +.
-		case 6: dwidth = true;  negative = true;  shift=32767; break;	//+ to -.
-		case 7: dwidth = false; negative = true;  shift=32767; break;	//+ to 0.
-		};
-		if(negative)
-			x = -x;
-		x += shift;
-		int32_t threshold = (int32_t)((dwidth ? 65535 : 32767) * nullwidth);
-		return (x > threshold) ? 1 : 0;
-	}
-	if(mode == 1) {
-		int32_t tolerance = (int32_t)(32767 * nullwidth);
-		if(x < -tolerance)
-			return esign_a;
-		if(x > tolerance)
-			return esign_b;
-		return 0;
-	}
-	return 0;
-}
-
 int32_t keyboard_mouse_calibration::get_calibrated_value(int32_t x) const throw()
 {
 	return x - offset;
@@ -314,11 +263,10 @@ keyboard_event_key::keyboard_event_key(uint32_t chngmask)
 {
 }
 
-keyboard_event_axis::keyboard_event_axis(int32_t _state, uint32_t chngmask, const keyboard_axis_calibration& _cal)
+keyboard_event_axis::keyboard_event_axis(int32_t _state, uint32_t chngmask)
 	: keyboard_event(chngmask, keyboard_keytype::KBD_KEYTYPE_AXIS)
 {
 	state = _state;
-	cal = _cal;
 }
 
 keyboard_event_hat::keyboard_event_hat(uint32_t chngmask)
@@ -511,41 +459,45 @@ std::vector<std::string> keyboard_key_hat::get_subkeys() throw(std::bad_alloc)
 }
 
 keyboard_key_axis::keyboard_key_axis(keyboard& keyb, const std::string& name, const std::string& clazz,
-	keyboard_axis_calibration _cal) throw(std::bad_alloc)
+	int mode) throw(std::bad_alloc)
 	: keyboard_key(keyb, name, clazz, keyboard_keytype::KBD_KEYTYPE_AXIS)
 {
 	rawstate = 0;
-	cal = _cal;
+	digitalstate = 0;
+	last_tolerance = 0.5;
+	_mode = mode;
 }
 keyboard_key_axis::~keyboard_key_axis() throw() {}
 
 int32_t keyboard_key_axis::get_state() const throw()
 {
 	umutex_class u(mutex);
-	return cal.get_calibrated_value(rawstate);
+	return rawstate;
 }
 
 int32_t keyboard_key_axis::get_state_digital() const throw()
 {
 	umutex_class u(mutex);
-	int32_t tmp = cal.get_calibrated_value(rawstate);
-	return cal.get_digital_state(tmp);
+	if(rawstate <= -32768 * last_tolerance)
+		return -1;
+	if(rawstate >= 32767 * last_tolerance)
+		return 1;
+	return 0;
 }
 
-keyboard_axis_calibration keyboard_key_axis::get_calibration() const throw()
+int keyboard_key_axis::get_mode() const throw()
 {
 	umutex_class u(mutex);
-	keyboard_axis_calibration tmp = cal;
-	return tmp;
+	return _mode;
 }
 
 std::vector<std::string> keyboard_key_axis::get_subkeys() throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	std::vector<std::string> r;
-	if(cal.mode == 0)
+	if(_mode == 0)
 		r.push_back("");
-	else if(cal.mode > 0) {
+	else if(_mode > 0) {
 		r.push_back("+");
 		r.push_back("-");
 	}
@@ -558,14 +510,17 @@ void keyboard_key_axis::set_state(keyboard_modifier_set mods, int32_t _rawstate)
 	int32_t state, ostate;
 	uint32_t change = 0;
 	int dold = 0, dnew = 0;
-	keyboard_axis_calibration _cal;
 	mutex.lock();
 	if(rawstate != _rawstate) {
-		ostate = cal.get_calibrated_value(rawstate);
-		dold = cal.get_digital_state(ostate);
+		ostate = rawstate;
+		dold = digitalstate;
 		rawstate = _rawstate;
-		state = cal.get_calibrated_value(rawstate);
-		dnew = cal.get_digital_state(state);
+		state = rawstate;
+		if(state <= -32768 * last_tolerance)
+			dnew = -1;
+		if(state >= 32767 * last_tolerance)
+			dnew = 1;
+		digitalstate = dnew;
 		if(dnew > 0)
 			change |= 1;
 		if((dold > 0 && dnew <= 0) || (dold <= 0 && dnew > 0))
@@ -574,38 +529,20 @@ void keyboard_key_axis::set_state(keyboard_modifier_set mods, int32_t _rawstate)
 			change |= 4;
 		if((dold < 0 && dnew >= 0) || (dold >= 0 && dnew < 0))
 			change |= 8;
-		_cal = cal;
 		edge = true;
 	}
 	mutex.unlock();
 	if(edge) {
-		keyboard_event_axis e(state, change, _cal);
+		keyboard_event_axis e(state, change);
 		call_listeners(mods, e);
 	}
 }
 
-void keyboard_key_axis::set_calibration(keyboard_axis_calibration _cal) throw()
+void keyboard_key_axis::set_mode(int mode, double tolerance) throw()
 {
-	uint32_t change = 0;
-	int dold = 0, dnew = 0;
-	mutex.lock();
-	int32_t ostate = cal.get_calibrated_value(rawstate);
-	dold = cal.get_digital_state(ostate);
-	cal = _cal;
-	int32_t state = cal.get_calibrated_value(rawstate);
-	dnew = cal.get_digital_state(state);
-	if(dnew < 0)
-		change |= 1;
-	if((dold < 0 && dnew >= 0) || (dold >= 0 && dnew < 0))
-		change |= 2;
-	if(dnew > 0)
-		change |= 4;
-	if((dold > 0 && dnew <= 0) || (dold <= 0 && dnew > 0))
-		change |= 8;
-	mutex.unlock();
-	keyboard_event_axis e(change, state, _cal);
-	keyboard_modifier_set mods;
-	call_listeners(mods, e);
+	umutex_class u(mutex);
+	_mode = mode;
+	last_tolerance = tolerance;
 }
 
 keyboard_key_mouse::keyboard_key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,

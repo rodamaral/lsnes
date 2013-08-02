@@ -1,7 +1,6 @@
 #include "core/command.hpp"
-#include "core/keymapper.hpp"
-#include "core/joystick.hpp"
 #include "core/joystickapi.hpp"
+#include "core/keymapper.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
 
@@ -167,6 +166,8 @@ namespace
 		"Unknown button #765", "Unknown button #766", "Unknown button #767"
 	};
 
+	std::map<int, unsigned> gamepad_map;
+
 	std::string get_button_name(uint16_t code)
 	{
 		if(code <= sizeof(buttonnames)/sizeof(buttonnames[0]) && buttonnames[code])
@@ -195,9 +196,9 @@ namespace
 			return false;
 		}
 		if(ev.type == EV_KEY)
-			joystick_report_button(fd, ev.code, ev.value != 0);
+			lsnes_gamepads[gamepad_map[fd]].report_button(ev.code, ev.value != 0);
 		if(ev.type == EV_ABS)
-			joystick_report_axis(fd, ev.code, ev.value);
+			lsnes_gamepads[gamepad_map[fd]].report_axis(ev.code, ev.value);
 		return true;
 	}
 
@@ -236,10 +237,11 @@ namespace
 				<< std::endl;
 			return false;
 		}
-		joystick_create(fd, namebuffer);
+		unsigned jid = gamepad_map[fd] = lsnes_gamepads.add(namebuffer);
+		hw_gamepad& ngp = lsnes_gamepads[jid];
 		for(unsigned i = 0; i <= KEY_MAX; i++)
 			if(keys[i / div] & (1ULL << (i % div)))
-				joystick_new_button(fd, i, get_button_name(i));
+				ngp.add_button(i, buttonnames[i]);
 		for(unsigned i = 0; i <= ABS_MAX; i++)
 			if(axes[i / div] & (1ULL << (i % div))) {
 				if(i < ABS_HAT0X || i > ABS_HAT3Y) {
@@ -250,11 +252,11 @@ namespace
 							<< fd << "): " << strerror(merrno) << std::endl;
 						continue;
 					}
-					joystick_new_axis(fd, i, V[1], V[2], get_axis_name(i), (V[1] < 0) ? 1 : 0);
+					ngp.add_axis(i, V[1], V[2], V[1] == 0, axisnames[i]);
 				} else if(i % 2 == 0)
-					joystick_new_hat(fd, i, i + 1, 1, get_axis_name(i), get_axis_name(i + 1));
+					ngp.add_hat(i, i + 1, 1, axisnames[i], axisnames[i + 1]);
 			}
-		joystick_message(fd);
+		messages << "Joystick #" << jid << " online: " << namebuffer << std::endl;
 		return true;
 	}
 
@@ -297,13 +299,11 @@ namespace
 		.quit = []() -> void {
 			quit_signaled = true;
 			while(!quit_ack);
-			joystick_quit();
 		},
 		.thread_fn = []() -> void {
 			while(!quit_signaled) {
-				for(auto fd : joystick_set())
-					while(read_one_input_event(fd));
-				joystick_flush();
+				for(auto fd : gamepad_map)
+					while(read_one_input_event(fd.first));
 				usleep(POLL_WAIT);
 			}
 			quit_ack = true;

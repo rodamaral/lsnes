@@ -143,6 +143,8 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 	size_t slen = str.length();
 	size_t pused = 0;
 	uint16_t state = utf8_initial_state;
+	if(y >= height)
+		return 0;
 	while(true) {
 		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
 		int32_t u = utf8_parse_byte(ch, state);
@@ -161,6 +163,8 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 			e.bg = bg;
 		}
 		x++;
+		if(x >= width)
+			return 0;
 		pused += (g.wide ? 2 : 1);
 		spos++;
 	}
@@ -217,6 +221,8 @@ text_framebuffer_panel::text_framebuffer_panel(wxWindow* parent, size_t w, size_
 	redirect = _redirect;
 	auto psize = get_pixels();
 	size_changed = false;
+	locked = false;
+	paint_requested = false;
 	SetMinSize(wxSize(psize.first, psize.second));
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(text_framebuffer_panel::on_paint), NULL, this);
 	this->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(text_framebuffer_panel::on_erase), NULL, this);

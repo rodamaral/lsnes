@@ -7,6 +7,7 @@
 #include "core/window.hpp"
 #include "lua/lua.hpp"
 #include "library/string.hpp"
+#include "library/zip.hpp"
 
 #include <stdexcept>
 #include <stdexcept>
@@ -19,16 +20,76 @@
 keyboard lsnes_kbd;
 keyboard_mapper lsnes_mapper(lsnes_kbd, lsnes_cmd);
 
-std::string calibration_to_mode(keyboard_axis_calibration p)
+hw_gamepad_set lsnes_gamepads;
+
+namespace
 {
-	if(p.mode == -1) return "disabled";
-	if(p.mode == 1 && p.esign_b == 1) return "axis";
-	if(p.mode == 1 && p.esign_b == -1) return "axis-inverse";
-	if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 0) return "pressure-0";
-	if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 1) return "pressure-+";
-	if(p.mode == 0 && p.esign_a == 0 && p.esign_b == -1) return "pressure0-";
-	if(p.mode == 0 && p.esign_a == 0 && p.esign_b == 1) return "pressure0+";
-	if(p.mode == 0 && p.esign_a == 1 && p.esign_b == -1) return "pressure+-";
-	if(p.mode == 0 && p.esign_a == 1 && p.esign_b == 0) return "pressure+0";
-	return "";
+	std::map<std::pair<unsigned, unsigned>, keyboard_key*> buttons;
+	std::map<std::pair<unsigned, unsigned>, keyboard_key*> axes;
+	std::map<std::pair<unsigned, unsigned>, keyboard_key*> hats;
+}
+
+void lsnes_gamepads_init()
+{
+	lsnes_gamepads.set_button_cb([](unsigned jnum, unsigned num, bool val) {
+		if(!buttons.count(std::make_pair(jnum, num)))
+			return;
+		platform::queue(keypress(keyboard_modifier_set(), *buttons[std::make_pair(jnum, num)], val));
+	});
+	lsnes_gamepads.set_hat_cb([](unsigned jnum, unsigned num, unsigned val) {
+		if(!hats.count(std::make_pair(jnum, num)))
+			return;
+		platform::queue(keypress(keyboard_modifier_set(), *hats[std::make_pair(jnum, num)], val));
+	});
+	lsnes_gamepads.set_axis_cb([](unsigned jnum, unsigned num, int16_t val) {
+		if(!axes.count(std::make_pair(jnum, num)))
+			return;
+		platform::queue(keypress(keyboard_modifier_set(), *axes[std::make_pair(jnum, num)], val));
+	});
+	lsnes_gamepads.set_axismode_cb([](unsigned jnum, unsigned num, int mode, double tolerance) {
+		if(!axes.count(std::make_pair(jnum, num)))
+			return;
+		axes[std::make_pair(jnum, num)]->cast_axis()->set_mode(mode, tolerance);
+	});
+	lsnes_gamepads.set_newitem_cb([](unsigned jnum, unsigned num, int type) {
+		if(type == 0) {
+			std::string name = (stringfmt() << "joystick" << jnum << "axis" << num).str();
+			int mode = lsnes_gamepads[jnum].get_mode(num);
+			axes[std::make_pair(jnum, num)] = new keyboard_key_axis(lsnes_kbd, name, "joystick", mode);
+			//Axis.
+		} else if(type == 1) {
+			std::string name = (stringfmt() << "joystick" << jnum << "button" << num).str();
+			buttons[std::make_pair(jnum, num)] = new keyboard_key_key(lsnes_kbd, name, "joystick");
+			//Button.
+		} else if(type == 2) {
+			std::string name = (stringfmt() << "joystick" << jnum << "hat" << num).str();
+			hats[std::make_pair(jnum, num)] = new keyboard_key_hat(lsnes_kbd, name, "joystick");
+			//Hat.
+		}
+	});
+	try {
+		auto cfg = read_file_relative(get_config_path() + "/gamepads.json", "");
+		std::string _cfg(cfg.begin(), cfg.end());
+		JSON::node config(_cfg);
+		lsnes_gamepads.load(config);
+	} catch(...) {
+	}
+}
+
+void lsnes_gamepads_deinit()
+{
+	std::ofstream cfg(get_config_path() + "/gamepads.json");
+	if(cfg)
+		cfg << lsnes_gamepads.save().serialize() << std::endl;
+}
+
+namespace
+{
+	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joystick info",
+		"Syntax: show-joysticks\nShow joystick info.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			messages << "--------------------------------------------" << std::endl;
+			messages << lsnes_gamepads.get_summary() << std::endl;
+			messages << "--------------------------------------------" << std::endl;
+		});
 }

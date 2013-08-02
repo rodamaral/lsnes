@@ -8,7 +8,9 @@ namespace
 		static std::map<std::string, settings_tab_factory*> x;
 		return x;
 	}
+	class wxeditor_esettings2* dlg;
 }
+
 
 settings_tab_factory::settings_tab_factory(const std::string& tabname,
 	std::function<settings_tab*(wxWindow* parent)> create_fn)
@@ -122,7 +124,7 @@ namespace
 
 		if(singletab) {
 			settings_tab* t = singletab->create(this);
-			top_s->Add(t);
+			top_s->Add(t, 1, wxGROW);
 			t->set_notify([this]() { this->on_notify(); });
 			tabs.push_back(t);
 		} else {
@@ -173,15 +175,24 @@ namespace
 	}
 }
 
+void settings_tab::call_window_fit()
+{
+	if(dlg) {
+		std::cerr << "Call_window_fit()" << std::endl;
+		dlg->Fit();
+	}
+}
+
 void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 {
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = new wxeditor_esettings2(parent, singletab);
+		editor = dlg = new wxeditor_esettings2(parent, singletab);
 		editor->ShowModal();
 	} catch(...) {
 	}
+	dlg = NULL;
 	editor->Destroy();
 }
 

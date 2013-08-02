@@ -162,32 +162,7 @@ end:
 	void handle_config_line(std::string line)
 	{
 		regex_results r;
-		if(r = regex("AXIS[ \t]+([^ \t]+)[ \t]+(-?[0-9])[ \t]+(-?[0-9])[ \t]+(-?[0-9])[ \t]+"
-			"(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(-?[0-9]+)[ \t]+(0?.[0-9]+)[ \t]*", line)) {
-			keyboard_axis_calibration c;
-			c.mode = parse_value<int>(r[2]);
-			if(c.mode < -1 || c.mode > 1)
-				(stringfmt() << "Illegal axis mode " << c.mode).throwex();
-			c.esign_a = parse_value<int>(r[3]);
-			c.esign_b = parse_value<int>(r[4]);
-			if(c.esign_a < -1 || c.esign_a > 1 || c.esign_b < -1 || c.esign_b > 1 ||
-				c.esign_a == c.esign_b || (c.mode == 1 && (c.esign_a == 0 || c.esign_b == 0)))
-				(stringfmt() << "Illegal axis endings " << c.esign_a << "/" << c.esign_b).throwex();
-			c.left = parse_value<int32_t>(r[5]);
-			c.center = parse_value<int32_t>(r[6]);
-			c.right = parse_value<int32_t>(r[7]);
-			c.nullwidth = parse_value<double>(r[8]);
-			keyboard_key* _k = lsnes_kbd.try_lookup_key(r[1]);
-			keyboard_key_axis* k = NULL;
-			if(_k)
-				k = _k->cast_axis();
-			if(!k)
-				return;
-			k->set_calibration(c);
-			messages << "Calibration of " << r[1] << " changed: mode=" << calibration_to_mode(c)
-				<< " limits=" << c.left << "(" << c.center << ")" << c.right
-				<< " null=" << c.nullwidth << std::endl;
-		} else if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
+		if(r = regex("SET[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
 			lsnes_vsetc.set(r[1], r[2], true);
 			messages << "Setting " << r[1] << " set to " << r[2] << std::endl;
 		} else if(r = regex("ALIAS[ \t]+([^ \t]+)[ \t]+(.*)", line)) {
@@ -241,16 +216,6 @@ end:
 	{
 		std::string cfg = get_config_path() + "/lsneswxw.cfg";
 		std::ofstream cfgfile(cfg.c_str());
-		//Joystick axis.
-		for(auto i : lsnes_kbd.all_keys()) {
-			keyboard_key_axis* j = i->cast_axis();
-			if(!j)
-				continue;
-			auto p = j->get_calibration();
-			cfgfile << "AXIS " << i->get_name() << " " << p.mode << " " << p.esign_a << " " << p.esign_b
-				<< " " << p.left << " " << p.center << " " << p.right << " " << p.nullwidth
-				<< std::endl;
-		}
 		//Settings.
 		for(auto i : lsnes_vsetc.get_all())
 			cfgfile << "SET " << i.first << " " << i.second << std::endl;

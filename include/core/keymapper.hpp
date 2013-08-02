@@ -11,6 +11,7 @@
 #include "misc.hpp"
 #include "library/keyboard.hpp"
 #include "library/keymapper.hpp"
+#include "library/joystick2.hpp"
 
 /**
  * Our keyboard
@@ -22,8 +23,16 @@ extern keyboard lsnes_kbd;
 extern keyboard_mapper lsnes_mapper;
 
 /**
- * Translate axis calibration into mode name.
+ * Gamepad HW.
  */
-std::string calibration_to_mode(keyboard_axis_calibration p);
+extern hw_gamepad_set lsnes_gamepads;
+/**
+ * Initialize gamepads (need to be called before initializing joysticks).
+ */
+void lsnes_gamepads_init();
+/**
+ * Deinitialize gamepads (need to be called after deinitializing joysticks).
+ */
+void lsnes_gamepads_deinit();
 
 #endif

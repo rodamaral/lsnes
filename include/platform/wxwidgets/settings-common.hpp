@@ -24,6 +24,7 @@ struct settings_tab : public wxPanel
 	virtual void on_notify() {}
 	void set_notify(std::function<void()> _notify) { notify = _notify; }
 	void do_notify() { notify(); }
+	void call_window_fit();
 private:
 	bool closing_flag;
 	std::function<void()> notify;

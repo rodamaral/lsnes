@@ -1,284 +1,336 @@
 #include "platform/wxwidgets/settings-common.hpp"
+#include "platform/wxwidgets/textrender.hpp"
 #include "core/keymapper.hpp"
-
-#define AMODE_DISABLED "Disabled"
-#define AMODE_AXIS_PAIR "Axis"
-#define AMODE_AXIS_PAIR_INVERSE "Axis (inverted)"
-#define AMODE_PRESSURE_M0 "Pressure - to 0"
-#define AMODE_PRESSURE_MP "Pressure - to +"
-#define AMODE_PRESSURE_0M "Pressure 0 to -"
-#define AMODE_PRESSURE_0P "Pressure 0 to +"
-#define AMODE_PRESSURE_PM "Pressure + to -"
-#define AMODE_PRESSURE_P0 "Pressure + to 0"
+#include <wx/choicebk.h>
+#include "library/minmax.hpp"
 
 namespace
 {
-	std::string formattype(const keyboard_axis_calibration& s)
-	{
-		if(s.mode == -1) return AMODE_DISABLED;
-		else if(s.mode == 1 && s.esign_b == 1) return AMODE_AXIS_PAIR;
-		else if(s.mode == 1 && s.esign_b == -1) return AMODE_AXIS_PAIR_INVERSE;
-		else if(s.mode == 0 && s.esign_a == 0 && s.esign_b == -1) return AMODE_PRESSURE_0M;
-		else if(s.mode == 0 && s.esign_a == 0 && s.esign_b == 1) return AMODE_PRESSURE_0P;
-		else if(s.mode == 0 && s.esign_a == -1 && s.esign_b == 0) return AMODE_PRESSURE_M0;
-		else if(s.mode == 0 && s.esign_a == -1 && s.esign_b == 1) return AMODE_PRESSURE_MP;
-		else if(s.mode == 0 && s.esign_a == 1 && s.esign_b == 0) return AMODE_PRESSURE_P0;
-		else if(s.mode == 0 && s.esign_a == 1 && s.esign_b == -1) return AMODE_PRESSURE_PM;
-		else return "Unknown";
-	}
-
-	std::string formatsettings(const std::string& name, const keyboard_axis_calibration& s)
-	{
-		return (stringfmt() << name << ": " << formattype(s) << " low:" << s.left << " mid:"
-			<< s.center << " high:" << s.right << " tolerance:" << s.nullwidth).str();
-	}
-
-	class wxeditor_esettings_joystick_aconfig : public wxDialog
+	class edit_axis_properties : public wxDialog
 	{
 	public:
-		wxeditor_esettings_joystick_aconfig(wxWindow* parent, const std::string& _aname);
-		~wxeditor_esettings_joystick_aconfig();
-		void on_ok(wxCommandEvent& e);
-		void on_cancel(wxCommandEvent& e);
+		edit_axis_properties(wxWindow* parent, unsigned _jid, unsigned _num)
+			: wxDialog(parent, -1, towxstring(get_title(_jid, _num))), jid(_jid), num(_num)
+		{
+			int64_t minus, zero, plus, neutral;
+			double threshold;
+			bool pressure, disabled;
+			lsnes_gamepads[jid].get_calibration(num, minus, zero, plus, neutral, threshold, pressure,
+				disabled);
+
+			Centre();
+			wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+			SetSizer(top_s);
+			wxSizer* t_s = new wxFlexGridSizer(2);
+			t_s->Add(new wxStaticText(this, -1, "Minus:"));
+			t_s->Add(low = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, "Center:"));
+			t_s->Add(mid = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, "Plus:"));
+			t_s->Add(hi = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, "Neutral:"));
+			t_s->Add(null = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, "Threshold:"));
+			t_s->Add(thresh = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1,
+				 wxGROW);
+			t_s->Add(_disabled = new wxCheckBox(this, -1, "Disabled"));
+			t_s->Add(_pressure = new wxCheckBox(this, -1, "Pressure"));
+			top_s->Add(t_s, 1, wxGROW);
+
+			low->SetValue(towxstring((stringfmt() << minus).str()));
+			mid->SetValue(towxstring((stringfmt() << zero).str()));
+			hi->SetValue(towxstring((stringfmt() << plus).str()));
+			null->SetValue(towxstring((stringfmt() << neutral).str()));
+			thresh->SetValue(towxstring((stringfmt() << threshold).str()));
+			_pressure->SetValue(pressure);
+			_disabled->SetValue(disabled);
+
+			wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+			pbutton_s->AddStretchSpacer();
+			pbutton_s->Add(okbutton = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
+			pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+			okbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(edit_axis_properties::on_ok), NULL, this);
+			cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+				wxCommandEventHandler(edit_axis_properties::on_cancel), NULL, this);
+			top_s->Add(pbutton_s, 0, wxGROW);
+			top_s->SetSizeHints(this);
+			Fit();
+		}
+		~edit_axis_properties()
+		{
+		}
+		void on_ok(wxCommandEvent& e)
+		{
+			int64_t minus, zero, plus, neutral;
+			double threshold;
+			bool pressure, disabled;
+			const char* bad_what = NULL;
+
+			try {
+				bad_what = "Bad low calibration value";
+				minus = boost::lexical_cast<int64_t>(tostdstring(low->GetValue()));
+				bad_what = "Bad middle calibration value";
+				zero = boost::lexical_cast<int64_t>(tostdstring(mid->GetValue()));
+				bad_what = "Bad high calibration value";
+				plus = boost::lexical_cast<int32_t>(tostdstring(hi->GetValue()));
+				bad_what = "Bad neutral zone width";
+				neutral = boost::lexical_cast<int64_t>(tostdstring(null->GetValue()));
+				bad_what = "Bad threshold (range is 0 - 1)";
+				threshold = boost::lexical_cast<double>(tostdstring(thresh->GetValue()));
+				if(threshold <= 0 || threshold >= 1)
+					throw 42;
+				pressure = _pressure->GetValue();
+				disabled = _disabled->GetValue();
+			} catch(...) {
+				wxMessageBox(towxstring(bad_what), _T("Error"), wxICON_EXCLAMATION | wxOK);
+				return;
+			}
+			lsnes_gamepads[jid].calibrate_axis(num, minus, zero, plus, neutral, threshold, pressure,
+				disabled);
+			EndModal(wxID_OK);
+		}
+		void on_cancel(wxCommandEvent& e)
+		{
+			EndModal(wxID_CANCEL);
+		}
 	private:
-		std::string aname;
-		wxComboBox* type;
+		unsigned jid;
+		unsigned num;
+		std::string get_title(unsigned id, unsigned num)
+		{
+			return (stringfmt() << "Configure axis " << num << " of joystick " << id).str();
+		}
 		wxTextCtrl* low;
 		wxTextCtrl* mid;
 		wxTextCtrl* hi;
-		wxTextCtrl* tol;
+		wxTextCtrl* null;
+		wxTextCtrl* thresh;
+		wxCheckBox* _disabled;
+		wxCheckBox* _pressure;
 		wxButton* okbutton;
 		wxButton* cancel;
 	};
 
-	wxeditor_esettings_joystick_aconfig::wxeditor_esettings_joystick_aconfig(wxWindow* parent,
-		const std::string& _aname)
-		: wxDialog(parent, -1, towxstring("Configure axis " + _aname))
+	size_t numwidth(unsigned num)
 	{
-		wxString choices[9];
-		int didx = 1;
-		choices[0] = wxT(AMODE_DISABLED);
-		choices[1] = wxT(AMODE_AXIS_PAIR);
-		choices[2] = wxT(AMODE_AXIS_PAIR_INVERSE);
-		choices[3] = wxT(AMODE_PRESSURE_M0);
-		choices[4] = wxT(AMODE_PRESSURE_MP);
-		choices[5] = wxT(AMODE_PRESSURE_0M);
-		choices[6] = wxT(AMODE_PRESSURE_0P);
-		choices[7] = wxT(AMODE_PRESSURE_PM);
-		choices[8] = wxT(AMODE_PRESSURE_P0);
-
-		aname = _aname;
-
-		keyboard_axis_calibration c;
-		keyboard_key* _k = lsnes_kbd.try_lookup_key(aname);
-		keyboard_key_axis* k = NULL;
-		if(_k)
-			k = _k->cast_axis();
-		if(k)
-			c = k->get_calibration();
-
-		if(c.mode == -1)	didx = 0;
-		else if(c.mode == 1 && c.esign_a == -1 && c.esign_b == 1)	didx = 1;
-		else if(c.mode == 1 && c.esign_a == 1 && c.esign_b == -1)	didx = 2;
-		else if(c.mode == 0 && c.esign_a == -1 && c.esign_b == 0)	didx = 3;
-		else if(c.mode == 0 && c.esign_a == -1 && c.esign_b == 1)	didx = 4;
-		else if(c.mode == 0 && c.esign_a == 0 && c.esign_b == -1)	didx = 5;
-		else if(c.mode == 0 && c.esign_a == 0 && c.esign_b == 1)	didx = 6;
-		else if(c.mode == 0 && c.esign_a == 1 && c.esign_b == -1)	didx = 7;
-		else if(c.mode == 0 && c.esign_a == 1 && c.esign_b == 0)	didx = 8;
-
-		Centre();
-		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
-		SetSizer(top_s);
-
-		wxFlexGridSizer* t_s = new wxFlexGridSizer(5, 2, 0, 0);
-		t_s->Add(new wxStaticText(this, -1, wxT("Type: ")), 0, wxGROW);
-		t_s->Add(type = new wxComboBox(this, wxID_ANY, choices[didx], wxDefaultPosition, wxDefaultSize,
-			9, choices, wxCB_READONLY), 1, wxGROW);
-		t_s->Add(new wxStaticText(this, -1, wxT("Low: ")), 0, wxGROW);
-		t_s->Add(low = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.left).str()), wxDefaultPosition,
-			wxSize(100, -1)), 1, wxGROW);
-		t_s->Add(new wxStaticText(this, -1, wxT("Middle: ")), 0, wxGROW);
-		t_s->Add(mid = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.center).str()),
-			wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-		t_s->Add(new wxStaticText(this, -1, wxT("High: ")), 0, wxGROW);
-		t_s->Add(hi = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.right).str()),
-			wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-		t_s->Add(new wxStaticText(this, -1, wxT("Tolerance: ")), 0, wxGROW);
-		t_s->Add(tol = new wxTextCtrl(this, -1, towxstring((stringfmt() << c.nullwidth).str()),
-			wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-		top_s->Add(t_s);
-
-		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
-		pbutton_s->AddStretchSpacer();
-		pbutton_s->Add(okbutton = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
-		pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
-		okbutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_joystick_aconfig::on_ok), NULL, this);
-		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_joystick_aconfig::on_cancel), NULL, this);
-		top_s->Add(pbutton_s, 0, wxGROW);
-
-		t_s->SetSizeHints(this);
-		top_s->SetSizeHints(this);
-		Fit();
+		if(num < 10)
+			return 1;
+		else
+			return 1 + numwidth(num / 10);
 	}
 
-	wxeditor_esettings_joystick_aconfig::~wxeditor_esettings_joystick_aconfig()
-	{
-	}
-
-	void wxeditor_esettings_joystick_aconfig::on_ok(wxCommandEvent& e)
-	{
-		std::string _type = tostdstring(type->GetValue());
-		std::string _low = tostdstring(low->GetValue());
-		std::string _mid = tostdstring(mid->GetValue());
-		std::string _hi = tostdstring(hi->GetValue());
-		std::string _tol = tostdstring(tol->GetValue());
-		keyboard_key_axis* k = NULL;
-		keyboard_key* _k;
-
-		_k = lsnes_kbd.try_lookup_key(aname);
-		if(_k)
-			k = _k->cast_axis();
-		if(!k) {
-			//Axis gone away?
-			EndModal(wxID_OK);
-			return;
-		}
-
-		keyboard_axis_calibration c;
-		const char* bad_what = NULL;
-		try {
-			bad_what = "Bad axis type";
-			if(_type == AMODE_AXIS_PAIR)		{c.mode = 1;  c.esign_a = -1;  c.esign_b = 1;  }
-			else if(_type == AMODE_AXIS_PAIR_INVERSE) {c.mode = 1;  c.esign_a = 1;   c.esign_b = -1; }
-			else if(_type == AMODE_DISABLED)	{c.mode = -1; c.esign_a = -1;  c.esign_b = 1;  }
-			else if(_type == AMODE_PRESSURE_0M)	{c.mode = 0;  c.esign_a = 0;   c.esign_b = -1; }
-			else if(_type == AMODE_PRESSURE_0P)	{c.mode = 0;  c.esign_a = 0;   c.esign_b = 1;  }
-			else if(_type == AMODE_PRESSURE_M0)	{c.mode = 0;  c.esign_a = -1;  c.esign_b = 0;  }
-			else if(_type == AMODE_PRESSURE_MP)	{c.mode = 0;  c.esign_a = -1;  c.esign_b = 1;  }
-			else if(_type == AMODE_PRESSURE_P0)	{c.mode = 0;  c.esign_a = 1;   c.esign_b = 0;  }
-			else if(_type == AMODE_PRESSURE_PM)	{c.mode = 0;  c.esign_a = 1;   c.esign_b = -1; }
-			else
-				throw 42;
-			bad_what = "Bad low calibration value (range is -32768 - 32767)";
-			c.left = boost::lexical_cast<int32_t>(_low);
-			bad_what = "Bad middle calibration value (range is -32768 - 32767)";
-			c.center = boost::lexical_cast<int32_t>(_mid);
-			bad_what = "Bad high calibration value (range is -32768 - 32767)";
-			c.right = boost::lexical_cast<int32_t>(_hi);
-			bad_what = "Bad tolerance (range is 0 - 1)";
-			c.nullwidth = boost::lexical_cast<double>(_tol);
-			if(c.nullwidth <= 0 || c.nullwidth >= 1)
-				throw 42;
-		} catch(...) {
-			wxMessageBox(towxstring(bad_what), _T("Error"), wxICON_EXCLAMATION | wxOK);
-			return;
-		}
-		k->set_calibration(c);
-		EndModal(wxID_OK);
-	}
-
-	void wxeditor_esettings_joystick_aconfig::on_cancel(wxCommandEvent& e)
-	{
-		EndModal(wxID_CANCEL);
-	}
-
-	class wxeditor_esettings_joystick : public settings_tab
+	class joystick_panel : public text_framebuffer_panel
 	{
 	public:
-		wxeditor_esettings_joystick(wxWindow* parent);
-		~wxeditor_esettings_joystick();
-		void on_configure(wxCommandEvent& e);
+		joystick_panel(wxWindow* parent, unsigned jid, hw_gamepad& gp)
+			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _gp(gp), _jid(jid)
+		{
+			unsigned rows = 2 + gp.axes() + gp.buttons() + gp.hats();
+			std::string jname = (stringfmt() << "joystick" << _jid << " [" << gp.name() << "]").str();
+			std::string status = std::string("Status: ") + (gp.online() ? "Online" : "Offline");
+			base_width = max(jname.length(), status.length());
+			unsigned y = 2;
+			selected_row = rows;
+			
+			maxtitle = 0;
+			if(gp.axes() > 0)
+				maxtitle = max(maxtitle, 5 + numwidth(gp.axes() - 1));
+			if(gp.buttons() > 0)
+				maxtitle = max(maxtitle, 7 + numwidth(gp.buttons() - 1));
+			if(gp.hats() > 0)
+				maxtitle = max(maxtitle, 4 + numwidth(gp.hats() - 1));
+
+			size_t widest = base_width;
+			for(unsigned i = 0; i < gp.axes(); i++)
+				widest = max(widest, axis_info(i).length());
+			for(unsigned i = 0; i < gp.buttons(); i++)
+				widest = max(widest, button_info(i).length());
+			for(unsigned i = 0; i < gp.hats(); i++)
+				widest = max(widest, hat_info(i).length());
+			width_need = max(widest + 15, (size_t)80);
+			height_need = 2 + _gp.axes() + _gp.buttons() + _gp.hats();
+			set_size(width_need, height_need);
+
+			write((stringfmt() << "joystick" << _jid << " [" << gp.name() << "]").str(), 256, 0, 0,
+				0, 0xFFFFFF);
+			write(std::string("Status: ") + (gp.online() ? "Online" : "Offline"), 256, 0, 1, 0,
+				0xFFFFFF);
+			
+			for(unsigned i = 0; i < gp.axes(); i++) {
+				axes_val.push_back(y);
+				y++;
+			}
+
+			for(unsigned i = 0; i < gp.buttons(); i++) {
+				buttons_val.push_back(y);
+				y++;
+			}
+
+			for(unsigned i = 0; i < gp.hats(); i++) {
+				hats_val.push_back(y);
+				y++;
+			}
+			Connect(wxEVT_LEFT_UP, wxMouseEventHandler(joystick_panel::on_mouse), NULL, this);
+			Connect(wxEVT_MOTION, wxMouseEventHandler(joystick_panel::on_mouse), NULL, this);
+			Fit();
+		}
+		~joystick_panel()
+		{
+		}
+		void on_change(wxCommandEvent& e)
+		{
+		}
+		void prepare_paint()
+		{
+			for(unsigned i = 0; i < axes_val.size(); i++) {
+				size_t y = axes_val[i];
+				write(axis_info(i), width_need, 0, y, 0x600000, (y == selected_row) ? 0xFFFFC0 :
+					0xFFFFFF);
+			}
+			for(unsigned i = 0; i < buttons_val.size(); i++) {
+				write(button_info(i), width_need, 0, buttons_val[i], 0x006000, 0xFFFFFF);
+			}
+			for(unsigned i = 0; i < hats_val.size(); i++) {
+				write(hat_info(i), width_need, 0, hats_val[i], 0x000060, 0xFFFFFF);
+			}
+		}
+		std::pair<unsigned, unsigned> size_needed() { return std::make_pair(width_need, height_need); }
+		void on_mouse(wxMouseEvent& e)
+		{
+			auto cell = get_cell();
+			size_t y = e.GetY() / cell.second;
+			for(size_t i = 0; i < axes_val.size(); i++)
+				if(e.LeftUp()) {
+					if(axes_val[i] == y) {
+						//Open dialog for axis i.
+						wxDialog* d = new edit_axis_properties(this, _jid, i);
+						d->ShowModal();
+						d->Destroy();
+					}
+				} else
+					selected_row = y;
+		}
 	private:
-		void refresh();
-		wxSizer* jgrid;
-		wxStaticText* no_joysticks;
-		std::map<std::string, wxButton*> buttons;
-		std::map<int, std::string> ids;
-		int last_id;
+		std::string axis_info(unsigned i)
+		{
+			std::ostringstream x;
+			x << "axis" << i;
+			for(unsigned j = 4 + numwidth(i); j < maxtitle; j++)
+				x << " ";
+			std::string astatus = _gp.axis_status(i);
+			x << astatus;
+			for(unsigned j = astatus.length(); j <= 16; j++)
+				x << " ";
+			x << "[" << get_calibration(i) << "]";
+			return x.str();
+		}
+		std::string button_info(unsigned i)
+		{
+			std::ostringstream x;
+			x << "button" << i;
+			for(unsigned j = 6 + numwidth(i); j < maxtitle; j++)
+				x << " ";
+			std::string astatus = _gp.button_status(i);
+			x << astatus;
+			return x.str();
+		}
+		std::string hat_info(unsigned i)
+		{
+			std::ostringstream x;
+			x << "hat" << i;
+			for(unsigned j = 3 + numwidth(i); j < maxtitle; j++)
+				x << " ";
+			std::string astatus = _gp.hat_status(i);
+			x << astatus;
+			return x.str();
+		}
+		std::string get_calibration(unsigned num)
+		{
+			int64_t minus, zero, plus, neutral;
+			double threshold;
+			bool pressure, disabled;
+			_gp.get_calibration(num, minus, zero, plus, neutral, threshold, pressure, disabled);
+			return (stringfmt()  << minus << "<-" << zero << "(" << neutral << ")->" << plus 
+				<< " T:" << threshold << " " << (pressure ? "P" : "A")
+				<< (disabled ? "D" : "E")).str();
+		}
+		unsigned _jid;
+		hw_gamepad& _gp;
+		size_t base_width;
+		size_t width_need;
+		size_t height_need;
+		size_t maxtitle;
+		size_t selected_row;
+		std::vector<unsigned> axes_val;
+		std::vector<unsigned> buttons_val;
+		std::vector<unsigned> hats_val;
 	};
 
-	wxeditor_esettings_joystick::wxeditor_esettings_joystick(wxWindow* parent)
-		: settings_tab(parent)
+	class joystick_config_window : public settings_tab
 	{
-		last_id = wxID_HIGHEST + 1;
-		no_joysticks = new wxStaticText(this, wxID_ANY, wxT("Sorry, no joysticks detected"));
-		no_joysticks->SetMinSize(wxSize(400, -1));
-		no_joysticks->Hide();
-		SetSizer(jgrid = new wxFlexGridSizer(0, 1, 0, 0));
-		refresh();
-		jgrid->SetSizeHints(this);
-		Fit();
-	}
-
-	wxeditor_esettings_joystick::~wxeditor_esettings_joystick()
-	{
-	}
-
-	void wxeditor_esettings_joystick::on_configure(wxCommandEvent& e)
-	{
-		if(!ids.count(e.GetId()))
-			return;
-		wxDialog* d = new wxeditor_esettings_joystick_aconfig(this, ids[e.GetId()]);
-		d->ShowModal();
-		d->Destroy();
-		refresh();
-	}
-
-	void wxeditor_esettings_joystick::refresh()
-	{
-		//Collect the new settings.
-		std::map<std::string, keyboard_axis_calibration> x;
-		auto axisset = lsnes_kbd.all_keys();
-		for(auto i : axisset) {
-			keyboard_key_axis* j = i->cast_axis();
-			if(!j)
-				continue;
-			x[i->get_name()] = j->get_calibration();
+	public:
+		joystick_config_window(wxWindow* parent)
+			: settings_tab(parent)
+		{
+			wxSizer* top1_s = new wxBoxSizer(wxVERTICAL);
+			SetSizer(top1_s);
+			std::map<std::string, unsigned> jsnum;
+			top1_s->Add(jsp = new wxChoicebook(this, -1), 1, wxGROW);
+			for(unsigned i = 0; i < lsnes_gamepads.gamepads(); i++) {
+				hw_gamepad& gp = lsnes_gamepads[i];
+				std::string name = gp.name();
+				jsnum[name] = jsnum.count(name) ? (jsnum[name] + 1) : 1;
+				std::string tname = (stringfmt() << "joystick" << i << ": " << name).str();
+				joystick_panel* tmp;
+				jsp->AddPage(tmp = new joystick_panel(jsp, i, gp), towxstring(tname));
+				panels.insert(tmp);
+			}
+			top1_s->SetSizeHints(this);
+			Fit();
+			timer = new update_timer(this);
+			timer->Start(100);
 		}
-
-		unsigned jcount = 0;
-		for(auto i : x) {
-			jcount++;
-			if(buttons.count(i.first)) {
-				//Okay, this already exists. Update.
-				buttons[i.first]->SetLabel(towxstring(formatsettings(i.first, i.second)));
-				if(!buttons[i.first]->IsShown()) {
-					jgrid->Add(buttons[i.first], 1, wxGROW);
-					buttons[i.first]->Show();
-				}
-			} else {
-				//New button.
-				ids[last_id] = i.first;
-				buttons[i.first] = new wxButton(this, last_id++, towxstring(formatsettings(i.first,
-					i.second)));
-				buttons[i.first]->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-					wxCommandEventHandler(wxeditor_esettings_joystick::on_configure), NULL, this);
-				jgrid->Add(buttons[i.first], 1, wxGROW);
+		~joystick_config_window()
+		{
+			if(timer) {
+				timer->Stop();
+				delete timer;
 			}
 		}
-		for(auto i : buttons) {
-			if(!x.count(i.first)) {
-				//Removed button.
-				i.second->Hide();
-				jgrid->Detach(i.second);
+		void update_all()
+		{
+			if(closing()) {
+				timer->Stop();
+				delete timer;
+				timer = NULL;
+				return;
+			}
+			for(auto i : panels) {
+				i->request_paint();
 			}
 		}
-		if(jcount > 0) {
-			jgrid->Detach(no_joysticks);
-			no_joysticks->Hide();
-		} else {
-			no_joysticks->Show();
-			jgrid->Add(no_joysticks);
-		}
-		jgrid->Layout();
-		this->Refresh();
-		Fit();
-	}
+	private:
+		class update_timer : public wxTimer
+		{
+		public:
+			update_timer(joystick_config_window* p)
+			{
+				w = p;
+			}
+			void Notify()
+			{
+				w->update_all();
+			}
+		private:
+			joystick_config_window* w;
+		};
+		update_timer* timer;
+		wxChoicebook* jsp;
+		std::set<joystick_panel*> panels;
+	};
 
-	settings_tab_factory bindings("Joysticks", [](wxWindow* parent) -> settings_tab* {
-		return new wxeditor_esettings_joystick(parent);
+	settings_tab_factory joysticks("Joysticks", [](wxWindow* parent) -> settings_tab* {
+		return new joystick_config_window(parent);
 	});
 }

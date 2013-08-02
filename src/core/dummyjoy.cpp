@@ -1,4 +1,5 @@
 #include "core/joystickapi.hpp"
+#include "core/keymapper.hpp"
 
 namespace
 {
@@ -24,12 +25,14 @@ joystick_driver::joystick_driver(_joystick_driver drv)
 
 void joystick_driver_init() throw()
 {
+	lsnes_gamepads_init();
 	driver.init();
 }
 
 void joystick_driver_quit() throw()
 {
 	driver.quit();
+	lsnes_gamepads_deinit();
 }
 
 void joystick_driver_thread_fn() throw()

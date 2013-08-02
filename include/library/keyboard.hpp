@@ -344,38 +344,6 @@ struct keyboard_axis_calibration
  * Mode: -1 => Disabled, 0 => Pressure-sentive button, 1 => Axis.
  */
 	int mode;
-/**
- * Endpoint sign A (left or released).
- */
-	int esign_a;
-/**
- * Endpoint sign B (right or pressed).
- */
-	int esign_b;
-/**
- * The left limit.
- */
-	int32_t left;
-/**
- * The center position.
- */
-	int32_t center;
-/**
- * The right limit.
- */
-	int32_t right;
-/**
- * Relative width of null zone (greater than 0, but less than 1).
- */
-	double nullwidth;
-/**
- * Translate from raw value to internal value (-32767...32767).
- */
-	int32_t get_calibrated_value(int32_t x) const throw();
-/**
- * Translate from internal value to digital state (-1, 0, 1).
- */
-	int get_digital_state(int32_t x) const throw();
 };
 
 /**
@@ -472,7 +440,7 @@ public:
  * Parameter chngmask: The change mask.
  * Parameter cal: The calibration structure.
  */
-	keyboard_event_axis(int32_t state, uint32_t chngmask, const keyboard_axis_calibration& cal);
+	keyboard_event_axis(int32_t state, uint32_t chngmask);
 /**
  * Destructor.
  */
@@ -480,13 +448,9 @@ public:
 /**
  * Get analog state.
  *
- * Returns: Analog position of axis, -32767...32767 (0...32767 for pressure-sensitive buttons).
+ * Returns: Analog position of axis, -32768...32767 (0...32767 for pressure-sensitive buttons).
  */
 	int32_t get_state() const throw();
-/**
- * Get calibration data.
- */
-	keyboard_axis_calibration get_calibration() { return cal; }
 private:
 	int32_t state;
 	keyboard_axis_calibration cal;
@@ -772,10 +736,10 @@ public:
  * Parameter keyb: The keyboard this is on.
  * Parameter name: The base name of the key.
  * Parameter clazz: The class of the key.
- * Parameter cal: Initial calibration.
+ * Parameter mode: Initial mode: -1 => disabled, 0 => axis, 1 => pressure
  */
-	keyboard_key_axis(keyboard& keyb, const std::string& name, const std::string& clazz,
-		keyboard_axis_calibration cal) throw(std::bad_alloc);
+	keyboard_key_axis(keyboard& keyb, const std::string& name, const std::string& clazz, int mode)
+		throw(std::bad_alloc);
 /**
  * Destructor.
  */
@@ -800,18 +764,20 @@ public:
  */
 	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
 /**
- * Get calibration.
+ * Get mode.
  */
-	keyboard_axis_calibration get_calibration() const throw();
+	int get_mode() const throw();
 /**
- * Set calibration.
+ * Set mode.
  */
-	void set_calibration(keyboard_axis_calibration cal) throw();
+	void set_mode(int mode, double tolerance) throw();
 private:
 	keyboard_key_axis(keyboard_key_axis&);
 	keyboard_key_axis& operator=(keyboard_key_axis&);
 	int32_t rawstate;
-	keyboard_axis_calibration cal;
+	int digitalstate;
+	double last_tolerance;
+	int _mode;
 };
 
 /**

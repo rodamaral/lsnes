@@ -39,26 +39,21 @@ namespace
 		L.settable(-3);
 	}
 
-	std::string calibration_to_type(keyboard_axis_calibration p)
+	std::string get_mode_str(int mode)
 	{
-		if(p.mode == -1) return "disabled";
-		if(p.mode == 1 && p.esign_b == 1) return "axis";
-		if(p.mode == 1 && p.esign_b == -1) return "axis-inverse";
-		if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 0) return "pressure-m0";
-		if(p.mode == 0 && p.esign_a == -1 && p.esign_b == 1) return "pressure-mp";
-		if(p.mode == 0 && p.esign_a == 0 && p.esign_b == -1) return "pressure-0m";
-		if(p.mode == 0 && p.esign_a == 0 && p.esign_b == 1) return "pressure-0p";
-		if(p.mode == 0 && p.esign_a == 1 && p.esign_b == -1) return "pressure-pm";
-		if(p.mode == 0 && p.esign_a == 1 && p.esign_b == 0) return "pressure-p0";
-		return "";
+		if(mode < 0)
+			return "disabled";
+		else if(mode > 0)
+			return "axis";
+		return "pressure0+";
 	}
-
 }
 
 void push_keygroup_parameters(lua_state& L, keyboard_key& p)
 {
 	keyboard_mouse_calibration p2;
 	keyboard_axis_calibration p3;
+	int mode;
 	L.newtable();
 	switch(p.get_type()) {
 	case KBD_KEYTYPE_KEY:
@@ -75,9 +70,9 @@ void push_keygroup_parameters(lua_state& L, keyboard_key& p)
 		pushpair(L, "type", "mouse");
 		break;
 	case KBD_KEYTYPE_AXIS:
-		p3 = p.cast_axis()->get_calibration();
+		mode = p.cast_axis()->get_mode();
 		pushpair(L, "value", p.get_state());
-		pushpair(L, "type", calibration_to_type(p3));
+		pushpair(L, "type", get_mode_str(mode));
 		break;
 	}
 }
