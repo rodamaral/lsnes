@@ -42,10 +42,10 @@ namespace
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
-		pbutton_s->Add(set_button = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
+		pbutton_s->Add(set_button = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
 		set_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_controllers::on_setkey), NULL, this);
-		pbutton_s->Add(clear_button = new wxButton(this, wxID_ANY, wxT("Clear")), 0, wxGROW);
+		pbutton_s->Add(clear_button = new wxButton(this, wxID_ANY, wxT("Drop")), 0, wxGROW);
 		clear_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_controllers::on_clearkey), NULL, this);
 		top_s->Add(pbutton_s, 0, wxGROW);
@@ -130,7 +130,7 @@ namespace
 			p->ShowModal();
 			std::string key = p->getkey();
 			p->Destroy();
-			ik->set(key);
+			ik->append(key);
 		} catch(...) {
 		}
 		refresh();
@@ -147,8 +147,30 @@ namespace
 		}
 		try {
 			controller_key* ik = realitems[name];
-			if(ik)
-				ik->set(NULL, 0);
+			if(!ik) {
+				refresh();
+				return;
+			}
+			std::vector<wxString> dropchoices;
+			std::string tmp;
+			unsigned idx = 0;
+			while((tmp = ik->get_string(idx++)) != "")
+				dropchoices.push_back(towxstring(tmp));
+			idx = 0;
+			if(dropchoices.size() > 1) {
+				wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this,
+					towxstring("Select key to remove from set"), towxstring("Pick key to drop"),
+				dropchoices.size(), &dropchoices[0]);
+				if(d2->ShowModal() == wxID_CANCEL) {
+					d2->Destroy();
+					refresh();
+					return;
+				}
+				idx = d2->GetSelection();
+				d2->Destroy();
+			}
+			auto g = ik->get(idx);
+			ik->remove(g.first, g.second);
 		} catch(...) {
 		}
 		refresh();
@@ -165,7 +187,10 @@ namespace
 		auto x = lsnes_mapper.get_controller_keys();
 		for(auto y : x) {
 			realitems[y->get_name()] = y;
-			data[y] = y->get_string();
+			std::string tmp;
+			unsigned idx = 0;
+			while((tmp = y->get_string(idx++)) != "")
+				data[y] += ((data[y] != "") ? ", " : "") + tmp;
 		}
 
 		int cidx = 0;

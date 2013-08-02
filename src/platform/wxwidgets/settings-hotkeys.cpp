@@ -10,8 +10,8 @@ namespace
 	public:
 		wxeditor_esettings_hotkeys(wxWindow* parent);
 		~wxeditor_esettings_hotkeys();
-		void on_primary(wxCommandEvent& e);
-		void on_secondary(wxCommandEvent& e);
+		void on_add(wxCommandEvent& e);
+		void on_drop(wxCommandEvent& e);
 		void on_change(wxCommandEvent& e);
 		void on_notify() { refresh(); }
 	private:
@@ -45,12 +45,12 @@ namespace
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
-		pbutton_s->Add(pri_button = new wxButton(this, wxID_ANY, wxT("Change primary")), 0, wxGROW);
+		pbutton_s->Add(pri_button = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
 		pri_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_primary), NULL, this);
-		pbutton_s->Add(sec_button = new wxButton(this, wxID_ANY, wxT("Change secondary")), 0, wxGROW);
+			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_add), NULL, this);
+		pbutton_s->Add(sec_button = new wxButton(this, wxID_ANY, wxT("Drop")), 0, wxGROW);
 		sec_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_secondary), NULL, this);
+			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_drop), NULL, this);
 		top_s->Add(pbutton_s, 0, wxGROW);
 
 		refresh();
@@ -112,7 +112,7 @@ namespace
 	{
 	}
 
-	void wxeditor_esettings_hotkeys::on_primary(wxCommandEvent& e)
+	void wxeditor_esettings_hotkeys::on_add(wxCommandEvent& e)
 	{
 		if(closing())
 			return;
@@ -127,25 +127,20 @@ namespace
 				refresh();
 				return;
 			}
-			std::string key = ik->get(true);
-			key_entry_dialog* d = new key_entry_dialog(this, "Specify key for " + name, key, true);
+			key_entry_dialog* d = new key_entry_dialog(this, "Specify key for " + name, "", false);
 			if(d->ShowModal() == wxID_CANCEL) {
 				d->Destroy();
 				return;
 			}
-			key = d->getkey();
+			std::string key = d->getkey();
 			d->Destroy();
-			if(key != "")
-				ik->set(key, true);
-			else
-				ik->clear(true);
-
+			ik->append(key);
 		} catch(...) {
 		}
 		refresh();
 	}
 
-	void wxeditor_esettings_hotkeys::on_secondary(wxCommandEvent& e)
+	void wxeditor_esettings_hotkeys::on_drop(wxCommandEvent& e)
 	{
 		if(closing())
 			return;
@@ -160,18 +155,25 @@ namespace
 				refresh();
 				return;
 			}
-			std::string key = ik->get(false);
-			key_entry_dialog* d = new key_entry_dialog(this, "Specify key for " + name, key, true);
-			if(d->ShowModal() == wxID_CANCEL) {
-				d->Destroy();
-				return;
+			std::vector<wxString> dropchoices;
+			key_specifier tmp;
+			unsigned idx = 0;
+			while((tmp = (std::string)ik->get(idx++)))
+				dropchoices.push_back(towxstring(clean_keystring(tmp)));
+			idx = 0;
+			if(dropchoices.size() > 1) {
+				wxSingleChoiceDialog* d2 = new wxSingleChoiceDialog(this,
+					towxstring("Select key to remove from set"), towxstring("Pick key to drop"),
+				dropchoices.size(), &dropchoices[0]);
+				if(d2->ShowModal() == wxID_CANCEL) {
+					d2->Destroy();
+					refresh();
+					return;
+				}
+				idx = d2->GetSelection();
+				d2->Destroy();
 			}
-			key = d->getkey();
-			d->Destroy();
-			if(key != "")
-				ik->set(key, false);
-			else
-				ik->clear(false);
+			ik->clear(idx);
 		} catch(...) {
 		}
 		refresh();
@@ -181,7 +183,7 @@ namespace
 	{
 		if(closing())
 			return;
-		std::map<inverse_bind*, std::pair<key_specifier, key_specifier>> data;
+		std::map<inverse_bind*, std::list<key_specifier>> data;
 		std::map<std::string, int> cat_set;
 		std::map<std::string, int> cat_assign;
 		realitems.clear();
@@ -189,7 +191,10 @@ namespace
 		auto x = lsnes_mapper.get_inverses();
 		for(auto y : x) {
 			realitems[y->getname()] = y;
-			data[y] = std::make_pair(y->get(true), y->get(false));
+			key_specifier tmp;
+			unsigned idx = 0;
+			while((tmp = y->get(idx++)))
+				data[y].push_back(tmp);
 		}
 
 		int cidx = 0;
@@ -202,13 +207,20 @@ namespace
 			}
 			items[std::make_pair(cat_set[j.first], cat_assign[j.first])] = i.first;
 			std::string text = j.second;
-			if(!data[i.second].first)
+			auto& I = data[i.second];
+			if(I.empty())
 				text = text + " (not set)";
-			else if(!data[i.second].second)
-				text = text + " (" + clean_keystring(data[i.second].first) + ")";
-			else
-				text = text + " (" + clean_keystring(data[i.second].first) + " or " +
-					clean_keystring(data[i.second].second) + ")";
+			else if(I.size() == 1)
+				text = text + " (" + clean_keystring(*I.begin()) + ")";
+			else {
+				text = text + " (";
+				for(auto i = I.begin(); i != I.end(); i++) {
+					if(i != I.begin())
+						text = text + ", ";
+					text = text + clean_keystring(*i);
+				}
+				text = text + ")";
+			}
 			itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
 			cat_assign[j.first]++;
 		}

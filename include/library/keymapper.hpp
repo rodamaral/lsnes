@@ -270,23 +270,22 @@ public:
 /**
  * Get keyspec.
  *
- * Parameter primary: If true, get the primary key, else secondary key.
+ * Parameter index: Index of the keyspec to get.
  * Returns: The keyspec.
  */
-	key_specifier get(bool primary) throw(std::bad_alloc);
+	key_specifier get(unsigned index) throw(std::bad_alloc);
 /**
- * Clear key (if primary is cleared, secondary becomes primary).
+ * Clear key (subsequent keys fill the gap).
  *
- * Parameter primary: If true, clear the primary, else the secondary.
+ * Parameter index: Index of key to clear.
  */
-	void clear(bool primary) throw(std::bad_alloc);
+	void clear(unsigned index) throw(std::bad_alloc);
 /**
- * Set key.
+ * Add key to set.
  *
  * Parameter keyspec: The new keyspec.
- * Parameter primary: If true, set the primary, else the secondary.
  */
-	void set(const key_specifier& keyspec, bool primary) throw(std::bad_alloc);
+	void append(const key_specifier& keyspec) throw(std::bad_alloc);
 /**
  * Get name for command.
  *
@@ -301,8 +300,7 @@ private:
 	keyboard_mapper& mapper;
 	std::string cmd;
 	std::string oname;
-	key_specifier primary_spec;
-	key_specifier secondary_spec;
+	std::vector<key_specifier> specs;
 	mutex_class mutex;
 };
 
@@ -331,19 +329,23 @@ public:
 /**
  * Get the trigger key.
  */
-	std::pair<keyboard_key*, unsigned> get() throw();
+	std::pair<keyboard_key*, unsigned> get(unsigned index) throw();
 /**
  * Get the trigger key.
  */
-	std::string get_string() throw(std::bad_alloc);
+	std::string get_string(unsigned index) throw(std::bad_alloc);
 /**
- * Set the trigger key.
+ * Set the trigger key (appends).
  */
-	void set(keyboard_key* key, unsigned subkey) throw();
+	void append(keyboard_key* key, unsigned subkey) throw();
 /**
- * Set the trigger key.
+ * Set the trigger key (appends).
  */
-	void set(const std::string& key) throw(std::bad_alloc, std::runtime_error);
+	void append(const std::string& key) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Remove the trigger key.
+ */
+	void remove(keyboard_key* key, unsigned subkey) throw();
 /**
  * Get the command.
  */
@@ -361,8 +363,7 @@ private:
 	keyboard_mapper& mapper;
 	std::string cmd;
 	std::string oname;
-	keyboard_key* key;
-	unsigned subkey;
+	std::vector<std::pair<keyboard_key*, unsigned>> keys;
 	bool axis;
 	mutex_class mutex;
 };

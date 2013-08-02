@@ -93,17 +93,18 @@ namespace
 			L.rawset(-3);
 		}
 		for(auto key : lsnes_mapper.get_controller_keys()) {
-			std::string _key = key->get_string();
-			if(_key == "")
-				continue;
-			std::string cmd = key->get_command();
-			_key = "|/" + _key;
-			if(target != "" && cmd != target)
-				continue;
-			L.pushlstring(_key.c_str(), _key.length());
-			L.pushlstring(cmd.c_str(), cmd.length());
-			L.rawset(-3);
-
+			for(unsigned i = 0;; i++) {
+				std::string _key = key->get_string(i);
+				if(_key == "")
+					break;
+				std::string cmd = key->get_command();
+				_key = "|/" + _key;
+				if(target != "" && cmd != target)
+					continue;
+				L.pushlstring(_key.c_str(), _key.length());
+				L.pushlstring(cmd.c_str(), cmd.length());
+				L.rawset(-3);
+			}
 		}
 		return 1;
 	});

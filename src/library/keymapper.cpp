@@ -108,10 +108,7 @@ void keyboard_mapper::do_register_inverse(const std::string& name, inverse_bind&
 	for(auto i : bindings)
 		if(i.second == ibind.cmd) {
 			umutex_class u2(ibind.mutex);
-			if(!ibind.primary_spec)
-				ibind.primary_spec = i.first.as_keyspec();
-			else if(!ibind.secondary_spec)
-				ibind.secondary_spec = i.first.as_keyspec();
+			ibind.specs.push_back(i.first.as_keyspec());
 		}
 }
 
@@ -289,24 +286,20 @@ void keyboard_mapper::change_command(const key_specifier& spec, const std::strin
 {
 	if(old != "" && ibinds.count(old)) {
 		auto& i = ibinds[old];
-		i->primary_spec.clear();
-		i->secondary_spec.clear();
+		{
+			umutex_class u2(i->mutex);
+			i->specs.clear();
+		}
 		for(auto j : bindings)
 			if(j.second == i->cmd && j.first.as_keyspec() != spec) {
 				umutex_class u2(i->mutex);
-				if(!i->primary_spec)
-					i->primary_spec = j.first.as_keyspec();
-				else if(!i->secondary_spec)
-					i->secondary_spec = j.first.as_keyspec();
+				i->specs.push_back(j.first.as_keyspec());
 			}
 	}
 	if(newc != "" && ibinds.count(newc)) {
 		auto& i = ibinds[newc];
 		umutex_class u2(i->mutex);
-		if(!i->primary_spec)
-			i->primary_spec = spec;
-		else if(!i->secondary_spec)
-			i->secondary_spec = spec;
+		i->specs.push_back(spec);
 	}
 }
 
@@ -373,9 +366,13 @@ std::list<controller_key*> keyboard_mapper::get_controllerkeys_kbdkey(keyboard_k
 	umutex_class u(mutex);
 	std::list<controller_key*> r;
 	for(auto i : ckeys) {
-		auto k = i.second->get();
-		if(k.first == kbdkey)
-			r.push_back(i.second);
+		for(unsigned j = 0;; j++) {
+			auto k = i.second->get(j);
+			if(!k.first)
+				break;
+			if(k.first == kbdkey)
+				r.push_back(i.second);
+		}
 	}
 	return r;
 }
@@ -392,41 +389,36 @@ inverse_bind::~inverse_bind() throw()
 	register_queue<keyboard_mapper::_inverse_proxy, inverse_bind>::do_unregister(mapper.inverse_proxy, cmd);
 }
 
-key_specifier inverse_bind::get(bool primary) throw(std::bad_alloc)
+key_specifier inverse_bind::get(unsigned index) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
-	return primary ? primary_spec : secondary_spec;
+	if(index >= specs.size())
+		return key_specifier();
+	return specs[index];
 }
 
-void inverse_bind::clear(bool primary) throw(std::bad_alloc)
+void inverse_bind::clear(unsigned index) throw(std::bad_alloc)
 {
 	key_specifier unbind;
 	{
 		umutex_class u(mutex);
-		unbind = primary ? primary_spec : secondary_spec;
+		if(index >= specs.size())
+			return;
+		unbind = specs[index];
 	}
 	if(unbind)
 		mapper.set(unbind, "");
 }
 
-void inverse_bind::set(const key_specifier& keyspec, bool primary) throw(std::bad_alloc)
+void inverse_bind::append(const key_specifier& keyspec) throw(std::bad_alloc)
 {
-	key_specifier unbind;
-	{
-		umutex_class u(mutex);
-		unbind = primary ? primary_spec : secondary_spec;
-	}
-	if(unbind)
-		mapper.set(unbind, "");
 	mapper.set(keyspec, cmd);
 }
-
 
 std::string inverse_bind::getname() throw(std::bad_alloc)
 {
 	return oname;
 }
-
 
 controller_key::controller_key(keyboard_mapper& _mapper, const std::string& _command, const std::string& _name,
 	bool _axis) throw(std::bad_alloc)
@@ -434,8 +426,6 @@ controller_key::controller_key(keyboard_mapper& _mapper, const std::string& _com
 {
 	register_queue<keyboard_mapper::_controllerkey_proxy, controller_key>::do_register(mapper.controllerkey_proxy,
 		cmd, *this);
-	key = NULL;
-	subkey = 0;
 	axis = _axis;
 }
 
@@ -445,38 +435,55 @@ controller_key::~controller_key() throw()
 		mapper.controllerkey_proxy, cmd);
 }
 
-std::pair<keyboard_key*, unsigned> controller_key::get() throw()
+std::pair<keyboard_key*, unsigned> controller_key::get(unsigned index) throw()
 {
 	umutex_class u(mutex);
-	return std::make_pair(key, subkey);
+	if(index >= keys.size())
+		return std::make_pair(reinterpret_cast<keyboard_key*>(NULL), 0);
+	return keys[index];
 }
 
-std::string controller_key::get_string() throw(std::bad_alloc)
+std::string controller_key::get_string(unsigned index) throw(std::bad_alloc)
 {
-	auto k = get();
+	auto k = get(index);
 	if(!k.first)
 		return "";
 	auto s = k.first->get_subkeys();
-	if(subkey >= s.size() || axis)
+	if(k.second >= s.size() || axis)
 		return k.first->get_name();
 	return k.first->get_name() + s[k.second];
 }
 
-void controller_key::set(keyboard_key* _key, unsigned _subkey) throw()
+void controller_key::append(keyboard_key* _key, unsigned _subkey) throw()
 {
 	umutex_class u(mutex);
-	if(key != _key) {
-		if(_key) _key->add_listener(*this, axis);
-		if(key) key->remove_listener(*this);
-	}
-	key = _key;
-	subkey = _subkey;
+	//Search for duplicates.
+	std::pair<keyboard_key*, unsigned> mkey = std::make_pair(_key, _subkey);
+	for(auto i : keys)
+		if(i == mkey)
+			return;
+	//No dupes, add.
+	_key->add_listener(*this, axis);
+	keys.push_back(mkey);
 }
 
-void controller_key::set(const std::string& _key) throw(std::bad_alloc, std::runtime_error)
+void controller_key::remove(keyboard_key* _key, unsigned _subkey) throw()
+{
+	umutex_class u(mutex);
+	std::pair<keyboard_key*, unsigned> mkey = std::make_pair(_key, _subkey);
+	for(auto i = keys.begin(); i != keys.end(); i++) {
+		if(*i == mkey) {
+			mkey.first->remove_listener(*this);
+			keys.erase(i);
+			return;
+		}
+	}
+}
+
+void controller_key::append(const std::string& _key) throw(std::bad_alloc, std::runtime_error)
 {
 	auto g = keymapper_lookup_subkey(mapper.get_keyboard(), _key, axis);
-	set(g.first, g.second);
+	append(g.first, g.second);
 }
 
 std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name, bool axis)
@@ -512,10 +519,14 @@ void controller_key::on_key_event(keyboard_modifier_set& mods, keyboard_key& key
 		return;
 	}
 	auto mask = event.get_change_mask();
-	unsigned kmask = (mask >> (2 * subkey)) & 3;
-	std::string cmd2;
-	if(kmask & 2)
-		cmd2 = keyboard_mapper::fixup_command_polarity(cmd, kmask == 3);
-	if(cmd2 != "")
-		mapper.get_command_group().invoke(cmd2);
+	for(auto i : keys) {
+		if(i.first != &key)
+			continue;
+		unsigned kmask = (mask >> (2 * i.second)) & 3;
+		std::string cmd2;
+		if(kmask & 2)
+			cmd2 = keyboard_mapper::fixup_command_polarity(cmd, kmask == 3);
+		if(cmd2 != "")
+			mapper.get_command_group().invoke(cmd2);
+	}
 }

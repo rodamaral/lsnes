@@ -182,7 +182,7 @@ end:
 		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
 			controller_key* ckey = lsnes_mapper.get_controllerkey(r[2]);
 			if(ckey) {
-				ckey->set(r[1]);
+				ckey->append(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;
 			} else
 				button_keys[r[2]] = r[1];
@@ -240,8 +240,9 @@ end:
 			cfgfile << "BIND " << std::string(i) << " " << lsnes_mapper.get(i) << std::endl;
 		//Buttons.
 		for(auto i : lsnes_mapper.get_controller_keys()) {
-			std::string b = i->get_string();
-			if(b != "")
+			std::string b;
+			unsigned idx = 0;
+			while((b = i->get_string(idx++)) != "")
 				cfgfile << "BUTTON " << b << " " << i->get_command() << std::endl;
 		}
 		for(auto i : button_keys)
