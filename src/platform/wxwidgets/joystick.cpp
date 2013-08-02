@@ -2,7 +2,6 @@
 #include "core/command.hpp"
 #include "core/framerate.hpp"
 #include "core/keymapper.hpp"
-#include "core/joystick.hpp"
 #include "core/joystickapi.hpp"
 #include "core/window.hpp"
 #include "library/minmax.hpp"
@@ -23,6 +22,8 @@
 namespace
 {
 	volatile bool ready;
+	unsigned joysticks;
+	std::map<unsigned, wxJoystick*> objs;
 
 	const char* buttonnames[] = {"Button1", "Button2", "Button3", "Button4", "Button5", "Button6", "Button7",
 		"Button8", "Button9", "Button10", "Button11", "Button12", "Button13", "Button14", "Button15",
@@ -39,21 +40,20 @@ namespace
 		{
 			if(!ready)
 				return;
-			for(auto i : joystick_set()) {
-				wxJoystick& j = *reinterpret_cast<wxJoystick*>(i);
+			for(auto i : objs) {
+				wxJoystick& j = i.second;
 				joystick_report_pov(i, 0, j.GetPOVCTSPosition());
 				uint32_t bmask = j.GetButtonState();
 				for(unsigned j = 0; j < 32; j++)
-					joystick_report_button(i, j, (bmask >> j) & 1);
+					lsnes_gamepads[i.first].report_button(j, (bmask >> j) & 1);
 				wxPoint xy = j.GetPosition();
-				joystick_report_axis(i, 0, xy.x);
-				joystick_report_axis(i, 1, xy.y);
-				joystick_report_axis(i, 2, j.GetZPosition());
-				joystick_report_axis(i, 3, j.GetRudderPosition());
-				joystick_report_axis(i, 4, j.GetUPosition());
-				joystick_report_axis(i, 5, j.GetVPosition());
+				lsnes_gamepads[i.first].report_axis(0, xy.x);
+				lsnes_gamepads[i.first].report_axis(1, xy.y);
+				lsnes_gamepads[i.first].report_axis(2, j.GetZPosition());
+				lsnes_gamepads[i.first].report_axis(3, j.GetRudderPosition());
+				lsnes_gamepads[i.first].report_axis(4, j.GetUPosition());
+				lsnes_gamepads[i.first].report_axis(5, j.GetVPosition());
 			}
-			joystick_flush();
 		}
 	}* jtimer;
 
@@ -69,24 +69,23 @@ namespace
 					delete joy;
 					continue;
 				}
-				uint64_t jid = reinterpret_cast<uint64_t>(joy);
-				joystick_create(jid, joy->GetProductName());
+				unsigned jid = lsnes_gamepads.add(joy->GetProductName());
+				hw_gamepad& ngp = lsnes_gamepads[jid];
+				objs[jid] = joy;
+				
 				if(joy->HasPOV())
-					joystick_new_hat(jid, 0, "POV");
+					ngp.add_hat(0, "POV");
 				for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)
-					joystick_new_button(jid, j, buttonnames[j]);
+					ngp.add_button(j, buttonnames[j]);
 				const char* R = "Rudder";
-				joystick_new_axis(jid, 0, joy->GetXMin(), joy->GetXMax(), "X", 1);
-				joystick_new_axis(jid, 1, joy->GetYMin(), joy->GetYMax(), "Y", 1);
-				if(joy->HasZ())		joystick_new_axis(jid, 2, joy->GetZMin(),
-					joy->GetZMax(), "Z", 1);
-				if(joy->HasRudder())	joystick_new_axis(jid, 3, joy->GetRudderMin(),
-					joy->GetRudderMax(), R, 1);
-				if(joy->HasU()) 	joystick_new_axis(jid, 4, joy->GetUMin(),
-					joy->GetUMax(), "U", 1);
-				if(joy->HasV())		joystick_new_axis(jid, 5, joy->GetVMin(),
-					joy->GetVMax(), "V", 1);
-				joystick_message(jid);
+				ngp.add_axis(0, joy->GetXMin(), joy->GetXMax(), false, "X");
+				ngp.add_axis(1, joy->GetYMin(), joy->GetYMax(), false, "Y");
+				if(joy->HasZ())		ngp.add_axis(2, joy->GetZMin(), joy->GetZMax(), false, "Z");
+				if(joy->HasRudder())	ngp.add_axis(3, joy->GetRudderMin(), joy->GetRudderMax(),
+					false, R);
+				if(joy->HasU()) 	ngp.add_axis(4, joy->GetUMin(), joy->GetUMax(), false, "U");
+				if(joy->HasV())		ngp.add_axis(5, joy->GetVMin(), joy->GetVMax(), false, "V");
+				messages << "Joystick #" << jid << " online: " << joy->GetProductName() << std::endl;
 			}
 			ready = true;
 			jtimer = new joystick_timer();
@@ -97,10 +96,9 @@ namespace
 			delete jtimer;
 			jtimer = NULL;
 			ready = false;
-			for(auto i : joystick_set())
-				delete reinterpret_cast<wxJoystick*>(i);
+			for(auto i : objs)
+				delete i.second;
 			usleep(50000);
-			joystick_quit();
 		},
 		//We don't poll in this thread, so just quit instantly.
 		.thread_fn = []() -> void {},

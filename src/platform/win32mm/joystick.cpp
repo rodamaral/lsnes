@@ -1,6 +1,5 @@
 #include "core/command.hpp"
 #include "core/framerate.hpp"
-#include "core/joystick.hpp"
 #include "core/keymapper.hpp"
 #include "core/joystickapi.hpp"
 #include "core/window.hpp"
@@ -22,6 +21,8 @@ namespace
 {
 	volatile bool quit_signaled;
 	volatile bool quit_ack;
+	std::map<unsigned, unsigned> idx_to_jid;
+	unsigned joysticks;
 
 	const char* buttonnames[] = {"Button1", "Button2", "Button3", "Button4", "Button5", "Button6", "Button7",
 		"Button8", "Button9", "Button10", "Button11", "Button12", "Button13", "Button14", "Button15",
@@ -35,6 +36,7 @@ namespace
 			unsigned max_joysticks = joyGetNumDevs();
 			if(!max_joysticks)
 				return;		//No joystick support.
+			joysticks = max_joysticks;
 			for(unsigned i = 0; i < max_joysticks; i++) {
 				JOYINFOEX info;
 				JOYCAPS caps;
@@ -44,49 +46,46 @@ namespace
 					continue;	//Not usable.
 				if(joyGetDevCaps(i, &caps, sizeof(caps)) != JOYERR_NOERROR)
 					continue;	//Not usable.
-				joystick_create(i, caps.szPname);
+				idx_to_jid[i] = lsnes_gamepads.add(caps.szPname);
+				hw_gamepad& ngp = lsnes_gamepads[idx_to_jid[i]];
 				if(caps.wCaps & JOYCAPS_HASPOV)
-					joystick_new_hat(i, 0, "POV");
+					ngp.add_hat(0, "POV");
 				for(unsigned j = 0; j < caps.wNumButtons && j < 32; j++)
-					joystick_new_button(i, j, buttonnames[j]);
-				joystick_new_axis(i, 0, caps.wXmin, caps.wXmax, "X", 1);
-				joystick_new_axis(i, 1, caps.wYmin, caps.wYmax, "Y", 1);
-				if(caps.wCaps & JOYCAPS_HASZ)	joystick_new_axis(i, 2, caps.wZmin, caps.wZmax,
-					"Z", 1);
-				if(caps.wCaps & JOYCAPS_HASR)	joystick_new_axis(i, 3, caps.wRmin, caps.wRmax,
-					"Rudder", 1);
-				if(caps.wCaps & JOYCAPS_HASU)	joystick_new_axis(i, 4, caps.wUmin, caps.wUmax,
-					"U", 1);
-				if(caps.wCaps & JOYCAPS_HASV)	joystick_new_axis(i, 5, caps.wVmin, caps.wVmax,
-					"V", 1);
-				joystick_message(i);
+					ngp.add_button(j, buttonnames[j]);
+				ngp.add_axis(0, caps.wXmin, caps.wXmax, false, "X");
+				ngp.add_axis(1, caps.wYmin, caps.wYmax, false, "Y");
+				if(caps.wCaps & JOYCAPS_HASZ)	ngp.add_axis(2, caps.wZmin, caps.wZmax, false, "Z");
+				if(caps.wCaps & JOYCAPS_HASR)	ngp.add_axis(3, caps.wRmin, caps.wRmax, false, 
+					"Rudder");
+				if(caps.wCaps & JOYCAPS_HASU)	ngp.add_axis(4, caps.wUmin, caps.wUmax, false, "U");
+				if(caps.wCaps & JOYCAPS_HASV)	ngp.add_axis(5, caps.wVmin, caps.wVmax, false, "V");
+				messages << "Joystick #" << idx_to_jid[i] << " online: " << caps.szPname << std::endl;
 			}
 			quit_ack = quit_signaled = false;
 		},
 		.quit = []() -> void {
 			quit_signaled = true;
 			while(!quit_ack);
-			joystick_quit();
 		},
 		.thread_fn = []() -> void {
 			while(!quit_signaled) {
-				for(auto i : joystick_set()) {
+				for(unsigned i = 0; i < joysticks; i++) {
 					JOYINFOEX info;
 					info.dwSize = sizeof(info);
 					info.dwFlags = JOY_RETURNALL;
 					if(joyGetPosEx(i, &info) != JOYERR_NOERROR)
 						continue;	//Not usable.
-					joystick_report_pov(i, 0, info.dwPOV);
+					lsnes_gamepads[idx_to_jid[i]].report_hat(0, info.dwPOV);
 					for(unsigned j = 0; j < 32; j++)
-						joystick_report_button(i, j, (info.dwButtons >> j) & 1);
-					joystick_report_axis(i, 0, info.dwXpos);
-					joystick_report_axis(i, 1, info.dwYpos);
-					joystick_report_axis(i, 2, info.dwZpos);
-					joystick_report_axis(i, 3, info.dwRpos);
-					joystick_report_axis(i, 4, info.dwUpos);
-					joystick_report_axis(i, 5, info.dwVpos);
+						lsnes_gamepads[idx_to_jid[i]].report_button(j, 
+							(info.dwButtons >> j) & 1);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(0, info.dwXpos);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(1, info.dwYpos);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(2, info.dwZpos);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(3, info.dwRpos);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(4, info.dwUpos);
+					lsnes_gamepads[idx_to_jid[i]].report_axis(5, info.dwVpos);
 				}
-				joystick_flush();
 				usleep(POLL_WAIT);
 			}
 			quit_ack = true;

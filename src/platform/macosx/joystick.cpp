@@ -1,5 +1,5 @@
 #include "sdl-sysjoy-interface.h"
-#include "core/joystick.hpp"
+#include "core/keymapper.hpp"
 #include "core/joystickapi.hpp"
 #include "core/misc.hpp"
 #include "library/string.hpp"
@@ -11,6 +11,7 @@ namespace
 	volatile bool quit_ack = false;
 	const unsigned POLL_WAIT = 20000;
 	std::map<uint8_t, SDL_Joystick*> joys;
+	std::map<uint8_t, unsigned> idx_to_jid;
 
 	void probe_joystick(int index)
 	{
@@ -23,13 +24,15 @@ namespace
 		}
 		uint64_t joyid = reinterpret_cast<size_t>(j);
 		joys[index] = j;
-		joystick_create(joyid, j->name);
+		idx_to_jid[index] = lsnes_gamepads.add(j->name);
+		hw_gamepad& ngp = lsnes_gamepads[idx_to_jid[i]];
+
 		for(int i = 0; i < j->nbuttons; i++)
-			joystick_new_button(joyid, i, (stringfmt() << "Button #" << i).str());
+			ngp.add_button(i, (stringfmt() << "Button #" << i).str());
 		for(int i = 0; i < j->naxes; i++)
-			joystick_new_axis(joyid, i, -32768, 32767, (stringfmt() << "Axis #" << i).str(), 1);
+			ngp.add_axis(i, -32768, 32767, false, (stringfmt() << "Axis #" << i).str());
 		for(int i = 0; i < j->nhats; i++)
-			joystick_new_hat(joyid, i, (stringfmt() << "Hat #" << i).str());
+			ngp.add_hat(i, (stringfmt() << "Hat #" << i).str());
 	}
 
 	struct _joystick_driver drv = {
@@ -49,13 +52,11 @@ namespace
 				delete i.second;
 			}
 			SDL_SYS_JoystickQuit();
-			joystick_quit();
 		},
 		.thread_fn = []() -> void {
 			while(!quit_signaled) {
 				for(auto i : joys)
 					SDL_SYS_JoystickUpdate(i.second);
-				joystick_flush();
 				usleep(POLL_WAIT);
 			}
 			quit_ack = true;
@@ -74,7 +75,7 @@ uint8_t SDL_numjoysticks;
 
 int SDL_PrivateJoystickAxis(SDL_Joystick* j, uint8_t axis, int16_t value)
 {
-	joystick_report_axis(reinterpret_cast<size_t>(j), axis, value);
+	lsnes_gamepads[j->index].report_axis(axis, value);
 	j->axes[axis] = value;
 	return 0;
 }
@@ -90,14 +91,14 @@ int SDL_PrivateJoystickHat(SDL_Joystick* j, uint8_t hat, uint8_t val)
 	int angle = -1;
 	if(val > 0)
 		angle = 4500 * (val - 1);
-	joystick_report_pov(reinterpret_cast<size_t>(j), hat, angle);
+	lsnes_gamepads[j->index].report_hat(hat, angle);
 	j->hats[hat] = val;
 	return 0;
 }
 
 int SDL_PrivateJoystickButton(SDL_Joystick* j, uint8_t button, uint8_t state)
 {
-	joystick_report_button(reinterpret_cast<size_t>(j), button, state != 0);
+	lsnes_gamepads[j->index].report_button(button, state != 0);
 	j->buttons[button] = state;
 	return 0;
 }
