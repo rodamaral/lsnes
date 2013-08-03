@@ -79,4 +79,32 @@ namespace
 		}
 		return 0;
 	});
+
+	function_ptr_luafun movie_to_rewind(LS, "movie.to_rewind", [](lua_state& L, const std::string& fname) -> int {
+		std::string filename = L.get_string(1, fname.c_str());
+		moviefile mfile(filename, *our_rom->rtype);
+		if(!mfile.is_savestate)
+			throw std::runtime_error("movie.to_rewind only allows savestates");
+		lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(LS);
+		u2->state = mfile.savestate;
+		if(u2->state.size() >= 32)
+			u2->state.resize(u2->state.size() - 32);
+		u2->secs = mfile.rtc_second;
+		u2->ssecs = mfile.rtc_subsecond;
+		u2->pollcounters = mfile.pollcounters;
+		u2->lag = mfile.lagged_frames;
+		u2->frame = mfile.save_frame;
+		u2->hostmemory = mfile.host_memory;
+		//Now the remaining field ptr is somewhat nastier.
+		uint64_t f = 0;
+		uint64_t s = mfile.input.size();
+		u2->ptr = 0;
+		while(++f < u2->frame) {
+			if(u2->ptr < s)
+				u2->ptr++;
+			while(u2->ptr < s && !mfile.input[u2->ptr].sync())
+				u2->ptr++;
+		}
+		return 1;
+	});
 }

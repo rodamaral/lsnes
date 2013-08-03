@@ -3116,6 +3116,15 @@ Return number of bytes needed to store the input frame.
  Mainly useful for some debugging.
 \end_layout
 
+\begin_layout Subsubsection
+movie.to_rewind(string filename)
+\end_layout
+
+\begin_layout Standard
+Load specified savestate file as rewind point and return UNSAFEREWIND correspond
+ing to it.
+\end_layout
+
 \begin_layout Subsection
 Table settings
 \end_layout

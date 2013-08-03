@@ -1587,6 +1587,11 @@ Set current frame from given data.
 Return number of bytes needed to store the input frame. Mainly 
 useful for some debugging.
 
+7.8.34 movie.to_rewind(string filename)
+
+Load specified savestate file as rewind point and return 
+UNSAFEREWIND corresponding to it.
+
 7.9 Table settings
 
 Routines for settings manipulation
