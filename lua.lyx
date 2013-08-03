@@ -1,0 +1,3659 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing single
+\use_hyperref true
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder false
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize a4paper
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Hakusana
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 2cm
+\topmargin 2cm
+\rightmargin 1cm
+\bottommargin 2cm
+\headheight 1cm
+\headsep 1cm
+\footskip 1cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+lsnes Lua functions reference
+\end_layout
+
+\begin_layout Section
+Table of contents
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Global
+\end_layout
+
+\begin_layout Subsection
+print: Print values to console
+\end_layout
+
+\begin_layout Itemize
+Syntax: none print(value...
+ values)
+\end_layout
+
+\begin_layout Standard
+Prints specified values to console.
+\end_layout
+
+\begin_layout Subsection
+exec: Execute lsnes commands
+\end_layout
+
+\begin_layout Itemize
+Syntax: none exec(string cmd)
+\end_layout
+
+\begin_layout Standard
+Execute lsnes command <cmd>.
+\end_layout
+
+\begin_layout Subsection
+utime: Get current time
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number,number) utime()
+\end_layout
+
+\begin_layout Standard
+Returns two numbers.
+ First is time since some epoch in seconds, the second is microseconds mod
+ 10^6 since that epoch.
+\end_layout
+
+\begin_layout Subsection
+emulator_ready: Check if emulator has been fully initialized
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean emulator_ready()
+\end_layout
+
+\begin_layout Standard
+Returns true if emulator has finished booting, false if not (on_startup()
+ will be issued later).
+\end_layout
+
+\begin_layout Subsection
+set_idle_timeout: Run function after timeout when emulator is idle
+\end_layout
+
+\begin_layout Itemize
+Syntax: none set_idle_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block idle for.
+ After this timeout has expired, on_idle() will be called once.
+\end_layout
+
+\begin_layout Subsection
+set_timer_timeout: Run function after timeout.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none set_timer_timeout(number timeout)
+\end_layout
+
+\begin_layout Standard
+Set number of microseconds to block timer for.
+ After this timeout has expired, on_timer() will be called once.
+\end_layout
+
+\begin_layout Subsection
+bus_address: Look up address in system bus.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bus_address(number bus_addr)
+\end_layout
+
+\begin_layout Standard
+Returns virtual address corresponding to specified address on system bus.
+\end_layout
+
+\begin_layout Subsection
+loopwrapper: Convert loop into callable function
+\end_layout
+
+\begin_layout Itemize
+Syntax: function loopwrapper(function fun, ...)
+\end_layout
+
+\begin_layout Standard
+Calls function <fun> with function and specified arguments.
+ The function passed suspends execution until the function returned is called.
+ Handy for linear flow control among multiple invocations of a hook.
+ Example code:
+\end_layout
+
+\begin_layout LyX-Code
+on_paint = loopwrapper(function(wait)
+\end_layout
+
+\begin_deeper
+\begin_layout LyX-Code
+while true do
+\end_layout
+
+\begin_deeper
+\begin_layout LyX-Code
+gui.text(0, 0, 
+\begin_inset Quotes eld
+\end_inset
+
+Test!
+\begin_inset Quotes erd
+\end_inset
+
+);
+\end_layout
+
+\begin_layout LyX-Code
+wait();
+\end_layout
+
+\end_deeper
+\begin_layout LyX-Code
+end
+\end_layout
+
+\end_deeper
+\begin_layout LyX-Code
+end);
+\end_layout
+
+\begin_layout Subsection
+list_bindings: List keybindings
+\end_layout
+
+\begin_layout Itemize
+Syntax: table list_bindings([string cmd])
+\end_layout
+
+\begin_layout Standard
+Get table of all keybindings, indexed by keyspec (modifiers|mask/key).
+ If <cmd> is specified, the table is limited to that command.
+ Also searches for controller keys.
+\end_layout
+
+\begin_layout Subsection
+get_alias: Get expansion of alias
+\end_layout
+
+\begin_layout Itemize
+Syntax: string get_alias(string aname)
+\end_layout
+
+\begin_layout Standard
+Get expansion of given alias <aname>.
+\end_layout
+
+\begin_layout Subsection
+set_alias: Set expansion of alias
+\end_layout
+
+\begin_layout Itemize
+Syntax: none set_alias(string aname, string value)
+\end_layout
+
+\begin_layout Standard
+Set expansion of given alias.
+\end_layout
+
+\begin_layout Subsection
+create_ibind: Create invese binding
+\end_layout
+
+\begin_layout Itemize
+Syntax: INVERSEBIND create_ibind(string name, string cmd)
+\end_layout
+
+\begin_layout Standard
+Return object representing inverse binding with specified name <name> and
+ specified command <cmd>.
+\end_layout
+
+\begin_layout Itemize
+Note: To create press/release commands, use aliases +foo and -foo .
+\end_layout
+
+\begin_layout Itemize
+Note: Keep the returned object around.
+\end_layout
+
+\begin_layout Subsection
+create_command: Create a command
+\end_layout
+
+\begin_layout Itemize
+Syntax: COMMANDBIND create_commmand(string name, function a)
+\end_layout
+
+\begin_layout Itemize
+Syntax: COMMANDBIND create_commmand(string name, function a, function b)
+\end_layout
+
+\begin_layout Standard
+Return object representing a command (pair).
+\end_layout
+
+\begin_layout Itemize
+If only one function is specied, the command is level-sensitive, <a> is
+ callback.
+\end_layout
+
+\begin_layout Itemize
+If <b> is function, the function is edge-sensitive, <a> is positive edge
+ callback and <b> is negative edge callback.
+\end_layout
+
+\begin_layout Itemize
+All callbacks get single argument: The parameters passed.
+\end_layout
+
+\begin_layout Itemize
+Keep the returned object around.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table bit:
+\end_layout
+
+\begin_layout Standard
+Bitwise logical functions and related.
+\end_layout
+
+\begin_layout Subsection
+bit.none/bit.bnot: Bitwise none or NOT function
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.none(number...)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.bnot(number...)
+\end_layout
+
+\begin_layout Standard
+48-bit bitwise NOT / NONE function (set bits that are set in none of the
+ arguments).
+\end_layout
+
+\begin_layout Subsection
+bit.any/bit.bor: Bitwise any or OR function
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.any(number...)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.bor(number...)
+\end_layout
+
+\begin_layout Standard
+48-bit bitwise OR / ANY function (set bits that are set in any of the arguments).
+\end_layout
+
+\begin_layout Subsection
+bit.all/bit.band: Bitwise all or AND function
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.all(number...)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.band(number...)
+\end_layout
+
+\begin_layout Standard
+48-bit bitwise AND / ALL function (set bits that are set in all of the arguments
+).
+\end_layout
+
+\begin_layout Subsection
+bit.parity/bit.bxor: Bitwise parity or XOR function
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.parity(number...)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.bxor(number...)
+\end_layout
+
+\begin_layout Standard
+48-bit bitwise XOR / PARITY function (set bits that are set in odd number
+ of the arguments).
+\end_layout
+
+\begin_layout Subsection
+bit.lrotate: Rotate a number left
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.lrotate(number base[, number amount[, number bits]])
+\end_layout
+
+\begin_layout Standard
+Rotate <bits>-bit (max 48, default 48) number <base> left by <amount> (default
+ 1) places.
+\end_layout
+
+\begin_layout Subsection
+bit.rrotate: Rotate a number right
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.rrotate(number base[, number amount[, number bits]])
+\end_layout
+
+\begin_layout Standard
+Rotate <bits>-bit (max 48, default 48) number <base> right by <amount> (default
+ 1) places.
+\end_layout
+
+\begin_layout Subsection
+bit.lshift: Shift a number left
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.lshift(number base[, number amount[, number bits]])
+\end_layout
+
+\begin_layout Standard
+Shift <bits>-bit (max 48, default 48) number <base> left by <amount> (default
+ 1) places.
+ The new bits are filled with zeroes.
+\end_layout
+
+\begin_layout Subsection
+bit.lrshift: Shift a number right (logical)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.lrshift(number base[, number amount[, number bits]])
+\end_layout
+
+\begin_layout Standard
+Shift <bits>-bit (max 48, default 48) number <base> logically right by <amount>
+ (default 1) places.
+ The new bits are filled with zeroes.
+\end_layout
+
+\begin_layout Subsection
+bit.arshift: Shift a number right (arithmetic)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.arshift(number base[, number amount[, number bits]])
+\end_layout
+
+\begin_layout Standard
+Shift <bits>-bit (max 48, default 48) number <base> logically right by <amount>
+ (default 1) places.
+ The new bits are shifted in with copy of the high bit.
+\end_layout
+
+\begin_layout Subsection
+bit.extract: Extract/shuffle bits from number
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.extract(number base[, number bit0[, number bit1,...]])
+\end_layout
+
+\begin_layout Standard
+Returns number that has bit0-th bit as bit 0, bit1-th bit as 1 and so on.
+\end_layout
+
+\begin_layout Itemize
+Note: Bit numbers up to 51 should work reliably (then things start falling
+ apart due to double precision issues).
+\end_layout
+
+\begin_layout Itemize
+Note: There are two special bit positions, true and false, standing for
+ always set bit and always clear bit.
+\end_layout
+
+\begin_layout Subsection
+bit.value: Construct number with specified bits set
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.value([number bit1[, number bit2,...]])
+\end_layout
+
+\begin_layout Standard
+Returns bitwise OR of 1 left shifted by <bit1> places, 1 left shifted by
+ <bit2> places and so on.
+ As special value, nil argument is no-op.
+\end_layout
+
+\begin_layout Subsection
+bit.test_any: Test if any bit is set
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean bit.test_any(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Returns true if bitwise and of <a> and <b> is nonzero, otherwise false.
+\end_layout
+
+\begin_layout Subsection
+bit.test_all: Test if all bits are set
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean bit.test_all(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Returns true if bitwise and of <a> and <b> equals <b>, otherwise false.
+\end_layout
+
+\begin_layout Subsection
+bit.popcount: Population count
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.popcount(number a)
+\end_layout
+
+\begin_layout Standard
+Returns number of set bits in <a>.
+\end_layout
+
+\begin_layout Subsection
+bit.clshift: Chained left shift
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) bit.clshift(number a, number b, [number amount,[number
+ bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained left shift on <a>, <b> by <amount> positions (default 1), assuming
+ numbers to be of specified number of bits <bits> (default 48).
+\end_layout
+
+\begin_layout Subsection
+bit.crshift: Chained right shift
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) bit.crshift(number a, number b, [number amount,[number
+ bits]])
+\end_layout
+
+\begin_layout Standard
+Does chained right shift on <a>, <b> by <amount> positions (default 1),
+ assuming numbers to be of specified number of bits <bits> (default 48).
+\end_layout
+
+\begin_layout Subsection
+bit.flagdecode: Decode bitfield into flags
+\end_layout
+
+\begin_layout Itemize
+Syntax: string bit.flagdecode(number a, number bits, [string on, [string
+ off]])
+\end_layout
+
+\begin_layout Standard
+Return string of length bits where ith character is ith character of on
+ if bit i is on, otherwise ith character of off.
+ Out of range reads give last character.
+\end_layout
+
+\begin_layout Itemize
+Note: <on> defaults to '*' if empty.
+\end_layout
+
+\begin_layout Itemize
+Note: <off> defaults to '-' if empty.
+\end_layout
+
+\begin_layout Subsection
+bit.rflagdecode: Decode bitfield into flags
+\end_layout
+
+\begin_layout Itemize
+Syntax: string bit.rflagdecode(number a, number bits, [string on, [string
+ off]])
+\end_layout
+
+\begin_layout Standard
+Like bit.flagdecode, but outputs the string in the opposite order (most significa
+nt bit first).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table gui:
+\end_layout
+
+\begin_layout Itemize
+Functions that draw to screen can only only be called in on_paint and on_video
+ callbacks or if non-default render queue has been set.
+\end_layout
+
+\begin_layout Itemize
+Colors are 32-bit.
+ Bits 0-7 are the blue component, bits 8-15 are the green component, bits
+ 16-23 are the red component, bits 24-31 are alpha component (0 is fully
+ opaque, 255 is almost transparent).
+ -1 is the fully transparent color.
+\end_layout
+
+\begin_layout Itemize
+Alpha values greater than 127 do work properly.
+\end_layout
+
+\begin_layout Itemize
+Origin of coordinates is at top left corner of game display area.
+ Left and top gaps correspond to negative coordinates.
+\end_layout
+
+\begin_layout Subsection
+gui.resolution: Get current resolution
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) gui.resolution()
+\end_layout
+
+\begin_layout Standard
+Returns 2-tuple (hresolution, vresolution).
+\end_layout
+
+\begin_layout Subsection
+gui.left_gap/gui.right_gap/gui.top_gap/gui.bottom_gap: Set edge gaps
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.left_gap(number gap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.right_gap(number gap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.top_gap(number gap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.bottom_gap(number gap)
+\end_layout
+
+\begin_layout Standard
+Set the specified edge gap to specified value <gap> (max gap is 8191).
+ If successful, old gap is returned.
+\end_layout
+
+\begin_layout Subsection
+gui.delta_left_gap/gui.delta_right_gap/gui.delta_top_gap/gui.delta_bottom_gap:
+ Adjust edge gaps
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.delta_left_gap(number dgap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.delta_right_gap(number dgap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.delta_top_gap(number dgap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.delta_bottom_gap(number dgap)
+\end_layout
+
+\begin_layout Standard
+Increase the specified edge gap by specified value <dgap> (max gap is 8191)
+ and return the old gap (returns nothing on error).
+\end_layout
+
+\begin_layout Subsection
+gui.text/gui.textH/gui.textV,gui.textHV: Draw text
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.text(number x, number y, string text[, number fgc[, number
+ bgc]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.textH(number x, number y, string text[, number fgc[, number
+ bgc]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.textV(number x, number y, string text[, number fgc[, number
+ bgc]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.textHV(number x, number y, string text[, number fgc[, number
+ bgc]])
+\end_layout
+
+\begin_layout Standard
+Draw specified text on the GUI (each character cell is 8 or 16 wide and
+ 16 high).
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate to start the drawing from (and x-coordinate at begining
+ of the lines).
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate to start the drawing from.
+\end_layout
+
+\begin_layout Itemize
+text: The text to draw.
+\end_layout
+
+\begin_layout Itemize
+fgc: Text color (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+bgc: Background color (default is -1 (transparent))
+\end_layout
+
+\begin_layout Standard
+Note: The H variants draw at double width and V variants draw at double
+ height.
+\end_layout
+
+\begin_layout Subsection
+gui.rectangle: Draw a rectangle
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.rectangle(number x, number y, number width, number height[,
+ number thickness[, number outline[, number fill]]])
+\end_layout
+
+\begin_layout Standard
+Draw rectangle on the GUI.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of upper edge.
+\end_layout
+
+\begin_layout Itemize
+width: Width of rectangle.
+\end_layout
+
+\begin_layout Itemize
+height: Height of rectangle.
+\end_layout
+
+\begin_layout Itemize
+thickness: Thickness of outline (default is 1).
+\end_layout
+
+\begin_layout Itemize
+outline: Color of outline (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+fill: Color of fill (default is -1 (transparent))
+\end_layout
+
+\begin_layout Subsection
+gui.box: Draw a 3D-effect box
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.box(number x, number y, number width, number height[, number
+ thickness[, number outline1[,number outline2[, number fill]]]])
+\end_layout
+
+\begin_layout Standard
+Draw rectangle with 3D effect on the GUI.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of upper edge.
+\end_layout
+
+\begin_layout Itemize
+width: Width of rectangle.
+\end_layout
+
+\begin_layout Itemize
+height: Height of rectangle.
+\end_layout
+
+\begin_layout Itemize
+thickness: Thickness of outline (default is 1).
+\end_layout
+
+\begin_layout Itemize
+outline1: First color of outline (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+outline2: First color of outline (default is 0x808080 (dark gray))
+\end_layout
+
+\begin_layout Itemize
+fill: Color of fill (default is 0xC0C0C0 (light grayy))
+\end_layout
+
+\begin_layout Subsection
+gui.pixel: Draw a single pixel
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.pixel(number x, number y[, number color])
+\end_layout
+
+\begin_layout Standard
+Draw one pixel on the GUI.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the pixel
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the pixel
+\end_layout
+
+\begin_layout Itemize
+color: Color of the pixel (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Subsection
+gui.crosshair: Draw a crosshair
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.crosshair(number x, number y[, number length[, number color]])
+\end_layout
+
+\begin_layout Standard
+Draw a crosshair.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the crosshair
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the crosshair
+\end_layout
+
+\begin_layout Itemize
+length: Length of the crosshair lines (default 10).
+\end_layout
+
+\begin_layout Itemize
+color: Color of the crosshair (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Subsection
+gui.line: Draw a line
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.line(number x1, number y1, number x2, number y2[, number
+ color])
+\end_layout
+
+\begin_layout Standard
+Draw a thin line.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x1: X-coordinate of one end.
+\end_layout
+
+\begin_layout Itemize
+y1: Y-coordinate of one end.
+\end_layout
+
+\begin_layout Itemize
+x2: X-coordinate of the other end.
+\end_layout
+
+\begin_layout Itemize
+y2: Y-coordinate of the other end.
+\end_layout
+
+\begin_layout Itemize
+color: Color of the line (default is 0xFFFFFF (white)).
+\end_layout
+
+\begin_layout Subsection
+gui.circle: Draw a (filled) circle
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.circle(number x, number y, number r[, number thick[, number
+ border[, number fil]]])
+\end_layout
+
+\begin_layout Standard
+Draw a circle.
+ Parameters.
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of the center
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of the center
+\end_layout
+
+\begin_layout Itemize
+r: The radius of the circle
+\end_layout
+
+\begin_layout Itemize
+thick: Border thickness
+\end_layout
+
+\begin_layout Itemize
+border: Border color (default is 0xFFFFFF (white))
+\end_layout
+
+\begin_layout Itemize
+fill: Fill color (default is -1 (transparent)).
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_draw: Draw a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_draw(number x, number y, BITMAP bitmap, PALETTE palette)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_draw(number x, number y, DBITMAP bitmap)
+\end_layout
+
+\begin_layout Standard
+Draw a bitmap <bitmap> on screen with specified palette <palette> (if bitmap
+ is paletted) .
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: X-coordinate of left edge.
+\end_layout
+
+\begin_layout Itemize
+y: Y-coordinate of top edge.
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to draw
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to draw the bitmap using.
+\end_layout
+
+\begin_layout Subsection
+gui.palette_new: Create a new palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: PALETTE gui.palette_new()
+\end_layout
+
+\begin_layout Standard
+Returns a new palette (initially all transparent).
+ 
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_new: Create a new bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: BITMAP/DBITMAP gui.bitmap_new(number w, number h, boolean direct[,
+ bool icolor])
+\end_layout
+
+\begin_layout Standard
+Returns a new bitmap/dbitmap.
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: The width of new bitmap
+\end_layout
+
+\begin_layout Itemize
+h: The height of new bitmap
+\end_layout
+
+\begin_layout Itemize
+direct: If true, the returned bitmap is dbitmap, otherwise bitmap.
+\end_layout
+
+\begin_layout Itemize
+icolor: Initital fill color (defaults to 0 on BITMAP, -1 on DBITMAP)
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_load/gui.bitmap_load_str: Load a bitmap from file or string
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load(string file)
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_str(string content)
+\end_layout
+
+\begin_layout Standard
+Reads file <file> or string <content> and returns loaded bitmap/dbitmap
+ (if bitmap, the second return value is palette for bitmap).
+\end_layout
+
+\begin_layout Itemize
+
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_load_png/gui.bitmap_load_png_str: Load a bitmap from PNG
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png(string file)
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png_str(string content)
+\end_layout
+
+\begin_layout Standard
+Load a bitmap from PNG file <file> or BASE64 encoded content <content>.
+\end_layout
+
+\begin_layout Itemize
+If the PNG is of color type 3 (PALETTE), returns two value.
+ First is BITMAP containing the image data from the PNG and second is PALETTE
+ containg the palette data from the PNG.
+\end_layout
+
+\begin_layout Itemize
+For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), returns
+ one DBITMAP containg the image data loaded from the PNG.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_load_pal/gui.bitmap_load_pal_str: Load a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: PALETTE gui.bitmap_load_pal(string file)
+\end_layout
+
+\begin_layout Itemize
+Syntax: PALETTE gui.bitmap_load_pal_str(string content)
+\end_layout
+
+\begin_layout Standard
+Load a palette from file <file> or string <content>.
+\end_layout
+
+\begin_layout Itemize
+The kinds of lines supported:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Blank or just whitespace: Ignored
+\end_layout
+
+\begin_layout Itemize
+First non-whitespace is '#': Ignored
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b>: Fully opaque color with specified RGB values (0-255)
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b> <a>: Color with specified RGB values (0-255) and specified alpha
+ (0-256, 0 being fully transparent and 256 fully opaque).
+\end_layout
+
+\begin_layout Itemize
+transparent: Fully transparent color
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+gui.palette_set: Set palette entry
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.palette_set(PALETTE palette, number index, number color)
+\end_layout
+
+\begin_layout Standard
+Sets color in palette.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to manipulate
+\end_layout
+
+\begin_layout Itemize
+index: Index of color (0-65535).
+\end_layout
+
+\begin_layout Itemize
+color: The color value.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_pset: Set pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_pset(BITMAP/DBITMAP bitmap, number x, number y, number
+ color)
+\end_layout
+
+\begin_layout Standard
+Sets specified pixel in bitmap.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to manipulate
+\end_layout
+
+\begin_layout Itemize
+x: The x-coordinate of the pixel.
+\end_layout
+
+\begin_layout Itemize
+y: The y-coordinate of the pixel.
+\end_layout
+
+\begin_layout Itemize
+color: If bitmap is a bitmap, color index (0-65535).
+ Otherwise color value.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_size: Get size of bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) gui.bitmap_size(BITMAP/DBITMAP bitmap)
+\end_layout
+
+\begin_layout Standard
+Get size of bitmap <bitmap>.
+ The first return is the width, the second is the height.
+\end_layout
+
+\begin_layout Itemize
+Note: Can be used anywhere.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_blit: Blit a bitmap into another
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit(BITMAP/DBITMAP dest, number dx, number dy, BITMAP/DB
+ITMAP src, number sx, number sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Standard
+Blit a part of bitmap to another.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: Destination to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: left edge of target
+\end_layout
+
+\begin_layout Itemize
+dy: Top edge of target
+\end_layout
+
+\begin_layout Itemize
+src: The source to blit from.
+ Must be of the same type as destination.
+\end_layout
+
+\begin_layout Itemize
+sx: left edge of source
+\end_layout
+
+\begin_layout Itemize
+sy: Top edge of source
+\end_layout
+
+\begin_layout Itemize
+w: Width of region
+\end_layout
+
+\begin_layout Itemize
+h: Height of region.
+\end_layout
+
+\begin_layout Itemize
+ck: Color key.
+ Pixels of this color are not blitted.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If bitmaps are bitmaps, this is color index of colorkey.
+ Values outside range 0-65535 cause no key to be used as colorkey.
+\end_layout
+
+\begin_layout Itemize
+If bitmaps are dbitmaps, this color value of colorkey.
+\end_layout
+
+\begin_layout Itemize
+May be absent or nil for no colorkey blit.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+gui.repaint: Arrange a repaint
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.repaint()
+\end_layout
+
+\begin_layout Standard
+Request on_repaint() to happen as soon as possible.
+\end_layout
+
+\begin_layout Subsection
+gui.subframe_update: Enable/Disable subframe updates
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.subframe_update(boolean on)
+\end_layout
+
+\begin_layout Standard
+Request subframe updates (calling on_paint() on subframes) to happen (<on>=true)
+ or not happen (<on>=false).
+\end_layout
+
+\begin_layout Subsection
+gui.screenshot: Write a screenshot
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.screenshot(string filename)
+\end_layout
+
+\begin_layout Standard
+Write PNG screenshot of the current frame (no drawings) to specified file
+ <filename>.
+\end_layout
+
+\begin_layout Subsection
+gui.color: Compose a color.
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.color(number r, number g, number b[, number a])
+\end_layout
+
+\begin_layout Standard
+Returns color (in notation Lua scripts use) corresponding to color (<r>,<g>,<b>)
+, each component in scale 0-255.
+ If <a> is specified, that is alpha (0 is fully transparent, 256(sic) is
+ fully opaque).
+ The default alpha is 256.
+\end_layout
+
+\begin_layout Subsection
+gui.status: Set status variable
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.status(string name, string value)
+\end_layout
+
+\begin_layout Standard
+Set status field 
+\begin_inset Quotes eld
+\end_inset
+
+L[<name>]
+\begin_inset Quotes erd
+\end_inset
+
+ to <value> in status area.
+\end_layout
+
+\begin_layout Subsection
+gui.rainbow: Rainbow color calculation
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.rainbow(number step, number steps[, number color])
+\end_layout
+
+\begin_layout Standard
+Perform hue rotation of color <color> (default bright red), by <step> steps.
+ The number of steps per full rotation is given by absolute value of <steps>.
+\end_layout
+
+\begin_layout Standard
+If <steps> is negative, the rotation will be counterclockwise.
+\end_layout
+
+\begin_layout Subsection
+gui.renderq_new: Create a render queue
+\end_layout
+
+\begin_layout Itemize
+Syntax: RENDERQUEUE gui.renderq_new(number width, number height)
+\end_layout
+
+\begin_layout Standard
+Create render queue with specified reported size and return it.
+\end_layout
+
+\begin_layout Subsection
+gui.renderq_clear: Clear a render queue
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.renderq_clear(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Clear specified render queue.
+\end_layout
+
+\begin_layout Subsection
+gui.renderq_set: Change active render queue
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.renderq_set(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Switch to specified render queue.
+ Use nil as queue to switch to default queue.
+\end_layout
+
+\begin_layout Itemize
+Note: When switched to another queue, all drawing functions work and draw
+ there, even outside on_video/on_paint.
+\end_layout
+
+\begin_layout Subsection
+gui.renderq_run: Run render queue
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.renderq_run(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Run specified render queue, copying the objects to current render queue.
+ 
+\end_layout
+
+\begin_layout Itemize
+Warning: Don't try to run the current render queue.
+\end_layout
+
+\begin_layout Subsection
+gui.loadfont: Load a font file
+\end_layout
+
+\begin_layout Itemize
+Syntax: CUSTOMFONT gui.loadfont(string filename)
+\end_layout
+
+\begin_layout Standard
+Loads font from specified file (CUSTOMFONT object).
+\end_layout
+
+\begin_layout Subsection
+CUSTOMFONT(): Render text to screen
+\end_layout
+
+\begin_layout Itemize
+Syntax: none CUSTOMFONT(number x, number y, string text[, number fgc[, number
+ bgc[, number hlc]]])
+\end_layout
+
+\begin_layout Standard
+Draw string with custom font to screen.
+ The parameters are the same as in gui.text, except <hlc> is the halo color
+ (default is no halo).
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+table input
+\end_layout
+
+\begin_layout Standard
+Input handling.
+ Functions manipulating input are only available in on_input callback.
+\end_layout
+
+\begin_layout Subsection
+input.get: Read controller button/axis (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number input.get(number controller, number index)
+\end_layout
+
+\begin_layout Standard
+Read the specified index <index> (zero-based) from specified controller
+ <controller> (zero-based).
+ 
+\end_layout
+
+\begin_layout Subsection
+input.set: Write controller button/axis (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.set(number controller, number index, number value)
+\end_layout
+
+\begin_layout Standard
+Write the specified index <index> (zero-based) from specified controller
+ <controller> (zero-based), storing value <value>.
+\end_layout
+
+\begin_layout Subsection
+input.get2: Read controller button/axis
+\end_layout
+
+\begin_layout Itemize
+Syntax: number input.get2(number port, number controller, number index)
+\end_layout
+
+\begin_layout Standard
+Read the specified input tuple.
+ Port 0 is system port.
+\end_layout
+
+\begin_layout Subsection
+input.set2: Write controller button/axis
+\end_layout
+
+\begin_layout Itemize
+Syntax: input.set2(number port, number controller, number index, number value)
+\end_layout
+
+\begin_layout Standard
+Write the specified input tuple.
+ Port 0 is system port.
+\end_layout
+
+\begin_layout Subsection
+input.lcid_to_pcid2: Look up logical controller
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) input.lcid_to_pcid2(number lcid)
+\end_layout
+
+\begin_layout Standard
+Look up physical pcid pair (port, controller) corresponding to specified
+ logical controller (1-based).
+ Returns nothing if controller does not exist.
+\end_layout
+
+\begin_layout Subsection
+input.port_type: Look up port type
+\end_layout
+
+\begin_layout Itemize
+Syntax: string input.port_type(number port)
+\end_layout
+
+\begin_layout Standard
+Return type of specified port.
+\end_layout
+
+\begin_layout Subsection
+input.controller_info: Get information about controller
+\end_layout
+
+\begin_layout Itemize
+Syntax: table input.controller_info(number port, number controller)
+\end_layout
+
+\begin_layout Standard
+Get controller info for specified controller.
+ If controller does not exist, returns nil.
+ Otherwise returns a table with following fields:
+\end_layout
+
+\begin_layout Itemize
+type (string): Type of the controller.
+\end_layout
+
+\begin_layout Itemize
+class (string): Class of the controller.
+\end_layout
+
+\begin_layout Itemize
+classnum (number): Number of the controller within its class (1-based)
+\end_layout
+
+\begin_layout Itemize
+lcid (number): Logical controller number of the controller.
+\end_layout
+
+\begin_layout Itemize
+button_count (number): Number of buttons on controller
+\end_layout
+
+\begin_layout Itemize
+buttons (array): Array of following info about each button:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+type (string): Type of button.
+ Currently one of 
+\begin_inset Quotes eld
+\end_inset
+
+null
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+axis
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+raxis
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+name (string): Name of button.
+\end_layout
+
+\begin_layout Itemize
+symbol (string): Symbol of button.
+ Only present for type 
+\begin_inset Quotes eld
+\end_inset
+
+button
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+hidden (boolean): True if hidden button.
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+input.veto_button: Veto a button press
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.veto_button()
+\end_layout
+
+\begin_layout Standard
+Signals that the button event should be vetoed.
+ Only valid in on_button callback.
+\end_layout
+
+\begin_layout Subsection
+input.geta: Get all buttons for controller (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number...) input.geta(number controller)
+\end_layout
+
+\begin_layout Standard
+Get input state for entiere controller.
+ Returns n return values.
+\end_layout
+
+\begin_layout Itemize
+1st return value: Bitmask: bit i is set if i:th index is nonzero
+\end_layout
+
+\begin_layout Itemize
+2nd- return value: value of i:th index.
+\end_layout
+
+\begin_layout Subsection
+input.seta: Set all buttons for controller (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.seta(number controller, number bitmask, number args...)
+\end_layout
+
+\begin_layout Standard
+Set state for entiere controller.
+ args is up to N values for indices (overriding values in bitmask if specified).
+\end_layout
+
+\begin_layout Subsection
+input.controllertype: Get controller type (deprecated)
+\end_layout
+
+\begin_layout Itemize
+syntax: string input.controllertype(number controller)
+\end_layout
+
+\begin_layout Standard
+Get the type of controller as string.
+\end_layout
+
+\begin_layout Subsection
+input.reset: Execute (delayed) reset
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.reset([number cycles])
+\end_layout
+
+\begin_layout Standard
+Execute reset.
+ If <cycles> is greater than zero, do delayed reset.
+ 0 (or no value) causes immediate reset.
+\end_layout
+
+\begin_layout Itemize
+Note: Only available with subframe flag false.
+\end_layout
+
+\begin_layout Subsection
+input.raw: Return raw input data
+\end_layout
+
+\begin_layout Itemize
+Syntax: table input.raw()
+\end_layout
+
+\begin_layout Standard
+Returns table of tables of all available keys and axes.
+ The first table is indexed by key name (platform-dependent!), and the inner
+ table has the following fields:
+\end_layout
+
+\begin_layout Itemize
+value: Last reported value for control
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+For keys: 1 for pressed, 0 for released.
+\end_layout
+
+\begin_layout Itemize
+For axes: -32767...32767.
+\end_layout
+
+\begin_layout Itemize
+For presure-sensitive buttons: 0...32767.
+\end_layout
+
+\begin_layout Itemize
+For hats: Bitmask: 1=>Up, 2=>Right, 4=>Down, 8=>Left.
+\end_layout
+
+\begin_layout Itemize
+For mouse: Coordinates relative to game area.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+ktype: Type of key (disabled, key, mouse, axis, hat, pressure).
+\end_layout
+
+\begin_layout Subsection
+input.keyhook: Hook a key
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.keyhook(string key, boolean state)
+\end_layout
+
+\begin_layout Standard
+Requests that keyhook events to be sent for key <key> (<state>=true) or
+ not sent (<state>=false).
+\end_layout
+
+\begin_layout Subsection
+input.joyget: Get controls for controller
+\end_layout
+
+\begin_layout Itemize
+Syntax: table input.joyget(number logical)
+\end_layout
+
+\begin_layout Standard
+Returns table for current controls for specified logical controller <logical>.
+ The names of fields vary by controller type.
+\end_layout
+
+\begin_layout Itemize
+The buttons have the same name as those are referred to in other contexts
+ in the emulator
+\end_layout
+
+\begin_layout Itemize
+The analog axes are usually 
+\begin_inset Quotes eld
+\end_inset
+
+xaxis
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+yaxis
+\begin_inset Quotes erd
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+Each field is numeric or boolean depending on axis/button.
+\end_layout
+
+\begin_layout Subsection
+input.joyset: Set controls for controller
+\end_layout
+
+\begin_layout Itemize
+Syntax: none input.joyset(number controller, table controls)
+\end_layout
+
+\begin_layout Standard
+Set the the state of specified controller to values specified in specified
+ table.
+\end_layout
+
+\begin_layout Itemize
+Each field can be boolean or number.
+\end_layout
+
+\begin_layout Itemize
+Also, buttons allow strings, which cause value to be inverted.
+\end_layout
+
+\begin_layout Subsection
+input.lcid_to_pcid: Look up logical controller (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number, number) input.lcid_to_pcid(number lcid)
+\end_layout
+
+\begin_layout Standard
+Returns the legacy pcid for controller (or false if there isn't one), followed
+ by pcid pair.
+ Returns nothing if controller does not exist.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table keyboard
+\end_layout
+
+\begin_layout Standard
+Various keybinding-related functions
+\end_layout
+
+\begin_layout Subsection
+keyboard.bind: Bind a key
+\end_layout
+
+\begin_layout Itemize
+Syntax: none keyboard.bind(string mod, string mask, string key, string cmd)
+\end_layout
+
+\begin_layout Standard
+Bind specified key with specified modifers to specified command.
+\end_layout
+
+\begin_layout Subsection
+keyboard.unbind: Unbind a key
+\end_layout
+
+\begin_layout Itemize
+Syntax: none keyboard.unbind(string mod, string mask, string key)
+\end_layout
+
+\begin_layout Standard
+Unbind specified key with specified modifers.
+\end_layout
+
+\begin_layout Subsection
+keyboard.alias: Set alias expansion
+\end_layout
+
+\begin_layout Itemize
+Syntax: none keyboard.alias(string alias, string expansion)
+\end_layout
+
+\begin_layout Standard
+Set expansion of given command.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table subtitle
+\end_layout
+
+\begin_layout Standard
+Subtitle handling
+\end_layout
+
+\begin_layout Subsection
+subtitle.byindex: Look up start and length of subtitle by index
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) subtitle.byindex(number i)
+\end_layout
+
+\begin_layout Standard
+Read the frame and length of ith subtitle.
+ Returns nothing if not present.
+\end_layout
+
+\begin_layout Subsection
+subtitle.set: Write a subtitle
+\end_layout
+
+\begin_layout Itemize
+Syntax: none subtitle.set(number f, number l, string txt)
+\end_layout
+
+\begin_layout Standard
+Set the text of subtitle.
+\end_layout
+
+\begin_layout Subsection
+subtitle.get: Read a subtitle
+\end_layout
+
+\begin_layout Itemize
+Syntax: string subtitle.get(number f, number l)
+\end_layout
+
+\begin_layout Standard
+Get the text of subtitle.
+\end_layout
+
+\begin_layout Subsection
+subtitle.delete: Delete a subtitle
+\end_layout
+
+\begin_layout Itemize
+Syntax: nonesubtitle.delete(number f, number l)
+\end_layout
+
+\begin_layout Standard
+Delete specified subtitle.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table hostmemory
+\end_layout
+
+\begin_layout Standard
+Host memory handling (extra memory saved to savestates).
+ Host memory starts empty.
+\end_layout
+
+\begin_layout Itemize
+Reads out of range return false.
+\end_layout
+
+\begin_layout Itemize
+Writes out of range extend the memory.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.read: Read byte from host memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.read(number address)
+\end_layout
+
+\begin_layout Standard
+Reads byte from hostmemory slot address <address>.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.write: Write byte to host memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none hostmemory.write(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes hostmemory slot with value <value> 0-255.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.read{,s}{byte,{,d,q}word}: Read from host memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readbyte(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readsbyte(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readsword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readdword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readsdword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readqword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readsqword(number address)
+\end_layout
+
+\begin_layout Standard
+Read elements (little-endian) from given address <address>.
+\end_layout
+
+\begin_layout Itemize
+byte is 1 element
+\end_layout
+
+\begin_layout Itemize
+word is 2 elements
+\end_layout
+
+\begin_layout Itemize
+dword is 4 elements
+\end_layout
+
+\begin_layout Itemize
+qword is 8 elements.
+\end_layout
+
+\begin_layout Itemize
+The 's' variants do signed read.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.write{,s}{byte,{,d,q}word}: Write to host memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writebyte(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writesbyte(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writeword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writesword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writedword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writesdword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writeqword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writesqword(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write value <value> to elements (little-endian) starting from given address
+ <address>.
+\end_layout
+
+\begin_layout Itemize
+byte is 1 element
+\end_layout
+
+\begin_layout Itemize
+word is 2 elements
+\end_layout
+
+\begin_layout Itemize
+dword is 4 elements
+\end_layout
+
+\begin_layout Itemize
+qword is 8 elements.
+\end_layout
+
+\begin_layout Itemize
+The 's' variants do signed write.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table movie
+\end_layout
+
+\begin_layout Standard
+Movie handling
+\end_layout
+
+\begin_layout Subsection
+movie.currentframe: Get current frame number
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.currentframe()
+\end_layout
+
+\begin_layout Standard
+Return number of current frame.
+\end_layout
+
+\begin_layout Subsection
+movie.framecount: Get move frame count
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.framecount()
+\end_layout
+
+\begin_layout Standard
+Return number of frames in movie.
+\end_layout
+
+\begin_layout Subsection
+movie.readonly: Is in readonly mode?
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean movie.readonly()
+\end_layout
+
+\begin_layout Standard
+Return true if in readonly mode, false if in readwrite.
+\end_layout
+
+\begin_layout Subsection
+movie.rerecords: Movie rerecord count
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.rerecords()
+\end_layout
+
+\begin_layout Standard
+Returns the current value of rerecord count.
+\end_layout
+
+\begin_layout Subsection
+movie.set_readwrite: Set read-write mode.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.set_readwrite()
+\end_layout
+
+\begin_layout Standard
+Set readwrite mode (does not cause on_readwrite callback).
+\end_layout
+
+\begin_layout Subsection
+movie.frame_subframes: Count subframes in frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.frame_subframes(number frame)
+\end_layout
+
+\begin_layout Standard
+Count number of subframes in specified frame <frame> (frame numbers are
+ 1-based) and return that.
+\end_layout
+
+\begin_layout Subsection
+movie.read_subframes: Read subframe data (deprecated)
+\end_layout
+
+\begin_layout Itemize
+Syntax: table movie.read_subframes(number frame, number subframe)
+\end_layout
+
+\begin_layout Standard
+Read specifed subframe in specified frame and return data as array.
+\end_layout
+
+\begin_layout Subsection
+movie.read_rtc: Read current RTC time
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) movie.read_rtc()
+\end_layout
+
+\begin_layout Standard
+Returns the current value of the RTC as a pair (second, subsecond).
+\end_layout
+
+\begin_layout Subsection
+movie.unsafe_rewind: Fast movie rewind to saved state
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.unsafe_rewind([UNSAFEREWIND state])
+\end_layout
+
+\begin_layout Standard
+Start setting point for unsafe rewind or jump to point of unsafe rewind.
+\end_layout
+
+\begin_layout Itemize
+If called without argument, causes emulator to start process of setting
+ unsafe rewind point.
+ When this has finished, callback on_set_rewind occurs, passing the rewind
+ state to lua script.
+\end_layout
+
+\begin_layout Itemize
+If called with argument, causes emulator rewind to passed rewind point as
+ soon as possible.
+ Readwrite mode is implicitly activated.
+\end_layout
+
+\begin_layout Standard
+The following warnings apply to unsafe rewinding:
+\end_layout
+
+\begin_layout Itemize
+There are no safety checks against misuse (that's what 
+\begin_inset Quotes eld
+\end_inset
+
+unsafe
+\begin_inset Quotes erd
+\end_inset
+
+ comes from)!
+\end_layout
+
+\begin_layout Itemize
+Only call rewind from timeline rewind point was set from.
+\end_layout
+
+\begin_layout Itemize
+Only call rewind from after the rewind point was set.
+\end_layout
+
+\begin_layout Subsection
+movie.to_rewind: Load savestate as rewind point
+\end_layout
+
+\begin_layout Itemize
+Syntax: UNSAFEREWIND movie.to_rewind(string filename)
+\end_layout
+
+\begin_layout Standard
+Load specified savestate file <filename> as rewind point and return UNSAFEREWIND
+ corresponding to it.
+\end_layout
+
+\begin_layout Itemize
+Note: This operation does not take emulated time.
+\end_layout
+
+\begin_layout Subsection
+movie.copy_movie/INPUTMOVIE::copy_movie: Copy movie to movie object
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTMOVIE movie.copy_movie([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTMOVIE INPUTMOVIE::copy_movie()
+\end_layout
+
+\begin_layout Standard
+Copies specified movie <movie>/current object (if none or nil, the active
+ movie) as new movie object.
+\end_layout
+
+\begin_layout Subsection
+movie.get_frame/INPUTMOVIE::get_frame: Read specified frame in movie.
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTFRAME movie.get_frame([INPUTMOVIE movie,] number frame)
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTFRAME INPUTMOVIE::get_frame(number frame);
+\end_layout
+
+\begin_layout Standard
+Get INPUTFRAME object corresponding to specified frame in specified movie.
+\end_layout
+
+\begin_layout Subsection
+movie.set_frame/INPUTMOVIE::set_frame: Write speicifed frame in movie.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.set_frame([INPUTMOVIE movie,] number frame, INPUTFRAME
+ data)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::set_frame(number frame, INPUTFRAME data)
+\end_layout
+
+\begin_layout Standard
+Set data in specified frame.
+\end_layout
+
+\begin_layout Itemize
+Note: Past can't be edited in active movie.
+\end_layout
+
+\begin_layout Subsection
+movie.get_size/INPUTMOVIE::get_size: Get size of movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: integer movie.get_size([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Itemize
+Syntax: integer INPUTMOVIE::get_size()
+\end_layout
+
+\begin_layout Standard
+Return number of subframes in specified movie.
+\end_layout
+
+\begin_layout Subsection
+movie.count_frames/INPUTMOVIE::count_frames: Count frames in movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.count_frames([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Itemize
+Syntax: number INPUTMOVIE::count_frames()
+\end_layout
+
+\begin_layout Standard
+Return number of frames in movie.
+\end_layout
+
+\begin_layout Subsection
+movie.find_frame/INPUTMOVIE::find_frame: Find subframe corresponding to frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.find_frame([INPUTMOVIE movie], number frame)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number INPUTMOVIE::find_frame(number frame)
+\end_layout
+
+\begin_layout Standard
+Returns starting subframe of given frame (frame numbers are 1-based).
+ Returns -1 if frame number is bad.
+\end_layout
+
+\begin_layout Subsection
+movie.blank_frame/INPUTMOVIE::blank_frame: Return a blank frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTFRAME movie.blank_frame([INPUTMOVIE movie])
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTFRAME INPUTMOVIE::blank_frame()
+\end_layout
+
+\begin_layout Standard
+Return blank INPUTFRAME with frame type from specified movie.
+\end_layout
+
+\begin_layout Subsection
+movie.append_frames/INPUTMOVIE::append_frames: Append blank frames
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.append_frames([INPUTMOVIE movie,] number frames)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::append_frames(number frames)
+\end_layout
+
+\begin_layout Standard
+Append specified number <frames> of frames.
+\end_layout
+
+\begin_layout Subsection
+movie.append_frame/INPUTMOVIE::append_frame: Append a frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.append_frame([INPUTMOVIE movie,] INPUTFRAME frame)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::append_frame(INPUTFRAME frame)
+\end_layout
+
+\begin_layout Standard
+Append specified frame <frame>.
+ Past of current movie can't be edited.
+\end_layout
+
+\begin_layout Subsection
+movie.truncate/INPUTMOVIE::truncate: Truncate a movie.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.truncate([INPUTMOVIE movie,] number frames)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::truncate(number frames)
+\end_layout
+
+\begin_layout Standard
+Truncate the specified movie to specified number of frames.
+\end_layout
+
+\begin_layout Subsection
+movie.edit/INPUTMOVIE::edit: Edit a movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.edit([INPUTMOVIE movie,] number frame, number port, number
+ controller, number control, number/bool value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::edit(number frame, number port, number controller,
+ number control, number/bool value)
+\end_layout
+
+\begin_layout Standard
+Change specified control in specified frame in specified movie.
+ Past can't be edited in active movie.
+\end_layout
+
+\begin_layout Subsection
+movie.copy_frames2: Copy frames between movies
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.copy_frames2([INPUTMOVIE dstmov,] number dst, [INPUTMOVIE
+ srcmov,] number src, number count)
+\end_layout
+
+\begin_layout Standard
+Copy specified number of frames between two movies.
+ The copy proceeeds in forward direction.
+\end_layout
+
+\begin_layout Subsection
+movie.copy_frames/INPUTMOVIE::copy_frames: Copy frames in movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.copy_frames([INPUTMOVIE mov,] number dst, number src,
+ number count, bool backwards)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOVIE::copy_frames(number dst, number src, number count,
+ bool backwards)
+\end_layout
+
+\begin_layout Standard
+Copy specified number of frames from one point in movie to another.
+ If backwards is true, the copy will be done backwards.
+\end_layout
+
+\begin_layout Subsection
+movie.serialize/INPUTMOVIE::serialize: Serialize movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: none movie.serialize([INPUTMOVIE movie,] string filename, bool binary)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTMOIVE::serialize(string filename, bool binary)
+\end_layout
+
+\begin_layout Standard
+Serialize given movie into file.
+ If binary is true, binary format (more compact and much faster) is used.
+\end_layout
+
+\begin_layout Subsection
+movie.unserialize: Unserialize movie
+\end_layout
+
+\begin_layout Itemize
+Syntax: INPUTMOVIE movie.unserialize(INPUTFRAME template, string filename,
+ bool binary)
+\end_layout
+
+\begin_layout Standard
+Unserialize movie from file.
+ The given frame is used as template to decide the frame type.
+ If binary is true, binary format is decoded (much faster).
+\end_layout
+
+\begin_layout Subsection
+movie.current_first_subframe: Return first subframe in current frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.current_first_subframe()
+\end_layout
+
+\begin_layout Standard
+Returns first subframe in current frame.
+\end_layout
+
+\begin_layout Subsection
+movie.pollcounter: Return poll counter for speified control
+\end_layout
+
+\begin_layout Itemize
+Syntax: number movie.pollcounter(number port, number controller, number control)
+\end_layout
+
+\begin_layout Standard
+Returns number of times the specified control has been polled this frame.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::get_button: Get button
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean INPUTFRAME::get_button(number port, number controller, number
+ control)
+\end_layout
+
+\begin_layout Standard
+Returns state of given button as boolean.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::get_axis: Get axis
+\end_layout
+
+\begin_layout Itemize
+Syntax: number INPUTFRAME::get_axis(number port, number controller, number
+ control)
+\end_layout
+
+\begin_layout Standard
+Returns state of given axis as number.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::set_button/INPUTFRAME::set_axis: Set button or axis
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTFRAME::set_button(number port, number controller, number
+ control, number/bool value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTFRAME::set_axis(number port, number controller, number
+ control)
+\end_layout
+
+\begin_layout Standard
+Set the given button/axis to given value.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::serialize: Serialize a frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: string INPUTFRAME::serialize()
+\end_layout
+
+\begin_layout Standard
+Return string representation of frame.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::unserialize: Unserialize a frame
+\end_layout
+
+\begin_layout Itemize
+Syntax: none INPUTFRAME::unserialize(string data)
+\end_layout
+
+\begin_layout Standard
+Set current frame from given data.
+\end_layout
+
+\begin_layout Subsection
+INPUTFRAME::get_stride: Get movie stride
+\end_layout
+
+\begin_layout Itemize
+Syntax: number INPUTFRAME::get_stride()
+\end_layout
+
+\begin_layout Standard
+Return number of bytes needed to store the input frame.
+ Mainly useful for some debugging.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table settings
+\end_layout
+
+\begin_layout Standard
+Routines for settings manipulation
+\end_layout
+
+\begin_layout Subsection
+settings.get: Get value of setting
+\end_layout
+
+\begin_layout Itemize
+Syntax: string settings.get(string name)
+\end_layout
+
+\begin_layout Standard
+Get value of setting <name>.
+ If setting value can't be obtained, returns (nil, error message).
+\end_layout
+
+\begin_layout Subsection
+settings.set: Set value of setting
+\end_layout
+
+\begin_layout Itemize
+Syntax: none settings.set(string name, string value)
+\end_layout
+
+\begin_layout Standard
+Set value <value> of setting <name>.
+ If setting can't be set, returns (nil, error message).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table memory
+\end_layout
+
+\begin_layout Standard
+Contains various functions for managing memory
+\end_layout
+
+\begin_layout Subsection
+memory.vma_count: Count number of VMAs.
+\end_layout
+
+\begin_layout Itemize
+Syntax: number memory.vma_count()
+\end_layout
+
+\begin_layout Standard
+Returns the number of VMAs
+\end_layout
+
+\begin_layout Subsection
+memory.read_vma: Lookup VMA info by index
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.read_vma(number index)
+\end_layout
+
+\begin_layout Standard
+Reads the specified VMA (indices start from zero).
+ Trying to read invalid VMA gives nil.
+ The read VMA is table with the following fields:
+\end_layout
+
+\begin_layout Itemize
+region_name (string): The readable name of the VMA
+\end_layout
+
+\begin_layout Itemize
+baseaddr (number): Base address of the VMA
+\end_layout
+
+\begin_layout Itemize
+lastaddr (number): Last address in the VMA.
+\end_layout
+
+\begin_layout Itemize
+size (number): The size of VMA in bytes.
+\end_layout
+
+\begin_layout Itemize
+readonly (boolean): True of the VMA corresponds to ROM.
+\end_layout
+
+\begin_layout Itemize
+iospace (boolean): True if the VMA is I/O space.
+\end_layout
+
+\begin_layout Itemize
+native_endian (boolean): True if the VMA has native endian as opposed to
+ little endian.
+\end_layout
+
+\begin_layout Subsection
+memory.find_vma: Find VMA info by address
+\end_layout
+
+\begin_layout Itemize
+Syntax: table memory.find_vma(number address)
+\end_layout
+
+\begin_layout Standard
+Finds the VMA containing specified address.
+ Returns table in the same format as read_vma or nil if not found.
+\end_layout
+
+\begin_layout Subsection
+memory.read{,s}{byte,{,d,q}word}: Write memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readbyte([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readdword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readqword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsbyte([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsdword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsqword([string vma, ]number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address <ddress> (if 's' variant is used, do undergo
+ 2's complement).
+\end_layout
+
+\begin_layout Subsection
+memory.write{byte,{,d,q}word}: Write memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writebyte([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writeword([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writedword([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writeqword([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Standard
+Writes the specified value <value> (negative values undergo 2's complement)
+ to specified address <address>.
+\end_layout
+
+\begin_layout Subsection
+memory.map{,s}{byte,{,d,q}word}: Map an array
+\end_layout
+
+\begin_layout Itemize
+Syntax: userdata memory.map<type>([[string vma, ]number base, number size])
+\end_layout
+
+\begin_layout Standard
+Returns a table mapping specified memory aperture for read/write.
+ If parameters are omitted, entiere map space is the aperture.
+\end_layout
+
+\begin_layout Itemize
+Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+\end_layout
+
+\begin_layout Subsection
+memory.hash_region: Hash region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.hash_region([string vma, ]number base, number size)
+\end_layout
+
+\begin_layout Standard
+Hash specified number of bytes starting from specified address and return
+ the SHA-256.
+\end_layout
+
+\begin_layout Subsection
+memory.hash_state: Hash system state
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.hash_state()
+\end_layout
+
+\begin_layout Standard
+Hash the current system state.
+ Mainly useful for debugging savestates.
+\end_layout
+
+\begin_layout Subsection
+memory.readregion: Read region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: table memory.readregion([string vma, ]number base, number size)
+\end_layout
+
+\begin_layout Standard
+Read a region of memory.
+\end_layout
+
+\begin_layout Itemize
+Warning: If the region crosses VMA boundary, the results are undefined.
+\end_layout
+
+\begin_layout Subsection
+memory.writeregion: Write region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writeregion([string vma, ]number base, number size, table
+ data)
+\end_layout
+
+\begin_layout Standard
+Write a region of memory.
+\end_layout
+
+\begin_layout Itemize
+Warning: If the region crosses VMA boundary, the results are undefined.
+\end_layout
+
+\begin_layout Subsection
+memory.map_structure: Create mmap structure
+\end_layout
+
+\begin_layout Itemize
+syntax: MMAP_STRUCT memory.map_structure()
+\end_layout
+
+\begin_layout Standard
+Returns a new mapping structure (MMAP_STRUCT)
+\end_layout
+
+\begin_layout Subsection
+MMAP_STRUCT(): Bind key in mmap structure
+\end_layout
+
+\begin_layout Itemize
+Syntax: none MMAP_STRUCT(string key, [string vma, ]number address, string
+ type)
+\end_layout
+
+\begin_layout Standard
+Bind key <key> in mmap structure to specified address <address> with specified
+ type <type>.
+\end_layout
+
+\begin_layout Itemize
+Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+\end_layout
+
+\begin_layout Subsection
+memory.read_expr: Evaluate memory watch expression
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.read_expr(string expr)
+\end_layout
+
+\begin_layout Standard
+Evaluate specified watch expression and return result
+\end_layout
+
+\begin_layout Subsection
+memory.action: Run core action
+\end_layout
+
+\begin_layout Itemize
+memory.action(string action, [<params>])
+\end_layout
+
+\begin_layout Standard
+Run core action.
+ The different models expect parameters as:
+\end_layout
+
+\begin_layout Itemize
+string: String
+\end_layout
+
+\begin_layout Itemize
+numeric: numeric
+\end_layout
+
+\begin_layout Itemize
+enumeration: String
+\end_layout
+
+\begin_layout Itemize
+boolean: String
+\end_layout
+
+\begin_layout Itemize
+toggle: None.
+\end_layout
+
+\begin_layout Subsection
+memory.get_lag_flag: Get lag flag
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean memory.get_lag_flag()
+\end_layout
+
+\begin_layout Standard
+Get the value of core lag flag.
+ True if this frame has been lag so far, false if poll has been detected.
+\end_layout
+
+\begin_layout Subsection
+memory.set_lag_flag: Set lag flag
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.set_lag_flag(boolean flag)
+\end_layout
+
+\begin_layout Standard
+Set the value of core lag flag.
+ This flag automatically gets cleared if poll is detected, but can be forcibly
+ set or cleared if game so requires.
+\end_layout
+
+\begin_layout Itemize
+Should only be used in on_frame_emulated callback.
+\end_layout
+
+\begin_layout Itemize
+Setting or clearing this affects the emulator lag counter.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table memory2
+\end_layout
+
+\begin_layout Standard
+Contains newer memory functions.
+\end_layout
+
+\begin_layout Subsection
+memory2(): Get all VMA names.
+\end_layout
+
+\begin_layout Itemize
+Syntax: table memory2()
+\end_layout
+
+\begin_layout Standard
+Returns array of all valid VMA names.
+\end_layout
+
+\begin_layout Subsection
+memory2.<vma>:info: Get VMA info
+\end_layout
+
+\begin_layout Itemize
+Syntax: table memory2.<vma>:info()
+\end_layout
+
+\begin_layout Standard
+Return table describing given VMA.
+ Includes fields address, size, last, readonly, special and endian.
+\end_layout
+
+\begin_layout Subsection
+memory2.<vma>:<op>: Read/Write memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<vma>:<op>(number offset, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number memory2.<vma>:<op>(number offset)
+\end_layout
+
+\begin_layout Standard
+Read/Write value from/to given VMA <vma> at given offset <offset> (must
+ be in-range).
+ The value written is <value>.
+ <Op> is of form: [i][s]<type>, where:
+\end_layout
+
+\begin_layout Itemize
+<type> is one of 'byte', 'word', 'dword', 'qword'.
+\end_layout
+
+\begin_layout Itemize
+'i' signifies that the value is treated as opposite-to-normal endianess,
+\end_layout
+
+\begin_layout Itemize
+'s' signifies that value is treated as signed.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Table _SYSTEM
+\end_layout
+
+\begin_layout Standard
+Contains copy of global variables from time of Lua initialization.
+ Non-writeable.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Callbacks
+\end_layout
+
+\begin_layout Standard
+Various callbacks to Lua that can occur.
+\end_layout
+
+\begin_layout Subsection
+on_paint: Screen is being painted
+\end_layout
+
+\begin_layout Itemize
+Callback: on_paint(bool not_synth)
+\end_layout
+
+\begin_layout Standard
+Called when screen is being painted.
+ Any gui.* calls requiring graphic context draw on the screen.
+\end_layout
+
+\begin_layout Itemize
+not_synth is true if this hook is being called in response to received frame,
+ false otherwise.
+\end_layout
+
+\begin_layout Subsection
+on_video: Dumped video frame is being painted
+\end_layout
+
+\begin_layout Itemize
+Callback: on_video()
+\end_layout
+
+\begin_layout Standard
+Called when video dump frame is being painted.
+ Any gui.* calls requiring graphic context draw on the video.
+\end_layout
+
+\begin_layout Subsection
+on_frame_emulated: Frame emulation complete
+\end_layout
+
+\begin_layout Itemize
+Callback: on_frame_emulated()
+\end_layout
+
+\begin_layout Standard
+Called when emulating frame has completed and on_paint()/on_video() calls
+ are about to be issued.
+\end_layout
+
+\begin_layout Subsection
+on_frame: Frame emulation starting.
+\end_layout
+
+\begin_layout Itemize
+Callback: on_frame()
+\end_layout
+
+\begin_layout Standard
+Called on each starting whole frame.
+\end_layout
+
+\begin_layout Subsection
+on_startup: Emulator startup complete
+\end_layout
+
+\begin_layout Itemize
+Callback: on_startup()
+\end_layout
+
+\begin_layout Standard
+Called when the emulator is starting (lsnes.rc and --run files has been run).
+\end_layout
+
+\begin_layout Subsection
+on_rewind: Movie rewound to beginning
+\end_layout
+
+\begin_layout Itemize
+Callback: on_rewind()
+\end_layout
+
+\begin_layout Standard
+Called when rewind movie to beginning has completed.
+\end_layout
+
+\begin_layout Subsection
+on_pre_load: Load operation is about to start
+\end_layout
+
+\begin_layout Itemize
+Callback: on_pre_load(string name)
+\end_layout
+
+\begin_layout Standard
+Called just before savestate/movie load occurs (note: loads are always delayed,
+ so this occurs even when load was initiated by lua).
+\end_layout
+
+\begin_layout Subsection
+on_err_Load: Load failed
+\end_layout
+
+\begin_layout Itemize
+Callback: on_err_load(string name)
+\end_layout
+
+\begin_layout Standard
+Called if loadstate goes wrong.
+\end_layout
+
+\begin_layout Subsection
+on_post_load: Load completed
+\end_layout
+
+\begin_layout Itemize
+Callback: on_post_load(string name, boolean was_savestate)
+\end_layout
+
+\begin_layout Standard
+Called on successful loadstate.
+ was_savestate gives if this was a savestate or a movie.
+\end_layout
+
+\begin_layout Subsection
+on_pre_save: Save operation is about to start
+\end_layout
+
+\begin_layout Itemize
+Callback: on_pre_save(string name, boolean is_savestate)
+\end_layout
+
+\begin_layout Standard
+Called just before savestate save occurs (note: movie saves are synchronous
+ and won't trigger these callbacks if called from Lua).
+\end_layout
+
+\begin_layout Subsection
+on_err_save: Save failed
+\end_layout
+
+\begin_layout Itemize
+Callback: on_err_save(string name)
+\end_layout
+
+\begin_layout Standard
+Called if savestate goes wrong.
+\end_layout
+
+\begin_layout Subsection
+on_post_save: Save completed
+\end_layout
+
+\begin_layout Itemize
+Callback: on_post_save(string name, boolean is_savestate)
+\end_layout
+
+\begin_layout Standard
+Called on successful savaestate.
+ is_savestate gives if this was a savestate or a movie.
+\end_layout
+
+\begin_layout Subsection
+on_quit: Emulator is shutting down
+\end_layout
+
+\begin_layout Itemize
+Callback: on_quit()
+\end_layout
+
+\begin_layout Standard
+Called when emulator is shutting down.
+\end_layout
+
+\begin_layout Subsection
+on_input: Polling for input
+\end_layout
+
+\begin_layout Standard
+Called when emulator is just sending input to bsnes core.
+ Warning: This is called even in readonly mode, but the results are ignored.
+\end_layout
+
+\begin_layout Subsection
+on_reset: System has been reset
+\end_layout
+
+\begin_layout Itemize
+Callback: on_reset()
+\end_layout
+
+\begin_layout Standard
+Called when system is reset.
+\end_layout
+
+\begin_layout Subsection
+on_readwrite: Entered readwrite mode
+\end_layout
+
+\begin_layout Itemize
+Callback: on_readwrite()
+\end_layout
+
+\begin_layout Standard
+Called when moving into readwrite mode as result of 
+\begin_inset Quotes eld
+\end_inset
+
+set-rwmode
+\begin_inset Quotes erd
+\end_inset
+
+ command (note: moving to rwmode by Lua won't trigger this, as per recursive
+ entry protection).
+\end_layout
+
+\begin_layout Subsection
+on_snoop/on_snoop2: Snoop core controller reads
+\end_layout
+
+\begin_layout Itemize
+Callback: on_snoop(number port, number controller, number index, number
+ value)
+\end_layout
+
+\begin_layout Itemize
+Callback: on_snoop2(number port, number controller, number index, number
+ value)
+\end_layout
+
+\begin_layout Standard
+Called each time bsnes asks for input.
+ The value is the final value to be sent to bsnes core (readonly mode, autohold
+ and autofire have been taken into account).
+ Might be useful when translating movies to format suitable for console
+ verification.
+ Note: There is no way to modify the value to be sent.
+\end_layout
+
+\begin_layout Itemize
+On_snoop2 is called instead of on_snoop if defined.
+ Reserves port 0 for system, having first user port be port 1.
+\end_layout
+
+\begin_layout Subsection
+on_keyhook: Hooked key/axis has been moved
+\end_layout
+
+\begin_layout Itemize
+Callback: on_keyhook(string keyname, table state)
+\end_layout
+
+\begin_layout Standard
+Sent when key that has keyhook events requested changes state.
+ Keyname is name of the key (group) and state is the state (same kind as
+ table values in input.raw).
+\end_layout
+
+\begin_layout Subsection
+on_idle: Idle event
+\end_layout
+
+\begin_layout Itemize
+Callback: on_idle()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout(), the timeout has expired and
+ emulator is waiting.
+\end_layout
+
+\begin_layout Subsection
+on_timer: Timer event
+\end_layout
+
+\begin_layout Itemize
+Callback: on_timer()
+\end_layout
+
+\begin_layout Standard
+Called when requested by set_idle_timeout() and the timeout has expired
+ (regardless if emulator is waiting).
+\end_layout
+
+\begin_layout Subsection
+on_set_rewind: Rewind point has been set
+\end_layout
+
+\begin_layout Itemize
+Callback: on_set_rewind(UNSAFEREWIND r)
+\end_layout
+
+\begin_layout Standard
+Called when unsafe rewind object has been constructed.
+\end_layout
+
+\begin_layout Subsection
+on_pre_rewind: Rewind is about to occur
+\end_layout
+
+\begin_layout Itemize
+Callback: on_pre_rewind() 
+\end_layout
+
+\begin_layout Standard
+Called just before unsafe rewind is about to occur.
+\end_layout
+
+\begin_layout Subsection
+on_post_rewind: Rewind has occured
+\end_layout
+
+\begin_layout Itemize
+Callback: on_post_rewind() 
+\end_layout
+
+\begin_layout Standard
+Called just after unsafe rewind has occured.
+\end_layout
+
+\begin_layout Subsection
+on_button: Button has been pressed
+\end_layout
+
+\begin_layout Itemize
+Callback: on_button(number port, number controller, number index, string
+ type)
+\end_layout
+
+\begin_layout Standard
+Called on controller button press, with following parameters:
+\end_layout
+
+\begin_layout Itemize
+port: Port number (0 is system)
+\end_layout
+
+\begin_layout Itemize
+controller: Controller within port
+\end_layout
+
+\begin_layout Itemize
+index: Index of button.
+\end_layout
+
+\begin_layout Itemize
+type: Type of event, one of:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+pressed
+\begin_inset Quotes erd
+\end_inset
+
+: Button was pressed.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+released
+\begin_inset Quotes erd
+\end_inset
+
+: Button was released.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+hold
+\begin_inset Quotes erd
+\end_inset
+
+: Held.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+unhold
+\begin_inset Quotes erd
+\end_inset
+
+: Released from hold.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+type
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input on button.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+untype
+\begin_inset Quotes erd
+\end_inset
+
+: Typing input undone.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+autofire <duty> <cycle>
+\begin_inset Quotes erd
+\end_inset
+
+: Autofire with specifie duty and cycle.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+autofire
+\begin_inset Quotes erd
+\end_inset
+
+: Stop autofire.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+analog
+\begin_inset Quotes erd
+\end_inset
+
+: Analog action on axis.
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+on_movie_lost: Movie data is about to be lost
+\end_layout
+
+\begin_layout Itemize
+Callback: on_movie_lost(STRING kind)
+\end_layout
+
+\begin_layout Standard
+Called just before something would happen that could lose movie data.
+ Kind can be:
+\end_layout
+
+\begin_layout Itemize
+readwrite: Switching to readwrite mode.
+\end_layout
+
+\begin_layout Itemize
+reload: ROM is being reloaded in readwrite mode.
+\end_layout
+
+\begin_layout Itemize
+load: New movie is being loaded.
+\end_layout
+
+\begin_layout Itemize
+unsaferewind: Unsafe rewind is happening.
+\end_layout
+
+\end_body
+\end_document
