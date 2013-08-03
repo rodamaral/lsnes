@@ -75,17 +75,6 @@ void write_linefile(zip_writer& w, const std::string& member, const std::string&
 
 namespace
 {
-	int lsnes_rename(const char* oldname, const char* newname)
-	{
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-		std::cerr << "Win32 rename: \"" << oldname << "\" -> \"" << newname << "\"." << std::endl;
-		return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
-#else
-		std::cerr << "generic rename: \"" << oldname << "\" -> \"" << newname << "\"." << std::endl;
-		return rename(oldname, newname);
-#endif
-	}
-
 	void binary_write_byte(std::ostream& stream, uint8_t byte)
 	{
 		stream.write(reinterpret_cast<char*>(&byte), 1);
