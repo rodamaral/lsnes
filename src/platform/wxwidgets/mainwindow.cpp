@@ -922,7 +922,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_check(wxID_SHOW_STATUS, true);
 	menu_entry_check(wxID_DEDICATED_MEMORY_WATCH, wxT("Dedicated memory watch"));
 	menu_entry(wxID_SHOW_MESSAGES, wxT("Show messages"));
-	menu_special_sub(wxT("Configure"), new settings_menu(this, wxID_SETTINGS_FIRST));
+	menu_special_sub(wxT("Settings"), new settings_menu(this, wxID_SETTINGS_FIRST));
 	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
