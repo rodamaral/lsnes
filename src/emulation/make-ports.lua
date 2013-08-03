@@ -116,7 +116,7 @@ for i = 1,#ports do
 	print("}");
 	print("struct _"..port.symbol.." : public port_type");
 	print("{");
-	print("\t_"..port.symbol.."() : port_type(\""..port.iname.."\", \""..port.hname.."\", "..i..","..
+	print("\t_"..port.symbol.."() : port_type(\""..port.iname.."\", \""..port.hname.."\", "..
 		(math.floor((bits + 7) / 8) + 2 * ints)..")");
 	print("\t{");
 	print("\t\twrite = [](unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> void {");

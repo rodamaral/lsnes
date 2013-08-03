@@ -252,12 +252,10 @@ public:
  *
  * Parameter iname: Internal name of the port type.
  * Parameter hname: Human-readable name of the port type.
- * Parameter id: Identifier.
  * Parameter ssize: The storage size in bytes.
  * Throws std::bad_alloc: Not enough memory.
  */
-	port_type(const std::string& iname, const std::string& hname, unsigned id,
-		size_t ssize) throw(std::bad_alloc);
+	port_type(const std::string& iname, const std::string& hname, size_t ssize) throw(std::bad_alloc);
 /**
  * Unregister a port type.
  */
@@ -335,10 +333,6 @@ public:
  * Name of port type.
  */
 	std::string name;
-/**
- * Id of the port.
- */
-	unsigned pt_id;
 /**
  * Is given controller present?
  */

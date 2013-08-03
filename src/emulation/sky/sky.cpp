@@ -200,7 +200,7 @@ namespace sky
 
 	struct _psystem : public port_type
 	{
-		_psystem() : port_type("system", "system", 1,1)
+		_psystem() : port_type("system", "system", 1)
 		{
 			write = port_write;
 			read = port_read;

@@ -17,7 +17,7 @@ namespace
 
 	struct porttype_basecontrol : public port_type
 	{
-		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 999998, 1)
+		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 1)
 		{
 			write = [](unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> void {
 				if(idx > 0 || ctrl > 0) return;
@@ -52,9 +52,8 @@ port_type& get_default_system_port_type()
 	return x;
 }
 
-port_type::port_type(const std::string& iname, const std::string& _hname,  unsigned id,
-	size_t ssize) throw(std::bad_alloc)
-	: hname(_hname), storage_size(ssize), name(iname), pt_id(id)
+port_type::port_type(const std::string& iname, const std::string& _hname, size_t ssize) throw(std::bad_alloc)
+	: hname(_hname), storage_size(ssize), name(iname)
 {
 }
 
