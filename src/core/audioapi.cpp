@@ -226,6 +226,12 @@ void audioapi_record_voice(float* samples, size_t count)
 
 void audioapi_submit_buffer(int16_t* samples, size_t count, bool stereo, double rate)
 {
+	if(stereo)
+		for(unsigned i = 0; i < count; i++)
+			information_dispatch::do_sample(samples[2 * i + 0], samples[2 * i + 1]);
+	else
+		for(unsigned i = 0; i < count; i++)
+			information_dispatch::do_sample(samples[i], samples[i]);
 	//Limit buffers to avoid overrunning.
 	if(count > music_bufsize / (stereo ? 2 : 1))
 		count = music_bufsize / (stereo ? 2 : 1);

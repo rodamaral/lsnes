@@ -341,8 +341,6 @@ namespace sky
 			int16_t sbuf[2668];
 			fetch_sfx(_gstate, sbuf, samples);
 			audioapi_submit_buffer(sbuf, samples, true, 48000);
-			for(unsigned i = 0; i < samples; i++)
-				information_dispatch::do_sample(sbuf[2 * i + 0], sbuf[2 * i + 1]);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }

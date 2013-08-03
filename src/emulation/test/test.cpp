@@ -146,6 +146,7 @@ namespace
 		void  c_install_handler() { hide(); }
 		void c_uninstall_handler() {}
 		void c_emulate() {
+			int16_t audio[800] = {0};
 			pflag = false;
 			redraw_screen();
 			framebuffer_info inf;
@@ -161,6 +162,7 @@ namespace
 			inf.offset_y = 0;
 			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, 60,1);
+			audioapi_submit_buffer(audio, 800, false, 48000);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }

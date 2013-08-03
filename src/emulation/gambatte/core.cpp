@@ -352,7 +352,6 @@ namespace
 						int16_t r2 = (accumulator_r >> 6) - 32768;
 						soundbuf[emitted++] = l2;
 						soundbuf[emitted++] = r2;
-						information_dispatch::do_sample(l2, r2);
 						accumulator_l = accumulator_r = 0;
 						accumulator_s = 0;
 					}

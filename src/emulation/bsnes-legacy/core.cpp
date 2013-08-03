@@ -353,7 +353,6 @@ namespace
 			uint16_t _r = r_sample;
 			soundbuf[soundbuf_fill++] = l_sample;
 			soundbuf[soundbuf_fill++] = r_sample;
-			information_dispatch::do_sample(l_sample, r_sample);
 			//The SMP emits a sample every 768 ticks of its clock. Use this in order to keep track of
 			//time.
 			ecore_callbacks->timer_tick(768, SNES::system.apu_frequency());
