@@ -1288,3 +1288,36 @@ rr1-Δ18 [Thursday July 25th 2013]
 * Support Y-cabled gamepad16.
 * Lua: Allow shortening evaluate-lua to L.
 * Lua: Methods for handling movies as objects.
+
+rr2-β9 [Sunday August 4th 2013]
+===============================
+* Fix reading byte-sized values via read-(s)byte
+* Allow specifiying ROM type in load dialog.
+* More cleanups using initializer lists.
+* Core actions.
+* Remove long-umaintained SNES-specific dump format.
+* SNES disassembler.
+* Refactor core interface stuff.
+* Refactor dispatching interface
+* Fix creating a new project after forcing core.
+* Mac OS X joystick support
+* memory.get_lag_flag/memory.set_lag_flag
+* Show error dialog on important errors.
+* Autobuild index triple and legacy-pcid maps.
+* Remove moviestate support.
+* New file dialogs code.
+* Binary movies support.
+* Clip analog macros correctly.
+* Refactor the settings dialog.
+* Remember gamepads across restarts.
+* Unlimited number of keys per inverse bind / controller key.
+* Savestate to rewind point conversion.
+* Split lua reference to its own manual.
+* Kill port type IDs.
+* Call do_sample from audioapi_submit_buffer.
+* Lua: gui.adjust_transparency.
+* Lua: loadfile/dofile: Support basenames.
+* Lua: gui.bitmap_load*: Support basenames.
+* Lua: Support packed Lua scripts.
+* Lua: @@LUA_SCRIPT_FILENAME@@
+* Lua: Function to resolve file w.r.t. basneame.
