@@ -492,6 +492,37 @@ namespace
 			messages << "Color #" << (i++) << ": " << c.orig << ":" << c.origa << std::endl;
 		return 0;
 	});
+
+	inline premultiplied_color tadjust(premultiplied_color c, uint16_t adj)
+	{
+		uint32_t rgb = c.orig;
+		uint32_t a = c.origa;
+		a = (a * adj) >> 8;
+		if(a > 256)
+			a = 256;
+		if(a == 0)
+			return premultiplied_color(-1);
+		else
+			return premultiplied_color(rgb | ((uint32_t)(256 - a) << 24));
+	}
+
+	function_ptr_luafun adjust_trans(LS, "gui.adjust_transparency", [](lua_state& L, const std::string& fname)
+		-> int {
+		uint16_t tadj = L.get_numeric_argument<uint16_t>(2, fname.c_str());
+		if(lua_class<lua_dbitmap>::is(L, 1)) {
+			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
+			for(auto& c : b->pixels)
+				c = tadjust(c, tadj);
+		} else if(lua_class<lua_palette>::is(L, 1)) {
+			lua_palette* p = lua_class<lua_palette>::get(L, 1, fname.c_str());
+			for(auto& c : p->colors)
+				c = tadjust(c, tadj);
+		} else {
+			throw std::runtime_error("Expected BITMAP or PALETTE as argument 1 for "
+				"gui.adjust_transparency");
+		}
+		return 2;
+	});
 }
 
 DECLARE_LUACLASS(lua_palette, "PALETTE");

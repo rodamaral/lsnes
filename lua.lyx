@@ -1480,6 +1480,31 @@ Draw string with custom font to screen.
  
 \end_layout
 
+\begin_layout Subsection
+gui.adjust_transparency: Adjust transparency of DBITMAP or PALETTE
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.adjust_transparency(DBITMAP obj, number adj)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.adjust_transparency(PALETTE obj, number adj)
+\end_layout
+
+\begin_layout Standard
+Multiply alpha channel of <obj> by <adj>/256.
+ Useful for making 
+\begin_inset Quotes eld
+\end_inset
+
+ghosts
+\begin_inset Quotes erd
+\end_inset
+
+ out of solid bitmaps.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
