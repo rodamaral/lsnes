@@ -1102,7 +1102,7 @@ gui.bitmap_load/gui.bitmap_load_str: Load a bitmap from file or string
 \end_layout
 
 \begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load(string file)
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load(string file[, string base])
 \end_layout
 
 \begin_layout Itemize
@@ -1110,12 +1110,9 @@ Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_str(string content)
 \end_layout
 
 \begin_layout Standard
-Reads file <file> or string <content> and returns loaded bitmap/dbitmap
- (if bitmap, the second return value is palette for bitmap).
-\end_layout
-
-\begin_layout Itemize
-
+Reads file <file> (resolved relative to <base>) or string <content> and
+ returns loaded bitmap/dbitmap (if bitmap, the second return value is palette
+ for bitmap).
 \end_layout
 
 \begin_layout Subsection
@@ -1123,7 +1120,8 @@ gui.bitmap_load_png/gui.bitmap_load_png_str: Load a bitmap from PNG
 \end_layout
 
 \begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png(string file)
+Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png(string file[, string
+ base])
 \end_layout
 
 \begin_layout Itemize
@@ -1131,7 +1129,8 @@ Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png_str(string content)
 \end_layout
 
 \begin_layout Standard
-Load a bitmap from PNG file <file> or BASE64 encoded content <content>.
+Load a bitmap from PNG file <file> (resolved relative to <base>) or BASE64
+ encoded content <content>.
 \end_layout
 
 \begin_layout Itemize
@@ -1150,7 +1149,7 @@ gui.bitmap_load_pal/gui.bitmap_load_pal_str: Load a palette
 \end_layout
 
 \begin_layout Itemize
-Syntax: PALETTE gui.bitmap_load_pal(string file)
+Syntax: PALETTE gui.bitmap_load_pal(string file[, string base])
 \end_layout
 
 \begin_layout Itemize
@@ -1158,7 +1157,7 @@ Syntax: PALETTE gui.bitmap_load_pal_str(string content)
 \end_layout
 
 \begin_layout Standard
-Load a palette from file <file> or string <content>.
+Load a palette from file <file>(resolved relative to <base>) or string <content>.
 \end_layout
 
 \begin_layout Itemize

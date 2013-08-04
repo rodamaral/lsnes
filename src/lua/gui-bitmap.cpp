@@ -323,8 +323,14 @@ namespace
 	}
 
 	function_ptr_luafun gui_loadbitmap(LS, "gui.bitmap_load", [](lua_state& L, const std::string& fname) -> int {
+		std::string name2;
 		std::string name = L.get_string(1, fname.c_str());
-		return bitmap_load_fn(L, [&name]() -> lua_loaded_bitmap { return lua_loaded_bitmap::load(name); });
+		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
+			name2 = L.get_string(2, fname.c_str());
+		return bitmap_load_fn(L, [&name, &name2]() -> lua_loaded_bitmap {
+			std::string name3 = resolve_file_relative(name, name2);
+			return lua_loaded_bitmap::load(name3);
+		});
 	});
 
 	function_ptr_luafun gui_loadbitmap2(LS, "gui.bitmap_load_str", [](lua_state& L, const std::string& fname)
@@ -417,8 +423,14 @@ namespace
 
 	function_ptr_luafun gui_loadbitmappng(LS, "gui.bitmap_load_png", [](lua_state& L, const std::string& fname)
 		-> int {
+		std::string name2;
 		std::string name = L.get_string(1, fname.c_str());
-		return bitmap_load_png_fn(L, [&name](png_decoded_image& img) { decode_png(name, img); });
+		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
+			name2 = L.get_string(2, fname.c_str());
+		return bitmap_load_png_fn(L, [&name, &name2](png_decoded_image& img) {
+			std::string name3 = resolve_file_relative(name, name2);
+			decode_png(name3, img);
+		});
 	});
 
 	function_ptr_luafun gui_loadbitmappng2(LS, "gui.bitmap_load_png_str", [](lua_state& L,
@@ -466,8 +478,11 @@ namespace
 
 	function_ptr_luafun gui_loadpalette(LS, "gui.bitmap_load_pal", [](lua_state& L, const std::string& fname)
 		-> int {
+		std::string name2;
 		std::string name = L.get_string(1, fname.c_str());
-		std::istream& s = open_file_relative(name, "");
+		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
+			name2 = L.get_string(2, fname.c_str());
+		std::istream& s = open_file_relative(name, name2);
 		try {
 			int r = bitmap_palette_fn(L, s);
 			delete &s;
