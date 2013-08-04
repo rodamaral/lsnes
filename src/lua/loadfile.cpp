@@ -199,4 +199,15 @@ namespace
 		int new_sp = lua_gettop(L.handle());
 		return new_sp - (old_sp - 1);
 	});
+
+	function_ptr_luafun resolvefile(LS, "resolve_filename", [](lua_state& L, const std::string& fname)
+	{
+		std::string file2;
+		std::string file1 = L.get_string(1, fname.c_str());
+		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
+			file2 = L.get_string(2, fname.c_str());
+		std::string absfilename = resolve_file_relative(file1, file2);
+		L.pushlstring(absfilename);
+		return 1;
+	});
 }

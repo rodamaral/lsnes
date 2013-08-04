@@ -120,8 +120,8 @@ Expanded to string token containing path and filename of this Lua script.
 
 \begin_layout Standard
 In practicular, this is suitable to be passed as base argument of various
- functions like loadfile, dofile, gui.bitmap_load, gui.bitmap_load_png and
- gui.bitmap_load_pal.
+ functions like loadfile, dofile, resolve_filename, gui.bitmap_load, gui.bitmap_lo
+ad_png and gui.bitmap_load_pal.
 \end_layout
 
 \begin_layout Section
@@ -386,6 +386,18 @@ Syntax: function dofile(string filename[, string base])
 \begin_layout Standard
 Execute lua script from <filename>, resolved relative to <base> (if empty,
  current directory) and return all return values.
+\end_layout
+
+\begin_layout Subsection
+resolve_filename: Resolve name of file relative to another
+\end_layout
+
+\begin_layout Itemize
+Syntax: string resolve_file(string filename, string base)
+\end_layout
+
+\begin_layout Standard
+Resolve name of file <filename> relative to <base> and return the result.
 \end_layout
 
 \begin_layout Standard
