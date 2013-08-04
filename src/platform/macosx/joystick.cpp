@@ -25,7 +25,7 @@ namespace
 		uint64_t joyid = reinterpret_cast<size_t>(j);
 		joys[index] = j;
 		idx_to_jid[index] = lsnes_gamepads.add(j->name);
-		hw_gamepad& ngp = lsnes_gamepads[idx_to_jid[i]];
+		hw_gamepad& ngp = lsnes_gamepads[idx_to_jid[index]];
 
 		for(int i = 0; i < j->nbuttons; i++)
 			ngp.add_button(i, (stringfmt() << "Button #" << i).str());

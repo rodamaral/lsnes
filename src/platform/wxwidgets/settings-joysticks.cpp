@@ -22,19 +22,19 @@ namespace
 			wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 			SetSizer(top_s);
 			wxSizer* t_s = new wxFlexGridSizer(2);
-			t_s->Add(new wxStaticText(this, -1, "Minus:"));
-			t_s->Add(low = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-			t_s->Add(new wxStaticText(this, -1, "Center:"));
-			t_s->Add(mid = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-			t_s->Add(new wxStaticText(this, -1, "Plus:"));
-			t_s->Add(hi = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-			t_s->Add(new wxStaticText(this, -1, "Neutral:"));
-			t_s->Add(null = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
-			t_s->Add(new wxStaticText(this, -1, "Threshold:"));
-			t_s->Add(thresh = new wxTextCtrl(this, -1, "", wxDefaultPosition, wxSize(100, -1)), 1,
+			t_s->Add(new wxStaticText(this, -1, wxT("Minus:")));
+			t_s->Add(low = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, wxT("Center:")));
+			t_s->Add(mid = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, wxT("Plus:")));
+			t_s->Add(hi = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, wxT("Neutral:")));
+			t_s->Add(null = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(100, -1)), 1, wxGROW);
+			t_s->Add(new wxStaticText(this, -1, wxT("Threshold:")));
+			t_s->Add(thresh = new wxTextCtrl(this, -1, wxT(""), wxDefaultPosition, wxSize(100, -1)), 1,
 				 wxGROW);
-			t_s->Add(_disabled = new wxCheckBox(this, -1, "Disabled"));
-			t_s->Add(_pressure = new wxCheckBox(this, -1, "Pressure"));
+			t_s->Add(_disabled = new wxCheckBox(this, -1, wxT("Disabled")));
+			t_s->Add(_pressure = new wxCheckBox(this, -1, wxT("Pressure")));
 			top_s->Add(t_s, 1, wxGROW);
 
 			low->SetValue(towxstring((stringfmt() << minus).str()));
