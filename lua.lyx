@@ -338,6 +338,32 @@ All callbacks get single argument: The parameters passed.
 Keep the returned object around.
 \end_layout
 
+\begin_layout Subsection
+loadfile: Load Lua script
+\end_layout
+
+\begin_layout Itemize
+Syntax: function loadfile(string filename[, string base])
+\end_layout
+
+\begin_layout Standard
+Load lua script from <filename>, resolved relative to <base> (if empty,
+ current directory).
+\end_layout
+
+\begin_layout Subsection
+dofile: Execute Lua script
+\end_layout
+
+\begin_layout Itemize
+Syntax: function dofile(string filename[, string base])
+\end_layout
+
+\begin_layout Standard
+Execute lua script from <filename>, resolved relative to <base> (if empty,
+ current directory) and return all return values.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

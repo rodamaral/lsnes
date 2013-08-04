@@ -17,4 +17,6 @@ const char* lua_sysrc_script =
 "	return resume;\n"
 "end;\n"
 "print=print2;\n"
+"loadfile=loadfile2;\n"
+"dofile=dofile2;\n"
 "memory2=memory2();\n";

@@ -118,7 +118,7 @@ namespace
 		int t = L.load(read_lua_fragment, NULL, "run_lua_fragment");
 #endif
 #if LUA_VERSION_NUM == 502
-		int t = L.load(read_lua_fragment, NULL, "run_lua_fragment", "bt");
+		int t = L.load(read_lua_fragment, NULL, "run_lua_fragment", "t");
 #endif
 		if(t == LUA_ERRSYNTAX) {
 			messages << "Can't run Lua: Internal syntax error: " << L.tostring(-1)
