@@ -101,6 +101,30 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Section
+Special tokens
+\end_layout
+
+\begin_layout Standard
+These tokens are special, and are expanded while the script is being loaded
+\end_layout
+
+\begin_layout Subsection
+@@LUA_SCRIPT_FILENAME@@
+\end_layout
+
+\begin_layout Standard
+Expanded to string token containing path and filename of this Lua script.
+ Handy for referencing other lua scripts or resources that are relative
+ to this Lua script.
+\end_layout
+
+\begin_layout Standard
+In practicular, this is suitable to be passed as base argument of various
+ functions like loadfile, dofile, gui.bitmap_load, gui.bitmap_load_png and
+ gui.bitmap_load_pal.
+\end_layout
+
+\begin_layout Section
 Global
 \end_layout
 
