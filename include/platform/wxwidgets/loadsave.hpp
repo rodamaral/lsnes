@@ -41,7 +41,15 @@ private:
 	std::string desc;
 };
 
-extern single_type filetype_lua_script;
+class lua_script_type
+{
+public:
+	typedef std::string returntype;
+	filedialog_input_params input(bool save) const;
+	std::string output(const filedialog_output_params& p, bool save) const;
+};
+
+extern lua_script_type filetype_lua_script;
 extern single_type filetype_macro;
 extern single_type filetype_watch;
 extern single_type filetype_commentary;

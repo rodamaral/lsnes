@@ -30,7 +30,25 @@ std::string single_type::output(const filedialog_output_params& p, bool save) co
 {
 	return p.path;
 }
-	
+
+filedialog_input_params lua_script_type::input(bool save) const
+{
+	filedialog_input_params p;
+	p.types.push_back(filedialog_type_entry("Lua scripts", "*.lua", "lua"));
+	p.types.push_back(filedialog_type_entry("Packed lua scripts", "*.zlua", "zlua"));
+	p.types.push_back(filedialog_type_entry("All files", "", ""));
+	p.default_type = 0;
+	return p;
+}
+
+std::string lua_script_type::output(const filedialog_output_params& p, bool save) const
+{
+	if(p.typechoice == 1)
+		return p.path + "/main.lua";
+	else
+		return p.path;
+}
+
 
 filedialog_output_params show_filedialog(wxWindow* parent, const std::string& title, const std::string& basepath,
 	const filedialog_input_params& p, const std::string& defaultname, bool saving)
@@ -71,7 +89,7 @@ filedialog_output_params show_filedialog(wxWindow* parent, const std::string& ti
 	return r;
 }
 
-single_type filetype_lua_script("lua", "Lua scripts");
+lua_script_type filetype_lua_script;
 single_type filetype_macro("lmc", "Macro files");
 single_type filetype_watch("lwch", "Memory watch");
 single_type filetype_commentary("lsvs", "Commentary track");
