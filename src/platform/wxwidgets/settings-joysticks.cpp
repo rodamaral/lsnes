@@ -273,6 +273,8 @@ namespace
 		joystick_config_window(wxWindow* parent)
 			: settings_tab(parent)
 		{
+			if(!lsnes_gamepads.gamepads())
+				throw std::runtime_error("No joysticks available");
 			wxSizer* top1_s = new wxBoxSizer(wxVERTICAL);
 			SetSizer(top1_s);
 			std::map<std::string, unsigned> jsnum;
