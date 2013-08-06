@@ -264,7 +264,8 @@ namespace
 			port_is_ycable[1] = (type2 == 9);
 			have_saved_this_frame = false;
 			do_reset_flag = -1;
-			ecore_callbacks->action_state_updated();
+			if(ecore_callbacks)
+				ecore_callbacks->action_state_updated();
 		}
 		return r ? 0 : -1;
 	}
