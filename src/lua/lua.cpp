@@ -169,13 +169,13 @@ namespace
 		run_lua_fragment(L);
 	}
 
-	template<typename... T> bool run_callback(T... args)
+	template<typename... T> bool run_callback(lua_state::lua_callback_list& list, T... args)
 	{
 		if(recursive_flag)
 			return true;
 		recursive_flag = true;
 		try {
-			if(!LS.callback(args...)) {
+			if(!list.callback(args...)) {
 				recursive_flag = false;
 				return false;
 			}
@@ -230,110 +230,138 @@ namespace
 		do_eval_lua(L, lua_sysrc_script);
 	}
 
+#define DEFINE_CB(X) lua_state::lua_callback_list on_##X (LS, #X , "on_" #X )
+
+	DEFINE_CB(paint);
+	DEFINE_CB(video);
+	DEFINE_CB(reset);
+	DEFINE_CB(frame);
+	DEFINE_CB(rewind);
+	DEFINE_CB(idle);
+	DEFINE_CB(timer);
+	DEFINE_CB(frame_emulated);
+	DEFINE_CB(readwrite);
+	DEFINE_CB(startup);
+	DEFINE_CB(pre_load);
+	DEFINE_CB(post_load);
+	DEFINE_CB(err_load);
+	DEFINE_CB(pre_save);
+	DEFINE_CB(post_save);
+	DEFINE_CB(err_save);
+	DEFINE_CB(input);
+	DEFINE_CB(snoop);
+	DEFINE_CB(snoop2);
+	DEFINE_CB(button);
+	DEFINE_CB(quit);
+	DEFINE_CB(keyhook);
+	DEFINE_CB(movie_lost);
+	DEFINE_CB(pre_rewind);
+	DEFINE_CB(post_rewind);
+	DEFINE_CB(set_rewind);
 }
 
 void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
 {
-	run_callback("on_paint", lua_state::store_tag(lua_render_ctx, ctx), lua_state::boolean_tag(non_synthetic));
+	run_callback(on_paint, lua_state::store_tag(lua_render_ctx, ctx), lua_state::boolean_tag(non_synthetic));
 }
 
 void lua_callback_do_video(struct lua_render_context* ctx) throw()
 {
-	run_callback("on_video", lua_state::store_tag(lua_render_ctx, ctx));
+	run_callback(on_video, lua_state::store_tag(lua_render_ctx, ctx));
 }
 
 void lua_callback_do_reset() throw()
 {
-	run_callback("on_reset");
+	run_callback(on_reset);
 }
 
 void lua_callback_do_frame() throw()
 {
-	run_callback("on_frame");
+	run_callback(on_frame);
 }
 
 void lua_callback_do_rewind() throw()
 {
-	run_callback("on_rewind");
+	run_callback(on_rewind);
 }
 
 void lua_callback_do_idle() throw()
 {
 	lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
-	run_callback("on_idle");
+	run_callback(on_idle);
 }
 
 void lua_callback_do_timer() throw()
 {
 	lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
-	run_callback("on_timer");
+	run_callback(on_timer);
 }
 
 void lua_callback_do_frame_emulated() throw()
 {
-	run_callback("on_frame_emulated");
+	run_callback(on_frame_emulated);
 }
 
 void lua_callback_do_readwrite() throw()
 {
-	run_callback("on_readwrite");
+	run_callback(on_readwrite);
 }
 
 void lua_callback_startup() throw()
 {
 	lua_booted_flag = true;
-	run_callback("on_startup");
+	run_callback(on_startup);
 }
 
 void lua_callback_pre_load(const std::string& name) throw()
 {
-	run_callback("on_pre_load", lua_state::string_tag(name));
+	run_callback(on_pre_load, lua_state::string_tag(name));
 }
 
 void lua_callback_err_load(const std::string& name) throw()
 {
-	run_callback("on_err_load", lua_state::string_tag(name));
+	run_callback(on_err_load, lua_state::string_tag(name));
 }
 
 void lua_callback_post_load(const std::string& name, bool was_state) throw()
 {
-	run_callback("on_post_load", lua_state::string_tag(name), lua_state::boolean_tag(was_state));
+	run_callback(on_post_load, lua_state::string_tag(name), lua_state::boolean_tag(was_state));
 }
 
 void lua_callback_pre_save(const std::string& name, bool is_state) throw()
 {
-	run_callback("on_pre_save", lua_state::string_tag(name), lua_state::boolean_tag(is_state));
+	run_callback(on_pre_save, lua_state::string_tag(name), lua_state::boolean_tag(is_state));
 }
 
 void lua_callback_err_save(const std::string& name) throw()
 {
-	run_callback("on_err_save", lua_state::string_tag(name));
+	run_callback(on_err_save, lua_state::string_tag(name));
 }
 
 void lua_callback_post_save(const std::string& name, bool is_state) throw()
 {
-	run_callback("on_post_save", lua_state::string_tag(name), lua_state::boolean_tag(is_state));
+	run_callback(on_post_save, lua_state::string_tag(name), lua_state::boolean_tag(is_state));
 }
 
 void lua_callback_do_input(controller_frame& data, bool subframe) throw()
 {
-	run_callback("on_input", lua_state::store_tag(lua_input_controllerdata, &data),
+	run_callback(on_input, lua_state::store_tag(lua_input_controllerdata, &data),
 		lua_state::boolean_tag(subframe));
 }
 
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw()
 {
-	if(run_callback("on_snoop2", lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
+	if(run_callback(on_snoop2, lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
 		lua_state::numeric_tag(index), lua_state::numeric_tag(value)))
 		return;
-	run_callback("on_snoop", lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
+	run_callback(on_snoop, lua_state::numeric_tag(port), lua_state::numeric_tag(controller),
 		lua_state::numeric_tag(index), lua_state::numeric_tag(value));
 }
 
 bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type)
 {
 	bool flag = false;
-	run_callback("on_button", lua_state::store_tag(lua_veto_flag, &flag), lua_state::numeric_tag(port),
+	run_callback(on_button, lua_state::store_tag(lua_veto_flag, &flag), lua_state::numeric_tag(port),
 		lua_state::numeric_tag(controller), lua_state::numeric_tag(index), lua_state::string_tag(type));
 	return flag;
 }
@@ -379,12 +407,12 @@ namespace
 
 void lua_callback_quit() throw()
 {
-	run_callback("on_quit");
+	run_callback(on_quit);
 }
 
 void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw()
 {
-	run_callback("on_keyhook", lua_state::string_tag(key), lua_state::fnptr_tag(push_keygroup_parameters2, &p));
+	run_callback(on_keyhook, lua_state::string_tag(key), lua_state::fnptr_tag(push_keygroup_parameters2, &p));
 }
 
 void init_lua(bool soft) throw()
@@ -429,18 +457,18 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 		lua_unsaferewind* u2 = reinterpret_cast<lua_obj_pin<lua_unsaferewind>*>(u)->object();
 		//Load.
 		try {
-			run_callback("on_pre_rewind");
-			run_callback("on_movie_lost", "unsaferewind");
+			run_callback(on_pre_rewind);
+			run_callback(on_movie_lost, "unsaferewind");
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			try { get_host_memory() = u2->hostmemory; } catch(...) {}
-			run_callback("on_post_rewind");
+			run_callback(on_post_rewind);
 		} catch(...) {
 			return;
 		}
 	} else {
 		//Save
-		run_callback("on_set_rewind", lua_state::fn_tag([save, secs, ssecs, &mov](lua_state& L) -> int {
+		run_callback(on_set_rewind, lua_state::fn_tag([save, secs, ssecs, &mov](lua_state& L) -> int {
 			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(LS);
 			u2->state = save;
 			u2->secs = secs,
@@ -454,7 +482,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 
 void lua_callback_movie_lost(const char* what)
 {
-	run_callback("on_movie_lost", std::string(what));
+	run_callback(on_movie_lost, std::string(what));
 }
 
 bool lua_requests_repaint = false;

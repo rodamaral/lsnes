@@ -80,18 +80,22 @@ namespace
 			register_lua_function(L, i.first, *i.second);
 	}
 	typedef register_queue<lua_state, lua_function> regqueue_t;
+	typedef register_queue<lua_state::callback_proxy, lua_state::lua_callback_list> regqueue2_t;
 }
 
 
 lua_state::lua_state() throw(std::bad_alloc)
+	: cbproxy(*this)
 {
 	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
 	regqueue_t::do_ready(*this, true);
+	regqueue2_t::do_ready(cbproxy, true);
 }
 
 lua_state::lua_state(lua_state& _master, lua_State* L)
+	: cbproxy(*this)
 {
 	master = &_master;
 	lua_handle = L;
@@ -102,6 +106,7 @@ lua_state::~lua_state() throw()
 	if(master)
 		return;
 	regqueue_t::do_ready(*this, false);
+	regqueue2_t::do_ready(cbproxy, false);
 	if(lua_handle)
 		lua_close(lua_handle);
 }
@@ -145,6 +150,8 @@ void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
 		if(!tmp)
 			throw std::runtime_error("Can't re-initialize Lua interpretter");
 		lua_close(lua_handle);
+		for(auto& i : callbacks)
+			i.second->clear();
 		lua_handle = tmp;
 	} else {
 		//Initialize new.
@@ -195,5 +202,48 @@ bool lua_state::do_once(void* key)
 	} else {
 		pop(1);
 		return false;
+	}
+}
+
+lua_state::lua_callback_list::lua_callback_list(lua_state& _L, const std::string& _name, const std::string& fncbname)
+	: L(_L), name(_name), fn_cbname(fncbname)
+{
+	regqueue2_t::do_register(L.cbproxy, name, *this);
+}
+
+lua_state::lua_callback_list::~lua_callback_list()
+{
+	regqueue2_t::do_unregister(L.cbproxy, name);
+	if(!L.handle())
+		return;
+	for(auto& i : callbacks) {
+		L.pushlightuserdata(&i);
+		L.pushnil();
+		L.rawset(LUA_REGISTRYINDEX);
+	}
+}
+
+void lua_state::lua_callback_list::_register(lua_state& _L)
+{
+	callbacks.push_back(0);
+	_L.pushlightuserdata(&*callbacks.rbegin());
+	_L.pushvalue(-2);
+	_L.rawset(LUA_REGISTRYINDEX);
+}
+
+void lua_state::lua_callback_list::_unregister(lua_state& _L)
+{
+	for(auto i = callbacks.begin(); i != callbacks.end();) {
+		_L.pushlightuserdata(&*i);
+		_L.rawget(LUA_REGISTRYINDEX);
+		if(_L.rawequal(-1, -2)) {
+			char* key = &*i;
+			_L.pushlightuserdata(key);
+			_L.pushnil();
+			_L.rawset(LUA_REGISTRYINDEX);
+			i = callbacks.erase(i);
+		} else
+			i++;
+		_L.pop(1);
 	}
 }

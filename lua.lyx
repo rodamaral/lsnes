@@ -3245,6 +3245,58 @@ Read/Write value from/to given VMA <vma> at given offset <offset> (must
 \end_layout
 
 \begin_layout Section
+Table callback
+\end_layout
+
+\begin_layout Standard
+Various callback-related functions.
+\end_layout
+
+\begin_layout Subsection
+callback.register: Register a callback
+\end_layout
+
+\begin_layout Itemize
+Syntax: function callback.register(string cbname, function cbfun);
+\end_layout
+
+\begin_layout Standard
+Instruct function <cbfun> to be added to list of callbacks to call on event
+ <cbname> (See section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:Callbacks"
+
+\end_inset
+
+).
+ The callback name does not have the 'on_' prefix (e.g.
+ 
+\begin_inset Quotes eld
+\end_inset
+
+paint
+\begin_inset Quotes erd
+\end_inset
+
+).
+ Returns <cbfun>.
+\end_layout
+
+\begin_layout Subsection
+callback.unregister: Unregister a callback
+\end_layout
+
+\begin_layout Itemize
+Syntax: function callback.unregister(string cbname, function cbfun);
+\end_layout
+
+\begin_layout Standard
+Instruct function <cbfun> to be removed from list of callbacks to call on
+ event <cbname>.
+\end_layout
+
+\begin_layout Section
 Table _SYSTEM
 \end_layout
 
@@ -3261,6 +3313,12 @@ Contains copy of global variables from time of Lua initialization.
 \end_layout
 
 \begin_layout Section
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:Callbacks"
+
+\end_inset
+
 Callbacks
 \end_layout
 

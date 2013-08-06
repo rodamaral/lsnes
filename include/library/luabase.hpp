@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <map>
+#include <list>
 #include <cassert>
 #include "string.hpp"
 #include "utf8.hpp"
@@ -302,12 +303,104 @@ public:
 		return true;
 	}
 /**
+ * Do a callback.
+ *
+ * Parameter cblist: List of environment keys to do callbacks.
+ * Parameter args: Arguments to pass to the callback.
+ */
+	template<typename... T>
+	bool callback(const std::list<char>& cblist, T... args)
+	{
+		bool any = false;
+		for(auto& i : cblist) {
+			pushlightuserdata(const_cast<char*>(&i));
+			rawget(LUA_REGISTRYINDEX);
+			int t = type(-1);
+			if(t != LUA_TFUNCTION) {
+				pop(1);
+			} else {
+				_callback(0, args...);
+				any = true;
+			}
+		}
+		return any;
+	}
+/**
  * Do something just once per VM.
  *
  * Parameter key: The do-once key value.
  * Returns: True if called the first time for given key on given VM, false otherwise.
  */
 	bool do_once(void* key);
+/**
+ * Callback list.
+ */
+	class lua_callback_list
+	{
+	public:
+		lua_callback_list(lua_state& L, const std::string& name, const std::string& fn_cbname = "");
+		~lua_callback_list();
+		void _register(lua_state& L);	//Reads callback from top of lua stack.
+		void _unregister(lua_state& L);	//Reads callback from top of lua stack.
+		template<typename... T> bool callback(T... args) {
+			bool any = L.callback(callbacks, args...);
+			if(fn_cbname != "" && L.callback(fn_cbname, args...))
+				any = true;
+			return any;
+		}
+		const std::string& get_name() { return name; }
+		void clear() { callbacks.clear(); }
+	private:
+		lua_callback_list(const lua_callback_list&);
+		lua_callback_list& operator=(const lua_callback_list&);
+		std::list<char> callbacks;
+		lua_state& L;
+		std::string name;
+		std::string fn_cbname;
+	};
+/**
+ * Enumerate all callbacks.
+ */
+	std::list<lua_callback_list*> get_callbacks()
+	{
+		if(master)
+			return master->get_callbacks();
+		std::list<lua_callback_list*> r;
+		for(auto i : callbacks)
+			r.push_back(i.second);
+		return r;
+	}
+/**
+ * Register a callback.
+ */
+	class callback_proxy
+	{
+	public:
+		callback_proxy(lua_state& _L) : parent(_L) {}
+		void do_register(const std::string& name, lua_callback_list& callback)
+		{
+			parent.do_register_cb(name, callback);
+		}
+/**
+ * Unregister a callback.
+ */
+		void do_unregister(const std::string& name)
+		{
+			parent.do_unregister_cb(name);
+		}
+	private:
+		lua_state& parent;
+	};
+
+	void do_register_cb(const std::string& name, lua_callback_list& callback)
+	{
+		callbacks[name] = &callback;
+	}
+
+	void do_unregister_cb(const std::string& name)
+	{
+		callbacks.erase(name);
+	}
 
 	//All kinds of Lua API functions.
 	void pop(int n) { lua_pop(lua_handle, n); }
@@ -361,6 +454,7 @@ public:
 	int isnoneornil(int index) { return lua_isnoneornil(lua_handle, index); }
 	lua_Integer tointeger(int index) { return lua_tointeger(lua_handle, index); }
 	void rawgeti(int index, int n) { lua_rawgeti(lua_handle, index, n); }
+	callback_proxy cbproxy;
 private:
 	static void builtin_oom();
 	static void* builtin_alloc(void* user, void* old, size_t olds, size_t news);
@@ -368,6 +462,7 @@ private:
 	lua_state* master;
 	lua_State* lua_handle;
 	std::map<std::string, lua_function*> functions;
+	std::map<std::string, lua_callback_list*> callbacks;
 	lua_state(lua_state&);
 	lua_state& operator=(lua_state&);
 };
@@ -709,5 +804,6 @@ public:
 private:
 	int (*fn)(lua_state& L, const std::string& fname);
 };
+
 
 #endif
