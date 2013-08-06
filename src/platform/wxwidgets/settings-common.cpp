@@ -123,19 +123,29 @@ namespace
 		SetSizer(top_s);
 
 		if(singletab) {
+			//If this throws, let it throw through.
 			settings_tab* t = singletab->create(this);
 			top_s->Add(t, 1, wxGROW);
 			t->set_notify([this]() { this->on_notify(); });
 			tabs.push_back(t);
 		} else {
+			int created = 0;
 			tabset = new wxNotebook(this, -1, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 			for(auto i : settings_tab_factory::factories()) {
-				settings_tab* t = i->create(tabset);
+				settings_tab* t;
+				try {
+					t = i->create(tabset);
+				} catch(...) {
+					continue;
+				}
 				tabset->AddPage(t, towxstring(i->get_name()));
 				t->set_notify([this]() { this->on_notify(); });
 				tabs.push_back(t);
+				created++;
 			}
 			top_s->Add(tabset, 1, wxGROW);
+			if(!created)
+				throw std::runtime_error("Nothing to configure here, move along");
 		}
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -188,7 +198,15 @@ void display_settings_dialog(wxWindow* parent, settings_tab_factory* singletab)
 	modal_pause_holder hld;
 	wxDialog* editor;
 	try {
-		editor = dlg = new wxeditor_esettings2(parent, singletab);
+		try {
+			editor = dlg = new wxeditor_esettings2(parent, singletab);
+		} catch(std::exception& e) {
+			std::string title = "Configure";
+			if(singletab)
+				title = "Configure " + singletab->get_name();
+			show_message_ok(parent, title, e.what(), wxICON_EXCLAMATION);
+			return;
+		}
 		editor->ShowModal();
 	} catch(...) {
 	}
