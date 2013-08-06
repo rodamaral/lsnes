@@ -19,4 +19,5 @@ const char* lua_sysrc_script =
 "print=print2;\n"
 "loadfile=loadfile2;\n"
 "dofile=dofile2;\n"
-"memory2=memory2();\n";
+"memory2=memory2();\n"
+"callback=callback();\n";

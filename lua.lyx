@@ -3253,6 +3253,12 @@ Various callback-related functions.
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:callback.register:-Register-a"
+
+\end_inset
+
 callback.register: Register a callback
 \end_layout
 
@@ -3284,6 +3290,12 @@ paint
 \end_layout
 
 \begin_layout Subsection
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:callback.unregister:-Unregister-"
+
+\end_inset
+
 callback.unregister: Unregister a callback
 \end_layout
 
@@ -3294,6 +3306,44 @@ Syntax: function callback.unregister(string cbname, function cbfun);
 \begin_layout Standard
 Instruct function <cbfun> to be removed from list of callbacks to call on
  event <cbname>.
+\end_layout
+
+\begin_layout Subsection
+callback.<cbname>:register: Register callback
+\end_layout
+
+\begin_layout Itemize
+Syntax: function callback.<cbname>:register(function cbfun)
+\end_layout
+
+\begin_layout Standard
+Synonym for callback.register (section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:callback.register:-Register-a"
+
+\end_inset
+
+), albeit with callback name specified differently.
+\end_layout
+
+\begin_layout Subsection
+callback.<cbname>:unregister: Register callback
+\end_layout
+
+\begin_layout Itemize
+Syntax: function callback.<cbname>:unregister(function cbfun)
+\end_layout
+
+\begin_layout Standard
+Synonym for callback.unregister (section 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:callback.unregister:-Unregister-"
+
+\end_inset
+
+), albeit with callback name specified differently.
 \end_layout
 
 \begin_layout Section
