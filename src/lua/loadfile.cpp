@@ -185,13 +185,13 @@ namespace
 		}
 	}
 
-	function_ptr_luafun loadfile2(lua_func_misc, "loadfile2", [](lua_state& L, const std::string& fname)
+	function_ptr_luafun loadfile2(lua_func_load, "loadfile2", [](lua_state& L, const std::string& fname)
 		-> int {
 		load_chunk(L, fname);
 		return 1;
 	});
 
-	function_ptr_luafun dofile2(lua_func_misc, "dofile2", [](lua_state& L, const std::string& fname)
+	function_ptr_luafun dofile2(lua_func_load, "dofile2", [](lua_state& L, const std::string& fname)
 		-> int {
 		load_chunk(L, fname);
 		int old_sp = lua_gettop(L.handle());
@@ -200,7 +200,7 @@ namespace
 		return new_sp - (old_sp - 1);
 	});
 
-	function_ptr_luafun resolvefile(lua_func_misc, "resolve_filename", [](lua_state& L, const std::string& fname)
+	function_ptr_luafun resolvefile(lua_func_load, "resolve_filename", [](lua_state& L, const std::string& fname)
 	{
 		std::string file2;
 		std::string file1 = L.get_string(1, fname.c_str());

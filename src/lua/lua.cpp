@@ -24,6 +24,8 @@ extern const char* lua_sysrc_script;
 lua_state lsnes_lua_state;
 lua_function_group lua_func_bit;
 lua_function_group lua_func_misc;
+lua_function_group lua_func_callback;
+lua_function_group lua_func_load;
 
 namespace
 {
@@ -423,6 +425,8 @@ void init_lua() throw()
 	try {
 		lsnes_lua_state.reset();
 		lsnes_lua_state.add_function_group(lua_func_bit);
+		lsnes_lua_state.add_function_group(lua_func_load);
+		lsnes_lua_state.add_function_group(lua_func_callback);
 		lsnes_lua_state.add_function_group(lua_func_misc);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;

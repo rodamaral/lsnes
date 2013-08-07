@@ -127,7 +127,7 @@ namespace
 		return 1;
 	}
 
-	function_ptr_luafun callback(lua_func_misc, "callback", [](lua_state& L, const std::string& fname)
+	function_ptr_luafun callback(lua_func_callback, "callback", [](lua_state& L, const std::string& fname)
 		-> int {
 		lua_class<lua_callbacks_list>::create(L, &L);
 		return 1;
