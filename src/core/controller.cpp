@@ -64,11 +64,18 @@ namespace
 	std::map<std::string, inverse_bind*> macro_binds2;
 	std::map<std::string, controller_bind> all_buttons;
 	std::map<std::string, active_bind> active_buttons;
+	std::map<std::string, controller_key*> added_keys;
 
 	//Promote stored key to active key.
 	void promote_key(controller_key& k)
 	{
 		std::string name = k.get_command();
+		if(added_keys.count(name)) {
+			//Already exists.
+			delete &k;
+			return;
+		}
+		added_keys[name] = &k;
 		if(!button_keys.count(name))
 			return;
 		k.append(button_keys[name]);
@@ -595,6 +602,12 @@ void load_project_macros(controller_state& ctrlstate, project_info& pinfo)
 		if(!pinfo.macros.count(i))
 			ctrlstate.erase_macro(i);
 	load_macros(ctrlstate);
+}
+
+void cleanup_all_keys()
+{
+	for(auto i : added_keys)
+		delete i.second;
 }
 
 controller_state controls;

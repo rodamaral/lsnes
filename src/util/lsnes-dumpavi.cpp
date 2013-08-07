@@ -1,6 +1,7 @@
 #include "lsnes.hpp"
 
 #include "core/advdumper.hpp"
+#include "core/controller.hpp"
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
 #include "core/mainloop.hpp"
@@ -335,5 +336,6 @@ int main(int argc, char** argv)
 	information_dispatch::do_dump_end();
 	rrdata::close();
 	quit_lua();
+	cleanup_all_keys();
 	return 0;
 }

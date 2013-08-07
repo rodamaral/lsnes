@@ -7,6 +7,7 @@
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/joystickapi.hpp"
+#include "core/keymapper.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
@@ -510,6 +511,8 @@ int lsnes_app::OnExit()
 	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();
+	cleanup_all_keys();
+	cleanup_keymapper();
 	return 0;
 }
 

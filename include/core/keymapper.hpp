@@ -34,5 +34,9 @@ void lsnes_gamepads_init();
  * Deinitialize gamepads (need to be called after deinitializing joysticks).
  */
 void lsnes_gamepads_deinit();
+/**
+ * Cleanup the keymapper stuff.
+ */
+void cleanup_keymapper();
 
 #endif

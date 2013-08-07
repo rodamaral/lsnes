@@ -83,6 +83,13 @@ void lsnes_gamepads_deinit()
 		cfg << lsnes_gamepads.save().serialize() << std::endl;
 }
 
+void cleanup_keymapper()
+{
+	for(auto i : buttons) delete i.second;
+	for(auto i : axes) delete i.second;
+	for(auto i : hats) delete i.second;
+}
+
 namespace
 {
 	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joystick info",
