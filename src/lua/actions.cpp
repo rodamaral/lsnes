@@ -4,7 +4,8 @@
 
 namespace
 {
-	function_ptr_luafun c_action(LS, "memory.action", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun c_action(lua_func_misc, "memory.action", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string name = L.get_string(1, fname.c_str());
 		const interface_action* act = NULL;
 		for(auto i : our_rom->rtype->get_actions())

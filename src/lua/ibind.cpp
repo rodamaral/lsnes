@@ -78,7 +78,8 @@ lua_command_bind::~lua_command_bind()
 
 namespace
 {
-	function_ptr_luafun input_bindings(LS, "list_bindings", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun input_bindings(lua_func_misc, "list_bindings", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string target;
 		if(!L.isnoneornil(1))
 			target = L.get_string(1, fname.c_str());
@@ -109,7 +110,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun get_alias(LS, "get_alias", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun get_alias(lua_func_misc, "get_alias", [](lua_state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
 		std::string a = lsnes_cmd.get_alias_for(name);
 		if(a != "")
@@ -119,7 +120,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun set_alias(LS, "set_alias", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun set_alias(lua_func_misc, "set_alias", [](lua_state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
 		std::string value;
 		if(L.type(2) != LUA_TNIL)
@@ -129,14 +130,16 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun create_ibind(LS, "create_ibind", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun create_ibind(lua_func_misc, "create_ibind", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string name = L.get_string(1, fname.c_str());
 		std::string command = L.get_string(2, fname.c_str());
 		lua_inverse_bind* b = lua_class<lua_inverse_bind>::create(L, name, command);
 		return 1;
 	});
 
-	function_ptr_luafun create_cmd(LS, "create_command", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun create_cmd(lua_func_misc, "create_command", [](lua_state& L, const std::string& fname)
+		-> int {
 		if(L.type(2) != LUA_TFUNCTION)
 			throw std::runtime_error("Argument 2 of create_command must be function");
 		if(L.type(3) != LUA_TFUNCTION && L.type(3) != LUA_TNIL && L.type(3) != LUA_TNONE)

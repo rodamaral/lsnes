@@ -46,19 +46,20 @@ namespace
 		return 0;
 	}
 
-	function_ptr_luafun gui_text(LS, "gui.text", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_text(lua_func_misc, "gui.text", [](lua_state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, false, false);
 	});
 
-	function_ptr_luafun gui_textH(LS, "gui.textH", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_textH(lua_func_misc, "gui.textH", [](lua_state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, true, false);
 	});
 
-	function_ptr_luafun gui_textV(LS, "gui.textV", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_textV(lua_func_misc, "gui.textV", [](lua_state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, false, true);
 	});
 
-	function_ptr_luafun gui_textHV(LS, "gui.textHV", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_textHV(lua_func_misc, "gui.textHV", [](lua_state& L, const std::string& fname)
+		-> int {
 		return internal_gui_text(L, fname, true, true);
 	});
 }

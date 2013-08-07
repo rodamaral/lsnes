@@ -71,7 +71,7 @@ namespace
 	class lua_symmetric_bitwise : public lua_function
 	{
 	public:
-		lua_symmetric_bitwise(const std::string& s) : lua_function(LS, s) {};
+		lua_symmetric_bitwise(const std::string& s) : lua_function(lua_func_bit, s) {};
 		int invoke(lua_state& L)
 		{
 			int stacksize = 0;
@@ -89,7 +89,7 @@ namespace
 	class lua_shifter : public lua_function
 	{
 	public:
-		lua_shifter(const std::string& s) : lua_function(LS, s) {};
+		lua_shifter(const std::string& s) : lua_function(lua_func_bit, s) {};
 		int invoke(lua_state& L)
 		{
 			uint64_t base;
@@ -103,7 +103,8 @@ namespace
 		}
 	};
 
-	function_ptr_luafun lua_bextract(LS, "bit.extract", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_bextract(lua_func_bit, "bit.extract", [](lua_state& L, const std::string& fname)
+		-> int {
 		uint64_t num = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
@@ -120,7 +121,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun lua_bvalue(LS, "bit.value", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_bvalue(lua_func_bit, "bit.value", [](lua_state& L, const std::string& fname) -> int {
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
 			if(L.isnumber(i + 1)) {
@@ -134,14 +135,16 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun lua_testany(LS, "bit.test_any", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_testany(lua_func_bit, "bit.test_any", [](lua_state& L, const std::string& fname)
+		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		L.pushboolean((a & b) != 0);
 		return 1;
 	});
 
-	function_ptr_luafun lua_testall(LS, "bit.test_all", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_testall(lua_func_bit, "bit.test_all", [](lua_state& L, const std::string& fname)
+		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		L.pushboolean((a & b) == b);
@@ -160,13 +163,15 @@ namespace
 		return c;
 	}
 
-	function_ptr_luafun lua_popcount(LS, "bit.popcount", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_popcount(lua_func_bit, "bit.popcount", [](lua_state& L, const std::string& fname)
+		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		L.pushnumber(popcount(a));
 		return 1;
 	});
 
-	function_ptr_luafun lua_clshift(LS, "bit.clshift", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_clshift(lua_func_bit, "bit.clshift", [](lua_state& L, const std::string& fname)
+		-> int {
 		unsigned amount = 1;
 		unsigned bits = 48;
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
@@ -186,7 +191,8 @@ namespace
 		return 2;
 	});
 
-	function_ptr_luafun lua_crshift(LS, "bit.crshift", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_crshift(lua_func_bit, "bit.crshift", [](lua_state& L, const std::string& fname)
+		-> int {
 		unsigned amount = 1;
 		unsigned bits = 48;
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
@@ -231,11 +237,13 @@ namespace
 		return 1;
 	}
 
-	function_ptr_luafun lua_flagdecode(LS, "bit.flagdecode", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_flagdecode(lua_func_bit, "bit.flagdecode", [](lua_state& L, const std::string& fname)
+		-> int {
 		return flagdecode_core(L, fname, false);
 	});
 
-	function_ptr_luafun lua_rflagdecode(LS, "bit.rflagdecode", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun lua_rflagdecode(lua_func_bit, "bit.rflagdecode", [](lua_state& L,
+		const std::string& fname) -> int {
 		return flagdecode_core(L, fname, true);
 	});
 

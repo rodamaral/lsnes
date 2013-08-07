@@ -7,7 +7,9 @@
 #include <iostream>
 #include "library/luabase.hpp"
 
-extern lua_state LS;
+extern lua_state lsnes_lua_state;
+extern lua_function_group lua_func_bit;
+extern lua_function_group lua_func_misc;
 
 void push_keygroup_parameters(lua_state& L, keyboard_key& p);
 extern lua_render_context* lua_render_ctx;

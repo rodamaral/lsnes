@@ -58,7 +58,8 @@ namespace
 		premultiplied_color fill;
 	};
 
-	function_ptr_luafun gui_rectangle(LS, "gui.circle", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_rectangle(lua_func_misc, "gui.circle", [](lua_state& L, const std::string& fname)
+		-> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t outline = 0xFFFFFFU;

@@ -36,7 +36,8 @@ namespace
 		uint32_t length;
 	};
 
-	function_ptr_luafun gui_crosshair(LS, "gui.crosshair", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_crosshair(lua_func_misc, "gui.crosshair", [](lua_state& L, const std::string& fname)
+		-> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t color = 0xFFFFFFU;

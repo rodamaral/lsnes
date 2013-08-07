@@ -4,6 +4,7 @@
 #include <string>
 #include <stdexcept>
 #include <map>
+#include <set>
 #include <list>
 #include <cassert>
 #include "string.hpp"
@@ -14,6 +15,50 @@ extern "C"
 }
 
 struct lua_function;
+
+/**
+ * Group of functions.
+ */
+class lua_function_group
+{
+public:
+/**
+ * Create a group.
+ */
+	lua_function_group();
+/**
+ * Destroy a group.
+ */
+	~lua_function_group();
+/**
+ * Add a function to group.
+ */
+	void do_register(const std::string& name, lua_function& fun);
+/**
+ * Drop a function from group.
+ */
+	void do_unregister(const std::string& name);
+/**
+ * Request callbacks on all currently registered functions.
+ */
+	void request_callback(std::function<void(std::string, lua_function*)> cb);
+/**
+ * Bind a callback.
+ *
+ * Callbacks for all registered functions are immediately called.
+ */
+	int add_callback(std::function<void(std::string, lua_function*)> cb,
+		std::function<void(lua_function_group*)> dcb);
+/**
+ * Unbind a calback.
+ */
+	void drop_callback(int handle);
+private:
+	int next_handle;
+	std::map<std::string, lua_function*> functions;
+	std::map<int, std::function<void(std::string, lua_function*)>> callbacks;
+	std::map<int, std::function<void(lua_function_group*)>> dcallbacks;
+};
 
 /**
  * Lua state object.
@@ -207,19 +252,6 @@ public:
  */
 	void deinit() throw();
 /**
- * Register a function.
- *
- * Parameter name: The name of function.
- * Parameter fun: The function itself.
- */
-	void do_register(const std::string& name, lua_function& fun) throw(std::bad_alloc);
-/**
- * Unregister a function.
- *
- * Parameter name: The name of the function.
- */
-	void do_unregister(const std::string& name) throw();
-/**
  * Get a string argument.
  *
  * Parameter argindex: The stack index.
@@ -325,6 +357,14 @@ public:
 		}
 		return any;
 	}
+/**
+ * Add a group of functions.
+ */
+	void add_function_group(lua_function_group& group);
+/**
+ * Function callback.
+ */
+	void function_callback(const std::string& name, lua_function* func);
 /**
  * Do something just once per VM.
  *
@@ -461,7 +501,7 @@ private:
 	void (*oom_handler)();
 	lua_state* master;
 	lua_State* lua_handle;
-	std::map<std::string, lua_function*> functions;
+	std::set<std::pair<lua_function_group*, int>> function_groups;
 	std::map<std::string, lua_callback_list*> callbacks;
 	lua_state(lua_state&);
 	lua_state& operator=(lua_state&);
@@ -764,7 +804,7 @@ public:
 /**
  * Register function.
  */
-	lua_function(lua_state& state, const std::string& name) throw(std::bad_alloc);
+	lua_function(lua_function_group& group, const std::string& name) throw(std::bad_alloc);
 /**
  * Unregister function.
  */
@@ -776,7 +816,7 @@ public:
 	virtual int invoke(lua_state& L) = 0;
 protected:
 	std::string fname;
-	lua_state& state;
+	lua_function_group& group;
 };
 
 /**
@@ -788,9 +828,9 @@ public:
 /**
  * Register.
  */
-	function_ptr_luafun(lua_state& state, const std::string& name,
+	function_ptr_luafun(lua_function_group& group, const std::string& name,
 		int (*_fn)(lua_state& L, const std::string& fname))
-		: lua_function(state, name)
+		: lua_function(group, name)
 	{
 		fn = _fn;
 	}

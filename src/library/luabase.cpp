@@ -55,7 +55,7 @@ namespace
 		L.pop(1);
 	}
 
-	void register_lua_function(lua_state& L, const std::string& name, lua_function& fun)
+	void register_lua_function(lua_state& L, const std::string& name, lua_function* fun)
 	{
 		std::string u = name;
 		size_t split = u.find_last_of(".");
@@ -66,21 +66,20 @@ namespace
 			u2 = u.substr(split + 1);
 		}
 		recursive_lookup_table(L, u1);
-		void* ptr = reinterpret_cast<void*>(&fun);
-		L.pushlightuserdata(ptr);
-		L.pushlightuserdata(&L);
-		L.pushcclosure(lua_trampoline_function, 2);
+		if(!fun)
+			L.pushnil();
+		else {
+			void* ptr = reinterpret_cast<void*>(fun);
+			L.pushlightuserdata(ptr);
+			L.pushlightuserdata(&L);
+			L.pushcclosure(lua_trampoline_function, 2);
+		}
 		L.setfield(-2, u2.c_str());
 		L.pop(1);
 	}
-
-	void register_lua_functions(lua_state& L, std::map<std::string, lua_function*>& functions)
-	{
-		for(auto i : functions)
-			register_lua_function(L, i.first, *i.second);
-	}
 	typedef register_queue<lua_state, lua_function> regqueue_t;
 	typedef register_queue<lua_state::callback_proxy, lua_state::lua_callback_list> regqueue2_t;
+	typedef register_queue<lua_function_group, lua_function> regqueue3_t;
 }
 
 
@@ -90,7 +89,6 @@ lua_state::lua_state() throw(std::bad_alloc)
 	master = NULL;
 	lua_handle = NULL;
 	oom_handler = builtin_oom;
-	regqueue_t::do_ready(*this, true);
 	regqueue2_t::do_ready(cbproxy, true);
 }
 
@@ -105,7 +103,8 @@ lua_state::~lua_state() throw()
 {
 	if(master)
 		return;
-	regqueue_t::do_ready(*this, false);
+	for(auto i : function_groups)
+		i.first->drop_callback(i.second);
 	regqueue2_t::do_ready(cbproxy, false);
 	if(lua_handle)
 		lua_close(lua_handle);
@@ -130,15 +129,15 @@ void* lua_state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 }
 
 
-lua_function::lua_function(lua_state& _state, const std::string& func) throw(std::bad_alloc)
-	: state(_state)
+lua_function::lua_function(lua_function_group& _group, const std::string& func) throw(std::bad_alloc)
+	: group(_group)
 {
-	regqueue_t::do_register(state, fname = func, *this);
+	regqueue3_t::do_register(group, fname = func, *this);
 }
 
 lua_function::~lua_function() throw()
 {
-	regqueue_t::do_unregister(state, fname);
+	regqueue3_t::do_unregister(group, fname);
 }
 
 void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
@@ -159,7 +158,10 @@ void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
 		if(!lua_handle)
 			throw std::runtime_error("Can't initialize Lua interpretter");
 	}
-	register_lua_functions(*this, functions);
+	for(auto i : function_groups)
+		i.first->request_callback([this](std::string name, lua_function* func) -> void {
+			register_lua_function(*this, name, func);
+		});
 }
 
 void lua_state::deinit() throw()
@@ -171,20 +173,26 @@ void lua_state::deinit() throw()
 	lua_handle = NULL;
 }
 
-void lua_state::do_register(const std::string& name, lua_function& fun) throw(std::bad_alloc)
+void lua_state::add_function_group(lua_function_group& group)
 {
-	if(master)
-		return master->do_register(name, fun);
-	functions[name] = &fun;
-	if(lua_handle)
-		register_lua_function(*this, name, fun);
+	function_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
+		lua_function* func) -> void {
+		this->function_callback(name, func);
+	}, [this](lua_function_group* x) {
+		for(auto i = this->function_groups.begin(); i != this->function_groups.end();)
+			if(i->first == x)
+				i = this->function_groups.erase(i);
+			else
+				i++;
+	})));
 }
 
-void lua_state::do_unregister(const std::string& name) throw()
+void lua_state::function_callback(const std::string& name, lua_function* func)
 {
 	if(master)
-		return master->do_unregister(name);
-	functions.erase(name);
+		return master->function_callback(name, func);
+	if(lua_handle)
+		register_lua_function(*this, name, func);
 }
 
 bool lua_state::do_once(void* key)
@@ -247,3 +255,56 @@ void lua_state::lua_callback_list::_unregister(lua_state& _L)
 		_L.pop(1);
 	}
 }
+
+lua_function_group::lua_function_group()
+{
+	next_handle = 0;
+	regqueue3_t::do_ready(*this, true);
+}
+
+lua_function_group::~lua_function_group()
+{
+	for(auto i : functions)
+		for(auto j : callbacks)
+			j.second(i.first, NULL);
+	for(auto i : dcallbacks)
+		i.second(this);
+	regqueue3_t::do_ready(*this, false);
+}
+
+void lua_function_group::request_callback(std::function<void(std::string, lua_function*)> cb)
+{
+	for(auto i : functions)
+		cb(i.first, i.second);
+}
+
+int lua_function_group::add_callback(std::function<void(std::string, lua_function*)> cb,
+	std::function<void(lua_function_group*)> dcb)
+{
+	int handle = next_handle++;
+	callbacks[handle] = cb;
+	dcallbacks[handle] = dcb;
+	for(auto i : functions)
+		cb(i.first, i.second);
+	return handle;
+}
+
+void lua_function_group::drop_callback(int handle)
+{
+	callbacks.erase(handle);
+}
+
+void lua_function_group::do_register(const std::string& name, lua_function& fun)
+{
+	functions[name] = &fun;
+	for(auto i : callbacks)
+		i.second(name, &fun);
+}
+
+void lua_function_group::do_unregister(const std::string& name)
+{
+	functions.erase(name);
+	for(auto i : callbacks)
+		i.second(name, NULL);
+}
+

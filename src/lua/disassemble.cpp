@@ -7,7 +7,8 @@
 
 namespace
 {
-	function_ptr_luafun memdisass(LS, "memory.disassemble", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun memdisass(lua_func_misc, "memory.disassemble", [](lua_state& L, const std::string& fname)
+		-> int {
 		uint64_t count = 1;
 		std::string kind = L.get_string(1, fname.c_str());
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
@@ -48,7 +49,8 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun getreg(LS, "memory.getregister", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun getreg(lua_func_misc, "memory.getregister", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string r = L.get_string(1, fname.c_str());
 		const interface_device_reg* regs = our_rom->rtype->get_registers();
 		if(!regs) {
@@ -68,7 +70,8 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun setreg(LS, "memory.setregister", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun setreg(lua_func_misc, "memory.setregister", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string r = L.get_string(1, fname.c_str());
 		const interface_device_reg* regs = our_rom->rtype->get_registers();
 		if(!regs) {
@@ -87,5 +90,4 @@ namespace
 		}
 		return 0;
 	});
-
 }

@@ -26,7 +26,8 @@ namespace
 		lua_render_context lctx;
 	};
 
-	function_ptr_luafun gui_rq_run(LS, "gui.renderq_run", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_rq_run(lua_func_misc, "gui.renderq_run", [](lua_state& L, const std::string& fname)
+		-> int {
 		if(!lua_render_ctx)
 			return 0;
 		if(lua_class<render_queue_obj>::is(L, 1)) {
@@ -49,7 +50,8 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun gui_rq_clear(LS, "gui.renderq_clear", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_rq_clear(lua_func_misc, "gui.renderq_clear", [](lua_state& L,
+		const std::string& fname) -> int {
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
@@ -66,14 +68,16 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun gui_rq_new(LS, "gui.renderq_new", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_rq_new(lua_func_misc, "gui.renderq_new", [](lua_state& L, const std::string& fname)
+		-> int {
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		lua_class<render_queue_obj>::create(L, x, y);
 		return 1;
 	});
 
-	function_ptr_luafun gui_rq_set(LS, "gui.renderq_set", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_rq_set(lua_func_misc, "gui.renderq_set", [](lua_state& L, const std::string& fname)
+		-> int {
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());

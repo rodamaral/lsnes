@@ -79,23 +79,23 @@ namespace
 	{
 		static char doonce_key;
 		if(L->do_once(&doonce_key)) {
-			objclass<lua_vma>().bind(LS, "info", &lua_vma::info);
-			objclass<lua_vma>().bind(LS, "sbyte", &lua_vma::rw<int8_t, false>);
-			objclass<lua_vma>().bind(LS, "byte", &lua_vma::rw<uint8_t, false>);
-			objclass<lua_vma>().bind(LS, "sword", &lua_vma::rw<int16_t, false>);
-			objclass<lua_vma>().bind(LS, "word", &lua_vma::rw<uint16_t, false>);
-			objclass<lua_vma>().bind(LS, "sdword", &lua_vma::rw<int32_t, false>);
-			objclass<lua_vma>().bind(LS, "dword", &lua_vma::rw<uint32_t, false>);
-			objclass<lua_vma>().bind(LS, "sqword", &lua_vma::rw<int64_t, false>);
-			objclass<lua_vma>().bind(LS, "qword", &lua_vma::rw<uint64_t, false>);
-			objclass<lua_vma>().bind(LS, "isbyte", &lua_vma::rw<int8_t, true>);
-			objclass<lua_vma>().bind(LS, "ibyte", &lua_vma::rw<uint8_t, true>);
-			objclass<lua_vma>().bind(LS, "isword", &lua_vma::rw<int16_t, true>);
-			objclass<lua_vma>().bind(LS, "iword", &lua_vma::rw<uint16_t, true>);
-			objclass<lua_vma>().bind(LS, "isdword", &lua_vma::rw<int32_t, true>);
-			objclass<lua_vma>().bind(LS, "idword", &lua_vma::rw<uint32_t, true>);
-			objclass<lua_vma>().bind(LS, "isqword", &lua_vma::rw<int64_t, true>);
-			objclass<lua_vma>().bind(LS, "iqword", &lua_vma::rw<uint64_t, true>);
+			objclass<lua_vma>().bind(*L, "info", &lua_vma::info);
+			objclass<lua_vma>().bind(*L, "sbyte", &lua_vma::rw<int8_t, false>);
+			objclass<lua_vma>().bind(*L, "byte", &lua_vma::rw<uint8_t, false>);
+			objclass<lua_vma>().bind(*L, "sword", &lua_vma::rw<int16_t, false>);
+			objclass<lua_vma>().bind(*L, "word", &lua_vma::rw<uint16_t, false>);
+			objclass<lua_vma>().bind(*L, "sdword", &lua_vma::rw<int32_t, false>);
+			objclass<lua_vma>().bind(*L, "dword", &lua_vma::rw<uint32_t, false>);
+			objclass<lua_vma>().bind(*L, "sqword", &lua_vma::rw<int64_t, false>);
+			objclass<lua_vma>().bind(*L, "qword", &lua_vma::rw<uint64_t, false>);
+			objclass<lua_vma>().bind(*L, "isbyte", &lua_vma::rw<int8_t, true>);
+			objclass<lua_vma>().bind(*L, "ibyte", &lua_vma::rw<uint8_t, true>);
+			objclass<lua_vma>().bind(*L, "isword", &lua_vma::rw<int16_t, true>);
+			objclass<lua_vma>().bind(*L, "iword", &lua_vma::rw<uint16_t, true>);
+			objclass<lua_vma>().bind(*L, "isdword", &lua_vma::rw<int32_t, true>);
+			objclass<lua_vma>().bind(*L, "idword", &lua_vma::rw<uint32_t, true>);
+			objclass<lua_vma>().bind(*L, "isqword", &lua_vma::rw<int64_t, true>);
+			objclass<lua_vma>().bind(*L, "iqword", &lua_vma::rw<uint64_t, true>);
 		}
 		vmabase = r->base;
 		vmasize = r->size;
@@ -138,9 +138,9 @@ namespace
 	{
 		static char doonce_key;
 		if(L->do_once(&doonce_key)) {
-			objclass<lua_vma_list>().bind(LS, "__index", &lua_vma_list::index, true);
-			objclass<lua_vma_list>().bind(LS, "__newindex", &lua_vma_list::newindex, true);
-			objclass<lua_vma_list>().bind(LS, "__call", &lua_vma_list::call);
+			objclass<lua_vma_list>().bind(*L, "__index", &lua_vma_list::index, true);
+			objclass<lua_vma_list>().bind(*L, "__newindex", &lua_vma_list::newindex, true);
+			objclass<lua_vma_list>().bind(*L, "__call", &lua_vma_list::call);
 		}
 	}
 
@@ -175,7 +175,7 @@ namespace
 		throw std::runtime_error("Writing is not allowed");
 	}
 
-	function_ptr_luafun memory2(LS, "memory2", [](lua_state& L, const std::string& fname) ->
+	function_ptr_luafun memory2(lua_func_misc, "memory2", [](lua_state& L, const std::string& fname) ->
 		int {
 		lua_class<lua_vma_list>::create(L, &L);
 		return 1;

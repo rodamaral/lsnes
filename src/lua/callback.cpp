@@ -34,8 +34,8 @@ namespace
 	{
 		static char doonce_key;
 		if(L->do_once(&doonce_key)) {
-			objclass<lua_callbacks_list>().bind(LS, "__index", &lua_callbacks_list::index, true);
-			objclass<lua_callbacks_list>().bind(LS, "__newindex", &lua_callbacks_list::newindex, true);
+			objclass<lua_callbacks_list>().bind(*L, "__index", &lua_callbacks_list::index, true);
+			objclass<lua_callbacks_list>().bind(*L, "__newindex", &lua_callbacks_list::newindex, true);
 		}
 	}
 
@@ -127,8 +127,8 @@ namespace
 		return 1;
 	}
 
-	function_ptr_luafun callback(LS, "callback", [](lua_state& L, const std::string& fname) ->
-		int {
+	function_ptr_luafun callback(lua_func_misc, "callback", [](lua_state& L, const std::string& fname)
+		-> int {
 		lua_class<lua_callbacks_list>::create(L, &L);
 		return 1;
 	});

@@ -116,14 +116,15 @@ namespace
 			throw std::runtime_error("Can not edit past");
 	}
 
-	function_ptr_luafun movie_cfs(LS, "movie.current_first_subframe", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_cfs(lua_func_misc, "movie.current_first_subframe", [](lua_state& L,
+		const std::string& fname) -> int {
 		movie& m = movb.get_movie();
 		L.pushnumber(m.get_current_frame_first_subframe());
 		return 1;
 	});
 
-	function_ptr_luafun movie_pc(LS, "movie.pollcounter", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_pc(lua_func_misc, "movie.pollcounter", [](lua_state& L, const std::string& fname)
+		-> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		unsigned button = L.get_numeric_argument<unsigned>(3, fname.c_str());
@@ -481,72 +482,78 @@ namespace
 		controller_frame_vector v;
 	};
 
-	function_ptr_luafun movie_getdata(LS, "movie.copy_movie", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_getdata(lua_func_misc, "movie.copy_movie", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _copy_movie(L, fname);
 	});
 
-	function_ptr_luafun movie_getframe(LS, "movie.get_frame", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_getframe(lua_func_misc, "movie.get_frame", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _get_frame(L, fname);
 	});
 
-	function_ptr_luafun movie_setframe(LS, "movie.set_frame", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_setframe(lua_func_misc, "movie.set_frame", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _set_frame(L, fname);
 	});
 
-	function_ptr_luafun movie_get_size(LS, "movie.get_size", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_get_size(lua_func_misc, "movie.get_size", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _get_size(L, fname);
 	});
 
-	function_ptr_luafun movie_count_frames(LS, "movie.count_frames", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_count_frames(lua_func_misc, "movie.count_frames", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _count_frames(L, fname);
 	});
 
-	function_ptr_luafun movie_find_frame(LS, "movie.find_frame", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_find_frame(lua_func_misc, "movie.find_frame", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _find_frame(L, fname);
 	});
 
-	function_ptr_luafun movie_blank_frame(LS, "movie.blank_frame", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_blank_frame(lua_func_misc, "movie.blank_frame", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _blank_frame(L, fname);
 	});
 
-	function_ptr_luafun movie_append_frames(LS, "movie.append_frames", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_append_frames(lua_func_misc, "movie.append_frames", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _append_frames(L, fname);
 	});
 
-	function_ptr_luafun movie_append_frame(LS, "movie.append_frame", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_append_frame(lua_func_misc, "movie.append_frame", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _append_frame(L, fname);
 	});
 
-	function_ptr_luafun movie_truncate(LS, "movie.truncate", [](lua_state& L, const std::string& fname)
+	function_ptr_luafun movie_truncate(lua_func_misc, "movie.truncate", [](lua_state& L, const std::string& fname)
 		-> int {
 		return _truncate(L, fname);
 	});
 
-	function_ptr_luafun movie_edit(LS, "movie.edit", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_edit(lua_func_misc, "movie.edit", [](lua_state& L, const std::string& fname)
+		-> int {
 		return _edit(L, fname);
 	});
 
-	function_ptr_luafun movie_copyframe2(LS, "movie.copy_frames2", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_copyframe2(lua_func_misc, "movie.copy_frames2", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _copy_frames<false>(L, fname);
 	});
 
-	function_ptr_luafun movie_copyframe(LS, "movie.copy_frames", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_copyframe(lua_func_misc, "movie.copy_frames", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _copy_frames<true>(L, fname);
 	});
 
-	function_ptr_luafun movie_serialize(LS, "movie.serialize", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun movie_serialize(lua_func_misc, "movie.serialize", [](lua_state& L,
+		const std::string& fname) -> int {
 		return _serialize(L, fname);
 	});
 
-	function_ptr_luafun movie_unserialize(LS, "movie.unserialize", [](lua_state& L, const std::string& fname)
-		-> int {
+	function_ptr_luafun movie_unserialize(lua_func_misc, "movie.unserialize", [](lua_state& L,
+		const std::string& fname) -> int {
 		lua_inputframe* f = lua_class<lua_inputframe>::get(L, 1, fname.c_str());
 		std::string filename = L.get_string(2, fname.c_str());
 		bool binary = L.get_bool(3, fname.c_str());

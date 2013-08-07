@@ -89,7 +89,7 @@ nodraw2:
 		premultiplied_color color;
 	};
 
-	function_ptr_luafun gui_pixel(LS, "gui.line", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun gui_pixel(lua_func_misc, "gui.line", [](lua_state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t color = 0xFFFFFFU;

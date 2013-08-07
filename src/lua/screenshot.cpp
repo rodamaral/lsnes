@@ -3,8 +3,8 @@
 
 namespace
 {
-	function_ptr_luafun lua_gui_screenshot(LS, "gui.screenshot", [](lua_state& L, const std::string& fname) ->
-		int {
+	function_ptr_luafun lua_gui_screenshot(lua_func_misc, "gui.screenshot", [](lua_state& L,
+		const std::string& fname) -> int {
 		std::string fn = L.get_string(1, fname.c_str());
 		try {
 			take_screenshot(fn);

@@ -5,7 +5,7 @@
 
 namespace
 {
-	function_ptr_luafun kbind(LS, "keyboard.bind", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun kbind(lua_func_misc, "keyboard.bind", [](lua_state& L, const std::string& fname) -> int {
 		std::string mod = L.get_string(1, fname.c_str());
 		std::string mask = L.get_string(2, fname.c_str());
 		std::string key = L.get_string(3, fname.c_str());
@@ -20,7 +20,8 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun kunbind(LS, "keyboard.unbind", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun kunbind(lua_func_misc, "keyboard.unbind", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string mod = L.get_string(1, fname.c_str());
 		std::string mask = L.get_string(2, fname.c_str());
 		std::string key = L.get_string(3, fname.c_str());
@@ -34,7 +35,8 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun kalias(LS, "keyboard.alias", [](lua_state& L, const std::string& fname) -> int {
+	function_ptr_luafun kalias(lua_func_misc, "keyboard.alias", [](lua_state& L, const std::string& fname)
+		-> int {
 		std::string alias = L.get_string(1, fname.c_str());
 		std::string cmds = L.get_string(2, fname.c_str());
 		try {

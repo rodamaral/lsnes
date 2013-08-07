@@ -21,7 +21,9 @@ uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 bool* lua_veto_flag = NULL;
 extern const char* lua_sysrc_script;
 
-lua_state LS;
+lua_state lsnes_lua_state;
+lua_function_group lua_func_bit;
+lua_function_group lua_func_misc;
 
 namespace
 {
@@ -92,7 +94,7 @@ namespace
 	bool recursive_flag = false;
 	const char* luareader_fragment = NULL;
 
-	const char* read_lua_fragment(lua_State* LS, void* dummy, size_t* size)
+	const char* read_lua_fragment(lua_State* L, void* dummy, size_t* size)
 	{
 		if(luareader_fragment) {
 			const char* ret = luareader_fragment;
@@ -230,7 +232,7 @@ namespace
 		do_eval_lua(L, lua_sysrc_script);
 	}
 
-#define DEFINE_CB(X) lua_state::lua_callback_list on_##X (LS, #X , "on_" #X )
+#define DEFINE_CB(X) lua_state::lua_callback_list on_##X (lsnes_lua_state, #X , "on_" #X )
 
 	DEFINE_CB(paint);
 	DEFINE_CB(video);
@@ -373,7 +375,7 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(LS, args);
+			do_eval_lua(lsnes_lua_state, args);
 		});
 
 	function_ptr_command<const std::string&> evaluate_lua2(lsnes_cmd, "L", "Evaluate expression in "
@@ -381,25 +383,25 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			if(args == "")
 				throw std::runtime_error("Expected expression to evaluate");
-			do_eval_lua(LS, args);
+			do_eval_lua(lsnes_lua_state, args);
 		});
 
 	function_ptr_command<arg_filename> run_lua(lsnes_cmd, "run-lua", "Run Lua script in Lua VM",
 		"Syntax: run-lua <file>\nRuns <file> in Lua VM.\n",
 		[](arg_filename args) throw(std::bad_alloc, std::runtime_error)
 		{
-			do_run_lua(LS, args);
+			do_run_lua(lsnes_lua_state, args);
 		});
 
 	function_ptr_command<> reset_lua(lsnes_cmd, "reset-lua", "Reset the Lua VM",
 		"Syntax: reset-lua\nReset the Lua VM.\n",
 		[]() throw(std::bad_alloc, std::runtime_error)
 		{
-			LS.reset();
-			luaL_openlibs(LS.handle());
+			lsnes_lua_state.reset();
+			luaL_openlibs(lsnes_lua_state.handle());
 
-			run_sysrc_lua(LS);
-			copy_system_tables(LS);
+			run_sysrc_lua(lsnes_lua_state);
+			copy_system_tables(lsnes_lua_state);
 			messages << "Lua VM reset" << std::endl;
 		});
 
@@ -415,25 +417,25 @@ void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw()
 	run_callback(on_keyhook, lua_state::string_tag(key), lua_state::fnptr_tag(push_keygroup_parameters2, &p));
 }
 
-void init_lua(bool soft) throw()
+void init_lua() throw()
 {
-	LS.set_oom_handler(OOM_panic);
+	lsnes_lua_state.set_oom_handler(OOM_panic);
 	try {
-		LS.reset();
+		lsnes_lua_state.reset();
+		lsnes_lua_state.add_function_group(lua_func_bit);
+		lsnes_lua_state.add_function_group(lua_func_misc);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
-		if(soft)
-			return;
 		fatal_error();
 	}
-	luaL_openlibs(LS.handle());
-	run_sysrc_lua(LS);
-	copy_system_tables(LS);
+	luaL_openlibs(lsnes_lua_state.handle());
+	run_sysrc_lua(lsnes_lua_state);
+	copy_system_tables(lsnes_lua_state);
 }
 
 void quit_lua() throw()
 {
-	LS.deinit();
+	lsnes_lua_state.deinit();
 }
 
 
@@ -469,7 +471,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 	} else {
 		//Save
 		run_callback(on_set_rewind, lua_state::fn_tag([save, secs, ssecs, &mov](lua_state& L) -> int {
-			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(LS);
+			lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(lsnes_lua_state);
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
