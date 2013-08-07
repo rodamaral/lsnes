@@ -365,24 +365,32 @@ zip_reader::~zip_reader() throw()
 
 zip_reader::zip_reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error)
 {
-	zipfile_member_info info;
-	info.next_offset = 0;
-	zipstream = new std::ifstream;
-	zipstream->open(zipfile.c_str(), std::ios::binary);
-	refcnt = new size_t;
-	*refcnt = 1;
-	if(!*zipstream)
-		throw std::runtime_error("Can't open zipfile '" + zipfile + "' for reading");
-	do {
-		zipstream->clear();
-		zipstream->seekg(info.next_offset);
-		if(zipstream->fail())
-			throw std::runtime_error("Can't seek ZIP file");
-		info = parse_member(*zipstream);
-		if(info.central_directory_special)
-			break;
-		offsets[info.filename] = info.header_offset;
-	} while(1);
+	zipstream = NULL;
+	refcnt = NULL;
+	try {
+		zipfile_member_info info;
+		info.next_offset = 0;
+		zipstream = new std::ifstream;
+		zipstream->open(zipfile.c_str(), std::ios::binary);
+		refcnt = new size_t;
+		*refcnt = 1;
+		if(!*zipstream)
+			throw std::runtime_error("Can't open zipfile '" + zipfile + "' for reading");
+		do {
+			zipstream->clear();
+			zipstream->seekg(info.next_offset);
+			if(zipstream->fail())
+				throw std::runtime_error("Can't seek ZIP file");
+			info = parse_member(*zipstream);
+			if(info.central_directory_special)
+				break;
+			offsets[info.filename] = info.header_offset;
+		} while(1);
+	} catch(...) {
+		delete zipstream;
+		delete refcnt;
+		throw;
+	}
 }
 
 zip_writer::zip_writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
