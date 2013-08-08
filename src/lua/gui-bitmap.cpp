@@ -224,6 +224,35 @@ namespace
 		return 0;
 	});
 
+	inline int64_t demultiply_color(const premultiplied_color& c)
+	{
+		if(!c.origa)
+			return -1;
+		else
+			return c.orig | ((uint32_t)(256 - c.origa) << 24);
+	}
+
+	function_ptr_luafun pget_bitmap(lua_func_misc, "gui.bitmap_pget", [](lua_state& L, const std::string& fname)
+		-> int {
+		uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
+		uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+		if(lua_class<lua_bitmap>::is(L, 1)) {
+			lua_bitmap* b = lua_class<lua_bitmap>::get(L, 1, fname.c_str());
+			if(x >= b->width || y >= b->height)
+				return 0;
+			L.pushnumber(b->pixels[y * b->width + x]);
+		} else if(lua_class<lua_dbitmap>::is(L, 1)) {
+			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
+			if(x >= b->width || y >= b->height)
+				return 0;
+			L.pushnumber(demultiply_color(b->pixels[y * b->width + x]));
+		} else {
+			L.pushstring("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pget.");
+			L.error();
+		}
+		return 1;
+	});
+
 	function_ptr_luafun size_bitmap(lua_func_misc, "gui.bitmap_size", [](lua_state& L, const std::string& fname)
 		-> int {
 		if(lua_class<lua_bitmap>::is(L, 1)) {

@@ -1280,6 +1280,35 @@ color: If bitmap is a bitmap, color index (0-65535).
 \end_layout
 
 \begin_layout Subsection
+gui.bitmap_pget: Get pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: number gui.bitmap_pget(BITMAP/DBITMAP bitmap, number x, number y)
+\end_layout
+
+\begin_layout Standard
+Gets specified pixel in bitmap.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: The bitmap to query
+\end_layout
+
+\begin_layout Itemize
+x: The x-coordinate of the pixel.
+\end_layout
+
+\begin_layout Itemize
+y: The y-coordinate of the pixel.
+\end_layout
+
+\begin_layout Standard
+The bitmap color (color index if paletted, otherwise color value).
+\end_layout
+
+\begin_layout Subsection
 gui.bitmap_size: Get size of bitmap
 \end_layout
 
