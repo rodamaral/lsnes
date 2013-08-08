@@ -20,6 +20,9 @@
 
 namespace
 {
+	uint64_t akill = 0;
+	double akillfrac = 0;
+
 	unsigned strhash(const std::string& str)
 	{
 		unsigned h = 0;
@@ -91,13 +94,19 @@ namespace
 			if(bits64) {
 				size_t w = dscr2.get_width();
 				size_t h = dscr2.get_height();
-				render_video_hud(dscr2, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL);
+				if(!render_video_hud(dscr2, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL)) {
+					akill += killed_audio_length(fps_n, fps_d, akillfrac);
+					return;
+				}
 				for(size_t i = 0; i < h; i++)
 					video->write(reinterpret_cast<char*>(dscr2.rowptr(i)), 8 * w);
 			} else {
 				size_t w = dscr.get_width();
 				size_t h = dscr.get_height();
-				render_video_hud(dscr, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL);
+				if(!render_video_hud(dscr, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL)) {
+					akill += killed_audio_length(fps_n, fps_d, akillfrac);
+					return;
+				}
 				for(size_t i = 0; i < h; i++)
 					video->write(reinterpret_cast<char*>(dscr.rowptr(i)), 4 * w);
 			}
@@ -108,6 +117,10 @@ namespace
 
 		void on_sample(short l, short r)
 		{
+			if(akill) {
+				akill--;
+				return;
+			}
 			if(have_dumped_frame && audio) {
 				char buffer[4];
 				write16sbe(buffer + 0, l);
@@ -208,6 +221,8 @@ namespace
 			}
 			messages << "Dumping to " << prefix << std::endl;
 			information_dispatch::do_dumper_update();
+			akill = 0;
+			akillfrac = 0;
 		}
 
 		void end() throw()

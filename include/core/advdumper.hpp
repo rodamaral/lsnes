@@ -116,9 +116,15 @@ private:
  * Parameter rgap: Right gap
  * Parameter bgap: Bottom gap.
  * Parameter fn: Function to call between running lua hooks and actually rendering.
+ * Returns: True if frame should be dumped, false if not.
  */
-template<bool X> void render_video_hud(struct framebuffer<X>& target, struct framebuffer_raw& source, uint32_t hscl,
+template<bool X> bool render_video_hud(struct framebuffer<X>& target, struct framebuffer_raw& source, uint32_t hscl,
 	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
 	uint32_t rgap, uint32_t bgap, void(*fn)());
+
+/**
+ * Calculate number of sound samples to drop due to dropped frame.
+ */
+uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction);
 
 #endif

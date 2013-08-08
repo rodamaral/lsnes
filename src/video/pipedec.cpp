@@ -16,6 +16,9 @@
 
 namespace
 {
+	uint64_t akill = 0;
+	double akillfrac = 0;
+
 	std::string get_pipedec_command(const std::string& type)
 	{
 		auto r = regex("(.*)[\\/][^\\/]+", get_config_path());
@@ -138,7 +141,10 @@ namespace
 			if(*reinterpret_cast<char*>(&magic) == 1) { r = 8; g = 16; b = 24; }
 			else { r = 16; g = 8; b = 0; }
 
-			render_video_hud(dscr, _frame, 1, 1, r, g, b, 0, 0, 0, 0, NULL);
+			if(!render_video_hud(dscr, _frame, 1, 1, r, g, b, 0, 0, 0, 0, NULL)) {
+				akill += killed_audio_length(fps_n, fps_d, akillfrac);
+				return;
+			}
 			size_t w = dscr.get_width();
 			size_t h = dscr.get_height();
 
@@ -184,6 +190,10 @@ namespace
 
 		void on_sample(short l, short r)
 		{
+			if(akill) {
+				akill--;
+				return;
+			}
 			if(have_dumped_frame && audio)
 				audio->sample(l, r);
 		}
@@ -283,6 +293,8 @@ namespace
 			}
 			messages << "Dumping to " << prefix << std::endl;
 			information_dispatch::do_dumper_update();
+			akill = 0;
+			akillfrac = 0;
 		}
 
 		void end() throw()

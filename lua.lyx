@@ -1566,6 +1566,19 @@ ghosts
  out of solid bitmaps.
 \end_layout
 
+\begin_layout Subsection
+gui.kill_frame: Kill video frame and associated sound
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.kill_frame()
+\end_layout
+
+\begin_layout Standard
+Kills the currently dumped video frame + the associated sound.
+ Only valid in on_video callback.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

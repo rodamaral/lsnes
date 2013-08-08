@@ -18,6 +18,8 @@
 namespace
 {
 	setting_var<setting_var_model_int<0,9>> clevel(lsnes_vset, "jmd-compression", "JMD‣Compression", 7);
+	uint64_t akill = 0;
+	double akillfrac = 0;
 
 	void deleter_fn(void* f)
 	{
@@ -89,7 +91,10 @@ namespace
 
 		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL);
+			if(!render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL)) {
+				akill += killed_audio_length(fps_n, fps_d, akillfrac);
+				return;
+			}
 			frame_buffer f;
 			f.ts = get_next_video_ts(fps_n, fps_d);
 			//We'll compress the frame here.
@@ -101,6 +106,10 @@ namespace
 
 		void on_sample(short l, short r)
 		{
+			if(akill) {
+				akill--;
+				return;
+			}
 			uint64_t ts = get_next_audio_ts();
 			if(have_dumped_frame) {
 				sample_buffer s;
@@ -379,6 +388,8 @@ namespace
 			}
 			messages << "Dumping to " << prefix << " at level " << clevel << std::endl;
 			information_dispatch::do_dumper_update();
+			akill = 0;
+			akillfrac = 0;
 		}
 
 		void end() throw()

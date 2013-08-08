@@ -28,6 +28,8 @@ namespace
 {
 	class avi_avsnoop;
 	avi_avsnoop* vid_dumper;
+	uint64_t akill = 0;
+	double akillfrac = 0;
 
 	uint32_t rates[] = {8000, 11025, 12000, 16000, 22050, 24000, 32000, 44100, 48000, 64000, 88200, 96000,
 		128000, 176400, 192000};
@@ -349,13 +351,20 @@ again:
 				hscl = scl.first;
 				vscl = scl.second;
 			}
-			render_video_hud(dscr, _frame, hscl, vscl, 0, 8, 16, dlb, dtb, drb, dbb, waitfn);
+			if(!render_video_hud(dscr, _frame, hscl, vscl, 0, 8, 16, dlb, dtb, drb, dbb, waitfn)) {
+				akill += killed_audio_length(fps_n, fps_d, akillfrac);
+				return;
+			}
 			worker->queue_video(dscr.rowptr(0), dscr.get_width(), dscr.get_height(), fps_n, fps_d);
 			have_dumped_frame = true;
 		}
 
 		void on_sample(short l, short r)
 		{
+			if(akill) {
+				akill--;
+				return;
+			}
 			if(resampler_w) {
 				if(!have_dumped_frame)
 					return;
@@ -489,6 +498,8 @@ again:
 			messages << "Dumping AVI (" << c.first->get_hname() << " / " << c.second->get_hname()
 				<< ") to " << prefix << std::endl;
 			information_dispatch::do_dumper_update();
+			akill = 0;
+			akillfrac = 0;
 		}
 
 		void end() throw()

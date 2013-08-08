@@ -43,10 +43,11 @@ unsigned adv_dumper::target_type_file = 0;
 unsigned adv_dumper::target_type_prefix = 1;
 unsigned adv_dumper::target_type_special = 2;
 
-template<bool X> void render_video_hud(struct framebuffer<X>& target, struct framebuffer_raw& source, uint32_t hscl,
+template<bool X> bool render_video_hud(struct framebuffer<X>& target, struct framebuffer_raw& source, uint32_t hscl,
 	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
 	uint32_t rgap, uint32_t bgap, void(*fn)())
 {
+	bool lua_kill_video = false;
 	struct lua_render_context lrc;
 	render_queue rq;
 	lrc.left_gap = lgap;
@@ -56,7 +57,7 @@ template<bool X> void render_video_hud(struct framebuffer<X>& target, struct fra
 	lrc.queue = &rq;
 	lrc.width = source.get_width();
 	lrc.height = source.get_height();
-	lua_callback_do_video(&lrc);
+	lua_callback_do_video(&lrc, lua_kill_video);
 	if(fn)
 		fn();
 	target.set_palette(roffset, goffset, boffset);
@@ -65,11 +66,21 @@ template<bool X> void render_video_hud(struct framebuffer<X>& target, struct fra
 	target.set_origin(lrc.left_gap, lrc.top_gap);
 	target.copy_from(source, hscl, vscl);
 	rq.run(target);
+	return !lua_kill_video;
 }
 
-template void render_video_hud(struct framebuffer<false>& target, struct framebuffer_raw& source, uint32_t hscl,
+uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction)
+{
+	auto g = information_dispatch::get_sound_rate();
+	double x = 1.0 * fps_d * g.first / (fps_n * g.second) + fraction;
+	uint64_t y = x;
+	fraction = x - y;
+	return y;
+}
+
+template bool render_video_hud(struct framebuffer<false>& target, struct framebuffer_raw& source, uint32_t hscl,
 	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
 	uint32_t rgap, uint32_t bgap, void(*fn)());
-template void render_video_hud(struct framebuffer<true>& target, struct framebuffer_raw& source, uint32_t hscl,
+template bool render_video_hud(struct framebuffer<true>& target, struct framebuffer_raw& source, uint32_t hscl,
 	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
 	uint32_t rgap, uint32_t bgap, void(*fn)());

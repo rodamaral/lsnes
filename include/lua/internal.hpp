@@ -16,6 +16,7 @@ extern lua_function_group lua_func_load;
 void push_keygroup_parameters(lua_state& L, keyboard_key& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
+extern bool* lua_kill_frame;
 extern bool lua_booted_flag;
 extern uint64_t lua_idle_hook_time;
 extern uint64_t lua_timer_hook_time;

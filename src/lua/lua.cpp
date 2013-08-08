@@ -19,6 +19,7 @@ extern "C" {
 uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 bool* lua_veto_flag = NULL;
+bool* lua_kill_frame = NULL;
 extern const char* lua_sysrc_script;
 
 lua_state lsnes_lua_state;
@@ -269,9 +270,10 @@ void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) t
 	run_callback(on_paint, lua_state::store_tag(lua_render_ctx, ctx), lua_state::boolean_tag(non_synthetic));
 }
 
-void lua_callback_do_video(struct lua_render_context* ctx) throw()
+void lua_callback_do_video(struct lua_render_context* ctx, bool& kill_frame) throw()
 {
-	run_callback(on_video, lua_state::store_tag(lua_render_ctx, ctx));
+	run_callback(on_video, lua_state::store_tag(lua_render_ctx, ctx), lua_state::store_tag(lua_kill_frame,
+		&kill_frame));
 }
 
 void lua_callback_do_reset() throw()

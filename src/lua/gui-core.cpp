@@ -142,4 +142,10 @@ namespace
 		L.pushnumber(basecolor);
 		return 1;
 	});
+
+	function_ptr_luafun gui_killframe(lua_func_misc, "gui.kill_frame", [](lua_state& L, const std::string& fname)
+		-> int {
+		if(lua_kill_frame)
+			*lua_kill_frame = true;
+	});
 }
