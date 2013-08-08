@@ -336,9 +336,9 @@ namespace
 			do_reset_flag = false;
 
 			uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
+			int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
+			size_t emitted = 0;
 			while(true) {
-				int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
-				size_t emitted = 0;
 				unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
 				long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
 				for(unsigned i = 0; i < samples_emitted; i++) {
@@ -356,7 +356,6 @@ namespace
 						accumulator_s = 0;
 					}
 				}
-				audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
 				ecore_callbacks->timer_tick(samples_emitted, 2097152);
 				frame_overflow += samples_emitted;
 				if(frame_overflow >= SAMPLES_PER_FRAME) {
@@ -378,6 +377,7 @@ namespace
 
 			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, 262144, 4389);
+			audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }
