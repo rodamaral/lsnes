@@ -24,6 +24,11 @@
 #include "loadres.h"
 #include <cstddef>
 #include <string>
+#include <vector>
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -51,6 +56,15 @@ public:
 	  * @return 0 on success, negative value on failure.
 	  */
 	LoadRes load(std::string const &romfile, unsigned flags = 0);
+
+	/** Load ROM image.
+	  *
+	  * @param image    Raw ROM image data.
+	  * @param isize    Size of raw ROM image data.
+	  * @param flags    ORed combination of LoadFlags.
+	  * @return 0 on success, negative value on failure.
+	  */
+	LoadRes load(const unsigned char* image, size_t isize, unsigned flags = 0);
 
 	/**
 	  * Emulates until at least 'samples' audio samples are produced in the
@@ -80,8 +94,8 @@ public:
 	  * @return sample offset in audioBuf at which the video frame was completed, or -1
 	  *         if no new video frame was completed.
 	  */
-	std::ptrdiff_t runFor(gambatte::uint_least32_t *videoBuf, std::ptrdiff_t pitch,
-	                      gambatte::uint_least32_t *audioBuf, std::size_t &samples);
+	signed runFor(gambatte::uint_least32_t *videoBuf, std::ptrdiff_t pitch,
+		      gambatte::uint_least32_t *soundBuf, unsigned &samples);
 
 	/**
 	  * Reset to initial state.
@@ -93,7 +107,7 @@ public:
 	  * @param palNum 0 <= palNum < 3. One of BG_PALETTE, SP1_PALETTE and SP2_PALETTE.
 	  * @param colorNum 0 <= colorNum < 4
 	  */
-	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32);
+	void setDmgPaletteColor(int palNum, int colorNum, uint_least32_t rgb32);
 
 	/** Sets the callback used for getting input state. */
 	void setInputGetter(InputGetter *getInput);
@@ -149,6 +163,16 @@ public:
 	  */
 	bool loadState(std::string const &filepath);
 
+	/** Save savestate to given buffer.
+	  */
+	void saveState(std::vector<char>& data, const std::vector<char>& cmpdata);
+	/** Save savestate to given buffer.
+	  */
+	void saveState(std::vector<char>& data);
+	/** Load savestate from given buffer.
+	  */
+	void loadState(const std::vector<char>& data);
+
 	/**
 	  * Selects which state slot to save state to or load state from.
 	  * There are 10 such slots, numbered from 0 to 9 (periodically extended for all n).
@@ -180,14 +204,52 @@ public:
 	  */
 	void setGameShark(std::string const &codes);
 
+	/** Set RTC base time.
+	  */
+	void setRtcBase(time_t time);
+
+	/** Get RTC base time.
+	  */
+	time_t getRtcBase();
+
+	/** Get pointer and size to Work RAM.
+	  * @return The pointer and size of Work RAM.
+	 */
+	std::pair<unsigned char*, size_t> getWorkRam();
+
+	/** Get pointer and size to Save RAM.
+	  * @return The pointer and size of Save RAM.
+	 */
+	std::pair<unsigned char*, size_t> getSaveRam();
+
+	/** Get pointer and size to I/O RAM.
+	  * @return The pointer and size of I/O RAM.
+	 */
+	std::pair<unsigned char*, size_t> getIoRam();
+
+	/** Get pointer and size to Video RAM.
+	  * @return The pointer and size of Video RAM.
+	 */
+	std::pair<unsigned char*, size_t> getVideoRam();
+
+	/** Function to get wall time. */
+	void set_walltime_fn(time_t (*_walltime)());
+
+	/** Get version. */
+	static std::string version();
 private:
+	void preload_common();
+	void postload_common(const unsigned flags);
 	struct Priv;
 	Priv *const p_;
+	time_t (*walltime)();
 
 	GB(GB const &);
 	GB & operator=(GB const &);
 };
 
 }
+
+#define GAMBATTE_USES_LOADRES
 
 #endif

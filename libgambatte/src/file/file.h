@@ -22,6 +22,15 @@ Free Software Foundation, Inc.,
 #ifndef GAMBATTE_FILE_H
 #define GAMBATTE_FILE_H
 
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+//
+// Modified 2012-07-10 by H. Ilari Liusvaara
+//	- New API methods.
+
+#include <memory>
 #include "transfer_ptr.h"
 #include <string>
 
@@ -37,6 +46,7 @@ public:
 };
 
 transfer_ptr<File> newFileInstance(std::string const &filepath);
+transfer_ptr<File> newFileInstance(const unsigned char* image, size_t isize);
 
 }
 

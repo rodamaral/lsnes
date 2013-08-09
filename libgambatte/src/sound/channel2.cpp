@@ -20,6 +20,10 @@
 #include "../savestate.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 Channel2::Channel2()
@@ -76,7 +80,7 @@ void Channel2::setNr4(unsigned const data) {
 	setEvent();
 }
 
-void Channel2::setSo(unsigned long soMask) {
+void Channel2::setSo(unsigned soMask) {
 	soMask_ = soMask;
 	staticOutputTest_(cycleCounter_);
 	setEvent();
@@ -116,17 +120,17 @@ void Channel2::loadState(SaveState const &state) {
 	master_ = state.spu.ch2.master;
 }
 
-void Channel2::update(uint_least32_t *buf, unsigned long const soBaseVol, unsigned long cycles) {
-	unsigned long const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
-	unsigned long const outLow = outBase * (0 - 15ul);
-	unsigned long const endCycles = cycleCounter_ + cycles;
+void Channel2::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
+	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
+	unsigned const outLow = outBase * (0 - 15ul);
+	unsigned const endCycles = cycleCounter_ + cycles;
 
 	for (;;) {
-		unsigned long const outHigh = master_
+		unsigned const outHigh = master_
 		                            ? outBase * (envelopeUnit_.getVolume() * 2 - 15ul)
 		                            : outLow;
-		unsigned long const nextMajorEvent = std::min(nextEventUnit->counter(), endCycles);
-		unsigned long out = dutyUnit_.isHighState() ? outHigh : outLow;
+		unsigned const nextMajorEvent = std::min(nextEventUnit->counter(), endCycles);
+		unsigned out = dutyUnit_.isHighState() ? outHigh : outLow;
 
 		while (dutyUnit_.counter() <= nextMajorEvent) {
 			*buf += out - prevOut_;
@@ -158,6 +162,26 @@ void Channel2::update(uint_least32_t *buf, unsigned long const soBaseVol, unsign
 		envelopeUnit_.resetCounters(cycleCounter_);
 		cycleCounter_ -= SoundUnit::counter_max;
 	}
+}
+
+void Channel2::loadOrSave(loadsave& state)
+{
+	//disableMaster has no state.
+	lengthCounter_.loadOrSave(state);
+	dutyUnit_.loadOrSave(state);
+	envelopeUnit_.loadOrSave(state);
+
+	state.startEnumeration();
+	state.enumerate<SoundUnit*>(nextEventUnit, NULL, 0);
+	state.enumerate<SoundUnit*>(nextEventUnit, &lengthCounter_, 1);
+	state.enumerate<SoundUnit*>(nextEventUnit, &envelopeUnit_, 2);
+	state.endEnumeration();
+
+	state(cycleCounter_);
+	state(soMask_);
+	state(prevOut_);
+	state(nr4_);
+	state(master_);
 }
 
 }

@@ -19,16 +19,22 @@
 #ifndef CPU_H
 #define CPU_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "memory.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
 class CPU {
 public:
-	CPU();
-	long runFor(unsigned long cycles);
+	CPU(time_t (**_getCurrentTime)());
+	signed runFor(unsigned cycles);
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state);
+	void loadOrSave(loadsave& state);
 	void loadState(SaveState const &state);
 	void loadSavedata() { mem_.loadSavedata(); }
 	void saveSavedata() { mem_.saveSavedata(); }
@@ -57,6 +63,10 @@ public:
 		return mem_.loadROM(romfile, forceDmg, multicartCompat);
 	}
 
+	LoadRes load(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat) {
+		return mem_.loadROM(image, isize, forceDmg, multicartCompat);
+	}
+
 	bool loaded() const { return mem_.loaded(); }
 	char const * romTitle() const { return mem_.romTitle(); }
 	PakInfo const pakInfo(bool multicartCompat) const { return mem_.pakInfo(multicartCompat); }
@@ -64,23 +74,30 @@ public:
 	std::size_t fillSoundBuffer() { return mem_.fillSoundBuffer(cycleCounter_); }
 	bool isCgb() const { return mem_.isCgb(); }
 
-	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
+	void setDmgPaletteColor(int palNum, int colorNum, uint_least32_t rgb32) {
 		mem_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
 
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }
 
+	void setRtcBase(time_t time) { mem_.setRtcBase(time); }
+	time_t getRtcBase() { return mem_.getRtcBase(); }
+	std::pair<unsigned char*, size_t> getWorkRam() { return mem_.getWorkRam(); }
+	std::pair<unsigned char*, size_t> getSaveRam() { return mem_.getSaveRam(); }
+	std::pair<unsigned char*, size_t> getIoRam() { return mem_.getIoRam(); }
+	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
+
 private:
 	Memory mem_;
-	unsigned long cycleCounter_;
+	unsigned cycleCounter_;
 	unsigned short pc_;
 	unsigned short sp;
 	unsigned hf1, hf2, zf, cf;
 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
 	bool skip_;
 
-	void process(unsigned long cycles);
+	void process(unsigned cycles);
 };
 
 }

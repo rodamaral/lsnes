@@ -19,6 +19,10 @@
 #ifndef BITMAP_FONT_H
 #define BITMAP_FONT_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include <cstddef>
 
@@ -44,7 +48,7 @@ std::size_t getWidth(char const *chars);
 template<class RandomAccessIterator, class Fill>
 void print(RandomAccessIterator dest, std::ptrdiff_t pitch, Fill fill, char const *chars);
 
-void print(gambatte::uint_least32_t *dest, std::ptrdiff_t pitch, unsigned long color, char const *chars);
+void print(gambatte::uint_least32_t *dest, std::ptrdiff_t pitch, uint_least32_t color, char const *chars);
 void utoa(unsigned u, char *a);
 
 // --- INTERFACE END ---

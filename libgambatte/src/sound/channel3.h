@@ -19,8 +19,13 @@
 #ifndef SOUND_CHANNEL3_H
 #define SOUND_CHANNEL3_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include "length_counter.h"
+#include "loadsave.h"
 #include "master_disabler.h"
 
 namespace gambatte {
@@ -41,8 +46,8 @@ public:
 	void setNr2(unsigned data);
 	void setNr3(unsigned data) { nr3_ = data; }
 	void setNr4(unsigned data);
-	void setSo(unsigned long soMask);
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void setSo(unsigned soMask);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 
 	unsigned waveRamRead(unsigned index) const {
 		if (master_) {
@@ -66,10 +71,11 @@ public:
 		waveRam_[index] = data;
 	}
 
+	void loadOrSave(loadsave& state);
 private:
 	class Ch3MasterDisabler : public MasterDisabler {
 	public:
-		Ch3MasterDisabler(bool &m, unsigned long &wC) : MasterDisabler(m), waveCounter_(wC) {}
+		Ch3MasterDisabler(bool &m, unsigned &wC) : MasterDisabler(m), waveCounter_(wC) {}
 
 		virtual void operator()() {
 			MasterDisabler::operator()();
@@ -77,17 +83,17 @@ private:
 		}
 
 	private:
-		unsigned long &waveCounter_;
+		unsigned &waveCounter_;
 	};
 
 	unsigned char waveRam_[0x10];
 	Ch3MasterDisabler disableMaster_;
 	LengthCounter lengthCounter_;
-	unsigned long cycleCounter_;
-	unsigned long soMask_;
-	unsigned long prevOut_;
-	unsigned long waveCounter_;
-	unsigned long lastReadTime_;
+	unsigned cycleCounter_;
+	unsigned soMask_;
+	unsigned prevOut_;
+	unsigned waveCounter_;
+	unsigned lastReadTime_;
 	unsigned char nr0_;
 	unsigned char nr3_;
 	unsigned char nr4_;
@@ -97,7 +103,7 @@ private:
 	bool master_;
 	bool cgb_;
 
-	void updateWaveCounter(unsigned long cc);
+	void updateWaveCounter(unsigned cc);
 };
 
 }

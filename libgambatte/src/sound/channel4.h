@@ -24,6 +24,11 @@
 #include "length_counter.h"
 #include "master_disabler.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -36,9 +41,10 @@ public:
 	void setNr2(unsigned data);
 	void setNr3(unsigned data) { lfsr_.nr3Change(data, cycleCounter_); }
 	void setNr4(unsigned data);
-	void setSo(unsigned long soMask);
+	void loadOrSave(loadsave& state);
+	void setSo(unsigned soMask);
 	bool isActive() const { return master_; }
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
@@ -49,24 +55,31 @@ private:
 	public:
 		Lfsr();
 		virtual void event();
-		virtual void resetCounters(unsigned long oldCc);
+		void loadOrSave(loadsave& state) {
+			loadOrSave2(state);
+			state(backupCounter_);
+			state(reg_);
+			state(nr3_);
+			state(master_);
+		}
+		virtual void resetCounters(unsigned oldCc);
 		bool isHighState() const { return ~reg_ & 1; }
-		void nr3Change(unsigned newNr3, unsigned long cc);
-		void nr4Init(unsigned long cc);
-		void reset(unsigned long cc);
-		void saveState(SaveState &state, unsigned long cc);
+		void nr3Change(unsigned newNr3, unsigned cc);
+		void nr4Init(unsigned cc);
+		void reset(unsigned cc);
+		void saveState(SaveState &state, unsigned cc);
 		void loadState(SaveState const &state);
 		void disableMaster() { killCounter(); master_ = false; reg_ = 0x7FFF; }
 		void killCounter() { counter_ = counter_disabled; }
-		void reviveCounter(unsigned long cc);
+		void reviveCounter(unsigned cc);
 
 	private:
-		unsigned long backupCounter_;
+		unsigned backupCounter_;
 		unsigned short reg_;
 		unsigned char nr3_;
 		bool master_;
 
-		void updateBackupCounter(unsigned long cc);
+		void updateBackupCounter(unsigned cc);
 	};
 
 	class Ch4MasterDisabler : public MasterDisabler {
@@ -86,9 +99,9 @@ private:
 	EnvelopeUnit envelopeUnit_;
 	Lfsr lfsr_;
 	SoundUnit *nextEventUnit_;
-	unsigned long cycleCounter_;
-	unsigned long soMask_;
-	unsigned long prevOut_;
+	unsigned cycleCounter_;
+	unsigned soMask_;
+	unsigned prevOut_;
 	unsigned char nr4_;
 	bool master_;
 

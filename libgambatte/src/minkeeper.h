@@ -19,7 +19,12 @@
 #ifndef MINKEEPER_H
 #define MINKEEPER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include <algorithm>
+#include "loadsave.h"
 
 namespace MinKeeperUtil {
 template<int n> struct CeiledLog2 { enum { r = 1 + CeiledLog2<(n + 1) / 2>::r }; };
@@ -39,22 +44,29 @@ template<template<int> class T> struct Sum<T,0> { enum { r = 0 }; };
 template<int ids>
 class MinKeeper {
 public:
-	explicit MinKeeper(unsigned long initValue = 0xFFFFFFFF);
+	explicit MinKeeper(unsigned initValue = 0xFFFFFFFF);
 	int min() const { return a_[0]; }
-	unsigned long minValue() const { return minValue_; }
+	unsigned minValue() const { return minValue_; }
 
 	template<int id>
-	void setValue(unsigned long cnt) {
+	void setValue(unsigned cnt) {
 		values_[id] = cnt;
 		updateValue<id / 2>(*this);
 	}
 
-	void setValue(int id, unsigned long cnt) {
+	void setValue(int id, unsigned cnt) {
 		values_[id] = cnt;
 		updateValueLut.call(id >> 1, *this);
 	}
 
-	unsigned long value(int id) const { return values_[id]; }
+	unsigned value(int id) const { return values_[id]; }
+
+	void loadOrSave(gambatte::loadsave& state) {
+		state(values_, ids);
+		state(minValue_);
+		//updateValueLut is constant for our purposes.
+		state(a_, Sum<levels>::r);
+	}
 
 private:
 	enum { levels = MinKeeperUtil::CeiledLog2<ids>::r };
@@ -101,8 +113,9 @@ private:
 	};
 
 	static UpdateValueLut updateValueLut;
-	unsigned long values_[ids];
-	unsigned long minValue_;
+
+	unsigned values_[ids];
+	unsigned minValue_;
 	int a_[Sum<levels>::r];
 
 	template<int id> static void updateValue(MinKeeper<ids> &m);
@@ -111,7 +124,7 @@ private:
 template<int ids> typename MinKeeper<ids>::UpdateValueLut MinKeeper<ids>::updateValueLut;
 
 template<int ids>
-MinKeeper<ids>::MinKeeper(unsigned long const initValue) {
+MinKeeper<ids>::MinKeeper(unsigned const initValue) {
 	std::fill(values_, values_ + ids, initValue);
 
 	for (int i = 0; i < Num<levels-1>::r; ++i) {

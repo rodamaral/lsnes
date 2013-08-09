@@ -19,6 +19,10 @@
 #include "envelope_unit.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 EnvelopeUnit::VolOnOffEvent EnvelopeUnit::nullEvent_;
@@ -39,14 +43,14 @@ void EnvelopeUnit::saveState(SaveState::SPU::Env &estate) const {
 	estate.volume = volume_;
 }
 
-void EnvelopeUnit::loadState(SaveState::SPU::Env const &estate, unsigned nr2, unsigned long cc) {
+void EnvelopeUnit::loadState(SaveState::SPU::Env const &estate, unsigned nr2, unsigned cc) {
 	counter_ = std::max(estate.counter, cc);
 	volume_ = estate.volume;
 	nr2_ = nr2;
 }
 
 void EnvelopeUnit::event() {
-	unsigned long const period = nr2_ & 7;
+	unsigned const period = nr2_ & 7;
 
 	if (period) {
 		unsigned newVol = volume_;
@@ -81,9 +85,9 @@ bool EnvelopeUnit::nr2Change(unsigned const newNr2) {
 	return !(newNr2 & 0xF8);
 }
 
-bool EnvelopeUnit::nr4Init(unsigned long const cc) {
+bool EnvelopeUnit::nr4Init(unsigned const cc) {
 	{
-		unsigned long period = nr2_ & 7;
+		unsigned period = nr2_ & 7;
 
 		if (!period)
 			period = 8;
@@ -96,6 +100,13 @@ bool EnvelopeUnit::nr4Init(unsigned long const cc) {
 
 	volume_ = nr2_ >> 4;
 	return !(nr2_ & 0xF8);
+}
+
+void EnvelopeUnit::loadOrSave(loadsave& state)
+{
+	loadOrSave2(state);
+	state(nr2_);
+	state(volume_);
 }
 
 }

@@ -19,6 +19,10 @@
 #ifndef STATIC_OUTPUT_TESTER_H
 #define STATIC_OUTPUT_TESTER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "envelope_unit.h"
 
 namespace gambatte {
@@ -27,7 +31,7 @@ template<class Channel, class Unit>
 class StaticOutputTester : public EnvelopeUnit::VolOnOffEvent {
 public:
 	StaticOutputTester(Channel const &ch, Unit &unit) : ch_(ch), unit_(unit) {}
-	void operator()(unsigned long cc);
+	void operator()(unsigned cc);
 
 private:
 	Channel const &ch_;
@@ -35,7 +39,7 @@ private:
 };
 
 template<class Channel, class Unit>
-void StaticOutputTester<Channel, Unit>::operator()(unsigned long cc) {
+void StaticOutputTester<Channel, Unit>::operator()(unsigned cc) {
 	if (ch_.soMask_ && ch_.master_ && ch_.envelopeUnit_.getVolume())
 		unit_.reviveCounter(cc);
 	else

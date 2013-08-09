@@ -19,6 +19,10 @@
 #include "interrupter.h"
 #include "memory.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 Interrupter::Interrupter(unsigned short &sp, unsigned short &pc)
@@ -27,7 +31,7 @@ Interrupter::Interrupter(unsigned short &sp, unsigned short &pc)
 {
 }
 
-unsigned long Interrupter::interrupt(unsigned const address, unsigned long cc, Memory &memory) {
+unsigned Interrupter::interrupt(unsigned const address, unsigned cc, Memory &memory) {
 	cc += 8;
 	sp_ = (sp_ - 1) & 0xFFFF;
 	memory.write(sp_, pc_ >> 8, cc);
@@ -66,11 +70,20 @@ void Interrupter::setGameShark(std::string const &codes) {
 	}
 }
 
-void Interrupter::applyVblankCheats(unsigned long const cc, Memory &memory) {
+void Interrupter::applyVblankCheats(unsigned const cc, Memory &memory) {
 	for (std::size_t i = 0, size = gsCodes_.size(); i < size; ++i) {
 		if (gsCodes_[i].type == 0x01)
 			memory.write(gsCodes_[i].address, gsCodes_[i].value, cc);
 	}
+}
+
+void Interrupter::loadOrSave(loadsave& state) {
+	unsigned gssize = gsCodes_.size();
+	state(gssize);
+	if(!state.saving())
+		gsCodes_.resize(gssize);
+	for(unsigned i = 0; i < gssize; i++)
+		gsCodes_[i].loadOrSave(state);
 }
 
 }

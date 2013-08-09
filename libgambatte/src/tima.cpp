@@ -19,6 +19,10 @@
 #include "tima.h"
 #include "savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 static unsigned char const timaClock[4] = { 10, 4, 6, 8 };
 
 namespace gambatte {
@@ -44,7 +48,7 @@ void Tima::loadState(SaveState const &state, TimaInterruptRequester timaIrq) {
 	tma_  = state.mem.ioamhram.get()[0x106];
 	tac_  = state.mem.ioamhram.get()[0x107];
 
-	unsigned long nextIrqEventTime = disabled_time;
+	unsigned nextIrqEventTime = disabled_time;
 	if (tac_ & 4) {
 		nextIrqEventTime = tmatime_ != disabled_time && tmatime_ > state.cpu.cycleCounter
 		                 ? tmatime_
@@ -54,12 +58,12 @@ void Tima::loadState(SaveState const &state, TimaInterruptRequester timaIrq) {
 	timaIrq.setNextIrqEventTime(nextIrqEventTime);
 }
 
-void Tima::resetCc(unsigned long const oldCc, unsigned long const newCc, TimaInterruptRequester timaIrq) {
+void Tima::resetCc(unsigned const oldCc, unsigned const newCc, TimaInterruptRequester timaIrq) {
 	if (tac_ & 0x04) {
 		updateIrq(oldCc, timaIrq);
 		updateTima(oldCc);
 
-		unsigned long const dec = oldCc - newCc;
+		unsigned const dec = oldCc - newCc;
 		lastUpdate_ -= dec;
 		timaIrq.setNextIrqEventTime(timaIrq.nextIrqEventTime() - dec);
 
@@ -68,8 +72,8 @@ void Tima::resetCc(unsigned long const oldCc, unsigned long const newCc, TimaInt
 	}
 }
 
-void Tima::updateTima(unsigned long const cc) {
-	unsigned long const ticks = (cc - lastUpdate_) >> timaClock[tac_ & 3];
+void Tima::updateTima(unsigned const cc) {
+	unsigned const ticks = (cc - lastUpdate_) >> timaClock[tac_ & 3];
 	lastUpdate_ += ticks << timaClock[tac_ & 3];
 
 	if (cc >= tmatime_) {
@@ -79,7 +83,7 @@ void Tima::updateTima(unsigned long const cc) {
 		tima_ = tma_;
 	}
 
-	unsigned long tmp = tima_ + ticks;
+	unsigned tmp = tima_ + ticks;
 	while (tmp > 0x100)
 		tmp -= 0x100 - tma_;
 
@@ -98,7 +102,7 @@ void Tima::updateTima(unsigned long const cc) {
 	tima_ = tmp;
 }
 
-void Tima::setTima(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq) {
+void Tima::setTima(unsigned const data, unsigned const cc, TimaInterruptRequester timaIrq) {
 	if (tac_ & 0x04) {
 		updateIrq(cc, timaIrq);
 		updateTima(cc);
@@ -112,7 +116,7 @@ void Tima::setTima(unsigned const data, unsigned long const cc, TimaInterruptReq
 	tima_ = data;
 }
 
-void Tima::setTma(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq) {
+void Tima::setTma(unsigned const data, unsigned const cc, TimaInterruptRequester timaIrq) {
 	if (tac_ & 0x04) {
 		updateIrq(cc, timaIrq);
 		updateTima(cc);
@@ -121,9 +125,9 @@ void Tima::setTma(unsigned const data, unsigned long const cc, TimaInterruptRequ
 	tma_ = data;
 }
 
-void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequester timaIrq) {
+void Tima::setTac(unsigned const data, unsigned const cc, TimaInterruptRequester timaIrq) {
 	if (tac_ ^ data) {
-		unsigned long nextIrqEventTime = timaIrq.nextIrqEventTime();
+		unsigned nextIrqEventTime = timaIrq.nextIrqEventTime();
 
 		if (tac_ & 0x04) {
 			updateIrq(cc, timaIrq);
@@ -153,7 +157,7 @@ void Tima::setTac(unsigned const data, unsigned long const cc, TimaInterruptRequ
 	tac_ = data;
 }
 
-unsigned Tima::tima(unsigned long cc) {
+unsigned Tima::tima(unsigned cc) {
 	if (tac_ & 0x04)
 		updateTima(cc);
 
@@ -164,6 +168,15 @@ void Tima::doIrqEvent(TimaInterruptRequester timaIrq) {
 	timaIrq.flagIrq();
 	timaIrq.setNextIrqEventTime(timaIrq.nextIrqEventTime()
 	                          + ((256u - tma_) << timaClock[tac_ & 3]));
+}
+
+void Tima::loadOrSave(loadsave& state)
+{
+	state(lastUpdate_);
+	state(tmatime_);
+	state(tima_);
+	state(tma_);
+	state(tac_);
 }
 
 }

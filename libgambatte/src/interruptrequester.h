@@ -19,10 +19,16 @@
 #ifndef INTERRUPT_REQUESTER_H
 #define INTERRUPT_REQUESTER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "counterdef.h"
 #include "minkeeper.h"
+#include "loadsave.h"
 
 namespace gambatte {
+
 
 struct SaveState;
 
@@ -41,12 +47,12 @@ public:
 	InterruptRequester();
 	void saveState(SaveState &) const;
 	void loadState(SaveState const &);
-	void resetCc(unsigned long oldCc, unsigned long newCc);
+	void resetCc(unsigned oldCc, unsigned newCc);
 	unsigned ifreg() const { return ifreg_; }
 	unsigned pendingIrqs() const { return ifreg_ & iereg_; }
 	bool ime() const { return intFlags_.ime(); }
 	bool halted() const { return intFlags_.halted(); }
-	void ei(unsigned long cc);
+	void ei(unsigned cc);
 	void di();
 	void halt();
 	void unhalt();
@@ -54,12 +60,13 @@ public:
 	void ackIrq(unsigned bit);
 	void setIereg(unsigned iereg);
 	void setIfreg(unsigned ifreg);
+	void loadOrSave(loadsave& state);
 
 	IntEventId minEventId() const { return static_cast<IntEventId>(eventTimes_.min()); }
-	unsigned long minEventTime() const { return eventTimes_.minValue(); }
-	template<IntEventId id> void setEventTime(unsigned long value) { eventTimes_.setValue<id>(value); }
-	void setEventTime(IntEventId id, unsigned long value) { eventTimes_.setValue(id, value); }
-	unsigned long eventTime(IntEventId id) const { return eventTimes_.value(id); }
+	unsigned minEventTime() const { return eventTimes_.minValue(); }
+	template<IntEventId id> void setEventTime(unsigned value) { eventTimes_.setValue<id>(value); }
+	void setEventTime(IntEventId id, unsigned value) { eventTimes_.setValue(id, value); }
+	unsigned eventTime(IntEventId id) const { return eventTimes_.value(id); }
 
 private:
 	class IntFlags {
@@ -74,13 +81,15 @@ private:
 		void unsetHalted() { flags_ &= ~flag_halted; }
 		void set(bool ime, bool halted) { flags_ = halted * flag_halted + ime * flag_ime; }
 
+		void loadOrSave(loadsave& state) { state(flags_); }
+
 	private:
 		unsigned char flags_;
 		enum { flag_ime = 1, flag_halted = 2 };
 	};
 
 	MinKeeper<intevent_last + 1> eventTimes_;
-	unsigned long minIntTime_;
+	unsigned minIntTime_;
 	unsigned ifreg_;
 	unsigned iereg_;
 	IntFlags intFlags_;

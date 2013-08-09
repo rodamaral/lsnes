@@ -19,6 +19,12 @@
 #ifndef MEMPTRS_H
 #define MEMPTRS_H
 
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 enum OamDmaSrc { oam_dma_src_rom,
@@ -60,6 +66,7 @@ public:
 	void setWrambank(unsigned bank);
 	void setOamDmaSrc(OamDmaSrc oamDmaSrc);
 
+	void loadOrSave(loadsave& state);
 private:
 	unsigned char const *rmem_[0x10];
 	unsigned char       *wmem_[0x10];
@@ -72,6 +79,7 @@ private:
 	unsigned char *rambankdata_;
 	unsigned char *wramdataend_;
 	OamDmaSrc oamDmaSrc_;
+	size_t memchunk_size;
 
 	MemPtrs(MemPtrs const &);
 	MemPtrs & operator=(MemPtrs const &);

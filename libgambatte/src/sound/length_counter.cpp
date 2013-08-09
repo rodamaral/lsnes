@@ -20,6 +20,10 @@
 #include "master_disabler.h"
 #include <algorithm>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 LengthCounter::LengthCounter(MasterDisabler &disabler, unsigned const mask)
@@ -37,14 +41,14 @@ void LengthCounter::event() {
 	disableMaster_();
 }
 
-void LengthCounter::nr1Change(unsigned const newNr1, unsigned const nr4, unsigned long const cc) {
+void LengthCounter::nr1Change(unsigned const newNr1, unsigned const nr4, unsigned const cc) {
 	lengthCounter_ = (~newNr1 & lengthMask_) + 1;
 	counter_ = nr4 & 0x40
 	         ? ((cc >> 13) + lengthCounter_) << 13
-	         : static_cast<unsigned long>(counter_disabled);
+	         : static_cast<unsigned>(counter_disabled);
 }
 
-void LengthCounter::nr4Change(unsigned const oldNr4, unsigned const newNr4, unsigned long const cc) {
+void LengthCounter::nr4Change(unsigned const oldNr4, unsigned const newNr4, unsigned const cc) {
 	if (counter_ != counter_disabled)
 		lengthCounter_ = (counter_ >> 13) - (cc >> 13);
 
@@ -79,9 +83,16 @@ void LengthCounter::saveState(SaveState::SPU::LCounter &lstate) const {
 	lstate.lengthCounter = lengthCounter_;
 }
 
-void LengthCounter::loadState(SaveState::SPU::LCounter const &lstate, unsigned long const cc) {
+void LengthCounter::loadState(SaveState::SPU::LCounter const &lstate, unsigned const cc) {
 	counter_ = std::max(lstate.counter, cc);
 	lengthCounter_ = lstate.lengthCounter;
+}
+
+void LengthCounter::loadOrSave(loadsave& state)
+{
+	loadOrSave2(state);
+	state(lengthCounter_);
+	state(cgb_);
 }
 
 }

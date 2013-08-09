@@ -19,9 +19,14 @@
 #ifndef STATESAVER_H
 #define STATESAVER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "gbint.h"
 #include <cstddef>
 #include <string>
+#include <vector>
 
 namespace gambatte {
 

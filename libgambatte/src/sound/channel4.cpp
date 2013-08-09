@@ -20,7 +20,11 @@
 #include "../savestate.h"
 #include <algorithm>
 
-static unsigned long toPeriod(unsigned const nr3) {
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
+static unsigned toPeriod(unsigned const nr3) {
 	unsigned s = (nr3 >> 4) + 3;
 	unsigned r = nr3 & 7;
 
@@ -42,10 +46,10 @@ Channel4::Lfsr::Lfsr()
 {
 }
 
-void Channel4::Lfsr::updateBackupCounter(unsigned long const cc) {
+void Channel4::Lfsr::updateBackupCounter(unsigned const cc) {
 	if (backupCounter_ <= cc) {
-		unsigned long const period = toPeriod(nr3_);
-		unsigned long periods = (cc - backupCounter_) / period + 1;
+		unsigned const period = toPeriod(nr3_);
+		unsigned periods = (cc - backupCounter_) / period + 1;
 		backupCounter_ += periods * period;
 
 		if (master_ && nr3_ < 0xE0) {
@@ -70,7 +74,7 @@ void Channel4::Lfsr::updateBackupCounter(unsigned long const cc) {
 	}
 }
 
-void Channel4::Lfsr::reviveCounter(unsigned long cc) {
+void Channel4::Lfsr::reviveCounter(unsigned cc) {
 	updateBackupCounter(cc);
 	counter_ = backupCounter_;
 }
@@ -89,12 +93,12 @@ inline void Channel4::Lfsr::event() {
 	backupCounter_ = counter_;
 }
 
-void Channel4::Lfsr::nr3Change(unsigned newNr3, unsigned long cc) {
+void Channel4::Lfsr::nr3Change(unsigned newNr3, unsigned cc) {
 	updateBackupCounter(cc);
 	nr3_ = newNr3;
 }
 
-void Channel4::Lfsr::nr4Init(unsigned long cc) {
+void Channel4::Lfsr::nr4Init(unsigned cc) {
 	disableMaster();
 	updateBackupCounter(cc);
 	master_ = true;
@@ -102,19 +106,19 @@ void Channel4::Lfsr::nr4Init(unsigned long cc) {
 	counter_ = backupCounter_;
 }
 
-void Channel4::Lfsr::reset(unsigned long cc) {
+void Channel4::Lfsr::reset(unsigned cc) {
 	nr3_ = 0;
 	disableMaster();
 	backupCounter_ = cc + toPeriod(nr3_);
 }
 
-void Channel4::Lfsr::resetCounters(unsigned long oldCc) {
+void Channel4::Lfsr::resetCounters(unsigned oldCc) {
 	updateBackupCounter(oldCc);
 	backupCounter_ -= counter_max;
 	SoundUnit::resetCounters(oldCc);
 }
 
-void Channel4::Lfsr::saveState(SaveState &state, unsigned long cc) {
+void Channel4::Lfsr::saveState(SaveState &state, unsigned cc) {
 	updateBackupCounter(cc);
 	state.spu.ch4.lfsr.counter = backupCounter_;
 	state.spu.ch4.lfsr.reg = reg_;
@@ -179,7 +183,7 @@ void Channel4::setNr4(unsigned const data) {
 	setEvent();
 }
 
-void Channel4::setSo(unsigned long soMask) {
+void Channel4::setSo(unsigned soMask) {
 	soMask_ = soMask;
 	staticOutputTest_(cycleCounter_);
 	setEvent();
@@ -218,15 +222,15 @@ void Channel4::loadState(SaveState const &state) {
 	master_ = state.spu.ch4.master;
 }
 
-void Channel4::update(uint_least32_t *buf, unsigned long const soBaseVol, unsigned long cycles) {
-	unsigned long const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
-	unsigned long const outLow = outBase * (0 - 15ul);
-	unsigned long const endCycles = cycleCounter_ + cycles;
+void Channel4::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
+	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
+	unsigned const outLow = outBase * (0 - 15ul);
+	unsigned const endCycles = cycleCounter_ + cycles;
 
 	for (;;) {
-		unsigned long const outHigh = outBase * (envelopeUnit_.getVolume() * 2 - 15ul);
-		unsigned long const nextMajorEvent = std::min(nextEventUnit_->counter(), endCycles);
-		unsigned long out = lfsr_.isHighState() ? outHigh : outLow;
+		unsigned const outHigh = outBase * (envelopeUnit_.getVolume() * 2 - 15ul);
+		unsigned const nextMajorEvent = std::min(nextEventUnit_->counter(), endCycles);
+		unsigned out = lfsr_.isHighState() ? outHigh : outLow;
 
 		while (lfsr_.counter() <= nextMajorEvent) {
 			*buf += out - prevOut_;
@@ -258,6 +262,25 @@ void Channel4::update(uint_least32_t *buf, unsigned long const soBaseVol, unsign
 		envelopeUnit_.resetCounters(cycleCounter_);
 		cycleCounter_ -= SoundUnit::counter_max;
 	}
+}
+
+void Channel4::loadOrSave(loadsave& state) {
+	//DisableMaster has no state.
+	lengthCounter_.loadOrSave(state);
+	envelopeUnit_.loadOrSave(state);
+	lfsr_.loadOrSave(state);
+
+	state.startEnumeration();
+	state.enumerate<SoundUnit*>(nextEventUnit_, NULL, 0);
+	state.enumerate<SoundUnit*>(nextEventUnit_, &lengthCounter_, 1);
+	state.enumerate<SoundUnit*>(nextEventUnit_, &envelopeUnit_, 2);
+	state.endEnumeration();
+
+	state(cycleCounter_);
+	state(soMask_);
+	state(prevOut_);
+	state(nr4_);
+	state(master_);
 }
 
 }

@@ -19,6 +19,10 @@
 #include "ly_counter.h"
 #include "../savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 LyCounter::LyCounter()
@@ -39,23 +43,23 @@ void LyCounter::doEvent() {
 	time_ = time_ + lineTime_;
 }
 
-unsigned long LyCounter::nextLineCycle(unsigned const lineCycle, unsigned long const cc) const {
-	unsigned long tmp = time_ + (lineCycle << ds_);
+unsigned LyCounter::nextLineCycle(unsigned const lineCycle, unsigned const cc) const {
+	unsigned tmp = time_ + (lineCycle << ds_);
 	if (tmp - cc > lineTime_)
 		tmp -= lineTime_;
 
 	return tmp;
 }
 
-unsigned long LyCounter::nextFrameCycle(unsigned long const frameCycle, unsigned long const cc) const {
-	unsigned long tmp = time_ + (((153U - ly()) * 456U + frameCycle) << ds_);
+unsigned LyCounter::nextFrameCycle(unsigned const frameCycle, unsigned const cc) const {
+	unsigned tmp = time_ + (((153U - ly()) * 456U + frameCycle) << ds_);
 	if (tmp - cc > 70224U << ds_)
 		tmp -= 70224U << ds_;
 
 	return tmp;
 }
 
-void LyCounter::reset(unsigned long videoCycles, unsigned long lastUpdate) {
+void LyCounter::reset(unsigned videoCycles, unsigned lastUpdate) {
 	ly_ = videoCycles / 456;
 	time_ = lastUpdate + ((456 - (videoCycles - ly_ * 456ul)) << isDoubleSpeed());
 }

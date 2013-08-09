@@ -68,6 +68,10 @@
   gnome dot org.
 */
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "bitmap_font.h"
 #include <algorithm>
 
@@ -288,7 +292,7 @@ namespace {
 
 class Rgb32Fill {
 public:
-	explicit Rgb32Fill(unsigned long color)
+	explicit Rgb32Fill(uint_least32_t color)
 	: color_(color)
 	{
 	}
@@ -298,12 +302,12 @@ public:
 	}
 
 private:
-	unsigned long const color_;
+	uint_least32_t const color_;
 };
 
 }
 
-void print(gambatte::uint_least32_t *dest, std::ptrdiff_t pitch, unsigned long color, char const *chars) {
+void print(gambatte::uint_least32_t *dest, std::ptrdiff_t pitch, uint_least32_t color, char const *chars) {
 	print(dest, pitch, Rgb32Fill(color), chars);
 }
 

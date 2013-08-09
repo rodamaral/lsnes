@@ -25,6 +25,10 @@
 #include <cstring>
 #include <sstream>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 static std::string const itos(int i) {
 	std::stringstream ss;
 	ss << i;
@@ -35,6 +39,14 @@ static std::string const statePath(std::string const &basePath, int stateNo) {
 	return basePath + "_" + itos(stateNo) + ".gqs";
 }
 
+namespace
+{
+	time_t default_walltime()
+	{
+		return time(0);
+	}
+}
+
 namespace gambatte {
 
 struct GB::Priv {
@@ -42,10 +54,10 @@ struct GB::Priv {
 	int stateNo;
 	unsigned loadflags;
 
-	Priv() : stateNo(1), loadflags(0) {}
+	Priv(time_t (**_getCurrentTime)()) : stateNo(1), loadflags(0), cpu(_getCurrentTime) {}
 };
 
-GB::GB() : p_(new Priv) {}
+GB::GB() : p_(new Priv(&walltime)), walltime(default_walltime) {}
 
 GB::~GB() {
 	if (p_->cpu.loaded())
@@ -54,8 +66,8 @@ GB::~GB() {
 	delete p_;
 }
 
-std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
-                          gambatte::uint_least32_t *const soundBuf, std::size_t &samples) {
+signed GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
+                gambatte::uint_least32_t *const soundBuf, unsigned &samples) {
 	if (!p_->cpu.loaded()) {
 		samples = 0;
 		return -1;
@@ -64,10 +76,10 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	p_->cpu.setVideoBuffer(videoBuf, pitch);
 	p_->cpu.setSoundBuffer(soundBuf);
 
-	long const cyclesSinceBlit = p_->cpu.runFor(samples * 2);
+	signed const cyclesSinceBlit = p_->cpu.runFor(samples * 2);
 	samples = p_->cpu.fillSoundBuffer();
 	return cyclesSinceBlit >= 0
-	     ? static_cast<std::ptrdiff_t>(samples) - (cyclesSinceBlit >> 1)
+	     ? static_cast<signed>(samples) - (cyclesSinceBlit >> 1)
 	     : cyclesSinceBlit;
 }
 
@@ -77,7 +89,7 @@ void GB::reset() {
 
 		SaveState state;
 		p_->cpu.setStatePtrs(state);
-		setInitState(state, p_->cpu.isCgb(), p_->loadflags & GBA_CGB);
+		setInitState(state, p_->cpu.isCgb(), p_->loadflags & GBA_CGB, walltime());
 		p_->cpu.loadState(state);
 		p_->cpu.loadSavedata();
 	}
@@ -91,24 +103,44 @@ void GB::setSaveDir(std::string const &sdir) {
 	p_->cpu.setSaveDir(sdir);
 }
 
-LoadRes GB::load(std::string const &romfile, unsigned const flags) {
+void GB::preload_common()
+{
 	if (p_->cpu.loaded())
 		p_->cpu.saveSavedata();
+}
+
+void GB::postload_common(const unsigned flags)
+{
+	SaveState state;
+	p_->cpu.setStatePtrs(state);
+	setInitState(state, p_->cpu.isCgb(), flags & GBA_CGB, walltime());
+	p_->cpu.loadState(state);
+	p_->cpu.loadSavedata();
+
+	p_->stateNo = 1;
+	p_->cpu.setOsdElement(transfer_ptr<OsdElement>());
+}
+
+LoadRes GB::load(std::string const &romfile, unsigned const flags) {
+	preload_common();
 
 	LoadRes const loadres = p_->cpu.load(romfile,
 	                                     flags & FORCE_DMG,
 	                                     flags & MULTICART_COMPAT);
-	if (loadres == LOADRES_OK) {
-		SaveState state;
-		p_->cpu.setStatePtrs(state);
-		p_->loadflags = flags;
-		setInitState(state, p_->cpu.isCgb(), flags & GBA_CGB);
-		p_->cpu.loadState(state);
-		p_->cpu.loadSavedata();
 
-		p_->stateNo = 1;
-		p_->cpu.setOsdElement(transfer_ptr<OsdElement>());
-	}
+	if (loadres == LOADRES_OK)
+		postload_common(flags);
+
+	return loadres;
+}
+
+LoadRes GB::load(const unsigned char* image, size_t isize, unsigned flags) {
+	preload_common();
+
+	LoadRes const loadres = p_->cpu.load(image, isize, flags & FORCE_DMG, flags & MULTICART_COMPAT);
+
+	if (loadres == LOADRES_OK)
+		postload_common(flags);
 
 	return loadres;
 }
@@ -126,7 +158,7 @@ void GB::saveSavedata() {
 		p_->cpu.saveSavedata();
 }
 
-void GB::setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
+void GB::setDmgPaletteColor(int palNum, int colorNum, uint_least32_t rgb32) {
 	p_->cpu.setDmgPaletteColor(palNum, colorNum, rgb32);
 }
 
@@ -176,6 +208,29 @@ bool GB::saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitc
 	return false;
 }
 
+void GB::saveState(std::vector<char>& data, const std::vector<char>& cmpdata) {
+	if (p_->cpu.loaded()) {
+		loadsave_save l(cmpdata);
+		p_->cpu.loadOrSave(l);
+		data = l.get();
+	}
+}
+
+void GB::saveState(std::vector<char>& data) {
+	if (p_->cpu.loaded()) {
+		loadsave_save l;
+		p_->cpu.loadOrSave(l);
+		data = l.get();
+	}
+}
+
+void GB::loadState(const std::vector<char>& data) {
+	if (p_->cpu.loaded()) {
+		loadsave_load l(data);
+		p_->cpu.loadOrSave(l);
+	}
+}
+
 void GB::selectState(int n) {
 	n -= (n / 10) * 10;
 	p_->stateNo = n < 0 ? n + 10 : n;
@@ -207,6 +262,40 @@ void GB::setGameGenie(std::string const &codes) {
 
 void GB::setGameShark(std::string const &codes) {
 	p_->cpu.setGameShark(codes);
+}
+
+void GB::setRtcBase(time_t time) {
+	p_->cpu.setRtcBase(time);
+}
+
+time_t GB::getRtcBase() {
+	return p_->cpu.getRtcBase();
+}
+
+std::pair<unsigned char*, size_t> GB::getWorkRam() {
+	return p_->cpu.getWorkRam();
+}
+
+std::pair<unsigned char*, size_t> GB::getSaveRam() {
+	return p_->cpu.getSaveRam();
+}
+
+std::pair<unsigned char*, size_t> GB::getIoRam() {
+	return p_->cpu.getIoRam();
+}
+
+std::pair<unsigned char*, size_t> GB::getVideoRam() {
+	return p_->cpu.getVideoRam();
+}
+
+void GB::set_walltime_fn(time_t (*_walltime)())
+{
+	walltime = _walltime;
+}
+
+std::string GB::version()
+{
+	return "r537";
 }
 
 }

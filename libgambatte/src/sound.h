@@ -19,10 +19,15 @@
 #ifndef SOUND_H
 #define SOUND_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "sound/channel1.h"
 #include "sound/channel2.h"
 #include "sound/channel3.h"
 #include "sound/channel4.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
@@ -34,10 +39,11 @@ public:
 	void setStatePtrs(SaveState &state);
 	void saveState(SaveState &state);
 	void loadState(SaveState const &state);
+	void loadOrSave(loadsave& state);
 
-	void generateSamples(unsigned long cycleCounter, bool doubleSpeed);
-	void resetCounter(unsigned long newCc, unsigned long oldCc, bool doubleSpeed);
-	std::size_t fillBuffer();
+	void generateSamples(unsigned cycleCounter, bool doubleSpeed);
+	void resetCounter(unsigned newCc, unsigned oldCc, bool doubleSpeed);
+	unsigned fillBuffer();
 	void setBuffer(uint_least32_t *buf) { buffer_ = buf; bufferPos_ = 0; }
 
 	bool isEnabled() const { return enabled_; }
@@ -77,13 +83,13 @@ private:
 	Channel3 ch3_;
 	Channel4 ch4_;
 	uint_least32_t *buffer_;
-	std::size_t bufferPos_;
-	unsigned long lastUpdate_;
-	unsigned long soVol_;
+	unsigned lastUpdate_;
+	unsigned soVol_;
+	unsigned bufferPos_;
 	uint_least32_t rsum_;
 	bool enabled_;
 
-	void accumulateChannels(unsigned long cycles);
+	void accumulateChannels(unsigned cycles);
 };
 
 }

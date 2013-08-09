@@ -20,13 +20,13 @@ public:
 	}
 
 	void statRegChange(unsigned statReg,
-	                   unsigned long nextM0IrqTime, unsigned long cc, bool cgb) {
+	                   unsigned nextM0IrqTime, unsigned cc, bool cgb) {
 		if (nextM0IrqTime - cc > cgb * 2U)
 			statReg_ = statReg;
 	}
 
 	void lycRegChange(unsigned lycReg,
-	                  unsigned long nextM0IrqTime, unsigned long cc,
+	                  unsigned nextM0IrqTime, unsigned cc,
 	                  bool ds, bool cgb) {
 		if (nextM0IrqTime - cc > cgb * 5 + 1U - ds)
 			lycReg_ = lycReg;
@@ -53,6 +53,11 @@ public:
 
 	unsigned statReg() const { return statReg_; }
 
+	void loadOrSave(loadsave& state)
+	{
+		state(statReg_);
+		state(lycReg_);
+	}
 private:
 	unsigned char statReg_;
 	unsigned char lycReg_;

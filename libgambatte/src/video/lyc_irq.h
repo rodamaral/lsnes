@@ -19,6 +19,12 @@
 #ifndef VIDEO_LYC_IRQ_H
 #define VIDEO_LYC_IRQ_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
+#include "../loadsave.h"
+
 namespace gambatte {
 
 struct SaveState;
@@ -31,21 +37,30 @@ public:
 	unsigned lycReg() const { return lycRegSrc_; }
 	void loadState(SaveState const &state);
 	void saveState(SaveState &state) const;
-	unsigned long time() const { return time_; }
+	void loadOrSave(loadsave& state) {
+		state(time_);
+		state(lycRegSrc_);
+		state(statRegSrc_);
+		state(lycReg_);
+		state(statReg_);
+		state(cgb_);
+	}
+
+	unsigned time() const { return time_; }
 	void setCgb(bool cgb) { cgb_ = cgb; }
 	void lcdReset();
-	void reschedule(LyCounter const &lyCounter, unsigned long cc);
+	void reschedule(LyCounter const &lyCounter, unsigned cc);
 
-	void statRegChange(unsigned statReg, LyCounter const &lyCounter, unsigned long cc) {
+	void statRegChange(unsigned statReg, LyCounter const &lyCounter, unsigned cc) {
 		regChange(statReg, lycRegSrc_, lyCounter, cc);
 	}
 
-	void lycRegChange(unsigned lycReg, LyCounter const &lyCounter, unsigned long cc) {
+	void lycRegChange(unsigned lycReg, LyCounter const &lyCounter, unsigned cc) {
 		regChange(statRegSrc_, lycReg, lyCounter, cc);
 	}
 
 private:
-	unsigned long time_;
+	unsigned time_;
  	unsigned char lycRegSrc_;
  	unsigned char statRegSrc_;
 	unsigned char lycReg_;
@@ -53,7 +68,7 @@ private:
 	bool cgb_;
 
 	void regChange(unsigned statReg, unsigned lycReg,
-	               LyCounter const &lyCounter, unsigned long cc);
+	               LyCounter const &lyCounter, unsigned cc);
 };
 
 }

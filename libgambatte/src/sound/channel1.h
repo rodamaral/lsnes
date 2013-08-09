@@ -19,12 +19,20 @@
 #ifndef SOUND_CHANNEL1_H
 #define SOUND_CHANNEL1_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
+#include "gbint.h"
+#include "master_disabler.h"
+#include "length_counter.h"
 #include "duty_unit.h"
 #include "envelope_unit.h"
 #include "gbint.h"
 #include "length_counter.h"
 #include "master_disabler.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
 
 namespace gambatte {
 
@@ -38,9 +46,10 @@ public:
 	void setNr2(unsigned data);
 	void setNr3(unsigned data);
 	void setNr4(unsigned data);
-	void setSo(unsigned long soMask);
+	void loadOrSave(loadsave& state);
+	void setSo(unsigned soMask);
 	bool isActive() const { return master_; }
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
@@ -52,10 +61,17 @@ private:
 		SweepUnit(MasterDisabler &disabler, DutyUnit &dutyUnit);
 		virtual void event();
 		void nr0Change(unsigned newNr0);
-		void nr4Init(unsigned long cycleCounter);
+		void nr4Init(unsigned cycleCounter);
 		void reset();
 		void saveState(SaveState &state) const;
 		void loadState(SaveState const &state);
+
+		void loadOrSave(loadsave& state) {
+			loadOrSave2(state);
+			state(shadow_);
+			state(nr0_);
+			state(negging_);
+		}
 
 	private:
 		MasterDisabler &disableMaster_;
@@ -76,13 +92,14 @@ private:
 	EnvelopeUnit envelopeUnit_;
 	SweepUnit sweepUnit_;
 	SoundUnit *nextEventUnit_;
-	unsigned long cycleCounter_;
-	unsigned long soMask_;
-	unsigned long prevOut_;
+	unsigned cycleCounter_;
+	unsigned soMask_;
+	unsigned prevOut_;
 	unsigned char nr4_;
 	bool master_;
 
 	void setEvent();
+
 };
 
 }

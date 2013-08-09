@@ -19,8 +19,13 @@
 #ifndef SPRITE_MAPPER_H
 #define SPRITE_MAPPER_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "ly_counter.h"
 #include "../savestate.h"
+#include "../loadsave.h"
 
 namespace gambatte {
 
@@ -32,17 +37,17 @@ public:
 	             LyCounter const &lyCounter,
 	             unsigned char const *oamram);
 	void reset(unsigned char const *oamram, bool cgb);
-	unsigned long doEvent(unsigned long time);
+	unsigned doEvent(unsigned time);
 	bool largeSprites(unsigned spNo) const { return oamReader_.largeSprites(spNo); }
 	unsigned numSprites(unsigned ly) const { return num_[ly] & ~need_sorting_mask; }
-	void oamChange(unsigned long cc) { oamReader_.change(cc); }
-	void oamChange(unsigned char const *oamram, unsigned long cc) { oamReader_.change(oamram, cc); }
+	void oamChange(unsigned cc) { oamReader_.change(cc); }
+	void oamChange(unsigned char const *oamram, unsigned cc) { oamReader_.change(oamram, cc); }
 	unsigned char const * oamram() const { return oamReader_.oam(); }
 	unsigned char const * posbuf() const { return oamReader_.spritePosBuf(); }
-	void  preSpeedChange(unsigned long cc) { oamReader_.update(cc); }
-	void postSpeedChange(unsigned long cc) { oamReader_.change(cc); }
+	void  preSpeedChange(unsigned cc) { oamReader_.update(cc); }
+	void postSpeedChange(unsigned cc) { oamReader_.change(cc); }
 
-	void resetCycleCounter(unsigned long oldCc, unsigned long newCc) {
+	void resetCycleCounter(unsigned oldCc, unsigned newCc) {
 		oamReader_.update(oldCc);
 		oamReader_.resetCycleCounter(oldCc, newCc);
 	}
@@ -57,7 +62,7 @@ public:
 	}
 
 	void setStatePtrs(SaveState &state) { oamReader_.setStatePtrs(state); }
-	void enableDisplay(unsigned long cc) { oamReader_.enableDisplay(cc); }
+	void enableDisplay(unsigned cc) { oamReader_.enableDisplay(cc); }
 	void saveState(SaveState &state) const { oamReader_.saveState(state); }
 
 	void loadState(SaveState const &state, unsigned char const *oamram) {
@@ -65,33 +70,48 @@ public:
 		mapSprites();
 	}
 
-	bool inactivePeriodAfterDisplayEnable(unsigned long cc) const {
+	bool inactivePeriodAfterDisplayEnable(unsigned cc) const {
 		return oamReader_.inactivePeriodAfterDisplayEnable(cc);
 	}
 
-	static unsigned long schedule(LyCounter const &lyCounter, unsigned long cc) {
+	static unsigned schedule(LyCounter const &lyCounter, unsigned cc) {
 		return lyCounter.nextLineCycle(80, cc);
 	}
 
+	void loadOrSave(loadsave& state) {
+		state(spritemap_, 1440);
+		state(num_, 144);
+		oamReader_.loadOrSave(state);
+	}
 private:
 	class OamReader {
 	public:
+		void loadOrSave(loadsave& state) {
+			state(buf_, 80);
+			for(unsigned i = 0; i < 40; i++)
+				state(szbuf_[i]);
+			state(lu_);
+			state(lastChange_);
+			state(largeSpritesSrc_);
+			state(cgb_);
+		}
+
 		OamReader(LyCounter const &lyCounter, unsigned char const *oamram);
 		void reset(unsigned char const *oamram, bool cgb);
-		void change(unsigned long cc);
-		void change(unsigned char const *oamram, unsigned long cc) { change(cc); oamram_ = oamram; }
+		void change(unsigned cc);
+		void change(unsigned char const *oamram, unsigned cc) { change(cc); oamram_ = oamram; }
 		bool changed() const { return lastChange_ != 0xFF; }
 		bool largeSprites(unsigned spNo) const { return szbuf_[spNo]; }
 		unsigned char const * oam() const { return oamram_; }
-		void resetCycleCounter(unsigned long oldCc, unsigned long newCc) { lu_ -= oldCc - newCc; }
+		void resetCycleCounter(unsigned oldCc, unsigned newCc) { lu_ -= oldCc - newCc; }
 		void setLargeSpritesSrc(bool src) { largeSpritesSrc_ = src; }
-		void update(unsigned long cc);
+		void update(unsigned cc);
 		unsigned char const * spritePosBuf() const { return buf_; }
 		void setStatePtrs(SaveState &state);
-		void enableDisplay(unsigned long cc);
+		void enableDisplay(unsigned cc);
 		void saveState(SaveState &state) const { state.ppu.enableDisplayM0Time = lu_; }
 		void loadState(SaveState const &ss, unsigned char const *oamram);
-		bool inactivePeriodAfterDisplayEnable(unsigned long cc) const { return cc < lu_; }
+		bool inactivePeriodAfterDisplayEnable(unsigned cc) const { return cc < lu_; }
 		unsigned lineTime() const { return lyCounter_.lineTime(); }
 
 	private:
@@ -99,7 +119,7 @@ private:
 		bool szbuf_[40];
 		LyCounter const &lyCounter_;
 		unsigned char const *oamram_;
-		unsigned long lu_;
+		unsigned lu_;
 		unsigned char lastChange_;
 		bool largeSpritesSrc_;
 		bool cgb_;
@@ -115,6 +135,7 @@ private:
 	void clearMap();
 	void mapSprites();
 	void sortLine(unsigned ly) const;
+
 };
 
 }

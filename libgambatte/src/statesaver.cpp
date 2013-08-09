@@ -77,7 +77,7 @@ static void write(std::ofstream &file, unsigned short data) {
 	file.put(data      & 0xFF);
 }
 
-static void write(std::ofstream &file, unsigned long data) {
+static void write(std::ofstream &file, unsigned data) {
 	static char const inf[] = { 0x00, 0x00, 0x04 };
 	file.write(inf, sizeof inf);
 	put32(file, data);
@@ -130,7 +130,7 @@ static inline void read(std::ifstream &file, unsigned short &data) {
 	data = read(file) & 0xFFFF;
 }
 
-static inline void read(std::ifstream &file, unsigned long &data) {
+static inline void read(std::ifstream &file, unsigned &data) {
 	data = read(file);
 }
 

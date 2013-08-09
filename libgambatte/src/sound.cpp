@@ -21,6 +21,10 @@
 #include <algorithm>
 #include <cstring>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 /*
 	Frame Sequencer
 
@@ -89,7 +93,7 @@ void PSG::loadState(SaveState const &state) {
 	enabled_ = state.mem.ioamhram.get()[0x126] >> 7 & 1;
 }
 
-void PSG::accumulateChannels(unsigned long const cycles) {
+void PSG::accumulateChannels(unsigned const cycles) {
 	uint_least32_t *const buf = buffer_ + bufferPos_;
 	std::memset(buf, 0, cycles * sizeof *buf);
 	ch1_.update(buf, soVol_, cycles);
@@ -98,8 +102,8 @@ void PSG::accumulateChannels(unsigned long const cycles) {
 	ch4_.update(buf, soVol_, cycles);
 }
 
-void PSG::generateSamples(unsigned long const cycleCounter, bool const doubleSpeed) {
-	unsigned long const cycles = (cycleCounter - lastUpdate_) >> (1 + doubleSpeed);
+void PSG::generateSamples(unsigned const cycleCounter, bool const doubleSpeed) {
+	unsigned const cycles = (cycleCounter - lastUpdate_) >> (1 + doubleSpeed);
 	lastUpdate_ += cycles << (1 + doubleSpeed);
 
 	if (cycles)
@@ -108,12 +112,12 @@ void PSG::generateSamples(unsigned long const cycleCounter, bool const doubleSpe
 	bufferPos_ += cycles;
 }
 
-void PSG::resetCounter(unsigned long newCc, unsigned long oldCc, bool doubleSpeed) {
+void PSG::resetCounter(unsigned newCc, unsigned oldCc, bool doubleSpeed) {
 	generateSamples(oldCc, doubleSpeed);
 	lastUpdate_ = newCc - (oldCc - lastUpdate_);
 }
 
-std::size_t PSG::fillBuffer() {
+unsigned PSG::fillBuffer() {
 	uint_least32_t sum = rsum_;
 	uint_least32_t *b = buffer_;
 	std::size_t n = bufferPos_;
@@ -164,8 +168,8 @@ static bool isBigEndianSampleOrder() {
 	return u.uc[0];
 }
 
-static unsigned long so1Mul() { return isBigEndianSampleOrder() ? 0x00000001 : 0x00010000; }
-static unsigned long so2Mul() { return isBigEndianSampleOrder() ? 0x00010000 : 0x00000001; }
+static unsigned so1Mul() { return isBigEndianSampleOrder() ? 0x00000001 : 0x00010000; }
+static unsigned so2Mul() { return isBigEndianSampleOrder() ? 0x00010000 : 0x00000001; }
 
 void PSG::setSoVolume(unsigned nr50) {
 	soVol_ = ((nr50      & 0x7) + 1) * so1Mul() * 64
@@ -173,7 +177,7 @@ void PSG::setSoVolume(unsigned nr50) {
 }
 
 void PSG::mapSo(unsigned nr51) {
-	unsigned long so = nr51 * so1Mul() + (nr51 >> 4) * so2Mul();
+	unsigned so = nr51 * so1Mul() + (nr51 >> 4) * so2Mul();
 	ch1_.setSo((so      & 0x00010001) * 0xFFFF);
 	ch2_.setSo((so >> 1 & 0x00010001) * 0xFFFF);
 	ch3_.setSo((so >> 2 & 0x00010001) * 0xFFFF);
@@ -185,6 +189,19 @@ unsigned PSG::getStatus() const {
 	     | ch2_.isActive() << 1
 	     | ch3_.isActive() << 2
 	     | ch4_.isActive() << 3;
+}
+
+void PSG::loadOrSave(loadsave& state)
+{
+	ch1_.loadOrSave(state);
+	ch2_.loadOrSave(state);
+	ch3_.loadOrSave(state);
+	ch4_.loadOrSave(state);
+	state(lastUpdate_);
+	state(soVol_);
+	state(rsum_);
+	state(bufferPos_);
+	state(enabled_);
 }
 
 }

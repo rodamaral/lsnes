@@ -19,6 +19,10 @@
 #include "interruptrequester.h"
 #include "savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 InterruptRequester::InterruptRequester()
@@ -34,6 +38,15 @@ void InterruptRequester::saveState(SaveState &state) const {
 	state.mem.halted = halted();
 }
 
+void InterruptRequester::loadOrSave(loadsave& state)
+{
+	eventTimes_.loadOrSave(state);
+	state(minIntTime_);
+	state(ifreg_);
+	state(iereg_);
+	intFlags_.loadOrSave(state);
+}
+
 void InterruptRequester::loadState(SaveState const &state) {
 	minIntTime_ = state.mem.minIntTime;
 	ifreg_ = state.mem.ioamhram.get()[0x10F];
@@ -42,17 +55,17 @@ void InterruptRequester::loadState(SaveState const &state) {
 
 	eventTimes_.setValue<intevent_interrupts>(intFlags_.imeOrHalted() && pendingIrqs()
 		? minIntTime_
-		: static_cast<unsigned long>(disabled_time));
+		: static_cast<unsigned>(disabled_time));
 }
 
-void InterruptRequester::resetCc(unsigned long oldCc, unsigned long newCc) {
+void InterruptRequester::resetCc(unsigned oldCc, unsigned newCc) {
 	minIntTime_ = minIntTime_ < oldCc ? 0 : minIntTime_ - (oldCc - newCc);
 
 	if (eventTimes_.value(intevent_interrupts) != disabled_time)
 		eventTimes_.setValue<intevent_interrupts>(minIntTime_);
 }
 
-void InterruptRequester::ei(unsigned long cc) {
+void InterruptRequester::ei(unsigned cc) {
 	intFlags_.setIme();
 	minIntTime_ = cc + 1;
 
@@ -99,7 +112,7 @@ void InterruptRequester::setIereg(unsigned iereg) {
 	if (intFlags_.imeOrHalted()) {
 		eventTimes_.setValue<intevent_interrupts>(pendingIrqs()
 			? minIntTime_
-			: static_cast<unsigned long>(disabled_time));
+			: static_cast<unsigned>(disabled_time));
 	}
 }
 
@@ -109,7 +122,7 @@ void InterruptRequester::setIfreg(unsigned ifreg) {
 	if (intFlags_.imeOrHalted()) {
 		eventTimes_.setValue<intevent_interrupts>(pendingIrqs()
 			? minIntTime_
-			: static_cast<unsigned long>(disabled_time));
+			: static_cast<unsigned>(disabled_time));
 	}
 }
 

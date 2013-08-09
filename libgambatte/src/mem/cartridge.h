@@ -26,8 +26,15 @@
 #include "scoped_ptr.h"
 #include <string>
 #include <vector>
+#include "../loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
+
+class File;
 
 class Mbc {
 public:
@@ -36,23 +43,16 @@ public:
 	virtual void saveState(SaveState::Mem &ss) const = 0;
 	virtual void loadState(SaveState::Mem const &ss) = 0;
 	virtual bool isAddressWithinAreaRombankCanBeMappedTo(unsigned address, unsigned rombank) const = 0;
+	virtual void loadOrSave(loadsave& state) = 0;
 };
 
 class Cartridge {
 public:
+	Cartridge(time_t (**_getCurrentTime)());
 	void setStatePtrs(SaveState &);
 	void saveState(SaveState &) const;
 	void loadState(SaveState const &);
 	bool loaded() const { return mbc_.get(); }
-	unsigned char const * rmem(unsigned area) const { return memptrs_.rmem(area); }
-	unsigned char * wmem(unsigned area) const { return memptrs_.wmem(area); }
-	unsigned char * vramdata() const { return memptrs_.vramdata(); }
-	unsigned char * romdata(unsigned area) const { return memptrs_.romdata(area); }
-	unsigned char * wramdata(unsigned area) const { return memptrs_.wramdata(area); }
-	unsigned char const * rdisabledRam() const { return memptrs_.rdisabledRam(); }
-	unsigned char const * rsrambankptr() const { return memptrs_.rsrambankptr(); }
-	unsigned char * wsrambankptr() const { return memptrs_.wsrambankptr(); }
-	unsigned char * vrambankptr() const { return memptrs_.vrambankptr(); }
 	OamDmaSrc oamDmaSrc() const { return memptrs_.oamDmaSrc(); }
 	void setVrambank(unsigned bank) { memptrs_.setVrambank(bank); }
 	void setWrambank(unsigned bank) { memptrs_.setWrambank(bank); }
@@ -65,16 +65,40 @@ public:
 	void saveSavedata();
 	std::string const saveBasePath() const;
 	void setSaveDir(std::string const &dir);
-	LoadRes loadROM(std::string const &romfile, bool forceDmg, bool multicartCompat);
 	char const * romTitle() const { return reinterpret_cast<char const *>(memptrs_.romdata() + 0x134); }
 	class PakInfo const pakInfo(bool multicartCompat) const;
 	void setGameGenie(std::string const &codes);
+	const unsigned char * rmem(unsigned area) const { return memptrs_.rmem(area); }
+	unsigned char * wmem(unsigned area) const { return memptrs_.wmem(area); }
+	unsigned char * vramdata() const { return memptrs_.vramdata(); }
+	unsigned char * romdata(unsigned area) const { return memptrs_.romdata(area); }
+	unsigned char * wramdata(unsigned area) const { return memptrs_.wramdata(area); }
+	const unsigned char * rdisabledRam() const { return memptrs_.rdisabledRam(); }
+	const unsigned char * rsrambankptr() const { return memptrs_.rsrambankptr(); }
+	unsigned char * wsrambankptr() const { return memptrs_.wsrambankptr(); }
+	unsigned char * vrambankptr() const { return memptrs_.vrambankptr(); }
+
+	void loadOrSave(loadsave& state);
+	void setRtcBase(time_t time) { rtc_.setBaseTime(time); }
+	time_t getRtcBase() { return rtc_.getBaseTime(); }
+	std::pair<unsigned char*, size_t> getWorkRam();
+	std::pair<unsigned char*, size_t> getSaveRam();
+	std::pair<unsigned char*, size_t> getVideoRam();
+	LoadRes loadROM(const std::string &romfile, bool forceDmg, bool multicartCompat);
+	LoadRes loadROM(const unsigned char* image, size_t isize, bool forceDmg, bool multicartCompat);
+	LoadRes loadROM(File* rom, const bool forceDmg, const bool multicartCompat, const std::string& filename);
+	void clearMemorySavedData();
 
 private:
 	struct AddrData {
-		unsigned long addr;
+		unsigned addr;
 		unsigned char data;
-		AddrData(unsigned long addr, unsigned data) : addr(addr), data(data) {}
+		AddrData(unsigned addr, unsigned data) : addr(addr), data(data) {}
+		AddrData() {}
+		void loadOrSave(loadsave& state) {
+			state(addr);
+			state(data);
+		}
 	};
 
 	MemPtrs memptrs_;
@@ -83,6 +107,9 @@ private:
 	std::string defaultSaveBasePath_;
 	std::string saveDir_;
 	std::vector<AddrData> ggUndoList_;
+	bool memoryCartridge;
+	time_t memoryCartridgeRtcBase;
+	std::vector<unsigned char> memoryCartridgeSram;
 
 	void applyGameGenie(std::string const &code);
 };

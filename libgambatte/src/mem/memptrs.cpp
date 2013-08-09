@@ -20,6 +20,10 @@
 #include <algorithm>
 #include <cstring>
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 MemPtrs::MemPtrs()
@@ -43,13 +47,11 @@ MemPtrs::~MemPtrs() {
 
 void MemPtrs::reset(unsigned const rombanks, unsigned const rambanks, unsigned const wrambanks) {
 	delete []memchunk_;
-	memchunk_ = new unsigned char[
-		  0x4000
-		+ rombanks * 0x4000ul
-		+ 0x4000
-		+ rambanks * 0x2000ul
-		+ wrambanks * 0x1000ul
-		+ 0x4000];
+	memchunk_size = 0x4000 + rombanks * 0x4000ul + 0x4000 + rambanks * 0x2000ul + wrambanks * 0x1000ul + 0x4000;
+	memchunk_ = new unsigned char[memchunk_size];
+
+	//FIXME: Make this random.
+	memset(memchunk_, 0, memchunk_size);
 
 	romdata_[0] = romdata();
 	rambankdata_ = romdata_[0] + rombanks * 0x4000ul + 0x4000;
@@ -153,6 +155,28 @@ void MemPtrs::disconnectOamDmaAreas() {
 			break;
 		}
 	}
+}
+
+void MemPtrs::loadOrSave(loadsave& state)
+{
+	state(memchunk_, 0x4000);
+	state(romdataend(), memchunk_size - (romdataend() - memchunk_));
+	int oamDmaSrc_2 = oamDmaSrc_;
+	state(oamDmaSrc_2);
+	oamDmaSrc_ = (OamDmaSrc)oamDmaSrc_2;
+	//Rmem is constant.
+	for(unsigned i = 0; i < 0x10; i++)
+		state(wmem_[i], memchunk_);
+	for(unsigned i = 0; i < 0x10; i++)
+		state(rmem_[i], memchunk_);
+	state(romdata_[0], memchunk_);
+	state(romdata_[1], memchunk_);
+	state(rambankdata_, memchunk_);
+	state(rsrambankptr_, memchunk_);
+	state(wsrambankptr_, memchunk_);
+	state(wramdataend_, memchunk_);
+	state(vrambankptr_, memchunk_);
+	//memchunk_size is cart constant, not saved.
 }
 
 }

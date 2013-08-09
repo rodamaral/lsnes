@@ -39,6 +39,10 @@ private:
 
 }
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
 SpriteMapper::OamReader::OamReader(LyCounter const &lyCounter, unsigned char const *oamram)
@@ -65,7 +69,7 @@ void SpriteMapper::OamReader::reset(unsigned char const *const oamram, bool cons
 	}
 }
 
-static unsigned toPosCycles(unsigned long const cc, LyCounter const &lyCounter) {
+static unsigned toPosCycles(unsigned const cc, LyCounter const &lyCounter) {
 	unsigned lc = lyCounter.lineCycles(cc) + 3 - lyCounter.isDoubleSpeed() * 3u;
 	if (lc >= 456)
 		lc -= 456;
@@ -73,7 +77,7 @@ static unsigned toPosCycles(unsigned long const cc, LyCounter const &lyCounter) 
 	return lc;
 }
 
-void SpriteMapper::OamReader::update(unsigned long const cc) {
+void SpriteMapper::OamReader::update(unsigned const cc) {
 	if (cc > lu_) {
 		if (changed()) {
 			unsigned const lulc = toPosCycles(lu_, lyCounter_);
@@ -115,7 +119,7 @@ void SpriteMapper::OamReader::update(unsigned long const cc) {
 	}
 }
 
-void SpriteMapper::OamReader::change(unsigned long cc) {
+void SpriteMapper::OamReader::change(unsigned cc) {
 	update(cc);
 	lastChange_ = std::min(toPosCycles(lu_, lyCounter_), 80u);
 }
@@ -132,7 +136,7 @@ void SpriteMapper::OamReader::loadState(SaveState const &ss, unsigned char const
 	change(lu_);
 }
 
-void SpriteMapper::OamReader::enableDisplay(unsigned long cc) {
+void SpriteMapper::OamReader::enableDisplay(unsigned cc) {
 	std::memset(buf_, 0x00, sizeof buf_);
 	std::fill(szbuf_, szbuf_ + 40, false);
 	lu_ = cc + (80 << lyCounter_.isDoubleSpeed());
@@ -145,6 +149,7 @@ SpriteMapper::SpriteMapper(NextM0Time &nextM0Time,
 : nextM0Time_(nextM0Time)
 , oamReader_(lyCounter, oamram)
 {
+	memset(spritemap_, 0, sizeof(spritemap_));
 	clearMap();
 }
 
@@ -188,12 +193,12 @@ void SpriteMapper::sortLine(unsigned const ly) const {
 	              SpxLess(posbuf() + 1));
 }
 
-unsigned long SpriteMapper::doEvent(unsigned long const time) {
+unsigned SpriteMapper::doEvent(unsigned const time) {
 	oamReader_.update(time);
 	mapSprites();
 	return oamReader_.changed()
 	     ? time + oamReader_.lineTime()
-	     : static_cast<unsigned long>(disabled_time);
+	     : static_cast<unsigned>(disabled_time);
 }
 
 }

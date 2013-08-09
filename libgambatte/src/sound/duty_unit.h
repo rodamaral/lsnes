@@ -19,9 +19,14 @@
 #ifndef DUTY_UNIT_H
 #define DUTY_UNIT_H
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 #include "sound_unit.h"
 #include "master_disabler.h"
 #include "../savestate.h"
+#include "../loadsave.h"
 
 namespace gambatte {
 
@@ -29,23 +34,25 @@ class DutyUnit : public SoundUnit {
 public:
 	DutyUnit();
 	virtual void event();
-	virtual void resetCounters(unsigned long oldCc);
+	virtual void resetCounters(unsigned oldCc);
 	bool isHighState() const { return high_; }
-	void nr1Change(unsigned newNr1, unsigned long cc);
-	void nr3Change(unsigned newNr3, unsigned long cc);
-	void nr4Change(unsigned newNr4, unsigned long cc);
+	void nr1Change(unsigned newNr1, unsigned cc);
+	void nr3Change(unsigned newNr3, unsigned cc);
+	void nr4Change(unsigned newNr4, unsigned cc);
 	void reset();
-	void saveState(SaveState::SPU::Duty &dstate, unsigned long cc);
-	void loadState(SaveState::SPU::Duty const &dstate, unsigned nr1, unsigned nr4, unsigned long cc);
+	void saveState(SaveState::SPU::Duty &dstate, unsigned cc);
+	void loadState(SaveState::SPU::Duty const &dstate, unsigned nr1, unsigned nr4, unsigned cc);
 	void killCounter();
-	void reviveCounter(unsigned long cc);
+	void reviveCounter(unsigned cc);
+
+	void loadOrSave(loadsave& state);
 
 	//intended for use by SweepUnit only.
 	unsigned freq() const { return 2048 - (period_ >> 1); }
-	void setFreq(unsigned newFreq, unsigned long cc);
+	void setFreq(unsigned newFreq, unsigned cc);
 
 private:
-	unsigned long nextPosUpdate_;
+	unsigned nextPosUpdate_;
 	unsigned short period_;
 	unsigned char pos_;
 	unsigned char duty_;
@@ -54,7 +61,7 @@ private:
 
 	void setCounter();
 	void setDuty(unsigned nr1);
-	void updatePos(unsigned long cc);
+	void updatePos(unsigned cc);
 };
 
 class DutyMasterDisabler : public MasterDisabler {

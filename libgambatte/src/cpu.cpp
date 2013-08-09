@@ -20,10 +20,14 @@
 #include "memory.h"
 #include "savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
-CPU::CPU()
-: mem_(Interrupter(sp, pc_))
+CPU::CPU(time_t (**_getCurrentTime)())
+: mem_(Interrupter(sp, pc_), _getCurrentTime)
 , cycleCounter_(0)
 , pc_(0x100)
 , sp(0xFFFE)
@@ -42,10 +46,10 @@ CPU::CPU()
 {
 }
 
-long CPU::runFor(unsigned long const cycles) {
+signed CPU::runFor(unsigned const cycles) {
 	process(cycles);
 
-	long const csb = mem_.cyclesSinceBlit(cycleCounter_);
+	signed const csb = mem_.cyclesSinceBlit(cycleCounter_);
 
 	if (cycleCounter_ & 0x80000000)
 		cycleCounter_ = mem_.resetCounters(cycleCounter_);
@@ -119,6 +123,26 @@ void CPU::loadState(SaveState const &state) {
 	h = state.cpu.h & 0xFF;
 	l = state.cpu.l & 0xFF;
 	skip_ = state.cpu.skip;
+}
+
+void CPU::loadOrSave(loadsave& state)
+{
+	mem_.loadOrSave(state);
+	state(cycleCounter_);
+	state(pc_);
+	state(sp);
+	state(hf1);
+	state(hf2);
+	state(zf);
+	state(cf);
+	state(a_);
+	state(b);
+	state(c);
+	state(d);
+	state(e);
+	state(h);
+	state(l);
+	state(skip_);
 }
 
 // The main reasons for the use of macros is to more conveniently be able to tweak
@@ -485,18 +509,18 @@ void CPU::loadState(SaveState const &state) {
 	PC_MOD(high << 8 | low); \
 } while (0)
 
-void CPU::process(unsigned long const cycles) {
+void CPU::process(unsigned const cycles) {
 	mem_.setEndtime(cycleCounter_, cycles);
 
 	unsigned char a = a_;
-	unsigned long cycleCounter = cycleCounter_;
+	unsigned cycleCounter = cycleCounter_;
 
 	while (mem_.isActive()) {
 		unsigned short pc = pc_;
 
 		if (mem_.halted()) {
 			if (cycleCounter < mem_.nextEventTime()) {
-				unsigned long cycles = mem_.nextEventTime() - cycleCounter;
+				unsigned cycles = mem_.nextEventTime() - cycleCounter;
 				cycleCounter += cycles + (-cycles & 3);
 			}
 		} else while (cycleCounter < mem_.nextEventTime()) {
@@ -591,7 +615,7 @@ void CPU::process(unsigned long const cycles) {
 				cycleCounter = mem_.stop(cycleCounter);
 
 				if (cycleCounter < mem_.nextEventTime()) {
-					unsigned long cycles = mem_.nextEventTime() - cycleCounter;
+					unsigned cycles = mem_.nextEventTime() - cycleCounter;
 					cycleCounter += cycles + (-cycles & 3);
 				}
 
@@ -1005,7 +1029,7 @@ void CPU::process(unsigned long const cycles) {
 					mem_.halt();
 
 					if (cycleCounter < mem_.nextEventTime()) {
-						unsigned long cycles = mem_.nextEventTime() - cycleCounter;
+						unsigned cycles = mem_.nextEventTime() - cycleCounter;
 						cycleCounter += cycles + (-cycles & 3);
 					}
 				}

@@ -19,9 +19,13 @@
 #include "rtc.h"
 #include "../savestate.h"
 
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
+
 namespace gambatte {
 
-Rtc::Rtc()
+Rtc::Rtc(time_t (**_getCurrentTime)())
 : activeData_(0)
 , activeSet_(0)
 , baseTime_(0)
@@ -34,11 +38,12 @@ Rtc::Rtc()
 , dataS_(0)
 , enabled_(false)
 , lastLatchData_(false)
+, getCurrentTime(_getCurrentTime)
 {
 }
 
 void Rtc::doLatch() {
-	std::time_t tmp = (dataDh_ & 0x40 ? haltTime_ : std::time(0)) - baseTime_;
+	std::time_t tmp = (dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)()) - baseTime_;
 
 	while (tmp > 0x1FF * 86400) {
 		baseTime_ += 0x1FF * 86400;
@@ -112,44 +117,77 @@ void Rtc::loadState(SaveState const &state) {
 }
 
 void Rtc::setDh(unsigned const newDh) {
-	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : std::time(0);
+	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)();
 	std::time_t const oldHighdays = ((unixtime - baseTime_) / 86400) & 0x100;
 	baseTime_ += oldHighdays * 86400;
 	baseTime_ -= ((newDh & 0x1) << 8) * 86400;
 
 	if ((dataDh_ ^ newDh) & 0x40) {
 		if (newDh & 0x40)
-			haltTime_ = std::time(0);
+			haltTime_ = (*getCurrentTime)();
 		else
-			baseTime_ += std::time(0) - haltTime_;
+			baseTime_ += (*getCurrentTime)() - haltTime_;
+
 	}
 }
 
 void Rtc::setDl(unsigned const newLowdays) {
-	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : std::time(0);
+	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)();
 	std::time_t const oldLowdays = ((unixtime - baseTime_) / 86400) & 0xFF;
 	baseTime_ += oldLowdays * 86400;
 	baseTime_ -= newLowdays * 86400;
 }
 
 void Rtc::setH(unsigned const newHours) {
-	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : std::time(0);
+	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)();
 	std::time_t const oldHours = ((unixtime - baseTime_) / 3600) % 24;
 	baseTime_ += oldHours * 3600;
 	baseTime_ -= newHours * 3600;
 }
 
 void Rtc::setM(unsigned const newMinutes) {
-	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : std::time(0);
+	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)();
 	std::time_t const oldMinutes = ((unixtime - baseTime_) / 60) % 60;
 	baseTime_ += oldMinutes * 60;
 	baseTime_ -= newMinutes * 60;
 }
 
 void Rtc::setS(unsigned const newSeconds) {
-	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : std::time(0);
+	std::time_t const unixtime = dataDh_ & 0x40 ? haltTime_ : (*getCurrentTime)();
 	baseTime_ += (unixtime - baseTime_) % 60;
 	baseTime_ -= newSeconds;
+}
+
+void Rtc::loadOrSave(loadsave& state)
+{
+	state.startEnumeration();
+	state.enumerate<unsigned char*>(activeData_, NULL, 0);
+	state.enumerate(activeData_, &dataDh_, 1);
+	state.enumerate(activeData_, &dataDl_, 2);
+	state.enumerate(activeData_, &dataH_, 3);
+	state.enumerate(activeData_, &dataM_, 4);
+	state.enumerate(activeData_, &dataS_, 5);
+	state.endEnumeration();
+
+	state.startEnumeration();
+	state.enumerate<void (gambatte::Rtc::*)(unsigned int)>(activeSet_, NULL, 0);
+	state.enumerate(activeSet_, &Rtc::setDh, 1);
+	state.enumerate(activeSet_, &Rtc::setDl, 2);
+	state.enumerate(activeSet_, &Rtc::setH, 3);
+	state.enumerate(activeSet_, &Rtc::setM, 4);
+	state.enumerate(activeSet_, &Rtc::setS, 5);
+	state.endEnumeration();
+
+	state.time(baseTime_);
+	state.time(haltTime_);
+	state(index_);
+	state(dataDh_);
+	state(dataDl_);
+	state(dataH_);
+	state(dataM_);
+	state(dataS_);
+	state(enabled_);
+	state(lastLatchData_);
 }
 
 }

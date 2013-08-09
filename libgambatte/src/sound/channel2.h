@@ -24,6 +24,11 @@
 #include "gbint.h"
 #include "length_counter.h"
 #include "static_output_tester.h"
+#include "loadsave.h"
+
+//
+// Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+//	- Make it rerecording-friendly.
 
 namespace gambatte {
 
@@ -36,9 +41,10 @@ public:
 	void setNr2(unsigned data);
 	void setNr3(unsigned data);
 	void setNr4(unsigned data);
-	void setSo(unsigned long soMask);
+	void loadOrSave(loadsave& state);
+	void setSo(unsigned soMask);
 	bool isActive() const { return master_; }
-	void update(uint_least32_t *buf, unsigned long soBaseVol, unsigned long cycles);
+	void update(uint_least32_t *buf, unsigned soBaseVol, unsigned cycles);
 	void reset();
 	void init(bool cgb);
 	void saveState(SaveState &state);
@@ -53,9 +59,9 @@ private:
 	DutyUnit dutyUnit_;
 	EnvelopeUnit envelopeUnit_;
 	SoundUnit *nextEventUnit;
-	unsigned long cycleCounter_;
-	unsigned long soMask_;
-	unsigned long prevOut_;
+	unsigned cycleCounter_;
+	unsigned soMask_;
+	unsigned prevOut_;
 	unsigned char nr4_;
 	bool master_;
 
