@@ -389,6 +389,54 @@ Execute lua script from <filename>, resolved relative to <base> (if empty,
 \end_layout
 
 \begin_layout Subsection
+open_file: Open a stream
+\end_layout
+
+\begin_layout Itemize
+Syntax: FILEREADER open_file(string filename[, string base])
+\end_layout
+
+\begin_layout Standard
+Open file <filename>, resolved relative to <base> (if empty, current directory)
+ and return a handle.
+\end_layout
+
+\begin_layout Subsection
+FILEREADER(): Read line/bytes from stream
+\end_layout
+
+\begin_layout Itemize
+Syntax: string/nil FILEREADER()
+\end_layout
+
+\begin_layout Itemize
+Syntax: string/nil FILEREADER(number bytes)
+\end_layout
+
+\begin_layout Standard
+Reads next line or <bytes> bytes from specified file handle.
+ On EOF, nil is returned.
+\end_layout
+
+\begin_layout Itemize
+Note: The line-oriented variant reads in text mode, so CR at end of line
+ is stripped.
+\end_layout
+
+\begin_layout Subsection
+FILEREADER:lines: Iterator to read all lines
+\end_layout
+
+\begin_layout Itemize
+Syntax: for line in <foo>:lines() do ...
+ end
+\end_layout
+
+\begin_layout Standard
+Iterator for reading all lines of <foo> in a loop.
+\end_layout
+
+\begin_layout Subsection
 resolve_filename: Resolve name of file relative to another
 \end_layout
 

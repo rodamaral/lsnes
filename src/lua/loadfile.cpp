@@ -135,7 +135,74 @@ namespace
 		std::istream& s;
 		replace rpl;
 	};
-	
+
+	class lua_file_reader
+	{
+	public:
+		lua_file_reader(lua_state* L, std::istream* strm);
+		~lua_file_reader()
+		{
+			delete &s;
+		}
+		int read(lua_state& L)
+		{
+			if(L.type(2) == LUA_TNUMBER) {
+				//Read specified number of bytes.
+				size_t sz = L.get_numeric_argument<size_t>(2, "FILEREADER::read");
+				std::vector<char> buf;
+				buf.resize(sz);
+				s.read(&buf[0], sz);
+				if(!s && !s.gcount()) {
+					L.pushnil();
+					return 1;
+				}
+				L.pushlstring(&buf[0], s.gcount());
+				return 1;
+			} else if(L.type(2) == LUA_TNIL || L.type(2) == LUA_TNONE) {
+				//Read next line.
+				std::string tmp;
+				std::getline(s, tmp);
+				if(!s) {
+					L.pushnil();
+					return 1;
+				}
+				istrip_CR(tmp);
+				L.pushlstring(tmp);
+				return 1;
+			} else
+				throw std::runtime_error("Expected number or nil as the 2nd argument of "
+					"FILEREADER::read");
+		}
+		int lines(lua_state& L)
+		{
+			L.pushlightuserdata(this);
+			L.pushcclosure(lua_file_reader::lines_helper2, 1);
+			//Trick: The first parameter is the userdata for this object, so by making it state, we
+			//can pin this object.
+			L.pushvalue(1);
+			L.pushboolean(true);
+			return 3;
+		}
+		int lines_helper(lua_State* L)
+		{
+			std::string tmp;
+			std::getline(s, tmp);
+			if(!s) {
+				lua_pushnil(L);
+				return 1;
+			}
+			istrip_CR(tmp);
+			lua_pushlstring(L, tmp.c_str(), tmp.length());
+			return 1;
+		}
+		static int lines_helper2(lua_State* L)
+		{
+			reinterpret_cast<lua_file_reader*>(lua_touserdata(L, lua_upvalueindex(1)))->lines_helper(L);
+		}
+	private:
+		std::istream& s;
+	};
+
 	const char* reader::rfn(lua_State* L, size_t* size)
 	{
 		auto g = rpl.run([this]() -> std::pair<const char*, size_t> {
@@ -210,4 +277,35 @@ namespace
 		L.pushlstring(absfilename);
 		return 1;
 	});
+
+	function_ptr_luafun openfile(lua_func_load, "open_file", [](lua_state& L, const std::string& fname) -> int {
+		std::string file2;
+		std::string file1 = L.get_string(1, fname.c_str());
+		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
+			file2 = L.get_string(2, fname.c_str());
+		std::istream& s = open_file_relative(file1, file2);
+		try {
+			lua_class<lua_file_reader>::create(L, &L, &s);
+			return 1;
+		} catch(...) {
+			delete &s;
+			throw;
+		}
+	});
+}
+
+DECLARE_LUACLASS(lua_file_reader, "FILEREADER");
+
+
+namespace
+{
+	lua_file_reader::lua_file_reader(lua_state* L, std::istream* strm)
+		: s(*strm)
+	{
+		static char doonce_key;
+		if(L->do_once(&doonce_key)) {
+			objclass<lua_file_reader>().bind(*L, "__call", &lua_file_reader::read);
+			objclass<lua_file_reader>().bind(*L, "lines", &lua_file_reader::lines);
+		}
+	}
 }
