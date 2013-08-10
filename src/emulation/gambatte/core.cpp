@@ -249,7 +249,23 @@ namespace
 	{
 		_gambatte_core()
 			: core_core({&psystem}, {
-				{0, "Soft reset", "reset", {}}
+				{0, "Soft reset", "reset", {}},
+				{1, "Change BG palette", "bgpalette", {
+					{"Color 0","string:[0-9A-Fa-f]{6}"},
+					{"Color 1","string:[0-9A-Fa-f]{6}"},
+					{"Color 2","string:[0-9A-Fa-f]{6}"},
+					{"Color 3","string:[0-9A-Fa-f]{6}"}
+				}},{2, "Change SP1 palette", "sp1palette", {
+					{"Color 0","string:[0-9A-Fa-f]{6}"},
+					{"Color 1","string:[0-9A-Fa-f]{6}"},
+					{"Color 2","string:[0-9A-Fa-f]{6}"},
+					{"Color 3","string:[0-9A-Fa-f]{6}"}
+				}}, {3, "Change SP2 palette", "sp2palette", {
+					{"Color 0","string:[0-9A-Fa-f]{6}"},
+					{"Color 1","string:[0-9A-Fa-f]{6}"},
+					{"Color 2","string:[0-9A-Fa-f]{6}"},
+					{"Color 3","string:[0-9A-Fa-f]{6}"}
+				}}
 			}),
 			core_region({{"world", "World", 0, 0, false, {4389, 262144}, {0}}}) {}
 
@@ -393,14 +409,28 @@ namespace
 		}
 		void c_execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 		{
+			uint32_t a, b, c, d;
 			switch(id) {
 			case 0:		//Soft reset.
 				do_reset_flag = true;
 				break;
+			case 1:		//Change DMG BG palette.
+			case 2:		//Change DMG SP1 palette.
+			case 3:		//Change DMG SP2 palette.
+				a = strtoul(p[0].s.c_str(), NULL, 16);
+				b = strtoul(p[1].s.c_str(), NULL, 16);
+				c = strtoul(p[2].s.c_str(), NULL, 16);
+				d = strtoul(p[3].s.c_str(), NULL, 16);
+				if(instance) {
+					instance->setDmgPaletteColor(id - 1, 0, a);
+					instance->setDmgPaletteColor(id - 1, 1, b);
+					instance->setDmgPaletteColor(id - 1, 2, c);
+					instance->setDmgPaletteColor(id - 1, 3, d);
+				}
 			}
 		}
 		const interface_device_reg* c_get_registers() { return gb_registers; }
-		unsigned c_action_flags(unsigned id) { return (id == 0) ? 1 : 0; }
+		unsigned c_action_flags(unsigned id) { return (id < 4) ? 1 : 0; }
 		int c_reset_action(bool hard) { return hard ? -1 : 0; }
 		std::pair<uint64_t, uint64_t> c_get_bus_map()
 		{
