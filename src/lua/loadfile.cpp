@@ -25,6 +25,7 @@ namespace
 			matched = 0;
 			copied = 0;
 			source = 0;
+			first_chunk = true;
 			target = "[[]]";
 		}
 		replace(const std::string& _target)
@@ -43,6 +44,7 @@ namespace
 		size_t upper_ptr;
 		size_t upper_size;
 		bool upper_eof;
+		bool first_chunk;
 	};
 
 	std::string pattern = "@@LUA_SCRIPT_FILENAME@@";
@@ -58,6 +60,12 @@ namespace
 				upper_ptr = 0;
 				if(!upper_buf && !upper_size)
 					upper_eof = true;
+				if(first_chunk) {
+					static char binary_lua_id[] = {0x1B, 0x4C, 0x75, 0x61};
+					if(upper_size >= 4 && !memcmp(upper_buf, binary_lua_id, 4))
+						throw std::runtime_error("Binary Lua chunks are not allowed");
+					first_chunk = false;
+				}
 			}
 			if(upper_ptr == upper_size && source == 0) {
 				if(!matched)
@@ -131,9 +139,11 @@ namespace
 		{
 			return reinterpret_cast<reader*>(data)->rfn(L, size);
 		}
+		const std::string& get_err() { return err; }
 	private:
 		std::istream& s;
 		replace rpl;
+		std::string err;
 	};
 
 	class lua_file_reader
@@ -205,20 +215,26 @@ namespace
 
 	const char* reader::rfn(lua_State* L, size_t* size)
 	{
-		auto g = rpl.run([this]() -> std::pair<const char*, size_t> {
-			size_t size;
-			static char buffer[4096];
-			if(!this->s)
-				return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
-			this->s.read(buffer, sizeof(buffer));
-			size = this->s.gcount();
-			if(!size) {
-				return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
-			}
-			return std::make_pair(buffer, size);
-		});
-		*size = g.second;
-		return g.first;
+		try {
+			auto g = rpl.run([this]() -> std::pair<const char*, size_t> {
+				size_t size;
+				static char buffer[4096];
+				if(!this->s)
+					return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
+				this->s.read(buffer, sizeof(buffer));
+				size = this->s.gcount();
+				if(!size) {
+					return std::make_pair(reinterpret_cast<const char*>(NULL), 0);
+				}
+				return std::make_pair(buffer, size);
+			});
+			*size = g.second;
+			return g.first;
+		} catch(std::exception& e) {
+			err = e.what();
+			*size = 0;
+			return NULL;
+		}
 	}
 
 	void load_chunk(lua_state& L, const std::string& fname)
@@ -241,6 +257,8 @@ namespace
 #endif			
 		);
 		delete &file;
+		if(rc.get_err() != "")
+			throw std::runtime_error(rc.get_err());
 		if(r == 0) {
 			return;
 		} else if(r == LUA_ERRSYNTAX) {
