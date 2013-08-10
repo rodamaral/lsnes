@@ -26,6 +26,7 @@
 #include "core/command.hpp"
 #include "core/controllerframe.hpp"
 #include "core/dispatch.hpp"
+#include "core/settings.hpp"
 #include "core/framebuffer.hpp"
 #include "core/window.hpp"
 #include "interface/callbacks.hpp"
@@ -44,6 +45,9 @@
 
 namespace
 {
+	setting_var<setting_var_model_bool<setting_yes_no>> output_native(lsnes_vset, "gambatte-native-sound",
+		"Gambatte‣Sound Output at native rate", false);
+
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;
 	bool rtc_fixed;
@@ -272,7 +276,12 @@ namespace
 		std::string c_core_identifier() { return "libgambatte "+gambatte::GB::version(); }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(262144, 4389); }
-		std::pair<uint32_t, uint32_t> c_audio_rate() { return std::make_pair(32768, 1); }
+		std::pair<uint32_t, uint32_t> c_audio_rate() {
+			if(output_native)
+				return std::make_pair(2097152, 1);
+			else
+				return std::make_pair(32768, 1);
+		}
 		std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) {
 			std::map<std::string, std::vector<char>> s;
 			if(!internal_rom)
@@ -344,6 +353,7 @@ namespace
 		void c_emulate() {
 			if(!internal_rom)
 				return;
+			bool native_rate = output_native;
 			int16_t reset = ecore_callbacks->get_input(0, 0, 1);
 			if(reset) {
 				instance->reset();
@@ -352,26 +362,32 @@ namespace
 			do_reset_flag = false;
 
 			uint32_t samplebuffer[SAMPLES_PER_FRAME + 2064];
-			int16_t soundbuf[(SAMPLES_PER_FRAME + 63) / 32 + 66];
+			int16_t soundbuf[2 * (SAMPLES_PER_FRAME + 2064)];
 			size_t emitted = 0;
 			while(true) {
 				unsigned samples_emitted = SAMPLES_PER_FRAME - frame_overflow;
 				long ret = instance->runFor(primary_framebuffer, 160, samplebuffer, samples_emitted);
-				for(unsigned i = 0; i < samples_emitted; i++) {
-					uint32_t l = (int32_t)(int16_t)(samplebuffer[i]) + 32768;
-					uint32_t r = (int32_t)(int16_t)(samplebuffer[i] >> 16) + 32768;
-					accumulator_l += l;
-					accumulator_r += r;
-					accumulator_s++;
-					if((accumulator_s & 63) == 0) {
-						int16_t l2 = (accumulator_l >> 6) - 32768;
-						int16_t r2 = (accumulator_r >> 6) - 32768;
-						soundbuf[emitted++] = l2;
-						soundbuf[emitted++] = r2;
-						accumulator_l = accumulator_r = 0;
-						accumulator_s = 0;
+				if(native_rate)
+					for(unsigned i = 0; i < samples_emitted; i++) {
+						soundbuf[emitted++] = (int16_t)(samplebuffer[i]);
+						soundbuf[emitted++] = (int16_t)(samplebuffer[i] >> 16);
 					}
-				}
+				else
+					for(unsigned i = 0; i < samples_emitted; i++) {
+						uint32_t l = (int32_t)(int16_t)(samplebuffer[i]) + 32768;
+						uint32_t r = (int32_t)(int16_t)(samplebuffer[i] >> 16) + 32768;
+						accumulator_l += l;
+						accumulator_r += r;
+						accumulator_s++;
+						if((accumulator_s & 63) == 0) {
+							int16_t l2 = (accumulator_l >> 6) - 32768;
+							int16_t r2 = (accumulator_r >> 6) - 32768;
+							soundbuf[emitted++] = l2;
+							soundbuf[emitted++] = r2;
+							accumulator_l = accumulator_r = 0;
+							accumulator_s = 0;
+						}
+					}
 				ecore_callbacks->timer_tick(samples_emitted, 2097152);
 				frame_overflow += samples_emitted;
 				if(frame_overflow >= SAMPLES_PER_FRAME) {
@@ -393,7 +409,7 @@ namespace
 
 			framebuffer_raw ls(inf);
 			ecore_callbacks->output_frame(ls, 262144, 4389);
-			audioapi_submit_buffer(soundbuf, emitted / 2, true, 32768);
+			audioapi_submit_buffer(soundbuf, emitted / 2, true, native_rate ? 2097152 : 32768);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }
