@@ -90,7 +90,7 @@ namespace
 				"(0.25-10):",
 					val);
 			} else if(e.GetId() == wxID_HIGHEST + 7) {
-				val = (stringfmt() << horizontal_scale_factor).str();
+				val = (stringfmt() << vertical_scale_factor).str();
 				val = pick_text(this, "Set Y scaling factor", "Enter new vertical scale factor "
 					"(0.25-10):", val);
 			} else if(e.GetId() == wxID_HIGHEST + 8) {
