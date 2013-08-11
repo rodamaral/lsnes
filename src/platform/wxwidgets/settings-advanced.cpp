@@ -9,6 +9,7 @@ namespace
 		wxeditor_esettings_advanced(wxWindow* parent);
 		~wxeditor_esettings_advanced();
 		void on_change(wxCommandEvent& e);
+		void on_change2(wxMouseEvent& e);
 		void on_selchange(wxCommandEvent& e);
 		void on_setting_change(const setting_var_base& val);
 		void _refresh();
@@ -55,6 +56,8 @@ namespace
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
 		pbutton_s->Add(changebutton = new wxButton(this, wxID_ANY, wxT("Change")), 0, wxGROW);
+		_settings->Connect(wxEVT_LEFT_DCLICK,
+			wxMouseEventHandler(wxeditor_esettings_advanced::on_change2), NULL, this);
 		changebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_advanced::on_change), NULL, this);
 		top_s->Add(pbutton_s, 0, wxGROW);
@@ -211,6 +214,12 @@ namespace
 		std::string v = d->get_value();
 		d->Destroy();
 		return v;
+	}
+
+	void wxeditor_esettings_advanced::on_change2(wxMouseEvent& e)
+	{
+		wxCommandEvent e2;
+		on_change(e2);
 	}
 
 	void wxeditor_esettings_advanced::on_change(wxCommandEvent& e)
