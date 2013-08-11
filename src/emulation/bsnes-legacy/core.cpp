@@ -591,6 +591,10 @@ namespace
 				div = last_interlace ? DURATION_NTSC_FIELD : DURATION_NTSC_FRAME;
 			return std::make_pair(SNES::system.cpu_frequency(), div);
 		}
+		double c_get_PAR() {
+			double base = (SNES::system.region() == SNES::System::Region::PAL) ? 1.25 : 1.146;
+			return base;
+		}
 		std::pair<uint32_t, uint32_t> c_audio_rate() {
 			if(!internal_rom)
 				return std::make_pair(64081, 2);
@@ -1293,8 +1297,8 @@ again2:
 		update_trace_hook_state();
 	}
 
-	function_ptr_luafun lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua_state& L, const std::string& fname) ->
-		int {
+	function_ptr_luafun lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua_state& L,
+		const std::string& fname) -> int {
 		std::string r = L.get_string(1, fname.c_str());
 		snesdbg_settrace(r);
 	});

@@ -269,6 +269,11 @@ std::pair<uint64_t, uint64_t> core_core::get_bus_map()
 	return c_get_bus_map();
 }
 
+double core_core::get_PAR()
+{
+	return c_get_PAR();
+}
+
 std::list<core_vma_info> core_core::vma_list()
 {
 	return c_vma_list();

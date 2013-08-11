@@ -121,9 +121,9 @@ enum
 };
 
 
-double horizontal_scale_factor = 1.0;
-double vertical_scale_factor = 1.0;
+double video_scale_factor = 1.0;
 int scaling_flags = SWS_POINT;
+bool arcorrect_enabled = false;
 bool hflip_enabled = false;
 bool vflip_enabled = false;
 bool rotate_enabled = false;
@@ -450,10 +450,26 @@ namespace
 	keyboard_key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
 	keyboard_key_key mouse_i(lsnes_kbd, "mouse_inwindow", "mouse");
 
+	std::pair<double, double> calc_scale_factors(double factor, bool ar,
+		double par)
+	{
+		if(!ar)
+			return std::make_pair(factor, factor);
+		else if(par < 1) {
+			//Too wide, make taller.
+			return std::make_pair(factor, factor / par);
+		} else {
+			//Too narrow, make wider.
+			return std::make_pair(factor * par, factor);
+		}
+	}
+
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
-		platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.GetX() / horizontal_scale_factor));
-		platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.GetY() / vertical_scale_factor));
+		auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
+			(our_rom && our_rom->rtype) ? our_rom->rtype->get_PAR() : 1.0);
+		platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.GetX() / sfactors.first));
+		platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.GetY() / sfactors.second));
 		if(e.Entering())
 			platform::queue(keypress(keyboard_modifier_set(), mouse_i, 1));
 		if(e.Leaving())
@@ -706,12 +722,14 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(this);
 	uint32_t tw, th;
 	bool aux = hflip_enabled || vflip_enabled || rotate_enabled;
+	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, (our_rom && our_rom->rtype) ?
+		our_rom->rtype->get_PAR() : 1.0);
 	if(rotate_enabled) {
-		tw = main_screen.get_height() * horizontal_scale_factor + 0.5;
-		th = main_screen.get_width() * vertical_scale_factor + 0.5;
+		tw = main_screen.get_height() * sfactors.second + 0.5;
+		th = main_screen.get_width() * sfactors.first + 0.5;
 	} else {
-		tw = main_screen.get_width() * horizontal_scale_factor + 0.5;
-		th = main_screen.get_height() * vertical_scale_factor + 0.5;
+		tw = main_screen.get_width() * sfactors.first + 0.5;
+		th = main_screen.get_height() * sfactors.second + 0.5;
 	}
 	if(!tw || !th) {
 		main_window_dirty = false;
@@ -719,10 +737,14 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	}
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags ||
 		hflip_enabled != old_hflip || vflip_enabled != old_vflip || rotate_enabled != old_rotate) {
-		if(screen_buffer)
+		if(screen_buffer) {
 			delete[] screen_buffer;
-		if(rotate_buffer)
+			screen_buffer = NULL;
+		}
+		if(rotate_buffer) {
 			delete[] rotate_buffer;
+			rotate_buffer = NULL;
+		}
 		old_height = th;
 		old_width = tw;
 		old_flags = scaling_flags;

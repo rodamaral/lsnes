@@ -82,6 +82,7 @@ namespace
 		std::string c_core_identifier() { return "null core"; }
 		bool c_set_region(core_region& reg) { return true; }
 		std::pair<unsigned, unsigned> c_video_rate() { return std::make_pair(60, 1); }
+		double c_get_PAR() { return 1.0; }
 		std::pair<unsigned, unsigned> c_audio_rate() { return std::make_pair(48000, 1); }
 		std::map<std::string, std::vector<char>> c_save_sram() throw (std::bad_alloc) {
 			std::map<std::string, std::vector<char>> x;

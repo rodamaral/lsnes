@@ -289,6 +289,7 @@ struct core_core
 	~core_core() throw();
 	bool set_region(core_region& region);
 	std::pair<uint32_t, uint32_t> get_video_rate();
+	double get_PAR();
 	std::pair<uint32_t, uint32_t> get_audio_rate();
 	std::string get_core_identifier();
 	std::map<std::string, std::vector<char>> save_sram() throw(std::bad_alloc);
@@ -338,6 +339,10 @@ protected:
  * Get current video frame rate as (numerator, denominator).
  */
 	virtual std::pair<uint32_t, uint32_t> c_video_rate() = 0;
+/**
+ * Get PAR of video output.
+ */
+	virtual double c_get_PAR() = 0;
 /**
  * Get audio sampling rate as (numerator, denominator).
  *
@@ -529,6 +534,7 @@ public:
 	}
 	unsigned action_flags(unsigned id) { return core->action_flags(id); }
 	bool is_hidden() { return core->is_hidden(); }
+	double get_PAR() { return core->get_PAR(); }
 	void pre_emulate_frame(controller_frame& cf) { return core->pre_emulate_frame(cf); }
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }

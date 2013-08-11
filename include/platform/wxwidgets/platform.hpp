@@ -17,9 +17,9 @@ class wxWindow;
 class wxKeyEvent;
 
 //Scaling
-extern double horizontal_scale_factor;
-extern double vertical_scale_factor;
+extern double video_scale_factor;
 extern int scaling_flags;
+extern bool arcorrect_enabled;
 extern bool hflip_enabled;
 extern bool vflip_enabled;
 extern bool rotate_enabled;

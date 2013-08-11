@@ -267,6 +267,7 @@ namespace sky
 		std::string c_core_identifier() { return "Sky"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(656250, 18227); }
+		double c_get_PAR() { return 5.0/6; }
 		std::pair<uint32_t, uint32_t> c_audio_rate() { return std::make_pair(48000, 1); }
 		std::map<std::string, std::vector<char>> c_save_sram() throw(std::bad_alloc) {
 			std::map<std::string, std::vector<char>> r;

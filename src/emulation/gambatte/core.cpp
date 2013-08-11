@@ -276,6 +276,7 @@ namespace
 		std::string c_core_identifier() { return "libgambatte "+gambatte::GB::version(); }
 		bool c_set_region(core_region& region) { return (&region == this); }
 		std::pair<uint32_t, uint32_t> c_video_rate() { return std::make_pair(262144, 4389); }
+		double c_get_PAR() { return 1.0; }
 		std::pair<uint32_t, uint32_t> c_audio_rate() {
 			if(output_native)
 				return std::make_pair(2097152, 1);
