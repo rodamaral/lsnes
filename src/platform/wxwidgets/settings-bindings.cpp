@@ -1,9 +1,11 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
 #include "core/keymapper.hpp"
+#include <wx/defs.h>
 
 namespace
 {
+
 	class wxeditor_esettings_bindings : public settings_tab
 	{
 	public:
@@ -13,6 +15,8 @@ namespace
 		void on_edit(wxCommandEvent& e);
 		void on_delete(wxCommandEvent& e);
 		void on_change(wxCommandEvent& e);
+		void on_mouse(wxMouseEvent& e);
+		void on_popup_menu(wxCommandEvent& e);
 	private:
 		std::map<int, std::string> numbers;
 		wxListBox* select;
@@ -37,6 +41,10 @@ namespace
 		top_s->Add(select = new wxListBox(this, wxID_ANY), 1, wxGROW);
 		select->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(wxeditor_esettings_bindings::on_change), NULL, this);
+		select->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_bindings::on_mouse), NULL,
+			this);
+		select->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxeditor_esettings_bindings::on_mouse), NULL,
+			this);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
@@ -60,6 +68,31 @@ namespace
 
 	wxeditor_esettings_bindings::~wxeditor_esettings_bindings()
 	{
+	}
+
+	void wxeditor_esettings_bindings::on_popup_menu(wxCommandEvent& e)
+	{
+		if(closing())
+			return;
+		if(e.GetId() == wxID_EDIT)
+			on_edit(e);
+		else if(e.GetId() == wxID_DELETE)
+			on_delete(e);
+	}
+
+	void wxeditor_esettings_bindings::on_mouse(wxMouseEvent& e)
+	{
+		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
+			return;
+		if(selected() == "")
+			return;
+		wxMenu menu;
+		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxeditor_esettings_bindings::on_popup_menu), NULL, this);
+		menu.Append(wxID_EDIT, towxstring("Edit"));
+		menu.AppendSeparator();
+		menu.Append(wxID_DELETE, towxstring("Delete"));
+		PopupMenu(&menu);
 	}
 
 	void wxeditor_esettings_bindings::on_change(wxCommandEvent& e)
@@ -145,6 +178,8 @@ namespace
 		for(auto i : a)
 			bind[i] = lsnes_mapper.get(i);
 		for(auto i : bind) {
+			if(i.second == "")
+				continue;
 			numbers[choices.size()] = i.first;
 			choices.push_back(towxstring(clean_keystring(i.first) + " (" + i.second + ")"));
 		}

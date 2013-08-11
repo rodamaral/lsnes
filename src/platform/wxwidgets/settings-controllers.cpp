@@ -5,6 +5,12 @@
 
 namespace
 {
+	enum
+	{
+		wxID_ADDKEY = wxID_HIGHEST + 1,
+		wxID_DROPKEY
+	};
+
 	class wxeditor_esettings_controllers : public settings_tab
 	{
 	public:
@@ -13,6 +19,8 @@ namespace
 		void on_setkey(wxCommandEvent& e);
 		void on_clearkey(wxCommandEvent& e);
 		void on_change(wxCommandEvent& e);
+		void on_mouse(wxMouseEvent& e);
+		void on_popup_menu(wxCommandEvent& e);
 	private:
 		wxTreeCtrl* controls;
 		std::map<string_list<char>, wxTreeItemId> items;
@@ -36,6 +44,10 @@ namespace
 			wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
 		controls->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 			wxCommandEventHandler(wxeditor_esettings_controllers::on_change), NULL, this);
+		controls->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_controllers::on_mouse), NULL,
+			this);
+		controls->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxeditor_esettings_controllers::on_mouse), NULL,
+			this);
 		controls->SetMinSize(wxSize(400, 300));
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -163,6 +175,52 @@ namespace
 		} catch(...) {
 		}
 		refresh();
+	}
+
+	void wxeditor_esettings_controllers::on_popup_menu(wxCommandEvent& e)
+	{
+		if(closing())
+			return;
+		if(e.GetId() == wxID_ADDKEY)
+			on_setkey(e);
+		else if(e.GetId() >= wxID_DROPKEY) {
+			string_list<char> sel = get_selection();
+			if(!realitems.count(sel))
+				return;
+			controller_key* ik = realitems[sel];
+			if(!ik)
+				return;
+			auto g = ik->get(e.GetId() - wxID_DROPKEY);
+			ik->remove(g.first, g.second);
+		}
+		refresh();
+	}
+
+	void wxeditor_esettings_controllers::on_mouse(wxMouseEvent& e)
+	{
+		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
+			return;
+		string_list<char> sel = get_selection();
+		if(!realitems.count(sel))
+			return;
+		controller_key* ik = realitems[sel];
+		if(!ik)
+			return;
+
+		wxMenu menu;
+		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxeditor_esettings_controllers::on_popup_menu), NULL, this);
+		menu.Append(wxID_ADDKEY, towxstring("Add new key"));
+		bool first = true;
+		unsigned idx = 0;
+		std::string tmp;
+		while((tmp = ik->get_string(idx++)) != "") {
+			if(first)
+				menu.AppendSeparator();
+			first = false;
+			menu.Append(wxID_DROPKEY + idx - 1, towxstring("Drop " + tmp));
+		}
+		PopupMenu(&menu);
 	}
 
 	void wxeditor_esettings_controllers::refresh()

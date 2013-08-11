@@ -5,6 +5,12 @@
 
 namespace
 {
+	enum
+	{
+		wxID_ADDKEY = wxID_HIGHEST + 1,
+		wxID_DROPKEY
+	};
+
 	class wxeditor_esettings_hotkeys : public settings_tab
 	{
 	public:
@@ -14,6 +20,8 @@ namespace
 		void on_drop(wxCommandEvent& e);
 		void on_change(wxCommandEvent& e);
 		void on_notify() { refresh(); }
+		void on_mouse(wxMouseEvent& e);
+		void on_popup_menu(wxCommandEvent& e);
 	private:
 		wxTreeCtrl* controls;
 		wxButton* pri_button;
@@ -37,6 +45,10 @@ namespace
 			wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
 		controls->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_change), NULL, this);
+		controls->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_hotkeys::on_mouse), NULL,
+			this);
+		controls->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxeditor_esettings_hotkeys::on_mouse), NULL,
+			this);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
@@ -157,6 +169,51 @@ namespace
 		} catch(...) {
 		}
 		refresh();
+	}
+
+	void wxeditor_esettings_hotkeys::on_popup_menu(wxCommandEvent& e)
+	{
+		if(closing())
+			return;
+		if(e.GetId() == wxID_ADDKEY)
+			on_add(e);
+		else if(e.GetId() >= wxID_DROPKEY) {
+			string_list<char> sel = get_selection();
+			if(!realitems.count(sel))
+				return;
+			inverse_bind* ik = realitems[sel];
+			if(!ik)
+				return;
+			ik->clear(e.GetId() - wxID_DROPKEY);
+		}
+		refresh();
+	}
+
+	void wxeditor_esettings_hotkeys::on_mouse(wxMouseEvent& e)
+	{
+		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
+			return;
+		string_list<char> sel = get_selection();
+		if(!realitems.count(sel))
+			return;
+		inverse_bind* ik = realitems[sel];
+		if(!ik)
+			return;
+
+		wxMenu menu;
+		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_popup_menu), NULL, this);
+		menu.Append(wxID_ADDKEY, towxstring("Add new key"));
+		bool first = true;
+		unsigned idx = 0;
+		key_specifier tmp;
+		while((tmp = ik->get(idx++))) {
+			if(first)
+				menu.AppendSeparator();
+			first = false;
+			menu.Append(wxID_DROPKEY + idx - 1, towxstring("Drop " + clean_keystring(tmp)));
+		}
+		PopupMenu(&menu);
 	}
 
 	void wxeditor_esettings_hotkeys::refresh()

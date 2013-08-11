@@ -3,6 +3,11 @@
 
 namespace
 {
+	enum
+	{
+		wxID_CHANGE = wxID_HIGHEST + 1
+	};
+
 	class wxeditor_esettings_advanced : public settings_tab
 	{
 	public:
@@ -12,6 +17,8 @@ namespace
 		void on_change2(wxMouseEvent& e);
 		void on_selchange(wxCommandEvent& e);
 		void on_setting_change(const setting_var_base& val);
+		void on_mouse(wxMouseEvent& e);
+		void on_popup_menu(wxCommandEvent& e);
 		void _refresh();
 		struct listener : public setting_var_listener
 		{
@@ -52,6 +59,10 @@ namespace
 		top_s->Add(_settings = new wxListBox(this, wxID_ANY), 1, wxGROW);
 		_settings->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(wxeditor_esettings_advanced::on_selchange), NULL, this);
+		_settings->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxeditor_esettings_advanced::on_mouse), NULL,
+			this);
+		_settings->Connect(wxEVT_LEFT_UP, wxMouseEventHandler(wxeditor_esettings_advanced::on_mouse), NULL,
+			this);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 		pbutton_s->AddStretchSpacer();
@@ -214,6 +225,27 @@ namespace
 		std::string v = d->get_value();
 		d->Destroy();
 		return v;
+	}
+
+	void wxeditor_esettings_advanced::on_popup_menu(wxCommandEvent& e)
+	{
+		if(closing())
+			return;
+		if(e.GetId() == wxID_EDIT)
+			on_change(e);
+	}
+
+	void wxeditor_esettings_advanced::on_mouse(wxMouseEvent& e)
+	{
+		if(!e.RightUp() && !(e.LeftUp() && e.ControlDown()))
+			return;
+		if(selected() == "")
+			return;
+		wxMenu menu;
+		menu.Connect(wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxeditor_esettings_advanced::on_popup_menu), NULL, this);
+		menu.Append(wxID_EDIT, towxstring("Change"));
+		PopupMenu(&menu);
 	}
 
 	void wxeditor_esettings_advanced::on_change2(wxMouseEvent& e)
