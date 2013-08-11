@@ -114,6 +114,7 @@ enum
 	wxID_CLOSE_PROJECT,
 	wxID_CLOSE_ROM,
 	wxID_EDIT_MACROS,
+	wxID_ENTER_FULLSCREEN,
 	wxID_ACTIONS_FIRST,
 	wxID_ACTIONS_LAST = wxID_ACTIONS_FIRST + 256,
 	wxID_SETTINGS_FIRST,
@@ -142,6 +143,7 @@ namespace
 	bool old_vflip = false;
 	bool old_rotate = false;
 	bool main_window_dirty;
+	bool is_fs = false;
 	thread_class* emulation_thread;
 
 	std::pair<std::string, std::string> lsplit(std::string l)
@@ -713,6 +715,10 @@ void wxwin_mainwindow::panel::request_paint()
 
 void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 {
+	if(wx_escape_count >= 3 && is_fs) {
+		//Leave fullscreen mode.
+		main_window->enter_or_leave_fullscreen(false);
+	}
 	render_framebuffer();
 	static struct SwsContext* ctx;
 	uint8_t* srcp[1];
@@ -735,6 +741,14 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		main_window_dirty = false;
 		return;
 	}
+	//Scale this to fullscreen.
+	if(is_fs) {
+		wxSize screen = main_window->GetSize();
+		double fss = min(1.0 * screen.GetWidth() / tw, 1.0 * screen.GetHeight() / th);
+		tw *= fss;
+		th *= fss;
+	}
+	
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags ||
 		hflip_enabled != old_hflip || vflip_enabled != old_vflip || rotate_enabled != old_rotate) {
 		if(screen_buffer) {
@@ -952,6 +966,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
 		menu_entry(wxID_AUDIO_DEVICE, wxT("Set audio device"));
 	}
+	menu_separator();
+	menu_entry(wxID_ENTER_FULLSCREEN, wxT("Enter fullscreen mode"));
 
 	menu_start(wxT("Help"));
 	menu_entry(wxID_ABOUT, wxT("About..."));
@@ -1464,6 +1480,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_CLOSE_ROM:
 		runemufn([]() -> void { close_rom(); });
 		return;
+	case wxID_ENTER_FULLSCREEN:
+		wx_escape_count = 0;
+		enter_or_leave_fullscreen(true);
+		return;
 	};
 }
 
@@ -1488,4 +1508,24 @@ void wxwin_mainwindow::do_load_rom_image()
 void wxwin_mainwindow::action_updated()
 {
 	reinterpret_cast<system_menu*>(sysmenu)->update(true);
+}
+
+void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
+{
+	if(fs && !is_fs) {
+		if(spanel_shown)
+			toplevel->Detach(spanel);
+		spanel->Hide();
+		is_fs = fs;
+		ShowFullScreen(true);
+		Fit();
+	} else if(!fs && is_fs) {
+		ShowFullScreen(false);
+		if(spanel_shown) {
+			spanel->Show();
+			toplevel->Add(spanel, 1, wxGROW);
+		}
+		Fit();
+		is_fs = fs;
+	}
 }

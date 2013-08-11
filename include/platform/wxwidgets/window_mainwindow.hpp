@@ -46,6 +46,7 @@ public:
 	void handle_menu_click(wxCommandEvent& e);
 	void update_statusbar(const std::map<std::string, std::u32string>& vars);
 	void action_updated();
+	void enter_or_leave_fullscreen(bool fs);
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:

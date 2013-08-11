@@ -10,6 +10,8 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 
+int wx_escape_count = 0;
+
 namespace
 {
 	//Modifier table.
@@ -299,6 +301,12 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 {
 	int mods = e.GetModifiers();
 	int keyc = e.GetKeyCode();
+	if(polarity) {
+		if(keyc == WXK_ESCAPE)
+			wx_escape_count++;
+		else
+			wx_escape_count = 0;
+	}
 	keyboard_modifier_set mset;
 	modifier_entry* m = modifiers;
 	while(m->name) {

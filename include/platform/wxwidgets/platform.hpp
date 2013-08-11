@@ -23,6 +23,7 @@ extern bool arcorrect_enabled;
 extern bool hflip_enabled;
 extern bool vflip_enabled;
 extern bool rotate_enabled;
+extern int wx_escape_count;
 
 wxString towxstring(const std::string& str) throw(std::bad_alloc);
 std::string tostdstring(const wxString& str) throw(std::bad_alloc);
