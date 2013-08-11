@@ -134,3 +134,162 @@ bool regex_match(const std::string& regexp, const std::string& str) throw(std::b
 {
 	return regex(regexp, str);
 }
+
+namespace
+{
+	template<typename ch>
+	std::list<std::basic_string<ch>> _split_on_codepoint(const std::basic_string<ch>& s,
+		const std::basic_string<ch>& cp)
+	{
+		std::list<std::basic_string<ch>> ret;
+		size_t start = 0;
+		size_t end = 0;
+		size_t len = s.length();
+		while(end < len) {
+			end = s.find(cp, start);
+			std::basic_string<ch> x;
+			if(end < len) {
+				x.resize(end - start);
+				std::copy(s.begin() + start, s.begin() + end, x.begin());
+				start = end + cp.length();
+			} else {
+				x.resize(len - start);
+				std::copy(s.begin() + start, s.end(), x.begin());
+			}
+			ret.push_back(x);
+		}
+		return ret;
+	}
+}
+
+template<typename T>
+string_list<T>::string_list()
+{
+}
+
+template<typename T>
+string_list<T>::string_list(const std::list<std::basic_string<T>>& list)
+{
+	v.resize(list.size());
+	std::copy(list.begin(), list.end(), v.begin());
+}
+
+template<typename T>
+bool string_list<T>::empty()
+{
+	return (v.size() == 0);
+}
+
+template<typename T>
+string_list<T> string_list<T>::strip_one() const
+{
+	return string_list<T>(&v[0], (v.size() > 0) ? (v.size() - 1) : 0);
+}
+
+template<typename T>
+size_t string_list<T>::size() const
+{
+	return v.size();
+}
+
+template<typename T>
+const std::basic_string<T>& string_list<T>::operator[](size_t idx) const
+{
+	if(idx >= v.size())
+		throw std::runtime_error("Index out of range");
+	return v[idx];
+}
+
+template<typename T>
+string_list<T>::string_list(const std::basic_string<T>* array, size_t arrsize)
+{
+	v.resize(arrsize);
+	std::copy(array, array + arrsize, v.begin());
+}
+
+template<typename T>
+bool string_list<T>::operator<(const string_list<T>& x) const
+{
+	for(size_t i = 0; i < v.size() && i < x.v.size(); i++)
+		if(v[i] < x.v[i])
+			return true;
+		else if(v[i] > x.v[i])
+			return false;
+	return (v.size() < x.v.size());
+}
+
+template<typename T>
+bool string_list<T>::operator==(const string_list<T>& x) const
+{
+	if(v.size() != x.v.size())
+		return false;
+	for(size_t i = 0; i < v.size(); i++)
+		if(v[i] != x.v[i])
+			return false;
+	return true;
+}
+
+template<typename T>
+bool string_list<T>::prefix_of(const string_list<T>& x) const
+{
+	if(v.size() > x.v.size())
+		return false;
+	for(size_t i = 0; i < v.size(); i++)
+		if(v[i] != x.v[i])
+			return false;
+	return true;
+}
+
+namespace
+{
+	template<typename T> std::basic_string<T> separator();
+	template<> std::basic_string<char> separator()
+	{
+		return to_u8string(U"\u2023");
+	}
+
+	template<> std::basic_string<char16_t> separator()
+	{
+		return u"\u2023";
+	}
+
+	template<> std::basic_string<char32_t> separator()
+	{
+		return U"\u2023";
+	}
+
+	template<> std::basic_string<wchar_t> separator()
+	{
+		return L"->";
+	}
+}
+
+template<typename T>
+std::basic_string<T> string_list<T>::debug_name() const
+{
+	std::basic_stringstream<T> x;
+	for(size_t i = 0; i < v.size(); i++)
+		if(i != 0)
+			x << separator<T>() << v[i];
+		else
+			x << v[i];
+	return x.str();
+}
+
+template class string_list<char>;
+template class string_list<wchar_t>;
+template class string_list<char16_t>;
+template class string_list<char32_t>;
+
+
+string_list<char> split_on_codepoint(const std::string& s, char32_t cp)
+{
+	std::string _cp = to_u8string(std::u32string(1, cp));
+	return _split_on_codepoint<char>(s, _cp);
+}
+
+string_list<char32_t> split_on_codepoint(const std::u32string& s, char32_t cp)
+{
+	std::u32string _cp(1, cp);
+	return _split_on_codepoint<char32_t>(s, _cp);
+}

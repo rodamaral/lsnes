@@ -15,17 +15,15 @@ namespace
 		void on_change(wxCommandEvent& e);
 		void on_notify() { refresh(); }
 	private:
-		wxListBox* category;
-		wxListBox* control;
+		wxTreeCtrl* controls;
 		wxButton* pri_button;
 		wxButton* sec_button;
-		std::map<int, std::string> categories;
-		std::map<std::pair<int, int>, std::string> itemlabels;
-		std::map<std::pair<int, int>, std::string> items;
-		std::map<std::string, inverse_bind*> realitems;
-		void change_category(int cat);
+		std::map<string_list<char>, wxTreeItemId> items;
+		std::map<string_list<char>, std::string> names;
+		std::map<string_list<char>, inverse_bind*> realitems;
 		void refresh();
-		std::pair<std::string, std::string> splitkeyname(const std::string& kn);
+		string_list<char> get_selection();
+		wxTreeItemId get_item(const string_list<char>& i);
 	};
 
 
@@ -34,13 +32,10 @@ namespace
 	{
 		wxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
-		wxString empty[1];
 
-		top_s->Add(category = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1,
-			wxGROW);
-		top_s->Add(control = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 1, empty), 1,
-			wxGROW);
-		category->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+		top_s->Add(controls = new wxTreeCtrl(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+			wxTR_HIDE_ROOT | wxTR_LINES_AT_ROOT), 1, wxGROW);
+		controls->Connect(wxEVT_COMMAND_TREE_SEL_CHANGED,
 			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_change), NULL, this);
 
 		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -48,64 +43,46 @@ namespace
 		pbutton_s->Add(pri_button = new wxButton(this, wxID_ANY, wxT("Add")), 0, wxGROW);
 		pri_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_add), NULL, this);
+		pri_button->Enable(false);
 		pbutton_s->Add(sec_button = new wxButton(this, wxID_ANY, wxT("Drop")), 0, wxGROW);
 		sec_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_hotkeys::on_drop), NULL, this);
+		sec_button->Enable(false);
 		top_s->Add(pbutton_s, 0, wxGROW);
+
+		items[string_list<char>()] = controls->AddRoot(wxT(""));
 
 		refresh();
 		top_s->SetSizeHints(this);
 		Fit();
 	}
 
-	std::pair<std::string, std::string> wxeditor_esettings_hotkeys::splitkeyname(const std::string& kn)
+	wxTreeItemId wxeditor_esettings_hotkeys::get_item(const string_list<char>& i)
 	{
-		std::string tmp = kn;
-		size_t split = 0;
-		for(size_t itr = 0; itr < tmp.length() - 2 && itr < tmp.length(); itr++) {
-			unsigned char ch1 = tmp[itr];
-			unsigned char ch2 = tmp[itr + 1];
-			unsigned char ch3 = tmp[itr + 2];
-			if(ch1 == 0xE2 && ch2 == 0x80 && ch3 == 0xA3)
-				split = itr;
-		}
-		if(split)
-			return std::make_pair(tmp.substr(0, split), tmp.substr(split + 3));
-		else
-			return std::make_pair("(Uncategorized)", tmp);
+		if(items.count(i) && items[i].IsOk())
+			return items[i];
+		return items[i] = controls->AppendItem(get_item(i.strip_one()), towxstring(i[i.size() - 1]));
+	}
+
+	string_list<char> wxeditor_esettings_hotkeys::get_selection()
+	{
+		if(closing())
+			return string_list<char>();
+		string_list<char> sel;
+		wxTreeItemId id = controls->GetSelection();
+		for(auto i : items)
+			if(i.second == id)
+				sel = i.first;
+		return sel;
 	}
 
 	void wxeditor_esettings_hotkeys::on_change(wxCommandEvent& e)
 	{
 		if(closing())
 			return;
-		int c = category->GetSelection();
-		if(c == wxNOT_FOUND) {
-			category->SetSelection(0);
-			change_category(0);
-		} else
-			change_category(c);
-	}
-
-	void wxeditor_esettings_hotkeys::change_category(int cat)
-	{
-		if(closing())
-			return;
-		std::map<int, std::string> n;
-		for(auto i : itemlabels)
-			if(i.first.first == cat)
-				n[i.first.second] = i.second;
-
-		for(size_t i = 0; i < control->GetCount(); i++)
-			if(n.count(i))
-				control->SetString(i, towxstring(n[i]));
-			else
-				control->Delete(i--);
-		for(auto i : n)
-			if(i.first >= (int)control->GetCount())
-				control->Append(towxstring(n[i.first]));
-		if(control->GetSelection() == wxNOT_FOUND)
-			control->SetSelection(0);
+		string_list<char> sel = get_selection();
+		pri_button->Enable(realitems.count(sel));
+		sec_button->Enable(realitems.count(sel));
 	}
 
 	wxeditor_esettings_hotkeys::~wxeditor_esettings_hotkeys()
@@ -116,13 +93,14 @@ namespace
 	{
 		if(closing())
 			return;
-		std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
+		string_list<char> sel = get_selection();
+		std::string name = names.count(sel) ? names[sel] : "";
 		if(name == "") {
 			refresh();
 			return;
 		}
 		try {
-			inverse_bind* ik = realitems[name];
+			inverse_bind* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
@@ -134,7 +112,8 @@ namespace
 			}
 			std::string key = d->getkey();
 			d->Destroy();
-			ik->append(key);
+			if(key != "")
+				ik->append(key);
 		} catch(...) {
 		}
 		refresh();
@@ -144,13 +123,14 @@ namespace
 	{
 		if(closing())
 			return;
-		std::string name = items[std::make_pair(category->GetSelection(), control->GetSelection())];
+		string_list<char> sel = get_selection();
+		std::string name = names.count(sel) ? names[sel] : "";
 		if(name == "") {
 			refresh();
 			return;
 		}
 		try {
-			inverse_bind* ik = realitems[name];
+			inverse_bind* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
@@ -184,29 +164,31 @@ namespace
 		if(closing())
 			return;
 		std::map<inverse_bind*, std::list<key_specifier>> data;
-		std::map<std::string, int> cat_set;
-		std::map<std::string, int> cat_assign;
 		realitems.clear();
-		itemlabels.clear();
 		auto x = lsnes_mapper.get_inverses();
 		for(auto y : x) {
-			realitems[y->getname()] = y;
+			string_list<char> key = split_on_codepoint(y->getname(), U'\u2023');
+			names[key] = y->getname();
+			realitems[key] = y;
 			key_specifier tmp;
 			unsigned idx = 0;
 			while((tmp = y->get(idx++)))
 				data[y].push_back(tmp);
 		}
-
-		int cidx = 0;
-		for(auto i : realitems) {
-			std::pair<std::string, std::string> j = splitkeyname(i.first);
-			if(!cat_set.count(j.first)) {
-				categories[cidx] = j.first;
-				cat_assign[j.first] = 0;
-				cat_set[j.first] = cidx++;
+		//Delete no longer present stuff. 
+		for(auto i = items.rbegin(); i != items.rend(); i++) {
+			auto j = realitems.lower_bound(i->first);
+			if(j == realitems.end() || !i->first.prefix_of(j->first)) {
+				//Delete this item.
+				if(i->second.IsOk())
+					controls->Delete(i->second);
+				items[i->first] = wxTreeItemId();
 			}
-			items[std::make_pair(cat_set[j.first], cat_assign[j.first])] = i.first;
-			std::string text = j.second;
+		}
+		//Update the rest.
+		for(auto i : realitems) {
+			string_list<char> key = i.first;
+			std::string text = key[key.size() - 1];
 			auto& I = data[i.second];
 			if(I.empty())
 				text = text + " (not set)";
@@ -221,21 +203,9 @@ namespace
 				}
 				text = text + ")";
 			}
-			itemlabels[std::make_pair(cat_set[j.first], cat_assign[j.first])] = text;
-			cat_assign[j.first]++;
+			wxTreeItemId id = get_item(key);
+			controls->SetItemText(id, towxstring(text));
 		}
-
-		for(size_t i = 0; i < category->GetCount(); i++)
-			if(categories.count(i))
-				category->SetString(i, towxstring(categories[i]));
-			else
-				category->Delete(i--);
-		for(auto i : categories)
-			if(i.first >= (int)category->GetCount())
-				category->Append(towxstring(categories[i.first]));
-		if(category->GetSelection() == wxNOT_FOUND)
-			category->SetSelection(0);
-		change_category(category->GetSelection());
 	}
 
 	settings_tab_factory hotkeys("Hotkeys", [](wxWindow* parent) -> settings_tab* {

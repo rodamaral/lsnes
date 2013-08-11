@@ -14,7 +14,7 @@ ports = {
 	},{
 		["symbol"] = "ptype1", ["iname"] = "ptype1", ["hname"] = "ptype1", ["controllers"] = {
 			{
-				["name"] = "test1", ["class"] = "test1", ["buttons"] = {
+				["name"] = "test1", ["class"] = "test", ["buttons"] = {
 					{axis, "xlstick", -32768, 32767, true},
 					{axis, "ylstick", -32768, 32767, true},
 					{taxis, "ltrigger", 0, 255, false},
@@ -42,7 +42,7 @@ ports = {
 	},{
 		["symbol"] = "ptype2", ["iname"] = "ptype2", ["hname"] = "ptype2", ["controllers"] = {
 			{
-				["name"] = "test2", ["class"] = "test2", ["buttons"] = {
+				["name"] = "test2", ["class"] = "test", ["buttons"] = {
 					{axis, "xlstick", -32768, 32767, true},
 					{taxis, "ltrigger", 0, 255, false},
 					{axis, "ylstick", -32768, 32767, true},

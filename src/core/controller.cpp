@@ -89,33 +89,33 @@ namespace
 		controller_key* k;
 		if(binding.mode == 0) {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name).str());
 			promote_key(*k);
 			k = new controller_key(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
-				<< binding.name << " (hold)").str());
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
+				<< binding.name << "‣hold").str());
 			promote_key(*k);
 			k = new controller_key(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
-				<< binding.name << " (type)").str());
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
+				<< binding.name << "‣type").str());
 			promote_key(*k);
 			k = new controller_key(lsnes_mapper, (stringfmt() << "+autofire-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
-				<< binding.name << " (autofire)").str());
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
+				<< binding.name << "‣autofire").str());
 			promote_key(*k);
 			k = new controller_key(lsnes_mapper, (stringfmt() << "autofire-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
-				<< binding.name << " (autofire toggle)").str());
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
+				<< binding.name << "‣autofire toggle").str());
 			promote_key(*k);
 		} else if(binding.mode == 1) {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name).str());
 			promote_key(*k);
 		} else if(binding.mode == 2) {
 			k = new controller_key(lsnes_mapper, (stringfmt() << "controller-analog " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "-" << binding.number << "‣"
+				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name << " (axis)").str(), true);
 			promote_key(*k);
 		}

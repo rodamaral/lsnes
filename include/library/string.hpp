@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <list>
 #include <stdexcept>
 #include <vector>
 #include <boost/lexical_cast.hpp>
@@ -121,5 +122,33 @@ template<> inline std::string parse_value(const std::string& value) throw(std::b
 {
 	return value;
 }
+
+template<typename T>
+class string_list
+{
+public:
+	string_list();
+	string_list(const std::list<std::basic_string<T>>& list);
+	bool empty();
+	string_list strip_one() const;
+	size_t size() const;
+	const std::basic_string<T>& operator[](size_t idx) const;
+	bool operator<(const string_list<T>& x) const;
+	bool operator==(const string_list<T>& x) const;
+	bool prefix_of(const string_list<T>& x) const;
+	std::basic_string<T> debug_name() const;
+private:
+	string_list(const std::basic_string<T>* array, size_t arrsize);
+	std::vector<std::basic_string<T>> v;
+};
+
+/**
+ * Split a string into substrings on some unicode codepoint.
+ */
+string_list<char> split_on_codepoint(const std::string& s, char32_t cp);
+/**
+ * Split a string into substrings on some unicode codepoint.
+ */
+string_list<char32_t> split_on_codepoint(const std::u32string& s, char32_t cp);
 
 #endif
