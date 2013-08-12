@@ -488,45 +488,31 @@ std::string hw_gamepad::axis_status(unsigned num)
 	return "offline";
 }
 
-std::string hw_gamepad::button_status(unsigned num)
+int hw_gamepad::button_status(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _buttons) {
 		if(i.second.num != num || !i.second.online)
 			continue;
-		return i.second.state ? "Pressed" : "Released";
+		return i.second.state ? 1 : 0;
 	}
-	return "offline";
+	return -1;
 }
 
-std::string hw_gamepad::hat_status(unsigned num)
+int hw_gamepad::hat_status(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _hats) {
 		if(i.second.num != num || !i.second.online)
 			continue;
-		std::string str;
-		if(i.second.state & 1) str = str + "N";
-		if(i.second.state & 4) str = str + "S";
-		if(i.second.state & 2) str = str + "E";
-		if(i.second.state & 8) str = str + "W";
-		if(!str.length())
-			str = "Center";
-		return str;
+		return i.second.state;
 	}
 	for(auto& i : _axes_hat) {
 		if(i.second->num != num || !i.second->online)
 			continue;
-		std::string str;
-		if(i.second->state & 1) str = str + "N";
-		if(i.second->state & 4) str = str + "S";
-		if(i.second->state & 2) str = str + "E";
-		if(i.second->state & 8) str = str + "W";
-		if(!str.length())
-			str = "Center";
-		return str;
+		return i.second->state;
 	}
-	return "offline";
+	return -1;
 }
 
 JSON::node hw_gamepad::save()

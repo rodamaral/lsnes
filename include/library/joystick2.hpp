@@ -30,8 +30,8 @@ public:
 	std::set<unsigned> online_buttons();
 	std::set<unsigned> online_hats();
 	std::string axis_status(unsigned num);
-	std::string button_status(unsigned num);
-	std::string hat_status(unsigned num);
+	int button_status(unsigned num);
+	int hat_status(unsigned num);
 	void report_axis(uint64_t id, int64_t val);
 	void report_button(uint64_t id, bool val);
 	void report_hat(uint64_t id, int angle);
