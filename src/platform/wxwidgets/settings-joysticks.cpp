@@ -283,9 +283,12 @@ namespace
 				bg = 0xFFFFFF;
 			}
 			draw_box(fb, stride, fg, bg);
-			fb[2 * stride + 1] = E(D(num, 100), fg, bg);
-			fb[2 * stride + 2] = E(D(num, 10), fg, bg);
-			fb[2 * stride + 3] = E(D(num, 1), fg, bg);
+			if(num > 9) {
+				fb[2 * stride + 1] = E(D(num, 100), fg, bg);
+				fb[2 * stride + 2] = E(D(num, 10), fg, bg);
+				fb[2 * stride + 3] = E(D(num, 1), fg, bg);
+			} else
+				fb[2 * stride + 2] = E(D(num, 1), fg, bg);
 		}
 		void draw_hat(unsigned x, unsigned y, unsigned num, int state)
 		{
@@ -303,9 +306,12 @@ namespace
 			unsigned sbits = 0020;
 			if(state > 0)
 				sbits = sbits_lookup[state & 15];
-			fb[2 * stride + 1] = E(D(num, 100), fg, bg);
-			fb[2 * stride + 2] = E(D(num, 10), fg, bg);
-			fb[2 * stride + 3] = E(D(num, 1), fg, bg);
+			if(num > 9) {
+				fb[2 * stride + 1] = E(D(num, 100), fg, bg);
+				fb[2 * stride + 2] = E(D(num, 10), fg, bg);
+				fb[2 * stride + 3] = E(D(num, 1), fg, bg);
+			} else
+				fb[2 * stride + 2] = E(D(num, 1), fg, bg);
 			for(unsigned y = 1; y < 4; y++)
 				for(unsigned x = 1; x < 4; x++)
 					if((sbits >> (y * 3 + x - 4)) & 1)
