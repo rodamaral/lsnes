@@ -8,20 +8,31 @@ namespace
 		wxID_SCALE_FACTOR = wxID_HIGHEST + 1,
 		wxID_SCALE_ALGO = wxID_HIGHEST + 2,
 		wxID_AR_CORRECT = wxID_HIGHEST + 3,
-		wxID_HFLIP = wxID_HIGHEST + 4,
-		wxID_VFLIP = wxID_HIGHEST + 5,
-		wxID_ROTATE = wxID_HIGHEST + 6,
+		wxID_ORIENT = wxID_HIGHEST + 4,
 	};
 	
 	const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Experimential", "Point", "Area",
 		"Bicubic-Linear", "Gauss", "Sinc", "Lanczos", "Spline"};
-
+	const char* orientations[] = {"Normal", "Rotate 90° left", "Rotate 90° right", "Rotate 180°",
+		"Flip horizontal", "Flip vertical", "Transpose", "Transpose other"};
+	unsigned orientation_flags[] = {0, 7, 1, 6, 2, 4, 5, 3};
+	unsigned inv_orientation_flags[] = {0, 2, 4, 7, 5, 6, 3, 1};
+	
 	std::string getalgo(int flags)
 	{
 		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
 			if(flags & (1 << i))
 				return scalealgo_choices[i];
 		return "unknown";
+	}
+
+	unsigned get_orientation()
+	{
+		unsigned x = 0;
+		x |= (rotate_enabled ? 1 : 0);
+		x |= (hflip_enabled ? 2 : 0);
+		x |= (vflip_enabled ? 4 : 0);
+		return inv_orientation_flags[x];
 	}
 
 	class wxeditor_esettings_video : public settings_tab
@@ -31,10 +42,8 @@ namespace
 		~wxeditor_esettings_video();
 		void on_configure(wxCommandEvent& e);
 		wxCheckBox* arcorrect;
-		wxCheckBox* hflip;
-		wxCheckBox* vflip;
-		wxCheckBox* rotate;
 		wxComboBox* scalealgo;
+		wxComboBox* orient;
 		wxSpinCtrl* scalefact;
 		void on_close();
 	private:
@@ -46,8 +55,11 @@ namespace
 		: settings_tab(parent)
 	{
 		std::vector<wxString> scales;
+		std::vector<wxString> orients;
 		for(size_t i = 0; i < sizeof(scalealgo_choices)/sizeof(scalealgo_choices[0]); i++)
 			scales.push_back(towxstring(scalealgo_choices[i]));
+		for(size_t i = 0; i < sizeof(orientations)/sizeof(orientations[0]); i++)
+			orients.push_back(towxstring(orientations[i]));
 
 		wxButton* tmp;
 		top_s = new wxFlexGridSizer(4, 2, 0, 0);
@@ -55,13 +67,14 @@ namespace
 		top_s->Add(new wxStaticText(this, -1, wxT("Scale %: ")), 0, wxGROW);
 		top_s->Add(scalefact = new wxSpinCtrl(this, wxID_SCALE_FACTOR, wxT(""), wxDefaultPosition,
 			wxDefaultSize, wxSP_ARROW_KEYS, 25, 1000, 100 * video_scale_factor), 1, wxGROW);
-		top_s->Add(new wxStaticText(this, wxID_SCALE_ALGO, wxT("Scaling type: ")), 0, wxGROW);
-		top_s->Add(scalealgo = new wxComboBox(this, -1, towxstring(getalgo(scaling_flags)), wxDefaultPosition,
-			wxDefaultSize, scales.size(), &scales[0], wxCB_READONLY), 1, wxGROW);
+		top_s->Add(new wxStaticText(this, -1, wxT("Scaling type: ")), 0, wxGROW);
+		top_s->Add(scalealgo = new wxComboBox(this, wxID_SCALE_ALGO, towxstring(getalgo(scaling_flags)),
+			wxDefaultPosition, wxDefaultSize, scales.size(), &scales[0], wxCB_READONLY), 1, wxGROW);
+		top_s->Add(new wxStaticText(this, -1, wxT("Orientation: ")), 0, wxGROW);
+		top_s->Add(orient = new wxComboBox(this, wxID_ORIENT, towxstring(orientations[get_orientation()]),
+			wxDefaultPosition, wxDefaultSize, orients.size(), &orients[0], wxCB_READONLY), 1, wxGROW);
+		
 		top_s->Add(arcorrect = new wxCheckBox(this, wxID_AR_CORRECT, wxT("AR correction")), 1, wxGROW);
-		top_s->Add(rotate = new wxCheckBox(this, wxID_ROTATE, wxT("Rotate")), 1, wxGROW);
-		top_s->Add(hflip = new wxCheckBox(this, wxID_HFLIP, wxT("X flip")), 1, wxGROW);
-		top_s->Add(vflip = new wxCheckBox(this, wxID_VFLIP, wxT("Y flip")), 1, wxGROW);
 
 		scalefact->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED,
 			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
@@ -69,11 +82,7 @@ namespace
 			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
 		arcorrect->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
-		hflip->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
-		vflip->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
-			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
-		rotate->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
+		orient->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 			wxCommandEventHandler(wxeditor_esettings_video::on_configure), NULL, this);
 
 		refresh();
@@ -103,12 +112,12 @@ namespace
 					scaling_flags = 1 << scalealgo->GetSelection();
 			} else if(e.GetId() == wxID_AR_CORRECT)
 				arcorrect_enabled = arcorrect->GetValue();
-			else if(e.GetId() == wxID_HFLIP)
-				hflip_enabled = hflip->GetValue();
-			else if(e.GetId() == wxID_ROTATE)
-				rotate_enabled = rotate->GetValue();
-			else if(e.GetId() == wxID_VFLIP)
-				vflip_enabled = vflip->GetValue();
+			else if(e.GetId() == wxID_ORIENT) {
+				unsigned f = orientation_flags[orient->GetSelection()];
+				rotate_enabled = f & 1;
+				hflip_enabled = f & 2;
+				vflip_enabled = f & 4;
+			}
 			if(main_window)
 				main_window->notify_update();
 		} catch(std::exception& e) {
@@ -122,9 +131,7 @@ namespace
 	{
 		scalefact->SetValue(video_scale_factor * 100.0 + 0.5);
 		arcorrect->SetValue(arcorrect_enabled);
-		hflip->SetValue(hflip_enabled);
-		vflip->SetValue(vflip_enabled);
-		rotate->SetValue(rotate_enabled);
+		orient->SetSelection(get_orientation());
 		scalealgo->SetValue(towxstring(getalgo(scaling_flags)));
 		top_s->Layout();
 		Fit();
