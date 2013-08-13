@@ -329,14 +329,6 @@ namespace
 				return U' ';
 			return U'0' + ((val / div) % 10);
 		}
-		text_framebuffer::element E(char32_t ch, unsigned fg, unsigned bg)
-		{
-			text_framebuffer::element e;
-			e.ch = ch;
-			e.fg = fg;
-			e.bg = bg;
-			return e;
-		}
 	};
 
 	class joystick_config_window : public settings_tab

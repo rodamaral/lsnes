@@ -32,6 +32,13 @@ struct text_framebuffer
 	size_t write(const std::string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg);
 	size_t write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg);
 	static size_t text_width(const std::string& text);
+	element E(char32_t ch, uint32_t fg, uint32_t bg)
+	{
+		element e;
+		e.ch = ch;
+		e.fg = fg;
+		e.bg = bg;
+	}
 private:
 	std::vector<element> buffer;
 	size_t width;
