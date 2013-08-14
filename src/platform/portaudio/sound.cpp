@@ -187,26 +187,10 @@ namespace
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 	}
 
-	void close_full()
-	{
-		dispose_stream(stream_p);
-		stream_r = NULL;
-		current_rdev = paNoDevice;
-		current_rfreq = 0;
-		stream_r = NULL;
-		current_rdev = paNoDevice;
-		current_rfreq = 0;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
-	}
-
 	void close_all()
 	{
-		if(current_rdev == current_pdev && current_rdev != paNoDevice)
-			close_full();
-		else {
-			close_input();
-			close_output();
-		}
+		close_input();
+		close_output();
 	}
 
 	void print_status(unsigned flags)
@@ -258,6 +242,7 @@ namespace
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_p);
 		current_pfreq = output ? si->sampleRate : 0;
 		current_pdev = dev;
+		std::cerr << "Setting rate to in=" << current_rfreq << " out=" << current_pfreq << std::endl;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 		print_status(2);
 		return 3;
@@ -291,6 +276,7 @@ namespace
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_r);
 		current_rfreq = input ? si->sampleRate : 0;
 		current_rdev = dev;
+		std::cerr << "Setting rate to in=" << current_rfreq << " out=" << current_pfreq << std::endl;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 		print_status(1);
 		return 3;
@@ -310,158 +296,29 @@ namespace
 		return status;
 	}
 
-	//Switch to full-duplex configuration.
-	unsigned switch_devices_full(PaDeviceIndex dev)
-	{
-		if(!check_indev(dev) || !check_outdev(dev))
-			return 0;
-		close_all();
-		if(dev == paNoDevice) {
-			messages << "Sound devices closed." << std::endl;
-			return 3;
-		}
-		PaStreamParameters* input = get_input_parameters(dev, dev);
-		PaStreamParameters* output = get_input_parameters(dev, dev);
-		auto inf = Pa_GetDeviceInfo(dev);
-		PaError err = Pa_OpenStream(&stream_r, input, output, inf->defaultSampleRate, 0, 0, audiocb, NULL);
-		if(err != paNoError) {
-			messages << "Portaudio: error (open): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
-			return 0;
-		}
-		flag_rstereo = (input && input->channelCount == 2);
-		flag_pstereo = (output && output->channelCount == 2);
-		err = Pa_StartStream(stream_r);
-		if(err != paNoError) {
-			messages << "Portaudio error (start): " << Pa_GetErrorText(err) << std::endl;
-			audioapi_voice_rate(current_rfreq, current_pfreq);
-			return 0;
-		}
-		stream_p = stream_r;
-		const PaStreamInfo* si = Pa_GetStreamInfo(stream_r);
-		current_rfreq = input ? si->sampleRate : 0;
-		si = Pa_GetStreamInfo(stream_p);
-		current_pfreq = output ? si->sampleRate : 0;
-		current_rfreq = input ? si->sampleRate : 0;
-		current_rdev = dev;
-		current_pdev = dev;
-		audioapi_voice_rate(current_rfreq, current_pfreq);
-		print_status(3);
-		return 3;
-	}
-
 	unsigned switch_devices(PaDeviceIndex new_in, PaDeviceIndex new_out)
 	{
-		bool cur_full_duplex = (current_pdev == current_rdev);
-		bool new_full_duplex = (new_in == new_out);
+		std::cerr << "switch_devices: in=" << new_in << " out=" << new_out << std::endl;
 		bool switch_in = (new_in != current_rdev);
 		bool switch_out = (new_out != current_pdev);
 		if(!switch_in && !switch_out)
 			return 3;
-		else if(!switch_in && !cur_full_duplex && !new_full_duplex)
+		else if(!switch_in)
 			return switch_devices_outonly(new_out);
-		else if(!switch_out && !cur_full_duplex && !new_full_duplex)
+		else if(!switch_out)
 			return switch_devices_inonly(new_in);
-		else if(!new_full_duplex)
-			return switch_devices_split(new_in, new_out);
 		else
-			return switch_devices_full(new_out);
+			return switch_devices_split(new_in, new_out);
 	}
 
 	bool initial_switch_devices(PaDeviceIndex force_in, PaDeviceIndex force_out)
 	{
-		if(force_in != paNoDevice && force_out != paNoDevice) {
-			//Both are being forced. Just try to open.
-			unsigned r = switch_devices(force_in, force_out);
-			return (r != 0);
-		} else if(force_in != paNoDevice) {
-			//Input forcing, but no output. Prefer full dupex.
-			unsigned r = switch_devices(force_in, force_in);
-			PaDeviceIndex out;
-			bool tmp;
-			switch(r) {
-			case 0:
-			case 1:
-				tmp = (r != 0);
-				//We didn't get output open on that. Scan for output device.
-				for(out = 0; out < Pa_GetDeviceCount(); out++) {
-					if(out == force_in)
-						continue;	//Don't retry that.
-					r = switch_devices(tmp ? force_in : paNoDevice, out);
-					if(r == 3)
-						return true;	//Got it open.
-				}
-				//We can't get output.
-				return (switch_devices(force_in, paNoDevice) != 0);
-			case 2:
-			case 3:
-				//We got output open. This is enough success.
-				return true;
-			}
-		} else if(force_out != paNoDevice) {
-			//Output forcing, but no input. Prefer full dupex.
-			unsigned r = switch_devices(force_out, force_out);
-			PaDeviceIndex in;
-			bool tmp;
-			switch(r) {
-			case 0:
-			case 2:
-				tmp = (r != 0);
-				//We didn't get input open on that. Scan for input device.
-				for(in = 0; in < Pa_GetDeviceCount(); in++) {
-					if(in == force_out)
-						continue;	//Don't retry that.
-					r = switch_devices(in, tmp ? force_out : paNoDevice);
-					if(r == 3)
-						return true;	//Got it open.
-				}
-				//We can't get input.
-				return (switch_devices(paNoDevice, force_out) != 0);
-			case 1:
-			case 3:
-				//We got input open. This is enough success.
-				return true;
-			}
-		} else {
-			//Neither is forced.
-			unsigned r;
-			PaDeviceIndex idx;
-			PaDeviceIndex pidx;
-			PaDeviceIndex ridx;
-			bool o_r = true;
-			bool o_p = true;
-			for(idx = 0; idx < Pa_GetDeviceCount(); idx++) {
-				PaDeviceIndex in, out;
-				if(!o_r)
-					in = ridx;
-				else if(check_indev(idx))
-					in = idx;
-				else
-					in = paNoDevice;
-				if(!o_p)
-					out = pidx;
-				else if(check_outdev(idx))
-					out = idx;
-				else
-					out = paNoDevice;
-				r = switch_devices(in, out);
-				if((r & 1) && in != paNoDevice) {
-					o_r = false;
-					ridx = idx;
-				}
-				if((r & 2) && (out != paNoDevice)) {
-					o_p = false;
-					pidx = idx;
-				}
-				if(r == 3 && (in != paNoDevice) && (out != paNoDevice))
-					return true;
-			}
-			//Get output open if possible.
-			if(!o_p)
-				return (switch_devices(paNoDevice, pidx) != 0);
-			return false;
-		}
-		return false;
+		if(force_in == paNoDevice)
+			force_in = Pa_GetDefaultInputDevice();
+		if(force_out == paNoDevice)
+			force_out = Pa_GetDefaultOutputDevice();
+		unsigned r = switch_devices(force_in, force_out);
+		return (r != 0);
 	}
 
 	PaDeviceIndex output_to_index(const std::string& dev)
