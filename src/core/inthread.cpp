@@ -6,6 +6,7 @@
 #include "library/serialization.hpp"
 #include "library/string.hpp"
 #include "library/ogg.hpp"
+#include "library/oggopus.hpp"
 #include "library/opus.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -442,6 +443,8 @@ out_parsing:
 	{
 		ogg_stream_reader_iostreams reader(data);
 		reader.set_errors_to(messages);
+		struct oggopus_header h;
+		struct oggopus_tags t;
 		ogg_page page;
 		ogg_demuxer d(messages);
 		int state = 0;
@@ -450,60 +453,56 @@ out_parsing:
 		uint64_t last_datalen = 0;
 		uint64_t last_granulepos = 0;
 		try {
-			while(reader.get_page(page)) {
-				bool c = d.page_in(page);
-				struct oggopus_header h;
-				struct oggopus_tags t;
+			while(true) {
+				ogg_packet p;
+				if(!d.wants_packet_out()) {
+					if(!reader.get_page(page))
+						break;
+					d.page_in(page);
+					continue;
+				} else
+					d.packet_out(p);
 				switch(state) {
 				case 0:		//Not locked.
-					h = parse_oggopus_header(page);
+					h = parse_oggopus_header(p);
 					if(h.streams != 1)
 						throw std::runtime_error("Multistream OggOpus streams are not "
 							"supported");
 					state = 1;	//Expecting comment.
 					pregap_length = h.preskip;
 					gain = h.gain;
-					while(d.wants_packet_out())
-						d.discard_packet();
 					break;
 				case 1:		//Expecting comment.
-					t = parse_oggopus_tags(page);
+					t = parse_oggopus_tags(p);
 					state = 2;	//Data page.
 					if(page.get_eos())
 						throw std::runtime_error("Empty OggOpus stream");
-					//We don't do anything with this.
-					while(d.wants_packet_out())
-						d.discard_packet();
 					break;
 				case 2:		//Data page.
 				case 3:		//Data page.
-					while(d.wants_packet_out()) {
-						ogg_packet p;
-						d.packet_out(p);
-						std::vector<uint8_t> pkt = p.get_vector();
-						uint8_t tcnt = opus_packet_tick_count(&pkt[0], pkt.size());
-						if(tcnt) {
-							write(tcnt, &pkt[0], pkt.size());
-							datalen += tcnt * 120;
-						}
-						if(p.get_last_page()) {
-							uint64_t samples = p.get_granulepos() - last_granulepos;
-							if(samples > p.get_granulepos())
-								samples = 0;
-							uint64_t rsamples = datalen - last_datalen;
-							if((samples > rsamples && state == 3) || (samples <
-								rsamples && !p.get_on_eos_page()))
-								messages << "Warning: Granulepos says there are "
-									<< samples << " samples, found " << rsamples
-									<< std::endl;
-							last_datalen = datalen;
-							last_granulepos = p.get_granulepos();
-							if(p.get_on_eos_page()) {
-								if(samples < rsamples)
-									postgap_length = rsamples - samples;
-								state = 4;
-								goto out;
-							}
+					const std::vector<uint8_t>& pkt = p.get_vector();
+					uint8_t tcnt = opus_packet_tick_count(&pkt[0], pkt.size());
+					if(tcnt) {
+						write(tcnt, &pkt[0], pkt.size());
+						datalen += tcnt * 120;
+					}
+					if(p.get_last_page()) {
+						uint64_t samples = p.get_granulepos() - last_granulepos;
+						if(samples > p.get_granulepos())
+						samples = 0;
+						uint64_t rsamples = datalen - last_datalen;
+						if((samples > rsamples && state == 3) || (samples <
+							rsamples && !p.get_on_eos_page()))
+							messages << "Warning: Granulepos says there are "
+								<< samples << " samples, found " << rsamples
+								<< std::endl;
+						last_datalen = datalen;
+						last_granulepos = p.get_granulepos();
+						if(p.get_on_eos_page()) {
+							if(samples < rsamples)
+								postgap_length = rsamples - samples;
+							state = 4;
+							goto out;
 						}
 					}
 					state = 3;
@@ -514,7 +513,7 @@ out:
 			if(state == 0)
 				throw std::runtime_error("No OggOpus stream found");
 			if(state == 1)
-				throw std::runtime_error("Oggopus stream missing required tags page");
+				throw std::runtime_error("Oggopus stream missing required tags pages");
 			if(state == 2 || state == 3)
 				messages << "Warning: Incomplete Oggopus stream." << std::endl;
 			if(datalen <= pregap_length)
@@ -617,6 +616,8 @@ out:
 
 	void opus_stream::export_stream_oggopus(std::ofstream& data)
 	{
+		if(!packets.size())
+			throw std::runtime_error("Empty oggopus stream is not valid");
 		oggopus_header header;
 		oggopus_tags tags;
 		ogg_stream_writer_iostreams writer(data);
@@ -637,17 +638,14 @@ out:
 		tags.vendor = "unknown";
 		tags.comments.push_back((stringfmt() << "ENCODER=lsnes rr" + lsnes_version).str());
 		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
+
 		struct ogg_page hpage = serialize_oggopus_header(header);
-		struct ogg_page tpage = serialize_oggopus_tags(tags);
-		struct ogg_page ppage;
 		hpage.set_stream(stream_id);
-		tpage.set_stream(stream_id);
-		//Empty stream?
-		if(!packets.size())
-			tpage.set_eos(true);
 		writer.put_page(hpage);
-		writer.put_page(tpage);
-		ogg_muxer mux(stream_id, 2);
+		seq = serialize_oggopus_tags(tags, [&writer](const ogg_page& p) { writer.put_page(p); }, stream_id);
+
+		struct ogg_page ppage;
+		ogg_muxer mux(stream_id, seq);
 		for(size_t i = 0; i < packets.size(); i++) {
 			std::vector<unsigned char> p;
 			try {

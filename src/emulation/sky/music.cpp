@@ -4,6 +4,7 @@
 #include <cmath>
 #include "library/minmax.hpp"
 #include "library/ogg.hpp"
+#include "library/oggopus.hpp"
 #include "library/string.hpp"
 #include "core/window.hpp"
 #include "state.hpp"
@@ -380,32 +381,36 @@ namespace sky
 		return true;
 	}
 
-	bool song_buffer::parse_ogg_page(ogg_page& p, subsong_context& ctx)
+	bool song_buffer::parse_ogg_page(ogg_page& page, subsong_context& ctx)
 	{
-		bool c = ctx.demux.page_in(p);
-		if(!c)
+		ogg_packet p;
+		if(!ctx.demux.page_in(page))
 			return false;
-		if(ctx.pages == 0)
-			parse_ogg_header(p, ctx);
-		else if(ctx.pages == 1)
-			parse_ogg_tags(p, ctx);
-		else
-			parse_ogg_data(p, ctx);
-		ctx.pages++;
+		while(ctx.demux.wants_packet_out()) {
+			ctx.demux.packet_out(p);
+			if(ctx.pages == 0) {
+				parse_ogg_header(p, ctx);
+				ctx.pages = 1;
+			} else if(ctx.pages == 1) {
+				parse_ogg_tags(p, ctx, page);
+				ctx.pages = 2;
+			} else
+				parse_ogg_data(p, ctx, page);
+		}
+		if(ctx.pages > 1)
+			ctx.pages++;
 		return true;
 	}
 
-	void song_buffer::parse_ogg_header(ogg_page& p, subsong_context& ctx)
+	void song_buffer::parse_ogg_header(ogg_packet& p, subsong_context& ctx)
 	{
 		struct oggopus_header h = ::parse_oggopus_header(p);
 		fill_msc_from_header(mscharacteristics[ctx.psid], h);
 		ctx.pregap = h.preskip;
 		ctx.gain = h.gain;
-		while(ctx.demux.wants_packet_out())
-			ctx.demux.discard_packet();
 	}
 
-	void song_buffer::parse_ogg_tags(ogg_page& p, subsong_context& ctx)
+	void song_buffer::parse_ogg_tags(ogg_packet& p, subsong_context& ctx, const ogg_page& debug)
 	{
 		struct oggopus_tags t = ::parse_oggopus_tags(p);
 		for(auto& i : t.comments) {
@@ -433,50 +438,37 @@ namespace sky
 					entry.insert(lsid);
 				}
 			} catch(std::exception& e) {
-				messages << "Warning: " << p.stream_debug_id() << " tag '" << i << "': " << e.what()
-					<< std::endl;
+				messages << "Warning: " << debug.stream_debug_id() << " tag '" << i << "': "
+					<< e.what() << std::endl;
 			}
 		}
 		//Make sure substream 0 exits.
 		auto dummy = register_lsid((stringfmt() << "PSID" << ctx.psid).str(), ctx.psid);
-		while(ctx.demux.wants_packet_out())
-			ctx.demux.discard_packet();
 	}
 
-	void song_buffer::parse_ogg_data(ogg_page& p, subsong_context& ctx)
-	{
-		while(ctx.demux.wants_packet_out()) {
-			ogg_packet pkt;
-			ctx.demux.packet_out(pkt);
-			parse_ogg_packet(pkt, ctx);
-			if(pkt.get_last_page())
-				parse_ogg_pageend(p, ctx);
-		}
-	}
-
-	void song_buffer::parse_ogg_packet(ogg_packet& pkt, subsong_context& ctx)
+	void song_buffer::parse_ogg_data(ogg_packet& p, subsong_context& ctx, const ogg_page& debug)
 	{
 		std::pair<uint32_t, uint64_t> ptsx = std::make_pair(ctx.psid, ctx.pts);
-		packetdata[ptsx] = pkt.get_vector();
+		packetdata[ptsx] = p.get_vector();
 		uint8_t t = opus_packet_tick_count(&packetdata[ptsx][0], packetdata[ptsx].size());
 		ctx.pts += 120 * t;
-	}
-
-	void song_buffer::parse_ogg_pageend(ogg_page& p, subsong_context& ctx)
-	{
-		uint64_t samples = p.get_granulepos() - ctx.last_granule;
-		if(samples > ctx.pts - ctx.last_pts) {
-			if(ctx.pages > 2)
-				messages << "Warning: " << p.page_debug_id() << " Granulepos says there are "
-					<< samples << " samples, found " << ctx.pts - ctx.last_pts << std::endl;
-		} else if(p.get_eos())
-			//On EOS page, clip.
-			ctx.pts = ctx.last_pts + samples;
-		else if(samples < ctx.pts - ctx.last_pts)
-			messages << "Warning: " << p.page_debug_id() << " Granulepos says there are " << samples
-				<< " samples, found " << ctx.pts - ctx.last_pts << std::endl;
-		ctx.last_pts = ctx.pts;
-		ctx.last_granule = p.get_granulepos();
+		if(p.get_last_page()) {
+			uint64_t samples = p.get_granulepos() - ctx.last_granule;
+			if(samples > ctx.pts - ctx.last_pts) {
+				if(ctx.pages > 2)
+					messages << "Warning: " << debug.page_debug_id() << " Granulepos says there "
+						<< "are " << samples << " samples, found " << ctx.pts - ctx.last_pts
+						<< std::endl;
+			} else if(p.get_on_eos_page())
+				//On EOS page, clip.
+				ctx.pts = ctx.last_pts + samples;
+			else if(samples < ctx.pts - ctx.last_pts)
+				messages << "Warning: " << debug.page_debug_id() << " Granulepos says there are "
+					<< samples << " samples, found " << ctx.pts - ctx.last_pts
+					<< std::endl;
+			ctx.last_pts = ctx.pts;
+			ctx.last_granule = p.get_granulepos();
+		}
 	}
 
 	song_buffer* bsong;

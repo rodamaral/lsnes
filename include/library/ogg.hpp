@@ -19,7 +19,8 @@ public:
 /**
  * Constructor.
  */
-	ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, const std::vector<uint8_t>& d);
+	ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos,
+		const std::vector<uint8_t>& d);
 /**
  * Is the packet first within its page?
  */
@@ -45,6 +46,10 @@ public:
  */
 	bool get_on_eos_page() const throw() { return eos_page; }
 /**
+ * Does the page this starts on have BOS set?
+ */
+	bool get_on_bos_page() const throw() { return bos_page; }
+/**
  * Get the packet data.
  */
 	const std::vector<uint8_t>& get_vector() const throw() { return data; }
@@ -61,6 +66,7 @@ private:
 	bool last_page;
 	bool spans_page;
 	bool eos_page;
+	bool bos_page;
 	uint64_t granulepos;
 	std::vector<uint8_t> data;
 };
@@ -257,6 +263,7 @@ private:
 		uint64_t granule);
 	std::ostream& errors_to;
 	std::vector<uint8_t> partial;
+	bool started_bos;
 	bool seen_page;
 	bool damaged_packet;
 	uint32_t imprint_stream;
@@ -440,76 +447,5 @@ public:
 private:
 	std::ostream& os;
 };
-
-/**
- * OggOpus header structure.
- */
-struct oggopus_header
-{
-	uint8_t version;
-	uint8_t channels;
-	uint16_t preskip;
-	uint32_t rate;
-	int16_t gain;
-	uint8_t map_family;
-	uint8_t streams;
-	uint8_t coupled;
-	uint8_t chanmap[255];
-};
-
-/**
- * OggOpus tags structure
- */
-struct oggopus_tags
-{
-	std::string vendor;
-	std::vector<std::string> comments;
-};
-
-/**
- * Parse Ogg page as OggOpus header.
- *
- * Parameter page: The page to parse.
- * Returns: Parsed data.
- * Throws std::runtime_error: Not valid OggOpus header page.
- */
-struct oggopus_header parse_oggopus_header(struct ogg_page& page) throw(std::runtime_error);
-
-/**
- * Serialize OggOpus header as an Ogg page.
- *
- * Parameter header: The header.
- * Returns: The serialized page.
- * Throws std::runtime_error: Not valid OggOpus header.
- */
-struct ogg_page serialize_oggopus_header(struct oggopus_header& header) throw(std::runtime_error);
-
-/**
- * Parse Ogg page as OggOpus comment.
- *
- * Parameter page: The page to parse.
- * Returns: Parsed data.
- * Throws std::runtime_error: Not valid OggOpus comment page.
- */
-struct oggopus_tags parse_oggopus_tags(struct ogg_page& page) throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Serialize OggOpus comments as an Ogg page.
- *
- * Parameter tags: The comments.
- * Returns: The serialized page.
- * Throws std::runtime_error: Not valid OggOpus comments.
- */
-struct ogg_page serialize_oggopus_tags(struct oggopus_tags& tags) throw(std::runtime_error);
-
-/**
- * Get tick (2.5ms) count from opus packet.
- *
- * Parameter packet: The packet data.
- * Parameter packetsize: The size of packet.
- *
- * Note: Guaranteed not to read more than 2 bytes from the packet.
- */
-uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize);
 
 #endif

@@ -86,11 +86,9 @@ namespace sky
 		};
 		bool page_starts_new_stream(ogg_page& p);
 		bool parse_ogg_page(ogg_page& p, subsong_context& ctx);
-		void parse_ogg_header(ogg_page& p, subsong_context& ctx);
-		void parse_ogg_tags(ogg_page& p, subsong_context& ctx);
-		void parse_ogg_data(ogg_page& p, subsong_context& ctx);
-		void parse_ogg_packet(ogg_packet& pkt, subsong_context& ctx);
-		void parse_ogg_pageend(ogg_page& p, subsong_context& ctx);
+		void parse_ogg_header(ogg_packet& p, subsong_context& ctx);
+		void parse_ogg_tags(ogg_packet& p, subsong_context& ctx, const ogg_page& debug);
+		void parse_ogg_data(ogg_packet& p, subsong_context& ctx, const ogg_page& debug);
 		//Register a LSID.
 		uint32_t register_lsid(const std::string& ssid);
 		uint32_t register_lsid(const std::string& ssid, uint32_t psid);
