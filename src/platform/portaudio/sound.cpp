@@ -242,7 +242,6 @@ namespace
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_p);
 		current_pfreq = output ? si->sampleRate : 0;
 		current_pdev = dev;
-		std::cerr << "Setting rate to in=" << current_rfreq << " out=" << current_pfreq << std::endl;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 		print_status(2);
 		return 3;
@@ -276,7 +275,6 @@ namespace
 		const PaStreamInfo* si = Pa_GetStreamInfo(stream_r);
 		current_rfreq = input ? si->sampleRate : 0;
 		current_rdev = dev;
-		std::cerr << "Setting rate to in=" << current_rfreq << " out=" << current_pfreq << std::endl;
 		audioapi_voice_rate(current_rfreq, current_pfreq);
 		print_status(1);
 		return 3;
@@ -285,8 +283,6 @@ namespace
 	//Switch to split-duplex configuration.
 	unsigned switch_devices_split(PaDeviceIndex rdev, PaDeviceIndex pdev)
 	{
-		if(rdev == pdev)
-			std::cerr << "switch_devices_split: rdev==pdev!" << std::endl;
 		unsigned status = 3;
 		if(!check_indev(rdev) || !check_outdev(pdev))
 			return 0;
@@ -298,7 +294,6 @@ namespace
 
 	unsigned switch_devices(PaDeviceIndex new_in, PaDeviceIndex new_out)
 	{
-		std::cerr << "switch_devices: in=" << new_in << " out=" << new_out << std::endl;
 		bool switch_in = (new_in != current_rdev);
 		bool switch_out = (new_out != current_pdev);
 		if(!switch_in && !switch_out)
