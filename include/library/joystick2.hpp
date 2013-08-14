@@ -29,7 +29,7 @@ public:
 	std::set<unsigned> online_axes();
 	std::set<unsigned> online_buttons();
 	std::set<unsigned> online_hats();
-	std::string axis_status(unsigned num);
+	void axis_status(unsigned num, int64_t& raw, int16_t& scaled);
 	int button_status(unsigned num);
 	int hat_status(unsigned num);
 	void report_axis(uint64_t id, int64_t val);

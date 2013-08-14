@@ -475,17 +475,21 @@ int hw_gamepad::get_mode(unsigned num)
 	return -1;
 }
 
-std::string hw_gamepad::axis_status(unsigned num)
+void hw_gamepad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
 {
 	umutex_class H(mutex);
 	for(auto& i : _axes) {
 		if(i.second.num != num || !i.second.online)
 			continue;
+		raw = i.second.rstate;
 		if(i.second.disabled)
-			return "disabled";
-		return (stringfmt() << i.second.rstate << "{" << (int)(i.second.state / 327.67) << "%}").str();
+			pct = 0;
+		else
+			pct = (int)(i.second.state / 327.67);
+		return;
 	}
-	return "offline";
+	raw = 0;
+	pct = 0;;
 }
 
 int hw_gamepad::button_status(unsigned num)

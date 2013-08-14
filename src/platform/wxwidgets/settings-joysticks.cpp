@@ -11,6 +11,11 @@ namespace
 					U"\u2502\u0020\u0020\u0020\u2502"
 					U"\u2502\u0020\u0020\u0020\u2502"
 					U"\u2514\u2500\u2500\u2500\u2518";
+	const char32_t* bbox_symbols = 	U"\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510"
+					U"\u2502\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u2502"
+					U"\u2502\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u2502"
+					U"\u2502\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u0020\u2502"
+					U"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518";
 	unsigned sbits_lookup[] = {0020, 0002, 0040, 0004, 0200, 0202, 0400, 0404, 0010, 0001, 0050, 0005,
 		0100, 0101, 0500, 0252};
 					
@@ -138,55 +143,65 @@ namespace
 		joystick_panel(wxWindow* parent, unsigned jid, hw_gamepad& gp)
 			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _gp(gp), _jid(jid)
 		{
-			unsigned rows = 2 + gp.axes() + gp.buttons() + gp.hats();
+			const unsigned pwidth = 80;
+			const unsigned b_perrow = 8;
+			const unsigned s_perrow = 16;
+			unsigned rows = 9 + (gp.axes() + b_perrow - 1) / b_perrow * 5 + (gp.buttons() +
+				s_perrow - 1) / s_perrow * 5 + (gp.hats() + s_perrow - 1) / s_perrow * 5;
+			
 			std::string jname = (stringfmt() << "joystick" << _jid << " [" << gp.name() << "]").str();
 			std::string status = std::string("Status: ") + (gp.online() ? "Online" : "Offline");
-			base_width = max(jname.length(), status.length());
 			unsigned y = 2;
-			selected_row = rows;
-			
-			maxtitle = 0;
-			if(gp.axes() > 0)
-				maxtitle = max(maxtitle, 5 + numwidth(gp.axes() - 1));
-			if(gp.buttons() > 0)
-				maxtitle = max(maxtitle, 7 + numwidth(gp.buttons() - 1));
-			if(gp.hats() > 0)
-				maxtitle = max(maxtitle, 4 + numwidth(gp.hats() - 1));
+			selected_row = gp.axes();
 
-			size_t widest = base_width;
-			for(unsigned i = 0; i < gp.axes(); i++)
-				widest = max(widest, axis_info(i).length());
-			width_need = max(widest + 15, (size_t)80);
-			unsigned per_row = width_need / 5;
-			height_need = 2 + _gp.axes() + (_gp.buttons() + _gp.hats() + per_row - 1) / per_row * 5;
-			set_size(width_need, height_need);
+
+			set_size(pwidth, rows);
 
 			write((stringfmt() << "joystick" << _jid << " [" << gp.name() << "]").str(), 256, 0, 0,
 				0, 0xFFFFFF);
 			write(std::string("Status: ") + (gp.online() ? "Online" : "Offline"), 256, 0, 1, 0,
 				0xFFFFFF);
 			
-			for(unsigned i = 0; i < gp.axes(); i++) {
-				axes_val.push_back(y);
-				y++;
-			}
+			if(gp.axes())
+				write("Axes:", 256, 0, y++, 0, 0xFFFFFF);
 			unsigned xp = 0;
+			for(unsigned i = 0; i < gp.axes(); i++) {
+				axes_val.push_back(std::make_pair(xp, y));
+				xp += 10;
+				if(xp >= pwidth) {
+					xp = 0;
+					y += 5;
+				}
+			}
+			if(xp)
+				y += 5;
+			xp = 0;
+			if(gp.buttons())
+				write("Buttons:", 256, 0, y++, 0, 0xFFFFFF);
 			for(unsigned i = 0; i < gp.buttons(); i++) {
 				buttons_val.push_back(std::make_pair(xp, y));
 				xp += 5;
-				if(xp + 5 > width_need) {
+				if(xp >= pwidth) {
 					xp = 0;
 					y += 5;
 				}
 			}
+			if(xp)
+				y += 5;
+			xp = 0;
+			if(gp.hats())
+				write("Hats:", 256, 0, y++, 0, 0xFFFFFF);
 			for(unsigned i = 0; i < gp.hats(); i++) {
 				hats_val.push_back(std::make_pair(xp, y));
 				xp += 5;
-				if(xp + 5 > width_need) {
+				if(xp >= pwidth) {
 					xp = 0;
 					y += 5;
 				}
 			}
+			if(xp)
+				y += 5;
+			cal_row = y;
 			Connect(wxEVT_LEFT_UP, wxMouseEventHandler(joystick_panel::on_mouse), NULL, this);
 			Connect(wxEVT_MOTION, wxMouseEventHandler(joystick_panel::on_mouse), NULL, this);
 			Fit();
@@ -199,11 +214,10 @@ namespace
 		}
 		void prepare_paint()
 		{
-			for(unsigned i = 0; i < axes_val.size(); i++) {
-				size_t y = axes_val[i];
-				write(axis_info(i), width_need, 0, y, 0x600000, (y == selected_row) ? 0xFFFFC0 :
-					0xFFFFFF);
-			}
+			for(unsigned i = 0; i < 4; i++)
+				write("", 256, 0, cal_row + i, 0, 0xFFFFFF);
+			for(unsigned i = 0; i < axes_val.size(); i++)
+				draw_axis(axes_val[i].first, axes_val[i].second, i, axis_info(i));
 			for(unsigned i = 0; i < buttons_val.size(); i++)
 				draw_button(buttons_val[i].first, buttons_val[i].second, i, button_info(i));
 			for(unsigned i = 0; i < hats_val.size(); i++)
@@ -213,31 +227,45 @@ namespace
 		void on_mouse(wxMouseEvent& e)
 		{
 			auto cell = get_cell();
+			size_t x = e.GetX() / cell.first;
 			size_t y = e.GetY() / cell.second;
-			for(size_t i = 0; i < axes_val.size(); i++)
+			selected_row = axes_val.size();
+			for(size_t i = 0; i < axes_val.size(); i++) {
+				if(x < axes_val[i].first || x >= axes_val[i].first + 10)
+					continue;
+				if(y < axes_val[i].second || y >= axes_val[i].second + 5)
+					continue;
 				if(e.LeftUp()) {
-					if(axes_val[i] == y) {
-						//Open dialog for axis i.
-						wxDialog* d = new edit_axis_properties(this, _jid, i);
-						d->ShowModal();
-						d->Destroy();
-					}
+					//Open dialog for axis i.
+					wxDialog* d = new edit_axis_properties(this, _jid, i);
+					d->ShowModal();
+					d->Destroy();
 				} else
-					selected_row = y;
+					selected_row = i;
+			}
 		}
 	private:
-		std::string axis_info(unsigned i)
+		struct axis_state_info
 		{
-			std::ostringstream x;
-			x << "axis" << i;
-			for(unsigned j = 4 + numwidth(i); j < maxtitle; j++)
-				x << " ";
-			std::string astatus = _gp.axis_status(i);
-			x << astatus;
-			for(unsigned j = astatus.length(); j <= 16; j++)
-				x << " ";
-			x << "[" << get_calibration(i) << "]";
-			return x.str();
+			bool offline;
+			int64_t rawvalue;
+			int16_t value;
+			int64_t minus;
+			int64_t zero;
+			int64_t plus;
+			int64_t neutral;
+			double threshold;
+			bool pressure;
+			bool disabled;
+		};
+		struct axis_state_info axis_info(unsigned i)
+		{
+			struct axis_state_info ax;
+			ax.offline = (_gp.online_axes().count(i) == 0);
+			_gp.axis_status(i, ax.rawvalue, ax.value);
+			_gp.get_calibration(i, ax.minus, ax.zero, ax.plus, ax.neutral, ax.threshold, ax.pressure,
+				ax.disabled);
+			return ax;
 		}
 		int button_info(unsigned i)
 		{
@@ -247,26 +275,72 @@ namespace
 		{
 			return _gp.hat_status(i);
 		}
-		std::string get_calibration(unsigned num)
-		{
-			int64_t minus, zero, plus, neutral;
-			double threshold;
-			bool pressure, disabled;
-			_gp.get_calibration(num, minus, zero, plus, neutral, threshold, pressure, disabled);
-			return (stringfmt()  << minus << "<-" << zero << "(" << neutral << ")->" << plus 
-				<< " T:" << threshold << " " << (pressure ? "P" : "A")
-				<< (disabled ? "D" : "E")).str();
-		}
 		unsigned _jid;
 		hw_gamepad& _gp;
 		size_t base_width;
 		size_t width_need;
 		size_t height_need;
 		size_t maxtitle;
+		size_t cal_row;
 		size_t selected_row;
-		std::vector<unsigned> axes_val;
+		std::vector<std::pair<unsigned, unsigned>> axes_val;
 		std::vector<std::pair<unsigned, unsigned>> buttons_val;
 		std::vector<std::pair<unsigned, unsigned>> hats_val;
+		void draw_axis(unsigned x, unsigned y, unsigned num, axis_state_info state)
+		{
+			unsigned stride = get_characters().first;
+			text_framebuffer::element* fb = get_buffer() + (y * stride + x);
+			uint32_t fg, bg;
+			fg = state.offline ? 0x808080 : 0x000000;
+			bg = (num != selected_row) ? 0xFFFFFF : 0xFFFFC0;
+			draw_bbox(fb, stride, fg, bg);
+			fb[1 * stride + 6] = E(D(num, 100), fg, bg);
+			fb[1 * stride + 7] = E(D(num, 10), fg, bg);
+			fb[1 * stride + 8] = E(D(num, 1), fg, bg);
+			if(state.offline) {
+				write("Offline", 8, x + 1, y + 2, fg, bg);
+			} else {
+				std::string r1 = (stringfmt() << state.rawvalue).str();
+				std::string r2 = (stringfmt() << state.value << "%").str();
+				if(state.disabled)
+					r2 = "Disabled";
+				size_t r1l = (r1.length() < 8) ? r1.length() : 8;
+				size_t r2l = (r2.length() < 8) ? r2.length() : 8;
+				write(r1, r1l, x + 9 - r1l, y + 2, fg, bg);
+				write(r2, r2l, x + 9 - r2l, y + 3, fg, bg);
+			}
+			if(num == selected_row) {
+				uint32_t fg2 = 0;
+				uint32_t bg2 = 0xFFFFFF;
+				//This is selected, Also draw the calibration parameters.
+				write((stringfmt() << "Calibration for axis" << num << ":").str(), 256, 0, cal_row,
+					fg2, bg2);
+				if(state.pressure) {
+					write((stringfmt() << "Released: " << state.zero).str(), 40, 0,
+						cal_row + 1, fg2, bg2);
+					write((stringfmt() << "Pressed: " << state.plus).str(), 40, 40,
+						cal_row + 1, fg2, bg2);
+					write((stringfmt() << "Analog threshold: " << state.neutral).str(), 40, 0,
+						cal_row + 2, fg2, bg2);
+					write((stringfmt() << "Digital threshold: " << state.threshold).str(), 40, 40,
+						cal_row + 2, fg2, bg2);
+					write("Pressure sensitive button", 40, 0, cal_row + 3, fg2, bg2);
+				} else {
+					write((stringfmt() << "Left/Up: " << state.minus).str(), 40, 0,
+						cal_row + 1, fg2, bg2);
+					write((stringfmt() << "Right/Down: " << state.plus).str(), 40, 40,
+						cal_row + 1, fg2, bg2);
+					write((stringfmt() << "Center: " << state.zero).str(), 40, 0,
+						cal_row + 2, fg2, bg2);
+					write((stringfmt() << "Analog threshold: " << state.neutral).str(), 40, 40,
+						cal_row + 2, fg2, bg2);
+					write((stringfmt() << "Digital threshold: " << state.threshold).str(), 40, 0,
+						cal_row + 3, fg2, bg2);
+					write("Axis", 40, 40, cal_row + 3, fg2, bg2);
+				}
+
+			}
+		}
 		void draw_button(unsigned x, unsigned y, unsigned num, int state)
 		{
 			unsigned stride = get_characters().first;
@@ -322,6 +396,12 @@ namespace
 			for(unsigned y = 0; y < 5; y++)
 				for(unsigned x = 0; x < 5; x++)
 					fb[y * stride + x] = E(box_symbols[5 * y + x], fg, bg);
+		}
+		void draw_bbox(text_framebuffer::element* fb, unsigned stride, uint32_t fg, uint32_t bg)
+		{
+			for(unsigned y = 0; y < 5; y++)
+				for(unsigned x = 0; x < 10; x++)
+					fb[y * stride + x] = E(bbox_symbols[10 * y + x], fg, bg);
 		}
 		char32_t D(unsigned val, unsigned div)
 		{

@@ -38,6 +38,7 @@ struct text_framebuffer
 		e.ch = ch;
 		e.fg = fg;
 		e.bg = bg;
+		return e;
 	}
 private:
 	std::vector<element> buffer;
