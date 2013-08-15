@@ -315,7 +315,16 @@ Set option <name> to value <value>.
 
 \begin_layout Standard
 Set number of frames to dump.
- Mandatory.
+ Mandatory, unless --overdump-length is specified.
+\end_layout
+
+\begin_layout Subsubsection
+--overdump-length=<length>
+\end_layout
+
+\begin_layout Standard
+Set number of frames to dump after movie end.
+ Mutually exclusive with --length.
 \end_layout
 
 \begin_layout Subsubsection

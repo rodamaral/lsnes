@@ -120,13 +120,15 @@ namespace
 	}
 
 	adv_dumper& get_dumper(const std::vector<std::string>& cmdline, std::string& mode, std::string& prefix,
-		uint64_t& length)
+		uint64_t& length, bool& overdump_mode, uint64_t& overdump_length)
 	{
 		bool dumper_given = false;
 		std::string dumper;
 		bool mode_given = false;
 		prefix = "avidump";
 		length = 0;
+		overdump_mode = false;
+		overdump_length = 0;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
 			if(a.length() >= 7 && a.substr(0, 7) == "--core=") {
@@ -144,8 +146,22 @@ namespace
 					length = boost::lexical_cast<uint64_t>(a.substr(9));
 					if(!length)
 						throw std::runtime_error("Length out of range (1-)");
+					if(overdump_mode)
+						throw std::runtime_error("--length and --overdump-length are "
+							"mutually exclusive.");
 				} catch(std::exception& e) {
 					std::cerr << "Bad --length: " << e.what() << std::endl;
+					exit(1);
+				}
+			else if(a.length() >= 18 && a.substr(0, 18) == "--overdump-length=")
+				try {
+					overdump_length = boost::lexical_cast<uint64_t>(a.substr(18));
+					overdump_mode = true;
+					if(length)
+						throw std::runtime_error("--length and --overdump-length are "
+							"mutually exclusive.");
+				} catch(std::exception& e) {
+					std::cerr << "Bad --overdump-length: " << e.what() << std::endl;
 					exit(1);
 				}
 			else if(a.length() >= 9 && a.substr(0, 9) == "--option=") {
@@ -225,8 +241,9 @@ namespace
 			std::cerr << "'" << mode << "' is not a valid mode for '" << dumper << "'" << std::endl;
 			exit(1);
 		}
-		if(!length) {
-			std::cerr << "--length=<frames> has to be specified" << std::endl;
+		if(!length && !overdump_mode) {
+			std::cerr << "--length=<frames> or --overdump-length=<frames> has to be specified"
+				<< std::endl;
 			exit(1);
 		}
 		return locate_dumper(dumper);
@@ -239,10 +256,11 @@ int main(int argc, char** argv)
 	std::vector<std::string> cmdline;
 	for(int i = 1; i < argc; i++)
 		cmdline.push_back(argv[i]);
-	uint64_t length;
+	uint64_t length, overdump_length;
+	bool overdump_mode;
 	std::string mode, prefix;
 
-	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length);
+	adv_dumper& dumper = get_dumper(cmdline, mode, prefix, length, overdump_mode, overdump_length);
 
 	set_random_seed();
 	platform::init();
@@ -324,6 +342,8 @@ int main(int argc, char** argv)
 		our_rom->region = &movie.gametype->get_region();
 		our_rom->load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
+		if(overdump_mode)
+			length = overdump_length + movie.get_frame_count();
 		dumper_startup(dumper, mode, prefix, length);
 		main_loop(r, movie, true);
 	} catch(std::bad_alloc& e) {

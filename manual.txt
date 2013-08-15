@@ -121,14 +121,20 @@ Set option <name> to value <value>.
 
 4.2.8 --length=<length>
 
-Set number of frames to dump. Mandatory.
+Set number of frames to dump. Mandatory, unless --overdump-length 
+is specified.
 
-4.2.9 --lua=<script>
+4.2.9 --overdump-length=<length>
+
+Set number of frames to dump after movie end. Mutually exclusive 
+with --length.
+
+4.2.10 --lua=<script>
 
 Run specified lua script (lsnes-dumpavi does not have 
 initialization files).
 
-4.2.10 --load-library=<library>
+4.2.11 --load-library=<library>
 
 Load the specified shared object / dynamic library / dynamic link 
 library.
