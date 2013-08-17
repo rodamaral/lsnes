@@ -226,6 +226,7 @@ struct port_controller
 struct port_controller_set
 {
 	std::vector<port_controller*> controllers;	//Controllers.
+	std::set<unsigned> legal_for;			//Ports this is legal for
 /**
  * Get specified controller, or NULL if it doesn't exist.
  */
@@ -305,7 +306,10 @@ public:
  * Parameter port: Port to query.
  * Returns: Nonzero if legal, zero if illegal.
  */
-	int (*legal)(unsigned port);
+	int legal(unsigned port)
+	{
+		return controller_info->legal_for.count(port) ? 1 : 0;
+	}
 /**
  * Controller info.
  */

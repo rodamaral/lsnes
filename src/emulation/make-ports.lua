@@ -112,7 +112,12 @@ for i = 1,#ports do
 		s = s .."&"..csyms[j];
 	end
 	s = s .. "}"
-	print("\tport_controller_set "..psym2.." = {"..s.."};");
+	local legal_for = "{";
+	for j = 1,#(port.legal) do
+		legal_for = legal_for .. port.legal[j] .. ",";
+	end
+	legal_for = legal_for .. "}"
+	print("\tport_controller_set "..psym2.." = {"..s..","..legal_for.."};");
 	print("}");
 	print("struct _"..port.symbol.." : public port_type");
 	print("{");
@@ -255,12 +260,6 @@ for i = 1,#ports do
 		end
 		print("\t\t\treturn ptr;");
 	end
-	print("\t\t};");
-	print("\t\tlegal = [](unsigned c) -> int {");
-	for j = 1,#(port.legal) do
-		print("\t\t\tif(c == "..port.legal[j]..") return true;");
-	end
-	print("\t\t\treturn false;");
 	print("\t\t};");
 	print("\t\tcontroller_info = &portdefs::"..psym2..";");
 	print("\t}");

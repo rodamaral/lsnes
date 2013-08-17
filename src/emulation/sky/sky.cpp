@@ -83,7 +83,7 @@ namespace sky
 		{port_controller_button::TYPE_NULL, '\0', "", false},
 	}};
 
-	port_controller_set X2 = {{&X4, &X8}};
+	port_controller_set X2 = {{&X4, &X8},{0}};
 
 	void port_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
 	{
@@ -192,11 +192,6 @@ namespace sky
 		if(read_button_value(textbuf, ptr)) buffer[0] |= 128;
 		skip_rest_of_field(textbuf, ptr, false);
 	};
-	int port_legal(unsigned c)
-	{
-		if(c == 0) return true;
-		return false;
-	};
 
 	struct _psystem : public port_type
 	{
@@ -206,7 +201,6 @@ namespace sky
 			read = port_read;
 			serialize = port_serialize;
 			deserialize = port_deserialize;
-			legal = port_legal;
 			controller_info = &X2;
 		}
 	} psystem;

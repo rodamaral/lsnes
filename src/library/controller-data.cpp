@@ -13,7 +13,7 @@
 namespace
 {
 	port_controller simple_controller = {"(system)", "system", {}};
-	port_controller_set simple_port = {{&simple_controller}};
+	port_controller_set simple_port = {{&simple_controller},{0}};
 
 	struct porttype_basecontrol : public port_type
 	{
@@ -40,7 +40,6 @@ namespace
 				skip_rest_of_field(textbuf, ptr, false);
 				return ptr;
 			};
-			legal = [](unsigned port) -> int { return (port == 0); };
 			controller_info = &simple_port;
 		}
 	};
