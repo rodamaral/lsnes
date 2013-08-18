@@ -4,7 +4,9 @@
 #include "globalwrap.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
+#include "sha256.hpp"
 #include <iostream>
+#include <sys/time.h>
 #include <sstream>
 #include <list>
 #include <deque>
@@ -43,6 +45,24 @@ namespace
 			controller_info = &simple_port;
 		}
 	};
+
+	unsigned macro_random_bit()
+	{
+		static unsigned char state[32];
+		static unsigned extracted = 256;
+		if(extracted == 256) {
+			timeval tv;
+			gettimeofday(&tv, NULL);
+			unsigned char buffer[48];
+			memcpy(buffer, state, 32);
+			write64ube(buffer + 32, tv.tv_sec);
+			write64ube(buffer + 40, tv.tv_usec);
+			sha256::hash(state, buffer, 48);
+			extracted = 0;
+		}
+		unsigned bit = extracted++;
+		return ((state[bit / 8] >> (bit % 8)) & 1);
+	}
 }
 
 port_type& get_default_system_port_type()
@@ -669,12 +689,17 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 	std::deque<size_t> stack;
 	bool in_sparen = false;
 	bool first = true;
+	bool btn_token = false;
+	bool btn_token_next = false;
+	size_t last_bit = 0;
 	size_t last_size = 0;
 	size_t astride = aaxes.size();
 	size_t stride = get_stride();
 	size_t idx = 0;
 	size_t len = spec.length();
 	while(idx < len) {
+		btn_token = btn_token_next;
+		btn_token_next = false;
 		unsigned char ch = spec[idx];
 		if(autoterminate)
 			throw std::runtime_error("Asterisk must be the last thing");
@@ -692,6 +717,12 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 			last_size = (data.size() - x) / stride;
 		} else if(ch == '*') {
 			autoterminate = true;
+		} else if(ch == '?') {
+			if(!btn_token)
+				throw std::runtime_error("? needs button to apply to");
+			if(!in_sparen)
+				throw std::runtime_error("? needs to be in brackets");
+			data[data.size() - stride + last_bit / 4] |= (2 << (2 * (last_bit % 4)));
 		} else if(ch == '[') {
 			if(in_sparen)
 				throw std::runtime_error("Nested square brackets not allowed");
@@ -762,13 +793,15 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 						data.resize(data.size() + stride);
 						adata.resize(adata.size() + astride);
 					}
-					data[data.size() - stride + k.second / 8] |= (1 << (k.second % 8));
+					last_bit = k.second;
+					data[data.size() - stride + k.second / 4] |= (1 << (2 * (k.second % 4)));
 					if(!in_sparen)
 						last_size = 1;
 				}
 			}
 			if(!found)
 				throw std::runtime_error("Unknown character or button");
+			btn_token_next = true;
 		}
 		idx++;
 		first = false;
@@ -798,9 +831,13 @@ bool controller_macro_data::syntax_check(const std::string& spec, const JSON::no
 	size_t depth = 0;
 	bool in_sparen = false;
 	bool first = true;
+	bool btn_token = false;
+	bool btn_token_next = false;
 	size_t idx = 0;
 	size_t len = spec.length();
 	while(idx < len) {
+		btn_token = btn_token_next;
+		btn_token_next = false;
 		unsigned char ch = spec[idx];
 		if(autoterminate)
 			return false;
@@ -816,6 +853,9 @@ bool controller_macro_data::syntax_check(const std::string& spec, const JSON::no
 			depth--;
 		} else if(ch == '*') {
 			autoterminate = true;
+		} else if(ch == '?') {
+			if(!btn_token || !in_sparen)
+				return false;
 		} else if(ch == '[') {
 			if(in_sparen)
 				return false;
@@ -873,6 +913,7 @@ bool controller_macro_data::syntax_check(const std::string& spec, const JSON::no
 			}
 			if(!found)
 				return false;
+			btn_token_next = true;
 		}
 		idx++;
 		first = false;
@@ -896,7 +937,10 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 	nframe %= get_frames();
 	for(size_t i = 0; i < buttons; i++) {
 		unsigned lb = btnmap[i];
-		if((data[nframe * get_stride() + i / 8] >> (i % 8)) & 1)
+		unsigned st = ((data[nframe * get_stride() + i / 4] >> (2 * (i % 4))) & 3);
+		if(st == 3)
+			st = macro_random_bit();
+		if(st == 1)
 			switch(amode) {
 			case AM_OVERWRITE:
 			case AM_OR:
@@ -947,9 +991,15 @@ std::string controller_macro_data::dump(const port_controller& ctrl)
 			o << t.coeffs[0] << "," << t.coeffs[1] << "," << t.coeffs[2] << ",";
 			o << t.coeffs[3] << "," << t.coeffs[4] << "," << t.coeffs[5] << "@";
 		}
-		for(size_t j = 0; j < buttons && j < ctrl.buttons.size(); j++)
-			if(((data[i * get_stride() + j / 8] >> (j % 8)) & 1) && ctrl.buttons[j].macro)
+		for(size_t j = 0; j < buttons && j < ctrl.buttons.size(); j++) {
+			unsigned st = ((data[i * get_stride() + j / 4] >> (2 * (j % 4))) & 3);
+			if(!ctrl.buttons[j].macro)
+				continue;
+			if(st == 1)
 				o << ctrl.buttons[j].macro;
+			if(st == 3)
+				o << ctrl.buttons[j].macro << "?";
+		}
 		o << "]";
 	}
 	if(autoterminate)

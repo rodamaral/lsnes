@@ -1199,7 +1199,7 @@ struct controller_macro_data
 	void write(controller_frame& frame, unsigned port, unsigned controller, int64_t nframe, apply_mode amode);
 	std::string dump(const port_controller& ctrl); //Mainly for debugging.
 	size_t get_frames() { return data.size() / get_stride(); }
-	size_t get_stride() { return (buttons + 7) / 8; }
+	size_t get_stride() { return (buttons + 3) / 4; }
 	size_t buttons;
 	std::vector<unsigned char> data;
 	std::vector<std::pair<unsigned, unsigned>> aaxes;
