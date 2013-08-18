@@ -722,7 +722,7 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 				throw std::runtime_error("? needs button to apply to");
 			if(!in_sparen)
 				throw std::runtime_error("? needs to be in brackets");
-			data[data.size() - stride + last_bit / 4] |= (2 << (2 * (last_bit % 4)));
+			data[data.size() - stride + last_bit] |= 2;
 		} else if(ch == '[') {
 			if(in_sparen)
 				throw std::runtime_error("Nested square brackets not allowed");
@@ -794,7 +794,7 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 						adata.resize(adata.size() + astride);
 					}
 					last_bit = k.second;
-					data[data.size() - stride + k.second / 4] |= (1 << (2 * (k.second % 4)));
+					data[data.size() - stride + k.second] |= 1;
 					if(!in_sparen)
 						last_size = 1;
 				}
@@ -937,7 +937,7 @@ void controller_macro_data::write(controller_frame& frame, unsigned port, unsign
 	nframe %= get_frames();
 	for(size_t i = 0; i < buttons; i++) {
 		unsigned lb = btnmap[i];
-		unsigned st = ((data[nframe * get_stride() + i / 4] >> (2 * (i % 4))) & 3);
+		unsigned st = data[nframe * get_stride() + i];
 		if(st == 3)
 			st = macro_random_bit();
 		if(st == 1)
@@ -992,7 +992,7 @@ std::string controller_macro_data::dump(const port_controller& ctrl)
 			o << t.coeffs[3] << "," << t.coeffs[4] << "," << t.coeffs[5] << "@";
 		}
 		for(size_t j = 0; j < buttons && j < ctrl.buttons.size(); j++) {
-			unsigned st = ((data[i * get_stride() + j / 4] >> (2 * (j % 4))) & 3);
+			unsigned st = data[i * get_stride() + j];
 			if(!ctrl.buttons[j].macro)
 				continue;
 			if(st == 1)
