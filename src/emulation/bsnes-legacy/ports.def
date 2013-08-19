@@ -84,6 +84,16 @@ system_controller_hreset = {
 	}
 };
 
+system_controller_compact = {
+	["name"] = "(system)", ["class"] = "(system)", ["buttons"] = {
+		{shadow, "F", "framesync"},
+		{shadow, "R", "reset"},
+		{shadow_null},
+		{shadow_null},
+		{shadow, "H", "hard"}
+	}
+};
+
 ports = {
 	{
 		["symbol"] = "gamepad", ["iname"] = "gamepad", ["hname"] = "gamepad", ["controllers"] = {
@@ -144,6 +154,10 @@ ports = {
 	},{
 		["symbol"] = "psystem_hreset", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
 			system_controller_hreset
+		}, ["legal"] = {0}
+	},{
+		["symbol"] = "psystem_compact", ["iname"] = "system", ["hname"] = "system", ["controllers"] = {
+			system_controller_compact
 		}, ["legal"] = {0}
 	}
 };

@@ -65,6 +65,7 @@ namespace
 	bool do_hreset_flag = false;
 	long do_reset_flag = -1;
 	bool support_hreset = false;
+	bool support_dreset = false;
 	bool save_every_frame = false;
 	bool have_saved_this_frame = false;
 	int16_t blanksound[1070] = {0};
@@ -175,7 +176,8 @@ namespace
 		}},
 		{"hardreset", "Support hard resets", "0", boolean_values},
 		{"saveevery", "Emulate saving each frame", "0", boolean_values},
-		{"radominit", "Random initial state", "0", boolean_values}
+		{"radominit", "Random initial state", "0", boolean_values},
+		{"compact", "Don't support delayed resets", "0", boolean_values}
 	};
 
 	////////////////// PORTS COMMON ///////////////////
@@ -245,6 +247,7 @@ namespace
 		signed type1 = bsnes_settings.ivalue_to_index(_settings, "port1");
 		signed type2 = bsnes_settings.ivalue_to_index(_settings, "port2");
 		signed hreset = bsnes_settings.ivalue_to_index(_settings, "hardreset");
+		signed compact = bsnes_settings.ivalue_to_index(_settings, "compact");
 		signed esave = bsnes_settings.ivalue_to_index(_settings, "saveevery");
 		signed irandom = bsnes_settings.ivalue_to_index(_settings, "radominit");
 
@@ -253,7 +256,8 @@ namespace
 		snes_unload_cartridge();
 		SNES::config.random = (irandom != 0);
 		save_every_frame = (esave != 0);
-		support_hreset = (hreset != 0);
+		support_hreset = (hreset != 0 || compact != 0);
+		support_dreset = (compact == 0);
 		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
 		bool r = fun(img);
 		if(r) {
@@ -277,8 +281,11 @@ namespace
 		signed type1 = bsnes_settings.ivalue_to_index(_settings, "port1");
 		signed type2 = bsnes_settings.ivalue_to_index(_settings, "port2");
 		signed hreset = bsnes_settings.ivalue_to_index(_settings, "hardreset");
+		signed compact = bsnes_settings.ivalue_to_index(_settings, "compact");
 		controller_set r;
-		if(hreset)
+		if(compact)
+			r.ports.push_back(&psystem_compact);
+		else if(hreset)
 			r.ports.push_back(&psystem_hreset);
 		else
 			r.ports.push_back(&psystem);
@@ -301,12 +308,6 @@ namespace
 		}
 		return r;
 	}
-
-#ifdef BSNES_HAS_DEBUGGER
-#define BSNES_RESET_LEVEL 6
-#else
-#define BSNES_RESET_LEVEL 5
-#endif
 
 	class my_interface : public SNES::Interface
 	{
@@ -542,7 +543,7 @@ namespace
 	struct _bsnes_core : public core_core
 	{
 		_bsnes_core() : core_core({&gamepad, &gamepad16, &justifier, &justifiers, &mouse, &multitap,
-			&multitap16, &none, &superscope, &psystem, &psystem_hreset}, {
+			&multitap16, &none, &superscope, &psystem, &psystem_hreset, &psystem_compact}, {
 				{0, "Soft reset", "reset", {}},
 				{1, "Hard reset", "hardreset", {}},
 #ifdef BSNES_HAS_DEBUGGER
@@ -831,6 +832,8 @@ again2:
 		const interface_device_reg* c_get_registers() { return snes_registers; }
 		unsigned c_action_flags(unsigned id)
 		{
+			if((id == 2 || id == 3) && !support_dreset)
+				return 0;
 			if(id == 0 || id == 2)
 				return 1;
 			if(id == 1 || id == 3)
