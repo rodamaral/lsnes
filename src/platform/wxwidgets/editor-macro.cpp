@@ -155,7 +155,7 @@ namespace
 				if(!macros[i.first])
 					continue;
 				m.macros[i.first] = controller_macro_data(tostdstring(macros[i.first]->GetValue()),
-					curmacro.macros[i.first].get_descriptor());
+					curmacro.macros[i.first].get_descriptor(), i.first);
 				m.macros[i.first].enabled = enabled[i.first]->GetValue();
 			}
 		} catch(std::exception& e) {
@@ -327,7 +327,7 @@ void wxeditor_macro::on_add(wxCommandEvent& e)
 		auto c = get_controller_set();
 		for(auto i : c) {
 			_macro.macros[i.first] = controller_macro_data("",
-				controller_macro_data::make_descriptor(*i.second));
+				controller_macro_data::make_descriptor(*i.second), i.first);
 			_macro.macros[i.first].enabled = false;
 		}
 		if(do_edit("", _macro))

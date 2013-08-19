@@ -662,11 +662,40 @@ out:
 	return std::make_pair(x1, x2);
 }
 
-controller_macro_data::controller_macro_data(const std::string& spec, const JSON::node& desc)
+namespace
+{
+	std::string macro_field_as_string(const JSON::node& parent, const std::string& path)
+	{
+		const JSON::node& n = parent.follow(path);
+		if(n.type() != JSON::string)
+			(stringfmt() << "Expected string as field '" << path << "'").throwex();
+		return n.as_string8();
+	}
+
+	bool macro_field_as_boolean(const JSON::node& parent, const std::string& path)
+	{
+		const JSON::node& n = parent.follow(path);
+		if(n.type() != JSON::boolean)
+			(stringfmt() << "Expected boolean as field '" << path << "'").throwex();
+		return n.as_bool();
+	}
+
+	const JSON::node& macro_field_as_array(const JSON::node& parent, const std::string& path)
+	{
+		const JSON::node& n = parent.follow(path);
+		if(n.type() != JSON::array)
+			(stringfmt() << "Expected array as field '" << path << "'").throwex();
+		return n;
+	}
+}
+
+controller_macro_data::controller_macro_data(const std::string& spec, const JSON::node& desc, unsigned inum)
 {
 	_descriptor = desc;
 	unsigned btnnum = 0;
 	std::map<std::string, unsigned> symbols;
+	if(desc.type() != JSON::array)
+		(stringfmt() << "Expected controller descriptor " << (inum + 1) << " to be an array");
 	for(auto i = desc.begin(); i != desc.end(); ++i) {
 		if(i->type() == JSON::string) {
 			symbols[i->as_string8()] = btnnum++;
@@ -674,12 +703,15 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 		} else if(i->type() == JSON::number) {
 			uint64_t anum = i->as_uint();
 			if(anum > aaxes.size())
-				throw std::runtime_error("Descriptor axis number out of range");
+				(stringfmt() << "Descriptor axis number " << anum << " out of range in descriptor "
+					<< (inum + 1)).throwex();
 			else if(anum == aaxes.size())
 				aaxes.push_back(std::make_pair(i.index(), std::numeric_limits<unsigned>::max()));
 			else
 				aaxes[anum].second = i.index();
-		}
+		} else
+			(stringfmt() << "Controller descriptor " << (inum + 1) << " contains element of unknown"
+				<< "kind").throwex();
 	}
 	buttons = symbols.size();
 	orig = spec;
@@ -697,125 +729,132 @@ controller_macro_data::controller_macro_data(const std::string& spec, const JSON
 	size_t stride = get_stride();
 	size_t idx = 0;
 	size_t len = spec.length();
-	while(idx < len) {
-		btn_token = btn_token_next;
-		btn_token_next = false;
-		unsigned char ch = spec[idx];
-		if(autoterminate)
-			throw std::runtime_error("Asterisk must be the last thing");
-		if(ch == '(') {
-			if(in_sparen)
-				throw std::runtime_error("Parentheses in square brackets not allowed");
-			stack.push_back(data.size());
-		} else if(ch == ')') {
-			if(in_sparen)
-				throw std::runtime_error("Parentheses in square brackets not allowed");
-			if(stack.empty())
-				throw std::runtime_error("Unmatched right parenthesis");
-			size_t x = stack.back();
-			stack.pop_back();
-			last_size = (data.size() - x) / stride;
-		} else if(ch == '*') {
-			autoterminate = true;
-		} else if(ch == '?') {
-			if(!btn_token)
-				throw std::runtime_error("? needs button to apply to");
-			if(!in_sparen)
-				throw std::runtime_error("? needs to be in brackets");
-			data[data.size() - stride + last_bit] |= 2;
-		} else if(ch == '[') {
-			if(in_sparen)
-				throw std::runtime_error("Nested square brackets not allowed");
-			in_sparen = true;
-			data.resize(data.size() + stride);
-			adata.resize(adata.size() + astride);
-			last_size = 1;
-		} else if(ch == ']') {
-			if(!in_sparen)
-				throw std::runtime_error("Unmatched right square bracket");
-			in_sparen = false;
-		} else if(ch == '.') {
-			if(!in_sparen) {
+	try {
+		while(idx < len) {
+			btn_token = btn_token_next;
+			btn_token_next = false;
+			unsigned char ch = spec[idx];
+			if(autoterminate)
+				throw std::runtime_error("Asterisk must be the last thing");
+			if(ch == '(') {
+				if(in_sparen)
+					throw std::runtime_error("Parentheses in square brackets not allowed");
+				stack.push_back(data.size());
+			} else if(ch == ')') {
+				if(in_sparen)
+					throw std::runtime_error("Parentheses in square brackets not allowed");
+				if(stack.empty())
+					throw std::runtime_error("Unmatched right parenthesis");
+				size_t x = stack.back();
+				stack.pop_back();
+				last_size = (data.size() - x) / stride;
+			} else if(ch == '*') {
+				autoterminate = true;
+			} else if(ch == '?') {
+				if(!btn_token)
+					throw std::runtime_error("? needs button to apply to");
+				if(!in_sparen)
+					throw std::runtime_error("? needs to be in brackets");
+				data[data.size() - stride + last_bit] |= 2;
+			} else if(ch == '[') {
+				if(in_sparen)
+					throw std::runtime_error("Nested square brackets not allowed");
+				in_sparen = true;
 				data.resize(data.size() + stride);
 				adata.resize(adata.size() + astride);
 				last_size = 1;
-			}
-		} else if(spec[idx] >= '0' && spec[idx] <= '9') {
-			size_t rep = 0;
-			unsigned i = 0;
-			while(spec[idx + i] >= '0' && spec[idx + i] <= '9') {
-				rep = 10 * rep + (spec[idx + i] - '0');
-				i++;
-			}
-			if(in_sparen) {
-				//This has special meaning: Axis transform.
-				//Rep is the axis pair to operate on.
-				if(spec[idx + i] != ':')
-					throw std::runtime_error("Expected ':' in axis transform");
-				size_t sep = i;
-				while(idx + i < len && spec[idx + i] != '@')
+			} else if(ch == ']') {
+				if(!in_sparen)
+					throw std::runtime_error("Unmatched right square bracket");
+				in_sparen = false;
+			} else if(ch == '.') {
+				if(!in_sparen) {
+					data.resize(data.size() + stride);
+					adata.resize(adata.size() + astride);
+					last_size = 1;
+				}
+			} else if(spec[idx] >= '0' && spec[idx] <= '9') {
+				size_t rep = 0;
+				unsigned i = 0;
+				while(spec[idx + i] >= '0' && spec[idx + i] <= '9') {
+					rep = 10 * rep + (spec[idx + i] - '0');
 					i++;
-				if(idx + i >= len)
-					throw std::runtime_error("Expected '@' in axis transform");
-				std::string aexpr = spec.substr(idx + sep + 1, i - sep - 1);
-				if(rep >= astride)
-					throw std::runtime_error("Axis transform refers to invalid axis");
-				adata[adata.size() - astride + rep] = axis_transform(aexpr);
-				i++;
-			} else {
-				if(first)
-					throw std::runtime_error("Repeat not allowed without frame to repeat");
-				size_t o = data.size();
-				size_t ao = adata.size();
-				data.resize(o + (rep - 1) * last_size * stride);
-				adata.resize(ao + (rep - 1) * last_size * astride);
-				for(unsigned i = 1; i < rep; i++) {
-					memcpy(&data[o + (i - 1) * last_size * stride], &data[o - last_size * stride],
-						last_size * stride);
-					memcpy(&data[ao + (i - 1) * last_size * astride], &data[ao - last_size *
-						astride], last_size * astride);
 				}
-				last_size = last_size * rep;
-			}
-			idx = idx + (i - 1);
-		} else {	//Symbol.
-			bool found = false;
-			for(auto k : symbols) {
-				std::string key = k.first;
-				size_t j;
-				for(j = 0; idx + j < len && j < key.length(); j++)
-					if(spec[idx + j] != key[j])
-						break;
-				if(j == key.length()) {
-					idx += key.length() - 1;
-					found = true;
-					if(!in_sparen) {
-						data.resize(data.size() + stride);
-						adata.resize(adata.size() + astride);
+				if(in_sparen) {
+					//This has special meaning: Axis transform.
+					//Rep is the axis pair to operate on.
+					if(spec[idx + i] != ':')
+						throw std::runtime_error("Expected ':' in axis transform");
+					size_t sep = i;
+					while(idx + i < len && spec[idx + i] != '@')
+						i++;
+					if(idx + i >= len)
+						throw std::runtime_error("Expected '@' in axis transform");
+					std::string aexpr = spec.substr(idx + sep + 1, i - sep - 1);
+					if(rep >= astride)
+						throw std::runtime_error("Axis transform refers to invalid axis");
+					adata[adata.size() - astride + rep] = axis_transform(aexpr);
+					i++;
+				} else {
+					if(first)
+						throw std::runtime_error("Repeat not allowed without frame to "
+							"repeat");
+					size_t o = data.size();
+					size_t ao = adata.size();
+					data.resize(o + (rep - 1) * last_size * stride);
+					adata.resize(ao + (rep - 1) * last_size * astride);
+					for(unsigned i = 1; i < rep; i++) {
+						memcpy(&data[o + (i - 1) * last_size * stride], &data[o - last_size *
+							stride], last_size * stride);
+						memcpy(&data[ao + (i - 1) * last_size * astride], &data[ao -
+							last_size * astride], last_size * astride);
 					}
-					last_bit = k.second;
-					data[data.size() - stride + k.second] |= 1;
-					if(!in_sparen)
-						last_size = 1;
+					last_size = last_size * rep;
 				}
+				idx = idx + (i - 1);
+			} else {	//Symbol.
+				bool found = false;
+				for(auto k : symbols) {
+					std::string key = k.first;
+					size_t j;
+					for(j = 0; idx + j < len && j < key.length(); j++)
+						if(spec[idx + j] != key[j])
+							break;
+					if(j == key.length()) {
+						idx += key.length() - 1;
+						found = true;
+						if(!in_sparen) {
+							data.resize(data.size() + stride);
+							adata.resize(adata.size() + astride);
+						}
+						last_bit = k.second;
+						data[data.size() - stride + k.second] |= 1;
+						if(!in_sparen)
+							last_size = 1;
+					}
+				}
+				if(!found)
+					throw std::runtime_error("Unknown character or button");
+				btn_token_next = true;
 			}
-			if(!found)
-				throw std::runtime_error("Unknown character or button");
-			btn_token_next = true;
+			idx++;
+			first = false;
 		}
-		idx++;
-		first = false;
+		if(in_sparen)
+			throw std::runtime_error("Unmatched left square bracket");
+		if(!stack.empty())
+			throw std::runtime_error("Unmatched left parenthesis");
+	} catch(std::exception& e) {
+		(stringfmt() << "Error parsing macro for controller " << (inum + 1) << ": " << e.what()).throwex();
 	}
-	if(in_sparen)
-		throw std::runtime_error("Unmatched left square bracket");
-	if(!stack.empty())
-		throw std::runtime_error("Unmatched left parenthesis");
 }
 
 bool controller_macro_data::syntax_check(const std::string& spec, const JSON::node& desc)
 {
 	unsigned buttons = 0;
 	size_t astride = 0;
+	if(desc.type() != JSON::array)
+		return false;
 	for(auto i = desc.begin(); i != desc.end(); ++i) {
 		if(i->type() == JSON::string)
 			buttons++;
@@ -825,7 +864,8 @@ bool controller_macro_data::syntax_check(const std::string& spec, const JSON::no
 				return false;
 			else if(anum == astride)
 				astride++;
-		}
+		} else
+			return false;
 	}
 	bool autoterminate = false;
 	size_t depth = 0;
@@ -1208,19 +1248,24 @@ JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
 
 controller_macro::controller_macro(const JSON::node& v)
 {
-	std::string mode = v["mode"].as_string8();
+	if(v.type() != JSON::object)
+		throw std::runtime_error("Expected macro to be JSON object");
+	std::string mode = macro_field_as_string(v, "mode");
 	if(mode == "overwrite") amode = controller_macro_data::AM_OVERWRITE;
-	if(mode == "or") amode = controller_macro_data::AM_OR;
-	if(mode == "xor") amode = controller_macro_data::AM_XOR;
-	const JSON::node& c = v["data"];
+	else if(mode == "or") amode = controller_macro_data::AM_OR;
+	else if(mode == "xor") amode = controller_macro_data::AM_XOR;
+	else (stringfmt() << "Unknown button mode '" << mode << "'").throwex();
+	const JSON::node& c = macro_field_as_array(v, "data");
 	for(auto i = c.begin(); i != c.end(); ++i) {
-		if(i->type() != JSON::null)
-			macros[i.index()] = controller_macro_data(*i);
+		if(i->type() == JSON::object)
+			macros[i.index()] = controller_macro_data(*i, i.index());
+		else
+			(stringfmt() << "Expected object as field 'data/" << i.index() << "'").throwex();
 	}
 }
 
-controller_macro_data::controller_macro_data(const JSON::node& v)
-	: controller_macro_data(v["expr"].as_string8(), v["desc"])
+controller_macro_data::controller_macro_data(const JSON::node& v, unsigned i)
+	: controller_macro_data(macro_field_as_string(v, "expr"), macro_field_as_array(v, "desc"), i)
 {
-	enabled = v["enable"].as_bool();
+	enabled = macro_field_as_boolean(v, "enable");
 }

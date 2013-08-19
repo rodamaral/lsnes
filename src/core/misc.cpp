@@ -294,7 +294,7 @@ function_ptr_command<const std::string&> macro_test(lsnes_cmd, "test-macro", "",
 				messages << "No controller data for controller" << std::endl;
 				return;
 			}
-			controller_macro_data mdata(r[2].c_str(), controller_macro_data::make_descriptor(*_ctrl));
+			controller_macro_data mdata(r[2].c_str(), controller_macro_data::make_descriptor(*_ctrl), 0);
 			messages << "Macro: " << mdata.dump(*_ctrl) << std::endl;
 		} catch(std::exception& e) {
 			messages << "Exception: " << e.what() << std::endl;

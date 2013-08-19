@@ -1190,8 +1190,8 @@ struct controller_macro_data
 		AM_XOR
 	};
 	controller_macro_data() { buttons = 0; }
-	controller_macro_data(const std::string& spec, const JSON::node& desc);
-	controller_macro_data(const JSON::node& ser);
+	controller_macro_data(const std::string& spec, const JSON::node& desc, unsigned i);
+	controller_macro_data(const JSON::node& ser, unsigned i);
 	void serialize(JSON::node& v);
 	static JSON::node make_descriptor(const port_controller& ctrl);
 	const JSON::node& get_descriptor() { return _descriptor; }
