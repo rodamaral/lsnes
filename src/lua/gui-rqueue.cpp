@@ -10,15 +10,15 @@ namespace
 
 	struct render_queue_obj
 	{
-		render_queue_obj(uint32_t width, uint32_t height) throw()
+		render_queue_obj(lua_state& L, uint32_t width, uint32_t height) throw()
 		{
 			lctx.left_gap = std::numeric_limits<uint32_t>::max();
 			lctx.right_gap = std::numeric_limits<uint32_t>::max();
 			lctx.bottom_gap = std::numeric_limits<uint32_t>::max();
 			lctx.top_gap = std::numeric_limits<uint32_t>::max();
 			lctx.queue = &rqueue;
-			lctx.width = 512;
-			lctx.height = 448;
+			lctx.width = width;
+			lctx.height = height;
 		}
 		~render_queue_obj() throw() {}
 		lua_render_context* get() { return &lctx; }

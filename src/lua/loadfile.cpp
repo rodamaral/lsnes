@@ -149,7 +149,7 @@ namespace
 	class lua_file_reader
 	{
 	public:
-		lua_file_reader(lua_state* L, std::istream* strm);
+		lua_file_reader(lua_state& L, std::istream* strm);
 		~lua_file_reader()
 		{
 			delete &s;
@@ -303,7 +303,7 @@ namespace
 			file2 = L.get_string(2, fname.c_str());
 		std::istream& s = open_file_relative(file1, file2);
 		try {
-			lua_class<lua_file_reader>::create(L, &L, &s);
+			lua_class<lua_file_reader>::create(L, &s);
 			return 1;
 		} catch(...) {
 			delete &s;
@@ -317,13 +317,13 @@ DECLARE_LUACLASS(lua_file_reader, "FILEREADER");
 
 namespace
 {
-	lua_file_reader::lua_file_reader(lua_state* L, std::istream* strm)
+	lua_file_reader::lua_file_reader(lua_state& L, std::istream* strm)
 		: s(*strm)
 	{
 		static char doonce_key;
-		if(L->do_once(&doonce_key)) {
-			objclass<lua_file_reader>().bind(*L, "__call", &lua_file_reader::read);
-			objclass<lua_file_reader>().bind(*L, "lines", &lua_file_reader::lines);
+		if(L.do_once(&doonce_key)) {
+			objclass<lua_file_reader>().bind(L, "__call", &lua_file_reader::read);
+			objclass<lua_file_reader>().bind(L, "lines", &lua_file_reader::lines);
 		}
 	}
 }

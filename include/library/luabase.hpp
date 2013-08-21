@@ -645,7 +645,7 @@ template<class T> class lua_class
 		load_metatable(state);
 		state.setmetatable(-2);
 		T* _obj = reinterpret_cast<T*>(obj);
-		new(_obj) T(args...);
+		new(_obj) T(state, args...);
 		return _obj;
 	}
 

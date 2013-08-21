@@ -12,7 +12,7 @@ namespace
 	struct lua_customfont
 	{
 	public:
-		lua_customfont(lua_state* L, const std::string& filename);
+		lua_customfont(lua_state& L, const std::string& filename);
 		~lua_customfont() throw();
 		int draw(lua_state& L);
 		const custom_font& get_font() { return font; }
@@ -85,12 +85,12 @@ namespace
 		lua_obj_pin<lua_customfont> font;
 	};
 
-	lua_customfont::lua_customfont(lua_state* L, const std::string& filename)
+	lua_customfont::lua_customfont(lua_state& L, const std::string& filename)
 		: font(filename)
 	{
 		static char done_key;
-		if(L->do_once(&done_key)) {
-			objclass<lua_customfont>().bind(*L, "__call", &lua_customfont::draw);
+		if(L.do_once(&done_key)) {
+			objclass<lua_customfont>().bind(L, "__call", &lua_customfont::draw);
 		}
 	}
 
@@ -125,7 +125,7 @@ namespace
 		-> int {
 		std::string filename = L.get_string(1, fname.c_str());
 		try {
-			lua_class<lua_customfont>::create(L, &L, filename);
+			lua_class<lua_customfont>::create(L, filename);
 			return 1;
 		} catch(std::exception& e) {
 			L.pushstring(e.what());

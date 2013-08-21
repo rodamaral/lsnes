@@ -50,7 +50,7 @@ namespace
 	class lua_vma
 	{
 	public:
-		lua_vma(lua_state* L, memory_region* r);
+		lua_vma(lua_state& L, memory_region* r);
 		int info(lua_state& L);
 		template<class T, bool _bswap> int rw(lua_state& L);
 	private:
@@ -63,7 +63,7 @@ namespace
 	class lua_vma_list
 	{
 	public:
-		lua_vma_list(lua_state* L);
+		lua_vma_list(lua_state& L);
 		int index(lua_state& L);
 		int newindex(lua_state& L);
 		int call(lua_state& L);
@@ -75,27 +75,27 @@ DECLARE_LUACLASS(lua_vma_list, "VMALIST");
 
 namespace
 {
-	lua_vma::lua_vma(lua_state* L, memory_region* r)
+	lua_vma::lua_vma(lua_state& L, memory_region* r)
 	{
 		static char doonce_key;
-		if(L->do_once(&doonce_key)) {
-			objclass<lua_vma>().bind(*L, "info", &lua_vma::info);
-			objclass<lua_vma>().bind(*L, "sbyte", &lua_vma::rw<int8_t, false>);
-			objclass<lua_vma>().bind(*L, "byte", &lua_vma::rw<uint8_t, false>);
-			objclass<lua_vma>().bind(*L, "sword", &lua_vma::rw<int16_t, false>);
-			objclass<lua_vma>().bind(*L, "word", &lua_vma::rw<uint16_t, false>);
-			objclass<lua_vma>().bind(*L, "sdword", &lua_vma::rw<int32_t, false>);
-			objclass<lua_vma>().bind(*L, "dword", &lua_vma::rw<uint32_t, false>);
-			objclass<lua_vma>().bind(*L, "sqword", &lua_vma::rw<int64_t, false>);
-			objclass<lua_vma>().bind(*L, "qword", &lua_vma::rw<uint64_t, false>);
-			objclass<lua_vma>().bind(*L, "isbyte", &lua_vma::rw<int8_t, true>);
-			objclass<lua_vma>().bind(*L, "ibyte", &lua_vma::rw<uint8_t, true>);
-			objclass<lua_vma>().bind(*L, "isword", &lua_vma::rw<int16_t, true>);
-			objclass<lua_vma>().bind(*L, "iword", &lua_vma::rw<uint16_t, true>);
-			objclass<lua_vma>().bind(*L, "isdword", &lua_vma::rw<int32_t, true>);
-			objclass<lua_vma>().bind(*L, "idword", &lua_vma::rw<uint32_t, true>);
-			objclass<lua_vma>().bind(*L, "isqword", &lua_vma::rw<int64_t, true>);
-			objclass<lua_vma>().bind(*L, "iqword", &lua_vma::rw<uint64_t, true>);
+		if(L.do_once(&doonce_key)) {
+			objclass<lua_vma>().bind(L, "info", &lua_vma::info);
+			objclass<lua_vma>().bind(L, "sbyte", &lua_vma::rw<int8_t, false>);
+			objclass<lua_vma>().bind(L, "byte", &lua_vma::rw<uint8_t, false>);
+			objclass<lua_vma>().bind(L, "sword", &lua_vma::rw<int16_t, false>);
+			objclass<lua_vma>().bind(L, "word", &lua_vma::rw<uint16_t, false>);
+			objclass<lua_vma>().bind(L, "sdword", &lua_vma::rw<int32_t, false>);
+			objclass<lua_vma>().bind(L, "dword", &lua_vma::rw<uint32_t, false>);
+			objclass<lua_vma>().bind(L, "sqword", &lua_vma::rw<int64_t, false>);
+			objclass<lua_vma>().bind(L, "qword", &lua_vma::rw<uint64_t, false>);
+			objclass<lua_vma>().bind(L, "isbyte", &lua_vma::rw<int8_t, true>);
+			objclass<lua_vma>().bind(L, "ibyte", &lua_vma::rw<uint8_t, true>);
+			objclass<lua_vma>().bind(L, "isword", &lua_vma::rw<int16_t, true>);
+			objclass<lua_vma>().bind(L, "iword", &lua_vma::rw<uint16_t, true>);
+			objclass<lua_vma>().bind(L, "isdword", &lua_vma::rw<int32_t, true>);
+			objclass<lua_vma>().bind(L, "idword", &lua_vma::rw<uint32_t, true>);
+			objclass<lua_vma>().bind(L, "isqword", &lua_vma::rw<int64_t, true>);
+			objclass<lua_vma>().bind(L, "iqword", &lua_vma::rw<uint64_t, true>);
 		}
 		vmabase = r->base;
 		vmasize = r->size;
@@ -134,13 +134,13 @@ namespace
 			throw std::runtime_error("VMA::rw<T>: Parameter #3 must be integer if present");
 	}
 
-	lua_vma_list::lua_vma_list(lua_state* L)
+	lua_vma_list::lua_vma_list(lua_state& L)
 	{
 		static char doonce_key;
-		if(L->do_once(&doonce_key)) {
-			objclass<lua_vma_list>().bind(*L, "__index", &lua_vma_list::index, true);
-			objclass<lua_vma_list>().bind(*L, "__newindex", &lua_vma_list::newindex, true);
-			objclass<lua_vma_list>().bind(*L, "__call", &lua_vma_list::call);
+		if(L.do_once(&doonce_key)) {
+			objclass<lua_vma_list>().bind(L, "__index", &lua_vma_list::index, true);
+			objclass<lua_vma_list>().bind(L, "__newindex", &lua_vma_list::newindex, true);
+			objclass<lua_vma_list>().bind(L, "__call", &lua_vma_list::call);
 		}
 	}
 
@@ -164,7 +164,7 @@ namespace
 		std::list<memory_region*>::iterator i;
 		for(i = l.begin(), j = 0; i != l.end(); i++, j++)
 			if((*i)->name == vma) {
-				lua_class<lua_vma>::create(L, &L, *i);
+				lua_class<lua_vma>::create(L, *i);
 				return 1;
 			}
 		throw std::runtime_error("VMALIST::__index: No such VMA");
@@ -177,7 +177,7 @@ namespace
 
 	function_ptr_luafun memory2(lua_func_misc, "memory2", [](lua_state& L, const std::string& fname) ->
 		int {
-		lua_class<lua_vma_list>::create(L, &L);
+		lua_class<lua_vma_list>::create(L);
 		return 1;
 	});
 }

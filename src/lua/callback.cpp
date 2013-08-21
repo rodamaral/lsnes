@@ -7,7 +7,7 @@ namespace
 	class lua_callbacks_list
 	{
 	public:
-		lua_callbacks_list(lua_state* L);
+		lua_callbacks_list(lua_state& L);
 		int index(lua_state& L);
 		int newindex(lua_state& L);
 	};
@@ -15,7 +15,7 @@ namespace
 	class lua_callback_obj
 	{
 	public:
-		lua_callback_obj(lua_state* L, const std::string& name);
+		lua_callback_obj(lua_state& L, const std::string& name);
 		int _register(lua_state& L);
 		int _unregister(lua_state& L);
 		int _call(lua_state& L);
@@ -30,19 +30,19 @@ DECLARE_LUACLASS(lua_callback_obj, "CALLBACK_OBJ");
 
 namespace
 {
-	lua_callbacks_list::lua_callbacks_list(lua_state* L)
+	lua_callbacks_list::lua_callbacks_list(lua_state& L)
 	{
 		static char doonce_key;
-		if(L->do_once(&doonce_key)) {
-			objclass<lua_callbacks_list>().bind(*L, "__index", &lua_callbacks_list::index, true);
-			objclass<lua_callbacks_list>().bind(*L, "__newindex", &lua_callbacks_list::newindex, true);
+		if(L.do_once(&doonce_key)) {
+			objclass<lua_callbacks_list>().bind(L, "__index", &lua_callbacks_list::index, true);
+			objclass<lua_callbacks_list>().bind(L, "__newindex", &lua_callbacks_list::newindex, true);
 		}
 	}
 
 	int lua_callbacks_list::index(lua_state& L)
 	{
 		std::string name = L.get_string(2, "CALLBACKS_LIST::__index");
-		lua_class<lua_callback_obj>::create(L, &L, name);
+		lua_class<lua_callback_obj>::create(L, name);
 		return 1;
 	}
 
@@ -51,17 +51,17 @@ namespace
 		throw std::runtime_error("Writing is not allowed");
 	}
 
-	lua_callback_obj::lua_callback_obj(lua_state* L, const std::string& name)
+	lua_callback_obj::lua_callback_obj(lua_state& L, const std::string& name)
 	{
 		static char doonce_key;
-		if(L->do_once(&doonce_key)) {
-			objclass<lua_callback_obj>().bind(*L, "register", &lua_callback_obj::_register);
-			objclass<lua_callback_obj>().bind(*L, "unregister", &lua_callback_obj::_unregister);
-			objclass<lua_callback_obj>().bind(*L, "__call", &lua_callback_obj::_call);
+		if(L.do_once(&doonce_key)) {
+			objclass<lua_callback_obj>().bind(L, "register", &lua_callback_obj::_register);
+			objclass<lua_callback_obj>().bind(L, "unregister", &lua_callback_obj::_unregister);
+			objclass<lua_callback_obj>().bind(L, "__call", &lua_callback_obj::_call);
 		}
 		callback = NULL;
 		special = 0;
-		for(auto i : L->get_callbacks())
+		for(auto i : L.get_callbacks())
 			if(i->get_name() == name)
 				callback = i;
 		if(name == "register") {
@@ -129,7 +129,7 @@ namespace
 
 	function_ptr_luafun callback(lua_func_callback, "callback", [](lua_state& L, const std::string& fname)
 		-> int {
-		lua_class<lua_callbacks_list>::create(L, &L);
+		lua_class<lua_callbacks_list>::create(L);
 		return 1;
 	});
 }

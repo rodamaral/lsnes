@@ -5,12 +5,13 @@
 #include <string>
 #include <cstdint>
 #include "core/window.hpp"
+#include "library/luabase.hpp"
 #include "library/framebuffer.hpp"
 #include "library/threadtypes.hpp"
 
 struct lua_bitmap
 {
-	lua_bitmap(uint32_t w, uint32_t h);
+	lua_bitmap(lua_state& L, uint32_t w, uint32_t h);
 	~lua_bitmap();
 	size_t width;
 	size_t height;
@@ -19,7 +20,7 @@ struct lua_bitmap
 
 struct lua_dbitmap
 {
-	lua_dbitmap(uint32_t w, uint32_t h);
+	lua_dbitmap(lua_state& L, uint32_t w, uint32_t h);
 	~lua_dbitmap();
 	size_t width;
 	size_t height;
@@ -29,7 +30,7 @@ struct lua_dbitmap
 struct lua_palette
 {
 	std::vector<premultiplied_color> colors;
-	lua_palette();
+	lua_palette(lua_state& L);
 	~lua_palette();
 	mutex_class palette_mutex;
 };

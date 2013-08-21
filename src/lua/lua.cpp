@@ -507,3 +507,7 @@ bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 
 DECLARE_LUACLASS(lua_unsaferewind, "UNSAFEREWIND");
+
+lua_unsaferewind::lua_unsaferewind(lua_state& L)
+{
+}

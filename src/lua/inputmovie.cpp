@@ -15,7 +15,7 @@ namespace
 	{
 		friend class lua_inputmovie;
 	public:
-		lua_inputframe(lua_state* L, controller_frame _f);
+		lua_inputframe(lua_state& L, controller_frame _f);
 		int get_button(lua_state& L)
 		{
 			unsigned port = L.get_numeric_argument<unsigned>(2, "INPUTFRAME::get_button");
@@ -141,7 +141,7 @@ namespace
 		int ptr = 1;
 		controller_frame_vector& v = framevector(L, ptr, fname);
 
-		lua_inputmovie* m = lua_class<lua_inputmovie>::create(L, &L, v);
+		lua_inputmovie* m = lua_class<lua_inputmovie>::create(L, v);
 		return 1;
 	}
 
@@ -154,7 +154,7 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		controller_frame _f = v[n];
-		lua_inputframe* f = lua_class<lua_inputframe>::create(L, &L, _f);
+		lua_inputframe* f = lua_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
 
@@ -234,7 +234,7 @@ namespace
 		controller_frame_vector& v = framevector(L, ptr, fname);
 
 		controller_frame _f = v.blank_frame(true);
-		lua_inputframe* f = lua_class<lua_inputframe>::create(L, &L, _f);
+		lua_inputframe* f = lua_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
 
@@ -410,8 +410,8 @@ namespace
 	class lua_inputmovie
 	{
 	public:
-		lua_inputmovie(lua_state* L, const controller_frame_vector& _v);
-		lua_inputmovie(lua_state* L, controller_frame& _f);
+		lua_inputmovie(lua_state& L, const controller_frame_vector& _v);
+		lua_inputmovie(lua_state& L, controller_frame& _f);
 		int copy_movie(lua_state& L)
 		{
 			return _copy_movie(L, "INPUTMOVIE::copy_movie");
@@ -560,7 +560,7 @@ namespace
 		std::ifstream file(filename, binary ? std::ios_base::binary : std::ios_base::in);
 		if(!file)
 			throw std::runtime_error("Can't open file to read input from");
-		lua_inputmovie* m = lua_class<lua_inputmovie>::create(L, &L, f->get_frame());
+		lua_inputmovie* m = lua_class<lua_inputmovie>::create(L, f->get_frame());
 		controller_frame_vector& v = *m->get_frame_vector();
 		if(binary) {
 			uint64_t stride = v.get_stride();
@@ -608,18 +608,18 @@ DECLARE_LUACLASS(lua_inputframe, "INPUTFRAME");
 
 namespace
 {
-	lua_inputframe::lua_inputframe(lua_state* L, controller_frame _f)
+	lua_inputframe::lua_inputframe(lua_state& L, controller_frame _f)
 	{
 		f = _f;
 		static char done_key;
-		if(L->do_once(&done_key)) {
-			objclass<lua_inputframe>().bind(*L, "get_button", &lua_inputframe::get_button);
-			objclass<lua_inputframe>().bind(*L, "get_axis", &lua_inputframe::get_axis);
-			objclass<lua_inputframe>().bind(*L, "set_axis", &lua_inputframe::set_axis);
-			objclass<lua_inputframe>().bind(*L, "set_button", &lua_inputframe::set_axis);
-			objclass<lua_inputframe>().bind(*L, "serialize", &lua_inputframe::serialize);
-			objclass<lua_inputframe>().bind(*L, "unserialize", &lua_inputframe::unserialize);
-			objclass<lua_inputframe>().bind(*L, "get_stride", &lua_inputframe::get_stride);
+		if(L.do_once(&done_key)) {
+			objclass<lua_inputframe>().bind(L, "get_button", &lua_inputframe::get_button);
+			objclass<lua_inputframe>().bind(L, "get_axis", &lua_inputframe::get_axis);
+			objclass<lua_inputframe>().bind(L, "set_axis", &lua_inputframe::set_axis);
+			objclass<lua_inputframe>().bind(L, "set_button", &lua_inputframe::set_axis);
+			objclass<lua_inputframe>().bind(L, "serialize", &lua_inputframe::serialize);
+			objclass<lua_inputframe>().bind(L, "unserialize", &lua_inputframe::unserialize);
+			objclass<lua_inputframe>().bind(L, "get_stride", &lua_inputframe::get_stride);
 		}
 	}
 
@@ -644,15 +644,15 @@ namespace
 		}
 	}
 	
-	lua_inputmovie::lua_inputmovie(lua_state* L, const controller_frame_vector& _v)
+	lua_inputmovie::lua_inputmovie(lua_state& L, const controller_frame_vector& _v)
 	{
 		v = _v;
-		common_init(*L);
+		common_init(L);
 	}
 
-	lua_inputmovie::lua_inputmovie(lua_state* L, controller_frame& f)
+	lua_inputmovie::lua_inputmovie(lua_state& L, controller_frame& f)
 	{
 		v.clear(f.porttypes());
-		common_init(*L);
+		common_init(L);
 	}
 }

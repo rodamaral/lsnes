@@ -88,7 +88,7 @@ namespace
 class lua_mmap_struct
 {
 public:
-	lua_mmap_struct(lua_state* L);
+	lua_mmap_struct(lua_state& L);
 
 	~lua_mmap_struct()
 	{
@@ -381,7 +381,7 @@ namespace
 
 	function_ptr_luafun gui_cbitmap(lua_func_misc, "memory.map_structure", [](lua_state& L,
 		const std::string& fname) -> int {
-		lua_class<lua_mmap_struct>::create(L, &L);
+		lua_class<lua_mmap_struct>::create(L);
 		return 1;
 	});
 
@@ -472,12 +472,12 @@ int lua_mmap_struct::map(lua_state& L)
 
 DECLARE_LUACLASS(lua_mmap_struct, "MMAP_STRUCT");
 
-lua_mmap_struct::lua_mmap_struct(lua_state* L)
+lua_mmap_struct::lua_mmap_struct(lua_state& L)
 {
 	static char done_key;
-	if(L->do_once(&done_key)) {
-		objclass<lua_mmap_struct>().bind(*L, "__index", &lua_mmap_struct::index, true);
-		objclass<lua_mmap_struct>().bind(*L, "__newindex", &lua_mmap_struct::newindex, true);
-		objclass<lua_mmap_struct>().bind(*L, "__call", &lua_mmap_struct::map);
+	if(L.do_once(&done_key)) {
+		objclass<lua_mmap_struct>().bind(L, "__index", &lua_mmap_struct::index, true);
+		objclass<lua_mmap_struct>().bind(L, "__newindex", &lua_mmap_struct::newindex, true);
+		objclass<lua_mmap_struct>().bind(L, "__call", &lua_mmap_struct::map);
 	}
 }

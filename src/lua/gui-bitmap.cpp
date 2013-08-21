@@ -9,7 +9,7 @@
 #include <vector>
 #include <sstream>
 
-lua_bitmap::lua_bitmap(uint32_t w, uint32_t h)
+lua_bitmap::lua_bitmap(lua_state& L, uint32_t w, uint32_t h)
 {
 	width = w;
 	height = h;
@@ -22,7 +22,7 @@ lua_bitmap::~lua_bitmap()
 	render_kill_request(this);
 }
 
-lua_dbitmap::lua_dbitmap(uint32_t w, uint32_t h)
+lua_dbitmap::lua_dbitmap(lua_state& L, uint32_t w, uint32_t h)
 {
 	width = w;
 	height = h;
@@ -34,7 +34,7 @@ lua_dbitmap::~lua_dbitmap()
 	render_kill_request(this);
 }
 
-lua_palette::lua_palette()
+lua_palette::lua_palette(lua_state& L)
 {
 }
 
