@@ -611,37 +611,35 @@ namespace
 	lua_inputframe::lua_inputframe(lua_state& L, controller_frame _f)
 	{
 		f = _f;
-		static char done_key;
-		if(L.do_once(&done_key)) {
-			objclass<lua_inputframe>().bind(L, "get_button", &lua_inputframe::get_button);
-			objclass<lua_inputframe>().bind(L, "get_axis", &lua_inputframe::get_axis);
-			objclass<lua_inputframe>().bind(L, "set_axis", &lua_inputframe::set_axis);
-			objclass<lua_inputframe>().bind(L, "set_button", &lua_inputframe::set_axis);
-			objclass<lua_inputframe>().bind(L, "serialize", &lua_inputframe::serialize);
-			objclass<lua_inputframe>().bind(L, "unserialize", &lua_inputframe::unserialize);
-			objclass<lua_inputframe>().bind(L, "get_stride", &lua_inputframe::get_stride);
-		}
+		objclass<lua_inputframe>().bind_multi(L, {
+			{"get_button", &lua_inputframe::get_button},
+			{"get_axis", &lua_inputframe::get_axis},
+			{"set_axis", &lua_inputframe::set_axis},
+			{"set_button", &lua_inputframe::set_axis},
+			{"serialize", &lua_inputframe::serialize},
+			{"unserialize", &lua_inputframe::unserialize},
+			{"get_stride", &lua_inputframe::get_stride},
+		});
 	}
 
 	void lua_inputmovie::common_init(lua_state& L)
 	{
-		static char done_key;
-		if(L.do_once(&done_key)) {
-			objclass<lua_inputmovie>().bind(L, "copy_movie", &lua_inputmovie::copy_movie);
-			objclass<lua_inputmovie>().bind(L, "get_frame", &lua_inputmovie::get_frame);
-			objclass<lua_inputmovie>().bind(L, "set_frame", &lua_inputmovie::set_frame);
-			objclass<lua_inputmovie>().bind(L, "get_size", &lua_inputmovie::get_size);
-			objclass<lua_inputmovie>().bind(L, "count_frames", &lua_inputmovie::count_frames);
-			objclass<lua_inputmovie>().bind(L, "find_frame", &lua_inputmovie::find_frame);
-			objclass<lua_inputmovie>().bind(L, "blank_frame", &lua_inputmovie::blank_frame);
-			objclass<lua_inputmovie>().bind(L, "append_frames", &lua_inputmovie::append_frames);
-			objclass<lua_inputmovie>().bind(L, "append_frame", &lua_inputmovie::append_frame);
-			objclass<lua_inputmovie>().bind(L, "truncate", &lua_inputmovie::truncate);
-			objclass<lua_inputmovie>().bind(L, "edit", &lua_inputmovie::edit);
-			objclass<lua_inputmovie>().bind(L, "debugdump", &lua_inputmovie::debugdump);
-			objclass<lua_inputmovie>().bind(L, "copy_frames", &lua_inputmovie::copy_frames);
-			objclass<lua_inputmovie>().bind(L, "serialize", &lua_inputmovie::serialize);
-		}
+		objclass<lua_inputmovie>().bind_multi(L, {
+			{"copy_movie", &lua_inputmovie::copy_movie},
+			{"get_frame", &lua_inputmovie::get_frame},
+			{"set_frame", &lua_inputmovie::set_frame},
+			{"get_size", &lua_inputmovie::get_size},
+			{"count_frames", &lua_inputmovie::count_frames},
+			{"find_frame", &lua_inputmovie::find_frame},
+			{"blank_frame", &lua_inputmovie::blank_frame},
+			{"append_frames", &lua_inputmovie::append_frames},
+			{"append_frame", &lua_inputmovie::append_frame},
+			{"truncate", &lua_inputmovie::truncate},
+			{"edit", &lua_inputmovie::edit},
+			{"debugdump", &lua_inputmovie::debugdump},
+			{"copy_frames", &lua_inputmovie::copy_frames},
+			{"serialize", &lua_inputmovie::serialize},
+		});
 	}
 	
 	lua_inputmovie::lua_inputmovie(lua_state& L, const controller_frame_vector& _v)

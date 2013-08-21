@@ -88,10 +88,9 @@ namespace
 	lua_customfont::lua_customfont(lua_state& L, const std::string& filename)
 		: font(filename)
 	{
-		static char done_key;
-		if(L.do_once(&done_key)) {
-			objclass<lua_customfont>().bind(L, "__call", &lua_customfont::draw);
-		}
+		objclass<lua_customfont>().bind_multi(L, {
+			{"__call", &lua_customfont::draw},
+		});
 	}
 
 	lua_customfont::~lua_customfont() throw()

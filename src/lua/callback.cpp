@@ -32,11 +32,10 @@ namespace
 {
 	lua_callbacks_list::lua_callbacks_list(lua_state& L)
 	{
-		static char doonce_key;
-		if(L.do_once(&doonce_key)) {
-			objclass<lua_callbacks_list>().bind(L, "__index", &lua_callbacks_list::index);
-			objclass<lua_callbacks_list>().bind(L, "__newindex", &lua_callbacks_list::newindex);
-		}
+		objclass<lua_callbacks_list>().bind_multi(L, {
+			{"__index", &lua_callbacks_list::index},
+			{"__newindex", &lua_callbacks_list::newindex},
+		});
 	}
 
 	int lua_callbacks_list::index(lua_state& L)
@@ -53,12 +52,11 @@ namespace
 
 	lua_callback_obj::lua_callback_obj(lua_state& L, const std::string& name)
 	{
-		static char doonce_key;
-		if(L.do_once(&doonce_key)) {
-			objclass<lua_callback_obj>().bind(L, "register", &lua_callback_obj::_register);
-			objclass<lua_callback_obj>().bind(L, "unregister", &lua_callback_obj::_unregister);
-			objclass<lua_callback_obj>().bind(L, "__call", &lua_callback_obj::_call);
-		}
+		objclass<lua_callback_obj>().bind_multi(L, {
+			{"register", &lua_callback_obj::_register},
+			{"unregister", &lua_callback_obj::_unregister},
+			{"__call", &lua_callback_obj::_call},
+		});
 		callback = NULL;
 		special = 0;
 		for(auto i : L.get_callbacks())

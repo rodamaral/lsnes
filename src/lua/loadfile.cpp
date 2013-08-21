@@ -320,10 +320,9 @@ namespace
 	lua_file_reader::lua_file_reader(lua_state& L, std::istream* strm)
 		: s(*strm)
 	{
-		static char doonce_key;
-		if(L.do_once(&doonce_key)) {
-			objclass<lua_file_reader>().bind(L, "__call", &lua_file_reader::read);
-			objclass<lua_file_reader>().bind(L, "lines", &lua_file_reader::lines);
-		}
+		objclass<lua_file_reader>().bind_multi(L, {
+			{"__call", &lua_file_reader::read},
+			{"lines", &lua_file_reader::lines}
+		});
 	}
 }

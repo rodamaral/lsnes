@@ -634,6 +634,18 @@ template<class T> class lua_class;
  */
 template<class T> lua_class<T>& objclass();
 
+template<class T> struct lua_class_binding
+{
+/**
+ * Name.
+ */
+	const char* name;
+/**
+ * Function.
+ */
+	int (T::*fn)(lua_state& LS);
+};
+
 /**
  * The type of Lua classes.
  */
@@ -703,7 +715,6 @@ badtype:
 		state.pushvalue(arg);
 		return lua_obj_pin<T>(state, obj);
 	}
-
 public:
 /**
  * Create a new Lua class.
@@ -748,7 +759,16 @@ public:
 		state.rawset(-3);
 		state.pop(1);
 	}
-
+/**
+ * Bind multiple at once.
+ */
+	void bind_multi(lua_state& state, std::initializer_list<lua_class_binding<T>> list, void* doonce_key = NULL)
+	{
+		static char once_key;
+		if(state.do_once(doonce_key ? doonce_key : &once_key))
+			for(auto i : list)
+				bind(state, i.name, i.fn);
+	}
 /**
  * Get a pointer to the object.
  *
