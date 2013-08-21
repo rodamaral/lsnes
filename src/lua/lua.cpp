@@ -480,6 +480,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			try { get_host_memory() = u2->hostmemory; } catch(...) {}
 			run_callback(on_post_rewind);
+			delete reinterpret_cast<lua_obj_pin<lua_unsaferewind>*>(u);
 		} catch(...) {
 			return;
 		}

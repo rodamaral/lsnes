@@ -513,13 +513,21 @@ private:
 template<typename T> struct lua_obj_pin
 {
 /**
+ * Create a null pin.
+ */
+	lua_obj_pin()
+	{
+		state = NULL;
+		obj = NULL;
+	}
+/**
  * Create a new pin.
  *
  * Parameter _state: The state to pin the object in.
  * Parameter _object: The object to pin.
  */
 	lua_obj_pin(lua_state& _state, T* _object)
-		: state(_state.get_master())
+		: state(&_state.get_master())
 	{
 		_state.pushlightuserdata(this);
 		_state.pushvalue(-2);
@@ -531,9 +539,49 @@ template<typename T> struct lua_obj_pin
  */
 	~lua_obj_pin() throw()
 	{
-		state.pushlightuserdata(this);
-		state.pushnil();
-		state.rawset(LUA_REGISTRYINDEX);
+		if(obj) {
+			state->pushlightuserdata(this);
+			state->pushnil();
+			state->rawset(LUA_REGISTRYINDEX);
+		}
+	}
+/**
+ * Copy ctor.
+ */
+	lua_obj_pin(const lua_obj_pin& p)
+	{
+		state = p.state;
+		obj = p.obj;
+		if(obj) {
+			state->pushlightuserdata(this);
+			state->pushlightuserdata(const_cast<lua_obj_pin*>(&p));
+			state->rawget(LUA_REGISTRYINDEX);
+			state->rawset(LUA_REGISTRYINDEX);
+		}
+	}
+/**
+ * Assignment operator.
+ */
+	lua_obj_pin& operator=(const lua_obj_pin& p)
+	{
+		if(state == p.state && obj == p.obj)
+			return *this;
+		if(obj == p.obj)
+			throw std::logic_error("A Lua object can't be in two lua states at once");
+		if(obj) {
+			state->pushlightuserdata(this);
+			state->pushnil();
+			state->rawset(LUA_REGISTRYINDEX);
+		}
+		state = p.state;
+		if(p.obj) {
+			state->pushlightuserdata(this);
+			state->pushlightuserdata(const_cast<lua_obj_pin*>(&p));
+			state->rawget(LUA_REGISTRYINDEX);
+			state->rawset(LUA_REGISTRYINDEX);
+		}
+		obj = p.obj;
+		return *this;
 	}
 /**
  * Get pointer to pinned object.
@@ -541,11 +589,18 @@ template<typename T> struct lua_obj_pin
  * Returns: The pinned object.
  */
 	T* object() { return obj; }
+/**
+ * Is non-null?
+ */
+	operator bool() { return obj != NULL; }
+/**
+ * Smart pointer.
+ */
+	T& operator*() { if(obj) return *obj; throw std::runtime_error("Attempted to reference NULL Lua pin"); }
+	T* operator->() { if(obj) return obj; throw std::runtime_error("Attempted to reference NULL Lua pin"); }
 private:
 	T* obj;
-	lua_state& state;
-	lua_obj_pin(const lua_obj_pin&);
-	lua_obj_pin& operator=(const lua_obj_pin&);
+	lua_state* state;
 };
 
 template<typename T> void* unbox_any_pin(struct lua_obj_pin<T>* pin)
@@ -642,11 +697,11 @@ badtype:
 		return ret;
 	}
 
-	lua_obj_pin<T>* _pin(lua_state& state, int arg, const std::string& fname)
+	lua_obj_pin<T> _pin(lua_state& state, int arg, const std::string& fname)
 	{
 		T* obj = get(state, arg, fname);
 		state.pushvalue(arg);
-		return new lua_obj_pin<T>(state, obj);
+		return lua_obj_pin<T>(state, obj);
 	}
 
 public:
@@ -735,7 +790,7 @@ public:
  * Parameter fname: Name of function for error message purposes.
  * Throws std::runtime_error: Wrong type.
  */
-	static lua_obj_pin<T>* pin(lua_state& state, int arg, const std::string& fname) throw(std::bad_alloc,
+	static lua_obj_pin<T> pin(lua_state& state, int arg, const std::string& fname) throw(std::bad_alloc,
 		std::runtime_error)
 	{
 		return objclass<T>()._pin(state, arg, fname);

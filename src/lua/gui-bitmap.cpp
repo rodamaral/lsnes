@@ -46,60 +46,54 @@ namespace
 {
 	struct render_object_bitmap : public render_object
 	{
-		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_bitmap>* _bitmap,
-			lua_obj_pin<lua_palette>* _palette) throw()
+		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_bitmap> _bitmap,
+			lua_obj_pin<lua_palette> _palette) throw()
 		{
 			x = _x;
 			y = _y;
 			b = _bitmap;
-			b2 = NULL;
 			p = _palette;
 		}
 
-		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_dbitmap>* _bitmap) throw()
+		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_dbitmap> _bitmap) throw()
 		{
 			x = _x;
 			y = _y;
-			b = NULL;
 			b2 = _bitmap;
-			p = NULL;
 		}
 
 		~render_object_bitmap() throw()
 		{
-			delete b;
-			delete b2;
-			delete p;
 		}
 
 		bool kill_request(void* obj) throw()
 		{
-			return kill_request_ifeq(unbox_any_pin(p), obj) ||
-				kill_request_ifeq(unbox_any_pin(b), obj) ||
-				kill_request_ifeq(unbox_any_pin(b2), obj);
+				return kill_request_ifeq(p.object(), obj) ||
+				kill_request_ifeq(b.object(), obj) ||
+				kill_request_ifeq(b2.object(), obj);
 		}
 
 		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
 		{
 			if(p)
-				p->object()->palette_mutex.lock();
+				p->palette_mutex.lock();
 			uint32_t originx = scr.get_origin_x();
 			uint32_t originy = scr.get_origin_y();
 			size_t pallim = 0;
 			size_t w, h;
 			premultiplied_color* palette;
 			if(b) {
-				palette = &p->object()->colors[0];
-				for(auto& c : p->object()->colors)
+				palette = &p->colors[0];
+				for(auto& c : p->colors)
 					c.set_palette(scr);
-				pallim = p->object()->colors.size();
-				w = b->object()->width;
-				h = b->object()->height;
+				pallim = p->colors.size();
+				w = b->width;
+				h = b->height;
 			} else {
-				for(auto& c : b2->object()->pixels)
+				for(auto& c : b2->pixels)
 					c.set_palette(scr);
-				w = b2->object()->width;
-				h = b2->object()->height;
+				w = b2->width;
+				h = b2->height;
 			}
 
 			int32_t xmin = 0;
@@ -113,16 +107,16 @@ namespace
 				size_t eptr = x + xmin + originx;
 				if(b)
 					for(int32_t c = xmin; c < xmax; c++, eptr++) {
-						uint16_t i = b->object()->pixels[r * b->object()->width + c];
+						uint16_t i = b->pixels[r * b->width + c];
 						if(i < pallim)
 							palette[i].apply(rptr[eptr]);
 					}
 				else
 					for(int32_t c = xmin; c < xmax; c++, eptr++)
-						b2->object()->pixels[r * b2->object()->width + c].apply(rptr[eptr]);
+						b2->pixels[r * b2->width + c].apply(rptr[eptr]);
 			}
 			if(p)
-				p->object()->palette_mutex.unlock();
+				p->palette_mutex.unlock();
 		}
 		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
 		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
@@ -130,9 +124,9 @@ namespace
 	private:
 		int32_t x;
 		int32_t y;
-		lua_obj_pin<lua_bitmap>* b;
-		lua_obj_pin<lua_dbitmap>* b2;
-		lua_obj_pin<lua_palette>* p;
+		lua_obj_pin<lua_bitmap> b;
+		lua_obj_pin<lua_dbitmap> b2;
+		lua_obj_pin<lua_palette> p;
 	};
 
 	function_ptr_luafun gui_bitmap(lua_func_misc, "gui.bitmap_draw", [](lua_state& L, const std::string& fname)

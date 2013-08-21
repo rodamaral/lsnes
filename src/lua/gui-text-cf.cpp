@@ -28,18 +28,17 @@ namespace
 	struct render_object_text_cf : public render_object
 	{
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
-			premultiplied_color _bg, premultiplied_color _hl, lua_obj_pin<lua_customfont>* _font) throw()
+			premultiplied_color _bg, premultiplied_color _hl, lua_obj_pin<lua_customfont> _font) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
 		~render_object_text_cf() throw()
 		{
-			delete font;
 		}
 		template<bool X> void op(struct framebuffer<X>& scr) throw()
 		{
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			hl.set_palette(scr);
-			const custom_font& fdata = font->object()->get_font();
+			const custom_font& fdata = font->get_font();
 			std::u32string _text = to_u32string(text);
 			int32_t orig_x = x;
 			int32_t drawx = x;
@@ -71,7 +70,7 @@ namespace
 		}
 		bool kill_request(void* obj) throw()
 		{
-			return kill_request_ifeq(unbox_any_pin(font), obj);
+			return kill_request_ifeq(font.object(), obj);
 		}
 		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
 		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
@@ -83,7 +82,7 @@ namespace
 		premultiplied_color fg;
 		premultiplied_color bg;
 		premultiplied_color hl;
-		lua_obj_pin<lua_customfont>* font;
+		lua_obj_pin<lua_customfont> font;
 	};
 
 	lua_customfont::lua_customfont(lua_state* L, const std::string& filename)

@@ -74,7 +74,8 @@ namespace
 			mainloop_signal_need_rewind(NULL);
 		} else if(lua_class<lua_unsaferewind>::is(L, 1)) {
 			//Load the save.
-			lua_obj_pin<lua_unsaferewind>* u = lua_class<lua_unsaferewind>::pin(L, 1, fname.c_str());
+			lua_obj_pin<lua_unsaferewind>* u = new lua_obj_pin<lua_unsaferewind>(
+				lua_class<lua_unsaferewind>::pin(L, 1, fname.c_str()));
 			mainloop_signal_need_rewind(u);
 		} else {
 			L.pushstring("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");

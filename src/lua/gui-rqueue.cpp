@@ -34,7 +34,7 @@ namespace
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
-			lua_render_context* ptr = q->object()->get();
+			lua_render_context* ptr = q->get();
 			if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
 				lua_render_ctx->top_gap = ptr->top_gap;
 			if(ptr->right_gap != std::numeric_limits<uint32_t>::max())
@@ -56,7 +56,7 @@ namespace
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
-			synchronous_paint_ctx = q->object();
+			synchronous_paint_ctx = &*q;
 			redraw_framebuffer();
 		} else {
 			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_run.");
@@ -70,7 +70,7 @@ namespace
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
-			lua_render_context* ptr = q->object()->get();
+			lua_render_context* ptr = q->get();
 			ptr->top_gap = std::numeric_limits<uint32_t>::max();
 			ptr->right_gap = std::numeric_limits<uint32_t>::max();
 			ptr->bottom_gap = std::numeric_limits<uint32_t>::max();
@@ -96,7 +96,7 @@ namespace
 		if(lua_class<render_queue_obj>::is(L, 1)) {
 			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
-			lua_render_context* ptr = q->object()->get();
+			lua_render_context* ptr = q->get();
 			if(!redirect || last != lua_render_ctx)
 				saved = lua_render_ctx;
 			lua_render_ctx = last = ptr;
