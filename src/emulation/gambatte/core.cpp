@@ -64,6 +64,8 @@ namespace
 
 
 	struct interface_device_reg gb_registers[] = {
+		{"wrambank", []() -> uint64_t { return instance ? instance->getIoRam().first[0x170] & 0x07 : 0; },
+			[](uint64_t v) {}},
 		{NULL, NULL, NULL}
 	};
 
