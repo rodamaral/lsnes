@@ -21,6 +21,7 @@ uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 bool* lua_veto_flag = NULL;
 bool* lua_kill_frame = NULL;
 extern const char* lua_sysrc_script;
+void* synchronous_paint_ctx;
 
 lua_state lsnes_lua_state;
 lua_function_group lua_func_bit;
@@ -235,6 +236,13 @@ namespace
 		do_eval_lua(L, lua_sysrc_script);
 	}
 
+	void run_synchronous_paint(struct lua_render_context* ctx)
+	{
+		if(!synchronous_paint_ctx)
+			return;
+		lua_renderq_run(ctx, synchronous_paint_ctx);
+	}
+
 #define DEFINE_CB(X) lua_state::lua_callback_list on_##X (lsnes_lua_state, #X , "on_" #X )
 
 	DEFINE_CB(paint);
@@ -267,6 +275,7 @@ namespace
 
 void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
 {
+	run_synchronous_paint(ctx);
 	run_callback(on_paint, lua_state::store_tag(lua_render_ctx, ctx), lua_state::boolean_tag(non_synthetic));
 }
 

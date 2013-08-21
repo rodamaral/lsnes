@@ -1453,6 +1453,18 @@ Request on_repaint() to happen as soon as possible.
 \end_layout
 
 \begin_layout Subsection
+gui.synchronous_repaint: Paint screen now
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.synchronous_repaint(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Standard
+Paints specified render queue on screen right there and then.
+\end_layout
+
+\begin_layout Subsection
 gui.subframe_update: Enable/Disable subframe updates
 \end_layout
 

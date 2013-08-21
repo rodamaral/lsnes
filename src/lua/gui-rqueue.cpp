@@ -1,3 +1,4 @@
+#include "core/framebuffer.hpp"
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
 
@@ -43,6 +44,20 @@ namespace
 			if(ptr->left_gap != std::numeric_limits<uint32_t>::max())
 				lua_render_ctx->left_gap = ptr->left_gap;
 			lua_render_ctx->queue->copy_from(*ptr->queue);
+		} else {
+			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_run.");
+			L.error();
+		}
+		return 0;
+	});
+
+	function_ptr_luafun gui_srepaint(lua_func_misc, "gui.synchronous_repaint", [](lua_state& L,
+		const std::string& fname) -> int {
+		if(lua_class<render_queue_obj>::is(L, 1)) {
+			lua_class<render_queue_obj>::get(L, 1, fname.c_str());
+			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
+			synchronous_paint_ctx = q->object();
+			redraw_framebuffer();
 		} else {
 			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_run.");
 			L.error();
@@ -102,3 +117,18 @@ namespace
 }
 
 DECLARE_LUACLASS(render_queue_obj, "RENDERCTX");
+
+void lua_renderq_run(lua_render_context* ctx, void* _sctx)
+{
+	render_queue_obj* sctx = (render_queue_obj*)_sctx;
+	lua_render_context* ptr = sctx->get();
+	if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
+		ctx->top_gap = ptr->top_gap;
+	if(ptr->right_gap != std::numeric_limits<uint32_t>::max())
+		ctx->right_gap = ptr->right_gap;
+	if(ptr->bottom_gap != std::numeric_limits<uint32_t>::max())
+		ctx->bottom_gap = ptr->bottom_gap;
+	if(ptr->left_gap != std::numeric_limits<uint32_t>::max())
+		ctx->left_gap = ptr->left_gap;
+	ctx->queue->copy_from(*ptr->queue);
+}
