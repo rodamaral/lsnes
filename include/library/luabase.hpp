@@ -624,7 +624,7 @@ template<class T> struct lua_class_bind_data
 /**
  * The name of the method to pass.
  */
-	std::string fname;
+	char fname[];
 };
 
 template<class T> class lua_class;
@@ -734,22 +734,16 @@ public:
  * Parameter fn: The method to call.
  * Parameter force: If true, overwrite existing method.
  */
-	void bind(lua_state& state, const char* keyname, int (T::*fn)(lua_state& LS), bool force = false)
+	void bind(lua_state& state, const char* keyname, int (T::*fn)(lua_state& LS))
 	{
 		load_metatable(state);
 		state.pushstring(keyname);
-		state.rawget(-2);
-		if(!state.isnil(-1) && !force) {
-			state.pop(2);
-			return;
-		}
-		state.pop(1);
-		lua_class_bind_data<T>* bdata = new lua_class_bind_data<T>;
+		std::string fname = std::string("Method ") + keyname;
+		void* ptr = state.newuserdata(sizeof(lua_class_bind_data<T>) + fname.length() + 1);
+		lua_class_bind_data<T>* bdata = reinterpret_cast<lua_class_bind_data<T>*>(ptr);
 		bdata->fn = fn;
-		bdata->fname = std::string("Method ") + keyname;
 		bdata->state = &state.get_master();
-		state.pushstring(keyname);
-		state.pushlightuserdata(bdata);
+		std::copy(fname.begin(), fname.end(), bdata->fname);
 		state.pushcclosure(class_bind_trampoline, 1);
 		state.rawset(-3);
 		state.pop(1);

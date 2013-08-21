@@ -138,8 +138,8 @@ namespace
 	{
 		static char doonce_key;
 		if(L.do_once(&doonce_key)) {
-			objclass<lua_vma_list>().bind(L, "__index", &lua_vma_list::index, true);
-			objclass<lua_vma_list>().bind(L, "__newindex", &lua_vma_list::newindex, true);
+			objclass<lua_vma_list>().bind(L, "__index", &lua_vma_list::index);
+			objclass<lua_vma_list>().bind(L, "__newindex", &lua_vma_list::newindex);
 			objclass<lua_vma_list>().bind(L, "__call", &lua_vma_list::call);
 		}
 	}

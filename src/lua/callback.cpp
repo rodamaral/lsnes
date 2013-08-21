@@ -34,8 +34,8 @@ namespace
 	{
 		static char doonce_key;
 		if(L.do_once(&doonce_key)) {
-			objclass<lua_callbacks_list>().bind(L, "__index", &lua_callbacks_list::index, true);
-			objclass<lua_callbacks_list>().bind(L, "__newindex", &lua_callbacks_list::newindex, true);
+			objclass<lua_callbacks_list>().bind(L, "__index", &lua_callbacks_list::index);
+			objclass<lua_callbacks_list>().bind(L, "__newindex", &lua_callbacks_list::newindex);
 		}
 	}
 

@@ -476,8 +476,8 @@ lua_mmap_struct::lua_mmap_struct(lua_state& L)
 {
 	static char done_key;
 	if(L.do_once(&done_key)) {
-		objclass<lua_mmap_struct>().bind(L, "__index", &lua_mmap_struct::index, true);
-		objclass<lua_mmap_struct>().bind(L, "__newindex", &lua_mmap_struct::newindex, true);
+		objclass<lua_mmap_struct>().bind(L, "__index", &lua_mmap_struct::index);
+		objclass<lua_mmap_struct>().bind(L, "__newindex", &lua_mmap_struct::newindex);
 		objclass<lua_mmap_struct>().bind(L, "__call", &lua_mmap_struct::map);
 	}
 }
