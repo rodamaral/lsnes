@@ -616,7 +616,7 @@ template<class T> struct lua_class_bind_data
 /**
  * The pointer to call.
  */
-	int (T::*fn)(lua_state& state);
+	int (T::*fn)(lua_state& state, const std::string& _fname);
 /**
  * The state to call it in.
  */
@@ -643,7 +643,7 @@ template<class T> struct lua_class_binding
 /**
  * Function.
  */
-	int (T::*fn)(lua_state& LS);
+	int (T::*fn)(lua_state& LS, const std::string& fname);
 };
 
 /**
@@ -667,7 +667,7 @@ template<class T> class lua_class
 			lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
 			lua_state L(*b->state, LS);
 			T* p = lua_class<T>::get(L, 1, b->fname);
-			return (p->*(b->fn))(L);
+			return (p->*(b->fn))(L, b->fname);
 		} catch(std::exception& e) {
 			std::string err = e.what();
 			lua_pushlstring(LS, err.c_str(), err.length());
@@ -745,16 +745,17 @@ public:
  * Parameter fn: The method to call.
  * Parameter force: If true, overwrite existing method.
  */
-	void bind(lua_state& state, const char* keyname, int (T::*fn)(lua_state& LS))
+	void bind(lua_state& state, const char* keyname, int (T::*fn)(lua_state& LS, const std::string& fname))
 	{
 		load_metatable(state);
 		state.pushstring(keyname);
-		std::string fname = std::string("Method ") + keyname;
+		std::string fname = name + std::string("::") + keyname;
 		void* ptr = state.newuserdata(sizeof(lua_class_bind_data<T>) + fname.length() + 1);
 		lua_class_bind_data<T>* bdata = reinterpret_cast<lua_class_bind_data<T>*>(ptr);
 		bdata->fn = fn;
 		bdata->state = &state.get_master();
 		std::copy(fname.begin(), fname.end(), bdata->fname);
+		bdata->fname[fname.length()] = 0;
 		state.pushcclosure(class_bind_trampoline, 1);
 		state.rawset(-3);
 		state.pop(1);

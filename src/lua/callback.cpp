@@ -8,17 +8,17 @@ namespace
 	{
 	public:
 		lua_callbacks_list(lua_state& L);
-		int index(lua_state& L);
-		int newindex(lua_state& L);
+		int index(lua_state& L, const std::string& fname);
+		int newindex(lua_state& L, const std::string& fname);
 	};
 
 	class lua_callback_obj
 	{
 	public:
 		lua_callback_obj(lua_state& L, const std::string& name);
-		int _register(lua_state& L);
-		int _unregister(lua_state& L);
-		int _call(lua_state& L);
+		int _register(lua_state& L, const std::string& fname);
+		int _unregister(lua_state& L, const std::string& fname);
+		int _call(lua_state& L, const std::string& fname);
 	private:
 		lua_state::lua_callback_list* callback;
 		int special;
@@ -38,14 +38,14 @@ namespace
 		});
 	}
 
-	int lua_callbacks_list::index(lua_state& L)
+	int lua_callbacks_list::index(lua_state& L, const std::string& fname)
 	{
-		std::string name = L.get_string(2, "CALLBACKS_LIST::__index");
+		std::string name = L.get_string(2, fname.c_str());
 		lua_class<lua_callback_obj>::create(L, name);
 		return 1;
 	}
 
-	int lua_callbacks_list::newindex(lua_state& L)
+	int lua_callbacks_list::newindex(lua_state& L, const std::string& fname)
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}
@@ -74,7 +74,7 @@ namespace
 			throw std::runtime_error("Unknown callback type '" + name + "' for callback.<foo>");
 	}
 
-	int lua_callback_obj::_register(lua_state& L)
+	int lua_callback_obj::_register(lua_state& L, const std::string& fname)
 	{
 		if(!callback)
 			throw std::runtime_error("callback.{,un}register.register not valid");
@@ -87,7 +87,7 @@ namespace
 		return 1;
 	}
 
-	int lua_callback_obj::_unregister(lua_state& L)
+	int lua_callback_obj::_unregister(lua_state& L, const std::string& fname)
 	{
 		if(!callback)
 			throw std::runtime_error("callback.{,un}register.unregister not valid");
@@ -100,7 +100,7 @@ namespace
 		return 1;
 	}
 
-	int lua_callback_obj::_call(lua_state& L)
+	int lua_callback_obj::_call(lua_state& L, const std::string& fname)
 	{
 		if(!special)
 			throw std::runtime_error("Need to specify operation to do to callback");

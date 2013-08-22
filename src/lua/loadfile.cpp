@@ -154,11 +154,11 @@ namespace
 		{
 			delete &s;
 		}
-		int read(lua_state& L)
+		int read(lua_state& L, const std::string& fname)
 		{
 			if(L.type(2) == LUA_TNUMBER) {
 				//Read specified number of bytes.
-				size_t sz = L.get_numeric_argument<size_t>(2, "FILEREADER::read");
+				size_t sz = L.get_numeric_argument<size_t>(2, fname.c_str());
 				std::vector<char> buf;
 				buf.resize(sz);
 				s.read(&buf[0], sz);
@@ -180,10 +180,9 @@ namespace
 				L.pushlstring(tmp);
 				return 1;
 			} else
-				throw std::runtime_error("Expected number or nil as the 2nd argument of "
-					"FILEREADER::read");
+				(stringfmt() << "Expected number or nil as the 2nd argument of " << fname).throwex();
 		}
-		int lines(lua_state& L)
+		int lines(lua_state& L, const std::string& fname)
 		{
 			L.pushlightuserdata(this);
 			L.pushcclosure(lua_file_reader::lines_helper2, 1);

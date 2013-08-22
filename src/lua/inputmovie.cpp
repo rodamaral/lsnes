@@ -16,54 +16,54 @@ namespace
 		friend class lua_inputmovie;
 	public:
 		lua_inputframe(lua_state& L, controller_frame _f);
-		int get_button(lua_state& L)
+		int get_button(lua_state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, "INPUTFRAME::get_button");
-			unsigned controller = L.get_numeric_argument<unsigned>(3, "INPUTFRAME::get_button");
-			unsigned button = L.get_numeric_argument<unsigned>(4, "INPUTFRAME::get_button");
+			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
+			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
+			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
 			short value = getbutton(port, controller, button);
 			L.pushboolean(value ? 1 : 0);
 			return 1;
 		}
-		int get_axis(lua_state& L)
+		int get_axis(lua_state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, "INPUTFRAME::get_axis");
-			unsigned controller = L.get_numeric_argument<unsigned>(3, "INPUTFRAME::get_axis");
-			unsigned button = L.get_numeric_argument<unsigned>(4, "INPUTFRAME::get_axis");
+			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
+			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
+			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
 			short value = getbutton(port, controller, button);
 			L.pushnumber(value);
 			return 1;
 		}
-		int set_axis(lua_state& L)
+		int set_axis(lua_state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, "INPUTFRAME::set_axis");
-			unsigned controller = L.get_numeric_argument<unsigned>(3, "INPUTFRAME::set_axis");
-			unsigned button = L.get_numeric_argument<unsigned>(4, "INPUTFRAME::set_axis");
+			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
+			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
+			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
 			short value;
 			if(L.type(5) == LUA_TBOOLEAN)
 				value = L.toboolean(5);
 			else if(L.type(5) == LUA_TNUMBER)
-				value = L.get_numeric_argument<short>(5, "INPUTFRAME::set_axis");
+				value = L.get_numeric_argument<short>(5, fname.c_str());
 			else
-				(stringfmt() << "Expected argument 5 of INPUTFRAME::set_axis to be boolean or "
+				(stringfmt() << "Expected argument 5 of " << fname << " to be boolean or "
 					<< "number").throwex();
 			setbutton(port, controller, button, value);
 			return 0;
 		}
-		int serialize(lua_state& L)
+		int serialize(lua_state& L, const std::string& fname)
 		{
 			char buf[MAX_SERIALIZED_SIZE];
 			f.serialize(buf);
 			L.pushstring(buf);
 			return 1;
 		}
-		int unserialize(lua_state& L)
+		int unserialize(lua_state& L, const std::string& fname)
 		{
-			std::string buf = L.get_string(2, "INPUTFRAME::unserialize");
+			std::string buf = L.get_string(2, fname.c_str());
 			f.deserialize(buf.c_str());
 			return 0;
 		}
-		int get_stride(lua_state& L)
+		int get_stride(lua_state& L, const std::string& fname)
 		{
 			L.pushnumber(f.size());
 			return 1;
@@ -412,59 +412,59 @@ namespace
 	public:
 		lua_inputmovie(lua_state& L, const controller_frame_vector& _v);
 		lua_inputmovie(lua_state& L, controller_frame& _f);
-		int copy_movie(lua_state& L)
+		int copy_movie(lua_state& L, const std::string& fname)
 		{
-			return _copy_movie(L, "INPUTMOVIE::copy_movie");
+			return _copy_movie(L, fname.c_str());
 		}
-		int get_frame(lua_state& L)
+		int get_frame(lua_state& L, const std::string& fname)
 		{
-			return _get_frame(L, "INPUTMOVIE::get_frame");
+			return _get_frame(L, fname.c_str());
 		}
-		int set_frame(lua_state& L)
+		int set_frame(lua_state& L, const std::string& fname)
 		{
-			return _set_frame(L, "INPUTMOVIE::set_frame");
+			return _set_frame(L, fname.c_str());
 		}
-		int get_size(lua_state& L)
+		int get_size(lua_state& L, const std::string& fname)
 		{
-			return _get_size(L, "INPUTMOVIE::get_size");
+			return _get_size(L, fname.c_str());
 		}
-		int count_frames(lua_state& L)
+		int count_frames(lua_state& L, const std::string& fname)
 		{
-			return _count_frames(L, "INPUTMOVIE::count_frames");
+			return _count_frames(L, fname.c_str());
 		}
-		int find_frame(lua_state& L)
+		int find_frame(lua_state& L, const std::string& fname)
 		{
-			return _find_frame(L, "INPUTMOVIE::find_frame");
+			return _find_frame(L, fname.c_str());
 		}
-		int blank_frame(lua_state& L)
+		int blank_frame(lua_state& L, const std::string& fname)
 		{
-			return _blank_frame(L, "INPUTMOVIE::blank_frame");
+			return _blank_frame(L, fname.c_str());
 		}
-		int append_frames(lua_state& L)
+		int append_frames(lua_state& L, const std::string& fname)
 		{
-			return _append_frames(L, "INPUTMOVIE::append_frames");
+			return _append_frames(L, fname.c_str());
 		}
-		int append_frame(lua_state& L)
+		int append_frame(lua_state& L, const std::string& fname)
 		{
-			return _append_frame(L, "INPUTMOVIE::append_frame");
+			return _append_frame(L, fname.c_str());
 		}
-		int truncate(lua_state& L)
+		int truncate(lua_state& L, const std::string& fname)
 		{
-			return _truncate(L, "INPUTMOVIE::truncate");
+			return _truncate(L, fname.c_str());
 		}
-		int edit(lua_state& L)
+		int edit(lua_state& L, const std::string& fname)
 		{
-			return _edit(L, "INPUTMOVIE::edit");
+			return _edit(L, fname.c_str());
 		}
-		int copy_frames(lua_state& L)
+		int copy_frames(lua_state& L, const std::string& fname)
 		{
-			return _copy_frames<true>(L, "INPUTMOVIE::copy_frames");
+			return _copy_frames<true>(L, fname.c_str());
 		}
-		int serialize(lua_state& L)
+		int serialize(lua_state& L, const std::string& fname)
 		{
-			return _serialize(L, "INPUTMOVIE::serialize");
+			return _serialize(L, fname.c_str());
 		}
-		int debugdump(lua_state& L)
+		int debugdump(lua_state& L, const std::string& fname)
 		{
 			char buf[MAX_SERIALIZED_SIZE];
 			for(uint64_t i = 0; i < v.size(); i++) {

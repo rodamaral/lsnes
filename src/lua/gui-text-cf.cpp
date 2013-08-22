@@ -14,7 +14,7 @@ namespace
 	public:
 		lua_customfont(lua_state& L, const std::string& filename);
 		~lua_customfont() throw();
-		int draw(lua_state& L);
+		int draw(lua_state& L, const std::string& fname);
 		const custom_font& get_font() { return font; }
 	private:
 		custom_font font;
@@ -98,9 +98,8 @@ namespace
 		render_kill_request(this);
 	}
 
-	int lua_customfont::draw(lua_state& L)
+	int lua_customfont::draw(lua_state& L, const std::string& fname)
 	{
-		std::string fname = "CUSTOMFONT::__call";
 		if(!lua_render_ctx)
 			return 0;
 		int64_t fgc = 0xFFFFFFU;

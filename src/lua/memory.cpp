@@ -94,7 +94,7 @@ public:
 	{
 	}
 
-	int index(lua_state& L)
+	int index(lua_state& L, const std::string& fname)
 	{
 		const char* c = L.tostring(2);
 		if(!c) {
@@ -110,7 +110,7 @@ public:
 		x.first->read(L, x.second);
 		return 1;
 	}
-	int newindex(lua_state& L)
+	int newindex(lua_state& L, const std::string& fname)
 	{
 		const char* c = L.tostring(2);
 		if(!c)
@@ -123,7 +123,7 @@ public:
 		return 0;
 	}
 
-	int map(lua_state& L);
+	int map(lua_state& L, const std::string& fname);
 private:
 	std::map<std::string, std::pair<mmap_base*, uint64_t>> mappings;
 };
@@ -423,27 +423,21 @@ namespace
 
 }
 
-int lua_mmap_struct::map(lua_state& L)
+int lua_mmap_struct::map(lua_state& L, const std::string& fname)
 {
 	const char* name = L.tostring(2);
 	int base = 0;
 	uint64_t vmabase = 0;
 	if(L.type(3) == LUA_TSTRING) {
-		vmabase = get_vmabase(L, L.get_string(3, "lua_mmap_struct::map"));
+		vmabase = get_vmabase(L, L.get_string(3, fname.c_str()));
 		base = 1;
 	}
-	uint64_t addr = L.get_numeric_argument<uint64_t>(base + 3, "lua_mmap_struct::map");
+	uint64_t addr = L.get_numeric_argument<uint64_t>(base + 3, fname.c_str());
 	const char* type = L.tostring(base + 4);
-	if(!name) {
-		L.pushstring("lua_mmap_struct::map: Bad name");
-		L.error();
-		return 0;
-	}
-	if(!type) {
-		L.pushstring("lua_mmap_struct::map: Bad type");
-		L.error();
-		return 0;
-	}
+	if(!name)
+		(stringfmt() << fname << ": Bad name").throwex();
+	if(!type)
+		(stringfmt() << fname << ": Bad type").throwex();
 	std::string name2(name);
 	std::string type2(type);
 	if(type2 == "byte")
@@ -462,11 +456,8 @@ int lua_mmap_struct::map(lua_state& L)
 		mappings[name2] = std::make_pair(&mhuq, addr);
 	else if(type2 == "sqword")
 		mappings[name2] = std::make_pair(&mhsq, addr);
-	else {
-		L.pushstring("lua_mmap_struct::map: Bad type");
-		L.error();
-		return 0;
-	}
+	else
+		(stringfmt() << fname << ": Bad type").throwex();
 	return 0;
 }
 

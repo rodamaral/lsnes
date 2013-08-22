@@ -51,8 +51,8 @@ namespace
 	{
 	public:
 		lua_vma(lua_state& L, memory_region* r);
-		int info(lua_state& L);
-		template<class T, bool _bswap> int rw(lua_state& L);
+		int info(lua_state& L, const std::string& fname);
+		template<class T, bool _bswap> int rw(lua_state& L, const std::string& fname);
 	private:
 		std::string vma;
 		uint64_t vmabase;
@@ -64,9 +64,9 @@ namespace
 	{
 	public:
 		lua_vma_list(lua_state& L);
-		int index(lua_state& L);
-		int newindex(lua_state& L);
-		int call(lua_state& L);
+		int index(lua_state& L, const std::string& fname);
+		int newindex(lua_state& L, const std::string& fname);
+		int call(lua_state& L, const std::string& fname);
 	};
 }
 
@@ -102,17 +102,17 @@ namespace
 		ro = r->readonly;
 	}
 
-	int lua_vma::info(lua_state& L)
+	int lua_vma::info(lua_state& L, const std::string& fname)
 	{
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
 				return handle_push_vma(L, *i);
-		throw std::runtime_error("VMA::info: Stale region");
+		(stringfmt() << fname << ": Stale region").throwex();
 	}
 
-	template<class T, bool _bswap> int lua_vma::rw(lua_state& L)
+	template<class T, bool _bswap> int lua_vma::rw(lua_state& L, const std::string& fname)
 	{
-		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "VMA::rw<T>");
+		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		if(addr > vmasize || addr > vmasize - sizeof(T))
 			throw std::runtime_error("VMA::rw<T>: Address outside VMA bounds");
 		if(L.type(3) == LUA_TNIL || L.type(3) == LUA_TNONE) {
@@ -124,13 +124,13 @@ namespace
 		} else if(L.type(3) == LUA_TNUMBER) {
 			//Write.
 			if(ro)
-				throw std::runtime_error("VMA::rw<T>: VMA is read-only");
+				(stringfmt() << fname << ": VMA is read-only").throwex();
 			T val = L.get_numeric_argument<T>(3, "VMA::rw<T>");
 			if(_bswap) val = bswap(val);
 			lsnes_memory.write<T>(addr + vmabase, val);
 			return 0;
 		} else
-			throw std::runtime_error("VMA::rw<T>: Parameter #3 must be integer if present");
+			(stringfmt() << fname << ": Parameter #3 must be integer if present").throwex();
 	}
 
 	lua_vma_list::lua_vma_list(lua_state& L)
@@ -142,7 +142,7 @@ namespace
 		});
 	}
 
-	int lua_vma_list::call(lua_state& L)
+	int lua_vma_list::call(lua_state& L, const std::string& fname)
 	{
 		L.newtable();
 		size_t key = 1;
@@ -154,9 +154,9 @@ namespace
 		return 1;
 	}
 
-	int lua_vma_list::index(lua_state& L)
+	int lua_vma_list::index(lua_state& L, const std::string& fname)
 	{
-		std::string vma = L.get_string(2, "VMALIST::__index");
+		std::string vma = L.get_string(2, fname.c_str());
 		auto l = lsnes_memory.get_regions();
 		size_t j;
 		std::list<memory_region*>::iterator i;
@@ -165,10 +165,10 @@ namespace
 				lua_class<lua_vma>::create(L, *i);
 				return 1;
 			}
-		throw std::runtime_error("VMALIST::__index: No such VMA");
+		(stringfmt() << fname << ": No such VMA").throwex();
 	}
 
-	int lua_vma_list::newindex(lua_state& L)
+	int lua_vma_list::newindex(lua_state& L, const std::string& fname)
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}
