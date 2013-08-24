@@ -1,5 +1,6 @@
 #include "memorysearch.hpp"
 #include "minmax.hpp"
+#include "serialization.hpp"
 #include <iostream>
 
 memory_search::memory_search(memory_space& space) throw(std::bad_alloc)
@@ -136,21 +137,8 @@ struct search_value_helper
 	{
 		if(left < sizeof(value_type))
 			return false;
-		value_type v1 = 0;
-		value_type v2 = 0;
-		if(!endian || (endian == memory_space::get_system_endian() && memory_space::can_read_unaligned())) {
-			v1 = *reinterpret_cast<const value_type*>(oldv);
-			v2 = *reinterpret_cast<const value_type*>(newv);
-		} else if(endian < 0)
-			for(size_t i = 0; i < sizeof(value_type); i++) {
-				v1 |= static_cast<value_type>(oldv[i]) << (8 * i);
-				v2 |= static_cast<value_type>(newv[i]) << (8 * i);
-			}
-		else if(endian > 0)
-			for(size_t i = 0; i < sizeof(value_type); i++) {
-				v1 |= static_cast<value_type>(oldv[i]) << (8 * (sizeof(T) - i - 1));
-				v2 |= static_cast<value_type>(newv[i]) << (8 * (sizeof(T) - i - 1));
-			}
+		value_type v1 = read_of_endian<value_type>(oldv, endian);
+		value_type v2 = read_of_endian<value_type>(newv, endian);
 		return val(v1, v2);
 	}
 	const T& val;

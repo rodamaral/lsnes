@@ -1,5 +1,6 @@
 #include "memoryspace.hpp"
 #include "minmax.hpp"
+#include "serialization.hpp"
 #include <algorithm>
 
 namespace
@@ -14,27 +15,12 @@ namespace
 			g = m.lookup(addr);
 		if(!g.first || g.second + sizeof(T) > g.first->size)
 			return 0;
-		if((!g.first->endian || g.first->endian == system_endian) && memory_space::can_read_unaligned()) {
-			//Native endian.
+		if(g.first->direct_map)
+			return read_of_endian<T>(g.first->direct_map + g.second, g.first->endian);
+		else {
 			T buf;
-			if(g.first->direct_map)
-				return *reinterpret_cast<T*>(g.first->direct_map + g.second);
-			else
-				g.first->read(g.second, &buf, sizeof(T));
-			return buf;
-		} else {
-			//Can't read directly.
-			unsigned char buf[sizeof(T)];
-			if(g.first->direct_map)
-				memcpy(buf, g.first->direct_map + g.second, sizeof(T));
-			else
-				g.first->read(g.second, buf, sizeof(T));
-			if(g.first->endian && g.first->endian != system_endian) {
-				//Needs byteswap.
-				for(size_t i = 0; i < sizeof(T) / 2; i++)
-					std::swap(buf[i], buf[sizeof(T) - i - 1]);
-			}
-			return *reinterpret_cast<T*>(buf);
+			g.first->read(g.second, &buf, sizeof(T));
+			return read_of_endian<T>(&buf, g.first->endian);
 		}
 	}
 
@@ -48,26 +34,12 @@ namespace
 			g = m.lookup(addr);
 		if(!g.first || g.first->readonly || g.second + sizeof(T) > g.first->size)
 			return false;
-		if((!g.first->endian || g.first->endian == system_endian) && memory_space::can_read_unaligned()) {
-			//Native endian.
-			if(g.first->direct_map) {
-				*reinterpret_cast<T*>(g.first->direct_map + g.second) = value;
-				return true;
-			} else
-				g.first->write(g.second, &value, sizeof(T));
-		} else {
-			//The opposite endian (little).
-			unsigned char buf[sizeof(T)];
-			*reinterpret_cast<T*>(buf) = value;
-			if(g.first->endian && g.first->endian != system_endian) {
-				//Needs byteswap.
-				for(size_t i = 0; i < sizeof(T) / 2; i++)
-					std::swap(buf[i], buf[sizeof(T) - i - 1]);
-			}
-			if(g.first->direct_map)
-				memcpy(g.first->direct_map + g.second, buf, sizeof(T));
-			else
-				return g.first->write(g.second, buf, sizeof(T));
+		if(g.first->direct_map)
+			write_of_endian(g.first->direct_map + g.second, value, g.first->endian);
+		else {
+			T buf;
+			write_of_endian(&buf, value, g.first->endian);
+			g.first->write(g.second, &buf, sizeof(T));
 		}
 		return true;
 	}

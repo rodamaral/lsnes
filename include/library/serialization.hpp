@@ -58,4 +58,35 @@ T1 _read_common(const unsigned char* source)
 #define read64ube(t) _read_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<const unsigned char*>(t))
 #define read64ule(t) _read_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<const unsigned char*>(t))
 
+template<typename T> void swap_endian(T& value)
+{
+	char* _value = reinterpret_cast<char*>(&value);
+	for(size_t i = 0; i < sizeof(T)/2; i++)
+		std::swap(_value[i], _value[sizeof(T)-i-1]);
+}
+
+template<typename T> void swap_endian(T& value, int endian)
+{
+	short _magic = 258;
+	char magic = *reinterpret_cast<char*>(&_magic);
+	bool do_swap = (endian == -1 && magic == 1) || (endian == 1 && magic == 2);
+	if(do_swap)
+		swap_endian(value);
+}
+
+template<typename T> T read_of_endian(const void* value, int endian)
+{
+	T val;
+	memcpy(&val, value, sizeof(T));
+	swap_endian(val, endian);
+	return val;
+}
+
+template<typename T> void write_of_endian(void* value, const T& val, int endian)
+{
+	T val2;
+	memcpy(value, &val, sizeof(T));
+	swap_endian(*reinterpret_cast<T*>(value), endian);
+}
+
 #endif

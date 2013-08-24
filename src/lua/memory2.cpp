@@ -6,6 +6,7 @@
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
+#include "library/serialization.hpp"
 #include "library/minmax.hpp"
 
 namespace
@@ -39,12 +40,9 @@ namespace
 
 	template<typename T> T bswap(T val)
 	{
-		char buf[sizeof(T)];
-		memcpy(buf, &val, sizeof(T));
-		for(size_t i = 0; i < sizeof(T) / 2; i++)
-			std::swap(buf[i], buf[sizeof(T) - i - 1]);
-		memcpy(&val, buf, sizeof(T));
-		return val;
+		T val2 = val;
+		swap_endian(val2);
+		return val2;
 	}
 
 	class lua_vma
