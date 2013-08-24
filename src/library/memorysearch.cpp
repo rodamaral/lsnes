@@ -345,81 +345,47 @@ template<class T> void memory_search::search(const T& obj) throw()
 	}
 }
 
-void memory_search::byte_value(uint8_t value) throw() { search(search_value<uint8_t>(value)); }
-void memory_search::byte_difference(uint8_t value) throw() { search(search_difference<uint8_t>(value)); }
-void memory_search::byte_slt() throw() { search(search_lt<int8_t>()); }
-void memory_search::byte_sle() throw() { search(search_le<int8_t>()); }
-void memory_search::byte_seq() throw() { search(search_eq<int8_t>()); }
-void memory_search::byte_sne() throw() { search(search_ne<int8_t>()); }
-void memory_search::byte_sge() throw() { search(search_ge<int8_t>()); }
-void memory_search::byte_sgt() throw() { search(search_gt<int8_t>()); }
-void memory_search::byte_ult() throw() { search(search_lt<uint8_t>()); }
-void memory_search::byte_ule() throw() { search(search_le<uint8_t>()); }
-void memory_search::byte_ueq() throw() { search(search_eq<uint8_t>()); }
-void memory_search::byte_une() throw() { search(search_ne<uint8_t>()); }
-void memory_search::byte_uge() throw() { search(search_ge<uint8_t>()); }
-void memory_search::byte_ugt() throw() { search(search_gt<uint8_t>()); }
-void memory_search::byte_seqlt() throw() { search(search_seqlt<uint8_t>()); }
-void memory_search::byte_seqle() throw() { search(search_seqle<uint8_t>()); }
-void memory_search::byte_seqge() throw() { search(search_seqge<uint8_t>()); }
-void memory_search::byte_seqgt() throw() { search(search_seqgt<uint8_t>()); }
+template<typename T> void memory_search::s_value(T value) throw() { search(search_value<T>(value)); }
+template<typename T> void memory_search::s_difference(T value) throw() { search(search_difference<T>(value)); }
+template<typename T> void memory_search::s_lt() throw() { search(search_lt<T>()); }
+template<typename T> void memory_search::s_le() throw() { search(search_le<T>()); }
+template<typename T> void memory_search::s_eq() throw() { search(search_eq<T>()); }
+template<typename T> void memory_search::s_ne() throw() { search(search_ne<T>()); }
+template<typename T> void memory_search::s_ge() throw() { search(search_ge<T>()); }
+template<typename T> void memory_search::s_gt() throw() { search(search_gt<T>()); }
+template<typename T> void memory_search::s_seqlt() throw() { search(search_seqlt<T>()); }
+template<typename T> void memory_search::s_seqle() throw() { search(search_seqle<T>()); }
+template<typename T> void memory_search::s_seqge() throw() { search(search_seqge<T>()); }
+template<typename T> void memory_search::s_seqgt() throw() { search(search_seqgt<T>()); }
 
-void memory_search::word_value(uint16_t value) throw() { search(search_value<uint16_t>(value)); }
-void memory_search::word_difference(uint16_t value) throw() { search(search_difference<uint16_t>(value)); }
-void memory_search::word_slt() throw() { search(search_lt<int16_t>()); }
-void memory_search::word_sle() throw() { search(search_le<int16_t>()); }
-void memory_search::word_seq() throw() { search(search_eq<int16_t>()); }
-void memory_search::word_sne() throw() { search(search_ne<int16_t>()); }
-void memory_search::word_sge() throw() { search(search_ge<int16_t>()); }
-void memory_search::word_sgt() throw() { search(search_gt<int16_t>()); }
-void memory_search::word_ult() throw() { search(search_lt<uint16_t>()); }
-void memory_search::word_ule() throw() { search(search_le<uint16_t>()); }
-void memory_search::word_ueq() throw() { search(search_eq<uint16_t>()); }
-void memory_search::word_une() throw() { search(search_ne<uint16_t>()); }
-void memory_search::word_uge() throw() { search(search_ge<uint16_t>()); }
-void memory_search::word_ugt() throw() { search(search_gt<uint16_t>()); }
-void memory_search::word_seqlt() throw() { search(search_seqlt<uint16_t>()); }
-void memory_search::word_seqle() throw() { search(search_seqle<uint16_t>()); }
-void memory_search::word_seqge() throw() { search(search_seqge<uint16_t>()); }
-void memory_search::word_seqgt() throw() { search(search_seqgt<uint16_t>()); }
+template<typename T> void memorysearch_pull_type(memory_search& s)
+{
+	T val;
+	s.s_value<T>(val);
+	s.s_difference<T>(val);
+	s.s_lt<T>();
+	s.s_le<T>();
+	s.s_eq<T>();
+	s.s_ne<T>();
+	s.s_ge<T>();
+	s.s_gt<T>();
+	s.s_seqlt<T>();
+	s.s_seqle<T>();
+	s.s_seqge<T>();
+	s.s_seqgt<T>();
+}
 
-void memory_search::dword_value(uint32_t value) throw() { search(search_value<uint32_t>(value)); }
-void memory_search::dword_difference(uint32_t value) throw() { search(search_difference<uint32_t>(value)); }
-void memory_search::dword_slt() throw() { search(search_lt<int32_t>()); }
-void memory_search::dword_sle() throw() { search(search_le<int32_t>()); }
-void memory_search::dword_seq() throw() { search(search_eq<int32_t>()); }
-void memory_search::dword_sne() throw() { search(search_ne<int32_t>()); }
-void memory_search::dword_sge() throw() { search(search_ge<int32_t>()); }
-void memory_search::dword_sgt() throw() { search(search_gt<int32_t>()); }
-void memory_search::dword_ult() throw() { search(search_lt<uint32_t>()); }
-void memory_search::dword_ule() throw() { search(search_le<uint32_t>()); }
-void memory_search::dword_ueq() throw() { search(search_eq<uint32_t>()); }
-void memory_search::dword_une() throw() { search(search_ne<uint32_t>()); }
-void memory_search::dword_uge() throw() { search(search_ge<uint32_t>()); }
-void memory_search::dword_ugt() throw() { search(search_gt<uint32_t>()); }
-void memory_search::dword_seqlt() throw() { search(search_seqlt<uint32_t>()); }
-void memory_search::dword_seqle() throw() { search(search_seqle<uint32_t>()); }
-void memory_search::dword_seqge() throw() { search(search_seqge<uint32_t>()); }
-void memory_search::dword_seqgt() throw() { search(search_seqgt<uint32_t>()); }
-
-void memory_search::qword_value(uint64_t value) throw() { search(search_value<uint64_t>(value)); }
-void memory_search::qword_difference(uint64_t value) throw() { search(search_difference<uint64_t>(value)); }
-void memory_search::qword_slt() throw() { search(search_lt<int64_t>()); }
-void memory_search::qword_sle() throw() { search(search_le<int64_t>()); }
-void memory_search::qword_seq() throw() { search(search_eq<int64_t>()); }
-void memory_search::qword_sne() throw() { search(search_ne<int64_t>()); }
-void memory_search::qword_sge() throw() { search(search_ge<int64_t>()); }
-void memory_search::qword_sgt() throw() { search(search_gt<int64_t>()); }
-void memory_search::qword_ult() throw() { search(search_lt<uint64_t>()); }
-void memory_search::qword_ule() throw() { search(search_le<uint64_t>()); }
-void memory_search::qword_ueq() throw() { search(search_eq<uint64_t>()); }
-void memory_search::qword_une() throw() { search(search_ne<uint64_t>()); }
-void memory_search::qword_uge() throw() { search(search_ge<uint64_t>()); }
-void memory_search::qword_ugt() throw() { search(search_gt<uint64_t>()); }
-void memory_search::qword_seqlt() throw() { search(search_seqlt<uint64_t>()); }
-void memory_search::qword_seqle() throw() { search(search_seqle<uint64_t>()); }
-void memory_search::qword_seqge() throw() { search(search_seqge<uint64_t>()); }
-void memory_search::qword_seqgt() throw() { search(search_seqgt<uint64_t>()); }
+void memorysearch_pull_all(memory_search& s)
+{
+	memorysearch_pull_type<int8_t>(s);
+	memorysearch_pull_type<uint8_t>(s);
+	memorysearch_pull_type<int16_t>(s);
+	memorysearch_pull_type<uint16_t>(s);
+	memorysearch_pull_type<int32_t>(s);
+	memorysearch_pull_type<uint32_t>(s);
+	memorysearch_pull_type<int64_t>(s);
+	memorysearch_pull_type<uint64_t>(s);
+}
 
 void memory_search::update() throw() { search(search_update()); }
 

@@ -263,150 +263,150 @@ namespace
 		{
 			"value", {
 				&wxwindow_memorysearch::search_1<int8_t, uint8_t,
-					&memory_search::byte_value>,
+					&memory_search::s_value<uint8_t>>,
 				&wxwindow_memorysearch::search_1<uint8_t, uint8_t,
-					&memory_search::byte_value>,
+					&memory_search::s_value<uint8_t>>,
 				&wxwindow_memorysearch::search_1<int16_t, uint16_t,
-					&memory_search::word_value>,
+					&memory_search::s_value<uint16_t>>,
 				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
-					&memory_search::word_value>,
+					&memory_search::s_value<uint16_t>>,
 				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
-					&memory_search::dword_value>,
+					&memory_search::s_value<uint32_t>>,
 				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
-					&memory_search::dword_value>,
+					&memory_search::s_value<uint32_t>>,
 				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
-					&memory_search::qword_value>,
+					&memory_search::s_value<uint64_t>>,
 				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
-					&memory_search::qword_value>
+					&memory_search::s_value<uint64_t>>
 			}
 		},{
 			"diff.", {
 				&wxwindow_memorysearch::search_1<int8_t, uint8_t,
-					&memory_search::byte_difference>,
+					&memory_search::s_difference<uint8_t>>,
 				&wxwindow_memorysearch::search_1<uint8_t, uint8_t,
-					&memory_search::byte_difference>,
+					&memory_search::s_difference<uint8_t>>,
 				&wxwindow_memorysearch::search_1<int16_t, uint16_t,
-					&memory_search::word_difference>,
+					&memory_search::s_difference<uint16_t>>,
 				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
-					&memory_search::word_difference>,
+					&memory_search::s_difference<uint16_t>>,
 				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
-					&memory_search::dword_difference>,
+					&memory_search::s_difference<uint32_t>>,
 				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
-					&memory_search::dword_difference>,
+					&memory_search::s_difference<uint32_t>>,
 				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
-					&memory_search::qword_difference>,
+					&memory_search::s_difference<uint64_t>>,
 				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
-					&memory_search::qword_difference>
+					&memory_search::s_difference<uint64_t>>
 			}
 		},{
 			"<", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_slt>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_ult>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_slt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_ult>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_slt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_ult>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_slt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_ult>
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint64_t>>
 			}
 		},{
 			"<=", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_sle>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_ule>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_sle>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_ule>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_sle>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_ule>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_sle>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_ule>
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint64_t>>
 			}
 		},{
 			"==", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seq>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_ueq>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seq>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_ueq>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seq>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_ueq>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seq>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_ueq>
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint64_t>>
 			}
 		},{
 			"!=", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_sne>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_une>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_sne>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_une>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_sne>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_une>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_sne>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_une>
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint64_t>>
 			}
 		},{
 			">=", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_sge>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_uge>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_sge>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_uge>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_sge>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_uge>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_sge>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_uge>
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint64_t>>
 			}
 		},{
 			">", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_sgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_ugt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_sgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_ugt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_sgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_ugt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_sgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_ugt>
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint64_t>>
 			}
 		},{
 			"seq<", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqlt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqlt>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>
 			}
 		},{
 			"seq<=", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqle>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqle>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>
 			}
 		},{
 			"seq>=", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqge>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqge>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>
 			}
 		},{
 			"seq>", {
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::byte_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::word_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::dword_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqgt>,
-				&wxwindow_memorysearch::search_0<&memory_search::qword_seqgt>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint8_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>
 			}
 		},{
 			"true", {
