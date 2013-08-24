@@ -22,28 +22,19 @@ namespace
 			else
 				g.first->read(g.second, &buf, sizeof(T));
 			return buf;
-		} else if(g.first->endian < 0 || (!g.first->endian && system_endian < 0)) {
-			//The opposite endian (little).
-			unsigned char buf[sizeof(T)];
-			if(g.first->direct_map)
-				memcpy(buf, g.first->direct_map + g.second, sizeof(T));
-			else
-				g.first->read(g.second, buf, sizeof(T));
-			T v = 0;
-			for(unsigned i = 0; i < sizeof(T); i++)
-				v |= (static_cast<T>(buf[i]) << (8 * i));
-			return v;
 		} else {
-			//The opposite endian (big).
+			//Can't read directly.
 			unsigned char buf[sizeof(T)];
 			if(g.first->direct_map)
 				memcpy(buf, g.first->direct_map + g.second, sizeof(T));
 			else
 				g.first->read(g.second, buf, sizeof(T));
-			T v = 0;
-			for(unsigned i = 0; i < sizeof(T); i++)
-				v |= (static_cast<T>(buf[i]) << (8 * (sizeof(T) - i - 1)));
-			return v;
+			if(g.first->endian && g.first->endian != system_endian) {
+				//Needs byteswap.
+				for(size_t i = 0; i < sizeof(T) / 2; i++)
+					std::swap(buf[i], buf[sizeof(T) - i - 1]);
+			}
+			return *reinterpret_cast<T*>(buf);
 		}
 	}
 
@@ -64,20 +55,15 @@ namespace
 				return true;
 			} else
 				g.first->write(g.second, &value, sizeof(T));
-		} else if(g.first->endian < 0 || (!g.first->endian && system_endian < 0)) {
+		} else {
 			//The opposite endian (little).
 			unsigned char buf[sizeof(T)];
-			for(unsigned i = 0; i < sizeof(T); i++)
-				buf[i] = value >> (8 * i);
-			if(g.first->direct_map)
-				memcpy(g.first->direct_map + g.second, buf, sizeof(T));
-			else
-				return g.first->write(g.second, buf, sizeof(T));
-		} else {
-			//The opposite endian (big).
-			unsigned char buf[sizeof(T)];
-			for(unsigned i = 0; i < sizeof(T); i++)
-				buf[i] = value >> (8 * (sizeof(T) - i - 1));
+			*reinterpret_cast<T*>(buf) = value;
+			if(g.first->endian && g.first->endian != system_endian) {
+				//Needs byteswap.
+				for(size_t i = 0; i < sizeof(T) / 2; i++)
+					std::swap(buf[i], buf[sizeof(T) - i - 1]);
+			}
 			if(g.first->direct_map)
 				memcpy(g.first->direct_map + g.second, buf, sizeof(T));
 			else
