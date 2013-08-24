@@ -4,7 +4,8 @@
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
 #include "core/window.hpp"
-#include <library/string.hpp>
+#include "library/string.hpp"
+#include "library/int24.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -340,6 +341,12 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 				break;
 			case 'W':
 				stack_push<uint16_t>(s, lsnes_memory.read<uint16_t>(stack_pop(s).as_address()));
+				break;
+			case 'o':
+				stack_push<ss_int24_t>(s, lsnes_memory.read<ss_uint24_t>(stack_pop(s).as_address()));
+				break;
+			case 'O':
+				stack_push<ss_uint24_t>(s, lsnes_memory.read<ss_uint24_t>(stack_pop(s).as_address()));
 				break;
 			case 'd':
 				stack_push<int32_t>(s, lsnes_memory.read<uint32_t>(stack_pop(s).as_address()));

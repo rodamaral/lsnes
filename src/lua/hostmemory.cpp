@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/moviedata.hpp"
 #include "library/serialization.hpp"
+#include "library/int24.hpp"
 
 namespace
 {
@@ -77,6 +78,26 @@ namespace
 	function_ptr_luafun hm_writesw(lua_func_misc, "hostmemory.writesword", [](lua_state& L,
 		const std::string& fname) -> int {
 		return do_write<int16_t>(L, fname);
+	});
+
+	function_ptr_luafun hm_readh(lua_func_misc, "hostmemory.readhword", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_read<ss_uint24_t>(L, fname);
+	});
+
+	function_ptr_luafun hm_writeh(lua_func_misc, "hostmemory.writehword", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_write<ss_uint24_t>(L, fname);
+	});
+
+	function_ptr_luafun hm_readsh(lua_func_misc, "hostmemory.readshword", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_read<ss_int24_t>(L, fname);
+	});
+
+	function_ptr_luafun hm_writesh(lua_func_misc, "hostmemory.writeshword", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_write<ss_int24_t>(L, fname);
 	});
 
 	function_ptr_luafun hm_readd(lua_func_misc, "hostmemory.readdword", [](lua_state& L,

@@ -8,6 +8,7 @@
 #include "library/string.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
+#include "library/int24.hpp"
 
 namespace
 {
@@ -81,6 +82,8 @@ namespace
 			{"byte", &lua_vma::rw<uint8_t, false>},
 			{"sword", &lua_vma::rw<int16_t, false>},
 			{"word", &lua_vma::rw<uint16_t, false>},
+			{"shword", &lua_vma::rw<ss_int24_t, false>},
+			{"hword", &lua_vma::rw<ss_uint24_t, false>},
 			{"sdword", &lua_vma::rw<int32_t, false>},
 			{"dword", &lua_vma::rw<uint32_t, false>},
 			{"sqword", &lua_vma::rw<int64_t, false>},
@@ -89,6 +92,8 @@ namespace
 			{"ibyte", &lua_vma::rw<uint8_t, true>},
 			{"isword", &lua_vma::rw<int16_t, true>},
 			{"iword", &lua_vma::rw<uint16_t, true>},
+			{"ishword", &lua_vma::rw<ss_int24_t, true>},
+			{"ihword", &lua_vma::rw<ss_uint24_t, true>},
 			{"isdword", &lua_vma::rw<int32_t, true>},
 			{"idword", &lua_vma::rw<uint32_t, true>},
 			{"isqword", &lua_vma::rw<int64_t, true>},

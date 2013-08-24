@@ -1,6 +1,7 @@
 #include "memoryspace.hpp"
 #include "minmax.hpp"
 #include "serialization.hpp"
+#include "int24.hpp"
 #include <algorithm>
 
 namespace
@@ -150,6 +151,8 @@ template<> int8_t MSR (uint64_t address) { return internal_read<int8_t, false>(*
 template<> uint8_t MSR (uint64_t address) { return internal_read<uint8_t, false>(*this, address); }
 template<> int16_t MSR (uint64_t address) { return internal_read<int16_t, false>(*this, address); }
 template<> uint16_t MSR (uint64_t address) { return internal_read<uint16_t, false>(*this, address); }
+template<> ss_int24_t MSR (uint64_t address) { return internal_read<ss_int24_t, false>(*this, address); }
+template<> ss_uint24_t MSR (uint64_t address) { return internal_read<ss_uint24_t, false>(*this, address); }
 template<> int32_t MSR (uint64_t address) { return internal_read<int32_t, false>(*this, address); }
 template<> uint32_t MSR (uint64_t address) { return internal_read<uint32_t, false>(*this, address); }
 template<> int64_t MSR (uint64_t address) { return internal_read<int64_t, false>(*this, address); }
@@ -158,6 +161,8 @@ template<> bool MSW (uint64_t a, int8_t v) { return internal_write<int8_t, false
 template<> bool MSW (uint64_t a, uint8_t v) { return internal_write<uint8_t, false>(*this, a, v); }
 template<> bool MSW (uint64_t a, int16_t v) { return internal_write<int16_t, false>(*this, a, v); }
 template<> bool MSW (uint64_t a, uint16_t v) { return internal_write<uint16_t, false>(*this, a, v); }
+template<> bool MSW (uint64_t a, ss_int24_t v) { return internal_write<ss_int24_t, false>(*this, a, v); }
+template<> bool MSW (uint64_t a, ss_uint24_t v) { return internal_write<ss_uint24_t, false>(*this, a, v); }
 template<> bool MSW (uint64_t a, int32_t v) { return internal_write<int32_t, false>(*this, a, v); }
 template<> bool MSW (uint64_t a, uint32_t v) { return internal_write<uint32_t, false>(*this, a, v); }
 template<> bool MSW (uint64_t a, int64_t v) { return internal_write<int64_t, false>(*this, a, v); }
@@ -166,6 +171,8 @@ template<> int8_t MSRL (uint64_t address) { return internal_read<int8_t, true>(*
 template<> uint8_t MSRL (uint64_t address) { return internal_read<uint8_t, true>(*this, address); }
 template<> int16_t MSRL (uint64_t address) { return internal_read<int16_t, true>(*this, address); }
 template<> uint16_t MSRL (uint64_t address) { return internal_read<uint16_t, true>(*this, address); }
+template<> ss_int24_t MSRL (uint64_t address) { return internal_read<ss_int24_t, true>(*this, address); }
+template<> ss_uint24_t MSRL (uint64_t address) { return internal_read<ss_uint24_t, true>(*this, address); }
 template<> int32_t MSRL (uint64_t address) { return internal_read<int32_t, true>(*this, address); }
 template<> uint32_t MSRL (uint64_t address) { return internal_read<uint32_t, true>(*this, address); }
 template<> int64_t MSRL (uint64_t address) { return internal_read<int64_t, true>(*this, address); }
@@ -174,6 +181,8 @@ template<> bool MSWL (uint64_t a, int8_t v) { return internal_write<int8_t, true
 template<> bool MSWL (uint64_t a, uint8_t v) { return internal_write<uint8_t, true>(*this, a, v); }
 template<> bool MSWL (uint64_t a, int16_t v) { return internal_write<int16_t, true>(*this, a, v); }
 template<> bool MSWL (uint64_t a, uint16_t v) { return internal_write<uint16_t, true>(*this, a, v); }
+template<> bool MSWL (uint64_t a, ss_int24_t v) { return internal_write<ss_int24_t, true>(*this, a, v); }
+template<> bool MSWL (uint64_t a, ss_uint24_t v) { return internal_write<ss_uint24_t, true>(*this, a, v); }
 template<> bool MSWL (uint64_t a, int32_t v) { return internal_write<int32_t, true>(*this, a, v); }
 template<> bool MSWL (uint64_t a, uint32_t v) { return internal_write<uint32_t, true>(*this, a, v); }
 template<> bool MSWL (uint64_t a, int64_t v) { return internal_write<int64_t, true>(*this, a, v); }

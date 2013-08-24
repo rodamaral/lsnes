@@ -7,6 +7,7 @@
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "library/int24.hpp"
 
 namespace
 {
@@ -396,18 +397,23 @@ namespace
 	lua_read_memory<int8_t, &memory_space::read<int8_t>> rsb("memory.readsbyte");
 	lua_read_memory<uint16_t, &memory_space::read<uint16_t>> ruw("memory.readword");
 	lua_read_memory<int16_t, &memory_space::read<int16_t>> rsw("memory.readsword");
+	lua_read_memory<ss_uint24_t, &memory_space::read<ss_uint24_t>> ruh("memory.readhword");
+	lua_read_memory<ss_int24_t, &memory_space::read<ss_int24_t>> rsh("memory.readshword");
 	lua_read_memory<uint32_t, &memory_space::read<uint32_t>> rud("memory.readdword");
 	lua_read_memory<int32_t, &memory_space::read<int32_t>> rsd("memory.readsdword");
 	lua_read_memory<uint64_t, &memory_space::read<uint64_t>> ruq("memory.readqword");
 	lua_read_memory<int64_t, &memory_space::read<int64_t>> rsq("memory.readsqword");
 	lua_write_memory<uint8_t, &memory_space::write<uint8_t>> wb("memory.writebyte");
 	lua_write_memory<uint16_t, &memory_space::write<uint16_t>> ww("memory.writeword");
+	lua_write_memory<ss_uint24_t, &memory_space::write<ss_uint24_t>> wh("memory.writehword");
 	lua_write_memory<uint32_t, &memory_space::write<uint32_t>> wd("memory.writedword");
 	lua_write_memory<uint64_t, &memory_space::write<uint64_t>> wq("memory.writeqword");
 	lua_mmap_memory_helper<uint8_t, &memory_space::read<uint8_t>, &memory_space::write<uint8_t>> mhub;
 	lua_mmap_memory_helper<int8_t, &memory_space::read<int8_t>, &memory_space::write<int8_t>> mhsb;
 	lua_mmap_memory_helper<uint16_t, &memory_space::read<uint16_t>, &memory_space::write<uint16_t>> mhuw;
 	lua_mmap_memory_helper<int16_t, &memory_space::read<int16_t>, &memory_space::write<int16_t>> mhsw;
+	lua_mmap_memory_helper<ss_uint24_t, &memory_space::read<ss_uint24_t>, &memory_space::write<ss_uint24_t>> mhuh;
+	lua_mmap_memory_helper<ss_int24_t, &memory_space::read<ss_int24_t>, &memory_space::write<ss_int24_t>> mhsh;
 	lua_mmap_memory_helper<uint32_t, &memory_space::read<uint32_t>, &memory_space::write<uint32_t>> mhud;
 	lua_mmap_memory_helper<int32_t, &memory_space::read<int32_t>, &memory_space::write<int32_t>> mhsd;
 	lua_mmap_memory_helper<uint64_t, &memory_space::read<uint64_t>, &memory_space::write<uint64_t>> mhuq;
@@ -416,11 +422,12 @@ namespace
 	lua_mmap_memory msb("memory.mapsbyte", mhsb);
 	lua_mmap_memory muw("memory.mapword", mhuw);
 	lua_mmap_memory msw("memory.mapsword", mhsw);
+	lua_mmap_memory muh("memory.maphword", mhuh);
+	lua_mmap_memory msh("memory.mapshword", mhsh);
 	lua_mmap_memory mud("memory.mapdword", mhud);
 	lua_mmap_memory msd("memory.mapsdword", mhsd);
 	lua_mmap_memory muq("memory.mapqword", mhuq);
 	lua_mmap_memory msq("memory.mapsqword", mhsq);
-
 }
 
 int lua_mmap_struct::map(lua_state& L, const std::string& fname)
@@ -448,6 +455,10 @@ int lua_mmap_struct::map(lua_state& L, const std::string& fname)
 		mappings[name2] = std::make_pair(&mhuw, addr);
 	else if(type2 == "sword")
 		mappings[name2] = std::make_pair(&mhsw, addr);
+	else if(type2 == "hword")
+		mappings[name2] = std::make_pair(&mhuh, addr);
+	else if(type2 == "shword")
+		mappings[name2] = std::make_pair(&mhsh, addr);
 	else if(type2 == "dword")
 		mappings[name2] = std::make_pair(&mhud, addr);
 	else if(type2 == "sdword")

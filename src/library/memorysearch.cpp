@@ -1,6 +1,7 @@
 #include "memorysearch.hpp"
 #include "minmax.hpp"
 #include "serialization.hpp"
+#include "int24.hpp"
 #include <iostream>
 
 memory_search::memory_search(memory_space& space) throw(std::bad_alloc)
@@ -84,7 +85,7 @@ struct search_seqlt
 	{
 		T mask = (T)1 << (sizeof(T) * 8 - 1);
 		T diff = newv - oldv;
-		return ((diff & mask) != 0);
+		return ((diff & mask) != (T)0);
 	}
 };
 
@@ -96,7 +97,7 @@ struct search_seqle
 	{
 		T mask = (T)1 << (sizeof(T) * 8 - 1);
 		T diff = newv - oldv;
-		return ((diff & mask) != 0) || (diff == 0);
+		return ((diff & mask) != (T)0) || (diff == (T)0);
 	}
 };
 
@@ -108,7 +109,7 @@ struct search_seqge
 	{
 		T mask = (T)1 << (sizeof(T) * 8 - 1);
 		T diff = newv - oldv;
-		return ((diff & mask) == 0);
+		return ((diff & mask) == (T)0);
 	}
 };
 
@@ -120,7 +121,7 @@ struct search_seqgt
 	{
 		T mask = (T)1 << (sizeof(T) * 8 - 1);
 		T diff = newv - oldv;
-		return ((diff & mask) == 0) && (diff != 0);
+		return ((diff & mask) == (T)0) && (diff != (T)0);
 	}
 };
 
@@ -381,6 +382,8 @@ void memorysearch_pull_all(memory_search& s)
 	memorysearch_pull_type<uint8_t>(s);
 	memorysearch_pull_type<int16_t>(s);
 	memorysearch_pull_type<uint16_t>(s);
+	memorysearch_pull_type<ss_int24_t>(s);
+	memorysearch_pull_type<ss_uint24_t>(s);
 	memorysearch_pull_type<int32_t>(s);
 	memorysearch_pull_type<uint32_t>(s);
 	memorysearch_pull_type<int64_t>(s);

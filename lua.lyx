@@ -2237,7 +2237,7 @@ Writes hostmemory slot with value <value> 0-255.
 \end_layout
 
 \begin_layout Subsection
-hostmemory.read{,s}{byte,{,d,q}word}: Read from host memory
+hostmemory.read{,s}{byte,{,h,d,q}word}: Read from host memory
 \end_layout
 
 \begin_layout Itemize
@@ -2254,6 +2254,14 @@ Syntax: number hostmemory.readword(number address)
 
 \begin_layout Itemize
 Syntax: number hostmemory.readsword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readhword(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readshword(number address)
 \end_layout
 
 \begin_layout Itemize
@@ -2285,6 +2293,10 @@ word is 2 elements
 \end_layout
 
 \begin_layout Itemize
+hword is 3 elements
+\end_layout
+
+\begin_layout Itemize
 dword is 4 elements
 \end_layout
 
@@ -2297,7 +2309,7 @@ The 's' variants do signed read.
 \end_layout
 
 \begin_layout Subsection
-hostmemory.write{,s}{byte,{,d,q}word}: Write to host memory
+hostmemory.write{,s}{byte,{,h,d,q}word}: Write to host memory
 \end_layout
 
 \begin_layout Itemize
@@ -2314,6 +2326,14 @@ Syntax: number hostmemory.writeword(number address, number value)
 
 \begin_layout Itemize
 Syntax: number hostmemory.writesword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writehword(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.writeshword(number address, number value)
 \end_layout
 
 \begin_layout Itemize
@@ -2343,6 +2363,10 @@ byte is 1 element
 
 \begin_layout Itemize
 word is 2 elements
+\end_layout
+
+\begin_layout Itemize
+hword is 3 elements
 \end_layout
 
 \begin_layout Itemize

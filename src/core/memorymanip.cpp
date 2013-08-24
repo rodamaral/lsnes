@@ -1,4 +1,3 @@
-
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"
@@ -7,6 +6,7 @@
 #include "core/rrdata.hpp"
 #include "interface/romtype.hpp"
 #include "library/string.hpp"
+#include "library/int24.hpp"
 #include "library/minmax.hpp"
 #include "library/memorysearch.hpp"
 
@@ -255,14 +255,17 @@ namespace
 
 	read_command<uint8_t, &memory_space::read<uint8_t>> ru1("read-byte");
 	read_command<uint16_t, &memory_space::read<uint16_t>> ru2("read-word");
+	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>> ru3("read-hword");
 	read_command<uint32_t, &memory_space::read<uint32_t>> ru4("read-dword");
 	read_command<uint64_t, &memory_space::read<uint64_t>> ru8("read-qword");
 	read_command<int8_t, &memory_space::read<int8_t>> rs1("read-sbyte");
 	read_command<int16_t, &memory_space::read<int16_t>> rs2("read-sword");
+	read_command<ss_int24_t, &memory_space::read<ss_int24_t>> rs3("read-shword");
 	read_command<int32_t, &memory_space::read<int32_t>> rs4("read-sdword");
 	read_command<int64_t, &memory_space::read<int64_t>> rs8("read-sqword");
 	write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>> w1("write-byte");
 	write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>> w2("write-word");
+	write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>> w3("write-hword");
 	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>> w4("write-dword");
 	write_command<uint64_t, -9223372036854775808LL, 0xFFFFFFFFFFFFFFFFULL, &memory_space::write<uint64_t>>
 		w8("write-qword");

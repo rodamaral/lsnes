@@ -3,6 +3,7 @@
 #include "core/memorywatch.hpp"
 #include "library/string.hpp"
 #include "library/memorysearch.hpp"
+#include "library/int24.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"
@@ -26,7 +27,7 @@
 #define wxID_DISQUALIFY (wxID_HIGHEST + 8)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
-#define DATATYPES 8
+#define DATATYPES 10
 #define CANDIDATE_LIMIT 512
 
 class wxwindow_memorysearch;
@@ -42,6 +43,8 @@ namespace
 		"unsigned byte",
 		"signed word",
 		"unsigned word",
+		"signed hword",
+		"unsigned hword",
 		"signed dword",
 		"unsigned dword",
 		"signed qword",
@@ -103,6 +106,11 @@ namespace
 		return format_number_signedh(static_cast<int16_t>(val), 4, hex);
 	}
 
+	template<> std::string format_number_signed<ss_uint24_t>(ss_uint24_t val, bool hex)
+	{
+		return format_number_signedh((int32_t)(uint32_t)(val), 6, hex);
+	}
+
 	template<> std::string format_number_signed<uint32_t>(uint32_t val, bool hex)
 	{
 		return format_number_signedh(static_cast<int32_t>(val), 8, hex);
@@ -121,6 +129,11 @@ namespace
 	template<> std::string format_number_unsigned<uint16_t>(uint16_t val, bool hex)
 	{
 		return format_number_unsignedh(val, 4, hex);
+	}
+
+	template<> std::string format_number_unsigned<ss_uint24_t>(ss_uint24_t val, bool hex)
+	{
+		return format_number_unsignedh(val, 6, hex);
 	}
 
 	template<> std::string format_number_unsigned<uint32_t>(uint32_t val, bool hex)
@@ -270,6 +283,10 @@ namespace
 					&memory_search::s_value<uint16_t>>,
 				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
 					&memory_search::s_value<uint16_t>>,
+				&wxwindow_memorysearch::search_1<ss_int24_t, ss_uint24_t,
+					&memory_search::s_value<ss_uint24_t>>,
+				&wxwindow_memorysearch::search_1<ss_uint24_t, ss_uint24_t,
+					&memory_search::s_value<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
 					&memory_search::s_value<uint32_t>>,
 				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
@@ -289,6 +306,10 @@ namespace
 					&memory_search::s_difference<uint16_t>>,
 				&wxwindow_memorysearch::search_1<uint16_t, uint16_t,
 					&memory_search::s_difference<uint16_t>>,
+				&wxwindow_memorysearch::search_1<ss_int24_t, ss_uint24_t,
+					&memory_search::s_difference<ss_uint24_t>>,
+				&wxwindow_memorysearch::search_1<ss_uint24_t, ss_uint24_t,
+					&memory_search::s_difference<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_1<int32_t, uint32_t,
 					&memory_search::s_difference<uint32_t>>,
 				&wxwindow_memorysearch::search_1<uint32_t, uint32_t,
@@ -304,6 +325,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int64_t>>,
@@ -315,6 +338,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<int64_t>>,
@@ -326,6 +351,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int64_t>>,
@@ -337,6 +364,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int64_t>>,
@@ -348,6 +377,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int64_t>>,
@@ -359,6 +390,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int64_t>>,
@@ -370,6 +403,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>,
@@ -381,6 +416,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>,
@@ -392,6 +429,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>,
@@ -403,6 +442,8 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint8_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint16_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint16_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<ss_int24_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<ss_uint24_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>,
@@ -410,6 +451,8 @@ namespace
 			}
 		},{
 			"true", {
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
@@ -549,17 +592,24 @@ void wxwindow_memorysearch::panel::prepare_paint()
 						_parent->hexmode);
 					break;
 				case 4:
-					row += format_number_signed(lsnes_memory.read<uint32_t>(i), _parent->hexmode);
+					row += format_number_signed(lsnes_memory.read<ss_uint24_t>(i), _parent->hexmode);
 					break;
 				case 5:
-					row += format_number_unsigned(lsnes_memory.read<uint32_t>(i),
+					row += format_number_unsigned(lsnes_memory.read<ss_uint24_t>(i),
 						_parent->hexmode);
 					break;
 				case 6:
+					row += format_number_signed(lsnes_memory.read<uint32_t>(i), _parent->hexmode);
+					break;
+				case 7:
+					row += format_number_unsigned(lsnes_memory.read<uint32_t>(i),
+						_parent->hexmode);
+					break;
+				case 8:
 					row +=  format_number_signed(lsnes_memory.read<uint64_t>(i),
 						_parent->hexmode);
 					break;
-				case 7:
+				case 9:
 					row += format_number_unsigned(lsnes_memory.read<uint64_t>(i),
 						_parent->hexmode);
 					break;

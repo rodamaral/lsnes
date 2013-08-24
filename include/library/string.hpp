@@ -8,6 +8,7 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 #include "utf8.hpp"
+#include "int24.hpp"
 
 /**
  * Strip trailing CR if any.
@@ -113,6 +114,33 @@ template<typename T> inline T parse_value(const std::string& value) throw(std::b
 				throw std::runtime_error("Value out of range");
 			return static_cast<T>(v);
 		}
+	} catch(std::exception& e) {
+		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
+	}
+}
+
+template<> inline ss_int24_t parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+{
+	try {
+		int32_t v = boost::lexical_cast<int32_t>(value);
+		if(v < -8388608 || v > 8388607)
+			throw std::runtime_error("Value out of valid range");
+		return v;
+	} catch(std::exception& e) {
+		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
+	}
+}
+
+template<> inline ss_uint24_t parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
+{
+	try {
+		if(value.length() && value[0] == '-') {
+			throw std::runtime_error("Unsigned values can't be negative");
+		}
+		uint32_t v = boost::lexical_cast<uint32_t>(value);
+		if(v > 0xFFFFFF)
+			throw std::runtime_error("Value out of valid range");
+		return v;
 	} catch(std::exception& e) {
 		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
 	}
