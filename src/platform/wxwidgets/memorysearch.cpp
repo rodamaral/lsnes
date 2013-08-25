@@ -27,14 +27,14 @@
 #define wxID_DISQUALIFY (wxID_HIGHEST + 8)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
-#define DATATYPES 10
+#define DATATYPES 12
 #define CANDIDATE_LIMIT 512
 
 class wxwindow_memorysearch;
 
 namespace
 {
-	const char* watchchars = "bBwWdDqQ";
+	const char* watchchars = "bBwWoOdDqQfF";
 
 	wxwindow_memorysearch* mwatch;
 
@@ -49,6 +49,8 @@ namespace
 		"unsigned dword",
 		"signed qword",
 		"unsigned qword"
+		"float",
+		"double"
 	};
 
 	typedef void (wxwindow_memorysearch::*search_fn_t)();
@@ -144,6 +146,11 @@ namespace
 	template<> std::string format_number_unsigned<uint64_t>(uint64_t val, bool hex)
 	{
 		return format_number_unsignedh(val, 16, hex);
+	}
+
+	std::string format_number_float(double val)
+	{
+		return (stringfmt() << val).str();
 	}
 }
 
@@ -294,7 +301,11 @@ namespace
 				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
 					&memory_search::s_value<uint64_t>>,
 				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
-					&memory_search::s_value<uint64_t>>
+					&memory_search::s_value<uint64_t>>,
+				&wxwindow_memorysearch::search_1<float, float,
+					&memory_search::s_value<float>>,
+				&wxwindow_memorysearch::search_1<double, double,
+					&memory_search::s_value<double>>
 			}
 		},{
 			"diff.", {
@@ -317,7 +328,11 @@ namespace
 				&wxwindow_memorysearch::search_1<int64_t, uint64_t,
 					&memory_search::s_difference<uint64_t>>,
 				&wxwindow_memorysearch::search_1<uint64_t, uint64_t,
-					&memory_search::s_difference<uint64_t>>
+					&memory_search::s_difference<uint64_t>>,
+				&wxwindow_memorysearch::search_1<float, float,
+					&memory_search::s_difference<float>>,
+				&wxwindow_memorysearch::search_1<double, double,
+					&memory_search::s_difference<double>>
 			}
 		},{
 			"<", {
@@ -330,7 +345,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_lt<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<double>>
 			}
 		},{
 			"<=", {
@@ -343,7 +360,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_le<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<double>>
 			}
 		},{
 			"==", {
@@ -356,7 +375,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_eq<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_eq<double>>
 			}
 		},{
 			"!=", {
@@ -369,7 +390,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ne<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ne<double>>
 			}
 		},{
 			">=", {
@@ -382,7 +405,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_ge<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<double>>
 			}
 		},{
 			">", {
@@ -395,7 +420,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_gt<int64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<double>>
 			}
 		},{
 			"seq<", {
@@ -408,7 +435,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqlt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_lt<double>>
 			}
 		},{
 			"seq<=", {
@@ -421,7 +450,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqle<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_le<double>>
 			}
 		},{
 			"seq>=", {
@@ -434,7 +465,9 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqge<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_ge<double>>
 			}
 		},{
 			"seq>", {
@@ -447,10 +480,14 @@ namespace
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint32_t>>,
 				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>,
-				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>
+				&wxwindow_memorysearch::search_0<&memory_search::s_seqgt<uint64_t>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<float>>,
+				&wxwindow_memorysearch::search_0<&memory_search::s_gt<double>>
 			}
 		},{
 			"true", {
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
+				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
 				&wxwindow_memorysearch::search_0<&memory_search::update>,
@@ -612,6 +649,12 @@ void wxwindow_memorysearch::panel::prepare_paint()
 				case 9:
 					row += format_number_unsigned(lsnes_memory.read<uint64_t>(i),
 						_parent->hexmode);
+					break;
+				case 10:
+					row += format_number_float(lsnes_memory.read<float>(i));
+					break;
+				case 11:
+					row += format_number_float(lsnes_memory.read<double>(i));
 					break;
 				};
 				if(j >= first && j < last)

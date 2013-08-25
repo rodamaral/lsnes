@@ -360,6 +360,12 @@ std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
 			case 'Q':
 				stack_push<uint64_t>(s, lsnes_memory.read<uint64_t>(stack_pop(s).as_address()));
 				break;
+			case 'f':
+				stack_push<float>(s, lsnes_memory.read<float>(stack_pop(s).as_address()));
+				break;
+			case 'F':
+				stack_push<double>(s, lsnes_memory.read<double>(stack_pop(s).as_address()));
+				break;
 			default:
 				throw std::runtime_error("#syntax (illchar)");
 			}

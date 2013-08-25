@@ -2281,7 +2281,7 @@ Syntax: number hostmemory.readsqword(number address)
 \end_layout
 
 \begin_layout Standard
-Read elements (little-endian) from given address <address>.
+Read elements (big-endian) from given address <address>.
 \end_layout
 
 \begin_layout Itemize
@@ -2306,6 +2306,22 @@ qword is 8 elements.
 
 \begin_layout Itemize
 The 's' variants do signed read.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.read{float,double}: Read from host memory
+\end_layout
+
+\begin_layout Itemize
+syntax: number hostmemory.readfloat(number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number hostmemory.readdouble(number address)
+\end_layout
+
+\begin_layout Standard
+Read elements (big-endian) floating-pont from given address <address>.
 \end_layout
 
 \begin_layout Subsection
@@ -2379,6 +2395,23 @@ qword is 8 elements.
 
 \begin_layout Itemize
 The 's' variants do signed write.
+\end_layout
+
+\begin_layout Subsection
+hostmemory.write{float,double}: Write to host memory
+\end_layout
+
+\begin_layout Itemize
+syntax: none hostmemory.readfloat(number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none hostmemory.readdouble(number address, number value)
+\end_layout
+
+\begin_layout Standard
+Write elements (big-endian) floating-pont to given address <address>, storing
+ <value>.
 \end_layout
 
 \begin_layout Standard
@@ -3041,7 +3074,7 @@ Finds the VMA containing specified address.
 \end_layout
 
 \begin_layout Subsection
-memory.read{,s}{byte,{,d,q}word}: Write memory
+memory.read{,s}{byte,{,h,d,q}word}: Read memory
 \end_layout
 
 \begin_layout Itemize
@@ -3050,6 +3083,10 @@ Syntax: none memory.readbyte([string vma, ]number address)
 
 \begin_layout Itemize
 Syntax: none memory.readword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readhword([string vma, ]number address)
 \end_layout
 
 \begin_layout Itemize
@@ -3069,6 +3106,10 @@ Syntax: none memory.readsword([string vma, ]number address)
 \end_layout
 
 \begin_layout Itemize
+Syntax: none memory.readshword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
 Syntax: none memory.readsdword([string vma, ]number address)
 \end_layout
 
@@ -3077,12 +3118,76 @@ Syntax: none memory.readsqword([string vma, ]number address)
 \end_layout
 
 \begin_layout Standard
-Reads the specified address <ddress> (if 's' variant is used, do undergo
+Reads the specified address <address> (if 's' variant is used, do undergo
  2's complement).
 \end_layout
 
 \begin_layout Subsection
-memory.write{byte,{,d,q}word}: Write memory
+memory.read{,s}{byte,{,h,d,q}word}: Read memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readbyte([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readhword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readdword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readqword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsbyte([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readshword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsdword([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readsqword([string vma, ]number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address <address>
+\end_layout
+
+\begin_layout Subsection
+memory.read{float,double}: Read memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readfloat([string vma, ]number address)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.readdouble([string vma, ]number address)
+\end_layout
+
+\begin_layout Standard
+Reads the specified address <address>
+\end_layout
+
+\begin_layout Subsection
+memory.write{byte,{,h,d,q}word,float,double}: Write memory
 \end_layout
 
 \begin_layout Itemize
@@ -3094,6 +3199,10 @@ Syntax: none memory.writeword([string vma, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
+Syntax: none memory.writehword([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Itemize
 Syntax: none memory.writedword([string vma, ]number address, number value)
 \end_layout
 
@@ -3101,13 +3210,21 @@ Syntax: none memory.writedword([string vma, ]number address, number value)
 Syntax: none memory.writeqword([string vma, ]number address, number value)
 \end_layout
 
+\begin_layout Itemize
+Syntax: none memory.writefloat([string vma, ]number address, number value)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.writedouble([string vma, ]number address, number value)
+\end_layout
+
 \begin_layout Standard
-Writes the specified value <value> (negative values undergo 2's complement)
- to specified address <address>.
+Writes the specified value <value> (negative integer values undergo 2's
+ complement) to specified address <address>.
 \end_layout
 
 \begin_layout Subsection
-memory.map{,s}{byte,{,d,q}word}: Map an array
+memory.map{{,s}{byte,{,h,d,q}word},float,double}: Map an array
 \end_layout
 
 \begin_layout Itemize
@@ -3120,7 +3237,8 @@ Returns a table mapping specified memory aperture for read/write.
 \end_layout
 
 \begin_layout Itemize
-Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
+ qword, sqword, float or double.
 \end_layout
 
 \begin_layout Subsection
@@ -3209,7 +3327,8 @@ Bind key <key> in mmap structure to specified address <address> with specified
 \end_layout
 
 \begin_layout Itemize
-Type may be one of: byte, sbyte, word, sword, dword, sdword, qword or sqword.
+Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
+ qword, sqword, float or double.
 \end_layout
 
 \begin_layout Subsection
@@ -3352,7 +3471,7 @@ Read/Write value from/to given VMA <vma> at given offset <offset> (must
 \end_layout
 
 \begin_layout Itemize
-<type> is one of 'byte', 'word', 'dword', 'qword'.
+<type> is one of 'byte', 'word', 'hword', 'dword', 'qword', 'float', 'double'.
 \end_layout
 
 \begin_layout Itemize
@@ -3360,7 +3479,7 @@ Read/Write value from/to given VMA <vma> at given offset <offset> (must
 \end_layout
 
 \begin_layout Itemize
-'s' signifies that value is treated as signed.
+'s' signifies that value is treated as signed (not available for floating-point).
 \end_layout
 
 \begin_layout Standard

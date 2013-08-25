@@ -166,6 +166,13 @@ namespace
 			} catch(...) {
 			}
 			try {
+				if(has_value) {
+					valuef = parse_value<double>(secondword);
+					has_valuef = true;
+				}
+			} catch(...) {
+			}
+			try {
 				if(t = regex("0x(.+)", secondword)) {
 					if(t[1].length() > 16)
 						throw 42;
@@ -187,10 +194,12 @@ namespace
 		std::string secondword;
 		uint64_t address;
 		uint64_t value;
+		double valuef;
 		bool has_tail;
 		bool address_bad;
 		bool value_bad;
 		bool has_value;
+		bool has_valuef;
 		std::string _command;
 	};
 
@@ -253,6 +262,30 @@ namespace
 		}
 	};
 
+	template<typename arg, bool (memory_space::*_wfn)(uint64_t addr, arg a)>
+	class writef_command : public memorymanip_command
+	{
+	public:
+		writef_command(const std::string& cmd)
+			throw(std::bad_alloc)
+			: memorymanip_command(cmd)
+		{
+		}
+		~writef_command() throw() {}
+		void invoke2() throw(std::bad_alloc, std::runtime_error)
+		{
+			if(address_bad || !has_valuef || has_tail)
+				throw std::runtime_error("Syntax: " + _command + " <address> <value>");
+			(lsnes_memory.*_wfn)(address, valuef);
+		}
+		std::string get_short_help() throw(std::bad_alloc) { return "Write memory"; }
+		std::string get_long_help() throw(std::bad_alloc)
+		{
+			return "Syntax: " + _command + " <address> <value>\n"
+				"Writes data to memory.\n";
+		}
+	};
+
 	read_command<uint8_t, &memory_space::read<uint8_t>> ru1("read-byte");
 	read_command<uint16_t, &memory_space::read<uint16_t>> ru2("read-word");
 	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>> ru3("read-hword");
@@ -262,11 +295,14 @@ namespace
 	read_command<int16_t, &memory_space::read<int16_t>> rs2("read-sword");
 	read_command<ss_int24_t, &memory_space::read<ss_int24_t>> rs3("read-shword");
 	read_command<int32_t, &memory_space::read<int32_t>> rs4("read-sdword");
-	read_command<int64_t, &memory_space::read<int64_t>> rs8("read-sqword");
+	read_command<float, &memory_space::read<float>> rf4("read-float");
+	read_command<double, &memory_space::read<double>> rf8("read-double");
 	write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>> w1("write-byte");
 	write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>> w2("write-word");
 	write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>> w3("write-hword");
 	write_command<uint32_t, -2147483648LL, 0xFFFFFFFFULL, &memory_space::write<uint32_t>> w4("write-dword");
 	write_command<uint64_t, -9223372036854775808LL, 0xFFFFFFFFFFFFFFFFULL, &memory_space::write<uint64_t>>
 		w8("write-qword");
+	writef_command<float, &memory_space::write<float>> wf4("write-float");
+	writef_command<double, &memory_space::write<double>> wf8("write-double");
 }

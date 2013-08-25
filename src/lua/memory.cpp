@@ -403,11 +403,15 @@ namespace
 	lua_read_memory<int32_t, &memory_space::read<int32_t>> rsd("memory.readsdword");
 	lua_read_memory<uint64_t, &memory_space::read<uint64_t>> ruq("memory.readqword");
 	lua_read_memory<int64_t, &memory_space::read<int64_t>> rsq("memory.readsqword");
+	lua_read_memory<float, &memory_space::read<float>> rf4("memory.readfloat");
+	lua_read_memory<double, &memory_space::read<double>> rf8("memory.readdouble");
 	lua_write_memory<uint8_t, &memory_space::write<uint8_t>> wb("memory.writebyte");
 	lua_write_memory<uint16_t, &memory_space::write<uint16_t>> ww("memory.writeword");
 	lua_write_memory<ss_uint24_t, &memory_space::write<ss_uint24_t>> wh("memory.writehword");
 	lua_write_memory<uint32_t, &memory_space::write<uint32_t>> wd("memory.writedword");
 	lua_write_memory<uint64_t, &memory_space::write<uint64_t>> wq("memory.writeqword");
+	lua_write_memory<float, &memory_space::write<float>> wf4("memory.writefloat");
+	lua_write_memory<double, &memory_space::write<double>> wf8("memory.writedouble");
 	lua_mmap_memory_helper<uint8_t, &memory_space::read<uint8_t>, &memory_space::write<uint8_t>> mhub;
 	lua_mmap_memory_helper<int8_t, &memory_space::read<int8_t>, &memory_space::write<int8_t>> mhsb;
 	lua_mmap_memory_helper<uint16_t, &memory_space::read<uint16_t>, &memory_space::write<uint16_t>> mhuw;
@@ -418,6 +422,8 @@ namespace
 	lua_mmap_memory_helper<int32_t, &memory_space::read<int32_t>, &memory_space::write<int32_t>> mhsd;
 	lua_mmap_memory_helper<uint64_t, &memory_space::read<uint64_t>, &memory_space::write<uint64_t>> mhuq;
 	lua_mmap_memory_helper<int64_t, &memory_space::read<int64_t>, &memory_space::write<int64_t>> mhsq;
+	lua_mmap_memory_helper<float, &memory_space::read<float>, &memory_space::write<float>> mhf4;
+	lua_mmap_memory_helper<double, &memory_space::read<double>, &memory_space::write<double>> mhf8;
 	lua_mmap_memory mub("memory.mapbyte", mhub);
 	lua_mmap_memory msb("memory.mapsbyte", mhsb);
 	lua_mmap_memory muw("memory.mapword", mhuw);
@@ -428,6 +434,8 @@ namespace
 	lua_mmap_memory msd("memory.mapsdword", mhsd);
 	lua_mmap_memory muq("memory.mapqword", mhuq);
 	lua_mmap_memory msq("memory.mapsqword", mhsq);
+	lua_mmap_memory mf4("memory.mapfloat", mhf4);
+	lua_mmap_memory mf8("memory.mapdouble", mhf8);
 }
 
 int lua_mmap_struct::map(lua_state& L, const std::string& fname)
@@ -467,6 +475,10 @@ int lua_mmap_struct::map(lua_state& L, const std::string& fname)
 		mappings[name2] = std::make_pair(&mhuq, addr);
 	else if(type2 == "sqword")
 		mappings[name2] = std::make_pair(&mhsq, addr);
+	else if(type2 == "float")
+		mappings[name2] = std::make_pair(&mhf4, addr);
+	else if(type2 == "double")
+		mappings[name2] = std::make_pair(&mhf8, addr);
 	else
 		(stringfmt() << fname << ": Bad type").throwex();
 	return 0;

@@ -139,4 +139,24 @@ namespace
 		const std::string& fname) -> int {
 		return do_write<int64_t>(L, fname);
 	});
+
+	function_ptr_luafun hm_readf4(lua_func_misc, "hostmemory.readfloat", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_read<float>(L, fname);
+	});
+
+	function_ptr_luafun hm_writef4(lua_func_misc, "hostmemory.writefloat", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_write<float>(L, fname);
+	});
+
+	function_ptr_luafun hm_readf8(lua_func_misc, "hostmemory.readdouble", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_read<double>(L, fname);
+	});
+
+	function_ptr_luafun hm_writef8(lua_func_misc, "hostmemory.writedouble", [](lua_state& L,
+		const std::string& fname) -> int {
+		return do_write<double>(L, fname);
+	});
 }

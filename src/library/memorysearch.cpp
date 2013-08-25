@@ -376,6 +376,19 @@ template<typename T> void memorysearch_pull_type(memory_search& s)
 	s.s_seqgt<T>();
 }
 
+template<typename T> void memorysearch_pull_type2(memory_search& s)
+{
+	T val;
+	s.s_value<T>(val);
+	s.s_difference<T>(val);
+	s.s_lt<T>();
+	s.s_le<T>();
+	s.s_eq<T>();
+	s.s_ne<T>();
+	s.s_ge<T>();
+	s.s_gt<T>();
+}
+
 void memorysearch_pull_all(memory_search& s)
 {
 	memorysearch_pull_type<int8_t>(s);
@@ -388,6 +401,8 @@ void memorysearch_pull_all(memory_search& s)
 	memorysearch_pull_type<uint32_t>(s);
 	memorysearch_pull_type<int64_t>(s);
 	memorysearch_pull_type<uint64_t>(s);
+	memorysearch_pull_type2<float>(s);
+	memorysearch_pull_type2<double>(s);
 }
 
 void memory_search::update() throw() { search(search_update()); }

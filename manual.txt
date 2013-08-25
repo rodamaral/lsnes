@@ -188,6 +188,10 @@ The available element <sizes> are:
 
 • qword: 8 bytes
 
+• float: 4 bytes (floating-point)
+
+• double: 8 bytes (floating-point)
+
 When reading RAM and ROM, multi-byte reads/writes are big-endian. 
 When dealing with DSP memory, multi-byte reads/writes are 
 native-endian (do not use operand sizes exceeding DSP bitness, 
@@ -583,7 +587,11 @@ The following operators are available:
 
 • d : read_signed_dword(a)
 
+• f: read_float(a)
+
 • i : quotent(a / b)
+
+• o: read_signed_hword(a)
 
 • p :\pi
 
@@ -610,8 +618,12 @@ The following operators are available:
 
 • C0x<number>z : Push number <number> (hexadecimal) to stack.
 
+• F: read_double(a)
+
 • H<digit> : Set hexadecimal mode with specified number of digits 
   (use A-G for 10-16 digits).
+
+• O: read_unsigned_hword(a)
 
 • Q : read_unsigned_qword(a)
 

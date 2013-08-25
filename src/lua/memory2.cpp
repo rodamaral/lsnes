@@ -88,6 +88,8 @@ namespace
 			{"dword", &lua_vma::rw<uint32_t, false>},
 			{"sqword", &lua_vma::rw<int64_t, false>},
 			{"qword", &lua_vma::rw<uint64_t, false>},
+			{"float", &lua_vma::rw<float, false>},
+			{"double", &lua_vma::rw<double, false>},
 			{"isbyte", &lua_vma::rw<int8_t, true>},
 			{"ibyte", &lua_vma::rw<uint8_t, true>},
 			{"isword", &lua_vma::rw<int16_t, true>},
@@ -98,6 +100,8 @@ namespace
 			{"idword", &lua_vma::rw<uint32_t, true>},
 			{"isqword", &lua_vma::rw<int64_t, true>},
 			{"iqword", &lua_vma::rw<uint64_t, true>},
+			{"ifloat", &lua_vma::rw<float, true>},
+			{"idouble", &lua_vma::rw<double, true>},
 		});
 		vmabase = r->base;
 		vmasize = r->size;

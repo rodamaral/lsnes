@@ -46,10 +46,14 @@ int memorywatch_recognize_typech(char ch)
 	case 'B':	return 1;
 	case 'w':	return 2;
 	case 'W':	return 3;
-	case 'd':	return 4;
-	case 'D':	return 5;
-	case 'q':	return 6;
-	case 'Q':	return 7;
+	case 'o':	return 4;
+	case 'O':	return 5;
+	case 'd':	return 6;
+	case 'D':	return 7;
+	case 'q':	return 8;
+	case 'Q':	return 9;
+	case 'f':	return 10;
+	case 'F':	return 11;
 	default:	return 0;
 	}
 }
@@ -59,7 +63,9 @@ wxeditor_watchexpr::wxeditor_watchexpr(wxWindow* parent, const std::string& name
 {
 	wxString types[] = {
 		wxT("Signed byte"), wxT("Unsigned byte"), wxT("Signed word"), wxT("Unsigned word"),
-		wxT("Signed doubleword"), wxT("Unsigned doubleword"), wxT("Signed quadword"), wxT("Unsigned quadword")
+		wxT("Signed onehalfword"), wxT("Unsigned onehalfword"), wxT("Signed doubleword"),
+		wxT("Unsigned doubleword"), wxT("Signed quadword"), wxT("Unsigned quadword"),
+		wxT("Float"), wxT("double")
 	};
 
 	Centre();
@@ -71,7 +77,7 @@ wxeditor_watchexpr::wxeditor_watchexpr(wxWindow* parent, const std::string& name
 	top_s->Add(arbitrary = new wxRadioButton(this, wxID_ANY, wxT("Expression"), wxDefaultPosition, wxDefaultSize,
 		0), 0, wxGROW);
 	top_s->Add(typesel = new wxComboBox(this, wxID_ANY, types[0], wxDefaultPosition, wxDefaultSize,
-		8, types, wxCB_READONLY), 0, wxGROW);
+		12, types, wxCB_READONLY), 0, wxGROW);
 	top_s->Add(busaddr = new wxRadioButton(this, wxID_ANY, wxT("Bus address"), wxDefaultPosition, wxDefaultSize,
 		wxRB_GROUP), 0, wxGROW);
 	top_s->Add(mapaddr = new wxRadioButton(this, wxID_ANY, wxT("Map address"), wxDefaultPosition, wxDefaultSize,
@@ -153,8 +159,8 @@ bool wxeditor_watchexpr::ShouldPreventAppExit() const
 
 void wxeditor_watchexpr::on_ok(wxCommandEvent& e)
 {
-	const char* letters = "bBwWdDqQ";
-	const char* hexwidths = "224488GG";
+	const char* letters = "bBwWoOdDqQfF";
+	const char* hexwidths = "22446688GGGG";
 	if(structured->GetValue()) {
 		std::string hexmod;
 		std::string addr2 = tostdstring(addr->GetValue());

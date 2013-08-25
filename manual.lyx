@@ -435,6 +435,14 @@ dword: 4 bytes
 qword: 8 bytes
 \end_layout
 
+\begin_layout Itemize
+float: 4 bytes (floating-point)
+\end_layout
+
+\begin_layout Itemize
+double: 8 bytes (floating-point)
+\end_layout
+
 \begin_layout Standard
 When reading RAM and ROM, multi-byte reads/writes are big-endian.
  When dealing with DSP memory, multi-byte reads/writes are native-endian
@@ -1198,6 +1206,10 @@ d : read_signed_dword(a)
 \end_layout
 
 \begin_layout Itemize
+f: read_float(a)
+\end_layout
+
+\begin_layout Itemize
 i : quotent(a / b)
 \end_layout
 
@@ -1255,6 +1267,10 @@ D : read_unsigned_dword(a)
 
 \begin_layout Itemize
 C0x<number>z : Push number <number> (hexadecimal) to stack.
+\end_layout
+
+\begin_layout Itemize
+F: read_double(a)
 \end_layout
 
 \begin_layout Itemize
