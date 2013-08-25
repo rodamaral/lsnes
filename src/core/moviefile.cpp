@@ -688,6 +688,12 @@ void moviefile::brief_info::binary_io(std::istream& stream)
 		case TAG_SAVESTATE:
 			this->current_frame = s.binary_read_number();
 			break;
+		case TAG_RRDATA: {
+			std::vector<char> c_rrdata;
+			s.binary_read_blob(c_rrdata);
+			this->rerecords = rrdata::count(c_rrdata);
+			break;
+		}
 		default:
 			break;
 		}

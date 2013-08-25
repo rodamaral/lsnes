@@ -125,13 +125,9 @@ namespace
 		if(!slotinfo_cache.count(filename)) {
 			std::ostringstream out;
 			try {
-				std::string projid = vector_to_string(read_file_relative(filename + "/projectid",
-					""));
-				std::string rerecords = vector_to_string(read_file_relative(filename + "/rerecords",
-					""));
-				std::string frame = vector_to_string(read_file_relative(filename + "/saveframe", ""));
-				if(our_movie.projectid == projid)
-					out << rerecords << "R/" << frame << "F";
+				moviefile::brief_info info(filename);
+				if(our_movie.projectid == info.projectid)
+					out << info.rerecords << "R/" << info.current_frame << "F";
 				else
 					out << "Wrong movie";
 			} catch(...) {
