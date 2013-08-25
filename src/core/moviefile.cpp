@@ -243,6 +243,12 @@ namespace
 			v.resize(left);
 			read_stream(&v[0], left);
 		}
+		void flush()
+		{
+			char buf[256];
+			while(left)
+				read_stream(buf, min(left, (uint64_t)256));
+		}
 	private:
 		void read_stream(char* dest, size_t size)
 		{
@@ -271,6 +277,7 @@ namespace
 			uint64_t size = binary_read_number(stream);
 			extension_stream strm(stream, size);
 			fn(tag, strm);
+			strm.flush();
 		}
 	}
 
