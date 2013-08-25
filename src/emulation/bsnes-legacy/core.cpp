@@ -1105,6 +1105,7 @@ again2:
 			create_region(ret, "SLOTB_RAM", 0x30000000, SNES::sufamiturbo.slotB.ram, false);
 		}
 		if(internal_rom == &type_sgb) {
+			map_internal(ret, "GBCPU_STATE", 4, &GameBoy::cpu, sizeof(GameBoy::cpu));
 			create_region(ret, "GBROM", 0x90000000, GameBoy::cartridge.romdata,
 				GameBoy::cartridge.romsize, true);
 			create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata,
