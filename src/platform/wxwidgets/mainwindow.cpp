@@ -1529,3 +1529,46 @@ void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 		is_fs = fs;
 	}
 }
+
+namespace
+{
+	class rom_request_type
+	{
+	public:
+		typedef std::pair<size_t, std::string> returntype;
+		rom_request_type(rom_request& req)
+			: _req(req)
+		{
+		}
+		filedialog_input_params input(bool save) const
+		{
+			filedialog_input_params p;
+			for(auto i : _req.cores) {
+				std::string name = i->get_core_identifier();
+				std::string ext = "";
+				for(auto j : i->get_extensions()) {
+					if(ext != "")
+						ext = ext + ";";
+					ext = ext + "*." + j;
+				}
+				p.types.push_back(filedialog_type_entry(name, ext, ""));
+			}
+			p.default_type = _req.selected;
+			return p;
+		}
+		std::pair<size_t, std::string> output(const filedialog_output_params& p, bool save) const
+		{
+			return std::make_pair(static_cast<size_t>(p.typechoice), p.path);
+		}
+	private:
+		rom_request _req;
+	};
+}
+
+void wxwin_mainwindow::request_rom(rom_request& req)
+{
+	rom_request_type t(req);
+	auto p = choose_file_load(this, "Select ROM", rom_path(), t);
+	req.selected = p.first;
+	req.filename = p.second;
+}

@@ -641,6 +641,59 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 	}
 }
 
+moviefile::brief_info::brief_info(const std::string& filename)
+{
+	{
+		std::istream& s = open_file_relative(filename, "");
+		char buf[6] = {0};
+		s.read(buf, 5);
+		if(!strcmp(buf, "lsmv\x1A")) {
+			binary_io(s);
+			delete &s;
+			return;
+		}
+		delete &s;
+	}
+	zip_reader r(filename);
+	std::string tmp;
+	read_linefile(r, "systemid", tmp);
+	if(tmp.substr(0, 8) != "lsnes-rr")
+		throw std::runtime_error("Not lsnes movie");
+	read_linefile(r, "gametype", sysregion);
+	read_linefile(r, "coreversion", corename);
+	read_linefile(r, "projectid", projectid);
+	if(r.has_member("savestate"))
+		read_numeric_file(r, "saveframe", current_frame);
+	else
+		current_frame = 0;
+	read_numeric_file(r, "rerecords", rerecords);
+}
+
+void moviefile::brief_info::binary_io(std::istream& stream)
+{
+	sysregion = binary_read_string(stream);
+	//Discard the settings.
+	while(binary_read_byte(stream)) {
+		binary_read_string(stream);
+		binary_read_string(stream);
+	}
+	for_each_extension(stream, [this](uint32_t tag, extension_stream& s) {
+		switch(tag) {
+		case TAG_CORE_VERSION:
+			this->corename = s.binary_read_string_implicit();
+			break;
+		case TAG_PROJECT_ID:
+			this->projectid = s.binary_read_string_implicit();
+			break;
+		case TAG_SAVESTATE:
+			this->current_frame = s.binary_read_number();
+			break;
+		default:
+			break;
+		}
+	});
+}
+
 moviefile::moviefile() throw(std::bad_alloc)
 {
 	static port_type_set dummy_types;

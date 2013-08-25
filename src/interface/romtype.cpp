@@ -284,6 +284,16 @@ std::set<std::string> core_core::srams()
 	return c_srams();
 }
 
+bool core_core::isnull()
+{
+	return c_isnull();
+}
+
+bool core_core::c_isnull()
+{
+	return false;
+}
+
 core_sysregion::core_sysregion(const std::string& _name, core_type& _type, core_region& _region)
 	: name(_name), type(_type), region(_region)
 {
@@ -507,6 +517,15 @@ core_romimage_info_collection::core_romimage_info_collection(std::initializer_li
 {
 	for(auto i : idata)
 		data.push_back(core_romimage_info(i));
+}
+
+std::set<core_sysregion*> core_sysregion::find_matching(const std::string& name)
+{
+	std::set<core_sysregion*> ret;
+	auto u = sysregions().upper_bound(name);
+	for(auto i = sysregions().lower_bound(name); i != u; ++i)
+		ret.insert(i->second);
+	return ret;
 }
 
 struct emucore_callbacks* ecore_callbacks;

@@ -50,6 +50,11 @@ namespace
 	{
 	}
 
+	void dummy_request_rom(rom_request& req)
+	{
+		throw std::runtime_error("Headless build does not support ROM requests");
+	}
+
 	const char* dummy_name() { return "Dummy graphics plugin"; }
 
 	struct _graphics_driver driver = {
@@ -62,6 +67,7 @@ namespace
 		.fatal_error = dummy_fatal_error,
 		.name = dummy_name,
 		.action_updated = dummy_action_updated,
+		.request_rom = dummy_request_rom
 	};
 
 }
@@ -120,4 +126,9 @@ const char* graphics_driver_name()
 void graphics_driver_action_updated()
 {
 	driver.action_updated();
+}
+
+void graphics_driver_request_rom(rom_request& req)
+{
+	driver.request_rom(req);
 }

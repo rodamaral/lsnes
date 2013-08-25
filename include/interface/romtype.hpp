@@ -323,6 +323,7 @@ struct core_core
 	std::set<const interface_action*> get_actions();
 	const interface_device_reg* get_registers();
 	int reset_action(bool hard);
+	bool isnull();
 protected:
 /**
  * Get the name of the core.
@@ -467,6 +468,10 @@ protected:
  * Returns: The list of SRAMs.
  */
 	virtual std::set<std::string> c_srams() = 0;
+/**
+ * Is null core (only NULL core should define this).
+ */
+	virtual bool c_isnull();
 private:
 	std::vector<port_type*> port_types;
 	bool hidden;
@@ -539,6 +544,7 @@ public:
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }
 	int reset_action(bool hard) { return core->reset_action(hard); }
+	bool isnull() { return core->isnull(); }
 protected:
 /**
  * Load a ROM slot set. Changes the ROM currently loaded for core.
@@ -594,6 +600,13 @@ public:
 	core_region& get_region();
 	core_type& get_type();
 	void fill_framerate_magic(uint64_t* magic);	//4 elements filled.
+/**
+ * Find all sysregions matching specified name.
+ *
+ * Parameter name: The name of system region.
+ * Returns: Sysregions matching the specified.
+ */
+	static std::set<core_sysregion*> find_matching(const std::string& name);
 private:
 	core_sysregion(const core_sysregion&);
 	core_sysregion& operator=(const core_sysregion&);
@@ -601,6 +614,7 @@ private:
 	core_type& type;
 	core_region& region;
 };
+
 
 //Set to true if new core is detected.
 extern bool new_core_flag;

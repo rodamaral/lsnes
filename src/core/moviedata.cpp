@@ -508,6 +508,30 @@ void do_load_state(struct moviefile& _movie, int lmode)
 			<< std::endl;
 }
 
+void try_request_rom(const std::string& moviefile)
+{
+	moviefile::brief_info info(moviefile);
+	auto sysregs = core_sysregion::find_matching(info.sysregion);
+	rom_request req;
+	req.selected = 0;
+	size_t idx = 0;
+	for(auto i : sysregs) {
+		req.cores.push_back(&i->get_type());
+		if(i->get_type().get_core_identifier() == info.corename)
+			req.selected = idx;
+		idx++;
+	}
+	graphics_driver_request_rom(req);
+	if(req.filename == "")
+		throw std::runtime_error("Canceled loading ROM");
+	//Try to load the ROM using specified core.
+	if(req.selected >= req.cores.size())
+		throw std::runtime_error("Invalid ROM type selected");
+	core_type* selected_core = req.cores[req.selected];
+	loaded_rom newrom(req.filename, *selected_core);
+	*our_rom = newrom;
+}
+
 //Load state
 bool do_load_state(const std::string& filename, int lmode)
 {
@@ -517,6 +541,8 @@ bool do_load_state(const std::string& filename, int lmode)
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;
 	try {
+		if(our_rom->rtype->isnull())
+			try_request_rom(filename2);
 		mfile = moviefile(filename2, *our_rom->rtype);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

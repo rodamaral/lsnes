@@ -16,6 +16,20 @@
 struct moviefile
 {
 /**
+ * Brief information
+ */
+	struct brief_info
+	{
+		brief_info(const std::string& filename);
+		std::string sysregion;
+		std::string corename;
+		std::string projectid;
+		uint64_t current_frame;
+		uint64_t rerecords;
+	private:
+		void binary_io(std::istream& s);
+	};
+/**
  * This constructor construct movie structure with default settings.
  *
  * throws std::bad_alloc: Not enough memory.

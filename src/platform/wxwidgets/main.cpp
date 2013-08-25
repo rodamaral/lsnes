@@ -556,6 +556,25 @@ namespace
 		.action_updated = []()
 		{
 			runuifun([]() -> void { main_window->action_updated(); });
+		},
+		.request_rom = [](rom_request& req)
+		{
+			rom_request* _req = &req;
+			mutex_class lock;
+			cv_class cv;
+			bool done = false;
+			umutex_class h(lock);
+			runuifun([_req, &lock, &cv, &done]() -> void {
+				try {
+					main_window->request_rom(*_req);
+				} catch(...) {
+				}
+				umutex_class h(lock);
+				done = true;
+				cv.notify_all();
+			});
+			while(!done)
+				cv.wait(h);
 		}
 	};
 	struct graphics_driver _drv(drv);

@@ -131,6 +131,7 @@ namespace
 		std::set<std::string> c_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 0; }
 		int c_reset_action(bool hard) { return -1; }
+		bool c_isnull() { return true; }
 	} core_null;
 
 	core_type* current_rom_type = &core_null;

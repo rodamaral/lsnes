@@ -2,6 +2,7 @@
 #define _window__hpp__included__
 
 #include "core/keymapper.hpp"
+#include "interface/romtype.hpp"
 #include "library/messagebuffer.hpp"
 #include "library/emustatus.hpp"
 #include "library/framebuffer.hpp"
@@ -47,6 +48,18 @@ struct keypress
 	short value;
 };
 
+//ROM request.
+struct rom_request
+{
+	//List of core types.
+	std::vector<core_type*> cores;
+	//Selected core (default core on call).
+	size_t selected;
+	//Filename selected.
+	std::string filename;
+};
+
+
 //Various methods corresponding to graphics_driver_*
 struct _graphics_driver
 {
@@ -59,6 +72,7 @@ struct _graphics_driver
 	void (*fatal_error)();
 	const char* (*name)();
 	void (*action_updated)();
+	void (*request_rom)(rom_request& req);
 };
 
 struct graphics_driver
@@ -113,7 +127,10 @@ const char* graphics_driver_name();
  * Enable/Disable an action.
  */
 void graphics_driver_action_updated();
-
+/**
+ * Request a ROM image.
+ */
+void graphics_driver_request_rom(rom_request& req);
 
 /**
  * Platform-specific-related functions.
