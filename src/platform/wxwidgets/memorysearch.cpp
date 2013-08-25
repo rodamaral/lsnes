@@ -48,7 +48,7 @@ namespace
 		"signed dword",
 		"unsigned dword",
 		"signed qword",
-		"unsigned qword"
+		"unsigned qword",
 		"float",
 		"double"
 	};
