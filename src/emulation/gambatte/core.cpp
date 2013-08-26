@@ -176,8 +176,6 @@ namespace
 		sram.size = g.second;
 		sram.backing_ram = g.first;
 		sram.endian = -1;
-		sram.readonly = false;
-		sram.iospace_rw = NULL;
 
 		auto g2 = instance->getWorkRam();
 		wram.name = "WRAM";
@@ -185,8 +183,6 @@ namespace
 		wram.size = g2.second;
 		wram.backing_ram = g2.first;
 		wram.endian = -1;
-		wram.readonly = false;
-		wram.iospace_rw = NULL;
 
 		auto g3 = instance->getVideoRam();
 		vram.name = "VRAM";
@@ -194,8 +190,6 @@ namespace
 		vram.size = g3.second;
 		vram.backing_ram = g3.first;
 		vram.endian = -1;
-		vram.readonly = false;
-		vram.iospace_rw = NULL;
 
 		auto g4 = instance->getIoRam();
 		ioamhram.name = "IOAMHRAM";
@@ -203,8 +197,6 @@ namespace
 		ioamhram.size = g4.second;
 		ioamhram.backing_ram = g4.first;
 		ioamhram.endian = -1;
-		ioamhram.readonly = false;
-		ioamhram.iospace_rw = NULL;
 
 		rom.name = "ROM";
 		rom.base = 0x80000000;
@@ -212,7 +204,6 @@ namespace
 		rom.backing_ram = (void*)&romdata[0];
 		rom.endian = -1;
 		rom.readonly = true;
-		rom.iospace_rw = NULL;
 
 		if(sram.size)
 			vmas.push_back(sram);

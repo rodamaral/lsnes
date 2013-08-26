@@ -379,12 +379,19 @@ namespace sky
 			core_vma_info ram;
 			ram.name = "RAM";
 			ram.backing_ram = _gstate.as_ram().first;
-			ram.size = _gstate.as_ram().second;
+			ram.size = _gstate.as_ram().second - 32;
 			ram.base = 0;
-			ram.readonly = false;
 			ram.endian = 0;
-			ram.iospace_rw = NULL;
+			ram.volatile_flag = true;
 			r.push_back(ram);
+			core_vma_info sram;
+			sram.name = "SRAM";
+			sram.backing_ram = _gstate.as_ram().first + _gstate.as_ram().second - 32;
+			sram.size = 32;
+			sram.base = _gstate.as_ram().second - 32;
+			sram.endian = 0;
+			sram.volatile_flag = false;
+			r.push_back(sram);
 			return r;
 		}
 		std::set<std::string> c_srams()

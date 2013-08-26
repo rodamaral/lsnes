@@ -486,7 +486,6 @@ namespace
 		i.name = name;
 		i.base = base;
 		i.size = size;
-		i.readonly = false;
 		i.endian = -1;
 		i.iospace_rw = iospace_rw;
 		inf.push_back(i);
@@ -504,7 +503,13 @@ namespace
 		i.backing_ram = memory;
 		i.readonly = readonly;
 		i.endian = native_endian ? 0 : -1;
-		i.iospace_rw = NULL;
+		i.volatile_flag = true;
+		//SRAMs aren't volatile.
+		for(unsigned j = 0; j < SNES::cartridge.nvram.size(); j++) {
+			SNES::Cartridge::NonVolatileRAM& r = SNES::cartridge.nvram[j];
+			if(r.data == memory)
+				i.volatile_flag = false;
+		}
 		inf.push_back(i);
 	}
 

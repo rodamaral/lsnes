@@ -103,6 +103,10 @@ struct moviefile
  */
 	std::map<std::string, std::vector<char>> movie_sram;
 /**
+ * Contents of RAM on time of initial powerup.
+ */
+	std::map<std::string, std::vector<char>> ramcontent;
+/**
  * True if savestate, false if movie.
  */
 	bool is_savestate;

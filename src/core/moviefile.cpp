@@ -39,6 +39,7 @@ enum lsnes_movie_tags
 	TAG_SAVESTATE = 0x2e5bc2ac,
 	TAG_SCREENSHOT = 0xc6760d0e,
 	TAG_SUBTITLE = 0x6a7054d3,
+	TAG_RAMCONTENT = 0xd3ec3770
 };
 
 void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
@@ -799,6 +800,9 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		poll_flag = _poll_flag;
 		active_macros = read_active_macros(r, "macros");
 	}
+	for(auto name : r)
+		if(name.length() >= 8 && name.substr(0, 8) == "initram.")
+			ramcontent[name.substr(8)] = read_raw_file(r, name);
 	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
@@ -876,6 +880,8 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		write_numeric_file(w, "pollflag", poll_flag);
 		write_active_macros(w, "macros", active_macros);
 	}
+	for(auto i : ramcontent)
+		write_raw_file(w, "initram." + i.first, i.second);
 	write_authors_file(w, authors);
 	write_input(w, input);
 
@@ -1013,6 +1019,14 @@ void moviefile::binary_io(std::ostream& stream) throw(std::bad_alloc, std::runti
 			binary_write_number(s, i.second);
 			binary_write_string_implicit(s, i.first);
 		});
+
+	for(auto i : ramcontent) {
+		binary_write_extension(stream, TAG_RAMCONTENT, [&i](std::ostream& s) {
+			binary_write_string(s, i.first);
+			binary_write_blob(s, i.second);
+		});
+	}
+
 	binary_write_movie(stream, input);
 }
 
@@ -1066,6 +1080,11 @@ void moviefile::binary_io(std::istream& stream, core_type& romtype) throw(std::b
 		case TAG_MOVIE_SRAM: {
 			std::string a = s.binary_read_string();
 			s.binary_read_blob(this->movie_sram[a]);
+			break;
+		}
+		case TAG_RAMCONTENT: {
+			std::string a = s.binary_read_string();
+			s.binary_read_blob(this->ramcontent[a]);
 			break;
 		}
 		case TAG_MOVIE_TIME:

@@ -167,6 +167,13 @@ private:
  */
 struct core_vma_info
 {
+	core_vma_info()
+	{
+		backing_ram = NULL;
+		readonly = false;
+		volatile_flag = false;
+		iospace_rw = NULL;
+	}
 /**
  * Name of the VMA.
  */
@@ -191,6 +198,10 @@ struct core_vma_info
  * Default endianess. -1 => Little endian, 0 => The same as host system, 1 => Big endian.
  */
 	int endian;
+/**
+ * If true, the VMA is volatile.
+ */
+	bool volatile_flag;
 /**
  * If backing_ram is NULL, this routine is used to access the memory one byte at a time.
  *

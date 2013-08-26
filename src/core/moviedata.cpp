@@ -13,6 +13,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
+#include "library/minmax.hpp"
 #include "interface/romtype.hpp"
 
 #include <iomanip>
@@ -351,6 +352,27 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		messages << "Movie rewound to beginning." << std::endl;
 }
 
+void populate_volatile_ram(moviefile& mf, std::list<core_vma_info>& vmas)
+{
+	for(auto i : vmas) {
+		if(!i.volatile_flag)
+			continue;
+		if(i.readonly)
+			continue;
+		//FIXME: The special flag might have to be split.
+		if(i.iospace_rw)
+			continue;
+		if(!mf.ramcontent.count(i.name))
+			continue;
+		uint64_t csize = min((uint64_t)mf.ramcontent[i.name].size(), i.size);
+		if(i.backing_ram)
+			memcpy(i.backing_ram, &mf.ramcontent[i.name][0], csize);
+		else
+			for(uint64_t o = 0; o < csize; o++)
+				i.iospace_rw(o, mf.ramcontent[i.name][o], true);
+	}
+}
+
 //Load state from loaded movie file (does not catch errors).
 void do_load_state(struct moviefile& _movie, int lmode)
 {
@@ -428,6 +450,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 				our_rom->load_core_state(_movie.anchor_savestate);
 			our_rom->rtype->set_pflag(0);
 			controls.set_macro_frames(std::map<std::string, uint64_t>());
+			std::list<core_vma_info> vmas = our_rom->rtype->vma_list();
+			populate_volatile_ram(_movie, vmas);
 		}
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
