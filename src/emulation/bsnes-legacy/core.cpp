@@ -1111,6 +1111,7 @@ again2:
 			create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata,
 				GameBoy::cartridge.ramsize, false);
 			create_region(ret, "GBWRAM", 0x00030000, GameBoy::cpu.wram, 32768, false);
+			create_region(ret, "GBHRAM", 0x00038000, GameBoy::cpu.hram, 128, true);
 		}
 		return ret;
 	}
