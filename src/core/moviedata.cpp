@@ -554,6 +554,7 @@ void try_request_rom(const std::string& moviefile)
 	core_type* selected_core = req.cores[req.selected];
 	loaded_rom newrom(req.filename, *selected_core);
 	*our_rom = newrom;
+	notify_core_change();
 }
 
 //Load state
