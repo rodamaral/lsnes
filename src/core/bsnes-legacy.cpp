@@ -1147,6 +1147,9 @@ std::list<vma_info> get_vma_list()
 	if(internal_rom == &type_sgb) {
 		create_region(ret, "GBROM", 0x90000000, GameBoy::cartridge.romdata, GameBoy::cartridge.romsize, true);
 		create_region(ret, "GBRAM", 0x20000000, GameBoy::cartridge.ramdata, GameBoy::cartridge.ramsize, false);
+		create_region(ret, "GBWRAM", 0x00030000, GameBoy::cpu.wram, 32768, false);
+		map_internal(ret, "GBCPU_STATE", 4, &GameBoy::cpu, sizeof(GameBoy::cpu));
+		create_region(ret, "GBHRAM", 0x00038000, GameBoy::cpu.hram, 128, true);
 	}
 	return ret;
 }
