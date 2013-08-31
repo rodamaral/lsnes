@@ -1359,8 +1359,8 @@ Get size of bitmap. Can be used anywhere. Parameters:
 The first return is the width, the second is the height.
 
 8.3.22 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, 
-  bitmap/dbitmap src, number sx, number sy, number w, number h[, 
-  number ck])
+  bitmap/dbitmap src, [palette pal, ]number sx, number sy, number 
+  w, number h[, number ck])
 
 Blit a part of bitmap to another. Can be used anywhere. 
 Parameters:
@@ -1371,8 +1371,11 @@ Parameters:
 
 • dy: Top edge of target
 
-• src: The source to blit from. Must be of the same type as 
-  destination.
+• src: The source to blit from. If destination is paletted, must 
+  be paletted.
+
+• pal: The palette. Only present if src is paletted, but dest is 
+  not.
 
 • sx: left edge of source
 

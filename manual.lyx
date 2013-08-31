@@ -2706,7 +2706,7 @@ The first return is the width, the second is the height.
 
 \begin_layout Subsubsection
 gui.bitmap_blit(bitmap/dbitmap dest, number dx, number dy, bitmap/dbitmap
- src, number sx, number sy, number w, number h[, number ck])
+ src, [palette pal, ]number sx, number sy, number w, number h[, number ck])
 \end_layout
 
 \begin_layout Standard
@@ -2729,7 +2729,14 @@ dy: Top edge of target
 
 \begin_layout Itemize
 src: The source to blit from.
- Must be of the same type as destination.
+ If destination is paletted, must be paletted.
+\end_layout
+
+\begin_layout Itemize
+pal: The palette.
+ 
+\emph on
+Only present if src is paletted, but dest is not.
 \end_layout
 
 \begin_layout Itemize
