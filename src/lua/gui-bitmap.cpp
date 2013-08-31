@@ -264,70 +264,188 @@ namespace
 		return 2;
 	});
 
+	struct colorkey_none
+	{
+		bool iskey(uint16_t& c) const { return false; }
+		bool iskey(premultiplied_color& c) const { return false; }
+	};
+
+	struct colorkey_direct
+	{
+		colorkey_direct(uint64_t _ck)
+		{
+			premultiplied_color c(_ck);
+			ck = c.orig;
+			cka = c.origa;
+		}
+		bool iskey(premultiplied_color& c) const { return (c.orig == ck && c.origa == cka); }
+		uint32_t ck;
+		uint16_t cka;
+	};
+
+	struct colorkey_palette
+	{
+		colorkey_palette(uint64_t _ck) { ck = _ck; }
+		bool iskey(uint16_t& c) const { return (c == ck); }
+		uint16_t ck;
+	};
+
+	template<class colorkey> struct srcdest_direct
+	{
+		srcdest_direct(lua_dbitmap& dest, lua_dbitmap& src, const colorkey& _ckey)
+			: ckey(_ckey)
+		{
+			darray = &dest.pixels[0];
+			sarray = &src.pixels[0];
+			swidth = src.width;
+			sheight = src.height;
+			dwidth = dest.width;
+			dheight = dest.height;
+		}
+		void copy(size_t didx, size_t sidx)
+		{
+			premultiplied_color c = sarray[sidx];
+			if(!ckey.iskey(c))
+				darray[didx] = c;
+		}
+		size_t swidth, sheight, dwidth, dheight;
+	private:
+		premultiplied_color* sarray;
+		premultiplied_color* darray;
+		const colorkey& ckey;
+	};
+
+	template<class colorkey> struct srcdest_palette
+	{
+		srcdest_palette(lua_bitmap& dest, lua_bitmap& src, const colorkey& _ckey)
+			: ckey(_ckey)
+		{
+			darray = &dest.pixels[0];
+			sarray = &src.pixels[0];
+			swidth = src.width;
+			sheight = src.height;
+			dwidth = dest.width;
+			dheight = dest.height;
+		}
+		void copy(size_t didx, size_t sidx)
+		{
+			uint16_t c = sarray[sidx];
+			if(!ckey.iskey(c))
+				darray[didx] = c;
+		}
+		size_t swidth, sheight, dwidth, dheight;
+	private:
+		uint16_t* sarray;
+		uint16_t* darray;
+		const colorkey& ckey;
+	};
+
+	template<class colorkey> struct srcdest_paletted
+	{
+		typedef premultiplied_color ptype;
+		srcdest_paletted(lua_dbitmap& dest, lua_bitmap& src, lua_palette& palette, const colorkey& _ckey)
+			: ckey(_ckey), transparent(-1)
+		{
+			darray = &dest.pixels[0];
+			sarray = &src.pixels[0];
+			limit = palette.colors.size();
+			pal = &palette.colors[0];
+			swidth = src.width;
+			sheight = src.height;
+			dwidth = dest.width;
+			dheight = dest.height;
+		}
+		void copy(size_t didx, size_t sidx)
+		{
+			uint16_t c = sarray[sidx];
+			if(!ckey.iskey(c))
+				darray[didx] = (c < limit) ? pal[c] : transparent;
+		}
+		size_t swidth, sheight, dwidth, dheight;
+	private:
+		uint16_t* sarray;
+		premultiplied_color* darray;
+		premultiplied_color* pal;
+		uint32_t limit;
+		premultiplied_color transparent;
+		const colorkey& ckey;
+	};
+
+	template<class srcdest>
+	void blit(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h)
+	{
+		while((dx + w > sd.dwidth || sx + w > sd.swidth) && w > 0)
+			w--;
+		while((dy + h > sd.dheight || sy + h > sd.sheight) && h > 0)
+			h--;
+		size_t sidx = sy * sd.swidth + sx;
+		size_t didx = dy * sd.dwidth + dx;
+		size_t srskip = sd.swidth - w;
+		size_t drskip = sd.dwidth - w;
+		for(uint32_t j = 0; j < h; j++) {
+			for(uint32_t i = 0; i < w; i++) {
+				sd.copy(didx, sidx);
+				sidx++;
+				didx++;
+			}
+			sidx += srskip;
+			didx += drskip;
+		}
+	}
+
 	function_ptr_luafun blit_bitmap(lua_func_misc, "gui.bitmap_blit", [](lua_state& L, const std::string& fname)
 		-> int {
-		uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-		uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-		uint32_t sx = L.get_numeric_argument<uint32_t>(5, fname.c_str());
-		uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
-		uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
-		uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
+		int slot = 1;
+		int dsts = 0;
+		int srcs = 0;
+		bool dst_d = lua_class<lua_dbitmap>::is(L, dsts = slot);
+		bool dst_p = lua_class<lua_bitmap>::is(L, slot++);
+		if(!dst_d && !dst_p)
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_blit");
+		uint32_t dx = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		uint32_t dy = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		bool src_d = lua_class<lua_dbitmap>::is(L, srcs = slot);
+		bool src_p = lua_class<lua_bitmap>::is(L, slot++);
+		if(!src_d && !src_p)
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 4 for gui.bitmap_blit");
+		if(dst_d && src_p)
+			slot++;		//Reserve slot 5 for palette.
+		uint32_t sx = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		uint32_t sy = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		uint32_t w = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		uint32_t h = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
 		int64_t ck = 0x100000000ULL;
-		L.get_numeric_argument<int64_t>(9, ck, fname.c_str());
-		bool nck = false;
-		premultiplied_color pck(ck);
-		uint32_t ckorig = pck.orig;
-		uint16_t ckoriga = pck.origa;
-		if(ck == 0x100000000ULL)
-			nck = true;
-		if(lua_class<lua_bitmap>::is(L, 1) && lua_class<lua_bitmap>::is(L, 4)) {
-			lua_bitmap* db = lua_class<lua_bitmap>::get(L, 1, fname.c_str());
-			lua_bitmap* sb = lua_class<lua_bitmap>::get(L, 4, fname.c_str());
-			while((dx + w > db->width || sx + w > sb->width) && w > 0)
-				w--;
-			while((dy + h > db->height || sy + h > sb->height) && h > 0)
-				h--;
-			size_t sidx = sy * sb->width + sx;
-			size_t didx = dy * db->width + dx;
-			size_t srskip = sb->width - w;
-			size_t drskip = db->width - w;
-			for(uint32_t j = 0; j < h; j++) {
-				for(uint32_t i = 0; i < w; i++) {
-					uint16_t pix = sb->pixels[sidx];
-					if(pix != ck)	//No need to check nck, as that value is out of range.
-						db->pixels[didx] = pix;
-					sidx++;
-					didx++;
-				}
-				sidx += srskip;
-				didx += drskip;
-			}
-		} else if(lua_class<lua_dbitmap>::is(L, 1) && lua_class<lua_dbitmap>::is(L, 1)) {
-			lua_dbitmap* db = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
-			lua_dbitmap* sb = lua_class<lua_dbitmap>::get(L, 4, fname.c_str());
-			while((dx + w > db->width || sx + w > sb->width) && w > 0)
-				w--;
-			while((dy + h > db->height || sy + h > sb->height) && h > 0)
-				h--;
-			size_t sidx = sy * sb->width + sx;
-			size_t didx = dy * db->width + dx;
-			size_t srskip = sb->width - w;
-			size_t drskip = db->width - w;
-			for(uint32_t j = 0; j < h; j++) {
-				for(uint32_t i = 0; i < w; i++) {
-					premultiplied_color pix = sb->pixels[sidx];
-					if(pix.orig != ckorig || pix.origa != ckoriga || nck)
-						db->pixels[didx] = pix;
-					sidx++;
-					didx++;
-				}
-				sidx += srskip;
-				didx += drskip;
-			}
-		} else {
-			L.pushstring("Expected BITMAP or DBITMAP as arguments 1&4 for gui.bitmap_pset.");
-			L.error();
-		}
+		L.get_numeric_argument<int64_t>(slot++, ck, fname.c_str());
+
+		if(dst_d && src_d) {
+			lua_dbitmap* db = lua_class<lua_dbitmap>::get(L, dsts, fname.c_str());
+			lua_dbitmap* sb = lua_class<lua_dbitmap>::get(L, srcs, fname.c_str());
+			if(ck == 0x100000000ULL)
+				blit(srcdest_direct<colorkey_none>(*db, *sb, colorkey_none()), dx, dy, sx, sy, w, h);
+			else
+				blit(srcdest_direct<colorkey_direct>(*db, *sb, colorkey_direct(ck)), dx, dy, sx, sy, w,
+					h);
+		} else if(dst_p && src_p) {
+			lua_bitmap* db = lua_class<lua_bitmap>::get(L, dsts, fname.c_str());
+			lua_bitmap* sb = lua_class<lua_bitmap>::get(L, srcs, fname.c_str());
+			if(ck > 65535)
+				blit(srcdest_palette<colorkey_none>(*db, *sb, colorkey_none()), dx, dy, sx, sy, w, h);
+			else
+				blit(srcdest_palette<colorkey_palette>(*db, *sb, colorkey_palette(ck)), dx, dy, sx, sy,
+					w, h);
+		} else if(dst_d && src_p) {
+			lua_dbitmap* db = lua_class<lua_dbitmap>::get(L, dsts, fname.c_str());
+			lua_bitmap* sb = lua_class<lua_bitmap>::get(L, srcs, fname.c_str());
+			lua_palette* pal = lua_class<lua_palette>::get(L, srcs + 1, fname.c_str());
+			if(ck > 65535)
+				blit(srcdest_paletted<colorkey_none>(*db, *sb, *pal, colorkey_none()), dx, dy, sx, sy,
+					w, h);
+			else
+				blit(srcdest_paletted<colorkey_palette>(*db, *sb, *pal, colorkey_palette(ck)), dx, dy,
+					sx, sy, w, h);
+		} else
+			throw std::runtime_error("If parameter 1 to gui.bitmap_blit is paletted, parameter 4 must be "
+				"too");
 		return 0;
 	});
 

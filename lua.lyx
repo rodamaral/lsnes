@@ -1378,8 +1378,18 @@ gui.bitmap_blit: Blit a bitmap into another
 \end_layout
 
 \begin_layout Itemize
-Syntax: none gui.bitmap_blit(BITMAP/DBITMAP dest, number dx, number dy, BITMAP/DB
-ITMAP src, number sx, number sy, number w, number h[, number ck])
+Syntax: none gui.bitmap_blit(BITMAP dest, number dx, number dy, BITMAP src,
+ number sx, number sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit(DBITMAP dest, number dx, number dy, DBITMAP
+ src, number sx, number sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit(DBITMAP dest, number dx, number dy, BITMAP src,
+ PALETTE pal, number sx, number sy, number w, number h[, number ck])
 \end_layout
 
 \begin_layout Standard
@@ -1401,7 +1411,10 @@ dy: Top edge of target
 
 \begin_layout Itemize
 src: The source to blit from.
- Must be of the same type as destination.
+\end_layout
+
+\begin_layout Itemize
+pal: The palette to use in blit.
 \end_layout
 
 \begin_layout Itemize
@@ -1427,12 +1440,12 @@ ck: Color key.
 
 \begin_deeper
 \begin_layout Itemize
-If bitmaps are bitmaps, this is color index of colorkey.
+If soruce bitmap is bitmap, this is color index of colorkey.
  Values outside range 0-65535 cause no key to be used as colorkey.
 \end_layout
 
 \begin_layout Itemize
-If bitmaps are dbitmaps, this color value of colorkey.
+If source bitmap is dbitmap, this is the color value of colorkey.
 \end_layout
 
 \begin_layout Itemize
