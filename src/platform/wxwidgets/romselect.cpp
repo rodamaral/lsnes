@@ -608,8 +608,8 @@ struct moviefile wxwin_project::make_movie()
 	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
 	f.rerecords = "0";
 	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
-		f.romimg_sha256[i] = our_rom->romimg[i].sha_256;
-		f.romxml_sha256[i] = our_rom->romxml[i].sha_256;
+		f.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
+		f.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
 	}
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {

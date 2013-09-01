@@ -190,92 +190,27 @@ namespace
 			return false;
 		}
 	}
+
+	struct loaded_image::info get_xml_info()
+	{
+		loaded_image::info i;
+		i.type = loaded_image::info::IT_MARKUP;
+		i.headersize = 0;
+		return i;
+	}
+
+	struct loaded_image::info xlate_info(core_romimage_info ri)
+	{
+		loaded_image::info i;
+		if(ri.pass_mode == 0) i.type = loaded_image::info::IT_MEMORY;
+		if(ri.pass_mode == 1) i.type = loaded_image::info::IT_FILE;
+		i.headersize = ri.headersize;
+		return i;
+	}
+
+	sha256_hasher lsnes_image_hasher;
 }
 
-loaded_slot::loaded_slot() throw(std::bad_alloc)
-{
-	valid = false;
-	xml = false;
-	sha_256 = "";
-	filename_flag = false;
-}
-
-loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
-	const struct core_romimage_info& imginfo, bool xml_flag) throw(std::bad_alloc, std::runtime_error)
-{
-	unsigned headered = 0;
-	xml = xml_flag;
-	if(filename == "") {
-		valid = false;
-		sha_256 = "";
-		filename_flag = (!xml && imginfo.pass_mode);
-		return;
-	}
-	//XMLs are always loaded, no matter what.
-	if(!xml && imginfo.pass_mode) {
-		std::string _filename = filename;
-		//Translate the passed filename to absolute one.
-		_filename = resolve_file_relative(_filename, base);
-		_filename = boost_fs::absolute(boost_fs::path(_filename)).string();
-		filename_flag = true;
-		data.resize(_filename.length());
-		std::copy(_filename.begin(), _filename.end(), data.begin());
-		//Compute the SHA-256.
-		std::istream& s = open_file_relative(filename, "");
-		sha256 hash;
-		char buffer[8192];
-		size_t block;
-		while((block = s.readsome(buffer, 8192)))
-			hash.write(buffer, block);
-		sha_256 = hash.read();
-		delete &s;
-		valid = true;
-		return;
-	}
-	filename_flag = false;
-	valid = true;
-	data = read_file_relative(filename, base);
-	if(!xml && imginfo.headersize)
-		headered = ((data.size() % (2 * imginfo.headersize)) == imginfo.headersize) ? imginfo.headersize : 0;
-	if(headered && !xml) {
-		if(data.size() >= headered) {
-			memmove(&data[0], &data[headered], data.size() - headered);
-			data.resize(data.size() - headered);
-		} else {
-			data.resize(0);
-		}
-	}
-	sha_256 = sha256::hash(data);
-	if(xml) {
-		size_t osize = data.size();
-		data.resize(osize + 1);
-		data[osize] = 0;
-	}
-}
-
-void loaded_slot::patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error)
-{
-	if(filename_flag)
-		throw std::runtime_error("CD images can't be patched on the fly");
-	try {
-		std::vector<char> data2 = data;
-		if(xml && valid)
-			data2.resize(data2.size() - 1);
-		data2 = do_patch_file(data2, patch, offset);
-		//Mark the slot as valid and update hash.
-		valid = true;
-		std::string new_sha256 = sha256::hash(data2);
-		if(xml) {
-			size_t osize = data2.size();
-			data2.resize(osize + 1);
-			data2[osize] = 0;
-		}
-		data = data2;
-		sha_256 = new_sha256;
-	} catch(...) {
-		throw;
-	}
-}
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {
@@ -298,13 +233,13 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 		//This thing has a BIOS.
 		romidx = 1;
 		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
-		romimg[0] = loaded_slot(basename, "", ctype.get_image_info(0), false);
+		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(file_exists(basename + ".xml"))
-			romxml[0] = loaded_slot(basename + ".xml", "", ctype.get_image_info(0), true);
+			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 	}
-	romimg[romidx] = loaded_slot(file, "", ctype.get_image_info(romidx), false);
+	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(ctype.get_image_info(romidx)));
 	if(file_exists(file + ".xml"))
-		romxml[romidx] = loaded_slot(file + ".xml", "", ctype.get_image_info(romidx), true);
+		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 	load_filename = file;
 	msu1_base = resolve_file_relative(file, "");
 	return;
@@ -333,13 +268,15 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 			//This thing has a BIOS.
 			romidx = 1;
 			std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
-			romimg[0] = loaded_slot(basename, "", coretype->get_image_info(0), false);
+			romimg[0] = loaded_image(lsnes_image_hasher, basename, "",
+				xlate_info(coretype->get_image_info(0)));
 			if(file_exists(basename + ".xml"))
-				romxml[0] = loaded_slot(basename + ".xml", "", coretype->get_image_info(0), true);
+				romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 		}
-		romimg[romidx] = loaded_slot(file, "", coretype->get_image_info(romidx), false);
+		romimg[romidx] = loaded_image(lsnes_image_hasher, file, "",
+			xlate_info(coretype->get_image_info(romidx)));
 		if(file_exists(file + ".xml"))
-			romxml[romidx] = loaded_slot(file + ".xml", "", coretype->get_image_info(romidx), true);
+			romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 		msu1_base = resolve_file_relative(file, "");
 		return;
 	}
@@ -410,8 +347,8 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 
 	//Load ROMs.
 	for(size_t i = 0; i < rtype->get_image_count(); i++) {
-		romimg[i] = loaded_slot(cromimg[i], file, rtype->get_image_info(i), false);
-		romxml[i] = loaded_slot(cromxml[i], file, rtype->get_image_info(i), true);
+		romimg[i] = loaded_image(lsnes_image_hasher, cromimg[i], file, xlate_info(rtype->get_image_info(i)));
+		romxml[i] = loaded_image(lsnes_image_hasher, cromxml[i], file, get_xml_info());
 	}
 
 	//Patch ROMs.
@@ -544,7 +481,12 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 		if(memcmp(tmp, &buf[buf.size() - 32], 32))
 			throw std::runtime_error("Savestate corrupt");
 	}
-	rtype->unserialize(&buf[0], buf.size() - 32);;
+	rtype->unserialize(&buf[0], buf.size() - 32);
+}
+
+void set_hasher_callback(std::function<void(uint64_t)> cb)
+{
+	lsnes_image_hasher.set_callback(cb);
 }
 
 std::map<std::string, core_type*> preferred_core;

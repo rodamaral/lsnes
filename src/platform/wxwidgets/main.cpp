@@ -478,8 +478,8 @@ bool lsnes_app::OnInit()
 			//Initialize the remainder.
 			mov->rerecords = "0";
 			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
-				mov->romimg_sha256[i] = rom->romimg[i].sha_256;
-				mov->romxml_sha256[i] = rom->romxml[i].sha_256;
+				mov->romimg_sha256[i] = rom->romimg[i].sha_256.read();
+				mov->romxml_sha256[i] = rom->romxml[i].sha_256.read();
 			}
 		}
 		mov->gametype = &rom->rtype->combine_region(*rom->region);

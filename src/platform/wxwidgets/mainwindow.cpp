@@ -144,7 +144,28 @@ namespace
 	bool old_rotate = false;
 	bool main_window_dirty;
 	bool is_fs = false;
+	bool hashing_in_progress = false;
+	uint64_t hashing_left = 0;
+	int64_t last_update = 0;
 	thread_class* emulation_thread;
+
+	void hash_callback(uint64_t left)
+	{
+		wxwin_mainwindow* mwin = main_window;
+		if(left == 0xFFFFFFFFFFFFFFFFULL) {
+			hashing_in_progress = false;
+			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
+			last_update = get_utime() - 2000000;
+			return;
+		}
+		hashing_in_progress = true;
+		hashing_left = left;
+		uint64_t this_update = get_utime();
+		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
+			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
+			last_update = this_update;
+		}
+	}
 
 	std::pair<std::string, std::string> lsplit(std::string l)
 	{
@@ -982,6 +1003,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	});
 	gpanel->SetDropTarget(new loadfile(this));
 	spanel->SetDropTarget(new loadfile(this));
+	set_hasher_callback(hash_callback);
 }
 
 void wxwin_mainwindow::request_paint()
@@ -1034,6 +1056,12 @@ std::u32string read_variable_map(const std::map<std::string, std::u32string>& va
 
 void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32string>& vars)
 {
+	if(hashing_in_progress) {
+		std::ostringstream s;
+		s << "Hashing ROMs, approximately " << ((hashing_left + 524288) >> 20) << "MB left...";
+		statusbar->SetStatusText(towxstring(s.str()));
+		return;
+	}
 	if(vars.empty())
 		return;
 	try {

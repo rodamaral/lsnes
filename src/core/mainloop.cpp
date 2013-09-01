@@ -346,8 +346,8 @@ namespace
 				*our_rom = newrom;
 			}
 			for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
-				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256;
-				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256;
+				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
+				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
 			}
 		} catch(std::exception& e) {
 			platform::error_message(std::string("Can't load ROM: ") + e.what());

@@ -24,6 +24,31 @@
 
 namespace
 {
+	bool hashing_in_progress = false;
+	uint64_t hashing_left = 0;
+	int64_t last_update = 0;
+
+	void hash_callback(uint64_t left)
+	{
+		if(left == 0xFFFFFFFFFFFFFFFFULL) {
+			hashing_in_progress = false;
+			std::cout << "Done." << std::endl;
+			last_update = get_utime() - 2000000;
+			return;
+		}
+		if(!hashing_in_progress) {
+			std::cout << "Hashing disc images..." << std::flush;
+		}
+		hashing_in_progress = true;
+		hashing_left = left;
+		uint64_t this_update = get_utime();
+		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
+			std::cout << ((hashing_left + 524288) >> 20) << "..." << std::flush;
+			last_update = this_update;
+		}
+	}
+	
+
 	class myavsnoop : public information_dispatch
 	{
 	public:
@@ -295,6 +320,8 @@ int main(int argc, char** argv)
 		}
 	}
 
+	set_hasher_callback(hash_callback);
+
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
@@ -312,8 +339,6 @@ int main(int argc, char** argv)
 	messages << "Detected region: " << r.rtype->combine_region(*r.region).get_name() << std::endl;
 	set_nominal_framerate(r.region->approx_framerate());
 
-	messages << "--- Internal memory mappings ---" << std::endl;
-	dump_region_map();
 	messages << "--- End of Startup --- " << std::endl;
 
 	moviefile movie;

@@ -7,90 +7,7 @@
 #include <stdexcept>
 #include "core/misc.hpp"
 #include "interface/romtype.hpp"
-
-/**
- * Some loaded data or indication of no data.
- */
-struct loaded_slot
-{
-/**
- * Construct empty slot.
- *
- * throws std::bad_alloc: Not enough memory.
- */
-	loaded_slot() throw(std::bad_alloc);
-
-/**
- * This constructor construct slot by reading data from file. If filename is "", constructs an empty slot.
- *
- * parameter filename: The filename to read. If "", empty slot is constructed.
- * parameter base: Base filename to interpret the filename against. If "", no base filename is used.
- * parameter imginfo: Image information.
- * parameter xml_flag: If set, always keep trailing NUL.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Can't load the data.
- */
-	loaded_slot(const std::string& filename, const std::string& base, const struct core_romimage_info& imginfo,
-		bool xml_flag = false) throw(std::bad_alloc, std::runtime_error);
-
-/**
- * This method patches this slot using specified IPS patch.
- *
- * parameter patch: The patch to apply
- * parameter offset: The amount to add to the offsets in the IPS file. Parts with offsets below zero are not patched.
- * throws std::bad_alloc: Not enough memory.
- * throws std::runtime_error: Bad IPS patch.
- */
-	void patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error);
-/**
- * Is this filename?
- */
-	bool filename_flag;
-/**
- * Is this slot XML slot?
- */
-	bool xml;
-/**
- * If this slot is blank, this is set to false, data is undefined and sha256 is "". Otherwise this is set to true,
- * data to apporiate data, and sha256 to hash of data.
- */
-	bool valid;
-/**
- * The actual data for this slot.
- */
-	std::vector<char> data;
-/**
- * SHA-256 for the data in this slot if data is valid. If no valid data, this field is "".
- */
-	std::string sha_256;
-/**
- * Get pointer to loaded data
- *
- * returns: Pointer to loaded data, or NULL if slot is blank.
- */
-	operator const char*() const throw()
-	{
-		return valid ? reinterpret_cast<const char*>(&data[0]) : NULL;
-	}
-/**
- * Get pointer to loaded data
- *
- * returns: Pointer to loaded data, or NULL if slot is blank.
- */
-	operator const uint8_t*() const throw()
-	{
-		return valid ? reinterpret_cast<const uint8_t*>(&data[0]) : NULL;
-	}
-/**
- * Get size of slot
- *
- * returns: The number of bytes in slot, or 0 if slot is blank.
- */
-	operator unsigned() const throw()
-	{
-		return valid ? data.size() : 0;
-	}
-};
+#include "library/fileimage.hpp"
 
 /**
  * ROM loaded into memory.
@@ -135,11 +52,11 @@ struct loaded_rom
 /**
  * Loaded main ROM
  */
-	loaded_slot romimg[27];
+	loaded_image romimg[27];
 /**
  * Loaded main ROM XML
  */
-	loaded_slot romxml[27];
+	loaded_image romxml[27];
 /**
  * MSU-1 base.
  */
@@ -191,6 +108,11 @@ std::pair<core_type*, core_region*> get_current_rom_info() throw();
  */
 std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector<std::string>& cmdline)
 	throw(std::bad_alloc, std::runtime_error);
+
+/**
+ * Set the hasher callback.
+ */
+void set_hasher_callback(std::function<void(uint64_t)> cb);
 
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;
