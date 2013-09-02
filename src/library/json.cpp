@@ -126,14 +126,18 @@ node::number_holder::number_holder(const std::string& expr, size_t& ptr, size_t 
 	x = expr.substr(ptr, tmp - ptr);
 	ptr = tmp;
 	try {
-		n.n1 = parse_value<uint64_t>(x);
-		sub = 1;
-		return;
+		if(regex_match("[0-9]+", x)) {
+			n.n1 = parse_value<uint64_t>(x);
+			sub = 1;
+			return;
+		}
 	} catch(...) {}
 	try {
-		n.n2 = parse_value<int64_t>(x);
-		sub = 2;
-		return;
+		if(regex_match("[+-]?[0-9]+", x)) {
+			n.n2 = parse_value<int64_t>(x);
+			sub = 2;
+			return;
+		}
 	} catch(...) {}
 	try {
 		n.n0 = parse_value<double>(x);
