@@ -5,7 +5,7 @@
 #include "library/zip.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
-#include "library/serialization.hpp"
+#include "library/binarystream.hpp"
 #include "interface/romtype.hpp"
 
 #include <iostream>
@@ -22,7 +22,6 @@
 
 enum lsnes_movie_tags
 {
-	TAG_ = 0xaddb2d86,
 	TAG_ANCHOR_SAVE = 0xf5e0fad7,
 	TAG_AUTHOR = 0xafff97b4,
 	TAG_CORE_VERSION = 0xe4344c7e,
@@ -73,230 +72,38 @@ void write_linefile(zip_writer& w, const std::string& member, const std::string&
 	}
 }
 
-
 namespace
 {
-	void binary_write_byte(std::ostream& stream, uint8_t byte)
+	void binary_read_movie(binary_input_stream& in, controller_frame_vector& v)
 	{
-		stream.write(reinterpret_cast<char*>(&byte), 1);
-	}
-
-	void binary_write_number(std::ostream& stream, uint64_t number)
-	{
-		char data[10];
-		size_t len = 0;
-		do {
-			bool cont = (number > 127);
-			data[len++] = (cont ? 0x80 : 0x00) | (number & 0x7F);
-			number >>= 7;
-		} while(number);
-		stream.write(data, len);
-	}
-
-	void binary_write_number32(std::ostream& stream, uint32_t number)
-	{
-		char data[4];
-		write32ube(data, number);
-		stream.write(data, 4);
-	}
-
-	void binary_write_string(std::ostream& stream, const std::string& string)
-	{
-		size_t slen = string.length();
-		binary_write_number(stream, slen);
-		std::copy(string.begin(), string.end(), std::ostream_iterator<char>(stream));
-	}
-
-	void binary_write_string_implicit(std::ostream& stream, const std::string& string)
-	{
-		std::copy(string.begin(), string.end(), std::ostream_iterator<char>(stream));
-	}
-
-	void binary_write_blob(std::ostream& stream, const std::vector<char>& blob)
-	{
-		stream.write(&blob[0], blob.size());
-	}
-
-	void binary_write_extension(std::ostream& stream, uint32_t tag, std::function<void(std::ostream& s)> fn,
-		bool even_empty = false);
-
-	void binary_write_extension(std::ostream& stream, uint32_t tag, std::function<void(std::ostream& s)> fn,
-		bool even_empty)
-	{
-		std::ostringstream tmp;
-		fn(tmp);
-		std::string str = tmp.str();
-		if(!even_empty && !str.length())
-			return;
-		binary_write_number32(stream, TAG_);
-		binary_write_number32(stream, tag);
-		binary_write_string(stream, str);
-	}
-
-	uint8_t binary_read_byte(std::istream& stream)
-	{
-		char byte;
-		stream.read(&byte, 1);
-		if(!stream)
-			throw std::runtime_error("Unexpected EOF");
-		return byte;
-	}
-
-	uint32_t binary_read_number32(std::istream& stream)
-	{
-		char c[4];
-		stream.read(c, 4);
-		if(!stream)
-			throw std::runtime_error("Unexpected EOF");
-		return read32ube(c);
-	}
-
-	uint64_t binary_read_number(std::istream& stream)
-	{
-		uint64_t s = 0;
-		int sh = 0;
-		uint8_t c;
-		do {
-			c = binary_read_byte(stream);
-			s |= (static_cast<uint64_t>(c & 0x7F) << sh);
-			sh += 7;
-		} while(c & 0x80);
-		if(!stream)
-			throw std::runtime_error("Unexpected EOF");
-		return s;
-	}
-	
-	std::string binary_read_string(std::istream& stream)
-	{
-		size_t sz = binary_read_number(stream);
-		std::vector<char> _r;
-		_r.resize(sz);
-		stream.read(&_r[0], _r.size());
-		if(!stream)
-			throw std::runtime_error("Unexpected EOF");
-		std::string r(_r.begin(), _r.end());
-		return r;
-	}
-
-	class extension_stream
-	{
-	public:
-		extension_stream(std::istream& s, uint64_t _left) : under(s), left(_left) {}
-		uint64_t binary_read_number()
-		{
-			uint64_t s = 0;
-			int sh = 0;
-			uint8_t c;
-			do {
-				c = binary_read_byte();
-				s |= (static_cast<uint64_t>(c & 0x7F) << sh);
-				sh += 7;
-			} while(c & 0x80);
-			return s;
+		uint64_t stride = v.get_stride();
+		uint64_t pageframes = v.get_frames_per_page();
+		uint64_t vsize = 0;
+		size_t pagenum = 0;
+		uint64_t pagesize = stride * pageframes;
+		while(in.get_left()) {
+			v.resize(vsize + pageframes);
+			unsigned char* contents = v.get_page_buffer(pagenum++);
+			uint64_t gcount = min(pagesize, in.get_left());
+			in.raw(contents, gcount);
+			vsize += (gcount / stride);
 		}
-		void binary_read_movie(controller_frame_vector& v)
-		{
-			uint64_t stride = v.get_stride();
-			uint64_t pageframes = v.get_frames_per_page();
-			uint64_t vsize = 0;
-			size_t pagenum = 0;
-			uint64_t pagesize = stride * pageframes;
-			while(left) {
-				v.resize(vsize + pageframes);
-				unsigned char* contents = v.get_page_buffer(pagenum++);
-				uint64_t gcount = min(pagesize, left);
-				read_stream(reinterpret_cast<char*>(contents), gcount);
-				vsize += (gcount / stride);
-			}
-			v.resize(vsize);
-		}
-		uint32_t binary_read_number32()
-		{
-			char c[4];
-			read_stream(c, 4);
-			return read32ube(c);
-		}
-		std::string binary_read_string()
-		{
-			size_t l = binary_read_number();
-			std::vector<char> _r;
-			_r.resize(l);
-			read_stream(&_r[0], l);
-			std::string r(_r.begin(), _r.end());
-			return r;
-		}
-		std::string binary_read_string_implicit()
-		{
-			std::vector<char> _r;
-			_r.resize(left);
-			read_stream(&_r[0], left);
-			std::string r(_r.begin(), _r.end());
-			return r;
-		}
-		uint8_t binary_read_byte()
-		{
-			char c;
-			read_stream(&c, 1);
-			return c;
-		}
-		void binary_read_blob(std::vector<char>& v)
-		{
-			v.resize(left);
-			read_stream(&v[0], left);
-		}
-		void flush()
-		{
-			char buf[256];
-			while(left)
-				read_stream(buf, min(left, (uint64_t)256));
-		}
-	private:
-		void read_stream(char* dest, size_t size)
-		{
-			if(size > left)
-				throw std::runtime_error("Substream unexpected EOF");
-			under.read(dest, size);
-			if(!under)
-				throw std::runtime_error("Unexpected EOF");
-			left -= size;
-		}
-		std::istream& under;
-		uint64_t left;
-	};
-
-	void for_each_extension(std::istream& stream, std::function<void(uint32_t tag, extension_stream& s)> fn)
-	{
-		while(stream) {
-			char c[4];
-			stream.read(c, 4);
-			if(!stream)
-				break;
-			uint32_t tagid = read32ube(c);
-			if(tagid != TAG_)
-				throw std::runtime_error("Movie file packet structure desync");
-			uint32_t tag = binary_read_number32(stream);
-			uint64_t size = binary_read_number(stream);
-			extension_stream strm(stream, size);
-			fn(tag, strm);
-			strm.flush();
-		}
+		v.resize(vsize);
 	}
 
-	void binary_write_movie(std::ostream& stream, controller_frame_vector& v)
+	void binary_write_movie(binary_output_stream& out, controller_frame_vector& v)
 	{
 		uint64_t pages = v.get_page_count();
 		uint64_t stride = v.get_stride();
 		uint64_t pageframes = v.get_frames_per_page();
 		uint64_t vsize = v.size();
-		binary_write_number32(stream, TAG_);
-		binary_write_number32(stream, TAG_MOVIE);
-		binary_write_number(stream, vsize * stride);
+		out.write_extension_tag(TAG_MOVIE, vsize * stride);
 		size_t pagenum = 0;
 		while(vsize > 0) {
 			uint64_t count = (vsize > pageframes) ? pageframes : vsize;
 			size_t bytes = count * stride;
 			unsigned char* content = v.get_page_buffer(pagenum++);
-			stream.write(reinterpret_cast<char*>(content), bytes);
+			out.raw(content, bytes);
 			vsize -= count;
 		}
 	}
@@ -670,35 +477,28 @@ moviefile::brief_info::brief_info(const std::string& filename)
 	read_numeric_file(r, "rerecords", rerecords);
 }
 
-void moviefile::brief_info::binary_io(std::istream& stream)
+void moviefile::brief_info::binary_io(std::istream& _stream)
 {
-	sysregion = binary_read_string(stream);
+	binary_input_stream in(_stream);
+	sysregion = in.string();
 	//Discard the settings.
-	while(binary_read_byte(stream)) {
-		binary_read_string(stream);
-		binary_read_string(stream);
+	while(in.byte()) {
+		in.string();
+		in.string();
 	}
-	for_each_extension(stream, [this](uint32_t tag, extension_stream& s) {
-		switch(tag) {
-		case TAG_CORE_VERSION:
-			this->corename = s.binary_read_string_implicit();
-			break;
-		case TAG_PROJECT_ID:
-			this->projectid = s.binary_read_string_implicit();
-			break;
-		case TAG_SAVESTATE:
-			this->current_frame = s.binary_read_number();
-			break;
-		case TAG_RRDATA: {
+	in.extension({
+		{TAG_CORE_VERSION, [this](binary_input_stream& s) {
+			this->corename = s.string_implicit();
+		}},{TAG_PROJECT_ID, [this](binary_input_stream& s) {
+			this->projectid = s.string_implicit();
+		}},{TAG_SAVESTATE, [this](binary_input_stream& s) {
+			this->current_frame = s.number();
+		}},{TAG_RRDATA, [this](binary_input_stream& s) {
 			std::vector<char> c_rrdata;
-			s.binary_read_blob(c_rrdata);
+			s.blob_implicit(c_rrdata);
 			this->rerecords = rrdata::count(c_rrdata);
-			break;
-		}
-		default:
-			break;
-		}
-	});
+		}}
+	}, binary_null_default);
 }
 
 moviefile::moviefile() throw(std::bad_alloc)
@@ -914,125 +714,127 @@ Following need to be saved:
 - Input (blob).
 - Extensions (???)
 */
-void moviefile::binary_io(std::ostream& stream) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runtime_error)
 {
-	binary_write_string(stream, gametype->get_name());
-	write_settings<std::ostream>(stream, settings, gametype->get_type().get_settings(), [](std::ostream& s,
-		const std::string& name, const std::string& value) -> void {
-			binary_write_byte(s, 0x01);
-			binary_write_string(s, name);
-			binary_write_string(s, value);
+	binary_output_stream out(_stream);
+	out.string(gametype->get_name());
+	write_settings<binary_output_stream>(out, settings, gametype->get_type().get_settings(),
+		[](binary_output_stream& s, const std::string& name, const std::string& value) -> void {
+			s.byte(0x01);
+			s.string(name);
+			s.string(value);
 		});
-	binary_write_byte(stream, 0x00);
+	out.byte(0x00);
 
-	binary_write_extension(stream, TAG_MOVIE_TIME, [this](std::ostream& s) {
-		binary_write_number(s, movie_rtc_second);
-		binary_write_number(s, movie_rtc_subsecond);
+	out.extension(TAG_MOVIE_TIME, [this](binary_output_stream& s) {
+		s.number(this->movie_rtc_second);
+		s.number(this->movie_rtc_subsecond);
 	});
 
-	binary_write_extension(stream, TAG_PROJECT_ID, [this](std::ostream& s) {
-		binary_write_string_implicit(s, this->projectid);
+	out.extension(TAG_PROJECT_ID, [this](binary_output_stream& s) {
+		s.string_implicit(this->projectid);
 	});
 
-	binary_write_extension(stream, TAG_CORE_VERSION, [this](std::ostream& s) {
+	out.extension(TAG_CORE_VERSION, [this](binary_output_stream& s) {
 		this->coreversion = this->gametype->get_type().get_core_identifier();
-		binary_write_string_implicit(s, this->coreversion);
+		s.string_implicit(this->coreversion);
 	});
 
 	for(unsigned i = 0; i < sizeof(romimg_sha256) / sizeof(romimg_sha256[0]); i++) {
-		binary_write_extension(stream, TAG_ROMHASH, [this, i](std::ostream& s) {
+		out.extension(TAG_ROMHASH, [this, i](binary_output_stream& s) {
 			if(!this->romimg_sha256[i].length()) return;
-			binary_write_byte(s, 2 * i);
-			binary_write_string_implicit(s, romimg_sha256[i]);
+			s.byte(2 * i);
+			s.string_implicit(romimg_sha256[i]);
 		});
-		binary_write_extension(stream, TAG_ROMHASH, [this, i](std::ostream& s) {
+		out.extension(TAG_ROMHASH, [this, i](binary_output_stream& s) {
 			if(!this->romxml_sha256[i].length()) return;
-			binary_write_byte(s, 2 * i + 1);
-			binary_write_string_implicit(s, romxml_sha256[i]);
+			s.byte(2 * i + 1);
+			s.string_implicit(romxml_sha256[i]);
 		});
 	}
 
-	binary_write_extension(stream, TAG_RRDATA, [this](std::ostream& s) {
+	out.extension(TAG_RRDATA, [this](binary_output_stream& s) {
 		uint64_t count;
 		std::vector<char> rrd;
 		count = rrdata::write(rrd);
-		binary_write_blob(s, rrd);
+		s.blob_implicit(rrd);
 	});
 	
-	for(auto i : movie_sram) {
-		binary_write_extension(stream, TAG_MOVIE_SRAM, [&i](std::ostream& s) {
-			binary_write_string(s, i.first);
-			binary_write_blob(s, i.second);
+	for(auto i : movie_sram)
+		out.extension(TAG_MOVIE_SRAM, [&i](binary_output_stream& s) {
+			s.string(i.first);
+			s.blob_implicit(i.second);
 		});
-	}
-	binary_write_extension(stream, TAG_ANCHOR_SAVE, [this](std::ostream& s) {
-		binary_write_blob(s, this->anchor_savestate);
+
+	out.extension(TAG_ANCHOR_SAVE, [this](binary_output_stream& s) {
+		s.blob_implicit(this->anchor_savestate);
 	});
 	if(is_savestate) {
-		binary_write_extension(stream, TAG_SAVESTATE, [this](std::ostream& s) {
-			binary_write_number(s, this->save_frame);
-			binary_write_number(s, this->lagged_frames);
-			binary_write_number(s, this->rtc_second);
-			binary_write_number(s, this->rtc_subsecond);
-			binary_write_number(s, this->pollcounters.size());
+		out.extension(TAG_SAVESTATE, [this](binary_output_stream& s) {
+			s.number(this->save_frame);
+			s.number(this->lagged_frames);
+			s.number(this->rtc_second);
+			s.number(this->rtc_subsecond);
+			s.number(this->pollcounters.size());
 			for(auto i : this->pollcounters)
-				binary_write_number32(s, i);
-			binary_write_byte(s, this->poll_flag ? 0x01 : 0x00);
-			binary_write_blob(s, this->savestate);
+				s.number32(i);
+			s.byte(this->poll_flag ? 0x01 : 0x00);
+			s.blob_implicit(this->savestate);
 		});
 
-		binary_write_extension(stream, TAG_HOSTMEMORY, [this](std::ostream& s) {
-			binary_write_blob(s, this->host_memory);
+		out.extension(TAG_HOSTMEMORY, [this](binary_output_stream& s) {
+			s.blob_implicit(this->host_memory);
 		});
 
-		binary_write_extension(stream, TAG_SCREENSHOT, [this](std::ostream& s) {
-			binary_write_blob(s, this->screenshot);
+		out.extension(TAG_SCREENSHOT, [this](binary_output_stream& s) {
+			s.blob_implicit(this->screenshot);
 		});
 
 		for(auto i : sram) {
-			binary_write_extension(stream, TAG_SAVE_SRAM, [&i](std::ostream& s) {
-				binary_write_string(s, i.first);
-				binary_write_blob(s, i.second);
+			out.extension(TAG_SAVE_SRAM, [&i](binary_output_stream& s) {
+				s.string(i.first);
+				s.blob_implicit(i.second);
 			});
 		}
 	}
 
-	binary_write_extension(stream, TAG_GAMENAME, [this](std::ostream& s) {
-		binary_write_string_implicit(s, this->gamename);
+	out.extension(TAG_GAMENAME, [this](binary_output_stream& s) {
+		s.string_implicit(this->gamename);
 	});
 
 	for(auto i : subtitles)
-		binary_write_extension(stream, TAG_SUBTITLE, [&i](std::ostream& s) {
-			binary_write_number(s, i.first.get_frame());
-			binary_write_number(s, i.first.get_length());
-			binary_write_string_implicit(s, i.second);
+		out.extension(TAG_SUBTITLE, [&i](binary_output_stream& s) {
+			s.number(i.first.get_frame());
+			s.number(i.first.get_length());
+			s.string_implicit(i.second);
 		});
 
 	for(auto i : authors)
-		binary_write_extension(stream, TAG_AUTHOR, [&i](std::ostream& s) {
-			binary_write_string(s, i.first);
-			binary_write_string_implicit(s, i.second);
+		out.extension(TAG_AUTHOR, [&i](binary_output_stream& s) {
+			s.string(i.first);
+			s.string_implicit(i.second);
 		});
 
 	for(auto i : active_macros)
-		binary_write_extension(stream, TAG_MACRO, [&i](std::ostream& s) {
-			binary_write_number(s, i.second);
-			binary_write_string_implicit(s, i.first);
+		out.extension(TAG_MACRO, [&i](binary_output_stream& s) {
+			s.number(i.second);
+			s.string_implicit(i.first);
 		});
 
 	for(auto i : ramcontent) {
-		binary_write_extension(stream, TAG_RAMCONTENT, [&i](std::ostream& s) {
-			binary_write_string(s, i.first);
-			binary_write_blob(s, i.second);
+		out.extension(TAG_RAMCONTENT, [&i](binary_output_stream& s) {
+			s.string(i.first);
+			s.blob_implicit(i.second);
 		});
 	}
 
-	binary_write_movie(stream, input);
+	binary_write_movie(out, input);
 }
 
-void moviefile::binary_io(std::istream& stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
-	std::string tmp = binary_read_string(stream);
+	binary_input_stream in(_stream);
+	std::string tmp = in.string();
 	try {
 		gametype = &romtype.lookup_sysregion(tmp);
 	} catch(std::bad_alloc& e) {
@@ -1040,108 +842,78 @@ void moviefile::binary_io(std::istream& stream, core_type& romtype) throw(std::b
 	} catch(std::exception& e) {
 		throw std::runtime_error("Illegal game type '" + tmp + "'");
 	}
-	while(binary_read_byte(stream)) {
-		std::string name = binary_read_string(stream);
-		settings[name] = binary_read_string(stream);
+	while(in.byte()) {
+		std::string name = in.string();
+		settings[name] = in.string();
 	}
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	input.clear(ports);
 
-	for_each_extension(stream, [this](uint32_t tag, extension_stream& s) {
-		switch(tag) {
-		case TAG_ANCHOR_SAVE:
-			s.binary_read_blob(this->anchor_savestate);
-			break;
-		case TAG_AUTHOR: {
-			std::string a = s.binary_read_string();
-			std::string b = s.binary_read_string_implicit();
+	in.extension({
+		{TAG_ANCHOR_SAVE, [this](binary_input_stream& s) {
+			s.blob_implicit(this->anchor_savestate);
+		}},{TAG_AUTHOR, [this](binary_input_stream& s) {
+			std::string a = s.string();
+			std::string b = s.string_implicit();
 			this->authors.push_back(std::make_pair(a, b));
-			break;
-		}
-		case TAG_CORE_VERSION:
-			this->coreversion = s.binary_read_string_implicit();
-			break;
-		case TAG_GAMENAME:
-			this->gamename = s.binary_read_string_implicit();
-			break;
-		case TAG_HOSTMEMORY:
-			s.binary_read_blob(this->host_memory);
-			break;
-		case TAG_MACRO: {
-			uint64_t n = s.binary_read_number();
-			this->active_macros[s.binary_read_string_implicit()] = n;
-			break;
-		}
-		case TAG_MOVIE: {
-			s.binary_read_movie(input);
-			break;
-		}
-		case TAG_MOVIE_SRAM: {
-			std::string a = s.binary_read_string();
-			s.binary_read_blob(this->movie_sram[a]);
-			break;
-		}
-		case TAG_RAMCONTENT: {
-			std::string a = s.binary_read_string();
-			s.binary_read_blob(this->ramcontent[a]);
-			break;
-		}
-		case TAG_MOVIE_TIME:
-			this->movie_rtc_second = s.binary_read_number();
-			this->movie_rtc_subsecond = s.binary_read_number();
-			break;
-		case TAG_PROJECT_ID:
-			this->projectid = s.binary_read_string_implicit();
-			break;
-		case TAG_ROMHASH: {
-			uint8_t n = s.binary_read_byte();
-			std::string h = s.binary_read_string_implicit();
+		}},{TAG_CORE_VERSION, [this](binary_input_stream& s) {
+			this->coreversion = s.string_implicit();
+		}},{TAG_GAMENAME, [this](binary_input_stream& s) {
+			this->gamename = s.string_implicit();
+		}},{TAG_HOSTMEMORY, [this](binary_input_stream& s) {
+			s.blob_implicit(this->host_memory);
+		}},{TAG_MACRO, [this](binary_input_stream& s) {
+			uint64_t n = s.number();
+			this->active_macros[s.string_implicit()] = n;
+		}},{TAG_MOVIE, [this](binary_input_stream& s) {
+			binary_read_movie(s, input);
+		}},{TAG_MOVIE_SRAM, [this](binary_input_stream& s) {
+			std::string a = s.string();
+			s.blob_implicit(this->movie_sram[a]);
+		}},{TAG_RAMCONTENT, [this](binary_input_stream& s) {
+			std::string a = s.string();
+			s.blob_implicit(this->ramcontent[a]);
+		}},{TAG_MOVIE_TIME, [this](binary_input_stream& s) {
+			this->movie_rtc_second = s.number();
+			this->movie_rtc_subsecond = s.number();
+		}},{TAG_PROJECT_ID, [this](binary_input_stream& s) {
+			this->projectid = s.string_implicit();
+		}},{TAG_ROMHASH, [this](binary_input_stream& s) {
+			uint8_t n = s.byte();
+			std::string h = s.string_implicit();
 			if(n > 2 * (sizeof(this->romimg_sha256) / sizeof(romimg_sha256[0])))
-				break;
+				return;
 			if(n & 1)
 				romxml_sha256[n >> 1] = h;
 			else
 				romimg_sha256[n >> 1] = h;
-			break;
-		}
-		case TAG_RRDATA: {
-			s.binary_read_blob(c_rrdata);
+		}},{TAG_RRDATA, [this](binary_input_stream& s) {
+			s.blob_implicit(this->c_rrdata);
 			this->rerecords = (stringfmt() << rrdata::count(c_rrdata)).str();
-			break;
-		}
-		case TAG_SAVE_SRAM: {
-			std::string a = s.binary_read_string();
-			s.binary_read_blob(this->sram[a]);
-			break;
-		}
-		case TAG_SAVESTATE: {
+		}},{TAG_SAVE_SRAM, [this](binary_input_stream& s) {
+			std::string a = s.string();
+			s.blob_implicit(this->sram[a]);
+		}},{TAG_SAVESTATE, [this](binary_input_stream& s) {
 			this->is_savestate = true;
-			this->save_frame = s.binary_read_number();
-			this->lagged_frames = s.binary_read_number();
-			this->rtc_second = s.binary_read_number();
-			this->rtc_subsecond = s.binary_read_number();
-			this->pollcounters.resize(s.binary_read_number());
+			this->save_frame = s.number();
+			this->lagged_frames = s.number();
+			this->rtc_second = s.number();
+			this->rtc_subsecond = s.number();
+			this->pollcounters.resize(s.number());
 			for(auto& i : this->pollcounters)
-				i = s.binary_read_number32();
-			this->poll_flag = (s.binary_read_byte() != 0);
-			s.binary_read_blob(this->savestate);
-			break;
-		}
-		case TAG_SCREENSHOT:
-			s.binary_read_blob(this->screenshot);
-			break;
-		case TAG_SUBTITLE: {
-			uint64_t f = s.binary_read_number();
-			uint64_t l = s.binary_read_number();
-			std::string x = s.binary_read_string_implicit();
+				i = s.number32();
+			this->poll_flag = (s.byte() != 0);
+			s.blob_implicit(this->savestate);
+		}},{TAG_SCREENSHOT, [this](binary_input_stream& s) {
+			s.blob_implicit(this->screenshot);
+		}},{TAG_SUBTITLE, [this](binary_input_stream& s) {
+			uint64_t f = s.number();
+			uint64_t l = s.number();
+			std::string x = s.string_implicit();
 			this->subtitles[moviefile_subtiming(f, l)] = x;
-			break;
-		}
-		default:
-			break;
-		}
-	});
+		}}
+	}, binary_null_default);
 }
 
 uint64_t moviefile::get_frame_count() throw()
