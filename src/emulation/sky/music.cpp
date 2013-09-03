@@ -21,7 +21,7 @@ namespace sky
 	const uint64_t past_end = 0xFFFFFFFFFFFFFFFFULL;
 
 	//These values are taken from libopusfile.
-	downmix_pair downmix[] = {
+	const downmix_pair downmix[] = {
 		{16384,16384},
 		{16384,0},{0,16384},
 		{9598,0},{6786,6786},{0,9598},
@@ -32,7 +32,7 @@ namespace sky
 		{6368,0},{4502,4502},{0,6368},{5515,3183},{3183,5515},{5515,3183},{3183,5515},{4502,4502}
 	};
 
-	size_t downmix_idx[9] = {0, 0, 1, 3, 6, 10, 15, 21, 28};
+	const size_t downmix_idx[9] = {0, 0, 1, 3, 6, 10, 15, 21, 28};
 
 	uint32_t pick_subsong(random& rng, const std::set<uint32_t>& candidates)
 	{

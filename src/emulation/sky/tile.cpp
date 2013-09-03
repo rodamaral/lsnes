@@ -2,7 +2,7 @@
 
 namespace sky
 {
-	uint16_t _floorheights[6] = {0, 12800, 15360, 17000, 20000, 25000 };
+	const uint16_t _floorheights[6] = {0, 12800, 15360, 17000, 20000, 25000 };
 
 	const uint8_t _floor_height[256] = {
 		0, 1, 1, 1, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 5
