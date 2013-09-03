@@ -296,10 +296,27 @@ void do_save_movie(const std::string& filename) throw(std::bad_alloc, std::runti
 
 extern time_t random_seed_value;
 
+void reinitialize_movie(core_sysregion* sysreg)
+{
+	moviefile mov;
+	mov.port1 = &porttype_info::port_default(0);
+	mov.port2 = &porttype_info::port_default(1);
+	mov.input.clear(*mov.port1, *mov.port2);
+	mov.projectid = get_random_hexstring(40);
+	mov.gametype = sysreg;
+	our_movie = mov;
+	movie newmovie;
+	newmovie.load("0", mov.projectid, mov.input);
+	newmovie.readonly_mode(false);
+	movb.get_movie() = newmovie;
+}
+
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!our_rom->rtype) {
+		lua_callback_movie_lost("close");
 		core_unload_cartridge();
+		reinitialize_movie(NULL);
 		refresh_cart_mappings();
 		redraw_framebuffer(screen_nosignal);
 		force_pause();
@@ -319,20 +336,20 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		rrdata::add_internal();
 	}
 	try {
+		bool gametype_changes = false;
 		bool ro = movb.get_movie().readonly_mode();
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
 		our_rom->load(our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
-		if(our_rom->rtype)
-			our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
-		else
-			our_movie.gametype = NULL;
+		gametype_changes = (&our_movie.gametype->get_type() != our_rom->rtype) && reload;
+		our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 		if(reload) {
-			if(!ro)
+			if(!ro || gametype_changes)
 				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
+			if(gametype_changes || !ro)
+				reinitialize_movie(our_movie.gametype);
 		}
-
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
