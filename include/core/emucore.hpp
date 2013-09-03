@@ -71,6 +71,8 @@ std::pair<uint64_t, uint64_t> core_get_bus_map();
 unsigned core_get_poll_flag();
 //Set poll flag (set to 1 on each real poll, except if 2.
 void core_set_poll_flag(unsigned pflag);
+//Is a cartridge loaded?
+bool core_rom_loaded();
 
 /**
  * Get name of logical button.

@@ -1175,6 +1175,11 @@ void core_set_poll_flag(unsigned pflag)
 	pollflag_active = (pflag < 2);
 }
 
+bool core_rom_loaded()
+{
+	return (internal_rom != NULL);
+}
+
 emucore_callbacks::~emucore_callbacks() throw()
 {
 }

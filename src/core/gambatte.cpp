@@ -323,6 +323,11 @@ void core_power()
 
 void core_unload_cartridge()
 {
+	if(!internal_rom)
+		return;
+	instance->~GB();
+	new(instance) gambatte::GB;
+	internal_rom = NULL;
 }
 
 void set_preload_settings()
@@ -605,6 +610,11 @@ std::pair<uint32_t, uint32_t> get_scale_factors(uint32_t width, uint32_t height)
 std::pair<uint64_t, uint64_t> core_get_bus_map()
 {
 	return std::make_pair(0, 0);
+}
+
+bool core_rom_loaded()
+{
+	return (internal_rom != NULL);
 }
 
 emucore_callbacks::~emucore_callbacks() throw() {}

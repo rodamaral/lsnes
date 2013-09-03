@@ -107,7 +107,8 @@ enum
 	wxID_RROM_FIRST,
 	wxID_RROM_LAST = wxID_RROM_FIRST + 16,
 	wxID_VUDISPLAY,
-	wxID_MOVIE_EDIT
+	wxID_MOVIE_EDIT,
+	wxID_CLOSE_ROM
 };
 
 
@@ -867,6 +868,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_SUBTITLES, wxT("Subtitles..."));
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
 	menu_end_sub();
+	menu_start_sub(wxT("Close"));
+	menu_entry(wxID_CLOSE_ROM, wxT("ROM"));
+	menu_end_sub();
 	menu_separator();
 	menu_entry(wxID_EXIT, wxT("Quit"));
 
@@ -994,6 +998,28 @@ void wxwin_mainwindow::notify_exit() throw()
 	wxwidgets_exiting = true;
 	join_emulator_thread();
 	Destroy();
+}
+
+void wxwin_mainwindow::request_rom(std::string& filename, core_type& coretype)
+{
+	const std::list<std::string>& exts = coretype.get_extensions();
+	std::string filter = coretype.get_hname() + " ROMs|";
+	bool first = true;
+	for(auto i : exts) {
+		if(!first)
+			filter = filter + ";";
+		first = false;
+		filter = filter + "*." + i;
+	}
+	filter = filter + "|All files|*.*";
+	wxFileDialog* fdiag = new wxFileDialog(this, wxT("Load ROM"), towxstring(rom_path()), "",  towxstring(filter),
+		wxFD_OPEN);
+	if(fdiag->ShowModal() != wxID_OK) {
+		delete fdiag;
+		return;
+	}
+	filename = fdiag->GetPath();
+	delete fdiag;
 }
 
 #define NEW_KEYBINDING "A new binding..."
@@ -1299,6 +1325,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_MOVIE_EDIT:
 		wxeditor_movie_display(this);
+		return;
+	case wxID_CLOSE_ROM:
+		platform::queue("close-rom");
 		return;
 	};
 }

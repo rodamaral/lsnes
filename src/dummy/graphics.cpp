@@ -49,4 +49,9 @@ void graphics_plugin::fatal_error() throw()
 	std::cerr << "Exiting on fatal error." << std::endl;
 }
 
+std::string graphics_plugin::request_rom(core_type& coretype)
+{
+	throw std::runtime_error("Headless does not support ROM preloading");
+}
+
 const char* graphics_plugin::name = "Dummy graphics plugin";

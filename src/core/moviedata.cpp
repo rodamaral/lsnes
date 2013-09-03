@@ -7,11 +7,14 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "lua/lua.hpp"
+#include "core/mainloop.hpp"
+#include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
+#include "library/zip.hpp"
 
 #include <iomanip>
 #include <fstream>
@@ -295,6 +298,14 @@ extern time_t random_seed_value;
 
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
+	if(!our_rom->rtype) {
+		core_unload_cartridge();
+		refresh_cart_mappings();
+		redraw_framebuffer(screen_nosignal);
+		force_pause();
+		messages << "ROM closed" << std::endl;
+		return;
+	}
 	if(!our_movie.gametype && !reload) {
 		messages << "Can't load movie without a ROM" << std::endl;
 		return;
@@ -344,6 +355,26 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		messages << "ROM reloaded." << std::endl;
 	else
 		messages << "Movie rewound to beginning." << std::endl;
+}
+
+void try_request_rom(const std::string& moviefile)
+{
+	auto sysreg_content = read_file_relative(moviefile + "/gametype", "");
+	std::string sysreg_name(sysreg_content.begin(), sysreg_content.end());
+	size_t ptr = sysreg_name.find_first_of("\r\n");
+	if(ptr < sysreg_name.size())
+		sysreg_name = sysreg_name.substr(0, ptr);
+	core_sysregion* sysreg;
+	try {
+		sysreg = &core_sysregion::lookup(sysreg_name);
+	} catch(...) {
+		throw std::runtime_error("The movie is for unsupported system type");
+	}
+	std::string rname = graphics_plugin::request_rom(sysreg->get_type());
+	if(rname == "")
+		throw std::runtime_error("Canceled loading ROM");
+	loaded_rom newrom(rname);
+	*our_rom = newrom;
 }
 
 //Load state from loaded movie file (does not catch errors).
@@ -510,6 +541,8 @@ bool do_load_state(const std::string& filename, int lmode)
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;
 	try {
+		if(!core_rom_loaded())
+			try_request_rom(filename2);
 		mfile = moviefile(filename2);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();

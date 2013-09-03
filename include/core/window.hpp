@@ -4,6 +4,7 @@
 #include "core/keymapper.hpp"
 #include "core/messagebuffer.hpp"
 #include "core/status.hpp"
+#include "core/romtype.hpp"
 #include "library/framebuffer.hpp"
 #include <string>
 #include <map>
@@ -221,6 +222,10 @@ struct graphics_plugin
  * - The call can occur in any thread.
  */
 	static void fatal_error() throw();
+/**
+ * Request filename for ROM load.
+ */
+	static std::string request_rom(core_type& coretype);
 /**
  * Identification for graphics plugin.
  */

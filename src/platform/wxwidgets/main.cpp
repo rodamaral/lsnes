@@ -16,6 +16,7 @@
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/workthread.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 
@@ -531,6 +532,30 @@ void graphics_plugin::fatal_error() throw()
 		post_ui_event(UISERV_PANIC);
 		while(!panic_ack);
 	}
+}
+
+std::string graphics_plugin::request_rom(core_type& coretype)
+{
+	core_type* ctype = &coretype;
+	std::string outname;
+	mutex_class lock;
+	cv_class cv;
+	bool done = false;
+	umutex_class h(lock);
+	runuifun([ctype, &outname, &lock, &cv, &done]() -> void {
+		if(done)
+			return;
+		try {
+			main_window->request_rom(outname, *ctype);
+		} catch(...) {
+		}
+		umutex_class h(lock);
+		done = true;
+		cv.notify_all();
+	});
+	while(!done)
+		cv.wait(h);
+	return outname;
 }
 
 void _runuifun_async(void (*fn)(void*), void* arg)

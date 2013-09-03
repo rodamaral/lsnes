@@ -288,6 +288,11 @@ namespace
 		}
 		return true;
 	}
+
+	void close_rom()
+	{
+		our_rom->rtype = NULL;
+	}
 }
 
 void update_movie_state()
@@ -731,6 +736,13 @@ namespace
 				mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
 		});
 
+	function_ptr_command<> close_rom2("close-rom", "Close the ROM image",
+		"Syntax: close-rom\nClose the ROM image\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			close_rom();
+			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+		});
+
 	function_ptr_command<> cancel_save("cancel-saves", "Cancel all pending saves", "Syntax: cancel-save\n"
 		"Cancel pending saves\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -1084,7 +1096,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		core_emulate_frame();
+		if(core_rom_loaded())
+			core_emulate_frame();
 		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(to_wait_frame(get_utime()));
@@ -1102,4 +1115,10 @@ void set_stop_at_frame(uint64_t frame)
 	stop_at_frame_active = (frame != 0);
 	amode = ADVANCE_AUTO;
 	platform::set_paused(false);
+}
+
+void force_pause()
+{
+	amode = ADVANCE_PAUSE;
+	platform::set_paused(true);
 }
