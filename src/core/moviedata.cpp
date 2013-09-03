@@ -290,6 +290,29 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 
 extern time_t random_seed_value;
 
+void reinitialize_movie(core_sysregion* sysreg)
+{
+	moviefile mov;
+	mov.gametype = sysreg;
+	mov.coreversion = our_rom->rtype->get_core_identifier();
+	mov.projectid = get_random_hexstring(40);
+	mov.save_frame = 0;
+	mov.lagged_frames = 0;
+	for(auto& i : mov.pollcounters)
+		i = 0; 
+	mov.poll_flag = false;
+	auto ctrldata = our_rom->rtype->controllerconfig(mov.settings);
+	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	mov.input.clear(portset);
+	mov.start_paused = true;
+	mov.lazy_project_create = true;
+	our_movie = mov;
+	movie newmovie;
+	newmovie.load("0", mov.projectid, mov.input);
+	newmovie.readonly_mode(false);
+	movb.get_movie() = newmovie;
+}
+
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
 	bool force_rw = false;
@@ -314,6 +337,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 			our_movie.input.clear(portset);
 			movb.get_movie().load(our_movie.rerecords, our_movie.projectid, our_movie.input);
 		}
+		if(our_rom->rtype != &our_movie.gametype->get_type())
+			force_rw = true; //Core type change.
 	}
 	try {
 		bool ro = movb.get_movie().readonly_mode() && !force_rw;
@@ -325,6 +350,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 			if(!ro)
 				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
+			if(!ro)
+				reinitialize_movie(our_movie.gametype);
 		}
 
 		our_rom->rtype->load_sram(our_movie.movie_sram);
