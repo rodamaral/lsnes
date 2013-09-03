@@ -2,27 +2,12 @@
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "library/minmax.hpp"
+#include "library/threadtypes.hpp"
 #include <cstring>
 #include <cmath>
 #include <iostream>
 #include <unistd.h>
 #include <sys/time.h>
-#ifdef NATIVE_THREADS
-#include <thread>
-#include <condition_variable>
-#include <mutex>
-typedef std::thread thread_class;
-typedef std::condition_variable cv_class;
-typedef std::mutex mutex_class;
-typedef std::unique_lock<std::mutex> umutex_class;
-#else
-#include <boost/thread.hpp>
-#include <boost/thread/locks.hpp>
-typedef boost::thread thread_class;
-typedef boost::condition_variable cv_class;
-typedef boost::mutex mutex_class;
-typedef boost::unique_lock<boost::mutex> umutex_class;
-#endif
 
 //3 music buffers is not enough due to huge blocksizes used by SDL.
 #define MUSIC_BUFFERS 8

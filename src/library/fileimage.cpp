@@ -15,9 +15,9 @@ namespace
 {
 	std::map<std::string, std::pair<time_t, std::string>> cached_entries;
 
-	std::mutex& global_queue_mutex()
+	mutex_class& global_queue_mutex()
 	{
-		static std::mutex m;
+		static mutex_class m;
 		return m;
 	}
 
