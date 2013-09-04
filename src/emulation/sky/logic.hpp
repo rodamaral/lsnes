@@ -8,10 +8,8 @@
 
 namespace sky
 {
-	void simulate_frame(gstate& s, uint16_t b);
-	void rom_boot_vector(gstate& s);
-	void handle_loadstate(gstate& s);
-	extern uint32_t fadeffect_buffer[FB_WIDTH * FB_HEIGHT];
-	extern bool indirect_flag;
+	void simulate_frame(struct instance& inst, uint16_t b);
+	void rom_boot_vector(struct instance& inst);
+	void handle_loadstate(struct instance& inst);
 }
 #endif

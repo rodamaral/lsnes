@@ -61,13 +61,10 @@ namespace sky
 		uint8_t padD;			//Padding.
 		uint8_t sram[32];		//SRAM.
 		void level_init(uint8_t _stage);
-		uint8_t simulate_frame(int lr, int ad, bool jump);
+		uint8_t simulate_frame(noise_maker& sfx, int lr, int ad, bool jump);
 		void change_state(uint8_t newstate);
 		std::pair<uint8_t*, size_t> as_ram();
 	};
-	extern gstate _gstate;
-	extern music_player mplayer;
-	inline gstate& get_state() { return _gstate; }
 }
 
 #endif

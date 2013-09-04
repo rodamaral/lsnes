@@ -113,8 +113,6 @@ namespace sky
 		std::vector<uint8_t> dummy_packet;
 	};
 
-	extern song_buffer* bsong;
-
 	struct packet_decoder
 	{
 		//Create a new packet decoder.
@@ -161,7 +159,6 @@ namespace sky
 		song_buffer* song;
 		random& rng;
 	};
-
 }
 
 #endif

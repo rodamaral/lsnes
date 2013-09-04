@@ -2,6 +2,7 @@
 #include "romimage.hpp"
 #include "util.hpp"
 #include "state.hpp"
+#include "instance.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include "library/minmax.hpp"
@@ -104,14 +105,13 @@ namespace sky
 		}
 	}
 
-	void fetch_sfx(gstate& s, int16_t* buffer, size_t samples)
+	void fetch_sfx(struct instance& inst, int16_t* buffer, size_t samples)
 	{
-		static std::vector<std::pair<int16_t, int16_t>> buf;
-		if(buf.size() < samples)
-			buf.resize(samples);
-		s.dma.fetch(soundfx, buffer, samples);
+		std::vector<std::pair<int16_t, int16_t>> buf;
+		buf.resize(samples);
+		inst.state.dma.fetch(inst.soundfx, buffer, samples);
 		try {
-			mplayer.decode(&buf[0], samples);
+			inst.mplayer.decode(&buf[0], samples);
 		} catch(...) {
 		}
 		for(size_t i = 0; i < samples; i++) {
@@ -134,6 +134,4 @@ namespace sky
 		dma.reset(snds[sound]);
 		dma.hipri(hipri);
 	}
-
-	sound_noise_maker gsfx(soundfx, _gstate.dma);
 }

@@ -1,6 +1,7 @@
 #include "state.hpp"
 #include "romimage.hpp"
 #include "framebuffer.hpp"
+#include "instance.hpp"
 #include "logic.hpp"
 #include "demo.hpp"
 #include "core/dispatch.hpp"
@@ -33,6 +34,8 @@ namespace sky
 		320, 200, 1280,			//Logical size.
 		0, 0				//Offset.
 	};
+
+	struct instance corei;
 
 	port_controller X4 = {"(system)", "(system)", {
 		{port_controller_button::TYPE_BUTTON, 'F', "framesync", true}
@@ -267,27 +270,27 @@ namespace sky
 			std::map<std::string, std::vector<char>> r;
 			std::vector<char> sram;
 			sram.resize(32);
-			memcpy(&sram[0], _gstate.sram, 32);
+			memcpy(&sram[0], corei.state.sram, 32);
 			r["sram"] = sram;
 			return r;
 		}
 		void c_load_sram(std::map<std::string, std::vector<char>>& sram) throw(std::bad_alloc) {
 			if(sram.count("sram") && sram["sram"].size() == 32)
-				memcpy(_gstate.sram, &sram["sram"][0], 32);
+				memcpy(corei.state.sram, &sram["sram"][0], 32);
 			else
-				memset(_gstate.sram, 0, 32);
+				memset(corei.state.sram, 0, 32);
 		}
 		void c_serialize(std::vector<char>& out) {
-			auto wram = _gstate.as_ram();
+			auto wram = corei.state.as_ram();
 			out.resize(wram.second);
 			memcpy(&out[0], wram.first, wram.second);
 		}
 		void c_unserialize(const char* in, size_t insize) {
-			auto wram = _gstate.as_ram();
+			auto wram = corei.state.as_ram();
 			if(insize != wram.second)
 				throw std::runtime_error("Save is of wrong size");
 			memcpy(wram.first, in, wram.second);
-			handle_loadstate(_gstate);
+			handle_loadstate(corei);
 		}
 		core_region& c_get_region() { return *this; }
 		void c_power() {}
@@ -298,15 +301,13 @@ namespace sky
 		void c_install_handler() { hide(); }
 		void c_uninstall_handler() {}
 		void c_emulate() {
-			static unsigned count[4];
-			static unsigned tcount[4] = {5, 7, 8, 25};
 			uint16_t x = 0;
 			for(unsigned i = 0; i < 7; i++)
 				if(ecore_callbacks->get_input(0, 1, iindexes[cstyle][i]))
 					x |= (1 << i);
 			pflag = true;
-			simulate_frame(_gstate, x);
-			uint32_t* fb = indirect_flag ? fadeffect_buffer : sky::framebuffer;
+			simulate_frame(corei, x);
+			uint32_t* fb = corei.get_framebuffer();
 			framebuffer_info inf;
 			inf.type = &_pixel_format_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(fb));
@@ -323,18 +324,9 @@ namespace sky
 			ecore_callbacks->output_frame(ls, 656250, 18227);
 			ecore_callbacks->timer_tick(18227, 656250);
 			size_t samples = 1333;
-			size_t extrasample = 0;
-			for(unsigned i = 0; i < 4; i++) {
-				count[i]++;
-				if(count[i] == tcount[i]) {
-					count[i] = 0;
-					extrasample = extrasample ? 0 : 1;
-				} else
-					break;
-			}
-			samples += extrasample;
+			samples += corei.extrasamples();
 			int16_t sbuf[2668];
-			fetch_sfx(_gstate, sbuf, samples);
+			fetch_sfx(corei, sbuf, samples);
 			audioapi_submit_buffer(sbuf, samples, true, 48000);
 		}
 		void c_runtosave() {}
@@ -356,12 +348,12 @@ namespace sky
 			size_t size = images[0].size;
 			std::string filename(_filename, _filename + size);
 			try {
-				load_rom(filename);
+				load_rom(corei, filename);
 			} catch(std::exception& e) {
 				messages << e.what();
 				return -1;
 			}
-			rom_boot_vector(_gstate);
+			rom_boot_vector(corei);
 			return 0;
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
@@ -378,17 +370,17 @@ namespace sky
 			std::list<core_vma_info> r;
 			core_vma_info ram;
 			ram.name = "RAM";
-			ram.backing_ram = _gstate.as_ram().first;
-			ram.size = _gstate.as_ram().second - 32;
+			ram.backing_ram = corei.state.as_ram().first;
+			ram.size = corei.state.as_ram().second - 32;
 			ram.base = 0;
 			ram.endian = 0;
 			ram.volatile_flag = true;
 			r.push_back(ram);
 			core_vma_info sram;
 			sram.name = "SRAM";
-			sram.backing_ram = _gstate.as_ram().first + _gstate.as_ram().second - 32;
+			sram.backing_ram = corei.state.as_ram().first + corei.state.as_ram().second - 32;
 			sram.size = 32;
-			sram.base = _gstate.as_ram().second - 32;
+			sram.base = corei.state.as_ram().second - 32;
 			sram.endian = 0;
 			sram.volatile_flag = false;
 			r.push_back(sram);

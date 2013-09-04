@@ -471,8 +471,6 @@ namespace sky
 		}
 	}
 
-	song_buffer* bsong;
-
 	packet_decoder::packet_decoder()
 	{
 		d = NULL;

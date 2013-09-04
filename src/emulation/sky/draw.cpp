@@ -4,6 +4,7 @@
 #include "romimage.hpp"
 #include "framebuffer.hpp"
 #include "messages.hpp"
+#include "instance.hpp"
 #include "library/minmax.hpp"
 
 /*
@@ -32,23 +33,12 @@ namespace sky
 	//Normalized floor thickness.
 	const double fthickness = 0.33;
 
-	const unsigned pipe_slices = 256;
 	//Type of point representation.
 	struct point_t
 	{
 		double x;
 		double y;
 	};
-
-	struct pipe_cache
-	{
-		double min_h;
-		double min_v;
-		double max_h;
-		double max_v;
-		uint32_t colors[pipe_slices];
-	};
-	struct pipe_cache pipecache[7];
 
 	const unsigned top_palette[] = {61, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 	const unsigned front_palette[] = {62, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30};
@@ -130,16 +120,16 @@ namespace sky
 		return ship_sprite_normal(s.p.hpos, vdir, thruster % 3);
 	}
 
-	void draw_sprite(double h, double v, int32_t num)
+	void draw_sprite(struct instance& inst, double h, double v, int32_t num)
 	{
 		if(num < 0)
 			return;
 		signed x = FB_WIDTH * hscale * h + FB_WIDTH / 2 - FB_SCALE * 15;
-		signed y = FB_HEIGHT / z0 - FB_HEIGHT * vscale * v - FB_SCALE * ship.width + FB_SCALE;
-		uint32_t offset = ship.width * 30 * num;
+		signed y = FB_HEIGHT / z0 - FB_HEIGHT * vscale * v - FB_SCALE * inst.ship.width + FB_SCALE;
+		uint32_t offset = inst.ship.width * 30 * num;
 		//For some darn reason, CARS.LZS has the image rotated 90 degrees counterclockwise.
-		for(signed j = 0; j < FB_SCALE * (int)ship.width; j++) {
-			if(y + j < 0 || y + j > overlap_end)
+		for(signed j = 0; j < FB_SCALE * (int)inst.ship.width; j++) {
+			if(y + j < 0 || y + j > inst.overlap_end)
 				continue;
 			uint32_t offset2 = offset + j / FB_SCALE;
 			size_t base = FB_WIDTH * (y + j) + x;
@@ -148,86 +138,91 @@ namespace sky
 					continue;
 				if(x + i >= FB_WIDTH)
 					break;
-				uint8_t c = ship.decode[offset2 + ship.width * (i / FB_SCALE)];
+				uint8_t c = inst.ship.decode[offset2 + inst.ship.width * (i / FB_SCALE)];
 				if(!c)
 					continue;
-				uint32_t pix = ship.palette[c] & 0xFFFFFF;
-				if((framebuffer[base + i] >> 24) == 0)
-					framebuffer[base + i] = pix;
+				uint32_t pix = inst.ship.palette[c] & 0xFFFFFF;
+				if((inst.framebuffer[base + i] >> 24) == 0)
+					inst.framebuffer[base + i] = pix;
 			}
 		}
 	}
 
-	void draw_grav_g_meter(gstate& s)
+	void draw_grav_g_meter(struct instance& inst)
 	{
-		uint16_t realgrav = 100 * (s.p.gravity - 3);
+		uint16_t realgrav = 100 * (inst.state.p.gravity - 3);
 		uint16_t x = 116;
 		uint16_t y = 156;
-		static size_t sep = strlen(_numbers_g) / 10;
+		static const size_t sep = strlen(_numbers_g) / 10;
 		while(realgrav) {
 			uint8_t digit = realgrav % 10;
-			draw_block2(_numbers_g + sep * digit, y * 320 + (x - 5), dashpalette[6], dashpalette[5],
-				true);
+			draw_block2(inst, _numbers_g + sep * digit, y * 320 + (x - 5), inst.dashpalette[6], 
+				inst.dashpalette[5], true);
 			x -= 5;
 			realgrav /= 10;
 		}
 	}
 
-	void draw_indicator(uint8_t& curval, uint8_t newval, gauge& g, uint8_t on1, uint8_t on2, uint8_t off1,
-		uint8_t off2)
+	void draw_indicator(struct instance& inst, uint8_t& curval, uint8_t newval, gauge& g, uint8_t on1, uint8_t on2,
+		uint8_t off1, uint8_t off2)
 	{
 		unsigned tmp = newval;
 		if(tmp > g.maxlimit()) tmp = g.maxlimit();
 		if(curval < tmp)
 			for(unsigned i = curval; i < tmp; i++) {
-				draw_block(g.get_data(i), g.get_position(i), dashpalette[on1], dashpalette[on2]);
+				draw_block(inst, g.get_data(i), g.get_position(i), inst.dashpalette[on1],
+					inst.dashpalette[on2]);
 			}
 		else
 			for(unsigned i = tmp; i < curval; i++) {
-				draw_block(g.get_data(i), g.get_position(i), dashpalette[off1], dashpalette[off2]);
+				draw_block(inst, g.get_data(i), g.get_position(i), inst.dashpalette[off1],
+					inst.dashpalette[off2]);
 			}
 		curval = tmp;
 	}
 
-	void draw_gauges(gstate& s)
+	void draw_gauges(struct instance& inst)
 	{
 		//draw_grav_g_meter(s);
-		uint8_t timermod = ((s.p.framecounter % 9) > 4) ? 1 : 0;
-		draw_indicator(s.speedind, (s.p.lspeed - s.p.speedbias) / 0x141, speed_dat, 2, 3, 0, 1);
-		draw_indicator(s.o2ind, (s.p.o2_left + 0xbb7) / 0xbb8, oxydisp_dat, 2, 3, 0, 1);
-		draw_indicator(s.fuelind, (s.p.fuel_left + 0xbb7) / 0xbb8, fueldisp_dat, 2, 3, 0, 1);
+		uint8_t timermod = ((inst.state.p.framecounter % 9) > 4) ? 1 : 0;
+		draw_indicator(inst, inst.state.speedind, (inst.state.p.lspeed - inst.state.p.speedbias) / 0x141,
+			inst.speed_dat, 2, 3, 0, 1);
+		draw_indicator(inst, inst.state.o2ind, (inst.state.p.o2_left + 0xbb7) / 0xbb8, inst.oxydisp_dat, 2, 3,
+			0, 1);
+		draw_indicator(inst, inst.state.fuelind, (inst.state.p.fuel_left + 0xbb7) / 0xbb8, inst.fueldisp_dat,
+			2, 3, 0, 1);
 		//Lock indicator.
-		bool lck = s.p.is_set(physics::flag_locked);
-		if(lck != s.lockind)
-			draw_block2(_lockind_g + (lck ? strlen(_lockind_g) / 2 : 0), 0x9c * 320 + 0xcb,
-				dashpalette[6], dashpalette[5], true);
-		s.lockind = lck;
+		bool lck = inst.state.p.is_set(physics::flag_locked);
+		if(lck != inst.state.lockind)
+			draw_block2(inst, _lockind_g + (lck ? strlen(_lockind_g) / 2 : 0), 0x9c * 320 + 0xcb,
+				inst.dashpalette[6], inst.dashpalette[5], true);
+		inst.state.lockind = lck;
 		//Out of oxygen blink&beep.
-		if(s.p.death == physics::death_o2 && s.beep_phase != timermod) {
-			blink_between(0xa0, 0xa1, 7, 7, dashpalette[7], dashpalette[8]);
+		if(inst.state.p.death == physics::death_o2 && inst.state.beep_phase != timermod) {
+			blink_between(inst, 0xa0, 0xa1, 7, 7, inst.dashpalette[7], inst.dashpalette[8]);
 			if(timermod)
-				gsfx(sound_beep);
+				inst.gsfx(sound_beep);
 		}
 		//Out of fuel blink&beep.
-		if(s.p.death == physics::death_fuel && s.beep_phase != timermod) {
-			blink_between(0x9b, 0xa9, 16, 5, dashpalette[7], dashpalette[8]);
+		if(inst.state.p.death == physics::death_fuel && inst.state.beep_phase != timermod) {
+			blink_between(inst, 0x9b, 0xa9, 16, 5, inst.dashpalette[7], inst.dashpalette[8]);
 			if(timermod)
-				gsfx(sound_beep);
+				inst.gsfx(sound_beep);
 		}
 		//Distance gauge.
-		uint32_t res = s.curlevel.apparent_length() / (29 * FB_SCALE + 1);
-		size_t tmp = (s.p.lpos - 3 * 65536) / res;
-		for(unsigned i = s.distind; i < tmp && i < (29 * FB_SCALE + 1); i++)
-			draw_distance_column(i, dashpalette[4]);
-		s.distind = tmp;
-		s.beep_phase = timermod;
+		uint32_t res = inst.state.curlevel.apparent_length() / (29 * FB_SCALE + 1);
+		size_t tmp = (inst.state.p.lpos - 3 * 65536) / res;
+		for(unsigned i = inst.state.distind; i < tmp && i < (29 * FB_SCALE + 1); i++)
+			draw_distance_column(inst, i, inst.dashpalette[4]);
+		inst.state.distind = tmp;
+		inst.state.beep_phase = timermod;
 	}
 
 	inline double horizon_distance() { return (1 / yescape - z0) / zscale; }
-	inline double near_distance() { return (600 / overlap_end - z0) / zscale; }
+	inline double near_distance(struct instance& inst) { return (600 / inst.overlap_end - z0) / zscale; }
 
 
-	void draw_quad_x(point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
+	void draw_quad_x(struct instance& inst, point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
 	{
 		if(fabs(p1.x - p2.x) < 0.1)
 			return;
@@ -240,7 +235,7 @@ namespace sky
 		double ltmax = max(p3.y, p4.y);
 		double ltmin = min(p3.y, p4.y);
 		signed y1 = max((int)floor(utmin), 0);
-		signed y2 = min((int)ceil(ltmax), (int)overlap_end);
+		signed y2 = min((int)ceil(ltmax), (int)inst.overlap_end);
 		for(signed j = y1; j < y2; j++) {
 			signed xstart = x1, xend = x2;
 			if(j < utmax) {
@@ -258,21 +253,21 @@ namespace sky
 			xstart = max(xstart, 0);
 			xend = min(xend, FB_WIDTH);
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = xstart; i < xend; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 			else
 				for(signed i = xstart; i < xend; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 		}
 	}
 
-	void draw_quad_y(point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
+	void draw_quad_y(struct instance& inst, point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
 	{
 		if(fabs(p1.y - p3.y) < 0.1)
 			return;
 		signed y1 = max((int)floor(p1.y), 0);
-		signed y2 = min((int)ceil(p3.y), (int)overlap_end);
+		signed y2 = min((int)ceil(p3.y), (int)inst.overlap_end);
 		for(signed j = y1; j < y2; j++) {
 			signed xstart, xend;
 			xstart = floor((p3.x - p1.x) * (j - p1.y) / (p3.y - p1.y) + p1.x);
@@ -280,35 +275,36 @@ namespace sky
 			xstart = max(xstart, 0);
 			xend = min(xend, FB_WIDTH);
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = xstart; i < xend; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 			else
 				for(signed i = xstart; i < xend; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 		}
 	}
 
-	void draw_quad_z(point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
+	void draw_quad_z(struct instance& inst, point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
 	{
 		if(fabs(p1.x - p2.x) < 0.1 || fabs(p1.y - p3.y) < 0.1)
 			return;
 		signed x1 = max((int)floor(p1.x), 0);
 		signed x2 = min((int)ceil(p2.x), FB_WIDTH);
 		signed y1 = max((int)floor(p1.y), 0);
-		signed y2 = min((int)ceil(p3.y), (int)overlap_end);
+		signed y2 = min((int)ceil(p3.y), (int)inst.overlap_end);
 		for(signed j = y1; j < y2; j++) {
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = x1; i < x2; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 			else
 				for(signed i = x1; i < x2; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 		}
 	}
 
-	void draw_quad_z_tunshadow(point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color, int x)
+	void draw_quad_z_tunshadow(struct instance& inst, point_t p1, point_t p2, point_t p3, point_t p4,
+		uint32_t color, int x)
 	{
 		if(fabs(p1.x - p2.x) < 0.1 || fabs(p1.y - p3.y) < 0.1)
 			return;
@@ -317,7 +313,7 @@ namespace sky
 		signed x1 = max((int)floor(p1.x), 0);
 		signed x2 = min((int)ceil(p2.x), FB_WIDTH);
 		signed y1 = max((int)floor(p1.y), 0);
-		signed y2 = min((int)ceil(p3.y), (int)overlap_end);
+		signed y2 = min((int)ceil(p3.y), (int)inst.overlap_end);
 		double slope = calc_slope(slopepoints[x + 3]);
 		const double width = p2.x - p1.x;
 		const double hwidth = 0.45 * width;
@@ -339,23 +335,23 @@ namespace sky
 			}
 			c1 = max(c1, 0);
 			c2 = min(c2, FB_WIDTH);
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = c1; i < c2; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 			else
 				for(signed i = c1; i < c2; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 		}
 	}
 
-	void draw_quad_z_tunnel(point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
+	void draw_quad_z_tunnel(struct instance& inst, point_t p1, point_t p2, point_t p3, point_t p4, uint32_t color)
 	{
 		if(fabs(p1.x - p2.x) < 0.1 || fabs(p1.y - p3.y) < 0.1)
 			return;
 		signed x1 = max((int)floor(p1.x), 0);
 		signed x2 = min((int)ceil(p2.x), FB_WIDTH);
 		signed y1 = max((int)floor(p1.y), 0);
-		signed y2 = min((int)ceil(p3.y), (int)overlap_end);
+		signed y2 = min((int)ceil(p3.y), (int)inst.overlap_end);
 		const double width = p2.x - p1.x;
 		const double hwidth = 0.45 * width;
 		const double center = (p1.x + p2.x) / 2;
@@ -371,23 +367,23 @@ namespace sky
 			c2 = max(c2, 0);
 			x2 = min(x2, FB_WIDTH);
 			c1 = min(c1, FB_WIDTH);
-			if(j < overlap_start) {
+			if(j < inst.overlap_start) {
 				for(signed i = x1; i < c1; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 				for(signed i = c2; i < x2; i++)
-					framebuffer[base + i] = color;
+					inst.framebuffer[base + i] = color;
 			} else {
 				for(signed i = x1; i < c1; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 				for(signed i = c2; i < x2; i++)
-					framebuffer_blend2(framebuffer[base + i], color);
+					framebuffer_blend2(inst.framebuffer[base + i], color);
 			}
 		}
 	}
 
-	void draw_quad_z_pipefront(double z, int x, uint32_t color)
+	void draw_quad_z_pipefront(struct instance& inst, double z, int x, uint32_t color)
 	{
-		struct pipe_cache& p = pipecache[x + 3];
+		struct pipe_cache& p = inst.pipecache[x + 3];
 		auto p5 = point_project_b(x - 0.5, 0, z);
 		auto p6 = point_project_b(x, 1, z);
 		auto p7 = point_project_b(x + 0.5, 0, z);
@@ -405,7 +401,7 @@ namespace sky
 		int16_t nxs = ccenter - cwidth;
 		int16_t nxe = ccenter + cwidth;
 		for(signed j = ymax - cheight; j < ymax; j++) {
-			if(j < 0 || j > overlap_end)
+			if(j < 0 || j > inst.overlap_end)
 				continue;
 			int16_t dstart = nxs;
 			int16_t dend = nxe;
@@ -430,15 +426,15 @@ namespace sky
 			dstart = max(cstart, (int16_t)0);
 			dend = min(cend, (int16_t)FB_WIDTH);
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = dstart; i < dend; i++) {
 					if(i < cistart || i >= ciend)
-						framebuffer[base + i] = color;
+						inst.framebuffer[base + i] = color;
 				}
 			else
 				for(signed i = dstart; i < dend; i++) {
 					if(i < cistart || i >= ciend)
-						framebuffer_blend2(framebuffer[base + i], color);
+						framebuffer_blend2(inst.framebuffer[base + i], color);
 				}
 		}
 	}
@@ -521,7 +517,8 @@ namespace sky
 		//	p.colors[i] = 0xFF8000 + i;
 	}
 
-	void rebuild_pipe_quad_caches(uint32_t color1, uint32_t color2, uint32_t color3, uint32_t color4)
+	void rebuild_pipe_quad_caches(struct instance& i, uint32_t color1, uint32_t color2, uint32_t color3,
+		uint32_t color4)
 	{
 		uint32_t c[6];
 		c[0] = color4;
@@ -531,12 +528,12 @@ namespace sky
 		c[4] = color2;
 		c[5] = color3;
 		for(int x = 0; x < 7; x++)
-			rebuild_pipe_quad_cache(pipecache[x], x - 3, c);
+			rebuild_pipe_quad_cache(i.pipecache[x], x - 3, c);
 	}
 
-	void draw_quad_y_pipe_last(double z, int x, bool top)
+	void draw_quad_y_pipe_last(struct instance& inst, double z, int x, bool top)
 	{
-		struct pipe_cache& p = pipecache[x + 3];
+		struct pipe_cache& p = inst.pipecache[x + 3];
 		uint32_t fcolor = (!top && z < 0.2) ? 0x1000000 : 0;
 		//We need these for slope projection.
 		auto p1 = point_project_b(p.min_h, p.min_v, z);
@@ -562,7 +559,7 @@ namespace sky
 		int16_t cwidth = floor((p7.x - p5.x) / 2);
 		int16_t ccenter = floor((p7.x + p5.x) / 2);
 		for(signed j = ymax - cheight; j < ymax; j++) {
-			if(j < 0 || j > overlap_end)
+			if(j < 0 || j > inst.overlap_end)
 				continue;
 			int16_t nxs = floor(sl1 * j + c1);
 			int16_t nxe = ceil(sl2 * j + c2);
@@ -584,22 +581,22 @@ namespace sky
 			if(dstart > nxs)
 				color += (dstart - nxs) * cstep;
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = dstart; i < dend; i++) {
-					framebuffer[base + i] = fcolor | p.colors[color >> 16];
+					inst.framebuffer[base + i] = fcolor | p.colors[color >> 16];
 					color += cstep;
 				}
 			else
 				for(signed i = dstart; i < dend; i++) {
-					framebuffer_blend2(framebuffer[base + i], fcolor | p.colors[color >> 16]);
+					framebuffer_blend2(inst.framebuffer[base + i], fcolor | p.colors[color >> 16]);
 					color += cstep;
 				}
 		}
 	}
 
-	void draw_quad_y_pipe_first(double z1, double z2, int x, bool top)
+	void draw_quad_y_pipe_first(struct instance& inst, double z1, double z2, int x, bool top)
 	{
-		struct pipe_cache& p = pipecache[x + 3];
+		struct pipe_cache& p = inst.pipecache[x + 3];
 		uint32_t fcolor = (!top && z1 < 0) ? 0x1000000 : 0;
 		auto p1 = point_project_b(p.min_h, p.min_v, z2);
 		auto p2 = point_project_b(p.max_h, p.max_v, z2);
@@ -627,7 +624,7 @@ namespace sky
 		bool hclip = false;
 		uint16_t mindist = 65535;
 		for(signed j = ymin; j < ymax; j++) {
-			if(j < 0 || j > overlap_end)
+			if(j < 0 || j > inst.overlap_end)
 				continue;
 			int16_t nxs = floor(sl1 * j + c1);
 			int16_t nxe = ceil(sl2 * j + c2);
@@ -675,25 +672,25 @@ namespace sky
 			if(dstart > nxs)
 				color += (dstart - nxs) * cstep;
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = dstart; i < dend; i++) {
 					if(i < cstart || i >= cend)
-						framebuffer[base + i] = fcolor | p.colors[color >> 16];
+						inst.framebuffer[base + i] = fcolor | p.colors[color >> 16];
 					color += cstep;
 				}
 			else
 				for(signed i = dstart; i < dend; i++) {
 					if(i < cstart || i >= cend)
-						framebuffer_blend2(framebuffer[base + i], fcolor |
+						framebuffer_blend2(inst.framebuffer[base + i], fcolor |
 							p.colors[color >> 16]);
 					color += cstep;
 				}
 		}
 	}
 
-	void draw_quad_y_pipe(double z1, double z2, int x, bool top)
+	void draw_quad_y_pipe(struct instance& inst, double z1, double z2, int x, bool top)
 	{
-		struct pipe_cache& p = pipecache[x + 3];
+		struct pipe_cache& p = inst.pipecache[x + 3];
 		uint32_t fcolor = (!top && z1 < 0.2) ? 0x1000000 : 0;
 		auto p1 = point_project_b(p.min_h, p.min_v, z2);
 		auto p2 = point_project_b(p.max_h, p.max_v, z2);
@@ -715,7 +712,7 @@ namespace sky
 		double c2 = p2.x - sl2 * p2.y;
 		//FIXME: This leaves some graphical glitching in seams.
 		for(signed j = ymin; j < ymax; j++) {
-			if(j < 0 || j > overlap_end)
+			if(j < 0 || j > inst.overlap_end)
 				continue;
 			int16_t nxs = floor(sl1 * j + c1);
 			int16_t nxe = ceil(sl2 * j + c2);
@@ -744,33 +741,34 @@ namespace sky
 			if(dstart > nxs)
 				color += (dstart - nxs) * cstep;
 			size_t base = FB_WIDTH * j;
-			if(j < overlap_start)
+			if(j < inst.overlap_start)
 				for(signed i = dstart; i < dend; i++) {
-					framebuffer[base + i] = fcolor | p.colors[color >> 16];
+					inst.framebuffer[base + i] = fcolor | p.colors[color >> 16];
 					color += cstep;
 				}
 			else
 				for(signed i = dstart; i < dend; i++) {
-					framebuffer_blend2(framebuffer[base + i], fcolor | p.colors[color >> 16]);
+					framebuffer_blend2(inst.framebuffer[base + i], fcolor | p.colors[color >> 16]);
 					color += cstep;
 				}
 		}
 	}
 
-	void draw_level(gstate& s)
+	void draw_level(struct instance& inst)
 	{
-		for(unsigned i = 0; i < overlap_start; i++)
+		for(unsigned i = 0; i < inst.overlap_start; i++)
 			for(unsigned j = 0; j < FB_WIDTH; j++)
-				framebuffer[i * FB_WIDTH + j] = origbuffer[(i / FB_SCALE) * 320 + (j / FB_SCALE)];
-		for(unsigned i = overlap_start; i < overlap_end; i++)
+				inst.framebuffer[i * FB_WIDTH + j] = inst.origbuffer[(i / FB_SCALE) * 320 +
+					(j / FB_SCALE)];
+		for(unsigned i = inst.overlap_start; i < inst.overlap_end; i++)
 			for(unsigned j = 0; j < FB_WIDTH; j++)
-				framebuffer_blend2(framebuffer[i * FB_WIDTH + j], origbuffer[(i / FB_SCALE) * 320 +
-					(j / FB_SCALE)]);
-		static signed dorder[] = {-3, 3, -2, 2, -1, 1, 0};
-		level& l = s.curlevel;
-		double zship = s.p.lpos / 65536.0;
+				framebuffer_blend2(inst.framebuffer[i * FB_WIDTH + j], inst.origbuffer[
+				(i / FB_SCALE) * 320 + (j / FB_SCALE)]);
+		static const signed dorder[] = {-3, 3, -2, 2, -1, 1, 0};
+		level& l = inst.state.curlevel;
+		double zship = inst.state.p.lpos / 65536.0;
 		double horizon = horizon_distance();
-		double near = near_distance();
+		double near = near_distance(inst);
 		signed maxtile = ceil(zship + horizon);
 		signed mintile = floor(zship + near - 1);
 		for(signed zt = maxtile; zt >= mintile; zt--) {
@@ -783,10 +781,10 @@ namespace sky
 				tile tback = l.at_tile(zt + 1, xt);
 				//First, draw the floor level.
 				if(t.lower_floor() && (!t.is_rblock() || t.is_tunnel())) {
-					bool ifront = (s.p.vpos < 10240);
-					ifront &= (xt >= 0 || s.p.hpos < 5888 * xt + 32768 - 2944);
-					ifront &= (xt <= 0 || s.p.hpos > 5888 * xt + 32768 + 2944);
-					draw_quad_y(point_project_b(xt - 0.5, 0, zt + 1 - zship),
+					bool ifront = (inst.state.p.vpos < 10240);
+					ifront &= (xt >= 0 || inst.state.p.hpos < 5888 * xt + 32768 - 2944);
+					ifront &= (xt <= 0 || inst.state.p.hpos > 5888 * xt + 32768 + 2944);
+					draw_quad_y(inst, point_project_b(xt - 0.5, 0, zt + 1 - zship),
 						point_project_b(xt + 0.5, 0, zt + 1 - zship),
 						point_project_b(xt - 0.5, 0, zt - zship),
 						point_project_b(xt + 0.5, 0, zt - zship),
@@ -795,7 +793,7 @@ namespace sky
 				//Draw pipe shadow.
 				if(t.is_tunnel() && !tfront.is_block()) {
 					//Pipe shadow never obscures the ship.
-					draw_quad_z_tunshadow(point_project_b(xt - 0.5, 1, zt - zship),
+					draw_quad_z_tunshadow(inst, point_project_b(xt - 0.5, 1, zt - zship),
 						point_project_b(xt + 0.5, 1, zt - zship),
 						point_project_b(xt - 0.5, 0, zt - zship),
 						point_project_b(xt + 0.5, 0, zt - zship),
@@ -804,11 +802,12 @@ namespace sky
 				//Draw the top surface.
 				if(t.is_rblock()) {
 					signed q = t.apparent_height();
-					bool ifront = (s.p.vpos < 10240 + q * 2560);
-					ifront &= (xt >= 0 || s.p.hpos < 5888 * xt + 32768 - 2944);
-					ifront &= (xt <= 0 || s.p.hpos > 5888 * xt + 32768 + 2944);
-					ifront |= (l.in_pipe(zt * 65536, s.p.hpos, s.p.vpos) && zt < zship);
-					draw_quad_y(point_project_b(xt - 0.5, q, zt + 1 - zship),
+					bool ifront = (inst.state.p.vpos < 10240 + q * 2560);
+					ifront &= (xt >= 0 || inst.state.p.hpos < 5888 * xt + 32768 - 2944);
+					ifront &= (xt <= 0 || inst.state.p.hpos > 5888 * xt + 32768 + 2944);
+					ifront |= (l.in_pipe(zt * 65536, inst.state.p.hpos, inst.state.p.vpos) &&
+						zt < zship);
+					draw_quad_y(inst, point_project_b(xt - 0.5, q, zt + 1 - zship),
 						point_project_b(xt + 0.5, q, zt + 1 - zship),
 						point_project_b(xt - 0.5, q, zt - zship),
 						point_project_b(xt + 0.5, q, zt - zship),
@@ -818,9 +817,9 @@ namespace sky
 				if(t.is_rblock() && xt < 0 && tright.apparent_height() < t.apparent_height()) {
 					signed q1 = tright.apparent_height();
 					signed q2 = t.apparent_height();
-					bool ifront = (s.p.vpos < 10240 + q2 * 2560);
-					ifront &= (s.p.hpos < 5888 * xt + 32768 + 2944);
-					draw_quad_x(point_project_b(xt + 0.5, q2, zt - zship),
+					bool ifront = (inst.state.p.vpos < 10240 + q2 * 2560);
+					ifront &= (inst.state.p.hpos < 5888 * xt + 32768 + 2944);
+					draw_quad_x(inst, point_project_b(xt + 0.5, q2, zt - zship),
 						point_project_b(xt + 0.5, q2, zt + 1 - zship),
 						point_project_b(xt + 0.5, q1, zt - zship),
 						point_project_b(xt + 0.5, q1, zt + 1 - zship),
@@ -829,9 +828,9 @@ namespace sky
 				if(t.is_rblock() && xt > 0 && tleft.apparent_height() < t.apparent_height()) {
 					signed q1 = tleft.apparent_height();
 					signed q2 = t.apparent_height();
-					bool ifront = (s.p.vpos < 10240 + q2 * 2560);
-					ifront &= (s.p.hpos > 5888 * xt + 32768 - 2944);
-					draw_quad_x(point_project_b(xt - 0.5, q2, zt + 1 - zship),
+					bool ifront = (inst.state.p.vpos < 10240 + q2 * 2560);
+					ifront &= (inst.state.p.hpos > 5888 * xt + 32768 - 2944);
+					draw_quad_x(inst, point_project_b(xt - 0.5, q2, zt + 1 - zship),
 						point_project_b(xt - 0.5, q2, zt - zship),
 						point_project_b(xt - 0.5, q1, zt + 1- zship),
 						point_project_b(xt - 0.5, q1, zt - zship),
@@ -843,13 +842,13 @@ namespace sky
 					signed q2 = t.apparent_height();
 					bool ifront = (zt < zship);
 					if(t.is_tunnel() && !tfront.is_block())
-						draw_quad_z_tunnel(point_project_b(xt - 0.5, q2, zt - zship),
+						draw_quad_z_tunnel(inst, point_project_b(xt - 0.5, q2, zt - zship),
 							point_project_b(xt + 0.5, q2, zt - zship),
 							point_project_b(xt - 0.5, q1, zt - zship),
 							point_project_b(xt + 0.5, q1, zt - zship),
 							l.get_palette_color(62, ifront));
 					else {
-						draw_quad_z(point_project_b(xt - 0.5, q2, zt - zship),
+						draw_quad_z(inst, point_project_b(xt - 0.5, q2, zt - zship),
 							point_project_b(xt + 0.5, q2, zt - zship),
 							point_project_b(xt - 0.5, q1, zt - zship),
 							point_project_b(xt + 0.5, q1, zt - zship),
@@ -858,35 +857,36 @@ namespace sky
 				}
 				//Last tunnel block.
 				if(t.is_tunnel() && !t.is_rblock()) {
-					bool top = (s.p.vpos > 10240);
-					top &= !l.in_pipe(zt * 65536, s.p.hpos, s.p.vpos);
+					bool top = (inst.state.p.vpos > 10240);
+					top &= !l.in_pipe(zt * 65536, inst.state.p.hpos, inst.state.p.vpos);
 					if(tback.is_rblock() || !tback.is_block())
-						draw_quad_y_pipe_last(zt + 1 - zship, xt, top);
+						draw_quad_y_pipe_last(inst, zt + 1 - zship, xt, top);
 					//Standalone tunnel top.
 					if(tfront.is_block())
-						draw_quad_y_pipe(zt - zship, zt + 1 - zship, xt, top);
+						draw_quad_y_pipe(inst, zt - zship, zt + 1 - zship, xt, top);
 					else
-						draw_quad_y_pipe_first(zt - zship, zt + 1 - zship, xt, top);
+						draw_quad_y_pipe_first(inst, zt - zship, zt + 1 - zship, xt, top);
 					//Standalone tunnel front.
 					if(!tfront.is_block()) {
 						bool ifront = (zt < zship);
-						draw_quad_z_pipefront(zt - zship, xt, l.get_palette_color(66, ifront));
+						draw_quad_z_pipefront(inst, zt - zship, xt, l.get_palette_color(66,
+							ifront));
 					}
 				}
 				//Left/Right floor surface.
 				if(xt < 0 && t.lower_floor() && !tright.lower_floor()) {
-					bool ifront = (s.p.vpos < 10240);
-					ifront &= (s.p.hpos > 5888 * xt + 32768);
-					draw_quad_x(point_project_b(xt + 0.5, 0, zt - zship),
+					bool ifront = (inst.state.p.vpos < 10240);
+					ifront &= (inst.state.p.hpos > 5888 * xt + 32768);
+					draw_quad_x(inst, point_project_b(xt + 0.5, 0, zt - zship),
 						point_project_b(xt + 0.5, 0, zt + 1 - zship),
 						point_project_b(xt + 0.5, -fthickness, zt - zship),
 						point_project_b(xt + 0.5, -fthickness, zt + 1 - zship),
 						l.get_palette_color(right_palette[t.lower_floor()]));
 				}
 				if(xt > 0 && t.lower_floor() && !tleft.lower_floor()) {
-					bool ifront = (s.p.vpos < 10240);
-					ifront &= (s.p.hpos > 5888 * xt + 32768);
-					draw_quad_x(point_project_b(xt - 0.5, 0, zt + 1 - zship),
+					bool ifront = (inst.state.p.vpos < 10240);
+					ifront &= (inst.state.p.hpos > 5888 * xt + 32768);
+					draw_quad_x(inst, point_project_b(xt - 0.5, 0, zt + 1 - zship),
 						point_project_b(xt - 0.5, 0, zt - zship),
 						point_project_b(xt - 0.5, -fthickness, zt + 1- zship),
 						point_project_b(xt - 0.5, -fthickness, zt - zship),
@@ -894,9 +894,9 @@ namespace sky
 				}
 				//Front floor surface.
 				if(t.lower_floor() && !tfront.lower_floor()) {
-					bool ifront = (s.p.vpos < 10240);
-					ifront &= (s.p.hpos < 5888 * xt + 32768);
-					draw_quad_z(point_project_b(xt - 0.5, 0, zt - zship),
+					bool ifront = (inst.state.p.vpos < 10240);
+					ifront &= (inst.state.p.hpos < 5888 * xt + 32768);
+					draw_quad_z(inst, point_project_b(xt - 0.5, 0, zt - zship),
 						point_project_b(xt + 0.5, 0, zt - zship),
 						point_project_b(xt - 0.5, -fthickness, zt - zship),
 						point_project_b(xt + 0.5, -fthickness, zt - zship),
@@ -904,41 +904,42 @@ namespace sky
 				}
 			}
 		}
-		draw_sprite((s.p.hpos - 32768.0) / 5888.0, (s.p.vpos - 10240.0) / 2560.0, ship_sprite(s));
+		draw_sprite(inst, (inst.state.p.hpos - 32768.0) / 5888.0, (inst.state.p.vpos - 10240.0) / 2560.0,
+			ship_sprite(inst.state));
 	}
 
-	const char* period = "%&(ccK";
-	const char* dash = "%'(cScS";
-	const char* vline = "%$(b";
-	const char* tback = "%F*ccccccccccccccccccccccccccccccccccccccccc";
+	const char* const period = "%&(ccK";
+	const char* const dash = "%'(cScS";
+	const char* const vline = "%$(b";
+	const char* const tback = "%F*ccccccccccccccccccccccccccccccccccccccccc";
 
-	void draw_timeattack_time(const char* msg)
+	void draw_timeattack_time(struct instance& inst, const char* msg)
 	{
 		uint16_t w = 321;
 		uint16_t nst = strlen(_numbers_g) / 10;
-		draw_block2(tback, 0, 0xFFFFFF, 0xFFFFFF, false);
+		draw_block2(inst, tback, 0, 0xFFFFFF, 0xFFFFFF, false);
 		while(*msg) {
 			if(*msg >= '0' && *msg <= '9') {
-				draw_block2(_numbers_g + (*msg - '0') * nst, w, 0xFFFFFF, 0xFFFFFF, true);
-				draw_block2(vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(inst, _numbers_g + (*msg - '0') * nst, w, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(inst, vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
 				w += 5;
 			} else if(*msg == ':') {
-				draw_block2(period, w, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(inst, period, w, 0xFFFFFF, 0xFFFFFF, true);
 				w += 3;
 			} else if(*msg == '-') {
-				draw_block2(dash, w, 0xFFFFFF, 0xFFFFFF, true);
-				draw_block2(vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(inst, dash, w, 0xFFFFFF, 0xFFFFFF, true);
+				draw_block2(inst, vline, w + 4, 0xFFFFFF, 0xFFFFFF, true);
 				w += 5;
 			}
 			msg++;
 		}
 		for(unsigned i = 0; i < 7; i++)
 			for(unsigned j = 0; j < 35; j++)
-				origbuffer[320 * i + j] ^= 0xFFFFFF;
-		render_framebuffer_update(0, 0, 35, 7);
+				inst.origbuffer[320 * i + j] ^= 0xFFFFFF;
+		render_framebuffer_update(inst, 0, 0, 35, 7);
 	}
 
-	void draw_timeattack_time(uint16_t frames)
+	void draw_timeattack_time(struct instance& inst, uint16_t frames)
 	{
 		char msg[8];
 		if(frames > 64807) {
@@ -948,6 +949,6 @@ namespace sky
 			unsigned subseconds = 36454U * frames / 13125 - 100 * seconds;
 			sprintf(msg, "%u:%02u", seconds, subseconds);
 		}
-		draw_timeattack_time(msg);
+		draw_timeattack_time(inst, msg);
 	}
 }

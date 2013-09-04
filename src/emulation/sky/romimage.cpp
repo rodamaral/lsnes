@@ -2,6 +2,7 @@
 #include "framebuffer.hpp"
 #include "tasdemos.hpp"
 #include "physics.hpp"
+#include "instance.hpp"
 #include "library/bintohex.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -24,25 +25,6 @@ uint64_t get_utime()
         return static_cast<uint64_t>(tv.tv_sec) * 1000000 + tv.tv_usec;
 }
 
-	std::string rom_filename;
-	gauge speed_dat;
-	gauge oxydisp_dat;
-	gauge fueldisp_dat;
-	roads_lzs levels;
-	image ship;
-	image dashboard;
-	image levelselect;
-	image backgrounds[10];
-	sounds soundfx;
-	demo builtin_demo;
-	uint32_t dashpalette[16];
-
-	struct demoset_entry
-	{
-		uint8_t hash[32];
-		std::vector<char> demodata;
-	};
-	std::vector<demoset_entry> demos;
 
 	void load_builtin_demos(std::vector<demoset_entry>& _demos)
 	{
@@ -86,7 +68,7 @@ uint64_t get_utime()
 		}
 	}
 
-	void load_rom(const std::string& filename)
+	void load_rom(struct instance& inst, const std::string& filename)
 	{
 		std::string errfile;
 		try {
@@ -135,46 +117,46 @@ uint64_t get_utime()
 			errfile = "<demos>";
 			load_demos(_demos, filename);
 
-			speed_dat = _speed_dat;
-			oxydisp_dat = _oxydisp_dat;
-			fueldisp_dat = _fueldisp_dat;
-			levels = _levels;
-			ship = _ship;
-			dashboard = _dashboard;
-			levelselect = _levelselect;
-			soundfx = _soundfx;
-			builtin_demo = _builtin_demo;
-			demos = _demos;
-			memcpy(dashpalette, dashboard.palette, sizeof(dashpalette));
+			inst.speed_dat = _speed_dat;
+			inst.oxydisp_dat = _oxydisp_dat;
+			inst.fueldisp_dat = _fueldisp_dat;
+			inst.levels = _levels;
+			inst.ship = _ship;
+			inst.dashboard = _dashboard;
+			inst.levelselect = _levelselect;
+			inst.soundfx = _soundfx;
+			inst.builtin_demo = _builtin_demo;
+			inst.demos = _demos;
+			memcpy(inst.dashpalette, inst.dashboard.palette, sizeof(inst.dashpalette));
 			for(unsigned i = 0; i < 10; i++)
-				backgrounds[i] = _backgrounds[i];
-			rom_filename = filename;
+				inst.backgrounds[i] = _backgrounds[i];
+			inst.rom_filename = filename;
 		} catch(std::exception& e) { throw std::runtime_error(errfile + ": " + e.what()); }
 	}
 
 	//Combine background and dashboard into origbuffer and render.
-	void combine_background(size_t back)
+	void combine_background(struct instance& inst, size_t back)
 	{
-		memset(origbuffer, 0, sizeof(origbuffer));
-		image& bg = backgrounds[back];
+		memset(inst.origbuffer, 0, sizeof(inst.origbuffer));
+		image& bg = inst.backgrounds[back];
 		if(bg.width && bg.height) {
 			size_t pixels = 320 * bg.height;
 			for(unsigned i = 0; i < pixels; i++)
-				origbuffer[i] = bg[i] & 0x00FFFFFFU;
+				inst.origbuffer[i] = bg[i] & 0x00FFFFFFU;
 		}
 		{
-			size_t pixels = 320 * dashboard.height;
-			size_t writestart = 64000 - 320 * dashboard.height;
+			size_t pixels = 320 * inst.dashboard.height;
+			size_t writestart = 64000 - 320 * inst.dashboard.height;
 			for(unsigned i = 0; i < pixels; i++)
-				if(dashboard.decode[i])
-					origbuffer[i + writestart] = dashboard[i] | 0xFF000000U;
+				if(inst.dashboard.decode[i])
+					inst.origbuffer[i + writestart] = inst.dashboard[i] | 0xFF000000U;
 		}
-		render_backbuffer();
+		render_backbuffer(inst);
 	}
 
-	demo lookup_demo(const uint8_t* levelhash)
+	demo lookup_demo(struct instance& inst, const uint8_t* levelhash)
 	{
-		for(auto i = demos.rbegin(); i != demos.rend(); i++) {
+		for(auto i = inst.demos.rbegin(); i != inst.demos.rend(); i++) {
 			if(!memcmp(i->hash, levelhash, 32))
 				return demo(i->demodata, false);
 		}

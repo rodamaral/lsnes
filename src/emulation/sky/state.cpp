@@ -3,7 +3,7 @@
 
 namespace sky
 {
-	const char* statenames[] = {
+	const char* const statenames[] = {
 		"MENU_FADEIN", "MENU", "MENU_FADEOUT", "LOAD_LEVEL", "LEVEL_FADEIN", "LEVEL_PLAY", "LEVEL_COMPLETE",
 		"LEVEL_FADEOUT", "LOAD_MENU", "LEVEL_UNAVAIL", "DEMO_UNAVAIL", "LEVEL_FADEOUT_RETRY"
 	};
@@ -20,9 +20,9 @@ namespace sky
 		lockind = 0;
 		beep_phase = 0;
 	}
-	uint8_t gstate::simulate_frame(int lr, int ad, bool jump)
+	uint8_t gstate::simulate_frame(noise_maker& sfx, int lr, int ad, bool jump)
 	{
-		uint8_t dstatus = p.simulate_frame(curlevel, gsfx, lr, ad, jump);
+		uint8_t dstatus = p.simulate_frame(curlevel, sfx, lr, ad, jump);
 		uint16_t lt = p.lpos >> 16;
 		uint8_t ht = (p.hpos - 12160) / 5888;
 		if(secret == 1 && p.is_set(physics::flag_landed) && ht <= 2 && lt >= 131 && lt <= 170)
@@ -41,7 +41,4 @@ namespace sky
 	{
 		return std::make_pair(reinterpret_cast<uint8_t*>(this), sizeof(*this));
 	}
-
-	gstate _gstate;
-	music_player mplayer(_gstate.music, _gstate.rng);
 }

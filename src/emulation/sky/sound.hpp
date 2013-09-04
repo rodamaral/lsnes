@@ -48,7 +48,7 @@ namespace sky
 	};
 
 	struct gstate;
-	void fetch_sfx(gstate& s, int16_t* buffer, size_t samples);	//Stereo!
+	void fetch_sfx(struct instance& inst, int16_t* buffer, size_t samples);	//Stereo!
 
 	struct active_sfx_dma
 	{
@@ -79,7 +79,5 @@ namespace sky
 		const sounds& snds;
 		active_sfx_dma& dma;
 	};
-
-	extern sound_noise_maker gsfx;
 }
 #endif

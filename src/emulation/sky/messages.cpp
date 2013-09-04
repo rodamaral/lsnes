@@ -2,19 +2,21 @@
 
 namespace sky
 {
-	const char* _lockind_g = "%=(bFA*cN:Rc^X[cbPAccKSD`%=(4c='(RYR@>aK49c>XXRSD#";
-	const char* _numbers_g = "#'(#;/;##'(JVJVJ#'(#V#<##'(#V#V##'(/;#VJ#'(#<#V##'(#<#;##'(#VJVJ#'(#;#;##'(#;#V#";
-	const char* _lvlcomplete_g = "$e5-###$#####%###.S##'&C###+%##KC##34####C+#%E112%#?aVU@]T_T'('+%-+KM-+KL'6W"
-		"3C+KEERKbEE444$'EE--CE%-']``&DU+R,_JJC########C############%#####";
-	const char* _lvlunavail_g = "$e#+#####'####-'####3####O3###$####%L*$^,ZC]TT^GE'+K4%+CKL5+1ED'+EAEF+C--'3E-"
-		"--'?*JJ4%*2JC";
-	const char* _demounavail_g = "$e)+#####'#%###%'####3#+###/3###$##C###L*$^,ZCA?aTUGE'+K4%--+KL5+1ED'+RKEEF+"
-		"C--'3ECE--'?*JJ4$]^+J#";
-	const char* _lvlcomplete2_g = "$eE-############$###+3####C######3##&'####+######'###L*#[]cJ1&FVZD[]VM5+4$3"
-		"E-$(((#444)7E*VVKbCB441':WBF+D$'-++''73D($'+4S2BA]^#``a[423`#########$$##############&FC#####";
-	const char* _lvlcomplete3_g = "$eW-#####%#######K+$###+#####C#C####+%'3##%#####+#+####%#D'###C`[[,.TZD']'*"
-		"L[a[]VK+44%ME%C444%-E'444)$ZZSMKJK%G73EKD':WBC($#'5--#L('+M+4($'+222$'Eb['12$^A*423`########$####"
-		"##############$C##########";
+	const char* const _lockind_g = "%=(bFA*cN:Rc^X[cbPAccKSD`%=(4c='(RYR@>aK49c>XXRSD#";
+	const char* const _numbers_g = "#'(#;/;##'(JVJVJ#'(#V#<##'(#V#V##'(/;#VJ#'(#<#V##'(#<#;##'(#VJVJ#'(#;#;##'"
+		"(#;#V#";
+	const char* const _lvlcomplete_g = "$e5-###$#####%###.S##'&C###+%##KC##34####C+#%E112%#?aVU@]T_T'('+%-+KM-"
+		"+KL'6W3C+KEERKbEE444$'EE--CE%-']``&DU+R,_JJC########C############%#####";
+	const char* const _lvlunavail_g = "$e#+#####'####-'####3####O3###$####%L*$^,ZC]TT^GE'+K4%+CKL5+1ED'+EAEF+C"
+		"--'3E---'?*JJ4%*2JC";
+	const char* const _demounavail_g = "$e)+#####'#%###%'####3#+###/3###$##C###L*$^,ZCA?aTUGE'+K4%--+KL5+1ED'+"
+		"RKEEF+C--'3ECE--'?*JJ4$]^+J#";
+	const char* const _lvlcomplete2_g = "$eE-############$###+3####C######3##&'####+######'###L*#[]cJ1&FVZD[]V"
+		"M5+4$3E-$(((#444)7E*VVKbCB441':WBF+D$'-++''73D($'+4S2BA]^#``a[423`#########$$##############&FC###"
+		"##";
+	const char* const _lvlcomplete3_g = "$eW-#####%#######K+$###+#####C#C####+%'3##%#####+#+####%#D'###C`[[,.T"
+		"ZD']'*L[a[]VK+44%ME%C444%-E'444)$ZZSMKJK%G73EKD':WBC($#'5--#L('+M+4($'+222$'Eb['12$^A*423`#######"
+		"#$##################$C##########";
 	const uint32_t complete_mark[] = {
 		18, 15,
 		0x000000, 0x000000, 0x000000, 0x000000, 0x613e1a, 0xb67a3d, 0xeaa45f, 0xfcb977, 0xeab47f,

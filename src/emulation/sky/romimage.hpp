@@ -14,21 +14,9 @@
 
 namespace sky
 {
-	extern std::string rom_filename;
-	extern gauge speed_dat;
-	extern gauge oxydisp_dat;
-	extern gauge fueldisp_dat;
-	extern roads_lzs levels;
-	extern image ship;
-	extern image dashboard;
-	extern image levelselect;
-	extern image backgrounds[10];
-	extern sounds soundfx;
-	extern demo builtin_demo;
-	extern uint32_t dashpalette[16];
-	void load_rom(const std::string& filename);
-	void combine_background(size_t back);
-	demo lookup_demo(const uint8_t* levelhash);
+	void load_rom(struct instance& inst, const std::string& filename);
+	void combine_background(struct instance& inst, size_t back);
+	demo lookup_demo(struct instance& inst, const uint8_t* levelhash);
 }
 
 
