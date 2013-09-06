@@ -38,7 +38,7 @@ public:
 		std::function<void(binary_input_stream& s)> fn;
 	};
 	binary_input_stream(std::istream& s);
-	binary_input_stream(std::istream& s, uint64_t len);
+	binary_input_stream(binary_input_stream& s, uint64_t len);
 	uint8_t byte();
 	uint64_t number();
 	uint32_t number32();
@@ -51,15 +51,15 @@ public:
 		std::function<void(uint32_t tag, binary_input_stream& s)> default_hdlr);
 	uint64_t get_left()
 	{
-		if(implicit_len)
+		if(!parent)
 			throw std::logic_error("binary_input_stream::get_left() can only be used in substreams");
 		return left;
 	}
 private:
 	bool read(char* buf, size_t size, bool allow_none = false);
 	void flush();
+	binary_input_stream* parent;
 	std::istream& strm;
-	bool implicit_len;
 	uint64_t left;
 };
 

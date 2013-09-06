@@ -128,7 +128,7 @@ std::string binary_input_stream::string()
 
 std::string binary_input_stream::string_implicit()
 {
-	if(implicit_len)
+	if(!parent)
 		throw std::logic_error("binary_input_stream::string_implicit() can only be used in substreams");
 	std::vector<char> _r;
 	_r.resize(left);
@@ -139,20 +139,22 @@ std::string binary_input_stream::string_implicit()
 
 void binary_input_stream::blob_implicit(std::vector<char>& blob)
 {
-	if(implicit_len)
+	if(!parent)
 		throw std::logic_error("binary_input_stream::string_implicit() can only be used in substreams");
 	blob.resize(left);
 	read(&blob[0], left);
 }
 
 binary_input_stream::binary_input_stream(std::istream& s)
-	: strm(s), implicit_len(true), left(0)
+	: strm(s), left(0), parent(NULL)
 {
 }
 
-binary_input_stream::binary_input_stream(std::istream& s, uint64_t len)
-	: strm(s), implicit_len(false), left(len)
+binary_input_stream::binary_input_stream(binary_input_stream& s, uint64_t len)
+	: strm(s.strm), left(len), parent(&s)
 {
+	if(parent->parent && left > parent->left)
+		throw std::runtime_error("Substream length greater than its parent");
 }
 
 void binary_input_stream::raw(void* buf, size_t bufsize)
@@ -171,7 +173,7 @@ void binary_input_stream::extension(std::initializer_list<binary_tag_handler> fu
 	std::map<uint32_t, std::function<void(binary_input_stream& s)>> fn;
 	for(auto i : funcs)
 		fn[i.tag] = i.fn;
-	while(implicit_len || left > 0) {
+	while(!parent || left > 0) {
 		char c[4];
 		if(!read(c, 4, true))
 			break;
@@ -180,7 +182,7 @@ void binary_input_stream::extension(std::initializer_list<binary_tag_handler> fu
 			throw std::runtime_error("Binary file packet structure desync");
 		uint32_t tag = number32();
 		uint64_t size = number();
-		binary_input_stream ss(strm, size);
+		binary_input_stream ss(*this, size);
 		if(fn.count(tag))
 			fn[tag](ss);
 		else
@@ -191,7 +193,7 @@ void binary_input_stream::extension(std::initializer_list<binary_tag_handler> fu
 
 void binary_input_stream::flush()
 {
-	if(implicit_len)
+	if(!parent)
 		throw std::logic_error("binary_input_stream::flush() can only be used in substreams");
 	char buf[256];
 	while(left)
@@ -200,15 +202,21 @@ void binary_input_stream::flush()
 
 bool binary_input_stream::read(char* buf, size_t size, bool allow_none)
 {
-	if(!implicit_len && size > left)
-		throw std::runtime_error("Substream unexpected EOF");
-	strm.read(buf, size);
-	if(!strm) {
-		if(!strm.gcount() && allow_none)
+	if(parent) {
+		if(left == 0 && allow_none)
 			return false;
-		throw std::runtime_error("Unexpected EOF");
+		if(size > left)
+			std::runtime_error("Substream unexpected EOF");
+		parent->read(buf, size, false);
+		left -= size;
+	} else {
+		strm.read(buf, size);
+		if(!strm) {
+			if(!strm.gcount() && allow_none)
+				return false;
+			throw std::runtime_error("Unexpected EOF");
+		}
 	}
-	left -= size;
 	return true;
 }
 
