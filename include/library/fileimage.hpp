@@ -123,6 +123,8 @@ private:
 
 /**
  * Some loaded data or indication of no data.
+ *
+ * The loaded images are copied in CoW manner.
  */
 struct loaded_image
 {
@@ -164,6 +166,8 @@ struct loaded_image
 /**
  * This method patches this slot using specified IPS patch.
  *
+ * If the object was shared, this breaks the sharing, with this object gaining dedicated copy.
+ *
  * parameter patch: The patch to apply
  * parameter offset: The amount to add to the offsets in the IPS file. Parts with offsets below zero are not patched.
  * throws std::bad_alloc: Not enough memory.
@@ -179,14 +183,9 @@ struct loaded_image
  */
 	std::string filename;
 /**
- * If this slot is blank, this is set to false, data is undefined and sha256 is "". Otherwise this is set to true,
- * data to apporiate data, and sha256 to hash of data.
- */
-	bool valid;
-/**
  * The actual data for this slot.
  */
-	std::vector<char> data;
+	std::shared_ptr<std::vector<char>> data;
 /**
  * SHA-256 for the data in this slot if data is valid. If no valid data, this field is "".
  *
@@ -200,7 +199,7 @@ struct loaded_image
  */
 	operator const char*() const throw()
 	{
-		return valid ? reinterpret_cast<const char*>(&data[0]) : NULL;
+		return data ? reinterpret_cast<const char*>(&(*data)[0]) : NULL;
 	}
 /**
  * Get pointer to loaded data
@@ -209,7 +208,7 @@ struct loaded_image
  */
 	operator const uint8_t*() const throw()
 	{
-		return valid ? reinterpret_cast<const uint8_t*>(&data[0]) : NULL;
+		return data ? reinterpret_cast<const uint8_t*>(&(*data)[0]) : NULL;
 	}
 /**
  * Get size of slot
@@ -218,7 +217,7 @@ struct loaded_image
  */
 	operator unsigned() const throw()
 	{
-		return valid ? data.size() : 0;
+		return data ? data->size() : 0;
 	}
 };
 

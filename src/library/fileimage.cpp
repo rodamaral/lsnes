@@ -380,7 +380,6 @@ void sha256_hasher::send_idle()
 loaded_image::loaded_image() throw(std::bad_alloc)
 {
 	type = info::IT_NONE;
-	valid = false;
 	sha_256 = sha256_future("");
 	filename = "";
 }
@@ -393,7 +392,6 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 	if(_filename == "") {
 		//NULL.
 		type = info::IT_NONE;
-		valid = false;
 		sha_256 = sha256_future("");
 		return;
 	}
@@ -403,23 +401,23 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		unsigned headered = 0;
 		filename = resolve_file_relative(_filename, base);
 		type = info.type;
-		data = read_file_relative(_filename, base);
-		valid = true;
+
+		data.reset(new std::vector<char>(read_file_relative(_filename, base)));
 		if(info.type == info::IT_MEMORY && info.headersize)
-			headered = ((data.size() % (2 * info.headersize)) == info.headersize) ? info.headersize : 0;
-		if(data.size() >= headered) {
+			headered = ((data->size() % (2 * info.headersize)) == info.headersize) ? info.headersize : 0;
+		if(data->size() >= headered) {
 			if(headered) {
-				memmove(&data[0], &data[headered], data.size() - headered);
-				data.resize(data.size() - headered);
+				memmove(&(*data)[0], &(*data)[headered], data->size() - headered);
+				data->resize(data->size() - headered);
 			}
 		} else {
-			data.resize(0);
+			data->resize(0);
 		}
-		sha_256 = sha256_future(sha256::hash(data));
+		sha_256 = sha256_future(sha256::hash(*data));
 		if(info.type == info::IT_MARKUP) {
-			size_t osize = data.size();
-			data.resize(osize + 1);
-			data[osize] = 0;
+			size_t osize = data->size();
+			data->resize(osize + 1);
+			(*data)[osize] = 0;
 		}
 		return;
 	}
@@ -428,9 +426,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		filename = resolve_file_relative(_filename, base);
 		filename = boost_fs::absolute(boost_fs::path(filename)).string();
 		type = info::IT_FILE;
-		data.resize(filename.length());
-		std::copy(filename.begin(), filename.end(), data.begin());
-		valid = true;
+		data.reset(new std::vector<char>(filename.begin(), filename.end()));
 		sha_256 = h(filename);
 		return;
 	}
@@ -444,19 +440,18 @@ void loaded_image::patch(const std::vector<char>& patch, int32_t offset) throw(s
 	if(type != info::IT_MEMORY && type != info::IT_MARKUP)
 		throw std::runtime_error("File images can't be patched on the fly");
 	try {
-		std::vector<char> data2 = data;
+		std::vector<char> data2 = *data;
 		if(type == info::IT_MARKUP)
 			data2.resize(data2.size() - 1);
 		data2 = do_patch_file(data2, patch, offset);
 		//Mark the slot as valid and update hash.
-		valid = true;
 		std::string new_sha256 = sha256::hash(data2);
 		if(type == info::IT_MARKUP) {
 			size_t osize = data2.size();
 			data2.resize(osize + 1);
 			data2[osize] = 0;
 		}
-		data = data2;
+		data.reset(new std::vector<char>(data2));
 		sha_256 = sha256_future(new_sha256);
 	} catch(...) {
 		throw;
