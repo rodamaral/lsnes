@@ -1,11 +1,14 @@
 #ifndef _rom__hpp__included__
 #define _rom__hpp__included__
 
+#define ROM_SLOT_COUNT 27
+
 #include <string>
 #include <map>
 #include <vector>
 #include <stdexcept>
 #include "core/misc.hpp"
+#include "core/moviefile.hpp"
 #include "core/romtype.hpp"
 
 /**
@@ -60,6 +63,10 @@ struct loaded_slot
  * SHA-256 for the data in this slot if data is valid. If no valid data, this field is "".
  */
 	std::string sha256;
+/**
+ * Name hint. Only for non-XML slots.
+ */
+	std::string namehint;
 /**
  * Get pointer to loaded data
  *
@@ -121,11 +128,11 @@ struct loaded_rom
 /**
  * Loaded main ROM
  */
-	loaded_slot romimg[27];
+	loaded_slot romimg[ROM_SLOT_COUNT];
 /**
  * Loaded main ROM XML
  */
-	loaded_slot romxml[27];
+	loaded_slot romxml[ROM_SLOT_COUNT];
 /**
  * MSU-1 base.
  */

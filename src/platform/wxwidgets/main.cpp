@@ -459,9 +459,10 @@ bool lsnes_app::OnInit()
 			//Initialize the remainder.
 			mov->coreversion = bsnes_core_version;
 			mov->rerecords = "0";
-			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
+			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				mov->romimg_sha256[i] = rom->romimg[i].sha256;
 				mov->romxml_sha256[i] = rom->romxml[i].sha256;
+				mov->romname_hint[i] = rom->romimg[i].namehint;
 			}
 			mov->gametype = &rom->rtype->combine_region(*rom->region);
 		}

@@ -420,7 +420,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
 	bool rom_ok = true;
-	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+		if(_movie.romname_hint[i] == "")
+			_movie.romname_hint[i] = our_rom->romimg[i].namehint;
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romimg_sha256[i], our_rom->romimg[i],
 			(stringfmt() << "ROM #" << (i + 1)).str(), will_load_state);
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256[i], our_rom->romxml[i],

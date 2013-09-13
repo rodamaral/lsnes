@@ -7,8 +7,8 @@
 #include <map>
 #include "core/controllerframe.hpp"
 #include "core/rom.hpp"
+#include "core/romtype.hpp"
 #include "core/subtitles.hpp"
-
 
 /**
  * This structure gives parsed representationg of movie file, as result of decoding or for encoding.
@@ -76,11 +76,15 @@ struct moviefile
 /**
  * SHA-256 of ROM (empty string if none).
  */
-	std::string romimg_sha256[27];
+	std::string romimg_sha256[ROM_SLOT_COUNT];
 /**
  * SHA-256 of ROM XML (empty string if none).
  */
-	std::string romxml_sha256[27];
+	std::string romxml_sha256[ROM_SLOT_COUNT];
+/**
+ * ROM hints (empty string if none).
+ */
+	std::string romname_hint[ROM_SLOT_COUNT];
 /**
  * Authors of the run, first in each pair is full name, second is nickname.
  */
