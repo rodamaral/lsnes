@@ -1012,13 +1012,13 @@ void wxwin_mainwindow::request_rom(std::string& filename, core_type& coretype)
 		filter = filter + "*." + i;
 	}
 	filter = filter + "|All files|*.*";
-	wxFileDialog* fdiag = new wxFileDialog(this, wxT("Load ROM"), towxstring(rom_path()), "",  towxstring(filter),
-		wxFD_OPEN);
+	wxFileDialog* fdiag = new wxFileDialog(this, wxT("Load ROM"), towxstring(rom_path()), wxT(""),
+		towxstring(filter), wxFD_OPEN);
 	if(fdiag->ShowModal() != wxID_OK) {
 		delete fdiag;
 		return;
 	}
-	filename = fdiag->GetPath();
+	filename = tostdstring(fdiag->GetPath());
 	delete fdiag;
 }
 
