@@ -21,6 +21,7 @@ struct filedialog_input_params
 {
 	std::vector<filedialog_type_entry> types;
 	int default_type;
+	std::string default_filename;
 };
 
 struct filedialog_output_params

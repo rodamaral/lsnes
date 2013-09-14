@@ -566,9 +566,12 @@ namespace
 			bool done = false;
 			umutex_class h(lock);
 			runuifun([_req, &lock, &cv, &done]() -> void {
+				if(done)
+					return;
 				try {
 					main_window->request_rom(*_req);
 				} catch(...) {
+					_req->filename = "";
 				}
 				umutex_class h(lock);
 				done = true;

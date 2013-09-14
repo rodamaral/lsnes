@@ -41,6 +41,16 @@ namespace boost_fs = boost::filesystem3;
 namespace boost_fs = boost::filesystem;
 #endif
 
+bool file_exists(const std::string& name)
+{
+	try {
+		delete &open_file_relative(name, "");
+		return true;
+	} catch(...) {
+		return false;
+	}
+}
+
 namespace
 {
 	const char* null_chars = "F";
@@ -179,16 +189,6 @@ namespace
 					return i;
 			}
 		return fallback;
-	}
-
-	bool file_exists(const std::string& name)
-	{
-		try {
-			delete &open_file_relative(name, "");
-			return true;
-		} catch(...) {
-			return false;
-		}
 	}
 
 	struct loaded_image::info get_xml_info()

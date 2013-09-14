@@ -116,11 +116,17 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
  */
 void set_hasher_callback(std::function<void(uint64_t)> cb);
 
+/**
+ * Does the file exist?
+ */
+bool file_exists(const std::string& name);
+
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;
 //Preferred overall core.
 extern std::string preferred_core_default;
 //Currently active ROM.
 extern std::string current_romfile;
+
 
 #endif

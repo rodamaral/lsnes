@@ -55,7 +55,7 @@ struct rom_request
 	std::vector<core_type*> cores;
 	//Selected core (default core on call).
 	size_t selected;
-	//Filename selected.
+	//Filename selected (on entry, filename hint).
 	std::string filename;
 };
 

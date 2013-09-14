@@ -69,6 +69,8 @@ filedialog_output_params show_filedialog(wxWindow* parent, const std::string& ti
 	if(defaultname != "")
 		d->SetFilename(towxstring(defaultname));
 	d->SetFilterIndex(p.default_type);
+	if(p.default_filename != "")
+		d->SetFilename(p.default_filename);
 	if(d->ShowModal() == wxID_CANCEL)
 		throw canceled_exception();
 	std::string filename = tostdstring(d->GetPath());

@@ -569,12 +569,16 @@ void try_request_rom(const std::string& moviefile)
 	rom_request req;
 	req.selected = 0;
 	size_t idx = 0;
+	bool has_bios = false;
 	for(auto i : sysregs) {
+		if(i->get_type().get_biosname() != "" && info.hash[1] != "")
+			has_bios = true;
 		req.cores.push_back(&i->get_type());
 		if(i->get_type().get_core_identifier() == info.corename)
 			req.selected = idx;
 		idx++;
 	}
+	req.filename = info.hint[has_bios ? 1 : 0];
 	graphics_driver_request_rom(req);
 	if(req.filename == "")
 		throw std::runtime_error("Canceled loading ROM");
