@@ -297,7 +297,7 @@ namespace
 		}
 		loaded_rom newrom;
 		*our_rom = newrom;
-		for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			our_movie.romimg_sha256[i] = "";
 			our_movie.romxml_sha256[i] = "";
 		}
@@ -345,7 +345,7 @@ namespace
 				loaded_rom newrom(r[1], *t);
 				*our_rom = newrom;
 			}
-			for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
 				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
 			}

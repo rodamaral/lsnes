@@ -565,11 +565,11 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	unsigned base = 97;
 	if(r.has_member("slot`.sha256"))
 		base = 96;
-	for(size_t i = 0; i < 26; i++) {
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i) << ".sha256").str(), romimg_sha256[i + 1],
+	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), romimg_sha256[i],
 			true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i) << "xml.sha256").str(),
-			romxml_sha256[i + 1], true);
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
+			romxml_sha256[i], true);
 	}
 	read_subtitles(r, "subtitles", subtitles);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
@@ -653,11 +653,11 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 	write_rrdata(w);
 	write_linefile(w, "rom.sha256", romimg_sha256[0], true);
 	write_linefile(w, "romxml.sha256", romxml_sha256[0], true);
-	for(size_t i = 0; i < 26; i++) {
-		write_linefile(w, (stringfmt() << "slot" << (char)(97 + i) << ".sha256").str(), romimg_sha256[i + 1],
+	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
+		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i],
 			true);
-		write_linefile(w, (stringfmt() << "slot" << (char)(97 + i) << "xml.sha256").str(),
-			romxml_sha256[i + 1], true);
+		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(), romxml_sha256[i],
+			true);
 	}
 	write_subtitles(w, "subtitles", subtitles);
 	for(auto i : movie_sram)
@@ -740,7 +740,7 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 		s.string_implicit(this->coreversion);
 	});
 
-	for(unsigned i = 0; i < sizeof(romimg_sha256) / sizeof(romimg_sha256[0]); i++) {
+	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 		out.extension(TAG_ROMHASH, [this, i](binary_output_stream& s) {
 			if(!this->romimg_sha256[i].length()) return;
 			s.byte(2 * i);
@@ -882,7 +882,7 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 		}},{TAG_ROMHASH, [this](binary_input_stream& s) {
 			uint8_t n = s.byte();
 			std::string h = s.string_implicit();
-			if(n > 2 * (sizeof(this->romimg_sha256) / sizeof(romimg_sha256[0])))
+			if(n > 2 * ROM_SLOT_COUNT)
 				return;
 			if(n & 1)
 				romxml_sha256[n >> 1] = h;

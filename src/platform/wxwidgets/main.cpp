@@ -477,7 +477,7 @@ bool lsnes_app::OnInit()
 		if(c_rom != "") {
 			//Initialize the remainder.
 			mov->rerecords = "0";
-			for(size_t i = 0; i < sizeof(rom->romimg)/sizeof(rom->romimg[0]); i++) {
+			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				mov->romimg_sha256[i] = rom->romimg[i].sha_256.read();
 				mov->romxml_sha256[i] = rom->romxml[i].sha_256.read();
 			}

@@ -145,7 +145,7 @@ struct loaded_rom load_rom_from_commandline(std::vector<std::string> cmdline) th
 	}
 
 	std::string not_present = "N/A";
-	for(size_t i = 0; i < sizeof(r.romimg)/sizeof(r.romimg[0]); i++) {
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 		std::string romname = "UNKNOWN ROM";
 		std::string xmlname = "UNKNOWN XML";
 		if(i < r.rtype->get_image_count()) {

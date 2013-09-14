@@ -89,11 +89,11 @@ struct moviefile
 /**
  * SHA-256 of ROM (empty string if none).
  */
-	std::string romimg_sha256[27];
+	std::string romimg_sha256[ROM_SLOT_COUNT];
 /**
  * SHA-256 of ROM XML (empty string if none).
  */
-	std::string romxml_sha256[27];
+	std::string romxml_sha256[ROM_SLOT_COUNT];
 /**
  * Authors of the run, first in each pair is full name, second is nickname.
  */

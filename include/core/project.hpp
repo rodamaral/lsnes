@@ -7,6 +7,7 @@
 #include <vector>
 #include "library/json.hpp"
 #include "core/controller.hpp"
+#include "core/rom.hpp"
 
 //Information about project.
 struct project_info
@@ -35,8 +36,8 @@ struct project_info
 	std::string coreversion;
 	std::string gamename;
 	std::string projectid;
-	std::string romimg_sha256[27];
-	std::string romxml_sha256[27];
+	std::string romimg_sha256[ROM_SLOT_COUNT];
+	std::string romxml_sha256[ROM_SLOT_COUNT];
 	std::vector<std::pair<std::string, std::string>> authors;
 	std::map<std::string, std::vector<char>> movie_sram;
 	std::vector<char> anchor_savestate;

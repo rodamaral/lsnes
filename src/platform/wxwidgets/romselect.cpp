@@ -253,7 +253,7 @@ namespace
 		pinfo.projectid = our_movie.projectid;
 		project_copy_watches(pinfo);
 		project_copy_macros(pinfo, controls);
-		for(unsigned i = 0; i < 27; i++) {
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];
 		}
@@ -607,7 +607,7 @@ struct moviefile wxwin_project::make_movie()
 	f.projectid = get_random_hexstring(40);
 	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
 	f.rerecords = "0";
-	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 		f.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
 		f.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
 	}

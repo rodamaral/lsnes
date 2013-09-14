@@ -158,7 +158,7 @@ namespace
 		s << "time=" << p.movie_rtc_second << ":" << p.movie_rtc_subsecond << std::endl;
 		for(auto i : p.authors)
 			s << "author=" << i.first << "|" << i.second << std::endl;
-		for(unsigned i = 0; i < 27; i++) {
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			if(p.romimg_sha256[i] != "") {
 				if(i)
 					s << "slotsha" << static_cast<char>(96 + i) << "=" << p.romimg_sha256[i]
@@ -198,7 +198,7 @@ namespace
 		m.anchor_savestate = p.anchor_savestate;
 		m.movie_sram = p.movie_sram;
 		m.authors = p.authors;
-		for(unsigned i = 0; i < 27; i++) {
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			m.romimg_sha256[i] = p.romimg_sha256[i];
 			m.romxml_sha256[i] = p.romxml_sha256[i];
 		}

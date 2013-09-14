@@ -1,6 +1,8 @@
 #ifndef _rom__hpp__included__
 #define _rom__hpp__included__
 
+#define ROM_SLOT_COUNT 27
+
 #include <string>
 #include <map>
 #include <vector>
@@ -52,11 +54,11 @@ struct loaded_rom
 /**
  * Loaded main ROM
  */
-	loaded_image romimg[27];
+	loaded_image romimg[ROM_SLOT_COUNT];
 /**
  * Loaded main ROM XML
  */
-	loaded_image romxml[27];
+	loaded_image romxml[ROM_SLOT_COUNT];
 /**
  * MSU-1 base.
  */

@@ -311,8 +311,8 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 	region = orig_region;
 
 	//ROM files.
-	std::string cromimg[sizeof(romimg)/sizeof(romimg[0])];
-	std::string cromxml[sizeof(romimg)/sizeof(romimg[0])];
+	std::string cromimg[ROM_SLOT_COUNT];
+	std::string cromxml[ROM_SLOT_COUNT];
 	for(auto i : lines) {
 		regex_results tmp;
 		if(!(tmp = regex("(rom|xml)[ \t]+([^ \t]+)[ \t]+(.*)", i)))
@@ -390,8 +390,8 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	if(rtype && !rtype->set_region(*region))
 		throw std::runtime_error("Trying to force unknown region");
 
-	core_romimage images[sizeof(romimg)/sizeof(romimg[0])];
-	for(size_t i = 0; i < sizeof(romimg)/sizeof(romimg[0]); i++) {
+	core_romimage images[ROM_SLOT_COUNT];
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 		images[i].markup = (const char*)romxml[i];
 		images[i].data = (const unsigned char*)romimg[i];
 		images[i].size = (size_t)romimg[i];
