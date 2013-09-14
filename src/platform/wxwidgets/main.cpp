@@ -535,19 +535,20 @@ void graphics_plugin::fatal_error() throw()
 	}
 }
 
-std::string graphics_plugin::request_rom(core_type& coretype)
+std::string graphics_plugin::request_rom(core_type& coretype, const std::string& hint)
 {
 	core_type* ctype = &coretype;
 	std::string outname;
+	std::string _hint = hint;
 	mutex_class lock;
 	cv_class cv;
 	bool done = false;
 	umutex_class h(lock);
-	runuifun([ctype, &outname, &lock, &cv, &done]() -> void {
+	runuifun([ctype, hint, &outname, &lock, &cv, &done]() -> void {
 		if(done)
 			return;
 		try {
-			main_window->request_rom(outname, *ctype);
+			main_window->request_rom(outname, *ctype, hint);
 		} catch(...) {
 		}
 		umutex_class h(lock);

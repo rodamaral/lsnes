@@ -225,7 +225,7 @@ struct graphics_plugin
 /**
  * Request filename for ROM load.
  */
-	static std::string request_rom(core_type& coretype);
+	static std::string request_rom(core_type& coretype, const std::string& hint);
 /**
  * Identification for graphics plugin.
  */

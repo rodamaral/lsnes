@@ -201,4 +201,9 @@ std::vector<char> save_core_state(bool nochecksum = false) throw(std::bad_alloc)
  */
 void load_core_state(const std::vector<char>& buf, bool nochecksum = false) throw(std::runtime_error);
 
+/**
+ * Does specified file exist?
+ */
+bool file_exists(const std::string& name);
+
 #endif

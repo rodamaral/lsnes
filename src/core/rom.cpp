@@ -29,20 +29,20 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
+bool file_exists(const std::string& name)
+{
+	try {
+		delete &open_file_relative(name, "");
+		return true;
+	} catch(...) {
+		return false;
+	}
+}
+
 namespace
 {
 	core_type* current_rom_type = NULL;
 	core_region* current_region = NULL;
-
-	bool file_exists(const std::string& name)
-	{
-		try {
-			delete &open_file_relative(name, "");
-			return true;
-		} catch(...) {
-			return false;
-		}
-	}
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
