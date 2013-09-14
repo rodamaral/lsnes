@@ -24,6 +24,9 @@ struct moviefile
 		std::string sysregion;
 		std::string corename;
 		std::string projectid;
+		std::string hash[ROM_SLOT_COUNT];
+		std::string hashxml[ROM_SLOT_COUNT];
+		std::string hint[ROM_SLOT_COUNT];
 		uint64_t current_frame;
 		uint64_t rerecords;
 	private:
@@ -94,6 +97,10 @@ struct moviefile
  * SHA-256 of ROM XML (empty string if none).
  */
 	std::string romxml_sha256[ROM_SLOT_COUNT];
+/**
+ * ROM name hint (empty string if none).
+ */
+	std::string namehint[ROM_SLOT_COUNT];
 /**
  * Authors of the run, first in each pair is full name, second is nickname.
  */

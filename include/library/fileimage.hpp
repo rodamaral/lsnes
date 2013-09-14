@@ -183,6 +183,10 @@ struct loaded_image
  */
 	std::string filename;
 /**
+ * ROM name hint.
+ */
+	std::string namehint;
+/**
  * The actual data for this slot.
  */
 	std::shared_ptr<std::vector<char>> data;

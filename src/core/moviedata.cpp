@@ -213,6 +213,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
 			our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
+			our_movie.namehint[i] = our_rom->romimg[i].namehint;
 		}
 		our_movie.savestate = our_rom->save_core_state();
 		get_framebuffer().save(our_movie.screenshot);
@@ -427,6 +428,8 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	}
 	bool rom_ok = true;
 	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+		if(_movie.namehint[i] == "")
+			_movie.namehint[i] = our_rom->romimg[i].namehint;
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romimg_sha256[i], our_rom->romimg[i],
 			(stringfmt() << "ROM #" << (i + 1)).str(), will_load_state);
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256[i], our_rom->romxml[i],

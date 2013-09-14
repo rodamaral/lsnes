@@ -348,6 +348,7 @@ namespace
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
 				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
+				our_movie.namehint[i] = our_rom->romimg[i].namehint;
 			}
 		} catch(std::exception& e) {
 			platform::error_message(std::string("Can't load ROM: ") + e.what());

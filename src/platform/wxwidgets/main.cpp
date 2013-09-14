@@ -480,6 +480,7 @@ bool lsnes_app::OnInit()
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				mov->romimg_sha256[i] = rom->romimg[i].sha_256.read();
 				mov->romxml_sha256[i] = rom->romxml[i].sha_256.read();
+				mov->namehint[i] = rom->romimg[i].namehint;
 			}
 		}
 		mov->gametype = &rom->rtype->combine_region(*rom->region);

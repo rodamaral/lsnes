@@ -38,7 +38,8 @@ enum lsnes_movie_tags
 	TAG_SAVESTATE = 0x2e5bc2ac,
 	TAG_SCREENSHOT = 0xc6760d0e,
 	TAG_SUBTITLE = 0x6a7054d3,
-	TAG_RAMCONTENT = 0xd3ec3770
+	TAG_RAMCONTENT = 0xd3ec3770,
+	TAG_ROMHINT = 0x6f715830
 };
 
 void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
@@ -475,6 +476,20 @@ moviefile::brief_info::brief_info(const std::string& filename)
 	else
 		current_frame = 0;
 	read_numeric_file(r, "rerecords", rerecords);
+	read_linefile(r, "rom.sha256", hash[0], true);
+	read_linefile(r, "romxml.sha256", hashxml[0], true);
+	read_linefile(r, "rom.hint", hint[0], true);
+	unsigned base = 97;
+	if(r.has_member("slot`.sha256"))
+		base = 96;
+	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), hash[i],
+			true);
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
+			hashxml[i], true);
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), hint[i],
+			true);
+	}
 }
 
 void moviefile::brief_info::binary_io(std::istream& _stream)
@@ -497,6 +512,21 @@ void moviefile::brief_info::binary_io(std::istream& _stream)
 			std::vector<char> c_rrdata;
 			s.blob_implicit(c_rrdata);
 			this->rerecords = rrdata::count(c_rrdata);
+		}},{TAG_ROMHASH, [this](binary_input_stream& s) {
+			uint8_t n = s.byte();
+			std::string h = s.string_implicit();
+			if(n > 2 * ROM_SLOT_COUNT)
+				return;
+			if(n & 1)
+				this->hash[n >> 1] = h;
+			else
+				this->hashxml[n >> 1] = h;
+		}},{TAG_ROMHINT, [this](binary_input_stream& s) {
+			uint8_t n = s.byte();
+			std::string h = s.string_implicit();
+			if(n > ROM_SLOT_COUNT)
+				return;
+			this->hint[n] = h;
 		}}
 	}, binary_null_default);
 }
@@ -562,6 +592,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	read_linefile(r, "coreversion", coreversion);
 	read_linefile(r, "rom.sha256", romimg_sha256[0], true);
 	read_linefile(r, "romxml.sha256", romxml_sha256[0], true);
+	read_linefile(r, "rom.hint", namehint[0], true);
 	unsigned base = 97;
 	if(r.has_member("slot`.sha256"))
 		base = 96;
@@ -570,6 +601,8 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 			true);
 		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
 			romxml_sha256[i], true);
+		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), namehint[i],
+			true);
 	}
 	read_subtitles(r, "subtitles", subtitles);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
@@ -653,10 +686,13 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 	write_rrdata(w);
 	write_linefile(w, "rom.sha256", romimg_sha256[0], true);
 	write_linefile(w, "romxml.sha256", romxml_sha256[0], true);
+	write_linefile(w, "rom.hint", namehint[0], true);
 	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
 		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i],
 			true);
 		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(), romxml_sha256[i],
+			true);
+		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".hint").str(), namehint[i],
 			true);
 	}
 	write_subtitles(w, "subtitles", subtitles);
@@ -744,12 +780,17 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 		out.extension(TAG_ROMHASH, [this, i](binary_output_stream& s) {
 			if(!this->romimg_sha256[i].length()) return;
 			s.byte(2 * i);
-			s.string_implicit(romimg_sha256[i]);
+			s.string_implicit(this->romimg_sha256[i]);
 		});
 		out.extension(TAG_ROMHASH, [this, i](binary_output_stream& s) {
 			if(!this->romxml_sha256[i].length()) return;
 			s.byte(2 * i + 1);
-			s.string_implicit(romxml_sha256[i]);
+			s.string_implicit(this->romxml_sha256[i]);
+		});
+		out.extension(TAG_ROMHINT, [this, i](binary_output_stream& s) {
+			if(!this->namehint[i].length()) return;
+			s.byte(i);
+			s.string_implicit(this->namehint[i]);
 		});
 	}
 
@@ -888,6 +929,12 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 				romxml_sha256[n >> 1] = h;
 			else
 				romimg_sha256[n >> 1] = h;
+		}},{TAG_ROMHINT, [this](binary_input_stream& s) {
+			uint8_t n = s.byte();
+			std::string h = s.string_implicit();
+			if(n > ROM_SLOT_COUNT)
+				return;
+			namehint[n] = h;
 		}},{TAG_RRDATA, [this](binary_input_stream& s) {
 			s.blob_implicit(this->c_rrdata);
 			this->rerecords = (stringfmt() << rrdata::count(c_rrdata)).str();

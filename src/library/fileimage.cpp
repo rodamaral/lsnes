@@ -396,6 +396,18 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		return;
 	}
 
+	std::string xfilename = _filename;
+#if defined(_WIN32) || defined(_WIN64)
+	const char* split = "/\\";
+#else
+	const char* split = "/";
+#endif
+	size_t s1 = xfilename.find_last_of(split);
+	size_t s2 = xfilename.find_last_of(".");
+	if(s1 < xfilename.length()) s1 = s1 + 1; else s1 = 0;
+	if(s2 <= s1 || s2 >= xfilename.length()) s2 = xfilename.length();
+	namehint = xfilename.substr(s1, s2 - s1);
+
 	//Load markups and memory images.
 	if(info.type == info::IT_MEMORY || info.type == info::IT_MARKUP) {
 		unsigned headered = 0;

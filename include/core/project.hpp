@@ -38,6 +38,7 @@ struct project_info
 	std::string projectid;
 	std::string romimg_sha256[ROM_SLOT_COUNT];
 	std::string romxml_sha256[ROM_SLOT_COUNT];
+	std::string namehint[ROM_SLOT_COUNT];
 	std::vector<std::pair<std::string, std::string>> authors;
 	std::map<std::string, std::vector<char>> movie_sram;
 	std::vector<char> anchor_savestate;

@@ -173,6 +173,13 @@ namespace
 				else
 					s << "romxml=" << p.romxml_sha256[i] << std::endl;
 			}
+			if(p.namehint[i] != "") {
+				if(i)
+					s << "slothint" << static_cast<char>(96 + i) << "=" << p.namehint[i]
+						<< std::endl;
+				else
+					s << "romhint=" << p.namehint[i] << std::endl;
+			}
 		}
 		for(auto i : p.settings)
 			s << "setting." << i.first << "=" << i.second << std::endl;
@@ -201,6 +208,7 @@ namespace
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			m.romimg_sha256[i] = p.romimg_sha256[i];
 			m.romxml_sha256[i] = p.romxml_sha256[i];
+			m.namehint[i] = p.namehint[i];
 		}
 		m.projectid = p.projectid;
 		m.coreversion = p.coreversion;
@@ -283,6 +291,10 @@ project_info& project_load(const std::string& id)
 			pi.romxml_sha256[0] = r[1];
 		else if(r = regex("slotxml([a-z])=([0-9a-f]+)", tmp))
 			pi.romxml_sha256[r[2][0] - 96] = r[2];
+		else if(r = regex("romhint=(.*)", tmp))
+			pi.namehint[0] = r[1];
+		else if(r = regex("slothint([a-z])=(.*)", tmp))
+			pi.namehint[r[2][0] - 96] = r[2];
 		else if(r = regex("setting.([^=]+)=(.*)", tmp))
 			pi.settings[r[1]] = r[2];
 		else if(r = regex("watch.([^=]+)=(.*)", tmp))

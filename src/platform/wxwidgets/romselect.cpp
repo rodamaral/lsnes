@@ -256,6 +256,7 @@ namespace
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];
+			pinfo.namehint[i] = our_movie.namehint[i];
 		}
 		for(unsigned i = 0; i < luascripts->GetCount(); i++)
 			pinfo.luascripts.push_back(tostdstring(luascripts->GetString(i)));
@@ -610,6 +611,7 @@ struct moviefile wxwin_project::make_movie()
 	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 		f.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
 		f.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
+		f.namehint[i] = our_rom->romimg[i].namehint;
 	}
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {
@@ -640,7 +642,7 @@ struct moviefile wxwin_project::make_movie()
 
 void open_new_project_window(wxWindow* parent)
 {
-	if(current_romfile == "") {
+	if(our_rom->rtype->isnull()) {
 		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}
