@@ -52,6 +52,7 @@ namespace
 		lua_vma(lua_state& L, memory_region* r);
 		int info(lua_state& L, const std::string& fname);
 		template<class T, bool _bswap> int rw(lua_state& L, const std::string& fname);
+		template<bool write, bool sign> int scattergather(lua_state& L, const std::string& fname);
 	private:
 		std::string vma;
 		uint64_t vmabase;
@@ -78,6 +79,9 @@ namespace
 	{
 		objclass<lua_vma>().bind_multi(L, {
 			{"info", &lua_vma::info},
+			{"read", &lua_vma::scattergather<false, false>},
+			{"sread", &lua_vma::scattergather<false, true>},
+			{"write", &lua_vma::scattergather<true, false>},
 			{"sbyte", &lua_vma::rw<int8_t, false>},
 			{"byte", &lua_vma::rw<uint8_t, false>},
 			{"sword", &lua_vma::rw<int16_t, false>},
@@ -138,6 +142,36 @@ namespace
 			return 0;
 		} else
 			(stringfmt() << fname << ": Parameter #3 must be integer if present").throwex();
+	}
+
+	template<bool write, bool sign> int lua_vma::scattergather(lua_state& L, const std::string& fname)
+	{
+		uint64_t val = 0;
+		int ptr = 2;
+		unsigned shift = 0;
+		uint64_t addr = 0;
+		if(write)
+			val = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		while(L.type(ptr) != LUA_TNIL && L.type(ptr) != LUA_TNONE) {
+			if(L.type(ptr) == LUA_TBOOLEAN) {
+				if(L.toboolean(ptr++))
+					addr++;
+				else
+					addr--;
+			} else
+				addr = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+			if(write)
+				lsnes_memory.write<uint8_t>(addr + vmabase, val >> shift);
+			else
+				val = val + ((uint64_t)lsnes_memory.read<uint8_t>(addr + vmabase) << shift);
+			shift += 8;
+		}
+		if(!write) {
+			int64_t sval = val;
+			if(val >= (1ULL << (shift - 1))) sval -= (1ULL << shift);
+			if(sign) L.pushnumber(sval); else L.pushnumber(val);
+		}
+		return write ? 0 : 1;
 	}
 
 	lua_vma_list::lua_vma_list(lua_state& L)

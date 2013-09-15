@@ -3495,6 +3495,48 @@ Read/Write value from/to given VMA <vma> at given offset <offset> (must
 's' signifies that value is treated as signed (not available for floating-point).
 \end_layout
 
+\begin_layout Subsection
+memory2.<vma>:read: Scatter-gather value read
+\end_layout
+
+\begin_layout Itemize
+Syntax: number memory2.<vma>:read(number addr...)
+\end_layout
+
+\begin_layout Standard
+Read value from given VMA <vma> at byte offsets <addr>..., given in order of
+ increasing significance.
+ Value of true and false are special.
+ True increments address by 1, and false decrements address by 1.
+\end_layout
+
+\begin_layout Subsection
+memory2.<vma>:sread: Signed scatter-gather value read
+\end_layout
+
+\begin_layout Itemize
+Syntax: number memory2.<vma>:sread(number addr...)
+\end_layout
+
+\begin_layout Standard
+Like memory2.<vma>:read, but reads signed values.
+\end_layout
+
+\begin_layout Subsection
+memory2.<vma>:write: Scatter-gather value write
+\end_layout
+
+\begin_layout Itemize
+Syntax: number memory2.<vma>:write(number val, number addr...)
+\end_layout
+
+\begin_layout Standard
+Write value <val> to given VMA <vma> at byte offsets <addr>..., given in order
+ of increasing significance.
+ Value of true and false are special.
+ True increments address by 1, and false decrements address by 1.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
