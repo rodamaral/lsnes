@@ -1575,7 +1575,7 @@ namespace
 				std::string name = i->get_core_identifier();
 				std::string ext = "";
 				for(auto j : i->get_extensions()) {
-					if(file_exists(rom_path() + "/" + _req.filename + "." + j))
+					if(file_exists_zip(rom_path() + "/" + _req.filename + "." + j))
 						p.default_filename = _req.filename + "." + j;
 					if(ext != "")
 						ext = ext + ";";

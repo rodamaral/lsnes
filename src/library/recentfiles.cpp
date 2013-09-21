@@ -26,7 +26,7 @@ void recent_files::add(const std::string& file)
 					regex_results r = regex("(.*) <.*>", f);
 					if(r)
 						g = r[1];
-					delete &open_file_relative(g, "");
+					exists = file_exists_zip(g);
 				} catch(std::exception& e) {
 					exists = false;
 				}

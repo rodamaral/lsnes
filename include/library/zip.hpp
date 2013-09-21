@@ -279,6 +279,15 @@ std::string resolve_file_relative(const std::string& name, const std::string& re
 	std::runtime_error);
 
 /**
+ * Does the specified file (maybe inside .zip) exist?
+ *
+ * parameter name: The name of file.
+ * returns: True if file exists, false if not.
+ * throws std::bad_alloc: Not enough memory.
+ */
+bool file_exists_zip(const std::string& name) throw(std::bad_alloc);
+
+/**
  * This class handles writing a ZIP archives.
  */
 class zip_writer
