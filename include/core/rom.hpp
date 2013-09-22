@@ -31,6 +31,16 @@ struct loaded_rom
 	loaded_rom(const std::string& file, const std::string& tmpprefer = "") throw(std::bad_alloc,
 		std::runtime_error);
 /**
+ * Take a ROM and load it.
+ */
+	loaded_rom(const std::string& file, const std::string& core, const std::string& type,
+		const std::string& region);
+/**
+ * Load a multi-file ROM.
+ */
+	loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
+		const std::string& region);
+/**
  * Take in ROM filename and load it to memory with specified type.
  *
  * parameter file: The file to load
@@ -120,8 +130,8 @@ void set_hasher_callback(std::function<void(uint64_t)> cb);
 extern std::map<std::string, core_type*> preferred_core;
 //Preferred overall core.
 extern std::string preferred_core_default;
-//Currently active ROM.
-extern std::string current_romfile;
+//Main hasher
+extern sha256_hasher lsnes_image_hasher;
 
 
 #endif

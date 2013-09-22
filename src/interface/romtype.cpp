@@ -125,6 +125,14 @@ core_romimage_info::core_romimage_info(const core_romimage_info_params& params)
 	mandatory = params.mandatory;
 	pass_mode = params.pass_mode;
 	headersize = params.headersize;
+	if(params.extensions) {
+		std::string tmp = params.extensions;
+		while(tmp != "") {
+			std::string ext;
+			extract_token(tmp, ext, ";");
+			extensions.insert(ext);
+		}
+	}
 }
 
 size_t core_romimage_info::get_headnersize(size_t imagesize)
@@ -147,14 +155,6 @@ core_type::core_type(const core_type_params& params)
 	for(auto i : params.regions)
 		regions.push_back(i);
 	imageinfo = params.images.get();
-	if(params.extensions) {
-		std::string tmp = params.extensions;
-		while(tmp != "") {
-			std::string ext;
-			extract_token(tmp, ext, ";");
-			extensions.push_back(ext);
-		}
-	}
 	types().insert(this);
 }
 
@@ -239,9 +239,17 @@ core_sysregion& core_type::combine_region(core_region& reg)
 	throw std::runtime_error("Invalid region for system type");
 }
 
-const std::list<std::string>& core_type::get_extensions()
+std::list<std::string> core_type::get_extensions()
 {
-	return extensions;
+	static std::list<std::string> empty;
+	unsigned base = (biosname != "") ? 1 : 0;
+	if(imageinfo.size() <= base)
+		return empty;
+	auto s = imageinfo[base].extensions;
+	std::list<std::string> ret;
+	for(auto i : s)
+		ret.push_back(i);
+	return ret;
 }
 
 std::string core_type::get_biosname()
@@ -253,7 +261,7 @@ bool core_type::is_known_extension(const std::string& ext)
 {
 	std::string _ext = ext;
 	std::transform(_ext.begin(), _ext.end(), _ext.begin(), ::tolower);
-	for(auto i : extensions)
+	for(auto i : get_extensions())
 		if(i == _ext)
 			return true;
 	return false;

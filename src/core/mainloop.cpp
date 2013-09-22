@@ -16,6 +16,7 @@
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
 #include "core/rom.hpp"
+#include "core/romloader.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
@@ -156,11 +157,11 @@ namespace
 		}
 		int get_pflag()
 		{
-			return our_rom->rtype->get_pflag();
+			return our_rom.rtype->get_pflag();
 		}
 		void set_pflag(int flag)
 		{
-			our_rom->rtype->set_pflag(flag);
+			our_rom.rtype->set_pflag(flag);
 		}
 	} lsnes_pflag_handler;
 }
@@ -250,7 +251,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	}
 	platform::flush_command_queue();
 	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
-	our_rom->rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
+	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
 	controls.commit(tmp);
 	return tmp;
@@ -289,77 +290,6 @@ namespace
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
 
-	bool reload_null_rom()
-	{
-		if(project_get()) {
-			std::cerr << "Can't switch ROM with project active." << std::endl;
-			return false;
-		}
-		loaded_rom newrom;
-		*our_rom = newrom;
-		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			our_movie.romimg_sha256[i] = "";
-			our_movie.romxml_sha256[i] = "";
-		}
-		notify_core_change();
-		return true;
-	}
-
-	bool reload_rom(const std::string& filename)
-	{
-		if(project_get()) {
-			std::cerr << "Can't switch ROM with project active." << std::endl;
-			return false;
-		}
-		std::string filenam = filename;
-		bool no_switch = false;
-		if(filenam == "") {
-			filenam = our_rom->load_filename;
-			no_switch = true;
-		}
-		if(filenam == "") {
-			platform::error_message("Can't reload ROM: No existing ROM");
-			messages << "No ROM loaded" << std::endl;
-			return false;
-		}
-		try {
-			messages << "Loading ROM " << filenam << std::endl;
-			regex_results r = regex("(.*) <([^/<>]+)/([^/<>]+)>", filenam);
-			if(!r) {
-				loaded_rom newrom(filenam);
-				*our_rom = newrom;
-			} else {
-				core_type* t = NULL;
-				for(auto i : core_type::get_core_types()) {
-					if(mangle_name(i->get_hname()) != r[3])
-						continue;
-					if(mangle_name(i->get_core_identifier()) != r[2])
-						continue;
-					t = i;
-				}
-				if(!t) {
-					platform::error_message("Can't load ROM: Can't find matching core");
-					messages << "Can't find matching core type" << std::endl;
-					return false;
-				}
-				loaded_rom newrom(r[1], *t);
-				*our_rom = newrom;
-			}
-			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
-				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
-				our_movie.namehint[i] = our_rom->romimg[i].namehint;
-			}
-		} catch(std::exception& e) {
-			platform::error_message(std::string("Can't load ROM: ") + e.what());
-			messages << "Can't reload ROM: " << e.what() << std::endl;
-			return false;
-		}
-		messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
-		notify_core_change();
-		return true;
-	}
-
 	struct jukebox_size_listener : public setting_var_listener
 	{
 		jukebox_size_listener() { lsnes_vset.add_listener(*this); }
@@ -380,7 +310,7 @@ void update_movie_state()
 	static unsigned last_controllers = 0;
 	{
 		uint64_t magic[4];
-		our_rom->region->fill_framerate_magic(magic);
+		our_rom.region->fill_framerate_magic(magic);
 		voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
 	}
 	auto& _status = platform::get_emustatus();
@@ -512,7 +442,7 @@ public:
 
 	std::string get_base_path()
 	{
-		return our_rom->msu1_base;
+		return our_rom.msu1_base;
 	}
 
 	time_t get_time()
@@ -710,25 +640,25 @@ namespace
 	function_ptr_command<> reset_c(lsnes_cmd, "reset", "Reset the system",
 		"Syntax: reset\nReset\nResets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			int sreset_action = our_rom->rtype->reset_action(false);
+			int sreset_action = our_rom.rtype->reset_action(false);
 			if(sreset_action < 0) {
 				platform::error_message("Core does not support resets");
 				messages << "Emulator core does not support resets" << std::endl;
 				return;
 			}
-			our_rom->rtype->execute_action(sreset_action, std::vector<interface_action_paramval>());
+			our_rom.rtype->execute_action(sreset_action, std::vector<interface_action_paramval>());
 		});
 
 	function_ptr_command<> hreset_c(lsnes_cmd, "reset-hard", "Reset the system",
 		"Syntax: reset-hard\nReset-hard\nHard resets the system in beginning of the next frame.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			int hreset_action = our_rom->rtype->reset_action(true);
+			int hreset_action = our_rom.rtype->reset_action(true);
 			if(hreset_action < 0) {
 				platform::error_message("Core does not support hard resets");
 				messages << "Emulator core does not support hard resets" << std::endl;
 				return;
 			}
-			our_rom->rtype->execute_action(hreset_action, std::vector<interface_action_paramval>());
+			our_rom.rtype->execute_action(hreset_action, std::vector<interface_action_paramval>());
 		});
 
 	function_ptr_command<arg_filename> load_c(lsnes_cmd, "load", "Load savestate (current mode)",
@@ -864,13 +794,6 @@ namespace
 		"Syntax: rewind-movie\nRewind movie to the beginning\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_BEGINNING);
-		});
-
-	function_ptr_command<const std::string&> reload_rom2(lsnes_cmd, "reload-rom", "Reload the ROM image",
-		"Syntax: reload-rom [<file>]\nReload the ROM image from <file>\n",
-		[](const std::string& filename) throw(std::bad_alloc, std::runtime_error) {
-			if(reload_rom(filename))
-				mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
 		});
 
 	function_ptr_command<> cancel_save(lsnes_cmd, "cancel-saves", "Cancel all pending saves", "Syntax: "
@@ -1107,7 +1030,7 @@ nothing_to_do:
 	void handle_saves()
 	{
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
-			our_rom->rtype->runtosave();
+			our_rom.rtype->runtosave();
 			for(auto i : queued_saves) {
 				do_save_state(i.first, i.second);
 				int tmp = -1;
@@ -1115,7 +1038,7 @@ nothing_to_do:
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
-				std::vector<char> s = our_rom->save_core_state(true);
+				std::vector<char> s = our_rom.save_core_state(true);
 				uint64_t secs = our_movie.rtc_second;
 				uint64_t ssecs = our_movie.rtc_subsecond;
 				lua_callback_do_unsafe_rewind(s, secs, ssecs, movb.get_movie(), NULL);
@@ -1150,7 +1073,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	jukebox_size_listener jlistener;
 	voicethread_task();
 	init_special_screens();
-	our_rom = &rom;
+	our_rom = rom;
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
 	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
@@ -1237,7 +1160,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			just_did_loadstate = false;
 		}
 		frame_irq_time = get_utime() - time_x;
-		our_rom->rtype->emulate();
+		our_rom.rtype->emulate();
 		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(to_wait_frame(get_utime()));
@@ -1271,9 +1194,23 @@ void switch_projects(const std::string& newproj)
 	platform::set_paused(false);
 }
 
+void load_new_rom(const romload_request& req)
+{
+	if(_load_new_rom(req)) {
+		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+	}
+}
+
+void reload_current_rom()
+{
+	if(reload_active_rom()) {
+		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
+	}
+}
+
 void close_rom()
 {
-	if(reload_null_rom()) {
+	if(load_null_rom()) {
 		load_paused = true;
 		mark_pending_load("SOME NONBLANK NAME", LOAD_STATE_ROMRELOAD);
 	}

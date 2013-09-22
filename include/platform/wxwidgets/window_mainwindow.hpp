@@ -1,9 +1,12 @@
 #ifndef _plat_wxwidgets__window_mainwindow__hpp__included__
 #define _plat_wxwidgets__window_mainwindow__hpp__included__
 
+#include "core/window.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/menu_recent.hpp"
+#include "platform/wxwidgets/menu_loadrom.hpp"
 #include "library/dispatch.hpp"
+#include "library/recentfiles.hpp"
 
 #include <stack>
 
@@ -48,10 +51,11 @@ public:
 	void action_updated();
 	void enter_or_leave_fullscreen(bool fs);
 	void request_rom(rom_request& req);
-	recent_menu* recent_roms;
-	recent_menu* recent_movies;
+	recent_menu<recentfile_multirom>* recent_roms;
+	recent_menu<recentfile_path>* recent_movies;
+	loadrom_menu* loadroms;
 private:
-	void do_load_rom_image();
+	void do_load_rom_image(core_type* t);
 	void handle_menu_click_cancelable(wxCommandEvent& e);
 	panel* gpanel;
 	wxMenu* current_menu;

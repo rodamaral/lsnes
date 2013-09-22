@@ -116,15 +116,14 @@ namespace
 				.hname = "test",
 				.id = 0,
 				.sysname = "Test",
-				.extensions = "test",
 				.bios = NULL,
 				.regions = {this},
-				.images = {{"rom", "Cartridge ROM", 1, 0, 0}},
+				.images = {{"rom", "Cartridge ROM", 1, 0, 0, "test"}},
 				.settings = {},
 				.core = this,
 			}}),
 			core_region({{"world", "World", 0, 0, false, {1, 60}, {0}}}),
-			core_sysregion("test", *this, *this) {}
+			core_sysregion("test", *this, *this) { hide(); }
 
 		std::string c_core_identifier() { return "TEST"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
@@ -144,7 +143,7 @@ namespace
 		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t width, uint32_t height) {
 			return std::make_pair(max(512 / width, (uint32_t)1), max(448 / height, (uint32_t)1));
 		}
-		void  c_install_handler() { hide(); }
+		void  c_install_handler() {}
 		void c_uninstall_handler() {}
 		void c_emulate() {
 			int16_t audio[800] = {0};

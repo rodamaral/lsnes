@@ -88,7 +88,7 @@ namespace
 	function_ptr_luafun movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua_state& L,
 		const std::string& fname) -> int {
 		std::string filename = L.get_string(1, fname.c_str());
-		moviefile mfile(filename, *our_rom->rtype);
+		moviefile mfile(filename, *our_rom.rtype);
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
 		lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(L);

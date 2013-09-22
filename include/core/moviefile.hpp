@@ -20,6 +20,7 @@ struct moviefile
  */
 	struct brief_info
 	{
+		brief_info() { current_frame = 0; rerecords = 0; }
 		brief_info(const std::string& filename);
 		std::string sysregion;
 		std::string corename;

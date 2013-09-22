@@ -52,7 +52,7 @@ namespace
 	function_ptr_luafun getreg(lua_func_misc, "memory.getregister", [](lua_state& L, const std::string& fname)
 		-> int {
 		std::string r = L.get_string(1, fname.c_str());
-		const interface_device_reg* regs = our_rom->rtype->get_registers();
+		const interface_device_reg* regs = our_rom.rtype->get_registers();
 		if(!regs) {
 			L.pushnil();
 			return 1;
@@ -73,7 +73,7 @@ namespace
 	function_ptr_luafun setreg(lua_func_misc, "memory.setregister", [](lua_state& L, const std::string& fname)
 		-> int {
 		std::string r = L.get_string(1, fname.c_str());
-		const interface_device_reg* regs = our_rom->rtype->get_registers();
+		const interface_device_reg* regs = our_rom.rtype->get_registers();
 		if(!regs) {
 			return 0;
 		}

@@ -262,6 +262,14 @@ end:
 		platform::dummy_event_loop();
 		return NULL;
 	}
+
+	std::string get_loaded_movie(const std::vector<std::string>& cmdline)
+	{
+		for(auto i : cmdline)
+			if(!i.empty() && i[0] != '-')
+				return i;
+		return "";
+	}
 }
 
 wxString towxstring(const std::string& str) throw(std::bad_alloc)
@@ -337,6 +345,7 @@ private:
 	bool settings_mode;
 	std::string c_rom;
 	std::string c_file;
+	std::vector<std::string> cmdline;
 	std::map<std::string, std::string> c_settings;
 	std::vector<std::string> c_lua;
 	bool exit_immediately;
@@ -358,7 +367,6 @@ void lsnes_app::OnInitCmdLine(wxCmdLineParser& parser)
 
 bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 {
-	std::vector<std::string> cmdline;
 	for(size_t i = 0; i< parser.GetParamCount(); i++)
 		cmdline.push_back(tostdstring(parser.GetParam(i)));
 	for(auto i: cmdline) {
@@ -375,16 +383,10 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		}
 		if(i == "--settings")
 			settings_mode = true;
-		if(r = regex("--rom=(.+)", i))
-			c_rom = r[1];
-		if(r = regex("--load=(.+)", i))
-			c_file = r[1];
 		if(r = regex("--set=([^=]+)=(.+)", i))
 			c_settings[r[1]] = r[2];
 		if(r = regex("--lua=(.+)", i))
 			c_lua.push_back(r[1]);
-		if(r = regex("[^-].*", i))
-			c_rom = i;	//Alt. way to specify rom.
 	}
 	return true;
 }
@@ -442,26 +444,22 @@ bool lsnes_app::OnInit()
 	msg_window = new wxwin_messages();
 	msg_window->Show();
 
-	loaded_rom* rom = NULL;
-	if(c_rom != "")
-		try {
-			moviefile mov;
-			rom = new loaded_rom(c_rom);
-			rom->load(c_settings, mov.movie_rtc_second, mov.movie_rtc_subsecond);
-		} catch(std::exception& e) {
-			std::cerr << "Can't load ROM: " << e.what() << std::endl;
-			return false;
-		}
-	else
-		rom = new loaded_rom;
+	const std::string movie_file = get_loaded_movie(cmdline);
+	loaded_rom rom;
+	try {
+		moviefile mov;
+		rom = construct_rom(movie_file, cmdline);
+		rom.load(c_settings, mov.movie_rtc_second, mov.movie_rtc_subsecond);
+	} catch(std::exception& e) {
+		std::cerr << "Can't load ROM: " << e.what() << std::endl;
+		return false;
+	}
+
 	moviefile* mov = NULL;
-	if(c_file != "")
+	if(movie_file != "")
 		try {
-			if(!rom)
-				throw std::runtime_error("No ROM loaded");
-			mov = new moviefile(c_file, *rom->rtype);
-			if(c_rom != "")
-				rom->load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
+			mov = new moviefile(movie_file, *rom.rtype);
+			rom.load(mov->settings, mov->movie_rtc_second, mov->movie_rtc_subsecond);
 		} catch(std::exception& e) {
 			std::cerr << "Can't load state: " << e.what() << std::endl;
 			return false;
@@ -469,21 +467,21 @@ bool lsnes_app::OnInit()
 	else {
 		mov = new moviefile;
 		mov->settings = c_settings;
-		auto ctrldata = rom->rtype->controllerconfig(mov->settings);
+		auto ctrldata = rom.rtype->controllerconfig(mov->settings);
 		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 		mov->input.clear(ports);
-		mov->coreversion = rom->rtype->get_core_identifier();
+		mov->coreversion = rom.rtype->get_core_identifier();
 		mov->projectid = get_random_hexstring(40);
-		if(c_rom != "") {
+		if(!rom.rtype->isnull()) {
 			//Initialize the remainder.
 			mov->rerecords = "0";
 			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				mov->romimg_sha256[i] = rom->romimg[i].sha_256.read();
-				mov->romxml_sha256[i] = rom->romxml[i].sha_256.read();
-				mov->namehint[i] = rom->romimg[i].namehint;
+				mov->romimg_sha256[i] = rom.romimg[i].sha_256.read();
+				mov->romxml_sha256[i] = rom.romxml[i].sha_256.read();
+				mov->namehint[i] = rom.romimg[i].namehint;
 			}
 		}
-		mov->gametype = &rom->rtype->combine_region(*rom->region);
+		mov->gametype = &rom.rtype->combine_region(*rom.region);
 	}
 	our_rom = rom;
 	mov->start_paused = true;
@@ -491,7 +489,7 @@ bool lsnes_app::OnInit()
 		messages << "Trying to run Lua script: " << i << std::endl;
 		lsnes_cmd.invoke("run-lua " + i);
 	}
-	boot_emulator(*rom, *mov);
+	boot_emulator(rom, *mov);
 	return true;
 }
 
@@ -571,7 +569,7 @@ namespace
 				try {
 					main_window->request_rom(*_req);
 				} catch(...) {
-					_req->filename = "";
+					_req->canceled = true;
 				}
 				umutex_class h(lock);
 				done = true;

@@ -16,8 +16,10 @@ struct project_info
 	std::string id;
 	//Name of the project.
 	std::string name;
-	//ROM used.
+	//Bundle ROM used.
 	std::string rom;
+	//ROMs used.
+	std::string roms[ROM_SLOT_COUNT];
 	//Last savestate.
 	std::string last_save;
 	//Directory for save/load dialogs.

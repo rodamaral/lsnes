@@ -88,7 +88,7 @@ namespace
 			unsigned r = (reinterpret_cast<unsigned char*>(&magic))[swap ? 2 : 0];
 			unsigned g = (reinterpret_cast<unsigned char*>(&magic))[1];
 			unsigned b = (reinterpret_cast<unsigned char*>(&magic))[swap ? 0 : 2];
-			auto scl = our_rom->rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
+			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			uint32_t hscl = scl.first;
 			uint32_t vscl = scl.second;
 			if(bits64) {

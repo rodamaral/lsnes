@@ -71,7 +71,6 @@ namespace
 			.hname = "(null)",
 			.id = 9999,
 			.sysname = "System",
-			.extensions = "",
 			.bios = NULL,
 			.regions = {this},
 			.images = {},
@@ -197,9 +196,9 @@ namespace
 		i.headersize = ri.headersize;
 		return i;
 	}
-
-	sha256_hasher lsnes_image_hasher;
 }
+
+sha256_hasher lsnes_image_hasher;
 
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
@@ -219,6 +218,9 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 	region = orig_region = &rtype->get_preferred_region();
 	unsigned romidx = 0;
 	std::string bios;
+	unsigned pmand = 0, tmand = 0;
+	for(unsigned i = 0; i < ctype.get_image_count(); i++)
+		tmand |= ctype.get_image_info(i).mandatory;
 	if((bios = ctype.get_biosname()) != "") {
 		//This thing has a BIOS.
 		romidx = 1;
@@ -226,12 +228,15 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(file_exists_zip(basename + ".xml"))
 			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+		pmand |= ctype.get_image_info(0).mandatory;
 	}
 	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(ctype.get_image_info(romidx)));
 	if(file_exists_zip(file + ".xml"))
 		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
-	load_filename = file;
+	pmand |= ctype.get_image_info(romidx).mandatory;
 	msu1_base = resolve_file_relative(file, "");
+	if(pmand != tmand)
+		throw std::runtime_error("Required ROM images missing");
 	return;
 }
 
@@ -242,7 +247,6 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 	std::string s;
 	std::getline(spec, s);
 	istrip_CR(s);
-	load_filename = file;
 	if(!spec || s != "[GAMEPACK FILE]") {
 		//This is a Raw ROM image.
 		regex_results tmp;
@@ -254,6 +258,9 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 		region = orig_region = &rtype->get_preferred_region();
 		unsigned romidx = 0;
 		std::string bios;
+		unsigned pmand = 0, tmand = 0;
+		for(unsigned i = 0; i < rtype->get_image_count(); i++)
+			tmand |= rtype->get_image_info(i).mandatory;
 		if((bios = coretype->get_biosname()) != "") {
 			//This thing has a BIOS.
 			romidx = 1;
@@ -262,14 +269,19 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 				xlate_info(coretype->get_image_info(0)));
 			if(file_exists_zip(basename + ".xml"))
 				romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+			pmand |= rtype->get_image_info(0).mandatory;
 		}
 		romimg[romidx] = loaded_image(lsnes_image_hasher, file, "",
 			xlate_info(coretype->get_image_info(romidx)));
 		if(file_exists_zip(file + ".xml"))
 			romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
+		pmand |= rtype->get_image_info(romidx).mandatory;
 		msu1_base = resolve_file_relative(file, "");
+		if(pmand != tmand)
+			throw std::runtime_error("Required ROM images missing");
 		return;
 	}
+	load_filename = file;
 	std::vector<std::string> lines;
 	while(std::getline(spec, s))
 		lines.push_back(strip_CR(s));
@@ -366,6 +378,149 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 		msu1_base = resolve_file_relative(cromimg[0], file);
 }
 
+namespace
+{
+	bool filter_by_core(core_type& ctype, const std::string& core)
+	{
+		return (core == "" || ctype.get_core_identifier() == core);
+	}
+
+	bool filter_by_type(core_type& ctype, const std::string& type)
+	{
+		return (type == "" || ctype.get_iname() == type);
+	}
+
+	bool filter_by_region(core_type& ctype, const std::string& region)
+	{
+		if(region == "")
+			return true;
+		for(auto i : ctype.get_regions())
+			if(i->get_iname() == region)
+				return true;
+		return false;
+	}
+
+	bool filter_by_extension(core_type& ctype, const std::string& file)
+	{
+		regex_results tmp = regex(".*\\.([^.]*)", file);
+		if(!tmp)
+			return false;
+		std::string ext = tmp[1];
+		return ctype.is_known_extension(ext);
+	}
+
+	bool filter_by_fileset(core_type& ctype, const std::string file[ROM_SLOT_COUNT])
+	{
+		uint32_t m = 0, t = 0;
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+			if(i >= ctype.get_image_count() && file[i] != "")
+				return false;
+			auto s = ctype.get_image_info(i);
+			if(file[i] != "")
+				m |= s.mandatory;
+			t |= s.mandatory;
+		}
+		return (m == t);
+	}
+
+	core_region* detect_region(core_type* t, const std::string& region)
+	{
+		core_region* r = NULL;
+		for(auto i: t->get_regions())
+			if(i->get_iname() == region)
+				r = i;
+		if(!r && region != "")
+			(stringfmt() << "Not a valid system region '" << region << "'").throwex();
+		if(!r) r = &t->get_preferred_region();	//Default region.
+		return r;
+	}
+}
+
+loaded_rom::loaded_rom(const std::string& file, const std::string& core, const std::string& type,
+	const std::string& _region)
+{
+	core_type* t = NULL;
+	core_region* r = NULL;
+	bool fullspec = (core != "" && type != "");
+	for(auto i : core_type::get_core_types()) {
+		if(!filter_by_core(*i, core))
+			continue;
+		if(!filter_by_type(*i, type))
+			continue;
+		if(!fullspec && !filter_by_region(*i, _region))
+			continue;
+		if(!fullspec && !filter_by_extension(*i, file))
+			continue;
+		t = i;
+	}
+	if(!t) throw std::runtime_error("No matching core found");
+	r = detect_region(t, _region);
+	unsigned pmand = 0, tmand = 0;
+	for(unsigned i = 0; i < t->get_image_count(); i++)
+		tmand |= t->get_image_info(i).mandatory;
+	std::string bios = t->get_biosname();
+	unsigned romidx = (bios != "") ? 1 : 0;
+	if(bios != "") {
+		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
+		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
+		if(file_exists_zip(basename + ".xml"))
+			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+		pmand |= t->get_image_info(0).mandatory;
+	}
+	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(t->get_image_info(romidx)));
+	if(file_exists_zip(file + ".xml"))
+		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
+	pmand |= t->get_image_info(romidx).mandatory;
+	msu1_base = resolve_file_relative(file, "");
+	if(pmand != tmand)
+		throw std::runtime_error("Required ROM images missing");
+	rtype = t;
+	orig_region = region = r;
+}
+
+loaded_rom::loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string& core, const std::string& type,
+	const std::string& _region)
+{
+	core_type* t = NULL;
+	core_region* r = NULL;
+	bool fullspec = (core != "" && type != "");
+	for(auto i : core_type::get_core_types()) {
+		if(!filter_by_core(*i, core)) {
+			continue;
+		}
+		if(!filter_by_type(*i, type)) {
+			continue;
+		}
+		if(!fullspec && !filter_by_region(*i, _region)) {
+			continue;
+		}
+		if(!fullspec && !filter_by_fileset(*i, file)) {
+			continue;
+		}
+		t = i;
+	}
+	if(!t) throw std::runtime_error("No matching core found");
+	r = detect_region(t, _region);
+	std::string bios = t->get_biosname();
+	unsigned romidx = (bios != "") ? 1 : 0;
+	unsigned pmand = 0, tmand = 0;
+	for(unsigned i = 0; i < 27; i++) {
+		if(i >= t->get_image_count())
+			continue;
+		if(file[i] != "")
+			pmand |= t->get_image_info(i).mandatory;
+		tmand |= t->get_image_info(i).mandatory;
+		romimg[i] = loaded_image(lsnes_image_hasher, file[i], "", xlate_info(t->get_image_info(i)));
+		if(file_exists_zip(file[i] + ".xml"))
+			romxml[i] = loaded_image(lsnes_image_hasher, file[i] + ".xml", "", get_xml_info());
+	}
+	msu1_base = resolve_file_relative(file[romidx], "");
+	if(pmand != tmand)
+		throw std::runtime_error("Required ROM images missing");
+	rtype = t;
+	orig_region = region = r;
+}
+
 void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc_sec, uint64_t rtc_subsec)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -397,7 +552,6 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	information_dispatch::do_sound_rate(nominal_hz.first, nominal_hz.second);
 	current_rom_type = rtype;
 	current_region = region;
-	current_romfile = load_filename;
 	//If core changes, unload the cartridge.
 	if(old_core != current_rom_type->get_core())
 		try { old_core->unload_cartridge(); } catch(...) {}
@@ -481,4 +635,3 @@ void set_hasher_callback(std::function<void(uint64_t)> cb)
 
 std::map<std::string, core_type*> preferred_core;
 std::string preferred_core_default;
-std::string current_romfile;

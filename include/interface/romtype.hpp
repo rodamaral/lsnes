@@ -136,6 +136,10 @@ struct core_romimage_info_params
  * Size of optional copier header to remove. 0 means there never is copier header.
  */
 	unsigned headersize;
+/**
+ * Standard extensions (split by ;).
+ */
+	const char* extensions;
 };
 
 struct core_romimage_info
@@ -146,6 +150,7 @@ struct core_romimage_info
 	unsigned mandatory;
 	int pass_mode;
 	unsigned headersize;
+	std::set<std::string> extensions;
 	size_t get_headnersize(size_t imagesize);
 };
 
@@ -236,10 +241,6 @@ struct core_type_params
  * System menu name.
  */
 	const char* sysname;
-/**
- * Semicolon-separated list of extensions this system type uses.
- */
-	const char* extensions;
 /**
  * The name of BIOS for this system. NULL if there is no bios.
  */
@@ -502,7 +503,7 @@ public:
 	core_sysregion& combine_region(core_region& reg);
 	const std::string& get_iname();
 	const std::string& get_hname();
-	const std::list<std::string>& get_extensions();
+	std::list<std::string> get_extensions();
 	bool is_known_extension(const std::string& ext);
 	core_sysregion& lookup_sysregion(const std::string& sysreg);
 	std::string get_biosname();
@@ -583,7 +584,6 @@ private:
 	std::string hname;
 	std::string biosname;
 	std::string sysname;
-	std::list<std::string> extensions;
 	std::list<core_region*> regions;
 	std::vector<core_romimage_info> imageinfo;
 	core_setting_group settings;

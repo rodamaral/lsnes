@@ -78,12 +78,12 @@ namespace
 
 void refresh_cart_mappings() throw(std::bad_alloc)
 {
-	if(!our_rom || !our_rom->rtype)
+	if(!our_rom.rtype)
 		return;
 	std::list<memory_region*> cur_regions = lsnes_memory.get_regions();
 	std::list<memory_region*> regions;
 	memory_region* tmp = NULL;
-	auto vmalist = our_rom->rtype->vma_list();
+	auto vmalist = our_rom.rtype->vma_list();
 	try {
 		tmp = new iospace_region("LSNESMMIO", 0xFFFFFFFF00000000ULL, 32, lsnes_mmio_iospace_handler);
 		regions.push_back(tmp);

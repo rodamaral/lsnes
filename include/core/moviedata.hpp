@@ -17,7 +17,7 @@
 #define SAVE_MOVIE 1
 
 extern struct moviefile our_movie;
-extern struct loaded_rom* our_rom;
+extern struct loaded_rom our_rom;
 extern bool system_corrupt;
 std::vector<char>& get_host_memory();
 movie& get_movie();

@@ -1,8 +1,9 @@
 #include "platform/wxwidgets/menu_recent.hpp"
 #include "platform/wxwidgets/platform.hpp"
 
-recent_menu::recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
-	void (*cb)(const std::string& name))
+template<class T>
+recent_menu<T>::recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
+	void (*cb)(const T& name))
 	: hook(*this), rfiles(cfg, wxid_high - wxid_low)	//Reserve wxid_high for refresh.
 {
 	pwin = win;
@@ -15,7 +16,7 @@ recent_menu::recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::
 	update();
 }
 
-void recent_menu::on_select(wxCommandEvent& e)
+template<class T> void recent_menu<T>::on_select(wxCommandEvent& e)
 {
 	int id = e.GetId();
 	if(id < wxid_range_low || id > wxid_range_high)
@@ -32,7 +33,7 @@ void recent_menu::on_select(wxCommandEvent& e)
 	}
 }
 
-void recent_menu::update()
+template<class T> void recent_menu<T>::update()
 {
 	auto ents = rfiles.get();
 	int id = wxid_range_low;
@@ -45,7 +46,7 @@ void recent_menu::update()
 		if(id >= wxid_range_high)
 			break;
 		entries[id] = i;
-		items[id] = Append(id, towxstring(i));
+		items[id] = Append(id, towxstring(i.display()));
 		id++;
 	}
 	if(has_ents)
@@ -53,7 +54,15 @@ void recent_menu::update()
 	items[wxid_range_high] = Append(wxid_range_high, wxT("Refresh"));
 }
 
-void recent_menu::add(const std::string& file)
+template<class T> void recent_menu<T>::add(const T& file)
 {
 	rfiles.add(file);
+}
+
+void _dummy_3642632773273272787237272723()
+{
+	recent_menu<recentfile_path> x(NULL, 0, 0, "", NULL);
+	recent_menu<recentfile_multirom> y(NULL, 0, 0, "", NULL);
+	x.add(recentfile_path());
+	y.add(recentfile_multirom());
 }

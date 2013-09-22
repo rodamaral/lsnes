@@ -3,6 +3,7 @@
 
 #include "settings.hpp"
 #include "rom.hpp"
+#include "romloader.hpp"
 #include "moviefile.hpp"
 #include "movie.hpp"
 
@@ -27,6 +28,8 @@ void mainloop_signal_need_rewind(void* ptr);
 void set_stop_at_frame(uint64_t frame = 0);
 void switch_projects(const std::string& newproj);
 void close_rom();
+void load_new_rom(const romload_request& req);
+void reload_current_rom();
 
 extern setting_var<setting_var_model_bool<setting_yes_no>> jukebox_dflt_binary;
 extern setting_var<setting_var_model_bool<setting_yes_no>> movie_dflt_binary;

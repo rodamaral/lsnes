@@ -180,6 +180,13 @@ namespace
 				else
 					s << "romhint=" << p.namehint[i] << std::endl;
 			}
+			if(p.roms[i] != "") {
+				if(i)
+					s << "slotrom" << static_cast<char>(96 + i) << "=" << p.roms[i]
+						<< std::endl;
+				else
+					s << "romrom=" << p.roms[i] << std::endl;
+			}
 		}
 		for(auto i : p.settings)
 			s << "setting." << i.first << "=" << i.second << std::endl;
@@ -286,15 +293,19 @@ project_info& project_load(const std::string& id)
 		else if(r = regex("romsha=([0-9a-f]+)", tmp))
 			pi.romimg_sha256[0] = r[1];
 		else if(r = regex("slotsha([a-z])=([0-9a-f]+)", tmp))
-			pi.romimg_sha256[r[2][0] - 96] = r[2];
+			pi.romimg_sha256[r[1][0] - 96] = r[2];
 		else if(r = regex("romxml=([0-9a-f]+)", tmp))
 			pi.romxml_sha256[0] = r[1];
 		else if(r = regex("slotxml([a-z])=([0-9a-f]+)", tmp))
-			pi.romxml_sha256[r[2][0] - 96] = r[2];
+			pi.romxml_sha256[r[1][0] - 96] = r[2];
 		else if(r = regex("romhint=(.*)", tmp))
 			pi.namehint[0] = r[1];
 		else if(r = regex("slothint([a-z])=(.*)", tmp))
-			pi.namehint[r[2][0] - 96] = r[2];
+			pi.namehint[r[1][0] - 96] = r[2];
+		else if(r = regex("romrom=(.*)", tmp))
+			pi.roms[0] = r[1];
+		else if(r = regex("slotrom([a-z])=(.*)", tmp))
+			pi.roms[r[1][0] - 96] = r[2];
 		else if(r = regex("setting.([^=]+)=(.*)", tmp))
 			pi.settings[r[1]] = r[2];
 		else if(r = regex("watch.([^=]+)=(.*)", tmp))
@@ -368,33 +379,47 @@ bool project_set(project_info* p, bool current)
 		return true;
 	}
 
-	loaded_rom* newrom = NULL;
+	loaded_rom newrom;
 	moviefile newmovie;
 	bool switched = false;
+	std::set<core_sysregion*> sysregs;
 	try {
 		if(current)
 			goto skip_rom_movie;
+
+		sysregs = core_sysregion::find_matching(p->gametype);
+		if(sysregs.empty())
+			throw std::runtime_error("No core supports '" + p->gametype + "'");
+
 		//First, try to load the ROM and the last movie file into RAM...
-		newrom = new loaded_rom(p->rom, p->coreversion);
-		if(newrom->rtype->get_iname() != p->coreversion) {
-			messages << "Warning: Can't find matching core, using " << newrom->rtype->get_iname()
+		if(p->rom != "") {
+			newrom = loaded_rom(p->rom, p->coreversion);
+		} else {
+			core_type* ctype = NULL;
+			for(auto i : sysregs) {
+				ctype = &i->get_type();
+				if(ctype->get_core_identifier() == p->coreversion)
+					break;
+			}
+			newrom = loaded_rom(p->roms, ctype->get_core_identifier(), ctype->get_iname(), "");
+		}
+		if(newrom.rtype->get_core_identifier() != p->coreversion) {
+			messages << "Warning: Can't find matching core, using " << newrom.rtype->get_core_identifier()
 				<< std::endl;
 		}
 		if(p->last_save != "")
 			try {
-				newmovie = moviefile(p->last_save, *newrom->rtype);
+				newmovie = moviefile(p->last_save, *newrom.rtype);
 			} catch(std::exception& e) {
 				messages << "Warning: Can't load last save: " << e.what() << std::endl;
-				fill_stub_movie(newmovie, *p, *newrom->rtype);
+				fill_stub_movie(newmovie, *p, *newrom.rtype);
 			}
 		else {
-			fill_stub_movie(newmovie, *p, *newrom->rtype);
+			fill_stub_movie(newmovie, *p, *newrom.rtype);
 		}
 		//Okay, loaded, load into core.
-		newrom->load(p->settings, p->movie_rtc_second, p->movie_rtc_subsecond);
-		std::swap(our_rom, newrom);
-		delete newrom;
-		newrom = NULL;
+		newrom.load(p->settings, p->movie_rtc_second, p->movie_rtc_subsecond);
+		our_rom = newrom;
 		do_load_state(newmovie, LOAD_STATE_DEFAULT);
 skip_rom_movie:
 		active_project = p;
@@ -411,7 +436,6 @@ skip_rom_movie:
 		load_project_macros(controls, *active_project);
 	} catch(std::exception& e) {
 		messages << "Can't switch projects: " << e.what() << std::endl;
-		delete newrom;
 	}
 	if(switched) {
 		do_flush_slotinfo();

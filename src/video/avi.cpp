@@ -346,7 +346,7 @@ again:
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
-			auto scl = our_rom->rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
+			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			if(dump_large) {
 				hscl = scl.first;
 				vscl = scl.second;

@@ -6,16 +6,17 @@
 #include "library/recentfiles.hpp"
 #include <map>
 
+template<class T>
 class recent_menu : public wxMenu
 {
 public:
 	recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
-		void (*cb)(const std::string& name));
+		void (*cb)(const T& name));
 	void on_select(wxCommandEvent& e);
 	void update();
-	void add(const std::string& file);
+	void add(const T& file);
 private:
-	class rhook : public recent_files::hook
+	class rhook : public recent_files_hook
 	{
 	public:
 		rhook(recent_menu& _pmenu) : pmenu(_pmenu) {}
@@ -24,13 +25,13 @@ private:
 	private:
 		recent_menu& pmenu;
 	} hook;
-	recent_files rfiles;
+	recent_files<T> rfiles;
 	wxWindow* pwin;
-	std::map<int, std::string> entries;
+	std::map<int, T> entries;
 	std::map<int, wxMenuItem*> items;
 	int wxid_range_low;
 	int wxid_range_high;
-	void (*callback)(const std::string& name);
+	void (*callback)(const T& name);
 };
 
 #endif

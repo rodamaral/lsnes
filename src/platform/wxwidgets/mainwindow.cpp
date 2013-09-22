@@ -25,6 +25,7 @@
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
+#include "core/romloader.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
@@ -97,7 +98,8 @@ enum
 	wxID_SPEED_TURBO,
 	wxID_LOAD_LIBRARY,
 	wxID_RELOAD_ROM_IMAGE,
-	wxID_LOAD_ROM_IMAGE,
+	wxID_LOAD_ROM_IMAGE_FIRST,
+	wxID_LOAD_ROM_IMAGE_LAST = wxID_LOAD_ROM_IMAGE_FIRST + 1023,
 	wxID_NEW_MOVIE,
 	wxID_SHOW_MESSAGES,
 	wxID_DEDICATED_MEMORY_WATCH,
@@ -173,6 +175,22 @@ namespace
 			if((uint8_t)l[i] == 0xE2 && (uint8_t)l[i + 1] == 0x80 && (uint8_t)l[i + 2] == 0xA3)
 				return std::make_pair(l.substr(0, i), l.substr(i + 3));
 		return std::make_pair("", l);
+	}
+
+	recentfile_multirom loadreq_to_multirom(const romload_request& req)
+	{
+		recentfile_multirom r;
+		r.packfile = req.packfile;
+		r.singlefile = req.singlefile;
+		r.core = req.core;
+		r.system = req.system;
+		r.region = req.region;
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++)
+			if(req.files[i] != "") {
+				r.files.resize(i + 1);
+				r.files[i] = req.files[i];
+			}
+		return r;
 	}
 
 	class system_menu : public wxMenu
@@ -261,7 +279,7 @@ namespace
 			return;
 		unsigned act_id = action_by_id[e.GetId()];
 		const interface_action* act = NULL;
-		for(auto i : our_rom->rtype->get_actions())
+		for(auto i : our_rom.rtype->get_actions())
 			if(i->id == act_id) {
 				act = i;
 				break;
@@ -270,7 +288,7 @@ namespace
 			return;
 		try {
 			auto p = prompt_action_params(pwin, act->get_title(), act->params);
-			runemufn([act_id,p]() { our_rom->rtype->execute_action(act_id, p); });
+			runemufn([act_id,p]() { our_rom.rtype->execute_action(act_id, p); });
 		} catch(canceled_exception& e) {
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -296,13 +314,13 @@ namespace
 			submenui_by_name.clear();
 			toggles.clear();
 
-			for(auto i : our_rom->rtype->get_actions())
+			for(auto i : our_rom.rtype->get_actions())
 				insert_act(i->id, i->get_title(), !i->params.empty(), i->is_toggle());
 		}
 		for(auto i : item_by_action)
-			i.second->Enable(our_rom->rtype->action_flags(i.first) & 1);
+			i.second->Enable(our_rom.rtype->action_flags(i.first) & 1);
 		for(auto i : toggles)
-			item_by_action[i]->Check(our_rom->rtype->action_flags(i) & 2);
+			item_by_action[i]->Check(our_rom.rtype->action_flags(i) & 2);
 	}
 
 	std::string munge_name(const std::string& orig)
@@ -410,15 +428,25 @@ namespace
 		return parsed;
 	}
 
-	void recent_rom_selected(const std::string& file)
+	void recent_rom_selected(const recentfile_multirom& file)
 	{
-		platform::queue("unpause-emulator");
-		platform::queue("reload-rom " + file);
+		romload_request req;
+		req.packfile = file.packfile;
+		req.singlefile = file.singlefile;
+		req.core = file.core;
+		req.system = file.system;
+		req.region = file.region;
+		for(unsigned i = 0; i < file.files.size() && i < ROM_SLOT_COUNT; i++)
+			req.files[i] = file.files[i];
+		runemufn([req]() {
+			lsnes_cmd.invoke("unpause-emulator");
+			load_new_rom(req);
+		});
 	}
 
-	void recent_movie_selected(const std::string& file)
+	void recent_movie_selected(const recentfile_path& file)
 	{
-		platform::queue("load-smart " + file);
+		platform::queue("load-smart " + file.get_path());
 	}
 
 	wxString getname()
@@ -428,14 +456,14 @@ namespace
 		if(p)
 			windowname = windowname + p->name;
 		else
-			windowname = windowname + our_rom->rtype->get_core_identifier();
+			windowname = windowname + our_rom.rtype->get_core_identifier();
 		windowname = windowname + "]";
 		return towxstring(windowname);
 	}
 
 	struct emu_args
 	{
-		struct loaded_rom* rom;
+		struct loaded_rom rom;
 		struct moviefile* initial;
 		bool load_has_to_succeed;
 	};
@@ -445,11 +473,11 @@ namespace
 		struct emu_args* args = reinterpret_cast<struct emu_args*>(_args);
 		try {
 			our_rom = args->rom;
-			messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
+			messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
 			struct moviefile* movie = args->initial;
 			bool has_to_succeed = args->load_has_to_succeed;
 			platform::flush_command_queue();
-			main_loop(*our_rom, *movie, has_to_succeed);
+			main_loop(our_rom, *movie, has_to_succeed);
 			signal_program_exit();
 		} catch(std::bad_alloc& e) {
 			OOM_panic();
@@ -490,7 +518,7 @@ namespace
 	void handle_wx_mouse(wxMouseEvent& e)
 	{
 		auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
-			(our_rom && our_rom->rtype) ? our_rom->rtype->get_PAR() : 1.0);
+			(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
 		platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.GetX() / sfactors.first));
 		platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.GetY() / sfactors.second));
 		if(e.Entering())
@@ -554,13 +582,21 @@ namespace
 		return lsnes_vset["moviepath"].str();
 	}
 
-	std::string rom_path()
-	{
-		return lsnes_vset["rompath"].str();
-	}
-
 	bool is_lsnes_movie(const std::string& filename)
 	{
+		std::istream* s = NULL;
+		try {
+			bool ans = false;
+			s = &open_file_relative(filename, "");
+			char buf[6] = {0};
+			s->read(buf, 5);
+			if(*s && !strcmp(buf, "lsmv\x1A"))
+				ans = true;
+			delete s;
+			if(ans) return true;
+		} catch(...) {
+			delete s;
+		}
 		try {
 			zip_reader r(filename);
 			std::istream& s = r["systemid"];
@@ -582,30 +618,37 @@ namespace
 		{
 			bool ret = false;
 			if(filenames.Count() == 2) {
-				if(is_lsnes_movie(tostdstring(filenames[0])) &&
-					!is_lsnes_movie(tostdstring(filenames[1]))) {
-					platform::queue("unpause-emulator");
-					platform::queue("reload-rom " + tostdstring(filenames[1]));
-					platform::queue("load-smart " + tostdstring(filenames[0]));
-					ret = true;
-				}
-				if(!is_lsnes_movie(tostdstring(filenames[0])) &&
-					is_lsnes_movie(tostdstring(filenames[1]))) {
-					platform::queue("unpause-emulator");
-					platform::queue("reload-rom " + tostdstring(filenames[0]));
-					platform::queue("load-smart " + tostdstring(filenames[1]));
-					ret = true;
-				}
+				std::string a = std::string(filenames[0]);
+				std::string b = std::string(filenames[1]);
+				bool amov = is_lsnes_movie(a);
+				bool bmov = is_lsnes_movie(b);
+				if(amov == bmov)
+					return false;
+				if(amov) std::swap(a, b);
+				runemufn([a, b]() {
+					lsnes_cmd.invoke("unpause-emulator");
+					romload_request req;
+					req.packfile = a;
+					load_new_rom(req);
+					lsnes_cmd.invoke("load-smart " + b);
+				});
+				ret = true;
 			}
 			if(filenames.Count() == 1) {
-				if(is_lsnes_movie(tostdstring(filenames[0]))) {
-					platform::queue("load-smart " + tostdstring(filenames[0]));
-					pwin->recent_movies->add(tostdstring(filenames[0]));
+				std::string a = std::string(filenames[0]);
+				bool amov = is_lsnes_movie(a);
+				if(amov) {
+					platform::queue("load-smart " + a);
+					pwin->recent_movies->add(a);
 					ret = true;
 				} else {
-					platform::queue("unpause-emulator");
-					platform::queue("reload-rom " + tostdstring(filenames[0]));
-					pwin->recent_roms->add(tostdstring(filenames[0]));
+					romload_request req;
+					req.packfile = a;
+					runemufn([req]() {
+						lsnes_cmd.invoke("unpause-emulator");
+						load_new_rom(req);
+					});
+					pwin->recent_roms->add(loadreq_to_multirom(req));
 					ret = true;
 				}
 			}
@@ -620,7 +663,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 	update_preferences();
 	try {
 		struct emu_args* a = new emu_args;
-		a->rom = &rom;
+		a->rom = rom;
 		a->initial = &movie;
 		a->load_has_to_succeed = false;
 		modal_pause_holder hld;
@@ -749,8 +792,8 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 	wxPaintDC dc(this);
 	uint32_t tw, th;
 	bool aux = hflip_enabled || vflip_enabled || rotate_enabled;
-	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, (our_rom && our_rom->rtype) ?
-		our_rom->rtype->get_PAR() : 1.0);
+	auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled, our_rom.rtype ?
+		our_rom.rtype->get_PAR() : 1.0);
 	if(rotate_enabled) {
 		tw = main_screen.get_height() * sfactors.second + 0.5;
 		th = main_screen.get_width() * sfactors.first + 0.5;
@@ -896,13 +939,16 @@ wxwin_mainwindow::wxwin_mainwindow()
 	}
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
-	menu_entry(wxID_LOAD_ROM_IMAGE, wxT("ROM..."));
+	menu_entry(wxID_LOAD_ROM_IMAGE_FIRST, wxT("ROM..."));
+	menu_special_sub(wxT("Multifile ROM"), loadroms = new loadrom_menu(this, wxID_LOAD_ROM_IMAGE_FIRST + 1,
+		wxID_LOAD_ROM_IMAGE_LAST, [this](core_type* t) { this->do_load_rom_image(t); }));
 	menu_entry(wxID_LOAD_PROJECT, wxT("Project..."));
 	menu_separator();
-	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu(this, wxID_RROM_FIRST, wxID_RROM_LAST,
-		get_config_path() + "/recent-roms.txt", recent_rom_selected));
-	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu(this, wxID_RMOVIE_FIRST,
-		wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt", recent_movie_selected));
+	menu_special_sub(wxT("Recent ROMs"), recent_roms = new recent_menu<recentfile_multirom>(this,
+		wxID_RROM_FIRST, wxID_RROM_LAST, get_config_path() + "/recent-roms.txt", recent_rom_selected));
+	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu<recentfile_path>(this,
+		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt",
+		recent_movie_selected));
 	menu_separator();
 	menu_entry(wxID_CONFLICTRESOLUTION, wxT("Conflict resolution"));
 	menu_end_sub();
@@ -1004,6 +1050,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	gpanel->SetDropTarget(new loadfile(this));
 	spanel->SetDropTarget(new loadfile(this));
 	set_hasher_callback(hash_callback);
+	reinterpret_cast<system_menu*>(sysmenu)->update(false);
+	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
 }
 
 void wxwin_mainwindow::request_paint()
@@ -1123,11 +1171,12 @@ void wxwin_mainwindow::refresh_title() throw()
 	SetTitle(getname());
 	auto p = project_get();
 	menu_enable(wxID_RELOAD_ROM_IMAGE, !p);
-	menu_enable(wxID_LOAD_ROM_IMAGE, !p);
+	for(int i = wxID_LOAD_ROM_IMAGE_FIRST; i <= wxID_LOAD_ROM_IMAGE_LAST; i++)
+		menu_enable(i, !p);
 	menu_enable(wxID_CLOSE_PROJECT, p != NULL);
 	menu_enable(wxID_CLOSE_ROM, p == NULL);
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
-	menubar->SetMenuLabel(1, towxstring(our_rom->rtype->get_systemmenu_name()));
+	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
 }
 
 namespace
@@ -1447,12 +1496,11 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		handle_post_loadlibrary();
 		break;
 	}
-	case wxID_LOAD_ROM_IMAGE:
-		do_load_rom_image();
-		return;
 	case wxID_RELOAD_ROM_IMAGE:
-		platform::queue("unpause-emulator");
-		platform::queue("reload-rom");
+		runemufn([]() {
+			lsnes_cmd.invoke("unpause-emulator");
+			reload_current_rom();
+		});
 		return;
 	case wxID_NEW_MOVIE:
 		show_projectwindow(this);
@@ -1512,25 +1560,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wx_escape_count = 0;
 		enter_or_leave_fullscreen(true);
 		return;
-	};
-}
-
-void wxwin_mainwindow::do_load_rom_image()
-{
-	wxwindow_romload r(rom_path());
-	if(!r.show(this))
+	case wxID_LOAD_ROM_IMAGE_FIRST:
+		do_load_rom_image(NULL);
 		return;
-	std::string file = r.get_filename();
-	std::string core = r.get_core();
-	std::string type = r.get_type();
-	std::string filename;
-	if(core != "")
-		filename = file + " <" + mangle_name(core) + "/" + mangle_name(type) + ">";
-	else
-		filename = file;
-	recent_roms->add(filename);
-	platform::queue("unpause-emulator");
-	platform::queue("reload-rom " + filename);
+	};
 }
 
 void wxwin_mainwindow::action_updated()
@@ -1556,49 +1589,4 @@ void wxwin_mainwindow::enter_or_leave_fullscreen(bool fs)
 		Fit();
 		is_fs = fs;
 	}
-}
-
-namespace
-{
-	class rom_request_type
-	{
-	public:
-		typedef std::pair<size_t, std::string> returntype;
-		rom_request_type(rom_request& req)
-			: _req(req)
-		{
-		}
-		filedialog_input_params input(bool save) const
-		{
-			filedialog_input_params p;
-			for(auto i : _req.cores) {
-				std::string name = i->get_core_identifier();
-				std::string ext = "";
-				for(auto j : i->get_extensions()) {
-					if(file_exists_zip(rom_path() + "/" + _req.filename + "." + j))
-						p.default_filename = _req.filename + "." + j;
-					if(ext != "")
-						ext = ext + ";";
-					ext = ext + "*." + j;
-				}
-				p.types.push_back(filedialog_type_entry(name, ext, ""));
-			}
-			p.default_type = _req.selected;
-			return p;
-		}
-		std::pair<size_t, std::string> output(const filedialog_output_params& p, bool save) const
-		{
-			return std::make_pair(static_cast<size_t>(p.typechoice), p.path);
-		}
-	private:
-		rom_request _req;
-	};
-}
-
-void wxwin_mainwindow::request_rom(rom_request& req)
-{
-	rom_request_type t(req);
-	auto p = choose_file_load(this, "Select ROM", rom_path(), t);
-	req.selected = p.first;
-	req.filename = p.second;
 }

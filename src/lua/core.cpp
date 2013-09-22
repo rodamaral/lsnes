@@ -78,7 +78,7 @@ namespace
 	function_ptr_luafun lua_busaddr(lua_func_misc, "bus_address", [](lua_state& L, const std::string& fname)
 		-> int {
 		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		auto busrange = our_rom->rtype->get_bus_map();
+		auto busrange = our_rom.rtype->get_bus_map();
 		if(!busrange.second) {
 			L.pushstring("This platform does not have bus mapping");
 			L.error();
@@ -90,14 +90,14 @@ namespace
 
 	function_ptr_luafun mgetlagflag(lua_func_misc, "memory.get_lag_flag", [](lua_state& L,
 		const std::string& fname) -> int {
-		L.pushboolean(!(our_rom->rtype && our_rom->rtype->get_pflag()));
+		L.pushboolean(!(our_rom.rtype && our_rom.rtype->get_pflag()));
 		return 1;
 	});
 
 	function_ptr_luafun msetlagflag(lua_func_misc, "memory.set_lag_flag", [](lua_state& L,
 		const std::string& fname) -> int {
-		if(our_rom->rtype)
-			our_rom->rtype->set_pflag(!L.get_bool(1, fname.c_str()));
+		if(our_rom.rtype)
+			our_rom.rtype->set_pflag(!L.get_bool(1, fname.c_str()));
 		return 0;
 	});
 }

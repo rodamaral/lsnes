@@ -518,9 +518,9 @@ void moviefile::brief_info::binary_io(std::istream& _stream)
 			if(n > 2 * ROM_SLOT_COUNT)
 				return;
 			if(n & 1)
-				this->hash[n >> 1] = h;
-			else
 				this->hashxml[n >> 1] = h;
+			else
+				this->hash[n >> 1] = h;
 		}},{TAG_ROMHINT, [this](binary_input_stream& s) {
 			uint8_t n = s.byte();
 			std::string h = s.string_implicit();

@@ -16,7 +16,7 @@ namespace
 			std::string sym;
 			extract_token(args, sym, " \t");
 			const interface_action* act = NULL;
-			for(auto i : our_rom->rtype->get_actions())
+			for(auto i : our_rom.rtype->get_actions())
 				if(i->get_symbol() == sym) {
 					act = i;
 					break;
@@ -25,7 +25,7 @@ namespace
 				messages << "No such action." << std::endl;
 				return;
 			}
-			if(!(our_rom->rtype->action_flags(act->id) & 1)) {
+			if(!(our_rom.rtype->action_flags(act->id) & 1)) {
 				messages << "Action not enabled." << std::endl;
 				return;
 			}
@@ -123,6 +123,6 @@ out:
 				messages << "Excess parameters for action." << std::endl;
 				return;
 			}
-			our_rom->rtype->execute_action(act->id, params);
+			our_rom.rtype->execute_action(act->id, params);
 		});
 }

@@ -243,10 +243,10 @@ namespace sky
 				.hname = "Sky",
 				.id = 3522,
 				.sysname = "Sky",
-				.extensions = "sky",
 				.bios = NULL,
 				.regions = {this},
-				.images = {{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0}},
+				.images = {{"rom", "skyroads.zip", .mandatory = 1, .pass_mode = 1, .headersize = 0,
+					.extensions = "sky"}},
 				.settings = {},
 				.core = this,
 			}}),
@@ -259,7 +259,7 @@ namespace sky
 				.framemagic = {656250, 18227},
 				.compatible_runs = {0}
 			}}),
-			core_sysregion("sky", *this, *this) {}
+			core_sysregion("sky", *this, *this) { hide(); }
 
 		std::string c_core_identifier() { return "Sky"; }
 		bool c_set_region(core_region& region) { return (&region == this); }
@@ -298,7 +298,7 @@ namespace sky
 		std::pair<uint32_t, uint32_t> c_get_scale_factors(uint32_t w, uint32_t h) {
 			return std::make_pair(FB_WIDTH / w, FB_HEIGHT / h);
 		}
-		void c_install_handler() { hide(); }
+		void c_install_handler() {}
 		void c_uninstall_handler() {}
 		void c_emulate() {
 			uint16_t x = 0;

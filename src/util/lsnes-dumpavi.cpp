@@ -14,6 +14,7 @@
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
+#include "core/romloader.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
@@ -47,7 +48,6 @@ namespace
 			last_update = this_update;
 		}
 	}
-	
 
 	class myavsnoop : public information_dispatch
 	{
@@ -156,8 +156,8 @@ namespace
 		overdump_length = 0;
 		for(auto i = cmdline.begin(); i != cmdline.end(); i++) {
 			std::string a = *i;
-			if(a.length() >= 7 && a.substr(0, 7) == "--core=") {
-				preferred_core_default = a.substr(7);
+			if(a == "--core=list") {
+				preferred_core_default = "list";
 			} else if(a.length() >= 9 && a.substr(0, 9) == "--dumper=") {
 				dumper_given = true;
 				dumper = a.substr(9);
@@ -322,11 +322,22 @@ int main(int argc, char** argv)
 
 	set_hasher_callback(hash_callback);
 
+	std::string movfn;
+	for(auto i : cmdline) {
+		if(i.length() > 0 && i[0] != '-') {
+			movfn = i;
+		}
+	}
+	if(movfn == "") {
+		messages << "Movie filename required" << std::endl;
+		return 0;
+	}
+
 	messages << "--- Loading ROM ---" << std::endl;
 	struct loaded_rom r;
 	try {
 		std::map<std::string, std::string> tmp;
-		r = load_rom_from_commandline(cmdline);
+		r = construct_rom(movfn, cmdline);
 		r.load(tmp, 1000000000, 0);
 		messages << "Using core: " << r.rtype->get_core_identifier() << std::endl;
 	} catch(std::bad_alloc& e) {
@@ -343,29 +354,12 @@ int main(int argc, char** argv)
 
 	moviefile movie;
 	try {
-		bool tried = false;
-		bool loaded = false;
-		for(auto i = cmdline.begin(); i != cmdline.end(); i++)
-			if(i->length() > 0 && (*i)[0] != '-') {
-				try {
-					tried = true;
-					movie = moviefile(*i, *r.rtype);
-					loaded = true;
-				} catch(std::bad_alloc& e) {
-					OOM_panic();
-				} catch(std::exception& e) {
-					messages << "Error loading '" << *i << "': " << e.what() << std::endl;
-				}
-			}
-		if(!tried)
-			throw std::runtime_error("Specifying movie is required");
-		if(!loaded)
-			throw std::runtime_error("Can't load any of the movies specified");
+		movie = moviefile(movfn, *r.rtype);
 		//Load ROM before starting the dumper.
-		our_rom = &r;
-		messages << "Using core: " << our_rom->rtype->get_core_identifier() << std::endl;
-		our_rom->region = &movie.gametype->get_region();
-		our_rom->load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
+		our_rom = r;
+		messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
+		our_rom.region = &movie.gametype->get_region();
+		our_rom.load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
 		if(overdump_mode)
 			length = overdump_length + movie.get_frame_count();

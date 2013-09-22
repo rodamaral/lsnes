@@ -2,6 +2,7 @@
 #define _window__hpp__included__
 
 #include "core/keymapper.hpp"
+#include "core/rom.hpp"
 #include "interface/romtype.hpp"
 #include "library/messagebuffer.hpp"
 #include "library/emustatus.hpp"
@@ -56,7 +57,10 @@ struct rom_request
 	//Selected core (default core on call).
 	size_t selected;
 	//Filename selected (on entry, filename hint).
-	std::string filename;
+	bool has_slot[ROM_SLOT_COUNT];
+	std::string filename[ROM_SLOT_COUNT];
+	//Canceled flag.
+	bool canceled;
 };
 
 

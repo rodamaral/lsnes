@@ -237,7 +237,7 @@ namespace
 		project_info pinfo;
 		pinfo.id = generate_project_id();
 		pinfo.name = tostdstring(projname->GetValue());
-		pinfo.rom = current_romfile;
+		pinfo.rom = our_rom.load_filename;
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
@@ -254,6 +254,7 @@ namespace
 		project_copy_watches(pinfo);
 		project_copy_macros(pinfo, controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+			pinfo.roms[i] = our_rom.romimg[i].filename;
 			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
 			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];
 			pinfo.namehint[i] = our_movie.namehint[i];
@@ -428,7 +429,7 @@ private:
 
 void show_projectwindow(wxWindow* modwin)
 {
-	if(!our_rom->rtype) {
+	if(!our_rom.rtype) {
 		show_message_ok(modwin, "Can't start new movie", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}
@@ -445,7 +446,7 @@ wxwin_project::wxwin_project()
 {
 	std::vector<wxString> cchoices;
 
-	std::set<std::string> sram_set = our_rom->rtype->srams();
+	std::set<std::string> sram_set = our_rom.rtype->srams();
 
 	Centre();
 	//2 Top-level block.
@@ -463,9 +464,9 @@ wxwin_project::wxwin_project()
 	wxFlexGridSizer* new_sizer = new wxFlexGridSizer(3, 1, 0, 0);
 	new_panel->SetSizer(new_sizer);
 	//Controllertypes/Gamename/initRTC/SRAMs.
-	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + our_rom->rtype->get_settings().settings.size() +
+	wxFlexGridSizer* mainblock = new wxFlexGridSizer(4 + our_rom.rtype->get_settings().settings.size() +
 		sram_set.size(), 2, 0, 0);
-	for(auto i : our_rom->rtype->get_settings().settings) {
+	for(auto i : our_rom.rtype->get_settings().settings) {
 		settings.insert(std::make_pair(i.second.iname, setting_select(new_panel, i.second)));
 		mainblock->Add(settings.find(i.second.iname)->second.get_label());
 		mainblock->Add(settings.find(i.second.iname)->second.get_control());
@@ -597,21 +598,21 @@ struct moviefile wxwin_project::make_movie()
 {
 	moviefile f;
 	f.force_corrupt = false;
-	f.gametype = &our_rom->rtype->combine_region(*our_rom->region);
+	f.gametype = &our_rom.rtype->combine_region(*our_rom.region);
 	for(auto i : settings) {
 		f.settings[i.first] = i.second.read();
 		if(!i.second.get_setting().validate(f.settings[i.first]))
 			throw std::runtime_error((stringfmt() << "Bad value for setting " << i.first).str());
 	}
-	f.coreversion = our_rom->rtype->get_core_identifier();
+	f.coreversion = our_rom.rtype->get_core_identifier();
 	f.gamename = tostdstring(projectname->GetValue());
 	f.projectid = get_random_hexstring(40);
 	set_mprefix_for_project(f.projectid, tostdstring(prefix->GetValue()));
 	f.rerecords = "0";
 	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-		f.romimg_sha256[i] = our_rom->romimg[i].sha_256.read();
-		f.romxml_sha256[i] = our_rom->romxml[i].sha_256.read();
-		f.namehint[i] = our_rom->romimg[i].namehint;
+		f.romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+		f.romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+		f.namehint[i] = our_rom.romimg[i].namehint;
 	}
 	size_t lines = authors->GetNumberOfLines();
 	for(size_t i = 0; i < lines; i++) {
@@ -634,7 +635,7 @@ struct moviefile wxwin_project::make_movie()
 	f.movie_rtc_subsecond = f.rtc_subsecond = boost::lexical_cast<int64_t>(tostdstring(rtc_subsec->GetValue()));
 	if(f.movie_rtc_subsecond < 0)
 		throw std::runtime_error("RTC subsecond must be positive");
-	auto ctrldata = our_rom->rtype->controllerconfig(f.settings);
+	auto ctrldata = our_rom.rtype->controllerconfig(f.settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 	f.input.clear(ports);
 	return f;
@@ -642,7 +643,7 @@ struct moviefile wxwin_project::make_movie()
 
 void open_new_project_window(wxWindow* parent)
 {
-	if(our_rom->rtype->isnull()) {
+	if(our_rom.rtype->isnull()) {
 		show_message_ok(parent, "Can't start new project", "No ROM loaded", wxICON_EXCLAMATION);
 		return;
 	}

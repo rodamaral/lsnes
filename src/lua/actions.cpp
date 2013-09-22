@@ -8,14 +8,14 @@ namespace
 		-> int {
 		std::string name = L.get_string(1, fname.c_str());
 		const interface_action* act = NULL;
-		for(auto i : our_rom->rtype->get_actions())
+		for(auto i : our_rom.rtype->get_actions())
 			if(i->get_symbol() == name) {
 				act = i;
 				break;
 			}
 		if(!act)
 			throw std::runtime_error("No such action");
-		if(!(our_rom->rtype->action_flags(act->id) & 1))
+		if(!(our_rom.rtype->action_flags(act->id) & 1))
 			throw std::runtime_error("Action not enabled.");
 		std::vector<interface_action_paramval> params;
 		unsigned idx = 2;
@@ -90,7 +90,7 @@ out:
 		if(L.type(idx) != LUA_TNONE) {
 			throw std::runtime_error("Excess arguments for action");
 		}
-		our_rom->rtype->execute_action(act->id, params);
+		our_rom.rtype->execute_action(act->id, params);
 		return 0;
 	});
 }
