@@ -618,8 +618,8 @@ namespace
 		{
 			bool ret = false;
 			if(filenames.Count() == 2) {
-				std::string a = std::string(filenames[0]);
-				std::string b = std::string(filenames[1]);
+				std::string a = tostdstring(filenames[0]);
+				std::string b = tostdstring(filenames[1]);
 				bool amov = is_lsnes_movie(a);
 				bool bmov = is_lsnes_movie(b);
 				if(amov == bmov)
@@ -635,7 +635,7 @@ namespace
 				ret = true;
 			}
 			if(filenames.Count() == 1) {
-				std::string a = std::string(filenames[0]);
+				std::string a = tostdstring(filenames[0]);
 				bool amov = is_lsnes_movie(a);
 				if(amov) {
 					platform::queue("load-smart " + a);

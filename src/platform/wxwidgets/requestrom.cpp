@@ -70,8 +70,8 @@ namespace
 		}
 		filter += "|All files|*";
 		std::string directory = lsnes_vset["rompath"].str();
-		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), directory, wxT(""),
-			towxstring(filter), wxFD_OPEN);
+		wxFileDialog* d = new wxFileDialog(parent, towxstring("Choose ROM to load"), towxstring(directory),
+			wxT(""), towxstring(filter), wxFD_OPEN);
 		if(d->ShowModal() == wxID_CANCEL) {
 			delete d;
 			return;
@@ -111,7 +111,7 @@ namespace
 			Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(multirom_dialog::on_wclose), NULL, this);
 
 			wxSizer* hsizer2 = new wxBoxSizer(wxHORIZONTAL);
-			hsizer2->Add(new wxStaticText(this, wxID_ANY, "Region: "), 0, wxGROW);
+			hsizer2->Add(new wxStaticText(this, wxID_ANY, wxT("Region: ")), 0, wxGROW);
 			std::vector<wxString> regions_list;
 			core_region& prefr = t.get_preferred_region();
 			unsigned regindex = 0;
@@ -245,8 +245,8 @@ namespace
 				directory = "rompath";
 			directory = lsnes_vset[directory].str();
 			core_romimage_info iinfo = t.get_image_info(i);
-			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname), directory,
-				wxT(""), towxstring(filter), wxFD_OPEN);
+			wxFileDialog* d = new wxFileDialog(this, towxstring("Load " + iinfo.hname),
+				towxstring(directory), wxT(""), towxstring(filter), wxFD_OPEN);
 			if(d->ShowModal() == wxID_CANCEL) {
 				delete d;
 				return;
@@ -381,9 +381,9 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 		}
 		if(exts != "") exts = exts.substr(1);
 		filespec = "Known ROMs (" + exts + ")|" + exts + "|All files|*";
-		wxFileDialog* d = new wxFileDialog(this, towxstring(_title), directory, wxT(""),
+		wxFileDialog* d = new wxFileDialog(this, towxstring(_title), towxstring(directory), wxT(""),
 			towxstring(filespec), wxFD_OPEN);
-		if(defaultname != "") d->SetFilename(defaultname);
+		if(defaultname != "") d->SetFilename(towxstring(defaultname));
 		if(d->ShowModal() == wxID_CANCEL) {
 			delete d;
 			return;
