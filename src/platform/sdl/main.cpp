@@ -36,9 +36,10 @@ struct moviefile generate_movie_template(std::vector<std::string> cmdline, loade
 	movie.coreversion = bsnes_core_version;
 	movie.projectid = get_random_hexstring(40);
 	movie.gametype = &r.rtype->combine_region(*r.region);
-	for(size_t i = 0; i < sizeof(r.romimg)/sizeof(r.romimg[0]); i++) {
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 		movie.romimg_sha256[i] = r.romimg[i].sha256;
 		movie.romxml_sha256[i] = r.romxml[i].sha256;
+		movie.romname_hint[i] = r.romimg[i].namehint;
 	}
 	movie.movie_sram = load_sram_commandline(cmdline);
 	for(auto i = cmdline.begin(); i != cmdline.end(); i++) {

@@ -1000,12 +1000,16 @@ void wxwin_mainwindow::notify_exit() throw()
 	Destroy();
 }
 
-void wxwin_mainwindow::request_rom(std::string& filename, core_type& coretype)
+void wxwin_mainwindow::request_rom(std::string& filename, core_type& coretype, const std::string& hint)
 {
 	const std::list<std::string>& exts = coretype.get_extensions();
 	std::string filter = coretype.get_hname() + " ROMs|";
 	bool first = true;
+	std::string defaultname = "";
 	for(auto i : exts) {
+		std::string hinted_file = hint + "." + i;
+		if(file_exists(rom_path() + "/" + hinted_file))
+			defaultname = hinted_file;
 		if(!first)
 			filter = filter + ";";
 		first = false;
@@ -1014,6 +1018,8 @@ void wxwin_mainwindow::request_rom(std::string& filename, core_type& coretype)
 	filter = filter + "|All files|*.*";
 	wxFileDialog* fdiag = new wxFileDialog(this, wxT("Load ROM"), towxstring(rom_path()), wxT(""),
 		towxstring(filter), wxFD_OPEN);
+	if(defaultname != "")
+		fdiag->SetFilename(towxstring(defaultname));
 	if(fdiag->ShowModal() != wxID_OK) {
 		delete fdiag;
 		return;

@@ -183,6 +183,15 @@ namespace
 			return false;
 		}
 	}
+
+	std::string getline(const std::vector<char>& v)
+	{
+		std::string t(v.begin(), v.end());
+		size_t ptr = t.find_first_of("\r\n");
+		if(ptr < t.size())
+			t = t.substr(0, ptr);
+		return t;
+	}
 }
 
 std::string translate_name_mprefix(std::string original, bool forio)
@@ -377,18 +386,20 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 
 void try_request_rom(const std::string& moviefile)
 {
-	auto sysreg_content = read_file_relative(moviefile + "/gametype", "");
-	std::string sysreg_name(sysreg_content.begin(), sysreg_content.end());
-	size_t ptr = sysreg_name.find_first_of("\r\n");
-	if(ptr < sysreg_name.size())
-		sysreg_name = sysreg_name.substr(0, ptr);
+	std::string sysreg_name = getline(read_file_relative(moviefile + "/gametype", ""));
 	core_sysregion* sysreg;
 	try {
 		sysreg = &core_sysregion::lookup(sysreg_name);
 	} catch(...) {
 		throw std::runtime_error("The movie is for unsupported system type");
 	}
-	std::string rname = graphics_plugin::request_rom(sysreg->get_type());
+	std::string hintfile = (sysreg->get_type().get_biosname() != "") ? "slota.hint" : "rom.hint";
+	std::string hint;
+	try {
+		hint = getline(read_file_relative(moviefile + "/" + hintfile, ""));
+	} catch(...) {
+	}
+	std::string rname = graphics_plugin::request_rom(sysreg->get_type(), hint);
 	if(rname == "")
 		throw std::runtime_error("Canceled loading ROM");
 	loaded_rom newrom(rname);
@@ -421,7 +432,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 				<< "\tFile is from: " << _movie.coreversion << std::endl;
 	}
 	bool rom_ok = true;
-	for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+		if(_movie.romname_hint[i] == "")
+			_movie.romname_hint[i] = our_rom->romimg[i].namehint;
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romimg_sha256[i], our_rom->romimg[i],
 			(stringfmt() << "ROM #" << (i + 1)).str(), will_load_state);
 		rom_ok = rom_ok & warn_hash_mismatch(_movie.romxml_sha256[i], our_rom->romxml[i],

@@ -41,7 +41,7 @@ public:
 	void menu_check(int id, bool newstate);
 	void menu_separator();
 	void handle_menu_click(wxCommandEvent& e);
-	void request_rom(std::string& filename, core_type& coretype);
+	void request_rom(std::string& filename, core_type& coretype, const std::string& hint);
 	recent_menu* recent_roms;
 	recent_menu* recent_movies;
 private:

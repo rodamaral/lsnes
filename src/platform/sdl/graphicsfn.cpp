@@ -613,7 +613,7 @@ void graphics_plugin::fatal_error() throw()
 	}
 }
 
-std::string graphics_plugin::request_rom(core_type& coretype)
+std::string graphics_plugin::request_rom(core_type& coretype, const std::string& hint)
 {
 	throw std::runtime_error("SDL version does not support ROM preloading");
 }

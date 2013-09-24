@@ -29,20 +29,20 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
+bool file_exists(const std::string& name)
+{
+	try {
+		delete &open_file_relative(name, "");
+		return true;
+	} catch(...) {
+		return false;
+	}
+}
+
 namespace
 {
 	core_type* current_rom_type = NULL;
 	core_region* current_region = NULL;
-
-	bool file_exists(const std::string& name)
-	{
-		try {
-			delete &open_file_relative(name, "");
-			return true;
-		} catch(...) {
-			return false;
-		}
-	}
 }
 
 loaded_slot::loaded_slot() throw(std::bad_alloc)
@@ -63,6 +63,17 @@ loaded_slot::loaded_slot(const std::string& filename, const std::string& base,
 		return;
 	}
 	valid = true;
+	std::string _filename = filename;
+#if defined(_WIN32) || defined(_WIN64)
+	const char* split = "/\\";
+#else
+	const char* split = "/";
+#endif
+	size_t s1 = _filename.find_last_of(split);
+	size_t s2 = _filename.find_last_of(".");
+	if(s1 < _filename.length()) s1 = s1 + 1; else s1 = 0;
+	if(s2 <= s1 || s2 >= _filename.length()) s2 = _filename.length();
+	namehint = _filename.substr(s1, s2 - s1);
 	data = read_file_relative(filename, base);
 	if(!xml)
 		headered = imginfo.headersize(data.size());

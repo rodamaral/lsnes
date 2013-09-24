@@ -56,8 +56,11 @@ int main(int argc, char** argv)
 		else
 			std::cout << "No game name available" << std::endl;
 		std::cout << "Project ID: " << escape_string(m.projectid) << std::endl;
-		for(size_t i = 0; i < sizeof(m.romimg_sha256)/sizeof(m.romimg_sha256[0]); i++) {
+		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 			if(m.romimg_sha256[i] != "") {
+				if(m.romname_hint[i] != "")
+					std::cout << name_subrom(*rtype, 2 * i + 0) << " namehint: "
+						<< escape_string(m.romname_hint[i]) << std::endl;
 				std::cout << name_subrom(*rtype, 2 * i + 0) << " checksum: "
 					<< escape_string(m.romimg_sha256[i]) << std::endl;
 				if(m.romxml_sha256[i] != "") {

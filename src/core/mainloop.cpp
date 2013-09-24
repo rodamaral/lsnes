@@ -278,9 +278,10 @@ namespace
 			messages << "Loading ROM " << filenam << std::endl;
 			loaded_rom newrom(filenam);
 			*our_rom = newrom;
-			for(size_t i = 0; i < sizeof(our_rom->romimg)/sizeof(our_rom->romimg[0]); i++) {
+			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
 				our_movie.romimg_sha256[i] = our_rom->romimg[i].sha256;
 				our_movie.romxml_sha256[i] = our_rom->romxml[i].sha256;
+				our_movie.romname_hint[i] = our_rom->romxml[i].namehint;
 			}
 		} catch(std::exception& e) {
 			messages << "Can't reload ROM: " << e.what() << std::endl;
