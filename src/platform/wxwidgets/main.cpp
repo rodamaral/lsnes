@@ -132,6 +132,7 @@ namespace
 				main_window->notify_exit();
 		} else if(c == UISERV_UIFUN) {
 			std::list<ui_queue_entry>::iterator i;
+			ui_queue_entry e;
 			queue_synchronous_fn_warning = true;
 back:
 			{
@@ -139,12 +140,10 @@ back:
 				if(ui_queue.empty())
 					goto end;
 				i = ui_queue.begin();
-			}
-			i->fn(i->arg);
-			{
-				umutex_class h(ui_mutex);
+				e = *i;
 				ui_queue.erase(i);
 			}
+			e.fn(e.arg);
 			goto back;
 end:
 			queue_synchronous_fn_warning = false;
