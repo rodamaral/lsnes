@@ -341,7 +341,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		movb.get_movie().reset_state();
 		random_seed_value = our_movie.movie_rtc_second;
 		our_rom->load(our_movie.movie_rtc_second, our_movie.movie_rtc_subsecond);
-		gametype_changes = (&our_movie.gametype->get_type() != our_rom->rtype) && reload;
+		gametype_changes = (!our_movie.gametype || &our_movie.gametype->get_type() != our_rom->rtype) &&
+			reload;
 		our_movie.gametype = &our_rom->rtype->combine_region(*our_rom->region);
 		if(reload) {
 			if(!ro || gametype_changes)
