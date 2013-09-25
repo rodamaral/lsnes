@@ -22,7 +22,7 @@ public:
 /**
  * Construct a future, with value that is immediately resolved.
  */
-	sha256_future(const std::string& value);
+	sha256_future(const std::string& value, uint64_t _prefix = 0);
 /**
  * Is the result known?
  */
@@ -31,6 +31,10 @@ public:
  * Read the result (or throw error). Waits until result is ready.
  */
 	std::string read() const;
+/**
+ * Read the prefix value. Waits until result is ready.
+ */
+	uint64_t prefix() const;
 /**
  * Copy a future.
  */
@@ -51,7 +55,7 @@ private:
 /**
  * Resolve a future.
  */
-	void resolve(unsigned id, const std::string& hash);
+	void resolve(unsigned id, const std::string& hash, uint64_t _prefix);
 	void resolve_error(unsigned id, const std::string& err);
 
 	friend class sha256_hasher;
@@ -59,6 +63,7 @@ private:
 	mutable cv_class condition;
 	bool is_ready;
 	unsigned cbid;
+	uint64_t prefixv;
 	std::string value;
 	std::string error;
 	sha256_future* prev;
@@ -87,7 +92,11 @@ public:
 /**
  * Compute SHA-256 of file.
  */
-	sha256_future operator()(const std::string& filename);
+	sha256_future operator()(const std::string& filename, uint64_t prefixlen = 0);
+/**
+ * Compute SHA-256 of file.
+ */
+	sha256_future operator()(const std::string& filename, std::function<uint64_t(uint64_t)> prefixlen);
 /**
  * Thread entrypoint.
  */
@@ -102,6 +111,7 @@ private:
 	struct queue_job
 	{
 		std::string filename;
+		uint64_t prefix;
 		uint64_t size;
 		unsigned cbid;
 		volatile unsigned interested;
@@ -191,6 +201,10 @@ struct loaded_image
  */
 	std::shared_ptr<std::vector<char>> data;
 /**
+ * Number of bytes stripped when loading.
+ */
+	uint64_t stripped;
+/**
  * SHA-256 for the data in this slot if data is valid. If no valid data, this field is "".
  *
  * Note, for file images, this takes a bit of time to fill.
@@ -224,5 +238,10 @@ struct loaded_image
 		return data ? data->size() : 0;
 	}
 };
+
+/**
+ * Get headersize function.
+ */
+std::function<uint64_t(uint64_t)> std_headersize_fn(uint64_t hdrsize);
 
 #endif

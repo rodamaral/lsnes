@@ -55,10 +55,14 @@ struct rom_request
 	//List of core types.
 	std::vector<core_type*> cores;
 	//Selected core (default core on call).
+	bool core_guessed;
 	size_t selected;
 	//Filename selected (on entry, filename hint).
 	bool has_slot[ROM_SLOT_COUNT];
+	bool guessed[ROM_SLOT_COUNT];
 	std::string filename[ROM_SLOT_COUNT];
+	std::string hash[ROM_SLOT_COUNT];
+	std::string hashxml[ROM_SLOT_COUNT];
 	//Canceled flag.
 	bool canceled;
 };

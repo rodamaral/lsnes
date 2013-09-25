@@ -10,6 +10,7 @@
 #include "core/mainloop.hpp"
 #include "core/moviedata.hpp"
 #include "core/project.hpp"
+#include "core/romguess.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "library/string.hpp"
@@ -579,18 +580,25 @@ void try_request_rom(const std::string& moviefile)
 	req.selected = 0;
 	size_t idx = 0;
 	bool has_bios = false;
+	req.core_guessed = false;
 	for(auto i : sysregs) {
 		if(i->get_type().get_biosname() != "" && info.hash[1] != "")
 			has_bios = true;
 		req.cores.push_back(&i->get_type());
-		if(i->get_type().get_core_identifier() == info.corename)
+		if(i->get_type().get_core_identifier() == info.corename) {
 			req.selected = idx;
+			req.core_guessed = true;
+		}
 		idx++;
 	}
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+		req.guessed[i] = false;
 		req.has_slot[i] = (info.hash[i] != "");
 		req.filename[i] = info.hint[i];
+		req.hash[i] = info.hash[i];
+		req.hashxml[i] = info.hashxml[i];
 	}
+	try_guess_roms(req);
 	req.canceled = true;
 	graphics_driver_request_rom(req);
 	if(req.canceled)

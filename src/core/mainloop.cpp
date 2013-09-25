@@ -955,6 +955,8 @@ namespace
 	//failing.
 	int handle_load()
 	{
+		std::string old_project = our_movie.projectid;
+jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
 			uint64_t t = get_utime();
 			std::vector<char> s;
@@ -989,10 +991,11 @@ nothing_to_do:
 			amode = old_mode;
 			platform::set_paused(amode == ADVANCE_PAUSE);
 			platform::flush_command_queue();
+			if(amode == ADVANCE_LOAD)
+				goto jumpback;
 			return 0;
 		}
 		if(pending_load != "") {
-			std::string old_project = our_movie.projectid;
 			system_corrupt = false;
 			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
 				!do_load_state(pending_load, loadmode)) {
@@ -1018,6 +1021,8 @@ nothing_to_do:
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
 				platform::flush_command_queue();
+				if(amode == ADVANCE_LOAD)
+					goto jumpback;
 			}
 			if(old_project != our_movie.projectid)
 				flush_slotinfo();	//Wrong movie may be stale.

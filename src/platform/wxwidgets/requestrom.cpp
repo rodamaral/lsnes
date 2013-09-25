@@ -256,8 +256,10 @@ namespace
 		}
 		void filename_updated(unsigned i)
 		{
-			if(i >= ROM_SLOT_COUNT || !filenames[i])
+			if(i >= t.get_image_count() || !filenames[i])
 				return;
+			uint64_t header = t.get_image_info(i).headersize;
+
 			std::string filename = tostdstring(filenames[i]->GetValue());
 			if(!file_exists_zip(filename)) {
 				hashfutures[i] = sha256_future();
@@ -266,7 +268,7 @@ namespace
 				return;
 			}
 			//TODO: Handle files inside ZIP files.
-			hashfutures[i] = lsnes_image_hasher(filename);
+			hashfutures[i] = lsnes_image_hasher(filename, std_headersize_fn(header));
 			if(hash_ready[i] = hashfutures[i].ready())
 				try {
 					hashes[i]->SetLabel(towxstring("Hash: " + hashfutures[i].read()));
@@ -344,8 +346,11 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 		choices.push_back(i->get_core_identifier());
 	std::string coretext;
 	try  {
-		coretext = pick_among(this, "Choose core", "Choose core to load the ROM", choices,
-			req.selected);
+		if(choices.size() > 1 && !req.core_guessed)
+			coretext = pick_among(this, "Choose core", "Choose core to load the ROM", choices,
+				req.selected);
+		else
+			coretext = choices[req.selected];
 	} catch(canceled_exception& e) {
 		return;
 	}
@@ -358,6 +363,8 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 		if(!req.has_slot[i])
 			continue;
+		if(req.guessed[i])
+			continue; //Leave these alone.
 		if(i >= type.get_image_count()) {
 			messages << "wxwin_mainwindow::request_rom: Present image index (" << i
 				<< ") out of range!" << std::endl;
@@ -381,7 +388,11 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 		}
 		if(exts != "") exts = exts.substr(1);
 		filespec = "Known ROMs (" + exts + ")|" + exts + "|All files|*";
-		wxFileDialog* d = new wxFileDialog(this, towxstring(_title), towxstring(directory), wxT(""),
+		wxFileDialog* d;
+		std::string hash;
+		uint64_t header = type.get_image_info(i).headersize;
+again:
+		d = new wxFileDialog(this, towxstring(_title), towxstring(directory), wxT(""),
 			towxstring(filespec), wxFD_OPEN);
 		if(defaultname != "") d->SetFilename(towxstring(defaultname));
 		if(d->ShowModal() == wxID_CANCEL) {
@@ -390,6 +401,31 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 		}
 		req.filename[i] = tostdstring(d->GetPath());
 		delete d;
+		//Check the hash.
+		if(!file_exists_zip(req.filename[i])) {
+			show_message_ok(this, "File not found", "Can't find '" + req.filename[i] + "'",
+				wxICON_EXCLAMATION);
+			goto again;
+		}
+		try {
+			std::string hash = lsnes_image_hasher(req.filename[i], std_headersize_fn(header)).read();
+			if(hash != req.hash[i]) {
+				//Hash mismatches.
+				wxMessageDialog* d3 = new wxMessageDialog(this, towxstring("The ROM checksum does "
+					"not match movie\n\nProceed anyway?"), towxstring("Checksum error"),
+					wxYES_NO | wxNO_DEFAULT | wxICON_EXCLAMATION);
+				int r = d3->ShowModal();
+				d3->Destroy();
+				if(r == wxID_NO) goto again;
+			}
+		} catch(...) {
+			wxMessageDialog* d3 = new wxMessageDialog(this, towxstring("Can't read checksum for "
+				"ROM\n\nProceed anyway?"), towxstring("Checksum error"), wxYES_NO |
+				wxYES_DEFAULT | wxICON_EXCLAMATION);
+			int r = d3->ShowModal();
+			d3->Destroy();
+			if(r == wxID_NO) goto again;
+		}
 	}
 	req.canceled = false;
 }

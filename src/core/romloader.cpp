@@ -2,6 +2,7 @@
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
+#include "core/romguess.hpp"
 #include "core/settings.hpp"
 #include "core/project.hpp"
 #include "core/window.hpp"
@@ -208,6 +209,8 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			//Fallback default.
 			roms[0] = lsnes_vset["firmwarepath"].str() + "/" + bios;
 		}
+		if(roms[i] == "" && info.hash[i] != "")
+			roms[i] = try_to_guess_rom(info.hint[i], info.hash[i], info.hashxml[i], *ctype, i);
 		if(roms[i] == "" && info.hash[i] != "")
 			throw std::runtime_error("Can't find " + romid + " (specify explicitly)");
 		if(roms[i] != "")

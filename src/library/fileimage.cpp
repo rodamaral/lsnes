@@ -1,6 +1,8 @@
 #include "fileimage.hpp"
 #include "sha256.hpp"
 #include "patch.hpp"
+#include "string.hpp"
+#include "minmax.hpp"
 #include "zip.hpp"
 #include <boost/filesystem.hpp>
 #include <sstream>
@@ -21,15 +23,23 @@ namespace
 		return m;
 	}
 
+	uint64_t calculate_headersize(uint64_t f, uint64_t h)
+	{
+		if(!h) return 0;
+		if(f % (2 * h) == h) return h;
+		return 0;
+	}
+
 	void* thread_trampoline(sha256_hasher* h)
 	{
 		h->entrypoint();
 		return NULL;
 	}
 
-	std::string lookup_cache(const std::string& filename)
+	std::string lookup_cache(const std::string& filename, uint64_t prefixlen)
 	{
 		std::string cache = filename + ".sha256";
+		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
 		time_t filetime = boost_fs::last_write_time(boost_fs::path(filename));
 		if(cached_entries.count(cache)) {
 			//Found the cache entry...
@@ -67,9 +77,10 @@ namespace
 		return cached_hash;
 	}
 
-	void store_cache(const std::string& filename, const std::string& value)
+	void store_cache(const std::string& filename, uint64_t prefixlen, const std::string& value)
 	{
 		std::string cache = filename + ".sha256";
+		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
 		time_t filetime = boost_fs::last_write_time(boost_fs::path(filename));
 		std::ofstream out(cache);
 		cached_entries[cache] = std::make_pair(filetime, value);
@@ -97,11 +108,12 @@ sha256_future::sha256_future()
 	hasher = NULL;
 }
 
-sha256_future::sha256_future(const std::string& _value)
+sha256_future::sha256_future(const std::string& _value, uint64_t _prefix)
 {
 	is_ready = true;
 	value = _value;
 	cbid = 0;
+	prefixv = _prefix;
 	prev = next = NULL;
 	hasher = NULL;
 }
@@ -140,6 +152,16 @@ std::string sha256_future::read() const
 	return value;
 }
 
+uint64_t sha256_future::prefix() const
+{
+	umutex_class h(mutex);
+	while(!is_ready)
+		condition.wait(h);
+	if(error != "")
+		throw std::runtime_error(error);
+	return prefixv;
+}
+
 sha256_future::sha256_future(const sha256_future& f)
 {
 	umutex_class h2(global_queue_mutex());
@@ -148,6 +170,7 @@ sha256_future::sha256_future(const sha256_future& f)
 	cbid = f.cbid;
 	value = f.value;
 	error = f.error;
+	prefixv = f.prefixv;
 	prev = next = NULL;
 	hasher = f.hasher;
 	if(!is_ready && hasher)
@@ -173,6 +196,7 @@ sha256_future& sha256_future::operator=(const sha256_future& f)
 	cbid = f.cbid;
 	value = f.value;
 	error = f.error;
+	prefixv = f.prefixv;
 	prev = next = NULL;
 	hasher = f.hasher;
 	if(!is_ready && hasher)
@@ -181,7 +205,7 @@ sha256_future& sha256_future::operator=(const sha256_future& f)
 	f.mutex.unlock();
 }
 
-void sha256_future::resolve(unsigned id, const std::string& hash)
+void sha256_future::resolve(unsigned id, const std::string& hash, uint64_t _prefix)
 {
 	umutex_class h(mutex);
 	hasher->unlink(*this);
@@ -189,6 +213,7 @@ void sha256_future::resolve(unsigned id, const std::string& hash)
 		return;
 	is_ready = true;
 	value = hash;
+	prefixv = _prefix;
 	condition.notify_all();
 }
 
@@ -200,6 +225,7 @@ void sha256_future::resolve_error(unsigned id, const std::string& err)
 		return;
 	is_ready = true;
 	error = err;
+	prefixv = 0;
 	condition.notify_all();
 }
 
@@ -242,11 +268,28 @@ void sha256_hasher::unlink(sha256_future& future)
 		future.next->prev = future.prev;
 }
 
-sha256_future sha256_hasher::operator()(const std::string& filename)
+sha256_future sha256_hasher::operator()(const std::string& filename, uint64_t prefixlen)
+{
+	queue_job j;
+	j.filename = filename;
+	j.prefix = prefixlen;
+	j.size = get_file_size(filename);
+	j.cbid = next_cbid++;
+	j.interested = 1;
+	sha256_future future(*this, j.cbid);
+	queue.push_back(j);
+	umutex_class h(mutex);
+	total_work += j.size;
+	condition.notify_all();
+	return future;
+}
+
+sha256_future sha256_hasher::operator()(const std::string& filename, std::function<uint64_t(uint64_t)> prefixlen)
 {
 	queue_job j;
 	j.filename = filename;
 	j.size = get_file_size(filename);
+	j.prefix = prefixlen(j.size);
 	j.cbid = next_cbid++;
 	j.interested = 1;
 	sha256_future future(*this, j.cbid);
@@ -309,11 +352,11 @@ void sha256_hasher::entrypoint()
 		uint64_t progress = 0;
 		std::string cached_hash;
 		fp = NULL;
-		cached_hash = lookup_cache(current_job->filename);
+		cached_hash = lookup_cache(current_job->filename, current_job->prefix);
 		if(cached_hash != "") {
 			umutex_class h2(global_queue_mutex());
 			for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
-				fut->resolve(current_job->cbid, cached_hash);
+				fut->resolve(current_job->cbid, cached_hash, current_job->prefix);
 			goto finished;
 		}
 		fp = fopen(current_job->filename.c_str(), "rb");
@@ -323,6 +366,7 @@ void sha256_hasher::entrypoint()
 				fut->resolve_error(current_job->cbid, "Can't open file");
 		} else {
 			sha256 hash;
+			uint64_t toskip = current_job->prefix;
 			while(!feof(fp) && !ferror(fp)) {
 				{
 					umutex_class h(mutex);
@@ -330,9 +374,13 @@ void sha256_hasher::entrypoint()
 						goto finished; //Aborted.
 				}
 				unsigned char buf[16384];
+				uint64_t offset = 0;
 				size_t s = fread(buf, 1, sizeof(buf), fp);
 				progress += s;
-				hash.write(buf, s);
+				//The first current_job->prefix bytes need to be skipped.
+				offset = min(toskip, (uint64_t)s);
+				toskip -= offset;
+				if(s > offset) hash.write(buf + offset, s - offset);
 				send_callback(progress);
 			}
 			if(ferror(fp)) {
@@ -343,8 +391,8 @@ void sha256_hasher::entrypoint()
 				std::string hval = hash.read();
 				umutex_class h2(global_queue_mutex());
 				for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
-					fut->resolve(current_job->cbid, hval);
-				store_cache(current_job->filename, hval);
+					fut->resolve(current_job->cbid, hval, current_job->prefix);
+				store_cache(current_job->filename, current_job->prefix, hval);
 			}
 		}
 finished:
@@ -393,6 +441,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		//NULL.
 		type = info::IT_NONE;
 		sha_256 = sha256_future("");
+		stripped = 0;
 		return;
 	}
 
@@ -415,8 +464,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		type = info.type;
 
 		data.reset(new std::vector<char>(read_file_relative(_filename, base)));
-		if(info.type == info::IT_MEMORY && info.headersize)
-			headered = ((data->size() % (2 * info.headersize)) == info.headersize) ? info.headersize : 0;
+		headered = (info.type == info::IT_MEMORY) ? calculate_headersize(data->size(), info.headersize) : 0;
 		if(data->size() >= headered) {
 			if(headered) {
 				memmove(&(*data)[0], &(*data)[headered], data->size() - headered);
@@ -425,7 +473,8 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		} else {
 			data->resize(0);
 		}
-		sha_256 = sha256_future(sha256::hash(*data));
+		stripped = headered;
+		sha_256 = sha256_future(sha256::hash(*data), headered);
 		if(info.type == info::IT_MARKUP) {
 			size_t osize = data->size();
 			data->resize(osize + 1);
@@ -439,6 +488,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 		filename = boost_fs::absolute(boost_fs::path(filename)).string();
 		type = info::IT_FILE;
 		data.reset(new std::vector<char>(filename.begin(), filename.end()));
+		stripped = 0;
 		sha_256 = h(filename);
 		return;
 	}
@@ -468,4 +518,10 @@ void loaded_image::patch(const std::vector<char>& patch, int32_t offset) throw(s
 	} catch(...) {
 		throw;
 	}
+}
+
+std::function<uint64_t(uint64_t)> std_headersize_fn(uint64_t hdrsize)
+{
+	uint64_t h = hdrsize;
+	return ([h](uint64_t x) -> uint64_t { return calculate_headersize(x, h); });
 }

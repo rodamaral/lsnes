@@ -59,11 +59,17 @@ namespace
 			std::string rxsha = r.romxml[i].sha_256.read();
 			std::string fisha = f.romimg_sha256[i];
 			std::string fxsha = f.romxml_sha256[i];
+			std::string finam = r.romimg[i].filename;
+			std::string fxnam = r.romxml[i].filename;
 			std::string nhint = f.namehint[i];
 			if(risha != "" || rxsha != "" || fisha != "" || fxsha != "" || nhint != "") {
 				std::cout << "ROM slot #" << i << ":" << std::endl;
 				if(nhint != "")
 					std::cout << "\tHint:\t" << nhint << std::endl;
+				if(finam != "")
+					std::cout << "\tFile:\t" << finam << std::endl;
+				if(fxnam != "")
+					std::cout << "\tXFile:\t" << fxnam << std::endl;
 				if(risha != "" && fisha == risha)
 					std::cout << "\tHash:\t" << risha << " (matches)" << std::endl;
 				if(risha != "" && fisha != risha)
@@ -71,11 +77,11 @@ namespace
 				if(fisha != "" && fisha != risha)
 					std::cout << "\tHash:\t" << risha << " (Movie)" << std::endl;
 				if(rxsha != "" && fxsha == rxsha)
-					std::cout << "\tHash:\t" << rxsha << " (matches)" << std::endl;
+					std::cout << "\tXHash:\t" << rxsha << " (matches)" << std::endl;
 				if(rxsha != "" && fxsha != rxsha)
-					std::cout << "\tXMLHash:\t" << rxsha << " (ROM)" << std::endl;
+					std::cout << "\tXHash:\t" << rxsha << " (ROM)" << std::endl;
 				if(fxsha != "" && fxsha != rxsha)
-					std::cout << "\tXMLHash:\t" << rxsha << " (Movie)" << std::endl;
+					std::cout << "\tXHash:\t" << rxsha << " (Movie)" << std::endl;
 			}
 		}
 	}
