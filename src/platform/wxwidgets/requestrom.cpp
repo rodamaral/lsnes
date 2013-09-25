@@ -411,9 +411,8 @@ again:
 			auto future = lsnes_image_hasher(req.filename[i], std_headersize_fn(header));
 			//Dirty method to run the event loop until hashing finishes.
 			while(!future.ready()) {
-				while(wxTheApp->Pending())
-					wxTheApp->Dispatch();
-				usleep(10000);
+				wxSafeYield();
+				usleep(50000);
 			}
 			std::string hash = future.read();
 			if(hash != req.hash[i]) {
