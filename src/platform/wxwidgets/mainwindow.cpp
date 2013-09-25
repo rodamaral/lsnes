@@ -148,10 +148,16 @@ namespace
 	bool is_fs = false;
 	bool hashing_in_progress = false;
 	uint64_t hashing_left = 0;
+	uint64_t hashing_total = 0;
 	int64_t last_update = 0;
 	thread_class* emulation_thread;
 
-	void hash_callback(uint64_t left)
+	template<typename T> void runemufn_async(T fn)
+	{
+		platform::queue(functor_call_helper2<T>, new T(fn), false);
+	}
+
+	void hash_callback(uint64_t left, uint64_t total)
 	{
 		wxwin_mainwindow* mwin = main_window;
 		if(left == 0xFFFFFFFFFFFFFFFFULL) {
@@ -162,6 +168,7 @@ namespace
 		}
 		hashing_in_progress = true;
 		hashing_left = left;
+		hashing_total = total;
 		uint64_t this_update = get_utime();
 		if(this_update < last_update - 1000000 || this_update > last_update + 1000000) {
 			runuifun([mwin]() { if(mwin) mwin->notify_update_status(); });
@@ -438,7 +445,7 @@ namespace
 		req.region = file.region;
 		for(unsigned i = 0; i < file.files.size() && i < ROM_SLOT_COUNT; i++)
 			req.files[i] = file.files[i];
-		runemufn([req]() {
+		runemufn_async([req]() {
 			lsnes_cmd.invoke("unpause-emulator");
 			load_new_rom(req);
 		});
@@ -625,7 +632,7 @@ namespace
 				if(amov == bmov)
 					return false;
 				if(amov) std::swap(a, b);
-				runemufn([a, b]() {
+				runemufn_async([a, b]() {
 					lsnes_cmd.invoke("unpause-emulator");
 					romload_request req;
 					req.packfile = a;
@@ -644,7 +651,7 @@ namespace
 				} else {
 					romload_request req;
 					req.packfile = a;
-					runemufn([req]() {
+					runemufn_async([req]() {
 						lsnes_cmd.invoke("unpause-emulator");
 						load_new_rom(req);
 					});
@@ -1105,8 +1112,10 @@ std::u32string read_variable_map(const std::map<std::string, std::u32string>& va
 void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32string>& vars)
 {
 	if(hashing_in_progress) {
+		//TODO: Display this as a dialog.
 		std::ostringstream s;
-		s << "Hashing ROMs, approximately " << ((hashing_left + 524288) >> 20) << "MB left...";
+		s << "Hashing ROMs, approximately " << ((hashing_left + 524288) >> 20) << " of "
+			<< ((hashing_total + 524288) >> 20) << "MB left...";
 		statusbar->SetStatusText(towxstring(s.str()));
 		return;
 	}

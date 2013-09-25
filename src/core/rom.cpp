@@ -215,7 +215,6 @@ namespace
 
 sha256_hasher lsnes_image_hasher;
 
-
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {
 	return std::make_pair(current_rom_type, current_region);
@@ -648,7 +647,7 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 	rtype->unserialize(&buf[0], buf.size() - 32);
 }
 
-void set_hasher_callback(std::function<void(uint64_t)> cb)
+void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb)
 {
 	lsnes_image_hasher.set_callback(cb);
 }

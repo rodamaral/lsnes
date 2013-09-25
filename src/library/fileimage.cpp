@@ -280,6 +280,7 @@ sha256_future sha256_hasher::operator()(const std::string& filename, uint64_t pr
 	queue.push_back(j);
 	umutex_class h(mutex);
 	total_work += j.size;
+	work_size += j.size;
 	condition.notify_all();
 	return future;
 }
@@ -296,11 +297,12 @@ sha256_future sha256_hasher::operator()(const std::string& filename, std::functi
 	queue.push_back(j);
 	umutex_class h(mutex);
 	total_work += j.size;
+	work_size += j.size;
 	condition.notify_all();
 	return future;
 }
 
-void sha256_hasher::set_callback(std::function<void(uint64_t)> cb)
+void sha256_hasher::set_callback(std::function<void(uint64_t, uint64_t)> cb)
 {
 	umutex_class h(mutex);
 	progresscb = cb;
@@ -313,7 +315,8 @@ sha256_hasher::sha256_hasher()
 	last_future = NULL;
 	next_cbid = 0;
 	total_work = 0;
-	progresscb = [](uint64_t x) -> void {};
+	work_size = 0;
+	progresscb = [](uint64_t x, uint64_t y) -> void {};
 	hash_thread = new thread_class(thread_trampoline, this);
 }
 
@@ -417,12 +420,13 @@ void sha256_hasher::send_callback(uint64_t this_completed)
 		else
 			amount = total_work - this_completed;
 	}
-	progresscb(amount);
+	progresscb(amount, work_size);
 }
 
 void sha256_hasher::send_idle()
 {
-	progresscb(0xFFFFFFFFFFFFFFFFULL);
+	work_size = 0;	//Delete work when idle.
+	progresscb(0xFFFFFFFFFFFFFFFFULL, 0);
 }
 
 loaded_image::loaded_image() throw(std::bad_alloc)

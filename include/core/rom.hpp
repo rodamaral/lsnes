@@ -124,7 +124,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 /**
  * Set the hasher callback.
  */
-void set_hasher_callback(std::function<void(uint64_t)> cb);
+void set_hasher_callback(std::function<void(uint64_t, uint64_t)> cb);
 
 //Map of preferred cores for each extension and type.
 extern std::map<std::string, core_type*> preferred_core;

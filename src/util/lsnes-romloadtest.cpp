@@ -29,7 +29,7 @@ namespace
 	uint64_t hashing_left = 0;
 	int64_t last_update = 0;
 
-	void hash_callback(uint64_t left)
+	void hash_callback(uint64_t left, uint64_t total)
 	{
 		if(left == 0xFFFFFFFFFFFFFFFFULL) {
 			hashing_in_progress = false;

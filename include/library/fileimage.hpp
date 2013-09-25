@@ -88,7 +88,7 @@ public:
 /**
  * Set callback.
  */
-	void set_callback(std::function<void(uint64_t)> cb);
+	void set_callback(std::function<void(uint64_t, uint64_t)> cb);
 /**
  * Compute SHA-256 of file.
  */
@@ -126,9 +126,10 @@ private:
 	sha256_future* first_future;
 	sha256_future* last_future;
 	unsigned next_cbid;
-	std::function<void(uint64_t)> progresscb;
+	std::function<void(uint64_t, uint64_t)> progresscb;
 	bool quitting;
 	uint64_t total_work;
+	uint64_t work_size;
 };
 
 /**
