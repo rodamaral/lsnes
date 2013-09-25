@@ -1021,6 +1021,8 @@ nothing_to_do:
 				location_special = SPECIAL_SAVEPOINT;
 				update_movie_state();
 				platform::flush_command_queue();
+				if(amode == ADVANCE_QUIT)
+					return -1;
 				if(amode == ADVANCE_LOAD)
 					goto jumpback;
 			}
@@ -1150,6 +1152,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			} else if(r < 0) {
 				//Not exactly desriable, but this at least won't desync.
 				stop_at_frame_active = false;
+				if(amode == ADVANCE_QUIT)
+					return;
 				amode = ADVANCE_PAUSE;
 			}
 		}
