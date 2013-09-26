@@ -1681,6 +1681,51 @@ Kills the currently dumped video frame + the associated sound.
  Only valid in on_video callback.
 \end_layout
 
+\begin_layout Subsection
+gui.arrow: Draw an arrow
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.arrow(number x, number y, number length, number hwidth,
+ number direction[, bool fill[, number color[, number twidth[, number hthick]]]]
+\end_layout
+
+\begin_layout Standard
+Draws an arrow using color <color>.
+ The tip of arrow is at (<x>, <y>).
+ Other parameters:
+\end_layout
+
+\begin_layout Enumerate
+<length>: The length of arrow tail.
+\end_layout
+
+\begin_layout Enumerate
+<hwidth>: The width of arrow head.
+ Should be odd.
+\end_layout
+
+\begin_layout Enumerate
+<direction>: Direction of arrow.
+ 0 is to right, +1 rotates 45 degrees counterclockwise.
+\end_layout
+
+\begin_layout Enumerate
+<fill>: If true, fill the arrow head.
+ Default false.
+\end_layout
+
+\begin_layout Enumerate
+<twidth>: Tail width.
+ Should be odd.
+ Default 1.
+\end_layout
+
+\begin_layout Enumerate
+<hthick>: Head thickness (only used if <fill> is false).
+ Default is <twidth>.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
