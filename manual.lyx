@@ -2964,6 +2964,59 @@ Draw string with custom font to screen.
  
 \end_layout
 
+\begin_layout Subsubsection
+gui.arrow(number x, number y, number length, number headwidth, number direction[,
+ boolean fill[, number color[, number width[, number hthicknes]]]]
+\end_layout
+
+\begin_layout Standard
+Draw an arrow.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: The x-coordinate of arrow tip.
+\end_layout
+
+\begin_layout Itemize
+y: The y-coordinate of arrow tip.
+\end_layout
+
+\begin_layout Itemize
+length: Length of arrow tail
+\end_layout
+
+\begin_layout Itemize
+headwidth: Width of arrow head.
+ Should be odd.
+\end_layout
+
+\begin_layout Itemize
+direction: Direction of arrow.
+ 0 is to right.
+ Each unit is 45 degree rotation counterclockwise.
+\end_layout
+
+\begin_layout Itemize
+fill: If true, fill the arrow head (hthickness is ignored).
+ Default is not to fill.
+\end_layout
+
+\begin_layout Itemize
+color: Color of arrow (default white).
+\end_layout
+
+\begin_layout Itemize
+width: Width of arrow tail.
+ Should be odd.
+ Default is 1.
+\end_layout
+
+\begin_layout Itemize
+hthickness: Thickness of arrow head.
+ Default is the same as tail width.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout

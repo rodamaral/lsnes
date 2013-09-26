@@ -1497,6 +1497,33 @@ Draw string with custom font to screen. The parameters are the
 same as in gui.text, except hlc is the halo color (default is no 
 halo). 
 
+8.3.37 gui.arrow(number x, number y, number length, number 
+  headwidth, number direction[, boolean fill[, number color[, 
+  number width[, number hthicknes]]]]
+
+Draw an arrow. Parameters:
+
+• x: The x-coordinate of arrow tip.
+
+• y: The y-coordinate of arrow tip.
+
+• length: Length of arrow tail
+
+• headwidth: Width of arrow head. Should be odd.
+
+• direction: Direction of arrow. 0 is to right. Each unit is 45 
+  degree rotation counterclockwise.
+
+• fill: If true, fill the arrow head (hthickness is ignored). 
+  Default is not to fill.
+
+• color: Color of arrow (default white).
+
+• width: Width of arrow tail. Should be odd. Default is 1.
+
+• hthickness: Thickness of arrow head. Default is the same as 
+  tail width.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.
