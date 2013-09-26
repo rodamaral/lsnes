@@ -4,8 +4,12 @@
 
 namespace
 {
-	int _dx[8] = {-1,-1,0,1,1,1,0,-1};
-	int _dy[8] = {0,1,1,1,0,-1,-1,-1};
+	int _dx[8] =  {-1,-1, 0, 1, 1, 1, 0,-1};
+	int _dy[8] =  { 0, 1, 1, 1, 0,-1,-1,-1};
+	int _dxn[8] = { 0, 0, 1, 1, 0, 0,-1,-1};
+	int _dyn[8] = { 1, 1, 0, 0,-1,-1, 0, 0};
+	int _dxp[8] = { 0, 1, 1, 0, 0,-1,-1, 0};
+	int _dyp[8] = { 1, 0, 0,-1,-1, 0, 0, 1};
 	struct render_object_arrow : public render_object
 	{
 		render_object_arrow(int32_t _x, int32_t _y, uint32_t _length, uint32_t _width,
@@ -21,8 +25,9 @@ namespace
 			uint32_t originy = scr.get_origin_y();
 			auto orange = offsetrange();
 			for(int32_t o = orange.first; o < orange.second; o++) {
-				int32_t bpx = x + originx + _dx[(direction + 2) & 7] * o;
-				int32_t bpy = y + originy + _dy[(direction + 2) & 7] * o;
+				int32_t bpx, bpy;
+				bpx = x + originx + ((o < 0) ? _dxn[direction & 7] : _dxp[direction & 7]) * o;
+				bpy = y + originy + ((o < 0) ? _dyn[direction & 7] : _dyp[direction & 7]) * o;
 				int dx = _dx[direction & 7];
 				int dy = _dy[direction & 7];
 				auto drange = drawrange(o);
@@ -61,9 +66,13 @@ namespace
 			int32_t maxc = 0;
 			if(in_center) maxc = max(maxc, static_cast<int32_t>(length));
 			if(in_head) {
-				if(fill)
-					maxc = max(maxc, hmax);
-				else
+				if(fill) {
+					if(direction & 1) {
+						int32_t fedge = hmax - minc;
+						maxc = max(maxc, minc + fedge / 2 + 1); 
+					} else
+						maxc = max(maxc, hmax);
+				} else
 					maxc = max(maxc, static_cast<int32_t>(minc + headthickness));
 			}
 			return std::make_pair(minc, maxc);
