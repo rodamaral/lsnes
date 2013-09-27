@@ -21,8 +21,16 @@ extern bool lua_booted_flag;
 extern uint64_t lua_idle_hook_time;
 extern uint64_t lua_timer_hook_time;
 
-std::list<std::string(*)(lua_State* LS, int index)>& userdata_recogn_fns();
+struct luaclass_methods
+{
+	bool (*is)(lua_State* LS, int index);
+	const std::string& (*name)();
+	std::string (*print)(lua_State* LS, int index);
+};
+
+std::list<luaclass_methods>& userdata_recogn_fns();
 std::string try_recognize_userdata(lua_State* LS, int index);
+std::string try_print_userdata(lua_State* LS, int index);
 
 template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)
@@ -95,7 +103,11 @@ public:
 	lua_class(const std::string& _name)
 	{
 		name = _name;
-		userdata_recogn_fns().push_back(lua_class<T>::recognize);
+		luaclass_methods m;
+		m.is = lua_class<T>::is;
+		m.name = lua_class<T>::get_name;
+		m.print = lua_class<T>::print;
+		userdata_recogn_fns().push_back(m);
 	}
 
 	template<typename... U> T* _create(lua_State* LS, U... args)
@@ -234,6 +246,17 @@ badtype:
 	static lua_obj_pin<T>* pin(lua_State* LS, int arg, const char* fname)
 	{
 		return objclass<T>()._pin(LS, arg, fname);
+	}
+
+	static const std::string& get_name()
+	{
+		return objclass<T>().name;
+	}
+
+	static std::string print(lua_State* LS, int index)
+	{
+		T* obj = get(LS, index, "__internal_print");
+		return obj->print();
 	}
 private:
 	static int dogc(lua_State* LS)

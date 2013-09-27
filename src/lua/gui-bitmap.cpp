@@ -21,6 +21,11 @@ lua_bitmap::~lua_bitmap()
 	render_kill_request(this);
 }
 
+std::string lua_bitmap::print()
+{
+	return (stringfmt() << width << "*" << height).str();
+}
+
 lua_dbitmap::lua_dbitmap(uint32_t w, uint32_t h)
 {
 	width = w;
@@ -33,6 +38,11 @@ lua_dbitmap::~lua_dbitmap()
 	render_kill_request(this);
 }
 
+std::string lua_dbitmap::print()
+{
+	return (stringfmt() << width << "*" << height).str();
+}
+
 lua_palette::lua_palette()
 {
 	palette_mutex = &mutex::aquire();
@@ -41,6 +51,12 @@ lua_palette::lua_palette()
 lua_palette::~lua_palette()
 {
 	delete palette_mutex;
+}
+
+std::string lua_palette::print()
+{
+	size_t s = colors.size();
+	return (stringfmt() << s << " " << ((s != 1) ? "colors" : "color")).str();
 }
 
 namespace

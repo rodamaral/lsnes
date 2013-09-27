@@ -99,7 +99,11 @@ public:
 		x.first->write(LS, x.second);
 		return 0;
 	}
-
+	std::string print()
+	{
+		size_t s = mappings.size();
+		return (stringfmt() << s << " " << ((s != 1) ? "mappings" : "mapping")).str();
+	}
 	int map(lua_State* LS);
 private:
 	std::map<std::string, std::pair<mmap_base*, uint64_t>> mappings;

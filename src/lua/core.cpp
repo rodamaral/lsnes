@@ -36,8 +36,8 @@ namespace
 			return (stringfmt() << "Thread:" << lua_topointer(LS, index)).str();
 			break;
 		case LUA_TUSERDATA:
-			return (stringfmt() << "Userdata<" << try_recognize_userdata(LS, index) << ">:"
-				<< lua_touserdata(LS, index)).str();
+			return (stringfmt() << "Userdata<" << try_recognize_userdata(LS, index) << "@"
+				<< lua_touserdata(LS, index) << ">:[" << try_print_userdata(LS, index) << "]").str();
 		case LUA_TTABLE: {
 			//Fun with recursion.
 			const void* ptr = lua_topointer(LS, index);

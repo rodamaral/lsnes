@@ -15,6 +15,10 @@ namespace
 		~lua_customfont() throw();
 		int draw(lua_State* LS);
 		const custom_font& get_font() { return font; }
+		std::string print()
+		{
+			return "";
+		}
 	private:
 		custom_font font;
 	};

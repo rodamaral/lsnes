@@ -7,6 +7,10 @@ class lua_inverse_bind
 {
 public:
 	lua_inverse_bind(const std::string name, const std::string cmd);
+	std::string print()
+	{
+		return ikey.getname();
+	}
 private:
 	inverse_key ikey;
 };
