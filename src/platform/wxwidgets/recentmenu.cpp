@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/menu_recent.hpp"
 #include "platform/wxwidgets/platform.hpp"
+#include "library/eatarg.hpp"
 
 template<class T>
 recent_menu<T>::recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
@@ -63,6 +64,6 @@ void _dummy_3642632773273272787237272723()
 {
 	recent_menu<recentfile_path> x(NULL, 0, 0, "", NULL);
 	recent_menu<recentfile_multirom> y(NULL, 0, 0, "", NULL);
-	x.add(recentfile_path());
-	y.add(recentfile_multirom());
+	eat_argument(&recent_menu<recentfile_path>::add);
+	eat_argument(&recent_menu<recentfile_multirom>::add);
 }

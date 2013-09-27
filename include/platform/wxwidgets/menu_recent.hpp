@@ -11,7 +11,7 @@ class recent_menu : public wxMenu
 {
 public:
 	recent_menu(wxWindow* win, int wxid_low, int wxid_high, const std::string& cfg,
-		void (*cb)(const T& name));
+		void (*cb)(const T& name))  __attribute__((noinline));
 	void on_select(wxCommandEvent& e);
 	void update();
 	void add(const T& file);

@@ -49,7 +49,7 @@ template<class T>
 class recent_files
 {
 public:
-	recent_files(const std::string& cfgfile, size_t maxcount);
+	recent_files(const std::string& cfgfile, size_t maxcount) __attribute__((noinline));
 	void add(const T& file);
 	void add_hook(recent_files_hook& h);
 	void remove_hook(recent_files_hook& h);
