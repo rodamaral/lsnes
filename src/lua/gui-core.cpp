@@ -125,10 +125,8 @@ namespace
 		uint64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		int32_t steps = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		L.get_numeric_argument<int64_t>(3, basecolor, fname.c_str());
-		if(!steps) {
-			L.pushstring("Expected nonzero steps for gui.rainbow");
-			L.error();
-		}
+		if(!steps)
+			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		if(basecolor < 0) {
 			//Special: Any rotation of transparent is transparent.
 			L.pushnumber(-1);

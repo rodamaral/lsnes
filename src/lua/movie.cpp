@@ -77,11 +77,8 @@ namespace
 			lua_obj_pin<lua_unsaferewind>* u = new lua_obj_pin<lua_unsaferewind>(
 				lua_class<lua_unsaferewind>::pin(L, 1, fname.c_str()));
 			mainloop_signal_need_rewind(u);
-		} else {
-			L.pushstring("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
-			L.error();
-			return 0;
-		}
+		} else
+			throw std::runtime_error("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
 		return 0;
 	});
 

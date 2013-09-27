@@ -49,10 +49,8 @@ namespace
 			if(ptr->left_gap != std::numeric_limits<uint32_t>::max())
 				lua_render_ctx->left_gap = ptr->left_gap;
 			lua_render_ctx->queue->copy_from(*ptr->queue);
-		} else {
-			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_run.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_run.");
 		return 0;
 	});
 
@@ -63,10 +61,8 @@ namespace
 			auto q = lua_class<render_queue_obj>::pin(L, 1, fname.c_str());
 			synchronous_paint_ctx = &*q;
 			redraw_framebuffer();
-		} else {
-			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_run.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_run.");
 		return 0;
 	});
 
@@ -81,10 +77,8 @@ namespace
 			ptr->bottom_gap = std::numeric_limits<uint32_t>::max();
 			ptr->left_gap = std::numeric_limits<uint32_t>::max();
 			ptr->queue->clear();
-		} else {
-			L.pushstring("Expected RENDERCTX as argument 1 for gui.renderq_clear.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_clear.");
 		return 0;
 	});
 
@@ -113,10 +107,8 @@ namespace
 			redirect = false;
 			last = NULL;
 			saved = NULL;
-		} else {
-			L.pushstring("Expected RENDERCTX or nil as argument 1 for gui.renderq_set.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected RENDERCTX or nil as argument 1 for gui.renderq_set.");
 		return 0;
 	});
 }

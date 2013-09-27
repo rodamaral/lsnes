@@ -1253,11 +1253,8 @@ again2:
 	function_ptr_luafun lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua_state& L,
 		const std::string& fname) -> int {
 		unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		if(r >= SNES::Debugger::Breakpoints) {
-			L.pushstring("Bad breakpoint number");
-			L.error();
-			return 0;
-		}
+		if(r >= SNES::Debugger::Breakpoints)
+			throw std::runtime_error("Bad breakpoint number");
 		if(L.type(2) == LUA_TNIL) {
 			//Clear breakpoint.
 			SNES::debugger.breakpoint[r].enabled = false;
@@ -1274,11 +1271,8 @@ again2:
 			snesdbg_set_callback(L, snes_debug_cb_keys[r]);
 			L.pop(2);
 			return 0;
-		} else {
-			L.pushstring("Expected argument 2 to memory.setdebug to be nil or table");
-			L.error();
-			return 0;
-		}
+		} else
+			throw std::runtime_error("Expected argument 2 to memory.setdebug to be nil or table");
 	});
 
 	function_ptr_luafun lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua_state& L,

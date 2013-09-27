@@ -487,7 +487,6 @@ public:
 	int isboolean(int index) { return lua_isboolean(lua_handle, index); }
 	int toboolean(int index) { return lua_toboolean(lua_handle, index); }
 	const char* tolstring(int index, size_t *len) { return lua_tolstring(lua_handle, index, len); }
-	int error() { return lua_error(lua_handle); }
 	void pushboolean(int b) { lua_pushboolean(lua_handle, b); }
 	lua_Number tonumber(int index) { return lua_tonumber(lua_handle, index); }
 	void gettable(int index) { lua_gettable(lua_handle, index); }

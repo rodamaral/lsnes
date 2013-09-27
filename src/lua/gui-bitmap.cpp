@@ -161,10 +161,8 @@ namespace
 			lua_class<lua_dbitmap>::get(L, 3, fname.c_str());
 			auto b = lua_class<lua_dbitmap>::pin(L, 3, fname.c_str());
 			lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b);
-		} else {
-			L.pushstring("Expected BITMAP or DBITMAP as argument 3 for gui.bitmap_draw.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 3 for gui.bitmap_draw.");
 		return 0;
 	});
 
@@ -227,10 +225,8 @@ namespace
 			if(x >= b->width || y >= b->height)
 				return 0;
 			b->pixels[y * b->width + x] = premultiplied_color(c);
-		} else {
-			L.pushstring("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pset.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pset.");
 		return 0;
 	});
 
@@ -256,10 +252,8 @@ namespace
 			if(x >= b->width || y >= b->height)
 				return 0;
 			L.pushnumber(demultiply_color(b->pixels[y * b->width + x]));
-		} else {
-			L.pushstring("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pget.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pget.");
 		return 1;
 	});
 
@@ -273,10 +267,8 @@ namespace
 			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
 			L.pushnumber(b->width);
 			L.pushnumber(b->height);
-		} else {
-			L.pushstring("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_size.");
-			L.error();
-		}
+		} else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_size.");
 		return 2;
 	});
 

@@ -129,11 +129,8 @@ namespace
 		-> int {
 		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		auto busrange = our_rom.rtype->get_bus_map();
-		if(!busrange.second) {
-			L.pushstring("This platform does not have bus mapping");
-			L.error();
-			return 0;
-		}
+		if(!busrange.second)
+			throw std::runtime_error("This platform does not have bus mapping");
 		L.pushnumber(busrange.first + (addr % busrange.second));
 		return 1;
 	});

@@ -14,13 +14,7 @@ namespace
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		L.get_numeric_argument<uint64_t>(3, count, fname.c_str());
 		disassembler* d;
-		try {
-			d = &disassembler::byname(kind);
-		} catch(std::exception& e) {
-			L.pushstring(e.what());
-			L.error();
-			return 0;
-		}
+		d = &disassembler::byname(kind);
 		L.newtable();
 		uint64_t laddr = addr;
 		for(uint64_t i = 1; i <= count; i++) {

@@ -198,11 +198,8 @@ namespace
 		std::string x = L.get_string(1, fname.c_str());
 		state = L.get_bool(2, fname.c_str());
 		keyboard_key* key = lsnes_kbd.try_lookup_key(x);
-		if(!key) {
-			L.pushstring("Invalid key name");
-			L.error();
-			return 0;
-		}
+		if(!key)
+			throw std::runtime_error("Invalid key name");
 		bool ostate = hooked.count(x) > 0;
 		if(ostate == state)
 			return 0;
@@ -221,11 +218,8 @@ namespace
 		if(!lua_input_controllerdata)
 			return 0;
 		auto pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid.first < 0) {
-			L.pushstring("Invalid controller for input.joyget");
-			L.error();
-			return 0;
-		}
+		if(pcid.first < 0)
+			throw std::runtime_error("Invalid controller for input.joyget");
 		L.newtable();
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
@@ -245,19 +239,13 @@ namespace
 
 	function_ptr_luafun ijset(lua_func_misc, "input.joyset", [](lua_state& L, const std::string& fname) -> int {
 		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		if(L.type(2) != LUA_TTABLE) {
-			L.pushstring("Invalid type for input.joyset");
-			L.error();
-			return 0;
-		}
+		if(L.type(2) != LUA_TTABLE)
+			throw std::runtime_error("Invalid type for input.joyset");
 		if(!lua_input_controllerdata)
 			return 0;
 		auto pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid.first < 0) {
-			L.pushstring("Invalid controller for input.joyset");
-			L.error();
-			return 0;
-		}
+		if(pcid.first < 0)
+			throw std::runtime_error("Invalid controller for input.joyset");
 		const port_type& pt = lua_input_controllerdata->get_port_type(pcid.first);
 		const port_controller& ctrl = *pt.controller_info->controllers[pcid.second];
 		unsigned lcnt = ctrl.buttons.size();

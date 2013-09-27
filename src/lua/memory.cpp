@@ -214,11 +214,8 @@ namespace
 			}
 			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
 			uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
-			if(!size) {
-				L.pushstring("Aperture with zero size is not valid");
-				L.error();
-				return 0;
-			}
+			if(!size)
+				throw std::runtime_error("Aperture with zero size is not valid");
 			aperture_make_fun(L, addr, size - 1, h);
 			return 1;
 		}
