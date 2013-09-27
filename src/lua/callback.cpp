@@ -10,6 +10,10 @@ namespace
 		lua_callbacks_list(lua_state& L);
 		int index(lua_state& L, const std::string& fname);
 		int newindex(lua_state& L, const std::string& fname);
+		std::string print()
+		{
+			return "";
+		}
 	};
 
 	class lua_callback_obj
@@ -19,6 +23,13 @@ namespace
 		int _register(lua_state& L, const std::string& fname);
 		int _unregister(lua_state& L, const std::string& fname);
 		int _call(lua_state& L, const std::string& fname);
+		std::string print()
+		{
+			if(callback)
+				return callback->get_name();
+			else
+				return "(null)";
+		}
 	private:
 		lua_state::lua_callback_list* callback;
 		int special;

@@ -53,6 +53,10 @@ namespace
 		int info(lua_state& L, const std::string& fname);
 		template<class T, bool _bswap> int rw(lua_state& L, const std::string& fname);
 		template<bool write, bool sign> int scattergather(lua_state& L, const std::string& fname);
+		std::string print()
+		{
+			return vma;
+		}
 	private:
 		std::string vma;
 		uint64_t vmabase;
@@ -67,6 +71,10 @@ namespace
 		int index(lua_state& L, const std::string& fname);
 		int newindex(lua_state& L, const std::string& fname);
 		int call(lua_state& L, const std::string& fname);
+		std::string print()
+		{
+			return "";
+		}
 	};
 }
 

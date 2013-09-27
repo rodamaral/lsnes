@@ -16,8 +16,16 @@ extern "C"
 
 class lua_state;
 
-std::list<std::string(*)(lua_state& state, int index)>& userdata_recogn_fns();
+struct luaclass_methods
+{
+	bool (*is)(lua_state& state, int index);
+	const std::string& (*name)();
+	std::string (*print)(lua_state& state, int index);
+};
+
+std::list<luaclass_methods>& userdata_recogn_fns();
 std::string try_recognize_userdata(lua_state& state, int index);
+std::string try_print_userdata(lua_state& state, int index);
 
 struct lua_function;
 
@@ -716,11 +724,6 @@ badtype:
 		return ret;
 	}
 
-	std::string _recognize(lua_state& state, int arg)
-	{
-		return _is(state, arg) ? name : "";
-	}
-
 	lua_obj_pin<T> _pin(lua_state& state, int arg, const std::string& fname)
 	{
 		T* obj = get(state, arg, fname);
@@ -736,7 +739,11 @@ public:
 	lua_class(const std::string& _name)
 	{
 		name = _name;
-		userdata_recogn_fns().push_back(lua_class<T>::recognize);
+		luaclass_methods m;
+		m.is = lua_class<T>::is;
+		m.name = lua_class<T>::get_name;
+		m.print = lua_class<T>::print;
+		userdata_recogn_fns().push_back(m);
 	}
 
 /**
@@ -810,16 +817,20 @@ public:
 		return objclass<T>()._is(state, arg);
 	}
 /**
- * Identify if object is of this type.
- * Parameter state: The Lua state.
- * Parameter arg: Argument index.
- * Returns: Name of type if object is of specified type, "" if not.
+ * Get name of class.
  */
-	static std::string recognize(lua_state& state, int arg)
+	static const std::string& get_name()
 	{
-		return objclass<T>()._recognize(state, arg);
+		return objclass<T>().name;
 	}
-
+/**
+ * Format instance of this class as string.
+ */
+	static std::string print(lua_state& state, int index)
+	{
+		T* obj = get(state, index, "__internal_print");
+		return obj->print();
+	}
 /**
  * Get a pin of object against Lua GC.
  *

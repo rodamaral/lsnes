@@ -38,8 +38,8 @@ namespace
 			return (stringfmt() << "Thread:" << L.topointer(index)).str();
 			break;
 		case LUA_TUSERDATA:
-			return (stringfmt() << "Userdata<" << try_recognize_userdata(L, index) << ">:"
-				<< L.touserdata(index)).str();
+			return (stringfmt() << "Userdata<" << try_recognize_userdata(L, index) << "@"
+				<< L.touserdata(index) << ">:[" << try_print_userdata(L, index) << "]").str();
 		case LUA_TTABLE: {
 			//Fun with recursion.
 			const void* ptr = L.topointer(index);

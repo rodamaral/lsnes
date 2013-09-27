@@ -2,6 +2,7 @@
 #define _lua__unsaferewind__hpp__included__
 
 #include "library/luabase.hpp"
+#include "library/string.hpp"
 
 struct lua_unsaferewind
 {
@@ -14,6 +15,10 @@ struct lua_unsaferewind
 	uint64_t ssecs;
 	std::vector<uint32_t> pollcounters;
 	std::vector<char> hostmemory;
+	std::string print()
+	{
+		return (stringfmt() << "to frame " << frame).str();
+	}
 };
 
 #endif

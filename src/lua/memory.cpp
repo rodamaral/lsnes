@@ -123,8 +123,12 @@ public:
 		x.first->write(L, x.second);
 		return 0;
 	}
-
 	int map(lua_state& L, const std::string& fname);
+	std::string print()
+	{
+		size_t s = mappings.size();
+		return (stringfmt() << s << " " << ((s != 1) ? "mappings" : "mapping")).str();
+	}
 private:
 	std::map<std::string, std::pair<mmap_base*, uint64_t>> mappings;
 };

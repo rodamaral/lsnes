@@ -22,6 +22,11 @@ namespace
 		}
 		~render_queue_obj() throw() {}
 		lua_render_context* get() { return &lctx; }
+		std::string print()
+		{
+			size_t s = rqueue.get_object_count();
+			return (stringfmt() << s << " " << ((s != 1) ? "objects" : "object")).str();
+		}
 	private:
 		render_queue rqueue;
 		lua_render_context lctx;

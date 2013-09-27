@@ -7,6 +7,10 @@ class lua_inverse_bind
 {
 public:
 	lua_inverse_bind(lua_state& L, const std::string& name, const std::string& cmd);
+	std::string print()
+	{
+		return ikey.getname();
+	}
 private:
 	inverse_bind ikey;
 };
@@ -49,6 +53,13 @@ class lua_command_bind
 public:
 	lua_command_bind(lua_state& L, const std::string& cmd, int idx1, int idx2);
 	~lua_command_bind();
+	std::string print()
+	{
+		if(b)
+			return a->get_name() + "," + b->get_name();
+		else
+			return a->get_name();
+	}
 private:
 	lua_command_binding* a;
 	lua_command_binding* b;

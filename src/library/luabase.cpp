@@ -308,19 +308,17 @@ void lua_function_group::do_unregister(const std::string& name)
 		i.second(name, NULL);
 }
 
-std::list<std::string(*)(lua_state& state, int index)>& userdata_recogn_fns()
+std::list<luaclass_methods>& userdata_recogn_fns()
 {
-	static std::list<std::string(*)(lua_state& state, int index)> x;
+	static std::list<luaclass_methods> x;
 	return x;
 }
 
 std::string try_recognize_userdata(lua_state& state, int index)
 {
-	for(auto i : userdata_recogn_fns()) {
-		std::string x = i(state, index);
-		if(x != "")
-			return x;
-	}
+	for(auto i : userdata_recogn_fns())
+		if(i.is(state, index))
+			return i.name();
 	//Hack: Lua builtin file objects.
 	state.pushstring("FILE*");
 	state.rawget(LUA_REGISTRYINDEX);
@@ -333,4 +331,12 @@ std::string try_recognize_userdata(lua_state& state, int index)
 	}
 	state.pop(1);
 	return "unknown";
+}
+
+std::string try_print_userdata(lua_state& L, int index)
+{
+	for(auto i : userdata_recogn_fns())
+		if(i.is(L, index))
+			return i.print(L, index);
+	return "no data available";
 }

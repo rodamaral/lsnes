@@ -583,6 +583,19 @@ struct render_queue
 		create_add<T>(*obj);
 	}
 /**
+ * Get number of objects.
+ */
+	size_t get_object_count()
+	{
+		size_t c = 0;
+		struct node* n = queue_head;
+		while(n != queue_tail) {
+			n = n->next;
+			c++;
+		}
+		return c;
+	}
+/**
  * Constructor.
  */
 	render_queue() throw();

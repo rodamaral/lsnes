@@ -8,6 +8,7 @@
 #include "library/luabase.hpp"
 #include "library/framebuffer.hpp"
 #include "library/threadtypes.hpp"
+#include "library/string.hpp"
 
 struct lua_bitmap
 {
@@ -16,6 +17,7 @@ struct lua_bitmap
 	size_t width;
 	size_t height;
 	std::vector<uint16_t> pixels;
+	std::string print();
 };
 
 struct lua_dbitmap
@@ -25,6 +27,7 @@ struct lua_dbitmap
 	size_t width;
 	size_t height;
 	std::vector<premultiplied_color> pixels;
+	std::string print();
 };
 
 struct lua_palette
@@ -33,6 +36,7 @@ struct lua_palette
 	lua_palette(lua_state& L);
 	~lua_palette();
 	mutex_class palette_mutex;
+	std::string print();
 };
 
 struct lua_loaded_bitmap

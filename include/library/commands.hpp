@@ -109,6 +109,10 @@ public:
  * Get long help for command.
  */
 	virtual std::string get_long_help() throw(std::bad_alloc);
+/**
+ * Get name of command.
+ */
+	const std::string& get_name() { return commandname; }
 private:
 	command(const command&);
 	command& operator=(const command&);

@@ -72,6 +72,12 @@ namespace
 		{
 			return f;
 		}
+		std::string print()
+		{
+			char buf[MAX_SERIALIZED_SIZE];
+			f.serialize(buf);
+			return buf;
+		}
 	private:
 		short getbutton(unsigned port, unsigned controller, unsigned index)
 		{
@@ -476,6 +482,11 @@ namespace
 		controller_frame_vector* get_frame_vector()
 		{
 			return &v;
+		}
+		std::string print()
+		{
+			size_t s = v.size();
+			return (stringfmt() << s << " " << ((s != 1) ? "frames" : "frame")).str();
 		}
 	private:
 		void common_init(lua_state& L);
