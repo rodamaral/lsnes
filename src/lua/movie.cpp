@@ -94,11 +94,8 @@ namespace
 			//Load the save.
 			lua_obj_pin<lua_unsaferewind>* u = lua_class<lua_unsaferewind>::pin(LS, 1, fname.c_str());
 			mainloop_signal_need_rewind(u);
-		} else {
-			lua_pushstring(LS, "movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
-			lua_error(LS);
-			return 0;
-		}
+		} else
+			throw std::runtime_error("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
 		return 0;
 	});
 }

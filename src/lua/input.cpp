@@ -110,11 +110,8 @@ namespace
 		std::string x = get_string_argument(LS, 1, fname.c_str());
 		state = get_boolean_argument(LS, 2, fname.c_str());
 		k = keygroup::lookup_by_name(x);
-		if(!k) {
-			lua_pushstring(LS, "Invalid key name");
-			lua_error(LS);
-			return 0;
-		}
+		if(!k)
+			throw std::runtime_error("Invalid key name");
 		k->request_hook_callback(state);
 		return 0;
 	});
@@ -124,11 +121,8 @@ namespace
 		if(!lua_input_controllerdata)
 			return 0;
 		int pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid < 0) {
-			lua_pushstring(LS, "Invalid controller for input.joyget");
-			lua_error(LS);
-			return 0;
-		}
+		if(pcid < 0)
+			throw std::runtime_error("Invalid controller for input.joyget");
 		lua_newtable(LS);
 		unsigned lcnt = get_core_logical_controller_limits().second;
 		for(unsigned i = 0; i < lcnt; i++) {
@@ -153,19 +147,13 @@ namespace
 
 	function_ptr_luafun ijset("input.joyset", [](lua_State* LS, const std::string& fname) -> int {
 		unsigned lcid = get_numeric_argument<unsigned>(LS, 1, fname.c_str());
-		if(lua_type(LS, 2) != LUA_TTABLE) {
-			lua_pushstring(LS, "Invalid type for input.joyset");
-			lua_error(LS);
-			return 0;
-		}
+		if(lua_type(LS, 2) != LUA_TTABLE)
+			throw std::runtime_error("Invalid type for input.joyset");
 		if(!lua_input_controllerdata)
 			return 0;
 		int pcid = controls.lcid_to_pcid(lcid - 1);
-		if(pcid < 0) {
-			lua_pushstring(LS, "Invalid controller for input.joyset");
-			lua_error(LS);
-			return 0;
-		}
+		if(pcid < 0)
+			throw std::runtime_error("Invalid controller for input.joyset");
 		unsigned lcnt = get_core_logical_controller_limits().second;
 		for(unsigned i = 0; i < lcnt; i++) {
 			std::string n = get_logical_button_name(i);

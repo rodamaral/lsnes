@@ -141,14 +141,8 @@ namespace
 
 	function_ptr_luafun gui_text_cf("gui.loadfont", [](lua_State* LS, const std::string& fname) -> int {
 		std::string filename = get_string_argument(LS, 1, fname.c_str());
-		try {
-			lua_customfont* b = lua_class<lua_customfont>::create(LS, LS, filename);
-			return 1;
-		} catch(std::exception& e) {
-			lua_pushstring(LS, e.what());
-			lua_error(LS);
-			return 0;
-		}
+		lua_customfont* b = lua_class<lua_customfont>::create(LS, LS, filename);
+		return 1;
 	
 	});
 }

@@ -113,35 +113,44 @@ namespace
 {
 	int aperture_read_fun(lua_State* LS)
 	{
-		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
-		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
-		if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = lua_tonumber(LS, lua_upvalueindex(2));
-		mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
-		uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(read)");
-		if(addr > size || addr + base < addr) {
-			lua_pushnumber(LS, 0);
+		try {
+			uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
+			uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
+			if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
+				size = lua_tonumber(LS, lua_upvalueindex(2));
+			mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(read)");
+			if(addr > size || addr + base < addr) {
+				lua_pushnumber(LS, 0);
+				return 1;
+			}
+			addr += base;
+			fn->read(LS, addr);
 			return 1;
+		} catch(std::exception& e) {
+			lua_pushstring(LS, e.what());
+			lua_error(LS);
 		}
-		addr += base;
-		fn->read(LS, addr);
-		return 1;
 	}
 
 	int aperture_write_fun(lua_State* LS)
 	{
-
-		uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
-		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
-		if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
-			size = lua_tonumber(LS, lua_upvalueindex(2));
-		mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
-		uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(write)");
-		if(addr > size || addr + base < addr)
-			return 0;
-		addr += base;
+		try {
+			uint64_t base = lua_tonumber(LS, lua_upvalueindex(1));
+			uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
+			if(lua_type(LS, lua_upvalueindex(2)) == LUA_TNUMBER)
+				size = lua_tonumber(LS, lua_upvalueindex(2));
+			mmap_base* fn = reinterpret_cast<mmap_base*>(lua_touserdata(LS, lua_upvalueindex(3)));
+			uint64_t addr = get_numeric_argument<uint64_t>(LS, 2, "aperture(write)");
+			if(addr > size || addr + base < addr)
+				return 0;
+			addr += base;
 		fn->write(LS, addr);
-		return 0;
+			return 0;
+		} catch(std::exception& e) {
+			lua_pushstring(LS, e.what());
+			lua_error(LS);
+		}
 	}
 
 	void aperture_make_fun(lua_State* LS, uint64_t base, uint64_t size, mmap_base& type)
@@ -181,11 +190,8 @@ namespace
 			}
 			uint64_t addr = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 			uint64_t size = get_numeric_argument<uint64_t>(LS, 2, fname.c_str());
-			if(!size) {
-				lua_pushstring(LS, "Aperture with zero size is not valid");
-				lua_error(LS);
-				return 0;
-			}
+			if(!size)
+				throw std::runtime_error("Aperture with zero size is not valid");
 			aperture_make_fun(LS, addr, size - 1, h);
 			return 1;
 		}
@@ -371,16 +377,10 @@ int lua_mmap_struct::map(lua_State* LS)
 	const char* name = lua_tostring(LS, 2);
 	uint64_t addr = get_numeric_argument<uint64_t>(LS, 3, "lua_mmap_struct::map");
 	const char* type = lua_tostring(LS, 4);
-	if(!name) {
-		lua_pushstring(LS, "lua_mmap_struct::map: Bad name");
-		lua_error(LS);
-		return 0;
-	}
-	if(!type) {
-		lua_pushstring(LS, "lua_mmap_struct::map: Bad type");
-		lua_error(LS);
-		return 0;
-	}
+	if(!name)
+		throw std::runtime_error("lua_mmap_struct::map: Bad name");
+	if(!type)
+		throw std::runtime_error("lua_mmap_struct::map: Bad type");
 	std::string name2(name);
 	std::string type2(type);
 	if(type2 == "byte")
@@ -399,11 +399,8 @@ int lua_mmap_struct::map(lua_State* LS)
 		mappings[name2] = std::make_pair(&mhuq, addr);
 	else if(type2 == "sqword")
 		mappings[name2] = std::make_pair(&mhsq, addr);
-	else {
-		lua_pushstring(LS, "lua_mmap_struct::map: Bad type");
-		lua_error(LS);
-		return 0;
-	}
+	else
+		throw std::runtime_error("lua_mmap_struct::map: Bad type");
 	return 0;
 }
 

@@ -36,10 +36,9 @@ template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)
 {
 	if(lua_isnone(LS, argindex) || !lua_isnumber(LS, argindex)) {
-		char buffer[1024];
+		static char buffer[1024];
 		sprintf(buffer, "argument #%i to %s must be numeric", argindex, fname);
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
+		throw std::runtime_error(buffer);
 	}
 	return static_cast<T>(lua_tonumber(LS, argindex));
 }
@@ -50,10 +49,9 @@ void get_numeric_argument(lua_State* LS, unsigned argindex, T& value, const char
 	if(lua_isnoneornil(LS, argindex))
 		return;
 	if(lua_isnone(LS, argindex) || !lua_isnumber(LS, argindex)) {
-		char buffer[1024];
+		static char buffer[1024];
 		sprintf(buffer, "argument #%i to %s must be numeric if present", argindex, fname);
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
+		throw std::runtime_error(buffer);
 	}
 	value = static_cast<T>(lua_tonumber(LS, argindex));
 }
@@ -147,8 +145,8 @@ public:
 	{
 		lua_class_bind_data<T>* b = (lua_class_bind_data<T>*)lua_touserdata(LS, lua_upvalueindex(1));
 		const char* fname = lua_tostring(LS, lua_upvalueindex(2));
-		T* p = lua_class<T>::get(LS, 1, fname);
 		try {
+			T* p = lua_class<T>::get(LS, 1, fname);
 			return (p->*(b->fn))(LS);
 		} catch(std::exception& e) {
 			lua_pushstring(LS, e.what());
@@ -196,10 +194,9 @@ public:
 		lua_pop(LS, 2);
 		return reinterpret_cast<T*>(lua_touserdata(LS, arg));
 badtype:
-		char buffer[2048];
+		static char buffer[2048];
 		sprintf(buffer, "argument #%i to %s must be %s", arg, fname, name.c_str());
-		lua_pushstring(LS, buffer);
-		lua_error(LS);
+		throw std::runtime_error(buffer);
 	}
 
 	static T* get(lua_State* LS, int arg, const char* fname, bool optional = false)

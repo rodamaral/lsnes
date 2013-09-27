@@ -121,10 +121,8 @@ namespace
 		uint64_t step = get_numeric_argument<uint64_t>(LS, 1, fname.c_str());
 		int32_t steps = get_numeric_argument<int32_t>(LS, 2, fname.c_str());
 		get_numeric_argument<int64_t>(LS, 3, basecolor, fname.c_str());
-		if(!steps) {
-			lua_pushstring(LS, "Expected nonzero steps for gui.rainbow");
-			lua_error(LS);
-		}
+		if(!steps)
+			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		if(basecolor < 0) {
 			//Special: Any rotation of transparent is transparent.
 			lua_pushnumber(LS, -1);
