@@ -1,5 +1,6 @@
 #include "recentfiles.hpp"
 #include "zip.hpp"
+#include "eatarg.hpp"
 #include "json.hpp"
 #include "string.hpp"
 #include <fstream>
@@ -247,13 +248,13 @@ recent_files_hook::~recent_files_hook()
 void _dummy_63263632747434353545()
 {
 	recent_files<recentfile_path> x("", 0);
-	x.add(recentfile_path(""));
-	x.add_hook(*(recent_files_hook*)NULL);
-	x.remove_hook(*(recent_files_hook*)NULL);
-	x.get();
+	eat_argument(&recent_files<recentfile_path>::add);
+	eat_argument(&recent_files<recentfile_path>::add_hook);
+	eat_argument(&recent_files<recentfile_path>::remove_hook);
+	eat_argument(&recent_files<recentfile_path>::get);
 	recent_files<recentfile_multirom> y("", 0);
-	y.add(recentfile_multirom());
-	y.add_hook(*(recent_files_hook*)NULL);
-	y.remove_hook(*(recent_files_hook*)NULL);
-	y.get();
+	eat_argument(&recent_files<recentfile_multirom>::add);
+	eat_argument(&recent_files<recentfile_multirom>::add_hook);
+	eat_argument(&recent_files<recentfile_multirom>::remove_hook);
+	eat_argument(&recent_files<recentfile_multirom>::get);
 }

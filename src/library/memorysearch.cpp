@@ -1,4 +1,5 @@
 #include "memorysearch.hpp"
+#include "eatarg.hpp"
 #include "minmax.hpp"
 #include "serialization.hpp"
 #include "int24.hpp"
@@ -362,31 +363,31 @@ template<typename T> void memory_search::s_seqgt() throw() { search(search_seqgt
 template<typename T> void memorysearch_pull_type(memory_search& s)
 {
 	T val;
-	s.s_value<T>(val);
-	s.s_difference<T>(val);
-	s.s_lt<T>();
-	s.s_le<T>();
-	s.s_eq<T>();
-	s.s_ne<T>();
-	s.s_ge<T>();
-	s.s_gt<T>();
-	s.s_seqlt<T>();
-	s.s_seqle<T>();
-	s.s_seqge<T>();
-	s.s_seqgt<T>();
+	eat_argument(&memory_search::s_value<T>);
+	eat_argument(&memory_search::s_difference<T>);
+	eat_argument(&memory_search::s_lt<T>);
+	eat_argument(&memory_search::s_le<T>);
+	eat_argument(&memory_search::s_eq<T>);
+	eat_argument(&memory_search::s_ne<T>);
+	eat_argument(&memory_search::s_ge<T>);
+	eat_argument(&memory_search::s_gt<T>);
+	eat_argument(&memory_search::s_seqlt<T>);
+	eat_argument(&memory_search::s_seqle<T>);
+	eat_argument(&memory_search::s_seqge<T>);
+	eat_argument(&memory_search::s_seqgt<T>);
 }
 
 template<typename T> void memorysearch_pull_type2(memory_search& s)
 {
 	T val;
-	s.s_value<T>(val);
-	s.s_difference<T>(val);
-	s.s_lt<T>();
-	s.s_le<T>();
-	s.s_eq<T>();
-	s.s_ne<T>();
-	s.s_ge<T>();
-	s.s_gt<T>();
+	eat_argument(&memory_search::s_value<T>);
+	eat_argument(&memory_search::s_difference<T>);
+	eat_argument(&memory_search::s_lt<T>);
+	eat_argument(&memory_search::s_le<T>);
+	eat_argument(&memory_search::s_eq<T>);
+	eat_argument(&memory_search::s_ne<T>);
+	eat_argument(&memory_search::s_ge<T>);
+	eat_argument(&memory_search::s_gt<T>);
 }
 
 void memorysearch_pull_all(memory_search& s)
