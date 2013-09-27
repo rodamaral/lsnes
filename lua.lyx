@@ -1701,6 +1701,7 @@ gui.arrow: Draw an arrow
 \begin_layout Itemize
 Syntax: none gui.arrow(number x, number y, number length, number hwidth,
  number direction[, bool fill[, number color[, number twidth[, number hthick]]]]
+)
 \end_layout
 
 \begin_layout Standard
@@ -1737,6 +1738,137 @@ Draws an arrow using color <color>.
 \begin_layout Enumerate
 <hthick>: Head thickness (only used if <fill> is false).
  Default is <twidth>.
+\end_layout
+
+\begin_layout Subsection
+gui.tilemap: Create a tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: TILEMAP gui.tilemap(number w, number h, number bw, number bh)
+\end_layout
+
+\begin_layout Standard
+Create a new tilemap of size <w>*<h>, with each cell being <bw>*<bh>.
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:getsize: Query tilemap size
+\end_layout
+
+\begin_layout Itemize
+Syntax: number, number TILEMAP:getsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap (width first).
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:getcsize: Query tilemap cell size
+\end_layout
+
+\begin_layout Itemize
+Syntax: number, number TILEMAP:getcsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap cell (width first).
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:get: Query tilemap cell
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: dbitmap TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap,palette TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Standard
+Return contents of cell at <x>,<y>.
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:set: Set tilemap cell
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y, dbitmap b)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y, bitmap b, palette p)
+\end_layout
+
+\begin_layout Standard
+Set contents of cell at <x>,<y>.
+ If no bitmap/dbitmap is given, cell is cleared.
+ Otherwise specified (d)bitmap is used (with specified palette if bitmap).
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:scroll: Scroll tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
+ w, number h)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
+ w, number h, boolean circx, boolean circy)
+\end_layout
+
+\begin_layout Standard
+Scrolls the tilemap tiles by <ox>,<oy>.
+ If <x>,<y>,<w>,<h> is specified, the scrolling is limited to <w>*<h> window
+ starting at <x>,<y> (in tiles).
+\end_layout
+
+\begin_layout Standard
+If <circx> is true, the window is circular in horizontal direction.
+ Similarly with <circy> and vertical direciton.
+\end_layout
+
+\begin_layout Subsection
+TILEMAP:draw: Draw tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y, number x0, number y0)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y, number x0, number y0, number
+ w, number h)
+\end_layout
+
+\begin_layout Standard
+Draw tilemap at <x>,<y>.
+ If <x0>,<y0> is given, that is tilemap coordinate (in pixels) of upper
+ left edge.
+ If <w>,<h> is given, that is the size of window to draw (in pixels)
 \end_layout
 
 \begin_layout Standard

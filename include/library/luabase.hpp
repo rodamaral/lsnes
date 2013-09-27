@@ -598,6 +598,19 @@ template<typename T> struct lua_obj_pin
 		return *this;
 	}
 /**
+ * Clear a pinned object.
+ */
+	void clear()
+	{
+		if(obj) {
+			state->pushlightuserdata(this);
+			state->pushnil();
+			state->rawset(LUA_REGISTRYINDEX);
+		}
+		state = NULL;
+		obj = NULL;
+	}
+/**
  * Get pointer to pinned object.
  *
  * Returns: The pinned object.
@@ -612,6 +625,14 @@ template<typename T> struct lua_obj_pin
  */
 	T& operator*() { if(obj) return *obj; throw std::runtime_error("Attempted to reference NULL Lua pin"); }
 	T* operator->() { if(obj) return obj; throw std::runtime_error("Attempted to reference NULL Lua pin"); }
+/**
+ * Push Lua value.
+ */
+	void luapush(lua_state& state)
+	{
+		state.pushlightuserdata(this);
+		state.rawget(LUA_REGISTRYINDEX);
+	}
 private:
 	T* obj;
 	lua_state* state;
