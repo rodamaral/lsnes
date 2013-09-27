@@ -1529,6 +1529,91 @@ Draw an arrow. Parameters:
 • hthickness: Thickness of arrow head. Default is the same as 
   tail width.
 
+8.3.38 gui.tilemap(number w, number h, number bw, number bh)
+
+Create a new tilemap. Parameters:
+
+• w: The width of tilemap in tiles
+
+• h: The height of tilemap in tiles
+
+• bw: Width of each tile.
+
+• bh: Height of each tile.
+
+8.3.39 TILEMAP:draw(number x, number y[, number x0[, number y0[, 
+  number w[, number h]]]])
+
+Draw a tilemap. Parameters:
+
+• x: The x-position of upper left corner on screen.
+
+• y: The y-position of upper left corner on screen.
+
+• x0: The tilemap x coordinate corresponding to upper left corner 
+  of draw area. Default 0.
+
+• y0: The tilemap y coordinate corresponding to upper left corner 
+  of draw area. Default 0.
+
+• w: The width of draw area in pixels. Default: Width of whole 
+  tilemap.
+
+• h: The width of draw area in pixels. Default: Height of whole 
+  tilemap.
+
+8.3.40 TILEMAP:set(number x, number y[, bitmap/dbitmap b, palette 
+  p])
+
+Set a tile in tilemap. Parameters:
+
+• x: The x-position of tile to set.
+
+• y: The y-position of tile to set.
+
+• b: The bitmap to set. If nil, that cell is transparent.
+
+• p: The palette. Only if <b> is bitmap.
+
+8.3.41 TILEMAP:get(number x, number y)
+
+Get tile in tilemap (nil, dbitmap or bitmap/palette). Parameters:
+
+• x: The x-position of tile to get.
+
+• y: The y-position of tile to get.
+
+8.3.42 TILEMAP:getsize()
+
+Return size of tilemap in tiles (width, height).
+
+8.3.43 TILEMAP:getcsize()
+
+Return size of tilemap cells in pixels (width, height).
+
+8.3.44 TILEMAP:scroll(number ox, number oy[, number x[, number 
+  y[, number w[, number h[, boolean circx[, boolean circy]]]]]])
+
+Scrolls tilemap tiles. Parameters:
+
+• ox: Number of tiles to scroll in x-direction.
+
+• oy: Number of tiles to scroll in y-direction.
+
+• x: Left edge of scroll window. Default 0.
+
+• y: Upper edge of scroll window. Default 0.
+
+• w: Width of scroll window. Default: Width of tilemap.
+
+• h: Height of scroll window. Default: Height of tilemap.
+
+• circx: If true, do circular rotation instead of shift in 
+  x-direction.
+
+• circy: If true, do circular rotation instead of shift in 
+  y-direction.
+
 8.4 table input
 
 Input handling. Only available in on_input callback.

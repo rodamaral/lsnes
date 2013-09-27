@@ -73,6 +73,11 @@ template<typename T> struct lua_obj_pin
 		lua_pushnil(state);
 		lua_rawset(state, LUA_REGISTRYINDEX);
 	}
+	void luapush(lua_State* LS)
+	{
+		lua_pushlightuserdata(LS, this);
+		lua_rawget(LS, LUA_REGISTRYINDEX);
+	}
 	T* object() { return obj; }
 private:
 	T* obj;

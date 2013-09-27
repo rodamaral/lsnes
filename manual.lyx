@@ -3026,6 +3026,177 @@ hthickness: Thickness of arrow head.
  Default is the same as tail width.
 \end_layout
 
+\begin_layout Subsubsection
+gui.tilemap(number w, number h, number bw, number bh)
+\end_layout
+
+\begin_layout Standard
+Create a new tilemap.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: The width of tilemap in tiles
+\end_layout
+
+\begin_layout Itemize
+h: The height of tilemap in tiles
+\end_layout
+
+\begin_layout Itemize
+bw: Width of each tile.
+\end_layout
+
+\begin_layout Itemize
+bh: Height of each tile.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:draw(number x, number y[, number x0[, number y0[, number w[, number
+ h]]]])
+\end_layout
+
+\begin_layout Standard
+Draw a tilemap.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: The x-position of upper left corner on screen.
+\end_layout
+
+\begin_layout Itemize
+y: The y-position of upper left corner on screen.
+\end_layout
+
+\begin_layout Itemize
+x0: The tilemap x coordinate corresponding to upper left corner of draw
+ area.
+ Default 0.
+\end_layout
+
+\begin_layout Itemize
+y0: The tilemap y coordinate corresponding to upper left corner of draw
+ area.
+ Default 0.
+\end_layout
+
+\begin_layout Itemize
+w: The width of draw area in pixels.
+ Default: Width of whole tilemap.
+\end_layout
+
+\begin_layout Itemize
+h: The width of draw area in pixels.
+ Default: Height of whole tilemap.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:set(number x, number y[, bitmap/dbitmap b, palette p])
+\end_layout
+
+\begin_layout Standard
+Set a tile in tilemap.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: The x-position of tile to set.
+\end_layout
+
+\begin_layout Itemize
+y: The y-position of tile to set.
+\end_layout
+
+\begin_layout Itemize
+b: The bitmap to set.
+ If nil, that cell is transparent.
+\end_layout
+
+\begin_layout Itemize
+p: The palette.
+ Only if <b> is bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Standard
+Get tile in tilemap (nil, dbitmap or bitmap/palette).
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+x: The x-position of tile to get.
+\end_layout
+
+\begin_layout Itemize
+y: The y-position of tile to get.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:getsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap in tiles (width, height).
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:getcsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap cells in pixels (width, height).
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:scroll(number ox, number oy[, number x[, number y[, number w[, number
+ h[, boolean circx[, boolean circy]]]]]])
+\end_layout
+
+\begin_layout Standard
+Scrolls tilemap tiles.
+ Parameters:
+\end_layout
+
+\begin_layout Itemize
+ox: Number of tiles to scroll in x-direction.
+\end_layout
+
+\begin_layout Itemize
+oy: Number of tiles to scroll in y-direction.
+\end_layout
+
+\begin_layout Itemize
+x: Left edge of scroll window.
+ Default 0.
+\end_layout
+
+\begin_layout Itemize
+y: Upper edge of scroll window.
+ Default 0.
+\end_layout
+
+\begin_layout Itemize
+w: Width of scroll window.
+ Default: Width of tilemap.
+\end_layout
+
+\begin_layout Itemize
+h: Height of scroll window.
+ Default: Height of tilemap.
+\end_layout
+
+\begin_layout Itemize
+circx: If true, do circular rotation instead of shift in x-direction.
+\end_layout
+
+\begin_layout Itemize
+circy: If true, do circular rotation instead of shift in y-direction.
+\end_layout
+
 \begin_layout Subsection
 table input
 \end_layout
