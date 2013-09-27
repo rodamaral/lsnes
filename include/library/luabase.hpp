@@ -14,6 +14,11 @@ extern "C"
 #include <lua.h>
 }
 
+class lua_state;
+
+std::list<std::string(*)(lua_state& state, int index)>& userdata_recogn_fns();
+std::string try_recognize_userdata(lua_state& state, int index);
+
 struct lua_function;
 
 /**
@@ -450,6 +455,8 @@ public:
 	int getmetatable(int index) { return lua_getmetatable(lua_handle, index); }
 	int rawequal(int index1, int index2) { return lua_rawequal(lua_handle, index1, index2); }
 	void* touserdata(int index) { return lua_touserdata(lua_handle, index); }
+	const void* topointer(int index) { return lua_topointer(lua_handle, index); }
+	int gettop() { return lua_gettop(lua_handle); }
 	void pushvalue(int index) { lua_pushvalue(lua_handle, index); }
 	void pushlightuserdata(void* p) { lua_pushlightuserdata(lua_handle, p); }
 	void rawset(int index) { lua_rawset(lua_handle, index); }
@@ -709,6 +716,11 @@ badtype:
 		return ret;
 	}
 
+	std::string _recognize(lua_state& state, int arg)
+	{
+		return _is(state, arg) ? name : "";
+	}
+
 	lua_obj_pin<T> _pin(lua_state& state, int arg, const std::string& fname)
 	{
 		T* obj = get(state, arg, fname);
@@ -724,6 +736,7 @@ public:
 	lua_class(const std::string& _name)
 	{
 		name = _name;
+		userdata_recogn_fns().push_back(lua_class<T>::recognize);
 	}
 
 /**
@@ -795,6 +808,16 @@ public:
 	static bool is(lua_state& state, int arg) throw()
 	{
 		return objclass<T>()._is(state, arg);
+	}
+/**
+ * Identify if object is of this type.
+ * Parameter state: The Lua state.
+ * Parameter arg: Argument index.
+ * Returns: Name of type if object is of specified type, "" if not.
+ */
+	static std::string recognize(lua_state& state, int arg)
+	{
+		return objclass<T>()._recognize(state, arg);
 	}
 
 /**

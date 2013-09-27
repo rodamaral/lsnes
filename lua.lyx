@@ -139,6 +139,19 @@ Syntax: none print(value...
 
 \begin_layout Standard
 Prints specified values to console.
+ Can print any Lua type at least enough to identify the type and instance.
+\end_layout
+
+\begin_layout Subsection
+tostringx: Format a value to string
+\end_layout
+
+\begin_layout Itemize
+Syntax: string tostringx(value val)
+\end_layout
+
+\begin_layout Standard
+Formats value <val> like print would, and returns the result as a string.
 \end_layout
 
 \begin_layout Subsection

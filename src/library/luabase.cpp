@@ -308,3 +308,29 @@ void lua_function_group::do_unregister(const std::string& name)
 		i.second(name, NULL);
 }
 
+std::list<std::string(*)(lua_state& state, int index)>& userdata_recogn_fns()
+{
+	static std::list<std::string(*)(lua_state& state, int index)> x;
+	return x;
+}
+
+std::string try_recognize_userdata(lua_state& state, int index)
+{
+	for(auto i : userdata_recogn_fns()) {
+		std::string x = i(state, index);
+		if(x != "")
+			return x;
+	}
+	//Hack: Lua builtin file objects.
+	state.pushstring("FILE*");
+	state.rawget(LUA_REGISTRYINDEX);
+	if(state.getmetatable(index)) {
+		if(state.rawequal(-1, -2)) {
+			state.pop(2);
+			return "FILE*";
+		}
+		state.pop(1);
+	}
+	state.pop(1);
+	return "unknown";
+}
