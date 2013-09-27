@@ -940,36 +940,41 @@ Sets the delay for subsequent characters in typematic autorepeat.
 
 Print line to message console.
 
-8.1.2 exec(string command)
+8.1.2 tostringx
+
+Convert arbitrary lua value into a string (using same conversions 
+as print) and return the result.
+
+8.1.3 exec(string command)
 
 Run command as it was entered on the command line
 
-8.1.3 utime()
+8.1.4 utime()
 
 Returns two values. First is time since some epoch in seconds, 
 the second is microseconds mod 10^6 since that epoch.
 
-8.1.4 emulator_ready()
+8.1.5 emulator_ready()
 
 Returns true if emulator has finished booting, false if not 
 (on_startup() will be issued later).
 
-8.1.5 set_idle_timeout(number timeout)
+8.1.6 set_idle_timeout(number timeout)
 
 Set number of microseconds to block idle for. After this timeout 
 has expired, on_idle() will be called once.
 
-8.1.6 set_timer_timeout(number timeout)
+8.1.7 set_timer_timeout(number timeout)
 
 Set number of microseconds to block timer for. After this timeout 
 has expired, on_timer() will be called once.
 
-8.1.7 bus_address(number snesaddr)
+8.1.8 bus_address(number snesaddr)
 
 Returns virtual address corresponding to specified address on 
 SNES bus.
 
-8.1.8 loopwrapper(function fun, ...)
+8.1.9 loopwrapper(function fun, ...)
 
 Calls function fun with function and specified arguments. The 
 function passed suspends execution until the function returned is 
@@ -988,21 +993,21 @@ on_paint = loopwrapper(function(wait)
 
 end);
 
-8.1.9 list_bindings([string cmd])
+8.1.10 list_bindings([string cmd])
 
 Get table of all keybindings, indexed by keyspec 
 (modifiers|mask/key). If command is specified, the table is 
 limited to that command.
 
-8.1.10 get_alias(string aname)
+8.1.11 get_alias(string aname)
 
 Get expansion of given alias.
 
-8.1.11 set_alias(string aname, string value)
+8.1.12 set_alias(string aname, string value)
 
 Set expansion of given alias.
 
-8.1.12 create_ibind(string name, string cmd)
+8.1.13 create_ibind(string name, string cmd)
 
 Return object representing inverse binding with specified name 
 and specified command.

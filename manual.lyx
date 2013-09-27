@@ -1924,6 +1924,15 @@ Print line to message console.
 \end_layout
 
 \begin_layout Subsubsection
+tostringx
+\end_layout
+
+\begin_layout Standard
+Convert arbitrary lua value into a string (using same conversions as print)
+ and return the result.
+\end_layout
+
+\begin_layout Subsubsection
 exec(string command)
 \end_layout
 

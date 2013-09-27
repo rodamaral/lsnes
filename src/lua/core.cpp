@@ -3,9 +3,75 @@
 #include "lua/internal.hpp"
 #include "core/framerate.hpp"
 #include "core/window.hpp"
+#include "library/string.hpp"
+#include <sstream>
 
 namespace
 {
+	std::string luavalue_to_string(lua_State* LS, int index, std::set<const void*>& printed, bool quote)
+	{
+		switch(lua_type(LS, index)) {
+		case LUA_TNONE:
+			return "none";
+		case LUA_TNIL:
+			return "nil";
+		case LUA_TBOOLEAN:
+			return lua_toboolean(LS, index) ? "true" : "false";
+		case LUA_TNUMBER:
+			return (stringfmt() << lua_tonumber(LS, index)).str();
+		case LUA_TSTRING: {
+			const char* tmp2;
+			size_t len;
+			tmp2 = lua_tolstring(LS, index, &len);
+			if(quote)
+				return "\"" + std::string(tmp2, tmp2 + len) + "\"";
+			else
+				return std::string(tmp2, tmp2 + len);
+		}
+		case LUA_TLIGHTUSERDATA:
+			return (stringfmt() << "Lightuserdata:" << lua_touserdata(LS, index)).str();
+		case LUA_TFUNCTION:
+			return (stringfmt() << "Function:" << lua_topointer(LS, index)).str();
+		case LUA_TTHREAD:
+			return (stringfmt() << "Thread:" << lua_topointer(LS, index)).str();
+			break;
+		case LUA_TUSERDATA:
+			return (stringfmt() << "Userdata<" << try_recognize_userdata(LS, index) << ">:"
+				<< lua_touserdata(LS, index)).str();
+		case LUA_TTABLE: {
+			//Fun with recursion.
+			const void* ptr = lua_topointer(LS, index);
+			if(printed.count(ptr))
+				return (stringfmt() << "<table:" << ptr << ">").str();
+			printed.insert(ptr);
+			std::ostringstream s;
+			s << "<" << ptr << ">{";
+			lua_pushnil(LS);
+			bool first = true;
+			while(lua_next(LS, index)) {
+				if(!first)
+					s << ", ";
+				int stacktop = lua_gettop(LS);
+				s << "[" << luavalue_to_string(LS, stacktop - 1, printed, true) << "]="
+					<< luavalue_to_string(LS, stacktop, printed, true);
+				first = false;
+				lua_pop(LS, 1);
+			}
+			s << "}";
+			return s.str();
+		}
+		default:
+			return (stringfmt() << "???:" << lua_topointer(LS, index)).str();
+		}
+	}
+
+	function_ptr_luafun lua_tostringx("tostringx", [](lua_State* LS, const std::string& fname) -> int {
+		std::set<const void*> tmp2;
+		std::string y = luavalue_to_string(LS, 1, tmp2, false);
+		lua_pushlstring(LS, y.c_str(), y.length());
+		return 1;
+	});
+
 	function_ptr_luafun lua_print("print", [](lua_State* LS, const std::string& fname) -> int {
 		int stacksize = 0;
 		while(!lua_isnone(LS, stacksize + 1))
@@ -13,29 +79,12 @@ namespace
 		std::string toprint;
 		bool first = true;
 		for(int i = 0; i < stacksize; i++) {
-			size_t len;
-			const char* tmp = NULL;
-			if(lua_isnil(LS, i + 1)) {
-				tmp = "nil";
-				len = 3;
-			} else if(lua_isboolean(LS, i + 1) && lua_toboolean(LS, i + 1)) {
-				tmp = "true";
-				len = 4;
-			} else if(lua_isboolean(LS, i + 1) && !lua_toboolean(LS, i + 1)) {
-				tmp = "false";
-				len = 5;
-			} else {
-				tmp = lua_tolstring(LS, i + 1, &len);
-				if(!tmp) {
-					tmp = "(unprintable)";
-					len = 13;
-				}
-			}
-			std::string localmsg(tmp, tmp + len);
+			std::set<const void*> tmp2;
+			std::string tmp = luavalue_to_string(LS, i + 1, tmp2, false);
 			if(first)
-				toprint = localmsg;
+				toprint = tmp;
 			else
-				toprint = toprint + "\t" + localmsg;
+				toprint = toprint + "\t" + tmp;
 			first = false;
 		}
 		platform::message(toprint);

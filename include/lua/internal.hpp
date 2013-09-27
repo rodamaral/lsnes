@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <list>
+#include <functional>
 extern "C"
 {
 #include <lua.h>
@@ -18,6 +20,9 @@ extern controller_frame* lua_input_controllerdata;
 extern bool lua_booted_flag;
 extern uint64_t lua_idle_hook_time;
 extern uint64_t lua_timer_hook_time;
+
+std::list<std::string(*)(lua_State* LS, int index)>& userdata_recogn_fns();
+std::string try_recognize_userdata(lua_State* LS, int index);
 
 template<typename T>
 T get_numeric_argument(lua_State* LS, unsigned argindex, const char* fname)
@@ -90,6 +95,7 @@ public:
 	lua_class(const std::string& _name)
 	{
 		name = _name;
+		userdata_recogn_fns().push_back(lua_class<T>::recognize);
 	}
 
 	template<typename... U> T* _create(lua_State* LS, U... args)
@@ -206,6 +212,16 @@ badtype:
 	static bool is(lua_State* LS, int arg)
 	{
 		return objclass<T>()._is(LS, arg);
+	}
+
+	std::string _recognize(lua_State* LS, int arg)
+	{
+		return _is(LS, arg) ? name : "";
+	}
+
+	static std::string recognize(lua_State* LS, int arg)
+	{
+		return objclass<T>()._recognize(LS, arg);
 	}
 
 	lua_obj_pin<T>* _pin(lua_State* LS, int arg, const char* fname)

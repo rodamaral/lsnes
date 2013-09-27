@@ -670,6 +670,33 @@ bool lua_do_once(lua_State* LS, void* key)
 	}
 }
 
+std::list<std::string(*)(lua_State* LS, int index)>& userdata_recogn_fns()
+{
+	static std::list<std::string(*)(lua_State* LS, int index)> x;
+	return x;
+}
+
+std::string try_recognize_userdata(lua_State* LS, int index)
+{
+	for(auto i : userdata_recogn_fns()) {
+		std::string x = i(LS, index);
+		if(x != "")
+			return x;
+	}
+	//Hack: Lua builtin file objects.
+	lua_pushstring(LS, "FILE*");
+	lua_rawget(LS, LUA_REGISTRYINDEX);
+	if(lua_getmetatable(LS, index)) {
+		if(lua_rawequal(LS, -1, -2)) {
+			lua_pop(LS, 2);
+			return "FILE*";
+		}
+		lua_pop(LS, 1);
+	}
+	lua_pop(LS, 1);
+	return "unknown";
+}
+
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
 bool lua_supported = true;
