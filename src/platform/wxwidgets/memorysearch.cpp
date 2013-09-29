@@ -26,6 +26,7 @@
 #define wxID_AUTOUPDATE (wxID_HIGHEST + 7)
 #define wxID_DISQUALIFY (wxID_HIGHEST + 8)
 #define wxID_POKE (wxID_HIGHEST + 9)
+#define wxID_SHOW_HEXEDITOR (wxID_HIGHEST + 10)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 12
@@ -790,6 +791,8 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 		}
 	}
 	menu.Append(wxID_ADD, wxT("Add watch..."))->Enable(some_selected);
+	menu.Append(wxID_SHOW_HEXEDITOR, wxT("Select in hex editor"))->Enable(selcount == 1 &&
+		wxeditor_hexeditor_available());
 	menu.Append(wxID_POKE, wxT("Poke..."))->Enable(selcount == 1);
 	menu.AppendSeparator();
 	menu.Append(wxID_DISQUALIFY, wxT("Disqualify"))->Enable(some_selected);
@@ -901,7 +904,19 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			}
 			return;
 		}
-		
+	} else if(id == wxID_SHOW_HEXEDITOR) {
+		uint64_t start, end;
+		matches->get_selection(start, end);
+		if(start == end) {
+			start = act_line;
+			end = act_line + 1;
+		}
+		for(long r = start; r < end; r++) {
+			if(!addresses.count(r))
+				continue;
+			wxeditor_hexeditor_jumpto(addresses[r]);
+			return;
+		}
 	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
 		int button = id - wxID_BUTTONS_BASE;
 		(this->*(searchtbl[button].searches[typecode]))();

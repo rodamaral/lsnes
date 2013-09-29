@@ -70,6 +70,9 @@ void wxwindow_memorysearch_update();
 void wxeditor_hexeditor_update();
 class memory_search;
 memory_search* wxwindow_memorysearch_active();
+bool wxeditor_hexeditor_available();
+bool wxeditor_hexeditor_jumpto(uint64_t addr);
+
 
 template<typename T>
 void functor_call_helper2(void* args)

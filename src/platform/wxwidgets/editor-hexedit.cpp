@@ -495,8 +495,8 @@ invalid_bookmark:
 			if(j->readonly || j->special)
 				continue;
 			if(index == selected) {
-				if(j->base != hpanel->vmabase || j->size != hpanel->vmasize);
-				update_vma(j->base, j->size);
+				if(j->base != hpanel->vmabase || j->size != hpanel->vmasize)
+					update_vma(j->base, j->size);
 				current_vma = index;
 				if(vma_endians.count(index)) {
 					littleendian = vma_endians[index];
@@ -549,6 +549,34 @@ invalid_bookmark:
 	{
 		if(destructing)
 			return;
+		hpanel->request_paint();
+	}
+	void jumpto(uint64_t addr)
+	{
+		if(destructing)
+			return;
+		//Switch to correct VMA.
+		auto i = lsnes_memory.get_regions();
+		int index = 0;
+		for(auto j : i) {
+			if(j->readonly || j->special)
+				continue;
+			if(addr >= j->base && addr < j->base + j->size) {
+				if(j->base != hpanel->vmabase || j->size != hpanel->vmasize)
+					update_vma(j->base, j->size);
+				current_vma = index;
+				if(vma_endians.count(index)) {
+					littleendian = vma_endians[index];
+					valuemenu->FindItem(wxID_OPPOSITE_ENDIAN)->Check(littleendian);
+				}
+				break;
+			}
+			index++;
+		}
+		if(addr < hpanel->vmabase || addr >= hpanel->vmabase + hpanel->vmasize)
+			return;
+		hpanel->seloff = addr - hpanel->vmabase;
+		rescroll_panel();
 		hpanel->request_paint();
 	}
 	void refresh_curvalue()
@@ -801,4 +829,15 @@ void wxeditor_hexeditor_update()
 {
 	if(editor)
 		editor->updated();
+}
+
+bool wxeditor_hexeditor_available()
+{
+	return editor;
+}
+
+bool wxeditor_hexeditor_jumpto(uint64_t addr)
+{
+	if(editor)
+		editor->jumpto(addr);
 }
