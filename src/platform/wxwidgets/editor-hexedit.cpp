@@ -35,29 +35,30 @@ namespace
 		const char* name;
 		unsigned len;
 		bool hard_bigendian;
+		const char* watch;
 		std::string (*read)(const uint8_t* x);
 	};
 
 	val_type datatypes[] = {
-		{"1 byte (signed)", 1, false, [](const uint8_t* x) -> std::string {
+		{"1 byte (signed)", 1, false, "b", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << (int)(char)x[0]).str();
 		}},
-		{"1 byte (unsigned)", 1, false, [](const uint8_t* x) -> std::string {
+		{"1 byte (unsigned)", 1, false, "B", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << (int)x[0]).str();
 		}},
-		{"1 byte (hex)", 1, false, [](const uint8_t* x) -> std::string {
+		{"1 byte (hex)", 1, false, "BH2", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << std::hex << std::setw(2) << std::setfill('0') << (int)x[0]).str();
 		}},
-		{"2 bytes (signed)", 2, false, [](const uint8_t* x) -> std::string {
+		{"2 bytes (signed)", 2, false, "w", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int16_t*)x).str();
 		}},
-		{"2 bytes (unsigned)", 2, false, [](const uint8_t* x) -> std::string {
+		{"2 bytes (unsigned)", 2, false, "W", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint16_t*)x).str();
 		}},
-		{"2 bytes (hex)", 2, false, [](const uint8_t* x) -> std::string {
+		{"2 bytes (hex)", 2, false, "WH4", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << std::hex << std::setw(4) << std::setfill('0') << *(uint16_t*)x).str();
 		}},
-		{"3 bytes (signed)", 3, true, [](const uint8_t* x) -> std::string {
+		{"3 bytes (signed)", 3, true, "o", [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
@@ -66,42 +67,42 @@ namespace
 				a -= 0x1000000;
 			return (stringfmt() << a).str();
 		}},
-		{"3 bytes (unsigned)", 3, true, [](const uint8_t* x) -> std::string {
+		{"3 bytes (unsigned)", 3, true, "O", [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
 			return (stringfmt() << a).str();
 		}},
-		{"3 bytes (hex)", 3, true, [](const uint8_t* x) -> std::string {
+		{"3 bytes (hex)", 3, true, "OH6", [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
 			return (stringfmt() << std::hex << std::setw(6) << std::setfill('0') << a).str();
 		}},
-		{"4 bytes (signed)", 4, false, [](const uint8_t* x) -> std::string {
+		{"4 bytes (signed)", 4, false, "d", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x).str();
 		}},
-		{"4 bytes (unsigned)", 4, false, [](const uint8_t* x) -> std::string {
+		{"4 bytes (unsigned)", 4, false, "D", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint32_t*)x).str();
 		}},
-		{"4 bytes (hex)", 4, false, [](const uint8_t* x) -> std::string {
+		{"4 bytes (hex)", 4, false, "DH8", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << std::hex << std::setw(8) << std::setfill('0') << *(uint32_t*)x).str();
 		}},
-		{"4 bytes (float)", 4, false, [](const uint8_t* x) -> std::string {
+		{"4 bytes (float)", 4, false, "f", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(float*)x).str();
 		}},
-		{"8 bytes (signed)", 8, false, [](const uint8_t* x) -> std::string {
+		{"8 bytes (signed)", 8, false, "q", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int64_t*)x).str();
 		}},
-		{"8 bytes (unsigned)", 8, false, [](const uint8_t* x) -> std::string {
+		{"8 bytes (unsigned)", 8, false, "Q", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint64_t*)x).str();
 		}},
-		{"8 bytes (hex)", 8, false, [](const uint8_t* x) -> std::string {
+		{"8 bytes (hex)", 8, false, "QHG", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << std::hex << std::setw(16) << std::setfill('0') << *(uint64_t*)x).str();
 		}},
-		{"8 bytes (float)", 8, false, [](const uint8_t* x) -> std::string {
+		{"8 bytes (float)", 8, false, "F", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(double*)x).str();
 		}}
 	};
@@ -129,6 +130,7 @@ namespace
 		wxID_SEARCH_DISQUALIFY,
 		wxID_SEARCH_PREV,
 		wxID_SEARCH_NEXT,
+		wxID_SEARCH_WATCH,
 	};
 }
 
@@ -180,6 +182,7 @@ public:
 		menubar->Append(searchmenu, wxT("Search"));
 		searchmenu->Append(wxID_SEARCH_PREV, wxT("Previous...\tCtrl+P"));
 		searchmenu->Append(wxID_SEARCH_NEXT, wxT("Next...\tCtrl+N"));
+		searchmenu->Append(wxID_SEARCH_WATCH, wxT("Add watch...\tCtrl+W"));
 		searchmenu->AppendSeparator();
 		searchmenu->Append(wxID_SEARCH_DISQUALIFY, wxT("Disqualify...\tCtrl+D"));
 		set_search_status();
@@ -209,6 +212,8 @@ public:
 			wxCommandEventHandler(wxeditor_hexedit::on_search_prevnext));
 		Connect(wxID_SEARCH_NEXT, wxEVT_COMMAND_MENU_SELECTED,
 			wxCommandEventHandler(wxeditor_hexedit::on_search_prevnext));
+		Connect(wxID_SEARCH_WATCH, wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(wxeditor_hexedit::on_search_watch));
 
 		scroll->set_page_size(hpanel->lines);
 		scroll->set_handler([this](scroll_bar& s) {
@@ -435,6 +440,28 @@ public:
 				hpanel->vmabase;
 			rescroll_panel();
 			hpanel->request_paint();
+		}
+	}
+	void on_search_watch(wxCommandEvent& e)
+	{
+		try {
+			if(!hpanel->vmasize)
+				return;
+			uint64_t addr = hpanel->vmabase + hpanel->seloff;
+			std::string n = pick_text(this, "Name for watch", (stringfmt()
+				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
+			if(n == "")
+				return;
+			std::string wch = datatypes[curtype].watch;
+			size_t sz = wch.find_first_of("$");
+			std::string e;
+			if(sz < wch.length())
+				e = (stringfmt() << wch.substr(0, sz) << "C0x" << std::hex << addr << "z"
+					<< wch.substr(sz + 1)).str();
+			else
+				e = (stringfmt() << "C0x" << std::hex << addr << "z" << wch).str();
+			runemufn([n, e]() { set_watchexpr_for(n, e); });
+		} catch(canceled_exception& e) {
 		}
 	}
 	void on_search_prevnext(wxCommandEvent& e)
