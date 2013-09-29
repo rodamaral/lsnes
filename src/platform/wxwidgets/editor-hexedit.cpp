@@ -104,7 +104,47 @@ namespace
 		}},
 		{"8 bytes (float)", 8, false, "F", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(double*)x).str();
-		}}
+		}},
+		{"Q8.8 (signed)", 2, false, "C256z$w/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(int16_t*)x / 256.0).str();
+		}},
+		{"Q8.8 (unsigned)", 2, false, "C256z$W/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(uint16_t*)x / 256.0).str();
+		}},
+		{"Q16.8 (signed)", 3, false, "C256z$o/", [](const uint8_t* x) -> std::string {
+			int32_t a = 0;
+			a |= (uint32_t)x[0] << 16;
+			a |= (uint32_t)x[1] << 8;
+			a |= (uint32_t)x[2];
+			if(a & 0x800000)
+				a -= 0x1000000;
+			return (stringfmt() << a / 256.0).str();
+		}},
+		{"Q16.8 (unsigned)", 3, false, "C256z$O/", [](const uint8_t* x) -> std::string {
+			int32_t a = 0;
+			a |= (uint32_t)x[0] << 16;
+			a |= (uint32_t)x[1] << 8;
+			a |= (uint32_t)x[2];
+			return (stringfmt() << a / 256.0).str();
+		}},
+		{"Q24.8 (signed)", 4, false, "C256z$d/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(int32_t*)x / 256.0).str();
+		}},
+		{"Q24.8 (unsigned)", 4, false, "C256z$D/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(uint32_t*)x / 256.0).str();
+		}},
+		{"Q20.12 (signed)", 4, false, "C4096z$d/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(int32_t*)x / 4096.0).str();
+		}},
+		{"Q20.12 (unsigned)", 4, false, "C4096z$D/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(uint32_t*)x / 4096.0).str();
+		}},
+		{"Q16.16 (signed)", 4, false, "C65536z$d/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(int32_t*)x / 65536.0).str();
+		}},
+		{"Q16.16 (unsigned)", 4, false, "C65536z$D/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(uint32_t*)x / 65536.0).str();
+		}},
 	};
 
 	unsigned hexaddr = 6;
