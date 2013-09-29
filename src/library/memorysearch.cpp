@@ -366,6 +366,9 @@ template<typename T> void memory_search::s_seqle() throw() { search(search_seqle
 template<typename T> void memory_search::s_seqge() throw() { search(search_seqge<T>()); }
 template<typename T> void memory_search::s_seqgt() throw() { search(search_seqgt<T>()); }
 
+template<typename T> T memory_search::v_read(uint64_t addr) throw() { return mspace.read<T>(addr); }
+template<typename T> void memory_search::v_write(uint64_t addr, T val) throw() { mspace.write<T>(addr, val); }
+
 template<typename T> void memorysearch_pull_type(memory_search& s)
 {
 	T val;
@@ -381,6 +384,8 @@ template<typename T> void memorysearch_pull_type(memory_search& s)
 	eat_argument(&memory_search::s_seqle<T>);
 	eat_argument(&memory_search::s_seqge<T>);
 	eat_argument(&memory_search::s_seqgt<T>);
+	eat_argument(&memory_search::v_read<T>);
+	eat_argument(&memory_search::v_write<T>);
 }
 
 template<typename T> void memorysearch_pull_type2(memory_search& s)
@@ -394,6 +399,8 @@ template<typename T> void memorysearch_pull_type2(memory_search& s)
 	eat_argument(&memory_search::s_ne<T>);
 	eat_argument(&memory_search::s_ge<T>);
 	eat_argument(&memory_search::s_gt<T>);
+	eat_argument(&memory_search::v_read<T>);
+	eat_argument(&memory_search::v_write<T>);
 }
 
 void memorysearch_pull_all(memory_search& s)

@@ -25,6 +25,7 @@
 #define wxID_SET_REGIONS (wxID_HIGHEST + 6)
 #define wxID_AUTOUPDATE (wxID_HIGHEST + 7)
 #define wxID_DISQUALIFY (wxID_HIGHEST + 8)
+#define wxID_POKE (wxID_HIGHEST + 9)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 12
@@ -252,6 +253,7 @@ public:
 	bool update_queued;
 	template<void(memory_search::*sfn)()> void search_0();
 	template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void search_1();
+	template<typename T> void _do_poke_addr(uint64_t addr);
 private:
 	friend memory_search* wxwindow_memorysearch_active();
 	friend class panel;
@@ -281,6 +283,22 @@ private:
 
 namespace
 {
+	typedef void (wxwindow_memorysearch::*pokefn_t)(uint64_t);
+	pokefn_t pokes[] = {
+		&wxwindow_memorysearch::_do_poke_addr<int8_t>,
+		&wxwindow_memorysearch::_do_poke_addr<uint8_t>,
+		&wxwindow_memorysearch::_do_poke_addr<int16_t>,
+		&wxwindow_memorysearch::_do_poke_addr<uint16_t>,
+		&wxwindow_memorysearch::_do_poke_addr<ss_int24_t>,
+		&wxwindow_memorysearch::_do_poke_addr<ss_uint24_t>,
+		&wxwindow_memorysearch::_do_poke_addr<int32_t>,
+		&wxwindow_memorysearch::_do_poke_addr<uint32_t>,
+		&wxwindow_memorysearch::_do_poke_addr<int64_t>,
+		&wxwindow_memorysearch::_do_poke_addr<uint64_t>,
+		&wxwindow_memorysearch::_do_poke_addr<float>, 
+		&wxwindow_memorysearch::_do_poke_addr<double>,
+	};
+	
 	struct searchtype searchtbl[] = {
 		{
 			"value", {
@@ -631,7 +649,8 @@ void wxwindow_memorysearch::panel::prepare_paint()
 						_parent->hexmode);
 					break;
 				case 4:
-					row += format_number_signed(lsnes_memory.read<ss_uint24_t>(i), _parent->hexmode);
+					row += format_number_signed(lsnes_memory.read<ss_uint24_t>(i),
+						_parent->hexmode);
 					break;
 				case 5:
 					row += format_number_unsigned(lsnes_memory.read<ss_uint24_t>(i),
@@ -758,16 +777,20 @@ void wxwindow_memorysearch::on_mouse2(wxMouseEvent& e)
 {
 	wxMenu menu;
 	bool some_selected;
+	uint64_t selcount = 0;
 	uint64_t start, end;
 	matches->get_selection(start, end);
 	some_selected = (start < end);
 	if(!some_selected) {
 		uint64_t first = scroll->get_position();
 		act_line = first + e.GetY() / matches->get_cell().second;
-		if(addresses.count(act_line))
+		if(addresses.count(act_line)) {
 			some_selected = true;
+			selcount++;
+		}
 	}
 	menu.Append(wxID_ADD, wxT("Add watch..."))->Enable(some_selected);
+	menu.Append(wxID_POKE, wxT("Poke..."))->Enable(selcount == 1);
 	menu.AppendSeparator();
 	menu.Append(wxID_DISQUALIFY, wxT("Disqualify"))->Enable(some_selected);
 	menu.AppendSeparator();
@@ -823,7 +846,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		char wch = watchchars[typecode];
 		for(long r = start; r < end; r++) {
 			if(!addresses.count(r))
-				return;
+				continue;
 			uint64_t addr = addresses[r];
 			try {
 				std::string n = pick_text(this, "Name for watch", (stringfmt()
@@ -861,12 +884,47 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
 		wxeditor_hexeditor_update();
+	} else if(id == wxID_POKE) {
+		uint64_t start, end;
+		matches->get_selection(start, end);
+		if(start == end) {
+			start = act_line;
+			end = act_line + 1;
+		}
+		for(long r = start; r < end; r++) {
+			if(!addresses.count(r))
+				continue;
+			uint64_t addr = addresses[r];
+			try {
+				(this->*(pokes[typecode]))(addr);
+			} catch(canceled_exception& e) {
+			}
+			return;
+		}
+		
 	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
 		int button = id - wxID_BUTTONS_BASE;
 		(this->*(searchtbl[button].searches[typecode]))();
 		wxeditor_hexeditor_update();
 	}
 	update();
+}
+
+template<typename T> void wxwindow_memorysearch::_do_poke_addr(uint64_t addr)
+{
+	T val = msearch->v_read<T>(addr);
+	std::string v;
+	try {
+		v = pick_text(this, "Poke value", (stringfmt() << "Enter value to poke to " << std::hex << "0x"
+			<< addr).str(), (stringfmt() << val).str(), false);
+		val = parse_value<T>(v);
+	} catch(canceled_exception& e) {
+		return;
+	} catch(...) {
+		wxMessageBox(towxstring("Bad value '" + v + "'"), _T("Error"), wxICON_WARNING | wxOK, this);
+		return;
+	}
+	msearch->v_write<T>(addr, val);
 }
 
 template<void(memory_search::*sfn)()> void wxwindow_memorysearch::search_0()

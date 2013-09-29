@@ -73,6 +73,8 @@ public:
 	template<typename T> void s_seqle() throw();
 	template<typename T> void s_seqge() throw();
 	template<typename T> void s_seqgt() throw();
+	template<typename T> T v_read(uint64_t addr) throw();
+	template<typename T> void v_write(uint64_t addr, T val) throw();
 
 	static bool searchable_region(memory_region* r)
 	{
