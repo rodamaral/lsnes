@@ -1074,6 +1074,7 @@ nothing_to_do:
 void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_to_succeed) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	platform::system_thread_available(true);
 	//Basic initialization.
 	dispatch_set_error_streams(&messages.getstream());
 	emulation_thread = this_thread_id();
@@ -1179,6 +1180,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	information_dispatch::do_dump_end();
 	core_core::uninstall_all_handlers();
 	voicethread_kill();
+	platform::system_thread_available(false);
 }
 
 void set_stop_at_frame(uint64_t frame)

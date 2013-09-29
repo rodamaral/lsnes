@@ -62,10 +62,14 @@ void wxeditor_movie_update();
 void wxeditor_autohold_display(wxWindow* parent);
 void wxeditor_tasinput_display(wxWindow* parent);
 void wxeditor_macro_display(wxWindow* parent);
+void wxeditor_hexedit_display(wxWindow* parent);
 
 //Auxillary windows.
 void wxwindow_memorysearch_display();
 void wxwindow_memorysearch_update();
+void wxeditor_hexeditor_update();
+class memory_search;
+memory_search* wxwindow_memorysearch_active();
 
 template<typename T>
 void functor_call_helper2(void* args)

@@ -57,6 +57,7 @@ extern single_type filetype_commentary;
 extern single_type filetype_sox;
 extern single_type filetype_sub;
 extern single_type filetype_png;
+extern single_type filetype_hexbookmarks;
 
 filedialog_output_params show_filedialog(wxWindow* parent, const std::string& title, const std::string& basepath,
 	const filedialog_input_params& p, const std::string& defaultname, bool saving);

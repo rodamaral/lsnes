@@ -142,6 +142,17 @@ std::pair<memory_region*, uint64_t> memory_space::lookup_linear(uint64_t linear)
 	return std::make_pair(reinterpret_cast<memory_region*>(NULL), 0);
 }
 
+void memory_space::read_all_linear_memory(uint8_t* buffer)
+{
+	auto g = lookup_linear(0);
+	size_t off = 0;
+	while(g.first) {
+		read_range_r(*g.first, g.second, buffer + off, g.first->size);
+		off += g.first->size;
+		g = lookup_linear(off);
+	}
+}
+
 #define MSR memory_space::read
 #define MSW memory_space::write
 #define MSRL memory_space::read_linear

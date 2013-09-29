@@ -52,6 +52,14 @@ public:
  * Returns list of all candidates. This function isn't lazy, so be careful when calling with many candidates.
  */
 	std::list<uint64_t> get_candidates() throw(std::bad_alloc);
+/**
+ * Is specified address a candidate?
+ */
+	bool is_candidate(uint64_t addr) throw();
+/**
+ * Next candidate in VMA.
+ */
+	uint64_t cycle_candidate_vma(uint64_t addr, bool next) throw();
 
 	template<typename T> void s_value(T value) throw();
 	template<typename T> void s_difference(T value) throw();

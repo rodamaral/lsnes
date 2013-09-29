@@ -171,6 +171,11 @@ namespace
 		return (i + 64) >> 6 << 6;
 	}
 
+	inline uint64_t prev_multiple_of_64(uint64_t i)
+	{
+		return ((i - 64) >> 6 << 6) + 63;
+	}
+
 	template<typename T>
 	void search_block_mapped(uint64_t* still_in, uint64_t& candidates, memory_region& region, uint64_t rbase,
 		uint64_t ibase, T& helper, std::vector<uint8_t>& previous_content)
@@ -296,6 +301,7 @@ namespace
 				out.push_back(region.base + j);
 		}
 	}
+
 }
 
 void memory_search::dq_range(uint64_t first, uint64_t last)
@@ -429,6 +435,97 @@ std::list<uint64_t> memory_search::get_candidates() throw(std::bad_alloc)
 		i += t.first->size - t.second;
 	}
 	return out;
+}
+
+bool memory_search::is_candidate(uint64_t addr) throw()
+{
+	auto t = mspace.lookup_linear(0);
+	if(!t.first)
+		return false;
+	uint64_t i = 0;
+	while(true) {
+		//Switch blocks.
+		t = mspace.lookup_linear(i);
+		if(!t.first)
+			return false;
+		if(i >= previous_content.size())
+			return false;
+		uint64_t rsize = t.first->size;
+		uint64_t switch_at = i + rsize - t.second;	//The smallest i not in this region.
+		rsize = min(rsize, previous_content.size() - i);
+		if(addr >= t.first->base + t.second && addr < t.first->base + rsize) {
+			uint64_t adv = addr - (t.first->base + t.second);
+			uint64_t ix = i + adv;
+			return ((still_in[ix / 64] >> (ix % 64)) & 1);
+		}
+		i += t.first->size - t.second;
+	}
+	return false;
+}
+
+uint64_t memory_search::cycle_candidate_vma(uint64_t addr, bool next) throw()
+{
+	auto t = mspace.lookup_linear(0);
+	if(!t.first)
+		return false;
+	uint64_t i = 0;
+	while(true) {
+		//Switch blocks.
+		t = mspace.lookup_linear(i);
+		if(!t.first)
+			return addr;
+		if(i >= previous_content.size())
+			return addr;
+		uint64_t rsize = t.first->size;
+		uint64_t switch_at = i + rsize - t.second;	//The smallest i not in this region.
+		rsize = min(rsize, previous_content.size() - i);
+		if(addr >= t.first->base + t.second && addr < t.first->base + rsize) {
+			uint64_t baseaddr = t.first->base + t.second;
+			int64_t tryoff = addr - baseaddr + i;
+			uint64_t finoff = tryoff;
+			uint64_t warp = i;
+			bool warped = false;
+			if(next) {
+				//Cycle forwards.
+				tryoff++;
+				while(tryoff < finoff || !warped) {
+					if(tryoff >= switch_at) {
+						tryoff = warp;
+						if(warped)
+							return addr;
+						warped = true;
+					}
+					if(still_in[tryoff / 64] == 0)
+						tryoff = next_multiple_of_64(tryoff);
+					else {
+						if((still_in[tryoff / 64] >> (tryoff % 64)) & 1)
+							return tryoff - i + baseaddr;
+						tryoff++;
+					}
+				}
+			} else {
+				//Cycle backwards.
+				tryoff--;
+				while(tryoff > finoff || !warped) {
+					if(tryoff < warp) {
+						tryoff = switch_at - 1;
+						if(warped)
+							return addr;
+						warped = true;
+					}
+					if(still_in[tryoff / 64] == 0)
+						tryoff = prev_multiple_of_64(tryoff);
+					else {
+						if((still_in[tryoff / 64] >> (tryoff % 64)) & 1)
+							return tryoff - i + baseaddr;
+						tryoff--;
+					}
+				}
+			}
+		}
+		i += t.first->size - t.second;
+	}
+	return addr;
 }
 
 void memory_search::reset() throw(std::bad_alloc)

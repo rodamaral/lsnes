@@ -67,6 +67,8 @@ void scroll_bar::apply_delta(int delta)
 	if(newscroll > range)
 		newscroll = (delta < 0) ? 0 : maxscroll;
 	position = newscroll;
+	if(position > maxscroll)
+		position = maxscroll;
 	if(range > pagesize)
 		SetScrollbar(position, pagesize, range, max(pagesize - 1, 1U));
 	else

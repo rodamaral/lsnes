@@ -98,4 +98,5 @@ single_type filetype_commentary("lsvs", "Commentary track");
 single_type filetype_sox("sox", "SoX file");
 single_type filetype_sub("sub", "Microsub subtitles");
 single_type filetype_png("png", "Portable Network Graphics");
+single_type filetype_hexbookmarks("lhb", "Hex editor bookmarks");
 

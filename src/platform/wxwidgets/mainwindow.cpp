@@ -121,6 +121,7 @@ enum
 	wxID_ACTIONS_LAST = wxID_ACTIONS_FIRST + 256,
 	wxID_SETTINGS_FIRST,
 	wxID_SETTINGS_LAST = wxID_SETTINGS_FIRST + 256,
+	wxID_HEXEDITOR,
 };
 
 
@@ -1021,6 +1022,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_MEMORYWATCH, wxT("Save memory watch..."));
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
+	menu_entry(wxID_HEXEDITOR, wxT("Memory editor..."));
 	menu_separator();
 	menu_entry(wxID_MOVIE_EDIT, wxT("Edit movie..."));
 	menu_separator();
@@ -1571,6 +1573,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_LOAD_ROM_IMAGE_FIRST:
 		do_load_rom_image(NULL);
+		return;
+	case wxID_HEXEDITOR:
+		wxeditor_hexedit_display(this);
 		return;
 	};
 }

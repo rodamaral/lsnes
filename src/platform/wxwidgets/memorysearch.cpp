@@ -31,6 +31,7 @@
 #define CANDIDATE_LIMIT 512
 
 class wxwindow_memorysearch;
+memory_search* wxwindow_memorysearch_active();
 
 namespace
 {
@@ -252,6 +253,7 @@ public:
 	template<void(memory_search::*sfn)()> void search_0();
 	template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void search_1();
 private:
+	friend memory_search* wxwindow_memorysearch_active();
 	friend class panel;
 	template<typename T> T promptvalue(bool& bad);
 	void update();
@@ -801,6 +803,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		for(auto i : lsnes_memory.get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
+		wxeditor_hexeditor_update();
 	} else if(id == wxID_UPDATE) {
 		update();
 	} else if(id == wxID_TYPESELECT) {
@@ -848,6 +851,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			runemufn([addr, ms]() { ms->dq_range(addr, addr); });
 		}
 		matches->set_selection(0, 0);
+		wxeditor_hexeditor_update();
 	} else if(id == wxID_SET_REGIONS) {
 		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
 		if(d->ShowModal() == wxID_OK)
@@ -856,9 +860,11 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		for(auto i : lsnes_memory.get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
+		wxeditor_hexeditor_update();
 	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
 		int button = id - wxID_BUTTONS_BASE;
 		(this->*(searchtbl[button].searches[typecode]))();
+		wxeditor_hexeditor_update();
 	}
 	update();
 }
@@ -913,4 +919,12 @@ void wxwindow_memorysearch_update()
 {
 	if(mwatch)
 		mwatch->auto_update();
+}
+
+memory_search* wxwindow_memorysearch_active()
+{
+	if(mwatch)
+		return mwatch->msearch;
+	else
+		return NULL;
 }

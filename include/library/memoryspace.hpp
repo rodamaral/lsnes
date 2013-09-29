@@ -227,6 +227,12 @@ public:
  * Returns: True on success, false on failure.
  */
 	bool write_range_linear(uint64_t linear, const void* buffer, size_t bsize);
+/**
+ * Read complete linear memory.
+ *
+ * Parameter buffer: Buffer to store to (get_linear_size() bytes).
+ */
+	void read_all_linear_memory(uint8_t* buffer);
 private:
 	mutex_class mutex;
 	std::vector<memory_region*> u_regions;

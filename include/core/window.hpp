@@ -311,6 +311,10 @@ struct platform
  * Run all queues.
  */
 	static void run_queues() throw();
+/**
+ * Set availablinty of system thread.
+ */
+	static void system_thread_available(bool av) throw();
 
 	static bool pausing_allowed;
 	static double global_volume;

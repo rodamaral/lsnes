@@ -30,6 +30,11 @@
 #define MAXMESSAGES 5000
 #define INIT_WIN_SIZE 6
 
+namespace
+{
+	volatile bool _system_thread_available = false;
+}
+
 keypress::keypress()
 {
 	key1 = NULL;
@@ -476,19 +481,28 @@ void platform::queue(const std::string& c) throw(std::bad_alloc)
 
 void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_alloc)
 {
+	if(!_system_thread_available) {
+		f(arg);
+		return;
+	}
 	init_threading();
 	umutex_class h(queue_lock);
 	++next_function;
 	functions.push_back(std::make_pair(f, arg));
 	queue_condition.notify_all();
 	if(sync)
-		while(functions_executed < next_function)
+		while(functions_executed < next_function && _system_thread_available)
 			cv_timed_wait(queue_condition, h, microsec_class(10000));
 }
 
 void platform::run_queues() throw()
 {
 	internal_run_queues(false);
+}
+
+void platform::system_thread_available(bool av) throw()
+{
+	_system_thread_available = av;
 }
 
 namespace

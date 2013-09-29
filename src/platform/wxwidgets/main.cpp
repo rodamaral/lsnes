@@ -123,6 +123,7 @@ namespace
 			if(main_window)
 				main_window->notify_update_status();
 			wxeditor_movie_update();
+			wxeditor_hexeditor_update();
 		} else if(c == UISERV_UPDATE_SCREEN) {
 			if(main_window)
 				main_window->notify_update();

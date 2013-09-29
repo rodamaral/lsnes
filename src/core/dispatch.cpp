@@ -350,6 +350,7 @@ struct dispatcher<> notify_status_update("status_update");
 struct dispatcher<bool> notify_sound_unmute("sound_unmute");
 struct dispatcher<bool> notify_mode_change("mode_change");
 struct dispatcher<> notify_core_change("core_change");
+struct dispatcher<bool> notify_core_changed("core_changed");
 struct dispatcher<> notify_new_core("new_core");
 struct dispatcher<> notify_voice_stream_change("voice_stream_change");
 struct dispatcher<> notify_vu_change("vu_change");
