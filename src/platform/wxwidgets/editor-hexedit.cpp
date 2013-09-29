@@ -111,6 +111,12 @@ namespace
 		{"Q8.8 (unsigned)", 2, false, "C256z$W/", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint16_t*)x / 256.0).str();
 		}},
+		{"Q12.4 (signed)", 2, false, "C16z$w/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(int16_t*)x / 16.0).str();
+		}},
+		{"Q12.4 (unsigned)", 2, false, "C16z$W/", [](const uint8_t* x) -> std::string {
+			return (stringfmt() << *(uint16_t*)x / 16.0).str();
+		}},
 		{"Q16.8 (signed)", 3, false, "C256z$o/", [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
