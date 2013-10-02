@@ -99,4 +99,5 @@ single_type filetype_sox("sox", "SoX file");
 single_type filetype_sub("sub", "Microsub subtitles");
 single_type filetype_png("png", "Portable Network Graphics");
 single_type filetype_hexbookmarks("lhb", "Hex editor bookmarks");
-
+single_type filetype_memorysearch("lms", "Memory search save");
+single_type filetype_textfile("txt", "Text file");

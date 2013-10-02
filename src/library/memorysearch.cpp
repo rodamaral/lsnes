@@ -369,6 +369,34 @@ template<typename T> void memory_search::s_seqgt() throw() { search(search_seqgt
 template<typename T> T memory_search::v_read(uint64_t addr) throw() { return mspace.read<T>(addr); }
 template<typename T> void memory_search::v_write(uint64_t addr, T val) throw() { mspace.write<T>(addr, val); }
 
+template<typename T> T memory_search::v_readold(uint64_t addr) throw()
+{
+	uint64_t i = 0;
+	auto t = mspace.lookup_linear(0);
+	if(!t.first)
+		return 0;
+	//Search for linear range containing the address.
+	while(true) {
+		t = mspace.lookup_linear(i);
+		if(!t.first)
+			return 0;
+		if(t.first->base <= addr && t.first->base + t.first->size > addr) {
+			//Global address t.first->base <=> linear address i.
+			uint64_t linaddr = addr - t.first->base + i;
+			uint64_t maxr = t.first->size + t.first->base - addr;
+			maxr = min(maxr, (uint64_t)sizeof(T));
+			char buf[sizeof(T)] = {0};
+			if(previous_content.size() < linaddr + maxr)
+				return 0;
+			memcpy(buf, &previous_content[linaddr], maxr);
+			return read_of_endian<T>(buf, t.first->endian);
+		}
+		i += t.first->size - t.second;
+	}
+	
+	return 0;
+}
+
 template<typename T> void memorysearch_pull_type(memory_search& s)
 {
 	T val;
@@ -385,6 +413,7 @@ template<typename T> void memorysearch_pull_type(memory_search& s)
 	eat_argument(&memory_search::s_seqge<T>);
 	eat_argument(&memory_search::s_seqgt<T>);
 	eat_argument(&memory_search::v_read<T>);
+	eat_argument(&memory_search::v_readold<T>);
 	eat_argument(&memory_search::v_write<T>);
 }
 
@@ -400,6 +429,7 @@ template<typename T> void memorysearch_pull_type2(memory_search& s)
 	eat_argument(&memory_search::s_ge<T>);
 	eat_argument(&memory_search::s_gt<T>);
 	eat_argument(&memory_search::v_read<T>);
+	eat_argument(&memory_search::v_readold<T>);
 	eat_argument(&memory_search::v_write<T>);
 }
 
@@ -564,3 +594,62 @@ void memory_search::reset() throw(std::bad_alloc)
 		i += t.first->size - t.second;
 	}
 }
+
+
+void memory_search::savestate(std::vector<char>& buffer, enum savestate_type type) const
+{
+	size_t size;
+	uint64_t linsize = mspace.get_linear_size();
+	if(type == ST_PREVMEM)
+		size = 9 + linsize;
+	else if(type == ST_SET)
+		size = 17 + (linsize + 63) / 64 * 8;
+	else if(type == ST_ALL)
+		size = 17 + linsize + (linsize + 63) / 64 * 8;
+	else
+		throw std::runtime_error("Invalid savestate type");
+	buffer.resize(size);
+	buffer[0] = type;
+	write64ube(&buffer[1], linsize);
+	size_t offset = 9;
+	if(type == ST_PREVMEM || type == ST_ALL) {
+		memcpy(&buffer[offset], &previous_content[0], min(linsize, (uint64_t)previous_content.size()));
+		offset += linsize;
+	}
+	if(type == ST_SET || type == ST_ALL) {
+		write64ube(&buffer[offset], candidates);
+		offset += 8;
+		size_t bound = min((linsize + 63) / 64, (uint64_t)still_in.size());
+		for(unsigned i = 0; i < bound; i++) {
+			write64ube(&buffer[offset], still_in[i]);
+			offset += 8;
+		}
+	}
+}
+
+void memory_search::loadstate(const std::vector<char>& buffer)
+{
+	if(buffer.size() < 9 || buffer[0] < ST_PREVMEM || buffer[0] > ST_ALL)
+		throw std::runtime_error("Invalid memory search save");
+	uint64_t linsize = read64ube(&buffer[1]);
+	if(linsize != mspace.get_linear_size())
+		throw std::runtime_error("Save size mismatch (not from this game)");
+	if(!previous_content.size())
+		reset();
+	savestate_type type = (savestate_type)buffer[0];
+	size_t offset = 9;
+	if(type == ST_PREVMEM || type == ST_ALL) {
+		memcpy(&previous_content[0], &buffer[offset], min(linsize, (uint64_t)previous_content.size()));
+		offset += linsize;
+	}
+	if(type == ST_SET || type == ST_ALL) {
+		candidates = read64ube(&buffer[offset]);
+		offset += 8;
+		size_t bound = min((linsize + 63) / 64, (uint64_t)still_in.size());
+		for(unsigned i = 0; i < bound; i++) {
+			still_in[i] = read64ube(&buffer[offset]);
+			offset += 8;
+		}
+	}
+}
+

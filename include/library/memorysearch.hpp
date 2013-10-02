@@ -74,12 +74,30 @@ public:
 	template<typename T> void s_seqge() throw();
 	template<typename T> void s_seqgt() throw();
 	template<typename T> T v_read(uint64_t addr) throw();
+	template<typename T> T v_readold(uint64_t addr) throw();
 	template<typename T> void v_write(uint64_t addr, T val) throw();
 
 	static bool searchable_region(memory_region* r)
 	{
 		return (r && !r->readonly && !r->special);
 	}
+/**
+ * Savestate type.
+ */
+	enum savestate_type
+	{
+		ST_PREVMEM,
+		ST_SET,
+		ST_ALL
+	};
+/**
+ * Save state.
+ */
+	void savestate(std::vector<char>& buffer, enum savestate_type type) const;
+/**
+ * Load state.
+ */
+	void loadstate(const std::vector<char>& buffer);
 private:
 	memory_space& mspace;
 	std::vector<uint8_t> previous_content;

@@ -1,15 +1,19 @@
 #include "core/dispatch.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
+#include "core/project.hpp"
 #include "library/string.hpp"
 #include "library/memorysearch.hpp"
 #include "library/int24.hpp"
+#include "library/zip.hpp"
 
+#include "platform/wxwidgets/loadsave.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/textrender.hpp"
 
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 
 #include <wx/wx.h>
@@ -27,6 +31,13 @@
 #define wxID_DISQUALIFY (wxID_HIGHEST + 8)
 #define wxID_POKE (wxID_HIGHEST + 9)
 #define wxID_SHOW_HEXEDITOR (wxID_HIGHEST + 10)
+#define wxID_MENU_SAVE_PREVMEM (wxID_HIGHEST + 11)
+#define wxID_MENU_SAVE_SET (wxID_HIGHEST + 12)
+#define wxID_MENU_SAVE_ALL (wxID_HIGHEST + 13)
+#define wxID_MENU_LOAD (wxID_HIGHEST + 14)
+#define wxID_MENU_UNDO (wxID_HIGHEST + 15)
+#define wxID_MENU_REDO (wxID_HIGHEST + 16)
+#define wxID_MENU_DUMP_CANDIDATES (wxID_HIGHEST + 17)
 #define wxID_BUTTONS_BASE (wxID_HIGHEST + 128)
 
 #define DATATYPES 12
@@ -37,6 +48,7 @@ memory_search* wxwindow_memorysearch_active();
 
 namespace
 {
+	unsigned UNDOHISTORY_MAXSIZE = 48;
 	const char* watchchars = "bBwWoOdDqQfF";
 
 	wxwindow_memorysearch* mwatch;
@@ -255,6 +267,28 @@ public:
 	template<void(memory_search::*sfn)()> void search_0();
 	template<typename T, typename T2, void(memory_search::*sfn)(T2 val)> void search_1();
 	template<typename T> void _do_poke_addr(uint64_t addr);
+	template<typename T> std::string _do_format_signed(uint64_t addr, bool hex, bool old)
+	{
+		if(old)
+			return format_number_signed<T>(msearch->v_readold<T>(addr), hex);
+		else
+			return format_number_signed<T>(lsnes_memory.read<T>(addr), hex);
+	}
+	template<typename T> std::string _do_format_unsigned(uint64_t addr, bool hex, bool old)
+	{
+		if(old)
+			return format_number_unsigned<T>(msearch->v_readold<T>(addr), hex);
+		else
+			return format_number_unsigned<T>(lsnes_memory.read<T>(addr), hex);
+	}
+	template<typename T> std::string _do_format_float(uint64_t addr, bool hex, bool old)
+	{
+		if(old)
+			return format_number_float(msearch->v_readold<T>(addr));
+		else
+			return format_number_float(lsnes_memory.read<T>(addr));
+	}
+	void dump_candidates_text();
 private:
 	friend memory_search* wxwindow_memorysearch_active();
 	friend class panel;
@@ -264,6 +298,10 @@ private:
 	void on_mouse0(wxMouseEvent& e, bool polarity);
 	void on_mousedrag();
 	void on_mouse2(wxMouseEvent& e);
+	void handle_undo_redo(bool redo);
+	void push_undo();
+	void handle_save(memory_search::savestate_type type);
+	void handle_load();
 	wxStaticText* count;
 	scroll_bar* scroll;
 	panel* matches;
@@ -280,6 +318,10 @@ private:
 	bool toomany;
 	int scroll_delta;
 	std::set<std::string> vmas_enabled;
+	wxMenuItem* undoitem;
+	wxMenuItem* redoitem;
+	std::list<std::vector<char>> undohistory;
+	std::list<std::vector<char>> redohistory;
 };
 
 namespace
@@ -298,6 +340,22 @@ namespace
 		&wxwindow_memorysearch::_do_poke_addr<uint64_t>,
 		&wxwindow_memorysearch::_do_poke_addr<float>, 
 		&wxwindow_memorysearch::_do_poke_addr<double>,
+	};
+
+	typedef std::string (wxwindow_memorysearch::*displayfn_t)(uint64_t, bool hexmode, bool old);
+	displayfn_t displays[] = {
+		&wxwindow_memorysearch::_do_format_signed<uint8_t>,
+		&wxwindow_memorysearch::_do_format_unsigned<uint8_t>,
+		&wxwindow_memorysearch::_do_format_signed<uint16_t>,
+		&wxwindow_memorysearch::_do_format_unsigned<uint16_t>,
+		&wxwindow_memorysearch::_do_format_signed<ss_uint24_t>,
+		&wxwindow_memorysearch::_do_format_unsigned<ss_uint24_t>,
+		&wxwindow_memorysearch::_do_format_signed<uint32_t>,
+		&wxwindow_memorysearch::_do_format_signed<uint32_t>,
+		&wxwindow_memorysearch::_do_format_unsigned<uint64_t>,
+		&wxwindow_memorysearch::_do_format_unsigned<uint64_t>,
+		&wxwindow_memorysearch::_do_format_float<float>,
+		&wxwindow_memorysearch::_do_format_float<double>,
 	};
 	
 	struct searchtype searchtbl[] = {
@@ -578,6 +636,38 @@ wxwindow_memorysearch::wxwindow_memorysearch()
 		if(memory_search::searchable_region(i))
 			vmas_enabled.insert(i->name);
 
+	wxMenuBar* menubar = new wxMenuBar();
+	SetMenuBar(menubar);
+	wxMenu* filemenu = new wxMenu();
+	filemenu->Append(wxID_MENU_DUMP_CANDIDATES, wxT("Dump candidates..."));
+	filemenu->AppendSeparator();
+	filemenu->Append(wxID_MENU_SAVE_PREVMEM, wxT("Save previous memory..."));
+	filemenu->Append(wxID_MENU_SAVE_SET, wxT("Save set of addresses..."));
+	filemenu->Append(wxID_MENU_SAVE_ALL, wxT("Save previous memory and set of addresses..."));
+	filemenu->AppendSeparator();
+	filemenu->Append(wxID_MENU_LOAD, wxT("Load save..."));
+	menubar->Append(filemenu, wxT("File"));
+	wxMenu* editmenu = new wxMenu();
+	undoitem = editmenu->Append(wxID_UNDO, wxT("Undo"));
+	redoitem = editmenu->Append(wxID_REDO, wxT("Redo"));
+	undoitem->Enable(false);
+	redoitem->Enable(false);
+	menubar->Append(editmenu, wxT("Edit"));
+	Connect(wxID_MENU_DUMP_CANDIDATES, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_MENU_SAVE_PREVMEM, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_MENU_SAVE_SET, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_MENU_SAVE_ALL, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_MENU_LOAD, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_UNDO, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+	Connect(wxID_REDO, wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxwindow_memorysearch::on_button_click));
+
 	dragging = false;
 	toomany = true;
 	matches->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(wxwindow_memorysearch::on_mouse), NULL, this);
@@ -634,51 +724,10 @@ void wxwindow_memorysearch::panel::prepare_paint()
 			long j = 0;
 			for(auto i : addrs2) {
 				std::string row = hexformat_address(i) + " ";
-				switch(_parent->typecode) {
-				case 0:
-					row += format_number_signed(lsnes_memory.read<uint8_t>(i), _parent->hexmode);
-					break;
-				case 1:
-					row += format_number_unsigned(lsnes_memory.read<uint8_t>(i),
-						_parent->hexmode);
-					break;
-				case 2:
-					row += format_number_signed(lsnes_memory.read<uint16_t>(i), _parent->hexmode);
-					break;
-				case 3:
-					row += format_number_unsigned(lsnes_memory.read<uint16_t>(i),
-						_parent->hexmode);
-					break;
-				case 4:
-					row += format_number_signed(lsnes_memory.read<ss_uint24_t>(i),
-						_parent->hexmode);
-					break;
-				case 5:
-					row += format_number_unsigned(lsnes_memory.read<ss_uint24_t>(i),
-						_parent->hexmode);
-					break;
-				case 6:
-					row += format_number_signed(lsnes_memory.read<uint32_t>(i), _parent->hexmode);
-					break;
-				case 7:
-					row += format_number_unsigned(lsnes_memory.read<uint32_t>(i),
-						_parent->hexmode);
-					break;
-				case 8:
-					row +=  format_number_signed(lsnes_memory.read<uint64_t>(i),
-						_parent->hexmode);
-					break;
-				case 9:
-					row += format_number_unsigned(lsnes_memory.read<uint64_t>(i),
-						_parent->hexmode);
-					break;
-				case 10:
-					row += format_number_float(lsnes_memory.read<float>(i));
-					break;
-				case 11:
-					row += format_number_float(lsnes_memory.read<double>(i));
-					break;
-				};
+				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, false);
+				row += " (Was: ";
+				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, true);
+				row += ')';
 				if(j >= first && j < last)
 					lines.push_back(row);
 				addrs[j++] = i;
@@ -731,6 +780,110 @@ wxwindow_memorysearch::~wxwindow_memorysearch()
 bool wxwindow_memorysearch::ShouldPreventAppExit() const
 {
 	return false;
+}
+
+void wxwindow_memorysearch::dump_candidates_text()
+{
+	try {
+		std::string filename = choose_file_save(this, "Dump memory search", project_otherpath(),
+			filetype_textfile);
+		std::ofstream out(filename);
+		auto ms = msearch;
+		runemufn([ms, this, &out]() {
+			std::list<uint64_t> addrs2 = ms->get_candidates();
+			long j = 0;
+			for(auto i : addrs2) {
+				std::string row = hexformat_address(i) + " ";
+				row += (this->*displays[this->typecode])(i, this->hexmode, false);
+				row += " (Was: ";
+				row += (this->*displays[this->typecode])(i, this->hexmode, true);
+				row += ')';
+				out << row << std::endl;
+			}
+		});
+		if(!out)
+			throw std::runtime_error("Can't write save file");
+	} catch(canceled_exception& e) {
+	} catch(std::exception& e) {
+		show_message_ok(this, "Save error", std::string(e.what()), wxICON_WARNING);
+		return;
+	}
+}
+
+void wxwindow_memorysearch::handle_save(memory_search::savestate_type type)
+{
+	try {
+		std::vector<char> state;
+		msearch->savestate(state, type);
+		std::string filename = choose_file_save(this, "Save memory search", project_otherpath(),
+			filetype_memorysearch);
+		std::ofstream out(filename, std::ios::binary);
+		out.write(&state[0], state.size());
+		if(!out)
+			throw std::runtime_error("Can't write save file");
+	} catch(canceled_exception& e) {
+	} catch(std::exception& e) {
+		show_message_ok(this, "Save error", std::string(e.what()), wxICON_WARNING);
+		return;
+	}
+}
+
+void wxwindow_memorysearch::handle_load()
+{
+	try {
+		std::string filename = choose_file_load(this, "Load memory search", project_otherpath(),
+			filetype_memorysearch);
+		std::vector<char> state = read_file_relative(filename, "");
+		push_undo();
+		msearch->loadstate(state);
+		update();
+	} catch(canceled_exception& e) {
+	} catch(std::exception& e) {
+		show_message_ok(this, "Load error", std::string(e.what()), wxICON_WARNING);
+		return;
+	}
+}
+
+void wxwindow_memorysearch::handle_undo_redo(bool redo)
+{
+	std::list<std::vector<char>>& a = *(redo ? &redohistory : &undohistory);
+	std::list<std::vector<char>>& b = *(redo ? &undohistory : &redohistory);
+	if(!a.size()) {
+		show_message_ok(this, "Undo/Redo error", "Can't find state to undo/redo to", wxICON_WARNING);
+		return;
+	}
+	bool pushed = false;
+	try {
+		std::vector<char> state;
+		msearch->savestate(state, memory_search::ST_SET);
+		b.push_back(state);
+		pushed = true;
+		msearch->loadstate(a.back());
+		a.pop_back();
+	} catch(std::exception& e) {
+		if(pushed)
+			b.pop_back();
+		show_message_ok(this, "Undo/Redo error", std::string(e.what()), wxICON_WARNING);
+		return;
+	}
+	undoitem->Enable(undohistory.size());
+	redoitem->Enable(redohistory.size());
+	update();
+}
+
+void wxwindow_memorysearch::push_undo()
+{
+	try {
+		std::vector<char> state;
+		msearch->savestate(state, memory_search::ST_SET);
+		undohistory.push_back(state);
+		if(undohistory.size() > UNDOHISTORY_MAXSIZE)
+			undohistory.pop_front();
+		redohistory.clear();
+		undoitem->Enable(undohistory.size());
+		redoitem->Enable(redohistory.size());
+	} catch(...) {
+	}
 }
 
 void wxwindow_memorysearch::on_mouse(wxMouseEvent& e)
@@ -825,6 +978,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 {
 	int id = e.GetId();
 	if(id == wxID_RESET) {
+		push_undo();
 		msearch->reset();
 		for(auto i : lsnes_memory.get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
@@ -869,6 +1023,7 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			start = act_line;
 			end = act_line + 1;
 		}
+		push_undo();
 		for(long r = start; r < end; r++) {
 			if(!addresses.count(r))
 				return;
@@ -882,7 +1037,12 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		wxwindow_memorysearch_vmasel* d = new wxwindow_memorysearch_vmasel(this, vmas_enabled);
 		if(d->ShowModal() == wxID_OK)
 			vmas_enabled = d->get_vmas();
+		else {
+			d->Destroy();
+			return;
+		}
 		d->Destroy();
+		push_undo();
 		for(auto i : lsnes_memory.get_regions())
 			if(memory_search::searchable_region(i) && !vmas_enabled.count(i->name))
 				msearch->dq_range(i->base, i->last_address());
@@ -919,8 +1079,29 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 		}
 	} else if(id >= wxID_BUTTONS_BASE && id < wxID_BUTTONS_BASE + (sizeof(searchtbl)/sizeof(searchtbl[0]))) {
 		int button = id - wxID_BUTTONS_BASE;
+		push_undo();
+		uint64_t old_count = msearch->get_candidate_count();
 		(this->*(searchtbl[button].searches[typecode]))();
+		uint64_t new_count = msearch->get_candidate_count();
+		if(old_count == new_count) {
+			undohistory.pop_back();  //Shouldn't be undoable.
+			undoitem->Enable(undohistory.size());
+		}
 		wxeditor_hexeditor_update();
+	} else if(id == wxID_MENU_DUMP_CANDIDATES) {
+		dump_candidates_text();
+	} else if(id == wxID_MENU_SAVE_PREVMEM) {
+		handle_save(memory_search::ST_PREVMEM);
+	} else if(id == wxID_MENU_SAVE_SET) {
+		handle_save(memory_search::ST_SET);
+	} else if(id == wxID_MENU_SAVE_ALL) {
+		handle_save(memory_search::ST_ALL);
+	} else if(id == wxID_MENU_LOAD) {
+		handle_load();
+	} else if(id == wxID_UNDO) {
+		handle_undo_redo(false);
+	} else if(id == wxID_REDO) {
+		handle_undo_redo(true);
 	}
 	update();
 }
