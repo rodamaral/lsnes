@@ -1054,7 +1054,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 
 		if(!first_round) {
 			controls.reset_framehold();
+			movb.get_movie().get_pollcounters().set_framepflag(false);
 			resetcycles = movb.new_frame_starting(amode == ADVANCE_SKIPLAG);
+			movb.get_movie().get_pollcounters().set_framepflag(true);
 			if(amode == ADVANCE_QUIT && queued_saves.empty())
 				break;
 			bool delayed_reset = (resetcycles > 0);
@@ -1069,6 +1071,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(queued_saves.empty())
 				r = handle_load();
 			if(r > 0 || system_corrupt) {
+				movb.get_movie().get_pollcounters().set_framepflag(our_movie.is_savestate);
 				first_round = our_movie.is_savestate;
 				if(system_corrupt)
 					amode = ADVANCE_PAUSE;

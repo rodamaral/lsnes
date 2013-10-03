@@ -129,7 +129,8 @@ namespace
 			if(controller == 0 && button == 0)
 				return m.get_pollcounters().max_polls() + (extra0 ? 1 : 0);
 			else if(controller == 0 && button >= 1 && button <= 3)
-				return m.get_pollcounters().get_system() ? 1 : 0;
+				return (m.get_pollcounters().get_system() || m.get_pollcounters().get_framepflag()) ?
+					1 : 0;
 		} else if(port <= 2) {
 			if(controller < MAX_CONTROLLERS_PER_PORT && button < MAX_CONTROLS_PER_CONTROLLER)
 				return m.get_pollcounters().get_polls((port - 1) * MAX_CONTROLLERS_PER_PORT +

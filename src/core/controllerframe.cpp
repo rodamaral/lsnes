@@ -130,6 +130,7 @@ pollcounter_vector::pollcounter_vector() throw()
 void pollcounter_vector::clear() throw()
 {
 	system_flag = false;
+	framepflag = false;
 	memset(ctrs, 0, sizeof(ctrs));
 }
 
@@ -229,6 +230,15 @@ bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 	return (mem.size() == 100 || mem.size() == (MAX_BUTTONS  + 4));	//Non-extended is 100.
 }
 
+void pollcounter_vector::set_framepflag(bool value) throw()
+{
+	framepflag = value;
+}
+
+bool pollcounter_vector::get_framepflag() const throw()
+{
+	return framepflag;
+}
 
 controller_frame::controller_frame(porttype_info& p1, porttype_info& p2) throw(std::runtime_error)
 {

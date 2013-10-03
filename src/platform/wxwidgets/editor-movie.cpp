@@ -252,7 +252,7 @@ uint32_t frame_controls::read_pollcount(pollcounter_vector& v, unsigned idx)
 	if(idx == 0)
 		return max(v.max_polls(), (uint32_t)1);
 	if(idx < 4)
-		return v.get_system() ? 1 : 0;
+		return (v.get_system() || v.get_framepflag()) ? 1 : 0;
 	return v.get_polls(idx - 4);
 }
 
