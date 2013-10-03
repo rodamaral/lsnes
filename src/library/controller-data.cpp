@@ -302,6 +302,7 @@ pollcounter_vector::pollcounter_vector(const pollcounter_vector& p) throw(std::b
 	ctrs = new uint32_t[p.types->indices()];
 	types = p.types;
 	memcpy(ctrs, p.ctrs, sizeof(uint32_t) * p.types->indices());
+	framepflag = p.framepflag;
 }
 
 pollcounter_vector& pollcounter_vector::operator=(const pollcounter_vector& p) throw(std::bad_alloc)
@@ -313,6 +314,7 @@ pollcounter_vector& pollcounter_vector::operator=(const pollcounter_vector& p) t
 	memcpy(n, p.ctrs, sizeof(uint32_t) * p.types->indices());
 	delete[] ctrs;
 	ctrs = n;
+	framepflag = p.framepflag;
 	return *this;
 }
 
@@ -324,6 +326,7 @@ pollcounter_vector::~pollcounter_vector() throw()
 void pollcounter_vector::clear() throw()
 {
 	memset(ctrs, 0, sizeof(uint32_t) * types->indices());
+	framepflag = false;
 }
 
 void pollcounter_vector::set_all_DRDY() throw()
@@ -391,6 +394,16 @@ bool pollcounter_vector::check(const std::vector<uint32_t>& mem) throw()
 	return (mem.size() == types->indices());
 }
 
+
+void pollcounter_vector::set_framepflag(bool value) throw()
+{
+	framepflag = value;
+}
+
+bool pollcounter_vector::get_framepflag() const throw()
+{
+	return framepflag;
+}
 
 controller_frame::controller_frame(const port_type_set& p) throw(std::runtime_error)
 {

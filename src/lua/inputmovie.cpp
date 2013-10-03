@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/string.hpp"
+#include "library/minmax.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/window.hpp"
@@ -96,6 +97,8 @@ namespace
 		movie& m = movb.get_movie();
 		if(port == 0 && controller == 0 && button == 0)
 			return m.get_pollcounters().max_polls() + (extra0 ? 1 : 0);
+		if(port == 0 && controller == 0 && m.get_pollcounters().get_framepflag())
+			return max(m.get_pollcounters().get_polls(port, controller, button), (uint32_t)1);
 		return m.get_pollcounters().get_polls(port, controller, button);
 	}
 

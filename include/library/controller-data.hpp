@@ -677,9 +677,18 @@ public:
  * Returns: True if load is possible, false otherwise.
  */
 	bool check(const std::vector<uint32_t>& mem) throw();
+/**
+ * Set/Clear the frame parameters polled flag.
+ */
+	void set_framepflag(bool value) throw();
+/**
+ * Get the frame parameters polled flag.
+ */
+	bool get_framepflag() const throw();
 private:
 	uint32_t* ctrs;
 	const port_type_set* types;
+	bool framepflag;
 };
 
 /**

@@ -230,6 +230,9 @@ uint32_t frame_controls::read_pollcount(pollcounter_vector& v, unsigned idx)
 {
 	if(idx == 0)
 		return max(v.max_polls(), (uint32_t)1);
+	for(auto i : controlinfo)
+		if(idx == i.index && i.port == 0 && i.controller == 0)
+			return max(v.get_polls(idx), (uint32_t)(v.get_framepflag() ? 1 : 0));
 	return v.get_polls(idx);
 }
 
