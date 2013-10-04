@@ -1010,3 +1010,24 @@ rr1-Δ18 [Thursday July 25th 2013]
 * Support Y-cabled gamepad16.
 * Lua: Allow shortening evaluate-lua to L.
 * Lua: Methods for handling movies as objects.
+
+rr1-Δ18ε1 [Friday October 4th 2013]
+===================================
+* Add installer script
+* Backport support for SGB GB WRAM and HRAM.
+* Support BITMAP+PALETTE -> DBITMAP.
+* If loading movie/savestate without ROM, prompt one.
+* Fix movie initialization on ROM load.
+* Fix compilation if wxString is wchar_t based.
+* Save ROM name hints.
+* Use hints for default filename on ROM load.
+* runuifun: Call the function only once.
+* Fix NULL pointer dereference if gametype changes from NULL.
+* Lua: gui.arrow
+* Fix diagonal arrows.
+* Print() can print any type.
+* Extend userdata printing.
+* Fix wrong use of lua_error.
+* Lua: Tilemaps
+* Don't allow editing reset flags after reading.
+
