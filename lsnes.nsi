@@ -1,5 +1,5 @@
 !define PRODUCT_NAME "lsnes"
-!define PRODUCT_VERSION "rr1-delta18"
+!define PRODUCT_VERSION "rr1-delta18epsilon1"
 !define PRODUCT_PUBLISHER "Ilari"
 !define PRODUCT_WEB_SITE "http://tasvideos.org/Lsnes.html"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
@@ -57,7 +57,6 @@ Section "Main installer files" SEC01
   File "lsnesgb-wxwidgets.exe"
   File "lsnes-sdl.exe"
   File "lsnes-wxwidgets.exe"
-  File "sources.tar"
   File "lsnes.nsi"
   File "manual.txt"
 

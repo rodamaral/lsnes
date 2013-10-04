@@ -1321,3 +1321,112 @@ rr2-β9 [Sunday August 4th 2013]
 * Lua: Support packed Lua scripts.
 * Lua: @@LUA_SCRIPT_FILENAME@@
 * Lua: Function to resolve file w.r.t. basneame.
+
+rr1-Δ18ε1 [Friday October 4th 2013]
+===================================
+* Add installer script
+* Backport support for SGB GB WRAM and HRAM.
+* Support BITMAP+PALETTE -> DBITMAP.
+* If loading movie/savestate without ROM, prompt one.
+* Fix movie initialization on ROM load.
+* Fix compilation if wxString is wchar_t based.
+* Save ROM name hints.
+* Use hints for default filename on ROM load.
+* runuifun: Call the function only once.
+* Fix NULL pointer dereference if gametype changes from NULL.
+* Lua: gui.arrow
+* Fix diagonal arrows.
+* Print() can print any type.
+* Extend userdata printing.
+* Fix wrong use of lua_error.
+* Lua: Tilemaps
+* Don't allow editing reset flags after reading.
+
+rr2-β10 [Friday October 4th 2013]
+=================================
+* Don't show joysticks tab if no joysticks.
+* Lua: callback.register/callback.unregister
+* Don't call action_state_updated() while emulator is strating up.
+* Decouple sets of functions from Lua states.
+* Properly handle zip_reader trying to open non-.zip.
+* Cleanup controller and keymapper stuff on exit.
+* SNES: Call callbacks in correct lua state.
+* Gambatte: First emit video then sound.
+* gui.kill_frame: Omit frame from video dump.
+* Lua: gui.bitmap_pget: Read pixels from bitmap.
+* Gambatte: DMG palette manipulation.
+* Gambatte: Allow native-rate sound output.
+* Lua: open_file.
+* Lua: Don't load binary chunks.
+* Don't offer horizontal scale factor as value of verical factor
+* Config dialog / advanced: Treat doubleclick as change click
+* Use tree control instead of pair of listboxes in hotkeys&controls
+* Settings dialog: Support right click context menu
+* Replace X/Y scale with one scale + optional AR correction
+* Some sort of fullscreen mode
+* Tweak the video options panel
+* Much more compact joystick dialog
+* Joystick dialog: Center one-digit numbers
+* Move E() from joystick code to general text panel code
+* Joystick dialog: Compactify
+* Portaudio: Heed defaults, don't use full-duplex mode
+* Fix parsing Oggopus files with tags spanning multiple pages
+* Remove leftover debug messages
+* lsnes-dumpavi: Support specifying dump length as overdump length
+* Make port_type::legal based on data instead of generated
+* Macros: Support ? modifier for macros (press at random)
+* Reserve 1 byte for each macro button instead of 2 bits
+* Be more careful when parsing macros
+* SNES: Support "compact form" where delay resets aren't supported
+* Lua: gui.synchronous_repaint()
+* Support "wrambank" register (read-only) for DMG/CGB
+* Make lua_obj_pin<T> copyable
+* Lua: Automatically pass Lua state to lua class ctors
+* Lua: Use full userdata to store class binds
+* Lua: lua_class<T>::bind_multi (initializer lists are useful)
+* Lua: Pass name of method to various lua class methods
+* Some libgambatte fixes
+* Simplify memory space read/write code
+* Clean up reading of values of various types
+* Simplify memory search by using templates
+* Support 24-bit memory watches / memory searching
+* Support float/double memory watch/search
+* Fix reading binary movies with unknown extensions
+* If movie is loaded without ROM, prompt for ROM
+* Fix slotinfo for binary save slots
+* Add some missing files
+* Fix memory search datatype names
+* Add state mapping for SGB Gameboy CPU
+* Support SGB GB HRAM too
+* Allow RAM initialization from movie file
+* Properly change core if ROM is loaded by request
+* Refactor image slots code
+* Refactor binary file saving/loading routines
+* Remove lanczos.cpp, Nothing needs it
+* Check JSON integer values before trying to parse
+* enumerate_directory: Don't list . and ..
+* Fix compiling if Boost threads are used
+* Mark some globals as const
+* Make some global variables fields
+* binary_input_stream: Handle nested extensions correctly
+* Share file image data among copied instances
+* Make symbolic constant ROM_SLOT_COUNT for ROM slot count
+* Save ROM hints
+* Use ROM hints for default request filename
+* Scatter-gather value read/write
+* Fix compilation with wchar_t based wxstring
+* Cut the ridiculous exception spam from file probing
+* Support Multi-ROM projects
+* Fix compilation with wchar_t-based wxString
+* ROM guessing
+* Hashing: Show total work size, and don't accidentally block the UI
+* Fix a bug where quitting emulator would only unpause it
+* Fix UI blocking on hash verification against movie
+* Fix Win32 (or GCC 4.8?) compilation
+* Hex editor
+* Memory search: Poke
+* Memory search: Select in hex editor
+* Hex editor: Add watch
+* Hex editor: Few fixed-point types
+* Hex editor: Q12.4
+* Memory search: Save, Load, Undo and Redo
