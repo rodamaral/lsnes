@@ -1405,6 +1405,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);
 		fb.copy_from(_fb, 1, 1);
+		render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
 		buf.resize(3 * (ciX.rmax - ciX.rmin + 1) * (ciY.rmax - ciY.rmin + 1));
 		unsigned offX = -ciX.rmin;

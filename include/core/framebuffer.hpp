@@ -101,5 +101,6 @@ void render_kill_request(void* obj);
  * Get latest screen received from core.
  */
 framebuffer_raw& render_get_latest_screen();
+void render_get_latest_screen_end();
 
 #endif

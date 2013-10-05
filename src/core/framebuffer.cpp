@@ -308,3 +308,8 @@ framebuffer_raw& render_get_latest_screen()
 {
 	return get_read_buffer().fbuf;
 }
+
+void render_get_latest_screen_end()
+{
+	buffering.end_read();
+}
