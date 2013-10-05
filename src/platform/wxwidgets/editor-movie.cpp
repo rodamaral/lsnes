@@ -593,6 +593,7 @@ namespace
 			unsigned _height, control_info X, control_info Y, unsigned posX, unsigned posY)
 			: wxDialog(parent, wxID_ANY, towxstring(windowname(X, Y)), wxPoint(posX, posY))
 		{
+			dirty = false;
 			bitmap = _bitmap;
 			width = _width;
 			height = _height;
