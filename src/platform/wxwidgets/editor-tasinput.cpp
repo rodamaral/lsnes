@@ -1,4 +1,5 @@
 #include "core/controller.hpp"
+#include "core/framebuffer.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/dispatch.hpp"
@@ -21,6 +22,14 @@
 #include <wx/statline.h>
 #include <wx/spinctrl.h>
 
+extern "C"
+{
+#ifndef UINT64_C
+#define UINT64_C(val) val##ULL
+#endif
+#include <libswscale/swscale.h>
+}
+
 namespace
 {
 	const int padmajsize = 193;
@@ -28,6 +37,8 @@ namespace
 
 	int32_t value_to_coordinate(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
 	{
+		if(dim == rmax - rmin + 1)
+			return val - rmin;
 		//Scale the values to be zero-based.
 		val = min(max(val, rmin), rmax);
 		rmax -= rmin;
@@ -51,6 +62,8 @@ namespace
 
 	int32_t coordinate_to_value(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
 	{
+		if(dim == rmax - rmin + 1)
+			return val + rmin;
 		val = min(max(val, (int32_t)0), dim - 1);
 		int32_t center = (rmax + rmin) / 2;
 		int32_t cc = (dim - 1) / 2;
@@ -78,6 +91,7 @@ public:
 	void on_control(wxCommandEvent& e);
 	void on_keyboard_up(wxKeyEvent& e);
 	void on_keyboard_down(wxKeyEvent& e);
+	void call_screen_update();
 private:
 	struct dispatch_target<> ahreconfigure;
 	struct xypanel;
@@ -111,24 +125,26 @@ private:
 	{
 		xypanel(wxWindow* win, wxSizer* s, control_triple _t, wxEvtHandler* _obj, wxObjectEventFunction _fun,
 			int _wxid);
+		~xypanel();
 		short get_x() { return x; }
 		short get_y() { return y; }
 		void on_click(wxMouseEvent& e);
 		void on_numbers_change(wxSpinEvent& e);
 		void on_paint(wxPaintEvent& e);
 		void Destroy();
+		void do_redraw();
 	private:
 		short x, y;
 		wxEvtHandler* obj;
 		wxObjectEventFunction fun;
 		int wxid;
 		control_triple t;
-		unsigned awidth;
-		unsigned aheight;
 		wxPanel* graphics;
 		wxSpinCtrl* xnum;
 		wxSpinCtrl* ynum;
-		void do_redraw();
+		bool lightgun;
+		bool dirty;
+		struct SwsContext* rctx;
 	};
 	std::map<int, control_triple> inputs;
 	std::vector<controller_double> panels;
@@ -150,13 +166,21 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 	y = 0;
 	xnum = NULL;
 	ynum = NULL;
+	rctx = NULL;
+	dirty = false;
 	obj = _obj;
 	fun = _fun;
 	wxid = _wxid;
 	t = _t;
 	s->Add(new wxStaticText(win, wxID_ANY, towxstring(t.name)));
 	s->Add(graphics = new wxPanel(win, wxID_ANY));
-	graphics->SetSize(padmajsize, (t.yindex != std::numeric_limits<unsigned>::max()) ? padmajsize : padminsize);
+	lightgun = false;
+	if(t.type == port_controller_button::TYPE_LIGHTGUN && t.yindex != std::numeric_limits<unsigned>::max()) {
+		graphics->SetSize(t.xmax - t.xmin + 1, t.ymax - t.ymin + 1);
+		lightgun = true;
+	} else
+		graphics->SetSize(padmajsize, (t.yindex != std::numeric_limits<unsigned>::max()) ? padmajsize :
+			padminsize);
 	graphics->SetMinSize(graphics->GetSize());
 	graphics->SetMaxSize(graphics->GetSize());
 	graphics->Connect(wxEVT_PAINT, wxPaintEventHandler(xypanel::on_paint), NULL, this);
@@ -172,6 +196,18 @@ wxeditor_tasinput::xypanel::xypanel(wxWindow* win, wxSizer* s, control_triple _t
 	xnum->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(xypanel::on_numbers_change), NULL, this);
 	if(ynum) ynum->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler(xypanel::on_numbers_change), NULL,
 		this);
+}
+
+wxeditor_tasinput::xypanel::~xypanel()
+{
+	sws_freeContext(rctx);
+}
+
+void wxeditor_tasinput::call_screen_update()
+{
+	for(auto i : inputs)
+		if(i.second.type == port_controller_button::TYPE_LIGHTGUN)
+			i.second.panel->do_redraw();
 }
 
 void wxeditor_tasinput::xypanel::on_click(wxMouseEvent& e)
@@ -201,15 +237,47 @@ void wxeditor_tasinput::xypanel::on_numbers_change(wxSpinEvent& e)
 
 void wxeditor_tasinput::xypanel::do_redraw()
 {
-	graphics->Refresh();
+	if(!dirty) {
+		dirty = true;
+		graphics->Refresh();
+	}
 }
 
 void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 {
 	wxPaintDC dc(graphics);
-	dc.SetBackground(*wxWHITE_BRUSH);
-	dc.SetPen(*wxBLACK_PEN);
-	dc.Clear();
+	if(lightgun) {
+		//Draw the current screen.
+		framebuffer_raw& _fb = render_get_latest_screen();
+		framebuffer<false> fb;
+		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
+		auto size = our_rom.rtype->lightgun_scale();
+		fb.reallocate(osize.first, osize.second, false);
+		fb.copy_from(_fb, 1, 1);
+		render_get_latest_screen_end();
+		std::vector<uint8_t> buf;
+		buf.resize(3 * (t.ymax - t.ymin + 1) * (t.ymax - t.ymin + 1));
+		unsigned offX = -t.xmin;
+		unsigned offY = -t.ymin;
+		rctx = sws_getCachedContext(rctx, osize.first, osize.second, PIX_FMT_RGBA,
+			size.first, size.second, PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
+		uint8_t* srcp[1];
+		int srcs[1];
+		uint8_t* dstp[1];
+		int dsts[1];
+		srcs[0] = 4 * (fb.rowptr(1) - fb.rowptr(0));
+		dsts[0] = 3 * (t.xmax - t.xmin + 1);
+		srcp[0] = reinterpret_cast<unsigned char*>(fb.rowptr(0));
+		dstp[0] = &buf[3 * (offY * (t.xmax - t.xmin + 1) + offX)];
+		memset(&buf[0], 0, buf.size());
+		sws_scale(rctx, srcp, srcs, 0, size.second, dstp, dsts);
+		wxBitmap bmp(wxImage(t.xmax - t.xmin + 1, t.ymax - t.ymin + 1, &buf[0], true));
+		dc.DrawBitmap(bmp, 0, 0, false);
+	} else {
+		dc.SetBackground(*wxWHITE_BRUSH);
+		dc.SetPen(*wxBLACK_PEN);
+		dc.Clear();
+	}
 	wxSize ps = graphics->GetSize();
 	dc.DrawLine(0, 0, ps.GetWidth(), 0);
 	dc.DrawLine(0, 0, 0, ps.GetHeight());
@@ -227,6 +295,7 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 	dc.DrawLine(xdraw, 0, xdraw, ps.GetHeight());
 	if((t.yindex != std::numeric_limits<unsigned>::max()) || t.ycenter)
 		dc.DrawLine(0, ydraw, ps.GetWidth(), ydraw);
+	dirty = false;
 }
 
 void wxeditor_tasinput::xypanel::Destroy()
@@ -478,4 +547,10 @@ void wxeditor_tasinput_display(wxWindow* parent)
 	v->Show();
 	tasinput_open = v;
 	controls.tasinput_enable(true);
+}
+
+void wxwindow_tasinput_update()
+{
+	if(tasinput_open)
+		tasinput_open->call_screen_update();
 }
