@@ -297,6 +297,16 @@ bool core_core::isnull()
 	return c_isnull();
 }
 
+std::pair<unsigned, unsigned> core_core::lightgun_scale()
+{
+	return c_lightgun_scale();
+}
+
+std::pair<unsigned, unsigned> core_core::c_lightgun_scale()
+{
+	return std::make_pair(0, 0);
+}
+
 bool core_core::c_isnull()
 {
 	return false;

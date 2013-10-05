@@ -73,6 +73,7 @@ namespace
 	size_t soundbuf_fill = 0;
 	bool last_hires = false;
 	bool last_interlace = false;
+	bool last_PAL = false;
 	uint64_t trace_counter;
 	std::ofstream trace_output;
 	bool trace_output_enable;
@@ -858,6 +859,9 @@ again2:
 		}
 		std::list<core_vma_info> c_vma_list() { return get_VMAlist(); }
 		std::set<std::string> c_srams() { return bsnes_srams(); }
+		std::pair<unsigned, unsigned> c_lightgun_scale() {
+			return std::make_pair(256, last_PAL ? 239 : 224);
+		}
 	} bsnes_core;
 
 	struct _type_snes : public core_type
@@ -1039,6 +1043,7 @@ again2:
 		last_hires = hires;
 		last_interlace = interlace;
 		bool region = (SNES::system.region() == SNES::System::Region::PAL);
+		last_PAL = region;
 		if(stepping_into_save)
 			messages << "Got video refresh in runtosave, expect desyncs!" << std::endl;
 		video_refresh_done = true;

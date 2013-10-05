@@ -20,6 +20,7 @@ shadow="SHADOW";
 shadow_axis="SHADOW_AXIS";
 null="NULL";
 shadow_null="SHADOW_NULL";
+lightgun="LIGHTGUN";
 
 if not arg[1] then
 	error("Expected input file");
@@ -71,6 +72,13 @@ for i = 1,#ports do
 				buttonsymbols[bsym] = "{port_controller_button::TYPE_TAXIS, U'\\0',\"" .. xbutton[2]
 					.. "\", false, ".. xbutton[3] .. ", ".. xbutton[4] .. "," ..
 					(xbutton[5] and "true" or "false") .. ", NULL}";
+				ints = ints + 1;
+			end
+			if xbutton[1] == lightgun then
+				table.insert(bsyms, bsym);
+				buttonsymbols[bsym] = "{port_controller_button::TYPE_LIGHTGUN, U'\\0',\"" ..
+					xbutton[2] .. "\", false, ".. xbutton[3] .. ", ".. xbutton[4] .. "," ..
+					" false, NULL}";
 				ints = ints + 1;
 			end
 			if xbutton[1] == shadow then
@@ -143,7 +151,8 @@ for i = 1,#ports do
 					"buffer["..bidx.."] &= ~"..bmask..";");
 				bit_l = bit_l + 1;
 			end
-			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) or
+				(bt == lightgun) then
 				print("\t\t\t\t\tbuffer["..int_l.."] = (unsigned short)x;");
 				print("\t\t\t\t\tbuffer["..(int_l + 1).."] = ((unsigned short)x >> 8);");
 				int_l = int_l + 2;
@@ -173,7 +182,8 @@ for i = 1,#ports do
 				print("\t\t\t\t\treturn (buffer["..bidx.."] & "..bmask..") ? 1 : 0;");
 				bit_l = bit_l + 1;
 			end
-			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) or
+				(bt == lightgun) then
 				print("\t\t\t\t\treturn (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				int_l = int_l + 2;
@@ -212,7 +222,8 @@ for i = 1,#ports do
 		for k = 1,#(controller.buttons) do
 			local xbutton = controller.buttons[k];
 			local bt = xbutton[1];
-			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
+			if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) or
+				(bt == lightgun) then
 				print("\t\t\t\ttmp = (short)((unsigned short)buffer["..int_l.."] + ("..
 					"(unsigned short)buffer["..(int_l+1).."] << 8));");
 				print("\t\t\t\tptr += sprintf(textbuf + ptr, \" %i\", tmp);");
@@ -248,7 +259,8 @@ for i = 1,#ports do
 			for k = 1,#(controller.buttons) do
 				local xbutton = controller.buttons[k];
 				local bt = xbutton[1];
-				if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) then
+				if (bt == axis) or (bt == raxis) or (bt == taxis) or (bt == shadow_axis) or
+					(bt == lightgun) then
 					print("\t\t\ttmp = read_axis_value(textbuf, ptr);");
 					print("\t\t\tbuffer["..int_l.."] = (unsigned short)tmp;");
 					print("\t\t\tbuffer["..(int_l + 1).."] = ((unsigned short)tmp >> 8);");

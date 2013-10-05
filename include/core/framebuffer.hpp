@@ -97,5 +97,9 @@ void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime
  * Kill pending requests associated with object.
  */
 void render_kill_request(void* obj);
+/**
+ * Get latest screen received from core.
+ */
+framebuffer_raw& render_get_latest_screen();
 
 #endif

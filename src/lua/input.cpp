@@ -393,6 +393,7 @@ namespace
 				case port_controller_button::TYPE_AXIS: L.pushstring("axis"); break;
 				case port_controller_button::TYPE_RAXIS: L.pushstring("raxis"); break;
 				case port_controller_button::TYPE_TAXIS: L.pushstring("axis"); break;
+				case port_controller_button::TYPE_LIGHTGUN: L.pushstring("lightgun"); break;
 			};
 			L.rawset(-3);
 			if(cs->buttons[i].symbol) {
@@ -403,6 +404,14 @@ namespace
 			if(cs->buttons[i].macro) {
 				L.pushstring("macro");
 				L.pushstring(cs->buttons[i].macro);
+				L.rawset(-3);
+			}
+			if(cs->buttons[i].is_analog()) {
+				L.pushstring("rmin");
+				L.pushnumber(cs->buttons[i].rmin);
+				L.rawset(-3);
+				L.pushstring("rmax");
+				L.pushnumber(cs->buttons[i].rmax);
 				L.rawset(-3);
 			}
 			L.pushstring("name");

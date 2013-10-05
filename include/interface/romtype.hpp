@@ -335,6 +335,7 @@ struct core_core
 	std::set<const interface_action*> get_actions();
 	const interface_device_reg* get_registers();
 	int reset_action(bool hard);
+	std::pair<unsigned, unsigned> lightgun_scale();
 	bool isnull();
 protected:
 /**
@@ -481,6 +482,10 @@ protected:
  */
 	virtual std::set<std::string> c_srams() = 0;
 /**
+ * Get lightgun scale (only cores that have lightguns need to define this).
+ */
+	virtual std::pair<unsigned, unsigned> c_lightgun_scale();
+/**
  * Is null core (only NULL core should define this).
  */
 	virtual bool c_isnull();
@@ -556,6 +561,7 @@ public:
 	std::set<const interface_action*> get_actions() { return core->get_actions(); }
 	const interface_device_reg* get_registers() { return core->get_registers(); }
 	int reset_action(bool hard) { return core->reset_action(hard); }
+	std::pair<unsigned, unsigned> lightgun_scale() { return core->lightgun_scale(); }
 	bool isnull() { return core->isnull(); }
 protected:
 /**

@@ -303,3 +303,8 @@ void render_kill_request(void* obj)
 	buffer2.rq.kill_request(obj);
 	buffer3.rq.kill_request(obj);
 }
+
+framebuffer_raw& render_get_latest_screen()
+{
+	return get_read_buffer().fbuf;
+}

@@ -38,8 +38,8 @@ gamepad16_controller = {
 
 justifier_controller = {
 	["name"] = "justifier", ["class"] = "justifier", ["buttons"] = {
-		{axis, "xaxis", -16, 271, false},
-		{axis, "yaxis", -16, 255, false},
+		{lightgun, "xaxis", -16, 271},
+		{lightgun, "yaxis", -16, 255},
 		{button, "T", "trigger"},
 		{button, "S", "start"}
 	}
@@ -56,8 +56,8 @@ mouse_controller = {
 
 superscope_controller = {
 	["name"] = "superscope", ["class"] = "superscope", ["buttons"] = {
-		{axis, "xaxis", -16, 271, false},
-		{axis, "yaxis", -16, 255, false},
+		{lightgun, "xaxis", -16, 271},
+		{lightgun, "yaxis", -16, 255},
 		{button, "T", "trigger", "T"},
 		{button, "C", "cursor", "C"},
 		{button, "U", "turbo", "U"},

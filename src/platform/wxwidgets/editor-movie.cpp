@@ -1,3 +1,4 @@
+#include "core/framebuffer.hpp"
 #include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/dispatch.hpp"
@@ -20,6 +21,14 @@
 #include <wx/control.h>
 #include <wx/combobox.h>
 #include <wx/clipbrd.h>
+
+extern "C"
+{
+#ifndef UINT64_C
+#define UINT64_C(val) val##ULL
+#endif
+#include <libswscale/swscale.h>
+}
 
 enum
 {
@@ -65,12 +74,15 @@ struct control_info
 	std::u32string title;
 	unsigned port;
 	unsigned controller;
+	port_controller_button::_type axistype;
+	int rmin;
+	int rmax;
 	static control_info portinfo(unsigned& p, unsigned port, unsigned controller);
 	static control_info fixedinfo(unsigned& p, const std::u32string& str);
 	static control_info buttoninfo(unsigned& p, char32_t character, const std::u32string& title, unsigned idx,
 		unsigned port, unsigned controller);
 	static control_info axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
-		unsigned port, unsigned controller);
+		unsigned port, unsigned controller, port_controller_button::_type _axistype, int _rmin, int _rmax);
 };
 
 control_info control_info::portinfo(unsigned& p, unsigned port, unsigned controller)
@@ -120,7 +132,7 @@ control_info control_info::buttoninfo(unsigned& p, char32_t character, const std
 }
 
 control_info control_info::axisinfo(unsigned& p, const std::u32string& title, unsigned idx,
-	unsigned port, unsigned controller)
+	unsigned port, unsigned controller, port_controller_button::_type _axistype, int _rmin, int _rmax)
 {
 	control_info i;
 	i.position_left = p;
@@ -134,6 +146,9 @@ control_info control_info::axisinfo(unsigned& p, const std::u32string& title, un
 	i.title = title;
 	i.port = port;
 	i.controller = controller;
+	i.axistype = _axistype;
+	i.rmin = _rmin;
+	i.rmax = _rmax;
 	return i;
 }
 
@@ -200,10 +215,12 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 				last_multibyte = false;
 			} else if(pcb.type == port_controller_button::TYPE_AXIS ||
 				pcb.type == port_controller_button::TYPE_RAXIS ||
-				pcb.type == port_controller_button::TYPE_TAXIS) {
+				pcb.type == port_controller_button::TYPE_TAXIS ||
+				pcb.type == port_controller_button::TYPE_LIGHTGUN) {
 				if(j)
 					c++;
-				controlinfo.push_back(control_info::axisinfo(c, to_u32string(pcb.name), idx, pid, i));
+				controlinfo.push_back(control_info::axisinfo(c, to_u32string(pcb.name), idx, pid, i,
+					pcb.type, pcb.rmin, pcb.rmax));
 				last_multibyte = true;
 			}
 		}
@@ -486,6 +503,198 @@ namespace
 				info.write_index(_dst, j, 0);
 		}
 	}
+
+	control_info find_paired(control_info ci, const std::list<control_info>& info)
+	{
+		if(ci.axistype == port_controller_button::TYPE_TAXIS)
+			return ci;
+		bool even = true;
+		bool next_flag = false;
+		control_info previous;
+		for(auto i : info) {
+			if(i.port != ci.port || i.controller != ci.controller)
+				continue;
+			if(i.axistype != port_controller_button::TYPE_AXIS &&
+				i.axistype != port_controller_button::TYPE_RAXIS &&
+				i.axistype != port_controller_button::TYPE_LIGHTGUN)
+				continue;
+			if(next_flag)
+				return i;
+			if(i.index == ci.index) {
+				//This and...
+				if(even)
+					next_flag = true; //Next.
+				else
+					return previous; //Pevious.
+			}
+			previous = i;
+			even = !even;
+		}
+		//Huh, no pair.
+		return ci;
+	}
+
+	int32_t value_to_coordinate(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
+	{
+		//Scale the values to be zero-based.
+		val = min(max(val, rmin), rmax);
+		rmax -= rmin;
+		val -= rmin;
+		int32_t center = rmax / 2;
+		int32_t cc = (dim - 1) / 2;
+		if(val == center)
+			return cc;
+		if(val < center) {
+			//0 => 0, center => cc.
+			return (val * (int64_t)cc + (center / 2)) / center;
+		}
+		if(val > center) {
+			//center => cc, rmax => dim - 1.
+			val -= center;
+			rmax -= center;
+			int32_t cc2 = (dim - 1 - cc);
+			return (val * (int64_t)cc2 + (rmax / 2)) / rmax + cc;
+		}
+	}
+
+	int32_t coordinate_to_value(int32_t rmin, int32_t rmax, int32_t val, int32_t dim)
+	{
+		if(dim == rmin - rmax + 1) {
+			return val + rmin;
+		}
+		val = min(max(val, (int32_t)0), dim - 1);
+		int32_t center = (rmax + rmin) / 2;
+		int32_t cc = (dim - 1) / 2;
+		if(val == cc)
+			return center;
+		if(val < cc) {
+			//0 => rmin, cc => center.
+			return ((center - rmin) * (int64_t)val + cc / 2) / cc + rmin;
+		}
+		if(val > cc) {
+			//cc => center, dim - 1 => rmax.
+			uint32_t cc2 = (dim - 1 - cc);
+			return ((rmax - center) * (int64_t)(val - cc) + cc2 / 2) / cc2 + center;
+		}
+	}
+
+	std::string windowname(control_info X, control_info Y)
+	{
+		if(X.index == Y.index)
+			return (stringfmt() << to_u8string(X.title)).str();
+		else
+			return (stringfmt() << to_u8string(X.title) << "/" <<  to_u8string(Y.title)).str();
+	}
+
+	class window_prompt : public wxDialog
+	{
+	public:
+		window_prompt(wxWindow* parent, uint8_t* _bitmap, unsigned _width,
+			unsigned _height, control_info X, control_info Y, unsigned posX, unsigned posY)
+			: wxDialog(parent, wxID_ANY, towxstring(windowname(X, Y)), wxPoint(posX, posY))
+		{
+			bitmap = _bitmap;
+			width = _width;
+			height = _height;
+			cX = X;
+			cY = Y;
+			oneaxis = false;
+			if(X.index == Y.index) {
+				//One-axis never has a bitmap.
+				bitmap = NULL;
+				height = 32;
+				oneaxis = true;
+			}
+			wxSizer* s = new wxBoxSizer(wxVERTICAL);
+			SetSizer(s);
+			s->Add(panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(width, height)), 0,
+				wxGROW);
+			panel->Connect(wxEVT_PAINT, wxPaintEventHandler(window_prompt::on_paint), NULL, this);
+			panel->Connect(wxEVT_ERASE_BACKGROUND, wxEraseEventHandler(window_prompt::on_erase), NULL,
+				this);
+			Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(window_prompt::on_wclose));
+			panel->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(window_prompt::on_mouse), NULL, this);
+			panel->Connect(wxEVT_MOTION, wxMouseEventHandler(window_prompt::on_mouse), NULL, this);
+			Fit();
+		}
+		void on_wclose(wxCloseEvent& e)
+		{
+			EndModal(wxID_CANCEL);
+		}
+		void on_erase(wxEraseEvent& e)
+		{
+			//Blank.
+		}
+		void on_paint(wxPaintEvent& e)
+		{
+			wxPaintDC dc(panel);
+			if(bitmap) {
+				wxBitmap bmp(wxImage(width, height, bitmap, true));
+				dc.DrawBitmap(bmp, 0, 0, false);
+			} else {
+				dc.SetBackground(*wxWHITE_BRUSH);
+				dc.Clear();
+				auto xval = value_to_coordinate(cX.rmin, cX.rmax, 0, width);
+				auto yval = value_to_coordinate(cY.rmin, cY.rmax, 0, height);
+				dc.SetPen(*wxBLACK_PEN);
+				if(cX.rmin < 0 && cX.rmax > 0)
+					dc.DrawLine(xval, 0, xval, height);
+				if(!oneaxis && cY.rmin < 0 && cY.rmax > 0)
+					dc.DrawLine(0, yval, width, yval);
+			}
+			dc.SetPen(*wxRED_PEN);
+			dc.DrawLine(mouseX, 0, mouseX, height);
+			if(!oneaxis)
+				dc.DrawLine(0, mouseY, width, mouseY);
+			dirty = false;
+		}
+		void on_mouse(wxMouseEvent& e)
+		{
+			if(e.LeftDown()) {
+				result.first = coordinate_to_value(cX.rmin, cX.rmax, e.GetX(), width);
+				if(!oneaxis)
+					result.second = coordinate_to_value(cY.rmin, cY.rmax, e.GetY(), height);
+				else
+					result.second = 0;
+				EndModal(wxID_OK);
+			}
+			mouseX = e.GetX();
+			mouseY = e.GetY();
+			if(!dirty) {
+				dirty = true;
+				panel->Refresh();
+			}
+		}
+		std::pair<int, int> get_results()
+		{
+			return result;
+		}
+	private:
+		std::pair<int, int> result;
+		wxPanel* panel;
+		bool oneaxis;
+		bool dirty;
+		int mouseX;
+		int mouseY;
+		int height;
+		int width;
+		control_info cX;
+		control_info cY;
+		uint8_t* bitmap;
+	};
+
+	std::pair<int, int> prompt_coodinates_window(wxWindow* parent, uint8_t* bitmap, unsigned width,
+		unsigned height, control_info X, control_info Y, unsigned posX, unsigned posY)
+	{
+		window_prompt* p = new window_prompt(parent, bitmap, width, height, X, Y, posX, posY);
+		if(p->ShowModal() == wxID_CANCEL) {
+			delete p;
+			throw canceled_exception();
+		}
+		auto r = p->get_results();
+		delete p;
+		return r;
+	}
 }
 
 class wxeditor_movie : public wxDialog
@@ -515,9 +724,10 @@ private:
 	private:
 		int get_lines();
 		void render(text_framebuffer& fb, unsigned long long pos);
-		void on_mouse0(unsigned x, unsigned y, bool polarity);
+		void on_mouse0(unsigned x, unsigned y, bool polarity, bool shift, unsigned X, unsigned Y);
 		void on_mouse1(unsigned x, unsigned y, bool polarity);
 		void on_mouse2(unsigned x, unsigned y, bool polarity);
+		void popup_axis_panel(uint64_t row, control_info ci, unsigned screenX, unsigned screenY);
 		void do_toggle_buttons(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_alter_axis(unsigned idx, uint64_t row1, uint64_t row2);
 		void do_sweep_axis(unsigned idx, uint64_t row1, uint64_t row2);
@@ -1120,7 +1330,7 @@ void wxeditor_movie::_moviepanel::do_set_stop_at_frame()
 	});
 }
 
-void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity)
+void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarity, bool shift, unsigned X, unsigned Y)
 {
 	if(y < 3)
 		return;
@@ -1147,9 +1357,94 @@ void wxeditor_movie::_moviepanel::on_mouse0(unsigned x, unsigned y, bool polarit
 			(x >= i.position_left + off && x < i.position_left + i.reserved + off)) {
 			if(i.type == 0)
 				do_toggle_buttons(idx, press_line, line);
-			else if(i.type == 1)
-				do_alter_axis(idx, press_line, line);
+			else if(i.type == 1) {
+				if(shift) {
+					if(press_line == line && (i.port || i.controller))
+						try {
+							wxPoint spos = GetScreenPosition();
+							popup_axis_panel(line, i, spos.x + X, spos.y + Y);
+						} catch(canceled_exception& e) {
+						}
+				} else
+					do_alter_axis(idx, press_line, line);
+			}
 		}
+	}
+}
+
+void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci, unsigned screenX, unsigned screenY)
+{
+	control_info ciX;
+	control_info ciY;
+	control_info ci2 = find_paired(ci, fcontrols.get_controlinfo());
+	if(ci.index == ci2.index) {
+		ciX = ciY = ci;
+	} else if(ci2.index < ci.index) {
+		ciX = ci2;
+		ciY = ci;
+	} else {
+		ciX = ci;
+		ciY = ci2;
+	}
+	frame_controls* _fcontrols = &fcontrols;
+	if(ciX.index == ciY.index) {
+		auto c = prompt_coodinates_window(m, NULL, 256, 0, ciX, ciX, screenX, screenY);
+		runemufn([ciX, row, c, _fcontrols]() {
+			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
+			if(row < fedit) return;
+			controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+			controller_frame cf = fv[row];
+			_fcontrols->write_index(cf, ciX.index, c.first);
+		});
+		signal_repaint();
+	} else if(ci.axistype == port_controller_button::TYPE_LIGHTGUN) {
+		framebuffer_raw& _fb = render_get_latest_screen();
+		framebuffer<false> fb;
+		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
+		auto size = our_rom.rtype->lightgun_scale();
+		fb.reallocate(osize.first, osize.second, false);
+		fb.copy_from(_fb, 1, 1);
+		std::vector<uint8_t> buf;
+		buf.resize(3 * (ciX.rmax - ciX.rmin + 1) * (ciY.rmax - ciY.rmin + 1));
+		unsigned offX = -ciX.rmin;
+		unsigned offY = -ciY.rmin;
+		struct SwsContext* ctx = sws_getContext(osize.first, osize.second, PIX_FMT_RGBA,
+			size.first, size.second, PIX_FMT_BGR24, SWS_POINT, NULL, NULL, NULL);
+		uint8_t* srcp[1];
+		int srcs[1];
+		uint8_t* dstp[1];
+		int dsts[1];
+		srcs[0] = 4 * (fb.rowptr(1) - fb.rowptr(0));
+		dsts[0] = 3 * (ciX.rmax - ciX.rmin + 1);
+		srcp[0] = reinterpret_cast<unsigned char*>(fb.rowptr(0));
+		dstp[0] = &buf[3 * (offY * (ciX.rmax - ciX.rmin + 1) + offX)];
+		memset(&buf[0], 0, buf.size());
+		sws_scale(ctx, srcp, srcs, 0, size.second, dstp, dsts);
+		sws_freeContext(ctx);
+		auto c = prompt_coodinates_window(m, &buf[0], (ciX.rmax - ciX.rmin + 1), (ciY.rmax - ciY.rmin + 1),
+			ciX, ciY, screenX, screenY);
+		runemufn([ciX, ciY, row, c, _fcontrols]() {
+			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
+			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
+			if(row < fedit) return;
+			controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+			controller_frame cf = fv[row];
+			_fcontrols->write_index(cf, ciX.index, c.first);
+			_fcontrols->write_index(cf, ciY.index, c.second);
+		});
+		signal_repaint();
+	} else {
+		auto c = prompt_coodinates_window(m, NULL, 256, 256, ciX, ciY, screenX, screenY);
+		runemufn([ciX, ciY, row, c, _fcontrols]() {
+			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
+			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
+			if(row < fedit) return;
+			controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+			controller_frame cf = fv[row];
+			_fcontrols->write_index(cf, ciX.index, c.first);
+			_fcontrols->write_index(cf, ciY.index, c.second);
+		});
+		signal_repaint();
 	}
 }
 
@@ -1540,9 +1835,9 @@ void wxeditor_movie::_moviepanel::on_mouse(wxMouseEvent& e)
 {
 	auto cell = fb.get_cell();
 	if(e.LeftDown() && !e.ControlDown())
-		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, true);
+		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, true, e.ShiftDown(), e.GetX(), e.GetY());
 	if(e.LeftUp() && !e.ControlDown())
-		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, false);
+		on_mouse0(e.GetX() / cell.first, e.GetY() / cell.second, false, e.ShiftDown(), e.GetX(), e.GetY());
 	if(e.MiddleDown())
 		on_mouse1(e.GetX() / cell.first, e.GetY() / cell.second, true);
 	if(e.MiddleUp())
@@ -1695,7 +1990,6 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 	std::string cliptext = copy_from_clipboard();
 	runemufn([_fcontrols, iset, &cliptext, _gapstart, port, controller, append]() {
 		//Insert enough lines for the pasted content.
-		//TODO: Check that this won't alter the past.
 		uint64_t gapstart = _gapstart;
 		if(!movb.get_movie().readonly_mode())
 			return;
@@ -1751,7 +2045,6 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 	uint64_t gapstart = row;
 	runemufn([_fcontrols, iset, gapstart, port, controller]() {
 		//Insert enough lines for the pasted content.
-		//TODO: Check that this won't alter the past.
 		if(!movb.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
@@ -1782,7 +2075,6 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 	uint64_t gaplen = row2 - row1 + 1;
 	runemufn([_fcontrols, iset, gapstart, gaplen, port, controller]() {
 		//Insert enough lines for the pasted content.
-		//TODO: Check that this won't alter the past.
 		if(!movb.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();

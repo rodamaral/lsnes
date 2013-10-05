@@ -182,7 +182,8 @@ struct port_controller_button
 		TYPE_BUTTON,	//Button.
 		TYPE_AXIS,	//Axis.
 		TYPE_RAXIS,	//Relative Axis (mouse).
-		TYPE_TAXIS	//Throttle Axis (does not pair).
+		TYPE_TAXIS,	//Throttle Axis (does not pair).
+		TYPE_LIGHTGUN,	//Lightgun axis.
 	};
 	enum _type type;
 	char32_t symbol;
@@ -195,7 +196,8 @@ struct port_controller_button
 /**
  * Is analog?
  */
-	bool is_analog() const throw() { return type == (TYPE_AXIS) || (type == TYPE_RAXIS) || (type == TYPE_TAXIS); }
+	bool is_analog() const throw() { return type == (TYPE_AXIS) || (type == TYPE_RAXIS) || (type == TYPE_TAXIS)
+		|| (type == TYPE_LIGHTGUN); }
 };
 
 /**

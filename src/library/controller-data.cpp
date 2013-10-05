@@ -274,6 +274,7 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
 		case port_controller_button::TYPE_TAXIS:
+		case port_controller_button::TYPE_LIGHTGUN:
 			val = ptype.read(backingmem, controller, i);
 			buf += writeu32val(buf, val);
 			need_space = true;
@@ -624,6 +625,7 @@ unsigned port_controller::analog_actions() const
 		switch(buttons[i].type) {
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
+		case port_controller_button::TYPE_LIGHTGUN:
 			r++;
 			break;
 		case port_controller_button::TYPE_TAXIS:
@@ -647,6 +649,7 @@ std::pair<unsigned, unsigned> port_controller::analog_action(unsigned k) const
 		switch(buttons[i].type) {
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
+		case port_controller_button::TYPE_LIGHTGUN:
 			if(selecting) {
 				x2 = i;
 				goto out;
