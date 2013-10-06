@@ -273,6 +273,15 @@ public:
  * Adjust frame count.
  */
 	void adjust_frame_count(int64_t adjust);
+/**
+ * Read specified triple at specified subframe of current frame. Only works in readonly mode.
+ */
+	int16_t read_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned index);
+/**
+ * Write specified triple at specified subframe of current frame (if possible). Only works in readonly mode.
+ */
+	void write_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned index,
+		int16_t x);
 private:
 	//Sequence number.
 	uint64_t seqno;

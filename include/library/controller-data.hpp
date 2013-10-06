@@ -219,7 +219,12 @@ struct port_controller
 /**
  * Get specified button, or NULL if it doesn't exist.
  */
-	struct port_controller_button* get(unsigned i);
+	struct port_controller_button* get(unsigned i)
+	{
+		if(i >= buttons.size())
+			return NULL;
+		return &buttons[i];
+	}
 };
 
 /**

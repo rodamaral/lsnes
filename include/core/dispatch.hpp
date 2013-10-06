@@ -271,5 +271,6 @@ extern struct dispatcher<> notify_new_core;
 extern struct dispatcher<> notify_voice_stream_change;
 extern struct dispatcher<> notify_vu_change;
 extern struct dispatcher<> notify_subtitle_change;
+extern struct dispatcher<unsigned, unsigned, int> notify_multitrack_change;
 
 #endif

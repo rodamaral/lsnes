@@ -6,6 +6,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/inthread.hpp"
+#include "core/multitrack.hpp"
 #include "lua/lua.hpp"
 #include "library/string.hpp"
 #include "core/mainloop.hpp"
@@ -253,6 +254,7 @@ controller_frame movie_logic::update_controls(bool subframe) throw(std::bad_allo
 	controller_frame tmp = controls.get(movb.get_movie().get_current_frame());
 	our_rom.rtype->pre_emulate_frame(tmp);	//Preset controls, the lua will override if needed.
 	lua_callback_do_input(tmp, subframe);
+	multitrack_editor.process_frame(tmp);
 	controls.commit(tmp);
 	return tmp;
 }
@@ -307,6 +309,7 @@ namespace
 
 void update_movie_state()
 {
+	bool readonly = false;
 	static unsigned last_controllers = 0;
 	{
 		uint64_t magic[4];
@@ -335,9 +338,10 @@ void update_movie_state()
 	{
 		_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
 		auto& mo = movb.get_movie();
+		readonly = mo.readonly_mode();
 		if(system_corrupt)
 			_status.set("!mode", "C");
-		else if(!mo.readonly_mode())
+		else if(!readonly)
 			_status.set("!mode", "R");
 		else if(mo.get_frame_count() >= mo.get_current_frame())
 			_status.set("!mode", "P");
@@ -378,7 +382,7 @@ void update_movie_state()
 	do_watch_memory();
 
 	controller_frame c;
-	if(movb.get_movie().readonly_mode())
+	if(!multitrack_editor.any_records())
 		c = movb.get_movie().get_controls();
 	else
 		c = controls.get_committed();
@@ -392,7 +396,21 @@ void update_movie_state()
 		}
 		char32_t buffer[MAX_DISPLAY_LENGTH];
 		c.display(pindex.first, pindex.second, buffer);
-		_status.set((stringfmt() << "P" << (i + 1)).str(), buffer);
+		std::u32string _buffer = buffer;
+		if(readonly && multitrack_editor.is_enabled()) {
+			multitrack_edit::state st = multitrack_editor.get(pindex.first, pindex.second);
+			if(st == multitrack_edit::MT_PRESERVE)
+				_buffer += U" (keep)";
+			else if(st == multitrack_edit::MT_OVERWRITE)
+				_buffer += U" (rewrite)";
+			else if(st == multitrack_edit::MT_OR)
+				_buffer += U" (OR)";
+			else if(st == multitrack_edit::MT_XOR)
+				_buffer += U" (XOR)";
+			else
+				_buffer += U" (\?\?\?)";
+		}
+		_status.set((stringfmt() << "P" << (i + 1)).str(), _buffer);
 	}
 	notify_status_update();
 }

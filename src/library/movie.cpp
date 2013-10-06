@@ -476,6 +476,60 @@ void movie::set_pflag_handler(poll_flag* handler)
 	pflag_handler = handler;
 }
 
+int16_t movie::read_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned ctrl)
+{
+	//Readwrite, Past the end of movie or before the beginning?
+	if(!readonly || current_frame_first_subframe >= movie_data.size() || current_frame == 0)
+		return 0;
+	uint32_t changes = count_changes(current_frame_first_subframe);
+	uint32_t index = (changes > subframe) ? subframe : changes - 1;
+	return movie_data[current_frame_first_subframe + index].axis3(port, controller, ctrl);
+}
+
+void movie::write_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned ctrl,
+	int16_t x)
+{
+	if(!readonly || current_frame == 0)
+		return;
+	bool extended = false;
+	while(current_frame > frames_in_movie) {
+		//Extend the movie by a blank frame.
+		extended = true;
+		movie_data.append(movie_data.blank_frame(true));
+		frames_in_movie++;
+	}
+	if(extended) {
+		clear_caches();
+		current_frame_first_subframe = movie_data.size() - 1;
+	}
+	if(current_frame < frames_in_movie) {
+		//If we are not on the last frame, write is possible if it is not on extension.
+		uint32_t changes = count_changes(current_frame_first_subframe);
+		if(subframe < changes)
+			movie_data[current_frame_first_subframe + subframe].axis3(port, controller, ctrl, x);
+	} else  {
+		//Writing to the last frame. If not on extension, handle like non-last frame.
+		//Note that if movie had to be extended, it was done before, resulting movie like in state with
+		//0 stored subframes.
+		uint32_t changes = count_changes(current_frame_first_subframe);
+		if(subframe < changes)
+			movie_data[current_frame_first_subframe + subframe].axis3(port, controller, ctrl, x);
+		else {
+			//If there is no frame at all, create one.
+			if(current_frame_first_subframe >= movie_data.size()) {
+				movie_data.append(movie_data.blank_frame(true));
+				frames_in_movie++;
+			}
+			//Create needed subframes.
+			while(count_changes(current_frame_first_subframe) <= subframe)
+				movie_data.append(movie_data.blank_frame(false));
+			//Write it.
+			movie_data[current_frame_first_subframe + subframe].axis3(port, controller, ctrl, x);
+		}
+	}
+}
+
+
 movie::poll_flag::~poll_flag()
 {
 }

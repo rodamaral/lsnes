@@ -122,6 +122,7 @@ enum
 	wxID_SETTINGS_FIRST,
 	wxID_SETTINGS_LAST = wxID_SETTINGS_FIRST + 256,
 	wxID_HEXEDITOR,
+	wxID_MULTITRACK,
 };
 
 
@@ -1014,6 +1015,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_AUTOHOLD, wxT("Autohold/Autofire..."));
 	menu_entry(wxID_TASINPUT, wxT("TAS input plugin..."));
+	menu_entry(wxID_MULTITRACK, wxT("Multitrack..."));
 	menu_entry(wxID_EDIT_MACROS, wxT("Edit macros..."));
 	menu_separator();
 	menu_entry(wxID_EDIT_MEMORYWATCH, wxT("Edit memory watch..."));
@@ -1326,6 +1328,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 			if(!s)
 				lua_callback_movie_lost("readwrite");
 			movb.get_movie().readonly_mode(s);
+			notify_mode_change(s);
 			if(!s)
 				lua_callback_do_readwrite();
 			update_movie_state();
@@ -1576,6 +1579,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_HEXEDITOR:
 		wxeditor_hexedit_display(this);
+		return;
+	case wxID_MULTITRACK:
+		wxeditor_multitrack_display(this);
 		return;
 	};
 }

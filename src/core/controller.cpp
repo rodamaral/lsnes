@@ -610,5 +610,16 @@ void cleanup_all_keys()
 		delete i.second;
 }
 
+std::pair<int, int> controller_by_name(const std::string& name)
+{
+	for(auto i : active_buttons) {
+		std::string _name = (stringfmt() << i.second.bind.cclass << "-" << i.second.bind.number).str();
+		if(name != _name)
+			continue;
+		return std::make_pair(i.second.port, i.second.controller);
+	}
+	return std::make_pair(-1, -1);
+}
+
 controller_state controls;
 std::map<std::string, std::string> button_keys;
