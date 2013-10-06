@@ -256,7 +256,7 @@ void wxeditor_tasinput::xypanel::on_paint(wxPaintEvent& e)
 		fb.copy_from(_fb, 1, 1);
 		render_get_latest_screen_end();
 		std::vector<uint8_t> buf;
-		buf.resize(3 * (t.ymax - t.ymin + 1) * (t.ymax - t.ymin + 1));
+		buf.resize(3 * (t.xmax - t.xmin + 1) * (t.ymax - t.ymin + 1));
 		unsigned offX = -t.xmin;
 		unsigned offY = -t.ymin;
 		rctx = sws_getCachedContext(rctx, osize.first, osize.second, PIX_FMT_RGBA,
