@@ -123,6 +123,7 @@ enum
 	wxID_SETTINGS_LAST = wxID_SETTINGS_FIRST + 256,
 	wxID_HEXEDITOR,
 	wxID_MULTITRACK,
+	wxID_CHDIR,
 };
 
 
@@ -967,6 +968,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_SAVE_SCREENSHOT, wxT("Screenshot..."));
 	menu_entry(wxID_SAVE_SUBTITLES, wxT("Subtitles..."));
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
+	menu_separator();
+	menu_entry(wxID_CHDIR, wxT("Change working directory..."));
 	menu_end_sub();
 	menu_start_sub(wxT("Close"));
 	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));
@@ -1583,6 +1586,17 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_MULTITRACK:
 		wxeditor_multitrack_display(this);
 		return;
+	case wxID_CHDIR: {
+		wxDirDialog* d = new wxDirDialog(this, wxT("Change working directory"), ".", wxDD_DIR_MUST_EXIST);
+		if(d->ShowModal() == wxID_CANCEL) {
+			d->Destroy();
+			return;
+		}
+		std::string path = tostdstring(d->GetPath());
+		d->Destroy();
+		chdir(path.c_str());
+		messages << "Changed working directory to '" << path << "'" << std::endl;
+	}
 	};
 }
 
