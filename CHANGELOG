@@ -1430,3 +1430,14 @@ rr2-β10 [Friday October 4th 2013]
 * Hex editor: Few fixed-point types
 * Hex editor: Q12.4
 * Memory search: Save, Load, Undo and Redo
+
+rr2-β11 [Sunday October 6th 2013]
+=================================
+* Movie editor: Add panel for inputting axis values
+* Fix uninitialzed variable
+* Fix graphics update hanging
+* TAS Input: Improve lightgun support
+* Multitrack support
+* TAS input: Don't bug out on loadstate
+* TAS Input: Compute buffer size for lightgun correctly
+* Change working directory
