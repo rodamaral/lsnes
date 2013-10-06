@@ -506,6 +506,7 @@ void wxeditor_tasinput::update_controls()
 		throw std::runtime_error("No controlers");
 	}
 	//Connect the keyboard.
+	hsizer->Layout();
 	connect_keyboard_recursive(this);
 	Fit();
 }
