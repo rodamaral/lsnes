@@ -1587,7 +1587,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		wxeditor_multitrack_display(this);
 		return;
 	case wxID_CHDIR: {
-		wxDirDialog* d = new wxDirDialog(this, wxT("Change working directory"), ".", wxDD_DIR_MUST_EXIST);
+		wxDirDialog* d = new wxDirDialog(this, wxT("Change working directory"), wxT("."), wxDD_DIR_MUST_EXIST);
 		if(d->ShowModal() == wxID_CANCEL) {
 			d->Destroy();
 			return;
