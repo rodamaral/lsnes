@@ -352,8 +352,13 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 			if(!ro)
 				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
-			if(!ro)
+			if(!ro) {
 				reinitialize_movie(our_movie.gametype);
+				//Redo this.
+				auto ctrldata = our_rom.rtype->controllerconfig(our_movie.settings);
+				port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+				controls.set_ports(portset);
+			}
 		}
 
 		our_rom.rtype->load_sram(our_movie.movie_sram);
