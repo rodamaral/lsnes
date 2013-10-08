@@ -5,6 +5,7 @@
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
+#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/sha256.hpp"
@@ -102,6 +103,7 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 	std::ostringstream str;
 	str << seed.length() << " " << seed;
 	rseed = str.str();
+	rrdata.set_internal(random_rrdata());
 }
 
 void set_random_seed() throw(std::bad_alloc)

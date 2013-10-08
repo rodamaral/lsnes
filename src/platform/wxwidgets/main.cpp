@@ -506,7 +506,7 @@ int lsnes_app::OnExit()
 		x->Destroy();
 	save_configuration();
 	information_dispatch::do_dump_end();
-	rrdata::close();
+	rrdata.close();
 	quit_lua();
 	joystick_driver_signal();
 	joystick_thread_handle->join();

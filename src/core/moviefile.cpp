@@ -281,7 +281,7 @@ void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::st
 std::string read_rrdata(zip_reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 {
 	out = read_raw_file(r, "rrdata");
-	uint64_t count = rrdata::count(out);
+	uint64_t count = rrdata.count(out);
 	std::ostringstream x;
 	x << count;
 	return x.str();
@@ -291,7 +291,7 @@ void write_rrdata(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
 {
 	uint64_t count;
 	std::vector<char> out;
-	count = rrdata::write(out);
+	count = rrdata.write(out);
 	write_raw_file(w, "rrdata", out);
 	std::ostream& m2 = w.create_file("rerecords");
 	try {
@@ -511,7 +511,7 @@ void moviefile::brief_info::binary_io(std::istream& _stream)
 		}},{TAG_RRDATA, [this](binary_input_stream& s) {
 			std::vector<char> c_rrdata;
 			s.blob_implicit(c_rrdata);
-			this->rerecords = rrdata::count(c_rrdata);
+			this->rerecords = rrdata.count(c_rrdata);
 		}},{TAG_ROMHASH, [this](binary_input_stream& s) {
 			uint8_t n = s.byte();
 			std::string h = s.string_implicit();
@@ -797,7 +797,7 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 	out.extension(TAG_RRDATA, [this](binary_output_stream& s) {
 		uint64_t count;
 		std::vector<char> rrd;
-		count = rrdata::write(rrd);
+		count = rrdata.write(rrd);
 		s.blob_implicit(rrd);
 	});
 	
@@ -937,7 +937,7 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 			namehint[n] = h;
 		}},{TAG_RRDATA, [this](binary_input_stream& s) {
 			s.blob_implicit(this->c_rrdata);
-			this->rerecords = (stringfmt() << rrdata::count(c_rrdata)).str();
+			this->rerecords = (stringfmt() << rrdata.count(c_rrdata)).str();
 		}},{TAG_SAVE_SRAM, [this](binary_input_stream& s) {
 			std::string a = s.string();
 			s.blob_implicit(this->sram[a]);

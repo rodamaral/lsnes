@@ -497,7 +497,7 @@ namespace
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> tmp;
-			uint64_t x = rrdata::write(tmp);
+			uint64_t x = rrdata.write(tmp);
 			messages << x << " rerecord(s)" << std::endl;
 		});
 

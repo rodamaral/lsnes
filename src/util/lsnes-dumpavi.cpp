@@ -373,7 +373,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	information_dispatch::do_dump_end();
-	rrdata::close();
+	rrdata.close();
 	quit_lua();
 	cleanup_all_keys();
 	return 0;

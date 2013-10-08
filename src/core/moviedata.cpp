@@ -327,8 +327,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 	//Negative return.
 	if(!reload) {
 		//Force unlazy rrdata.
-		rrdata::read_base(our_movie.projectid, false);
-		rrdata::add_internal();
+		rrdata.read_base(our_movie.projectid, false);
+		rrdata.add_internal();
 	} else {
 		auto ctrldata = our_rom.rtype->controllerconfig(our_movie.settings);
 		port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
@@ -470,9 +470,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	//Negative return.
-	rrdata::read_base(_movie.projectid, _movie.lazy_project_create);
-	rrdata::read(_movie.c_rrdata);
-	rrdata::add_internal();
+	rrdata.read_base(_movie.projectid, _movie.lazy_project_create);
+	rrdata.read(_movie.c_rrdata);
+	rrdata.add_internal();
 	try {
 		our_rom.region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		random_seed_value = _movie.movie_rtc_second;
@@ -566,7 +566,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		x << std::setfill('0') << std::setw(3) << mlength / 1000000;
 		std::string rerecords = _movie.rerecords;
 		if(our_movie.is_savestate)
-			rerecords = (stringfmt() << rrdata::count()).str();
+			rerecords = (stringfmt() << rrdata.count()).str();
 		messages << "Rerecords " << rerecords << " length " << x.str() << " ("
 			<< _movie.get_frame_count() << " frames)" << std::endl;
 	}
@@ -656,8 +656,8 @@ bool do_load_state(const std::string& filename, int lmode)
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
 {
 	//Force unlazy rrdata.
-	rrdata::read_base(our_movie.projectid, false);
-	rrdata::add_internal();
+	rrdata.read_base(our_movie.projectid, false);
+	rrdata.add_internal();
 	our_movie.rtc_second = secs;
 	our_movie.rtc_subsecond = ssecs;
 	our_rom.load_core_state(state, true);

@@ -37,7 +37,7 @@ namespace
 			return x >> (8 * (offset & 7));
 		} else if(offset >= 24 && offset < 32 && !write) {
 			//Rerecord counter.
-			uint64_t x = rrdata::count();
+			uint64_t x = rrdata.count();
 			return x >> (8 * (offset & 7));
 		} else
 			return 0;

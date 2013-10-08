@@ -21,7 +21,7 @@ namespace
 	});
 
 	function_ptr_luafun mrrs(lua_func_misc, "movie.rerecords", [](lua_state& L, const std::string& fname) -> int {
-		L.pushnumber(rrdata::count());
+		L.pushnumber(rrdata.count());
 		return 1;
 	});
 

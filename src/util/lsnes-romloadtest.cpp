@@ -174,7 +174,7 @@ int main(int argc, char** argv)
 
 	dump_what_was_loaded(r, movie);
 
-	rrdata::close();
+	rrdata.close();
 	cleanup_all_keys();
 	return 0;
 }
