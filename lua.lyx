@@ -3326,51 +3326,66 @@ Reads the specified address <address> (if 's' variant is used, do undergo
 \end_layout
 
 \begin_layout Subsection
-memory.read{,s}{byte,{,h,d,q}word}: Read memory
+memory.{,s}read_sg: Scatter/Gather read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readbyte([string vma, ]number address)
+Syntax: none memory.read_sg(string/boolean/number...)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readhword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readdword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readqword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readsbyte([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readsword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readshword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readsdword([string vma, ]number address)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.readsqword([string vma, ]number address)
+Syntax: none memory.sread_sg(string/boolean/number...)
 \end_layout
 
 \begin_layout Standard
-Reads the specified address <address>
+Perform (2s complement signed if using memory.sread_sg) scatter/gather read
+ of memory.
+ Each argument can be string, boolean or number:
+\end_layout
+
+\begin_layout Itemize
+String: Set VMA addresses are relative to (e.g.
+ 'WRAM').
+\end_layout
+
+\begin_layout Itemize
+boolean: If true, increment relative address by 1, if false, decrement by
+ 1.
+ The new address is read as next higher byte.
+\end_layout
+
+\begin_layout Itemize
+integer: Set the relative address to specified value and read the address
+ as next higher byte.
+\end_layout
+
+\begin_layout Subsection
+memory.write_sg: Scatter/Gather write memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.write_sg(number value, string/boolean/number...)
+\end_layout
+
+\begin_layout Standard
+Perform scatter/gather write of value <value> on memory.
+ Each argument can be string, boolean or number:
+\end_layout
+
+\begin_layout Itemize
+String: Set VMA addresses are relative to (e.g.
+ 'WRAM').
+\end_layout
+
+\begin_layout Itemize
+boolean: If true, increment relative address by 1, if false, decrement by
+ 1.
+ The new address is read as next higher byte.
+\end_layout
+
+\begin_layout Itemize
+integer: Set the relative address to specified value and read the address
+ as next higher byte.
 \end_layout
 
 \begin_layout Subsection

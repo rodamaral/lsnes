@@ -394,6 +394,55 @@ namespace
 		return 1;
 	});
 
+	template<bool write, bool sign> int memory_scattergather(lua_state& L, const std::string& fname)
+	{
+		uint64_t val = 0;
+		int ptr = 1;
+		unsigned shift = 0;
+		uint64_t addr = 0;
+		uint64_t vmabase = 0;
+		if(write)
+			val = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		while(L.type(ptr) != LUA_TNIL && L.type(ptr) != LUA_TNONE) {
+			if(L.type(ptr) == LUA_TBOOLEAN) {
+				if(L.toboolean(ptr++))
+					addr++;
+				else
+					addr--;
+			} else if(L.type(ptr) == LUA_TSTRING) {
+				vmabase = get_vmabase(L, L.get_string(ptr++, fname.c_str()));
+				continue;
+			} else
+				addr = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+			if(write)
+				lsnes_memory.write<uint8_t>(addr + vmabase, val >> shift);
+			else
+				val = val + ((uint64_t)lsnes_memory.read<uint8_t>(addr + vmabase) << shift);
+			shift += 8;
+		}
+		if(!write) {
+			int64_t sval = val;
+			if(val >= (1ULL << (shift - 1))) sval -= (1ULL << shift);
+			if(sign) L.pushnumber(sval); else L.pushnumber(val);
+		}
+		return write ? 0 : 1;
+	}
+
+	function_ptr_luafun scattergather1(lua_func_misc, "memory.read_sg", [](lua_state& L, const std::string& fname)
+		-> int {
+		return memory_scattergather<false, false>(L, fname);
+	});
+
+	function_ptr_luafun scattergather2(lua_func_misc, "memory.sread_sg", [](lua_state& L,
+		const std::string& fname) -> int {
+		return memory_scattergather<false, true>(L, fname);
+	});
+
+	function_ptr_luafun scattergather3(lua_func_misc, "memory.write_sg", [](lua_state& L,
+		const std::string& fname) -> int {
+		return memory_scattergather<true, false>(L, fname);
+	});
+
 	lua_read_memory<uint8_t, &memory_space::read<uint8_t>> rub("memory.readbyte");
 	lua_read_memory<int8_t, &memory_space::read<int8_t>> rsb("memory.readsbyte");
 	lua_read_memory<uint16_t, &memory_space::read<uint16_t>> ruw("memory.readword");
