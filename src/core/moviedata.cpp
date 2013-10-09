@@ -357,8 +357,11 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 			if(!ro || gametype_changes)
 				lua_callback_movie_lost("reload");
 			movb.get_movie().readonly_mode(ro);
-			if(gametype_changes || !ro)
+			if(gametype_changes || !ro) {
 				reinitialize_movie(our_movie.gametype);
+				controls.set_port(0, *our_movie.port1, true);
+				controls.set_port(1, *our_movie.port2, true);
+			}
 		}
 		load_sram(our_movie.movie_sram);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
