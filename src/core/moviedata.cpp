@@ -327,7 +327,7 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 	//Negative return.
 	if(!reload) {
 		//Force unlazy rrdata.
-		rrdata.read_base(our_movie.projectid, false);
+		rrdata.read_base(rrdata_filename(our_movie.projectid), false);
 		rrdata.add_internal();
 	} else {
 		auto ctrldata = our_rom.rtype->controllerconfig(our_movie.settings);
@@ -470,7 +470,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	//Negative return.
-	rrdata.read_base(_movie.projectid, _movie.lazy_project_create);
+	rrdata.read_base(rrdata_filename(_movie.projectid), _movie.lazy_project_create);
 	rrdata.read(_movie.c_rrdata);
 	rrdata.add_internal();
 	try {
@@ -656,7 +656,7 @@ bool do_load_state(const std::string& filename, int lmode)
 void mainloop_restore_state(const std::vector<char>& state, uint64_t secs, uint64_t ssecs)
 {
 	//Force unlazy rrdata.
-	rrdata.read_base(our_movie.projectid, false);
+	rrdata.read_base(rrdata_filename(our_movie.projectid), false);
 	rrdata.add_internal();
 	our_movie.rtc_second = secs;
 	our_movie.rtc_subsecond = ssecs;

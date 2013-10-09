@@ -6,5 +6,6 @@
 extern rrdata_set rrdata;
 
 rrdata_set::instance random_rrdata();
+std::string rrdata_filename(const std::string& projectid);
 
 #endif
