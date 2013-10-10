@@ -150,6 +150,8 @@ std::string translate_name_mprefix(std::string original, int& binary, bool save)
 	auto p = project_get();
 	regex_results r;
 	if(p && (r = regex("\\$\\{project\\}([0-9]+).lsmv", original))) {
+		if(binary < 0)
+			binary = jukebox_dflt_binary ? 1 : 0;
 		return p->directory + "/" + p->prefix + "-" + r[1] + ".lss";
 	}
 	size_t prefixloc = original.find("${project}");
