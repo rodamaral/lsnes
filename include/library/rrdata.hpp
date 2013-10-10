@@ -152,9 +152,12 @@ public:
 	void debug_add(const instance& b, const instance& e) { return _add(b, e); }
 	bool debug_in_set(const instance& b) { return _in_set(b); }
 	bool debug_in_set(const instance& b, const instance& e) { return _in_set(b, e); }
+	uint64_t debug_nodecount(std::set<std::pair<instance, instance>>& set);
 private:
 	bool _add(const instance& b);
 	void _add(const instance& b, const instance& e);
+	void _add(const instance& b, const instance& e, std::set<std::pair<instance, instance>>& set,
+		uint64_t& cnt);
 	bool _in_set(const instance& b) { return _in_set(b, b + 1); }
 	bool _in_set(const instance& b, const instance& e);
 	instance internal;

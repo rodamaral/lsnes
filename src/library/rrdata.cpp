@@ -1,6 +1,7 @@
 #include "rrdata.hpp"
 #include <cstring>
 #include <limits>
+#include <cassert>
 
 #define MAXRUN 16843009
 
@@ -125,10 +126,11 @@ void rrdata_set::read_base(const std::string& projectfile, bool lazy) throw(std:
 		return;
 	}
 	std::set<std::pair<instance, instance>> new_rrset;
-	if(projectfile == current_projectfile)
+	uint64_t new_count = 0;
+	if(projectfile == current_projectfile) {
 		new_rrset = data;
-	else
-		rcount = 0;
+		new_count = rcount;
+	}
 	std::string filename = projectfile;
 	if(handle_open) {
 		ohandle.close();
@@ -140,7 +142,7 @@ void rrdata_set::read_base(const std::string& projectfile, bool lazy) throw(std:
 		ihandle.read(reinterpret_cast<char*>(bytes), RRDATA_BYTES);
 		instance k(bytes);
 		//std::cerr << "Loaded symbol: " << k << std::endl;
-		_add(k, k + 1);
+		_add(k, k + 1, new_rrset, new_count);
 	}
 	ihandle.close();
 	ohandle.open(filename.c_str(), std::ios_base::out | std::ios_base::app | std::ios_base::binary);
@@ -158,6 +160,7 @@ void rrdata_set::read_base(const std::string& projectfile, bool lazy) throw(std:
 		}
 	}
 	data = new_rrset;
+	rcount = new_count;
 	current_projectfile = projectfile;
 	lazy_mode = lazy;
 }
@@ -353,57 +356,65 @@ bool rrdata_set::_add(const instance& b)
 
 void rrdata_set::_add(const instance& b, const instance& e)
 {
+	_add(b, e, data, rcount);
+}
+
+void rrdata_set::_add(const instance& b, const instance& e, std::set<std::pair<instance, instance>>& set,
+	uint64_t& cnt)
+{
 	//Special case: Nothing.
-	if(data.empty()) {
-		data.insert(std::make_pair(b, e));
-		rcount += symbols_in_interval(b, e);
+	if(set.empty()) {
+		set.insert(std::make_pair(b, e));
+		cnt += symbols_in_interval(b, e);
 		return;
 	}
 	//Just insert it.
-	auto itr = data.lower_bound(std::make_pair(b, e));
-	if(itr != data.end() && itr->first == b && itr->second == e)
+	auto itr = set.lower_bound(std::make_pair(b, e));
+	if(itr != set.end() && itr->first == b && itr->second == e)
 		return;
-	data.insert(std::make_pair(b, e));
-	rcount += symbols_in_interval(b, e);
-	itr = data.lower_bound(std::make_pair(b, e));
+	set.insert(std::make_pair(b, e));
+	cnt += symbols_in_interval(b, e);
+	itr = set.lower_bound(std::make_pair(b, e));
 	auto itr1 = itr;
 	auto itr2 = itr;
-	if(itr1 != data.begin()) itr1--;
+	if(itr1 != set.begin()) itr1--;
 	itr2++;
 	bool have1 = (itr1 != itr);
 	instance rangebase = b;
 	//If the thing is entierely in itr1, undo the add.
 	if(have1 && b >= itr1->first && e <= itr1->second) {
-		rcount -= symbols_in_interval(b, e);
-		data.erase(itr);
+		cnt -= symbols_in_interval(b, e);
+		set.erase(itr);
 		return;
 	}
 	//Attach the thing to itr1 if appropriate.
 	if(have1 && b <= itr1->second) {
-		rcount -= symbols_in_interval(b, itr1->second);
+		cnt -= symbols_in_interval(b, itr1->second);
 		rangebase = itr1->first;
-		data.insert(std::make_pair(itr1->first, e));
-		auto tmp = data.lower_bound(std::make_pair(itr1->first, e));
-		data.erase(itr1);
-		data.erase(itr);
+		set.insert(std::make_pair(itr1->first, e));
+		auto tmp = set.lower_bound(std::make_pair(itr1->first, e));
+		set.erase(itr1);
+		set.erase(itr);
 		itr = tmp;
 		have1 = false;
 	}
-	while(itr2 != data.end()) {
+	while(itr2 != set.end()) {
 		if(e < itr2->first)
 			break;	//Nothing to merge anymore.
-		if(e >= itr2->second) {
+		if(e >= itr2->second && (rangebase != itr2->first || e != itr2->second)) {
 			//This entiere range is subsumed.
-			rcount -= symbols_in_interval(itr2->first, itr2->second);
+			cnt -= symbols_in_interval(itr2->first, itr2->second);
 			auto tmp = itr2;
 			itr2++;
-			data.erase(tmp);
+			set.erase(tmp);
 		} else if(e < itr2->second) {
 			//Combines with range.
-			rcount -= symbols_in_interval(itr2->first, e);
-			data.insert(std::make_pair(rangebase, itr2->second));
-			data.erase(itr);
-			data.erase(itr2);
+			cnt -= symbols_in_interval(itr2->first, e);
+			if(rangebase != itr2->first) {
+				set.insert(std::make_pair(rangebase, itr2->second));
+				set.erase(itr2);
+			}
+			set.erase(itr);
 			break;
 		}
 	}
@@ -437,4 +448,12 @@ std::string rrdata_set::debug_dump()
 		x << "{" << i.first << "," << i.second << "}";
 	x << "]";
 	return x.str();
+}
+
+uint64_t rrdata_set::debug_nodecount(std::set<std::pair<instance, instance>>& set)
+{
+	uint64_t x = 0;
+	for(auto i : set)
+		x += symbols_in_interval(i.first, i.second);
+	return x;
 }
