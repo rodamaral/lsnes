@@ -32,6 +32,11 @@ $(error "Bad value for THREADS (expected NATIVE or BOOST)")
 endif
 endif
 
+ifdef USE_LIBGCRYPT
+CFLAGS += -DUSE_LIBGCRYPT_SHA256
+LDFLAGS += -lgcrypt
+endif
+
 
 export
 

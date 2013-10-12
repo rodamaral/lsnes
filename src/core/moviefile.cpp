@@ -821,7 +821,9 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 				s.number32(i);
 			s.byte(this->poll_flag ? 0x01 : 0x00);
 			s.blob_implicit(this->savestate);
-		});
+		}, true, out.numberbytes(save_frame) + out.numberbytes(lagged_frames) + out.numberbytes(rtc_second) +
+			out.numberbytes(rtc_subsecond) + out.numberbytes(pollcounters.size()) +
+			4 * pollcounters.size() + 1 + savestate.size());
 
 		out.extension(TAG_HOSTMEMORY, [this](binary_output_stream& s) {
 			s.blob_implicit(this->host_memory);
@@ -829,7 +831,7 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 
 		out.extension(TAG_SCREENSHOT, [this](binary_output_stream& s) {
 			s.blob_implicit(this->screenshot);
-		});
+		}, true, screenshot.size());
 
 		for(auto i : sram) {
 			out.extension(TAG_SAVE_SRAM, [&i](binary_output_stream& s) {

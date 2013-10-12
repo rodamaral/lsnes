@@ -16,12 +16,15 @@ public:
 	binary_output_stream(std::ostream& s);
 	void byte(uint8_t byte);
 	void number(uint64_t number);
+	size_t numberbytes(uint64_t number);
 	void number32(uint32_t number);
 	void string(const std::string& string);
 	void string_implicit(const std::string& string);
 	void blob_implicit(const std::vector<char>& blob);
 	void raw(const void* buf, size_t bufsize);
 	void extension(uint32_t tag, std::function<void(binary_output_stream&)> fn, bool even_empty = false);
+	void extension(uint32_t tag, std::function<void(binary_output_stream&)> fn, bool even_empty,
+		size_t size_precognition);
 	void write_extension_tag(uint32_t tag, uint64_t size);
 	std::string get();
 private:

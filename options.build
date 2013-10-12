@@ -129,3 +129,6 @@ OPUS_CODEC=
 
 # Set to non-empty value (e.g. 'yes') to use Opus codec surround encoding support.
 OPUS_CODEC_SUPPORTS_SURROUND=
+
+# Set to non-empty value (e.g. 'yes') to use libgcrypt for SHA-256 instead of builtin routines.
+USE_LIBGCRYPT=yes

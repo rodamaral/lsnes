@@ -36,6 +36,10 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/filesystem.hpp>
 
+#ifdef USE_LIBGCRYPT_SHA256
+#include <gcrypt.h>
+#endif
+
 #ifdef BOOST_FILESYSTEM3
 namespace boost_fs = boost::filesystem3;
 #else
@@ -625,7 +629,11 @@ std::vector<char> loaded_rom::save_core_state(bool nochecksum) throw(std::bad_al
 		return ret;
 	size_t offset = ret.size();
 	unsigned char tmp[32];
+#ifdef USE_LIBGCRYPT_SHA256
+	gcry_md_hash_buffer(GCRY_MD_SHA256, tmp, &ret[0], offset);
+#else
 	sha256::hash(tmp, ret);
+#endif
 	ret.resize(offset + 32);
 	memcpy(&ret[offset], tmp, 32);
 	return ret;
@@ -642,7 +650,11 @@ void loaded_rom::load_core_state(const std::vector<char>& buf, bool nochecksum) 
 		throw std::runtime_error("Savestate corrupt");
 	if(!savestate_no_check) {
 		unsigned char tmp[32];
+#ifdef USE_LIBGCRYPT_SHA256
+		gcry_md_hash_buffer(GCRY_MD_SHA256, tmp, &buf[0], buf.size() - 32);
+#else
 		sha256::hash(tmp, reinterpret_cast<const uint8_t*>(&buf[0]), buf.size() - 32);
+#endif
 		if(memcmp(tmp, &buf[buf.size() - 32], 32))
 			throw std::runtime_error("Savestate corrupt");
 	}

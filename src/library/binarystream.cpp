@@ -35,6 +35,16 @@ void binary_output_stream::number(uint64_t number)
 	strm.write(data, len);
 }
 
+size_t binary_output_stream::numberbytes(uint64_t number)
+{
+	size_t o = 0;
+	do {
+		o++;
+		number >>= 7;
+	} while(number);
+	return o;
+}
+
 void binary_output_stream::number32(uint32_t number)
 {
 	char data[4];
@@ -81,6 +91,18 @@ void binary_output_stream::extension(uint32_t tag, std::function<void(binary_out
 	number32(tag);
 	string(str);
 }
+
+void binary_output_stream::extension(uint32_t tag, std::function<void(binary_output_stream&)> fn, bool even_empty,
+	size_t size_precognition)
+{
+	if(!even_empty && !size_precognition)
+		return;
+	number32(TAG_);
+	number32(tag);
+	number(size_precognition);
+	fn(*this);
+}
+
 
 std::string binary_output_stream::get()
 {
