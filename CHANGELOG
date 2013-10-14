@@ -1031,3 +1031,6 @@ rr1-Δ18ε1 [Friday October 4th 2013]
 * Lua: Tilemaps
 * Don't allow editing reset flags after reading.
 
+rr1-Δ18ε2 [Monday October 14th 2013]
+====================================
+* Fix crash if reloading ROM with non-default controllers in readwrite mode
