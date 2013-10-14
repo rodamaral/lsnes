@@ -1441,3 +1441,19 @@ rr2-β11 [Sunday October 6th 2013]
 * TAS input: Don't bug out on loadstate
 * TAS Input: Compute buffer size for lightgun correctly
 * Change working directory
+
+rr1-Δ18ε2 [Monday October 14th 2013]
+====================================
+* Fix crash if reloading ROM with non-default controllers in readwrite mode
+
+rr2-β12 [Monday October 14th 2013]
+==================================
+* Fix compilation on Mac OS X
+* Lua: Also add scatter-gather to memory.* (not just memory2.*)
+* Fix crash if loading rom with non-default controllers active
+* Refactor rrdata handling
+* Merge branch 'rr1-maint
+* Use correct file for rerecord counting
+* Fix more bugs in rerecord counting
+* Fix bug that caused save slots always to be semi-text in projects
+* Speed up binary savestate saving
