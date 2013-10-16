@@ -23,6 +23,10 @@
 #include <cstring>
 #include <boost/filesystem.hpp>
 
+#ifdef USE_LIBGCRYPT_SHA256
+#include <gcrypt.h>
+#endif
+
 namespace
 {
 	std::string rseed;
@@ -119,6 +123,16 @@ void set_random_seed() throw(std::bad_alloc)
 			return;
 		}
 	}
+	//If libgcrypt is available, use that.
+#ifdef USE_LIBGCRYPT_SHA256
+	{
+		char buf[64];
+		gcry_randomize((unsigned char*)buf, sizeof(buf), GCRY_STRONG_RANDOM);
+		std::string s(buf, sizeof(buf));
+		set_random_seed(s);
+		return;
+	}
+#endif
 	//Fall back to time.
 	std::ostringstream str;
 	str << collect_identifying_information() << " " << time(NULL);
