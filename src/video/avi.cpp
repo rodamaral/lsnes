@@ -84,6 +84,8 @@ namespace
 
 	setting_var<setting_var_model_bool<setting_yes_no>> dump_large(lsnes_vset, "avi-large", "AVI‣Large dump",
 		false);
+	setting_var<setting_var_model_int<0, 32>> fixed_xfact(lsnes_vset, "avi-xfactor", "AVI‣Fixed X factor", 0);
+	setting_var<setting_var_model_int<0, 32>> fixed_yfact(lsnes_vset, "avi-yfactor", "AVI‣Fixed Y factor", 0);
 	setting_var<setting_var_model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
 	setting_var<setting_var_model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border", "AVI‣Bottom padding", 0);
 	setting_var<setting_var_model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border", "AVI‣Left padding", 0);
@@ -347,7 +349,10 @@ again:
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
 			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
-			if(dump_large) {
+			if(fixed_xfact != 0 && fixed_yfact != 0) {
+				hscl = fixed_xfact;
+				vscl = fixed_yfact;
+			} else if(dump_large) {
 				hscl = scl.first;
 				vscl = scl.second;
 			}
