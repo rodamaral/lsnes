@@ -8,16 +8,19 @@ __all__.files: $(CORES_FILES)
 	lua ../genfilelist.lua $^ >$@
 	cat $(CORES_FLAGS) >$(ALLFLAGS)
 
-bsnes-legacy/$(ALLFILES): forcelook
+make-ports.exe: make-ports.cpp
+	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $< ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/controller-parse.cpp ../library/controller-data.cpp ../library/sha256.cpp -lboost_regex -lboost_system
+
+bsnes-legacy/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C bsnes-legacy
 
-gambatte/$(ALLFILES): forcelook
+gambatte/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C gambatte
 
-sky/$(ALLFILES): forcelook
+sky/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C sky
 
-test/$(ALLFILES): forcelook
+test/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C test
 
 .PRECIOUS: %.$(OBJECT_SUFFIX) %.files

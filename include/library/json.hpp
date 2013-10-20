@@ -69,12 +69,21 @@ struct null_tag
 	operator int() { return id; }
 };
 
+struct none_tag
+{
+	const static int id = -1;
+	bool operator==(const int& n) const { return n == id; }
+	bool operator!=(const int& n) const { return !(*this == n); }
+	operator int() { return id; }
+};
+
 extern number_tag number;
 extern string_tag string;
 extern boolean_tag boolean;
 extern array_tag array;
 extern object_tag object;
 extern null_tag null;
+extern none_tag none;
 
 node i(int64_t n);
 node u(uint64_t n);
@@ -127,14 +136,74 @@ enum errorcode
 	ERR_PATCH_ILLEGAL_MOVE,		//MOVE operation in patch illegal.
 };
 
+enum parsestate
+{
+	PARSE_NOT_PARSING = 0,		//Not parsing.
+	PARSE_ARRAY_AFTER_VALUE,	//After value in array
+	PARSE_END_OF_DOCUMENT,		//At end of document
+	PARSE_OBJECT_AFTER_VALUE,	//After value in object
+	PARSE_OBJECT_COLON,		//Expecting for colon in object
+	PARSE_OBJECT_NAME,		//Expecting name in object
+	PARSE_STRING_BODY,		//Parsing string body
+	PARSE_STRING_ESCAPE,		//Parsing escape in string body
+	PARSE_VALUE_START,		//Parsing start of value
+	PARSE_NUMBER,			//Parsing number.
+};
+
 extern const char* error_desc[];
+extern const char* state_desc[];
 
 struct error : public std::runtime_error
 {
-	error(errorcode _code) : runtime_error(error_desc[_code]), code(_code) {}
+	error(errorcode _code) : runtime_error(error_desc[_code]), code(_code), state(PARSE_NOT_PARSING),
+		position(std::string::npos) {}
+	error(errorcode _code, parsestate _state, size_t pos) : runtime_error(error_desc[_code]), code(_code), 
+		state(_state), position(pos) {}
 	errorcode get_code() { return code; }
+	parsestate get_state() { return state; }
+	size_t get_position() { return position; }
+	std::pair<size_t, size_t> get_position_lc(const std::string& doc) { return get_position_lc(doc, position); }
+	std::pair<size_t, size_t> get_position_lc(const std::string& doc, size_t pos);
+	const char* what() const throw();
+	std::string extended_error(const std::string& doc);
 private:
 	errorcode code;
+	parsestate state;
+	size_t position;
+	mutable char buffer[512];
+};
+
+class node;
+
+/**
+ * A JSON pointer
+ */
+class pointer
+{
+public:
+	pointer();
+	pointer(const std::string& ptr) throw(std::bad_alloc);
+	pointer(const std::u32string& ptr) throw(std::bad_alloc);
+	pointer pastend() const throw(std::bad_alloc) { return field(U"-"); }
+	pointer& pastend_inplace() throw(std::bad_alloc) { return field_inplace(U"-"); }
+	pointer index(uint64_t idx) const throw(std::bad_alloc);
+	pointer& index_inplace(uint64_t idx) throw(std::bad_alloc);
+	pointer field(const std::string& fld) const throw(std::bad_alloc) { return field(to_u32string(fld)); }
+	pointer& field_inplace(const std::string& fld) throw(std::bad_alloc)
+	{
+		return field_inplace(to_u32string(fld));
+	}
+	pointer field(const std::u32string& fld) const throw(std::bad_alloc);
+	pointer& field_inplace(const std::u32string& fld) throw(std::bad_alloc);
+	pointer remove() const throw(std::bad_alloc);
+	pointer& remove_inplace() throw(std::bad_alloc);
+	std::string as_string8() const { return to_u8string(_pointer); }
+	std::u32string as_string() const { return _pointer; }
+	friend std::ostream& operator<<(std::ostream& s, const pointer& p);
+	friend std::basic_ostream<char32_t>& operator<<(std::basic_ostream<char32_t>& s, const pointer& p);
+private:
+	friend class node;
+	std::u32string _pointer;
 };
 
 /**
@@ -183,6 +252,42 @@ public:
  * Get type of node.
  */
 	int type() const throw();
+/**
+ * Get type of node by pointer.
+ */
+	int type_of(const std::u32string& pointer) const throw(std::bad_alloc);
+	int type_of(const std::string& pointer) const throw(std::bad_alloc)
+	{
+		return type_of(to_u32string(pointer));
+	}
+	int type_of(const pointer& ptr) const throw(std::bad_alloc)
+	{
+		return type_of(ptr._pointer);
+	}
+/**
+ * Get type of node by pointer (indirect).
+ */
+	int type_of_indirect(const std::u32string& pointer) const throw(std::bad_alloc);
+	int type_of_indirect(const std::string& pointer) const throw(std::bad_alloc)
+	{
+		return type_of_indirect(to_u32string(pointer));
+	}
+	int type_of_indirect(const pointer& ptr) const throw(std::bad_alloc)
+	{
+		return type_of_indirect(ptr._pointer);
+	}
+/**
+ * Resolve an indirect pointer
+ */
+	std::u32string resolve_indirect(const std::u32string& pointer) const throw(std::bad_alloc);
+	std::string resolve_indirect(const std::string& pointer) const throw(std::bad_alloc)
+	{
+		return to_u8string(resolve_indirect(to_u32string(pointer)));
+	}
+	pointer resolve_indirect(const pointer& ptr) const throw(std::bad_alloc)
+	{
+		return pointer(resolve_indirect(ptr._pointer));
+	}
 /**
  * Get double numeric value (NT_NUMBER).
  */
@@ -245,6 +350,25 @@ public:
 	{
 		return follow(to_u32string(pointer));
 	}
+	const node& follow(const pointer& ptr) const throw(std::bad_alloc, error)
+	{
+		return follow(ptr._pointer);
+	}
+/**
+ * Apply JSON pointer (RFC 6901) following strings as indirect references.
+ */
+	const node& follow_indirect(const std::u32string& pointer) const throw(std::bad_alloc, error)
+	{
+		return follow(resolve_indirect(pointer));
+	}
+	const node& follow_indirect(const std::string& pointer) const throw(std::bad_alloc, error)
+	{
+		return follow_indirect(to_u32string(pointer));
+	}
+	const node& follow_indirect(const pointer& ptr) const throw(std::bad_alloc, error)
+	{
+		return follow_indirect(ptr._pointer);
+	}
 /**
  * Set value of node (any).
  */
@@ -294,6 +418,25 @@ public:
 	{
 		return follow(to_u32string(pointer));
 	}
+	node& follow(const pointer& ptr) throw(std::bad_alloc, error)
+	{
+		return follow(ptr._pointer);
+	}
+/**
+ * Apply JSON pointer (RFC 6901) following strings as indirect references.
+ */
+	node& follow_indirect(const std::u32string& pointer) throw(std::bad_alloc, error)
+	{
+		return follow(resolve_indirect(pointer));
+	}
+	node& follow_indirect(const std::string& pointer) throw(std::bad_alloc, error)
+	{
+		return follow_indirect(to_u32string(pointer));
+	}
+	node& follow_indirect(const pointer& ptr) throw(std::bad_alloc, error)
+	{
+		return follow_indirect(ptr._pointer);
+	}
 /**
  * Return node specified by JSON pointer (RFC 6901). If the last component doesn't exist, it is created as NULL.
  */
@@ -301,6 +444,10 @@ public:
 	node& operator[](const std::string& pointer) throw(std::bad_alloc, error)
 	{
 		return (*this)[to_u32string(pointer)];
+	}
+	node& operator[](const pointer& ptr) throw(std::bad_alloc, error)
+	{
+		return (*this)[ptr._pointer];
 	}
 /**
  * Create node at specified pointer and return it.
@@ -310,6 +457,10 @@ public:
 	{
 		return insert_node(to_u32string(pointer), nwn);
 	}
+	node& insert_node(const pointer& ptr, const node& nwn) throw(std::bad_alloc, error)
+	{
+		return insert_node(ptr._pointer, nwn);
+	}
 /**
  * Delete a node by pointer and return what was deleted.
  */
@@ -317,6 +468,10 @@ public:
 	node delete_node(const std::string& pointer) throw(std::bad_alloc, error)
 	{
 		return delete_node(to_u32string(pointer));
+	}
+	node delete_node(const pointer& ptr) throw(std::bad_alloc, error)
+	{
+		return delete_node(ptr._pointer);
 	}
 /**
  * Synonym for follow().
@@ -328,6 +483,10 @@ public:
 	const node& operator[](const std::string& pointer) const throw(std::bad_alloc, error)
 	{
 		return follow(pointer);
+	}
+	const node& operator[](const pointer& ptr) const throw(std::bad_alloc, error)
+	{
+		return follow(ptr._pointer);
 	}
 /**
  * Delete an array index. The rest are shifted.

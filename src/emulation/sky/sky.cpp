@@ -86,9 +86,9 @@ namespace sky
 		{port_controller_button::TYPE_NULL, '\0', "", false},
 	}};
 
-	port_controller_set X2 = {{&X4, &X8},{0}};
+	port_controller_set X2 = {"sky", "sky", "sky", {X4, X8},{0}};
 
-	void port_write(unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
+	void port_write(const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x)
 	{
 		switch(idx) {
 		case 0:
@@ -125,7 +125,7 @@ namespace sky
 		};
 	}
 
-	short port_read(const unsigned char* buffer, unsigned idx, unsigned ctrl)
+	short port_read(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl)
 	{
 		switch(idx) {
 		case 0:
@@ -163,7 +163,7 @@ namespace sky
 		};
 		return 0;
 	}
-	size_t port_serialize(const unsigned char* buffer, char* textbuf)
+	size_t port_serialize(const port_type* _this, const unsigned char* buffer, char* textbuf)
 	{
 		size_t ptr = 0;
 		short tmp;
@@ -179,7 +179,7 @@ namespace sky
 		textbuf[ptr] = '\0';
 		return ptr;
 	};
-	size_t port_deserialize(unsigned char* buffer, const char* textbuf)
+	size_t port_deserialize(const port_type* _this, unsigned char* buffer, const char* textbuf)
 	{
 		memset(buffer, 0, 2);
 		size_t ptr = 0;
@@ -221,13 +221,13 @@ namespace sky
 	void controller_magic()
 	{
 		if(magic_flags & 1) {
-			X2.controllers[1] = &A8;
+			X2.controllers[1] = A8;
 			cstyle = 1;
 		} else if(magic_flags & 2) {
-			X2.controllers[1] = &B8;
+			X2.controllers[1] = B8;
 			cstyle = 2;
 		} else if(magic_flags & 4) {
-			X2.controllers[1] = &C8;
+			X2.controllers[1] = C8;
 			cstyle = 2;
 		} else {
 			cstyle = 0;

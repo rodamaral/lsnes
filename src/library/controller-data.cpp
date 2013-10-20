@@ -15,26 +15,29 @@
 namespace
 {
 	port_controller simple_controller = {"(system)", "system", {}};
-	port_controller_set simple_port = {{&simple_controller},{0}};
+	port_controller_set simple_port = {"system", "system", "system", {simple_controller},{0}};
 
 	struct porttype_basecontrol : public port_type
 	{
 		porttype_basecontrol() : port_type("basecontrol", "basecontrol", 1)
 		{
-			write = [](unsigned char* buffer, unsigned idx, unsigned ctrl, short x) -> void {
+			write = [](const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl,
+				short x) -> void {
 				if(idx > 0 || ctrl > 0) return;
 				buffer[0] = x ? 1 : 0;
 			};
-			read = [](const unsigned char* buffer, unsigned idx, unsigned ctrl) -> short {
+			read = [](const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl) ->
+				short {
 				if(idx > 0 || ctrl > 0) return 0;
 				return buffer[0] ? 1 : 0;
 			};
-			serialize = [](const unsigned char* buffer, char* textbuf) -> size_t {
+			serialize = [](const port_type* _this, const unsigned char* buffer, char* textbuf) -> size_t {
 				textbuf[0] = buffer[0] ? 'F' : '-';
 				textbuf[1] = '\0';
 				return 1;
 			};
-			deserialize = [](unsigned char* buffer, const char* textbuf) -> size_t {
+			deserialize = [](const port_type* _this, unsigned char* buffer, const char* textbuf) ->
+				size_t {
 				size_t ptr = 0;
 				buffer[0] = 0;
 				if(read_button_value(textbuf, ptr))
@@ -256,11 +259,11 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 		*buf = '\0';
 		return;
 	}
-	const port_controller* pc = ptype.controller_info->controllers[controller];
+	const port_controller& pc = ptype.controller_info->controllers[controller];
 	bool need_space = false;
 	short val;
-	for(unsigned i = 0; i < pc->buttons.size(); i++) {
-		const port_controller_button& pcb = pc->buttons[i];
+	for(unsigned i = 0; i < pc.buttons.size(); i++) {
+		const port_controller_button& pcb = pc.buttons[i];
 		if(need_space && pcb.type != port_controller_button::TYPE_NULL) {
 			need_space = false;
 			*(buf++) = ' ';
@@ -269,13 +272,13 @@ void controller_frame::display(unsigned port, unsigned controller, char32_t* buf
 		case port_controller_button::TYPE_NULL:
 			break;
 		case port_controller_button::TYPE_BUTTON:
-			*(buf++) = ptype.read(backingmem, controller, i) ? pcb.symbol : U'-';
+			*(buf++) = ptype.read(&ptype, backingmem, controller, i) ? pcb.symbol : U'-';
 			break;
 		case port_controller_button::TYPE_AXIS:
 		case port_controller_button::TYPE_RAXIS:
 		case port_controller_button::TYPE_TAXIS:
 		case port_controller_button::TYPE_LIGHTGUN:
-			val = ptype.read(backingmem, controller, i);
+			val = ptype.read(&ptype, backingmem, controller, i);
 			buf += writeu32val(buf, val);
 			need_space = true;
 			break;
@@ -1049,7 +1052,7 @@ std::string controller_macro_data::dump(const port_controller& ctrl)
 		}
 		for(size_t j = 0; j < buttons && j < ctrl.buttons.size(); j++) {
 			unsigned st = data[i * get_stride() + j];
-			if(!ctrl.buttons[j].macro)
+			if(ctrl.buttons[j].macro == "")
 				continue;
 			if(st == 1)
 				o << ctrl.buttons[j].macro;
@@ -1248,7 +1251,7 @@ JSON::node controller_macro_data::make_descriptor(const port_controller& ctrl)
 {
 	JSON::node n(JSON::array);
 	for(size_t i = 0; i < ctrl.buttons.size(); i++) {
-		if(ctrl.buttons[i].macro)
+		if(ctrl.buttons[i].macro != "")
 			n.append(JSON::s(ctrl.buttons[i].macro));
 		else
 			n.append(JSON::n()); //Placeholder.

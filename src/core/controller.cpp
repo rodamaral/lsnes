@@ -237,8 +237,8 @@ namespace
 		for(unsigned i = 0; i < ptype.controller_info->controllers.size(); i++) {
 			//No, n might not equal i + 1, since some ports have heterogenous controllers (e.g.
 			//gameboy-gambatte system port).
-			unsigned n = next_id_from_map(counts, ptype.controller_info->controllers[i]->cclass, 1);
-			process_controller(allocated, assigned, *ptype.controller_info->controllers[i], port, n);
+			unsigned n = next_id_from_map(counts, ptype.controller_info->controllers[i].cclass, 1);
+			process_controller(allocated, assigned, ptype.controller_info->controllers[i], port, n);
 		}
 	}
 
@@ -533,7 +533,7 @@ void reread_active_buttons()
 		if(x.first < 0)
 			break;
 		const port_type& pt = controls.get_blank().get_port_type(x.first);
-		const port_controller& ctrl = *pt.controller_info->controllers[x.second];
+		const port_controller& ctrl = pt.controller_info->controllers[x.second];
 		if(!classnum.count(ctrl.cclass))
 			classnum[ctrl.cclass] = 1;
 		else

@@ -1,0 +1,23 @@
+{
+	"ports":[{
+		"symbol":"psystem", "name":"system", "hname":"system","controllers":[{
+			"type":"(system)", "class":"(system)","buttons":[
+				{"type":"button","symbol":"F","name":"framesync", "shadow":true},
+				{"type":"button","symbol":"R","name":"reset", "shadow":true},
+				{"type":"null", "shadow":true},
+				{"type":"null", "shadow":true}
+			]
+		},{
+			"type":"gamepad", "class":"gb","buttons":[
+				{"type":"button","name":"A"},
+				{"type":"button","name":"B"},
+				{"type":"button","symbol":"s","name":"select"},
+				{"type":"button","symbol":"S","name":"start"},
+				{"type":"button","movie":"r","symbol":"→","name":"right","macro":">"},
+				{"type":"button","movie":"l","symbol":"←","name":"left","macro":"<"},
+				{"type":"button","movie":"u","symbol":"↑","name":"up","macro":"^"},
+				{"type":"button","movie":"d","symbol":"↓","name":"down","macro":"v"}
+			]
+		}],"legal":[0]
+	}]
+}

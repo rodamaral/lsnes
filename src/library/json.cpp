@@ -48,6 +48,102 @@ const char* error_desc[] = {
 	"JSON patch illegal move",
 };
 
+const char* state_desc[] = {
+	"",
+	"array next",
+	"end of document",
+	"object next",
+	"object colon",
+	"object name",
+	"string body",
+	"string escape",
+	"value start",
+	"number"
+};
+
+const char* asciinames[] = {
+	"NUL", "SOH", "STX", "ETX", "EOT", "ENQ", "ACK", "BEL", "BS", "HT", "LF", "VT", "FF", "CR", "SO", "SI",
+	"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US"
+};
+
+std::pair<size_t, size_t> error::get_position_lc(const std::string& doc, size_t pos)
+{
+	size_t r = 1, c = 1;
+	bool last_cr = false;
+	for(size_t i = 0; i < pos; i++) {
+		if(doc[i] == 13 || (doc[i] == 10 && !last_cr)) {
+			c = 1;
+			r++;
+			last_cr = (doc[i] == 13);
+			continue;
+		}
+		if(last_cr && doc[i] == 10) {
+			last_cr = false;
+			continue;
+		}
+		c++;
+	}
+	return std::make_pair(r, c);
+}
+
+const char* error::what() const throw()
+{
+	if(state == PARSE_NOT_PARSING)
+		return error_desc[code];
+	else {
+		sprintf(buffer, "%s (while expecting %s) at byte %llu", error_desc[code], state_desc[state],
+			(unsigned long long)position);
+		return buffer;
+	}
+}
+
+std::string error::extended_error(const std::string& doc)
+{
+	if(state == PARSE_NOT_PARSING)
+		return error_desc[code];
+	std::ostringstream s;
+	size_t pos = position;
+	while(pos < doc.length() && (doc[pos] == '\t' || doc[pos] == '\v' || doc[pos] == '\r' || doc[pos] == '\n' ||
+		doc[pos] == ' '))
+		pos++;
+	auto p2 = get_position_lc(doc, pos);
+	s << error_desc[code] << " (while expecting " << state_desc[state] << ") at ";
+	if(position == doc.length())
+		s << "end of input";
+	else {
+		std::ostringstream sample;
+		size_t p = pos;
+		for(size_t i = 0; i < 32; i++) {
+			if(p >= doc.length())
+				break;
+			if(doc[p] < 32) {
+				sample << "<" << asciinames[doc[p++]] << ">";
+			} else if(doc[p] < 127)
+				sample << doc[p++];
+			else if(doc[p] < 128)
+				sample << "<DEL>";
+			else if(doc[p] < 192)
+				sample << "<" << (int)doc[p++] << ">";
+			else if(doc[p] < 224) {
+				sample << doc[p++];
+				sample << doc[p++];
+			} else if(doc[p] < 240) {
+				sample << doc[p++];
+				sample << doc[p++];
+				sample << doc[p++];
+			} else if(doc[p] < 248) {
+				sample << doc[p++];
+				sample << doc[p++];
+				sample << doc[p++];
+				sample << doc[p++];
+			} else
+				sample << "<" << (int)doc[p++] << ">";
+		}
+		s << "line " << p2.first << " byte " << p2.second << " [near: '" << sample.str() << "']";
+	}
+	return s.str();
+}
+
 node number_tag::operator()(double v) const { return node(*this, v); }
 node number_tag::operator()(uint64_t v) const { return node(*this, v); }
 node number_tag::operator()(int64_t v) const { return node(*this, v); }
@@ -72,6 +168,7 @@ boolean_tag boolean;
 array_tag array;
 object_tag object;
 null_tag null;
+none_tag none;
 
 template<> void node::number_holder::from(double val) { sub = 0; n.n0 = val; }
 template<> void node::number_holder::from(uint64_t val) { sub = 1; n.n1 = val; }
@@ -111,6 +208,7 @@ node::number_holder::number_holder(const std::string& expr, size_t& ptr, size_t 
 	//-?(0|1-9[0-9]+)(.[0-9]+)?([eE][+-]?[0-9]+)?
 	int state = 0;
 	size_t tmp = ptr;
+	size_t tmp2 = ptr;
 	std::string x;
 	while(tmp < len) {
 		unsigned c = numchar(expr[tmp]);
@@ -145,7 +243,7 @@ node::number_holder::number_holder(const std::string& expr, size_t& ptr, size_t 
 		return;
 	} catch(...) {}
 bad:
-	throw error(ERR_INVALID_NUMBER);
+	throw error(ERR_INVALID_NUMBER, PARSE_NUMBER, tmp2);
 }
 
 
@@ -489,7 +587,7 @@ namespace
 		json_token(enum ttype t) { type = t; }
 	};
 
-	uint32_t parse_hex(int32_t ch)
+	uint32_t parse_hex(int32_t ch, parsestate state, size_t pos)
 	{
 		switch(ch) {
 		case '0': return 0;
@@ -508,7 +606,7 @@ namespace
 		case 'D': case 'd': return 13;
 		case 'E': case 'e': return 14;
 		case 'F': case 'f': return 15;
-		default: throw error(ERR_BAD_HEX);
+		default: throw error(ERR_BAD_HEX, state, pos);
 		}
 	}
 
@@ -544,6 +642,7 @@ namespace
 		uint32_t extra = 0;
 		uint32_t tmp;
 		size_t i;
+		size_t lc = ptr;
 		for(i = ptr; i <= len; i++) {
 			int ch = -1;
 			if(i < len)
@@ -554,9 +653,10 @@ namespace
 			//Okay, have Unicode codepoint decoded.
 			switch(estate) {
 			case 0:
+				lc = i;
 				extra = 0;
 				if(uch < 32)
-					throw error(ERR_CONTROL_CHARACTER);
+					throw error(ERR_CONTROL_CHARACTER, PARSE_STRING_BODY, lc);
 				if(uch == '\"')
 					goto out;
 				if(uch == '\\')
@@ -580,21 +680,21 @@ namespace
 					estate = 2;
 					break;
 				default:
-					throw error(ERR_INVALID_ESCAPE);
+					throw error(ERR_INVALID_ESCAPE, PARSE_STRING_ESCAPE, lc);
 				}
 				break;
 			case 2: case 3: case 4: case 8: case 9: case 10:
-				extra = (extra << 4) | parse_hex(uch);
+				extra = (extra << 4) | parse_hex(uch, PARSE_STRING_ESCAPE, lc);
 				estate++;
 				break;
 			case 5:
-				extra = (extra << 4) | parse_hex(uch);
+				extra = (extra << 4) | parse_hex(uch, PARSE_STRING_ESCAPE, lc);
 				if((extra & 0xFC00) == 0xDC00)
-					throw error(ERR_INVALID_SURROGATE);
+					throw error(ERR_INVALID_SURROGATE, PARSE_STRING_ESCAPE, lc);
 				else if((extra & 0xFC00) == 0xD800)
 					estate = 6;
 				else if((extra & 0xFFFE) == 0xFFFE)
-					throw error(ERR_ILLEGAL_CHARACTER);
+					throw error(ERR_ILLEGAL_CHARACTER, PARSE_STRING_ESCAPE, lc);
 				else {
 					estate = 0;
 					*target = extra;
@@ -603,28 +703,28 @@ namespace
 				break;
 			case 6:
 				if(uch != '\\')
-					throw error(ERR_INVALID_SURROGATE);
+					throw error(ERR_INVALID_SURROGATE, PARSE_STRING_ESCAPE, lc);
 				estate = 7;
 				break;
 			case 7:
 				if(uch != 'u')
-					throw error(ERR_INVALID_SURROGATE);
+					throw error(ERR_INVALID_SURROGATE, PARSE_STRING_ESCAPE, lc);
 				estate = 8;
 				break;
 			case 11:
-				extra = (extra << 4) | parse_hex(uch);
+				extra = (extra << 4) | parse_hex(uch, PARSE_STRING_ESCAPE, lc);
 				if((extra & 0xFC00FC00UL) != 0xD800DC00)
-					throw error(ERR_INVALID_SURROGATE);
+					throw error(ERR_INVALID_SURROGATE, PARSE_STRING_ESCAPE, lc);
 				tmp = ((extra & 0x3FF0000) >> 6) + (extra & 0x3FF) + 0x10000;
 				if((tmp & 0xFFFE) == 0xFFFE)
-					throw error(ERR_ILLEGAL_CHARACTER);
+					throw error(ERR_ILLEGAL_CHARACTER, PARSE_STRING_ESCAPE, lc);
 				*target = tmp;
 				++target;
 				estate = 0;
 				break;
 			};
 		}
-		throw error(ERR_TRUNCATED_STRING);
+		throw error(ERR_TRUNCATED_STRING, estate ? PARSE_STRING_ESCAPE : PARSE_STRING_BODY, len);
 	out:
 		return i;
 	}
@@ -639,7 +739,7 @@ namespace
 
 	json_token parse_token(const std::string& doc, size_t& ptr, size_t len)
 	{
-		if(ptr < len && (doc[ptr] == ' ' || doc[ptr] == '\t' || doc[ptr] == '\r' || doc[ptr] == '\n'))
+		while(ptr < len && (doc[ptr] == ' ' || doc[ptr] == '\t' || doc[ptr] == '\r' || doc[ptr] == '\n'))
 			ptr++;
 		if(ptr >= len)
 			return json_token(json_token::TEOF);
@@ -748,6 +848,29 @@ bad:
 			ptr++;
 		}
 	}
+
+	std::u32string pointer_escape_field(const std::u32string& orig) throw(std::bad_alloc)
+	{
+		std::basic_stringstream<char32_t> x;
+		for(auto i : orig) {
+			if(i == U'~')
+				x << U"~0";
+			else if(i == U'/')
+				x << U"~1";
+			else
+				x << i;
+		}
+		return x.str();
+	}
+
+	std::u32string pointer_escape_index(uint64_t idx) throw(std::bad_alloc)
+	{
+		std::string orig = (stringfmt() << idx).str();
+		std::basic_ostringstream<char32_t> x;
+		for(auto i : orig)
+			x << (char32_t)i;
+		return x.str();
+	}
 }
 
 std::string node::serialize() const throw(std::bad_alloc, error)
@@ -792,11 +915,13 @@ node::node(const std::string& doc) throw(std::bad_alloc, error)
 	ctor(doc, tmp, doc.length());
 	skip_ws(doc, tmp, doc.length());
 	if(tmp < doc.length())
-		throw error(ERR_GARBAGE_AFTER_END);
+		throw error(ERR_GARBAGE_AFTER_END, PARSE_END_OF_DOCUMENT, tmp);
 }
 
 void node::ctor(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_alloc, error)
 {
+	size_t tmp3;
+	tmp3 = ptr;
 	json_token t = parse_token(doc, ptr, len);
 	size_t tmp = ptr;
 	std::string tmp2;
@@ -811,15 +936,15 @@ void node::ctor(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_
 		set(null);
 		return;
 	case json_token::TEOF:
-		throw error(ERR_TRUNCATED_JSON);
+		throw error(ERR_TRUNCATED_JSON, PARSE_VALUE_START, ptr);
 	case json_token::TCOMMA:
-		throw error(ERR_UNEXPECTED_COMMA);
+		throw error(ERR_UNEXPECTED_COMMA, PARSE_VALUE_START, tmp3);
 	case json_token::TCOLON:
-		throw error(ERR_UNEXPECTED_COLON);
+		throw error(ERR_UNEXPECTED_COLON, PARSE_VALUE_START, tmp3);
 	case json_token::TARRAY_END:
-		throw error(ERR_UNEXPECTED_RIGHT_BRACKET);
+		throw error(ERR_UNEXPECTED_RIGHT_BRACKET, PARSE_VALUE_START, tmp3);
 	case json_token::TOBJECT_END:
-		throw error(ERR_UNEXPECTED_RIGHT_BRACE);
+		throw error(ERR_UNEXPECTED_RIGHT_BRACE, PARSE_VALUE_START, tmp3);
 	case json_token::TSTRING:
 		set(string, U"");
 		read_string(_string, doc, ptr, len);
@@ -835,26 +960,29 @@ void node::ctor(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_
 			break;
 		}
 		while(true) {
+			tmp3 = ptr;
 			json_token t2 = parse_token(doc, ptr, len);
 			if(t2.type == json_token::TEOF)
-				throw error(ERR_TRUNCATED_JSON);
+				throw error(ERR_TRUNCATED_JSON, PARSE_OBJECT_NAME, ptr);
 			if(t2.type != json_token::TSTRING)
-				throw error(ERR_EXPECTED_STRING_KEY);
+				throw error(ERR_EXPECTED_STRING_KEY, PARSE_OBJECT_NAME, tmp3);
 			std::u32string key;
 			read_string(key, doc, ptr, len);
+			tmp3 = ptr;
 			t2 = parse_token(doc, ptr, len);
 			if(t2.type == json_token::TEOF)
-				throw error(ERR_TRUNCATED_JSON);
+				throw error(ERR_TRUNCATED_JSON, PARSE_OBJECT_COLON, ptr);
 			if(t2.type != json_token::TCOLON)
-				throw error(ERR_EXPECTED_COLON);
+				throw error(ERR_EXPECTED_COLON, PARSE_OBJECT_COLON, tmp3);
 			insert(key, node(doc, ptr, len));
+			tmp3 = ptr;
 			t2 = parse_token(doc, ptr, len);
 			if(t2.type == json_token::TEOF)
-				throw error(ERR_TRUNCATED_JSON);
+				throw error(ERR_TRUNCATED_JSON, PARSE_OBJECT_AFTER_VALUE, ptr);
 			if(t2.type == json_token::TOBJECT_END)
 				break;
 			if(t2.type != json_token::TCOMMA)
-				throw error(ERR_EXPECTED_COMMA);
+				throw error(ERR_EXPECTED_COMMA, PARSE_OBJECT_AFTER_VALUE, tmp3);
 		}
 		break;
 	case json_token::TARRAY:
@@ -865,17 +993,18 @@ void node::ctor(const std::string& doc, size_t& ptr, size_t len) throw(std::bad_
 		}
 		while(true) {
 			append(node(doc, ptr, len));
+			tmp3 = ptr;
 			json_token t2 = parse_token(doc, ptr, len);
 			if(t2.type == json_token::TEOF)
-				throw error(ERR_TRUNCATED_JSON);
+				throw error(ERR_TRUNCATED_JSON, PARSE_ARRAY_AFTER_VALUE, ptr);
 			if(t2.type == json_token::TARRAY_END)
 				break;
 			if(t2.type != json_token::TCOMMA)
-				throw error(ERR_EXPECTED_COMMA);
+				throw error(ERR_EXPECTED_COMMA, PARSE_ARRAY_AFTER_VALUE, tmp3);
 		}
 		break;
 	case json_token::TINVALID:
-		throw error(ERR_UNKNOWN_CHARACTER);
+		throw error(ERR_UNKNOWN_CHARACTER, PARSE_VALUE_START, tmp3);
 	}
 }
 
@@ -1410,6 +1539,127 @@ bool node::operator==(const node& n) const
 		throw error(ERR_UNKNOWN_TYPE);
 	}
 }
+
+int node::type_of(const std::u32string& pointer) const throw(std::bad_alloc)
+{
+	try {
+		const node& n = follow(pointer);
+		return n.type();
+	} catch(std::bad_alloc& e) {
+		throw;
+	} catch(std::exception& e) {
+		return none.id;
+	}
+}
+
+int node::type_of_indirect(const std::u32string& pointer) const throw(std::bad_alloc)
+{
+	try {
+		const node& n = follow(pointer);
+		if(n.type() == string)
+			return type_of(n.as_string());
+		else
+			return n.type();
+	} catch(std::bad_alloc& e) {
+		throw;
+	} catch(std::exception& e) {
+		return none.id;
+	}
+}
+
+std::u32string node::resolve_indirect(const std::u32string& pointer) const throw(std::bad_alloc)
+{
+	try {
+		const node& n = follow(pointer);
+		if(n.type() == string)
+			return n.as_string();
+		else
+			return pointer;
+	} catch(std::bad_alloc& e) {
+		throw;
+	} catch(std::exception& e) {
+		return pointer;
+	}
+}
+
+pointer::pointer()
+{
+}
+
+pointer::pointer(const std::string& ptr) throw(std::bad_alloc)
+{
+	_pointer = to_u32string(ptr);
+}
+
+pointer::pointer(const std::u32string& ptr) throw(std::bad_alloc)
+{
+	_pointer = ptr;
+}
+
+pointer pointer::index(uint64_t idx) const throw(std::bad_alloc)
+{
+	if(_pointer.length())
+		return pointer(_pointer + U"/" + pointer_escape_index(idx));
+	else
+		return pointer(pointer_escape_index(idx));
+}
+
+pointer& pointer::index_inplace(uint64_t idx) throw(std::bad_alloc)
+{
+	if(_pointer.length())
+		_pointer = _pointer + U"/" + pointer_escape_index(idx);
+	else
+		_pointer = pointer_escape_index(idx);
+	return *this;
+}
+
+pointer pointer::field(const std::u32string& fld) const throw(std::bad_alloc)
+{
+	if(_pointer.length())
+		return pointer(_pointer + U"/" + pointer_escape_field(fld));
+	else
+		return pointer(pointer_escape_field(fld));
+		
+}
+
+pointer& pointer::field_inplace(const std::u32string& fld) throw(std::bad_alloc)
+{
+	if(_pointer.length())
+		_pointer = _pointer + U"/" + pointer_escape_field(fld);
+	else
+		_pointer = pointer_escape_field(fld);
+	return *this;
+}
+
+pointer pointer::remove() const throw(std::bad_alloc)
+{
+	size_t p = _pointer.find_last_of(U"/");
+	if(p >= _pointer.length())
+		return pointer();
+	else
+		return pointer(_pointer.substr(0, p));
+}
+
+pointer& pointer::remove_inplace() throw(std::bad_alloc)
+{
+	size_t p = _pointer.find_last_of(U"/");
+	if(p >= _pointer.length())
+		_pointer = U"";
+	else
+		_pointer = _pointer.substr(0, p);
+	return *this;
+}
+
+std::ostream& operator<<(std::ostream& s, const pointer& p)
+{
+	return s << to_u8string(p._pointer);
+}
+
+std::basic_ostream<char32_t>& operator<<(std::basic_ostream<char32_t>& s, const pointer& p)
+{
+	return s << p._pointer;
+}
+
 }
 
 bool operator==(const int& n, const JSON::number_tag& v) { return v == n; }

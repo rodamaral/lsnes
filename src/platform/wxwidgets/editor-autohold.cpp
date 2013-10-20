@@ -184,7 +184,7 @@ void wxeditor_autohold::update_controls()
 			const port_controller_set& pci = *(pt.controller_info);
 			if(pci.controllers.size() <= pcid.second)
 				continue;
-			const port_controller& pc = *(pci.controllers[pcid.second]);
+			const port_controller& pc = pci.controllers[pcid.second];
 			//First check that this has non-hidden buttons.
 			bool has_buttons = false;
 			for(unsigned k = 0; k < pc.buttons.size(); k++) {

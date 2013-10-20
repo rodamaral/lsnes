@@ -194,9 +194,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 {
 	const port_controller_set& pci = *(p.controller_info);
 	for(unsigned i = 0; i < pci.controllers.size(); i++) {
-		if(!pci.controllers[i])
-			continue;
-		const port_controller& pc = *(pci.controllers[i]);
+		const port_controller& pc = pci.controllers[i];
 		if(pid || i)
 			controlinfo.push_back(control_info::fixedinfo(c, U"\u2502"));
 		unsigned nextp = c;

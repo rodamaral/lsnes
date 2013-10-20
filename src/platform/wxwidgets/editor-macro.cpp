@@ -29,7 +29,7 @@ namespace
 			port_controller_set* pcs = s.port_type(g.first).controller_info;
 			if(g.second >= pcs->controllers.size())
 				continue;
-			r[i] = pcs->controllers[g.second];
+			r[i] = &pcs->controllers[g.second];
 		}
 		return r;
 	}

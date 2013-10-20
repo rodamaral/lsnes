@@ -187,12 +187,13 @@ struct port_controller_button
 	};
 	enum _type type;
 	char32_t symbol;
-	const char* name;
+	std::string name;
 	bool shadow;
 	int16_t rmin;		//Range min.
 	int16_t rmax;		//Range max.
 	bool centers;
-	const char* macro;	//Name in macro (must be prefix-free).
+	std::string macro;	//Name in macro (must be prefix-free).
+	char msymbol;		//Symbol in movie.
 /**
  * Is analog?
  */
@@ -205,8 +206,8 @@ struct port_controller_button
  */
 struct port_controller
 {
-	const char* cclass;				//Controller class.
-	const char* type;				//Controller type.
+	std::string cclass;				//Controller class.
+	std::string type;				//Controller type.
 	std::vector<port_controller_button> buttons;	//Buttons.
 /**
  * Count number of analog actions on this controller.
@@ -232,7 +233,10 @@ struct port_controller
  */
 struct port_controller_set
 {
-	std::vector<port_controller*> controllers;	//Controllers.
+	std::string iname;
+	std::string hname;
+	std::string symbol;
+	std::vector<port_controller> controllers;	//Controllers.
 	std::set<unsigned> legal_for;			//Ports this is legal for
 /**
  * Get specified controller, or NULL if it doesn't exist.
@@ -241,7 +245,7 @@ struct port_controller_set
 	{
 		if(c >= controllers.size())
 			return NULL;
-		return controllers[c];
+		return &controllers[c];
 	}
 /**
  * Get specified button, or NULL if it doesn't exist.
@@ -276,7 +280,7 @@ public:
  * Parameter ctrl: The control to manipulate.
  * Parameter x: New value for control. Only zero/nonzero matters for buttons.
  */
-	void (*write)(unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
+	void (*write)(const port_type* _this, unsigned char* buffer, unsigned idx, unsigned ctrl, short x);
 /**
  * Read controller data from compressed representation.
  *
@@ -285,7 +289,7 @@ public:
  * Parameter ctrl: The control to query.
  * Returns: The value of control. Buttons return 0 or 1.
  */
-	short (*read)(const unsigned char* buffer, unsigned idx, unsigned ctrl);
+	short (*read)(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl);
 /**
  * Take compressed controller data and serialize it into textual representation.
  *
@@ -295,7 +299,7 @@ public:
  * Parameter textbuf: The text buffer to write to.
  * Returns: Number of bytes written.
  */
-	size_t (*serialize)(const unsigned char* buffer, char* textbuf);
+	size_t (*serialize)(const port_type* _this, const unsigned char* buffer, char* textbuf);
 /**
  * Unserialize textual representation into compressed controller state.
  *
@@ -306,7 +310,7 @@ public:
  * Returns: Number of bytes read.
  * Throws std::runtime_error: Bad serialization.
  */
-	size_t (*deserialize)(unsigned char* buffer, const char* textbuf);
+	size_t (*deserialize)(const port_type* _this, unsigned char* buffer, const char* textbuf);
 /**
  * Is the device legal for port?
  *
@@ -857,7 +861,8 @@ public:
 	{
 		if(port >= types->ports())
 			return;
-		types->port_type(port).write(backing + types->port_offset(port), controller, ctrl, x);
+		auto& t = types->port_type(port);
+		t.write(&t, backing + types->port_offset(port), controller, ctrl, x);
 	}
 /**
  * Set axis/button value.
@@ -883,7 +888,8 @@ public:
 	{
 		if(port >= types->ports())
 			return 0;
-		return types->port_type(port).read(backing + types->port_offset(port), controller, ctrl);
+		auto& t = types->port_type(port);
+		return t.read(&t, backing + types->port_offset(port), controller, ctrl);
 	}
 
 /**
@@ -932,7 +938,8 @@ public:
 		size_t offset = 0;
 		for(size_t i = 0; i < types->ports(); i++) {
 			size_t s;
-			s = types->port_type(i).deserialize(backing + types->port_offset(i), buf + offset);
+			auto& t = types->port_type(i);
+			s = t.deserialize(&t, backing + types->port_offset(i), buf + offset);
 			if(s != DESERIALIZE_SPECIAL_BLANK) {
 				offset += s;
 				while(is_nonterminator(buf[offset]))
@@ -951,7 +958,8 @@ public:
 	{
 		size_t offset = 0;
 		for(size_t i = 0; i < types->ports(); i++) {
-			offset += types->port_type(i).serialize(backing + types->port_offset(i), buf + offset);
+			auto& t = types->port_type(i);
+			offset += t.serialize(&t, backing + types->port_offset(i), buf + offset);
 		}
 		buf[offset++] = '\0';
 	}

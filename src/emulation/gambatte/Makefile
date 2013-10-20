@@ -15,8 +15,8 @@ __all__.files: $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
 	$(MAKE) -C ../../../gambatte
 	$(REALRANLIB) $@
 
-ports.inc: ports.def ../make-ports.lua
-	lua ../make-ports.lua $< >$@
+ports.inc: ports.json ../make-ports.exe
+	../make-ports.exe <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)

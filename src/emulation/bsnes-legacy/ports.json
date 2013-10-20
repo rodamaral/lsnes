@@ -1,0 +1,103 @@
+{
+	"buttons":{
+		"B":{"type":"button", "name":"B"},
+		"Y":{"type":"button", "name":"Y"},
+		"select":{"type":"button", "name":"select", "symbol":"s"},
+		"start":{"type":"button", "name":"start", "symbol":"S"},
+		"up":{"type":"button", "name":"up", "symbol":"↑", "macro":"^", "movie":"u"},
+		"down":{"type":"button", "name":"down", "symbol":"↓", "macro":"v", "movie":"d"},
+		"left":{"type":"button", "name":"left", "symbol":"←", "macro":"<", "movie":"l"},
+		"right":{"type":"button", "name":"right", "symbol":"→", "macro":">", "movie":"r"},
+		"A":{"type":"button", "name":"A"},
+		"X":{"type":"button", "name":"X"},
+		"L":{"type":"button", "name":"L"},
+		"R":{"type":"button", "name":"R"},
+		"ext0":{"type":"button", "name":"ext0", "symbol":"0", "macro":"E0"},
+		"ext1":{"type":"button", "name":"ext1", "symbol":"1", "macro":"E1"},
+		"ext2":{"type":"button", "name":"ext2", "symbol":"2", "macro":"E2"},
+		"ext3":{"type":"button", "name":"ext3", "symbol":"3", "macro":"E3"},
+		"trigger":{"type":"button", "name":"trigger", "symbol":"T"},
+		"cursor":{"type":"button", "name":"cursor", "symbol":"C"},
+		"turbo":{"type":"button", "name":"turbo", "symbol":"U"},
+		"pause":{"type":"button", "name":"pause", "symbol":"P"},
+		"xaxis":{"type":"lightgun", "name":"xaxis", "min":-16, "max":271},
+		"yaxis":{"type":"lightgun", "name":"yaxis", "min":-16, "max":255},
+		"xmotion":{"type":"raxis", "name":"xaxis", "min":-255, "max":255, "centers":true},
+		"ymotion":{"type":"raxis", "name":"yaxis", "min":-255, "max":255, "centers":true},
+		"framesync":{"type":"button", "name":"framesync", "symbol":"F", "shadow":true},
+		"reset":{"type":"button", "name":"reset", "symbol":"R", "shadow":true},
+		"hard":{"type":"button", "name":"hard", "symbol":"H", "shadow":true},
+		"rhigh":{"type":"axis", "name":"rhigh", "shadow":true},
+		"rlow":{"type":"axis", "name":"rlow", "shadow":true},
+		"shadownull":{"type":"null", "shadow":true}
+	},"controllers":{
+		"gamepad":{"type":"gamepad", "class":"gamepad", "buttons":[
+			"buttons/B", "buttons/Y", "buttons/select", "buttons/start", "buttons/up", "buttons/down",
+			"buttons/left", "buttons/right", "buttons/A", "buttons/X", "buttons/L", "buttons/R"
+		]},
+		"gamepad16":{"type":"gamepad16", "class":"gamepad", "buttons":[
+			"buttons/B", "buttons/Y", "buttons/select", "buttons/start", "buttons/up", "buttons/down",
+			"buttons/left", "buttons/right", "buttons/A", "buttons/X", "buttons/L", "buttons/R",
+			"buttons/ext0", "buttons/ext1", "buttons/ext2", "buttons/ext3"
+		]},
+		"justifier":{"type":"justifier", "class":"justifier", "buttons":[
+			"buttons/xaxis", "buttons/yaxis", "buttons/trigger", "buttons/start"
+		]},
+		"mouse":{"type":"mouse", "class":"mouse", "buttons":[
+			"buttons/xmotion", "buttons/ymotion", "buttons/L", "buttons/R"
+		]},
+		"superscope":{"type":"superscope", "class":"superscope", "buttons":[
+			"buttons/xaxis", "buttons/yaxis", "buttons/trigger", "buttons/cursor", "buttons/turbo",
+			"buttons/pause"
+		]},
+		"system":{"type":"(system)", "class":"(system)", "buttons":[
+			"buttons/framesync", "buttons/reset", "buttons/rhigh", "buttons/rlow"
+		]},
+		"system_hreset":{"type":"(system)", "class":"(system)", "buttons":[
+			"buttons/framesync", "buttons/reset", "buttons/rhigh", "buttons/rlow", "buttons/hard"
+		]},
+		"system_compact":{"type":"(system)", "class":"(system)", "buttons":[
+			"buttons/framesync", "buttons/reset", "buttons/shadownull", "buttons/shadownull",
+			"buttons/hard"
+		]}
+	},"ports":[
+		{"symbol":"gamepad", "name":"gamepad", "hname":"gamepad", "controllers":[
+			"controllers/gamepad"
+		],"legal":[1,2]},
+		{"symbol":"gamepad16", "name":"gamepad16", "hname":"gamepad (16 buttons)", "controllers":[
+			"controllers/gamepad16"
+		],"legal":[1,2]},
+		{"symbol":"ygamepad16", "name":"ygamepad16", "hname":"Y-cabled gamepad (16 buttons)", "controllers":[
+			"controllers/gamepad16", "controllers/gamepad16"
+		],"legal":[1,2]},
+		{"symbol":"justifier", "name":"justifier", "hname":"Justifier", "controllers":[
+			"controllers/justifier"
+		],"legal":[2]},
+		{"symbol":"justifiers", "name":"justifiers", "hname":"2 Justifiers", "controllers":[
+			"controllers/justifier", "controllers/justifier"
+		],"legal":[2]},
+		{"symbol":"mouse", "name":"mouse", "hname":"Mouse", "controllers":[
+			"controllers/mouse"
+		],"legal":[1, 2]},
+		{"symbol":"multitap", "name":"multitap", "hname":"Multitap", "controllers":[
+			"controllers/gamepad", "controllers/gamepad", "controllers/gamepad", "controllers/gamepad"
+		],"legal":[1, 2]},
+		{"symbol":"multitap16", "name":"multitap16", "hname":"Multitap (16 buttons)", "controllers":[
+			"controllers/gamepad16", "controllers/gamepad16", "controllers/gamepad16",
+			"controllers/gamepad16"
+		],"legal":[1, 2]},
+		{"symbol":"none", "name":"none", "hname":"None", "controllers":[],"legal":[1, 2]},
+		{"symbol":"superscope", "name":"superscope", "hname":"Super Scope", "controllers":[
+			"controllers/superscope"
+		],"legal":[2]},
+		{"symbol":"psystem", "name":"system", "hname":"system", "controllers":[
+			"controllers/system"
+		],"legal":[0]},
+		{"symbol":"psystem_hreset", "name":"system", "hname":"system", "controllers":[
+			"controllers/system_hreset"
+		],"legal":[0]},
+		{"symbol":"psystem_compact", "name":"system", "hname":"system", "controllers":[
+			"controllers/system_compact"
+		],"legal":[0]}
+	]
+}

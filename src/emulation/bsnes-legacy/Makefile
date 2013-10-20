@@ -37,8 +37,8 @@ __all__.files: $(OBJECTS) ../../../$(BSNES_LIBRARY)
 	$(MAKE) -C ../../../bsnes $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING)
 	$(REALRANLIB) $@
 
-ports.inc: ports.def ../make-ports.lua
-	lua ../make-ports.lua $< >$@
+ports.inc: ports.json ../make-ports.exe
+	../make-ports.exe <$< >$@
 
 %.$(OBJECT_SUFFIX): %.cpp ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS)

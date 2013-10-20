@@ -17,7 +17,7 @@ namespace
 	{
 		unsigned ctrls = pt.controller_info->controllers.size();
 		for(unsigned i = 0; i < ctrls; i++)
-			for(unsigned j = 0; j < pt.controller_info->controllers[i]->buttons.size(); j++)
+			for(unsigned j = 0; j < pt.controller_info->controllers[i].buttons.size(); j++)
 				tab.push_back(t(p, i, j));
 	}
 }

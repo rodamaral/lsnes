@@ -1,4 +1,3 @@
-#ifdef TEST_JSON
 #include "json.hpp"
 #include "string.hpp"
 
@@ -1772,7 +1771,102 @@ test_x tests[] = {
 		JSON::node y("[{\"op\":\"foo\",\"path\":\"3\",\"from\":\"4\",\"value\":6}]");
 		x.patch(y);
 		return false;
-	}, JSON::ERR_PATCH_BAD},
+	}, JSON::ERR_PATCH_BAD},{"Basic type_of", []() {
+		JSON::node x("[1,false,null,{\"foo\":\"bar\"}]");
+		if(x.type_of("0") != JSON::number) return false;
+		if(x.type_of("1") != JSON::boolean) return false;
+		if(x.type_of("2") != JSON::null) return false;
+		if(x.type_of("3") != JSON::object) return false;
+		if(x.type_of("3/foo") != JSON::string) return false;
+		if(x.type_of("4") != JSON::none) return false;
+		if(x.type_of("foo") != JSON::none) return false;
+		return true;
+	}},{"Basic type_of_indirect", []() {
+		JSON::node x("{\"objects\":{\"foo\":\"bar\",\"baz\":true},\"pointers\":[false,\"objects/foo\", "
+			"\"objects/baz\",\"objects/enone\"]}");
+		if(x.type_of_indirect("objects/baz") != JSON::boolean) return false;
+		if(x.type_of_indirect("pointers/0") != JSON::boolean) return false;
+		if(x.type_of_indirect("pointers/1") != JSON::string) return false;
+		if(x.type_of_indirect("pointers/2") != JSON::boolean) return false;
+		if(x.type_of_indirect("pointers/3") != JSON::none) return false;
+		if(x.type_of_indirect("pointers/4") != JSON::none) return false;
+		return true;
+	}},{"Basic resolve_indirect", []() {
+		JSON::node x("{\"objects\":{\"foo\":\"bar\",\"baz\":true},\"pointers\":[false,\"objects/foo\", "
+			"\"objects/baz\",\"objects/enone\"]}");
+		if(x.resolve_indirect("objects/baz") != "objects/baz") return false;
+		if(x.resolve_indirect("pointers/0") != "pointers/0") return false;
+		if(x.resolve_indirect("pointers/1") != "objects/foo") return false;
+		if(x.resolve_indirect("pointers/2") != "objects/baz") return false;
+		if(x.resolve_indirect("pointers/3") != "objects/enone") return false;
+		if(x.resolve_indirect("pointers/4") != "pointers/4") return false;
+		return true;
+	}},{"Basic pointer obj #1", []() {
+		JSON::pointer p;
+		p.field_inplace("foo").field_inplace("bar");
+		return p.as_string8() == "foo/bar";
+	}},{"Basic pointer obj #2", []() {
+		JSON::pointer p("foo/bar");
+		return p.as_string() == U"foo/bar";
+	}},{"Basic pointer obj #3", []() {
+		JSON::pointer p(U"foo/bar");
+		return p.as_string8() == "foo/bar";
+	}},{"Basic pointer obj #4", []() {
+		JSON::pointer p;
+		p = p.index(5);
+		p = p.index(3);
+		return p.as_string8() == "5/3";
+	}},{"Basic pointer obj #5", []() {
+		JSON::pointer p;
+		p.index_inplace(5);
+		p.index_inplace(3);
+		return p.as_string8() == "5/3";
+	}},{"Basic pointer obj #6", []() {
+		JSON::pointer p;
+		p.index_inplace(5);
+		p.index_inplace(3);
+		p.pastend_inplace();
+		return p.as_string8() == "5/3/-";
+	}},{"Basic pointer obj #7", []() {
+		JSON::pointer p;
+		p = p.index(5);
+		p = p.index(3);
+		p = p.pastend();
+		return p.as_string8() == "5/3/-";
+	}},{"Basic pointer obj #8", []() {
+		JSON::pointer p;
+		p = p.field("foo").field("bar");
+		return p.as_string8() == "foo/bar";
+	}},{"Basic pointer obj #9", []() {
+		JSON::pointer p;
+		p = p.field("~").field("/");
+		return p.as_string8() == "~0/~1";
+	}},{"Basic pointer obj #10", []() {
+		JSON::pointer p;
+		p = p.field("foo").field("bar").field("baz").remove();
+		return p.as_string8() == "foo/bar";
+	}},{"Basic pointer obj #11", []() {
+		JSON::pointer p;
+		p.field_inplace("foo").field_inplace("bar").field_inplace("baz").remove_inplace();
+		return p.as_string8() == "foo/bar";
+	}},{"Basic pointer obj #12", []() {
+		JSON::pointer p("baz/zot");
+		std::string x = (stringfmt() << p).str();
+		return x == "baz/zot";
+	}},{"Basic pointer obj #13", []() {
+		JSON::pointer p("baz/zot");
+		std::basic_ostringstream<char32_t> y;
+		y << p;
+		return y.str() == U"baz/zot";
+	}},{"Basic pointer obj #14", []() {
+		JSON::pointer p;
+		p = p.field("foo").remove();
+		return p.as_string8() == "";
+	}},{"Basic pointer obj #15", []() {
+		JSON::pointer p;
+		p.field_inplace("foo").remove_inplace();
+		return p.as_string8() == "";
+	}},
 };
 
 void run_test(unsigned i, size_t& total, size_t& pass, size_t& fail)
@@ -1816,5 +1910,3 @@ int main(int argc, char** argv)
 	return (fail != 0);
 }
 
-
-#endif
