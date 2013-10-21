@@ -132,3 +132,6 @@ OPUS_CODEC_SUPPORTS_SURROUND=
 
 # Set to non-empty value (e.g. 'yes') to use libgcrypt for SHA-256 instead of builtin routines.
 USE_LIBGCRYPT=yes
+
+# Postfix for boost for host builds.
+HOST_BOOST_POSTFIX=
