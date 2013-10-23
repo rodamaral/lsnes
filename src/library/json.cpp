@@ -66,6 +66,19 @@ const char* asciinames[] = {
 	"DLE", "DC1", "DC2", "DC3", "DC4", "NAK", "SYN", "ETB", "CAN", "EM", "SUB", "ESC", "FS", "GS", "RS", "US"
 };
 
+bool parse_size_t(const std::u32string& s, size_t& x)
+{
+	x = 0;
+	for(size_t i = 0; i < s.length(); i++) {
+		if(s[i] < 48 || s[i] > 57)
+			return false;
+		if((std::numeric_limits<size_t>::max() - (size_t)(s[i] - 48)) / 10 < x)
+			return false;
+		x = 10 * x + (s[i] - 48);
+	}
+	return true;
+}
+
 std::pair<size_t, size_t> error::get_position_lc(const std::string& doc, size_t pos)
 {
 	size_t r = 1, c = 1;
@@ -361,22 +374,24 @@ size_t node::index_count() const throw(error)
 	return xarray.size();
 }
 
-const node& node::index(size_t index) const throw(error)
+errorcode node::index_soft(size_t index, const node*& out) const throw()
 {
 	if(vtype != array)
-		throw error(ERR_NOT_AN_ARRAY);
+		return ERR_NOT_AN_ARRAY;
 	if(index >= xarray_index.size())
-		throw error(ERR_INDEX_INVALID);
-	return *xarray_index[index];
+		return ERR_INDEX_INVALID;
+	out = xarray_index[index];
+	return ERR_OK;
 }
 
-node& node::index(size_t index) throw(error)
+errorcode node::index_soft(size_t index, node*& out) throw()
 {
 	if(vtype != array)
-		throw error(ERR_NOT_AN_ARRAY);
+		return ERR_NOT_AN_ARRAY;
 	if(index >= xarray_index.size())
-		throw error(ERR_INDEX_INVALID);
-	return *xarray_index[index];
+		return ERR_INDEX_INVALID;
+	out = xarray_index[index];
+	return ERR_OK;
 }
 
 size_t node::field_count(const std::u32string& key) const throw(error)
@@ -393,34 +408,38 @@ bool node::field_exists(const std::u32string& key) const throw(error)
 	return (field_count(key) > 0);
 }
 
-const node& node::field(const std::u32string& key, size_t subindex) const throw(error)
+errorcode node::field_soft(const std::u32string& key, size_t subindex, const node*& out) const throw()
 {
 	if(vtype != object)
-		throw error(ERR_NOT_AN_OBJECT);
+		return ERR_NOT_AN_OBJECT;
 	if(!xobject.count(key))
-		throw error(ERR_KEY_INVALID);
+		return ERR_KEY_INVALID;
 	const std::list<node>& l = xobject.find(key)->second;
 	size_t j = 0;
 	for(auto i = l.begin(); i != l.end(); i++, j++) {
-		if(j == subindex)
-			return *i;;
+		if(j == subindex) {
+			out = &*i;
+			return ERR_OK;
+		}
 	}
-	throw error(ERR_INSTANCE_INVALID);
+	return ERR_INSTANCE_INVALID;
 }
 
-node& node::field(const std::u32string& key, size_t subindex) throw(error)
+errorcode node::field_soft(const std::u32string& key, size_t subindex, node*& out) throw()
 {
 	if(vtype != object)
-		throw error(ERR_NOT_AN_OBJECT);
+		return ERR_NOT_AN_OBJECT;
 	if(!xobject.count(key))
-		throw error(ERR_KEY_INVALID);
+		return ERR_KEY_INVALID;
 	std::list<node>& l = xobject.find(key)->second;
 	size_t j = 0;
 	for(auto i = l.begin(); i != l.end(); i++, j++) {
-		if(j == subindex)
-			return *i;;
+		if(j == subindex) {
+			out = &*i;
+			return ERR_OK;
+		}
 	}
-	throw error(ERR_INSTANCE_INVALID);
+	return ERR_INSTANCE_INVALID;
 }
 
 node::node(const node& _node) throw(std::bad_alloc)
@@ -494,85 +513,95 @@ node& node::insert(const std::u32string& key, const node& _node) throw(std::bad_
 
 namespace
 {
-	std::u32string jsonptr_unescape(const std::u32string& c, size_t start, size_t end)
+	errorcode jsonptr_unescape_soft(const std::u32string& c, size_t start, size_t end, std::u32string& _out)
 	{
 		std::basic_ostringstream<char32_t> out;
 		for(size_t ptr = start; ptr < end; ptr++) {
 			if(c[ptr] == '~') {
 				if(ptr == end - 1)
-					throw error(ERR_POINTER_TRAILING_ESCAPE);
+					return ERR_POINTER_TRAILING_ESCAPE;
 				ptr++;
 				if(c[ptr] == '0')
 					out << U"~";
 				else if(c[ptr] == '1')
 					out << U"/";
 				else
-					throw error(ERR_POINTER_INVALID_ESCAPE);
+					return ERR_POINTER_INVALID_ESCAPE;
 			} else
 				out << c[ptr];
 		}
-		return out.str();
+		_out = out.str();
+		return ERR_OK;
 	}
+
+	std::u32string jsonptr_unescape(const std::u32string& c, size_t start, size_t end)
+	{
+		std::u32string o;
+		auto e = jsonptr_unescape_soft(c, start, end, o);
+		if(e != ERR_OK) throw error(e);
+		return o;
+	}
+
 }
 
-const node& node::follow(const std::u32string& pointer) const throw(std::bad_alloc, error)
+errorcode node::follow_soft(const std::u32string& pointer, const node*& current) const throw(std::bad_alloc)
 {
-	const node* current = this;
+	errorcode e;
+	current = this;
 	size_t ptr = 0;
 	while(ptr < pointer.length()) {
 		size_t p = pointer.find_first_of(U"/", ptr);
 		if(p > pointer.length())
 			p = pointer.length();
-		std::u32string c = jsonptr_unescape(pointer, ptr, p);
+		std::u32string c;
+		auto e = jsonptr_unescape_soft(pointer, ptr, p, c);
+		if(e != ERR_OK) return e;
 		if(current->vtype == array) {
 			if(c == U"-")
-				throw error(ERR_POINTER_BAD_APPEND);
+				return ERR_POINTER_BAD_APPEND;
 			size_t idx;
-			try {
-				idx = parse_value<size_t>(to_u8string(c));
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(...) {
-				throw error(ERR_POINTER_BAD_INDEX);
-			}
-			current = &current->index(idx);
+			if(!parse_size_t(c, idx))
+				return ERR_POINTER_BAD_INDEX;
+			e = current->index_soft(idx, current);
+			if(e != ERR_OK) return e;
 		} else if(current->vtype == object) {
-			current = &current->field(c);
+			e = current->field_soft(c, 0, current);
+			if(e != ERR_OK) return e;
 		} else
-			throw error(ERR_NOT_ARRAY_NOR_OBJECT);
+			return ERR_NOT_ARRAY_NOR_OBJECT;
 		ptr = p + 1;
 	}
-	return *current;
+	return ERR_OK;
 }
 
-node& node::follow(const std::u32string& pointer) throw(std::bad_alloc, error)
+errorcode node::follow_soft(const std::u32string& pointer, node*& current) throw(std::bad_alloc)
 {
-	node* current = this;
+	current = this;
+	errorcode e;
 	size_t ptr = 0;
 	while(ptr < pointer.length()) {
 		size_t p = pointer.find_first_of(U"/", ptr);
 		if(p > pointer.length())
 			p = pointer.length();
-		std::u32string c = jsonptr_unescape(pointer, ptr, p);
+		std::u32string c;
+		auto e = jsonptr_unescape_soft(pointer, ptr, p, c);
+		if(e != ERR_OK) return e;
 		if(current->vtype == array) {
 			if(c == U"-")
-				throw error(ERR_POINTER_BAD_APPEND);
+				return ERR_POINTER_BAD_APPEND;
 			size_t idx;
-			try {
-				idx = parse_value<size_t>(to_u8string(c));
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(...) {
-				throw error(ERR_POINTER_BAD_INDEX);
-			}
-			current = &current->index(idx);
+			if(!parse_size_t(c, idx))
+				return ERR_POINTER_BAD_INDEX;
+			e = current->index_soft(idx, current);
+			if(e != ERR_OK) return e;
 		} else if(current->vtype == object) {
-			current = &current->field(c);
+			e = current->field_soft(c, 0, current);
+			if(e != ERR_OK) return e;
 		} else
-			throw error(ERR_NOT_ARRAY_NOR_OBJECT);
+			return ERR_NOT_ARRAY_NOR_OBJECT;
 		ptr = p + 1;
 	}
-	return *current;
+	return ERR_OK;
 }
 
 namespace
@@ -1030,13 +1059,8 @@ node& node::operator[](const std::u32string& pointer) throw(std::bad_alloc, erro
 				return current->append(n());
 			}
 			size_t idx;
-			try {
-				idx = parse_value<size_t>(to_u8string(c));
-			} catch(std::bad_alloc& e) {
-				throw;
-			} catch(...) {
+			if(!parse_size_t(c, idx))
 				throw error(ERR_POINTER_BAD_INDEX);
-			}
 			if(idx > current->xarray.size())
 				throw error(ERR_POINTER_BAD_APPEND);
 			else if(idx == current->xarray.size())
@@ -1070,13 +1094,8 @@ node& node::insert_node(const std::u32string& pointer, const node& nwn) throw(st
 		if(rest == U"-")
 			return base->append(nwn);
 		size_t idx;
-		try {
-			idx = parse_value<size_t>(to_u8string(rest));
-		} catch(std::bad_alloc& e) {
-			throw;
-		} catch(...) {
+		if(!parse_size_t(rest, idx))
 			throw error(ERR_POINTER_BAD_INDEX);
-		}
 		if(idx > base->xarray.size())
 			throw error(ERR_POINTER_BAD_APPEND);
 		else if(idx == base->xarray.size())
@@ -1126,13 +1145,8 @@ node node::delete_node(const std::u32string& pointer) throw(std::bad_alloc, erro
 		if(rest == U"-")
 			throw error(ERR_POINTER_BAD_APPEND);
 		size_t idx;
-		try {
-			idx = parse_value<size_t>(to_u8string(rest));
-		} catch(std::bad_alloc& e) {
-			throw;
-		} catch(...) {
+		if(!parse_size_t(rest, idx))
 			throw error(ERR_POINTER_BAD_INDEX);
-		}
 		if(idx >= base->xarray.size())
 			throw error(ERR_INDEX_INVALID);
 		node* dptr = base->xarray_index[idx];
@@ -1543,11 +1557,14 @@ bool node::operator==(const node& n) const
 int node::type_of(const std::u32string& pointer) const throw(std::bad_alloc)
 {
 	try {
-		const node& n = follow(pointer);
-		return n.type();
+		const node* n;
+		if(follow_soft(pointer, n) != ERR_OK)
+			return none.id;
+		return n->type();
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
+		//Shouldn't happen.
 		return none.id;
 	}
 }
@@ -1555,14 +1572,17 @@ int node::type_of(const std::u32string& pointer) const throw(std::bad_alloc)
 int node::type_of_indirect(const std::u32string& pointer) const throw(std::bad_alloc)
 {
 	try {
-		const node& n = follow(pointer);
-		if(n.type() == string)
-			return type_of(n.as_string());
+		const node* n;
+		if(follow_soft(pointer, n) != ERR_OK)
+			return none.id;
+		if(n->type() == string)
+			return type_of(n->as_string());
 		else
-			return n.type();
+			return n->type();
 	} catch(std::bad_alloc& e) {
 		throw;
 	} catch(std::exception& e) {
+		//Shouldn't happen.
 		return none.id;
 	}
 }

@@ -316,7 +316,13 @@ public:
 /**
  * Read specified index from array (NT_ARRAY).
  */
-	const node& index(size_t idx) const throw(error);
+	const node& index(size_t idx) const throw(error)
+	{
+		const node* n;
+		auto e = index_soft(idx, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 /**
  * Read number of indices in object key (NT_OBJECT).
  */
@@ -336,7 +342,13 @@ public:
 /**
  * Read specified key from object (NT_OBJECT).
  */
-	const node& field(const std::u32string& key, size_t subindex = 0) const throw(error);
+	const node& field(const std::u32string& key, size_t subindex = 0) const throw(error)
+	{
+		const node* n;
+		auto e = field_soft(key, subindex, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 	const node& field(const std::string& key, size_t subindex = 0) const throw(std::bad_alloc, error)
 	{
 		return field(to_u32string(key), subindex);
@@ -345,7 +357,13 @@ public:
 /**
  * Apply JSON pointer (RFC 6901).
  */
-	const node& follow(const std::u32string& pointer) const throw(std::bad_alloc, error);
+	const node& follow(const std::u32string& pointer) const throw(std::bad_alloc, error)
+	{
+		const node* n;
+		auto e = follow_soft(pointer, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 	const node& follow(const std::string& pointer) const throw(std::bad_alloc, error)
 	{
 		return follow(to_u32string(pointer));
@@ -389,7 +407,13 @@ public:
 /**
  * Read/Write specified index from array (NT_ARRAY).
  */
-	node& index(size_t index) throw(error);
+	node& index(size_t idx) throw(error)
+	{
+		node* n;
+		auto e = index_soft(idx, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 /**
  * Append new element to array (NT_ARRAY).
  */
@@ -397,7 +421,13 @@ public:
 /**
  * Read/Write specified key from object (NT_OBJECT).
  */
-	node& field(const std::u32string& key, size_t subindex = 0) throw(error);
+	node& field(const std::u32string& key, size_t subindex = 0) throw(error)
+	{
+		node* n;
+		auto e = field_soft(key, subindex, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 	node& field(const std::string& key, size_t subindex = 0) throw(std::bad_alloc, error)
 	{
 		return field(to_u32string(key), subindex);
@@ -413,7 +443,13 @@ public:
 /**
  * Apply JSON pointer (RFC 6901).
  */
-	node& follow(const std::u32string& pointer) throw(std::bad_alloc, error);
+	node& follow(const std::u32string& pointer) throw(std::bad_alloc, error)
+	{
+		node* n;
+		auto e = follow_soft(pointer, n);
+		if(e != ERR_OK) throw error(e);
+		return *n;
+	}
 	node& follow(const std::string& pointer) throw(std::bad_alloc, error)
 	{
 		return follow(to_u32string(pointer));
@@ -637,6 +673,12 @@ private:
 	std::list<node> xarray;
 	std::vector<node*> xarray_index;
 	std::map<std::u32string, std::list<node>> xobject;
+	errorcode follow_soft(const std::u32string& pointer, const node*& out) const throw(std::bad_alloc);
+	errorcode follow_soft(const std::u32string& pointer, node*& out) throw(std::bad_alloc);
+	errorcode field_soft(const std::u32string& key, size_t subindex, node*& out) throw();
+	errorcode field_soft(const std::u32string& key, size_t subindex, const node*& out) const throw();
+	errorcode index_soft(size_t index, node*& out) throw();
+	errorcode index_soft(size_t index, const node*& out) const throw();
 };
 }
 
