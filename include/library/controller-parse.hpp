@@ -2,6 +2,7 @@
 #define _library__controller_parse__hpp__included__
 
 #include "controller-data.hpp"
+#include "assembler.hpp"
 #include "json.hpp"
 
 struct port_controller_set* pcs_from_json(const JSON::node& root, const std::string& ptr);
@@ -13,6 +14,7 @@ std::string pcs_write_classes(const std::vector<port_controller_set*>& p, unsign
 struct port_type_generic : public port_type
 {
 	port_type_generic(const JSON::node& root, const std::string& ptr) throw(std::exception);
+	~port_type_generic() throw();
 	struct ser_instruction
 	{
 		int type;
@@ -34,6 +36,7 @@ struct port_type_generic : public port_type
 private:
 	std::vector<size_t> indexbase;
 	std::vector<idxinfo> indexinfo;
+	void* dyncode_block;
 	mutable std::vector<ser_instruction> serialize_instructions;
 	std::string port_iname(const JSON::node& root, const std::string& ptr);
 	std::string port_hname(const JSON::node& root, const std::string& ptr);
@@ -42,6 +45,8 @@ private:
 	static short _read(const port_type* _this, const unsigned char* buffer, unsigned idx, unsigned ctrl);
 	static size_t _serialize(const port_type* _this, const unsigned char* buffer, char* textbuf);
 	static size_t _deserialize(const port_type* _this, unsigned char* buffer, const char* textbuf);
+	void make_dynamic_blocks();
+	void make_routines(assembler::assembler& a, std::list<assembler::label>& labels);
 };
 
 #endif

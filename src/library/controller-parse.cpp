@@ -1,5 +1,6 @@
 #include "controller-parse.hpp"
 #include "string.hpp"
+#include "assembler.hpp"
 #include <algorithm>
 
 namespace
@@ -675,7 +676,6 @@ port_type_generic::port_type_generic(const JSON::node& root, const std::string& 
 	: port_type(port_iname(root, ptr), port_hname(root, ptr), port_size(root, ptr))
 {
 	controller_info = pcs_parse_set(root, ptr);
-	//TODO: Use dynamic code generation to optimize if possible.
 	write = _write;
 	read = _read;
 	serialize = _serialize;
@@ -692,6 +692,13 @@ port_type_generic::port_type_generic(const JSON::node& root, const std::string& 
 	indexinfo = get_idx_instructions(*controller_info);
 	_serialize(this, NULL, NULL);
 	_deserialize(this, NULL, NULL);
+	dyncode_block = NULL;
+	make_dynamic_blocks();
+}
+
+port_type_generic::~port_type_generic() throw()
+{
+	delete reinterpret_cast<assembler::dynamic_code*>(dyncode_block);
 }
 
 std::string port_type_generic::port_iname(const JSON::node& root, const std::string& ptr)
@@ -717,3 +724,462 @@ size_t port_type_generic::port_size(const JSON::node& root, const std::string& p
 	delete info;
 	return tmp;
 }
+
+void port_type_generic::make_dynamic_blocks()
+{
+	try {
+		std::list<assembler::label> labels;
+		assembler::assembler a;
+		make_routines(a, labels);
+
+		assembler::dynamic_code* c;
+		dyncode_block = c = new assembler::dynamic_code(a.size());
+		auto m = a.flush(c->pointer());
+		c->commit();
+		if(m.count("read"))
+			read = (short(*)(const port_type*, const unsigned char*, unsigned, unsigned))m["read"];
+		if(m.count("write"))
+			write = (void(*)(const port_type*, unsigned char*, unsigned, unsigned, short))m["write"];
+		if(m.count("serialize"))
+			serialize = (size_t(*)(const port_type*, const unsigned char*, char*))m["serialize"];
+		if(m.count("deserialize"))
+			deserialize = (size_t(*)(const port_type*, unsigned char*, const char*))m["deserialize"];
+	} catch(std::exception& e) {
+		std::cerr << "Error assembling block: " << e.what() << std::endl;
+		delete reinterpret_cast<assembler::dynamic_code*>(dyncode_block);
+		dyncode_block = NULL;
+	} catch(...) {
+		std::cerr << "Error assembling block!" << std::endl;
+		delete reinterpret_cast<assembler::dynamic_code*>(dyncode_block);
+		dyncode_block = NULL;
+	}
+}
+
+#ifdef ARCH_IS_I386
+assembler::label& alloc_label(std::list<assembler::label>& v)
+{
+	v.push_back(assembler::label());
+	return v.back();
+}
+
+static bool i386_amd64()
+{
+	size_t r;
+	asm volatile(
+		//On i386, this is DEC EAX, MOV EAX, 0, NOP, NOP, NOP, NOP
+		//On amd64, this is MOV RAX, 0x9090909000000000
+		".byte 0x48\n"
+		".byte 0xB8, 0, 0, 0, 0\n"
+		".byte 0x90, 0x90, 0x90, 0x90\n"
+		: "=a"(r));
+	return (r != 0);
+}
+
+size_t axis_print(char* buf, short _v)
+{
+	int v = _v;
+	size_t r = 0;
+	buf[r++] = ' ';
+	if(v < 0) { buf[r++] = '-'; v = -v; }
+	if(v >= 10000) buf[r++] = '0' + (v / 10000 % 10);
+	if(v >= 1000) buf[r++] = '0' + (v / 1000 % 10);
+	if(v >= 100) buf[r++] = '0' + (v / 100 % 10);
+	if(v >= 10) buf[r++] = '0' + (v / 10 % 10);
+	buf[r++] = '0' + (v % 10);
+	return r;
+}
+
+enum regnum { REG_AX, REG_CX, REG_DX, REG_BX, REG_SP, REG_BP, REG_SI, REG_DI };
+enum modval { MOD_NO_OFF, MOD_OFF_1, MOD_OFF_4, MOD_REG };
+enum specials { RM_SIB = 4, INDEX_NONE = 4, SCALE_1 = 0, SCALE_2 = 1, SCALE_4 = 2, SCALE_8 = 3};
+
+void mov_reg_reg(assembler::assembler& a, uint8_t dest, uint8_t src, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0x8B, assembler::i386_modrm(dest, MOD_REG, src));
+}
+
+void xor_ax_ax(assembler::assembler& a, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0x31, assembler::i386_modrm(REG_AX, MOD_REG, REG_AX));
+}
+
+void inc_ax(assembler::assembler& a, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0xFF, assembler::i386_modrm(0, MOD_REG, REG_AX));
+}
+
+void testb_si_offset_imm(assembler::assembler& a, size_t offset, uint8_t mask)
+{
+	if(offset > 127)
+		a(0xF6, assembler::i386_modrm(0, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), mask);
+	else
+		a(0xF6, assembler::i386_modrm(0, MOD_OFF_1, REG_SI), (uint8_t)offset, mask);
+}
+
+void movb_si_offset(assembler::assembler& a, size_t offset, uint8_t reg)
+{
+	if(offset > 127)
+		a(0x8A, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
+	else
+		a(0x8A, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), (uint8_t)offset);
+}
+
+void movzbl_si_offset(assembler::assembler& a, size_t offset, uint8_t reg)
+{
+	if(offset > 127)
+		a(0x0F, 0xB6, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
+	else
+		a(0x0F, 0xB6, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), (uint8_t)offset);
+}
+
+void load_cx_imm(assembler::assembler& a, int64_t val, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0xC7, assembler::i386_modrm(0, MOD_REG, REG_CX), assembler::vle<int32_t>(val));
+}
+
+void orb_si_offset_imm(assembler::assembler& a, size_t offset, uint8_t mask)
+{
+	if(offset > 127)
+		a(0x80, assembler::i386_modrm(1, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), mask);
+	else
+		a(0x80, assembler::i386_modrm(1, MOD_OFF_1, REG_SI), (uint8_t)offset, mask);
+}
+
+void jnz_near(assembler::assembler& a, assembler::label& l)
+{
+	a(0x75, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
+}
+
+void jz_near(assembler::assembler& a, assembler::label& l)
+{
+	a(0x74, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
+}
+
+void jmp_near(assembler::assembler& a, assembler::label& l)
+{
+	a(0xEB, assembler::relocation_tag(assembler::i386_reloc_rel8, l), 0x00);
+}
+
+void mov_dxPax_imm(assembler::assembler& a, uint8_t val)
+{
+	a(0xC6, assembler::i386_modrm(0, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1), val);
+}
+
+void movb_dxPax_reg(assembler::assembler& a, uint8_t reg)
+{
+	a(0x88, assembler::i386_modrm(reg, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1));
+}
+
+void cmp_dxPax_imm(assembler::assembler& a, uint8_t val)
+{
+	a(0x80, assembler::i386_modrm(7, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1), val);
+}
+
+void andb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x80, assembler::i386_modrm(4, MOD_REG, reg), val);
+}
+
+void andd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x83, assembler::i386_modrm(4, MOD_REG, reg), val);
+}
+
+void cmpb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x80, assembler::i386_modrm(7, MOD_REG, reg), val);
+}
+
+void cmpd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x83, assembler::i386_modrm(7, MOD_REG, reg), val);
+}
+
+void addb_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x80, assembler::i386_modrm(0, MOD_REG, reg), val);
+}
+
+void addd_reg_imm(assembler::assembler& a, uint8_t reg, uint8_t val)
+{
+	a(0x83, assembler::i386_modrm(0, MOD_REG, reg), val);
+}
+
+void sbbb_reg_reg(assembler::assembler& a, uint8_t dst, uint8_t src)
+{
+	a(0x18, assembler::i386_modrm(src, MOD_REG, dst));
+}
+
+void sbbd_reg_reg(assembler::assembler& a, uint8_t dst, uint8_t src)
+{
+	a(0x19, assembler::i386_modrm(src, MOD_REG, dst));
+}
+
+void mov_si_offset_si_word(assembler::assembler& a, size_t offset, bool amd64)
+{
+	if(offset > 127)
+		a(0x66, 0x8B, assembler::i386_modrm(REG_SI, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
+	else
+		a(0x66, 0x8B, assembler::i386_modrm(REG_SI, MOD_OFF_1, REG_SI), offset);
+	if(amd64) a(0x48);
+	a(0x81, assembler::i386_modrm(4, MOD_REG, REG_SI), assembler::vle<int32_t>(0xFFFF));
+}
+
+void lea_load_out_addr_di(assembler::assembler& a, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0x8D, assembler::i386_modrm(REG_DI, MOD_NO_OFF, RM_SIB), assembler::i386_sib(REG_DX, REG_AX, SCALE_1));
+}
+
+void add_ax_cx(assembler::assembler& a, bool amd64)
+{
+	if(amd64) a(0x48);
+	a(0x01, assembler::i386_modrm(REG_CX, MOD_REG, REG_AX));
+}
+
+void call_label(assembler::assembler& a, assembler::label& l, uint8_t amd64_tmpreg, bool amd64)
+{
+	if(amd64) {
+		a(0x48 | ((amd64_tmpreg&8) ? 1 : 0), 0xB8 | (amd64_tmpreg&7), 
+			assembler::relocation_tag(assembler::i386_reloc_abs64, l), assembler::pad_tag(8),
+			0x40 | ((amd64_tmpreg&8) ? 1 : 0), 0xFF, assembler::i386_modrm(2, MOD_REG, (amd64_tmpreg&7)));
+	} else
+		a(0xE8, assembler::relocation_tag(assembler::i386_reloc_rel32, l), assembler::pad_tag(4));
+}
+
+void push_gp(assembler::assembler& a, uint8_t reg)
+{
+	a(0x50 + (reg&7));
+}
+
+void pop_gp(assembler::assembler& a, uint8_t reg)
+{
+	a(0x58 + (reg&7));
+}
+
+void add_esp_imm(assembler::assembler& a, int8_t val)
+{
+	a(0x83, assembler::i386_modrm(0, MOD_REG, REG_SP), val);
+}
+
+void load_gp_esp_n(assembler::assembler& a, uint8_t reg, int8_t offset)
+{
+	a(0x8B, assembler::i386_modrm(reg, MOD_OFF_1, RM_SIB), assembler::i386_sib(REG_SP, INDEX_NONE, SCALE_1),
+		offset);
+}
+
+void mov_si_offset_imm(assembler::assembler& a, int32_t offset, uint8_t val)
+{
+	if(offset > 127)
+		a(0xC6, assembler::i386_modrm(0, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset), val);
+	else
+		a(0xC6, assembler::i386_modrm(0, MOD_OFF_1, REG_SI), offset, val);
+}
+
+void mov_ax_imm(assembler::assembler& a, size_t val, bool amd64)
+{
+	if(amd64) a(0x48, 0xB8, assembler::vle<uint64_t>(val));
+	else a(0xB8, assembler::vle<uint32_t>(val));
+}
+
+void mov_si_offset_word(assembler::assembler& a, int32_t offset, uint8_t reg)
+{
+	if(offset > 127)
+		a(0x66, 0x89, assembler::i386_modrm(reg, MOD_OFF_4, REG_SI), assembler::vle<int32_t>(offset));
+	else
+		a(0x66, 0x89, assembler::i386_modrm(reg, MOD_OFF_1, REG_SI), offset);
+}
+
+void ret(assembler::assembler& a)
+{
+	a(0xC3);
+}
+
+void port_type_generic::make_routines(assembler::assembler& a, std::list<assembler::label>& labels)
+{
+	bool amd64 = i386_amd64();
+	assembler::label& axisprint = (alloc_label(labels) = assembler::label((void*)axis_print));
+	assembler::label& axisread = (alloc_label(labels) = assembler::label((void*)read_axis_value));
+	a._label(alloc_label(labels), "serialize");
+	if(!amd64) {
+		//Emit extra prologue for serialize.
+		push_gp(a, REG_SI);
+		push_gp(a, REG_DX);
+		load_gp_esp_n(a, REG_SI, 16);
+		load_gp_esp_n(a, REG_DX, 20);
+	}
+	//SI: State block.
+	//DX: Output buffer.
+	//AX: Counter.
+	xor_ax_ax(a, amd64);
+	for(auto& i : serialize_instructions) {
+		switch(i.type) {
+		case 0: { //Button.
+/*
+			This is really bad:
+			movb_si_offset(a, i.offset, REG_CX);
+			andb_reg_imm(a, REG_CX, i.mask);
+			cmpb_reg_imm(a, REG_CX, i.mask);
+			sbbb_reg_reg(a, REG_CX, REG_CX);
+			andb_reg_imm(a, REG_CX, 0x2E - i.character);
+			addb_reg_imm(a, REG_CX, i.character);
+			movb_dxPax_reg(a, REG_CX);
+			//Better but still bad.
+			movzbl_si_offset(a, i.offset, REG_CX);
+			andd_reg_imm(a, REG_CX, i.mask);
+			cmpd_reg_imm(a, REG_CX, i.mask);
+			sbbd_reg_reg(a, REG_CX, REG_CX);
+			andd_reg_imm(a, REG_CX, 0x2E - i.character);
+			addd_reg_imm(a, REG_CX, i.character);
+			movb_dxPax_reg(a, REG_CX);
+*/
+			assembler::label& button_set = alloc_label(labels);
+			assembler::label& end_char = alloc_label(labels);
+			testb_si_offset_imm(a, i.offset, i.mask);
+			jnz_near(a, button_set);
+			mov_dxPax_imm(a, '.');
+			jmp_near(a, end_char);
+			a._label(button_set);
+			mov_dxPax_imm(a, i.character);
+			a._label(end_char);
+
+			inc_ax(a, amd64);
+			break;
+		}
+		case 1: //Axis
+			if(!amd64) push_gp(a, REG_DI);
+			push_gp(a, REG_SI);
+			push_gp(a, REG_DX);
+			push_gp(a, REG_AX);
+			mov_si_offset_si_word(a, i.offset, amd64);
+			lea_load_out_addr_di(a, amd64);
+			if(!amd64) push_gp(a, REG_SI);
+			if(!amd64) push_gp(a, REG_DI);
+			call_label(a, axisprint, 11, amd64);
+			if(!amd64) add_esp_imm(a, 0x8);
+			pop_gp(a, REG_CX);	//POP CX instead of AX so we can add the return value.
+			pop_gp(a, REG_DX);
+			pop_gp(a, REG_SI);
+			if(!amd64) pop_gp(a, REG_DI);
+			add_ax_cx(a, amd64);
+			break;
+		case 2: //Pipe character
+		case 3:
+			mov_dxPax_imm(a, '|');
+			inc_ax(a, amd64);
+			break;
+		case 4: //End or nothing
+		case 5:
+			if(!amd64) pop_gp(a, REG_DX);
+			if(!amd64) pop_gp(a, REG_SI);
+			ret(a);
+			break;
+		}
+	}
+	a._label(alloc_label(labels), "deserialize");
+	if(!amd64) {
+		//Emit extra prologue for deserialize.
+		push_gp(a, REG_SI);
+		push_gp(a, REG_DX);
+		load_gp_esp_n(a, REG_SI, 16);
+		load_gp_esp_n(a, REG_DX, 20);
+	}
+	//SI: State block.
+	//DX: Output buffer.
+	//AX: Counter.
+	xor_ax_ax(a, amd64);
+	for(size_t i = 0; i < storage_size; i++)
+		mov_si_offset_imm(a, i, 0);
+	for(auto& i : serialize_instructions) {
+		switch(i.type) {
+		case 0: { //Button.
+			assembler::label& no_progress = alloc_label(labels);
+			assembler::label& clear_button = alloc_label(labels);
+			cmp_dxPax_imm(a, '|');
+			jz_near(a, no_progress);
+			cmp_dxPax_imm(a, '\r');
+			jz_near(a, no_progress);
+			cmp_dxPax_imm(a, '\n');
+			jz_near(a, no_progress);
+			cmp_dxPax_imm(a, '\0');
+			jz_near(a, no_progress);
+			cmp_dxPax_imm(a, ' ');
+			jz_near(a, clear_button);
+			cmp_dxPax_imm(a, '.');
+			jz_near(a, clear_button);
+			orb_si_offset_imm(a, i.offset, i.mask);
+			a._label(clear_button);
+			inc_ax(a, amd64);
+			a._label(no_progress);
+			break;
+		}
+		case 1: //Axis
+			if(!amd64) push_gp(a, REG_DI);
+			push_gp(a, REG_SI);
+			push_gp(a, REG_DX);
+			push_gp(a, REG_AX);
+			mov_reg_reg(a, REG_DI, REG_DX, amd64);
+			mov_reg_reg(a, REG_SI, REG_SP, amd64);
+			if(!amd64) push_gp(a, REG_SI);
+			if(!amd64) push_gp(a, REG_DI);
+			call_label(a, axisread, 11, amd64);
+			if(!amd64) add_esp_imm(a, 0x8);
+			mov_reg_reg(a, REG_CX, REG_AX, amd64);
+			pop_gp(a, REG_AX);
+			pop_gp(a, REG_DX);
+			pop_gp(a, REG_SI);
+			if(!amd64) pop_gp(a, REG_DI);
+			mov_si_offset_word(a, i.offset, REG_CX);
+			break;
+		case 2: //Pipe character 1
+			break;  //Do nothing.
+		case 3: //Pipe character 2 
+		case 4: { //Pipe character 3
+			assembler::label& not_last_pipe = alloc_label(labels);
+			assembler::label& goto_out = alloc_label(labels);
+			assembler::label& loop = alloc_label(labels);
+			a._label(loop);
+			cmp_dxPax_imm(a, '|');
+			jz_near(a, goto_out);
+			cmp_dxPax_imm(a, '\r');
+			jz_near(a, goto_out);
+			cmp_dxPax_imm(a, '\n');
+			jz_near(a, goto_out);
+			cmp_dxPax_imm(a, '\0');
+			jz_near(a, goto_out);
+			inc_ax(a, amd64);
+			jmp_near(a, loop);
+			a._label(goto_out);
+			if(i.type == 3) {
+				cmp_dxPax_imm(a, '|');
+				jnz_near(a, not_last_pipe);
+				inc_ax(a, amd64);
+				a._label(not_last_pipe);
+			} else {
+				if(!amd64) pop_gp(a, REG_DX);
+				if(!amd64) pop_gp(a, REG_SI);
+				ret(a);
+			}
+			break;
+		}
+		case 5:
+			mov_ax_imm(a, DESERIALIZE_SPECIAL_BLANK, amd64);
+			if(!amd64) pop_gp(a, REG_DX);
+			if(!amd64) pop_gp(a, REG_SI);
+			ret(a);
+			break;
+		}
+	}
+	
+}
+#else
+void port_type_generic::make_routines(assembler::assembler& a, std::list<assembler::label>& labels)
+{
+	throw std::runtime_error("ASM on this arch not supported");
+}
+
+#endif

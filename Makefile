@@ -37,6 +37,11 @@ CFLAGS += -DUSE_LIBGCRYPT_SHA256
 LDFLAGS += -lgcrypt -lgpg-error
 endif
 
+ifeq ($(ARCHITECTURE), I386)
+CFLAGS += -DARCH_IS_I386
+else
+endif
+
 
 export
 

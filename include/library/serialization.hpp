@@ -2,6 +2,7 @@
 #define _library__serialization__hpp__included__
 
 #include <cstdlib>
+#include <map>
 
 template<typename T1, typename T2, size_t ssize, bool be>
 void _write_common(unsigned char* target, T1 value)

@@ -172,7 +172,7 @@ void sha256::real_finish(uint8_t* hash)
 
 void sha256::real_write(const uint8_t* data, size_t datalen)
 {
-#if defined(__i386__) || defined(__x86_64__)
+#ifdef ARCH_IS_I386
 	//First pad blockbytes to multiple of four.
 	size_t i = 0;
 	while(blockbytes & 3 && i < datalen) {

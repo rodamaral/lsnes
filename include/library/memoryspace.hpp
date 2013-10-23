@@ -111,7 +111,7 @@ public:
 /**
  * Get system endianess.
  */
-#if (defined(__i386__) || defined(__x86_64__))
+#ifdef ARCH_IS_I386
 	static int get_system_endian() throw() { return -1; }
 #else
 	static int get_system_endian() throw() { if(!sysendian) sysendian = _get_system_endian(); return sysendian; }
@@ -119,7 +119,7 @@ public:
 /**
  * Do native unaligned reads work?
  */
-#if (defined(__i386__) || defined(__x86_64__))
+#ifdef ARCH_IS_I386
 	static int can_read_unaligned() throw() { return true; }
 #else
 	static int can_read_unaligned() throw() { return false; }

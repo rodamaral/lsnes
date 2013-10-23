@@ -135,3 +135,8 @@ USE_LIBGCRYPT=yes
 
 # Postfix for boost for host builds.
 HOST_BOOST_POSTFIX=
+
+# The target architecture
+# I386 - I386/AMD64
+# Leave empty for generic.
+ARCHITECTURE=
