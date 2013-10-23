@@ -1,5 +1,6 @@
 #include "string.hpp"
 #include "minmax.hpp"
+#include "threadtypes.hpp"
 #include <cctype>
 #include <boost/regex.hpp>
 
@@ -103,6 +104,8 @@ const std::string& regex_results::operator[](size_t i) const
 regex_results regex(const std::string& regexp, const std::string& str, const char* ex) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	static mutex_class m;
+	umutex_class h(m);
 	static std::map<std::string, boost::regex*> regexps;
 	if(!regexps.count(regexp)) {
 		boost::regex* y = NULL;
