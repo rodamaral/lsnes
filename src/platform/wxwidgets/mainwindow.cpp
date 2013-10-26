@@ -459,6 +459,11 @@ namespace
 		platform::queue("load-smart " + file.get_path());
 	}
 
+	void recent_script_selected(const recentfile_path& file)
+	{
+		platform::queue("run-lua " + file.get_path());
+	}
+
 	wxString getname()
 	{
 		std::string windowname = "lsnes rr" + lsnes_version + " [";
@@ -959,6 +964,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_special_sub(wxT("Recent Movies"), recent_movies = new recent_menu<recentfile_path>(this,
 		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt",
 		recent_movie_selected));
+	menu_special_sub(wxT("Recent Lua scripts"), recent_scripts = new recent_menu<recentfile_path>(this,
+		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-scripts.txt",
+		recent_script_selected));
 	menu_separator();
 	menu_entry(wxID_CONFLICTRESOLUTION, wxT("Conflict resolution"));
 	menu_end_sub();
@@ -1315,10 +1323,13 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 	case wxID_RUN_SCRIPT:
 		platform::queue("run-script " + pick_file_member(this, "Select Script", project_otherpath()));
 		return;
-	case wxID_RUN_LUA:
-		platform::queue("run-lua " + choose_file_load(this, "Select Lua Script", project_otherpath(),
-			filetype_lua_script));
+	case wxID_RUN_LUA: {
+		std::string f = choose_file_load(this, "Select Lua Script", project_otherpath(),
+			filetype_lua_script);
+		platform::queue("run-lua " + f);
+		recent_scripts->add(f);
 		return;
+	}
 	case wxID_RESET_LUA:
 		platform::queue("reset-lua");
 		return;

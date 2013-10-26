@@ -53,6 +53,7 @@ public:
 	void request_rom(rom_request& req);
 	recent_menu<recentfile_multirom>* recent_roms;
 	recent_menu<recentfile_path>* recent_movies;
+	recent_menu<recentfile_path>* recent_scripts;
 	loadrom_menu* loadroms;
 private:
 	void do_load_rom_image(core_type* t);
