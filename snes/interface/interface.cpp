@@ -28,4 +28,9 @@ time_t Interface::randomSeed()
   return time(0);
 }
 
+void Interface::notifyLatched()
+{
+  //Nothing.
+}
+
 }
