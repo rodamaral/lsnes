@@ -9,6 +9,7 @@ void CPU::step_auto_joypad_poll() {
 
     if(status.auto_joypad_active && status.auto_joypad_latch) {
       if(status.auto_joypad_counter == 0) {
+        interface->notifyLatched();
         input.port1->latch(1);
         input.port2->latch(1);
         input.port1->latch(0);
