@@ -33,6 +33,7 @@ void CPU::mmio_w2183(uint8 data) {
 //strobing $4016.d0 affects both controller port latches.
 //$4017 bit 0 writes are ignored.
 void CPU::mmio_w4016(uint8 data) {
+  if(data&1) interface->notifyLatched();
   input.port1->latch(data & 1);
   input.port2->latch(data & 1);
 }
