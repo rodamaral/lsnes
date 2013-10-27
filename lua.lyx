@@ -4354,5 +4354,26 @@ load: New movie is being loaded.
 unsaferewind: Unsafe rewind is happening.
 \end_layout
 
+\begin_layout Subsection
+on_latch: Latch line is rising
+\end_layout
+
+\begin_layout Itemize
+Callback: on_latch(<core-dependent-parameters>)
+\end_layout
+
+\begin_layout Standard
+Called when latch line for controller is rising.
+ Some cores may not support this.
+\end_layout
+
+\begin_layout Itemize
+bsnes core: Called with no parameters.
+\end_layout
+
+\begin_layout Itemize
+gambatte core: Not supported.
+\end_layout
+
 \end_body
 \end_document
