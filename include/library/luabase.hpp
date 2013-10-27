@@ -86,6 +86,13 @@ public:
 		T val;
 		_store_tag(T& a, T v) : addr(a), val(v) {}
 	};
+	//Auxillary type for vararg-tag.
+	struct vararg_tag
+	{
+		std::list<std::string> args;
+		vararg_tag(std::list<std::string>& _args) : args(_args) {}
+		int pushargs(lua_state& L);
+	};
 
 	//Auxillary type for numeric-tag.
 	template<typename T> struct _numeric_tag
@@ -171,6 +178,12 @@ private:
 		tag.addr = tag.val;
 		_callback(argc, args...);
 		tag.addr = NULL;
+	}
+
+	template<typename... T> void _callback(int argc, vararg_tag tag, T... args)
+	{
+		int e = tag.pushargs(*this);
+		_callback(argc + e, args...);
 	}
 
 	template<typename... T> void _callback(int argc, nil_tag tag, T... args)

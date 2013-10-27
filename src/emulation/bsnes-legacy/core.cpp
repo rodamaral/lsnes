@@ -348,6 +348,12 @@ namespace
 			return ecore_callbacks->get_randomseed();
 		}
 
+		void notifyLatched()
+		{
+			std::list<std::string> dummy;
+			ecore_callbacks->notify_latch(dummy);
+		}
+
 		void videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan);
 
 		void audioSample(int16_t l_sample, int16_t r_sample)

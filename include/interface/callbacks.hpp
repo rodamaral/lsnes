@@ -2,6 +2,8 @@
 #define _interface__callbacks__hpp__included__
 
 #include <cstdint>
+#include <string>
+#include <list>
 #include "library/framebuffer.hpp"
 
 /**
@@ -21,6 +23,10 @@ public:
  * Returns the actual input value used.
  */
 	virtual int16_t set_input(unsigned port, unsigned index, unsigned control, int16_t value) = 0;
+/**
+ * Notifies about latch. Only called on some systems.
+ */
+	virtual void notify_latch(std::list<std::string>& l) = 0;
 /**
  * Tick the RTC timer.
  */

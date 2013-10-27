@@ -419,6 +419,7 @@ uint64_t audio_irq_time;
 uint64_t controller_irq_time;
 uint64_t frame_irq_time;
 
+
 struct lsnes_callbacks : public emucore_callbacks
 {
 public:
@@ -442,6 +443,11 @@ public:
 			movb.get_movie().set_controls(f);
 		}
 		return movb.get_movie().next_input(port, index, control);
+	}
+
+	void notify_latch(std::list<std::string>& args)
+	{
+		lua_callback_do_latch(args);
 	}
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
@@ -493,6 +499,17 @@ public:
 
 namespace
 {
+	function_ptr_command<const std::string&> test4(lsnes_cmd, "test4", "test", "test", 
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			std::list<std::string> _args;
+			std::string args2 = args;
+			while(args2 != "") {
+				std::string sym;
+				extract_token(args2, sym, " \t");
+				_args.push_back(sym);
+			}
+			lua_callback_do_latch(_args);
+		});
 	function_ptr_command<> count_rerecords(lsnes_cmd, "count-rerecords", "Count rerecords",
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {

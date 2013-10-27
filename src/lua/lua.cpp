@@ -271,6 +271,7 @@ namespace
 	DEFINE_CB(pre_rewind);
 	DEFINE_CB(post_rewind);
 	DEFINE_CB(set_rewind);
+	DEFINE_CB(latch);
 }
 
 void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) throw()
@@ -501,6 +502,11 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 void lua_callback_movie_lost(const char* what)
 {
 	run_callback(on_movie_lost, std::string(what));
+}
+
+void lua_callback_do_latch(std::list<std::string>& args)
+{
+	run_callback(on_latch, lua_state::vararg_tag(args));
 }
 
 bool lua_requests_repaint = false;

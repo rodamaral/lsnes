@@ -340,3 +340,24 @@ std::string try_print_userdata(lua_state& L, int index)
 			return i.print(L, index);
 	return "no data available";
 }
+
+int lua_state::vararg_tag::pushargs(lua_state& L)
+{
+	int e = 0;
+	for(auto i : args) {
+		if(i == "")
+			L.pushnil();
+		else if(i == "true")
+			L.pushboolean(true);
+		else if(i == "false")
+			L.pushboolean(false);
+		else if(regex_match("[+-]?(|0|[1-9][0-9]*)(.[0-9]+)?([eE][+-]?(0|[1-9][0-9]*))?", i))
+			L.pushnumber(strtod(i.c_str(), NULL));
+		else if(i[0] == ':')
+			L.pushlstring(i.substr(1));
+		else
+			L.pushlstring(i);
+		e++;
+	}
+	return e;
+}
