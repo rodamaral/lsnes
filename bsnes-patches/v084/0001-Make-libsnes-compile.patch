@@ -1,13 +1,13 @@
-From 53dc2ba4aa6f590d15d9bc65cefb11f74c2448e8 Mon Sep 17 00:00:00 2001
+From 831e9614a7babbacf59935960fbaa6cfc8d49c08 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:30:36 +0200
-Subject: [PATCH 1/8] Make libsnes compile
+Subject: [PATCH 1/9] Make libsnes compile
 
 Changes between v083 and v084 had broken libsnes. Fix it so it at least
 compiles.
 ---
- ui-libsnes/libsnes.cpp |   37 +++++++++++++++++++++++++++++++++++--
- 1 files changed, 35 insertions(+), 2 deletions(-)
+ ui-libsnes/libsnes.cpp | 37 +++++++++++++++++++++++++++++++++++--
+ 1 file changed, 35 insertions(+), 2 deletions(-)
 
 diff --git a/ui-libsnes/libsnes.cpp b/ui-libsnes/libsnes.cpp
 index fbb4482..5f5ded6 100755
@@ -78,5 +78,5 @@ index fbb4482..5f5ded6 100755
    }
    SNES::cartridge.load(SNES::Cartridge::Mode::SuperGameBoy, xmlrom);
 -- 
-1.7.9.48.g85da4d
+1.8.4.rc3
 

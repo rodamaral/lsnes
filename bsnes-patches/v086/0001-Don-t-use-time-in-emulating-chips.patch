@@ -1,17 +1,17 @@
-From 11817638cce47203329f3d45486a936fdfcf36c7 Mon Sep 17 00:00:00 2001
+From 6c3da8eb6516d25e97b46d97fb0d3d24ca9ecfd0 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:37:44 +0200
-Subject: [PATCH 1/6] Don't use time() in emulating chips
+Subject: [PATCH 1/7] Don't use time() in emulating chips
 
 Instead of using time() in chip emulation, create new interface method
 currentTime(), defaulting to time(0). This way frontend can cleanly
 override the current time bsnes is using.
 ---
- snes/chip/bsx/satellaview/satellaview.cpp |    2 +-
- snes/chip/spc7110/spc7110.cpp             |    2 +-
- snes/chip/srtc/srtc.cpp                   |    2 +-
- snes/interface/interface.cpp              |    5 +++++
- snes/interface/interface.hpp              |    1 +
+ snes/chip/bsx/satellaview/satellaview.cpp | 2 +-
+ snes/chip/spc7110/spc7110.cpp             | 2 +-
+ snes/chip/srtc/srtc.cpp                   | 2 +-
+ snes/interface/interface.cpp              | 5 +++++
+ snes/interface/interface.hpp              | 1 +
  5 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/snes/chip/bsx/satellaview/satellaview.cpp b/snes/chip/bsx/satellaview/satellaview.cpp
@@ -80,5 +80,5 @@ index f1a48c0..df975e8 100755
  
  extern Interface *interface;
 -- 
-1.7.9.48.g85da4d
+1.8.4.rc3
 

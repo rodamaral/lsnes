@@ -1,26 +1,26 @@
-From 0e21eb89711c7254bdcbf7054b4bcd3abe815c6f Mon Sep 17 00:00:00 2001
+From af7fdd9f73a3eb5e9266c59bfb4dd676679b2f7d Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 01:52:08 +0200
-Subject: [PATCH 4/8] Save controller state when savestating
+Subject: [PATCH 4/9] Save controller state when savestating
 
 When savestating, save the controller state and restore it upon loadstate.
 Prevents libsnes from mixing up buttons.
 ---
- snes/controller/controller.cpp            |    8 ++++++
- snes/controller/controller.hpp            |    2 +
- snes/controller/gamepad/gamepad.cpp       |   13 ++++++++++
- snes/controller/gamepad/gamepad.hpp       |    2 +-
- snes/controller/justifier/justifier.cpp   |   36 +++++++++++++++++++++++++++++
- snes/controller/justifier/justifier.hpp   |    1 +
- snes/controller/mouse/mouse.cpp           |   13 ++++++++++
- snes/controller/mouse/mouse.hpp           |    2 +-
- snes/controller/multitap/multitap.cpp     |   16 +++++++++++++
- snes/controller/multitap/multitap.hpp     |    2 +-
- snes/controller/superscope/superscope.cpp |   31 +++++++++++++++++++++++++
- snes/controller/superscope/superscope.hpp |    1 +
- snes/input/input.cpp                      |   15 ++++++++++++
- snes/input/input.hpp                      |    1 +
- snes/system/serialization.cpp             |    1 +
+ snes/controller/controller.cpp            |  8 +++++++
+ snes/controller/controller.hpp            |  2 ++
+ snes/controller/gamepad/gamepad.cpp       | 13 +++++++++++
+ snes/controller/gamepad/gamepad.hpp       |  2 +-
+ snes/controller/justifier/justifier.cpp   | 36 +++++++++++++++++++++++++++++++
+ snes/controller/justifier/justifier.hpp   |  1 +
+ snes/controller/mouse/mouse.cpp           | 13 +++++++++++
+ snes/controller/mouse/mouse.hpp           |  2 +-
+ snes/controller/multitap/multitap.cpp     | 16 ++++++++++++++
+ snes/controller/multitap/multitap.hpp     |  2 +-
+ snes/controller/superscope/superscope.cpp | 31 ++++++++++++++++++++++++++
+ snes/controller/superscope/superscope.hpp |  1 +
+ snes/input/input.cpp                      | 15 +++++++++++++
+ snes/input/input.hpp                      |  1 +
+ snes/system/serialization.cpp             |  1 +
  15 files changed, 141 insertions(+), 3 deletions(-)
 
 diff --git a/snes/controller/controller.cpp b/snes/controller/controller.cpp
@@ -341,5 +341,5 @@ index f7d6f3b..08e7051 100755
    if(cartridge.mode() == Cartridge::Mode::SufamiTurbo) sufamiturbo.serialize(s);
    if(cartridge.mode() == Cartridge::Mode::SuperGameBoy) icd2.serialize(s);
 -- 
-1.7.9.48.g85da4d
+1.8.4.rc3
 
