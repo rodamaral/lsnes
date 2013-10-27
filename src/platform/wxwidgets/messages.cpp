@@ -4,6 +4,7 @@
 #include "core/window.hpp"
 
 #define MAXMESSAGES 20
+#define COMMAND_HISTORY_SIZE 500
 
 wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	: wxPanel(_parent)
@@ -48,8 +49,8 @@ wxwin_messages::wxwin_messages()
 
 	wxBoxSizer* cmd_s = new wxBoxSizer(wxHORIZONTAL);
 	wxButton* execute;
-	cmd_s->Add(command = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
-		wxTE_PROCESS_ENTER), 1, wxEXPAND);
+	cmd_s->Add(command = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+		0, NULL, wxTE_PROCESS_ENTER), 1, wxEXPAND);
 	cmd_s->Add(execute = new wxButton(this, wxID_ANY, wxT("Execute")), 0, wxGROW);
 	command->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(wxwin_messages::on_execute),
 		NULL, this);
@@ -144,6 +145,16 @@ void wxwin_messages::on_execute(wxCommandEvent& e)
 	std::string cmd = tostdstring(command->GetValue());
 	if(cmd == "")
 		return;
+	command->Insert(towxstring(cmd), 0);
+	//If command is already there, delete the previous.
+	for(unsigned i = 1; i < command->GetCount(); i++)
+		if(tostdstring(command->GetString(i)) == cmd) {
+			command->Delete(i);
+			break;
+		}
+	//Delete old commands to prevent box becoming unmageable.
+	if(command->GetCount() > COMMAND_HISTORY_SIZE)
+		command->Delete(command->GetCount() - 1);
 	platform::queue(cmd);
 }
 

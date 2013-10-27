@@ -31,7 +31,7 @@ public:
 	void on_close(wxCloseEvent& e);
 	void reshow();
 private:
-	wxTextCtrl* command;
+	wxComboBox* command;
 	panel* mpanel;
 };
 
