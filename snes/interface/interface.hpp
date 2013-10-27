@@ -7,6 +7,7 @@ struct Interface {
   virtual void message(const string &text);
   virtual time_t currentTime();
   virtual time_t randomSeed();
+  virtual void notifyLatched();
 };
 
 extern Interface *interface;
