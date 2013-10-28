@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include "threadtypes.hpp"
+#include "arch-detect.hpp"
 
 /**
  * Information about region of memory.

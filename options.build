@@ -138,5 +138,5 @@ HOST_BOOST_POSTFIX=
 
 # The target architecture
 # I386 - I386/AMD64
-# Leave empty for generic.
+# Leave empty for generic/autodetect.
 ARCHITECTURE=

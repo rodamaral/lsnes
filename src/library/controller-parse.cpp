@@ -1,6 +1,7 @@
 #include "controller-parse.hpp"
 #include "string.hpp"
 #include "assembler.hpp"
+#include "arch-detect.hpp"
 #include <algorithm>
 
 namespace

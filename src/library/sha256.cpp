@@ -3,7 +3,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-
+#include "arch-detect.hpp"
 
 //Since this isn't used for anything too performance-sensitive, just write a implementation, no need to specially
 //optimize.
