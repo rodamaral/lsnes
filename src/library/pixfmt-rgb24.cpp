@@ -5,16 +5,21 @@ template<bool uvswap>
 pixel_format_rgb24<uvswap>::~pixel_format_rgb24() throw() {}
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::decode(uint8_t* target, const uint8_t* src, size_t width) throw()
+void pixel_format_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
 {
 	if(uvswap) {
 		for(size_t i = 0; i < width; i++) {
-			target[3 * i + 0] = src[3 * i + 2];
-			target[3 * i + 1] = src[3 * i + 1];
-			target[3 * i + 2] = src[3 * i + 0];
+			target[i] = (uint32_t)src[3 * i + 2] << 16;
+			target[i] |= (uint32_t)src[3 * i + 1] << 8;
+			target[i] |= src[3 * i + 0];
 		}
-	} else
-		memcpy(target, src, 3 * width);
+	} else {
+		for(size_t i = 0; i < width; i++) {
+			target[i] = (uint32_t)src[3 * i + 0] << 16;
+			target[i] |= (uint32_t)src[3 * i + 1] << 8;
+			target[i] |= src[3 * i + 2];
+		}
+	}
 }
 
 template<bool uvswap>

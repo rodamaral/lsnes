@@ -1871,6 +1871,34 @@ Draw tilemap at <x>,<y>.
  If <w>,<h> is given, that is the size of window to draw (in pixels)
 \end_layout
 
+\begin_layout Subsection
+gui.bitmap_save_png: Save a bitmap to PNG
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_save_png(string filename[, string base], BITMAP bmp,
+ PALETTE pal)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_save_png(string filename[, string base], DBITMAP
+ bmp)
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.bitmap_save_png(BITMAP bmp, PALETTE pal)
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.bitmap_save_png(DBITMAP bmp)
+\end_layout
+
+\begin_layout Standard
+Save specified bitmap <bmp>, with palette <pal> (only if paletted) into
+ PNG file <filename> (relative to <base>) or return BASE64 encoding as return
+ value.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -3849,6 +3877,61 @@ reference "sub:callback.unregister:-Unregister-"
 \end_inset
 
 ), albeit with callback name specified differently.
+\end_layout
+
+\begin_layout Section
+table bsnes
+\end_layout
+
+\begin_layout Standard
+Various bsnes-specific functions.
+\end_layout
+
+\begin_layout Subsection
+bsnes.dump_sprite: Dump a sprite
+\end_layout
+
+\begin_layout Itemize
+Syntax: BITMAP bsnes.dump_sprite([string vma, ] number addr, number width,
+ number height)
+\end_layout
+
+\begin_layout Standard
+Dumps given sprite (in native format) from memory.
+ VMA is usually 
+\begin_inset Quotes eld
+\end_inset
+
+VRAM
+\begin_inset Quotes erd
+\end_inset
+
+.
+ Width and height are given in 8x8 blocks.
+\end_layout
+
+\begin_layout Subsection
+bsnes.dump_palette: Dump a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: PALETTE bsnes.dump_palette([string vma, ] number addr, bool full256,
+ bool first_trans)
+\end_layout
+
+\begin_layout Standard
+Dumps a palette from memory.
+ VMA is usually 
+\begin_inset Quotes eld
+\end_inset
+
+CGRAM
+\begin_inset Quotes erd
+\end_inset
+
+.
+ If <full256> is true, 256 colors are dumped (otherwise 16).
+ If <first_trans> is true, first color is forced transparent.
 \end_layout
 
 \begin_layout Section

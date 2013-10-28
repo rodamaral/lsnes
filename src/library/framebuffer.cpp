@@ -1,5 +1,5 @@
 #include "framebuffer.hpp"
-#include "png.hpp"
+#include "png-codec.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
 #include "utf8.hpp"
@@ -287,14 +287,17 @@ void framebuffer_raw::save(std::vector<char>& data) throw(std::bad_alloc)
 void framebuffer_raw::save_png(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
 	uint8_t* memory = reinterpret_cast<uint8_t*>(addr);
-	uint8_t* buffer = new uint8_t[3 * static_cast<size_t>(width) * height];
+	png_encodedable_image img;
+	img.width = width;
+	img.height = height;
+	img.has_palette = false;
+	img.has_alpha = false;
+	img.data.resize(static_cast<size_t>(width) * height);
 	for(size_t i = 0; i < height; i++)
-		fmt->decode(buffer + 3 * width * i, memory + stride * i, width);
+		fmt->decode(&img.data[width * i], memory + stride * i, width);
 	try {
-		save_png_data(file, buffer, width, height);
-		delete[] buffer;
+		img.encode(file);
 	} catch(...) {
-		delete[] buffer;
 		throw;
 	}
 }

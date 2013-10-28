@@ -35,9 +35,9 @@ public:
  */
 	pixel_format() throw(std::bad_alloc);
 /**
- * Decode pixel format data into RGB24 data (R, G, B).
+ * Decode pixel format data into RGB data (0, R, G, B).
  */
-	virtual void decode(uint8_t* target, const uint8_t* src, size_t width)
+	virtual void decode(uint32_t* target, const uint8_t* src, size_t width)
 		throw() = 0;
 /**
  * Decode pixel format data into RGB (with specified byte order).

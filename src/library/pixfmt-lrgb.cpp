@@ -4,7 +4,7 @@ pixel_format_lrgb::~pixel_format_lrgb() throw()
 {
 }
 
-void pixel_format_lrgb::decode(uint8_t* target, const uint8_t* src, size_t width)
+void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width)
 	throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
@@ -14,9 +14,10 @@ void pixel_format_lrgb::decode(uint8_t* target, const uint8_t* src, size_t width
 		uint32_t r = l * ((word >> 0) & 0x1F);
 		uint32_t g = l * ((word >> 5) & 0x1F);
 		uint32_t b = l * ((word >> 10) & 0x1F);
-		target[3 * i + 0] = ((r << 8) - r + 248) / 496;
-		target[3 * i + 1] = ((g << 8) - g + 248) / 496;
-		target[3 * i + 2] = ((b << 8) - b + 248) / 496;
+		uint32_t x = (((r << 8) - r + 248) / 496) << 16;
+		x |= (((g << 8) - g + 248) / 496) << 8;
+		x |= ((b << 8) - b + 248) / 496;
+		target[i] = x;
 	}
 }
 

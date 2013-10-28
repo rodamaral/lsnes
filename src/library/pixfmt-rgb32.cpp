@@ -2,14 +2,11 @@
 
 pixel_format_rgb32::~pixel_format_rgb32() throw() {}
 
-void pixel_format_rgb32::decode(uint8_t* target, const uint8_t* src, size_t width) throw()
+void pixel_format_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
-	for(size_t i = 0; i < width; i++) {
-		target[3 * i + 0] = _src[i] >> 16;
-		target[3 * i + 1] = _src[i] >> 8;
-		target[3 * i + 2] = _src[i];
-	}
+	for(size_t i = 0; i < width; i++)
+		target[i] = _src[i];
 }
 
 void pixel_format_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width,

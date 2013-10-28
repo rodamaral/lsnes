@@ -11,7 +11,7 @@ class pixel_format_rgb16 : public pixel_format
 {
 public:
 	~pixel_format_rgb16() throw();
-	void decode(uint8_t* target, const uint8_t* src, size_t width)
+	void decode(uint32_t* target, const uint8_t* src, size_t width)
 		throw();
 	void decode(uint32_t* target, const uint8_t* src, size_t width,
 		const pixel_format_aux_palette<false>& auxp) throw();

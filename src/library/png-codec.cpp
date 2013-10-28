@@ -1,4 +1,4 @@
-#include "png-decoder.hpp"
+#include "png-codec.hpp"
 #include "serialization.hpp"
 #include "minmax.hpp"
 #include "zip.hpp"
@@ -10,6 +10,14 @@
 #include <stdexcept>
 #include <zlib.h>
 #include <string.hpp>
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/stream_buffer.hpp>
+#include <boost/iostreams/filter/symmetric.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
 
 namespace
 {
@@ -39,6 +47,119 @@ namespace
 	{
 		free(addr);
 	}
+
+	int size_to_bits(unsigned v)
+	{
+		if(v > 256) return 16;
+		if(v > 16) return 8;
+		if(v > 4) return 4;
+		if(v > 2) return 2;
+		return 1;
+	}
+
+	size_t buffer_stride(size_t width, bool has_pal, bool has_trans, size_t psize)
+	{
+		if(!has_pal)
+			return 1 + width * (has_trans ? 4 : 3);
+		else
+			return 1 + (width * size_to_bits(psize) + 7) / 8;
+	}
+
+	void write_row_pal1(char* output, const uint32_t* input, size_t w)
+	{
+		memset(output, 0, (w + 7) / 8);
+		for(size_t i = 0; i < w; i++)
+			output[i >> 3] |= ((input[i] & 1) << (7 -i % 8));
+	}
+
+	void write_row_pal2(char* output, const uint32_t* input, size_t w)
+	{
+		memset(output, 0, (w + 3) / 4);
+		for(size_t i = 0; i < w; i++)
+			output[i >> 2] |= ((input[i] & 3) << (2 * (3 - i % 4)));
+	}
+
+	void write_row_pal4(char* output, const uint32_t* input, size_t w)
+	{
+		memset(output, 0, (w + 1) / 2);
+		for(size_t i = 0; i < w; i++)
+			output[i >> 1] |= ((input[i] & 15) << (4 * (1 - i % 2)));
+	}
+
+	void write_row_pal8(char* output, const uint32_t* input, size_t w)
+	{
+		for(size_t i = 0; i < w; i++)
+			output[i] = input[i];
+	}
+
+	void write_row_pal16(char* output, const uint32_t* input, size_t w)
+	{
+		for(size_t i = 0; i < w; i++) {
+			output[2 * i + 0] = input[i] >> 8;
+			output[2 * i + 1] = input[i];
+		}
+	}
+
+	void write_row_rgba(char* output, const uint32_t* input, size_t w)
+	{
+		for(size_t i = 0; i < w; i++) {
+			output[4 * i + 0] = input[i] >> 16;
+			output[4 * i + 1] = input[i] >> 8;
+			output[4 * i + 2] = input[i];
+			output[4 * i + 3] = input[i] >> 24;
+		}	
+	}
+
+	void write_row_rgb(char* output, const uint32_t* input, size_t w)
+	{
+		for(size_t i = 0; i < w; i++) {
+			output[3 * i + 0] = input[i] >> 16;
+			output[3 * i + 1] = input[i] >> 8;
+			output[3 * i + 2] = input[i];
+		}	
+	}
+	
+	//=========================================================
+	//==================== PNG CHUNKER ========================
+	//=========================================================
+	class png_chunk_output
+	{
+	public:
+		typedef char char_type;
+		struct category : boost::iostreams::closable_tag, boost::iostreams::sink_tag {};
+		png_chunk_output(std::ostream& _os, uint32_t _type)
+			: os(_os), type(_type)
+		{
+		}
+
+		void close()
+		{
+			uint32_t crc = crc32(0, NULL, 0);
+			char fixed[12];
+			write32ube(fixed, stream.size());
+			write32ube(fixed + 4, type);
+			crc = crc32(crc, reinterpret_cast<Bytef*>(fixed + 4), 4);
+			if(stream.size() > 0)
+				crc = crc32(crc, reinterpret_cast<Bytef*>(&stream[0]), stream.size());
+			write32ube(fixed + 8, crc);
+			os.write(fixed, 8);
+			os.write(&stream[0], stream.size());
+			os.write(fixed + 8, 4);
+		}
+
+		std::streamsize write(const char* s, std::streamsize n)
+		{
+			size_t oldsize = stream.size();
+			stream.resize(oldsize + n);
+			memcpy(&stream[oldsize], s, n);
+			return n;
+		}
+	protected:
+		std::vector<char> stream;
+		std::ostream& os;
+		uint32_t type;
+	};
+	
 
 	//=========================================================
 	//=================== AUTORELEASE =========================
@@ -692,7 +813,7 @@ badtype:
 	}
 }
 
-void decode_png(std::istream& stream, png_decoded_image& out)
+void png_decoded_image::decode_png(std::istream& stream)
 {
 	png_dechunker dechunk(stream);
 	if(!dechunk.next_chunk())
@@ -806,24 +927,129 @@ next_pass:
 		}
 	}
 out:
-	std::swap(out.data, ndata);
-	std::swap(out.palette, npalette);
-	out.has_palette = (hdr.type == 3);
-	out.width = hdr.width;
-	out.height = hdr.height;
+	std::swap(data, ndata);
+	std::swap(palette, npalette);
+	has_palette = (hdr.type == 3);
+	width = hdr.width;
+	height = hdr.height;
 }
 
-void decode_png(const std::string& file, png_decoded_image& out)
+png_decoded_image::png_decoded_image(const std::string& file)
 {
 	std::istream& s = open_file_relative(file, "");
 	try {
-		decode_png(s, out);
+		decode_png(s);
 		delete &s;
 	} catch(...) {
 		delete &s;
 		throw;
 	}
 }
+
+png_decoded_image::png_decoded_image(std::istream& file)
+{
+	decode_png(file);
+}
+
+png_decoded_image::png_decoded_image()
+{
+	width = 0;
+	height = 0;
+	has_palette = false;
+}
+
+png_encodedable_image::png_encodedable_image()
+{
+	width = 0;
+	height = 0;
+	has_palette = false;
+	has_alpha = false;
+	colorkey = 0xFFFFFFFFU;
+}
+
+void png_encodedable_image::encode(const std::string& file) const
+{
+	std::ofstream s(file);
+	if(!s)
+		throw std::runtime_error("Can't open file to write PNG image to");
+	encode(s);
+}
+
+void png_encodedable_image::encode(std::ostream& file) const
+{
+	size_t pbits = size_to_bits(palette.size());
+	//Write the PNG magic.
+	char png_magic[] = {-119, 80, 78, 71, 13, 10, 26, 10};
+	file.write(png_magic, sizeof(png_magic));
+	//Write the IHDR
+	char ihdr[13];
+	write32ube(ihdr + 0, width);
+	write32ube(ihdr + 4, height);
+	ihdr[8] = has_palette ? size_to_bits(palette.size()) : 8;
+	ihdr[9] = has_palette ? 3 : (has_alpha ? 6 : 2);
+	ihdr[10] = 0; //Deflate,
+	ihdr[11] = 0;  //Filter bank 0
+	ihdr[12] = 0;  //No interlacing.
+	boost::iostreams::stream<png_chunk_output> ihdr_h(file, 0x49484452);	
+	ihdr_h.write(ihdr, sizeof(ihdr));
+	ihdr_h.close();	
+	//Write the PLTE.
+	if(has_palette) {
+		std::vector<char> data;
+		data.resize(3 * palette.size());
+		for(size_t i = 0; i < palette.size(); i++) {
+			data[3 * i + 0] = palette[i] >> 16;
+			data[3 * i + 1] = palette[i] >> 8;
+			data[3 * i + 2] = palette[i] >> 0;
+		}
+		boost::iostreams::stream<png_chunk_output> plte_h(file, 0x504C5445);	
+		plte_h.write(&data[0], data.size());
+		plte_h.close();		
+	}
+	//Write the tRNS.
+	if(has_palette && has_alpha) {
+		std::vector<char> data;
+		data.resize(palette.size());
+		for(size_t i = 0; i < palette.size(); i++)
+			data[i] = palette[i] >> 24;
+		boost::iostreams::stream<png_chunk_output> trns_h(file, 0x74524E53);	
+		trns_h.write(&data[0], data.size());
+		trns_h.close();		
+	}
+	//Write the IDAT
+	boost::iostreams::filtering_ostream idat_h;
+	boost::iostreams::zlib_params params;
+	params.noheader = false;
+	idat_h.push(boost::iostreams::zlib_compressor(params));
+	idat_h.push(png_chunk_output(file, 0x49444154));
+	std::vector<char> buf;
+	buf.resize(1 + 4 * width);
+	size_t bufstride = buffer_stride(width, has_palette, has_alpha, palette.size());
+	for(size_t i = 0; i < height; i++) {
+		buf[0] = 0;	//No filter.
+		if(has_palette)
+			switch(pbits) {
+			case 1: write_row_pal1(&buf[1], &data[width * i], width); break;
+			case 2: write_row_pal2(&buf[1], &data[width * i], width); break;
+			case 4: write_row_pal4(&buf[1], &data[width * i], width); break;
+			case 8: write_row_pal8(&buf[1], &data[width * i], width); break;
+			case 16: write_row_pal16(&buf[1], &data[width * i], width); break;
+			}
+		else if(has_alpha)
+			write_row_rgba(&buf[1], &data[width * i], width);
+		else
+			write_row_rgb(&buf[1], &data[width * i], width);
+		idat_h.write(&buf[0], bufstride);
+	}
+	idat_h.pop();
+	idat_h.pop();	
+	//Write the IEND and finish.
+	boost::iostreams::stream<png_chunk_output> iend_h(file, 0x49454E44);
+	iend_h.close();
+	if(!file)
+		throw std::runtime_error("Can't write target PNG file");
+}
+
 /*
 int main(int argc, char** argv)
 {

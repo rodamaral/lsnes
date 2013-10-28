@@ -1,7 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
-#include "library/png-decoder.hpp"
+#include "library/png-codec.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
@@ -58,8 +58,54 @@ std::string lua_palette::print()
 	return (stringfmt() << s << " " << ((s != 1) ? "colors" : "color")).str();
 }
 
+std::vector<char> lua_dbitmap::save_png() const
+{
+	png_encodedable_image img;
+	img.width = width;
+	img.height = height;
+	img.has_palette = false;
+	img.has_alpha = false;
+	img.data.resize(width * height);
+	for(size_t i = 0; i < width * height; i++) {
+		const premultiplied_color& c = pixels[i];
+		if(c.origa != 256)
+			img.has_alpha = true;
+		img.data[i] = c.orig + ((uint32_t)(c.origa - (c.origa >> 7) + (c.origa >> 8)) << 24);
+	}
+	std::ostringstream tmp1;
+	img.encode(tmp1);
+	std::string tmp2 = tmp1.str();
+	return std::vector<char>(tmp2.begin(), tmp2.end());
+}
+
+std::vector<char> lua_bitmap::save_png(const lua_palette& pal) const
+{
+	png_encodedable_image img;
+	img.width = width;
+	img.height = height;
+	img.has_palette = true;
+	img.has_alpha = false;
+	img.data.resize(width * height);
+	img.palette.resize(pal.colors.size());
+	for(size_t i = 0; i < width * height; i++) {
+		img.data[i] = pixels[i];
+	}
+	for(size_t i = 0; i < pal.colors.size(); i++) {
+		const premultiplied_color& c = pal.colors[i];
+		if(c.origa != 256)
+			img.has_alpha = true;
+		img.palette[i] = c.orig + ((uint32_t)(c.origa - (c.origa >> 7) + (c.origa >> 8)) << 24);
+	}
+	std::ostringstream tmp1;
+	img.encode(tmp1);
+	std::string tmp2 = tmp1.str();
+	return std::vector<char>(tmp2.begin(), tmp2.end());
+}
+
 namespace
 {
+	const char* base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	
 	struct render_object_bitmap : public render_object
 	{
 		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_bitmap> _bitmap,
@@ -526,6 +572,45 @@ namespace
 		return -3;
 	}
 
+	std::string base64_encode(const std::string& str)
+	{
+		std::ostringstream x;
+		unsigned pos = 0;
+		uint32_t mem = 0;
+		for(auto i : str) {
+			mem = (mem << 8) + (unsigned char)i;
+			if(++pos == 3) {
+				uint8_t c1 = (mem >> 18) & 0x3F;
+				uint8_t c2 = (mem >> 12) & 0x3F;
+				uint8_t c3 = (mem >> 6) & 0x3F;
+				uint8_t c4 = mem & 0x3F;
+				x << base64chars[c1];
+				x << base64chars[c2];
+				x << base64chars[c3];
+				x << base64chars[c4];
+				mem = 0;
+				pos = 0;
+			}
+		}
+		if(pos == 2) {
+			uint8_t c1 = (mem >> 10) & 0x3F;
+			uint8_t c2 = (mem >> 4) & 0x3F;
+			uint8_t c3 = (mem << 2) & 0x3F;
+			x << base64chars[c1];
+			x << base64chars[c2];
+			x << base64chars[c3];
+			x << "=";
+		}
+		if(pos == 1) {
+			uint8_t c1 = (mem >> 2) & 0x3F;
+			uint8_t c2 = (mem << 4) & 0x3F;
+			x << base64chars[c1];
+			x << base64chars[c2];
+			x << "==";
+		}
+		return x.str();
+	}
+
 	std::string base64_decode(const std::string& str)
 	{
 		bool end = 0;
@@ -557,10 +642,10 @@ namespace
 		return x.str();
 	}
 
-	int bitmap_load_png_fn(lua_state& L, std::function<void(png_decoded_image&)> src)
+	template<typename T>
+	int bitmap_load_png_fn(lua_state& L, T& src)
 	{
-		png_decoded_image img;
-		src(img);
+		png_decoded_image img(src);
 		if(img.has_palette) {
 			lua_bitmap* b = lua_class<lua_bitmap>::create(L, img.width, img.height);
 			lua_palette* p = lua_class<lua_palette>::create(L);
@@ -578,25 +663,70 @@ namespace
 		}
 	}
 
+	void bitmap_save_png_fn(lua_state& L, std::function<void(const std::vector<char>& buf)> fn, int index,
+		const std::string& fname)
+	{
+		std::vector<char> buf;
+		if(lua_class<lua_bitmap>::is(L, index)) {
+			lua_bitmap* b = lua_class<lua_bitmap>::get(L, index, fname.c_str());
+			lua_palette* p = lua_class<lua_palette>::get(L, index + 1, fname.c_str());
+			buf = b->save_png(*p);
+		} else if(lua_class<lua_dbitmap>::is(L, index)) {
+			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, index, fname.c_str());
+			buf = b->save_png();
+		} else
+			(stringfmt() << "Expected BITMAP or DBITMAP as argument " << index
+				<< " for gui.bitmap_save_png.").throwex();
+		fn(buf);
+	}
+
+	
 	function_ptr_luafun gui_loadbitmappng(lua_func_misc, "gui.bitmap_load_png", [](lua_state& L,
 		const std::string& fname) -> int {
 		std::string name2;
 		std::string name = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			name2 = L.get_string(2, fname.c_str());
-		return bitmap_load_png_fn(L, [&name, &name2](png_decoded_image& img) {
-			std::string name3 = resolve_file_relative(name, name2);
-			decode_png(name3, img);
-		});
+		std::string filename = resolve_file_relative(name, name2);
+		return bitmap_load_png_fn(L, filename);
 	});
 
 	function_ptr_luafun gui_loadbitmappng2(lua_func_misc, "gui.bitmap_load_png_str", [](lua_state& L,
 		const std::string& fname) -> int {
 		std::string contents = base64_decode(L.get_string(1, fname.c_str()));
-		return bitmap_load_png_fn(L, [&contents](png_decoded_image& img) {
-			std::istringstream strm(contents);
-			decode_png(strm, img);
-		});
+		std::istringstream strm(contents);
+		return bitmap_load_png_fn(L, strm);
+	});
+
+	function_ptr_luafun gui_savebitmappng(lua_func_misc, "gui.bitmap_save_png", [](lua_state& L,
+		const std::string& fname) -> int {
+		int index = 1;
+		std::string name, name2;
+		if(L.type(index) == LUA_TSTRING) {
+			name = L.get_string(index, fname.c_str());
+			index++;
+		}
+		if(L.type(index) == LUA_TSTRING) {
+			name2 = L.get_string(index, fname.c_str());
+			index++;
+		}
+		if(index > 1) {
+			std::string filename = resolve_file_relative(name, name2);
+			std::ofstream strm(filename, std::ios::binary);
+			if(!strm)
+				throw std::runtime_error("Can't open output file");
+			bitmap_save_png_fn(L, [&strm](const std::vector<char>& x) { strm.write(&x[0], x.size()); },
+				index, fname);
+			if(!strm)
+				throw std::runtime_error("Can't write output file");
+			return 0;
+		} else {
+			std::ostringstream strm;
+			bitmap_save_png_fn(L, [&strm](const std::vector<char>& x) { strm.write(&x[0], x.size()); }, 1,
+				fname);
+			L.pushlstring(base64_encode(strm.str()));
+			return 1;
+		}
 	});
 
 	int bitmap_palette_fn(lua_state& L, std::istream& s)

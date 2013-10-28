@@ -6,7 +6,7 @@ pixel_format_rgb15<uvswap>::~pixel_format_rgb15() throw()
 }
 
 template<bool uvswap>
-void pixel_format_rgb15<uvswap>::decode(uint8_t* target, const uint8_t* src, size_t width)
+void pixel_format_rgb15<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width)
 	throw()
 {
 	const uint16_t* _src = reinterpret_cast<const uint16_t*>(src);
@@ -15,9 +15,9 @@ void pixel_format_rgb15<uvswap>::decode(uint8_t* target, const uint8_t* src, siz
 		uint64_t r = ((word >> (uvswap ? 10 : 0)) & 0x1F);
 		uint64_t g = ((word >> 5) & 0x1F);
 		uint64_t b = ((word >> (uvswap ? 0 : 10)) & 0x1F);
-		target[3 * i + 0] = ((r << 8) - r + 15) / 31;
-		target[3 * i + 1] = ((g << 8) - g + 15) / 31;
-		target[3 * i + 2] = ((b << 8) - b + 15) / 31;
+		target[i] = (((r << 8) - r + 15) / 31) << 16;
+		target[i] |= (((g << 8) - g + 15) / 31) << 8;
+		target[i] |= (((b << 8) - b + 15) / 31);
 	}
 }
 
