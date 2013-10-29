@@ -3925,7 +3925,7 @@ bsnes.dump_sprite: Dump a sprite
 
 \begin_layout Itemize
 Syntax: BITMAP bsnes.dump_sprite([string vma, ] number addr, number width,
- number height)
+ number height[, number stride])
 \end_layout
 
 \begin_layout Standard
@@ -3939,7 +3939,8 @@ VRAM
 \end_inset
 
 .
- Width and height are given in 8x8 blocks.
+ <Width> and <height> are given in 8x8 blocks.
+ <Stride> overrides row stride (default 512).
 \end_layout
 
 \begin_layout Subsection

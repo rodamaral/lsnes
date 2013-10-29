@@ -27,6 +27,7 @@ namespace
 		lua_bitmap* b = lua_class<lua_bitmap>::create(L, width * 8, height * 8);
 		size_t stride1 = 32;
 		size_t stride2 = 512;
+		L.get_numeric_argument<size_t>(index++, stride2, fname.c_str());
 		for(unsigned j = 0; j < height; j++)
 			for(unsigned i = 0; i < width; i++) {
 				uint64_t sbase = addr + stride2 * j + stride1 * i;
