@@ -124,6 +124,8 @@ enum
 	wxID_HEXEDITOR,
 	wxID_MULTITRACK,
 	wxID_CHDIR,
+	wxID_RLUA_FIRST,
+	wxID_RLUA_LAST = wxID_RLUA_FIRST + 16,
 };
 
 
@@ -965,7 +967,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-movies.txt",
 		recent_movie_selected));
 	menu_special_sub(wxT("Recent Lua scripts"), recent_scripts = new recent_menu<recentfile_path>(this,
-		wxID_RMOVIE_FIRST, wxID_RMOVIE_LAST, get_config_path() + "/recent-scripts.txt",
+		wxID_RLUA_FIRST, wxID_RLUA_LAST, get_config_path() + "/recent-scripts.txt",
 		recent_script_selected));
 	menu_separator();
 	menu_entry(wxID_CONFLICTRESOLUTION, wxT("Conflict resolution"));
