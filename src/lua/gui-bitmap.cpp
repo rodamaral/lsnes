@@ -2,6 +2,8 @@
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
 #include "library/png-codec.hpp"
+#include "library/sha256.hpp"
+#include "library/serialization.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
@@ -316,6 +318,74 @@ namespace
 		} else
 			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_size.");
 		return 2;
+	});
+
+	function_ptr_luafun hash_bitmap(lua_func_misc, "gui.bitmap_hash", [](lua_state& L, const std::string& fname)
+		-> int {
+		sha256 h;
+		const int buffersize = 256;
+		int bufferuse = 0;
+		char buf[buffersize];
+		memset(buf, 0, buffersize);
+		if(lua_class<lua_bitmap>::is(L, 1)) {
+			lua_bitmap* b = lua_class<lua_bitmap>::get(L, 1, fname.c_str());
+			write64ube(buf + 0, b->width);
+			write64ube(buf + 8, b->height);
+			bufferuse = 16;
+			for(unsigned i = 0; i < b->width * b->height; i++) {
+				if(bufferuse + 2 > buffersize) {
+					h.write(buf, bufferuse);
+					bufferuse = 0;
+				}
+				write16ube(buf + bufferuse + 0, b->pixels[i]);
+				bufferuse += 2;
+			}
+			if(bufferuse > 0) h.write(buf, bufferuse);
+			L.pushlstring(h.read());
+			return 1;
+		} else if(lua_class<lua_dbitmap>::is(L, 1)) {
+			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
+			write64ube(buf + 0, b->width);
+			write64ube(buf + 4, b->height);
+			bufferuse = 16;
+			for(unsigned i = 0; i < b->width * b->height; i++) {
+				if(bufferuse + 6 > buffersize) {
+					h.write(buf, bufferuse);
+					bufferuse = 0;
+				}
+				write32ube(buf + bufferuse + 0, b->pixels[i].orig);
+				write16ube(buf + bufferuse + 4, b->pixels[i].origa);
+				bufferuse += 6;
+			}
+			if(bufferuse > 0) h.write(buf, bufferuse);
+			L.pushlstring(h.read());
+			return 1;
+		} else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_hash.");
+	});
+
+	function_ptr_luafun hash_palette(lua_func_misc, "gui.palette_hash", [](lua_state& L, const std::string& fname)
+		-> int {
+		lua_palette* p = lua_class<lua_palette>::get(L, 1, fname.c_str());
+		sha256 h;
+		const int buffersize = 256;
+		int bufferuse = 0;
+		char buf[buffersize];
+		unsigned realsize = 0;
+		for(unsigned i = 0; i < p->colors.size(); i++)
+			if(p->colors[i].origa) realsize = i + 1;
+		for(unsigned i = 0; i < realsize; i++) {
+			if(bufferuse + 6 > buffersize) {
+				h.write(buf, bufferuse);
+				bufferuse = 0;
+			}
+			write32ube(buf + bufferuse + 0, p->colors[i].orig);
+			write16ube(buf + bufferuse + 4, p->colors[i].origa);
+			bufferuse += 6;
+		}
+		if(bufferuse > 0) h.write(buf, bufferuse);
+		L.pushlstring(h.read());
+		return 1;
 	});
 
 	struct colorkey_none

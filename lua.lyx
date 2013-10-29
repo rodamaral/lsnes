@@ -1899,6 +1899,38 @@ Save specified bitmap <bmp>, with palette <pal> (only if paletted) into
  value.
 \end_layout
 
+\begin_layout Subsection
+gui.bitmap_hash: Hash a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.bitmap_hash(BITMAP bmp)
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.bitmap_hash(DBITMAP bmp)
+\end_layout
+
+\begin_layout Standard
+Hashes bitmap <bmp> and returns 64-hex digit crypto-strong hash.
+ Identical bitmaps result in indentical hashes (but color order in indexed
+ bitmaps is significant).
+\end_layout
+
+\begin_layout Subsection
+gui.palette_hash: Hash a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: string gui.palette_hash(PALETTE pal)
+\end_layout
+
+\begin_layout Standard
+Hashes palette <pal> and retruns 64-hex digit crypto-strong hash.
+ Identical palettes result in identical hashes (fully transparent colors
+ at end of palette don't affect the hash).
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
