@@ -10,6 +10,8 @@
 #include "core/window.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
+#include "library/serialization.hpp"
+#include "library/arch-detect.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -32,11 +34,78 @@ namespace
 	std::string rseed;
 	uint64_t rcounter = 0;
 	bool reached_main_flag;
+	mutex_class seed_mutex;
+
+	uint64_t arch_get_tsc()
+	{
+#ifdef ARCH_IS_I386
+		uint32_t a, b;
+		asm volatile("rdtsc" : "=a"(a), "=d"(b));
+		return ((uint64_t)b << 32) | a;
+#else
+		return 0;
+#endif
+	}
+
+	uint64_t arch_get_random()
+	{
+#ifdef ARCH_IS_I386
+		uint32_t r;
+		asm volatile (".byte 0xb8, 0x01, 0x00, 0x00, 0x00, 0x0f, 0xa2, 0xf7, 0xc1, 0x00, 0x00, 0x00, 0x40, "
+			"0x74, 0x03, 0x0f, 0xc7, 0xf0" : "=a"(r) : : "ebx", "ecx", "edx");
+		return r;
+#else
+		return 0;
+#endif
+	}
+
+	//Returns 32 bytes.
+	void arch_random_256(uint8_t* buf)
+	{
+		uint32_t tmp[1026];
+		uint64_t tsc = arch_get_tsc();
+		tmp[1024] = tsc;
+		tmp[1025] = tsc >> 32;
+		for(unsigned i = 0; i < 1024; i++)
+			tmp[i] = arch_get_random();
+		sha256::hash(buf, reinterpret_cast<uint8_t*>(buf), sizeof(buf));
+	}
+
+	void do_mix_tsc()
+	{
+		const int slots = 32;
+		static unsigned count = 0;
+		static uint64_t last_reseed = 0;
+		static uint64_t buf[slots];
+		buf[count++] = arch_get_tsc();
+		umutex_class h(seed_mutex);
+		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
+			last_reseed = buf[count - 1];
+			std::vector<char> x;
+			x.resize(rseed.length() + slots * 8 + 8);
+			std::copy(rseed.begin(), rseed.end(), x.begin());
+			for(unsigned i = 0; i < slots; i++)
+				write64ule(&x[rseed.length() + 8 * i], buf[i]);
+			write64ule(&x[rseed.length() + 8 * slots], arch_get_random());
+			rseed = "32 " + sha256::hash(reinterpret_cast<uint8_t*>(&x[0]), x.size());
+			count = 0;
+		}
+	}
 
 	std::string get_random_hexstring_64(size_t index)
 	{
 		std::ostringstream str;
-		str << rseed << " " << time(NULL) << " " << (rcounter++) << " " << index;
+		{
+			umutex_class h(seed_mutex);
+			str << rseed << " ";
+			str << time(NULL) << " ";
+			str << arch_get_tsc() << " ";
+			str << arch_get_random() << " ";
+			str << arch_get_random() << " ";
+			str << arch_get_random() << " ";
+			str << arch_get_random() << " ";
+			str << (rcounter++) << " " << index;
+		}
 		std::string s = str.str();
 		std::vector<char> x;
 		x.resize(s.length());
@@ -63,6 +132,9 @@ namespace
 			}
 			loops++;
 		}
+		str << arch_get_tsc() << " ";
+		for(unsigned i = 0; i < 256; i++)
+			str << arch_get_random() << " ";
 		return str.str();
 	}
 
@@ -106,7 +178,10 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 {
 	std::ostringstream str;
 	str << seed.length() << " " << seed;
-	rseed = str.str();
+	{
+		umutex_class h(seed_mutex);
+		rseed = str.str();
+	}
 	rrdata.set_internal(random_rrdata());
 }
 
@@ -288,7 +363,27 @@ std::string mangle_name(const std::string& orig)
 	return out.str();
 }
 
+void random_mix_timing_entropy()
+{
+	do_mix_tsc();
+}
 
+//Generate highly random stuff.
+void highrandom_256(uint8_t* buf)
+{
+	uint8_t tmp[104];
+	std::string s = get_random_hexstring(0);
+	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
+	arch_random_256(tmp + 64);
+	write64ube(tmp + 96, arch_get_tsc());
+	sha256::hash(buf, tmp, 104);
+#ifdef USE_LIBGCRYPT_SHA256
+	memset(tmp, 0, 32);
+	gcry_randomize((unsigned char*)buf, 32, GCRY_STRONG_RANDOM);
+	for(unsigned i = 0; i < 32; i++)
+		buf[i] ^= tmp[i];
+#endif
+}
 
 function_ptr_command<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",
 	[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {

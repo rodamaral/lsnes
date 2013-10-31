@@ -122,5 +122,14 @@ std::string safe_filename(const std::string& str);
  */
 std::string mangle_name(const std::string& orig);
 
+/**
+ * Mix some entropy.
+ */
+void random_mix_timing_entropy();
+
+/**
+ * 256 bits of as high quality entropy as possible.
+ */
+void highrandom_256(uint8_t* buf);
 
 #endif

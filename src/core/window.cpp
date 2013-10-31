@@ -343,6 +343,7 @@ void platform::dummy_event_loop() throw()
 		umutex_class h(queue_lock);
 		internal_run_queues(true);
 		cv_timed_wait(queue_condition, h, microsec_class(MAXWAIT));
+		random_mix_timing_entropy();
 	}
 }
 
@@ -394,8 +395,10 @@ void platform::flush_command_queue() throw()
 				waitleft = min(waitleft, on_idle_time - now);
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
-			if(waitleft > 0)
+			if(waitleft > 0) {
 				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
+				random_mix_timing_entropy();
+			}
 		} else
 			break;
 		//If we had to wait, check queues at least once more.
@@ -443,8 +446,10 @@ void platform::wait(uint64_t usec) throw()
 				waitleft = min(waitleft, on_idle_time - now);
 			if(on_timer_time >= now)
 				waitleft = min(waitleft, on_timer_time - now);
-			if(waitleft > 0)
+			if(waitleft > 0) {
 				cv_timed_wait(queue_condition, h, microsec_class(waitleft));
+				random_mix_timing_entropy();
+			}
 		} else
 			return;
 	}
@@ -491,8 +496,10 @@ void platform::queue(void (*f)(void* arg), void* arg, bool sync) throw(std::bad_
 	functions.push_back(std::make_pair(f, arg));
 	queue_condition.notify_all();
 	if(sync)
-		while(functions_executed < next_function && _system_thread_available)
+		while(functions_executed < next_function && _system_thread_available) {
 			cv_timed_wait(queue_condition, h, microsec_class(10000));
+			random_mix_timing_entropy();
+		}
 }
 
 void platform::run_queues() throw()

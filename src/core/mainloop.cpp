@@ -1209,6 +1209,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		}
 		frame_irq_time = get_utime() - time_x;
 		our_rom.rtype->emulate();
+		random_mix_timing_entropy();
 		time_x = get_utime();
 		if(amode == ADVANCE_AUTO)
 			platform::wait(to_wait_frame(get_utime()));
