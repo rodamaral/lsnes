@@ -414,16 +414,27 @@ zip_writer::zip_writer(const std::string& zipfile, unsigned _compression) throw(
 	compression = _compression;
 	zipfile_path = zipfile;
 	temp_path = zipfile + ".tmp";
-	zipstream.open(temp_path.c_str(), std::ios::binary);
-	if(!zipstream)
+	zipstream = new std::ofstream(temp_path.c_str(), std::ios::binary);
+	if(!*zipstream)
 		throw std::runtime_error("Can't open zipfile '" + temp_path + "' for writing");
 	committed = false;
+	system_stream = true;
+}
+
+zip_writer::zip_writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
+{
+	compression = _compression;
+	zipstream = &stream;
+	committed = false;
+	system_stream = false;
 }
 
 zip_writer::~zip_writer() throw()
 {
-	if(!committed)
+	if(!committed && system_stream)
 		remove(temp_path.c_str());
+	if(system_stream)
+		delete zipstream;
 }
 
 void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_error)
@@ -434,7 +445,7 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		throw std::logic_error("Can't commit with file open");
 	std::vector<unsigned char> directory_entry;
 	uint32_t cdirsize = 0;
-	uint32_t cdiroff = zipstream.tellp();
+	uint32_t cdiroff = zipstream->tellp();
 	if(cdiroff == (uint32_t)-1)
 		throw std::runtime_error("Can't read current ZIP stream position");
 	for(auto i : files) {
@@ -458,8 +469,8 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		write32(&directory_entry[38], 0);
 		write32(&directory_entry[42], i.second.offset);
 		memcpy(&directory_entry[46], i.first.c_str(), i.first.length());
-		zipstream.write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
-		if(!zipstream)
+		zipstream->write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
+		if(!*zipstream)
 			throw std::runtime_error("Failed to write central directory entry to output file");
 	}
 	directory_entry.resize(22);
@@ -471,14 +482,16 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 	write32(&directory_entry[12], cdirsize);
 	write32(&directory_entry[16], cdiroff);
 	write16(&directory_entry[20], 0);
-	zipstream.write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
-	if(!zipstream)
+	zipstream->write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
+	if(!*zipstream)
 		throw std::runtime_error("Failed to write central directory end marker to output file");
-	zipstream.close();
-	std::string backup = zipfile_path + ".backup";
-	rename_file_overwrite(zipfile_path.c_str(), backup.c_str());
-	if(rename_file_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
-		throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
+	if(system_stream) {
+		dynamic_cast<std::ofstream*>(zipstream)->close();
+		std::string backup = zipfile_path + ".backup";
+		rename_file_overwrite(zipfile_path.c_str(), backup.c_str());
+		if(rename_file_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
+			throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
+	}
 	committed = true;
 }
 
@@ -514,7 +527,7 @@ void zip_writer::close_file() throw(std::bad_alloc, std::logic_error, std::runti
 	crc32 = f.crc32();
 	delete s;
 
-	base_offset = zipstream.tellp();
+	base_offset = zipstream->tellp();
 	if(base_offset == (uint32_t)-1)
 		throw std::runtime_error("Can't read current ZIP stream position");
 	unsigned char header[30];
@@ -529,10 +542,10 @@ void zip_writer::close_file() throw(std::bad_alloc, std::logic_error, std::runti
 	write32(header + 18, cs);
 	write32(header + 22, ucs);
 	write16(header + 26, open_file.length());
-	zipstream.write(reinterpret_cast<char*>(header), 30);
-	zipstream.write(open_file.c_str(), open_file.length());
-	zipstream.write(&current_compressed_file[0], current_compressed_file.size());
-	if(!zipstream)
+	zipstream->write(reinterpret_cast<char*>(header), 30);
+	zipstream->write(open_file.c_str(), open_file.length());
+	zipstream->write(&current_compressed_file[0], current_compressed_file.size());
+	if(!*zipstream)
 		throw std::runtime_error("Can't write member to ZIP file");
 	current_compressed_file.resize(0);
 	zip_file_info info;

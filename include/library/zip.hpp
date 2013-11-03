@@ -7,6 +7,7 @@
 #include <string>
 #include <map>
 #include <fstream>
+#include <sstream>
 #include <zlib.h>
 
 /**
@@ -297,12 +298,13 @@ public:
  * Creates new empty ZIP archive. The members will be compressed according to specified compression.
  *
  * parameter zipfile: The zipfile to create.
+ * parameter stream: The stream to write the ZIP to.
  * parameter _compression: Compression. 0 is uncompressed, 1-9 are deflate compression levels.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't open archive or invalid argument.
  */
 	zip_writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
-
+	zip_writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
 /**
  * Destroys ZIP writer, aborting the transaction (unless commit() has been called).
  */
@@ -347,7 +349,8 @@ private:
 
 	zip_writer(zip_writer&);
 	zip_writer& operator=(zip_writer&);
-	std::ofstream zipstream;
+	std::ostream* zipstream;
+	bool system_stream;
 	std::string temp_path;
 	std::string zipfile_path;
 	std::string open_file;

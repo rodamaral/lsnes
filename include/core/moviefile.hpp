@@ -8,7 +8,7 @@
 #include "core/controllerframe.hpp"
 #include "core/rom.hpp"
 #include "core/subtitles.hpp"
-
+#include "library/zip.hpp"
 
 /**
  * This structure gives parsed representationg of movie file, as result of decoding or for encoding.
@@ -61,7 +61,10 @@ struct moviefile
  */
 	void save(const std::string& filename, unsigned compression, bool binary) throw(std::bad_alloc,
 		std::runtime_error);
-
+/**
+ * Reads this movie structure and saves it to stream (uncompressed ZIP).
+ */
+	void save(std::ostream& outstream) throw(std::bad_alloc, std::runtime_error);
 /**
  * Force loading as corrupt.
  */
@@ -213,6 +216,7 @@ struct moviefile
 private:
 	void binary_io(std::ostream& stream) throw(std::bad_alloc, std::runtime_error);
 	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
+	void save(zip_writer& w) throw(std::bad_alloc, std::runtime_error);
 };
 
 #endif

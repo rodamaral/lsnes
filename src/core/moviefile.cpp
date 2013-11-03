@@ -703,6 +703,17 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		return;
 	}
 	zip_writer w(movie, compression);
+	save(w);
+}
+
+void moviefile::save(std::ostream& stream) throw(std::bad_alloc, std::runtime_error)
+{
+	zip_writer w(stream, 0);
+	save(w);
+}
+
+void moviefile::save(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
+{
 	write_linefile(w, "gametype", gametype->get_name());
 	write_settings<zip_writer>(w, settings, gametype->get_type().get_settings(), [](zip_writer& w,
 		const std::string& name, const std::string& value) -> void {
@@ -754,7 +765,6 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		write_raw_file(w, "initram." + i.first, i.second);
 	write_authors_file(w, authors);
 	write_input(w, input);
-
 	w.commit();
 }
 
