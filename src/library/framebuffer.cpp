@@ -365,6 +365,7 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 		typename framebuffer<X>::element_t* ptr = rowptr(line) + offset_x;
 		size_t bpp = scr.fmt->get_bpp();
 		size_t xptr = 0;
+		size_t old_copyable_width = copyable_width;
 		while(copyable_width > DECBUF_SIZE) {
 			scr.fmt->decode(decbuf, sbase + xptr * bpp, DECBUF_SIZE, auxpal);
 			for(size_t k = 0; k < DECBUF_SIZE; k++)
@@ -377,6 +378,7 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 		for(size_t k = 0; k < copyable_width; k++)
 			for(size_t i = 0; i < hscale; i++)
 				*(ptr++) = decbuf[k];
+		copyable_width = old_copyable_width;
 		for(size_t j = 1; j < vscale; j++)
 			memcpy(rowptr(line + j) + offset_x, rowptr(line) + offset_x,
 				sizeof(typename framebuffer<X>::element_t) * hscale * copyable_width);
