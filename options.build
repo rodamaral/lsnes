@@ -136,6 +136,9 @@ USE_LIBGCRYPT=yes
 # Postfix for boost for host builds.
 HOST_BOOST_POSTFIX=
 
+# Set to non-empty value (e.g. 'yes') to support LZMA/XZ compression via liblzma (the XZ version).
+USE_LIBLZMA=
+
 # The target architecture
 # I386 - I386/AMD64
 # Leave empty for generic/autodetect.

@@ -4,8 +4,18 @@
 #include "string.hpp"
 #include "minmax.hpp"
 #include "threadtypes.hpp"
+#include "streamcompress.hpp"
 #include <curl/curl.h>
 #include <cstring>
+#include <fstream>
+#include <boost/iostreams/categories.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/stream_buffer.hpp>
+#include <boost/iostreams/filter/symmetric.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/device/back_inserter.hpp>
 
 http_request::input_handler::~input_handler()
 {
