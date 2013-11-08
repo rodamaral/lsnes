@@ -154,7 +154,7 @@ dynamic_code::dynamic_code(size_t size)
 		throw std::runtime_error("Failed to allocate memory for routine");
 #else
 	asize = (size + 4095) >> 12 << 12;  //Windows is always i386/amd64, right?
-	base = VirtualAlloc(NULL, rsize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	base = VirtualAlloc(NULL, asize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if(!base)
 		throw std::runtime_error("Failed to allocate memory for routine");
 #endif
@@ -175,8 +175,8 @@ void dynamic_code::commit()
 	if(mprotect(base, asize, PROT_READ | PROT_EXEC) < 0)
 		throw std::runtime_error("Failed to mark routine as executable");
 #else
-	uint32_t dummy;
-	if(!VirtualProtect(base, asize, PAGE_EXECUTE_READ, &dummy)) {
+	long unsigned dummy;
+	if(!VirtualProtect(base, asize, PAGE_EXECUTE_READ, &dummy))
 		throw std::runtime_error("Failed to mark routine as executable");
 #endif
 }

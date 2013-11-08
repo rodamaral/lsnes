@@ -9,7 +9,7 @@ __all__.files: $(CORES_FILES)
 	cat $(CORES_FLAGS) >$(ALLFLAGS)
 
 make-ports.exe: make-ports.cpp
-	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $< ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/controller-parse.cpp ../library/controller-data.cpp ../library/sha256.cpp -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX)
+	$(HOSTCC) -g -std=gnu++0x -I../../include/library -o $@ $< ../library/json.cpp ../library/utf8.cpp ../library/string.cpp ../library/controller-parse.cpp ../library/controller-data.cpp ../library/sha256.cpp ../library/assembler.cpp -lboost_regex$(HOST_BOOST_POSTFIX) -lboost_system$(HOST_BOOST_POSTFIX)
 
 bsnes-legacy/$(ALLFILES): forcelook make-ports.exe
 	$(MAKE) -C bsnes-legacy
