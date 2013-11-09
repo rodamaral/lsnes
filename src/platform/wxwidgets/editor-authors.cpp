@@ -211,9 +211,10 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 		if(l != "" && l != "|")
 			newauthors.push_back(split_author(l));
 	}
-	for(int i = 0; i < luascripts->GetCount(); i++)
-		luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
-	bool run_new = autorunlua->GetValue();
+	if(luascripts)
+		for(int i = 0; i < luascripts->GetCount(); i++)
+			luascriptlist.push_back(tostdstring(luascripts->GetString(i)));
+	bool run_new = autorunlua ? autorunlua->GetValue() : false;
 
 	runemufn([gamename, newauthors, pfx, dir, prjname, luascriptlist, run_new, proj]() {
 		std::set<std::string> oldscripts;
