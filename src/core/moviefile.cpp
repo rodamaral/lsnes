@@ -458,7 +458,7 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 moviefile::brief_info::brief_info(const std::string& filename)
 {
 	regex_results rr;
-	if(rr = regex("$MEMORY:(.*)", filename)) {
+	if(rr = regex("\\$MEMORY:(.*)", filename)) {
 		if(!memory_saves.count(rr[1]))
 			throw std::runtime_error("No such memory save");
 		moviefile& mv = memory_saves[rr[1]];
@@ -572,7 +572,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
 	regex_results rr;
-	if(rr = regex("$MEMORY:(.*)", movie)) {
+	if(rr = regex("\\$MEMORY:(.*)", movie)) {
 		if(!memory_saves.count(rr[1]))
 			throw std::runtime_error("No such memory save");
 		*this = memory_saves[rr[1]];
@@ -679,7 +679,7 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 	std::runtime_error)
 {
 	regex_results rr;
-	if(rr = regex("$MEMORY:(.*)", movie)) {
+	if(rr = regex("\\$MEMORY:(.*)", movie)) {
 		memory_saves[rr[1]] = *this;
 		return;
 	}
