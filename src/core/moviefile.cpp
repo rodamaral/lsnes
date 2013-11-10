@@ -20,6 +20,11 @@
 #define DEFAULT_RTC_SECOND 1000000000ULL
 #define DEFAULT_RTC_SUBSECOND 0ULL
 
+namespace
+{
+	std::map<std::string, moviefile> memory_saves;
+}
+
 enum lsnes_movie_tags
 {
 	TAG_ANCHOR_SAVE = 0xf5e0fad7,
@@ -452,6 +457,23 @@ void write_pollcounters(zip_writer& w, const std::string& file, const std::vecto
 
 moviefile::brief_info::brief_info(const std::string& filename)
 {
+	regex_results rr;
+	if(rr = regex("$MEMORY:(.*)", filename)) {
+		if(!memory_saves.count(rr[1]))
+			throw std::runtime_error("No such memory save");
+		moviefile& mv = memory_saves[rr[1]];
+		sysregion = mv.gametype->get_name();
+		corename = mv.coreversion;
+		projectid = mv.projectid;
+		current_frame = mv.is_savestate ? mv.save_frame : 0;
+		rerecords = mv.rerecords_mem;
+		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+			hash[i] = mv.romimg_sha256[i];
+			hashxml[i] = mv.romxml_sha256[i];
+			hint[i] = mv.namehint[i];
+		}
+		return;
+	}
 	{
 		std::istream& s = open_file_relative(filename, "");
 		char buf[6] = {0};
@@ -549,6 +571,13 @@ moviefile::moviefile() throw(std::bad_alloc)
 
 moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
+	regex_results rr;
+	if(rr = regex("$MEMORY:(.*)", movie)) {
+		if(!memory_saves.count(rr[1]))
+			throw std::runtime_error("No such memory save");
+		*this = memory_saves[rr[1]];
+		return;
+	}
 	poll_flag = false;
 	start_paused = false;
 	force_corrupt = false;
@@ -649,6 +678,11 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 void moviefile::save(const std::string& movie, unsigned compression, bool binary) throw(std::bad_alloc,
 	std::runtime_error)
 {
+	regex_results rr;
+	if(rr = regex("$MEMORY:(.*)", movie)) {
+		memory_saves[rr[1]] = *this;
+		return;
+	}
 	if(binary) {
 		std::string tmp = movie + ".tmp";
 		std::ofstream strm(tmp.c_str(), std::ios_base::binary);

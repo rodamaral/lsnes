@@ -91,6 +91,10 @@ struct moviefile
  */
 	std::string rerecords;
 /**
+ * Rerecord count (memory saves only).
+ */
+	uint64_t rerecords_mem;
+/**
  * SHA-256 of ROM (empty string if none).
  */
 	std::string romimg_sha256[ROM_SLOT_COUNT];
