@@ -1035,3 +1035,8 @@ uint64_t moviefile::get_movie_length() throw()
 	t += frames * _magic[STEP_W] + (frames * _magic[STEP_N] / _magic[BLOCK_FRAMES]);
 	return t;
 }
+
+moviefile& moviefile::memref(const std::string& slot)
+{
+	return memory_saves[slot];
+}

@@ -123,6 +123,11 @@ std::string safe_filename(const std::string& str);
 std::string mangle_name(const std::string& orig);
 
 /**
+ * Return a new temporary file. The file will be created.
+ */
+std::string get_temp_file();
+
+/**
  * Mix some entropy.
  */
 void random_mix_timing_entropy();

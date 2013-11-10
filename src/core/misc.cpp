@@ -13,6 +13,7 @@
 #include "library/serialization.hpp"
 #include "library/arch-detect.hpp"
 
+#include <cstdlib>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -24,6 +25,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <boost/filesystem.hpp>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#endif
 
 #ifdef USE_LIBGCRYPT_SHA256
 #include <gcrypt.h>
@@ -382,6 +386,27 @@ void highrandom_256(uint8_t* buf)
 	gcry_randomize((unsigned char*)buf, 32, GCRY_STRONG_RANDOM);
 	for(unsigned i = 0; i < 32; i++)
 		buf[i] ^= tmp[i];
+#endif
+}
+
+std::string get_temp_file()
+{
+#if !defined(_WIN32) && !defined(_WIN64)
+	char tname[512];
+	strcpy(tname, "/tmp/lsnestmp_XXXXXX");
+	int h = mkstemp(tname);
+	if(h < 0)
+		throw std::runtime_error("Failed to get new tempfile name");
+	close(h);
+	return tname;
+#else
+	char tpath[512];
+	char tname[512];
+	if(!GetTempPathA(512, tpath))
+		throw std::runtime_error("Failed to get new tempfile name");
+	if(!GetTempFileNameA(tpath, "lsn", 0, tname))
+		throw std::runtime_error("Failed to get new tempfile name");
+	return tname;
 #endif
 }
 

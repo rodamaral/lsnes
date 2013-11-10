@@ -213,6 +213,10 @@ struct moviefile
  * returns: Length of the movie in nanoseconds.
  */
 	uint64_t get_movie_length() throw();
+/**
+ * Return reference to memory slot.
+ */
+	static moviefile& memref(const std::string& slot);
 private:
 	void binary_io(std::ostream& stream) throw(std::bad_alloc, std::runtime_error);
 	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
