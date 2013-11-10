@@ -17,6 +17,12 @@ namespace
 {
 	bool install_handlers_automatically;
 
+	std::map<std::string, std::string>& sysreg_mapping()
+	{
+		static std::map<std::string, std::string> x;
+		return x;
+	}
+
 	std::set<core_core*>& all_cores_set()
 	{
 		static std::set<core_core*> x;
@@ -544,6 +550,19 @@ std::set<core_sysregion*> core_sysregion::find_matching(const std::string& name)
 	for(auto i = sysregions().lower_bound(name); i != u; ++i)
 		ret.insert(i->second);
 	return ret;
+}
+
+void register_sysregion_mapping(std::string from, std::string to)
+{
+	sysreg_mapping()[from] = to;
+}
+
+std::string lookup_sysregion_mapping(std::string from)
+{
+	if(sysreg_mapping().count(from))
+		return sysreg_mapping()[from];
+	else
+		return "";
 }
 
 struct emucore_callbacks* ecore_callbacks;

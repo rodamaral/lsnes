@@ -37,7 +37,7 @@ wxeditor_action::wxeditor_action(wxWindow* parent, const std::string& label,
 
 {
 	params = _params;
-		Centre();
+	Centre();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
 
