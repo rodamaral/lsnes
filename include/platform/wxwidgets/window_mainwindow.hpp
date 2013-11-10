@@ -1,6 +1,7 @@
 #ifndef _plat_wxwidgets__window_mainwindow__hpp__included__
 #define _plat_wxwidgets__window_mainwindow__hpp__included__
 
+#include "core/filedownload.hpp"
 #include "core/window.hpp"
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/menu_recent.hpp"
@@ -55,6 +56,7 @@ public:
 	recent_menu<recentfile_path>* recent_movies;
 	recent_menu<recentfile_path>* recent_scripts;
 	loadrom_menu* loadroms;
+	file_download* download_in_progress;
 private:
 	void do_load_rom_image(core_type* t);
 	void handle_menu_click_cancelable(wxCommandEvent& e);

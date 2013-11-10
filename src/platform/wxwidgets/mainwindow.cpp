@@ -129,6 +129,7 @@ enum
 	wxID_RLUA_LAST = wxID_RLUA_FIRST + 16,
 	wxID_UPLOAD_FIRST,
 	wxID_UPLOAD_LAST = wxID_UPLOAD_FIRST + 256,
+	wxID_DOWNLOAD,
 };
 
 
@@ -159,6 +160,37 @@ namespace
 	uint64_t hashing_total = 0;
 	int64_t last_update = 0;
 	thread_class* emulation_thread;
+
+	class download_timer : public wxTimer
+	{
+	public:
+		download_timer(wxwin_mainwindow* main)
+		{
+			w = main;
+			Start(50);
+		}
+		void Notify()
+		{
+			if(w->download_in_progress->finished) {
+				w->update_statusbar(std::map<std::string, std::u32string>());
+				auto old = w->download_in_progress;
+				w->download_in_progress = NULL;
+				if(old->errormsg != "") {
+					show_message_ok(w, "Error downloading movie", old->errormsg,
+						wxICON_EXCLAMATION);
+				} else {
+					platform::queue("load-movie $MEMORY:wxwidgets_download_tmp");
+				}
+				delete old;
+				Stop();
+				delete this;
+			} else {
+				w->update_statusbar(std::map<std::string, std::u32string>());
+			}
+		}
+	private:
+		wxwin_mainwindow* w; 
+	};
 
 	template<typename T> void runemufn_async(T fn)
 	{
@@ -931,6 +963,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	: wxFrame(NULL, wxID_ANY, getname(), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
+	download_in_progress = NULL;
 	Centre();
 	mwindow = NULL;
 	toplevel = new wxFlexGridSizer(1, 2, 0, 0);
@@ -953,6 +986,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_start_sub(wxT("Load"));
 	menu_entry(wxID_LOAD_STATE, wxT("State..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
+	menu_entry(wxID_DOWNLOAD, wxT("Download movie..."));
 	if(loaded_library::call_library() != "") {
 		menu_separator();
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + loaded_library::call_library()));
@@ -1133,6 +1167,10 @@ std::u32string read_variable_map(const std::map<std::string, std::u32string>& va
 
 void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32string>& vars)
 {
+	if(download_in_progress) {
+		statusbar->SetStatusText(download_in_progress->statusmsg());
+		return;
+	}
 	if(hashing_in_progress) {
 		//TODO: Display this as a dialog.
 		std::ostringstream s;
@@ -1614,6 +1652,17 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		d->Destroy();
 		chdir(path.c_str());
 		messages << "Changed working directory to '" << path << "'" << std::endl;
+		return;
+	}
+	case wxID_DOWNLOAD: {
+		if(download_in_progress) return;
+		filename = pick_text(this, "Download movie", "Enter URL to download");
+		download_in_progress = new file_download();
+		download_in_progress->url = filename;
+		download_in_progress->target_slot = "wxwidgets_download_tmp";
+		download_in_progress->do_async();
+		new download_timer(this);
+		return;
 	}
 	};
 }
