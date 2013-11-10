@@ -632,6 +632,9 @@ private:
 	core_region& region;
 };
 
+//Register a sysregion to name mapping.
+void register_sysregion_mapping(std::string from, std::string to);
+std::string lookup_sysregion_mapping(std::string from);
 
 //Set to true if new core is detected.
 extern bool new_core_flag;

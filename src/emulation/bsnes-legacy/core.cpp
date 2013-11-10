@@ -1344,9 +1344,21 @@ again2:
 		L.pushlstring(disasm);
 		return 1;
 	});
-
 #else
 	void snesdbg_on_break() {}
 	void snesdbg_on_trace() {}
 #endif
+
+	struct oninit {
+		oninit()
+		{
+			register_sysregion_mapping("snes_pal", "SNES");
+			register_sysregion_mapping("snes_ntsc", "SNES");
+			register_sysregion_mapping("bsx", "SNES");
+			register_sysregion_mapping("bsxslotted", "SNES");
+			register_sysregion_mapping("sufamiturbo", "SNES");
+			register_sysregion_mapping("sgb_ntsc", "SGB");
+			register_sysregion_mapping("sgb_pal", "SGB");
+		}
+	} _oninit;
 }

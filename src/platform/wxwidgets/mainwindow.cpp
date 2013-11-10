@@ -2,6 +2,7 @@
 
 #include <wx/dnd.h>
 #include "platform/wxwidgets/menu_dump.hpp"
+#include "platform/wxwidgets/menu_upload.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
@@ -126,6 +127,8 @@ enum
 	wxID_CHDIR,
 	wxID_RLUA_FIRST,
 	wxID_RLUA_LAST = wxID_RLUA_FIRST + 16,
+	wxID_UPLOAD_FIRST,
+	wxID_UPLOAD_LAST = wxID_UPLOAD_FIRST + 256,
 };
 
 
@@ -980,6 +983,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_CANCEL_SAVES, wxT("Cancel pending saves"));
 	menu_separator();
 	menu_entry(wxID_CHDIR, wxT("Change working directory..."));
+	menu_separator();
+	menu_special_sub(wxT("Upload"), new upload_menu(this, wxID_UPLOAD_FIRST, wxID_UPLOAD_LAST));
 	menu_end_sub();
 	menu_start_sub(wxT("Close"));
 	menu_entry(wxID_CLOSE_PROJECT, wxT("Project"));

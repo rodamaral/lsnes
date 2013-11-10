@@ -562,4 +562,13 @@ namespace
 			return;
 		instance->saveState(x, cmp_save);
 	});
+
+	struct oninit {
+		oninit()
+		{
+			register_sysregion_mapping("gdmg", "GB");
+			register_sysregion_mapping("ggbc", "GBC");
+			register_sysregion_mapping("ggbca", "GBC");
+		}
+	} _oninit;
 }
