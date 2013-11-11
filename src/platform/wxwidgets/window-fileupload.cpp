@@ -562,8 +562,12 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	std::string fn = tostdstring(filename->GetValue());
 	std::vector<char> content;
 	if(file->GetValue()) {
-		if(fn == "")
-			filename->SetValue(ufilename->GetValue());
+		if(fn == "") {
+			std::string name = tostdstring(ufilename->GetValue());
+			auto r = regex(".*/([^/]+)", name);
+			if(r) name = r[1];
+			filename->SetValue(towxstring(name));
+		}
 		boost::iostreams::back_insert_device<std::vector<char>> rd(content);
 		std::ifstream in(tostdstring(ufilename->GetValue()), std::ios::binary);
 		if(!in) {
