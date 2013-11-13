@@ -178,7 +178,9 @@ std::string dh25519_http_auth::format_get_session_request()
 dh25519_http_auth::request_hash dh25519_http_auth::start_request(const std::string& url, const std::string& verb)
 {
 	unsigned _nonce;
-	std::string personalization = verb + " " + url;
+	regex_results r = regex("[^:]+(://.*)", url);
+	std::string url2 = r ? r[1] : url;
+	std::string personalization = verb + " " + url2;
 	char buf[32];
 	uint8_t prereq[8];
 	if(!ready)
@@ -208,7 +210,7 @@ std::string dh25519_http_auth::request_hash::get_authorization()
 	sprintf(buf, "%u", nonce);
 	h.read(response);
 	return "dh25519 id="+quote_field(id)+",key="+encode_hex(pubkey,32)+",nonce="+identity(buf)+
-		",response="+encode_hex(response,32)+",response2="+encode_hex(prereq,8);
+		",response="+encode_hex(response,32)+",response2="+encode_hex(prereq,8)+",noprotocol=1";
 }
 
 void dh25519_http_auth::parse_auth_response(const std::string& response)
