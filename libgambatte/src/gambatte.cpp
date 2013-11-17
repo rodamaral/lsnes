@@ -298,4 +298,52 @@ std::string GB::version()
 	return "r537";
 }
 
+uint32_t GB::get_cpureg(enum cpu_register _reg)
+{
+	switch(_reg) {
+		case REG_CYCLECOUNTER:	return p_->cpu.cycleCounter_;
+		case REG_PC:		return p_->cpu.pc_;
+		case REG_SP:		return p_->cpu.sp;
+		case REG_HF1:		return p_->cpu.hf1;
+		case REG_HF2:		return p_->cpu.hf2;
+		case REG_ZF:		return p_->cpu.zf;
+		case REG_CF:		return p_->cpu.cf;
+		case REG_A:		return p_->cpu.a_;
+		case REG_B:		return p_->cpu.b;
+		case REG_C:		return p_->cpu.c;
+		case REG_D:		return p_->cpu.d;
+		case REG_E:		return p_->cpu.e;
+		case REG_F:
+			return ((p_->cpu.hf2 & 0x600 | (p_->cpu.cf & 0x100)) >> 4)
+				| (p_->cpu.zf & 0xFF ? 0 : 0x80);
+		case REG_H:		return p_->cpu.h;
+		case REG_L:		return p_->cpu.l;
+		default:		return 0;
+	}
+}
+
+void GB::set_cpureg(enum cpu_register _reg, uint32_t val)
+{
+	switch(_reg) {
+		case REG_PC:		p_->cpu.pc_ = val; break;
+		case REG_SP:		p_->cpu.sp = val; break;
+		case REG_HF1:		p_->cpu.hf1 = val; break;
+		case REG_HF2:		p_->cpu.hf2 = val; break;
+		case REG_ZF:		p_->cpu.zf = val; break;
+		case REG_CF:		p_->cpu.cf = val; break;
+		case REG_A:		p_->cpu.a_ = val; break;
+		case REG_B:		p_->cpu.b = val; break;
+		case REG_C:		p_->cpu.c = val; break;
+		case REG_D:		p_->cpu.d = val; break;
+		case REG_E:		p_->cpu.e = val; break;
+		case REG_F:
+			p_->cpu.hf2 = (val << 4) & 0x600;
+			p_->cpu.cf = (val << 4) & 0x100;
+			p_->cpu.zf = val & 0x80;
+			break;
+		case REG_H:		p_->cpu.h = val; break;
+		case REG_L:		p_->cpu.l = val; break;
+		default:		break;
+	}
+}
 }

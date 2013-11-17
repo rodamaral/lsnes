@@ -88,13 +88,13 @@ public:
 	std::pair<unsigned char*, size_t> getIoRam() { return mem_.getIoRam(); }
 	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
 
-private:
-	Memory mem_;
 	unsigned cycleCounter_;
 	unsigned short pc_;
 	unsigned short sp;
 	unsigned hf1, hf2, zf, cf;
 	unsigned char a_, b, c, d, e, /*f,*/ h, l;
+private:
+	Memory mem_;
 	bool skip_;
 
 	void process(unsigned cycles);
