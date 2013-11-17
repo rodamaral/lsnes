@@ -31,6 +31,12 @@ namespace gambatte {
 class CPU {
 	Memory memory;
 	
+
+	bool skip;
+	
+	void process(unsigned cycles);
+	
+public:
 	unsigned cycleCounter_;
 
 	unsigned short PC_;
@@ -39,12 +45,6 @@ class CPU {
 	unsigned HF1, HF2, ZF, CF;
 
 	unsigned char A_, B, C, D, E, /*F,*/ H, L;
-
-	bool skip;
-	
-	void process(unsigned cycles);
-	
-public:
 	
 	CPU(time_t (**_getCurrentTime)());
 // 	void halt();

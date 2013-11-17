@@ -203,6 +203,28 @@ public:
 
 	/** Get version. */
 	static std::string version();
+
+	/** CPU registers. */
+	enum cpu_register
+	{
+		REG_CYCLECOUNTER,
+		REG_PC,
+		REG_SP,
+		REG_HF1,
+		REG_HF2,
+		REG_ZF,
+		REG_CF,
+		REG_A,
+		REG_B,
+		REG_C,
+		REG_D,
+		REG_E,
+		REG_F,
+		REG_H,
+		REG_L
+	};
+	uint32_t get_cpureg(enum cpu_register reg);
+	void set_cpureg(enum cpu_register reg, uint32_t val);
 private:
 	void preload_common();
 	void postload_common(const unsigned flags);
