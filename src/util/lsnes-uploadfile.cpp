@@ -13,6 +13,8 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
+#include <sys/time.h>
+#include <unistd.h>
 
 
 namespace

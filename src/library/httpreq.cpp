@@ -1,3 +1,4 @@
+#define CURL_STATICLIB
 #include <cstdio>
 #include "httpreq.hpp"
 #include "httpauth.hpp"

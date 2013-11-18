@@ -19,7 +19,7 @@ else
 BOOST_LIB_POSTFIX=
 endif
 
-LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz $(USER_LDFLAGS) -lcurl
+LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz -lcurl $(USER_LDFLAGS)
 
 ifeq ($(THREADS), NATIVE)
 CFLAGS += -DNATIVE_THREADS
