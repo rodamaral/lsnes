@@ -566,6 +566,7 @@ namespace
 					{"Delay","int:0,99999999"}
 				}},
 #endif
+#ifdef BSNES_IS_COMPAT
 				{4, "Layers‣BG1 Priority 0", "bg1pri0", {{"", "toggle"}}},
 				{5, "Layers‣BG1 Priority 1", "bg1pri1", {{"", "toggle"}}},
 				{8, "Layers‣BG2 Priority 0", "bg2pri0", {{"", "toggle"}}},
@@ -577,7 +578,8 @@ namespace
 				{20, "Layers‣Sprite Priority 0", "oampri0", {{"", "toggle"}}},
 				{21, "Layers‣Sprite Priority 1", "oampri1", {{"", "toggle"}}},
 				{22, "Layers‣Sprite Priority 2", "oampri2", {{"", "toggle"}}},
-				{23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}}}
+				{23, "Layers‣Sprite Priority 3", "oampri3", {{"", "toggle"}}},
+#endif
 			}) {}
 
 		std::string c_core_identifier() {
@@ -835,11 +837,13 @@ again2:
 				do_hreset_flag = true;
 				break;
 			}
+#ifdef BSNES_IS_COMPAT
 			if(id >= 4 && id <= 23) {
 				unsigned y = (id - 4) / 4;
 				SNES::ppu.layer_enabled[y][id % 4] = !SNES::ppu.layer_enabled[y][id % 4];
 				ecore_callbacks->action_state_updated();
 			}
+#endif
 		}
 		const interface_device_reg* c_get_registers() { return snes_registers; }
 		unsigned c_action_flags(unsigned id)
@@ -850,10 +854,12 @@ again2:
 				return 1;
 			if(id == 1 || id == 3)
 				return support_hreset ? 1 : 0;
+#ifdef BSNES_IS_COMPAT
 			if(id >= 4 && id <= 23) {
 				unsigned y = (id - 4) / 4;
 				return SNES::ppu.layer_enabled[y][id % 4] ? 3 : 1;
 			}
+#endif
 		}
 		int c_reset_action(bool hard)
 		{
