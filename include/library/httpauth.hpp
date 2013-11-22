@@ -5,6 +5,8 @@
 #include "skein.hpp"
 #include <string>
 #include <cstring>
+#include <list>
+#include <map>
 
 /**
  * DH25519 HTTP auth class.
@@ -80,6 +82,7 @@ public:
  */
 	void get_pubkey(uint8_t* pubkey);
 private:
+	void parse_auth_response(std::map<std::string, std::string> pparse);
 	unsigned char privkey[32];
 	unsigned char pubkey[32];
 	unsigned char ssecret[32];

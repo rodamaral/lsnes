@@ -48,12 +48,13 @@ namespace
 	//5 => Comma
 	//6 => Equals sign.
 	//7 => Backslash
-	//8 => EOS.
+	//8 => Slash
+	//9 => EOS.
 	uint8_t charclass[] = {
 	//	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, //0
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //1
-		1, 2, 3, 2, 2, 2, 2, 2, 4, 4, 2, 2, 5, 2, 2, 4, //2
+		1, 2, 3, 2, 2, 2, 2, 2, 4, 4, 2, 2, 5, 2, 2, 8, //2
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 6, 4, 4, //3
 		4, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, //4
 		2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 7, 4, 2, 2, //5
@@ -69,75 +70,73 @@ namespace
 		4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4  //F
 	};
 
-#define A_INVALID	0x0000	//Give up.
-#define A_NOOP		0x1000	//Do nothing, not even eat the character.
-#define A_EAT		0x2000	//Eat the character.
-#define A_COPY_PNAME	0x3000	//Eat and copy to pname.
-#define A_COPY_PVAL	0x4000	//Eat and copy to pvalue.
-#define A_EMIT		0x5000	//Emit (pname,pvalue) and zeroize.
-#define A_MASK		0xF000
-#define A_STATE		0x0FFF
-
-	unsigned auth_param_parser[] = {
-		//CTRL    WS      TOKN    DBLQ    OTHQ    COMM    EQLS    BCKS    EOS
-		// 0: Skip the initial whitespace.
-		  0x0000, 0x2000, 0x1001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x2000,
-		// 1: Parse name.
-		  0x0000, 0x1002, 0x3001, 0x0000, 0x0000, 0x0000, 0x1002, 0x0000, 0x0000,
-		// 2: Parse whitespace after name (and =)
-		  0x0000, 0x2002, 0x0000, 0x0000, 0x0000, 0x0000, 0x2003, 0x0000, 0x0000,
-		// 3: Parse whitespace before value.
-		  0x0000, 0x2003, 0x1004, 0x2005, 0x0000, 0x5007, 0x0000, 0x0000, 0x5000,
-		// 4: Token value.
-		  0x0000, 0x5007, 0x4004, 0x0000, 0x0000, 0x5007, 0x0000, 0x0000, 0x5000,
-		// 5: Quoted-string value.
-		  0x0000, 0x4005, 0x4005, 0x5009, 0x4005, 0x4005, 0x4005, 0x2006, 0x0000,
-		// 6: Quoted-string escape.
-		  0x0000, 0x4005, 0x4005, 0x4005, 0x4005, 0x4005, 0x4005, 0x4005, 0x0000,
-		// 7: Whitespace after end of value.
-		  0x0000, 0x2007, 0x0000, 0x0000, 0x0000, 0x2008, 0x0000, 0x0000, 0x2000,
-		// 8: Whitespace after comma.
-		  0x0000, 0x2008, 0x1001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-		// 9: Eat double quote at end of quoted string.
-		  0x0000, 0x0000, 0x0000, 0x2007, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-	};
-
 	unsigned get_charclass(const std::string& str, size_t pos) {
 		if(pos < str.length())
 			return charclass[(uint8_t)str[pos]];
 		else
-			return 8;
+			return 9;
 	}
 
-	bool do_state_machine(const unsigned* machine, const std::string& input, size_t start,
-		std::map<std::string, std::string>& params)
+	std::string substr(std::string x, std::pair<size_t, size_t> m, size_t base)
 	{
-		std::string pname, pvalue;
-		unsigned state = 0;
-		while(start <= input.length()) {
-			unsigned act = machine[state * 9 + get_charclass(input, start)];
-			switch(act & A_MASK) {
-			case A_INVALID:
-				return false;
-			case A_NOOP:
-				break;
-			case A_EAT:
+		return x.substr(m.first + base, m.second);
+	}
+
+	bool parse_authenticate(const std::string& _input, std::list<std::map<std::string, std::string>>& params)
+	{
+		std::string classstr = _input;
+		for(size_t i = 0; i < classstr.length(); i++)
+			classstr[i] = 48 + get_charclass(classstr, i);
+		size_t start = 0;
+		std::map<std::string, std::string> tmp;
+		while(start < _input.length()) {
+			regex_results r;
+			if(classstr[0] == '1' || classstr[0] == '5') {
+				//Skip Whitespace or comma.
 				start++;
-				break;
-			case A_COPY_PNAME:
-				pname = pname + std::string(1, input[start++]);
-				break;
-			case A_COPY_PVAL:
-				pvalue = pvalue + std::string(1, input[start++]);
-				break;
-			case A_EMIT:
-				params[pname] = pvalue;
-				pname = "";
-				pvalue = "";
-				break;
-			};
-			state = act & A_STATE;
+				classstr = classstr.substr(1);
+				continue;
+			}
+			if(r = regex("1*(2+)1+([28]+)6*1*(5.*|$)", classstr)) {
+				//This is authscheme (1) followed by token68 (2). Tail is (3)
+				if(!tmp.empty()) params.push_back(tmp);
+				tmp.clear();
+				tmp[":method"] = substr(_input, r.match(1), start);
+				tmp[":token"] = substr(_input, r.match(2), start);
+				start += r.match(3).first;
+				classstr = classstr.substr(r.match(3).first);
+				//std::cerr << "Parsed authscheme=" << tmp[":method"] << " with token68: "
+				//	<< tmp[":token"] << std::endl; 
+			} else if(r = regex("1*(2+)1+((5|2+1*61*[23]).*|$)", classstr)) {
+				//This is authscheme (1) followed by parameter. Tail is (2)
+				if(!tmp.empty()) params.push_back(tmp);
+				tmp.clear();
+				tmp[":method"] = substr(_input, r.match(1), start);
+				start += r.match(2).first;
+				classstr = classstr.substr(r.match(2).first);
+				//std::cerr << "Parsed authscheme=" << tmp[":method"] << std::endl; 
+			} else if(r = regex("1*(2+)1*61*(2+|3([124568]|7[12345678])+3)1*(5.*|$)", classstr)) {
+				//This is auth-param (name (1) = value (2)). Tail is (4).
+				std::string name = substr(_input, r.match(1), start);
+				std::string value = substr(_input, r.match(2), start);
+				if(value[0] == '"') {
+					//Process quoted-string.
+					std::ostringstream x;
+					for(size_t i = 1; i < value.length(); i++) {
+						if(value[i] == '\"') break;
+						else if(value[i] == '\\') { x << value[i + 1]; i++; }
+						else x << value[i];
+					}
+					value = x.str();
+				}
+				tmp[name] = value;
+				start += r.match(4).first;
+				classstr = classstr.substr(r.match(4).first);
+				//std::cerr << "Parsed param: " << name << " -> '" << value << "'" << std::endl; 
+			} else
+				return false;	//Syntax error.
 		}
+		if(!tmp.empty()) params.push_back(tmp);
 		return true;
 	}
 
@@ -215,12 +214,17 @@ std::string dh25519_http_auth::request_hash::get_authorization()
 
 void dh25519_http_auth::parse_auth_response(const std::string& response)
 {
-	std::map<std::string,std::string> pparse;
-	if(response.substr(0, 7) != "dh25519") return;
-
-	if(!do_state_machine(auth_param_parser, response, 7, pparse)) {
+	std::list<std::map<std::string, std::string>> pparse;
+	if(!parse_authenticate(response, pparse)) {
 		throw std::runtime_error("Response parse error: <"+response+">");
 	}
+	for(auto i : pparse)
+		parse_auth_response(i);
+}
+
+void dh25519_http_auth::parse_auth_response(std::map<std::string, std::string> pparse)
+{
+	if(pparse[":method"] != "dh25519") return;
 
 	//If there are id and challenge fields, use those to reseed.
 	bool stale = (pparse.count("error") && pparse["error"] == "stale");
@@ -264,3 +268,18 @@ void dh25519_http_auth::get_pubkey(uint8_t* _pubkey)
 {
 	memcpy(_pubkey, pubkey, 32);
 }
+
+#ifdef TEST_HTTP_AUTH_PARSE
+int main(int argc, char** argv)
+{
+	std::list<std::map<std::string, std::string>> params;
+	bool r = parse_authenticate(argv[1], params);
+	if(!r) { std::cerr << "Parse error" << std::endl; return 1; }
+	for(auto i : params) {
+		for(auto j : i)
+			std::cerr << j.first << "=" << j.second << std::endl;
+		std::cerr << "---------------------------------------" << std::endl;
+	}
+	return 0;
+}
+#endif

@@ -76,9 +76,10 @@ regex_results::regex_results()
 	matched = false;
 }
 
-regex_results::regex_results(std::vector<std::string> res)
+regex_results::regex_results(std::vector<std::string> res, std::vector<std::pair<size_t, size_t>> mch)
 {
 	matched = true;
+	matches = mch;
 	results = res;
 }
 
@@ -96,9 +97,15 @@ size_t regex_results::size() const
 {
 	return results.size();
 }
+
 const std::string& regex_results::operator[](size_t i) const
 {
 	return results[i];
+}
+
+std::pair<size_t, size_t> regex_results::match(size_t i) const
+{
+	return matches[i];
 }
 
 regex_results regex(const std::string& regexp, const std::string& str, const char* ex) throw(std::bad_alloc,
@@ -124,9 +131,13 @@ regex_results regex(const std::string& regexp, const std::string& str, const cha
 	bool x = boost::regex_match(str.begin(), str.end(), matches, *(regexps[regexp]));
 	if(x) {
 		std::vector<std::string> res;
-		for(size_t i = 0; i < matches.size(); i++)
+		std::vector<std::pair<size_t, size_t>> mch;
+		for(size_t i = 0; i < matches.size(); i++) {
 			res.push_back(matches.str(i));
-		return regex_results(res);
+			mch.push_back(std::make_pair(matches[i].first - str.begin(),
+				matches[i].second - matches[i].first));
+		}
+		return regex_results(res, mch);
 	} else if(ex)
 		throw std::runtime_error(ex);
 	else

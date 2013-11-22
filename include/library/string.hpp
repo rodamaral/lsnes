@@ -55,14 +55,16 @@ class regex_results
 {
 public:
 	regex_results();
-	regex_results(std::vector<std::string> res);
+	regex_results(std::vector<std::string> res, std::vector<std::pair<size_t, size_t>> mch);
 	operator bool() const;
 	bool operator!() const;
 	size_t size() const;
 	const std::string& operator[](size_t i) const;
+	std::pair<size_t, size_t> match(size_t i) const;
 private:
 	bool matched;
 	std::vector<std::string> results;
+	std::vector<std::pair<size_t, size_t>> matches;
 };
 
 /**
