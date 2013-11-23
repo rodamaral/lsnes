@@ -39,6 +39,34 @@ namespace
 		return field;
 	}
 
+	enum charclass
+	{
+		CHRCLASS_CONTROL,
+		CHRCLASS_WHITESPACE,
+		CHRCLASS_TOKEN,
+		CHRCLASS_DBLQUOTE,
+		CHRCLASS_OTHERQUOTED,
+		CHRCLASS_COMMA,
+		CHRCLASS_EQUALS,
+		CHRCLASS_BACKSLASH,
+		CHRCLASS_SLASH,
+		CHRCLASS_EOS,
+	};
+
+	enum charclass_mask
+	{
+		CMASK_CONTROL = 1 << CHRCLASS_CONTROL,
+		CMASK_WHITESPACE = 1 << CHRCLASS_WHITESPACE,
+		CMASK_TOKEN = 1 << CHRCLASS_TOKEN,
+		CMASK_DBLQUOTE = 1 << CHRCLASS_DBLQUOTE,
+		CMASK_OTHERQUOTED = 1 << CHRCLASS_OTHERQUOTED,
+		CMASK_COMMA = 1 << CHRCLASS_COMMA,
+		CMASK_EQUALS = 1 << CHRCLASS_EQUALS,
+		CMASK_BACKSLASH = 1 << CHRCLASS_BACKSLASH,
+		CMASK_SLASH = 1 << CHRCLASS_SLASH,
+		CMASK_EOS = 1 << CHRCLASS_EOS,
+	};
+
 	//Character class.
 	//0 => Controls, except HT
 	//1 => Whitespace (HT and SP).
@@ -74,7 +102,7 @@ namespace
 		if(pos < str.length())
 			return charclass[(uint8_t)str[pos]];
 		else
-			return 9;
+			return CHRCLASS_EOS;
 	}
 
 	std::string substr(std::string x, std::pair<size_t, size_t> m, size_t base)
@@ -82,59 +110,133 @@ namespace
 		return x.substr(m.first + base, m.second);
 	}
 
-	bool parse_authenticate(const std::string& _input, std::list<std::map<std::string, std::string>>& params)
+	bool read_char(const std::string& input, size_t& itr, char ch)
 	{
-		std::string classstr = _input;
-		for(size_t i = 0; i < classstr.length(); i++)
-			classstr[i] = 48 + get_charclass(classstr, i);
-		size_t start = 0;
-		std::map<std::string, std::string> tmp;
-		while(start < _input.length()) {
-			regex_results r;
-			if(classstr[0] == '1' || classstr[0] == '5') {
-				//Skip Whitespace or comma.
-				start++;
-				classstr = classstr.substr(1);
-				continue;
-			}
-			if(r = regex("1*(2+)1+([28]+)6*1*(5.*|$)", classstr)) {
-				//This is authscheme (1) followed by token68 (2). Tail is (3)
-				if(!tmp.empty()) params.push_back(tmp);
-				tmp.clear();
-				tmp[":method"] = substr(_input, r.match(1), start);
-				tmp[":token"] = substr(_input, r.match(2), start);
-				start += r.match(3).first;
-				classstr = classstr.substr(r.match(3).first);
-				//std::cerr << "Parsed authscheme=" << tmp[":method"] << " with token68: "
-				//	<< tmp[":token"] << std::endl; 
-			} else if(r = regex("1*(2+)1+((5|2+1*61*[23]).*|$)", classstr)) {
-				//This is authscheme (1) followed by parameter. Tail is (2)
-				if(!tmp.empty()) params.push_back(tmp);
-				tmp.clear();
-				tmp[":method"] = substr(_input, r.match(1), start);
-				start += r.match(2).first;
-				classstr = classstr.substr(r.match(2).first);
-				//std::cerr << "Parsed authscheme=" << tmp[":method"] << std::endl; 
-			} else if(r = regex("1*(2+)1*61*(2+|3([124568]|7[12345678])+3)1*(5.*|$)", classstr)) {
-				//This is auth-param (name (1) = value (2)). Tail is (4).
-				std::string name = substr(_input, r.match(1), start);
-				std::string value = substr(_input, r.match(2), start);
-				if(value[0] == '"') {
-					//Process quoted-string.
-					std::ostringstream x;
-					for(size_t i = 1; i < value.length(); i++) {
-						if(value[i] == '\"') break;
-						else if(value[i] == '\\') { x << value[i + 1]; i++; }
-						else x << value[i];
-					}
-					value = x.str();
+		if(input[itr] == ch) {
+			itr++;
+			return true;
+		}
+		return false;
+	}
+
+	bool is_of_class(const std::string& input, size_t itr, uint16_t mask)
+	{
+		return mask & (1 << get_charclass(input, itr));
+	}
+
+	bool read_whitespace(const std::string& input, size_t& itr)
+	{
+		size_t oitr = itr;
+		while(get_charclass(input, itr) == CHRCLASS_WHITESPACE)
+			itr++;
+		return (itr != oitr);
+	}
+
+	std::string read_token(const std::string& input, size_t& itr)
+	{
+		size_t len = 0;
+		while(get_charclass(input, itr + len) == CHRCLASS_TOKEN)
+			len++;
+		std::string tmp(input.begin() + itr, input.begin() + itr + len);
+		itr += len;
+		return tmp;
+	}
+
+	std::string read_quoted_string(const std::string& input, size_t& itr, bool& error)
+	{
+		itr++; //Skip the initial ".
+		std::ostringstream tmp;
+		while(true) {
+			if(is_of_class(input, itr, CMASK_CONTROL | CMASK_EOS)) {
+				error = true;
+				return "";
+			} else if(is_of_class(input, itr, CMASK_BACKSLASH)) {
+				//Quoted pair.
+				if(is_of_class(input, itr + 1, CMASK_CONTROL | CMASK_EOS)) {
+					error = true;
+					return "";
+				} else {
+					//Skip the backslash and take next char.
+					itr++;
+					tmp << input[itr++];
 				}
-				tmp[name] = value;
-				start += r.match(4).first;
-				classstr = classstr.substr(r.match(4).first);
-				//std::cerr << "Parsed param: " << name << " -> '" << value << "'" << std::endl; 
-			} else
-				return false;	//Syntax error.
+			} else if(is_of_class(input, itr, CMASK_DBLQUOTE)) {
+				//String ends.
+				itr++;
+				return tmp.str();
+			} else {
+				//Some char that is literial.
+				tmp << input[itr++];
+			}
+		}
+	}
+
+	bool parse_authenticate(const std::string& input, std::list<std::map<std::string, std::string>>& params)
+	{
+		std::map<std::string, std::string> tmp;
+		size_t itr = 0;
+		size_t inlen = input.length();
+		while(itr < inlen) {
+			//Skip commas.
+			if(read_char(input, itr, ','))
+				continue;
+			//Skip whitespace.
+			if(read_whitespace(input, itr))
+				continue;
+			std::string pname = read_token(input, itr);
+			if(!pname.length()) return false;  //Token is required here.
+			//Now we have two choices:
+			//1) Whitespace followed by CHRCLASS_TOKEN, CHRCLASS_SLASH, CHRCLASS_COMMA or CHRCLASS_EOS.
+			//   -> This is method name.
+			//2) Possible whitespace followed by CHRCLASS_EQUALS. -> This is a parameter.
+			bool had_ws = read_whitespace(input, itr);
+			bool is_param = false;
+			if(had_ws & is_of_class(input, itr, CMASK_TOKEN | CMASK_COMMA | CMASK_SLASH | CMASK_EOS)) {
+				//This is method name.
+			} else if(is_of_class(input, itr, CMASK_EQUALS)) {
+				//This is a parameter.
+				is_param = true;
+			} else return false;	//Bad syntax.
+
+			//Okay, parse what follows.
+			if(is_param) {
+				//Now itr points to equals sign of the parameter.
+				itr++;  //Advance to start of value.
+				read_whitespace(input, itr);  //Skip BWS.
+				std::string pvalue;
+				bool err = false;
+				if(is_of_class(input, itr, CMASK_TOKEN)) {
+					//Token.
+					pvalue = read_token(input, itr);
+				} else if(is_of_class(input, itr, CMASK_DBLQUOTE)) {
+					//Quoted string.
+					pvalue = read_quoted_string(input, itr, err);
+					if(err) return false; //Bad quoted string.
+				} else return false; //Bad syntax.
+				if(tmp.count(pname)) return false; //Each parameter must only occur once.
+				//We don't check for realm being quoted string (httpbis p7 says "might" on accepting
+				//token realm).
+				tmp[pname] = pvalue;
+			} else {
+				//Now itr points to start of parameters.
+				if(!tmp.empty()) params.push_back(tmp);
+				tmp.clear();
+				tmp[":method"] = pname;
+				//We have to see if this has token68 or not. It is if what follows has signature:
+				//(TOKEN|SLASH)+EQUALS*WHITESPACE*(COMMA|EOS).
+				size_t itr2 = itr;
+				while(is_of_class(input, itr2, CMASK_TOKEN | CMASK_SLASH)) itr2++;
+				if(itr == itr2) continue; //Not token68.
+				while(is_of_class(input, itr2, CMASK_EQUALS)) itr2++;
+				while(is_of_class(input, itr2, CMASK_WHITESPACE)) itr2++;
+				if(!is_of_class(input, itr2, CMASK_COMMA | CMASK_EOS)) continue; //Not token68.
+				//OK, this is token68.
+				size_t itr3 = itr;
+				while(is_of_class(input, itr3, CMASK_TOKEN | CMASK_SLASH)) itr3++;
+				tmp[":token"] = std::string(input.begin() + itr, input.begin() + itr3);
+				//Advance point of read to the COMMA/EOS.
+				itr = itr2;
+			}
 		}
 		if(!tmp.empty()) params.push_back(tmp);
 		return true;
