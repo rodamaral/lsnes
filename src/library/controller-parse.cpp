@@ -463,6 +463,7 @@ std::string pcs_write_class(const struct port_controller_set& pset, unsigned& tm
 			s << "\t\t\ttmp = (short)((unsigned short)buffer[" << i.offset
 				<< "] + ((unsigned short)buffer[" << (i.offset + 1) << "] << 8));\n";
 			s << "\t\t\tptr += sprintf(textbuf + ptr, \" %i\", tmp);\n";
+			break;
 		case 2:
 			s << "\t\t\ttextbuf[ptr++] = '|';\n";
 			break;
