@@ -321,7 +321,7 @@ public:
 	T get_numeric_argument(int argindex, const std::string& fname)
 	{
 		if(lua_isnone(lua_handle, argindex) || !lua_isnumber(lua_handle, argindex))
-			(stringfmt() << "Argunment #" << argindex << " to " << fname << " must be numeric").throwex();
+			(stringfmt() << "Argument #" << argindex << " to " << fname << " must be numeric").throwex();
 		return static_cast<T>(lua_tonumber(lua_handle, argindex));
 	}
 /**
@@ -338,7 +338,7 @@ public:
 		if(lua_isnoneornil(lua_handle, argindex))
 			return;
 		if(lua_isnone(lua_handle, argindex) || !lua_isnumber(lua_handle, argindex))
-			(stringfmt() << "Argunment #" << argindex << " to " << fname << " must be numeric if "
+			(stringfmt() << "Argument #" << argindex << " to " << fname << " must be numeric if "
 				"present").throwex();
 		value = static_cast<T>(lua_tonumber(lua_handle, argindex));
 	}
