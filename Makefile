@@ -76,6 +76,7 @@ src/core/version.cpp: buildaux/version.exe forcelook
 
 clean:
 	$(MAKE) -C src clean
+	rm -f buildaux/version.exe
 
 forcelook:
 	@true

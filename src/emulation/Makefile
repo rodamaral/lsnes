@@ -37,6 +37,7 @@ clean:
 	$(MAKE) -C gambatte clean
 	$(MAKE) -C sky clean
 	$(MAKE) -C test clean
+	rm -f make-ports.exe
 
 forcelook:
 	@true
