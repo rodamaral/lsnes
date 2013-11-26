@@ -113,7 +113,8 @@ namespace
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
 
-	const char* eval_lua_lua = "loadstring(" TEMPORARY ")();";
+	const char* eval_lua_lua = "local fn = loadstring(" TEMPORARY "); if fn then fn(); else print("
+		"\"Parse error in Lua statement\"); end;";
 	const char* run_lua_lua = "dofile(" TEMPORARY ");";
 
 	void run_lua_fragment(lua_state& L) throw(std::bad_alloc)
