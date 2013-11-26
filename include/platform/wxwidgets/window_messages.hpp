@@ -13,8 +13,12 @@ public:
 	public:
 		panel(wxwin_messages* _parent, unsigned lines);
 		void on_paint(wxPaintEvent& e);
+		void on_resize(wxSizeEvent& e);
+		virtual wxSize DoGetBestSize() const;
 	private:
 		wxwin_messages* parent;
+		size_t ilines;
+		size_t line_separation;
 	};
 	wxwin_messages();
 	~wxwin_messages();

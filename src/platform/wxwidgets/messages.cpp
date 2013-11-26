@@ -12,17 +12,33 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	parent = _parent;
 	wxMemoryDC d;
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	SetMinSize(wxSize(12 * s.x, lines * s.y));
+	line_separation = s.y;
+	ilines = lines;
+	//wxSizer* dummy_pad = new wxBoxSizer(wxVERTICAL);
+	//SetSizer(dummy_pad);
+	//dummy_pad->Add(12 * s.x, lines * s.y);
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_messages::panel::on_paint), NULL, this);
+	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);
+	//Fit();
+	SetMinSize(wxSize(6 * s.x, 5 * s.y));
 }
 
+wxSize wxwin_messages::panel::DoGetBestSize() const
+{
+	wxMemoryDC d;
+	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
+	std::cerr << "Requesting " << 12 * s.x << "*" << ilines * s.y << std::endl;
+	return wxSize(12 * s.x, ilines * s.y);
+}
 
 wxwin_messages::wxwin_messages()
 	: wxFrame(NULL, wxID_ANY, wxT("lsnes: Messages"), wxDefaultPosition, wxSize(-1, -1),
-		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN)
+		wxMINIMIZE_BOX | wxCLOSE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN |
+		wxRESIZE_BORDER)
 {
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(3, 1, 0, 0);
-	top_s->Add(mpanel = new panel(this, MAXMESSAGES));
+	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+	SetSizer(top_s);
+	top_s->Add(mpanel = new panel(this, MAXMESSAGES), 1, wxEXPAND);
 	platform::msgbuf.set_max_window_size(MAXMESSAGES);
 
 	wxFlexGridSizer* buttons_s = new wxFlexGridSizer(1, 6, 0, 0);
@@ -60,9 +76,14 @@ wxwin_messages::wxwin_messages()
 	top_s->Add(cmd_s, 0, wxGROW);
 
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_messages::on_close));
+	//Very nasty hack.
+	wxSize tmp = mpanel->GetMinSize();
+	mpanel->SetMinSize(mpanel->DoGetBestSize());
 	top_s->SetSizeHints(this);
-	SetSizer(top_s);
-	Fit();
+	wxSize tmp2 = GetClientSize();
+	mpanel->SetMinSize(tmp);
+	top_s->SetSizeHints(this);
+	SetClientSize(tmp2);
 }
 
 wxwin_messages::~wxwin_messages()
@@ -89,6 +110,16 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 		dc.DrawText(towxstring(msgs[i]), 0, y);
 		y += s.y;
 	}
+}
+
+void wxwin_messages::panel::on_resize(wxSizeEvent& e)
+{
+	wxSize newsize = e.GetSize();
+	size_t lines = newsize.y / line_separation;
+	if(lines < 1) lines = 1;
+	platform::msgbuf.set_max_window_size(lines);
+	Refresh();
+	e.Skip();
 }
 
 void wxwin_messages::on_close(wxCloseEvent& e)
