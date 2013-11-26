@@ -25,6 +25,7 @@ public:
 		uint64_t line_current;
 		size_t line_separation;
 		bool mouse_held;
+		int scroll_acc;
 	};
 	wxwin_messages();
 	~wxwin_messages();

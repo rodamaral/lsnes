@@ -23,11 +23,28 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	SetMinSize(wxSize(6 * s.x, 5 * s.y));
 }
 
 void wxwin_messages::panel::on_mouse(wxMouseEvent& e)
 {
+	//Handle mouse wheels first.
+	if(e.GetWheelRotation() && e.GetWheelDelta()) {
+		int unit = e.GetWheelDelta();
+		scroll_acc += e.GetWheelRotation();
+		while(scroll_acc <= -unit) {
+			umutex_class h(platform::msgbuf_lock());
+			platform::msgbuf.scroll_down_line();
+			scroll_acc += unit;
+		}
+		while(scroll_acc >= e.GetWheelDelta()) {
+			umutex_class h(platform::msgbuf_lock());
+			platform::msgbuf.scroll_up_line();
+			scroll_acc -= unit;
+		}
+	}
+
 	uint64_t gfirst;
 	{
 		umutex_class h(platform::msgbuf_lock());
