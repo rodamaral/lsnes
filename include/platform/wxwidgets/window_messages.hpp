@@ -14,11 +14,17 @@ public:
 		panel(wxwin_messages* _parent, unsigned lines);
 		void on_paint(wxPaintEvent& e);
 		void on_resize(wxSizeEvent& e);
+		void on_mouse(wxMouseEvent& e);
+		void on_menu(wxCommandEvent& e);
 		virtual wxSize DoGetBestSize() const;
 	private:
 		wxwin_messages* parent;
 		size_t ilines;
+		uint64_t line_clicked;
+		uint64_t line_declicked;
+		uint64_t line_current;
 		size_t line_separation;
+		bool mouse_held;
 	};
 	wxwin_messages();
 	~wxwin_messages();

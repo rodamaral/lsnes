@@ -1,7 +1,11 @@
 #include "platform/wxwidgets/window_messages.hpp"
 #include "platform/wxwidgets/platform.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
+#include <wx/clipbrd.h>
 
+#include "library/minmax.hpp"
 #include "core/window.hpp"
+#include "core/project.hpp"
 
 #define MAXMESSAGES 20
 #define COMMAND_HISTORY_SIZE 500
@@ -16,7 +20,82 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	ilines = lines;
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_messages::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);
+	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
+	this->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	SetMinSize(wxSize(6 * s.x, 5 * s.y));
+}
+
+void wxwin_messages::panel::on_mouse(wxMouseEvent& e)
+{
+	uint64_t gfirst;
+	{
+		umutex_class h(platform::msgbuf_lock());
+		gfirst = platform::msgbuf.get_visible_first();
+	}
+	uint64_t local_line = e.GetY() / line_separation;
+	uint64_t global_line = gfirst + local_line;
+	if(e.RightDown()) {
+		line_clicked = global_line;
+		mouse_held = true;
+		return;
+	} else if(e.RightUp()) {
+		line_declicked = global_line;
+		mouse_held = false;
+		wxMenu menu;
+		menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxwin_messages::panel::on_menu),
+			NULL, this);
+		menu.Append(wxID_COPY, wxT("Copy to clipboard"));
+		menu.Append(wxID_SAVE, wxT("Save to file"));
+		PopupMenu(&menu);
+	} else {
+		line_current = global_line;
+	}
+	Refresh();
+}
+
+void wxwin_messages::panel::on_menu(wxCommandEvent& e)
+{
+	std::string str;
+	uint64_t m = min(line_clicked, line_declicked);
+	uint64_t M = max(line_clicked, line_declicked);
+	size_t lines = 0;
+	{
+		umutex_class h(platform::msgbuf_lock());
+		for(uint64_t i = m; i <= M; i++) {
+			try {
+				std::string mline = platform::msgbuf.get_message(i);
+				if(lines == 1) str += "\n";
+				str += mline;
+				if(lines >= 1) str += "\n";
+				lines++;
+			} catch(...) {
+			}
+		}
+	}
+	switch(e.GetId()) {
+	case wxID_COPY:
+		if (wxTheClipboard->Open()) {
+			wxTheClipboard->SetData(new wxTextDataObject(towxstring(str)));
+			wxTheClipboard->Close();
+		}
+		break;
+	case wxID_SAVE:
+		try {
+			std::string filename = choose_file_save(this, "Save messages to", project_otherpath(),
+				filetype_textfile);
+			std::ofstream s(filename, std::ios::app);
+			if(!s) throw std::runtime_error("Error opening output file");
+			if(lines == 1) str += "\n";
+			s << str;
+			if(!s) throw std::runtime_error("Error writing output file");
+		} catch(canceled_exception& e) {
+		} catch(std::exception& e) {
+			wxMessageBox(towxstring(e.what()), _T("Error creating file"), wxICON_EXCLAMATION | wxOK,
+				this);
+		}
+		break;
+	}
 }
 
 wxSize wxwin_messages::panel::DoGetBestSize() const
@@ -91,6 +170,8 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 	dc.Clear();
 	int y = 0;
 	uint64_t lines, first;
+	uint64_t xm = min(line_clicked, line_current);
+	uint64_t xM = max(line_clicked, line_current);
 	std::vector<std::string> msgs;
 	{
 		umutex_class h(platform::msgbuf_lock());
@@ -101,7 +182,10 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 			msgs[i] = platform::msgbuf.get_message(first + i);
 	}
 	for(size_t i = 0; i < lines; i++) {
+		uint64_t global_line = first + i;
 		wxSize s = dc.GetTextExtent(towxstring(msgs[i]));
+		bool sel = (global_line >= xm && global_line <= xM) && mouse_held;
+		dc.SetTextForeground(*(sel ? wxBLUE : wxBLACK));
 		dc.DrawText(towxstring(msgs[i]), 0, y);
 		y += s.y;
 	}
