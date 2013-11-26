@@ -14,12 +14,8 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
 	line_separation = s.y;
 	ilines = lines;
-	//wxSizer* dummy_pad = new wxBoxSizer(wxVERTICAL);
-	//SetSizer(dummy_pad);
-	//dummy_pad->Add(12 * s.x, lines * s.y);
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_messages::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);
-	//Fit();
 	SetMinSize(wxSize(6 * s.x, 5 * s.y));
 }
 
@@ -27,7 +23,6 @@ wxSize wxwin_messages::panel::DoGetBestSize() const
 {
 	wxMemoryDC d;
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	std::cerr << "Requesting " << 12 * s.x << "*" << ilines * s.y << std::endl;
 	return wxSize(12 * s.x, ilines * s.y);
 }
 
