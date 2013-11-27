@@ -1,5 +1,6 @@
 #include "core/audioapi.hpp"
 #include "core/dispatch.hpp"
+#include "core/window.hpp"
 
 #include "library/string.hpp"
 #include "platform/wxwidgets/platform.hpp"
@@ -95,6 +96,11 @@ public:
 	void on_game_change(wxScrollEvent& e);
 	void on_vout_change(wxScrollEvent& e);
 	void on_vin_change(wxScrollEvent& e);
+	void on_game_reset(wxCommandEvent& e);
+	void on_vout_reset(wxCommandEvent& e);
+	void on_vin_reset(wxCommandEvent& e);
+	void on_devsel(wxCommandEvent& e);
+	void on_mute(wxCommandEvent& e);
 private:
 	struct _vupanel : public wxPanel
 	{
@@ -202,6 +208,14 @@ private:
 	wxSlider* gamevol;
 	wxSlider* voutvol;
 	wxSlider* vinvol;
+	wxButton* dgamevol;
+	wxButton* dvoutvol;
+	wxButton* dvinvol;
+	wxComboBox* pdev;
+	wxComboBox* rdev;
+	wxCheckBox* mute;
+	struct dispatch_target<bool> unmuted;
+	struct dispatch_target<std::pair<std::string, std::string>> devchange;
 };
 
 wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
@@ -210,22 +224,25 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 	update_sent = false;
 	closing = false;
 	Centre();
-	wxFlexGridSizer* top_s = new wxFlexGridSizer(4, 1, 0, 0);
+	wxFlexGridSizer* top_s = new wxFlexGridSizer(5, 1, 0, 0);
 	SetSizer(top_s);
 
 	top_s->Add(vupanel = new _vupanel(this));
 	top_s->Add(rate = new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
 
-	wxFlexGridSizer* slier_s = new wxFlexGridSizer(3, 2, 0, 0);
+	wxFlexGridSizer* slier_s = new wxFlexGridSizer(3, 3, 0, 0);
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
 	slier_s->Add(gamevol = new wxSlider(this, wxID_ANY, to_db(audioapi_music_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
+	slier_s->Add(dgamevol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Voice out:")), 1, wxGROW);
 	slier_s->Add(voutvol = new wxSlider(this, wxID_ANY, to_db(audioapi_voicep_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
+	slier_s->Add(dvoutvol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	slier_s->Add(new wxStaticText(this, wxID_ANY, wxT("Voice in:")), 1, wxGROW);
 	slier_s->Add(vinvol = new wxSlider(this, wxID_ANY, to_db(audioapi_voicer_volume()), -100, 50,
 		wxDefaultPosition, wxSize(320, -1)), 1, wxGROW);
+	slier_s->Add(dvinvol = new wxButton(this, wxID_ANY, wxT("Reset")));
 	top_s->Add(slier_s, 1, wxGROW);
 
 	gamevol->SetLineSize(1);
@@ -237,7 +254,36 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 	connect_events(gamevol, wxScrollEventHandler(wxwin_vumeter::on_game_change), this);
 	connect_events(voutvol, wxScrollEventHandler(wxwin_vumeter::on_vout_change), this);
 	connect_events(vinvol, wxScrollEventHandler(wxwin_vumeter::on_vin_change), this);
+	dgamevol->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwin_vumeter::on_game_reset), NULL,
+		this);
+	dvoutvol->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwin_vumeter::on_vout_reset), NULL,
+		this);
+	dvinvol->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(wxwin_vumeter::on_vin_reset), NULL,
+		this);
 
+	auto pdev_map = audioapi_driver_get_devices(false);
+	auto rdev_map = audioapi_driver_get_devices(true);
+	std::string current_pdev = pdev_map[audioapi_driver_get_device(false)];
+	std::string current_rdev = rdev_map[audioapi_driver_get_device(true)];
+	std::vector<wxString> available_pdevs;
+	std::vector<wxString> available_rdevs;
+	for(auto i : pdev_map)
+		available_pdevs.push_back(towxstring(i.second));
+	for(auto i : rdev_map)
+		available_rdevs.push_back(towxstring(i.second));
+
+	wxSizer* hw_s = new wxFlexGridSizer(3, 2, 0, 0);
+	hw_s->Add(new wxStaticText(this, wxID_ANY, wxT("Input device:")), 0, wxGROW);
+	hw_s->Add(rdev = new wxComboBox(this, wxID_ANY, towxstring(current_rdev), wxDefaultPosition,
+		wxSize(-1, -1), available_rdevs.size(), &available_rdevs[0], wxCB_READONLY), 1, wxGROW);
+	hw_s->Add(new wxStaticText(this, wxID_ANY, wxT("Output device:")), 0, wxGROW);
+	hw_s->Add(pdev = new wxComboBox(this, wxID_ANY, towxstring(current_pdev), wxDefaultPosition,
+		wxSize(-1, -1), available_pdevs.size(), &available_pdevs[0], wxCB_READONLY), 1, wxGROW);
+	hw_s->Add(new wxStaticText(this, wxID_ANY, wxT("")), 0, wxGROW);
+	hw_s->Add(mute = new wxCheckBox(this, wxID_ANY, wxT("Mute sounds")), 1, wxGROW);
+	mute->SetValue(!platform::is_sound_enabled());
+	top_s->Add(hw_s);
+	
 	wxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(closebutton = new wxButton(this, wxID_OK, wxT("Close")), 0, wxGROW);
@@ -246,7 +292,26 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 
 	closebutton->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
 		wxCommandEventHandler(wxwin_vumeter::on_close), NULL, this);
+	rdev->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+		wxCommandEventHandler(wxwin_vumeter::on_devsel), NULL, this);
+	pdev->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+		wxCommandEventHandler(wxwin_vumeter::on_devsel), NULL, this);
+	mute->Connect(wxEVT_CHECKBOX,
+		wxCommandEventHandler(wxwin_vumeter::on_mute), NULL, this);
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_vumeter::on_wclose));
+
+	unmuted.set(notify_sound_unmute, [this](bool unmute) {
+		runuifun([this, unmute]() { if(!this->closing) this->mute->SetValue(!unmute); });
+	});
+	devchange.set(notify_sound_change, [this](std::pair<std::string, std::string> d) {
+		runuifun([this, d]() {
+			if(this->closing) return;
+			auto pdevs = audioapi_driver_get_devices(false);
+			if(pdevs.count(d.second)) this->pdev->SetValue(pdevs[d.second]);
+			auto rdevs = audioapi_driver_get_devices(true);
+			if(rdevs.count(d.first)) this->rdev->SetValue(rdevs[d.first]);
+		});
+	});
 
 	top_s->SetSizeHints(this);
 	Fit();
@@ -263,6 +328,21 @@ wxwin_vumeter::~wxwin_vumeter() throw()
 {
 }
 
+void wxwin_vumeter::on_devsel(wxCommandEvent& e)
+{
+	std::string newpdev = tostdstring(pdev->GetValue());
+	std::string newrdev = tostdstring(rdev->GetValue());
+	std::string _newpdev = "null";
+	std::string _newrdev = "null";
+	for(auto i : audioapi_driver_get_devices(false))
+		if(i.second == newpdev)
+			_newpdev = i.first;
+	for(auto i : audioapi_driver_get_devices(true))
+		if(i.second == newrdev)
+			_newrdev = i.first;
+	platform::set_sound_device(_newpdev, _newrdev);
+}
+
 void wxwin_vumeter::on_game_change(wxScrollEvent& e)
 {
 	audioapi_music_volume(pow(10, gamevol->GetValue() / 20.0));
@@ -276,6 +356,29 @@ void wxwin_vumeter::on_vout_change(wxScrollEvent& e)
 void wxwin_vumeter::on_vin_change(wxScrollEvent& e)
 {
 	audioapi_voicer_volume(pow(10, vinvol->GetValue() / 20.0));
+}
+
+void wxwin_vumeter::on_game_reset(wxCommandEvent& e)
+{
+	audioapi_music_volume(1);
+	gamevol->SetValue(0);
+}
+
+void wxwin_vumeter::on_vout_reset(wxCommandEvent& e)
+{
+	audioapi_voicep_volume(1);
+	voutvol->SetValue(0);
+}
+
+void wxwin_vumeter::on_vin_reset(wxCommandEvent& e)
+{
+	audioapi_voicer_volume(1);
+	vinvol->SetValue(0);
+}
+
+void wxwin_vumeter::on_mute(wxCommandEvent& e)
+{
+	platform::sound_enable(!mute->GetValue());
 }
 
 void wxwin_vumeter::refresh()

@@ -56,7 +56,6 @@ void open_rom_select_window();
 void open_new_project_window(wxWindow* parent);
 void show_conflictwindow(wxWindow* parent);
 void open_vumeter_window(wxWindow* parent);
-void wxeditor_sounddev_display(wxWindow* parent);
 void wxeditor_movie_display(wxWindow* parent);
 void wxeditor_movie_update();
 void wxeditor_autohold_display(wxWindow* parent);

@@ -57,7 +57,6 @@ enum
 	wxID_SUBFRAMEADVANCE,
 	wxID_NEXTPOLL,
 	wxID_AUDIO_ENABLED,
-	wxID_AUDIO_DEVICE,
 	wxID_SAVE_STATE,
 	wxID_SAVE_MOVIE,
 	wxID_SAVE_SUBTITLES,
@@ -1092,9 +1091,8 @@ wxwin_mainwindow::wxwin_mainwindow()
 	if(audioapi_driver_initialized()) {
 		menu_separator();
 		menu_entry_check(wxID_AUDIO_ENABLED, wxT("Sounds enabled"));
-		menu_entry(wxID_VUDISPLAY, wxT("VU display / volume controls"));
+		menu_entry(wxID_VUDISPLAY, wxT("VU display / sound controls"));
 		menu_check(wxID_AUDIO_ENABLED, platform::is_sound_enabled());
-		menu_entry(wxID_AUDIO_DEVICE, wxT("Set audio device"));
 	}
 	menu_separator();
 	menu_entry(wxID_ENTER_FULLSCREEN, wxT("Enter fullscreen mode"));
@@ -1326,9 +1324,6 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_AUDIO_ENABLED:
 		platform::sound_enable(menu_ischecked(wxID_AUDIO_ENABLED));
-		return;
-	case wxID_AUDIO_DEVICE:
-		wxeditor_sounddev_display(this);
 		return;
 	case wxID_CANCEL_SAVES:
 		platform::queue("cancel-saves");
