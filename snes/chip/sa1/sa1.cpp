@@ -37,7 +37,7 @@ void SA1::enter() {
 }
 
 void SA1::op_irq() {
-  op_read(regs.pc.d);
+  op_read(regs.pc.d, false);
   op_io();
   if(!regs.e) op_writestack(regs.pc.b);
   op_writestack(regs.pc.h);

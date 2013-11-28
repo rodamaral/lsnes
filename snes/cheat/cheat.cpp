@@ -21,9 +21,9 @@ void Cheat::synchronize() {
   for(unsigned i = 0; i < size(); i++) {
     const CheatCode &code = operator[](i);
 
-    unsigned addr = mirror(code.addr);
+    unsigned addr = code.nomirror ? code.addr : mirror(code.addr);
     override[addr] = true;
-    if((addr & 0xffe000) == 0x7e0000) {
+    if(!code.nomirror && (addr & 0xffe000) == 0x7e0000) {
       //mirror $7e:0000-1fff to $00-3f|80-bf:0000-1fff
       unsigned mirroraddr;
       for(unsigned x = 0; x <= 0x3f; x++) {
@@ -40,11 +40,14 @@ void Cheat::synchronize() {
 }
 
 uint8 Cheat::read(unsigned addr) const {
-  addr = mirror(addr);
+  unsigned raddr = mirror(addr);
 
   for(unsigned i = 0; i < size(); i++) {
     const CheatCode &code = operator[](i);
-    if(addr == mirror(code.addr)) {
+    if(!code.nomirror && addr == mirror(code.addr)) {
+      return code.data;
+    }
+    if(code.nomirror && raddr == code.addr) {
       return code.data;
     }
   }

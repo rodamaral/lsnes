@@ -44,10 +44,13 @@ private:
 struct Bus {
   unsigned mirror(unsigned addr, unsigned size);
 
-  alwaysinline uint8 read(unsigned addr);
+  alwaysinline uint8 read(unsigned addr, bool exec);
   alwaysinline void write(unsigned addr, uint8 data);
 
   uint8 *lookup;
+  uint8 *classmap;
+  uint8 *debugflags;
+  uint8 u_debugflags;
   uint32 *target;
 
   unsigned idcount;
@@ -59,6 +62,7 @@ struct Bus {
     MapMode mode,
     unsigned bank_lo, unsigned bank_hi,
     unsigned addr_lo, unsigned addr_hi,
+    unsigned mclass,
     const function<uint8 (unsigned)> &read,
     const function<void (unsigned, uint8)> &write,
     unsigned base = 0, unsigned length = 0
@@ -66,6 +70,13 @@ struct Bus {
 
   void map_reset();
   void map_xml();
+
+  void clearDebugFlags();
+  void debugFlags(uint8 setf, uint8 clrf);
+  void debugFlags(uint8 setf, uint8 clrf, uint8 clazz, uint32 offset);
+  unsigned enumerateMirrors(uint8 clazz, uint32 offset, unsigned start);
+  function<void (uint8, unsigned, unsigned, uint8, bool)> debug_read;
+  function<void (uint8, unsigned, unsigned, uint8)> debug_write;
 
   Bus();
   ~Bus();

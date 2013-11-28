@@ -1,7 +1,7 @@
 #ifdef HITACHIDSP_CPP
 
 uint8 HitachiDSP::bus_read(unsigned addr) {
-  if((addr & 0x408000) == 0x008000) return bus.read(addr);
+  if((addr & 0x408000) == 0x008000) return bus.read(addr, false);
   return 0x00;
 }
 

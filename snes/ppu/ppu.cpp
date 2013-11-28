@@ -87,8 +87,8 @@ void PPU::enable() {
   function<uint8 (unsigned)> read = { &PPU::mmio_read, (PPU*)&ppu };
   function<void (unsigned, uint8)> write = { &PPU::mmio_write, (PPU*)&ppu };
 
-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, read, write);
-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, read, write);
+  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, read, write);
+  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, read, write);
 }
 
 void PPU::power() {

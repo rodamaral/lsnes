@@ -36,8 +36,8 @@ void PPU::frame() {
 }
 
 void PPU::enable() {
-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
+  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
+  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
 }
 
 void PPU::power() {

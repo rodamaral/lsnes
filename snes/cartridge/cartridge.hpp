@@ -12,6 +12,22 @@ struct Cartridge : property<Cartridge> {
     PAL,
   };
 
+  enum class MemoryClass : unsigned {
+    MISC = 0,
+    ROM = 1,
+    SRAM = 2,
+    WRAM = 3,
+    SUPERFXROM = 4,
+    SUPERFXRAM = 5,
+    SA1IRAM = 6,
+    SA1BWRAM = 7,
+    SUFAMITURBO_ROMA = 8,
+    SUFAMITURBO_ROMB = 9,
+    SUFAMITURBO_RAMA = 10,
+    SUFAMITURBO_RAMB = 11,
+    BSXFLASH = 12,
+  };
+
   enum class Slot : unsigned {
     Base,
     Bsx,
@@ -68,6 +84,7 @@ struct Cartridge : property<Cartridge> {
     unsigned addrhi;
     unsigned offset;
     unsigned size;
+    MemoryClass clazz;
 
     Mapping();
     Mapping(const function<uint8 (unsigned)>&, const function<void (unsigned, uint8)>&);

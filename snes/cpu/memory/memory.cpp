@@ -10,11 +10,11 @@ void CPU::op_io() {
   alu_edge();
 }
 
-uint8 CPU::op_read(uint32 addr) {
+uint8 CPU::op_read(uint32 addr, bool exec) {
   status.clock_count = speed(addr);
   dma_edge();
   add_clocks(status.clock_count - 4);
-  regs.mdr = bus.read(addr);
+  regs.mdr = bus.read(addr, exec);
   add_clocks(4);
   alu_edge();
   return regs.mdr;

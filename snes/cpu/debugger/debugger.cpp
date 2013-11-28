@@ -19,8 +19,8 @@ void CPUDebugger::op_step() {
   synchronize_smp();
 }
 
-uint8 CPUDebugger::op_read(uint32 addr) {
-  uint8 data = CPU::op_read(addr);
+uint8 CPUDebugger::op_read(uint32 addr, bool exec) {
+  uint8 data = CPU::op_read(addr, exec);
   usage[addr] |= UsageRead;
   debugger.breakpoint_test(Debugger::Breakpoint::Source::CPUBus, Debugger::Breakpoint::Mode::Read, addr, data);
   return data;

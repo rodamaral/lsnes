@@ -107,7 +107,7 @@ void SA1::op_io() {
   tick();
 }
 
-uint8 SA1::op_read(unsigned addr) {
+uint8 SA1::op_read(unsigned addr, bool exec) {
   tick();
   if(((addr & 0x40e000) == 0x006000) || ((addr & 0xd00000) == 0x400000)) tick();
   return bus_read(addr);

@@ -1,5 +1,5 @@
 alwaysinline uint8_t op_readpc() {
-  return op_read((regs.pc.b << 16) + regs.pc.w++);
+  return op_read((regs.pc.b << 16) + regs.pc.w++, true);
 }
 
 alwaysinline uint8_t op_readstack() {

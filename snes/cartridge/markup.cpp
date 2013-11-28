@@ -74,6 +74,7 @@ void Cartridge::parse_markup_rom(XML::Node &root) {
   for(auto &node : root) {
     if(node.name != "map") continue;
     Mapping m(rom);
+    m.clazz = MemoryClass::ROM;
     parse_markup_map(m, node);
     if(m.size == 0) m.size = rom.size();
     mapping.append(m);
@@ -85,6 +86,7 @@ void Cartridge::parse_markup_ram(XML::Node &root) {
   ram_size = parse_markup_integer(root["size"].data);
   for(auto &node : root) {
     Mapping m(ram);
+    m.clazz = MemoryClass::SRAM;
     parse_markup_map(m, node);
     if(m.size == 0) m.size = ram_size;
     mapping.append(m);
@@ -133,6 +135,7 @@ void Cartridge::parse_markup_superfx(XML::Node &root) {
       for(auto &leaf : node) {
         if(leaf.name != "map") continue;
         Mapping m(superfx.rom);
+        //m.clazz = MemoryClass::SUPERFXROM;  -- Aliases ROM.
         parse_markup_map(m, leaf);
         mapping.append(m);
       }
@@ -145,6 +148,7 @@ void Cartridge::parse_markup_superfx(XML::Node &root) {
         }
         if(leaf.name != "map") continue;
         Mapping m(superfx.ram);
+        //m.clazz = MemoryClass::SUPERFXRAM;  -- Aliases SRAM.
         parse_markup_map(m, leaf);
         if(m.size == 0) m.size = ram_size;
         mapping.append(m);
@@ -188,6 +192,7 @@ void Cartridge::parse_markup_sa1(XML::Node &root) {
   for(auto &node : iram) {
     if(node.name != "map") continue;
     Mapping m(sa1.cpuiram);
+    m.clazz = MemoryClass::SA1IRAM;
     parse_markup_map(m, node);
     if(m.size == 0) m.size = 2048;
     mapping.append(m);
@@ -197,6 +202,7 @@ void Cartridge::parse_markup_sa1(XML::Node &root) {
   for(auto &node : bwram) {
     if(node.name != "map") continue;
     Mapping m(sa1.cpubwram);
+    //m.clazz = MemoryClass::SA1BWRAM;   -- Aliases SRAM
     parse_markup_map(m, node);
     if(m.size == 0) m.size = ram_size;
     mapping.append(m);
@@ -341,6 +347,7 @@ void Cartridge::parse_markup_bsx(XML::Node &root) {
   for(auto &node : root["slot"]) {
     if(node.name != "map") continue;
     Mapping m(bsxflash.memory);
+    m.clazz = MemoryClass::BSXFLASH;
     parse_markup_map(m, node);
     mapping.append(m);
   }
@@ -373,6 +380,7 @@ void Cartridge::parse_markup_sufamiturbo(XML::Node &root) {
           if(leaf.name != "map") continue;
           Memory &memory = slotid == 0 ? sufamiturbo.slotA.rom : sufamiturbo.slotB.rom;
           Mapping m(memory);
+          m.clazz = slotid ? MemoryClass::SUFAMITURBO_ROMB : MemoryClass::SUFAMITURBO_ROMA;
           parse_markup_map(m, leaf);
           if(m.size == 0) m.size = memory.size();
           if(m.size) mapping.append(m);
@@ -384,6 +392,7 @@ void Cartridge::parse_markup_sufamiturbo(XML::Node &root) {
           if(leaf.name != "map") continue;
           Memory &memory = slotid == 0 ? sufamiturbo.slotA.ram : sufamiturbo.slotB.ram;
           Mapping m(memory);
+          m.clazz = slotid ? MemoryClass::SUFAMITURBO_RAMB : MemoryClass::SUFAMITURBO_RAMA;
           parse_markup_map(m, leaf);
           if(m.size == 0) m.size = ram_size;
           if(m.size) mapping.append(m);
@@ -536,11 +545,13 @@ void Cartridge::parse_markup_link(XML::Node &root) {
 }
 
 Cartridge::Mapping::Mapping() {
+  clazz = MemoryClass::MISC;
   mode = Bus::MapMode::Direct;
   banklo = bankhi = addrlo = addrhi = offset = size = 0;
 }
 
 Cartridge::Mapping::Mapping(Memory &memory) {
+  clazz = MemoryClass::MISC;
   read = { &Memory::read, &memory };
   write = { &Memory::write, &memory };
   mode = Bus::MapMode::Direct;

@@ -23,7 +23,7 @@ void HitachiDSP::enter() {
       break;
     case State::DMA:
       for(unsigned n = 0; n < regs.dma_length; n++) {
-        bus.write(regs.dma_target + n, bus.read(regs.dma_source + n));
+        bus.write(regs.dma_target + n, bus.read(regs.dma_source + n, false));
         step(2);
       }
       state = State::Idle;

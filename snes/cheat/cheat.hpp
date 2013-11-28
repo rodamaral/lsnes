@@ -1,6 +1,7 @@
 struct CheatCode {
   unsigned addr;
   unsigned data;
+  bool nomirror;
 };
 
 struct Cheat : public linear_vector<CheatCode> {

@@ -33,7 +33,7 @@ uint8 Debugger::read(Debugger::MemorySource source, unsigned addr) {
     case MemorySource::CPUBus: {
       //do not read from memory-mapped registers that could affect program behavior
       if(((addr - 0x2000) & 0x40c000) == 0x000000) break;  //$00-3f:2000-5fff MMIO
-      return bus.read(addr & 0xffffff);
+      return bus.read(addr & 0xffffff, false);
     } break;
 
     case MemorySource::APUBus: {

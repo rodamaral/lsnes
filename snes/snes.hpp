@@ -1,5 +1,6 @@
 #ifndef SNES_HPP
 #define SNES_HPP
+#define BSNES_SUPPORTS_ADV_BREAKPOINTS
 
 namespace SNES {
   namespace Info {

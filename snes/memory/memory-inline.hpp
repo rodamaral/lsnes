@@ -51,11 +51,26 @@ MappedRAM::MappedRAM() : data_(0), size_(0), write_protect_(false) {}
 
 //Bus
 
-uint8 Bus::read(unsigned addr) {
-  if(cheat.override[addr]) return cheat.read(addr);
-  return reader[lookup[addr]](target[addr]);
+uint8 Bus::read(unsigned addr, bool exec) {
+  uint8 emask = exec ? 0x24 : 0x09;
+  uint8 val;
+  if(__builtin_expect(cheat.override[addr], 0))
+    val = cheat.read(addr);
+  else
+    val = reader[lookup[addr]](target[addr]);
+  if(__builtin_expect((u_debugflags | debugflags[addr]) & emask, 0)) {
+    unsigned daddr = target[addr];
+    uint8 mclass = classmap[addr];
+    debug_read(mclass, daddr, addr, val, exec);
+  }
+  return val;
 }
 
 void Bus::write(unsigned addr, uint8 data) {
+  if(__builtin_expect((u_debugflags | debugflags[addr]) & 0x12, 0)) {
+    unsigned daddr = target[addr];
+    uint8 mclass = classmap[addr];
+    debug_write(mclass, daddr, addr, data);
+  }
   return writer[lookup[addr]](target[addr], data);
 }
