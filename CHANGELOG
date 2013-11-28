@@ -1457,3 +1457,52 @@ rr2-β12 [Monday October 14th 2013]
 * Fix more bugs in rerecord counting
 * Fix bug that caused save slots always to be semi-text in projects
 * Speed up binary savestate saving
+
+rr2-β13 [Thursday November 28th 2013]
+=====================================
+* If libgcrypt is available but /dev/urandom is not, use libgcrypt for RNG* Allow setting AVI scale factors
+* JSON-based controller descriptions
+* Fix compile for Mac OS X
+* Optimize generic controllers using dynamically generated code
+* Make regex thread-safe
+* JSON: Reduce internal exception spam
+* Recent Lua scripts
+* Support latch notifications on SNES
+* Wxwidgets: Command line history
+* Oops, forgot to update patchseries for latch notification support
+* Add on_latch to Lua docs
+* Try to autodect I386/amd64
+* Save bitmaps as PNG
+* Lua: gui.bitmap_hash/gui.palete_hash
+* Lua: bsnes.dump_sprite: Allow overriding row stride
+* Fix recent movies menu
+* Fix output if core tries to output wider than buffer (currently 4096)
+* Win32 compile fixes
+* Don't crash if setting game name & authors outside project context
+* Support in-memory saves and use those for wxwidgets ROM loading
+* Fix in-memory slots
+* Improve randomness of get_random_hexstring (on I386)
+* Zip: Allow output to arbitrary ostream
+* HTTP request code
+* Support stream compression
+* File upload code
+* Add command-line file uploader
+* Upload UI
+* Movie downloading
+* Strip path when autofilling filename
+* httpauth: Use the no-protocol mode
+* Gambatte: Expose CPU registers
+* Fix compilation on Win32
+* BSNES: Compile with accuracy core
+* Fix WWW-Autheticate parsing
+* Rewrite parse_authenticate in saner way
+* Lua: Fix a typo in error message
+* Fix writing movie data
+* Nuke the helper executables on make clean
+* Print proper error message if Lua expression parse fails
+* Allow resizing messages window
+* Oops, remove some crap lines
+* Messages panel: copy to clipboard / save to file
+* Messages window: Scroll with wheel
+* Fold audio device controls to VU meter window
+* Unified support for breakpoints & cheats

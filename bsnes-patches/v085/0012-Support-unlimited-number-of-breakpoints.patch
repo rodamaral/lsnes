@@ -1,6 +1,6 @@
-From 42e32c402d9113206d9d0abf3ee15c40aaa17747 Mon Sep 17 00:00:00 2001
+From a5b380757b086e3a00b47fe14e2a63c74683e8da Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
-Date: Thu, 28 Nov 2013 19:25:13 +0200
+Date: Thu, 28 Nov 2013 22:36:29 +0200
 Subject: [PATCH 12/12] Support unlimited number of breakpoints
 
 ---
@@ -35,7 +35,7 @@ Subject: [PATCH 12/12] Support unlimited number of breakpoints
  snes/memory/memory.cpp                      | 47 ++++++++++++++++++++++++++---
  snes/memory/memory.hpp                      | 13 +++++++-
  snes/ppu/ppu.cpp                            |  4 +--
- snes/smp/smp.cpp                            |  2 +-
+ snes/smp/core/core.hpp                      |  2 +-
  snes/snes.hpp                               |  1 +
  33 files changed, 166 insertions(+), 70 deletions(-)
 
@@ -770,19 +770,19 @@ index 8545175..13e231c 100755
  }
  
  void PPU::power() {
-diff --git a/snes/smp/smp.cpp b/snes/smp/smp.cpp
-index d4ccf42..bc7800c 100755
---- a/snes/smp/smp.cpp
-+++ b/snes/smp/smp.cpp
-@@ -44,7 +44,7 @@ void SMP::enter() {
-       scheduler.exit(Scheduler::ExitReason::SynchronizeEvent);
-     }
+diff --git a/snes/smp/core/core.hpp b/snes/smp/core/core.hpp
+index 1489fce..13d6936 100755
+--- a/snes/smp/core/core.hpp
++++ b/snes/smp/core/core.hpp
+@@ -2,7 +2,7 @@ struct SMPcore {
+   virtual void op_io() = 0;
+   virtual uint8 op_read(uint16 addr) = 0;
+   virtual void op_write(uint16 addr, uint8 data) = 0;
+-  void op_step();
++  virtual void op_step();
  
--    op_step();
-+    bus.op_step();
-   }
- }
- 
+   #include "registers.hpp"
+   #include "memory.hpp"
 diff --git a/snes/snes.hpp b/snes/snes.hpp
 index dffeeee..37ed1fe 100755
 --- a/snes/snes.hpp
