@@ -346,4 +346,20 @@ void GB::set_cpureg(enum cpu_register _reg, uint32_t val)
 		default:		break;
 	}
 }
+
+void GB::set_debug_buffer(debugbuffer& dbgbuf)
+{
+	p_->cpu.set_debug_buffer(dbgbuf);
+}
+
+uint8_t GB::bus_read(unsigned addr)
+{
+	return p_->cpu.bus_read(addr);
+}
+
+void GB::bus_write(unsigned addr, uint8_t val)
+{
+	p_->cpu.bus_write(addr, val);
+}
+
 }

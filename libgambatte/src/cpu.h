@@ -51,6 +51,11 @@ public:
 		mem_.setSaveDir(sdir);
 	}
 
+	void set_debug_buffer(debugbuffer& dbgbuf)
+	{
+		mem_.set_debug_buffer(dbgbuf);
+	}
+
 	std::string const saveBasePath() const {
 		return mem_.saveBasePath();
 	}
@@ -87,6 +92,8 @@ public:
 	std::pair<unsigned char*, size_t> getSaveRam() { return mem_.getSaveRam(); }
 	std::pair<unsigned char*, size_t> getIoRam() { return mem_.getIoRam(); }
 	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
+        uint8_t bus_read(unsigned addr) { return mem_.read(addr, cycleCounter_, false); }
+        void bus_write(unsigned addr, uint8_t val) { mem_.write(addr, val, cycleCounter_); }
 
 	unsigned cycleCounter_;
 	unsigned short pc_;

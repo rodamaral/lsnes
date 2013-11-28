@@ -154,8 +154,8 @@ void CPU::loadOrSave(loadsave& state)
 #define de() ( d << 8 | e )
 #define hl() ( h << 8 | l )
 
-#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); cycleCounter += 4; } while (0)
-#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
+#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, false); cycleCounter += 4; } while (0)
+#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter, true); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
 #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
 
 #define WRITE(addr, data) do { mem_.write(addr, data, cycleCounter); cycleCounter += 4; } while (0)
@@ -525,7 +525,8 @@ void CPU::process(unsigned const cycles) {
 			}
 		} else while (cycleCounter < mem_.nextEventTime()) {
 			unsigned char opcode;
-
+			if(__builtin_expect(mem_.get_debug()->trace_cpu, 0))
+				mem_.get_debug()->trace(pc);
 			PC_READ(opcode);
 
 			if (skip_) {
@@ -923,7 +924,7 @@ void CPU::process(unsigned const cycles) {
 			case 0x3A:
 				{
 					unsigned addr = hl();
-					a = mem_.read(addr, cycleCounter);
+					a = mem_.read(addr, cycleCounter, false);
 					cycleCounter += 4;
 
 					addr = (addr - 1) & 0xFFFF;

@@ -18,6 +18,7 @@
  ***************************************************************************/
 #ifndef GAMBATTE_H
 #define GAMBATTE_H
+#define GAMBATTE_SUPPORTS_ADV_DEBUG
 
 #include "gbint.h"
 #include "inputgetter.h"
@@ -25,6 +26,8 @@
 #include <cstddef>
 #include <string>
 #include <vector>
+#include <functional>
+#include <map>
 
 //
 // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
@@ -33,6 +36,23 @@
 namespace gambatte {
 
 enum { BG_PALETTE = 0, SP1_PALETTE = 1, SP2_PALETTE = 2 };
+
+struct debugbuffer
+{
+	//1 => Read, 2 => Write, 4 => Execute, 8 => Cheat
+	uint8_t* wram;		//32kB, id1.
+	uint8_t* ioamhram;	//512 bytes, id2.
+	uint8_t* cart;		//As needed, id3.
+	uint8_t* sram;		//As needed, id4.
+	uint8_t* bus;		//64kB, id0
+	std::map<unsigned, uint8_t> wramcheat;
+	std::map<unsigned, uint8_t> sramcheat;
+	std::map<unsigned, uint8_t> cartcheat;
+	std::function<void(unsigned, unsigned, uint8_t, bool)> read;
+	std::function<void(unsigned, unsigned, uint8_t)> write;
+	std::function<void(uint16_t)> trace;
+	bool trace_cpu;
+};
 
 class GB {
 public:
@@ -259,6 +279,9 @@ public:
 	};
 	uint32_t get_cpureg(enum cpu_register reg);
 	void set_cpureg(enum cpu_register reg, uint32_t val);
+	void set_debug_buffer(debugbuffer& dbgbuf);
+	uint8_t bus_read(unsigned addr);
+	void bus_write(unsigned addr, uint8_t val);
 private:
 	void preload_common();
 	void postload_common(const unsigned flags);

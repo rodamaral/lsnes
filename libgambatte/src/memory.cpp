@@ -234,7 +234,7 @@ unsigned Memory::event(unsigned cc) {
 					unsigned const src = dmaSrc++ & 0xFFFF;
 					unsigned const data = (src & 0xE000) == 0x8000 || src > 0xFDFF
 					                    ? 0xFF
-					                    : read(src, cc);
+					                    : read(src, cc, false);
 
 					cc += 2 << doubleSpeed;
 
@@ -550,18 +550,31 @@ static bool isInOamDmaConflictArea(OamDmaSrc const oamDmaSrc, unsigned const p, 
 	    && p - a[oamDmaSrc].exceptAreaLower >= a[oamDmaSrc].exceptAreaWidth;
 }
 
-unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc) {
+unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc, bool exec) {
 	if (p < 0xFF80) {
 		if (lastOamDmaUpdate_ != disabled_time) {
 			updateOamDma(cc);
 
-			if (isInOamDmaConflictArea(cart_.oamDmaSrc(), p, isCgb()) && oamDmaPos_ < 0xA0)
+			if (isInOamDmaConflictArea(cart_.oamDmaSrc(), p, isCgb()) && oamDmaPos_ < 0xA0) {
 				return ioamhram_[oamDmaPos_];
+			}
 		}
 
 		if (p < 0xC000) {
-			if (p < 0x8000)
-				return cart_.romdata(p >> 14)[p];
+			if (p < 0x8000) {
+				const unsigned char* aaddr = cart_.romdata(p >> 14) + p;
+				auto a = cart_.getCartRom();
+				if(aaddr >= a.first && aaddr < a.first + a.second)
+					if(__builtin_expect(dbg->cart[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
+						if(dbg->cart[aaddr - a.first] & (exec ? 0x44 : 0x11))
+							dbg->read(3, aaddr - a.first, *aaddr, exec);
+						if(dbg->cart[aaddr - a.first] & 8) {
+							auto itr = dbg->cartcheat.find(aaddr - a.first);
+							if(itr != dbg->cartcheat.end()) return itr->second;
+						}
+					}
+				return *aaddr;
+			}
 
 			if (p < 0xA000) {
 				if (!lcd_.vramAccessible(cc))
@@ -570,23 +583,52 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc) {
 				return cart_.vrambankptr()[p];
 			}
 
-			if (cart_.rsrambankptr())
-				return cart_.rsrambankptr()[p];
+			if (cart_.rsrambankptr()) {
+				const unsigned char* aaddr = cart_.rsrambankptr() + p;
+				auto a = cart_.getSaveRam();
+				if(aaddr >= a.first && aaddr < a.first + a.second)
+					if(__builtin_expect(dbg->sram[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
+						if(dbg->sram[aaddr - a.first] & (exec ? 0x44 : 0x11))
+							dbg->read(4, aaddr - a.first, *aaddr, exec);
+						if(dbg->sram[aaddr - a.first] & 8) {
+							auto itr = dbg->sramcheat.find(aaddr - a.first);
+							if(itr != dbg->sramcheat.end()) return itr->second;
+						}
+					}
+				return *aaddr;
+			}
 
 			return cart_.rtcRead();
 		}
 
-		if (p < 0xFE00)
-			return cart_.wramdata(p >> 12 & 1)[p & 0xFFF];
+		if (p < 0xFE00) {
+			unsigned char* aaddr = cart_.wramdata(p >> 12 & 1) + (p & 0xFFF);
+			auto a = cart_.getWorkRam();
+			if(aaddr >= a.first && aaddr < a.first + a.second)
+				if(__builtin_expect(dbg->wram[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
+					if(dbg->wram[aaddr - a.first] & (exec ? 0x44 : 0x11))
+						dbg->read(1, aaddr - a.first, *aaddr, exec);
+					if(dbg->wram[aaddr - a.first] & 8) {
+						auto itr = dbg->wramcheat.find(aaddr - a.first);
+						if(itr != dbg->wramcheat.end()) return itr->second;
+					}
+				}
+			return *aaddr;
+		}
 
 		long const ffp = long(p) - 0xFF00;
-		if (ffp >= 0)
-			return nontrivial_ff_read(ffp, cc);
+		if (ffp >= 0) {
+			uint8_t v = nontrivial_ff_read(ffp, cc);
+			if(__builtin_expect(dbg->ioamhram[ffp + 0x100] & (exec ? 0x44 : 0x11), 0))
+				dbg->read(2, ffp + 0x100, v, exec);
+			return v;
+		}
 
 		if (!lcd_.oamReadable(cc) || oamDmaPos_ < 0xA0)
 			return 0xFF;
 	}
-
+	if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & (exec ? 0x44 : 0x11), 0))
+		dbg->read(2, p - 0xFE00, ioamhram_[p - 0xFE00], exec);
 	return ioamhram_[p - 0xFE00];
 }
 
@@ -1023,18 +1065,32 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned co
 	if (p < 0xFE00) {
 		if (p < 0xA000) {
 			if (p < 0x8000) {
+				//Being a write on MBC, this is not ROM write.
 				cart_.mbcWrite(p, data);
 			} else if (lcd_.vramAccessible(cc)) {
 				lcd_.vramChange(cc);
 				cart_.vrambankptr()[p] = data;
 			}
 		} else if (p < 0xC000) {
-			if (cart_.wsrambankptr())
-				cart_.wsrambankptr()[p] = data;
-			else
+			if (cart_.wsrambankptr()) {
+				unsigned char* aaddr = cart_.wsrambankptr() + p;
+				auto a = cart_.getSaveRam();
+				if(aaddr >= a.first && aaddr < a.first + a.second)
+					if(__builtin_expect(dbg->sram[aaddr - a.first] & 0x22, 0))
+						dbg->write(4, aaddr - a.first, data);
+				*aaddr = data;
+			} else {
+				//Being I/O write, this is not write on SRAM.
 				cart_.rtcWrite(data);
-		} else
-			cart_.wramdata(p >> 12 & 1)[p & 0xFFF] = data;
+			}
+		} else {
+			unsigned char* aaddr = cart_.wramdata(p >> 12 & 1) + (p & 0xFFF);
+			auto a = cart_.getWorkRam();
+			if(aaddr >= a.first && aaddr < a.first + a.second)
+				if(__builtin_expect(dbg->wram[aaddr - a.first] & 0x22, 0))
+					dbg->write(1, aaddr - a.first, data);
+			*aaddr = data;
+		}
 	} else if (p - 0xFF80u >= 0x7Fu) {
 		long const ffp = long(p) - 0xFF00;
 		if (ffp < 0) {
@@ -1042,10 +1098,16 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned co
 				lcd_.oamChange(cc);
 				ioamhram_[p - 0xFE00] = data;
 			}
-		} else
+		} else {
+			if(__builtin_expect(dbg->ioamhram[ffp + 0x100] & 0x22, 0))
+				dbg->write(2, ffp + 0x100, data);
 			nontrivial_ff_write(ffp, data, cc);
-	} else
+		}
+	} else {
+		if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & 0x22, 0))
+			dbg->write(2, p - 0xFE00, data);
 		ioamhram_[p - 0xFE00] = data;
+	}
 }
 
 void Memory::postLoadRom()

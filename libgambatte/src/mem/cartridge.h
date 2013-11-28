@@ -81,6 +81,7 @@ public:
 	void loadOrSave(loadsave& state);
 	void setRtcBase(time_t time) { rtc_.setBaseTime(time); }
 	time_t getRtcBase() { return rtc_.getBaseTime(); }
+	std::pair<unsigned char*, size_t> getCartRom();
 	std::pair<unsigned char*, size_t> getWorkRam();
 	std::pair<unsigned char*, size_t> getSaveRam();
 	std::pair<unsigned char*, size_t> getVideoRam();

@@ -858,6 +858,12 @@ std::pair<unsigned char*, size_t> Cartridge::getWorkRam() {
 	return std::make_pair(memptrs_.wramdata(0), worksize);
 }
 
+std::pair<unsigned char*, size_t> Cartridge::getCartRom()
+{
+	size_t worksize = memptrs_.romdataend() - memptrs_.romdata(0);
+	return std::make_pair(memptrs_.romdata(0), worksize);
+}
+
 Cartridge::Cartridge(time_t (**_getCurrentTime)())
 	: rtc_(_getCurrentTime) {
 	memoryCartridge = true;
