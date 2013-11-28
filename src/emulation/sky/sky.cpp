@@ -402,5 +402,19 @@ namespace sky
 		}
 		unsigned c_action_flags(unsigned id) { return 0; }
 		int c_reset_action(bool hard) { return -1; }
+		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags)
+		{
+		}
+		void c_set_cheat(uint64_t addr, uint64_t value, bool set)
+		{
+		}
+		void c_debug_reset()
+		{
+		}
+		std::vector<std::string> c_get_trace_cpus()
+		{
+			std::vector<std::string> r;
+			return r;
+		}
 	} sky_core;
 }

@@ -336,6 +336,10 @@ struct core_core
 	const interface_device_reg* get_registers();
 	int reset_action(bool hard);
 	std::pair<unsigned, unsigned> lightgun_scale();
+	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear);
+	void set_cheat(uint64_t addr, uint64_t value, bool set);
+	std::vector<std::string> get_trace_cpus();
+	void debug_reset();
 	bool isnull();
 protected:
 /**
@@ -486,6 +490,25 @@ protected:
  */
 	virtual std::pair<unsigned, unsigned> c_lightgun_scale();
 /**
+ * Set/Clear debug callback flags for address.
+ *
+ * Address of 0xFFFFFFFFFFFFFFFF means all addresses.
+ * Flags are 1 for read, 2 for write, 4 for execute, 8 for trace (addr is processor number)
+ */
+	virtual void c_set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear) = 0;
+/**
+ * Set/Clear cheat.
+ */
+	virtual void c_set_cheat(uint64_t addr, uint64_t value, bool set) = 0;
+/**
+ * Get list of trace processor names.
+ */
+	virtual std::vector<std::string> c_get_trace_cpus() = 0;
+/**
+ * Reset all debug hooks.
+ */
+	virtual void c_debug_reset() = 0;
+/**
  * Is null core (only NULL core should define this).
  */
 	virtual bool c_isnull();
@@ -562,6 +585,16 @@ public:
 	const interface_device_reg* get_registers() { return core->get_registers(); }
 	int reset_action(bool hard) { return core->reset_action(hard); }
 	std::pair<unsigned, unsigned> lightgun_scale() { return core->lightgun_scale(); }
+	void set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear)
+	{
+		return core->set_debug_flags(addr, flags_set, flags_clear);
+	}
+	void set_cheat(uint64_t addr, uint64_t value, bool set)
+	{
+		return core->set_cheat(addr, value, set);
+	}
+	std::vector<std::string> get_trace_cpus() { return core->get_trace_cpus(); }
+	void debug_reset() { core->debug_reset(); }
 	bool isnull() { return core->isnull(); }
 protected:
 /**

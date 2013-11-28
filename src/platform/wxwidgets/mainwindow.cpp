@@ -10,6 +10,7 @@
 #include "platform/wxwidgets/window_status.hpp"
 #include "platform/wxwidgets/window-romload.hpp"
 #include "platform/wxwidgets/settings-common.hpp"
+#include "platform/wxwidgets/menu_tracelog.hpp"
 
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -129,6 +130,8 @@ enum
 	wxID_UPLOAD_FIRST,
 	wxID_UPLOAD_LAST = wxID_UPLOAD_FIRST + 256,
 	wxID_DOWNLOAD,
+	wxID_TRACELOG_FIRST,
+	wxID_TRACELOG_LAST = wxID_TRACELOG_FIRST + 256,
 };
 
 
@@ -1076,6 +1079,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_separator();
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	menu_entry(wxID_HEXEDITOR, wxT("Memory editor..."));
+	tracelog_menu* trlog;
+	menu_special_sub(wxT("Trace log"), trlog = new tracelog_menu(this, wxID_TRACELOG_FIRST, wxID_TRACELOG_LAST));
+	trlog->update();
 	menu_separator();
 	menu_entry(wxID_MOVIE_EDIT, wxT("Edit movie..."));
 	menu_separator();
@@ -1101,6 +1107,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_ABOUT, wxT("About..."));
 
 	corechange.set(notify_core_change, []() { signal_core_change(); });
+	titlechange.set(notify_title_change, []() { signal_core_change(); });
 	newcore.set(notify_new_core, []() { update_preferences(); });
 	unmuted.set(notify_sound_unmute, [this](bool unmute) {
 		runuifun([this, unmute]() { this->menu_check(wxID_AUDIO_ENABLED, unmute); });

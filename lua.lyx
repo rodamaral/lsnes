@@ -3689,6 +3689,114 @@ Should only be used in on_frame_emulated callback.
 Setting or clearing this affects the emulator lag counter.
 \end_layout
 
+\begin_layout Subsection
+memory.{,un}register{read,write,exec}: (Un)Register read / write / execute
+ callback
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory.registerread([string vma, ] number addr, function
+ fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory.registerwrite([string vma, ] number addr, function
+ fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory.registerexec([string vma, ] number addr, function
+ fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.unregisterread([string vma, ] number addr, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.unregisterwrite([string vma, ] number addr, function
+ fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.unregisterexec([string vma, ] number addr, function fn);
+\end_layout
+
+\begin_layout Standard
+Add or remove callback on memory read, write or execute (depending on the
+ function).
+ If <vma> is specified, <addr> is relative to it, otherwise <addr> is global.
+ <fn> is the callback.
+ The register* functions return <fn> (which can then be passed to unregister*
+ functions.
+\end_layout
+
+\begin_layout Itemize
+Not all cores support this, and it may be unsupported for some VMAs.
+\end_layout
+
+\begin_layout Itemize
+The functions are passed two parameters: Address and value.
+\end_layout
+
+\begin_layout Subsection
+memory.{,un}registertrace: Set/Clear trace hook
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory.registertrace(number processor, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.unregistertrace(number processor, function fn);
+\end_layout
+
+\begin_layout Standard
+Add or remove trace callback.
+ <processor> is system-dependent processor number (0 is usually main CPU).
+ The function arguments work like in other (un)register* functions.
+\end_layout
+
+\begin_layout Itemize
+The functions are passed two parameters: Trace CPU and Trace event string.
+\end_layout
+
+\begin_layout Subsection
+memory.cheat: Set cheat
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.cheat([string vma, ] number addr, number value);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.cheat([string vma, ] number addr);
+\end_layout
+
+\begin_layout Standard
+Set or clear cheat (value <value>) on address <addr>.
+ If <vma> is specified, <addr> is relative to that.
+ If <value> is not speicified, clear a cheat.
+\end_layout
+
+\begin_layout Itemize
+Not all cores support this, and it may be unsupported for some VMAs.
+\end_layout
+
+\begin_layout Subsection
+memory.setxmask: Set global execute hook mask
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.setxmask(number mask)
+\end_layout
+
+\begin_layout Standard
+Set the global execute hook mask to <mask>.
+ The meaning of each bit is system-dependent, but bit 0 should be the main
+ CPU.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -4483,12 +4591,65 @@ Called when latch line for controller is rising.
  Some cores may not support this.
 \end_layout
 
-\begin_layout Itemize
-bsnes core: Called with no parameters.
+\begin_layout Section
+System-dependent behaviour
+\end_layout
+
+\begin_layout Subsection
+bsnes core
 \end_layout
 
 \begin_layout Itemize
-gambatte core: Not supported.
+Registers are: pbpc, pb, pc, r0, r1, r2, r3, r4, r5, a, x, y, z, s, d, db,
+ p, e, irq, wai, mdr, vector, aa, rd, sp, dp, p_n, p_v, p_m, p_x, p_d, p_i,
+ p_z, p_c
+\end_layout
+
+\begin_layout Itemize
+on_latch has no parameters
+\end_layout
+
+\begin_layout Itemize
+CPU 0 is S-CPU, 1 is S-SMP.
+\end_layout
+
+\begin_layout Itemize
+Cheats are supported for ROM, SRAM, WRAM, BSXFLASH, SLOT{A,B}_{RAM,ROM}.
+\end_layout
+
+\begin_layout Itemize
+Read/Write/Execute hooks are supported for ROM, SRAM, WRAM, BSXFLASH, SLOT{A,B}_
+{RAM,ROM}.
+\end_layout
+
+\begin_layout Subsection
+gambatte core
+\end_layout
+
+\begin_layout Itemize
+Registers are: wrambank, cyclecounter, pc, sp, hf1, hf2, zf, cf, a, b, c,
+ d, e, f, h, l
+\end_layout
+
+\begin_layout Itemize
+on_latch is not supported
+\end_layout
+
+\begin_layout Itemize
+CPU 0 is main CPU.
+\end_layout
+
+\begin_layout Itemize
+Cheats are supported for ROM, SRAM and WRAM.
+\end_layout
+
+\begin_layout Itemize
+Read/Write/Execute hooks are supported for ROM (read/execute only), SRAM
+ and WRAM.
+\end_layout
+
+\begin_layout Itemize
+
 \end_layout
 
 \end_body

@@ -101,3 +101,4 @@ single_type filetype_png("png", "Portable Network Graphics");
 single_type filetype_hexbookmarks("lhb", "Hex editor bookmarks");
 single_type filetype_memorysearch("lms", "Memory search save");
 single_type filetype_textfile("txt", "Text file");
+single_type filetype_trace("trace", "Trace file");

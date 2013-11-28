@@ -313,6 +313,11 @@ std::pair<unsigned, unsigned> core_core::c_lightgun_scale()
 	return std::make_pair(0, 0);
 }
 
+void core_core::debug_reset()
+{
+	return c_debug_reset();
+}
+
 bool core_core::c_isnull()
 {
 	return false;
@@ -531,6 +536,21 @@ std::set<const interface_action*> core_core::get_actions()
 int core_core::reset_action(bool hard)
 {
 	return c_reset_action(hard);
+}
+
+void core_core::set_debug_flags(uint64_t addr, unsigned flags_set, unsigned flags_clear)
+{
+	return c_set_debug_flags(addr, flags_set, flags_clear);
+}
+
+void core_core::set_cheat(uint64_t addr, uint64_t value, bool set)
+{
+	return c_set_cheat(addr, value, set);
+}
+
+std::vector<std::string> core_core::get_trace_cpus()
+{
+	return c_get_trace_cpus();
 }
 
 emucore_callbacks::~emucore_callbacks() throw()

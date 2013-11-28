@@ -356,3 +356,4 @@ struct dispatcher<> notify_voice_stream_change("voice_stream_change");
 struct dispatcher<> notify_vu_change("vu_change");
 struct dispatcher<> notify_subtitle_change("subtitle_change");
 struct dispatcher<unsigned, unsigned, int> notify_multitrack_change("multitrack_change");
+struct dispatcher<> notify_title_change("title_change");

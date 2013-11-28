@@ -194,5 +194,12 @@ namespace
 		std::set<std::string> c_srams() { return std::set<std::string>(); }
 		unsigned c_action_flags(unsigned id) { return 1; }
 		int c_reset_action(bool hard) { return -1; }
+		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags) {}
+		void c_set_cheat(uint64_t addr, uint64_t value, bool set) {}
+		void c_debug_reset() {}
+		std::vector<std::string> c_get_trace_cpus()
+		{
+			return std::vector<std::string>();
+		}
 	} test_core;
 }

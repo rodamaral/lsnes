@@ -76,6 +76,7 @@ private:
 	void* sounddev2;
 	void* dmenu;
 	struct dispatch_target<> corechange;
+	struct dispatch_target<> titlechange;
 	struct dispatch_target<> newcore;
 	struct dispatch_target<bool> unmuted;
 	struct dispatch_target<bool> modechange;

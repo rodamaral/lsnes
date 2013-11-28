@@ -1,7 +1,7 @@
 From 4dc46334ec175e26277632fee4aea80768749af9 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 11 Nov 2011 19:49:46 +0200
-Subject: [PATCH 06/11] Allow frontend to control random number seed
+Subject: [PATCH 06/12] Allow frontend to control random number seed
 
 ---
  snes/interface/interface.cpp | 5 +++++
@@ -49,5 +49,5 @@ index c19a7c5..dbd912d 100755
    region = config.region;
    expansion = config.expansion_port;
 -- 
-1.8.4.rc3
+1.8.4.4
 

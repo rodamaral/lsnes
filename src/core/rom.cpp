@@ -136,6 +136,13 @@ namespace
 		unsigned c_action_flags(unsigned id) { return 0; }
 		int c_reset_action(bool hard) { return -1; }
 		bool c_isnull() { return true; }
+		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags) {}
+		void c_set_cheat(uint64_t addr, uint64_t value, bool set) {}
+		void c_debug_reset() {}
+		std::vector<std::string> c_get_trace_cpus()
+		{
+			return std::vector<std::string>();
+		}
 	} core_null;
 
 	core_type* current_rom_type = &core_null;
@@ -578,7 +585,10 @@ void loaded_rom::load(std::map<std::string, std::string>& settings, uint64_t rtc
 	current_region = region;
 	//If core changes, unload the cartridge.
 	if(old_core != current_rom_type->get_core())
-		try { old_core->unload_cartridge(); } catch(...) {}
+		try {
+			old_core->debug_reset();
+			old_core->unload_cartridge();
+		} catch(...) {}
 	refresh_cart_mappings();
 	notify_core_changed(old_type != current_rom_type);
 }

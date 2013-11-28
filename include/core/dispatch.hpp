@@ -266,6 +266,7 @@ extern struct dispatcher<> notify_status_update;
 extern struct dispatcher<bool> notify_sound_unmute;
 extern struct dispatcher<bool> notify_mode_change;
 extern struct dispatcher<> notify_core_change;
+extern struct dispatcher<> notify_title_change;
 extern struct dispatcher<bool> notify_core_changed;
 extern struct dispatcher<> notify_new_core;
 extern struct dispatcher<> notify_voice_stream_change;

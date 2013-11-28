@@ -1,0 +1,799 @@
+From 42e32c402d9113206d9d0abf3ee15c40aaa17747 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Thu, 28 Nov 2013 19:25:13 +0200
+Subject: [PATCH 12/12] Support unlimited number of breakpoints
+
+---
+ snes/alt/cpu/cpu.cpp                        | 22 +++++++-------
+ snes/alt/ppu-compatibility/ppu.cpp          |  4 +--
+ snes/alt/ppu-parallel/ppu.cpp               |  4 +--
+ snes/alt/ppu-performance/ppu.cpp            |  4 +--
+ snes/cartridge/cartridge.hpp                | 17 +++++++++++
+ snes/cartridge/markup.cpp                   | 11 +++++++
+ snes/cheat/cheat.cpp                        | 11 ++++---
+ snes/cheat/cheat.hpp                        |  1 +
+ snes/chip/bsx/satellaview/satellaview.cpp   |  4 +--
+ snes/chip/hitachidsp/hitachidsp.cpp         |  2 +-
+ snes/chip/hitachidsp/memory.cpp             |  2 +-
+ snes/chip/nss/nss.cpp                       |  4 +--
+ snes/chip/sa1/memory/memory.cpp             |  2 +-
+ snes/chip/sa1/memory/memory.hpp             |  2 +-
+ snes/chip/sa1/sa1.cpp                       |  2 +-
+ snes/chip/sdd1/sdd1.cpp                     |  4 +--
+ snes/cpu/core/core.hpp                      |  2 +-
+ snes/cpu/core/disassembler/disassembler.cpp |  2 +-
+ snes/cpu/core/memory.hpp                    |  2 +-
+ snes/cpu/cpu.cpp                            | 26 ++++++++--------
+ snes/cpu/debugger/debugger.cpp              |  4 +--
+ snes/cpu/debugger/debugger.hpp              |  2 +-
+ snes/cpu/dma/dma.cpp                        |  4 +--
+ snes/cpu/memory/memory.cpp                  |  4 +--
+ snes/cpu/memory/memory.hpp                  |  2 +-
+ snes/cpu/mmio/mmio.cpp                      |  2 +-
+ snes/debugger/debugger.cpp                  |  2 +-
+ snes/memory/memory-inline.hpp               | 21 +++++++++++--
+ snes/memory/memory.cpp                      | 47 ++++++++++++++++++++++++++---
+ snes/memory/memory.hpp                      | 13 +++++++-
+ snes/ppu/ppu.cpp                            |  4 +--
+ snes/smp/smp.cpp                            |  2 +-
+ snes/snes.hpp                               |  1 +
+ 33 files changed, 166 insertions(+), 70 deletions(-)
+
+diff --git a/snes/alt/cpu/cpu.cpp b/snes/alt/cpu/cpu.cpp
+index 814908d..dcbb92d 100755
+--- a/snes/alt/cpu/cpu.cpp
++++ b/snes/alt/cpu/cpu.cpp
+@@ -89,24 +89,24 @@ void CPU::enable() {
+   function<uint8 (unsigned)> read = { &CPU::mmio_read, (CPU*)&cpu };
+   function<void (unsigned, uint8)> write = { &CPU::mmio_write, (CPU*)&cpu };
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2140, 0x2183, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2140, 0x2183, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2140, 0x2183, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2140, 0x2183, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4016, 0x4017, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4016, 0x4017, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4016, 0x4017, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4016, 0x4017, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4200, 0x421f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4200, 0x421f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4200, 0x421f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4200, 0x421f, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, 0, read, write);
+ 
+   read = [](unsigned addr) { return cpu.wram[addr]; };
+   write = [](unsigned addr, uint8 data) { cpu.wram[addr] = data; };
+ 
+-  bus.map(Bus::MapMode::Linear, 0x00, 0x3f, 0x0000, 0x1fff, read, write, 0x000000, 0x002000);
+-  bus.map(Bus::MapMode::Linear, 0x80, 0xbf, 0x0000, 0x1fff, read, write, 0x000000, 0x002000);
+-  bus.map(Bus::MapMode::Linear, 0x7e, 0x7f, 0x0000, 0xffff, read, write);
++  bus.map(Bus::MapMode::Linear, 0x00, 0x3f, 0x0000, 0x1fff, 3, read, write, 0x000000, 0x002000);
++  bus.map(Bus::MapMode::Linear, 0x80, 0xbf, 0x0000, 0x1fff, 3, read, write, 0x000000, 0x002000);
++  bus.map(Bus::MapMode::Linear, 0x7e, 0x7f, 0x0000, 0xffff, 3, read, write);
+ }
+ 
+ void CPU::power() {
+diff --git a/snes/alt/ppu-compatibility/ppu.cpp b/snes/alt/ppu-compatibility/ppu.cpp
+index a21e5e3..122b143 100755
+--- a/snes/alt/ppu-compatibility/ppu.cpp
++++ b/snes/alt/ppu-compatibility/ppu.cpp
+@@ -126,8 +126,8 @@ void PPU::enable() {
+   function<uint8 (unsigned)> read = { &PPU::mmio_read, (PPU*)&ppu };
+   function<void (unsigned, uint8)> write = { &PPU::mmio_write, (PPU*)&ppu };
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, read, write);
+ }
+ 
+ void PPU::power() {
+diff --git a/snes/alt/ppu-parallel/ppu.cpp b/snes/alt/ppu-parallel/ppu.cpp
+index 1c3dcb7..8dd118b 100755
+--- a/snes/alt/ppu-parallel/ppu.cpp
++++ b/snes/alt/ppu-parallel/ppu.cpp
+@@ -36,8 +36,8 @@ void PPU::frame() {
+ }
+ 
+ void PPU::enable() {
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, { &PPU::mmio_read, this }, { &PPU::mmio_write, this });
+ }
+ 
+ void PPU::power() {
+diff --git a/snes/alt/ppu-performance/ppu.cpp b/snes/alt/ppu-performance/ppu.cpp
+index 7c231bc..4b2b294 100755
+--- a/snes/alt/ppu-performance/ppu.cpp
++++ b/snes/alt/ppu-performance/ppu.cpp
+@@ -90,8 +90,8 @@ void PPU::enable() {
+   function<uint8 (unsigned)> read = { &PPU::mmio_read, (PPU*)&ppu };
+   function<void (unsigned, uint8)> write = { &PPU::mmio_write, (PPU*)&ppu };
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, read, write);
+ }
+ 
+ void PPU::power() {
+diff --git a/snes/cartridge/cartridge.hpp b/snes/cartridge/cartridge.hpp
+index 37555bc..82e73c4 100755
+--- a/snes/cartridge/cartridge.hpp
++++ b/snes/cartridge/cartridge.hpp
+@@ -12,6 +12,22 @@ struct Cartridge : property<Cartridge> {
+     PAL,
+   };
+ 
++  enum class MemoryClass : unsigned {
++    MISC = 0,
++    ROM = 1,
++    SRAM = 2,
++    WRAM = 3,
++    SUPERFXROM = 4,
++    SUPERFXRAM = 5,
++    SA1IRAM = 6,
++    SA1BWRAM = 7,
++    SUFAMITURBO_ROMA = 8,
++    SUFAMITURBO_ROMB = 9,
++    SUFAMITURBO_RAMA = 10,
++    SUFAMITURBO_RAMB = 11,
++    BSXFLASH = 12,
++  };
++
+   enum class Slot : unsigned {
+     Base,
+     Bsx,
+@@ -68,6 +84,7 @@ struct Cartridge : property<Cartridge> {
+     unsigned addrhi;
+     unsigned offset;
+     unsigned size;
++    MemoryClass clazz;
+ 
+     Mapping();
+     Mapping(const function<uint8 (unsigned)>&, const function<void (unsigned, uint8)>&);
+diff --git a/snes/cartridge/markup.cpp b/snes/cartridge/markup.cpp
+index e639fe5..2dd0d64 100755
+--- a/snes/cartridge/markup.cpp
++++ b/snes/cartridge/markup.cpp
+@@ -74,6 +74,7 @@ void Cartridge::parse_markup_rom(XML::Node &root) {
+   for(auto &node : root) {
+     if(node.name != "map") continue;
+     Mapping m(rom);
++    m.clazz = MemoryClass::ROM;
+     parse_markup_map(m, node);
+     if(m.size == 0) m.size = rom.size();
+     mapping.append(m);
+@@ -85,6 +86,7 @@ void Cartridge::parse_markup_ram(XML::Node &root) {
+   ram_size = parse_markup_integer(root["size"].data);
+   for(auto &node : root) {
+     Mapping m(ram);
++    m.clazz = MemoryClass::SRAM;
+     parse_markup_map(m, node);
+     if(m.size == 0) m.size = ram_size;
+     mapping.append(m);
+@@ -133,6 +135,7 @@ void Cartridge::parse_markup_superfx(XML::Node &root) {
+       for(auto &leaf : node) {
+         if(leaf.name != "map") continue;
+         Mapping m(superfx.rom);
++        //m.clazz = MemoryClass::SUPERFXROM;  -- Aliases ROM.
+         parse_markup_map(m, leaf);
+         mapping.append(m);
+       }
+@@ -145,6 +148,7 @@ void Cartridge::parse_markup_superfx(XML::Node &root) {
+         }
+         if(leaf.name != "map") continue;
+         Mapping m(superfx.ram);
++        //m.clazz = MemoryClass::SUPERFXRAM;  -- Aliases SRAM.
+         parse_markup_map(m, leaf);
+         if(m.size == 0) m.size = ram_size;
+         mapping.append(m);
+@@ -188,6 +192,7 @@ void Cartridge::parse_markup_sa1(XML::Node &root) {
+   for(auto &node : iram) {
+     if(node.name != "map") continue;
+     Mapping m(sa1.cpuiram);
++    m.clazz = MemoryClass::SA1IRAM;
+     parse_markup_map(m, node);
+     if(m.size == 0) m.size = 2048;
+     mapping.append(m);
+@@ -197,6 +202,7 @@ void Cartridge::parse_markup_sa1(XML::Node &root) {
+   for(auto &node : bwram) {
+     if(node.name != "map") continue;
+     Mapping m(sa1.cpubwram);
++    //m.clazz = MemoryClass::SA1BWRAM;   -- Aliases SRAM
+     parse_markup_map(m, node);
+     if(m.size == 0) m.size = ram_size;
+     mapping.append(m);
+@@ -341,6 +347,7 @@ void Cartridge::parse_markup_bsx(XML::Node &root) {
+   for(auto &node : root["slot"]) {
+     if(node.name != "map") continue;
+     Mapping m(bsxflash.memory);
++    m.clazz = MemoryClass::BSXFLASH;
+     parse_markup_map(m, node);
+     mapping.append(m);
+   }
+@@ -373,6 +380,7 @@ void Cartridge::parse_markup_sufamiturbo(XML::Node &root) {
+           if(leaf.name != "map") continue;
+           Memory &memory = slotid == 0 ? sufamiturbo.slotA.rom : sufamiturbo.slotB.rom;
+           Mapping m(memory);
++          m.clazz = slotid ? MemoryClass::SUFAMITURBO_ROMB : MemoryClass::SUFAMITURBO_ROMA;
+           parse_markup_map(m, leaf);
+           if(m.size == 0) m.size = memory.size();
+           if(m.size) mapping.append(m);
+@@ -384,6 +392,7 @@ void Cartridge::parse_markup_sufamiturbo(XML::Node &root) {
+           if(leaf.name != "map") continue;
+           Memory &memory = slotid == 0 ? sufamiturbo.slotA.ram : sufamiturbo.slotB.ram;
+           Mapping m(memory);
++          m.clazz = slotid ? MemoryClass::SUFAMITURBO_RAMB : MemoryClass::SUFAMITURBO_RAMA;
+           parse_markup_map(m, leaf);
+           if(m.size == 0) m.size = ram_size;
+           if(m.size) mapping.append(m);
+@@ -536,11 +545,13 @@ void Cartridge::parse_markup_link(XML::Node &root) {
+ }
+ 
+ Cartridge::Mapping::Mapping() {
++  clazz = MemoryClass::MISC;
+   mode = Bus::MapMode::Direct;
+   banklo = bankhi = addrlo = addrhi = offset = size = 0;
+ }
+ 
+ Cartridge::Mapping::Mapping(Memory &memory) {
++  clazz = MemoryClass::MISC;
+   read = { &Memory::read, &memory };
+   write = { &Memory::write, &memory };
+   mode = Bus::MapMode::Direct;
+diff --git a/snes/cheat/cheat.cpp b/snes/cheat/cheat.cpp
+index 46c42d1..3a269cc 100755
+--- a/snes/cheat/cheat.cpp
++++ b/snes/cheat/cheat.cpp
+@@ -21,9 +21,9 @@ void Cheat::synchronize() {
+   for(unsigned i = 0; i < size(); i++) {
+     const CheatCode &code = operator[](i);
+ 
+-    unsigned addr = mirror(code.addr);
++    unsigned addr = code.nomirror ? code.addr : mirror(code.addr);
+     override[addr] = true;
+-    if((addr & 0xffe000) == 0x7e0000) {
++    if(!code.nomirror && (addr & 0xffe000) == 0x7e0000) {
+       //mirror $7e:0000-1fff to $00-3f|80-bf:0000-1fff
+       unsigned mirroraddr;
+       for(unsigned x = 0; x <= 0x3f; x++) {
+@@ -40,11 +40,14 @@ void Cheat::synchronize() {
+ }
+ 
+ uint8 Cheat::read(unsigned addr) const {
+-  addr = mirror(addr);
++  unsigned raddr = mirror(addr);
+ 
+   for(unsigned i = 0; i < size(); i++) {
+     const CheatCode &code = operator[](i);
+-    if(addr == mirror(code.addr)) {
++    if(!code.nomirror && addr == mirror(code.addr)) {
++      return code.data;
++    }
++    if(code.nomirror && raddr == code.addr) {
+       return code.data;
+     }
+   }
+diff --git a/snes/cheat/cheat.hpp b/snes/cheat/cheat.hpp
+index 306b99b..b4d2a42 100755
+--- a/snes/cheat/cheat.hpp
++++ b/snes/cheat/cheat.hpp
+@@ -1,6 +1,7 @@
+ struct CheatCode {
+   unsigned addr;
+   unsigned data;
++  bool nomirror;
+ };
+ 
+ struct Cheat : public linear_vector<CheatCode> {
+diff --git a/snes/chip/bsx/satellaview/satellaview.cpp b/snes/chip/bsx/satellaview/satellaview.cpp
+index 3c98019..25af8e5 100755
+--- a/snes/chip/bsx/satellaview/satellaview.cpp
++++ b/snes/chip/bsx/satellaview/satellaview.cpp
+@@ -6,8 +6,8 @@ void BSXSatellaview::init() {
+ }
+ 
+ void BSXSatellaview::load() {
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2188, 0x219f, { &BSXSatellaview::mmio_read, &bsxsatellaview }, { &BSXSatellaview::mmio_write, &bsxsatellaview });
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2188, 0x219f, { &BSXSatellaview::mmio_read, &bsxsatellaview }, { &BSXSatellaview::mmio_write, &bsxsatellaview });
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2188, 0x219f, 0, { &BSXSatellaview::mmio_read, &bsxsatellaview }, { &BSXSatellaview::mmio_write, &bsxsatellaview });
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2188, 0x219f, 0, { &BSXSatellaview::mmio_read, &bsxsatellaview }, { &BSXSatellaview::mmio_write, &bsxsatellaview });
+ }
+ 
+ void BSXSatellaview::unload() {
+diff --git a/snes/chip/hitachidsp/hitachidsp.cpp b/snes/chip/hitachidsp/hitachidsp.cpp
+index 1042267..3e5c5bd 100755
+--- a/snes/chip/hitachidsp/hitachidsp.cpp
++++ b/snes/chip/hitachidsp/hitachidsp.cpp
+@@ -23,7 +23,7 @@ void HitachiDSP::enter() {
+       break;
+     case State::DMA:
+       for(unsigned n = 0; n < regs.dma_length; n++) {
+-        bus.write(regs.dma_target + n, bus.read(regs.dma_source + n));
++        bus.write(regs.dma_target + n, bus.read(regs.dma_source + n, false));
+         step(2);
+       }
+       state = State::Idle;
+diff --git a/snes/chip/hitachidsp/memory.cpp b/snes/chip/hitachidsp/memory.cpp
+index 3c9c3af..36868e8 100755
+--- a/snes/chip/hitachidsp/memory.cpp
++++ b/snes/chip/hitachidsp/memory.cpp
+@@ -1,7 +1,7 @@
+ #ifdef HITACHIDSP_CPP
+ 
+ uint8 HitachiDSP::bus_read(unsigned addr) {
+-  if((addr & 0x408000) == 0x008000) return bus.read(addr);
++  if((addr & 0x408000) == 0x008000) return bus.read(addr, false);
+   return 0x00;
+ }
+ 
+diff --git a/snes/chip/nss/nss.cpp b/snes/chip/nss/nss.cpp
+index 964973d..5946af3 100755
+--- a/snes/chip/nss/nss.cpp
++++ b/snes/chip/nss/nss.cpp
+@@ -10,8 +10,8 @@ void NSS::init() {
+ 
+ void NSS::load() {
+   dip = 0x0000;
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4100, 0x4101, { &NSS::read, this }, { &NSS::write, this });
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4100, 0x4101, { &NSS::read, this }, { &NSS::write, this });
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4100, 0x4101, 0, { &NSS::read, this }, { &NSS::write, this });
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4100, 0x4101, 0, { &NSS::read, this }, { &NSS::write, this });
+ }
+ 
+ void NSS::unload() {
+diff --git a/snes/chip/sa1/memory/memory.cpp b/snes/chip/sa1/memory/memory.cpp
+index d13ac92..9bb4ff2 100755
+--- a/snes/chip/sa1/memory/memory.cpp
++++ b/snes/chip/sa1/memory/memory.cpp
+@@ -107,7 +107,7 @@ void SA1::op_io() {
+   tick();
+ }
+ 
+-uint8 SA1::op_read(unsigned addr) {
++uint8 SA1::op_read(unsigned addr, bool exec) {
+   tick();
+   if(((addr & 0x40e000) == 0x006000) || ((addr & 0xd00000) == 0x400000)) tick();
+   return bus_read(addr);
+diff --git a/snes/chip/sa1/memory/memory.hpp b/snes/chip/sa1/memory/memory.hpp
+index ffb9e9f..ab8e1ed 100755
+--- a/snes/chip/sa1/memory/memory.hpp
++++ b/snes/chip/sa1/memory/memory.hpp
+@@ -3,7 +3,7 @@ void bus_write(unsigned addr, uint8 data);
+ uint8 vbr_read(unsigned addr);
+ 
+ alwaysinline void op_io();
+-alwaysinline uint8 op_read(unsigned addr);
++alwaysinline uint8 op_read(unsigned addr, bool exec);
+ alwaysinline void op_write(unsigned addr, uint8 data);
+ 
+ uint8 mmc_read(unsigned addr);
+diff --git a/snes/chip/sa1/sa1.cpp b/snes/chip/sa1/sa1.cpp
+index 71c6310..30e0080 100755
+--- a/snes/chip/sa1/sa1.cpp
++++ b/snes/chip/sa1/sa1.cpp
+@@ -37,7 +37,7 @@ void SA1::enter() {
+ }
+ 
+ void SA1::op_irq() {
+-  op_read(regs.pc.d);
++  op_read(regs.pc.d, false);
+   op_io();
+   if(!regs.e) op_writestack(regs.pc.b);
+   op_writestack(regs.pc.h);
+diff --git a/snes/chip/sdd1/sdd1.cpp b/snes/chip/sdd1/sdd1.cpp
+index c9b8b1c..5d6cc55 100755
+--- a/snes/chip/sdd1/sdd1.cpp
++++ b/snes/chip/sdd1/sdd1.cpp
+@@ -14,8 +14,8 @@ void SDD1::init() {
+ void SDD1::load() {
+   //hook S-CPU DMA MMIO registers to gather information for struct dma[];
+   //buffer address and transfer size information for use in SDD1::mcu_read()
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, { &SDD1::mmio_read, &sdd1 }, { &SDD1::mmio_write, &sdd1 });
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, { &SDD1::mmio_read, &sdd1 }, { &SDD1::mmio_write, &sdd1 });
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, 0, { &SDD1::mmio_read, &sdd1 }, { &SDD1::mmio_write, &sdd1 });
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, 0, { &SDD1::mmio_read, &sdd1 }, { &SDD1::mmio_write, &sdd1 });
+ }
+ 
+ void SDD1::unload() {
+diff --git a/snes/cpu/core/core.hpp b/snes/cpu/core/core.hpp
+index 7a685a8..9d77f3c 100755
+--- a/snes/cpu/core/core.hpp
++++ b/snes/cpu/core/core.hpp
+@@ -10,7 +10,7 @@ struct CPUcore {
+   void powercycle();
+ 
+   virtual void op_io() = 0;
+-  virtual uint8_t op_read(uint32_t addr) = 0;
++  virtual uint8_t op_read(uint32_t addr, bool exec = false) = 0;
+   virtual void op_write(uint32_t addr, uint8_t data) = 0;
+   virtual void last_cycle() = 0;
+   virtual bool interrupt_pending() = 0;
+diff --git a/snes/cpu/core/disassembler/disassembler.cpp b/snes/cpu/core/disassembler/disassembler.cpp
+index 030b3ab..ab8dde2 100755
+--- a/snes/cpu/core/disassembler/disassembler.cpp
++++ b/snes/cpu/core/disassembler/disassembler.cpp
+@@ -6,7 +6,7 @@ uint8 CPUcore::dreadb(uint32 addr) {
+     //do not read MMIO registers within debugger
+     return 0x00;
+   }
+-  return bus.read(addr);
++  return bus.read(addr, false);
+ }
+ 
+ uint16 CPUcore::dreadw(uint32 addr) {
+diff --git a/snes/cpu/core/memory.hpp b/snes/cpu/core/memory.hpp
+index 4992657..132501c 100755
+--- a/snes/cpu/core/memory.hpp
++++ b/snes/cpu/core/memory.hpp
+@@ -1,5 +1,5 @@
+ alwaysinline uint8_t op_readpc() {
+-  return op_read((regs.pc.b << 16) + regs.pc.w++);
++  return op_read((regs.pc.b << 16) + regs.pc.w++, true);
+ }
+ 
+ alwaysinline uint8_t op_readstack() {
+diff --git a/snes/cpu/cpu.cpp b/snes/cpu/cpu.cpp
+index 2d7d343..39da6b1 100755
+--- a/snes/cpu/cpu.cpp
++++ b/snes/cpu/cpu.cpp
+@@ -78,8 +78,8 @@ void CPU::enter() {
+       } else if(status.reset_pending) {
+         status.reset_pending = false;
+         add_clocks(186);
+-        regs.pc.l = bus.read(0xfffc);
+-        regs.pc.h = bus.read(0xfffd);
++        regs.pc.l = bus.read(0xfffc, false);
++        regs.pc.h = bus.read(0xfffd, false);
+       }
+     }
+ 
+@@ -95,24 +95,24 @@ void CPU::enable() {
+   function<uint8 (unsigned)> read = { &CPU::mmio_read, (CPU*)&cpu };
+   function<void (unsigned, uint8)> write = { &CPU::mmio_write, (CPU*)&cpu };
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2140, 0x2183, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2140, 0x2183, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2140, 0x2183, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2140, 0x2183, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4016, 0x4017, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4016, 0x4017, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4016, 0x4017, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4016, 0x4017, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4200, 0x421f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4200, 0x421f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4200, 0x421f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4200, 0x421f, 0, read, write);
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x4300, 0x437f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x4300, 0x437f, 0, read, write);
+ 
+   read = [](unsigned addr) { return cpu.wram[addr]; };
+   write = [](unsigned addr, uint8 data) { cpu.wram[addr] = data; };
+ 
+-  bus.map(Bus::MapMode::Linear, 0x00, 0x3f, 0x0000, 0x1fff, read, write, 0x000000, 0x002000);
+-  bus.map(Bus::MapMode::Linear, 0x80, 0xbf, 0x0000, 0x1fff, read, write, 0x000000, 0x002000);
+-  bus.map(Bus::MapMode::Linear, 0x7e, 0x7f, 0x0000, 0xffff, read, write);
++  bus.map(Bus::MapMode::Linear, 0x00, 0x3f, 0x0000, 0x1fff, 3, read, write, 0x000000, 0x002000);
++  bus.map(Bus::MapMode::Linear, 0x80, 0xbf, 0x0000, 0x1fff, 3, read, write, 0x000000, 0x002000);
++  bus.map(Bus::MapMode::Linear, 0x7e, 0x7f, 0x0000, 0xffff, 3, read, write);
+ }
+ 
+ void CPU::power() {
+diff --git a/snes/cpu/debugger/debugger.cpp b/snes/cpu/debugger/debugger.cpp
+index a33518e..8301bdb 100755
+--- a/snes/cpu/debugger/debugger.cpp
++++ b/snes/cpu/debugger/debugger.cpp
+@@ -19,8 +19,8 @@ void CPUDebugger::op_step() {
+   synchronize_smp();
+ }
+ 
+-uint8 CPUDebugger::op_read(uint32 addr) {
+-  uint8 data = CPU::op_read(addr);
++uint8 CPUDebugger::op_read(uint32 addr, bool exec) {
++  uint8 data = CPU::op_read(addr, exec);
+   usage[addr] |= UsageRead;
+   debugger.breakpoint_test(Debugger::Breakpoint::Source::CPUBus, Debugger::Breakpoint::Mode::Read, addr, data);
+   return data;
+diff --git a/snes/cpu/debugger/debugger.hpp b/snes/cpu/debugger/debugger.hpp
+index 579f6f0..c3d66db 100755
+--- a/snes/cpu/debugger/debugger.hpp
++++ b/snes/cpu/debugger/debugger.hpp
+@@ -16,7 +16,7 @@ public:
+   bool opcode_edge;  //true right before an opcode execues, used to skip over opcodes
+ 
+   void op_step();
+-  uint8 op_read(uint32 addr);
++  uint8 op_read(uint32 addr, bool exec = false);
+   void op_write(uint32 addr, uint8 data);
+ 
+   CPUDebugger();
+diff --git a/snes/cpu/dma/dma.cpp b/snes/cpu/dma/dma.cpp
+index e8cdb3e..0a00bfe 100755
+--- a/snes/cpu/dma/dma.cpp
++++ b/snes/cpu/dma/dma.cpp
+@@ -26,7 +26,7 @@ bool CPU::dma_addr_valid(uint32 abus) {
+ 
+ uint8 CPU::dma_read(uint32 abus) {
+   if(dma_addr_valid(abus) == false) return 0x00;
+-  return bus.read(abus);
++  return bus.read(abus, false);
+ }
+ 
+ //simulate two-stage pipeline for DMA transfers; example:
+@@ -49,7 +49,7 @@ void CPU::dma_transfer(bool direction, uint8 bbus, uint32 abus) {
+     dma_write(dma_transfer_valid(bbus, abus), 0x2100 | bbus, regs.mdr);
+   } else {
+     dma_add_clocks(4);
+-    regs.mdr = dma_transfer_valid(bbus, abus) ? bus.read(0x2100 | bbus) : 0x00;
++    regs.mdr = dma_transfer_valid(bbus, abus) ? bus.read(0x2100 | bbus, false) : 0x00;
+     dma_add_clocks(4);
+     dma_write(dma_addr_valid(abus), abus, regs.mdr);
+   }
+diff --git a/snes/cpu/memory/memory.cpp b/snes/cpu/memory/memory.cpp
+index c2c8f1f..31f82c3 100755
+--- a/snes/cpu/memory/memory.cpp
++++ b/snes/cpu/memory/memory.cpp
+@@ -10,11 +10,11 @@ void CPU::op_io() {
+   alu_edge();
+ }
+ 
+-uint8 CPU::op_read(uint32 addr) {
++uint8 CPU::op_read(uint32 addr, bool exec) {
+   status.clock_count = speed(addr);
+   dma_edge();
+   add_clocks(status.clock_count - 4);
+-  regs.mdr = bus.read(addr);
++  regs.mdr = bus.read(addr, exec);
+   add_clocks(4);
+   alu_edge();
+   return regs.mdr;
+diff --git a/snes/cpu/memory/memory.hpp b/snes/cpu/memory/memory.hpp
+index d33861d..fd64ba8 100755
+--- a/snes/cpu/memory/memory.hpp
++++ b/snes/cpu/memory/memory.hpp
+@@ -1,4 +1,4 @@
+ void op_io();
+-debugvirtual uint8 op_read(uint32 addr);
++debugvirtual uint8 op_read(uint32 addr, bool exec);
+ debugvirtual void op_write(uint32 addr, uint8 data);
+ alwaysinline unsigned speed(unsigned addr) const;
+diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
+index b7afff0..30048c1 100755
+--- a/snes/cpu/mmio/mmio.cpp
++++ b/snes/cpu/mmio/mmio.cpp
+@@ -5,7 +5,7 @@ bool CPU::joylatch() { return status.joypad_strobe_latch; }
+ 
+ //WMDATA
+ uint8 CPU::mmio_r2180() {
+-  return bus.read(0x7e0000 | status.wram_addr++);
++  return bus.read(0x7e0000 | status.wram_addr++, false);
+ }
+ 
+ //WMDATA
+diff --git a/snes/debugger/debugger.cpp b/snes/debugger/debugger.cpp
+index b131233..e8d0f5a 100755
+--- a/snes/debugger/debugger.cpp
++++ b/snes/debugger/debugger.cpp
+@@ -33,7 +33,7 @@ uint8 Debugger::read(Debugger::MemorySource source, unsigned addr) {
+     case MemorySource::CPUBus: {
+       //do not read from memory-mapped registers that could affect program behavior
+       if(((addr - 0x2000) & 0x40c000) == 0x000000) break;  //$00-3f:2000-5fff MMIO
+-      return bus.read(addr & 0xffffff);
++      return bus.read(addr & 0xffffff, false);
+     } break;
+ 
+     case MemorySource::APUBus: {
+diff --git a/snes/memory/memory-inline.hpp b/snes/memory/memory-inline.hpp
+index 70503be..45f150c 100755
+--- a/snes/memory/memory-inline.hpp
++++ b/snes/memory/memory-inline.hpp
+@@ -51,11 +51,26 @@ MappedRAM::MappedRAM() : data_(0), size_(0), write_protect_(false) {}
+ 
+ //Bus
+ 
+-uint8 Bus::read(unsigned addr) {
+-  if(cheat.override[addr]) return cheat.read(addr);
+-  return reader[lookup[addr]](target[addr]);
++uint8 Bus::read(unsigned addr, bool exec) {
++  uint8 emask = exec ? 0x24 : 0x09;
++  uint8 val;
++  if(__builtin_expect(cheat.override[addr], 0))
++    val = cheat.read(addr);
++  else
++    val = reader[lookup[addr]](target[addr]);
++  if(__builtin_expect((u_debugflags | debugflags[addr]) & emask, 0)) {
++    unsigned daddr = target[addr];
++    uint8 mclass = classmap[addr];
++    debug_read(mclass, daddr, addr, val, exec);
++  }
++  return val;
+ }
+ 
+ void Bus::write(unsigned addr, uint8 data) {
++  if(__builtin_expect((u_debugflags | debugflags[addr]) & 0x12, 0)) {
++    unsigned daddr = target[addr];
++    uint8 mclass = classmap[addr];
++    debug_write(mclass, daddr, addr, data);
++  }
+   return writer[lookup[addr]](target[addr], data);
+ }
+diff --git a/snes/memory/memory.cpp b/snes/memory/memory.cpp
+index ede9cbd..a9a484a 100755
+--- a/snes/memory/memory.cpp
++++ b/snes/memory/memory.cpp
+@@ -27,6 +27,7 @@ void Bus::map(
+   MapMode mode,
+   unsigned bank_lo, unsigned bank_hi,
+   unsigned addr_lo, unsigned addr_hi,
++  unsigned mclass,
+   const function<uint8 (unsigned)> &rd,
+   const function<void (unsigned, uint8)> &wr,
+   unsigned base, unsigned length
+@@ -48,6 +49,7 @@ void Bus::map(
+       if(mode == MapMode::Shadow) destaddr = mirror(base + destaddr, length);
+       lookup[(bank << 16) | addr] = id;
+       target[(bank << 16) | addr] = destaddr;
++      if(mclass) classmap[(bank << 16) | addr] = mclass;
+     }
+   }
+ }
+@@ -57,23 +59,58 @@ void Bus::map_reset() {
+   function<void (unsigned, uint8)> writer = [](unsigned, uint8) {};
+ 
+   idcount = 0;
+-  map(MapMode::Direct, 0x00, 0xff, 0x0000, 0xffff, reader, writer);
++  map(MapMode::Direct, 0x00, 0xff, 0x0000, 0xffff, 0xFF, reader, writer);
+ }
+ 
+ void Bus::map_xml() {
+   for(auto &m : cartridge.mapping) {
+-    map(m.mode, m.banklo, m.bankhi, m.addrlo, m.addrhi, m.read, m.write, m.offset, m.size);
++    map(m.mode, m.banklo, m.bankhi, m.addrlo, m.addrhi, (unsigned)m.clazz, m.read, m.write, m.offset, m.size);
+   }
+ }
+ 
++unsigned Bus::enumerateMirrors(uint8 clazz, uint32 offset, unsigned start)
++{
++  unsigned i;
++  for(i = start; i < 0x1000000; i++)
++    if((classmap[i] == clazz && target[i] == offset) || (i == offset && clazz == 255))
++      return i;
++  return i;
++}
++
++void Bus::clearDebugFlags()
++{
++  u_debugflags = 0;
++  memset(debugflags, 0, 0x1000000);
++}
++
++void Bus::debugFlags(uint8 setf, uint8 clrf)
++{
++  u_debugflags = (u_debugflags | setf) & ~clrf;
++}
++
++void Bus::debugFlags(uint8 setf, uint8 clrf, uint8 clazz, uint32 offset)
++{
++  if(clazz == 255) {
++    setf <<= 3;
++    clrf <<= 3;
++    debugflags[offset] = (debugflags[offset] | setf) & ~clrf;
++  } else
++    for(unsigned i = 0; i < 0x1000000; i++)
++      if(classmap[i] == clazz && target[i] == offset)
++        debugflags[i] = (debugflags[i] | setf) & ~clrf;
++}
++
+ Bus::Bus() {
+-  lookup = new uint8 [16 * 1024 * 1024];
+-  target = new uint32[16 * 1024 * 1024];
++  u_debugflags = 0;
++  lookup = new uint8 [112 * 1024 * 1024];
++  target = (uint32*)(lookup + 0x3000000);
++  classmap = lookup + 0x1000000;
++  debugflags = lookup + 0x2000000;
++  memset(debugflags, 0, 0x1000000);
+ }
+ 
+ Bus::~Bus() {
+   delete[] lookup;
+-  delete[] target;
+ }
+ 
+ }
+diff --git a/snes/memory/memory.hpp b/snes/memory/memory.hpp
+index 634e071..c20e14d 100755
+--- a/snes/memory/memory.hpp
++++ b/snes/memory/memory.hpp
+@@ -44,10 +44,13 @@ private:
+ struct Bus {
+   unsigned mirror(unsigned addr, unsigned size);
+ 
+-  alwaysinline uint8 read(unsigned addr);
++  alwaysinline uint8 read(unsigned addr, bool exec);
+   alwaysinline void write(unsigned addr, uint8 data);
+ 
+   uint8 *lookup;
++  uint8 *classmap;
++  uint8 *debugflags;
++  uint8 u_debugflags;
+   uint32 *target;
+ 
+   unsigned idcount;
+@@ -59,6 +62,7 @@ struct Bus {
+     MapMode mode,
+     unsigned bank_lo, unsigned bank_hi,
+     unsigned addr_lo, unsigned addr_hi,
++    unsigned mclass,
+     const function<uint8 (unsigned)> &read,
+     const function<void (unsigned, uint8)> &write,
+     unsigned base = 0, unsigned length = 0
+@@ -67,6 +71,13 @@ struct Bus {
+   void map_reset();
+   void map_xml();
+ 
++  void clearDebugFlags();
++  void debugFlags(uint8 setf, uint8 clrf);
++  void debugFlags(uint8 setf, uint8 clrf, uint8 clazz, uint32 offset);
++  unsigned enumerateMirrors(uint8 clazz, uint32 offset, unsigned start);
++  function<void (uint8, unsigned, unsigned, uint8, bool)> debug_read;
++  function<void (uint8, unsigned, unsigned, uint8)> debug_write;
++
+   Bus();
+   ~Bus();
+ };
+diff --git a/snes/ppu/ppu.cpp b/snes/ppu/ppu.cpp
+index 8545175..13e231c 100755
+--- a/snes/ppu/ppu.cpp
++++ b/snes/ppu/ppu.cpp
+@@ -87,8 +87,8 @@ void PPU::enable() {
+   function<uint8 (unsigned)> read = { &PPU::mmio_read, (PPU*)&ppu };
+   function<void (unsigned, uint8)> write = { &PPU::mmio_write, (PPU*)&ppu };
+ 
+-  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, read, write);
+-  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, read, write);
++  bus.map(Bus::MapMode::Direct, 0x00, 0x3f, 0x2100, 0x213f, 0, read, write);
++  bus.map(Bus::MapMode::Direct, 0x80, 0xbf, 0x2100, 0x213f, 0, read, write);
+ }
+ 
+ void PPU::power() {
+diff --git a/snes/smp/smp.cpp b/snes/smp/smp.cpp
+index d4ccf42..bc7800c 100755
+--- a/snes/smp/smp.cpp
++++ b/snes/smp/smp.cpp
+@@ -44,7 +44,7 @@ void SMP::enter() {
+       scheduler.exit(Scheduler::ExitReason::SynchronizeEvent);
+     }
+ 
+-    op_step();
++    bus.op_step();
+   }
+ }
+ 
+diff --git a/snes/snes.hpp b/snes/snes.hpp
+index dffeeee..37ed1fe 100755
+--- a/snes/snes.hpp
++++ b/snes/snes.hpp
+@@ -1,5 +1,6 @@
+ #ifndef SNES_HPP
+ #define SNES_HPP
++#define BSNES_SUPPORTS_ADV_BREAKPOINTS
+ 
+ namespace SNES {
+   namespace Info {
+-- 
+1.8.4.4
+

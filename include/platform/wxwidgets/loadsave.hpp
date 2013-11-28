@@ -60,7 +60,7 @@ extern single_type filetype_png;
 extern single_type filetype_hexbookmarks;
 extern single_type filetype_memorysearch;
 extern single_type filetype_textfile;
-
+extern single_type filetype_trace;
 
 filedialog_output_params show_filedialog(wxWindow* parent, const std::string& title, const std::string& basepath,
 	const filedialog_input_params& p, const std::string& defaultname, bool saving);

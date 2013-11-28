@@ -40,6 +40,9 @@
 #include "library/framebuffer.hpp"
 #include "library/luabase.hpp"
 #include "lua/internal.hpp"
+#ifdef BSNES_HAS_DEBUGGER
+#define DEBUGGER
+#endif
 #include <snes/snes.hpp>
 #include <gameboy/gameboy.hpp>
 #ifdef BSNES_V087
@@ -59,6 +62,9 @@
 #define ROM_TYPE_SUFAMITURBO 4
 #define ROM_TYPE_SGB 5
 
+#define ADDR_KIND_ALL -1
+#define ADDR_KIND_NONE -2
+
 namespace
 {
 	bool p1disable = false;
@@ -74,9 +80,10 @@ namespace
 	bool last_hires = false;
 	bool last_interlace = false;
 	bool last_PAL = false;
+	bool disable_breakpoints = false;
 	uint64_t trace_counter;
-	std::ofstream trace_output;
-	bool trace_output_enable;
+	bool trace_cpu_enable;
+	bool trace_smp_enable;
 	SNES::Interface* old;
 	bool stepping_into_save;
 	bool video_refresh_done;
@@ -196,6 +203,7 @@ namespace
 
 	void snesdbg_on_break();
 	void snesdbg_on_trace();
+	std::pair<int, uint64_t> recognize_address(uint64_t addr);
 
 	class my_interfaced : public SNES::Interface
 	{
@@ -409,10 +417,21 @@ namespace
 			//Trace counter did transition 1->0. Call the hook.
 			snesdbg_on_trace();
 		}
-		if(trace_output_enable) {
+		if(trace_cpu_enable) {
 			char buffer[1024];
 			SNES::cpu.disassemble_opcode(buffer, SNES::cpu.regs.pc);
-			trace_output << buffer << std::endl;
+			ecore_callbacks->memory_trace(0, buffer);
+		}
+		return false;
+#endif
+	}
+	bool smp_trace_fn()
+	{
+#ifdef BSNES_HAS_DEBUGGER
+		if(trace_smp_enable) {
+			nall::string _disasm = SNES::smp.disassemble_opcode(SNES::smp.regs.pc);
+			std::string disasm(_disasm, _disasm.length());
+			ecore_callbacks->memory_trace(1, disasm.c_str());
 		}
 		return false;
 #endif
@@ -429,7 +448,7 @@ namespace
 
 	bool trace_enabled()
 	{
-		return (trace_counter || !!trace_output_enable);
+		return (trace_counter || !!trace_cpu_enable);
 	}
 
 	void update_trace_hook_state()
@@ -441,6 +460,10 @@ namespace
 			SNES::cpu.step_event = nall::function<bool()>();
 		else
 			SNES::cpu.step_event = trace_fn;
+		if(!trace_smp_enable)
+			SNES::smp.step_event = nall::function<bool()>();
+		else
+			SNES::smp.step_event = smp_trace_fn;
 #endif
 	}
 
@@ -467,10 +490,18 @@ namespace
 
 	uint8_t snes_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
 	{
+		uint8_t val = 0;
+		disable_breakpoints = true;
 		if(write)
 			SNES::bus.write(offset, data);
 		else
-			return SNES::bus.read(offset);
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			val = SNES::bus.read(offset, false);
+#else
+			val = SNES::bus.read(offset);
+#endif
+		disable_breakpoints = false;
+		return val;
 	}
 
 	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
@@ -547,8 +578,56 @@ namespace
 		return r;
 	}
 
-	const char* hexes = "0123456789ABCDEF";
+	uint64_t translate_class_address(uint8_t clazz, unsigned offset)
+	{
+		switch(clazz) {
+		case 1:		//ROM.
+			return 0x80000000 + offset;
+		case 2:		//SRAM.
+			return 0x10000000 + offset;
+		case 3:		//WRAM
+			return 0x007E0000 + offset;
+		case 8:		//SufamiTurboA ROM.
+			return 0x90000000 + offset;
+		case 9:		//SufamiTurboB ROM.
+			return 0xA0000000 + offset;
+		case 10:	//SufamiTurboA RAM.
+			return 0x20000000 + offset;
+		case 11:	//SufamiTurboB RAM.
+			return 0x30000000 + offset;
+		case 12:	//BSX flash.
+			return 0x90000000 + offset;
+		default:	//Other, including bus.
+			return 0xFFFFFFFFFFFFFFFFULL;
+		}
+	}
 
+	void bsnes_debug_read(uint8_t clazz, unsigned offset, unsigned addr, uint8_t val, bool exec)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = translate_class_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL) {
+			if(exec)
+				ecore_callbacks->memory_execute(_addr, 0);
+			else
+				ecore_callbacks->memory_read(_addr, val);
+		}
+		if(exec)
+			ecore_callbacks->memory_execute(0x1000000 + _addr, 0);
+		else
+			ecore_callbacks->memory_read(0x1000000 + _addr, val);
+	}
+
+	void bsnes_debug_write(uint8_t clazz, unsigned offset, unsigned addr, uint8_t val)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = translate_class_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL)
+			ecore_callbacks->memory_write(_addr, val);
+		ecore_callbacks->memory_write(0x1000000 + _addr, val);
+	}
+
+	const char* hexes = "0123456789ABCDEF";
 
 	void redraw_cover_fbinfo();
 
@@ -689,6 +768,10 @@ namespace
 			return std::make_pair((width < 400) ? 2 : 1, (height < 400) ? 2 : 1);
 		}
 		void c_install_handler() {
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			SNES::bus.debug_read = bsnes_debug_read;
+			SNES::bus.debug_write = bsnes_debug_write;
+#endif
 			basic_init();
 			old = SNES::interface;
 			SNES::interface = &my_interface_obj;
@@ -728,6 +811,7 @@ again:
 					}
 					SNES::cpu.step_event = nall::function<bool()>();
 					forced_hook = false;
+					update_trace_hook_state();
 					if(video_refresh_done) {
 						//Force the reset here.
 						do_reset_flag = -1;
@@ -873,6 +957,77 @@ again2:
 		std::set<std::string> c_srams() { return bsnes_srams(); }
 		std::pair<unsigned, unsigned> c_lightgun_scale() {
 			return std::make_pair(256, last_PAL ? 239 : 224);
+		}
+		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags)
+		{
+			if(addr == 0) {
+				if(sflags & 8) trace_cpu_enable = true;
+				if(cflags & 8) trace_cpu_enable = false;
+				update_trace_hook_state();
+			}
+			if(addr == 1) {
+				if(sflags & 8) trace_smp_enable = true;
+				if(cflags & 8) trace_smp_enable = false;
+				update_trace_hook_state();
+			}
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			auto _addr = recognize_address(addr);
+			if(_addr.first == ADDR_KIND_ALL)
+				SNES::bus.debugFlags(sflags & 7, cflags & 7);
+			else if(_addr.first != ADDR_KIND_NONE && ((sflags | cflags) & 7))
+				SNES::bus.debugFlags(sflags & 7, cflags & 7, _addr.first, _addr.second);
+#endif
+		}
+		void c_set_cheat(uint64_t addr, uint64_t value, bool set)
+		{
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			bool s = false;
+			auto _addr = recognize_address(addr);
+			if(_addr.first == ADDR_KIND_NONE || _addr.first == ADDR_KIND_ALL)
+				return;
+			unsigned x = 0;
+			while(x < 0x1000000) {
+				x = SNES::bus.enumerateMirrors(_addr.first, _addr.second, x);
+				if(x < 0x1000000) {
+					if(set) {
+						for(size_t i = 0; i < SNES::cheat.size(); i++) {
+							if(SNES::cheat[i].addr == x) {
+								SNES::cheat[i].data = value;
+								s = true;
+								break;
+							}
+						}
+						if(!s) SNES::cheat.append({x, (uint8_t)value, true});
+					} else
+						for(size_t i = 0; i < SNES::cheat.size(); i++) {
+							if(SNES::cheat[i].addr == x) {
+								SNES::cheat.remove(i);
+								break;
+							}
+						}
+				}
+				x++;
+			}
+			SNES::cheat.synchronize();
+#endif
+		}
+		void c_debug_reset()
+		{
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			SNES::bus.clearDebugFlags();
+			SNES::cheat.reset();
+#endif
+			trace_cpu_enable = false;
+			trace_smp_enable = false;
+			update_trace_hook_state();
+		}
+		std::vector<std::string> c_get_trace_cpus()
+		{
+			std::vector<std::string> r;
+			r.push_back("cpu");
+			r.push_back("smp");
+			//TODO: Trace various chips.
+			return r;
 		}
 	} bsnes_core;
 
@@ -1034,14 +1189,20 @@ again2:
 		cover_render_string(cover_fbmem, 0, 0, ident, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
 		std::ostringstream name;
 		name << "Internal ROM name: ";
+		disable_breakpoints = true;
 		for(unsigned i = 0; i < 21; i++) {
 			unsigned busaddr = 0x00FFC0 + i;
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			unsigned char ch = SNES::bus.read(busaddr, false);
+#else
 			unsigned char ch = SNES::bus.read(busaddr);
+#endif
 			if(ch < 32 || ch > 126)
 				name << "<" << hexes[ch / 16] << hexes[ch % 16] << ">";
 			else
 				name << ch;
 		}
+		disable_breakpoints = false;
 		cover_render_string(cover_fbmem, 0, 16, name.str(), 0x7FFFF, 0x00000, 512, 448, 2048, 4);
 		unsigned y = 32;
 		for(auto i : cover_information()) {
@@ -1138,6 +1299,35 @@ again2:
 			create_region(ret, "GBHRAM", 0x00038000, GameBoy::cpu.hram, 128, true);
 		}
 		return ret;
+	}
+
+	std::pair<int, uint64_t> recognize_address(uint64_t addr)
+	{
+		if(addr == 0xFFFFFFFFFFFFFFFFULL)
+			return std::make_pair(ADDR_KIND_ALL, 0);
+		if(addr >= 0x80000000 && addr <= 0x8FFFFFFF) //Rom.
+			return std::make_pair(1, addr - 0x80000000);
+		if(addr >= 0x10000000 && addr <= 0x1FFFFFFF) //SRAM.
+			return std::make_pair(2, addr - 0x10000000);
+		if(addr >= 0x007E0000 && addr <= 0x007FFFFF) //WRAM.
+			return std::make_pair(3, addr - 0x007E0000);
+		if(internal_rom == &type_sufamiturbo) {
+			if(addr >= 0x90000000 && addr <= 0x9FFFFFFF) //SufamiTurboA Rom.
+				return std::make_pair(8, addr - 0x90000000);
+			if(addr >= 0xA0000000 && addr <= 0xAFFFFFFF) //SufamiTurboB Rom.
+				return std::make_pair(9, addr - 0x90000000);
+			if(addr >= 0x20000000 && addr <= 0x2FFFFFFF) //SufamiTurboA Ram.
+				return std::make_pair(10, addr - 0x20000000);
+			if(addr >= 0x20000000 && addr <= 0x3FFFFFFF) //SufamiTurboB Ram.
+				return std::make_pair(11, addr - 0x30000000);
+		}
+		if(internal_rom == &type_bsx || internal_rom == &type_bsxslotted) {
+			if(addr >= 0x90000000 && addr <= 0x9FFFFFFF) //BSX flash.
+				return std::make_pair(12, addr - 0x90000000);
+		}
+		if(addr >= 0x01000000 && addr <= 0x01FFFFFF) //BUS.
+			return std::make_pair(255, addr - 0x01000000);
+		return std::make_pair(ADDR_KIND_NONE, 0);
 	}
 
 	function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
@@ -1303,34 +1493,16 @@ again2:
 		return 0;
 	});
 
-	void snesdbg_settrace(std::string r)
-	{
-		if(trace_output_enable)
-			messages << "------- End of trace -----" << std::endl;
-		trace_output.close();
-		trace_output_enable = false;
-		if(r != "") {
-			trace_output.close();
-			trace_output.open(r);
-			if(trace_output) {
-				trace_output_enable = true;
-				messages << "------- Start of trace -----" << std::endl;
-			} else
-				messages << "Can't open " << r << std::endl;
-		}
-		update_trace_hook_state();
-	}
-
 	function_ptr_luafun lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua_state& L,
 		const std::string& fname) -> int {
 		std::string r = L.get_string(1, fname.c_str());
-		snesdbg_settrace(r);
+		lsnes_cmd.invoke("tracelog cpu " + r);
 	});
 
 	function_ptr_command<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
 		"No description available\n",
 		[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
-			snesdbg_settrace(r);
+			lsnes_cmd.invoke("tracelog cpu " + r);
 		});
 
 	function_ptr_luafun lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua_state& L,

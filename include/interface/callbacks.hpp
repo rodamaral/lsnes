@@ -55,6 +55,22 @@ public:
  * Notify that action states have been updated.
  */
 	virtual void action_state_updated() = 0;
+/**
+ * Notify that memory address has been read.
+ */
+	virtual void memory_read(uint64_t addr, uint64_t value) = 0;
+/**
+ * Notify that memory address is about to be written.
+ */
+	virtual void memory_write(uint64_t addr, uint64_t value) = 0;
+/**
+ * Notify that memory address is about to be executed.
+ */
+	virtual void memory_execute(uint64_t addr, uint64_t proc) = 0;
+/**
+ * Notify trace event.
+ */
+	virtual void memory_trace(uint64_t proc, const char* str) = 0;
 };
 
 extern struct emucore_callbacks* ecore_callbacks;

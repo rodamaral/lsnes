@@ -2,6 +2,8 @@
 
 #include "core/command.hpp"
 #include "core/controller.hpp"
+#include "core/command.hpp"
+#include "core/debug.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
@@ -494,6 +496,26 @@ public:
 	void action_state_updated()
 	{
 		graphics_driver_action_updated();
+	}
+
+	void memory_read(uint64_t addr, uint64_t value)
+	{
+		debug_fire_callback_read(addr, value);
+	}
+
+	void memory_write(uint64_t addr, uint64_t value)
+	{
+		debug_fire_callback_write(addr, value);
+	}
+
+	void memory_execute(uint64_t addr, uint64_t proc)
+	{
+		debug_fire_callback_exec(addr, proc);
+	}
+
+	void memory_trace(uint64_t proc, const char* str)
+	{
+		debug_fire_callback_trace(proc, str);
 	}
 };
 

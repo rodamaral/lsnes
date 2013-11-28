@@ -53,6 +53,12 @@ namespace
 	bool rtc_fixed;
 	time_t rtc_fixed_val;
 	gambatte::GB* instance;
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+	gambatte::debugbuffer debugbuf;
+	bool reallocate_debug = false;
+	size_t cur_romsize;
+	size_t cur_ramsize;
+#endif
 	unsigned frame_overflow = 0;
 	std::vector<unsigned char> romdata;
 	uint32_t cover_fbmem[480 * 432];
@@ -61,6 +67,7 @@ namespace
 	uint32_t accumulator_r = 0;
 	unsigned accumulator_s = 0;
 	bool pflag = false;
+	bool disable_breakpoints = false;
 
 
 	struct interface_device_reg gb_registers[] = {
@@ -135,6 +142,644 @@ namespace
 		};
 	} getinput;
 
+	uint64_t get_address(unsigned clazz, unsigned offset)
+	{
+		switch(clazz) {
+		case 0: return 0x1000000 + offset; //BUS.
+		case 1: return offset; //WRAM.
+		case 2: return 0x18000 + offset; //IOAMHRAM
+		case 3: return 0x80000000 + offset; //ROM
+		case 4: return 0x20000 + offset;  //SRAM.
+		}
+		return 0xFFFFFFFFFFFFFFFF;
+	}
+
+	void gambatte_read_handler(unsigned clazz, unsigned offset, uint8_t value, bool exec)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = get_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL) {
+			if(exec)
+				ecore_callbacks->memory_execute(_addr, 0);
+			else
+				ecore_callbacks->memory_read(_addr, value);
+		}
+	}
+
+	void gambatte_write_handler(unsigned clazz, unsigned offset, uint8_t value)
+	{
+		if(disable_breakpoints) return;
+		uint64_t _addr = get_address(clazz, offset);
+		if(_addr != 0xFFFFFFFFFFFFFFFFULL)
+			ecore_callbacks->memory_write(_addr, value);
+	}
+
+	int get_hl(gambatte::GB* instance)
+	{
+		return instance->get_cpureg(gambatte::GB::REG_H) * 256 +
+			instance->get_cpureg(gambatte::GB::REG_L);
+	}
+
+	int get_bc(gambatte::GB* instance)
+	{
+		return instance->get_cpureg(gambatte::GB::REG_B) * 256 +
+			instance->get_cpureg(gambatte::GB::REG_C);
+	}
+
+	int get_de(gambatte::GB* instance)
+	{
+		return instance->get_cpureg(gambatte::GB::REG_D) * 256 +
+			instance->get_cpureg(gambatte::GB::REG_E);
+	}
+
+	std::string hex2(uint8_t v)
+	{
+		return (stringfmt() << std::setw(2) << std::setfill('0') << std::hex << (int)v).str();
+	}
+
+	std::string hex4(uint16_t v)
+	{
+		return (stringfmt() << std::setw(4) << std::setfill('0') << std::hex << v).str();
+	}
+
+	std::string signdec(uint8_t v, bool psign = false);
+	std::string signdec(uint8_t v, bool psign)
+	{
+		if(v < 128) return (stringfmt() << (psign ? "+" : "") << v).str();
+		return (stringfmt() << (int)v - 256).str();
+	}
+
+	uint16_t jraddr(uint16_t pc, uint8_t lt)
+	{
+		return pc + lt + 2 - ((lt < 128) ? 0 : 256);
+	}
+
+	void gambatte_trace_handler(uint16_t _pc)
+	{
+		std::ostringstream s;
+		int addr = -1;
+		uint16_t t2;
+		uint8_t ht, lt;
+		uint32_t offset = 0;
+		uint32_t pc = _pc;
+		std::function<uint8_t()> fetch = [pc, &offset]() -> uint8_t {
+			unsigned addr = pc + offset++;
+			uint8_t v;
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+			disable_breakpoints = true;
+			v = instance->bus_read(addr);
+			disable_breakpoints = true;
+#endif
+			return v;
+		};
+		std::function<uint16_t()> fetch2 = [&fetch]() -> uint16_t {
+			uint8_t lt, ht;
+			lt = fetch();
+			ht = fetch();
+			return 256 * ht + lt;
+		};
+		s << hex4(pc) << " ";
+		switch(fetch()) {
+		case 0x00: s << "NOP"; break;
+		case 0x01: s << "LD BC, 0x" << hex4(fetch2()); break;
+		case 0x02: s << "LD (BC),A"; addr = get_bc(instance); break;
+		case 0x03: s << "INC BC"; break;
+		case 0x04: s << "INC B"; break;
+		case 0x05: s << "DEC B"; break;
+		case 0x06: s << "LD B,0x" << hex2(fetch()); break;
+		case 0x07: s << "RCLA"; break;
+		case 0x08: s << "LD (0x" << hex4(addr = fetch2()) << "),SP"; break;
+		case 0x09: s << "ADD HL,BC"; break;
+		case 0x0A: s << "LD A,(BC)"; addr = get_bc(instance); break;
+		case 0x0B: s << "DEC BC"; break;
+		case 0x0C: s << "INC C"; break;
+		case 0x0D: s << "DEC C"; break;
+		case 0x0E: s << "LD C,0x" << hex2(fetch()); break;
+		case 0x0F: s << "RRCA"; break;
+		case 0x10: s << "STOP"; fetch(); break;
+		case 0x11: s << "LD DE, 0x" << hex4(fetch2()); break;
+		case 0x12: s << "LD (DE),A"; addr = get_de(instance); break;
+		case 0x13: s << "INC DE"; break;
+		case 0x14: s << "INC D"; break;
+		case 0x15: s << "DEC D"; break;
+		case 0x16: s << "LD D,0x" << hex2(fetch()); break;
+		case 0x17: s << "RLA"; break;
+		case 0x18: s << "JR " << signdec(lt = fetch()); addr = jraddr(pc, lt); break;
+		case 0x19: s << "ADD HL,DE"; break;
+		case 0x1A: s << "LD A,(DE)"; addr = get_de(instance); break;
+		case 0x1B: s << "DEC DE"; break;
+		case 0x1C: s << "INC E"; break;
+		case 0x1D: s << "DEC E"; break;
+		case 0x1E: s << "LD E,0x" << hex2(fetch()); break;
+		case 0x1F: s << "RRA"; break;
+		case 0x20: s << "JR NZ," << signdec(lt = fetch()); addr = jraddr(pc, lt); break;
+		case 0x21: s << "LD HL, 0x" << hex4(fetch2()); break;
+		case 0x22: s << "LD (HL+),A"; addr = get_hl(instance); break;
+		case 0x23: s << "INC HL"; break;
+		case 0x24: s << "INC H"; break;
+		case 0x25: s << "DEC H"; break;
+		case 0x26: s << "LD H,0x" << hex2(fetch()); break;
+		case 0x27: s << "DAA"; break;
+		case 0x28: s << "JR Z," << signdec(lt = fetch()); addr = jraddr(pc, lt); break;
+		case 0x29: s << "ADD HL,HL"; break;
+		case 0x2A: s << "LD A,(HL+)"; addr = get_hl(instance); break;
+		case 0x2B: s << "DEC HL"; break;
+		case 0x2C: s << "INC L"; break;
+		case 0x2D: s << "DEC L"; break;
+		case 0x2E: s << "LD L,0x" << hex2(fetch()); break;
+		case 0x2F: s << "CPL"; break;
+		case 0x30: s << "JR NC," << signdec(lt = fetch()); addr = jraddr(pc, lt); break;
+		case 0x31: s << "LD SP, 0x" << hex4(fetch2()); break;
+		case 0x32: s << "LD (HL-),A"; addr = get_hl(instance); break;
+		case 0x33: s << "INC SP"; break;
+		case 0x34: s << "INC (HL)"; addr = get_hl(instance); break;
+		case 0x35: s << "DEC (HL)"; addr = get_hl(instance); break;
+		case 0x36: s << "LD (HL),0x" << hex2(fetch()); addr = get_hl(instance); break;
+		case 0x37: s << "SCF"; break;
+		case 0x38: s << "JR Z," << signdec(lt = fetch()); addr = jraddr(pc, lt); break;
+		case 0x39: s << "ADD HL,SP"; break;
+		case 0x3A: s << "LD A,(HL-)"; addr = get_hl(instance); break;
+		case 0x3B: s << "DEC SP"; break;
+		case 0x3C: s << "INC A"; break;
+		case 0x3D: s << "DEC A"; break;
+		case 0x3E: s << "LD A,0x" << hex2(fetch()); break;
+		case 0x3F: s << "CCF"; break;
+		case 0x40: s << "LD B,B"; break;
+		case 0x41: s << "LD B,C"; break;
+		case 0x42: s << "LD B,D"; break;
+		case 0x43: s << "LD B,E"; break;
+		case 0x44: s << "LD B,H"; break;
+		case 0x45: s << "LD B,L"; break;
+		case 0x46: s << "LD B,(HL)"; addr = get_hl(instance); break;
+		case 0x47: s << "LD B,A"; break; 
+		case 0x48: s << "LD C,B"; break;
+		case 0x49: s << "LD C,C"; break;
+		case 0x4A: s << "LD C,D"; break;
+		case 0x4B: s << "LD C,E"; break;
+		case 0x4C: s << "LD C,H"; break;
+		case 0x4D: s << "LD C,L"; break;
+		case 0x4E: s << "LD C,(HL)"; addr = get_hl(instance); break;
+		case 0x4F: s << "LD C,A"; break;
+		case 0x50: s << "LD D,B"; break;
+		case 0x51: s << "LD D,C"; break;
+		case 0x52: s << "LD D,D"; break;
+		case 0x53: s << "LD D,E"; break;
+		case 0x54: s << "LD D,H"; break;
+		case 0x55: s << "LD D,L"; break;
+		case 0x56: s << "LD D,(HL)"; addr = get_hl(instance); break;
+		case 0x57: s << "LD D,A"; break;
+		case 0x58: s << "LD E,B"; break;
+		case 0x59: s << "LD E,C"; break;
+		case 0x5A: s << "LD E,D"; break;
+		case 0x5B: s << "LD E,E"; break;
+		case 0x5C: s << "LD E,H"; break;
+		case 0x5D: s << "LD E,L"; break;
+		case 0x5E: s << "LD E,(HL)"; addr = get_hl(instance); break;
+		case 0x5F: s << "LD E,A"; break;
+		case 0x60: s << "LD H,B"; break;
+		case 0x61: s << "LD H,C"; break;
+		case 0x62: s << "LD H,D"; break;
+		case 0x63: s << "LD H,E"; break;
+		case 0x64: s << "LD H,H"; break;
+		case 0x65: s << "LD H,L"; break;
+		case 0x66: s << "LD H,(HL)"; addr = get_hl(instance); break;
+		case 0x67: s << "LD H,A"; break;
+		case 0x68: s << "LD L,B"; break;
+		case 0x69: s << "LD L,C"; break;
+		case 0x6A: s << "LD L,D"; break;
+		case 0x6B: s << "LD L,E"; break;
+		case 0x6C: s << "LD L,H"; break;
+		case 0x6D: s << "LD L,L"; break;
+		case 0x6E: s << "LD L,(HL)"; addr = get_hl(instance); break;
+		case 0x6F: s << "LD L,A"; break;
+		case 0x70: s << "LD (HL),B"; addr = get_hl(instance); break;
+		case 0x71: s << "LD (HL),C"; addr = get_hl(instance); break;
+		case 0x72: s << "LD (HL),D"; addr = get_hl(instance); break;
+		case 0x73: s << "LD (HL),E"; addr = get_hl(instance); break;
+		case 0x74: s << "LD (HL),H"; addr = get_hl(instance); break;
+		case 0x75: s << "LD (HL),L"; addr = get_hl(instance); break;
+		case 0x76: s << "HALT"; break;
+		case 0x77: s << "LD (HL),A"; addr = get_hl(instance); break;
+		case 0x78: s << "LD A,B"; break;
+		case 0x79: s << "LD A,C"; break;
+		case 0x7A: s << "LD A,D"; break;
+		case 0x7B: s << "LD A,E"; break;
+		case 0x7C: s << "LD A,H"; break;
+		case 0x7D: s << "LD A,L"; break;
+		case 0x7E: s << "LD A,(HL)"; addr = get_hl(instance); break;
+		case 0x7F: s << "LD A,A"; break;
+		case 0x80: s << "ADD B"; break;
+		case 0x81: s << "ADD C"; break;
+		case 0x82: s << "ADD D"; break;
+		case 0x83: s << "ADD E"; break;
+		case 0x84: s << "ADD H"; break;
+		case 0x85: s << "ADD L"; break;
+		case 0x86: s << "ADD (HL)"; addr = get_hl(instance); break;
+		case 0x87: s << "ADD A"; break;
+		case 0x88: s << "ADC B"; break;
+		case 0x89: s << "ADC C"; break;
+		case 0x8A: s << "ADC D"; break;
+		case 0x8B: s << "ADC E"; break;
+		case 0x8C: s << "ADC H"; break;
+		case 0x8D: s << "ADC L"; break;
+		case 0x8E: s << "ADC (HL)"; addr = get_hl(instance); break;
+		case 0x8F: s << "ADC A"; break;
+		case 0x90: s << "SUB B"; break;
+		case 0x91: s << "SUB C"; break;
+		case 0x92: s << "SUB D"; break;
+		case 0x93: s << "SUB E"; break;
+		case 0x94: s << "SUB H"; break;
+		case 0x95: s << "SUB L"; break;
+		case 0x96: s << "SUB (HL)"; addr = get_hl(instance); break;
+		case 0x97: s << "SUB A"; break;
+		case 0x98: s << "SBC B"; break;
+		case 0x99: s << "SBC C"; break;
+		case 0x9A: s << "SBC D"; break;
+		case 0x9B: s << "SBC E"; break;
+		case 0x9C: s << "SBC H"; break;
+		case 0x9D: s << "SBC L"; break;
+		case 0x9E: s << "SBC (HL)"; addr = get_hl(instance); break;
+		case 0x9F: s << "SBC A"; break;
+		case 0xA0: s << "AND B"; break;
+		case 0xA1: s << "AND C"; break;
+		case 0xA2: s << "AND D"; break;
+		case 0xA3: s << "AND E"; break;
+		case 0xA4: s << "AND H"; break;
+		case 0xA5: s << "AND L"; break;
+		case 0xA6: s << "AND (HL)"; addr = get_hl(instance); break;
+		case 0xA7: s << "AND A"; break;
+		case 0xA8: s << "XOR B"; break;
+		case 0xA9: s << "XOR C"; break;
+		case 0xAA: s << "XOR D"; break;
+		case 0xAB: s << "XOR E"; break;
+		case 0xAC: s << "XOR H"; break;
+		case 0xAD: s << "XOR L"; break;
+		case 0xAE: s << "XOR (HL)"; addr = get_hl(instance); break;
+		case 0xAF: s << "XOR A"; break;
+		case 0xB0: s << "OR B"; break;
+		case 0xB1: s << "OR C"; break;
+		case 0xB2: s << "OR D"; break;
+		case 0xB3: s << "OR E"; break;
+		case 0xB4: s << "OR H"; break;
+		case 0xB5: s << "OR L"; break;
+		case 0xB6: s << "OR (HL)"; addr = get_hl(instance); break;
+		case 0xB7: s << "OR A"; break;
+		case 0xB8: s << "CP B"; break;
+		case 0xB9: s << "CP C"; break;
+		case 0xBA: s << "CP D"; break;
+		case 0xBB: s << "CP E"; break;
+		case 0xBC: s << "CP H"; break;
+		case 0xBD: s << "CP L"; break;
+		case 0xBE: s << "CP (HL)"; addr = get_hl(instance); break;
+		case 0xBF: s << "CP A"; break;
+		case 0xC0: s << "RET NZ"; break;
+		case 0xC1: s << "POP BC"; break;
+		case 0xC2: s << "JP NZ,0x" << hex4(fetch2()); break;
+		case 0xC3: s << "JP 0x" << hex4(fetch2()); break;
+		case 0xC4: s << "CALL NZ,0x" << hex4(fetch2()); break;
+		case 0xC5: s << "PUSH BC" << std::endl; break;
+		case 0xC6: s << "ADD 0x" << hex2(fetch()); break;
+		case 0xC7: s << "RST 0x00"; break;
+		case 0xC8: s << "RET Z"; break;
+		case 0xC9: s << "RET"; break;
+		case 0xCA: s << "JP Z,0x" << hex4(fetch2()); break;
+		case 0xCB:
+			switch(fetch()) {
+			case 0x00: s << "RLC B"; break;
+			case 0x01: s << "RLC C"; break;
+			case 0x02: s << "RLC D"; break;
+			case 0x03: s << "RLC E"; break;
+			case 0x04: s << "RLC H"; break;
+			case 0x05: s << "RLC L"; break;
+			case 0x06: s << "RLC (HL)"; addr = get_hl(instance); break;
+			case 0x07: s << "RLC A"; break;
+			case 0x08: s << "RRC B"; break;
+			case 0x09: s << "RRC C"; break;
+			case 0x0A: s << "RRC D"; break;
+			case 0x0B: s << "RRC E"; break;
+			case 0x0C: s << "RRC H"; break;
+			case 0x0D: s << "RRC L"; break;
+			case 0x0E: s << "RRC (HL)"; addr = get_hl(instance); break;
+			case 0x0F: s << "RRC A"; break;
+			case 0x10: s << "RL B"; break;
+			case 0x11: s << "RL C"; break;
+			case 0x12: s << "RL D"; break;
+			case 0x13: s << "RL E"; break;
+			case 0x14: s << "RL H"; break;
+			case 0x15: s << "RL L"; break;
+			case 0x16: s << "RL (HL)"; addr = get_hl(instance); break;
+			case 0x17: s << "RL A"; break;
+			case 0x18: s << "RR B"; break;
+			case 0x19: s << "RR C"; break;
+			case 0x1A: s << "RR D"; break;
+			case 0x1B: s << "RR E"; break;
+			case 0x1C: s << "RR H"; break;
+			case 0x1D: s << "RR L"; break;
+			case 0x1E: s << "RR (HL)"; addr = get_hl(instance); break;
+			case 0x1F: s << "RR A"; break;
+			case 0x20: s << "SLA B"; break;
+			case 0x21: s << "SLA C"; break;
+			case 0x22: s << "SLA D"; break;
+			case 0x23: s << "SLA E"; break;
+			case 0x24: s << "SLA H"; break;
+			case 0x25: s << "SLA L"; break;
+			case 0x26: s << "SLA (HL)"; addr = get_hl(instance); break;
+			case 0x27: s << "SLA A"; break;
+			case 0x28: s << "SRA B"; break;
+			case 0x29: s << "SRA C"; break;
+			case 0x2A: s << "SRA D"; break;
+			case 0x2B: s << "SRA E"; break;
+			case 0x2C: s << "SRA H"; break;
+			case 0x2D: s << "SRA L"; break;
+			case 0x2E: s << "SRA (HL)"; addr = get_hl(instance); break;
+			case 0x2F: s << "SRA A"; break;
+			case 0x30: s << "SWAP B"; break;
+			case 0x31: s << "SWAP C"; break;
+			case 0x32: s << "SWAP D"; break;
+			case 0x33: s << "SWAP E"; break;
+			case 0x34: s << "SWAP H"; break;
+			case 0x35: s << "SWAP L"; break;
+			case 0x36: s << "SWAP (HL)"; addr = get_hl(instance); break;
+			case 0x37: s << "SWAP A"; break;
+			case 0x38: s << "SRL B"; break;
+			case 0x39: s << "SRL C"; break;
+			case 0x3A: s << "SRL D"; break;
+			case 0x3B: s << "SRL E"; break;
+			case 0x3C: s << "SRL H"; break;
+			case 0x3D: s << "SRL L"; break;
+			case 0x3E: s << "SRL (HL)"; addr = get_hl(instance); break;
+			case 0x3F: s << "SRL A"; break;
+			case 0x40: s << "BIT 0,B"; break;
+			case 0x41: s << "BIT 0,C"; break;
+			case 0x42: s << "BIT 0,D"; break;
+			case 0x43: s << "BIT 0,E"; break;
+			case 0x44: s << "BIT 0,H"; break;
+			case 0x45: s << "BIT 0,L"; break;
+			case 0x46: s << "BIT 0,(HL)"; addr = get_hl(instance); break;
+			case 0x47: s << "BIT 0,A"; break;
+			case 0x48: s << "BIT 1,B"; break;
+			case 0x49: s << "BIT 1,C"; break;
+			case 0x4A: s << "BIT 1,D"; break;
+			case 0x4B: s << "BIT 1,E"; break;
+			case 0x4C: s << "BIT 1,H"; break;
+			case 0x4D: s << "BIT 1,L"; break;
+			case 0x4E: s << "BIT 1,(HL)"; addr = get_hl(instance); break;
+			case 0x4F: s << "BIT 1,A"; break;
+			case 0x50: s << "BIT 2,B"; break;
+			case 0x51: s << "BIT 2,C"; break;
+			case 0x52: s << "BIT 2,D"; break;
+			case 0x53: s << "BIT 2,E"; break;
+			case 0x54: s << "BIT 2,H"; break;
+			case 0x55: s << "BIT 2,L"; break;
+			case 0x56: s << "BIT 2,(HL)"; addr = get_hl(instance); break;
+			case 0x57: s << "BIT 2,A"; break;
+			case 0x58: s << "BIT 3,B"; break;
+			case 0x59: s << "BIT 3,C"; break;
+			case 0x5A: s << "BIT 3,D"; break;
+			case 0x5B: s << "BIT 3,E"; break;
+			case 0x5C: s << "BIT 3,H"; break;
+			case 0x5D: s << "BIT 3,L"; break;
+			case 0x5E: s << "BIT 3,(HL)"; addr = get_hl(instance); break;
+			case 0x5F: s << "BIT 3,A"; break;
+			case 0x60: s << "BIT 4,B"; break;
+			case 0x61: s << "BIT 4,C"; break;
+			case 0x62: s << "BIT 4,D"; break;
+			case 0x63: s << "BIT 4,E"; break;
+			case 0x64: s << "BIT 4,H"; break;
+			case 0x65: s << "BIT 4,L"; break;
+			case 0x66: s << "BIT 4,(HL)"; addr = get_hl(instance); break;
+			case 0x67: s << "BIT 4,A"; break;
+			case 0x68: s << "BIT 5,B"; break;
+			case 0x69: s << "BIT 5,C"; break;
+			case 0x6A: s << "BIT 5,D"; break;
+			case 0x6B: s << "BIT 5,E"; break;
+			case 0x6C: s << "BIT 5,H"; break;
+			case 0x6D: s << "BIT 5,L"; break;
+			case 0x6E: s << "BIT 5,(HL)"; addr = get_hl(instance); break;
+			case 0x6F: s << "BIT 5,A"; break;
+			case 0x70: s << "BIT 6,B"; break;
+			case 0x71: s << "BIT 6,C"; break;
+			case 0x72: s << "BIT 6,D"; break;
+			case 0x73: s << "BIT 6,E"; break;
+			case 0x74: s << "BIT 6,H"; break;
+			case 0x75: s << "BIT 6,L"; break;
+			case 0x76: s << "BIT 6,(HL)"; addr = get_hl(instance); break;
+			case 0x77: s << "BIT 6,A"; break;
+			case 0x78: s << "BIT 7,B"; break;
+			case 0x79: s << "BIT 7,C"; break;
+			case 0x7A: s << "BIT 7,D"; break;
+			case 0x7B: s << "BIT 7,E"; break;
+			case 0x7C: s << "BIT 7,H"; break;
+			case 0x7D: s << "BIT 7,L"; break;
+			case 0x7E: s << "BIT 7,(HL)"; addr = get_hl(instance); break;
+			case 0x7F: s << "BIT 7,A"; break;
+			case 0x80: s << "RES 0,B"; break;
+			case 0x81: s << "RES 0,C"; break;
+			case 0x82: s << "RES 0,D"; break;
+			case 0x83: s << "RES 0,E"; break;
+			case 0x84: s << "RES 0,H"; break;
+			case 0x85: s << "RES 0,L"; break;
+			case 0x86: s << "RES 0,(HL)"; addr = get_hl(instance); break;
+			case 0x87: s << "RES 0,A"; break;
+			case 0x88: s << "RES 1,B"; break;
+			case 0x89: s << "RES 1,C"; break;
+			case 0x8A: s << "RES 1,D"; break;
+			case 0x8B: s << "RES 1,E"; break;
+			case 0x8C: s << "RES 1,H"; break;
+			case 0x8D: s << "RES 1,L"; break;
+			case 0x8E: s << "RES 1,(HL)"; addr = get_hl(instance); break;
+			case 0x8F: s << "RES 1,A"; break;
+			case 0x90: s << "RES 2,B"; break;
+			case 0x91: s << "RES 2,C"; break;
+			case 0x92: s << "RES 2,D"; break;
+			case 0x93: s << "RES 2,E"; break;
+			case 0x94: s << "RES 2,H"; break;
+			case 0x95: s << "RES 2,L"; break;
+			case 0x96: s << "RES 2,(HL)"; addr = get_hl(instance); break;
+			case 0x97: s << "RES 2,A"; break;
+			case 0x98: s << "RES 3,B"; break;
+			case 0x99: s << "RES 3,C"; break;
+			case 0x9A: s << "RES 3,D"; break;
+			case 0x9B: s << "RES 3,E"; break;
+			case 0x9C: s << "RES 3,H"; break;
+			case 0x9D: s << "RES 3,L"; break;
+			case 0x9E: s << "RES 3,(HL)"; addr = get_hl(instance); break;
+			case 0x9F: s << "RES 3,A"; break;
+			case 0xA0: s << "RES 4,B"; break;
+			case 0xA1: s << "RES 4,C"; break;
+			case 0xA2: s << "RES 4,D"; break;
+			case 0xA3: s << "RES 4,E"; break;
+			case 0xA4: s << "RES 4,H"; break;
+			case 0xA5: s << "RES 4,L"; break;
+			case 0xA6: s << "RES 4,(HL)"; addr = get_hl(instance); break;
+			case 0xA7: s << "RES 4,A"; break;
+			case 0xA8: s << "RES 5,B"; break;
+			case 0xA9: s << "RES 5,C"; break;
+			case 0xAA: s << "RES 5,D"; break;
+			case 0xAB: s << "RES 5,E"; break;
+			case 0xAC: s << "RES 5,H"; break;
+			case 0xAD: s << "RES 5,L"; break;
+			case 0xAE: s << "RES 5,(HL)"; addr = get_hl(instance); break;
+			case 0xAF: s << "RES 5,A"; break;
+			case 0xB0: s << "RES 6,B"; break;
+			case 0xB1: s << "RES 6,C"; break;
+			case 0xB2: s << "RES 6,D"; break;
+			case 0xB3: s << "RES 6,E"; break;
+			case 0xB4: s << "RES 6,H"; break;
+			case 0xB5: s << "RES 6,L"; break;
+			case 0xB6: s << "RES 6,(HL)"; addr = get_hl(instance); break;
+			case 0xB7: s << "RES 6,A"; break;
+			case 0xB8: s << "RES 7,B"; break;
+			case 0xB9: s << "RES 7,C"; break;
+			case 0xBA: s << "RES 7,D"; break;
+			case 0xBB: s << "RES 7,E"; break;
+			case 0xBC: s << "RES 7,H"; break;
+			case 0xBD: s << "RES 7,L"; break;
+			case 0xBE: s << "RES 7,(HL)"; addr = get_hl(instance); break;
+			case 0xBF: s << "RES 7,A"; break;
+			case 0xC0: s << "SET 0,B"; break;
+			case 0xC1: s << "SET 0,C"; break;
+			case 0xC2: s << "SET 0,D"; break;
+			case 0xC3: s << "SET 0,E"; break;
+			case 0xC4: s << "SET 0,H"; break;
+			case 0xC5: s << "SET 0,L"; break;
+			case 0xC6: s << "SET 0,(HL)"; addr = get_hl(instance); break;
+			case 0xC7: s << "SET 0,A"; break;
+			case 0xC8: s << "SET 1,B"; break;
+			case 0xC9: s << "SET 1,C"; break;
+			case 0xCA: s << "SET 1,D"; break;
+			case 0xCB: s << "SET 1,E"; break;
+			case 0xCC: s << "SET 1,H"; break;
+			case 0xCD: s << "SET 1,L"; break;
+			case 0xCE: s << "SET 1,(HL)"; addr = get_hl(instance); break;
+			case 0xCF: s << "SET 1,A"; break;
+			case 0xD0: s << "SET 2,B"; break;
+			case 0xD1: s << "SET 2,C"; break;
+			case 0xD2: s << "SET 2,D"; break;
+			case 0xD3: s << "SET 2,E"; break;
+			case 0xD4: s << "SET 2,H"; break;
+			case 0xD5: s << "SET 2,L"; break;
+			case 0xD6: s << "SET 2,(HL)"; addr = get_hl(instance); break;
+			case 0xD7: s << "SET 2,A"; break;
+			case 0xD8: s << "SET 3,B"; break;
+			case 0xD9: s << "SET 3,C"; break;
+			case 0xDA: s << "SET 3,D"; break;
+			case 0xDB: s << "SET 3,E"; break;
+			case 0xDC: s << "SET 3,H"; break;
+			case 0xDD: s << "SET 3,L"; break;
+			case 0xDE: s << "SET 3,(HL)"; addr = get_hl(instance); break;
+			case 0xDF: s << "SET 3,A"; break;
+			case 0xE0: s << "SET 4,B"; break;
+			case 0xE1: s << "SET 4,C"; break;
+			case 0xE2: s << "SET 4,D"; break;
+			case 0xE3: s << "SET 4,E"; break;
+			case 0xE4: s << "SET 4,H"; break;
+			case 0xE5: s << "SET 4,L"; break;
+			case 0xE6: s << "SET 4,(HL)"; addr = get_hl(instance); break;
+			case 0xE7: s << "SET 4,A"; break;
+			case 0xE8: s << "SET 5,B"; break;
+			case 0xE9: s << "SET 5,C"; break;
+			case 0xEA: s << "SET 5,D"; break;
+			case 0xEB: s << "SET 5,E"; break;
+			case 0xEC: s << "SET 5,H"; break;
+			case 0xED: s << "SET 5,L"; break;
+			case 0xEE: s << "SET 5,(HL)"; addr = get_hl(instance); break;
+			case 0xEF: s << "SET 5,A"; break;
+			case 0xF0: s << "SET 6,B"; break;
+			case 0xF1: s << "SET 6,C"; break;
+			case 0xF2: s << "SET 6,D"; break;
+			case 0xF3: s << "SET 6,E"; break;
+			case 0xF4: s << "SET 6,H"; break;
+			case 0xF5: s << "SET 6,L"; break;
+			case 0xF6: s << "SET 6,(HL)"; addr = get_hl(instance); break;
+			case 0xF7: s << "SET 6,A"; break;
+			case 0xF8: s << "SET 7,B"; break;
+			case 0xF9: s << "SET 7,C"; break;
+			case 0xFA: s << "SET 7,D"; break;
+			case 0xFB: s << "SET 7,E"; break;
+			case 0xFC: s << "SET 7,H"; break;
+			case 0xFD: s << "SET 7,L"; break;
+			case 0xFE: s << "SET 7,(HL)"; addr = get_hl(instance); break;
+			case 0xFF: s << "SET 7,A"; break;
+			};
+			break;
+		case 0xCC: s << "CALL Z,0x" << hex4(fetch2()); break;
+		case 0xCD: s << "CALL 0x" << hex4(fetch2()); break;
+		case 0xCE: s << "ADC 0x" << hex2(fetch()); break;
+		case 0xCF: s << "RST 0x08"; break;
+		case 0xD0: s << "RET NC"; break;
+		case 0xD1: s << "POP DE"; break;
+		case 0xD2: s << "JP NC,0x" << hex4(fetch2()); break;
+		case 0xD3: s << "INVALID_D3"; break;
+		case 0xD4: s << "CALL NC,0x" << hex4(fetch2()); break;
+		case 0xD5: s << "PUSH DE" << std::endl; break;
+		case 0xD6: s << "SUB 0x" << hex2(fetch()); break;
+		case 0xD7: s << "RST 0x10"; break;
+		case 0xD8: s << "RET C"; break;
+		case 0xD9: s << "RETI"; break;
+		case 0xDA: s << "JP C,0x" << hex4(fetch2()); break;
+		case 0xDB: s << "INVALID_DB"; break;
+		case 0xDC: s << "CALL C,0x" << hex4(fetch2()); break;
+		case 0xDD: s << "INVALID_DD"; break;
+		case 0xDE: s << "SBC 0x" << hex2(fetch()); break;
+		case 0xDF: s << "RST 0x18"; break;
+		case 0xE0: s << "LDH (0x" << hex2(lt = fetch()) << "),A"; addr = 0xFF00 + lt; break;
+		case 0xE1: s << "POP HL"; break;
+		case 0xE2: s << "LD (C),A"; addr = 0xFF00 + instance->get_cpureg(gambatte::GB::REG_C); break;
+		case 0xE3: s << "INVALID_E3"; break;
+		case 0xE4: s << "INVALID_E4"; break;
+		case 0xE5: s << "PUSH HL" << std::endl; break;
+		case 0xE6: s << "AND 0x" << hex2(fetch()); break;
+		case 0xE7: s << "RST 0x20"; break;
+		case 0xE8: s << "ADD SP," << signdec(lt = fetch()); break;
+		case 0xE9: s << "JP (HL)"; addr = get_hl(instance); break;
+		case 0xEA: s << "LD (0x" << hex4(addr = fetch2()) << "),A"; break;
+		case 0xEB: s << "INVALID_EB"; break;
+		case 0xEC: s << "INVALID_EC"; break;
+		case 0xED: s << "INVALID_ED"; break;
+		case 0xEE: s << "XOR 0x" << std::setw(2) << std::setfill('0') << std::hex << fetch(); break;
+		case 0xEF: s << "RST 0x28"; break;
+		case 0xF0: s << "LDH A, (0x" << hex2(lt = fetch()) << ")"; addr = 0xFF00 + lt; break;
+		case 0xF1: s << "POP AF"; break;
+		case 0xF2: s << "LD A,(C)"; addr = 0xFF00 + instance->get_cpureg(gambatte::GB::REG_C); break;
+		case 0xF3: s << "DI"; break;
+		case 0xF4: s << "INVALID_F4"; break;
+		case 0xF5: s << "PUSH AF"; break;
+		case 0xF6: s << "OR 0x" << hex2(fetch()); break;
+		case 0xF7: s << "RST 0x30"; break;
+		case 0xF8: s << "LD HL,SP" << signdec(fetch(), true); break;
+		case 0xF9: s << "LD SP,HL"; break;
+		case 0xFA: s << "LD A,(0x" << hex4(addr = fetch2()) << ")"; break;
+		case 0xFB: s << "EI"; break;
+		case 0xFC: s << "INVALID_FC"; break;
+		case 0xFD: s << "INVALID_FD"; break;
+		case 0xFE: s << "CP 0x" << hex2(fetch()); break;
+		case 0xFF: s << "RST 0x38"; break;
+		}
+		while(s.str().length() < 24) s << " ";
+		if(addr >= 0) {
+			s << "[" << std::setw(4) << std::setfill('0') << std::hex << addr << "] ";
+		} else
+			s << "       ";
+
+		s << "A:" << hex2(instance->get_cpureg(gambatte::GB::REG_A));
+		s << " B:" << hex2(instance->get_cpureg(gambatte::GB::REG_B));
+		s << " C:" << hex2(instance->get_cpureg(gambatte::GB::REG_C));
+		s << " D:" << hex2(instance->get_cpureg(gambatte::GB::REG_D));
+		s << " E:" << hex2(instance->get_cpureg(gambatte::GB::REG_E));
+		s << " H:" << hex2(instance->get_cpureg(gambatte::GB::REG_H));
+		s << " L:" << hex2(instance->get_cpureg(gambatte::GB::REG_L));
+		s << " PC:" << hex4(instance->get_cpureg(gambatte::GB::REG_PC));
+		s << " SP:" << hex4(instance->get_cpureg(gambatte::GB::REG_SP));
+		s << " F:" 
+			<< (instance->get_cpureg(gambatte::GB::REG_CF) ? "C" : "-")
+			<< (instance->get_cpureg(gambatte::GB::REG_ZF) ? "Z" : "-")
+			<< (instance->get_cpureg(gambatte::GB::REG_HF1) ? "1" : "-")
+			<< (instance->get_cpureg(gambatte::GB::REG_HF2) ? "2" : "-");
+		std::string _s = s.str();
+		ecore_callbacks->memory_trace(0, _s.c_str());
+	}
+
 	void basic_init()
 	{
 		static bool done = false;
@@ -144,6 +789,18 @@ namespace
 		instance = new gambatte::GB;
 		instance->setInputGetter(&getinput);
 		instance->set_walltime_fn(walltime_fn);
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+		uint8_t* tmp = new uint8_t[98816];
+		memset(tmp, 0, 98816);
+		debugbuf.wram = tmp;
+		debugbuf.bus = tmp + 32768;
+		debugbuf.ioamhram = tmp + 98304;
+		debugbuf.read = gambatte_read_handler;
+		debugbuf.write = gambatte_write_handler;
+		debugbuf.trace = gambatte_trace_handler;
+		debugbuf.trace_cpu = false;
+		instance->set_debug_buffer(debugbuf);
+#endif
 	}
 
 	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
@@ -172,6 +829,30 @@ namespace
 		rtc_fixed = true;
 		rtc_fixed_val = rtc_sec;
 		instance->load(data, size, flags);
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+		size_t sramsize = instance->getSaveRam().second;
+		size_t romsize = size;
+		if(reallocate_debug || cur_ramsize != sramsize || cur_romsize != romsize) {
+			if(debugbuf.cart) delete[] debugbuf.cart;
+			if(debugbuf.sram) delete[] debugbuf.sram;
+			debugbuf.cart = NULL;
+			debugbuf.sram = NULL;
+			if(sramsize) debugbuf.sram = new uint8_t[(sramsize + 4095) >> 12 << 12];
+			if(romsize) debugbuf.cart = new uint8_t[(romsize + 4095) >> 12 << 12];
+			if(sramsize) memset(debugbuf.sram, 0, (sramsize + 4095) >> 12 << 12);
+			if(romsize) memset(debugbuf.cart, 0, (romsize + 4095) >> 12 << 12);
+			memset(debugbuf.wram, 0, 32768);
+			memset(debugbuf.ioamhram, 0, 512);
+			debugbuf.wramcheat.clear();
+			debugbuf.sramcheat.clear();
+			debugbuf.cartcheat.clear();
+			debugbuf.trace_cpu = false;
+			reallocate_debug = false;
+			cur_ramsize = sramsize;
+			cur_romsize = romsize;
+		}
+		instance->set_debug_buffer(debugbuf);
+#endif
 		rtc_fixed = false;
 		romdata.resize(size);
 		memcpy(&romdata[0], data, size);
@@ -189,6 +870,20 @@ namespace
 		return r;
 	}
 
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+	uint8_t gambatte_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
+	{
+		uint8_t val = 0;
+		disable_breakpoints = true;
+		if(write)
+			instance->bus_write(offset, data);
+		else
+			val = instance->bus_read(offset);
+		disable_breakpoints = false;
+		return val;
+	}
+#endif
+
 	std::list<core_vma_info> get_VMAlist()
 	{
 		std::list<core_vma_info> vmas;
@@ -199,6 +894,7 @@ namespace
 		core_vma_info vram;
 		core_vma_info ioamhram;
 		core_vma_info rom;
+		core_vma_info bus;
 
 		auto g = instance->getSaveRam();
 		sram.name = "SRAM";
@@ -241,6 +937,14 @@ namespace
 		vmas.push_back(rom);
 		vmas.push_back(vram);
 		vmas.push_back(ioamhram);
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+		bus.name = "BUS";
+		bus.base = 0x1000000;
+		bus.size = 0x10000;
+		bus.iospace_rw = gambatte_bus_iospace_rw;
+		bus.endian = -1;
+		vmas.push_back(bus);
+#endif
 		return vmas;
 	}
 
@@ -474,10 +1178,102 @@ namespace
 		int c_reset_action(bool hard) { return hard ? -1 : 0; }
 		std::pair<uint64_t, uint64_t> c_get_bus_map()
 		{
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+			return std::make_pair(0x1000000, 0x10000);
+#else
 			return std::make_pair(0, 0);
+#endif
 		}
 		std::list<core_vma_info> c_vma_list() { return get_VMAlist(); }
 		std::set<std::string> c_srams() { return gambatte_srams(); }
+		void c_set_debug_flags(uint64_t addr, unsigned int sflags, unsigned int cflags)
+		{
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+			if(addr == 0 && sflags & 8) debugbuf.trace_cpu = true;
+			if(addr == 0 && cflags & 8) debugbuf.trace_cpu = false;
+			if(addr >= 0 && addr < 32768) {
+				debugbuf.wram[addr] |= (sflags & 7);
+				debugbuf.wram[addr] &= ~(cflags & 7);
+			} else if(addr >= 0x20000 && addr < 0x20000 + instance->getSaveRam().second) {
+				debugbuf.sram[addr - 0x20000] |= (sflags & 7);
+				debugbuf.sram[addr - 0x20000] &= ~(cflags & 7);
+			} else if(addr >= 0x18000 && addr < 0x18200) {
+				debugbuf.ioamhram[addr - 0x18000] |= (sflags & 7);
+				debugbuf.ioamhram[addr - 0x18000] &= ~(cflags & 7);
+			} else if(addr >= 0x80000000 && addr < 0x80000000 + romdata.size()) {
+				debugbuf.cart[addr - 0x80000000] |= (sflags & 7);
+				debugbuf.cart[addr - 0x80000000] &= ~(cflags & 7);
+			} else if(addr >= 0x1000000 && addr < 0x1010000) {
+				debugbuf.bus[addr - 0x1000000] |= (sflags & 7);
+				debugbuf.bus[addr - 0x1000000] &= ~(cflags & 7);
+			} else if(addr == 0xFFFFFFFFFFFFFFFFULL) {
+				//Set/Clear every known debug.
+				for(unsigned i = 0; i < 32768; i++) {
+					debugbuf.wram[i] |= ((sflags & 7) << 4);
+					debugbuf.wram[i] &= ~((cflags & 7) << 4);
+				}
+				for(unsigned i = 0; i < 65536; i++) {
+					debugbuf.bus[i] |= ((sflags & 7) << 4);
+					debugbuf.bus[i] &= ~((cflags & 7) << 4);
+				}
+				for(unsigned i = 0; i < 512; i++) {
+					debugbuf.ioamhram[i] |= ((sflags & 7) << 4);
+					debugbuf.ioamhram[i] &= ~((cflags & 7) << 4);
+				}
+				for(unsigned i = 0; i < instance->getSaveRam().second; i++) {
+					debugbuf.sram[i] |= ((sflags & 7) << 4);
+					debugbuf.sram[i] &= ~((cflags & 7) << 4);
+				}
+				for(unsigned i = 0; i < romdata.size(); i++) {
+					debugbuf.cart[i] |= ((sflags & 7) << 4);
+					debugbuf.cart[i] &= ~((cflags & 7) << 4);
+				}
+			}
+#endif
+		}
+		void c_set_cheat(uint64_t addr, uint64_t value, bool set)
+		{
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+			if(addr >= 0 && addr < 32768) {
+				if(set) {
+					debugbuf.wram[addr] |= 8;
+					debugbuf.wramcheat[addr] = value;
+				} else {
+					debugbuf.wram[addr] &= ~8;
+					debugbuf.wramcheat.erase(addr);
+				}
+			} else if(addr >= 0x20000 && addr < 0x20000 + instance->getSaveRam().second) {
+				auto addr2 = addr - 0x20000;
+				if(set) {
+					debugbuf.sram[addr2] |= 8;
+					debugbuf.sramcheat[addr2] = value;
+				} else {
+					debugbuf.sram[addr2] &= ~8;
+					debugbuf.sramcheat.erase(addr2);
+				}
+			} else if(addr >= 0x80000000 && addr < 0x80000000 + romdata.size()) {
+				auto addr2 = addr - 0x80000000;
+				if(set) {
+					debugbuf.cart[addr2] |= 8;
+					debugbuf.cartcheat[addr2] = value;
+				} else {
+					debugbuf.cart[addr2] &= ~8;
+					debugbuf.cartcheat.erase(addr2);
+				}
+			}
+#endif
+		}
+		void c_debug_reset()
+		{
+			//Next load will reset trace.
+			reallocate_debug = true;
+		}
+		std::vector<std::string> c_get_trace_cpus()
+		{
+			std::vector<std::string> r;
+			r.push_back("cpu");
+			return r;
+		}
 	} gambatte_core;
 
 	struct _type_dmg : public core_type, public core_sysregion

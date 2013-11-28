@@ -1,4 +1,6 @@
+#include "core/command.hpp"
 #include "lua/internal.hpp"
+#include "core/debug.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/moviedata.hpp"
@@ -19,6 +21,17 @@ namespace
 		throw std::runtime_error("No such VMA");
 	}
 
+	uint64_t get_read_address(lua_state& L, int& base, const char* fn)
+	{
+		uint64_t vmabase = 0;
+		if(L.type(base) == LUA_TSTRING) {
+			vmabase = get_vmabase(L, L.get_string(base, fn));
+			base++;
+		}
+		uint64_t addr = L.get_numeric_argument<uint64_t>(base++, fn) + vmabase;
+		return addr;
+	}
+
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	class lua_read_memory : public lua_function
 	{
@@ -26,13 +39,8 @@ namespace
 		lua_read_memory(const std::string& name) : lua_function(lua_func_misc, name) {}
 		int invoke(lua_state& L)
 		{
-			int base = 0;
-			uint64_t vmabase = 0;
-			if(L.type(1) == LUA_TSTRING) {
-				vmabase = get_vmabase(L, L.get_string(1, "lua_read_memory"));
-				base = 1;
-			}
-			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+			int base = 1;
+			uint64_t addr = get_read_address(L, base, "lua_read_memory");
 			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 			return 1;
 		}
@@ -45,13 +53,8 @@ namespace
 		lua_write_memory(const std::string& name) : lua_function(lua_func_misc, name) {}
 		int invoke(lua_state& L)
 		{
-			int base = 0;
-			uint64_t vmabase = 0;
-			if(L.type(1) == LUA_TSTRING) {
-				vmabase = get_vmabase(L, L.get_string(1, "lua_read_memory"));
-				base = 1;
-			}
-			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
+			int base = 1;
+			uint64_t addr = get_read_address(L, base, "lua_write_memory");
 			T value = L.get_numeric_argument<T>(base + 2, fname.c_str());
 			(lsnes_memory.*wfun)(addr, value);
 			return 0;
@@ -196,6 +199,167 @@ namespace
 		L.setmetatable(-2);
 	}
 
+	struct lua_debug_callback
+	{
+		uint64_t addr;
+		debug_type type;
+		debug_handle h;
+		bool dead;
+		const void* lua_fn;
+		static int dtor(lua_State* L)
+		{
+			lua_debug_callback* D = (lua_debug_callback*)lua_touserdata(L, 1);
+			return D->_dtor(L);
+		}
+		int _dtor(lua_State* L);
+	};
+	std::map<uint64_t, std::list<lua_debug_callback*>> cbs;
+
+	int lua_debug_callback::_dtor(lua_State* L)
+	{
+		if(dead) return 0;
+		dead = true;
+		lua_pushlightuserdata(L, &type);
+		lua_pushnil(L);
+		lua_rawset(L, LUA_REGISTRYINDEX);
+		debug_remove_callback(addr, type, h);
+		for(auto j = cbs[addr].begin(); j != cbs[addr].end(); j++)
+			if(*j == this) {
+				cbs[addr].erase(j);
+				break;
+			}
+		if(cbs[addr].empty())
+			cbs.erase(addr);
+		return 0;
+	}
+
+	void do_lua_error(lua_state& L, int ret)
+	{
+		if(!ret) return;
+		switch(ret) {
+		case LUA_ERRRUN:
+			messages << "Error in Lua memory callback: " << L.get_string(-1, "errhnd") << std::endl;
+			L.pop(1);
+			return;
+		case LUA_ERRMEM:
+			messages << "Error in Lua memory callback (Out of memory)" << std::endl;
+			return;
+		case LUA_ERRERR:
+			messages << "Error in Lua memory callback (Double fault)" << std::endl;
+			return;
+		default:
+			messages << "Error in Lua memory callback (\?\?\?)" << std::endl;
+			return;
+		}
+	}
+
+	template<debug_type type, bool reg> class lua_registerX : public lua_function
+	{
+	public:
+		lua_registerX(const std::string& name) : lua_function(lua_func_misc, name) {}
+		int invoke(lua_state& L)
+		{
+			uint64_t addr;
+			int base = 1;
+			if(L.type(1) == LUA_TNIL && type != DEBUG_TRACE) {
+				addr = 0xFFFFFFFFFFFFFFFFULL;
+				base = 2;
+			} else if(type != DEBUG_TRACE)
+				addr = get_read_address(L, base, fname.c_str());
+			else
+				addr = L.get_numeric_argument<uint64_t>(base++, fname.c_str());
+			if(L.type(base) != LUA_TFUNCTION)
+				throw std::runtime_error("Expected last argument to " + fname + " to be function");
+			if(reg) {
+				handle_registerX(L, addr, base);
+				L.pushvalue(base);
+				return 1;
+			} else {
+				handle_unregisterX(L, addr, base);
+				return 0;
+			}
+		}
+		void handle_registerX(lua_state& L, uint64_t addr, int lfn)
+		{
+			auto& cbl = cbs[addr];
+
+			//Put the context in userdata so it can be gc'd when Lua context is terminated.
+			lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
+			L.newtable();
+			L.pushstring("__gc");
+			L.pushcclosure(&lua_debug_callback::dtor, 0);
+			L.rawset(-3);
+			L.setmetatable(-2);
+			L.pushlightuserdata(&D->addr);
+			L.pushvalue(-2);
+			L.rawset(LUA_REGISTRYINDEX);
+			L.pop(1); //Pop the copy of object.
+
+			cbl.push_back(D);
+
+			D->dead = false;
+			D->addr = addr;
+			D->type = type;
+			D->lua_fn = L.topointer(lfn);
+			lua_state* LL = &L.get_master();
+			void* D2 = &D->type;
+			if(type != DEBUG_TRACE)
+				D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
+					LL->pushlightuserdata(D2);
+					LL->rawget(LUA_REGISTRYINDEX);
+					LL->pushnumber(addr);
+					LL->pushnumber(value);
+					do_lua_error(*LL, LL->pcall(2, 0, 0));
+				}, [LL, D]() {
+					LL->pushlightuserdata(&D->addr);
+					LL->pushnil();
+					LL->rawset(LUA_REGISTRYINDEX);
+					D->_dtor(LL->handle());
+				});
+			else
+				D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
+					LL->pushlightuserdata(D2);
+					LL->rawget(LUA_REGISTRYINDEX);
+					LL->pushnumber(proc);
+					LL->pushstring(str);
+					do_lua_error(*LL, LL->pcall(2, 0, 0));
+				}, [LL, D]() {
+					LL->pushlightuserdata(&D->addr);
+					LL->pushnil();
+					LL->rawset(LUA_REGISTRYINDEX);
+					D->_dtor(LL->handle());
+				});
+			L.pushlightuserdata(D2);
+			L.pushvalue(lfn);
+			L.rawset(LUA_REGISTRYINDEX);
+		}
+		void handle_unregisterX(lua_state& L, uint64_t addr, int lfn)
+		{
+			if(!cbs.count(addr))
+				return;
+			auto& cbl = cbs[addr];
+			for(auto i = cbl.begin(); i != cbl.end(); i++) {
+				if((*i)->type != type) continue;
+				if(L.topointer(lfn) != (*i)->lua_fn) continue;
+				L.pushlightuserdata(&(*i)->type);
+				L.pushnil();
+				L.rawset(LUA_REGISTRYINDEX);
+				(*i)->_dtor(L.handle());
+				//Lua will GC the object.
+				break;
+			}
+		}
+	};
+
+	function_ptr_command<> callbacks_show_lua(lsnes_cmd, "show-lua-callbacks", "", "",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+		for(auto& i : cbs)
+			for(auto& j : i.second)
+				messages << "addr=" << j->addr << " type=" << j->type << " handle="
+					<< j->h.handle << " dead=" << j->dead << " lua_fn="
+					<< j->lua_fn << std::endl;
+		});
+
 	class lua_mmap_memory : public lua_function
 	{
 	public:
@@ -206,14 +370,9 @@ namespace
 				aperture_make_fun(L, 0, 0xFFFFFFFFFFFFFFFFULL, h);
 				return 1;
 			}
-			int base = 0;
-			uint64_t vmabase = 0;
-			if(L.type(1) == LUA_TSTRING) {
-				vmabase = get_vmabase(L, L.get_string(1, "lua_mmap_memory"));
-				base = 1;
-			}
-			uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
-			uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
+			int base = 1;
+			uint64_t addr = get_read_address(L, base, "lua_mmap_memory");
+			uint64_t size = L.get_numeric_argument<uint64_t>(base, fname.c_str());
 			if(!size)
 				throw std::runtime_error("Aperture with zero size is not valid");
 			aperture_make_fun(L, addr, size - 1, h);
@@ -226,6 +385,26 @@ namespace
 		-> int {
 		L.pushnumber(lsnes_memory.get_regions().size());
 		return 1;
+	});
+
+	function_ptr_luafun cheat(lua_func_misc, "memory.cheat", [](lua_state& L, const std::string& fname)
+		-> int {
+		int base = 1;
+		uint64_t addr = get_read_address(L, base, fname.c_str());
+		if(L.type(base) == LUA_TNIL || L.type(base) == LUA_TNONE) {
+			debug_clear_cheat(addr);
+		} else {
+			uint64_t value = L.get_numeric_argument<uint64_t>(base, fname.c_str());
+			debug_set_cheat(addr, value);
+		}
+		return 0;
+	});
+
+	function_ptr_luafun xmask(lua_func_misc, "memory.setxmask", [](lua_state& L, const std::string& fname)
+		-> int {
+		uint64_t value = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		debug_setxmask(value);
+		return 0;
 	});
 
 	int handle_push_vma(lua_state& L, memory_region& r)
@@ -300,14 +479,9 @@ namespace
 	function_ptr_luafun hashmemory(lua_func_misc, "memory.hash_region", [](lua_state& L, const std::string& fname)
 		-> int {
 		std::string hash;
-		int base = 0;
-		uint64_t vmabase = 0;
-		if(L.type(1) == LUA_TSTRING) {
-			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
-			base = 1;
-		}
-		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
-		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
+		int base = 1;
+		uint64_t addr = get_read_address(L, base, fname.c_str());
+		uint64_t size = L.get_numeric_argument<uint64_t>(base, fname.c_str());
 		char buffer[BLOCKSIZE];
 		sha256 h;
 		while(size > BLOCKSIZE) {
@@ -328,14 +502,9 @@ namespace
 	function_ptr_luafun readmemoryr(lua_func_misc, "memory.readregion", [](lua_state& L, const std::string& fname)
 		-> int {
 		std::string hash;
-		int base = 0;
-		uint64_t vmabase = 0;
-		if(L.type(1) == LUA_TSTRING) {
-			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
-			base = 1;
-		}
-		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
-		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
+		int base = 1;
+		uint64_t addr = get_read_address(L, base, fname.c_str());
+		uint64_t size = L.get_numeric_argument<uint64_t>(base, fname.c_str());
 		L.newtable();
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
@@ -356,14 +525,9 @@ namespace
 	function_ptr_luafun writememoryr(lua_func_misc, "memory.writeregion", [](lua_state& L,
 		const std::string& fname) -> int {
 		std::string hash;
-		int base = 0;
-		uint64_t vmabase = 0;
-		if(L.type(1) == LUA_TSTRING) {
-			vmabase = get_vmabase(L, L.get_string(1, fname.c_str()));
-			base = 1;
-		}
-		uint64_t addr = L.get_numeric_argument<uint64_t>(base + 1, fname.c_str()) + vmabase;
-		uint64_t size = L.get_numeric_argument<uint64_t>(base + 2, fname.c_str());
+		int base = 1;
+		uint64_t addr = get_read_address(L, base, fname.c_str());
+		uint64_t size = L.get_numeric_argument<uint64_t>(base, fname.c_str());
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
 		while(size > 0) {
@@ -486,6 +650,14 @@ namespace
 	lua_mmap_memory msq("memory.mapsqword", mhsq);
 	lua_mmap_memory mf4("memory.mapfloat", mhf4);
 	lua_mmap_memory mf8("memory.mapdouble", mhf8);
+	lua_registerX<DEBUG_READ, true> mrr("memory.registerread");
+	lua_registerX<DEBUG_READ, false> murr("memory.unregisterread");
+	lua_registerX<DEBUG_WRITE, true> mrw("memory.registerwrite");
+	lua_registerX<DEBUG_WRITE, false> murw("memory.unregisterwrite");
+	lua_registerX<DEBUG_EXEC, true> mrx("memory.registerexec");
+	lua_registerX<DEBUG_EXEC, false> murx("memory.unregisterexec");
+	lua_registerX<DEBUG_TRACE, true> mrt("memory.registertrace");
+	lua_registerX<DEBUG_TRACE, false> murt("memory.unregistertrace");
 }
 
 int lua_mmap_struct::map(lua_state& L, const std::string& fname)
