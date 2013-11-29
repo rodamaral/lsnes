@@ -337,6 +337,9 @@ void dispatch_set_error_streams(std::ostream* stream)
 	notify_subtitle_change.errors_to(stream);
 	notify_voice_stream_change.errors_to(stream);
 	notify_vu_change.errors_to(stream);
+	notify_core_changed.errors_to(stream);
+	notify_multitrack_change.errors_to(stream);
+	notify_title_change.errors_to(stream);
 }
 
 struct dispatcher<> notify_autohold_reconfigure("autohold_reconfigure");
