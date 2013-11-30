@@ -1,4 +1,4 @@
-ifdef BSNES_VERSION
+ifdef BUILD_BSNES
 OBJECTS=core.$(OBJECT_SUFFIX) scpu-disasm.$(OBJECT_SUFFIX) bitmap.$(OBJECT_SUFFIX)
 BSNES_CFLAGS=
 BSNES_LDFLAGS=
@@ -8,22 +8,20 @@ BSNES_PROFILE_STRING=profile=compatibility
 else
 BSNES_PROFILE_STRING=profile=accuracy
 endif
-ifeq ($(BSNES_VERSION), 084)
-BSNES_PROFILE_STRING+=options=debugger
-CFLAGS += -DBSNES_HAS_DEBUGGER
-else
-ifeq ($(BSNES_VERSION), 085)
+include ../../../bsnes/bsnes.mk
+
+ifdef BSNES_SUPPORTS_DEBUGGER
 BSNES_PROFILE_STRING+=options=debugger
 CFLAGS += -DBSNES_HAS_DEBUGGER
 endif
-endif
+
 ifeq ($(BSNES_VERSION), 087)
 BSNES_TARGET_STRING=target=libsnes
 else
 BSNES_TARGET_STRING=ui=ui-libsnes
 endif
-CFLAGS += -DBSNES_V${BSNES_VERSION}
 CFLAGS += -DBSNES_VERSION=\"${BSNES_VERSION}\"
+CFLAGS += -DLIBSNES_INCLUDE_FILE=\"${LIBSNES_DIR}/libsnes.hpp\"
 
 BSNES_LIBRARY=bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 

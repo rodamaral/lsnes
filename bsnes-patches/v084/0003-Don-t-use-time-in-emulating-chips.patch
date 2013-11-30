@@ -1,7 +1,7 @@
 From b481e3d161d924cc5a4449329393c8d9f23b27ec Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 9 Nov 2011 00:37:44 +0200
-Subject: [PATCH 3/9] Don't use time() in emulating chips
+Subject: [PATCH 03/10] Don't use time() in emulating chips
 
 Instead of using time() in chip emulation, create new interface method
 currentTime(), defaulting to time(0). This way frontend can cleanly
@@ -80,5 +80,5 @@ index f1a48c0..df975e8 100755
  
  extern Interface *interface;
 -- 
-1.8.4.rc3
+1.8.4.4
 

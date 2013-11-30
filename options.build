@@ -103,9 +103,8 @@ SECRET_RABBIT_CODE=
 # Set to non-empty value (e.g. 'yes') to build the gambatte core.
 BUILD_GAMBATTE=
 
-# Bsnes version used. Non-empty value also causes bsnes core to be built.
-# 087 has different layout from the rest.
-BSNES_VERSION=085
+# Set to non-empty value (e.g. 'yes') to build the bsnes core.
+BUILD_BSNES=yes
 
 # Set to non-empty value (e.g. 'yes') if bsnes build uses compatiblity core, not accuracy core.
 BSNES_IS_COMPAT=

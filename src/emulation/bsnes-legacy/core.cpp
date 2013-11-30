@@ -45,11 +45,7 @@
 #endif
 #include <snes/snes.hpp>
 #include <gameboy/gameboy.hpp>
-#ifdef BSNES_V087
-#include <target-libsnes/libsnes.hpp>
-#else
-#include <ui-libsnes/libsnes.hpp>
-#endif
+#include LIBSNES_INCLUDE_FILE
 
 #define DURATION_NTSC_FRAME 357366
 #define DURATION_NTSC_FIELD 357368

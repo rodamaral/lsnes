@@ -1,0 +1,22 @@
+From 242efcc9cf10fa58c8e06f154c41db21e6aa2688 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sat, 30 Nov 2013 10:26:59 +0200
+Subject: [PATCH 10/10] Add support for auto-detecting bsnes version
+
+---
+ bsnes.mk | 3 +++
+ 1 file changed, 3 insertions(+)
+ create mode 100644 bsnes.mk
+
+diff --git a/bsnes.mk b/bsnes.mk
+new file mode 100644
+index 0000000..11300e2
+--- /dev/null
++++ b/bsnes.mk
+@@ -0,0 +1,3 @@
++BSNES_SUPPORTS_DEBUGGER=yes
++LIBSNES_DIR=ui-libsnes
++BSNES_VERSION=084
+-- 
+1.8.4.4
+
