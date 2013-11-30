@@ -82,7 +82,7 @@ namespace
 			.settings = {},
 			.core = this,
 		}}), core_region({{"null", "(null)", 0, 0, false, {1, 60}, {0}}}),
-		core_sysregion("null", *this, *this) {}
+		core_sysregion("null", *this, *this) { hide(); }
 		std::string c_core_identifier() { return "null core"; }
 		bool c_set_region(core_region& reg) { return true; }
 		std::pair<unsigned, unsigned> c_video_rate() { return std::make_pair(60, 1); }
