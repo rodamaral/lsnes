@@ -4648,9 +4648,5 @@ Read/Write/Execute hooks are supported for ROM (read/execute only), SRAM
  and WRAM.
 \end_layout
 
-\begin_layout Itemize
-
-\end_layout
-
 \end_body
 \end_document

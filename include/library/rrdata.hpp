@@ -79,6 +79,44 @@ public:
 		unsigned operator-(const struct instance& m) const throw();
 	};
 /**
+ * State block for emergency save.
+ */
+	struct esave_state
+	{
+		esave_state()
+		{
+			initialized = false;
+		}
+		void init(const std::set<std::pair<instance, instance>>& obj)
+		{
+			if(initialized) return;
+			initialized = true;
+			itr = obj.begin();
+			eitr = obj.end();
+		}
+		std::set<std::pair<instance, instance>>::const_iterator next()
+		{
+			if(itr == eitr) return itr;
+			return itr++;
+		}
+		bool finished()
+		{
+			return (itr == eitr);
+		}
+		void reset()
+		{
+			initialized = false;
+			segptr = segend = pred = instance();
+		}
+		instance segptr;
+		instance segend;
+		instance pred;
+	private:
+		bool initialized;
+		std::set<std::pair<instance, instance>>::const_iterator itr;
+		std::set<std::pair<instance, instance>>::const_iterator eitr;
+	};
+/**
  * Ctor
  */
 	rrdata_set() throw();
@@ -121,6 +159,23 @@ public:
  */
 	uint64_t write(std::vector<char>& strm) throw(std::bad_alloc);
 /**
+ * Get size for compressed representation.
+ *
+ * Returns: The size of compressed representation.
+ * Note: Uses no memory.
+ */
+	uint64_t size_emerg() const throw();
+/**
+ * Write part of compressed representation to buffer.
+ *
+ * Parameter state: The state variable (initially, pass esave_state()).
+ * Parameter buf: The buffer to write to.
+ * Parameter bufsize: The buffer size (needs to be at least 36).
+ * Returns: The number of bytes written (0 if at the end).
+ * Note: Uses no memory.
+ */
+	size_t write_emerg(struct esave_state& state, char* buf, size_t bufsize) const throw();
+/**
  * Load compressed representation of load ID set from stream and union it with current set to form new current
  * set.
  *
@@ -160,6 +215,8 @@ private:
 		uint64_t& cnt);
 	bool _in_set(const instance& b) { return _in_set(b, b + 1); }
 	bool _in_set(const instance& b, const instance& e);
+	uint64_t emerg_action(struct esave_state& state, char* buf, size_t bufsize, uint64_t& scount) const;
+
 	instance internal;
 	std::set<std::pair<instance, instance>> data;
 	std::ofstream ohandle;

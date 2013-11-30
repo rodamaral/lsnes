@@ -1061,7 +1061,7 @@ public:
 /**
  * Get number of subframes.
  */
-	size_t size()
+	size_t size() const
 	{
 		return frames;
 	}
@@ -1157,19 +1157,23 @@ public:
 /**
  * Return number of pages in movie.
  */
-	size_t get_page_count() { return pages.size(); }
+	size_t get_page_count() const { return pages.size(); }
 /**
  * Return the stride.
  */
-	size_t get_stride() { return frame_size; }
+	size_t get_stride() const { return frame_size; }
 /**
  * Return number of frames per page.
  */
-	size_t get_frames_per_page() { return frames_per_page; }
+	size_t get_frames_per_page() const { return frames_per_page; }
 /**
  * Get content of given page.
  */
 	unsigned char* get_page_buffer(size_t page) { return pages[page].content; }
+/**
+ * Get content of given page.
+ */
+	const unsigned char* get_page_buffer(size_t page) const { return pages.find(page)->second.content; }
 private:
 	class page
 	{

@@ -189,11 +189,10 @@ void rrdata_set::add_internal() throw(std::bad_alloc)
 
 namespace
 {
-	void flush_symbol(std::vector<char>& strm, const rrdata_set::instance& base,
-		const rrdata_set::instance& predicted, unsigned count)
+	size_t _flush_symbol(char* buf1, const rrdata_set::instance& base, const rrdata_set::instance& predicted,
+		unsigned count)
 	{
 		char opcode;
-		char buf1[RRDATA_BYTES + 4];
 		char buf2[3];
 		unsigned bias;
 		if(count == 1) {
@@ -220,9 +219,7 @@ namespace
 		buf2[1] = (count - bias) >> 8;
 		buf2[2] = (count - bias);
 		memcpy(buf1 + (RRDATA_BYTES - j + 1), buf2 + (3 - (opcode >> 5)), opcode >> 5);
-		for(size_t s = 0; s < (RRDATA_BYTES - j + 1) + (opcode >> 5); s++)
-			strm.push_back(buf1[s]);
-		//std::cerr << "Encoding " << count << " symbols starting from " << base << std::endl;
+		return (RRDATA_BYTES - j + 1) + (opcode >> 5);
 	}
 
 	uint64_t symbols_in_interval(const rrdata_set::instance& b, const rrdata_set::instance& e) throw()
@@ -238,28 +235,50 @@ namespace
 	}
 }
 
+uint64_t rrdata_set::emerg_action(struct rrdata_set::esave_state& state, char* buf, size_t bufsize, uint64_t& scount)
+	const
+{
+	uint64_t rsize = 0;
+	size_t lbytes;
+	unsigned encode_count = 0;
+	state.init(data);
+	while(!state.finished() || state.segptr != state.segend) {
+		if(state.segptr == state.segend) {
+			auto i = state.next();
+			state.segptr = i->first;
+			state.segend = i->second;
+		}
+		unsigned syms = state.segend - state.segptr;
+		if(syms > MAXRUN)
+			syms = MAXRUN;
+		char tmp[RRDATA_BYTES + 4];
+		rsize += lbytes = _flush_symbol(tmp, state.segptr, state.pred, syms);
+		if(buf) {
+			if(bufsize < lbytes) break;
+			memcpy(buf, tmp, lbytes);
+			buf += lbytes;
+			bufsize -= lbytes;
+		}
+		scount += syms;
+		state.segptr = state.segptr + syms;
+		state.pred = state.segptr;
+	}
+	return rsize;
+}
+
 uint64_t rrdata_set::write(std::vector<char>& strm) throw(std::bad_alloc)
 {
-	strm.clear();
 	uint64_t scount = 0;
-	instance last_encode_end;
-	memset(last_encode_end.bytes, 0, RRDATA_BYTES);
-
-	instance predicted;
-	instance encode_base;
-	unsigned encode_count = 0;
-	for(auto i : data) {
-		//std::cerr << "Considering " << *i << std::endl;
-		encode_base = i.first;
-		while(encode_base != i.second) {
-			unsigned syms = i.second - encode_base;
-			if(syms > MAXRUN)
-				syms = MAXRUN;
-			flush_symbol(strm, encode_base, predicted, syms);
-			scount += syms;
-			encode_base = encode_base + syms;
-			predicted = encode_base;
-		}
+	esave_state cstate;
+	size_t ssize = emerg_action(cstate, NULL, 0, scount);
+	cstate.reset();
+	strm.resize(ssize);
+	uint64_t scount2 = 0;
+	size_t ssize2 = emerg_action(cstate, &strm[0], ssize, scount2);
+	if(ssize != ssize2 || scount != scount2) {
+		std::cerr << "RRDATA mismatch!" << std::endl;
+		std::cerr << "Length: Prepare: " << ssize << " Write: " << ssize2 << std::endl;
+		std::cerr << "Scount: Prepare: " << scount << " Write: " << scount2 << std::endl;
 	}
 	if(scount)
 		return scount - 1;
@@ -457,3 +476,21 @@ uint64_t rrdata_set::debug_nodecount(std::set<std::pair<instance, instance>>& se
 		x += symbols_in_interval(i.first, i.second);
 	return x;
 }
+
+namespace
+{
+}
+
+uint64_t rrdata_set::size_emerg() const throw()
+{
+	esave_state s;
+	uint64_t dummy;
+	return emerg_action(s, NULL, 0, dummy);
+}
+
+size_t rrdata_set::write_emerg(struct esave_state& state, char* buf, size_t bufsize) const throw()
+{
+	uint64_t dummy;
+	return emerg_action(state, buf, bufsize, dummy);
+}
+

@@ -6,6 +6,7 @@
 #include "core/misc.hpp"
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
+#include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/sha256.hpp"
@@ -14,6 +15,7 @@
 #include "library/arch-detect.hpp"
 
 #include <cstdlib>
+#include <csignal>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
@@ -150,6 +152,18 @@ namespace
 			return 'B';
 		return 'N';
 	}
+
+	void fatal_signal_handler(int sig)
+	{
+		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+		signal(sig, SIG_DFL);
+		raise(sig);
+	}
+
+	function_ptr_command<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "", 
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+	});
 
 	//% is intentionally missing.
 	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -313,6 +327,7 @@ std::string get_config_path() throw(std::bad_alloc)
 
 void OOM_panic()
 {
+	emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
 	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }
@@ -347,6 +362,39 @@ void reached_main()
 	reached_main_flag = true;
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
+#ifdef SIGHUP
+	signal(SIGHUP, fatal_signal_handler);
+#endif
+#ifdef SIGINT
+	signal(SIGINT, fatal_signal_handler);
+#endif
+#ifdef SIGQUIT
+	signal(SIGQUIT, fatal_signal_handler);
+#endif
+#ifdef SIGILL
+	signal(SIGILL, fatal_signal_handler);
+#endif
+#ifdef SIGABRT
+	signal(SIGABRT, fatal_signal_handler);
+#endif
+#ifdef SIGSEGV
+	signal(SIGSEGV, fatal_signal_handler);
+#endif
+#ifdef SIGFPE
+	signal(SIGFPE, fatal_signal_handler);
+#endif
+#ifdef SIGPIPE
+	signal(SIGPIPE, fatal_signal_handler);
+#endif
+#ifdef SIGBUS
+	signal(SIGBUS, fatal_signal_handler);
+#endif
+#ifdef SIGTRAP
+	signal(SIGTRAP, fatal_signal_handler);
+#endif
+#ifdef SIGTERM
+	signal(SIGTERM, fatal_signal_handler);
+#endif
 }
 
 std::string mangle_name(const std::string& orig)
