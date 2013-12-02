@@ -54,9 +54,9 @@ namespace
 	bool rtc_fixed;
 	time_t rtc_fixed_val;
 	gambatte::GB* instance;
+	bool reallocate_debug = false;
 #ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 	gambatte::debugbuffer debugbuf;
-	bool reallocate_debug = false;
 	size_t cur_romsize;
 	size_t cur_ramsize;
 #endif
