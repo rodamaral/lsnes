@@ -369,11 +369,15 @@ Cycle save jukebox backwards.
 
 Cycle save jukebox forwards
 
-5.4.3 load-jukebox
+5.4.3 set-jukebox-slot <slot>
+
+Set current jukebox slot
+
+5.4.4 load-jukebox
 
 Do load from jukebox (current mode).
 
-5.4.4 save-jukebox
+5.4.5 save-jukebox
 
 Do state save to jukebox.
 

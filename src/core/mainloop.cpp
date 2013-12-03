@@ -602,6 +602,18 @@ namespace
 			update_movie_state();
 		});
 
+	function_ptr_command<const std::string&> save_jukebox_set(lsnes_cmd, "set-jukebox-slot", "Set jukebox slot",
+		"Syntax: set-jukebox-slot\nSet jukebox slot\n", [](const std::string& args)
+		throw(std::bad_alloc, std::runtime_error) {
+			if(!regex_match("[1-9][0-9]{0,8}", args))
+				throw std::runtime_error("Bad slot number");
+			uint32_t slot = parse_value<uint32_t>(args);
+			if(slot >= jukebox_size)
+				throw std::runtime_error("Bad slot number");
+			save_jukebox_pointer = slot - 1;
+			update_movie_state();
+		});
+
 	function_ptr_command<> load_jukebox(lsnes_cmd, "load-jukebox", "Load save from jukebox",
 		"Syntax: load-jukebox\nLoad save from jukebox\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {

@@ -780,6 +780,14 @@ Cycle save jukebox forwards
 \end_layout
 
 \begin_layout Subsubsection
+set-jukebox-slot <slot>
+\end_layout
+
+\begin_layout Standard
+Set current jukebox slot
+\end_layout
+
+\begin_layout Subsubsection
 load-jukebox
 \end_layout
 
