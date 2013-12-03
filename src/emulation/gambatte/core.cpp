@@ -69,7 +69,8 @@ namespace
 	unsigned accumulator_s = 0;
 	bool pflag = false;
 	bool disable_breakpoints = false;
-
+	bool palette_colors_default[3] = {true, true, true};
+	uint32_t palette_colors[12];
 
 	struct interface_device_reg gb_registers[] = {
 		{"wrambank", []() -> uint64_t { return instance ? instance->getIoRam().first[0x170] & 0x07 : 0; },
@@ -360,6 +361,11 @@ namespace
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
 		do_reset_flag = false;
+
+		for(unsigned i = 0; i < 12; i++)
+			if(!palette_colors_default[i >> 2])
+				instance->setDmgPaletteColor(i >> 2, i & 3, palette_colors[i]);
+
 		return 1;
 	}
 
@@ -667,6 +673,11 @@ namespace
 				b = strtoul(p[1].s.c_str(), NULL, 16);
 				c = strtoul(p[2].s.c_str(), NULL, 16);
 				d = strtoul(p[3].s.c_str(), NULL, 16);
+				palette_colors[4 * (id - 1) + 0] = a;
+				palette_colors[4 * (id - 1) + 1] = b;
+				palette_colors[4 * (id - 1) + 2] = c;
+				palette_colors[4 * (id - 1) + 3] = d;
+				palette_colors_default[id - 1] = false;
 				if(instance) {
 					instance->setDmgPaletteColor(id - 1, 0, a);
 					instance->setDmgPaletteColor(id - 1, 1, b);
@@ -769,6 +780,9 @@ namespace
 		{
 			//Next load will reset trace.
 			reallocate_debug = true;
+			palette_colors_default[0] = true;
+			palette_colors_default[1] = true;
+			palette_colors_default[2] = true;
 		}
 		std::vector<std::string> c_get_trace_cpus()
 		{
