@@ -163,6 +163,38 @@ namespace
 	int64_t last_update = 0;
 	thread_class* emulation_thread;
 
+	setting_var<setting_var_model_bool<setting_yes_no>> background_audio(lsnes_vset, "background-audio",
+		"GUI‣Enable background audio", true);
+
+	class _focus_timer : public wxTimer
+	{
+	public:
+		_focus_timer()
+		{
+			was_focused = (wxWindow::FindFocus() != NULL);
+			was_enabled = platform::is_sound_enabled();
+			Start(500);
+		}
+		void Notify()
+		{
+			bool is_focused = (wxWindow::FindFocus() != NULL);
+			if(is_focused && !was_focused) {
+				//Gained focus.
+				if(!background_audio)
+					platform::sound_enable(was_enabled);
+			} else if(!is_focused && was_focused) {
+				//Lost focus.
+				was_enabled = platform::is_sound_enabled();
+				if(!background_audio)
+					platform::sound_enable(false);
+			}
+			was_focused = is_focused;
+		}
+	private:
+		bool was_focused;
+		bool was_enabled;
+	};
+
 	class download_timer : public wxTimer
 	{
 	public:
@@ -1120,6 +1152,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	set_hasher_callback(hash_callback);
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
 	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
+	focus_timer = new _focus_timer;
 }
 
 void wxwin_mainwindow::request_paint()

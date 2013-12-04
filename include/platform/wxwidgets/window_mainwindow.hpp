@@ -75,6 +75,7 @@ private:
 	void* sounddev1;
 	void* sounddev2;
 	void* dmenu;
+	wxTimer* focus_timer;
 	struct dispatch_target<> corechange;
 	struct dispatch_target<> titlechange;
 	struct dispatch_target<> newcore;
