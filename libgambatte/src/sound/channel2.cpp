@@ -122,13 +122,13 @@ void Channel2::loadState(SaveState const &state) {
 
 void Channel2::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
 	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
-	unsigned const outLow = outBase * (0 - 15ul);
 	unsigned const endCycles = cycleCounter_ + cycles;
 
 	for (;;) {
 		unsigned const outHigh = master_
-		                            ? outBase * (envelopeUnit_.getVolume() * 2 - 15ul)
-		                            : outLow;
+		                            ? outBase * (envelopeUnit_.getVolume())
+		                            : 0;
+		unsigned const outLow = -outHigh;
 		unsigned const nextMajorEvent = std::min(nextEventUnit->counter(), endCycles);
 		unsigned out = dutyUnit_.isHighState() ? outHigh : outLow;
 

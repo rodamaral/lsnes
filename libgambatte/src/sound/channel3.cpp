@@ -156,8 +156,8 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
 			unsigned const nextMajorEvent =
 				std::min(lengthCounter_.counter(), endCycles);
 			unsigned out = master_
-				? ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - 15ul
-				: 0 - 15ul;
+				? ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - (15 >> rshift_)
+				: 0;
 			out *= outBase;
 
 			while (waveCounter_ <= nextMajorEvent) {
@@ -171,7 +171,7 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
 				++wavePos_;
 				wavePos_ &= 0x1F;
 				sampleBuf_ = waveRam_[wavePos_ >> 1];
-				out = ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - 15ul;
+				out = ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - (15 >> rshift_);
 				out *= outBase;
 			}
 
@@ -188,7 +188,7 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
 				break;
 		}
 	} else {
-		unsigned const out = outBase * (0 - 15ul);
+		unsigned const out = 0;
 		*buf += out - prevOut_;
 		prevOut_ = out;
 		cycleCounter_ += cycles;
