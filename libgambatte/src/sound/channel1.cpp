@@ -220,14 +220,13 @@ void Channel1::loadState(const SaveState &state) {
 
 void Channel1::update(uint_least32_t *buf, const unsigned soBaseVol, unsigned cycles) {
 	const unsigned outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
-	const unsigned outLow = outBase * (0 - 15ul);
 	const unsigned endCycles = cycleCounter + cycles;
 	
 	for (;;) {
-		const unsigned outHigh = master ? outBase * (envelopeUnit.getVolume() * 2 - 15ul) : outLow;
+		const unsigned outHigh = master ? outBase * (envelopeUnit.getVolume()) : 0;
+		const unsigned outLow = -outHigh;
 		const unsigned nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
 		unsigned out = dutyUnit.isHighState() ? outHigh : outLow;
-		
 		while (dutyUnit.getCounter() <= nextMajorEvent) {
 			*buf = out - prevOut;
 			prevOut = out;

@@ -264,14 +264,13 @@ void Channel4::loadState(const SaveState &state) {
 
 void Channel4::update(uint_least32_t *buf, const unsigned soBaseVol, unsigned cycles) {
 	const unsigned outBase = envelopeUnit.dacIsOn() ? soBaseVol & soMask : 0;
-	const unsigned outLow = outBase * (0 - 15ul);
 	const unsigned endCycles = cycleCounter + cycles;
 	
 	for (;;) {
-		const unsigned outHigh = /*master ? */outBase * (envelopeUnit.getVolume() * 2 - 15ul)/* : outLow*/;
+		const unsigned outHigh = /*master ? */outBase * (envelopeUnit.getVolume())/* : outLow*/;
+		const unsigned outLow = -outHigh;
 		const unsigned nextMajorEvent = nextEventUnit->getCounter() < endCycles ? nextEventUnit->getCounter() : endCycles;
 		unsigned out = lfsr.isHighState() ? outHigh : outLow;
-		
 		while (lfsr.getCounter() <= nextMajorEvent) {
 			*buf += out - prevOut;
 			prevOut = out;
