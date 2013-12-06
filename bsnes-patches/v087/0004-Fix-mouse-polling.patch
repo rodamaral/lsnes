@@ -1,13 +1,13 @@
-From e6ec3c0d382f57e2c447b1a5dbfc4f58fc0ecfef Mon Sep 17 00:00:00 2001
+From 21e21c3b953f499bb3e309ff6a04b38763e7910a Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Wed, 7 Mar 2012 16:57:18 +0200
-Subject: [PATCH 4/6] Fix mouse polling
+Subject: [PATCH 4/8] Fix mouse polling
 
 Don't poll for mouse motion excessive number of times (no need to poll it for
 each bit!)
 ---
- snes/controller/mouse/mouse.cpp |   14 ++++++++++++--
- snes/controller/mouse/mouse.hpp |    2 ++
+ snes/controller/mouse/mouse.cpp | 14 ++++++++++++--
+ snes/controller/mouse/mouse.hpp |  2 ++
  2 files changed, 14 insertions(+), 2 deletions(-)
 
 diff --git a/snes/controller/mouse/mouse.cpp b/snes/controller/mouse/mouse.cpp
@@ -59,5 +59,5 @@ index b66ea51..b07c8ab 100755
 +  int _position_y;
  };
 -- 
-1.7.9.48.g85da4d
+1.8.4.4
 

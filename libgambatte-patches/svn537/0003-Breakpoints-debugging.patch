@@ -1,0 +1,490 @@
+From 6725b4545adc3e94e0344e5f904267349ce167ba Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Thu, 28 Nov 2013 22:05:32 +0200
+Subject: [PATCH 3/4] Breakpoints & debugging
+
+---
+ libgambatte/include/gambatte.h    |  23 +++++++++
+ libgambatte/src/cpu.cpp           |   9 ++--
+ libgambatte/src/cpu.h             |   7 +++
+ libgambatte/src/gambatte.cpp      |  16 ++++++
+ libgambatte/src/mem/cartridge.cpp |   6 +++
+ libgambatte/src/mem/cartridge.h   |   1 +
+ libgambatte/src/memory.cpp        | 100 ++++++++++++++++++++++++++++++--------
+ libgambatte/src/memory.h          |  93 ++++++++++++++++++++++++++++++++---
+ 8 files changed, 225 insertions(+), 30 deletions(-)
+
+diff --git a/libgambatte/include/gambatte.h b/libgambatte/include/gambatte.h
+index 5094906..ea2558c 100644
+--- a/libgambatte/include/gambatte.h
++++ b/libgambatte/include/gambatte.h
+@@ -18,6 +18,7 @@
+  ***************************************************************************/
+ #ifndef GAMBATTE_H
+ #define GAMBATTE_H
++#define GAMBATTE_SUPPORTS_ADV_DEBUG
+ 
+ #include "gbint.h"
+ #include "inputgetter.h"
+@@ -25,6 +26,8 @@
+ #include <cstddef>
+ #include <string>
+ #include <vector>
++#include <functional>
++#include <map>
+ 
+ //
+ // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+@@ -34,6 +37,23 @@ namespace gambatte {
+ 
+ enum { BG_PALETTE = 0, SP1_PALETTE = 1, SP2_PALETTE = 2 };
+ 
++struct debugbuffer
++{
++	//1 => Read, 2 => Write, 4 => Execute, 8 => Cheat
++	uint8_t* wram;		//32kB, id1.
++	uint8_t* ioamhram;	//512 bytes, id2.
++	uint8_t* cart;		//As needed, id3.
++	uint8_t* sram;		//As needed, id4.
++	uint8_t* bus;		//64kB, id0
++	std::map<unsigned, uint8_t> wramcheat;
++	std::map<unsigned, uint8_t> sramcheat;
++	std::map<unsigned, uint8_t> cartcheat;
++	std::function<void(unsigned, unsigned, uint8_t, bool)> read;
++	std::function<void(unsigned, unsigned, uint8_t)> write;
++	std::function<void(uint16_t)> trace;
++	bool trace_cpu;
++};
++
+ class GB {
+ public:
+ 	GB();
+@@ -259,6 +279,9 @@ public:
+ 	};
+ 	uint32_t get_cpureg(enum cpu_register reg);
+ 	void set_cpureg(enum cpu_register reg, uint32_t val);
++	void set_debug_buffer(debugbuffer& dbgbuf);
++	uint8_t bus_read(unsigned addr);
++	void bus_write(unsigned addr, uint8_t val);
+ private:
+ 	void preload_common();
+ 	void postload_common(const unsigned flags);
+diff --git a/libgambatte/src/cpu.cpp b/libgambatte/src/cpu.cpp
+index 06400c5..40a81e6 100644
+--- a/libgambatte/src/cpu.cpp
++++ b/libgambatte/src/cpu.cpp
+@@ -154,8 +154,8 @@ void CPU::loadOrSave(loadsave& state)
+ #define de() ( d << 8 | e )
+ #define hl() ( h << 8 | l )
+ 
+-#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter); cycleCounter += 4; } while (0)
+-#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
++#define READ(dest, addr) do { (dest) = mem_.read(addr, cycleCounter, false); cycleCounter += 4; } while (0)
++#define PC_READ(dest) do { (dest) = mem_.read(pc, cycleCounter, true); pc = (pc + 1) & 0xFFFF; cycleCounter += 4; } while (0)
+ #define FF_READ(dest, addr) do { (dest) = mem_.ff_read(addr, cycleCounter); cycleCounter += 4; } while (0)
+ 
+ #define WRITE(addr, data) do { mem_.write(addr, data, cycleCounter); cycleCounter += 4; } while (0)
+@@ -525,7 +525,8 @@ void CPU::process(unsigned const cycles) {
+ 			}
+ 		} else while (cycleCounter < mem_.nextEventTime()) {
+ 			unsigned char opcode;
+-
++			if(__builtin_expect(mem_.get_debug()->trace_cpu, 0))
++				mem_.get_debug()->trace(pc);
+ 			PC_READ(opcode);
+ 
+ 			if (skip_) {
+@@ -923,7 +924,7 @@ void CPU::process(unsigned const cycles) {
+ 			case 0x3A:
+ 				{
+ 					unsigned addr = hl();
+-					a = mem_.read(addr, cycleCounter);
++					a = mem_.read(addr, cycleCounter, false);
+ 					cycleCounter += 4;
+ 
+ 					addr = (addr - 1) & 0xFFFF;
+diff --git a/libgambatte/src/cpu.h b/libgambatte/src/cpu.h
+index 224ba0b..e7e46ff 100644
+--- a/libgambatte/src/cpu.h
++++ b/libgambatte/src/cpu.h
+@@ -51,6 +51,11 @@ public:
+ 		mem_.setSaveDir(sdir);
+ 	}
+ 
++	void set_debug_buffer(debugbuffer& dbgbuf)
++	{
++		mem_.set_debug_buffer(dbgbuf);
++	}
++
+ 	std::string const saveBasePath() const {
+ 		return mem_.saveBasePath();
+ 	}
+@@ -87,6 +92,8 @@ public:
+ 	std::pair<unsigned char*, size_t> getSaveRam() { return mem_.getSaveRam(); }
+ 	std::pair<unsigned char*, size_t> getIoRam() { return mem_.getIoRam(); }
+ 	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
++        uint8_t bus_read(unsigned addr) { return mem_.read(addr, cycleCounter_, false); }
++        void bus_write(unsigned addr, uint8_t val) { mem_.write(addr, val, cycleCounter_); }
+ 
+ 	unsigned cycleCounter_;
+ 	unsigned short pc_;
+diff --git a/libgambatte/src/gambatte.cpp b/libgambatte/src/gambatte.cpp
+index a61e177..47f894e 100644
+--- a/libgambatte/src/gambatte.cpp
++++ b/libgambatte/src/gambatte.cpp
+@@ -346,4 +346,20 @@ void GB::set_cpureg(enum cpu_register _reg, uint32_t val)
+ 		default:		break;
+ 	}
+ }
++
++void GB::set_debug_buffer(debugbuffer& dbgbuf)
++{
++	p_->cpu.set_debug_buffer(dbgbuf);
++}
++
++uint8_t GB::bus_read(unsigned addr)
++{
++	return p_->cpu.bus_read(addr);
++}
++
++void GB::bus_write(unsigned addr, uint8_t val)
++{
++	p_->cpu.bus_write(addr, val);
++}
++
+ }
+diff --git a/libgambatte/src/mem/cartridge.cpp b/libgambatte/src/mem/cartridge.cpp
+index d593dc5..1775139 100644
+--- a/libgambatte/src/mem/cartridge.cpp
++++ b/libgambatte/src/mem/cartridge.cpp
+@@ -858,6 +858,12 @@ std::pair<unsigned char*, size_t> Cartridge::getWorkRam() {
+ 	return std::make_pair(memptrs_.wramdata(0), worksize);
+ }
+ 
++std::pair<unsigned char*, size_t> Cartridge::getCartRom()
++{
++	size_t worksize = memptrs_.romdataend() - memptrs_.romdata(0);
++	return std::make_pair(memptrs_.romdata(0), worksize);
++}
++
+ Cartridge::Cartridge(time_t (**_getCurrentTime)())
+ 	: rtc_(_getCurrentTime) {
+ 	memoryCartridge = true;
+diff --git a/libgambatte/src/mem/cartridge.h b/libgambatte/src/mem/cartridge.h
+index dd342b6..3a0466c 100644
+--- a/libgambatte/src/mem/cartridge.h
++++ b/libgambatte/src/mem/cartridge.h
+@@ -81,6 +81,7 @@ public:
+ 	void loadOrSave(loadsave& state);
+ 	void setRtcBase(time_t time) { rtc_.setBaseTime(time); }
+ 	time_t getRtcBase() { return rtc_.getBaseTime(); }
++	std::pair<unsigned char*, size_t> getCartRom();
+ 	std::pair<unsigned char*, size_t> getWorkRam();
+ 	std::pair<unsigned char*, size_t> getSaveRam();
+ 	std::pair<unsigned char*, size_t> getVideoRam();
+diff --git a/libgambatte/src/memory.cpp b/libgambatte/src/memory.cpp
+index cc76f96..c42af88 100644
+--- a/libgambatte/src/memory.cpp
++++ b/libgambatte/src/memory.cpp
+@@ -234,7 +234,7 @@ unsigned Memory::event(unsigned cc) {
+ 					unsigned const src = dmaSrc++ & 0xFFFF;
+ 					unsigned const data = (src & 0xE000) == 0x8000 || src > 0xFDFF
+ 					                    ? 0xFF
+-					                    : read(src, cc);
++					                    : read(src, cc, false);
+ 
+ 					cc += 2 << doubleSpeed;
+ 
+@@ -550,18 +550,31 @@ static bool isInOamDmaConflictArea(OamDmaSrc const oamDmaSrc, unsigned const p,
+ 	    && p - a[oamDmaSrc].exceptAreaLower >= a[oamDmaSrc].exceptAreaWidth;
+ }
+ 
+-unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc) {
++unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc, bool exec) {
+ 	if (p < 0xFF80) {
+ 		if (lastOamDmaUpdate_ != disabled_time) {
+ 			updateOamDma(cc);
+ 
+-			if (isInOamDmaConflictArea(cart_.oamDmaSrc(), p, isCgb()) && oamDmaPos_ < 0xA0)
++			if (isInOamDmaConflictArea(cart_.oamDmaSrc(), p, isCgb()) && oamDmaPos_ < 0xA0) {
+ 				return ioamhram_[oamDmaPos_];
++			}
+ 		}
+ 
+ 		if (p < 0xC000) {
+-			if (p < 0x8000)
+-				return cart_.romdata(p >> 14)[p];
++			if (p < 0x8000) {
++				const unsigned char* aaddr = cart_.romdata(p >> 14) + p;
++				auto a = cart_.getCartRom();
++				if(aaddr >= a.first && aaddr < a.first + a.second)
++					if(__builtin_expect(dbg->cart[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
++						if(dbg->cart[aaddr - a.first] & (exec ? 0x44 : 0x11))
++							dbg->read(3, aaddr - a.first, *aaddr, exec);
++						if(dbg->cart[aaddr - a.first] & 8) {
++							auto itr = dbg->cartcheat.find(aaddr - a.first);
++							if(itr != dbg->cartcheat.end()) return itr->second;
++						}
++					}
++				return *aaddr;
++			}
+ 
+ 			if (p < 0xA000) {
+ 				if (!lcd_.vramAccessible(cc))
+@@ -570,23 +583,52 @@ unsigned Memory::nontrivial_read(unsigned const p, unsigned const cc) {
+ 				return cart_.vrambankptr()[p];
+ 			}
+ 
+-			if (cart_.rsrambankptr())
+-				return cart_.rsrambankptr()[p];
++			if (cart_.rsrambankptr()) {
++				const unsigned char* aaddr = cart_.rsrambankptr() + p;
++				auto a = cart_.getSaveRam();
++				if(aaddr >= a.first && aaddr < a.first + a.second)
++					if(__builtin_expect(dbg->sram[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
++						if(dbg->sram[aaddr - a.first] & (exec ? 0x44 : 0x11))
++							dbg->read(4, aaddr - a.first, *aaddr, exec);
++						if(dbg->sram[aaddr - a.first] & 8) {
++							auto itr = dbg->sramcheat.find(aaddr - a.first);
++							if(itr != dbg->sramcheat.end()) return itr->second;
++						}
++					}
++				return *aaddr;
++			}
+ 
+ 			return cart_.rtcRead();
+ 		}
+ 
+-		if (p < 0xFE00)
+-			return cart_.wramdata(p >> 12 & 1)[p & 0xFFF];
++		if (p < 0xFE00) {
++			unsigned char* aaddr = cart_.wramdata(p >> 12 & 1) + (p & 0xFFF);
++			auto a = cart_.getWorkRam();
++			if(aaddr >= a.first && aaddr < a.first + a.second)
++				if(__builtin_expect(dbg->wram[aaddr - a.first] & (exec ? 0x4C : 0x19), 0)) {
++					if(dbg->wram[aaddr - a.first] & (exec ? 0x44 : 0x11))
++						dbg->read(1, aaddr - a.first, *aaddr, exec);
++					if(dbg->wram[aaddr - a.first] & 8) {
++						auto itr = dbg->wramcheat.find(aaddr - a.first);
++						if(itr != dbg->wramcheat.end()) return itr->second;
++					}
++				}
++			return *aaddr;
++		}
+ 
+ 		long const ffp = long(p) - 0xFF00;
+-		if (ffp >= 0)
+-			return nontrivial_ff_read(ffp, cc);
++		if (ffp >= 0) {
++			uint8_t v = nontrivial_ff_read(ffp, cc);
++			if(__builtin_expect(dbg->ioamhram[ffp + 0x100] & (exec ? 0x44 : 0x11), 0))
++				dbg->read(2, ffp + 0x100, v, exec);
++			return v;
++		}
+ 
+ 		if (!lcd_.oamReadable(cc) || oamDmaPos_ < 0xA0)
+ 			return 0xFF;
+ 	}
+-
++	if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & (exec ? 0x44 : 0x11), 0))
++		dbg->read(2, p - 0xFE00, ioamhram_[p - 0xFE00], exec);
+ 	return ioamhram_[p - 0xFE00];
+ }
+ 
+@@ -1023,18 +1065,32 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned co
+ 	if (p < 0xFE00) {
+ 		if (p < 0xA000) {
+ 			if (p < 0x8000) {
++				//Being a write on MBC, this is not ROM write.
+ 				cart_.mbcWrite(p, data);
+ 			} else if (lcd_.vramAccessible(cc)) {
+ 				lcd_.vramChange(cc);
+ 				cart_.vrambankptr()[p] = data;
+ 			}
+ 		} else if (p < 0xC000) {
+-			if (cart_.wsrambankptr())
+-				cart_.wsrambankptr()[p] = data;
+-			else
++			if (cart_.wsrambankptr()) {
++				unsigned char* aaddr = cart_.wsrambankptr() + p;
++				auto a = cart_.getSaveRam();
++				if(aaddr >= a.first && aaddr < a.first + a.second)
++					if(__builtin_expect(dbg->sram[aaddr - a.first] & 0x22, 0))
++						dbg->write(4, aaddr - a.first, data);
++				*aaddr = data;
++			} else {
++				//Being I/O write, this is not write on SRAM.
+ 				cart_.rtcWrite(data);
+-		} else
+-			cart_.wramdata(p >> 12 & 1)[p & 0xFFF] = data;
++			}
++		} else {
++			unsigned char* aaddr = cart_.wramdata(p >> 12 & 1) + (p & 0xFFF);
++			auto a = cart_.getWorkRam();
++			if(aaddr >= a.first && aaddr < a.first + a.second)
++				if(__builtin_expect(dbg->wram[aaddr - a.first] & 0x22, 0))
++					dbg->write(1, aaddr - a.first, data);
++			*aaddr = data;
++		}
+ 	} else if (p - 0xFF80u >= 0x7Fu) {
+ 		long const ffp = long(p) - 0xFF00;
+ 		if (ffp < 0) {
+@@ -1042,10 +1098,16 @@ void Memory::nontrivial_write(unsigned const p, unsigned const data, unsigned co
+ 				lcd_.oamChange(cc);
+ 				ioamhram_[p - 0xFE00] = data;
+ 			}
+-		} else
++		} else {
++			if(__builtin_expect(dbg->ioamhram[ffp + 0x100] & 0x22, 0))
++				dbg->write(2, ffp + 0x100, data);
+ 			nontrivial_ff_write(ffp, data, cc);
+-	} else
++		}
++	} else {
++		if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & 0x22, 0))
++			dbg->write(2, p - 0xFE00, data);
+ 		ioamhram_[p - 0xFE00] = data;
++	}
+ }
+ 
+ void Memory::postLoadRom()
+diff --git a/libgambatte/src/memory.h b/libgambatte/src/memory.h
+index a531930..4a252b7 100644
+--- a/libgambatte/src/memory.h
++++ b/libgambatte/src/memory.h
+@@ -23,6 +23,7 @@
+ // Modified 2012-07-10 to 2012-07-14 by H. Ilari Liusvaara
+ //	- Make it rerecording-friendly.
+ 
++#include "gambatte.h"
+ #include "mem/cartridge.h"
+ #include "interrupter.h"
+ #include "pakinfo.h"
+@@ -71,22 +72,99 @@ public:
+ 	void ei(unsigned cycleCounter) { if (!ime()) { intreq_.ei(cycleCounter); } }
+ 	void di() { intreq_.di(); }
+ 
++	void set_debug_buffer(debugbuffer& dbgbuf)
++	{
++		dbg = &dbgbuf;
++	}
++
+ 	unsigned ff_read(unsigned p, unsigned cc) {
+-		return p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
++		uint8_t v = p < 0x80 ? nontrivial_ff_read(p, cc) : ioamhram_[p + 0x100];
++		if(__builtin_expect(dbg->ioamhram[0x100 + p] & 1, 0))
++			dbg->read(2, 0x100 + p, v, false);
++		if(__builtin_expect(dbg->bus[0xFF00 + p] & 1, 0))
++			dbg->read(0, 0xFF00 + p, v, false);
++		return v;
++	}
++
++	inline uint8_t do_read_trap(const uint8_t* addr, std::pair<unsigned char*, size_t> area, unsigned clazz,
++		const uint8_t* dbgflags, std::map<unsigned, uint8_t>& cheats, uint8_t v, uint8_t mask, bool exec)
++	{
++		if(addr >= area.first && addr < area.first + area.second) {
++			if(__builtin_expect(dbgflags[addr - area.first] & mask, 0)) {
++				if(dbgflags[addr - area.first] & (mask & 77))
++					dbg->read(clazz, addr - area.first, v, exec);
++				if(__builtin_expect(dbgflags[addr - area.first] & 8, 0)) {
++					auto itr = cheats.find(addr - area.first);
++					if(itr != cheats.end()) v = itr->second;
++				}
++			}
++		}
++		return v;
+ 	}
+ 
+-	unsigned read(unsigned p, unsigned cc) {
+-		return cart_.rmem(p >> 12) ? cart_.rmem(p >> 12)[p] : nontrivial_read(p, cc);
++	inline void do_write_trap(const uint8_t* addr, std::pair<unsigned char*, size_t> area, unsigned clazz,
++		const uint8_t* dbgflags, uint8_t v)
++	{
++		if(addr >= area.first && addr < area.first + area.second)
++			if(__builtin_expect(dbgflags[addr - area.first] & 0x22, 0))
++				dbg->write(clazz, addr - area.first, v);
++	}
++
++	unsigned read(unsigned p, unsigned cc, bool exec) {
++		uint8_t mask = exec ? 0x4C : 0x19;
++		const unsigned char* memblock = cart_.rmem(p >> 12);
++		uint8_t v = memblock ? memblock[p] : nontrivial_read(p, cc, exec);
++		uint8_t v2 = v;
++		if(memblock) {
++			if(p >= 0xFE00) { //IOAMHRAM.
++				if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & mask, 0))
++					dbg->read(2, 0x100 + p, v, false);
++			} else {
++				const uint8_t* addr = memblock + p;
++				static void* targets[8] = {&&cart, &&cart, &&cart, &&cart, &&out, &&sram, &&wram,
++					&&wram};
++				goto *targets[p >> 13];
++wram:
++				v2 = do_read_trap(addr, cart_.getWorkRam(), 1, dbg->wram, dbg->wramcheat, v, mask, exec);
++				goto out;
++sram:
++				v2 = do_read_trap(addr, cart_.getSaveRam(), 4, dbg->sram, dbg->sramcheat, v, mask, exec);
++				goto out;
++cart:
++				v2 = do_read_trap(addr, cart_.getCartRom(), 3, dbg->cart, dbg->cartcheat, v, mask, exec);
++				goto out;
++			}
++out:			;
++		}
++		if(__builtin_expect(dbg->bus[p] & mask, 0))
++			dbg->read(0, p, v, false);
++		return v2;
+ 	}
+ 
+ 	void write(unsigned p, unsigned data, unsigned cc) {
+-		if (cart_.wmem(p >> 12)) {
+-			cart_.wmem(p >> 12)[p] = data;
++		if(__builtin_expect(dbg->bus[0xFF00 + p] & 0x22, 0))
++			dbg->write(0, p, data);
++		unsigned char* memblock = cart_.wmem(p >> 12);
++		if(memblock) {
++			if(p >= 0xFE00)	//IOAMHRAM.
++				if(__builtin_expect(dbg->ioamhram[p - 0xFE00] & 2, 0))
++					dbg->write(2, 0x100 + p, data);
++			uint8_t* addr = memblock + p;
++			do_write_trap(addr, cart_.getWorkRam(), 1, dbg->wram, data);
++			do_write_trap(addr, cart_.getSaveRam(), 4, dbg->sram, data);
++			do_write_trap(addr, cart_.getCartRom(), 3, dbg->cart, data);
++		}
++		if (memblock) {
++			memblock[p] = data;
+ 		} else
+ 			nontrivial_write(p, data, cc);
+ 	}
+ 
+ 	void ff_write(unsigned p, unsigned data, unsigned cc) {
++		if(__builtin_expect(dbg->ioamhram[0x100 + p] & 2, 0))
++			dbg->write(2, 0x100 + p, data);
++		if(__builtin_expect(dbg->bus[0xFF00 + p] & 2, 0))
++			dbg->write(0, 0xFF00 + p, data);
+ 		if (p - 0x80u < 0x7Fu) {
+ 			ioamhram_[p + 0x100] = data;
+ 		} else
+@@ -119,8 +197,9 @@ public:
+ 	void setDmgPaletteColor(unsigned palNum, unsigned colorNum, uint_least32_t rgb32);
+ 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }
+ 	void setGameShark(std::string const &codes) { interrupter_.setGameShark(codes); }
+-
++	debugbuffer* get_debug() { return dbg; }
+ private:
++	debugbuffer* dbg;
+ 	Cartridge cart_;
+ 	unsigned char ioamhram_[0x200];
+ 	InputGetter *getInput_;
+@@ -147,7 +226,7 @@ private:
+ 	void endOamDma(unsigned cycleCounter);
+ 	unsigned char const * oamDmaSrcPtr() const;
+ 	unsigned nontrivial_ff_read(unsigned p, unsigned cycleCounter);
+-	unsigned nontrivial_read(unsigned p, unsigned cycleCounter);
++	unsigned nontrivial_read(unsigned p, unsigned cycleCounter, bool exec);
+ 	void nontrivial_ff_write(unsigned p, unsigned data, unsigned cycleCounter);
+ 	void nontrivial_write(unsigned p, unsigned data, unsigned cycleCounter);
+ 	void updateSerial(unsigned cc);
+-- 
+1.8.5
+

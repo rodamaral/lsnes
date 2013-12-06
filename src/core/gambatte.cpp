@@ -53,6 +53,10 @@ const char* button_symbols = "ABsSrlud";
 
 namespace
 {
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
+	size_t debug_size;
+	gambatte::debugbuffer debugbuf;
+#endif
 	int regions_compatible(unsigned rom, unsigned run)
 	{
 		return 1;
@@ -141,6 +145,24 @@ namespace
 		romdata.resize(size);
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
+
+		size_t dsize = (size > 65536) ? size : 65536;
+		if(dsize < instance->getSaveRam().second) dsize = instance->getSaveRam().second;
+		if(debug_size < dsize) {
+			if(debugbuf.wram) delete[] debugbuf.wram;
+			debugbuf.wram = NULL;
+			uint8_t* tmp = new uint8_t[dsize];
+			memset(tmp, 0, dsize);
+			debug_size = dsize;
+			debugbuf.wram = tmp;
+		}
+		debugbuf.bus = debugbuf.wram;
+		debugbuf.ioamhram = debugbuf.wram;
+		debugbuf.sram = debugbuf.wram;
+		debugbuf.cart = debugbuf.wram;
+		debugbuf.trace_cpu = false;
+		instance->set_debug_buffer(debugbuf);
+
 		return 1;
 	}
 
@@ -315,6 +337,16 @@ void do_basic_core_init()
 	instance = new gambatte::GB;
 	instance->setInputGetter(&getinput);
 	instance->set_walltime_fn(walltime_fn);
+	debug_size = 65536;
+	uint8_t* tmp = new uint8_t[debug_size];
+	memset(tmp, 0, debug_size);
+	debugbuf.wram = tmp;
+	debugbuf.bus = tmp;
+	debugbuf.ioamhram = tmp;
+	debugbuf.sram = tmp;
+	debugbuf.cart = tmp;
+	debugbuf.trace_cpu = false;
+	instance->set_debug_buffer(debugbuf);
 }
 
 void core_power()

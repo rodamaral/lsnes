@@ -1,0 +1,134 @@
+From 0ba9fa35b68d63c4adcf0bd7e19eef52bdc3ecd4 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Mon, 18 Nov 2013 01:53:58 +0200
+Subject: [PATCH 2/3] Expose CPU registers
+
+---
+ libgambatte/include/gambatte.h | 22 +++++++++++++++++++
+ libgambatte/src/cpu.h          | 12 +++++------
+ libgambatte/src/gambatte.cpp   | 48 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 76 insertions(+), 6 deletions(-)
+
+diff --git a/libgambatte/include/gambatte.h b/libgambatte/include/gambatte.h
+index 11a54a9..98bd129 100644
+--- a/libgambatte/include/gambatte.h
++++ b/libgambatte/include/gambatte.h
+@@ -203,6 +203,28 @@ public:
+ 
+ 	/** Get version. */
+ 	static std::string version();
++
++	/** CPU registers. */
++	enum cpu_register
++	{
++		REG_CYCLECOUNTER,
++		REG_PC,
++		REG_SP,
++		REG_HF1,
++		REG_HF2,
++		REG_ZF,
++		REG_CF,
++		REG_A,
++		REG_B,
++		REG_C,
++		REG_D,
++		REG_E,
++		REG_F,
++		REG_H,
++		REG_L
++	};
++	uint32_t get_cpureg(enum cpu_register reg);
++	void set_cpureg(enum cpu_register reg, uint32_t val);
+ private:
+ 	void preload_common();
+ 	void postload_common(const unsigned flags);
+diff --git a/libgambatte/src/cpu.h b/libgambatte/src/cpu.h
+index fd4bd64..08bcf80 100644
+--- a/libgambatte/src/cpu.h
++++ b/libgambatte/src/cpu.h
+@@ -31,6 +31,12 @@ namespace gambatte {
+ class CPU {
+ 	Memory memory;
+ 	
++
++	bool skip;
++	
++	void process(unsigned cycles);
++	
++public:
+ 	unsigned cycleCounter_;
+ 
+ 	unsigned short PC_;
+@@ -39,12 +45,6 @@ class CPU {
+ 	unsigned HF1, HF2, ZF, CF;
+ 
+ 	unsigned char A_, B, C, D, E, /*F,*/ H, L;
+-
+-	bool skip;
+-	
+-	void process(unsigned cycles);
+-	
+-public:
+ 	
+ 	CPU(time_t (**_getCurrentTime)());
+ // 	void halt();
+diff --git a/libgambatte/src/gambatte.cpp b/libgambatte/src/gambatte.cpp
+index 9c4fcdc..380ab42 100644
+--- a/libgambatte/src/gambatte.cpp
++++ b/libgambatte/src/gambatte.cpp
+@@ -290,4 +290,52 @@ std::string GB::version()
+ 	return "SVN364";
+ }
+ 
++uint32_t GB::get_cpureg(enum cpu_register reg)
++{
++	switch(reg) {
++		case REG_CYCLECOUNTER:	return p_->cpu.cycleCounter_;
++		case REG_PC:		return p_->cpu.PC_;
++		case REG_SP:		return p_->cpu.SP;
++		case REG_HF1:		return p_->cpu.HF1;
++		case REG_HF2:		return p_->cpu.HF2;
++		case REG_ZF:		return p_->cpu.ZF;
++		case REG_CF:		return p_->cpu.CF;
++		case REG_A:		return p_->cpu.A_;
++		case REG_B:		return p_->cpu.B;
++		case REG_C:		return p_->cpu.C;
++		case REG_D:		return p_->cpu.D;
++		case REG_E:		return p_->cpu.E;
++		case REG_F:
++			return ((p_->cpu.HF2 & 0x600 | (p_->cpu.CF & 0x100)) >> 4)
++				| (p_->cpu.ZF & 0xFF ? 0 : 0x80);
++		case REG_H:		return p_->cpu.H;
++		case REG_L:		return p_->cpu.L;
++		default:		return 0;
++	}
++}
++
++void GB::set_cpureg(enum cpu_register reg, uint32_t val)
++{
++	switch(reg) {
++		case REG_PC:		p_->cpu.PC_ = val; break;
++		case REG_SP:		p_->cpu.SP = val; break;
++		case REG_HF1:		p_->cpu.HF1 = val; break;
++		case REG_HF2:		p_->cpu.HF2 = val; break;
++		case REG_ZF:		p_->cpu.ZF = val; break;
++		case REG_CF:		p_->cpu.CF = val; break;
++		case REG_A:		p_->cpu.A_ = val; break;
++		case REG_B:		p_->cpu.B = val; break;
++		case REG_C:		p_->cpu.C = val; break;
++		case REG_D:		p_->cpu.D = val; break;
++		case REG_E:		p_->cpu.E = val; break;
++		case REG_F:
++			p_->cpu.HF2 = (val << 4) & 0x600;
++			p_->cpu.CF = (val << 4) & 0x100;
++			p_->cpu.ZF = val & 0x80;
++			break;
++		case REG_H:		p_->cpu.H = val; break;
++		case REG_L:		p_->cpu.L = val; break;
++		default:		break;
++	}
++}
+ }
+-- 
+1.8.5
+

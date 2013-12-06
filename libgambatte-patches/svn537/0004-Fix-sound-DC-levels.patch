@@ -1,0 +1,109 @@
+From 607d3e252c43d67cea54ec222ef1767a86b3660b Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Thu, 5 Dec 2013 08:48:21 +0200
+Subject: [PATCH 4/4] Fix sound DC levels
+
+This was causing popping in Mega Man (I)
+---
+ libgambatte/src/sound/channel1.cpp | 6 +++---
+ libgambatte/src/sound/channel2.cpp | 6 +++---
+ libgambatte/src/sound/channel3.cpp | 8 ++++----
+ libgambatte/src/sound/channel4.cpp | 4 ++--
+ 4 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/libgambatte/src/sound/channel1.cpp b/libgambatte/src/sound/channel1.cpp
+index c517965..dd83894 100644
+--- a/libgambatte/src/sound/channel1.cpp
++++ b/libgambatte/src/sound/channel1.cpp
+@@ -218,13 +218,13 @@ void Channel1::loadState(SaveState const &state) {
+ 
+ void Channel1::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
+ 	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
+-	unsigned const outLow = outBase * (0 - 15ul);
+ 	unsigned const endCycles = cycleCounter_ + cycles;
+ 
+ 	for (;;) {
+ 		unsigned const outHigh = master_
+-		                            ? outBase * (envelopeUnit_.getVolume() * 2 - 15ul)
+-		                            : outLow;
++		                            ? outBase * (envelopeUnit_.getVolume())
++		                            : 0;
++		unsigned const outLow = -outHigh;
+ 		unsigned const nextMajorEvent = std::min(nextEventUnit_->counter(), endCycles);
+ 		unsigned out = dutyUnit_.isHighState() ? outHigh : outLow;
+ 
+diff --git a/libgambatte/src/sound/channel2.cpp b/libgambatte/src/sound/channel2.cpp
+index f154249..6024d79 100644
+--- a/libgambatte/src/sound/channel2.cpp
++++ b/libgambatte/src/sound/channel2.cpp
+@@ -122,13 +122,13 @@ void Channel2::loadState(SaveState const &state) {
+ 
+ void Channel2::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
+ 	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
+-	unsigned const outLow = outBase * (0 - 15ul);
+ 	unsigned const endCycles = cycleCounter_ + cycles;
+ 
+ 	for (;;) {
+ 		unsigned const outHigh = master_
+-		                            ? outBase * (envelopeUnit_.getVolume() * 2 - 15ul)
+-		                            : outLow;
++		                            ? outBase * (envelopeUnit_.getVolume())
++		                            : 0;
++		unsigned const outLow = -outHigh;
+ 		unsigned const nextMajorEvent = std::min(nextEventUnit->counter(), endCycles);
+ 		unsigned out = dutyUnit_.isHighState() ? outHigh : outLow;
+ 
+diff --git a/libgambatte/src/sound/channel3.cpp b/libgambatte/src/sound/channel3.cpp
+index c583949..f25c96d 100644
+--- a/libgambatte/src/sound/channel3.cpp
++++ b/libgambatte/src/sound/channel3.cpp
+@@ -156,8 +156,8 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
+ 			unsigned const nextMajorEvent =
+ 				std::min(lengthCounter_.counter(), endCycles);
+ 			unsigned out = master_
+-				? ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - 15ul
+-				: 0 - 15ul;
++				? ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - (15 >> rshift_)
++				: 0;
+ 			out *= outBase;
+ 
+ 			while (waveCounter_ <= nextMajorEvent) {
+@@ -171,7 +171,7 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
+ 				++wavePos_;
+ 				wavePos_ &= 0x1F;
+ 				sampleBuf_ = waveRam_[wavePos_ >> 1];
+-				out = ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - 15ul;
++				out = ((sampleBuf_ >> (~wavePos_ << 2 & 4) & 0xF) >> rshift_) * 2 - (15 >> rshift_);
+ 				out *= outBase;
+ 			}
+ 
+@@ -188,7 +188,7 @@ void Channel3::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cy
+ 				break;
+ 		}
+ 	} else {
+-		unsigned const out = outBase * (0 - 15ul);
++		unsigned const out = 0;
+ 		*buf += out - prevOut_;
+ 		prevOut_ = out;
+ 		cycleCounter_ += cycles;
+diff --git a/libgambatte/src/sound/channel4.cpp b/libgambatte/src/sound/channel4.cpp
+index bc0a312..0abd4fb 100644
+--- a/libgambatte/src/sound/channel4.cpp
++++ b/libgambatte/src/sound/channel4.cpp
+@@ -224,11 +224,11 @@ void Channel4::loadState(SaveState const &state) {
+ 
+ void Channel4::update(uint_least32_t *buf, unsigned const soBaseVol, unsigned cycles) {
+ 	unsigned const outBase = envelopeUnit_.dacIsOn() ? soBaseVol & soMask_ : 0;
+-	unsigned const outLow = outBase * (0 - 15ul);
+ 	unsigned const endCycles = cycleCounter_ + cycles;
+ 
+ 	for (;;) {
+-		unsigned const outHigh = outBase * (envelopeUnit_.getVolume() * 2 - 15ul);
++		unsigned const outHigh = outBase * (envelopeUnit_.getVolume());
++		unsigned const outLow = -outHigh;
+ 		unsigned const nextMajorEvent = std::min(nextEventUnit_->counter(), endCycles);
+ 		unsigned out = lfsr_.isHighState() ? outHigh : outLow;
+ 
+-- 
+1.8.5
+

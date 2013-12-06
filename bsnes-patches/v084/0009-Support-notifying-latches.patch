@@ -1,0 +1,65 @@
+From 62f8a07104b57b75071318098145d99012dbc908 Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sun, 27 Oct 2013 10:52:45 +0200
+Subject: [PATCH 09/10] Support notifying latches
+
+---
+ snes/cpu/mmio/mmio.cpp       | 1 +
+ snes/cpu/timing/joypad.cpp   | 1 +
+ snes/interface/interface.cpp | 5 +++++
+ snes/interface/interface.hpp | 1 +
+ 4 files changed, 8 insertions(+)
+
+diff --git a/snes/cpu/mmio/mmio.cpp b/snes/cpu/mmio/mmio.cpp
+index c5ee930..b7afff0 100755
+--- a/snes/cpu/mmio/mmio.cpp
++++ b/snes/cpu/mmio/mmio.cpp
+@@ -33,6 +33,7 @@ void CPU::mmio_w2183(uint8 data) {
+ //strobing $4016.d0 affects both controller port latches.
+ //$4017 bit 0 writes are ignored.
+ void CPU::mmio_w4016(uint8 data) {
++  if(data&1) interface->notifyLatched();
+   input.port1->latch(data & 1);
+   input.port2->latch(data & 1);
+ }
+diff --git a/snes/cpu/timing/joypad.cpp b/snes/cpu/timing/joypad.cpp
+index 6e15346..c69b708 100755
+--- a/snes/cpu/timing/joypad.cpp
++++ b/snes/cpu/timing/joypad.cpp
+@@ -7,6 +7,7 @@ void CPU::step_auto_joypad_poll() {
+ 
+     if(status.auto_joypad_active && status.auto_joypad_poll) {
+       if(status.auto_joypad_counter == 0) {
++        interface->notifyLatched();
+         input.port1->latch(1);
+         input.port2->latch(1);
+         input.port1->latch(0);
+diff --git a/snes/interface/interface.cpp b/snes/interface/interface.cpp
+index 0a21a13..6685556 100755
+--- a/snes/interface/interface.cpp
++++ b/snes/interface/interface.cpp
+@@ -28,4 +28,9 @@ time_t Interface::randomSeed()
+   return time(0);
+ }
+ 
++void Interface::notifyLatched()
++{
++  //Nothing.
++}
++
+ }
+diff --git a/snes/interface/interface.hpp b/snes/interface/interface.hpp
+index 30ee7fd..203f7b0 100755
+--- a/snes/interface/interface.hpp
++++ b/snes/interface/interface.hpp
+@@ -7,6 +7,7 @@ struct Interface {
+   virtual void message(const string &text);
+   virtual time_t currentTime();
+   virtual time_t randomSeed();
++  virtual void notifyLatched();
+ };
+ 
+ extern Interface *interface;
+-- 
+1.8.4.4
+

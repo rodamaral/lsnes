@@ -1,71 +1,71 @@
-From 45ef88799c500b6932f6f2e90377bb4aece25523 Mon Sep 17 00:00:00 2001
+From f4fcace8e1261f4e0e01c7db174dc148eab1180f Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Fri, 18 Jan 2013 21:06:30 +0200
-Subject: [PATCH] Changes to make libgambatte rerecording friendly
+Subject: [PATCH 1/3] Changes to make libgambatte rerecording friendly
 
 ---
- Makefile                                     |   10 +
- libgambatte/Makefile                         |   18 ++
- libgambatte/include/gambatte.h               |   72 +++++++-
- libgambatte/src/bitmap_font.cpp              |   10 +-
- libgambatte/src/bitmap_font.h                |    6 +-
- libgambatte/src/cpu.cpp                      |   45 ++++-
- libgambatte/src/cpu.h                        |   31 +++-
- libgambatte/src/file/file.cpp                |   34 ++++
- libgambatte/src/file/file.h                  |   10 +
- libgambatte/src/gambatte.cpp                 |  124 ++++++++++--
- libgambatte/src/initstate.cpp                |    8 +-
- libgambatte/src/initstate.h                  |    8 +-
- libgambatte/src/interrupter.cpp              |   17 ++-
- libgambatte/src/interrupter.h                |   18 ++-
- libgambatte/src/interruptrequester.cpp       |   23 ++-
- libgambatte/src/interruptrequester.h         |   27 ++-
- libgambatte/src/loadsave.cpp                 |  266 ++++++++++++++++++++++++++
- libgambatte/src/loadsave.h                   |  160 ++++++++++++++++
- libgambatte/src/mem/cartridge.cpp            |  160 ++++++++++++++--
- libgambatte/src/mem/cartridge.h              |   37 ++++-
- libgambatte/src/mem/memptrs.cpp              |   32 +++-
- libgambatte/src/mem/memptrs.h                |   17 ++-
- libgambatte/src/mem/rtc.cpp                  |   57 +++++-
- libgambatte/src/mem/rtc.h                    |   11 +-
- libgambatte/src/memory.cpp                   |  108 +++++++----
- libgambatte/src/memory.h                     |   80 +++++---
- libgambatte/src/minkeeper.h                  |   30 ++-
- libgambatte/src/savestate.h                  |   54 +++---
- libgambatte/src/sound.cpp                    |   36 +++-
- libgambatte/src/sound.h                      |   17 ++-
- libgambatte/src/sound/channel1.cpp           |   44 ++++-
- libgambatte/src/sound/channel1.h             |   25 ++-
- libgambatte/src/sound/channel2.cpp           |   41 +++-
- libgambatte/src/sound/channel2.h             |   17 ++-
- libgambatte/src/sound/channel3.cpp           |   41 +++-
- libgambatte/src/sound/channel3.h             |   27 ++-
- libgambatte/src/sound/channel4.cpp           |   59 ++++--
- libgambatte/src/sound/channel4.h             |   40 +++--
- libgambatte/src/sound/duty_unit.cpp          |   34 +++-
- libgambatte/src/sound/duty_unit.h            |   29 ++-
- libgambatte/src/sound/envelope_unit.cpp      |   19 ++-
- libgambatte/src/sound/envelope_unit.h        |   12 +-
- libgambatte/src/sound/length_counter.cpp     |   19 ++-
- libgambatte/src/sound/length_counter.h       |   13 +-
- libgambatte/src/sound/sound_unit.h           |   15 ++-
- libgambatte/src/sound/static_output_tester.h |    8 +-
- libgambatte/src/state_osd_elements.cpp       |    8 +-
- libgambatte/src/statesaver.cpp               |    6 +-
- libgambatte/src/statesaver.h                 |    7 +
- libgambatte/src/tima.cpp                     |   35 +++-
- libgambatte/src/tima.h                       |   28 ++-
- libgambatte/src/video.cpp                    |  120 +++++++-----
- libgambatte/src/video.h                      |  118 +++++++-----
- libgambatte/src/video/ly_counter.cpp         |   14 +-
- libgambatte/src/video/ly_counter.h           |   26 ++-
- libgambatte/src/video/lyc_irq.cpp            |   14 +-
- libgambatte/src/video/lyc_irq.h              |   27 ++-
- libgambatte/src/video/next_m0_time.h         |   10 +
- libgambatte/src/video/ppu.cpp                |  125 ++++++++++---
- libgambatte/src/video/ppu.h                  |   93 ++++++---
- libgambatte/src/video/sprite_mapper.cpp      |   17 +-
- libgambatte/src/video/sprite_mapper.h        |   53 ++++--
+ Makefile                                     |  10 +
+ libgambatte/Makefile                         |  18 ++
+ libgambatte/include/gambatte.h               |  72 +++++++-
+ libgambatte/src/bitmap_font.cpp              |  10 +-
+ libgambatte/src/bitmap_font.h                |   6 +-
+ libgambatte/src/cpu.cpp                      |  45 ++++-
+ libgambatte/src/cpu.h                        |  31 +++-
+ libgambatte/src/file/file.cpp                |  34 ++++
+ libgambatte/src/file/file.h                  |  10 +
+ libgambatte/src/gambatte.cpp                 | 124 +++++++++++--
+ libgambatte/src/initstate.cpp                |   8 +-
+ libgambatte/src/initstate.h                  |   8 +-
+ libgambatte/src/interrupter.cpp              |  17 +-
+ libgambatte/src/interrupter.h                |  18 +-
+ libgambatte/src/interruptrequester.cpp       |  23 ++-
+ libgambatte/src/interruptrequester.h         |  27 ++-
+ libgambatte/src/loadsave.cpp                 | 266 +++++++++++++++++++++++++++
+ libgambatte/src/loadsave.h                   | 160 ++++++++++++++++
+ libgambatte/src/mem/cartridge.cpp            | 160 +++++++++++++---
+ libgambatte/src/mem/cartridge.h              |  37 +++-
+ libgambatte/src/mem/memptrs.cpp              |  32 +++-
+ libgambatte/src/mem/memptrs.h                |  17 +-
+ libgambatte/src/mem/rtc.cpp                  |  57 +++++-
+ libgambatte/src/mem/rtc.h                    |  11 +-
+ libgambatte/src/memory.cpp                   | 108 +++++++----
+ libgambatte/src/memory.h                     |  80 +++++---
+ libgambatte/src/minkeeper.h                  |  30 ++-
+ libgambatte/src/savestate.h                  |  54 +++---
+ libgambatte/src/sound.cpp                    |  36 +++-
+ libgambatte/src/sound.h                      |  17 +-
+ libgambatte/src/sound/channel1.cpp           |  44 ++++-
+ libgambatte/src/sound/channel1.h             |  25 ++-
+ libgambatte/src/sound/channel2.cpp           |  41 ++++-
+ libgambatte/src/sound/channel2.h             |  17 +-
+ libgambatte/src/sound/channel3.cpp           |  41 ++++-
+ libgambatte/src/sound/channel3.h             |  27 ++-
+ libgambatte/src/sound/channel4.cpp           |  59 ++++--
+ libgambatte/src/sound/channel4.h             |  40 ++--
+ libgambatte/src/sound/duty_unit.cpp          |  34 +++-
+ libgambatte/src/sound/duty_unit.h            |  29 +--
+ libgambatte/src/sound/envelope_unit.cpp      |  19 +-
+ libgambatte/src/sound/envelope_unit.h        |  12 +-
+ libgambatte/src/sound/length_counter.cpp     |  19 +-
+ libgambatte/src/sound/length_counter.h       |  13 +-
+ libgambatte/src/sound/sound_unit.h           |  15 +-
+ libgambatte/src/sound/static_output_tester.h |   8 +-
+ libgambatte/src/state_osd_elements.cpp       |   8 +-
+ libgambatte/src/statesaver.cpp               |   6 +-
+ libgambatte/src/statesaver.h                 |   7 +
+ libgambatte/src/tima.cpp                     |  35 ++--
+ libgambatte/src/tima.h                       |  28 +--
+ libgambatte/src/video.cpp                    | 120 ++++++------
+ libgambatte/src/video.h                      | 118 +++++++-----
+ libgambatte/src/video/ly_counter.cpp         |  14 +-
+ libgambatte/src/video/ly_counter.h           |  26 ++-
+ libgambatte/src/video/lyc_irq.cpp            |  14 +-
+ libgambatte/src/video/lyc_irq.h              |  27 ++-
+ libgambatte/src/video/next_m0_time.h         |  10 +
+ libgambatte/src/video/ppu.cpp                | 125 ++++++++++---
+ libgambatte/src/video/ppu.h                  |  93 +++++++---
+ libgambatte/src/video/sprite_mapper.cpp      |  17 +-
+ libgambatte/src/video/sprite_mapper.h        |  53 ++++--
  62 files changed, 2098 insertions(+), 572 deletions(-)
  create mode 100644 Makefile
  create mode 100644 libgambatte/Makefile
@@ -5793,5 +5793,5 @@ index 22bf619..2358d2d 100644
  
  }
 -- 
-1.7.9.48.g85da4d
+1.8.5
 

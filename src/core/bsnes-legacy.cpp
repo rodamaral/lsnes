@@ -280,7 +280,11 @@ namespace
 		if(write)
 			SNES::bus.write(offset, data);
 		else
+#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+			return SNES::bus.read(offset, false);
+#else
 			return SNES::bus.read(offset);
+#endif
 	}
 
 	uint8_t ptrtable_iospace_rw(uint64_t offset, uint8_t data, bool write)
