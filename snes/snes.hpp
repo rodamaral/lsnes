@@ -1,5 +1,6 @@
 #ifndef SNES_HPP
 #define SNES_HPP
+#define BSNES_SUPPORTS_ALT_TIMINGS
 
 namespace SNES {
   namespace Info {

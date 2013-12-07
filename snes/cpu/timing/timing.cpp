@@ -17,10 +17,18 @@ void CPU::add_clocks(unsigned clocks) {
 
   step(clocks);
 
-  status.auto_joypad_clock += clocks;
-  if(status.auto_joypad_clock >= 256) {
-    status.auto_joypad_clock -= 256;
-    step_auto_joypad_poll();
+  if(config.cpu.alt_poll_timings) {
+    bool opolarity = (status.auto_joypad_clock & 128);
+    status.auto_joypad_clock = (status.auto_joypad_clock + clocks) & 0xFF;
+    bool npolarity = (status.auto_joypad_clock & 128);
+    if(opolarity != npolarity)
+      step_auto_joypad_poll_NEW(opolarity);
+  } else {
+    status.auto_joypad_clock += clocks;
+    if(status.auto_joypad_clock >= 256) {
+      status.auto_joypad_clock -= 256;
+      step_auto_joypad_poll();
+    }
   }
 
   if(status.dram_refreshed == false && hcounter() >= status.dram_refresh_position) {

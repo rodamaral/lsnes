@@ -10,6 +10,7 @@ struct Configuration {
     unsigned ntsc_frequency;
     unsigned pal_frequency;
     unsigned wram_init_value;
+    bool alt_poll_timings;
   } cpu;
 
   struct SMP {
