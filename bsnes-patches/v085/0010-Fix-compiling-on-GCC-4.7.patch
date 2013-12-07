@@ -1,7 +1,7 @@
 From e397bd46f17d6ea00c8c96d5a8e0c5f5b4a6f642 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 14 Oct 2012 23:31:36 +0300
-Subject: [PATCH 10/13] Fix compiling on GCC 4.7
+Subject: [PATCH 10/14] Fix compiling on GCC 4.7
 
 ---
  nall/string.hpp | 2 +-
@@ -22,5 +22,5 @@ index 1b255ce..07a64df 100755
  #include <nall/string/convert.hpp>
  #include <nall/string/cstring.hpp>
 -- 
-1.8.4.4
+1.8.5.1
 

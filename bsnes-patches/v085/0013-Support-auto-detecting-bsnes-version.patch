@@ -1,7 +1,7 @@
 From 8bc6bb381e680616dcc843c99889799aedd43163 Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sat, 30 Nov 2013 10:27:37 +0200
-Subject: [PATCH 13/13] Support auto-detecting bsnes version
+Subject: [PATCH 13/14] Support auto-detecting bsnes version
 
 ---
  bsnes.mk | 3 +++
@@ -18,5 +18,5 @@ index 0000000..20f22f6
 +LIBSNES_DIR=ui-libsnes
 +BSNES_VERSION=085
 -- 
-1.8.4.4
+1.8.5.1
 

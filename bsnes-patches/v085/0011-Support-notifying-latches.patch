@@ -1,7 +1,7 @@
 From e047aa8eb9883f60e4141effba8128a4a555d8be Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Sun, 27 Oct 2013 10:52:45 +0200
-Subject: [PATCH 11/13] Support notifying latches
+Subject: [PATCH 11/14] Support notifying latches
 
 ---
  snes/cpu/mmio/mmio.cpp       | 1 +
@@ -61,5 +61,5 @@ index 30ee7fd..203f7b0 100755
  
  extern Interface *interface;
 -- 
-1.8.4.4
+1.8.5.1
 
