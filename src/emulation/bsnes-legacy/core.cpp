@@ -1517,6 +1517,7 @@ again2:
 			lsnes_cmd.invoke("tracelog cpu " + r);
 		});
 
+#ifdef BSNES_IS_COMPAT
 	function_ptr_luafun lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua_state& L,
 		const std::string& fname) -> int {
 		unsigned layer = L.get_numeric_argument<unsigned>(1, fname.c_str());
@@ -1525,6 +1526,7 @@ again2:
 		SNES::ppu.layer_enable(layer, priority, enabled);
 		return 0;
 	});
+#endif
 
 	function_ptr_luafun lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua_state& L, const std::string& fname) ->
 		int {
