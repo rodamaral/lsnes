@@ -13,6 +13,7 @@ void handle_post_loadlibrary()
 {
 	if(new_core_flag) {
 		new_core_flag = false;
+		core_core::initialize_new_cores();
 		notify_new_core();
 	}
 }

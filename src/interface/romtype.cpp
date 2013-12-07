@@ -29,6 +29,12 @@ namespace
 		return x;
 	}
 
+	std::set<core_core*>& uninitialized_cores_set()
+	{
+		static std::set<core_core*> x;
+		return x;
+	}
+
 	std::multimap<std::string, core_sysregion*>& sysregions()
 	{
 		static std::multimap<std::string, core_sysregion*> x;
@@ -374,15 +380,21 @@ core_core::core_core(std::initializer_list<port_type*> ports, std::initializer_l
 		actions[i._symbol] = i;
 
 	hidden = false;
+	uninitialized_cores_set().insert(this);
 	all_cores_set().insert(this);
-	if(install_handlers_automatically)
-		install_handler();
 	new_core_flag = true;
 }
 
 core_core::~core_core() throw()
 {
 	all_cores().erase(this);
+}
+
+void core_core::initialize_new_cores()
+{
+	for(auto i : uninitialized_cores_set())
+		i->install_handler();
+	uninitialized_cores_set().clear();
 }
 
 std::string core_core::get_core_shortname()

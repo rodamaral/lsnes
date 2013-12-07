@@ -181,7 +181,10 @@ namespace
 		{"hardreset", "Support hard resets", "0", boolean_values},
 		{"saveevery", "Emulate saving each frame", "0", boolean_values},
 		{"radominit", "Random initial state", "0", boolean_values},
-		{"compact", "Don't support delayed resets", "0", boolean_values}
+		{"compact", "Don't support delayed resets", "0", boolean_values},
+#ifdef BSNES_SUPPORTS_ALT_TIMINGS
+		{"alttimings", "Alternate poll timings", "0", boolean_values},
+#endif
 	};
 
 	////////////////// PORTS COMMON ///////////////////
@@ -255,6 +258,9 @@ namespace
 		signed compact = bsnes_settings.ivalue_to_index(_settings, "compact");
 		signed esave = bsnes_settings.ivalue_to_index(_settings, "saveevery");
 		signed irandom = bsnes_settings.ivalue_to_index(_settings, "radominit");
+#ifdef BSNES_SUPPORTS_ALT_TIMINGS
+		signed ialttimings = bsnes_settings.ivalue_to_index(_settings, "alttimings");
+#endif
 
 		basic_init();
 		snes_term();
@@ -264,6 +270,9 @@ namespace
 		support_hreset = (hreset != 0 || compact != 0);
 		support_dreset = (compact == 0);
 		SNES::config.expansion_port = SNES::System::ExpansionPortDevice::None;
+#ifdef BSNES_SUPPORTS_ALT_TIMINGS
+		SNES::config.cpu.alt_poll_timings = (ialttimings != 0);
+#endif
 		bool r = fun(img);
 		if(r) {
 			internal_rom = ctype;
@@ -1205,6 +1214,13 @@ again2:
 			cover_render_string(cover_fbmem, 0, y, i, 0x7FFFF, 0x00000, 512, 448, 2048, 4);
 			y += 16;
 		}
+#ifdef BSNES_SUPPORTS_ALT_TIMINGS
+		if(SNES::config.cpu.alt_poll_timings) {
+			cover_render_string(cover_fbmem, 0, y, "Alternate timings enabled.", 0x7FFFF, 0x00000,
+				512, 448, 2048, 4);
+			y += 16;
+		}
+#endif
 	}
 
 	void my_interface::videoRefresh(const uint32_t* data, bool hires, bool interlace, bool overscan)

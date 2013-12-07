@@ -330,6 +330,7 @@ struct core_core
 	static std::set<core_core*> all_cores();
 	static void install_all_handlers();
 	static void uninstall_all_handlers();
+	static void initialize_new_cores();
 	void hide() { hidden = true; }
 	bool is_hidden() { return hidden; }
 	std::set<const interface_action*> get_actions();
