@@ -200,6 +200,7 @@ int http_request::_progress(double _dltotal, double _dlnow, double _ultotal, dou
 	dlnow = _dlnow;
 	ultotal = _ultotal;
 	ulnow = _ulnow;
+	return 0;
 }
 
 void http_request::get_xfer_status(int64_t& dnow, int64_t& dtotal, int64_t& unow, int64_t& utotal)
