@@ -28,6 +28,7 @@ struct custom_font
 public:
 	custom_font();
 	custom_font(const std::string& file);
+	custom_font(struct bitmap_font& bfont);
 	void add(const std::u32string& key, const font_glyph_data& glyph) throw(std::bad_alloc);
 	std::u32string best_ligature_match(const std::u32string& codepoints, size_t start) const
 		throw(std::bad_alloc);

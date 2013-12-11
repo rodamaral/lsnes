@@ -1633,11 +1633,12 @@ gui.loadfont: Load a font file
 \end_layout
 
 \begin_layout Itemize
-Syntax: CUSTOMFONT gui.loadfont(string filename)
+Syntax: CUSTOMFONT gui.loadfont([string filename])
 \end_layout
 
 \begin_layout Standard
 Loads font from specified file (CUSTOMFONT object).
+ If filename is not given, loads the system default font.
 \end_layout
 
 \begin_layout Subsection

@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <vector>
 #include <map>
+#include <set>
 
 template<bool X> struct framebufferelem {};
 template<> struct framebufferelem<false> { typedef uint32_t t; };
@@ -513,6 +514,14 @@ struct bitmap_font
  * Returns: String layout.
  */
 	std::vector<layout> dolayout(const std::string& string) throw(std::bad_alloc);
+/**
+ * Get set of all glyph numbers.
+ */
+	std::set<uint32_t> get_glyphs_set();
+/**
+ * Get bad glyph.
+ */
+	const glyph& get_bad_glyph() throw();
 /**
  * Render string to framebuffer.
  *

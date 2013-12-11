@@ -236,6 +236,36 @@ custom_font::custom_font(const std::string& file)
 	}
 }
 
+custom_font::custom_font(struct bitmap_font& bfont)
+{
+	auto s = bfont.get_glyphs_set();
+	for(auto i = s.begin();;i++) {
+		const bitmap_font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
+		font_glyph_data k;
+		k.width = j.wide ? 16 : 8;
+		k.height = 16;
+		k.stride = 1;
+		k.glyph.resize(16);
+		for(size_t y = 0; y < 16; y++) {
+			k.glyph[y] = 0;
+			uint32_t r = j.data[y / (j.wide ? 2 : 4)];
+			if(j.wide)
+				r >>= 16 - ((y & 1) << 4);
+			else
+				r >>= 24 - ((y & 3) << 3);
+			for(size_t x = 0; x < k.width; x++) {
+				uint32_t b = (j.wide ? 15 : 7) - x;
+				if(((r >> b) & 1) != 0)
+					k.glyph[y] |= 1UL << (31 - x);
+			}
+		}
+		std::u32string key = (i != s.end()) ? std::u32string(1, *i) : std::u32string();
+		glyphs[key] = k;
+		if(i == s.end()) break;
+	}
+	rowadvance = 16;
+}
+
 std::ostream& operator<<(std::ostream& os, const std::u32string& lkey)
 {
 	if(!lkey.length())

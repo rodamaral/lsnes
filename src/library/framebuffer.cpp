@@ -687,6 +687,19 @@ const bitmap_font::glyph& bitmap_font::get_glyph(uint32_t glyph) throw()
 		return bad_glyph;
 }
 
+std::set<uint32_t> bitmap_font::get_glyphs_set()
+{
+	std::set<uint32_t> out;
+	for(auto& i : glyphs)
+		out.insert(i.first);
+	return out;
+}
+
+const bitmap_font::glyph& bitmap_font::get_bad_glyph() throw()
+{
+	return bad_glyph;
+}
+
 std::pair<size_t, size_t> bitmap_font::get_metrics(const std::string& string) throw()
 {
 	size_t commit_width = 0;

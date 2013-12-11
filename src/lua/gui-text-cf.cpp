@@ -13,14 +13,17 @@ namespace
 	{
 	public:
 		lua_customfont(lua_state& L, const std::string& filename);
+		lua_customfont(lua_state& L);
 		~lua_customfont() throw();
 		int draw(lua_state& L, const std::string& fname);
 		const custom_font& get_font() { return font; }
 		std::string print()
 		{
-			return "";
+			return orig_filename;
 		}
 	private:
+		void init(lua_state& L);
+		std::string orig_filename;
 		custom_font font;
 	};
 }
@@ -89,12 +92,25 @@ namespace
 		lua_obj_pin<lua_customfont> font;
 	};
 
-	lua_customfont::lua_customfont(lua_state& L, const std::string& filename)
-		: font(filename)
+	void lua_customfont::init(lua_state& L)
 	{
 		objclass<lua_customfont>().bind_multi(L, {
 			{"__call", &lua_customfont::draw},
 		});
+	}
+
+	lua_customfont::lua_customfont(lua_state& L, const std::string& filename)
+		: font(filename)
+	{
+		orig_filename = filename;
+		init(L);
+	}
+
+	lua_customfont::lua_customfont(lua_state& L)
+		: font(main_font)
+	{
+		orig_filename = "<builtin>";
+		init(L);
 	}
 
 	lua_customfont::~lua_customfont() throw()
@@ -125,6 +141,10 @@ namespace
 
 	function_ptr_luafun gui_text_cf(lua_func_misc, "gui.loadfont", [](lua_state& L, const std::string& fname)
 		-> int {
+		if(L.type(1) == LUA_TNONE || L.type(1) == LUA_TNIL) {
+			lua_class<lua_customfont>::create(L);
+			return 1;
+		}
 		std::string filename = L.get_string(1, fname.c_str());
 		lua_class<lua_customfont>::create(L, filename);
 		return 1;
