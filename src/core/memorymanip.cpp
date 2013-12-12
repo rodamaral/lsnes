@@ -111,29 +111,6 @@ void refresh_cart_mappings() throw(std::bad_alloc)
 
 namespace
 {
-	unsigned char hex(char ch)
-	{
-		switch(ch) {
-		case '0':			return 0;
-		case '1':			return 1;
-		case '2':			return 2;
-		case '3':			return 3;
-		case '4':			return 4;
-		case '5':			return 5;
-		case '6':			return 6;
-		case '7':			return 7;
-		case '8':			return 8;
-		case '9':			return 9;
-		case 'a':	case 'A':	return 10;
-		case 'b':	case 'B':	return 11;
-		case 'c':	case 'C':	return 12;
-		case 'd':	case 'D':	return 13;
-		case 'e':	case 'E':	return 14;
-		case 'f':	case 'F':	return 15;
-		};
-		throw std::runtime_error("Bad hex character");
-	}
-
 	class memorymanip_command : public command
 	{
 	public:
@@ -153,15 +130,7 @@ namespace
 			value_bad = true;
 			has_value = (secondword != "");
 			try {
-				if(t = regex("0x(.+)", firstword)) {
-					if(t[1].length() > 16)
-						throw 42;
-					address = 0;
-					for(unsigned i = 0; i < t[1].length(); i++)
-						address = 16 * address + hex(t[1][i]);
-				} else {
-					address = parse_value<uint64_t>(firstword);
-				}
+				address = parse_value<uint64_t>(firstword);
 				address_bad = false;
 			} catch(...) {
 			}
@@ -173,17 +142,7 @@ namespace
 			} catch(...) {
 			}
 			try {
-				if(t = regex("0x(.+)", secondword)) {
-					if(t[1].length() > 16)
-						throw 42;
-					value = 0;
-					for(unsigned i = 0; i < t[1].length(); i++)
-						value = 16 * value + hex(t[1][i]);
-				} else if(regex("-.*", secondword)) {
-					value = static_cast<uint64_t>(parse_value<int64_t>(secondword));
-				} else {
-					value = parse_value<uint64_t>(secondword);
-				}
+				value = parse_value<uint64_t>(secondword);
 				value_bad = false;
 			} catch(...) {
 			}

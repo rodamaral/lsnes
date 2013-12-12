@@ -18,45 +18,6 @@ namespace
 		std::string disasm;
 	};
 
-	unsigned char hex(char ch)
-	{
-		switch(ch) {
-		case '0':			return 0;
-		case '1':			return 1;
-		case '2':			return 2;
-		case '3':			return 3;
-		case '4':			return 4;
-		case '5':			return 5;
-		case '6':			return 6;
-		case '7':			return 7;
-		case '8':			return 8;
-		case '9':			return 9;
-		case 'a':	case 'A':	return 10;
-		case 'b':	case 'B':	return 11;
-		case 'c':	case 'C':	return 12;
-		case 'd':	case 'D':	return 13;
-		case 'e':	case 'E':	return 14;
-		case 'f':	case 'F':	return 15;
-		};
-		throw std::runtime_error("Bad hex character");
-	}
-
-	uint64_t parse_hexordec(const std::string& k)
-	{
-		regex_results t;
-		uint64_t address = 0;
-		if(t = regex("0x(.+)", k)) {
-			if(t[1].length() > 16)
-				throw 42;
-			address = 0;
-			for(unsigned i = 0; i < t[1].length(); i++)
-				address = 16 * address + hex(t[1][i]);
-		} else {
-			address = parse_value<uint64_t>(k);
-		}
-		return address;
-	}
-
 	function_ptr_command<const std::string&> disassemble(lsnes_cmd, "disassemble", "Disassemble code",
 		"Syntax: disassemble <kind> <addr> [<count>] [to <filename>]\nDisassemble code\n",
 		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
@@ -67,7 +28,7 @@ namespace
 			return;
 		}
 		std::string kind = r[1];
-		uint64_t addr = parse_hexordec(r[2]);
+		uint64_t addr = parse_value<uint64_t>(r[2]);
 		uint64_t count = 1;
 		if(r[4] != "")
 			count = parse_value<uint64_t>(r[4]);

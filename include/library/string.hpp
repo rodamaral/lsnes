@@ -102,20 +102,53 @@ int string_to_bool(const std::string& cast_to_bool);
  */
 template<typename T> inline T parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
+	//Floating-point case.
 	try {
-		//Hack, since lexical_cast lets negative values slip through.
-		if(!std::numeric_limits<T>::is_signed && value.length() && value[0] == '-') {
-			throw std::runtime_error("Unsigned values can't be negative");
+		if(std::numeric_limits<T>::is_integer) {
+			if(!std::numeric_limits<T>::is_signed && value.length() && value[0] == '-') {
+				throw std::runtime_error("Unsigned values can't be negative");
+			}
+			size_t idx = 0;
+			if(value[idx] == '-' || value[idx] == '+')
+				idx++;
+			bool sign = (value[0] == '-');
+			T mult = sign ? -1 : 1;
+			T bound = sign ? std::numeric_limits<T>::min() : std::numeric_limits<T>::max();
+			T val = 0;
+			if(value.length() > idx + 2 && value[idx] == '0' && value[idx + 1] == 'x') {
+				//Hexadecimal
+				for(size_t i = idx + 2; i < value.length(); i++) {
+					char ch = value[i];
+					T v = 0;
+					if(ch >= '0' && ch <= '9')
+						v = ch - '0';
+					else if(ch >= 'A' && ch <= 'F')
+						v = ch - 'A' + 10;
+					else if(ch >= 'a' && ch <= 'f')
+						v = ch - 'a' + 10;
+					else
+						throw std::runtime_error("Invalid character in number");
+					if((sign && (bound + v) / 16 > val) || (!sign && (bound - v) / 16 < val))
+						throw std::runtime_error("Value exceeds range");
+					val = 16 * val + (sign ? -v : v);
+				}
+			} else {
+				//Decimal.
+				for(size_t i = idx; i < value.length(); i++) {
+					char ch = value[i];
+					T v = 0;
+					if(ch >= '0' && ch <= '9')
+						v = ch - '0';
+					else
+						throw std::runtime_error("Invalid character in number");
+					if((sign && (bound + v) / 10 > val) || (!sign && (bound - v) / 10 < val))
+						throw std::runtime_error("Value exceeds range");
+					val = 10 * val + (sign ? -v : v);
+				}
+			}
+			return val;
 		}
-		//Hack for inability of lexical_cast to deal with chars like we want.
-		if(sizeof(T) > 1)
-			return boost::lexical_cast<T>(value);
-		else {
-			short v = boost::lexical_cast<short>(value);
-			if(v > 255 || v < -128 || (v > 127 && std::numeric_limits<T>::is_signed))
-				throw std::runtime_error("Value out of range");
-			return static_cast<T>(v);
-		}
+		return boost::lexical_cast<T>(value);
 	} catch(std::exception& e) {
 		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
 	}
@@ -123,29 +156,18 @@ template<typename T> inline T parse_value(const std::string& value) throw(std::b
 
 template<> inline ss_int24_t parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
-	try {
-		int32_t v = boost::lexical_cast<int32_t>(value);
-		if(v < -8388608 || v > 8388607)
-			throw std::runtime_error("Value out of valid range");
-		return v;
-	} catch(std::exception& e) {
-		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
-	}
+	int32_t v = parse_value<int32_t>(value);
+	if(v < -8388608 || v > 8388607)
+		throw std::runtime_error("Can't parse value '" + value + "': Value out of valid range");
+	return v;
 }
 
 template<> inline ss_uint24_t parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
 {
-	try {
-		if(value.length() && value[0] == '-') {
-			throw std::runtime_error("Unsigned values can't be negative");
-		}
-		uint32_t v = boost::lexical_cast<uint32_t>(value);
-		if(v > 0xFFFFFF)
-			throw std::runtime_error("Value out of valid range");
-		return v;
-	} catch(std::exception& e) {
-		throw std::runtime_error("Can't parse value '" + value + "': " + e.what());
-	}
+	uint32_t v = parse_value<uint32_t>(value);
+	if(v > 0xFFFFFF)
+		throw std::runtime_error("Can't parse value '" + value + "': Value out of valid range");
+	return v;
 }
 
 template<> inline std::string parse_value(const std::string& value) throw(std::bad_alloc, std::runtime_error)
