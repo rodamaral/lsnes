@@ -160,6 +160,13 @@ namespace
 		raise(sig);
 	}
 
+	void terminate_handler()
+	{
+		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+		std::cerr << "Exiting on fatal error" << std::endl;
+		exit(1);
+	}
+
 	function_ptr_command<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "", 
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
@@ -362,6 +369,7 @@ void reached_main()
 	reached_main_flag = true;
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
+	std::set_terminate(terminate_handler);
 #ifdef SIGHUP
 	signal(SIGHUP, fatal_signal_handler);
 #endif
