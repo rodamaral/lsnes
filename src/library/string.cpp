@@ -3,7 +3,7 @@
 #include "threadtypes.hpp"
 #include <cctype>
 #include <boost/regex.hpp>
-
+#include "map-pointer.hpp"
 
 std::string strip_CR(const std::string& str)
 {
@@ -113,7 +113,7 @@ regex_results regex(const std::string& regexp, const std::string& str, const cha
 {
 	static mutex_class m;
 	umutex_class h(m);
-	static std::map<std::string, boost::regex*> regexps;
+	static std::map<std::string, map_pointer<boost::regex>> regexps;
 	if(!regexps.count(regexp)) {
 		boost::regex* y = NULL;
 		try {
