@@ -17,6 +17,8 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	wxMemoryDC d;
 	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
 	line_separation = s.y;
+	line_clicked = 0;
+	mouse_held = false;
 	ilines = lines;
 	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_messages::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);
