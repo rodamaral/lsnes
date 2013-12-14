@@ -3919,6 +3919,93 @@ Write value <val> to given VMA <vma> at byte offsets <addr>..., given in order
 \end_layout
 
 \begin_layout Section
+Table random
+\end_layout
+
+\begin_layout Standard
+Contains random number generation methods.
+ These functions do not return reproducable results.
+\end_layout
+
+\begin_layout Subsection
+random.boolean: Random boolean
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean random.boolean()
+\end_layout
+
+\begin_layout Standard
+Returns true or false at random (50-50 chance).
+\end_layout
+
+\begin_layout Subsection
+random.integer: Random integer
+\end_layout
+
+\begin_layout Itemize
+Syntax: number random.integer(number highplusone)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number random.integer(number low, number high)
+\end_layout
+
+\begin_layout Standard
+With one argument, return random integer [0,<highplusone>) (upper end exclusive).
+ With two arguments, return random integer [<low>,<high>] (both ends inclusive).
+\end_layout
+
+\begin_layout Standard
+The returned numbers are from uniform distribution.
+\end_layout
+
+\begin_layout Subsection
+random.float: Random float
+\end_layout
+
+\begin_layout Itemize
+Syntax: number random.float()
+\end_layout
+
+\begin_layout Standard
+Returns random decimal number [0,1).
+\end_layout
+
+\begin_layout Subsection
+random.among: Random parameter
+\end_layout
+
+\begin_layout Itemize
+Syntax: value random.among(value values...)
+\end_layout
+
+\begin_layout Standard
+Returns random parameter value, picked at uniform.
+ Multiple equivalent values are returned with higher chance.
+\end_layout
+
+\begin_layout Subsection
+random.amongtable: Random from table
+\end_layout
+
+\begin_layout Itemize
+Syntax: value random.amongtable(table tab)
+\end_layout
+
+\begin_layout Standard
+Returns random value from table <tab>.
+ As in random.among, no equality testing is done.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
 Table callback
 \end_layout
 
