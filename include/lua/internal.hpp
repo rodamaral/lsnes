@@ -13,6 +13,7 @@ extern lua_function_group lua_func_bit;
 extern lua_function_group lua_func_misc;
 extern lua_function_group lua_func_callback;
 extern lua_function_group lua_func_load;
+extern lua_function_group lua_func_zip;
 
 void push_keygroup_parameters(lua_state& L, keyboard_key& p);
 extern lua_render_context* lua_render_ctx;

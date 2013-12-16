@@ -28,6 +28,7 @@ lua_function_group lua_func_bit;
 lua_function_group lua_func_misc;
 lua_function_group lua_func_callback;
 lua_function_group lua_func_load;
+lua_function_group lua_func_zip;
 
 namespace
 {
@@ -441,6 +442,7 @@ void init_lua() throw()
 		lsnes_lua_state.add_function_group(lua_func_load);
 		lsnes_lua_state.add_function_group(lua_func_callback);
 		lsnes_lua_state.add_function_group(lua_func_misc);
+		lsnes_lua_state.add_function_group(lua_func_zip);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
 		fatal_error();

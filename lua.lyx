@@ -4006,6 +4006,107 @@ Returns random value from table <tab>.
 \end_layout
 
 \begin_layout Section
+Table zip
+\end_layout
+
+\begin_layout Subsection
+zip.create: Create a new zipfile
+\end_layout
+
+\begin_layout Itemize
+Syntax: ZIPWRITER zip.create(string filename[, number compression])
+\end_layout
+
+\begin_layout Standard
+Creates a new zipfile <filename>, with specified compression level <compression>
+ (default 9).
+\end_layout
+
+\begin_layout Subsection
+zip.enumerate: Enumerate members in zipfile
+\end_layout
+
+\begin_layout Itemize
+Syntax: Table zip.enumerate(string filename[, boolean invert])
+\end_layout
+
+\begin_layout Standard
+Returns table of files in zip archive <filename>.
+ If <invert> is true, instead of returning array of names, returns table
+ with keys being member names and values being true.
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER:commit: Finish creating ZIP file.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:commit()
+\end_layout
+
+\begin_layout Standard
+Closes the ZIP archive.
+ Nothing more can be written.
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER:rollback: Delete the ZIP file being creted
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:rollback()
+\end_layout
+
+\begin_layout Standard
+Deletes the newly written ZIP archive.
+ Nothing more can be written.
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER:create_file: Start writing a new member
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:create_file(string filename)
+\end_layout
+
+\begin_layout Standard
+Starts writing a new member <filename> in ZIP file.
+ If member is open, it is closed.
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER:close_file: Close member
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:close_file()
+\end_layout
+
+\begin_layout Standard
+Closes member in ZIP file.
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER:write: Write data
+\end_layout
+
+\begin_layout Itemize
+Syntax none ZIPWRITER:write(string data)
+\end_layout
+
+\begin_layout Standard
+Writes data <data> into ZIP file (binary mode).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
 Table callback
 \end_layout
 
