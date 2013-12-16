@@ -194,6 +194,18 @@ struct framebuffer_raw
  */
 	size_t get_height() const throw();
 /**
+ * Get stride.
+ */
+	size_t get_stride() const throw();
+/**
+ * Get starting address.
+ */
+	unsigned char* get_start() const throw();
+/**
+ * Get pixel format.
+ */
+	pixel_format* get_format() const throw();
+/**
  * Destructor.
  */
 	~framebuffer_raw();

@@ -302,6 +302,11 @@ void framebuffer_raw::save_png(const std::string& file) throw(std::bad_alloc, st
 	}
 }
 
+size_t framebuffer_raw::get_stride() const throw() { return stride; }
+unsigned char* framebuffer_raw::get_start() const throw() { return reinterpret_cast<uint8_t*>(addr); }
+pixel_format* framebuffer_raw::get_format() const throw() { return fmt; }
+
+
 template<bool X>
 framebuffer<X>::framebuffer() throw()
 {

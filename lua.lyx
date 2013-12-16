@@ -1517,6 +1517,19 @@ Write PNG screenshot of the current frame (no drawings) to specified file
 \end_layout
 
 \begin_layout Subsection
+gui.screenshot_bitmap: Write a screenshot to bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP gui.screenshot_bitmap()
+\end_layout
+
+\begin_layout Standard
+Write PNG screenshot of the current frame (no drawings) to dbitmap and return
+ the result.
+\end_layout
+
+\begin_layout Subsection
 gui.color: Compose a color.
 \end_layout
 
