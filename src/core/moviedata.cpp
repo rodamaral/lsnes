@@ -13,20 +13,13 @@
 #include "core/romguess.hpp"
 #include "core/rrdata.hpp"
 #include "core/settings.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
 #include "interface/romtype.hpp"
 
 #include <iomanip>
 #include <fstream>
-
-#include <boost/filesystem.hpp>
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
-#endif
 
 struct moviefile our_movie;
 struct loaded_rom our_rom;
@@ -192,7 +185,7 @@ std::pair<std::string, std::string> split_author(const std::string& author) thro
 std::string resolve_relative_path(const std::string& path)
 {
 	try {
-		return boost_fs::absolute(boost_fs::path(path)).string();
+		return get_absolute_path(path);
 	} catch(...) {
 		return path;
 	}

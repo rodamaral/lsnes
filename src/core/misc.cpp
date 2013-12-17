@@ -9,6 +9,7 @@
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
+#include "library/directory.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/serialization.hpp"
@@ -314,8 +315,7 @@ std::string get_config_path() throw(std::bad_alloc)
 	}
 	//Try to create 'lsnes'. If it exists (or is created) and is directory, great. Otherwise error out.
 	std::string lsnes_path = basedir + "/lsnes";
-	boost::filesystem::path p(lsnes_path);
-	if(!boost::filesystem::create_directories(p) && !boost::filesystem::is_directory(p)) {
+	if(!ensure_directory_exists(lsnes_path)) {
 		messages << "FATAL: Can't create configuration directory '" << lsnes_path << "'" << std::endl;
 		fatal_error();
 	}

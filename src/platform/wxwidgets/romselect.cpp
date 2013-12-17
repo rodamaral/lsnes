@@ -16,10 +16,10 @@
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "interface/setting.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem.hpp>
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/loadsave.hpp"
@@ -316,8 +316,7 @@ no_watch:
 		ok = ok && (projname->GetValue().length() > 0);
 		ok = ok && (projdir->GetValue().length() > 0);
 		ok = ok && (projpfx->GetValue().length() > 0);
-		boost::filesystem::path p(tostdstring(projdir->GetValue()));
-		ok = ok && boost::filesystem::is_directory(p);
+		ok = ok && file_is_directory(tostdstring(projdir->GetValue()));
 		okbutton->Enable(ok);
 	}
 

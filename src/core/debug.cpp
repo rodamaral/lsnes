@@ -2,17 +2,12 @@
 #include "core/debug.hpp"
 #include "core/dispatch.hpp"
 #include "core/moviedata.hpp"
+#include "library/directory.hpp"
 #include <stdexcept>
 #include <list>
 #include <map>
-#include <boost/filesystem.hpp>
 #include <fstream>
 
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
-#endif
 
 namespace
 {
@@ -209,7 +204,7 @@ void debug_tracelog(uint64_t proc, const std::string& filename)
 		return;
 	}
 	if(trace_outputs.count(proc)) throw std::runtime_error("Already tracelogging");
-	std::string full_filename = boost_fs::absolute(boost_fs::path(filename)).string();
+	std::string full_filename = get_absolute_path(filename);
 	bool found = false;
 	for(auto i : trace_outputs) {
 		if(i.second.first->full_filename == full_filename) {

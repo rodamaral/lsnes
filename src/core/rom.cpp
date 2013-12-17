@@ -34,16 +34,9 @@
 #include <boost/iostreams/filter/zlib.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
-#include <boost/filesystem.hpp>
 
 #ifdef USE_LIBGCRYPT_SHA256
 #include <gcrypt.h>
-#endif
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
 #endif
 
 namespace

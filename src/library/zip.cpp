@@ -1,10 +1,10 @@
 #include "zip.hpp"
+#include "directory.hpp"
 
 #include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <boost/filesystem.hpp>
 #include <boost/iostreams/categories.hpp>
 #include <boost/iostreams/copy.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -15,12 +15,6 @@
 #include <boost/iostreams/device/back_inserter.hpp>
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 #include <windows.h>
-#endif
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
 #endif
 
 int rename_file_overwrite(const char* oldname, const char* newname)
@@ -34,14 +28,6 @@ int rename_file_overwrite(const char* oldname, const char* newname)
 
 namespace
 {
-	bool is_regular_file(const std::string& filename)
-	{
-		boost::system::error_code ec;
-		boost_fs::file_status stat = status(boost_fs::path(filename), ec);
-		bool e = is_regular_file(stat);
-		return e;
-	}
-
 	uint32_t read32(const unsigned char* buf, unsigned offset = 0, unsigned modulo = 4) throw()
 	{
 		return (uint32_t)buf[offset % modulo] |
@@ -379,7 +365,7 @@ zip_reader::~zip_reader() throw()
 
 zip_reader::zip_reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error)
 {
-	if(!is_regular_file(zipfile))
+	if(!file_is_regular(zipfile))
 		throw std::runtime_error("Zipfile '" + zipfile + "' is not regular file");
 	zipstream = NULL;
 	refcnt = NULL;
@@ -669,7 +655,7 @@ std::istream& open_file_relative(const std::string& name, const std::string& ref
 	std::string path_to_open = combine_path(name, referencing_path);
 	std::string final_path = path_to_open;
 	//Try to open this from the main OS filesystem.
-	if(is_regular_file(path_to_open)) {
+	if(file_is_regular(path_to_open)) {
 		std::ifstream* i = new std::ifstream(path_to_open.c_str(), std::ios::binary);
 		if(i->is_open()) {
 			return *i;
@@ -688,7 +674,7 @@ std::istream& open_file_relative(const std::string& name, const std::string& ref
 		else
 			membername = path_to_open.substr(split + 1);
 		path_to_open = path_to_open.substr(0, split);
-		if(is_regular_file(path_to_open))
+		if(file_is_regular(path_to_open))
 			try {
 				zip_reader r(path_to_open);
 				return r[membername];
@@ -714,7 +700,7 @@ bool file_exists_zip(const std::string& name) throw(std::bad_alloc)
 {
 	std::string path_to_open = name;
 	std::string final_path = path_to_open;
-	if(is_regular_file(path_to_open))
+	if(file_is_regular(path_to_open))
 		return true;
 	//Didn't succeed. Try to open as ZIP archive.
 	std::string membername;
@@ -728,7 +714,7 @@ bool file_exists_zip(const std::string& name) throw(std::bad_alloc)
 		else
 			membername = path_to_open.substr(split + 1);
 		path_to_open = path_to_open.substr(0, split);
-		if(is_regular_file(path_to_open))
+		if(file_is_regular(path_to_open))
 			try {
 				zip_reader r(path_to_open);
 				return r.has_member(membername);

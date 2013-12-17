@@ -4,14 +4,8 @@
 #include "core/settings.hpp"
 #include "interface/romtype.hpp"
 #include "library/zip.hpp"
-#include <boost/filesystem.hpp>
+#include "library/directory.hpp"
 #include <fstream>
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
-#endif
 
 namespace
 {
@@ -55,7 +49,7 @@ namespace
 	{
 		if(!db_loaded) load_db();
 		//Database write. If there is existing entry for file, it is overwritten.
-		std::string file = boost_fs::absolute(boost_fs::path(_file)).string();
+		std::string file = get_absolute_path(_file);
 		std::pair<std::string, uint64_t> key = std::make_pair(file, prefix);
 		if(hash == "" && !our_db.count(key))
 			return;		//Already correct.

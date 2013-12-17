@@ -2,18 +2,12 @@
 #include "string.hpp"
 #include "minmax.hpp"
 #include <iostream>
-#include <boost/filesystem.hpp>
+#include "library/directory.hpp"
 #include <sstream>
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
-#endif
 
 uint64_t get_file_size(const std::string& filename)
 {
-	uintmax_t size = boost_fs::file_size(boost_fs::path(filename));
+	uintmax_t size = file_get_size(filename);
 	if(size == static_cast<uintmax_t>(-1))
 		return 0;
 	return size;

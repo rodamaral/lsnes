@@ -4,14 +4,8 @@
 #include "string.hpp"
 #include "minmax.hpp"
 #include "zip.hpp"
-#include <boost/filesystem.hpp>
+#include "directory.hpp"
 #include <sstream>
-
-#ifdef BOOST_FILESYSTEM3
-namespace boost_fs = boost::filesystem3;
-#else
-namespace boost_fs = boost::filesystem;
-#endif
 
 namespace
 {
@@ -40,7 +34,7 @@ namespace
 	{
 		std::string cache = filename + ".sha256";
 		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
-		time_t filetime = boost_fs::last_write_time(boost_fs::path(filename));
+		time_t filetime = file_get_mtime(filename);
 		if(cached_entries.count(cache)) {
 			//Found the cache entry...
 			if(cached_entries[cache].first == filetime)
@@ -81,7 +75,7 @@ namespace
 	{
 		std::string cache = filename + ".sha256";
 		if(prefixlen) cache += (stringfmt() << "-" << prefixlen).str();
-		time_t filetime = boost_fs::last_write_time(boost_fs::path(filename));
+		time_t filetime = file_get_mtime(filename);
 		std::ofstream out(cache);
 		cached_entries[cache] = std::make_pair(filetime, value);
 		if(!out)
@@ -93,7 +87,7 @@ namespace
 
 	uint64_t get_file_size(const std::string& filename)
 	{
-		uintmax_t size = boost_fs::file_size(boost_fs::path(filename));
+		uintmax_t size = file_get_size(filename);
 		if(size == static_cast<uintmax_t>(-1))
 			return 0;
 		return size;
@@ -489,7 +483,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 
 	if(info.type == info::IT_FILE) {
 		filename = resolve_file_relative(_filename, base);
-		filename = boost_fs::absolute(boost_fs::path(filename)).string();
+		filename = get_absolute_path(filename);
 		type = info::IT_FILE;
 		data.reset(new std::vector<char>(filename.begin(), filename.end()));
 		stripped = 0;
