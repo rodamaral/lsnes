@@ -1674,7 +1674,7 @@ out:
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = false;
 		});
-	inverse_bind itangent(lsnes_mapper, "+tangent", "Movie‣Voice tangent");
+	keyboard::invbind itangent(lsnes_mapper, "+tangent", "Movie‣Voice tangent");
 	inthread_th* int_task;
 }
 

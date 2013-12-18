@@ -579,13 +579,13 @@ namespace
 		emulation_thread->join();
 	}
 
-	keyboard_mouse_calibration mouse_cal = {0};
-	keyboard_key_mouse mouse_x(lsnes_kbd, "mouse_x", "mouse", mouse_cal);
-	keyboard_key_mouse mouse_y(lsnes_kbd, "mouse_y", "mouse", mouse_cal);
-	keyboard_key_key mouse_l(lsnes_kbd, "mouse_left", "mouse");
-	keyboard_key_key mouse_m(lsnes_kbd, "mouse_center", "mouse");
-	keyboard_key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
-	keyboard_key_key mouse_i(lsnes_kbd, "mouse_inwindow", "mouse");
+	keyboard::mouse_calibration mouse_cal = {0};
+	keyboard::key_mouse mouse_x(lsnes_kbd, "mouse_x", "mouse", mouse_cal);
+	keyboard::key_mouse mouse_y(lsnes_kbd, "mouse_y", "mouse", mouse_cal);
+	keyboard::key_key mouse_l(lsnes_kbd, "mouse_left", "mouse");
+	keyboard::key_key mouse_m(lsnes_kbd, "mouse_center", "mouse");
+	keyboard::key_key mouse_r(lsnes_kbd, "mouse_right", "mouse");
+	keyboard::key_key mouse_i(lsnes_kbd, "mouse_inwindow", "mouse");
 
 	std::pair<double, double> calc_scale_factors(double factor, bool ar,
 		double par)
@@ -605,24 +605,24 @@ namespace
 	{
 		auto sfactors = calc_scale_factors(video_scale_factor, arcorrect_enabled,
 			(our_rom.rtype) ? our_rom.rtype->get_PAR() : 1.0);
-		platform::queue(keypress(keyboard_modifier_set(), mouse_x, e.GetX() / sfactors.first));
-		platform::queue(keypress(keyboard_modifier_set(), mouse_y, e.GetY() / sfactors.second));
+		platform::queue(keypress(keyboard::modifier_set(), mouse_x, e.GetX() / sfactors.first));
+		platform::queue(keypress(keyboard::modifier_set(), mouse_y, e.GetY() / sfactors.second));
 		if(e.Entering())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_i, 1));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_i, 1));
 		if(e.Leaving())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_i, 0));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_i, 0));
 		if(e.LeftDown())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_l, 1));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_l, 1));
 		if(e.LeftUp())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_l, 0));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_l, 0));
 		if(e.MiddleDown())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_m, 1));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_m, 1));
 		if(e.MiddleUp())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_m, 0));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_m, 0));
 		if(e.RightDown())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_r, 1));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_r, 1));
 		if(e.RightUp())
-			platform::queue(keypress(keyboard_modifier_set(), mouse_r, 0));
+			platform::queue(keypress(keyboard::modifier_set(), mouse_r, 0));
 	}
 
 	bool is_readonly_mode()

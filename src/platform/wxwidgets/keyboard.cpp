@@ -20,7 +20,7 @@ namespace
 		int mod;
 		const char* name;
 		const char* lname;
-		keyboard_modifier* allocated;
+		keyboard::modifier* allocated;
 	} modifiers[] = {
 		{ wxMOD_ALT, "alt", NULL, NULL },
 		{ wxMOD_CONTROL, "ctrl", NULL, NULL },
@@ -37,7 +37,7 @@ namespace
 		int keynum;
 		const char* name;
 		const char* clazz;
-		keyboard_key_key* allocated;
+		keyboard::key_key* allocated;
 	} keys[] = {
 		{ WXK_BACK, "back", "editing", NULL },
 		{ WXK_TAB, "tab", "editing", NULL },
@@ -259,20 +259,20 @@ namespace
 		{ 0, NULL, NULL, NULL }
 	};
 
-	std::map<int, keyboard_modifier*> modifier_map;
-	std::map<int, keyboard_key_key*> key_map;
+	std::map<int, keyboard::modifier*> modifier_map;
+	std::map<int, keyboard::key_key*> key_map;
 	std::map<std::string, int> keys_allocated;
 	std::set<int> keys_held;
 
 	struct keypress_request
 	{
-		keyboard_modifier_set mods;
-		keyboard_key_key* key;
+		keyboard::modifier_set mods;
+		keyboard::key_key* key;
 		bool polarity;
 	};
 
 	//Request keypress event to happen.
-	void do_keypress(keyboard_modifier_set mods, keyboard_key_key& key, bool polarity)
+	void do_keypress(keyboard::modifier_set mods, keyboard::key_key& key, bool polarity)
 	{
 		struct keypress_request* req = new keypress_request;
 		req->mods = mods;
@@ -307,7 +307,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 		else
 			wx_escape_count = 0;
 	}
-	keyboard_modifier_set mset;
+	keyboard::modifier_set mset;
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if((mods & m->mod) == m->mod) {
@@ -324,7 +324,7 @@ void handle_wx_keyboard(wxKeyEvent& e, bool polarity)
 	} else
 		keys_held.erase(keyc);
 	key_entry* k = keys;
-	keyboard_key_key* grp = NULL;
+	keyboard::key_key* grp = NULL;
 	while(k->name) {
 		if(k->keynum == keyc) {
 			grp = k->allocated;
@@ -345,16 +345,16 @@ void initialize_wx_keyboard()
 	modifier_entry* m = modifiers;
 	while(m->name) {
 		if(m->lname)
-			m->allocated = new keyboard_modifier(lsnes_kbd, m->name, m->lname);
+			m->allocated = new keyboard::modifier(lsnes_kbd, m->name, m->lname);
 		else
-			m->allocated = new keyboard_modifier(lsnes_kbd, m->name);
+			m->allocated = new keyboard::modifier(lsnes_kbd, m->name);
 		modifier_map[m->mod] = m->allocated;
 		m++;
 	}
 	key_entry* k = keys;
 	while(k->name) {
 		if(!keys_allocated.count(k->name)) {
-			k->allocated = new keyboard_key_key(lsnes_kbd, k->name, k->clazz);
+			k->allocated = new keyboard::key_key(lsnes_kbd, k->name, k->clazz);
 			key_map[k->keynum] = k->allocated;
 			keys_allocated[k->name] = k->keynum;
 		} else

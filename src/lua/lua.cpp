@@ -56,27 +56,27 @@ namespace
 	}
 }
 
-void push_keygroup_parameters(lua_state& L, keyboard_key& p)
+void push_keygroup_parameters(lua_state& L, keyboard::key& p)
 {
-	keyboard_mouse_calibration p2;
-	keyboard_axis_calibration p3;
+	keyboard::mouse_calibration p2;
+	keyboard::axis_calibration p3;
 	int mode;
 	L.newtable();
 	switch(p.get_type()) {
-	case KBD_KEYTYPE_KEY:
+	case keyboard::KBD_KEYTYPE_KEY:
 		pushpair(L, "value", p.get_state());
 		pushpair(L, "type", "key");
 		break;
-	case KBD_KEYTYPE_HAT:
+	case keyboard::KBD_KEYTYPE_HAT:
 		pushpair(L, "value", p.get_state());
 		pushpair(L, "type", "hat");
 		break;
-	case KBD_KEYTYPE_MOUSE:
+	case keyboard::KBD_KEYTYPE_MOUSE:
 		p2 = p.cast_mouse()->get_calibration();
 		pushpair(L, "value", p.get_state());
 		pushpair(L, "type", "mouse");
 		break;
-	case KBD_KEYTYPE_AXIS:
+	case keyboard::KBD_KEYTYPE_AXIS:
 		mode = p.cast_axis()->get_mode();
 		pushpair(L, "value", p.get_state());
 		pushpair(L, "type", get_mode_str(mode));
@@ -90,7 +90,7 @@ bool lua_booted_flag = false;
 
 namespace
 {
-	int push_keygroup_parameters2(lua_state& L, keyboard_key* p)
+	int push_keygroup_parameters2(lua_state& L, keyboard::key* p)
 	{
 		push_keygroup_parameters(L, *p);
 		return 1;
@@ -428,7 +428,7 @@ void lua_callback_quit() throw()
 	run_callback(on_quit);
 }
 
-void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw()
+void lua_callback_keyhook(const std::string& key, keyboard::key& p) throw()
 {
 	run_callback(on_keyhook, lua_state::string_tag(key), lua_state::fnptr_tag(push_keygroup_parameters2, &p));
 }

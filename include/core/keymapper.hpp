@@ -10,17 +10,17 @@
 #include <iostream>
 #include "misc.hpp"
 #include "library/keyboard.hpp"
-#include "library/keymapper.hpp"
+#include "library/keyboard-mapper.hpp"
 #include "library/joystick2.hpp"
 
 /**
  * Our keyboard
  */
-extern keyboard lsnes_kbd;
+extern keyboard::keyboard lsnes_kbd;
 /**
  * Our key mapper.
  */
-extern keyboard_mapper lsnes_mapper;
+extern keyboard::mapper lsnes_mapper;
 
 /**
  * Gamepad HW.

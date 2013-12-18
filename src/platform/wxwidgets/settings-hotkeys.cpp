@@ -28,7 +28,7 @@ namespace
 		wxButton* sec_button;
 		std::map<string_list<char>, wxTreeItemId> items;
 		std::map<string_list<char>, std::string> names;
-		std::map<string_list<char>, inverse_bind*> realitems;
+		std::map<string_list<char>, keyboard::invbind*> realitems;
 		void refresh();
 		string_list<char> get_selection();
 		wxTreeItemId get_item(const string_list<char>& i);
@@ -112,7 +112,7 @@ namespace
 			return;
 		}
 		try {
-			inverse_bind* ik = realitems[sel];
+			keyboard::invbind* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
@@ -142,13 +142,13 @@ namespace
 			return;
 		}
 		try {
-			inverse_bind* ik = realitems[sel];
+			keyboard::invbind* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
 			}
 			std::vector<wxString> dropchoices;
-			key_specifier tmp;
+			keyboard::keyspec tmp;
 			unsigned idx = 0;
 			while((tmp = (std::string)ik->get(idx++)))
 				dropchoices.push_back(towxstring(clean_keystring(tmp)));
@@ -181,7 +181,7 @@ namespace
 			string_list<char> sel = get_selection();
 			if(!realitems.count(sel))
 				return;
-			inverse_bind* ik = realitems[sel];
+			keyboard::invbind* ik = realitems[sel];
 			if(!ik)
 				return;
 			ik->clear(e.GetId() - wxID_DROPKEY);
@@ -196,7 +196,7 @@ namespace
 		string_list<char> sel = get_selection();
 		if(!realitems.count(sel))
 			return;
-		inverse_bind* ik = realitems[sel];
+		keyboard::invbind* ik = realitems[sel];
 		if(!ik)
 			return;
 
@@ -206,7 +206,7 @@ namespace
 		menu.Append(wxID_ADDKEY, towxstring("Add new key"));
 		bool first = true;
 		unsigned idx = 0;
-		key_specifier tmp;
+		keyboard::keyspec tmp;
 		while((tmp = ik->get(idx++))) {
 			if(first)
 				menu.AppendSeparator();
@@ -220,14 +220,14 @@ namespace
 	{
 		if(closing())
 			return;
-		std::map<inverse_bind*, std::list<key_specifier>> data;
+		std::map<keyboard::invbind*, std::list<keyboard::keyspec>> data;
 		realitems.clear();
 		auto x = lsnes_mapper.get_inverses();
 		for(auto y : x) {
 			string_list<char> key = split_on_codepoint(y->getname(), U'\u2023');
 			names[key] = y->getname();
 			realitems[key] = y;
-			key_specifier tmp;
+			keyboard::keyspec tmp;
 			unsigned idx = 0;
 			while((tmp = y->get(idx++)))
 				data[y].push_back(tmp);

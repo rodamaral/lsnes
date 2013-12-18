@@ -184,9 +184,9 @@ namespace
 		return 1;
 	});
 
-	class _keyhook_listener : public keyboard_event_listener
+	class _keyhook_listener : public keyboard::event_listener
 	{
-		void on_key_event(keyboard_modifier_set& modifiers, keyboard_key& key, keyboard_event& event)
+		void on_key_event(keyboard::modifier_set& modifiers, keyboard::key& key, keyboard::event& event)
 		{
 			lua_callback_keyhook(key.get_name(), key);
 		}
@@ -197,7 +197,7 @@ namespace
 		bool state;
 		std::string x = L.get_string(1, fname.c_str());
 		state = L.get_bool(2, fname.c_str());
-		keyboard_key* key = lsnes_kbd.try_lookup_key(x);
+		keyboard::key* key = lsnes_kbd.try_lookup_key(x);
 		if(!key)
 			throw std::runtime_error("Invalid key name");
 		bool ostate = hooked.count(x) > 0;

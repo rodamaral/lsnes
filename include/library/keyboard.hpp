@@ -9,11 +9,13 @@
 #include <vector>
 #include <list>
 
-class keyboard_modifier;
-class keyboard_key;
-class keyboard_key_axis;
-class keyboard_key_mouse;
-class keyboard_event_listener;
+namespace keyboard
+{
+class modifier;
+class key;
+class key_axis;
+class key_mouse;
+class event_listener;
 
 /**
  * A group of modifiers and keys.
@@ -43,7 +45,7 @@ public:
 	struct _modifier_proxy
 	{
 		_modifier_proxy(keyboard& kbd) : _kbd(kbd) {}
-		void do_register(const std::string& name, keyboard_modifier& mod)
+		void do_register(const std::string& name, modifier& mod)
 		{
 			_kbd.do_register_modifier(name, mod);
 		}
@@ -64,7 +66,7 @@ public:
 	struct _key_proxy
 	{
 		_key_proxy(keyboard& kbd) : _kbd(kbd) {}
-		void do_register(const std::string& name, keyboard_key& key)
+		void do_register(const std::string& name, key& key)
 		{
 			_kbd.do_register_key(name, key);
 		}
@@ -82,27 +84,27 @@ public:
  * Returns: The modifier.
  * Throws std::runtime_error: No such modifier.
  */
-	keyboard_modifier& lookup_modifier(const std::string& name) throw(std::runtime_error);
+	modifier& lookup_modifier(const std::string& name) throw(std::runtime_error);
 /**
  * Try lookup modifier by name.
  *
  * Parameter name: The name of the modifier.
  * Returns: The modifier, or NULL if not found.
  */
-	keyboard_modifier* try_lookup_modifier(const std::string& name) throw();
+	modifier* try_lookup_modifier(const std::string& name) throw();
 /**
  * Look up all modifiers.
  *
  * Returns: The set of modifiers.
  */
-	std::list<keyboard_modifier*> all_modifiers() throw(std::bad_alloc);
+	std::list<modifier*> all_modifiers() throw(std::bad_alloc);
 /**
  * Register a modifier.
  *
  * Parameter name: The name of the modifier.
  * Parameter mod: The modifier.
  */
-	void do_register_modifier(const std::string& name, keyboard_modifier& mod) throw(std::bad_alloc);
+	void do_register_modifier(const std::string& name, modifier& mod) throw(std::bad_alloc);
 /**
  * Unregister a modifier.
  *
@@ -116,27 +118,27 @@ public:
  * Returns: The key.
  * Throws std::runtime_error: No such key.
  */
-	keyboard_key& lookup_key(const std::string& name) throw(std::runtime_error);
+	key& lookup_key(const std::string& name) throw(std::runtime_error);
 /**
  * Try lookup key by name.
  *
  * Parameter name: The name of the key.
  * Returns: The key, or NULL if not found.
  */
-	keyboard_key* try_lookup_key(const std::string& name) throw();
+	key* try_lookup_key(const std::string& name) throw();
 /**
  * Look up all keys.
  *
  * Returns: The set of keys.
  */
-	std::list<keyboard_key*> all_keys() throw(std::bad_alloc);
+	std::list<key*> all_keys() throw(std::bad_alloc);
 /**
  * Register a key.
  *
  * Parameter name: The name of the key.
  * Parameter mod: The key.
  */
-	void do_register_key(const std::string& name, keyboard_key& mod) throw(std::bad_alloc);
+	void do_register_key(const std::string& name, key& mod) throw(std::bad_alloc);
 /**
  * Unregister a key.
  *
@@ -146,28 +148,28 @@ public:
 /**
  * Set exclusive listener for all keys at once.
  */
-	void set_exclusive(keyboard_event_listener* listener) throw();
+	void set_exclusive(event_listener* listener) throw();
 /**
  * Set current key.
  */
-	void set_current_key(keyboard_key* key) throw();
+	void set_current_key(key* key) throw();
 /**
  * Get current key.
  */
-	keyboard_key* get_current_key() throw();
+	key* get_current_key() throw();
 private:
 	keyboard(const keyboard&);
 	keyboard& operator=(const keyboard&);
-	std::map<std::string, keyboard_modifier*> modifiers;
-	std::map<std::string, keyboard_key*> keys;
+	std::map<std::string, modifier*> modifiers;
+	std::map<std::string, key*> keys;
 	mutex_class mutex;
-	keyboard_key* current_key;
+	key* current_key;
 };
 
 /**
  * A modifier or group of modifiers.
  */
-class keyboard_modifier
+class modifier
 {
 public:
 /**
@@ -176,10 +178,10 @@ public:
  * Parameter keyb: The keyboard these will be on.
  * Parameter _name: The name of the modifier.
  */
-	keyboard_modifier(keyboard& keyb, const std::string& _name) throw(std::bad_alloc)
+	modifier(keyboard& keyb, const std::string& _name) throw(std::bad_alloc)
 		: kbd(keyb), name(_name)
 	{
-		register_queue<keyboard::_modifier_proxy, keyboard_modifier>::do_register(kbd.modifier_proxy, name,
+		register_queue<keyboard::_modifier_proxy, modifier>::do_register(kbd.modifier_proxy, name,
 			*this);
 	}
 /**
@@ -189,18 +191,18 @@ public:
  * Parameter _name: The name of the modifier.
  * Parameter _link: The name of the modifier group this is in.
  */
-	keyboard_modifier(keyboard& keyb, const std::string& _name, const std::string& _link) throw(std::bad_alloc)
+	modifier(keyboard& keyb, const std::string& _name, const std::string& _link) throw(std::bad_alloc)
 		: kbd(keyb), name(_name), link(_link)
 	{
-		register_queue<keyboard::_modifier_proxy, keyboard_modifier>::do_register(kbd.modifier_proxy, name,
+		register_queue<keyboard::_modifier_proxy, modifier>::do_register(kbd.modifier_proxy, name,
 			*this);
 	}
 /**
  * Destructor.
  */
-	~keyboard_modifier() throw()
+	~modifier() throw()
 	{
-		register_queue<keyboard::_modifier_proxy, keyboard_modifier>::do_unregister(kbd.modifier_proxy, name);
+		register_queue<keyboard::_modifier_proxy, modifier>::do_unregister(kbd.modifier_proxy, name);
 	}
 /**
  * Get associated keyboard.
@@ -221,7 +223,7 @@ public:
  *
  * Returns: The linked modifier, or NULL if none (or not initialized yet).
  */
-	keyboard_modifier* get_link() { return kbd.try_lookup_modifier(link); }
+	modifier* get_link() { return kbd.try_lookup_modifier(link); }
 private:
 	keyboard& kbd;
 	std::string name;
@@ -231,7 +233,7 @@ private:
 /**
  * A set of modifier keys.
  */
-class keyboard_modifier_set
+class modifier_set
 {
 public:
 /**
@@ -241,7 +243,7 @@ public:
  * parameter really: If true, actually add the key. If false, do nothing.
  * throws std::bad_alloc: Not enough memory.
  */
-	void add(keyboard_modifier& mod, bool really = true) throw(std::bad_alloc);
+	void add(modifier& mod, bool really = true) throw(std::bad_alloc);
 /**
  * Remove a modifier from the set.
  *
@@ -249,7 +251,7 @@ public:
  * parameter really: If true, actually remove the key. If false, do nothing.
  * throws std::bad_alloc: Not enough memory.
  */
-	void remove(keyboard_modifier& mod, bool really = true) throw(std::bad_alloc);
+	void remove(modifier& mod, bool really = true) throw(std::bad_alloc);
 /**
  * Construct modifier set from comma-separated string.
  *
@@ -259,7 +261,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Illegal modifier or wrong syntax.
  */
-	static keyboard_modifier_set construct(keyboard& kbd, const std::string& modifiers) throw(std::bad_alloc,
+	static modifier_set construct(keyboard& kbd, const std::string& modifiers) throw(std::bad_alloc,
 		std::runtime_error);
 /**
  * Check modifier against its mask for validity.
@@ -272,7 +274,7 @@ public:
  * returns: True if set is valid, false if not.
  * throws std::bad_alloc: Not enough memory.
  */
-	bool valid(keyboard_modifier_set& mask) throw(std::bad_alloc);
+	bool valid(modifier_set& mask) throw(std::bad_alloc);
 /**
  * Check if this modifier set triggers the action.
  *
@@ -282,7 +284,7 @@ public:
  * - Modifiers with this linkage group do not appear in either set nor trigger.
  *
  */
-	bool triggers(const keyboard_modifier_set& trigger, const keyboard_modifier_set& mask) throw(std::bad_alloc);
+	bool triggers(const modifier_set& trigger, const modifier_set& mask) throw(std::bad_alloc);
 /**
  * Stringify.
  */
@@ -293,14 +295,14 @@ public:
  * parameter m: Another set.
  * returns: True if two sets are equal, false if not.
  */
-	bool operator==(const keyboard_modifier_set& m) const throw();
+	bool operator==(const modifier_set& m) const throw();
 /**
  * Less than check.
  */
-	bool operator<(const keyboard_modifier_set& m) const throw();
+	bool operator<(const modifier_set& m) const throw();
 private:
-	friend std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m);
-	std::set<keyboard_modifier*> set;
+	friend std::ostream& operator<<(std::ostream& os, const modifier_set& m);
+	std::set<modifier*> set;
 };
 
 /**
@@ -310,12 +312,12 @@ private:
  * parameter m: The modifier set to print.
  * returns: reference to os.
  */
-std::ostream&  operator<<(std::ostream& os, const keyboard_modifier_set& m);
+std::ostream&  operator<<(std::ostream& os, const modifier_set& m);
 
 /**
  * Type of key.
  */
-enum keyboard_keytype
+enum keytype
 {
 /**
  * A simple key (pressed/released)
@@ -338,7 +340,7 @@ enum keyboard_keytype
 /**
  * Joystick axis calibration structure.
  */
-struct keyboard_axis_calibration
+struct axis_calibration
 {
 /**
  * Mode: -1 => Disabled, 0 => Pressure-sentive button, 1 => Axis.
@@ -349,7 +351,7 @@ struct keyboard_axis_calibration
 /**
  * Mouse axis calibration structure.
  */
-struct keyboard_mouse_calibration
+struct mouse_calibration
 {
 /**
  * The offset from left of screen area to left of game area.
@@ -364,7 +366,7 @@ struct keyboard_mouse_calibration
 /**
  * Superclass of key event data.
  */
-class keyboard_event
+class event
 {
 public:
 /**
@@ -373,7 +375,7 @@ public:
  * Parameter _chngmask: The change mask.
  * Parameter _type: Type of the event.
  */
-	keyboard_event(uint32_t _chngmask, keyboard_keytype _type) throw()
+	event(uint32_t _chngmask, keytype _type) throw()
 	{
 		chngmask = _chngmask;
 		type = _type;
@@ -381,7 +383,7 @@ public:
 /**
  * Destructor.
  */
-	virtual ~keyboard_event() throw();
+	virtual ~event() throw();
 /**
  * Get analog state. The format is dependent on key type.
  */
@@ -395,16 +397,16 @@ public:
 /**
  * Get type of event.
  */
-	keyboard_keytype get_type() const throw() { return type; }
+	keytype get_type() const throw() { return type; }
 private:
 	uint32_t chngmask;
-	keyboard_keytype type;
+	keytype type;
 };
 
 /**
  * A simple key event.
  */
-class keyboard_event_key : public keyboard_event
+class event_key : public event
 {
 public:
 /**
@@ -412,11 +414,11 @@ public:
  *
  * Parameter chngmask: The change mask.
  */
-	keyboard_event_key(uint32_t chngmask);
+	event_key(uint32_t chngmask);
 /**
  * Destructor.
  */
-	~keyboard_event_key() throw();
+	~event_key() throw();
 /**
  * Get analog state.
  *
@@ -430,7 +432,7 @@ private:
 /**
  * An axis event.
  */
-class keyboard_event_axis : public keyboard_event
+class event_axis : public event
 {
 public:
 /**
@@ -440,11 +442,11 @@ public:
  * Parameter chngmask: The change mask.
  * Parameter cal: The calibration structure.
  */
-	keyboard_event_axis(int32_t state, uint32_t chngmask);
+	event_axis(int32_t state, uint32_t chngmask);
 /**
  * Destructor.
  */
-	~keyboard_event_axis() throw();
+	~event_axis() throw();
 /**
  * Get analog state.
  *
@@ -453,13 +455,13 @@ public:
 	int32_t get_state() const throw();
 private:
 	int32_t state;
-	keyboard_axis_calibration cal;
+	axis_calibration cal;
 };
 
 /**
  * A hat event.
  */
-class keyboard_event_hat : public keyboard_event
+class event_hat : public event
 {
 public:
 /**
@@ -467,11 +469,11 @@ public:
  *
  * Parameter chngmask: The change mask to use.
  */
-	keyboard_event_hat(uint32_t chngmask);
+	event_hat(uint32_t chngmask);
 /**
  * Destructor.
  */
-	~keyboard_event_hat() throw();
+	~event_hat() throw();
 /**
  * Get analog state.
  *
@@ -483,7 +485,7 @@ public:
 /**
  * A mouse event.
  */
-class keyboard_event_mouse : public keyboard_event
+class event_mouse : public event
 {
 public:
 /**
@@ -492,11 +494,11 @@ public:
  * Parameter state: The game-relative position to use.
  * Parameter cal: The calibration structure.
  */
-	keyboard_event_mouse(int32_t state, const keyboard_mouse_calibration& cal);
+	event_mouse(int32_t state, const mouse_calibration& cal);
 /**
  * Destructor.
  */
-	~keyboard_event_mouse() throw();
+	~event_mouse() throw();
 /**
  * Get analog state.
  *
@@ -506,22 +508,22 @@ public:
 /**
  * Get calibration data.
  */
-	keyboard_mouse_calibration get_calibration() { return cal; }
+	mouse_calibration get_calibration() { return cal; }
 private:
 	int32_t state;
-	keyboard_mouse_calibration cal;
+	mouse_calibration cal;
 };
 
 /**
  * A keyboard event listener.
  */
-class keyboard_event_listener
+class event_listener
 {
 public:
 /**
  * Destructor.
  */
-	virtual ~keyboard_event_listener() throw();
+	virtual ~event_listener() throw();
 /**
  * Receive a key event.
  *
@@ -529,13 +531,13 @@ public:
  * Parameter key: The key this event is about.
  * Parameter event: The event.
  */
-	virtual void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event) = 0;
+	virtual void on_key_event(modifier_set& mods, key& key, event& event) = 0;
 };
 
 /**
  * A (compound) key on keyboard.
  */
-class keyboard_key
+class key
 {
 public:
 /**
@@ -546,12 +548,12 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter type: The type of key.
  */
-	keyboard_key(keyboard& keyb, const std::string& name, const std::string& clazz, keyboard_keytype type)
+	key(keyboard& keyb, const std::string& name, const std::string& clazz, keytype type)
 		throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	virtual ~keyboard_key() throw();
+	virtual ~key() throw();
 /**
  * Get class.
  */
@@ -567,33 +569,33 @@ public:
 /**
  * Get key type.
  */
-	keyboard_keytype get_type() const throw() { return type; }
+	keytype get_type() const throw() { return type; }
 /**
  * Add listener.
  *
  * Parameter listener: The listener.
  * Parameter analog: If true, also pass analog events.
  */
-	void add_listener(keyboard_event_listener& listener, bool analog) throw(std::bad_alloc);
+	void add_listener(event_listener& listener, bool analog) throw(std::bad_alloc);
 /**
  * Remove listener.
  *
  * Parameter listener: The listener.
  */
-	void remove_listener(keyboard_event_listener& listener) throw();
+	void remove_listener(event_listener& listener) throw();
 /**
  * Set exclusive listener.
  *
  * Parameter listener: The listener. NULL to ungrab key.
  */
-	void set_exclusive(keyboard_event_listener* listener) throw();
+	void set_exclusive(event_listener* listener) throw();
 /**
  * Set analog state.
  *
  * Parameter mods: The current modifiers.
  * Parameter state: The new state. The format is dependent on key type.
  */
-	virtual void set_state(keyboard_modifier_set mods, int32_t state) throw() = 0;
+	virtual void set_state(modifier_set mods, int32_t state) throw() = 0;
 /**
  * Get analog state. The format is dependent on key type.
  */
@@ -609,11 +611,11 @@ public:
 /**
  * Dynamic cast to axis type.
  */
-	keyboard_key_axis* cast_axis() throw();
+	key_axis* cast_axis() throw();
 /**
  * Dynamic cast to mouse type.
  */
-	keyboard_key_mouse* cast_mouse() throw();
+	key_mouse* cast_mouse() throw();
 protected:
 /**
  * Call all event listeners on this key.
@@ -621,27 +623,27 @@ protected:
  * Parameter mods: The current modifiers.
  * Parameter event: The event to pass.
  */
-	void call_listeners(keyboard_modifier_set& mods, keyboard_event& event);
+	void call_listeners(modifier_set& mods, event& event);
 /**
  * Mutex protecting state.
  */
 	mutable mutex_class mutex;
 private:
-	keyboard_key(keyboard_key&);
-	keyboard_key& operator=(keyboard_key&);
+	key(key&);
+	key& operator=(key&);
 	keyboard& kbd;
 	std::string clazz;
 	std::string name;
-	std::set<keyboard_event_listener*> digital_listeners;
-	std::set<keyboard_event_listener*> analog_listeners;
-	keyboard_event_listener* exclusive_listener;
-	keyboard_keytype type;
+	std::set<event_listener*> digital_listeners;
+	std::set<event_listener*> analog_listeners;
+	event_listener* exclusive_listener;
+	keytype type;
 };
 
 /**
  * A simple key on keyboard.
  */
-class keyboard_key_key : public keyboard_key
+class key_key : public key
 {
 public:
 /**
@@ -651,18 +653,18 @@ public:
  * Parameter name: The base name of the key.
  * Parameter clazz: The class of the key.
  */
-	keyboard_key_key(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
+	key_key(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~keyboard_key_key() throw();
+	~key_key() throw();
 /**
  * Set analog state.
  *
  * Parameter mods: The current modifiers.
  * Parameter state: The new state. 1 for pressed, 0 for released.
  */
-	void set_state(keyboard_modifier_set mods, int32_t state) throw();
+	void set_state(modifier_set mods, int32_t state) throw();
 /**
  * Get analog state. 1 for pressed, 0 for released.
  */
@@ -676,15 +678,15 @@ public:
  */
 	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
 private:
-	keyboard_key_key(keyboard_key_key&);
-	keyboard_key_key& operator=(keyboard_key_key&);
+	key_key(key_key&);
+	key_key& operator=(key_key&);
 	int32_t state;
 };
 
 /**
  * A hat on keyboard.
  */
-class keyboard_key_hat : public keyboard_key
+class key_hat : public key
 {
 public:
 /**
@@ -694,18 +696,18 @@ public:
  * Parameter name: The base name of the key.
  * Parameter clazz: The class of the key.
  */
-	keyboard_key_hat(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
+	key_hat(keyboard& keyb, const std::string& name, const std::string& clazz) throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~keyboard_key_hat() throw();
+	~key_hat() throw();
 /**
  * Set analog state.
  *
  * Parameter mods: The current modifiers.
  * Parameter state: The new state. 1 => up, 2 => right, 4 => down, 8 => left.
  */
-	void set_state(keyboard_modifier_set mods, int32_t state) throw();
+	void set_state(modifier_set mods, int32_t state) throw();
 /**
  * Get analog state. 1 => up, 2 => right, 4 => down, 8 => left.
  */
@@ -719,15 +721,15 @@ public:
  */
 	std::vector<std::string> get_subkeys() throw(std::bad_alloc);
 private:
-	keyboard_key_hat(keyboard_key_hat&);
-	keyboard_key_hat& operator=(keyboard_key_hat&);
+	key_hat(key_hat&);
+	key_hat& operator=(key_hat&);
 	int32_t state;
 };
 
 /**
  * An axis on keyboard.
  */
-class keyboard_key_axis : public keyboard_key
+class key_axis : public key
 {
 public:
 /**
@@ -738,19 +740,19 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter mode: Initial mode: -1 => disabled, 0 => axis, 1 => pressure
  */
-	keyboard_key_axis(keyboard& keyb, const std::string& name, const std::string& clazz, int mode)
+	key_axis(keyboard& keyb, const std::string& name, const std::string& clazz, int mode)
 		throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~keyboard_key_axis() throw();
+	~key_axis() throw();
 /**
  * Set analog state.
  *
  * Parameter mods: The current modifiers.
  * Parameter state: The new state. Uncalibrated analog position.
  */
-	void set_state(keyboard_modifier_set mods, int32_t state) throw();
+	void set_state(modifier_set mods, int32_t state) throw();
 /**
  * Get analog state. -32767...32767 for axes, 0...32767 for pressure-sensitive buttons.
  */
@@ -772,8 +774,8 @@ public:
  */
 	void set_mode(int mode, double tolerance) throw();
 private:
-	keyboard_key_axis(keyboard_key_axis&);
-	keyboard_key_axis& operator=(keyboard_key_axis&);
+	key_axis(key_axis&);
+	key_axis& operator=(key_axis&);
 	int32_t rawstate;
 	int digitalstate;
 	double last_tolerance;
@@ -783,7 +785,7 @@ private:
 /**
  * A mouse axis on keyboard.
  */
-class keyboard_key_mouse : public keyboard_key
+class key_mouse : public key
 {
 public:
 /**
@@ -794,19 +796,19 @@ public:
  * Parameter clazz: The class of the key.
  * Parameter cal: Initial calibration.
  */
-	keyboard_key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,
-		keyboard_mouse_calibration cal) throw(std::bad_alloc);
+	key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,
+		mouse_calibration cal) throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~keyboard_key_mouse() throw();
+	~key_mouse() throw();
 /**
  * Set analog state.
  *
  * Parameter mods: The current modifiers.
  * Parameter state: The new state. Screen-relative analog position.
  */
-	void set_state(keyboard_modifier_set mods, int32_t state) throw();
+	void set_state(modifier_set mods, int32_t state) throw();
 /**
  * Get analog state. Game-relative analog position.
  */
@@ -822,16 +824,16 @@ public:
 /**
  * Get calibration.
  */
-	keyboard_mouse_calibration get_calibration() const throw();
+	mouse_calibration get_calibration() const throw();
 /**
  * Set calibration.
  */
-	void set_calibration(keyboard_mouse_calibration cal) throw();
+	void set_calibration(mouse_calibration cal) throw();
 private:
-	keyboard_key_mouse(keyboard_key_mouse&);
-	keyboard_key_mouse& operator=(keyboard_key_mouse&);
+	key_mouse(key_mouse&);
+	key_mouse& operator=(key_mouse&);
 	int32_t rawstate;
-	keyboard_mouse_calibration cal;
+	mouse_calibration cal;
 };
-
+}
 #endif

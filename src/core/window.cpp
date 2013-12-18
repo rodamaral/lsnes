@@ -42,7 +42,7 @@ keypress::keypress()
 	value = 0;
 }
 
-keypress::keypress(keyboard_modifier_set mod, keyboard_key& _key, short _value)
+keypress::keypress(keyboard::modifier_set mod, keyboard::key& _key, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;
@@ -50,7 +50,7 @@ keypress::keypress(keyboard_modifier_set mod, keyboard_key& _key, short _value)
 	value = _value;
 }
 
-keypress::keypress(keyboard_modifier_set mod, keyboard_key& _key, keyboard_key& _key2, short _value)
+keypress::keypress(keyboard::modifier_set mod, keyboard::key& _key, keyboard::key& _key2, short _value)
 {
 	modifiers = mod;
 	key1 = &_key;
@@ -90,8 +90,8 @@ namespace
 			}
 		});
 
-	inverse_bind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
-	inverse_bind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
+	keyboard::invbind ienable_sound(lsnes_mapper, "enable-sound on", "Sound‣Enable");
+	keyboard::invbind idisable_sound(lsnes_mapper, "enable-sound off", "Sound‣Disable");
 
 	emulator_status emustatus;
 

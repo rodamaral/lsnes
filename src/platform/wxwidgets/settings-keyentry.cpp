@@ -106,8 +106,8 @@ void press_button_dialog::dismiss_with(const std::string& _k)
 				if(lch == '+' || lch == '-')
 					k = k.substr(0, k.length() - 1);
 			}
-			keyboard_key& key = lsnes_kbd.lookup_key(k);
-			if(key.get_type() != KBD_KEYTYPE_AXIS)
+			keyboard::key& key = lsnes_kbd.lookup_key(k);
+			if(key.get_type() != keyboard::KBD_KEYTYPE_AXIS)
 				return;
 		} catch(...) {
 			return;
@@ -127,8 +127,8 @@ key_entry_dialog::key_entry_dialog(wxWindow* parent, const std::string& title, c
 	wxString boxchoices[] = { wxT("Released"), wxT("Don't care"), wxT("Pressed") };
 	std::vector<wxString> classeslist;
 	wxString emptystring;
-	std::list<keyboard_modifier*> mods;
-	std::list<keyboard_key*> keys;
+	std::list<keyboard::modifier*> mods;
+	std::list<keyboard::key*> keys;
 
 	wtitle = title;
 

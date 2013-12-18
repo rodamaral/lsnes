@@ -1,7 +1,9 @@
 #include "keyboard.hpp"
 #include <iostream>
 
-void keyboard::do_register_modifier(const std::string& name, keyboard_modifier& mod) throw(std::bad_alloc)
+namespace keyboard
+{
+void keyboard::do_register_modifier(const std::string& name, modifier& mod) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	modifiers[name] = &mod;
@@ -13,15 +15,15 @@ void keyboard::do_unregister_modifier(const std::string& name) throw()
 	modifiers.erase(name);
 }
 
-keyboard_modifier& keyboard::lookup_modifier(const std::string& name) throw(std::runtime_error)
+modifier& keyboard::lookup_modifier(const std::string& name) throw(std::runtime_error)
 {
-	keyboard_modifier* m = try_lookup_modifier(name);
+	modifier* m = try_lookup_modifier(name);
 	if(!m)
 		throw std::runtime_error("No such modifier");
 	return *m;
 }
 
-keyboard_modifier* keyboard::try_lookup_modifier(const std::string& name) throw()
+modifier* keyboard::try_lookup_modifier(const std::string& name) throw()
 {
 	umutex_class u(mutex);
 	if(!modifiers.count(name))
@@ -29,16 +31,16 @@ keyboard_modifier* keyboard::try_lookup_modifier(const std::string& name) throw(
 	return modifiers[name];
 }
 
-std::list<keyboard_modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
+std::list<modifier*> keyboard::all_modifiers() throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
-	std::list<keyboard_modifier*> r;
+	std::list<modifier*> r;
 	for(auto i : modifiers)
 		r.push_back(i.second);
 	return r;
 }
 
-void keyboard::do_register_key(const std::string& name, keyboard_key& key) throw(std::bad_alloc)
+void keyboard::do_register_key(const std::string& name, key& key) throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	keys[name] = &key;
@@ -50,15 +52,15 @@ void keyboard::do_unregister_key(const std::string& name) throw()
 	keys.erase(name);
 }
 
-keyboard_key& keyboard::lookup_key(const std::string& name) throw(std::runtime_error)
+key& keyboard::lookup_key(const std::string& name) throw(std::runtime_error)
 {
-	keyboard_key* m = try_lookup_key(name);
+	key* m = try_lookup_key(name);
 	if(!m)
 		throw std::runtime_error("No such key");
 	return *m;
 }
 
-keyboard_key* keyboard::try_lookup_key(const std::string& name) throw()
+key* keyboard::try_lookup_key(const std::string& name) throw()
 {
 	umutex_class u(mutex);
 	if(!keys.count(name))
@@ -66,29 +68,29 @@ keyboard_key* keyboard::try_lookup_key(const std::string& name) throw()
 	return keys[name];
 }
 
-std::list<keyboard_key*> keyboard::all_keys() throw(std::bad_alloc)
+std::list<key*> keyboard::all_keys() throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
-	std::list<keyboard_key*> r;
+	std::list<key*> r;
 	for(auto i : keys)
 		r.push_back(i.second);
 	return r;
 }
 
-void keyboard::set_exclusive(keyboard_event_listener* listener) throw()
+void keyboard::set_exclusive(event_listener* listener) throw()
 {
 	umutex_class u(mutex);
 	for(auto i : keys)
 		i.second->set_exclusive(listener);
 }
 
-void keyboard::set_current_key(keyboard_key* key) throw()
+void keyboard::set_current_key(key* key) throw()
 {
 	umutex_class u(mutex);
 	current_key = key;
 }
 
-keyboard_key* keyboard::get_current_key() throw()
+key* keyboard::get_current_key() throw()
 {
 	umutex_class u(mutex);
 	return current_key;
@@ -97,32 +99,32 @@ keyboard_key* keyboard::get_current_key() throw()
 keyboard::keyboard() throw(std::bad_alloc)
 	: modifier_proxy(*this), key_proxy(*this)
 {
-	register_queue<keyboard::_modifier_proxy, keyboard_modifier>::do_ready(modifier_proxy, true);
-	register_queue<keyboard::_key_proxy, keyboard_key>::do_ready(key_proxy, true);
+	register_queue<keyboard::_modifier_proxy, modifier>::do_ready(modifier_proxy, true);
+	register_queue<keyboard::_key_proxy, key>::do_ready(key_proxy, true);
 }
 
 keyboard::~keyboard() throw()
 {
-	register_queue<keyboard::_modifier_proxy, keyboard_modifier>::do_ready(modifier_proxy, false);
-	register_queue<keyboard::_key_proxy, keyboard_key>::do_ready(key_proxy, false);
+	register_queue<keyboard::_modifier_proxy, modifier>::do_ready(modifier_proxy, false);
+	register_queue<keyboard::_key_proxy, key>::do_ready(key_proxy, false);
 }
 
-void keyboard_modifier_set::add(keyboard_modifier& mod, bool really) throw(std::bad_alloc)
+void modifier_set::add(modifier& mod, bool really) throw(std::bad_alloc)
 {
 	if(really)
 		set.insert(&mod);
 }
 
-void keyboard_modifier_set::remove(keyboard_modifier& mod, bool really) throw(std::bad_alloc)
+void modifier_set::remove(modifier& mod, bool really) throw(std::bad_alloc)
 {
 	if(really)
 		set.erase(&mod);
 }
 
-keyboard_modifier_set keyboard_modifier_set::construct(keyboard& kbd, const std::string& _modifiers)
+modifier_set modifier_set::construct(keyboard& kbd, const std::string& _modifiers)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	keyboard_modifier_set set;
+	modifier_set set;
 	std::string modifiers = _modifiers;
 	while(modifiers != "") {
 		std::string mod = modifiers;
@@ -138,29 +140,29 @@ keyboard_modifier_set keyboard_modifier_set::construct(keyboard& kbd, const std:
 	return set;
 }
 
-bool keyboard_modifier_set::valid(keyboard_modifier_set& mask) throw(std::bad_alloc)
+bool modifier_set::valid(modifier_set& mask) throw(std::bad_alloc)
 {
 	//No element can be together with its linkage group.
 	for(auto i : set) {
-		keyboard_modifier* j = i->get_link();
+		modifier* j = i->get_link();
 		if(j && set.count(j))
 			return false;
 	}
 	for(auto i : mask.set) {
-		keyboard_modifier* j = i->get_link();
+		modifier* j = i->get_link();
 		if(j && mask.set.count(j))
 			return false;
 	}
 	//For every element of set, it or its linkage group must be in mask.
 	for(auto i : set) {
-		keyboard_modifier* j = i->get_link();
+		modifier* j = i->get_link();
 		if(!mask.set.count(i) && !mask.set.count(j ? j : i))
 			return false;
 	}
 	return true;
 }
 
-bool keyboard_modifier_set::operator==(const keyboard_modifier_set& m) const throw()
+bool modifier_set::operator==(const modifier_set& m) const throw()
 {
 	for(auto i : set)
 		if(!m.set.count(i))
@@ -171,7 +173,7 @@ bool keyboard_modifier_set::operator==(const keyboard_modifier_set& m) const thr
 	return true;
 }
 
-bool keyboard_modifier_set::operator<(const keyboard_modifier_set& m) const throw()
+bool modifier_set::operator<(const modifier_set& m) const throw()
 {
 	auto i1 = set.begin();
 	auto i2 = m.set.begin();
@@ -184,7 +186,7 @@ bool keyboard_modifier_set::operator<(const keyboard_modifier_set& m) const thro
 	return (i2 != m.set.end());
 }
 
-keyboard_modifier_set::operator std::string() const throw(std::bad_alloc)
+modifier_set::operator std::string() const throw(std::bad_alloc)
 {
 	std::string r;
 	for(auto i : set)
@@ -192,7 +194,7 @@ keyboard_modifier_set::operator std::string() const throw(std::bad_alloc)
 	return r;
 }
 
-std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m)
+std::ostream& operator<<(std::ostream& os, const modifier_set& m)
 {
 	os << "<modset:";
 	for(auto i : m.set)
@@ -201,7 +203,7 @@ std::ostream& operator<<(std::ostream& os, const keyboard_modifier_set& m)
 	return os;
 }
 
-bool keyboard_modifier_set::triggers(const keyboard_modifier_set& trigger, const keyboard_modifier_set& mask)
+bool modifier_set::triggers(const modifier_set& trigger, const modifier_set& mask)
 	throw(std::bad_alloc)
 {
 	for(auto i : mask.set) {
@@ -241,51 +243,51 @@ bool keyboard_modifier_set::triggers(const keyboard_modifier_set& trigger, const
 	return true;
 }
 
-int32_t keyboard_mouse_calibration::get_calibrated_value(int32_t x) const throw()
+int32_t mouse_calibration::get_calibrated_value(int32_t x) const throw()
 {
 	return x - offset;
 }
 
-keyboard_event::~keyboard_event() throw() {}
-keyboard_event_key::~keyboard_event_key() throw() {}
-keyboard_event_axis::~keyboard_event_axis() throw() {}
-keyboard_event_hat::~keyboard_event_hat() throw() {}
-keyboard_event_mouse::~keyboard_event_mouse() throw() {}
-keyboard_event_listener::~keyboard_event_listener() throw() {}
+event::~event() throw() {}
+event_key::~event_key() throw() {}
+event_axis::~event_axis() throw() {}
+event_hat::~event_hat() throw() {}
+event_mouse::~event_mouse() throw() {}
+event_listener::~event_listener() throw() {}
 
-keyboard_key::~keyboard_key() throw()
+key::~key() throw()
 {
-	register_queue<keyboard::_key_proxy, keyboard_key>::do_unregister(kbd.key_proxy, name);
+	register_queue<keyboard::_key_proxy, key>::do_unregister(kbd.key_proxy, name);
 }
 
-keyboard_event_key::keyboard_event_key(uint32_t chngmask)
-	: keyboard_event(chngmask, keyboard_keytype::KBD_KEYTYPE_KEY)
+event_key::event_key(uint32_t chngmask)
+	: event(chngmask, keytype::KBD_KEYTYPE_KEY)
 {
 }
 
-keyboard_event_axis::keyboard_event_axis(int32_t _state, uint32_t chngmask)
-	: keyboard_event(chngmask, keyboard_keytype::KBD_KEYTYPE_AXIS)
+event_axis::event_axis(int32_t _state, uint32_t chngmask)
+	: event(chngmask, keytype::KBD_KEYTYPE_AXIS)
 {
 	state = _state;
 }
 
-keyboard_event_hat::keyboard_event_hat(uint32_t chngmask)
-	: keyboard_event(chngmask, keyboard_keytype::KBD_KEYTYPE_HAT)
+event_hat::event_hat(uint32_t chngmask)
+	: event(chngmask, keytype::KBD_KEYTYPE_HAT)
 {
 }
 
-keyboard_event_mouse::keyboard_event_mouse(int32_t _state, const keyboard_mouse_calibration& _cal)
-	: keyboard_event(0, keyboard_keytype::KBD_KEYTYPE_MOUSE)
+event_mouse::event_mouse(int32_t _state, const mouse_calibration& _cal)
+	: event(0, keytype::KBD_KEYTYPE_MOUSE)
 {
 	state = _state;
 	cal = _cal;
 }
 
-int32_t keyboard_event_key::get_state() const throw() { return (get_change_mask() & 1) != 0; }
-int32_t keyboard_event_axis::get_state() const throw() { return state; }
-int32_t keyboard_event_mouse::get_state() const throw() { return state; }
+int32_t event_key::get_state() const throw() { return (get_change_mask() & 1) != 0; }
+int32_t event_axis::get_state() const throw() { return state; }
+int32_t event_mouse::get_state() const throw() { return state; }
 
-int32_t keyboard_event_hat::get_state() const throw()
+int32_t event_hat::get_state() const throw()
 {
 	int32_t r = 0;
 	uint32_t m = get_change_mask();
@@ -296,15 +298,15 @@ int32_t keyboard_event_hat::get_state() const throw()
 	return m;
 }
 
-keyboard_key::keyboard_key(keyboard& keyb, const std::string& _name, const std::string& _clazz,
-	keyboard_keytype _type) throw(std::bad_alloc)
+key::key(keyboard& keyb, const std::string& _name, const std::string& _clazz,
+	keytype _type) throw(std::bad_alloc)
 	:  kbd(keyb), clazz(_clazz), name(_name), type(_type)
 {
 	exclusive_listener = NULL;
-	register_queue<keyboard::_key_proxy, keyboard_key>::do_register(kbd.key_proxy, name, *this);
+	register_queue<keyboard::_key_proxy, key>::do_register(kbd.key_proxy, name, *this);
 }
 
-void keyboard_key::add_listener(keyboard_event_listener& listener, bool analog) throw(std::bad_alloc)
+void key::add_listener(event_listener& listener, bool analog) throw(std::bad_alloc)
 {
 	if(analog) {
 		analog_listeners.insert(&listener);
@@ -314,19 +316,19 @@ void keyboard_key::add_listener(keyboard_event_listener& listener, bool analog) 
 		analog_listeners.erase(&listener);
 	}
 }
-void keyboard_key::remove_listener(keyboard_event_listener& listener) throw()
+void key::remove_listener(event_listener& listener) throw()
 {
 	digital_listeners.erase(&listener);
 	analog_listeners.erase(&listener);
 }
 
-void keyboard_key::set_exclusive(keyboard_event_listener* listener) throw()
+void key::set_exclusive(event_listener* listener) throw()
 {
 	umutex_class u(mutex);
 	exclusive_listener = listener;
 }
 
-void keyboard_key::call_listeners(keyboard_modifier_set& mods, keyboard_event& event)
+void key::call_listeners(modifier_set& mods, event& event)
 {
 	kbd.set_current_key(this);
 	bool digital = (event.get_change_mask() & 0xAAAAAAAAUL) != 0;
@@ -337,7 +339,7 @@ void keyboard_key::call_listeners(keyboard_modifier_set& mods, keyboard_event& e
 		kbd.set_current_key(NULL);
 		return;
 	}
-	keyboard_event_listener* itr = NULL;
+	event_listener* itr = NULL;
 	while(digital) {
 		auto itr2 = digital_listeners.upper_bound(itr);
 		if(itr2 == digital_listeners.end())
@@ -361,30 +363,30 @@ void keyboard_key::call_listeners(keyboard_modifier_set& mods, keyboard_event& e
 	kbd.set_current_key(NULL);
 }
 
-keyboard_key_axis* keyboard_key::cast_axis() throw()
+key_axis* key::cast_axis() throw()
 {
 	if(type != KBD_KEYTYPE_AXIS)
 		return NULL;
-	return dynamic_cast<keyboard_key_axis*>(this);
+	return dynamic_cast<key_axis*>(this);
 }
 
-keyboard_key_mouse* keyboard_key::cast_mouse() throw()
+key_mouse* key::cast_mouse() throw()
 {
 	if(type != KBD_KEYTYPE_MOUSE)
 		return NULL;
-	return dynamic_cast<keyboard_key_mouse*>(this);
+	return dynamic_cast<key_mouse*>(this);
 }
 
-keyboard_key_key::keyboard_key_key(keyboard& keyb, const std::string& name, const std::string& clazz)
+key_key::key_key(keyboard& keyb, const std::string& name, const std::string& clazz)
 	throw(std::bad_alloc)
-	: keyboard_key(keyb, name, clazz, keyboard_keytype::KBD_KEYTYPE_KEY)
+	: key(keyb, name, clazz, keytype::KBD_KEYTYPE_KEY)
 {
 	state = 0;
 }
 
-keyboard_key_key::~keyboard_key_key() throw() {}
+key_key::~key_key() throw() {}
 
-void keyboard_key_key::set_state(keyboard_modifier_set mods, int32_t _state) throw()
+void key_key::set_state(modifier_set mods, int32_t _state) throw()
 {
 	uint32_t change = _state ? 1 : 0;
 	bool edge = false;
@@ -396,30 +398,30 @@ void keyboard_key_key::set_state(keyboard_modifier_set mods, int32_t _state) thr
 	}
 	mutex.unlock();
 	if(edge) {
-		keyboard_event_key e(change);
+		event_key e(change);
 		call_listeners(mods, e);
 	}
 }
 
-int32_t keyboard_key_key::get_state() const throw() { return state; }
-int32_t keyboard_key_key::get_state_digital() const throw() { return state; }
+int32_t key_key::get_state() const throw() { return state; }
+int32_t key_key::get_state_digital() const throw() { return state; }
 
-std::vector<std::string> keyboard_key_key::get_subkeys() throw(std::bad_alloc)
+std::vector<std::string> key_key::get_subkeys() throw(std::bad_alloc)
 {
 	std::vector<std::string> r;
 	r.push_back("");
 	return r;
 }
 
-keyboard_key_hat::keyboard_key_hat(keyboard& keyb, const std::string& name, const std::string& clazz)
+key_hat::key_hat(keyboard& keyb, const std::string& name, const std::string& clazz)
 	throw(std::bad_alloc)
-	: keyboard_key(keyb, name, clazz, keyboard_keytype::KBD_KEYTYPE_HAT)
+	: key(keyb, name, clazz, keytype::KBD_KEYTYPE_HAT)
 {
 	state = 0;
 }
-keyboard_key_hat::~keyboard_key_hat() throw() {}
+key_hat::~key_hat() throw() {}
 
-void keyboard_key_hat::set_state(keyboard_modifier_set mods, int32_t _state) throw()
+void key_hat::set_state(modifier_set mods, int32_t _state) throw()
 {
 	state &= 15;
 	uint32_t change = 0;
@@ -440,15 +442,15 @@ void keyboard_key_hat::set_state(keyboard_modifier_set mods, int32_t _state) thr
 	}
 	mutex.unlock();
 	if(edge) {
-		keyboard_event_hat e(change);
+		event_hat e(change);
 		call_listeners(mods, e);
 	}
 }
 
-int32_t keyboard_key_hat::get_state() const throw() { return state; }
-int32_t keyboard_key_hat::get_state_digital() const throw() { return state; }
+int32_t key_hat::get_state() const throw() { return state; }
+int32_t key_hat::get_state_digital() const throw() { return state; }
 
-std::vector<std::string> keyboard_key_hat::get_subkeys() throw(std::bad_alloc)
+std::vector<std::string> key_hat::get_subkeys() throw(std::bad_alloc)
 {
 	std::vector<std::string> r;
 	r.push_back("n");
@@ -458,24 +460,24 @@ std::vector<std::string> keyboard_key_hat::get_subkeys() throw(std::bad_alloc)
 	return r;
 }
 
-keyboard_key_axis::keyboard_key_axis(keyboard& keyb, const std::string& name, const std::string& clazz,
+key_axis::key_axis(keyboard& keyb, const std::string& name, const std::string& clazz,
 	int mode) throw(std::bad_alloc)
-	: keyboard_key(keyb, name, clazz, keyboard_keytype::KBD_KEYTYPE_AXIS)
+	: key(keyb, name, clazz, keytype::KBD_KEYTYPE_AXIS)
 {
 	rawstate = 0;
 	digitalstate = 0;
 	last_tolerance = 0.5;
 	_mode = mode;
 }
-keyboard_key_axis::~keyboard_key_axis() throw() {}
+key_axis::~key_axis() throw() {}
 
-int32_t keyboard_key_axis::get_state() const throw()
+int32_t key_axis::get_state() const throw()
 {
 	umutex_class u(mutex);
 	return rawstate;
 }
 
-int32_t keyboard_key_axis::get_state_digital() const throw()
+int32_t key_axis::get_state_digital() const throw()
 {
 	umutex_class u(mutex);
 	if(rawstate <= -32768 * last_tolerance)
@@ -485,13 +487,13 @@ int32_t keyboard_key_axis::get_state_digital() const throw()
 	return 0;
 }
 
-int keyboard_key_axis::get_mode() const throw()
+int key_axis::get_mode() const throw()
 {
 	umutex_class u(mutex);
 	return _mode;
 }
 
-std::vector<std::string> keyboard_key_axis::get_subkeys() throw(std::bad_alloc)
+std::vector<std::string> key_axis::get_subkeys() throw(std::bad_alloc)
 {
 	umutex_class u(mutex);
 	std::vector<std::string> r;
@@ -504,7 +506,7 @@ std::vector<std::string> keyboard_key_axis::get_subkeys() throw(std::bad_alloc)
 	return r;
 }
 
-void keyboard_key_axis::set_state(keyboard_modifier_set mods, int32_t _rawstate) throw()
+void key_axis::set_state(modifier_set mods, int32_t _rawstate) throw()
 {
 	bool edge = false;
 	int32_t state, ostate;
@@ -533,52 +535,52 @@ void keyboard_key_axis::set_state(keyboard_modifier_set mods, int32_t _rawstate)
 	}
 	mutex.unlock();
 	if(edge) {
-		keyboard_event_axis e(state, change);
+		event_axis e(state, change);
 		call_listeners(mods, e);
 	}
 }
 
-void keyboard_key_axis::set_mode(int mode, double tolerance) throw()
+void key_axis::set_mode(int mode, double tolerance) throw()
 {
 	umutex_class u(mutex);
 	_mode = mode;
 	last_tolerance = tolerance;
 }
 
-keyboard_key_mouse::keyboard_key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,
-	keyboard_mouse_calibration _cal) throw(std::bad_alloc)
-	: keyboard_key(keyb, name, clazz, keyboard_keytype::KBD_KEYTYPE_MOUSE)
+key_mouse::key_mouse(keyboard& keyb, const std::string& name, const std::string& clazz,
+	mouse_calibration _cal) throw(std::bad_alloc)
+	: key(keyb, name, clazz, keytype::KBD_KEYTYPE_MOUSE)
 {
 	rawstate = 0;
 	cal = _cal;
 }
 
-keyboard_key_mouse::~keyboard_key_mouse() throw() {}
-int32_t keyboard_key_mouse::get_state_digital() const throw() { return 0; }
+key_mouse::~key_mouse() throw() {}
+int32_t key_mouse::get_state_digital() const throw() { return 0; }
 
-int32_t keyboard_key_mouse::get_state() const throw()
+int32_t key_mouse::get_state() const throw()
 {
 	umutex_class u(mutex);
 	return cal.get_calibrated_value(rawstate);
 }
 
-std::vector<std::string> keyboard_key_mouse::get_subkeys() throw(std::bad_alloc)
+std::vector<std::string> key_mouse::get_subkeys() throw(std::bad_alloc)
 {
 	return std::vector<std::string>();
 }
 
-keyboard_mouse_calibration keyboard_key_mouse::get_calibration() const throw()
+mouse_calibration key_mouse::get_calibration() const throw()
 {
 	umutex_class u(mutex);
-	keyboard_mouse_calibration tmp = cal;
+	mouse_calibration tmp = cal;
 	return tmp;
 }
 
-void keyboard_key_mouse::set_state(keyboard_modifier_set mods, int32_t _rawstate) throw()
+void key_mouse::set_state(modifier_set mods, int32_t _rawstate) throw()
 {
 	bool edge = false;
 	int32_t state;
-	keyboard_mouse_calibration _cal;
+	mouse_calibration _cal;
 	mutex.lock();
 	if(rawstate != _rawstate) {
 		rawstate = _rawstate;
@@ -588,18 +590,19 @@ void keyboard_key_mouse::set_state(keyboard_modifier_set mods, int32_t _rawstate
 	}
 	mutex.unlock();
 	if(edge) {
-		keyboard_event_mouse e(state, _cal);
+		event_mouse e(state, _cal);
 		call_listeners(mods, e);
 	}
 }
 
-void keyboard_key_mouse::set_calibration(keyboard_mouse_calibration _cal) throw()
+void key_mouse::set_calibration(mouse_calibration _cal) throw()
 {
 	mutex.lock();
 	cal = _cal;
 	int32_t state = cal.get_calibrated_value(rawstate);
 	mutex.unlock();
-	keyboard_event_mouse e(state, _cal);
-	keyboard_modifier_set mods;
+	event_mouse e(state, _cal);
+	modifier_set mods;
 	call_listeners(mods, e);
+}
 }

@@ -214,15 +214,15 @@ void render_framebuffer()
 	ri.rq.run(main_screen);
 	notify_set_screen(main_screen);
 	//We would want divide by 2, but we'll do it ourselves in order to do mouse.
-	keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
-	keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
-	keyboard_mouse_calibration xcal;
-	keyboard_mouse_calibration ycal;
+	keyboard::key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
+	keyboard::key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
+	keyboard::mouse_calibration xcal;
+	keyboard::mouse_calibration ycal;
 	xcal.offset = ri.lgap;
 	ycal.offset = ri.tgap;
-	if(mouse_x && mouse_x->get_type() == KBD_KEYTYPE_MOUSE)
+	if(mouse_x && mouse_x->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
 		mouse_x->cast_mouse()->set_calibration(xcal);
-	if(mouse_y && mouse_y->get_type() == KBD_KEYTYPE_MOUSE)
+	if(mouse_y && mouse_y->get_type() == keyboard::KBD_KEYTYPE_MOUSE)
 		mouse_y->cast_mouse()->set_calibration(ycal);
 	buffering.end_read();
 }

@@ -1,5 +1,5 @@
-#ifndef _library__keymapper__hpp__included__
-#define _library__keymapper__hpp__included__
+#ifndef _library__keyboard_mapper__hpp__included__
+#define _library__keyboard_mapper__hpp__included__
 
 #include "command.hpp"
 #include <set>
@@ -8,27 +8,29 @@
 #include <string>
 #include "keyboard.hpp"
 
-class inverse_bind;
-class controller_key;
+namespace keyboard
+{
+class invbind;
+class ctrlrkey;
 
-std::pair<keyboard_key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name, bool axis)
-	throw(std::bad_alloc, std::runtime_error);
+std::pair<key*, unsigned> keymapper_lookup_subkey(keyboard& kbd, const std::string& name,
+	bool axis) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Key specifier
  */
-struct key_specifier
+struct keyspec
 {
 /**
  * Create a new key specifier (invalid).
  */
-	key_specifier() throw(std::bad_alloc);
+	keyspec() throw(std::bad_alloc);
 /**
  * Create a new key specifier from keyspec.
  *
  * Parameter keyspec: The key specifier.
  */
-	key_specifier(const std::string& keyspec) throw(std::bad_alloc, std::runtime_error);
+	keyspec(const std::string& keyspec) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get the key specifier as a keyspec.
  */
@@ -48,11 +50,11 @@ struct key_specifier
 /**
  * Compare for equality.
  */
-	bool operator==(const key_specifier& keyspec);
+	bool operator==(const keyspec& keyspec);
 /**
  * Compare for not-equality.
  */
-	bool operator!=(const key_specifier& keyspec);
+	bool operator!=(const keyspec& keyspec);
 /**
  * The modifier.
  */
@@ -71,17 +73,17 @@ struct key_specifier
 /**
  * Keyboard mapper. Maps keyboard keys into commands.
  */
-class keyboard_mapper : public keyboard_event_listener
+class mapper : public event_listener
 {
 public:
 /**
  * Create new keyboard mapper.
  */
-	keyboard_mapper(keyboard& kbd, command::group& domain) throw(std::bad_alloc);
+	mapper(keyboard& kbd, command::group& domain) throw(std::bad_alloc);
 /**
  * Destroy a keyboard mapper.
  */
-	~keyboard_mapper() throw();
+	~mapper() throw();
 /**
  * Binds a key, erroring out if binding would conflict with existing one.
  *
@@ -110,52 +112,52 @@ public:
  *
  * Returns: The set of keyspecs that are bound.
  */
-	std::list<key_specifier> get_bindings() throw(std::bad_alloc);
+	std::list<keyspec> get_bindings() throw(std::bad_alloc);
 /**
  * Get command for key.
  */
-	std::string get(const key_specifier& keyspec) throw(std::bad_alloc);
+	std::string get(const keyspec& keyspec) throw(std::bad_alloc);
 /**
  * Bind command for key.
  *
  * Parameter keyspec: The key specifier to bind to.
  * Parameter cmd: The command to bind. If "", the key is unbound.
  */
-	void set(const key_specifier& keyspec, const std::string& cmd) throw(std::bad_alloc, std::runtime_error);
+	void set(const keyspec& keyspec, const std::string& cmd) throw(std::bad_alloc, std::runtime_error);
 /**
  * Get set of inverse binds.
  *
  * Returns: The set of all inverses.
  */
-	std::set<inverse_bind*> get_inverses() throw(std::bad_alloc);
+	std::set<invbind*> get_inverses() throw(std::bad_alloc);
 /**
  * Find inverse bind by command.
  *
  * Parameter command: The command.
  * Returns: The inverse bind, or NULL if none.
  */
-	inverse_bind* get_inverse(const std::string& command) throw(std::bad_alloc);
+	invbind* get_inverse(const std::string& command) throw(std::bad_alloc);
 /**
  * Get set of controller keys.
  *
  * Returns: The set of all controller keys.
  */
-	std::set<controller_key*> get_controller_keys() throw(std::bad_alloc);
+	std::set<ctrlrkey*> get_controller_keys() throw(std::bad_alloc);
 /**
  * Get specific controller key.
  */
-	controller_key* get_controllerkey(const std::string& command) throw(std::bad_alloc);
+	ctrlrkey* get_controllerkey(const std::string& command) throw(std::bad_alloc);
 /**
  * Get list of controller keys for specific keyboard key.
  */
-	std::list<controller_key*> get_controllerkeys_kbdkey(keyboard_key* kbdkey) throw(std::bad_alloc);
+	std::list<ctrlrkey*> get_controllerkeys_kbdkey(key* kbdkey) throw(std::bad_alloc);
 /**
  * Proxy for inverse bind registrations.
  */
 	struct _inverse_proxy
 	{
-		_inverse_proxy(keyboard_mapper& mapper) : _mapper(mapper) {}
-		void do_register(const std::string& name, inverse_bind& ibind)
+		_inverse_proxy(mapper& mapper) : _mapper(mapper) {}
+		void do_register(const std::string& name, invbind& ibind)
 		{
 			_mapper.do_register_inverse(name, ibind);
 		}
@@ -164,15 +166,15 @@ public:
 			_mapper.do_unregister_inverse(name);
 		}
 	private:
-		keyboard_mapper& _mapper;
+		mapper& _mapper;
 	} inverse_proxy;
 /**
  * Proxy for controller key registrations.
  */
 	struct _controllerkey_proxy
 	{
-		_controllerkey_proxy(keyboard_mapper& mapper) : _mapper(mapper) {}
-		void do_register(const std::string& name, controller_key& ckey)
+		_controllerkey_proxy(mapper& mapper) : _mapper(mapper) {}
+		void do_register(const std::string& name, ctrlrkey& ckey)
 		{
 			_mapper.do_register_ckey(name, ckey);
 		}
@@ -181,12 +183,12 @@ public:
 			_mapper.do_unregister_ckey(name);
 		}
 	private:
-		keyboard_mapper& _mapper;
+		mapper& _mapper;
 	} controllerkey_proxy;
 /**
  * Register inverse bind.
  */
-	void do_register_inverse(const std::string& name, inverse_bind& bind) throw(std::bad_alloc);
+	void do_register_inverse(const std::string& name, invbind& bind) throw(std::bad_alloc);
 /**
  * Unregister inverse bind.
  */
@@ -194,7 +196,7 @@ public:
 /**
  * Register controller key.
  */
-	void do_register_ckey(const std::string& name, controller_key& ckey) throw(std::bad_alloc);
+	void do_register_ckey(const std::string& name, ctrlrkey& ckey) throw(std::bad_alloc);
 /**
  * Unregister inverse bind.
  */
@@ -218,31 +220,31 @@ public:
 private:
 	struct triplet
 	{
-		triplet(keyboard_modifier_set mod, keyboard_modifier_set mask, keyboard_key& key, unsigned subkey);
-		triplet(keyboard_key& key, unsigned subkey);
-		triplet(keyboard& k, const key_specifier& spec);
+		triplet(modifier_set mod, modifier_set mask, key& kkey, unsigned subkey);
+		triplet(key& kkey, unsigned subkey);
+		triplet(keyboard& k, const keyspec& spec);
 		bool operator<(const struct triplet& a) const;
 		bool operator==(const struct triplet& a) const;
 		bool operator<=(const struct triplet& a) const { return !(a > *this); }
 		bool operator!=(const struct triplet& a) const { return !(a == *this); }
 		bool operator>=(const struct triplet& a) const { return !(a < *this); }
 		bool operator>(const struct triplet& a) const { return (a < *this); }
-		key_specifier as_keyspec() const throw(std::bad_alloc);
+		keyspec as_keyspec() const throw(std::bad_alloc);
 		bool index;
-		keyboard_modifier_set mod;
-		keyboard_modifier_set mask;
-		keyboard_key* key;
+		modifier_set mod;
+		modifier_set mask;
+		key* _key;
 		unsigned subkey;
 	};
-	void change_command(const key_specifier& spec, const std::string& old, const std::string& newc);
-	void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event);
-	void on_key_event_subkey(keyboard_modifier_set& mods, keyboard_key& key, unsigned skey, bool polarity);
-	keyboard_mapper(const keyboard_mapper&);
-	keyboard_mapper& operator=(const keyboard_mapper&);
-	std::map<std::string, inverse_bind*> ibinds;
-	std::map<std::string, controller_key*> ckeys;
+	void change_command(const keyspec& spec, const std::string& old, const std::string& newc);
+	void on_key_event(modifier_set& mods, key& key, event& event);
+	void on_key_event_subkey(modifier_set& mods, key& key, unsigned skey, bool polarity);
+	mapper(const mapper&);
+	mapper& operator=(const mapper&);
+	std::map<std::string, invbind*> ibinds;
+	std::map<std::string, ctrlrkey*> ckeys;
 	std::map<triplet, std::string> bindings;
-	std::set<keyboard_key*> listening;
+	std::set<key*> listening;
 	keyboard& kbd;
 	command::group& domain;
 	mutex_class mutex;
@@ -251,7 +253,7 @@ private:
 /**
  * Inverse bind. Can map up to 2 keys to some command (and follows forward binds).
  */
-class inverse_bind
+class invbind
 {
 public:
 /**
@@ -261,19 +263,19 @@ public:
  * Parameter command: Command this is for.
  * Parameter name: Name of inverse key.
  */
-	inverse_bind(keyboard_mapper& mapper, const std::string& command, const std::string& name)
+	invbind(mapper& kmapper, const std::string& command, const std::string& name)
 		throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~inverse_bind() throw();
+	~invbind() throw();
 /**
  * Get keyspec.
  *
  * Parameter index: Index of the keyspec to get.
  * Returns: The keyspec.
  */
-	key_specifier get(unsigned index) throw(std::bad_alloc);
+	keyspec get(unsigned index) throw(std::bad_alloc);
 /**
  * Clear key (subsequent keys fill the gap).
  *
@@ -285,7 +287,7 @@ public:
  *
  * Parameter keyspec: The new keyspec.
  */
-	void append(const key_specifier& keyspec) throw(std::bad_alloc);
+	void append(const keyspec& keyspec) throw(std::bad_alloc);
 /**
  * Get name for command.
  *
@@ -293,14 +295,14 @@ public:
  */
 	std::string getname() throw(std::bad_alloc);
 private:
-	friend class keyboard_mapper;
-	inverse_bind(const inverse_bind&);
-	inverse_bind& operator=(const inverse_bind&);
-	void addkey(const key_specifier& keyspec);
-	keyboard_mapper& mapper;
+	friend class mapper;
+	invbind(const invbind&);
+	invbind& operator=(const invbind&);
+	void addkey(const keyspec& keyspec);
+	mapper& _mapper;
 	std::string cmd;
 	std::string oname;
-	std::vector<key_specifier> specs;
+	std::vector<keyspec> specs;
 	mutex_class mutex;
 };
 
@@ -309,7 +311,7 @@ private:
  *
  * Can overlap with any other bind.
  */
-class controller_key : public keyboard_event_listener
+class ctrlrkey : public event_listener
 {
 public:
 /**
@@ -320,16 +322,16 @@ public:
  * Parameter name: Name of controller key.
  * Parameter axis: If true, create a axis-type key.
  */
-	controller_key(keyboard_mapper& mapper, const std::string& command, const std::string& name,
+	ctrlrkey(mapper& kmapper, const std::string& command, const std::string& name,
 		bool axis = false) throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~controller_key() throw();
+	~ctrlrkey() throw();
 /**
  * Get the trigger key.
  */
-	std::pair<keyboard_key*, unsigned> get(unsigned index) throw();
+	std::pair<key*, unsigned> get(unsigned index) throw();
 /**
  * Get the trigger key.
  */
@@ -337,7 +339,7 @@ public:
 /**
  * Set the trigger key (appends).
  */
-	void append(keyboard_key* key, unsigned subkey) throw();
+	void append(key* key, unsigned subkey) throw();
 /**
  * Set the trigger key (appends).
  */
@@ -345,7 +347,7 @@ public:
 /**
  * Remove the trigger key.
  */
-	void remove(keyboard_key* key, unsigned subkey) throw();
+	void remove(key* key, unsigned subkey) throw();
 /**
  * Get the command.
  */
@@ -359,13 +361,14 @@ public:
  */
 	bool is_axis() const throw() { return axis; }
 private:
-	void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event);
-	keyboard_mapper& mapper;
+	void on_key_event(modifier_set& mods, key& key, event& event);
+	mapper& _mapper;
 	std::string cmd;
 	std::string oname;
-	std::vector<std::pair<keyboard_key*, unsigned>> keys;
+	std::vector<std::pair<key*, unsigned>> keys;
 	bool axis;
 	mutex_class mutex;
 };
+}
 
 #endif

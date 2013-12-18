@@ -198,8 +198,8 @@ namespace
 			update_movie_state();
 		});
 
-	inverse_bind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
-	inverse_bind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
+	keyboard::invbind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
+	keyboard::invbind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
 
 	function_ptr_luafun mtlua(lua_func_misc, "input.multitrack_state", [](lua_state& L, const std::string& fname)
 		-> int {

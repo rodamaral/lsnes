@@ -12,7 +12,7 @@ public:
 		return ikey.getname();
 	}
 private:
-	inverse_bind ikey;
+	keyboard::invbind ikey;
 };
 
 class lua_command_binding : public command::base

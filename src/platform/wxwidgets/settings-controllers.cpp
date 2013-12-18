@@ -25,7 +25,7 @@ namespace
 		wxTreeCtrl* controls;
 		std::map<string_list<char>, wxTreeItemId> items;
 		std::map<string_list<char>, std::string> names;
-		std::map<string_list<char>, controller_key*> realitems;
+		std::map<string_list<char>, keyboard::ctrlrkey*> realitems;
 		wxButton* set_button;
 		wxButton* clear_button;
 		void refresh();
@@ -114,7 +114,7 @@ namespace
 			return;
 		}
 		try {
-			controller_key* ik = realitems[sel];
+			keyboard::ctrlrkey* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
@@ -143,7 +143,7 @@ namespace
 			return;
 		}
 		try {
-			controller_key* ik = realitems[sel];
+			keyboard::ctrlrkey* ik = realitems[sel];
 			if(!ik) {
 				refresh();
 				return;
@@ -187,7 +187,7 @@ namespace
 			string_list<char> sel = get_selection();
 			if(!realitems.count(sel))
 				return;
-			controller_key* ik = realitems[sel];
+			keyboard::ctrlrkey* ik = realitems[sel];
 			if(!ik)
 				return;
 			auto g = ik->get(e.GetId() - wxID_DROPKEY);
@@ -203,7 +203,7 @@ namespace
 		string_list<char> sel = get_selection();
 		if(!realitems.count(sel))
 			return;
-		controller_key* ik = realitems[sel];
+		keyboard::ctrlrkey* ik = realitems[sel];
 		if(!ik)
 			return;
 
@@ -227,7 +227,7 @@ namespace
 	{
 		if(closing())
 			return;
-		std::map<controller_key*, std::string> data;
+		std::map<keyboard::ctrlrkey*, std::string> data;
 		auto x = lsnes_mapper.get_controller_keys();
 		realitems.clear();
 		for(auto y : x) {

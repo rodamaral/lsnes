@@ -60,14 +60,14 @@ namespace
 		}
 	};
 
-	std::map<std::string, inverse_bind*> macro_binds;
-	std::map<std::string, inverse_bind*> macro_binds2;
+	std::map<std::string, keyboard::invbind*> macro_binds;
+	std::map<std::string, keyboard::invbind*> macro_binds2;
 	std::map<std::string, controller_bind> all_buttons;
 	std::map<std::string, active_bind> active_buttons;
-	std::map<std::string, controller_key*> added_keys;
+	std::map<std::string, keyboard::ctrlrkey*> added_keys;
 
 	//Promote stored key to active key.
-	void promote_key(controller_key& k)
+	void promote_key(keyboard::ctrlrkey& k)
 	{
 		std::string name = k.get_command();
 		if(added_keys.count(name)) {
@@ -86,35 +86,35 @@ namespace
 	//Allocate controller keys for specified button.
 	void add_button(const std::string& name, const controller_bind& binding)
 	{
-		controller_key* k;
+		keyboard::ctrlrkey* k;
 		if(binding.mode == 0) {
-			k = new controller_key(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "+controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name).str());
 			promote_key(*k);
-			k = new controller_key(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "hold-controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name << "‣hold").str());
 			promote_key(*k);
-			k = new controller_key(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "type-controller " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name << "‣type").str());
 			promote_key(*k);
-			k = new controller_key(lsnes_mapper, (stringfmt() << "+autofire-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
-				<< binding.name << "‣autofire").str());
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "+autofire-controller "
+				<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
+				<< binding.number << "‣" << binding.name << "‣autofire").str());
 			promote_key(*k);
-			k = new controller_key(lsnes_mapper, (stringfmt() << "autofire-controller " << name).str(),
-				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
-				<< binding.name << "‣autofire toggle").str());
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "autofire-controller "
+				<< name).str(), (stringfmt() << "Controller‣" << binding.cclass << "‣#"
+				<< binding.number << "‣" << binding.name << "‣autofire toggle").str());
 			promote_key(*k);
 		} else if(binding.mode == 1) {
-			k = new controller_key(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "designate-position " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name).str());
 			promote_key(*k);
 		} else if(binding.mode == 2) {
-			k = new controller_key(lsnes_mapper, (stringfmt() << "controller-analog " << name).str(),
+			k = new keyboard::ctrlrkey(lsnes_mapper, (stringfmt() << "controller-analog " << name).str(),
 				(stringfmt() << "Controller‣" << binding.cclass << "‣#" << binding.number << "‣"
 				<< binding.name << " (axis)").str(), true);
 			promote_key(*k);
@@ -359,8 +359,8 @@ namespace
 		if(mode < 3)
 			do_button_action(name, state, mode);
 		else if(mode == 3) {
-			keyboard_key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
-			keyboard_key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
+			keyboard::key* mouse_x = lsnes_kbd.try_lookup_key("mouse_x");
+			keyboard::key* mouse_y = lsnes_kbd.try_lookup_key("mouse_y");
 			if(!mouse_x || !mouse_y) {
 				messages << "Controller analog function not available without mouse" << std::endl;
 				return;
@@ -575,8 +575,10 @@ void load_macros(controller_state& ctrlstate)
 	for(auto i : s) {
 		if(!macro_binds.count(i)) {
 			//New macro, create inverse bind.
-			macro_binds[i] = new inverse_bind(lsnes_mapper, "macro " + i , "Macro‣" + i + " (toggle)");
-			macro_binds2[i] = new inverse_bind(lsnes_mapper, "+macro " + i , "Macro‣" + i + " (hold)");
+			macro_binds[i] = new keyboard::invbind(lsnes_mapper, "macro " + i , "Macro‣" + i +
+				" (toggle)");
+			macro_binds2[i] = new keyboard::invbind(lsnes_mapper, "+macro " + i , "Macro‣" + i +
+				" (hold)");
 		}
 	}
 	for(auto i : macro_binds) {

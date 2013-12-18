@@ -182,7 +182,7 @@ end:
 				messages << r[1] << "/" << r[2] << " ";
 			messages << r[3] << " bound to '" << r[4] << "'" << std::endl;
 		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
-			controller_key* ckey = lsnes_mapper.get_controllerkey(r[2]);
+			keyboard::ctrlrkey* ckey = lsnes_mapper.get_controllerkey(r[2]);
 			if(ckey) {
 				ckey->append(r[1]);
 				messages << r[1] << " bound (button) to " << r[2] << std::endl;

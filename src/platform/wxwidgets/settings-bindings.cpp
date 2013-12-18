@@ -174,7 +174,7 @@ namespace
 		int n = select->GetSelection();
 		std::map<std::string, std::string> bind;
 		std::vector<wxString> choices;
-		std::list<key_specifier> a = lsnes_mapper.get_bindings();
+		std::list<keyboard::keyspec> a = lsnes_mapper.get_bindings();
 		for(auto i : a)
 			bind[i] = lsnes_mapper.get(i);
 		for(auto i : bind) {

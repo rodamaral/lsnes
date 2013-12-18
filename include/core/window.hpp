@@ -26,23 +26,23 @@ struct keypress
 /**
  * Create new keypress.
  */
-	keypress(keyboard_modifier_set mod, keyboard_key& _key, short _value);
+	keypress(keyboard::modifier_set mod, keyboard::key& _key, short _value);
 /**
  * Create new keypress (two keys).
  */
-	keypress(keyboard_modifier_set mod, keyboard_key& _key, keyboard_key& _key2, short _value);
+	keypress(keyboard::modifier_set mod, keyboard::key& _key, keyboard::key& _key2, short _value);
 /**
  * Modifier set.
  */
-	keyboard_modifier_set modifiers;
+	keyboard::modifier_set modifiers;
 /**
  * The actual key (first)
  */
-	keyboard_key* key1;
+	keyboard::key* key1;
 /**
  * The actual key (second)
  */
-	keyboard_key* key2;
+	keyboard::key* key2;
 /**
  * Value for the press
  */

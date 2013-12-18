@@ -13,7 +13,7 @@ command::group lsnes_cmd;
 namespace
 {
 	mutex_class alias_ibind_mutex;
-	std::map<std::string, inverse_bind*> alias_binds;
+	std::map<std::string, keyboard::invbind*> alias_binds;
 }
 
 void refresh_alias_binds()
@@ -30,6 +30,6 @@ void refresh_alias_binds()
 		if(i == "" || i[0] == '-')
 			continue;
 		if(!alias_binds.count(i) || alias_binds[i] == NULL)
-			alias_binds[i] = new inverse_bind(lsnes_mapper, i, "Alias‣" + i);
+			alias_binds[i] = new keyboard::invbind(lsnes_mapper, i, "Alias‣" + i);
 	}
 }

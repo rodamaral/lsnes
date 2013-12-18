@@ -63,11 +63,11 @@ namespace
 	std::string pkey;
 	std::function<void(std::string key)> keygrab_callback;
 
-	class keygrabber : public keyboard_event_listener
+	class keygrabber : public keyboard::event_listener
 	{
 	public:
 		keygrabber() { keygrab_active = false; }
-		void on_key_event(keyboard_modifier_set& mods, keyboard_key& key, keyboard_event& event)
+		void on_key_event(keyboard::modifier_set& mods, keyboard::key& key, keyboard::event& event)
 		{
 			if(!keygrab_active)
 				return;

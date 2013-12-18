@@ -28,7 +28,7 @@ void lua_callback_err_save(const std::string& name) throw();
 void lua_callback_post_save(const std::string& name, bool is_state) throw();
 void lua_callback_snoop_input(uint32_t port, uint32_t controller, uint32_t index, short value) throw();
 void lua_callback_quit() throw();
-void lua_callback_keyhook(const std::string& key, keyboard_key& p) throw();
+void lua_callback_keyhook(const std::string& key, keyboard::key& p) throw();
 void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs, uint64_t ssecs, movie& mov, void* u);
 bool lua_callback_do_button(uint32_t port, uint32_t controller, uint32_t index, const char* type);
 void lua_callback_movie_lost(const char* what);

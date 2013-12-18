@@ -92,8 +92,8 @@ namespace
 			turboed = false;
 		});
 
-	inverse_bind turboh(lsnes_mapper, "+turbo", "Speed‣Turbo hold");
-	inverse_bind turbot(lsnes_mapper, "toggle-turbo", "Speed‣Turbo toggle");
+	keyboard::invbind turboh(lsnes_mapper, "+turbo", "Speed‣Turbo hold");
+	keyboard::invbind turbot(lsnes_mapper, "toggle-turbo", "Speed‣Turbo toggle");
 }
 
 
