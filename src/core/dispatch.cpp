@@ -88,7 +88,7 @@ uint64_t gameinfo_struct::get_rerecords() const throw()
 
 namespace
 {
-	globalwrap<std::list<information_dispatch*>> dispatch;
+	globalwrap<std::list<information_dispatch*>> _dispatch;
 	globalwrap<std::list<information_dispatch*>> dispatch_audio;
 	uint32_t srate_n = 32000;
 	uint32_t srate_d = 1;
@@ -99,7 +99,7 @@ namespace
 information_dispatch::information_dispatch(const std::string& name) throw(std::bad_alloc)
 {
 	target_name = name;
-	dispatch().push_back(this);
+	_dispatch().push_back(this);
 	known_if_dumper = false;
 	marked_as_dumper = false;
 	notified_as_dumper = false;
@@ -107,9 +107,9 @@ information_dispatch::information_dispatch(const std::string& name) throw(std::b
 
 information_dispatch::~information_dispatch() throw()
 {
-	for(auto i = dispatch().begin(); i != dispatch().end(); ++i) {
+	for(auto i = _dispatch().begin(); i != _dispatch().end(); ++i) {
 		if(*i == this) {
-			dispatch().erase(i);
+			_dispatch().erase(i);
 			break;
 		}
 	}
@@ -120,7 +120,7 @@ information_dispatch::~information_dispatch() throw()
 		}
 	}
 	if(notified_as_dumper)
-		for(auto& i : dispatch()) {
+		for(auto& i : _dispatch()) {
 			START_EH_BLOCK
 			i->on_destroy_dumper(target_name);
 			END_EH_BLOCK(i, "on_destroy_dumper");
@@ -135,7 +135,7 @@ void information_dispatch::on_frame(struct framebuffer_raw& _frame, uint32_t fps
 void information_dispatch::do_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d) throw()
 {
 	update_dumpers();
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		START_EH_BLOCK
 		i->on_frame(_frame, fps_n, fps_d);
 		END_EH_BLOCK(i, "on_frame");
@@ -165,7 +165,7 @@ void information_dispatch::on_dump_end()
 void information_dispatch::do_dump_end() throw()
 {
 	update_dumpers();
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		START_EH_BLOCK
 		i->on_dump_end();
 		END_EH_BLOCK(i, "on_dump_end");
@@ -194,7 +194,7 @@ void information_dispatch::do_sound_rate(uint32_t rate_n, uint32_t rate_d) throw
 		return;
 	srate_n = rate_n;
 	srate_d = rate_d;
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		START_EH_BLOCK
 		i->on_sound_rate(rate_n, rate_d);
 		END_EH_BLOCK(i, "on_sound_rate");
@@ -219,7 +219,7 @@ void information_dispatch::do_gameinfo(const struct gameinfo_struct& gi) throw()
 	} catch(...) {
 		OOM_panic();
 	}
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		START_EH_BLOCK
 		i->on_gameinfo(sgi);
 		END_EH_BLOCK(i, "on_gameinfo");
@@ -250,7 +250,7 @@ unsigned information_dispatch::get_dumper_count() throw()
 {
 	update_dumpers(true);
 	unsigned count = 0;
-	for(auto& i : dispatch())
+	for(auto& i : _dispatch())
 		if(i->marked_as_dumper)
 			count++;
 	if(!recursive) {
@@ -266,7 +266,7 @@ std::set<std::string> information_dispatch::get_dumpers() throw(std::bad_alloc)
 	update_dumpers();
 	std::set<std::string> r;
 	try {
-		for(auto& i : dispatch())
+		for(auto& i : _dispatch())
 			if(i->notified_as_dumper)
 				r.insert(i->get_name());
 	} catch(...) {
@@ -283,13 +283,13 @@ const std::string& information_dispatch::get_name() throw()
 
 void information_dispatch::update_dumpers(bool nocalls) throw()
 {
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		if(!i->known_if_dumper) {
 			i->marked_as_dumper = i->get_dumper_flag();
 			i->known_if_dumper = true;
 		}
 		if(i->marked_as_dumper && !i->notified_as_dumper && !nocalls) {
-			for(auto& j : dispatch()) {
+			for(auto& j : _dispatch()) {
 				START_EH_BLOCK
 				j->on_new_dumper(i->target_name);
 				END_EH_BLOCK(j, "on_new_dumper");
@@ -313,7 +313,7 @@ void information_dispatch::do_dumper_update() throw()
 {
 	if(in_global_ctors())
 		return;
-	for(auto& i : dispatch()) {
+	for(auto& i : _dispatch()) {
 		START_EH_BLOCK
 		i->on_dumper_update();
 		END_EH_BLOCK(i, "on_dumper_update");
@@ -342,21 +342,21 @@ void dispatch_set_error_streams(std::ostream* stream)
 	notify_title_change.errors_to(stream);
 }
 
-struct dispatcher<> notify_autohold_reconfigure("autohold_reconfigure");
-struct dispatcher<unsigned, unsigned, unsigned, bool> notify_autohold_update("autohold_update");
-struct dispatcher<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update("autofire_update");
-struct dispatcher<> notify_close("notify_close");
-struct dispatcher<framebuffer<false>&> notify_set_screen("set_screen");
-struct dispatcher<std::pair<std::string, std::string>> notify_sound_change("sound_change");
-struct dispatcher<> notify_screen_update("screen_update");
-struct dispatcher<> notify_status_update("status_update");
-struct dispatcher<bool> notify_sound_unmute("sound_unmute");
-struct dispatcher<bool> notify_mode_change("mode_change");
-struct dispatcher<> notify_core_change("core_change");
-struct dispatcher<bool> notify_core_changed("core_changed");
-struct dispatcher<> notify_new_core("new_core");
-struct dispatcher<> notify_voice_stream_change("voice_stream_change");
-struct dispatcher<> notify_vu_change("vu_change");
-struct dispatcher<> notify_subtitle_change("subtitle_change");
-struct dispatcher<unsigned, unsigned, int> notify_multitrack_change("multitrack_change");
-struct dispatcher<> notify_title_change("title_change");
+struct dispatch::source<> notify_autohold_reconfigure("autohold_reconfigure");
+struct dispatch::source<unsigned, unsigned, unsigned, bool> notify_autohold_update("autohold_update");
+struct dispatch::source<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update("autofire_update");
+struct dispatch::source<> notify_close("notify_close");
+struct dispatch::source<framebuffer<false>&> notify_set_screen("set_screen");
+struct dispatch::source<std::pair<std::string, std::string>> notify_sound_change("sound_change");
+struct dispatch::source<> notify_screen_update("screen_update");
+struct dispatch::source<> notify_status_update("status_update");
+struct dispatch::source<bool> notify_sound_unmute("sound_unmute");
+struct dispatch::source<bool> notify_mode_change("mode_change");
+struct dispatch::source<> notify_core_change("core_change");
+struct dispatch::source<bool> notify_core_changed("core_changed");
+struct dispatch::source<> notify_new_core("new_core");
+struct dispatch::source<> notify_voice_stream_change("voice_stream_change");
+struct dispatch::source<> notify_vu_change("vu_change");
+struct dispatch::source<> notify_subtitle_change("subtitle_change");
+struct dispatch::source<unsigned, unsigned, int> notify_multitrack_change("multitrack_change");
+struct dispatch::source<> notify_title_change("title_change");

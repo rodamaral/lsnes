@@ -1017,7 +1017,7 @@ namespace
 			update_movie_state();
 		}
 	private:
-		struct dispatch_target<> closenotify;
+		struct dispatch::target<> closenotify;
 	} mywcb;
 
 	//If there is a pending load, perform it. Return 1 on successful load, 0 if nothing to load, -1 on load

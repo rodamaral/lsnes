@@ -526,9 +526,9 @@ namespace
 			setscreen.set(notify_set_screen, [](framebuffer<false>& scr) { our_screen = &scr; });
 		}
 	private:
-		struct dispatch_target<> screenupdate;
-		struct dispatch_target<> statusupdate;
-		struct dispatch_target<framebuffer<false>&> setscreen;
+		struct dispatch::target<> screenupdate;
+		struct dispatch::target<> statusupdate;
+		struct dispatch::target<framebuffer<false>&> setscreen;
 	} x;
 }
 

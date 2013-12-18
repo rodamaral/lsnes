@@ -202,7 +202,7 @@ private:
 	volatile bool update_sent;
 	bool closing;
 	wxButton* closebutton;
-	struct dispatch_target<> vulistener;
+	struct dispatch::target<> vulistener;
 	_vupanel* vupanel;
 	wxStaticText* rate;
 	wxSlider* gamevol;
@@ -214,8 +214,8 @@ private:
 	wxComboBox* pdev;
 	wxComboBox* rdev;
 	wxCheckBox* mute;
-	struct dispatch_target<bool> unmuted;
-	struct dispatch_target<std::pair<std::string, std::string>> devchange;
+	struct dispatch::target<bool> unmuted;
+	struct dispatch::target<std::pair<std::string, std::string>> devchange;
 };
 
 wxwin_vumeter::wxwin_vumeter(wxWindow* parent)

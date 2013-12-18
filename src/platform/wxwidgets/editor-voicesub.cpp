@@ -57,8 +57,8 @@ private:
 	wxButton* unloadbutton;
 	wxButton* refreshbutton;
 	wxButton* closebutton;
-	struct dispatch_target<> corechange;
-	struct dispatch_target<> vstreamchange;
+	struct dispatch::target<> corechange;
+	struct dispatch::target<> vstreamchange;
 };
 
 wxeditor_voicesub::wxeditor_voicesub(wxWindow* parent)

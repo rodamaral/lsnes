@@ -93,7 +93,7 @@ public:
 	void on_keyboard_down(wxKeyEvent& e);
 	void call_screen_update();
 private:
-	struct dispatch_target<> ahreconfigure;
+	struct dispatch::target<> ahreconfigure;
 	struct xypanel;
 	struct control_triple
 	{

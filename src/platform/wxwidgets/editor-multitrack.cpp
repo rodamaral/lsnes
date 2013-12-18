@@ -40,9 +40,9 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void on_control(wxCommandEvent& e);
 private:
-	struct dispatch_target<> ahreconfigure;
-	struct dispatch_target<bool> ahmodechange;
-	struct dispatch_target<unsigned, unsigned, int> ahmtchange;
+	struct dispatch::target<> ahreconfigure;
+	struct dispatch::target<bool> ahmodechange;
+	struct dispatch::target<unsigned, unsigned, int> ahmtchange;
 	struct controller_info
 	{
 		unsigned port;

@@ -29,9 +29,9 @@ public:
 	void on_wclose(wxCloseEvent& e);
 	void on_checkbox(wxCommandEvent& e);
 private:
-	struct dispatch_target<unsigned, unsigned, unsigned, bool> ahupdate;
-	struct dispatch_target<unsigned, unsigned, unsigned, unsigned, unsigned> afupdate;
-	struct dispatch_target<> ahreconfigure;
+	struct dispatch::target<unsigned, unsigned, unsigned, bool> ahupdate;
+	struct dispatch::target<unsigned, unsigned, unsigned, unsigned, unsigned> afupdate;
+	struct dispatch::target<> ahreconfigure;
 
 	struct control_triple
 	{

@@ -45,7 +45,7 @@ private:
 	wxButton* _delete;
 	wxButton* close;
 	std::map<int, subdata> subtexts;
-	struct dispatch_target<> subchange;
+	struct dispatch::target<> subchange;
 };
 
 namespace

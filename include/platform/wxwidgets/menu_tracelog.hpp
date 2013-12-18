@@ -17,7 +17,7 @@ public:
 	void update();
 	bool any_enabled();
 private:
-	struct dispatch_target<> corechange;
+	struct dispatch::target<> corechange;
 	wxWindow* pwin;
 	int wxid_range_low;
 	int wxid_range_high;

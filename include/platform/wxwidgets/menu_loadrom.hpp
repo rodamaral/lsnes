@@ -20,7 +20,7 @@ private:
 	int wxid_range_low;
 	int wxid_range_high;
 	std::function<void(core_type* name)> callback;
-	struct dispatch_target<> corelistener;
+	struct dispatch::target<> corelistener;
 };
 
 #endif

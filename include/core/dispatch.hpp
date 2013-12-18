@@ -255,23 +255,23 @@ private:
 
 void dispatch_set_error_streams(std::ostream* stream);
 
-extern struct dispatcher<> notify_autohold_reconfigure;
-extern struct dispatcher<unsigned, unsigned, unsigned, bool> notify_autohold_update;
-extern struct dispatcher<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update;
-extern struct dispatcher<> notify_close;
-extern struct dispatcher<framebuffer<false>&> notify_set_screen;
-extern struct dispatcher<std::pair<std::string, std::string>> notify_sound_change;
-extern struct dispatcher<> notify_screen_update;
-extern struct dispatcher<> notify_status_update;
-extern struct dispatcher<bool> notify_sound_unmute;
-extern struct dispatcher<bool> notify_mode_change;
-extern struct dispatcher<> notify_core_change;
-extern struct dispatcher<> notify_title_change;
-extern struct dispatcher<bool> notify_core_changed;
-extern struct dispatcher<> notify_new_core;
-extern struct dispatcher<> notify_voice_stream_change;
-extern struct dispatcher<> notify_vu_change;
-extern struct dispatcher<> notify_subtitle_change;
-extern struct dispatcher<unsigned, unsigned, int> notify_multitrack_change;
+extern struct dispatch::source<> notify_autohold_reconfigure;
+extern struct dispatch::source<unsigned, unsigned, unsigned, bool> notify_autohold_update;
+extern struct dispatch::source<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update;
+extern struct dispatch::source<> notify_close;
+extern struct dispatch::source<framebuffer<false>&> notify_set_screen;
+extern struct dispatch::source<std::pair<std::string, std::string>> notify_sound_change;
+extern struct dispatch::source<> notify_screen_update;
+extern struct dispatch::source<> notify_status_update;
+extern struct dispatch::source<bool> notify_sound_unmute;
+extern struct dispatch::source<bool> notify_mode_change;
+extern struct dispatch::source<> notify_core_change;
+extern struct dispatch::source<> notify_title_change;
+extern struct dispatch::source<bool> notify_core_changed;
+extern struct dispatch::source<> notify_new_core;
+extern struct dispatch::source<> notify_voice_stream_change;
+extern struct dispatch::source<> notify_vu_change;
+extern struct dispatch::source<> notify_subtitle_change;
+extern struct dispatch::source<unsigned, unsigned, int> notify_multitrack_change;
 
 #endif

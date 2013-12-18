@@ -515,7 +515,7 @@ namespace
 		{
 			ncore.set(notify_new_core, []() { init_buttonmap(); });
 		}
-		struct dispatch_target<> ncore;
+		struct dispatch::target<> ncore;
 	} coresnoop;
 }
 

@@ -31,7 +31,7 @@ namespace
 	cb2_list dummy_cb2;  //Always empty.
 	uint64_t xmask = 1;
 	std::function<void()> tracelog_change_cb;
-	struct dispatch_target<> corechange;
+	struct dispatch::target<> corechange;
 	bool corechange_r = false;
 
 	struct tracelog_file

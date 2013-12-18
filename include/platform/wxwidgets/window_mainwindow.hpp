@@ -76,11 +76,11 @@ private:
 	void* sounddev2;
 	void* dmenu;
 	wxTimer* focus_timer;
-	struct dispatch_target<> corechange;
-	struct dispatch_target<> titlechange;
-	struct dispatch_target<> newcore;
-	struct dispatch_target<bool> unmuted;
-	struct dispatch_target<bool> modechange;
+	struct dispatch::target<> corechange;
+	struct dispatch::target<> titlechange;
+	struct dispatch::target<> newcore;
+	struct dispatch::target<bool> unmuted;
+	struct dispatch::target<bool> modechange;
 };
 
 #endif

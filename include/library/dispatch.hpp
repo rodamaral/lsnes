@@ -8,51 +8,86 @@
 #include <functional>
 #include "threadtypes.hpp"
 
-mutex_class& dispatch_global_init_lock();
-
-template<typename... T> struct dispatcher;
-
-template<typename... T> struct dispatch_target
+namespace dispatch
 {
-	dispatch_target()
+mutex_class& global_init_lock();
+
+template<typename... T> struct source;
+
+/**
+ * Dispatch target handler.
+ */
+template<typename... T> struct target
+{
+/**
+ * Create a new target handler.
+ */
+	target()
 	{
 		src = NULL;
 		fn = dummy;
 	}
-	inline ~dispatch_target();
-	inline void set(dispatcher<T...>& d, std::function<void(T...)> _fn);
+/**
+ * Destroy a target, detaching it from source.
+ */
+	inline ~target();
+/**
+ * Connect a target to given source and give a handler.
+ *
+ * Parameter d: The source to connect to.
+ * Parameter _fn: The function to use as handler.
+ */
+	inline void set(source<T...>& d, std::function<void(T...)> _fn);
 private:
 	static void dummy(T... args) {};
-	void set_source(dispatcher<T...>* d) { src = d; }
+	void set_source(source<T...>* d) { src = d; }
 	void call(T... args) { fn(args...); }
-	dispatcher<T...>* src;
+	source<T...>* src;
 	std::function<void(T...)> fn;
-	friend class dispatcher<T...>;
+	friend class source<T...>;
 };
 
-template<typename... T> struct dispatcher
+/**
+ * Dispatch source (event generator).
+ */
+template<typename... T> struct source
 {
-	dispatcher(const char* _name)
+/**
+ * Create a new event source.
+ *
+ * Parameter _name: The name of the event.
+ */
+	source(const char* _name)
 	{
 		init();
 		name = _name;
 	}
-	~dispatcher()
+/**
+ * Destory an event source.
+ *
+ * All targets are disconnected.
+ */
+	~source()
 	{
 		delete _targets;
 		delete lck;
 		lck = NULL;
 	}
+/**
+ * Send an event.
+ *
+ * Parameter args: The arguments to send.
+ */
 	void operator()(T... args)
 	{
 		init();
 		uint64_t k = 0;
-		typename std::map<uint64_t, dispatch_target<T...>*>::iterator i;
+		typename std::map<uint64_t, target<T...>*>::iterator i;
 		lck->lock();
 		i = targets().lower_bound(k);
 		while(i != targets().end()) {
 			k = i->first + 1;
-			dispatch_target<T...>* t = i->second;
+			target<T...>* t = i->second;
 			lck->unlock();
 			try {
 				t->call(args...);
@@ -64,14 +99,24 @@ template<typename... T> struct dispatcher
 		}
 		lck->unlock();
 	}
-	void connect(dispatch_target<T...>& target)
+/**
+ * Connect a new target.
+ *
+ * Parameters target: The target to connect.
+ */
+	void connect(target<T...>& target)
 	{
 		init();
 		umutex_class h(*lck);
 		targets()[next_cbseq++] = &target;
 		target.set_source(this);
 	}
-	void disconnect(dispatch_target<T...>& target)
+/**
+ * Disconnect a target.
+ *
+ * Parameters target: The target to disconnect.
+ */
+	void disconnect(target<T...>& target)
 	{
 		init();
 		if(!lck)
@@ -84,6 +129,11 @@ template<typename... T> struct dispatcher
 			}
 		target.set_source(NULL);
 	}
+/**
+ * Set stream to send error messages to.
+ *
+ * Parameter to: The stream (if NULL, use std::cerr).
+ */
 	void errors_to(std::ostream* to)
 	{
 		errstrm = to ? to : &std::cerr;
@@ -93,7 +143,7 @@ private:
 	{
 		if(inited)
 			return;
-		umutex_class h(dispatch_global_init_lock());
+		umutex_class h(global_init_lock());
 		if(inited)
 			return;
 		errstrm = &std::cerr;
@@ -104,32 +154,32 @@ private:
 		inited = true;
 	}
 	mutex_class* lck;
-	std::map<uint64_t, dispatch_target<T...>*>& targets()
+	std::map<uint64_t, target<T...>*>& targets()
 	{
-		if(!_targets) _targets = new std::map<uint64_t, dispatch_target<T...>*>;
+		if(!_targets) _targets = new std::map<uint64_t, target<T...>*>;
 		return *_targets;
 	}
-	std::map<uint64_t, dispatch_target<T...>*>* _targets;
+	std::map<uint64_t, target<T...>*>* _targets;
 	uint64_t next_cbseq;
 	std::ostream* errstrm;
 	const char* name;
 	bool inited;
-	dispatcher(const dispatcher<T...>&);
-	dispatcher<T...>& operator=(const dispatcher<T...>&);
+	source(const source<T...>&);
+	source<T...>& operator=(const source<T...>&);
 };
 
-template <typename... T> dispatch_target<T...>::~dispatch_target()
+template <typename... T> target<T...>::~target()
 {
 	if(src)
 		src->disconnect(*this);
 }
 
-template <typename... T> void dispatch_target<T...>::set(dispatcher<T...>& d, std::function<void(T...)> _fn)
+template <typename... T> void target<T...>::set(source<T...>& d, std::function<void(T...)> _fn)
 {
 	fn = _fn;
 	src = &d;
 	if(src)
 		src->connect(*this);
 }
-
+}
 #endif

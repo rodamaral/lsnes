@@ -876,7 +876,7 @@ private:
 	_panel* hpanel;
 	wxMenu* valuemenu;
 	wxMenu* typemenu;
-	struct dispatch_target<bool> corechange;
+	struct dispatch::target<bool> corechange;
 	unsigned current_vma;
 	std::vector<std::string> vma_names;
 	std::map<unsigned, bool> vma_endians;
