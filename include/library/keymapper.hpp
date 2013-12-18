@@ -1,7 +1,7 @@
 #ifndef _library__keymapper__hpp__included__
 #define _library__keymapper__hpp__included__
 
-#include "commands.hpp"
+#include "command.hpp"
 #include <set>
 #include <list>
 #include <stdexcept>
@@ -77,7 +77,7 @@ public:
 /**
  * Create new keyboard mapper.
  */
-	keyboard_mapper(keyboard& kbd, command_group& domain) throw(std::bad_alloc);
+	keyboard_mapper(keyboard& kbd, command::group& domain) throw(std::bad_alloc);
 /**
  * Destroy a keyboard mapper.
  */
@@ -206,7 +206,7 @@ public:
 /**
  * Get command group to run commands in..
  */
-	command_group& get_command_group() throw();
+	command::group& get_command_group() throw();
 /**
  * Fixup command based on polarity.
  *
@@ -244,7 +244,7 @@ private:
 	std::map<triplet, std::string> bindings;
 	std::set<keyboard_key*> listening;
 	keyboard& kbd;
-	command_group& domain;
+	command::group& domain;
 	mutex_class mutex;
 };
 

@@ -8,7 +8,7 @@
 #include <set>
 #include <map>
 
-command_group lsnes_cmd;
+command::group lsnes_cmd;
 
 namespace
 {

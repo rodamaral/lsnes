@@ -2,7 +2,7 @@
 #define _library__keyboard_cmd_bridge__hpp__
 
 #include "keyboard.hpp"
-#include "commands.hpp"
+#include "command.hpp"
 
 class inverse_bind;
 
@@ -15,7 +15,7 @@ public:
 /**
  * Create a bridge.
  */
-	keyboard_command_bridge(keyboard& kgroup, command_group& cgroup);
+	keyboard_command_bridge(keyboard& kgroup, command::group& cgroup);
 /**
  * Destroy a bridge.
  */

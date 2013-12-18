@@ -4,9 +4,9 @@
 #include <stdexcept>
 #include <string>
 #include <set>
-#include "library/commands.hpp"
+#include "library/command.hpp"
 
-extern command_group lsnes_cmd;
+extern command::group lsnes_cmd;
 
 void refresh_alias_binds();
 

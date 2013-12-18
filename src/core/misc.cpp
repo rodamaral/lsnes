@@ -168,7 +168,7 @@ namespace
 		exit(1);
 	}
 
-	function_ptr_command<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "", 
+	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "", 
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
 	});
@@ -466,7 +466,7 @@ std::string get_temp_file()
 #endif
 }
 
-function_ptr_command<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",
+command::fnptr<const std::string&> macro_test(lsnes_cmd, "test-macro", "", "",
 	[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		regex_results r = regex("([0-9]+)[ \t](.*)", args);
 		if(!r) {

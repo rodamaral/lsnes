@@ -5,7 +5,7 @@
 
 namespace
 {
-	function_ptr_command<const std::string&> action(lsnes_cmd, "action", "Execute core action",
+	command::fnptr<const std::string&> action(lsnes_cmd, "action", "Execute core action",
 		"Syntax: action <name> [<params>...]\nExecutes core action.\n",
 		[](const std::string& _args) throw(std::bad_alloc, std::runtime_error) {
 			if(_args == "") {

@@ -1664,12 +1664,12 @@ out:
 	};
 
 	//The tangent function.
-	function_ptr_command<> ptangent(lsnes_cmd, "+tangent", "Voice tangent",
+	command::fnptr<> ptangent(lsnes_cmd, "+tangent", "Voice tangent",
 		"Syntax: +tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = true;
 		});
-	function_ptr_command<> ntangent(lsnes_cmd, "-tangent", "Voice tangent",
+	command::fnptr<> ntangent(lsnes_cmd, "-tangent", "Voice tangent",
 		"Syntax: -tangent\nVoice tangent.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			active_flag = false;

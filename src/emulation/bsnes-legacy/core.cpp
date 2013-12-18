@@ -1342,9 +1342,9 @@ again2:
 		return std::make_pair(ADDR_KIND_NONE, 0);
 	}
 
-	function_ptr_command<arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
+	command::fnptr<command::arg_filename> dump_core(lsnes_cmd, "dump-core", "No description available",
 		"No description available\n",
-		[](arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> out;
 			bsnes_core.serialize(out);
 			std::ofstream x(args, std::ios_base::out | std::ios_base::binary);
@@ -1511,7 +1511,7 @@ again2:
 		lsnes_cmd.invoke("tracelog cpu " + r);
 	});
 
-	function_ptr_command<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
+	command::fnptr<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
 		"No description available\n",
 		[](const std::string& r) throw(std::bad_alloc, std::runtime_error) {
 			lsnes_cmd.invoke("tracelog cpu " + r);

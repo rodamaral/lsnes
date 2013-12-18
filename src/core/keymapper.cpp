@@ -92,7 +92,7 @@ void cleanup_keymapper()
 
 namespace
 {
-	function_ptr_command<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joystick info",
+	command::fnptr<> show_joysticks(lsnes_cmd, "show-joysticks", "Show joystick info",
 		"Syntax: show-joysticks\nShow joystick info.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "--------------------------------------------" << std::endl;

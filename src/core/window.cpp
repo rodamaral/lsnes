@@ -64,7 +64,7 @@ namespace
 {
 	bool queue_function_run = false;
 
-	function_ptr_command<> identify_key(lsnes_cmd, "show-plugins", "Show plugins in use",
+	command::fnptr<> identify_key(lsnes_cmd, "show-plugins", "Show plugins in use",
 		"Syntax: show-plugins\nShows plugins in use.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			messages << "Graphics:\t" << graphics_driver_name() << std::endl;
@@ -72,7 +72,7 @@ namespace
 			messages << "Joystick:\t" << joystick_driver_name() << std::endl;
 		});
 
-	function_ptr_command<const std::string&> enable_sound(lsnes_cmd, "enable-sound", "Enable/Disable sound",
+	command::fnptr<const std::string&> enable_sound(lsnes_cmd, "enable-sound", "Enable/Disable sound",
 		"Syntax: enable-sound <on/off>\nEnable or disable sound.\n",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			switch(string_to_bool(args)) {

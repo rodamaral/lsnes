@@ -135,7 +135,7 @@ keyboard& keyboard_mapper::get_keyboard() throw()
 	return kbd;
 }
 
-keyboard_mapper::keyboard_mapper(keyboard& _kbd, command_group& _domain) throw(std::bad_alloc)
+keyboard_mapper::keyboard_mapper(keyboard& _kbd, command::group& _domain) throw(std::bad_alloc)
 	: inverse_proxy(*this), controllerkey_proxy(*this), kbd(_kbd), domain(_domain)
 {
 	register_queue<_inverse_proxy, inverse_bind>::do_ready(inverse_proxy, true);
@@ -227,7 +227,7 @@ std::list<key_specifier> keyboard_mapper::get_bindings() throw(std::bad_alloc)
 	return r;
 }
 
-command_group& keyboard_mapper::get_command_group() throw()
+command::group& keyboard_mapper::get_command_group() throw()
 {
 	return domain;
 }

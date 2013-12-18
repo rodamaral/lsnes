@@ -68,7 +68,7 @@ namespace
 			return mprefix + "-";
 	}
 
-	function_ptr_command<const std::string&> dump_coresave(lsnes_cmd, "dump-coresave", "Dump bsnes core state",
+	command::fnptr<const std::string&> dump_coresave(lsnes_cmd, "dump-coresave", "Dump bsnes core state",
 		"Syntax: dump-coresave <name>\nDumps core save to <name>\n",
 		[](const std::string& name) throw(std::bad_alloc, std::runtime_error) {
 			auto x = our_rom.save_core_state();

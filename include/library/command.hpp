@@ -1,5 +1,5 @@
-#ifndef _library_commands__hpp__included__
-#define _library_commands__hpp__included__
+#ifndef _library_command__hpp__included__
+#define _library_command__hpp__included__
 
 #include <stdexcept>
 #include <string>
@@ -8,22 +8,24 @@
 #include <list>
 #include "threadtypes.hpp"
 
-class command;
+namespace command
+{
+class base;
 
 /**
  * A group of commands (with aliases).
  */
-class command_group
+class group
 {
 public:
 /**
  * Create a new command group. This also places some builtin commands in that new group.
  */
-	command_group() throw(std::bad_alloc);
+	group() throw(std::bad_alloc);
 /**
  * Destroy a group.
  */
-	~command_group() throw();
+	~group() throw();
 /**
  * Look up and invoke a command. The command will undergo alias expansion and recursion checking.
  *
@@ -49,7 +51,7 @@ public:
 /**
  * Register a command.
  */
-	void do_register(const std::string& name, command& cmd) throw(std::bad_alloc);
+	void do_register(const std::string& name, base& cmd) throw(std::bad_alloc);
 /**
  * Unregister a command.
  */
@@ -63,19 +65,19 @@ public:
  */
 	void set_oom_panic(void (*fn)());
 private:
-	std::map<std::string, command*> commands;
+	std::map<std::string, base*> commands;
 	std::set<std::string> command_stack;
 	std::map<std::string, std::list<std::string>> aliases;
 	mutex_class int_mutex;
 	std::ostream* output;
 	void (*oom_panic_routine)();
-	command* builtin[1];
+	base* builtin[1];
 };
 
 /**
  * A command.
  */
-class command
+class base
 {
 public:
 /**
@@ -85,12 +87,12 @@ public:
  * parameter cmd: The command to register.
  * throws std::bad_alloc: Not enough memory.
  */
-	command(command_group& group, const std::string& cmd) throw(std::bad_alloc);
+	base(group& group, const std::string& cmd) throw(std::bad_alloc);
 
 /**
  * Deregister a command.
  */
-	virtual ~command() throw();
+	virtual ~base() throw();
 
 /**
  * Invoke a command.
@@ -114,10 +116,10 @@ public:
  */
 	const std::string& get_name() { return commandname; }
 private:
-	command(const command&);
-	command& operator=(const command&);
+	base(const base&);
+	base& operator=(const base&);
 	std::string commandname;
-	command_group& in_group;
+	group& in_group;
 };
 
 /**
@@ -144,13 +146,13 @@ struct arg_filename
  * parameter a: The arguments to pass.
  */
 template<typename... args>
-void invoke_command_fn(void (*fn)(args... arguments), const std::string& a);
+void invoke_fn(void (*fn)(args... arguments), const std::string& a);
 
 /**
  * Warp function pointer as command.
  */
 template<typename... args>
-class function_ptr_command : public command
+class fnptr : public base
 {
 public:
 /**
@@ -162,9 +164,9 @@ public:
  * parameter help: Help for the command.
  * parameter fn: Function to call on command.
  */
-	function_ptr_command(command_group& group, const std::string& name, const std::string& _description,
+	fnptr(group& group, const std::string& name, const std::string& _description,
 		const std::string& _help, void (*_fn)(args... arguments)) throw(std::bad_alloc)
-		: command(group, name)
+		: base(group, name)
 	{
 		description = _description;
 		help = _help;
@@ -173,7 +175,7 @@ public:
 /**
  * Destroy a commnad.
  */
-	~function_ptr_command() throw()
+	~fnptr() throw()
 	{
 	}
 /**
@@ -183,7 +185,7 @@ public:
  */
 	void invoke(const std::string& a) throw(std::bad_alloc, std::runtime_error)
 	{
-		invoke_command_fn(fn, a);
+		invoke_fn(fn, a);
 	}
 /**
  * Get short description.
@@ -210,5 +212,6 @@ private:
 	std::string description;
 	std::string help;
 };
+}
 
 #endif

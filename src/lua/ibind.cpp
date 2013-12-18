@@ -15,11 +15,11 @@ private:
 	inverse_bind ikey;
 };
 
-class lua_command_binding : public command
+class lua_command_binding : public command::base
 {
 public:
 	lua_command_binding(lua_state& _L, const std::string& cmd, int idx)
-		: command(lsnes_cmd, cmd), L(_L)
+		: command::base(lsnes_cmd, cmd), L(_L)
 	{
 		L.pushlightuserdata(this);
 		L.pushvalue(idx);

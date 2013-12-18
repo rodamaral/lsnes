@@ -1,4 +1,4 @@
-#include "commands.hpp"
+#include "command.hpp"
 #include "globalwrap.hpp"
 #include "minmax.hpp"
 #include "register-queue.hpp"
@@ -7,12 +7,14 @@
 #include <iostream>
 #include <cstdlib>
 
+namespace command
+{
 namespace
 {
-	struct run_script : public command
+	struct run_script : public base
 	{
-		run_script(command_group& group, std::ostream*& _output)
-			: command(group, "run-script"), in_group(group), output(_output)
+		run_script(group& group, std::ostream*& _output)
+			: base(group, "run-script"), in_group(group), output(_output)
 		{
 		}
 
@@ -51,7 +53,7 @@ namespace
 				"the command line\n";
 		}
 
-		command_group& in_group;
+		group& in_group;
 		std::ostream*& output;
 	};
 
@@ -61,32 +63,32 @@ namespace
 		exit(1);
 	}
 
-	typedef register_queue<command_group, command> regqueue_t;
+	typedef register_queue<group, base> regqueue_t;
 }
 
-command::command(command_group& group, const std::string& cmd) throw(std::bad_alloc)
+base::base(group& group, const std::string& cmd) throw(std::bad_alloc)
 	: in_group(group)
 {
 	regqueue_t::do_register(in_group, commandname = cmd, *this);
 }
 
-command::~command() throw()
+base::~base() throw()
 {
 	regqueue_t::do_unregister(in_group, commandname);
 }
 
 
-std::string command::get_short_help() throw(std::bad_alloc)
+std::string base::get_short_help() throw(std::bad_alloc)
 {
 	return "No description available";
 }
 
-std::string command::get_long_help() throw(std::bad_alloc)
+std::string base::get_long_help() throw(std::bad_alloc)
 {
 	return "No help available on command " + commandname;
 }
 
-command_group::command_group() throw(std::bad_alloc)
+group::group() throw(std::bad_alloc)
 {
 	oom_panic_routine = default_oom_panic;
 	output = &std::cerr;
@@ -95,14 +97,14 @@ command_group::command_group() throw(std::bad_alloc)
 	builtin[0] = new run_script(*this, output);
 }
 
-command_group::~command_group() throw()
+group::~group() throw()
 {
 	for(size_t i = 0; i < sizeof(builtin)/sizeof(builtin[0]); i++)
 		delete builtin[i];
 	regqueue_t::do_ready(*this, false);
 }
 
-void command_group::invoke(const std::string& cmd) throw()
+void group::invoke(const std::string& cmd) throw()
 {
 	try {
 		std::string cmd2 = strip_CR(cmd);
@@ -158,7 +160,7 @@ not_alias:
 			size_t split = cmd2.find_first_of(" \t");
 			std::string rcmd = cmd2.substr(0, min(split, cmd2.length()));
 			std::string args = cmd2.substr(min(cmd2.find_first_not_of(" \t", split), cmd2.length()));
-			command* cmdh = NULL;
+			base* cmdh = NULL;
 			{
 				umutex_class lock(int_mutex);
 				if(!commands.count(rcmd)) {
@@ -185,7 +187,7 @@ not_alias:
 	}
 }
 
-std::set<std::string> command_group::get_aliases() throw(std::bad_alloc)
+std::set<std::string> group::get_aliases() throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	std::set<std::string> r;
@@ -194,7 +196,7 @@ std::set<std::string> command_group::get_aliases() throw(std::bad_alloc)
 	return r;
 }
 
-std::string command_group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
+std::string group::get_alias_for(const std::string& aname) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	if(!valid_alias_name(aname))
@@ -208,7 +210,7 @@ std::string command_group::get_alias_for(const std::string& aname) throw(std::ba
 		return "";
 }
 
-void command_group::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
+void group::set_alias_for(const std::string& aname, const std::string& avalue) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	if(!valid_alias_name(aname))
@@ -228,7 +230,7 @@ void command_group::set_alias_for(const std::string& aname, const std::string& a
 		aliases[aname] = newlist;
 }
 
-bool command_group::valid_alias_name(const std::string& aliasname) throw(std::bad_alloc)
+bool group::valid_alias_name(const std::string& aliasname) throw(std::bad_alloc)
 {
 	if(aliasname.length() == 0 || aliasname[0] == '?' || aliasname[0] == '*')
 		return false;
@@ -237,7 +239,7 @@ bool command_group::valid_alias_name(const std::string& aliasname) throw(std::ba
 	return true;
 }
 
-void command_group::do_register(const std::string& name, command& cmd) throw(std::bad_alloc)
+void group::do_register(const std::string& name, base& cmd) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	if(commands.count(name))
@@ -245,18 +247,18 @@ void command_group::do_register(const std::string& name, command& cmd) throw(std
 	commands[name] = &cmd;
 }
 
-void command_group::do_unregister(const std::string& name) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name) throw(std::bad_alloc)
 {
 	umutex_class lock(int_mutex);
 	commands.erase(name);
 }
 
-void command_group::set_output(std::ostream& s)
+void group::set_output(std::ostream& s)
 {
 	output = &s;
 }
 
-void command_group::set_oom_panic(void (*fn)())
+void group::set_oom_panic(void (*fn)())
 {
 	if(fn)
 		oom_panic_routine = fn;
@@ -265,13 +267,13 @@ void command_group::set_oom_panic(void (*fn)())
 }
 
 template<>
-void invoke_command_fn(void (*fn)(const std::string& args), const std::string& args)
+void invoke_fn(void (*fn)(const std::string& args), const std::string& args)
 {
 	fn(args);
 }
 
 template<>
-void invoke_command_fn(void (*fn)(), const std::string& args)
+void invoke_fn(void (*fn)(), const std::string& args)
 {
 	if(args != "")
 		throw std::runtime_error("This command does not take arguments");
@@ -279,11 +281,12 @@ void invoke_command_fn(void (*fn)(), const std::string& args)
 }
 
 template<>
-void invoke_command_fn(void (*fn)(struct arg_filename a), const std::string& args)
+void invoke_fn(void (*fn)(struct arg_filename a), const std::string& args)
 {
 	if(args == "")
 		throw std::runtime_error("Filename required");
 	arg_filename b;
 	b.v = args;
 	fn(b);
+}
 }
