@@ -6,24 +6,26 @@
 #include <iterator>
 #include <map>
 
+namespace binarystream
+{
 const uint32_t TAG_ = 0xaddb2d86;
 
-binary_output_stream::binary_output_stream()
+output::output()
 	: strm(buf)
 {
 }
 
-binary_output_stream::binary_output_stream(std::ostream& s)
+output::output(std::ostream& s)
 	: strm(s)
 {
 }
 
-void binary_output_stream::byte(uint8_t byte)
+void output::byte(uint8_t byte)
 {
 	strm.write(reinterpret_cast<char*>(&byte), 1);
 }
 
-void binary_output_stream::number(uint64_t number)
+void output::number(uint64_t number)
 {
 	char data[10];
 	size_t len = 0;
@@ -35,7 +37,7 @@ void binary_output_stream::number(uint64_t number)
 	strm.write(data, len);
 }
 
-size_t binary_output_stream::numberbytes(uint64_t number)
+size_t output::numberbytes(uint64_t number)
 {
 	size_t o = 0;
 	do {
@@ -45,44 +47,44 @@ size_t binary_output_stream::numberbytes(uint64_t number)
 	return o;
 }
 
-void binary_output_stream::number32(uint32_t number)
+void output::number32(uint32_t number)
 {
 	char data[4];
 	write32ube(data, number);
 	strm.write(data, 4);
 }
 
-void binary_output_stream::string(const std::string& string)
+void output::string(const std::string& string)
 {
 	number(string.length());
 	std::copy(string.begin(), string.end(), std::ostream_iterator<char>(strm));
 }
 
-void binary_output_stream::string_implicit(const std::string& string)
+void output::string_implicit(const std::string& string)
 {
 	std::copy(string.begin(), string.end(), std::ostream_iterator<char>(strm));
 }
 
-void binary_output_stream::blob_implicit(const std::vector<char>& blob)
+void output::blob_implicit(const std::vector<char>& blob)
 {
 	strm.write(&blob[0], blob.size());
 }
 
-void binary_output_stream::raw(const void* buf, size_t bufsize)
+void output::raw(const void* buf, size_t bufsize)
 {
 	strm.write(reinterpret_cast<const char*>(buf), bufsize);
 }
 
-void binary_output_stream::write_extension_tag(uint32_t tag, uint64_t size)
+void output::write_extension_tag(uint32_t tag, uint64_t size)
 {
 	number32(TAG_);
 	number32(tag);
 	number(size);
 }
 
-void binary_output_stream::extension(uint32_t tag, std::function<void(binary_output_stream&)> fn, bool even_empty)
+void output::extension(uint32_t tag, std::function<void(output&)> fn, bool even_empty)
 {
-	binary_output_stream tmp;
+	output tmp;
 	fn(tmp);
 	std::string str = tmp.get();
 	if(!even_empty && !str.length())
@@ -92,7 +94,7 @@ void binary_output_stream::extension(uint32_t tag, std::function<void(binary_out
 	string(str);
 }
 
-void binary_output_stream::extension(uint32_t tag, std::function<void(binary_output_stream&)> fn, bool even_empty,
+void output::extension(uint32_t tag, std::function<void(output&)> fn, bool even_empty,
 	size_t size_precognition)
 {
 	if(!even_empty && !size_precognition)
@@ -104,21 +106,21 @@ void binary_output_stream::extension(uint32_t tag, std::function<void(binary_out
 }
 
 
-std::string binary_output_stream::get()
+std::string output::get()
 {
 	if(&strm != &buf)
 		throw std::logic_error("Get can only be used without explicit sink");
 	return buf.str();
 }
 
-uint8_t binary_input_stream::byte()
+uint8_t input::byte()
 {
 	char byte;
 	read(&byte, 1);
 	return byte;
 }
 
-uint64_t binary_input_stream::number()
+uint64_t input::number()
 {
 	uint64_t s = 0;
 	int sh = 0;
@@ -131,14 +133,14 @@ uint64_t binary_input_stream::number()
 	return s;
 }
 
-uint32_t binary_input_stream::number32()
+uint32_t input::number32()
 {
 	char c[4];
 	read(c, 4);
 	return read32ube(c);
 }
 
-std::string binary_input_stream::string()
+std::string input::string()
 {
 	size_t sz = number();
 	std::vector<char> _r;
@@ -148,10 +150,10 @@ std::string binary_input_stream::string()
 	return r;
 }
 
-std::string binary_input_stream::string_implicit()
+std::string input::string_implicit()
 {
 	if(!parent)
-		throw std::logic_error("binary_input_stream::string_implicit() can only be used in substreams");
+		throw std::logic_error("binarystream::input::string_implicit() can only be used in substreams");
 	std::vector<char> _r;
 	_r.resize(left);
 	read(&_r[0], left);
@@ -159,40 +161,40 @@ std::string binary_input_stream::string_implicit()
 	return r;
 }
 
-void binary_input_stream::blob_implicit(std::vector<char>& blob)
+void input::blob_implicit(std::vector<char>& blob)
 {
 	if(!parent)
-		throw std::logic_error("binary_input_stream::string_implicit() can only be used in substreams");
+		throw std::logic_error("binarystream::input::string_implicit() can only be used in substreams");
 	blob.resize(left);
 	read(&blob[0], left);
 }
 
-binary_input_stream::binary_input_stream(std::istream& s)
+input::input(std::istream& s)
 	: strm(s), left(0), parent(NULL)
 {
 }
 
-binary_input_stream::binary_input_stream(binary_input_stream& s, uint64_t len)
+input::input(input& s, uint64_t len)
 	: strm(s.strm), left(len), parent(&s)
 {
 	if(parent->parent && left > parent->left)
 		throw std::runtime_error("Substream length greater than its parent");
 }
 
-void binary_input_stream::raw(void* buf, size_t bufsize)
+void input::raw(void* buf, size_t bufsize)
 {
 	read(reinterpret_cast<char*>(buf), bufsize);
 }
 
-void binary_input_stream::extension(std::function<void(uint32_t tag, binary_input_stream& s)> fn)
+void input::extension(std::function<void(uint32_t tag, input& s)> fn)
 {
 	extension({}, fn);
 }
 
-void binary_input_stream::extension(std::initializer_list<binary_tag_handler> funcs,
-	std::function<void(uint32_t tag, binary_input_stream& s)> default_hdlr)
+void input::extension(std::initializer_list<binary_tag_handler> funcs,
+	std::function<void(uint32_t tag, input& s)> default_hdlr)
 {
-	std::map<uint32_t, std::function<void(binary_input_stream& s)>> fn;
+	std::map<uint32_t, std::function<void(input& s)>> fn;
 	for(auto i : funcs)
 		fn[i.tag] = i.fn;
 	while(!parent || left > 0) {
@@ -204,7 +206,7 @@ void binary_input_stream::extension(std::initializer_list<binary_tag_handler> fu
 			throw std::runtime_error("Binary file packet structure desync");
 		uint32_t tag = number32();
 		uint64_t size = number();
-		binary_input_stream ss(*this, size);
+		input ss(*this, size);
 		if(fn.count(tag))
 			fn[tag](ss);
 		else
@@ -213,16 +215,16 @@ void binary_input_stream::extension(std::initializer_list<binary_tag_handler> fu
 	}
 }
 
-void binary_input_stream::flush()
+void input::flush()
 {
 	if(!parent)
-		throw std::logic_error("binary_input_stream::flush() can only be used in substreams");
+		throw std::logic_error("binarystream::input::flush() can only be used in substreams");
 	char buf[256];
 	while(left)
 		read(buf, min(left, (uint64_t)256));
 }
 
-bool binary_input_stream::read(char* buf, size_t size, bool allow_none)
+bool input::read(char* buf, size_t size, bool allow_none)
 {
 	if(parent) {
 		if(left == 0 && allow_none)
@@ -242,7 +244,8 @@ bool binary_input_stream::read(char* buf, size_t size, bool allow_none)
 	return true;
 }
 
-void binary_null_default(uint32_t tag, binary_input_stream& s)
+void null_default(uint32_t tag, input& s)
 {
 	//no-op
+}
 }
