@@ -687,6 +687,8 @@ template<class T> class lua_class;
  */
 template<class T> lua_class<T>& objclass()
 {
+	if(lua_class_types().count(typeid(T)))
+		throw std::runtime_error("Internal error: Lua class not found!");
 	return *reinterpret_cast<lua_class<T>*>(lua_class_types()[typeid(T)]);
 }
 
@@ -856,14 +858,23 @@ public:
  */
 	static bool is(lua_state& state, int arg) throw()
 	{
-		return objclass<T>()._is(state, arg);
+		try {
+			return objclass<T>()._is(state, arg);
+		} catch(...) {
+			return false;
+		}
 	}
 /**
  * Get name of class.
  */
 	static const std::string& get_name()
 	{
-		return objclass<T>().name;
+		try {
+			return objclass<T>().name;
+		} catch(...) {
+			static std::string foo = "???";
+			return foo;
+		}
 	}
 /**
  * Format instance of this class as string.
