@@ -329,6 +329,18 @@ struct framebuffer
  */
 	size_t get_height() const throw();
 /**
+ * Get last blit width
+ *
+ * Returns: The width.
+ */
+	size_t get_last_blit_width() const throw();
+/**
+ * Get last blit height
+ *
+ * Returns: The height.
+ */
+	size_t get_last_blit_height() const throw();
+/**
  * Get R palette offset.
  */
 	uint8_t get_palette_r() const throw();
@@ -348,6 +360,8 @@ private:
 	size_t stride;		//Stride in pixels.
 	size_t offset_x;	//X offset.
 	size_t offset_y;	//Y offset.
+	size_t last_blit_w;	//Width of last blit.
+	size_t last_blit_h;	//Height of last blit.
 	element_t* mem;		//The memory of framebuffer.
 	pixel_format* current_fmt;	//Current format of framebuffer.
 	pixel_format_aux_palette<X> auxpal;	//Aux palette.

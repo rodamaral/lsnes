@@ -312,6 +312,8 @@ framebuffer<X>::framebuffer() throw()
 {
 	width = 0;
 	height = 0;
+	last_blit_w = 0;
+	last_blit_h = 0;
 	stride = 0;
 	offset_x = 0;
 	offset_y = 0;
@@ -338,6 +340,8 @@ template<bool X>
 void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscale) throw()
 {
 	typename framebuffer<X>::element_t decbuf[DECBUF_SIZE];
+	last_blit_w = scr.width * hscale;
+	last_blit_h = scr.height * vscale;
 
 	if(!scr.fmt) {
 		for(size_t y = 0; y < height; y++)
@@ -458,6 +462,19 @@ size_t framebuffer<X>::get_height() const throw()
 {
 	return height;
 }
+
+template<bool X>
+size_t framebuffer<X>::get_last_blit_width() const throw()
+{
+	return last_blit_w;
+}
+
+template<bool X>
+size_t framebuffer<X>::get_last_blit_height() const throw()
+{
+	return last_blit_h;
+}
+
 
 template<bool X>
 typename framebuffer<X>::element_t* framebuffer<X>::rowptr(size_t row) throw()
