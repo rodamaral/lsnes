@@ -11,7 +11,7 @@ audio/__all__.files: forcelook
 video/__all__.files: forcelook
 	$(MAKE) -C video
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
 
 forcelook:

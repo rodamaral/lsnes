@@ -3,6 +3,7 @@
 *.lib
 *.obj
 *.exe
+*.dep
 *.ldflags
 *.files
 docs

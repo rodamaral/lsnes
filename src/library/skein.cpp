@@ -204,8 +204,8 @@ void skein_hash::read(uint8_t* output)
 
 #ifdef TEST_SKEIN_CODE
 #define SKEIN_DEBUG
-#include "skein.h"
-#include "skein_debug.h"
+#include <skein.h>
+#include <skein_debug.h>
 
 
 

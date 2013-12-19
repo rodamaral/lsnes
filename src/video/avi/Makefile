@@ -8,13 +8,14 @@ __all__.files: codec/__all__.files $(OBJECTS)
 codec/__all__.files: forcelook
 	$(MAKE) -C codec
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../include
 
 forcelook:
 	@true
 
 precheck:
+	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
 	$(MAKE) -C codec precheck
 
 clean:

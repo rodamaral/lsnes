@@ -38,7 +38,7 @@ __all__.files: $(OBJECTS) ../../../$(BSNES_LIBRARY)
 ports.inc: ports.json ../make-ports.exe
 	../make-ports.exe <$< >$@
 
-%.$(OBJECT_SUFFIX): %.cpp ports.inc
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../bsnes $(CFLAGS) $(BSNES_CFLAGS)
 else
 
@@ -53,6 +53,7 @@ forcelook:
 	@true
 
 precheck:
+	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
 	@true
 
 clean:

@@ -5,10 +5,14 @@ OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 __all__.files: $(OBJECTS)
 	lua ../../../../genfilelist.lua $^ >$@
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../../../../include
 
 precheck:
+	../../../../../buildaux/mkdeps.exe ../../../../../include -- *.cpp
+	@true
+
+forcelook:
 	@true
 
 clean:

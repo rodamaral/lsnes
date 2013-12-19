@@ -9,13 +9,14 @@ __all__.files: $(OBJECTS)
 ports.inc: ports.json ../make-ports.exe
 	../make-ports.exe <$< >$@
 
-%.$(OBJECT_SUFFIX): %.cpp ports.inc
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS)
 
 forcelook:
 	@true
 
 precheck:
+	../../../buildaux/mkdeps.exe ../../../include -- *.cpp
 	@true
 
 clean:

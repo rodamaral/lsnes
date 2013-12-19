@@ -5,11 +5,14 @@ OBJECTS=$(patsubst %.cpp,%.$(OBJECT_SUFFIX),$(wildcard *.cpp))
 __all_files__: $(OBJECTS)
 	@true
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) -c -o $@ $< -I../../include $(CFLAGS)
-	touch $(patsubst %.$(OBJECT_SUFFIX),%.ldflags,$^)
 
 precheck:
+	../../buildaux/mkdeps.exe ../../include -- *.cpp
+	@true
+
+forcelook:
 	@true
 
 clean:

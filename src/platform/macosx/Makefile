@@ -10,13 +10,17 @@ __all__.files: $(OBJECTS)
 	lua ../../genfilelist.lua $^ >$@
 	touch __all__.ldflags
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS)
 
-%.$(OBJECT_SUFFIX): %.c
+%.$(OBJECT_SUFFIX): %.c %c.dep
 	$(REALCC) -DSDL_JOYSTICK_IOKIT -x c --std=gnu99 -c -o $@ $< $(CSTDFLAGS)
 
 precheck:
+	../../../buildaux/mkdeps.exe ../../../include -- *.cpp *.c
+	@true
+
+forcelook:
 	@true
 
 clean:

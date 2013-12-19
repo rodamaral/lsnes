@@ -18,7 +18,7 @@ __all__.files: $(OBJECTS) ../../../$(GAMBATTE_LIBRARY)
 ports.inc: ports.json ../make-ports.exe
 	../make-ports.exe <$< >$@
 
-%.$(OBJECT_SUFFIX): %.cpp ports.inc
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep ports.inc
 	$(REALCC) -c -o $@ $< -I../../../include -I../../../gambatte $(CFLAGS) $(GAMBATTE_CFLAGS)
 
 else
@@ -34,6 +34,7 @@ forcelook:
 	@true
 
 precheck:
+	../../../buildaux/mkdeps.exe ../../../include ../../../gambatte -- *.cpp
 	@true
 
 clean:

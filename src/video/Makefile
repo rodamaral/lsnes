@@ -14,13 +14,14 @@ __all__.files: avi/__all__.files $(OBJECTS)
 avi/__all__.files: forcelook
 	$(MAKE) -C avi
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include $(AVI_CFLAGS)
 
 forcelook:
 	@true
 
 precheck:
+	../../buildaux/mkdeps.exe ../../include -- *.cpp
 	$(MAKE) -C avi precheck
 
 clean:

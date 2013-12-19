@@ -78,6 +78,7 @@ lsnes$(DOT_EXECUTABLE_SUFFIX): __all_common__.files __all_platform__.files
 precheck:
 	$(MAKE) -C core precheck
 	$(MAKE) -C emulation precheck
+	$(MAKE) -C fonts precheck
 	$(MAKE) -C interface precheck
 	$(MAKE) -C library precheck
 	$(MAKE) -C lua precheck
@@ -87,6 +88,7 @@ precheck:
 
 clean:
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags
+	find . -name "*.dep" -exec rm -f {} \;
 	$(MAKE) -C core clean
 	$(MAKE) -C emulation clean
 	$(MAKE) -C fonts clean

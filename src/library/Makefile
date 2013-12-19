@@ -6,10 +6,14 @@ __all__.files: $(OBJECTS)
 	lua ../genfilelist.lua $^ >$@
 	touch __all__.ldflags
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library
 
 precheck:
+	../../buildaux/mkdeps.exe ../../include/library -- *.cpp
+	@true
+
+forcelook:
 	@true
 
 clean:

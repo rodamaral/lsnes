@@ -8,16 +8,21 @@ __all__.files: $(OBJECTS)
 
 .PRECIOUS: font.$(OBJECT_SUFFIX) font.cpp
 
-%.$(OBJECT_SUFFIX): %.cpp
+%.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include
 
-font.cpp : $(FONT_SRC)
+font.cpp font.cpp.dep: $(FONT_SRC)
 	echo "extern const char* font_hex_data;" >font.cpp
 	echo "const char* font_hex_data = " >>font.cpp
 	sed -E -f fonttransform.sed <$^ >>font.cpp
 	echo ";" >>font.cpp
+	touch font.cpp.dep
 
 precheck:
+	../../buildaux/mkdeps.exe ../../include -- *.cpp
+	@true
+
+forcelook:
 	@true
 
 clean:
