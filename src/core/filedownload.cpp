@@ -120,7 +120,7 @@ void file_download::_do_async()
 	//Okay, we got the file.
 	std::istream* s = NULL;
 	try {
-		zip_reader r(tempname);
+		zip::reader r(tempname);
 		unsigned count = 0;
 		for(auto i : r) {
 			count++;

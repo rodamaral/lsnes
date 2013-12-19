@@ -197,7 +197,7 @@ font2::font2(const std::string& file)
 	std::istream* toclose = NULL;
 	rowadvance = 0;
 	try {
-		zip_reader r(file);
+		zip::reader r(file);
 		for(auto member : r) {
 			//Parse the key out of filename.
 			std::u32string key;

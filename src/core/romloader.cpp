@@ -199,7 +199,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			for(auto j : exts) {
 				std::string candidate = lsnes_vset[psetting].str() + "/" + info.hint[i] +
 					"." + j;
-				if(file_exists_zip(candidate)) {
+				if(zip::file_exists(candidate)) {
 					roms[i] = candidate;
 					break;
 				}
@@ -215,7 +215,7 @@ loaded_rom construct_rom_multifile(core_type* ctype, const moviefile::brief_info
 			throw std::runtime_error("Can't find " + romid + " (specify explicitly)");
 		if(roms[i] != "")
 			pmand |= img.mandatory;
-		if(roms[i] != "" && !file_exists_zip(roms[i]))
+		if(roms[i] != "" && !zip::file_exists(roms[i]))
 			throw std::runtime_error(romid + " points to nonexistent file (" + roms[i] + ")");
 	}
 	if(pmand != tmand)

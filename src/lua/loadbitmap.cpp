@@ -73,7 +73,7 @@ struct lua_loaded_bitmap lua_loaded_bitmap::load(std::istream& file)
 struct lua_loaded_bitmap lua_loaded_bitmap::load(const std::string& name)
 {
 	struct lua_loaded_bitmap b;
-	std::istream& file = open_file_relative(name, "");
+	std::istream& file = zip::openrel(name, "");
 	try {
 		b = lua_loaded_bitmap::load(file);
 		delete &file;

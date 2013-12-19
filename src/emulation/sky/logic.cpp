@@ -31,7 +31,7 @@ namespace sky
 			std::string filename = inst.rom_filename + "/menu.opus";
 			std::istream* s = NULL;
 			try {
-				s = &open_file_relative(filename, "");
+				s = &zip::openrel(filename, "");
 				messages << "Selected song: " << filename << std::endl;
 				inst.bsong = new song_buffer(*s);
 				inst.mplayer.set_song(inst.bsong);
@@ -49,7 +49,7 @@ namespace sky
 			inst.bsong = NULL;
 			std::istream* s = NULL;
 			try {
-				zip_reader r(inst.rom_filename);
+				zip::reader r(inst.rom_filename);
 				std::string iname;
 				std::vector<std::string> inames;
 				for(auto i : r)

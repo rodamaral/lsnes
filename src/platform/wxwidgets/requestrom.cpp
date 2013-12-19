@@ -261,7 +261,7 @@ namespace
 			uint64_t header = t.get_image_info(i).headersize;
 
 			std::string filename = tostdstring(filenames[i]->GetValue());
-			if(!file_exists_zip(filename)) {
+			if(!zip::file_exists(filename)) {
 				hashfutures[i] = sha256_future();
 				hash_ready[i] = true;
 				hashes[i]->SetLabel(towxstring("Not found"));
@@ -383,7 +383,7 @@ void wxwin_mainwindow::request_rom(rom_request& req)
 		std::string defaultname = "";
 		for(auto j : iinfo.extensions) {
 			exts = exts + ";*." + j;
-			if(file_exists_zip(directory + "/" + req.filename[i] + "." + j))
+			if(zip::file_exists(directory + "/" + req.filename[i] + "." + j))
 				defaultname = req.filename[i] + "." + j;
 		}
 		if(exts != "") exts = exts.substr(1);
@@ -402,7 +402,7 @@ again:
 		req.filename[i] = tostdstring(d->GetPath());
 		delete d;
 		//Check the hash.
-		if(!file_exists_zip(req.filename[i])) {
+		if(!zip::file_exists(req.filename[i])) {
 			show_message_ok(this, "File not found", "Can't find '" + req.filename[i] + "'",
 				wxICON_EXCLAMATION);
 			goto again;

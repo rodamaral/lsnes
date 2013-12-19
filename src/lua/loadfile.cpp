@@ -246,8 +246,8 @@ namespace
 		std::string file1 = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			file2 = L.get_string(2, fname.c_str());
-		std::string absfilename = resolve_file_relative(file1, file2);
-		std::istream& file = open_file_relative(file1, file2);
+		std::string absfilename = zip::resolverel(file1, file2);
+		std::istream& file = zip::openrel(file1, file2);
 		std::string chunkname;
 		if(file2 != "")
 			chunkname = file2 + "[" + file1 + "]";
@@ -294,7 +294,7 @@ namespace
 		std::string file1 = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			file2 = L.get_string(2, fname.c_str());
-		std::string absfilename = resolve_file_relative(file1, file2);
+		std::string absfilename = zip::resolverel(file1, file2);
 		L.pushlstring(absfilename);
 		return 1;
 	});
@@ -304,7 +304,7 @@ namespace
 		std::string file1 = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			file2 = L.get_string(2, fname.c_str());
-		std::istream& s = open_file_relative(file1, file2);
+		std::istream& s = zip::openrel(file1, file2);
 		try {
 			lua_class<lua_file_reader>::create(L, &s);
 			return 1;

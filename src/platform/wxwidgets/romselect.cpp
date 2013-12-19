@@ -264,7 +264,7 @@ namespace
 		if(memwatch->GetValue().length() == 0)
 			goto no_watch;
 		try {
-			std::istream& in = open_file_relative(tostdstring(memwatch->GetValue()), "");
+			std::istream& in = zip::openrel(tostdstring(memwatch->GetValue()), "");
 			while(in) {
 				std::string wname;
 				std::string wexpr;
@@ -298,7 +298,7 @@ no_watch:
 		try {
 			std::string lwch = choose_file_load(this, "Select memory watch file", ".", filetype_watch);
 			try {
-				auto& p = open_file_relative(lwch, "");
+				auto& p = zip::openrel(lwch, "");
 				delete &p;
 			} catch(std::exception& e) {
 				show_message_ok(this, "File not found", "File '" + lwch + "' can't be opened",
@@ -325,7 +325,7 @@ no_watch:
 		try {
 			std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 			try {
-				auto& p = open_file_relative(luascript, "");
+				auto& p = zip::openrel(luascript, "");
 				delete &p;
 			} catch(std::exception& e) {
 				show_message_ok(this, "File not found", "File '" + luascript + "' can't be opened",
@@ -623,10 +623,10 @@ struct moviefile wxwin_project::make_movie()
 		std::string sf = tostdstring(i.second->GetValue());
 		if(i.first != "") {
 			if(sf != "")
-				f.movie_sram[i.first] = read_file_relative(sf, "");
+				f.movie_sram[i.first] = zip::readrel(sf, "");
 		} else {
 			if(sf != "")
-				f.anchor_savestate = read_file_relative(sf, "");
+				f.anchor_savestate = zip::readrel(sf, "");
 		}
 	}
 	f.is_savestate = false;

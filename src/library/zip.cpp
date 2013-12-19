@@ -17,7 +17,9 @@
 #include <windows.h>
 #endif
 
-int rename_file_overwrite(const char* oldname, const char* newname)
+namespace zip
+{
+int rename_overwrite(const char* oldname, const char* newname)
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
 	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
@@ -291,12 +293,12 @@ namespace
 	}
 }
 
-bool zip_reader::has_member(const std::string& name) throw()
+bool reader::has_member(const std::string& name) throw()
 {
 	return (offsets.count(name) > 0);
 }
 
-std::string zip_reader::find_first() throw(std::bad_alloc)
+std::string reader::find_first() throw(std::bad_alloc)
 {
 	if(offsets.empty())
 		return "";
@@ -304,7 +306,7 @@ std::string zip_reader::find_first() throw(std::bad_alloc)
 		return offsets.begin()->first;
 }
 
-std::string zip_reader::find_next(const std::string& name) throw(std::bad_alloc)
+std::string reader::find_next(const std::string& name) throw(std::bad_alloc)
 {
 	auto i = offsets.upper_bound(name);
 	if(i == offsets.end())
@@ -313,7 +315,7 @@ std::string zip_reader::find_next(const std::string& name) throw(std::bad_alloc)
 		return i->first;
 }
 
-std::istream& zip_reader::operator[](const std::string& name) throw(std::bad_alloc, std::runtime_error)
+std::istream& reader::operator[](const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!offsets.count(name))
 		throw std::runtime_error("No such file '" + name + "' in zip archive");
@@ -335,27 +337,27 @@ std::istream& zip_reader::operator[](const std::string& name) throw(std::bad_all
 		throw std::runtime_error("Unsupported ZIP feature: Unsupported compression method");
 }
 
-zip_reader::iterator zip_reader::begin() throw(std::bad_alloc)
+reader::iterator reader::begin() throw(std::bad_alloc)
 {
 	return iterator(offsets.begin());
 }
 
-zip_reader::iterator zip_reader::end() throw(std::bad_alloc)
+reader::iterator reader::end() throw(std::bad_alloc)
 {
 	return iterator(offsets.end());
 }
 
-zip_reader::riterator zip_reader::rbegin() throw(std::bad_alloc)
+reader::riterator reader::rbegin() throw(std::bad_alloc)
 {
 	return riterator(offsets.rbegin());
 }
 
-zip_reader::riterator zip_reader::rend() throw(std::bad_alloc)
+reader::riterator reader::rend() throw(std::bad_alloc)
 {
 	return riterator(offsets.rend());
 }
 
-zip_reader::~zip_reader() throw()
+reader::~reader() throw()
 {
 	if(!--*refcnt) {
 		delete zipstream;
@@ -363,7 +365,7 @@ zip_reader::~zip_reader() throw()
 	}
 }
 
-zip_reader::zip_reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error)
+reader::reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!file_is_regular(zipfile))
 		throw std::runtime_error("Zipfile '" + zipfile + "' is not regular file");
@@ -395,7 +397,7 @@ zip_reader::zip_reader(const std::string& zipfile) throw(std::bad_alloc, std::ru
 	}
 }
 
-zip_writer::zip_writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
+writer::writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
 {
 	compression = _compression;
 	zipfile_path = zipfile;
@@ -407,7 +409,7 @@ zip_writer::zip_writer(const std::string& zipfile, unsigned _compression) throw(
 	system_stream = true;
 }
 
-zip_writer::zip_writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
+writer::writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
 {
 	compression = _compression;
 	zipstream = &stream;
@@ -415,7 +417,7 @@ zip_writer::zip_writer(std::ostream& stream, unsigned _compression) throw(std::b
 	system_stream = false;
 }
 
-zip_writer::~zip_writer() throw()
+writer::~writer() throw()
 {
 	if(!committed && system_stream)
 		remove(temp_path.c_str());
@@ -423,7 +425,7 @@ zip_writer::~zip_writer() throw()
 		delete zipstream;
 }
 
-void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_error)
+void writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_error)
 {
 	if(committed)
 		throw std::logic_error("Can't commit twice");
@@ -474,14 +476,14 @@ void zip_writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_e
 	if(system_stream) {
 		dynamic_cast<std::ofstream*>(zipstream)->close();
 		std::string backup = zipfile_path + ".backup";
-		rename_file_overwrite(zipfile_path.c_str(), backup.c_str());
-		if(rename_file_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
+		zip::rename_overwrite(zipfile_path.c_str(), backup.c_str());
+		if(zip::rename_overwrite(temp_path.c_str(), zipfile_path.c_str()) < 0)
 			throw std::runtime_error("Can't rename '" + temp_path + "' -> '" + zipfile_path + "'");
 	}
 	committed = true;
 }
 
-std::ostream& zip_writer::create_file(const std::string& name) throw(std::bad_alloc, std::logic_error,
+std::ostream& writer::create_file(const std::string& name) throw(std::bad_alloc, std::logic_error,
 	std::runtime_error)
 {
 	if(open_file != "")
@@ -501,7 +503,7 @@ std::ostream& zip_writer::create_file(const std::string& name) throw(std::bad_al
 	return *s;
 }
 
-void zip_writer::close_file() throw(std::bad_alloc, std::logic_error, std::runtime_error)
+void writer::close_file() throw(std::bad_alloc, std::logic_error, std::runtime_error)
 {
 	if(open_file == "")
 		throw std::logic_error("Can't close file with no file open");
@@ -534,7 +536,7 @@ void zip_writer::close_file() throw(std::bad_alloc, std::logic_error, std::runti
 	if(!*zipstream)
 		throw std::runtime_error("Can't write member to ZIP file");
 	current_compressed_file.resize(0);
-	zip_file_info info;
+	file_info info;
 	info.crc = crc32;
 	info.uncompressed_size = ucs;
 	info.compressed_size = cs;
@@ -643,13 +645,13 @@ namespace
 	}
 }
 
-std::string resolve_file_relative(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
+std::string resolverel(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	return combine_path(name, referencing_path);
 }
 
-std::istream& open_file_relative(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
+std::istream& openrel(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	std::string path_to_open = combine_path(name, referencing_path);
@@ -676,7 +678,7 @@ std::istream& open_file_relative(const std::string& name, const std::string& ref
 		path_to_open = path_to_open.substr(0, split);
 		if(file_is_regular(path_to_open))
 			try {
-				zip_reader r(path_to_open);
+				reader r(path_to_open);
 				return r[membername];
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -685,18 +687,18 @@ std::istream& open_file_relative(const std::string& name, const std::string& ref
 	}
 }
 
-std::vector<char> read_file_relative(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
+std::vector<char> readrel(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	std::vector<char> out;
-	std::istream& s = open_file_relative(name, referencing_path);
+	std::istream& s = openrel(name, referencing_path);
 	boost::iostreams::back_insert_device<std::vector<char>> rd(out);
 	boost::iostreams::copy(s, rd);
 	delete &s;
 	return out;
 }
 
-bool file_exists_zip(const std::string& name) throw(std::bad_alloc)
+bool file_exists(const std::string& name) throw(std::bad_alloc)
 {
 	std::string path_to_open = name;
 	std::string final_path = path_to_open;
@@ -716,7 +718,7 @@ bool file_exists_zip(const std::string& name) throw(std::bad_alloc)
 		path_to_open = path_to_open.substr(0, split);
 		if(file_is_regular(path_to_open))
 			try {
-				zip_reader r(path_to_open);
+				reader r(path_to_open);
 				return r.has_member(membername);
 			} catch(std::bad_alloc& e) {
 				throw;
@@ -724,4 +726,5 @@ bool file_exists_zip(const std::string& name) throw(std::bad_alloc)
 			}
 	}
 	return false;
+}
 }

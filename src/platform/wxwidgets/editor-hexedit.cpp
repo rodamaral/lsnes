@@ -362,7 +362,7 @@ public:
 		try {
 			std::string filename = choose_file_load(this, "Load bookmarks from file", project_otherpath(),
 				filetype_hexbookmarks);
-			auto _in = read_file_relative(filename, "");
+			auto _in = zip::readrel(filename, "");
 			std::string in(_in.begin(), _in.end());
 			JSON::node root(in);
 			std::vector<bookmark_entry> newbookmarks;

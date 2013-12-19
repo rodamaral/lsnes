@@ -10,10 +10,12 @@
 #include <sstream>
 #include <zlib.h>
 
+namespace zip
+{
 /**
  * This class opens ZIP archive and offers methods to read members off it.
  */
-class zip_reader
+class reader
 {
 public:
 /**
@@ -157,12 +159,12 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't open the ZIP file.
  */
-	zip_reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error);
+	reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Destroy the ZIP reader. Opened input streams continue to be valid.
  */
-	~zip_reader() throw();
+	~reader() throw();
 
 /**
  * Gives the name of the first member, or "" if empty archive.
@@ -231,8 +233,8 @@ public:
  */
 	std::istream& operator[](const std::string& name) throw(std::bad_alloc, std::runtime_error);
 private:
-	zip_reader(zip_reader&);
-	zip_reader& operator=(zip_reader&);
+	reader(reader&);
+	reader& operator=(reader&);
 	std::map<std::string, unsigned long long> offsets;
 	std::ifstream* zipstream;
 	size_t* refcnt;
@@ -251,32 +253,32 @@ private:
  * throw std::bad_alloc: Not enough memory.
  * throw std::runtime_error: The file does not exist or can't be opened.
  */
-std::istream& open_file_relative(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
+std::istream& openrel(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
 	std::runtime_error);
 
 /**
- * As open_file_relative, but instead of returning handle to file, reads the entiere contents of the file and returns
+ * As zip::openrel, but instead of returning handle to file, reads the entiere contents of the file and returns
  * that.
  *
- * parameter name: As in open_file_relative
- * parameter referencing_path: As in open_file_relative.
+ * parameter name: As in zip::openrel
+ * parameter referencing_path: As in zip::openrel.
  * returns: The file contents.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: The file does not exist or can't be opened.
  */
-std::vector<char> read_file_relative(const std::string& name, const std::string& referencing_path)
+std::vector<char> readrel(const std::string& name, const std::string& referencing_path)
 	throw(std::bad_alloc, std::runtime_error);
 
 /**
- * Resolves the final file path that open_file_relative/read_file_relative would open.
+ * Resolves the final file path that zip::openrel/zip::readrel would open.
  *
- * parameter name: As in open_file_relative
- * parameter referencing_path: As in open_file_relative
+ * parameter name: As in zip::openrel
+ * parameter referencing_path: As in zip::openrel
  * returns: The file absolute path.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Bad path.
  */
-std::string resolve_file_relative(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
+std::string resolverel(const std::string& name, const std::string& referencing_path) throw(std::bad_alloc,
 	std::runtime_error);
 
 /**
@@ -286,12 +288,12 @@ std::string resolve_file_relative(const std::string& name, const std::string& re
  * returns: True if file exists, false if not.
  * throws std::bad_alloc: Not enough memory.
  */
-bool file_exists_zip(const std::string& name) throw(std::bad_alloc);
+bool file_exists(const std::string& name) throw(std::bad_alloc);
 
 /**
  * This class handles writing a ZIP archives.
  */
-class zip_writer
+class writer
 {
 public:
 /**
@@ -303,12 +305,12 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't open archive or invalid argument.
  */
-	zip_writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
-	zip_writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
+	writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
+	writer(std::ostream& stream, unsigned _compression) throw(std::bad_alloc, std::runtime_error);
 /**
  * Destroys ZIP writer, aborting the transaction (unless commit() has been called).
  */
-	~zip_writer() throw();
+	~writer() throw();
 
 /**
  * Commits the ZIP file. Does atomic replace of existing file if possible.
@@ -328,7 +330,8 @@ public:
  * throws std::logic_error: Existing file open.
  * throws std::runtime_error: Illegal name.
  */
-	std::ostream& create_file(const std::string& name) throw(std::bad_alloc, std::logic_error, std::runtime_error);
+	std::ostream& create_file(const std::string& name) throw(std::bad_alloc, std::logic_error,
+		std::runtime_error);
 
 /**
  * Closes open member and destroys stream corresponding to it.
@@ -339,7 +342,7 @@ public:
  */
 	void close_file() throw(std::bad_alloc, std::logic_error, std::runtime_error);
 private:
-	struct zip_file_info
+	struct file_info
 	{
 		unsigned long crc;
 		unsigned long uncompressed_size;
@@ -347,8 +350,8 @@ private:
 		unsigned long offset;
 	};
 
-	zip_writer(zip_writer&);
-	zip_writer& operator=(zip_writer&);
+	writer(writer&);
+	writer& operator=(writer&);
 	std::ostream* zipstream;
 	bool system_stream;
 	std::string temp_path;
@@ -356,13 +359,13 @@ private:
 	std::string open_file;
 	uint32_t base_offset;
 	std::vector<char> current_compressed_file;
-	std::map<std::string, zip_file_info> files;
+	std::map<std::string, file_info> files;
 	unsigned compression;
 	boost::iostreams::filtering_ostream* s;
 	uint32_t basepos;
 	bool committed;
 };
 
-int rename_file_overwrite(const char* oldname, const char* newname);
-
+int rename_overwrite(const char* oldname, const char* newname);
+}
 #endif

@@ -30,7 +30,7 @@ namespace
 			}
 			std::istream* o = NULL;
 			try {
-				o = &open_file_relative(filename, "");
+				o = &zip::openrel(filename, "");
 				(*output) << "Running '" << std::string(filename) << "'" << std::endl;
 				std::string line;
 				while(std::getline(*o, line))

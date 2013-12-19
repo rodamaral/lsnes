@@ -262,7 +262,7 @@ void wxeditor_authors::on_add(wxCommandEvent& e)
 	try {
 		std::string luascript = choose_file_load(this, "Pick lua script", ".", filetype_lua_script);
 		try {
-			auto& p = open_file_relative(luascript, "");
+			auto& p = zip::openrel(luascript, "");
 			delete &p;
 		} catch(std::exception& e) {
 			show_message_ok(this, "File not found", "File '" + luascript + "' can't be opened",

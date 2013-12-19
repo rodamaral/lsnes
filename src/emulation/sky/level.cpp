@@ -219,7 +219,7 @@ namespace sky
 #ifdef LEVEL_CHECKSUMMER
 int main(int argc, char** argv)
 {
-	sky::roads_lzs levels(read_file_relative(argv[1], ""));
+	sky::roads_lzs levels(zip::readrel(argv[1], ""));
 	uint32_t democount = 0;
 	for(unsigned i = 0; i < 31; i++) {
 		if(levels.present(i)) {
@@ -227,7 +227,7 @@ int main(int argc, char** argv)
 			levels[i].sha256_hash(x);
 			std::string demofile = (stringfmt() << argv[2] << i).str();
 			try {
-				std::vector<char> dem = read_file_relative(demofile, "");
+				std::vector<char> dem = zip::readrel(demofile, "");
 				if(dem.size() == 0)
 					continue;
 				char d = 1;

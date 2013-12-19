@@ -380,7 +380,7 @@ void wxeditor_macro::on_load(wxCommandEvent& e)
 		if(mname == "")
 			return;
 		std::string file = choose_file_load(this, "Load macro from", project_otherpath(), filetype_macro);
-		std::vector<char> contents = read_file_relative(file, "");
+		std::vector<char> contents = zip::readrel(file, "");
 		controller_macro m(JSON::node(std::string(contents.begin(), contents.end())));
 		controls.set_macro(mname, m);
 	} catch(canceled_exception& e) {

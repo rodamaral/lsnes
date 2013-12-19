@@ -68,7 +68,7 @@ void lsnes_gamepads_init()
 		}
 	});
 	try {
-		auto cfg = read_file_relative(get_config_path() + "/gamepads.json", "");
+		auto cfg = zip::readrel(get_config_path() + "/gamepads.json", "");
 		std::string _cfg(cfg.begin(), cfg.end());
 		JSON::node config(_cfg);
 		lsnes_gamepads.load(config);

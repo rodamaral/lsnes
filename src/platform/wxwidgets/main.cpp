@@ -298,7 +298,7 @@ std::string pick_archive_member(wxWindow* parent, const std::string& filename) t
 	//Did we pick a .zip file?
 	std::string f;
 	try {
-		zip_reader zr(filename);
+		zip::reader zr(filename);
 		std::vector<wxString> files;
 		for(auto i : zr)
 			files.push_back(towxstring(i));
@@ -622,7 +622,7 @@ std::string pick_file_member(wxWindow* parent, const std::string& title, const s
 	if(!regex_match(".*\\.[zZ][iI][pP]", filename))
 		return filename;	//Not a ZIP.
 	try {
-		zip_reader zr(filename);
+		zip::reader zr(filename);
 		std::vector<std::string> files;
 		for(auto i : zr)
 			files.push_back(i);

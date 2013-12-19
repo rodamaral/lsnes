@@ -674,7 +674,7 @@ namespace
 		std::istream* s = NULL;
 		try {
 			bool ans = false;
-			s = &open_file_relative(filename, "");
+			s = &zip::openrel(filename, "");
 			char buf[6] = {0};
 			s->read(buf, 5);
 			if(*s && !strcmp(buf, "lsmv\x1A"))
@@ -685,7 +685,7 @@ namespace
 			delete s;
 		}
 		try {
-			zip_reader r(filename);
+			zip::reader r(filename);
 			std::istream& s = r["systemid"];
 			std::string s2;
 			std::getline(s, s2);
@@ -1471,7 +1471,7 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		std::string filename = choose_file_load(this, "Choose memory watch file", project_otherpath(),
 			filetype_watch);
 		try {
-			std::istream& in = open_file_relative(filename, "");
+			std::istream& in = zip::openrel(filename, "");
 			while(in) {
 				std::string wname;
 				std::string wexpr;

@@ -47,7 +47,7 @@ uint64_t get_utime()
 
 	void load_demos(std::vector<demoset_entry>& _demos, const std::string& filename)
 	{
-		zip_reader r(filename);
+		zip::reader r(filename);
 		for(auto i : r) {
 			regex_results rx;
 			if(rx = regex("([0-9A-Fa-f]{64}).rec", i)) {
@@ -73,29 +73,29 @@ uint64_t get_utime()
 		std::string errfile;
 		try {
 			errfile = "/SPEED.DAT";
-			gauge _speed_dat(read_file_relative(filename + errfile, ""), 0x22);
+			gauge _speed_dat(zip::readrel(filename + errfile, ""), 0x22);
 			errfile = "/OXY_DISP.DAT";
-			gauge _oxydisp_dat(read_file_relative(filename + errfile, ""), 0x0a);
+			gauge _oxydisp_dat(zip::readrel(filename + errfile, ""), 0x0a);
 			errfile = "/FUL_DISP.DAT";
-			gauge _fueldisp_dat(read_file_relative(filename + errfile, ""), 0x0a);
+			gauge _fueldisp_dat(zip::readrel(filename + errfile, ""), 0x0a);
 			errfile = "/ROADS.LZS";
-			roads_lzs _levels(read_file_relative(filename + errfile, ""));
+			roads_lzs _levels(zip::readrel(filename + errfile, ""));
 			errfile = "/CARS.LZS";
-			image _ship(read_file_relative(filename + errfile, ""));
+			image _ship(zip::readrel(filename + errfile, ""));
 			errfile = "/DASHBRD.LZS";
-			image _dashboard(read_file_relative(filename + errfile, ""));
+			image _dashboard(zip::readrel(filename + errfile, ""));
 			if(_dashboard.width != 320 || _dashboard.height > 200) {
 				std::cerr << _dashboard.width << "x" << _dashboard.height << std::endl;
 				throw std::runtime_error("Must be 320 wide and at most 200 high");
 			}
 			errfile = "/GOMENU.LZS";
-			image _levelselect(read_file_relative(filename + errfile, ""));
+			image _levelselect(zip::readrel(filename + errfile, ""));
 			if(_levelselect.width != 320 || _levelselect.height != 200)
 				throw std::runtime_error("Must be 320x200");
 			errfile = "/SFX.SND";
-			sounds _soundfx(read_file_relative(filename + errfile, ""), 5);
+			sounds _soundfx(zip::readrel(filename + errfile, ""), 5);
 			errfile = "/DEMO.REC";
-			demo _builtin_demo(read_file_relative(filename + errfile, ""), true);
+			demo _builtin_demo(zip::readrel(filename + errfile, ""), true);
 			image _backgrounds[10];
 			for(unsigned i = 0; i < 10; i++) {
 				std::string n = "/WORLDx.LZS";
@@ -103,12 +103,12 @@ uint64_t get_utime()
 				errfile = n;
 				//Skip nonexistent backgrounds.
 				try {
-					std::istream& x = open_file_relative(filename + errfile, "");
+					std::istream& x = zip::openrel(filename + errfile, "");
 					delete &x;
 				} catch(...) {
 					continue;
 				}
-				_backgrounds[i] = image(read_file_relative(filename + errfile, ""));
+				_backgrounds[i] = image(zip::readrel(filename + errfile, ""));
 				if(_backgrounds[i].width != 320 || _backgrounds[i].height > 200)
 					throw std::runtime_error("Must be 320 wide and at most 200 high");
 			}

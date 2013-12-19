@@ -50,7 +50,7 @@ enum lsnes_movie_tags
 	TAG_ROMHINT = 0x6f715830
 };
 
-void read_linefile(zip_reader& r, const std::string& member, std::string& out, bool conditional = false)
+void read_linefile(zip::reader& r, const std::string& member, std::string& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(conditional && !r.has_member(member))
@@ -66,7 +66,7 @@ void read_linefile(zip_reader& r, const std::string& member, std::string& out, b
 	}
 }
 
-void write_linefile(zip_writer& w, const std::string& member, const std::string& value, bool conditional = false)
+void write_linefile(zip::writer& w, const std::string& member, const std::string& value, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	if(conditional && value == "")
@@ -117,7 +117,7 @@ namespace
 		}
 	}
 
-	std::map<std::string, std::string> read_settings(zip_reader& r)
+	std::map<std::string, std::string> read_settings(zip::reader& r)
 	{
 		std::map<std::string, std::string> x;
 		for(auto i : r) {
@@ -147,7 +147,7 @@ namespace
 		}
 	}
 
-	std::map<std::string, uint64_t> read_active_macros(zip_reader& r, const std::string& member)
+	std::map<std::string, uint64_t> read_active_macros(zip::reader& r, const std::string& member)
 	{
 		std::map<std::string, uint64_t> x;
 		if(!r.has_member(member))
@@ -179,7 +179,7 @@ namespace
 		return x;
 	}
 
-	void write_active_macros(zip_writer& w, const std::string& member, const std::map<std::string, uint64_t>& ma)
+	void write_active_macros(zip::writer& w, const std::string& member, const std::map<std::string, uint64_t>& ma)
 	{
 		if(ma.empty())
 			return;
@@ -199,7 +199,7 @@ namespace
 
 
 template<typename T>
-void read_numeric_file(zip_reader& r, const std::string& member, T& out, bool conditional = false)
+void read_numeric_file(zip::reader& r, const std::string& member, T& out, bool conditional = false)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::string _out;
@@ -210,7 +210,7 @@ void read_numeric_file(zip_reader& r, const std::string& member, T& out, bool co
 }
 
 template<typename T>
-void write_numeric_file(zip_writer& w, const std::string& member, T value) throw(std::bad_alloc,
+void write_numeric_file(zip::writer& w, const std::string& member, T value) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	std::ostringstream x;
@@ -218,7 +218,7 @@ void write_numeric_file(zip_writer& w, const std::string& member, T value) throw
 	write_linefile(w, member, x.str());
 }
 
-void write_raw_file(zip_writer& w, const std::string& member, std::vector<char>& content) throw(std::bad_alloc,
+void write_raw_file(zip::writer& w, const std::string& member, std::vector<char>& content) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	std::ostream& m = w.create_file(member);
@@ -233,7 +233,7 @@ void write_raw_file(zip_writer& w, const std::string& member, std::vector<char>&
 	}
 }
 
-std::vector<char> read_raw_file(zip_reader& r, const std::string& member) throw(std::bad_alloc, std::runtime_error)
+std::vector<char> read_raw_file(zip::reader& r, const std::string& member) throw(std::bad_alloc, std::runtime_error)
 {
 	std::vector<char> out;
 	std::istream& m = r[member];
@@ -268,8 +268,8 @@ uint32_t decode_uint32(unsigned char* buf)
 		((uint32_t)buf[3]);
 }
 
-void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::string>>& authors) throw(std::bad_alloc,
-	std::runtime_error)
+void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::string>>& authors)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	std::istream& m = r["authors"];
 	try {
@@ -286,7 +286,7 @@ void read_authors_file(zip_reader& r, std::vector<std::pair<std::string, std::st
 	}
 }
 
-std::string read_rrdata(zip_reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
+std::string read_rrdata(zip::reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 {
 	out = read_raw_file(r, "rrdata");
 	uint64_t count = rrdata.count(out);
@@ -295,7 +295,7 @@ std::string read_rrdata(zip_reader& r, std::vector<char>& out) throw(std::bad_al
 	return x.str();
 }
 
-void write_rrdata(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
+void write_rrdata(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 {
 	uint64_t count;
 	std::vector<char> out;
@@ -313,7 +313,7 @@ void write_rrdata(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
 	}
 }
 
-void write_authors_file(zip_writer& w, std::vector<std::pair<std::string, std::string>>& authors)
+void write_authors_file(zip::writer& w, std::vector<std::pair<std::string, std::string>>& authors)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::ostream& m = w.create_file("authors");
@@ -332,7 +332,7 @@ void write_authors_file(zip_writer& w, std::vector<std::pair<std::string, std::s
 	}
 }
 
-void write_input(zip_writer& w, controller_frame_vector& input)
+void write_input(zip::writer& w, controller_frame_vector& input)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	std::ostream& m = w.create_file("input");
@@ -351,7 +351,7 @@ void write_input(zip_writer& w, controller_frame_vector& input)
 	}
 }
 
-void read_subtitles(zip_reader& r, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+void read_subtitles(zip::reader& r, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
 {
 	x.clear();
 	if(!r.has_member(file))
@@ -376,7 +376,7 @@ void read_subtitles(zip_reader& r, const std::string& file, std::map<moviefile_s
 
 }
 
-void write_subtitles(zip_writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
+void write_subtitles(zip::writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
 {
 	std::ostream& m = w.create_file(file);
 	try {
@@ -392,7 +392,7 @@ void write_subtitles(zip_writer& w, const std::string& file, std::map<moviefile_
 	}
 }
 
-void read_input(zip_reader& r, controller_frame_vector& input, unsigned version) throw(std::bad_alloc,
+void read_input(zip::reader& r, controller_frame_vector& input, unsigned version) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	controller_frame tmp = input.blank_frame(false);
@@ -413,7 +413,7 @@ void read_input(zip_reader& r, controller_frame_vector& input, unsigned version)
 	}
 }
 
-void read_pollcounters(zip_reader& r, const std::string& file, std::vector<uint32_t>& pctr)
+void read_pollcounters(zip::reader& r, const std::string& file, std::vector<uint32_t>& pctr)
 {
 	std::istream& m = r[file];
 	try {
@@ -439,7 +439,7 @@ void read_pollcounters(zip_reader& r, const std::string& file, std::vector<uint3
 	}
 }
 
-void write_pollcounters(zip_writer& w, const std::string& file, const std::vector<uint32_t>& pctr)
+void write_pollcounters(zip::writer& w, const std::string& file, const std::vector<uint32_t>& pctr)
 {
 	std::ostream& m = w.create_file(file);
 	try {
@@ -478,7 +478,7 @@ moviefile::brief_info::brief_info(const std::string& filename)
 		return;
 	}
 	{
-		std::istream& s = open_file_relative(filename, "");
+		std::istream& s = zip::openrel(filename, "");
 		char buf[6] = {0};
 		s.read(buf, 5);
 		if(!strcmp(buf, "lsmv\x1A")) {
@@ -488,7 +488,7 @@ moviefile::brief_info::brief_info(const std::string& filename)
 		}
 		delete &s;
 	}
-	zip_reader r(filename);
+	zip::reader r(filename);
 	std::string tmp;
 	read_linefile(r, "systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
@@ -588,7 +588,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	lazy_project_create = false;
 	std::string tmp;
 	{
-		std::istream& s = open_file_relative(movie, "");
+		std::istream& s = zip::openrel(movie, "");
 		char buf[6] = {0};
 		s.read(buf, 5);
 		if(!strcmp(buf, "lsmv\x1A")) {
@@ -598,7 +598,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		}
 		delete &s;
 	}
-	zip_reader r(movie);
+	zip::reader r(movie);
 	read_linefile(r, "systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
 		throw std::runtime_error("Not lsnes movie");
@@ -700,25 +700,25 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 			throw std::runtime_error("Failed to write to output file");
 		strm.close();
 		std::string backup = movie + ".backup";
-		rename_file_overwrite(movie.c_str(), backup.c_str());
-		if(rename_file_overwrite(tmp.c_str(), movie.c_str()) < 0)
+		zip::rename_overwrite(movie.c_str(), backup.c_str());
+		if(zip::rename_overwrite(tmp.c_str(), movie.c_str()) < 0)
 			throw std::runtime_error("Can't rename '" + tmp + "' -> '" + movie + "'");
 		return;
 	}
-	zip_writer w(movie, compression);
+	zip::writer w(movie, compression);
 	save(w);
 }
 
 void moviefile::save(std::ostream& stream) throw(std::bad_alloc, std::runtime_error)
 {
-	zip_writer w(stream, 0);
+	zip::writer w(stream, 0);
 	save(w);
 }
 
-void moviefile::save(zip_writer& w) throw(std::bad_alloc, std::runtime_error)
+void moviefile::save(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 {
 	write_linefile(w, "gametype", gametype->get_name());
-	write_settings<zip_writer>(w, settings, gametype->get_type().get_settings(), [](zip_writer& w,
+	write_settings<zip::writer>(w, settings, gametype->get_type().get_settings(), [](zip::writer& w,
 		const std::string& name, const std::string& value) -> void {
 			if(regex_match("port[0-9]+", name))
 				write_linefile(w, name, value);

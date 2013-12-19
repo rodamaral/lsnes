@@ -748,7 +748,7 @@ void upload_menu::save()
 		if(!out)
 			return;
 	}
-	rename_file_overwrite((base + ".tmp").c_str(), base.c_str());
+	zip::rename_overwrite((base + ".tmp").c_str(), base.c_str());
 }
 
 void upload_menu::configure_entry(unsigned num, struct upload_entry entry)

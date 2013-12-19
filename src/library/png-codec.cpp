@@ -936,7 +936,7 @@ out:
 
 png_decoded_image::png_decoded_image(const std::string& file)
 {
-	std::istream& s = open_file_relative(file, "");
+	std::istream& s = zip::openrel(file, "");
 	try {
 		decode_png(s);
 		delete &s;

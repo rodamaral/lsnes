@@ -65,7 +65,7 @@ namespace
 			return file;
 		}
 	private:
-		zip_writer* w;
+		zip::writer* w;
 		std::ostream* file_open;
 		std::string file;
 	};
@@ -78,7 +78,7 @@ namespace
 	lua_zip_writer::lua_zip_writer(lua_state& L, const std::string& filename, unsigned compression)
 	{
 		file = filename;
-		w = new zip_writer(filename, compression);
+		w = new zip::writer(filename, compression);
 		file_open = NULL;
 		objclass<lua_zip_writer>().bind_multi(L, {
 			{"commit", &lua_zip_writer::commit},
@@ -108,7 +108,7 @@ namespace
 		bool invert = false;
 		if(L.type(2) != LUA_TNONE && L.type(2) != LUA_TNIL)
 			invert = L.toboolean(2);
-		zip_reader r(filename);
+		zip::reader r(filename);
 		L.newtable();
 		size_t idx = 1;
 		for(auto i : r) {

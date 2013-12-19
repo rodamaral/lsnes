@@ -89,7 +89,7 @@ namespace
 
 	std::string hash_file(const std::string& file, uint64_t hsize)
 	{
-		if(!file_exists_zip(file)) {
+		if(!zip::file_exists(file)) {
 			record_hash_deleted(file);
 			return "";
 		}
@@ -107,10 +107,10 @@ namespace
 	std::string try_basename(const std::string& hash, const std::string& xhash,
 		const std::string& file, uint64_t headersize)
 	{
-		if(!file_exists_zip(file))
+		if(!zip::file_exists(file))
 			return "";
 		std::string xfile = file + ".xml";
-		bool has_xfile = file_exists_zip(xfile);
+		bool has_xfile = zip::file_exists(xfile);
 		if(xhash == "" && has_xfile)
 			return "";	//Markup mismatch.
 		if(xhash != "" && !has_xfile)

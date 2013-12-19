@@ -458,10 +458,10 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 	//Load markups and memory images.
 	if(info.type == info::IT_MEMORY || info.type == info::IT_MARKUP) {
 		unsigned headered = 0;
-		filename = resolve_file_relative(_filename, base);
+		filename = zip::resolverel(_filename, base);
 		type = info.type;
 
-		data.reset(new std::vector<char>(read_file_relative(_filename, base)));
+		data.reset(new std::vector<char>(zip::readrel(_filename, base)));
 		headered = (info.type == info::IT_MEMORY) ? calculate_headersize(data->size(), info.headersize) : 0;
 		if(data->size() >= headered) {
 			if(headered) {
@@ -482,7 +482,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 	}
 
 	if(info.type == info::IT_FILE) {
-		filename = resolve_file_relative(_filename, base);
+		filename = zip::resolverel(_filename, base);
 		filename = get_absolute_path(filename);
 		type = info::IT_FILE;
 		data.reset(new std::vector<char>(filename.begin(), filename.end()));

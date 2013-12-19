@@ -601,7 +601,7 @@ namespace
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			name2 = L.get_string(2, fname.c_str());
 		return bitmap_load_fn(L, [&name, &name2]() -> lua_loaded_bitmap {
-			std::string name3 = resolve_file_relative(name, name2);
+			std::string name3 = zip::resolverel(name, name2);
 			return lua_loaded_bitmap::load(name3);
 		});
 	});
@@ -757,7 +757,7 @@ namespace
 		std::string name = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			name2 = L.get_string(2, fname.c_str());
-		std::string filename = resolve_file_relative(name, name2);
+		std::string filename = zip::resolverel(name, name2);
 		return bitmap_load_png_fn(L, filename);
 	});
 
@@ -781,7 +781,7 @@ namespace
 			index++;
 		}
 		if(index > 1) {
-			std::string filename = resolve_file_relative(name, name2);
+			std::string filename = zip::resolverel(name, name2);
 			std::ofstream strm(filename, std::ios::binary);
 			if(!strm)
 				throw std::runtime_error("Can't open output file");
@@ -839,7 +839,7 @@ namespace
 		std::string name = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			name2 = L.get_string(2, fname.c_str());
-		std::istream& s = open_file_relative(name, name2);
+		std::istream& s = zip::openrel(name, name2);
 		try {
 			int r = bitmap_palette_fn(L, s);
 			delete &s;

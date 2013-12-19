@@ -35,7 +35,7 @@ bool recentfile_path::check() const
 	if(path == "")
 		return false;
 	try {
-		return file_exists_zip(path);
+		return zip::file_exists(path);
 		return true;
 	} catch(...) {
 		return false;
@@ -122,12 +122,12 @@ bool recentfile_multirom::check() const
 {
 	if(packfile == "" && singlefile == "" && core == "" && system == "" && region == "" && files.empty())
 		return false;
-	if(packfile != "" && !file_exists_zip(packfile))
+	if(packfile != "" && !zip::file_exists(packfile))
 		return false;
-	if(singlefile != "" && !file_exists_zip(singlefile))
+	if(singlefile != "" && !zip::file_exists(singlefile))
 		return false;
 	for(auto i : files)
-		if(i != "" && !file_exists_zip(i))
+		if(i != "" && !zip::file_exists(i))
 			return false;
 	return true;
 }

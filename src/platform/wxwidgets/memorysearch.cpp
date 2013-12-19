@@ -833,7 +833,7 @@ void wxwindow_memorysearch::handle_load()
 	try {
 		std::string filename = choose_file_load(this, "Load memory search", project_otherpath(),
 			filetype_memorysearch);
-		std::vector<char> state = read_file_relative(filename, "");
+		std::vector<char> state = zip::readrel(filename, "");
 		push_undo();
 		msearch->loadstate(state);
 		update();

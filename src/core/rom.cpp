@@ -244,15 +244,15 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 		romidx = 1;
 		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
 		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
-		if(file_exists_zip(basename + ".xml"))
+		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 		pmand |= ctype.get_image_info(0).mandatory;
 	}
 	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(ctype.get_image_info(romidx)));
-	if(file_exists_zip(file + ".xml"))
+	if(zip::file_exists(file + ".xml"))
 		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 	pmand |= ctype.get_image_info(romidx).mandatory;
-	msu1_base = resolve_file_relative(file, "");
+	msu1_base = zip::resolverel(file, "");
 	record_files(*this);
 	if(pmand != tmand)
 		throw std::runtime_error("Required ROM images missing");
@@ -262,7 +262,7 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) throw(std::bad_alloc,
 	std::runtime_error)
 {
-	std::istream& spec = open_file_relative(file, "");
+	std::istream& spec = zip::openrel(file, "");
 	std::string s;
 	std::getline(spec, s);
 	istrip_CR(s);
@@ -286,16 +286,16 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 			std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
 			romimg[0] = loaded_image(lsnes_image_hasher, basename, "",
 				xlate_info(coretype->get_image_info(0)));
-			if(file_exists_zip(basename + ".xml"))
+			if(zip::file_exists(basename + ".xml"))
 				romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 			pmand |= rtype->get_image_info(0).mandatory;
 		}
 		romimg[romidx] = loaded_image(lsnes_image_hasher, file, "",
 			xlate_info(coretype->get_image_info(romidx)));
-		if(file_exists_zip(file + ".xml"))
+		if(zip::file_exists(file + ".xml"))
 			romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 		pmand |= rtype->get_image_info(romidx).mandatory;
-		msu1_base = resolve_file_relative(file, "");
+		msu1_base = zip::resolverel(file, "");
 		record_files(*this);
 		if(pmand != tmand)
 			throw std::runtime_error("Required ROM images missing");
@@ -389,14 +389,14 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 		int32_t offset = 0;
 		if(tmp[1] != "")
 			offset = parse_value<int32_t>(tmp[1]);
-		romimg[idx].patch(read_file_relative(tmp[3], file), offset);
+		romimg[idx].patch(zip::readrel(tmp[3], file), offset);
 	}
 
 	//MSU-1 base.
 	if(cromimg[1] != "")
-		msu1_base = resolve_file_relative(cromimg[1], file);
+		msu1_base = zip::resolverel(cromimg[1], file);
 	else
-		msu1_base = resolve_file_relative(cromimg[0], file);
+		msu1_base = zip::resolverel(cromimg[0], file);
 }
 
 namespace
@@ -484,15 +484,15 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& core, const s
 	if(bios != "") {
 		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
 		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
-		if(file_exists_zip(basename + ".xml"))
+		if(zip::file_exists(basename + ".xml"))
 			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 		pmand |= t->get_image_info(0).mandatory;
 	}
 	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(t->get_image_info(romidx)));
-	if(file_exists_zip(file + ".xml"))
+	if(zip::file_exists(file + ".xml"))
 		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 	pmand |= t->get_image_info(romidx).mandatory;
-	msu1_base = resolve_file_relative(file, "");
+	msu1_base = zip::resolverel(file, "");
 	record_files(*this);
 	if(pmand != tmand)
 		throw std::runtime_error("Required ROM images missing");
@@ -533,10 +533,10 @@ loaded_rom::loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string
 			pmand |= t->get_image_info(i).mandatory;
 		tmand |= t->get_image_info(i).mandatory;
 		romimg[i] = loaded_image(lsnes_image_hasher, file[i], "", xlate_info(t->get_image_info(i)));
-		if(file_exists_zip(file[i] + ".xml"))
+		if(zip::file_exists(file[i] + ".xml"))
 			romxml[i] = loaded_image(lsnes_image_hasher, file[i] + ".xml", "", get_xml_info());
 	}
-	msu1_base = resolve_file_relative(file[romidx], "");
+	msu1_base = zip::resolverel(file[romidx], "");
 	record_files(*this);
 	if(pmand != tmand)
 		throw std::runtime_error("Required ROM images missing");
@@ -593,7 +593,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 	regex_results opt;
 	for(auto i : cmdline) {
 		if(opt = regex("--continue=(.+)", i)) {
-			zip_reader r(opt[1]);
+			zip::reader r(opt[1]);
 			for(auto j : r) {
 				auto sramname = regex("sram\\.(.*)", j);
 				if(!sramname)
@@ -613,7 +613,7 @@ std::map<std::string, std::vector<char>> load_sram_commandline(const std::vector
 			continue;
 		} else if(opt = regex("--sram-([^=]+)=(.+)", i)) {
 			try {
-				ret[opt[1]] = read_file_relative(opt[2], "");
+				ret[opt[1]] = zip::readrel(opt[2], "");
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::runtime_error& e) {
