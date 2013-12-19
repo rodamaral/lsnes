@@ -1,17 +1,19 @@
-#ifndef _library__joystick__hpp__included__
-#define _library__joystick__hpp__included__
+#ifndef _library__gamepad__hpp__included__
+#define _library__gamepad__hpp__included__
 
 #include <cstdint>
 #include <set>
 #include "json.hpp"
 #include "threadtypes.hpp"
 
-class hw_gamepad
+namespace gamepad
+{
+class pad
 {
 public:
-	hw_gamepad(const JSON::node& state, unsigned jnum);
-	hw_gamepad(const std::string& _name, unsigned jnum);
-	~hw_gamepad();
+	pad(const JSON::node& state, unsigned jnum);
+	pad(const std::string& _name, unsigned jnum);
+	~pad();
 	unsigned add_axis(uint64_t id, int64_t min, int64_t max, bool pressure, const std::string& name);
 	unsigned add_button(uint64_t id, const std::string& name);
 	unsigned add_hat(uint64_t id, const std::string& name);
@@ -89,8 +91,8 @@ private:
 		unsigned state;
 		bool online;
 	};
-	hw_gamepad(const hw_gamepad&);
-	hw_gamepad& operator=(const hw_gamepad&);
+	pad(const pad&);
+	pad& operator=(const pad&);
 	std::function<void(unsigned jnum, unsigned num, int16_t val)> axis_fn;
 	std::function<void(unsigned jnum, unsigned num, bool val)> button_fn;
 	std::function<void(unsigned jnum, unsigned num, unsigned val)> hat_fn;
@@ -109,15 +111,15 @@ private:
 	mutex_class mutex;
 };
 
-class hw_gamepad_set
+class set
 {
 public:
-	hw_gamepad_set();
-	~hw_gamepad_set();
+	set();
+	~set();
 	void load(const JSON::node& state);
 	JSON::node save();
 	unsigned gamepads();
-	hw_gamepad& operator[](unsigned gpnum);
+	pad& operator[](unsigned gpnum);
 	unsigned add(const std::string& name);
 	void set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn);
 	void set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val)> fn);
@@ -126,15 +128,16 @@ public:
 	void set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn);
 	std::string get_summary();
 private:
-	hw_gamepad_set(const hw_gamepad_set&);
-	hw_gamepad_set& operator=(const hw_gamepad_set&);
+	set(const set&);
+	set& operator=(const set&);
 	std::function<void(unsigned jnum, unsigned num, int16_t val)> axis_fn;
 	std::function<void(unsigned jnum, unsigned num, bool val)> button_fn;
 	std::function<void(unsigned jnum, unsigned num, unsigned val)> hat_fn;
 	std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> amode_fn;
 	std::function<void(unsigned jnum, unsigned num, int type)> newitem_fn;
-	std::vector<hw_gamepad*> _gamepads;
+	std::vector<pad*> _gamepads;
 	mutex_class mutex;
 };
+}
 
 #endif

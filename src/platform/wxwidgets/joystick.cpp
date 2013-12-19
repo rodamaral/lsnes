@@ -70,7 +70,7 @@ namespace
 					continue;
 				}
 				unsigned jid = lsnes_gamepads.add(joy->GetProductName());
-				hw_gamepad& ngp = lsnes_gamepads[jid];
+				gamepad::pad& ngp = lsnes_gamepads[jid];
 				objs[jid] = joy;
 				
 				if(joy->HasPOV())

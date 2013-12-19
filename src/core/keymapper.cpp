@@ -20,7 +20,7 @@
 keyboard::keyboard lsnes_kbd;
 keyboard::mapper lsnes_mapper(lsnes_kbd, lsnes_cmd);
 
-hw_gamepad_set lsnes_gamepads;
+gamepad::set lsnes_gamepads;
 
 namespace
 {

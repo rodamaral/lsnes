@@ -140,7 +140,7 @@ namespace
 	class joystick_panel : public text_framebuffer_panel
 	{
 	public:
-		joystick_panel(wxWindow* parent, unsigned jid, hw_gamepad& gp)
+		joystick_panel(wxWindow* parent, unsigned jid, gamepad::pad& gp)
 			: text_framebuffer_panel(parent, 60, 32, -1, NULL), _gp(gp), _jid(jid)
 		{
 			const unsigned pwidth = 80;
@@ -276,7 +276,7 @@ namespace
 			return _gp.hat_status(i);
 		}
 		unsigned _jid;
-		hw_gamepad& _gp;
+		gamepad::pad& _gp;
 		size_t base_width;
 		size_t width_need;
 		size_t height_need;
@@ -424,7 +424,7 @@ namespace
 			std::map<std::string, unsigned> jsnum;
 			top1_s->Add(jsp = new wxChoicebook(this, -1), 1, wxGROW);
 			for(unsigned i = 0; i < lsnes_gamepads.gamepads(); i++) {
-				hw_gamepad& gp = lsnes_gamepads[i];
+				gamepad::pad& gp = lsnes_gamepads[i];
 				std::string name = gp.name();
 				jsnum[name] = jsnum.count(name) ? (jsnum[name] + 1) : 1;
 				std::string tname = (stringfmt() << "joystick" << i << ": " << name).str();

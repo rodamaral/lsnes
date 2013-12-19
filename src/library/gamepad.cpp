@@ -1,6 +1,8 @@
-#include "joystick2.hpp"
+#include "gamepad.hpp"
 #include "string.hpp"
 
+namespace gamepad
+{
 namespace
 {
 	short angle_to_bitmask(int pov)
@@ -55,7 +57,7 @@ namespace
 	}
 }
 
-hw_gamepad::hw_gamepad(const JSON::node& state, unsigned _jnum)
+pad::pad(const JSON::node& state, unsigned _jnum)
 {
 	axis_fn = [](uint64_t a, uint64_t b, int16_t c) {};
 	button_fn = [](uint64_t a, uint64_t b, bool c) {};
@@ -66,7 +68,7 @@ hw_gamepad::hw_gamepad(const JSON::node& state, unsigned _jnum)
 	load(state);
 }
 
-hw_gamepad::hw_gamepad(const std::string& _xname, unsigned _jnum)
+pad::pad(const std::string& _xname, unsigned _jnum)
 {
 	axis_fn = [](uint64_t a, uint64_t b, int16_t c) {};
 	button_fn = [](uint64_t a, uint64_t b, bool c) {};
@@ -80,11 +82,11 @@ hw_gamepad::hw_gamepad(const std::string& _xname, unsigned _jnum)
 	online_flag = false;
 }
 
-hw_gamepad::~hw_gamepad()
+pad::~pad()
 {
 }
 
-void hw_gamepad::set_online(bool status)
+void pad::set_online(bool status)
 {
 	std::list<unsigned> axes_off;
 	std::list<unsigned> buttons_off;
@@ -123,7 +125,7 @@ void hw_gamepad::set_online(bool status)
 		hat_fn(jid, i, 0);
 }
 
-unsigned hw_gamepad::add_axis(uint64_t id, int64_t _min, int64_t _max, bool pressure, const std::string& xname)
+unsigned pad::add_axis(uint64_t id, int64_t _min, int64_t _max, bool pressure, const std::string& xname)
 {
 	axis_info a;
 	{
@@ -152,7 +154,7 @@ unsigned hw_gamepad::add_axis(uint64_t id, int64_t _min, int64_t _max, bool pres
 	return a.num;
 }
 
-unsigned hw_gamepad::add_button(uint64_t id, const std::string& xname)
+unsigned pad::add_button(uint64_t id, const std::string& xname)
 {
 	button_info b;
 	{
@@ -173,7 +175,7 @@ unsigned hw_gamepad::add_button(uint64_t id, const std::string& xname)
 	return b.num;
 }
 
-unsigned hw_gamepad::add_hat(uint64_t id, const std::string& xname)
+unsigned pad::add_hat(uint64_t id, const std::string& xname)
 {
 	hat_info h;
 	{
@@ -196,7 +198,7 @@ unsigned hw_gamepad::add_hat(uint64_t id, const std::string& xname)
 	return h.num;
 }
 
-unsigned hw_gamepad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::string& xnamex,
+unsigned pad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const std::string& xnamex,
 	const std::string& xnamey)
 {
 	hat_info h;
@@ -222,7 +224,7 @@ unsigned hw_gamepad::add_hat(uint64_t idx, uint64_t idy, int64_t mindev, const s
 	return h.num;
 }
 
-void hw_gamepad::report_axis(uint64_t id, int64_t val)
+void pad::report_axis(uint64_t id, int64_t val)
 {
 	mutex.lock();
 	if(_axes.count(id)) {
@@ -254,7 +256,7 @@ void hw_gamepad::report_axis(uint64_t id, int64_t val)
 		mutex.unlock();
 }
 
-void hw_gamepad::report_button(uint64_t id, bool val)
+void pad::report_button(uint64_t id, bool val)
 {
 	mutex.lock();
 	if(!_buttons.count(id)) {
@@ -271,7 +273,7 @@ void hw_gamepad::report_button(uint64_t id, bool val)
 		button_fn(jid, inum, nstate);
 }
 
-void hw_gamepad::report_hat(uint64_t id, int angle)
+void pad::report_hat(uint64_t id, int angle)
 {
 	mutex.lock();
 	unsigned h = angle_to_bitmask(angle);
@@ -289,7 +291,7 @@ void hw_gamepad::report_hat(uint64_t id, int angle)
 		hat_fn(jid, inum, nstate);
 }
 
-std::set<unsigned> hw_gamepad::online_axes()
+std::set<unsigned> pad::online_axes()
 {
 	umutex_class H(mutex);
 	std::set<unsigned> r;
@@ -298,7 +300,7 @@ std::set<unsigned> hw_gamepad::online_axes()
 	return r;
 }
 
-std::set<unsigned> hw_gamepad::online_buttons()
+std::set<unsigned> pad::online_buttons()
 {
 	umutex_class H(mutex);
 	std::set<unsigned> r;
@@ -307,7 +309,7 @@ std::set<unsigned> hw_gamepad::online_buttons()
 	return r;
 }
 
-std::set<unsigned> hw_gamepad::online_hats()
+std::set<unsigned> pad::online_hats()
 {
 	umutex_class H(mutex);
 	std::set<unsigned> r;
@@ -318,7 +320,7 @@ std::set<unsigned> hw_gamepad::online_hats()
 	return r;
 }
 
-void hw_gamepad::load(const JSON::node& state)
+void pad::load(const JSON::node& state)
 {
 	std::list<std::pair<unsigned, int>> notify_queue;
 	{
@@ -399,7 +401,7 @@ void hw_gamepad::load(const JSON::node& state)
 	}
 }
 
-void hw_gamepad::calibrate_axis(unsigned num, int64_t minus, int64_t zero, int64_t plus, int64_t neutral,
+void pad::calibrate_axis(unsigned num, int64_t minus, int64_t zero, int64_t plus, int64_t neutral,
 	double threshold, bool pressure, bool disabled)
 {
 	mutex.lock();
@@ -435,7 +437,7 @@ void hw_gamepad::calibrate_axis(unsigned num, int64_t minus, int64_t zero, int64
 	return;
 }
 
-void hw_gamepad::get_calibration(unsigned num, int64_t& minus, int64_t& zero, int64_t& plus, int64_t& neutral,
+void pad::get_calibration(unsigned num, int64_t& minus, int64_t& zero, int64_t& plus, int64_t& neutral,
 	double& threshold, bool& pressure, bool& disabled)
 {
 	umutex_class H(mutex);
@@ -453,7 +455,7 @@ void hw_gamepad::get_calibration(unsigned num, int64_t& minus, int64_t& zero, in
 	}
 }
 
-double hw_gamepad::get_tolerance(unsigned num)
+double pad::get_tolerance(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _axes) {
@@ -464,7 +466,7 @@ double hw_gamepad::get_tolerance(unsigned num)
 	return 0.5;
 }
 
-int hw_gamepad::get_mode(unsigned num)
+int pad::get_mode(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _axes) {
@@ -475,7 +477,7 @@ int hw_gamepad::get_mode(unsigned num)
 	return -1;
 }
 
-void hw_gamepad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
+void pad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
 {
 	umutex_class H(mutex);
 	for(auto& i : _axes) {
@@ -492,7 +494,7 @@ void hw_gamepad::axis_status(unsigned num, int64_t& raw, int16_t& pct)
 	pct = 0;;
 }
 
-int hw_gamepad::button_status(unsigned num)
+int pad::button_status(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _buttons) {
@@ -503,7 +505,7 @@ int hw_gamepad::button_status(unsigned num)
 	return -1;
 }
 
-int hw_gamepad::hat_status(unsigned num)
+int pad::hat_status(unsigned num)
 {
 	umutex_class H(mutex);
 	for(auto& i : _hats) {
@@ -519,7 +521,7 @@ int hw_gamepad::hat_status(unsigned num)
 	return -1;
 }
 
-JSON::node hw_gamepad::save()
+JSON::node pad::save()
 {
 	umutex_class H(mutex);
 	JSON::node r(JSON::object);
@@ -579,7 +581,7 @@ JSON::node hw_gamepad::save()
 	return r;
 }
 
-std::string hw_gamepad::get_summary()
+std::string pad::get_summary()
 {
 	umutex_class h(mutex);
 	std::ostringstream x;
@@ -622,17 +624,17 @@ std::string hw_gamepad::get_summary()
 	return x.str();
 }
 
-hw_gamepad_set::hw_gamepad_set()
+set::set()
 {
 }
 
-hw_gamepad_set::~hw_gamepad_set()
+set::~set()
 {
 	for(auto i : _gamepads)
 		delete i;
 }
 
-void hw_gamepad_set::load(const JSON::node& state)
+void set::load(const JSON::node& state)
 {
 	bool locked = true;
 	mutex.lock();
@@ -642,10 +644,10 @@ void hw_gamepad_set::load(const JSON::node& state)
 
 	for(size_t i = 0; i < state.index_count(); i++) {
 		const JSON::node& gpn = state.index(i);
-		hw_gamepad* gp = NULL;
+		pad* gp = NULL;
 		try {
 			gp = NULL;
-			gp = new hw_gamepad("", _gamepads.size());
+			gp = new pad("", _gamepads.size());
 			gp->set_axis_cb(axis_fn);
 			gp->set_button_cb(button_fn);
 			gp->set_hat_cb(hat_fn);
@@ -667,7 +669,7 @@ void hw_gamepad_set::load(const JSON::node& state)
 	mutex.unlock();
 }
 
-JSON::node hw_gamepad_set::save()
+JSON::node set::save()
 {
 	umutex_class h(mutex);
 	JSON::node n(JSON::array);
@@ -676,13 +678,13 @@ JSON::node hw_gamepad_set::save()
 	return n;
 }
 
-unsigned hw_gamepad_set::gamepads()
+unsigned set::gamepads()
 {
 	umutex_class h(mutex);
 	return _gamepads.size();
 }
 
-hw_gamepad& hw_gamepad_set::operator[](unsigned gpnum)
+pad& set::operator[](unsigned gpnum)
 {
 	umutex_class h(mutex);
 	if(gpnum >= _gamepads.size())
@@ -690,7 +692,7 @@ hw_gamepad& hw_gamepad_set::operator[](unsigned gpnum)
 	return *_gamepads[gpnum];
 }
 
-unsigned hw_gamepad_set::add(const std::string& name)
+unsigned set::add(const std::string& name)
 {
 	umutex_class h(mutex);
 	for(size_t i = 0; i < _gamepads.size(); i++) {
@@ -700,9 +702,9 @@ unsigned hw_gamepad_set::add(const std::string& name)
 		}
 	}
 	//No suitable found, create one.
-	hw_gamepad* gp = NULL;
+	pad* gp = NULL;
 	try {
-		gp = new hw_gamepad(name, _gamepads.size());
+		gp = new pad(name, _gamepads.size());
 		gp->set_online(true);
 		gp->set_axis_cb(axis_fn);
 		gp->set_button_cb(button_fn);
@@ -716,7 +718,7 @@ unsigned hw_gamepad_set::add(const std::string& name)
 	}
 }
 
-void hw_gamepad_set::set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn)
+void set::set_axis_cb(std::function<void(unsigned jnum, unsigned num, int16_t val)> fn)
 {
 	umutex_class h(mutex);
 	axis_fn = fn;
@@ -724,7 +726,7 @@ void hw_gamepad_set::set_axis_cb(std::function<void(unsigned jnum, unsigned num,
 		i->set_axis_cb(axis_fn);
 }
 
-void hw_gamepad_set::set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val)> fn)
+void set::set_button_cb(std::function<void(unsigned jnum, unsigned num, bool val)> fn)
 {
 	umutex_class h(mutex);
 	button_fn = fn;
@@ -732,7 +734,7 @@ void hw_gamepad_set::set_button_cb(std::function<void(unsigned jnum, unsigned nu
 		i->set_button_cb(button_fn);
 }
 
-void hw_gamepad_set::set_hat_cb(std::function<void(unsigned jnum, unsigned num, unsigned val)> fn)
+void set::set_hat_cb(std::function<void(unsigned jnum, unsigned num, unsigned val)> fn)
 {
 	umutex_class h(mutex);
 	hat_fn = fn;
@@ -740,7 +742,7 @@ void hw_gamepad_set::set_hat_cb(std::function<void(unsigned jnum, unsigned num, 
 		i->set_hat_cb(hat_fn);
 }
 
-void hw_gamepad_set::set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn)
+void set::set_axismode_cb(std::function<void(unsigned jnum, unsigned num, int mode, double tolerance)> fn)
 {
 	umutex_class h(mutex);
 	amode_fn = fn;
@@ -748,7 +750,7 @@ void hw_gamepad_set::set_axismode_cb(std::function<void(unsigned jnum, unsigned 
 		i->set_axismode_cb(amode_fn);
 }
 
-void hw_gamepad_set::set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn)
+void set::set_newitem_cb(std::function<void(unsigned jnum, unsigned num, int type)> fn)
 {
 	umutex_class h(mutex);
 	newitem_fn = fn;
@@ -756,11 +758,12 @@ void hw_gamepad_set::set_newitem_cb(std::function<void(unsigned jnum, unsigned n
 		i->set_newitem_cb(newitem_fn);
 }
 
-std::string hw_gamepad_set::get_summary()
+std::string set::get_summary()
 {
 	umutex_class h(mutex);
 	std::ostringstream x;
 	for(auto i : _gamepads)
 		x << i->get_summary();
 	return x.str();
+}
 }

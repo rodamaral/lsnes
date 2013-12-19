@@ -11,7 +11,7 @@
 #include "misc.hpp"
 #include "library/keyboard.hpp"
 #include "library/keyboard-mapper.hpp"
-#include "library/joystick2.hpp"
+#include "library/gamepad.hpp"
 
 /**
  * Our keyboard
@@ -25,7 +25,7 @@ extern keyboard::mapper lsnes_mapper;
 /**
  * Gamepad HW.
  */
-extern hw_gamepad_set lsnes_gamepads;
+extern gamepad::set lsnes_gamepads;
 /**
  * Initialize gamepads (need to be called before initializing joysticks).
  */

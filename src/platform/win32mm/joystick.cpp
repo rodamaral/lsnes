@@ -47,7 +47,7 @@ namespace
 				if(joyGetDevCaps(i, &caps, sizeof(caps)) != JOYERR_NOERROR)
 					continue;	//Not usable.
 				idx_to_jid[i] = lsnes_gamepads.add(caps.szPname);
-				hw_gamepad& ngp = lsnes_gamepads[idx_to_jid[i]];
+				gamepad::pad& ngp = lsnes_gamepads[idx_to_jid[i]];
 				if(caps.wCaps & JOYCAPS_HASPOV)
 					ngp.add_hat(0, "POV");
 				for(unsigned j = 0; j < caps.wNumButtons && j < 32; j++)

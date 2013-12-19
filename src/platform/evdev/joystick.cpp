@@ -238,7 +238,7 @@ namespace
 			return false;
 		}
 		unsigned jid = gamepad_map[fd] = lsnes_gamepads.add(namebuffer);
-		hw_gamepad& ngp = lsnes_gamepads[jid];
+		gamepad::pad& ngp = lsnes_gamepads[jid];
 		for(unsigned i = 0; i <= KEY_MAX; i++)
 			if(keys[i / div] & (1ULL << (i % div)))
 				ngp.add_button(i, buttonnames[i]);
