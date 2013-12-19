@@ -10,15 +10,15 @@ namespace
 	int _dyn[8] = { 1, 1, 0, 0,-1,-1, 0, 0};
 	int _dxp[8] = { 0, 1, 1, 0, 0,-1,-1, 0};
 	int _dyp[8] = { 1, 0, 0,-1,-1, 0, 0, 1};
-	struct render_object_arrow : public render_object
+	struct render_object_arrow : public framebuffer::object
 	{
 		render_object_arrow(int32_t _x, int32_t _y, uint32_t _length, uint32_t _width,
 			uint32_t _headwidth, uint32_t _headthickness, int _direction, bool _fill,
-			premultiplied_color _color) throw()
+			framebuffer::color _color) throw()
 			: x(_x), y(_y), length(_length), width(_width), headwidth(_headwidth),
 			headthickness(_headthickness), direction(_direction), fill(_fill), color(_color) {}
 		~render_object_arrow() throw() {}
-		template<bool X> void op(struct framebuffer<X>& scr) throw()
+		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			color.set_palette(scr);
 			uint32_t originx = scr.get_origin_x();
@@ -42,9 +42,9 @@ namespace
 				}
 			}
 		}
-		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
-		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		std::pair<int32_t, int32_t> offsetrange()
 		{
@@ -85,7 +85,7 @@ namespace
 		uint32_t headthickness;
 		int direction;
 		bool fill;
-		premultiplied_color color;
+		framebuffer::color color;
 	};
 
 	function_ptr_luafun gui_box(lua_func_misc, "gui.arrow", [](lua_state& L, const std::string& fname) -> int {

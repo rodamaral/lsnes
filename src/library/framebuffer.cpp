@@ -10,11 +10,13 @@
 #define TABSTOPS 64
 #define SCREENSHOT_RGB_MAGIC	0x74212536U
 
+namespace framebuffer
+{
 namespace
 {
-	std::list<pixel_format*>& pixel_formats()
+	std::list<pixfmt*>& pixfmts()
 	{
-		static std::list<pixel_format*> x;
+		static std::list<pixfmt*> x;
 		return x;
 	}
 
@@ -93,21 +95,21 @@ namespace
 	}
 }
 
-pixel_format::pixel_format() throw(std::bad_alloc)
+pixfmt::pixfmt() throw(std::bad_alloc)
 {
-	pixel_formats().push_back(this);
+	pixfmts().push_back(this);
 }
 
-pixel_format::~pixel_format() throw()
+pixfmt::~pixfmt() throw()
 {
-	for(auto i = pixel_formats().begin(); i != pixel_formats().end(); i++)
+	for(auto i = pixfmts().begin(); i != pixfmts().end(); i++)
 		if(*i == this) {
-			pixel_formats().erase(i);
+			pixfmts().erase(i);
 			break;
 		}
 }
 
-framebuffer_raw::framebuffer_raw(const framebuffer_info& info) throw(std::bad_alloc)
+raw::raw(const info& info) throw(std::bad_alloc)
 {
 	size_t unit = info.type->get_bpp();
 	size_t pixel_offset = info.offset_y * info.physstride + unit * info.offset_x;
@@ -120,7 +122,7 @@ framebuffer_raw::framebuffer_raw(const framebuffer_info& info) throw(std::bad_al
 	allocated = 0;
 }
 
-framebuffer_raw::framebuffer_raw() throw(std::bad_alloc)
+raw::raw() throw(std::bad_alloc)
 {
 	user_memory = true;
 	fmt = NULL;
@@ -131,7 +133,7 @@ framebuffer_raw::framebuffer_raw() throw(std::bad_alloc)
 	allocated = 0;
 }
 
-framebuffer_raw::framebuffer_raw(const framebuffer_raw& f) throw(std::bad_alloc)
+raw::raw(const raw& f) throw(std::bad_alloc)
 {
 	user_memory = true;
 	fmt = f.fmt;
@@ -145,7 +147,7 @@ framebuffer_raw::framebuffer_raw(const framebuffer_raw& f) throw(std::bad_alloc)
 		memcpy(addr + stride * i, f.addr + f.stride * i, unit * width);
 }
 
-framebuffer_raw& framebuffer_raw::operator=(const framebuffer_raw& f) throw(std::bad_alloc, std::runtime_error)
+raw& raw::operator=(const raw& f) throw(std::bad_alloc, std::runtime_error)
 {
 	if(!user_memory)
 		throw std::runtime_error("Target framebuffer is not writable");
@@ -168,19 +170,19 @@ framebuffer_raw& framebuffer_raw::operator=(const framebuffer_raw& f) throw(std:
 	return *this;
 }
 
-framebuffer_raw::~framebuffer_raw()
+raw::~raw()
 {
 	if(user_memory)
 		delete[] addr;
 }
 
-void framebuffer_raw::load(const std::vector<char>& data) throw(std::bad_alloc, std::runtime_error)
+void raw::load(const std::vector<char>& data) throw(std::bad_alloc, std::runtime_error)
 {
 	if(data.size() < 2)
 		throw std::runtime_error("Bad screenshot data");
 	if(!user_memory)
 		throw std::runtime_error("Target framebuffer is not writable");
-	pixel_format* nfmt = NULL;
+	pixfmt* nfmt = NULL;
 	const uint8_t* data2 = reinterpret_cast<const uint8_t*>(&data[0]);
 	size_t legacy_width = read16ube(data2);
 	size_t dataoffset;
@@ -189,7 +191,7 @@ void framebuffer_raw::load(const std::vector<char>& data) throw(std::bad_alloc, 
 
 	if(legacy_width > 0 && data.size() % (3 * legacy_width) == 2) {
 		//Legacy screenshot.
-		for(pixel_format* f : pixel_formats())
+		for(pixfmt* f : pixfmts())
 			if(f->get_magic() == 0)
 				nfmt = f;
 		if(!nfmt)
@@ -203,7 +205,7 @@ void framebuffer_raw::load(const std::vector<char>& data) throw(std::bad_alloc, 
 			throw std::runtime_error("Bad screenshot data");
 		dataoffset = 8;
 		uint32_t magic = read32ube(data2 + 2);
-		for(pixel_format* f : pixel_formats())
+		for(pixfmt* f : pixfmts())
 			if(f->get_magic() == magic)
 				nfmt = f;
 		if(!nfmt)
@@ -240,7 +242,7 @@ void framebuffer_raw::load(const std::vector<char>& data) throw(std::bad_alloc, 
 		decode_words<4>(reinterpret_cast<uint8_t*>(addr), data2 + dataoffset, data.size() - dataoffset);
 }
 
-void framebuffer_raw::save(std::vector<char>& data) throw(std::bad_alloc)
+void raw::save(std::vector<char>& data) throw(std::bad_alloc)
 {
 	uint8_t* memory = reinterpret_cast<uint8_t*>(addr);
 	unsigned m;
@@ -284,7 +286,7 @@ void framebuffer_raw::save(std::vector<char>& data) throw(std::bad_alloc)
 	}
 }
 
-void framebuffer_raw::save_png(const std::string& file) throw(std::bad_alloc, std::runtime_error)
+void raw::save_png(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
 	uint8_t* memory = reinterpret_cast<uint8_t*>(addr);
 	png_encodedable_image img;
@@ -302,13 +304,13 @@ void framebuffer_raw::save_png(const std::string& file) throw(std::bad_alloc, st
 	}
 }
 
-size_t framebuffer_raw::get_stride() const throw() { return stride; }
-unsigned char* framebuffer_raw::get_start() const throw() { return reinterpret_cast<uint8_t*>(addr); }
-pixel_format* framebuffer_raw::get_format() const throw() { return fmt; }
+size_t raw::get_stride() const throw() { return stride; }
+unsigned char* raw::get_start() const throw() { return reinterpret_cast<uint8_t*>(addr); }
+pixfmt* raw::get_format() const throw() { return fmt; }
 
 
 template<bool X>
-framebuffer<X>::framebuffer() throw()
+fb<X>::fb() throw()
 {
 	width = 0;
 	height = 0;
@@ -328,7 +330,7 @@ framebuffer<X>::framebuffer() throw()
 
 
 template<bool X>
-framebuffer<X>::~framebuffer() throw()
+fb<X>::~fb() throw()
 {
 	if(user_mem)
 		delete[] mem;
@@ -337,15 +339,15 @@ framebuffer<X>::~framebuffer() throw()
 #define DECBUF_SIZE 4096
 
 template<bool X>
-void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscale) throw()
+void fb<X>::copy_from(raw& scr, size_t hscale, size_t vscale) throw()
 {
-	typename framebuffer<X>::element_t decbuf[DECBUF_SIZE];
+	typename fb<X>::element_t decbuf[DECBUF_SIZE];
 	last_blit_w = scr.width * hscale;
 	last_blit_h = scr.height * vscale;
 
 	if(!scr.fmt) {
 		for(size_t y = 0; y < height; y++)
-			memset(rowptr(y), 0, sizeof(typename framebuffer<X>::element_t) * width);
+			memset(rowptr(y), 0, sizeof(typename fb<X>::element_t) * width);
 		return;
 	}
 	if(scr.fmt != current_fmt || active_rshift != auxpal.rshift || active_gshift != auxpal.gshift ||
@@ -355,7 +357,7 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 	}
 
 	for(size_t y = 0; y < height; y++)
-		memset(rowptr(y), 0, sizeof(typename framebuffer<X>::element_t) * width);
+		memset(rowptr(y), 0, sizeof(typename fb<X>::element_t) * width);
 	if(width < offset_x || height < offset_y) {
 		//Just clear the screen.
 		return;
@@ -371,7 +373,7 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 	for(size_t y = 0; y < copyable_height; y++) {
 		size_t line = y * vscale + offset_y;
 		const uint8_t* sbase = reinterpret_cast<uint8_t*>(scr.addr) + y * scr.stride;
-		typename framebuffer<X>::element_t* ptr = rowptr(line) + offset_x;
+		typename fb<X>::element_t* ptr = rowptr(line) + offset_x;
 		size_t bpp = scr.fmt->get_bpp();
 		size_t xptr = 0;
 		size_t old_copyable_width = copyable_width;
@@ -390,18 +392,18 @@ void framebuffer<X>::copy_from(framebuffer_raw& scr, size_t hscale, size_t vscal
 		copyable_width = old_copyable_width;
 		for(size_t j = 1; j < vscale; j++)
 			memcpy(rowptr(line + j) + offset_x, rowptr(line) + offset_x,
-				sizeof(typename framebuffer<X>::element_t) * hscale * copyable_width);
+				sizeof(typename fb<X>::element_t) * hscale * copyable_width);
 	};
 }
 
 template<bool X>
-void framebuffer<X>::set_palette(uint32_t r, uint32_t g, uint32_t b) throw(std::bad_alloc)
+void fb<X>::set_palette(uint32_t r, uint32_t g, uint32_t b) throw(std::bad_alloc)
 {
-	typename framebuffer<X>::element_t R, G, B;
+	typename fb<X>::element_t R, G, B;
 	if(r == active_rshift && g == active_gshift && b == active_bshift)
 		return;
 	for(size_t i = 0; i < static_cast<size_t>(width) * height; i++) {
-		typename framebuffer<X>::element_t word = mem[i];
+		typename fb<X>::element_t word = mem[i];
 		R = (word >> active_rshift) & (X ? 0xFFFF : 0xFF);
 		G = (word >> active_gshift) & (X ? 0xFFFF : 0xFF);
 		B = (word >> active_bshift) & (X ? 0xFFFF : 0xFF);
@@ -413,7 +415,7 @@ void framebuffer<X>::set_palette(uint32_t r, uint32_t g, uint32_t b) throw(std::
 }
 
 template<bool X>
-void framebuffer<X>::set(element_t* _memory, size_t _width, size_t _height, size_t _pitch) throw()
+void fb<X>::set(element_t* _memory, size_t _width, size_t _height, size_t _pitch) throw()
 {
 	if(user_mem && mem)
 		delete[] mem;
@@ -426,7 +428,7 @@ void framebuffer<X>::set(element_t* _memory, size_t _width, size_t _height, size
 }
 
 template<bool X>
-void framebuffer<X>::reallocate(size_t _width, size_t _height, bool _upside_down) throw(std::bad_alloc)
+void fb<X>::reallocate(size_t _width, size_t _height, bool _upside_down) throw(std::bad_alloc)
 {
 	if(width != _width || height != _height) {
 		if(user_mem) {
@@ -445,39 +447,39 @@ void framebuffer<X>::reallocate(size_t _width, size_t _height, bool _upside_down
 }
 
 template<bool X>
-void framebuffer<X>::set_origin(size_t _offset_x, size_t _offset_y) throw()
+void fb<X>::set_origin(size_t _offset_x, size_t _offset_y) throw()
 {
 	offset_x = _offset_x;
 	offset_y = _offset_y;
 }
 
 template<bool X>
-size_t framebuffer<X>::get_width() const throw()
+size_t fb<X>::get_width() const throw()
 {
 	return width;
 }
 
 template<bool X>
-size_t framebuffer<X>::get_height() const throw()
+size_t fb<X>::get_height() const throw()
 {
 	return height;
 }
 
 template<bool X>
-size_t framebuffer<X>::get_last_blit_width() const throw()
+size_t fb<X>::get_last_blit_width() const throw()
 {
 	return last_blit_w;
 }
 
 template<bool X>
-size_t framebuffer<X>::get_last_blit_height() const throw()
+size_t fb<X>::get_last_blit_height() const throw()
 {
 	return last_blit_h;
 }
 
 
 template<bool X>
-typename framebuffer<X>::element_t* framebuffer<X>::rowptr(size_t row) throw()
+typename fb<X>::element_t* fb<X>::rowptr(size_t row) throw()
 {
 	if(upside_down)
 		row = height - row - 1;
@@ -485,21 +487,21 @@ typename framebuffer<X>::element_t* framebuffer<X>::rowptr(size_t row) throw()
 }
 
 template<bool X>
-const typename framebuffer<X>::element_t* framebuffer<X>::rowptr(size_t row) const throw()
+const typename fb<X>::element_t* fb<X>::rowptr(size_t row) const throw()
 {
 	if(upside_down)
 		row = height - row - 1;
 	return mem + stride * row;
 }
 
-template<bool X> uint8_t framebuffer<X>::get_palette_r() const throw() { return auxpal.rshift; }
-template<bool X> uint8_t framebuffer<X>::get_palette_g() const throw() { return auxpal.gshift; }
-template<bool X> uint8_t framebuffer<X>::get_palette_b() const throw() { return auxpal.bshift; }
+template<bool X> uint8_t fb<X>::get_palette_r() const throw() { return auxpal.rshift; }
+template<bool X> uint8_t fb<X>::get_palette_g() const throw() { return auxpal.gshift; }
+template<bool X> uint8_t fb<X>::get_palette_b() const throw() { return auxpal.bshift; }
 
-size_t framebuffer_raw::get_width() const throw() { return width; }
-size_t framebuffer_raw::get_height() const throw() { return height; }
-template<bool X> size_t framebuffer<X>::get_origin_x() const throw() { return offset_x; }
-template<bool X> size_t framebuffer<X>::get_origin_y() const throw() { return offset_y; }
+size_t raw::get_width() const throw() { return width; }
+size_t raw::get_height() const throw() { return height; }
+template<bool X> size_t fb<X>::get_origin_x() const throw() { return offset_x; }
+template<bool X> size_t fb<X>::get_origin_y() const throw() { return offset_y; }
 
 void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw()
 {
@@ -523,7 +525,7 @@ void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int
 	}
 }
 
-void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
+void queue::add(struct object& obj) throw(std::bad_alloc)
 {
 	struct node* n = reinterpret_cast<struct node*>(alloc(sizeof(node)));
 	n->obj = &obj;
@@ -535,7 +537,7 @@ void render_queue::add(struct render_object& obj) throw(std::bad_alloc)
 		queue_head = queue_tail = n;
 }
 
-void render_queue::copy_from(render_queue& q) throw(std::bad_alloc)
+void queue::copy_from(queue& q) throw(std::bad_alloc)
 {
 	struct node* tmp = q.queue_head;
 	while(tmp) {
@@ -547,7 +549,7 @@ void render_queue::copy_from(render_queue& q) throw(std::bad_alloc)
 	}
 }
 
-template<bool X> void render_queue::run(struct framebuffer<X>& scr) throw()
+template<bool X> void queue::run(struct fb<X>& scr) throw()
 {
 	struct node* tmp = queue_head;
 	while(tmp) {
@@ -560,11 +562,11 @@ template<bool X> void render_queue::run(struct framebuffer<X>& scr) throw()
 	}
 }
 
-void render_queue::clear() throw()
+void queue::clear() throw()
 {
 	while(queue_head) {
 		if(!queue_head->killed)
-			queue_head->obj->~render_object();
+			queue_head->obj->~object();
 		queue_head = queue_head->next;
 	}
 	//Release all memory for reuse.
@@ -573,7 +575,7 @@ void render_queue::clear() throw()
 	queue_tail = NULL;
 }
 
-void* render_queue::alloc(size_t block) throw(std::bad_alloc)
+void* queue::alloc(size_t block) throw(std::bad_alloc)
 {
 	block = (block + 15) / 16 * 16;
 	if(block > RENDER_PAGE_SIZE)
@@ -587,7 +589,7 @@ void* render_queue::alloc(size_t block) throw(std::bad_alloc)
 	return mem;
 }
 
-void render_queue::kill_request(void* obj) throw()
+void queue::kill_request(void* obj) throw()
 {
 	struct node* tmp = queue_head;
 	while(tmp) {
@@ -595,7 +597,7 @@ void render_queue::kill_request(void* obj) throw()
 			if(!tmp->killed && tmp->obj->kill_request(obj)) {
 				//Kill this request.
 				tmp->killed = true;
-				tmp->obj->~render_object();
+				tmp->obj->~object();
 			}
 			tmp = tmp->next;
 		} catch(...) {
@@ -603,7 +605,7 @@ void render_queue::kill_request(void* obj) throw()
 	}
 }
 
-render_queue::render_queue() throw()
+queue::queue() throw()
 {
 	queue_head = NULL;
 	queue_tail = NULL;
@@ -611,20 +613,20 @@ render_queue::render_queue() throw()
 	pages = 0;
 }
 
-render_queue::~render_queue() throw()
+queue::~queue() throw()
 {
 	clear();
 }
 
-render_object::render_object() throw()
+object::object() throw()
 {
 }
 
-render_object::~render_object() throw()
+object::~object() throw()
 {
 }
 
-bool render_object::kill_request_ifeq(void* myobj, void* killobj)
+bool object::kill_request_ifeq(void* myobj, void* killobj)
 {
 	if(!killobj)
 		return false;
@@ -633,12 +635,12 @@ bool render_object::kill_request_ifeq(void* myobj, void* killobj)
 	return false;
 }
 
-bool render_object::kill_request(void* obj) throw()
+bool object::kill_request(void* obj) throw()
 {
 	return false;
 }
 
-bitmap_font::bitmap_font() throw(std::bad_alloc)
+font::font() throw(std::bad_alloc)
 {
 	bad_glyph_data[0] = 0x018001AAU;
 	bad_glyph_data[1] = 0x01800180U;
@@ -648,7 +650,7 @@ bitmap_font::bitmap_font() throw(std::bad_alloc)
 	bad_glyph.data = bad_glyph_data;
 }
 
-void bitmap_font::load_hex_glyph(const char* data, size_t size) throw(std::bad_alloc, std::runtime_error)
+void font::load_hex_glyph(const char* data, size_t size) throw(std::bad_alloc, std::runtime_error)
 {
 	char buf2[8];
 	std::string line(data, data + size);
@@ -678,7 +680,7 @@ void bitmap_font::load_hex_glyph(const char* data, size_t size) throw(std::bad_a
 	glyphs[cp].offset = p;
 }
 
-void bitmap_font::load_hex(const char* data, size_t size) throw(std::bad_alloc, std::runtime_error)
+void font::load_hex(const char* data, size_t size) throw(std::bad_alloc, std::runtime_error)
 {
 	const char* enddata = data + size;
 	while(data != enddata) {
@@ -701,7 +703,7 @@ void bitmap_font::load_hex(const char* data, size_t size) throw(std::bad_alloc, 
 		i.second.data = &memory[i.second.offset];
 }
 
-const bitmap_font::glyph& bitmap_font::get_glyph(uint32_t glyph) throw()
+const font::glyph& font::get_glyph(uint32_t glyph) throw()
 {
 	if(glyphs.count(glyph))
 		return glyphs[glyph];
@@ -709,7 +711,7 @@ const bitmap_font::glyph& bitmap_font::get_glyph(uint32_t glyph) throw()
 		return bad_glyph;
 }
 
-std::set<uint32_t> bitmap_font::get_glyphs_set()
+std::set<uint32_t> font::get_glyphs_set()
 {
 	std::set<uint32_t> out;
 	for(auto& i : glyphs)
@@ -717,12 +719,12 @@ std::set<uint32_t> bitmap_font::get_glyphs_set()
 	return out;
 }
 
-const bitmap_font::glyph& bitmap_font::get_bad_glyph() throw()
+const font::glyph& font::get_bad_glyph() throw()
 {
 	return bad_glyph;
 }
 
-std::pair<size_t, size_t> bitmap_font::get_metrics(const std::string& string) throw()
+std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 {
 	size_t commit_width = 0;
 	size_t commit_height = 0;
@@ -760,7 +762,7 @@ std::pair<size_t, size_t> bitmap_font::get_metrics(const std::string& string) th
 	return std::make_pair(commit_width, commit_height);
 }
 
-std::vector<bitmap_font::layout> bitmap_font::dolayout(const std::string& string) throw(std::bad_alloc)
+std::vector<font::layout> font::dolayout(const std::string& string) throw(std::bad_alloc)
 {
 	//First, calculate the number of glyphs to draw.
 	uint16_t utfstate = utf8_initial_state;
@@ -807,8 +809,8 @@ std::vector<bitmap_font::layout> bitmap_font::dolayout(const std::string& string
 	return l;
 }
 
-template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x, int32_t y, const std::string& text,
-	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw()
+template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, const std::string& text,
+	color fg, color bg, bool hdbl, bool vdbl) throw()
 {
 	x += scr.get_origin_x();
 	y += scr.get_origin_y();
@@ -855,7 +857,7 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 			if(gy + ystart + ylength > sheight)	ylength = sheight - (gy + ystart);
 			if(g.data)
 				for(size_t i = 0; i < ylength; i++) {
-					typename framebuffer<X>::element_t* r = scr.rowptr(gy + ystart + i) +
+					typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) +
 						(gx + xstart);
 					uint32_t _y = (i + ystart) >> (vdbl ? 1 : 0);
 					uint32_t d = g.data[_y >> (g.wide ? 1 : 2)];
@@ -882,7 +884,7 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 				}
 			else
 				for(size_t i = 0; i < ylength; i++) {
-					typename framebuffer<X>::element_t* r = scr.rowptr(gy + ystart + i) +
+					typename fb<X>::element_t* r = scr.rowptr(gy + ystart + i) +
 						(gx + xstart);
 					for(size_t j = 0; j < xlength; j++)
 						bg.apply(r[j]);
@@ -892,7 +894,7 @@ template<bool X> void bitmap_font::render(struct framebuffer<X>& scr, int32_t x,
 	}
 }
 
-void premultiplied_color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()
+void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()
 {
 	if(X) {
 		uint64_t r = ((orig >> 16) & 0xFF) * 257;
@@ -915,11 +917,12 @@ void premultiplied_color::set_palette(unsigned rshift, unsigned gshift, unsigned
 	}
 }
 
-template class framebuffer<false>;
-template class framebuffer<true>;
-template void render_queue::run(struct framebuffer<false>&);
-template void render_queue::run(struct framebuffer<true>&);
-template void bitmap_font::render(struct framebuffer<false>& scr, int32_t x, int32_t y, const std::string& text,
-	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw();
-template void bitmap_font::render(struct framebuffer<true>& scr, int32_t x, int32_t y, const std::string& text,
-	premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw();
+template class fb<false>;
+template class fb<true>;
+template void queue::run(struct fb<false>&);
+template void queue::run(struct fb<true>&);
+template void font::render(struct fb<false>& scr, int32_t x, int32_t y, const std::string& text,
+	color fg, color bg, bool hdbl, bool vdbl) throw();
+template void font::render(struct fb<true>& scr, int32_t x, int32_t y, const std::string& text,
+	color fg, color bg, bool hdbl, bool vdbl) throw();
+}

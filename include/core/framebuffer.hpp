@@ -54,15 +54,15 @@ private:
 /**
  * The main framebuffer.
  */
-extern framebuffer_raw main_framebuffer;
+extern framebuffer::raw main_framebuffer;
 /**
  * Special screen: "SYSTEM STATE CORRUPT".
  */
-extern framebuffer_raw screen_corrupt;
+extern framebuffer::raw screen_corrupt;
 /**
  * The main screen to draw on.
  */
-extern framebuffer<false> main_screen;
+extern framebuffer::fb<false> main_screen;
 /**
  * Initialize special screens.
  *
@@ -72,7 +72,7 @@ void init_special_screens() throw(std::bad_alloc);
 /**
  * Copy framebuffer to backing store, running Lua hooks if any.
  */
-void redraw_framebuffer(framebuffer_raw& torender, bool no_lua = false, bool spontaneous = false);
+void redraw_framebuffer(framebuffer::raw& torender, bool no_lua = false, bool spontaneous = false);
 /**
  * Redraw the framebuffer, reusing contents from last redraw. Runs lua hooks if last redraw ran them.
  */
@@ -80,7 +80,7 @@ void redraw_framebuffer();
 /**
  * Return last complete framebuffer.
  */
-framebuffer_raw get_framebuffer() throw(std::bad_alloc);
+framebuffer::raw get_framebuffer() throw(std::bad_alloc);
 /**
  * Render framebuffer to main screen.
  */
@@ -100,7 +100,7 @@ void render_kill_request(void* obj);
 /**
  * Get latest screen received from core.
  */
-framebuffer_raw& render_get_latest_screen();
+framebuffer::raw& render_get_latest_screen();
 void render_get_latest_screen_end();
 
 #endif

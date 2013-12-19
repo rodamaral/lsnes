@@ -76,26 +76,26 @@ namespace
 		return y;
 	}
 
-	struct render_object_subtitle : public render_object
+	struct render_object_subtitle : public framebuffer::object
 	{
 		render_object_subtitle(int32_t _x, int32_t _y, const std::string& _text) throw()
 			: x(_x), y(_y), text(_text), fg(0xFFFF80), bg(-1) {}
 		~render_object_subtitle() throw() {}
-		template<bool X> void op(struct framebuffer<X>& scr) throw()
+		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			main_font.render(scr, x, y, text, fg, bg, false, false);
 		}
-		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
-		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;
 		std::string text;
-		premultiplied_color fg;
-		premultiplied_color bg;
+		framebuffer::color fg;
+		framebuffer::color bg;
 	};
 
 

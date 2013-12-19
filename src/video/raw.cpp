@@ -76,7 +76,7 @@ namespace
 				deleter(audio);
 		}
 
-		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			if(!video)
 				return;
@@ -146,8 +146,8 @@ namespace
 		std::ostream* video;
 		void (*deleter)(void* f);
 		bool have_dumped_frame;
-		struct framebuffer<false> dscr;
-		struct framebuffer<true> dscr2;
+		struct framebuffer::fb<false> dscr;
+		struct framebuffer::fb<true> dscr2;
 		bool swap;
 		bool bits64;
 	};

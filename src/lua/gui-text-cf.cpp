@@ -32,15 +32,15 @@ DECLARE_LUACLASS(lua_customfont, "CUSTOMFONT");
 
 namespace
 {
-	struct render_object_text_cf : public render_object
+	struct render_object_text_cf : public framebuffer::object
 	{
-		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, premultiplied_color _fg,
-			premultiplied_color _bg, premultiplied_color _hl, lua_obj_pin<lua_customfont> _font) throw()
+		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, framebuffer::color _fg,
+			framebuffer::color _bg, framebuffer::color _hl, lua_obj_pin<lua_customfont> _font) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
 		~render_object_text_cf() throw()
 		{
 		}
-		template<bool X> void op(struct framebuffer<X>& scr) throw()
+		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			fg.set_palette(scr);
 			bg.set_palette(scr);
@@ -79,16 +79,16 @@ namespace
 		{
 			return kill_request_ifeq(font.object(), obj);
 		}
-		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
-		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;
 		std::string text;
-		premultiplied_color fg;
-		premultiplied_color bg;
-		premultiplied_color hl;
+		framebuffer::color fg;
+		framebuffer::color bg;
+		framebuffer::color hl;
 		lua_obj_pin<lua_customfont> font;
 	};
 
@@ -132,9 +132,9 @@ namespace
 		L.get_numeric_argument<int64_t>(7, hlc, fname.c_str());
 		std::string text = L.get_string(4, fname.c_str());
 		auto f = lua_class<lua_customfont>::pin(L, 1, fname.c_str());
-		premultiplied_color fg(fgc);
-		premultiplied_color bg(bgc);
-		premultiplied_color hl(hlc);
+		framebuffer::color fg(fgc);
+		framebuffer::color bg(bgc);
+		framebuffer::color hl(hlc);
 		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
 	}

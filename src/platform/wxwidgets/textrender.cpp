@@ -58,7 +58,7 @@ void text_framebuffer::render(char* tbuffer)
 				break;	//No more space in row.
 			char* cellbase = tbuffer + y * (16 * stride) + xp * cellstride;
 			const element& e = buffer[y * width + x];
-			const bitmap_font::glyph& g = main_font.get_glyph(e.ch);
+			const framebuffer::font::glyph& g = main_font.get_glyph(e.ch);
 			char bgb = (e.bg >> 16);
 			char bgg = (e.bg >> 8);
 			char bgr = (e.bg >> 0);
@@ -155,7 +155,7 @@ size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_
 			continue;
 		}
 		//Okay, got u to write...
-		const bitmap_font::glyph& g = main_font.get_glyph(u);
+		const framebuffer::font::glyph& g = main_font.get_glyph(u);
 		if(x < width) {
 			element& e = buffer[y * width + x];
 			e.ch = u;
@@ -190,7 +190,7 @@ size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, si
 	size_t slen = str.length();
 	size_t pused = 0;
 	for(auto u : str) {
-		const bitmap_font::glyph& g = main_font.get_glyph(u);
+		const framebuffer::font::glyph& g = main_font.get_glyph(u);
 		if(x < width) {
 			element& e = buffer[y * width + x];
 			e.ch = u;

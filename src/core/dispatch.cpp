@@ -128,12 +128,12 @@ information_dispatch::~information_dispatch() throw()
 		}
 }
 
-void information_dispatch::on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
+void information_dispatch::on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 {
 	//Do nothing.
 }
 
-void information_dispatch::do_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d) throw()
+void information_dispatch::do_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d) throw()
 {
 	update_dumpers();
 	for(auto& i : _dispatch()) {
@@ -347,7 +347,7 @@ struct dispatch::source<> notify_autohold_reconfigure("autohold_reconfigure");
 struct dispatch::source<unsigned, unsigned, unsigned, bool> notify_autohold_update("autohold_update");
 struct dispatch::source<unsigned, unsigned, unsigned, unsigned, unsigned> notify_autofire_update("autofire_update");
 struct dispatch::source<> notify_close("notify_close");
-struct dispatch::source<framebuffer<false>&> notify_set_screen("set_screen");
+struct dispatch::source<framebuffer::fb<false>&> notify_set_screen("set_screen");
 struct dispatch::source<std::pair<std::string, std::string>> notify_sound_change("sound_change");
 struct dispatch::source<> notify_screen_update("screen_update");
 struct dispatch::source<> notify_status_update("status_update");

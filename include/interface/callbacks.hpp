@@ -50,7 +50,7 @@ public:
 /**
  * Output a frame. Call once for each call to emulate().
  */
-	virtual void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d) = 0;
+	virtual void output_frame(framebuffer::raw& screen, uint32_t fps_n, uint32_t fps_d) = 0;
 /**
  * Notify that action states have been updated.
  */

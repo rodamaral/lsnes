@@ -482,7 +482,7 @@ public:
 		return random_seed_value;
 	}
 
-	void output_frame(framebuffer_raw& screen, uint32_t fps_n, uint32_t fps_d)
+	void output_frame(framebuffer::raw& screen, uint32_t fps_n, uint32_t fps_d)
 	{
 		lua_callback_do_frame_emulated();
 		location_special = SPECIAL_FRAME_VIDEO;

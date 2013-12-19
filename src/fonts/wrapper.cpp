@@ -3,7 +3,7 @@
 #include <cstring>
 
 extern const char* font_hex_data;
-bitmap_font main_font;
+framebuffer::font main_font;
 
 void do_init_font()
 {

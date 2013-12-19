@@ -91,7 +91,7 @@ namespace
 	unsigned long long delayreset_cycles_target;
 
 	//Framebuffer.
-	struct framebuffer_info cover_fbinfo = {
+	struct framebuffer::info cover_fbinfo = {
 		&_pixel_format_lrgb,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		512, 448, 2048,			//Physical size.
@@ -880,8 +880,8 @@ again2:
 		}
 		bool c_get_pflag() { return SNES::cpu.controller_flag; }
 		void c_set_pflag(bool pflag) { SNES::cpu.controller_flag = pflag; }
-		framebuffer_raw& c_draw_cover() {
-			static framebuffer_raw x(cover_fbinfo);
+		framebuffer::raw& c_draw_cover() {
+			static framebuffer::raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
 		}
@@ -1240,7 +1240,7 @@ again2:
 		fps_n /= g;
 		fps_d /= g;
 
-		framebuffer_info inf;
+		framebuffer::info inf;
 		inf.type = &_pixel_format_lrgb;
 		inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
 		inf.physwidth = 512;
@@ -1251,7 +1251,7 @@ again2:
 		inf.stride = interlace ? 2048 : 4096;
 		inf.offset_x = 0;
 		inf.offset_y = (region ? (overscan ? 9 : 1) : (overscan ? 16 : 9)) * 2;
-		framebuffer_raw ls(inf);
+		framebuffer::raw ls(inf);
 
 		ecore_callbacks->output_frame(ls, fps_n, fps_d);
 		if(soundbuf_fill > 0) {

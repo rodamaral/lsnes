@@ -344,7 +344,7 @@ again:
 			delete soxdumper;
 		}
 
-		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			uint32_t hscl = 1;
 			uint32_t vscl = 1;
@@ -419,7 +419,7 @@ again:
 		resample_worker* resampler_w;
 	private:
 		sox_dumper* soxdumper;
-		framebuffer<false> dscr;
+		framebuffer::fb<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		std::pair<uint32_t, uint32_t> soundrate;

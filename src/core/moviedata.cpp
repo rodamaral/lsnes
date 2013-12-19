@@ -535,7 +535,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		movb.get_movie().readonly_mode(false);
 	//Paint the screen.
 	{
-		framebuffer_raw tmp;
+		framebuffer::raw tmp;
 		if(will_load_state) {
 			tmp.load(_movie.screenshot);
 			redraw_framebuffer(tmp);

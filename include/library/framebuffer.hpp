@@ -7,17 +7,19 @@
 #include <map>
 #include <set>
 
-template<bool X> struct framebufferelem {};
-template<> struct framebufferelem<false> { typedef uint32_t t; };
-template<> struct framebufferelem<true> { typedef uint64_t t; };
+namespace framebuffer
+{
+template<bool X> struct elem {};
+template<> struct elem<false> { typedef uint32_t t; };
+template<> struct elem<true> { typedef uint64_t t; };
 
 /**
  * Pixel format auxillary palette.
  */
 template<bool X>
-struct pixel_format_aux_palette
+struct auxpalette
 {
-	typedef typename framebufferelem<X>::t element_t;
+	typedef typename elem<X>::t element_t;
 	uint8_t rshift;			//Red shift.
 	uint8_t gshift;			//Green shift.
 	uint8_t bshift;			//Blue shift.
@@ -27,14 +29,14 @@ struct pixel_format_aux_palette
 /**
  * Pixel format.
  */
-class pixel_format
+class pixfmt
 {
 public:
-	virtual ~pixel_format() throw();
+	virtual ~pixfmt() throw();
 /**
  * Register the pixel format.
  */
-	pixel_format() throw(std::bad_alloc);
+	pixfmt() throw(std::bad_alloc);
 /**
  * Decode pixel format data into RGB data (0, R, G, B).
  */
@@ -44,21 +46,21 @@ public:
  * Decode pixel format data into RGB (with specified byte order).
  */
 	virtual void decode(uint32_t* target, const uint8_t* src, size_t width,
-		const pixel_format_aux_palette<false>& auxp) throw() = 0;
+		const auxpalette<false>& auxp) throw() = 0;
 /**
  * Decode pixel format data into RGB (with specified byte order).
  */
 	virtual void decode(uint64_t* target, const uint8_t* src, size_t width,
-		const pixel_format_aux_palette<true>& auxp) throw() = 0;
+		const auxpalette<true>& auxp) throw() = 0;
 /**
  * Create aux palette.
  */
-	virtual void set_palette(pixel_format_aux_palette<false>& auxp, uint8_t rshift, uint8_t gshift,
+	virtual void set_palette(auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
 		uint8_t bshift) throw(std::bad_alloc) = 0;
 /**
  * Create aux palette.
  */
-	virtual void set_palette(pixel_format_aux_palette<true>& auxp, uint8_t rshift, uint8_t gshift,
+	virtual void set_palette(auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
 		uint8_t bshift) throw(std::bad_alloc) = 0;
 /**
  * Bytes per pixel in data.
@@ -77,12 +79,12 @@ public:
 /**
  * Game framebuffer information.
  */
-struct framebuffer_info
+struct info
 {
 /**
  * Pixel format of framebuffer.
  */
-	pixel_format* type;
+	pixfmt* type;
 /**
  * The physical memory backing the framebuffer.
  */
@@ -130,7 +132,7 @@ template<bool X> struct framebuffer;
  *
  * Any copying only preserves the visible part.
  */
-struct framebuffer_raw
+struct raw
 {
 /**
  * Create a new framebuffer backed by temporary buffer.
@@ -139,13 +141,13 @@ struct framebuffer_raw
  *
  * Parameter info: The framebuffer info.
  */
-	framebuffer_raw(const framebuffer_info& info) throw(std::bad_alloc);
+	raw(const info& finfo) throw(std::bad_alloc);
 /**
  * Create a new framebuffer backed by memory buffer.
  *
  * The resulting framebuffer can be written to.
  */
-	framebuffer_raw() throw(std::bad_alloc);
+	raw() throw(std::bad_alloc);
 /**
  * Copy a framebuffer.
  *
@@ -153,14 +155,14 @@ struct framebuffer_raw
  *
  * Parameter f: The framebuffer.
  */
-	framebuffer_raw(const framebuffer_raw& f) throw(std::bad_alloc);
+	raw(const raw& f) throw(std::bad_alloc);
 /**
  * Assign a framebuffer.
  *
  * Parameter f: The framebuffer.
  * Throws std::runtime_error: The target framebuffer is not writable.
  */
-	framebuffer_raw& operator=(const framebuffer_raw& f) throw(std::bad_alloc, std::runtime_error);
+	raw& operator=(const raw& f) throw(std::bad_alloc, std::runtime_error);
 /**
  * Load contents of framebuffer.
  *
@@ -204,24 +206,24 @@ struct framebuffer_raw
 /**
  * Get pixel format.
  */
-	pixel_format* get_format() const throw();
+	pixfmt* get_format() const throw();
 /**
  * Destructor.
  */
-	~framebuffer_raw();
+	~raw();
 private:
 	bool user_memory;		//True if allocated in user memory, false if aliases framebuffer.
 	char* addr;			//Address of framebuffer start.
-	pixel_format* fmt;		//Format of framebuffer.
+	pixfmt* fmt;		//Format of framebuffer.
 	size_t width;			//Width of framebuffer.
 	size_t height;			//Height of framebuffer.
 	size_t stride;			//Stride in pixels.
 	size_t allocated;		//Amount of memory allocated (only meaningful if user_memory=true).
-	template<bool X> friend class framebuffer;
+	template<bool X> friend class fb;
 };
 
 
-struct premultiplied_color;
+struct color;
 
 /**
  * Rendered framebuffer.
@@ -229,18 +231,18 @@ struct premultiplied_color;
  * This framebuffer is in RGB32/RGB64 format, and is always backed by memory buffer.
  */
 template<bool X>
-struct framebuffer
+struct fb
 {
-	typedef typename framebufferelem<X>::t element_t;
+	typedef typename elem<X>::t element_t;
 /**
  * Creates framebuffer. The framebuffer dimensions are initially 0x0.
  */
-	framebuffer() throw();
+	fb() throw();
 
 /**
  * Destructor.
  */
-	~framebuffer() throw();
+	~fb() throw();
 
 /**
  * Sets the backing memory for framebuffer. The specified memory is not freed if framebuffer is reallocated or
@@ -292,7 +294,7 @@ struct framebuffer
  * parameter hscale Horizontal scale factor.
  * parameter vscale Vertical scale factor.
  */
-	void copy_from(framebuffer_raw& scr, size_t hscale, size_t vscale) throw();
+	void copy_from(raw& scr, size_t hscale, size_t vscale) throw();
 
 /**
  * Get pointer into specified row.
@@ -353,8 +355,8 @@ struct framebuffer
  */
 	uint8_t get_palette_b() const throw();
 private:
-	framebuffer(const framebuffer& f);
-	framebuffer& operator=(const framebuffer& f);
+	fb(const fb& f);
+	fb& operator=(const fb& f);
 	size_t width;		//Width of framebuffer.
 	size_t height;		//Height of framebuffer.
 	size_t stride;		//Stride in pixels.
@@ -363,31 +365,31 @@ private:
 	size_t last_blit_w;	//Width of last blit.
 	size_t last_blit_h;	//Height of last blit.
 	element_t* mem;		//The memory of framebuffer.
-	pixel_format* current_fmt;	//Current format of framebuffer.
-	pixel_format_aux_palette<X> auxpal;	//Aux palette.
+	pixfmt* current_fmt;	//Current format of framebuffer.
+	auxpalette<X> auxpal;	//Aux palette.
 	bool user_mem;		//True if internal memory is used.
 	bool upside_down;	//Upside down flag.
 	uint8_t active_rshift;			//Red shift.
 	uint8_t active_gshift;			//Green shift.
 	uint8_t active_bshift;			//Blue shift.
-	friend struct premultiplied_color;
+	friend struct color;
 };
 
-struct render_queue;
+struct queue;
 
 /**
  * Base class for objects to render.
  */
-struct render_object
+struct object
 {
 /**
  * Constructor.
  */
-	render_object() throw();
+	object() throw();
 /**
  * Destructor.
  */
-	virtual ~render_object() throw();
+	virtual ~object() throw();
 /**
  * Kill object function. If it returns true, kill the request. Default is to return false.
  */
@@ -401,18 +403,18 @@ struct render_object
  *
  * parameter scr: The screen to draw it on.
  */
-	virtual void operator()(struct framebuffer<false>& scr) throw() = 0;
-	virtual void operator()(struct framebuffer<true>& scr) throw() = 0;
+	virtual void operator()(struct fb<false>& scr) throw() = 0;
+	virtual void operator()(struct fb<true>& scr) throw() = 0;
 /**
  * Clone the object.
  */
-	virtual void clone(struct render_queue& q) const throw(std::bad_alloc) = 0;
+	virtual void clone(struct queue& q) const throw(std::bad_alloc) = 0;
 };
 
 /**
  * Premultiplied color.
  */
-struct premultiplied_color
+struct color
 {
 	uint32_t hi;
 	uint32_t lo;
@@ -426,7 +428,7 @@ struct premultiplied_color
 	operator bool() const throw() { return (origa != 0); }
 	bool operator!() const throw() { return (origa == 0); }
 
-	premultiplied_color() throw()
+	color() throw()
 	{
 		hi = lo = 0;
 		hiHI = loHI = 0;
@@ -436,7 +438,7 @@ struct premultiplied_color
 		invHI = 65536;
 	}
 
-	premultiplied_color(int64_t color) throw()
+	color(int64_t color) throw()
 	{
 		if(color < 0) {
 			//Transparent.
@@ -454,7 +456,7 @@ struct premultiplied_color
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
 	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw();
-	template<bool X> void set_palette(struct framebuffer<X>& s) throw()
+	template<bool X> void set_palette(struct fb<X>& s) throw()
 	{
 		set_palette(s.active_rshift, s.active_gshift, s.active_bshift, X);
 	}
@@ -474,7 +476,8 @@ struct premultiplied_color
 		uint64_t a, b;
 		a = color & 0xFFFF0000FFFFULL;
 		b = (color & 0xFFFF0000FFFF0000ULL) >> 16;
-		return (((a * invHI + hiHI) >> 16) & 0xFFFF0000FFFFULL) | ((b * invHI + loHI) & 0xFFFF0000FFFF0000ULL);
+		return (((a * invHI + hiHI) >> 16) & 0xFFFF0000FFFFULL) | ((b * invHI + loHI) &
+			0xFFFF0000FFFF0000ULL);
 	}
 	void apply(uint64_t& x) throw()
 	{
@@ -486,7 +489,7 @@ struct premultiplied_color
 /**
  * Bitmap font (8x16).
  */
-struct bitmap_font
+struct font
 {
 	/**
 	 * Bitmap font glyph.
@@ -510,7 +513,7 @@ struct bitmap_font
 /**
  * Constructor.
  */
-	bitmap_font() throw(std::bad_alloc);
+	font() throw(std::bad_alloc);
 /**
  * Load a .hex format font.
  *
@@ -560,8 +563,8 @@ struct bitmap_font
  * Parameter hdbl: If set, double width horizontally.
  * Parameter vdbl: If set, double height vertically.
  */
-	template<bool X> void render(struct framebuffer<X>& scr, int32_t x, int32_t y, const std::string& text,
-		premultiplied_color fg, premultiplied_color bg, bool hdbl, bool vdbl) throw();
+	template<bool X> void render(struct fb<X>& scr, int32_t x, int32_t y, const std::string& text,
+		color fg, color bg, bool hdbl, bool vdbl) throw();
 private:
 	glyph bad_glyph;
 	uint32_t bad_glyph_data[4];
@@ -577,14 +580,14 @@ private:
 /**
  * Queue of render operations.
  */
-struct render_queue
+struct queue
 {
 /**
  * Applies all objects in the queue in order.
  *
  * parameter scr: The screen to apply queue to.
  */
-	template<bool X> void run(struct framebuffer<X>& scr) throw();
+	template<bool X> void run(struct fb<X>& scr) throw();
 
 /**
  * Frees all objects in the queue without applying them.
@@ -609,7 +612,7 @@ struct render_queue
 /**
  * Copy objects from another render queue.
  */
-	void copy_from(render_queue& q) throw(std::bad_alloc);
+	void copy_from(queue& q) throw(std::bad_alloc);
 /**
  * Helper for clone.
  */
@@ -633,14 +636,14 @@ struct render_queue
 /**
  * Constructor.
  */
-	render_queue() throw();
+	queue() throw();
 /**
  * Destructor.
  */
-	~render_queue() throw();
+	~queue() throw();
 private:
-	void add(struct render_object& obj) throw(std::bad_alloc);
-	struct node { struct render_object* obj; struct node* next; bool killed; };
+	void add(struct object& obj) throw(std::bad_alloc);
+	struct node { struct object* obj; struct node* next; bool killed; };
 	struct page { char content[RENDER_PAGE_SIZE]; };
 	struct node* queue_head;
 	struct node* queue_tail;
@@ -659,6 +662,6 @@ private:
  * parameter maxc: Maximum coordinate relative to base. Updated.
  */
 void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw();
-
+}
 
 #endif

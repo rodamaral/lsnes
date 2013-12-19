@@ -3,15 +3,15 @@
 
 namespace
 {
-	struct render_object_box : public render_object
+	struct render_object_box : public framebuffer::object
 	{
 		render_object_box(int32_t _x, int32_t _y, int32_t _width, int32_t _height,
-			premultiplied_color _outline1, premultiplied_color _outline2, premultiplied_color _fill,
+			framebuffer::color _outline1, framebuffer::color _outline2, framebuffer::color _fill,
 			int32_t _thickness) throw()
 			: x(_x), y(_y), width(_width), height(_height), outline1(_outline1), outline2(_outline2),
 			fill(_fill), thickness(_thickness) {}
 		~render_object_box() throw() {}
-		template<bool X> void op(struct framebuffer<X>& scr) throw()
+		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			outline1.set_palette(scr);
 			outline2.set_palette(scr);
@@ -22,10 +22,10 @@ namespace
 			int32_t xmax = width;
 			int32_t ymin = 0;
 			int32_t ymax = height;
-			clip_range(originx, scr.get_width(), x, xmin, xmax);
-			clip_range(originy, scr.get_height(), y, ymin, ymax);
+			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
+			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer<X>::element_t* rptr = scr.rowptr(y + r + originy);
+				typename framebuffer::fb<X>::element_t* rptr = scr.rowptr(y + r + originy);
 				size_t eptr = x + xmin + originx;
 				for(int32_t c = xmin; c < xmax; c++, eptr++)
 					if((r < thickness && r <= (width - c)) || (c < thickness && c < (height - r)))
@@ -37,17 +37,17 @@ namespace
 						fill.apply(rptr[eptr]);
 			}
 		}
-		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
-		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;
 		int32_t width;
 		int32_t height;
-		premultiplied_color outline1;
-		premultiplied_color outline2;
-		premultiplied_color fill;
+		framebuffer::color outline1;
+		framebuffer::color outline2;
+		framebuffer::color fill;
 		int32_t thickness;
 	};
 
@@ -66,9 +66,9 @@ namespace
 		L.get_numeric_argument<int64_t>(6, outline1, fname.c_str());
 		L.get_numeric_argument<int64_t>(7, outline2, fname.c_str());
 		L.get_numeric_argument<int64_t>(8, fill, fname.c_str());
-		premultiplied_color poutline1(outline1);
-		premultiplied_color poutline2(outline2);
-		premultiplied_color pfill(fill);
+		framebuffer::color poutline1(outline1);
+		framebuffer::color poutline2(outline2);
+		framebuffer::color pfill(fill);
 		lua_render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
 			pfill, thickness);
 		return 0;

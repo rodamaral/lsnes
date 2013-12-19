@@ -12,14 +12,14 @@
 #include "library/framebuffer.hpp"
 #include "library/pixfmt-lrgb.hpp"
 
-framebuffer_raw screen_corrupt;
+framebuffer::raw screen_corrupt;
 
 namespace
 {
 	struct render_info
 	{
-		framebuffer_raw fbuf;
-		render_queue rq;
+		framebuffer::raw fbuf;
+		framebuffer::queue rq;
 		uint32_t hscl;
 		uint32_t vscl;
 		uint32_t lgap;
@@ -132,7 +132,7 @@ namespace
 	bool last_redraw_no_lua = true;
 }
 
-framebuffer<false> main_screen;
+framebuffer::fb<false> main_screen;
 
 void take_screenshot(const std::string& file) throw(std::bad_alloc, std::runtime_error)
 {
@@ -147,7 +147,7 @@ void init_special_screens() throw(std::bad_alloc)
 	std::vector<uint32_t> buf;
 	buf.resize(512*448);
 
-	framebuffer_info inf;
+	framebuffer::info inf;
 	inf.type = &_pixel_format_lrgb;
 	inf.mem = reinterpret_cast<char*>(&buf[0]);
 	inf.physwidth = 512;
@@ -160,10 +160,10 @@ void init_special_screens() throw(std::bad_alloc)
 	inf.offset_y = 0;
 
 	draw_corrupt(&buf[0]);
-	screen_corrupt = framebuffer_raw(inf);
+	screen_corrupt = framebuffer::raw(inf);
 }
 
-void redraw_framebuffer(framebuffer_raw& todraw, bool no_lua, bool spontaneous)
+void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 {
 	uint32_t hscl, vscl;
 	auto g = our_rom.rtype->get_scale_factors(todraw.get_width(), todraw.get_height());
@@ -198,7 +198,7 @@ void redraw_framebuffer(framebuffer_raw& todraw, bool no_lua, bool spontaneous)
 void redraw_framebuffer()
 {
 	render_info& ri = get_read_buffer();
-	framebuffer_raw copy = ri.fbuf;
+	framebuffer::raw copy = ri.fbuf;
 	buffering.end_read();
 	//Redraws are never spontaneous
 	redraw_framebuffer(copy, last_redraw_no_lua, false);
@@ -238,10 +238,10 @@ std::pair<uint32_t, uint32_t> get_framebuffer_size()
 	return std::make_pair(h, v);
 }
 
-framebuffer_raw get_framebuffer() throw(std::bad_alloc)
+framebuffer::raw get_framebuffer() throw(std::bad_alloc)
 {
 	render_info& ri = get_read_buffer();
-	framebuffer_raw copy = ri.fbuf;
+	framebuffer::raw copy = ri.fbuf;
 	buffering.end_read();
 	return copy;
 }
@@ -305,7 +305,7 @@ void render_kill_request(void* obj)
 	buffer3.rq.kill_request(obj);
 }
 
-framebuffer_raw& render_get_latest_screen()
+framebuffer::raw& render_get_latest_screen()
 {
 	return get_read_buffer().fbuf;
 }

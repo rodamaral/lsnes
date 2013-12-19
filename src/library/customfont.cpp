@@ -37,8 +37,8 @@ namespace
 		return ((glyph.glyph[ge] >> gb) & 1);
 	}
 
-	template<bool T> void _render(const font_glyph_data& glyph, framebuffer<T>& fb, int32_t x, int32_t y,
-		premultiplied_color fg, premultiplied_color bg, premultiplied_color hl)
+	template<bool T> void _render(const font_glyph_data& glyph, framebuffer::fb<T>& fb, int32_t x, int32_t y,
+		framebuffer::color fg, framebuffer::color bg, framebuffer::color hl)
 	{
 		uint32_t xdc, xoff, xsize;
 		uint32_t ydc, yoff, ysize;
@@ -172,14 +172,14 @@ font_glyph_data::font_glyph_data(std::istream& s)
 	}
 }
 
-void font_glyph_data::render(framebuffer<false>& fb, int32_t x, int32_t y, premultiplied_color fg,
-	premultiplied_color bg, premultiplied_color hl) const
+void font_glyph_data::render(framebuffer::fb<false>& fb, int32_t x, int32_t y, framebuffer::color fg,
+	framebuffer::color bg, framebuffer::color hl) const
 {
 	_render(*this, fb, x, y, fg, bg, hl);
 }
 
-void font_glyph_data::render(framebuffer<true>& fb, int32_t x, int32_t y, premultiplied_color fg,
-	premultiplied_color bg, premultiplied_color hl) const
+void font_glyph_data::render(framebuffer::fb<true>& fb, int32_t x, int32_t y, framebuffer::color fg,
+	framebuffer::color bg, framebuffer::color hl) const
 {
 	_render(*this, fb, x, y, fg, bg, hl);
 }
@@ -236,11 +236,11 @@ custom_font::custom_font(const std::string& file)
 	}
 }
 
-custom_font::custom_font(struct bitmap_font& bfont)
+custom_font::custom_font(struct framebuffer::font& bfont)
 {
 	auto s = bfont.get_glyphs_set();
 	for(auto i = s.begin();;i++) {
-		const bitmap_font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
+		const framebuffer::font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
 		font_glyph_data k;
 		k.width = j.wide ? 16 : 8;
 		k.height = 16;

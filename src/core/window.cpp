@@ -516,7 +516,7 @@ void platform::system_thread_available(bool av) throw()
 namespace
 {
 	mutex_class _msgbuf_lock;
-	framebuffer<false>* our_screen;
+	framebuffer::fb<false>* our_screen;
 
 	struct painter_listener
 	{
@@ -524,12 +524,12 @@ namespace
 		{
 			screenupdate.set(notify_screen_update, []() { graphics_driver_notify_screen(); });
 			statusupdate.set(notify_status_update, []() { graphics_driver_notify_status(); });
-			setscreen.set(notify_set_screen, [](framebuffer<false>& scr) { our_screen = &scr; });
+			setscreen.set(notify_set_screen, [](framebuffer::fb<false>& scr) { our_screen = &scr; });
 		}
 	private:
 		struct dispatch::target<> screenupdate;
 		struct dispatch::target<> statusupdate;
-		struct dispatch::target<framebuffer<false>&> setscreen;
+		struct dispatch::target<framebuffer::fb<false>&> setscreen;
 	} x;
 }
 

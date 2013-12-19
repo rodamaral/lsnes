@@ -28,7 +28,7 @@ namespace
 			return (stringfmt() << s << " " << ((s != 1) ? "objects" : "object")).str();
 		}
 	private:
-		render_queue rqueue;
+		framebuffer::queue rqueue;
 		lua_render_context lctx;
 	};
 

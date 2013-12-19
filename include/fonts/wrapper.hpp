@@ -3,7 +3,7 @@
 
 #include "library/framebuffer.hpp"
 
-extern bitmap_font main_font;
+extern framebuffer::font main_font;
 
 void do_init_font();
 

@@ -109,7 +109,7 @@ namespace
 	};
 
 	//Framebuffer.
-	struct framebuffer_info cover_fbinfo = {
+	struct framebuffer::info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		480, 432, 1920,			//Physical size.
@@ -631,7 +631,7 @@ namespace
 					break;
 				}
 			}
-			framebuffer_info inf;
+			framebuffer::info inf;
 			inf.type = &_pixel_format_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(primary_framebuffer));
 			inf.physwidth = 160;
@@ -643,15 +643,15 @@ namespace
 			inf.offset_x = 0;
 			inf.offset_y = 0;
 
-			framebuffer_raw ls(inf);
+			framebuffer::raw ls(inf);
 			ecore_callbacks->output_frame(ls, 262144, 4389);
 			audioapi_submit_buffer(soundbuf, emitted / 2, true, native_rate ? 2097152 : 32768);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }
 		void c_set_pflag(bool _pflag) { pflag = _pflag; }
-		framebuffer_raw& c_draw_cover() {
-			static framebuffer_raw x(cover_fbinfo);
+		framebuffer::raw& c_draw_cover() {
+			static framebuffer::raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
 		}

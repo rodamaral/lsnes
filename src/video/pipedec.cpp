@@ -135,7 +135,7 @@ namespace
 				pclose(video);
 		}
 
-		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			unsigned r, g, b;
 			unsigned short magic = 258;
@@ -216,7 +216,7 @@ namespace
 		FILE* video;
 		sox_dumper* audio;
 		bool have_dumped_frame;
-		struct framebuffer<false> dscr;
+		struct framebuffer::fb<false> dscr;
 		bool upsidedown;
 		bool bits32;
 		std::string cmd;

@@ -66,7 +66,7 @@ namespace
 		lua_palette* p = lua_class<lua_palette>::create(L);
 		for(unsigned j = 0; j < ps; j++) {
 			if(j == 0 && ftrans)
-				p->colors.push_back(premultiplied_color(-1));
+				p->colors.push_back(framebuffer::color(-1));
 			else {
 				uint64_t val = 0;
 				uint16_t c = lsnes_memory.read<uint16_t>(addr + j * 2);
@@ -75,7 +75,7 @@ namespace
 				uint64_t b = (c >> 10) & 0x1F;
 				val = (r << 19) | ((r << 14) & 0xFF0000) | (g << 11) | ((g << 6) & 0xFF00) |
 					(b << 3) | (b >> 2);
-				p->colors.push_back(premultiplied_color(val));
+				p->colors.push_back(framebuffer::color(val));
 			}
 		}
 		return 1;

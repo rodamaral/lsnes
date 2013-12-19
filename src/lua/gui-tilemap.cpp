@@ -160,7 +160,7 @@ namespace
 		mutex_class mutex;
 	};
 
-	struct render_object_tilemap : public render_object
+	struct render_object_tilemap : public framebuffer::object
 	{
 		render_object_tilemap(int32_t _x, int32_t _y, int32_t _x0, int32_t _y0, uint32_t _w,
 			uint32_t _h, lua_obj_pin<tilemap> _map)
@@ -172,7 +172,7 @@ namespace
 		{
 			return kill_request_ifeq(map.object(), obj);
 		}
-		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
+		template<bool T> void composite_op(struct framebuffer::fb<T>& scr) throw()
 		{
 			tilemap& _map = *map;
 			umutex_class h(_map.mutex);
@@ -184,7 +184,7 @@ namespace
 				}
 			}
 		}
-		template<bool T> void composite_op(struct framebuffer<T>& scr, int32_t xp,
+		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
 			int32_t yp, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax, lua_dbitmap& d) throw()
 		{
 			if(xmin >= xmax || ymin >= ymax) return;
@@ -192,26 +192,26 @@ namespace
 				c.set_palette(scr);
 
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer<T>::element_t* rptr = scr.rowptr(yp + r);
+				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
 				size_t eptr = xp + xmin;
 				for(int32_t c = xmin; c < xmax; c++, eptr++)
 					d.pixels[r * d.width + c].apply(rptr[eptr]);
 			}
 		}
-		template<bool T> void composite_op(struct framebuffer<T>& scr, int32_t xp,
+		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, int32_t xp,
 			int32_t yp, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax, lua_bitmap& b,
 			lua_palette& p)
 			throw()
 		{
 			if(xmin >= xmax || ymin >= ymax) return;
 			p.palette_mutex.lock();
-			premultiplied_color* palette = &p.colors[0];
+			framebuffer::color* palette = &p.colors[0];
 			for(auto& c : p.colors)
 				c.set_palette(scr);
 			size_t pallim = p.colors.size();
 
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer<T>::element_t* rptr = scr.rowptr(yp + r);
+				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
 				size_t eptr = xp + xmin;
 				for(int32_t c = xmin; c < xmax; c++, eptr++) {
 					uint16_t i = b.pixels[r * b.width + c];
@@ -221,7 +221,7 @@ namespace
 			}
 			p.palette_mutex.unlock();
 		}
-		template<bool T> void composite_op(struct framebuffer<T>& scr, tilemap_entry& e, int32_t bx,
+		template<bool T> void composite_op(struct framebuffer::fb<T>& scr, tilemap_entry& e, int32_t bx,
 			int32_t by) throw()
 		{
 			size_t _w, _h;
@@ -262,9 +262,9 @@ namespace
 			if(scrc + cmax > bc + d)
 				cmax = bc + d - scrc;
 		}
-		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
-		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
+		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;

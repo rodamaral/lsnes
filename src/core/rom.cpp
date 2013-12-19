@@ -48,7 +48,7 @@ namespace
 		"Movie‣Loading‣Don't check savestates", false);
 
 	//Framebuffer.
-	struct framebuffer_info null_fbinfo = {
+	struct framebuffer::info null_fbinfo = {
 		&_pixel_format_bgr16,		//Format.
 		(char*)null_cover_fbmem,	//Memory.
 		512, 448, 1024,			//Physical size.
@@ -100,8 +100,8 @@ namespace
 		void c_runtosave() {}
 		bool c_get_pflag() { return false; }
 		void c_set_pflag(bool pflag) {}
-		framebuffer_raw& c_draw_cover() {
-			static framebuffer_raw x(null_fbinfo);
+		framebuffer::raw& c_draw_cover() {
+			static framebuffer::raw x(null_fbinfo);
 			for(size_t i = 0; i < sizeof(null_cover_fbmem)/sizeof(null_cover_fbmem[0]); i++)
 				null_cover_fbmem[i] = 0x0000;
 			std::string message = "NO ROM LOADED";

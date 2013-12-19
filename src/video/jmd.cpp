@@ -90,7 +90,7 @@ namespace
 			}
 		}
 
-		void on_frame(struct framebuffer_raw& _frame, uint32_t fps_n, uint32_t fps_d)
+		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
 			if(!render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
@@ -184,7 +184,7 @@ namespace
 			return ret;
 		}
 
-		framebuffer<false> dscr;
+		framebuffer::fb<false> dscr;
 		unsigned dcounter;
 		bool have_dumped_frame;
 		uint64_t audio_w;

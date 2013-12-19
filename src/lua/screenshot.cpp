@@ -13,7 +13,7 @@ namespace
 
 	function_ptr_luafun lua_gui_screenshot_b(lua_func_misc, "gui.screenshot_bitmap", [](lua_state& L,
 		const std::string& fname) -> int {
-		framebuffer_raw& _fb = render_get_latest_screen();
+		framebuffer::raw& _fb = render_get_latest_screen();
 		try {
 			auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 			std::vector<uint32_t> tmp(_fb.get_width());
@@ -22,7 +22,7 @@ namespace
 				_fb.get_format()->decode(&tmp[0], _fb.get_start() + _fb.get_stride() * y,
 					_fb.get_width());
 				for(size_t x = 0; x < osize.first; x++)
-					b->pixels[y * b->width + x] = premultiplied_color(tmp[x]);
+					b->pixels[y * b->width + x] = framebuffer::color(tmp[x]);
 			}
 		} catch(...) {
 			render_get_latest_screen_end();

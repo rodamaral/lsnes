@@ -44,7 +44,7 @@ namespace
 	bool pflag = false;
 
 	//Framebuffer.
-	struct framebuffer_info cover_fbinfo = {
+	struct framebuffer::info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		480, 432, 1920,			//Physical size.
@@ -149,7 +149,7 @@ namespace
 			int16_t audio[800] = {0};
 			pflag = false;
 			redraw_screen();
-			framebuffer_info inf;
+			framebuffer::info inf;
 			inf.type = &_pixel_format_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(cover_fbmem));
 			inf.physwidth = 480;
@@ -160,15 +160,15 @@ namespace
 			inf.stride = 1920;
 			inf.offset_x = 0;
 			inf.offset_y = 0;
-			framebuffer_raw ls(inf);
+			framebuffer::raw ls(inf);
 			ecore_callbacks->output_frame(ls, 60,1);
 			audioapi_submit_buffer(audio, 800, false, 48000);
 		}
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }
 		void c_set_pflag(bool _pflag) { pflag = _pflag; }
-		framebuffer_raw& c_draw_cover() {
-			static framebuffer_raw x(cover_fbinfo);
+		framebuffer::raw& c_draw_cover() {
+			static framebuffer::raw x(cover_fbinfo);
 			redraw_cover_fbinfo();
 			return x;
 		}

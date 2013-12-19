@@ -1397,8 +1397,8 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		});
 		signal_repaint();
 	} else if(ci.axistype == port_controller_button::TYPE_LIGHTGUN) {
-		framebuffer_raw& _fb = render_get_latest_screen();
-		framebuffer<false> fb;
+		framebuffer::raw& _fb = render_get_latest_screen();
+		framebuffer::fb<false> fb;
 		auto osize = std::make_pair(_fb.get_width(), _fb.get_height());
 		auto size = our_rom.rtype->lightgun_scale();
 		fb.reallocate(osize.first, osize.second, false);

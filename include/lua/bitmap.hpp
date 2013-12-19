@@ -12,7 +12,7 @@
 
 struct lua_palette
 {
-	std::vector<premultiplied_color> colors;
+	std::vector<framebuffer::color> colors;
 	lua_palette(lua_state& L);
 	~lua_palette();
 	mutex_class palette_mutex;
@@ -36,7 +36,7 @@ struct lua_dbitmap
 	~lua_dbitmap();
 	size_t width;
 	size_t height;
-	std::vector<premultiplied_color> pixels;
+	std::vector<framebuffer::color> pixels;
 	std::vector<char> save_png() const;
 	std::string print();
 };

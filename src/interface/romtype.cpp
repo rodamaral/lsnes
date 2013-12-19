@@ -511,7 +511,7 @@ void core_core::set_pflag(bool pflag)
 	return c_set_pflag(pflag);
 }
 
-framebuffer_raw& core_core::draw_cover()
+framebuffer::raw& core_core::draw_cover()
 {
 	return c_draw_cover();
 }

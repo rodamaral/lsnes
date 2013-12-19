@@ -27,7 +27,7 @@ namespace sky
 
 	//Framebuffer.
 	uint32_t cover_fbmem[320*200];
-	struct framebuffer_info cover_fbinfo = {
+	struct framebuffer::info cover_fbinfo = {
 		&_pixel_format_rgb32,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		320, 200, 1280,			//Physical size.
@@ -308,7 +308,7 @@ namespace sky
 			pflag = true;
 			simulate_frame(corei, x);
 			uint32_t* fb = corei.get_framebuffer();
-			framebuffer_info inf;
+			framebuffer::info inf;
 			inf.type = &_pixel_format_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(fb));
 			inf.physwidth = FB_WIDTH;
@@ -320,7 +320,7 @@ namespace sky
 			inf.offset_x = 0;
 			inf.offset_y = 0;
 
-			framebuffer_raw ls(inf);
+			framebuffer::raw ls(inf);
 			ecore_callbacks->output_frame(ls, 656250, 18227);
 			ecore_callbacks->timer_tick(18227, 656250);
 			size_t samples = 1333;
@@ -332,8 +332,8 @@ namespace sky
 		void c_runtosave() {}
 		bool c_get_pflag() { return pflag; }
 		void c_set_pflag(bool _pflag) { pflag = _pflag; }
-		framebuffer_raw& c_draw_cover() {
-			static framebuffer_raw x(cover_fbinfo);
+		framebuffer::raw& c_draw_cover() {
+			static framebuffer::raw x(cover_fbinfo);
 			return x;
 		}
 		std::string c_get_core_shortname() { return "sky"; }

@@ -3,12 +3,12 @@
 
 namespace
 {
-	struct render_object_pixel : public render_object
+	struct render_object_pixel : public framebuffer::object
 	{
-		render_object_pixel(int32_t _x, int32_t _y, premultiplied_color _color) throw()
+		render_object_pixel(int32_t _x, int32_t _y, framebuffer::color _color) throw()
 			: x(_x), y(_y), color(_color) {}
 		~render_object_pixel() throw() {}
-		template<bool X> void op(struct framebuffer<X>& scr) throw()
+		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
 			color.set_palette(scr);
 			int32_t _x = x + scr.get_origin_x();
@@ -19,13 +19,13 @@ namespace
 				return;
 			color.apply(scr.rowptr(_y)[_x]);
 		}
-		void operator()(struct framebuffer<true>& scr) throw()  { op(scr); }
-		void operator()(struct framebuffer<false>& scr) throw() { op(scr); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }
+		void operator()(struct framebuffer::fb<false>& scr) throw() { op(scr); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;
-		premultiplied_color color;
+		framebuffer::color color;
 	};
 
 	function_ptr_luafun gui_pixel(lua_func_misc, "gui.pixel", [](lua_state& L, const std::string& fname) -> int {
@@ -35,7 +35,7 @@ namespace
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		L.get_numeric_argument<int64_t>(3, color, fname.c_str());
-		premultiplied_color pcolor(color);
+		framebuffer::color pcolor(color);
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	});

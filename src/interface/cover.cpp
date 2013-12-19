@@ -16,7 +16,7 @@ namespace
 		unsigned char* _bg = reinterpret_cast<unsigned char*>(&bg);
 		if(x >= w || y >= h)
 			return;
-		const bitmap_font::glyph& g = main_font.get_glyph(ch);
+		const framebuffer::font::glyph& g = main_font.get_glyph(ch);
 		unsigned maxw = min((size_t)(g.wide ? 16 : 8), (size_t)(w - x));
 		unsigned maxh = min((size_t)16,  (size_t)(h - y));
 		unsigned char* cellbase = reinterpret_cast<unsigned char*>(fb) + y * istride + pstride * x;
@@ -99,7 +99,7 @@ void cover_next_position(uint32_t ch, unsigned& x, unsigned& y)
 		x = 0;
 		y = y + 16;
 	} else {
-		const bitmap_font::glyph& g = main_font.get_glyph(ch);
+		const framebuffer::font::glyph& g = main_font.get_glyph(ch);
 		x = x + (g.wide ? 16 : 8);
 	}
 }

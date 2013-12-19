@@ -22,7 +22,7 @@ void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t widt
 }
 
 void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width,
-	const pixel_format_aux_palette<false>& auxp) throw()
+	const framebuffer::auxpalette<false>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++)
@@ -30,14 +30,14 @@ void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t widt
 }
 
 void pixel_format_lrgb::decode(uint64_t* target, const uint8_t* src, size_t width,
-	const pixel_format_aux_palette<true>& auxp) throw()
+	const framebuffer::auxpalette<true>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++)
 		target[i] = auxp.pcache[_src[i] & 0x7FFFF];
 }
 
-void pixel_format_lrgb::set_palette(pixel_format_aux_palette<false>& auxp, uint8_t rshift, uint8_t gshift,
+void pixel_format_lrgb::set_palette(framebuffer::auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.pcache.resize(0x80000);
@@ -55,7 +55,7 @@ void pixel_format_lrgb::set_palette(pixel_format_aux_palette<false>& auxp, uint8
 	auxp.bshift = bshift;
 }
 
-void pixel_format_lrgb::set_palette(pixel_format_aux_palette<true>& auxp, uint8_t rshift, uint8_t gshift,
+void pixel_format_lrgb::set_palette(framebuffer::auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.pcache.resize(0x80000);

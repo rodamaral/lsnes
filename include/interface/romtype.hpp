@@ -318,7 +318,7 @@ struct core_core
 	void runtosave();
 	bool get_pflag();
 	void set_pflag(bool pflag);
-	framebuffer_raw& draw_cover();
+	framebuffer::raw& draw_cover();
 	std::vector<port_type*> get_port_types() { return port_types; }
 	std::string get_core_shortname();
 	void pre_emulate_frame(controller_frame& cf);
@@ -435,7 +435,7 @@ protected:
  *
  * Should display information about the ROM loaded.
  */
-	virtual framebuffer_raw& c_draw_cover() = 0;
+	virtual framebuffer::raw& c_draw_cover() = 0;
 /**
  * Get shortened name of the core.
  */
@@ -572,7 +572,7 @@ public:
 	void runtosave() { core->runtosave(); }
 	bool get_pflag() { return core->get_pflag(); }
 	void set_pflag(bool pflag) { core->set_pflag(pflag); }
-	framebuffer_raw& draw_cover() { return core->draw_cover(); }
+	framebuffer::raw& draw_cover() { return core->draw_cover(); }
 	std::string get_systemmenu_name() { return sysname; }
 	void execute_action(unsigned id, const std::vector<interface_action_paramval>& p)
 	{

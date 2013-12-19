@@ -69,7 +69,7 @@ std::vector<char> lua_dbitmap::save_png() const
 	img.has_alpha = false;
 	img.data.resize(width * height);
 	for(size_t i = 0; i < width * height; i++) {
-		const premultiplied_color& c = pixels[i];
+		const framebuffer::color& c = pixels[i];
 		if(c.origa != 256)
 			img.has_alpha = true;
 		img.data[i] = c.orig + ((uint32_t)(c.origa - (c.origa >> 7) + (c.origa >> 8)) << 24);
@@ -93,7 +93,7 @@ std::vector<char> lua_bitmap::save_png(const lua_palette& pal) const
 		img.data[i] = pixels[i];
 	}
 	for(size_t i = 0; i < pal.colors.size(); i++) {
-		const premultiplied_color& c = pal.colors[i];
+		const framebuffer::color& c = pal.colors[i];
 		if(c.origa != 256)
 			img.has_alpha = true;
 		img.palette[i] = c.orig + ((uint32_t)(c.origa - (c.origa >> 7) + (c.origa >> 8)) << 24);
@@ -108,7 +108,7 @@ namespace
 {
 	const char* base64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	
-	struct render_object_bitmap : public render_object
+	struct render_object_bitmap : public framebuffer::object
 	{
 		render_object_bitmap(int32_t _x, int32_t _y, lua_obj_pin<lua_bitmap> _bitmap,
 			lua_obj_pin<lua_palette> _palette) throw()
@@ -137,7 +137,7 @@ namespace
 				kill_request_ifeq(b2.object(), obj);
 		}
 
-		template<bool T> void composite_op(struct framebuffer<T>& scr) throw()
+		template<bool T> void composite_op(struct framebuffer::fb<T>& scr) throw()
 		{
 			if(p)
 				p->palette_mutex.lock();
@@ -145,7 +145,7 @@ namespace
 			uint32_t originy = scr.get_origin_y();
 			size_t pallim = 0;
 			size_t w, h;
-			premultiplied_color* palette;
+			framebuffer::color* palette;
 			if(b) {
 				palette = &p->colors[0];
 				for(auto& c : p->colors)
@@ -164,10 +164,10 @@ namespace
 			int32_t xmax = w;
 			int32_t ymin = 0;
 			int32_t ymax = h;
-			clip_range(originx, scr.get_width(), x, xmin, xmax);
-			clip_range(originy, scr.get_height(), y, ymin, ymax);
+			framebuffer::clip_range(originx, scr.get_width(), x, xmin, xmax);
+			framebuffer::clip_range(originy, scr.get_height(), y, ymin, ymax);
 			for(int32_t r = ymin; r < ymax; r++) {
-				typename framebuffer<T>::element_t* rptr = scr.rowptr(y + r + originy);
+				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(y + r + originy);
 				size_t eptr = x + xmin + originx;
 				if(b)
 					for(int32_t c = xmin; c < xmax; c++, eptr++) {
@@ -182,9 +182,9 @@ namespace
 			if(p)
 				p->palette_mutex.unlock();
 		}
-		void operator()(struct framebuffer<false>& x) throw() { composite_op(x); }
-		void operator()(struct framebuffer<true>& x) throw() { composite_op(x); }
-		void clone(render_queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
+		void operator()(struct framebuffer::fb<false>& x) throw() { composite_op(x); }
+		void operator()(struct framebuffer::fb<true>& x) throw() { composite_op(x); }
+		void clone(framebuffer::queue& q) const throw(std::bad_alloc) { q.clone_helper(this); }
 	private:
 		int32_t x;
 		int32_t y;
@@ -230,7 +230,7 @@ namespace
 			L.get_numeric_argument<int64_t>(4, c, fname.c_str());
 			lua_dbitmap* b = lua_class<lua_dbitmap>::create(L, w, h);
 			for(size_t i = 0; i < b->width * b->height; i++)
-				b->pixels[i] = premultiplied_color(c);
+				b->pixels[i] = framebuffer::color(c);
 		} else {
 			uint16_t c = 0;
 			L.get_numeric_argument<uint16_t>(4, c, fname.c_str());
@@ -246,7 +246,7 @@ namespace
 		lua_palette* p = lua_class<lua_palette>::get(L, 1, fname.c_str());
 		uint16_t c = L.get_numeric_argument<uint16_t>(2, fname.c_str());
 		int64_t nval = L.get_numeric_argument<int64_t>(3, fname.c_str());
-		premultiplied_color nc(nval);
+		framebuffer::color nc(nval);
 		//The mutex lock protects only the internals of colors array.
 		if(p->colors.size() <= c) {
 			p->palette_mutex.lock();
@@ -272,13 +272,13 @@ namespace
 			int64_t c = L.get_numeric_argument<int64_t>(4, fname.c_str());
 			if(x >= b->width || y >= b->height)
 				return 0;
-			b->pixels[y * b->width + x] = premultiplied_color(c);
+			b->pixels[y * b->width + x] = framebuffer::color(c);
 		} else
 			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for gui.bitmap_pset.");
 		return 0;
 	});
 
-	inline int64_t demultiply_color(const premultiplied_color& c)
+	inline int64_t demultiply_color(const framebuffer::color& c)
 	{
 		if(!c.origa)
 			return -1;
@@ -391,18 +391,18 @@ namespace
 	struct colorkey_none
 	{
 		bool iskey(uint16_t& c) const { return false; }
-		bool iskey(premultiplied_color& c) const { return false; }
+		bool iskey(framebuffer::color& c) const { return false; }
 	};
 
 	struct colorkey_direct
 	{
 		colorkey_direct(uint64_t _ck)
 		{
-			premultiplied_color c(_ck);
+			framebuffer::color c(_ck);
 			ck = c.orig;
 			cka = c.origa;
 		}
-		bool iskey(premultiplied_color& c) const { return (c.orig == ck && c.origa == cka); }
+		bool iskey(framebuffer::color& c) const { return (c.orig == ck && c.origa == cka); }
 		uint32_t ck;
 		uint16_t cka;
 	};
@@ -428,14 +428,14 @@ namespace
 		}
 		void copy(size_t didx, size_t sidx)
 		{
-			premultiplied_color c = sarray[sidx];
+			framebuffer::color c = sarray[sidx];
 			if(!ckey.iskey(c))
 				darray[didx] = c;
 		}
 		size_t swidth, sheight, dwidth, dheight;
 	private:
-		premultiplied_color* sarray;
-		premultiplied_color* darray;
+		framebuffer::color* sarray;
+		framebuffer::color* darray;
 		const colorkey& ckey;
 	};
 
@@ -466,7 +466,7 @@ namespace
 
 	template<class colorkey> struct srcdest_paletted
 	{
-		typedef premultiplied_color ptype;
+		typedef framebuffer::color ptype;
 		srcdest_paletted(lua_dbitmap& dest, lua_bitmap& src, lua_palette& palette, const colorkey& _ckey)
 			: ckey(_ckey), transparent(-1)
 		{
@@ -488,10 +488,10 @@ namespace
 		size_t swidth, sheight, dwidth, dheight;
 	private:
 		uint16_t* sarray;
-		premultiplied_color* darray;
-		premultiplied_color* pal;
+		framebuffer::color* darray;
+		framebuffer::color* pal;
 		uint32_t limit;
-		premultiplied_color transparent;
+		framebuffer::color transparent;
 		const colorkey& ckey;
 	};
 
@@ -580,7 +580,7 @@ namespace
 		if(bitmap.d) {
 			lua_dbitmap* b = lua_class<lua_dbitmap>::create(L, bitmap.w, bitmap.h);
 			for(size_t i = 0; i < bitmap.w * bitmap.h; i++)
-				b->pixels[i] = premultiplied_color(bitmap.bitmap[i]);
+				b->pixels[i] = framebuffer::color(bitmap.bitmap[i]);
 			return 1;
 		} else {
 			lua_bitmap* b = lua_class<lua_bitmap>::create(L, bitmap.w, bitmap.h);
@@ -589,7 +589,7 @@ namespace
 				b->pixels[i] = bitmap.bitmap[i];
 			p->colors.resize(bitmap.palette.size());
 			for(size_t i = 0; i < bitmap.palette.size(); i++)
-				p->colors[i] = premultiplied_color(bitmap.palette[i]);
+				p->colors[i] = framebuffer::color(bitmap.palette[i]);
 			return 2;
 		}
 	}
@@ -723,12 +723,12 @@ namespace
 				b->pixels[i] = img.data[i];
 			p->colors.resize(img.palette.size());
 			for(size_t i = 0; i < img.palette.size(); i++)
-				p->colors[i] = premultiplied_color(mangle_color(img.palette[i]));
+				p->colors[i] = framebuffer::color(mangle_color(img.palette[i]));
 			return 2;
 		} else {
 			lua_dbitmap* b = lua_class<lua_dbitmap>::create(L, img.width, img.height);
 			for(size_t i = 0; i < img.width * img.height; i++)
-				b->pixels[i] = premultiplied_color(mangle_color(img.data[i]));
+				b->pixels[i] = framebuffer::color(mangle_color(img.data[i]));
 			return 1;
 		}
 	}
@@ -815,18 +815,18 @@ namespace
 				ca = 256 - parse_value<uint16_t>(r[4]);
 				int64_t clr;
 				if(ca == 256)
-					p->colors.push_back(premultiplied_color(-1));
+					p->colors.push_back(framebuffer::color(-1));
 				else
-					p->colors.push_back(premultiplied_color((ca << 24) | (cr << 16)
+					p->colors.push_back(framebuffer::color((ca << 24) | (cr << 16)
 						| (cg << 8) | cb));
 			} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
 				int64_t cr, cg, cb;
 				cr = parse_value<uint8_t>(r[1]);
 				cg = parse_value<uint8_t>(r[2]);
 				cb = parse_value<uint8_t>(r[3]);
-				p->colors.push_back(premultiplied_color((cr << 16) | (cg << 8) | cb));
+				p->colors.push_back(framebuffer::color((cr << 16) | (cg << 8) | cb));
 			} else if(regex_match("[ \t]*transparent[ \t]*", line)) {
-				p->colors.push_back(premultiplied_color(-1));
+				p->colors.push_back(framebuffer::color(-1));
 			} else if(!regex_match("[ \t]*(#.*)?", line))
 				throw std::runtime_error("Invalid line format (" + line + ")");
 		}
@@ -866,7 +866,7 @@ namespace
 		return 0;
 	});
 
-	inline premultiplied_color tadjust(premultiplied_color c, uint16_t adj)
+	inline framebuffer::color tadjust(framebuffer::color c, uint16_t adj)
 	{
 		uint32_t rgb = c.orig;
 		uint32_t a = c.origa;
@@ -874,9 +874,9 @@ namespace
 		if(a > 256)
 			a = 256;
 		if(a == 0)
-			return premultiplied_color(-1);
+			return framebuffer::color(-1);
 		else
-			return premultiplied_color(rgb | ((uint32_t)(256 - a) << 24));
+			return framebuffer::color(rgb | ((uint32_t)(256 - a) << 24));
 	}
 
 	function_ptr_luafun adjust_trans(lua_func_misc, "gui.adjust_transparency", [](lua_state& L,
