@@ -20,19 +20,19 @@ void stream_format_video::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(size());
-	write32ule(&buf[0], 0x66727473UL);	//Type
-	write32ule(&buf[4], size() - 8);	//Size.
-	write32ule(&buf[8], 40 + extra.size());	//BITMAPINFOHEADER size.
-	write32ule(&buf[12], width);
-	write32ule(&buf[16], height);
-	write16ule(&buf[20], planes);
-	write16ule(&buf[22], bit_count);
-	write32ule(&buf[24], compression);
-	write32ule(&buf[28], size_image);
-	write32ule(&buf[32], resolution_x);
-	write32ule(&buf[36], resolution_y);
-	write32ule(&buf[40], clr_used);
-	write32ule(&buf[44], clr_important);
+	serialization::u32l(&buf[0], 0x66727473UL);	//Type
+	serialization::u32l(&buf[4], size() - 8);	//Size.
+	serialization::u32l(&buf[8], 40 + extra.size());	//BITMAPINFOHEADER size.
+	serialization::u32l(&buf[12], width);
+	serialization::u32l(&buf[16], height);
+	serialization::u16l(&buf[20], planes);
+	serialization::u16l(&buf[22], bit_count);
+	serialization::u32l(&buf[24], compression);
+	serialization::u32l(&buf[28], size_image);
+	serialization::u32l(&buf[32], resolution_x);
+	serialization::u32l(&buf[36], resolution_y);
+	serialization::u32l(&buf[40], clr_used);
+	serialization::u32l(&buf[44], clr_important);
 	memcpy(&buf[48], &extra[0], extra.size());
 	out.write(&buf[0], buf.size());
 	if(!out)
@@ -53,15 +53,15 @@ void stream_format_audio::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(size());
-	write32ule(&buf[0], 0x66727473UL);	//Type
-	write32ule(&buf[4], size() - 8);	//Size.
-	write16ule(&buf[8], format_tag);
-	write16ule(&buf[10], channels);
-	write32ule(&buf[12], samples_per_second);
-	write32ule(&buf[16], average_bytes_per_second);
-	write16ule(&buf[20], block_align);
-	write16ule(&buf[22], bits_per_sample);
-	write16ule(&buf[24], extra.size());	//Extension data.
+	serialization::u32l(&buf[0], 0x66727473UL);	//Type
+	serialization::u32l(&buf[4], size() - 8);	//Size.
+	serialization::u16l(&buf[8], format_tag);
+	serialization::u16l(&buf[10], channels);
+	serialization::u32l(&buf[12], samples_per_second);
+	serialization::u32l(&buf[16], average_bytes_per_second);
+	serialization::u16l(&buf[20], block_align);
+	serialization::u16l(&buf[22], bits_per_sample);
+	serialization::u16l(&buf[24], extra.size());	//Extension data.
 	memset(&buf[26], 0, size() - 26);	//Pad
 	memcpy(&buf[26], &extra[0], extra.size());
 	out.write(&buf[0], buf.size());
@@ -78,25 +78,25 @@ void stream_header::serialize(std::ostream& out, struct stream_format_base& form
 {
 	std::vector<char> buf;
 	buf.resize(size());
-	write32ule(&buf[0], 0x68727473UL);	//Type
-	write32ule(&buf[4], size() - 8);	//Size.
-	write32ule(&buf[8], format.type());
-	write32ule(&buf[12], handler);
-	write32ule(&buf[16], flags);
-	write16ule(&buf[20], priority);
-	write16ule(&buf[22], language);
-	write32ule(&buf[24], initial_frames);
-	write32ule(&buf[28], format.scale());
-	write32ule(&buf[32], format.rate());
-	write32ule(&buf[36], start);
-	write32ule(&buf[40], length);
-	write32ule(&buf[44], suggested_buffer_size);
-	write32ule(&buf[48], quality);
-	write32ule(&buf[52], format.sample_size());
-	write32ule(&buf[56], format.rect_left());
-	write32ule(&buf[60], format.rect_top());
-	write32ule(&buf[64], format.rect_right());
-	write32ule(&buf[68], format.rect_bottom());
+	serialization::u32l(&buf[0], 0x68727473UL);	//Type
+	serialization::u32l(&buf[4], size() - 8);	//Size.
+	serialization::u32l(&buf[8], format.type());
+	serialization::u32l(&buf[12], handler);
+	serialization::u32l(&buf[16], flags);
+	serialization::u16l(&buf[20], priority);
+	serialization::u16l(&buf[22], language);
+	serialization::u32l(&buf[24], initial_frames);
+	serialization::u32l(&buf[28], format.scale());
+	serialization::u32l(&buf[32], format.rate());
+	serialization::u32l(&buf[36], start);
+	serialization::u32l(&buf[40], length);
+	serialization::u32l(&buf[44], suggested_buffer_size);
+	serialization::u32l(&buf[48], quality);
+	serialization::u32l(&buf[52], format.sample_size());
+	serialization::u32l(&buf[56], format.rect_left());
+	serialization::u32l(&buf[60], format.rect_top());
+	serialization::u32l(&buf[64], format.rect_right());
+	serialization::u32l(&buf[68], format.rect_bottom());
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write strh");
@@ -110,9 +110,9 @@ void stream_header_list<format>::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(12);
-	write32ule(&buf[0], 0x5453494CUL);		//List.
-	write32ule(&buf[4], size() - 8);
-	write32ule(&buf[8], 0x6c727473UL);		//Type.
+	serialization::u32l(&buf[0], 0x5453494CUL);		//List.
+	serialization::u32l(&buf[4], size() - 8);
+	serialization::u32l(&buf[8], 0x6c727473UL);		//Type.
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write strl");
@@ -128,22 +128,22 @@ void avi_header::serialize(std::ostream& out, stream_header_list<stream_format_v
 {
 	std::vector<char> buf;
 	buf.resize(size());
-	write32ule(&buf[0], 0x68697661);	//Type.
-	write32ule(&buf[4], size() - 8);
-	write32ule(&buf[8], microsec_per_frame);
-	write32ule(&buf[12], max_bytes_per_sec);
-	write32ule(&buf[16], padding_granularity);
-	write32ule(&buf[20], flags);
-	write32ule(&buf[24], videotrack.strh.length);
-	write32ule(&buf[28], initial_frames);
-	write32ule(&buf[32], tracks);
-	write32ule(&buf[36], suggested_buffer_size);
-	write32ule(&buf[40], videotrack.strf.width);
-	write32ule(&buf[44], videotrack.strf.height);
-	write32ule(&buf[48], 0);
-	write32ule(&buf[52], 0);
-	write32ule(&buf[56], 0);
-	write32ule(&buf[60], 0);
+	serialization::u32l(&buf[0], 0x68697661);	//Type.
+	serialization::u32l(&buf[4], size() - 8);
+	serialization::u32l(&buf[8], microsec_per_frame);
+	serialization::u32l(&buf[12], max_bytes_per_sec);
+	serialization::u32l(&buf[16], padding_granularity);
+	serialization::u32l(&buf[20], flags);
+	serialization::u32l(&buf[24], videotrack.strh.length);
+	serialization::u32l(&buf[28], initial_frames);
+	serialization::u32l(&buf[32], tracks);
+	serialization::u32l(&buf[36], suggested_buffer_size);
+	serialization::u32l(&buf[40], videotrack.strf.width);
+	serialization::u32l(&buf[44], videotrack.strf.height);
+	serialization::u32l(&buf[48], 0);
+	serialization::u32l(&buf[52], 0);
+	serialization::u32l(&buf[56], 0);
+	serialization::u32l(&buf[60], 0);
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write avih");
@@ -154,9 +154,9 @@ void header_list::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(12);
-	write32ule(&buf[0], 0x5453494CUL);		//List.
-	write32ule(&buf[4], size() - 8);
-	write32ule(&buf[8], 0x6c726468UL);		//Type.
+	serialization::u32l(&buf[0], 0x5453494CUL);		//List.
+	serialization::u32l(&buf[4], size() - 8);
+	serialization::u32l(&buf[8], 0x6c726468UL);		//Type.
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write hdrl");
@@ -180,9 +180,9 @@ void movi_chunk::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(12);
-	write32ule(&buf[0], 0x5453494CUL);		//List.
-	write32ule(&buf[4], size() - 8);
-	write32ule(&buf[8], 0x69766f6d);	//Type.
+	serialization::u32l(&buf[0], 0x5453494CUL);		//List.
+	serialization::u32l(&buf[4], size() - 8);
+	serialization::u32l(&buf[8], 0x69766f6d);	//Type.
 	out.write(&buf[0], buf.size());
 	out.seekp(payload_size, std::ios_base::cur);
 	if(!out)
@@ -202,10 +202,10 @@ void index_entry::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(16);
-	write32ule(&buf[0], chunk_type);
-	write32ule(&buf[4], flags);
-	write32ule(&buf[8], offset);
-	write32ule(&buf[12], length);
+	serialization::u32l(&buf[0], chunk_type);
+	serialization::u32l(&buf[4], flags);
+	serialization::u32l(&buf[8], offset);
+	serialization::u32l(&buf[12], length);
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write index entry");
@@ -226,8 +226,8 @@ void idx1_chunk::serialize(std::ostream& out)
 {
 	std::vector<char> buf;
 	buf.resize(8);
-	write32ule(&buf[0], 0x31786469UL);	//Type.
-	write32ule(&buf[4], size() - 8);
+	serialization::u32l(&buf[0], 0x31786469UL);	//Type.
+	serialization::u32l(&buf[4], size() - 8);
 	out.write(&buf[0], buf.size());
 	if(!out)
 		throw std::runtime_error("Can't write idx1");
@@ -246,9 +246,9 @@ void avi_file_structure::serialize()
 {
 	std::vector<char> buf;
 	buf.resize(12);
-	write32ule(&buf[0], 0x46464952UL);		//RIFF.
-	write32ule(&buf[4], size() - 8);
-	write32ule(&buf[8], 0x20495641UL);		//Type.
+	serialization::u32l(&buf[0], 0x46464952UL);		//RIFF.
+	serialization::u32l(&buf[4], size() - 8);
+	serialization::u32l(&buf[8], 0x20495641UL);		//Type.
 	outstream->write(&buf[0], buf.size());
 	if(!*outstream)
 		throw std::runtime_error("Can't write AVI header");

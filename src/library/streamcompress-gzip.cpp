@@ -47,8 +47,8 @@ namespace
 		{
 			uint8_t header[] = {31, 139, 8, 0, 0, 0, 0, 0, 0, 255};
 			uint8_t trailer[8];
-			write32ule(trailer + 0, crc);
-			write32ule(trailer + 4, size);
+			serialization::u32l(trailer + 0, crc);
+			serialization::u32l(trailer + 4, size);
 			while(hdr < 10) {
 				if(!outsize) return false;
 				*(out++) = header[hdr++];

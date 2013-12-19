@@ -104,9 +104,9 @@ font2::glyph::glyph(std::istream& s)
 	s.read(header, 26);
 	if(!s)
 		throw std::runtime_error("Can't read glyph bitmap header");
-	if(read16ule(header + 0) != 0x4D42)
+	if(serialization::u16l(header + 0) != 0x4D42)
 		throw std::runtime_error("Bad glyph BMP magic");
-	if(read16ule(header + 14) != 12) {
+	if(serialization::u16l(header + 14) != 12) {
 		//Not OS/2 format.
 		old = false;
 		rcount = 40;
@@ -115,19 +115,19 @@ font2::glyph::glyph(std::istream& s)
 			throw std::runtime_error("Can't read glyph bitmap header");
 	}
 
-	uint32_t startoff = read32ule(header + 10);
+	uint32_t startoff = serialization::u32l(header + 10);
 	if(old) {
-		width = read16ule(header + 18);
-		height = read16ule(header + 20);
-		if(read16ule(header + 22) != 1)
+		width = serialization::u16l(header + 18);
+		height = serialization::u16l(header + 20);
+		if(serialization::u16l(header + 22) != 1)
 			throw std::runtime_error("Bad glyph BMP planecount");
-		if(read16ule(header + 24) != 1)
+		if(serialization::u16l(header + 24) != 1)
 			throw std::runtime_error("Bad glyph BMP bitdepth");
 		if(startoff < 26)
 			throw std::runtime_error("Glyph BMP data can't overlap header");
 	} else {
-		long _width = read32sle(header + 18);
-		long _height = read32sle(header + 22);
+		long _width = serialization::s32l(header + 18);
+		long _height = serialization::s32l(header + 22);
 		if(_width < 0)
 			throw std::runtime_error("Bad glyph BMP size");
 		if(_height < 0)
@@ -135,11 +135,11 @@ font2::glyph::glyph(std::istream& s)
 		width = _width;
 		height = (_height >= 0) ? height : -height;
 
-		if(read16ule(header + 26) != 1)
+		if(serialization::u16l(header + 26) != 1)
 			throw std::runtime_error("Bad glyph BMP planecount");
-		if(read16ule(header + 28) != 1)
+		if(serialization::u16l(header + 28) != 1)
 			throw std::runtime_error("Bad glyph BMP bitdepth");
-		if(read32ule(header + 30) != 0)
+		if(serialization::u32l(header + 30) != 0)
 			throw std::runtime_error("Bad glyph BMP compression method");
 		if(startoff < 40)
 			throw std::runtime_error("Glyph BMP data can't overlap header");

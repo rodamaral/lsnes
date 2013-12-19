@@ -1079,7 +1079,7 @@ namespace
 	void emerg_write_number32(int handle, uint32_t num)
 	{
 		char buf[4];
-		write32ube(buf, num);
+		serialization::u32b(buf, num);
 		emerg_write_bytes(handle, (const uint8_t*)buf, 4);
 	}
 	void emerg_write_member(int handle, uint32_t tag, uint64_t size)

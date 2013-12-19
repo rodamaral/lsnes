@@ -136,12 +136,12 @@ namespace
 		{
 			uint32_t crc = crc32(0, NULL, 0);
 			char fixed[12];
-			write32ube(fixed, stream.size());
-			write32ube(fixed + 4, type);
+			serialization::u32b(fixed, stream.size());
+			serialization::u32b(fixed + 4, type);
 			crc = crc32(crc, reinterpret_cast<Bytef*>(fixed + 4), 4);
 			if(stream.size() > 0)
 				crc = crc32(crc, reinterpret_cast<Bytef*>(&stream[0]), stream.size());
-			write32ube(fixed + 8, crc);
+			serialization::u32b(fixed + 8, crc);
 			os.write(fixed, 8);
 			os.write(&stream[0], stream.size());
 			os.write(fixed + 8, 4);
@@ -258,8 +258,8 @@ namespace
 			}
 			throw std::runtime_error("PNG file truncated");
 		}
-		size = read32ube(buf + 0);
-		type = read32ube(buf + 4);
+		size = serialization::u32b(buf + 0);
+		type = serialization::u32b(buf + 4);
 		crc = crc32(0, NULL, 0);
 		crc = crc32(crc, buf + 4, 4);
 		ptr = 0;
@@ -273,7 +273,7 @@ namespace
 		stream.read(buf, 4);
 		if(!stream)
 			throw std::runtime_error("PNG file truncated");
-		uint32_t claim_crc = read32ube(buf);
+		uint32_t claim_crc = serialization::u32b(buf);
 		if(crc != claim_crc)
 			throw std::runtime_error("PNG file chunk CRC check failed");
 	}
@@ -306,8 +306,8 @@ badtype:
 				throw std::runtime_error("Expected IHDR chunk to be 13 bytes");
 			uint8_t buf[13];
 			d.chunk_read(buf, 13);
-			width = read32ube(buf + 0);
-			height = read32ube(buf + 4);
+			width = serialization::u32b(buf + 0);
+			height = serialization::u32b(buf + 4);
 			depth = buf[8];
 			type = buf[9];
 			compression = buf[10];
@@ -593,10 +593,10 @@ badtype:
 		case 2: v = (*in >> (6 - bit)) & 3; m = 0x555555; break;
 		case 4: v = (*in >> (4 - bit)) & 15; m = 0x111111; break;
 		case 8: v = *in; m = 0xFFFFFF; m = 0x010101; break;
-		case 16: v = read16ube(in); m = 0x010101; s = 8; break;
+		case 16: v = serialization::u16b(in); m = 0x010101; s = 8; break;
 		};
 		uint32_t alpha = 0xFF000000U;
-		if(v == read16ube(trans))
+		if(v == serialization::u16b(trans))
 			alpha = 0;
 		return alpha | (m * (v >> s));
 	}
@@ -631,7 +631,7 @@ badtype:
 		case 2: return (*in >> (6 - bit)) & 3;
 		case 4: return (*in >> (4 - bit)) & 15;
 		case 8: return *in;
-		case 16: return read16ube(in);
+		case 16: return serialization::u16b(in);
 		};
 	}
 
@@ -983,8 +983,8 @@ void png_encodedable_image::encode(std::ostream& file) const
 	file.write(png_magic, sizeof(png_magic));
 	//Write the IHDR
 	char ihdr[13];
-	write32ube(ihdr + 0, width);
-	write32ube(ihdr + 4, height);
+	serialization::u32b(ihdr + 0, width);
+	serialization::u32b(ihdr + 4, height);
 	ihdr[8] = has_palette ? size_to_bits(palette.size()) : 8;
 	ihdr[9] = has_palette ? 3 : (has_alpha ? 6 : 2);
 	ihdr[10] = 0; //Deflate,

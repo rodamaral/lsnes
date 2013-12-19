@@ -1,5 +1,6 @@
 #include "zip.hpp"
 #include "directory.hpp"
+#include "serialization.hpp"
 
 #include <cstdint>
 #include <cstring>
@@ -30,33 +31,6 @@ int rename_overwrite(const char* oldname, const char* newname)
 
 namespace
 {
-	uint32_t read32(const unsigned char* buf, unsigned offset = 0, unsigned modulo = 4) throw()
-	{
-		return (uint32_t)buf[offset % modulo] |
-			((uint32_t)buf[(offset + 1) % modulo] << 8) |
-			((uint32_t)buf[(offset + 2) % modulo] << 16) |
-			((uint32_t)buf[(offset + 3) % modulo] << 24);
-	}
-
-	uint16_t read16(const unsigned char* buf) throw()
-	{
-		return (uint16_t)buf[0] | ((uint16_t)buf[1] << 8);
-	}
-
-	void write16(unsigned char* buf, uint16_t value) throw()
-	{
-		buf[0] = (value) & 0xFF;
-		buf[1] = (value >> 8) & 0xFF;
-	}
-
-	void write32(unsigned char* buf, uint32_t value) throw()
-	{
-		buf[0] = (value) & 0xFF;
-		buf[1] = (value >> 8) & 0xFF;
-		buf[2] = (value >> 16) & 0xFF;
-		buf[3] = (value >> 24) & 0xFF;
-	}
-
 	class file_input
 	{
 	public:
@@ -250,23 +224,23 @@ namespace
 		unsigned char buffer[30];
 		if(!(file.read(reinterpret_cast<char*>(buffer), 30)))
 			throw std::runtime_error("Can't read file header from ZIP file");
-		uint32_t magic = read32(buffer);
+		uint32_t magic = serialization::u32l(buffer);
 		if(magic == 0x02014b50) {
 			info.central_directory_special = true;
 			return info;
 		}
 		if(magic != 0x04034b50)
 			throw std::runtime_error("ZIP archive corrupt: Expected file or central directory magic");
-		info.version_needed = read16(buffer + 4);
-		info.flags = read16(buffer + 6);
-		info.compression = read16(buffer + 8);
-		info.mtime_time = read16(buffer + 10);
-		info.mtime_day = read16(buffer + 12);
-		info.crc = read32(buffer + 14);
-		info.compressed_size = read32(buffer + 18);
-		info.uncompressed_size = read32(buffer + 22);
-		uint16_t filename_len = read16(buffer + 26);
-		uint16_t extra_len = read16(buffer + 28);
+		info.version_needed = serialization::u16l(buffer + 4);
+		info.flags = serialization::u16l(buffer + 6);
+		info.compression = serialization::u16l(buffer + 8);
+		info.mtime_time = serialization::u16l(buffer + 10);
+		info.mtime_day = serialization::u16l(buffer + 12);
+		info.crc = serialization::u32l(buffer + 14);
+		info.compressed_size = serialization::u32l(buffer + 18);
+		info.uncompressed_size = serialization::u32l(buffer + 22);
+		uint16_t filename_len = serialization::u16l(buffer + 26);
+		uint16_t extra_len = serialization::u16l(buffer + 28);
 		if(!filename_len)
 			throw std::runtime_error("Unsupported ZIP feature: Empty filename not allowed");
 		if(info.version_needed > 20) {
@@ -439,37 +413,37 @@ void writer::commit() throw(std::bad_alloc, std::logic_error, std::runtime_error
 	for(auto i : files) {
 		cdirsize += (46 + i.first.length());
 		directory_entry.resize(46 + i.first.length());
-		write32(&directory_entry[0], 0x02014b50);
-		write16(&directory_entry[4], 3);
-		write16(&directory_entry[6], 20);
-		write16(&directory_entry[8], 0);
-		write16(&directory_entry[10], compression ? 8 : 0);
-		write16(&directory_entry[12], 0);
-		write16(&directory_entry[14], 10273);
-		write32(&directory_entry[16], i.second.crc);
-		write32(&directory_entry[20], i.second.compressed_size);
-		write32(&directory_entry[24], i.second.uncompressed_size);
-		write16(&directory_entry[28], i.first.length());
-		write16(&directory_entry[30], 0);
-		write16(&directory_entry[32], 0);
-		write16(&directory_entry[34], 0);
-		write16(&directory_entry[36], 0);
-		write32(&directory_entry[38], 0);
-		write32(&directory_entry[42], i.second.offset);
+		serialization::u32l(&directory_entry[0], 0x02014b50);
+		serialization::u16l(&directory_entry[4], 3);
+		serialization::u16l(&directory_entry[6], 20);
+		serialization::u16l(&directory_entry[8], 0);
+		serialization::u16l(&directory_entry[10], compression ? 8 : 0);
+		serialization::u16l(&directory_entry[12], 0);
+		serialization::u16l(&directory_entry[14], 10273);
+		serialization::u32l(&directory_entry[16], i.second.crc);
+		serialization::u32l(&directory_entry[20], i.second.compressed_size);
+		serialization::u32l(&directory_entry[24], i.second.uncompressed_size);
+		serialization::u16l(&directory_entry[28], i.first.length());
+		serialization::u16l(&directory_entry[30], 0);
+		serialization::u16l(&directory_entry[32], 0);
+		serialization::u16l(&directory_entry[34], 0);
+		serialization::u16l(&directory_entry[36], 0);
+		serialization::u32l(&directory_entry[38], 0);
+		serialization::u32l(&directory_entry[42], i.second.offset);
 		memcpy(&directory_entry[46], i.first.c_str(), i.first.length());
 		zipstream->write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
 		if(!*zipstream)
 			throw std::runtime_error("Failed to write central directory entry to output file");
 	}
 	directory_entry.resize(22);
-	write32(&directory_entry[0], 0x06054b50);
-	write16(&directory_entry[4], 0);
-	write16(&directory_entry[6], 0);
-	write16(&directory_entry[8], files.size());
-	write16(&directory_entry[10], files.size());
-	write32(&directory_entry[12], cdirsize);
-	write32(&directory_entry[16], cdiroff);
-	write16(&directory_entry[20], 0);
+	serialization::u32l(&directory_entry[0], 0x06054b50);
+	serialization::u16l(&directory_entry[4], 0);
+	serialization::u16l(&directory_entry[6], 0);
+	serialization::u16l(&directory_entry[8], files.size());
+	serialization::u16l(&directory_entry[10], files.size());
+	serialization::u32l(&directory_entry[12], cdirsize);
+	serialization::u32l(&directory_entry[16], cdiroff);
+	serialization::u16l(&directory_entry[20], 0);
 	zipstream->write(reinterpret_cast<char*>(&directory_entry[0]), directory_entry.size());
 	if(!*zipstream)
 		throw std::runtime_error("Failed to write central directory end marker to output file");
@@ -520,16 +494,16 @@ void writer::close_file() throw(std::bad_alloc, std::logic_error, std::runtime_e
 		throw std::runtime_error("Can't read current ZIP stream position");
 	unsigned char header[30];
 	memset(header, 0, 30);
-	write32(header, 0x04034b50);
+	serialization::u32l(header, 0x04034b50);
 	header[4] = 20;
 	header[6] = 0;
 	header[8] = compression ? 8 : 0;
 	header[12] = 33;
 	header[13] = 40;
-	write32(header + 14, crc32);
-	write32(header + 18, cs);
-	write32(header + 22, ucs);
-	write16(header + 26, open_file.length());
+	serialization::u32l(header + 14, crc32);
+	serialization::u32l(header + 18, cs);
+	serialization::u32l(header + 22, ucs);
+	serialization::u16l(header + 26, open_file.length());
 	zipstream->write(reinterpret_cast<char*>(header), 30);
 	zipstream->write(open_file.c_str(), open_file.length());
 	zipstream->write(&current_compressed_file[0], current_compressed_file.size());

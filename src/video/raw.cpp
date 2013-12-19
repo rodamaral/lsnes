@@ -123,8 +123,8 @@ namespace
 			}
 			if(have_dumped_frame && audio) {
 				char buffer[4];
-				write16sbe(buffer + 0, l);
-				write16sbe(buffer + 2, r);
+				serialization::s16b(buffer + 0, l);
+				serialization::s16b(buffer + 2, r);
 				audio->write(buffer, 4);
 			}
 		}

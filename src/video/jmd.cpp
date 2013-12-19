@@ -133,7 +133,7 @@ namespace
 				return;
 			}
 			char dummypacket[8] = {0x00, 0x03};
-			write32ube(dummypacket + 2, maxtc - last_written_ts);
+			serialization::u32b(dummypacket + 2, maxtc - last_written_ts);
 			last_written_ts = maxtc;
 			jmd->write(dummypacket, sizeof(dummypacket));
 			if(!*jmd)
@@ -218,8 +218,8 @@ namespace
 
 			size_t usize = 4;
 			ret.resize(4);
-			write16ube(&ret[0], width);
-			write16ube(&ret[2], height);
+			serialization::u16b(&ret[0], width);
+			serialization::u16b(&ret[2], height);
 			uint8_t input_buffer[4 * INBUF_PIXELS];
 			size_t ptr = 0;
 			size_t pixels = static_cast<size_t>(width) * height;
@@ -230,7 +230,7 @@ namespace
 				if(input_clear) {
 					size_t pixel = ptr;
 					for(unsigned i = 0; i < INBUF_PIXELS && pixel < pixels; i++, pixel++)
-						write32ule(input_buffer + (4 * i), memory[pixel]);
+						serialization::u32l(input_buffer + (4 * i), memory[pixel]);
 					bsize = pixel - ptr;
 					ptr = pixel;
 					input_clear = false;
@@ -294,7 +294,7 @@ namespace
 		{
 			//Channel 0, minor 1.
 			char videopacketh[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
-			write32ube(videopacketh + 2, f.ts - last_written_ts);
+			serialization::u32b(videopacketh + 2, f.ts - last_written_ts);
 			last_written_ts = f.ts;
 			unsigned lneed = 0;
 			uint64_t datasize = f.data.size();	//Possibly upcast to avoid warnings.
@@ -316,10 +316,10 @@ namespace
 		{
 			//Channel 1, minor 1, payload 4.
 			char soundpacket[12] = {0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x04};
-			write32ube(soundpacket + 2, s.ts - last_written_ts);
+			serialization::u32b(soundpacket + 2, s.ts - last_written_ts);
 			last_written_ts = s.ts;
-			write16sbe(soundpacket + 8, s.l);
-			write16sbe(soundpacket + 10, s.r);
+			serialization::s16b(soundpacket + 8, s.l);
+			serialization::s16b(soundpacket + 10, s.r);
 			jmd->write(soundpacket, sizeof(soundpacket));
 			if(!*jmd)
 				throw std::runtime_error("Can't write JMD sound packet");

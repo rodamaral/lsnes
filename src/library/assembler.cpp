@@ -99,7 +99,7 @@ void i386_reloc_rel8(uint8_t* location, size_t target, size_t source)
 		std::cerr << "Out-of-range offset: " << d << std::endl;
 		throw std::runtime_error("Relative reference (8-bit) out of range");
 	}
-	write8sle(location, d);
+	serialization::s8l(location, d);
 }
 
 void i386_reloc_rel16(uint8_t* location, size_t target, size_t source)
@@ -109,7 +109,7 @@ void i386_reloc_rel16(uint8_t* location, size_t target, size_t source)
 		std::cerr << "Out-of-range offset: " << d << std::endl;
 		throw std::runtime_error("Relative reference (16-bit) out of range");
 	}
-	write32sle(location, d);
+	serialization::s32l(location, d);
 }
 
 void i386_reloc_rel32(uint8_t* location, size_t target, size_t source)
@@ -119,19 +119,19 @@ void i386_reloc_rel32(uint8_t* location, size_t target, size_t source)
 		std::cerr << "Out-of-range offset: " << d << std::endl;
 		throw std::runtime_error("Relative reference (32-bit) out of range");
 	}
-	write32sle(location, d);
+	serialization::s32l(location, d);
 }
 
 void i386_reloc_abs32(uint8_t* location, size_t target, size_t source)
 {
 	if(target > 0xFFFFFFFFU)
 		throw std::runtime_error("Absolute reference out of range");
-	write32ule(location, target);
+	serialization::u32l(location, target);
 }
 
 void i386_reloc_abs64(uint8_t* location, size_t target, size_t source)
 {
-	write64ule(location, target);
+	serialization::u64l(location, target);
 }
 
 uint8_t i386_modrm(uint8_t reg, uint8_t mod, uint8_t rm)

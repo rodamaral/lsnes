@@ -24,7 +24,7 @@ namespace
 			if(v >= 1)
 				v -= 1;
 		}
-		write64ule(buf, v2);
+		serialization::u64l(buf, v2);
 	}
 }
 
@@ -36,9 +36,9 @@ sox_dumper::sox_dumper(const std::string& filename, double samplerate, uint32_t 
 		throw std::runtime_error("Can't open sox file for output");
 	try {
 		uint8_t buffer[32] = {0};
-		write64ule(buffer, 0x1C586F532E);		//Magic and header size.
+		serialization::u64l(buffer, 0x1C586F532E);		//Magic and header size.
 		write_double(buffer + 16, samplerate);
-		write32ule(buffer + 24, channels);
+		serialization::u32l(buffer + 24, channels);
 		sox_file.write(reinterpret_cast<char*>(buffer), 32);
 		if(!sox_file)
 			throw std::runtime_error("Can't write audio header");
@@ -64,7 +64,7 @@ void sox_dumper::close() throw(std::bad_alloc, std::runtime_error)
 	sox_file.seekp(8, std::ios::beg);
 	uint8_t buffer[8];
 	uint64_t raw_samples = samples_dumped * samplebuffer.size();
-	write64ule(buffer, raw_samples);
+	serialization::u64l(buffer, raw_samples);
 	sox_file.write(reinterpret_cast<char*>(buffer), 8);
 	if(!sox_file)
 		throw std::runtime_error("Can't fixup audio header");
@@ -74,7 +74,7 @@ void sox_dumper::close() throw(std::bad_alloc, std::runtime_error)
 void sox_dumper::internal_dump_sample()
 {
 	for(size_t i = 0; i < samplebuffer.size(); ++i)
-		write32ule(&databuf[4 * i], static_cast<uint32_t>(samplebuffer[i]));
+		serialization::u32l(&databuf[4 * i], static_cast<uint32_t>(samplebuffer[i]));
 	sox_file.write(&databuf[0], databuf.size());
 	if(!sox_file)
 		throw std::runtime_error("Failed to dump sample");

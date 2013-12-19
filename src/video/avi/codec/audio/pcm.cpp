@@ -35,7 +35,7 @@ namespace
 	{
 		out.payload.resize(2 * chans * samples);
 		for(size_t i = 0; i < chans * samples; i++)
-			write16sle(&out.payload[2 * i], data[i]);
+			serialization::s16l(&out.payload[2 * i], data[i]);
 		out.typecode = 0x6277;
 		out.indexflags = 0x10;
 		out.hidden = false;

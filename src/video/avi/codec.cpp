@@ -54,9 +54,9 @@ namespace
 	{
 		uint32_t fulltype = get_actual_packet_type(track, pkt.typecode);
 		char buf[8 + PADGRANULARITY];
-		write32ule(buf + 0, fulltype);
-		write32ule(buf + 4, pkt.payload.size());
-		write32ule(buf + 8, 0);
+		serialization::u32l(buf + 0, fulltype);
+		serialization::u32l(buf + 4, pkt.payload.size());
+		serialization::u32l(buf + 8, 0);
 		size_t padding = (PADGRANULARITY - pkt.payload.size() % PADGRANULARITY) % PADGRANULARITY;
 		avifile.outstream->write(buf, 8);
 		avifile.outstream->write(&pkt.payload[0], pkt.payload.size());

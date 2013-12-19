@@ -14,7 +14,7 @@ namespace
 			L.pushboolean(0);
 			return 1;
 		}
-		L.pushnumber(read_of_endian<S>(&h[address], 1));
+		L.pushnumber(serialization::read_endian<S>(&h[address], 1));
 		return 1;
 	}
 
@@ -26,7 +26,7 @@ namespace
 		auto& h = get_host_memory();
 		if(address + sizeof(S) > h.size())
 			h.resize(address + sizeof(S));
-		write_of_endian<S>(&h[address], value, 1);
+		serialization::write_endian<S>(&h[address], value, 1);
 		return 0;
 	}
 

@@ -105,27 +105,17 @@ struct byteseq_tag
 	std::vector<uint8_t> st;
 };
 
-template<typename T> struct unsigned_of {};
-template<> struct unsigned_of<int8_t> { typedef uint8_t t; };
-template<> struct unsigned_of<uint8_t> { typedef uint8_t t; };
-template<> struct unsigned_of<int16_t> { typedef uint16_t t; };
-template<> struct unsigned_of<uint16_t> { typedef uint16_t t; };
-template<> struct unsigned_of<int32_t> { typedef uint32_t t; };
-template<> struct unsigned_of<uint32_t> { typedef uint32_t t; };
-template<> struct unsigned_of<int64_t> { typedef uint64_t t; };
-template<> struct unsigned_of<uint64_t> { typedef uint64_t t; };
-
 template<typename T> byteseq_tag vle(T v)
 {
 	uint8_t b[sizeof(T)];
-	_write_common<T,typename unsigned_of<T>::t, sizeof(T), false>(b, v);
+	serialization::write_common<T, false>(b, v);
 	return byteseq_tag(b, sizeof(T));
 }
 
 template<typename T> byteseq_tag vbe(T v)
 {
 	uint8_t b[sizeof(T)];
-	_write_common<T,typename unsigned_of<T>::t, sizeof(T), true>(b, v);
+	serialization::write_common<T, true>(b, v);
 	return byteseq_tag(b, sizeof(T));
 }
 

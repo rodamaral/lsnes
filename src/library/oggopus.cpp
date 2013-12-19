@@ -23,9 +23,9 @@ struct oggopus_header parse_oggopus_header(struct ogg::packet& packet) throw(std
 		throw std::runtime_error("Zero channels not allowed");
 	h.version = p[8];
 	h.channels = p[9];
-	h.preskip = read16ule(&p[10]);
-	h.rate = read32ule(&p[12]);
-	h.gain = read16sle(&p[16]);
+	h.preskip = serialization::u16l(&p[10]);
+	h.rate = serialization::u32l(&p[12]);
+	h.gain = serialization::s16l(&p[16]);
 	h.map_family = p[18];
 	memset(h.chanmap, 255, sizeof(h.chanmap));
 	if(h.map_family) {
@@ -67,18 +67,18 @@ struct oggopus_tags parse_oggopus_tags(struct ogg::packet& packet) throw(std::ba
 	//Scan the thing.
 	size_t itr = 8;
 	size_t oitr = 8;
-	itr = itr + 4 + read32ule(&p[itr]);
+	itr = itr + 4 + serialization::u32l(&p[itr]);
 	if(itr + 4 > p.size())
 		throw std::runtime_error("OggOpus header packet truncated");
 	h.vendor = std::string(&p[oitr + 4], &p[itr]);
 	if(itr + 4 > p.size())
 		throw std::runtime_error("OggOpus header packet truncated");
-	uint32_t headers = read32ule(&p[itr]);
+	uint32_t headers = serialization::u32l(&p[itr]);
 	itr += 4;
 	for(uint32_t i = 0; i < headers; i++) {
 		if(itr + 4 > p.size())
 			throw std::runtime_error("OggOpus header packet truncated");
-		itr = itr + 4 + read32ule(&p[itr]);
+		itr = itr + 4 + serialization::u32l(&p[itr]);
 		if(itr > p.size())
 			throw std::runtime_error("OggOpus header packet truncated");
 		h.comments.push_back(std::string(&p[oitr + 4], &p[itr]));
@@ -102,12 +102,12 @@ struct ogg::page serialize_oggopus_header(struct oggopus_header& header) throw(s
 		for(unsigned i = 0; i < header.channels; i++)
 			if(header.chanmap[i] != 255 && header.chanmap[i] > header.streams + header.coupled)
 				throw std::runtime_error("Logical channel mapped to invalid physical channel");
-	write64ube(buffer, 0x4F70757348656164ULL);
+	serialization::u64b(buffer, 0x4F70757348656164ULL);
 	buffer[8] = header.version;
 	buffer[9] = header.channels;
-	write16ule(buffer + 10, header.preskip);
-	write32ule(buffer + 12, header.rate);
-	write16sle(buffer + 16, header.gain);
+	serialization::u16l(buffer + 10, header.preskip);
+	serialization::u32l(buffer + 12, header.rate);
+	serialization::s16l(buffer + 16, header.gain);
 	buffer[18] = header.map_family;
 	if(header.map_family) {
 		buffer[19] = header.streams;
@@ -137,14 +137,14 @@ uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(co
 	std::vector<uint8_t> contents;
 	contents.resize(needed);
 	size_t itr = 0;
-	write64ube(&contents[0], 0x4F70757354616773ULL);
-	write32ule(&contents[8], tags.vendor.length());
+	serialization::u64b(&contents[0], 0x4F70757354616773ULL);
+	serialization::u32l(&contents[8], tags.vendor.length());
 	std::copy(tags.vendor.begin(), tags.vendor.end(), reinterpret_cast<char*>(&contents[12]));
 	itr = 12 + tags.vendor.length();
-	write32ule(&contents[itr], tags.comments.size());
+	serialization::u32l(&contents[itr], tags.comments.size());
 	itr += 4;
 	for(auto i : tags.comments) {
-		write32ule(&contents[itr], i.length());
+		serialization::u32l(&contents[itr], i.length());
 		std::copy(i.begin(), i.end(), reinterpret_cast<char*>(&contents[itr + 4]));
 		itr += (i.length() + 4);
 	}

@@ -14,7 +14,7 @@ namespace sky
 	void random::init()
 	{
 		memset(state, 0, 32);
-		write64ule(state, ecore_callbacks->get_randomseed());
+		serialization::u64l(state, ecore_callbacks->get_randomseed());
 		initialized = true;
 	}
 
@@ -25,7 +25,7 @@ namespace sky
 		uint8_t buf[4];
 		sha256 h;
 		h.write(state, 32);
-		write32ule(buf, x);
+		serialization::u32l(buf, x);
 		h.write(buf, 4);
 		h.read(state);
 	}
@@ -34,7 +34,7 @@ namespace sky
 	{
 		if(!initialized)
 			init();
-		uint32_t val = read32ule(state);
+		uint32_t val = serialization::u32l(state);
 		sha256 h;
 		h.write(state, 32);
 		h.read(state);

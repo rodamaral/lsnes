@@ -92,8 +92,8 @@ namespace
 			x.resize(rseed.length() + slots * 8 + 8);
 			std::copy(rseed.begin(), rseed.end(), x.begin());
 			for(unsigned i = 0; i < slots; i++)
-				write64ule(&x[rseed.length() + 8 * i], buf[i]);
-			write64ule(&x[rseed.length() + 8 * slots], arch_get_random());
+				serialization::u64l(&x[rseed.length() + 8 * i], buf[i]);
+			serialization::u64l(&x[rseed.length() + 8 * slots], arch_get_random());
 			rseed = "32 " + sha256::hash(reinterpret_cast<uint8_t*>(&x[0]), x.size());
 			count = 0;
 		}
@@ -435,7 +435,7 @@ void highrandom_256(uint8_t* buf)
 	std::string s = get_random_hexstring(0);
 	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
 	arch_random_256(tmp + 64);
-	write64ube(tmp + 96, arch_get_tsc());
+	serialization::u64b(tmp + 96, arch_get_tsc());
 	sha256::hash(buf, tmp, 104);
 #ifdef USE_LIBGCRYPT_SHA256
 	memset(tmp, 0, 32);

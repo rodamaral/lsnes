@@ -329,15 +329,15 @@ namespace
 		memset(buf, 0, buffersize);
 		if(lua_class<lua_bitmap>::is(L, 1)) {
 			lua_bitmap* b = lua_class<lua_bitmap>::get(L, 1, fname.c_str());
-			write64ube(buf + 0, b->width);
-			write64ube(buf + 8, b->height);
+			serialization::u64b(buf + 0, b->width);
+			serialization::u64b(buf + 8, b->height);
 			bufferuse = 16;
 			for(unsigned i = 0; i < b->width * b->height; i++) {
 				if(bufferuse + 2 > buffersize) {
 					h.write(buf, bufferuse);
 					bufferuse = 0;
 				}
-				write16ube(buf + bufferuse + 0, b->pixels[i]);
+				serialization::u16b(buf + bufferuse + 0, b->pixels[i]);
 				bufferuse += 2;
 			}
 			if(bufferuse > 0) h.write(buf, bufferuse);
@@ -345,16 +345,16 @@ namespace
 			return 1;
 		} else if(lua_class<lua_dbitmap>::is(L, 1)) {
 			lua_dbitmap* b = lua_class<lua_dbitmap>::get(L, 1, fname.c_str());
-			write64ube(buf + 0, b->width);
-			write64ube(buf + 4, b->height);
+			serialization::u64b(buf + 0, b->width);
+			serialization::u64b(buf + 4, b->height);
 			bufferuse = 16;
 			for(unsigned i = 0; i < b->width * b->height; i++) {
 				if(bufferuse + 6 > buffersize) {
 					h.write(buf, bufferuse);
 					bufferuse = 0;
 				}
-				write32ube(buf + bufferuse + 0, b->pixels[i].orig);
-				write16ube(buf + bufferuse + 4, b->pixels[i].origa);
+				serialization::u32b(buf + bufferuse + 0, b->pixels[i].orig);
+				serialization::u16b(buf + bufferuse + 4, b->pixels[i].origa);
 				bufferuse += 6;
 			}
 			if(bufferuse > 0) h.write(buf, bufferuse);
@@ -379,8 +379,8 @@ namespace
 				h.write(buf, bufferuse);
 				bufferuse = 0;
 			}
-			write32ube(buf + bufferuse + 0, p->colors[i].orig);
-			write16ube(buf + bufferuse + 4, p->colors[i].origa);
+			serialization::u32b(buf + bufferuse + 0, p->colors[i].orig);
+			serialization::u16b(buf + bufferuse + 4, p->colors[i].origa);
 			bufferuse += 6;
 		}
 		if(bufferuse > 0) h.write(buf, bufferuse);

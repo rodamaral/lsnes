@@ -1,63 +1,172 @@
 #ifndef _library__serialization__hpp__included__
 #define _library__serialization__hpp__included__
 
+#include <cstdint>
 #include <cstdlib>
 #include <map>
 
-template<typename T1, typename T2, size_t ssize, bool be>
-void _write_common(unsigned char* target, T1 value)
+namespace serialization
 {
-	for(size_t i = 0; i < ssize; i++)
+template<typename T> struct unsigned_of {};
+template<> struct unsigned_of<int8_t> { typedef uint8_t t; };
+template<> struct unsigned_of<uint8_t> { typedef uint8_t t; };
+template<> struct unsigned_of<int16_t> { typedef uint16_t t; };
+template<> struct unsigned_of<uint16_t> { typedef uint16_t t; };
+template<> struct unsigned_of<int32_t> { typedef uint32_t t; };
+template<> struct unsigned_of<uint32_t> { typedef uint32_t t; };
+template<> struct unsigned_of<int64_t> { typedef uint64_t t; };
+template<> struct unsigned_of<uint64_t> { typedef uint64_t t; };
+
+template<typename T1, bool be>
+void write_common(uint8_t* target, T1 value)
+{
+	for(size_t i = 0; i < sizeof(T1); i++)
 		if(be)
-			target[i] = static_cast<T2>(value) >> 8 * (ssize - i - 1);
+			target[i] = static_cast<typename unsigned_of<T1>::t>(value) >> 8 * (sizeof(T1) - i - 1);
 		else
-			target[i] = static_cast<T2>(value) >> 8 * i;
+			target[i] = static_cast<typename unsigned_of<T1>::t>(value) >> 8 * i;
 }
 
-template<typename T1, typename T2, size_t ssize, bool be>
-T1 _read_common(const unsigned char* source)
+template<typename T1, bool be>
+T1 read_common(const uint8_t* source)
 {
-	T2 value = 0;
-	for(size_t i = 0; i < ssize; i++)
+	typename unsigned_of<T1>::t value = 0;
+	for(size_t i = 0; i < sizeof(T1); i++)
 		if(be)
-			value |= static_cast<T2>(source[i]) << 8 * (ssize - i - 1);
+			value |= static_cast<typename unsigned_of<T1>::t>(source[i]) << 8 * (sizeof(T1) - i - 1);
 		else
-			value |= static_cast<T2>(source[i]) << 8 * i;
+			value |= static_cast<typename unsigned_of<T1>::t>(source[i]) << 8 * i;
 	return static_cast<T1>(value);
 }
 
-#define write8sbe(t, v)  _write_common<  int8_t,  uint8_t, 1,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write8sle(t, v)  _write_common<  int8_t,  uint8_t, 1, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write8ube(t, v)  _write_common< uint8_t,  uint8_t, 1,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write8ule(t, v)  _write_common< uint8_t,  uint8_t, 1, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write16sbe(t, v) _write_common< int16_t, uint16_t, 2,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write16sle(t, v) _write_common< int16_t, uint16_t, 2, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write16ube(t, v) _write_common<uint16_t, uint16_t, 2,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write16ule(t, v) _write_common<uint16_t, uint16_t, 2, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write32sbe(t, v) _write_common< int32_t, uint32_t, 4,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write32sle(t, v) _write_common< int32_t, uint32_t, 4, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write32ube(t, v) _write_common<uint32_t, uint32_t, 4,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write32ule(t, v) _write_common<uint32_t, uint32_t, 4, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write64sbe(t, v) _write_common< int64_t, uint64_t, 8,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write64sle(t, v) _write_common< int64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define write64ube(t, v) _write_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<unsigned char*>(t), (v))
-#define write64ule(t, v) _write_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<unsigned char*>(t), (v))
-#define read8sbe(t)  _read_common<  int8_t,  uint8_t, 1,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read8sle(t)  _read_common<  int8_t,  uint8_t, 1, false>(reinterpret_cast<const unsigned char*>(t))
-#define read8ube(t)  _read_common< uint8_t,  uint8_t, 1,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read8ule(t)  _read_common< uint8_t,  uint8_t, 1, false>(reinterpret_cast<const unsigned char*>(t))
-#define read16sbe(t) _read_common< int16_t, uint16_t, 2,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read16sle(t) _read_common< int16_t, uint16_t, 2, false>(reinterpret_cast<const unsigned char*>(t))
-#define read16ube(t) _read_common<uint16_t, uint16_t, 2,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read16ule(t) _read_common<uint16_t, uint16_t, 2, false>(reinterpret_cast<const unsigned char*>(t))
-#define read32sbe(t) _read_common< int32_t, uint32_t, 4,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read32sle(t) _read_common< int32_t, uint32_t, 4, false>(reinterpret_cast<const unsigned char*>(t))
-#define read32ube(t) _read_common<uint32_t, uint32_t, 4,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read32ule(t) _read_common<uint32_t, uint32_t, 4, false>(reinterpret_cast<const unsigned char*>(t))
-#define read64sbe(t) _read_common< int64_t, uint64_t, 8,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read64sle(t) _read_common< int64_t, uint64_t, 8, false>(reinterpret_cast<const unsigned char*>(t))
-#define read64ube(t) _read_common<uint64_t, uint64_t, 8,  true>(reinterpret_cast<const unsigned char*>(t))
-#define read64ule(t) _read_common<uint64_t, uint64_t, 8, false>(reinterpret_cast<const unsigned char*>(t))
+inline void s8b(void* t, int8_t v)
+{
+	write_common< int8_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s8l(void* t, int8_t v)
+{
+	write_common< int8_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u8b(void* t, uint8_t v)
+{
+	write_common< uint8_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u8l(void* t, uint8_t v)
+{
+	write_common< uint8_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s16b(void* t, int16_t v)
+{
+	write_common< int16_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s16l(void* t, int16_t v)
+{
+	write_common< int16_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u16b(void* t, uint16_t v)
+{
+	write_common<uint16_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u16l(void* t, uint16_t v)
+{
+	write_common<uint16_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s32b(void* t, int32_t v)
+{
+	write_common< int32_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s32l(void* t, int32_t v)
+{
+	write_common< int32_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u32b(void* t, uint32_t v)
+{
+	write_common<uint32_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u32l(void* t, uint32_t v)
+{
+	write_common<uint32_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s64b(void* t, int64_t v)
+{
+	write_common< int64_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void s64l(void* t, int64_t v)
+{
+	write_common< int64_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u64b(void* t, uint64_t v)
+{
+	write_common<uint64_t, true>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline void u64l(void* t, uint64_t v)
+{
+	write_common<uint64_t, false>(reinterpret_cast<uint8_t*>(t), v);
+}
+inline int8_t s8b(const void* t)
+{
+	return read_common< int8_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int8_t s8l(const void* t)
+{
+	return read_common< int8_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint8_t u8b(const void* t)
+{
+	return read_common< uint8_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint8_t u8l(const void* t)
+{
+	return read_common< uint8_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int16_t s16b(const void* t)
+{
+	return read_common< int16_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int16_t s16l(const void* t)
+{
+	return read_common< int16_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint16_t u16b(const void* t)
+{
+	return read_common<uint16_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint16_t u16l(const void* t)
+{
+	return read_common<uint16_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int32_t s32b(const void* t)
+{
+	return read_common< int32_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int32_t s32l(const void* t)
+{
+	return read_common< int32_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint32_t u32b(const void* t)
+{
+	return read_common<uint32_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint32_t u32l(const void* t)
+{
+	return read_common<uint32_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int64_t s64b(const void* t)
+{
+	return read_common< int64_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline int64_t s64l(const void* t)
+{
+	return read_common< int64_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint64_t u64b(const void* t)
+{
+	return read_common<uint64_t, true>(reinterpret_cast<const uint8_t*>(t));
+}
+inline uint64_t u64l(const void* t)
+{
+	return read_common<uint64_t, false>(reinterpret_cast<const uint8_t*>(t));
+}
 
 template<typename T> void swap_endian(T& value)
 {
@@ -75,7 +184,7 @@ template<typename T> void swap_endian(T& value, int endian)
 		swap_endian(value);
 }
 
-template<typename T> T read_of_endian(const void* value, int endian)
+template<typename T> T read_endian(const void* value, int endian)
 {
 	T val;
 	memcpy(&val, value, sizeof(T));
@@ -83,11 +192,12 @@ template<typename T> T read_of_endian(const void* value, int endian)
 	return val;
 }
 
-template<typename T> void write_of_endian(void* value, const T& val, int endian)
+template<typename T> void write_endian(void* value, const T& val, int endian)
 {
 	T val2;
 	memcpy(value, &val, sizeof(T));
 	swap_endian(*reinterpret_cast<T*>(value), endian);
+}
 }
 
 #endif

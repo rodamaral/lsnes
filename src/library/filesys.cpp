@@ -266,7 +266,7 @@ void filesystem::supercluster::load(std::fstream& s, uint32_t index)
 		throw std::runtime_error("Can't read cluster table");
 	free_clusters = 0;
 	for(unsigned i = 0; i < CLUSTERS_PER_SUPER; i++) {
-		if(!(clusters[i] = read32ube(buffer + 4 * i)))
+		if(!(clusters[i] = serialization::u32b(buffer + 4 * i)))
 			free_clusters++;
 	}
 }
@@ -276,7 +276,7 @@ void filesystem::supercluster::save(std::fstream& s, uint32_t index)
 	uint64_t offset = SUPERCLUSTER_SIZE * index;
 	char buffer[CLUSTER_SIZE];
 	for(unsigned i = 0; i < CLUSTERS_PER_SUPER; i++)
-		write32ube(buffer + 4 * i, clusters[i]);
+		serialization::u32b(buffer + 4 * i, clusters[i]);
 	s.clear();
 	s.seekp(offset, std::ios_base::beg);
 	s.write(buffer, CLUSTER_SIZE);

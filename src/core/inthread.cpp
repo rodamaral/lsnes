@@ -385,17 +385,17 @@ namespace
 					//This is a trailer entry.
 					if(buf[i + 3] == 2) {
 						//Pregap.
-						pregap_length = read32ube(buf + i) >> 8;
+						pregap_length = serialization::u32b(buf + i) >> 8;
 					} else if(buf[i + 3] == 3) {
 						//Postgap.
-						postgap_length = read32ube(buf + i) >> 8;
+						postgap_length = serialization::u32b(buf + i) >> 8;
 					} else if(buf[i + 3] == 4) {
 						//Gain.
-						gain = read16sbe(buf + i);
+						gain = serialization::s16b(buf + i);
 					}
 				} else {
-					uint16_t psize = read16ube(buf + i);
-					uint8_t plen = read8ube(buf + i + 2);
+					uint16_t psize = serialization::u16b(buf + i);
+					uint8_t plen = serialization::u8b(buf + i + 2);
 					total_size += psize;
 					total_len += 120 * plen;
 					opus_packetinfo p(psize, plen, 1ULL * next_cluster * CLUSTER_SIZE +
@@ -536,17 +536,17 @@ out:
 		data.read(header, 32);
 		if(!data)
 			throw std::runtime_error("Can't read .sox header");
-		if(read32ule(header + 0) != 0x586F532EULL)
+		if(serialization::u32l(header + 0) != 0x586F532EULL)
 			throw std::runtime_error("Bad .sox header magic");
-		if(read8ube(header + 4) > 28)
-			data.read(header + 32, read8ube(header + 4) - 28);
+		if(serialization::u8b(header + 4) > 28)
+			data.read(header + 32, serialization::u8b(header + 4) - 28);
 		if(!data)
 			throw std::runtime_error("Can't read .sox header");
-		if(read64ule(header + 16) != 4676829883349860352ULL)
+		if(serialization::u64l(header + 16) != 4676829883349860352ULL)
 			throw std::runtime_error("Bad .sox sampling rate");
-		if(read32ule(header + 24) != 1)
+		if(serialization::u32l(header + 24) != 1)
 			throw std::runtime_error("Only mono streams are supported");
-		uint64_t samples = read64ule(header + 8);
+		uint64_t samples = serialization::u64l(header + 8);
 		opus::encoder enc(opus::samplerate::r48k, false, opus::application::voice);
 		enc.ctl(opus::bitrate(opus_bitrate.get()));
 		int32_t pregap = enc.ctl(opus::lookahead);
@@ -569,7 +569,7 @@ out:
 				throw std::runtime_error("Can't read .sox data");
 			}
 			for(size_t j = 0; j < bs; j++)
-				tmp[j] = static_cast<float>(read32sle(tmpi + 4 * j)) / 268435456;
+				tmp[j] = static_cast<float>(serialization::s32l(tmpi + 4 * j)) / 268435456;
 			if(bs < OPUS_BLOCK_SIZE)
 				postgap_length = OPUS_BLOCK_SIZE - bs;
 			for(size_t j = bs; j < OPUS_BLOCK_SIZE; j++)
@@ -681,9 +681,9 @@ out:
 		std::vector<unsigned char> p;
 		float tmp[OPUS_MAX_OUT];
 		char header[32];
-		write64ule(header, 0x1C586F532EULL);			//Magic and header size.
-		write64ule(header + 16, 4676829883349860352ULL);	//Sampling rate.
-		write32ule(header + 24, 1);
+		serialization::u64l(header, 0x1C586F532EULL);			//Magic and header size.
+		serialization::u64l(header + 16, 4676829883349860352ULL);	//Sampling rate.
+		serialization::u32l(header + 24, 1);
 		uint64_t tlen = 0;
 		uint32_t lookahead_thrown = 0;
 		data.write(header, 32);
@@ -710,7 +710,7 @@ out:
 				tlen += (len - pregap_throw - postgap_throw);
 				for(uint32_t j = pregap_throw; j < len - postgap_throw; j++) {
 					int32_t s = (int32_t)(tmp[j] * lgain * 268435456.0);
-					write32sle(blank, s);
+					serialization::s32l(blank, s);
 					data.write(blank, 4);
 					if(!data)
 						throw std::runtime_error("Error writing PCM data.");
@@ -720,7 +720,7 @@ out:
 			}
 		}
 		data.seekp(0, std::ios_base::beg);
-		write64ule(header + 8, tlen);
+		serialization::u64l(header + 8, tlen);
 		data.write(header, 32);
 		if(!data) {
 			throw std::runtime_error("Error writing PCM data.");
@@ -745,9 +745,9 @@ out:
 				next_cluster = data_cluster = fs.allocate_cluster();
 			if(!next_mcluster)
 				next_mcluster = ctrl_cluster = fs.allocate_cluster();
-			write16ube(descriptor, payload_len);
-			write8ube(descriptor + 2, len);
-			write8ube(descriptor + 3, 1);
+			serialization::u16b(descriptor, payload_len);
+			serialization::u8b(descriptor + 2, len);
+			serialization::u8b(descriptor + 3, 1);
 			fs.write_data(next_cluster, next_offset, payload, payload_len, used_cluster, used_offset);
 			fs.write_data(next_mcluster, next_moffset, descriptor, 4, used_mcluster, used_moffset);
 			uint64_t off = static_cast<uint64_t>(used_cluster) * CLUSTER_SIZE + used_offset;
@@ -770,11 +770,11 @@ out:
 			//But the write must not update the pointers..
 			uint32_t tmp_mcluster = next_mcluster;
 			uint32_t tmp_moffset = next_moffset;
-			write32ube(descriptor, 0);
-			write32ube(descriptor + 4, (pregap_length << 8) | 0x02);
-			write32ube(descriptor + 8, (postgap_length << 8) | 0x03);
-			write16sbe(descriptor + 12, gain);
-			write16ube(descriptor + 14, 0x0004);
+			serialization::u32b(descriptor, 0);
+			serialization::u32b(descriptor + 4, (pregap_length << 8) | 0x02);
+			serialization::u32b(descriptor + 8, (postgap_length << 8) | 0x03);
+			serialization::s16b(descriptor + 12, gain);
+			serialization::u16b(descriptor + 14, 0x0004);
 			fs.write_data(tmp_mcluster, tmp_moffset, descriptor, 16, used_mcluster, used_moffset);
 		} catch(std::exception& e) {
 			(stringfmt() << "Can't write stream trailer: " << e.what()).throwex();
@@ -1017,9 +1017,9 @@ out:
 				size_t r = fs.read_data(next_cluster, next_offset, buffer, 16);
 				if(r < 16)
 					break;
-				uint64_t timebase = read64ube(buffer);
-				uint32_t ctrl_cluster = read32ube(buffer + 8);
-				uint32_t data_cluster = read32ube(buffer + 12);
+				uint64_t timebase = serialization::u64b(buffer);
+				uint32_t ctrl_cluster = serialization::u32b(buffer + 8);
+				uint32_t data_cluster = serialization::u32b(buffer + 12);
 				if(ctrl_cluster) {
 					opus_stream* x = new opus_stream(timebase, fs, ctrl_cluster, data_cluster);
 					entries[next_index] = i;
@@ -1069,10 +1069,10 @@ out:
 			idx = next_index++;
 			streams[idx] = &stream;
 			char buffer[16];
-			write64ube(buffer, stream.timebase());
+			serialization::u64b(buffer, stream.timebase());
 			auto r = stream.get_clusters();
-			write32ube(buffer + 8, r.first);
-			write32ube(buffer + 12, r.second);
+			serialization::u32b(buffer + 8, r.first);
+			serialization::u32b(buffer + 12, r.second);
 			uint64_t entry_number = 0;
 			if(free_indices.empty())
 				entry_number = next_stream++;
@@ -1135,7 +1135,7 @@ out:
 				uint32_t write_cluster = 2;
 				uint32_t write_offset = 0;
 				uint32_t dummy1, dummy2;
-				write64ube(buffer, newts);
+				serialization::u64b(buffer, newts);
 				fs.skip_data(write_cluster, write_offset, 16 * entries[index]);
 				fs.write_data(write_cluster, write_offset, buffer, 8, dummy1, dummy2);
 			}
@@ -1188,10 +1188,10 @@ out:
 			}
 		}
 		char header[32];
-		write64ule(header, 0x1C586F532EULL);			//Magic and header size.
-		write64ule(header + 8, len);
-		write64ule(header + 16, 4676829883349860352ULL);	//Sampling rate.
-		write64ule(header + 24, 1);
+		serialization::u64l(header, 0x1C586F532EULL);			//Magic and header size.
+		serialization::u64l(header + 8, len);
+		serialization::u64l(header + 16, 4676829883349860352ULL);	//Sampling rate.
+		serialization::u64l(header + 24, 1);
 		out.write(header, 32);
 		if(!out)
 			throw std::runtime_error("Error writing PCM output");
@@ -1252,7 +1252,7 @@ out:
 						t++;
 				}
 				for(size_t t = 0; t < maxsamples; t++)
-					write32sle(outbuf + 4 * t, buf1[t] * 268435456);
+					serialization::s32l(outbuf + 4 * t, buf1[t] * 268435456);
 				out.write(outbuf, 4 * maxsamples);
 				if(!out)
 					throw std::runtime_error("Failed to write PCM");

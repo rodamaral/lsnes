@@ -139,8 +139,8 @@ struct search_value_helper
 	{
 		if(left < sizeof(value_type))
 			return false;
-		value_type v1 = read_of_endian<value_type>(oldv, endian);
-		value_type v2 = read_of_endian<value_type>(newv, endian);
+		value_type v1 = serialization::read_endian<value_type>(oldv, endian);
+		value_type v2 = serialization::read_endian<value_type>(newv, endian);
 		return val(v1, v2);
 	}
 	const T& val;
@@ -389,7 +389,7 @@ template<typename T> T memory_search::v_readold(uint64_t addr) throw()
 			if(previous_content.size() < linaddr + maxr)
 				return 0;
 			memcpy(buf, &previous_content[linaddr], maxr);
-			return read_of_endian<T>(buf, t.first->endian);
+			return serialization::read_endian<T>(buf, t.first->endian);
 		}
 		i += t.first->size - t.second;
 	}
@@ -610,18 +610,18 @@ void memory_search::savestate(std::vector<char>& buffer, enum savestate_type typ
 		throw std::runtime_error("Invalid savestate type");
 	buffer.resize(size);
 	buffer[0] = type;
-	write64ube(&buffer[1], linsize);
+	serialization::u64b(&buffer[1], linsize);
 	size_t offset = 9;
 	if(type == ST_PREVMEM || type == ST_ALL) {
 		memcpy(&buffer[offset], &previous_content[0], min(linsize, (uint64_t)previous_content.size()));
 		offset += linsize;
 	}
 	if(type == ST_SET || type == ST_ALL) {
-		write64ube(&buffer[offset], candidates);
+		serialization::u64b(&buffer[offset], candidates);
 		offset += 8;
 		size_t bound = min((linsize + 63) / 64, (uint64_t)still_in.size());
 		for(unsigned i = 0; i < bound; i++) {
-			write64ube(&buffer[offset], still_in[i]);
+			serialization::u64b(&buffer[offset], still_in[i]);
 			offset += 8;
 		}
 	}
@@ -631,7 +631,7 @@ void memory_search::loadstate(const std::vector<char>& buffer)
 {
 	if(buffer.size() < 9 || buffer[0] < ST_PREVMEM || buffer[0] > ST_ALL)
 		throw std::runtime_error("Invalid memory search save");
-	uint64_t linsize = read64ube(&buffer[1]);
+	uint64_t linsize = serialization::u64b(&buffer[1]);
 	if(linsize != mspace.get_linear_size())
 		throw std::runtime_error("Save size mismatch (not from this game)");
 	if(!previous_content.size())
@@ -643,11 +643,11 @@ void memory_search::loadstate(const std::vector<char>& buffer)
 		offset += linsize;
 	}
 	if(type == ST_SET || type == ST_ALL) {
-		candidates = read64ube(&buffer[offset]);
+		candidates = serialization::u64b(&buffer[offset]);
 		offset += 8;
 		size_t bound = min((linsize + 63) / 64, (uint64_t)still_in.size());
 		for(unsigned i = 0; i < bound; i++) {
-			still_in[i] = read64ube(&buffer[offset]);
+			still_in[i] = serialization::u64b(&buffer[offset]);
 			offset += 8;
 		}
 	}

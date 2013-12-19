@@ -58,8 +58,8 @@ namespace
 			gettimeofday(&tv, NULL);
 			unsigned char buffer[48];
 			memcpy(buffer, state, 32);
-			write64ube(buffer + 32, tv.tv_sec);
-			write64ube(buffer + 40, tv.tv_usec);
+			serialization::u64b(buffer + 32, tv.tv_sec);
+			serialization::u64b(buffer + 40, tv.tv_usec);
 			sha256::hash(state, buffer, 48);
 			extracted = 0;
 		}

@@ -184,7 +184,7 @@ void raw::load(const std::vector<char>& data) throw(std::bad_alloc, std::runtime
 		throw std::runtime_error("Target framebuffer is not writable");
 	pixfmt* nfmt = NULL;
 	const uint8_t* data2 = reinterpret_cast<const uint8_t*>(&data[0]);
-	size_t legacy_width = read16ube(data2);
+	size_t legacy_width = serialization::u16b(data2);
 	size_t dataoffset;
 	size_t _width;
 	size_t _height;
@@ -204,13 +204,13 @@ void raw::load(const std::vector<char>& data) throw(std::bad_alloc, std::runtime
 		if(data.size() < 8)
 			throw std::runtime_error("Bad screenshot data");
 		dataoffset = 8;
-		uint32_t magic = read32ube(data2 + 2);
+		uint32_t magic = serialization::u32b(data2 + 2);
 		for(pixfmt* f : pixfmts())
 			if(f->get_magic() == magic)
 				nfmt = f;
 		if(!nfmt)
 			throw std::runtime_error("Unknown screenshot format");
-		_width = read16ube(data2 + 6);
+		_width = serialization::u16b(data2 + 6);
 		_height = (data.size() - 8) / (nfmt->get_ss_bpp() * _width);
 	}
 	if(data.size() < dataoffset + nfmt->get_ss_bpp() * _width * _height)
@@ -257,7 +257,7 @@ void raw::save(std::vector<char>& data) throw(std::bad_alloc)
 		offset = 2;
 		data.resize(offset + sbpp * static_cast<size_t>(width) * height);
 		data2 = reinterpret_cast<uint8_t*>(&data[0]);
-		write16ube(&data[0], width);
+		serialization::u16b(&data[0], width);
 		break;
 	default:
 		//Choose the first two bytes so that screenshot is bad in legacy format.
@@ -266,9 +266,9 @@ void raw::save(std::vector<char>& data) throw(std::bad_alloc)
 			m++;
 		offset = 8;
 		data.resize(offset + sbpp * static_cast<size_t>(width) * height);
-		write16ube(&data[0], m);
-		write32ube(&data[2], magic);
-		write16ube(&data[6], width);
+		serialization::u16b(&data[0], m);
+		serialization::u32b(&data[2], magic);
+		serialization::u16b(&data[6], width);
 		break;
 	}
 	data2 = reinterpret_cast<uint8_t*>(&data[0]);

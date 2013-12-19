@@ -17,11 +17,11 @@ namespace
 		if(!g.first || g.second + sizeof(T) > g.first->size)
 			return 0;
 		if(g.first->direct_map)
-			return read_of_endian<T>(g.first->direct_map + g.second, g.first->endian);
+			return serialization::read_endian<T>(g.first->direct_map + g.second, g.first->endian);
 		else {
 			T buf;
 			g.first->read(g.second, &buf, sizeof(T));
-			return read_of_endian<T>(&buf, g.first->endian);
+			return serialization::read_endian<T>(&buf, g.first->endian);
 		}
 	}
 
@@ -36,10 +36,10 @@ namespace
 		if(!g.first || g.first->readonly || g.second + sizeof(T) > g.first->size)
 			return false;
 		if(g.first->direct_map)
-			write_of_endian(g.first->direct_map + g.second, value, g.first->endian);
+			serialization::write_endian(g.first->direct_map + g.second, value, g.first->endian);
 		else {
 			T buf;
-			write_of_endian(&buf, value, g.first->endian);
+			serialization::write_endian(&buf, value, g.first->endian);
 			g.first->write(g.second, &buf, sizeof(T));
 		}
 		return true;

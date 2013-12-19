@@ -46,9 +46,9 @@ stream_statistics dump_stream(filesystem& fs, uint32_t ccluster, uint32_t dclust
 		size_t r = fs.read_data(ctrl_c, ctrl_o, buffer, 4);
 		if(r < 4)
 			break;
-		uint16_t psize = read16ube(buffer + 0);
-		uint16_t plength = 120 * read8ube(buffer + 2);
-		if(!read8ube(buffer + 3))
+		uint16_t psize = serialization::u16b(buffer + 0);
+		uint16_t plength = 120 * serialization::u8b(buffer + 2);
+		if(!serialization::u8b(buffer + 3))
 			break;
 		r = fs.skip_data(data_c, data_o, psize);
 		if(r < psize)
@@ -97,9 +97,9 @@ int main(int argc, char** argv)
 			size_t r = fs->read_data(maindir_c, maindir_o, buffer, 16);
 			if(r < 16)
 				break;
-			uint64_t stream_ts = read64ube(buffer);
-			uint32_t stream_c = read32ube(buffer + 8);
-			uint32_t stream_d = read32ube(buffer + 12);
+			uint64_t stream_ts = serialization::u64b(buffer);
+			uint32_t stream_c = serialization::u32b(buffer + 8);
+			uint32_t stream_d = serialization::u32b(buffer + 12);
 			if(!stream_c)
 				continue;
 			std::cout << "Found stream (from " << maindir_uc << ":" << maindir_uo << "): ts=" << stream_ts

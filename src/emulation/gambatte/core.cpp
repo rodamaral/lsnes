@@ -557,7 +557,7 @@ namespace
 			size_t osize = out.size();
 			out.resize(osize + 4 * sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]));
 			for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
-				write32ube(&out[osize + 4 * i], primary_framebuffer[i]);
+				serialization::u32b(&out[osize + 4 * i], primary_framebuffer[i]);
 			out.push_back(frame_overflow >> 8);
 			out.push_back(frame_overflow);
 		}
@@ -571,7 +571,7 @@ namespace
 			memcpy(&tmp[0], in, foffset);
 			instance->loadState(tmp);
 			for(size_t i = 0; i < sizeof(primary_framebuffer) / sizeof(primary_framebuffer[0]); i++)
-				primary_framebuffer[i] = read32ube(&in[foffset + 4 * i]);
+				primary_framebuffer[i] = serialization::u32b(&in[foffset + 4 * i]);
 
 			unsigned x1 = (unsigned char)in[insize - 2];
 			unsigned x2 = (unsigned char)in[insize - 1];

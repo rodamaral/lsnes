@@ -81,12 +81,12 @@ namespace
 		size_t psize = patch.size() - 12;
 		uint32_t crc_init = crc32(0, NULL, 0);
 		uint32_t pchcrc_c = crc32(crc_init, reinterpret_cast<const uint8_t*>(&patch[0]), patch.size() - 4);
-		uint32_t pchcrc = read32ule(_patch + psize + 8);
+		uint32_t pchcrc = serialization::u32l(_patch + psize + 8);
 		if(pchcrc_c != pchcrc)
 			(stringfmt() << "CRC mismatch on patch: Claimed: " << pchcrc << " Actual: " << pchcrc_c
 				<< ".").throwex();
-		uint32_t srccrc = read32ule(_patch + psize + 0);
-		uint32_t dstcrc = read32ule(_patch + psize + 4);
+		uint32_t srccrc = serialization::u32l(_patch + psize + 0);
+		uint32_t dstcrc = serialization::u32l(_patch + psize + 4);
 		uint64_t srcsize = decode_varint(_patch, ioffset, psize);
 		uint64_t dstsize = decode_varint(_patch, ioffset, psize);
 		uint64_t mdtsize = decode_varint(_patch, ioffset, psize);

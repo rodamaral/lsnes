@@ -42,7 +42,7 @@ namespace
 	template<typename T> T bswap(T val)
 	{
 		T val2 = val;
-		swap_endian(val2);
+		serialization::swap_endian(val2);
 		return val2;
 	}
 

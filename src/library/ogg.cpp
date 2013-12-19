@@ -438,7 +438,7 @@ page::page(const char* buffer, size_t& advance) throw(std::runtime_error)
 		data_count += (unsigned char)buffer[27 + i];
 	}
 	//Check the CRC.
-	uint32_t claimed = read32ule(buffer + 22);
+	uint32_t claimed = serialization::u32l(buffer + 22);
 	uint32_t x = 0;
 	uint32_t actual = oggcrc32(0, NULL, 0);
 	actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(buffer), 22);
@@ -452,9 +452,9 @@ page::page(const char* buffer, size_t& advance) throw(std::runtime_error)
 	flag_continue = (flags & 1);
 	flag_bos = (flags & 2);
 	flag_eos = (flags & 4);
-	granulepos = read64ule(buffer + 6);
-	stream = read32ule(buffer + 14);
-	sequence = read32ule(buffer + 18);
+	granulepos = serialization::u64l(buffer + 6);
+	stream = serialization::u32l(buffer + 14);
+	sequence = serialization::u32l(buffer + 18);
 	segment_count = buffer[26];
 	memset(segments, 0, sizeof(segments));
 	if(segment_count)
@@ -530,7 +530,7 @@ bool page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& advance)
 			}
 		}
 		//Check the CRC.
-		uint32_t claimed = read32ule(_buffer + 22);
+		uint32_t claimed = serialization::u32l(_buffer + 22);
 		uint32_t x = 0;
 		uint32_t actual = oggcrc32(0, NULL, 0);
 		actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(_buffer), 22);
@@ -637,16 +637,16 @@ void page::serialize(char* buffer) const throw()
 	memcpy(buffer, "OggS", 4);
 	buffer[4] = version;
 	buffer[5] = (flag_continue ? 1 : 0) | (flag_bos ? 2 : 0) | (flag_eos ? 4 : 0);
-	write64ule(buffer + 6, granulepos);
-	write32ule(buffer + 14, stream);
-	write32ule(buffer + 18, sequence);
-	write32ule(buffer + 22, 0);	//CRC will be fixed later.
+	serialization::u64l(buffer + 6, granulepos);
+	serialization::u32l(buffer + 14, stream);
+	serialization::u32l(buffer + 18, sequence);
+	serialization::u32l(buffer + 22, 0);	//CRC will be fixed later.
 	buffer[26] = segment_count;
 	memcpy(buffer + 27, segments, segment_count);
 	memcpy(buffer + 27 + segment_count, data, data_count);
 	size_t plen = 27 + segment_count + data_count;
 	//Fix the CRC.
-	write32ule(buffer + 22, oggcrc32(oggcrc32(0, NULL, 0), reinterpret_cast<uint8_t*>(buffer), plen));
+	serialization::u32l(buffer + 22, oggcrc32(oggcrc32(0, NULL, 0), reinterpret_cast<uint8_t*>(buffer), plen));
 }
 
 const uint64_t page::granulepos_none = 0xFFFFFFFFFFFFFFFFULL;

@@ -50,7 +50,7 @@ size_t output::numberbytes(uint64_t number)
 void output::number32(uint32_t number)
 {
 	char data[4];
-	write32ube(data, number);
+	serialization::u32b(data, number);
 	strm.write(data, 4);
 }
 
@@ -137,7 +137,7 @@ uint32_t input::number32()
 {
 	char c[4];
 	read(c, 4);
-	return read32ube(c);
+	return serialization::u32b(c);
 }
 
 std::string input::string()
@@ -201,7 +201,7 @@ void input::extension(std::initializer_list<binary_tag_handler> funcs,
 		char c[4];
 		if(!read(c, 4, true))
 			break;
-		uint32_t tagid = read32ube(c);
+		uint32_t tagid = serialization::u32b(c);
 		if(tagid != TAG_)
 			throw std::runtime_error("Binary file packet structure desync");
 		uint32_t tag = number32();
