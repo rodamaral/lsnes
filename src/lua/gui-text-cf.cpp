@@ -26,12 +26,9 @@ namespace
 		std::string orig_filename;
 		framebuffer::font2 font;
 	};
-}
 
-DECLARE_LUACLASS(lua_customfont, "CUSTOMFONT");
+	lua_class<lua_customfont> class_customfont("CUSTOMFONT");
 
-namespace
-{
 	struct render_object_text_cf : public framebuffer::object
 	{
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, framebuffer::color _fg,

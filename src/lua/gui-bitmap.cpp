@@ -896,8 +896,8 @@ namespace
 		}
 		return 2;
 	});
-}
 
-DECLARE_LUACLASS(lua_palette, "PALETTE");
-DECLARE_LUACLASS(lua_bitmap, "BITMAP");
-DECLARE_LUACLASS(lua_dbitmap, "DBITMAP");
+	lua_class<lua_palette> class_palette("PALETTE");
+	lua_class<lua_bitmap> class_bitmap("BITMAP");
+	lua_class<lua_dbitmap> class_dbitmap("DBITMAP");
+}

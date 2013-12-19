@@ -69,12 +69,9 @@ namespace
 		std::ostream* file_open;
 		std::string file;
 	};
-}
 
-DECLARE_LUACLASS(lua_zip_writer, "ZIPWRITER");
+	lua_class<lua_zip_writer> class_zipwriter("ZIPWRITER");
 
-namespace
-{
 	lua_zip_writer::lua_zip_writer(lua_state& L, const std::string& filename, unsigned compression)
 	{
 		file = filename;

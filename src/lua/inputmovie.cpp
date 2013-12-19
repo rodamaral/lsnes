@@ -615,13 +615,10 @@ namespace
 		else
 			return movb.get_movie().get_frame_vector();
 	}
-}
 
-DECLARE_LUACLASS(lua_inputmovie, "INPUTMOVIE");
-DECLARE_LUACLASS(lua_inputframe, "INPUTFRAME");
+	lua_class<lua_inputmovie> class_inputmovie("INPUTMOVIE");
+	lua_class<lua_inputframe> class_inputframe("INPUTFRAME");
 
-namespace
-{
 	lua_inputframe::lua_inputframe(lua_state& L, controller_frame _f)
 	{
 		f = _f;

@@ -3,7 +3,10 @@
 
 #include <string>
 #include <stdexcept>
+#include <typeinfo>
+#include <typeindex>
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <list>
 #include <cassert>
@@ -28,6 +31,8 @@ std::string try_recognize_userdata(lua_state& state, int index);
 std::string try_print_userdata(lua_state& state, int index);
 
 struct lua_function;
+
+std::unordered_map<std::type_index, void*>& lua_class_types();
 
 /**
  * Group of functions.
@@ -680,7 +685,10 @@ template<class T> class lua_class;
 /**
  * Function to obtain class object for given Lua class.
  */
-template<class T> lua_class<T>& objclass();
+template<class T> lua_class<T>& objclass()
+{
+	return *reinterpret_cast<lua_class<T>*>(lua_class_types()[typeid(T)]);
+}
 
 template<class T> struct lua_class_binding
 {
@@ -777,6 +785,7 @@ public:
 		m.name = lua_class<T>::get_name;
 		m.print = lua_class<T>::print;
 		userdata_recogn_fns().push_back(m);
+		lua_class_types()[typeid(T)] = this;
 	}
 
 /**
@@ -928,9 +937,6 @@ again:
 	lua_class(const lua_class<T>&);
 	lua_class& operator=(const lua_class<T>&);
 };
-
-#define DECLARE_LUACLASS(x, X) template<> lua_class< x >& objclass() { static lua_class< x > clazz( X ); \
-	return clazz; }
 
 /**
  * Function implemented in C++ exported to Lua.

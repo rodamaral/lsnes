@@ -3,6 +3,11 @@
 #include <iostream>
 #include <cassert>
 
+std::unordered_map<std::type_index, void*>& lua_class_types()
+{
+	static std::unordered_map<std::type_index, void*> x;
+	return x;
+}
 namespace
 {
 	int lua_trampoline_function(lua_State* L)

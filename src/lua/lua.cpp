@@ -421,6 +421,7 @@ namespace
 			messages << "Lua VM reset" << std::endl;
 		});
 
+	lua_class<lua_unsaferewind> class_unsaferewind("UNSAFEREWIND");
 }
 
 void lua_callback_quit() throw()
@@ -514,8 +515,6 @@ void lua_callback_do_latch(std::list<std::string>& args)
 
 bool lua_requests_repaint = false;
 bool lua_requests_subframe_paint = false;
-
-DECLARE_LUACLASS(lua_unsaferewind, "UNSAFEREWIND");
 
 lua_unsaferewind::lua_unsaferewind(lua_state& L)
 {

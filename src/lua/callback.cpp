@@ -34,13 +34,10 @@ namespace
 		lua_state::lua_callback_list* callback;
 		int special;
 	};
-}
 
-DECLARE_LUACLASS(lua_callbacks_list, "CALLBACKS_LIST");
-DECLARE_LUACLASS(lua_callback_obj, "CALLBACK_OBJ");
+	lua_class<lua_callbacks_list> class_callbacks_list("CALLBACKS_LIST");
+	lua_class<lua_callback_obj> class_callback_obj("CALLBACK_OBJ");
 
-namespace
-{
 	lua_callbacks_list::lua_callbacks_list(lua_state& L)
 	{
 		objclass<lua_callbacks_list>().bind_multi(L, {

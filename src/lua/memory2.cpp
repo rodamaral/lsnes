@@ -76,13 +76,10 @@ namespace
 			return "";
 		}
 	};
-}
 
-DECLARE_LUACLASS(lua_vma, "VMA");
-DECLARE_LUACLASS(lua_vma_list, "VMALIST");
+	lua_class<lua_vma> class_vma("VMA");
+	lua_class<lua_vma_list> class_vmalist("VMALIST");
 
-namespace
-{
 	lua_vma::lua_vma(lua_state& L, memory_region* r)
 	{
 		objclass<lua_vma>().bind_multi(L, {

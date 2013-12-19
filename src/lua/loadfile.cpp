@@ -313,13 +313,9 @@ namespace
 			throw;
 		}
 	});
-}
 
-DECLARE_LUACLASS(lua_file_reader, "FILEREADER");
+	lua_class<lua_file_reader> class_filreader("FILEREADER");
 
-
-namespace
-{
 	lua_file_reader::lua_file_reader(lua_state& L, std::istream* strm)
 		: s(*strm)
 	{

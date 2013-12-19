@@ -111,9 +111,9 @@ namespace
 			throw std::runtime_error("Expected RENDERCTX or nil as argument 1 for gui.renderq_set.");
 		return 0;
 	});
-}
 
-DECLARE_LUACLASS(render_queue_obj, "RENDERCTX");
+	lua_class<render_queue_obj> class_render_queue_obj("RENDERCTX");
+}
 
 void lua_renderq_run(lua_render_context* ctx, void* _sctx)
 {

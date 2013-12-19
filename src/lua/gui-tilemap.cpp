@@ -301,12 +301,9 @@ namespace
 		tilemap* t = lua_class<tilemap>::create(LS, w, h, px, py);
 		return 1;
 	});
-}
 
-DECLARE_LUACLASS(tilemap, "TILEMAP");
+	lua_class<tilemap> class_tilemap("TILEMAP");
 
-namespace
-{
 	tilemap::tilemap(lua_state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)
 		: width(_width), height(_height), cwidth(_cwidth), cheight(_cheight)
 	{

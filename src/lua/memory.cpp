@@ -658,6 +658,8 @@ namespace
 	lua_registerX<DEBUG_EXEC, false> murx("memory.unregisterexec");
 	lua_registerX<DEBUG_TRACE, true> mrt("memory.registertrace");
 	lua_registerX<DEBUG_TRACE, false> murt("memory.unregistertrace");
+
+	lua_class<lua_mmap_struct> class_mmap_struct("MMAP_STRUCT");
 }
 
 int lua_mmap_struct::map(lua_state& L, const std::string& fname)
@@ -705,8 +707,6 @@ int lua_mmap_struct::map(lua_state& L, const std::string& fname)
 		(stringfmt() << fname << ": Bad type").throwex();
 	return 0;
 }
-
-DECLARE_LUACLASS(lua_mmap_struct, "MMAP_STRUCT");
 
 lua_mmap_struct::lua_mmap_struct(lua_state& L)
 {
