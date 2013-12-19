@@ -6,20 +6,22 @@
 #include <vector>
 #include <map>
 
+namespace ogg
+{
 /**
  * A packet in Ogg bitstream.
  */
-class ogg_packet
+class packet
 {
 public:
 /**
  * Constructor.
  */
-	ogg_packet() {}
+	packet() {}
 /**
  * Constructor.
  */
-	ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos,
+	packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos,
 		const std::vector<uint8_t>& d);
 /**
  * Is the packet first within its page?
@@ -74,13 +76,13 @@ private:
 /**
  * A page in Ogg bitstream.
  */
-class ogg_page
+class page
 {
 public:
 /**
  * Create a new blank page.
  */
-	ogg_page() throw();
+	page() throw();
 /**
  * Create a page, reading a buffer.
  *
@@ -88,7 +90,7 @@ public:
  * Parameter advance: The number of bytes in packet is stored here.
  * Throws std::runtime_error: Bad packet.
  */
-	ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error);
+	page(const char* buffer, size_t& advance) throw(std::runtime_error);
 /**
  * Scan a buffer for pages.
  *
@@ -227,29 +229,29 @@ private:
 /**
  * Ogg demuxer.
  */
-class ogg_demuxer
+class demuxer
 {
 public:
 /**
  * Create a new demuxer.
  */
-	ogg_demuxer(std::ostream& _errors_to);
+	demuxer(std::ostream& _errors_to);
 /**
  * Demuxer wants a page in?
  */
-	bool wants_page_in() const throw() { return (packet == packets && !ended); }
+	bool wants_page_in() const throw() { return (dpacket == packets && !ended); }
 /**
  * Demuxer wants a packet out?
  */
-	bool wants_packet_out() const throw() { return (packet < packets); }
+	bool wants_packet_out() const throw() { return (dpacket < packets); }
 /**
  * Input a page.
  */
-	bool page_in(const ogg_page& p);
+	bool page_in(const page& p);
 /**
  * Output a packet.
  */
-	void packet_out(ogg_packet& pkt);
+	void packet_out(packet& pkt);
 /**
  * Discard a packet.
  */
@@ -269,8 +271,8 @@ private:
 	uint32_t imprint_stream;
 	uint32_t page_seq;
 	uint32_t page_era;
-	ogg_page last_page;
-	uint32_t packet;
+	page last_page;
+	uint32_t dpacket;
 	uint32_t packets;
 	uint64_t last_granulepos;
 	bool ended;
@@ -279,13 +281,13 @@ private:
 /**
  * Ogg muxer.
  */
-class ogg_muxer
+class muxer
 {
 public:
 /**
  * Create a muxer.
  */
-	ogg_muxer(uint32_t streamid, uint64_t _seq = 0);
+	muxer(uint32_t streamid, uint64_t _seq = 0);
 /**
  * Wants a packet?
  */
@@ -309,10 +311,10 @@ public:
 /**
  * Output a page.
  */
-	void page_out(ogg_page& p);
+	void page_out(page& p);
 private:
 	uint32_t strmid;
-	ogg_page buffer;
+	page buffer;
 	std::vector<uint8_t> buffered;
 	size_t written;
 	uint64_t seq;
@@ -323,17 +325,17 @@ private:
 /**
  * Ogg stream reader.
  */
-class ogg_stream_reader
+class stream_reader
 {
 public:
 /**
  * Constructor.
  */
-	ogg_stream_reader() throw();
+	stream_reader() throw();
 /**
  * Destructor.
  */
-	virtual ~ogg_stream_reader() throw();
+	virtual ~stream_reader() throw();
 /**
  * Read some data.
  *
@@ -348,7 +350,7 @@ public:
  * Parameter page: The page is assigned here if successful.
  * Returns: True if page was obtained, false if not.
  */
-	bool get_page(ogg_page& page) throw(std::exception);
+	bool get_page(page& page) throw(std::exception);
 /**
  * Set stream to report errors to.
  *
@@ -360,8 +362,8 @@ public:
  */
 	uint64_t get_last_offset() { return last_offset; }
 private:
-	ogg_stream_reader(const ogg_stream_reader&);
-	ogg_stream_reader& operator=(const ogg_stream_reader&);
+	stream_reader(const stream_reader&);
+	stream_reader& operator=(const stream_reader&);
 	void fill_buffer();
 	void discard_buffer(size_t amount);
 	bool eof;
@@ -375,7 +377,7 @@ private:
 /**
  * Ogg stream reader based on std::istream.
  */
-class ogg_stream_reader_iostreams : public ogg_stream_reader
+class stream_reader_iostreams : public stream_reader
 {
 public:
 /**
@@ -383,11 +385,11 @@ public:
  *
  * Parameter stream: The stream to read the data from.
  */
-	ogg_stream_reader_iostreams(std::istream& stream);
+	stream_reader_iostreams(std::istream& stream);
 /**
  * Destructor.
  */
-	~ogg_stream_reader_iostreams() throw();
+	~stream_reader_iostreams() throw();
 
 	size_t read(char* buffer, size_t size) throw(std::exception);
 private:
@@ -397,17 +399,17 @@ private:
 /**
  * Ogg stream writer.
  */
-class ogg_stream_writer
+class stream_writer
 {
 public:
 /**
  * Constructor.
  */
-	ogg_stream_writer() throw();
+	stream_writer() throw();
 /**
  * Destructor.
  */
-	virtual ~ogg_stream_writer() throw();
+	virtual ~stream_writer() throw();
 /**
  * Write data.
  *
@@ -420,16 +422,16 @@ public:
  *
  * Parameter page: The page to write.
  */
-	void put_page(const ogg_page& page) throw(std::exception);
+	void put_page(const page& page) throw(std::exception);
 private:
-	ogg_stream_writer(const ogg_stream_writer&);
-	ogg_stream_writer& operator=(const ogg_stream_writer&);
+	stream_writer(const stream_writer&);
+	stream_writer& operator=(const stream_writer&);
 };
 
 /**
  * Ogg stream writer based on std::istream.
  */
-class ogg_stream_writer_iostreams : public ogg_stream_writer
+class stream_writer_iostreams : public stream_writer
 {
 public:
 /**
@@ -437,15 +439,16 @@ public:
  *
  * Parameter stream: The stream to read the data from.
  */
-	ogg_stream_writer_iostreams(std::ostream& stream);
+	stream_writer_iostreams(std::ostream& stream);
 /**
  * Destructor.
  */
-	~ogg_stream_writer_iostreams() throw();
+	~stream_writer_iostreams() throw();
 
 	void write(const char* buffer, size_t size) throw(std::exception);
 private:
 	std::ostream& os;
 };
+}
 
 #endif

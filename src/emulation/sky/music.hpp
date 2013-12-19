@@ -64,7 +64,7 @@ namespace sky
 			//Note: Does not initialize psid.
 			subsong_context();
 			//Demuxer.
-			ogg_demuxer demux;
+			ogg::demuxer demux;
 			//Stream ID.
 			uint32_t psid;
 			//Ogg Stream ID.
@@ -84,11 +84,11 @@ namespace sky
 			//Seen EOS flag.
 			bool eos_seen;
 		};
-		bool page_starts_new_stream(ogg_page& p);
-		bool parse_ogg_page(ogg_page& p, subsong_context& ctx);
-		void parse_ogg_header(ogg_packet& p, subsong_context& ctx);
-		void parse_ogg_tags(ogg_packet& p, subsong_context& ctx, const ogg_page& debug);
-		void parse_ogg_data(ogg_packet& p, subsong_context& ctx, const ogg_page& debug);
+		bool page_starts_new_stream(ogg::page& p);
+		bool parse_ogg_page(ogg::page& p, subsong_context& ctx);
+		void parse_ogg_header(ogg::packet& p, subsong_context& ctx);
+		void parse_ogg_tags(ogg::packet& p, subsong_context& ctx, const ogg::page& debug);
+		void parse_ogg_data(ogg::packet& p, subsong_context& ctx, const ogg::page& debug);
 		//Register a LSID.
 		uint32_t register_lsid(const std::string& ssid);
 		uint32_t register_lsid(const std::string& ssid, uint32_t psid);

@@ -252,9 +252,9 @@ namespace sky
 	song_buffer::song_buffer(std::istream& stream)
 	{
 		next_lsid = 0;
-		ogg_stream_reader_iostreams r(stream);
+		ogg::stream_reader_iostreams r(stream);
 		r.set_errors_to(messages);
-		ogg_page p;
+		ogg::page p;
 		std::map<uint32_t, subsong_context> psids;
 		uint32_t next_psid = 0;
 		while(r.get_page(p))
@@ -371,7 +371,7 @@ namespace sky
 			return dummy_transition;
 	}
 
-	bool song_buffer::page_starts_new_stream(ogg_page& p)
+	bool song_buffer::page_starts_new_stream(ogg::page& p)
 	{
 		if(!p.get_bos() || p.get_packet_count() != 1)
 			return false;
@@ -381,9 +381,9 @@ namespace sky
 		return true;
 	}
 
-	bool song_buffer::parse_ogg_page(ogg_page& page, subsong_context& ctx)
+	bool song_buffer::parse_ogg_page(ogg::page& page, subsong_context& ctx)
 	{
-		ogg_packet p;
+		ogg::packet p;
 		if(!ctx.demux.page_in(page))
 			return false;
 		while(ctx.demux.wants_packet_out()) {
@@ -402,7 +402,7 @@ namespace sky
 		return true;
 	}
 
-	void song_buffer::parse_ogg_header(ogg_packet& p, subsong_context& ctx)
+	void song_buffer::parse_ogg_header(ogg::packet& p, subsong_context& ctx)
 	{
 		struct oggopus_header h = ::parse_oggopus_header(p);
 		fill_msc_from_header(mscharacteristics[ctx.psid], h);
@@ -410,7 +410,7 @@ namespace sky
 		ctx.gain = h.gain;
 	}
 
-	void song_buffer::parse_ogg_tags(ogg_packet& p, subsong_context& ctx, const ogg_page& debug)
+	void song_buffer::parse_ogg_tags(ogg::packet& p, subsong_context& ctx, const ogg::page& debug)
 	{
 		struct oggopus_tags t = ::parse_oggopus_tags(p);
 		for(auto& i : t.comments) {
@@ -446,7 +446,7 @@ namespace sky
 		auto dummy = register_lsid((stringfmt() << "PSID" << ctx.psid).str(), ctx.psid);
 	}
 
-	void song_buffer::parse_ogg_data(ogg_packet& p, subsong_context& ctx, const ogg_page& debug)
+	void song_buffer::parse_ogg_data(ogg::packet& p, subsong_context& ctx, const ogg::page& debug)
 	{
 		std::pair<uint32_t, uint64_t> ptsx = std::make_pair(ctx.psid, ctx.pts);
 		packetdata[ptsx] = p.get_vector();

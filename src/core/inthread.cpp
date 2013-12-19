@@ -441,12 +441,12 @@ out_parsing:
 
 	void opus_stream::import_stream_oggopus(std::ifstream& data)
 	{
-		ogg_stream_reader_iostreams reader(data);
+		ogg::stream_reader_iostreams reader(data);
 		reader.set_errors_to(messages);
 		struct oggopus_header h;
 		struct oggopus_tags t;
-		ogg_page page;
-		ogg_demuxer d(messages);
+		ogg::page page;
+		ogg::demuxer d(messages);
 		int state = 0;
 		postgap_length = 0;
 		uint64_t datalen = 0;
@@ -454,7 +454,7 @@ out_parsing:
 		uint64_t last_granulepos = 0;
 		try {
 			while(true) {
-				ogg_packet p;
+				ogg::packet p;
 				if(!d.wants_packet_out()) {
 					if(!reader.get_page(page))
 						break;
@@ -620,7 +620,7 @@ out:
 			throw std::runtime_error("Empty oggopus stream is not valid");
 		oggopus_header header;
 		oggopus_tags tags;
-		ogg_stream_writer_iostreams writer(data);
+		ogg::stream_writer_iostreams writer(data);
 		unsigned stream_id = 1;
 		uint64_t true_granule = 0;
 		uint32_t seq = 2;
@@ -639,13 +639,13 @@ out:
 		tags.comments.push_back((stringfmt() << "ENCODER=lsnes rr" + lsnes_version).str());
 		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
 
-		struct ogg_page hpage = serialize_oggopus_header(header);
+		struct ogg::page hpage = serialize_oggopus_header(header);
 		hpage.set_stream(stream_id);
 		writer.put_page(hpage);
-		seq = serialize_oggopus_tags(tags, [&writer](const ogg_page& p) { writer.put_page(p); }, stream_id);
+		seq = serialize_oggopus_tags(tags, [&writer](const ogg::page& p) { writer.put_page(p); }, stream_id);
 
-		struct ogg_page ppage;
-		ogg_muxer mux(stream_id, seq);
+		struct ogg::page ppage;
+		ogg::muxer mux(stream_id, seq);
 		for(size_t i = 0; i < packets.size(); i++) {
 			std::vector<unsigned char> p;
 			try {

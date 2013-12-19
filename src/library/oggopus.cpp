@@ -3,7 +3,7 @@
 #include "serialization.hpp"
 #include "minmax.hpp"
 
-struct oggopus_header parse_oggopus_header(struct ogg_packet& packet) throw(std::runtime_error)
+struct oggopus_header parse_oggopus_header(struct ogg::packet& packet) throw(std::runtime_error)
 {
 	struct oggopus_header h;
 	if(!packet.get_atomic())
@@ -50,7 +50,7 @@ struct oggopus_header parse_oggopus_header(struct ogg_packet& packet) throw(std:
 	return h;
 }
 
-struct oggopus_tags parse_oggopus_tags(struct ogg_packet& packet) throw(std::bad_alloc, std::runtime_error)
+struct oggopus_tags parse_oggopus_tags(struct ogg::packet& packet) throw(std::bad_alloc, std::runtime_error)
 {
 	struct oggopus_tags h;
 	if(!packet.get_first_page() || !packet.get_last_page())
@@ -87,9 +87,9 @@ struct oggopus_tags parse_oggopus_tags(struct ogg_packet& packet) throw(std::bad
 	return h;
 }
 
-struct ogg_page serialize_oggopus_header(struct oggopus_header& header) throw(std::runtime_error)
+struct ogg::page serialize_oggopus_header(struct oggopus_header& header) throw(std::runtime_error)
 {
-	struct ogg_page page;
+	struct ogg::page page;
 	unsigned char buffer[276];
 	size_t bsize = 19;
 	if(header.version != 1)
@@ -124,7 +124,7 @@ struct ogg_page serialize_oggopus_header(struct oggopus_header& header) throw(st
 	return page;
 }
 
-uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(const ogg_page& p)> output,
+uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(const ogg::page& p)> output,
 	uint32_t strmid) throw(std::bad_alloc, std::runtime_error)
 {
 	size_t needed = 8;
@@ -152,7 +152,7 @@ uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(co
 	uint32_t next_page = 1;
 	size_t written = 0;
 	while(true) {
-		ogg_page q;
+		ogg::page q;
 		q.set_continue(next_page != 1);
 		q.set_bos(false);
 		q.set_eos(false);

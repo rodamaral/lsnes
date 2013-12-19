@@ -8,6 +8,8 @@
 #include <iomanip>
 #include "string.hpp"
 
+namespace ogg
+{
 namespace {
 	const uint32_t crc_lookup[256]= {
 		0x00000000,0x04c11db7,0x09823b6e,0x0d4326d9,
@@ -76,7 +78,8 @@ namespace {
 		0xbcb4666d,0xb8757bda,0xb5365d03,0xb1f740b4
 	};
 
-	uint32_t ogg_crc32(uint32_t chain, const uint8_t* data, size_t size)
+	//Grr... Ogg doesn't use the same CRC32 as zlib...
+	uint32_t oggcrc32(uint32_t chain, const uint8_t* data, size_t size)
 	{
 		if(!data)
 			return 0;
@@ -87,7 +90,7 @@ namespace {
 }
 
 
-ogg_packet::ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos, 
+packet::packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos, 
 	const std::vector<uint8_t>& d)
 {
 	data = d;
@@ -99,21 +102,21 @@ ogg_packet::ogg_packet(uint64_t granule, bool first, bool last, bool spans, bool
 	bos_page = bos;
 }
 
-ogg_demuxer::ogg_demuxer(std::ostream& _errors_to)
+demuxer::demuxer(std::ostream& _errors_to)
 	: errors_to(_errors_to)
 {
 	seen_page = false;
 	imprint_stream = 0;
 	page_seq = 0;
 	page_era = 0;
-	packet = 0;
+	dpacket = 0;
 	packets = 0;
 	ended = false;
 	damaged_packet = false;
 	last_granulepos = 0;
 }
 
-uint64_t ogg_demuxer::page_fullseq(uint32_t seq)
+uint64_t demuxer::page_fullseq(uint32_t seq)
 {
 	if(seq < page_seq)
 		return (static_cast<uint64_t>(page_era + 1) << 32) + seq;
@@ -121,14 +124,14 @@ uint64_t ogg_demuxer::page_fullseq(uint32_t seq)
 		return (static_cast<uint64_t>(page_era) << 32) + seq;
 }
 
-void ogg_demuxer::update_pageseq(uint32_t new_seq)
+void demuxer::update_pageseq(uint32_t new_seq)
 {
 	if(new_seq < page_seq)
 		page_era++;
 	page_seq = new_seq;
 }
 
-bool ogg_demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
+bool demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
 {
 	if(new_seq != static_cast<uint32_t>(page_seq + 1)) {
 		//Some pages are missing!
@@ -147,7 +150,7 @@ bool ogg_demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
 	return false;
 }
 
-void ogg_demuxer::complain_continue_errors(unsigned flags, uint32_t seqno, uint32_t stream, uint32_t pkts,
+void demuxer::complain_continue_errors(unsigned flags, uint32_t seqno, uint32_t stream, uint32_t pkts,
 	uint64_t granule)
 {
 	bool continued = (flags & 1);
@@ -178,15 +181,15 @@ void ogg_demuxer::complain_continue_errors(unsigned flags, uint32_t seqno, uint3
 	if(incomplete && eos)
 		errors_to << "Warning: Ogg demux: EOS page with incomplete packet (stream " << stream << ")."
 			<< std::endl;
-	if(incomplete && pkts == 1 && granule != ogg_page::granulepos_none)
+	if(incomplete && pkts == 1 && granule != page::granulepos_none)
 		errors_to << "Warning: Ogg demux: Page should have granulepos NONE (page " << page_fullseq(seqno)
 			<< " of " << stream << ")" << std::endl;
-	if((!incomplete || pkts > 1) && granule == ogg_page::granulepos_none)
+	if((!incomplete || pkts > 1) && granule == page::granulepos_none)
 		errors_to << "Warning: Ogg demux: Page should not have granulepos NONE (page " << page_fullseq(seqno)
 			<< " of " << stream << ")" << std::endl;
 }
 
-bool ogg_demuxer::page_in(const ogg_page& p)
+bool demuxer::page_in(const page& p)
 {
 	//Is this from the right stream? If not, ignore page.
 	uint32_t stream = p.get_stream();
@@ -203,7 +206,7 @@ bool ogg_demuxer::page_in(const ogg_page& p)
 	bool continued = p.get_continue();
 	bool incomplete = p.get_last_packet_incomplete();
 	//BOS flag can only be set on first page.
-	if(granulepos < last_granulepos && granulepos != ogg_page::granulepos_none)
+	if(granulepos < last_granulepos && granulepos != page::granulepos_none)
 		errors_to << "Warning: Ogg demux: Non-monotonic granulepos" << std::endl;
 	if(!seen_page && !bos)
 		errors_to << "Warning: Ogg demux: First page does not have BOS set." << std::endl;
@@ -234,7 +237,7 @@ bool ogg_demuxer::page_in(const ogg_page& p)
 			imprint_stream = stream;
 			update_pageseq(sequence);
 			ended = eos;
-			if(granulepos != ogg_page::granulepos_none)
+			if(granulepos != page::granulepos_none)
 				last_granulepos = granulepos;
 			return true;
 		} else if(pkts == 2 && incomplete && (partial.empty() || damaged_packet || gap)) {
@@ -248,14 +251,14 @@ bool ogg_demuxer::page_in(const ogg_page& p)
 			update_pageseq(sequence);
 			damaged_packet = false;
 			ended = eos;
-			packet = 1;
+			dpacket = 1;
 			packets = 1;
-			if(granulepos != ogg_page::granulepos_none)
+			if(granulepos != page::granulepos_none)
 				last_granulepos = granulepos;
 			return true;
 		}
 	}
-	packet = (continued && (partial.empty() || damaged_packet || gap)) ? 1 : 0;	//Busted?
+	dpacket = (continued && (partial.empty() || damaged_packet || gap)) ? 1 : 0;	//Busted?
 	packets = pkts;
 	if(incomplete)
 		packets--;
@@ -265,24 +268,24 @@ bool ogg_demuxer::page_in(const ogg_page& p)
 	imprint_stream = stream;
 	update_pageseq(sequence);
 	ended = eos;
-	if(granulepos != ogg_page::granulepos_none)
+	if(granulepos != page::granulepos_none)
 		last_granulepos = granulepos;
 	return true;
 }
 
-void ogg_demuxer::packet_out(ogg_packet& pkt)
+void demuxer::packet_out(ogg::packet& pkt)
 {
 	if(!wants_packet_out())
 		throw std::runtime_error("Not ready for packet");
-	bool firstfrag = (packet == 0 && last_page.get_continue());
-	bool lastfrag = (packet == packets - 1 && last_page.get_last_packet_incomplete());
+	bool firstfrag = (dpacket == 0 && last_page.get_continue());
+	bool lastfrag = (dpacket == packets - 1 && last_page.get_last_packet_incomplete());
 	if(!firstfrag) {
 		//Wholly on this page.
 		std::vector<uint8_t> newbuffer;
-		auto frag = last_page.get_packet(packet);
+		auto frag = last_page.get_packet(dpacket);
 		newbuffer.resize(frag.second);
 		memcpy(&newbuffer[0], frag.first, frag.second);
-		pkt = ogg_packet(last_page.get_granulepos(), packet == 0, (packet == packets - 1), false,
+		pkt = packet(last_page.get_granulepos(), dpacket == 0, (dpacket == packets - 1), false,
 			last_page.get_eos(), last_page.get_bos(), newbuffer);
 	} else {
 		//Continued from the last page.
@@ -291,69 +294,69 @@ void ogg_demuxer::packet_out(ogg_packet& pkt)
 		newbuffer.resize(partial.size() + frag.second);
 		memcpy(&newbuffer[0], &partial[0], partial.size());
 		memcpy(&newbuffer[partial.size()], frag.first, frag.second);
-		pkt = ogg_packet(last_page.get_granulepos(), true, (packets == 1), true, last_page.get_eos(),
+		pkt = packet(last_page.get_granulepos(), true, (packets == 1), true, last_page.get_eos(),
 			started_bos, newbuffer);
 	}
 	if(lastfrag) {
 		//Load the next packet fragment
-		auto frag2 = last_page.get_packet(packet + 1);
+		auto frag2 = last_page.get_packet(dpacket + 1);
 		std::vector<uint8_t> newbuffer;
 		newbuffer.resize(frag2.second);
 		memcpy(&newbuffer[0], frag2.first, frag2.second);
 		std::swap(newbuffer, partial);
 		started_bos = last_page.get_bos();
 	}
-	packet++;
+	dpacket++;
 }
 
-void ogg_demuxer::discard_packet()
+void demuxer::discard_packet()
 {
 	if(!wants_packet_out())
 		throw std::runtime_error("Not ready for packet");
-	bool lastfrag = (packet == packets - 1 && last_page.get_last_packet_incomplete());
+	bool lastfrag = (dpacket == packets - 1 && last_page.get_last_packet_incomplete());
 	if(lastfrag) {
 		//Load the next packet fragment
-		auto frag2 = last_page.get_packet(packet + 1);
+		auto frag2 = last_page.get_packet(dpacket + 1);
 		std::vector<uint8_t> newbuffer;
 		newbuffer.resize(frag2.second);
 		memcpy(&newbuffer[0], frag2.first, frag2.second);
 		std::swap(newbuffer, partial);
 	}
-	packet++;
+	dpacket++;
 }
 
-ogg_muxer::ogg_muxer(uint32_t streamid, uint64_t _seq)
+muxer::muxer(uint32_t streamid, uint64_t _seq)
 {
 	strmid = streamid;
 	written = 0;
 	eos_asserted = false;
 	seq = _seq;
-	granulepos = ogg_page::granulepos_none;
-	buffer.set_granulepos(ogg_page::granulepos_none);
+	granulepos = page::granulepos_none;
+	buffer.set_granulepos(page::granulepos_none);
 }
 
 
-bool ogg_muxer::packet_fits(size_t pktsize) const throw()
+bool muxer::packet_fits(size_t pktsize) const throw()
 {
 	return pktsize <= buffer.get_max_complete_packet();
 }
 
-bool ogg_muxer::wants_packet_in() const throw()
+bool muxer::wants_packet_in() const throw()
 {
 	return buffered.size() == written && !eos_asserted;
 }
 
-bool ogg_muxer::has_page_out() const throw()
+bool muxer::has_page_out() const throw()
 {
 	return buffer.get_packet_count() > 0;
 }
 
-void ogg_muxer::signal_eos()
+void muxer::signal_eos()
 {
 	eos_asserted = true;
 }
 
-void ogg_muxer::packet_in(const std::vector<uint8_t>& data, uint64_t granule)
+void muxer::packet_in(const std::vector<uint8_t>& data, uint64_t granule)
 {
 	if(!wants_packet_in() || eos_asserted)
 		throw std::runtime_error("Muxer not ready for packet");
@@ -371,7 +374,7 @@ void ogg_muxer::packet_in(const std::vector<uint8_t>& data, uint64_t granule)
 	written = data.size() - _len;
 }
 
-void ogg_muxer::page_out(ogg_page& p)
+void muxer::page_out(page& p)
 {
 	if(!has_page_out())
 		throw std::runtime_error("Muxer not ready for page");
@@ -381,7 +384,7 @@ void ogg_muxer::page_out(ogg_page& p)
 	buffer.set_sequence(seq);
 	buffer.set_stream(strmid);
 	p = buffer;
-	buffer = ogg_page();
+	buffer = page();
 	seq++;
 	//Now we have a fresh page, flush buffer there.
 	if(written < buffered.size()) {
@@ -392,15 +395,15 @@ void ogg_muxer::page_out(ogg_page& p)
 			written = buffered.size();
 			buffer.set_granulepos(granulepos);
 			buffer.set_continue(written != 0);
-			granulepos = ogg_page::granulepos_none;
+			granulepos = page::granulepos_none;
 			return;
 		}
 		written = buffered.size() - _len;
 	}
-	buffer.set_granulepos(ogg_page::granulepos_none);
+	buffer.set_granulepos(page::granulepos_none);
 }
 
-ogg_page::ogg_page() throw()
+page::page() throw()
 {
 	version = 0;
 	flag_continue = false;
@@ -418,7 +421,7 @@ ogg_page::ogg_page() throw()
 	memset(packets, 0, sizeof(packets));
 }
 
-ogg_page::ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error)
+page::page(const char* buffer, size_t& advance) throw(std::runtime_error)
 {
 	//Check validity of page header.
 	if(buffer[0] != 'O' || buffer[1] != 'g' || buffer[2] != 'g' || buffer[3] != 'S')
@@ -437,10 +440,10 @@ ogg_page::ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error
 	//Check the CRC.
 	uint32_t claimed = read32ule(buffer + 22);
 	uint32_t x = 0;
-	uint32_t actual = ogg_crc32(0, NULL, 0);
-	actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(buffer), 22);
-	actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(&x), 4);
-	actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(buffer + 26), b - 26);
+	uint32_t actual = oggcrc32(0, NULL, 0);
+	actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(buffer), 22);
+	actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(&x), 4);
+	actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(buffer + 26), b - 26);
 	if(claimed != actual)
 		throw std::runtime_error("Bad Ogg page checksum");
 	//This packet is valid.
@@ -474,7 +477,7 @@ ogg_page::ogg_page(const char* buffer, size_t& advance) throw(std::runtime_error
 	advance = b;
 }
 
-bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& advance) throw()
+bool page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& advance) throw()
 {
 	const char* _buffer = buffer;
 	size_t buffer_left = bufferlen;
@@ -529,10 +532,10 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 		//Check the CRC.
 		uint32_t claimed = read32ule(_buffer + 22);
 		uint32_t x = 0;
-		uint32_t actual = ogg_crc32(0, NULL, 0);
-		actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(_buffer), 22);
-		actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(&x), 4);
-		actual = ogg_crc32(actual, reinterpret_cast<const uint8_t*>(_buffer + 26), b - 26);
+		uint32_t actual = oggcrc32(0, NULL, 0);
+		actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(_buffer), 22);
+		actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(&x), 4);
+		actual = oggcrc32(actual, reinterpret_cast<const uint8_t*>(_buffer + 26), b - 26);
 		if(claimed != actual) {
 			//CRC check fails. Advance.
 			advance++;
@@ -549,24 +552,24 @@ bool ogg_page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& adva
 	return false;
 }
 
-std::string ogg_page::stream_debug_id() const throw(std::bad_alloc)
+std::string page::stream_debug_id() const throw(std::bad_alloc)
 {
 	return (stringfmt() << "Stream " << std::hex << std::setfill('0') << std::setw(8) << stream).str();
 }
 
-std::string ogg_page::page_debug_id() const throw(std::bad_alloc)
+std::string page::page_debug_id() const throw(std::bad_alloc)
 {
 	return (stringfmt() << stream_debug_id() << " page " << sequence).str();
 }
 
-size_t ogg_page::get_max_complete_packet() const throw()
+size_t page::get_max_complete_packet() const throw()
 {
 	if(segment_count == 255)
 		return 0;
 	return (255 - segment_count) * 255 - 1;
 }
 
-bool ogg_page::append_packet(const uint8_t* _data, size_t datalen) throw()
+bool page::append_packet(const uint8_t* _data, size_t datalen) throw()
 {
 	//Compute the smallest amount of data we can't write.
 	size_t imin = (255 - segment_count) * 255;
@@ -598,7 +601,7 @@ bool ogg_page::append_packet(const uint8_t* _data, size_t datalen) throw()
 	return true;
 }
 
-bool ogg_page::append_packet_incomplete(const uint8_t*& _data, size_t& datalen) throw()
+bool page::append_packet_incomplete(const uint8_t*& _data, size_t& datalen) throw()
 {
 	//If we have absolutely no space, don't flag a packet.
 	if(segment_count == 255)
@@ -629,7 +632,7 @@ bool ogg_page::append_packet_incomplete(const uint8_t*& _data, size_t& datalen) 
 	return false;
 }
 
-void ogg_page::serialize(char* buffer) const throw()
+void page::serialize(char* buffer) const throw()
 {
 	memcpy(buffer, "OggS", 4);
 	buffer[4] = version;
@@ -643,14 +646,14 @@ void ogg_page::serialize(char* buffer) const throw()
 	memcpy(buffer + 27 + segment_count, data, data_count);
 	size_t plen = 27 + segment_count + data_count;
 	//Fix the CRC.
-	write32ule(buffer + 22, ogg_crc32(ogg_crc32(0, NULL, 0), reinterpret_cast<uint8_t*>(buffer), plen));
+	write32ule(buffer + 22, oggcrc32(oggcrc32(0, NULL, 0), reinterpret_cast<uint8_t*>(buffer), plen));
 }
 
-const uint64_t ogg_page::granulepos_none = 0xFFFFFFFFFFFFFFFFULL;
+const uint64_t page::granulepos_none = 0xFFFFFFFFFFFFFFFFULL;
 
 
 
-ogg_stream_reader::ogg_stream_reader() throw()
+stream_reader::stream_reader() throw()
 {
 	eof = false;
 	left = 0;
@@ -659,16 +662,16 @@ ogg_stream_reader::ogg_stream_reader() throw()
 	start_offset = 0;
 }
 
-ogg_stream_reader::~ogg_stream_reader() throw()
+stream_reader::~stream_reader() throw()
 {
 }
 
-void ogg_stream_reader::set_errors_to(std::ostream& os)
+void stream_reader::set_errors_to(std::ostream& os)
 {
 	errors_to = &os;
 }
 
-bool ogg_stream_reader::get_page(ogg_page& page) throw(std::exception)
+bool stream_reader::get_page(page& spage) throw(std::exception)
 {
 	size_t advance;
 	bool f;
@@ -676,7 +679,7 @@ try_again:
 	fill_buffer();
 	if(eof && !left)
 		return false;
-	f = ogg_page::scan(buffer, left, eof, advance);
+	f = page::scan(buffer, left, eof, advance);
 	if(advance) {
 		//The ogg stream resyncs.
 		(*errors_to) << "Warning: Ogg stream: Recapture after " << advance << " bytes." << std::endl;
@@ -685,13 +688,13 @@ try_again:
 	}
 	if(!f)
 		goto try_again;
-	page = ogg_page(buffer, advance);
+	spage = page(buffer, advance);
 	last_offset = start_offset;
 	discard_buffer(advance);
 	return true;
 }
 
-void ogg_stream_reader::fill_buffer()
+void stream_reader::fill_buffer()
 {
 	size_t r;
 	if(!eof && left < sizeof(buffer)) {
@@ -701,7 +704,7 @@ void ogg_stream_reader::fill_buffer()
 	}
 }
 
-void ogg_stream_reader::discard_buffer(size_t amount)
+void stream_reader::discard_buffer(size_t amount)
 {
 	if(amount < left)
 		memmove(buffer, buffer + amount, left - amount);
@@ -709,15 +712,15 @@ void ogg_stream_reader::discard_buffer(size_t amount)
 	start_offset += amount;
 }
 
-ogg_stream_writer::ogg_stream_writer() throw()
+stream_writer::stream_writer() throw()
 {
 }
 
-ogg_stream_writer::~ogg_stream_writer() throw()
+stream_writer::~stream_writer() throw()
 {
 }
 
-void ogg_stream_writer::put_page(const ogg_page& page) throw(std::exception)
+void stream_writer::put_page(const page& page) throw(std::exception)
 {
 	char buffer[65536];
 	size_t s = page.serialize_size();
@@ -725,16 +728,16 @@ void ogg_stream_writer::put_page(const ogg_page& page) throw(std::exception)
 	write(buffer, s);
 }
 
-ogg_stream_reader_iostreams::ogg_stream_reader_iostreams(std::istream& stream)
+stream_reader_iostreams::stream_reader_iostreams(std::istream& stream)
 	: is(stream)
 {
 }
 
-ogg_stream_reader_iostreams::~ogg_stream_reader_iostreams() throw()
+stream_reader_iostreams::~stream_reader_iostreams() throw()
 {
 }
 
-size_t ogg_stream_reader_iostreams::read(char* buffer, size_t size) throw(std::exception)
+size_t stream_reader_iostreams::read(char* buffer, size_t size) throw(std::exception)
 {
 	if(!is)
 		return 0;
@@ -742,20 +745,21 @@ size_t ogg_stream_reader_iostreams::read(char* buffer, size_t size) throw(std::e
 	return is.gcount();
 }
 
-ogg_stream_writer_iostreams::ogg_stream_writer_iostreams(std::ostream& stream)
+stream_writer_iostreams::stream_writer_iostreams(std::ostream& stream)
 	: os(stream)
 {
 }
 
-ogg_stream_writer_iostreams::~ogg_stream_writer_iostreams() throw()
+stream_writer_iostreams::~stream_writer_iostreams() throw()
 {
 }
 
-void ogg_stream_writer_iostreams::write(const char* buffer, size_t size) throw(std::exception)
+void stream_writer_iostreams::write(const char* buffer, size_t size) throw(std::exception)
 {
 	if(!os)
 		throw std::runtime_error("Error writing data");
 	os.write(buffer, size);
 	if(!os)
 		throw std::runtime_error("Error writing data");
+}
 }

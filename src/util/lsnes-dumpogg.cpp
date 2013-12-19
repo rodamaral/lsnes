@@ -13,8 +13,8 @@ int main(int argc, char** argv)
 		std::cerr << "Can't open '" << argv[1] << "'" << std::endl;
 		return 2;
 	}
-	ogg_stream_reader_iostreams r(s);
-	ogg_page p;
+	ogg::stream_reader_iostreams r(s);
+	ogg::page p;
 	while(r.get_page(p)) {
 		std::cout << "Ogg page: Stream " << p.get_stream() << " sequence " << p.get_sequence()
 			<< " Flags: " << (p.get_continue() ? "CONTINUE " : "")

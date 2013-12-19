@@ -36,7 +36,7 @@ struct oggopus_tags
  * Returns: Parsed data.
  * Throws std::runtime_error: Not valid OggOpus header page.
  */
-struct oggopus_header parse_oggopus_header(struct ogg_packet& packet) throw(std::runtime_error);
+struct oggopus_header parse_oggopus_header(struct ogg::packet& packet) throw(std::runtime_error);
 
 /**
  * Serialize OggOpus header as an Ogg page.
@@ -45,7 +45,7 @@ struct oggopus_header parse_oggopus_header(struct ogg_packet& packet) throw(std:
  * Returns: The serialized page.
  * Throws std::runtime_error: Not valid OggOpus header packet.
  */
-struct ogg_page serialize_oggopus_header(struct oggopus_header& header) throw(std::runtime_error);
+struct ogg::page serialize_oggopus_header(struct oggopus_header& header) throw(std::runtime_error);
 
 /**
  * Parse Ogg packet as OggOpus comment.
@@ -54,7 +54,7 @@ struct ogg_page serialize_oggopus_header(struct oggopus_header& header) throw(st
  * Returns: Parsed data.
  * Throws std::runtime_error: Not valid OggOpus comment packet.
  */
-struct oggopus_tags parse_oggopus_tags(struct ogg_packet& packet) throw(std::bad_alloc, std::runtime_error);
+struct oggopus_tags parse_oggopus_tags(struct ogg::packet& packet) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * Serialize OggOpus comments as Ogg pages.
@@ -65,7 +65,7 @@ struct oggopus_tags parse_oggopus_tags(struct ogg_packet& packet) throw(std::bad
  * Returns: Next sequence number to use.
  * Throws std::runtime_error: Not valid OggOpus comments.
  */
-uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(const ogg_page& p)> output,
+uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(const ogg::page& p)> output,
 	uint32_t strmid) throw(std::bad_alloc, std::runtime_error);
 
 /**
