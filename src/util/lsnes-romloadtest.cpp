@@ -127,11 +127,12 @@ int main(int argc, char** argv)
 				lsnes_vset[r[1]].str(r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
-				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what() << std::endl;
+				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what()
+					<< std::endl;
 			}
 		if(r = regex("--load-library=(.*)", i))
 			try {
-				with_loaded_library(new loaded_library(r[1]));
+				with_loaded_library(*new loadlib::module(loadlib::library(r[1])));
 				handle_post_loadlibrary();
 			} catch(std::runtime_error& e) {
 				std::cerr << "Can't load '" << r[1] << "': " << e.what() << std::endl;

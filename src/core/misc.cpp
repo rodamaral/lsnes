@@ -10,6 +10,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
+#include "library/loadlib.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/serialization.hpp"
@@ -369,6 +370,7 @@ void reached_main()
 	reached_main_flag = true;
 	lsnes_cmd.set_oom_panic(OOM_panic);
 	lsnes_cmd.set_output(platform::out());
+	loadlib::module::run_initializers();
 	std::set_terminate(terminate_handler);
 #ifdef SIGHUP
 	signal(SIGHUP, fatal_signal_handler);

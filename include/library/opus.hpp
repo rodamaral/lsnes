@@ -7,11 +7,14 @@
 #include <vector>
 #include <functional>
 
-class loaded_library;
+namespace loadlib
+{
+class module;
+}
 
 namespace opus
 {
-void load_libopus(loaded_library& lib);
+void load_libopus(const loadlib::module& lib);
 bool libopus_loaded();
 size_t add_callback(std::function<void()> fun);
 void cancel_callback(size_t handle);

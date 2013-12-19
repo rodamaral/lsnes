@@ -207,7 +207,7 @@ namespace
 				}
 			} else if(a.length() >= 12 && a.substr(0, 15) == "--load-library=")
 				try {
-					with_loaded_library(new loaded_library(a.substr(15)));
+					with_loaded_library(*new loadlib::module(loadlib::library(a.substr(15))));
 					handle_post_loadlibrary();
 				} catch(std::runtime_error& e) {
 					std::cerr << "Can't load '" << a.substr(15) << "': " << e.what() << std::endl;

@@ -1022,9 +1022,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_LOAD_STATE, wxT("State..."));
 	menu_entry(wxID_LOAD_MOVIE, wxT("Movie..."));
 	menu_entry(wxID_DOWNLOAD, wxT("Download movie..."));
-	if(loaded_library::call_library() != "") {
+	if(loadlib::library::name() != "") {
 		menu_separator();
-		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + loaded_library::call_library()));
+		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + loadlib::library::name()));
 	}
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
@@ -1599,9 +1599,10 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		set_speed(-1);
 		break;
 	case wxID_LOAD_LIBRARY: {
-		std::string name = std::string("load ") + loaded_library::call_library();
-		with_loaded_library(new loaded_library(choose_file_load(this, name, project_otherpath(),
-			single_type(loaded_library::call_library_ext(), loaded_library::call_library()))));
+		std::string name = std::string("load ") + loadlib::library::name();
+		with_loaded_library(*new loadlib::module(loadlib::library(choose_file_load(this, name,
+			project_otherpath(), single_type(loadlib::library::extension(),
+			loadlib::library::name())))));
 		handle_post_loadlibrary();
 		break;
 	}

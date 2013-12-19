@@ -1,10 +1,19 @@
 #include "loadlib.hpp"
 #include <sstream>
+#include <list>
 
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 #include <dlfcn.h>
 #include <unistd.h>
 #endif
+
+namespace loadlib
+{
+mutex_class& global_mutex()
+{
+	static mutex_class m;
+	return m;
+}
 
 namespace
 {
@@ -24,7 +33,7 @@ namespace
 #endif
 }
 
-loaded_library::loaded_library(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
+library::internal::internal(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	char buffer[16384];
@@ -59,7 +68,7 @@ loaded_library::loaded_library(const std::string& filename) throw(std::bad_alloc
 #endif
 }
 
-loaded_library::~loaded_library() throw()
+library::internal::~internal() throw()
 {
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	dlclose(handle);
@@ -68,7 +77,7 @@ loaded_library::~loaded_library() throw()
 #endif
 }
 
-void* loaded_library::operator[](const std::string& symbol) throw(std::bad_alloc, std::runtime_error)
+void* library::internal::operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error)
 {
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	dlerror();
@@ -98,12 +107,83 @@ void* loaded_library::operator[](const std::string& symbol) throw(std::bad_alloc
 #endif
 }
 
-const std::string& loaded_library::call_library() throw()
+const std::string& library::name() throw()
 {
 	return callsign;
 }
 
-const std::string& loaded_library::call_library_ext() throw()
+const std::string& library::extension() throw()
 {
 	return callsign_ext;
+}
+
+namespace
+{
+	std::list<loadlib::module*>& module_queue()
+	{
+		static std::list<module*> x;
+		return x;
+	}
+}
+
+module::module(std::initializer_list<symbol> _symbols, std::function<void(const module&)> init_fn)
+{
+	dynamic = false;
+	for(auto i : _symbols)
+		symbols[i.name] = i.address;
+	init = init_fn;
+	if(init) {
+		umutex_class h(global_mutex());
+		module_queue().push_back(this);
+	}
+}
+
+module::module(library _lib)
+{
+	dynamic = true;
+	lib = _lib;
+}
+
+module::~module()
+{
+	umutex_class h(global_mutex());
+	for(auto i = module_queue().begin(); i != module_queue().end(); i++) {
+		if(*i == this) {
+			module_queue().erase(i);
+			break;
+		}
+	}
+}
+
+module::module(const module& mod)
+{
+	dynamic = mod.dynamic;
+	lib = mod.lib;
+	symbols = mod.symbols;
+	init = mod.init;
+	if(init) {
+		umutex_class h(global_mutex());
+		module_queue().push_back(this);
+	}
+}
+
+void* module::operator[](const std::string& symbol) const throw(std::bad_alloc, std::runtime_error)
+{
+	if(dynamic)
+		return lib[symbol];
+	else if(symbols.count(symbol))
+		return symbols.find(symbol)->second;
+	else
+		throw std::runtime_error("Symbol '" + symbol + "' not found");
+}
+
+void module::run_initializers()
+{
+	for(auto i : module_queue())
+		if(i->init) {
+			i->init(*i);
+			i->init = std::function<void(const module&)>();
+		}
+	module_queue().clear();
+}
 }

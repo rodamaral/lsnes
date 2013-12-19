@@ -1,22 +1,11 @@
-#ifndef WITH_OPUS_CODEC
-#define RUNTIME_LIBOPUS
-#endif
-#define OPUS_BUILD
 #include "opus.hpp"
-#ifndef RUNTIME_LIBOPUS
-#include <opus.h>
-#include <opus_defines.h>
-#include <opus_multistream.h>
-#else
 #include "loadlib.hpp"
 #include "threadtypes.hpp"
-#endif
 #include <sstream>
 #include <cstring>
 #include <map>
 #include <functional>
 
-#ifdef RUNTIME_LIBOPUS
 #define OPUS_AUTO -1000
 #define OPUS_ALLOC_FAIL -7
 #define OPUS_APPLICATION_AUDIO 2049
@@ -68,36 +57,17 @@
 #define OPUS_UNIMPLEMENTED -5
 #define OPUS_MULTISTREAM_GET_ENCODER_STATE_REQUEST 5120
 #define OPUS_MULTISTREAM_GET_DECODER_STATE_REQUEST 5122
-#define OPUS_SUPPORTS_SURROUND
 #define SURROUND_SUPPORTED opus_surround_supported()
-#else
-#ifdef OPUS_SUPPORTS_SURROUND
-#define SURROUND_SUPPORTED 1
-#else
-#define SURROUND_SUPPORTED 0
-#endif
-#endif
 
 //Some of these might not be in stable.
-#ifndef OPUS_SET_GAIN_REQUEST
 #define OPUS_SET_GAIN_REQUEST 4034
-#endif
-#ifndef OPUS_GET_GAIN_REQUEST
 #define OPUS_GET_GAIN_REQUEST 4045
-#endif
-#ifndef OPUS_SET_LSB_DEPTH_REQUEST
 #define OPUS_SET_LSB_DEPTH_REQUEST 4036
-#endif
-#ifndef OPUS_GET_LSB_DEPTH_REQUEST
 #define OPUS_GET_LSB_DEPTH_REQUEST 4037
-#endif
-#ifndef OPUS_GET_LAST_PACKET_DURATION_REQUEST
 #define OPUS_GET_LAST_PACKET_DURATION_REQUEST 4039
-#endif
 
 namespace opus
 {
-#ifdef RUNTIME_LIBOPUS
 struct OpusEncoder { int dummy; };
 struct OpusDecoder { int dummy; };
 struct OpusMSEncoder { int dummy; };
@@ -223,7 +193,7 @@ template<typename T> void CA(T& d, void* s)
 	d = reinterpret_cast<T>(s);
 }
 
-void load_libopus(loaded_library& lib)
+void load_libopus(const loadlib::module& lib)
 {
 	static functions lfun;
 	functions tmp;
@@ -547,27 +517,7 @@ int opus_multistream_surround_encoder_init(OpusMSEncoder* e, int32_t fs, int ch,
 {
 	return opus_functions->multistream_surround_encoder_init(e, fs, ch, f, st, co, map, app);
 }
-#else
-void load_libopus(loaded_library& lib)
-{
-}
 
-bool libopus_loaded()
-{
-	return true;
-}
-
-size_t add_callback(std::function<void()> fun)
-{
-	fun();
-	return 0;
-}
-
-void cancel_callback(size_t handle)
-{
-}
-
-#endif
 samplerate samplerate::r8k(8000);
 samplerate samplerate::r12k(12000);
 samplerate samplerate::r16k(16000);
@@ -1467,11 +1417,9 @@ encoder& surround_encoder::operator[](size_t idx)
 size_t surround_encoder::size(unsigned channels, unsigned family)
 {
 	//Be conservative with memory, as stream count is not known.
-#ifdef OPUS_SUPPORTS_SURROUND
 	if(SURROUND_SUPPORTED)
 	return alignof(encoder) + channels * sizeof(encoder) + opus_multistream_surround_encoder_get_size(channels,
 		family);
-#endif
 	int streams, coupled;
 	lookup_params(channels, family, streams, coupled);
 	//We use channels and not streams here to keep compatiblity on fallback.
@@ -1493,12 +1441,10 @@ surround_encoder::surround_encoder(samplerate rate, unsigned _channels, unsigned
 		int rstreams, rcoupled;
 		unsigned char rmapping[256];
 		offset = _channels * sizeof(encoder);  //Conservative.
-#ifdef OPUS_SUPPORTS_SURROUND
 		if(SURROUND_SUPPORTED)
 		throwex(opus_multistream_surround_encoder_init(ME(*this), rate, _channels, _family, &rstreams,
 			&rcoupled, rmapping, app));
 		else
-#endif
 		{
 		lookup_params(_channels, _family, rstreams, rcoupled);
 		generate_mapping(_channels, _family, rmapping);
@@ -1545,11 +1491,9 @@ void surround_encoder::init_structures(unsigned _channels, unsigned _streams, un
 	streams = _streams;
 	coupled = _coupled;
 	family = _family;
-#ifdef OPUS_SUPPORTS_SURROUND
 	if(SURROUND_SUPPORTED)
 	opussize = opus_multistream_surround_encoder_get_size(_channels, family);
 	else
-#endif
 	opussize = opus_multistream_encoder_get_size(streams, coupled);
 	for(int32_t i = 0; i < streams; i++) {
 		OpusEncoder* e;

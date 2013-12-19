@@ -5,6 +5,6 @@
 
 void handle_post_loadlibrary();
 void autoload_libraries();
-void with_loaded_library(loaded_library* l);
+void with_loaded_library(const loadlib::module& l);
 
 #endif
