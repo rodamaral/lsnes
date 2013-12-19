@@ -1,3 +1,4 @@
+#include "command.hpp"
 #include "keyboard-mapper.hpp"
 #include "register-queue.hpp"
 #include "string.hpp"

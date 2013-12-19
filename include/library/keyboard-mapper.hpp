@@ -1,12 +1,16 @@
 #ifndef _library__keyboard_mapper__hpp__included__
 #define _library__keyboard_mapper__hpp__included__
 
-#include "command.hpp"
 #include <set>
 #include <list>
 #include <stdexcept>
 #include <string>
 #include "keyboard.hpp"
+
+namespace command
+{
+	class group;
+}
 
 namespace keyboard
 {
