@@ -9,7 +9,7 @@
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
 #include "interface/callbacks.hpp"
-#include "library/pixfmt-rgb32.hpp"
+#include "library/framebuffer-pixfmt-rgb32.hpp"
 
 namespace sky
 {
@@ -28,7 +28,7 @@ namespace sky
 	//Framebuffer.
 	uint32_t cover_fbmem[320*200];
 	struct framebuffer::info cover_fbinfo = {
-		&_pixel_format_rgb32,		//Format.
+		&framebuffer::pixfmt_rgb32,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		320, 200, 1280,			//Physical size.
 		320, 200, 1280,			//Logical size.
@@ -309,7 +309,7 @@ namespace sky
 			simulate_frame(corei, x);
 			uint32_t* fb = corei.get_framebuffer();
 			framebuffer::info inf;
-			inf.type = &_pixel_format_rgb32;
+			inf.type = &framebuffer::pixfmt_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(fb));
 			inf.physwidth = FB_WIDTH;
 			inf.physheight = FB_HEIGHT;

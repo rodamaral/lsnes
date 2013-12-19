@@ -13,7 +13,7 @@
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "interface/callbacks.hpp"
-#include "library/pixfmt-rgb16.hpp"
+#include "library/framebuffer-pixfmt-rgb16.hpp"
 #include "library/controller-data.hpp"
 #include "library/patch.hpp"
 #include "library/sha256.hpp"
@@ -49,7 +49,7 @@ namespace
 
 	//Framebuffer.
 	struct framebuffer::info null_fbinfo = {
-		&_pixel_format_bgr16,		//Format.
+		&framebuffer::pixfmt_bgr16,		//Format.
 		(char*)null_cover_fbmem,	//Memory.
 		512, 448, 1024,			//Physical size.
 		512, 448, 1024,			//Logical size.

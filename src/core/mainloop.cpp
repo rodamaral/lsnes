@@ -27,7 +27,6 @@
 #include "interface/callbacks.hpp"
 #include "interface/romtype.hpp"
 #include "library/framebuffer.hpp"
-#include "library/pixfmt-lrgb.hpp"
 #include "library/zip.hpp"
 
 #include <iomanip>

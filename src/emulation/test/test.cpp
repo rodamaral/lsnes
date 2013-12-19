@@ -31,7 +31,7 @@
 #include "interface/callbacks.hpp"
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
-#include "library/pixfmt-rgb32.hpp"
+#include "library/framebuffer-pixfmt-rgb32.hpp"
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
 #include "library/serialization.hpp"
@@ -45,7 +45,7 @@ namespace
 
 	//Framebuffer.
 	struct framebuffer::info cover_fbinfo = {
-		&_pixel_format_rgb32,		//Format.
+		&framebuffer::pixfmt_rgb32,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		480, 432, 1920,			//Physical size.
 		480, 432, 1920,			//Logical size.
@@ -150,7 +150,7 @@ namespace
 			pflag = false;
 			redraw_screen();
 			framebuffer::info inf;
-			inf.type = &_pixel_format_rgb32;
+			inf.type = &framebuffer::pixfmt_rgb32;
 			inf.mem = const_cast<char*>(reinterpret_cast<const char*>(cover_fbmem));
 			inf.physwidth = 480;
 			inf.physheight = 432;

@@ -34,7 +34,7 @@
 #include "interface/romtype.hpp"
 #include "interface/setting.hpp"
 #include "interface/callbacks.hpp"
-#include "library/pixfmt-lrgb.hpp"
+#include "library/framebuffer-pixfmt-lrgb.hpp"
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
 #include "library/framebuffer.hpp"
@@ -92,7 +92,7 @@ namespace
 
 	//Framebuffer.
 	struct framebuffer::info cover_fbinfo = {
-		&_pixel_format_lrgb,		//Format.
+		&framebuffer::pixfmt_lrgb,		//Format.
 		(char*)cover_fbmem,		//Memory.
 		512, 448, 2048,			//Physical size.
 		512, 448, 2048,			//Logical size.
@@ -1241,7 +1241,7 @@ again2:
 		fps_d /= g;
 
 		framebuffer::info inf;
-		inf.type = &_pixel_format_lrgb;
+		inf.type = &framebuffer::pixfmt_lrgb;
 		inf.mem = const_cast<char*>(reinterpret_cast<const char*>(data));
 		inf.physwidth = 512;
 		inf.physheight = 512;

@@ -10,7 +10,7 @@
 #include "lua/lua.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
-#include "library/pixfmt-lrgb.hpp"
+#include "library/framebuffer-pixfmt-lrgb.hpp"
 
 framebuffer::raw screen_corrupt;
 
@@ -148,7 +148,7 @@ void init_special_screens() throw(std::bad_alloc)
 	buf.resize(512*448);
 
 	framebuffer::info inf;
-	inf.type = &_pixel_format_lrgb;
+	inf.type = &framebuffer::pixfmt_lrgb;
 	inf.mem = reinterpret_cast<char*>(&buf[0]);
 	inf.physwidth = 512;
 	inf.physheight = 448;

@@ -1,11 +1,13 @@
-#include "pixfmt-rgb24.hpp"
+#include "framebuffer-pixfmt-rgb24.hpp"
 #include <cstring>
 
+namespace framebuffer
+{
 template<bool uvswap>
-pixel_format_rgb24<uvswap>::~pixel_format_rgb24() throw() {}
+_pixfmt_rgb24<uvswap>::~_pixfmt_rgb24() throw() {}
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
+void _pixfmt_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
 {
 	if(uvswap) {
 		for(size_t i = 0; i < width; i++) {
@@ -23,8 +25,8 @@ void pixel_format_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, si
 }
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<false>& auxp) throw()
+void _pixfmt_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, size_t width,
+	const auxpalette<false>& auxp) throw()
 {
 	for(size_t i = 0; i < width; i++) {
 		target[i] = static_cast<uint32_t>(src[3 * i + (uvswap ? 2 : 0)]) << auxp.rshift;
@@ -34,8 +36,8 @@ void pixel_format_rgb24<uvswap>::decode(uint32_t* target, const uint8_t* src, si
 }
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::decode(uint64_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<true>& auxp) throw()
+void _pixfmt_rgb24<uvswap>::decode(uint64_t* target, const uint8_t* src, size_t width,
+	const auxpalette<true>& auxp) throw()
 {
 	for(size_t i = 0; i < width; i++) {
 		target[i] = static_cast<uint64_t>(src[3 * i + (uvswap ? 2 : 0)]) << auxp.rshift;
@@ -46,7 +48,7 @@ void pixel_format_rgb24<uvswap>::decode(uint64_t* target, const uint8_t* src, si
 }
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::set_palette(framebuffer::auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_rgb24<uvswap>::set_palette(auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.rshift = rshift;
@@ -56,7 +58,7 @@ void pixel_format_rgb24<uvswap>::set_palette(framebuffer::auxpalette<false>& aux
 }
 
 template<bool uvswap>
-void pixel_format_rgb24<uvswap>::set_palette(framebuffer::auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_rgb24<uvswap>::set_palette(auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.rshift = rshift;
@@ -66,19 +68,19 @@ void pixel_format_rgb24<uvswap>::set_palette(framebuffer::auxpalette<true>& auxp
 }
 
 template<bool uvswap>
-uint8_t pixel_format_rgb24<uvswap>::get_bpp() throw()
+uint8_t _pixfmt_rgb24<uvswap>::get_bpp() throw()
 {
 	return 3;
 }
 
 template<bool uvswap>
-uint8_t pixel_format_rgb24<uvswap>::get_ss_bpp() throw()
+uint8_t _pixfmt_rgb24<uvswap>::get_ss_bpp() throw()
 {
 	return 3;
 }
 
 template<bool uvswap>
-uint32_t pixel_format_rgb24<uvswap>::get_magic() throw()
+uint32_t _pixfmt_rgb24<uvswap>::get_magic() throw()
 {
 	if(uvswap)
 		return 0x25642332U;
@@ -86,5 +88,6 @@ uint32_t pixel_format_rgb24<uvswap>::get_magic() throw()
 		return 0x85433684U;
 }
 
-pixel_format_rgb24<false> _pixel_format_rgb24;
-pixel_format_rgb24<true> _pixel_format_bgr24;
+_pixfmt_rgb24<false> pixfmt_rgb24;
+_pixfmt_rgb24<true> pixfmt_bgr24;
+}

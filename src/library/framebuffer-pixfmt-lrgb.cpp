@@ -1,10 +1,12 @@
-#include "pixfmt-lrgb.hpp"
+#include "framebuffer-pixfmt-lrgb.hpp"
 
-pixel_format_lrgb::~pixel_format_lrgb() throw()
+namespace framebuffer
+{
+_pixfmt_lrgb::~_pixfmt_lrgb() throw()
 {
 }
 
-void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width)
+void _pixfmt_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width)
 	throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
@@ -21,23 +23,23 @@ void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t widt
 	}
 }
 
-void pixel_format_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<false>& auxp) throw()
+void _pixfmt_lrgb::decode(uint32_t* target, const uint8_t* src, size_t width,
+	const auxpalette<false>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++)
 		target[i] = auxp.pcache[_src[i] & 0x7FFFF];
 }
 
-void pixel_format_lrgb::decode(uint64_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<true>& auxp) throw()
+void _pixfmt_lrgb::decode(uint64_t* target, const uint8_t* src, size_t width,
+	const auxpalette<true>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++)
 		target[i] = auxp.pcache[_src[i] & 0x7FFFF];
 }
 
-void pixel_format_lrgb::set_palette(framebuffer::auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_lrgb::set_palette(auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.pcache.resize(0x80000);
@@ -55,7 +57,7 @@ void pixel_format_lrgb::set_palette(framebuffer::auxpalette<false>& auxp, uint8_
 	auxp.bshift = bshift;
 }
 
-void pixel_format_lrgb::set_palette(framebuffer::auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_lrgb::set_palette(auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.pcache.resize(0x80000);
@@ -73,19 +75,20 @@ void pixel_format_lrgb::set_palette(framebuffer::auxpalette<true>& auxp, uint8_t
 	auxp.bshift = bshift;
 }
 
-uint8_t pixel_format_lrgb::get_bpp() throw()
+uint8_t _pixfmt_lrgb::get_bpp() throw()
 {
 	return 4;
 }
 
-uint8_t pixel_format_lrgb::get_ss_bpp() throw()
+uint8_t _pixfmt_lrgb::get_ss_bpp() throw()
 {
 	return 3;
 }
 
-uint32_t pixel_format_lrgb::get_magic() throw()
+uint32_t _pixfmt_lrgb::get_magic() throw()
 {
 	return 0;
 }
 
-pixel_format_lrgb _pixel_format_lrgb;
+_pixfmt_lrgb pixfmt_lrgb;
+}

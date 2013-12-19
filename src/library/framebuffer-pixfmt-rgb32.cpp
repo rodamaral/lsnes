@@ -1,16 +1,18 @@
-#include "pixfmt-rgb32.hpp"
+#include "framebuffer-pixfmt-rgb32.hpp"
 
-pixel_format_rgb32::~pixel_format_rgb32() throw() {}
+namespace framebuffer
+{
+_pixfmt_rgb32::~_pixfmt_rgb32() throw() {}
 
-void pixel_format_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
+void _pixfmt_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++)
 		target[i] = _src[i];
 }
 
-void pixel_format_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<false>& auxp) throw()
+void _pixfmt_rgb32::decode(uint32_t* target, const uint8_t* src, size_t width,
+	const auxpalette<false>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++) {
@@ -20,8 +22,8 @@ void pixel_format_rgb32::decode(uint32_t* target, const uint8_t* src, size_t wid
 	}
 }
 
-void pixel_format_rgb32::decode(uint64_t* target, const uint8_t* src, size_t width,
-	const framebuffer::auxpalette<true>& auxp) throw()
+void _pixfmt_rgb32::decode(uint64_t* target, const uint8_t* src, size_t width,
+	const auxpalette<true>& auxp) throw()
 {
 	const uint32_t* _src = reinterpret_cast<const uint32_t*>(src);
 	for(size_t i = 0; i < width; i++) {
@@ -32,7 +34,7 @@ void pixel_format_rgb32::decode(uint64_t* target, const uint8_t* src, size_t wid
 	}
 }
 
-void pixel_format_rgb32::set_palette(framebuffer::auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_rgb32::set_palette(auxpalette<false>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.rshift = rshift;
@@ -41,7 +43,7 @@ void pixel_format_rgb32::set_palette(framebuffer::auxpalette<false>& auxp, uint8
 	auxp.pcache.clear();
 }
 
-void pixel_format_rgb32::set_palette(framebuffer::auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
+void _pixfmt_rgb32::set_palette(auxpalette<true>& auxp, uint8_t rshift, uint8_t gshift,
 	uint8_t bshift) throw(std::bad_alloc)
 {
 	auxp.rshift = rshift;
@@ -50,19 +52,20 @@ void pixel_format_rgb32::set_palette(framebuffer::auxpalette<true>& auxp, uint8_
 	auxp.pcache.clear();
 }
 
-uint8_t pixel_format_rgb32::get_bpp() throw()
+uint8_t _pixfmt_rgb32::get_bpp() throw()
 {
 	return 4;
 }
 
-uint8_t pixel_format_rgb32::get_ss_bpp() throw()
+uint8_t _pixfmt_rgb32::get_ss_bpp() throw()
 {
 	return 3;
 }
 
-uint32_t pixel_format_rgb32::get_magic() throw()
+uint32_t _pixfmt_rgb32::get_magic() throw()
 {
 	return 0x74212536U;
 }
 
-pixel_format_rgb32 _pixel_format_rgb32;
+_pixfmt_rgb32 pixfmt_rgb32;
+}
