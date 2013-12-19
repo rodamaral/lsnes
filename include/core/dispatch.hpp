@@ -1,7 +1,6 @@
 #ifndef _dispatch__hpp__included__
 #define _dispatch__hpp__included__
 
-#include "core/keymapper.hpp"
 #include "library/framebuffer.hpp"
 #include "library/dispatch.hpp"
 

@@ -1,6 +1,7 @@
 #include "core/advdumper.hpp"
 #include "core/dispatch.hpp"
 #include "core/settings.hpp"
+#include "core/window.hpp"
 #include "library/serialization.hpp"
 #include "video/tcp.hpp"
 

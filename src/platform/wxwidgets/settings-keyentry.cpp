@@ -1,5 +1,6 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/settings-keyentry.hpp"
+#include "core/keymapper.hpp"
 
 namespace
 {

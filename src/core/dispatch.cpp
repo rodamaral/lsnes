@@ -1,5 +1,6 @@
 #include "core/dispatch.hpp"
 #include "library/globalwrap.hpp"
+#include "core/keymapper.hpp"
 #include "core/misc.hpp"
 
 #include <sstream>

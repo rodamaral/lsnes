@@ -3,6 +3,7 @@
 #include "core/dispatch.hpp"
 #include "core/framerate.hpp"
 #include "core/joystickapi.hpp"
+#include "core/keymapper.hpp"
 #include "lua/lua.hpp"
 #include "core/misc.hpp"
 #include "core/window.hpp"

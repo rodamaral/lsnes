@@ -4,6 +4,7 @@
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
+#include "core/keymapper.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"

@@ -2,6 +2,7 @@
 #include "core/command.hpp"
 #include "core/controller.hpp"
 #include "core/dispatch.hpp"
+#include "core/keymapper.hpp"
 #include "core/moviedata.hpp"
 #include "core/multitrack.hpp"
 #include "lua/internal.hpp"

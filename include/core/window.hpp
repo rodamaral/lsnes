@@ -1,9 +1,9 @@
 #ifndef _window__hpp__included__
 #define _window__hpp__included__
 
-#include "core/keymapper.hpp"
 #include "core/rom.hpp"
 #include "interface/romtype.hpp"
+#include "library/keyboard.hpp"
 #include "library/messagebuffer.hpp"
 #include "library/emustatus.hpp"
 #include "library/framebuffer.hpp"

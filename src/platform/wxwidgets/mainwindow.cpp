@@ -19,6 +19,7 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
+#include "core/keymapper.hpp"
 #include "interface/romtype.hpp"
 #include "core/loadlib.hpp"
 #include "lua/lua.hpp"

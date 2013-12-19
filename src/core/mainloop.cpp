@@ -8,6 +8,7 @@
 #include "core/framebuffer.hpp"
 #include "core/framerate.hpp"
 #include "core/inthread.hpp"
+#include "core/keymapper.hpp"
 #include "core/multitrack.hpp"
 #include "lua/lua.hpp"
 #include "library/string.hpp"

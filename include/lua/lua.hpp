@@ -2,9 +2,9 @@
 #define _lua__hpp__included__
 
 #include "core/controllerframe.hpp"
-#include "core/keymapper.hpp"
 #include "core/movie.hpp"
 #include "library/framebuffer.hpp"
+#include "library/keyboard.hpp"
 #include "library/lua-framebuffer.hpp"
 
 void init_lua() throw();
