@@ -4,7 +4,7 @@
 #include <cmath>
 #include "library/minmax.hpp"
 #include "library/ogg.hpp"
-#include "library/oggopus.hpp"
+#include "library/opus-ogg.hpp"
 #include "library/string.hpp"
 #include "core/window.hpp"
 #include "state.hpp"
@@ -67,7 +67,7 @@ namespace sky
 		}
 	}
 
-	void fill_msc_from_header(struct multistream_characteristics& c, const oggopus_header& h)
+	void fill_msc_from_header(struct multistream_characteristics& c, const opus::ogg_header& h)
 	{
 		c.channels = h.channels;
 		c.gain = h.gain;
@@ -404,7 +404,8 @@ namespace sky
 
 	void song_buffer::parse_ogg_header(ogg::packet& p, subsong_context& ctx)
 	{
-		struct oggopus_header h = ::parse_oggopus_header(p);
+		struct opus::ogg_header h;
+		h.parse(p);
 		fill_msc_from_header(mscharacteristics[ctx.psid], h);
 		ctx.pregap = h.preskip;
 		ctx.gain = h.gain;
@@ -412,7 +413,8 @@ namespace sky
 
 	void song_buffer::parse_ogg_tags(ogg::packet& p, subsong_context& ctx, const ogg::page& debug)
 	{
-		struct oggopus_tags t = ::parse_oggopus_tags(p);
+		struct opus::ogg_tags t;
+		t.parse(p);
 		for(auto& i : t.comments) {
 			try {
 				regex_results r = regex("SKY-([^-]+)-([^=]+)=(.*)", i);

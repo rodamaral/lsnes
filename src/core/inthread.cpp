@@ -6,7 +6,7 @@
 #include "library/serialization.hpp"
 #include "library/string.hpp"
 #include "library/ogg.hpp"
-#include "library/oggopus.hpp"
+#include "library/opus-ogg.hpp"
 #include "library/opus.hpp"
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -443,8 +443,8 @@ out_parsing:
 	{
 		ogg::stream_reader_iostreams reader(data);
 		reader.set_errors_to(messages);
-		struct oggopus_header h;
-		struct oggopus_tags t;
+		struct opus::ogg_header h;
+		struct opus::ogg_tags t;
 		ogg::page page;
 		ogg::demuxer d(messages);
 		int state = 0;
@@ -464,7 +464,7 @@ out_parsing:
 					d.packet_out(p);
 				switch(state) {
 				case 0:		//Not locked.
-					h = parse_oggopus_header(p);
+					h.parse(p);
 					if(h.streams != 1)
 						throw std::runtime_error("Multistream OggOpus streams are not "
 							"supported");
@@ -473,7 +473,7 @@ out_parsing:
 					gain = h.gain;
 					break;
 				case 1:		//Expecting comment.
-					t = parse_oggopus_tags(p);
+					t.parse(p);
 					state = 2;	//Data page.
 					if(page.get_eos())
 						throw std::runtime_error("Empty OggOpus stream");
@@ -618,8 +618,8 @@ out:
 	{
 		if(!packets.size())
 			throw std::runtime_error("Empty oggopus stream is not valid");
-		oggopus_header header;
-		oggopus_tags tags;
+		opus::ogg_header header;
+		opus::ogg_tags tags;
 		ogg::stream_writer_iostreams writer(data);
 		unsigned stream_id = 1;
 		uint64_t true_granule = 0;
@@ -639,10 +639,10 @@ out:
 		tags.comments.push_back((stringfmt() << "ENCODER=lsnes rr" + lsnes_version).str());
 		tags.comments.push_back((stringfmt() << "LSNES_STREAM_TS=" << s_timebase).str());
 
-		struct ogg::page hpage = serialize_oggopus_header(header);
+		struct ogg::page hpage = header.serialize();
 		hpage.set_stream(stream_id);
 		writer.put_page(hpage);
-		seq = serialize_oggopus_tags(tags, [&writer](const ogg::page& p) { writer.put_page(p); }, stream_id);
+		seq = tags.serialize([&writer](const ogg::page& p) { writer.put_page(p); }, stream_id);
 
 		struct ogg::page ppage;
 		ogg::muxer mux(stream_id, seq);
