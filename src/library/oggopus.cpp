@@ -168,19 +168,3 @@ uint32_t serialize_oggopus_tags(struct oggopus_tags& tags, std::function<void(co
 		written = ptr - &contents[0];
 	}
 }
-
-uint8_t opus_packet_tick_count(const uint8_t* packet, size_t packetsize)
-{
-	if(packetsize < 1)
-		return 0;
-	uint8_t x = ((packet[0] >= 0x70) ? 1 : 4) << ((packet[0] >> 3) & 3);
-	x = min(x, (uint8_t)24);
-	uint8_t y = (packetsize < 2) ? 255 : (packet[1] & 0x3F);
-	uint16_t z = (uint16_t)x * y;
-	switch(packet[0] & 3) {
-	case 0:		return x;
-	case 1:		return x << 1;
-	case 2:		return x << 1;
-	case 3:		return (z <= 48) ? z : 0;
-	};
-}

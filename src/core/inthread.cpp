@@ -481,7 +481,7 @@ out_parsing:
 				case 2:		//Data page.
 				case 3:		//Data page.
 					const std::vector<uint8_t>& pkt = p.get_vector();
-					uint8_t tcnt = opus_packet_tick_count(&pkt[0], pkt.size());
+					uint8_t tcnt = opus::packet_tick_count(&pkt[0], pkt.size());
 					if(tcnt) {
 						write(tcnt, &pkt[0], pkt.size());
 						datalen += tcnt * 120;
@@ -655,7 +655,7 @@ out:
 			}
 			if(!p.size())
 				(stringfmt() << "Empty Opus packet is not valid").throwex();
-			uint32_t samples = static_cast<uint32_t>(opus_packet_tick_count(&p[0], p.size())) * 120;
+			uint32_t samples = static_cast<uint32_t>(opus::packet_tick_count(&p[0], p.size())) * 120;
 			if(i + 1 < packets.size())
 				true_granule += samples;
 			else

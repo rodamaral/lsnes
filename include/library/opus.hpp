@@ -639,5 +639,15 @@ uint32_t packet_get_nb_channels(const unsigned char* packet);
 bandwidth packet_get_bandwidth(const unsigned char* packet);
 parsed_packet packet_parse(const unsigned char* packet, size_t len);
 std::string version();
+
+/**
+ * Get tick (2.5ms) count from opus packet.
+ *
+ * Parameter packet: The packet data.
+ * Parameter packetsize: The size of packet.
+ *
+ * Note: Guaranteed not to read more than 2 bytes from the packet.
+ */
+uint8_t packet_tick_count(const uint8_t* packet, size_t packetsize);
 }
 #endif

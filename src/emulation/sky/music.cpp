@@ -450,7 +450,7 @@ namespace sky
 	{
 		std::pair<uint32_t, uint64_t> ptsx = std::make_pair(ctx.psid, ctx.pts);
 		packetdata[ptsx] = p.get_vector();
-		uint8_t t = opus_packet_tick_count(&packetdata[ptsx][0], packetdata[ptsx].size());
+		uint8_t t = opus::packet_tick_count(&packetdata[ptsx][0], packetdata[ptsx].size());
 		ctx.pts += 120 * t;
 		if(p.get_last_page()) {
 			uint64_t samples = p.get_granulepos() - ctx.last_granule;
@@ -513,7 +513,7 @@ namespace sky
 				s = d->decode(&data[0], data.size(), dmem, 5760);
 			else {
 				//Insert silence.
-				uint8_t ticks = opus_packet_tick_count(&data[0], data.size());
+				uint8_t ticks = opus::packet_tick_count(&data[0], data.size());
 				if(!ticks)
 					ticks = 1;	//Try to recover.
 				memset(pcmbuf, 0, 240 * ticks * sizeof(int16_t));
@@ -524,7 +524,7 @@ namespace sky
 		} catch(std::exception& e) {
 			//Try to insert silence.
 			messages << "Failed to decode opus packet: " << e.what() << std::endl;
-			uint8_t ticks = opus_packet_tick_count(&data[0], data.size());
+			uint8_t ticks = opus::packet_tick_count(&data[0], data.size());
 			if(!ticks)
 				ticks = 1;	//Try to recover.
 			memset(pcmbuf, 0, 240 * ticks * sizeof(int16_t));
