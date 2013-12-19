@@ -1,9 +1,11 @@
-#include "customfont.hpp"
+#include "framebuffer-font2.hpp"
 #include "serialization.hpp"
 #include <cstring>
 #include "zip.hpp"
 #include "string.hpp"
 
+namespace framebuffer
+{
 namespace
 {
 	void bound(int32_t c, uint32_t odim, uint32_t dim, uint32_t& dc, uint32_t& off, uint32_t& size)
@@ -26,40 +28,40 @@ namespace
 			size = dim - dc;
 	}
 
-	inline bool readfont(const font_glyph_data& glyph, uint32_t xp1, uint32_t yp1)
+	inline bool readfont(const font2::glyph& fglyph, uint32_t xp1, uint32_t yp1)
 	{
-		if(xp1 < 1 || xp1 > glyph.width || yp1 < 1 || yp1 > glyph.height)
+		if(xp1 < 1 || xp1 > fglyph.width || yp1 < 1 || yp1 > fglyph.height)
 			return false;
 		xp1--;
 		yp1--;
-		size_t ge = yp1 * glyph.stride + (xp1 / 32);
+		size_t ge = yp1 * fglyph.stride + (xp1 / 32);
 		size_t gb = 31 - xp1 % 32;
-		return ((glyph.glyph[ge] >> gb) & 1);
+		return ((fglyph.fglyph[ge] >> gb) & 1);
 	}
 
-	template<bool T> void _render(const font_glyph_data& glyph, framebuffer::fb<T>& fb, int32_t x, int32_t y,
-		framebuffer::color fg, framebuffer::color bg, framebuffer::color hl)
+	template<bool T> void _render(const font2::glyph& fglyph, fb<T>& fb, int32_t x, int32_t y,
+		color fg, color bg, color hl)
 	{
 		uint32_t xdc, xoff, xsize;
 		uint32_t ydc, yoff, ysize;
 		if(hl) {
-			bound(x - 1, glyph.width + 2, fb.get_width(), xdc, xoff, xsize);
-			bound(y - 1, glyph.height + 2, fb.get_height(), ydc, yoff, ysize);
+			bound(x - 1, fglyph.width + 2, fb.get_width(), xdc, xoff, xsize);
+			bound(y - 1, fglyph.height + 2, fb.get_height(), ydc, yoff, ysize);
 			if(!xsize || !ysize)
 				return;
 			for(unsigned i = 0; i < ysize; i++) {
 				auto p = fb.rowptr(i + ydc) + xdc;
 				for(unsigned j = 0; j < xsize; j++) {
 					bool in_halo = false;
-					in_halo |= readfont(glyph, j + xoff - 1, i + yoff - 1);
-					in_halo |= readfont(glyph, j + xoff, i + yoff - 1);
-					in_halo |= readfont(glyph, j + xoff + 1, i + yoff - 1);
-					in_halo |= readfont(glyph, j + xoff - 1, i + yoff);
-					in_halo |= readfont(glyph, j + xoff + 1, i + yoff);
-					in_halo |= readfont(glyph, j + xoff - 1, i + yoff + 1);
-					in_halo |= readfont(glyph, j + xoff, i + yoff + 1);
-					in_halo |= readfont(glyph, j + xoff + 1, i + yoff + 1);
-					if(readfont(glyph, j + xoff, i + yoff))
+					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff - 1);
+					in_halo |= readfont(fglyph, j + xoff, i + yoff - 1);
+					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff - 1);
+					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff);
+					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff);
+					in_halo |= readfont(fglyph, j + xoff - 1, i + yoff + 1);
+					in_halo |= readfont(fglyph, j + xoff, i + yoff + 1);
+					in_halo |= readfont(fglyph, j + xoff + 1, i + yoff + 1);
+					if(readfont(fglyph, j + xoff, i + yoff))
 						fg.apply(p[j]);
 					else if(in_halo)
 						hl.apply(p[j]);
@@ -69,16 +71,16 @@ namespace
 				}
 			}
 		} else {
-			bound(x, glyph.width, fb.get_width(), xdc, xoff, xsize);
-			bound(y, glyph.height, fb.get_height(), ydc, yoff, ysize);
+			bound(x, fglyph.width, fb.get_width(), xdc, xoff, xsize);
+			bound(y, fglyph.height, fb.get_height(), ydc, yoff, ysize);
 			if(!xsize || !ysize)
 				return;
 			for(unsigned i = 0; i < ysize; i++) {
 				auto p = fb.rowptr(i + ydc) + xdc;
 				for(unsigned j = 0; j < xsize; j++) {
-					size_t ge = (i + yoff) * glyph.stride + ((j + xoff) / 32);
+					size_t ge = (i + yoff) * fglyph.stride + ((j + xoff) / 32);
 					size_t gb = 31 - (j + xoff) % 32;
-					if((glyph.glyph[ge] >> gb) & 1)
+					if((fglyph.fglyph[ge] >> gb) & 1)
 						fg.apply(p[j]);
 					else
 						bg.apply(p[j]);
@@ -88,12 +90,12 @@ namespace
 	}
 }
 
-font_glyph_data::font_glyph_data()
+font2::glyph::glyph()
 {
 	stride = width = height = 0;
 }
 
-font_glyph_data::font_glyph_data(std::istream& s)
+font2::glyph::glyph(std::istream& s)
 {
 	char header[40];
 	bool old = true;
@@ -150,8 +152,8 @@ font_glyph_data::font_glyph_data(std::istream& s)
 		rcount++;
 	}
 	stride = (width + 31) / 32;
-	glyph.resize(stride * height);
-	memset(&glyph[0], 0, sizeof(uint32_t) * glyph.size());
+	fglyph.resize(stride * height);
+	memset(&fglyph[0], 0, sizeof(uint32_t) * fglyph.size());
 	size_t toskip = (4 - ((width + 7) / 8) % 4) % 4;
 	for(size_t i = 0; i < height; i++) {
 		size_t y = upside_down ? (height - i - 1) : i;
@@ -162,7 +164,7 @@ font_glyph_data::font_glyph_data(std::istream& s)
 			int c = s.get();
 			if(!s)
 				throw std::runtime_error("EOF while reading BMP data");
-			glyph[e] |= ((uint32_t)c << (24 - b));
+			fglyph[e] |= ((uint32_t)c << (24 - b));
 		}
 		for(size_t j = 0; j < toskip; j++) {
 			s.get();
@@ -172,25 +174,25 @@ font_glyph_data::font_glyph_data(std::istream& s)
 	}
 }
 
-void font_glyph_data::render(framebuffer::fb<false>& fb, int32_t x, int32_t y, framebuffer::color fg,
-	framebuffer::color bg, framebuffer::color hl) const
+void font2::glyph::render(fb<false>& fb, int32_t x, int32_t y, color fg,
+	color bg, color hl) const
 {
 	_render(*this, fb, x, y, fg, bg, hl);
 }
 
-void font_glyph_data::render(framebuffer::fb<true>& fb, int32_t x, int32_t y, framebuffer::color fg,
-	framebuffer::color bg, framebuffer::color hl) const
+void font2::glyph::render(fb<true>& fb, int32_t x, int32_t y, color fg,
+	color bg, color hl) const
 {
 	_render(*this, fb, x, y, fg, bg, hl);
 }
 
 
-custom_font::custom_font()
+font2::font2()
 {
 	rowadvance = 0;
 }
 
-custom_font::custom_font(const std::string& file)
+font2::font2(const std::string& file)
 {
 	std::istream* toclose = NULL;
 	rowadvance = 0;
@@ -216,7 +218,7 @@ custom_font::custom_font(const std::string& file)
 			std::istream& s = r[member];
 			toclose = &s;
 			try {
-				add(key, font_glyph_data(s));
+				add(key, glyph(s));
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {
@@ -236,18 +238,18 @@ custom_font::custom_font(const std::string& file)
 	}
 }
 
-custom_font::custom_font(struct framebuffer::font& bfont)
+font2::font2(struct font& bfont)
 {
 	auto s = bfont.get_glyphs_set();
 	for(auto i = s.begin();;i++) {
-		const framebuffer::font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
-		font_glyph_data k;
+		const font::glyph& j = (i != s.end()) ? bfont.get_glyph(*i) : bfont.get_bad_glyph();
+		glyph k;
 		k.width = j.wide ? 16 : 8;
 		k.height = 16;
 		k.stride = 1;
-		k.glyph.resize(16);
+		k.fglyph.resize(16);
 		for(size_t y = 0; y < 16; y++) {
-			k.glyph[y] = 0;
+			k.fglyph[y] = 0;
 			uint32_t r = j.data[y / (j.wide ? 2 : 4)];
 			if(j.wide)
 				r >>= 16 - ((y & 1) << 4);
@@ -256,7 +258,7 @@ custom_font::custom_font(struct framebuffer::font& bfont)
 			for(size_t x = 0; x < k.width; x++) {
 				uint32_t b = (j.wide ? 15 : 7) - x;
 				if(((r >> b) & 1) != 0)
-					k.glyph[y] |= 1UL << (31 - x);
+					k.fglyph[y] |= 1UL << (31 - x);
 			}
 		}
 		std::u32string key = (i != s.end()) ? std::u32string(1, *i) : std::u32string();
@@ -278,14 +280,14 @@ std::ostream& operator<<(std::ostream& os, const std::u32string& lkey)
 	return os;
 }
 
-void custom_font::add(const std::u32string& key, const font_glyph_data& glyph) throw(std::bad_alloc)
+void font2::add(const std::u32string& key, const glyph& fglyph) throw(std::bad_alloc)
 {
-	glyphs[key] = glyph;
-	if(glyph.height > rowadvance)
-		rowadvance = glyph.height;
+	glyphs[key] = fglyph;
+	if(fglyph.height > rowadvance)
+		rowadvance = fglyph.height;
 }
 
-std::u32string custom_font::best_ligature_match(const std::u32string& codepoints, size_t start) const
+std::u32string font2::best_ligature_match(const std::u32string& codepoints, size_t start) const
 	throw(std::bad_alloc)
 {
 	std::u32string tmp;
@@ -315,9 +317,10 @@ std::u32string custom_font::best_ligature_match(const std::u32string& codepoints
 	return best;
 }
 
-const font_glyph_data& custom_font::lookup_glyph(const std::u32string& key) const throw()
+const font2::glyph& font2::lookup_glyph(const std::u32string& key) const throw()
 {
-	static font_glyph_data empty_glyph;
+	static glyph empty_glyph;
 	auto i = glyphs.find(key);
 	return (i == glyphs.end()) ? empty_glyph : i->second;
+}
 }

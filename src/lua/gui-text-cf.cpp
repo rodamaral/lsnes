@@ -2,7 +2,7 @@
 #include "fonts/wrapper.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
-#include "library/customfont.hpp"
+#include "library/framebuffer-font2.hpp"
 #include "library/utf8.hpp"
 #include <algorithm>
 
@@ -16,7 +16,7 @@ namespace
 		lua_customfont(lua_state& L);
 		~lua_customfont() throw();
 		int draw(lua_state& L, const std::string& fname);
-		const custom_font& get_font() { return font; }
+		const framebuffer::font2& get_font() { return font; }
 		std::string print()
 		{
 			return orig_filename;
@@ -24,7 +24,7 @@ namespace
 	private:
 		void init(lua_state& L);
 		std::string orig_filename;
-		custom_font font;
+		framebuffer::font2 font;
 	};
 }
 
@@ -45,7 +45,7 @@ namespace
 			fg.set_palette(scr);
 			bg.set_palette(scr);
 			hl.set_palette(scr);
-			const custom_font& fdata = font->get_font();
+			const framebuffer::font2& fdata = font->get_font();
 			std::u32string _text = to_u32string(text);
 			int32_t orig_x = x;
 			int32_t drawx = x;
@@ -59,7 +59,7 @@ namespace
 			for(size_t i = 0; i < _text.size();) {
 				uint32_t cp = _text[i];
 				std::u32string k = fdata.best_ligature_match(_text, i);
-				const font_glyph_data& glyph = fdata.lookup_glyph(k);
+				const framebuffer::font2::glyph& glyph = fdata.lookup_glyph(k);
 				if(k.length())
 					i += k.length();
 				else
