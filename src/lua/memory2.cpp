@@ -12,7 +12,7 @@
 
 namespace
 {
-	int handle_push_vma(lua_state& L, memory_region& r)
+	int handle_push_vma(lua::state& L, memory_region& r)
 	{
 		L.newtable();
 		L.pushstring("name");
@@ -49,10 +49,10 @@ namespace
 	class lua_vma
 	{
 	public:
-		lua_vma(lua_state& L, memory_region* r);
-		int info(lua_state& L, const std::string& fname);
-		template<class T, bool _bswap> int rw(lua_state& L, const std::string& fname);
-		template<bool write, bool sign> int scattergather(lua_state& L, const std::string& fname);
+		lua_vma(lua::state& L, memory_region* r);
+		int info(lua::state& L, const std::string& fname);
+		template<class T, bool _bswap> int rw(lua::state& L, const std::string& fname);
+		template<bool write, bool sign> int scattergather(lua::state& L, const std::string& fname);
 		std::string print()
 		{
 			return vma;
@@ -67,22 +67,22 @@ namespace
 	class lua_vma_list
 	{
 	public:
-		lua_vma_list(lua_state& L);
-		int index(lua_state& L, const std::string& fname);
-		int newindex(lua_state& L, const std::string& fname);
-		int call(lua_state& L, const std::string& fname);
+		lua_vma_list(lua::state& L);
+		int index(lua::state& L, const std::string& fname);
+		int newindex(lua::state& L, const std::string& fname);
+		int call(lua::state& L, const std::string& fname);
 		std::string print()
 		{
 			return "";
 		}
 	};
 
-	lua_class<lua_vma> class_vma("VMA");
-	lua_class<lua_vma_list> class_vmalist("VMALIST");
+	lua::_class<lua_vma> class_vma("VMA");
+	lua::_class<lua_vma_list> class_vmalist("VMALIST");
 
-	lua_vma::lua_vma(lua_state& L, memory_region* r)
+	lua_vma::lua_vma(lua::state& L, memory_region* r)
 	{
-		objclass<lua_vma>().bind_multi(L, {
+		lua::objclass<lua_vma>().bind_multi(L, {
 			{"info", &lua_vma::info},
 			{"read", &lua_vma::scattergather<false, false>},
 			{"sread", &lua_vma::scattergather<false, true>},
@@ -118,7 +118,7 @@ namespace
 		ro = r->readonly;
 	}
 
-	int lua_vma::info(lua_state& L, const std::string& fname)
+	int lua_vma::info(lua::state& L, const std::string& fname)
 	{
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
@@ -126,7 +126,7 @@ namespace
 		(stringfmt() << fname << ": Stale region").throwex();
 	}
 
-	template<class T, bool _bswap> int lua_vma::rw(lua_state& L, const std::string& fname)
+	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, const std::string& fname)
 	{
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
 		if(addr > vmasize || addr > vmasize - sizeof(T))
@@ -149,7 +149,7 @@ namespace
 			(stringfmt() << fname << ": Parameter #3 must be integer if present").throwex();
 	}
 
-	template<bool write, bool sign> int lua_vma::scattergather(lua_state& L, const std::string& fname)
+	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, const std::string& fname)
 	{
 		uint64_t val = 0;
 		int ptr = 2;
@@ -179,16 +179,16 @@ namespace
 		return write ? 0 : 1;
 	}
 
-	lua_vma_list::lua_vma_list(lua_state& L)
+	lua_vma_list::lua_vma_list(lua::state& L)
 	{
-		objclass<lua_vma_list>().bind_multi(L, {
+		lua::objclass<lua_vma_list>().bind_multi(L, {
 			{"__index", &lua_vma_list::index},
 			{"__newindex", &lua_vma_list::newindex},
 			{"__call", &lua_vma_list::call},
 		});
 	}
 
-	int lua_vma_list::call(lua_state& L, const std::string& fname)
+	int lua_vma_list::call(lua::state& L, const std::string& fname)
 	{
 		L.newtable();
 		size_t key = 1;
@@ -200,7 +200,7 @@ namespace
 		return 1;
 	}
 
-	int lua_vma_list::index(lua_state& L, const std::string& fname)
+	int lua_vma_list::index(lua::state& L, const std::string& fname)
 	{
 		std::string vma = L.get_string(2, fname.c_str());
 		auto l = lsnes_memory.get_regions();
@@ -208,20 +208,20 @@ namespace
 		std::list<memory_region*>::iterator i;
 		for(i = l.begin(), j = 0; i != l.end(); i++, j++)
 			if((*i)->name == vma) {
-				lua_class<lua_vma>::create(L, *i);
+				lua::_class<lua_vma>::create(L, *i);
 				return 1;
 			}
 		(stringfmt() << fname << ": No such VMA").throwex();
 	}
 
-	int lua_vma_list::newindex(lua_state& L, const std::string& fname)
+	int lua_vma_list::newindex(lua::state& L, const std::string& fname)
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}
 
-	function_ptr_luafun memory2(lua_func_misc, "memory2", [](lua_state& L, const std::string& fname) ->
+	lua::fnptr memory2(lua_func_misc, "memory2", [](lua::state& L, const std::string& fname) ->
 		int {
-		lua_class<lua_vma_list>::create(L);
+		lua::_class<lua_vma_list>::create(L);
 		return 1;
 	});
 }

@@ -58,7 +58,7 @@ namespace
 		framebuffer::color fill;
 	};
 
-	function_ptr_luafun gui_rectangle(lua_func_misc, "gui.circle", [](lua_state& L, const std::string& fname)
+	lua::fnptr gui_rectangle(lua_func_misc, "gui.circle", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(!lua_render_ctx)
 			return 0;

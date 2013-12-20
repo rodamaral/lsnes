@@ -46,7 +46,7 @@ namespace
 		int32_t thickness;
 	};
 
-	function_ptr_luafun gui_rectangle(lua_func_misc, "gui.rectangle", [](lua_state& L, const std::string& fname)
+	lua::fnptr gui_rectangle(lua_func_misc, "gui.rectangle", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(!lua_render_ctx)
 			return 0;

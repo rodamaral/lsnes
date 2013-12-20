@@ -29,7 +29,7 @@ namespace
 		bool vdbl;
 	};
 
-	int internal_gui_text(lua_state& L, const std::string& fname, bool hdbl, bool vdbl)
+	int internal_gui_text(lua::state& L, const std::string& fname, bool hdbl, bool vdbl)
 	{
 		if(!lua_render_ctx)
 			return 0;
@@ -46,19 +46,19 @@ namespace
 		return 0;
 	}
 
-	function_ptr_luafun gui_text(lua_func_misc, "gui.text", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr gui_text(lua_func_misc, "gui.text", [](lua::state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, false, false);
 	});
 
-	function_ptr_luafun gui_textH(lua_func_misc, "gui.textH", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr gui_textH(lua_func_misc, "gui.textH", [](lua::state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, true, false);
 	});
 
-	function_ptr_luafun gui_textV(lua_func_misc, "gui.textV", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr gui_textV(lua_func_misc, "gui.textV", [](lua::state& L, const std::string& fname) -> int {
 		return internal_gui_text(L, fname, false, true);
 	});
 
-	function_ptr_luafun gui_textHV(lua_func_misc, "gui.textHV", [](lua_state& L, const std::string& fname)
+	lua::fnptr gui_textHV(lua_func_misc, "gui.textHV", [](lua::state& L, const std::string& fname)
 		-> int {
 		return internal_gui_text(L, fname, true, true);
 	});

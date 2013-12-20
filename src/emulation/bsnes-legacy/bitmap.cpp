@@ -4,7 +4,7 @@
 
 namespace
 {
-	uint64_t get_vmabase(lua_state& L, const std::string& vma)
+	uint64_t get_vmabase(lua::state& L, const std::string& vma)
 	{
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
@@ -12,7 +12,7 @@ namespace
 		throw std::runtime_error("No such VMA");
 	}
 
-	function_ptr_luafun dump_memory_bitmap(lua_func_misc, "bsnes.dump_sprite", [](lua_state& L,
+	lua::fnptr dump_memory_bitmap(lua_func_misc, "bsnes.dump_sprite", [](lua::state& L,
 		const std::string& fname) -> int {
 		int index = 1;
 		uint64_t vmabase = 0;
@@ -24,7 +24,7 @@ namespace
 		uint64_t addr = L.get_numeric_argument<uint64_t>(index++, fname.c_str()) + vmabase;
 		uint32_t width = L.get_numeric_argument<uint32_t>(index++, fname.c_str());
 		uint32_t height = L.get_numeric_argument<uint32_t>(index++, fname.c_str());
-		lua_bitmap* b = lua_class<lua_bitmap>::create(L, width * 8, height * 8);
+		lua_bitmap* b = lua::_class<lua_bitmap>::create(L, width * 8, height * 8);
 		size_t stride1 = 32;
 		size_t stride2 = 512;
 		L.get_numeric_argument<size_t>(index++, stride2, fname.c_str());
@@ -50,7 +50,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun dump_memory_palette(lua_func_misc, "bsnes.dump_palette", [](lua_state& L,
+	lua::fnptr dump_memory_palette(lua_func_misc, "bsnes.dump_palette", [](lua::state& L,
 		const std::string& fname) -> int {
 		int index = 1;
 		uint64_t vmabase = 0;
@@ -63,7 +63,7 @@ namespace
 		bool full = L.get_bool(index++, fname.c_str());
 		bool ftrans = L.get_bool(index++, fname.c_str());
 		size_t ps = full ? 256 : 16;
-		lua_palette* p = lua_class<lua_palette>::create(L);
+		lua_palette* p = lua::_class<lua_palette>::create(L);
 		for(unsigned j = 0; j < ps; j++) {
 			if(j == 0 && ftrans)
 				p->colors.push_back(framebuffer::color(-1));

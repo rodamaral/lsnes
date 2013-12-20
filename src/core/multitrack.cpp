@@ -202,7 +202,7 @@ namespace
 	keyboard::invbind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
 	keyboard::invbind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
 
-	function_ptr_luafun mtlua(lua_func_misc, "input.multitrack_state", [](lua_state& L, const std::string& fname)
+	lua::fnptr mtlua(lua_func_misc, "input.multitrack_state", [](lua::state& L, const std::string& fname)
 		-> int {
 			unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 			unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());

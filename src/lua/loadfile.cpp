@@ -149,12 +149,12 @@ namespace
 	class lua_file_reader
 	{
 	public:
-		lua_file_reader(lua_state& L, std::istream* strm);
+		lua_file_reader(lua::state& L, std::istream* strm);
 		~lua_file_reader()
 		{
 			delete &s;
 		}
-		int read(lua_state& L, const std::string& fname)
+		int read(lua::state& L, const std::string& fname)
 		{
 			if(L.type(2) == LUA_TNUMBER) {
 				//Read specified number of bytes.
@@ -182,7 +182,7 @@ namespace
 			} else
 				(stringfmt() << "Expected number or nil as the 2nd argument of " << fname).throwex();
 		}
-		int lines(lua_state& L, const std::string& fname)
+		int lines(lua::state& L, const std::string& fname)
 		{
 			L.pushlightuserdata(this);
 			L.pushcclosure(lua_file_reader::lines_helper2, 1);
@@ -240,7 +240,7 @@ namespace
 		}
 	}
 
-	void load_chunk(lua_state& L, const std::string& fname)
+	void load_chunk(lua::state& L, const std::string& fname)
 	{
 		std::string file2;
 		std::string file1 = L.get_string(1, fname.c_str());
@@ -273,13 +273,13 @@ namespace
 		}
 	}
 
-	function_ptr_luafun loadfile2(lua_func_load, "loadfile2", [](lua_state& L, const std::string& fname)
+	lua::fnptr loadfile2(lua_func_load, "loadfile2", [](lua::state& L, const std::string& fname)
 		-> int {
 		load_chunk(L, fname);
 		return 1;
 	});
 
-	function_ptr_luafun dofile2(lua_func_load, "dofile2", [](lua_state& L, const std::string& fname)
+	lua::fnptr dofile2(lua_func_load, "dofile2", [](lua::state& L, const std::string& fname)
 		-> int {
 		load_chunk(L, fname);
 		int old_sp = lua_gettop(L.handle());
@@ -288,7 +288,7 @@ namespace
 		return new_sp - (old_sp - 1);
 	});
 
-	function_ptr_luafun resolvefile(lua_func_load, "resolve_filename", [](lua_state& L, const std::string& fname)
+	lua::fnptr resolvefile(lua_func_load, "resolve_filename", [](lua::state& L, const std::string& fname)
 	{
 		std::string file2;
 		std::string file1 = L.get_string(1, fname.c_str());
@@ -299,14 +299,14 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun openfile(lua_func_load, "open_file", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr openfile(lua_func_load, "open_file", [](lua::state& L, const std::string& fname) -> int {
 		std::string file2;
 		std::string file1 = L.get_string(1, fname.c_str());
 		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
 			file2 = L.get_string(2, fname.c_str());
 		std::istream& s = zip::openrel(file1, file2);
 		try {
-			lua_class<lua_file_reader>::create(L, &s);
+			lua::_class<lua_file_reader>::create(L, &s);
 			return 1;
 		} catch(...) {
 			delete &s;
@@ -314,12 +314,12 @@ namespace
 		}
 	});
 
-	lua_class<lua_file_reader> class_filreader("FILEREADER");
+	lua::_class<lua_file_reader> class_filreader("FILEREADER");
 
-	lua_file_reader::lua_file_reader(lua_state& L, std::istream* strm)
+	lua_file_reader::lua_file_reader(lua::state& L, std::istream* strm)
 		: s(*strm)
 	{
-		objclass<lua_file_reader>().bind_multi(L, {
+		lua::objclass<lua_file_reader>().bind_multi(L, {
 			{"__call", &lua_file_reader::read},
 			{"lines", &lua_file_reader::lines}
 		});

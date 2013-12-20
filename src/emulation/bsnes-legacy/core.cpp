@@ -38,7 +38,7 @@
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
 #include "library/framebuffer.hpp"
-#include "library/luabase.hpp"
+#include "library/lua-base.hpp"
 #include "lua/internal.hpp"
 #ifdef BSNES_HAS_DEBUGGER
 #define DEBUGGER
@@ -1352,10 +1352,10 @@ again2:
 		});
 
 #ifdef BSNES_HAS_DEBUGGER
-	lua_state* snes_debug_cb_keys[SNES::Debugger::Breakpoints];
-	lua_state* snes_debug_cb_trace;
+	lua::state* snes_debug_cb_keys[SNES::Debugger::Breakpoints];
+	lua::state* snes_debug_cb_trace;
 
-	void snesdbg_execute_callback(lua_state*& cb, signed r)
+	void snesdbg_execute_callback(lua::state*& cb, signed r)
 	{
 		if(!cb)
 			return;
@@ -1387,7 +1387,7 @@ again2:
 		snesdbg_execute_callback(snes_debug_cb_trace, -1);
 	}
 
-	void snesdbg_set_callback(lua_state& L, lua_state*& cb)
+	void snesdbg_set_callback(lua::state& L, lua::state*& cb)
 	{
 		cb = &L.get_master();
 		L.pushlightuserdata(&cb);
@@ -1395,7 +1395,7 @@ again2:
 		L.settable(LUA_REGISTRYINDEX);
 	}
 
-	bool snesdbg_get_bp_enabled(lua_state& L)
+	bool snesdbg_get_bp_enabled(lua::state& L)
 	{
 		bool r;
 		L.getfield(-1, "addr");
@@ -1404,7 +1404,7 @@ again2:
 		return r;
 	}
 
-	uint32_t snesdbg_get_bp_addr(lua_state& L)
+	uint32_t snesdbg_get_bp_addr(lua::state& L)
 	{
 		uint32_t r = 0;
 		L.getfield(-1, "addr");
@@ -1414,7 +1414,7 @@ again2:
 		return r;
 	}
 
-	uint32_t snesdbg_get_bp_data(lua_state& L)
+	uint32_t snesdbg_get_bp_data(lua::state& L)
 	{
 		signed r = -1;
 		L.getfield(-1, "data");
@@ -1424,7 +1424,7 @@ again2:
 		return r;
 	}
 
-	SNES::Debugger::Breakpoint::Mode snesdbg_get_bp_mode(lua_state& L)
+	SNES::Debugger::Breakpoint::Mode snesdbg_get_bp_mode(lua::state& L)
 	{
 		SNES::Debugger::Breakpoint::Mode r = SNES::Debugger::Breakpoint::Mode::Exec;
 		L.getfield(-1, "mode");
@@ -1446,7 +1446,7 @@ again2:
 		return r;
 	}
 
-	SNES::Debugger::Breakpoint::Source snesdbg_get_bp_source(lua_state& L)
+	SNES::Debugger::Breakpoint::Source snesdbg_get_bp_source(lua::state& L)
 	{
 		SNES::Debugger::Breakpoint::Source r = SNES::Debugger::Breakpoint::Source::CPUBus;
 		L.getfield(-1, "source");
@@ -1464,12 +1464,12 @@ again2:
 		return r;
 	}
 
-	void snesdbg_get_bp_callback(lua_state& L)
+	void snesdbg_get_bp_callback(lua::state& L)
 	{
 		L.getfield(-1, "callback");
 	}
 
-	function_ptr_luafun lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua_state& L,
+	lua::fnptr lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		if(r >= SNES::Debugger::Breakpoints)
@@ -1494,7 +1494,7 @@ again2:
 			throw std::runtime_error("Expected argument 2 to memory.setdebug to be nil or table");
 	});
 
-	function_ptr_luafun lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua_state& L,
+	lua::fnptr lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua::state& L,
 		const std::string& fname) -> int {
 		uint64_t r = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		L.pushvalue(2);
@@ -1505,7 +1505,7 @@ again2:
 		return 0;
 	});
 
-	function_ptr_luafun lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua_state& L,
+	lua::fnptr lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua::state& L,
 		const std::string& fname) -> int {
 		std::string r = L.get_string(1, fname.c_str());
 		lsnes_cmd.invoke("tracelog cpu " + r);
@@ -1518,7 +1518,7 @@ again2:
 		});
 
 #ifdef BSNES_IS_COMPAT
-	function_ptr_luafun lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua_state& L,
+	lua::fnptr lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned layer = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned priority = L.get_numeric_argument<unsigned>(2, fname.c_str());
@@ -1528,7 +1528,7 @@ again2:
 	});
 #endif
 
-	function_ptr_luafun lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua_state& L, const std::string& fname) ->
+	lua::fnptr lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua::state& L, const std::string& fname) ->
 		int {
 		unsigned addr = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		nall::string _disasm = SNES::smp.disassemble_opcode(addr);

@@ -6,7 +6,7 @@
 namespace
 {
 	template<typename S>
-	int do_read(lua_state& L, const std::string& fname)
+	int do_read(lua::state& L, const std::string& fname)
 	{
 		size_t address = L.get_numeric_argument<size_t>(1, fname.c_str());
 		auto& h = get_host_memory();
@@ -19,7 +19,7 @@ namespace
 	}
 
 	template<typename S>
-	int do_write(lua_state& L, const std::string& fname)
+	int do_write(lua::state& L, const std::string& fname)
 	{
 		size_t address = L.get_numeric_argument<size_t>(1, fname.c_str());
 		S value = static_cast<S>(L.get_numeric_argument<S>(2, fname.c_str()));
@@ -30,132 +30,132 @@ namespace
 		return 0;
 	}
 
-	function_ptr_luafun hm_read(lua_func_misc, "hostmemory.read", [](lua_state& L,
+	lua::fnptr hm_read(lua_func_misc, "hostmemory.read", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<uint8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_write(lua_func_misc, "hostmemory.write", [](lua_state& L,
+	lua::fnptr hm_write(lua_func_misc, "hostmemory.write", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<uint8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readb(lua_func_misc, "hostmemory.readbyte", [](lua_state& L,
+	lua::fnptr hm_readb(lua_func_misc, "hostmemory.readbyte", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<uint8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writeb(lua_func_misc, "hostmemory.writebyte", [](lua_state& L,
+	lua::fnptr hm_writeb(lua_func_misc, "hostmemory.writebyte", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<uint8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readsb(lua_func_misc, "hostmemory.readsbyte", [](lua_state& L,
+	lua::fnptr hm_readsb(lua_func_misc, "hostmemory.readsbyte", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<int8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writesb(lua_func_misc, "hostmemory.writesbyte", [](lua_state& L,
+	lua::fnptr hm_writesb(lua_func_misc, "hostmemory.writesbyte", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<int8_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readw(lua_func_misc, "hostmemory.readword", [](lua_state& L,
+	lua::fnptr hm_readw(lua_func_misc, "hostmemory.readword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<uint16_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writew(lua_func_misc, "hostmemory.writeword", [](lua_state& L,
+	lua::fnptr hm_writew(lua_func_misc, "hostmemory.writeword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<uint16_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readsw(lua_func_misc, "hostmemory.readsword", [](lua_state& L,
+	lua::fnptr hm_readsw(lua_func_misc, "hostmemory.readsword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<int16_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writesw(lua_func_misc, "hostmemory.writesword", [](lua_state& L,
+	lua::fnptr hm_writesw(lua_func_misc, "hostmemory.writesword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<int16_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readh(lua_func_misc, "hostmemory.readhword", [](lua_state& L,
+	lua::fnptr hm_readh(lua_func_misc, "hostmemory.readhword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<ss_uint24_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writeh(lua_func_misc, "hostmemory.writehword", [](lua_state& L,
+	lua::fnptr hm_writeh(lua_func_misc, "hostmemory.writehword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<ss_uint24_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readsh(lua_func_misc, "hostmemory.readshword", [](lua_state& L,
+	lua::fnptr hm_readsh(lua_func_misc, "hostmemory.readshword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<ss_int24_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writesh(lua_func_misc, "hostmemory.writeshword", [](lua_state& L,
+	lua::fnptr hm_writesh(lua_func_misc, "hostmemory.writeshword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<ss_int24_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readd(lua_func_misc, "hostmemory.readdword", [](lua_state& L,
+	lua::fnptr hm_readd(lua_func_misc, "hostmemory.readdword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<uint32_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writed(lua_func_misc, "hostmemory.writedword", [](lua_state& L,
+	lua::fnptr hm_writed(lua_func_misc, "hostmemory.writedword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<uint32_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readsd(lua_func_misc, "hostmemory.readsdword", [](lua_state& L,
+	lua::fnptr hm_readsd(lua_func_misc, "hostmemory.readsdword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<int32_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writesd(lua_func_misc, "hostmemory.writesdword", [](lua_state& L,
+	lua::fnptr hm_writesd(lua_func_misc, "hostmemory.writesdword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<int32_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readq(lua_func_misc, "hostmemory.readqword", [](lua_state& L,
+	lua::fnptr hm_readq(lua_func_misc, "hostmemory.readqword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<uint64_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writeq(lua_func_misc, "hostmemory.writeqword", [](lua_state& L,
+	lua::fnptr hm_writeq(lua_func_misc, "hostmemory.writeqword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<uint64_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readsq(lua_func_misc, "hostmemory.readsqword", [](lua_state& L,
+	lua::fnptr hm_readsq(lua_func_misc, "hostmemory.readsqword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<int64_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_writesq(lua_func_misc, "hostmemory.writesqword", [](lua_state& L,
+	lua::fnptr hm_writesq(lua_func_misc, "hostmemory.writesqword", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<int64_t>(L, fname);
 	});
 
-	function_ptr_luafun hm_readf4(lua_func_misc, "hostmemory.readfloat", [](lua_state& L,
+	lua::fnptr hm_readf4(lua_func_misc, "hostmemory.readfloat", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<float>(L, fname);
 	});
 
-	function_ptr_luafun hm_writef4(lua_func_misc, "hostmemory.writefloat", [](lua_state& L,
+	lua::fnptr hm_writef4(lua_func_misc, "hostmemory.writefloat", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<float>(L, fname);
 	});
 
-	function_ptr_luafun hm_readf8(lua_func_misc, "hostmemory.readdouble", [](lua_state& L,
+	lua::fnptr hm_readf8(lua_func_misc, "hostmemory.readdouble", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_read<double>(L, fname);
 	});
 
-	function_ptr_luafun hm_writef8(lua_func_misc, "hostmemory.writedouble", [](lua_state& L,
+	lua::fnptr hm_writef8(lua_func_misc, "hostmemory.writedouble", [](lua::state& L,
 		const std::string& fname) -> int {
 		return do_write<double>(L, fname);
 	});

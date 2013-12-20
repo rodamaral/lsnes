@@ -6,12 +6,12 @@ namespace
 	class lua_zip_writer
 	{
 	public:
-		lua_zip_writer(lua_state& L, const std::string& filename, unsigned compression);
+		lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression);
 		~lua_zip_writer()
 		{
 			if(w) delete w;
 		}
-		int commit(lua_state& L, const std::string& fname)
+		int commit(lua::state& L, const std::string& fname)
 		{
 			if(!w)
 				throw std::runtime_error("Zip writer already finished");
@@ -22,14 +22,14 @@ namespace
 			delete w;
 			w = NULL;
 		}
-		int rollback(lua_state& L, const std::string& fname)
+		int rollback(lua::state& L, const std::string& fname)
 		{
 			if(!w)
 				throw std::runtime_error("Zip writer already finished");
 			delete w;
 			w = NULL;
 		}
-		int close_file(lua_state& L, const std::string& fname)
+		int close_file(lua::state& L, const std::string& fname)
 		{
 			if(!w)
 				throw std::runtime_error("Zip writer already finished");
@@ -38,7 +38,7 @@ namespace
 			w->close_file();
 			file_open = NULL;
 		}
-		int create_file(lua_state& L, const std::string& fname)
+		int create_file(lua::state& L, const std::string& fname)
 		{
 			if(!w)
 				throw std::runtime_error("Zip writer already finished");
@@ -49,7 +49,7 @@ namespace
 			}
 			file_open = &w->create_file(filename);
 		}
-		int write(lua_state& L, const std::string& fname)
+		int write(lua::state& L, const std::string& fname)
 		{
 			if(!w)
 				throw std::runtime_error("Zip writer already finished");
@@ -70,14 +70,14 @@ namespace
 		std::string file;
 	};
 
-	lua_class<lua_zip_writer> class_zipwriter("ZIPWRITER");
+	lua::_class<lua_zip_writer> class_zipwriter("ZIPWRITER");
 
-	lua_zip_writer::lua_zip_writer(lua_state& L, const std::string& filename, unsigned compression)
+	lua_zip_writer::lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression)
 	{
 		file = filename;
 		w = new zip::writer(filename, compression);
 		file_open = NULL;
-		objclass<lua_zip_writer>().bind_multi(L, {
+		lua::objclass<lua_zip_writer>().bind_multi(L, {
 			{"commit", &lua_zip_writer::commit},
 			{"rollback", &lua_zip_writer::rollback},
 			{"close_file", &lua_zip_writer::close_file},
@@ -86,7 +86,7 @@ namespace
 		});
 	}
 
-	function_ptr_luafun lua_zip(lua_func_zip, "zip.create", [](lua_state& L,
+	lua::fnptr lua_zip(lua_func_zip, "zip.create", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned compression = 9;
 		std::string filename = L.get_string(1, fname.c_str());
@@ -95,11 +95,11 @@ namespace
 			compression = 0;
 		if(compression > 9)
 			compression = 9;
-		lua_class<lua_zip_writer>::create(L, filename, compression);
+		lua::_class<lua_zip_writer>::create(L, filename, compression);
 		return 1;
 	});
 
-	function_ptr_luafun lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua_state& L,
+	lua::fnptr lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L,
 		const std::string& fname) -> int {
 		std::string filename = L.get_string(1, fname.c_str());
 		bool invert = false;

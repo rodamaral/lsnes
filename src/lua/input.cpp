@@ -10,7 +10,7 @@ extern bool* lua_veto_flag;
 
 namespace
 {
-	int input_set(lua_state& L, unsigned port, unsigned controller, unsigned index, short value)
+	int input_set(lua::state& L, unsigned port, unsigned controller, unsigned index, short value)
 	{
 		if(!lua_input_controllerdata)
 			return 0;
@@ -18,7 +18,7 @@ namespace
 		return 0;
 	}
 
-	int input_get(lua_state& L, unsigned port, unsigned controller, unsigned index)
+	int input_get(lua::state& L, unsigned port, unsigned controller, unsigned index)
 	{
 		if(!lua_input_controllerdata)
 			return 0;
@@ -26,7 +26,7 @@ namespace
 		return 1;
 	}
 
-	int input_controllertype(lua_state& L, unsigned port, unsigned controller)
+	int input_controllertype(lua::state& L, unsigned port, unsigned controller)
 	{
 		auto& m = get_movie();
 		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
@@ -42,7 +42,7 @@ namespace
 		return 1;
 	}
 
-	int input_seta(lua_state& L, unsigned port, unsigned controller, uint64_t base, const char* fname)
+	int input_seta(lua::state& L, unsigned port, unsigned controller, uint64_t base, const char* fname)
 	{
 		if(!lua_input_controllerdata)
 			return 0;
@@ -60,7 +60,7 @@ namespace
 		return 0;
 	}
 
-	int input_geta(lua_state& L, unsigned port, unsigned controller)
+	int input_geta(lua::state& L, unsigned port, unsigned controller)
 	{
 		if(!lua_input_controllerdata)
 			return 0;
@@ -79,7 +79,7 @@ namespace
 		return pt.controller_info->controllers[controller].buttons.size() + 1;
 	}
 
-	function_ptr_luafun iset(lua_func_misc, "input.set", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iset(lua_func_misc, "input.set", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
@@ -89,7 +89,7 @@ namespace
 		return input_set(L, _controller.first, _controller.second, index, value);
 	});
 
-	function_ptr_luafun iset2(lua_func_misc, "input.set2", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iset2(lua_func_misc, "input.set2", [](lua::state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		unsigned index = L.get_numeric_argument<unsigned>(3, fname.c_str());
@@ -97,7 +97,7 @@ namespace
 		return input_set(L, port, controller, index, value);
 	});
 
-	function_ptr_luafun iget(lua_func_misc, "input.get", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iget(lua_func_misc, "input.get", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
@@ -106,14 +106,14 @@ namespace
 		return input_get(L, _controller.first, _controller.second, index);
 	});
 
-	function_ptr_luafun iget2(lua_func_misc, "input.get2", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iget2(lua_func_misc, "input.get2", [](lua::state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		unsigned index = L.get_numeric_argument<unsigned>(3, fname.c_str());
 		return input_get(L, port, controller, index);
 	});
 
-	function_ptr_luafun iseta(lua_func_misc, "input.seta", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iseta(lua_func_misc, "input.seta", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
@@ -122,14 +122,14 @@ namespace
 		return input_seta(L, _controller.first, _controller.second, base, fname.c_str());
 	});
 
-	function_ptr_luafun iseta2(lua_func_misc, "input.seta2", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iseta2(lua_func_misc, "input.seta2", [](lua::state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		uint64_t base = L.get_numeric_argument<uint64_t>(3, fname.c_str());
 		return input_seta(L, port, controller, base, fname.c_str());
 	});
 
-	function_ptr_luafun igeta(lua_func_misc, "input.geta", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr igeta(lua_func_misc, "input.geta", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
@@ -137,13 +137,13 @@ namespace
 		return input_geta(L, _controller.first, _controller.second);
 	});
 
-	function_ptr_luafun igeta2(lua_func_misc, "input.geta2", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr igeta2(lua_func_misc, "input.geta2", [](lua::state& L, const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		return input_geta(L, port, controller);
 	});
 
-	function_ptr_luafun igett(lua_func_misc, "input.controllertype", [](lua_state& L, const std::string& fname)
+	lua::fnptr igett(lua_func_misc, "input.controllertype", [](lua::state& L, const std::string& fname)
 		-> int {
 		unsigned controller = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		auto& m = get_movie();
@@ -152,14 +152,14 @@ namespace
 		return input_controllertype(L, _controller.first, _controller.second);
 	});
 
-	function_ptr_luafun igett2(lua_func_misc, "input.controllertype2", [](lua_state& L, const std::string& fname)
+	lua::fnptr igett2(lua_func_misc, "input.controllertype2", [](lua::state& L, const std::string& fname)
 		-> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
 		return input_controllertype(L, port, controller);
 	});
 
-	function_ptr_luafun ireset(lua_func_misc, "input.reset", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr ireset(lua_func_misc, "input.reset", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_input_controllerdata)
 			return 0;
 		long cycles = 0;
@@ -174,7 +174,7 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun iraw(lua_func_misc, "input.raw", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr iraw(lua_func_misc, "input.raw", [](lua::state& L, const std::string& fname) -> int {
 		L.newtable();
 		for(auto i : lsnes_kbd.all_keys()) {
 			L.pushlstring(i->get_name());
@@ -193,7 +193,7 @@ namespace
 	} keyhook_listener;
 	std::set<std::string> hooked;
 
-	function_ptr_luafun ireq(lua_func_misc, "input.keyhook", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr ireq(lua_func_misc, "input.keyhook", [](lua::state& L, const std::string& fname) -> int {
 		bool state;
 		std::string x = L.get_string(1, fname.c_str());
 		state = L.get_bool(2, fname.c_str());
@@ -213,7 +213,7 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun ijget(lua_func_misc, "input.joyget", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr ijget(lua_func_misc, "input.joyget", [](lua::state& L, const std::string& fname) -> int {
 		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		if(!lua_input_controllerdata)
 			return 0;
@@ -237,7 +237,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun ijset(lua_func_misc, "input.joyset", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr ijset(lua_func_misc, "input.joyset", [](lua::state& L, const std::string& fname) -> int {
 		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		if(L.type(2) != LUA_TTABLE)
 			throw std::runtime_error("Invalid type for input.joyset");
@@ -274,7 +274,7 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun ijlcid_to_pcid(lua_func_misc, "input.lcid_to_pcid", [](lua_state& L,
+	lua::fnptr ijlcid_to_pcid(lua_func_misc, "input.lcid_to_pcid", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		auto pcid = controls.lcid_to_pcid(lcid - 1);
@@ -302,7 +302,7 @@ namespace
 
 	//THE NEW API.
 
-	function_ptr_luafun ijlcid_to_pcid2(lua_func_misc, "input.lcid_to_pcid2", [](lua_state& L,
+	lua::fnptr ijlcid_to_pcid2(lua_func_misc, "input.lcid_to_pcid2", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned lcid = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		auto pcid = controls.lcid_to_pcid(lcid - 1);
@@ -313,7 +313,7 @@ namespace
 		return 2;
 	});
 
-	function_ptr_luafun iporttype(lua_func_misc, "input.port_type", [](lua_state& L, const std::string& fname)
+	lua::fnptr iporttype(lua_func_misc, "input.port_type", [](lua::state& L, const std::string& fname)
 		-> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		auto& m = get_movie();
@@ -335,13 +335,13 @@ namespace
 		return p.controller_info;
 	}
 
-	function_ptr_luafun iveto(lua_func_misc, "input.veto_button", [](lua_state& L, const std::string& fname)
+	lua::fnptr iveto(lua_func_misc, "input.veto_button", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(lua_veto_flag) *lua_veto_flag = true;
 		return 0;
 	});
 
-	function_ptr_luafun ictrlinfo(lua_func_misc, "input.controller_info", [](lua_state& L,
+	lua::fnptr ictrlinfo(lua_func_misc, "input.controller_info", [](lua::state& L,
 		const std::string& fname) -> int {
 		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
 		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());

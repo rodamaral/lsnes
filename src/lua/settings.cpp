@@ -3,7 +3,7 @@
 
 namespace
 {
-	function_ptr_luafun ss(lua_func_misc, "settings.set", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr ss(lua_func_misc, "settings.set", [](lua::state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
 		std::string value = L.get_string(2, fname.c_str());
 		try {
@@ -17,7 +17,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun sg(lua_func_misc, "settings.get", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr sg(lua_func_misc, "settings.get", [](lua::state& L, const std::string& fname) -> int {
 		std::string name = L.get_string(1, fname.c_str());
 		try {
 			std::string value = lsnes_vsetc.get(name);

@@ -7,37 +7,37 @@
 
 namespace
 {
-	function_ptr_luafun mcurframe(lua_func_misc, "movie.currentframe", [](lua_state& L, const std::string& fname)
+	lua::fnptr mcurframe(lua_func_misc, "movie.currentframe", [](lua::state& L, const std::string& fname)
 		-> int {
 		auto& m = get_movie();
 		L.pushnumber(m.get_current_frame());
 		return 1;
 	});
 
-	function_ptr_luafun mfc(lua_func_misc, "movie.framecount", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr mfc(lua_func_misc, "movie.framecount", [](lua::state& L, const std::string& fname) -> int {
 		auto& m = get_movie();
 		L.pushnumber(m.get_frame_count());
 		return 1;
 	});
 
-	function_ptr_luafun mrrs(lua_func_misc, "movie.rerecords", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr mrrs(lua_func_misc, "movie.rerecords", [](lua::state& L, const std::string& fname) -> int {
 		L.pushnumber(rrdata.count());
 		return 1;
 	});
 
-	function_ptr_luafun mro(lua_func_misc, "movie.readonly", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr mro(lua_func_misc, "movie.readonly", [](lua::state& L, const std::string& fname) -> int {
 		auto& m = get_movie();
 		L.pushboolean(m.readonly_mode() ? 1 : 0);
 		return 1;
 	});
 
-	function_ptr_luafun mrw(lua_func_misc, "movie.readwrite", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr mrw(lua_func_misc, "movie.readwrite", [](lua::state& L, const std::string& fname) -> int {
 		auto& m = get_movie();
 		m.readonly_mode(false);
 		return 0;
 	});
 
-	function_ptr_luafun mfs(lua_func_misc, "movie.frame_subframes", [](lua_state& L, const std::string& fname)
+	lua::fnptr mfs(lua_func_misc, "movie.frame_subframes", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
 		auto& m = get_movie();
@@ -45,7 +45,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun mrs(lua_func_misc, "movie.read_subframes", [](lua_state& L, const std::string& fname)
+	lua::fnptr mrs(lua_func_misc, "movie.read_subframes", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
 		uint64_t subframe = L.get_numeric_argument<uint64_t>(2, "movie.frame_subframes");
@@ -61,34 +61,34 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun rrc(lua_func_misc, "movie.read_rtc", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr rrc(lua_func_misc, "movie.read_rtc", [](lua::state& L, const std::string& fname) -> int {
 		L.pushnumber(our_movie.rtc_second);
 		L.pushnumber(our_movie.rtc_subsecond);
 		return 2;
 	});
 
-	function_ptr_luafun musv(lua_func_misc, "movie.unsafe_rewind", [](lua_state& L, const std::string& fname)
+	lua::fnptr musv(lua_func_misc, "movie.unsafe_rewind", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(L.isnoneornil(1)) {
 			//Start process to mark save.
 			mainloop_signal_need_rewind(NULL);
-		} else if(lua_class<lua_unsaferewind>::is(L, 1)) {
+		} else if(lua::_class<lua_unsaferewind>::is(L, 1)) {
 			//Load the save.
-			lua_obj_pin<lua_unsaferewind>* u = new lua_obj_pin<lua_unsaferewind>(
-				lua_class<lua_unsaferewind>::pin(L, 1, fname.c_str()));
+			lua::objpin<lua_unsaferewind>* u = new lua::objpin<lua_unsaferewind>(
+				lua::_class<lua_unsaferewind>::pin(L, 1, fname.c_str()));
 			mainloop_signal_need_rewind(u);
 		} else
 			throw std::runtime_error("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
 		return 0;
 	});
 
-	function_ptr_luafun movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua_state& L,
+	lua::fnptr movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua::state& L,
 		const std::string& fname) -> int {
 		std::string filename = L.get_string(1, fname.c_str());
 		moviefile mfile(filename, *our_rom.rtype);
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");
-		lua_unsaferewind* u2 = lua_class<lua_unsaferewind>::create(L);
+		lua_unsaferewind* u2 = lua::_class<lua_unsaferewind>::create(L);
 		u2->state = mfile.savestate;
 		if(u2->state.size() >= 32)
 			u2->state.resize(u2->state.size() - 32);

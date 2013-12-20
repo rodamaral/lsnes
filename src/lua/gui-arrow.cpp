@@ -88,7 +88,7 @@ namespace
 		framebuffer::color color;
 	};
 
-	function_ptr_luafun gui_box(lua_func_misc, "gui.arrow", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr gui_box(lua_func_misc, "gui.arrow", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());

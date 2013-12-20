@@ -68,11 +68,11 @@ namespace
 	}
 
 	template<uint64_t (*combine)(uint64_t chain, uint64_t arg), uint64_t init>
-	class lua_symmetric_bitwise : public lua_function
+	class lua_symmetric_bitwise : public lua::function
 	{
 	public:
-		lua_symmetric_bitwise(const std::string& s) : lua_function(lua_func_bit, s) {};
-		int invoke(lua_state& L)
+		lua_symmetric_bitwise(const std::string& s) : lua::function(lua_func_bit, s) {};
+		int invoke(lua::state& L)
 		{
 			int stacksize = 0;
 			while(!L.isnone(stacksize + 1))
@@ -86,11 +86,11 @@ namespace
 	};
 
 	template<uint64_t (*shift)(uint64_t base, uint64_t amount, uint64_t bits)>
-	class lua_shifter : public lua_function
+	class lua_shifter : public lua::function
 	{
 	public:
-		lua_shifter(const std::string& s) : lua_function(lua_func_bit, s) {};
-		int invoke(lua_state& L)
+		lua_shifter(const std::string& s) : lua::function(lua_func_bit, s) {};
+		int invoke(lua::state& L)
 		{
 			uint64_t base;
 			uint64_t amount = 1;
@@ -103,7 +103,7 @@ namespace
 		}
 	};
 
-	function_ptr_luafun lua_bextract(lua_func_bit, "bit.extract", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_bextract(lua_func_bit, "bit.extract", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t num = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t ret = 0;
@@ -121,7 +121,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun lua_bvalue(lua_func_bit, "bit.value", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr lua_bvalue(lua_func_bit, "bit.value", [](lua::state& L, const std::string& fname) -> int {
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
 			if(L.isnumber(i + 1)) {
@@ -135,7 +135,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun lua_testany(lua_func_bit, "bit.test_any", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_testany(lua_func_bit, "bit.test_any", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
@@ -143,7 +143,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun lua_testall(lua_func_bit, "bit.test_all", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_testall(lua_func_bit, "bit.test_all", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
@@ -163,14 +163,14 @@ namespace
 		return c;
 	}
 
-	function_ptr_luafun lua_popcount(lua_func_bit, "bit.popcount", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_popcount(lua_func_bit, "bit.popcount", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		L.pushnumber(popcount(a));
 		return 1;
 	});
 
-	function_ptr_luafun lua_clshift(lua_func_bit, "bit.clshift", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_clshift(lua_func_bit, "bit.clshift", [](lua::state& L, const std::string& fname)
 		-> int {
 		unsigned amount = 1;
 		unsigned bits = 48;
@@ -191,7 +191,7 @@ namespace
 		return 2;
 	});
 
-	function_ptr_luafun lua_crshift(lua_func_bit, "bit.crshift", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_crshift(lua_func_bit, "bit.crshift", [](lua::state& L, const std::string& fname)
 		-> int {
 		unsigned amount = 1;
 		unsigned bits = 48;
@@ -211,7 +211,7 @@ namespace
 		return 2;
 	});
 
-	int flagdecode_core(lua_state& L, const std::string& fname, bool reverse)
+	int flagdecode_core(lua::state& L, const std::string& fname, bool reverse)
 	{
 		uint64_t a = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		uint64_t b = L.get_numeric_argument<uint64_t>(2, fname.c_str());
@@ -237,12 +237,12 @@ namespace
 		return 1;
 	}
 
-	function_ptr_luafun lua_flagdecode(lua_func_bit, "bit.flagdecode", [](lua_state& L, const std::string& fname)
+	lua::fnptr lua_flagdecode(lua_func_bit, "bit.flagdecode", [](lua::state& L, const std::string& fname)
 		-> int {
 		return flagdecode_core(L, fname, false);
 	});
 
-	function_ptr_luafun lua_rflagdecode(lua_func_bit, "bit.rflagdecode", [](lua_state& L,
+	lua::fnptr lua_rflagdecode(lua_func_bit, "bit.rflagdecode", [](lua::state& L,
 		const std::string& fname) -> int {
 		return flagdecode_core(L, fname, true);
 	});

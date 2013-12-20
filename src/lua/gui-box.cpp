@@ -51,7 +51,7 @@ namespace
 		int32_t thickness;
 	};
 
-	function_ptr_luafun gui_box(lua_func_misc, "gui.box", [](lua_state& L, const std::string& fname) -> int {
+	lua::fnptr gui_box(lua_func_misc, "gui.box", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
 		int64_t outline1 = 0xFFFFFFU;

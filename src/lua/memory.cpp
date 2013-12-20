@@ -13,7 +13,7 @@
 
 namespace
 {
-	uint64_t get_vmabase(lua_state& L, const std::string& vma)
+	uint64_t get_vmabase(lua::state& L, const std::string& vma)
 	{
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
@@ -21,7 +21,7 @@ namespace
 		throw std::runtime_error("No such VMA");
 	}
 
-	uint64_t get_read_address(lua_state& L, int& base, const char* fn)
+	uint64_t get_read_address(lua::state& L, int& base, const char* fn)
 	{
 		uint64_t vmabase = 0;
 		if(L.type(base) == LUA_TSTRING) {
@@ -33,11 +33,11 @@ namespace
 	}
 
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
-	class lua_read_memory : public lua_function
+	class lua_read_memory : public lua::function
 	{
 	public:
-		lua_read_memory(const std::string& name) : lua_function(lua_func_misc, name) {}
-		int invoke(lua_state& L)
+		lua_read_memory(const std::string& name) : lua::function(lua_func_misc, name) {}
+		int invoke(lua::state& L)
 		{
 			int base = 1;
 			uint64_t addr = get_read_address(L, base, "lua_read_memory");
@@ -47,11 +47,11 @@ namespace
 	};
 
 	template<typename T, bool (memory_space::*wfun)(uint64_t addr, T value)>
-	class lua_write_memory : public lua_function
+	class lua_write_memory : public lua::function
 	{
 	public:
-		lua_write_memory(const std::string& name) : lua_function(lua_func_misc, name) {}
-		int invoke(lua_state& L)
+		lua_write_memory(const std::string& name) : lua::function(lua_func_misc, name) {}
+		int invoke(lua::state& L)
 		{
 			int base = 1;
 			uint64_t addr = get_read_address(L, base, "lua_write_memory");
@@ -65,8 +65,8 @@ namespace
 	{
 	public:
 		~mmap_base() {}
-		virtual void read(lua_state& L, uint64_t addr) = 0;
-		virtual void write(lua_state& L, uint64_t addr) = 0;
+		virtual void read(lua::state& L, uint64_t addr) = 0;
+		virtual void write(lua::state& L, uint64_t addr) = 0;
 	};
 
 
@@ -76,12 +76,12 @@ namespace
 	{
 	public:
 		~lua_mmap_memory_helper() {}
-		void read(lua_state& L, uint64_t addr)
+		void read(lua::state& L, uint64_t addr)
 		{
 			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 		}
 
-		void write(lua_state& L, uint64_t addr)
+		void write(lua::state& L, uint64_t addr)
 		{
 			T value = L.get_numeric_argument<T>(3, "aperture(write)");
 			(lsnes_memory.*wfun)(addr, value);
@@ -92,13 +92,13 @@ namespace
 class lua_mmap_struct
 {
 public:
-	lua_mmap_struct(lua_state& L);
+	lua_mmap_struct(lua::state& L);
 
 	~lua_mmap_struct()
 	{
 	}
 
-	int index(lua_state& L, const std::string& fname)
+	int index(lua::state& L, const std::string& fname)
 	{
 		const char* c = L.tostring(2);
 		if(!c) {
@@ -114,7 +114,7 @@ public:
 		x.first->read(L, x.second);
 		return 1;
 	}
-	int newindex(lua_state& L, const std::string& fname)
+	int newindex(lua::state& L, const std::string& fname)
 	{
 		const char* c = L.tostring(2);
 		if(!c)
@@ -126,7 +126,7 @@ public:
 		x.first->write(L, x.second);
 		return 0;
 	}
-	int map(lua_state& L, const std::string& fname);
+	int map(lua::state& L, const std::string& fname);
 	std::string print()
 	{
 		size_t s = mappings.size();
@@ -140,7 +140,7 @@ namespace
 {
 	int aperture_read_fun(lua_State* _L)
 	{
-		lua_state& L = *reinterpret_cast<lua_state*>(lua_touserdata(_L, lua_upvalueindex(4)));
+		lua::state& L = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(4)));
 		uint64_t base = L.tonumber(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
@@ -158,7 +158,7 @@ namespace
 
 	int aperture_write_fun(lua_State* _L)
 	{
-		lua_state& L = *reinterpret_cast<lua_state*>(lua_touserdata(_L, lua_upvalueindex(4)));
+		lua::state& L = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(4)));
 		uint64_t base = L.tonumber(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
@@ -172,7 +172,7 @@ namespace
 		return 0;
 	}
 
-	void aperture_make_fun(lua_state& L, uint64_t base, uint64_t size, mmap_base& type)
+	void aperture_make_fun(lua::state& L, uint64_t base, uint64_t size, mmap_base& type)
 	{
 		L.newtable();
 		L.newtable();
@@ -233,7 +233,7 @@ namespace
 		return 0;
 	}
 
-	void do_lua_error(lua_state& L, int ret)
+	void do_lua_error(lua::state& L, int ret)
 	{
 		if(!ret) return;
 		switch(ret) {
@@ -253,11 +253,11 @@ namespace
 		}
 	}
 
-	template<debug_type type, bool reg> class lua_registerX : public lua_function
+	template<debug_type type, bool reg> class lua_registerX : public lua::function
 	{
 	public:
-		lua_registerX(const std::string& name) : lua_function(lua_func_misc, name) {}
-		int invoke(lua_state& L)
+		lua_registerX(const std::string& name) : lua::function(lua_func_misc, name) {}
+		int invoke(lua::state& L)
 		{
 			uint64_t addr;
 			int base = 1;
@@ -279,7 +279,7 @@ namespace
 				return 0;
 			}
 		}
-		void handle_registerX(lua_state& L, uint64_t addr, int lfn)
+		void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 		{
 			auto& cbl = cbs[addr];
 
@@ -301,7 +301,7 @@ namespace
 			D->addr = addr;
 			D->type = type;
 			D->lua_fn = L.topointer(lfn);
-			lua_state* LL = &L.get_master();
+			lua::state* LL = &L.get_master();
 			void* D2 = &D->type;
 			if(type != DEBUG_TRACE)
 				D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
@@ -333,7 +333,7 @@ namespace
 			L.pushvalue(lfn);
 			L.rawset(LUA_REGISTRYINDEX);
 		}
-		void handle_unregisterX(lua_state& L, uint64_t addr, int lfn)
+		void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 		{
 			if(!cbs.count(addr))
 				return;
@@ -360,11 +360,11 @@ namespace
 					<< j->lua_fn << std::endl;
 		});
 
-	class lua_mmap_memory : public lua_function
+	class lua_mmap_memory : public lua::function
 	{
 	public:
-		lua_mmap_memory(const std::string& name, mmap_base& _h) : lua_function(lua_func_misc, name), h(_h) {}
-		int invoke(lua_state& L)
+		lua_mmap_memory(const std::string& name, mmap_base& _h) : lua::function(lua_func_misc, name), h(_h) {}
+		int invoke(lua::state& L)
 		{
 			if(L.isnoneornil(1)) {
 				aperture_make_fun(L, 0, 0xFFFFFFFFFFFFFFFFULL, h);
@@ -381,13 +381,13 @@ namespace
 		mmap_base& h;
 	};
 
-	function_ptr_luafun vmacount(lua_func_misc, "memory.vma_count", [](lua_state& L, const std::string& fname)
+	lua::fnptr vmacount(lua_func_misc, "memory.vma_count", [](lua::state& L, const std::string& fname)
 		-> int {
 		L.pushnumber(lsnes_memory.get_regions().size());
 		return 1;
 	});
 
-	function_ptr_luafun cheat(lua_func_misc, "memory.cheat", [](lua_state& L, const std::string& fname)
+	lua::fnptr cheat(lua_func_misc, "memory.cheat", [](lua::state& L, const std::string& fname)
 		-> int {
 		int base = 1;
 		uint64_t addr = get_read_address(L, base, fname.c_str());
@@ -400,14 +400,14 @@ namespace
 		return 0;
 	});
 
-	function_ptr_luafun xmask(lua_func_misc, "memory.setxmask", [](lua_state& L, const std::string& fname)
+	lua::fnptr xmask(lua_func_misc, "memory.setxmask", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t value = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		debug_setxmask(value);
 		return 0;
 	});
 
-	int handle_push_vma(lua_state& L, memory_region& r)
+	int handle_push_vma(lua::state& L, memory_region& r)
 	{
 		L.newtable();
 		L.pushstring("region_name");
@@ -437,7 +437,7 @@ namespace
 		return 1;
 	}
 
-	function_ptr_luafun readvma(lua_func_misc, "memory.read_vma", [](lua_state& L, const std::string& fname)
+	lua::fnptr readvma(lua_func_misc, "memory.read_vma", [](lua::state& L, const std::string& fname)
 		-> int {
 		std::list<memory_region*> regions = lsnes_memory.get_regions();
 		uint32_t num = L.get_numeric_argument<uint32_t>(1, fname.c_str());
@@ -449,7 +449,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun findvma(lua_func_misc, "memory.find_vma", [](lua_state& L, const std::string& fname)
+	lua::fnptr findvma(lua_func_misc, "memory.find_vma", [](lua::state& L, const std::string& fname)
 		-> int {
 		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		auto r = lsnes_memory.lookup(addr);
@@ -461,7 +461,7 @@ namespace
 
 	const char* hexes = "0123456789ABCDEF";
 
-	function_ptr_luafun hashstate(lua_func_misc, "memory.hash_state", [](lua_state& L, const std::string& fname)
+	lua::fnptr hashstate(lua_func_misc, "memory.hash_state", [](lua::state& L, const std::string& fname)
 		-> int {
 		char hash[64];
 		auto x = our_rom.save_core_state();
@@ -476,7 +476,7 @@ namespace
 
 #define BLOCKSIZE 256
 
-	function_ptr_luafun hashmemory(lua_func_misc, "memory.hash_region", [](lua_state& L, const std::string& fname)
+	lua::fnptr hashmemory(lua_func_misc, "memory.hash_region", [](lua::state& L, const std::string& fname)
 		-> int {
 		std::string hash;
 		int base = 1;
@@ -499,7 +499,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun readmemoryr(lua_func_misc, "memory.readregion", [](lua_state& L, const std::string& fname)
+	lua::fnptr readmemoryr(lua_func_misc, "memory.readregion", [](lua::state& L, const std::string& fname)
 		-> int {
 		std::string hash;
 		int base = 1;
@@ -522,7 +522,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun writememoryr(lua_func_misc, "memory.writeregion", [](lua_state& L,
+	lua::fnptr writememoryr(lua_func_misc, "memory.writeregion", [](lua::state& L,
 		const std::string& fname) -> int {
 		std::string hash;
 		int base = 1;
@@ -545,20 +545,20 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun gui_cbitmap(lua_func_misc, "memory.map_structure", [](lua_state& L,
+	lua::fnptr gui_cbitmap(lua_func_misc, "memory.map_structure", [](lua::state& L,
 		const std::string& fname) -> int {
-		lua_class<lua_mmap_struct>::create(L);
+		lua::_class<lua_mmap_struct>::create(L);
 		return 1;
 	});
 
-	function_ptr_luafun memory_watchexpr(lua_func_misc, "memory.read_expr", [](lua_state& L,
+	lua::fnptr memory_watchexpr(lua_func_misc, "memory.read_expr", [](lua::state& L,
 		const std::string& fname) -> int {
 		std::string val = evaluate_watch(L.get_string(1, fname.c_str()));
 		L.pushstring(val.c_str());
 		return 1;
 	});
 
-	template<bool write, bool sign> int memory_scattergather(lua_state& L, const std::string& fname)
+	template<bool write, bool sign> int memory_scattergather(lua::state& L, const std::string& fname)
 	{
 		uint64_t val = 0;
 		int ptr = 1;
@@ -592,17 +592,17 @@ namespace
 		return write ? 0 : 1;
 	}
 
-	function_ptr_luafun scattergather1(lua_func_misc, "memory.read_sg", [](lua_state& L, const std::string& fname)
+	lua::fnptr scattergather1(lua_func_misc, "memory.read_sg", [](lua::state& L, const std::string& fname)
 		-> int {
 		return memory_scattergather<false, false>(L, fname);
 	});
 
-	function_ptr_luafun scattergather2(lua_func_misc, "memory.sread_sg", [](lua_state& L,
+	lua::fnptr scattergather2(lua_func_misc, "memory.sread_sg", [](lua::state& L,
 		const std::string& fname) -> int {
 		return memory_scattergather<false, true>(L, fname);
 	});
 
-	function_ptr_luafun scattergather3(lua_func_misc, "memory.write_sg", [](lua_state& L,
+	lua::fnptr scattergather3(lua_func_misc, "memory.write_sg", [](lua::state& L,
 		const std::string& fname) -> int {
 		return memory_scattergather<true, false>(L, fname);
 	});
@@ -659,10 +659,10 @@ namespace
 	lua_registerX<DEBUG_TRACE, true> mrt("memory.registertrace");
 	lua_registerX<DEBUG_TRACE, false> murt("memory.unregistertrace");
 
-	lua_class<lua_mmap_struct> class_mmap_struct("MMAP_STRUCT");
+	lua::_class<lua_mmap_struct> class_mmap_struct("MMAP_STRUCT");
 }
 
-int lua_mmap_struct::map(lua_state& L, const std::string& fname)
+int lua_mmap_struct::map(lua::state& L, const std::string& fname)
 {
 	const char* name = L.tostring(2);
 	int base = 0;
@@ -708,9 +708,9 @@ int lua_mmap_struct::map(lua_state& L, const std::string& fname)
 	return 0;
 }
 
-lua_mmap_struct::lua_mmap_struct(lua_state& L)
+lua_mmap_struct::lua_mmap_struct(lua::state& L)
 {
-	objclass<lua_mmap_struct>().bind_multi(L, {
+	lua::objclass<lua_mmap_struct>().bind_multi(L, {
 		{"__index", &lua_mmap_struct::index},
 		{"__newindex", &lua_mmap_struct::newindex},
 		{"__call", &lua_mmap_struct::map},

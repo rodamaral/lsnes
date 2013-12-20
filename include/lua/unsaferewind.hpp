@@ -1,12 +1,12 @@
 #ifndef _lua__unsaferewind__hpp__included__
 #define _lua__unsaferewind__hpp__included__
 
-#include "library/luabase.hpp"
+#include "library/lua-base.hpp"
 #include "library/string.hpp"
 
 struct lua_unsaferewind
 {
-	lua_unsaferewind(lua_state& L);
+	lua_unsaferewind(lua::state& L);
 	std::vector<char> state;
 	uint64_t frame;
 	uint64_t lag;

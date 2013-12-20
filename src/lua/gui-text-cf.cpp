@@ -12,27 +12,27 @@ namespace
 	struct lua_customfont
 	{
 	public:
-		lua_customfont(lua_state& L, const std::string& filename);
-		lua_customfont(lua_state& L);
+		lua_customfont(lua::state& L, const std::string& filename);
+		lua_customfont(lua::state& L);
 		~lua_customfont() throw();
-		int draw(lua_state& L, const std::string& fname);
+		int draw(lua::state& L, const std::string& fname);
 		const framebuffer::font2& get_font() { return font; }
 		std::string print()
 		{
 			return orig_filename;
 		}
 	private:
-		void init(lua_state& L);
+		void init(lua::state& L);
 		std::string orig_filename;
 		framebuffer::font2 font;
 	};
 
-	lua_class<lua_customfont> class_customfont("CUSTOMFONT");
+	lua::_class<lua_customfont> class_customfont("CUSTOMFONT");
 
 	struct render_object_text_cf : public framebuffer::object
 	{
 		render_object_text_cf(int32_t _x, int32_t _y, const std::string& _text, framebuffer::color _fg,
-			framebuffer::color _bg, framebuffer::color _hl, lua_obj_pin<lua_customfont> _font) throw()
+			framebuffer::color _bg, framebuffer::color _hl, lua::objpin<lua_customfont> _font) throw()
 			: x(_x), y(_y), text(_text), fg(_fg), bg(_bg), hl(_hl), font(_font) {}
 		~render_object_text_cf() throw()
 		{
@@ -86,24 +86,24 @@ namespace
 		framebuffer::color fg;
 		framebuffer::color bg;
 		framebuffer::color hl;
-		lua_obj_pin<lua_customfont> font;
+		lua::objpin<lua_customfont> font;
 	};
 
-	void lua_customfont::init(lua_state& L)
+	void lua_customfont::init(lua::state& L)
 	{
-		objclass<lua_customfont>().bind_multi(L, {
+		lua::objclass<lua_customfont>().bind_multi(L, {
 			{"__call", &lua_customfont::draw},
 		});
 	}
 
-	lua_customfont::lua_customfont(lua_state& L, const std::string& filename)
+	lua_customfont::lua_customfont(lua::state& L, const std::string& filename)
 		: font(filename)
 	{
 		orig_filename = filename;
 		init(L);
 	}
 
-	lua_customfont::lua_customfont(lua_state& L)
+	lua_customfont::lua_customfont(lua::state& L)
 		: font(main_font)
 	{
 		orig_filename = "<builtin>";
@@ -115,7 +115,7 @@ namespace
 		render_kill_request(this);
 	}
 
-	int lua_customfont::draw(lua_state& L, const std::string& fname)
+	int lua_customfont::draw(lua::state& L, const std::string& fname)
 	{
 		if(!lua_render_ctx)
 			return 0;
@@ -128,7 +128,7 @@ namespace
 		L.get_numeric_argument<int64_t>(6, bgc, fname.c_str());
 		L.get_numeric_argument<int64_t>(7, hlc, fname.c_str());
 		std::string text = L.get_string(4, fname.c_str());
-		auto f = lua_class<lua_customfont>::pin(L, 1, fname.c_str());
+		auto f = lua::_class<lua_customfont>::pin(L, 1, fname.c_str());
 		framebuffer::color fg(fgc);
 		framebuffer::color bg(bgc);
 		framebuffer::color hl(hlc);
@@ -136,14 +136,14 @@ namespace
 		return 0;
 	}
 
-	function_ptr_luafun gui_text_cf(lua_func_misc, "gui.loadfont", [](lua_state& L, const std::string& fname)
+	lua::fnptr gui_text_cf(lua_func_misc, "gui.loadfont", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(L.type(1) == LUA_TNONE || L.type(1) == LUA_TNIL) {
-			lua_class<lua_customfont>::create(L);
+			lua::_class<lua_customfont>::create(L);
 			return 1;
 		}
 		std::string filename = L.get_string(1, fname.c_str());
-		lua_class<lua_customfont>::create(L, filename);
+		lua::_class<lua_customfont>::create(L, filename);
 		return 1;
 	});
 }

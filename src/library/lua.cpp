@@ -1,9 +1,11 @@
-#include "luabase.hpp"
+#include "lua-base.hpp"
 #include "register-queue.hpp"
 #include <iostream>
 #include <cassert>
 
-std::unordered_map<std::type_index, void*>& lua_class_types()
+namespace lua
+{
+std::unordered_map<std::type_index, void*>& class_types()
 {
 	static std::unordered_map<std::type_index, void*> x;
 	return x;
@@ -13,9 +15,9 @@ namespace
 	int lua_trampoline_function(lua_State* L)
 	{
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
-		lua_state* state = reinterpret_cast<lua_state*>(lua_touserdata(L, lua_upvalueindex(2)));
-		lua_function* f = reinterpret_cast<lua_function*>(ptr);
-		lua_state _L(*state, L);
+		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(2)));
+		function* f = reinterpret_cast<function*>(ptr);
+		state _L(*lstate, L);
 		try {
 			return f->invoke(_L);
 		} catch(std::exception& e) {
@@ -26,7 +28,7 @@ namespace
 	}
 
 	//Pushes given table to top of stack, creating if needed.
-	void recursive_lookup_table(lua_state& L, const std::string& tab)
+	void recursive_lookup_table(state& L, const std::string& tab)
 	{
 		if(tab == "") {
 #if LUA_VERSION_NUM == 501
@@ -60,7 +62,7 @@ namespace
 		L.pop(1);
 	}
 
-	void register_lua_function(lua_state& L, const std::string& name, lua_function* fun)
+	void register_function(state& L, const std::string& name, function* fun)
 	{
 		std::string u = name;
 		size_t split = u.find_last_of(".");
@@ -82,13 +84,13 @@ namespace
 		L.setfield(-2, u2.c_str());
 		L.pop(1);
 	}
-	typedef register_queue<lua_state, lua_function> regqueue_t;
-	typedef register_queue<lua_state::callback_proxy, lua_state::lua_callback_list> regqueue2_t;
-	typedef register_queue<lua_function_group, lua_function> regqueue3_t;
+	typedef register_queue<state, function> regqueue_t;
+	typedef register_queue<state::callback_proxy, state::callback_list> regqueue2_t;
+	typedef register_queue<function_group, function> regqueue3_t;
 }
 
 
-lua_state::lua_state() throw(std::bad_alloc)
+state::state() throw(std::bad_alloc)
 	: cbproxy(*this)
 {
 	master = NULL;
@@ -97,14 +99,14 @@ lua_state::lua_state() throw(std::bad_alloc)
 	regqueue2_t::do_ready(cbproxy, true);
 }
 
-lua_state::lua_state(lua_state& _master, lua_State* L)
+state::state(state& _master, lua_State* L)
 	: cbproxy(*this)
 {
 	master = &_master;
 	lua_handle = L;
 }
 
-lua_state::~lua_state() throw()
+state::~state() throw()
 {
 	if(master)
 		return;
@@ -115,18 +117,18 @@ lua_state::~lua_state() throw()
 		lua_close(lua_handle);
 }
 
-void lua_state::builtin_oom()
+void state::builtin_oom()
 {
 	std::cerr << "PANIC: FATAL: Out of memory" << std::endl;
 	exit(1);
 }
 
-void* lua_state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
+void* state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 {
 	if(news) {
 		void* m = realloc(old, news);
 		if(!m)
-			reinterpret_cast<lua_state*>(user)->oom_handler();
+			reinterpret_cast<state*>(user)->oom_handler();
 		return m;
 	} else
 		free(old);
@@ -134,23 +136,23 @@ void* lua_state::builtin_alloc(void* user, void* old, size_t olds, size_t news)
 }
 
 
-lua_function::lua_function(lua_function_group& _group, const std::string& func) throw(std::bad_alloc)
+function::function(function_group& _group, const std::string& func) throw(std::bad_alloc)
 	: group(_group)
 {
 	regqueue3_t::do_register(group, fname = func, *this);
 }
 
-lua_function::~lua_function() throw()
+function::~function() throw()
 {
 	regqueue3_t::do_unregister(group, fname);
 }
 
-void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
+void state::reset() throw(std::bad_alloc, std::runtime_error)
 {
 	if(master)
 		return master->reset();
 	if(lua_handle) {
-		lua_State* tmp = lua_newstate(lua_state::builtin_alloc, this);
+		lua_State* tmp = lua_newstate(state::builtin_alloc, this);
 		if(!tmp)
 			throw std::runtime_error("Can't re-initialize Lua interpretter");
 		lua_close(lua_handle);
@@ -159,17 +161,17 @@ void lua_state::reset() throw(std::bad_alloc, std::runtime_error)
 		lua_handle = tmp;
 	} else {
 		//Initialize new.
-		lua_handle = lua_newstate(lua_state::builtin_alloc, this);
+		lua_handle = lua_newstate(state::builtin_alloc, this);
 		if(!lua_handle)
 			throw std::runtime_error("Can't initialize Lua interpretter");
 	}
 	for(auto i : function_groups)
-		i.first->request_callback([this](std::string name, lua_function* func) -> void {
-			register_lua_function(*this, name, func);
+		i.first->request_callback([this](std::string name, function* func) -> void {
+			register_function(*this, name, func);
 		});
 }
 
-void lua_state::deinit() throw()
+void state::deinit() throw()
 {
 	if(master)
 		return master->deinit();
@@ -178,12 +180,12 @@ void lua_state::deinit() throw()
 	lua_handle = NULL;
 }
 
-void lua_state::add_function_group(lua_function_group& group)
+void state::add_function_group(function_group& group)
 {
 	function_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
-		lua_function* func) -> void {
+		function* func) -> void {
 		this->function_callback(name, func);
-	}, [this](lua_function_group* x) {
+	}, [this](function_group* x) {
 		for(auto i = this->function_groups.begin(); i != this->function_groups.end();)
 			if(i->first == x)
 				i = this->function_groups.erase(i);
@@ -192,15 +194,15 @@ void lua_state::add_function_group(lua_function_group& group)
 	})));
 }
 
-void lua_state::function_callback(const std::string& name, lua_function* func)
+void state::function_callback(const std::string& name, function* func)
 {
 	if(master)
 		return master->function_callback(name, func);
 	if(lua_handle)
-		register_lua_function(*this, name, func);
+		register_function(*this, name, func);
 }
 
-bool lua_state::do_once(void* key)
+bool state::do_once(void* key)
 {
 	if(master)
 		return master->do_once(key);
@@ -218,13 +220,13 @@ bool lua_state::do_once(void* key)
 	}
 }
 
-lua_state::lua_callback_list::lua_callback_list(lua_state& _L, const std::string& _name, const std::string& fncbname)
+state::callback_list::callback_list(state& _L, const std::string& _name, const std::string& fncbname)
 	: L(_L), name(_name), fn_cbname(fncbname)
 {
 	regqueue2_t::do_register(L.cbproxy, name, *this);
 }
 
-lua_state::lua_callback_list::~lua_callback_list()
+state::callback_list::~callback_list()
 {
 	regqueue2_t::do_unregister(L.cbproxy, name);
 	if(!L.handle())
@@ -236,7 +238,7 @@ lua_state::lua_callback_list::~lua_callback_list()
 	}
 }
 
-void lua_state::lua_callback_list::_register(lua_state& _L)
+void state::callback_list::_register(state& _L)
 {
 	callbacks.push_back(0);
 	_L.pushlightuserdata(&*callbacks.rbegin());
@@ -244,7 +246,7 @@ void lua_state::lua_callback_list::_register(lua_state& _L)
 	_L.rawset(LUA_REGISTRYINDEX);
 }
 
-void lua_state::lua_callback_list::_unregister(lua_state& _L)
+void state::callback_list::_unregister(state& _L)
 {
 	for(auto i = callbacks.begin(); i != callbacks.end();) {
 		_L.pushlightuserdata(&*i);
@@ -261,13 +263,13 @@ void lua_state::lua_callback_list::_unregister(lua_state& _L)
 	}
 }
 
-lua_function_group::lua_function_group()
+function_group::function_group()
 {
 	next_handle = 0;
 	regqueue3_t::do_ready(*this, true);
 }
 
-lua_function_group::~lua_function_group()
+function_group::~function_group()
 {
 	for(auto i : functions)
 		for(auto j : callbacks)
@@ -277,14 +279,14 @@ lua_function_group::~lua_function_group()
 	regqueue3_t::do_ready(*this, false);
 }
 
-void lua_function_group::request_callback(std::function<void(std::string, lua_function*)> cb)
+void function_group::request_callback(std::function<void(std::string, function*)> cb)
 {
 	for(auto i : functions)
 		cb(i.first, i.second);
 }
 
-int lua_function_group::add_callback(std::function<void(std::string, lua_function*)> cb,
-	std::function<void(lua_function_group*)> dcb)
+int function_group::add_callback(std::function<void(std::string, function*)> cb,
+	std::function<void(function_group*)> dcb)
 {
 	int handle = next_handle++;
 	callbacks[handle] = cb;
@@ -294,32 +296,32 @@ int lua_function_group::add_callback(std::function<void(std::string, lua_functio
 	return handle;
 }
 
-void lua_function_group::drop_callback(int handle)
+void function_group::drop_callback(int handle)
 {
 	callbacks.erase(handle);
 }
 
-void lua_function_group::do_register(const std::string& name, lua_function& fun)
+void function_group::do_register(const std::string& name, function& fun)
 {
 	functions[name] = &fun;
 	for(auto i : callbacks)
 		i.second(name, &fun);
 }
 
-void lua_function_group::do_unregister(const std::string& name)
+void function_group::do_unregister(const std::string& name)
 {
 	functions.erase(name);
 	for(auto i : callbacks)
 		i.second(name, NULL);
 }
 
-std::list<luaclass_methods>& userdata_recogn_fns()
+std::list<class_ops>& userdata_recogn_fns()
 {
-	static std::list<luaclass_methods> x;
+	static std::list<class_ops> x;
 	return x;
 }
 
-std::string try_recognize_userdata(lua_state& state, int index)
+std::string try_recognize_userdata(state& state, int index)
 {
 	for(auto i : userdata_recogn_fns())
 		if(i.is(state, index))
@@ -338,7 +340,7 @@ std::string try_recognize_userdata(lua_state& state, int index)
 	return "unknown";
 }
 
-std::string try_print_userdata(lua_state& L, int index)
+std::string try_print_userdata(state& L, int index)
 {
 	for(auto i : userdata_recogn_fns())
 		if(i.is(L, index))
@@ -346,7 +348,7 @@ std::string try_print_userdata(lua_state& L, int index)
 	return "no data available";
 }
 
-int lua_state::vararg_tag::pushargs(lua_state& L)
+int state::vararg_tag::pushargs(state& L)
 {
 	int e = 0;
 	for(auto i : args) {
@@ -365,4 +367,5 @@ int lua_state::vararg_tag::pushargs(lua_state& L)
 		e++;
 	}
 	return e;
+}
 }

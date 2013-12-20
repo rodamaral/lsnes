@@ -5,17 +5,17 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
-#include "library/luabase.hpp"
+#include "library/lua-base.hpp"
 #include "library/lua-framebuffer.hpp"
 
-extern lua_state lsnes_lua_state;
-extern lua_function_group lua_func_bit;
-extern lua_function_group lua_func_misc;
-extern lua_function_group lua_func_callback;
-extern lua_function_group lua_func_load;
-extern lua_function_group lua_func_zip;
+extern lua::state lsnes_lua_state;
+extern lua::function_group lua_func_bit;
+extern lua::function_group lua_func_misc;
+extern lua::function_group lua_func_callback;
+extern lua::function_group lua_func_load;
+extern lua::function_group lua_func_zip;
 
-void push_keygroup_parameters(lua_state& L, keyboard::key& p);
+void push_keygroup_parameters(lua::state& L, keyboard::key& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;
 extern bool* lua_kill_frame;

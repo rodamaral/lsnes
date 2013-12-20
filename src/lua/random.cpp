@@ -28,13 +28,13 @@ namespace
 		}
 	}
 
-	function_ptr_luafun rboolean(lua_func_misc, "random.boolean", [](lua_state& L, const std::string& fname)
+	lua::fnptr rboolean(lua_func_misc, "random.boolean", [](lua::state& L, const std::string& fname)
 		-> int {
 		L.pushboolean(randnum() % 2);
 		return 1;
 	});
 
-	function_ptr_luafun rinteger(lua_func_misc, "random.integer", [](lua_state& L, const std::string& fname)
+	lua::fnptr rinteger(lua_func_misc, "random.integer", [](lua::state& L, const std::string& fname)
 		-> int {
 		int64_t low = 0;
 		int64_t high = 0;
@@ -53,7 +53,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun rfloat(lua_func_misc, "random.float", [](lua_state& L, const std::string& fname)
+	lua::fnptr rfloat(lua_func_misc, "random.float", [](lua::state& L, const std::string& fname)
 		-> int {
 		double _bits = 0;
 		uint64_t* bits = (uint64_t*)&_bits;
@@ -63,7 +63,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun ramong(lua_func_misc, "random.among", [](lua_state& L, const std::string& fname)
+	lua::fnptr ramong(lua_func_misc, "random.among", [](lua::state& L, const std::string& fname)
 	{
 		unsigned args = 1;
 		while(L.type(args) != LUA_TNONE)
@@ -78,7 +78,7 @@ namespace
 		return 1;
 	});
 
-	function_ptr_luafun ramongt(lua_func_misc, "random.amongtable", [](lua_state& L, const std::string& fname)
+	lua::fnptr ramongt(lua_func_misc, "random.amongtable", [](lua::state& L, const std::string& fname)
 	{
 		if(L.type(1) != LUA_TTABLE)
 			throw std::runtime_error("random.amongtable: First argument must be table");
