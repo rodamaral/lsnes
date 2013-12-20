@@ -314,7 +314,7 @@ node::node() throw() : node(null) {}
 node::node(null_tag) throw() { vtype = null; }
 node::node(boolean_tag, bool b) throw() { vtype = boolean; _boolean = b; }
 node::node(string_tag, const std::u32string& str) throw(std::bad_alloc) { vtype = string; _string = str; }
-node::node(string_tag, const std::string& str) throw(std::bad_alloc) { vtype = string; _string = to_u32string(str); }
+node::node(string_tag, const std::string& str) throw(std::bad_alloc) { vtype = string; _string = utf8::to32(str); }
 node::node(number_tag, double n) throw() { vtype = number; _number.from<double>(n); }
 node::node(number_tag, int64_t n) throw() { vtype = number; _number.from<int64_t>(n); }
 node::node(number_tag, uint64_t n) throw() { vtype = number; _number.from<uint64_t>(n); }
@@ -666,7 +666,7 @@ namespace
 
 	template<typename T> size_t read_string_impl(T target, const std::string& doc, size_t ptr, size_t len)
 	{
-		uint16_t ustate = utf8_initial_state;
+		uint16_t ustate = utf8::initial_state;
 		int estate = 0;
 		uint32_t extra = 0;
 		uint32_t tmp;
@@ -676,7 +676,7 @@ namespace
 			int ch = -1;
 			if(i < len)
 				ch = (unsigned char)doc[i];
-			int32_t uch = utf8_parse_byte(ch, ustate);
+			int32_t uch = utf8::parse_byte(ch, ustate);
 			if(uch < 0)
 				continue;
 			//Okay, have Unicode codepoint decoded.
@@ -1608,7 +1608,7 @@ pointer::pointer()
 
 pointer::pointer(const std::string& ptr) throw(std::bad_alloc)
 {
-	_pointer = to_u32string(ptr);
+	_pointer = utf8::to32(ptr);
 }
 
 pointer::pointer(const std::u32string& ptr) throw(std::bad_alloc)
@@ -1672,7 +1672,7 @@ pointer& pointer::remove_inplace() throw(std::bad_alloc)
 
 std::ostream& operator<<(std::ostream& s, const pointer& p)
 {
-	return s << to_u8string(p._pointer);
+	return s << utf8::to8(p._pointer);
 }
 
 std::basic_ostream<char32_t>& operator<<(std::basic_ostream<char32_t>& s, const pointer& p)

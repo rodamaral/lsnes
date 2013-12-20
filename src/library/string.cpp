@@ -259,7 +259,7 @@ namespace
 	template<typename T> std::basic_string<T> separator();
 	template<> std::basic_string<char> separator()
 	{
-		return to_u8string(U"\u2023");
+		return utf8::to8(U"\u2023");
 	}
 
 	template<> std::basic_string<char16_t> separator()
@@ -298,7 +298,7 @@ template class string_list<char32_t>;
 
 string_list<char> split_on_codepoint(const std::string& s, char32_t cp)
 {
-	std::string _cp = to_u8string(std::u32string(1, cp));
+	std::string _cp = utf8::to8(std::u32string(1, cp));
 	return _split_on_codepoint<char>(s, _cp);
 }
 

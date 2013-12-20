@@ -731,12 +731,12 @@ std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 	int32_t lineminy = 0;
 	int32_t linemaxy = 0;
 	size_t linelength = 0;
-	uint16_t utfstate = utf8_initial_state;
+	uint16_t utfstate = utf8::initial_state;
 	size_t itr = 0;
 	size_t maxitr = string.length();
 	while(true) {
 		int ch = (itr < maxitr) ? static_cast<unsigned char>(string[itr++]) : -1;
-		int32_t cp = utf8_parse_byte(ch, utfstate);
+		int32_t cp = utf8::parse_byte(ch, utfstate);
 		if(cp < 0 && ch < 0) {
 			//The end.
 			commit_width = (commit_width < linelength) ? linelength : commit_width;
@@ -765,18 +765,14 @@ std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 std::vector<font::layout> font::dolayout(const std::string& string) throw(std::bad_alloc)
 {
 	//First, calculate the number of glyphs to draw.
-	uint16_t utfstate = utf8_initial_state;
+	uint16_t utfstate = utf8::initial_state;
 	size_t itr = 0;
 	size_t maxitr = string.length();
 	size_t chars = 0;
-	while(true) {
-		int ch = (itr < maxitr) ? static_cast<unsigned char>(string[itr++]) : -1;
-		int32_t cp = utf8_parse_byte(ch, utfstate);
-		if(cp < 0 && ch < 0)
-			break;
+	utf8::to32i2(string.begin(), string.end(), [&chars](int32_t cp) {
 		if(cp != 9 && cp != 10)
 			chars++;
-	}
+	});
 	//Allocate space.
 	std::vector<layout> l;
 	l.resize(chars);
@@ -784,10 +780,10 @@ std::vector<font::layout> font::dolayout(const std::string& string) throw(std::b
 	size_t gtr = 0;
 	size_t layout_x = 0;
 	size_t layout_y = 0;
-	utfstate = utf8_initial_state;
+	utfstate = utf8::initial_state;
 	while(true) {
 		int ch = (itr < maxitr) ? static_cast<unsigned char>(string[itr++]) : -1;
-		int32_t cp = utf8_parse_byte(ch, utfstate);
+		int32_t cp = utf8::parse_byte(ch, utfstate);
 		if(cp < 0 && ch < 0)
 			break;
 		const glyph& g = get_glyph(cp);
@@ -814,18 +810,14 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 {
 	x += scr.get_origin_x();
 	y += scr.get_origin_y();
-	uint16_t utfstate = utf8_initial_state;
 	size_t itr = 0;
 	size_t maxitr = text.length();
 	size_t layout_x = 0;
 	size_t layout_y = 0;
 	size_t swidth = scr.get_width();
 	size_t sheight = scr.get_height();
-	while(true) {
-		int ch = (itr < maxitr) ? static_cast<unsigned char>(text[itr++]) : -1;
-		int32_t cp = utf8_parse_byte(ch, utfstate);
-		if(cp < 0 && ch < 0)
-			break;
+	utf8::to32i2(text.begin(), text.end(), [this, x, y, &scr, &layout_x, &layout_y, swidth, sheight, hdbl, vdbl,
+		&fg, &bg](int32_t cp) {
 		const glyph& g = get_glyph(cp);
 		switch(cp) {
 		case 9:
@@ -891,7 +883,7 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 				}
 			layout_x += (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
 		}
-	}
+	});
 }
 
 void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()

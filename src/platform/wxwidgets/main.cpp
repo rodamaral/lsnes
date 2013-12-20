@@ -285,12 +285,12 @@ std::string tostdstring(const wxString& str) throw(std::bad_alloc)
 
 wxString towxstring(const std::u32string& str) throw(std::bad_alloc)
 {
-	return wxString(to_u8string(str).c_str(), wxConvUTF8);
+	return wxString(utf8::to8(str).c_str(), wxConvUTF8);
 }
 
 std::u32string tou32string(const wxString& str) throw(std::bad_alloc)
 {
-	return to_u32string(std::string(str.mb_str(wxConvUTF8)));
+	return utf8::to32(std::string(str.mb_str(wxConvUTF8)));
 }
 
 std::string pick_archive_member(wxWindow* parent, const std::string& filename) throw(std::bad_alloc)

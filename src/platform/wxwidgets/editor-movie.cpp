@@ -208,7 +208,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 			if(pcb.type == port_controller_button::TYPE_BUTTON) {
 				if(last_multibyte)
 					c++;
-				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, to_u32string(pcb.name),
+				controlinfo.push_back(control_info::buttoninfo(c, pcb.symbol, utf8::to32(pcb.name),
 					idx, pid, i));
 				last_multibyte = false;
 			} else if(pcb.type == port_controller_button::TYPE_AXIS ||
@@ -217,7 +217,7 @@ void frame_controls::add_port(unsigned& c, unsigned pid, const port_type& p, con
 				pcb.type == port_controller_button::TYPE_LIGHTGUN) {
 				if(j)
 					c++;
-				controlinfo.push_back(control_info::axisinfo(c, to_u32string(pcb.name), idx, pid, i,
+				controlinfo.push_back(control_info::axisinfo(c, utf8::to32(pcb.name), idx, pid, i,
 					pcb.type, pcb.rmin, pcb.rmax));
 				last_multibyte = true;
 			}
@@ -340,7 +340,7 @@ namespace
 					char32_t tmp1[2];
 					tmp1[0] = i.ch;
 					tmp1[1] = 0;
-					x << to_u8string(std::u32string(tmp1));
+					x << utf8::to8(std::u32string(tmp1));
 				} else
 					x << "-";
 				last_axis = false;
@@ -376,7 +376,7 @@ namespace
 	void decode_line(frame_controls& info, controller_frame& f, std::string line, unsigned port,
 		unsigned controller)
 	{
-		std::u32string _line = to_u32string(line);
+		std::u32string _line = utf8::to32(line);
 		bool last_axis = false;
 		bool first = true;
 		short y;
@@ -579,9 +579,9 @@ namespace
 	std::string windowname(control_info X, control_info Y)
 	{
 		if(X.index == Y.index)
-			return (stringfmt() << to_u8string(X.title)).str();
+			return (stringfmt() << utf8::to8(X.title)).str();
 		else
-			return (stringfmt() << to_u8string(X.title) << "/" <<  to_u8string(Y.title)).str();
+			return (stringfmt() << utf8::to8(X.title) << "/" <<  utf8::to8(Y.title)).str();
 	}
 
 	class window_prompt : public wxDialog

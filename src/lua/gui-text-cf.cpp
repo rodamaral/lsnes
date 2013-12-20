@@ -43,7 +43,7 @@ namespace
 			bg.set_palette(scr);
 			hl.set_palette(scr);
 			const framebuffer::font2& fdata = font->get_font();
-			std::u32string _text = to_u32string(text);
+			std::u32string _text = utf8::to32(text);
 			int32_t orig_x = x;
 			int32_t drawx = x;
 			int32_t drawy = y;

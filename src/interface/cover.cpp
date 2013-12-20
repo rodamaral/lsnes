@@ -72,23 +72,11 @@ void cover_render_character(void* fb, unsigned x, unsigned y, uint32_t ch, uint3
 void cover_render_string(void* fb, unsigned x, unsigned y, const std::string& str, uint32_t fg, uint32_t bg,
 	size_t w, size_t h, size_t istride, size_t pstride)
 {
-	size_t spos = 0;
-	size_t slen = str.length();
-	uint16_t state = utf8_initial_state;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8_parse_byte(ch, state);
-		if(u < 0) {
-			if(ch < 0)
-				break;
-			spos++;
-			continue;
-		}
+	utf8::to32i2(str.begin(), str.end(), [fb, &x, &y, fg, bg, w, h, istride, pstride](int32_t u) {
 		if(u != 9 && u != 10)
 			cover_render_character(fb, x, y, u, fg, bg, w, h, istride, pstride);
 		cover_next_position(u, x, y);
-		spos++;
-	}
+	});
 }
 
 void cover_next_position(uint32_t ch, unsigned& x, unsigned& y)
@@ -106,21 +94,9 @@ void cover_next_position(uint32_t ch, unsigned& x, unsigned& y)
 
 void cover_next_position(const std::string& str, unsigned& x, unsigned& y)
 {
-	size_t spos = 0;
-	size_t slen = str.length();
-	uint16_t state = utf8_initial_state;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8_parse_byte(ch, state);
-		if(u < 0) {
-			if(ch < 0)
-				break;
-			spos++;
-			continue;
-		}
+	utf8::to32i2(str.begin(), str.end(), [&x, &y](int32_t u) {
 		cover_next_position(u, x, y);
-		spos++;
-	}
+	});
 }
 
 std::vector<std::string> cover_information()

@@ -77,16 +77,16 @@ namespace
 		ret.type = port_controller_button::TYPE_BUTTON;
 		ret.name = read_str(root, pname);
 		std::u32string symbol = (root.type_of(psymbol) != JSON::none) ? read_str32(root, psymbol) :
-			to_u32string(ret.name);
+			utf8::to32(ret.name);
 		if(symbol.length() != 1)
 			(stringfmt() << "Symbol at '" << ptr << "' must be 1 codepoint").throwex();
 		ret.symbol = symbol[0];
 		ret.rmin = 0;
 		ret.rmax = 0;
 		ret.centers = false;
-		ret.macro = (root.type_of(pmacro) != JSON::none) ? read_str(root, pmacro) : to_u8string(symbol);
+		ret.macro = (root.type_of(pmacro) != JSON::none) ? read_str(root, pmacro) : utf8::to8(symbol);
 		std::string movie = (root.type_of(pmovie) != JSON::none) ? read_str(root, pmovie) :
-			to_u8string(symbol);
+			utf8::to8(symbol);
 		if(movie.length() != 1)
 			(stringfmt() << "Movie at '" << ptr << "' must be 1 character").throwex();
 		ret.msymbol = movie[0];

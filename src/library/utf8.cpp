@@ -1,6 +1,8 @@
 #include <sstream>
 #include "utf8.hpp"
 
+namespace utf8
+{
 namespace
 {
 	//First nibble values:
@@ -40,9 +42,9 @@ namespace
 	};
 }
 
-extern const uint16_t utf8_initial_state = 0;
+extern const uint16_t initial_state = 0;
 
-int32_t utf8_parse_byte(int ch, uint16_t& state) throw()
+int32_t parse_byte(int ch, uint16_t& state) throw()
 {
 	unsigned char mch = (ch < 248) ? ch : 248;
 	uint32_t astate = state >> 12;
@@ -146,27 +148,27 @@ int32_t utf8_parse_byte(int ch, uint16_t& state) throw()
 	return -1;
 }
 
-size_t utf8_strlen(const std::string& str) throw()
+size_t strlen(const std::string& str) throw()
 {
-	uint16_t s = utf8_initial_state;
+	uint16_t s = initial_state;
 	size_t r = 0;
 	for(size_t i = 0; i < str.length(); i++)
-		if(utf8_parse_byte(static_cast<uint8_t>(str[i]), s) >= 0)
+		if(parse_byte(static_cast<uint8_t>(str[i]), s) >= 0)
 			r++;
-	if(utf8_parse_byte(-1, s) >= 0)
+	if(parse_byte(-1, s) >= 0)
 		r++;
 	return r;
 }
 
-std::u32string to_u32string(const std::string& utf8)
+std::u32string to32(const std::string& utf8)
 {
 	std::u32string x;
-	x.resize(utf8_strlen(utf8));
-	copy_from_utf8(utf8.begin(), utf8.end(), x.begin());
+	x.resize(strlen(utf8));
+	to32i(utf8.begin(), utf8.end(), x.begin());
 	return x;
 }
 
-std::string to_u8string(const std::u32string& utf32)
+std::string to8(const std::u32string& utf32)
 {
 	std::ostringstream s;
 	for(auto i : utf32) {
@@ -184,6 +186,7 @@ std::string to_u8string(const std::u32string& utf32)
 	}
 	return s.str();
 }
+}
 
 #ifdef TEST_UTF8
 #include <iostream>
@@ -196,12 +199,12 @@ char* format_dword(uint16_t s)
 
 int main()
 {
-	uint16_t s = utf8_initial_state;
+	uint16_t s = utf8::initial_state;
 	while(true) {
 		int c;
 		int32_t d;
 		std::cin >> c;
-		d = utf8_parse_byte(c, s);
+		d = utf8::parse_byte(c, s);
 		std::cout << "> " << d << " (status word=" << format_dword(s) << ")" << std::endl;
 		if(c == -1 && d == -1)
 			return 0;

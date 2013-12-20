@@ -544,7 +544,7 @@ test_x tests[] = {
 		return (x.as_string() == U"");
 	}},{"Simple string token", []() {
 		JSON::node x("\"hello\"");
-		std::cout << to_u8string(x.as_string()) << "..." << std::flush;
+		std::cout << utf8::to8(x.as_string()) << "..." << std::flush;
 		return (x.as_string() == U"hello");
 	}},{"Simple number token #1", []() {
 		JSON::node x("123");
@@ -1015,7 +1015,7 @@ test_x tests[] = {
 		JSON::node x("{\"2\":\"ABC\",\"1\":\"DEF\",\"0\":\"GHI\"}");
 		const char32_t* str[] = {U"GHI", U"DEF", U"ABC"};
 		for(auto i = x.begin(); i != x.end(); i++) {
-			size_t idx = parse_value<size_t>(to_u8string(i.key()));
+			size_t idx = parse_value<size_t>(utf8::to8(i.key()));
 			if(i->as_string() != str[idx])
 				return false;
 		}
@@ -1025,7 +1025,7 @@ test_x tests[] = {
 		const JSON::node& x = _x;
 		const char32_t* str[] = {U"GHI", U"DEF", U"ABC"};
 		for(auto i = x.begin(); i != x.end(); i++) {
-			size_t idx = parse_value<size_t>(to_u8string(i.key()));
+			size_t idx = parse_value<size_t>(utf8::to8(i.key()));
 			if(i->as_string() != str[idx])
 				return false;
 		}

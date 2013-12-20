@@ -33,7 +33,7 @@ class stringfmt
 public:
 	stringfmt() {}
 	std::string str() { return x.str(); }
-	std::u32string str32() { return to_u32string(x.str()); }
+	std::u32string str32() { return utf8::to32(x.str()); }
 	template<typename T> stringfmt& operator<<(const T& y) { x << y; return *this; }
 	void throwex() { throw std::runtime_error(x.str()); }
 private:

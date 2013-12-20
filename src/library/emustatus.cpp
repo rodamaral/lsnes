@@ -11,7 +11,7 @@ emulator_status::~emulator_status() throw()
 void emulator_status::set(const std::string& key, const std::string& value) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
-	content[key] = to_u32string(value);
+	content[key] = utf8::to32(value);
 }
 
 void emulator_status::set(const std::string& key, const std::u32string& value) throw(std::bad_alloc)
