@@ -62,9 +62,9 @@ namespace
 	class opus_stream;
 	class stream_collection;
 
-	setting_var<setting_var_model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_vset, "opus-bitrate",
-		"commentary‣Bitrate", OPUS_BITRATE);
-	setting_var<setting_var_model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(lsnes_vset,
+	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_bitrate(lsnes_vset,
+		"opus-bitrate", "commentary‣Bitrate", OPUS_BITRATE);
+	settingvar::variable<settingvar::model_int<OPUS_MIN_BITRATE,OPUS_MAX_BITRATE>> opus_max_bitrate(lsnes_vset,
 		"opus-max-bitrate", "commentary‣Max bitrate", OPUS_MAX_BITRATE);
 
 	//Recording active flag.

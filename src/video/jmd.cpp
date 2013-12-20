@@ -18,7 +18,7 @@
 
 namespace
 {
-	setting_var<setting_var_model_int<0,9>> clevel(lsnes_vset, "jmd-compression", "JMD‣Compression", 7);
+	settingvar::variable<settingvar::model_int<0,9>> clevel(lsnes_vset, "jmd-compression", "JMD‣Compression", 7);
 	uint64_t akill = 0;
 	double akillfrac = 0;
 

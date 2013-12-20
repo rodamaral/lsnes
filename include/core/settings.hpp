@@ -3,7 +3,7 @@
 
 #include "library/settingvar.hpp"
 
-extern setting_var_group lsnes_vset;
-extern setting_var_cache lsnes_vsetc;
+extern settingvar::group lsnes_vset;
+extern settingvar::cache lsnes_vsetc;
 
 #endif

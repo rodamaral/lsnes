@@ -44,8 +44,8 @@ namespace
 	const char* null_chars = "F";
 	uint16_t null_cover_fbmem[512 * 448];
 
-	setting_var<setting_var_model_bool<setting_yes_no>> savestate_no_check(lsnes_vset, "dont-check-savestate",
-		"Movie‣Loading‣Don't check savestates", false);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> savestate_no_check(lsnes_vset,
+		"dont-check-savestate", "Movie‣Loading‣Don't check savestates", false);
 
 	//Framebuffer.
 	struct framebuffer::info null_fbinfo = {

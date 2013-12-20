@@ -1,26 +1,28 @@
 #include "settingvar.hpp"
 #include "register-queue.hpp"
 
+namespace settingvar
+{
 namespace
 {
-	typedef register_queue<setting_var_group, setting_var_base> regqueue_t;
+	typedef register_queue<group, base> regqueue_t;
 }
 
-setting_var_listener::~setting_var_listener() throw()
+listener::~listener() throw()
 {
 }
 
-setting_var_group::setting_var_group() throw(std::bad_alloc)
+group::group() throw(std::bad_alloc)
 {
 	regqueue_t::do_ready(*this, true);
 }
 
-setting_var_group::~setting_var_group() throw()
+group::~group() throw()
 {
 	regqueue_t::do_ready(*this, false);
 }
 
-std::set<std::string> setting_var_group::get_settings_set() throw(std::bad_alloc)
+std::set<std::string> group::get_settings_set() throw(std::bad_alloc)
 {
 	umutex_class(lock);
 	std::set<std::string> x;
@@ -29,7 +31,7 @@ std::set<std::string> setting_var_group::get_settings_set() throw(std::bad_alloc
 	return x;
 }
 
-setting_var_base& setting_var_group::operator[](const std::string& name)
+base& group::operator[](const std::string& name)
 {
 	umutex_class(lock);
 	if(!settings.count(name))
@@ -37,9 +39,9 @@ setting_var_base& setting_var_group::operator[](const std::string& name)
 	return *settings[name];
 }
 
-void setting_var_group::fire_listener(setting_var_base& var) throw()
+void group::fire_listener(base& var) throw()
 {
-	std::set<setting_var_listener*> l;
+	std::set<listener*> l;
 	{
 		umutex_class h(lock);
 		for(auto i : listeners)
@@ -52,48 +54,48 @@ void setting_var_group::fire_listener(setting_var_base& var) throw()
 		}
 }
 
-void setting_var_group::add_listener(struct setting_var_listener& listener) throw(std::bad_alloc)
+void group::add_listener(struct listener& listener) throw(std::bad_alloc)
 {
 	umutex_class(lock);
 	listeners.insert(&listener);
 }
 
-void setting_var_group::remove_listener(struct setting_var_listener& listener) throw(std::bad_alloc)
+void group::remove_listener(struct listener& listener) throw(std::bad_alloc)
 {
 	umutex_class(lock);
 	listeners.erase(&listener);
 }
 
-void setting_var_group::do_register(const std::string& name, setting_var_base& _setting) throw(std::bad_alloc)
+void group::do_register(const std::string& name, base& _setting) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
 	settings[name] = &_setting;
 }
 
-void setting_var_group::do_unregister(const std::string& name) throw(std::bad_alloc)
+void group::do_unregister(const std::string& name) throw(std::bad_alloc)
 {
 	umutex_class h(lock);
 	settings.erase(name);
 }
 
-setting_var_base::setting_var_base(setting_var_group& _group, const std::string& _iname, const std::string& _hname)
+base::base(group& _group, const std::string& _iname, const std::string& _hname)
 	throw(std::bad_alloc)
-	: group(_group), iname(_iname), hname(_hname)
+	: sgroup(_group), iname(_iname), hname(_hname)
 {
-	regqueue_t::do_register(group, iname, *this);
+	regqueue_t::do_register(sgroup, iname, *this);
 }
 
-setting_var_base::~setting_var_base() throw()
+base::~base() throw()
 {
-	regqueue_t::do_unregister(group, iname);
+	regqueue_t::do_unregister(sgroup, iname);
 }
 
-setting_var_cache::setting_var_cache(setting_var_group& _grp)
+cache::cache(group& _grp)
 	: grp(_grp)
 {
 }
 
-std::map<std::string, std::string> setting_var_cache::get_all()
+std::map<std::string, std::string> cache::get_all()
 {
 	std::map<std::string, std::string> x;
 	auto s = grp.get_settings_set();
@@ -104,12 +106,12 @@ std::map<std::string, std::string> setting_var_cache::get_all()
 	return x;
 }
 
-std::set<std::string> setting_var_cache::get_keys()
+std::set<std::string> cache::get_keys()
 {
 	return grp.get_settings_set();
 }
 
-void setting_var_cache::set(const std::string& name, const std::string& value, bool allow_invalid)
+void cache::set(const std::string& name, const std::string& value, bool allow_invalid)
 	throw(std::bad_alloc, std::runtime_error)
 {
 	try {
@@ -127,17 +129,18 @@ void setting_var_cache::set(const std::string& name, const std::string& value, b
 	}
 }
 
-std::string setting_var_cache::get(const std::string& name) throw(std::bad_alloc, std::runtime_error)
+std::string cache::get(const std::string& name) throw(std::bad_alloc, std::runtime_error)
 {
 	return grp[name].str();
 }
 
-const setting_var_description& setting_var_cache::get_description(const std::string& name) throw(std::bad_alloc,
+const description& cache::get_description(const std::string& name) throw(std::bad_alloc,
 	std::runtime_error)
 {
 	return grp[name].get_description();
 }
 
 
-const char* setting_yes_no::enable = "yes";
-const char* setting_yes_no::disable = "no";
+const char* yes_no::enable = "yes";
+const char* yes_no::disable = "no";
+}

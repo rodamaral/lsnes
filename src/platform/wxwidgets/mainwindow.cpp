@@ -164,8 +164,8 @@ namespace
 	int64_t last_update = 0;
 	thread_class* emulation_thread;
 
-	setting_var<setting_var_model_bool<setting_yes_no>> background_audio(lsnes_vset, "background-audio",
-		"GUI‣Enable background audio", true);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> background_audio(lsnes_vset,
+		"background-audio", "GUI‣Enable background audio", true);
 
 	class _focus_timer : public wxTimer
 	{

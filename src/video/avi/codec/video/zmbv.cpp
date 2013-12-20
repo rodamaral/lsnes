@@ -12,11 +12,14 @@
 
 namespace
 {
-	setting_var<setting_var_model_int<0,9>> clvl(lsnes_vset, "avi-zmbv-compression", "AVI‣ZMBV‣Compression", 7);
-	setting_var<setting_var_model_int<0,999999999>> kint(lsnes_vset, "avi-zmbv-keyint",
+	settingvar::variable<settingvar::model_int<0,9>> clvl(lsnes_vset, "avi-zmbv-compression",
+		"AVI‣ZMBV‣Compression", 7);
+	settingvar::variable<settingvar::model_int<0,999999999>> kint(lsnes_vset, "avi-zmbv-keyint",
 		"AVI‣ZMBV‣Keyframe interval", 299);
-	setting_var<setting_var_model_int<8,64>> bwv(lsnes_vset, "avi-zmbv-blockw", "AVI‣ZMBV‣Block width", 16);
-	setting_var<setting_var_model_int<8,64>> bhv(lsnes_vset, "avi-zmbv-blockh", "AVI‣ZMBV‣Block height", 16);
+	settingvar::variable<settingvar::model_int<8,64>> bwv(lsnes_vset, "avi-zmbv-blockw", "AVI‣ZMBV‣Block width",
+		16);
+	settingvar::variable<settingvar::model_int<8,64>> bhv(lsnes_vset, "avi-zmbv-blockh", "AVI‣ZMBV‣Block height",
+		16);
 
 	//Motion vector.
 	struct motion

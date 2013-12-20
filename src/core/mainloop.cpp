@@ -45,22 +45,22 @@
 void update_movie_state();
 time_t random_seed_value = 0;
 
-setting_var<setting_var_model_bool<setting_yes_no>> jukebox_dflt_binary(lsnes_vset, "jukebox-default-binary",
-	"Movie‣Saving‣Saveslots binary", true);
-setting_var<setting_var_model_bool<setting_yes_no>> movie_dflt_binary(lsnes_vset, "movie-default-binary",
+settingvar::variable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary(lsnes_vset,
+	"jukebox-default-binary", "Movie‣Saving‣Saveslots binary", true);
+settingvar::variable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary(lsnes_vset, "movie-default-binary",
 	"Movie‣Saving‣Movies binary", false);
-setting_var<setting_var_model_bool<setting_yes_no>> save_dflt_binary(lsnes_vset, "savestate-default-binary",
-	"Movie‣Saving‣Savestates binary", false);
+settingvar::variable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary(lsnes_vset,
+	"savestate-default-binary", "Movie‣Saving‣Savestates binary", false);
 
 namespace
 {
-	setting_var<setting_var_model_int<0,999999>> advance_timeout_first(lsnes_vset, "advance-timeout",
+	settingvar::variable<settingvar::model_int<0,999999>> advance_timeout_first(lsnes_vset, "advance-timeout",
 		"Delays‣First frame advance", 500);
-	setting_var<setting_var_model_int<0,999999>> advance_timeout_subframe(lsnes_vset, "advance-subframe-timeout",
-		"Delays‣Subframe advance", 100);
-	setting_var<setting_var_model_bool<setting_yes_no>> pause_on_end(lsnes_vset, "pause-on-end",
+	settingvar::variable<settingvar::model_int<0,999999>> advance_timeout_subframe(lsnes_vset,
+		"advance-subframe-timeout", "Delays‣Subframe advance", 100);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> pause_on_end(lsnes_vset, "pause-on-end",
 		"Movie‣Pause on end", false);
-	setting_var<setting_var_model_int<0,999999999>> jukebox_size(lsnes_vset, "jukebox-size",
+	settingvar::variable<settingvar::model_int<0,999999999>> jukebox_size(lsnes_vset, "jukebox-size",
 		"Movie‣Number of save slots", 12);
 
 	enum advance_mode
@@ -294,11 +294,11 @@ namespace
 		messages << "Pending save on '" << filename << "'" << std::endl;
 	}
 
-	struct jukebox_size_listener : public setting_var_listener
+	struct jukebox_size_listener : public settingvar::listener
 	{
 		jukebox_size_listener() { lsnes_vset.add_listener(*this); }
 		~jukebox_size_listener() throw() {lsnes_vset.remove_listener(*this); };
-		void on_setting_change(setting_var_group& grp, const setting_var_base& val)
+		void on_setting_change(settingvar::group& grp, const settingvar::base& val)
 		{
 			if(val.get_iname() == "jukebox-size") {
 				if(save_jukebox_pointer >= jukebox_size)

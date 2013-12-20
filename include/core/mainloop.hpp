@@ -31,8 +31,8 @@ void close_rom();
 void load_new_rom(const romload_request& req);
 void reload_current_rom();
 
-extern setting_var<setting_var_model_bool<setting_yes_no>> jukebox_dflt_binary;
-extern setting_var<setting_var_model_bool<setting_yes_no>> movie_dflt_binary;
-extern setting_var<setting_var_model_bool<setting_yes_no>> save_dflt_binary;
+extern settingvar::variable<settingvar::model_bool<settingvar::yes_no>> jukebox_dflt_binary;
+extern settingvar::variable<settingvar::model_bool<settingvar::yes_no>> movie_dflt_binary;
+extern settingvar::variable<settingvar::model_bool<settingvar::yes_no>> save_dflt_binary;
 
 #endif

@@ -82,24 +82,29 @@ namespace
 		return 48000;
 	}
 
-	setting_var<setting_var_model_bool<setting_yes_no>> dump_large(lsnes_vset, "avi-large", "AVI‣Large dump",
-		false);
-	setting_var<setting_var_model_int<0, 32>> fixed_xfact(lsnes_vset, "avi-xfactor", "AVI‣Fixed X factor", 0);
-	setting_var<setting_var_model_int<0, 32>> fixed_yfact(lsnes_vset, "avi-yfactor", "AVI‣Fixed Y factor", 0);
-	setting_var<setting_var_model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
-	setting_var<setting_var_model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border", "AVI‣Bottom padding", 0);
-	setting_var<setting_var_model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border", "AVI‣Left padding", 0);
-	setting_var<setting_var_model_int<0, 8191>> drb(lsnes_vset, "avi-right-border", "AVI‣Right padding", 0);
-	setting_var<setting_var_model_int<0, 999999999>> max_frames_per_segment(lsnes_vset, "avi-maxframes",
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> dump_large(lsnes_vset, "avi-large",
+		"AVI‣Large dump", false);
+	settingvar::variable<settingvar::model_int<0, 32>> fixed_xfact(lsnes_vset, "avi-xfactor",
+		"AVI‣Fixed X factor", 0);
+	settingvar::variable<settingvar::model_int<0, 32>> fixed_yfact(lsnes_vset, "avi-yfactor",
+		"AVI‣Fixed Y factor", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> dtb(lsnes_vset, "avi-top-border", "AVI‣Top padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> dbb(lsnes_vset, "avi-bottom-border",
+		"AVI‣Bottom padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> dlb(lsnes_vset, "avi-left-border",
+		"AVI‣Left padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> drb(lsnes_vset, "avi-right-border", "AVI‣Right padding",
+		0);
+	settingvar::variable<settingvar::model_int<0, 999999999>> max_frames_per_segment(lsnes_vset, "avi-maxframes",
 		"AVI‣Max frames per segment", 0);
 #ifdef WITH_SECRET_RABBIT_CODE
-	setting_enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply",
+	settingvar::enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply",
 		"High quality 44.1kHz", "High quality 48kHz"};
-	setting_var<setting_var_model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
+	settingvar::variable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
 		"AVI‣Sound mode", 5);
 #else
-	setting_enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply"};
-	setting_var<setting_var_model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
+	settingvar::enumeration soundrates {"nearest-common", "round-down", "round-up", "multiply"};
+	settingvar::variable<settingvar::model_enumerated<&soundrates>> soundrate_setting(lsnes_vset, "avi-soundrate",
 		"AVI‣Sound mode", 2);
 #endif
 

@@ -16,13 +16,13 @@ namespace
 		void on_change(wxCommandEvent& e);
 		void on_change2(wxMouseEvent& e);
 		void on_selchange(wxCommandEvent& e);
-		void on_setting_change(const setting_var_base& val);
+		void on_setting_change(const settingvar::base& val);
 		void on_mouse(wxMouseEvent& e);
 		void on_popup_menu(wxCommandEvent& e);
 		void _refresh();
-		struct listener : public setting_var_listener
+		struct listener : public settingvar::listener
 		{
-			listener(setting_var_group& group, wxeditor_esettings_advanced& _obj)
+			listener(settingvar::group& group, wxeditor_esettings_advanced& _obj)
 				: grp(group), obj(_obj)
 			{
 				group.add_listener(*this);
@@ -31,12 +31,12 @@ namespace
 			{
 				grp.remove_listener(*this);
 			}
-			void on_setting_change(setting_var_group& grp, const setting_var_base& val)
+			void on_setting_change(settingvar::group& grp, const settingvar::base& val)
 			{
 				obj.on_setting_change(val);
 			}
 			wxeditor_esettings_advanced& obj;
-			setting_var_group& grp;
+			settingvar::group& grp;
 		};
 	private:
 		listener _listener;
@@ -84,27 +84,27 @@ namespace
 	{
 	}
 
-	std::string change_value_of_boolean(const std::string& name, const setting_var_description& desc,
+	std::string change_value_of_boolean(const std::string& name, const settingvar::description& desc,
 		const std::string& current)
 	{
 		return string_to_bool(current) ? "0" : "1";
 	}
 
 	std::string change_value_of_enumeration(wxWindow* parent, const std::string& name,
-		const setting_var_description& desc, const std::string& current)
+		const settingvar::description& desc, const std::string& current)
 	{
 		std::vector<std::string> valset;
 		unsigned dflt = 0;
-		for(unsigned i = 0; i <= desc.enumeration->max_val(); i++) {
-			valset.push_back(desc.enumeration->get(i));
-			if(desc.enumeration->get(i) == current)
+		for(unsigned i = 0; i <= desc._enumeration->max_val(); i++) {
+			valset.push_back(desc._enumeration->get(i));
+			if(desc._enumeration->get(i) == current)
 				dflt = i;
 		}
 		return pick_among(parent, "Set value to", "Set " + name + " to value:", valset, dflt);
 	}
 
 	std::string change_value_of_string(wxWindow* parent, const std::string& name,
-		const setting_var_description& desc, const std::string& current)
+		const settingvar::description& desc, const std::string& current)
 	{
 		return pick_text(parent, "Set value to", "Set " + name + " to value:", current);
 	}
@@ -200,7 +200,7 @@ namespace
 	};
 
 	std::string change_value_of_numeric(wxWindow* parent, const std::string& name,
-		const setting_var_description& desc, const std::string& current)
+		const settingvar::description& desc, const std::string& current)
 	{
 		auto d = new numeric_inputbox(parent, name, desc.min_val, desc.max_val, current);
 		int x = d->ShowModal();
@@ -214,7 +214,7 @@ namespace
 	}
 
 	std::string change_value_of_path(wxWindow* parent, const std::string& name,
-		const setting_var_description& desc, const std::string& current)
+		const settingvar::description& desc, const std::string& current)
 	{
 		auto d = new path_inputbox(parent, name, current);
 		int x = d->ShowModal();
@@ -267,15 +267,15 @@ namespace
 		auto model = lsnes_vsetc.get_description(name);
 		try {
 			switch(model.type) {
-			case setting_var_description::T_BOOLEAN:
+			case settingvar::description::T_BOOLEAN:
 				value = change_value_of_boolean(name, model, value); break;
-			case setting_var_description::T_NUMERIC:
+			case settingvar::description::T_NUMERIC:
 				value = change_value_of_numeric(this, name, model, value); break;
-			case setting_var_description::T_STRING:
+			case settingvar::description::T_STRING:
 				value = change_value_of_string(this, name, model, value); break;
-			case setting_var_description::T_PATH:
+			case settingvar::description::T_PATH:
 				value = change_value_of_path(this, name, model, value); break;
-			case setting_var_description::T_ENUMERATION:
+			case settingvar::description::T_ENUMERATION:
 				value = change_value_of_enumeration(this, name, model, value); break;
 			default:
 				value = change_value_of_string(this, name, model, value); break;
@@ -306,7 +306,7 @@ namespace
 		changebutton->Enable(enable);
 	}
 
-	void wxeditor_esettings_advanced::on_setting_change(const setting_var_base& val)
+	void wxeditor_esettings_advanced::on_setting_change(const settingvar::base& val)
 	{
 		if(closing())
 			return;

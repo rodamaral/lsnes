@@ -8,39 +8,41 @@
 #include "string.hpp"
 #include <string>
 
-class setting_var_base;
-class setting_var_group;
-class setting_var_description;
+namespace settingvar
+{
+class base;
+class group;
+class description;
 
 /**
  * A settings listener.
  */
-struct setting_var_listener
+struct listener
 {
 /**
  * Destructor.
  */
-	virtual ~setting_var_listener() throw();
+	virtual ~listener() throw();
 /**
  * Listen for setting changing value.
  */
-	virtual void on_setting_change(setting_var_group& group, const setting_var_base& val) = 0;
+	virtual void on_setting_change(group& _group, const base& val) = 0;
 };
 
 /**
  * Group of setting variables.
  */
-class setting_var_group
+class group
 {
 public:
 /**
  * Constructor.
  */
-	setting_var_group() throw(std::bad_alloc);
+	group() throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	~setting_var_group() throw();
+	~group() throw();
 /**
  * Get all settings.
  */
@@ -48,19 +50,19 @@ public:
 /**
  * Get setting.
  */
-	setting_var_base& operator[](const std::string& name);
+	base& operator[](const std::string& name);
 /**
  * Add a listener.
  */
-	void add_listener(struct setting_var_listener& listener) throw(std::bad_alloc);
+	void add_listener(struct listener& _listener) throw(std::bad_alloc);
 /**
  * Remove a listener.
  */
-	void remove_listener(struct setting_var_listener& listener) throw(std::bad_alloc);
+	void remove_listener(struct listener& _listener) throw(std::bad_alloc);
 /**
  * Register a setting.
  */
-	void do_register(const std::string& name, setting_var_base& _setting) throw(std::bad_alloc);
+	void do_register(const std::string& name, base& _setting) throw(std::bad_alloc);
 /**
  * Unregister a setting.
  */
@@ -68,23 +70,23 @@ public:
 /**
  * Fire listener.
  */
-	void fire_listener(setting_var_base& var) throw();
+	void fire_listener(base& var) throw();
 private:
-	std::map<std::string, class setting_var_base*> settings;
-	std::set<struct setting_var_listener*> listeners;
+	std::map<std::string, class base*> settings;
+	std::set<struct listener*> listeners;
 	mutex_class lock;
 };
 
 /**
  * Write-trough value cache.
  */
-class setting_var_cache
+class cache
 {
 public:
 /**
  * Constructor.
  */
-	setting_var_cache(setting_var_group& grp);
+	cache(group& grp);
 /**
  * Enumerate contents.
  *
@@ -120,10 +122,10 @@ public:
 /**
  * Get descriptor for.
  */
-	const setting_var_description& get_description(const std::string& name) throw(std::bad_alloc,
+	const description& get_description(const std::string& name) throw(std::bad_alloc,
 		std::runtime_error);
 private:
-	setting_var_group& grp;
+	group& grp;
 	mutex_class lock;
 	std::map<std::string, std::string> badcache;
 };
@@ -131,9 +133,9 @@ private:
 /**
  * Enumeration.
  */
-struct setting_enumeration
+struct enumeration
 {
-	setting_enumeration(std::initializer_list<const char*> v)
+	enumeration(std::initializer_list<const char*> v)
 	{
 		unsigned x = 0;
 		for(auto i : v) {
@@ -150,7 +152,7 @@ private:
 /**
  * Description of setting.
  */
-struct setting_var_description
+struct description
 {
 	enum _type
 	{
@@ -163,29 +165,29 @@ struct setting_var_description
 	_type type;
 	int64_t min_val;
 	int64_t max_val;
-	setting_enumeration* enumeration;
+	enumeration* _enumeration;
 };
 
 /**
  * Get the description.
  */
-template<class T> static class setting_var_description& setting_var_description_get(T dummy);
+template<class T> static class description& description_get(T dummy);
 
 /**
  * Setting variable.
  */
-class setting_var_base
+class base
 {
 public:
 /**
  * Constructor.
  */
-	setting_var_base(setting_var_group& group, const std::string& iname, const std::string& hname)
+	base(group& _group, const std::string& iname, const std::string& hname)
 		throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	virtual ~setting_var_base() throw();
+	virtual ~base() throw();
 /**
  * Set setting.
  */
@@ -202,11 +204,11 @@ public:
 /**
  * Get setting description.
  */
-	virtual const setting_var_description& get_description() const throw() = 0;
+	virtual const description& get_description() const throw() = 0;
 protected:
-	setting_var_base(const setting_var_base&);
-	setting_var_base& operator=(const setting_var_base&);
-	setting_var_group& group;
+	base(const base&);
+	base& operator=(const base&);
+	group& sgroup;
 	std::string iname;
 	std::string hname;
 	mutable mutex_class lock;
@@ -215,25 +217,25 @@ protected:
 /**
  * Setting variable.
  */
-template<class model> class setting_var : public setting_var_base
+template<class model> class variable : public base
 {
 	typedef typename model::valtype_t valtype_t;
-	setting_var(const setting_var<model>&);
-	setting_var<model>& operator=(const setting_var<model>&);
+	variable(const variable<model>&);
+	variable<model>& operator=(const variable<model>&);
 public:
 /**
  * Constructor.
  */
-	setting_var(setting_var_group& group, const std::string& iname, const std::string& hname,
+	variable(group& sgroup, const std::string& iname, const std::string& hname,
 		valtype_t defaultvalue)
-		: setting_var_base(group, iname, hname)
+		: base(sgroup, iname, hname)
 	{
 		value = defaultvalue;
 	}
 /**
  * Destructor.
  */
-	virtual ~setting_var() throw()
+	virtual ~variable() throw()
 	{
 	}
 /**
@@ -245,7 +247,7 @@ public:
 			umutex_class h(lock);
 			value = model::read(val);
 		}
-		group.fire_listener(*this);
+		sgroup.fire_listener(*this);
 	}
 /**
  * Get setting.
@@ -266,7 +268,7 @@ public:
 				throw std::runtime_error("Invalid value");
 			value = _value;
 		}
-		group.fire_listener(*this);
+		sgroup.fire_listener(*this);
 	}
 /**
  * Get setting.
@@ -286,9 +288,9 @@ public:
 /**
  * Get setting description.
  */
-	const setting_var_description& get_description() const throw()
+	const description& get_description() const throw()
 	{
-		return setting_var_description_get(dummy);
+		return description_get(dummy);
 	}
 private:
 	valtype_t value;
@@ -298,7 +300,7 @@ private:
 /**
  * Yes-no.
  */
-struct setting_yes_no
+struct yes_no
 {
 	static const char* enable;
 	static const char* disable;
@@ -307,7 +309,7 @@ struct setting_yes_no
 /**
  * Model: Boolean.
  */
-template<typename values> struct setting_var_model_bool
+template<typename values> struct model_bool
 {
 	typedef bool valtype_t;
 	static bool valid(bool val) { return true; /* Any boolean is valid boolean. */ }
@@ -325,13 +327,13 @@ template<typename values> struct setting_var_model_bool
 	static bool transform(bool val) { return val; }
 };
 
-template<typename values> setting_var_description& setting_var_description_get(
-	setting_var_model_bool<values> X)
+template<typename values> description& description_get(
+	model_bool<values> X)
 {
-	static setting_var_description x;
+	static description x;
 	static bool init = false;
 	if(!init) {
-		x.type = setting_var_description::T_BOOLEAN;
+		x.type = description::T_BOOLEAN;
 		init = true;
 	}
 	return x;
@@ -340,7 +342,7 @@ template<typename values> setting_var_description& setting_var_description_get(
 /**
  * Model: Integer.
  */
-template<int32_t minimum, int32_t maximum> struct setting_var_model_int
+template<int32_t minimum, int32_t maximum> struct model_int
 {
 	typedef int32_t valtype_t;
 	static bool valid(int32_t val) { return (val >= minimum && val <= maximum); }
@@ -358,12 +360,12 @@ template<int32_t minimum, int32_t maximum> struct setting_var_model_int
 	static int transform(int val) { return val; }
 };
 
-template<int32_t m, int32_t M> setting_var_description& setting_var_description_get(setting_var_model_int<m, M> X)
+template<int32_t m, int32_t M> description& description_get(model_int<m, M> X)
 {
-	static setting_var_description x;
+	static description x;
 	static bool init = false;
 	if(!init) {
-		x.type = setting_var_description::T_NUMERIC;
+		x.type = description::T_NUMERIC;
 		x.min_val = m;
 		x.max_val = M;
 		init = true;
@@ -374,7 +376,7 @@ template<int32_t m, int32_t M> setting_var_description& setting_var_description_
 /**
  * Model: Path.
  */
-struct setting_var_model_path
+struct model_path
 {
 	typedef std::string valtype_t;
 	static bool valid(std::string val) { return true; /* Any boolean is valid boolean. */ }
@@ -392,12 +394,12 @@ struct setting_var_model_path
 	}
 };
 
-template<> setting_var_description& setting_var_description_get(setting_var_model_path X)
+template<> description& description_get(model_path X)
 {
-	static setting_var_description x;
+	static description x;
 	static bool init = false;
 	if(!init) {
-		x.type = setting_var_description::T_PATH;
+		x.type = description::T_PATH;
 		init = true;
 	}
 	return x;
@@ -406,7 +408,7 @@ template<> setting_var_description& setting_var_description_get(setting_var_mode
 /**
  * Model: Enumerated.
  */
-template<setting_enumeration* e> struct setting_var_model_enumerated
+template<enumeration* e> struct model_enumerated
 {
 	typedef unsigned valtype_t;
 	static bool valid(unsigned val) { return (val <= e->max_val()); }
@@ -427,18 +429,17 @@ template<setting_enumeration* e> struct setting_var_model_enumerated
 	static int transform(int val) { return val; }
 };
 
-template<setting_enumeration* e> setting_var_description& setting_var_description_get(
-	setting_var_model_enumerated<e> X)
+template<enumeration* e> description& description_get(model_enumerated<e> X)
 {
-	static setting_var_description x;
+	static description x;
 	static bool init = false;
 	if(!init) {
-		x.type = setting_var_description::T_ENUMERATION;
-		x.enumeration = e;
+		x.type = description::T_ENUMERATION;
+		x._enumeration = e;
 		init = true;
 	}
 	return x;
 }
-
+}
 
 #endif

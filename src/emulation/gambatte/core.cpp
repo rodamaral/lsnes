@@ -46,8 +46,8 @@
 
 namespace
 {
-	setting_var<setting_var_model_bool<setting_yes_no>> output_native(lsnes_vset, "gambatte-native-sound",
-		"Gambatte‣Sound Output at native rate", false);
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> output_native(lsnes_vset,
+		"gambatte-native-sound", "Gambatte‣Sound Output at native rate", false);
 
 	bool do_reset_flag = false;
 	core_type* internal_rom = NULL;

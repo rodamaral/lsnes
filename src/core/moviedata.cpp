@@ -51,9 +51,9 @@ movie& get_movie()
 
 namespace
 {
-	setting_var<setting_var_model_int<0, 9>> savecompression(lsnes_vset, "savecompression",
+	settingvar::variable<settingvar::model_int<0, 9>> savecompression(lsnes_vset, "savecompression",
 		"Movie‣Saving‣Compression",  7);
-	setting_var<setting_var_model_bool<setting_yes_no>> readonly_load_preserves(lsnes_vset,
+	settingvar::variable<settingvar::model_bool<settingvar::yes_no>> readonly_load_preserves(lsnes_vset,
 		"preserve_on_readonly_load", "Movie‣Loading‣Preserve on readonly load", true);
 	mutex_class mprefix_lock;
 	std::string mprefix;
