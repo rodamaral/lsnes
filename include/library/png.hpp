@@ -7,11 +7,13 @@
 #include <string>
 #include <iostream>
 
-struct png_decoded_image
+namespace png
 {
-	png_decoded_image();
-	png_decoded_image(std::istream& file);
-	png_decoded_image(const std::string& file);
+struct decoder
+{
+	decoder();
+	decoder(std::istream& file);
+	decoder(const std::string& file);
 	size_t width;
 	size_t height;
 	bool has_palette;
@@ -21,9 +23,9 @@ private:
 	void decode_png(std::istream& file);
 };
 
-struct png_encodedable_image
+struct encoder
 {
-	png_encodedable_image();
+	encoder();
 	size_t width;
 	size_t height;
 	bool has_palette;
@@ -34,5 +36,6 @@ struct png_encodedable_image
 	void encode(const std::string& file) const;
 	void encode(std::ostream& file) const;
 };
+}
 
 #endif

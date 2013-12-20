@@ -1,7 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
-#include "library/png-codec.hpp"
+#include "library/png.hpp"
 #include "library/sha256.hpp"
 #include "library/serialization.hpp"
 #include "library/string.hpp"
@@ -62,7 +62,7 @@ std::string lua_palette::print()
 
 std::vector<char> lua_dbitmap::save_png() const
 {
-	png_encodedable_image img;
+	png::encoder img;
 	img.width = width;
 	img.height = height;
 	img.has_palette = false;
@@ -82,7 +82,7 @@ std::vector<char> lua_dbitmap::save_png() const
 
 std::vector<char> lua_bitmap::save_png(const lua_palette& pal) const
 {
-	png_encodedable_image img;
+	png::encoder img;
 	img.width = width;
 	img.height = height;
 	img.has_palette = true;
@@ -715,7 +715,7 @@ namespace
 	template<typename T>
 	int bitmap_load_png_fn(lua::state& L, T& src)
 	{
-		png_decoded_image img(src);
+		png::decoder img(src);
 		if(img.has_palette) {
 			lua_bitmap* b = lua::_class<lua_bitmap>::create(L, img.width, img.height);
 			lua_palette* p = lua::_class<lua_palette>::create(L);

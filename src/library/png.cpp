@@ -1,4 +1,4 @@
-#include "png-codec.hpp"
+#include "png.hpp"
 #include "serialization.hpp"
 #include "minmax.hpp"
 #include "zip.hpp"
@@ -19,6 +19,8 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
+namespace png
+{
 namespace
 {
 	void throw_zlib_error(int x)
@@ -813,7 +815,7 @@ badtype:
 	}
 }
 
-void png_decoded_image::decode_png(std::istream& stream)
+void decoder::decode_png(std::istream& stream)
 {
 	png_dechunker dechunk(stream);
 	if(!dechunk.next_chunk())
@@ -934,7 +936,7 @@ out:
 	height = hdr.height;
 }
 
-png_decoded_image::png_decoded_image(const std::string& file)
+decoder::decoder(const std::string& file)
 {
 	std::istream& s = zip::openrel(file, "");
 	try {
@@ -946,19 +948,19 @@ png_decoded_image::png_decoded_image(const std::string& file)
 	}
 }
 
-png_decoded_image::png_decoded_image(std::istream& file)
+decoder::decoder(std::istream& file)
 {
 	decode_png(file);
 }
 
-png_decoded_image::png_decoded_image()
+decoder::decoder()
 {
 	width = 0;
 	height = 0;
 	has_palette = false;
 }
 
-png_encodedable_image::png_encodedable_image()
+encoder::encoder()
 {
 	width = 0;
 	height = 0;
@@ -967,7 +969,7 @@ png_encodedable_image::png_encodedable_image()
 	colorkey = 0xFFFFFFFFU;
 }
 
-void png_encodedable_image::encode(const std::string& file) const
+void encoder::encode(const std::string& file) const
 {
 	std::ofstream s(file);
 	if(!s)
@@ -975,7 +977,7 @@ void png_encodedable_image::encode(const std::string& file) const
 	encode(s);
 }
 
-void png_encodedable_image::encode(std::ostream& file) const
+void encoder::encode(std::ostream& file) const
 {
 	size_t pbits = size_to_bits(palette.size());
 	//Write the PNG magic.
@@ -1049,11 +1051,11 @@ void png_encodedable_image::encode(std::ostream& file) const
 	if(!file)
 		throw std::runtime_error("Can't write target PNG file");
 }
-
+}
 /*
 int main(int argc, char** argv)
 {
-	png_decoded_image img;
+	png::decoder img;
 	decode_png(argv[1], img);
 	std::cout << "Size: " << img.width << "*" << img.height << std::endl;
 	if(img.has_palette)

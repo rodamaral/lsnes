@@ -1,7 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
-#include "library/png-codec.hpp"
+#include "library/png.hpp"
 #include "library/string.hpp"
 #include "library/threadtypes.hpp"
 #include "library/zip.hpp"
