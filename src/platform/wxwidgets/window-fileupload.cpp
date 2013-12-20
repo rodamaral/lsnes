@@ -372,6 +372,7 @@ public:
 	void on_cancel(wxCommandEvent& e);
 	void on_source_sel(wxCommandEvent& e);
 	void on_file_sel(wxCommandEvent& e);
+	void on_wclose(wxCloseEvent& e);
 	void timer_tick();
 private:
 	struct _timer : public wxTimer
@@ -444,6 +445,8 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 	Centre();
 	wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 	SetSizer(top_s);
+
+	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxeditor_uploaddialog::on_wclose), NULL, this);
 
 	top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Filename:")), 0, wxGROW);
 	top_s->Add(filename = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(550, -1)), 0,
@@ -677,6 +680,12 @@ void wxeditor_uploaddialog::on_cancel(wxCommandEvent& e)
 	timer->stop();
 	delete timer;
 	EndModal(wxID_CANCEL);
+}
+
+void wxeditor_uploaddialog::on_wclose(wxCloseEvent& e)
+{
+	wxCommandEvent e2;
+	on_cancel(e2);
 }
 
 }
