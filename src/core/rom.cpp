@@ -185,19 +185,19 @@ namespace
 		return fallback;
 	}
 
-	struct loaded_image::info get_xml_info()
+	struct fileimage::image::info get_xml_info()
 	{
-		loaded_image::info i;
-		i.type = loaded_image::info::IT_MARKUP;
+		fileimage::image::info i;
+		i.type = fileimage::image::info::IT_MARKUP;
 		i.headersize = 0;
 		return i;
 	}
 
-	struct loaded_image::info xlate_info(core_romimage_info ri)
+	struct fileimage::image::info xlate_info(core_romimage_info ri)
 	{
-		loaded_image::info i;
-		if(ri.pass_mode == 0) i.type = loaded_image::info::IT_MEMORY;
-		if(ri.pass_mode == 1) i.type = loaded_image::info::IT_FILE;
+		fileimage::image::info i;
+		if(ri.pass_mode == 0) i.type = fileimage::image::info::IT_MEMORY;
+		if(ri.pass_mode == 1) i.type = fileimage::image::info::IT_FILE;
 		i.headersize = ri.headersize;
 		return i;
 	}
@@ -217,7 +217,7 @@ namespace
 	}
 }
 
-sha256_hasher lsnes_image_hasher;
+fileimage::hash lsnes_image_hasher;
 
 std::pair<core_type*, core_region*> get_current_rom_info() throw()
 {
@@ -243,14 +243,14 @@ loaded_rom::loaded_rom(const std::string& file, core_type& ctype) throw(std::bad
 		//This thing has a BIOS.
 		romidx = 1;
 		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
-		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
+		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(ctype.get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
-			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 		pmand |= ctype.get_image_info(0).mandatory;
 	}
-	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(ctype.get_image_info(romidx)));
+	romimg[romidx] = fileimage::image(lsnes_image_hasher, file, "", xlate_info(ctype.get_image_info(romidx)));
 	if(zip::file_exists(file + ".xml"))
-		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
+		romxml[romidx] = fileimage::image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 	pmand |= ctype.get_image_info(romidx).mandatory;
 	msu1_base = zip::resolverel(file, "");
 	record_files(*this);
@@ -284,16 +284,17 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 			//This thing has a BIOS.
 			romidx = 1;
 			std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
-			romimg[0] = loaded_image(lsnes_image_hasher, basename, "",
+			romimg[0] = fileimage::image(lsnes_image_hasher, basename, "",
 				xlate_info(coretype->get_image_info(0)));
 			if(zip::file_exists(basename + ".xml"))
-				romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+				romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "",
+					get_xml_info());
 			pmand |= rtype->get_image_info(0).mandatory;
 		}
-		romimg[romidx] = loaded_image(lsnes_image_hasher, file, "",
+		romimg[romidx] = fileimage::image(lsnes_image_hasher, file, "",
 			xlate_info(coretype->get_image_info(romidx)));
 		if(zip::file_exists(file + ".xml"))
-			romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
+			romxml[romidx] = fileimage::image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 		pmand |= rtype->get_image_info(romidx).mandatory;
 		msu1_base = zip::resolverel(file, "");
 		record_files(*this);
@@ -369,8 +370,9 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& tmpprefer) th
 
 	//Load ROMs.
 	for(size_t i = 0; i < rtype->get_image_count(); i++) {
-		romimg[i] = loaded_image(lsnes_image_hasher, cromimg[i], file, xlate_info(rtype->get_image_info(i)));
-		romxml[i] = loaded_image(lsnes_image_hasher, cromxml[i], file, get_xml_info());
+		romimg[i] = fileimage::image(lsnes_image_hasher, cromimg[i], file,
+			xlate_info(rtype->get_image_info(i)));
+		romxml[i] = fileimage::image(lsnes_image_hasher, cromxml[i], file, get_xml_info());
 	}
 	record_files(*this);	//Have to do this before patching.
 
@@ -483,14 +485,14 @@ loaded_rom::loaded_rom(const std::string& file, const std::string& core, const s
 	unsigned romidx = (bios != "") ? 1 : 0;
 	if(bios != "") {
 		std::string basename = lsnes_vset["firmwarepath"].str() + "/" + bios;
-		romimg[0] = loaded_image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
+		romimg[0] = fileimage::image(lsnes_image_hasher, basename, "", xlate_info(t->get_image_info(0)));
 		if(zip::file_exists(basename + ".xml"))
-			romxml[0] = loaded_image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
+			romxml[0] = fileimage::image(lsnes_image_hasher, basename + ".xml", "", get_xml_info());
 		pmand |= t->get_image_info(0).mandatory;
 	}
-	romimg[romidx] = loaded_image(lsnes_image_hasher, file, "", xlate_info(t->get_image_info(romidx)));
+	romimg[romidx] = fileimage::image(lsnes_image_hasher, file, "", xlate_info(t->get_image_info(romidx)));
 	if(zip::file_exists(file + ".xml"))
-		romxml[romidx] = loaded_image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
+		romxml[romidx] = fileimage::image(lsnes_image_hasher, file + ".xml", "", get_xml_info());
 	pmand |= t->get_image_info(romidx).mandatory;
 	msu1_base = zip::resolverel(file, "");
 	record_files(*this);
@@ -532,9 +534,9 @@ loaded_rom::loaded_rom(const std::string file[ROM_SLOT_COUNT], const std::string
 		if(file[i] != "")
 			pmand |= t->get_image_info(i).mandatory;
 		tmand |= t->get_image_info(i).mandatory;
-		romimg[i] = loaded_image(lsnes_image_hasher, file[i], "", xlate_info(t->get_image_info(i)));
+		romimg[i] = fileimage::image(lsnes_image_hasher, file[i], "", xlate_info(t->get_image_info(i)));
 		if(zip::file_exists(file[i] + ".xml"))
-			romxml[i] = loaded_image(lsnes_image_hasher, file[i] + ".xml", "", get_xml_info());
+			romxml[i] = fileimage::image(lsnes_image_hasher, file[i] + ".xml", "", get_xml_info());
 	}
 	msu1_base = zip::resolverel(file[romidx], "");
 	record_files(*this);

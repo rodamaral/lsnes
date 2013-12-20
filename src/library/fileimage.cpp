@@ -7,6 +7,8 @@
 #include "directory.hpp"
 #include <sstream>
 
+namespace fileimage
+{
 namespace
 {
 	std::map<std::string, std::pair<time_t, std::string>> cached_entries;
@@ -24,7 +26,7 @@ namespace
 		return 0;
 	}
 
-	void* thread_trampoline(sha256_hasher* h)
+	void* thread_trampoline(hash* h)
 	{
 		h->entrypoint();
 		return NULL;
@@ -94,7 +96,7 @@ namespace
 	}
 }
 
-sha256_future::sha256_future()
+hashval::hashval()
 {
 	is_ready = false;
 	cbid = 0;
@@ -102,7 +104,7 @@ sha256_future::sha256_future()
 	hasher = NULL;
 }
 
-sha256_future::sha256_future(const std::string& _value, uint64_t _prefix)
+hashval::hashval(const std::string& _value, uint64_t _prefix)
 {
 	is_ready = true;
 	value = _value;
@@ -112,7 +114,7 @@ sha256_future::sha256_future(const std::string& _value, uint64_t _prefix)
 	hasher = NULL;
 }
 
-sha256_future::sha256_future(sha256_hasher& h, unsigned id)
+hashval::hashval(hash& h, unsigned id)
 {
 	umutex_class h2(global_queue_mutex());
 	is_ready = false;
@@ -122,7 +124,7 @@ sha256_future::sha256_future(sha256_hasher& h, unsigned id)
 	hasher->link(*this);
 }
 
-sha256_future::~sha256_future()
+hashval::~hashval()
 {
 	umutex_class h2(global_queue_mutex());
 	umutex_class h(mutex);
@@ -130,13 +132,13 @@ sha256_future::~sha256_future()
 		hasher->unlink(*this);
 }
 
-bool sha256_future::ready() const
+bool hashval::ready() const
 {
 	umutex_class h(mutex);
 	return is_ready;
 }
 
-std::string sha256_future::read() const
+std::string hashval::read() const
 {
 	umutex_class h(mutex);
 	while(!is_ready)
@@ -146,7 +148,7 @@ std::string sha256_future::read() const
 	return value;
 }
 
-uint64_t sha256_future::prefix() const
+uint64_t hashval::prefix() const
 {
 	umutex_class h(mutex);
 	while(!is_ready)
@@ -156,7 +158,7 @@ uint64_t sha256_future::prefix() const
 	return prefixv;
 }
 
-sha256_future::sha256_future(const sha256_future& f)
+hashval::hashval(const hashval& f)
 {
 	umutex_class h2(global_queue_mutex());
 	umutex_class h(f.mutex);
@@ -171,7 +173,7 @@ sha256_future::sha256_future(const sha256_future& f)
 		hasher->link(*this);
 }
 
-sha256_future& sha256_future::operator=(const sha256_future& f)
+hashval& hashval::operator=(const hashval& f)
 {
 	if(this == &f)
 		return *this;
@@ -199,7 +201,7 @@ sha256_future& sha256_future::operator=(const sha256_future& f)
 	f.mutex.unlock();
 }
 
-void sha256_future::resolve(unsigned id, const std::string& hash, uint64_t _prefix)
+void hashval::resolve(unsigned id, const std::string& hash, uint64_t _prefix)
 {
 	umutex_class h(mutex);
 	hasher->unlink(*this);
@@ -211,7 +213,7 @@ void sha256_future::resolve(unsigned id, const std::string& hash, uint64_t _pref
 	condition.notify_all();
 }
 
-void sha256_future::resolve_error(unsigned id, const std::string& err)
+void hashval::resolve_error(unsigned id, const std::string& err)
 {
 	umutex_class h(mutex);
 	hasher->unlink(*this);
@@ -223,7 +225,7 @@ void sha256_future::resolve_error(unsigned id, const std::string& err)
 	condition.notify_all();
 }
 
-void sha256_hasher::link(sha256_future& future)
+void hash::link(hashval& future)
 {
 	//We assume caller holds global queue lock.
 	{
@@ -242,7 +244,7 @@ void sha256_hasher::link(sha256_future& future)
 		first_future = &future;
 }
 
-void sha256_hasher::unlink(sha256_future& future)
+void hash::unlink(hashval& future)
 {
 	//We assume caller holds global queue lock.
 	{
@@ -262,7 +264,7 @@ void sha256_hasher::unlink(sha256_future& future)
 		future.next->prev = future.prev;
 }
 
-sha256_future sha256_hasher::operator()(const std::string& filename, uint64_t prefixlen)
+hashval hash::operator()(const std::string& filename, uint64_t prefixlen)
 {
 	queue_job j;
 	j.filename = filename;
@@ -270,7 +272,7 @@ sha256_future sha256_hasher::operator()(const std::string& filename, uint64_t pr
 	j.size = get_file_size(filename);
 	j.cbid = next_cbid++;
 	j.interested = 1;
-	sha256_future future(*this, j.cbid);
+	hashval future(*this, j.cbid);
 	queue.push_back(j);
 	umutex_class h(mutex);
 	total_work += j.size;
@@ -279,7 +281,7 @@ sha256_future sha256_hasher::operator()(const std::string& filename, uint64_t pr
 	return future;
 }
 
-sha256_future sha256_hasher::operator()(const std::string& filename, std::function<uint64_t(uint64_t)> prefixlen)
+hashval hash::operator()(const std::string& filename, std::function<uint64_t(uint64_t)> prefixlen)
 {
 	queue_job j;
 	j.filename = filename;
@@ -287,7 +289,7 @@ sha256_future sha256_hasher::operator()(const std::string& filename, std::functi
 	j.prefix = prefixlen(j.size);
 	j.cbid = next_cbid++;
 	j.interested = 1;
-	sha256_future future(*this, j.cbid);
+	hashval future(*this, j.cbid);
 	queue.push_back(j);
 	umutex_class h(mutex);
 	total_work += j.size;
@@ -296,13 +298,13 @@ sha256_future sha256_hasher::operator()(const std::string& filename, std::functi
 	return future;
 }
 
-void sha256_hasher::set_callback(std::function<void(uint64_t, uint64_t)> cb)
+void hash::set_callback(std::function<void(uint64_t, uint64_t)> cb)
 {
 	umutex_class h(mutex);
 	progresscb = cb;
 }
 
-sha256_hasher::sha256_hasher()
+hash::hash()
 {
 	quitting = false;
 	first_future = NULL;
@@ -314,7 +316,7 @@ sha256_hasher::sha256_hasher()
 	hash_thread = new thread_class(thread_trampoline, this);
 }
 
-sha256_hasher::~sha256_hasher()
+hash::~hash()
 {
 	{
 		umutex_class h(mutex);
@@ -328,7 +330,7 @@ sha256_hasher::~sha256_hasher()
 		first_future->resolve_error(first_future->cbid, "Hasher deleted");
 }
 
-void sha256_hasher::entrypoint()
+void hash::entrypoint()
 {
 	FILE* fp;
 	while(true) {
@@ -352,14 +354,14 @@ void sha256_hasher::entrypoint()
 		cached_hash = lookup_cache(current_job->filename, current_job->prefix);
 		if(cached_hash != "") {
 			umutex_class h2(global_queue_mutex());
-			for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
+			for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 				fut->resolve(current_job->cbid, cached_hash, current_job->prefix);
 			goto finished;
 		}
 		fp = fopen(current_job->filename.c_str(), "rb");
 		if(!fp) {
 			umutex_class h2(global_queue_mutex());
-			for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
+			for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 				fut->resolve_error(current_job->cbid, "Can't open file");
 		} else {
 			sha256 hash;
@@ -382,12 +384,12 @@ void sha256_hasher::entrypoint()
 			}
 			if(ferror(fp)) {
 				umutex_class h2(global_queue_mutex());
-				for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
+				for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 					fut->resolve_error(current_job->cbid, "Can't read file");
 			} else {
 				std::string hval = hash.read();
 				umutex_class h2(global_queue_mutex());
-				for(sha256_future* fut = first_future; fut != NULL; fut = fut->next)
+				for(hashval* fut = first_future; fut != NULL; fut = fut->next)
 					fut->resolve(current_job->cbid, hval, current_job->prefix);
 				store_cache(current_job->filename, current_job->prefix, hval);
 			}
@@ -404,7 +406,7 @@ finished:
 	}
 }
 
-void sha256_hasher::send_callback(uint64_t this_completed)
+void hash::send_callback(uint64_t this_completed)
 {
 	uint64_t amount;
 	{
@@ -417,28 +419,28 @@ void sha256_hasher::send_callback(uint64_t this_completed)
 	progresscb(amount, work_size);
 }
 
-void sha256_hasher::send_idle()
+void hash::send_idle()
 {
 	work_size = 0;	//Delete work when idle.
 	progresscb(0xFFFFFFFFFFFFFFFFULL, 0);
 }
 
-loaded_image::loaded_image() throw(std::bad_alloc)
+image::image() throw(std::bad_alloc)
 {
 	type = info::IT_NONE;
-	sha_256 = sha256_future("");
+	sha_256 = hashval("");
 	filename = "";
 }
 
-loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const std::string& base,
-	const struct loaded_image::info& info) throw(std::bad_alloc, std::runtime_error)
+image::image(hash& h, const std::string& _filename, const std::string& base,
+	const struct image::info& info) throw(std::bad_alloc, std::runtime_error)
 {
 	if(info.type == info::IT_NONE && _filename != "")
 		throw std::runtime_error("Tried to load NULL image");
 	if(_filename == "") {
 		//NULL.
 		type = info::IT_NONE;
-		sha_256 = sha256_future("");
+		sha_256 = hashval("");
 		stripped = 0;
 		return;
 	}
@@ -472,7 +474,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 			data->resize(0);
 		}
 		stripped = headered;
-		sha_256 = sha256_future(sha256::hash(*data), headered);
+		sha_256 = hashval(sha256::hash(*data), headered);
 		if(info.type == info::IT_MARKUP) {
 			size_t osize = data->size();
 			data->resize(osize + 1);
@@ -493,7 +495,7 @@ loaded_image::loaded_image(sha256_hasher& h, const std::string& _filename, const
 	throw std::runtime_error("Unknown image type");
 }
 
-void loaded_image::patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error)
+void image::patch(const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error)
 {
 	if(type == info::IT_NONE)
 		throw std::runtime_error("Not an image");
@@ -512,7 +514,7 @@ void loaded_image::patch(const std::vector<char>& patch, int32_t offset) throw(s
 			data2[osize] = 0;
 		}
 		data.reset(new std::vector<char>(data2));
-		sha_256 = sha256_future(new_sha256);
+		sha_256 = hashval(new_sha256);
 	} catch(...) {
 		throw;
 	}
@@ -522,4 +524,5 @@ std::function<uint64_t(uint64_t)> std_headersize_fn(uint64_t hdrsize)
 {
 	uint64_t h = hdrsize;
 	return ([h](uint64_t x) -> uint64_t { return calculate_headersize(x, h); });
+}
 }

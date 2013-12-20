@@ -262,13 +262,13 @@ namespace
 
 			std::string filename = tostdstring(filenames[i]->GetValue());
 			if(!zip::file_exists(filename)) {
-				hashfutures[i] = sha256_future();
+				hashfutures[i] = fileimage::hashval();
 				hash_ready[i] = true;
 				hashes[i]->SetLabel(towxstring("Not found"));
 				return;
 			}
 			//TODO: Handle files inside ZIP files.
-			hashfutures[i] = lsnes_image_hasher(filename, std_headersize_fn(header));
+			hashfutures[i] = lsnes_image_hasher(filename, fileimage::std_headersize_fn(header));
 			if(hash_ready[i] = hashfutures[i].ready())
 				try {
 					hashes[i]->SetLabel(towxstring("Hash: " + hashfutures[i].read()));
@@ -298,7 +298,7 @@ namespace
 		wxButton* fileselect[ROM_SLOT_COUNT];
 		wxStaticText* hashes[ROM_SLOT_COUNT];
 		bool hash_ready[ROM_SLOT_COUNT];
-		sha256_future hashfutures[ROM_SLOT_COUNT];
+		fileimage::hashval hashfutures[ROM_SLOT_COUNT];
 		wxButton* okb;
 		wxButton* cancelb;
 		update_timer* timer;
@@ -408,7 +408,7 @@ again:
 			goto again;
 		}
 		try {
-			auto future = lsnes_image_hasher(req.filename[i], std_headersize_fn(header));
+			auto future = lsnes_image_hasher(req.filename[i], fileimage::std_headersize_fn(header));
 			//Dirty method to run the event loop until hashing finishes.
 			while(!future.ready()) {
 				wxSafeYield();

@@ -94,7 +94,7 @@ namespace
 			return "";
 		}
 		try {
-			sha256_future f = lsnes_image_hasher(file, std_headersize_fn(hsize));
+			fileimage::hashval f = lsnes_image_hasher(file, fileimage::std_headersize_fn(hsize));
 			std::string hash = f.read();
 			uint64_t prefix = f.prefix();
 			record_hash(file, prefix, hash);

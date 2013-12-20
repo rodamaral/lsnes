@@ -79,7 +79,7 @@ namespace
 			messages << "Saved core state to " << name << std::endl;
 		});
 
-	bool warn_hash_mismatch(const std::string& mhash, const loaded_image& slot,
+	bool warn_hash_mismatch(const std::string& mhash, const fileimage::image& slot,
 		const std::string& name, bool fatal)
 	{
 		if(mhash == slot.sha_256.read())

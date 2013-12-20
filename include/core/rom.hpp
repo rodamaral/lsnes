@@ -64,11 +64,11 @@ struct loaded_rom
 /**
  * Loaded main ROM
  */
-	loaded_image romimg[ROM_SLOT_COUNT];
+	fileimage::image romimg[ROM_SLOT_COUNT];
 /**
  * Loaded main ROM XML
  */
-	loaded_image romxml[ROM_SLOT_COUNT];
+	fileimage::image romxml[ROM_SLOT_COUNT];
 /**
  * MSU-1 base.
  */
@@ -131,7 +131,7 @@ extern std::map<std::string, core_type*> preferred_core;
 //Preferred overall core.
 extern std::string preferred_core_default;
 //Main hasher
-extern sha256_hasher lsnes_image_hasher;
+extern fileimage::hash lsnes_image_hasher;
 
 
 #endif
