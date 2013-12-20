@@ -1,14 +1,10 @@
 #include "rrdata.hpp"
+#include "hex.hpp"
 #include <cstring>
 #include <limits>
 #include <cassert>
 
 #define MAXRUN 16843009
-
-namespace
-{
-	const char* hexes = "0123456789ABCDEF";
-}
 
 rrdata_set::instance::instance() throw()
 {
@@ -360,10 +356,7 @@ void rrdata_set::set_internal(const instance& b) throw()
 
 std::ostream& operator<<(std::ostream& os, const struct rrdata_set::instance& j)
 {
-	for(unsigned i = 0; i < 32; i++) {
-		os << hexes[j.bytes[i] / 16] << hexes[j.bytes[i] % 16];
-	}
-	return os;
+	os << hex::b_to(j.bytes, 32, true);
 }
 
 bool rrdata_set::_add(const instance& b)

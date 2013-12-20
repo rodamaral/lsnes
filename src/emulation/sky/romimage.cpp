@@ -3,7 +3,7 @@
 #include "tasdemos.hpp"
 #include "physics.hpp"
 #include "instance.hpp"
-#include "library/bintohex.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
 #include <sys/time.h>
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
 	sky::level& l = sky::levels[lvl];
 	uint8_t hash[32];
 	l.sha256_hash(hash);
-	std::cerr << "Level hash is " << binary_to_hex(hash, 32) << std::endl;
+	std::cerr << "Level hash is " << hex::b_to(hash, 32) << std::endl;
 	sky::demo d;
 	try {
 		if(lvl)

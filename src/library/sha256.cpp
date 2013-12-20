@@ -1,4 +1,5 @@
 #include "sha256.hpp"
+#include "hex.hpp"
 #include <cstdint>
 #include <sstream>
 #include <iostream>
@@ -63,14 +64,9 @@ namespace
 		return (k & a) | ((~k) & b);
 	}
 
-	std::string format32(uint32_t num)
-	{
-		std::ostringstream y;
-		y << std::hex << std::setw(8) << std::setfill('0') << num;
-		return y.str();
-	}
-
-#define SHOW(a,b,c,d,e,f,g,h) "\t" << format32(a) << "\t" << format32(b) << "\t" << format32(c) << "\t" << format32(d) << "\t" << format32(e) << "\t" << format32(f) << "\t" << format32(g) << "\t" << format32(h)
+#define SHOW(a,b,c,d,e,f,g,h) "\t" << hex::to32(a) << "\t" << hex::to32(b) << "\t" << hex::to32(c) << "\t" \
+	<< hex::to32(d) << "\t" << hex::to32(e) << "\t" << hex::to32(f) << "\t" << hex::to32(g) << "\t" \
+	<< hex::to32(h)
 
 #define WROUND(i, shift) \
 	Xsigma0 = esigma0(datablock[(i + shift + 1) & 15]); \

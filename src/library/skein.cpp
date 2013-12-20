@@ -6,6 +6,7 @@
 #include <iomanip>
 #include "skein512c.inc"
 #include "arch-detect.hpp"
+#include "hex.hpp"
 
 //Jerry Solinas was not here.
 
@@ -15,7 +16,7 @@ static void show_array(const char* prefix, const uint64_t* a, size_t e)
 {
 	std::cerr << prefix;
 	for(size_t i = 0; i < e; i++) {
-		std::cerr << std::hex << std::setw(16) << std::setfill('0') << a[i];
+		std::cerr << hex::to(a[i]);
 		if(i < e - 1)
 			std::cerr << ", ";
 	}
@@ -26,7 +27,7 @@ static void show_array(const char* prefix, const uint8_t* a, size_t e)
 {
 	std::cerr << prefix;
 	for(size_t i = 0; i < e; i++) {
-		std::cerr << std::hex << std::setw(2) << std::setfill('0') << (int)a[i];
+		std::cerr << hex::to(a[i]);
 	}
 	std::cerr << std::endl;
 }

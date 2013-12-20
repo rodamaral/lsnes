@@ -1,7 +1,7 @@
 #ifndef _library__sha256__hpp__included__
 #define _library__sha256__hpp__included__
 
-#include "bintohex.hpp"
+#include "hex.hpp"
 #include <cstdint>
 #include <cstring>
 #include <vector>
@@ -67,7 +67,7 @@ public:
  */
 	static std::string tostring(const uint8_t* hashout) throw(std::bad_alloc)
 	{
-		return binary_to_hex(hashout, 32);
+		return hex::b_to(hashout, 32);
 	}
 
 /**

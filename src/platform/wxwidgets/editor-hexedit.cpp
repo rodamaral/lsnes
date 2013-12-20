@@ -4,6 +4,7 @@
 #include "core/project.hpp"
 #include "core/memorymanip.hpp"
 #include "library/memorysearch.hpp"
+#include "library/hex.hpp"
 
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/textrender.hpp"
@@ -47,7 +48,7 @@ namespace
 			return (stringfmt() << (int)x[0]).str();
 		}},
 		{"1 byte (hex)", 1, false, "BH2", [](const uint8_t* x) -> std::string {
-			return (stringfmt() << std::hex << std::setw(2) << std::setfill('0') << (int)x[0]).str();
+			return hex::to(x[0]);
 		}},
 		{"2 bytes (signed)", 2, false, "w", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int16_t*)x).str();
@@ -56,7 +57,7 @@ namespace
 			return (stringfmt() << *(uint16_t*)x).str();
 		}},
 		{"2 bytes (hex)", 2, false, "WH4", [](const uint8_t* x) -> std::string {
-			return (stringfmt() << std::hex << std::setw(4) << std::setfill('0') << *(uint16_t*)x).str();
+			return hex::to(*(uint16_t*)x);
 		}},
 		{"3 bytes (signed)", 3, true, "o", [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
@@ -79,7 +80,7 @@ namespace
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
-			return (stringfmt() << std::hex << std::setw(6) << std::setfill('0') << a).str();
+			return hex::to24(a);
 		}},
 		{"4 bytes (signed)", 4, false, "d", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x).str();
@@ -88,7 +89,7 @@ namespace
 			return (stringfmt() << *(uint32_t*)x).str();
 		}},
 		{"4 bytes (hex)", 4, false, "DH8", [](const uint8_t* x) -> std::string {
-			return (stringfmt() << std::hex << std::setw(8) << std::setfill('0') << *(uint32_t*)x).str();
+			return hex::to(*(uint32_t*)x);
 		}},
 		{"4 bytes (float)", 4, false, "f", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(float*)x).str();
@@ -100,7 +101,7 @@ namespace
 			return (stringfmt() << *(uint64_t*)x).str();
 		}},
 		{"8 bytes (hex)", 8, false, "QHG", [](const uint8_t* x) -> std::string {
-			return (stringfmt() << std::hex << std::setw(16) << std::setfill('0') << *(uint64_t*)x).str();
+			return hex::to(*(uint64_t*)x);
 		}},
 		{"8 bytes (float)", 8, false, "F", [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(double*)x).str();

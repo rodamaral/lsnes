@@ -4,7 +4,6 @@
 #include "physics.hpp"
 #include "library/string.hpp"
 #include "library/sha256.hpp"
-#include "library/bintohex.hpp"
 #include "library/zip.hpp"
 
 namespace sky

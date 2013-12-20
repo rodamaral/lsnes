@@ -1,7 +1,7 @@
 #include "lua/internal.hpp"
 #include "interface/disassembler.hpp"
 #include "interface/romtype.hpp"
-#include "library/bintohex.hpp"
+#include "library/hex.hpp"
 #include "core/memorymanip.hpp"
 #include "core/moviedata.hpp"
 
@@ -35,7 +35,7 @@ namespace
 			tmp.resize(bytes);
 			lsnes_memory.read_range(laddr, &tmp[0], bytes);
 			L.pushstring("bytes");
-			L.pushlstring(binary_to_hex(&tmp[0], bytes));
+			L.pushlstring(hex::b_to(&tmp[0], bytes));
 			L.settable(-3);
 			L.settable(-3);
 			laddr += bytes;

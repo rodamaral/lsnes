@@ -2,6 +2,7 @@
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/memorysearch.hpp"
 #include "library/int24.hpp"
@@ -75,13 +76,6 @@ namespace
 		const char* name;
 		search_fn_t searches[DATATYPES];
 	};
-
-	std::string hexformat_address(uint64_t addr)
-	{
-		std::ostringstream x;
-		x << std::setfill('0') << std::setw(16) << std::hex << addr;
-		return x.str();
-	}
 
 	template<typename T> std::string format_number_signed(T val, bool hex);
 	template<typename T> std::string format_number_unsigned(T val, bool hex);
@@ -723,7 +717,7 @@ void wxwindow_memorysearch::panel::prepare_paint()
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			long j = 0;
 			for(auto i : addrs2) {
-				std::string row = hexformat_address(i) + " ";
+				std::string row = hex::to(i) + " ";
 				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, false);
 				row += " (Was: ";
 				row += (_parent->*displays[_parent->typecode])(i, _parent->hexmode, true);
@@ -793,7 +787,7 @@ void wxwindow_memorysearch::dump_candidates_text()
 			std::list<uint64_t> addrs2 = ms->get_candidates();
 			long j = 0;
 			for(auto i : addrs2) {
-				std::string row = hexformat_address(i) + " ";
+				std::string row = hex::to(i) + " ";
 				row += (this->*displays[this->typecode])(i, this->hexmode, false);
 				row += " (Was: ";
 				row += (this->*displays[this->typecode])(i, this->hexmode, true);

@@ -1,22 +1,13 @@
 #include "disassemble-gb.hpp"
 #include "interface/disassembler.hpp"
 #include "library/string.hpp"
+#include "library/hex.hpp"
 #include <functional>
 #include <sstream>
 #include <iomanip>
 
 namespace
 {
-	std::string hex2(uint8_t v)
-	{
-		return (stringfmt() << std::setw(2) << std::setfill('0') << std::hex << (int)v).str();
-	}
-
-	std::string hex4(uint16_t v)
-	{
-		return (stringfmt() << std::setw(4) << std::setfill('0') << std::hex << v).str();
-	}
-
 	std::string signdec(uint8_t v, bool psign = false);
 	std::string signdec(uint8_t v, bool psign)
 	{
@@ -112,17 +103,17 @@ std::string disassemble_gb_opcode(uint16_t pc, std::function<uint8_t()> fetch, i
 		else {
 			switch(ins[i + 1]) {
 			case 'b':
-				o << "0x" << hex2(fetch());
+				o << "0x" << hex::to8(fetch());
 				break;
 			case 'B':
-				o << "0x" << hex2(tmp = fetch());
+				o << "0x" << hex::to8(tmp = fetch());
 				addr = 0xFF00 + tmp;
 				break;
 			case 'w':
-				o << "0x" << hex4(fetch2());
+				o << "0x" << hex::to16(fetch2());
 				break;
 			case 'W':
-				o << "0x" << hex4(tmp = fetch2());
+				o << "0x" << hex::to16(tmp = fetch2());
 				addr = tmp;
 				break;
 			case 'R':

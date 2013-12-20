@@ -1,4 +1,5 @@
 #include "json.hpp"
+#include "hex.hpp"
 #include "string.hpp"
 #include <limits>
 #include <climits>
@@ -831,9 +832,6 @@ bad:
 		return json_token(json_token::TINVALID);
 	};
 
-
-	const char* hexes = "0123456789abcdef";
-
 	std::string json_string_escape(const std::u32string& c)
 	{
 		std::ostringstream out;
@@ -846,7 +844,7 @@ bad:
 			else if(c[i] == '\t') out << "\\t";
 			else if(c[i] == '\f') out << "\\f";
 			else if((c[i] & 0xFFFFFFE0) == 0)
-				out << "\\u00" << hexes[c[i] >> 4] << hexes[c[i] % 16];
+				out << "\\u" << hex::to16(c[i]);
 			else if(c[i] == U'\\')
 				out << "\\\\";
 			else if(c[i] == U'\"')

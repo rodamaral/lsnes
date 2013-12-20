@@ -34,6 +34,7 @@
 #include "interface/cover.hpp"
 #include "interface/romtype.hpp"
 #include "library/framebuffer-pixfmt-rgb32.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
 #include "library/serialization.hpp"
@@ -194,16 +195,6 @@ namespace
 			instance->get_cpureg(gambatte::GB::REG_E);
 	}
 
-	std::string hex4(uint16_t v)
-	{
-		return (stringfmt() << std::setw(4) << std::setfill('0') << std::hex << v).str();
-	}
-
-	std::string hex2(uint8_t v)
-	{
-		return (stringfmt() << std::setw(2) << std::setfill('0') << std::hex << (int)v).str();
-	}
-
 	//0 => None or already done.
 	//1 => BC
 	//2 => DE
@@ -245,10 +236,10 @@ namespace
 			v = instance->bus_read(addr);
 			disable_breakpoints = true;
 #endif
-			s << hex2(v);
+			s << hex::to8(v);
 			return v;
 		};
-		s << hex4(pc) << " ";
+		s << hex::to16(pc) << " ";
 		auto d = disassemble_gb_opcode(pc, fetch, addr, opcode);
 		while(s.str().length() < 12) s << " ";
 		s << d;
@@ -265,15 +256,15 @@ namespace
 		} else
 			s << "       ";
 
-		s << "A:" << hex2(instance->get_cpureg(gambatte::GB::REG_A));
-		s << " B:" << hex2(instance->get_cpureg(gambatte::GB::REG_B));
-		s << " C:" << hex2(instance->get_cpureg(gambatte::GB::REG_C));
-		s << " D:" << hex2(instance->get_cpureg(gambatte::GB::REG_D));
-		s << " E:" << hex2(instance->get_cpureg(gambatte::GB::REG_E));
-		s << " H:" << hex2(instance->get_cpureg(gambatte::GB::REG_H));
-		s << " L:" << hex2(instance->get_cpureg(gambatte::GB::REG_L));
-		s << " PC:" << hex4(instance->get_cpureg(gambatte::GB::REG_PC));
-		s << " SP:" << hex4(instance->get_cpureg(gambatte::GB::REG_SP));
+		s << "A:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_A));
+		s << " B:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_B));
+		s << " C:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_C));
+		s << " D:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_D));
+		s << " E:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_E));
+		s << " H:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_H));
+		s << " L:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_L));
+		s << " PC:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_PC));
+		s << " SP:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_SP));
 		s << " F:" 
 			<< (instance->get_cpureg(gambatte::GB::REG_CF) ? "C" : "-")
 			<< (instance->get_cpureg(gambatte::GB::REG_ZF) ? "-" : "Z")

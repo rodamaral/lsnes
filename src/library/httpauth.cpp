@@ -1,3 +1,4 @@
+#include "hex.hpp"
 #include "httpauth.hpp"
 #include "string.hpp"
 #include <cstdint>
@@ -10,14 +11,6 @@
 
 namespace
 {
-	std::string encode_hex(const uint8_t* data, size_t datasize)
-	{
-		std::ostringstream x;
-		for(size_t i = 0; i < datasize; i++)
-			x << std::hex << std::setw(2) << std::setfill('0') << (int)data[i];
-		return x.str();
-	}
-
 	//Can only handle 9, 32-126, 128-255.
 	std::string quote_field(const std::string& field)
 	{
@@ -241,26 +234,6 @@ namespace
 		if(!tmp.empty()) params.push_back(tmp);
 		return true;
 	}
-
-	//Parse a hex char.
-	inline uint8_t hparse(char _ch)
-	{
-		uint8_t ch = _ch;
-		uint8_t itbl[] = {9,1,16,2,10,3,11,4,12,5,13,6,14,7,15,8,0};
-		return itbl[(uint8_t)(2*ch + 22*(ch>>5)) % 17];
-	}
-
-	//Undo hex encoding.
-	void unhex(uint8_t* buf, const std::string& str)
-	{
-		bool polarity = false;
-		size_t ptr = 0;
-		uint8_t val = 0;
-		while(ptr < str.length()) {
-			val = val * 16 + hparse(str[ptr++]);
-			if(!(polarity = !polarity)) *(buf++) = val;
-		}
-	}
 }
 
 dh25519_http_auth::dh25519_http_auth(const uint8_t* _privkey)
@@ -273,7 +246,7 @@ dh25519_http_auth::dh25519_http_auth(const uint8_t* _privkey)
 
 std::string dh25519_http_auth::format_get_session_request()
 {
-	return "dh25519 key="+encode_hex(pubkey,32);
+	return "dh25519 key="+hex::b_to(pubkey,32);
 }
 
 dh25519_http_auth::request_hash dh25519_http_auth::start_request(const std::string& url, const std::string& verb)
@@ -310,8 +283,8 @@ std::string dh25519_http_auth::request_hash::get_authorization()
 	uint8_t response[32];
 	sprintf(buf, "%u", nonce);
 	h.read(response);
-	return "dh25519 id="+quote_field(id)+",key="+encode_hex(pubkey,32)+",nonce="+identity(buf)+
-		",response="+encode_hex(response,32)+",response2="+encode_hex(prereq,8)+",noprotocol=1";
+	return "dh25519 id="+quote_field(id)+",key="+hex::b_to(pubkey,32)+",nonce="+identity(buf)+
+		",response="+hex::b_to(response,32)+",response2="+hex::b_to(prereq,8)+",noprotocol=1";
 }
 
 void dh25519_http_auth::parse_auth_response(const std::string& response)
@@ -336,7 +309,7 @@ void dh25519_http_auth::parse_auth_response(std::map<std::string, std::string> p
 		std::string challenge = pparse["challenge"];
 		if(challenge.length() != 64) goto no_reseed;
 		uint8_t _challenge[32];
-		unhex(_challenge, challenge);
+		hex::b_from(_challenge, challenge);
 		curve25519(ssecret, privkey, _challenge);
 		nonce = 0;
 		reseeded = true;

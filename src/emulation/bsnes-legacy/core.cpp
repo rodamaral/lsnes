@@ -35,6 +35,7 @@
 #include "interface/setting.hpp"
 #include "interface/callbacks.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/controller-data.hpp"
 #include "library/framebuffer.hpp"
@@ -632,8 +633,6 @@ namespace
 		ecore_callbacks->memory_write(0x1000000 + _addr, val);
 	}
 
-	const char* hexes = "0123456789ABCDEF";
-
 	void redraw_cover_fbinfo();
 
 	struct _bsnes_core : public core_core
@@ -1203,7 +1202,7 @@ again2:
 			unsigned char ch = SNES::bus.read(busaddr);
 #endif
 			if(ch < 32 || ch > 126)
-				name << "<" << hexes[ch / 16] << hexes[ch % 16] << ">";
+				name << "<" << hex::to8(ch) << ">";
 			else
 				name << ch;
 		}

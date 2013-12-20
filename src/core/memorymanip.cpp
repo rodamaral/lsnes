@@ -5,6 +5,7 @@
 #include "core/rom.hpp"
 #include "core/rrdata.hpp"
 #include "interface/romtype.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include "library/int24.hpp"
 #include "library/minmax.hpp"
@@ -162,7 +163,7 @@ namespace
 		std::string _command;
 	};
 
-	template<typename ret, ret (memory_space::*_rfn)(uint64_t addr)>
+	template<typename ret, ret (memory_space::*_rfn)(uint64_t addr), bool hexd>
 	class read_command : public memorymanip_command
 	{
 	public:
@@ -177,11 +178,14 @@ namespace
 				throw std::runtime_error("Syntax: " + _command + " <address>");
 			{
 				std::ostringstream x;
-				if(sizeof(ret) > 1)
-					x << "0x" << std::hex << address << " -> " << std::dec
+				if(hexd)
+					x << hex::to(address, true) << " -> "
+						<< hex::to((lsnes_memory.*_rfn)(address), true);
+				else if(sizeof(ret) > 1)
+					x << hex::to(address, true) << " -> " << std::dec
 						<< (lsnes_memory.*_rfn)(address);
 				else
-					x << "0x" << std::hex << address << " -> " << std::dec
+					x << hex::to(address, true) << " -> " << std::dec
 						<< (int)(lsnes_memory.*_rfn)(address);
 				messages << x.str() << std::endl;
 			}
@@ -245,17 +249,22 @@ namespace
 		}
 	};
 
-	read_command<uint8_t, &memory_space::read<uint8_t>> ru1("read-byte");
-	read_command<uint16_t, &memory_space::read<uint16_t>> ru2("read-word");
-	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>> ru3("read-hword");
-	read_command<uint32_t, &memory_space::read<uint32_t>> ru4("read-dword");
-	read_command<uint64_t, &memory_space::read<uint64_t>> ru8("read-qword");
-	read_command<int8_t, &memory_space::read<int8_t>> rs1("read-sbyte");
-	read_command<int16_t, &memory_space::read<int16_t>> rs2("read-sword");
-	read_command<ss_int24_t, &memory_space::read<ss_int24_t>> rs3("read-shword");
-	read_command<int32_t, &memory_space::read<int32_t>> rs4("read-sdword");
-	read_command<float, &memory_space::read<float>> rf4("read-float");
-	read_command<double, &memory_space::read<double>> rf8("read-double");
+	read_command<uint8_t, &memory_space::read<uint8_t>, false> ru1("read-byte");
+	read_command<uint16_t, &memory_space::read<uint16_t>, false> ru2("read-word");
+	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, false> ru3("read-hword");
+	read_command<uint32_t, &memory_space::read<uint32_t>, false> ru4("read-dword");
+	read_command<uint64_t, &memory_space::read<uint64_t>, false> ru8("read-qword");
+	read_command<uint8_t, &memory_space::read<uint8_t>, true> rh1("read-byte-hex");
+	read_command<uint16_t, &memory_space::read<uint16_t>, true> rh2("read-word-hex");
+	read_command<ss_uint24_t, &memory_space::read<ss_uint24_t>, true> rh3("read-hword-hex");
+	read_command<uint32_t, &memory_space::read<uint32_t>, true> rh4("read-dword-hex");
+	read_command<uint64_t, &memory_space::read<uint64_t>, true> rh8("read-qword-hex");
+	read_command<int8_t, &memory_space::read<int8_t>, false> rs1("read-sbyte");
+	read_command<int16_t, &memory_space::read<int16_t>, false> rs2("read-sword");
+	read_command<ss_int24_t, &memory_space::read<ss_int24_t>, false> rs3("read-shword");
+	read_command<int32_t, &memory_space::read<int32_t>, false> rs4("read-sdword");
+	read_command<float, &memory_space::read<float>, false> rf4("read-float");
+	read_command<double, &memory_space::read<double>, false> rf8("read-double");
 	write_command<uint8_t, -128, 0xFF, &memory_space::write<uint8_t>> w1("write-byte");
 	write_command<uint16_t, -32768, 0xFFFF, &memory_space::write<uint16_t>> w2("write-word");
 	write_command<ss_uint24_t, -8388608, 0xFFFFFF, &memory_space::write<ss_uint24_t>> w3("write-hword");

@@ -1,6 +1,6 @@
 #include "core/command.hpp"
 #include "interface/disassembler.hpp"
-#include "library/bintohex.hpp"
+#include "library/hex.hpp"
 #include "library/minmax.hpp"
 #include "core/memorymanip.hpp"
 #include "core/window.hpp"
@@ -69,9 +69,7 @@ namespace
 			std::vector<unsigned char> tmp;
 			tmp.resize(i.len);
 			lsnes_memory.read_range(i.addr, &tmp[0], i.len);
-			std::string l = (stringfmt() << std::setw(16) << std::setfill('0') << std::hex
-				<< i.addr).str() + " " + binary_to_hex(&tmp[0], i.len) + " "
-					+ i.disasm;
+			std::string l = hex::to(i.addr) + " " + hex::b_to(&tmp[0], i.len) + " " + i.disasm;
 			(*strm) << l << std::endl;
 		}
 		if(file != "")

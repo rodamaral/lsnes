@@ -10,6 +10,7 @@
 #include <wx/radiobut.h>
 
 #include "library/string.hpp"
+#include "library/hex.hpp"
 #include "interface/romtype.hpp"
 
 class wxeditor_watchexpr : public wxDialog

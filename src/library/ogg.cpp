@@ -1,6 +1,7 @@
 #include "ogg.hpp"
 #include "serialization.hpp"
 #include "minmax.hpp"
+#include "hex.hpp"
 #include <cstring>
 #include <zlib.h>
 #include <algorithm>
@@ -139,12 +140,10 @@ bool demuxer::complain_lost_page(uint32_t new_seq, uint32_t stream)
 		uint64_t last_missing = page_fullseq(new_seq) - 1;
 		if(first_missing == last_missing)
 			errors_to << "Warning: Ogg demux: Page " << first_missing << " missing on stream "
-				<< (stringfmt() << std::hex << std::setw(8) << std::setfill('0') << stream).str()
-				<< std::endl;
+				<< hex::to(stream) << std::endl;
 		else
 			errors_to << "Warning: Ogg demux: Pages " << first_missing << "-" << last_missing
-				<< " missing on stream " << (stringfmt() << std::hex << std::setw(8)
-				<< std::setfill('0') << stream).str() << std::endl;
+				<< " missing on stream " << hex::to(stream) << std::endl;
 		return true;
 	}
 	return false;
@@ -554,7 +553,7 @@ bool page::scan(const char* buffer, size_t bufferlen, bool eof, size_t& advance)
 
 std::string page::stream_debug_id() const throw(std::bad_alloc)
 {
-	return (stringfmt() << "Stream " << std::hex << std::setfill('0') << std::setw(8) << stream).str();
+	return (stringfmt() << "Stream " << hex::to(stream)).str();
 }
 
 std::string page::page_debug_id() const throw(std::bad_alloc)

@@ -37,6 +37,7 @@
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
 #include "library/framebuffer.hpp"
+#include "library/hex.hpp"
 
 namespace
 {
@@ -88,7 +89,7 @@ namespace
 				str << ecore_callbacks->get_input(1, 0, i) << " ";
 			for(unsigned i = 0; i < 15; i++)
 				if(ecore_callbacks->get_input(1, 0, i + 6)) k |= (1 << i);
-			str << std::hex << std::setw(4) << std::setfill('0') << k;
+			str << hex::to16(k);
 			cover_render_string(cover_fbmem, 0, 0, str.str(), 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
 		}
 		{
@@ -98,7 +99,7 @@ namespace
 				str << ecore_callbacks->get_input(2, 0, i) << " ";
 			for(unsigned i = 0; i < 15; i++)
 				if(ecore_callbacks->get_input(2, 0, i + 6)) k |= (1 << i);
-			str << std::hex << std::setw(4) << std::setfill('0') << k;
+			str << hex::to16(k);
 			cover_render_string(cover_fbmem, 0, 16, str.str(), 0xFFFFFF, 0x00000, 480, 432, 1920, 4);
 		}
 	}

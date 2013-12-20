@@ -9,6 +9,7 @@
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
+#include "library/hex.hpp"
 #include "library/int24.hpp"
 
 namespace
@@ -466,11 +467,7 @@ namespace
 		char hash[64];
 		auto x = our_rom.save_core_state();
 		size_t offset = x.size() - 32;
-		for(unsigned i = 0; i < 32; i++) {
-			hash[2 * i + 0] = hexes[static_cast<unsigned char>(x[offset + i]) >> 4];
-			hash[2 * i + 1] = hexes[static_cast<unsigned char>(x[offset + i]) & 0xF];
-		}
-		L.pushlstring(hash, 64);
+		L.pushlstring(hex::b_to((uint8_t*)&x[offset], 32));
 		return 1;
 	});
 

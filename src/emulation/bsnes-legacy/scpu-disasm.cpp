@@ -1,20 +1,11 @@
 #include "interface/disassembler.hpp"
+#include "library/hex.hpp"
 #include "library/string.hpp"
 #include <sstream>
 #include <iomanip>
 
 namespace
 {
-	std::string tohex(uint8_t x)
-	{
-		return (stringfmt() << std::setw(2) << std::setfill('0') << std::hex << static_cast<int>(x)).str();
-	}
-
-	std::string tohex(uint16_t x)
-	{
-		return (stringfmt() << std::setw(4) << std::setfill('0') << std::hex << x).str();
-	}
-
 	template<bool k> struct varsize {};
 	template<> struct varsize<false> { typedef uint8_t type_t; };
 	template<> struct varsize<true> { typedef uint16_t type_t; };
@@ -202,30 +193,30 @@ namespace
 			else {
 				switch(ins[i + 1]) {
 				case '0':
-					o << "$" << tohex(x);
+					o << "$" << hex::to(x);
 					break;
 				case 'a':
-					o << "$" << tohex(fetch_le<typename varsize<lacc>::type_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<typename varsize<lacc>::type_t>(fetchpc));
 					break;
 				case 'b':
-					o << "$" << tohex(fetch_le<uint8_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<uint8_t>(fetchpc));
 					break;
 				case 'l':
-					o << "$" << tohex(fetch_le<uint8_t>(fetchpc));
-					o << tohex(fetch_le<uint16_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<uint8_t>(fetchpc));
+					o << hex::to(fetch_le<uint16_t>(fetchpc));
 					break;
 				case 'r':
-					o << "$" << tohex(static_cast<uint16_t>(base + 2 +
+					o << "$" << hex::to(static_cast<uint16_t>(base + 2 +
 						fetch_le<int8_t>(fetchpc)));
 					break;
 				case 'R':
-					o << "$" << tohex(static_cast<uint16_t>(base + 3 +
+					o << "$" << hex::to(static_cast<uint16_t>(base + 3 +
 						fetch_le<int16_t>(fetchpc)));
 				case 'w':
-					o << "$" << tohex(fetch_le<uint16_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<uint16_t>(fetchpc));
 					break;
 				case 'x':
-					o << "$" << tohex(fetch_le<typename varsize<laddr>::type_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<typename varsize<laddr>::type_t>(fetchpc));
 					break;
 				}
 				i++;
@@ -251,24 +242,25 @@ namespace
 			else {
 				switch(ins[i + 1]) {
 				case '0':
-					o << "$" << tohex(x);
+					o << "$" << hex::to(x);
 					break;
 				case 'b':
-					o << "$" << tohex(fetch_le<uint8_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<uint8_t>(fetchpc));
 					break;
 				case 'c':
 					tmp = fetch_le<uint16_t>(fetchpc);
-					o << "$" << tohex(static_cast<uint16_t>(tmp & 0x1FFF)) << ":" << (tmp >> 13);
+					o << "$" << hex::to(static_cast<uint16_t>(tmp & 0x1FFF)) << ":"
+						<< (tmp >> 13);
 					break;
 				case 'r':
-					o << "$" << tohex(static_cast<uint16_t>(base + 2 +
+					o << "$" << hex::to(static_cast<uint16_t>(base + 2 +
 						fetch_le<int8_t>(fetchpc)));
 					break;
 				case 'R':
-					o << "$" << tohex(static_cast<uint16_t>(base + 3 +
+					o << "$" << hex::to(static_cast<uint16_t>(base + 3 +
 						fetch_le<int8_t>(fetchpc)));
 				case 'w':
-					o << "$" << tohex(fetch_le<uint16_t>(fetchpc));
+					o << "$" << hex::to(fetch_le<uint16_t>(fetchpc));
 					break;
 				}
 				i++;

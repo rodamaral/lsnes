@@ -2,13 +2,13 @@
 #include "lua/unsaferewind.hpp"
 #include "core/misc.hpp"
 #include "library/string.hpp"
+#include "library/hex.hpp"
 
 namespace
 {
 	uint64_t randnum()
 	{
-		std::string x = "0x" + get_random_hexstring(16);
-		return parse_value<uint64_t>(x);
+		return hex::from<uint64_t>(get_random_hexstring(16));
 	}
 
 	uint64_t randnum_mod(uint64_t y)

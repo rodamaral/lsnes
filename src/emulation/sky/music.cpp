@@ -2,6 +2,7 @@
 #include <cstring>
 #include <iomanip>
 #include <cmath>
+#include "library/hex.hpp"
 #include "library/minmax.hpp"
 #include "library/ogg.hpp"
 #include "library/opus-ogg.hpp"
@@ -278,8 +279,8 @@ namespace sky
 							i.second.eos_seen = true;
 		for(auto& i : psids)
 			if(!i.second.eos_seen)
-				messages << "Warning: No EOS on stream " << (stringfmt() << std::hex << std::setw(8)
-					<< std::setfill('0') << i.second.oggid).str() << std::endl;
+				messages << "Warning: No EOS on stream " << hex::to(i.second.oggid, true)
+					<< std::endl;
 		delete_undefined_substreams();
 		if(ssid_to_lsid.empty())
 			throw std::runtime_error("No valid Oggopus streams found");
@@ -328,8 +329,7 @@ namespace sky
 			}
 			uint32_t psid = lsid_to_psid[i.second];
 			std::cerr << std::endl << "\tPhysical stream (PSID#" << psid << ", Ogg stream " <<
-				(stringfmt() << std::hex << std::setw(8) << std::setfill('0')
-				<< psids[psid].oggid).str() << "):" << std::endl;
+				hex::to(psids[psid].oggid) << "):" << std::endl;
 			auto c = mscharacteristics[psid];
 			std::cerr << "\t\t" << (int)c.channels << " channels (" << (int)c.streams << " streams, "
 				<< (int)c.coupled << " coupled) @" << (c.gain / 256.0) << "dB" << std::endl;

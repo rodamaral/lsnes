@@ -1,6 +1,7 @@
 #include "png.hpp"
 #include "serialization.hpp"
 #include "minmax.hpp"
+#include "hex.hpp"
 #include "zip.hpp"
 #include <iostream>
 #include <fstream>
@@ -292,7 +293,7 @@ namespace
 			goto badtype;
 		return (stringfmt() << t1 << t2 << t3 << t4).str();
 badtype:
-		return (stringfmt() << "0x" << std::hex << std::setw(8) << std::setfill('0') << type).str();
+		return hex::to(type, true);
 	}
 
 	//=========================================================
@@ -1064,14 +1065,14 @@ int main(int argc, char** argv)
 		for(size_t i = 0; i < img.data.size(); i++) {
 			if(i > 0 && i % img.width == 0)
 				std::cout << std::endl;
-			std::cout << std::hex << std::setw(8) << std::setfill('0') << img.palette[img.data[i]]
-				<< "<" << std::hex << std::setw(4) << std::setfill('0') << img.data[i] << "> ";
+			std::cout << hex::to(img.palette[img.data[i]])
+				<< "<" << hex::to(img.data[i]) << "> ";
 		}
 	} else {
 		for(size_t i = 0; i < img.data.size(); i++) {
 			if(i > 0 && i % img.width == 0)
 				std::cout << std::endl;
-			std::cout << std::hex << std::setw(8) << std::setfill('0') << img.data[i] << " ";
+			std::cout << hex::to(img.data[i]) << " ";
 		}
 	}
 	std::cout << std::endl;

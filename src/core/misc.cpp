@@ -10,6 +10,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
+#include "library/hex.hpp"
 #include "library/loadlib.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
@@ -177,7 +178,6 @@ namespace
 	//% is intentionally missing.
 	const char* allowed_filename_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 		"^&'@{}[],$?!-#().+~_";
-	const char* hexes = "0123456789ABCDEF";
 }
 
 std::string safe_filename(const std::string& str)
@@ -188,7 +188,7 @@ std::string safe_filename(const std::string& str)
 		if(strchr(allowed_filename_chars, ch))
 			o << str[i];
 		else
-			o << "%" << hexes[ch / 16] << hexes[ch % 16];
+			o << "%" << hex::to8(ch);
 	}
 	return o.str();
 }
@@ -282,9 +282,7 @@ void dump_region_map() throw(std::bad_alloc)
 	std::list<struct memory_region*> regions = lsnes_memory.get_regions();
 	for(auto i : regions) {
 		std::ostringstream x;
-		x << std::setfill('0') << std::setw(16) << std::hex << i->base << "-";
-		x << std::setfill('0') << std::setw(16) << std::hex << i->last_address() << " ";
-		x << std::setfill('0') << std::setw(16) << std::hex << i->size << " ";
+		x << hex::to(i->base) << "-" << hex::to(i->last_address()) << " " << hex::to(i->size) << " ";
 		messages << x.str() << (i->readonly ? "R-" : "RW") << endian_char(i->endian)
 			<< (i->special ? 'I' : 'M') << " " << i->name << std::endl;
 	}
@@ -353,10 +351,7 @@ uint32_t gcd(uint32_t a, uint32_t b) throw()
 
 std::string format_address(void* addr)
 {
-	unsigned long x = (unsigned long)addr;
-	std::ostringstream y;
-	y << "0x" << std::hex << std::setfill('0') << std::setw(2 * sizeof(unsigned long)) << x;
-	return y.str();
+	return hex::to((uint64_t)addr);
 }
 
 bool in_global_ctors()
@@ -434,7 +429,7 @@ void random_mix_timing_entropy()
 void highrandom_256(uint8_t* buf)
 {
 	uint8_t tmp[104];
-	std::string s = get_random_hexstring(0);
+	std::string s = get_random_hexstring(64);
 	std::copy(s.begin(), s.end(), reinterpret_cast<char*>(tmp));
 	arch_random_256(tmp + 64);
 	serialization::u64b(tmp + 96, arch_get_tsc());
