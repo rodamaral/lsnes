@@ -1,4 +1,4 @@
-#include "filesys.hpp"
+#include "filesystem.hpp"
 #include "minmax.hpp"
 #include "serialization.hpp"
 #include <cstring>
@@ -282,4 +282,53 @@ void filesystem::supercluster::save(std::fstream& s, uint32_t index)
 	s.write(buffer, CLUSTER_SIZE);
 	if(!s)
 		throw std::runtime_error("Can't write cluster table");
+}
+
+filesystem::ref& filesystem::ref::operator=(const filesystem::ref& r)
+{
+	if(this == &r)
+		return *this;
+	//This is tricky, due to having to lock two objects.
+	size_t A = (size_t)this;
+	size_t B = (size_t)&r;
+	mutex_class* mtodelete = NULL;
+	if(!refcnt) {
+		//We just have to grab a ref and copy.
+		umutex_class m(*r.mutex);
+		++*(r.refcnt);
+		refcnt = r.refcnt;
+		mutex = r.mutex;
+		fs = r.fs;
+	} else if(A < B) {
+		//Two-object case.
+		umutex_class m1(*mutex);
+		umutex_class m2(*r.mutex);
+		--*refcnt;
+		if(!*refcnt) {
+			delete fs;
+			delete refcnt;
+			mtodelete = mutex;;
+		}
+		++*(r.refcnt);
+		refcnt = r.refcnt;
+		mutex = r.mutex;
+		fs = r.fs;
+	} else {
+		//Two-object case.
+		umutex_class m1(*r.mutex);
+		umutex_class m2(*mutex);
+		--*refcnt;
+		if(!*refcnt) {
+			delete fs;
+			delete refcnt;
+			mtodelete = mutex;;
+		}
+		++*(r.refcnt);
+		refcnt = r.refcnt;
+		mutex = r.mutex;
+		fs = r.fs;
+	}
+	if(mtodelete)
+		delete mtodelete;
+	return *this;
 }

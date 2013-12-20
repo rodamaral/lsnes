@@ -1,6 +1,6 @@
 #include <lsnes.hpp>
 #include <cstdint>
-#include "library/filesys.hpp"
+#include "library/filesystem.hpp"
 #include "library/minmax.hpp"
 #include "library/workthread.hpp"
 #include "library/serialization.hpp"
@@ -192,12 +192,12 @@ namespace
 		uint64_t offset() { return descriptor & 0xFFFFFFFFFFULL; }
 		//Read the packet.
 		//Can throw.
-		std::vector<unsigned char> packet(filesystem_ref from_sys);
+		std::vector<unsigned char> packet(filesystem::ref from_sys);
 	private:
 		uint64_t descriptor;
 	};
 
-	std::vector<unsigned char> opus_packetinfo::packet(filesystem_ref from_sys)
+	std::vector<unsigned char> opus_packetinfo::packet(filesystem::ref from_sys)
 	{
 		std::vector<unsigned char> ret;
 		uint64_t off = offset();
@@ -216,13 +216,13 @@ namespace
 	struct opus_stream
 	{
 		//Create new empty stream with specified base time.
-		opus_stream(uint64_t base, filesystem_ref filesys);
+		opus_stream(uint64_t base, filesystem::ref filesys);
 		//Read stream with specified base time and specified start clusters.
 		//Can throw.
-		opus_stream(uint64_t base, filesystem_ref filesys, uint32_t ctrl_cluster, uint32_t data_cluster);
+		opus_stream(uint64_t base, filesystem::ref filesys, uint32_t ctrl_cluster, uint32_t data_cluster);
 		//Import a stream with specified base time.
 		//Can throw.
-		opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data,
+		opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
 			external_stream_format extfmt);
 		//Delete this stream (also puts a ref)
 		void delete_stream() { deleting = true; put_ref(); }
@@ -295,7 +295,7 @@ namespace
 		opus_stream(const opus_stream&);
 		opus_stream& operator=(const opus_stream&);
 		void destroy();
-		filesystem_ref fs;
+		filesystem::ref fs;
 		std::vector<opus_packetinfo> packets;
 		uint64_t total_len;
 		uint64_t s_timebase;
@@ -314,7 +314,7 @@ namespace
 		bool deleting;
 	};
 
-	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys)
+	opus_stream::opus_stream(uint64_t base, filesystem::ref filesys)
 		: fs(filesys)
 	{
 		refcount = 1;
@@ -333,7 +333,7 @@ namespace
 		gain = 0;
 	}
 
-	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys, uint32_t _ctrl_cluster,
+	opus_stream::opus_stream(uint64_t base, filesystem::ref filesys, uint32_t _ctrl_cluster,
 		uint32_t _data_cluster)
 		: fs(filesys)
 	{
@@ -415,7 +415,7 @@ out_parsing:
 		}
 	}
 
-	opus_stream::opus_stream(uint64_t base, filesystem_ref filesys, std::ifstream& data,
+	opus_stream::opus_stream(uint64_t base, filesystem::ref filesys, std::ifstream& data,
 		external_stream_format extfmt)
 		: fs(filesys)
 	{
@@ -955,7 +955,7 @@ out:
 	public:
 		//Create a new collection.
 		//Can throw.
-		stream_collection(filesystem_ref filesys);
+		stream_collection(filesystem::ref filesys);
 		//Destroy a collection. All streams are destroyed but not deleted.
 		~stream_collection();
 		//Get list of streams active at given point.
@@ -964,7 +964,7 @@ out:
 		//Can throw.
 		uint64_t add_stream(opus_stream& stream);
 		//Get the filesystem this collection is for.
-		filesystem_ref get_filesystem() { return fs; }
+		filesystem::ref get_filesystem() { return fs; }
 		//Unlock all streams in collection.
 		void unlock_all();
 		//Get stream with given index (NULL if not found).
@@ -991,7 +991,7 @@ out:
 		//Can throw.
 		void export_superstream(std::ofstream& out);
 	private:
-		filesystem_ref fs;
+		filesystem::ref fs;
 		uint64_t next_index;
 		unsigned next_stream;
 		mutex_class mutex;
@@ -1002,7 +1002,7 @@ out:
 		std::map<uint64_t, opus_stream*> streams;
 	};
 
-	stream_collection::stream_collection(filesystem_ref filesys)
+	stream_collection::stream_collection(filesystem::ref filesys)
 		: fs(filesys)
 	{
 		next_stream = 0;
@@ -1825,9 +1825,9 @@ void voicesub_export_superstream(const std::string& filename)
 void voicesub_load_collection(const std::string& filename)
 {
 	umutex_class m2(current_collection_lock);
-	filesystem_ref newfs;
+	filesystem::ref newfs;
 	stream_collection* newc;
-	newfs = filesystem_ref(filename);
+	newfs = filesystem::ref(filename);
 	newc = new stream_collection(newfs);
 	if(current_collection)
 		delete current_collection;
