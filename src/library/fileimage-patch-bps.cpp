@@ -1,5 +1,5 @@
 #include "minmax.hpp"
-#include "patch.hpp"
+#include "fileimage-patch.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
 #include <cstdint>
@@ -8,6 +8,8 @@
 #include <iostream>
 #include <zlib.h>
 
+namespace fileimage
+{
 namespace
 {
 	uint8_t readbyte(const char* buf, uint64_t& pos, uint64_t size)
@@ -51,7 +53,7 @@ namespace
 		return 0;
 	}
 
-	struct bps_patcher : public rom_patcher
+	struct bps_patcher : public patcher
 	{
 		~bps_patcher() throw();
 		bool identify(const std::vector<char>& patch) throw();
@@ -172,4 +174,5 @@ namespace
 			(stringfmt() << "CRC mismatch on result: Claimed: " << dstcrc << " Actual: " << dstcrc_c
 				<< ".").throwex();
 	}
+}
 }

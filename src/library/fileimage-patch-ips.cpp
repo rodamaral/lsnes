@@ -1,5 +1,5 @@
 #include "minmax.hpp"
-#include "patch.hpp"
+#include "fileimage-patch.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
 #include <cstdint>
@@ -7,6 +7,8 @@
 #include <cstring>
 #include <iostream>
 
+namespace fileimage
+{
 namespace
 {
 	uint8_t readbyte(const char* buf, uint64_t& pos, uint64_t size)
@@ -17,7 +19,7 @@ namespace
 		return static_cast<uint8_t>(buf[pos++]);
 	}
 
-	struct ips_patcher : public rom_patcher
+	struct ips_patcher : public patcher
 	{
 		~ips_patcher() throw();
 		bool identify(const std::vector<char>& patch) throw();
@@ -31,8 +33,8 @@ namespace
 
 	bool ips_patcher::identify(const std::vector<char>& patch) throw()
 	{
-		return (patch.size() > 5 && patch[0] == 'P' && patch[1] == 'A' && patch[2] == 'T' && patch[3] == 'C' &&
-			patch[4] == 'H');
+		return (patch.size() > 5 && patch[0] == 'P' && patch[1] == 'A' && patch[2] == 'T' &&
+			patch[3] == 'C' && patch[4] == 'H');
 	}
 
 	void ips_patcher::dopatch(std::vector<char>& out, const std::vector<char>& original,
@@ -83,4 +85,5 @@ namespace
 					out[off + i] = b;
 		}
 	}
+}
 }

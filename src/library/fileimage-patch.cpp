@@ -1,4 +1,4 @@
-#include "patch.hpp"
+#include "fileimage-patch.hpp"
 #include "sha256.hpp"
 #include "string.hpp"
 #include <cstdint>
@@ -6,16 +6,18 @@
 #include <iostream>
 #include <set>
 
+namespace fileimage
+{
 namespace
 {
-	std::set<rom_patcher*>& patchers()
+	std::set<patcher*>& patchers()
 	{
-		static std::set<rom_patcher*> t;
+		static std::set<patcher*> t;
 		return t;
 	}
 }
 
-std::vector<char> do_patch_file(const std::vector<char>& original, const std::vector<char>& patch,
+std::vector<char> patch(const std::vector<char>& original, const std::vector<char>& patch,
 	int32_t offset) throw(std::bad_alloc, std::runtime_error)
 {
 	std::vector<char> out;
@@ -27,12 +29,13 @@ std::vector<char> do_patch_file(const std::vector<char>& original, const std::ve
 	throw std::runtime_error("Unknown patch file format");
 }
 
-rom_patcher::rom_patcher() throw(std::bad_alloc)
+patcher::patcher() throw(std::bad_alloc)
 {
 	patchers().insert(this);
 }
 
-rom_patcher::~rom_patcher() throw()
+patcher::~patcher() throw()
 {
 	patchers().erase(this);
+}
 }

@@ -1,5 +1,5 @@
-#ifndef _library__patch__hpp__included__
-#define _library__patch__hpp__included__
+#ifndef _library__fileimage_patch__hpp__included__
+#define _library__fileimage_patch__hpp__included__
 
 #include <vector>
 #include <string>
@@ -7,22 +7,24 @@
 #include <cstdlib>
 #include <stdexcept>
 
-std::vector<char> do_patch_file(const std::vector<char>& original, const std::vector<char>& patch,
+namespace fileimage
+{
+std::vector<char> patch(const std::vector<char>& original, const std::vector<char>& patch,
 	int32_t offset) throw(std::bad_alloc, std::runtime_error);
 
 /**
  * ROM patcher.
  */
-struct rom_patcher
+struct patcher
 {
 /**
  * Constructor.
  */
-	rom_patcher() throw(std::bad_alloc);
+	patcher() throw(std::bad_alloc);
 /**
  * Destructor.
  */
-	virtual ~rom_patcher() throw();
+	virtual ~patcher() throw();
 /**
  * Identify patch.
  *
@@ -36,5 +38,6 @@ struct rom_patcher
 	virtual void dopatch(std::vector<char>& out, const std::vector<char>& original,
 		const std::vector<char>& patch, int32_t offset) throw(std::bad_alloc, std::runtime_error) = 0;
 };
+}
 
 #endif

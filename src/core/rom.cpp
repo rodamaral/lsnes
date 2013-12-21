@@ -15,7 +15,7 @@
 #include "interface/callbacks.hpp"
 #include "library/framebuffer-pixfmt-rgb16.hpp"
 #include "library/controller-data.hpp"
-#include "library/patch.hpp"
+#include "library/fileimage-patch.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"

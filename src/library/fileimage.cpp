@@ -1,6 +1,6 @@
 #include "fileimage.hpp"
 #include "sha256.hpp"
-#include "patch.hpp"
+#include "fileimage-patch.hpp"
 #include "string.hpp"
 #include "minmax.hpp"
 #include "zip.hpp"
@@ -505,7 +505,7 @@ void image::patch(const std::vector<char>& patch, int32_t offset) throw(std::bad
 		std::vector<char> data2 = *data;
 		if(type == info::IT_MARKUP)
 			data2.resize(data2.size() - 1);
-		data2 = do_patch_file(data2, patch, offset);
+		data2 = ::fileimage::patch(data2, patch, offset);
 		//Mark the slot as valid and update hash.
 		std::string new_sha256 = sha256::hash(data2);
 		if(type == info::IT_MARKUP) {
