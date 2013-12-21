@@ -307,9 +307,9 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 		runuifun([this, d]() {
 			if(this->closing) return;
 			auto pdevs = audioapi_driver_get_devices(false);
-			if(pdevs.count(d.second)) this->pdev->SetValue(pdevs[d.second]);
+			if(pdevs.count(d.second)) this->pdev->SetValue(towxstring(pdevs[d.second]));
 			auto rdevs = audioapi_driver_get_devices(true);
-			if(rdevs.count(d.first)) this->rdev->SetValue(rdevs[d.first]);
+			if(rdevs.count(d.first)) this->rdev->SetValue(towxstring(rdevs[d.first]));
 		});
 	});
 
