@@ -4804,7 +4804,44 @@ bsnes core
 \begin_layout Itemize
 Registers are: pbpc, pb, pc, r0, r1, r2, r3, r4, r5, a, x, y, z, s, d, db,
  p, e, irq, wai, mdr, vector, aa, rd, sp, dp, p_n, p_v, p_m, p_x, p_d, p_i,
- p_z, p_c
+ p_z, p_c, ppu_display_disabled, ppu_oam_priority, ppu_bg_tilesize[0], ppu_bg_ti
+lesize[1], ppu_bg_tilesize[2], ppu_bg_tilesize[3], ppu_bg3_priority, ppu_mosaic_
+enabled[0], ppu_mosaic_enabled[1], ppu_mosaic_enabled[2], ppu_mosaic_enabled[3],
+ ppu_vram_incmode, ppu_mode7_vflip, ppu_mode7_hflip, ppu_window1_enabled[0],
+ ppu_window1_enabled[1], ppu_window1_enabled[2], ppu_window1_enabled[3],
+ ppu_window1_enabled[4], ppu_window1_enabled[5], ppu_window1_invert[0],
+ ppu_window1_invert[1], ppu_window1_invert[2], ppu_window1_invert[3], ppu_window
+1_invert[4], ppu_window1_invert[5], ppu_window2_enabled[0], ppu_window2_enabled[
+1], ppu_window2_enabled[2], ppu_window2_enabled[3], ppu_window2_enabled[4],
+ ppu_window2_enabled[5], ppu_window2_invert[0], ppu_window2_invert[1], ppu_windo
+w2_invert[2], ppu_window2_invert[3], ppu_window2_invert[4], ppu_window2_invert[5
+], ppu_bg_enabled[0], ppu_bg_enabled[1], ppu_bg_enabled[2], ppu_bg_enabled[3],
+ ppu_bg_enabled[4], ppu_bgsub_enabled[0], ppu_bgsub_enabled[1], ppu_bgsub_enable
+d[2], ppu_bgsub_enabled[3], ppu_bgsub_enabled[4], ppu_window_enabled[0],
+ ppu_window_enabled[1], ppu_window_enabled[2], ppu_window_enabled[3], ppu_window
+_enabled[4], ppu_sub_window_enabled[0], ppu_sub_window_enabled[1], ppu_sub_windo
+w_enabled[2], ppu_sub_window_enabled[3], ppu_sub_window_enabled[4], ppu_addsub_m
+ode, ppu_direct_color, ppu_color_mode, ppu_color_halve, ppu_color_enabled[0],
+ ppu_color_enabled[1], ppu_color_enabled[2], ppu_color_enabled[3], ppu_color_ena
+bled[4], ppu_color_enabled[5], ppu_mode7_extbg, ppu_pseudo_hires, ppu_overscan,
+ ppu_oam_interlace, ppu_interlace, ppu_latch_hcounter, ppu_latch_vcounter,
+ ppu_counters_latched, ppu_time_over, ppu_range_over, ppu_ppu1_mdr, ppu_ppu2_mdr
+, ppu_bg_y[0], ppu_bg_y[1], ppu_bg_y[2], ppu_bg_y[3], ppu_ioamaddr, ppu_icgramad
+dr, ppu_display_brightness, ppu_oam_basesize, ppu_oam_nameselect, ppu_oam_tdaddr
+, ppu_oam_baseaddr, ppu_oam_addr, ppu_oam_firstsprite, ppu_oam_latchdata,
+ ppu_bg_mode, ppu_mosaic_size, ppu_mosaic_countdown, ppu_bg_scaddr[0], ppu_bg_sc
+addr[1], ppu_bg_scaddr[2], ppu_bg_scaddr[3], ppu_bg_scsize[0], ppu_bg_scsize[1],
+ ppu_bg_scsize[2], ppu_bg_scsize[3], ppu_bg_tdaddr[0], ppu_bg_tdaddr[1],
+ ppu_bg_tdaddr[2], ppu_bg_tdaddr[3], ppu_bg_ofslatch, ppu_m7_hofs, ppu_m7_vofs,
+ ppu_bg_hofs[0], ppu_bg_hofs[1], ppu_bg_hofs[2], ppu_bg_hofs[3], ppu_bg_vofs[0],
+ ppu_bg_vofs[1], ppu_bg_vofs[2], ppu_bg_vofs[3], ppu_vram_mapping, ppu_vram_incs
+ize, ppu_vram_addr, ppu_mode7_repeat, ppu_m7_latch, ppu_m7a, ppu_m7b, ppu_m7c,
+ ppu_m7d, ppu_m7x, ppu_m7y, ppu_cgram_addr, ppu_cgram_latchdata, ppu_window1_lef
+t, ppu_window1_right, ppu_window2_left, ppu_window2_right, ppu_window_mask[0],
+ ppu_window_mask[1], ppu_window_mask[2], ppu_window_mask[3], ppu_window_mask[4],
+ ppu_window_mask[5], ppu_color_mask, ppu_colorsub_mask, ppu_color_r, ppu_color_g
+, ppu_color_b, ppu_color_rgb, ppu_scanlines, ppu_hcounter, ppu_vcounter,
+ ppu_vram_readbuffer, ppu_oam_itemcount, ppu_oam_tilecount, 
 \end_layout
 
 \begin_layout Itemize
