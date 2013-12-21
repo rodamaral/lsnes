@@ -296,7 +296,7 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 		wxCommandEventHandler(wxwin_vumeter::on_devsel), NULL, this);
 	pdev->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
 		wxCommandEventHandler(wxwin_vumeter::on_devsel), NULL, this);
-	mute->Connect(wxEVT_CHECKBOX,
+	mute->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED,
 		wxCommandEventHandler(wxwin_vumeter::on_mute), NULL, this);
 	Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(wxwin_vumeter::on_wclose));
 
