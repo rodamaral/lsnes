@@ -33,32 +33,6 @@ int firstchar(const std::string& str)
 		return -1;
 }
 
-int extract_token(std::string& str, std::string& tok, const char* sep, bool sequence) throw(std::bad_alloc)
-{
-	if(!*sep) {
-		tok = str;
-		str = "";
-		return (tok == "") ? -2 : -1;
-	}
-	size_t s = str.find_first_of(sep);
-	if(s < str.length()) {
-		int ech = static_cast<unsigned char>(str[s]);
-		size_t t = sequence ? min(str.find_first_not_of(sep, s), str.length()) : (s + 1);
-		tok = str.substr(0, s);
-		str = str.substr(t);
-		return ech;
-	} else {
-		tok = str;
-		str = "";
-		return -1;
-	}
-
-	int ech = (s < str.length()) ? static_cast<unsigned char>(str[s]) : -1;
-	tok = str.substr(0, s);
-	str = str.substr(s + 1);
-	return ech;
-}
-
 int string_to_bool(const std::string& x)
 {
 	std::string y = x;
@@ -306,4 +280,117 @@ string_list<char32_t> split_on_codepoint(const std::u32string& s, char32_t cp)
 {
 	std::u32string _cp(1, cp);
 	return _split_on_codepoint<char32_t>(s, _cp);
+}
+
+template<typename T> token_iterator<T>::token_iterator()
+	: str(tmp), is_end_iterator(true)
+{
+}
+
+template<typename T> token_iterator<T>::token_iterator(const std::basic_string<T>& s,
+	std::initializer_list<const T*> sep, bool whole_sequence) throw(std::bad_alloc)
+	: str(s), whole_seq(whole_sequence), is_end_iterator(false), bidx(0), eidx(0)
+{
+	for(auto i : sep)
+		spliton.insert(i);
+	load_helper();
+}
+
+template<typename T> bool token_iterator<T>::operator!=(const token_iterator<T>& itr) const throw()
+{
+	return !(*this == itr);
+}
+
+template<typename T> bool token_iterator<T>::operator==(const token_iterator<T>& itr) const throw()
+{
+	bool is_end_a = is_end_iterator || (bidx >= str.length());
+	bool is_end_b = itr.is_end_iterator || (itr.bidx >= itr.str.length());
+	if(is_end_a)
+		if(is_end_b)
+			return true;
+		else
+			return false;
+	else
+		if(is_end_b)
+			return false;
+		else
+			return bidx == itr.bidx;
+}
+
+template<typename T> const std::basic_string<T>& token_iterator<T>::operator*() const throw()
+{
+	return tmp;
+}
+
+template<typename T> token_iterator<T> token_iterator<T>::operator++(int) throw(std::bad_alloc)
+{
+	token_iterator<T> t = *this;
+	++*this;
+	return t;
+}
+
+template<typename T> token_iterator<T>& token_iterator<T>::operator++() throw(std::bad_alloc)
+{
+	bidx = eidx + is_sep(eidx);
+	load_helper();
+	return *this;
+}
+
+template<typename T> void token_iterator<T>::load_helper()
+{
+	size_t t;
+	if(whole_seq)
+		while(bidx < str.length() && (t = is_sep(bidx)))
+			bidx += t;
+	eidx = bidx;
+	while(eidx < str.length() && !is_sep(eidx))
+		eidx++;
+	tmp.resize(eidx - bidx);
+	std::copy(str.begin() + bidx, str.begin() + eidx, tmp.begin());
+}
+
+template<typename T> size_t token_iterator<T>::is_sep(size_t pos)
+{
+	if(pos >= str.length())
+		return 0;
+	std::basic_string<T> h(1, str[pos++]);
+	while(true) {
+		if(spliton.count(h))
+			return h.length();
+		auto i = spliton.lower_bound(h);
+		//If string at i is end-of-set or does not start with h, there can't be a match.
+		if(i == spliton.end())
+			return 0;
+		std::basic_string<T> i2 = *i;
+		if(i2.length() < h.length() || (i2.substr(0, h.length()) != h))
+			return 0;
+		h = h + std::basic_string<T>(1, str[pos++]);
+	}
+}
+
+namespace
+{
+	template<typename T> void pull_token_itr()
+	{
+		int w = 0;
+		std::basic_string<T> x;
+		token_iterator<T> y(x, {});
+		token_iterator<T> z;
+		y++;
+		++y;
+		x = *y;
+		if(y == z) w = 1;
+		if(y != z) w = 2;
+	}
+
+	void pull_token_itr2()
+	{
+		pull_token_itr<char>();
+		pull_token_itr<char32_t>();
+	}
+}
+
+void _dummy_63263896236732867328673826783276283673867()
+{
+	pull_token_itr2();
 }

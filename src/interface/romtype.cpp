@@ -139,11 +139,8 @@ core_romimage_info::core_romimage_info(const core_romimage_info_params& params)
 	headersize = params.headersize;
 	if(params.extensions) {
 		std::string tmp = params.extensions;
-		while(tmp != "") {
-			std::string ext;
-			extract_token(tmp, ext, ";");
+		for(auto& ext : token_iterator_foreach(tmp, {";"}))
 			extensions.insert(ext);
-		}
 	}
 }
 

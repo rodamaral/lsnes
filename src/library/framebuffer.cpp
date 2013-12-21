@@ -728,23 +728,9 @@ std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 {
 	size_t commit_width = 0;
 	size_t commit_height = 0;
-	int32_t lineminy = 0;
-	int32_t linemaxy = 0;
 	size_t linelength = 0;
-	uint16_t utfstate = utf8::initial_state;
-	size_t itr = 0;
-	size_t maxitr = string.length();
-	while(true) {
-		int ch = (itr < maxitr) ? static_cast<unsigned char>(string[itr++]) : -1;
-		int32_t cp = utf8::parse_byte(ch, utfstate);
-		if(cp < 0 && ch < 0) {
-			//The end.
-			commit_width = (commit_width < linelength) ? linelength : commit_width;
-			commit_height += (linemaxy - lineminy + 1);
-			break;
-		}
-		if(cp < 0)
-			continue;
+	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([this, &linelength, &commit_width,
+		&commit_height](const int32_t& cp) -> void {
 		const glyph& g = get_glyph(cp);
 		switch(cp) {
 		case 9:
@@ -758,34 +744,27 @@ std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 			linelength = linelength + (g.wide ? 16 : 8);
 			break;
 		};
-	}
+	}));
 	return std::make_pair(commit_width, commit_height);
 }
 
 std::vector<font::layout> font::dolayout(const std::string& string) throw(std::bad_alloc)
 {
 	//First, calculate the number of glyphs to draw.
-	uint16_t utfstate = utf8::initial_state;
-	size_t itr = 0;
-	size_t maxitr = string.length();
 	size_t chars = 0;
-	utf8::to32i2(string.begin(), string.end(), [&chars](int32_t cp) {
+	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([&chars](const int32_t& cp)
+		-> void {
 		if(cp != 9 && cp != 10)
 			chars++;
-	});
+	}));
 	//Allocate space.
 	std::vector<layout> l;
 	l.resize(chars);
-	itr = 0;
 	size_t gtr = 0;
 	size_t layout_x = 0;
 	size_t layout_y = 0;
-	utfstate = utf8::initial_state;
-	while(true) {
-		int ch = (itr < maxitr) ? static_cast<unsigned char>(string[itr++]) : -1;
-		int32_t cp = utf8::parse_byte(ch, utfstate);
-		if(cp < 0 && ch < 0)
-			break;
+	utf8::to32i(string.begin(), string.end(), lambda_output_iterator<int32_t>([this, &layout_x, &layout_y,
+		&l, &gtr](const int32_t cp) {
 		const glyph& g = get_glyph(cp);
 		switch(cp) {
 		case 9:
@@ -801,7 +780,7 @@ std::vector<font::layout> font::dolayout(const std::string& string) throw(std::b
 			l[gtr++].dglyph = &g;
 			layout_x = layout_x + (g.wide ? 16 : 8);;
 		}
-	}
+	}));
 	return l;
 }
 
@@ -810,14 +789,12 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 {
 	x += scr.get_origin_x();
 	y += scr.get_origin_y();
-	size_t itr = 0;
-	size_t maxitr = text.length();
 	size_t layout_x = 0;
 	size_t layout_y = 0;
 	size_t swidth = scr.get_width();
 	size_t sheight = scr.get_height();
-	utf8::to32i2(text.begin(), text.end(), [this, x, y, &scr, &layout_x, &layout_y, swidth, sheight, hdbl, vdbl,
-		&fg, &bg](int32_t cp) {
+	utf8::to32i(text.begin(), text.end(), lambda_output_iterator<int32_t>([this, x, y, &scr, &layout_x,
+		&layout_y, swidth, sheight, hdbl, vdbl, &fg, &bg](const int32_t& cp) {
 		const glyph& g = get_glyph(cp);
 		switch(cp) {
 		case 9:
@@ -883,7 +860,7 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 				}
 			layout_x += (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
 		}
-	});
+	}));
 }
 
 void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()

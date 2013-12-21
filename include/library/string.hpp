@@ -3,6 +3,7 @@
 
 #include <string>
 #include <sstream>
+#include <set>
 #include <list>
 #include <stdexcept>
 #include <vector>
@@ -41,15 +42,150 @@ private:
 };
 
 /**
- * Extract token out of string.
- *
- * Parameter str: The original string and the rest of the string on return.
- * Parameter tok: The extracted token will be written here.
- * Parameter sep: The characters to split on (empty always extracts the rest).
- * Parameter seq: If true, skip whole sequence of token ending characters.
- * Returns: The character token splitting occured on (-1 if end of string, -2 if string is empty).
+ * Lambda iterator.
  */
-int extract_token(std::string& str, std::string& tok, const char* sep, bool seq = false) throw(std::bad_alloc);
+template<typename T> class lambda_output_iterator
+{
+public:
+	template<typename U> class helper
+	{
+	public:
+		helper(std::function<void(const U& val)> _fn)
+			: fn(_fn)
+		{
+		}
+		helper& operator=(const U& v)
+		{
+			fn(v);
+			return *this;
+		}
+	private:
+		std::function<void(const U& val)> fn;
+	};
+	typedef std::output_iterator_tag iterator_category;
+	typedef helper<T> value_type;
+	typedef int difference_type;
+	typedef helper<T>& reference;
+	typedef helper<T>* pointer;
+/**
+ * Constructor.
+ */
+	lambda_output_iterator(std::function<void(const T& val)> _fn)
+		: h(_fn)
+	{
+	}
+/**
+ * Dereference.
+ */
+	helper<T>& operator*() throw()
+	{
+		return h;
+	}
+/**
+ * Increment.
+ */
+	lambda_output_iterator<T>& operator++() throw()
+	{
+	}
+/**
+ * Increment.
+ */
+	lambda_output_iterator<T> operator++(int) throw()
+	{
+	}
+private:
+	helper<T> h;
+};
+
+/**
+ * Token iterator.
+ */
+template<typename T> class token_iterator
+{
+public:
+	typedef std::forward_iterator_tag iterator_category;
+	typedef std::basic_string<T> value_type;
+	typedef int difference_type;
+	typedef const std::basic_string<T>& reference;
+	typedef const std::basic_string<T>* pointer;
+/**
+ * Create new end-of-sequence iterator.
+ */
+	token_iterator();
+/**
+ * Create a new start-of-sequence iterator.
+ *
+ * Parameter s: The string to iterate. Must remain valid during lifetime of iterator.
+ * Parameter sep: The set of separators.
+ * Parameter whole_sequence: If true, after seeing one separator, throw away separators until none more are found.
+ */
+	token_iterator(const std::basic_string<T>& s, std::initializer_list<const T*> sep,
+		bool whole_sequence = false) throw(std::bad_alloc);
+/**
+ * Compare.
+ */
+	bool operator==(const token_iterator<T>& itr) const throw();
+/**
+ * Compare.
+ */
+	bool operator!=(const token_iterator<T>& itr) const throw();
+/**
+ * Dereference.
+ */
+	const std::basic_string<T>& operator*() const throw();
+/**
+ * Increment.
+ */
+	token_iterator<T>& operator++() throw(std::bad_alloc);
+/**
+ * Increment.
+ */
+	token_iterator<T> operator++(int) throw(std::bad_alloc);
+private:
+	size_t is_sep(size_t pos);
+	void load_helper();
+	const std::basic_string<T>& str;
+	size_t bidx;
+	size_t eidx;
+	std::basic_string<T> tmp;
+	std::set<std::basic_string<T>> spliton;
+	bool is_end_iterator;
+	bool whole_seq;
+};
+
+/**
+ * Foreach helper.
+ */
+template<typename U> class _token_iterator_foreach
+{
+public:
+/**
+ * Create helper.
+ */
+	_token_iterator_foreach(const std::basic_string<U>& _s,
+		std::initializer_list<const U*> sep, bool whole_sequence = false)
+		: s(_s, sep, whole_sequence)
+	{
+	}
+/**
+ * Starting iterator.
+ */
+	token_iterator<U> begin() throw() { return s; }
+/**
+ * Ending iterator.
+ */
+	token_iterator<U> end() throw() { return e; }
+private:
+	token_iterator<U> s;
+	token_iterator<U> e;
+};
+
+template<typename T> _token_iterator_foreach<T> token_iterator_foreach(const std::basic_string<T>& _s,
+	std::initializer_list<const T*> sep, bool whole_sequence = false)
+{
+	return _token_iterator_foreach<T>(_s, sep, whole_sequence);
+}
+
 
 class regex_results
 {

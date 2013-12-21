@@ -429,9 +429,7 @@ namespace sky
 					stransitions[lsid].end_pts = parse_value<uint64_t>(r[3]) + ctx.pregap;
 				if(r[1] == "NEXT") {
 					std::string next = r[3];
-					std::string token;
-					while(next != "") {
-						extract_token(next, token, ",");
+					for(auto& token : token_iterator_foreach(next, {","})) {
 						uint32_t lsid2 = register_lsid(token);
 						stransitions[lsid].next_subsongs.insert(lsid2);
 					}

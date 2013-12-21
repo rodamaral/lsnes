@@ -525,11 +525,8 @@ namespace
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::list<std::string> _args;
 			std::string args2 = args;
-			while(args2 != "") {
-				std::string sym;
-				extract_token(args2, sym, " \t");
+			for(auto& sym : token_iterator_foreach(args, {" ", "\t"}))
 				_args.push_back(sym);
-			}
 			lua_callback_do_latch(_args);
 		});
 	command::fnptr<> count_rerecords(lsnes_cmd, "count-rerecords", "Count rerecords",

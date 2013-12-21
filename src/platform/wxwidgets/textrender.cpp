@@ -1,6 +1,7 @@
 #include "platform/wxwidgets/textrender.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/utf8.hpp"
+#include "library/string.hpp"
 #include <wx/dc.h>
 #include <wx/dcclient.h>
 #include <wx/image.h>
@@ -139,79 +140,59 @@ size_t text_framebuffer::text_width(const std::string& text)
 
 size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
 {
-	size_t spos = 0;
-	size_t slen = str.length();
 	size_t pused = 0;
-	uint16_t state = utf8::initial_state;
 	if(y >= height)
 		return 0;
-	while(true) {
-		int ch = (spos < slen) ? (unsigned char)str[spos] : - 1;
-		int32_t u = utf8::parse_byte(ch, state);
-		if(u < 0) {
-			if(ch < 0)
-				break;
-			spos++;
-			continue;
-		}
-		//Okay, got u to write...
+	utf8::to32i(str.begin(), str.end(), lambda_output_iterator<int32_t>([this, &pused, w, x, y, fg,
+		bg](const int32_t& u) {
 		const framebuffer::font::glyph& g = main_font.get_glyph(u);
-		if(x < width) {
-			element& e = buffer[y * width + x];
+		if(x + pused < width) {
+			element& e = buffer[y * width + x + pused];
 			e.ch = u;
 			e.fg = fg;
 			e.bg = bg;
 		}
-		x++;
-		if(x >= width)
-			return 0;
 		pused += (g.wide ? 2 : 1);
-		spos++;
-	}
+	}));
 	while(pused < w) {
 		//Pad with spaces.
-		if(x < width) {
-			element& e = buffer[y * width + x];
+		if(x + pused < width) {
+			element& e = buffer[y * width + x + pused];
 			e.ch = 32;
 			e.fg = fg;
 			e.bg = bg;
 		}
 		pused++;
-		x++;
 	}
-	return x;
+	return x + pused;
 }
 
 size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
 {
 	if(y >= height)
 		return 0;
-	size_t spos = 0;
-	size_t slen = str.length();
 	size_t pused = 0;
 	for(auto u : str) {
 		const framebuffer::font::glyph& g = main_font.get_glyph(u);
-		if(x < width) {
-			element& e = buffer[y * width + x];
+		if(x + pused < width) {
+			element& e = buffer[y * width + x + pused];
 			e.ch = u;
 			e.fg = fg;
 			e.bg = bg;
 		}
-		x++;
 		pused += (g.wide ? 2 : 1);
 	}
 	while(pused < w) {
 		//Pad with spaces.
-		if(x < width) {
-			element& e = buffer[y * width + x];
+		if(x + pused < width) {
+			element& e = buffer[y * width + x + pused];
 			e.ch = 32;
 			e.fg = fg;
 			e.bg = bg;
 		}
 		pused++;
-		x++;
 	}
-	return x;
+	return x + pused;
 }
 
 text_framebuffer_panel::text_framebuffer_panel(wxWindow* parent, size_t w, size_t h, wxWindowID id,

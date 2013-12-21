@@ -12,9 +12,9 @@ namespace
 				messages << "Action name required." << std::endl;
 				return;
 			}
-			std::string args = _args;
-			std::string sym;
-			extract_token(args, sym, " \t");
+			token_iterator<char> itr(_args, {" ", "\t"});
+			token_iterator<char> itre;
+			std::string sym = *itr++;
 			const interface_action* act = NULL;
 			for(auto i : our_rom.rtype->get_actions())
 				if(i->get_symbol() == sym) {
@@ -36,12 +36,11 @@ namespace
 					params.push_back(pv);
 					continue;
 				}
-				if(args == "") {
+				if(itr == itre) {
 					messages << "Action needs more parameters." << std::endl;
 					return;
 				}
-				std::string p;
-				extract_token(args, p, " \t");
+				std::string p = *itr++;
 				regex_results r;
 				interface_action_paramval pv;
 				if(r = regex("string(:(.*))?", i.model)) {
@@ -119,7 +118,7 @@ out:
 				}
 				params.push_back(pv);
 			}
-			if(args != "") {
+			if(itr != itre) {
 				messages << "Excess parameters for action." << std::endl;
 				return;
 			}

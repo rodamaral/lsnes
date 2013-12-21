@@ -236,10 +236,7 @@ messagebuffer platform::msgbuf(MAXMESSAGES, INIT_WIN_SIZE);
 void platform::message(const std::string& msg) throw(std::bad_alloc)
 {
 	umutex_class h(msgbuf_lock());
-	std::string msg2 = msg;
-	while(msg2 != "") {
-		std::string forlog;
-		extract_token(msg2, forlog, "\n");
+	for(auto& forlog : token_iterator_foreach(msg, {"\n"})) {
 		msgbuf.add_message(forlog);
 		if(system_log)
 			system_log << forlog << std::endl;

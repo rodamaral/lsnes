@@ -42,29 +42,24 @@ std::u32string to32(const std::string& utf8);
 std::string to8(const std::u32string& utf32);
 
 /**
- * Iterator to function copy from UTF-8 to UTF-32
- */
-template<typename srcitr>
-inline void to32i2(srcitr begin, srcitr end, std::function<void(int32_t)> target)
-{
-	uint16_t state = initial_state;
-	for(srcitr i = begin; i != end; i++) {
-		int32_t x = parse_byte((unsigned char)*i, state);
-		if(x >= 0)
-			target(x);
-	}
-	int32_t x = parse_byte(-1, state);
-	if(x >= 0)
-		target(x);
-}
-
-/**
  * Iterator copy from UTF-8 to UTF-32
  */
 template<typename srcitr, typename dstitr>
 inline void to32i(srcitr begin, srcitr end, dstitr target)
 {
-	to32i2(begin, end, [&target](int32_t x) { *target = x; ++target; });
+	uint16_t state = initial_state;
+	for(srcitr i = begin; i != end; i++) {
+		int32_t x = parse_byte((unsigned char)*i, state);
+		if(x >= 0) {
+			*target = x;
+			++target;
+		}
+	}
+	int32_t x = parse_byte(-1, state);
+	if(x >= 0) {
+		*target = x;
+		++target;
+	}
 }
 
 }
