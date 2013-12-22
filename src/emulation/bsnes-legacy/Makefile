@@ -32,6 +32,8 @@ __all__.files: $(OBJECTS) ../../../$(BSNES_LIBRARY)
 	echo $(BSNES_LDFLAGS) ../$(BSNES_LIBRARY) >__all__.ldflags
 
 ../../../$(BSNES_LIBRARY): forcelook
+	mkdir -p ../../../bsnes/out ../../../bsnes/obj
+	mkdir -p ../../../bsnes/snes/out ../../../bsnes/snes/obj
 	$(MAKE) -C ../../../bsnes $(BSNES_PROFILE_STRING) $(BSNES_TARGET_STRING)
 	$(REALRANLIB) $@
 
