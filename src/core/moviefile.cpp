@@ -1129,6 +1129,8 @@ namespace
 void emerg_save_movie(const moviefile& mv, const controller_frame_vector& v)
 {
 	//Whee, assume state of the emulator is totally busted.
+	if(!mv.gametype)
+		return;  //No valid movie. Trying to save would segfault.
 	char header[] = {'l', 's', 'm', 'v', '\x1a'};
 	int fd;
 	char filename_buf[512];
