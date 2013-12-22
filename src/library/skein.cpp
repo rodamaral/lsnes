@@ -4,11 +4,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
-#include "skein512c.inc"
 #include "arch-detect.hpp"
 #include "hex.hpp"
+#include "minmax.hpp"
 
+namespace skein
+{
 //Jerry Solinas was not here.
+#include "skein512c.inc"
 
 static uint8_t bitmasks[] = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
@@ -30,6 +33,28 @@ static void show_array(const char* prefix, const uint8_t* a, size_t e)
 		std::cerr << hex::to(a[i]);
 	}
 	std::cerr << std::endl;
+}
+
+inline static void to_words(uint64_t* out, const void* in, size_t words)
+{
+#ifdef ARCH_IS_I386
+	memcpy(out, in, words<<3);
+#else
+	for(unsigned i = 0; i < words; i++)
+		out[i]=0;
+	for(unsigned i = 0; i < (words<<3); i++)
+		out[i>>3]|=((uint64_t)reinterpret_cast<uint8_t*>(in)[i] << ((i&7)<<3));
+#endif
+}
+
+inline static void to_bytes(void* out, const uint64_t* in, size_t bytes)
+{
+#ifdef ARCH_IS_I386
+	memcpy(out, in, bytes);
+#else
+	for(size_t i = 0; i < bytes; i++)
+		output[i] = (out[i>>3] >> ((i&7)<<3));
+#endif
 }
 
 inline static void _skein256_compress(uint64_t* a, const uint64_t* b, const uint64_t* c, const uint64_t* d)
@@ -71,7 +96,7 @@ inline static void _skein1024_compress(uint64_t* a, const uint64_t* b, const uin
 #endif
 }
 
-skein_hash::skein_hash(skein_hash::variant v, uint64_t _outbits)
+hash::hash(hash::variant v, uint64_t _outbits) throw(std::runtime_error)
 {
 	memset(chain, 0, sizeof(chain));
 	memset(buffer, 0, sizeof(buffer));
@@ -88,7 +113,7 @@ skein_hash::skein_hash(skein_hash::variant v, uint64_t _outbits)
 	last_type = -1;
 }
 
-void skein_hash::configure()
+void hash::configure()
 {
 	uint64_t config[16] = {0x133414853ULL,outbits};
 	uint64_t tweak[2] = {32,0xC400000000000000ULL};
@@ -98,7 +123,7 @@ void skein_hash::configure()
 	last_type = 4;
 }
 
-void skein_hash::typechange(uint8_t newtype)
+void hash::typechange(uint8_t newtype)
 {
 	if(last_type != newtype) {
 		//Type change.
@@ -121,7 +146,7 @@ void skein_hash::typechange(uint8_t newtype)
 	}
 }
 
-void skein_hash::write(const uint8_t* data, size_t datalen, skein_hash::datatype type)
+void hash::write(const uint8_t* data, size_t datalen, hash::datatype type) throw(std::runtime_error)
 {
 	if(type < 0 || type == 4 || type > 62)
 		throw std::runtime_error("Invalid data type to write");
@@ -145,7 +170,7 @@ void skein_hash::write(const uint8_t* data, size_t datalen, skein_hash::datatype
 	}
 }
 
-void skein_hash::flush_buffer(uint8_t type, bool final)
+void hash::flush_buffer(uint8_t type, bool final)
 {
 	uint64_t _buffer[16];
 	uint64_t _buffer2[16];
@@ -159,14 +184,7 @@ void skein_hash::flush_buffer(uint8_t type, bool final)
 		tweak[1] += (1ULL << 62);
 	if(final)
 		tweak[1] += (1ULL << 63);
-#ifdef ARCH_IS_I386
-	memcpy(_buffer, buffer, fullbuffer);
-#else
-	for(unsigned i = 0; i < (fullbuffer>>3); i++)
-		_buffer[i]=0;
-	for(unsigned i = 0; i < fullbuffer; i++)
-		_buffer[i>>3]|=((uint64_t)buffer[i] << ((i&7)<<3));
-#endif
+	to_words(_buffer, buffer, fullbuffer >> 3);
 	compress(_buffer2, _buffer, chain, tweak);
 	memcpy(chain, _buffer2, fullbuffer);
 	data_low += bufferfill;
@@ -176,7 +194,7 @@ void skein_hash::flush_buffer(uint8_t type, bool final)
 	memset(buffer, 0, fullbuffer);
 }
 
-void skein_hash::read(uint8_t* output)
+void hash::read_partial(uint8_t* output, uint64_t startblock, uint64_t bits) throw()
 {
 	typechange(63);  //Switch to output.
 	//The final one is special.
@@ -184,25 +202,68 @@ void skein_hash::read(uint8_t* output)
 	uint64_t out[16];
 	uint64_t tweak[2] = {8,0xFF00000000000000ULL};
 	uint64_t offset = 0;
-	for(uint64_t i = 0; i < outbits; i += (fullbuffer<<3)) {
+	zeroes[0] = startblock;
+	for(uint64_t i = 0; i < bits; i += (fullbuffer<<3)) {
 		compress(out, zeroes, chain, tweak);
 		zeroes[0]++;
-		uint64_t fullbytes = (outbits - i) >> 3;
-		if(fullbytes > fullbuffer) fullbytes = fullbuffer;
-#ifdef ARCH_IS_I386
-		memcpy(output + offset, out, fullbytes);
-#else
-		for(unsigned i = 0; i < fullbytes; i++)
-			output[offset + i] = (out[i>>3] >> ((i&7)<<3));
-#endif
-		if(fullbytes < fullbuffer && i + 8 * fullbytes < outbits) {
+		uint64_t fullbytes = min((bits - i) >> 3, static_cast<uint64_t>(fullbuffer));
+		to_bytes(output + offset, out, fullbytes);
+		if(fullbytes < fullbuffer && i + 8 * fullbytes < bits) {
 			output[offset + fullbytes] = (out[fullbytes>>3] >> ((fullbytes&7)<<3));
-			output[offset + fullbytes] &= bitmasks[outbits&7];
+			output[offset + fullbytes] &= bitmasks[bits&7];
 		}
 		offset += fullbuffer;
 	}
 }
 
+void hash::read(uint8_t* output) throw()
+{
+	read_partial(output, 0, outbits);
+}
+
+prng::prng() throw()
+{
+	_is_seeded = false;
+	memset(state, 0, 128);
+}
+
+void prng::write(const void* buffer, size_t size) throw()
+{
+	hash h(hash::PIPE_1024, 1024);
+	h.write(state, 128, hash::T_NONCE);
+	h.write(reinterpret_cast<const uint8_t*>(buffer), size, hash::T_MESSAGE);
+	h.read(state);
+	if(size > 0)
+		_is_seeded = true;
+}
+
+void prng::read(void* buffer, size_t size) throw(std::runtime_error)
+{
+	if(!_is_seeded)
+		throw std::runtime_error("PRNG is not initialized");
+	//We can't use skein itself here, but the underlying compression function.
+	uint64_t chain[16] = {0};
+	uint64_t zeroes[16] = {0};
+	uint64_t out[16];
+	uint64_t tweak[2] = {8,0xFF00000000000000ULL};
+	to_words(chain, state, 16);
+	zeroes[0] = 1;
+	for(uint64_t i = 0; i < size; i += 128) {
+		_skein1024_compress(out, zeroes, chain, tweak);
+		zeroes[0]++;
+		uint64_t fullbytes = min(size - i, static_cast<uint64_t>(128));
+		to_bytes(reinterpret_cast<uint8_t*>(buffer) + i, out, fullbytes);
+	}
+	zeroes[0] = 0;
+	_skein1024_compress(out, zeroes, chain, tweak);
+	to_bytes(state, out, 128);
+}
+
+bool prng::is_seeded() const throw()
+{
+	return _is_seeded;
+}
+}
 #ifdef TEST_SKEIN_CODE
 #define SKEIN_DEBUG
 #include <skein.h>
@@ -215,9 +276,9 @@ int main(int argc, char** argv)
 /*
 	//skein_DebugFlag = SKEIN_DEBUG_STATE | SKEIN_DEBUG_TWEAK | SKEIN_DEBUG_INPUT_64;
 	uint8_t out[128];
-	skein_hash ctx(skein_hash::PIPE_512, 256);
-	ctx.write((uint8_t*)argv[1], strlen(argv[1]), skein_hash::T_KEY);
-	ctx.write((uint8_t*)argv[2], strlen(argv[2]), skein_hash::T_MESSAGE);
+	skein::hash ctx(skein::hash::PIPE_512, 256);
+	ctx.write((uint8_t*)argv[1], strlen(argv[1]), skein::hash::T_KEY);
+	ctx.write((uint8_t*)argv[2], strlen(argv[2]), skein::hash::T_MESSAGE);
 	ctx.read(out);
 	show_array("New: ", out, 32);
 	Skein_512_Ctxt_t ctx2;
@@ -235,9 +296,9 @@ int main()
 	uint8_t buf[129] = {0xFF,0xFE,0xFD,0xFC,0xFB,0xFA,0xF9,0xF8,0xF7};
 	uint8_t key[135] = {0x05,0x04,0x46,0x22,0x26,0x35,0x63,0x26,0xFF};
 	uint8_t out[128];
-	skein_hash ctx(skein_hash::PIPE_256, 256);
-	ctx.write(key, sizeof(key), skein_hash::T_KEY);
-	ctx.write(key, sizeof(key), skein_hash::T_NONCE);
+	skein::hash ctx(skein::hash::PIPE_256, 256);
+	ctx.write(key, sizeof(key), skein::hash::T_KEY);
+	ctx.write(key, sizeof(key), skein::hash::T_NONCE);
 	ctx.write(buf, 2);
 	ctx.read(out);
 	show_array("", out, 32);

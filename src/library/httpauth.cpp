@@ -262,18 +262,18 @@ dh25519_http_auth::request_hash dh25519_http_auth::start_request(const std::stri
 	_nonce = nonce++;
 	sprintf(buf, "%u", _nonce);
 
-	skein_hash hp(skein_hash::PIPE_512, 64);
-	hp.write(ssecret, 32, skein_hash::T_KEY);
-	hp.write((const uint8_t*)personalization.c_str(), personalization.length(), skein_hash::T_PERSONALIZATION);
-	hp.write(pubkey, 32, skein_hash::T_PUBKEY);
-	hp.write((uint8_t*)buf, strlen(buf), skein_hash::T_NONCE);
+	skein::hash hp(skein::hash::PIPE_512, 64);
+	hp.write(ssecret, 32, skein::hash::T_KEY);
+	hp.write((const uint8_t*)personalization.c_str(), personalization.length(), skein::hash::T_PERSONALIZATION);
+	hp.write(pubkey, 32, skein::hash::T_PUBKEY);
+	hp.write((uint8_t*)buf, strlen(buf), skein::hash::T_NONCE);
 	hp.read(prereq);
 
-	skein_hash h(skein_hash::PIPE_512, 256);
-	h.write(ssecret, 32, skein_hash::T_KEY);
-	h.write((const uint8_t*)personalization.c_str(), personalization.length(), skein_hash::T_PERSONALIZATION);
-	h.write(pubkey, 32, skein_hash::T_PUBKEY);
-	h.write((uint8_t*)buf, strlen(buf), skein_hash::T_NONCE);
+	skein::hash h(skein::hash::PIPE_512, 256);
+	h.write(ssecret, 32, skein::hash::T_KEY);
+	h.write((const uint8_t*)personalization.c_str(), personalization.length(), skein::hash::T_PERSONALIZATION);
+	h.write(pubkey, 32, skein::hash::T_PUBKEY);
+	h.write((uint8_t*)buf, strlen(buf), skein::hash::T_NONCE);
 	return request_hash(id, pubkey, _nonce, h, prereq);
 }
 

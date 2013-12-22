@@ -172,7 +172,7 @@ void wxeditor_uploadtarget::generate_dh25519(wxCommandEvent& e)
 		std::vector<char> x;
 		x.resize(entropy.length());
 		std::copy(entropy.begin(), entropy.end(), x.begin());
-		skein_hash h(skein_hash::PIPE_1024, 1024);
+		skein::hash h(skein::hash::PIPE_1024, 1024);
 		h.write((uint8_t*)&x[0], x.size());
 		h.read((uint8_t*)rbuf + 64);
 		{

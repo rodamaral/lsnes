@@ -23,7 +23,7 @@ public:
 /**
  * Construct.
  */
-		request_hash(const std::string& _id, const uint8_t* _key, unsigned _nonce, skein_hash _h,
+		request_hash(const std::string& _id, const uint8_t* _key, unsigned _nonce, skein::hash _h,
 			const uint8_t* _prereq)
 			: id(_id), nonce(_nonce), h(_h)
 		{
@@ -46,7 +46,7 @@ public:
 		uint8_t pubkey[32];
 		uint8_t prereq[8];
 		unsigned nonce;
-		skein_hash h;
+		skein::hash h;
 	};
 /**
  * Create a new instance.

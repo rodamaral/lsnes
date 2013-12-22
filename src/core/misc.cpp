@@ -14,6 +14,7 @@
 #include "library/loadlib.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
+#include "library/skein.hpp"
 #include "library/serialization.hpp"
 #include "library/arch-detect.hpp"
 
@@ -40,7 +41,7 @@
 
 namespace
 {
-	std::string rseed;
+	skein::prng prng;
 	uint64_t rcounter = 0;
 	bool reached_main_flag;
 	mutex_class seed_mutex;
@@ -85,41 +86,31 @@ namespace
 		const int slots = 32;
 		static unsigned count = 0;
 		static uint64_t last_reseed = 0;
-		static uint64_t buf[slots];
+		static uint64_t buf[slots + 1];
 		buf[count++] = arch_get_tsc();
 		umutex_class h(seed_mutex);
 		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
 			last_reseed = buf[count - 1];
-			std::vector<char> x;
-			x.resize(rseed.length() + slots * 8 + 8);
-			std::copy(rseed.begin(), rseed.end(), x.begin());
-			for(unsigned i = 0; i < slots; i++)
-				serialization::u64l(&x[rseed.length() + 8 * i], buf[i]);
-			serialization::u64l(&x[rseed.length() + 8 * slots], arch_get_random());
-			rseed = "32 " + sha256::hash(reinterpret_cast<uint8_t*>(&x[0]), x.size());
+			buf[slots] = arch_get_random();
+			prng.write(buf, sizeof(buf));
 			count = 0;
 		}
 	}
 
 	std::string get_random_hexstring_64(size_t index)
 	{
-		std::ostringstream str;
-		{
-			umutex_class h(seed_mutex);
-			str << rseed << " ";
-			str << time(NULL) << " ";
-			str << arch_get_tsc() << " ";
-			str << arch_get_random() << " ";
-			str << arch_get_random() << " ";
-			str << arch_get_random() << " ";
-			str << arch_get_random() << " ";
-			str << (rcounter++) << " " << index;
-		}
-		std::string s = str.str();
-		std::vector<char> x;
-		x.resize(s.length());
-		std::copy(s.begin(), s.end(), x.begin());
-		return sha256::hash(reinterpret_cast<uint8_t*>(&x[0]), x.size());
+		umutex_class h(seed_mutex);
+		uint64_t buf[6];
+		uint8_t out[32];
+		buf[0] = time(NULL);
+		buf[1] = arch_get_tsc();
+		buf[2] = arch_get_random();
+		buf[3] = arch_get_random();
+		buf[4] = arch_get_random();
+		buf[5] = arch_get_random();
+		prng.write(buf, sizeof(buf));
+		prng.read(out, sizeof(out));
+		return hex::b_to(out, sizeof(out));
 	}
 
 	std::string collect_identifying_information()
@@ -203,11 +194,10 @@ std::string get_random_hexstring(size_t length) throw(std::bad_alloc)
 
 void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 {
-	std::ostringstream str;
-	str << seed.length() << " " << seed;
+	std::vector<char> x(seed.begin(), seed.end());
 	{
 		umutex_class h(seed_mutex);
-		rseed = str.str();
+		prng.write(&x[0], x.size());
 	}
 	rrdata.set_internal(random_rrdata());
 }
@@ -218,9 +208,9 @@ void set_random_seed() throw(std::bad_alloc)
 	{
 		std::ifstream r("/dev/urandom", std::ios::binary);
 		if(r.is_open()) {
-			char buf[64];
-			r.read(buf, 64);
-			std::string s(buf, 64);
+			char buf[128];
+			r.read(buf, sizeof(buf));
+			std::string s(buf, sizeof(buf));
 			set_random_seed(s);
 			return;
 		}
@@ -228,7 +218,7 @@ void set_random_seed() throw(std::bad_alloc)
 	//If libgcrypt is available, use that.
 #ifdef USE_LIBGCRYPT_SHA256
 	{
-		char buf[64];
+		char buf[128];
 		gcry_randomize((unsigned char*)buf, sizeof(buf), GCRY_STRONG_RANDOM);
 		std::string s(buf, sizeof(buf));
 		set_random_seed(s);

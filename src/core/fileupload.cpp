@@ -99,7 +99,7 @@ namespace
 		std::ifstream fp(path, std::ios::binary);
 		if(!fp)
 			throw std::runtime_error("Can't open dh25519 keyfile");
-		skein_hash h(skein_hash::PIPE_512, 256);
+		skein::hash h(skein::hash::PIPE_512, 256);
 		while(true) {
 			char buf[4096];
 			fp.read(buf, sizeof(buf));
