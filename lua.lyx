@@ -1115,7 +1115,7 @@ fill: Fill color (default is -1 (transparent)).
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_draw: Draw a bitmap
+gui.bitmap_draw/(D)BITMAP:draw: Draw a bitmap
 \end_layout
 
 \begin_layout Itemize
@@ -1126,9 +1126,17 @@ Syntax: none gui.bitmap_draw(number x, number y, BITMAP bitmap, PALETTE palette)
 Syntax: none gui.bitmap_draw(number x, number y, DBITMAP bitmap)
 \end_layout
 
+\begin_layout Itemize
+Syntax: none BITMAP:draw(number x, number y, PALETTE palette)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:draw(number x, number y)
+\end_layout
+
 \begin_layout Standard
-Draw a bitmap <bitmap> on screen with specified palette <palette> (if bitmap
- is paletted) .
+Draw a bitmap <bitmap> (or object) on screen with specified palette <palette>
+ (if bitmap is paletted) .
  Parameters:
 \end_layout
 
@@ -1285,11 +1293,15 @@ transparent: Fully transparent color
 
 \end_deeper
 \begin_layout Subsection
-gui.palette_set: Set palette entry
+gui.palette_set/PALETTE:set: Set palette entry
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.palette_set(PALETTE palette, number index, number color)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none PALETTE:set(number index, number color)
 \end_layout
 
 \begin_layout Standard
@@ -1310,12 +1322,20 @@ color: The color value.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_pset: Set pixel in bitmap
+gui.bitmap_pset/(D)BITMAP:pset: Set pixel in bitmap
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.bitmap_pset(BITMAP/DBITMAP bitmap, number x, number y, number
  color)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP:pset(number x, number y, number color)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:pset(number x, number y, number color)
 \end_layout
 
 \begin_layout Standard
@@ -1341,11 +1361,19 @@ color: If bitmap is a bitmap, color index (0-65535).
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_pget: Get pixel in bitmap
+gui.bitmap_pget/(D)BITMAP:pget: Get pixel in bitmap
 \end_layout
 
 \begin_layout Itemize
 Syntax: number gui.bitmap_pget(BITMAP/DBITMAP bitmap, number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number BITMAP:pget(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number DBITMAP:pget(number x, number y)
 \end_layout
 
 \begin_layout Standard
@@ -1370,11 +1398,19 @@ The bitmap color (color index if paletted, otherwise color value).
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_size: Get size of bitmap
+gui.bitmap_size/(D)BITMAP:size: Get size of bitmap
 \end_layout
 
 \begin_layout Itemize
 Syntax: (number, number) gui.bitmap_size(BITMAP/DBITMAP bitmap)
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) BITMAP:size()
+\end_layout
+
+\begin_layout Itemize
+Syntax: (number, number) DBITMAP:size()
 \end_layout
 
 \begin_layout Standard
@@ -1387,7 +1423,7 @@ Note: Can be used anywhere.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_blit: Blit a bitmap into another
+gui.bitmap_blit/(D)BITMAP:blit: Blit a bitmap into another
 \end_layout
 
 \begin_layout Itemize
@@ -1405,8 +1441,23 @@ Syntax: none gui.bitmap_blit(DBITMAP dest, number dx, number dy, BITMAP src,
  PALETTE pal, number sx, number sy, number w, number h[, number ck])
 \end_layout
 
+\begin_layout Itemize
+Syntax: none BITMAP::blit(number dx, number dy, BITMAP src, number sx, number
+ sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP::blit(number dx, number dy, DBITMAP src, number sx,
+ number sy, number w, number h[, number ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:blit(number dx, number dy, BITMAP src, PALETTE pal,
+ number sx, number sy, number w, number h[, number ck])
+\end_layout
+
 \begin_layout Standard
-Blit a part of bitmap to another.
+Blit a part of bitmap to another (current object if any is destination).
  Parameters:
 \end_layout
 
@@ -1479,11 +1530,15 @@ Request on_repaint() to happen as soon as possible.
 \end_layout
 
 \begin_layout Subsection
-gui.synchronous_repaint: Paint screen now
+gui.synchronous_repaint/RENDERQUEUE:synchronous_repaint: Paint screen now
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.synchronous_repaint(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE::synchronous_repaint()
 \end_layout
 
 \begin_layout Standard
@@ -1595,11 +1650,15 @@ Create render queue with specified reported size and return it.
 \end_layout
 
 \begin_layout Subsection
-gui.renderq_clear: Clear a render queue
+gui.renderq_clear/RENDERQUEUE:clear: Clear a render queue
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.renderq_clear(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:clear()
 \end_layout
 
 \begin_layout Standard
@@ -1607,11 +1666,15 @@ Clear specified render queue.
 \end_layout
 
 \begin_layout Subsection
-gui.renderq_set: Change active render queue
+gui.renderq_set/RENDERQUEUE:set: Change active render queue
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.renderq_set(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:set()
 \end_layout
 
 \begin_layout Standard
@@ -1625,11 +1688,15 @@ Note: When switched to another queue, all drawing functions work and draw
 \end_layout
 
 \begin_layout Subsection
-gui.renderq_run: Run render queue
+gui.renderq_run/RENDERQUEUE:run: Run render queue
 \end_layout
 
 \begin_layout Itemize
 Syntax: none gui.renderq_run(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:run()
 \end_layout
 
 \begin_layout Standard
@@ -1671,7 +1738,8 @@ Draw string with custom font to screen.
 \end_layout
 
 \begin_layout Subsection
-gui.adjust_transparency: Adjust transparency of DBITMAP or PALETTE
+gui.adjust_transparency/DBITMAP:adjust_transparency/PALETTE:adjust_transparency:
+ Adjust transparency of DBITMAP or PALETTE
 \end_layout
 
 \begin_layout Itemize
@@ -1680,6 +1748,14 @@ Syntax: none gui.adjust_transparency(DBITMAP obj, number adj)
 
 \begin_layout Itemize
 Syntax: none gui.adjust_transparency(PALETTE obj, number adj)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:adjust_transparency(number adj)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none PALETTE:adjust_transparency(number adj)
 \end_layout
 
 \begin_layout Standard
@@ -1886,7 +1962,7 @@ Draw tilemap at <x>,<y>.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_save_png: Save a bitmap to PNG
+gui.bitmap_save_png/(D)BITMAP:save_png: Save a bitmap to PNG
 \end_layout
 
 \begin_layout Itemize
@@ -1907,14 +1983,30 @@ Syntax: string gui.bitmap_save_png(BITMAP bmp, PALETTE pal)
 Syntax: string gui.bitmap_save_png(DBITMAP bmp)
 \end_layout
 
+\begin_layout Itemize
+Syntax: none BITMAP:save_png(string filename[, string base], PALETTE pal)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:save_png(string filename[, string base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: string BITMAP:save_png(PALETTE pal)
+\end_layout
+
+\begin_layout Itemize
+Syntax: string DBITMAP:save_png()
+\end_layout
+
 \begin_layout Standard
-Save specified bitmap <bmp>, with palette <pal> (only if paletted) into
- PNG file <filename> (relative to <base>) or return BASE64 encoding as return
- value.
+Save specified bitmap <bmp> (or current object), with palette <pal> (only
+ if paletted) into PNG file <filename> (relative to <base>) or return BASE64
+ encoding as return value.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_hash: Hash a bitmap
+gui.bitmap_hash/(D)BITMAP:hash: Hash a bitmap
 \end_layout
 
 \begin_layout Itemize
@@ -1925,22 +2017,36 @@ Syntax: string gui.bitmap_hash(BITMAP bmp)
 Syntax: string gui.bitmap_hash(DBITMAP bmp)
 \end_layout
 
+\begin_layout Itemize
+Syntax: string BITMAP:hash()
+\end_layout
+
+\begin_layout Itemize
+Syntax: string DBITMAP:hash()
+\end_layout
+
 \begin_layout Standard
-Hashes bitmap <bmp> and returns 64-hex digit crypto-strong hash.
+Hashes bitmap <bmp> (or current object) and returns 64-hex digit crypto-strong
+ hash.
  Identical bitmaps result in indentical hashes (but color order in indexed
  bitmaps is significant).
 \end_layout
 
 \begin_layout Subsection
-gui.palette_hash: Hash a palette
+gui.palette_hash/PALETTE:hash: Hash a palette
 \end_layout
 
 \begin_layout Itemize
 Syntax: string gui.palette_hash(PALETTE pal)
 \end_layout
 
+\begin_layout Itemize
+Syntax: string PALETTE:hash(PALETTE pal)
+\end_layout
+
 \begin_layout Standard
-Hashes palette <pal> and retruns 64-hex digit crypto-strong hash.
+Hashes palette <pal> (or current object) and retruns 64-hex digit crypto-strong
+ hash.
  Identical palettes result in identical hashes (fully transparent colors
  at end of palette don't affect the hash).
 \end_layout

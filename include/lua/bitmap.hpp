@@ -17,6 +17,10 @@ struct lua_palette
 	~lua_palette();
 	mutex_class palette_mutex;
 	std::string print();
+	int set(lua::state& L, const std::string& fname);
+	int hash(lua::state& L, const std::string& fname);
+	int debug(lua::state& L, const std::string& fname);
+	int adjust_transparency(lua::state& L, const std::string& fname);
 };
 
 struct lua_bitmap
@@ -28,6 +32,15 @@ struct lua_bitmap
 	std::vector<uint16_t> pixels;
 	std::vector<char> save_png(const lua_palette& pal) const;
 	std::string print();
+	int draw(lua::state& L, const std::string& fname);
+	int _draw(lua::state& L, const std::string& fname, bool is_method);
+	int pset(lua::state& L, const std::string& fname);
+	int pget(lua::state& L, const std::string& fname);
+	int size(lua::state& L, const std::string& fname);
+	int hash(lua::state& L, const std::string& fname);
+	int blit(lua::state& L, const std::string& fname);
+	int save_png(lua::state& L, const std::string& fname);
+	int _save_png(lua::state& L, const std::string& fname, bool is_method);
 };
 
 struct lua_dbitmap
@@ -39,6 +52,16 @@ struct lua_dbitmap
 	std::vector<framebuffer::color> pixels;
 	std::vector<char> save_png() const;
 	std::string print();
+	int draw(lua::state& L, const std::string& fname);
+	int _draw(lua::state& L, const std::string& fname, bool is_method);
+	int pset(lua::state& L, const std::string& fname);
+	int pget(lua::state& L, const std::string& fname);
+	int size(lua::state& L, const std::string& fname);
+	int hash(lua::state& L, const std::string& fname);
+	int blit(lua::state& L, const std::string& fname);
+	int save_png(lua::state& L, const std::string& fname);
+	int adjust_transparency(lua::state& L, const std::string& fname);
+	int _save_png(lua::state& L, const std::string& fname, bool is_method);
 };
 
 struct lua_loaded_bitmap
