@@ -1239,7 +1239,7 @@ Load a bitmap from PNG file <file> (resolved relative to <base>) or BASE64
 \end_layout
 
 \begin_layout Itemize
-If the PNG is of color type 3 (PALETTE), returns two value.
+If the PNG is of color type 3 (PALETTE), returns two values.
  First is BITMAP containing the image data from the PNG and second is PALETTE
  containg the palette data from the PNG.
 \end_layout

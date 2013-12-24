@@ -869,7 +869,9 @@ void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool 
 		uint64_t r = ((orig >> 16) & 0xFF) * 257;
 		uint64_t g = ((orig >> 8) & 0xFF) * 257;
 		uint64_t b = (orig & 0xFF) * 257;
-		uint64_t color = (r << rshift) | (g << gshift) | (b << bshift);
+		uint64_t a = 65535;
+		uint64_t fullc = ~0ULL & ~((a << rshift) | (a << gshift) | (a << bshift));
+		uint64_t color = (r << rshift) | (g << gshift) | (b << bshift) | fullc;
 		hiHI = color & 0xFFFF0000FFFFULL;
 		loHI = (color & 0xFFFF0000FFFF0000ULL) >> 16;
 		hiHI *= (static_cast<uint32_t>(origa) * 256);
@@ -878,7 +880,9 @@ void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool 
 		uint32_t r = (orig >> 16) & 0xFF;
 		uint32_t g = (orig >> 8) & 0xFF;
 		uint32_t b = orig & 0xFF;
-		uint32_t color = (r << rshift) | (g << gshift) | (b << bshift);
+		uint32_t a = 255;
+		uint64_t fullc = ~0UL & ~((a << rshift) | (a << gshift) | (a << bshift));
+		uint32_t color = (r << rshift) | (g << gshift) | (b << bshift) | fullc;
 		hi = color & 0xFF00FF;
 		lo = (color & 0xFF00FF00) >> 8;
 		hi *= origa;
