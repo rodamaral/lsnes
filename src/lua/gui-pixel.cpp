@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 
 namespace
 {
@@ -31,11 +32,9 @@ namespace
 	lua::fnptr gui_pixel(lua_func_misc, "gui.pixel", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		int64_t color = 0xFFFFFFU;
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		L.get_numeric_argument<int64_t>(3, color, fname.c_str());
-		framebuffer::color pcolor(color);
+		auto pcolor = lua_get_fb_color(L, 3, fname, 0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	});

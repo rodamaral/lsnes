@@ -61,8 +61,20 @@ namespace
 		return 0;
 	});
 
+	inline int64_t demultiply_color(const framebuffer::color& c)
+	{
+		if(!c.origa)
+			return -1;
+		else
+			return c.orig | ((uint32_t)(256 - c.origa) << 24);
+	}
+
 	lua::fnptr gui_color(lua_func_misc, "gui.color", [](lua::state& L, const std::string& fname)
 		-> int {
+		if(L.type(1) == LUA_TSTRING) {
+			L.pushnumber(demultiply_color(lua_get_fb_color(L, 1, fname)));
+			return 1;
+		}
 		int64_t a = 256;
 		int64_t r = L.get_numeric_argument<uint32_t>(1, fname.c_str());
 		int64_t g = L.get_numeric_argument<uint32_t>(2, fname.c_str());
@@ -126,7 +138,7 @@ namespace
 		int64_t basecolor = 0x00FF0000;
 		uint64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
 		int32_t steps = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		L.get_numeric_argument<int64_t>(3, basecolor, fname.c_str());
+		basecolor = demultiply_color(lua_get_fb_color(L, 3, fname));
 		if(!steps)
 			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		if(basecolor < 0) {

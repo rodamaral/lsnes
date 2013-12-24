@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 
 namespace
 {
@@ -92,13 +93,11 @@ nodraw2:
 	lua::fnptr gui_pixel(lua_func_misc, "gui.line", [](lua::state& L, const std::string& fname) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		int64_t color = 0xFFFFFFU;
 		int32_t x1 = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y1 = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		int32_t x2 = L.get_numeric_argument<int32_t>(3, fname.c_str());
 		int32_t y2 = L.get_numeric_argument<int32_t>(4, fname.c_str());
-		L.get_numeric_argument<int64_t>(5, color, fname.c_str());
-		framebuffer::color pcolor(color);
+		auto pcolor = lua_get_fb_color(L, 5, fname, 0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
 	});

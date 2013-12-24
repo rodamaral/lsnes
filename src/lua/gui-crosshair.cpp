@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 
 namespace
 {
@@ -40,13 +41,11 @@ namespace
 		-> int {
 		if(!lua_render_ctx)
 			return 0;
-		int64_t color = 0xFFFFFFU;
 		uint32_t length = 10;
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		L.get_numeric_argument<uint32_t>(3, length, fname.c_str());
-		L.get_numeric_argument<int64_t>(4, color, fname.c_str());
-		framebuffer::color pcolor(color);
+		auto pcolor = lua_get_fb_color(L, 4, fname, 0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
 		return 0;
 	});

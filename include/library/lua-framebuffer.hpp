@@ -1,6 +1,9 @@
 #ifndef _library__lua_framebuffer__hpp__included__
 #define _library__lua_framebuffer__hpp__included__
 
+#include "lua-base.hpp"
+#include "framebuffer.hpp"
+
 struct lua_render_context
 {
 	uint32_t left_gap;
@@ -11,5 +14,10 @@ struct lua_render_context
 	uint32_t width;
 	uint32_t height;
 };
+
+framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string& fname)
+	throw(std::bad_alloc, std::runtime_error);
+framebuffer::color lua_get_fb_color(lua::state& L, int index, const std::string& fname, int64_t dflt)
+	throw(std::bad_alloc, std::runtime_error);
 
 #endif

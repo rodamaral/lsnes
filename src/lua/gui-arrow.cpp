@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 #include "library/minmax.hpp"
 
 namespace
@@ -96,11 +97,10 @@ namespace
 		uint32_t length = L.get_numeric_argument<int32_t>(3, fname.c_str());
 		uint32_t headwidth = L.get_numeric_argument<int32_t>(4, fname.c_str());
 		int direction = L.get_numeric_argument<int>(5, fname.c_str());
-		int64_t color = 0xFFFFFFU;
 		bool fill = false;
 		if(L.type(6) == LUA_TBOOLEAN && L.toboolean(6))
 			fill = true;
-		L.get_numeric_argument<int64_t>(7, color, fname.c_str());
+		auto color = lua_get_fb_color(L, 7, fname, 0xFFFFFF);
 		uint32_t width = 1;
 		L.get_numeric_argument<uint32_t>(8, width, fname.c_str());
 		uint32_t headthickness = width;

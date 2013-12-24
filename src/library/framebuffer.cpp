@@ -93,6 +93,41 @@ namespace
 			}
 		}
 	}
+
+	struct color_modifier
+	{
+		const char* name;
+		void(*fn)(int64_t& v);
+		bool modifier;
+	};
+
+	std::map<std::string, std::pair<void(*)(int64_t& v), bool>>& colornames()
+	{
+		static std::map<std::string, std::pair<void(*)(int64_t& v), bool>> c;
+		static bool i = false;
+		if(!i) {
+			std::vector<color_modifier> tmp = {
+				{"transparent", [](int64_t& v) { v = -1; }, false},
+				{"opaque10", [](int64_t& v) { v = (230ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque20", [](int64_t& v) { v = (205ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque25", [](int64_t& v) { v = (192ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque30", [](int64_t& v) { v = (179ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque40", [](int64_t& v) { v = (154ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque50", [](int64_t& v) { v = (128ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque60", [](int64_t& v) { v = (102ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque70", [](int64_t& v) { v = (77ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque75", [](int64_t& v) { v = (64ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque80", [](int64_t& v) { v = (51ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque90", [](int64_t& v) { v = (26ULL << 24) | (v & 0xFFFFFF); }, true},
+				{"opaque", [](int64_t& v) { v = (0ULL << 24) | (v & 0xFFFFFF); }, true},
+#include "framebuffer-basecolors.inc"
+			};
+			for(auto j : tmp)
+				c[j.name] = std::make_pair(j.fn, j.modifier);
+			i = true;
+		}
+		return c;
+	}
 }
 
 pixfmt::pixfmt() throw(std::bad_alloc)
@@ -861,6 +896,24 @@ template<bool X> void font::render(struct fb<X>& scr, int32_t x, int32_t y, cons
 			layout_x += (hdbl ? 2 : 1) * (g.wide ? 16 : 8);
 		}
 	}));
+}
+
+color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
+{
+	int64_t col = -1;
+	bool first = true;
+	auto& cspecs = colornames();
+	for(auto& t : token_iterator_foreach(clr, {" ","\t"}, true)) {
+		if(!cspecs.count(t))
+			throw std::runtime_error("Invalid color (modifier) '" + t + "'");
+		if(!first && !cspecs[t].second)
+			throw std::runtime_error("Base color (" + t + ") can't be used as modifier");
+		if(first && cspecs[t].second)
+			throw std::runtime_error("Modifier (" + t + ") can't be used as base color");
+		(cspecs[t].first)(col);
+		first = false;
+	}
+	*this = color(col);
 }
 
 void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()

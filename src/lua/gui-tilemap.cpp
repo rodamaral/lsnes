@@ -4,6 +4,7 @@
 #include "library/png.hpp"
 #include "library/string.hpp"
 #include "library/threadtypes.hpp"
+#include "library/lua-framebuffer.hpp"
 #include "library/zip.hpp"
 #include "lua/bitmap.hpp"
 #include <vector>

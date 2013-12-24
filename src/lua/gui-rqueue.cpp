@@ -76,7 +76,7 @@ namespace
 			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, rwidth, rheight);
 			for(auto y = 0; y < rheight; y++) {
 				const uint32_t* rowp = fb.rowptr(y);
-				framebuffer::color* rowt = &b->pixels[y * rwidth];
+				auto rowt = &b->pixels[y * rwidth];
 				for(auto x = 0; x < rwidth; x++) {
 					uint32_t v = rowp[x];
 					uint64_t c = -1;

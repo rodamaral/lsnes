@@ -4,6 +4,7 @@
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-font2.hpp"
 #include "library/utf8.hpp"
+#include "library/lua-framebuffer.hpp"
 #include <algorithm>
 
 
@@ -119,19 +120,13 @@ namespace
 	{
 		if(!lua_render_ctx)
 			return 0;
-		int64_t fgc = 0xFFFFFFU;
-		int64_t bgc = -1;
-		int64_t hlc = -1;
 		int32_t _x = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		int32_t _y = L.get_numeric_argument<int32_t>(3, fname.c_str());
-		L.get_numeric_argument<int64_t>(5, fgc, fname.c_str());
-		L.get_numeric_argument<int64_t>(6, bgc, fname.c_str());
-		L.get_numeric_argument<int64_t>(7, hlc, fname.c_str());
+		auto fg = lua_get_fb_color(L, 5, fname, 0xFFFFFFU);
+		auto bg = lua_get_fb_color(L, 6, fname, -1);
+		auto hl = lua_get_fb_color(L, 7, fname, -1);
 		std::string text = L.get_string(4, fname.c_str());
 		auto f = lua::_class<lua_customfont>::pin(L, 1, fname.c_str());
-		framebuffer::color fg(fgc);
-		framebuffer::color bg(bgc);
-		framebuffer::color hl(hlc);
 		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
 	}

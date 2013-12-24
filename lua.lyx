@@ -770,6 +770,7 @@ Colors are 32-bit.
  16-23 are the red component, bits 24-31 are alpha component (0 is fully
  opaque, 255 is almost transparent).
  -1 is the fully transparent color.
+ Alternatively, colors can be given as strings naming the color.
 \end_layout
 
 \begin_layout Itemize
@@ -779,6 +780,36 @@ Alpha values greater than 127 do work properly.
 \begin_layout Itemize
 Origin of coordinates is at top left corner of game display area.
  Left and top gaps correspond to negative coordinates.
+\end_layout
+
+\begin_layout Itemize
+The following color names are known: aliceblue, antiquewhite, aqua, aquamarine,
+ azure, beige, bisque, black, blanchedalmond, blue, blueviolet, brown, burlywood
+, cadetblue, chartreuse, chocolate, coral, cornflowerblue, cornsilk, crimson,
+ cyan, darkblue, darkcyan, darkgoldenrod, darkgray, darkgrey, darkgreen,
+ darkkhaki, darkmagenta, darkolivegreen, darkorange, darkorchid, darkred,
+ darksalmon, darkseagreen, darkslateblue, darkslategray, darkslategrey,
+ darkturquoise, darkviolet, deeppink, deepskyblue, dimgray, dimgrey, dodgerblue,
+ firebrick, floralwhite, forestgreen, fuchsia, gainsboro, ghostwhite, gold,
+ goldenrod, gray, grey, green, greenyellow, honeydew, hotpink, indianred,
+ indigo, ivory, khaki, lavender, lavenderblush, lawngreen, lemonchiffon,
+ lightblue, lightcoral, lightcyan, lightgoldenrodyellow, lightgray, lightgrey,
+ lightgreen, lightpink, lightsalmon, lightseagreen, lightskyblue, lightslategray
+, lightslategrey, lightsteelblue, lightyellow, lime, limegreen, linen, magenta,
+ maroon, mediumaquamarine, mediumblue, mediumorchid, mediumpurple, mediumseagree
+n, mediumslateblue, mediumspringgreen, mediumturquoise, mediumvioletred,
+ midnightblue, mintcream, mistyrose, moccasin, navajowhite, navy, oldlace,
+ olive, olivedrab, orange, orangered, orchid, palegoldenrod, palegreen,
+ paleturquoise, palevioletred, papayawhip, peachpuff, peru, pink, plum,
+ powderblue, purple, red, rosybrown, royalblue, saddlebrown, salmon, sandybrown,
+ seagreen, seashell, sienna, silver, skyblue, slateblue, slategray, slategrey,
+ snow, springgreen, steelblue, tan, teal, thistle, tomato, transparent,
+ turquoise, violet, wheat, white, whitesmoke, yellow, yellowgreen.
+\end_layout
+
+\begin_layout Itemize
+The following modifiers can be applied: opaque10, opaque20, opaque25, opaque30,
+ opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque.
 \end_layout
 
 \begin_layout Subsection
@@ -1592,12 +1623,20 @@ gui.color: Compose a color.
 Syntax: number gui.color(number r, number g, number b[, number a])
 \end_layout
 
+\begin_layout Itemize
+Syntax: number gui.color(string c)
+\end_layout
+
 \begin_layout Standard
 Returns color (in notation Lua scripts use) corresponding to color (<r>,<g>,<b>)
 , each component in scale 0-255.
  If <a> is specified, that is alpha (0 is fully transparent, 256(sic) is
  fully opaque).
  The default alpha is 256.
+\end_layout
+
+\begin_layout Standard
+The form taking a string returns color corresponding color name.
 \end_layout
 
 \begin_layout Subsection

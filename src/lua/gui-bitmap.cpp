@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 #include "library/png.hpp"
 #include "library/sha256.hpp"
 #include "library/serialization.hpp"
@@ -167,11 +168,10 @@ namespace
 		uint32_t h = L.get_numeric_argument<uint32_t>(2, fname.c_str());
 		bool d = L.get_bool(3, fname.c_str());
 		if(d) {
-			int64_t c = -1;
-			L.get_numeric_argument<int64_t>(4, c, fname.c_str());
+			auto c = lua_get_fb_color(L, 4, fname, -1);
 			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
 			for(size_t i = 0; i < b->width * b->height; i++)
-				b->pixels[i] = framebuffer::color(c);
+				b->pixels[i] = c;
 		} else {
 			uint16_t c = 0;
 			L.get_numeric_argument<uint16_t>(4, c, fname.c_str());
@@ -586,7 +586,9 @@ namespace
 			std::getline(s, line);
 			istrip_CR(line);
 			regex_results r;
-			if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
+			if(!regex_match("[ \t]*(#.*)?", line)) {
+				//Nothing.
+			} else if(r = regex("[ \t]*([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]+([0-9]+)[ \t]*", line)) {
 				int64_t cr, cg, cb, ca;
 				cr = parse_value<uint8_t>(r[1]);
 				cg = parse_value<uint8_t>(r[2]);
@@ -604,9 +606,9 @@ namespace
 				cg = parse_value<uint8_t>(r[2]);
 				cb = parse_value<uint8_t>(r[3]);
 				p->colors.push_back(framebuffer::color((cr << 16) | (cg << 8) | cb));
-			} else if(regex_match("[ \t]*transparent[ \t]*", line)) {
-				p->colors.push_back(framebuffer::color(-1));
-			} else if(!regex_match("[ \t]*(#.*)?", line))
+			} else if(r = regex("[ \t]*([^ \t]|[^ \t].*[^ \t])[ \t]*", line)) {
+				p->colors.push_back(framebuffer::color(r[1]));
+			} else
 				throw std::runtime_error("Invalid line format (" + line + ")");
 		}
 		return 1;
@@ -696,8 +698,7 @@ std::string lua_palette::print()
 int lua_palette::set(lua::state& L, const std::string& fname)
 {
 	uint16_t c = L.get_numeric_argument<uint16_t>(2, fname.c_str());
-	int64_t nval = L.get_numeric_argument<int64_t>(3, fname.c_str());
-	framebuffer::color nc(nval);
+	auto nc = lua_get_fb_color(L, 3, fname);
 	//The mutex lock protects only the internals of colors array.
 	if(this->colors.size() <= c) {
 		this->palette_mutex.lock();
@@ -858,7 +859,7 @@ int lua_bitmap::blit(lua::state& L, const std::string& fname)
 	uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
 	uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
 	uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
-	int64_t ck = 0x100000000ULL;
+	int64_t ck = 65536;
 	L.get_numeric_argument<int64_t>(9, ck, fname.c_str());
 	if(src_p) {
 		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
@@ -961,10 +962,10 @@ int lua_dbitmap::pset(lua::state& L, const std::string& fname)
 {
 	uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
 	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	int64_t c = L.get_numeric_argument<int64_t>(4, fname.c_str());
+	auto c = lua_get_fb_color(L, 4, fname);
 	if(x >= this->width || y >= this->height)
 		return 0;
-	this->pixels[y * this->width + x] = framebuffer::color(c);
+	this->pixels[y * this->width + x] = c;
 	return 0;
 }
 
@@ -1016,7 +1017,7 @@ int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 	bool src_d = lua::_class<lua_dbitmap>::is(L, 4);
 	bool src_p = lua::_class<lua_bitmap>::is(L, 4);
 	if(!src_d && !src_p)
-		throw std::runtime_error("Expected BITMAP or DBITMAP as argument 4 for gui.bitmap_blit");
+		throw std::runtime_error("Expected BITMAP or DBITMAP as argument 4 for " + fname);
 	int slot = 5;
 	if(src_p)
 		slot++;		//Reserve slot 5 for palette.
@@ -1024,24 +1025,35 @@ int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 	uint32_t sy = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
 	uint32_t w = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
 	uint32_t h = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
-	int64_t ck = 0x100000000ULL;
-	L.get_numeric_argument<int64_t>(slot++, ck, fname.c_str());
+	int64_t ckx = 0x100000000ULL;
+	//Hack: Direct-color bitmaps should take color spec, with special NONE value.
+	if(src_p)
+		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
+	else if(L.type(slot) == LUA_TSTRING) {
+		framebuffer::color cxt(L.get_string(slot, fname.c_str()));
+		ckx = demultiply_color(cxt);
+	} else if(L.type(slot) == LUA_TNUMBER) {
+		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
+	} else if(L.type(slot) == LUA_TNIL || L.type(slot) == LUA_TNONE) {
+		//Do nothing.
+	} else
+		(stringfmt() << "Expected string, number or nil as argument " << slot << " for " << fname).throwex();
 
 	if(src_d) {
 		lua_dbitmap* sb = lua::_class<lua_dbitmap>::get(L, 4, fname.c_str());
-		if(ck == 0x100000000ULL)
+		if(ckx == 0x100000000ULL)
 			xblit(srcdest_direct<colorkey_none>(*this, *sb, colorkey_none()), dx, dy, sx, sy, w, h);
 		else
-			xblit(srcdest_direct<colorkey_direct>(*this, *sb, colorkey_direct(ck)), dx, dy, sx, sy,
+			xblit(srcdest_direct<colorkey_direct>(*this, *sb, colorkey_direct(ckx)), dx, dy, sx, sy,
 				w, h);
 	} else {
 		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
 		lua_palette* pal = lua::_class<lua_palette>::get(L, 5, fname.c_str());
-		if(ck > 65535)
+		if(ckx > 65535)
 			xblit(srcdest_paletted<colorkey_none>(*this, *sb, *pal, colorkey_none()), dx, dy, sx, sy,
 				w, h);
 		else
-			xblit(srcdest_paletted<colorkey_palette>(*this, *sb, *pal, colorkey_palette(ck)), dx, dy,
+			xblit(srcdest_paletted<colorkey_palette>(*this, *sb, *pal, colorkey_palette(ckx)), dx, dy,
 				sx, sy, w, h);
 	}
 	return 0;

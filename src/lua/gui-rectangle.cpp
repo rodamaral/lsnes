@@ -1,5 +1,6 @@
 #include "lua/internal.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 
 namespace
 {
@@ -50,18 +51,14 @@ namespace
 		-> int {
 		if(!lua_render_ctx)
 			return 0;
-		int64_t outline = 0xFFFFFFU;
-		int64_t fill = -1;
 		uint32_t thickness = 1;
 		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
 		uint32_t width = L.get_numeric_argument<uint32_t>(3, fname.c_str());
 		uint32_t height = L.get_numeric_argument<uint32_t>(4, fname.c_str());
 		L.get_numeric_argument<uint32_t>(5, thickness, fname.c_str());
-		L.get_numeric_argument<int64_t>(6, outline, fname.c_str());
-		L.get_numeric_argument<int64_t>(7, fill, fname.c_str());
-		framebuffer::color poutline(outline);
-		framebuffer::color pfill(fill);
+		auto poutline = lua_get_fb_color(L, 6, fname, 0xFFFFFFU);
+		auto pfill = lua_get_fb_color(L, 7, fname, -1);
 		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, poutline, pfill,
 			thickness);
 		return 0;

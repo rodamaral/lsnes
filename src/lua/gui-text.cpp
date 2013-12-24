@@ -1,6 +1,7 @@
 #include "lua/internal.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
+#include "library/lua-framebuffer.hpp"
 
 namespace
 {
@@ -33,15 +34,11 @@ namespace
 	{
 		if(!lua_render_ctx)
 			return 0;
-		int64_t fgc = 0xFFFFFFU;
-		int64_t bgc = -1;
 		int32_t _x = L.get_numeric_argument<int32_t>(1, fname.c_str());
 		int32_t _y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		L.get_numeric_argument<int64_t>(4, fgc, fname.c_str());
-		L.get_numeric_argument<int64_t>(5, bgc, fname.c_str());
+		auto fg = lua_get_fb_color(L, 4, fname, 0xFFFFFFU);
+		auto bg = lua_get_fb_color(L, 5, fname, -1);
 		std::string text = L.get_string(3, fname.c_str());
-		framebuffer::color fg(fgc);
-		framebuffer::color bg(bgc);
 		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
