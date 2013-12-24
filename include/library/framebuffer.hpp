@@ -485,7 +485,18 @@ struct color
 	{
 		x = blend(x);
 	}
+	int64_t asnumber() const throw()
+	{
+		if(!origa)
+			return -1;
+		else
+			return orig | ((uint32_t)(256 - origa) << 24);
+	}
 };
+
+int64_t color_rotate_hue(int64_t color, int count, int steps);
+int64_t color_adjust_saturation(int64_t color, double adjust);
+int64_t color_adjust_lightness(int64_t color, double adjust);
 
 /**
  * Base color name.
@@ -500,7 +511,7 @@ struct basecolor
  */
 struct color_mod
 {
-	color_mod(const std::string& name, void(*fn)(int64_t&));
+	color_mod(const std::string& name, std::function<void(int64_t&)> fn);
 };
 
 /**

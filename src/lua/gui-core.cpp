@@ -61,18 +61,10 @@ namespace
 		return 0;
 	});
 
-	inline int64_t demultiply_color(const framebuffer::color& c)
-	{
-		if(!c.origa)
-			return -1;
-		else
-			return c.orig | ((uint32_t)(256 - c.origa) << 24);
-	}
-
 	lua::fnptr gui_color(lua_func_misc, "gui.color", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(L.type(1) == LUA_TSTRING) {
-			L.pushnumber(demultiply_color(lua_get_fb_color(L, 1, fname)));
+			L.pushnumber(lua_get_fb_color(L, 1, fname).asnumber());
 			return 1;
 		}
 		int64_t a = 256;
@@ -99,58 +91,15 @@ namespace
 		return 1;
 	});
 
-
-	//0: m
-	//1: M
-	//2: m + phue
-	//3: M - phue
-	uint8_t hsl2rgb_flags[] = {24, 52, 6, 13, 33, 19};
-
-	uint32_t shifthue(uint32_t color, double shift)
-	{
-		int16_t R = (color >> 16) & 0xFF;
-		int16_t G = (color >> 8) & 0xFF;
-		int16_t B = color & 0xFF;
-		int16_t m = min(R, min(G, B));
-		int16_t M = max(R, max(G, B));
-		int16_t S = M - m;
-		if(!S)
-			return color;	//Grey.
-		int16_t hue;
-		if(R == M)
-			hue = G - B + 6 * S;
-		else if(G == M)
-			hue = B - R + 2 * S;
-		else
-			hue = R - G + 4 * S;
-		hue = (hue + static_cast<uint32_t>(shift * S)) % (6 * S);
-		uint32_t V[4];
-		V[0] = m;
-		V[1] = M;
-		V[2] = m + hue % S;
-		V[3] = M - hue % S;
-		uint8_t flag = hsl2rgb_flags[hue / S];
-		return (V[(flag >> 4) & 3] << 16) | (V[(flag >> 2) & 3] << 8) | (V[flag & 3]);
-	}
-
 	lua::fnptr gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, const std::string& fname)
 		-> int {
 		int64_t basecolor = 0x00FF0000;
-		uint64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		int32_t steps = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		basecolor = demultiply_color(lua_get_fb_color(L, 3, fname));
+		int64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+		int64_t steps = L.get_numeric_argument<int64_t>(2, fname.c_str());
+		basecolor = lua_get_fb_color(L, 3, fname).asnumber();
 		if(!steps)
 			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
-		if(basecolor < 0) {
-			//Special: Any rotation of transparent is transparent.
-			L.pushnumber(-1);
-			return 1;
-		}
-		uint32_t asteps = std::abs(steps);
-		if(steps < 0)
-			step = asteps - step % asteps;	//Reverse order.
-		double hueshift = 6.0 * (step % asteps) / asteps;
-		basecolor = shifthue(basecolor & 0xFFFFFF, hueshift) | (basecolor & 0xFF000000);
+		basecolor = framebuffer::color_rotate_hue(basecolor, step, steps);
 		L.pushnumber(basecolor);
 		return 1;
 	});

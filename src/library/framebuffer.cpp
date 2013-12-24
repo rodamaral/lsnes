@@ -2,6 +2,7 @@
 #include "png.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
+#include "minmax.hpp"
 #include "utf8.hpp"
 #include <cstring>
 #include <iostream>
@@ -113,7 +114,7 @@ basecolor::basecolor(const std::string& name, int64_t value)
 	colornames()[name] = std::make_pair([value](int64_t& v) { v = value; }, false);
 }
 
-color_mod::color_mod(const std::string& name, void(*fn)(int64_t&))
+color_mod::color_mod(const std::string& name, std::function<void(int64_t&)> fn)
 {
 	colornames()[name] = std::make_pair(fn, true);
 }
@@ -930,6 +931,108 @@ void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool 
 		lo *= origa;
 	}
 }
+
+namespace
+{
+	void adjust_hmM_hue(int16_t& hue, int16_t& m, int16_t& M, double adj)
+	{
+		if(m == M)
+			return;
+		int16_t S = M - m;
+		hue = (hue + static_cast<uint32_t>(adj * S)) % (6 * S);
+	}
+	void adjust_ls_saturation(double& s, double& l, double adj)
+	{
+		s = clip(s + adj, 0.0, 1.0);
+	}
+	void adjust_ls_lightness(double& s, double& l, double adj)
+	{
+		l = clip(l + adj, 0.0, 1.0);
+	}
+	template<void(*adjustfn)(double& s, double& l, double adj)>
+	void adjust_hmM_sl(int16_t& hue, int16_t& m, int16_t& M, double adj)
+	{
+		int16_t S1 = M - m;
+		double _m = m / 255.0;
+		double _M = M / 255.0;
+		double l = (_m + _M) / 2;
+		double s;
+		if(l == 0 || l == 1) s = 0;
+		else if(l <= 0.5) s = _M / l - 1;
+		else s = (_M - l) / (1 - l);
+		adjustfn(s, l, adj);
+		if(l <= 0.5) _M = l * (s + 1);
+		else _M = l + s - l * s;
+		_m = 2 * l -_M;
+		m = _m * 255;
+		M = _M * 255;
+		int32_t S2 = M - m;
+		hue = S1 ? (S2 * hue / S1) : 0;
+	}
+	//0: m
+	//1: M
+	//2: m + phue
+	//3: M - phue
+	const uint8_t hsl2rgb_flags[] = {24, 52, 6, 13, 33, 19};
+	template<void(*adjustfn)(int16_t& hue, int16_t& m, int16_t& M, double adj)>
+	uint32_t adjustcolor(uint32_t color, double shift)
+	{
+		int16_t R = (color >> 16) & 0xFF;
+		int16_t G = (color >> 8) & 0xFF;
+		int16_t B = color & 0xFF;
+		int16_t m = min(R, min(G, B));
+		int16_t M = max(R, max(G, B));
+		int16_t S1 = M - m;
+		int16_t hue;
+		if(R == M)
+			hue = G - B + 6 * S1;
+		else if(G == M)
+			hue = B - R + 2 * S1;
+		else
+			hue = R - G + 4 * S1;
+		adjustfn(hue, m, M, shift);
+		if(m == M)
+			return ((uint32_t)m << 16) | ((uint32_t)m << 8) | (uint32_t)m;
+		int16_t S2 = M - m;
+		hue %= (6 * S2);
+		uint32_t V[4];
+		V[0] = m;
+		V[1] = M;
+		V[2] = m + hue % S2;
+		V[3] = M - hue % S2;
+		uint8_t flag = hsl2rgb_flags[hue / S2];
+		return (V[(flag >> 4) & 3] << 16) | (V[(flag >> 2) & 3] << 8) | (V[flag & 3]);
+	}
+}
+
+int64_t color_rotate_hue(int64_t basecolor, int step, int steps)
+{
+	if(!steps)
+		throw std::runtime_error("Expected nonzero steps for hue rotation");
+	if(basecolor < 0) {
+		//Special: Any rotation of transparent is transparent.
+		return -1;
+	}
+	uint32_t asteps = std::abs(steps);
+	if(steps < 0)
+		step = asteps - step % asteps;	//Reverse order.
+	double hueshift = 6.0 * (step % asteps) / asteps;
+	basecolor = adjustcolor<adjust_hmM_hue>(basecolor & 0xFFFFFF, hueshift) | (basecolor & 0xFF000000);
+	return basecolor;
+}
+
+int64_t color_adjust_saturation(int64_t color, double adjust)
+{
+	if(color < 0) return color;
+	return adjustcolor<adjust_hmM_sl<adjust_ls_saturation>>(color & 0xFFFFFF, adjust) | (color & 0xFF000000);
+}
+
+int64_t color_adjust_lightness(int64_t color, double adjust)
+{
+	if(color < 0) return color;
+	return adjustcolor<adjust_hmM_sl<adjust_ls_lightness>>(color & 0xFFFFFF, adjust) | (color & 0xFF000000);
+}
+
 
 template class fb<false>;
 template class fb<true>;

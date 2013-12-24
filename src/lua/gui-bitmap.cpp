@@ -199,14 +199,6 @@ namespace
 		return 0;
 	});
 
-	inline int64_t demultiply_color(const framebuffer::color& c)
-	{
-		if(!c.origa)
-			return -1;
-		else
-			return c.orig | ((uint32_t)(256 - c.origa) << 24);
-	}
-
 	lua::fnptr pget_bitmap(lua_func_misc, "gui.bitmap_pget", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(lua::_class<lua_bitmap>::is(L, 1))
@@ -975,7 +967,7 @@ int lua_dbitmap::pget(lua::state& L, const std::string& fname)
 	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
 	if(x >= this->width || y >= this->height)
 		return 0;
-	L.pushnumber(demultiply_color(this->pixels[y * this->width + x]));
+	L.pushnumber((this->pixels[y * this->width + x]).asnumber());
 	return 1;
 }
 
@@ -1031,7 +1023,7 @@ int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
 	else if(L.type(slot) == LUA_TSTRING) {
 		framebuffer::color cxt(L.get_string(slot, fname.c_str()));
-		ckx = demultiply_color(cxt);
+		ckx = cxt.asnumber();
 	} else if(L.type(slot) == LUA_TNUMBER) {
 		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
 	} else if(L.type(slot) == LUA_TNIL || L.type(slot) == LUA_TNONE) {

@@ -865,12 +865,38 @@ n4 steelblue steelblue1 steelblue2 steelblue3 steelblue4 tan tan1 tan2 tan3
  tomato3 tomato4 transparent turquoise turquoise1 turquoise2 turquoise3
  turquoise4 violet violetred violetred1 violetred2 violetred3 violetred4
  wheat wheat1 wheat2 wheat3 wheat4 white whitesmoke yellow yellow1 yellow2
- yellow3 yellow4 yellowgreen .
+ yellow3 yellow4 yellowgreen hsl-{r,ry,o,y,yg,g,gc,c,cb,b,bm,m,mr}{0,1,2,3,4,5,6
+,7,8}{0,1,2,3,4,5,6,7,8}.
 \end_layout
 
 \begin_layout Itemize
 The following modifiers can be applied: opaque10, opaque20, opaque25, opaque30,
- opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque.
+ opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque,
+ hue{+,-}{1-23}, {saturation,lightness}{+,-}{1-16}.
+\end_layout
+
+\begin_layout Itemize
+HSL base color names: r => Red, ry => Red-Yellow (also o).
+ y => Yellow, yg => Yellow-Green, g => Green, gc => Green-Cyan, c => Cyan,
+ cb => Cyan-Blue, b => Blue, bm => Blue-Magenta, m => Magenta, mr => Magenta
+ red.
+\end_layout
+
+\begin_layout Itemize
+HSL colors use 8-step scales for saturation and lightness.
+\end_layout
+
+\begin_layout Itemize
+Modifiers have opaqueness on percent scale (0 is transparent, 100 is fully
+ opaque).
+\end_layout
+
+\begin_layout Itemize
+Modifiers have Hue on 24-step scale (4 steps between R->Y->G->C->B->M->R).
+\end_layout
+
+\begin_layout Itemize
+Modifiers have Saturation/Lightness on 16 step scale.
 \end_layout
 
 \begin_layout Subsection
@@ -1734,7 +1760,7 @@ Perform hue rotation of color <color> (default bright red), by <step> steps.
 \end_layout
 
 \begin_layout Standard
-If <steps> is negative, the rotation will be counterclockwise.
+If <step> is negative, the rotation will be counterclockwise.
 \end_layout
 
 \begin_layout Subsection
