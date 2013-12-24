@@ -28,6 +28,8 @@ namespace
 			if(!lua_render_ctx)
 				return 0;
 			int32_t g = L.get_numeric_argument<int32_t>(1, fname.c_str());
+			if(lua_render_ctx->*gap == std::numeric_limits<uint32_t>::max())
+				lua_render_ctx->*gap = 0;  //Handle default gap of render queue.
 			if(delta) g += lua_render_ctx->*gap;
 			if(g < 0 || g > 8192)
 				return 0;	//Ignore ridiculous gap.
