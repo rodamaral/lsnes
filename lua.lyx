@@ -1709,6 +1709,19 @@ Warning: Don't try to run the current render queue.
 \end_layout
 
 \begin_layout Subsection
+RENDERQUEUE:render: Render a queue to DBITMAP
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP RENDERQUEUE:render()
+\end_layout
+
+\begin_layout Standard
+Renders the specified render queue to a bitmap, the base bitmap size (modified
+ by gaps) being the nominal screen size for render queue.
+\end_layout
+
+\begin_layout Subsection
 gui.loadfont: Load a font file
 \end_layout
 

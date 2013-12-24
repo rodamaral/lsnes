@@ -1,5 +1,6 @@
 #include "core/framebuffer.hpp"
 #include "lua/internal.hpp"
+#include "lua/bitmap.hpp"
 #include "library/framebuffer.hpp"
 
 namespace
@@ -62,7 +63,35 @@ namespace
 			lua_render_ctx = last = ptr;
 			redirect = true;
 		}
+		int render(lua::state& L, const std::string& fname)
+		{
+			uint32_t rwidth = lctx.width + rdgap(lctx.left_gap) + rdgap(lctx.right_gap);
+			uint32_t rheight = lctx.height + rdgap(lctx.top_gap) + rdgap(lctx.bottom_gap);
+			uint32_t xoff = rdgap(lctx.left_gap);
+			uint32_t yoff = rdgap(lctx.top_gap);
+			framebuffer::fb<false> fb;
+			fb.reallocate(rwidth, rheight);
+			fb.set_origin(xoff, yoff);
+			rqueue.run(fb);
+			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, rwidth, rheight);
+			for(auto y = 0; y < rheight; y++) {
+				const uint32_t* rowp = fb.rowptr(y);
+				framebuffer::color* rowt = &b->pixels[y * rwidth];
+				for(auto x = 0; x < rwidth; x++) {
+					uint32_t v = rowp[x];
+					uint64_t c = -1;
+					if(v >> 24)
+						c = ((256 - (v >> 24) - (v >> 31)) << 24) + (v & 0xFFFFFF);
+					rowt[x] = c;
+				}
+			}
+			return 1;
+		}
 	private:
+		uint32_t rdgap(uint32_t v)
+		{
+			return (v + 1) ? v : 0;
+		}
 		framebuffer::queue rqueue;
 		lua_render_context lctx;
 	};
@@ -74,6 +103,7 @@ namespace
 			{"synchronous_repaint", &lua_renderqueue::synchronous_repaint},
 			{"clear", &lua_renderqueue::clear},
 			{"set", &lua_renderqueue::set},
+			{"render", &lua_renderqueue::render},
 		});
 		lctx.left_gap = std::numeric_limits<uint32_t>::max();
 		lctx.right_gap = std::numeric_limits<uint32_t>::max();
