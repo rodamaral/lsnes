@@ -97,37 +97,25 @@ namespace
 	struct color_modifier
 	{
 		const char* name;
-		void(*fn)(int64_t& v);
+		std::function<void(int64_t& v)> fn;
 		bool modifier;
 	};
 
-	std::map<std::string, std::pair<void(*)(int64_t& v), bool>>& colornames()
+	std::map<std::string, std::pair<std::function<void(int64_t& v)>, bool>>& colornames()
 	{
-		static std::map<std::string, std::pair<void(*)(int64_t& v), bool>> c;
-		static bool i = false;
-		if(!i) {
-			std::vector<color_modifier> tmp = {
-				{"transparent", [](int64_t& v) { v = -1; }, false},
-				{"opaque10", [](int64_t& v) { v = (230ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque20", [](int64_t& v) { v = (205ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque25", [](int64_t& v) { v = (192ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque30", [](int64_t& v) { v = (179ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque40", [](int64_t& v) { v = (154ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque50", [](int64_t& v) { v = (128ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque60", [](int64_t& v) { v = (102ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque70", [](int64_t& v) { v = (77ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque75", [](int64_t& v) { v = (64ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque80", [](int64_t& v) { v = (51ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque90", [](int64_t& v) { v = (26ULL << 24) | (v & 0xFFFFFF); }, true},
-				{"opaque", [](int64_t& v) { v = (0ULL << 24) | (v & 0xFFFFFF); }, true},
-#include "framebuffer-basecolors.inc"
-			};
-			for(auto j : tmp)
-				c[j.name] = std::make_pair(j.fn, j.modifier);
-			i = true;
-		}
+		static std::map<std::string, std::pair<std::function<void(int64_t& v)>, bool>> c;
 		return c;
 	}
+}
+
+basecolor::basecolor(const std::string& name, int64_t value)
+{
+	colornames()[name] = std::make_pair([value](int64_t& v) { v = value; }, false);
+}
+
+color_mod::color_mod(const std::string& name, void(*fn)(int64_t&))
+{
+	colornames()[name] = std::make_pair(fn, true);
 }
 
 pixfmt::pixfmt() throw(std::bad_alloc)

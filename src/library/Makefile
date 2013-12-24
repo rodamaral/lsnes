@@ -6,13 +6,10 @@ __all__.files: $(OBJECTS)
 	lua ../genfilelist.lua $^ >$@
 	touch __all__.ldflags
 
-framebuffer-basecolors.inc: framebuffer-basecolors.def
-	lua make-basecolors.lua <$< >$@
-
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) $(CFLAGS) -c -o $@ $< -I../../include/library
 
-precheck: forcelook framebuffer-basecolors.inc
+precheck: forcelook
 	../../buildaux/mkdeps.exe ../../include/library -- *.cpp
 	@true
 

@@ -2,6 +2,7 @@
 #define _library__framebuffer__hpp__included__
 
 #include <stdexcept>
+#include <functional>
 #include <cstdlib>
 #include <vector>
 #include <map>
@@ -486,6 +487,21 @@ struct color
 	}
 };
 
+/**
+ * Base color name.
+ */
+struct basecolor
+{
+	basecolor(const std::string& name, int64_t value);
+};
+
+/**
+ * Color modifier.
+ */
+struct color_mod
+{
+	color_mod(const std::string& name, void(*fn)(int64_t&));
+};
 
 /**
  * Bitmap font (8x16).
