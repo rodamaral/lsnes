@@ -79,8 +79,9 @@ void lsnes_gamepads_init()
 void lsnes_gamepads_deinit()
 {
 	std::ofstream cfg(get_config_path() + "/gamepads.json");
+	JSON::printer_indenting printer;
 	if(cfg)
-		cfg << lsnes_gamepads.save().serialize() << std::endl;
+		cfg << lsnes_gamepads.save().serialize(&printer);
 }
 
 void cleanup_keymapper()

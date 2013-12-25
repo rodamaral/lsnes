@@ -207,6 +207,81 @@ private:
 };
 
 /**
+ * A JSON pretty-printer base.
+ */
+class printer
+{
+public:
+	virtual ~printer() throw();
+/**
+ * Print a value that is null, boolean or integer.
+ */
+	virtual std::string value_val(const std::string& val);
+/**
+ * Print a string value.
+ */
+	virtual std::string value_string(const std::u32string& s);
+/**
+ * Print beginning of array.
+ */
+	virtual std::string array_begin();
+/**
+ * Print a separator in array.
+ */
+	virtual std::string array_separator();
+/**
+ * Print end of array.
+ */
+	virtual std::string array_end();
+/**
+ * Print beginning of object.
+ */
+	virtual std::string object_begin();
+/**
+ * Print key in object.
+ */
+	virtual std::string object_key(const std::u32string& s);
+/**
+ * Print field separator in object.
+ */
+	virtual std::string object_separator();
+/**
+ * Print end of object.
+ */
+	virtual std::string object_end();
+};
+
+/**
+ * A JSON pretty-printer (indenting).
+ */
+class printer_indenting : public printer
+{
+public:
+	printer_indenting();
+	~printer_indenting() throw();
+	std::string value_val(const std::string& val);
+	std::string value_string(const std::u32string& s);
+	std::string array_begin();
+	std::string array_separator();
+	std::string array_end();
+	std::string object_begin();
+	std::string object_key(const std::u32string& s);
+	std::string object_separator();
+	std::string object_end();
+private:
+	std::string linestart(size_t _depth);
+	size_t depth;
+	enum _state
+	{
+		S_NORMAL,
+		S_END,
+		S_COMMA,
+		S_START,
+		S_START_END,
+	} state;
+};
+
+/**
  * A JSON node.
  */
 class node
@@ -247,7 +322,7 @@ public:
 /**
  * Serialize document.
  */
-	std::string serialize() const throw(std::bad_alloc, error);
+	std::string serialize(printer* printer = NULL) const throw(std::bad_alloc, error);
 /**
  * Get type of node.
  */

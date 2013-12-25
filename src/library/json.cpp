@@ -900,37 +900,41 @@ bad:
 	}
 }
 
-std::string node::serialize() const throw(std::bad_alloc, error)
+std::string node::serialize(printer* _printer) const throw(std::bad_alloc, error)
 {
+	printer xprinter;
+	_printer = _printer ? _printer : &xprinter;
+	printer& oprinter = *_printer;
 	std::ostringstream out;
 	bool first = true;
 	switch(vtype) {
-	case null_tag::id: return "null";
-	case boolean_tag::id: return _boolean ? "true" : "false";
+	case null_tag::id: return oprinter.value_val("null");
+	case boolean_tag::id: return oprinter.value_val(_boolean ? "true" : "false");
 	case number_tag::id:
 		_number.write(out);
-		return out.str();
+		return oprinter.value_val(out.str());
 	case string_tag::id:
-		return json_string_escape(_string);
+		return oprinter.value_string(_string);
 	case array_tag::id:
-		out << "[";
+		out << oprinter.array_begin();
 		for(auto& i : xarray_index) {
-			if(!first) out << ",";
-			out << i->serialize();
+			if(!first) out << oprinter.array_separator();
+			out << i->serialize(_printer);
 			first = false;
 		}
-		out << "]";
+		out << oprinter.array_end();
 		return out.str();
 	case object_tag::id:
-		out << "{";
+		out << oprinter.object_begin();
 		for(auto& i : xobject) {
 			for(auto& j : i.second) {
-				if(!first) out << ",";
-				out << json_string_escape(i.first) << ":" << j.serialize();
+				if(!first) out << oprinter.object_separator();
+				out << oprinter.object_key(i.first);
+				out << j.serialize(_printer);
 				first = false;
 			}
 		}
-		out << "}";
+		out << oprinter.object_end();
 		return out.str();
 	}
 	throw error(ERR_UNKNOWN_TYPE);
@@ -1676,6 +1680,228 @@ std::ostream& operator<<(std::ostream& s, const pointer& p)
 std::basic_ostream<char32_t>& operator<<(std::basic_ostream<char32_t>& s, const pointer& p)
 {
 	return s << p._pointer;
+}
+
+printer::~printer() throw()
+{
+}
+
+std::string printer::value_val(const std::string& val)
+{
+	return val;
+}
+
+std::string printer::value_string(const std::u32string& s)
+{
+	return json_string_escape(s);
+}
+
+std::string printer::array_begin()
+{
+	return "[";
+}
+
+std::string printer::array_separator()
+{
+	return ",";
+}
+
+std::string printer::array_end()
+{
+	return "]";
+}
+
+std::string printer::object_begin()
+{
+	return "{";
+}
+
+std::string printer::object_key(const std::u32string& s)
+{
+	return json_string_escape(s) + ":";
+}
+
+std::string printer::object_separator()
+{
+	return ",";
+}
+
+std::string printer::object_end()
+{
+	return "}";
+}
+
+printer_indenting::printer_indenting()
+{
+	depth = 0;
+	state = S_NORMAL;
+}
+
+printer_indenting::~printer_indenting() throw()
+{
+}
+
+std::string printer_indenting::linestart(size_t _depth)
+{
+	std::ostringstream s;
+	s << "\n";
+	for(size_t i = 0; i < _depth; i++)
+		s << "    ";
+	return s.str();
+}
+
+std::string printer_indenting::value_val(const std::string& val)
+{
+	if(depth == 0)
+		return val + "\n";
+	switch(state) {
+	case S_NORMAL:
+		return val;
+	default:
+		//According to JSON rules, value is not allowed immediately after end of array/object, so
+		//states S_END and S_START_END really have comma right before.
+		state = S_NORMAL;
+		return linestart(depth) + val;
+	}
+}
+
+std::string printer_indenting::value_string(const std::u32string& s)
+{
+	if(depth == 0)
+		return json_string_escape(s) + "\n";
+	switch(state) {
+	case S_NORMAL:
+		return json_string_escape(s);
+	default:
+		//According to JSON rules, value is not allowed immediately after end of array/object, so
+		//states S_END and S_START_END really have comma right before.
+		state = S_NORMAL;
+		return linestart(depth) + json_string_escape(s);
+	}
+}
+
+std::string printer_indenting::array_begin()
+{
+	switch(state) {
+	case S_NORMAL:
+		//This can only happen in beginning of expression or after key.
+		state = S_START;
+		depth++;
+		return "[";
+	case S_END:
+		//This is really after ], or },
+		state = S_START;
+		depth++;
+		return "[";
+	case S_COMMA:
+	case S_START:
+	case S_START_END:
+		//S_START_END really has comma right before due to JSON rules.
+		state = S_START;
+		return linestart(depth++) + "[";
+	}
+}
+
+std::string printer_indenting::array_separator()
+{
+	switch(state) {
+	case S_END:
+	case S_START_END:
+		//These states don't transition to comma.
+		return ",";
+	default:
+		state = S_COMMA;
+		return ",";
+	}
+}
+
+std::string printer_indenting::array_end()
+{
+	switch(state) {
+	case S_NORMAL:
+	case S_END:
+	case S_COMMA:
+	case S_START_END:
+		//S_END or S_START_END is after ']' or '}'.
+		//S_COMMA can't actually happen per JSON rules.
+		state = S_END;
+		--depth;
+		return linestart(depth) + "]" + (depth ? "" : "\n");
+	case S_START:
+		state = S_START_END;
+		--depth;
+		return std::string("]") + (depth ? "" : "\n");
+	}
+}
+
+std::string printer_indenting::object_begin()
+{
+	switch(state) {
+	case S_NORMAL:
+		//This can only happen in beginning of expression or after key.
+		state = S_START;
+		depth++;
+		return "{";
+	case S_END:
+		//This is really ], or },
+		state = S_START;
+		depth++;
+		return "{";
+	case S_COMMA:
+	case S_START:
+	case S_START_END:
+		//S_START_END really has comma right before due to JSON rules.
+		state = S_START;
+		return linestart(depth++) + "{";
+	}
+}
+
+std::string printer_indenting::object_key(const std::u32string& s)
+{
+	switch(state) {
+	case S_START:
+	case S_COMMA:
+	case S_END:
+	case S_START_END:
+		state = S_NORMAL;
+		return linestart(depth) + json_string_escape(s) + ":";
+	default:
+		//Can't actually happe
+		state = S_NORMAL;
+		return json_string_escape(s) + ":";
+	}
+}
+
+std::string printer_indenting::object_separator()
+{
+	switch(state) {
+	case S_END:
+	case S_START_END:
+		//These states don't transition to comma.
+		return ",";
+	default:
+		state = S_COMMA;
+		return ",";
+	}
+}
+
+std::string printer_indenting::object_end()
+{
+	switch(state) {
+	case S_NORMAL:
+	case S_END:
+	case S_COMMA:
+	case S_START_END:
+		//S_END or S_START_END is after ']' or '}'.
+		//S_COMMA can't actually happen per JSON rules.
+		state = S_END;
+		--depth;
+		return linestart(depth) + "}" + (depth ? "" : "\n");
+	case S_START:
+		state = S_START_END;
+		--depth;
+		return "}";
+	}
 }
 
 }
