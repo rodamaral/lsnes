@@ -89,9 +89,9 @@ std::string disassemble_gb_opcode(uint16_t pc, std::function<uint8_t()> fetch, i
 			case 6: return (stringfmt() << "SWAP " << regs[reg]).str();
 			case 7: return (stringfmt() << "SRL " << regs[reg]).str();
 			};
-		case 1: return (stringfmt() << "BIT " << bit << "," << regs[reg]).str();
-		case 2: return (stringfmt() << "RES " << bit << "," << regs[reg]).str();
-		case 3: return (stringfmt() << "SET " << bit << "," << regs[reg]).str();
+		case 1: return (stringfmt() << "BIT " << (int)bit << "," << regs[reg]).str();
+		case 2: return (stringfmt() << "RES " << (int)bit << "," << regs[reg]).str();
+		case 3: return (stringfmt() << "SET " << (int)bit << "," << regs[reg]).str();
 		};
 	}
 	std::ostringstream o;

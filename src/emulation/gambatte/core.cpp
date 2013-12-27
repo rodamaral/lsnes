@@ -248,7 +248,7 @@ namespace
 		case 2: addr = get_de(instance); break;
 		case 3: addr = get_hl(instance); break;
 		case 4: addr = 0xFF00 + instance->get_cpureg(gambatte::GB::REG_C); break;
-		case 5: if(opcode & 7)  addr = get_hl(instance); break;
+		case 5: if((opcode & 7) == 6)  addr = get_hl(instance); break;
 		}
 		while(s.str().length() < 28) s << " ";
 		if(addr >= 0) {
