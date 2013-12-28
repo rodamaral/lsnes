@@ -23,7 +23,7 @@ namespace zip
 int rename_overwrite(const char* oldname, const char* newname)
 {
 #if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING);
+	return MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING) ? 0 : -1;
 #else
 	return rename(oldname, newname);
 #endif

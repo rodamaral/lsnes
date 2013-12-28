@@ -228,6 +228,15 @@ Instead of starting the emulator, only display the settings.
 \end_layout
 
 \begin_layout Subsubsection
+--pluginmanager
+\end_layout
+
+\begin_layout Standard
+Instead of starting the emulator, display the plugin manager (useful to
+ disable some plugin that causes emulator to crash on startup)
+\end_layout
+
+\begin_layout Subsubsection
 --lua=<file>
 \end_layout
 

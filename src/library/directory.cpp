@@ -41,6 +41,12 @@ time_t file_get_mtime(const std::string& path)
 	return boost_fs::last_write_time(boost_fs::path(path));
 }
 
+bool file_exists(const std::string& filename)
+{
+	boost::system::error_code ec;
+	return boost_fs::exists(boost_fs::path(filename), ec);
+}
+
 bool file_is_regular(const std::string& filename)
 {
 	boost::system::error_code ec;

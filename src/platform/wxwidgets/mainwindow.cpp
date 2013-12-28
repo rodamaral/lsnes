@@ -133,6 +133,7 @@ enum
 	wxID_DOWNLOAD,
 	wxID_TRACELOG_FIRST,
 	wxID_TRACELOG_LAST = wxID_TRACELOG_FIRST + 256,
+	wxID_PLUGIN_MANAGER,
 };
 
 
@@ -1025,6 +1026,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 	if(loadlib::library::name() != "") {
 		menu_separator();
 		menu_entry(wxID_LOAD_LIBRARY, towxstring(std::string("Load ") + loadlib::library::name()));
+		menu_entry(wxID_PLUGIN_MANAGER, towxstring("Plugin manager"));
 	}
 	menu_separator();
 	menu_entry(wxID_RELOAD_ROM_IMAGE, wxT("Reload ROM"));
@@ -1606,6 +1608,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		handle_post_loadlibrary();
 		break;
 	}
+	case wxID_PLUGIN_MANAGER:
+		wxeditor_plugin_manager_display(this);
+		return;
 	case wxID_RELOAD_ROM_IMAGE:
 		runemufn([]() {
 			lsnes_cmd.invoke("unpause-emulator");

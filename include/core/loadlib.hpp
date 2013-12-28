@@ -4,7 +4,7 @@
 #include "library/loadlib.hpp"
 
 void handle_post_loadlibrary();
-void autoload_libraries();
+void autoload_libraries(void(*on_error)(const std::string& err) = NULL);
 void with_loaded_library(const loadlib::module& l);
 
 #endif

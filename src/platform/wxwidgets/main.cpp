@@ -344,6 +344,7 @@ public:
 	virtual bool OnCmdLineParsed(wxCmdLineParser& parser);
 private:
 	bool settings_mode;
+	bool pluginmanager_mode;
 	std::string c_rom;
 	std::string c_file;
 	std::vector<std::string> cmdline;
@@ -374,6 +375,7 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		regex_results r;
 		if(i == "--help" || i == "-h") {
 			std::cout << "--settings: Show the settings dialog" << std::endl;
+			std::cout << "--pluginmanager: Show the plugin manager" << std::endl;
 			std::cout << "--rom=<filename>: Load specified ROM on startup" << std::endl;
 			std::cout << "--load=<filename>: Load specified save/movie on starup" << std::endl;
 			std::cout << "--lua=<filename>: Load specified Lua script on startup" << std::endl;
@@ -384,6 +386,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 		}
 		if(i == "--settings")
 			settings_mode = true;
+		if(i == "--pluginmanager")
+			pluginmanager_mode = true;
 		if(r = regex("--set=([^=]+)=(.+)", i))
 			c_settings[r[1]] = r[2];
 		if(r = regex("--lua=(.+)", i))
@@ -403,6 +407,10 @@ bool lsnes_app::OnInit()
 	set_random_seed();
 	bring_app_foreground();
 
+	if(pluginmanager_mode)
+		if(!wxeditor_plugin_manager_display(NULL))
+			return false;
+
 	ui_services = new ui_services_type();
 
 	ui_thread = this_thread_id();
@@ -419,7 +427,9 @@ bool lsnes_app::OnInit()
 	controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();
-	autoload_libraries();
+	autoload_libraries([](const std::string& error) {
+		show_message_ok(NULL, "Error loading plugin", error, wxICON_EXCLAMATION);
+	});
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Loading configuration --- " << std::endl;
 	load_configuration();
