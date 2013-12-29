@@ -10,6 +10,25 @@
 #include <sstream>
 #include <dirent.h>
 
+namespace
+{
+	std::string get_name(std::string path)
+	{
+#if defined(_WIN32) || defined(_WIN64)
+		const char* sep = "\\/";
+#else
+		const char* sep = "/";
+#endif
+		size_t p = path.find_last_of(sep);
+		std::string name;
+		if(p == std::string::npos)
+			name = path;
+		else
+			name = path.substr(p + 1);
+		return name;
+	}
+}
+
 void handle_post_loadlibrary()
 {
 	if(new_core_flag) {
@@ -29,7 +48,7 @@ void with_loaded_library(const loadlib::module& l)
 	}
 }
 
-void autoload_libraries(void(*on_error)(const std::string& err))
+void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err))
 {
 	try {
 		std::string extension = loadlib::library::extension();
@@ -46,8 +65,9 @@ void autoload_libraries(void(*on_error)(const std::string& err))
 				with_loaded_library(*new loadlib::module(loadlib::library(i)));
 			} catch(std::exception& e) {
 				std::string x = "Can't load '" + i + "': " + e.what();
+				
 				if(on_error)
-					on_error(x);
+					on_error(get_name(i), e.what());
 				messages << x << std::endl;
 			}
 		}

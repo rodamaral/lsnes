@@ -427,8 +427,9 @@ bool lsnes_app::OnInit()
 	controls.set_ports(ports);
 
 	std::string cfgpath = get_config_path();
-	autoload_libraries([](const std::string& error) {
-		show_message_ok(NULL, "Error loading plugin", error, wxICON_EXCLAMATION);
+	autoload_libraries([](const std::string& libname, const std::string& error) {
+		show_message_ok(NULL, "Error loading plugin " + libname, "Error loading '" + libname + "'\n\n" +
+			error, wxICON_EXCLAMATION);
 	});
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Loading configuration --- " << std::endl;
