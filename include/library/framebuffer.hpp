@@ -655,7 +655,7 @@ struct queue
 	{
 		size_t c = 0;
 		struct node* n = queue_head;
-		while(n != queue_tail) {
+		while(n != NULL) {
 			n = n->next;
 			c++;
 		}
