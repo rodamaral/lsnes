@@ -21,6 +21,16 @@
 
 namespace
 {
+	std::set<std::string> failed_plugins;
+
+	std::string string_add_list(std::string a, std::string b)
+	{
+		if(a.length())
+			return a + "," + b;
+		else
+			return b;
+	}
+
 	std::string get_name(std::string path)
 	{
 #if defined(_WIN32) || defined(_WIN64)
@@ -134,7 +144,11 @@ void wxeditor_plugins::reload_plugins()
 		if(!r) continue;
 		pluginstbl.push_back(std::make_pair(r[1], r[2] == ""));
 		std::string r1 = r[1];
-		plugins->Append(towxstring(r1 + ((r[2] == "") ? "" : " (disabled)")));
+		std::string attributes;
+		if(r[2] != "") attributes = string_add_list(attributes, "disabled");
+		if(failed_plugins.count(r[1] + "." + extension)) attributes = string_add_list(attributes, "failed");
+		if(attributes.length()) attributes = " (" + attributes + ")";
+		plugins->Append(towxstring(r1 + attributes));
 	}
 
 	bool found = false;
@@ -227,6 +241,8 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 		if(s.st_mode & 04) s.st_mode |= 01;
 		chmod(nname.c_str(), s.st_mode & 0777);
 #endif
+		//The new plugin isn't failed.
+		failed_plugins.erase(get_name(nname));
 		std::string disname = nname + ".disabled";
 		remove(disname.c_str());
 		reload_plugins();
@@ -251,6 +267,11 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 	if(oname != nname)
 		zip::rename_overwrite(oname.c_str(), nname.c_str());
 	pluginstbl[sel].first = name2;
+	if(failed_plugins.count(name + "." + extension)) {
+		failed_plugins.insert(name2 + "." + extension);
+		failed_plugins.erase(name + "." + extension);
+	} else
+		failed_plugins.erase(name2 + "." + extension);
 	reload_plugins();
 }
 
@@ -290,6 +311,7 @@ void wxeditor_plugins::on_delete(wxCommandEvent& e)
 		reload_plugins();
 		return;
 	}
+	failed_plugins.erase(pluginstbl[sel].first + "." + extension);
 	reload_plugins();
 }
 
@@ -323,4 +345,9 @@ bool wxeditor_plugin_manager_display(wxWindow* parent)
 		if(hld) delete hld;
 		return false;
 	}
+}
+
+void wxeditor_plugin_manager_notify_fail(const std::string& libname)
+{
+	failed_plugins.insert(libname);
 }

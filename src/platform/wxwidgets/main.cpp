@@ -430,6 +430,7 @@ bool lsnes_app::OnInit()
 	autoload_libraries([](const std::string& libname, const std::string& error) {
 		show_message_ok(NULL, "Error loading plugin " + libname, "Error loading '" + libname + "'\n\n" +
 			error, wxICON_EXCLAMATION);
+		wxeditor_plugin_manager_notify_fail(libname);
 	});
 	messages << "Saving per-user data to: " << get_config_path() << std::endl;
 	messages << "--- Loading configuration --- " << std::endl;
