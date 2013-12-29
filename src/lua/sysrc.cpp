@@ -20,4 +20,10 @@ const char* lua_sysrc_script =
 "loadfile=loadfile2;\n"
 "dofile=dofile2;\n"
 "memory2=memory2();\n"
-"callback=callback();\n";
+"callback=callback();\n"
+"render_queue_function=function(rq)\n"
+"	local _rq = rq;\n"
+"	return function()\n"
+"		_rq:run();\n"
+"	end;\n"
+"end;\n";

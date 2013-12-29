@@ -461,6 +461,28 @@ Syntax: string resolve_file(string filename, string base)
 Resolve name of file <filename> relative to <base> and return the result.
 \end_layout
 
+\begin_layout Subsection
+render_queue_function: Return paint function for render queue
+\end_layout
+
+\begin_layout Itemize
+Syntax: function render_queue_function(RENDERQUEUE rq)
+\end_layout
+
+\begin_layout Standard
+Return function that renders render queue <rq>.
+\end_layout
+
+\begin_layout Itemize
+Handy for paint callback if one is using render queues updated in other
+ callbacks.
+ As in:
+\end_layout
+
+\begin_layout LyX-Code
+handle = callback.paint:register(render_queue_function(my_rq));
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
