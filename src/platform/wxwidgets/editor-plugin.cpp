@@ -203,15 +203,16 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 			}
 			nname = pathpfx + "/" + name + "(" + (stringfmt() << counter++).str() + ")." + extension;
 		}
+		std::string nnamet = nname + ".tmp";
 		std::ifstream in(file, std::ios::binary);
-		std::ofstream out(nname, std::ios::binary);
+		std::ofstream out(nnamet, std::ios::binary);
 		if(!out) {
-			show_message_ok(this, "Error", "Can't write file '" + nname + "'", wxICON_EXCLAMATION);
+			show_message_ok(this, "Error", "Can't write file '" + nnamet + "'", wxICON_EXCLAMATION);
 			reload_plugins();
 			return;
 		}
 		if(!in) {
-			remove(nname.c_str());
+			remove(nnamet.c_str());
 			show_message_ok(this, "Error", "Can't read file '" + file + "'", wxICON_EXCLAMATION);
 			reload_plugins();
 			return;
@@ -225,8 +226,8 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 				break;
 		}
 		if(!out) {
-			remove(nname.c_str());
-			show_message_ok(this, "Error", "Can't write file '" + nname + "'", wxICON_EXCLAMATION);
+			remove(nnamet.c_str());
+			show_message_ok(this, "Error", "Can't write file '" + nnamet + "'", wxICON_EXCLAMATION);
 			reload_plugins();
 			return;
 		}
@@ -234,13 +235,20 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 #if defined(_WIN32) || defined(_WIN64)
 #else
 		struct stat s;
-		if(stat(nname.c_str(), &s) < 0)
+		if(stat(file.c_str(), &s) < 0)
 			s.st_mode = 0644;
 		if(s.st_mode & 0400) s.st_mode |= 0100;
 		if(s.st_mode & 040) s.st_mode |= 010;
 		if(s.st_mode & 04) s.st_mode |= 01;
-		chmod(nname.c_str(), s.st_mode & 0777);
+		chmod(nnamet.c_str(), s.st_mode & 0777);
 #endif
+		if(zip::rename_overwrite(nnamet.c_str(), nname.c_str())) {
+			remove(nnamet.c_str());
+			show_message_ok(this, "Error", "Can't rename-over file '" + nname + "'",
+				wxICON_EXCLAMATION);
+			reload_plugins();
+			return;
+		}
 		//The new plugin isn't failed.
 		failed_plugins.erase(get_name(nname));
 		std::string disname = nname + ".disabled";
@@ -264,8 +272,16 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 	}
 	std::string oname = pathpfx + "/" + name + "." + extension + (pluginstbl[sel].second ? "" : ".disabled");
 	std::string nname = pathpfx + "/" + name2 + "." + extension + (pluginstbl[sel].second ? "" : ".disabled");
-	if(oname != nname)
+	if(oname != nname) {
 		zip::rename_overwrite(oname.c_str(), nname.c_str());
+		if(pluginstbl[sel].second) {
+			std::string dname = nname + ".disabled";
+			remove(dname.c_str());
+		} else {
+			std::string ename = pathpfx + "/" + name2 + "." + extension;
+			remove(ename.c_str());
+		}
+	}
 	pluginstbl[sel].first = name2;
 	if(failed_plugins.count(name + "." + extension)) {
 		failed_plugins.insert(name2 + "." + extension);
