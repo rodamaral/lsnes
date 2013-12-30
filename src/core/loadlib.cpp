@@ -4,6 +4,7 @@
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
 #include "library/directory.hpp"
+#include "library/running-executable.hpp"
 #include "library/loadlib.hpp"
 #include "library/opus.hpp"
 #include <stdexcept>
@@ -27,6 +28,36 @@ namespace
 			name = path.substr(p + 1);
 		return name;
 	}
+
+	std::string get_system_library_dir()
+	{
+		std::string path;
+		try {
+			path = running_executable();
+		} catch(...) {
+			return "";
+		}
+#if __WIN32__ || __WIN64__
+		const char* sep = "\\/";
+#else
+		const char* sep = "/";
+#endif
+		size_t p = path.find_last_of(sep);
+		if(p >= path.length())
+			path = ".";
+		else if(p == 0)
+			path = "/";
+		else
+			path = path.substr(0, p);
+#if !__WIN32__ && !__WIN64__
+		//If executable is in /bin, translate library path to corresponding /lib/lsnes.
+		regex_results r = regex("(.*)/bin", path);
+		if(r) path = r[1] + "/lib/lsnes";
+		else
+#endif
+			path = path + "/plugins";
+		return path;
+	}
 }
 
 void handle_post_loadlibrary()
@@ -48,11 +79,12 @@ void with_loaded_library(const loadlib::module& l)
 	}
 }
 
-void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err))
+namespace
 {
-	try {
+	void load_libraries(std::set<std::string> libs, bool system,
+		void(*on_error)(const std::string& libname, const std::string& err, bool system))
+	{
 		std::string extension = loadlib::library::extension();
-		auto libs = enumerate_directory(get_config_path() + "/autoload", ".*");
 		for(auto i : libs) {
 			if(i.length() < extension.length() + 1)
 				continue;
@@ -67,10 +99,20 @@ void autoload_libraries(void(*on_error)(const std::string& libname, const std::s
 				std::string x = "Can't load '" + i + "': " + e.what();
 				
 				if(on_error)
-					on_error(get_name(i), e.what());
+					on_error(get_name(i), e.what(), system);
 				messages << x << std::endl;
 			}
 		}
+	}
+}
+
+void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err, bool system))
+{
+	try {
+		auto libs = enumerate_directory(get_config_path() + "/autoload", ".*");
+		load_libraries(libs, false, on_error);
+		libs = enumerate_directory(get_system_library_dir(), ".*");
+		load_libraries(libs, true, on_error);
 		handle_post_loadlibrary();
 	} catch(std::exception& e) {
 		messages << e.what() << std::endl;

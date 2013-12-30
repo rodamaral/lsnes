@@ -3,6 +3,7 @@
 
 #include <set>
 #include <string>
+#include <cstdlib>
 
 std::set<std::string> enumerate_directory(const std::string& dir, const std::string& match);
 std::string get_absolute_path(const std::string& relative);
