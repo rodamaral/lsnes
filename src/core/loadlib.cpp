@@ -4,6 +4,7 @@
 #include "core/dispatch.hpp"
 #include "core/misc.hpp"
 #include "library/directory.hpp"
+#include "library/filelist.hpp"
 #include "library/running-executable.hpp"
 #include "library/loadlib.hpp"
 #include "library/opus.hpp"
@@ -27,6 +28,11 @@ namespace
 		else
 			name = path.substr(p + 1);
 		return name;
+	}
+
+	std::string get_user_library_dir()
+	{
+		return get_config_path() + "/autoload";
 	}
 
 	std::string get_system_library_dir()
@@ -84,6 +90,24 @@ namespace
 	void load_libraries(std::set<std::string> libs, bool system,
 		void(*on_error)(const std::string& libname, const std::string& err, bool system))
 	{
+		std::set<std::string> blacklist;
+		std::set<std::string> killlist;
+		//System plugins can't be killlisted nor blacklisted.
+		if(!system) {
+			filelist _blacklist(get_user_library_dir() + "/blacklist", get_user_library_dir());
+			filelist _killlist(get_user_library_dir() + "/killlist", get_user_library_dir());
+			killlist = _killlist.enumerate();
+			blacklist = _blacklist.enumerate();
+			//Try to kill the libs that don't exist anymore.
+			for(auto i : libs)
+				if(killlist.count(get_name(i)))
+					remove(i.c_str());
+			killlist = _killlist.enumerate();
+			//All killlisted plugins are automatically blacklisted.
+			for(auto i : killlist)
+				blacklist.insert(i);
+		}
+
 		std::string extension = loadlib::library::extension();
 		for(auto i : libs) {
 			if(i.length() < extension.length() + 1)
@@ -92,6 +116,8 @@ namespace
 				continue;
 			std::string tmp = i;
 			if(tmp.substr(i.length() - extension.length()) != extension)
+				continue;
+			if(blacklist.count(get_name(i)))
 				continue;
 			try {
 				with_loaded_library(*new loadlib::module(loadlib::library(i)));
@@ -109,7 +135,7 @@ namespace
 void autoload_libraries(void(*on_error)(const std::string& libname, const std::string& err, bool system))
 {
 	try {
-		auto libs = enumerate_directory(get_config_path() + "/autoload", ".*");
+		auto libs = enumerate_directory(get_user_library_dir(), ".*");
 		load_libraries(libs, false, on_error);
 		libs = enumerate_directory(get_system_library_dir(), ".*");
 		load_libraries(libs, true, on_error);

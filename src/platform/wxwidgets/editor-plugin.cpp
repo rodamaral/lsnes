@@ -8,6 +8,7 @@
 #include "core/misc.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
+#include "library/filelist.hpp"
 #include "library/loadlib.hpp"
 #include "library/string.hpp"
 #include "library/zip.hpp"
@@ -19,9 +20,12 @@
 #include <sys/stat.h>
 #endif
 
+//TODO: Handle plugin blacklist/killlist
 namespace
 {
 	std::set<std::string> failed_plugins;
+	std::string killlist_file = "/killlist";
+	std::string blacklist_file = "/blacklist";
 
 	std::string string_add_list(std::string a, std::string b)
 	{
@@ -49,7 +53,7 @@ namespace
 
 	std::string strip_extension(std::string tmp, std::string ext)
 	{
-		regex_results r = regex("(.*)\\." + ext + "(|\\.disabled)", tmp);
+		regex_results r = regex("(.*)\\." + ext, tmp);
 		if(!r) return tmp;
 		return r[1];
 	}
@@ -68,6 +72,8 @@ public:
 	void on_close(wxCommandEvent& e);
 private:
 	void reload_plugins();
+	filelist& get_blacklist();
+	filelist& get_killlist();
 	wxListBox* plugins;
 	wxButton* addbutton;
 	wxButton* renamebutton;
@@ -136,16 +142,24 @@ void wxeditor_plugins::reload_plugins()
 	else
 		name = pluginstbl[sel].first;
 
-	auto dir = enumerate_directory(pathpfx, ".*\\." + extension + "(|\\.disabled)");
+	auto dir = enumerate_directory(pathpfx, ".*\\." + extension);
 	plugins->Clear();
 	pluginstbl.clear();
 	for(auto i : dir) {
-		regex_results r = regex("(.*)\\." + extension + "(|\\.disabled)", get_name(i));
+		std::string name = get_name(i);
+		regex_results r = regex("(.*)\\." + extension, name);
 		if(!r) continue;
-		pluginstbl.push_back(std::make_pair(r[1], r[2] == ""));
+		//Blacklisted plugins should be listed as disabled. Killlisted plugins shouldn't appear at all.
+		bool is_disabled = false;
+		auto blacklist = get_blacklist().enumerate();
+		auto killlist = get_killlist().enumerate();
+		if(killlist.count(name))
+			continue;
+		is_disabled = blacklist.count(name);
+		pluginstbl.push_back(std::make_pair(r[1], !is_disabled));
 		std::string r1 = r[1];
 		std::string attributes;
-		if(r[2] != "") attributes = string_add_list(attributes, "disabled");
+		if(is_disabled) attributes = string_add_list(attributes, "disabled");
 		if(failed_plugins.count(r[1] + "." + extension)) attributes = string_add_list(attributes, "failed");
 		if(attributes.length()) attributes = " (" + attributes + ")";
 		plugins->Append(towxstring(r1 + attributes));
@@ -185,7 +199,7 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 		bool overwrite_ok = false;
 		bool first = true;
 		int counter = 2;
-		while(!overwrite_ok && (file_exists(nname) || file_exists(nname + ".disabled"))) {
+		while(!overwrite_ok && file_exists(nname)) {
 			if(first) {
 				wxMessageDialog* d3 = new wxMessageDialog(this,
 					towxstring("Plugin '" + name  + "' already exists.\n\nOverwrite?"),
@@ -251,8 +265,9 @@ void wxeditor_plugins::on_add(wxCommandEvent& e)
 		}
 		//The new plugin isn't failed.
 		failed_plugins.erase(get_name(nname));
-		std::string disname = nname + ".disabled";
-		remove(disname.c_str());
+		//Nor is it on killlist/blacklist
+		try { get_blacklist().remove(get_name(nname)); } catch(...) {}
+		try { get_killlist().remove(get_name(nname)); } catch(...) {}
 		reload_plugins();
 	} catch(canceled_exception& e) {
 	}
@@ -270,17 +285,10 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 	} catch(canceled_exception& e) {
 		return;
 	}
-	std::string oname = pathpfx + "/" + name + "." + extension + (pluginstbl[sel].second ? "" : ".disabled");
-	std::string nname = pathpfx + "/" + name2 + "." + extension + (pluginstbl[sel].second ? "" : ".disabled");
+	std::string oname = pathpfx + "/" + name + "." + extension;
+	std::string nname = pathpfx + "/" + name2 + "." + extension;
 	if(oname != nname) {
 		zip::rename_overwrite(oname.c_str(), nname.c_str());
-		if(pluginstbl[sel].second) {
-			std::string dname = nname + ".disabled";
-			remove(dname.c_str());
-		} else {
-			std::string ename = pathpfx + "/" + name2 + "." + extension;
-			remove(ename.c_str());
-		}
 	}
 	pluginstbl[sel].first = name2;
 	if(failed_plugins.count(name + "." + extension)) {
@@ -288,6 +296,7 @@ void wxeditor_plugins::on_rename(wxCommandEvent& e)
 		failed_plugins.erase(name + "." + extension);
 	} else
 		failed_plugins.erase(name2 + "." + extension);
+	try { get_blacklist().rename(name + "." + extension, name2 + "." + extension); } catch(...) {}
 	reload_plugins();
 }
 
@@ -296,16 +305,14 @@ void wxeditor_plugins::on_enable(wxCommandEvent& e)
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
 		return;
-	std::string ename = pathpfx + "/" + pluginstbl[sel].first + "." + extension;
-	std::string dname = pathpfx + "/" + pluginstbl[sel].first + "." + extension + ".disabled";
-	bool ok;
-	if(pluginstbl[sel].second)
-		ok = !zip::rename_overwrite(ename.c_str(), dname.c_str());
-	else
-		ok = !zip::rename_overwrite(dname.c_str(), ename.c_str());
-	if(!ok) {
+	try {
+		if(pluginstbl[sel].second)
+			get_blacklist().add(pluginstbl[sel].first + "." + extension);
+		else
+			get_blacklist().remove(pluginstbl[sel].first + "." + extension);
+	} catch(std::exception& e) {
 		show_message_ok(this, "Error", "Can't enable/disable plugin '" + pluginstbl[sel].first +
-			"'", wxICON_EXCLAMATION);
+			"': " + e.what(), wxICON_EXCLAMATION);
 		reload_plugins();
 		return;
 	}
@@ -318,14 +325,10 @@ void wxeditor_plugins::on_delete(wxCommandEvent& e)
 	int sel = plugins->GetSelection();
 	if(sel == wxNOT_FOUND || sel >= pluginstbl.size())
 		return;
-	std::string oname = pathpfx + "/" + pluginstbl[sel].first + "." + extension +
-		(pluginstbl[sel].second ? "" : ".disabled");
+	std::string oname = pathpfx + "/" + pluginstbl[sel].first + "." + extension;
 	if(remove(oname.c_str()) < 0) {
-		int err = errno;
-		show_message_ok(this, "Error", "Can't delete plugin '" + pluginstbl[sel].first +
-			"': " + strerror(err), wxICON_EXCLAMATION);
-		reload_plugins();
-		return;
+		//Killlist it then.
+		try { get_killlist().add(pluginstbl[sel].first + "." + extension); } catch(...) {}
 	}
 	failed_plugins.erase(pluginstbl[sel].first + "." + extension);
 	reload_plugins();
@@ -339,6 +342,18 @@ void wxeditor_plugins::on_start(wxCommandEvent& e)
 void wxeditor_plugins::on_close(wxCommandEvent& e)
 {
 	EndModal(wxID_CANCEL);
+}
+
+filelist& wxeditor_plugins::get_blacklist()
+{
+	static filelist x(pathpfx + blacklist_file, pathpfx);
+	return x;
+}
+
+filelist& wxeditor_plugins::get_killlist()
+{
+	static filelist x(pathpfx + killlist_file, pathpfx);
+	return x;
 }
 
 bool wxeditor_plugin_manager_display(wxWindow* parent)

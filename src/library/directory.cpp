@@ -38,7 +38,11 @@ uintmax_t file_get_size(const std::string& path)
 
 time_t file_get_mtime(const std::string& path)
 {
-	return boost_fs::last_write_time(boost_fs::path(path));
+	boost::system::error_code ec;
+	time_t t = boost_fs::last_write_time(boost_fs::path(path), ec);
+	if(t == -1)
+		return 0;
+	return t;
 }
 
 bool file_exists(const std::string& filename)
