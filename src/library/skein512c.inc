@@ -518,7 +518,6 @@ static void skein256_compress(uint64_t* out, const uint64_t* in, const uint64_t*
 	out[1]=in[1]^out[1];
 	out[2]=in[2]^out[2];
 	out[3]=in[3]^out[3];
-	out[4]=in[4]^out[4];
 }
 static void skein512_compress(uint64_t* out, const uint64_t* in, const uint64_t* key, const uint64_t* tweak)
 {
@@ -1556,7 +1555,6 @@ static void skein512_compress(uint64_t* out, const uint64_t* in, const uint64_t*
 	out[5]=in[5]^out[5];
 	out[6]=in[6]^out[6];
 	out[7]=in[7]^out[7];
-	out[8]=in[8]^out[8];
 }
 static void skein1024_compress(uint64_t* out, const uint64_t* in, const uint64_t* key, const uint64_t* tweak)
 {
@@ -3850,5 +3848,4 @@ static void skein1024_compress(uint64_t* out, const uint64_t* in, const uint64_t
 	out[13]=in[13]^out[13];
 	out[14]=in[14]^out[14];
 	out[15]=in[15]^out[15];
-	out[16]=in[16]^out[16];
 }

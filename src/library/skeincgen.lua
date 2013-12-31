@@ -50,7 +50,7 @@ for r=0,rounds do
 		current_permute[i]=permutation[current_permute[i]+1];
 	end
 end
-for i=0,okeys do print("\tout["..i.."]=in["..i.."]^out["..i.."];"); end
+for i=0,okeys-1 do print("\tout["..i.."]=in["..i.."]^out["..i.."];"); end
 print("}");
 end
 

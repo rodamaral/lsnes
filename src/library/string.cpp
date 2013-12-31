@@ -1,6 +1,7 @@
 #include "string.hpp"
 #include "minmax.hpp"
 #include "threadtypes.hpp"
+#include "eatarg.hpp"
 #include <cctype>
 #include <boost/regex.hpp>
 #include "map-pointer.hpp"
@@ -282,26 +283,24 @@ string_list<char32_t> split_on_codepoint(const std::u32string& s, char32_t cp)
 	return _split_on_codepoint<char32_t>(s, _cp);
 }
 
-template<typename T> token_iterator<T>::token_iterator()
-	: str(tmp), is_end_iterator(true)
+template<typename T> void token_iterator<T>::ctor_eos()
 {
+	is_end_iterator = true;
 }
 
-template<typename T> token_iterator<T>::token_iterator(const std::basic_string<T>& s,
-	std::initializer_list<const T*> sep, bool whole_sequence) throw(std::bad_alloc)
-	: str(s), whole_seq(whole_sequence), is_end_iterator(false), bidx(0), eidx(0)
+template<typename T> void token_iterator<T>::ctor_itr(std::initializer_list<const T*> sep, bool whole_sequence)
+	throw(std::bad_alloc)
 {
+	whole_seq = whole_sequence;
+	is_end_iterator = false;
+	bidx = 0;
+	eidx = 0;
 	for(auto i : sep)
 		spliton.insert(i);
 	load_helper();
 }
 
-template<typename T> bool token_iterator<T>::operator!=(const token_iterator<T>& itr) const throw()
-{
-	return !(*this == itr);
-}
-
-template<typename T> bool token_iterator<T>::operator==(const token_iterator<T>& itr) const throw()
+template<typename T> bool token_iterator<T>::equals_op(const token_iterator<T>& itr) const throw()
 {
 	bool is_end_a = is_end_iterator || (bidx >= str.length());
 	bool is_end_b = itr.is_end_iterator || (itr.bidx >= itr.str.length());
@@ -317,19 +316,19 @@ template<typename T> bool token_iterator<T>::operator==(const token_iterator<T>&
 			return bidx == itr.bidx;
 }
 
-template<typename T> const std::basic_string<T>& token_iterator<T>::operator*() const throw()
+template<typename T> const std::basic_string<T>& token_iterator<T>::dereference() const throw()
 {
 	return tmp;
 }
 
-template<typename T> token_iterator<T> token_iterator<T>::operator++(int) throw(std::bad_alloc)
+template<typename T> token_iterator<T> token_iterator<T>::postincrement() throw(std::bad_alloc)
 {
 	token_iterator<T> t = *this;
 	++*this;
 	return t;
 }
 
-template<typename T> token_iterator<T>& token_iterator<T>::operator++() throw(std::bad_alloc)
+template<typename T> token_iterator<T>& token_iterator<T>::preincrement() throw(std::bad_alloc)
 {
 	bidx = eidx + is_sep(eidx);
 	load_helper();
@@ -368,19 +367,23 @@ template<typename T> size_t token_iterator<T>::is_sep(size_t pos)
 	}
 }
 
+template<typename T> void token_iterator<T>::pull_fn()
+{
+	eat_argument(&token_iterator<T>::ctor_itr);
+	eat_argument(&token_iterator<T>::ctor_eos);
+	eat_argument(&token_iterator<T>::postincrement);
+	eat_argument(&token_iterator<T>::preincrement);
+	eat_argument(&token_iterator<T>::dereference);
+	eat_argument(&token_iterator<T>::equals_op);
+	eat_argument(&token_iterator<T>::is_sep);
+	eat_argument(&token_iterator<T>::load_helper);
+}
+
 namespace
 {
 	template<typename T> void pull_token_itr()
 	{
-		int w = 0;
-		std::basic_string<T> x;
-		token_iterator<T> y(x, {});
-		token_iterator<T> z;
-		y++;
-		++y;
-		x = *y;
-		if(y == z) w = 1;
-		if(y != z) w = 2;
+		token_iterator<T>::pull_fn();
 	}
 
 	void pull_token_itr2()

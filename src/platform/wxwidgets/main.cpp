@@ -358,6 +358,7 @@ IMPLEMENT_APP(lsnes_app)
 lsnes_app::lsnes_app()
 {
 	settings_mode = false;
+	pluginmanager_mode = false;
 	exit_immediately = false;
 }
 

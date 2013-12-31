@@ -149,6 +149,7 @@ namespace
 
 	void fatal_signal_handler(int sig)
 	{
+		write(2, "Caught fatal signal!\n", 21);
 		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
 		signal(sig, SIG_DFL);
 		raise(sig);
@@ -156,6 +157,7 @@ namespace
 
 	void terminate_handler()
 	{
+		write(2, "Terminating abnormally!\n", 24);
 		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
 		std::cerr << "Exiting on fatal error" << std::endl;
 		exit(1);

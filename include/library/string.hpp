@@ -111,7 +111,7 @@ public:
 /**
  * Create new end-of-sequence iterator.
  */
-	token_iterator();
+	token_iterator() : str(tmp) { ctor_eos(); }
 /**
  * Create a new start-of-sequence iterator.
  *
@@ -120,28 +120,38 @@ public:
  * Parameter whole_sequence: If true, after seeing one separator, throw away separators until none more are found.
  */
 	token_iterator(const std::basic_string<T>& s, std::initializer_list<const T*> sep,
-		bool whole_sequence = false) throw(std::bad_alloc);
+		bool whole_sequence = false) throw(std::bad_alloc) : str(s) { ctor_itr(sep, whole_sequence); }
 /**
  * Compare.
  */
-	bool operator==(const token_iterator<T>& itr) const throw();
+	bool operator==(const token_iterator<T>& itr) const throw() { return equals_op(itr); }
 /**
  * Compare.
  */
-	bool operator!=(const token_iterator<T>& itr) const throw();
+	bool operator!=(const token_iterator<T>& itr) const throw() { return !equals_op(itr); }
 /**
  * Dereference.
  */
-	const std::basic_string<T>& operator*() const throw();
+	const std::basic_string<T>& operator*() const throw() { return dereference(); }
 /**
  * Increment.
  */
-	token_iterator<T>& operator++() throw(std::bad_alloc);
+	token_iterator<T>& operator++() throw(std::bad_alloc) { return preincrement(); }
 /**
  * Increment.
  */
-	token_iterator<T> operator++(int) throw(std::bad_alloc);
+	token_iterator<T> operator++(int) throw(std::bad_alloc) { return postincrement(); }
+/**
+ * Do nothing, pull everything.
+ */
+	static void pull_fn();
 private:
+	void ctor_eos();
+	void ctor_itr(std::initializer_list<const T*> sep, bool whole_sequence = false) throw(std::bad_alloc);
+	token_iterator<T> postincrement() throw(std::bad_alloc);
+	token_iterator<T>& preincrement() throw(std::bad_alloc);
+	const std::basic_string<T>& dereference() const throw();
+	bool equals_op(const token_iterator<T>& itr) const throw();
 	size_t is_sep(size_t pos);
 	void load_helper();
 	const std::basic_string<T>& str;
