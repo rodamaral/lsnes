@@ -1506,3 +1506,85 @@ rr2-β13 [Thursday November 28th 2013]
 * Messages window: Scroll with wheel
 * Fold audio device controls to VU meter window
 * Unified support for breakpoints & cheats
+
+rr2-β14 [Tuesday December 31st 2013]
+====================================
+* Fix printing of errors from some notifications
+* Don't require to specify bsnes version when building
+* Null core: Set the hidden flag
+* Attempt to save if emulator is crashing
+* Gameboy disasembler
+* Fix compile with Gambatte not supporting debug hooks
+* Gambatte: Do not lose colors when ROM is reloaded
+* Command to set current slot
+* Optional background sound autodisable
+* Gambatte: DC levels fixes
+* Don't crash if loaded dynamic library contains a new core
+* Fix compile for bsnes accuracy for real
+* Add bsnes alternate poll timings patch
+* Fix http_request::_progress
+* Make parse_value be able to parse 0x notation
+* Bitmap font to custom font conversion
+* Also catch terminate() for autosave
+* Initialize some vars in messages window
+* Release regexps before finally exiting
+* Lua: random.*
+* Lua: Zip create / enumerate
+* Lua: gui.screenshot_bitmap()
+* Clean up filesystem stuff
+* Move binarystream functions to dedicated namespace
+* Refactor library command functions to dedicated namespace
+* Refactor library keyboard to dedicated namespace
+* Refactor library dispatch stuff to dedicated namespace
+* Build: Fast global need-rebuild detection
+* Remove some crazy dependencies to keymapper
+* Extra framebuffer methods
+* Refactor library framebuffer to dedicated namespace
+* Further framebuffer refactoring (pixel formats)
+* Remove some dead files
+* Refactor custom_font into framebuffer namespace
+* Refactor library gamepad to dedicated namespace
+* Refactor library ogg functions to dedicated namespace
+* Refactor library zip functions to dedicated namespace
+* Refactor library serialization to dedicated namespace
+* loadlib refactoring, add program modules
+* Move opus_packet_tick_count() to main opus library code
+* Move routines from oggopus to opus namespace
+* keyboard-mapper: Get rid of command.hpp include
+* Get rid of DECLARE_LUACLASS
+* Throw internal error instead of crashing if trying to use nonexistent class
+* Refactor library Lua base to dedicated namespace
+* Refactor library settings to dedicated namespace
+* Refactor library png functions to dedicated namespace
+* Refactor library UTF8 to dedicated namespace
+* Clean up hexadecimal<->string conversion
+* File upload: Behave like cancel was clicked on window close
+* Fix compilation of make-ports helper
+* Refactor library fileimage to dedicated namespace
+* Refactor library filesystem code
+* SNES: PPU registers
+* Move library patch functions with file image functions
+* Get rid of utf8::to32i2() and extract_token()
+* Fix compile error on some systems
+* Fix another compile error (constant in Connect())
+* SNES: Make needed directories for build if missing
+* Clean up some hash and RNG code
+* Crash autosave: Don't try to save movies with NULL sysregion
+* Lua: Bitmap/renderq object methods
+* Framebuffer: Set unused color bits to 1 instead of 0
+* Fix a bug applying delta gaps on render queue
+* Lua: RENDERQUEUE:render: Render queue to DBITMAP
+* Allow color names as color specifications
+* Some refactoring of the named colors stuff (and a lot more colors)
+* Lua: HSL colors and color modifiers
+* JSON Pretty printing support and pretty-print joystick configuration
+* GB: Disassemble/Tracelog fixes for CB xx
+* Wxwidgets: Plugin manager
+* Lua: render_queue_function
+* Fix off-by-one in counting number of objects in render queue
+* Clean up error reporting on plugin load failure
+* Plugin manager: Mark plugins that failed to load
+* Plugin manager: Atomic overwrites, remove otherstate plugin on rename
+* Also load plugins from location relative to the executable
+* Fix compiling on Win32
+* Plugin blacklist/killlist (needed on some toys)
