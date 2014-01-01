@@ -27,8 +27,12 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 	if(id < 0 || id > wxid_range_high - wxid_range_low) return;
 	bool ch = items[id]->IsChecked();
 	if(ch) {
-		std::string filename = choose_file_save(pwin, "Save Trace", project_moviepath(), filetype_trace, "");
-		debug_tracelog(id, filename);
+		try {
+			std::string filename = choose_file_save(pwin, "Save Trace", project_moviepath(),
+				filetype_trace, "");
+			debug_tracelog(id, filename);
+		} catch(canceled_exception& e) {
+		}
 	} else {
 		debug_tracelog(id, "");
 	}
