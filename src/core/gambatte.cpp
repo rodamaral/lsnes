@@ -137,7 +137,7 @@ namespace
 		instance->set_walltime_fn(walltime_fn);
 		memset(primary_framebuffer, 0, sizeof(primary_framebuffer));
 		frame_overflow = 0;
-		
+
 		rtc_fixed = true;
 		rtc_fixed_val = rtc_sec;
 		instance->load(data, size, flags);
@@ -146,6 +146,7 @@ namespace
 		memcpy(&romdata[0], data, size);
 		internal_rom = inttype;
 
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 		size_t dsize = (size > 65536) ? size : 65536;
 		if(dsize < instance->getSaveRam().second) dsize = instance->getSaveRam().second;
 		if(debug_size < dsize) {
@@ -162,7 +163,7 @@ namespace
 		debugbuf.cart = debugbuf.wram;
 		debugbuf.trace_cpu = false;
 		instance->set_debug_buffer(debugbuf);
-
+#endif
 		return 1;
 	}
 
@@ -182,7 +183,7 @@ namespace
 	}
 
 	uint64_t magic[4] = {35112, 2097152, 16742706, 626688};
-	
+
 	core_region region_world("world", "World", 0, 0, false, magic, regions_compatible);
 	core_romimage_info image_rom_dmg("rom", "Cartridge ROM", 1, header_fn);
 	core_romimage_info image_rom_gbc("rom", "Cartridge ROM", 1, header_fn);
@@ -201,7 +202,7 @@ namespace
 	core_sysregion sr3("ggbca", type_gbc_gba, region_world);
 
 	const char* buttonnames[] = {"left", "right", "up", "down", "A", "B", "select", "start"};
-	
+
 	void _set_core_controller(unsigned port) throw() {}
 
 	int get_button_id_gamepad(unsigned controller, unsigned lbid) throw()
@@ -224,7 +225,7 @@ namespace
 	{
 		return -1;
 	}
-	
+
 	struct porttype_gamepad : public porttype_info
 	{
 		porttype_gamepad() : porttype_info("gamepad", "Gamepad", 1, generic_port_size<1, 0, 8>())
@@ -337,6 +338,7 @@ void do_basic_core_init()
 	instance = new gambatte::GB;
 	instance->setInputGetter(&getinput);
 	instance->set_walltime_fn(walltime_fn);
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 	debug_size = 65536;
 	uint8_t* tmp = new uint8_t[debug_size];
 	memset(tmp, 0, debug_size);
@@ -347,6 +349,7 @@ void do_basic_core_init()
 	debugbuf.cart = tmp;
 	debugbuf.trace_cpu = false;
 	instance->set_debug_buffer(debugbuf);
+#endif
 }
 
 void core_power()
