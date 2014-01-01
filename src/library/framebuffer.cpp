@@ -759,13 +759,14 @@ std::pair<size_t, size_t> font::get_metrics(const std::string& string) throw()
 		switch(cp) {
 		case 9:
 			linelength = (linelength + TABSTOPS) / TABSTOPS * TABSTOPS;
+			commit_width = max(commit_width, linelength);
 			break;
 		case 10:
-			commit_width = (commit_width < linelength) ? linelength : commit_width;
 			commit_height += 16;
 			break;
 		default:
 			linelength = linelength + (g.wide ? 16 : 8);
+			commit_width = max(commit_width, linelength);
 			break;
 		};
 	}));
