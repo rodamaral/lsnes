@@ -23,9 +23,9 @@ ARCHIVE_SUFFIX=a
 # Usually blank for unix-type systems (including Linux and Mac OS X), '.exe' for Windows.
 DOT_EXECUTABLE_SUFFIX=
 
-# C++ compiler (GCC 4.6) for the target system.
+# C++ compiler (GCC 4.7 or newer) for the target system.
 # CROSS_PREFIX is prepended to this command.
-CC=g++-4.6
+CC=g++
 
 # Linker for the target system.
 # CROSS_PREFIX is prepended to this command.
