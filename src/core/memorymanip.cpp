@@ -124,6 +124,10 @@ namespace
 		void invoke(const std::string& args) throw(std::bad_alloc, std::runtime_error)
 		{
 			regex_results t = regex("(([^ \t]+)([ \t]+([^ \t]+)([ \t]+([^ \t].*)?)?)?)?", args);
+			if(!t) {
+				address_bad = true;
+				return;
+			}
 			firstword = t[2];
 			secondword = t[4];
 			has_tail = (t[6] != "");
