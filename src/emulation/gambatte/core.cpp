@@ -369,7 +369,7 @@ namespace
 		return r;
 	}
 
-#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 	uint8_t gambatte_bus_iospace_rw(uint64_t offset, uint8_t data, bool write)
 	{
 		uint8_t val = 0;
@@ -436,7 +436,7 @@ namespace
 		vmas.push_back(rom);
 		vmas.push_back(vram);
 		vmas.push_back(ioamhram);
-#ifdef BSNES_SUPPORTS_ADV_BREAKPOINTS
+#ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 		bus.name = "BUS";
 		bus.base = 0x1000000;
 		bus.size = 0x10000;
