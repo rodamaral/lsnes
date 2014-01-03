@@ -115,6 +115,7 @@ void rrdata_set::read_base(const std::string& projectfile, bool lazy) throw(std:
 		std::set<std::pair<instance, instance>> new_rrset;
 		data = new_rrset;
 		current_projectfile = projectfile;
+		rcount = 0;
 		lazy_mode = true;
 		if(handle_open)
 			ohandle.close();
