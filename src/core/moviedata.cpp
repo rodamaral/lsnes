@@ -469,6 +469,9 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	rrdata.read(_movie.c_rrdata);
 	rrdata.add_internal();
 	try {
+		if(!will_load_state && lmode == LOAD_STATE_PRESERVE)
+			newmovie.reset_state();
+
 		our_rom.region = _movie.gametype ? &(_movie.gametype->get_region()) : NULL;
 		random_seed_value = _movie.movie_rtc_second;
 		if(!will_load_state || our_movie.projectid != _movie.projectid)
