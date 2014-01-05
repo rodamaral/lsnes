@@ -1588,3 +1588,20 @@ rr2-β14 [Tuesday December 31st 2013]
 * Also load plugins from location relative to the executable
 * Fix compiling on Win32
 * Plugin blacklist/killlist (needed on some toys)
+
+rr1-Δ18ε3 [Sunday January 5th 2014]
+===================================
+* Backport bsnes/gambatte patches and make emu at least run
+* Fix compiling gambatte binding with versions not supporting debug extensions
+* Handle frame spanning movie page boundary
+* Platform::wait(): Never wait on zero delay
+
+rr2-β15 [Sunday January 5th 2014]
+=================================
+* options.build: Default to g++, not g++-4.6 (too old)
+* Fix crash on canceling tracelog filename select
+* Fix framebuffer::font::get_metrics
+* Don't crash on certain invalid memory read/write commands
+* Oops, GB(C) bus was missing
+* Don't desync if loading a movie preserving input
+* Fix rerecord count to reset on new movie

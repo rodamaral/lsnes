@@ -431,6 +431,9 @@ void platform::wait(uint64_t usec) throw()
 		internal_run_queues(true);
 		if(queue_function_run)
 			reload_lua_timers();
+		//If usec is 0, never wait (waitleft can be nonzero if time counting screws up).
+		if(!usec)
+			return;
 		now = get_utime();
 		uint64_t waitleft = 0;
 		waitleft = (now < continue_time) ? (continue_time - now) : 0;
