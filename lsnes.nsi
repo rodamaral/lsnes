@@ -1,5 +1,5 @@
 !define PRODUCT_NAME "lsnes"
-!define PRODUCT_VERSION "rr1-delta18epsilon2"
+!define PRODUCT_VERSION "rr1-delta18epsilon3"
 !define PRODUCT_PUBLISHER "Ilari"
 !define PRODUCT_WEB_SITE "http://tasvideos.org/Lsnes.html"
 !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"

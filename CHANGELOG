@@ -1034,3 +1034,10 @@ rr1-Δ18ε1 [Friday October 4th 2013]
 rr1-Δ18ε2 [Monday October 14th 2013]
 ====================================
 * Fix crash if reloading ROM with non-default controllers in readwrite mode
+
+rr1-Δ18ε3 [Sunday January 5th 2014]
+===================================
+* Backport bsnes/gambatte patches and make emu at least run
+* Fix compiling gambatte binding with versions not supporting debug extensions
+* Handle frame spanning movie page boundary
+* Platform::wait(): Never wait on zero delay
