@@ -972,7 +972,7 @@ encoder::encoder()
 
 void encoder::encode(const std::string& file) const
 {
-	std::ofstream s(file);
+	std::ofstream s(file, std::ios::binary);
 	if(!s)
 		throw std::runtime_error("Can't open file to write PNG image to");
 	encode(s);
