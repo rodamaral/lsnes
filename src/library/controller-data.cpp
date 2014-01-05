@@ -461,6 +461,8 @@ size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
 			page++;
 			cache_page = &pages[page];
 			cache_page_num = page;
+			index = 0;
+			offset = 0;
 		}
 		if(controller_frame::sync(cache_page->content + offset))
 			break;
