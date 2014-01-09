@@ -13,7 +13,7 @@ __all__.files: $(OBJECTS)
 %.$(OBJECT_SUFFIX): %.cpp %.cpp.dep
 	$(REALCC) -c -o $@ $< -I../../../include $(CFLAGS)
 
-%.$(OBJECT_SUFFIX): %.c %c.dep
+%.$(OBJECT_SUFFIX): %.c %.c.dep
 	$(REALCC) -DSDL_JOYSTICK_IOKIT -x c --std=gnu99 -c -o $@ $< $(CSTDFLAGS)
 
 precheck:
