@@ -50,7 +50,24 @@ memory_search* wxwindow_memorysearch_active();
 namespace
 {
 	unsigned UNDOHISTORY_MAXSIZE = 48;
-	const char* watchchars = "bBwWoOdDqQfF";
+	struct _watch_properties {
+		unsigned len;
+		int type;  //0 => Unsigned, 1 => Signed, 2 => Float.
+		const char* hformat;
+	} watch_properties[] = {
+		{1, 1, "%02x"},
+		{1, 0, "%02x"},
+		{2, 1, "%04x"},
+		{2, 0, "%04x"},
+		{3, 1, "%06x"},
+		{3, 0, "%06x"},
+		{4, 1, "%08x"},
+		{4, 0, "%08x"},
+		{8, 1, "%016x"},
+		{8, 0, "%016x"},
+		{4, 2, ""},
+		{8, 2, ""},
+	};
 
 	wxwindow_memorysearch* mwatch;
 
@@ -994,7 +1011,6 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 			start = act_line;
 			end = act_line + 1;
 		}
-		char wch = watchchars[typecode];
 		for(long r = start; r < end; r++) {
 			if(!addresses.count(r))
 				continue;
@@ -1004,8 +1020,22 @@ void wxwindow_memorysearch::on_button_click(wxCommandEvent& e)
 					<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 				if(n == "")
 					continue;
-				std::string e = (stringfmt() << "C0x" << std::hex << addr << "z" << wch).str();
-				runemufn([n, e]() { set_watchexpr_for(n, e); });
+				lsnes_memorywatch_item e;
+				e.expr = (stringfmt() << addr).str();
+				bool is_hex = hexmode2->GetValue();
+				e.bytes = watch_properties[typecode].len;
+				e.signed_flag = !is_hex && (watch_properties[typecode].type == 1);
+				e.float_flag = (watch_properties[typecode].type == 2);
+				if(e.float_flag) is_hex = false;
+				e.format = is_hex ? watch_properties[typecode].hformat : "";
+				auto i = lsnes_memory.get_regions();
+				int endianess = 0;
+				for(auto& j : i) {
+					if(addr >= j->base && addr < j->base + j->size)
+						endianess = j->endian;
+				}
+				e.endianess = endianess;
+				runemufn([n, &e]() { lsnes_memorywatch.set(n, e); });
 			} catch(canceled_exception& e) {
 			}
 		}

@@ -558,108 +558,150 @@ The right mouse button pops up a context-sensitive menu:
 
 8 Memory watch expression syntax
 
-Memory watch expressions are in RPN (Reverse Polish Notation). At 
-the end of expression, the top entry on stack is taken as the 
-final result.
+Memory watch expressions has the following syntax elements:
 
-Notations:
+${foo}     The value of memory watch foo.
 
-• Evaluation order is strictly left to right.
+0x1234     Hexadecimal number 1234
 
-• a is the entry on top of stack
+12345      Decimal number 12345
 
-• b is the entry immediately below top of stack
+3.141      Decimal number 3.141
 
-• ; separates values to be pushed (no intermediate pop).
+-a         Unary negation
 
-• After end of element, all used stack slots are popped and all 
-  results are pushed.
+~a         Bitwise NOT (integers only)
 
-• When pushing multiple values, the pushes occur in order shown.
+a*b        Multiplication
 
-The following operators are available:
+a/b        Division/quotent
 
-• + : a + b
+a%b        Remainder (integers only)
 
-• - : a - b
+a+b        Sum or string concatenation
 
-• * : a * b
+a-b        Difference
 
-• / : a / b
+a<<b       Shift left (integers only)
 
-• % : a % b
+a>>b       Shift right (integers only). Arithmetic for signed.
 
-• a : atan(a)
+a<b        Less than
 
-• b : read_signed_byte(a)
+a<=b       Less or equal to
 
-• c : cos(a)
+a==b       Equal to
 
-• d : read_signed_dword(a)
+a!=b       Not equal to
 
-• f: read_float(a)
+a>=b       Greater or equal to
 
-• i : quotent(a / b)
+a>b        Greater than
 
-• o: read_signed_hword(a)
+a&b        Bitwise AND (integers only)
 
-• p :\pi
+a^b        Bitwise XOR (integers only)
+
+a|b        Bitwise OR (integers only)
+
+a&&b       Logical AND
+
+a||b       Logical OR
+
+π          Numeric constant pi.
+
+i          Imaginary unit
+
+if(x,y)    If x is true, y, else false.
+
+if(x,y,z)  If x is true, y, else z.
+
+select(x...)
+
+           First value in x... that is not false, or false if 
+none.
+
+unsigned(x)
+
+           Cast x to unsigned.
+
+signed(x)
+
+           Cast x to signed.
+
+float(x)
+
+           Cast x to float.
+
+min(x...)  The smallest value among x... or false if empty.
+
+max(x...)  The largest value among x... or false if empty.
+
+sum(x...)  Sum/concatenation of x... or false if empty.
+
+prod(x...) Product of x... or false if empty.
+
+sqrt(x)    Square root of x.
+
+log(x)     Natural log of x.
+
+log(x,y)   Log of y to base x.
+
+exp(x)     e^x.
+
+exp(x,y)   x^y
+
+sin(x)     Sine of x
+
+cos(x)     Cosine of x
+
+tan(x)     Tangent of x
+
+asin(x)    Arcsine of x
+
+acos(x)    Arccosine of x
+
+atan(x)    Arctangent of x
+
+atan(x,y)  Angle between vector (x,y) and x-axis.
+
+sinh(x)    Hyperbolic sine of x
+
+cosh(x)    Hyperbolic cosine of x
+
+tanh(x)    Hyperbolic tangent of x
+
+arsinh(x)  Hyperbolic arsine of x
+
+arcosh(x)  Hyperbolic arcosine of x
+
+artanh(x)  Hyperbolic artangent of x
+
+torad(x)   Convert x degrees to radians.
+
+todeg(x)   Convert x radians to degrees.
+
+re(x)      Real part of complex number x.
+
+im(x)      Imaginary part of complex number x.
+
+conj(x)    Complex conjugate of x.
+
+abs(x)     Absolute value of x.
+
+arg(x)     Argument of x.
+
+pyth(x...) sqrt(sum(x^2)). I.e. pythagorean distance.
+
+e          Base of natural logarithm
+
+pi         Pi
+
+true       Constant true
+
+false      Constant false
 
 
-• q : read_signed_qword(a)
-
-• r : sqrt(a)
-
-• s : sin(a)
-
-• t : tan(a)
-
-• u : a; a
-
-• w : read_signed_word(a)
-
-• A : atan2(a, b)
-
-• B : read_unsigned_byte(a)
-
-• C<number>z : Push number <number> to stack.
-
-• D : read_unsigned_dword(a)
-
-• C0x<number>z : Push number <number> (hexadecimal) to stack.
-
-• F: read_double(a)
-
-• H<digit> : Set hexadecimal mode with specified number of digits 
-  (use A-G for 10-16 digits).
-
-• O: read_unsigned_hword(a)
-
-• Q : read_unsigned_qword(a)
-
-• R<digit> : round a to <digit> digits.
-
-• W : read_unsigned_word(a)
-
-8.1 Example:
-
-C0x007e0878zWC0x007e002czW-
-
-1. Push value 0x7e0878 on top of stack (C0x007e0878z).
-
-2. Pop the value on top of stack (0x7e0878), read word value at 
-  that address and push the result,call it x1 (W).
-
-3. Push value 0x7e002c on top of stack (C0x007e002cz).
-
-4. Pop the value on top of stack (0x7e002c), read word value at 
-  that address and push the result,call it x2 (W).
-
-5. Pop the two top numbers on stack, x1 and x2, substract x1 from 
-  x2 and push x2 - x1 (-).
-
-6. Since the expression ends, the final memory watch result is 
-  the top one on stack, which is x2 - x1.
 
 9 Modifier and key names:
 

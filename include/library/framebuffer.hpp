@@ -457,6 +457,7 @@ struct color
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
 	color(const std::string& color) throw(std::bad_alloc, std::runtime_error);
+	static std::string stringify(int64_t number);
 	void set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw();
 	template<bool X> void set_palette(struct fb<X>& s) throw()
 	{

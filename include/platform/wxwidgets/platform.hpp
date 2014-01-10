@@ -48,7 +48,7 @@ std::vector<interface_action_paramval> prompt_action_params(wxWindow* parent, co
 //Editor dialogs.
 void wxeditor_authors_display(wxWindow* parent);
 void wxeditor_hotkeys_display(wxWindow* parent);
-void wxeditor_memorywatch_display(wxWindow* parent);
+void wxeditor_memorywatches_display(wxWindow* parent);
 void wxeditor_subtitles_display(wxWindow* parent);
 std::string wxeditor_keyselect(wxWindow* parent, bool clearable);
 void show_wxeditor_voicesub(wxWindow* parent);

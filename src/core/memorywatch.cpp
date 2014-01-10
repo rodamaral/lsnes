@@ -1,11 +1,19 @@
 #include "core/command.hpp"
 #include "core/dispatch.hpp"
+#include "core/framebuffer.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/project.hpp"
 #include "core/window.hpp"
+#include "fonts/wrapper.hpp"
+#include "library/directory.hpp"
 #include "library/string.hpp"
 #include "library/int24.hpp"
+#include "library/mathexpr-ntype.hpp"
+#include "library/memorywatch.hpp"
+#include "library/memorywatch-list.hpp"
+#include "library/memorywatch-fb.hpp"
+#include "library/memorywatch-null.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,441 +24,459 @@
 #include <sstream>
 #include <map>
 
+void update_movie_state();
+
 namespace
 {
-	std::map<std::string, std::string> watches;
+	std::map<std::string, std::pair<framebuffer::font2*, size_t>> fonts_in_use;
 
-	struct numeric_type
+	framebuffer::font2& get_builtin_font2()
 	{
-		numeric_type() { t = VT_NAN; hex = 0; }
-		numeric_type(int8_t x) { t = VT_SIGNED; s = x; hex = 0; }
-		numeric_type(uint8_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
-		numeric_type(int16_t x) { t = VT_SIGNED; s = x; hex = 0; }
-		numeric_type(uint16_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
-		numeric_type(int32_t x) { t = VT_SIGNED; s = x; hex = 0; }
-		numeric_type(uint32_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
-		numeric_type(int64_t x) { t = VT_SIGNED; s = x; hex = 0; }
-		numeric_type(uint64_t x) { t = VT_UNSIGNED; u = x; hex = 0; }
-		numeric_type(double x) { t = VT_FLOAT; f = x; }
-		numeric_type(const std::string& _s)
-		{
-			char* end;
-			if(_s.length() > 2 && _s[0] == '0' && _s[1] == 'x') {
-				t = VT_UNSIGNED;
-				u = strtoull(_s.c_str() + 2, &end, 16);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else if(_s.length() > 3 && _s[0] == '+' && _s[1] == '0' && _s[2] == 'x') {
-				t = VT_SIGNED;
-				s = (int64_t)strtoull(_s.c_str() + 3, &end, 16);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else if(_s.length() > 3 && _s[0] == '-' && _s[1] == '0' && _s[2] == 'x') {
-				t = VT_SIGNED;
-				s = -(int64_t)strtoull(_s.c_str() + 3, &end, 16);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else if(_s.find_first_of(".") < _s.length()) {
-				t = VT_FLOAT;
-				f = strtod(_s.c_str(), &end);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else if(_s.length() > 1 && _s[0] == '+') {
-				t = VT_SIGNED;
-				s = (int64_t)strtoull(_s.c_str() + 1, &end, 10);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else if(_s.length() > 1 && _s[0] == '-') {
-				t = VT_SIGNED;
-				s = -(int64_t)strtoull(_s.c_str() + 1, &end, 10);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			} else {
-				t = VT_UNSIGNED;
-				u = strtoull(_s.c_str(), &end, 10);
-				if(*end)
-					throw std::runtime_error("#syntax (badval)");
-			}
-			hex = 0;
-		}
-		uint64_t as_address() const
-		{
-			switch(t) {
-			case VT_SIGNED:		return s;
-			case VT_UNSIGNED:	return u;
-			case VT_FLOAT:		return f;
-			case VT_NAN:		throw std::runtime_error("#NAN");
-			};
-			return 0;
-		}
-		int64_t as_integer() const
-		{
-			switch(t) {
-			case VT_SIGNED:		return s;
-			case VT_UNSIGNED:	return u;
-			case VT_FLOAT:		return f;
-			case VT_NAN:		throw std::runtime_error("#NAN");
-			};
-			return 0;
-		}
-		double as_double() const
-		{
-			switch(t) {
-			case VT_SIGNED:		return s;
-			case VT_UNSIGNED:	return u;
-			case VT_FLOAT:		return f;
-			case VT_NAN:		throw std::runtime_error("#NAN");
-			};
-			return 0;
-		}
-		std::string str() const
-		{
-			uint64_t wmasks[] = {
-				0x0000000000000000ULL, 0x000000000000000FULL, 0x00000000000000FFULL,
-				0x0000000000000FFFULL, 0x000000000000FFFFULL, 0x00000000000FFFFFULL,
-				0x0000000000FFFFFFULL, 0x000000000FFFFFFFULL, 0x00000000FFFFFFFFULL,
-				0x0000000FFFFFFFFFULL, 0x000000FFFFFFFFFFULL, 0x00000FFFFFFFFFFFULL,
-				0x0000FFFFFFFFFFFFULL, 0x000FFFFFFFFFFFFFULL, 0x00FFFFFFFFFFFFFFULL,
-				0x0FFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL
-			};
-			std::ostringstream x;
-			if(hex && (t == VT_SIGNED || t == VT_UNSIGNED)) {
-				uint64_t wmask = wmasks[hex];
-				uint64_t w = (t == VT_SIGNED) ? s : u;
-				x << std::hex << std::setw(hex) << std::setfill('0') << (w & wmask);
-				return x.str();
-			}
-			switch(t) {
-			case VT_SIGNED:		x << s;		break;
-			case VT_UNSIGNED:	x << u;		break;
-			case VT_FLOAT:		x << f;		break;
-			case VT_NAN:		x << "#NAN";	break;
-			};
-			return x.str();
-		}
-		numeric_type round(int prec) const
-		{
-			double b = 0, c = 0;
-			switch(t) {
-			case VT_FLOAT:
-				b = pow(10, prec);
-				c = floor(b * f + 0.5) / b;
-				return numeric_type(c);
-			default:
-				return *this;
-			}
-		}
-		numeric_type operator+(const numeric_type& b) const
-		{
-			if(t == VT_NAN || b.t == VT_NAN)
-				return numeric_type();
-			else if(t == VT_FLOAT || b.t == VT_FLOAT)
-				return numeric_type(as_double() + b.as_double());
-			else if(t == VT_SIGNED || b.t == VT_SIGNED)
-				return numeric_type(as_integer() + b.as_integer());
-			else
-				return numeric_type(as_address() + b.as_address());
-		}
-		numeric_type operator-(const numeric_type& b) const
-		{
-			if(t == VT_NAN || b.t == VT_NAN)
-				return numeric_type();
-			else if(t == VT_FLOAT || b.t == VT_FLOAT)
-				return numeric_type(as_double() - b.as_double());
-			else if(t == VT_SIGNED || b.t == VT_SIGNED)
-				return numeric_type(as_integer() - b.as_integer());
-			else
-				return numeric_type(as_address() - b.as_address());
-		}
-		numeric_type operator*(const numeric_type& b) const
-		{
-			if(t == VT_NAN || b.t == VT_NAN)
-				return numeric_type();
-			else if(t == VT_FLOAT || b.t == VT_FLOAT)
-				return numeric_type(as_double() * b.as_double());
-			else if(t == VT_SIGNED || b.t == VT_SIGNED)
-				return numeric_type(as_integer() * b.as_integer());
-			else
-				return numeric_type(as_address() * b.as_address());
-		}
-		numeric_type operator/(const numeric_type& b) const
-		{
-			if(b.t != VT_NAN && fabs(b.as_double()) < 1e-30)
-				throw std::runtime_error("#DIV-BY-0");
-			if(t == VT_NAN || b.t == VT_NAN)
-				return numeric_type();
-			else
-				return numeric_type(as_double() / b.as_double());
-		}
-		numeric_type operator%(const numeric_type& b) const
-		{
-			return numeric_type(*this - b * idiv(b));
-		}
-		numeric_type idiv(const numeric_type& b) const
-		{
-			if(b.t != VT_NAN && fabs(b.as_double()) < 1e-30)
-				throw std::runtime_error("#DIV-BY-0");
-			if(t == VT_NAN || b.t == VT_NAN)
-				return numeric_type();
-			else if(t == VT_FLOAT || b.t == VT_FLOAT)
-				return numeric_type(floor(as_double() / b.as_double()));
-			else if(t == VT_SIGNED || b.t == VT_SIGNED)
-				return numeric_type(as_integer() / b.as_integer());
-			else
-				return numeric_type(as_address() / b.as_address());
-		}
-		void sethex(char ch)
-		{
-			if(ch >= '0' && ch <= '9')
-				hex = (ch - '0');
-			if(ch >= 'A' && ch <= 'G')
-				hex = (ch - 'A') + 10;
-			if(ch >= 'a' && ch <= 'g')
-				hex = (ch - 'a') + 10;
-		}
-	private:
-		enum value_type
-		{
-			VT_SIGNED,
-			VT_UNSIGNED,
-			VT_FLOAT,
-			VT_NAN
-		} t;
-		int64_t s;
-		uint64_t u;
-		double f;
-		unsigned hex;
-	};
-
-	numeric_type stack_pop(std::stack<numeric_type>& s, bool norm = false)
-	{
-		if(s.size() < 1)
-			throw std::runtime_error("#syntax (underflow)");
-		numeric_type r = s.top();
-		if(!norm)
-			s.pop();
-		return r;
+		static framebuffer::font2 f(main_font);
+		return f;
 	}
 
-	template<typename T> void stack_push(std::stack<numeric_type>& s, T val)
+	framebuffer::font2* get_font(const std::string filename)
 	{
-		s.push(numeric_type(val));
+		//Handle NULL font.
+		if(filename == "")
+			return &get_builtin_font2();
+		std::string abs_filename = get_absolute_path(filename);
+		if(fonts_in_use.count(abs_filename)) {
+			fonts_in_use[abs_filename].second++;
+			return fonts_in_use[abs_filename].first;
+		}
+		framebuffer::font2* f = new framebuffer::font2(abs_filename);
+		try {
+			fonts_in_use[abs_filename] = std::make_pair(f, 1);
+		} catch(...) {
+			delete f;
+			throw;
+		}
+		return f;
+	}
+	void put_font(framebuffer::font2* font)
+	{
+		//Handle NULL font (always there).
+		if(!font)
+			return;
+		//Find font using this.
+		std::string filename;
+		for(auto& i : fonts_in_use)
+			if(i.second.first == font)
+				filename = i.first;
+		if(filename == "")
+			return;
+		fonts_in_use[filename].second--;
+		if(!fonts_in_use[filename].second) {
+			delete fonts_in_use[filename].first;
+			fonts_in_use.erase(filename);
+		}
+	}
+
+	std::map<std::string, bool> used_memorywatches;
+	void memorywatch_output_fn(const std::string& name, const std::string& value)
+	{
+		auto& status = platform::get_emustatus();
+		used_memorywatches[name] = true;
+		status.set("M[" + name + "]", value);
+	}
+
+	void erase_unused_watches()
+	{
+		auto& status = platform::get_emustatus();
+		for(auto& i : used_memorywatches) {
+			if(!i.second)
+				status.erase("M[" + i.first + "]");
+			i.second = false;
+		}
+	}
+
+	std::string json_string_default(const JSON::node& node, const std::string& pointer, const std::string& dflt)
+	{
+		return (node.type_of(pointer) == JSON::string) ? node[pointer].as_string8() : dflt;
+	}
+
+	uint64_t json_unsigned_default(const JSON::node& node, const std::string& pointer, uint64_t dflt)
+	{
+		return (node.type_of(pointer) == JSON::number) ? node[pointer].as_uint() : dflt;
+	}
+
+	int64_t json_signed_default(const JSON::node& node, const std::string& pointer, int64_t dflt)
+	{
+		return (node.type_of(pointer) == JSON::number) ? node[pointer].as_int() : dflt;
+	}
+
+	bool json_boolean_default(const JSON::node& node, const std::string& pointer, bool dflt)
+	{
+		return (node.type_of(pointer) == JSON::boolean) ? node[pointer].as_bool() : dflt;
 	}
 }
 
-std::string evaluate_watch(const std::string& expr) throw(std::bad_alloc)
+lsnes_memorywatch_printer::lsnes_memorywatch_printer()
 {
-	std::stack<numeric_type> s;
-	size_t y;
-	std::string _expr = expr;
-	std::string t;
-	numeric_type a;
-	numeric_type b;
-	int d;
-	try {
-		for(size_t i = 0; i < expr.length(); i++) {
-			numeric_type r;
-			switch(expr[i]) {
-			case 'C':
-				y = expr.find_first_of("z", i);
-				if(y > expr.length())
-					return "#syntax (noterm)";
-				t = _expr.substr(i + 1, y - i - 1);
-				stack_push(s, numeric_type(t));
-				i = y;
-				break;
-			case 'R':
-				if(i + 1 == expr.length())
-					throw std::runtime_error("#syntax (noparam)");
-				a = stack_pop(s);
-				d = expr[++i] - '0';
-				stack_push(s, a.round(d));
-				break;
-			case 'H':
-				if(i + 1 == expr.length())
-					throw std::runtime_error("#syntax (noparam)");
-				s.top().sethex(expr[++i]);
-				break;
-			case 'a':
-				stack_push<double>(s, atan(stack_pop(s).as_double()));
-				break;
-			case 'A':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push<double>(s, atan2(a.as_double(), b.as_double()));
-				break;
-			case 'c':
-				stack_push<double>(s, cos(stack_pop(s).as_double()));
-				break;
-			case 'r':
-				a = stack_pop(s);
-				if(a.as_double() < 0)
-					throw std::runtime_error("#NAN");
-				stack_push<double>(s, sqrt(a.as_double()));
-				break;
-			case 's':
-				stack_push<double>(s, sin(stack_pop(s).as_double()));
-				break;
-			case 't':
-				stack_push<double>(s, tan(stack_pop(s).as_double()));
-				break;
-			case 'u':
-				stack_push(s, stack_pop(s, true));
-				break;
-			case 'p':
-				stack_push(s, 4 * atan(1));
-				break;
-			case '+':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a + b);
-				break;
-			case '-':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a - b);
-				break;
-			case '*':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a * b);
-				break;
-			case 'i':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a.idiv(b));
-				break;
-			case '/':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a / b);
-				break;
-			case '%':
-				a = stack_pop(s);
-				b = stack_pop(s);
-				stack_push(s, a % b);
-				break;
-			case 'b':
-				stack_push<int8_t>(s, lsnes_memory.read<uint8_t>(stack_pop(s).as_address()));
-				break;
-			case 'B':
-				stack_push<uint8_t>(s, lsnes_memory.read<uint8_t>(stack_pop(s).as_address()));
-				break;
-			case 'w':
-				stack_push<int16_t>(s, lsnes_memory.read<uint16_t>(stack_pop(s).as_address()));
-				break;
-			case 'W':
-				stack_push<uint16_t>(s, lsnes_memory.read<uint16_t>(stack_pop(s).as_address()));
-				break;
-			case 'o':
-				stack_push<ss_int24_t>(s, lsnes_memory.read<ss_uint24_t>(stack_pop(s).as_address()));
-				break;
-			case 'O':
-				stack_push<ss_uint24_t>(s, lsnes_memory.read<ss_uint24_t>(stack_pop(s).as_address()));
-				break;
-			case 'd':
-				stack_push<int32_t>(s, lsnes_memory.read<uint32_t>(stack_pop(s).as_address()));
-				break;
-			case 'D':
-				stack_push<uint32_t>(s, lsnes_memory.read<uint32_t>(stack_pop(s).as_address()));
-				break;
-			case 'q':
-				stack_push<int64_t>(s, lsnes_memory.read<uint64_t>(stack_pop(s).as_address()));
-				break;
-			case 'Q':
-				stack_push<uint64_t>(s, lsnes_memory.read<uint64_t>(stack_pop(s).as_address()));
-				break;
-			case 'f':
-				stack_push<float>(s, lsnes_memory.read<float>(stack_pop(s).as_address()));
-				break;
-			case 'F':
-				stack_push<double>(s, lsnes_memory.read<double>(stack_pop(s).as_address()));
-				break;
-			default:
-				throw std::runtime_error("#syntax (illchar)");
-			}
-		}
-		if(s.empty())
-			return "#ERR";
-		else
-			return s.top().str();
-	} catch(std::exception& e) {
-		return e.what();
-	}
+	position = PC_MEMORYWATCH;
+	cond_enable = false;
+	onscreen_alt_origin_x = false;
+	onscreen_alt_origin_y = false;
+	onscreen_cliprange_x = false;
+	onscreen_cliprange_y = false;
+	onscreen_fg_color = 0xFFFFFF;
+	onscreen_bg_color = -1;
+	onscreen_halo_color = 0;
 }
 
-std::set<std::string> get_watches() throw(std::bad_alloc)
+JSON::node lsnes_memorywatch_printer::serialize()
+{
+	JSON::node ndata(JSON::object);
+	switch(position) {
+	case PC_DISABLED:	ndata["position"] = JSON::s("disabled"); break;
+	case PC_MEMORYWATCH:	ndata["position"] = JSON::s("memorywatch"); break;
+	case PC_ONSCREEN:	ndata["position"] = JSON::s("onscreen"); break;
+	};
+	ndata["cond_enable"] = JSON::b(cond_enable);
+	ndata["enabled"] = JSON::s(enabled);
+	ndata["onscreen_xpos"] = JSON::s(onscreen_xpos);
+	ndata["onscreen_ypos"] = JSON::s(onscreen_ypos);
+	ndata["onscreen_alt_origin_x"] = JSON::b(onscreen_alt_origin_x);
+	ndata["onscreen_alt_origin_y"] = JSON::b(onscreen_alt_origin_y);
+	ndata["onscreen_cliprange_x"] = JSON::b(onscreen_cliprange_x);
+	ndata["onscreen_cliprange_y"] = JSON::b(onscreen_cliprange_y);
+	ndata["onscreen_font"] = JSON::s(onscreen_font);
+	ndata["onscreen_fg_color"] = JSON::i(onscreen_fg_color);
+	ndata["onscreen_bg_color"] = JSON::i(onscreen_bg_color);
+	ndata["onscreen_halo_color"] = JSON::i(onscreen_halo_color);
+	return ndata;
+}
+
+void lsnes_memorywatch_printer::unserialize(const JSON::node& node)
+{
+	std::string _position = json_string_default(node, "position", "");
+	if(_position == "disabled") position = PC_DISABLED;
+	else if(_position == "memorywatch") position = PC_MEMORYWATCH;
+	else if(_position == "onscreen") position = PC_ONSCREEN;
+	else position = PC_MEMORYWATCH;
+	cond_enable = json_boolean_default(node, "cond_enable", false);
+	enabled = json_string_default(node, "enabled", "");
+	onscreen_xpos = json_string_default(node, "onscreen_xpos", "");
+	onscreen_ypos = json_string_default(node, "onscreen_ypos", "");
+	onscreen_alt_origin_x = json_boolean_default(node, "onscreen_alt_origin_x", false);
+	onscreen_alt_origin_y = json_boolean_default(node, "onscreen_alt_origin_y", false);
+	onscreen_cliprange_x = json_boolean_default(node, "onscreen_cliprange_x", false);
+	onscreen_cliprange_y = json_boolean_default(node, "onscreen_cliprange_y", false);
+	onscreen_font = json_string_default(node, "onscreen_font", "");
+	onscreen_fg_color = json_signed_default(node, "onscreen_fg_color", false);
+	onscreen_bg_color = json_signed_default(node, "onscreen_bg_color", false);
+	onscreen_halo_color = json_signed_default(node, "onscreen_halo_color", false);
+}
+
+gcroot_pointer<memorywatch_item_printer> lsnes_memorywatch_printer::get_printer_obj(
+	std::function<gcroot_pointer<mathexpr>(const std::string& n)> vars)
+{
+	gcroot_pointer<memorywatch_item_printer> ptr;
+	memorywatch_output_list* l;
+	memorywatch_output_fb* f;
+
+	std::string _enabled = (enabled != "") ? enabled : "true";
+
+	switch(position) {
+	case PC_DISABLED:
+		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_null);
+		break;
+	case PC_MEMORYWATCH:
+		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_list);
+		l = dynamic_cast<memorywatch_output_list*>(ptr.as_pointer());
+		l->cond_enable = cond_enable;
+		try {
+			if(l->cond_enable)
+				l->enabled = mathexpr::parse(*expression_value(), _enabled, vars);
+			else
+				l->enabled = mathexpr::parse(*expression_value(), "true", vars);
+		} catch(std::exception& e) {
+			(stringfmt() << "Error while parsing conditional: " << e.what()).throwex();
+		}
+		l->set_output(memorywatch_output_fn);
+		break;
+	case PC_ONSCREEN:
+		ptr = gcroot_pointer<memorywatch_item_printer>(new memorywatch_output_fb);
+		f = dynamic_cast<memorywatch_output_fb*>(ptr.as_pointer());
+		f->font = NULL;
+		f->set_dtor_cb([](memorywatch_output_fb& obj) { put_font(obj.font); });
+		f->cond_enable = cond_enable;
+		std::string while_parsing = "(unknown)";
+		try {
+			while_parsing = "conditional";
+			if(f->cond_enable)
+				f->enabled = mathexpr::parse(*expression_value(), _enabled, vars);
+			else
+				f->enabled = mathexpr::parse(*expression_value(), "true", vars);
+			while_parsing = "X position";
+			f->pos_x = mathexpr::parse(*expression_value(), onscreen_xpos, vars);
+			while_parsing = "Y position";
+			f->pos_y = mathexpr::parse(*expression_value(), onscreen_ypos, vars);
+		} catch(std::exception& e) {
+			(stringfmt() << "Error while parsing " << while_parsing << ": " << e.what()).throwex();
+		}
+		f->alt_origin_x = onscreen_alt_origin_x;
+		f->alt_origin_y = onscreen_alt_origin_y;
+		f->cliprange_x = onscreen_cliprange_x;
+		f->cliprange_y = onscreen_cliprange_y;
+		f->fg = onscreen_fg_color;
+		f->bg = onscreen_bg_color;
+		f->halo = onscreen_halo_color;
+		try {
+			f->font = get_font(onscreen_font);
+		} catch(std::exception& e) {
+			messages << "Bad font '" << onscreen_font << "': " << e.what() << std::endl;
+			f->font = &get_builtin_font2();
+		}
+		break;
+	}
+	return ptr;
+}
+
+lsnes_memorywatch_item::lsnes_memorywatch_item()
+{
+	bytes = 0;
+	signed_flag = false;
+	float_flag = false;
+	endianess = 0;
+	scale_div = 1;
+	addr_base = 0;
+	addr_size = 0;
+	mspace = &lsnes_memory;
+}
+
+JSON::node lsnes_memorywatch_item::serialize()
+{
+	JSON::node ndata(JSON::object);
+	ndata["printer"] = printer.serialize();
+	ndata["expr"] = JSON::s(expr);
+	ndata["format"] = JSON::s(format);
+	ndata["bytes"] = JSON::u(bytes);
+	ndata["signed"] = JSON::b(signed_flag);
+	ndata["float"] = JSON::b(float_flag);
+	ndata["endianess"] = JSON::i(endianess);
+	ndata["scale_div"] = JSON::u(scale_div);
+	ndata["addr_base"] = JSON::u(addr_base);
+	ndata["addr_size"] = JSON::u(addr_size);
+	return ndata;
+}
+
+void lsnes_memorywatch_item::unserialize(const JSON::node& node)
+{
+	if(node.type_of("printer") == JSON::object)
+		printer.unserialize(node["printer"]);
+	else
+		printer = lsnes_memorywatch_printer();
+	expr = json_string_default(node, "expr", "0");
+	format = json_string_default(node, "format", "");
+	bytes = json_unsigned_default(node, "bytes", 0);
+	signed_flag = json_boolean_default(node, "signed", false);
+	float_flag = json_boolean_default(node, "float", false);
+	endianess = json_signed_default(node, "endianess", false);
+	scale_div = json_unsigned_default(node, "scale_div", 1);
+	addr_base = json_unsigned_default(node, "addr_base", 0);
+	addr_size = json_unsigned_default(node, "addr_size", 0);
+}
+
+memorywatch_memread_oper* lsnes_memorywatch_item::get_memread_oper()
+{
+	if(!bytes)
+		return NULL;
+	memorywatch_memread_oper* o = new memorywatch_memread_oper;
+	o->bytes = bytes;
+	o->signed_flag = signed_flag;
+	o->float_flag = float_flag;
+	o->endianess = endianess;
+	o->scale_div = scale_div;
+	o->addr_base = addr_base;
+	o->addr_size = addr_size;
+	o->mspace = mspace;
+	return o;
+}
+
+std::set<std::string> lsnes_memorywatch_set::enumerate()
 {
 	std::set<std::string> r;
-	auto p = project_get();
-	std::map<std::string, std::string>* ws;
-	if(p)
-		ws = &p->watches;
-	else
-		ws = &watches;
-	for(auto i : *ws)
+	for(auto& i : items)
 		r.insert(i.first);
 	return r;
 }
 
-std::string get_watchexpr_for(const std::string& w) throw(std::bad_alloc)
+void lsnes_memorywatch_set::clear(const std::string& name)
 {
-	auto p = project_get();
-	std::map<std::string, std::string>* ws;
-	if(p)
-		ws = &p->watches;
-	else
-		ws = &watches;
-	if(ws->count(w))
-		return (*ws)[w];
-	else
-		return "";
-}
-
-void set_watchexpr_for(const std::string& w, const std::string& expr) throw(std::bad_alloc)
-{
-	auto& status = platform::get_emustatus();
-	auto p = project_get();
-	if(expr != "") {
-		if(p)
-			p->watches[w] = expr;
-		else
-			watches[w] = expr;
-		status.set("M[" + w + "]", evaluate_watch(expr));
-	} else {
-		if(p)
-			p->watches.erase(w);
-		else
-			watches.erase(w);
-		status.erase("M[" + w + "]");
+	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	nitems.erase(name);
+	rebuild(nitems);
+	std::swap(items, nitems);
+	auto pr = project_get();
+	if(pr) {
+		pr->watches.erase(name);
+		project_flush(pr);
 	}
-	if(p)
-		project_flush(p);
-	notify_status_update();
+	redraw_framebuffer();
 }
 
-void do_watch_memory()
+void lsnes_memorywatch_set::set(const std::string& name, const std::string& item)
 {
-	auto& status = platform::get_emustatus();
-	auto p = project_get();
-	auto w = p ? &(p->watches) : &watches;
-	for(auto i : *w)
-		status.set("M[" + i.first + "]", evaluate_watch(i.second));
+	lsnes_memorywatch_item _item;
+	_item.unserialize(JSON::node(item));
+	set(name, _item);
 }
 
-namespace
+lsnes_memorywatch_item& lsnes_memorywatch_set::get(const std::string& name)
 {
-	command::fnptr<const std::string&> add_watch(lsnes_cmd, "add-watch", "Add a memory watch",
-		"Syntax: add-watch <name> <expression>\nAdds a new memory watch\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("([^ \t]+)[ \t]+(|[^ \t].*)", t, "Name and expression required.");
-			set_watchexpr_for(r[1], r[2]);
-		});
-
-	command::fnptr<const std::string&> remove_watch(lsnes_cmd, "remove-watch", "Remove a memory watch",
-		"Syntax: remove-watch <name>\nRemoves a memory watch\n",
-		[](const std::string& t) throw(std::bad_alloc, std::runtime_error) {
-			auto r = regex("([^ \t]+)[ \t]*", t, "Name required.");
-			set_watchexpr_for(r[1], "");
-		});
+	if(!items.count(name))
+		throw std::runtime_error("No such memory watch named '" + name + "'");
+	return items[name];
 }
+
+std::string lsnes_memorywatch_set::get_string(const std::string& name, JSON::printer* printer)
+{
+	auto& x = get(name);
+	auto y = x.serialize();
+	auto z = y.serialize(printer);
+	return z;
+}
+
+void lsnes_memorywatch_set::watch(struct framebuffer::queue& rq)
+{
+	//Set framebuffer for all FB watches.
+	watch_set.foreach([&rq](memorywatch_item& i) {
+		memorywatch_output_fb* fb = dynamic_cast<memorywatch_output_fb*>(i.printer.as_pointer());
+		if(fb)
+			fb->set_rqueue(rq);
+	});
+	watch_set.refresh();
+	erase_unused_watches();
+}
+
+bool lsnes_memorywatch_set::rename(const std::string& oldname, const std::string& newname)
+{
+	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	if(nitems.count(newname))
+		return false;
+	if(!nitems.count(oldname))
+		return false;
+	nitems[newname] = nitems[oldname];
+	nitems.erase(oldname);
+	rebuild(nitems);
+	std::swap(items, nitems);
+	redraw_framebuffer();
+	update_movie_state();
+	return true;
+}
+
+void lsnes_memorywatch_set::set(const std::string& name, lsnes_memorywatch_item& item)
+{
+	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	nitems[name] = item;
+	rebuild(nitems);
+	std::swap(items, nitems);
+	auto pr = project_get();
+	if(pr) {
+		pr->watches[name] = get_string(name);
+		project_flush(pr);
+	}
+	redraw_framebuffer();
+	update_movie_state();
+}
+
+std::string lsnes_memorywatch_set::get_value(const std::string& name)
+{
+	return watch_set.get(name).get_value();
+}
+
+void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, lsnes_memorywatch_item>>& list)
+{
+	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	for(auto& i : list)
+		nitems[i.first] = i.second;
+	rebuild(nitems);
+	std::swap(items, nitems);
+	auto pr = project_get();
+	if(pr) {
+		for(auto& i : list)
+			pr->watches[i.first] = get_string(i.first);
+		project_flush(pr);
+	}
+	redraw_framebuffer();
+	update_movie_state();
+}
+
+void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, std::string>>& list)
+{
+	std::list<std::pair<std::string, lsnes_memorywatch_item>> _list;
+	for(auto& i: list) {
+		lsnes_memorywatch_item it;
+		it.unserialize(JSON::node(i.second));
+		_list.push_back(std::make_pair(i.first, it));
+	}
+	set_multi(_list);
+}
+
+void lsnes_memorywatch_set::clear_multi(const std::set<std::string>& names)
+{
+	std::map<std::string, lsnes_memorywatch_item> nitems = items;
+	for(auto& i : names)
+		nitems.erase(i);
+	rebuild(nitems);
+	std::swap(items, nitems);
+	auto pr = project_get();
+	if(pr) {
+		for(auto& i : names)
+			pr->watches.erase(i);
+		project_flush(pr);
+	}
+	redraw_framebuffer();
+	update_movie_state();
+}
+
+void lsnes_memorywatch_set::rebuild(std::map<std::string, lsnes_memorywatch_item>& nitems)
+{
+	{
+		memorywatch_set new_set;
+		std::map<std::string, gcroot_pointer<mathexpr>> vars;
+		auto vars_fn = [&vars](const std::string& n) -> gcroot_pointer<mathexpr> {
+			if(!vars.count(n))
+				vars[n] = gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(),
+					expression_value());
+			return vars[n];
+		};
+		for(auto& i : nitems) {
+			mathexpr_operinfo* memread_oper = i.second.get_memread_oper();
+			try {
+				gcroot_pointer<mathexpr> rt_expr;
+				gcroot_pointer<memorywatch_item_printer> rt_printer;
+				std::vector<gcroot_pointer<mathexpr>> v;
+				try {
+					rt_expr = mathexpr::parse(*expression_value(), i.second.expr, vars_fn);
+				} catch(std::exception& e) {
+					(stringfmt() << "Error while parsing address/expression: "
+						<< e.what()).throwex();
+				}
+				v.push_back(rt_expr);
+				if(memread_oper) {
+					rt_expr = gcroot_pointer<mathexpr>(gcroot_pointer_object_tag(),
+						expression_value(), memread_oper, v, true);
+					memread_oper = NULL;
+				}
+				rt_printer = i.second.printer.get_printer_obj(vars_fn);
+				memorywatch_item it(*expression_value());
+				*vars_fn(i.first) = *rt_expr;
+				it.expr = vars_fn(i.first);
+				it.printer = rt_printer;
+				it.format = i.second.format;
+				new_set.create(i.first, it);
+			} catch(...) {
+				delete memread_oper;
+				throw;
+			}
+		}
+		watch_set.swap(new_set);
+	}
+	garbage_collectable::do_gc();
+}
+
+lsnes_memorywatch_set lsnes_memorywatch;

@@ -548,13 +548,6 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr memory_watchexpr(lua_func_misc, "memory.read_expr", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string val = evaluate_watch(L.get_string(1, fname.c_str()));
-		L.pushstring(val.c_str());
-		return 1;
-	});
-
 	template<bool write, bool sign> int memory_scattergather(lua::state& L, const std::string& fname)
 	{
 		uint64_t val = 0;

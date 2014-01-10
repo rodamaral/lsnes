@@ -1,4 +1,5 @@
 #include "framebuffer.hpp"
+#include "hex.hpp"
 #include "png.hpp"
 #include "serialization.hpp"
 #include "string.hpp"
@@ -894,6 +895,12 @@ color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 	bool first = true;
 	auto& cspecs = colornames();
 	for(auto& t : token_iterator_foreach(clr, {" ","\t"}, true)) {
+		if(t.length() > 0 && t[0] == '#') {
+			if(!first)
+				throw std::runtime_error("Base color (" + t + ") can't be used as modifier");
+			std::string _t = t;
+			col = hex::from<uint32_t>(_t.substr(1));
+		}
 		if(!cspecs.count(t))
 			throw std::runtime_error("Invalid color (modifier) '" + t + "'");
 		if(!first && !cspecs[t].second)
@@ -904,6 +911,25 @@ color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 		first = false;
 	}
 	*this = color(col);
+}
+
+std::string color::stringify(int64_t number)
+{
+	auto& cspecs = colornames();
+	for(auto& i : colornames()) {
+		int64_t col = -1;
+		if(i.second.second)
+			continue;
+		(i.second.first)(col);
+		if(col == number)
+			return i.first;
+	}
+	if(number < 0)
+		return "transparent";
+	else if(number < 16777216)
+		return "#" + hex::to<uint32_t>(number).substr(2);
+	else
+		return "#" + hex::to<uint32_t>(number);
 }
 
 void color::set_palette(unsigned rshift, unsigned gshift, unsigned bshift, bool X) throw()

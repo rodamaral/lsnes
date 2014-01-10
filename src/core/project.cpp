@@ -424,11 +424,15 @@ bool project_set(project_info* p, bool current)
 skip_rom_movie:
 		active_project = p;
 		switched = true;
-		for(auto i : get_watches())
-			if(p->watches.count(i))
-				set_watchexpr_for(i, p->watches[i]);
-			else
-				set_watchexpr_for(i, "");
+		for(auto i : lsnes_memorywatch.enumerate())
+			try {
+				if(p->watches.count(i))
+					lsnes_memorywatch.set(i, p->watches[i]);
+				else
+					lsnes_memorywatch.clear(i);
+			} catch(std::exception& e) {
+				messages << "Can't set/clear watch '" << i << "': " << e.what() << std::endl;
+			}
 		voicesub_load_collection(p->directory + "/" + p->prefix + ".lsvs");
 		lsnes_cmd.invoke("reset-lua");
 		for(auto i : p->luascripts)
@@ -494,8 +498,13 @@ std::string project_savestate_ext()
 
 void project_copy_watches(project_info& p)
 {
-	for(auto i : get_watches())
-		p.watches[i] = get_watchexpr_for(i);
+	for(auto i : lsnes_memorywatch.enumerate()) {
+		try {
+			p.watches[i] = lsnes_memorywatch.get_string(i);
+		} catch(std::exception& e) {
+			messages << "Can't read memory watch '" << i << "': " << e.what() << std::endl;
+		}
+	}
 }
 
 void project_copy_macros(project_info& p, controller_state& s)

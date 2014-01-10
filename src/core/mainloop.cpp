@@ -381,8 +381,6 @@ void update_movie_state()
 	}
 	_status.set("!macros", mss.str());
 
-	do_watch_memory();
-
 	controller_frame c;
 	if(!multitrack_editor.any_records())
 		c = movb.get_movie().get_controls();
@@ -1251,6 +1249,9 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	core_core::uninstall_all_handlers();
 	voicethread_kill();
 	platform::system_thread_available(false);
+	//Kill all memory watches (so dtor ordering doesn't cause a crash).
+	project_set(NULL, true);
+	lsnes_memorywatch.clear_multi(lsnes_memorywatch.enumerate());
 }
 
 void set_stop_at_frame(uint64_t frame)

@@ -36,30 +36,32 @@ namespace
 		const char* name;
 		unsigned len;
 		bool hard_bigendian;
-		const char* watch;
+		const char* format;
+		int type;    //0 => Unsigned, 1 => Signed, 2 => Float
+		int scale;
 		std::string (*read)(const uint8_t* x);
 	};
 
 	val_type datatypes[] = {
-		{"1 byte (signed)", 1, false, "b", [](const uint8_t* x) -> std::string {
+		{"1 byte (signed)", 1, false, "", 1, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << (int)(char)x[0]).str();
 		}},
-		{"1 byte (unsigned)", 1, false, "B", [](const uint8_t* x) -> std::string {
+		{"1 byte (unsigned)", 1, false, "", 0, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << (int)x[0]).str();
 		}},
-		{"1 byte (hex)", 1, false, "BH2", [](const uint8_t* x) -> std::string {
+		{"1 byte (hex)", 1, false, "%02x", 0, 0, [](const uint8_t* x) -> std::string {
 			return hex::to(x[0]);
 		}},
-		{"2 bytes (signed)", 2, false, "w", [](const uint8_t* x) -> std::string {
+		{"2 bytes (signed)", 2, false, "", 1, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int16_t*)x).str();
 		}},
-		{"2 bytes (unsigned)", 2, false, "W", [](const uint8_t* x) -> std::string {
+		{"2 bytes (unsigned)", 2, false, "", 0, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint16_t*)x).str();
 		}},
-		{"2 bytes (hex)", 2, false, "WH4", [](const uint8_t* x) -> std::string {
+		{"2 bytes (hex)", 2, false, "%04x", 0, 0, [](const uint8_t* x) -> std::string {
 			return hex::to(*(uint16_t*)x);
 		}},
-		{"3 bytes (signed)", 3, true, "o", [](const uint8_t* x) -> std::string {
+		{"3 bytes (signed)", 3, true, "", 1, 0, [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
@@ -68,57 +70,57 @@ namespace
 				a -= 0x1000000;
 			return (stringfmt() << a).str();
 		}},
-		{"3 bytes (unsigned)", 3, true, "O", [](const uint8_t* x) -> std::string {
+		{"3 bytes (unsigned)", 3, true, "", 0, 0, [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
 			return (stringfmt() << a).str();
 		}},
-		{"3 bytes (hex)", 3, true, "OH6", [](const uint8_t* x) -> std::string {
+		{"3 bytes (hex)", 3, true, "%06x", 0, 0, [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
 			return hex::to24(a);
 		}},
-		{"4 bytes (signed)", 4, false, "d", [](const uint8_t* x) -> std::string {
+		{"4 bytes (signed)", 4, false, "", 1, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x).str();
 		}},
-		{"4 bytes (unsigned)", 4, false, "D", [](const uint8_t* x) -> std::string {
+		{"4 bytes (unsigned)", 4, false, "", 0, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint32_t*)x).str();
 		}},
-		{"4 bytes (hex)", 4, false, "DH8", [](const uint8_t* x) -> std::string {
+		{"4 bytes (hex)", 4, false, "%08x", 0, 0, [](const uint8_t* x) -> std::string {
 			return hex::to(*(uint32_t*)x);
 		}},
-		{"4 bytes (float)", 4, false, "f", [](const uint8_t* x) -> std::string {
+		{"4 bytes (float)", 4, false, "", 2, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(float*)x).str();
 		}},
-		{"8 bytes (signed)", 8, false, "q", [](const uint8_t* x) -> std::string {
+		{"8 bytes (signed)", 8, false, "", 1, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int64_t*)x).str();
 		}},
-		{"8 bytes (unsigned)", 8, false, "Q", [](const uint8_t* x) -> std::string {
+		{"8 bytes (unsigned)", 8, false, "", 0, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint64_t*)x).str();
 		}},
-		{"8 bytes (hex)", 8, false, "QHG", [](const uint8_t* x) -> std::string {
+		{"8 bytes (hex)", 8, false, "%016x", 0, 0, [](const uint8_t* x) -> std::string {
 			return hex::to(*(uint64_t*)x);
 		}},
-		{"8 bytes (float)", 8, false, "F", [](const uint8_t* x) -> std::string {
+		{"8 bytes (float)", 8, false, "", 2, 0, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(double*)x).str();
 		}},
-		{"Q8.8 (signed)", 2, false, "C256z$w/", [](const uint8_t* x) -> std::string {
+		{"Q8.8 (signed)", 2, false, "", 1, 8, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int16_t*)x / 256.0).str();
 		}},
-		{"Q8.8 (unsigned)", 2, false, "C256z$W/", [](const uint8_t* x) -> std::string {
+		{"Q8.8 (unsigned)", 2, false, "", 0, 8, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint16_t*)x / 256.0).str();
 		}},
-		{"Q12.4 (signed)", 2, false, "C16z$w/", [](const uint8_t* x) -> std::string {
+		{"Q12.4 (signed)", 2, false, "", 1, 4, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int16_t*)x / 16.0).str();
 		}},
-		{"Q12.4 (unsigned)", 2, false, "C16z$W/", [](const uint8_t* x) -> std::string {
+		{"Q12.4 (unsigned)", 2, false, "", 0, 4, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint16_t*)x / 16.0).str();
 		}},
-		{"Q16.8 (signed)", 3, false, "C256z$o/", [](const uint8_t* x) -> std::string {
+		{"Q16.8 (signed)", 3, true, "", 1, 8, [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
@@ -127,29 +129,29 @@ namespace
 				a -= 0x1000000;
 			return (stringfmt() << a / 256.0).str();
 		}},
-		{"Q16.8 (unsigned)", 3, false, "C256z$O/", [](const uint8_t* x) -> std::string {
+		{"Q16.8 (unsigned)", 3, true, "", 0, 8, [](const uint8_t* x) -> std::string {
 			int32_t a = 0;
 			a |= (uint32_t)x[0] << 16;
 			a |= (uint32_t)x[1] << 8;
 			a |= (uint32_t)x[2];
 			return (stringfmt() << a / 256.0).str();
 		}},
-		{"Q24.8 (signed)", 4, false, "C256z$d/", [](const uint8_t* x) -> std::string {
+		{"Q24.8 (signed)", 4, false, "", 1, 8, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x / 256.0).str();
 		}},
-		{"Q24.8 (unsigned)", 4, false, "C256z$D/", [](const uint8_t* x) -> std::string {
+		{"Q24.8 (unsigned)", 4, false, "", 0, 8, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint32_t*)x / 256.0).str();
 		}},
-		{"Q20.12 (signed)", 4, false, "C4096z$d/", [](const uint8_t* x) -> std::string {
+		{"Q20.12 (signed)", 4, false, "", 1, 12, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x / 4096.0).str();
 		}},
-		{"Q20.12 (unsigned)", 4, false, "C4096z$D/", [](const uint8_t* x) -> std::string {
+		{"Q20.12 (unsigned)", 4, false, "", 0, 12, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint32_t*)x / 4096.0).str();
 		}},
-		{"Q16.16 (signed)", 4, false, "C65536z$d/", [](const uint8_t* x) -> std::string {
+		{"Q16.16 (signed)", 4, false, "", 1, 16, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(int32_t*)x / 65536.0).str();
 		}},
-		{"Q16.16 (unsigned)", 4, false, "C65536z$D/", [](const uint8_t* x) -> std::string {
+		{"Q16.16 (unsigned)", 4, false, "", 0, 16, [](const uint8_t* x) -> std::string {
 			return (stringfmt() << *(uint32_t*)x / 65536.0).str();
 		}},
 	};
@@ -499,15 +501,22 @@ public:
 				<< "Enter name for watch at 0x" << std::hex << addr << ":").str());
 			if(n == "")
 				return;
-			std::string wch = datatypes[curtype].watch;
-			size_t sz = wch.find_first_of("$");
-			std::string e;
-			if(sz < wch.length())
-				e = (stringfmt() << wch.substr(0, sz) << "C0x" << std::hex << addr << "z"
-					<< wch.substr(sz + 1)).str();
-			else
-				e = (stringfmt() << "C0x" << std::hex << addr << "z" << wch).str();
-			runemufn([n, e]() { set_watchexpr_for(n, e); });
+			lsnes_memorywatch_item e;
+			e.expr = (stringfmt() << addr).str();
+			e.format = datatypes[curtype].format;
+			e.bytes = datatypes[curtype].len;
+			e.signed_flag = (datatypes[curtype].type == 1);
+			e.float_flag = (datatypes[curtype].type == 2);
+			//Handle hostendian VMAs.
+			auto i = lsnes_memory.get_regions();
+			bool hostendian = false;
+			for(auto& j : i) {
+				if(addr >= j->base && addr < j->base + j->size && !j->endian)
+					hostendian = true;
+			}
+			e.endianess = hostendian ? 0 : (littleendian ? -1 : 1);
+			e.scale_div = 1ULL << datatypes[curtype].scale;
+			runemufn([n, &e]() { lsnes_memorywatch.set(n, e); });
 		} catch(canceled_exception& e) {
 		}
 	}

@@ -2,15 +2,18 @@
 #include "core/dispatch.hpp"
 #include "core/framebuffer.hpp"
 #include "core/keymapper.hpp"
+#include "core/memorywatch.hpp"
 #include "core/misc.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/subtitles.hpp"
+#include "core/settings.hpp"
 #include "core/window.hpp"
 #include "lua/lua.hpp"
 #include "fonts/wrapper.hpp"
 #include "library/framebuffer.hpp"
 #include "library/framebuffer-pixfmt-lrgb.hpp"
+#include "library/minmax.hpp"
 
 framebuffer::raw screen_corrupt;
 
@@ -129,6 +132,14 @@ namespace
 			messages << "Saved PNG screenshot" << std::endl;
 		});
 
+	settingvar::variable<settingvar::model_int<0, 8191>> dtb(lsnes_vset, "top-border", "UI‣Top padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> dbb(lsnes_vset, "bottom-border",
+		"UI‣Bottom padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> dlb(lsnes_vset, "left-border",
+		"UI‣Left padding", 0);
+	settingvar::variable<settingvar::model_int<0, 8191>> drb(lsnes_vset, "right-border", "UI‣Right padding",
+		0);
+
 	bool last_redraw_no_lua = true;
 }
 
@@ -186,10 +197,11 @@ void redraw_framebuffer(framebuffer::raw& todraw, bool no_lua, bool spontaneous)
 	ri.fbuf = todraw;
 	ri.hscl = hscl;
 	ri.vscl = vscl;
-	ri.lgap = lrc.left_gap;
-	ri.rgap = lrc.right_gap;
-	ri.tgap = lrc.top_gap;
-	ri.bgap = lrc.bottom_gap;
+	ri.lgap = max(lrc.left_gap, (unsigned)dlb);
+	ri.rgap = max(lrc.right_gap, (unsigned)drb);
+	ri.tgap = max(lrc.top_gap, (unsigned)dtb);
+	ri.bgap = max(lrc.bottom_gap, (unsigned)dbb);
+	lsnes_memorywatch.watch(ri.rq);
 	buffering.end_write();
 	notify_screen_update();
 	last_redraw_no_lua = no_lua;

@@ -1148,203 +1148,299 @@ Memory watch expression syntax
 \end_layout
 
 \begin_layout Standard
-Memory watch expressions are in RPN (Reverse Polish Notation).
- At the end of expression, the top entry on stack is taken as the final
- result.
+Memory watch expressions has the following syntax elements:
 \end_layout
 
-\begin_layout Standard
-Notations:
+\begin_layout LyX-Code
+${foo}     The value of memory watch foo.
 \end_layout
 
-\begin_layout Itemize
-Evaluation order is strictly left to right.
+\begin_layout LyX-Code
+0x1234     Hexadecimal number 1234
 \end_layout
 
-\begin_layout Itemize
-a is the entry on top of stack
+\begin_layout LyX-Code
+12345      Decimal number 12345
 \end_layout
 
-\begin_layout Itemize
-b is the entry immediately below top of stack
+\begin_layout LyX-Code
+3.141      Decimal number 3.141
 \end_layout
 
-\begin_layout Itemize
-; separates values to be pushed (no intermediate pop).
+\begin_layout LyX-Code
+-a         Unary negation
 \end_layout
 
-\begin_layout Itemize
-After end of element, all used stack slots are popped and all results are
- pushed.
+\begin_layout LyX-Code
+~a         Bitwise NOT (integers only)
 \end_layout
 
-\begin_layout Itemize
-When pushing multiple values, the pushes occur in order shown.
+\begin_layout LyX-Code
+a*b        Multiplication
 \end_layout
 
-\begin_layout Standard
-The following operators are available:
+\begin_layout LyX-Code
+a/b        Division/quotent
 \end_layout
 
-\begin_layout Itemize
-+ : a + b
+\begin_layout LyX-Code
+a%b        Remainder (integers only)
 \end_layout
 
-\begin_layout Itemize
-- : a - b
+\begin_layout LyX-Code
+a+b        Sum or string concatenation
 \end_layout
 
-\begin_layout Itemize
-* : a * b
+\begin_layout LyX-Code
+a-b        Difference
 \end_layout
 
-\begin_layout Itemize
-/ : a / b
+\begin_layout LyX-Code
+a<<b       Shift left (integers only)
 \end_layout
 
-\begin_layout Itemize
-% : a % b
+\begin_layout LyX-Code
+a>>b       Shift right (integers only).
+ Arithmetic for signed.
 \end_layout
 
-\begin_layout Itemize
-a : atan(a)
+\begin_layout LyX-Code
+a<b        Less than
 \end_layout
 
-\begin_layout Itemize
-b : read_signed_byte(a)
+\begin_layout LyX-Code
+a<=b       Less or equal to
 \end_layout
 
-\begin_layout Itemize
-c : cos(a)
+\begin_layout LyX-Code
+a==b       Equal to
 \end_layout
 
-\begin_layout Itemize
-d : read_signed_dword(a)
+\begin_layout LyX-Code
+a!=b       Not equal to
 \end_layout
 
-\begin_layout Itemize
-f: read_float(a)
+\begin_layout LyX-Code
+a>=b       Greater or equal to
 \end_layout
 
-\begin_layout Itemize
-i : quotent(a / b)
+\begin_layout LyX-Code
+a>b        Greater than
 \end_layout
 
-\begin_layout Itemize
-o: read_signed_hword(a)
+\begin_layout LyX-Code
+a&b        Bitwise AND (integers only)
 \end_layout
 
-\begin_layout Itemize
-p :
-\begin_inset Formula $\pi$
-\end_inset
-
-
+\begin_layout LyX-Code
+a^b        Bitwise XOR (integers only)
 \end_layout
 
-\begin_layout Itemize
-q : read_signed_qword(a)
+\begin_layout LyX-Code
+a|b        Bitwise OR (integers only)
 \end_layout
 
-\begin_layout Itemize
-r : sqrt(a)
+\begin_layout LyX-Code
+a&&b       Logical AND
 \end_layout
 
-\begin_layout Itemize
-s : sin(a)
+\begin_layout LyX-Code
+a||b       Logical OR
 \end_layout
 
-\begin_layout Itemize
-t : tan(a)
+\begin_layout LyX-Code
+π          Numeric constant pi.
 \end_layout
 
-\begin_layout Itemize
-u : a; a
+\begin_layout LyX-Code
+i          Imaginary unit
 \end_layout
 
-\begin_layout Itemize
-w : read_signed_word(a)
+\begin_layout LyX-Code
+if(x,y)    If x is true, y, else false.
 \end_layout
 
-\begin_layout Itemize
-A : atan2(a, b)
+\begin_layout LyX-Code
+if(x,y,z)  If x is true, y, else z.
 \end_layout
 
-\begin_layout Itemize
-B : read_unsigned_byte(a)
+\begin_layout LyX-Code
+select(x...)
 \end_layout
 
-\begin_layout Itemize
-C<number>z : Push number <number> to stack.
+\begin_layout LyX-Code
+           First value in x...
+ that is not false, or false if none.
 \end_layout
 
-\begin_layout Itemize
-D : read_unsigned_dword(a)
+\begin_layout LyX-Code
+unsigned(x)
 \end_layout
 
-\begin_layout Itemize
-C0x<number>z : Push number <number> (hexadecimal) to stack.
+\begin_layout LyX-Code
+           Cast x to unsigned.
 \end_layout
 
-\begin_layout Itemize
-F: read_double(a)
+\begin_layout LyX-Code
+signed(x)
 \end_layout
 
-\begin_layout Itemize
-H<digit> : Set hexadecimal mode with specified number of digits (use A-G
- for 10-16 digits).
+\begin_layout LyX-Code
+           Cast x to signed.
 \end_layout
 
-\begin_layout Itemize
-O: read_unsigned_hword(a)
+\begin_layout LyX-Code
+float(x)
 \end_layout
 
-\begin_layout Itemize
-Q : read_unsigned_qword(a)
+\begin_layout LyX-Code
+           Cast x to float.
 \end_layout
 
-\begin_layout Itemize
-R<digit> : round a to <digit> digits.
+\begin_layout LyX-Code
+min(x...)  The smallest value among x...
+ or false if empty.
 \end_layout
 
-\begin_layout Itemize
-W : read_unsigned_word(a)
+\begin_layout LyX-Code
+max(x...)  The largest value among x...
+ or false if empty.
 \end_layout
 
-\begin_layout Subsection
-Example:
+\begin_layout LyX-Code
+sum(x...)  Sum/concatenation of x...
+ or false if empty.
 \end_layout
 
-\begin_layout Standard
-C0x007e0878zWC0x007e002czW-
+\begin_layout LyX-Code
+prod(x...) Product of x...
+ or false if empty.
 \end_layout
 
-\begin_layout Enumerate
-Push value 0x7e0878 on top of stack (C0x007e0878z).
+\begin_layout LyX-Code
+sqrt(x)    Square root of x.
 \end_layout
 
-\begin_layout Enumerate
-Pop the value on top of stack (0x7e0878), read word value at that address
- and push the result,call it x1 (W).
+\begin_layout LyX-Code
+log(x)     Natural log of x.
 \end_layout
 
-\begin_layout Enumerate
-Push value 0x7e002c on top of stack (C0x007e002cz).
+\begin_layout LyX-Code
+log(x,y)   Log of y to base x.
 \end_layout
 
-\begin_layout Enumerate
-Pop the value on top of stack (0x7e002c), read word value at that address
- and push the result,call it x2 (W).
+\begin_layout LyX-Code
+exp(x)     e^x.
 \end_layout
 
-\begin_layout Enumerate
-Pop the two top numbers on stack, x1 and x2, substract x1 from x2 and push
- x2 - x1 (-).
+\begin_layout LyX-Code
+exp(x,y)   x^y
 \end_layout
 
-\begin_layout Enumerate
-Since the expression ends, the final memory watch result is the top one
- on stack, which is x2 - x1.
+\begin_layout LyX-Code
+sin(x)     Sine of x
+\end_layout
+
+\begin_layout LyX-Code
+cos(x)     Cosine of x
+\end_layout
+
+\begin_layout LyX-Code
+tan(x)     Tangent of x
+\end_layout
+
+\begin_layout LyX-Code
+asin(x)    Arcsine of x
+\end_layout
+
+\begin_layout LyX-Code
+acos(x)    Arccosine of x
+\end_layout
+
+\begin_layout LyX-Code
+atan(x)    Arctangent of x
+\end_layout
+
+\begin_layout LyX-Code
+atan(x,y)  Angle between vector (x,y) and x-axis.
+\end_layout
+
+\begin_layout LyX-Code
+sinh(x)    Hyperbolic sine of x
+\end_layout
+
+\begin_layout LyX-Code
+cosh(x)    Hyperbolic cosine of x
+\end_layout
+
+\begin_layout LyX-Code
+tanh(x)    Hyperbolic tangent of x
+\end_layout
+
+\begin_layout LyX-Code
+arsinh(x)  Hyperbolic arsine of x
+\end_layout
+
+\begin_layout LyX-Code
+arcosh(x)  Hyperbolic arcosine of x
+\end_layout
+
+\begin_layout LyX-Code
+artanh(x)  Hyperbolic artangent of x
+\end_layout
+
+\begin_layout LyX-Code
+torad(x)   Convert x degrees to radians.
+\end_layout
+
+\begin_layout LyX-Code
+todeg(x)   Convert x radians to degrees.
+\end_layout
+
+\begin_layout LyX-Code
+re(x)      Real part of complex number x.
+\end_layout
+
+\begin_layout LyX-Code
+im(x)      Imaginary part of complex number x.
+\end_layout
+
+\begin_layout LyX-Code
+conj(x)    Complex conjugate of x.
+\end_layout
+
+\begin_layout LyX-Code
+abs(x)     Absolute value of x.
+\end_layout
+
+\begin_layout LyX-Code
+arg(x)     Argument of x.
+\end_layout
+
+\begin_layout LyX-Code
+pyth(x...) sqrt(sum(x^2)).
+ I.e.
+ pythagorean distance.
+\end_layout
+
+\begin_layout LyX-Code
+e          Base of natural logarithm
+\end_layout
+
+\begin_layout LyX-Code
+pi         Pi
+\end_layout
+
+\begin_layout LyX-Code
+true       Constant true
+\end_layout
+
+\begin_layout LyX-Code
+false      Constant false
+\end_layout
+
+\begin_layout LyX-Code
+
 \end_layout
 
 \begin_layout Section
