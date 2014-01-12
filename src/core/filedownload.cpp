@@ -150,7 +150,11 @@ void file_download::_do_async()
 			moviefile::brief_info info(tempname2);
 			auto sysregs = core_sysregion::find_matching(info.sysregion);
 			for(auto i : sysregs)
-				gametype = &i->get_type();
+				if(i->get_type().get_core_identifier() == info.corename)
+					gametype = &i->get_type();
+			if(!gametype)
+				for(auto i : sysregs)
+					gametype = &i->get_type();
 		}
 		moviefile::memref(target_slot) = moviefile(tempname2, *gametype);
 		remove(tempname2.c_str());
