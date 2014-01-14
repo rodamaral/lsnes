@@ -148,11 +148,6 @@ uint64_t movie::get_lag_frames() throw()
 	return lag_frames;
 }
 
-uint64_t movie::get_frame_count() throw()
-{
-	return frames_in_movie;
-}
-
 void movie::next_frame() throw(std::bad_alloc)
 {
 	//Adjust lag count. Frame 0 MUST NOT be considered lag.
@@ -171,7 +166,6 @@ void movie::next_frame() throw(std::bad_alloc)
 			//If in read-write mode, write a dummy record for the frame. Force sync flag.
 			//As index should be movie_data.size(), it is correct afterwards.
 			movie_data.append(current_controls.copy(true));
-			frames_in_movie++;
 		}
 	}
 
@@ -225,7 +219,6 @@ short movie::next_input(unsigned port, unsigned controller, unsigned ctrl) throw
 			movie_data.append(current_controls.copy(true));
 			//current_frame_first_subframe should be movie_data.size(), so it is right.
 			pollcounters.increment_polls(port, controller, ctrl);
-			frames_in_movie++;
 			return movie_data[current_frame_first_subframe].axis3(port, controller, ctrl);
 		}
 		short new_value = current_controls.axis3(port, controller, ctrl);
@@ -256,11 +249,21 @@ movie::movie() throw(std::bad_alloc)
 	rerecords = "0";
 	_project_id = "";
 	current_frame = 0;
-	frames_in_movie = 0;
 	current_frame_first_subframe = 0;
 	lag_frames = 0;
 	pflag_handler = NULL;
 	clear_caches();
+	movie_data.set_framecount_notification([this](controller_frame_vector& src, uint64_t old_frames) -> void {
+		//Recompute frame_first_subframe.
+		while(current_frame_first_subframe < movie_data.size() && current_frame > old_frames + 1) {
+			//OK, movie has been extended.
+			current_frame_first_subframe += count_changes(current_frame_first_subframe);
+			old_frames++;
+		}
+		//Nobody is this stupid, right?
+		current_frame_first_subframe = min(current_frame_first_subframe,
+			static_cast<uint64_t>(movie_data.size()));
+	});
 }
 
 void movie::load(const std::string& rerecs, const std::string& project_id, controller_frame_vector& input)
@@ -270,10 +273,6 @@ void movie::load(const std::string& rerecs, const std::string& project_id, contr
 		throw std::runtime_error("First subframe MUST have frame sync flag set");
 	seqno++;
 	clear_caches();
-	frames_in_movie = 0;
-	for(size_t i = 0; i < input.size(); i++)
-		if(input[i].sync())
-			frames_in_movie++;
 	readonly = true;
 	rerecords = rerecs;
 	_project_id = project_id;
@@ -305,7 +304,6 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 		//Transitioning to readwrite mode, we have to adjust the length of the movie data.
 		if(current_frame == 0) {
 			//WTF... At before first frame. Blank the entiere movie.
-			frames_in_movie = 0;
 			movie_data.clear();
 			return;
 		}
@@ -313,10 +311,8 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 		//In this case, we have to extend the movie data.
 		if(current_frame_first_subframe >= movie_data.size()) {
 			//Yes, this will insert one extra frame... But we will lose it later if it is not needed.
-			while(frames_in_movie < current_frame) {
+			while(movie_data.count_frames() < current_frame)
 				movie_data.append(movie_data.blank_frame(true));
-				frames_in_movie++;
-			}
 			current_frame_first_subframe = movie_data.size() - 1;
 		}
 
@@ -337,7 +333,6 @@ void movie::readonly_mode(bool enable) throw(std::bad_alloc)
 			for(uint64_t j = current_frame_first_subframe + polls; j < next_frame_first_subframe; j++)
 				movie_data[j].axis2(i, movie_data[current_frame_first_subframe + polls - 1].axis2(i));
 		}
-		frames_in_movie = current_frame - ((current_frame_first_subframe >= movie_data.size()) ? 1 : 0);
 	}
 }
 
@@ -450,25 +445,9 @@ movie& movie::operator=(const movie& m)
 	pollcounters = m.pollcounters;
 	current_controls = m.current_controls;
 	lag_frames = m.lag_frames;
-	frames_in_movie = m.frames_in_movie;
 	cached_frame = m.cached_frame;
 	cached_subframe = m.cached_subframe;
 	return *this;
-}
-
-void movie::adjust_frame_count(int64_t adjust)
-{
-	uint64_t old_frames = frames_in_movie;
-	frames_in_movie += adjust;
-	//If current_frame_first_subframe is in part extended, recompute it.
-	if(current_frame > old_frames + 1) {
-		current_frame_first_subframe = 0;
-		if(current_frame > 0)
-			for(uint64_t i = 0; i < current_frame - 1; i++)
-				current_frame_first_subframe += count_changes(current_frame_first_subframe);
-	}
-	//Nobody is this stupid, right?
-	current_frame_first_subframe = min(current_frame_first_subframe, static_cast<uint64_t>(movie_data.size()));
 }
 
 void movie::set_pflag_handler(poll_flag* handler)
@@ -492,17 +471,16 @@ void movie::write_subframe_at_index(uint32_t subframe, unsigned port, unsigned c
 	if(!readonly || current_frame == 0)
 		return;
 	bool extended = false;
-	while(current_frame > frames_in_movie) {
+	while(current_frame > movie_data.count_frames()) {
 		//Extend the movie by a blank frame.
 		extended = true;
 		movie_data.append(movie_data.blank_frame(true));
-		frames_in_movie++;
 	}
 	if(extended) {
 		clear_caches();
 		current_frame_first_subframe = movie_data.size() - 1;
 	}
-	if(current_frame < frames_in_movie) {
+	if(current_frame < movie_data.count_frames()) {
 		//If we are not on the last frame, write is possible if it is not on extension.
 		uint32_t changes = count_changes(current_frame_first_subframe);
 		if(subframe < changes)
@@ -518,7 +496,6 @@ void movie::write_subframe_at_index(uint32_t subframe, unsigned port, unsigned c
 			//If there is no frame at all, create one.
 			if(current_frame_first_subframe >= movie_data.size()) {
 				movie_data.append(movie_data.blank_frame(true));
-				frames_in_movie++;
 			}
 			//Create needed subframes.
 			while(count_changes(current_frame_first_subframe) <= subframe)

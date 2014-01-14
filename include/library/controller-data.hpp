@@ -702,6 +702,8 @@ private:
 	bool framepflag;
 };
 
+class controller_frame_vector;
+
 /**
  * Single (sub)frame of controls.
  */
@@ -723,10 +725,12 @@ public:
  *
  * Parameter memory: The backing memory.
  * Parameter p: Types of ports.
+ * Parameter host: Host frame vector.
  *
  * Throws std::runtime_error: NULL memory.
  */
-	controller_frame(unsigned char* memory, const port_type_set& p) throw(std::runtime_error);
+	controller_frame(unsigned char* memory, const port_type_set& p, controller_frame_vector* host = NULL) 
+		throw(std::runtime_error);
 /**
  * Copy construct a frame. The memory will be dedicated.
  *
@@ -817,13 +821,7 @@ public:
  *
  * Parameter x: The value to set the sync flag to.
  */
-	void sync(bool x) throw()
-	{
-		if(x)
-			backing[0] |= 1;
-		else
-			backing[0] &= ~1;
-	}
+	inline void sync(bool x) throw();
 /**
  * Get the sync flag.
  *
@@ -862,7 +860,10 @@ public:
 		if(port >= types->ports())
 			return;
 		auto& t = types->port_type(port);
-		t.write(&t, backing + types->port_offset(port), controller, ctrl, x);
+		if(!port && !controller && !ctrl && host)
+			sync(x != 0);
+		else
+			t.write(&t, backing + types->port_offset(port), controller, ctrl, x);
 	}
 /**
  * Set axis/button value.
@@ -933,22 +934,7 @@ public:
  * Parameter buf: The buffer containing text representation. Terminated by NUL, CR or LF.
  * Throws std::runtime_error: Bad serialized representation.
  */
-	void deserialize(const char* buf) throw(std::runtime_error)
-	{
-		size_t offset = 0;
-		for(size_t i = 0; i < types->ports(); i++) {
-			size_t s;
-			auto& t = types->port_type(i);
-			s = t.deserialize(&t, backing + types->port_offset(i), buf + offset);
-			if(s != DESERIALIZE_SPECIAL_BLANK) {
-				offset += s;
-				while(is_nonterminator(buf[offset]))
-					offset++;
-				if(buf[offset] == '|')
-					offset++;
-			}
-		}
-	}
+	inline void deserialize(const char* buf) throw(std::runtime_error);
 /**
  * Serialize frame to text format.
  *
@@ -1007,6 +993,7 @@ public:
 private:
 	unsigned char memory[MAXIMUM_CONTROLLER_FRAME_SIZE];
 	unsigned char* backing;
+	controller_frame_vector* host;
 	const port_type_set* types;
 };
 
@@ -1089,7 +1076,7 @@ public:
 			cache_page = &pages[page];
 			cache_page_num = page;
 		}
-		return controller_frame(cache_page->content + pageoffset, *types);
+		return controller_frame(cache_page->content + pageoffset, *types, this);
 	}
 /**
  * Append a subframe.
@@ -1141,7 +1128,15 @@ public:
  *
  * Returns: The number of frames.
  */
-	size_t count_frames() throw();
+	size_t count_frames() throw() { return real_frame_count; }
+/**
+ * Recount number of frames. 
+ *
+ * This is to be used after direct editing of pointers obtained by get_page_buffer().
+ *
+ * Returns: The number of frames.
+ */
+	size_t recount_frames() throw();
 /**
  * Return blank controller frame with correct type and dedicated memory.
  *
@@ -1174,7 +1169,49 @@ public:
  * Get content of given page.
  */
 	const unsigned char* get_page_buffer(size_t page) const { return pages.find(page)->second.content; }
+/**
+ * Notify sync flag polarity change.
+ *
+ * Parameter polarity: 1 if positive edge, -1 if negative edge. 0 is ignored.
+ */
+	void notify_sync_change(short polarity) {
+		uint64_t old_frame_count = real_frame_count;
+		real_frame_count = real_frame_count + polarity;
+		if(on_framecount_change && !freeze_count) on_framecount_change(*this, old_frame_count);
+	}
+/**
+ * Set where to deliver frame count change notifications to.
+ */
+	void set_framecount_notification(std::function<void(controller_frame_vector& src, uint64_t old)> cb)
+	{
+		on_framecount_change = cb;
+	}
+/**
+ * Freeze framecount notifications.
+ */
+	struct notify_freeze
+	{
+		notify_freeze(controller_frame_vector& parent)
+			: frozen(parent)
+		{
+			frozen.freeze_count++;
+			if(frozen.freeze_count == 1)
+				frozen.frame_count_at_freeze = frozen.real_frame_count;
+		}
+		~notify_freeze()
+		{
+			frozen.freeze_count--;
+			if(frozen.freeze_count == 0)
+				if(frozen.on_framecount_change) 
+					frozen.on_framecount_change(frozen, frozen.frame_count_at_freeze);
+		}
+	private:
+		notify_freeze(const notify_freeze&);
+		notify_freeze& operator=(const notify_freeze&);
+		controller_frame_vector& frozen;
+	};
 private:
+	friend class notify_freeze;
 	class page
 	{
 	public:
@@ -1188,6 +1225,10 @@ private:
 	size_t cache_page_num;
 	page* cache_page;
 	std::map<size_t, page> pages;
+	uint64_t real_frame_count;
+	uint64_t frame_count_at_freeze;
+	size_t freeze_count;
+	std::function<void(controller_frame_vector& src, uint64_t old)> on_framecount_change;
 	size_t walk_helper(size_t frame, bool sflag) throw();
 	void clear_cache()
 	{
@@ -1196,6 +1237,36 @@ private:
 		cache_page = NULL;
 	}
 };
+
+void controller_frame::sync(bool x) throw()
+{
+	short old = (backing[0] & 1);
+	if(x)
+		backing[0] |= 1;
+	else
+		backing[0] &= ~1;
+	if(host) host->notify_sync_change((backing[0] & 1) - old);
+}
+
+void controller_frame::deserialize(const char* buf) throw(std::runtime_error)
+{
+	short old = sync();
+	size_t offset = 0;
+	for(size_t i = 0; i < types->ports(); i++) {
+		size_t s;
+		auto& t = types->port_type(i);
+		s = t.deserialize(&t, backing + types->port_offset(i), buf + offset);
+		if(s != DESERIALIZE_SPECIAL_BLANK) {
+			offset += s;
+			while(is_nonterminator(buf[offset]))
+				offset++;
+			if(buf[offset] == '|')
+				offset++;
+		}
+	}
+	if(host) host->notify_sync_change(sync() - old);
+}
+
 
 //Parse a controller macro.
 struct controller_macro_data

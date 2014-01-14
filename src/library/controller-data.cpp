@@ -414,15 +414,18 @@ controller_frame::controller_frame(const port_type_set& p) throw(std::runtime_er
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
 	types = &p;
+	host = NULL;
 }
 
-controller_frame::controller_frame(unsigned char* mem, const port_type_set& p) throw(std::runtime_error)
+controller_frame::controller_frame(unsigned char* mem, const port_type_set& p, controller_frame_vector* _host) 
+	throw(std::runtime_error)
 {
 	if(!mem)
 		throw std::runtime_error("NULL backing memory not allowed");
 	memset(memory, 0, sizeof(memory));
 	backing = mem;
 	types = &p;
+	host = _host;
 }
 
 controller_frame::controller_frame(const controller_frame& obj) throw()
@@ -431,6 +434,7 @@ controller_frame::controller_frame(const controller_frame& obj) throw()
 	backing = memory;
 	types = obj.types;
 	memcpy(backing, obj.backing, types->size());
+	host = NULL;
 }
 
 controller_frame& controller_frame::operator=(const controller_frame& obj) throw(std::runtime_error)
@@ -438,7 +442,9 @@ controller_frame& controller_frame::operator=(const controller_frame& obj) throw
 	if(backing != memory && types != obj.types)
 		throw std::runtime_error("Port types do not match");
 	types = obj.types;
+	short old = sync();
 	memcpy(backing, obj.backing, types->size());
+	if(host) host->notify_sync_change(sync() - old);
 	return *this;
 }
 
@@ -474,8 +480,9 @@ size_t controller_frame_vector::walk_helper(size_t frame, bool sflag) throw()
 	return ret;
 }
 
-size_t controller_frame_vector::count_frames() throw()
+size_t controller_frame_vector::recount_frames() throw()
 {
+	uint64_t old_frame_count = real_frame_count;
 	size_t ret = 0;
 	if(!frames)
 		return 0;
@@ -496,17 +503,22 @@ size_t controller_frame_vector::count_frames() throw()
 		offset += frame_size;
 
 	}
+	real_frame_count = ret;
+	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
 	return ret;
 }
 
 void controller_frame_vector::clear(const port_type_set& p) throw(std::runtime_error)
 {
+	uint64_t old_frame_count = real_frame_count;
 	frame_size = p.size();
 	frames_per_page = CONTROLLER_PAGE_SIZE / frame_size;
 	frames = 0;
 	types = &p;
 	clear_cache();
 	pages.clear();
+	real_frame_count = 0;
+	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
 }
 
 controller_frame_vector::~controller_frame_vector() throw()
@@ -517,11 +529,15 @@ controller_frame_vector::~controller_frame_vector() throw()
 
 controller_frame_vector::controller_frame_vector() throw()
 {
+	real_frame_count = 0;
+	freeze_count = 0;
 	clear(dummytypes());
 }
 
 controller_frame_vector::controller_frame_vector(const port_type_set& p) throw()
 {
+	real_frame_count = 0;
+	freeze_count = 0;
 	clear(p);
 }
 
@@ -542,11 +558,13 @@ void controller_frame_vector::append(controller_frame frame) throw(std::bad_allo
 		cache_page = &pages[page];
 	}
 	controller_frame(cache_page->content + offset, *types) = frame;
+	if(frame.sync()) real_frame_count++;
 	frames++;
 }
 
 controller_frame_vector::controller_frame_vector(const controller_frame_vector& vector) throw(std::bad_alloc)
 {
+	real_frame_count = 0;
 	clear(*vector.types);
 	*this = vector;
 }
@@ -556,6 +574,7 @@ controller_frame_vector& controller_frame_vector::operator=(const controller_fra
 {
 	if(this == &v)
 		return *this;
+	uint64_t old_frame_count = real_frame_count;
 	resize(v.frames);
 	clear_cache();
 
@@ -563,6 +582,7 @@ controller_frame_vector& controller_frame_vector::operator=(const controller_fra
 	frame_size = v.frame_size;
 	frames_per_page = v.frames_per_page;
 	types = v.types;
+	real_frame_count = v.real_frame_count;
 
 	//This can't fail anymore. Copy the raw page contents.
 	size_t pagecount = (frames + frames_per_page - 1) / frames_per_page;
@@ -571,12 +591,9 @@ controller_frame_vector& controller_frame_vector::operator=(const controller_fra
 		const page& pg2 = v.pages.find(i)->second;
 		pg = pg2;
 	}
-
+	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
 	return *this;
 }
-
-/*
-*/
 
 void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 {
@@ -585,6 +602,9 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 		clear();
 	} else if(newsize < frames) {
 		//Shrink movie.
+		uint64_t old_frame_count = real_frame_count;
+		for(size_t i = newsize; i < frames; i++)
+			if((*this)[i].sync()) real_frame_count--;
 		size_t current_pages = (frames + frames_per_page - 1) / frames_per_page;
 		size_t pages_needed = (newsize + frames_per_page - 1) / frames_per_page;
 		for(size_t i = pages_needed; i < current_pages; i++)
@@ -595,6 +615,7 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 			memset(pages[pages_needed - 1].content + offset, 0, CONTROLLER_PAGE_SIZE - offset);
 		}
 		frames = newsize;
+		if(on_framecount_change) on_framecount_change(*this, old_frame_count);
 	} else if(newsize > frames) {
 		//Enlarge movie.
 		size_t current_pages = (frames + frames_per_page - 1) / frames_per_page;
@@ -611,6 +632,8 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 			}
 		}
 		frames = newsize;
+		//This can use real_frame_count, because the real frame count won't change.
+		if(on_framecount_change) on_framecount_change(*this, real_frame_count);
 	}
 }
 
@@ -619,6 +642,7 @@ controller_frame::controller_frame() throw()
 	memset(memory, 0, sizeof(memory));
 	backing = memory;
 	types = &dummytypes();
+	host = NULL;
 }
 
 unsigned port_controller::analog_actions() const

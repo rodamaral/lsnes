@@ -180,13 +180,10 @@ namespace
 			check_can_edit(0, 0, 0, n);
 
 		lua_inputframe* f = lua::_class<lua_inputframe>::get(L, ptr++, fname.c_str());
-		int64_t adjust = 0;
-		if(v[n].sync()) adjust--;
 		v[n] = f->get_frame();
-		if(v[n].sync()) adjust++;
 
 		if(&v == &movb.get_movie().get_frame_vector()) {
-			movb.get_movie().adjust_frame_count(adjust);
+			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -207,12 +204,7 @@ namespace
 		int ptr = 1;
 		controller_frame_vector& v = framevector(L, ptr, fname);
 
-		uint64_t c = 0;
-		uint64_t s = v.size();
-		for(uint64_t i = 0; i < s; i++)
-			if(v[i].sync())
-				c++;
-		L.pushnumber(c);
+		L.pushnumber(v.count_frames());
 		return 1;
 	}
 
@@ -253,10 +245,12 @@ namespace
 		controller_frame_vector& v = framevector(L, ptr, fname);
 
 		uint64_t count = L.get_numeric_argument<uint64_t>(ptr++, "lua_inputmovie::append_frames");
-		for(uint64_t i = 0; i < count; i++)
-			v.append(v.blank_frame(true));
+		{
+			controller_frame_vector::notify_freeze freeze(v);
+			for(uint64_t i = 0; i < count; i++)
+				v.append(v.blank_frame(true));
+		}
 		if(&v == &movb.get_movie().get_frame_vector()) {
-			movb.get_movie().adjust_frame_count(count);
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -272,7 +266,6 @@ namespace
 
 		v.append(v.blank_frame(true));
 		if(&v == &movb.get_movie().get_frame_vector()) {
-			movb.get_movie().adjust_frame_count(1);
 			update_movie_state();
 			platform::notify_status();
 			check_can_edit(0, 0, 0, v.size() - 1);
@@ -280,7 +273,6 @@ namespace
 		v[v.size() - 1] = f->get_frame();
 		if(&v == &movb.get_movie().get_frame_vector()) {
 			if(!v[v.size() - 1].sync()) {
-				movb.get_movie().adjust_frame_count(-1);
 				update_movie_state();
 			}
 			platform::notify_status();
@@ -300,7 +292,6 @@ namespace
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
 		if(&v == &movb.get_movie().get_frame_vector()) {
-			movb.get_movie().recount_frames();
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -317,7 +308,6 @@ namespace
 		unsigned controller = L.get_numeric_argument<unsigned>(ptr++, fname.c_str());
 		unsigned button = L.get_numeric_argument<unsigned>(ptr++, fname.c_str());
 		short value;
-		int64_t schange = 0;
 		if(L.type(ptr) == LUA_TBOOLEAN)
 			value = L.toboolean(ptr);
 		else if(L.type(ptr) == LUA_TNUMBER)
@@ -328,17 +318,10 @@ namespace
 		movie& m = movb.get_movie();
 		if(&v == &movb.get_movie().get_frame_vector())
 			check_can_edit(port, controller, button, frame);
-		if(port == 0 && controller == 0 && button == 0)
-			if(v[frame].sync() && !value) schange = -1;
 		v[frame].axis3(port, controller, button, value);
-		if(port == 0 && controller == 0 && button == 0)
-			if(!v[frame].sync() && value) schange = 1;
 
 		if(&v == &movb.get_movie().get_frame_vector()) {
-			if(schange) {
-				movb.get_movie().adjust_frame_count(schange);
-				update_movie_state();
-			}
+			update_movie_state();
 			platform::notify_status();
 		}
 		return 0;
@@ -353,7 +336,6 @@ namespace
 		controller_frame_vector& srcv = same ? dstv : framevector(L, ptr, fname);
 		uint64_t src = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
 		uint64_t count = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		int64_t schange = 0;
 		bool backwards = same ? L.get_bool(ptr++, fname.c_str()) : same;
 
 		if(src >= srcv.size() || src + count < src)
@@ -365,20 +347,17 @@ namespace
 		if(&dstv == &movb.get_movie().get_frame_vector())
 			check_can_edit(0, 0, 0, dst, true);
 
-		//Add enough blank frames to make the copy.
-		while(dst + count > dstv.size())
-			dstv.append(dstv.blank_frame(false));
+		{
+			controller_frame_vector::notify_freeze freeze(dstv);
+			//Add enough blank frames to make the copy.
+			while(dst + count > dstv.size())
+				dstv.append(dstv.blank_frame(false));
 
-		for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1)) {
-			if(dstv[dst + i].sync()) schange--;
-			dstv[dst + i] = srcv[src + i];
-			if(dstv[dst + i].sync()) schange++;
+			for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1))
+				dstv[dst + i] = srcv[src + i];
 		}
 		if(&dstv == &movb.get_movie().get_frame_vector()) {
-			if(schange) {
-				movb.get_movie().adjust_frame_count(schange);
-				update_movie_state();
-			}
+			update_movie_state();
 			platform::notify_status();
 		}
 		return 0;
@@ -576,6 +555,7 @@ namespace
 			throw std::runtime_error("Can't open file to read input from");
 		lua_inputmovie* m = lua::_class<lua_inputmovie>::create(L, f->get_frame());
 		controller_frame_vector& v = *m->get_frame_vector();
+		controller_frame_vector::notify_freeze freeze(v);
 		if(binary) {
 			uint64_t stride = v.get_stride();
 			uint64_t pageframes = v.get_frames_per_page();

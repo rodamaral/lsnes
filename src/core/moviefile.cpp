@@ -98,6 +98,7 @@ namespace
 			vsize += (gcount / stride);
 		}
 		v.resize(vsize);
+		v.recount_frames();
 	}
 
 	void binary_write_movie(binarystream::output& out, controller_frame_vector& v)

@@ -471,6 +471,7 @@ namespace
 	{
 		if(src == dst)
 			return;
+		controller_frame_vector::notify_freeze freeze(fv);
 		if(src > dst) {
 			//Copy forwards.
 			uint64_t shift = src - dst;
@@ -495,6 +496,7 @@ namespace
 	void zero_index_set(frame_controls& info, controller_frame_vector& fv, uint64_t dst, uint64_t len,
 		const std::set<unsigned>& indices)
 	{
+		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = dst; i < dst + len; i++) {
 			controller_frame _dst = fv[i];
 			for(auto j : indices)
@@ -821,19 +823,6 @@ namespace
 			if(base + i >= vsize || fv[base + i].sync())
 				return base + i;
 	}
-
-	//Adjust movie length by specified number of frames.
-	//Call only in emulator thread.
-	void movie_framecount_change(int64_t adjust, bool known = true);
-	void movie_framecount_change(int64_t adjust, bool known)
-	{
-		if(known)
-			movb.get_movie().adjust_frame_count(adjust);
-		else
-			movb.get_movie().recount_frames();
-		update_movie_state();
-		graphics_driver_notify_status();
-	}
 }
 
 wxeditor_movie::_moviepanel::~_moviepanel() throw() {}
@@ -1035,6 +1024,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 			return;
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = _press_line; i <= line; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
@@ -1043,8 +1033,6 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 			_fcontrols->write_index(cf, idx, !v);
 			adjust += (v ? -1 : 1);
 		}
-		if(idx == 0)
-			movie_framecount_change(adjust);
 	});
 	recursing = false;
 	if(idx == 0)
@@ -1070,6 +1058,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 			valid = false;
 			return;
 		}
+		controller_frame_vector::notify_freeze freeze(fv);
 		controller_frame cf = fv[line];
 		value = _fcontrols->read_index(cf, idx);
 	});
@@ -1089,6 +1078,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 	runemufn([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line; i <= line2; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
@@ -1130,6 +1120,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 	runemufn([idx, line, line2, value, value2, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line + 1; i <= line2 - 1; i++) {
 			if(i < fedit || i >= fv.size())
 				continue;
@@ -1151,9 +1142,9 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 		if(!movb.get_movie().readonly_mode())
 			return;
 		controller_frame_vector& fv = movb.get_movie().get_frame_vector();
+		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
-		movie_framecount_change(_count);
 	});
 	recursing = false;
 	signal_repaint();
@@ -1192,6 +1183,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 			nframe++;
 		if(nframe < fedit)
 			return;
+		controller_frame_vector::notify_freeze freeze(fv);
 		fv.append(fv.blank_frame(true));
 		if(nframe < vsize) {
 			//Okay, gotta copy all data after this point. nframe has to be at least 1.
@@ -1199,7 +1191,6 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 				fv[i + 1] = fv[i];
 			fv[nframe] = fv.blank_frame(true);
 		}
-		movie_framecount_change(1);
 	});
 	max_subframe = row;
 	recursing = false;
@@ -1219,6 +1210,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 		uint64_t vsize = fv.size();
 		if(_row1 >= vsize)
 			return;		//Nothing to do.
+		controller_frame_vector::notify_freeze freeze(fv);
 		uint64_t row2 = min(_row2, vsize - 1);
 		uint64_t row1 = min(_row1, vsize - 1);
 		row1 = max(row1, real_first_editable(*_fcontrols, 0));
@@ -1245,7 +1237,6 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 			for(uint64_t i = fsf; i < vsize - tonuke; i++)
 				fv[i] = fv[i + tonuke];
 			fv.resize(vsize - tonuke);
-			movie_framecount_change(-frames_tonuke);
 		} else {
 			if(row2 < real_first_editable(*_fcontrols, 0))
 				return;		//Nothing to do.
@@ -1271,7 +1262,6 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 			//Next subframe inherits the sync flag.
 			if(inherit_sync)
 				fv[row1].sync(true);
-			movie_framecount_change(-frames_tonuke);
 		}
 	});
 	max_subframe = _row1;
@@ -1296,7 +1286,6 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 			if(fv[i].sync())
 				delete_count--;
 		fv.resize(_row);
-		movie_framecount_change(delete_count);
 	});
 	max_subframe = row;
 	recursing = false;
@@ -1956,6 +1945,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 			return;
 		if(gapstart > vsize)
 			return;
+		controller_frame_vector::notify_freeze freeze(fv);
 		if(append) gapstart = vsize;
 		for(uint64_t i = 0; i < gaplen; i++)
 			fv.append(fv.blank_frame(false));
@@ -1973,7 +1963,6 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 					newframes++;
 			}
 		}
-		movie_framecount_change(newframes);
 	});
 	recursing = false;
 	signal_repaint();
@@ -2014,6 +2003,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 			return;
 		if(gapstart > vsize)
 			return;
+		controller_frame_vector::notify_freeze freeze(fv);
 		if(append) gapstart = vsize;
 		for(uint64_t i = 0; i < gaplen; i++)
 			fv.append(fv.blank_frame(true));
@@ -2029,7 +2019,6 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 				decode_line(*_fcontrols, f, z, port, controller);
 			}
 		}
-		movie_framecount_change(newframes);
 	});
 	recursing = false;
 	signal_repaint();
@@ -2056,7 +2045,6 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 		fv.append(fv.blank_frame(true));
 		move_index_set(*_fcontrols, fv, gapstart, gapstart + 1, vsize - gapstart, iset);
 		zero_index_set(*_fcontrols, fv, gapstart, 1, iset);
-		movie_framecount_change(1);
 	});
 	recursing = false;
 	signal_repaint();

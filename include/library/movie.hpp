@@ -71,7 +71,7 @@ public:
  *
  * returns: The number of frames.
  */
-	uint64_t get_frame_count() throw();
+	uint64_t get_frame_count() throw() { movie_data.count_frames(); }
 
 /**
  * Get number of current frame in movie
@@ -266,14 +266,6 @@ public:
  */
 	uint64_t get_current_frame_first_subframe() { return current_frame_first_subframe; }
 /**
- * Recount frames.
- */
-	void recount_frames() { adjust_frame_count(movie_data.count_frames() - frames_in_movie); }
-/**
- * Adjust frame count.
- */
-	void adjust_frame_count(int64_t adjust);
-/**
  * Read specified triple at specified subframe of current frame. Only works in readonly mode.
  */
 	int16_t read_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned index);
@@ -289,6 +281,8 @@ private:
 	poll_flag* pflag_handler;
 	//TRUE if readonly mode is active.
 	bool readonly;
+	//TRUE if movie is latched to end.
+	bool latch_end;
 	//Movie (not global!) rerecord count.
 	std::string rerecords;
 	//Project ID.
@@ -305,8 +299,6 @@ private:
 	controller_frame current_controls;
 	//Number of known lag frames.
 	uint64_t lag_frames;
-	//Number of frames in movie.
-	uint64_t frames_in_movie;
 	//Cached subframes.
 	uint64_t cached_frame;
 	uint64_t cached_subframe;
