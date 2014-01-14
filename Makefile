@@ -18,6 +18,11 @@ BOOST_LIB_POSTFIX=-mt
 else
 BOOST_LIB_POSTFIX=
 endif
+ifdef HOST_BOOST_NEEDS_MT
+HOST_BOOST_LIB_POSTFIX=-mt
+else
+HOST_BOOST_LIB_POSTFIX=
+endif
 
 LDFLAGS = -lboost_iostreams$(BOOST_LIB_POSTFIX) -lboost_filesystem$(BOOST_LIB_POSTFIX) -lboost_system$(BOOST_LIB_POSTFIX) -lboost_regex$(BOOST_LIB_POSTFIX) -lz -lcurl $(USER_LDFLAGS)
 
@@ -71,7 +76,7 @@ src/__all_files__: src/core/version.cpp buildaux/mkdeps.exe forcelook
 buildaux/version.exe: buildaux/version.cpp VERSION
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
 buildaux/mkdeps.exe: buildaux/mkdeps.cpp VERSION
-	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $< -lboost_filesystem -lboost_system
+	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $< -lboost_filesystem$(HOST_BOOST_LIB_POSTFIX) -lboost_system$(HOST_BOOST_LIB_POSTFIX)
 src/core/version.cpp: buildaux/version.exe forcelook
 	buildaux/version.exe >$@
 

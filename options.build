@@ -113,6 +113,10 @@ BSNES_IS_COMPAT=
 # Useful on Win32 and Mac OS X.
 BOOST_NEEDS_MT=
 
+# Set to non-empty value (e.g. 'yes') if host boost libraries need the '-mt' prefix.
+# Useful when building on Mac OS X.
+HOST_BOOST_NEEDS_MT=
+
 # Set to non-empty value (e.g. 'yes') if the linker exports symbols without -rdynamic.
 # Useful on Mac OS X.
 NO_RDYNAMIC=
