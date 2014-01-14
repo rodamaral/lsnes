@@ -177,10 +177,14 @@ end:
 			lsnes_cmd.set_alias_for(r[1], tmp);
 			messages << r[1] << " aliased to " << r[2] << std::endl;
 		} else if(r = regex("BIND[ \t]+([^/]*)/([^|]*)\\|([^ \t]+)[ \t]+(.*)", line)) {
-			lsnes_mapper.bind(r[1], r[2], r[3], r[4]);
+			std::string tmp = r[4];
+			regex_results r2 = regex("(load|load-smart|load-readonly|load-preserve|load-state"
+				"|load-movie|save-state|save-movie)[ \t]+\\$\\{project\\}(.*)\\.lsmv", tmp);
+			if(r2) tmp = r2[1] + " $SLOT:" + r2[2];
+			lsnes_mapper.bind(r[1], r[2], r[3], tmp);
 			if(r[1] != "" || r[2] != "")
 				messages << r[1] << "/" << r[2] << " ";
-			messages << r[3] << " bound to '" << r[4] << "'" << std::endl;
+			messages << r[3] << " bound to '" << tmp << "'" << std::endl;
 		} else if(r = regex("BUTTON[ \t]+([^ \t]+)[ \t](.*)", line)) {
 			keyboard::ctrlrkey* ckey = lsnes_mapper.get_controllerkey(r[2]);
 			if(ckey) {

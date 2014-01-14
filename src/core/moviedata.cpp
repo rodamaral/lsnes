@@ -141,21 +141,16 @@ void set_mprefix_for_project(const std::string& pfx)
 std::string translate_name_mprefix(std::string original, int& binary, bool save)
 {
 	auto p = project_get();
-	regex_results r;
-	if(p && (r = regex("\\$\\{project\\}([0-9]+).lsmv", original))) {
+	regex_results r = regex("\\$SLOT:(.*)", original);
+	if(r) {
 		if(binary < 0)
 			binary = jukebox_dflt_binary ? 1 : 0;
-		return p->directory + "/" + p->prefix + "-" + r[1] + ".lss";
-	}
-	size_t prefixloc = original.find("${project}");
-	if(prefixloc < original.length()) {
-		if(binary < 0)
-			binary = jukebox_dflt_binary ? 1 : 0;
-		std::string pprf = lsnes_vset["slotpath"].str() + "/";
-		if(prefixloc == 0)
-			return pprf + get_mprefix() + original.substr(prefixloc + 10);
-		else
-			return original.substr(0, prefixloc) + get_mprefix() + original.substr(prefixloc + 10);
+		if(p)
+			return p->directory + "/" + p->prefix + "-" + r[1] + ".lss";
+		else {
+			std::string pprf = lsnes_vset["slotpath"].str() + "/";
+			return pprf + get_mprefix() + r[1] + ".lsmv";
+		}
 	} else {
 		if(binary < 0)
 			binary = (save ? save_dflt_binary : movie_dflt_binary) ? 1 : 0;

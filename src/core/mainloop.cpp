@@ -110,7 +110,7 @@ namespace
 
 	std::string save_jukebox_name(size_t i)
 	{
-		return (stringfmt() << "${project}" << (i + 1) << ".lsmv").str();
+		return (stringfmt() << "$SLOT:" << (i + 1)).str();
 	}
 
 	std::map<std::string, std::string> slotinfo_cache;
@@ -265,7 +265,7 @@ namespace
 {
 
 	//Do pending load (automatically unpauses).
-	void mark_pending_load(const std::string& filename, int lmode)
+	void mark_pending_load(std::string filename, int lmode)
 	{
 		loadmode = lmode;
 		pending_load = filename;
@@ -275,7 +275,7 @@ namespace
 		platform::set_paused(false);
 	}
 
-	void mark_pending_save(const std::string& filename, int smode, int binary)
+	void mark_pending_save(std::string filename, int smode, int binary)
 	{
 		int tmp = -1;
 		if(smode == SAVE_MOVIE) {
@@ -914,70 +914,70 @@ namespace
 	keyboard::invbind itogglepause(lsnes_mapper, "toggle-pause-on-end", "Movie‣Toggle pause-on-end");
 	keyboard::invbind irewind_movie(lsnes_mapper, "rewind-movie", "Movie‣Rewind movie");
 	keyboard::invbind icancel_saves(lsnes_mapper, "cancel-saves", "Save‣Cancel pending saves");
-	keyboard::invbind iload1(lsnes_mapper, "load ${project}1.lsmv", "Load‣Slot 1");
-	keyboard::invbind iload2(lsnes_mapper, "load ${project}2.lsmv", "Load‣Slot 2");
-	keyboard::invbind iload3(lsnes_mapper, "load ${project}3.lsmv", "Load‣Slot 3");
-	keyboard::invbind iload4(lsnes_mapper, "load ${project}4.lsmv", "Load‣Slot 4");
-	keyboard::invbind iload5(lsnes_mapper, "load ${project}5.lsmv", "Load‣Slot 5");
-	keyboard::invbind iload6(lsnes_mapper, "load ${project}6.lsmv", "Load‣Slot 6");
-	keyboard::invbind iload7(lsnes_mapper, "load ${project}7.lsmv", "Load‣Slot 7");
-	keyboard::invbind iload8(lsnes_mapper, "load ${project}8.lsmv", "Load‣Slot 8");
-	keyboard::invbind iload9(lsnes_mapper, "load ${project}9.lsmv", "Load‣Slot 9");
-	keyboard::invbind iload10(lsnes_mapper, "load ${project}10.lsmv", "Load‣Slot 10");
-	keyboard::invbind iload11(lsnes_mapper, "load ${project}11.lsmv", "Load‣Slot 11");
-	keyboard::invbind iload12(lsnes_mapper, "load ${project}12.lsmv", "Load‣Slot 12");
-	keyboard::invbind iload13(lsnes_mapper, "load ${project}13.lsmv", "Load‣Slot 13");
-	keyboard::invbind iload14(lsnes_mapper, "load ${project}14.lsmv", "Load‣Slot 14");
-	keyboard::invbind iload15(lsnes_mapper, "load ${project}15.lsmv", "Load‣Slot 15");
-	keyboard::invbind iload16(lsnes_mapper, "load ${project}16.lsmv", "Load‣Slot 16");
-	keyboard::invbind iload17(lsnes_mapper, "load ${project}17.lsmv", "Load‣Slot 17");
-	keyboard::invbind iload18(lsnes_mapper, "load ${project}18.lsmv", "Load‣Slot 18");
-	keyboard::invbind iload19(lsnes_mapper, "load ${project}19.lsmv", "Load‣Slot 19");
-	keyboard::invbind iload20(lsnes_mapper, "load ${project}20.lsmv", "Load‣Slot 20");
-	keyboard::invbind iload21(lsnes_mapper, "load ${project}21.lsmv", "Load‣Slot 21");
-	keyboard::invbind iload22(lsnes_mapper, "load ${project}22.lsmv", "Load‣Slot 22");
-	keyboard::invbind iload23(lsnes_mapper, "load ${project}23.lsmv", "Load‣Slot 23");
-	keyboard::invbind iload24(lsnes_mapper, "load ${project}24.lsmv", "Load‣Slot 24");
-	keyboard::invbind iload25(lsnes_mapper, "load ${project}25.lsmv", "Load‣Slot 25");
-	keyboard::invbind iload26(lsnes_mapper, "load ${project}26.lsmv", "Load‣Slot 26");
-	keyboard::invbind iload27(lsnes_mapper, "load ${project}27.lsmv", "Load‣Slot 27");
-	keyboard::invbind iload28(lsnes_mapper, "load ${project}28.lsmv", "Load‣Slot 28");
-	keyboard::invbind iload29(lsnes_mapper, "load ${project}29.lsmv", "Load‣Slot 29");
-	keyboard::invbind iload30(lsnes_mapper, "load ${project}30.lsmv", "Load‣Slot 30");
-	keyboard::invbind iload31(lsnes_mapper, "load ${project}31.lsmv", "Load‣Slot 31");
-	keyboard::invbind iload32(lsnes_mapper, "load ${project}32.lsmv", "Load‣Slot 32");
-	keyboard::invbind isave1(lsnes_mapper, "save-state ${project}1.lsmv", "Save‣Slot 1");
-	keyboard::invbind isave2(lsnes_mapper, "save-state ${project}2.lsmv", "Save‣Slot 2");
-	keyboard::invbind isave3(lsnes_mapper, "save-state ${project}3.lsmv", "Save‣Slot 3");
-	keyboard::invbind isave4(lsnes_mapper, "save-state ${project}4.lsmv", "Save‣Slot 4");
-	keyboard::invbind isave5(lsnes_mapper, "save-state ${project}5.lsmv", "Save‣Slot 5");
-	keyboard::invbind isave6(lsnes_mapper, "save-state ${project}6.lsmv", "Save‣Slot 6");
-	keyboard::invbind isave7(lsnes_mapper, "save-state ${project}7.lsmv", "Save‣Slot 7");
-	keyboard::invbind isave8(lsnes_mapper, "save-state ${project}8.lsmv", "Save‣Slot 8");
-	keyboard::invbind isave9(lsnes_mapper, "save-state ${project}9.lsmv", "Save‣Slot 9");
-	keyboard::invbind isave10(lsnes_mapper, "save-state ${project}10.lsmv", "Save‣Slot 10");
-	keyboard::invbind isave11(lsnes_mapper, "save-state ${project}11.lsmv", "Save‣Slot 11");
-	keyboard::invbind isave12(lsnes_mapper, "save-state ${project}12.lsmv", "Save‣Slot 12");
-	keyboard::invbind isave13(lsnes_mapper, "save-state ${project}13.lsmv", "Save‣Slot 13");
-	keyboard::invbind isave14(lsnes_mapper, "save-state ${project}14.lsmv", "Save‣Slot 14");
-	keyboard::invbind isave15(lsnes_mapper, "save-state ${project}15.lsmv", "Save‣Slot 15");
-	keyboard::invbind isave16(lsnes_mapper, "save-state ${project}16.lsmv", "Save‣Slot 16");
-	keyboard::invbind isave17(lsnes_mapper, "save-state ${project}17.lsmv", "Save‣Slot 17");
-	keyboard::invbind isave18(lsnes_mapper, "save-state ${project}18.lsmv", "Save‣Slot 18");
-	keyboard::invbind isave19(lsnes_mapper, "save-state ${project}19.lsmv", "Save‣Slot 19");
-	keyboard::invbind isave20(lsnes_mapper, "save-state ${project}20.lsmv", "Save‣Slot 20");
-	keyboard::invbind isave21(lsnes_mapper, "save-state ${project}21.lsmv", "Save‣Slot 21");
-	keyboard::invbind isave22(lsnes_mapper, "save-state ${project}22.lsmv", "Save‣Slot 22");
-	keyboard::invbind isave23(lsnes_mapper, "save-state ${project}23.lsmv", "Save‣Slot 23");
-	keyboard::invbind isave24(lsnes_mapper, "save-state ${project}24.lsmv", "Save‣Slot 24");
-	keyboard::invbind isave25(lsnes_mapper, "save-state ${project}25.lsmv", "Save‣Slot 25");
-	keyboard::invbind isave26(lsnes_mapper, "save-state ${project}26.lsmv", "Save‣Slot 26");
-	keyboard::invbind isave27(lsnes_mapper, "save-state ${project}27.lsmv", "Save‣Slot 27");
-	keyboard::invbind isave28(lsnes_mapper, "save-state ${project}28.lsmv", "Save‣Slot 28");
-	keyboard::invbind isave29(lsnes_mapper, "save-state ${project}29.lsmv", "Save‣Slot 29");
-	keyboard::invbind isave30(lsnes_mapper, "save-state ${project}30.lsmv", "Save‣Slot 30");
-	keyboard::invbind isave31(lsnes_mapper, "save-state ${project}31.lsmv", "Save‣Slot 31");
-	keyboard::invbind isave32(lsnes_mapper, "save-state ${project}32.lsmv", "Save‣Slot 32");
+	keyboard::invbind iload1(lsnes_mapper, "load $SLOT:1", "Load‣Slot 1");
+	keyboard::invbind iload2(lsnes_mapper, "load $SLOT:2", "Load‣Slot 2");
+	keyboard::invbind iload3(lsnes_mapper, "load $SLOT:3", "Load‣Slot 3");
+	keyboard::invbind iload4(lsnes_mapper, "load $SLOT:4", "Load‣Slot 4");
+	keyboard::invbind iload5(lsnes_mapper, "load $SLOT:5", "Load‣Slot 5");
+	keyboard::invbind iload6(lsnes_mapper, "load $SLOT:6", "Load‣Slot 6");
+	keyboard::invbind iload7(lsnes_mapper, "load $SLOT:7", "Load‣Slot 7");
+	keyboard::invbind iload8(lsnes_mapper, "load $SLOT:8", "Load‣Slot 8");
+	keyboard::invbind iload9(lsnes_mapper, "load $SLOT:9", "Load‣Slot 9");
+	keyboard::invbind iload10(lsnes_mapper, "load $SLOT:10", "Load‣Slot 10");
+	keyboard::invbind iload11(lsnes_mapper, "load $SLOT:11", "Load‣Slot 11");
+	keyboard::invbind iload12(lsnes_mapper, "load $SLOT:12", "Load‣Slot 12");
+	keyboard::invbind iload13(lsnes_mapper, "load $SLOT:13", "Load‣Slot 13");
+	keyboard::invbind iload14(lsnes_mapper, "load $SLOT:14", "Load‣Slot 14");
+	keyboard::invbind iload15(lsnes_mapper, "load $SLOT:15", "Load‣Slot 15");
+	keyboard::invbind iload16(lsnes_mapper, "load $SLOT:16", "Load‣Slot 16");
+	keyboard::invbind iload17(lsnes_mapper, "load $SLOT:17", "Load‣Slot 17");
+	keyboard::invbind iload18(lsnes_mapper, "load $SLOT:18", "Load‣Slot 18");
+	keyboard::invbind iload19(lsnes_mapper, "load $SLOT:19", "Load‣Slot 19");
+	keyboard::invbind iload20(lsnes_mapper, "load $SLOT:20", "Load‣Slot 20");
+	keyboard::invbind iload21(lsnes_mapper, "load $SLOT:21", "Load‣Slot 21");
+	keyboard::invbind iload22(lsnes_mapper, "load $SLOT:22", "Load‣Slot 22");
+	keyboard::invbind iload23(lsnes_mapper, "load $SLOT:23", "Load‣Slot 23");
+	keyboard::invbind iload24(lsnes_mapper, "load $SLOT:24", "Load‣Slot 24");
+	keyboard::invbind iload25(lsnes_mapper, "load $SLOT:25", "Load‣Slot 25");
+	keyboard::invbind iload26(lsnes_mapper, "load $SLOT:26", "Load‣Slot 26");
+	keyboard::invbind iload27(lsnes_mapper, "load $SLOT:27", "Load‣Slot 27");
+	keyboard::invbind iload28(lsnes_mapper, "load $SLOT:28", "Load‣Slot 28");
+	keyboard::invbind iload29(lsnes_mapper, "load $SLOT:29", "Load‣Slot 29");
+	keyboard::invbind iload30(lsnes_mapper, "load $SLOT:30", "Load‣Slot 30");
+	keyboard::invbind iload31(lsnes_mapper, "load $SLOT:31", "Load‣Slot 31");
+	keyboard::invbind iload32(lsnes_mapper, "load $SLOT:32", "Load‣Slot 32");
+	keyboard::invbind isave1(lsnes_mapper, "save-state $SLOT:1", "Save‣Slot 1");
+	keyboard::invbind isave2(lsnes_mapper, "save-state $SLOT:2", "Save‣Slot 2");
+	keyboard::invbind isave3(lsnes_mapper, "save-state $SLOT:3", "Save‣Slot 3");
+	keyboard::invbind isave4(lsnes_mapper, "save-state $SLOT:4", "Save‣Slot 4");
+	keyboard::invbind isave5(lsnes_mapper, "save-state $SLOT:5", "Save‣Slot 5");
+	keyboard::invbind isave6(lsnes_mapper, "save-state $SLOT:6", "Save‣Slot 6");
+	keyboard::invbind isave7(lsnes_mapper, "save-state $SLOT:7", "Save‣Slot 7");
+	keyboard::invbind isave8(lsnes_mapper, "save-state $SLOT:8", "Save‣Slot 8");
+	keyboard::invbind isave9(lsnes_mapper, "save-state $SLOT:9", "Save‣Slot 9");
+	keyboard::invbind isave10(lsnes_mapper, "save-state $SLOT:10", "Save‣Slot 10");
+	keyboard::invbind isave11(lsnes_mapper, "save-state $SLOT:11", "Save‣Slot 11");
+	keyboard::invbind isave12(lsnes_mapper, "save-state $SLOT:12", "Save‣Slot 12");
+	keyboard::invbind isave13(lsnes_mapper, "save-state $SLOT:13", "Save‣Slot 13");
+	keyboard::invbind isave14(lsnes_mapper, "save-state $SLOT:14", "Save‣Slot 14");
+	keyboard::invbind isave15(lsnes_mapper, "save-state $SLOT:15", "Save‣Slot 15");
+	keyboard::invbind isave16(lsnes_mapper, "save-state $SLOT:16", "Save‣Slot 16");
+	keyboard::invbind isave17(lsnes_mapper, "save-state $SLOT:17", "Save‣Slot 17");
+	keyboard::invbind isave18(lsnes_mapper, "save-state $SLOT:18", "Save‣Slot 18");
+	keyboard::invbind isave19(lsnes_mapper, "save-state $SLOT:19", "Save‣Slot 19");
+	keyboard::invbind isave20(lsnes_mapper, "save-state $SLOT:20", "Save‣Slot 20");
+	keyboard::invbind isave21(lsnes_mapper, "save-state $SLOT:21", "Save‣Slot 21");
+	keyboard::invbind isave22(lsnes_mapper, "save-state $SLOT:22", "Save‣Slot 22");
+	keyboard::invbind isave23(lsnes_mapper, "save-state $SLOT:23", "Save‣Slot 23");
+	keyboard::invbind isave24(lsnes_mapper, "save-state $SLOT:24", "Save‣Slot 24");
+	keyboard::invbind isave25(lsnes_mapper, "save-state $SLOT:25", "Save‣Slot 25");
+	keyboard::invbind isave26(lsnes_mapper, "save-state $SLOT:26", "Save‣Slot 26");
+	keyboard::invbind isave27(lsnes_mapper, "save-state $SLOT:27", "Save‣Slot 27");
+	keyboard::invbind isave28(lsnes_mapper, "save-state $SLOT:28", "Save‣Slot 28");
+	keyboard::invbind isave29(lsnes_mapper, "save-state $SLOT:29", "Save‣Slot 29");
+	keyboard::invbind isave30(lsnes_mapper, "save-state $SLOT:30", "Save‣Slot 30");
+	keyboard::invbind isave31(lsnes_mapper, "save-state $SLOT:31", "Save‣Slot 31");
+	keyboard::invbind isave32(lsnes_mapper, "save-state $SLOT:32", "Save‣Slot 32");
 
 	bool on_quit_prompt = false;
 	class mywindowcallbacks : public information_dispatch
