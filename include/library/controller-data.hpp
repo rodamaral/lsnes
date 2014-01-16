@@ -696,6 +696,10 @@ public:
  * Get the frame parameters polled flag.
  */
 	bool get_framepflag() const throw();
+/**
+ * Get raw pollcounter data.
+ */
+	const uint32_t* rawdata() const throw() { return ctrs; }
 private:
 	uint32_t* ctrs;
 	const port_type_set* types;
@@ -1169,6 +1173,15 @@ public:
  * Get content of given page.
  */
 	const unsigned char* get_page_buffer(size_t page) const { return pages.find(page)->second.content; }
+/**
+ * Check that the movies are compatible up to a point.
+ *
+ * Parameter with: The 2nd frame vector to check.
+ * Parameter frame: The frame number (1-based) to check to.
+ * Parameter polls: The poll counters within frame to check to.
+ * Returns: True if compatible, false if not.
+ */
+	bool compatible(controller_frame_vector& with, uint64_t frame, const uint32_t* polls);
 /**
  * Notify sync flag polarity change.
  *

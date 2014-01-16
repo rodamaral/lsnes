@@ -11,16 +11,6 @@
 
 namespace
 {
-	uint64_t find_next_sync(controller_frame_vector& movie, uint64_t after)
-	{
-		if(after >= movie.size())
-			return after;
-		do {
-			after++;
-		} while(after < movie.size() && !movie[after].sync());
-		return after;
-	}
-
 	bool movies_compatible(controller_frame_vector& old_movie, controller_frame_vector& new_movie,
 		uint64_t frame, const uint32_t* polls, const std::string& old_projectid,
 		const std::string& new_projectid)
@@ -28,53 +18,7 @@ namespace
 		//Project IDs have to match.
 		if(old_projectid != new_projectid)
 			return false;
-		//Types have to match.
-		if(old_movie.get_types() != new_movie.get_types())
-			return false;
-		const port_type_set& pset = new_movie.get_types();
-		//If new movie is before first frame, anything with same project_id is compatible.
-		if(frame == 0)
-			return true;
-		//Scan both movies until frame syncs are seen. Out of bounds reads behave as all neutral but frame
-		//sync done.
-		uint64_t syncs_seen = 0;
-		uint64_t frames_read = 0;
-		while(syncs_seen < frame - 1) {
-			controller_frame oldc = old_movie.blank_frame(true), newc = new_movie.blank_frame(true);
-			if(frames_read < old_movie.size())
-				oldc = old_movie[frames_read];
-			if(frames_read < new_movie.size())
-				newc = new_movie[frames_read];
-			if(oldc != newc)
-				return false;	//Mismatch.
-			frames_read++;
-			if(newc.sync())
-				syncs_seen++;
-		}
-		//We increment the counter one time too many.
-		frames_read--;
-		//Current frame. We need to compare each control up to poll counter.
-		uint64_t readable_old_subframes = 0, readable_new_subframes = 0;
-		uint64_t oldlen = find_next_sync(old_movie, frames_read);
-		uint64_t newlen = find_next_sync(new_movie, frames_read);
-		if(frames_read < oldlen)
-			readable_old_subframes = oldlen - frames_read;
-		if(frames_read < newlen)
-			readable_new_subframes = newlen - frames_read;
-		//Then rest of the stuff.
-		for(unsigned i = 0; i < pset.indices(); i++) {
-			uint32_t p = polls[i] & 0x7FFFFFFFUL;
-			short ov = 0, nv = 0;
-			for(uint32_t j = 0; j < p; j++) {
-				if(j < readable_old_subframes)
-					ov = old_movie[j + frames_read].axis2(i);
-				if(j < readable_new_subframes)
-					nv = new_movie[j + frames_read].axis2(i);
-				if(ov != nv)
-					return false;
-			}
-		}
-		return true;
+		return old_movie.compatible(new_movie, frame, polls);
 	}
 }
 

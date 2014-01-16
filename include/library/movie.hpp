@@ -274,6 +274,16 @@ public:
  */
 	void write_subframe_at_index(uint32_t subframe, unsigned port, unsigned controller, unsigned index,
 		int16_t x);
+/**
+ * Call controller_frame_vector::compatible() with correct frame and pollcounters.
+ *
+ * Parameter with: The second vector.
+ * Returns: True if compatible, false if not.
+ */
+	bool compatible(controller_frame_vector& with)
+	{
+		return movie_data.compatible(with, current_frame, pollcounters.rawdata());
+	}
 private:
 	//Sequence number.
 	uint64_t seqno;

@@ -243,6 +243,16 @@ namespace
 			buf[i] = c[i];
 		return i;
 	}
+
+	uint64_t find_next_sync(controller_frame_vector& movie, uint64_t after)
+	{
+		if(after >= movie.size())
+			return after;
+		do {
+			after++;
+		} while(after < movie.size() && !movie[after].sync());
+		return after;
+	}
 }
 
 void controller_frame::display(unsigned port, unsigned controller, char32_t* buf) throw()
@@ -635,6 +645,57 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 		//This can use real_frame_count, because the real frame count won't change.
 		if(on_framecount_change) on_framecount_change(*this, real_frame_count);
 	}
+}
+
+bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t frame, const uint32_t* polls)
+{
+	//Types have to match.
+	if(get_types() != with.get_types())
+		return false;
+	const port_type_set& pset = with.get_types();
+	//If new movie is before first frame, anything with same project_id is compatible.
+	if(frame == 0)
+		return true;
+	//Scan both movies until frame syncs are seen. Out of bounds reads behave as all neutral but frame
+	//sync done.
+	uint64_t syncs_seen = 0;
+	uint64_t frames_read = 0;
+	while(syncs_seen < frame - 1) {
+		controller_frame oldc = blank_frame(true), newc = with.blank_frame(true);
+		if(frames_read < size())
+			oldc = (*this)[frames_read];
+		if(frames_read < with.size())
+			newc = with[frames_read];
+		if(oldc != newc)
+			return false;	//Mismatch.
+		frames_read++;
+		if(newc.sync())
+			syncs_seen++;
+	}
+	//We increment the counter one time too many.
+	frames_read--;
+	//Current frame. We need to compare each control up to poll counter.
+	uint64_t readable_old_subframes = 0, readable_new_subframes = 0;
+	uint64_t oldlen = find_next_sync(*this, frames_read);
+	uint64_t newlen = find_next_sync(with, frames_read);
+	if(frames_read < oldlen)
+		readable_old_subframes = oldlen - frames_read;
+	if(frames_read < newlen)
+		readable_new_subframes = newlen - frames_read;
+	//Then rest of the stuff.
+	for(unsigned i = 0; i < pset.indices(); i++) {
+		uint32_t p = polls[i] & 0x7FFFFFFFUL;
+		short ov = 0, nv = 0;
+		for(uint32_t j = 0; j < p; j++) {
+			if(j < readable_old_subframes)
+				ov = (*this)[j + frames_read].axis2(i);
+			if(j < readable_new_subframes)
+				nv = with[j + frames_read].axis2(i);
+			if(ov != nv)
+				return false;
+		}
+	}
+	return true;
 }
 
 controller_frame::controller_frame() throw()
