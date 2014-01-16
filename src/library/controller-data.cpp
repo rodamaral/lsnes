@@ -660,11 +660,29 @@ bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t
 	//sync done.
 	uint64_t syncs_seen = 0;
 	uint64_t frames_read = 0;
+	size_t old_size = size();
+	size_t new_size = with.size();
+	size_t pagenum = 0;
+	size_t ocomplete_pages = old_size / frames_per_page;  //Round DOWN
+	size_t ncomplete_pages = new_size / frames_per_page;  //Round DOWN
+	size_t complete_pages = min(ocomplete_pages, ncomplete_pages);
+	while(syncs_seen + frames_per_page < frame - 1 && pagenum < complete_pages) {
+		//Fast process page. The above condition guarantees that these pages are completely used.
+		auto opagedata = pages[pagenum].content;
+		auto npagedata = with.pages[pagenum].content;
+		size_t pagedataamt = frames_per_page * frame_size;
+		if(memcmp(opagedata, npagedata, pagedataamt))
+			return false;
+		frames_read += frames_per_page;
+		pagenum++;
+		for(size_t i = 0; i < pagedataamt; i += frame_size)
+			if(opagedata[i] & 1) syncs_seen++;
+	}
 	while(syncs_seen < frame - 1) {
 		controller_frame oldc = blank_frame(true), newc = with.blank_frame(true);
-		if(frames_read < size())
+		if(frames_read < old_size)
 			oldc = (*this)[frames_read];
-		if(frames_read < with.size())
+		if(frames_read < new_size)
 			newc = with[frames_read];
 		if(oldc != newc)
 			return false;	//Mismatch.
