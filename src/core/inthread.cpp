@@ -1652,7 +1652,9 @@ out:
 				if(ticks_spent < ITERATION_TIME)
 					usleep(ITERATION_TIME - ticks_spent);
 			}
+			umutex_class h(current_collection_lock);
 			delete current_collection;
+			current_collection = NULL;
 		}
 	private:
 		size_t rptr;
