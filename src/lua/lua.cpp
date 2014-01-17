@@ -20,6 +20,8 @@ uint64_t lua_idle_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 uint64_t lua_timer_hook_time = 0x7EFFFFFFFFFFFFFFULL;
 bool* lua_veto_flag = NULL;
 bool* lua_kill_frame = NULL;
+uint32_t* lua_hscl = NULL;
+uint32_t* lua_vscl = NULL;
 extern const char* lua_sysrc_script;
 void* synchronous_paint_ctx;
 
@@ -282,10 +284,10 @@ void lua_callback_do_paint(struct lua_render_context* ctx, bool non_synthetic) t
 	run_callback(on_paint, lua::state::store_tag(lua_render_ctx, ctx), lua::state::boolean_tag(non_synthetic));
 }
 
-void lua_callback_do_video(struct lua_render_context* ctx, bool& kill_frame) throw()
+void lua_callback_do_video(struct lua_render_context* ctx, bool& kill_frame, uint32_t& hscl, uint32_t& vscl) throw()
 {
 	run_callback(on_video, lua::state::store_tag(lua_render_ctx, ctx), lua::state::store_tag(lua_kill_frame,
-		&kill_frame));
+		&kill_frame), lua::state::store_tag(lua_hscl, &hscl), lua::state::store_tag(lua_vscl, &vscl));
 }
 
 void lua_callback_do_reset() throw()

@@ -1946,6 +1946,19 @@ Kills the currently dumped video frame + the associated sound.
 \end_layout
 
 \begin_layout Subsection
+gui.set_video_scale: Set video frame scale
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.set_video_scale(number h, number v)
+\end_layout
+
+\begin_layout Standard
+Sets the scale factors of current frame to <h>x<v>.
+ Only valid in on_video callback.
+\end_layout
+
+\begin_layout Subsection
 gui.arrow: Draw an arrow
 \end_layout
 

@@ -109,4 +109,14 @@ namespace
 		if(lua_kill_frame)
 			*lua_kill_frame = true;
 	});
+
+	lua::fnptr gui_setscale(lua_func_misc, "gui.set_video_scale", [](lua::state& L, const std::string& fname)
+		-> int {
+		if(lua_hscl && lua_vscl) {
+			uint32_t h = L.get_numeric_argument<uint32_t>(1, fname.c_str());
+			uint32_t v = L.get_numeric_argument<uint32_t>(2, fname.c_str());
+			*lua_hscl = h;
+			*lua_vscl = v;
+		}
+	});
 }

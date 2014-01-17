@@ -57,7 +57,7 @@ template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct
 	lrc.queue = &rq;
 	lrc.width = source.get_width();
 	lrc.height = source.get_height();
-	lua_callback_do_video(&lrc, lua_kill_video);
+	lua_callback_do_video(&lrc, lua_kill_video, hscl, vscl);
 	if(fn)
 		fn();
 	target.set_palette(roffset, goffset, boffset);
