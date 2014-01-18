@@ -11,6 +11,7 @@
 #include "platform/wxwidgets/window-romload.hpp"
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/menu_tracelog.hpp"
+#include "platform/wxwidgets/menu_branches.hpp"
 
 #include "core/audioapi.hpp"
 #include "core/command.hpp"
@@ -134,6 +135,8 @@ enum
 	wxID_TRACELOG_FIRST,
 	wxID_TRACELOG_LAST = wxID_TRACELOG_FIRST + 256,
 	wxID_PLUGIN_MANAGER,
+	wxID_BRANCH_FIRST,
+	wxID_BRANCH_LAST = wxID_BRANCH_FIRST + 10240,
 };
 
 
@@ -815,9 +818,9 @@ void wxwin_mainwindow::menu_special(wxString name, wxMenu* menu)
 	current_menu = NULL;
 }
 
-void wxwin_mainwindow::menu_special_sub(wxString name, wxMenu* menu)
+wxMenuItem* wxwin_mainwindow::menu_special_sub(wxString name, wxMenu* menu)
 {
-	current_menu->AppendSubMenu(menu, name);
+	return current_menu->AppendSubMenu(menu, name);
 }
 
 void wxwin_mainwindow::menu_entry(int id, wxString name)
@@ -1062,6 +1065,12 @@ wxwin_mainwindow::wxwin_mainwindow()
 		recent_script_selected));
 	menu_separator();
 	menu_entry(wxID_CONFLICTRESOLUTION, wxT("Conflict resolution"));
+	menu_separator();
+	branches_menu* brlist;
+	auto brlist_item = menu_special_sub(wxT("Branches"), brlist = new branches_menu(this, wxID_BRANCH_FIRST,
+		wxID_BRANCH_LAST));
+	brlist->set_disabler([brlist_item](bool enabled) { brlist_item->Enable(enabled); });
+	brlist->update();
 	menu_end_sub();
 	menu_start_sub(wxT("Save"));
 	menu_entry(wxID_SAVE_STATE, wxT("State..."));
@@ -1132,7 +1141,9 @@ wxwin_mainwindow::wxwin_mainwindow()
 	menu_entry(wxID_MEMORY_SEARCH, wxT("Memory Search..."));
 	menu_entry(wxID_HEXEDITOR, wxT("Memory editor..."));
 	tracelog_menu* trlog;
-	menu_special_sub(wxT("Trace log"), trlog = new tracelog_menu(this, wxID_TRACELOG_FIRST, wxID_TRACELOG_LAST));
+	auto trlog_item = menu_special_sub(wxT("Trace log"), trlog = new tracelog_menu(this, wxID_TRACELOG_FIRST,
+		wxID_TRACELOG_LAST));
+	trlog->set_disabler([trlog_item](bool enabled) { trlog_item->Enable(enabled); });
 	trlog->update();
 	menu_separator();
 	menu_entry(wxID_MOVIE_EDIT, wxT("Edit movie..."));
@@ -1270,6 +1281,8 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 		std::u32string macros = read_variable_map(vars, "!macros");
 		if(macros.length())
 			s << U"  Macros: " << macros;
+		if(vars.count("!branch"))
+			s << U"  Branch: " << read_variable_map(vars, "!branch");
 
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {

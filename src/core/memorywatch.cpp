@@ -313,7 +313,7 @@ void lsnes_memorywatch_set::clear(const std::string& name)
 	auto pr = project_get();
 	if(pr) {
 		pr->watches.erase(name);
-		project_flush(pr);
+		pr->flush();
 	}
 	redraw_framebuffer();
 }
@@ -377,7 +377,7 @@ void lsnes_memorywatch_set::set(const std::string& name, lsnes_memorywatch_item&
 	auto pr = project_get();
 	if(pr) {
 		pr->watches[name] = get_string(name);
-		project_flush(pr);
+		pr->flush();
 	}
 	redraw_framebuffer();
 	update_movie_state();
@@ -399,7 +399,7 @@ void lsnes_memorywatch_set::set_multi(std::list<std::pair<std::string, lsnes_mem
 	if(pr) {
 		for(auto& i : list)
 			pr->watches[i.first] = get_string(i.first);
-		project_flush(pr);
+		pr->flush();
 	}
 	redraw_framebuffer();
 	update_movie_state();
@@ -427,7 +427,7 @@ void lsnes_memorywatch_set::clear_multi(const std::set<std::string>& names)
 	if(pr) {
 		for(auto& i : names)
 			pr->watches.erase(i);
-		project_flush(pr);
+		pr->flush();
 	}
 	redraw_framebuffer();
 	update_movie_state();

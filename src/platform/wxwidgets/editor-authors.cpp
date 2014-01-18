@@ -227,7 +227,7 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			proj->directory = dir;
 			proj->name = prjname;
 			proj->luascripts = luascriptlist;
-			project_flush(proj);
+			proj->flush();
 			//For save status to immediately update.
 			do_flush_slotinfo();
 			update_movie_state();

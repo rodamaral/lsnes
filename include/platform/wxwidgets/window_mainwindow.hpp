@@ -38,7 +38,7 @@ public:
 	void on_close(wxCloseEvent& e);
 	void menu_start(wxString name);
 	void menu_special(wxString name, wxMenu* menu);
-	void menu_special_sub(wxString name, wxMenu* menu);
+	wxMenuItem* menu_special_sub(wxString name, wxMenu* menu);
 	void menu_entry(int id, wxString name);
 	void menu_entry_check(int id, wxString name);
 	void menu_start_sub(wxString name);

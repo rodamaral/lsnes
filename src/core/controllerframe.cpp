@@ -230,7 +230,7 @@ void controller_state::erase_macro(const std::string& macro)
 		project_info* p = project_get();
 		if(p) {
 			p->macros.erase(macro);
-			project_flush(p);
+			p->flush();
 		}
 	}
 	load_macros(*this);
@@ -270,7 +270,7 @@ void controller_state::set_macro(const std::string& macro, const controller_macr
 		project_info* p = project_get();
 		if(p) {
 			p->macros[macro] = all_macros[macro].serialize();
-			project_flush(p);
+			p->flush();
 		}
 	}
 	load_macros(*this);

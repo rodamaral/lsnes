@@ -51,6 +51,7 @@ void tracelog_menu::update()
 		items[id]->Check(debug_tracelogging(id));
 		id++;
 	}
+	if(disabler_fn) disabler_fn(!_items.empty());
 }
 
 bool tracelog_menu::any_enabled()

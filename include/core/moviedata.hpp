@@ -31,7 +31,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 void do_load_beginning(bool reloading = false) throw(std::bad_alloc, std::runtime_error);
 void do_load_state(struct moviefile& _movie, int lmode);
 bool do_load_state(const std::string& filename, int lmode);
-std::string translate_name_mprefix(std::string original, int& binary, bool save);
+std::string translate_name_mprefix(std::string original, int& binary, int save);
 
 extern std::string last_save;
 extern movie_logic movb;

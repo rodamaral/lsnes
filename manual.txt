@@ -387,33 +387,51 @@ Do load from jukebox (current mode).
 
 Do state save to jukebox.
 
-5.5 Lua 
+5.5 Slot branches
 
-5.5.1 evaluate-lua <luacode>
+5.5.1 list-branches
+
+List all branches
+
+5.5.2 create-branch <pid> <name>
+
+Create a new branch, with <pid> as parent and <name> as name.
+
+5.5.3 rename-branch <id> <name>
+
+Rename branch <id> to <name>.
+
+5.5.4 reparent-branch <id> <pid>
+
+Set parent of branch <id> to <pid>.
+
+5.5.5 set-branch <id>
+
+Set current branch to <id>.
+
+5.5.6 delete-branch <id>
+
+Delete branch <id>.
+
+
+
+5.6 Lua 
+
+5.6.1 evaluate-lua <luacode>
 
 Run Lua code <luacode> using built-in Lua interpretter.
 
-5.5.2 L <luacode>
+5.6.2 L <luacode>
 
 Synonym for evaluate-lua.
 
-5.5.3 run-lua <script>
+5.6.3 run-lua <script>
 
 Run specified lua file using built-in Lua interpretter.
 
-5.5.4 reset-lua
+5.6.4 reset-lua
 
 Clear the Lua VM state and restore to factory defaults.
-
-5.6 Memory watch
-
-5.6.1 add-watch <name> <expression>
-
-Adds new watch (or modifies old one).
-
-5.6.2 remove-watch <name>
-
-Remove a watch.
 
 5.7 Sound 
 

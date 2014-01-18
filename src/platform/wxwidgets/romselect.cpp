@@ -280,7 +280,7 @@ namespace
 		}
 no_watch:
 		project_info* pinfo2 = new project_info(pinfo);
-		project_flush(pinfo2);
+		pinfo2->flush();
 		project_info* old_proj = project_get();
 		project_set(pinfo2, true);
 		if(old_proj)

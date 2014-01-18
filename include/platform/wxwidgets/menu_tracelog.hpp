@@ -16,12 +16,14 @@ public:
 	void on_select(wxCommandEvent& e);
 	void update();
 	bool any_enabled();
+	void set_disabler(std::function<void(bool enabled)> fn) { disabler_fn = fn; }
 private:
 	struct dispatch::target<> corechange;
 	wxWindow* pwin;
 	int wxid_range_low;
 	int wxid_range_high;
 	std::vector<wxMenuItem*> items;
+	std::function<void(bool enabled)> disabler_fn;
 };
 
 #endif

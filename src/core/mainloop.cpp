@@ -281,13 +281,13 @@ namespace
 		if(smode == SAVE_MOVIE) {
 			//Just do this immediately.
 			do_save_movie(filename, binary);
-			flush_slotinfo(translate_name_mprefix(filename, tmp, false));
+			flush_slotinfo(translate_name_mprefix(filename, tmp, -1));
 			return;
 		}
 		if(location_special == SPECIAL_SAVEPOINT) {
 			//We can save immediately here.
 			do_save_state(filename, binary);
-			flush_slotinfo(translate_name_mprefix(filename, tmp, false));
+			flush_slotinfo(translate_name_mprefix(filename, tmp, -1));
 			return;
 		}
 		queued_saves.insert(std::make_pair(filename, binary));
@@ -311,6 +311,7 @@ namespace
 
 void update_movie_state()
 {
+	auto p = project_get();
 	bool readonly = false;
 	static unsigned last_controllers = 0;
 	{
@@ -352,12 +353,17 @@ void update_movie_state()
 	}
 	if(jukebox_size > 0) {
 		int tmp = -1;
-		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, false);
+		std::string sfilen = translate_name_mprefix(save_jukebox_name(save_jukebox_pointer), tmp, -1);
 		_status.set("!saveslot", (stringfmt() << (save_jukebox_pointer + 1)).str());
 		_status.set("!saveslotinfo", get_slotinfo(sfilen));
 	} else {
 		_status.erase("!saveslot");
 		_status.erase("!saveslotinfo");
+	}
+	if(p) {
+		_status.set("!branch", p->get_branch_string());
+	} else {
+		_status.erase("!branch");
 	}
 	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
 
@@ -1105,7 +1111,7 @@ nothing_to_do:
 			for(auto i : queued_saves) {
 				do_save_state(i.first, i.second);
 				int tmp = -1;
-				flush_slotinfo(translate_name_mprefix(i.first, tmp, false));
+				flush_slotinfo(translate_name_mprefix(i.first, tmp, -1));
 			}
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();

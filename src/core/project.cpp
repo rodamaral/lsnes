@@ -11,6 +11,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/directory.hpp"
+#include "library/minmax.hpp"
 #include "library/string.hpp"
 #include <fstream>
 #include <dirent.h>
@@ -140,66 +141,6 @@ namespace
 		}
 	}
 
-	void project_write(std::ostream& s, project_info& p)
-	{
-		s << p.name << std::endl;
-		s << "rom=" << p.rom << std::endl;
-		if(p.last_save != "")
-			s << "last-save=" << p.last_save << std::endl;
-		s << "directory=" << p.directory << std::endl;
-		s << "prefix=" << p.prefix << std::endl;
-		for(auto i : p.luascripts)
-			s << "luascript=" << i << std::endl;
-		s << "gametype=" << p.gametype << std::endl;
-		s << "coreversion=" << p.coreversion << std::endl;
-		if(p.gamename != "")
-			s << "gamename=" << p.gamename << std::endl;
-		s << "projectid=" << p.projectid << std::endl;
-		s << "time=" << p.movie_rtc_second << ":" << p.movie_rtc_subsecond << std::endl;
-		for(auto i : p.authors)
-			s << "author=" << i.first << "|" << i.second << std::endl;
-		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
-			if(p.romimg_sha256[i] != "") {
-				if(i)
-					s << "slotsha" << static_cast<char>(96 + i) << "=" << p.romimg_sha256[i]
-						<< std::endl;
-				else
-					s << "romsha=" << p.romimg_sha256[i] << std::endl;
-			}
-			if(p.romxml_sha256[i] != "") {
-				if(i)
-					s << "slotxml" << static_cast<char>(96 + i) << "=" << p.romxml_sha256[i]
-						<< std::endl;
-				else
-					s << "romxml=" << p.romxml_sha256[i] << std::endl;
-			}
-			if(p.namehint[i] != "") {
-				if(i)
-					s << "slothint" << static_cast<char>(96 + i) << "=" << p.namehint[i]
-						<< std::endl;
-				else
-					s << "romhint=" << p.namehint[i] << std::endl;
-			}
-			if(p.roms[i] != "") {
-				if(i)
-					s << "slotrom" << static_cast<char>(96 + i) << "=" << p.roms[i]
-						<< std::endl;
-				else
-					s << "romrom=" << p.roms[i] << std::endl;
-			}
-		}
-		for(auto i : p.settings)
-			s << "setting." << i.first << "=" << i.second << std::endl;
-		for(auto i : p.watches)
-			s << "watch." << eq_escape(i.first) << "=" << i.second << std::endl;
-		for(auto i : p.macros)
-			s << "macro." + i.first << "=" << i.second.serialize() << std::endl;
-		for(auto i : p.movie_sram)
-			save_binary(s, "sram." + i.first, i.second);
-		if(p.anchor_savestate.size())
-			save_binary(s, "anchor", p.anchor_savestate);
-	}
-
 	void fill_stub_movie(struct moviefile& m, struct project_info& p, struct core_type& coretype)
 	{
 		//Create a dummy movie.
@@ -255,6 +196,10 @@ project_info& project_load(const std::string& id)
 		throw std::runtime_error("Can't open project file");
 	project_info& pi = *new project_info();
 	pi.id = id;
+	pi.movie_rtc_second = 1000000000;
+	pi.movie_rtc_subsecond = 0;
+	pi.active_branch = 0;
+	pi.next_branch = 0;
 	//First line is always project name.
 	std::getline(f, pi.name);
 	if(!f || pi.name == "") {
@@ -323,45 +268,43 @@ project_info& project_load(const std::string& id)
 		else if(r = regex("time=([0-9]+):([0-9]+)", tmp)) {
 			pi.movie_rtc_second = parse_value<int64_t>(r[1]);
 			pi.movie_rtc_subsecond = parse_value<int64_t>(r[2]);
+		} else if(r = regex("branch([1-9][0-9]*)parent=([0-9]+)", tmp)) {
+			uint64_t bid = parse_value<int64_t>(r[1]);
+			uint64_t pbid = parse_value<int64_t>(r[2]);
+			if(!pi.branches.count(bid))
+				pi.branches[bid].name = "(Unnamed branch)";
+			pi.branches[bid].pbid = pbid;
+		} else if(r = regex("branch([1-9][0-9]*)name=(.*)", tmp)) {
+			uint64_t bid = parse_value<int64_t>(r[1]);
+			if(!pi.branches.count(bid))
+				pi.branches[bid].pbid = 0;
+			pi.branches[bid].name = r[2];
+		} else if(r = regex("branchcurrent=([0-9]+)", tmp)) {
+			pi.active_branch = parse_value<int64_t>(r[1]);
+		} else if(r = regex("branchnext=([0-9]+)", tmp)) {
+			pi.next_branch = parse_value<int64_t>(r[1]);
 		}
+	}
+	for(auto& i : pi.branches) {
+		uint64_t j = i.first;
+		uint64_t m = j;
+		while(j) {
+			j = pi.branches[j].pbid;
+			m = min(m, j);
+			if(j == i.first) {
+				//Cyclic dependency!
+				messages << "Warning: Cyclic slot branch dependency, reparenting '" <<
+					pi.branches[m].name << "' to be child of root..." << std::endl;
+				pi.branches[j].pbid = 0;
+				break;
+			}
+		}
+	}
+	if(pi.active_branch && !pi.branches.count(pi.active_branch)) {
+		messages << "Warning: Current slot branch does not exist, using root..." << std::endl;
+		pi.active_branch = 0;
 	}
 	return pi;
-}
-
-void project_flush(project_info* p)
-{
-	if(!p)
-		return;
-	std::string file = get_config_path() + "/" + p->id + ".prj";
-	std::string tmpfile = get_config_path() + "/" + p->id + ".prj.tmp";
-	std::string bakfile = get_config_path() + "/" + p->id + ".prj.bak";
-	std::ofstream f(tmpfile);
-	if(!f)
-		throw std::runtime_error("Can't write project file");
-	project_write(f, *p);
-	if(!f)
-		throw std::runtime_error("Can't write project file");
-	f.close();
-
-	std::ifstream f2(file);
-	if(f2) {
-		std::ofstream f3(bakfile);
-		if(!f3)
-			throw std::runtime_error("Can't backup project file");
-		while(f2) {
-			std::string tmp;
-			std::getline(f2, tmp);
-			f3 << tmp << std::endl;
-		}
-		f2.close();
-		f3.close();
-	}
-#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
-	if(MoveFileEx(tmpfile.c_str(), file.c_str(), MOVEFILE_REPLACE_EXISTING) < 0)
-#else
-	if(rename(tmpfile.c_str(), file.c_str()) < 0)
-#endif
-		throw std::runtime_error("Can't replace project file");
 }
 
 project_info* project_get()
@@ -376,6 +319,7 @@ bool project_set(project_info* p, bool current)
 			voicesub_unload_collection();
 		active_project = p;
 		notify_core_change();
+		notify_branch_change();
 		return true;
 	}
 
@@ -445,6 +389,7 @@ skip_rom_movie:
 		do_flush_slotinfo();
 		update_movie_state();
 		notify_core_change();
+		notify_branch_change();
 	}
 	return switched;
 }
@@ -511,4 +456,352 @@ void project_copy_macros(project_info& p, controller_state& s)
 {
 	for(auto i : s.enumerate_macro())
 		p.macros[i] = s.get_macro(i).serialize();
+}
+
+uint64_t project_info::get_parent_branch(uint64_t bid)
+{
+	if(!bid)
+		return 0;
+	if(!branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	return branches[bid].pbid;
+}
+
+void project_info::set_current_branch(uint64_t bid)
+{
+	if(bid && !branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	active_branch = bid;
+	notify_branch_change();
+	messages << "Set current slot branch to " << get_branch_string() << std::endl;
+}
+
+const std::string& project_info::get_branch_name(uint64_t bid)
+{
+	static std::string rootname = "(root)";
+	if(!bid)
+		return rootname;
+	if(!branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	return branches[bid].name;
+}
+
+void project_info::set_branch_name(uint64_t bid, const std::string& name)
+{
+	if(!bid)
+		throw std::runtime_error("Root branch name can't be set");
+	if(!branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	branches[bid].name = name;
+	notify_branch_change();
+}
+
+void project_info::set_parent_branch(uint64_t bid, uint64_t pbid)
+{
+	if(!bid)
+		throw std::runtime_error("Root branch never has parent");
+	if(!branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	if(pbid && !branches.count(pbid))
+		throw std::runtime_error("Invalid parent branch ID");
+	for(auto& i : branches) {
+		uint64_t j = i.first;
+		while(j) {
+			j = (j == bid) ? pbid : branches[j].pbid;
+			if(j == i.first)
+				throw std::runtime_error("Reparenting would create a circular dependency");
+		}
+	}
+	branches[bid].pbid = pbid;
+	notify_branch_change();
+}
+
+std::set<uint64_t> project_info::branch_children(uint64_t bid)
+{
+	if(bid && !branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	std::set<uint64_t> r;
+	for(auto& i : branches)
+		if(i.second.pbid == bid)
+			r.insert(i.first);
+	return r;
+}
+
+uint64_t project_info::create_branch(uint64_t pbid, const std::string& name)
+{
+	if(pbid && !branches.count(pbid))
+		throw std::runtime_error("Invalid parent branch ID");
+	uint64_t assign_bid = next_branch;
+	uint64_t last_bid = (branches.empty() ? 1 : branches.rbegin()->first + 1);
+	assign_bid = max(assign_bid, last_bid);
+	branches[assign_bid].name = name;
+	branches[assign_bid].pbid = pbid;
+	next_branch = assign_bid + 1;
+	notify_branch_change();
+	return assign_bid;
+}
+
+void project_info::delete_branch(uint64_t bid)
+{
+	if(!bid)
+		throw std::runtime_error("Root branch can not be deleted");
+	if(bid == active_branch)
+		throw std::runtime_error("Current branch can't be deleted");
+	if(!branches.count(bid))
+		throw std::runtime_error("Invalid branch ID");
+	for(auto& i : branches)
+		if(i.second.pbid == bid)
+			throw std::runtime_error("Can't delete branch with children");
+	branches.erase(bid);
+	notify_branch_change();
+}
+
+std::string project_info::get_branch_string()
+{
+	std::string r;
+	uint64_t j = active_branch;
+	if(!j)
+		return "(root)";
+	while(j) {
+		if(r == "")
+			r = get_branch_name(j);
+		else
+			r = get_branch_name(j) + "→" + r;
+		j = get_parent_branch(j);
+	}
+	return r;
+}
+
+void project_info::flush()
+{
+	std::string file = get_config_path() + "/" + id + ".prj";
+	std::string tmpfile = get_config_path() + "/" + id + ".prj.tmp";
+	std::string bakfile = get_config_path() + "/" + id + ".prj.bak";
+	std::ofstream f(tmpfile);
+	if(!f)
+		throw std::runtime_error("Can't write project file");
+	write(f);
+	if(!f)
+		throw std::runtime_error("Can't write project file");
+	f.close();
+
+	std::ifstream f2(file);
+	if(f2) {
+		std::ofstream f3(bakfile);
+		if(!f3)
+			throw std::runtime_error("Can't backup project file");
+		while(f2) {
+			std::string tmp;
+			std::getline(f2, tmp);
+			f3 << tmp << std::endl;
+		}
+		f2.close();
+		f3.close();
+	}
+#if defined(_WIN32) || defined(_WIN64) || defined(TEST_WIN32_CODE)
+	if(MoveFileEx(tmpfile.c_str(), file.c_str(), MOVEFILE_REPLACE_EXISTING) < 0)
+#else
+	if(rename(tmpfile.c_str(), file.c_str()) < 0)
+#endif
+		throw std::runtime_error("Can't replace project file");
+}
+
+void project_info::write(std::ostream& s)
+{
+	s << name << std::endl;
+	s << "rom=" << rom << std::endl;
+	if(last_save != "")
+		s << "last-save=" << last_save << std::endl;
+	s << "directory=" << directory << std::endl;
+	s << "prefix=" << prefix << std::endl;
+	for(auto i : luascripts)
+		s << "luascript=" << i << std::endl;
+	s << "gametype=" << gametype << std::endl;
+	s << "coreversion=" << coreversion << std::endl;
+	if(gamename != "")
+		s << "gamename=" << gamename << std::endl;
+	s << "projectid=" << projectid << std::endl;
+	s << "time=" << movie_rtc_second << ":" << movie_rtc_subsecond << std::endl;
+	for(auto i : authors)
+		s << "author=" << i.first << "|" << i.second << std::endl;
+	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+		if(romimg_sha256[i] != "") {
+			if(i)
+				s << "slotsha" << static_cast<char>(96 + i) << "=" << romimg_sha256[i] << std::endl;
+			else
+				s << "romsha=" << romimg_sha256[i] << std::endl;
+		}
+		if(romxml_sha256[i] != "") {
+			if(i)
+				s << "slotxml" << static_cast<char>(96 + i) << "=" << romxml_sha256[i] << std::endl;
+			else
+				s << "romxml=" << romxml_sha256[i] << std::endl;
+		}
+		if(namehint[i] != "") {
+			if(i)
+				s << "slothint" << static_cast<char>(96 + i) << "=" << namehint[i] << std::endl;
+			else
+				s << "romhint=" << namehint[i] << std::endl;
+		}
+		if(roms[i] != "") {
+			if(i)
+				s << "slotrom" << static_cast<char>(96 + i) << "=" << roms[i] << std::endl;
+			else
+				s << "romrom=" << roms[i] << std::endl;
+		}
+	}
+	for(auto i : settings)
+		s << "setting." << i.first << "=" << i.second << std::endl;
+	for(auto i : watches)
+		s << "watch." << eq_escape(i.first) << "=" << i.second << std::endl;
+	for(auto i : macros)
+		s << "macro." + i.first << "=" << i.second.serialize() << std::endl;
+	for(auto i : movie_sram)
+		save_binary(s, "sram." + i.first, i.second);
+	if(anchor_savestate.size())
+		save_binary(s, "anchor", anchor_savestate);
+	for(auto& i : branches) {
+		s << "branch" << i.first << "parent=" << i.second.pbid << std::endl;
+		s << "branch" << i.first << "name=" << i.second.name << std::endl;
+	}
+	s << "branchcurrent=" << active_branch << std::endl;
+	s << "branchnext=" << next_branch << std::endl;
+}
+
+namespace
+{
+	void recursive_list_branch(uint64_t bid, std::set<unsigned>& dset, unsigned depth, bool last_of)
+	{
+		if(!active_project) {
+			messages << "Not in project context." << std::endl;
+			return;
+		}
+		std::set<uint64_t> children = active_project->branch_children(bid);
+		std::string prefix;
+		for(unsigned i = 0; i + 1 < depth; i++)
+			prefix += (dset.count(i) ? "\u2502" : " ");
+		prefix += (dset.count(depth - 1) ? (last_of ? "\u2514" : "\u251c") : " ");
+		if(last_of) dset.erase(depth - 1);
+		messages << prefix
+			<< ((bid == active_project->get_current_branch()) ? "*" : "")
+			<< bid << ":" << active_project->get_branch_name(bid) << std::endl;
+		dset.insert(depth);
+		size_t c = 0;
+		for(auto i : children) {
+			bool last = (++c == children.size());
+			recursive_list_branch(i, dset, depth + 1, last);
+		}
+		dset.erase(depth);
+	}
+
+	command::fnptr<> list_branches(lsnes_cmd, "list-branches", "List all slot branches",
+		"Syntax: list-branches\nList all slot branches.\n",
+		[]() throw(std::bad_alloc, std::runtime_error) {
+			std::set<unsigned> dset;
+			recursive_list_branch(0, dset, 0, false);
+		});
+
+	command::fnptr<const std::string&> create_branch(lsnes_cmd, "create-branch", "Create a new slot branch",
+		"Syntax: create-branch <parentid> <name>\nCreate new branch named <name> under <parentid>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
+			if(!r) {
+				messages << "Syntax: create-branch <parentid> <name>" << std::endl;
+				return;
+			}
+			try {
+				uint64_t pbid = parse_value<uint64_t>(r[1]);
+				if(!active_project)
+					throw std::runtime_error("Not in project context");
+				uint64_t bid = active_project->create_branch(pbid, r[2]);
+				messages << "Created branch #" << bid << std::endl;
+				active_project->flush();
+			} catch(std::exception& e) {
+				messages << "Can't create new branch: " << e.what() << std::endl;
+			}
+		});
+
+	command::fnptr<const std::string&> delete_branch(lsnes_cmd, "delete-branch", "Delete a slot branch",
+		"Syntax: delete-branch <id>\nDelete slot branch with id <id>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r = regex("([0-9]+)[ \t]*", args);
+			if(!r) {
+				messages << "Syntax: delete-branch <id>" << std::endl;
+				return;
+			}
+			try {
+				uint64_t bid = parse_value<uint64_t>(r[1]);
+				if(!active_project)
+					throw std::runtime_error("Not in project context");
+				active_project->delete_branch(bid);
+				messages << "Deleted branch #" << bid << std::endl;
+				active_project->flush();
+			} catch(std::exception& e) {
+				messages << "Can't delete branch: " << e.what() << std::endl;
+			}
+		});
+
+	command::fnptr<const std::string&> set_branch(lsnes_cmd, "set-branch", "Set current slot branch",
+		"Syntax: set-branch <id>\nSet current branch to <id>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r = regex("([0-9]+)[ \t]*", args);
+			if(!r) {
+				messages << "Syntax: set-branch <id>" << std::endl;
+				return;
+			}
+			try {
+				uint64_t bid = parse_value<uint64_t>(r[1]);
+				if(!active_project)
+					throw std::runtime_error("Not in project context");
+				active_project->set_current_branch(bid);
+				messages << "Set current branch to #" << bid << std::endl;
+				active_project->flush();
+				update_movie_state();
+			} catch(std::exception& e) {
+				messages << "Can't set branch: " << e.what() << std::endl;
+			}
+		});
+
+	command::fnptr<const std::string&> reparent_branch(lsnes_cmd, "reparent-branch", "Reparent a slot branch",
+		"Syntax: reparent-branch <id> <newpid>\nReparent branch <id> to be child of <newpid>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r = regex("([0-9]+)[ \t]+([0-9]+)[ \t]*", args);
+			if(!r) {
+				messages << "Syntax: reparent-branch <id> <newpid>" << std::endl;
+				return;
+			}
+			try {
+				uint64_t bid = parse_value<uint64_t>(r[1]);
+				uint64_t pbid = parse_value<uint64_t>(r[2]);
+				if(!active_project)
+					throw std::runtime_error("Not in project context");
+				active_project->set_parent_branch(bid, pbid);
+				messages << "Reparented branch #" << bid << std::endl;
+				active_project->flush();
+				update_movie_state();
+			} catch(std::exception& e) {
+				messages << "Can't reparent branch: " << e.what() << std::endl;
+			}
+		});
+
+	command::fnptr<const std::string&> rename_branch(lsnes_cmd, "rename-branch", "Rename a slot branch",
+		"Syntax: rename-branch <id> <name>\nRename branch <id> to <name>.\n",
+		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
+			regex_results r = regex("([0-9]+)[ \t]+(.*)", args);
+			if(!r) {
+				messages << "Syntax: rename-branch <id> <name>" << std::endl;
+				return;
+			}
+			try {
+				uint64_t bid = parse_value<uint64_t>(r[1]);
+				if(!active_project)
+					throw std::runtime_error("Not in project context");
+				active_project->set_branch_name(bid, r[2]);
+				messages << "Renamed branch #" << bid << std::endl;
+				active_project->flush();
+				update_movie_state();
+			} catch(std::exception& e) {
+				messages << "Can't rename branch: " << e.what() << std::endl;
+			}
+		});
 }

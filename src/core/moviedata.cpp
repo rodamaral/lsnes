@@ -138,16 +138,28 @@ void set_mprefix_for_project(const std::string& pfx)
 	set_mprefix(pfx);
 }
 
-std::string translate_name_mprefix(std::string original, int& binary, bool save)
+std::string translate_name_mprefix(std::string original, int& binary, int save)
 {
 	auto p = project_get();
 	regex_results r = regex("\\$SLOT:(.*)", original);
 	if(r) {
 		if(binary < 0)
 			binary = jukebox_dflt_binary ? 1 : 0;
-		if(p)
-			return p->directory + "/" + p->prefix + "-" + r[1] + ".lss";
-		else {
+		if(p) {
+			uint64_t branch = p->get_current_branch();
+			std::string branch_str;
+			std::string filename;
+			if(branch) branch_str = (stringfmt() << "--" << branch).str();
+			filename = p->directory + "/" + p->prefix + "-" + r[1] + branch_str + ".lss";
+			while(save < 0 && branch) {
+				if(zip::file_exists(filename))
+					break;
+				branch = p->get_parent_branch(branch);
+				branch_str = branch ? ((stringfmt() << "--" << branch).str()) : "";
+				filename = p->directory + "/" + p->prefix + "-" + r[1] + branch_str + ".lss";
+			}
+			return filename;
+		} else {
 			std::string pprf = lsnes_vset["slotpath"].str() + "/";
 			return pprf + get_mprefix() + r[1] + ".lsmv";
 		}
@@ -195,7 +207,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename, binary, true);
+	std::string filename2 = translate_name_mprefix(filename, binary, 1);
 	lua_callback_pre_save(filename2, true);
 	try {
 		uint64_t origtime = get_utime();
@@ -235,7 +247,7 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 	auto p = project_get();
 	if(p) {
 		p->last_save = last_save;
-		project_flush(p);
+		p->flush();
 	}
 }
 
@@ -247,7 +259,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 		messages << "Can't save movie without a ROM" << std::endl;
 		return;
 	}
-	std::string filename2 = translate_name_mprefix(filename, binary, false);
+	std::string filename2 = translate_name_mprefix(filename, binary, 0);
 	lua_callback_pre_save(filename2, false);
 	try {
 		uint64_t origtime = get_utime();
@@ -276,7 +288,7 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	auto p = project_get();
 	if(p) {
 		p->last_save = last_save;
-		project_flush(p);
+		p->flush();
 	}
 }
 
@@ -614,7 +626,7 @@ void try_request_rom(const std::string& moviefile)
 bool do_load_state(const std::string& filename, int lmode)
 {
 	int tmp = -1;
-	std::string filename2 = translate_name_mprefix(filename, tmp, false);
+	std::string filename2 = translate_name_mprefix(filename, tmp, -1);
 	uint64_t origtime = get_utime();
 	lua_callback_pre_load(filename2);
 	struct moviefile mfile;

@@ -341,6 +341,7 @@ void dispatch_set_error_streams(std::ostream* stream)
 	notify_core_changed.errors_to(stream);
 	notify_multitrack_change.errors_to(stream);
 	notify_title_change.errors_to(stream);
+	notify_branch_change.errors_to(stream);
 }
 
 struct dispatch::source<> notify_autohold_reconfigure("autohold_reconfigure");
@@ -361,3 +362,4 @@ struct dispatch::source<> notify_vu_change("vu_change");
 struct dispatch::source<> notify_subtitle_change("subtitle_change");
 struct dispatch::source<unsigned, unsigned, int> notify_multitrack_change("multitrack_change");
 struct dispatch::source<> notify_title_change("title_change");
+struct dispatch::source<> notify_branch_change("branch_change");

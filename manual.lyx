@@ -813,6 +813,62 @@ Do state save to jukebox.
 \end_layout
 
 \begin_layout Subsection
+Slot branches
+\end_layout
+
+\begin_layout Subsubsection
+list-branches
+\end_layout
+
+\begin_layout Standard
+List all branches
+\end_layout
+
+\begin_layout Subsubsection
+create-branch <pid> <name>
+\end_layout
+
+\begin_layout Standard
+Create a new branch, with <pid> as parent and <name> as name.
+\end_layout
+
+\begin_layout Subsubsection
+rename-branch <id> <name>
+\end_layout
+
+\begin_layout Standard
+Rename branch <id> to <name>.
+\end_layout
+
+\begin_layout Subsubsection
+reparent-branch <id> <pid>
+\end_layout
+
+\begin_layout Standard
+Set parent of branch <id> to <pid>.
+\end_layout
+
+\begin_layout Subsubsection
+set-branch <id>
+\end_layout
+
+\begin_layout Standard
+Set current branch to <id>.
+\end_layout
+
+\begin_layout Subsubsection
+delete-branch <id>
+\end_layout
+
+\begin_layout Standard
+Delete branch <id>.
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Subsection
 Lua 
 \end_layout
 
@@ -846,26 +902,6 @@ reset-lua
 
 \begin_layout Standard
 Clear the Lua VM state and restore to factory defaults.
-\end_layout
-
-\begin_layout Subsection
-Memory watch
-\end_layout
-
-\begin_layout Subsubsection
-add-watch <name> <expression>
-\end_layout
-
-\begin_layout Standard
-Adds new watch (or modifies old one).
-\end_layout
-
-\begin_layout Subsubsection
-remove-watch <name>
-\end_layout
-
-\begin_layout Standard
-Remove a watch.
 \end_layout
 
 \begin_layout Subsection
