@@ -1,4 +1,5 @@
 #include "lua/internal.hpp"
+#include "lua/bitmap.hpp"
 #include "fonts/wrapper.hpp"
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
@@ -13,10 +14,13 @@ namespace
 	struct lua_customfont
 	{
 	public:
+		struct empty_font_tag {};
 		lua_customfont(lua::state& L, const std::string& filename);
 		lua_customfont(lua::state& L);
+		lua_customfont(lua::state& L, empty_font_tag tag);
 		~lua_customfont() throw();
 		int draw(lua::state& L, const std::string& fname);
+		int edit(lua::state& L, const std::string& fname);
 		const framebuffer::font2& get_font() { return font; }
 		std::string print()
 		{
@@ -94,6 +98,7 @@ namespace
 	{
 		lua::objclass<lua_customfont>().bind_multi(L, {
 			{"__call", &lua_customfont::draw},
+			{"edit", &lua_customfont::edit},
 		});
 	}
 
@@ -130,6 +135,40 @@ namespace
 		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
 	}
+
+	lua_customfont::lua_customfont(lua::state& L, lua_customfont::empty_font_tag tag)
+	{
+		orig_filename = "<empty>";
+		init(L);
+	}
+
+	int lua_customfont::edit(lua::state& L, const std::string& fname)
+	{
+		std::string text = L.get_string(2, fname.c_str());
+		lua_bitmap* _glyph = lua::_class<lua_bitmap>::get(L, 3, fname.c_str());
+		framebuffer::font2::glyph glyph;
+		glyph.width = _glyph->width;
+		glyph.height = _glyph->height;
+		glyph.stride = (glyph.width + 31) / 32;
+		glyph.fglyph.resize(glyph.stride * glyph.height);
+		memset(&glyph.fglyph[0], 0, sizeof(uint32_t) * glyph.fglyph.size());
+		for(size_t y = 0; y < glyph.height; y++) {
+			size_t bpos = y * glyph.stride * 32;
+			for(size_t x = 0; x < glyph.width; x++) {
+				size_t e = (bpos + x) / 32;
+				size_t b = 31 - (bpos + x) % 32;
+				if(_glyph->pixels[y * _glyph->width + x])
+					glyph.fglyph[e] |= (1UL << b);
+			}
+		}
+		font.add(utf8::to32(text), glyph);
+	}
+
+	lua::fnptr gui_text_cf_e(lua_func_misc, "gui.font_new", [](lua::state& L, const std::string& fname)
+		-> int {
+		lua::_class<lua_customfont>::create(L, lua_customfont::empty_font_tag());
+		return 1;
+	});
 
 	lua::fnptr gui_text_cf(lua_func_misc, "gui.loadfont", [](lua::state& L, const std::string& fname)
 		-> int {

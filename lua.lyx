@@ -1883,6 +1883,18 @@ Loads font from specified file (CUSTOMFONT object).
 \end_layout
 
 \begin_layout Subsection
+gui.font_new: Return a new empty font
+\end_layout
+
+\begin_layout Itemize
+Syntax: CUSTOMFONT gui.font_new()
+\end_layout
+
+\begin_layout Standard
+Returns a new font with no characters.
+\end_layout
+
+\begin_layout Subsection
 CUSTOMFONT(): Render text to screen
 \end_layout
 
@@ -1896,6 +1908,27 @@ Draw string with custom font to screen.
  The parameters are the same as in gui.text, except <hlc> is the halo color
  (default is no halo).
  
+\end_layout
+
+\begin_layout Subsection
+CUSTOMFONT:edit: Alter glyph in font
+\end_layout
+
+\begin_layout Itemize
+Syntax: none CUSTOMFONT:edit(string character, BITMAP glyph)
+\end_layout
+
+\begin_layout Standard
+Alter the character <character> (UTF-8 encoded) in font to use glyph specified
+ by bitmap <glyph>.
+ The conversion to monochrome is done by treating color 0 as background,
+ and everything else as foreground.
+\end_layout
+
+\begin_layout Standard
+If <character> is empty string, the bad glyph is edited.
+ If <character> has multiple characters, corresponding ligature glyph is
+ edited.
 \end_layout
 
 \begin_layout Subsection
