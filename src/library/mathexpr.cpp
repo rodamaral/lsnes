@@ -151,17 +151,17 @@ mathexpr_value mathexpr::evaluate()
 			fn->evaluate(tmp, promises);
 			state = EVALUATED;
 		} catch(mathexpr_error& e) {
-			state = ERROR;
+			state = FAILED;
 			errcode = e.get_code();
 			error = e.what();
 			throw;
 		} catch(std::exception& e) {
-			state = ERROR;
+			state = FAILED;
 			errcode = mathexpr_error::UNKNOWN;
 			error = e.what();
 			throw;
 		} catch(...) {
-			state = ERROR;
+			state = FAILED;
 			errcode = mathexpr_error::UNKNOWN;
 			error = "Unknown error";
 			throw;
@@ -179,7 +179,7 @@ mathexpr_value mathexpr::evaluate()
 		return ret;
 	case UNDEFINED:
 		throw mathexpr_error(mathexpr_error::UNDEFINED, "Undefined variable");
-	case ERROR:
+	case FAILED:
 		throw mathexpr_error(errcode, error);
 	case FORWARD:
 		try {
@@ -205,7 +205,7 @@ void mathexpr::trace()
 void mathexpr::mark_error_and_throw(mathexpr_error::errorcode _errcode, const std::string& _error)
 {
 	if(state == EVALUATING) {
-		state = ERROR;
+		state = FAILED;
 		errcode = _errcode;
 		error = _error;
 	}

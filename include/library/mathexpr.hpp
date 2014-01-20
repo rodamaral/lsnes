@@ -224,7 +224,7 @@ public:
 		EVALUATED,		//Evaluation completed, value available.
 		FIXED,			//This operand has fixed value.
 		UNDEFINED,		//This operand has undefined value.
-		ERROR,			//Evaluation failed.
+		FAILED,			//Evaluation failed.
 		FORWARD,		//Forward evaluation to first of args.
 		FORWARD_EVALING,	//Forward evaluation to first of args, evaluating.
 		FORWARD_EVALD,		//Forward evaluation to first of args, evaluated.
@@ -262,8 +262,8 @@ private:
 	mathexpr_typeinfo& type;		//Type of value.
 	void* value;				//Value if state is EVALUATED or FIXED.
 	mathexpr_operinfo* fn;			//Function (if state is TO_BE_EVALUATED, EVALUATING or EVALUATED)
-	mathexpr_error::errorcode errcode;	//Error code if state is ERROR.
-	std::string error;			//Error message if state is ERROR.
+	mathexpr_error::errorcode errcode;	//Error code if state is FAILED.
+	std::string error;			//Error message if state is FAILED.
 	std::vector<mathexpr*> arguments;
 	mutable bool owns_operator;
 };
