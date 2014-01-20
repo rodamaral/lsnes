@@ -26,4 +26,6 @@ const char* lua_sysrc_script =
 "	return function()\n"
 "		_rq:run();\n"
 "	end;\n"
-"end;\n";
+"end;\n"
+"string.byteU=_lsnes_string_byteU;\n"
+"string.charU=_lsnes_string_charU;\n";

@@ -483,6 +483,39 @@ Handy for paint callback if one is using render queues updated in other
 handle = callback.paint:register(render_queue_function(my_rq));
 \end_layout
 
+\begin_layout Subsection
+iconv_new: Create new character set converter
+\end_layout
+
+\begin_layout Itemize
+Syntax: ICONV iconv_new(string from, string to)
+\end_layout
+
+\begin_layout Standard
+Create a character set converter, converting from <from> to <to>.
+\end_layout
+
+\begin_layout Subsection
+ICONV(): Convert string fragment from character set to another
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean, string, (number, string) ICONV(string input)
+\end_layout
+
+\begin_layout Standard
+Convert string fragment <input> from character set to another.
+\end_layout
+
+\begin_layout Itemize
+If conversion is successful, returns (true, {converted-string}).
+ 
+\end_layout
+
+\begin_layout Itemize
+If conversion was unsuccessful, returns (
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -4588,6 +4621,37 @@ CGRAM
 .
  If <full256> is true, 256 colors are dumped (otherwise 16).
  If <first_trans> is true, first color is forced transparent.
+\end_layout
+
+\begin_layout Section
+extensions to table string
+\end_layout
+
+\begin_layout Subsection
+string.charU: string.char, UTF-8 version.
+\end_layout
+
+\begin_layout Itemize
+Syntax: string string.charU(number n...)
+\end_layout
+
+\begin_layout Standard
+Like Lua string.char(), but works in terms of Unicode codepoints.
+ The returned string is UTF-8.
+\end_layout
+
+\begin_layout Subsection
+string.byteU: string.byte, UTF-8 version.
+\end_layout
+
+\begin_layout Itemize
+Syntax: number...
+ string.byteU(string str[, number i[, number j]])
+\end_layout
+
+\begin_layout Standard
+Like string.byte(), but works in terms of Unicode codepoints.
+ The input string <str> is assumed UTF-8.
 \end_layout
 
 \begin_layout Section
