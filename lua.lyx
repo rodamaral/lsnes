@@ -803,6 +803,46 @@ Like bit.flagdecode, but outputs the string in the opposite order (most signific
 nt bit first).
 \end_layout
 
+\begin_layout Subsection
+bit.swap{,s}{,h,d,q}word: Swap word endian
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swaphword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapdword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapqword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapsword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapshword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapsdword(number n)
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.swapsqword(number n)
+\end_layout
+
+\begin_layout Standard
+Swap endianess of (un)signed integer <n>.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

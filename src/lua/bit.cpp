@@ -1,5 +1,7 @@
 #include "lua/internal.hpp"
 #include "library/minmax.hpp"
+#include "library/int24.hpp"
+#include "library/serialization.hpp"
 
 #define BITWISE_BITS 48
 #define BITWISE_MASK ((1ULL << (BITWISE_BITS)) - 1)
@@ -99,6 +101,20 @@ namespace
 			L.get_numeric_argument(2, amount, fname.c_str());
 			L.get_numeric_argument(3, bits, fname.c_str());
 			L.pushnumber(shift(base, amount, bits));
+			return 1;
+		}
+	};
+
+	template<typename T>
+	class lua_bswap : public lua::function
+	{
+	public:
+		lua_bswap(const std::string& s) : lua::function(lua_func_bit, s) {};
+		int invoke(lua::state& L)
+		{
+			T val = L.get_numeric_argument<T>(1, fname.c_str());
+			serialization::swap_endian(val);
+			L.pushnumber(val);
 			return 1;
 		}
 	};
@@ -260,4 +276,12 @@ namespace
 	lua_shifter<shift_lshift> bit_lshift("bit.lshift");
 	lua_shifter<shift_arshift> bit_arshift("bit.arshift");
 	lua_shifter<shift_lrshift> bit_lrshift("bit.lrshift");
+	lua_bswap<uint16_t> bit_swapword("bit.swapword");
+	lua_bswap<ss_uint24_t> bit_swaphword("bit.swaphword");
+	lua_bswap<uint32_t> bit_swapdword("bit.swapdword");
+	lua_bswap<uint64_t> bit_swapqword("bit.swapqword");
+	lua_bswap<int16_t> bit_swapsword("bit.swapsword");
+	lua_bswap<ss_int24_t> bit_swapshword("bit.swapshword");
+	lua_bswap<int32_t> bit_swapsdword("bit.swapsdword");
+	lua_bswap<int64_t> bit_swapsqword("bit.swapsqword");
 }
