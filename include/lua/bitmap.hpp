@@ -38,7 +38,8 @@ struct lua_bitmap
 	int pget(lua::state& L, const std::string& fname);
 	int size(lua::state& L, const std::string& fname);
 	int hash(lua::state& L, const std::string& fname);
-	int blit(lua::state& L, const std::string& fname);
+	template<bool scaled, bool porterduff> int blit(lua::state& L, const std::string& fname);
+	template<bool scaled> int blit_priority(lua::state& L, const std::string& fname);
 	int save_png(lua::state& L, const std::string& fname);
 	int _save_png(lua::state& L, const std::string& fname, bool is_method);
 };
@@ -58,7 +59,7 @@ struct lua_dbitmap
 	int pget(lua::state& L, const std::string& fname);
 	int size(lua::state& L, const std::string& fname);
 	int hash(lua::state& L, const std::string& fname);
-	int blit(lua::state& L, const std::string& fname);
+	template<bool scaled, bool porterduff> int blit(lua::state& L, const std::string& fname);
 	int save_png(lua::state& L, const std::string& fname);
 	int adjust_transparency(lua::state& L, const std::string& fname);
 	int _save_png(lua::state& L, const std::string& fname, bool is_method);

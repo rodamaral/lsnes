@@ -1731,6 +1731,181 @@ May be absent or nil for no colorkey blit.
 
 \end_deeper
 \begin_layout Subsection
+gui.bitmap_blit_scaled/(D)BITMAP:blit_scaled: Blit a bitmap into another
+ with scaling
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled(BITMAP dest, number dx, number dy, BITMAP
+ src, number sx, number sy, number w, number h, number hscl[, number vscl[,
+ number ck]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled(DBITMAP dest, number dx, number dy, DBITMAP
+ src, number sx, number sy, number w, number h, number hscl[, number vscl[,
+ number ck]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled(DBITMAP dest, number dx, number dy, BITMAP
+ src, PALETTE pal, number sx, number sy, number w, number h, number hscl[,
+ number vscl[, number ck]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP::blit_scaled(number dx, number dy, BITMAP src, number
+ sx, number sy, number w, number h, number hscl[, number vscl[, number ck]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP::blit_scaled(number dx, number dy, DBITMAP src, number
+ sx, number sy, number w, number h, number hscl[, number vscl[, number ck]])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:blit_scaled(number dx, number dy, BITMAP src, PALETTE
+ pal, number sx, number sy, number w, number h, number hscl[, number vscl[,
+ number ck]])
+\end_layout
+
+\begin_layout Standard
+Like (D)BITMAP:blit, but also scale the image horizontally by <hscl> and
+ vertically by <vscl> (if not specified, <vscl> defaults to <hscl>).
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_blit_porterduff/(D)BITMAP:blit_porterduff: Blit a bitmap into
+ another with Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_porterduff(BITMAP dest, number dx, number dy,
+ BITMAP src, number sx, number sy, number w, number h, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_porterduff(DBITMAP dest, number dx, number dy,
+ DBITMAP src, number sx, number sy, number w, number h, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_porterduff(DBITMAP dest, number dx, number dy,
+ BITMAP src, PALETTE pal, number sx, number sy, number w, number h, string
+ operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP::blit_porterduff(number dx, number dy, BITMAP src, number
+ sx, number sy, number w, number h, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP::blit_porterduff(number dx, number dy, DBITMAP src,
+ number sx, number sy, number w, number h, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:blit_porterduff(number dx, number dy, BITMAP src, PALETTE
+ pal, number sx, number sy, number w, number h, string operator)
+\end_layout
+
+\begin_layout Standard
+Like (D)BITMAP:blit, but applying specified Porter-Duff operator.
+ BITMAPs always have color 0 treated as background, DBITMAPs treat full
+ opaque as background.
+ <operator> may be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver,
+ DestIn, DestOut, Clear or Xor.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_blit_scaled_porterduff/(D)BITMAP:blit_scaled_porterduff: Blit
+ a bitmap into another with scaling and Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled_porterduff(BITMAP dest, number dx, number
+ dy, BITMAP src, number sx, number sy, number w, number h, number hscl,
+ number vscl, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled_porterduff(DBITMAP dest, number dx, number
+ dy, DBITMAP src, number sx, number sy, number w, number h, number hscl,
+ number vscl, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled_porterduff(DBITMAP dest, number dx, number
+ dy, BITMAP src, PALETTE pal, number sx, number sy, number w, number h,
+ number hscl, number vscl, string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP::blit_scaled_porterduff(number dx, number dy, BITMAP
+ src, number sx, number sy, number w, number h, number hscl, number vscl,
+ string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP::blit_scaled_porterduff(number dx, number dy, DBITMAP
+ src, number sx, number sy, number w, number h, number hscl, number vscl,
+ string operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none DBITMAP:blit_scaled_porterduff(number dx, number dy, BITMAP
+ src, PALETTE pal, number sx, number sy, number w, number h, number hscl,
+ number vscl, string operator)
+\end_layout
+
+\begin_layout Standard
+Like (D)BITMAP:blit_porterduff, but also scale the image horizontally by
+ <hscl> and vertically by <vscl> (if nil, <vscl> defaults to <hscl>).
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_blit_priority/BITMAP:blit_priority: Blit a bitmap into another
+ with color priority
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_priority(BITMAP dest, number dx, number dy,
+ BITMAP src, number sx, number sy, number w, number h)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP::blit_priority(number dx, number dy, BITMAP src, number
+ sx, number sy, number w, number h)
+\end_layout
+
+\begin_layout Standard
+Like BITMAP:blit, but copy a pixel only if source palette index is greater
+ than destination palette index.
+\end_layout
+
+\begin_layout Subsection
+gui.bitmap_blit_scaled_priority/BITMAP:blit_scaled_priority: Blit a bitmap
+ into another with color priority and scaling
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.bitmap_blit_scaled_priority(BITMAP dest, number dx, number
+ dy, BITMAP src, number sx, number sy, number w, number h, number hscl[,
+ number vscl])
+\end_layout
+
+\begin_layout Itemize
+Syntax: none BITMAP::blit_scaled_priority(number dx, number dy, BITMAP src,
+ number sx, number sy, number w, number h, number hscl[, number vscl])
+\end_layout
+
+\begin_layout Standard
+Like BITMAP:blit_scaled, but copy a pixel only if source palette index is
+ greater than destination palette index.
+\end_layout
+
+\begin_layout Subsection
 gui.repaint: Arrange a repaint
 \end_layout
 

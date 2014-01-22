@@ -2,6 +2,7 @@
 #include "core/framebuffer.hpp"
 #include "library/framebuffer.hpp"
 #include "library/lua-framebuffer.hpp"
+#include "library/minmax.hpp"
 #include "library/png.hpp"
 #include "library/sha256.hpp"
 #include "library/serialization.hpp"
@@ -238,6 +239,75 @@ namespace
 		return p->hash(L, fname);
 	});
 
+	struct operand_dbitmap
+	{
+		typedef framebuffer::color pixel_t;
+		typedef framebuffer::color rpixel_t;
+		operand_dbitmap(lua_dbitmap& _bitmap)
+			: bitmap(_bitmap), _transparent(-1)
+		{
+			pixels = &bitmap.pixels[0];
+		}
+		size_t get_width() { return bitmap.width; }
+		size_t get_height() { return bitmap.height; }
+		const rpixel_t& read(size_t idx) { return pixels[idx]; }
+		const pixel_t& lookup(const rpixel_t& p) { return p; }
+		void write(size_t idx, const pixel_t& v) { pixels[idx] = v; }
+		bool is_opaque(const rpixel_t& p) { return p.origa > 0; }
+		const pixel_t& transparent() { return _transparent; }
+	private:
+		lua_dbitmap& bitmap;
+		pixel_t* pixels;
+		framebuffer::color _transparent;
+	};
+
+	struct operand_bitmap
+	{
+		typedef uint16_t pixel_t;
+		typedef uint16_t rpixel_t;
+		operand_bitmap(lua_bitmap& _bitmap)
+			: bitmap(_bitmap)
+		{
+			pixels = &bitmap.pixels[0];
+		}
+		size_t get_width() { return bitmap.width; }
+		size_t get_height() { return bitmap.height; }
+		const rpixel_t& read(size_t idx) { return pixels[idx]; }
+		const pixel_t& lookup(const rpixel_t& p) { return p; }
+		void write(size_t idx, const pixel_t& v) { pixels[idx] = v; }
+		bool is_opaque(const rpixel_t& p) { return p > 0; }
+		pixel_t transparent() { return 0; }
+	private:
+		lua_bitmap& bitmap;
+		pixel_t* pixels;
+	};
+
+	struct operand_bitmap_pal
+	{
+		typedef framebuffer::color pixel_t;
+		typedef uint16_t rpixel_t;
+		operand_bitmap_pal(lua_bitmap& _bitmap, lua_palette& _palette)
+			: bitmap(_bitmap), palette(_palette), _transparent(-1)
+		{
+			pixels = &bitmap.pixels[0];
+			limit = palette.colors.size();
+			pal = &palette.colors[0];
+		}
+		size_t get_width() { return bitmap.width; }
+		size_t get_height() { return bitmap.height; }
+		const rpixel_t& read(size_t idx) { return pixels[idx]; }
+		const pixel_t& lookup(const rpixel_t& p) { return *((p < limit) ? pal + p : &_transparent); }
+		bool is_opaque(const rpixel_t& p) { return p > 0; }
+		const pixel_t& transparent() { return _transparent; }
+	private:
+		lua_bitmap& bitmap;
+		lua_palette& palette;
+		uint16_t* pixels;
+		framebuffer::color* pal;
+		uint32_t limit;
+		framebuffer::color _transparent;
+	};
+
 	struct colorkey_none
 	{
 		bool iskey(uint16_t& c) const { return false; }
@@ -264,35 +334,38 @@ namespace
 		uint16_t ck;
 	};
 
-	template<class colorkey> struct srcdest_direct
+	template<class _src, class _dest, class colorkey> struct srcdest
 	{
-		srcdest_direct(lua_dbitmap& dest, lua_dbitmap& src, const colorkey& _ckey)
-			: ckey(_ckey)
+		srcdest(_dest Xdest, _src Xsrc, const colorkey& _ckey)
+			: dest(Xdest), src(Xsrc), ckey(_ckey)
 		{
-			darray = &dest.pixels[0];
-			sarray = &src.pixels[0];
-			swidth = src.width;
-			sheight = src.height;
-			dwidth = dest.width;
-			dheight = dest.height;
+			swidth = src.get_width();
+			sheight = src.get_height();
+			dwidth = dest.get_width();
+			dheight = dest.get_height();
 		}
 		void copy(size_t didx, size_t sidx)
 		{
-			framebuffer::color c = sarray[sidx];
+			typename _src::rpixel_t c = src.read(sidx);
 			if(!ckey.iskey(c))
-				darray[didx] = c;
+				dest.write(didx, src.lookup(c));
 		}
 		size_t swidth, sheight, dwidth, dheight;
 	private:
-		framebuffer::color* sarray;
-		framebuffer::color* darray;
-		const colorkey& ckey;
+		_dest dest;
+		_src src;
+		colorkey ckey;
 	};
 
-	template<class colorkey> struct srcdest_palette
+	template<class _src, class _dest, class colorkey> srcdest<_src, _dest, colorkey> mk_srcdest(_dest dest,
+		_src src, const colorkey& ckey)
 	{
-		srcdest_palette(lua_bitmap& dest, lua_bitmap& src, const colorkey& _ckey)
-			: ckey(_ckey)
+		return srcdest<_src, _dest, colorkey>(dest, src, ckey);
+	}
+
+	struct srcdest_priority
+	{
+		srcdest_priority(lua_bitmap& dest, lua_bitmap& src)
 		{
 			darray = &dest.pixels[0];
 			sarray = &src.pixels[0];
@@ -304,54 +377,105 @@ namespace
 		void copy(size_t didx, size_t sidx)
 		{
 			uint16_t c = sarray[sidx];
-			if(!ckey.iskey(c))
+			if(darray[didx] < c)
 				darray[didx] = c;
 		}
 		size_t swidth, sheight, dwidth, dheight;
 	private:
 		uint16_t* sarray;
 		uint16_t* darray;
-		const colorkey& ckey;
 	};
 
-	template<class colorkey> struct srcdest_paletted
+	enum porterduff_oper
 	{
-		typedef framebuffer::color ptype;
-		srcdest_paletted(lua_dbitmap& dest, lua_bitmap& src, lua_palette& palette, const colorkey& _ckey)
-			: ckey(_ckey), transparent(-1)
+		PD_SRC,
+		PD_ATOP,
+		PD_OVER,
+		PD_IN,
+		PD_OUT,
+		PD_DEST,
+		PD_DEST_ATOP,
+		PD_DEST_OVER,
+		PD_DEST_IN,
+		PD_DEST_OUT,
+		PD_CLEAR,
+		PD_XOR
+	};
+
+	porterduff_oper get_pd_oper(const std::string& oper)
+	{
+		if(oper == "Src") return PD_SRC;
+		if(oper == "Atop") return PD_ATOP;
+		if(oper == "Over") return PD_OVER;
+		if(oper == "In") return PD_IN;
+		if(oper == "Out") return PD_OUT;
+		if(oper == "Dest") return PD_DEST;
+		if(oper == "DestAtop") return PD_DEST_ATOP;
+		if(oper == "DestOver") return PD_DEST_OVER;
+		if(oper == "DestIn") return PD_DEST_IN;
+		if(oper == "DestOut") return PD_DEST_OUT;
+		if(oper == "Clear") return PD_CLEAR;
+		if(oper == "Xor") return PD_XOR;
+		(stringfmt() << "Bad Porter-Duff operator '" << oper << "'").throwex();
+	}
+
+	template<porterduff_oper oper, class _src, class _dest> struct srcdest_porterduff
+	{
+		srcdest_porterduff(_dest Xdest, _src Xsrc)
+			: dest(Xdest), src(Xsrc)
 		{
-			darray = &dest.pixels[0];
-			sarray = &src.pixels[0];
-			limit = palette.colors.size();
-			pal = &palette.colors[0];
-			swidth = src.width;
-			sheight = src.height;
-			dwidth = dest.width;
-			dheight = dest.height;
+			swidth = src.get_width();
+			sheight = src.get_height();
+			dwidth = dest.get_width();
+			dheight = dest.get_height();
 		}
 		void copy(size_t didx, size_t sidx)
 		{
-			uint16_t c = sarray[sidx];
-			if(!ckey.iskey(c))
-				darray[didx] = (c < limit) ? pal[c] : transparent;
+			typename _dest::rpixel_t vd = dest.read(didx);
+			typename _src::rpixel_t vs = src.read(sidx);
+			bool od = dest.is_opaque(vd);
+			bool os = src.is_opaque(vs);
+			typename _dest::pixel_t ld = dest.lookup(vd);
+			typename _src::pixel_t ls = src.lookup(vs);
+			typename _dest::pixel_t t = dest.transparent();
+			typename _dest::pixel_t r;
+			switch(oper) {
+			case PD_SRC:		r = ls;				break;
+			case PD_ATOP:		r = od ? (os ? ls : ld) : t;	break;
+			case PD_OVER:		r = os ? ls : ld;		break;
+			case PD_IN:		r = (od & os) ? ls : t;		break;
+			case PD_OUT:		r = (!od && os) ? ls : t;	break;
+			case PD_DEST:		r = ld;				break;
+			case PD_DEST_ATOP:	r = os ? (od ? ld : ls) : t;	break;
+			case PD_DEST_OVER:	r = od ? ld : ls;		break;
+			case PD_DEST_IN:	r = (od & os) ? ld : t;		break;
+			case PD_DEST_OUT:	r = (od & !os) ? ld : t;	break;
+			case PD_CLEAR:		r = t;				break;
+			case PD_XOR:		r = od ? (os ? t : ld) : ls;	break;
+			}
+			dest.write(didx, r);
 		}
 		size_t swidth, sheight, dwidth, dheight;
 	private:
-		uint16_t* sarray;
-		framebuffer::color* darray;
-		framebuffer::color* pal;
-		uint32_t limit;
-		framebuffer::color transparent;
-		const colorkey& ckey;
+		_dest dest;
+		_src src;
 	};
 
+	template<porterduff_oper oper, class _src, class _dest> srcdest_porterduff<oper, _src, _dest>
+		mk_porterduff(_dest dest, _src src)
+	{
+		return srcdest_porterduff<oper, _src, _dest>(dest, src);
+	}
+
 	template<class srcdest>
-	void xblit(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h)
+	void xblit_copy(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h)
 	{
 		while((dx + w > sd.dwidth || sx + w > sd.swidth) && w > 0)
 			w--;
 		while((dy + h > sd.dheight || sy + h > sd.sheight) && h > 0)
 			h--;
+		if(dx + w < w || dy + h < h) return;  //Don't do overflowing blits.
+		if(sx + w < w || sy + h < h) return;  //Don't do overflowing blits.
 		size_t sidx = sy * sd.swidth + sx;
 		size_t didx = dy * sd.dwidth + dx;
 		size_t srskip = sd.swidth - w;
@@ -367,15 +491,173 @@ namespace
 		}
 	}
 
+	template<class srcdest>
+	void xblit_scaled(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h,
+		uint32_t hscl, uint32_t vscl)
+	{
+		w = max(static_cast<uint32_t>(sd.dwidth / hscl), w);
+		h = max(static_cast<uint32_t>(sd.dheight / vscl), h);
+		while((dx + hscl * w > sd.dwidth || sx + w > sd.swidth) && w > 0)
+			w--;
+		while((dy + vscl * h > sd.dheight || sy + h > sd.sheight) && h > 0)
+			h--;
+		if(dx + hscl * w < dx || dy + vscl * h < dy) return;  //Don't do overflowing blits.
+		if(sx + w < w || sy + h < h) return;  //Don't do overflowing blits.
+		size_t sidx = sy * sd.swidth + sx;
+		size_t didx = dy * sd.dwidth + dx;
+		size_t drskip = sd.dwidth - hscl * w;
+		uint32_t _w = hscl * w;
+		for(uint32_t j = 0; j < vscl * h; j++) {
+			uint32_t _sidx = sidx;
+			for(uint32_t i = 0; i < _w ; i += hscl) {
+				for(uint32_t k = 0; k < hscl; k++)
+					sd.copy(didx + k, _sidx);
+				_sidx++;
+				didx+=hscl;
+			}
+			if((j % vscl) == vscl - 1)
+				sidx += sd.swidth;
+			didx += drskip;
+		}
+	}
+
+	template<bool scaled, class srcdest>
+	inline void xblit(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h,
+		uint32_t hscl, uint32_t vscl)
+	{
+		if(scaled)
+			xblit_scaled(sd, dx, dy, sx, sy, w, h, hscl, vscl);
+		else
+			xblit_copy(sd, dx, dy, sx, sy, w, h);
+	}
+
+	template<bool scaled, class src, class dest>
+	inline void xblit_pal(dest _dest, src _src, uint64_t ck, uint32_t dx, uint32_t dy, uint32_t sx,
+		uint32_t sy, uint32_t w, uint32_t h, uint32_t hscl, uint32_t vscl)
+	{
+		if(ck > 65535)
+			xblit<scaled>(mk_srcdest(_dest, _src, colorkey_none()), dx, dy, sx, sy, w, h,
+				hscl, vscl);
+		else
+			xblit<scaled>(mk_srcdest(_dest, _src, colorkey_palette(ck)), dx, dy, sx, sy, w, h,
+				hscl, vscl);
+	}
+
+	template<bool scaled, class src, class dest>
+	inline void xblit_dir(dest _dest, src _src, uint64_t ck, uint32_t dx, uint32_t dy, uint32_t sx,
+		uint32_t sy, uint32_t w, uint32_t h, uint32_t hscl, uint32_t vscl)
+	{
+		if(ck == 0x100000000ULL)
+			xblit<scaled>(mk_srcdest(_dest, _src, colorkey_none()), dx, dy, sx, sy, w, h,
+				hscl, vscl);
+		else
+			xblit<scaled>(mk_srcdest(_dest, _src, colorkey_direct(ck)), dx, dy, sx, sy, w, h,
+				hscl, vscl);
+	}
+
+	template<bool scaled, porterduff_oper oper, class src, class dest>
+	inline void xblit_pduff2(dest _dest, src _src, uint32_t dx, uint32_t dy, uint32_t sx,
+		uint32_t sy, uint32_t w, uint32_t h, uint32_t hscl, uint32_t vscl)
+	{
+		xblit<scaled>(mk_porterduff<oper>(_dest, _src), dx, dy, sx, sy, w, h, hscl, vscl);
+	}
+
+	template<bool scaled, class src, class dest>
+	inline void xblit_pduff(dest _dest, src _src, uint32_t dx, uint32_t dy, uint32_t sx,
+		uint32_t sy, uint32_t w, uint32_t h, uint32_t hscl, uint32_t vscl, porterduff_oper oper)
+	{
+		switch(oper) {
+		case PD_ATOP:
+			xblit_pduff2<scaled, PD_ATOP>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_CLEAR:
+			xblit_pduff2<scaled, PD_CLEAR>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_DEST:
+			xblit_pduff2<scaled, PD_DEST>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_DEST_ATOP:
+			xblit_pduff2<scaled, PD_DEST_ATOP>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_DEST_IN:
+			xblit_pduff2<scaled, PD_DEST_IN>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_DEST_OUT:
+			xblit_pduff2<scaled, PD_DEST_OUT>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_DEST_OVER:
+			xblit_pduff2<scaled, PD_DEST_OVER>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_IN:
+			xblit_pduff2<scaled, PD_IN>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_OUT:
+			xblit_pduff2<scaled, PD_OUT>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_OVER:
+			xblit_pduff2<scaled, PD_OVER>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_SRC:
+			xblit_pduff2<scaled, PD_SRC>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		case PD_XOR:
+			xblit_pduff2<scaled, PD_XOR>(_dest, _src, dx, dy, sx, sy, w, h, hscl, vscl);
+			break;
+		}
+	}
+
 	lua::fnptr blit_bitmap(lua_func_misc, "gui.bitmap_blit", [](lua::state& L, const std::string& fname)
 		-> int {
 		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit(L, fname);
+			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<false, false>(L, fname);
 		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit(L, fname);
+			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<false, false>(L, fname);
 		else
 			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
 		return 0;
+	});
+
+	lua::fnptr blit_bitmap_s(lua_func_misc, "gui.bitmap_blit_scaled", [](lua::state& L, const std::string& fname)
+		-> int {
+		if(lua::_class<lua_bitmap>::is(L, 1))
+			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<true, false>(L, fname);
+		else if(lua::_class<lua_dbitmap>::is(L, 1))
+			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<true, false>(L, fname);
+		else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
+		return 0;
+	});
+
+	lua::fnptr blit_bitmap_pd(lua_func_misc, "gui.bitmap_blit_porterduff", [](lua::state& L,
+		const std::string& fname) -> int {
+		if(lua::_class<lua_bitmap>::is(L, 1))
+			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<false, true>(L, fname);
+		else if(lua::_class<lua_dbitmap>::is(L, 1))
+			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<false, true>(L, fname);
+		else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
+		return 0;
+	});
+
+	lua::fnptr blit_bitmap_spd(lua_func_misc, "gui.bitmap_blit_scaled_porterduff", [](lua::state& L,
+		const std::string& fname) -> int {
+		if(lua::_class<lua_bitmap>::is(L, 1))
+			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<true, true>(L, fname);
+		else if(lua::_class<lua_dbitmap>::is(L, 1))
+			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<true, true>(L, fname);
+		else
+			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
+		return 0;
+	});
+
+	lua::fnptr blit_bitmap_p(lua_func_misc, "gui.bitmap_blit_priority", [](lua::state& L,
+		const std::string& fname) -> int {
+		return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit_priority<false>(L, fname);
+	});
+
+	lua::fnptr blit_bitmap_sp(lua_func_misc, "gui.bitmap_blit_scaled_priority", [](lua::state& L,
+		const std::string& fname) -> int {
+		return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit_priority<true>(L, fname);
 	});
 
 	int bitmap_load_fn(lua::state& L, std::function<lua_loaded_bitmap()> src)
@@ -749,7 +1031,12 @@ lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 		{"pget", &lua_bitmap::pget},
 		{"size", &lua_bitmap::size},
 		{"hash", &lua_bitmap::hash},
-		{"blit", &lua_bitmap::blit},
+		{"blit", &lua_bitmap::blit<false, false>},
+		{"blit_priority", &lua_bitmap::blit_priority<false>},
+		{"blit_scaled", &lua_bitmap::blit<true, false>},
+		{"blit_scaled_priority", &lua_bitmap::blit_priority<true>},
+		{"blit_porterduff", &lua_bitmap::blit<false, true>},
+		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
 		{"save_png", &lua_bitmap::save_png},
 	});
 	width = w;
@@ -839,7 +1126,7 @@ int lua_bitmap::hash(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-int lua_bitmap::blit(lua::state& L, const std::string& fname)
+template<bool scaled, bool porterduff> int lua_bitmap::blit(lua::state& L, const std::string& fname)
 {
 	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
 	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
@@ -851,18 +1138,49 @@ int lua_bitmap::blit(lua::state& L, const std::string& fname)
 	uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
 	uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
 	uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
+	uint32_t hscl, vscl;
+	if(scaled) {
+		hscl = L.get_numeric_argument<uint32_t>(9, fname.c_str());
+		vscl = hscl;
+		L.get_numeric_argument<uint32_t>(10, vscl, fname.c_str());
+	}
 	int64_t ck = 65536;
-	L.get_numeric_argument<int64_t>(9, ck, fname.c_str());
+	porterduff_oper pd_oper;
+	if(porterduff) {
+		std::string oper = L.get_string(scaled ? 11 : 9, fname.c_str());
+		pd_oper = get_pd_oper(oper);
+	} else
+		L.get_numeric_argument<int64_t>(scaled ? 11 : 9, ck, fname.c_str());
 	if(src_p) {
 		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
-		if(ck > 65535)
-			xblit(srcdest_palette<colorkey_none>(*this, *sb, colorkey_none()), dx, dy, sx, sy, w, h);
+		if(porterduff)
+			xblit_pduff<scaled>(operand_bitmap(*this), operand_bitmap(*sb), dx, dy, sx, sy, w, h,
+				hscl, vscl, pd_oper);
 		else
-			xblit(srcdest_palette<colorkey_palette>(*this, *sb, colorkey_palette(ck)), dx, dy, sx,
-				sy, w, h);
+			xblit_pal<scaled>(operand_bitmap(*this), operand_bitmap(*sb), ck, dx, dy, sx, sy, w, h,
+				hscl, vscl);
 	} else
 		throw std::runtime_error("If parameter 1 to " + fname + " is paletted, parameter 4 must be "
 			"too");
+	return 0;
+}
+
+template<bool scaled> int lua_bitmap::blit_priority(lua::state& L, const std::string& fname)
+{
+	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
+	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+	lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
+	uint32_t sx = L.get_numeric_argument<uint32_t>(5, fname.c_str());
+	uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
+	uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
+	uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
+	uint32_t hscl, vscl;
+	if(scaled) {
+		hscl = L.get_numeric_argument<uint32_t>(9, fname.c_str());
+		vscl = hscl;
+		L.get_numeric_argument<uint32_t>(10, vscl, fname.c_str());
+	}
+	xblit<scaled>(srcdest_priority(*this, *sb), dx, dy, sx, sy, w, h, hscl, vscl);
 	return 0;
 }
 
@@ -912,7 +1230,10 @@ lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 		{"pget", &lua_dbitmap::pget},
 		{"size", &lua_dbitmap::size},
 		{"hash", &lua_dbitmap::hash},
-		{"blit", &lua_dbitmap::blit},
+		{"blit", &lua_dbitmap::blit<false, false>},
+		{"blit_scaled", &lua_dbitmap::blit<true, false>},
+		{"blit_porterduff", &lua_dbitmap::blit<false, true>},
+		{"blit_scaled_porterduff", &lua_dbitmap::blit<true, true>},
 		{"save_png", &lua_dbitmap::save_png},
 		{"adjust_transparency", &lua_dbitmap::adjust_transparency},
 	});
@@ -1002,7 +1323,7 @@ int lua_dbitmap::hash(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-int lua_dbitmap::blit(lua::state& L, const std::string& fname)
+template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 {
 	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
 	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
@@ -1017,36 +1338,50 @@ int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 	uint32_t sy = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
 	uint32_t w = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
 	uint32_t h = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+	uint32_t hscl, vscl;
+	if(scaled) {
+		hscl = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		vscl = hscl;
+		L.get_numeric_argument<uint32_t>(slot++, vscl, fname.c_str());
+	}
 	int64_t ckx = 0x100000000ULL;
-	//Hack: Direct-color bitmaps should take color spec, with special NONE value.
-	if(src_p)
-		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
-	else if(L.type(slot) == LUA_TSTRING) {
-		framebuffer::color cxt(L.get_string(slot, fname.c_str()));
-		ckx = cxt.asnumber();
-	} else if(L.type(slot) == LUA_TNUMBER) {
-		L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
-	} else if(L.type(slot) == LUA_TNIL || L.type(slot) == LUA_TNONE) {
-		//Do nothing.
-	} else
-		(stringfmt() << "Expected string, number or nil as argument " << slot << " for " << fname).throwex();
+	porterduff_oper pd_oper;
+	if(porterduff) {
+		std::string oper = L.get_string(slot, fname.c_str());
+		pd_oper = get_pd_oper(oper);
+	} else {
+		//Hack: Direct-color bitmaps should take color spec, with special NONE value.
+		if(src_p)
+			L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
+		else if(L.type(slot) == LUA_TSTRING) {
+			framebuffer::color cxt(L.get_string(slot, fname.c_str()));
+			ckx = cxt.asnumber();
+		} else if(L.type(slot) == LUA_TNUMBER) {
+			L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
+		} else if(L.type(slot) == LUA_TNIL || L.type(slot) == LUA_TNONE) {
+			//Do nothing.
+		} else
+			(stringfmt() << "Expected string, number or nil as argument " << slot << " for "
+				<< fname).throwex();
+	}
 
 	if(src_d) {
 		lua_dbitmap* sb = lua::_class<lua_dbitmap>::get(L, 4, fname.c_str());
-		if(ckx == 0x100000000ULL)
-			xblit(srcdest_direct<colorkey_none>(*this, *sb, colorkey_none()), dx, dy, sx, sy, w, h);
+		if(porterduff)
+			xblit_pduff<scaled>(operand_dbitmap(*this), operand_dbitmap(*sb), dx, dy, sx, sy, w, h,
+				hscl, vscl, pd_oper);
 		else
-			xblit(srcdest_direct<colorkey_direct>(*this, *sb, colorkey_direct(ckx)), dx, dy, sx, sy,
-				w, h);
+			xblit_dir<scaled>(operand_dbitmap(*this), operand_dbitmap(*sb), ckx, dx, dy, sx, sy, w, h,
+				hscl, vscl);
 	} else {
 		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
 		lua_palette* pal = lua::_class<lua_palette>::get(L, 5, fname.c_str());
-		if(ckx > 65535)
-			xblit(srcdest_paletted<colorkey_none>(*this, *sb, *pal, colorkey_none()), dx, dy, sx, sy,
-				w, h);
+		if(porterduff)
+			xblit_pduff<scaled>(operand_dbitmap(*this), operand_bitmap_pal(*sb, *pal), dx, dy,
+				sx, sy, w, h, hscl, vscl, pd_oper);
 		else
-			xblit(srcdest_paletted<colorkey_palette>(*this, *sb, *pal, colorkey_palette(ckx)), dx, dy,
-				sx, sy, w, h);
+			xblit_pal<scaled>(operand_dbitmap(*this), operand_bitmap_pal(*sb, *pal), ckx, dx, dy, sx, sy, 
+				w, h, hscl, vscl);
 	}
 	return 0;
 }
