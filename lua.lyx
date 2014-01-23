@@ -513,7 +513,44 @@ If conversion is successful, returns (true, {converted-string}).
 \end_layout
 
 \begin_layout Itemize
-If conversion was unsuccessful, returns (
+If conversion was unsuccessful, returns (false, {converted-part}, {unconverted-b
+ytes}, {error}).
+ The following errors are defined:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+INVALID: Invalid byte sequence in input
+\end_layout
+
+\begin_layout Itemize
+INCOMPLETE: The input is cut of in middle of multi-byte sequence
+\end_layout
+
+\begin_layout Itemize
+INTERNALERR: Internal errror
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+identify_class: Identify class of object
+\end_layout
+
+\begin_layout Itemize
+Syntax: string identify_class(userdata object)
+\end_layout
+
+\begin_layout Standard
+Identifies the class of userdata <object>, if possible.
+ If no identification is possible, returns 
+\begin_inset Quotes eld
+\end_inset
+
+unknown
+\begin_inset Quotes erd
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard

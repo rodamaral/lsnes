@@ -67,8 +67,14 @@ namespace
 		}
 	}
 
-	lua::fnptr lua_tostringx(lua_func_misc, "tostringx", [](lua::state& L, const std::string& fname) ->
-		int {
+	lua::fnptr lua_ctype(lua_func_misc, "identify_class", [](lua::state& L, const std::string& fname) -> int {
+		if(L.type(1) != LUA_TUSERDATA)
+			return 0;
+		L.pushlstring(try_recognize_userdata(L, 1));
+		return 1;
+	});
+
+	lua::fnptr lua_tostringx(lua_func_misc, "tostringx", [](lua::state& L, const std::string& fname) -> int {
 		std::set<const void*> tmp2;
 		std::string y = luavalue_to_string(L, 1, tmp2, false);
 		L.pushlstring(y.c_str(), y.length());
