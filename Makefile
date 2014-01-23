@@ -72,11 +72,13 @@ bsnes/out/libsnes.$(ARCHIVE_SUFFIX): forcelook
 	$(REALRANLIB) bsnes/out/libsnes.$(ARCHIVE_SUFFIX)
 
 
-src/__all_files__: src/core/version.cpp buildaux/mkdeps.exe forcelook
+src/__all_files__: src/core/version.cpp buildaux/mkdeps.exe buildaux/txt2cstr.exe forcelook
 	$(MAKE) -C src precheck
 	$(MAKE) -C src
 	cp src/lsnes$(DOT_EXECUTABLE_SUFFIX) .
 
+buildaux/txt2cstr.exe: buildaux/txt2cstr.cpp
+	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
 buildaux/version.exe: buildaux/version.cpp VERSION
 	$(HOSTCC) $(HOSTCCFLAGS) -o $@ $<
 buildaux/mkdeps.exe: buildaux/mkdeps.cpp VERSION
