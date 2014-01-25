@@ -36,6 +36,7 @@ namespace
 			umutex_class h(mutex);
 			render_kill_request(this);
 		}
+		static int create(lua::state& L, lua::parameters& P);
 		int draw(lua::state& L, const std::string& fname);
 		int get(lua::state& L, const std::string& fname)
 		{
@@ -293,23 +294,25 @@ namespace
 		return 0;
 	}
 
-	lua::fnptr gui_ctilemap(lua_func_misc, "gui.tilemap", [](lua::state& LS, const std::string& fname) ->
-		int {
-		uint32_t w = LS.get_numeric_argument<uint32_t>(1, fname.c_str());
-		uint32_t h = LS.get_numeric_argument<uint32_t>(2, fname.c_str());
-		uint32_t px = LS.get_numeric_argument<uint32_t>(3, fname.c_str());
-		uint32_t py = LS.get_numeric_argument<uint32_t>(4, fname.c_str());
-		tilemap* t = lua::_class<tilemap>::create(LS, w, h, px, py);
+	int tilemap::create(lua::state& L, lua::parameters& P)
+	{
+		auto w = P.arg<uint32_t>();
+		auto h = P.arg<uint32_t>();
+		auto px = P.arg<uint32_t>();
+		auto py = P.arg<uint32_t>();
+		tilemap* t = lua::_class<tilemap>::create(L, w, h, px, py);
 		return 1;
-	});
+	}
 
-	lua::_class<tilemap> class_tilemap(lua_class_gui, "TILEMAP", {}, {
-			{"draw", &tilemap::draw},
-			{"set", &tilemap::set},
-			{"get", &tilemap::get},
-			{"scroll", &tilemap::scroll},
-			{"getsize", &tilemap::getsize},
-			{"getcsize", &tilemap::getcsize},
+	lua::_class<tilemap> class_tilemap(lua_class_gui, "TILEMAP", {
+		{"new", tilemap::create},
+	}, {
+		{"draw", &tilemap::draw},
+		{"set", &tilemap::set},
+		{"get", &tilemap::get},
+		{"scroll", &tilemap::scroll},
+		{"getsize", &tilemap::getsize},
+		{"getcsize", &tilemap::getcsize},
 	});
 
 	tilemap::tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)

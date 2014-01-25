@@ -37,3 +37,4 @@ memory2=_lookup_class("VMALIST").new();
 callback=_lookup_class("CALLBACKS_LIST").new();
 memory.map_structure=_lookup_class("MMAP_STRUCT").new;
 zip.create=_lookup_class("ZIPWRITER").new;
+gui.tilemap=_lookup_class("TILEMAP").new;
