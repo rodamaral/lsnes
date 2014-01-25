@@ -553,6 +553,32 @@ unknown
 .
 \end_layout
 
+\begin_layout Subsection
+lookup_class: Lookup class by name
+\end_layout
+
+\begin_layout Itemize
+Syntax: classobj lookup_class(string name)
+\end_layout
+
+\begin_layout Standard
+Looks up class corresponding to <name>, if possible.
+ If not found, returns nil.
+ The classobj has following fields:
+\end_layout
+
+\begin_layout Itemize
+_static_methods: Return static method names
+\end_layout
+
+\begin_layout Itemize
+_class_methods: Return class method names
+\end_layout
+
+\begin_layout Itemize
+<static-function-name>: The specified static function.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

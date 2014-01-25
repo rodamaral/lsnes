@@ -6,6 +6,53 @@
 
 namespace lua
 {
+class class_base;
+class parameters;
+
+/**
+ * Group of classes.
+ */
+class class_group
+{
+public:
+/**
+ * Create a group.
+ */
+	class_group();
+/**
+ * Destroy a group.
+ */
+	~class_group();
+/**
+ * Add a class to group.
+ */
+	void do_register(const std::string& name, class_base& fun);
+/**
+ * Drop a class from group.
+ */
+	void do_unregister(const std::string& name);
+/**
+ * Request callbacks on all currently registered functions.
+ */
+	void request_callback(std::function<void(std::string, class_base*)> cb);
+/**
+ * Bind a callback.
+ *
+ * Callbacks for all registered functions are immediately called.
+ */
+	int add_callback(std::function<void(std::string, class_base*)> cb,
+		std::function<void(class_group*)> dcb);
+/**
+ * Unbind a calback.
+ */
+	void drop_callback(int handle);
+private:
+	int next_handle;
+	std::map<std::string, class_base*> classes;
+	std::map<int, std::function<void(std::string, class_base*)>> callbacks;
+	std::map<int, std::function<void(class_group*)>> dcallbacks;
+};
+
 struct class_ops
 {
 	bool (*is)(state& _state, int index);
@@ -37,6 +84,25 @@ template<class T> struct class_binding
 	char fname[];
 };
 
+/**
+ * Helper class containing binding data for Lua static class call.
+ */
+struct static_binding
+{
+/**
+ * The pointer to call.
+ */
+	int (*fn)(state& lstate, parameters& P);
+/**
+ * The state to call it in.
+ */
+	state* _state;
+/**
+ * The name of the method to pass.
+ */
+	char fname[];
+};
+
 template<class T> class _class;
 
 /**
@@ -50,6 +116,9 @@ template<class T> _class<T>& objclass()
 	return *reinterpret_cast<_class<T>*>(class_types()[type]);
 }
 
+/**
+ * A class method.
+ */
 template<class T> struct class_method
 {
 /**
@@ -63,9 +132,78 @@ template<class T> struct class_method
 };
 
 /**
+ * A static class method.
+ */
+struct static_method
+{
+/**
+ * Name.
+ */
+	const char* name;
+/**
+ * Function.
+ */
+	int (*fn)(state& LS, parameters& P);
+};
+
+/**
+ * Virtual base of Lua classes
+ */
+class class_base
+{
+public:
+/**
+ * Create a new Lua class.
+ *
+ * Parameter _group: The group the class will be in.
+ * Parameter _name: The name of the class.
+ */
+	class_base(class_group& _group, const std::string& _name);
+/**
+ * Dtor.
+ */
+	virtual ~class_base();
+/**
+ * Lookup by name in given Lua state.
+ *
+ * Parameter _L: The Lua state to look in.
+ * Parameter _name: The name of the class.
+ * Returns: The class instance, or NULL if no match.
+ */
+	static class_base* lookup(state& L, const std::string& _name);
+/**
+ * Push class table to stack.
+ */
+	static bool lookup_and_push(state& L, const std::string& _name);
+/**
+ * Register in given Lua state.
+ */
+	virtual void register_state(state& L) = 0;
+/**
+ * Lookup static methods in class.
+ */
+	virtual std::list<static_method> static_methods() = 0;
+/**
+ * Lookup class methods in class.
+ */
+	virtual std::set<std::string> class_methods() = 0;
+/**
+ * Get name of class.
+ */
+	const std::string& get_name() { return name; }
+protected:
+	void delayed_register();
+	void register_static(state& L);
+private:
+	class_group& group;
+	std::string name;
+	bool registered;
+};
+
+/**
  * The type of Lua classes.
  */
-template<class T> class _class
+template<class T> class _class : public class_base
 {
 	template<typename... U> T* _create(state& _state, U... args)
 	{
@@ -133,43 +271,7 @@ badtype:
 		_state.pop(1);
 		return t;
 	}
-public:
-/**
- * Create a new Lua class.
- *
- * Parameter _name: The name of the class.
- */
-	_class(const std::string& _name)
-	{
-		name = _name;
-		class_ops m;
-		m.is = _class<T>::is;
-		m.name = _class<T>::get_name;
-		m.print = _class<T>::print;
-		userdata_recogn_fns().push_back(m);
-		auto& type = typeid(T);
-		class_types()[type] = this;
-	}
 
-/**
- * Create a new instance of object.
- *
- * Parameter _state: The Lua state to create the object in.
- * Parameter args: The arguments to pass to class constructor.
- */
-	template<typename... U> static T* create(state& _state, U... args)
-	{
-		return objclass<T>()._create(_state, args...);
-	}
-
-/**
- * Bind a method to class.
- *
- * Parameter _state: The state to do the binding in.
- * Parameter keyname: The name of the method.
- * Parameter fn: The method to call.
- * Parameter force: If true, overwrite existing method.
- */
 	void bind(state& _state, const char* keyname, int (T::*fn)(state& LS, const std::string& fname))
 	{
 		load_metatable(_state);
@@ -185,16 +287,64 @@ public:
 		_state.rawset(-3);
 		_state.pop(1);
 	}
-/**
- * Bind multiple at once.
- */
-	void bind_multi(state& _state, std::initializer_list<class_method<T>> list, void* doonce_key = NULL)
+protected:
+	void register_state(state& L)
 	{
 		static char once_key;
-		if(_state.do_once(doonce_key ? doonce_key : &once_key))
-			for(auto i : list)
-				bind(_state, i.name, i.fn);
+		register_static(L);
+		if(L.do_once(&once_key))
+			for(auto i : cmethods)
+				bind(L, i.name, i.fn);
 	}
+public:
+/**
+ * Create a new Lua class.
+ *
+ * Parameter _group: The group the class will be in.
+ * Parameter _name: The name of the class.
+ * Parameter _smethods: Static methods of the class.
+ * Parameter _cmethods: Class methods of the class.
+ */
+	_class(class_group& _group, const std::string& _name, std::initializer_list<static_method> _smethods,
+		std::initializer_list<class_method<T>> _cmethods)
+		: class_base(_group, _name), smethods(_smethods), cmethods(_cmethods)
+	{
+		name = _name;
+		class_ops m;
+		m.is = _class<T>::is;
+		m.name = _class<T>::get_name;
+		m.print = _class<T>::print;
+		userdata_recogn_fns().push_back(m);
+		auto& type = typeid(T);
+		class_types()[type] = this;
+		delayed_register();
+	}
+/**
+ * Dtor
+ */
+	~_class()
+	{
+		auto& type = typeid(T);
+		class_types().erase(type);
+		auto& fns = userdata_recogn_fns();
+		for(auto i = fns.begin(); i != fns.end(); i++) {
+			if(i->is == _class<T>::is) {
+				fns.erase(i);
+				break;
+			}
+		}
+	}
+/**
+ * Create a new instance of object.
+ *
+ * Parameter _state: The Lua state to create the object in.
+ * Parameter args: The arguments to pass to class constructor.
+ */
+	template<typename... U> static T* create(state& _state, U... args)
+	{
+		return objclass<T>()._create(_state, args...);
+	}
+
 /**
  * Get a pointer to the object.
  *
@@ -258,6 +408,23 @@ public:
 	{
 		return objclass<T>()._pin(_state, arg, fname);
 	}
+/**
+ * Lookup static methods.
+ */
+	std::list<static_method> static_methods()
+	{
+		return smethods;
+	}
+/**
+ * Lookup class methods.
+ */
+	std::set<std::string> class_methods()
+	{
+		std::set<std::string> r;
+		for(auto& i : cmethods)
+			r.insert(i.name);
+		return r;
+	}
 private:
 	static int dogc(lua_State* LS)
 	{
@@ -278,6 +445,12 @@ private:
 		lua_getmetatable(LS, 1);
 		lua_pushvalue(LS, 2);
 		lua_rawget(LS, -2);
+		if(lua_type(LS, -1) == LUA_TNIL) {
+			std::string err = std::string("Class '") + lua_tostring(LS, lua_upvalueindex(1)) +
+				"' does not have class method '" + lua_tostring(LS, 2) + "'";
+			lua_pushstring(LS, err.c_str());
+			lua_error(LS);
+		}
 		return 1;
 	}
 
@@ -299,13 +472,16 @@ again:
 			_state.pushcfunction(&_class<T>::newindex);
 			_state.rawset(-3);
 			_state.pushstring("__index");
-			_state.pushcfunction(&_class<T>::index);
+			_state.pushlstring(name);
+			_state.pushcclosure(&_class<T>::index, 1);
 			_state.rawset(-3);
 			_state.rawset(LUA_REGISTRYINDEX);
 			goto again;
 		}
 	}
 	std::string name;
+	std::list<static_method> smethods;
+	std::list<class_method<T>> cmethods;
 	_class(const _class<T>&);
 	_class& operator=(const _class<T>&);
 };

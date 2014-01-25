@@ -16,6 +16,112 @@ std::unordered_map<std::type_index, void*>& class_types()
 }
 namespace
 {
+	char classtable_key;
+	char classtable_meta_key;
+
+	struct class_info
+	{
+		class_base* obj;
+		static int index(lua_State* L);
+		static int newindex(lua_State* L);
+		static int smethods(lua_State* L);
+		static int cmethods(lua_State* L);
+		static int trampoline(lua_State* L);
+	};
+
+	int class_info::index(lua_State* L)
+	{
+		lua_pushlightuserdata(L, &classtable_meta_key);
+		lua_rawget(L, LUA_REGISTRYINDEX);
+		lua_getmetatable(L, 1);
+		if(!lua_rawequal(L, -1, -2)) {
+			lua_pushstring(L, "Bad class table");
+			lua_error(L);
+		}
+		lua_pop(L, 2);
+		class_base* ptr = ((class_info*)lua_touserdata(L, 1))->obj;
+		const char* method = lua_tostring(L, 2);
+		if(!method) {
+			lua_pushstring(L, "Indexing invalid element of class table");
+			lua_error(L);
+		}
+		if(!strcmp(method, "_static_methods")) {
+			lua_pushlightuserdata(L, ptr);
+			lua_pushcclosure(L, class_info::smethods, 1);
+			return 1;
+		} else if(!strcmp(method, "_class_methods")) {
+			lua_pushlightuserdata(L, ptr);
+			lua_pushcclosure(L, class_info::cmethods, 1);
+			return 1;
+		} else {
+			auto m = ptr->static_methods();
+			for(auto i : m) {
+				if(!strcmp(i.name, method)) {
+					//Hit.
+					std::string name = ptr->get_name() + "::" + method;
+					lua_pushvalue(L, lua_upvalueindex(1));  //State.
+					lua_pushlightuserdata(L, (void*)i.fn);
+					std::string fname = ptr->get_name() + "::" + i.name;
+					lua_pushstring(L, fname.c_str());
+					lua_pushcclosure(L, class_info::trampoline, 3);
+					return 1;
+				}
+			}
+			std::string err = std::string("Class '") + ptr->get_name() +
+				"' does not have static method '" + method + "'";
+			lua_pushstring(L, err.c_str());
+			lua_error(L);
+		}
+	}
+	int class_info::newindex(lua_State* L)
+	{
+		lua_pushstring(L, "Writing into class table not allowed");
+		lua_error(L);
+	}
+
+	int class_info::smethods(lua_State* L)
+	{
+		class_base* obj = (class_base*)lua_touserdata(L, lua_upvalueindex(1));
+		auto m = obj->static_methods();
+		int rets = 0;
+		for(auto i : m) {
+			lua_pushstring(L, i.name);
+			rets++;
+		}
+		return rets;
+	}
+
+	int class_info::cmethods(lua_State* L)
+	{
+		class_base* obj = (class_base*)lua_touserdata(L, lua_upvalueindex(1));
+		auto m = obj->class_methods();
+		int rets = 0;
+		for(auto i : m) {
+			lua_pushstring(L, i.c_str());
+			rets++;
+		}
+		return rets;
+	}
+
+	typedef int (*fn_t)(state& L, parameters& P);
+
+	int class_info::trampoline(lua_State* L)
+	{
+		state* lstate = reinterpret_cast<state*>(lua_touserdata(L, lua_upvalueindex(1)));
+		void* _fn = lua_touserdata(L, lua_upvalueindex(2));
+		fn_t fn = (fn_t)_fn;
+		std::string name = lua_tostring(L, lua_upvalueindex(3));
+		state _L(*lstate, L);
+		try {
+			parameters P(_L, name);
+			return fn(_L, P);
+		} catch(std::exception& e) {
+			lua_pushfstring(L, "%s", e.what());
+			lua_error(L);
+		}
+		return 0;
+	}
+
 	int lua_trampoline_function(lua_State* L)
 	{
 		void* ptr = lua_touserdata(L, lua_upvalueindex(1));
@@ -88,11 +194,17 @@ namespace
 		L.setfield(-2, u2.c_str());
 		L.pop(1);
 	}
+
+	void register_class(state& L, const std::string& name, class_base* fun)
+	{
+		fun->register_state(L);
+	}
+
 	typedef register_queue<state, function> regqueue_t;
 	typedef register_queue<state::callback_proxy, state::callback_list> regqueue2_t;
 	typedef register_queue<function_group, function> regqueue3_t;
+	typedef register_queue<class_group, class_base> regqueue4_t;
 }
-
 
 state::state() throw(std::bad_alloc)
 	: cbproxy(*this)
@@ -115,6 +227,8 @@ state::~state() throw()
 	if(master)
 		return;
 	for(auto i : function_groups)
+		i.first->drop_callback(i.second);
+	for(auto i : class_groups)
 		i.first->drop_callback(i.second);
 	regqueue2_t::do_ready(cbproxy, false);
 	if(lua_handle)
@@ -151,6 +265,18 @@ function::~function() throw()
 	regqueue3_t::do_unregister(group, fname);
 }
 
+class_base::class_base(class_group& _group, const std::string& _name)
+	: group(_group), name(_name)
+{
+	registered = false;
+}
+
+class_base::~class_base() throw()
+{
+	if(registered)
+		regqueue4_t::do_unregister(group, name);
+}
+
 void state::reset() throw(std::bad_alloc, std::runtime_error)
 {
 	if(master)
@@ -172,6 +298,10 @@ void state::reset() throw(std::bad_alloc, std::runtime_error)
 	for(auto i : function_groups)
 		i.first->request_callback([this](std::string name, function* func) -> void {
 			register_function(*this, name, func);
+		});
+	for(auto i : class_groups)
+		i.first->request_callback([this](std::string name, class_base* clazz) -> void {
+			register_class(*this, name, clazz);
 		});
 }
 
@@ -198,12 +328,34 @@ void state::add_function_group(function_group& group)
 	})));
 }
 
+void state::add_class_group(class_group& group)
+{
+	class_groups.insert(std::make_pair(&group, group.add_callback([this](const std::string& name,
+		class_base* clazz) -> void {
+		this->class_callback(name, clazz);
+	}, [this](class_group* x) {
+		for(auto i = this->class_groups.begin(); i != this->class_groups.end();)
+			if(i->first == x)
+				i = this->class_groups.erase(i);
+			else
+				i++;
+	})));
+}
+
 void state::function_callback(const std::string& name, function* func)
 {
 	if(master)
 		return master->function_callback(name, func);
 	if(lua_handle)
 		register_function(*this, name, func);
+}
+
+void state::class_callback(const std::string& name, class_base* clazz)
+{
+	if(master)
+		return master->class_callback(name, clazz);
+	if(lua_handle)
+		register_class(*this, name, clazz);
 }
 
 bool state::do_once(void* key)
@@ -319,6 +471,58 @@ void function_group::do_unregister(const std::string& name)
 		i.second(name, NULL);
 }
 
+class_group::class_group()
+{
+	next_handle = 0;
+	regqueue4_t::do_ready(*this, true);
+}
+
+class_group::~class_group()
+{
+	for(auto i : classes)
+		for(auto j : callbacks)
+			j.second(i.first, NULL);
+	for(auto i : dcallbacks)
+		i.second(this);
+	regqueue4_t::do_ready(*this, false);
+}
+
+void class_group::request_callback(std::function<void(std::string, class_base*)> cb)
+{
+	for(auto i : classes)
+		cb(i.first, i.second);
+}
+
+int class_group::add_callback(std::function<void(std::string, class_base*)> cb,
+	std::function<void(class_group*)> dcb)
+{
+	int handle = next_handle++;
+	callbacks[handle] = cb;
+	dcallbacks[handle] = dcb;
+	for(auto i : classes)
+		cb(i.first, i.second);
+	return handle;
+}
+
+void class_group::drop_callback(int handle)
+{
+	callbacks.erase(handle);
+}
+
+void class_group::do_register(const std::string& name, class_base& fun)
+{
+	classes[name] = &fun;
+	for(auto i : callbacks)
+		i.second(name, &fun);
+}
+
+void class_group::do_unregister(const std::string& name)
+{
+	classes.erase(name);
+	for(auto i : callbacks)
+		i.second(name, NULL);
+}
+
 std::list<class_ops>& userdata_recogn_fns()
 {
 	static std::list<class_ops> x;
@@ -330,17 +534,23 @@ std::string try_recognize_userdata(state& state, int index)
 	for(auto i : userdata_recogn_fns())
 		if(i.is(state, index))
 			return i.name();
-	//Hack: Lua builtin file objects.
-	state.pushstring("FILE*");
-	state.rawget(LUA_REGISTRYINDEX);
+	//Hack: Lua builtin file objects and classobjs.
 	if(state.getmetatable(index)) {
+		state.pushstring("FILE*");
+		state.rawget(LUA_REGISTRYINDEX);
 		if(state.rawequal(-1, -2)) {
 			state.pop(2);
 			return "FILE*";
 		}
 		state.pop(1);
+		state.pushlightuserdata(&classtable_meta_key);
+		state.rawget(LUA_REGISTRYINDEX);
+		if(state.rawequal(-1, -2)) {
+			state.pop(2);
+			return "classobj";
+		}
+		state.pop(1);
 	}
-	state.pop(1);
 	return "unknown";
 }
 
@@ -349,6 +559,17 @@ std::string try_print_userdata(state& L, int index)
 	for(auto i : userdata_recogn_fns())
 		if(i.is(L, index))
 			return i.print(L, index);
+	//Hack: classobjs.
+	if(L.getmetatable(index)) {
+		L.pushlightuserdata(&classtable_meta_key);
+		L.rawget(LUA_REGISTRYINDEX);
+		if(L.rawequal(-1, -2)) {
+			L.pop(2);
+			std::string cname = ((class_info*)L.touserdata(index))->obj->get_name();
+			return cname;
+		}
+		L.pop(1);
+	}
 	return "no data available";
 }
 
@@ -371,5 +592,89 @@ int state::vararg_tag::pushargs(state& L)
 		e++;
 	}
 	return e;
+}
+
+class_base* class_base::lookup(state& L, const std::string& _name)
+{
+	if(lookup_and_push(L, _name)) {
+		class_base* obj = ((class_info*)L.touserdata(-1))->obj;
+		L.pop(1);
+		return obj;
+	}
+	return NULL;
+}
+
+bool class_base::lookup_and_push(state& L, const std::string& _name)
+{
+	L.pushlightuserdata(&classtable_key);
+	L.rawget(LUA_REGISTRYINDEX);
+	if(L.type(-1) == LUA_TNIL) {
+		//No classes.
+		L.pop(1);
+		return false;
+	}
+	//On top of stack there is class table.
+	L.pushlstring(_name);
+	L.rawget(-2);
+	if(L.type(-1) == LUA_TNIL) {
+		//Not found.
+		L.pop(2);
+		return false;
+	}
+	L.insert(-2);
+	L.pop(1);
+	return true;
+}
+
+void class_base::register_static(state& L)
+{
+again:
+	L.pushlightuserdata(&classtable_key);
+	L.rawget(LUA_REGISTRYINDEX);
+	if(L.type(-1) == LUA_TNIL) {
+		L.pop(1);
+		L.pushlightuserdata(&classtable_key);
+		L.newtable();
+		L.rawset(LUA_REGISTRYINDEX);
+		goto again;
+	}
+	//On top of stack there is class table.
+	L.pushlstring(name);
+	L.rawget(-2);
+	if(L.type(-1) != LUA_TNIL) {
+		//Already registered.
+		L.pop(2);
+		return;
+	}
+	L.pop(1);
+	L.pushlstring(name);
+	//Now construct the object.
+	class_info* ci = (class_info*)L.newuserdata(sizeof(class_info));
+	ci->obj = this;
+again2:
+	L.pushlightuserdata(&classtable_meta_key);
+	L.rawget(LUA_REGISTRYINDEX);
+	if(L.type(-1) == LUA_TNIL) {
+		L.pop(1);
+		L.pushlightuserdata(&classtable_meta_key);
+		L.newtable();
+		L.pushstring("__index");
+		L.pushlightuserdata(&L);
+		L.pushcclosure(class_info::index, 1);
+		L.rawset(-3);
+		L.pushstring("__newindex");
+		L.pushcfunction(class_info::newindex);
+		L.rawset(-3);
+		L.rawset(LUA_REGISTRYINDEX);
+		goto again2;
+	}
+	L.setmetatable(-2);
+	L.rawset(-3);
+	L.pop(1);
+}
+
+void class_base::delayed_register()
+{
+	regqueue4_t::do_register(group, name, *this);
 }
 }

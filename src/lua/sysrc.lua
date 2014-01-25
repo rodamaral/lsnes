@@ -18,8 +18,6 @@ end;
 print=print2;
 loadfile=loadfile2;
 dofile=dofile2;
-memory2=memory2();
-callback=callback();
 render_queue_function=function(rq)
 	local _rq = rq;
 	return function()
@@ -33,3 +31,7 @@ bit.bnot=bit.none;
 bit.bor=bit.any;
 bit.band=bit.all;
 bit.bxor=bit.parity;
+
+local _lookup_class = lookup_class;
+memory2=_lookup_class("VMALIST").new();
+callback=_lookup_class("CALLBACKS_LIST").new();

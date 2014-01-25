@@ -303,19 +303,18 @@ namespace
 		return 1;
 	});
 
-	lua::_class<tilemap> class_tilemap("TILEMAP");
-
-	tilemap::tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)
-		: width(_width), height(_height), cwidth(_cwidth), cheight(_cheight)
-	{
-		lua::objclass<tilemap>().bind_multi(L, {
+	lua::_class<tilemap> class_tilemap(lua_class_gui, "TILEMAP", {}, {
 			{"draw", &tilemap::draw},
 			{"set", &tilemap::set},
 			{"get", &tilemap::get},
 			{"scroll", &tilemap::scroll},
 			{"getsize", &tilemap::getsize},
 			{"getcsize", &tilemap::getcsize},
-		});
+	});
+
+	tilemap::tilemap(lua::state& L, size_t _width, size_t _height, size_t _cwidth, size_t _cheight)
+		: width(_width), height(_height), cwidth(_cwidth), cheight(_cheight)
+	{
 		if(width * height / height != width)
 			throw std::bad_alloc();
 		map.resize(width * height);

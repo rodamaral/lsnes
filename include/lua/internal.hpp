@@ -18,6 +18,14 @@ extern lua::function_group lua_func_callback;
 extern lua::function_group lua_func_load;
 extern lua::function_group lua_func_zip;
 
+extern lua::class_group lua_class_callback;
+extern lua::class_group lua_class_gui;
+extern lua::class_group lua_class_bind;
+extern lua::class_group lua_class_pure;
+extern lua::class_group lua_class_movie;
+extern lua::class_group lua_class_memory;
+extern lua::class_group lua_class_fileio;
+
 void push_keygroup_parameters(lua::state& L, keyboard::key& p);
 extern lua_render_context* lua_render_ctx;
 extern controller_frame* lua_input_controllerdata;

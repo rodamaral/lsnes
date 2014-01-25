@@ -160,6 +160,6 @@ namespace
 		return 1;
 	});
 
-	lua::_class<lua_inverse_bind> class_inverse_bind("INVERSEBIND");
-	lua::_class<lua_command_bind> class_command_bind("COMMANDBIND");
+	lua::_class<lua_inverse_bind> class_inverse_bind(lua_class_bind, "INVERSEBIND", {}, {});
+	lua::_class<lua_command_bind> class_command_bind(lua_class_bind, "COMMANDBIND", {}, {});
 }

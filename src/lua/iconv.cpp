@@ -70,15 +70,13 @@ namespace
 		std::string spec;
 	};
 
-	lua::_class<lua_iconv> class_iconv("ICONV");
+	lua::_class<lua_iconv> class_iconv(lua_class_pure, "ICONV", {}, {
+		{"__call", &lua_iconv::call}
+	});
 
 
 	lua_iconv::lua_iconv(lua::state& L, const char* from, const char* to)
 	{
-		lua::objclass<lua_iconv>().bind_multi(L, {
-			{"__call", &lua_iconv::call}
-		});
-
 		spec = std::string(from) + "->" + to;
 		errno = 0;
 		ctx = iconv_open(to, from);

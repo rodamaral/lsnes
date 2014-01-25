@@ -104,6 +104,11 @@ namespace
 		return 0;
 	});
 
+	lua::fnptr2 lua_lookup(lua_func_misc, "lookup_class", [](lua::state& L, lua::parameters& P) -> int {
+		auto clazz = P.arg<std::string>();
+		return lua::class_base::lookup_and_push(L, clazz) ? 1 : 0;
+	});
+
 	lua::fnptr2 lua_booted(lua_func_misc, "emulator_ready", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushboolean(lua_booted_flag ? 1 : 0);
 		return 1;

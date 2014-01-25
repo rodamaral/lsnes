@@ -32,6 +32,14 @@ lua::function_group lua_func_callback;
 lua::function_group lua_func_load;
 lua::function_group lua_func_zip;
 
+lua::class_group lua_class_callback;
+lua::class_group lua_class_gui;
+lua::class_group lua_class_bind;
+lua::class_group lua_class_pure;
+lua::class_group lua_class_movie;
+lua::class_group lua_class_memory;
+lua::class_group lua_class_fileio;
+
 namespace
 {
 	void pushpair(lua::state& L, std::string key, double value)
@@ -423,7 +431,7 @@ namespace
 			messages << "Lua VM reset" << std::endl;
 		});
 
-	lua::_class<lua_unsaferewind> class_unsaferewind("UNSAFEREWIND");
+	lua::_class<lua_unsaferewind> class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {});
 }
 
 void lua_callback_quit() throw()
@@ -446,6 +454,13 @@ void init_lua() throw()
 		lsnes_lua_state.add_function_group(lua_func_callback);
 		lsnes_lua_state.add_function_group(lua_func_misc);
 		lsnes_lua_state.add_function_group(lua_func_zip);
+		lsnes_lua_state.add_class_group(lua_class_callback);
+		lsnes_lua_state.add_class_group(lua_class_gui);
+		lsnes_lua_state.add_class_group(lua_class_bind);
+		lsnes_lua_state.add_class_group(lua_class_pure);
+		lsnes_lua_state.add_class_group(lua_class_movie);
+		lsnes_lua_state.add_class_group(lua_class_memory);
+		lsnes_lua_state.add_class_group(lua_class_fileio);
 	} catch(std::exception& e) {
 		messages << "Can't initialize Lua." << std::endl;
 		fatal_error();

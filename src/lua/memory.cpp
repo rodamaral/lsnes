@@ -649,7 +649,11 @@ namespace
 	lua_registerX<DEBUG_TRACE, true> mrt("memory.registertrace");
 	lua_registerX<DEBUG_TRACE, false> murt("memory.unregistertrace");
 
-	lua::_class<lua_mmap_struct> class_mmap_struct("MMAP_STRUCT");
+	lua::_class<lua_mmap_struct> class_mmap_struct(lua_class_memory, "MMAP_STRUCT", {}, {
+		{"__index", &lua_mmap_struct::index},
+		{"__newindex", &lua_mmap_struct::newindex},
+		{"__call", &lua_mmap_struct::map},
+	});
 }
 
 int lua_mmap_struct::map(lua::state& L, const std::string& fname)
@@ -700,9 +704,4 @@ int lua_mmap_struct::map(lua::state& L, const std::string& fname)
 
 lua_mmap_struct::lua_mmap_struct(lua::state& L)
 {
-	lua::objclass<lua_mmap_struct>().bind_multi(L, {
-		{"__index", &lua_mmap_struct::index},
-		{"__newindex", &lua_mmap_struct::newindex},
-		{"__call", &lua_mmap_struct::map},
-	});
 }

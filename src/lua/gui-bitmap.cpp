@@ -942,20 +942,44 @@ namespace
 		return 0;
 	});
 
-	lua::_class<lua_palette> class_palette("PALETTE");
-	lua::_class<lua_bitmap> class_bitmap("BITMAP");
-	lua::_class<lua_dbitmap> class_dbitmap("DBITMAP");
-}
-
-/** Palette **/
-lua_palette::lua_palette(lua::state& L)
-{
-	lua::objclass<lua_palette>().bind_multi(L, {
+	lua::_class<lua_palette> class_palette(lua_class_gui, "PALETTE", {}, {
 		{"set", &lua_palette::set},
 		{"hash", &lua_palette::hash},
 		{"debug", &lua_palette::debug},
 		{"adjust_transparency", &lua_palette::adjust_transparency},
 	});
+	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {}, {
+		{"draw", &lua_bitmap::draw},
+		{"pset", &lua_bitmap::pset},
+		{"pget", &lua_bitmap::pget},
+		{"size", &lua_bitmap::size},
+		{"hash", &lua_bitmap::hash},
+		{"blit", &lua_bitmap::blit<false, false>},
+		{"blit_priority", &lua_bitmap::blit_priority<false>},
+		{"blit_scaled", &lua_bitmap::blit<true, false>},
+		{"blit_scaled_priority", &lua_bitmap::blit_priority<true>},
+		{"blit_porterduff", &lua_bitmap::blit<false, true>},
+		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
+		{"save_png", &lua_bitmap::save_png},
+	});
+	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {}, {
+		{"draw", &lua_dbitmap::draw},
+		{"pset", &lua_dbitmap::pset},
+		{"pget", &lua_dbitmap::pget},
+		{"size", &lua_dbitmap::size},
+		{"hash", &lua_dbitmap::hash},
+		{"blit", &lua_dbitmap::blit<false, false>},
+		{"blit_scaled", &lua_dbitmap::blit<true, false>},
+		{"blit_porterduff", &lua_dbitmap::blit<false, true>},
+		{"blit_scaled_porterduff", &lua_dbitmap::blit<true, true>},
+		{"save_png", &lua_dbitmap::save_png},
+		{"adjust_transparency", &lua_dbitmap::adjust_transparency},
+	});
+}
+
+/** Palette **/
+lua_palette::lua_palette(lua::state& L)
+{
 }
 
 lua_palette::~lua_palette()
@@ -1024,20 +1048,6 @@ int lua_palette::adjust_transparency(lua::state& L, const std::string& fname)
 /** BITMAP **/
 lua_bitmap::lua_bitmap(lua::state& L, uint32_t w, uint32_t h)
 {
-	lua::objclass<lua_bitmap>().bind_multi(L, {
-		{"draw", &lua_bitmap::draw},
-		{"pset", &lua_bitmap::pset},
-		{"pget", &lua_bitmap::pget},
-		{"size", &lua_bitmap::size},
-		{"hash", &lua_bitmap::hash},
-		{"blit", &lua_bitmap::blit<false, false>},
-		{"blit_priority", &lua_bitmap::blit_priority<false>},
-		{"blit_scaled", &lua_bitmap::blit<true, false>},
-		{"blit_scaled_priority", &lua_bitmap::blit_priority<true>},
-		{"blit_porterduff", &lua_bitmap::blit<false, true>},
-		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
-		{"save_png", &lua_bitmap::save_png},
-	});
 	width = w;
 	height = h;
 	pixels.resize(width * height);
@@ -1223,19 +1233,6 @@ int lua_bitmap::_save_png(lua::state& L, const std::string& fname, bool is_metho
 /** DBITMAP **/
 lua_dbitmap::lua_dbitmap(lua::state& L, uint32_t w, uint32_t h)
 {
-	lua::objclass<lua_dbitmap>().bind_multi(L, {
-		{"draw", &lua_dbitmap::draw},
-		{"pset", &lua_dbitmap::pset},
-		{"pget", &lua_dbitmap::pget},
-		{"size", &lua_dbitmap::size},
-		{"hash", &lua_dbitmap::hash},
-		{"blit", &lua_dbitmap::blit<false, false>},
-		{"blit_scaled", &lua_dbitmap::blit<true, false>},
-		{"blit_porterduff", &lua_dbitmap::blit<false, true>},
-		{"blit_scaled_porterduff", &lua_dbitmap::blit<true, true>},
-		{"save_png", &lua_dbitmap::save_png},
-		{"adjust_transparency", &lua_dbitmap::adjust_transparency},
-	});
 	width = w;
 	height = h;
 	pixels.resize(width * height);

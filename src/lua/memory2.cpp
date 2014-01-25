@@ -68,6 +68,7 @@ namespace
 	{
 	public:
 		lua_vma_list(lua::state& L);
+		static int create(lua::state& L, lua::parameters& P);
 		int index(lua::state& L, const std::string& fname);
 		int newindex(lua::state& L, const std::string& fname);
 		int call(lua::state& L, const std::string& fname);
@@ -77,12 +78,7 @@ namespace
 		}
 	};
 
-	lua::_class<lua_vma> class_vma("VMA");
-	lua::_class<lua_vma_list> class_vmalist("VMALIST");
-
-	lua_vma::lua_vma(lua::state& L, memory_region* r)
-	{
-		lua::objclass<lua_vma>().bind_multi(L, {
+	lua::_class<lua_vma> class_vma(lua_class_memory, "VMA", {}, {
 			{"info", &lua_vma::info},
 			{"read", &lua_vma::scattergather<false, false>},
 			{"sread", &lua_vma::scattergather<false, true>},
@@ -111,7 +107,17 @@ namespace
 			{"iqword", &lua_vma::rw<uint64_t, true>},
 			{"ifloat", &lua_vma::rw<float, true>},
 			{"idouble", &lua_vma::rw<double, true>},
-		});
+	});
+	lua::_class<lua_vma_list> class_vmalist(lua_class_memory, "VMALIST", {
+		{"new", lua_vma_list::create},
+	}, {
+		{"__index", &lua_vma_list::index},
+		{"__newindex", &lua_vma_list::newindex},
+		{"__call", &lua_vma_list::call},
+	});
+
+	lua_vma::lua_vma(lua::state& L, memory_region* r)
+	{
 		vmabase = r->base;
 		vmasize = r->size;
 		vma = r->name;
@@ -181,11 +187,12 @@ namespace
 
 	lua_vma_list::lua_vma_list(lua::state& L)
 	{
-		lua::objclass<lua_vma_list>().bind_multi(L, {
-			{"__index", &lua_vma_list::index},
-			{"__newindex", &lua_vma_list::newindex},
-			{"__call", &lua_vma_list::call},
-		});
+	}
+
+	int lua_vma_list::create(lua::state& L, lua::parameters& P)
+	{
+		lua::_class<lua_vma_list>::create(L);
+		return 1;
 	}
 
 	int lua_vma_list::call(lua::state& L, const std::string& fname)
@@ -218,10 +225,4 @@ namespace
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}
-
-	lua::fnptr memory2(lua_func_misc, "memory2", [](lua::state& L, const std::string& fname) ->
-		int {
-		lua::_class<lua_vma_list>::create(L);
-		return 1;
-	});
 }

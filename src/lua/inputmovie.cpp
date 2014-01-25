@@ -596,26 +596,7 @@ namespace
 			return movb.get_movie().get_frame_vector();
 	}
 
-	lua::_class<lua_inputmovie> class_inputmovie("INPUTMOVIE");
-	lua::_class<lua_inputframe> class_inputframe("INPUTFRAME");
-
-	lua_inputframe::lua_inputframe(lua::state& L, controller_frame _f)
-	{
-		f = _f;
-		lua::objclass<lua_inputframe>().bind_multi(L, {
-			{"get_button", &lua_inputframe::get_button},
-			{"get_axis", &lua_inputframe::get_axis},
-			{"set_axis", &lua_inputframe::set_axis},
-			{"set_button", &lua_inputframe::set_axis},
-			{"serialize", &lua_inputframe::serialize},
-			{"unserialize", &lua_inputframe::unserialize},
-			{"get_stride", &lua_inputframe::get_stride},
-		});
-	}
-
-	void lua_inputmovie::common_init(lua::state& L)
-	{
-		lua::objclass<lua_inputmovie>().bind_multi(L, {
+	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {
 			{"copy_movie", &lua_inputmovie::copy_movie},
 			{"get_frame", &lua_inputmovie::get_frame},
 			{"set_frame", &lua_inputmovie::set_frame},
@@ -630,7 +611,24 @@ namespace
 			{"debugdump", &lua_inputmovie::debugdump},
 			{"copy_frames", &lua_inputmovie::copy_frames},
 			{"serialize", &lua_inputmovie::serialize},
-		});
+	});
+	lua::_class<lua_inputframe> class_inputframe(lua_class_movie, "INPUTFRAME", {}, {
+			{"get_button", &lua_inputframe::get_button},
+			{"get_axis", &lua_inputframe::get_axis},
+			{"set_axis", &lua_inputframe::set_axis},
+			{"set_button", &lua_inputframe::set_axis},
+			{"serialize", &lua_inputframe::serialize},
+			{"unserialize", &lua_inputframe::unserialize},
+			{"get_stride", &lua_inputframe::get_stride},
+	});
+
+	lua_inputframe::lua_inputframe(lua::state& L, controller_frame _f)
+	{
+		f = _f;
+	}
+
+	void lua_inputmovie::common_init(lua::state& L)
+	{
 	}
 	
 	lua_inputmovie::lua_inputmovie(lua::state& L, const controller_frame_vector& _v)

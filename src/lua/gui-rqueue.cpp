@@ -98,13 +98,6 @@ namespace
 
 	lua_renderqueue::lua_renderqueue(lua::state& L, uint32_t width, uint32_t height) throw()
 	{
-		lua::objclass<lua_renderqueue>().bind_multi(L, {
-			{"run", &lua_renderqueue::run},
-			{"synchronous_repaint", &lua_renderqueue::synchronous_repaint},
-			{"clear", &lua_renderqueue::clear},
-			{"set", &lua_renderqueue::set},
-			{"render", &lua_renderqueue::render},
-		});
 		lctx.left_gap = std::numeric_limits<uint32_t>::max();
 		lctx.right_gap = std::numeric_limits<uint32_t>::max();
 		lctx.bottom_gap = std::numeric_limits<uint32_t>::max();
@@ -167,7 +160,13 @@ namespace
 		return 0;
 	});
 
-	lua::_class<lua_renderqueue> class_lua_renderqueue("RENDERCTX");
+	lua::_class<lua_renderqueue> class_lua_renderqueue(lua_class_gui, "RENDERCTX", {}, {
+		{"run", &lua_renderqueue::run},
+		{"synchronous_repaint", &lua_renderqueue::synchronous_repaint},
+		{"clear", &lua_renderqueue::clear},
+		{"set", &lua_renderqueue::set},
+		{"render", &lua_renderqueue::render},
+	});
 }
 
 void lua_renderq_run(lua_render_context* ctx, void* _sctx)

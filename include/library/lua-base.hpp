@@ -22,6 +22,8 @@ namespace lua
 class state;
 class function;
 class function_group;
+class class_group;
+class class_base;
 
 /**
  * Lua state object.
@@ -338,9 +340,17 @@ public:
  */
 	void add_function_group(function_group& group);
 /**
+ * Add a group of classes.
+ */
+	void add_class_group(class_group& group);
+/**
  * Function callback.
  */
 	void function_callback(const std::string& name, function* func);
+/**
+ * Class callback.
+ */
+	void class_callback(const std::string& name, class_base* func);
 /**
  * Do something just once per VM.
  *
@@ -479,6 +489,7 @@ private:
 	state* master;
 	lua_State* lua_handle;
 	std::set<std::pair<function_group*, int>> function_groups;
+	std::set<std::pair<class_group*, int>> class_groups;
 	std::map<std::string, callback_list*> callbacks;
 	state(state&);
 	state& operator=(state&);

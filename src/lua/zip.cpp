@@ -70,20 +70,19 @@ namespace
 		std::string file;
 	};
 
-	lua::_class<lua_zip_writer> class_zipwriter("ZIPWRITER");
+	lua::_class<lua_zip_writer> class_zipwriter(lua_class_fileio, "ZIPWRITER", {}, {
+		{"commit", &lua_zip_writer::commit},
+		{"rollback", &lua_zip_writer::rollback},
+		{"close_file", &lua_zip_writer::close_file},
+		{"create_file", &lua_zip_writer::create_file},
+		{"write", &lua_zip_writer::write}
+	});
 
 	lua_zip_writer::lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression)
 	{
 		file = filename;
 		w = new zip::writer(filename, compression);
 		file_open = NULL;
-		lua::objclass<lua_zip_writer>().bind_multi(L, {
-			{"commit", &lua_zip_writer::commit},
-			{"rollback", &lua_zip_writer::rollback},
-			{"close_file", &lua_zip_writer::close_file},
-			{"create_file", &lua_zip_writer::create_file},
-			{"write", &lua_zip_writer::write}
-		});
 	}
 
 	lua::fnptr lua_zip(lua_func_zip, "zip.create", [](lua::state& L,

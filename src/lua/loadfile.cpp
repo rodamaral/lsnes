@@ -314,14 +314,13 @@ namespace
 		}
 	});
 
-	lua::_class<lua_file_reader> class_filreader("FILEREADER");
+	lua::_class<lua_file_reader> class_filreader(lua_class_fileio, "FILEREADER", {}, {
+		{"__call", &lua_file_reader::read},
+		{"lines", &lua_file_reader::lines}
+	});
 
 	lua_file_reader::lua_file_reader(lua::state& L, std::istream* strm)
 		: s(*strm)
 	{
-		lua::objclass<lua_file_reader>().bind_multi(L, {
-			{"__call", &lua_file_reader::read},
-			{"lines", &lua_file_reader::lines}
-		});
 	}
 }

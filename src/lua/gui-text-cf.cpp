@@ -28,12 +28,14 @@ namespace
 			return orig_filename;
 		}
 	private:
-		void init(lua::state& L);
 		std::string orig_filename;
 		framebuffer::font2 font;
 	};
 
-	lua::_class<lua_customfont> class_customfont("CUSTOMFONT");
+	lua::_class<lua_customfont> class_customfont(lua_class_gui, "CUSTOMFONT", {}, {
+		{"__call", &lua_customfont::draw},
+		{"edit", &lua_customfont::edit},
+	});
 
 	struct render_object_text_cf : public framebuffer::object
 	{
@@ -95,25 +97,15 @@ namespace
 		lua::objpin<lua_customfont> font;
 	};
 
-	void lua_customfont::init(lua::state& L)
-	{
-		lua::objclass<lua_customfont>().bind_multi(L, {
-			{"__call", &lua_customfont::draw},
-			{"edit", &lua_customfont::edit},
-		});
-	}
-
 	lua_customfont::lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2)
 		: orig_filename(zip::resolverel(filename, filename2)), font(orig_filename)
 	{
-		init(L);
 	}
 
 	lua_customfont::lua_customfont(lua::state& L)
 		: font(main_font)
 	{
 		orig_filename = "<builtin>";
-		init(L);
 	}
 
 	lua_customfont::~lua_customfont() throw()
@@ -142,7 +134,6 @@ namespace
 	lua_customfont::lua_customfont(lua::state& L, lua_customfont::empty_font_tag tag)
 	{
 		orig_filename = "<empty>";
-		init(L);
 	}
 
 	int lua_customfont::edit(lua::state& L, const std::string& fname)
