@@ -125,6 +125,451 @@ ad_png and gui.bitmap_load_pal.
 \end_layout
 
 \begin_layout Section
+Classes
+\end_layout
+
+\begin_layout Subsection
+MMAP_STRUCT: Quasi-table mapping emulated memory
+\end_layout
+
+\begin_layout Standard
+Objects of this class act like tables, except that the values are reflected
+ in emulated memory.
+\end_layout
+
+\begin_layout Subsubsection
+static function new: Create new instance
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: memory.map_structure
+\end_layout
+
+\begin_layout Itemize
+syntax: classes.MMAP_STRUCT.new()
+\end_layout
+
+\begin_layout Standard
+Create and returns a new mapping structure.
+\end_layout
+
+\begin_layout Subsubsection
+operator(): Bind key in mmap structure
+\end_layout
+
+\begin_layout Itemize
+Syntax: none MMAP_STRUCT(string key, [string vma, ]number address, string
+ type)
+\end_layout
+
+\begin_layout Standard
+Bind key <key> in mmap structure to specified address <address> with specified
+ type <type>.
+\end_layout
+
+\begin_layout Itemize
+Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
+ qword, sqword, float or double.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+ZIPWRITER: Writes .zip files
+\end_layout
+
+\begin_layout Standard
+This class does writing of .zip files.
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a new zipfile
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: zip.create
+\end_layout
+
+\begin_layout Itemize
+Syntax: classes.ZIPWRITER.new(string filename[, number compression])
+\end_layout
+
+\begin_layout Standard
+Creates a new zipfile <filename>, with specified compression level <compression>
+ (default 9).
+\end_layout
+
+\begin_layout Subsubsection
+Method commit: Finish creating ZIP file.
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:commit()
+\end_layout
+
+\begin_layout Standard
+Closes the ZIP archive.
+ Nothing more can be written.
+\end_layout
+
+\begin_layout Subsubsection
+Method rollback: Delete the ZIP file being creted
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:rollback()
+\end_layout
+
+\begin_layout Standard
+Deletes the newly written ZIP archive.
+ Nothing more can be written.
+\end_layout
+
+\begin_layout Subsubsection
+Method create_file: Start writing a new member
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:create_file(string filename)
+\end_layout
+
+\begin_layout Standard
+Starts writing a new member <filename> in ZIP file.
+ If member is open, it is closed.
+\end_layout
+
+\begin_layout Subsubsection
+Method close_file: Close member
+\end_layout
+
+\begin_layout Itemize
+Syntax: none ZIPWRITER:close_file()
+\end_layout
+
+\begin_layout Standard
+Closes member in ZIP file.
+\end_layout
+
+\begin_layout Subsubsection
+Method write: Write data
+\end_layout
+
+\begin_layout Itemize
+Syntax none ZIPWRITER:write(string data)
+\end_layout
+
+\begin_layout Standard
+Writes data <data> into ZIP file (binary mode).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+TILEMAP: Tiled collection of bitmaps.
+\end_layout
+
+\begin_layout Standard
+A tilemap is tiled table, each cell holding a bitmap.
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a tilemap
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: TILEMAP classes.TILEMAP.new(number w, number h, number bw, number
+ bh)
+\end_layout
+
+\begin_layout Standard
+Create a new tilemap of size <w>*<h>, with each cell being <bw>*<bh>.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:getsize: Query tilemap size
+\end_layout
+
+\begin_layout Itemize
+Syntax: number, number TILEMAP:getsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap (width first).
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:getcsize: Query tilemap cell size
+\end_layout
+
+\begin_layout Itemize
+Syntax: number, number TILEMAP:getcsize()
+\end_layout
+
+\begin_layout Standard
+Return size of tilemap cell (width first).
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:get: Query tilemap cell
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: dbitmap TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap,palette TILEMAP:get(number x, number y)
+\end_layout
+
+\begin_layout Standard
+Return contents of cell at <x>,<y>.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:set: Set tilemap cell
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y, dbitmap b)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:set(number x, number y, bitmap b, palette p)
+\end_layout
+
+\begin_layout Standard
+Set contents of cell at <x>,<y>.
+ If no bitmap/dbitmap is given, cell is cleared.
+ Otherwise specified (d)bitmap is used (with specified palette if bitmap).
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:scroll: Scroll tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
+ w, number h)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
+ w, number h, boolean circx, boolean circy)
+\end_layout
+
+\begin_layout Standard
+Scrolls the tilemap tiles by <ox>,<oy>.
+ If <x>,<y>,<w>,<h> is specified, the scrolling is limited to <w>*<h> window
+ starting at <x>,<y> (in tiles).
+\end_layout
+
+\begin_layout Standard
+If <circx> is true, the window is circular in horizontal direction.
+ Similarly with <circy> and vertical direciton.
+\end_layout
+
+\begin_layout Subsubsection
+TILEMAP:draw: Draw tilemap
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y, number x0, number y0)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none TILEMAP:draw(number x, number y, number x0, number y0, number
+ w, number h)
+\end_layout
+
+\begin_layout Standard
+Draw tilemap at <x>,<y>.
+ If <x0>,<y0> is given, that is tilemap coordinate (in pixels) of upper
+ left edge.
+ If <w>,<h> is given, that is the size of window to draw (in pixels)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+RENDERCTX: Render queue
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a render queue
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.renderq_new
+\end_layout
+
+\begin_layout Itemize
+Syntax: RENDERQUEUE classes.RENDERCTX.new(number width, number height)
+\end_layout
+
+\begin_layout Standard
+Create render queue with specified reported size and return it.
+\end_layout
+
+\begin_layout Subsubsection
+Static function setnull: Reset to default queue
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.renderq_set
+\end_layout
+
+\begin_layout Itemize
+Syntax: none classes.RENDERCTX:setnull()
+\end_layout
+
+\begin_layout Standard
+Reset back to default queue (screen, video or none).
+\end_layout
+
+\begin_layout Subsubsection
+Method clear: Clear a render queue
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.renderq_clear
+\end_layout
+
+\begin_layout Itemize
+Syntax: none gui.renderq_clear(RENDERQUEUE queue)
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:clear()
+\end_layout
+
+\begin_layout Standard
+Clear specified render queue.
+\end_layout
+
+\begin_layout Subsubsection
+Method set: Change active render queue
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.renderq_set
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:set()
+\end_layout
+
+\begin_layout Standard
+Switch to specified render queue.
+ Use nil as queue to switch to default queue.
+\end_layout
+
+\begin_layout Itemize
+Note: When switched to another queue, all drawing functions work and draw
+ there, even outside on_video/on_paint.
+\end_layout
+
+\begin_layout Subsubsection
+Method run: Run render queue
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.renderq_run
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE:run()
+\end_layout
+
+\begin_layout Standard
+Run specified render queue, copying the objects to current render queue.
+ 
+\end_layout
+
+\begin_layout Itemize
+Warning: Don't try to run the current render queue.
+\end_layout
+
+\begin_layout Subsubsection
+Method render: Render a queue to DBITMAP
+\end_layout
+
+\begin_layout Itemize
+Syntax: DBITMAP RENDERQUEUE:render()
+\end_layout
+
+\begin_layout Standard
+Renders the specified render queue to a bitmap, the base bitmap size (modified
+ by gaps) being the nominal screen size for render queue.
+\end_layout
+
+\begin_layout Subsection
+Method synchronous_repaint: Paint screen now
+\end_layout
+
+\begin_layout Itemize
+Compat.
+ alias: gui.synchronous_repaint
+\end_layout
+
+\begin_layout Itemize
+Syntax: none RENDERQUEUE::synchronous_repaint()
+\end_layout
+
+\begin_layout Standard
+Paints specified render queue on screen right there and then.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
 Global
 \end_layout
 
@@ -911,6 +1356,60 @@ Swap endianess of (un)signed integer <n>.
 \end_inset
 
 
+\end_layout
+
+\begin_layout Section
+Table classes:
+\end_layout
+
+\begin_layout Subsection
+classes.<foo>: The classobj for class <foo>
+\end_layout
+
+\begin_layout Itemize
+Syntax: classes.<foo>
+\end_layout
+
+\begin_layout Standard
+The classobj for class <foo>.
+\end_layout
+
+\begin_layout Subsection
+classes.<foo>._static_methods: Enumerate static methods
+\end_layout
+
+\begin_layout Itemize
+Syntax: string...
+ classes.<foo>._static_methods()
+\end_layout
+
+\begin_layout Standard
+Returns all static methods of <foo> as strings.
+\end_layout
+
+\begin_layout Subsection
+classes.<foo>._class_methods: Enumerate static methods
+\end_layout
+
+\begin_layout Itemize
+Syntax: string...
+ classes.<foo>._class_methods()
+\end_layout
+
+\begin_layout Standard
+Returns all class methods of <foo> as strings.
+\end_layout
+
+\begin_layout Subsection
+classes.<foo>.<bar>: Static method
+\end_layout
+
+\begin_layout Itemize
+Syntax: variable classes.<foo>.<bar>(variable...)
+\end_layout
+
+\begin_layout Standard
+Invokes static method <bar> of class <foo>.
 \end_layout
 
 \begin_layout Section
@@ -1981,22 +2480,6 @@ Request on_repaint() to happen as soon as possible.
 \end_layout
 
 \begin_layout Subsection
-gui.synchronous_repaint/RENDERQUEUE:synchronous_repaint: Paint screen now
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.synchronous_repaint(RENDERQUEUE queue)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none RENDERQUEUE::synchronous_repaint()
-\end_layout
-
-\begin_layout Standard
-Paints specified render queue on screen right there and then.
-\end_layout
-
-\begin_layout Subsection
 gui.subframe_update: Enable/Disable subframe updates
 \end_layout
 
@@ -2094,90 +2577,6 @@ Perform hue rotation of color <color> (default bright red), by <step> steps.
 
 \begin_layout Standard
 If <step> is negative, the rotation will be counterclockwise.
-\end_layout
-
-\begin_layout Subsection
-gui.renderq_new: Create a render queue
-\end_layout
-
-\begin_layout Itemize
-Syntax: RENDERQUEUE gui.renderq_new(number width, number height)
-\end_layout
-
-\begin_layout Standard
-Create render queue with specified reported size and return it.
-\end_layout
-
-\begin_layout Subsection
-gui.renderq_clear/RENDERQUEUE:clear: Clear a render queue
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.renderq_clear(RENDERQUEUE queue)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none RENDERQUEUE:clear()
-\end_layout
-
-\begin_layout Standard
-Clear specified render queue.
-\end_layout
-
-\begin_layout Subsection
-gui.renderq_set/RENDERQUEUE:set: Change active render queue
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.renderq_set(RENDERQUEUE queue)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none RENDERQUEUE:set()
-\end_layout
-
-\begin_layout Standard
-Switch to specified render queue.
- Use nil as queue to switch to default queue.
-\end_layout
-
-\begin_layout Itemize
-Note: When switched to another queue, all drawing functions work and draw
- there, even outside on_video/on_paint.
-\end_layout
-
-\begin_layout Subsection
-gui.renderq_run/RENDERQUEUE:run: Run render queue
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.renderq_run(RENDERQUEUE queue)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none RENDERQUEUE:run()
-\end_layout
-
-\begin_layout Standard
-Run specified render queue, copying the objects to current render queue.
- 
-\end_layout
-
-\begin_layout Itemize
-Warning: Don't try to run the current render queue.
-\end_layout
-
-\begin_layout Subsection
-RENDERQUEUE:render: Render a queue to DBITMAP
-\end_layout
-
-\begin_layout Itemize
-Syntax: DBITMAP RENDERQUEUE:render()
-\end_layout
-
-\begin_layout Standard
-Renders the specified render queue to a bitmap, the base bitmap size (modified
- by gaps) being the nominal screen size for render queue.
 \end_layout
 
 \begin_layout Subsection
@@ -2346,137 +2745,6 @@ Draws an arrow using color <color>.
 \begin_layout Enumerate
 <hthick>: Head thickness (only used if <fill> is false).
  Default is <twidth>.
-\end_layout
-
-\begin_layout Subsection
-gui.tilemap: Create a tilemap
-\end_layout
-
-\begin_layout Itemize
-Syntax: TILEMAP gui.tilemap(number w, number h, number bw, number bh)
-\end_layout
-
-\begin_layout Standard
-Create a new tilemap of size <w>*<h>, with each cell being <bw>*<bh>.
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:getsize: Query tilemap size
-\end_layout
-
-\begin_layout Itemize
-Syntax: number, number TILEMAP:getsize()
-\end_layout
-
-\begin_layout Standard
-Return size of tilemap (width first).
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:getcsize: Query tilemap cell size
-\end_layout
-
-\begin_layout Itemize
-Syntax: number, number TILEMAP:getcsize()
-\end_layout
-
-\begin_layout Standard
-Return size of tilemap cell (width first).
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:get: Query tilemap cell
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:get(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: dbitmap TILEMAP:get(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: bitmap,palette TILEMAP:get(number x, number y)
-\end_layout
-
-\begin_layout Standard
-Return contents of cell at <x>,<y>.
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:set: Set tilemap cell
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y, dbitmap b)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y, bitmap b, palette p)
-\end_layout
-
-\begin_layout Standard
-Set contents of cell at <x>,<y>.
- If no bitmap/dbitmap is given, cell is cleared.
- Otherwise specified (d)bitmap is used (with specified palette if bitmap).
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:scroll: Scroll tilemap
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
- w, number h)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
- w, number h, boolean circx, boolean circy)
-\end_layout
-
-\begin_layout Standard
-Scrolls the tilemap tiles by <ox>,<oy>.
- If <x>,<y>,<w>,<h> is specified, the scrolling is limited to <w>*<h> window
- starting at <x>,<y> (in tiles).
-\end_layout
-
-\begin_layout Standard
-If <circx> is true, the window is circular in horizontal direction.
- Similarly with <circy> and vertical direciton.
-\end_layout
-
-\begin_layout Subsection
-TILEMAP:draw: Draw tilemap
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y, number x0, number y0)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y, number x0, number y0, number
- w, number h)
-\end_layout
-
-\begin_layout Standard
-Draw tilemap at <x>,<y>.
- If <x0>,<y0> is given, that is tilemap coordinate (in pixels) of upper
- left edge.
- If <w>,<h> is given, that is the size of window to draw (in pixels)
 \end_layout
 
 \begin_layout Subsection
@@ -4217,37 +4485,6 @@ Warning: If the region crosses VMA boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsection
-memory.map_structure: Create mmap structure
-\end_layout
-
-\begin_layout Itemize
-syntax: MMAP_STRUCT memory.map_structure()
-\end_layout
-
-\begin_layout Standard
-Returns a new mapping structure (MMAP_STRUCT)
-\end_layout
-
-\begin_layout Subsection
-MMAP_STRUCT(): Bind key in mmap structure
-\end_layout
-
-\begin_layout Itemize
-Syntax: none MMAP_STRUCT(string key, [string vma, ]number address, string
- type)
-\end_layout
-
-\begin_layout Standard
-Bind key <key> in mmap structure to specified address <address> with specified
- type <type>.
-\end_layout
-
-\begin_layout Itemize
-Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
- qword, sqword, float or double.
-\end_layout
-
-\begin_layout Subsection
 memory.read_expr: Evaluate memory watch expression
 \end_layout
 
@@ -4647,19 +4884,6 @@ Table zip
 \end_layout
 
 \begin_layout Subsection
-zip.create: Create a new zipfile
-\end_layout
-
-\begin_layout Itemize
-Syntax: ZIPWRITER zip.create(string filename[, number compression])
-\end_layout
-
-\begin_layout Standard
-Creates a new zipfile <filename>, with specified compression level <compression>
- (default 9).
-\end_layout
-
-\begin_layout Subsection
 zip.enumerate: Enumerate members in zipfile
 \end_layout
 
@@ -4671,69 +4895,6 @@ Syntax: Table zip.enumerate(string filename[, boolean invert])
 Returns table of files in zip archive <filename>.
  If <invert> is true, instead of returning array of names, returns table
  with keys being member names and values being true.
-\end_layout
-
-\begin_layout Subsection
-ZIPWRITER:commit: Finish creating ZIP file.
-\end_layout
-
-\begin_layout Itemize
-Syntax: none ZIPWRITER:commit()
-\end_layout
-
-\begin_layout Standard
-Closes the ZIP archive.
- Nothing more can be written.
-\end_layout
-
-\begin_layout Subsection
-ZIPWRITER:rollback: Delete the ZIP file being creted
-\end_layout
-
-\begin_layout Itemize
-Syntax: none ZIPWRITER:rollback()
-\end_layout
-
-\begin_layout Standard
-Deletes the newly written ZIP archive.
- Nothing more can be written.
-\end_layout
-
-\begin_layout Subsection
-ZIPWRITER:create_file: Start writing a new member
-\end_layout
-
-\begin_layout Itemize
-Syntax: none ZIPWRITER:create_file(string filename)
-\end_layout
-
-\begin_layout Standard
-Starts writing a new member <filename> in ZIP file.
- If member is open, it is closed.
-\end_layout
-
-\begin_layout Subsection
-ZIPWRITER:close_file: Close member
-\end_layout
-
-\begin_layout Itemize
-Syntax: none ZIPWRITER:close_file()
-\end_layout
-
-\begin_layout Standard
-Closes member in ZIP file.
-\end_layout
-
-\begin_layout Subsection
-ZIPWRITER:write: Write data
-\end_layout
-
-\begin_layout Itemize
-Syntax none ZIPWRITER:write(string data)
-\end_layout
-
-\begin_layout Standard
-Writes data <data> into ZIP file (binary mode).
 \end_layout
 
 \begin_layout Standard
