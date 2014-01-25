@@ -11,6 +11,17 @@ namespace
 		{
 			if(w) delete w;
 		}
+		static int create(lua::state& L, lua::parameters& P)
+		{
+			auto filename = P.arg<std::string>();
+			auto compression = P.arg_opt<unsigned>(9);
+			if(compression < 0)
+				compression = 0;
+			if(compression > 9)
+				compression = 9;
+			lua::_class<lua_zip_writer>::create(L, filename, compression);
+			return 1;
+		}
 		int commit(lua::state& L, const std::string& fname)
 		{
 			if(!w)
@@ -70,7 +81,9 @@ namespace
 		std::string file;
 	};
 
-	lua::_class<lua_zip_writer> class_zipwriter(lua_class_fileio, "ZIPWRITER", {}, {
+	lua::_class<lua_zip_writer> class_zipwriter(lua_class_fileio, "ZIPWRITER", {
+		{"new", lua_zip_writer::create},
+	}, {
 		{"commit", &lua_zip_writer::commit},
 		{"rollback", &lua_zip_writer::rollback},
 		{"close_file", &lua_zip_writer::close_file},
@@ -85,21 +98,8 @@ namespace
 		file_open = NULL;
 	}
 
-	lua::fnptr lua_zip(lua_func_zip, "zip.create", [](lua::state& L,
-		const std::string& fname) -> int {
-		unsigned compression = 9;
-		std::string filename = L.get_string(1, fname.c_str());
-		L.get_numeric_argument<unsigned>(2, compression, fname.c_str());
-		if(compression < 0)
-			compression = 0;
-		if(compression > 9)
-			compression = 9;
-		lua::_class<lua_zip_writer>::create(L, filename, compression);
-		return 1;
-	});
-
-	lua::fnptr lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L,
-		const std::string& fname) -> int {
+	lua::fnptr lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L, const std::string& fname)
+		-> int {
 		std::string filename = L.get_string(1, fname.c_str());
 		bool invert = false;
 		if(L.type(2) != LUA_TNONE && L.type(2) != LUA_TNIL)
