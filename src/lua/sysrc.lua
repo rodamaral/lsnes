@@ -33,12 +33,19 @@ bit.band=bit.all;
 bit.bxor=bit.parity;
 
 local _lookup_class = lookup_class;
-memory2=_lookup_class("VMALIST").new();
-callback=_lookup_class("CALLBACKS_LIST").new();
-memory.map_structure=_lookup_class("MMAP_STRUCT").new;
-zip.create=_lookup_class("ZIPWRITER").new;
-gui.tilemap=_lookup_class("TILEMAP").new;
-gui.renderq_new=_lookup_class("RENDERCTX").new;
+local classes_meta = {
+	["__newindex"] = function() error("Classes table is not writable"); end,
+	["__index"] = function(a, b) return _lookup_class(b); end
+};
+classes = {};
+setmetatable(classes, classes_meta);
+
+memory2=classes.VMALIST.new();
+callback=classes.CALLBACKS_LIST.new();
+memory.map_structure=classes.MMAP_STRUCT.new;
+zip.create=classes.ZIPWRITER.new;
+gui.tilemap=classes.TILEMAP.new;
+gui.renderq_new=classes.RENDERCTX.new;
 
 local do_arg_err = function(what, n, name)
 	error("Expected "..what.." as argument #"..n.." of "..name);
@@ -46,7 +53,7 @@ end
 
 gui.renderq_set=function(o, ...)
 	if type(o) == "nil" then
-		_lookup_class("RENDERCTX").setnull();
+		classes.RENDERCTX.setnull();
 	elseif identify_class(o) == "RENDERCTX" then
 		o:set(...);
 	else
