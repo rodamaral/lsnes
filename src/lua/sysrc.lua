@@ -38,3 +38,42 @@ callback=_lookup_class("CALLBACKS_LIST").new();
 memory.map_structure=_lookup_class("MMAP_STRUCT").new;
 zip.create=_lookup_class("ZIPWRITER").new;
 gui.tilemap=_lookup_class("TILEMAP").new;
+gui.renderq_new=_lookup_class("RENDERCTX").new;
+
+local do_arg_err = function(what, n, name)
+	error("Expected "..what.." as argument #"..n.." of "..name);
+end
+
+gui.renderq_set=function(o, ...)
+	if type(o) == "nil" then
+		_lookup_class("RENDERCTX").setnull();
+	elseif identify_class(o) == "RENDERCTX" then
+		o:set(...);
+	else
+		do_arg_err("RENDERCTX or nil", 1, "gui.renderq_set");
+	end
+end
+
+gui.renderq_run=function(o, ...)
+	if identify_class(o) == "RENDERCTX" then
+		o:run(...);
+	else
+		do_arg_err("RENDERCTX", 1, "gui.renderq_run");
+	end
+end
+
+gui.synchronous_repaint=function(o, ...)
+	if identify_class(o) == "RENDERCTX" then
+		o:synchronous_repaint(...);
+	else
+		do_arg_err("RENDERCTX", 1, "gui.synchronous_repaint");
+	end
+end
+
+gui.renderq_clear=function(o, ...)
+	if identify_class(o) == "RENDERCTX" then
+		o:clear(...);
+	else
+		do_arg_err("RENDERCTX", 1, "gui.renderq_clear");
+	end
+end

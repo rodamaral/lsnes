@@ -19,6 +19,8 @@ namespace
 			size_t s = rqueue.get_object_count();
 			return (stringfmt() << s << " " << ((s != 1) ? "objects" : "object")).str();
 		}
+		static int create(lua::state& L, lua::parameters& P);
+		static int setnull(lua::state& L, lua::parameters& P);
 		int run(lua::state& L, const std::string& fname)
 		{
 			if(!lua_render_ctx)
@@ -107,60 +109,29 @@ namespace
 		lctx.height = height;
 	}
 
-	lua::fnptr gui_rq_run(lua_func_misc, "gui.renderq_run", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(!lua_render_ctx)
-			return 0;
-		if(lua::_class<lua_renderqueue>::is(L, 1)) {
-			return lua::_class<lua_renderqueue>::get(L, 1, fname.c_str())->run(L, fname);
-		} else
-			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_run.");
-		return 0;
-	});
-
-	lua::fnptr gui_srepaint(lua_func_misc, "gui.synchronous_repaint", [](lua::state& L,
-		const std::string& fname) -> int {
-		if(lua::_class<lua_renderqueue>::is(L, 1)) {
-			return lua::_class<lua_renderqueue>::get(L, 1, fname.c_str())->synchronous_repaint(L, fname);
-		} else
-			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_run.");
-		return 0;
-	});
-
-	lua::fnptr gui_rq_clear(lua_func_misc, "gui.renderq_clear", [](lua::state& L,
-		const std::string& fname) -> int {
-		if(lua::_class<lua_renderqueue>::is(L, 1)) {
-			return lua::_class<lua_renderqueue>::get(L, 1, fname.c_str())->clear(L, fname);
-		} else
-			throw std::runtime_error("Expected RENDERCTX as argument 1 for gui.renderq_clear.");
-		return 0;
-	});
-
-	lua::fnptr gui_rq_new(lua_func_misc, "gui.renderq_new", [](lua::state& L, const std::string& fname)
-		-> int {
-		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
+	int lua_renderqueue::create(lua::state& L, lua::parameters& P)
+	{
+		auto x = P.arg<int32_t>();
+		auto y = P.arg<int32_t>();
 		lua::_class<lua_renderqueue>::create(L, x, y);
 		return 1;
-	});
+	}
 
-	lua::fnptr gui_rq_set(lua_func_misc, "gui.renderq_set", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_renderqueue>::is(L, 1)) {
-			return lua::_class<lua_renderqueue>::get(L, 1, fname.c_str())->set(L, fname);
-		} else if(L.type(1) == LUA_TNIL || L.type(1) == LUA_TNONE) {
-			if(redirect && last == lua_render_ctx)
-				//If there is valid redirect, undo it.
-				lua_render_ctx = saved;
-			redirect = false;
-			last = NULL;
-			saved = NULL;
-		} else
-			throw std::runtime_error("Expected RENDERCTX or nil as argument 1 for " + fname);
+	int lua_renderqueue::setnull(lua::state& L, lua::parameters& P)
+	{
+		if(redirect && last == lua_render_ctx)
+			//If there is valid redirect, undo it.
+			lua_render_ctx = saved;
+		redirect = false;
+		last = NULL;
+		saved = NULL;
 		return 0;
-	});
+	}
 
-	lua::_class<lua_renderqueue> class_lua_renderqueue(lua_class_gui, "RENDERCTX", {}, {
+	lua::_class<lua_renderqueue> class_lua_renderqueue(lua_class_gui, "RENDERCTX", {
+		{"new", lua_renderqueue::create},
+		{"setnull", lua_renderqueue::setnull},
+	}, {
 		{"run", &lua_renderqueue::run},
 		{"synchronous_repaint", &lua_renderqueue::synchronous_repaint},
 		{"clear", &lua_renderqueue::clear},
