@@ -6,6 +6,7 @@
 #include "library/framebuffer-font2.hpp"
 #include "library/utf8.hpp"
 #include "library/lua-framebuffer.hpp"
+#include "library/zip.hpp"
 #include <algorithm>
 
 
@@ -15,7 +16,7 @@ namespace
 	{
 	public:
 		struct empty_font_tag {};
-		lua_customfont(lua::state& L, const std::string& filename);
+		lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2);
 		lua_customfont(lua::state& L);
 		lua_customfont(lua::state& L, empty_font_tag tag);
 		~lua_customfont() throw();
@@ -102,10 +103,9 @@ namespace
 		});
 	}
 
-	lua_customfont::lua_customfont(lua::state& L, const std::string& filename)
-		: font(filename)
+	lua_customfont::lua_customfont(lua::state& L, const std::string& filename, const std::string& filename2)
+		: orig_filename(zip::resolverel(filename, filename2)), font(orig_filename)
 	{
-		orig_filename = filename;
 		init(L);
 	}
 
@@ -125,13 +125,16 @@ namespace
 	{
 		if(!lua_render_ctx)
 			return 0;
-		int32_t _x = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		int32_t _y = L.get_numeric_argument<int32_t>(3, fname.c_str());
-		auto fg = lua_get_fb_color(L, 5, fname, 0xFFFFFFU);
-		auto bg = lua_get_fb_color(L, 6, fname, -1);
-		auto hl = lua_get_fb_color(L, 7, fname, -1);
-		std::string text = L.get_string(4, fname.c_str());
-		auto f = lua::_class<lua_customfont>::pin(L, 1, fname.c_str());
+
+		lua::parameters P(L, fname);
+		auto f = P.arg<lua::objpin<lua_customfont>>();
+		auto _x = P.arg<int32_t>();
+		auto _y = P.arg<int32_t>();
+		auto text = P.arg<std::string>();
+		auto fg = P.color(0xFFFFFFU);
+		auto bg = P.color(-1);
+		auto hl = P.color(-1);
+
 		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
 	}
@@ -144,8 +147,11 @@ namespace
 
 	int lua_customfont::edit(lua::state& L, const std::string& fname)
 	{
-		std::string text = L.get_string(2, fname.c_str());
-		lua_bitmap* _glyph = lua::_class<lua_bitmap>::get(L, 3, fname.c_str());
+		lua::parameters P(L, fname);
+		P.skip();	//This.
+		auto text = P.arg<std::string>();
+		auto _glyph = P.arg<lua_bitmap*>();
+
 		framebuffer::font2::glyph glyph;
 		glyph.width = _glyph->width;
 		glyph.height = _glyph->height;
@@ -164,20 +170,19 @@ namespace
 		font.add(utf8::to32(text), glyph);
 	}
 
-	lua::fnptr gui_text_cf_e(lua_func_misc, "gui.font_new", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 gui_text_cf_e(lua_func_misc, "gui.font_new", [](lua::state& L, lua::parameters& P) -> int {
 		lua::_class<lua_customfont>::create(L, lua_customfont::empty_font_tag());
 		return 1;
 	});
 
-	lua::fnptr gui_text_cf(lua_func_misc, "gui.loadfont", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(L.type(1) == LUA_TNONE || L.type(1) == LUA_TNIL) {
+	lua::fnptr2 gui_text_cf(lua_func_misc, "gui.loadfont", [](lua::state& L, lua::parameters& P) -> int {
+		if(P.is_novalue()) {
 			lua::_class<lua_customfont>::create(L);
 			return 1;
 		}
-		std::string filename = L.get_string(1, fname.c_str());
-		lua::_class<lua_customfont>::create(L, filename);
+		auto filename = P.arg<std::string>();
+		auto filename2 = P.arg_opt<std::string>("");
+		lua::_class<lua_customfont>::create(L, filename, filename2);
 		return 1;
 	});
 }

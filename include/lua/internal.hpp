@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <iostream>
 #include "library/lua-base.hpp"
+#include "library/lua-class.hpp"
+#include "library/lua-function.hpp"
+#include "library/lua-params.hpp"
 #include "library/lua-framebuffer.hpp"
 
 extern lua::state lsnes_lua_state;

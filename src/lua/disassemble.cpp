@@ -7,12 +7,11 @@
 
 namespace
 {
-	lua::fnptr memdisass(lua_func_misc, "memory.disassemble", [](lua::state& L, const std::string& fname)
-		-> int {
-		uint64_t count = 1;
-		std::string kind = L.get_string(1, fname.c_str());
-		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
-		L.get_numeric_argument<uint64_t>(3, count, fname.c_str());
+	lua::fnptr2 memdisass(lua_func_misc, "memory.disassemble", [](lua::state& L, lua::parameters& P) -> int {
+		auto kind = P.arg<std::string>();
+		auto addr = P.arg<uint64_t>();
+		auto count = P.arg_opt<uint64_t>(1);
+
 		disassembler* d;
 		d = &disassembler::byname(kind);
 		L.newtable();
@@ -43,9 +42,9 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr getreg(lua_func_misc, "memory.getregister", [](lua::state& L, const std::string& fname)
-		-> int {
-		std::string r = L.get_string(1, fname.c_str());
+	lua::fnptr2 getreg(lua_func_misc, "memory.getregister", [](lua::state& L, lua::parameters& P) -> int {
+		auto r = P.arg<std::string>();
+
 		const interface_device_reg* regs = our_rom.rtype->get_registers();
 		if(!regs) {
 			L.pushnil();
@@ -64,9 +63,9 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr setreg(lua_func_misc, "memory.setregister", [](lua::state& L, const std::string& fname)
-		-> int {
-		std::string r = L.get_string(1, fname.c_str());
+	lua::fnptr2 setreg(lua_func_misc, "memory.setregister", [](lua::state& L, lua::parameters& P) -> int {
+		auto r = P.arg<std::string>();
+
 		const interface_device_reg* regs = our_rom.rtype->get_registers();
 		if(!regs) {
 			return 0;
@@ -77,9 +76,9 @@ namespace
 			if(!regs[i].write)
 				break;
 			if(regs[i].boolean)
-				regs[i].write(L.get_bool(2, fname.c_str()) ? 1 : 0);
+				regs[i].write(P.arg<bool>() ? 1 : 0);
 			else
-				regs[i].write(L.get_numeric_argument<uint64_t>(2, fname.c_str()));
+				regs[i].write(P.arg<uint64_t>());
 			return 0;
 		}
 		return 0;

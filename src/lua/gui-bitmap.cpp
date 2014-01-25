@@ -163,19 +163,18 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr gui_cbitmap(lua_func_misc, "gui.bitmap_new", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 gui_cbitmap(lua_func_misc, "gui.bitmap_new", [](lua::state& L, lua::parameters& P)
 		-> int {
-		uint32_t w = L.get_numeric_argument<uint32_t>(1, fname.c_str());
-		uint32_t h = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-		bool d = L.get_bool(3, fname.c_str());
+		auto w = P.arg<uint32_t>();
+		auto h = P.arg<uint32_t>();
+		auto d = P.arg<bool>();
 		if(d) {
-			auto c = lua_get_fb_color(L, 4, fname, -1);
+			auto c = P.color(-1);
 			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
 			for(size_t i = 0; i < b->width * b->height; i++)
 				b->pixels[i] = c;
 		} else {
-			uint16_t c = 0;
-			L.get_numeric_argument<uint16_t>(4, c, fname.c_str());
+			uint16_t c = P.arg_opt<uint16_t>(0);
 			lua_bitmap* b = lua::_class<lua_bitmap>::create(L, w, h);
 			for(size_t i = 0; i < b->width * b->height; i++)
 				b->pixels[i] = c;
@@ -1325,63 +1324,54 @@ int lua_dbitmap::hash(lua::state& L, const std::string& fname)
 
 template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 {
-	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	bool src_d = lua::_class<lua_dbitmap>::is(L, 4);
-	bool src_p = lua::_class<lua_bitmap>::is(L, 4);
+	lua::parameters P(L, fname);
+	P.skip();	//This.
+	auto dx = P.arg<uint32_t>();
+	auto dy = P.arg<uint32_t>();
+	bool src_d = P.is<lua_dbitmap>();
+	bool src_p = P.is<lua_bitmap>();
+	int sidx = P.skip();
 	if(!src_d && !src_p)
-		throw std::runtime_error("Expected BITMAP or DBITMAP as argument 4 for " + fname);
-	int slot = 5;
+		P.expected("BITMAP or DBITMAP", sidx);
+	int spal;
 	if(src_p)
-		slot++;		//Reserve slot 5 for palette.
-	uint32_t sx = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
-	uint32_t sy = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
-	uint32_t w = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
-	uint32_t h = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
+		spal = P.skip();	//Reserve for palette.
+	auto sx = P.arg<uint32_t>();
+	auto sy = P.arg<uint32_t>();
+	auto w = P.arg<uint32_t>();
+	auto h = P.arg<uint32_t>();
 	uint32_t hscl, vscl;
 	if(scaled) {
-		hscl = L.get_numeric_argument<uint32_t>(slot++, fname.c_str());
-		vscl = hscl;
-		L.get_numeric_argument<uint32_t>(slot++, vscl, fname.c_str());
+		hscl = P.arg_opt<uint32_t>(1);
+		vscl = P.arg_opt<uint32_t>(hscl);
 	}
 	int64_t ckx = 0x100000000ULL;
 	porterduff_oper pd_oper;
 	if(porterduff) {
-		std::string oper = L.get_string(slot, fname.c_str());
-		pd_oper = get_pd_oper(oper);
+		pd_oper = get_pd_oper(P.arg<std::string>());
 	} else {
 		//Hack: Direct-color bitmaps should take color spec, with special NONE value.
 		if(src_p)
-			L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
-		else if(L.type(slot) == LUA_TSTRING) {
-			framebuffer::color cxt(L.get_string(slot, fname.c_str()));
-			ckx = cxt.asnumber();
-		} else if(L.type(slot) == LUA_TNUMBER) {
-			L.get_numeric_argument<int64_t>(slot, ckx, fname.c_str());
-		} else if(L.type(slot) == LUA_TNIL || L.type(slot) == LUA_TNONE) {
-			//Do nothing.
-		} else
-			(stringfmt() << "Expected string, number or nil as argument " << slot << " for "
-				<< fname).throwex();
+			ckx = P.arg_opt<int64_t>(0x10000);
+		else if(P.is_novalue())
+			; //Do nothing.
+		else
+			ckx = P.color(0).asnumber();
 	}
 
+	operand_dbitmap dest(*this);
 	if(src_d) {
-		lua_dbitmap* sb = lua::_class<lua_dbitmap>::get(L, 4, fname.c_str());
+		operand_dbitmap src(*P.arg<lua_dbitmap*>(sidx));
 		if(porterduff)
-			xblit_pduff<scaled>(operand_dbitmap(*this), operand_dbitmap(*sb), dx, dy, sx, sy, w, h,
-				hscl, vscl, pd_oper);
+			xblit_pduff<scaled>(dest, src, dx, dy, sx, sy, w, h, hscl, vscl, pd_oper);
 		else
-			xblit_dir<scaled>(operand_dbitmap(*this), operand_dbitmap(*sb), ckx, dx, dy, sx, sy, w, h,
-				hscl, vscl);
+			xblit_dir<scaled>(dest, src, ckx, dx, dy, sx, sy, w, h, hscl, vscl);
 	} else {
-		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
-		lua_palette* pal = lua::_class<lua_palette>::get(L, 5, fname.c_str());
+		operand_bitmap_pal src(*P.arg<lua_bitmap*>(sidx), *P.arg<lua_palette*>(spal));
 		if(porterduff)
-			xblit_pduff<scaled>(operand_dbitmap(*this), operand_bitmap_pal(*sb, *pal), dx, dy,
-				sx, sy, w, h, hscl, vscl, pd_oper);
+			xblit_pduff<scaled>(dest, src, dx, dy, sx, sy, w, h, hscl, vscl, pd_oper);
 		else
-			xblit_pal<scaled>(operand_dbitmap(*this), operand_bitmap_pal(*sb, *pal), ckx, dx, dy, sx, sy, 
-				w, h, hscl, vscl);
+			xblit_pal<scaled>(dest, src, ckx, dx, dy, sx, sy, w, h, hscl, vscl);
 	}
 	return 0;
 }

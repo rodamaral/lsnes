@@ -89,22 +89,20 @@ namespace
 		framebuffer::color color;
 	};
 
-	lua::fnptr gui_box(lua_func_misc, "gui.arrow", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 gui_box(lua_func_misc, "gui.arrow", [](lua::state& L, lua::parameters& P) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		uint32_t length = L.get_numeric_argument<int32_t>(3, fname.c_str());
-		uint32_t headwidth = L.get_numeric_argument<int32_t>(4, fname.c_str());
-		int direction = L.get_numeric_argument<int>(5, fname.c_str());
-		bool fill = false;
-		if(L.type(6) == LUA_TBOOLEAN && L.toboolean(6))
-			fill = true;
-		auto color = lua_get_fb_color(L, 7, fname, 0xFFFFFF);
-		uint32_t width = 1;
-		L.get_numeric_argument<uint32_t>(8, width, fname.c_str());
-		uint32_t headthickness = width;
-		L.get_numeric_argument<uint32_t>(9, headthickness, fname.c_str());
+
+		auto x = P.arg<int32_t>();
+		auto y = P.arg<int32_t>();
+		auto length = P.arg<uint32_t>();
+		auto headwidth = P.arg<uint32_t>();
+		auto direction = P.arg<int>();
+		bool fill = (P.is_boolean() ? P.arg<bool>() : (P.skip(), false));
+		auto color = P.color(0xFFFFFF);
+		auto width = P.arg_opt<uint32_t>(1);
+		auto headthickness = P.arg_opt<uint32_t>(width);
+
 		lua_render_ctx->queue->create_add<render_object_arrow>(x, y, length, width, headwidth, headthickness,
 			direction, fill, color);
 		return 0;

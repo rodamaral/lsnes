@@ -2159,7 +2159,7 @@ gui.loadfont: Load a font file
 \end_layout
 
 \begin_layout Itemize
-Syntax: CUSTOMFONT gui.loadfont([string filename])
+Syntax: CUSTOMFONT gui.loadfont([string filename[, string relative_to]])
 \end_layout
 
 \begin_layout Standard

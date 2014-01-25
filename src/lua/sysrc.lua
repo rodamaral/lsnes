@@ -28,3 +28,8 @@ render_queue_function=function(rq)
 end;
 string.byteU=_lsnes_string_byteU;
 string.charU=_lsnes_string_charU;
+--Bit aliases
+bit.bnot=bit.none;
+bit.bor=bit.any;
+bit.band=bit.all;
+bit.bxor=bit.parity;

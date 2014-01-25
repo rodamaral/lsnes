@@ -67,29 +67,27 @@ namespace
 		}
 	}
 
-	lua::fnptr lua_ctype(lua_func_misc, "identify_class", [](lua::state& L, const std::string& fname) -> int {
-		if(L.type(1) != LUA_TUSERDATA)
+	lua::fnptr2 lua_ctype(lua_func_misc, "identify_class", [](lua::state& L, lua::parameters& P) -> int {
+		if(!P.is_userdata())
 			return 0;
 		L.pushlstring(try_recognize_userdata(L, 1));
 		return 1;
 	});
 
-	lua::fnptr lua_tostringx(lua_func_misc, "tostringx", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 lua_tostringx(lua_func_misc, "tostringx", [](lua::state& L, lua::parameters& P) -> int {
 		std::set<const void*> tmp2;
 		std::string y = luavalue_to_string(L, 1, tmp2, false);
-		L.pushlstring(y.c_str(), y.length());
+		L.pushlstring(y);
 		return 1;
 	});
 
-	lua::fnptr lua_print(lua_func_misc, "print2", [](lua::state& L, const std::string& fname) -> int {
-		int stacksize = 0;
-		while(!L.isnone(stacksize + 1))
-		stacksize++;
+	lua::fnptr2 lua_print(lua_func_misc, "print2", [](lua::state& L, lua::parameters& P) -> int {
 		std::string toprint;
 		bool first = true;
-		for(int i = 0; i < stacksize; i++) {
+		while(P.more()) {
+			int i = P.skip();
 			std::set<const void*> tmp2;
-			std::string tmp = luavalue_to_string(L, i + 1, tmp2, false);
+			std::string tmp = luavalue_to_string(L, i, tmp2, false);
 			if(first)
 				toprint = tmp;
 			else
@@ -100,40 +98,36 @@ namespace
 		return 0;
 	});
 
-	lua::fnptr lua_exec(lua_func_misc, "exec", [](lua::state& L, const std::string& fname) -> int {
-		std::string text = L.get_string(1, fname.c_str());
+	lua::fnptr2 lua_exec(lua_func_misc, "exec", [](lua::state& L, lua::parameters& P) -> int {
+		auto text = P.arg<std::string>();
 		lsnes_cmd.invoke(text);
 		return 0;
 	});
 
-	lua::fnptr lua_booted(lua_func_misc, "emulator_ready", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 lua_booted(lua_func_misc, "emulator_ready", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushboolean(lua_booted_flag ? 1 : 0);
 		return 1;
 	});
 
-	lua::fnptr lua_utime(lua_func_misc, "utime", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 lua_utime(lua_func_misc, "utime", [](lua::state& L, lua::parameters& P) -> int {
 		uint64_t t = get_utime();
 		L.pushnumber(t / 1000000);
 		L.pushnumber(t % 1000000);
 		return 2;
 	});
 
-	lua::fnptr lua_idle_time(lua_func_misc, "set_idle_timeout", [](lua::state& L,
-		const std::string& fname) -> int {
-		lua_idle_hook_time = get_utime() + L.get_numeric_argument<uint64_t>(1, fname.c_str());
+	lua::fnptr2 lua_idle_time(lua_func_misc, "set_idle_timeout", [](lua::state& L, lua::parameters& P) -> int {
+		lua_idle_hook_time = get_utime() + P.arg<uint64_t>();
 		return 0;
 	});
 
-	lua::fnptr lua_timer_time(lua_func_misc, "set_timer_timeout", [](lua::state& L,
-		const std::string& fname) -> int {
-		lua_timer_hook_time = get_utime() + L.get_numeric_argument<uint64_t>(1, fname.c_str());
+	lua::fnptr2 lua_timer_time(lua_func_misc, "set_timer_timeout", [](lua::state& L, lua::parameters& P) -> int {
+		lua_timer_hook_time = get_utime() + P.arg<uint64_t>();
 		return 0;
 	});
 
-	lua::fnptr lua_busaddr(lua_func_misc, "bus_address", [](lua::state& L, const std::string& fname)
-		-> int {
-		uint64_t addr = L.get_numeric_argument<uint64_t>(1, fname.c_str());
+	lua::fnptr2 lua_busaddr(lua_func_misc, "bus_address", [](lua::state& L, lua::parameters& P) -> int {
+		uint64_t addr = P.arg<uint64_t>();
 		auto busrange = our_rom.rtype->get_bus_map();
 		if(!busrange.second)
 			throw std::runtime_error("This platform does not have bus mapping");
@@ -141,16 +135,14 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr mgetlagflag(lua_func_misc, "memory.get_lag_flag", [](lua::state& L,
-		const std::string& fname) -> int {
+	lua::fnptr2 mgetlagflag(lua_func_misc, "memory.get_lag_flag", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushboolean(!(our_rom.rtype && our_rom.rtype->get_pflag()));
 		return 1;
 	});
 
-	lua::fnptr msetlagflag(lua_func_misc, "memory.set_lag_flag", [](lua::state& L,
-		const std::string& fname) -> int {
+	lua::fnptr2 msetlagflag(lua_func_misc, "memory.set_lag_flag", [](lua::state& L, lua::parameters& P) -> int {
 		if(our_rom.rtype)
-			our_rom.rtype->set_pflag(!L.get_bool(1, fname.c_str()));
+			our_rom.rtype->set_pflag(!P.arg<bool>());
 		return 0;
 	});
 }

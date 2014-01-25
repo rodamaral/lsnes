@@ -1,4 +1,8 @@
 #include "lua-base.hpp"
+#include "lua-class.hpp"
+#include "lua-function.hpp"
+#include "lua-params.hpp"
+#include "lua-pin.hpp"
 #include "register-queue.hpp"
 #include <iostream>
 #include <cassert>

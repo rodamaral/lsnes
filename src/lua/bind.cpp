@@ -5,28 +5,28 @@
 
 namespace
 {
-	lua::fnptr kbind(lua_func_misc, "keyboard.bind", [](lua::state& L, const std::string& fname) -> int {
-		std::string mod = L.get_string(1, fname.c_str());
-		std::string mask = L.get_string(2, fname.c_str());
-		std::string key = L.get_string(3, fname.c_str());
-		std::string cmd = L.get_string(4, fname.c_str());
+	lua::fnptr2 kbind(lua_func_misc, "keyboard.bind", [](lua::state& L, lua::parameters& P) -> int {
+		auto mod = P.arg<std::string>();
+		auto mask = P.arg<std::string>();
+		auto key = P.arg<std::string>();
+		auto cmd = P.arg<std::string>();
 		lsnes_mapper.bind(mod, mask, key, cmd);
 		return 0;
 	});
 
-	lua::fnptr kunbind(lua_func_misc, "keyboard.unbind", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 kunbind(lua_func_misc, "keyboard.unbind", [](lua::state& L, lua::parameters& P)
 		-> int {
-		std::string mod = L.get_string(1, fname.c_str());
-		std::string mask = L.get_string(2, fname.c_str());
-		std::string key = L.get_string(3, fname.c_str());
+		auto mod = P.arg<std::string>();
+		auto mask = P.arg<std::string>();
+		auto key = P.arg<std::string>();
 		lsnes_mapper.unbind(mod, mask, key);
 		return 0;
 	});
 
-	lua::fnptr kalias(lua_func_misc, "keyboard.alias", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 kalias(lua_func_misc, "keyboard.alias", [](lua::state& L, lua::parameters& P)
 		-> int {
-		std::string alias = L.get_string(1, fname.c_str());
-		std::string cmds = L.get_string(2, fname.c_str());
+		auto alias = P.arg<std::string>();
+		auto cmds = P.arg<std::string>();
 		lsnes_cmd.set_alias_for(alias, cmds);
 		refresh_alias_binds();
 		return 0;

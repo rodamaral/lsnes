@@ -4,9 +4,8 @@
 
 namespace
 {
-	lua::fnptr c_action(lua_func_misc, "memory.action", [](lua::state& L, const std::string& fname)
-		-> int {
-		std::string name = L.get_string(1, fname.c_str());
+	lua::fnptr2 c_action(lua_func_misc, "memory.action", [](lua::state& L, lua::parameters& P) -> int {
+		auto name = P.arg<std::string>();
 		const interface_action* act = NULL;
 		for(auto i : our_rom.rtype->get_actions())
 			if(i->get_symbol() == name) {
@@ -18,12 +17,11 @@ namespace
 		if(!(our_rom.rtype->action_flags(act->id) & 1))
 			throw std::runtime_error("Action not enabled.");
 		std::vector<interface_action_paramval> params;
-		unsigned idx = 2;
 		for(auto i : act->params) {
 			regex_results r;
 			interface_action_paramval pv;
 			if(r = regex("string(:(.*))?", i.model)) {
-				pv.s = L.get_string(idx, fname.c_str());
+				pv.s = P.arg<std::string>();
 				bool bad = false;;
 				try {
 					if(r[2] != "" && !regex_match(r[2], pv.s))
@@ -45,12 +43,12 @@ namespace
 						<< std::endl;
 					throw std::runtime_error("Internal error");
 				}
-				pv.i = L.get_numeric_argument<uint64_t>(idx, fname.c_str());
+				pv.i = P.arg<uint64_t>();
 				if(pv.i < low || pv.i > high) {
 					throw std::runtime_error("Parameter out of limits.");
 				}
 			} else if(r = regex("enum:(.*)", i.model)) {
-				std::string p = L.get_string(idx, fname.c_str());
+				std::string p = P.arg<std::string>();
 				unsigned num = 0;
 				try {
 					JSON::node e(r[1]);
@@ -76,20 +74,17 @@ namespace
 out:
 				pv.i = num;
 			} else if(regex_match("bool", i.model)) {
-				pv.b = L.get_bool(idx, fname.c_str());
+				pv.b = P.arg<bool>();
 			} else if(regex_match("toggle", i.model)) {
-				idx--;
 			} else {
 				messages << "Internal error: Unknown parameter model '" << i.model << "'."
 					<< std::endl;
 				throw std::runtime_error("Internal error");
 			}
 			params.push_back(pv);
-			idx++;
 		}
-		if(L.type(idx) != LUA_TNONE) {
+		if(P.more())
 			throw std::runtime_error("Excess arguments for action");
-		}
 		our_rom.rtype->execute_action(act->id, params);
 		return 0;
 	});
