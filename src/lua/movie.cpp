@@ -7,46 +7,43 @@
 
 namespace
 {
-	lua::fnptr mcurframe(lua_func_misc, "movie.currentframe", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 mcurframe(lua_func_misc, "movie.currentframe", [](lua::state& L, lua::parameters& P) -> int {
 		auto& m = get_movie();
 		L.pushnumber(m.get_current_frame());
 		return 1;
 	});
 
-	lua::fnptr mfc(lua_func_misc, "movie.framecount", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 mfc(lua_func_misc, "movie.framecount", [](lua::state& L, lua::parameters& P) -> int {
 		auto& m = get_movie();
 		L.pushnumber(m.get_frame_count());
 		return 1;
 	});
 
-	lua::fnptr mrrs(lua_func_misc, "movie.rerecords", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 mrrs(lua_func_misc, "movie.rerecords", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushnumber(rrdata.count());
 		return 1;
 	});
 
-	lua::fnptr mro(lua_func_misc, "movie.readonly", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 mro(lua_func_misc, "movie.readonly", [](lua::state& L, lua::parameters& P) -> int {
 		auto& m = get_movie();
 		L.pushboolean(m.readonly_mode() ? 1 : 0);
 		return 1;
 	});
 
-	lua::fnptr mrw(lua_func_misc, "movie.readwrite", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 mrw(lua_func_misc, "movie.readwrite", [](lua::state& L, lua::parameters& P) -> int {
 		auto& m = get_movie();
 		m.readonly_mode(false);
 		return 0;
 	});
 
-	lua::fnptr mfs(lua_func_misc, "movie.frame_subframes", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 mfs(lua_func_misc, "movie.frame_subframes", [](lua::state& L, lua::parameters& P) -> int {
 		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
 		auto& m = get_movie();
 		L.pushnumber(m.frame_subframes(frame));
 		return 1;
 	});
 
-	lua::fnptr mrs(lua_func_misc, "movie.read_subframes", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 mrs(lua_func_misc, "movie.read_subframes", [](lua::state& L, lua::parameters& P) -> int {
 		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
 		uint64_t subframe = L.get_numeric_argument<uint64_t>(2, "movie.frame_subframes");
 		auto& m = get_movie();
@@ -61,30 +58,28 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr rrc(lua_func_misc, "movie.read_rtc", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 rrc(lua_func_misc, "movie.read_rtc", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushnumber(our_movie.rtc_second);
 		L.pushnumber(our_movie.rtc_subsecond);
 		return 2;
 	});
 
-	lua::fnptr musv(lua_func_misc, "movie.unsafe_rewind", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(L.isnoneornil(1)) {
+	lua::fnptr2 musv(lua_func_misc, "movie.unsafe_rewind", [](lua::state& L, lua::parameters& P) -> int {
+		if(P.is_novalue()) {
 			//Start process to mark save.
 			mainloop_signal_need_rewind(NULL);
-		} else if(lua::_class<lua_unsaferewind>::is(L, 1)) {
+		} else if(P.is<lua_unsaferewind>()) {
 			//Load the save.
 			lua::objpin<lua_unsaferewind>* u = new lua::objpin<lua_unsaferewind>(
-				lua::_class<lua_unsaferewind>::pin(L, 1, fname.c_str()));
+				P.arg<lua::objpin<lua_unsaferewind>>());
 			mainloop_signal_need_rewind(u);
 		} else
-			throw std::runtime_error("movie.unsafe_rewind: Expected nil or UNSAFEREWIND as 1st argument");
+			P.expected("UNSAFEREWIND or nil");
 		return 0;
 	});
 
-	lua::fnptr movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string filename = L.get_string(1, fname.c_str());
+	lua::fnptr2 movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua::state& L, lua::parameters& P) -> int {
+		auto filename = P.arg<std::string>();
 		moviefile mfile(filename, *our_rom.rtype);
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");

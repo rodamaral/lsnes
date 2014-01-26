@@ -14,8 +14,7 @@ namespace
 		return 0;
 	});
 
-	lua::fnptr2 kunbind(lua_func_misc, "keyboard.unbind", [](lua::state& L, lua::parameters& P)
-		-> int {
+	lua::fnptr2 kunbind(lua_func_misc, "keyboard.unbind", [](lua::state& L, lua::parameters& P) -> int {
 		auto mod = P.arg<std::string>();
 		auto mask = P.arg<std::string>();
 		auto key = P.arg<std::string>();
@@ -23,8 +22,7 @@ namespace
 		return 0;
 	});
 
-	lua::fnptr2 kalias(lua_func_misc, "keyboard.alias", [](lua::state& L, lua::parameters& P)
-		-> int {
+	lua::fnptr2 kalias(lua_func_misc, "keyboard.alias", [](lua::state& L, lua::parameters& P) -> int {
 		auto alias = P.arg<std::string>();
 		auto cmds = P.arg<std::string>();
 		lsnes_cmd.set_alias_for(alias, cmds);
