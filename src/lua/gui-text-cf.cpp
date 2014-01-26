@@ -20,6 +20,8 @@ namespace
 		lua_customfont(lua::state& L);
 		lua_customfont(lua::state& L, empty_font_tag tag);
 		~lua_customfont() throw();
+		static int create(lua::state& L, lua::parameters& P);
+		static int load(lua::state& L, lua::parameters& P);
 		int draw(lua::state& L, const std::string& fname);
 		int edit(lua::state& L, const std::string& fname);
 		const framebuffer::font2& get_font() { return font; }
@@ -32,7 +34,10 @@ namespace
 		framebuffer::font2 font;
 	};
 
-	lua::_class<lua_customfont> class_customfont(lua_class_gui, "CUSTOMFONT", {}, {
+	lua::_class<lua_customfont> class_customfont(lua_class_gui, "CUSTOMFONT", {
+		{"new", lua_customfont::create},
+		{"load", lua_customfont::load},
+	}, {
 		{"__call", &lua_customfont::draw},
 		{"edit", &lua_customfont::edit},
 	});
@@ -161,12 +166,14 @@ namespace
 		font.add(utf8::to32(text), glyph);
 	}
 
-	lua::fnptr2 gui_text_cf_e(lua_func_misc, "gui.font_new", [](lua::state& L, lua::parameters& P) -> int {
+	int lua_customfont::create(lua::state& L, lua::parameters& P)
+	{
 		lua::_class<lua_customfont>::create(L, lua_customfont::empty_font_tag());
 		return 1;
-	});
+	};
 
-	lua::fnptr2 gui_text_cf(lua_func_misc, "gui.loadfont", [](lua::state& L, lua::parameters& P) -> int {
+	int lua_customfont::load(lua::state& L, lua::parameters& P)
+	{
 		if(P.is_novalue()) {
 			lua::_class<lua_customfont>::create(L);
 			return 1;
@@ -175,5 +182,5 @@ namespace
 		auto filename2 = P.arg_opt<std::string>("");
 		lua::_class<lua_customfont>::create(L, filename, filename2);
 		return 1;
-	});
+	};
 }

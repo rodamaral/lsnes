@@ -60,6 +60,7 @@ namespace
 		lua_iconv(lua::state& L, const char* from, const char* to);
 		~lua_iconv() throw();
 		int call(lua::state& L, const std::string& fname);
+		static int create(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return spec;
@@ -70,8 +71,10 @@ namespace
 		std::string spec;
 	};
 
-	lua::_class<lua_iconv> class_iconv(lua_class_pure, "ICONV", {}, {
-		{"__call", &lua_iconv::call}
+	lua::_class<lua_iconv> class_iconv(lua_class_pure, "ICONV", {
+		{"new", lua_iconv::create},
+	}, {
+		{"__call", &lua_iconv::call},
 	});
 
 
@@ -135,12 +138,13 @@ exit:
 		return code.length() ? 4 : 2;
 	}
 
-	lua::fnptr iconv_new(lua_func_load, "iconv_new", [](lua::state& L, const std::string& fname) -> int {
-		std::string from = L.get_string(1, fname.c_str());
-		std::string to = L.get_string(2, fname.c_str());
+	int lua_iconv::create(lua::state& L, lua::parameters& P)
+	{
+		auto from = P.arg<std::string>();
+		auto to = P.arg<std::string>();
 		lua::_class<lua_iconv>::create(L, from.c_str(), to.c_str());
 		return 1;
-	});
+	}
 
 	lua::fnptr iconv_byteU(lua_func_bit, "_lsnes_string_byteU", [](lua::state& L, const std::string& fname)
 		-> int {

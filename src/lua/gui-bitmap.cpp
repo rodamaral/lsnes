@@ -146,98 +146,6 @@ namespace
 		lua::objpin<lua_palette> p;
 	};
 
-	lua::fnptr gui_bitmap(lua_func_misc, "gui.bitmap_draw", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 3))
-			return lua::_class<lua_bitmap>::get(L, 3, fname.c_str())->_draw(L, fname, false);
-		else if(lua::_class<lua_dbitmap>::is(L, 3))
-			return lua::_class<lua_dbitmap>::get(L, 3, fname.c_str())->_draw(L, fname, false);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 3 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr gui_cpalette(lua_func_misc, "gui.palette_new", [](lua::state& L, const std::string& fname)
-		-> int {
-		lua::_class<lua_palette>::create(L);
-		return 1;
-	});
-
-	lua::fnptr2 gui_cbitmap(lua_func_misc, "gui.bitmap_new", [](lua::state& L, lua::parameters& P)
-		-> int {
-		auto w = P.arg<uint32_t>();
-		auto h = P.arg<uint32_t>();
-		auto d = P.arg<bool>();
-		if(d) {
-			auto c = P.color(-1);
-			lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
-			for(size_t i = 0; i < b->width * b->height; i++)
-				b->pixels[i] = c;
-		} else {
-			uint16_t c = P.arg_opt<uint16_t>(0);
-			lua_bitmap* b = lua::_class<lua_bitmap>::create(L, w, h);
-			for(size_t i = 0; i < b->width * b->height; i++)
-				b->pixels[i] = c;
-		}
-		return 1;
-	});
-
-	lua::fnptr gui_epalette(lua_func_misc, "gui.palette_set", [](lua::state& L, const std::string& fname)
-		-> int {
-		lua_palette* p = lua::_class<lua_palette>::get(L, 1, fname.c_str());
-		return p->set(L, fname);
-	});
-
-	lua::fnptr pset_bitmap(lua_func_misc, "gui.bitmap_pset", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->pset(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->pset(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr pget_bitmap(lua_func_misc, "gui.bitmap_pget", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->pget(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->pget(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr size_bitmap(lua_func_misc, "gui.bitmap_size", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->size(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->size(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr hash_bitmap(lua_func_misc, "gui.bitmap_hash", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->hash(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->hash(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr hash_palette(lua_func_misc, "gui.palette_hash", [](lua::state& L, const std::string& fname)
-		-> int {
-		lua_palette* p = lua::_class<lua_palette>::get(L, 1, fname.c_str());
-		return p->hash(L, fname);
-	});
-
 	struct operand_dbitmap
 	{
 		typedef framebuffer::color pixel_t;
@@ -494,6 +402,7 @@ namespace
 	void xblit_scaled(srcdest sd, uint32_t dx, uint32_t dy, uint32_t sx, uint32_t sy, uint32_t w, uint32_t h,
 		uint32_t hscl, uint32_t vscl)
 	{
+		if(!hscl || !vscl) return;
 		w = max(static_cast<uint32_t>(sd.dwidth / hscl), w);
 		h = max(static_cast<uint32_t>(sd.dheight / vscl), h);
 		while((dx + hscl * w > sd.dwidth || sx + w > sd.swidth) && w > 0)
@@ -605,60 +514,6 @@ namespace
 		}
 	}
 
-	lua::fnptr blit_bitmap(lua_func_misc, "gui.bitmap_blit", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<false, false>(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<false, false>(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr blit_bitmap_s(lua_func_misc, "gui.bitmap_blit_scaled", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<true, false>(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<true, false>(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr blit_bitmap_pd(lua_func_misc, "gui.bitmap_blit_porterduff", [](lua::state& L,
-		const std::string& fname) -> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<false, true>(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<false, true>(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr blit_bitmap_spd(lua_func_misc, "gui.bitmap_blit_scaled_porterduff", [](lua::state& L,
-		const std::string& fname) -> int {
-		if(lua::_class<lua_bitmap>::is(L, 1))
-			return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit<true, true>(L, fname);
-		else if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->blit<true, true>(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as argument 1 for " + fname);
-		return 0;
-	});
-
-	lua::fnptr blit_bitmap_p(lua_func_misc, "gui.bitmap_blit_priority", [](lua::state& L,
-		const std::string& fname) -> int {
-		return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit_priority<false>(L, fname);
-	});
-
-	lua::fnptr blit_bitmap_sp(lua_func_misc, "gui.bitmap_blit_scaled_priority", [](lua::state& L,
-		const std::string& fname) -> int {
-		return lua::_class<lua_bitmap>::get(L, 1, fname.c_str())->blit_priority<true>(L, fname);
-	});
-
 	int bitmap_load_fn(lua::state& L, std::function<lua_loaded_bitmap()> src)
 	{
 		uint32_t w, h;
@@ -679,27 +534,6 @@ namespace
 			return 2;
 		}
 	}
-
-	lua::fnptr gui_loadbitmap(lua_func_misc, "gui.bitmap_load", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string name2;
-		std::string name = L.get_string(1, fname.c_str());
-		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
-			name2 = L.get_string(2, fname.c_str());
-		return bitmap_load_fn(L, [&name, &name2]() -> lua_loaded_bitmap {
-			std::string name3 = zip::resolverel(name, name2);
-			return lua_loaded_bitmap::load(name3);
-		});
-	});
-
-	lua::fnptr gui_loadbitmap2(lua_func_misc, "gui.bitmap_load_str", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string contents = L.get_string(1, fname.c_str());
-		return bitmap_load_fn(L, [&contents]() -> lua_loaded_bitmap {
-			std::istringstream strm(contents);
-			return lua_loaded_bitmap::load(strm);
-		});
-	});
 
 	inline int64_t mangle_color(uint32_t c)
 	{
@@ -819,38 +653,6 @@ namespace
 		}
 	}
 
-	lua::fnptr gui_loadbitmappng(lua_func_misc, "gui.bitmap_load_png", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string name2;
-		std::string name = L.get_string(1, fname.c_str());
-		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
-			name2 = L.get_string(2, fname.c_str());
-		std::string filename = zip::resolverel(name, name2);
-		return bitmap_load_png_fn(L, filename);
-	});
-
-	lua::fnptr gui_loadbitmappng2(lua_func_misc, "gui.bitmap_load_png_str", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string contents = base64_decode(L.get_string(1, fname.c_str()));
-		std::istringstream strm(contents);
-		return bitmap_load_png_fn(L, strm);
-	});
-
-	lua::fnptr gui_savebitmappng(lua_func_misc, "gui.bitmap_save_png", [](lua::state& L,
-		const std::string& fname) -> int {
-		int slot = 1;
-		while(L.type(slot) == LUA_TSTRING)
-			slot++;
-		if(lua::_class<lua_bitmap>::is(L, slot))
-			return lua::_class<lua_bitmap>::get(L, slot, fname.c_str())->_save_png(L, fname, false);
-		else if(lua::_class<lua_dbitmap>::is(L, slot))
-			return lua::_class<lua_dbitmap>::get(L, slot, fname.c_str())->_save_png(L, fname, false);
-		else
-			throw std::runtime_error("Expected BITMAP or DBITMAP as first non-string argument for " +
-				fname);
-		return 0;
-	});
-
 	int bitmap_palette_fn(lua::state& L, std::istream& s)
 	{
 		lua_palette* p = lua::_class<lua_palette>::create(L);
@@ -887,36 +689,6 @@ namespace
 		return 1;
 	}
 
-	lua::fnptr gui_loadpalette(lua_func_misc, "gui.bitmap_load_pal", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string name2;
-		std::string name = L.get_string(1, fname.c_str());
-		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
-			name2 = L.get_string(2, fname.c_str());
-		std::istream& s = zip::openrel(name, name2);
-		try {
-			int r = bitmap_palette_fn(L, s);
-			delete &s;
-			return r;
-		} catch(...) {
-			delete &s;
-			throw;
-		}
-	});
-
-	lua::fnptr gui_loadpalette2(lua_func_misc, "gui.bitmap_load_pal_str", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string content = L.get_string(1, fname.c_str());
-		std::istringstream s(content);
-		return bitmap_palette_fn(L, s);
-	});
-
-	lua::fnptr gui_dpalette(lua_func_misc, "gui.palette_debug", [](lua::state& L,
-		const std::string& fname) -> int {
-		lua_palette* p = lua::_class<lua_palette>::get(L, 1, fname.c_str());
-		return p->debug(L, fname);
-	});
-
 	inline framebuffer::color tadjust(framebuffer::color c, uint16_t adj)
 	{
 		uint32_t rgb = c.orig;
@@ -930,25 +702,27 @@ namespace
 			return framebuffer::color(rgb | ((uint32_t)(256 - a) << 24));
 	}
 
-	lua::fnptr adjust_trans(lua_func_misc, "gui.adjust_transparency", [](lua::state& L,
-		const std::string& fname) -> int {
-		if(lua::_class<lua_dbitmap>::is(L, 1))
-			return lua::_class<lua_dbitmap>::get(L, 1, fname.c_str())->adjust_transparency(L, fname);
-		else if(lua::_class<lua_palette>::is(L, 1))
-			return lua::_class<lua_palette>::get(L, 1, fname.c_str())->adjust_transparency(L, fname);
-		else
-			throw std::runtime_error("Expected BITMAP or PALETTE as argument 1 for "
-				"gui.adjust_transparency");
-		return 0;
+	lua::_class<lua_loaded_bitmap> class_loaded_bitmap(lua_class_gui, "IMAGELOADER", {
+		{"load", lua_loaded_bitmap::load<false>},
+		{"load_str", lua_loaded_bitmap::load_str<false>},
+		{"load_png", lua_loaded_bitmap::load<true>},
+		{"load_png_str", lua_loaded_bitmap::load_str<true>},
+	}, {
 	});
 
-	lua::_class<lua_palette> class_palette(lua_class_gui, "PALETTE", {}, {
+	lua::_class<lua_palette> class_palette(lua_class_gui, "PALETTE", {
+		{"new", lua_palette::create},
+		{"load", lua_palette::load},
+		{"load_str", lua_palette::load_str},
+	}, {
 		{"set", &lua_palette::set},
 		{"hash", &lua_palette::hash},
 		{"debug", &lua_palette::debug},
 		{"adjust_transparency", &lua_palette::adjust_transparency},
 	});
-	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {}, {
+	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {
+		{"new", lua_bitmap::create},
+	}, {
 		{"draw", &lua_bitmap::draw},
 		{"pset", &lua_bitmap::pset},
 		{"pget", &lua_bitmap::pget},
@@ -962,7 +736,9 @@ namespace
 		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
 		{"save_png", &lua_bitmap::save_png},
 	});
-	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {}, {
+	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {
+		{"new", lua_dbitmap::create},
+	}, {
 		{"draw", &lua_dbitmap::draw},
 		{"pset", &lua_dbitmap::pset},
 		{"pget", &lua_dbitmap::pget},
@@ -990,6 +766,34 @@ std::string lua_palette::print()
 {
 	size_t s = colors.size();
 	return (stringfmt() << s << " " << ((s != 1) ? "colors" : "color")).str();
+}
+
+int lua_palette::create(lua::state& L, lua::parameters& P)
+{
+	lua::_class<lua_palette>::create(L);
+	return 1;
+}
+
+int lua_palette::load(lua::state& L, lua::parameters& P)
+{
+	auto name = P.arg<std::string>();
+	auto name2 = P.arg_opt<std::string>("");
+	std::istream& s = zip::openrel(name, name2);
+	try {
+		int r = bitmap_palette_fn(L, s);
+		delete &s;
+		return r;
+	} catch(...) {
+		delete &s;
+		throw;
+	}
+}
+
+int lua_palette::load_str(lua::state& L, lua::parameters& P)
+{
+	auto content = P.arg<std::string>();
+	std::istringstream s(content);
+	return bitmap_palette_fn(L, s);
 }
 
 int lua_palette::set(lua::state& L, const std::string& fname)
@@ -1064,18 +868,24 @@ std::string lua_bitmap::print()
 	return (stringfmt() << width << "*" << height).str();
 }
 
-int lua_bitmap::draw(lua::state& L, const std::string& fname)
+int lua_bitmap::create(lua::state& L, lua::parameters& P)
 {
-	return _draw(L, fname, true);
+	auto w = P.arg<uint32_t>();
+	auto h = P.arg<uint32_t>();
+	uint16_t c = P.arg_opt<uint16_t>(0);
+	lua_bitmap* b = lua::_class<lua_bitmap>::create(L, w, h);
+	for(size_t i = 0; i < b->width * b->height; i++)
+		b->pixels[i] = c;
+	return 1;
 }
 
-int lua_bitmap::_draw(lua::state& L, const std::string& fname, bool is_method)
+int lua_bitmap::draw(lua::state& L, const std::string& fname)
 {
 	if(!lua_render_ctx)
 		return 0;
-	int arg_x = is_method ? 2 : 1;
-	int arg_y = arg_x + 1;
-	int arg_b = is_method ? 1 : 3;
+	int arg_x = 2;
+	int arg_y = 3;
+	int arg_b = 1;
 	int32_t x = L.get_numeric_argument<int32_t>(arg_x, fname.c_str());
 	int32_t y = L.get_numeric_argument<int32_t>(arg_y, fname.c_str());
 	auto b = lua::_class<lua_bitmap>::pin(L, arg_b, fname.c_str());
@@ -1248,18 +1058,24 @@ std::string lua_dbitmap::print()
 	return (stringfmt() << width << "*" << height).str();
 }
 
-int lua_dbitmap::draw(lua::state& L, const std::string& fname)
+int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 {
-	return _draw(L, fname, true);
+	auto w = P.arg<uint32_t>();
+	auto h = P.arg<uint32_t>();
+	auto c = P.color(-1);
+	lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
+	for(size_t i = 0; i < b->width * b->height; i++)
+		b->pixels[i] = c;
+	return 1;
 }
 
-int lua_dbitmap::_draw(lua::state& L, const std::string& fname, bool is_method)
+int lua_dbitmap::draw(lua::state& L, const std::string& fname)
 {
 	if(!lua_render_ctx)
 		return 0;
-	int arg_x = is_method ? 2 : 1;
-	int arg_y = arg_x + 1;
-	int arg_b = is_method ? 1 : 3;
+	int arg_x = 2;
+	int arg_y = 3;
+	int arg_b = 1;
 	int32_t x = L.get_numeric_argument<int32_t>(arg_x, fname.c_str());
 	int32_t y = L.get_numeric_argument<int32_t>(arg_y, fname.c_str());
 	auto b = lua::_class<lua_dbitmap>::pin(L, arg_b, fname.c_str());
@@ -1410,4 +1226,38 @@ int lua_dbitmap::adjust_transparency(lua::state& L, const std::string& fname)
 	for(auto& c : this->pixels)
 		c = tadjust(c, tadj);
 	return 0;
+}
+
+
+template<bool png> int lua_loaded_bitmap::load(lua::state& L, lua::parameters& P)
+{
+	auto name = P.arg<std::string>();
+	auto name2 = P.arg_opt<std::string>("");
+	if(png) {
+		std::string filename = zip::resolverel(name, name2);
+		return bitmap_load_png_fn(L, filename);
+	} else
+		return bitmap_load_fn(L, [&name, &name2]() -> lua_loaded_bitmap {
+			std::string name3 = zip::resolverel(name, name2);
+			return lua_loaded_bitmap::load(name3);
+		});
+}
+
+template<bool png> int lua_loaded_bitmap::load_str(lua::state& L, lua::parameters& P)
+{
+	std::string contents = P.arg<std::string>();
+	if(png) {
+		contents = base64_decode(contents);
+		std::istringstream strm(contents);
+		return bitmap_load_png_fn(L, strm);
+	} else
+		return bitmap_load_fn(L, [&contents]() -> lua_loaded_bitmap {
+			std::istringstream strm(contents);
+			return lua_loaded_bitmap::load(strm);
+		});
+}
+
+std::string lua_loaded_bitmap::print()
+{
+	return "";
 }

@@ -101,6 +101,252 @@ LatexCommand tableofcontents
 \end_layout
 
 \begin_layout Section
+Conventions
+\end_layout
+
+\begin_layout Subsection
+Coordinates:
+\end_layout
+
+\begin_layout Itemize
+Coordinates increase to right and down.
+\end_layout
+
+\begin_layout Itemize
+The origin is at top left of game area or buffer.
+\end_layout
+
+\begin_layout Subsection
+Drawing and contexts
+\end_layout
+
+\begin_layout Itemize
+Methods that draw something (unless stated otherwise) require a valid rendering
+ context.
+ This context can come in three ways:
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+The default rendering context of paint callback (the screen).
+\end_layout
+
+\begin_layout Enumerate
+The default rendering context of video callback (the video).
+\end_layout
+
+\begin_layout Enumerate
+Explicitly set rendering context (RENDERCTX:set).
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The rendering context is always reset when callback ends.
+\end_layout
+
+\begin_layout Subsection
+Colors
+\end_layout
+
+\begin_layout Standard
+(Direct) colors can be specified either as numbers or strings.
+\end_layout
+
+\begin_layout Itemize
+-1 is fully transparent.
+\end_layout
+
+\begin_layout Itemize
+Non-negative numbers less than 
+\begin_inset Formula $2^{32}$
+\end_inset
+
+ are partially opaque colors (
+\begin_inset Formula $a*2^{24}+r*2^{16}+g*2^{8}+b$
+\end_inset
+
+)
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $a$
+\end_inset
+
+ is transparency 
+\begin_inset Formula $0-255$
+\end_inset
+
+, 
+\begin_inset Formula $0$
+\end_inset
+
+ is fully opaque, 
+\begin_inset Formula $256$
+\end_inset
+
+ would be fully transparent.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Thus, numbers in range 
+\begin_inset Formula $0-16777215$
+\end_inset
+
+ stand for fully opaque colors.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+\begin_inset Formula $r$
+\end_inset
+
+, 
+\begin_inset Formula $g$
+\end_inset
+
+ and 
+\begin_inset Formula $b$
+\end_inset
+
+ are intensities of base colors on scale 
+\begin_inset Formula $0-255$
+\end_inset
+
+.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Color can also be specified by name as string: The following color names
+ are known: aliceblue antiquewhite antiquewhite1 antiquewhite2 antiquewhite3
+ antiquewhite4 aqua aquamarine aquamarine1 aquamarine2 aquamarine3 aquamarine4
+ azure azure1 azure2 azure3 azure4 beige bisque bisque1 bisque2 bisque3
+ bisque4 black blanchedalmond blue blue1 blue2 blue3 blue4 blueviolet brown
+ brown1 brown2 brown3 brown4 burlywood burlywood1 burlywood2 burlywood3
+ burlywood4 cadet cadetblue cadetblue1 cadetblue2 cadetblue3 cadetblue4
+ chartreuse chartreuse1 chartreuse2 chartreuse3 chartreuse4 chocolate chocolate1
+ chocolate2 chocolate3 chocolate4 coral coral1 coral2 coral3 coral4 cornflowerbl
+ue cornsilk cornsilk1 cornsilk2 cornsilk3 cornsilk4 crimson cyan cyan1 cyan2
+ cyan3 cyan4 darkblue darkcyan darkgoldenrod darkgoldenrod1 darkgoldenrod2
+ darkgoldenrod3 darkgoldenrod4 darkgray darkgreen darkgrey darkkhaki darkmagenta
+ darkolivegreen darkolivegreen1 darkolivegreen2 darkolivegreen3 darkolivegreen4
+ darkorange darkorange1 darkorange2 darkorange3 darkorange4 darkorchid darkorchi
+d1 darkorchid2 darkorchid3 darkorchid4 darkred darksalmon darkseagreen darkseagr
+een1 darkseagreen2 darkseagreen3 darkseagreen4 darkslateblue darkslategray
+ darkslategray1 darkslategray2 darkslategray3 darkslategray4 darkslategrey
+ darkturquoise darkviolet deeppink deeppink1 deeppink2 deeppink3 deeppink4
+ deepskyblue deepskyblue1 deepskyblue2 deepskyblue3 deepskyblue4 dimgray
+ dimgrey dodgerblue dodgerblue1 dodgerblue2 dodgerblue3 dodgerblue4 firebrick
+ firebrick1 firebrick2 firebrick3 firebrick4 floralwhite forestgreen fractal
+ fuchsia gainsboro ghostwhite gold gold1 gold2 gold3 gold4 goldenrod goldenrod1
+ goldenrod2 goldenrod3 goldenrod4 gray gray0 gray1 gray10 gray100 gray11
+ gray12 gray13 gray14 gray15 gray16 gray17 gray18 gray19 gray2 gray20 gray21
+ gray22 gray23 gray24 gray25 gray26 gray27 gray28 gray29 gray3 gray30 gray31
+ gray32 gray33 gray34 gray35 gray36 gray37 gray38 gray39 gray4 gray40 gray41
+ gray42 gray43 gray44 gray45 gray46 gray47 gray48 gray49 gray5 gray50 gray51
+ gray52 gray53 gray54 gray55 gray56 gray57 gray58 gray59 gray6 gray60 gray61
+ gray62 gray63 gray64 gray65 gray66 gray67 gray68 gray69 gray7 gray70 gray71
+ gray72 gray73 gray74 gray75 gray76 gray77 gray78 gray79 gray8 gray80 gray81
+ gray82 gray83 gray84 gray85 gray86 gray87 gray88 gray89 gray9 gray90 gray91
+ gray92 gray93 gray94 gray95 gray96 gray97 gray98 gray99 green green1 green2
+ green3 green4 greenyellow grey grey0 grey1 grey10 grey100 grey11 grey12
+ grey13 grey14 grey15 grey16 grey17 grey18 grey19 grey2 grey20 grey21 grey22
+ grey23 grey24 grey25 grey26 grey27 grey28 grey29 grey3 grey30 grey31 grey32
+ grey33 grey34 grey35 grey36 grey37 grey38 grey39 grey4 grey40 grey41 grey42
+ grey43 grey44 grey45 grey46 grey47 grey48 grey49 grey5 grey50 grey51 grey52
+ grey53 grey54 grey55 grey56 grey57 grey58 grey59 grey6 grey60 grey61 grey62
+ grey63 grey64 grey65 grey66 grey67 grey68 grey69 grey7 grey70 grey71 grey72
+ grey73 grey74 grey75 grey76 grey77 grey78 grey79 grey8 grey80 grey81 grey82
+ grey83 grey84 grey85 grey86 grey87 grey88 grey89 grey9 grey90 grey91 grey92
+ grey93 grey94 grey95 grey96 grey97 grey98 grey99 honeydew honeydew1 honeydew2
+ honeydew3 honeydew4 hotpink hotpink1 hotpink2 hotpink3 hotpink4 indianred
+ indianred1 indianred2 indianred3 indianred4 indigo ivory ivory1 ivory2
+ ivory3 ivory4 khaki khaki1 khaki2 khaki3 khaki4 lavender lavenderblush
+ lavenderblush1 lavenderblush2 lavenderblush3 lavenderblush4 lawngreen lemonchif
+fon lemonchiffon1 lemonchiffon2 lemonchiffon3 lemonchiffon4 lightblue lightblue1
+ lightblue2 lightblue3 lightblue4 lightcoral lightcyan lightcyan1 lightcyan2
+ lightcyan3 lightcyan4 lightgoldenrod lightgoldenrod1 lightgoldenrod2 lightgolde
+nrod3 lightgoldenrod4 lightgoldenrodyellow lightgray lightgreen lightgrey
+ lightpink lightpink1 lightpink2 lightpink3 lightpink4 lightsalmon lightsalmon1
+ lightsalmon2 lightsalmon3 lightsalmon4 lightseagreen lightskyblue lightskyblue1
+ lightskyblue2 lightskyblue3 lightskyblue4 lightslateblue lightslategray
+ lightslategrey lightsteelblue lightsteelblue1 lightsteelblue2 lightsteelblue3
+ lightsteelblue4 lightyellow lightyellow1 lightyellow2 lightyellow3 lightyellow4
+ lime limegreen linen magenta magenta1 magenta2 magenta3 magenta4 maroon
+ maroon1 maroon2 maroon3 maroon4 mediumaquamarine mediumblue mediumforestgreen
+ mediumgoldenrod mediumorchid mediumorchid1 mediumorchid2 mediumorchid3
+ mediumorchid4 mediumpurple mediumpurple1 mediumpurple2 mediumpurple3 mediumpurp
+le4 mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumviole
+tred midnightblue mintcream mistyrose mistyrose1 mistyrose2 mistyrose3 mistyrose
+4 moccasin navajowhite navajowhite1 navajowhite2 navajowhite3 navajowhite4
+ navy navyblue oldlace olive olivedrab olivedrab1 olivedrab2 olivedrab3
+ olivedrab4 orange orange1 orange2 orange3 orange4 orangered orangered1
+ orangered2 orangered3 orangered4 orchid orchid1 orchid2 orchid3 orchid4
+ palegoldenrod palegreen palegreen1 palegreen2 palegreen3 palegreen4 paleturquoi
+se paleturquoise1 paleturquoise2 paleturquoise3 paleturquoise4 palevioletred
+ palevioletred1 palevioletred2 palevioletred3 palevioletred4 papayawhip
+ peachpuff peachpuff1 peachpuff2 peachpuff3 peachpuff4 peru pink pink1 pink2
+ pink3 pink4 plum plum1 plum2 plum3 plum4 powderblue purple purple1 purple2
+ purple3 purple4 red red1 red2 red3 red4 rosybrown rosybrown1 rosybrown2
+ rosybrown3 rosybrown4 royalblue royalblue1 royalblue2 royalblue3 royalblue4
+ saddlebrown salmon salmon1 salmon2 salmon3 salmon4 sandybrown seagreen
+ seagreen1 seagreen2 seagreen3 seagreen4 seashell seashell1 seashell2 seashell3
+ seashell4 sienna sienna1 sienna2 sienna3 sienna4 silver skyblue skyblue1
+ skyblue2 skyblue3 skyblue4 slateblue slateblue1 slateblue2 slateblue3 slateblue
+4 slategray slategray1 slategray2 slategray3 slategray4 slategrey snow snow1
+ snow2 snow3 snow4 springgreen springgreen1 springgreen2 springgreen3 springgree
+n4 steelblue steelblue1 steelblue2 steelblue3 steelblue4 tan tan1 tan2 tan3
+ tan4 teal thistle thistle1 thistle2 thistle3 thistle4 tomato tomato1 tomato2
+ tomato3 tomato4 transparent turquoise turquoise1 turquoise2 turquoise3
+ turquoise4 violet violetred violetred1 violetred2 violetred3 violetred4
+ wheat wheat1 wheat2 wheat3 wheat4 white whitesmoke yellow yellow1 yellow2
+ yellow3 yellow4 yellowgreen 
+\end_layout
+
+\begin_layout Itemize
+The HSL base color names: hsl-<hue><saturation><lightness>.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Hue can be one of: r (red), ry (red-yellow), o (orange, same as red-yellow),
+ y (yellow), yg (yellow-green), g (green), gc (green-cyan), c (cyan), cb
+ (cyan-blue), b (blue), bm (blue-magenta), m (magenta), mr (magenta-red).
+\end_layout
+
+\begin_layout Itemize
+Saturation is 0-8, where 0 is greyscale and 8 is fully saturated.
+\end_layout
+
+\begin_layout Itemize
+Lightness is 0-8, where 0 is black and 8 is white.
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+The color names can have a modifier after space (multiple modifiers are
+ allowed, separated by spaces): opaque10, opaque20, opaque25, opaque30,
+ opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque,
+ hue{+,-}{1-23}, {saturation,lightness}{+,-}{1-16}.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+opaqueness is measured as percentage.
+\end_layout
+
+\begin_layout Itemize
+Hue adjustments are on 24-step scale.
+\end_layout
+
+\begin_layout Itemize
+Saturation and lightness adjustments are on 16-step scale.
+\end_layout
+
+\end_deeper
+\begin_layout Section
 Special tokens
 \end_layout
 
@@ -134,7 +380,7 @@ MMAP_STRUCT: Quasi-table mapping emulated memory
 
 \begin_layout Standard
 Objects of this class act like tables, except that the values are reflected
- in emulated memory.
+ to and from emulated memory.
 \end_layout
 
 \begin_layout Subsubsection
@@ -142,16 +388,27 @@ static function new: Create new instance
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: memory.map_structure
+Syntax: mmap memory.mmap.new()
 \end_layout
 
 \begin_layout Itemize
-syntax: classes.MMAP_STRUCT.new()
+Syntax: mmap classes.MMAP_STRUCT.new()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: mmap memory.map_structure()
 \end_layout
 
 \begin_layout Standard
-Create and returns a new mapping structure.
+Return value:
+\end_layout
+
+\begin_layout Itemize
+mmap: MMAP_STRUCT: The created mmap structure.
+\end_layout
+
+\begin_layout Standard
+Create a new MMAP_STRUCT (with no mappings) and return it.
 \end_layout
 
 \begin_layout Subsubsection
@@ -159,18 +416,50 @@ operator(): Bind key in mmap structure
 \end_layout
 
 \begin_layout Itemize
-Syntax: none MMAP_STRUCT(string key, [string vma, ]number address, string
- type)
-\end_layout
-
-\begin_layout Standard
-Bind key <key> in mmap structure to specified address <address> with specified
- type <type>.
+Syntax: obj(key, address, type)
 \end_layout
 
 \begin_layout Itemize
-Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
- qword, sqword, float or double.
+Syntax: obj(key, vma, address, type)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+obj: MMAP_STRUCT: The structure to manipulate.
+\end_layout
+
+\begin_layout Itemize
+key: String: The name of the key in array to map.
+\end_layout
+
+\begin_layout Itemize
+vma: String: The memory area the mapped address is in (default: global memory
+ space).
+\end_layout
+
+\begin_layout Itemize
+address: Number: The offset of memory addreess, relative to specified memory
+ area or global memory space.
+\end_layout
+
+\begin_layout Itemize
+type: String: The type of data to map.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+One of: byte, sbyte, word, sword, hword, shword, dword, sdword, qword, sqword,
+ float or double.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Bind key <key> in mmap structure <obj> to address <address> (relative to
+ <vma>).
+ The memory address is treated as type <type>.
 \end_layout
 
 \begin_layout Standard
@@ -181,7 +470,7 @@ Type may be one of: byte, sbyte, word, sword, hword, shword, dword, sdword,
 \end_layout
 
 \begin_layout Subsection
-ZIPWRITER: Writes .zip files
+ZIPWRITER: Write .zip files
 \end_layout
 
 \begin_layout Standard
@@ -193,17 +482,36 @@ Static function new: Create a new zipfile
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: zip.create
+Syntax: zip zip.writer.new(filename, [compression])
 \end_layout
 
 \begin_layout Itemize
-Syntax: classes.ZIPWRITER.new(string filename[, number compression])
+Deprecated: zip zip.create(filename, [compression])
 \end_layout
 
 \begin_layout Standard
-Creates a new zipfile <filename>, with specified compression level <compression>
- (default 9).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+filename: string: The name of the file to write.
+\end_layout
+
+\begin_layout Itemize
+compression: number: Compression level (0-9).
+ Default is 9.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+zip: ZIPWRITER: The newly created ZIP writer.
+\end_layout
+
+\begin_layout Standard
+Create a new ZIPWRITER object and return it.
 \end_layout
 
 \begin_layout Subsubsection
@@ -211,25 +519,56 @@ Method commit: Finish creating ZIP file.
 \end_layout
 
 \begin_layout Itemize
-Syntax: none ZIPWRITER:commit()
+Syntax: zipfile:commit()
 \end_layout
 
 \begin_layout Standard
-Closes the ZIP archive.
- Nothing more can be written.
-\end_layout
-
-\begin_layout Subsubsection
-Method rollback: Delete the ZIP file being creted
+Parameters:
 \end_layout
 
 \begin_layout Itemize
-Syntax: none ZIPWRITER:rollback()
+zipfile: ZIPFILE: The ZIP file object.
 \end_layout
 
 \begin_layout Standard
-Deletes the newly written ZIP archive.
- Nothing more can be written.
+Finish writing the ZIP file and actually create it on disk.
+\end_layout
+
+\begin_layout Itemize
+If a member is currently open, it is implicitly closed.
+\end_layout
+
+\begin_layout Itemize
+Invoking this on already committed or rolled back zipfile causes an error.
+\end_layout
+
+\begin_layout Subsubsection
+Method rollback: Cancel writing the ZIP file.
+\end_layout
+
+\begin_layout Itemize
+Syntax: zipfile:rollback()
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+zipfile: ZIPFILE: The ZIP file object.
+\end_layout
+
+\begin_layout Standard
+Cancel writing the whole ZIP file.
+ The file on disk will not be modified.
+\end_layout
+
+\begin_layout Itemize
+If a member is currently open, it is implicitly closed.
+\end_layout
+
+\begin_layout Itemize
+Invoking this on already committed or rolled back zipfile causes an error.
 \end_layout
 
 \begin_layout Subsubsection
@@ -237,12 +576,31 @@ Method create_file: Start writing a new member
 \end_layout
 
 \begin_layout Itemize
-Syntax: none ZIPWRITER:create_file(string filename)
+Syntax: zipfile:create_file(filename)
 \end_layout
 
 \begin_layout Standard
-Starts writing a new member <filename> in ZIP file.
- If member is open, it is closed.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+zipfile: ZIPFILE: The ZIP file object.
+\end_layout
+
+\begin_layout Itemize
+string filename: Name of the new member to create
+\end_layout
+
+\begin_layout Standard
+Start writing a new member <filename> in ZIP file.
+\end_layout
+
+\begin_layout Itemize
+If a member is currently open, it is implicitly closed.
+\end_layout
+
+\begin_layout Itemize
+Invoking this on already committed or rolled back zipfile causes an error.
 \end_layout
 
 \begin_layout Subsubsection
@@ -250,11 +608,27 @@ Method close_file: Close member
 \end_layout
 
 \begin_layout Itemize
-Syntax: none ZIPWRITER:close_file()
+Syntax: zipfile:close_file()
 \end_layout
 
 \begin_layout Standard
-Closes member in ZIP file.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+zipfile: ZIPFILE: The ZIP file object.
+\end_layout
+
+\begin_layout Standard
+Close the currently open member in zipfile.
+\end_layout
+
+\begin_layout Itemize
+Invoking this on already committed or rolled back zipfile causes an error.
+\end_layout
+
+\begin_layout Itemize
+Invoking this without an open member causes an error.
 \end_layout
 
 \begin_layout Subsubsection
@@ -262,11 +636,27 @@ Method write: Write data
 \end_layout
 
 \begin_layout Itemize
-Syntax none ZIPWRITER:write(string data)
+Syntax: zipfile:write(data)
 \end_layout
 
 \begin_layout Standard
-Writes data <data> into ZIP file (binary mode).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+zipfile: ZIPFILE: The ZIP file object.
+\end_layout
+
+\begin_layout Itemize
+data: string: The data to write.
+\end_layout
+
+\begin_layout Standard
+Write <data> in binary mode (as-is) to currently open member.
+\end_layout
+
+\begin_layout Itemize
+Invoking this without a member being open causes an error.
 \end_layout
 
 \begin_layout Standard
@@ -281,7 +671,7 @@ TILEMAP: Tiled collection of bitmaps.
 \end_layout
 
 \begin_layout Standard
-A tilemap is tiled table, each cell holding a bitmap.
+A tilemap is tiled table, each cell holding a bitmap (indexed or direct).
 \end_layout
 
 \begin_layout Subsubsection
@@ -289,17 +679,48 @@ Static function new: Create a tilemap
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.tilemap
+Syntax: tilemap gui.tiled_bitmap.new(w, h, bw, bh);
 \end_layout
 
 \begin_layout Itemize
-Syntax: TILEMAP classes.TILEMAP.new(number w, number h, number bw, number
- bh)
+Syntax: tilemap classes.TILEMAP.new(w, h, bw, bh);
+\end_layout
+
+\begin_layout Itemize
+Deprecated: tilemap gui.tilemap(w, h, bw, bh);
 \end_layout
 
 \begin_layout Standard
-Create a new tilemap of size <w>*<h>, with each cell being <bw>*<bh>.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: number: Width of the tilemap in tiles
+\end_layout
+
+\begin_layout Itemize
+h: number: Height of the tilemap in tiles
+\end_layout
+
+\begin_layout Itemize
+bw: number: Width of each tile in pixels.
+\end_layout
+
+\begin_layout Itemize
+bh: number: Height of each tile in pixels.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+tilemap: TILEMAP: the newly created tilemap
+\end_layout
+
+\begin_layout Standard
+Create a new tilemap of <w>*<h> tiles, each of <bw>*<bh> pixels and return
+ it.
 \end_layout
 
 \begin_layout Subsubsection
@@ -307,11 +728,31 @@ TILEMAP:getsize: Query tilemap size
 \end_layout
 
 \begin_layout Itemize
-Syntax: number, number TILEMAP:getsize()
+Syntax: width, height tmap:getsize()
 \end_layout
 
 \begin_layout Standard
-Return size of tilemap (width first).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to query.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+width: number : The width of the tilemap in tiles.
+\end_layout
+
+\begin_layout Itemize
+height: number: The height of the tilemap in tiles.
+\end_layout
+
+\begin_layout Standard
+Get size of tilemap in tiles.
 \end_layout
 
 \begin_layout Subsubsection
@@ -319,31 +760,73 @@ TILEMAP:getcsize: Query tilemap cell size
 \end_layout
 
 \begin_layout Itemize
-Syntax: number, number TILEMAP:getcsize()
+Syntax: width, height tmap:getcsize()
 \end_layout
 
 \begin_layout Standard
-Return size of tilemap cell (width first).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to query.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+width: number: The width of tilemap tile in pixels.
+\end_layout
+
+\begin_layout Itemize
+height: number: The height of tilemap tile in pixels.
+\end_layout
+
+\begin_layout Standard
+Get size of each tilemap tile in pixels.
 \end_layout
 
 \begin_layout Subsubsection
-TILEMAP:get: Query tilemap cell
+TILEMAP:get: Query tilemap tile
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:get(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: dbitmap TILEMAP:get(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: bitmap,palette TILEMAP:get(number x, number y)
+Syntax: bitmap, palette tmap:get(x, y)
 \end_layout
 
 \begin_layout Standard
-Return contents of cell at <x>,<y>.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to query.
+\end_layout
+
+\begin_layout Itemize
+x: number: The x-coordinate of tile to query.
+\end_layout
+
+\begin_layout Itemize
+y: number: The y-coordinate of tile to query.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+bitmap: The associated bitmap (BITMAP or DBITMAP), or nil if none.
+\end_layout
+
+\begin_layout Itemize
+palette: The palette (PALETTE) associated with indexed-color bitmap, if
+ any.
+ Otherwise nil.
+\end_layout
+
+\begin_layout Standard
+Return the contents of tile at <x>,<y>.
 \end_layout
 
 \begin_layout Subsubsection
@@ -351,21 +834,50 @@ TILEMAP:set: Set tilemap cell
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y)
+Syntax: tmap:set(x, y)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y, dbitmap b)
+Syntax: tmap:set(x, y, bitmap)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:set(number x, number y, bitmap b, palette p)
+Syntax: tmap:set(x, y, bitmap, palette)
 \end_layout
 
 \begin_layout Standard
-Set contents of cell at <x>,<y>.
- If no bitmap/dbitmap is given, cell is cleared.
- Otherwise specified (d)bitmap is used (with specified palette if bitmap).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to manipulate.
+\end_layout
+
+\begin_layout Itemize
+number x: The x-coordinate of tile to set.
+\end_layout
+
+\begin_layout Itemize
+number y: The y-coordinate of tile to set.
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP/DBITMAP: The bitmap to set to tile.
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The associated palette for bitmap.
+\end_layout
+
+\begin_layout Standard
+Set the contents of tile <x>,<y>.
+ If no <bitmap> is given, clears the tile.
+ Otherwise sets the tile to contain bitmap <bitmap> with associated palette
+ <palette>.
+\end_layout
+
+\begin_layout Itemize
+Specifying index bitmap <bitmap> without palette <palette> causes an error.
 \end_layout
 
 \begin_layout Subsubsection
@@ -373,28 +885,65 @@ TILEMAP:scroll: Scroll tilemap
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy)
+Syntax: tmap:scroll(ox, oy);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
- w, number h)
+Syntax: tmap:scroll(ox, oy, x, y, w, h);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:scroll(number ox, number oy, number x, number y, number
- w, number h, boolean circx, boolean circy)
+Syntax: tmap:scroll(ox, oy, x, y, w, h, circ_x, circ_y);
 \end_layout
 
 \begin_layout Standard
-Scrolls the tilemap tiles by <ox>,<oy>.
- If <x>,<y>,<w>,<h> is specified, the scrolling is limited to <w>*<h> window
- starting at <x>,<y> (in tiles).
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to manipulate.
+\end_layout
+
+\begin_layout Itemize
+ox: number: The number of tiles to scroll horizontally (positive is to right).
+\end_layout
+
+\begin_layout Itemize
+oy: number: The number of tiles to scroll vertically (positive is to down).
+\end_layout
+
+\begin_layout Itemize
+x: number: The left edge of scroll window.
+\end_layout
+
+\begin_layout Itemize
+y: number: The top edge of scroll window.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of scroll window.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of scroll window.
+\end_layout
+
+\begin_layout Itemize
+circ_x: boolean: If true, treat the window as circular in horizontal direction.
+\end_layout
+
+\begin_layout Itemize
+circ_y: boolean: If true, treat the window as circular in vertical direction.
 \end_layout
 
 \begin_layout Standard
-If <circx> is true, the window is circular in horizontal direction.
- Similarly with <circy> and vertical direciton.
+Scroll the specified tilemap <tmap> by <ox>,<oy>.
+ If a window <x>,<y>,<w>,<h> is specified, only that part is scrolled.
+ <circ_x> and <circ_y> control if scroll is circular or not.
+\end_layout
+
+\begin_layout Itemize
+Specifying out-of-range window causes an error.
 \end_layout
 
 \begin_layout Subsubsection
@@ -402,23 +951,52 @@ TILEMAP:draw: Draw tilemap
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y)
+Name: tmap:draw(x, y)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y, number x0, number y0)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none TILEMAP:draw(number x, number y, number x0, number y0, number
- w, number h)
+Name: tmap:draw(x, y, x0, y0, w, h)
 \end_layout
 
 \begin_layout Standard
-Draw tilemap at <x>,<y>.
- If <x0>,<y0> is given, that is tilemap coordinate (in pixels) of upper
- left edge.
- If <w>,<h> is given, that is the size of window to draw (in pixels)
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+tmap: TILEMAP: The tilemap to draw.
+\end_layout
+
+\begin_layout Itemize
+x: The x coordinate on screen to draw to.
+\end_layout
+
+\begin_layout Itemize
+y: The y coordinate on screen to draw to.
+\end_layout
+
+\begin_layout Itemize
+x0: number: The x coordinate on tilemap (in pixels) to start drawing from.
+\end_layout
+
+\begin_layout Itemize
+y0: number: The y coordinate on tilemap (in pixels) to start drawing from.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width to draw (in pixels).
+\end_layout
+
+\begin_layout Itemize
+h: number: The height to draw (in pixels).
+\end_layout
+
+\begin_layout Standard
+Draw tilemap <tmap> to screen at <x>,<y>.
+ If a window <x0>,<y0>,<w>,<h> is specified, only that part is drawn.
+\end_layout
+
+\begin_layout Itemize
+This method requires a rendering context to work.
 \end_layout
 
 \begin_layout Standard
@@ -429,7 +1007,11 @@ Draw tilemap at <x>,<y>.
 \end_layout
 
 \begin_layout Subsection
-RENDERCTX: Render queue
+RENDERCTX: Off-screen rendering context
+\end_layout
+
+\begin_layout Standard
+Object acting as off-screen rendering context.
 \end_layout
 
 \begin_layout Subsubsection
@@ -437,16 +1019,39 @@ Static function new: Create a render queue
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.renderq_new
+Syntax: renderctx gui.renderctx.new(width, height);
 \end_layout
 
 \begin_layout Itemize
-Syntax: RENDERQUEUE classes.RENDERCTX.new(number width, number height)
+Syntax: renderctx classes.RENDERCTX.new(width, height);
+\end_layout
+
+\begin_layout Itemize
+Deprecated: renderctx gui.renderq_new(width, height);
 \end_layout
 
 \begin_layout Standard
-Create render queue with specified reported size and return it.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+width: number: The notional width of the game area.
+\end_layout
+
+\begin_layout Itemize
+height: number: The notional height of the game area.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+rendectx: RENDERCTX: The newly created render context.
+\end_layout
+
+\begin_layout Standard
+Create a render context with reported size <width>*<height> and return it.
 \end_layout
 
 \begin_layout Subsubsection
@@ -454,16 +1059,31 @@ Static function setnull: Reset to default queue
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.renderq_set
+Syntax: gui.renderctx.setnull()
 \end_layout
 
 \begin_layout Itemize
-Syntax: none classes.RENDERCTX:setnull()
+Syntax: classes.RENDERCTX:setnull()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.renderq_set()
 \end_layout
 
 \begin_layout Standard
-Reset back to default queue (screen, video or none).
+Reset the used render context back to default for the executing callback:
+\end_layout
+
+\begin_layout Itemize
+The default for paint callback is the screen
+\end_layout
+
+\begin_layout Itemize
+The default for video callback is the video frame
+\end_layout
+
+\begin_layout Itemize
+The default otherwise is nothing.
 \end_layout
 
 \begin_layout Subsubsection
@@ -471,95 +1091,2307 @@ Method clear: Clear a render queue
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.renderq_clear
+Syntax: renderctx:clear()
 \end_layout
 
 \begin_layout Itemize
-Syntax: none gui.renderq_clear(RENDERQUEUE queue)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none RENDERQUEUE:clear()
+Deprecated: gui.renderq_clear(renderctx)
 \end_layout
 
 \begin_layout Standard
-Clear specified render queue.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+renderctx: RENDERCTX: The render queue to clear.
+\end_layout
+
+\begin_layout Standard
+Clear all drawing from the context.
 \end_layout
 
 \begin_layout Subsubsection
-Method set: Change active render queue
+Method set: Change active render context
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.renderq_set
+Syntax: renderctx:set()
 \end_layout
 
 \begin_layout Itemize
-Syntax: none RENDERQUEUE:set()
+Deprecated: gui.renderq_set(renderctx)
 \end_layout
 
 \begin_layout Standard
-Switch to specified render queue.
- Use nil as queue to switch to default queue.
+Parameters:
 \end_layout
 
 \begin_layout Itemize
-Note: When switched to another queue, all drawing functions work and draw
- there, even outside on_video/on_paint.
+renderctx: RENDERCTX: The render queue to use.
+\end_layout
+
+\begin_layout Standard
+Switch the current rendering context <renderctx>.
 \end_layout
 
 \begin_layout Subsubsection
-Method run: Run render queue
+Method run: Draw all objects in context to another
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.renderq_run
+Syntax: renderctx:run()
 \end_layout
 
 \begin_layout Itemize
-Syntax: none RENDERQUEUE:run()
+Deprecated: gui.renderq_run(renderctx)
 \end_layout
 
 \begin_layout Standard
-Run specified render queue, copying the objects to current render queue.
- 
+Parameters:
 \end_layout
 
 \begin_layout Itemize
-Warning: Don't try to run the current render queue.
+renderctx: RENDERCTX: The render context to overlay.
+\end_layout
+
+\begin_layout Standard
+Overlay the specified render context <context> upon the active rendering
+ context.
+\end_layout
+
+\begin_layout Itemize
+Trying to overlay rendering context upon itself is a bad idea.
 \end_layout
 
 \begin_layout Subsubsection
-Method render: Render a queue to DBITMAP
+Method render: Render a contex to bitmap
 \end_layout
 
 \begin_layout Itemize
-Syntax: DBITMAP RENDERQUEUE:render()
+Syntax: bitmap renderctx:render()
 \end_layout
 
 \begin_layout Standard
-Renders the specified render queue to a bitmap, the base bitmap size (modified
- by gaps) being the nominal screen size for render queue.
+Parameters:
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Itemize
+renderctx: RENDERCTX: The context to render.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The rendered bitmap.
+\end_layout
+
+\begin_layout Standard
+Render the specified context <renderctx> to a new bitmap.
+\end_layout
+
+\begin_layout Itemize
+The size of bitmap will be nominal game area size, plus any set gaps.
+\end_layout
+
+\begin_layout Itemize
+This method does not require active rendering context.
+\end_layout
+
+\begin_layout Subsubsection
 Method synchronous_repaint: Paint screen now
 \end_layout
 
 \begin_layout Itemize
-Compat.
- alias: gui.synchronous_repaint
+Syntax: renderctx:synchronous_repaint()
 \end_layout
 
 \begin_layout Itemize
-Syntax: none RENDERQUEUE::synchronous_repaint()
+Deprecated: gui.synchronous_repaint(renderctx)
 \end_layout
 
 \begin_layout Standard
-Paints specified render queue on screen right there and then.
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+renderctx: RENDERCTX: The context to paint.
+\end_layout
+
+\begin_layout Standard
+Immediately redraw the screen with game overlayed by drawings from context
+ <renderctx>.
+\end_layout
+
+\begin_layout Itemize
+This does not require active rendering context.
+\end_layout
+
+\begin_layout Itemize
+Will not cause paint callback to be invoked.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+PALETTE: Color palette for indexed image
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a new palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette gui.palette.new()
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette classes.PALETTE.new()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: palette gui.palette_new()
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The created palette.
+\end_layout
+
+\begin_layout Standard
+Create a new palette (with all colors transparent) and return it.
+\end_layout
+
+\begin_layout Subsubsection
+Static function load: Load a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette gui.palette.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette classes.PALETTE.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: palette gui.palette_load(file, [base])
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+string file: The file to load.
+\end_layout
+
+\begin_layout Itemize
+string base (optional): The base file to resolve file relative to.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The loaded palette.
+\end_layout
+
+\begin_layout Standard
+Load a palette from file <file> (resolved relative to <base>).
+\end_layout
+
+\begin_layout Itemize
+The file format is a series of lines, each with following format:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Blank or just whitespace: Ignored
+\end_layout
+
+\begin_layout Itemize
+First non-whitespace is '#': Ignored
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b>: Fully opaque color with specified RGB values (0-255)
+\end_layout
+
+\begin_layout Itemize
+<r> <g> <b> <a>: Color with specified RGB values (0-255) and specified alpha
+ (0-256, 0 being fully transparent and 256 fully opaque).
+\end_layout
+
+\begin_layout Itemize
+transparent: Fully transparent color
+\end_layout
+
+\end_deeper
+\begin_layout Subsubsection
+Static function load_str: Load a palette from string
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette gui.palette.load(data)
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette classes.PALETTE.load(data)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: palette gui.palette_load(data)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+string data: The palette data.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The loaded palette.
+\end_layout
+
+\begin_layout Standard
+Like PALETTE:load, but instead of reading palette from file, reads it from
+ a string.
+\end_layout
+
+\begin_layout Subsubsection
+Method set: Set palette entry
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette:set(index, color)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.palette_set(palette, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The palette to manipulate
+\end_layout
+
+\begin_layout Itemize
+index: number: The index of color to set (0-65535).
+\end_layout
+
+\begin_layout Itemize
+color: number/string: The color value to set.
+\end_layout
+
+\begin_layout Standard
+Set palette <palette> index <index> to color <color>.
+\end_layout
+
+\begin_layout Subsubsection
+Method hash: Hash a palette
+\end_layout
+
+\begin_layout Itemize
+Syntax: hash palette:hash()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: hash gui.palette_hash(palette)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to hash.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+hash: string: 64-hex digit hash.
+\end_layout
+
+\begin_layout Standard
+Obtain crypto-grade hash of palette data of <palette>.
+\end_layout
+
+\begin_layout Itemize
+All colors after the last non-transparent one are ignored.
+\end_layout
+
+\begin_layout Subsubsection
+Method adjust_transparency: Adjust transparency
+\end_layout
+
+\begin_layout Itemize
+Syntax: palette:adjust_transparency(newvalue)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.adjust_transparency(palette, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The palette to adjust.
+\end_layout
+
+\begin_layout Itemize
+Number adj: The factor to multiply opaqueness with times 256.
+\end_layout
+
+\begin_layout Standard
+Multiply opaqueness of all colors in palette <palette> by factor of <adj>/256.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+BITMAP: Indexed-color bitmap
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create a new bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap gui.bitmap.new(w, h, [fillcolor])
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap classes.BITMAP.new(w, h, [fillcolor])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: bitmap gui.bitmap_new(w, h, false, [fillcolor])
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of bitmap to create in pixels.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of bitmap to create in pixels.
+\end_layout
+
+\begin_layout Itemize
+false: boolean: Constant boolean false.
+\end_layout
+
+\begin_layout Itemize
+fillcolor: number: The initial fill index.
+ Default 0 if not specified.
+\end_layout
+
+\begin_layout Standard
+Create a new bitmap of size <w>*<h>.
+ Fill the bitmap with color index <fillcolor>.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw: Draw a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:draw(x, y, palette)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_draw(x, y, bitmap, palette)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to draw
+\end_layout
+
+\begin_layout Itemize
+x: number: The x-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+y: number: The y-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+palette: The palette to use for drawing.
+\end_layout
+
+\begin_layout Standard
+Draw bitmap <bitmap> on screen at <x>,<y> with palette <palette>.
+\end_layout
+
+\begin_layout Subsubsection
+Method pset: Set pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:pset(x, y, color)
+\end_layout
+
+\begin_layout Itemize
+Deprecaed: gui.bitmap_pset(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to manipulate.
+\end_layout
+
+\begin_layout Itemize
+x: number: x-coordinate of pixel to set.
+\end_layout
+
+\begin_layout Itemize
+y: number: y-coordinate of pixel to set.
+\end_layout
+
+\begin_layout Itemize
+color: number: The color index to set.
+\end_layout
+
+\begin_layout Standard
+Sets specified pixel <x>,<y> in bitmap <bitmap> to color index <color>.
+\end_layout
+
+\begin_layout Subsubsection
+Method pget: Get pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: color bitmap:pget(x,y)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: color gui.bitmap_pget(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to query.
+\end_layout
+
+\begin_layout Itemize
+x: number: x-coordinate of pixel to get.
+\end_layout
+
+\begin_layout Itemize
+y: number: y-coordinate of pixel to get.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+color: number: The color index in specified pixel.
+\end_layout
+
+\begin_layout Standard
+Gets color index of specified pixel <x>,<y> in bitmap <bitmap>.
+\end_layout
+
+\begin_layout Subsubsection
+Method size: Get size of bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: width, height bitmap:size()
+\end_layout
+
+\begin_layout Itemize
+Syntax: width, height gui.bitmap_size(bitmap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to query.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+width: number: The width of the bitmap.
+\end_layout
+
+\begin_layout Itemize
+height: number: The height of the bitmap.
+\end_layout
+
+\begin_layout Standard
+Get size of bitmap <bitmap>.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit: Blit a bitmap into another
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit(dx, dy, src, sx, sy, w, h, [ck])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+ck: number: The color key.
+ Pixels with this index are not copied.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If none is specified, all pixels are copied.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Copy region of size <w>*<h> at <sx>,<sy> in bitmap <src> into <dest> at
+ <dx>,<dy>.
+ If a color key <ck> is specified, pixels of that color are not copied.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_scaled: Blit a bitmap into another with scaling
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled(dx, dy, src, sx, sy, w, h, hscl, [vscl], [ck])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_scaled(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+hscl: number: Horizontal scale factor (integer).
+\end_layout
+
+\begin_layout Itemize
+vscl: number: Vertical scale factor (integer).
+ Defaults to the same as <hscl>.
+\end_layout
+
+\begin_layout Itemize
+ck: number: The color key.
+ Pixels with this index are not copied.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If none is specified, all pixels are copied.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like BITMAP:blit, but also scales the copied part of bitmap (using nearest
+ neighbor) by factor of <hscl>*<vscl>.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_porterduff: Blit a bitmap into another with Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_porterduff(dx, dy, src, sx, sy, w, h, operator)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_porterduff(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+operator: string: The operator to use.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Can be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver, DestIn,
+ DestOut, Clear or Xor.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like BITMAP:blit, but instead of just overwriting, applies specified Porter-Duff
+ operator.
+ 
+\end_layout
+
+\begin_layout Itemize
+Color index 0 in source and target is treated as background.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_scaled_porterduff: Blit a bitmap into another with scaling and
+ Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled_porterduff(dx, dy, src, sx, sy, w, h, hscl, [vscl],
+ operator)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_scaled_porterduff(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+hscl: number: Horizontal scale factor (integer).
+\end_layout
+
+\begin_layout Itemize
+vscl: number: Vertical scale factor (integer).
+ Defaults to the same as <hscl>.
+\end_layout
+
+\begin_layout Itemize
+operator: string: The operator to use.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Can be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver, DestIn,
+ DestOut, Clear or Xor.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like BITMAP:blit_porterduff, but also scales the source by <hscl>*<vscl>
+ like BITMAP:blit_scaled.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_priority: Blit a bitmap into another with color priority
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_priority(dx, dy, src, sx, sy, w, h)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_priority(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Standard
+Like BITMAP:blit, but only copy pixels where source color index is greater
+ than destination color index.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_scaled_priority: Blit a bitmap into another with color priority
+ and scaling
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled_priority(dx, dy, src, sx, sy, w, h, hscl, [vscl])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_scaled_priority(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: BITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+hscl: number: Horizontal scale factor (integer).
+\end_layout
+
+\begin_layout Itemize
+vscl: number: Vertical scale factor (integer).
+ Defaults to the same as <hscl>.
+\end_layout
+
+\begin_layout Standard
+Like BITMAP:blit_priority, but apply scaling by <hscl>*<vscl> like BITMAP:blit_s
+caled.
+\end_layout
+
+\begin_layout Subsubsection
+Method save_png: Save a bitmap to PNG
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:save_png(filename, [base], palette)
+\end_layout
+
+\begin_layout Itemize
+Syntax: data bitmap:save_png(palette)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_save_png(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to save.
+\end_layout
+
+\begin_layout Itemize
+filename: string: The filename to save to.
+\end_layout
+
+\begin_layout Itemize
+base: string: The base filename is resolved relative to.
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: The palette to use.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+data: string: BASE64 encoded PNG data.
+\end_layout
+
+\begin_layout Standard
+Save bitmap <bitmap>, with palette <pal> into PNG file <filename> (relative
+ to <base>) or return BASE64 encoding of it.
+\end_layout
+
+\begin_layout Subsubsection
+Method hash: Hash a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: hash bitmap:hash()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: hash bitmap:hash(bitmap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP: The bitmap to hash.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+hash: string: 64-hex digit hash
+\end_layout
+
+\begin_layout Standard
+Hashes bitmap <bitmap> and returns crypto-strong hash.
+ 
+\end_layout
+
+\begin_layout Itemize
+Color order in bitmap is significant.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+DBITMAP: Direct-color bitmap
+\end_layout
+
+\begin_layout Subsubsection
+Static function: new: Create a new bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap gui.dbitmap.new(w, h, [fillcolor])
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap classes.DBITMAP.new(w, h, [fillcolor])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: bitmap gui.bitmap_new (w, h, true, [fillcolor]).
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of new bitmap.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of new bitmap.
+\end_layout
+
+\begin_layout Itemize
+true: boolean: Fixed boolean true
+\end_layout
+
+\begin_layout Itemize
+fillcolor: The color to fill the bitmap with (default transparent).
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The new bitmap.
+\end_layout
+
+\begin_layout Standard
+Create a new direct-color bitmap of size <w>*<h>, initially filled with
+ <fillcolor>.
+\end_layout
+
+\begin_layout Subsubsection
+Method draw: Draw a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap.draw(x, y)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_draw(x, y, bitmap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to draw.
+\end_layout
+
+\begin_layout Itemize
+x: number: X-coordinate on screen.
+\end_layout
+
+\begin_layout Itemize
+y: number: Y-coordinate on screen.
+\end_layout
+
+\begin_layout Standard
+Draw bitmap <bitmap> on screen at <x>,<y>.
+\end_layout
+
+\begin_layout Subsubsection
+Method pset: Set pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:pset(x, y, color)
+\end_layout
+
+\begin_layout Itemize
+Deprecaed: gui.bitmap_pset(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to manipulate.
+\end_layout
+
+\begin_layout Itemize
+x: number: x-coordinate of pixel to set.
+\end_layout
+
+\begin_layout Itemize
+y: number: y-coordinate of pixel to set.
+\end_layout
+
+\begin_layout Itemize
+color: number/string: The color to set.
+\end_layout
+
+\begin_layout Standard
+Sets specified pixel <x>,<y> in bitmap <bitmap> to color <color>.
+\end_layout
+
+\begin_layout Subsubsection
+Method pget: Get pixel in bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: color bitmap:pget(x,y)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: color gui.bitmap_pget(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to query.
+\end_layout
+
+\begin_layout Itemize
+x: number: x-coordinate of pixel to get.
+\end_layout
+
+\begin_layout Itemize
+y: number: y-coordinate of pixel to get.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+color: number: The color of specified pixel.
+\end_layout
+
+\begin_layout Standard
+Gets color index of specified pixel <x>,<y> in bitmap <bitmap>.
+\end_layout
+
+\begin_layout Subsubsection
+Method size: Get size of bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: width, height bitmap:size()
+\end_layout
+
+\begin_layout Itemize
+Syntax: width, height gui.bitmap_size(bitmap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to query.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+width: number: The width of the bitmap.
+\end_layout
+
+\begin_layout Itemize
+height: number: The height of the bitmap.
+\end_layout
+
+\begin_layout Standard
+Get size of bitmap <bitmap>.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit: Blit a bitmap into another
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit(dx, dy, src, sx, sy, w, h, [ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit(dx, dy, src, srcpal, sx, sy, w, h, [ck])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: DBITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP/DBITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+srcpal: PALETTE: If <src> is indexed, this is the palette for source.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+ck: number: The color key.
+ Pixels with this index are not copied.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If none is specified, all pixels are copied.
+\end_layout
+
+\begin_layout Itemize
+If <src> is paletted, this is color index, otherwise it is a color.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Copy region of size <w>*<h> at <sx>,<sy> in bitmap <src> (with palette <pal>
+ if indexed) into <dest> at <dx>,<dy>.
+ If a color key <ck> is specified, pixels of that color are not copied.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_scaled: Blit a bitmap into another with scaling
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled(dx, dy, src, sx, sy, w, h, hscl, [vscl], [ck])
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled(dx, dy, src, srcpal, sx, sy, w, h, hscl, [vscl],
+ [ck])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_scaled(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: DBITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP/DBITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+srcpal: PALETTE: If <src> is indexed, this is the palette for source.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+hscl: number: Horizontal scale factor (integer).
+\end_layout
+
+\begin_layout Itemize
+vscl: number: Vertical scale factor (integer).
+ Defaults to the same as <hscl>.
+\end_layout
+
+\begin_layout Itemize
+ck: number: The color key.
+ Pixels with this index are not copied.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+If none is specified, all pixels are copied.
+\end_layout
+
+\begin_layout Itemize
+If <src> is paletted, this is color index, otherwise it is a color.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like DBITMAP:blit, but also scales the copied part of bitmap (using nearest
+ neighbor) by factor of <hscl>*<vscl>.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_porterduff: Blit a bitmap into another with Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_porterduff(dx, dy, src, sx, sy, w, h, operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_porterduff(dx, dy, src, srcpal, sx, sy, w, h, operator)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_porterduff(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: DBITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP/DBITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+srcpal: PALETTE: If <src> is indexed, this is the palette for source.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+operator: string: The operator to use.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Can be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver, DestIn,
+ DestOut, Clear or Xor.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like DBITMAP:blit, but instead of just overwriting, applies specified Porter-Duf
+f operator.
+ 
+\end_layout
+
+\begin_layout Itemize
+In target, fully transparent is background.
+ In source, either fully transparent (if direct) or index 0 (if paletted)
+ is treated as background.
+\end_layout
+
+\begin_layout Subsubsection
+Method blit_scaled_porterduff: Blit a bitmap into another with scaling and
+ Porter-Duff composition
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled_porterduff(dx, dy, src, sx, sy, w, h, hscl, [vscl],
+ operator)
+\end_layout
+
+\begin_layout Itemize
+Syntax: dest:blit_scaled_porterduff(dx, dy, src, srcpal, sx, sy, w, h, hscl,
+ [vscl], operator)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.bitmap_blit_scaled_porterduff(dest, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+dest: DBITMAP: The target bitmap to blit to.
+\end_layout
+
+\begin_layout Itemize
+dx: number: The x-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+dy: number: The y-coordinate in target.
+\end_layout
+
+\begin_layout Itemize
+src: BITMAP/DBITMAP: The source bitmap.
+\end_layout
+
+\begin_layout Itemize
+srcpal: PALETTE: If <src> is indexed, this is the palette for source.
+\end_layout
+
+\begin_layout Itemize
+sx: number: The x-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+sy: number: The y-coordinate in source.
+\end_layout
+
+\begin_layout Itemize
+w: number: The width of area to blit.
+\end_layout
+
+\begin_layout Itemize
+h: number: The height of area to blit.
+\end_layout
+
+\begin_layout Itemize
+hscl: number: Horizontal scale factor (integer).
+\end_layout
+
+\begin_layout Itemize
+vscl: number: Vertical scale factor (integer).
+ Defaults to the same as <hscl>.
+\end_layout
+
+\begin_layout Itemize
+operator: string: The operator to use.
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Can be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver, DestIn,
+ DestOut, Clear or Xor.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Like DBITMAP:blit_porterduff, but also scales the source by <hscl>*<vscl>
+ like DBITMAP:blit_scaled.
+\end_layout
+
+\begin_layout Subsubsection
+Method adjust_transparency: Adjust transparency of bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:adjust_transparency(newvalue)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: gui.adjust_transparency(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to adjust.
+\end_layout
+
+\begin_layout Itemize
+Number adj: The factor to multiply opaqueness with times 256.
+\end_layout
+
+\begin_layout Standard
+Multiply opaqueness of all colors in bitmap <bitmap> by factor of <adj>/256.
+\end_layout
+
+\begin_layout Subsubsection
+Method save_png: Save a bitmap to PNG
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap:save_png(filename, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: data bitmap:save_png()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_save_png(bitmap, ...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to save.
+\end_layout
+
+\begin_layout Itemize
+filename: string: The filename to save to.
+\end_layout
+
+\begin_layout Itemize
+base: string: The base filename is resolved relative to.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+data: string: BASE64 encoded PNG data.
+\end_layout
+
+\begin_layout Standard
+Save bitmap <bitmap> into PNG file <filename> (relative to <base>) or return
+ BASE64 encoding of it.
+\end_layout
+
+\begin_layout Subsubsection
+Method hash: Hash a bitmap
+\end_layout
+
+\begin_layout Itemize
+Syntax: hash bitmap:hash()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: hash bitmap:hash(bitmap)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+bitmap: DBITMAP: The bitmap to hash.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+hash: string: 64-hex digit hash
+\end_layout
+
+\begin_layout Standard
+Hashes bitmap <bitmap> and returns crypto-strong hash.
+ 
+\end_layout
+
+\begin_layout Subsection
+IMAGELOADER: Load an image
+\end_layout
+
+\begin_layout Subsubsection
+Static function load: Load a bitmap from file
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette gui.image.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette classes.IMAGELOADER.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_load(...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+file: string: The file to read.
+\end_layout
+
+\begin_layout Itemize
+base: string: The base to resolve <file> relative to.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP/DBITMAP: The new bitmap
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: If bitmap is paletted, this is the palette, otherwise
+ nil.
+\end_layout
+
+\begin_layout Standard
+Load a new bitmap and return it (plus associated palette if any).
+\end_layout
+
+\begin_layout Subsubsection
+Static function load_str: Load a bitmap from string
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette gui.image.load_str(data)
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette classes.IMAGELOADER.load_str(data)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_load_str(...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+data: string: The image data
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP/DBITMAP: The new bitmap
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: If bitmap is paletted, this is the palette, otherwise
+ nil.
+\end_layout
+
+\begin_layout Standard
+Like IMAGELOADER:load, but read the bitmap from string <data> instead of
+ file.
+\end_layout
+
+\begin_layout Subsubsection
+Static function load_png: Load a bitmap from PNG file
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette gui.image.load_png(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette classes.IMAGELOADER.load_png(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_load_png(...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+file: string: The file to read.
+\end_layout
+
+\begin_layout Itemize
+base: string: The base to resolve <file> relative to.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP/DBITMAP: The new bitmap
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: If bitmap is paletted, this is the palette, otherwise
+ nil.
+\end_layout
+
+\begin_layout Standard
+Like IMAGELOADER:load, but load a PNG file instead.
+\end_layout
+
+\begin_layout Subsubsection
+Static function load_png_str: Load a PNG bitmap from string
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette gui.image.load_png_str(data)
+\end_layout
+
+\begin_layout Itemize
+Syntax: bitmap, palette classes.IMAGELOADER.load_png_str(data)
+\end_layout
+
+\begin_layout Itemize
+Deprecated: ...
+ gui.bitmap_load_png_str(...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+data: string: The image data, base64 encoded.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+bitmap: BITMAP/DBITMAP: The new bitmap
+\end_layout
+
+\begin_layout Itemize
+palette: PALETTE: If bitmap is paletted, this is the palette, otherwise
+ nil.
+\end_layout
+
+\begin_layout Standard
+Like IMAGELOADER:load_png, but read the bitmap from BASE64 encoded string
+ <data> instead of file.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+CUSTOMFONT: Arbitrary-sized bitmap font
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Return a new empty font
+\end_layout
+
+\begin_layout Itemize
+Syntax: font gui.font.new()
+\end_layout
+
+\begin_layout Itemize
+Syntax: font classes.CUSTOMFONT.new()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: font gui.font_new()
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+font: CUSTOMFONT: New font.
+\end_layout
+
+\begin_layout Standard
+Create a new font with no characters and return it.
+\end_layout
+
+\begin_layout Subsubsection
+Static function: load: Load a font file
+\end_layout
+
+\begin_layout Itemize
+Syntax: font gui.font.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: font gui.font.load()
+\end_layout
+
+\begin_layout Itemize
+Syntax: font classes.CUSTOMFONT.load(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: font classes.CUSTOMFONT.load()
+\end_layout
+
+\begin_layout Itemize
+Deprecated: font gui.loadfont(...)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+file: string: The file to read the font from
+\end_layout
+
+\begin_layout Itemize
+base: string: The file to resolve <file> relative to.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+font: CUSTOMFONT: New font.
+\end_layout
+
+\begin_layout Standard
+Load font from file <file> (relative to <base>).
+ If no filename is given, system default font is loaded.
+\end_layout
+
+\begin_layout Subsubsection
+operator(): Render text to screen
+\end_layout
+
+\begin_layout Itemize
+Syntax: font(x, y, text, [fgc], [bgc], [hlc])
+\end_layout
+
+\begin_layout Standard
+Parmeters:
+\end_layout
+
+\begin_layout Itemize
+font: CUSTOMFONT: The font to use.
+\end_layout
+
+\begin_layout Itemize
+x: number: The x-position on screen to draw to.
+\end_layout
+
+\begin_layout Itemize
+y: number: The y-position on screen to draw to.
+\end_layout
+
+\begin_layout Itemize
+text: string: The text to draw.
+\end_layout
+
+\begin_layout Itemize
+fgc: number/string: Foreground color (default white).
+\end_layout
+
+\begin_layout Itemize
+bgc: number/string: Background color (default transparent).
+\end_layout
+
+\begin_layout Itemize
+hlc: number/string: Outline color (default transparent).
+\end_layout
+
+\begin_layout Standard
+Draws a string <text> with specified font <font> and colors <fgc>,<bgc>,<hlc>
+ onto screen.
+\end_layout
+
+\begin_layout Itemize
+If <hlc> is transparent, no outline is drawn.
+\end_layout
+
+\begin_layout Subsubsection
+Method edit: Alter glyph in font
+\end_layout
+
+\begin_layout Itemize
+Syntax: font:edit(character, glyph)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+font: CUSTOMFONT: The font to edit.
+\end_layout
+
+\begin_layout Itemize
+character: string: The character to edit (UTF-8 encoded).
+\end_layout
+
+\begin_layout Itemize
+glyph: BITMAP: The bitmap to use.
+\end_layout
+
+\begin_layout Standard
+Replace character <character> in font <font> by <glyph>.
+\end_layout
+
+\begin_layout Itemize
+Color index 0 is background, everything else is foreground.
+\end_layout
+
+\begin_layout Itemize
+<character> may be empty string, meaning the replacement character used
+ for bad characters.
+\end_layout
+
+\begin_layout Itemize
+<character> may be multi-codepoint string, meaning character used for that
+ ligature.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+ICONV: Character set conversions
+\end_layout
+
+\begin_layout Subsubsection
+Static function new: Create new character set converter
+\end_layout
+
+\begin_layout Itemize
+Syntax: iconv iconv.new(from, to);
+\end_layout
+
+\begin_layout Itemize
+Syntax: iconv classes.ICONV.new(from, to);
+\end_layout
+
+\begin_layout Itemize
+Deprecated: iconv iconv_new(...);
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+from: string: The source character set.
+\end_layout
+
+\begin_layout Itemize
+to: string: The target character set.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+iconv: ICONV: The converter.
+\end_layout
+
+\begin_layout Standard
+Create a character set converter, converting from <from> to <to> and return
+ it.
+\end_layout
+
+\begin_layout Subsubsection
+Operator(): Convert string fragment from character set to another
+\end_layout
+
+\begin_layout Itemize
+Syntax: success, result, unconverted, error iconv(input)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+iconv: ICONV: The context to use.
+\end_layout
+
+\begin_layout Itemize
+input: string: The input to convert.
+\end_layout
+
+\begin_layout Standard
+Return value:
+\end_layout
+
+\begin_layout Itemize
+success: boolean: True if conversion was successful, false if not.
+\end_layout
+
+\begin_layout Itemize
+result: string: The string (partially) converted.
+\end_layout
+
+\begin_layout Itemize
+unconvered: number: Number of bytes that were not converted (only if <success>
+ is false).
+\end_layout
+
+\begin_layout Itemize
+error: string: Error that caused conversion to stop (only if <success> is
+ false).
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+INVALID: The input string is invalid.
+\end_layout
+
+\begin_layout Itemize
+INCOMPLETE: The input string cuts off in middle of character.
+\end_layout
+
+\begin_layout Itemize
+INTERNALERR: Internal error.
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+Convert a string <input> using character set converter <iconv> and return
+ the result.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Newpage pagebreak
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+FILEREADER: Read a file as a stream
+\end_layout
+
+\begin_layout Subsubsection
+Static function open: Open a stream
+\end_layout
+
+\begin_layout Itemize
+Syntax: handle filereader.open(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Syntax: handle classes.FILEREADER.open(file, [base])
+\end_layout
+
+\begin_layout Itemize
+Deprecated: handle open_file(file, [base])
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+file: string: The filename to read.
+\end_layout
+
+\begin_layout Itemize
+base: string: The base <file> is resolved against.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+handle: FILEREADER: The new file reader.
+\end_layout
+
+\begin_layout Standard
+Open file <file> (relative to <base>) and return a handle to it.
+\end_layout
+
+\begin_layout Subsubsection
+operator(): Read line/bytes from stream
+\end_layout
+
+\begin_layout Itemize
+Syntax: result handle()
+\end_layout
+
+\begin_layout Itemize
+Syntax: result handle(bytes)
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+handle: FILEREADER: The handle to read from.
+\end_layout
+
+\begin_layout Itemize
+bytes: Number of bytes to read (default is next line).
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+result: string: The read data, or nil on end-of-file.
+\end_layout
+
+\begin_layout Standard
+Reads next line or <bytes> bytes from specified file handle <handle>.
+\end_layout
+
+\begin_layout Itemize
+If reading specified number of bytes, the bytes are read in binary mode
+ (as-is).
+\end_layout
+
+\begin_layout Itemize
+If reading next line, the line is read in text mode (any line ending is
+ skpped).
+\end_layout
+
+\begin_layout Subsubsection
+Method lines: Iterator to read all lines
+\end_layout
+
+\begin_layout Itemize
+Syntax: for line in handle:lines() do ...
+ end
+\end_layout
+
+\begin_layout Standard
+Parameters:
+\end_layout
+
+\begin_layout Itemize
+handle: FILEREADER: The handle to read.
+\end_layout
+
+\begin_layout Standard
+Returns:
+\end_layout
+
+\begin_layout Itemize
+A lua iterator with one variable.
+\end_layout
+
+\begin_layout Standard
+Return a Lua iterator that iterates all the lines in <handle>.
 \end_layout
 
 \begin_layout Standard
@@ -847,54 +3679,6 @@ Execute lua script from <filename>, resolved relative to <base> (if empty,
 \end_layout
 
 \begin_layout Subsection
-open_file: Open a stream
-\end_layout
-
-\begin_layout Itemize
-Syntax: FILEREADER open_file(string filename[, string base])
-\end_layout
-
-\begin_layout Standard
-Open file <filename>, resolved relative to <base> (if empty, current directory)
- and return a handle.
-\end_layout
-
-\begin_layout Subsection
-FILEREADER(): Read line/bytes from stream
-\end_layout
-
-\begin_layout Itemize
-Syntax: string/nil FILEREADER()
-\end_layout
-
-\begin_layout Itemize
-Syntax: string/nil FILEREADER(number bytes)
-\end_layout
-
-\begin_layout Standard
-Reads next line or <bytes> bytes from specified file handle.
- On EOF, nil is returned.
-\end_layout
-
-\begin_layout Itemize
-Note: The line-oriented variant reads in text mode, so CR at end of line
- is stripped.
-\end_layout
-
-\begin_layout Subsection
-FILEREADER:lines: Iterator to read all lines
-\end_layout
-
-\begin_layout Itemize
-Syntax: for line in <foo>:lines() do ...
- end
-\end_layout
-
-\begin_layout Standard
-Iterator for reading all lines of <foo> in a loop.
-\end_layout
-
-\begin_layout Subsection
 resolve_filename: Resolve name of file relative to another
 \end_layout
 
@@ -928,55 +3712,6 @@ Handy for paint callback if one is using render queues updated in other
 handle = callback.paint:register(render_queue_function(my_rq));
 \end_layout
 
-\begin_layout Subsection
-iconv_new: Create new character set converter
-\end_layout
-
-\begin_layout Itemize
-Syntax: ICONV iconv_new(string from, string to)
-\end_layout
-
-\begin_layout Standard
-Create a character set converter, converting from <from> to <to>.
-\end_layout
-
-\begin_layout Subsection
-ICONV(): Convert string fragment from character set to another
-\end_layout
-
-\begin_layout Itemize
-Syntax: boolean, string, (number, string) ICONV(string input)
-\end_layout
-
-\begin_layout Standard
-Convert string fragment <input> from character set to another.
-\end_layout
-
-\begin_layout Itemize
-If conversion is successful, returns (true, {converted-string}).
- 
-\end_layout
-
-\begin_layout Itemize
-If conversion was unsuccessful, returns (false, {converted-part}, {unconverted-b
-ytes}, {error}).
- The following errors are defined:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-INVALID: Invalid byte sequence in input
-\end_layout
-
-\begin_layout Itemize
-INCOMPLETE: The input is cut of in middle of multi-byte sequence
-\end_layout
-
-\begin_layout Itemize
-INTERNALERR: Internal errror
-\end_layout
-
-\end_deeper
 \begin_layout Subsection
 identify_class: Identify class of object
 \end_layout
@@ -1022,6 +3757,22 @@ _class_methods: Return class method names
 
 \begin_layout Itemize
 <static-function-name>: The specified static function.
+\end_layout
+
+\begin_layout Subsection
+icnov: Class ICONV
+\end_layout
+
+\begin_layout Standard
+See class ICONV.
+\end_layout
+
+\begin_layout Subsection
+filereader: Class FILEREADER
+\end_layout
+
+\begin_layout Standard
+See class FILEREADER.
 \end_layout
 
 \begin_layout Standard
@@ -1416,146 +4167,6 @@ Invokes static method <bar> of class <foo>.
 Table gui:
 \end_layout
 
-\begin_layout Itemize
-Functions that draw to screen can only only be called in on_paint and on_video
- callbacks or if non-default render queue has been set.
-\end_layout
-
-\begin_layout Itemize
-Colors are 32-bit.
- Bits 0-7 are the blue component, bits 8-15 are the green component, bits
- 16-23 are the red component, bits 24-31 are alpha component (0 is fully
- opaque, 255 is almost transparent).
- -1 is the fully transparent color.
- Alternatively, colors can be given as strings naming the color.
-\end_layout
-
-\begin_layout Itemize
-Alpha values greater than 127 do work properly.
-\end_layout
-
-\begin_layout Itemize
-Origin of coordinates is at top left corner of game display area.
- Left and top gaps correspond to negative coordinates.
-\end_layout
-
-\begin_layout Itemize
-The following color names are known: aliceblue antiquewhite antiquewhite1
- antiquewhite2 antiquewhite3 antiquewhite4 aqua aquamarine aquamarine1 aquamarin
-e2 aquamarine3 aquamarine4 azure azure1 azure2 azure3 azure4 beige bisque
- bisque1 bisque2 bisque3 bisque4 black blanchedalmond blue blue1 blue2 blue3
- blue4 blueviolet brown brown1 brown2 brown3 brown4 burlywood burlywood1
- burlywood2 burlywood3 burlywood4 cadet cadetblue cadetblue1 cadetblue2
- cadetblue3 cadetblue4 chartreuse chartreuse1 chartreuse2 chartreuse3 chartreuse
-4 chocolate chocolate1 chocolate2 chocolate3 chocolate4 coral coral1 coral2
- coral3 coral4 cornflowerblue cornsilk cornsilk1 cornsilk2 cornsilk3 cornsilk4
- crimson cyan cyan1 cyan2 cyan3 cyan4 darkblue darkcyan darkgoldenrod darkgolden
-rod1 darkgoldenrod2 darkgoldenrod3 darkgoldenrod4 darkgray darkgreen darkgrey
- darkkhaki darkmagenta darkolivegreen darkolivegreen1 darkolivegreen2 darkoliveg
-reen3 darkolivegreen4 darkorange darkorange1 darkorange2 darkorange3 darkorange4
- darkorchid darkorchid1 darkorchid2 darkorchid3 darkorchid4 darkred darksalmon
- darkseagreen darkseagreen1 darkseagreen2 darkseagreen3 darkseagreen4 darkslateb
-lue darkslategray darkslategray1 darkslategray2 darkslategray3 darkslategray4
- darkslategrey darkturquoise darkviolet deeppink deeppink1 deeppink2 deeppink3
- deeppink4 deepskyblue deepskyblue1 deepskyblue2 deepskyblue3 deepskyblue4
- dimgray dimgrey dodgerblue dodgerblue1 dodgerblue2 dodgerblue3 dodgerblue4
- firebrick firebrick1 firebrick2 firebrick3 firebrick4 floralwhite forestgreen
- fractal fuchsia gainsboro ghostwhite gold gold1 gold2 gold3 gold4 goldenrod
- goldenrod1 goldenrod2 goldenrod3 goldenrod4 gray gray0 gray1 gray10 gray100
- gray11 gray12 gray13 gray14 gray15 gray16 gray17 gray18 gray19 gray2 gray20
- gray21 gray22 gray23 gray24 gray25 gray26 gray27 gray28 gray29 gray3 gray30
- gray31 gray32 gray33 gray34 gray35 gray36 gray37 gray38 gray39 gray4 gray40
- gray41 gray42 gray43 gray44 gray45 gray46 gray47 gray48 gray49 gray5 gray50
- gray51 gray52 gray53 gray54 gray55 gray56 gray57 gray58 gray59 gray6 gray60
- gray61 gray62 gray63 gray64 gray65 gray66 gray67 gray68 gray69 gray7 gray70
- gray71 gray72 gray73 gray74 gray75 gray76 gray77 gray78 gray79 gray8 gray80
- gray81 gray82 gray83 gray84 gray85 gray86 gray87 gray88 gray89 gray9 gray90
- gray91 gray92 gray93 gray94 gray95 gray96 gray97 gray98 gray99 green green1
- green2 green3 green4 greenyellow grey grey0 grey1 grey10 grey100 grey11
- grey12 grey13 grey14 grey15 grey16 grey17 grey18 grey19 grey2 grey20 grey21
- grey22 grey23 grey24 grey25 grey26 grey27 grey28 grey29 grey3 grey30 grey31
- grey32 grey33 grey34 grey35 grey36 grey37 grey38 grey39 grey4 grey40 grey41
- grey42 grey43 grey44 grey45 grey46 grey47 grey48 grey49 grey5 grey50 grey51
- grey52 grey53 grey54 grey55 grey56 grey57 grey58 grey59 grey6 grey60 grey61
- grey62 grey63 grey64 grey65 grey66 grey67 grey68 grey69 grey7 grey70 grey71
- grey72 grey73 grey74 grey75 grey76 grey77 grey78 grey79 grey8 grey80 grey81
- grey82 grey83 grey84 grey85 grey86 grey87 grey88 grey89 grey9 grey90 grey91
- grey92 grey93 grey94 grey95 grey96 grey97 grey98 grey99 honeydew honeydew1
- honeydew2 honeydew3 honeydew4 hotpink hotpink1 hotpink2 hotpink3 hotpink4
- indianred indianred1 indianred2 indianred3 indianred4 indigo ivory ivory1
- ivory2 ivory3 ivory4 khaki khaki1 khaki2 khaki3 khaki4 lavender lavenderblush
- lavenderblush1 lavenderblush2 lavenderblush3 lavenderblush4 lawngreen lemonchif
-fon lemonchiffon1 lemonchiffon2 lemonchiffon3 lemonchiffon4 lightblue lightblue1
- lightblue2 lightblue3 lightblue4 lightcoral lightcyan lightcyan1 lightcyan2
- lightcyan3 lightcyan4 lightgoldenrod lightgoldenrod1 lightgoldenrod2 lightgolde
-nrod3 lightgoldenrod4 lightgoldenrodyellow lightgray lightgreen lightgrey
- lightpink lightpink1 lightpink2 lightpink3 lightpink4 lightsalmon lightsalmon1
- lightsalmon2 lightsalmon3 lightsalmon4 lightseagreen lightskyblue lightskyblue1
- lightskyblue2 lightskyblue3 lightskyblue4 lightslateblue lightslategray
- lightslategrey lightsteelblue lightsteelblue1 lightsteelblue2 lightsteelblue3
- lightsteelblue4 lightyellow lightyellow1 lightyellow2 lightyellow3 lightyellow4
- lime limegreen linen magenta magenta1 magenta2 magenta3 magenta4 maroon
- maroon1 maroon2 maroon3 maroon4 mediumaquamarine mediumblue mediumforestgreen
- mediumgoldenrod mediumorchid mediumorchid1 mediumorchid2 mediumorchid3
- mediumorchid4 mediumpurple mediumpurple1 mediumpurple2 mediumpurple3 mediumpurp
-le4 mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumviole
-tred midnightblue mintcream mistyrose mistyrose1 mistyrose2 mistyrose3 mistyrose
-4 moccasin navajowhite navajowhite1 navajowhite2 navajowhite3 navajowhite4
- navy navyblue oldlace olive olivedrab olivedrab1 olivedrab2 olivedrab3
- olivedrab4 orange orange1 orange2 orange3 orange4 orangered orangered1
- orangered2 orangered3 orangered4 orchid orchid1 orchid2 orchid3 orchid4
- palegoldenrod palegreen palegreen1 palegreen2 palegreen3 palegreen4 paleturquoi
-se paleturquoise1 paleturquoise2 paleturquoise3 paleturquoise4 palevioletred
- palevioletred1 palevioletred2 palevioletred3 palevioletred4 papayawhip
- peachpuff peachpuff1 peachpuff2 peachpuff3 peachpuff4 peru pink pink1 pink2
- pink3 pink4 plum plum1 plum2 plum3 plum4 powderblue purple purple1 purple2
- purple3 purple4 red red1 red2 red3 red4 rosybrown rosybrown1 rosybrown2
- rosybrown3 rosybrown4 royalblue royalblue1 royalblue2 royalblue3 royalblue4
- saddlebrown salmon salmon1 salmon2 salmon3 salmon4 sandybrown seagreen
- seagreen1 seagreen2 seagreen3 seagreen4 seashell seashell1 seashell2 seashell3
- seashell4 sienna sienna1 sienna2 sienna3 sienna4 silver skyblue skyblue1
- skyblue2 skyblue3 skyblue4 slateblue slateblue1 slateblue2 slateblue3 slateblue
-4 slategray slategray1 slategray2 slategray3 slategray4 slategrey snow snow1
- snow2 snow3 snow4 springgreen springgreen1 springgreen2 springgreen3 springgree
-n4 steelblue steelblue1 steelblue2 steelblue3 steelblue4 tan tan1 tan2 tan3
- tan4 teal thistle thistle1 thistle2 thistle3 thistle4 tomato tomato1 tomato2
- tomato3 tomato4 transparent turquoise turquoise1 turquoise2 turquoise3
- turquoise4 violet violetred violetred1 violetred2 violetred3 violetred4
- wheat wheat1 wheat2 wheat3 wheat4 white whitesmoke yellow yellow1 yellow2
- yellow3 yellow4 yellowgreen hsl-{r,ry,o,y,yg,g,gc,c,cb,b,bm,m,mr}{0,1,2,3,4,5,6
-,7,8}{0,1,2,3,4,5,6,7,8}.
-\end_layout
-
-\begin_layout Itemize
-The following modifiers can be applied: opaque10, opaque20, opaque25, opaque30,
- opaque40, opaque50, opaque60, opaque70, opaque75, opaque80, opaque90, opaque,
- hue{+,-}{1-23}, {saturation,lightness}{+,-}{1-16}.
-\end_layout
-
-\begin_layout Itemize
-HSL base color names: r => Red, ry => Red-Yellow (also o).
- y => Yellow, yg => Yellow-Green, g => Green, gc => Green-Cyan, c => Cyan,
- cb => Cyan-Blue, b => Blue, bm => Blue-Magenta, m => Magenta, mr => Magenta
- red.
-\end_layout
-
-\begin_layout Itemize
-HSL colors use 8-step scales for saturation and lightness.
-\end_layout
-
-\begin_layout Itemize
-Modifiers have opaqueness on percent scale (0 is transparent, 100 is fully
- opaque).
-\end_layout
-
-\begin_layout Itemize
-Modifiers have Hue on 24-step scale (4 steps between R->Y->G->C->B->M->R).
-\end_layout
-
-\begin_layout Itemize
-Modifiers have Saturation/Lightness on 16 step scale.
-\end_layout
-
 \begin_layout Subsection
 gui.resolution: Get current resolution
 \end_layout
@@ -1890,584 +4501,6 @@ fill: Fill color (default is -1 (transparent)).
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_draw/(D)BITMAP:draw: Draw a bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_draw(number x, number y, BITMAP bitmap, PALETTE palette)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_draw(number x, number y, DBITMAP bitmap)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP:draw(number x, number y, PALETTE palette)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:draw(number x, number y)
-\end_layout
-
-\begin_layout Standard
-Draw a bitmap <bitmap> (or object) on screen with specified palette <palette>
- (if bitmap is paletted) .
- Parameters:
-\end_layout
-
-\begin_layout Itemize
-x: X-coordinate of left edge.
-\end_layout
-
-\begin_layout Itemize
-y: Y-coordinate of top edge.
-\end_layout
-
-\begin_layout Itemize
-bitmap: The bitmap to draw
-\end_layout
-
-\begin_layout Itemize
-palette: The palette to draw the bitmap using.
-\end_layout
-
-\begin_layout Subsection
-gui.palette_new: Create a new palette
-\end_layout
-
-\begin_layout Itemize
-Syntax: PALETTE gui.palette_new()
-\end_layout
-
-\begin_layout Standard
-Returns a new palette (initially all transparent).
- 
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_new: Create a new bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: BITMAP/DBITMAP gui.bitmap_new(number w, number h, boolean direct[,
- bool icolor])
-\end_layout
-
-\begin_layout Standard
-Returns a new bitmap/dbitmap.
-\end_layout
-
-\begin_layout Standard
-Parameters:
-\end_layout
-
-\begin_layout Itemize
-w: The width of new bitmap
-\end_layout
-
-\begin_layout Itemize
-h: The height of new bitmap
-\end_layout
-
-\begin_layout Itemize
-direct: If true, the returned bitmap is dbitmap, otherwise bitmap.
-\end_layout
-
-\begin_layout Itemize
-icolor: Initital fill color (defaults to 0 on BITMAP, -1 on DBITMAP)
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_load/gui.bitmap_load_str: Load a bitmap from file or string
-\end_layout
-
-\begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load(string file[, string base])
-\end_layout
-
-\begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_str(string content)
-\end_layout
-
-\begin_layout Standard
-Reads file <file> (resolved relative to <base>) or string <content> and
- returns loaded bitmap/dbitmap (if bitmap, the second return value is palette
- for bitmap).
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_load_png/gui.bitmap_load_png_str: Load a bitmap from PNG
-\end_layout
-
-\begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png(string file[, string
- base])
-\end_layout
-
-\begin_layout Itemize
-Syntax: DBITMAP/(BITMAP, PALETTE) gui.bitmap_load_png_str(string content)
-\end_layout
-
-\begin_layout Standard
-Load a bitmap from PNG file <file> (resolved relative to <base>) or BASE64
- encoded content <content>.
-\end_layout
-
-\begin_layout Itemize
-If the PNG is of color type 3 (PALETTE), returns two values.
- First is BITMAP containing the image data from the PNG and second is PALETTE
- containg the palette data from the PNG.
-\end_layout
-
-\begin_layout Itemize
-For color types 0 (GRAY), 2 (RGB), 4 (GRAY_ALPHA) and 6 (RGBA), returns
- one DBITMAP containg the image data loaded from the PNG.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_load_pal/gui.bitmap_load_pal_str: Load a palette
-\end_layout
-
-\begin_layout Itemize
-Syntax: PALETTE gui.bitmap_load_pal(string file[, string base])
-\end_layout
-
-\begin_layout Itemize
-Syntax: PALETTE gui.bitmap_load_pal_str(string content)
-\end_layout
-
-\begin_layout Standard
-Load a palette from file <file>(resolved relative to <base>) or string <content>.
-\end_layout
-
-\begin_layout Itemize
-The kinds of lines supported:
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-Blank or just whitespace: Ignored
-\end_layout
-
-\begin_layout Itemize
-First non-whitespace is '#': Ignored
-\end_layout
-
-\begin_layout Itemize
-<r> <g> <b>: Fully opaque color with specified RGB values (0-255)
-\end_layout
-
-\begin_layout Itemize
-<r> <g> <b> <a>: Color with specified RGB values (0-255) and specified alpha
- (0-256, 0 being fully transparent and 256 fully opaque).
-\end_layout
-
-\begin_layout Itemize
-transparent: Fully transparent color
-\end_layout
-
-\end_deeper
-\begin_layout Subsection
-gui.palette_set/PALETTE:set: Set palette entry
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.palette_set(PALETTE palette, number index, number color)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none PALETTE:set(number index, number color)
-\end_layout
-
-\begin_layout Standard
-Sets color in palette.
- Parameters:
-\end_layout
-
-\begin_layout Itemize
-palette: The palette to manipulate
-\end_layout
-
-\begin_layout Itemize
-index: Index of color (0-65535).
-\end_layout
-
-\begin_layout Itemize
-color: The color value.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_pset/(D)BITMAP:pset: Set pixel in bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_pset(BITMAP/DBITMAP bitmap, number x, number y, number
- color)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP:pset(number x, number y, number color)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:pset(number x, number y, number color)
-\end_layout
-
-\begin_layout Standard
-Sets specified pixel in bitmap.
- Parameters:
-\end_layout
-
-\begin_layout Itemize
-bitmap: The bitmap to manipulate
-\end_layout
-
-\begin_layout Itemize
-x: The x-coordinate of the pixel.
-\end_layout
-
-\begin_layout Itemize
-y: The y-coordinate of the pixel.
-\end_layout
-
-\begin_layout Itemize
-color: If bitmap is a bitmap, color index (0-65535).
- Otherwise color value.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_pget/(D)BITMAP:pget: Get pixel in bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: number gui.bitmap_pget(BITMAP/DBITMAP bitmap, number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: number BITMAP:pget(number x, number y)
-\end_layout
-
-\begin_layout Itemize
-Syntax: number DBITMAP:pget(number x, number y)
-\end_layout
-
-\begin_layout Standard
-Gets specified pixel in bitmap.
- Parameters:
-\end_layout
-
-\begin_layout Itemize
-bitmap: The bitmap to query
-\end_layout
-
-\begin_layout Itemize
-x: The x-coordinate of the pixel.
-\end_layout
-
-\begin_layout Itemize
-y: The y-coordinate of the pixel.
-\end_layout
-
-\begin_layout Standard
-The bitmap color (color index if paletted, otherwise color value).
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_size/(D)BITMAP:size: Get size of bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: (number, number) gui.bitmap_size(BITMAP/DBITMAP bitmap)
-\end_layout
-
-\begin_layout Itemize
-Syntax: (number, number) BITMAP:size()
-\end_layout
-
-\begin_layout Itemize
-Syntax: (number, number) DBITMAP:size()
-\end_layout
-
-\begin_layout Standard
-Get size of bitmap <bitmap>.
- The first return is the width, the second is the height.
-\end_layout
-
-\begin_layout Itemize
-Note: Can be used anywhere.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_blit/(D)BITMAP:blit: Blit a bitmap into another
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit(BITMAP dest, number dx, number dy, BITMAP src,
- number sx, number sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit(DBITMAP dest, number dx, number dy, DBITMAP
- src, number sx, number sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit(DBITMAP dest, number dx, number dy, BITMAP src,
- PALETTE pal, number sx, number sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit(number dx, number dy, BITMAP src, number sx, number
- sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP::blit(number dx, number dy, DBITMAP src, number sx,
- number sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:blit(number dx, number dy, BITMAP src, PALETTE pal,
- number sx, number sy, number w, number h[, number ck])
-\end_layout
-
-\begin_layout Standard
-Blit a part of bitmap to another (current object if any is destination).
- Parameters:
-\end_layout
-
-\begin_layout Itemize
-dest: Destination to blit to.
-\end_layout
-
-\begin_layout Itemize
-dx: left edge of target
-\end_layout
-
-\begin_layout Itemize
-dy: Top edge of target
-\end_layout
-
-\begin_layout Itemize
-src: The source to blit from.
-\end_layout
-
-\begin_layout Itemize
-pal: The palette to use in blit.
-\end_layout
-
-\begin_layout Itemize
-sx: left edge of source
-\end_layout
-
-\begin_layout Itemize
-sy: Top edge of source
-\end_layout
-
-\begin_layout Itemize
-w: Width of region
-\end_layout
-
-\begin_layout Itemize
-h: Height of region.
-\end_layout
-
-\begin_layout Itemize
-ck: Color key.
- Pixels of this color are not blitted.
-\end_layout
-
-\begin_deeper
-\begin_layout Itemize
-If soruce bitmap is bitmap, this is color index of colorkey.
- Values outside range 0-65535 cause no key to be used as colorkey.
-\end_layout
-
-\begin_layout Itemize
-If source bitmap is dbitmap, this is the color value of colorkey.
-\end_layout
-
-\begin_layout Itemize
-May be absent or nil for no colorkey blit.
-\end_layout
-
-\end_deeper
-\begin_layout Subsection
-gui.bitmap_blit_scaled/(D)BITMAP:blit_scaled: Blit a bitmap into another
- with scaling
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled(BITMAP dest, number dx, number dy, BITMAP
- src, number sx, number sy, number w, number h, number hscl[, number vscl[,
- number ck]])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled(DBITMAP dest, number dx, number dy, DBITMAP
- src, number sx, number sy, number w, number h, number hscl[, number vscl[,
- number ck]])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled(DBITMAP dest, number dx, number dy, BITMAP
- src, PALETTE pal, number sx, number sy, number w, number h, number hscl[,
- number vscl[, number ck]])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit_scaled(number dx, number dy, BITMAP src, number
- sx, number sy, number w, number h, number hscl[, number vscl[, number ck]])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP::blit_scaled(number dx, number dy, DBITMAP src, number
- sx, number sy, number w, number h, number hscl[, number vscl[, number ck]])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:blit_scaled(number dx, number dy, BITMAP src, PALETTE
- pal, number sx, number sy, number w, number h, number hscl[, number vscl[,
- number ck]])
-\end_layout
-
-\begin_layout Standard
-Like (D)BITMAP:blit, but also scale the image horizontally by <hscl> and
- vertically by <vscl> (if not specified, <vscl> defaults to <hscl>).
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_blit_porterduff/(D)BITMAP:blit_porterduff: Blit a bitmap into
- another with Porter-Duff composition
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_porterduff(BITMAP dest, number dx, number dy,
- BITMAP src, number sx, number sy, number w, number h, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_porterduff(DBITMAP dest, number dx, number dy,
- DBITMAP src, number sx, number sy, number w, number h, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_porterduff(DBITMAP dest, number dx, number dy,
- BITMAP src, PALETTE pal, number sx, number sy, number w, number h, string
- operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit_porterduff(number dx, number dy, BITMAP src, number
- sx, number sy, number w, number h, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP::blit_porterduff(number dx, number dy, DBITMAP src,
- number sx, number sy, number w, number h, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:blit_porterduff(number dx, number dy, BITMAP src, PALETTE
- pal, number sx, number sy, number w, number h, string operator)
-\end_layout
-
-\begin_layout Standard
-Like (D)BITMAP:blit, but applying specified Porter-Duff operator.
- BITMAPs always have color 0 treated as background, DBITMAPs treat full
- opaque as background.
- <operator> may be one of: Src, Atop, Over, In, Out, Dest, DestAtop, DestOver,
- DestIn, DestOut, Clear or Xor.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_blit_scaled_porterduff/(D)BITMAP:blit_scaled_porterduff: Blit
- a bitmap into another with scaling and Porter-Duff composition
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled_porterduff(BITMAP dest, number dx, number
- dy, BITMAP src, number sx, number sy, number w, number h, number hscl,
- number vscl, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled_porterduff(DBITMAP dest, number dx, number
- dy, DBITMAP src, number sx, number sy, number w, number h, number hscl,
- number vscl, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled_porterduff(DBITMAP dest, number dx, number
- dy, BITMAP src, PALETTE pal, number sx, number sy, number w, number h,
- number hscl, number vscl, string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit_scaled_porterduff(number dx, number dy, BITMAP
- src, number sx, number sy, number w, number h, number hscl, number vscl,
- string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP::blit_scaled_porterduff(number dx, number dy, DBITMAP
- src, number sx, number sy, number w, number h, number hscl, number vscl,
- string operator)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:blit_scaled_porterduff(number dx, number dy, BITMAP
- src, PALETTE pal, number sx, number sy, number w, number h, number hscl,
- number vscl, string operator)
-\end_layout
-
-\begin_layout Standard
-Like (D)BITMAP:blit_porterduff, but also scale the image horizontally by
- <hscl> and vertically by <vscl> (if nil, <vscl> defaults to <hscl>).
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_blit_priority/BITMAP:blit_priority: Blit a bitmap into another
- with color priority
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_priority(BITMAP dest, number dx, number dy,
- BITMAP src, number sx, number sy, number w, number h)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit_priority(number dx, number dy, BITMAP src, number
- sx, number sy, number w, number h)
-\end_layout
-
-\begin_layout Standard
-Like BITMAP:blit, but copy a pixel only if source palette index is greater
- than destination palette index.
-\end_layout
-
-\begin_layout Subsection
-gui.bitmap_blit_scaled_priority/BITMAP:blit_scaled_priority: Blit a bitmap
- into another with color priority and scaling
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_blit_scaled_priority(BITMAP dest, number dx, number
- dy, BITMAP src, number sx, number sy, number w, number h, number hscl[,
- number vscl])
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP::blit_scaled_priority(number dx, number dy, BITMAP src,
- number sx, number sy, number w, number h, number hscl[, number vscl])
-\end_layout
-
-\begin_layout Standard
-Like BITMAP:blit_scaled, but copy a pixel only if source palette index is
- greater than destination palette index.
-\end_layout
-
-\begin_layout Subsection
 gui.repaint: Arrange a repaint
 \end_layout
 
@@ -2580,102 +4613,6 @@ If <step> is negative, the rotation will be counterclockwise.
 \end_layout
 
 \begin_layout Subsection
-gui.loadfont: Load a font file
-\end_layout
-
-\begin_layout Itemize
-Syntax: CUSTOMFONT gui.loadfont([string filename[, string relative_to]])
-\end_layout
-
-\begin_layout Standard
-Loads font from specified file (CUSTOMFONT object).
- If filename is not given, loads the system default font.
-\end_layout
-
-\begin_layout Subsection
-gui.font_new: Return a new empty font
-\end_layout
-
-\begin_layout Itemize
-Syntax: CUSTOMFONT gui.font_new()
-\end_layout
-
-\begin_layout Standard
-Returns a new font with no characters.
-\end_layout
-
-\begin_layout Subsection
-CUSTOMFONT(): Render text to screen
-\end_layout
-
-\begin_layout Itemize
-Syntax: none CUSTOMFONT(number x, number y, string text[, number fgc[, number
- bgc[, number hlc]]])
-\end_layout
-
-\begin_layout Standard
-Draw string with custom font to screen.
- The parameters are the same as in gui.text, except <hlc> is the halo color
- (default is no halo).
- 
-\end_layout
-
-\begin_layout Subsection
-CUSTOMFONT:edit: Alter glyph in font
-\end_layout
-
-\begin_layout Itemize
-Syntax: none CUSTOMFONT:edit(string character, BITMAP glyph)
-\end_layout
-
-\begin_layout Standard
-Alter the character <character> (UTF-8 encoded) in font to use glyph specified
- by bitmap <glyph>.
- The conversion to monochrome is done by treating color 0 as background,
- and everything else as foreground.
-\end_layout
-
-\begin_layout Standard
-If <character> is empty string, the bad glyph is edited.
- If <character> has multiple characters, corresponding ligature glyph is
- edited.
-\end_layout
-
-\begin_layout Subsection
-gui.adjust_transparency/DBITMAP:adjust_transparency/PALETTE:adjust_transparency:
- Adjust transparency of DBITMAP or PALETTE
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.adjust_transparency(DBITMAP obj, number adj)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.adjust_transparency(PALETTE obj, number adj)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:adjust_transparency(number adj)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none PALETTE:adjust_transparency(number adj)
-\end_layout
-
-\begin_layout Standard
-Multiply alpha channel of <obj> by <adj>/256.
- Useful for making 
-\begin_inset Quotes eld
-\end_inset
-
-ghosts
-\begin_inset Quotes erd
-\end_inset
-
- out of solid bitmaps.
-\end_layout
-
-\begin_layout Subsection
 gui.kill_frame: Kill video frame and associated sound
 \end_layout
 
@@ -2748,93 +4685,59 @@ Draws an arrow using color <color>.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_save_png/(D)BITMAP:save_png: Save a bitmap to PNG
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_save_png(string filename[, string base], BITMAP bmp,
- PALETTE pal)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none gui.bitmap_save_png(string filename[, string base], DBITMAP
- bmp)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string gui.bitmap_save_png(BITMAP bmp, PALETTE pal)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string gui.bitmap_save_png(DBITMAP bmp)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none BITMAP:save_png(string filename[, string base], PALETTE pal)
-\end_layout
-
-\begin_layout Itemize
-Syntax: none DBITMAP:save_png(string filename[, string base])
-\end_layout
-
-\begin_layout Itemize
-Syntax: string BITMAP:save_png(PALETTE pal)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string DBITMAP:save_png()
+gui.tiled_bitmap: Class TILEMAP
 \end_layout
 
 \begin_layout Standard
-Save specified bitmap <bmp> (or current object), with palette <pal> (only
- if paletted) into PNG file <filename> (relative to <base>) or return BASE64
- encoding as return value.
+See class TILEMAP.
 \end_layout
 
 \begin_layout Subsection
-gui.bitmap_hash/(D)BITMAP:hash: Hash a bitmap
-\end_layout
-
-\begin_layout Itemize
-Syntax: string gui.bitmap_hash(BITMAP bmp)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string gui.bitmap_hash(DBITMAP bmp)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string BITMAP:hash()
-\end_layout
-
-\begin_layout Itemize
-Syntax: string DBITMAP:hash()
+gui.palette: Class PALETTE
 \end_layout
 
 \begin_layout Standard
-Hashes bitmap <bmp> (or current object) and returns 64-hex digit crypto-strong
- hash.
- Identical bitmaps result in indentical hashes (but color order in indexed
- bitmaps is significant).
+See class PALETTE.
 \end_layout
 
 \begin_layout Subsection
-gui.palette_hash/PALETTE:hash: Hash a palette
-\end_layout
-
-\begin_layout Itemize
-Syntax: string gui.palette_hash(PALETTE pal)
-\end_layout
-
-\begin_layout Itemize
-Syntax: string PALETTE:hash(PALETTE pal)
+gui.bitmap: Class BITMAP
 \end_layout
 
 \begin_layout Standard
-Hashes palette <pal> (or current object) and retruns 64-hex digit crypto-strong
- hash.
- Identical palettes result in identical hashes (fully transparent colors
- at end of palette don't affect the hash).
+See class BITMAP.
+\end_layout
+
+\begin_layout Subsection
+gui.dbitmap: Class DBITMAP
+\end_layout
+
+\begin_layout Standard
+See class DBITMAP.
+\end_layout
+
+\begin_layout Subsection
+gui.font: Class CUSTOMFONT
+\end_layout
+
+\begin_layout Standard
+See class CUSTOMFONT.
+\end_layout
+
+\begin_layout Subsection
+gui.renderctx: Class RENDERCTX
+\end_layout
+
+\begin_layout Standard
+See class RENDERCTX.
+\end_layout
+
+\begin_layout Subsection
+gui.image: Class IMAGELOADER
+\end_layout
+
+\begin_layout Standard
+See class IMAGELOADER.
 \end_layout
 
 \begin_layout Standard
@@ -3350,7 +5253,7 @@ subtitle.delete: Delete a subtitle
 \end_layout
 
 \begin_layout Itemize
-Syntax: nonesubtitle.delete(number f, number l)
+Syntax: none subtitle.delete(number f, number l)
 \end_layout
 
 \begin_layout Standard
@@ -4672,6 +6575,14 @@ Set the global execute hook mask to <mask>.
  CPU.
 \end_layout
 
+\begin_layout Subsection
+memory.mmap: Class MMAP_STRUCT
+\end_layout
+
+\begin_layout Standard
+See class MMAP_STRUCT
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
@@ -4895,6 +6806,14 @@ Syntax: Table zip.enumerate(string filename[, boolean invert])
 Returns table of files in zip archive <filename>.
  If <invert> is true, instead of returning array of names, returns table
  with keys being member names and values being true.
+\end_layout
+
+\begin_layout Subsection
+zip.writer: Class ZIPWRITER
+\end_layout
+
+\begin_layout Standard
+See class ZIPWRITER.
 \end_layout
 
 \begin_layout Standard

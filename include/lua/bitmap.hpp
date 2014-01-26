@@ -6,6 +6,8 @@
 #include <cstdint>
 #include "core/window.hpp"
 #include "library/lua-base.hpp"
+#include "library/lua-class.hpp"
+#include "library/lua-params.hpp"
 #include "library/framebuffer.hpp"
 #include "library/threadtypes.hpp"
 #include "library/string.hpp"
@@ -17,6 +19,9 @@ struct lua_palette
 	~lua_palette();
 	mutex_class palette_mutex;
 	std::string print();
+	static int create(lua::state& L, lua::parameters& P);
+	static int load(lua::state& L, lua::parameters& P);
+	static int load_str(lua::state& L, lua::parameters& P);
 	int set(lua::state& L, const std::string& fname);
 	int hash(lua::state& L, const std::string& fname);
 	int debug(lua::state& L, const std::string& fname);
@@ -32,8 +37,8 @@ struct lua_bitmap
 	std::vector<uint16_t> pixels;
 	std::vector<char> save_png(const lua_palette& pal) const;
 	std::string print();
+	static int create(lua::state& L, lua::parameters& P);
 	int draw(lua::state& L, const std::string& fname);
-	int _draw(lua::state& L, const std::string& fname, bool is_method);
 	int pset(lua::state& L, const std::string& fname);
 	int pget(lua::state& L, const std::string& fname);
 	int size(lua::state& L, const std::string& fname);
@@ -53,8 +58,8 @@ struct lua_dbitmap
 	std::vector<framebuffer::color> pixels;
 	std::vector<char> save_png() const;
 	std::string print();
+	static int create(lua::state& L, lua::parameters& P);
 	int draw(lua::state& L, const std::string& fname);
-	int _draw(lua::state& L, const std::string& fname, bool is_method);
 	int pset(lua::state& L, const std::string& fname);
 	int pget(lua::state& L, const std::string& fname);
 	int size(lua::state& L, const std::string& fname);
@@ -67,6 +72,7 @@ struct lua_dbitmap
 
 struct lua_loaded_bitmap
 {
+	std::string print();
 	size_t w;
 	size_t h;
 	bool d;
@@ -74,6 +80,8 @@ struct lua_loaded_bitmap
 	std::vector<int64_t> palette;
 	static struct lua_loaded_bitmap load(std::istream& stream);
 	static struct lua_loaded_bitmap load(const std::string& name);
+	template<bool png> static int load(lua::state& L, lua::parameters& P);
+	template<bool png> static int load_str(lua::state& L, lua::parameters& P);
 };
 
 

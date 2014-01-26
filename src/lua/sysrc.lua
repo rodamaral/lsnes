@@ -40,47 +40,139 @@ local classes_meta = {
 classes = {};
 setmetatable(classes, classes_meta);
 
+-- Classes
+memory.mmap = classes.MMAP_STRUCT;
+zip.writer = classes.ZIPWRITER;
+gui.tiled_bitmap = classes.TILEMAP;
+gui.renderctx = classes.RENDERCTX;
+gui.palette = classes.PALETTE;
+gui.bitmap = classes.BITMAP;
+gui.dbitmap = classes.DBITMAP;
+gui.image = classes.IMAGELOADER;
+gui.font = classes.CUSTOMFONT;
+iconv = classes.ICONV;
+filereader = classes.FILEREADER;
+
+-- Some ctors
 memory2=classes.VMALIST.new();
 callback=classes.CALLBACKS_LIST.new();
 memory.map_structure=classes.MMAP_STRUCT.new;
 zip.create=classes.ZIPWRITER.new;
 gui.tilemap=classes.TILEMAP.new;
 gui.renderq_new=classes.RENDERCTX.new;
+gui.palette_new=classes.PALETTE.new;
+gui.font_new = classes.CUSTOMFONT.new;
+gui.loadfont = classes.CUSTOMFONT.load;
+iconv_new = classes.ICONV.new;
 
 local do_arg_err = function(what, n, name)
 	error("Expected "..what.." as argument #"..n.." of "..name);
 end
 
+local normal_method = {}
+
+local normal_method = function(class, method, name, parent)
+	if type(class) == "string" then
+		normal_method[name] = normal_method[name] or {};
+		normal_method[name][class] = method;
+	else
+		normal_method[name] = normal_method[name] or {};
+		local k, v;
+		for k, v in pairs(class) do
+			normal_method[name][v] = method;
+		end
+	end
+	parent[name] = function(o, ...)
+		local m = normal_method[name];
+		local c = identify_class(o);
+		if m[c] then
+			return o[m[c]](o, ...);
+		else
+			local what = "";
+			local k, v;
+			for k, v in pairs(m) do
+				if what ~= "" then
+					what = what .. " or " .. k;
+				else
+					what = k;
+				end
+			end
+			do_arg_err(what, 1, name);
+		end
+	end
+end
+
 gui.renderq_set=function(o, ...)
 	if type(o) == "nil" then
-		classes.RENDERCTX.setnull();
+		return classes.RENDERCTX.setnull();
 	elseif identify_class(o) == "RENDERCTX" then
-		o:set(...);
+		return o:set(...);
 	else
 		do_arg_err("RENDERCTX or nil", 1, "gui.renderq_set");
 	end
 end
 
-gui.renderq_run=function(o, ...)
-	if identify_class(o) == "RENDERCTX" then
-		o:run(...);
+normal_method("RENDERCTX", "run", "renderq_run", gui);
+normal_method("RENDERCTX", "synchronous_repaint", "synchronous_repaint", gui);
+normal_method("RENDERCTX", "clear", "renderq_clear", gui);
+
+gui.bitmap_new=function(w, h, type, ...)
+	if type==true then
+		return classes.DBITMAP.new(w,h,...);
+	elseif type==false then
+		return classes.BITMAP.new(w,h,...);
 	else
-		do_arg_err("RENDERCTX", 1, "gui.renderq_run");
+		do_arg_err("boolean", 3, "gui.bitmap_new");
 	end
 end
 
-gui.synchronous_repaint=function(o, ...)
-	if identify_class(o) == "RENDERCTX" then
-		o:synchronous_repaint(...);
+gui.bitmap_draw=function(x, y, o, ...)
+	if identify_class(o) == "BITMAP" then
+		return o:draw(x, y, ...);
+	elseif identify_class(o) == "DBITMAP" then
+		return o:draw(x, y, ...);
 	else
-		do_arg_err("RENDERCTX", 1, "gui.synchronous_repaint");
+		do_arg_err("BITMAP or DBITMAP", 3, "gui.bitmap_draw");
 	end
 end
 
-gui.renderq_clear=function(o, ...)
-	if identify_class(o) == "RENDERCTX" then
-		o:clear(...);
+gui.bitmap_save_png=function(...)
+	local x = {...};
+	local i = 1;
+	local j;
+	local obj;
+	for j=1,#x do
+		if type(x[j]) ~= "string" then
+			obj = table.remove(x, j);
+			i = j;
+			break;
+		end
+	end
+	if identify_class(obj) == "BITMAP" then
+		return obj:save_png(unpack(x));
+	elseif identify_class(obj) == "DBITMAP" then
+		return obj:save_png(unpack(x));
 	else
-		do_arg_err("RENDERCTX", 1, "gui.renderq_clear");
+		do_arg_err("BITMAP or DBITMAP", i, "gui.bitmap_save_png");
 	end
 end
+
+gui.bitmap_load=classes.IMAGELOADER.load;
+gui.bitmap_load_str=classes.IMAGELOADER.load_str;
+gui.bitmap_load_png=classes.IMAGELOADER.load_png;
+gui.bitmap_load_png_str=classes.IMAGELOADER.load_png_str;
+
+normal_method("PALETTE", "set", "palette_set", gui);
+normal_method("PALETTE", "hash", "palette_hash", gui);
+normal_method("PALETTE", "debug", "palette_debug", gui);
+normal_method({"BITMAP", "DBITMAP"}, "pset", "bitmap_pset", gui);
+normal_method({"BITMAP", "DBITMAP"}, "pget", "bitmap_pget", gui);
+normal_method({"BITMAP", "DBITMAP"}, "size", "bitmap_size", gui);
+normal_method({"BITMAP", "DBITMAP"}, "hash", "bitmap_hash", gui);
+normal_method({"BITMAP", "DBITMAP"}, "blit", "bitmap_blit", gui);
+normal_method({"BITMAP", "DBITMAP"}, "blit_scaled", "bitmap_blit_scaled", gui);
+normal_method({"BITMAP", "DBITMAP"}, "blit_porterduff", "bitmap_blit_porterduff", gui);
+normal_method({"BITMAP", "DBITMAP"}, "blit_scaled_porterduff", "bitmap_blit_scaled_porterduff", gui);
+normal_method("BITMAP", "blit_priority", "bitmap_blit_priority", gui);
+normal_method("BITMAP", "blit_scaled_priority", "bitmap_blit_scaled_priority", gui);
+normal_method({"DBITMAP", "PALETTE"}, "adjust_transparency", "adjust_transparency", gui);
