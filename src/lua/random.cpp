@@ -28,23 +28,21 @@ namespace
 		}
 	}
 
-	lua::fnptr rboolean(lua_func_misc, "random.boolean", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 rboolean(lua_func_misc, "random.boolean", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushboolean(randnum() % 2);
 		return 1;
 	});
 
-	lua::fnptr rinteger(lua_func_misc, "random.integer", [](lua::state& L, const std::string& fname)
-		-> int {
-		int64_t low = 0;
+	lua::fnptr2 rinteger(lua_func_misc, "random.integer", [](lua::state& L, lua::parameters& P) -> int {
+		auto low = P.arg<int64_t>();
 		int64_t high = 0;
-		if(L.type(2) == LUA_TNUMBER) {
-			low = L.get_numeric_argument<int64_t>(1, fname.c_str());
-			high = L.get_numeric_argument<int64_t>(2, fname.c_str());
+		if(P.is_number()) {
+			high = P.arg<uint64_t>();
 			if(low > high)
 				throw std::runtime_error("random.integer: high > low");
 		} else {
-			high = L.get_numeric_argument<int64_t>(1, fname.c_str()) - 1;
+			high = low - 1;
+			low = 0;
 			if(high < 0)
 				throw std::runtime_error("random.integer: high > low");
 		}
@@ -53,8 +51,7 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr rfloat(lua_func_misc, "random.float", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 rfloat(lua_func_misc, "random.float", [](lua::state& L, lua::parameters& P) -> int {
 		double _bits = 0;
 		uint64_t* bits = (uint64_t*)&_bits;
 		*bits = randnum() & 0xFFFFFFFFFFFFFULL;
@@ -63,11 +60,12 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr ramong(lua_func_misc, "random.among", [](lua::state& L, const std::string& fname)
-	{
+	lua::fnptr2 ramong(lua_func_misc, "random.among", [](lua::state& L, lua::parameters& P) -> int {
 		unsigned args = 1;
-		while(L.type(args) != LUA_TNONE)
+		while(P.more()) {
+			P.skip();
 			args++;
+		}
 		args--;
 		if(!args) {
 			L.pushnil();
@@ -78,10 +76,10 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr ramongt(lua_func_misc, "random.amongtable", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 ramongt(lua_func_misc, "random.amongtable", [](lua::state& L, lua::parameters& P)
 	{
-		if(L.type(1) != LUA_TTABLE)
-			throw std::runtime_error("random.amongtable: First argument must be table");
+		if(!P.is_table())
+			P.expected("table");
 		uint64_t size = 0;
 		L.pushnil();
 		while(L.next(1)) {

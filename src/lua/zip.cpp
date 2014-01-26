@@ -98,12 +98,10 @@ namespace
 		file_open = NULL;
 	}
 
-	lua::fnptr lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L, const std::string& fname)
-		-> int {
-		std::string filename = L.get_string(1, fname.c_str());
-		bool invert = false;
-		if(L.type(2) != LUA_TNONE && L.type(2) != LUA_TNIL)
-			invert = L.toboolean(2);
+	lua::fnptr2 lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L, lua::parameters& P) -> int {
+		auto filename = P.arg<std::string>();
+		auto invert = P.arg_opt<bool>(false);
+
 		zip::reader r(filename);
 		L.newtable();
 		size_t idx = 1;

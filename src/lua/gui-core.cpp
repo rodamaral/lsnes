@@ -49,29 +49,26 @@ namespace
 	lua_gui_set_gap<&lua_render_context::top_gap, true> dtg("gui.delta_top_gap");
 	lua_gui_set_gap<&lua_render_context::bottom_gap, true> dbg("gui.delta_bottom_gap");
 
-	lua::fnptr gui_repaint(lua_func_misc, "gui.repaint", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 gui_repaint(lua_func_misc, "gui.repaint", [](lua::state& L, lua::parameters& P) -> int {
 		lua_requests_repaint = true;
 		return 0;
 	});
 
-	lua::fnptr gui_sfupd(lua_func_misc, "gui.subframe_update", [](lua::state& L, const std::string& fname)
-		-> int {
-		lua_requests_subframe_paint = L.get_bool(1, fname.c_str());
+	lua::fnptr2 gui_sfupd(lua_func_misc, "gui.subframe_update", [](lua::state& L, lua::parameters& P) -> int {
+		lua_requests_subframe_paint = P.arg<bool>();
 		return 0;
 	});
 
-	lua::fnptr gui_color(lua_func_misc, "gui.color", [](lua::state& L, const std::string& fname)
-		-> int {
-		if(L.type(1) == LUA_TSTRING) {
-			L.pushnumber(lua_get_fb_color(L, 1, fname).asnumber());
+	lua::fnptr2 gui_color(lua_func_misc, "gui.color", [](lua::state& L, lua::parameters& P) -> int {
+		if(P.is_string()) {
+			framebuffer::color c(P.arg<std::string>());
+			L.pushnumber(c.asnumber());
 			return 1;
 		}
-		int64_t a = 256;
-		int64_t r = L.get_numeric_argument<uint32_t>(1, fname.c_str());
-		int64_t g = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-		int64_t b = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-		L.get_numeric_argument<int64_t>(4, a, fname.c_str());
+		int64_t r = P.arg<int64_t>();
+		int64_t g = P.arg<int64_t>();
+		int64_t b = P.arg<int64_t>();
+		int64_t a = P.arg_opt<int64_t>(256);
 		if(a > 0)
 			L.pushnumber(((256 - a) << 24) | (r << 16) | (g << 8) | b);
 		else
@@ -79,10 +76,9 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr gui_status(lua_func_misc, "gui.status", [](lua::state& L, const std::string& fname)
-		-> int {
-		std::string name = L.get_string(1, fname.c_str());
-		std::string value = L.get_string(2, fname.c_str());
+	lua::fnptr2 gui_status(lua_func_misc, "gui.status", [](lua::state& L, lua::parameters& P) -> int {
+		auto name = P.arg<std::string>();
+		auto value = P.arg<std::string>();
 		auto& w = platform::get_emustatus();
 		if(value == "")
 			w.erase("L[" + name + "]");
@@ -91,12 +87,10 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, const std::string& fname)
-		-> int {
-		int64_t basecolor = 0x00FF0000;
-		int64_t step = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		int64_t steps = L.get_numeric_argument<int64_t>(2, fname.c_str());
-		basecolor = lua_get_fb_color(L, 3, fname).asnumber();
+	lua::fnptr2 gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, lua::parameters& P) -> int {
+		int64_t step = P.arg<int64_t>();
+		int64_t steps = P.arg<int64_t>();
+		auto basecolor = P.color(0x00FF0000).asnumber();
 		if(!steps)
 			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		basecolor = framebuffer::color_rotate_hue(basecolor, step, steps);
@@ -104,17 +98,15 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr gui_killframe(lua_func_misc, "gui.kill_frame", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 gui_killframe(lua_func_misc, "gui.kill_frame", [](lua::state& L, lua::parameters& P) -> int {
 		if(lua_kill_frame)
 			*lua_kill_frame = true;
 	});
 
-	lua::fnptr gui_setscale(lua_func_misc, "gui.set_video_scale", [](lua::state& L, const std::string& fname)
-		-> int {
+	lua::fnptr2 gui_setscale(lua_func_misc, "gui.set_video_scale", [](lua::state& L, lua::parameters& P) -> int {
 		if(lua_hscl && lua_vscl) {
-			uint32_t h = L.get_numeric_argument<uint32_t>(1, fname.c_str());
-			uint32_t v = L.get_numeric_argument<uint32_t>(2, fname.c_str());
+			auto h = P.arg<uint32_t>();
+			auto v = P.arg<uint32_t>();
 			*lua_hscl = h;
 			*lua_vscl = v;
 		}

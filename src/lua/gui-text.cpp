@@ -30,33 +30,22 @@ namespace
 		bool vdbl;
 	};
 
-	int internal_gui_text(lua::state& L, const std::string& fname, bool hdbl, bool vdbl)
+	template<bool hdbl, bool vdbl>
+	int internal_gui_text(lua::state& L, lua::parameters& P)
 	{
 		if(!lua_render_ctx)
 			return 0;
-		int32_t _x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t _y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		auto fg = lua_get_fb_color(L, 4, fname, 0xFFFFFFU);
-		auto bg = lua_get_fb_color(L, 5, fname, -1);
-		std::string text = L.get_string(3, fname.c_str());
+		auto _x = P.arg<int32_t>();
+		auto _y = P.arg<int32_t>();
+		auto text = P.arg<std::string>();
+		auto fg = P.color(0xFFFFFFU);
+		auto bg = P.color(-1);
 		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
 
-	lua::fnptr gui_text(lua_func_misc, "gui.text", [](lua::state& L, const std::string& fname) -> int {
-		return internal_gui_text(L, fname, false, false);
-	});
-
-	lua::fnptr gui_textH(lua_func_misc, "gui.textH", [](lua::state& L, const std::string& fname) -> int {
-		return internal_gui_text(L, fname, true, false);
-	});
-
-	lua::fnptr gui_textV(lua_func_misc, "gui.textV", [](lua::state& L, const std::string& fname) -> int {
-		return internal_gui_text(L, fname, false, true);
-	});
-
-	lua::fnptr gui_textHV(lua_func_misc, "gui.textHV", [](lua::state& L, const std::string& fname)
-		-> int {
-		return internal_gui_text(L, fname, true, true);
-	});
+	lua::fnptr2 gui_text(lua_func_misc, "gui.text", internal_gui_text<false, false>);
+	lua::fnptr2 gui_textH(lua_func_misc, "gui.textH", internal_gui_text<true, false>);
+	lua::fnptr2 gui_textV(lua_func_misc, "gui.textV", internal_gui_text<false, true>);
+	lua::fnptr2 gui_textHV(lua_func_misc, "gui.textHV", internal_gui_text<true, true>);
 }

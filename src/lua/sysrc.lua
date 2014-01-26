@@ -64,6 +64,8 @@ gui.palette_new=classes.PALETTE.new;
 gui.font_new = classes.CUSTOMFONT.new;
 gui.loadfont = classes.CUSTOMFONT.load;
 iconv_new = classes.ICONV.new;
+create_ibind = classes.INVERSEBIND.new;
+create_command = classes.COMMANDBIND.new;
 
 local do_arg_err = function(what, n, name)
 	error("Expected "..what.." as argument #"..n.." of "..name);

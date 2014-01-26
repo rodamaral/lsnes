@@ -37,15 +37,14 @@ namespace
 		uint32_t length;
 	};
 
-	lua::fnptr gui_crosshair(lua_func_misc, "gui.crosshair", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 gui_crosshair(lua_func_misc, "gui.crosshair", [](lua::state& L, lua::parameters& P)
 		-> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint32_t length = 10;
-		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		L.get_numeric_argument<uint32_t>(3, length, fname.c_str());
-		auto pcolor = lua_get_fb_color(L, 4, fname, 0xFFFFFFU);
+		auto x = P.arg<int32_t>();
+		auto y = P.arg<int32_t>();
+		auto length = P.arg_opt<uint32_t>(10);
+		auto pcolor = P.color(0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
 		return 0;
 	});

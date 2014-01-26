@@ -4,15 +4,15 @@
 
 namespace
 {
-	lua::fnptr lua_gui_screenshot(lua_func_misc, "gui.screenshot", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string fn = L.get_string(1, fname.c_str());
+	lua::fnptr2 lua_gui_screenshot(lua_func_misc, "gui.screenshot", [](lua::state& L,
+		lua::parameters& P) -> int {
+		auto fn = P.arg<std::string>();
 		take_screenshot(fn);
 		return 0;
 	});
 
-	lua::fnptr lua_gui_screenshot_b(lua_func_misc, "gui.screenshot_bitmap", [](lua::state& L,
-		const std::string& fname) -> int {
+	lua::fnptr2 lua_gui_screenshot_b(lua_func_misc, "gui.screenshot_bitmap", [](lua::state& L,
+		lua::parameters& P) -> int {
 		framebuffer::raw& _fb = render_get_latest_screen();
 		try {
 			auto osize = std::make_pair(_fb.get_width(), _fb.get_height());

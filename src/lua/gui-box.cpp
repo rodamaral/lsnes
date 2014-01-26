@@ -52,18 +52,18 @@ namespace
 		int32_t thickness;
 	};
 
-	lua::fnptr gui_box(lua_func_misc, "gui.box", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 gui_box(lua_func_misc, "gui.box", [](lua::state& L, lua::parameters& P) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		uint32_t thickness = 1;
-		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		uint32_t width = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-		uint32_t height = L.get_numeric_argument<uint32_t>(4, fname.c_str());
-		L.get_numeric_argument<uint32_t>(5, thickness, fname.c_str());
-		auto poutline1 = lua_get_fb_color(L, 6, fname, 0xFFFFFFU);
-		auto poutline2 = lua_get_fb_color(L, 7, fname, 0x808080U);
-		auto pfill = lua_get_fb_color(L, 8, fname, 0xC0C0C0U);
+
+		auto x = P.arg<int32_t>();
+		auto y = P.arg<int32_t>();
+		auto width = P.arg<uint32_t>();
+		auto height = P.arg<uint32_t>();
+		uint32_t thickness = P.arg_opt<uint32_t>(1);
+		auto poutline1 = P.color(0xFFFFFFU);
+		auto poutline2 = P.color(0x808080U);
+		auto pfill = P.color(0xC0C0C0U);
 		lua_render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
 			pfill, thickness);
 		return 0;

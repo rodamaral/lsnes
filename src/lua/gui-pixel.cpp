@@ -29,12 +29,12 @@ namespace
 		framebuffer::color color;
 	};
 
-	lua::fnptr gui_pixel(lua_func_misc, "gui.pixel", [](lua::state& L, const std::string& fname) -> int {
+	lua::fnptr2 gui_pixel(lua_func_misc, "gui.pixel", [](lua::state& L, lua::parameters& P) -> int {
 		if(!lua_render_ctx)
 			return 0;
-		int32_t x = L.get_numeric_argument<int32_t>(1, fname.c_str());
-		int32_t y = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		auto pcolor = lua_get_fb_color(L, 3, fname, 0xFFFFFFU);
+		auto x = P.arg<int32_t>();
+		auto y = P.arg<int32_t>();
+		auto pcolor = P.color(0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	});

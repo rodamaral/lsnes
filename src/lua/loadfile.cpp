@@ -253,12 +253,10 @@ namespace
 		}
 	}
 
-	void load_chunk(lua::state& L, const std::string& fname)
+	void load_chunk(lua::state& L, lua::parameters& P)
 	{
-		std::string file2;
-		std::string file1 = L.get_string(1, fname.c_str());
-		if(L.type(2) != LUA_TNIL && L.type(2) != LUA_TNONE)
-			file2 = L.get_string(2, fname.c_str());
+		auto file1 = P.arg<std::string>();
+		auto file2 = P.arg_opt<std::string>("");
 		std::string absfilename = zip::resolverel(file1, file2);
 		std::istream& file = zip::openrel(file1, file2);
 		std::string chunkname;
@@ -291,13 +289,13 @@ namespace
 	{
 	}
 
-	lua::fnptr loadfile2(lua_func_load, "loadfile2", [](lua::state& L, const std::string& fname) -> int {
-		load_chunk(L, fname);
+	lua::fnptr2 loadfile2(lua_func_load, "loadfile2", [](lua::state& L, lua::parameters& P) -> int {
+		load_chunk(L, P);
 		return 1;
 	});
 
-	lua::fnptr dofile2(lua_func_load, "dofile2", [](lua::state& L, const std::string& fname) -> int {
-		load_chunk(L, fname);
+	lua::fnptr2 dofile2(lua_func_load, "dofile2", [](lua::state& L, lua::parameters& P) -> int {
+		load_chunk(L, P);
 		int old_sp = lua_gettop(L.handle());
 		lua_call(L.handle(), 0, LUA_MULTRET);
 		int new_sp = lua_gettop(L.handle());
