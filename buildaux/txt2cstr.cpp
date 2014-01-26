@@ -42,7 +42,7 @@ struct encoder
 			}
 			i++;
 		}
-		output << out.str() << std::endl;
+		output << out.str();
 		return i;
 	}
 	size_t operator()()

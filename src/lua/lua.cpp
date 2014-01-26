@@ -124,6 +124,8 @@ namespace
 
 #define TEMPORARY "LUAINTERP_INTERNAL_COMMAND_TEMPORARY"
 
+	const char* eval_sysrc_lua = "local fn = loadstring(" TEMPORARY ", \"<built-in>\"); if fn then fn(); else "
+		"print2(\"Parse error in sysrc.lua script\"); end;";
 	const char* eval_lua_lua = "local fn = loadstring(" TEMPORARY "); if fn then fn(); else print("
 		"\"Parse error in Lua statement\"); end;";
 	const char* run_lua_lua = "dofile(" TEMPORARY ");";
@@ -245,7 +247,10 @@ namespace
 
 	void run_sysrc_lua(lua::state& L)
 	{
-		do_eval_lua(L, lua_sysrc_script);
+		L.pushstring(lua_sysrc_script);
+		L.setglobal(TEMPORARY);
+		luareader_fragment = eval_sysrc_lua;
+		run_lua_fragment(L);
 	}
 
 	void run_synchronous_paint(struct lua_render_context* ctx)

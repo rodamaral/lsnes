@@ -7,6 +7,7 @@ __all__.files: $(OBJECTS)
 	echo >__all__.ldflags
 
 sysrc.cpp: sysrc.lua
+	luac -p $<
 	../../buildaux/txt2cstr.exe lua_sysrc_script $< >$@
 
 sysrc.cpp.dep: sysrc.cpp
