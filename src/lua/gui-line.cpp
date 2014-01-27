@@ -91,13 +91,14 @@ nodraw2:
 	};
 
 	lua::fnptr2 gui_pixel(lua_func_misc, "gui.line", [](lua::state& L, lua::parameters& P) -> int {
+		int32_t x1, y1, x2, y2;
+		framebuffer::color pcolor;
+
 		if(!lua_render_ctx)
 			return 0;
-		auto x1 = P.arg<int32_t>();
-		auto y1 = P.arg<int32_t>();
-		auto x2 = P.arg<int32_t>();
-		auto y2 = P.arg<int32_t>();
-		auto pcolor = P.arg_opt<framebuffer::color>(0xFFFFFFU);
+
+		P(x1, y1, x2, y2, P.optional(pcolor, 0xFFFFFFU));
+
 		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
 	});

@@ -33,14 +33,16 @@ namespace
 	template<bool hdbl, bool vdbl>
 	int internal_gui_text(lua::state& L, lua::parameters& P)
 	{
+		int32_t x, y;
+		std::string text;
+		framebuffer::color fg, bg;
+
 		if(!lua_render_ctx)
 			return 0;
-		auto _x = P.arg<int32_t>();
-		auto _y = P.arg<int32_t>();
-		auto text = P.arg<std::string>();
-		auto fg = P.arg_opt<framebuffer::color>(0xFFFFFFU);
-		auto bg = P.arg_opt<framebuffer::color>(-1);
-		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
+
+		P(x, y, text, P.optional(fg, 0xFFFFFFU), P.optional(bg, -1));
+
+		lua_render_ctx->queue->create_add<render_object_text>(x, y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}
 

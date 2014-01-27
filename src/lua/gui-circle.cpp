@@ -59,16 +59,16 @@ namespace
 		framebuffer::color fill;
 	};
 
-	lua::fnptr2 gui_rectangle(lua_func_misc, "gui.circle", [](lua::state& L, lua::parameters& P)
-		-> int {
+	lua::fnptr2 gui_rectangle(lua_func_misc, "gui.circle", [](lua::state& L, lua::parameters& P) -> int {
+		int32_t x, y;
+		uint32_t radius, thickness;
+		framebuffer::color poutline, pfill;
+
 		if(!lua_render_ctx)
 			return 0;
-		auto x = P.arg<int32_t>();
-		auto y = P.arg<int32_t>();
-		auto radius = P.arg<uint32_t>();
-		uint32_t thickness = P.arg_opt<uint32_t>(1);
-		auto poutline = P.arg_opt<framebuffer::color>(0xFFFFFFU);
-		auto pfill = P.arg_opt<framebuffer::color>(-1);
+
+		P(x, y, radius, P.optional(thickness, 1), P.optional(poutline, 0xFFFFFFU), P.optional(pfill, -1));
+
 		lua_render_ctx->queue->create_add<render_object_circle>(x, y, radius, poutline, pfill, thickness);
 		return 0;
 	});
