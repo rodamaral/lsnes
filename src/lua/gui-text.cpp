@@ -37,8 +37,7 @@ namespace
 		std::string text;
 		framebuffer::color fg, bg;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x, y, text, P.optional(fg, 0xFFFFFFU), P.optional(bg, -1));
 

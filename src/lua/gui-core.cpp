@@ -55,20 +55,21 @@ namespace
 	});
 
 	lua::fnptr2 gui_sfupd(lua_func_misc, "gui.subframe_update", [](lua::state& L, lua::parameters& P) -> int {
-		lua_requests_subframe_paint = P.arg<bool>();
+		P(lua_requests_subframe_paint);
 		return 0;
 	});
 
 	lua::fnptr2 gui_color(lua_func_misc, "gui.color", [](lua::state& L, lua::parameters& P) -> int {
+		int64_t r, g, b, a;
+
 		if(P.is_string()) {
 			framebuffer::color c(P.arg<std::string>());
 			L.pushnumber(c.asnumber());
 			return 1;
 		}
-		int64_t r = P.arg<int64_t>();
-		int64_t g = P.arg<int64_t>();
-		int64_t b = P.arg<int64_t>();
-		int64_t a = P.arg_opt<int64_t>(256);
+
+		P(r, g, b, P.optional(a, 256));
+
 		if(a > 0)
 			L.pushnumber(((256 - a) << 24) | (r << 16) | (g << 8) | b);
 		else
@@ -77,8 +78,10 @@ namespace
 	});
 
 	lua::fnptr2 gui_status(lua_func_misc, "gui.status", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
-		auto value = P.arg<std::string>();
+		std::string name, value;
+
+		P(name, value);
+
 		auto& w = platform::get_emustatus();
 		if(value == "")
 			w.erase("L[" + name + "]");
@@ -88,9 +91,12 @@ namespace
 	});
 
 	lua::fnptr2 gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, lua::parameters& P) -> int {
-		int64_t step = P.arg<int64_t>();
-		int64_t steps = P.arg<int64_t>();
-		auto basecolor = P.arg_opt<framebuffer::color>(0x00FF0000).asnumber();
+		int64_t step, steps;
+		framebuffer::color c;
+
+		P(step, steps, P.optional(c, 0x00FF0000));
+
+		auto basecolor = c.asnumber();
 		if(!steps)
 			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		basecolor = framebuffer::color_rotate_hue(basecolor, step, steps);
@@ -105,8 +111,10 @@ namespace
 
 	lua::fnptr2 gui_setscale(lua_func_misc, "gui.set_video_scale", [](lua::state& L, lua::parameters& P) -> int {
 		if(lua_hscl && lua_vscl) {
-			auto h = P.arg<uint32_t>();
-			auto v = P.arg<uint32_t>();
+			uint32_t h, v;
+
+			P(h, v);
+
 			*lua_hscl = h;
 			*lua_vscl = v;
 		}

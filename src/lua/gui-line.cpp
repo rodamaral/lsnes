@@ -94,8 +94,7 @@ nodraw2:
 		int32_t x1, y1, x2, y2;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x1, y1, x2, y2, P.optional(pcolor, 0xFFFFFFU));
 

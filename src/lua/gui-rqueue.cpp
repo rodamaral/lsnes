@@ -23,10 +23,9 @@ namespace
 		static int setnull(lua::state& L, lua::parameters& P);
 		int run(lua::state& L, const std::string& fname)
 		{
-			if(!lua_render_ctx)
-				return 0;
-			auto q = lua::_class<lua_renderqueue>::pin(L, 1, fname.c_str());
-			lua_render_context* ptr = q->get();
+			if(!lua_render_ctx) return 0;
+
+			lua_render_context* ptr = get();
 			if(ptr->top_gap != std::numeric_limits<uint32_t>::max())
 				lua_render_ctx->top_gap = ptr->top_gap;
 			if(ptr->right_gap != std::numeric_limits<uint32_t>::max())
@@ -40,7 +39,11 @@ namespace
 		}
 		int synchronous_repaint(lua::state& L, const std::string& fname)
 		{
-			auto q = lua::_class<lua_renderqueue>::pin(L, 1, fname.c_str());
+			lua::parameters P(L, fname);
+			lua::objpin<lua_renderqueue> q;
+
+			P(q);
+
 			synchronous_paint_ctx = &*q;
 			redraw_framebuffer();
 			synchronous_paint_ctx = NULL;
@@ -48,8 +51,7 @@ namespace
 		}
 		int clear(lua::state& L, const std::string& fname)
 		{
-			auto q = lua::_class<lua_renderqueue>::pin(L, 1, fname.c_str());
-			lua_render_context* ptr = q->get();
+			lua_render_context* ptr = get();
 			ptr->top_gap = std::numeric_limits<uint32_t>::max();
 			ptr->right_gap = std::numeric_limits<uint32_t>::max();
 			ptr->bottom_gap = std::numeric_limits<uint32_t>::max();
@@ -58,7 +60,11 @@ namespace
 		}
 		int set(lua::state& L, const std::string& fname)
 		{
-			auto q = lua::_class<lua_renderqueue>::pin(L, 1, fname.c_str());
+			lua::parameters P(L, fname);
+			lua::objpin<lua_renderqueue> q;
+
+			P(q);
+
 			lua_render_context* ptr = q->get();
 			if(!redirect || last != lua_render_ctx)
 				saved = lua_render_ctx;
@@ -111,8 +117,10 @@ namespace
 
 	int lua_renderqueue::create(lua::state& L, lua::parameters& P)
 	{
-		auto x = P.arg<int32_t>();
-		auto y = P.arg<int32_t>();
+		int32_t x, y;
+
+		P(x, y);
+
 		lua::_class<lua_renderqueue>::create(L, x, y);
 		return 1;
 	}

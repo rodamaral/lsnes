@@ -202,28 +202,29 @@ namespace
 	keyboard::invbind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
 	keyboard::invbind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
 
-	lua::fnptr mtlua(lua_func_misc, "input.multitrack_state", [](lua::state& L, const std::string& fname)
-		-> int {
-			unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
-			unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
-			auto s = multitrack_editor.get(port, controller);
-			switch(s) {
-			case multitrack_edit::MT_OR:
-				L.pushstring("or");
-				return 1;
-			case multitrack_edit::MT_OVERWRITE:
-				L.pushstring("rewrite");
-				return 1;
-			case multitrack_edit::MT_PRESERVE:
-				L.pushstring("keep");
-				return 1;
-			case multitrack_edit::MT_XOR:
-				L.pushstring("xor");
-				return 1;
-			default:
-				return 0;
-			}
-		});
+	lua::fnptr2 mtlua(lua_func_misc, "input.multitrack_state", [](lua::state& L, lua::parameters& P) -> int {
+		unsigned port, controller;
+
+		P(port, controller);
+
+		auto s = multitrack_editor.get(port, controller);
+		switch(s) {
+		case multitrack_edit::MT_OR:
+			L.pushstring("or");
+			return 1;
+		case multitrack_edit::MT_OVERWRITE:
+			L.pushstring("rewrite");
+			return 1;
+		case multitrack_edit::MT_PRESERVE:
+			L.pushstring("keep");
+			return 1;
+		case multitrack_edit::MT_XOR:
+			L.pushstring("xor");
+			return 1;
+		default:
+			return 0;
+		}
+	});
 }
 
 multitrack_edit multitrack_editor;

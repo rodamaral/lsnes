@@ -96,8 +96,7 @@ namespace
 		bool fill;
 		framebuffer::color color;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x, y, length, headwidth, direction, P.optional(fill, false), P.optional(color, 0xFFFFFF),
 			P.optional(width, 1), P.optional2(headthickness, width));

@@ -126,51 +126,61 @@ namespace
 
 	int lua_vma::info(lua::state& L, const std::string& fname)
 	{
+		lua::parameters P(L, fname);
+
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
 				return handle_push_vma(L, *i);
-		(stringfmt() << fname << ": Stale region").throwex();
+		(stringfmt() << P.get_fname() << ": Stale region").throwex();
 	}
 
 	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, const std::string& fname)
 	{
-		uint64_t addr = L.get_numeric_argument<uint64_t>(2, fname.c_str());
+		lua::parameters P(L, fname);
+		uint64_t addr;
+		T val;
+
+		P(P.skipped(), addr);
+
 		if(addr > vmasize || addr > vmasize - sizeof(T))
 			throw std::runtime_error("VMA::rw<T>: Address outside VMA bounds");
-		if(L.type(3) == LUA_TNIL || L.type(3) == LUA_TNONE) {
+		if(P.is_novalue()) {
 			//Read.
 			T val = lsnes_memory.read<T>(addr + vmabase);
 			if(_bswap) val = bswap(val);
 			L.pushnumber(val);
 			return 1;
-		} else if(L.type(3) == LUA_TNUMBER) {
+		} else if(P.is_number()) {
 			//Write.
 			if(ro)
-				(stringfmt() << fname << ": VMA is read-only").throwex();
-			T val = L.get_numeric_argument<T>(3, "VMA::rw<T>");
+				(stringfmt() << P.get_fname() << ": VMA is read-only").throwex();
+			P(val);
 			if(_bswap) val = bswap(val);
 			lsnes_memory.write<T>(addr + vmabase, val);
 			return 0;
 		} else
-			(stringfmt() << fname << ": Parameter #3 must be integer if present").throwex();
+			P.expected("number or nil");
 	}
 
 	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, const std::string& fname)
 	{
+		lua::parameters P(L, fname);
 		uint64_t val = 0;
-		int ptr = 2;
 		unsigned shift = 0;
 		uint64_t addr = 0;
+
+		P(P.skipped());
 		if(write)
-			val = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		while(L.type(ptr) != LUA_TNIL && L.type(ptr) != LUA_TNONE) {
-			if(L.type(ptr) == LUA_TBOOLEAN) {
-				if(L.toboolean(ptr++))
+			P(val);
+
+		while(!P.is_novalue()) {
+			if(P.is_boolean()) {
+				if(P.arg<bool>())
 					addr++;
 				else
 					addr--;
 			} else
-				addr = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+				addr = P.arg<uint64_t>();
 			if(write)
 				lsnes_memory.write<uint8_t>(addr + vmabase, val >> shift);
 			else
@@ -209,7 +219,11 @@ namespace
 
 	int lua_vma_list::index(lua::state& L, const std::string& fname)
 	{
-		std::string vma = L.get_string(2, fname.c_str());
+		lua::parameters P(L, fname);
+		std::string vma;
+
+		P(P.skipped(), vma);
+
 		auto l = lsnes_memory.get_regions();
 		size_t j;
 		std::list<memory_region*>::iterator i;
@@ -218,7 +232,7 @@ namespace
 				lua::_class<lua_vma>::create(L, *i);
 				return 1;
 			}
-		(stringfmt() << fname << ": No such VMA").throwex();
+		(stringfmt() << P.get_fname() << ": No such VMA").throwex();
 	}
 
 	int lua_vma_list::newindex(lua::state& L, const std::string& fname)

@@ -57,8 +57,7 @@ namespace
 		uint32_t width, height, thickness;
 		framebuffer::color poutline1, poutline2, pfill;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x, y, width, height, P.optional(thickness, 1), P.optional(poutline1, 0xFFFFFFU),
 			P.optional(poutline2, 0x808080U), P.optional(pfill, 0xC0C0C0U));

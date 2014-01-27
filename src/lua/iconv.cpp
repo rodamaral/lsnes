@@ -96,7 +96,11 @@ namespace
 
 	int lua_iconv::call(lua::state& L, const std::string& fname)
 	{
-		std::string src = L.get_string(2, fname.c_str());
+		lua::parameters P(L, fname);
+		std::string src;
+
+		P(P.skipped(), src);
+
 		std::string dst;
 		buffer input(false, src);
 		buffer output(true, dst);
@@ -140,16 +144,20 @@ exit:
 
 	int lua_iconv::create(lua::state& L, lua::parameters& P)
 	{
-		auto from = P.arg<std::string>();
-		auto to = P.arg<std::string>();
+		std::string from, to;
+
+		P(from, to);
+
 		lua::_class<lua_iconv>::create(L, from.c_str(), to.c_str());
 		return 1;
 	}
 
 	lua::fnptr2 iconv_byteU(lua_func_bit, "_lsnes_string_byteU", [](lua::state& L, lua::parameters& P) -> int {
-		auto _str = P.arg<std::string>();
-		size_t i = P.arg_opt<size_t>(1);
-		size_t j = P.arg_opt<size_t>(i);
+		std::string _str;
+		size_t i, j;
+
+		P(_str, P.optional(i, 1), P.optional2(j, i));
+
 		std::u32string str = utf8::to32(_str);
 		if(i == 0) i = 1;
 		size_t p = 0;
@@ -163,7 +171,10 @@ exit:
 	lua::fnptr2 iconv_charU(lua_func_bit, "_lsnes_string_charU", [](lua::state& L, lua::parameters& P) -> int {
 		std::u32string str;
 		while(P.more()) {
-			auto cp = P.arg<uint32_t>();
+			uint32_t cp;
+
+			P(cp);
+
 			//Surrogates are not valid unicode.
 			if((cp & 0xD800) == 0xD800)
 				throw std::runtime_error("Invalid character");

@@ -99,13 +99,19 @@ namespace
 	});
 
 	lua::fnptr2 lua_exec(lua_func_misc, "exec", [](lua::state& L, lua::parameters& P) -> int {
-		auto text = P.arg<std::string>();
+		std::string text;
+
+		P(text);
+
 		lsnes_cmd.invoke(text);
 		return 0;
 	});
 
 	lua::fnptr2 lua_lookup(lua_func_misc, "lookup_class", [](lua::state& L, lua::parameters& P) -> int {
-		auto clazz = P.arg<std::string>();
+		std::string clazz;
+
+		P(clazz);
+
 		return lua::class_base::lookup_and_push(L, clazz) ? 1 : 0;
 	});
 
@@ -122,17 +128,28 @@ namespace
 	});
 
 	lua::fnptr2 lua_idle_time(lua_func_misc, "set_idle_timeout", [](lua::state& L, lua::parameters& P) -> int {
-		lua_idle_hook_time = get_utime() + P.arg<uint64_t>();
+		uint64_t dt;
+
+		P(dt);
+
+		lua_idle_hook_time = get_utime() + dt;
 		return 0;
 	});
 
 	lua::fnptr2 lua_timer_time(lua_func_misc, "set_timer_timeout", [](lua::state& L, lua::parameters& P) -> int {
-		lua_timer_hook_time = get_utime() + P.arg<uint64_t>();
+		uint64_t dt;
+
+		P(dt);
+
+		lua_timer_hook_time = get_utime() + dt;
 		return 0;
 	});
 
 	lua::fnptr2 lua_busaddr(lua_func_misc, "bus_address", [](lua::state& L, lua::parameters& P) -> int {
-		uint64_t addr = P.arg<uint64_t>();
+		uint64_t addr;
+
+		P(addr);
+
 		auto busrange = our_rom.rtype->get_bus_map();
 		if(!busrange.second)
 			throw std::runtime_error("This platform does not have bus mapping");
@@ -146,8 +163,12 @@ namespace
 	});
 
 	lua::fnptr2 msetlagflag(lua_func_misc, "memory.set_lag_flag", [](lua::state& L, lua::parameters& P) -> int {
+		bool flag;
+
+		P(flag);
+
 		if(our_rom.rtype)
-			our_rom.rtype->set_pflag(!P.arg<bool>());
+			our_rom.rtype->set_pflag(!flag);
 		return 0;
 	});
 }

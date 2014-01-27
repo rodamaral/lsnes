@@ -7,11 +7,27 @@
 
 namespace lua
 {
+struct function_parameter_tag
+{
+	function_parameter_tag(int& _idx) : idx(_idx) {}
+	int& idx;
+};
+
+struct table_parameter_tag
+{
+	table_parameter_tag(int& _idx) : idx(_idx) {}
+	int& idx;
+};
+
 template<typename T, typename U> struct optional_parameter_tag
 {
 	optional_parameter_tag(T& _target, U _dflt) : target(_target), dflt(_dflt) {}
 	T& target;
 	U dflt;
+};
+
+struct skipped_parameter_tag
+{
 };
 
 template<typename T> static void arg_helper(state& L, T& x, int idx, const std::string& fname)
@@ -42,6 +58,27 @@ template<typename T> void arg_helper(state& L, lua::objpin<T>& x, int idx, const
 template<> void arg_helper(state& L, framebuffer::color& x, int idx, const std::string& fname)
 {
 	x = lua_get_fb_color(L, idx, fname);
+}
+
+template<> void arg_helper(state& L, skipped_parameter_tag& x, int idx, const std::string& fname)
+{
+	delete &x;
+}
+
+template<> void arg_helper(state& L, function_parameter_tag& x, int idx, const std::string& fname)
+{
+	if(L.type(idx) != LUA_TFUNCTION)
+		(stringfmt() << "Expected function as argument #" << idx << " to " << fname).throwex();
+	x.idx = idx;
+	delete &x;
+}
+
+template<> void arg_helper(state& L, table_parameter_tag& x, int idx, const std::string& fname)
+{
+	if(L.type(idx) != LUA_TTABLE)
+		(stringfmt() << "Expected table as argument #" << idx << " to " << fname).throwex();
+	x.idx = idx;
+	delete &x;
 }
 
 template<typename T, typename U> void arg_helper(state& L, optional_parameter_tag<T, U>& x, int idx,
@@ -204,6 +241,18 @@ public:
 	{
 		return *new optional_parameter_tag<T, const U&>(value, dflt);
 	}
+/**
+ * Skipped tag.
+ */
+	skipped_parameter_tag& skipped() { return *new skipped_parameter_tag(); }
+/**
+ * Function tag.
+ */
+	function_parameter_tag& function(int& fnidx) { return *new function_parameter_tag(fnidx); }
+/**
+ * Table tag.
+ */
+	table_parameter_tag& table(int& fnidx) { return *new table_parameter_tag(fnidx); }
 private:
 	state& L;
 	std::string fname;

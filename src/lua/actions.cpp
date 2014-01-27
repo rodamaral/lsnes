@@ -5,7 +5,10 @@
 namespace
 {
 	lua::fnptr2 c_action(lua_func_misc, "memory.action", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
+		std::string name;
+
+		P(name);
+
 		const interface_action* act = NULL;
 		for(auto i : our_rom.rtype->get_actions())
 			if(i->get_symbol() == name) {
@@ -21,7 +24,7 @@ namespace
 			regex_results r;
 			interface_action_paramval pv;
 			if(r = regex("string(:(.*))?", i.model)) {
-				pv.s = P.arg<std::string>();
+				P(pv.s);
 				bool bad = false;;
 				try {
 					if(r[2] != "" && !regex_match(r[2], pv.s))
@@ -43,12 +46,13 @@ namespace
 						<< std::endl;
 					throw std::runtime_error("Internal error");
 				}
-				pv.i = P.arg<uint64_t>();
+				P(pv.i);
 				if(pv.i < low || pv.i > high) {
 					throw std::runtime_error("Parameter out of limits.");
 				}
 			} else if(r = regex("enum:(.*)", i.model)) {
-				std::string p = P.arg<std::string>();
+				std::string p;
+				P(p);
 				unsigned num = 0;
 				try {
 					JSON::node e(r[1]);
@@ -74,7 +78,7 @@ namespace
 out:
 				pv.i = num;
 			} else if(regex_match("bool", i.model)) {
-				pv.b = P.arg<bool>();
+				P(pv.b);
 			} else if(regex_match("toggle", i.model)) {
 			} else {
 				messages << "Internal error: Unknown parameter model '" << i.model << "'."

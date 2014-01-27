@@ -42,8 +42,7 @@ namespace
 		uint32_t length;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x, y, P.optional(length, 10), P.optional(pcolor, 0xFFFFFFU));
 

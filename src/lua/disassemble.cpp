@@ -10,6 +10,7 @@ namespace
 	lua::fnptr2 memdisass(lua_func_misc, "memory.disassemble", [](lua::state& L, lua::parameters& P) -> int {
 		std::string kind;
 		uint64_t addr, count;
+
 		P(kind, addr, P.optional(count, 1));
 
 		disassembler* d;
@@ -44,6 +45,7 @@ namespace
 
 	lua::fnptr2 getreg(lua_func_misc, "memory.getregister", [](lua::state& L, lua::parameters& P) -> int {
 		std::string r;
+
 		P(r);
 
 		const interface_device_reg* regs = our_rom.rtype->get_registers();
@@ -66,6 +68,7 @@ namespace
 
 	lua::fnptr2 setreg(lua_func_misc, "memory.setregister", [](lua::state& L, lua::parameters& P) -> int {
 		std::string r;
+
 		P(r);
 
 		const interface_device_reg* regs = our_rom.rtype->get_registers();

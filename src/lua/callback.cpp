@@ -60,7 +60,11 @@ namespace
 
 	int lua_callbacks_list::index(lua::state& L, const std::string& fname)
 	{
-		std::string name = L.get_string(2, fname.c_str());
+		lua::parameters P(L, fname);
+		std::string name;
+
+		P(P.skipped(), name);
+
 		lua::_class<lua_callback_obj>::create(L, name);
 		return 1;
 	}
@@ -91,41 +95,50 @@ namespace
 
 	int lua_callback_obj::_register(lua::state& L, const std::string& fname)
 	{
-		if(!callback)
-			throw std::runtime_error("callback.{,un}register.register not valid");
-		if(L.type(2) != LUA_TFUNCTION)
-			throw std::runtime_error("Expected function as 2nd argument to callback.<foo>:register");
-		L.pushvalue(2);
+		lua::parameters P(L, fname);
+		int lfn;
+
+		if(!callback) throw std::runtime_error(P.get_fname() + ": not valid");
+
+		P(P.skipped(), P.function(lfn));
+
+		L.pushvalue(lfn);
 		callback->_register(L);
 		L.pop(1);
-		L.pushvalue(2);
+		L.pushvalue(lfn);
 		return 1;
 	}
 
 	int lua_callback_obj::_unregister(lua::state& L, const std::string& fname)
 	{
-		if(!callback)
-			throw std::runtime_error("callback.{,un}register.unregister not valid");
-		if(L.type(2) != LUA_TFUNCTION)
-			throw std::runtime_error("Expected function as 2nd argument to callback.<foo>:register");
-		L.pushvalue(2);
+		int lfn;
+		lua::parameters P(L, fname);
+
+		if(!callback) throw std::runtime_error(P.get_fname() + ": not valid");
+
+		P(P.skipped(), P.function(lfn));
+
+		L.pushvalue(lfn);
 		callback->_unregister(L);
 		L.pop(1);
-		L.pushvalue(2);
+		L.pushvalue(lfn);
 		return 1;
 	}
 
 	int lua_callback_obj::_call(lua::state& L, const std::string& fname)
 	{
-		if(!special)
-			throw std::runtime_error("Need to specify operation to do to callback");
-		std::string name = L.get_string(2, "callback.{,un}register");
-		if(L.type(3) != LUA_TFUNCTION)
-			throw std::runtime_error("Expected function as 2nd argument to callback.{,un}register");
+		lua::parameters P(L, fname);
+		std::string name;
+		int lfn;
+
+		if(!special) throw std::runtime_error("Need to specify operation to do to callback");
+
+		P(P.skipped(), name, P.function(lfn));
+
 		bool any = false;
 		for(auto i : L.get_callbacks()) {
 			if(i->get_name() == name) {
-				L.pushvalue(3);
+				L.pushvalue(lfn);
 				if(special == 1)
 					i->_register(L);
 				else if(special == 2)
@@ -136,7 +149,7 @@ namespace
 		}
 		if(!any)
 			throw std::runtime_error("Unknown callback type '" + name + "' for callback.register");
-		L.pushvalue(3);
+		L.pushvalue(lfn);
 		return 1;
 	}
 }

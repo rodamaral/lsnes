@@ -33,8 +33,7 @@ namespace
 		int32_t x, y;
 		framebuffer::color pcolor;
 
-		if(!lua_render_ctx)
-			return 0;
+		if(!lua_render_ctx) return 0;
 
 		P(x, y, P.optional(pcolor, 0xFFFFFFU));
 

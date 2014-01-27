@@ -34,10 +34,12 @@ namespace
 	});
 
 	lua::fnptr2 rinteger(lua_func_misc, "random.integer", [](lua::state& L, lua::parameters& P) -> int {
-		auto low = P.arg<int64_t>();
-		int64_t high = 0;
+		uint64_t low = 0, high = 0;
+
+		P(low);
+
 		if(P.is_number()) {
-			high = P.arg<uint64_t>();
+			P(high);
 			if(low > high)
 				throw std::runtime_error("random.integer: high > low");
 		} else {
@@ -78,11 +80,12 @@ namespace
 
 	lua::fnptr2 ramongt(lua_func_misc, "random.amongtable", [](lua::state& L, lua::parameters& P)
 	{
-		if(!P.is_table())
-			P.expected("table");
+		int ltbl;
+		P(P.table(ltbl));
+
 		uint64_t size = 0;
 		L.pushnil();
-		while(L.next(1)) {
+		while(L.next(ltbl)) {
 			size++;
 			L.pop(1);
 		}
@@ -93,11 +96,11 @@ namespace
 		uint64_t n = randnum_mod(size);
 		L.pushnil();
 		for(uint64_t i = 0; i < n; i++) {
-			if(!L.next(1))
+			if(!L.next(ltbl))
 				throw std::runtime_error("random.amongtable: Inconsistent table size");
 			L.pop(1);
 		}
-		if(!L.next(1))
+		if(!L.next(ltbl))
 			throw std::runtime_error("random.amongtable: Inconsistent table size");
 		return 1;
 	});

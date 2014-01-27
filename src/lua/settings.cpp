@@ -4,8 +4,10 @@
 namespace
 {
 	lua::fnptr2 ss(lua_func_misc, "settings.set", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
-		auto value = P.arg<std::string>();
+		std::string name, value;
+
+		P(name, value);
+
 		try {
 			lsnes_vsetc.set(name, value);
 		} catch(std::exception& e) {
@@ -18,7 +20,10 @@ namespace
 	});
 
 	lua::fnptr2 sg(lua_func_misc, "settings.get", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
+		std::string name;
+
+		P(name);
+
 		try {
 			std::string value = lsnes_vsetc.get(name);
 			L.pushlstring(value.c_str(), value.length());

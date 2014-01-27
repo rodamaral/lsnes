@@ -8,7 +8,10 @@ namespace
 	template<typename S>
 	int do_read(lua::state& L, lua::parameters& P)
 	{
-		size_t address = P.arg<size_t>();
+		size_t address;
+
+		P(address);
+
 		auto& h = get_host_memory();
 		if(address + sizeof(S) > h.size()) {
 			L.pushboolean(0);
@@ -21,8 +24,11 @@ namespace
 	template<typename S>
 	int do_write(lua::state& L, lua::parameters& P)
 	{
-		auto address = P.arg<size_t>();
-		S value = P.arg<S>();
+		size_t address;
+		S value;
+
+		P(address, value);
+
 		auto& h = get_host_memory();
 		if(address + sizeof(S) > h.size())
 			h.resize(address + sizeof(S));
