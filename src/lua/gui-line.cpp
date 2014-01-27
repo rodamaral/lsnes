@@ -97,7 +97,7 @@ nodraw2:
 		auto y1 = P.arg<int32_t>();
 		auto x2 = P.arg<int32_t>();
 		auto y2 = P.arg<int32_t>();
-		auto pcolor = P.color(0xFFFFFFU);
+		auto pcolor = P.arg_opt<framebuffer::color>(0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
 	});

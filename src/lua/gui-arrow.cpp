@@ -90,18 +90,17 @@ namespace
 	};
 
 	lua::fnptr2 gui_box(lua_func_misc, "gui.arrow", [](lua::state& L, lua::parameters& P) -> int {
+		int32_t x, y;
+		uint32_t length, headwidth, width, headthickness;
+		int direction;
+		bool fill;
+		framebuffer::color color;
+
 		if(!lua_render_ctx)
 			return 0;
 
-		auto x = P.arg<int32_t>();
-		auto y = P.arg<int32_t>();
-		auto length = P.arg<uint32_t>();
-		auto headwidth = P.arg<uint32_t>();
-		auto direction = P.arg<int>();
-		bool fill = (P.is_boolean() ? P.arg<bool>() : (P.skip(), false));
-		auto color = P.color(0xFFFFFF);
-		auto width = P.arg_opt<uint32_t>(1);
-		auto headthickness = P.arg_opt<uint32_t>(width);
+		P(x, y, length, headwidth, direction, P.optional(fill, false), P.optional(color, 0xFFFFFF),
+			P.optional(width, 1), P.optional2(headthickness, width));
 
 		lua_render_ctx->queue->create_add<render_object_arrow>(x, y, length, width, headwidth, headthickness,
 			direction, fill, color);

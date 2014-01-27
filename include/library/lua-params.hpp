@@ -7,6 +7,13 @@
 
 namespace lua
 {
+template<typename T, typename U> struct optional_parameter_tag
+{
+	optional_parameter_tag(T& _target, U _dflt) : target(_target), dflt(_dflt) {}
+	T& target;
+	U dflt;
+};
+
 template<typename T> static void arg_helper(state& L, T& x, int idx, const std::string& fname)
 {
 	x = L.get_numeric_argument<T>(idx, fname);
@@ -32,25 +39,44 @@ template<typename T> void arg_helper(state& L, lua::objpin<T>& x, int idx, const
 	x = _class<T>::pin(L, idx, fname);
 }
 
-template<typename T> static void arg_helper_opt(state& L, T& x, T dflt, int idx, const std::string& fname)
+template<> void arg_helper(state& L, framebuffer::color& x, int idx, const std::string& fname)
 {
-	x = dflt;
-	L.get_numeric_argument<T>(idx, x, fname);
+	x = lua_get_fb_color(L, idx, fname);
 }
 
-template<> void arg_helper_opt(state& L, bool& x, bool dflt, int idx, const std::string& fname)
+template<typename T, typename U> void arg_helper(state& L, optional_parameter_tag<T, U>& x, int idx,
+	const std::string& fname)
 {
-	x = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? dflt : L.get_bool(idx, fname);
+	x.target = x.dflt;
+	L.get_numeric_argument<T>(idx, x.target, fname);
+	delete &x;
 }
 
-template<> void arg_helper_opt(state& L, std::string& x, std::string dflt, int idx, const std::string& fname)
+template<typename U> void arg_helper(state& L, optional_parameter_tag<bool, U>& x, int idx, const std::string& fname)
 {
-	x = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? dflt : L.get_string(idx, fname);
+	x.target = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? x.dflt : L.get_bool(idx, fname);
+	delete &x;
 }
 
-template<typename T> void arg_helper_opt(state& L, T*& x, T* dflt, int idx, const std::string& fname)
+template<typename U> void arg_helper(state& L, optional_parameter_tag<std::string, U>& x, int idx,
+	const std::string& fname)
 {
-	x = _class<T>::get(L, idx, fname, true);
+	x.target = (L.type(idx) == LUA_TNIL || L.type(idx) == LUA_TNONE) ? x.dflt : L.get_string(idx, fname);
+	delete &x;
+}
+
+template<typename U> void arg_helper(state& L, optional_parameter_tag<framebuffer::color, U>& x, int idx,
+	const std::string& fname)
+{
+	x.target = lua_get_fb_color(L, idx, fname, x.dflt);
+	delete &x;
+}
+
+template<typename T, typename U> void arg_helper(state& L, optional_parameter_tag<T*, U>& x, int idx,
+	const std::string& fname)
+{
+	x.target = _class<T>::get(L, idx, fname, true);
+	delete &x;
 }
 
 /**
@@ -98,17 +124,7 @@ public:
 	template<typename T> T arg_opt(T d, int i = 0)
 	{
 		T tmp;
-		arg_helper_opt(L, tmp, d, i ? i : next, fname);
-		if(!i) next++;
-		return tmp;
-	}
-/**
- * Get color.
- */
-	framebuffer::color color(int64_t d, int i = 0)
-	{
-		framebuffer::color tmp;
-		tmp = lua_get_fb_color(L, i ? i : next, fname, d);
+		arg_helper(L, optional<T>(tmp, d), i ? i : next, fname);
 		if(!i) next++;
 		return tmp;
 	}
@@ -161,6 +177,32 @@ public:
 	{
 		(stringfmt() << "Expected " << what << " as argument #" << (i ? i : next) << " of "
 			<< fname).throwex();
+	}
+/**
+ * Read multiple at once.
+ */
+	template<typename T, typename... U> void operator()(T& x, U&... args)
+	{
+		arg_helper(L, x, next, fname);
+		next++;
+		(*this)(args...);
+	}
+	void operator()()
+	{
+	}
+/**
+ * Optional tag.
+ */
+	template<typename T, typename U> optional_parameter_tag<T, U>& optional(T& value, U dflt)
+	{
+		return *new optional_parameter_tag<T, U>(value, dflt);
+	}
+/**
+ * Optional tag, reference default value.
+ */
+	template<typename T, typename U> optional_parameter_tag<T, const U&>& optional2(T& value, const U& dflt)
+	{
+		return *new optional_parameter_tag<T, const U&>(value, dflt);
 	}
 private:
 	state& L;

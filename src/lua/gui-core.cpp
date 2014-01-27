@@ -90,7 +90,7 @@ namespace
 	lua::fnptr2 gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, lua::parameters& P) -> int {
 		int64_t step = P.arg<int64_t>();
 		int64_t steps = P.arg<int64_t>();
-		auto basecolor = P.color(0x00FF0000).asnumber();
+		auto basecolor = P.arg_opt<framebuffer::color>(0x00FF0000).asnumber();
 		if(!steps)
 			throw std::runtime_error("Expected nonzero steps for gui.rainbow");
 		basecolor = framebuffer::color_rotate_hue(basecolor, step, steps);

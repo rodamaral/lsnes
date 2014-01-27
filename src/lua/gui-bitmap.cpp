@@ -1062,7 +1062,7 @@ int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 {
 	auto w = P.arg<uint32_t>();
 	auto h = P.arg<uint32_t>();
-	auto c = P.color(-1);
+	auto c = P.arg_opt<framebuffer::color>(-1);
 	lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
 	for(size_t i = 0; i < b->width * b->height; i++)
 		b->pixels[i] = c;
@@ -1169,7 +1169,7 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, cons
 		else if(P.is_novalue())
 			; //Do nothing.
 		else
-			ckx = P.color(0).asnumber();
+			ckx = P.arg<framebuffer::color>().asnumber();
 	}
 
 	operand_dbitmap dest(*this);

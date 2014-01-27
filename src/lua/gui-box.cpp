@@ -61,9 +61,9 @@ namespace
 		auto width = P.arg<uint32_t>();
 		auto height = P.arg<uint32_t>();
 		uint32_t thickness = P.arg_opt<uint32_t>(1);
-		auto poutline1 = P.color(0xFFFFFFU);
-		auto poutline2 = P.color(0x808080U);
-		auto pfill = P.color(0xC0C0C0U);
+		auto poutline1 = P.arg_opt<framebuffer::color>(0xFFFFFFU);
+		auto poutline2 = P.arg_opt<framebuffer::color>(0x808080U);
+		auto pfill = P.arg_opt<framebuffer::color>(0xC0C0C0U);
 		lua_render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
 			pfill, thickness);
 		return 0;

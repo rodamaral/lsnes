@@ -56,8 +56,8 @@ namespace
 		auto width = P.arg<uint32_t>();
 		auto height = P.arg<uint32_t>();
 		auto thickness = P.arg_opt<uint32_t>(1);
-		auto poutline = P.color(0xFFFFFFU);
-		auto pfill = P.color(-1);
+		auto poutline = P.arg_opt<framebuffer::color>(0xFFFFFFU);
+		auto pfill = P.arg_opt<framebuffer::color>(-1);
 		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, poutline, pfill,
 			thickness);
 		return 0;

@@ -82,9 +82,8 @@ namespace
 	template<uint64_t (*sh)(uint64_t base, uint64_t amount, uint64_t bits)>
 	int shift(lua::state& L, lua::parameters& P)
 	{
-		auto base = P.arg<uint64_t>();
-		auto amount = P.arg_opt<uint64_t>(1);
-		auto bits = P.arg_opt<uint64_t>(BITWISE_BITS);
+		uint64_t base, amount, bits;
+		P(base, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
 		L.pushnumber(sh(base, amount, bits));
 		return 1;
 	}
@@ -92,16 +91,17 @@ namespace
 	template<typename T>
 	int bswap(lua::state& L, lua::parameters& P)
 	{
-		T val = P.arg<T>();
+		T val;
+		P(val);
 		serialization::swap_endian(val);
 		L.pushnumber(val);
 		return 1;
 	}
 
-	lua::fnptr2 lua_bextract(lua_func_bit, "bit.extract", [](lua::state& L, lua::parameters& P)
-		-> int {
-		uint64_t num = P.arg<uint64_t>();
+	lua::fnptr2 lua_bextract(lua_func_bit, "bit.extract", [](lua::state& L, lua::parameters& P) -> int {
 		uint64_t ret = 0;
+		uint64_t num;
+		P(num);
 		for(size_t i = 0;; i++) {
 			if(P.is_boolean()) {
 				if(P.arg<bool>())
@@ -129,15 +129,15 @@ namespace
 	});
 
 	lua::fnptr2 lua_testany(lua_func_bit, "bit.test_any", [](lua::state& L, lua::parameters& P) -> int {
-		auto a = P.arg<uint64_t>();
-		auto b = P.arg<uint64_t>();
+		uint64_t a, b;
+		P(a, b);
 		L.pushboolean((a & b) != 0);
 		return 1;
 	});
 
 	lua::fnptr2 lua_testall(lua_func_bit, "bit.test_all", [](lua::state& L, lua::parameters& P) -> int {
-		auto a = P.arg<uint64_t>();
-		auto b = P.arg<uint64_t>();
+		uint64_t a, b;
+		P(a, b);
 		L.pushboolean((a & b) == b);
 		return 1;
 	});
@@ -155,16 +155,16 @@ namespace
 	}
 
 	lua::fnptr2 lua_popcount(lua_func_bit, "bit.popcount", [](lua::state& L, lua::parameters& P) -> int {
-		auto a = P.arg<uint64_t>();
+		uint64_t a;
+		P(a);
 		L.pushnumber(popcount(a));
 		return 1;
 	});
 
 	lua::fnptr2 lua_clshift(lua_func_bit, "bit.clshift", [](lua::state& L, lua::parameters& P) -> int {
-		auto a = P.arg<uint64_t>();
-		auto b = P.arg<uint64_t>();
-		auto amount = P.arg_opt<unsigned>(1);
-		auto bits = P.arg_opt<unsigned>(BITWISE_BITS);
+		uint64_t a, b;
+		unsigned amount, bits;
+		P(a, b, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
 		uint64_t mask = ((1ULL << bits) - 1);
 		a &= mask;
 		b &= mask;
@@ -179,10 +179,9 @@ namespace
 	});
 
 	lua::fnptr2 lua_crshift(lua_func_bit, "bit.crshift", [](lua::state& L, lua::parameters& P) -> int {
-		auto a = P.arg<uint64_t>();
-		auto b = P.arg<uint64_t>();
-		auto amount = P.arg_opt<unsigned>(1);
-		auto bits = P.arg_opt<unsigned>(BITWISE_BITS);
+		uint64_t a, b;
+		unsigned amount, bits;
+		P(a, b, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
 		uint64_t mask = ((1ULL << bits) - 1);
 		a &= mask;
 		b &= mask;
@@ -198,10 +197,9 @@ namespace
 	template<bool reverse>
 	int flagdecode_core(lua::state& L, lua::parameters& P)
 	{
-		auto a = P.arg<uint64_t>();
-		auto b = P.arg<uint64_t>();
-		auto on = P.arg_opt<std::string>("");
-		auto off = P.arg_opt<std::string>("");
+		uint64_t a, b;
+		std::string on, off;
+		P(a, b, P.optional(on, ""), P.optional(off, ""));
 		size_t onl = on.length();
 		size_t offl = off.length();
 		char onc = onl ? on[onl - 1] : '*';

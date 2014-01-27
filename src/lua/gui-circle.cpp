@@ -67,8 +67,8 @@ namespace
 		auto y = P.arg<int32_t>();
 		auto radius = P.arg<uint32_t>();
 		uint32_t thickness = P.arg_opt<uint32_t>(1);
-		auto poutline = P.color(0xFFFFFFU);
-		auto pfill = P.color(-1);
+		auto poutline = P.arg_opt<framebuffer::color>(0xFFFFFFU);
+		auto pfill = P.arg_opt<framebuffer::color>(-1);
 		lua_render_ctx->queue->create_add<render_object_circle>(x, y, radius, poutline, pfill, thickness);
 		return 0;
 	});

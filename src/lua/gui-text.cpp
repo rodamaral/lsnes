@@ -38,8 +38,8 @@ namespace
 		auto _x = P.arg<int32_t>();
 		auto _y = P.arg<int32_t>();
 		auto text = P.arg<std::string>();
-		auto fg = P.color(0xFFFFFFU);
-		auto bg = P.color(-1);
+		auto fg = P.arg_opt<framebuffer::color>(0xFFFFFFU);
+		auto bg = P.arg_opt<framebuffer::color>(-1);
 		lua_render_ctx->queue->create_add<render_object_text>(_x, _y, text, fg, bg, hdbl, vdbl);
 		return 0;
 	}

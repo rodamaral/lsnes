@@ -34,7 +34,7 @@ namespace
 			return 0;
 		auto x = P.arg<int32_t>();
 		auto y = P.arg<int32_t>();
-		auto pcolor = P.color(0xFFFFFFU);
+		auto pcolor = P.arg_opt<framebuffer::color>(0xFFFFFFU);
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
 	});
