@@ -92,7 +92,9 @@ lua_command_bind::~lua_command_bind()
 namespace
 {
 	lua::fnptr2 input_bindings(lua_func_misc, "list_bindings", [](lua::state& L, lua::parameters& P) -> int {
-		auto target = P.arg_opt<std::string>("");
+		std::string target;
+
+		P(P.optional(target, ""));
 
 		L.newtable();
 		for(auto key : lsnes_mapper.get_bindings()) {
@@ -122,7 +124,10 @@ namespace
 	});
 
 	lua::fnptr2 get_alias(lua_func_misc, "get_alias", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
+		std::string name;
+
+		P(name);
+
 		std::string a = lsnes_cmd.get_alias_for(name);
 		if(a != "")
 			L.pushlstring(a);
@@ -132,8 +137,10 @@ namespace
 	});
 
 	lua::fnptr2 set_alias(lua_func_misc, "set_alias", [](lua::state& L, lua::parameters& P) -> int {
-		auto name = P.arg<std::string>();
-		auto value = P.arg_opt<std::string>("");
+		std::string name, value;
+
+		P(name, P.optional(value, ""));
+
 		lsnes_cmd.set_alias_for(name, value);
 		refresh_alias_binds();
 		return 0;
@@ -149,19 +156,24 @@ namespace
 
 int lua_inverse_bind::create(lua::state& L, lua::parameters& P)
 {
-	auto name = P.arg<std::string>();
-	auto command = P.arg<std::string>();
+	std::string name, command;
+
+	P(name, command);
+
 	lua_inverse_bind* b = lua::_class<lua_inverse_bind>::create(L, name, command);
 	return 1;
 }
 
 int lua_command_bind::create(lua::state& L, lua::parameters& P)
 {
-	auto name = P.arg<std::string>();
-	if(!P.is_function())
-		P.expected("function");
-	if(!P.is_function(3) && P.is_novalue(3))
-		P.expected("function or nil", 3);
-	lua_command_bind* b = lua::_class<lua_command_bind>::create(L, name, 2, 3);
+	std::string name;
+	int lfn1 = 0, lfn2 = 0;
+
+	P(name, P.function(lfn1));
+	if(P.is_function() || P.is_novalue())
+		lfn2 = P.skip();
+	else
+		P.expected("function or nil");
+	lua_command_bind* b = lua::_class<lua_command_bind>::create(L.get_master(), name, lfn1, lfn2);
 	return 1;
 }

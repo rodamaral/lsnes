@@ -169,9 +169,13 @@ namespace
 		}
 		int read(lua::state& L, const std::string& fname)
 		{
-			if(L.type(2) == LUA_TNUMBER) {
+			lua::parameters P(L, fname);
+			P(P.skipped());
+
+			if(P.is_number()) {
 				//Read specified number of bytes.
-				size_t sz = L.get_numeric_argument<size_t>(2, fname.c_str());
+				size_t sz;
+				P(sz);
 				std::vector<char> buf;
 				buf.resize(sz);
 				s.read(&buf[0], sz);
@@ -181,7 +185,7 @@ namespace
 				}
 				L.pushlstring(&buf[0], s.gcount());
 				return 1;
-			} else if(L.type(2) == LUA_TNIL || L.type(2) == LUA_TNONE) {
+			} else if(P.is_novalue()) {
 				//Read next line.
 				std::string tmp;
 				std::getline(s, tmp);
@@ -193,7 +197,7 @@ namespace
 				L.pushlstring(tmp);
 				return 1;
 			} else
-				(stringfmt() << "Expected number or nil as the 2nd argument of " << fname).throwex();
+				P.expected("number or nil");
 		}
 		int lines(lua::state& L, const std::string& fname)
 		{
