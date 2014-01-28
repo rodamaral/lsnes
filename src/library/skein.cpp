@@ -4,9 +4,11 @@
 #include <iostream>
 #include <stdexcept>
 #include <iomanip>
+#include <algorithm>
 #include "arch-detect.hpp"
+#ifdef TEST_SKEIN_CODE
 #include "hex.hpp"
-#include "minmax.hpp"
+#endif
 
 namespace skein
 {
@@ -15,6 +17,7 @@ namespace skein
 
 static uint8_t bitmasks[] = {0, 128, 192, 224, 240, 248, 252, 254, 255};
 
+#ifdef TEST_SKEIN_CODE
 static void show_array(const char* prefix, const uint64_t* a, size_t e)
 {
 	std::cerr << prefix;
@@ -34,6 +37,7 @@ static void show_array(const char* prefix, const uint8_t* a, size_t e)
 	}
 	std::cerr << std::endl;
 }
+#endif
 
 inline static void to_words(uint64_t* out, const void* in, size_t words)
 {
@@ -206,7 +210,7 @@ void hash::read_partial(uint8_t* output, uint64_t startblock, uint64_t bits) thr
 	for(uint64_t i = 0; i < bits; i += (fullbuffer<<3)) {
 		compress(out, zeroes, chain, tweak);
 		zeroes[0]++;
-		uint64_t fullbytes = min((bits - i) >> 3, static_cast<uint64_t>(fullbuffer));
+		uint64_t fullbytes = std::min((bits - i) >> 3, static_cast<uint64_t>(fullbuffer));
 		to_bytes(output + offset, out, fullbytes);
 		if(fullbytes < fullbuffer && i + 8 * fullbytes < bits) {
 			output[offset + fullbytes] = (out[fullbytes>>3] >> ((fullbytes&7)<<3));
@@ -251,7 +255,7 @@ void prng::read(void* buffer, size_t size) throw(std::runtime_error)
 	for(uint64_t i = 0; i < size; i += 128) {
 		_skein1024_compress(out, zeroes, chain, tweak);
 		zeroes[0]++;
-		uint64_t fullbytes = min(size - i, static_cast<uint64_t>(128));
+		uint64_t fullbytes = std::min(size - i, static_cast<uint64_t>(128));
 		to_bytes(reinterpret_cast<uint8_t*>(buffer) + i, out, fullbytes);
 	}
 	zeroes[0] = 0;
