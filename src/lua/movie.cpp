@@ -37,15 +37,20 @@ namespace
 	});
 
 	lua::fnptr2 mfs(lua_func_misc, "movie.frame_subframes", [](lua::state& L, lua::parameters& P) -> int {
-		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
+		uint64_t frame;
+
+		P(frame);
+
 		auto& m = get_movie();
 		L.pushnumber(m.frame_subframes(frame));
 		return 1;
 	});
 
 	lua::fnptr2 mrs(lua_func_misc, "movie.read_subframes", [](lua::state& L, lua::parameters& P) -> int {
-		uint64_t frame = L.get_numeric_argument<uint64_t>(1, "movie.frame_subframes");
-		uint64_t subframe = L.get_numeric_argument<uint64_t>(2, "movie.frame_subframes");
+		uint64_t frame, subframe;
+
+		P(frame, subframe);
+
 		auto& m = get_movie();
 		controller_frame r = m.read_subframe(frame, subframe);
 		L.newtable();
@@ -70,16 +75,21 @@ namespace
 			mainloop_signal_need_rewind(NULL);
 		} else if(P.is<lua_unsaferewind>()) {
 			//Load the save.
-			lua::objpin<lua_unsaferewind>* u = new lua::objpin<lua_unsaferewind>(
-				P.arg<lua::objpin<lua_unsaferewind>>());
-			mainloop_signal_need_rewind(u);
+			lua::objpin<lua_unsaferewind> pin;
+
+			P(pin);
+
+			mainloop_signal_need_rewind(new lua::objpin<lua_unsaferewind>(pin));
 		} else
 			P.expected("UNSAFEREWIND or nil");
 		return 0;
 	});
 
 	lua::fnptr2 movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua::state& L, lua::parameters& P) -> int {
-		auto filename = P.arg<std::string>();
+		std::string filename;
+
+		P(filename);
+
 		moviefile mfile(filename, *our_rom.rtype);
 		if(!mfile.is_savestate)
 			throw std::runtime_error("movie.to_rewind only allows savestates");

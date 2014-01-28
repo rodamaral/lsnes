@@ -1,4 +1,5 @@
 #include "library/zip.hpp"
+#include "library/minmax.hpp"
 #include "lua/internal.hpp"
 
 namespace
@@ -13,19 +14,20 @@ namespace
 		}
 		static int create(lua::state& L, lua::parameters& P)
 		{
-			auto filename = P.arg<std::string>();
-			auto compression = P.arg_opt<unsigned>(9);
-			if(compression < 0)
-				compression = 0;
-			if(compression > 9)
-				compression = 9;
+			std::string filename;
+			unsigned compression;
+
+			P(filename, P.optional(compression, 9));
+
+			compression = clip(compression, 0U, 9U);
+
 			lua::_class<lua_zip_writer>::create(L, filename, compression);
 			return 1;
 		}
 		int commit(lua::state& L, const std::string& fname)
 		{
-			if(!w)
-				throw std::runtime_error("Zip writer already finished");
+			if(!w) throw std::runtime_error("Zip writer already finished");
+
 			if(file_open)
 				w->close_file();
 			file_open = NULL;
@@ -35,25 +37,28 @@ namespace
 		}
 		int rollback(lua::state& L, const std::string& fname)
 		{
-			if(!w)
-				throw std::runtime_error("Zip writer already finished");
+			if(!w) throw std::runtime_error("Zip writer already finished");
+
 			delete w;
 			w = NULL;
 		}
 		int close_file(lua::state& L, const std::string& fname)
 		{
-			if(!w)
-				throw std::runtime_error("Zip writer already finished");
-			if(!file_open)
-				throw std::runtime_error("Zip writer doesn't have file open");
+			if(!w) throw std::runtime_error("Zip writer already finished");
+			if(!file_open) throw std::runtime_error("Zip writer doesn't have file open");
+
 			w->close_file();
 			file_open = NULL;
 		}
 		int create_file(lua::state& L, const std::string& fname)
 		{
-			if(!w)
-				throw std::runtime_error("Zip writer already finished");
-			std::string filename = L.get_string(2, "ZIPWRITER::create_file");
+			lua::parameters P(L, fname);
+			std::string filename;
+
+			if(!w) throw std::runtime_error("Zip writer already finished");
+
+			P(P.skipped(), filename);
+
 			if(file_open) {
 				w->close_file();
 				file_open = NULL;
@@ -62,11 +67,14 @@ namespace
 		}
 		int write(lua::state& L, const std::string& fname)
 		{
-			if(!w)
-				throw std::runtime_error("Zip writer already finished");
-			if(!file_open)
-				throw std::runtime_error("Zip writer doesn't have file open");
-			std::string _data = L.get_string(2, "ZIPWRITER::write");
+			lua::parameters P(L, fname);
+			std::string _data;
+
+			if(!w) throw std::runtime_error("Zip writer already finished");
+			if(!file_open) throw std::runtime_error("Zip writer doesn't have file open");
+
+			P(P.skipped(), _data);
+
 			std::vector<char> data(_data.length());
 			std::copy(_data.begin(), _data.end(), data.begin());
 			file_open->write(&data[0], data.size());
@@ -99,8 +107,10 @@ namespace
 	}
 
 	lua::fnptr2 lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L, lua::parameters& P) -> int {
-		auto filename = P.arg<std::string>();
-		auto invert = P.arg_opt<bool>(false);
+		std::string filename;
+		bool invert;
+
+		P(filename, P.optional(invert, false));
 
 		zip::reader r(filename);
 		L.newtable();
