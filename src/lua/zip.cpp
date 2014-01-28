@@ -24,7 +24,7 @@ namespace
 			lua::_class<lua_zip_writer>::create(L, filename, compression);
 			return 1;
 		}
-		int commit(lua::state& L, const std::string& fname)
+		int commit(lua::state& L, lua::parameters& P)
 		{
 			if(!w) throw std::runtime_error("Zip writer already finished");
 
@@ -35,14 +35,14 @@ namespace
 			delete w;
 			w = NULL;
 		}
-		int rollback(lua::state& L, const std::string& fname)
+		int rollback(lua::state& L, lua::parameters& P)
 		{
 			if(!w) throw std::runtime_error("Zip writer already finished");
 
 			delete w;
 			w = NULL;
 		}
-		int close_file(lua::state& L, const std::string& fname)
+		int close_file(lua::state& L, lua::parameters& P)
 		{
 			if(!w) throw std::runtime_error("Zip writer already finished");
 			if(!file_open) throw std::runtime_error("Zip writer doesn't have file open");
@@ -50,9 +50,8 @@ namespace
 			w->close_file();
 			file_open = NULL;
 		}
-		int create_file(lua::state& L, const std::string& fname)
+		int create_file(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			std::string filename;
 
 			if(!w) throw std::runtime_error("Zip writer already finished");
@@ -65,9 +64,8 @@ namespace
 			}
 			file_open = &w->create_file(filename);
 		}
-		int write(lua::state& L, const std::string& fname)
+		int write(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			std::string _data;
 
 			if(!w) throw std::runtime_error("Zip writer already finished");

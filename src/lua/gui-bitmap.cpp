@@ -801,10 +801,13 @@ int lua_palette::load_str(lua::state& L, lua::parameters& P)
 	return bitmap_palette_fn(L, s);
 }
 
-int lua_palette::set(lua::state& L, const std::string& fname)
+int lua_palette::set(lua::state& L, lua::parameters& P)
 {
-	uint16_t c = L.get_numeric_argument<uint16_t>(2, fname.c_str());
-	auto nc = lua_get_fb_color(L, 3, fname);
+	framebuffer::color nc;
+	uint16_t c;
+
+	P(P.skipped(), c, nc);
+
 	//The mutex lock protects only the internals of colors array.
 	if(this->colors.size() <= c) {
 		this->palette_mutex.lock();
@@ -815,7 +818,7 @@ int lua_palette::set(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_palette::hash(lua::state& L, const std::string& fname)
+int lua_palette::hash(lua::state& L, lua::parameters& P)
 {
 	sha256 h;
 	const int buffersize = 256;
@@ -838,7 +841,7 @@ int lua_palette::hash(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-int lua_palette::debug(lua::state& L, const std::string& fname)
+int lua_palette::debug(lua::state& L, lua::parameters& P)
 {
 	size_t i = 0;
 	for(auto c : this->colors)
@@ -846,9 +849,12 @@ int lua_palette::debug(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_palette::adjust_transparency(lua::state& L, const std::string& fname)
+int lua_palette::adjust_transparency(lua::state& L, lua::parameters& P)
 {
-	uint16_t tadj = L.get_numeric_argument<uint16_t>(2, fname.c_str());
+	uint16_t tadj;
+
+	P(P.skipped(), tadj);
+
 	for(auto& c : this->colors)
 		c = tadjust(c, tadj);
 	return 0;
@@ -886,9 +892,8 @@ int lua_bitmap::create(lua::state& L, lua::parameters& P)
 	return 1;
 }
 
-int lua_bitmap::draw(lua::state& L, const std::string& fname)
+int lua_bitmap::draw(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	int32_t x, y;
 	lua::objpin<lua_bitmap> b;
 	lua::objpin<lua_palette> p;
@@ -901,9 +906,8 @@ int lua_bitmap::draw(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_bitmap::pset(lua::state& L, const std::string& fname)
+int lua_bitmap::pset(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t x, y;
 	uint16_t c;
 
@@ -915,9 +919,8 @@ int lua_bitmap::pset(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_bitmap::pget(lua::state& L, const std::string& fname)
+int lua_bitmap::pget(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t x, y;
 
 	P(P.skipped(), x, y);
@@ -928,14 +931,14 @@ int lua_bitmap::pget(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-int lua_bitmap::size(lua::state& L, const std::string& fname)
+int lua_bitmap::size(lua::state& L, lua::parameters& P)
 {
 	L.pushnumber(this->width);
 	L.pushnumber(this->height);
 	return 2;
 }
 
-int lua_bitmap::hash(lua::state& L, const std::string& fname)
+int lua_bitmap::hash(lua::state& L, lua::parameters& P)
 {
 	sha256 h;
 	const int buffersize = 256;
@@ -958,9 +961,8 @@ int lua_bitmap::hash(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-template<bool scaled, bool porterduff> int lua_bitmap::blit(lua::state& L, const std::string& fname)
+template<bool scaled, bool porterduff> int lua_bitmap::blit(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
 	lua_bitmap* src_p;
 
@@ -980,9 +982,8 @@ template<bool scaled, bool porterduff> int lua_bitmap::blit(lua::state& L, const
 	return 0;
 }
 
-template<bool scaled> int lua_bitmap::blit_priority(lua::state& L, const std::string& fname)
+template<bool scaled> int lua_bitmap::blit_priority(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
 	lua_bitmap* src_p;
 
@@ -994,9 +995,8 @@ template<bool scaled> int lua_bitmap::blit_priority(lua::state& L, const std::st
 	return 0;
 }
 
-int lua_bitmap::save_png(lua::state& L, const std::string& fname)
+int lua_bitmap::save_png(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	std::string name, name2;
 	lua_palette* p;
 	bool was_filename;
@@ -1055,9 +1055,8 @@ int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 	return 1;
 }
 
-int lua_dbitmap::draw(lua::state& L, const std::string& fname)
+int lua_dbitmap::draw(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	int32_t x, y;
 	lua::objpin<lua_dbitmap> b;
 
@@ -1069,9 +1068,8 @@ int lua_dbitmap::draw(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_dbitmap::pset(lua::state& L, const std::string& fname)
+int lua_dbitmap::pset(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t x, y;
 	framebuffer::color c;
 
@@ -1083,9 +1081,8 @@ int lua_dbitmap::pset(lua::state& L, const std::string& fname)
 	return 0;
 }
 
-int lua_dbitmap::pget(lua::state& L, const std::string& fname)
+int lua_dbitmap::pget(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t x, y;
 
 	P(P.skipped(), x, y);
@@ -1096,14 +1093,14 @@ int lua_dbitmap::pget(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-int lua_dbitmap::size(lua::state& L, const std::string& fname)
+int lua_dbitmap::size(lua::state& L, lua::parameters& P)
 {
 	L.pushnumber(this->width);
 	L.pushnumber(this->height);
 	return 2;
 }
 
-int lua_dbitmap::hash(lua::state& L, const std::string& fname)
+int lua_dbitmap::hash(lua::state& L, lua::parameters& P)
 {
 	sha256 h;
 	const int buffersize = 256;
@@ -1127,9 +1124,8 @@ int lua_dbitmap::hash(lua::state& L, const std::string& fname)
 	return 1;
 }
 
-template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, const std::string& fname)
+template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
 
 	P(P.skipped(), dx, dy);
@@ -1180,9 +1176,8 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, cons
 	return 0;
 }
 
-int lua_dbitmap::save_png(lua::state& L, const std::string& fname)
+int lua_dbitmap::save_png(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	std::string name, name2;
 	lua_palette* p;
 	bool was_filename;
@@ -1209,9 +1204,8 @@ int lua_dbitmap::save_png(lua::state& L, const std::string& fname)
 	}
 }
 
-int lua_dbitmap::adjust_transparency(lua::state& L, const std::string& fname)
+int lua_dbitmap::adjust_transparency(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	uint16_t tadj;
 
 	P(P.skipped(), tadj);

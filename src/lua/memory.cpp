@@ -84,7 +84,7 @@ public:
 	{
 	}
 
-	int index(lua::state& L, const std::string& fname)
+	int index(lua::state& L, lua::parameters& P)
 	{
 		const char* c = L.tostring(2);
 		if(!c) {
@@ -100,7 +100,7 @@ public:
 		x.first->read(L, x.second);
 		return 1;
 	}
-	int newindex(lua::state& L, const std::string& fname)
+	int newindex(lua::state& L, lua::parameters& P)
 	{
 		const char* c = L.tostring(2);
 		if(!c)
@@ -117,7 +117,7 @@ public:
 		lua::_class<lua_mmap_struct>::create(L);
 		return 1;
 	}
-	int map(lua::state& L, const std::string& fname);
+	int map(lua::state& L, lua::parameters& P);
 	std::string print()
 	{
 		size_t s = mappings.size();
@@ -637,9 +637,8 @@ namespace
 	});
 }
 
-int lua_mmap_struct::map(lua::state& L, const std::string& fname)
+int lua_mmap_struct::map(lua::state& L, lua::parameters& P)
 {
-	lua::parameters P(L, fname);
 	std::string name, type;
 	uint64_t vmabase = 0, addr;
 

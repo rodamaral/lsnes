@@ -50,9 +50,9 @@ namespace
 	{
 	public:
 		lua_vma(lua::state& L, memory_region* r);
-		int info(lua::state& L, const std::string& fname);
-		template<class T, bool _bswap> int rw(lua::state& L, const std::string& fname);
-		template<bool write, bool sign> int scattergather(lua::state& L, const std::string& fname);
+		int info(lua::state& L, lua::parameters& P);
+		template<class T, bool _bswap> int rw(lua::state& L, lua::parameters& P);
+		template<bool write, bool sign> int scattergather(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return vma;
@@ -69,9 +69,9 @@ namespace
 	public:
 		lua_vma_list(lua::state& L);
 		static int create(lua::state& L, lua::parameters& P);
-		int index(lua::state& L, const std::string& fname);
-		int newindex(lua::state& L, const std::string& fname);
-		int call(lua::state& L, const std::string& fname);
+		int index(lua::state& L, lua::parameters& P);
+		int newindex(lua::state& L, lua::parameters& P);
+		int call(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return "";
@@ -124,19 +124,16 @@ namespace
 		ro = r->readonly;
 	}
 
-	int lua_vma::info(lua::state& L, const std::string& fname)
+	int lua_vma::info(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
-
 		for(auto i : lsnes_memory.get_regions())
 			if(i->name == vma)
 				return handle_push_vma(L, *i);
 		(stringfmt() << P.get_fname() << ": Stale region").throwex();
 	}
 
-	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, const std::string& fname)
+	template<class T, bool _bswap> int lua_vma::rw(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		uint64_t addr;
 		T val;
 
@@ -162,9 +159,8 @@ namespace
 			P.expected("number or nil");
 	}
 
-	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, const std::string& fname)
+	template<bool write, bool sign> int lua_vma::scattergather(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		uint64_t val = 0;
 		unsigned shift = 0;
 		uint64_t addr = 0;
@@ -205,7 +201,7 @@ namespace
 		return 1;
 	}
 
-	int lua_vma_list::call(lua::state& L, const std::string& fname)
+	int lua_vma_list::call(lua::state& L, lua::parameters& P)
 	{
 		L.newtable();
 		size_t key = 1;
@@ -217,9 +213,8 @@ namespace
 		return 1;
 	}
 
-	int lua_vma_list::index(lua::state& L, const std::string& fname)
+	int lua_vma_list::index(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		std::string vma;
 
 		P(P.skipped(), vma);
@@ -235,7 +230,7 @@ namespace
 		(stringfmt() << P.get_fname() << ": No such VMA").throwex();
 	}
 
-	int lua_vma_list::newindex(lua::state& L, const std::string& fname)
+	int lua_vma_list::newindex(lua::state& L, lua::parameters& P)
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}

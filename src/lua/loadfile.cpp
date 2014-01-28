@@ -167,9 +167,8 @@ namespace
 				throw;
 			}
 		}
-		int read(lua::state& L, const std::string& fname)
+		int read(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			P(P.skipped());
 
 			if(P.is_number()) {
@@ -199,7 +198,7 @@ namespace
 			} else
 				P.expected("number or nil");
 		}
-		int lines(lua::state& L, const std::string& fname)
+		int lines(lua::state& L, lua::parameters& P)
 		{
 			L.pushlightuserdata(this);
 			L.pushcclosure(lua_file_reader::lines_helper2, 1);

@@ -73,7 +73,7 @@ template<class T> struct class_binding
 /**
  * The pointer to call.
  */
-	int (T::*fn)(state& lstate, const std::string& _fname);
+	int (T::*fn)(state& lstate, lua::parameters& P);
 /**
  * The state to call it in.
  */
@@ -128,7 +128,7 @@ template<class T> struct class_method
 /**
  * Function.
  */
-	int (T::*fn)(state& LS, const std::string& fname);
+	int (T::*fn)(state& LS, lua::parameters& P);
 };
 
 /**
@@ -221,7 +221,8 @@ template<class T> class _class : public class_base
 			class_binding<T>* b = (class_binding<T>*)lua_touserdata(LS, lua_upvalueindex(1));
 			state L(*b->_state, LS);
 			T* p = _class<T>::get(L, 1, b->fname);
-			return (p->*(b->fn))(L, b->fname);
+			lua::parameters P(L, b->fname);
+			return (p->*(b->fn))(L, P);
 		} catch(std::exception& e) {
 			std::string err = e.what();
 			lua_pushlstring(LS, err.c_str(), err.length());
@@ -272,7 +273,7 @@ badtype:
 		return t;
 	}
 
-	void bind(state& _state, const char* keyname, int (T::*fn)(state& LS, const std::string& fname))
+	void bind(state& _state, const char* keyname, int (T::*fn)(state& LS, lua::parameters& P))
 	{
 		load_metatable(_state);
 		_state.pushstring(keyname);

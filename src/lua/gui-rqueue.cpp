@@ -21,7 +21,7 @@ namespace
 		}
 		static int create(lua::state& L, lua::parameters& P);
 		static int setnull(lua::state& L, lua::parameters& P);
-		int run(lua::state& L, const std::string& fname)
+		int run(lua::state& L, lua::parameters& P)
 		{
 			if(!lua_render_ctx) return 0;
 
@@ -37,9 +37,8 @@ namespace
 			lua_render_ctx->queue->copy_from(*ptr->queue);
 			return 0;
 		}
-		int synchronous_repaint(lua::state& L, const std::string& fname)
+		int synchronous_repaint(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			lua::objpin<lua_renderqueue> q;
 
 			P(q);
@@ -49,7 +48,7 @@ namespace
 			synchronous_paint_ctx = NULL;
 			return 0;
 		}
-		int clear(lua::state& L, const std::string& fname)
+		int clear(lua::state& L, lua::parameters& P)
 		{
 			lua_render_context* ptr = get();
 			ptr->top_gap = std::numeric_limits<uint32_t>::max();
@@ -58,9 +57,8 @@ namespace
 			ptr->left_gap = std::numeric_limits<uint32_t>::max();
 			ptr->queue->clear();
 		}
-		int set(lua::state& L, const std::string& fname)
+		int set(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			lua::objpin<lua_renderqueue> q;
 
 			P(q);
@@ -71,7 +69,7 @@ namespace
 			lua_render_ctx = last = ptr;
 			redirect = true;
 		}
-		int render(lua::state& L, const std::string& fname)
+		int render(lua::state& L, lua::parameters& P)
 		{
 			uint32_t rwidth = lctx.width + rdgap(lctx.left_gap) + rdgap(lctx.right_gap);
 			uint32_t rheight = lctx.height + rdgap(lctx.top_gap) + rdgap(lctx.bottom_gap);

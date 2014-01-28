@@ -22,8 +22,8 @@ namespace
 		~lua_customfont() throw();
 		static int create(lua::state& L, lua::parameters& P);
 		static int load(lua::state& L, lua::parameters& P);
-		int draw(lua::state& L, const std::string& fname);
-		int edit(lua::state& L, const std::string& fname);
+		int draw(lua::state& L, lua::parameters& P);
+		int edit(lua::state& L, lua::parameters& P);
 		const framebuffer::font2& get_font() { return font; }
 		std::string print()
 		{
@@ -118,9 +118,8 @@ namespace
 		render_kill_request(this);
 	}
 
-	int lua_customfont::draw(lua::state& L, const std::string& fname)
+	int lua_customfont::draw(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		int32_t _x, _y;
 		framebuffer::color fg, bg, hl;
 		std::string text;
@@ -140,9 +139,8 @@ namespace
 		orig_filename = "<empty>";
 	}
 
-	int lua_customfont::edit(lua::state& L, const std::string& fname)
+	int lua_customfont::edit(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		std::string text;
 		lua_bitmap* _glyph;
 

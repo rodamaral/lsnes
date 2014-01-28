@@ -37,10 +37,9 @@ namespace
 			render_kill_request(this);
 		}
 		static int create(lua::state& L, lua::parameters& P);
-		int draw(lua::state& L, const std::string& fname);
-		int get(lua::state& L, const std::string& fname)
+		int draw(lua::state& L, lua::parameters& P);
+		int get(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			uint32_t x, y;
 
 			P(P.skipped(), x, y);
@@ -59,9 +58,8 @@ namespace
 			} else
 				return 0;
 		}
-		int set(lua::state& L, const std::string& fname)
+		int set(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			uint32_t x, y;
 
 			P(P.skipped(), x, y);
@@ -87,13 +85,13 @@ namespace
 				P.expected("BITMAP, DBITMAP or nil", oidx);
 			return 0;
 		}
-		int getsize(lua::state& L, const std::string& fname)
+		int getsize(lua::state& L, lua::parameters& P)
 		{
 			L.pushnumber(width);
 			L.pushnumber(height);
 			return 2;
 		}
-		int getcsize(lua::state& L, const std::string& fname)
+		int getcsize(lua::state& L, lua::parameters& P)
 		{
 			L.pushnumber(cwidth);
 			L.pushnumber(cheight);
@@ -118,9 +116,8 @@ namespace
 			} else
 				return orig + shift;
 		}
-		int scroll(lua::state& L, const std::string& fname)
+		int scroll(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			int32_t ox, oy;
 			size_t x0, y0, w, h;
 			bool circx, circy;
@@ -282,9 +279,8 @@ namespace
 		lua::objpin<tilemap> map;
 	};
 
-	int tilemap::draw(lua::state& L, const std::string& fname)
+	int tilemap::draw(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		uint32_t x, y, w, h;
 		int32_t x0, y0;
 		lua::objpin<tilemap> t;

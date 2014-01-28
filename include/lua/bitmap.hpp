@@ -22,10 +22,10 @@ struct lua_palette
 	static int create(lua::state& L, lua::parameters& P);
 	static int load(lua::state& L, lua::parameters& P);
 	static int load_str(lua::state& L, lua::parameters& P);
-	int set(lua::state& L, const std::string& fname);
-	int hash(lua::state& L, const std::string& fname);
-	int debug(lua::state& L, const std::string& fname);
-	int adjust_transparency(lua::state& L, const std::string& fname);
+	int set(lua::state& L, lua::parameters& P);
+	int hash(lua::state& L, lua::parameters& P);
+	int debug(lua::state& L, lua::parameters& P);
+	int adjust_transparency(lua::state& L, lua::parameters& P);
 };
 
 struct lua_bitmap
@@ -38,15 +38,15 @@ struct lua_bitmap
 	std::vector<char> save_png(const lua_palette& pal) const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
-	int draw(lua::state& L, const std::string& fname);
-	int pset(lua::state& L, const std::string& fname);
-	int pget(lua::state& L, const std::string& fname);
-	int size(lua::state& L, const std::string& fname);
-	int hash(lua::state& L, const std::string& fname);
-	template<bool scaled, bool porterduff> int blit(lua::state& L, const std::string& fname);
-	template<bool scaled> int blit_priority(lua::state& L, const std::string& fname);
-	int save_png(lua::state& L, const std::string& fname);
-	int _save_png(lua::state& L, const std::string& fname, bool is_method);
+	int draw(lua::state& L, lua::parameters& P);
+	int pset(lua::state& L, lua::parameters& P);
+	int pget(lua::state& L, lua::parameters& P);
+	int size(lua::state& L, lua::parameters& P);
+	int hash(lua::state& L, lua::parameters& P);
+	template<bool scaled, bool porterduff> int blit(lua::state& L, lua::parameters& P);
+	template<bool scaled> int blit_priority(lua::state& L, lua::parameters& P);
+	int save_png(lua::state& L, lua::parameters& P);
+	int _save_png(lua::state& L, lua::parameters& P, bool is_method);
 };
 
 struct lua_dbitmap
@@ -59,15 +59,15 @@ struct lua_dbitmap
 	std::vector<char> save_png() const;
 	std::string print();
 	static int create(lua::state& L, lua::parameters& P);
-	int draw(lua::state& L, const std::string& fname);
-	int pset(lua::state& L, const std::string& fname);
-	int pget(lua::state& L, const std::string& fname);
-	int size(lua::state& L, const std::string& fname);
-	int hash(lua::state& L, const std::string& fname);
-	template<bool scaled, bool porterduff> int blit(lua::state& L, const std::string& fname);
-	int save_png(lua::state& L, const std::string& fname);
-	int adjust_transparency(lua::state& L, const std::string& fname);
-	int _save_png(lua::state& L, const std::string& fname, bool is_method);
+	int draw(lua::state& L, lua::parameters& P);
+	int pset(lua::state& L, lua::parameters& P);
+	int pget(lua::state& L, lua::parameters& P);
+	int size(lua::state& L, lua::parameters& P);
+	int hash(lua::state& L, lua::parameters& P);
+	template<bool scaled, bool porterduff> int blit(lua::state& L, lua::parameters& P);
+	int save_png(lua::state& L, lua::parameters& P);
+	int adjust_transparency(lua::state& L, lua::parameters& P);
+	int _save_png(lua::state& L, lua::parameters& P, bool is_method);
 };
 
 struct lua_loaded_bitmap

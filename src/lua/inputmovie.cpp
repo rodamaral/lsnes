@@ -17,9 +17,8 @@ namespace
 		friend class lua_inputmovie;
 	public:
 		lua_inputframe(lua::state& L, controller_frame _f);
-		int get_button(lua::state& L, const std::string& fname)
+		int get_button(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			unsigned port, controller, button;
 
 			P(P.skipped(), port, controller, button);
@@ -28,9 +27,8 @@ namespace
 			L.pushboolean(value ? 1 : 0);
 			return 1;
 		}
-		int get_axis(lua::state& L, const std::string& fname)
+		int get_axis(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			unsigned port, controller, button;
 
 			P(P.skipped(), port, controller, button);
@@ -39,9 +37,8 @@ namespace
 			L.pushnumber(value);
 			return 1;
 		}
-		int set_axis(lua::state& L, const std::string& fname)
+		int set_axis(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			unsigned port, controller, button;
 			short value;
 
@@ -54,16 +51,15 @@ namespace
 			setbutton(port, controller, button, value);
 			return 0;
 		}
-		int serialize(lua::state& L, const std::string& fname)
+		int serialize(lua::state& L, lua::parameters& P)
 		{
 			char buf[MAX_SERIALIZED_SIZE];
 			f.serialize(buf);
 			L.pushstring(buf);
 			return 1;
 		}
-		int unserialize(lua::state& L, const std::string& fname)
+		int unserialize(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			std::string buf;
 
 			P(P.skipped(), buf);
@@ -71,7 +67,7 @@ namespace
 			f.deserialize(buf.c_str());
 			return 0;
 		}
-		int get_stride(lua::state& L, const std::string& fname)
+		int get_stride(lua::state& L, lua::parameters& P)
 		{
 			L.pushnumber(f.size());
 			return 1;
@@ -411,72 +407,59 @@ namespace
 	public:
 		lua_inputmovie(lua::state& L, const controller_frame_vector& _v);
 		lua_inputmovie(lua::state& L, controller_frame& _f);
-		int copy_movie(lua::state& L, const std::string& fname)
+		int copy_movie(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _copy_movie(L, P);
 		}
-		int get_frame(lua::state& L, const std::string& fname)
+		int get_frame(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _get_frame(L, P);
 		}
-		int set_frame(lua::state& L, const std::string& fname)
+		int set_frame(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _set_frame(L, P);
 		}
-		int get_size(lua::state& L, const std::string& fname)
+		int get_size(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _get_size(L, P);
 		}
-		int count_frames(lua::state& L, const std::string& fname)
+		int count_frames(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _count_frames(L, P);
 		}
-		int find_frame(lua::state& L, const std::string& fname)
+		int find_frame(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _find_frame(L, P);
 		}
-		int blank_frame(lua::state& L, const std::string& fname)
+		int blank_frame(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _blank_frame(L, P);
 		}
-		int append_frames(lua::state& L, const std::string& fname)
+		int append_frames(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _append_frames(L, P);
 		}
-		int append_frame(lua::state& L, const std::string& fname)
+		int append_frame(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _append_frame(L, P);
 		}
-		int truncate(lua::state& L, const std::string& fname)
+		int truncate(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _truncate(L, P);
 		}
-		int edit(lua::state& L, const std::string& fname)
+		int edit(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _edit(L, P);
 		}
-		int copy_frames(lua::state& L, const std::string& fname)
+		int copy_frames(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _copy_frames<true>(L, P);
 		}
-		int serialize(lua::state& L, const std::string& fname)
+		int serialize(lua::state& L, lua::parameters& P)
 		{
-			lua::parameters P(L, fname);
 			return _serialize(L, P);
 		}
-		int debugdump(lua::state& L, const std::string& fname)
+		int debugdump(lua::state& L, lua::parameters& P)
 		{
 			char buf[MAX_SERIALIZED_SIZE];
 			for(uint64_t i = 0; i < v.size(); i++) {

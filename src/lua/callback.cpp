@@ -9,8 +9,8 @@ namespace
 	public:
 		lua_callbacks_list(lua::state& L);
 		static int create(lua::state& L, lua::parameters& P);
-		int index(lua::state& L, const std::string& fname);
-		int newindex(lua::state& L, const std::string& fname);
+		int index(lua::state& L, lua::parameters& P);
+		int newindex(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return "";
@@ -21,9 +21,9 @@ namespace
 	{
 	public:
 		lua_callback_obj(lua::state& L, const std::string& name);
-		int _register(lua::state& L, const std::string& fname);
-		int _unregister(lua::state& L, const std::string& fname);
-		int _call(lua::state& L, const std::string& fname);
+		int _register(lua::state& L, lua::parameters& P);
+		int _unregister(lua::state& L, lua::parameters& P);
+		int _call(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			if(callback)
@@ -58,9 +58,8 @@ namespace
 		return 1;
 	}
 
-	int lua_callbacks_list::index(lua::state& L, const std::string& fname)
+	int lua_callbacks_list::index(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		std::string name;
 
 		P(P.skipped(), name);
@@ -69,7 +68,7 @@ namespace
 		return 1;
 	}
 
-	int lua_callbacks_list::newindex(lua::state& L, const std::string& fname)
+	int lua_callbacks_list::newindex(lua::state& L, lua::parameters& P)
 	{
 		throw std::runtime_error("Writing is not allowed");
 	}
@@ -93,9 +92,8 @@ namespace
 			throw std::runtime_error("Unknown callback type '" + name + "' for callback.<foo>");
 	}
 
-	int lua_callback_obj::_register(lua::state& L, const std::string& fname)
+	int lua_callback_obj::_register(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		int lfn;
 
 		if(!callback) throw std::runtime_error(P.get_fname() + ": not valid");
@@ -109,10 +107,9 @@ namespace
 		return 1;
 	}
 
-	int lua_callback_obj::_unregister(lua::state& L, const std::string& fname)
+	int lua_callback_obj::_unregister(lua::state& L, lua::parameters& P)
 	{
 		int lfn;
-		lua::parameters P(L, fname);
 
 		if(!callback) throw std::runtime_error(P.get_fname() + ": not valid");
 
@@ -125,9 +122,8 @@ namespace
 		return 1;
 	}
 
-	int lua_callback_obj::_call(lua::state& L, const std::string& fname)
+	int lua_callback_obj::_call(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		std::string name;
 		int lfn;
 

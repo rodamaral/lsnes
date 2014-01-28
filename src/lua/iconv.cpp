@@ -59,7 +59,7 @@ namespace
 	public:
 		lua_iconv(lua::state& L, const char* from, const char* to);
 		~lua_iconv() throw();
-		int call(lua::state& L, const std::string& fname);
+		int call(lua::state& L, lua::parameters& P);
 		static int create(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
@@ -94,9 +94,8 @@ namespace
 		iconv_close(ctx);
 	}
 
-	int lua_iconv::call(lua::state& L, const std::string& fname)
+	int lua_iconv::call(lua::state& L, lua::parameters& P)
 	{
-		lua::parameters P(L, fname);
 		std::string src;
 
 		P(P.skipped(), src);
