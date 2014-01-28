@@ -40,9 +40,12 @@ namespace
 		int draw(lua::state& L, const std::string& fname);
 		int get(lua::state& L, const std::string& fname)
 		{
+			lua::parameters P(L, fname);
+			uint32_t x, y;
+
+			P(P.skipped(), x, y);
+
 			umutex_class h(mutex);
-			uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-			uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
 			if(x >= width || y >= height)
 				return 0;
 			tilemap_entry& e = map[y * width + x];
@@ -58,27 +61,30 @@ namespace
 		}
 		int set(lua::state& L, const std::string& fname)
 		{
+			lua::parameters P(L, fname);
+			uint32_t x, y;
+
+			P(P.skipped(), x, y);
+			int oidx = P.skip();
+
 			umutex_class h(mutex);
-			uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-			uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
 			if(x >= width || y >= height)
 				return 0;
 			tilemap_entry& e = map[y * width + x];
-			if(lua::_class<lua_dbitmap>::is(L, 4)) {
-				auto d = lua::_class<lua_dbitmap>::pin(L, 4, fname.c_str());
+			if(P.is<lua_dbitmap>(oidx)) {
+				auto d = P.arg<lua::objpin<lua_dbitmap>>(oidx);
 				e.erase();
 				e.d = d;
-			} else if(lua::_class<lua_bitmap>::is(L, 4)) {
-				auto b = lua::_class<lua_bitmap>::pin(L, 4, fname.c_str());
-				auto p = lua::_class<lua_palette>::pin(L, 5, fname.c_str());
+			} else if(P.is<lua_bitmap>(oidx)) {
+				auto b = P.arg<lua::objpin<lua_bitmap>>(oidx);
+				auto p = P.arg<lua::objpin<lua_palette>>(oidx + 1);
 				e.erase();
 				e.b = b;
 				e.p = p;
-			} else if(L.type(4) == LUA_TNIL || L.type(4) == LUA_TNONE) {
+			} else if(P.is_novalue(oidx)) {
 				e.erase();
 			} else
-				throw std::runtime_error("Expected BITMAP, DBITMAP or nil as argument 4 to "
-					+ fname);
+				P.expected("BITMAP, DBITMAP or nil", oidx);
 			return 0;
 		}
 		int getsize(lua::state& L, const std::string& fname)
@@ -114,16 +120,15 @@ namespace
 		}
 		int scroll(lua::state& L, const std::string& fname)
 		{
+			lua::parameters P(L, fname);
+			int32_t ox, oy;
+			size_t x0, y0, w, h;
+			bool circx, circy;
+
+			P(P.skipped(), ox, oy, P.optional(x0, 0), P.optional(y0, 0), P.optional(w, width),
+				P.optional(h, height), P.optional(circx, false), P.optional(circy, false));
+
 			umutex_class mh(mutex);
-			int32_t ox = -L.get_numeric_argument<int32_t>(2, fname.c_str());
-			int32_t oy = -L.get_numeric_argument<int32_t>(3, fname.c_str());
-			size_t x0 = 0, y0 = 0, w = width, h = height;
-			L.get_numeric_argument<size_t>(4, x0, fname.c_str());
-			L.get_numeric_argument<size_t>(5, y0, fname.c_str());
-			L.get_numeric_argument<size_t>(6, w, fname.c_str());
-			L.get_numeric_argument<size_t>(7, h, fname.c_str());
-			bool circx = (L.type(8) == LUA_TBOOLEAN && L.toboolean(8));
-			bool circy = (L.type(9) == LUA_TBOOLEAN && L.toboolean(9));
 			if(x0 > width || x0 + w > width || x0 + w < x0 || y0 > height || y0 + h > height ||
 				y0 + h < y0)
 				throw std::runtime_error("Scroll window out of range");
@@ -279,27 +284,26 @@ namespace
 
 	int tilemap::draw(lua::state& L, const std::string& fname)
 	{
-		if(!lua_render_ctx)
-			return 0;
-		uint32_t x = L.get_numeric_argument<int32_t>(2, fname.c_str());
-		uint32_t y = L.get_numeric_argument<int32_t>(3, fname.c_str());
-		int32_t x0 = 0, y0 = 0;
-		uint32_t w = width * cwidth, h = height * cheight;
-		L.get_numeric_argument<int32_t>(4, x0, fname.c_str());
-		L.get_numeric_argument<int32_t>(5, y0, fname.c_str());
-		L.get_numeric_argument<uint32_t>(6, w, fname.c_str());
-		L.get_numeric_argument<uint32_t>(7, h, fname.c_str());
-		auto t = lua::_class<tilemap>::pin(L, 1, fname.c_str());
+		lua::parameters P(L, fname);
+		uint32_t x, y, w, h;
+		int32_t x0, y0;
+		lua::objpin<tilemap> t;
+
+		if(!lua_render_ctx) return 0;
+
+		P(t, x, y, P.optional(x0, 0), P.optional(y0, 0), P.optional(w, width * cwidth),
+			P.optional(h, height * cheight));
+
 		lua_render_ctx->queue->create_add<render_object_tilemap>(x, y, x0, y0, w, h, t);
 		return 0;
 	}
 
 	int tilemap::create(lua::state& L, lua::parameters& P)
 	{
-		auto w = P.arg<uint32_t>();
-		auto h = P.arg<uint32_t>();
-		auto px = P.arg<uint32_t>();
-		auto py = P.arg<uint32_t>();
+		uint32_t w, h, px, py;
+
+		P(w, h, px, py);
+
 		tilemap* t = lua::_class<tilemap>::create(L, w, h, px, py);
 		return 1;
 	}

@@ -120,17 +120,16 @@ namespace
 
 	int lua_customfont::draw(lua::state& L, const std::string& fname)
 	{
+		lua::parameters P(L, fname);
+		int32_t _x, _y;
+		framebuffer::color fg, bg, hl;
+		std::string text;
+		lua::objpin<lua_customfont> f;
+
 		if(!lua_render_ctx)
 			return 0;
 
-		lua::parameters P(L, fname);
-		auto f = P.arg<lua::objpin<lua_customfont>>();
-		auto _x = P.arg<int32_t>();
-		auto _y = P.arg<int32_t>();
-		auto text = P.arg<std::string>();
-		auto fg = P.arg_opt<framebuffer::color>(0xFFFFFFU);
-		auto bg = P.arg_opt<framebuffer::color>(-1);
-		auto hl = P.arg_opt<framebuffer::color>(-1);
+		P(f, _x, _y, text, P.optional(fg, 0xFFFFFFU), P.optional(bg, -1), P.optional(hl, -1));
 
 		lua_render_ctx->queue->create_add<render_object_text_cf>(_x, _y, text, fg, bg, hl, f);
 		return 0;
@@ -144,9 +143,10 @@ namespace
 	int lua_customfont::edit(lua::state& L, const std::string& fname)
 	{
 		lua::parameters P(L, fname);
-		P.skip();	//This.
-		auto text = P.arg<std::string>();
-		auto _glyph = P.arg<lua_bitmap*>();
+		std::string text;
+		lua_bitmap* _glyph;
+
+		P(P.skipped(), text, _glyph);
 
 		framebuffer::font2::glyph glyph;
 		glyph.width = _glyph->width;
@@ -174,12 +174,14 @@ namespace
 
 	int lua_customfont::load(lua::state& L, lua::parameters& P)
 	{
+		std::string filename, filename2;
 		if(P.is_novalue()) {
 			lua::_class<lua_customfont>::create(L);
 			return 1;
 		}
-		auto filename = P.arg<std::string>();
-		auto filename2 = P.arg_opt<std::string>("");
+
+		P(filename, P.optional(filename2, ""));
+
 		lua::_class<lua_customfont>::create(L, filename, filename2);
 		return 1;
 	};

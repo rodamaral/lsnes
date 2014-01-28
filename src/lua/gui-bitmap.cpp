@@ -776,8 +776,10 @@ int lua_palette::create(lua::state& L, lua::parameters& P)
 
 int lua_palette::load(lua::state& L, lua::parameters& P)
 {
-	auto name = P.arg<std::string>();
-	auto name2 = P.arg_opt<std::string>("");
+	std::string name, name2;
+
+	P(name, P.optional(name2, ""));
+
 	std::istream& s = zip::openrel(name, name2);
 	try {
 		int r = bitmap_palette_fn(L, s);
@@ -791,7 +793,10 @@ int lua_palette::load(lua::state& L, lua::parameters& P)
 
 int lua_palette::load_str(lua::state& L, lua::parameters& P)
 {
-	auto content = P.arg<std::string>();
+	std::string content;
+
+	P(content);
+
 	std::istringstream s(content);
 	return bitmap_palette_fn(L, s);
 }
@@ -870,9 +875,11 @@ std::string lua_bitmap::print()
 
 int lua_bitmap::create(lua::state& L, lua::parameters& P)
 {
-	auto w = P.arg<uint32_t>();
-	auto h = P.arg<uint32_t>();
-	uint16_t c = P.arg_opt<uint16_t>(0);
+	uint32_t w, h;
+	uint16_t c;
+
+	P(w, h, P.optional(c, 0));
+
 	lua_bitmap* b = lua::_class<lua_bitmap>::create(L, w, h);
 	for(size_t i = 0; i < b->width * b->height; i++)
 		b->pixels[i] = c;
@@ -881,24 +888,27 @@ int lua_bitmap::create(lua::state& L, lua::parameters& P)
 
 int lua_bitmap::draw(lua::state& L, const std::string& fname)
 {
-	if(!lua_render_ctx)
-		return 0;
-	int arg_x = 2;
-	int arg_y = 3;
-	int arg_b = 1;
-	int32_t x = L.get_numeric_argument<int32_t>(arg_x, fname.c_str());
-	int32_t y = L.get_numeric_argument<int32_t>(arg_y, fname.c_str());
-	auto b = lua::_class<lua_bitmap>::pin(L, arg_b, fname.c_str());
-	auto p = lua::_class<lua_palette>::pin(L, 4, fname.c_str());
+	lua::parameters P(L, fname);
+	int32_t x, y;
+	lua::objpin<lua_bitmap> b;
+	lua::objpin<lua_palette> p;
+
+	if(!lua_render_ctx) return 0;
+
+	P(b, x, y, p);
+
 	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b, p);
 	return 0;
 }
 
 int lua_bitmap::pset(lua::state& L, const std::string& fname)
 {
-	uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	uint16_t c = L.get_numeric_argument<uint16_t>(4, fname.c_str());
+	lua::parameters P(L, fname);
+	uint32_t x, y;
+	uint16_t c;
+
+	P(P.skipped(), x, y, c);
+
 	if(x >= this->width || y >= this->height)
 		return 0;
 	this->pixels[y * this->width + x] = c;
@@ -907,8 +917,11 @@ int lua_bitmap::pset(lua::state& L, const std::string& fname)
 
 int lua_bitmap::pget(lua::state& L, const std::string& fname)
 {
-	uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+	lua::parameters P(L, fname);
+	uint32_t x, y;
+
+	P(P.skipped(), x, y);
+
 	if(x >= this->width || y >= this->height)
 		return 0;
 	L.pushnumber(this->pixels[y * this->width + x]);
@@ -947,83 +960,54 @@ int lua_bitmap::hash(lua::state& L, const std::string& fname)
 
 template<bool scaled, bool porterduff> int lua_bitmap::blit(lua::state& L, const std::string& fname)
 {
-	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	bool src_d = lua::_class<lua_dbitmap>::is(L, 4);
-	bool src_p = lua::_class<lua_bitmap>::is(L, 4);
-	if(!src_d && !src_p)
-		throw std::runtime_error("Expected BITMAP or DBITMAP as argument 4 for " + fname);
-	uint32_t sx = L.get_numeric_argument<uint32_t>(5, fname.c_str());
-	uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
-	uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
-	uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
-	uint32_t hscl, vscl;
-	if(scaled) {
-		hscl = L.get_numeric_argument<uint32_t>(9, fname.c_str());
-		vscl = hscl;
-		L.get_numeric_argument<uint32_t>(10, vscl, fname.c_str());
-	}
-	int64_t ck = 65536;
-	porterduff_oper pd_oper;
+	lua::parameters P(L, fname);
+	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
+	lua_bitmap* src_p;
+
+	P(P.skipped(), dx, dy, src_p, sx, sy, w, h);
+	if(scaled)
+		P(hscl, P.optional2(vscl, hscl));
+
 	if(porterduff) {
-		std::string oper = L.get_string(scaled ? 11 : 9, fname.c_str());
-		pd_oper = get_pd_oper(oper);
-	} else
-		L.get_numeric_argument<int64_t>(scaled ? 11 : 9, ck, fname.c_str());
-	if(src_p) {
-		lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
-		if(porterduff)
-			xblit_pduff<scaled>(operand_bitmap(*this), operand_bitmap(*sb), dx, dy, sx, sy, w, h,
-				hscl, vscl, pd_oper);
-		else
-			xblit_pal<scaled>(operand_bitmap(*this), operand_bitmap(*sb), ck, dx, dy, sx, sy, w, h,
-				hscl, vscl);
-	} else
-		throw std::runtime_error("If parameter 1 to " + fname + " is paletted, parameter 4 must be "
-			"too");
+		porterduff_oper pd_oper = get_pd_oper(P.arg<std::string>());
+		xblit_pduff<scaled>(operand_bitmap(*this), operand_bitmap(*src_p), dx, dy, sx, sy, w, h, hscl, vscl,
+			pd_oper);
+	} else {
+		int64_t ck = P.arg_opt<uint64_t>(65536);
+		xblit_pal<scaled>(operand_bitmap(*this), operand_bitmap(*src_p), ck, dx, dy, sx, sy, w, h,
+			hscl, vscl);
+	}
 	return 0;
 }
 
 template<bool scaled> int lua_bitmap::blit_priority(lua::state& L, const std::string& fname)
 {
-	uint32_t dx = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t dy = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	lua_bitmap* sb = lua::_class<lua_bitmap>::get(L, 4, fname.c_str());
-	uint32_t sx = L.get_numeric_argument<uint32_t>(5, fname.c_str());
-	uint32_t sy = L.get_numeric_argument<uint32_t>(6, fname.c_str());
-	uint32_t w = L.get_numeric_argument<uint32_t>(7, fname.c_str());
-	uint32_t h = L.get_numeric_argument<uint32_t>(8, fname.c_str());
-	uint32_t hscl, vscl;
-	if(scaled) {
-		hscl = L.get_numeric_argument<uint32_t>(9, fname.c_str());
-		vscl = hscl;
-		L.get_numeric_argument<uint32_t>(10, vscl, fname.c_str());
-	}
-	xblit<scaled>(srcdest_priority(*this, *sb), dx, dy, sx, sy, w, h, hscl, vscl);
+	lua::parameters P(L, fname);
+	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
+	lua_bitmap* src_p;
+
+	P(P.skipped(), dx, dy, src_p, sx, sy, w, h);
+	if(scaled)
+		P(hscl, P.optional2(vscl, hscl));
+
+	xblit<scaled>(srcdest_priority(*this, *src_p), dx, dy, sx, sy, w, h, hscl, vscl);
 	return 0;
 }
 
 int lua_bitmap::save_png(lua::state& L, const std::string& fname)
 {
-	return _save_png(L, fname, true);
-}
-
-int lua_bitmap::_save_png(lua::state& L, const std::string& fname, bool is_method)
-{
-	int index = is_method ? 2 : 1;
-	int oindex = index;
+	lua::parameters P(L, fname);
 	std::string name, name2;
-	if(L.type(index) == LUA_TSTRING) {
-		name = L.get_string(index, fname.c_str());
-		index++;
-	}
-	if(L.type(index) == LUA_TSTRING) {
-		name2 = L.get_string(index, fname.c_str());
-		index++;
-	}
-	lua_palette* p = lua::_class<lua_palette>::get(L, index + (is_method ? 0 : 1), fname.c_str());
+	lua_palette* p;
+	bool was_filename;
+
+	P(P.skipped());
+	if(was_filename = P.is_string()) P(name);
+	if(P.is_string()) P(name2);
+	P(p);
+
 	auto buf = this->save_png(*p);
-	if(L.type(oindex) == LUA_TSTRING) {
+	if(was_filename) {
 		std::string filename = zip::resolverel(name, name2);
 		std::ofstream strm(filename, std::ios::binary);
 		if(!strm)
@@ -1060,9 +1044,11 @@ std::string lua_dbitmap::print()
 
 int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 {
-	auto w = P.arg<uint32_t>();
-	auto h = P.arg<uint32_t>();
-	auto c = P.arg_opt<framebuffer::color>(-1);
+	uint32_t w, h;
+	framebuffer::color c;
+
+	P(w, h, P.optional(c, -1));
+
 	lua_dbitmap* b = lua::_class<lua_dbitmap>::create(L, w, h);
 	for(size_t i = 0; i < b->width * b->height; i++)
 		b->pixels[i] = c;
@@ -1071,23 +1057,26 @@ int lua_dbitmap::create(lua::state& L, lua::parameters& P)
 
 int lua_dbitmap::draw(lua::state& L, const std::string& fname)
 {
-	if(!lua_render_ctx)
-		return 0;
-	int arg_x = 2;
-	int arg_y = 3;
-	int arg_b = 1;
-	int32_t x = L.get_numeric_argument<int32_t>(arg_x, fname.c_str());
-	int32_t y = L.get_numeric_argument<int32_t>(arg_y, fname.c_str());
-	auto b = lua::_class<lua_dbitmap>::pin(L, arg_b, fname.c_str());
+	lua::parameters P(L, fname);
+	int32_t x, y;
+	lua::objpin<lua_dbitmap> b;
+
+	if(!lua_render_ctx) return 0;
+
+	P(b, x, y);
+
 	lua_render_ctx->queue->create_add<render_object_bitmap>(x, y, b);
 	return 0;
 }
 
 int lua_dbitmap::pset(lua::state& L, const std::string& fname)
 {
-	uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
-	auto c = lua_get_fb_color(L, 4, fname);
+	lua::parameters P(L, fname);
+	uint32_t x, y;
+	framebuffer::color c;
+
+	P(P.skipped(), x, y, c);
+
 	if(x >= this->width || y >= this->height)
 		return 0;
 	this->pixels[y * this->width + x] = c;
@@ -1096,8 +1085,11 @@ int lua_dbitmap::pset(lua::state& L, const std::string& fname)
 
 int lua_dbitmap::pget(lua::state& L, const std::string& fname)
 {
-	uint32_t x = L.get_numeric_argument<uint32_t>(2, fname.c_str());
-	uint32_t y = L.get_numeric_argument<uint32_t>(3, fname.c_str());
+	lua::parameters P(L, fname);
+	uint32_t x, y;
+
+	P(P.skipped(), x, y);
+
 	if(x >= this->width || y >= this->height)
 		return 0;
 	L.pushnumber((this->pixels[y * this->width + x]).asnumber());
@@ -1138,9 +1130,11 @@ int lua_dbitmap::hash(lua::state& L, const std::string& fname)
 template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, const std::string& fname)
 {
 	lua::parameters P(L, fname);
-	P.skip();	//This.
-	auto dx = P.arg<uint32_t>();
-	auto dy = P.arg<uint32_t>();
+	uint32_t dx, dy, sx, sy, w, h, hscl, vscl;
+
+	P(P.skipped(), dx, dy);
+
+	//DBitmap or Bitmap+Palette.
 	bool src_d = P.is<lua_dbitmap>();
 	bool src_p = P.is<lua_bitmap>();
 	int sidx = P.skip();
@@ -1149,15 +1143,12 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, cons
 	int spal;
 	if(src_p)
 		spal = P.skip();	//Reserve for palette.
-	auto sx = P.arg<uint32_t>();
-	auto sy = P.arg<uint32_t>();
-	auto w = P.arg<uint32_t>();
-	auto h = P.arg<uint32_t>();
-	uint32_t hscl, vscl;
-	if(scaled) {
-		hscl = P.arg_opt<uint32_t>(1);
-		vscl = P.arg_opt<uint32_t>(hscl);
-	}
+	
+	P(sx, sy, w, h);
+
+	if(scaled)
+		P(hscl, P.optional2(vscl, hscl));
+
 	int64_t ckx = 0x100000000ULL;
 	porterduff_oper pd_oper;
 	if(porterduff) {
@@ -1191,19 +1182,17 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, cons
 
 int lua_dbitmap::save_png(lua::state& L, const std::string& fname)
 {
-	return _save_png(L, fname, true);
-}
-
-int lua_dbitmap::_save_png(lua::state& L, const std::string& fname, bool is_method)
-{
-	int index = is_method ? 2 : 1;
+	lua::parameters P(L, fname);
 	std::string name, name2;
-	if(L.type(index) == LUA_TSTRING)
-		name = L.get_string(index, fname.c_str());
-	if(L.type(index + 1) == LUA_TSTRING)
-		name2 = L.get_string(index + 1, fname.c_str());
+	lua_palette* p;
+	bool was_filename;
+
+	P(P.skipped());
+	if(was_filename = P.is_string()) P(name);
+	if(P.is_string()) P(name2);
+
 	auto buf = this->save_png();
-	if(L.type(index) == LUA_TSTRING) {
+	if(was_filename) {
 		std::string filename = zip::resolverel(name, name2);
 		std::ofstream strm(filename, std::ios::binary);
 		if(!strm)
@@ -1222,7 +1211,11 @@ int lua_dbitmap::_save_png(lua::state& L, const std::string& fname, bool is_meth
 
 int lua_dbitmap::adjust_transparency(lua::state& L, const std::string& fname)
 {
-	uint16_t tadj = L.get_numeric_argument<uint16_t>(2, fname.c_str());
+	lua::parameters P(L, fname);
+	uint16_t tadj;
+
+	P(P.skipped(), tadj);
+
 	for(auto& c : this->pixels)
 		c = tadjust(c, tadj);
 	return 0;
@@ -1231,8 +1224,10 @@ int lua_dbitmap::adjust_transparency(lua::state& L, const std::string& fname)
 
 template<bool png> int lua_loaded_bitmap::load(lua::state& L, lua::parameters& P)
 {
-	auto name = P.arg<std::string>();
-	auto name2 = P.arg_opt<std::string>("");
+	std::string name, name2;
+
+	P(name, P.optional(name2, ""));
+
 	if(png) {
 		std::string filename = zip::resolverel(name, name2);
 		return bitmap_load_png_fn(L, filename);
@@ -1245,7 +1240,10 @@ template<bool png> int lua_loaded_bitmap::load(lua::state& L, lua::parameters& P
 
 template<bool png> int lua_loaded_bitmap::load_str(lua::state& L, lua::parameters& P)
 {
-	std::string contents = P.arg<std::string>();
+	std::string contents;
+
+	P(contents);
+
 	if(png) {
 		contents = base64_decode(contents);
 		std::istringstream strm(contents);
