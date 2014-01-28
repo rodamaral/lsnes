@@ -74,32 +74,6 @@ protected:
 	function_group& group;
 };
 
-/**
- * Register function pointer as lua function.
- */
-class fnptr : public function
-{
-public:
-/**
- * Register.
- */
-	fnptr(function_group& group, const std::string& name,
-		int (*_fn)(state& L, const std::string& fname))
-		: function(group, name)
-	{
-		fn = _fn;
-	}
-/**
- * Invoke function.
- */
-	int invoke(state& L)
-	{
-		return fn(L, fname);
-	}
-private:
-	int (*fn)(state& L, const std::string& fname);
-};
-
 }
 
 #endif

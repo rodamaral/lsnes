@@ -12,22 +12,23 @@ namespace
 		throw std::runtime_error("No such VMA");
 	}
 
-	lua::fnptr dump_memory_bitmap(lua_func_misc, "bsnes.dump_sprite", [](lua::state& L,
-		const std::string& fname) -> int {
-		int index = 1;
+	lua::fnptr2 dump_memory_bitmap(lua_func_misc, "bsnes.dump_sprite", [](lua::state& L, lua::parameters& P)
+		-> int {
+		std::string vma;
+		uint64_t addr;
+		uint32_t width, height;
 		uint64_t vmabase = 0;
-		if(L.type(index) == LUA_TSTRING) {
-			std::string vma = L.get_string(index, fname.c_str());
-			vmabase = get_vmabase(L, vma);
-			index++;
-		}
-		uint64_t addr = L.get_numeric_argument<uint64_t>(index++, fname.c_str()) + vmabase;
-		uint32_t width = L.get_numeric_argument<uint32_t>(index++, fname.c_str());
-		uint32_t height = L.get_numeric_argument<uint32_t>(index++, fname.c_str());
-		lua_bitmap* b = lua::_class<lua_bitmap>::create(L, width * 8, height * 8);
 		size_t stride1 = 32;
-		size_t stride2 = 512;
-		L.get_numeric_argument<size_t>(index++, stride2, fname.c_str());
+		size_t stride2;
+
+		if(P.is_string()) {
+			P(vma);
+			vmabase = get_vmabase(L, vma);
+		}
+		P(addr, width, height, P.optional(stride2, 512));
+		addr += vmabase;
+
+		lua_bitmap* b = lua::_class<lua_bitmap>::create(L, width * 8, height * 8);
 		for(unsigned j = 0; j < height; j++)
 			for(unsigned i = 0; i < width; i++) {
 				uint64_t sbase = addr + stride2 * j + stride1 * i;
@@ -50,18 +51,20 @@ namespace
 		return 1;
 	});
 
-	lua::fnptr dump_memory_palette(lua_func_misc, "bsnes.dump_palette", [](lua::state& L,
-		const std::string& fname) -> int {
-		int index = 1;
+	lua::fnptr2 dump_memory_palette(lua_func_misc, "bsnes.dump_palette", [](lua::state& L, lua::parameters& P)
+		-> int {
+		std::string vma;
+		uint64_t addr;
+		bool full, ftrans;
 		uint64_t vmabase = 0;
-		if(L.type(index) == LUA_TSTRING) {
-			std::string vma = L.get_string(index, fname.c_str());
+
+		if(P.is_string()) {
+			P(vma);
 			vmabase = get_vmabase(L, vma);
-			index++;
 		}
-		uint64_t addr = L.get_numeric_argument<uint64_t>(index++, fname.c_str()) + vmabase;
-		bool full = L.get_bool(index++, fname.c_str());
-		bool ftrans = L.get_bool(index++, fname.c_str());
+		P(addr, full, ftrans);
+		addr += vmabase;
+
 		size_t ps = full ? 256 : 16;
 		lua_palette* p = lua::_class<lua_palette>::create(L);
 		for(unsigned j = 0; j < ps; j++) {

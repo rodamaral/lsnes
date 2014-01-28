@@ -1780,17 +1780,22 @@ again2:
 		L.getfield(-1, "callback");
 	}
 
-	lua::fnptr lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua::state& L,
-		const std::string& fname) -> int {
-		unsigned r = L.get_numeric_argument<unsigned>(1, fname.c_str());
+	lua::fnptr2 lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua::state& L, lua::parameters& P)
+		-> int {
+		unsigned r;
+		int ltbl;
+
+		P(r);
+
 		if(r >= SNES::Debugger::Breakpoints)
 			throw std::runtime_error("Bad breakpoint number");
-		if(L.type(2) == LUA_TNIL) {
+		if(P.is_novalue()) {
 			//Clear breakpoint.
 			SNES::debugger.breakpoint[r].enabled = false;
 			return 0;
-		} else if(L.type(2) == LUA_TTABLE) {
-			L.pushvalue(2);
+		} else if(P.is_table()) {
+			P(P.table(ltbl));
+			L.pushvalue(ltbl);
 			auto& x = SNES::debugger.breakpoint[r];
 			x.enabled = snesdbg_get_bp_enabled(L);
 			x.addr = snesdbg_get_bp_addr(L);
@@ -1802,13 +1807,17 @@ again2:
 			L.pop(2);
 			return 0;
 		} else
-			throw std::runtime_error("Expected argument 2 to memory.setdebug to be nil or table");
+			P.expected("table or nil");
 	});
 
-	lua::fnptr lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua::state& L,
-		const std::string& fname) -> int {
-		uint64_t r = L.get_numeric_argument<uint64_t>(1, fname.c_str());
-		L.pushvalue(2);
+	lua::fnptr2 lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua::state& L, lua::parameters& P) -> int {
+		uint64_t r;
+		int lfn = 2;
+
+		P(r);
+		if(P.is_function() || P.is_novalue()) lfn = P.skip();
+
+		L.pushvalue(lfn);
 		snesdbg_set_callback(L, snes_debug_cb_trace);
 		trace_counter = r;
 		update_trace_hook_state();
@@ -1816,9 +1825,12 @@ again2:
 		return 0;
 	});
 
-	lua::fnptr lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua::state& L,
-		const std::string& fname) -> int {
-		std::string r = L.get_string(1, fname.c_str());
+	lua::fnptr2 lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua::state& L, lua::parameters& P)
+		-> int {
+		std::string r;
+
+		P(r);
+
 		lsnes_cmd.invoke("tracelog cpu " + r);
 	});
 
@@ -1829,19 +1841,22 @@ again2:
 		});
 
 #ifdef BSNES_IS_COMPAT
-	lua::fnptr lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua::state& L,
-		const std::string& fname) -> int {
-		unsigned layer = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		unsigned priority = L.get_numeric_argument<unsigned>(2, fname.c_str());
-		bool enabled = L.toboolean(3);
+	lua::fnptr2 lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua::state& L, lua::parameters& P) -> int {
+		unsigned layer, priority;
+		bool enabled;
+
+		P(layer, priority, enabled);
+
 		SNES::ppu.layer_enable(layer, priority, enabled);
 		return 0;
 	});
 #endif
 
-	lua::fnptr lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua::state& L, const std::string& fname) ->
-		int {
-		unsigned addr = L.get_numeric_argument<unsigned>(1, fname.c_str());
+	lua::fnptr2 lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua::state& L, lua::parameters& P) -> int {
+		uint64_t addr;
+
+		P(addr);
+
 		nall::string _disasm = SNES::smp.disassemble_opcode(addr);
 		std::string disasm(_disasm, _disasm.length());
 		L.pushlstring(disasm);
