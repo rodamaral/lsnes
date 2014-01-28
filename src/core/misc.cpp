@@ -89,6 +89,7 @@ namespace
 		static uint64_t buf[slots + 1];
 		buf[count++] = arch_get_tsc();
 		umutex_class h(seed_mutex);
+		if(count == 0) count = 1;  //Shouldn't happen.
 		if(count == slots || buf[count - 1] - last_reseed > 300000000) {
 			last_reseed = buf[count - 1];
 			buf[slots] = arch_get_random();
