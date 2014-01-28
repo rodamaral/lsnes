@@ -19,35 +19,38 @@ namespace
 		lua_inputframe(lua::state& L, controller_frame _f);
 		int get_button(lua::state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
-			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
-			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
+			lua::parameters P(L, fname);
+			unsigned port, controller, button;
+
+			P(P.skipped(), port, controller, button);
+
 			short value = getbutton(port, controller, button);
 			L.pushboolean(value ? 1 : 0);
 			return 1;
 		}
 		int get_axis(lua::state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
-			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
-			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
+			lua::parameters P(L, fname);
+			unsigned port, controller, button;
+
+			P(P.skipped(), port, controller, button);
+
 			short value = getbutton(port, controller, button);
 			L.pushnumber(value);
 			return 1;
 		}
 		int set_axis(lua::state& L, const std::string& fname)
 		{
-			unsigned port = L.get_numeric_argument<unsigned>(2, fname.c_str());
-			unsigned controller = L.get_numeric_argument<unsigned>(3, fname.c_str());
-			unsigned button = L.get_numeric_argument<unsigned>(4, fname.c_str());
+			lua::parameters P(L, fname);
+			unsigned port, controller, button;
 			short value;
-			if(L.type(5) == LUA_TBOOLEAN)
-				value = L.toboolean(5);
-			else if(L.type(5) == LUA_TNUMBER)
-				value = L.get_numeric_argument<short>(5, fname.c_str());
+
+			P(P.skipped(), port, controller, button);
+			if(P.is_boolean()) value = P.arg<bool>() ? 1 : 0;
+			else if(P.is_number()) value = P.arg<short>();
 			else
-				(stringfmt() << "Expected argument 5 of " << fname << " to be boolean or "
-					<< "number").throwex();
+				P.expected("number or boolean");
+
 			setbutton(port, controller, button, value);
 			return 0;
 		}
@@ -60,7 +63,11 @@ namespace
 		}
 		int unserialize(lua::state& L, const std::string& fname)
 		{
-			std::string buf = L.get_string(2, fname.c_str());
+			lua::parameters P(L, fname);
+			std::string buf;
+
+			P(P.skipped(), buf);
+
 			f.deserialize(buf.c_str());
 			return 0;
 		}
@@ -125,41 +132,41 @@ namespace
 			throw std::runtime_error("Can not edit past");
 	}
 
-	lua::fnptr movie_cfs(lua_func_misc, "movie.current_first_subframe", [](lua::state& L,
-		const std::string& fname) -> int {
+	lua::fnptr2 movie_cfs(lua_func_misc, "movie.current_first_subframe", [](lua::state& L, lua::parameters& P)
+		-> int {
 		movie& m = movb.get_movie();
 		L.pushnumber(m.get_current_frame_first_subframe());
 		return 1;
 	});
 
-	lua::fnptr movie_pc(lua_func_misc, "movie.pollcounter", [](lua::state& L, const std::string& fname)
-		-> int {
-		unsigned port = L.get_numeric_argument<unsigned>(1, fname.c_str());
-		unsigned controller = L.get_numeric_argument<unsigned>(2, fname.c_str());
-		unsigned button = L.get_numeric_argument<unsigned>(3, fname.c_str());
+	lua::fnptr2 movie_pc(lua_func_misc, "movie.pollcounter", [](lua::state& L, lua::parameters& P) -> int {
+		unsigned port, controller, button;
+
+		P(port, controller, button);
+
 		uint32_t ret = 0;
 		ret = get_pc_for(port, controller, button);
 		L.pushnumber(ret);
 		return 1;
 	});
 
-	controller_frame_vector& framevector(lua::state& L, int& ptr, const std::string& fname);
+	controller_frame_vector& framevector(lua::state& L, lua::parameters& P);
 
-	int _copy_movie(lua::state& L, const std::string& fname)
+	int _copy_movie(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		controller_frame_vector& v = framevector(L, P);
 
 		lua_inputmovie* m = lua::_class<lua_inputmovie>::create(L, v);
 		return 1;
 	}
 
-	int _get_frame(lua::state& L, const std::string& fname)
+	int _get_frame(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		uint64_t n;
+		controller_frame_vector& v = framevector(L, P);
 
-		uint64_t n = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		P(n);
+
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		controller_frame _f = v[n];
@@ -167,19 +174,20 @@ namespace
 		return 1;
 	}
 
-	int _set_frame(lua::state& L, const std::string& fname)
+	int _set_frame(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		uint64_t n;
+		lua_inputframe* f;
+		controller_frame_vector& v = framevector(L, P);
 
-		uint64_t n = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		P(n, f);
+
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		//Checks if requested frame is from movie.
 		if(&v == &movb.get_movie().get_frame_vector())
 			check_can_edit(0, 0, 0, n);
 
-		lua_inputframe* f = lua::_class<lua_inputframe>::get(L, ptr++, fname.c_str());
 		v[n] = f->get_frame();
 
 		if(&v == &movb.get_movie().get_frame_vector()) {
@@ -190,30 +198,31 @@ namespace
 		return 0;
 	}
 
-	int _get_size(lua::state& L, const std::string& fname)
+	int _get_size(lua::state& L, lua::parameters& P)
 	{
 		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		controller_frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.size());
 		return 1;
 	}
 
-	int _count_frames(lua::state& L, const std::string& fname)
+	int _count_frames(lua::state& L, lua::parameters& P)
 	{
 		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		controller_frame_vector& v = framevector(L, P);
 
 		L.pushnumber(v.count_frames());
 		return 1;
 	}
 
-	int _find_frame(lua::state& L, const std::string& fname)
+	int _find_frame(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		uint64_t n;
+		controller_frame_vector& v = framevector(L, P);
 
-		uint64_t n = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		P(n);
+
 		if(!n) {
 			L.pushnumber(-1);
 			return 1;
@@ -229,22 +238,23 @@ namespace
 		return 1;
 	}
 
-	int _blank_frame(lua::state& L, const std::string& fname)
+	int _blank_frame(lua::state& L, lua::parameters& P)
 	{
 		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		controller_frame_vector& v = framevector(L, P);
 
 		controller_frame _f = v.blank_frame(true);
 		lua_inputframe* f = lua::_class<lua_inputframe>::create(L, _f);
 		return 1;
 	}
 
-	int _append_frames(lua::state& L, const std::string& fname)
+	int _append_frames(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		uint64_t count;
+		controller_frame_vector& v = framevector(L, P);
 
-		uint64_t count = L.get_numeric_argument<uint64_t>(ptr++, "lua_inputmovie::append_frames");
+		P(count);
+
 		{
 			controller_frame_vector::notify_freeze freeze(v);
 			for(uint64_t i = 0; i < count; i++)
@@ -257,12 +267,12 @@ namespace
 		return 0;
 	}
 
-	int _append_frame(lua::state& L, const std::string& fname)
+	int _append_frame(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		lua_inputframe* f;
+		controller_frame_vector& v = framevector(L, P);
 
-		lua_inputframe* f = lua::_class<lua_inputframe>::get(L, ptr++, fname.c_str());
+		P(f);
 
 		v.append(v.blank_frame(true));
 		if(&v == &movb.get_movie().get_frame_vector()) {
@@ -280,12 +290,13 @@ namespace
 		return 0;
 	}
 
-	int _truncate(lua::state& L, const std::string& fname)
+	int _truncate(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
+		uint64_t n;
+		controller_frame_vector& v = framevector(L, P);
 
-		uint64_t n = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
+		P(n);
+
 		if(n > v.size())
 			throw std::runtime_error("Requested truncate length longer than existing");
 		if(&v == &movb.get_movie().get_frame_vector())
@@ -298,23 +309,19 @@ namespace
 		return 0;
 	}
 
-	int _edit(lua::state& L, const std::string& fname)
+	int _edit(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
-
-		uint64_t frame = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		unsigned port = L.get_numeric_argument<unsigned>(ptr++, fname.c_str());
-		unsigned controller = L.get_numeric_argument<unsigned>(ptr++, fname.c_str());
-		unsigned button = L.get_numeric_argument<unsigned>(ptr++, fname.c_str());
+		uint64_t frame;
+		unsigned port, controller, button;
 		short value;
-		if(L.type(ptr) == LUA_TBOOLEAN)
-			value = L.toboolean(ptr);
-		else if(L.type(ptr) == LUA_TNUMBER)
-			value = L.get_numeric_argument<short>(ptr++, fname.c_str());
+		controller_frame_vector& v = framevector(L, P);
+
+		P(frame, port, controller, button);
+		if(P.is_boolean()) value = P.arg<bool>() ? 1 : 0;
+		else if(P.is_number()) P(value);
 		else
-			(stringfmt() << "Expected argument " << (ptr - 1) << " of " << fname << " to be boolean or "
-				<< "number").throwex();
+			P.expected("number or boolean");
+
 		movie& m = movb.get_movie();
 		if(&v == &movb.get_movie().get_frame_vector())
 			check_can_edit(port, controller, button, frame);
@@ -328,15 +335,16 @@ namespace
 	}
 
 	template<bool same>
-	int _copy_frames(lua::state& L, const std::string& fname)
+	int _copy_frames(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& dstv = framevector(L, ptr, fname);
-		uint64_t dst = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		controller_frame_vector& srcv = same ? dstv : framevector(L, ptr, fname);
-		uint64_t src = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		uint64_t count = L.get_numeric_argument<uint64_t>(ptr++, fname.c_str());
-		bool backwards = same ? L.get_bool(ptr++, fname.c_str()) : same;
+		uint64_t dst, src, count;
+		bool backwards = same;
+
+		controller_frame_vector& dstv = framevector(L, P);
+		P(dst);
+		controller_frame_vector& srcv = same ? dstv : framevector(L, P);
+		P(src, count);
+		if(same) P(backwards);
 
 		if(src >= srcv.size() || src + count < src)
 			throw std::runtime_error("Source index out of movie");
@@ -363,12 +371,15 @@ namespace
 		return 0;
 	}
 
-	int _serialize(lua::state& L, const std::string& fname)
+	int _serialize(lua::state& L, lua::parameters& P)
 	{
-		int ptr = 1;
-		controller_frame_vector& v = framevector(L, ptr, fname);
-		std::string filename = L.get_string(ptr++, fname.c_str());
-		bool binary = L.get_bool(ptr++, fname.c_str());
+		std::string filename;
+		bool binary;
+
+		controller_frame_vector& v = framevector(L, P);
+	
+		P(filename, binary);
+		
 		std::ofstream file(filename, binary ? std::ios_base::binary : std::ios_base::out);
 		if(!file)
 			throw std::runtime_error("Can't open file to write output to");
@@ -402,55 +413,68 @@ namespace
 		lua_inputmovie(lua::state& L, controller_frame& _f);
 		int copy_movie(lua::state& L, const std::string& fname)
 		{
-			return _copy_movie(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _copy_movie(L, P);
 		}
 		int get_frame(lua::state& L, const std::string& fname)
 		{
-			return _get_frame(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _get_frame(L, P);
 		}
 		int set_frame(lua::state& L, const std::string& fname)
 		{
-			return _set_frame(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _set_frame(L, P);
 		}
 		int get_size(lua::state& L, const std::string& fname)
 		{
-			return _get_size(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _get_size(L, P);
 		}
 		int count_frames(lua::state& L, const std::string& fname)
 		{
-			return _count_frames(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _count_frames(L, P);
 		}
 		int find_frame(lua::state& L, const std::string& fname)
 		{
-			return _find_frame(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _find_frame(L, P);
 		}
 		int blank_frame(lua::state& L, const std::string& fname)
 		{
-			return _blank_frame(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _blank_frame(L, P);
 		}
 		int append_frames(lua::state& L, const std::string& fname)
 		{
-			return _append_frames(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _append_frames(L, P);
 		}
 		int append_frame(lua::state& L, const std::string& fname)
 		{
-			return _append_frame(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _append_frame(L, P);
 		}
 		int truncate(lua::state& L, const std::string& fname)
 		{
-			return _truncate(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _truncate(L, P);
 		}
 		int edit(lua::state& L, const std::string& fname)
 		{
-			return _edit(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _edit(L, P);
 		}
 		int copy_frames(lua::state& L, const std::string& fname)
 		{
-			return _copy_frames<true>(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _copy_frames<true>(L, P);
 		}
 		int serialize(lua::state& L, const std::string& fname)
 		{
-			return _serialize(L, fname.c_str());
+			lua::parameters P(L, fname);
+			return _serialize(L, P);
 		}
 		int debugdump(lua::state& L, const std::string& fname)
 		{
@@ -475,81 +499,75 @@ namespace
 		controller_frame_vector v;
 	};
 
-	lua::fnptr movie_getdata(lua_func_misc, "movie.copy_movie", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _copy_movie(L, fname);
+	lua::fnptr2 movie_getdata(lua_func_misc, "movie.copy_movie", [](lua::state& L, lua::parameters& P) -> int {
+		return _copy_movie(L, P);
 	});
 
-	lua::fnptr movie_getframe(lua_func_misc, "movie.get_frame", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _get_frame(L, fname);
+	lua::fnptr2 movie_getframe(lua_func_misc, "movie.get_frame", [](lua::state& L, lua::parameters& P) -> int {
+		return _get_frame(L, P);
 	});
 
-	lua::fnptr movie_setframe(lua_func_misc, "movie.set_frame", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _set_frame(L, fname);
+	lua::fnptr2 movie_setframe(lua_func_misc, "movie.set_frame", [](lua::state& L, lua::parameters& P) -> int {
+		return _set_frame(L, P);
 	});
 
-	lua::fnptr movie_get_size(lua_func_misc, "movie.get_size", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _get_size(L, fname);
+	lua::fnptr2 movie_get_size(lua_func_misc, "movie.get_size", [](lua::state& L, lua::parameters& P) -> int {
+		return _get_size(L, P);
 	});
 
-	lua::fnptr movie_count_frames(lua_func_misc, "movie.count_frames", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _count_frames(L, fname);
-	});
-
-	lua::fnptr movie_find_frame(lua_func_misc, "movie.find_frame", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _find_frame(L, fname);
-	});
-
-	lua::fnptr movie_blank_frame(lua_func_misc, "movie.blank_frame", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _blank_frame(L, fname);
-	});
-
-	lua::fnptr movie_append_frames(lua_func_misc, "movie.append_frames", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _append_frames(L, fname);
-	});
-
-	lua::fnptr movie_append_frame(lua_func_misc, "movie.append_frame", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _append_frame(L, fname);
-	});
-
-	lua::fnptr movie_truncate(lua_func_misc, "movie.truncate", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 movie_count_frames(lua_func_misc, "movie.count_frames", [](lua::state& L, lua::parameters& P)
 		-> int {
-		return _truncate(L, fname);
+		return _count_frames(L, P);
 	});
 
-	lua::fnptr movie_edit(lua_func_misc, "movie.edit", [](lua::state& L, const std::string& fname)
+	lua::fnptr2 movie_find_frame(lua_func_misc, "movie.find_frame", [](lua::state& L, lua::parameters& P) -> int {
+		return _find_frame(L, P);
+	});
+
+	lua::fnptr2 movie_blank_frame(lua_func_misc, "movie.blank_frame", [](lua::state& L, lua::parameters& P)
 		-> int {
-		return _edit(L, fname);
+		return _blank_frame(L, P);
 	});
 
-	lua::fnptr movie_copyframe2(lua_func_misc, "movie.copy_frames2", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _copy_frames<false>(L, fname);
+	lua::fnptr2 movie_append_frames(lua_func_misc, "movie.append_frames", [](lua::state& L, lua::parameters& P)
+		-> int {
+		return _append_frames(L, P);
 	});
 
-	lua::fnptr movie_copyframe(lua_func_misc, "movie.copy_frames", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _copy_frames<true>(L, fname);
+	lua::fnptr2 movie_append_frame(lua_func_misc, "movie.append_frame", [](lua::state& L, lua::parameters& P)
+		-> int {
+		return _append_frame(L, P);
 	});
 
-	lua::fnptr movie_serialize(lua_func_misc, "movie.serialize", [](lua::state& L,
-		const std::string& fname) -> int {
-		return _serialize(L, fname);
+	lua::fnptr2 movie_truncate(lua_func_misc, "movie.truncate", [](lua::state& L, lua::parameters& P) -> int {
+		return _truncate(L, P);
 	});
 
-	lua::fnptr movie_unserialize(lua_func_misc, "movie.unserialize", [](lua::state& L,
-		const std::string& fname) -> int {
-		lua_inputframe* f = lua::_class<lua_inputframe>::get(L, 1, fname.c_str());
-		std::string filename = L.get_string(2, fname.c_str());
-		bool binary = L.get_bool(3, fname.c_str());
+	lua::fnptr2 movie_edit(lua_func_misc, "movie.edit", [](lua::state& L, lua::parameters& P) -> int {
+		return _edit(L, P);
+	});
+
+	lua::fnptr2 movie_copyframe2(lua_func_misc, "movie.copy_frames2", [](lua::state& L, lua::parameters& P)
+		-> int {
+		return _copy_frames<false>(L, P);
+	});
+
+	lua::fnptr2 movie_copyframe(lua_func_misc, "movie.copy_frames", [](lua::state& L, lua::parameters& P) -> int {
+		return _copy_frames<true>(L, P);
+	});
+
+	lua::fnptr2 movie_serialize(lua_func_misc, "movie.serialize", [](lua::state& L, lua::parameters& P) -> int {
+		return _serialize(L, P);
+	});
+
+	lua::fnptr2 movie_unserialize(lua_func_misc, "movie.unserialize", [](lua::state& L, lua::parameters& P)
+		-> int {
+		lua_inputframe* f;
+		std::string filename;
+		bool binary;
+
+		P(f, filename, binary);
+
 		std::ifstream file(filename, binary ? std::ios_base::binary : std::ios_base::in);
 		if(!file)
 			throw std::runtime_error("Can't open file to read input from");
@@ -585,13 +603,13 @@ namespace
 	});
 
 
-	controller_frame_vector& framevector(lua::state& L, int& ptr, const std::string& fname)
+	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
-		if(L.type(ptr) == LUA_TNIL) { //NONE can be handled as else case.
-			ptr++;
+		if(P.is_nil()) {
+			P.skip();
 			return movb.get_movie().get_frame_vector();
-		} else if(lua::_class<lua_inputmovie>::is(L, ptr))
-			return *lua::_class<lua_inputmovie>::get(L, ptr++, fname.c_str())->get_frame_vector();
+		} else if(P.is<lua_inputmovie>())
+			return *(P.arg<lua_inputmovie*>()->get_frame_vector());
 		else
 			return movb.get_movie().get_frame_vector();
 	}

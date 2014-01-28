@@ -252,16 +252,16 @@ namespace
 		{
 			lua::parameters P(L, fname);
 			uint64_t addr;
+			int lfn;
 			if(P.is_nil() && type != DEBUG_TRACE) {
 				addr = 0xFFFFFFFFFFFFFFFFULL;
 				P.skip();
 			} else if(type != DEBUG_TRACE)
 				addr = get_read_address(P);
 			else
-				addr = P.arg<uint64_t>();
-			if(P.is_function())
-				P.expected("function");
-			int lfn = P.skip();
+				P(addr);
+			P(P.function(lfn));
+
 			if(reg) {
 				handle_registerX(L, addr, lfn);
 				L.pushvalue(lfn);
@@ -360,14 +360,14 @@ namespace
 		{
 			lua::parameters P(L, fname);
 			if(P.is_novalue()) {
-				aperture_make_fun(L, 0, 0xFFFFFFFFFFFFFFFFULL, h);
+				aperture_make_fun(L.get_master(), 0, 0xFFFFFFFFFFFFFFFFULL, h);
 				return 1;
 			}
 			auto addr = get_read_address(P);
 			auto size = P.arg<uint64_t>();
 			if(!size)
 				throw std::runtime_error("Aperture with zero size is not valid");
-			aperture_make_fun(L, addr, size - 1, h);
+			aperture_make_fun(L.get_master(), addr, size - 1, h);
 			return 1;
 		}
 		mmap_base& h;
@@ -379,12 +379,14 @@ namespace
 	});
 
 	lua::fnptr2 cheat(lua_func_misc, "memory.cheat", [](lua::state& L, lua::parameters& P) -> int {
-		int base = 1;
-		auto addr = get_read_address(P);
+		uint64_t addr, value;
+
+		addr = get_read_address(P);
+
 		if(P.is_novalue()) {
 			debug_clear_cheat(addr);
 		} else {
-			auto value = P.arg<uint64_t>();
+			P(value);
 			debug_set_cheat(addr, value);
 		}
 		return 0;
@@ -427,8 +429,11 @@ namespace
 	}
 
 	lua::fnptr2 readvma(lua_func_misc, "memory.read_vma", [](lua::state& L, lua::parameters& P) -> int {
+		uint32_t num;
+
+		P(num);
+
 		std::list<memory_region*> regions = lsnes_memory.get_regions();
-		auto num = P.arg<uint32_t>();
 		uint32_t j = 0;
 		for(auto i = regions.begin(); i != regions.end(); i++, j++)
 			if(j == num)
@@ -438,7 +443,10 @@ namespace
 	});
 
 	lua::fnptr2 findvma(lua_func_misc, "memory.find_vma", [](lua::state& L, lua::parameters& P) -> int {
-		auto addr = P.arg<uint64_t>();
+		uint64_t addr;
+
+		P(addr);
+
 		auto r = lsnes_memory.lookup(addr);
 		if(r.first)
 			return handle_push_vma(L, *r.first);
@@ -460,9 +468,11 @@ namespace
 
 	lua::fnptr2 hashmemory(lua_func_misc, "memory.hash_region", [](lua::state& L, lua::parameters& P) -> int {
 		std::string hash;
-		int base = 1;
-		auto addr = get_read_address(P);
-		auto size = P.arg<uint64_t>();
+		uint64_t addr, size;
+
+		addr = get_read_address(P);
+		P(size);
+
 		char buffer[BLOCKSIZE];
 		sha256 h;
 		while(size > BLOCKSIZE) {
@@ -481,10 +491,11 @@ namespace
 	});
 
 	lua::fnptr2 readmemoryr(lua_func_misc, "memory.readregion", [](lua::state& L, lua::parameters& P) -> int {
-		std::string hash;
-		int base = 1;
-		auto addr = get_read_address(P);
-		auto size = P.arg<uint64_t>();
+		uint64_t addr, size;
+
+		addr = get_read_address(P);
+		P(size);
+
 		L.newtable();
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
@@ -503,17 +514,19 @@ namespace
 	});
 
 	lua::fnptr2 writememoryr(lua_func_misc, "memory.writeregion", [](lua::state& L, lua::parameters& P) -> int {
-		std::string hash;
-		int base = 1;
-		auto addr = get_read_address(P);
-		auto size = P.arg<uint64_t>();
+		uint64_t addr, size;
+		int ltbl;
+
+		addr = get_read_address(P);
+		P(size, P.table(ltbl));
+
 		char buffer[BLOCKSIZE];
 		uint64_t ctr = 0;
 		while(size > 0) {
 			size_t rsize = min(size, static_cast<uint64_t>(BLOCKSIZE));
 			for(size_t i = 0; i < rsize; i++) {
 				L.pushnumber(ctr++);
-				L.gettable(3);
+				L.gettable(ltbl);
 				buffer[i] = L.tointeger(-1);
 				L.pop(1);
 			}
@@ -527,13 +540,12 @@ namespace
 	template<bool write, bool sign> int memory_scattergather(lua::state& L, lua::parameters& P)
 	{
 		uint64_t val = 0;
-		int ptr = 1;
 		unsigned shift = 0;
 		uint64_t addr = 0;
 		uint64_t vmabase = 0;
 		if(write)
 			val = P.arg<uint64_t>();
-		while(L.type(ptr) != LUA_TNIL && L.type(ptr) != LUA_TNONE) {
+		while(P.more()) {
 			if(P.is_boolean()) {
 				if(P.arg<bool>())
 					addr++;
@@ -627,47 +639,42 @@ namespace
 
 int lua_mmap_struct::map(lua::state& L, const std::string& fname)
 {
-	const char* name = L.tostring(2);
-	int base = 0;
-	uint64_t vmabase = 0;
-	if(L.type(3) == LUA_TSTRING) {
-		vmabase = get_vmabase(L.get_string(3, fname.c_str()));
-		base = 1;
-	}
-	uint64_t addr = L.get_numeric_argument<uint64_t>(base + 3, fname.c_str());
-	const char* type = L.tostring(base + 4);
-	if(!name)
-		(stringfmt() << fname << ": Bad name").throwex();
-	if(!type)
-		(stringfmt() << fname << ": Bad type").throwex();
-	std::string name2(name);
-	std::string type2(type);
-	if(type2 == "byte")
-		mappings[name2] = std::make_pair(&mhub, addr);
-	else if(type2 == "sbyte")
-		mappings[name2] = std::make_pair(&mhsb, addr);
-	else if(type2 == "word")
-		mappings[name2] = std::make_pair(&mhuw, addr);
-	else if(type2 == "sword")
-		mappings[name2] = std::make_pair(&mhsw, addr);
-	else if(type2 == "hword")
-		mappings[name2] = std::make_pair(&mhuh, addr);
-	else if(type2 == "shword")
-		mappings[name2] = std::make_pair(&mhsh, addr);
-	else if(type2 == "dword")
-		mappings[name2] = std::make_pair(&mhud, addr);
-	else if(type2 == "sdword")
-		mappings[name2] = std::make_pair(&mhsd, addr);
-	else if(type2 == "qword")
-		mappings[name2] = std::make_pair(&mhuq, addr);
-	else if(type2 == "sqword")
-		mappings[name2] = std::make_pair(&mhsq, addr);
-	else if(type2 == "float")
-		mappings[name2] = std::make_pair(&mhf4, addr);
-	else if(type2 == "double")
-		mappings[name2] = std::make_pair(&mhf8, addr);
+	lua::parameters P(L, fname);
+	std::string name, type;
+	uint64_t vmabase = 0, addr;
+
+	P(P.skipped(), name);
+	if(P.is_string())
+		vmabase = get_vmabase(P.arg<std::string>());
+	P(addr, type);
+	addr += vmabase;
+
+	if(type == "byte")
+		mappings[name] = std::make_pair(&mhub, addr);
+	else if(type == "sbyte")
+		mappings[name] = std::make_pair(&mhsb, addr);
+	else if(type == "word")
+		mappings[name] = std::make_pair(&mhuw, addr);
+	else if(type == "sword")
+		mappings[name] = std::make_pair(&mhsw, addr);
+	else if(type == "hword")
+		mappings[name] = std::make_pair(&mhuh, addr);
+	else if(type == "shword")
+		mappings[name] = std::make_pair(&mhsh, addr);
+	else if(type == "dword")
+		mappings[name] = std::make_pair(&mhud, addr);
+	else if(type == "sdword")
+		mappings[name] = std::make_pair(&mhsd, addr);
+	else if(type == "qword")
+		mappings[name] = std::make_pair(&mhuq, addr);
+	else if(type == "sqword")
+		mappings[name] = std::make_pair(&mhsq, addr);
+	else if(type == "float")
+		mappings[name] = std::make_pair(&mhf4, addr);
+	else if(type == "double")
+		mappings[name] = std::make_pair(&mhf8, addr);
 	else
-		(stringfmt() << fname << ": Bad type").throwex();
+		(stringfmt() << P.get_fname() << ": Bad type").throwex();
 	return 0;
 }
 
