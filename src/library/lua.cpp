@@ -626,6 +626,25 @@ bool class_base::lookup_and_push(state& L, const std::string& _name)
 	return true;
 }
 
+std::set<std::string> class_base::all_classes(state& L)
+{
+	L.pushlightuserdata(&classtable_key);
+	L.rawget(LUA_REGISTRYINDEX);
+	if(L.type(-1) == LUA_TNIL) {
+		//No classes.
+		L.pop(1);
+		return std::set<std::string>();
+	}
+	std::set<std::string> r;
+	L.pushnil();
+	while(L.next(-2)) {
+		L.pop(1);	//Pop value.
+		if(L.type(-1) == LUA_TSTRING) r.insert(L.tostring(-1));
+	}
+	L.pop(1);
+	return r;
+}
+
 void class_base::register_static(state& L)
 {
 again:

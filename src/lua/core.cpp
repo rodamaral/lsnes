@@ -115,6 +115,16 @@ namespace
 		return lua::class_base::lookup_and_push(L, clazz) ? 1 : 0;
 	});
 
+	lua::fnptr2 lua_classlist(lua_func_misc, "all_classes", [](lua::state& L, lua::parameters& P) -> int {
+		auto c = lua::class_base::all_classes(L);
+		int count = 0;
+		for(auto& i : c) {
+			L.pushlstring(i);
+			count++;
+		}
+		return count;
+	});
+
 	lua::fnptr2 lua_booted(lua_func_misc, "emulator_ready", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushboolean(lua_booted_flag ? 1 : 0);
 		return 1;

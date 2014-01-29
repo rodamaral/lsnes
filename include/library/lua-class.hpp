@@ -176,6 +176,10 @@ public:
  */
 	static bool lookup_and_push(state& L, const std::string& _name);
 /**
+ * Get set of all classes.
+ */
+	static std::set<std::string> all_classes(state& L);
+/**
  * Register in given Lua state.
  */
 	virtual void register_state(state& L) = 0;

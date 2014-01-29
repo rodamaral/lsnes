@@ -3760,6 +3760,19 @@ _class_methods: Return class method names
 \end_layout
 
 \begin_layout Subsection
+all_classes: Get list of all classes
+\end_layout
+
+\begin_layout Itemize
+Syntax: string...
+ all_classes()
+\end_layout
+
+\begin_layout Standard
+Get names of all classes available.
+\end_layout
+
+\begin_layout Subsection
 icnov: Class ICONV
 \end_layout
 
