@@ -3,7 +3,8 @@
 
 namespace
 {
-	lua::fnptr2 ss(lua_func_misc, "settings.set", [](lua::state& L, lua::parameters& P) -> int {
+	int ss_set(lua::state& L, lua::parameters& P)
+	{
 		std::string name, value;
 
 		P(name, value);
@@ -17,9 +18,10 @@ namespace
 		}
 		L.pushboolean(1);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 sg(lua_func_misc, "settings.get", [](lua::state& L, lua::parameters& P) -> int {
+	int ss_get(lua::state& L, lua::parameters& P)
+	{
 		std::string name;
 
 		P(name);
@@ -33,5 +35,11 @@ namespace
 			L.pushstring(e.what());
 			return 2;
 		}
+	}
+
+	class lua_settings_dummy {};
+	lua::_class<lua_settings_dummy> lua_settings(lua_class_bind, "*settings", {
+		{"set", ss_set},
+		{"get", ss_get},
 	});
 }

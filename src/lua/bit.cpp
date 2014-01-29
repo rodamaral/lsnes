@@ -102,7 +102,8 @@ namespace
 		return 1;
 	}
 
-	lua::fnptr2 lua_bextract(lua_func_bit, "bit.extract", [](lua::state& L, lua::parameters& P) -> int {
+	int bit_extract(lua::state& L, lua::parameters& P)
+	{
 		uint64_t ret = 0;
 		uint64_t num;
 
@@ -119,9 +120,10 @@ namespace
 		}
 		L.pushnumber(ret);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_bvalue(lua_func_bit, "bit.value", [](lua::state& L, lua::parameters& P) -> int {
+	int bit_value(lua::state& L, lua::parameters& P)
+	{
 		uint64_t ret = 0;
 		for(size_t i = 0;; i++) {
 			if(P.is_number()) {
@@ -132,25 +134,20 @@ namespace
 		}
 		L.pushnumber(ret);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_testany(lua_func_bit, "bit.test_any", [](lua::state& L, lua::parameters& P) -> int {
+	template<bool all>
+	int bit_test(lua::state& L, lua::parameters& P)
+	{
 		uint64_t a, b;
 
 		P(a, b);
 
-		L.pushboolean((a & b) != 0);
+		uint64_t t = a & b;
+		bool c = all ? (t == b) : (t != 0);
+		L.pushboolean(c);
 		return 1;
-	});
-
-	lua::fnptr2 lua_testall(lua_func_bit, "bit.test_all", [](lua::state& L, lua::parameters& P) -> int {
-		uint64_t a, b;
-
-		P(a, b);
-
-		L.pushboolean((a & b) == b);
-		return 1;
-	});
+	}
 
 	int poptable[] = {0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4};
 
@@ -164,16 +161,19 @@ namespace
 		return c;
 	}
 
-	lua::fnptr2 lua_popcount(lua_func_bit, "bit.popcount", [](lua::state& L, lua::parameters& P) -> int {
+	int bit_popcount(lua::state& L, lua::parameters& P)
+	{
 		uint64_t a;
 
 		P(a);
 
 		L.pushnumber(popcount(a));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_clshift(lua_func_bit, "bit.clshift", [](lua::state& L, lua::parameters& P) -> int {
+	template<bool right>
+	int bit_cshift(lua::state& L, lua::parameters& P)
+	{
 		uint64_t a, b;
 		unsigned amount, bits;
 
@@ -182,33 +182,22 @@ namespace
 		uint64_t mask = ((1ULL << bits) - 1);
 		a &= mask;
 		b &= mask;
-		a <<= amount;
-		a &= mask;
-		a |= (b >> (bits - amount));
-		b <<= amount;
-		b &= mask;
+		if(right) {
+			b >>= amount;
+			b |= (a << (bits - amount));
+			b &= mask;
+			a >>= amount;
+		} else {
+			a <<= amount;
+			a &= mask;
+			a |= (b >> (bits - amount));
+			b <<= amount;
+			b &= mask;
+		}
 		L.pushnumber(a);
 		L.pushnumber(b);
 		return 2;
-	});
-
-	lua::fnptr2 lua_crshift(lua_func_bit, "bit.crshift", [](lua::state& L, lua::parameters& P) -> int {
-		uint64_t a, b;
-		unsigned amount, bits;
-
-		P(a, b, P.optional(amount, 1), P.optional(bits, BITWISE_BITS));
-
-		uint64_t mask = ((1ULL << bits) - 1);
-		a &= mask;
-		b &= mask;
-		b >>= amount;
-		b |= (a << (bits - amount));
-		b &= mask;
-		a >>= amount;
-		L.pushnumber(a);
-		L.pushnumber(b);
-		return 2;
-	});
+	}
 
 	template<bool reverse>
 	int flagdecode_core(lua::state& L, lua::parameters& P)
@@ -235,23 +224,37 @@ namespace
 		return 1;
 	}
 
-	lua::fnptr2 lua_flagdecode(lua_func_bit, "bit.flagdecode", flagdecode_core<false>);
-	lua::fnptr2 lua_rflagdecode(lua_func_bit, "bit.rflagdecode", flagdecode_core<true>);
-	lua::fnptr2 bit_none(lua_func_bit, "bit.none", fold<combine_none, BITWISE_MASK>);
-	lua::fnptr2 bit_any(lua_func_bit, "bit.any", fold<combine_any, 0>);
-	lua::fnptr2 bit_all(lua_func_bit, "bit.all", fold<combine_all, BITWISE_MASK>);
-	lua::fnptr2 bit_parity(lua_func_bit, "bit.parity", fold<combine_parity, 0>);
-	lua::fnptr2 bit_lrotate(lua_func_bit, "bit.lrotate", shift<shift_lrotate>);
-	lua::fnptr2 bit_rrotate(lua_func_bit, "bit.rrotate", shift<shift_rrotate>);
-	lua::fnptr2 bit_lshift(lua_func_bit, "bit.lshift", shift<shift_lshift>);
-	lua::fnptr2 bit_arshift(lua_func_bit, "bit.arshift", shift<shift_arshift>);
-	lua::fnptr2 bit_lrshift(lua_func_bit, "bit.lrshift", shift<shift_lrshift>);
-	lua::fnptr2 bit_swapword(lua_func_bit, "bit.swapword", bswap<uint16_t>);
-	lua::fnptr2 bit_swaphword(lua_func_bit, "bit.swaphword", bswap<ss_uint24_t>);
-	lua::fnptr2 bit_swapdword(lua_func_bit, "bit.swapdword", bswap<uint32_t>);
-	lua::fnptr2 bit_swapqword(lua_func_bit, "bit.swapqword", bswap<uint64_t>);
-	lua::fnptr2 bit_swapsword(lua_func_bit, "bit.swapsword", bswap<int16_t>);
-	lua::fnptr2 bit_swapshword(lua_func_bit, "bit.swapshword", bswap<ss_int24_t>);
-	lua::fnptr2 bit_swapsdword(lua_func_bit, "bit.swapsdword", bswap<int32_t>);
-	lua::fnptr2 bit_swapsqword(lua_func_bit, "bit.swapsqword", bswap<int64_t>);
+	class lua_bit_dummy {};
+	lua::_class<lua_bit_dummy> bitops(lua_class_pure, "*bit", {
+		{"flagdecode", flagdecode_core<false>},
+		{"rflagdecode", flagdecode_core<true>},
+		{"none", fold<combine_none, BITWISE_MASK>},
+		{"any", fold<combine_any, 0>},
+		{"all", fold<combine_all, BITWISE_MASK>},
+		{"parity", fold<combine_parity, 0>},
+		{"bnot", fold<combine_none, BITWISE_MASK>},
+		{"bor", fold<combine_any, 0>},
+		{"band", fold<combine_all, BITWISE_MASK>},
+		{"bxor", fold<combine_parity, 0>},
+		{"lrotate", shift<shift_lrotate>},
+		{"rrotate", shift<shift_rrotate>},
+		{"lshift", shift<shift_lshift>},
+		{"arshift", shift<shift_arshift>},
+		{"lrshift", shift<shift_lrshift>},
+		{"swapword", bswap<uint16_t>},
+		{"swaphword", bswap<ss_uint24_t>},
+		{"swapdword", bswap<uint32_t>},
+		{"swapqword", bswap<uint64_t>},
+		{"swapsword", bswap<int16_t>},
+		{"swapshword", bswap<ss_int24_t>},
+		{"swapsdword", bswap<int32_t>},
+		{"swapsqword", bswap<int64_t>},
+		{"extract", bit_extract},
+		{"value", bit_value},
+		{"test_any", bit_test<false>},
+		{"test_all", bit_test<true>},
+		{"popcount", bit_popcount},
+		{"clshift", bit_cshift<false>},
+		{"crshift", bit_cshift<true>},
+	});
 }

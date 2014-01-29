@@ -36,30 +36,33 @@ namespace
 		return 0;
 	}
 
-	lua::fnptr2 hm_read(lua_func_misc, "hostmemory.read", do_read<uint8_t>);
-	lua::fnptr2 hm_write(lua_func_misc, "hostmemory.write", do_write<uint8_t>);
-	lua::fnptr2 hm_readb(lua_func_misc, "hostmemory.readbyte", do_read<uint8_t>);
-	lua::fnptr2 hm_writeb(lua_func_misc, "hostmemory.writebyte", do_write<uint8_t>);
-	lua::fnptr2 hm_readsb(lua_func_misc, "hostmemory.readsbyte", do_read<int8_t>);
-	lua::fnptr2 hm_writesb(lua_func_misc, "hostmemory.writesbyte", do_write<int8_t>);
-	lua::fnptr2 hm_readw(lua_func_misc, "hostmemory.readword", do_read<uint16_t>);
-	lua::fnptr2 hm_writew(lua_func_misc, "hostmemory.writeword", do_write<uint16_t>);
-	lua::fnptr2 hm_readsw(lua_func_misc, "hostmemory.readsword", do_read<int16_t>);
-	lua::fnptr2 hm_writesw(lua_func_misc, "hostmemory.writesword", do_write<int16_t>);
-	lua::fnptr2 hm_readh(lua_func_misc, "hostmemory.readhword", do_read<ss_uint24_t>);
-	lua::fnptr2 hm_writeh(lua_func_misc, "hostmemory.writehword", do_write<ss_uint24_t>);
-	lua::fnptr2 hm_readsh(lua_func_misc, "hostmemory.readshword", do_read<ss_int24_t>);
-	lua::fnptr2 hm_writesh(lua_func_misc, "hostmemory.writeshword", do_write<ss_int24_t>);
-	lua::fnptr2 hm_readd(lua_func_misc, "hostmemory.readdword", do_read<uint32_t>);
-	lua::fnptr2 hm_writed(lua_func_misc, "hostmemory.writedword", do_write<uint32_t>);
-	lua::fnptr2 hm_readsd(lua_func_misc, "hostmemory.readsdword", do_read<int32_t>);
-	lua::fnptr2 hm_writesd(lua_func_misc, "hostmemory.writesdword", do_write<int32_t>);
-	lua::fnptr2 hm_readq(lua_func_misc, "hostmemory.readqword", do_read<uint64_t>);
-	lua::fnptr2 hm_writeq(lua_func_misc, "hostmemory.writeqword", do_write<uint64_t>);
-	lua::fnptr2 hm_readsq(lua_func_misc, "hostmemory.readsqword", do_read<int64_t>);
-	lua::fnptr2 hm_writesq(lua_func_misc, "hostmemory.writesqword", do_write<int64_t>);
-	lua::fnptr2 hm_readf4(lua_func_misc, "hostmemory.readfloat", do_read<float>);
-	lua::fnptr2 hm_writef4(lua_func_misc, "hostmemory.writefloat", do_write<float>);
-	lua::fnptr2 hm_readf8(lua_func_misc, "hostmemory.readdouble", do_read<double>);
-	lua::fnptr2 hm_writef8(lua_func_misc, "hostmemory.writedouble", do_write<double>);
+	class lua_hostmemory_dummy {};
+	lua::_class<lua_hostmemory_dummy> hostops(lua_class_pure, "*hostmemory", {
+		{"read", do_read<uint8_t>},
+		{"write", do_write<uint8_t>},
+		{"readbyte", do_read<uint8_t>},
+		{"writebyte", do_write<uint8_t>},
+		{"readsbyte", do_read<int8_t>},
+		{"writesbyte", do_write<int8_t>},
+		{"readword", do_read<uint16_t>},
+		{"writeword", do_write<uint16_t>},
+		{"readsword", do_read<int16_t>},
+		{"writesword", do_write<int16_t>},
+		{"readhword", do_read<ss_uint24_t>},
+		{"writehword", do_write<ss_uint24_t>},
+		{"readshword", do_read<ss_int24_t>},
+		{"writeshword", do_write<ss_int24_t>},
+		{"readdword", do_read<uint32_t>},
+		{"writedword", do_write<uint32_t>},
+		{"readsdword", do_read<int32_t>},
+		{"writesdword", do_write<int32_t>},
+		{"readqword", do_read<uint64_t>},
+		{"writeqword", do_write<uint64_t>},
+		{"readsqword", do_read<int64_t>},
+		{"writesqword", do_write<int64_t>},
+		{"readfloat", do_read<float>},
+		{"writefloat", do_write<float>},
+		{"readdouble", do_read<double>},
+		{"writedouble", do_write<double>},
+	});
 }

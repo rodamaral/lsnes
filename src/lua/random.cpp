@@ -28,12 +28,14 @@ namespace
 		}
 	}
 
-	lua::fnptr2 rboolean(lua_func_misc, "random.boolean", [](lua::state& L, lua::parameters& P) -> int {
+	int rand_boolean(lua::state& L, lua::parameters& P)
+	{
 		L.pushboolean(randnum() % 2);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 rinteger(lua_func_misc, "random.integer", [](lua::state& L, lua::parameters& P) -> int {
+	int rand_integer(lua::state& L, lua::parameters& P)
+	{
 		uint64_t low = 0, high = 0;
 
 		P(low);
@@ -51,18 +53,20 @@ namespace
 		uint64_t rsize = high - low + 1;
 		L.pushnumber(low + randnum_mod(rsize));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 rfloat(lua_func_misc, "random.float", [](lua::state& L, lua::parameters& P) -> int {
+	int rand_float(lua::state& L, lua::parameters& P)
+	{
 		double _bits = 0;
 		uint64_t* bits = (uint64_t*)&_bits;
 		*bits = randnum() & 0xFFFFFFFFFFFFFULL;
 		*bits |= 0x3FF0000000000000ULL;
 		L.pushnumber(_bits - 1);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 ramong(lua_func_misc, "random.among", [](lua::state& L, lua::parameters& P) -> int {
+	int rand_among(lua::state& L, lua::parameters& P)
+	{
 		unsigned args = 1;
 		while(P.more()) {
 			P.skip();
@@ -76,9 +80,9 @@ namespace
 		uint64_t n = randnum_mod(args);
 		L.pushvalue(n + 1);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 ramongt(lua_func_misc, "random.amongtable", [](lua::state& L, lua::parameters& P)
+	int rand_amongtable(lua::state& L, lua::parameters& P)
 	{
 		int ltbl;
 		P(P.table(ltbl));
@@ -103,5 +107,14 @@ namespace
 		if(!L.next(ltbl))
 			throw std::runtime_error("random.amongtable: Inconsistent table size");
 		return 1;
+	}
+
+	class lua_dummy_random {};
+	lua::_class<lua_dummy_random> lua_random(lua_class_pure, "*random", {
+		{"boolean", rand_boolean},
+		{"integer", rand_integer},
+		{"float", rand_float},
+		{"among", rand_among},
+		{"amongtable", rand_amongtable},
 	});
 }
