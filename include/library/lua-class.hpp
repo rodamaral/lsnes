@@ -305,13 +305,15 @@ public:
  * Parameter _name: The name of the class.
  * Parameter _smethods: Static methods of the class.
  * Parameter _cmethods: Class methods of the class.
+ * Parameter _print: The print method.
  */
 	_class(class_group& _group, const std::string& _name, std::initializer_list<static_method> _smethods,
-		std::initializer_list<class_method<T>> _cmethods)
+		std::initializer_list<class_method<T>> _cmethods = {}, std::string (T::*_print)() = NULL)
 		: class_base(_group, _name), smethods(_smethods), cmethods(_cmethods)
 	{
 		name = _name;
 		class_ops m;
+		printmeth = _print;
 		m.is = _class<T>::is;
 		m.name = _class<T>::get_name;
 		m.print = _class<T>::print;
@@ -394,7 +396,15 @@ public:
 	static std::string print(state& _state, int index)
 	{
 		T* obj = get(_state, index, "__internal_print");
-		return obj->print();
+		try {
+			auto pmeth = objclass<T>().printmeth;
+			if(pmeth)
+				return (obj->*pmeth)();
+			else
+				return "";
+		} catch(...) {
+			return "";
+		}
 	}
 /**
  * Get a pin of object against Lua GC.
@@ -483,6 +493,7 @@ again:
 	std::string name;
 	std::list<static_method> smethods;
 	std::list<class_method<T>> cmethods;
+	std::string (T::*printmeth)();
 	_class(const _class<T>&);
 	_class& operator=(const _class<T>&);
 };

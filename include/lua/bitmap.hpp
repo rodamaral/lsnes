@@ -72,7 +72,6 @@ struct lua_dbitmap
 
 struct lua_loaded_bitmap
 {
-	std::string print();
 	size_t w;
 	size_t h;
 	bool d;

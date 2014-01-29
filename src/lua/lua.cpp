@@ -436,7 +436,8 @@ namespace
 			messages << "Lua VM reset" << std::endl;
 		});
 
-	lua::_class<lua_unsaferewind> class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {});
+	lua::_class<lua_unsaferewind> class_unsaferewind(lua_class_movie, "UNSAFEREWIND", {}, {
+	}, &lua_unsaferewind::print);
 }
 
 void lua_callback_quit() throw()

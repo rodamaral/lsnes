@@ -634,7 +634,7 @@ namespace
 		{"__index", &lua_mmap_struct::index},
 		{"__newindex", &lua_mmap_struct::newindex},
 		{"__call", &lua_mmap_struct::map},
-	});
+	}, &lua_mmap_struct::print);
 }
 
 int lua_mmap_struct::map(lua::state& L, lua::parameters& P)

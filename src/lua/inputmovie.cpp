@@ -612,7 +612,8 @@ namespace
 			{"debugdump", &lua_inputmovie::debugdump},
 			{"copy_frames", &lua_inputmovie::copy_frames},
 			{"serialize", &lua_inputmovie::serialize},
-	});
+	}, &lua_inputmovie::print);
+
 	lua::_class<lua_inputframe> class_inputframe(lua_class_movie, "INPUTFRAME", {}, {
 			{"get_button", &lua_inputframe::get_button},
 			{"get_axis", &lua_inputframe::get_axis},
@@ -621,7 +622,7 @@ namespace
 			{"serialize", &lua_inputframe::serialize},
 			{"unserialize", &lua_inputframe::unserialize},
 			{"get_stride", &lua_inputframe::get_stride},
-	});
+	}, &lua_inputframe::print);
 
 	lua_inputframe::lua_inputframe(lua::state& L, controller_frame _f)
 	{

@@ -107,7 +107,8 @@ namespace
 			{"iqword", &lua_vma::rw<uint64_t, true>},
 			{"ifloat", &lua_vma::rw<float, true>},
 			{"idouble", &lua_vma::rw<double, true>},
-	});
+	}, &lua_vma::print);
+
 	lua::_class<lua_vma_list> class_vmalist(lua_class_memory, "VMALIST", {
 		{"new", lua_vma_list::create},
 	}, {

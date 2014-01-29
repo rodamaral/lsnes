@@ -224,10 +224,6 @@ namespace
 		{
 			reinterpret_cast<lua_file_reader*>(lua_touserdata(L, lua_upvalueindex(1)))->lines_helper(L);
 		}
-		std::string print()
-		{
-			return "";
-		}
 	private:
 		std::istream& s;
 	};

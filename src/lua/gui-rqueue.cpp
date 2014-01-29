@@ -143,7 +143,7 @@ namespace
 		{"clear", &lua_renderqueue::clear},
 		{"set", &lua_renderqueue::set},
 		{"render", &lua_renderqueue::render},
-	});
+	}, &lua_renderqueue::print);
 }
 
 void lua_renderq_run(lua_render_context* ctx, void* _sctx)

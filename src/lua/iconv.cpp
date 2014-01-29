@@ -75,7 +75,7 @@ namespace
 		{"new", lua_iconv::create},
 	}, {
 		{"__call", &lua_iconv::call},
-	});
+	}, &lua_iconv::print);
 
 
 	lua_iconv::lua_iconv(lua::state& L, const char* from, const char* to)

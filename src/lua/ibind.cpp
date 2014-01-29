@@ -148,10 +148,10 @@ namespace
 
 	lua::_class<lua_inverse_bind> class_inverse_bind(lua_class_bind, "INVERSEBIND", {
 		{"new", lua_inverse_bind::create},
-	}, {});
+	}, {}, &lua_inverse_bind::print);
 	lua::_class<lua_command_bind> class_command_bind(lua_class_bind, "COMMANDBIND", {
 		{"new", lua_command_bind::create},
-	}, {});
+	}, {}, &lua_command_bind::print);
 }
 
 int lua_inverse_bind::create(lua::state& L, lua::parameters& P)

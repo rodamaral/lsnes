@@ -40,7 +40,7 @@ namespace
 	}, {
 		{"__call", &lua_customfont::draw},
 		{"edit", &lua_customfont::edit},
-	});
+	}, &lua_customfont::print);
 
 	struct render_object_text_cf : public framebuffer::object
 	{

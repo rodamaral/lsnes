@@ -707,7 +707,6 @@ namespace
 		{"load_str", lua_loaded_bitmap::load_str<false>},
 		{"load_png", lua_loaded_bitmap::load<true>},
 		{"load_png_str", lua_loaded_bitmap::load_str<true>},
-	}, {
 	});
 
 	lua::_class<lua_palette> class_palette(lua_class_gui, "PALETTE", {
@@ -719,7 +718,8 @@ namespace
 		{"hash", &lua_palette::hash},
 		{"debug", &lua_palette::debug},
 		{"adjust_transparency", &lua_palette::adjust_transparency},
-	});
+	}, &lua_palette::print);
+
 	lua::_class<lua_bitmap> class_bitmap(lua_class_gui, "BITMAP", {
 		{"new", lua_bitmap::create},
 	}, {
@@ -735,7 +735,8 @@ namespace
 		{"blit_porterduff", &lua_bitmap::blit<false, true>},
 		{"blit_scaled_porterduff", &lua_bitmap::blit<true, true>},
 		{"save_png", &lua_bitmap::save_png},
-	});
+	}, &lua_bitmap::print);
+
 	lua::_class<lua_dbitmap> class_dbitmap(lua_class_gui, "DBITMAP", {
 		{"new", lua_dbitmap::create},
 	}, {
@@ -750,7 +751,7 @@ namespace
 		{"blit_scaled_porterduff", &lua_dbitmap::blit<true, true>},
 		{"save_png", &lua_dbitmap::save_png},
 		{"adjust_transparency", &lua_dbitmap::adjust_transparency},
-	});
+	}, &lua_dbitmap::print);
 }
 
 /** Palette **/
@@ -1247,9 +1248,4 @@ template<bool png> int lua_loaded_bitmap::load_str(lua::state& L, lua::parameter
 			std::istringstream strm(contents);
 			return lua_loaded_bitmap::load(strm);
 		});
-}
-
-std::string lua_loaded_bitmap::print()
-{
-	return "";
 }

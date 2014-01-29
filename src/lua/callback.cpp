@@ -11,10 +11,6 @@ namespace
 		static int create(lua::state& L, lua::parameters& P);
 		int index(lua::state& L, lua::parameters& P);
 		int newindex(lua::state& L, lua::parameters& P);
-		std::string print()
-		{
-			return "";
-		}
 	};
 
 	class lua_callback_obj
@@ -26,7 +22,11 @@ namespace
 		int _call(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
-			if(callback)
+			if(special == 1)
+				return "global register";
+			else if(special == 2)
+				return "global unregister";
+			else if(callback)
 				return callback->get_name();
 			else
 				return "(null)";
@@ -46,7 +46,7 @@ namespace
 		{"register", &lua_callback_obj::_register},
 		{"unregister", &lua_callback_obj::_unregister},
 		{"__call", &lua_callback_obj::_call},
-	});
+	}, &lua_callback_obj::print);
 
 	lua_callbacks_list::lua_callbacks_list(lua::state& L)
 	{

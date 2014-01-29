@@ -95,7 +95,7 @@ namespace
 		{"close_file", &lua_zip_writer::close_file},
 		{"create_file", &lua_zip_writer::create_file},
 		{"write", &lua_zip_writer::write}
-	});
+	}, &lua_zip_writer::print);
 
 	lua_zip_writer::lua_zip_writer(lua::state& L, const std::string& filename, unsigned compression)
 	{
