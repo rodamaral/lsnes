@@ -31,6 +31,17 @@ namespace
 		return addr + vmabase;
 	}
 
+	template<typename T, T (memory_space::*rfun)(uint64_t addr),
+		bool (memory_space::*wfun)(uint64_t addr, T value)>
+	void do_rw(lua::state& L, uint64_t addr, bool wrflag)
+	{
+		if(wrflag) {
+			T value = L.get_numeric_argument<T>(3, "aperture(write)");
+			(lsnes_memory.*wfun)(addr, value);
+		} else
+			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
+	}
+
 	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	int lua_read_memory(lua::state& L, lua::parameters& P)
 	{
@@ -47,32 +58,6 @@ namespace
 		(lsnes_memory.*wfun)(addr, value);
 		return 0;
 	}
-
-	class mmap_base
-	{
-	public:
-		~mmap_base() {}
-		virtual void read(lua::state& L, uint64_t addr) = 0;
-		virtual void write(lua::state& L, uint64_t addr) = 0;
-	};
-
-	template<typename T, T (memory_space::*rfun)(uint64_t addr), bool (memory_space::*wfun)(uint64_t addr,
-		T value)>
-	class lua_mmap_memory_helper : public mmap_base
-	{
-	public:
-		~lua_mmap_memory_helper() {}
-		void read(lua::state& L, uint64_t addr)
-		{
-			L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
-		}
-
-		void write(lua::state& L, uint64_t addr)
-		{
-			T value = L.get_numeric_argument<T>(3, "aperture(write)");
-			(lsnes_memory.*wfun)(addr, value);
-		}
-	};
 }
 
 class lua_mmap_struct
@@ -97,7 +82,7 @@ public:
 			return 1;
 		}
 		auto& x = mappings[c2];
-		x.first->read(L, x.second);
+		x.rw(L, x.addr, false);
 		return 1;
 	}
 	int newindex(lua::state& L, lua::parameters& P)
@@ -109,7 +94,7 @@ public:
 		if(!mappings.count(c2))
 			return 0;
 		auto& x = mappings[c2];
-		x.first->write(L, x.second);
+		x.rw(L, x.addr, true);
 		return 0;
 	}
 	static int create(lua::state& L, lua::parameters& P)
@@ -124,46 +109,63 @@ public:
 		return (stringfmt() << s << " " << ((s != 1) ? "mappings" : "mapping")).str();
 	}
 private:
-	std::map<std::string, std::pair<mmap_base*, uint64_t>> mappings;
+	struct mapping
+	{
+		mapping() {}
+		mapping(uint64_t _addr, void (*_rw)(lua::state& L, uint64_t addr, bool wrflag))
+			: addr(_addr), rw(_rw)
+		{
+		}
+		uint64_t addr;
+		void (*rw)(lua::state& L, uint64_t addr, bool wrflag);
+	};
+	std::map<std::string, mapping> mappings;
 };
 
 namespace
 {
+	template<typename T, T (memory_space::*rfun)(uint64_t addr)>
 	int aperture_read_fun(lua_State* _L)
 	{
-		lua::state& L = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(4)));
+		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
+		lua::state L(mL, _L);
+
 		uint64_t base = L.tonumber(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
 			size = L.tonumber(lua_upvalueindex(2));
-		mmap_base* fn = reinterpret_cast<mmap_base*>(L.touserdata(lua_upvalueindex(3)));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(read)");
 		if(addr > size || addr + base < addr) {
 			L.pushnumber(0);
 			return 1;
 		}
 		addr += base;
-		fn->read(L, addr);
+		L.pushnumber(static_cast<T>((lsnes_memory.*rfun)(addr)));
 		return 1;
 	}
 
+	template<typename T, bool (memory_space::*wfun)(uint64_t addr, T value)>
 	int aperture_write_fun(lua_State* _L)
 	{
-		lua::state& L = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(4)));
+		lua::state& mL = *reinterpret_cast<lua::state*>(lua_touserdata(_L, lua_upvalueindex(3)));
+		lua::state L(mL, _L);
+
 		uint64_t base = L.tonumber(lua_upvalueindex(1));
 		uint64_t size = 0xFFFFFFFFFFFFFFFFULL;
 		if(L.type(lua_upvalueindex(2)) == LUA_TNUMBER)
 			size = L.tonumber(lua_upvalueindex(2));
-		mmap_base* fn = reinterpret_cast<mmap_base*>(L.touserdata(lua_upvalueindex(3)));
 		uint64_t addr = L.get_numeric_argument<uint64_t>(2, "aperture(write)");
 		if(addr > size || addr + base < addr)
 			return 0;
 		addr += base;
-		fn->write(L, addr);
+		T value = L.get_numeric_argument<T>(3, "aperture(write)");
+		(lsnes_memory.*wfun)(addr, value);
 		return 0;
 	}
 
-	void aperture_make_fun(lua::state& L, uint64_t base, uint64_t size, mmap_base& type)
+	template<typename T, T (memory_space::*rfun)(uint64_t addr), bool (memory_space::*wfun)(uint64_t addr,
+		T value)>
+	void aperture_make_fun(lua::state& L, uint64_t base, uint64_t size)
 	{
 		L.newtable();
 		L.newtable();
@@ -173,9 +175,8 @@ namespace
 			L.pushnil();
 		else
 			L.pushnumber(size);
-		L.pushlightuserdata(&type);
 		L.pushlightuserdata(&L);
-		L.pushcclosure(aperture_read_fun, 4);
+		L.pushcclosure(aperture_read_fun<T, rfun>, 3);
 		L.settable(-3);
 		L.pushstring("__newindex");
 		L.pushnumber(base);
@@ -183,9 +184,8 @@ namespace
 			L.pushnil();
 		else
 			L.pushnumber(size);
-		L.pushlightuserdata(&type);
 		L.pushlightuserdata(&L);
-		L.pushcclosure(aperture_write_fun, 4);
+		L.pushcclosure(aperture_write_fun<T, wfun>, 3);
 		L.settable(-3);
 		L.setmetatable(-2);
 	}
@@ -244,104 +244,103 @@ namespace
 		}
 	}
 
-	template<debug_type type, bool reg> class lua_registerX : public lua::function
+	template<debug_type type, bool reg>
+	void handle_registerX(lua::state& L, uint64_t addr, int lfn)
 	{
-	public:
-		lua_registerX(const std::string& name) : lua::function(lua_func_misc, name) {}
-		int invoke(lua::state& L)
-		{
-			lua::parameters P(L, fname);
-			uint64_t addr;
-			int lfn;
-			if(P.is_nil() && type != DEBUG_TRACE) {
-				addr = 0xFFFFFFFFFFFFFFFFULL;
-				P.skip();
-			} else if(type != DEBUG_TRACE)
-				addr = get_read_address(P);
-			else
-				P(addr);
-			P(P.function(lfn));
+		auto& cbl = cbs[addr];
 
-			if(reg) {
-				handle_registerX(L, addr, lfn);
-				L.pushvalue(lfn);
-				return 1;
-			} else {
-				handle_unregisterX(L, addr, lfn);
-				return 0;
-			}
-		}
-		void handle_registerX(lua::state& L, uint64_t addr, int lfn)
-		{
-			auto& cbl = cbs[addr];
+		//Put the context in userdata so it can be gc'd when Lua context is terminated.
+		lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
+		L.newtable();
+		L.pushstring("__gc");
+		L.pushcclosure(&lua_debug_callback::dtor, 0);
+		L.rawset(-3);
+		L.setmetatable(-2);
+		L.pushlightuserdata(&D->addr);
+		L.pushvalue(-2);
+		L.rawset(LUA_REGISTRYINDEX);
+		L.pop(1); //Pop the copy of object.
 
-			//Put the context in userdata so it can be gc'd when Lua context is terminated.
-			lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
-			L.newtable();
-			L.pushstring("__gc");
-			L.pushcclosure(&lua_debug_callback::dtor, 0);
-			L.rawset(-3);
-			L.setmetatable(-2);
-			L.pushlightuserdata(&D->addr);
-			L.pushvalue(-2);
+		cbl.push_back(D);
+
+		D->dead = false;
+		D->addr = addr;
+		D->type = type;
+		D->lua_fn = L.topointer(lfn);
+		lua::state* LL = &L.get_master();
+		void* D2 = &D->type;
+		if(type != DEBUG_TRACE)
+			D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
+				LL->pushlightuserdata(D2);
+				LL->rawget(LUA_REGISTRYINDEX);
+				LL->pushnumber(addr);
+				LL->pushnumber(value);
+				do_lua_error(*LL, LL->pcall(2, 0, 0));
+			}, [LL, D]() {
+				LL->pushlightuserdata(&D->addr);
+				LL->pushnil();
+				LL->rawset(LUA_REGISTRYINDEX);
+				D->_dtor(LL->handle());
+			});
+		else
+			D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
+				LL->pushlightuserdata(D2);
+				LL->rawget(LUA_REGISTRYINDEX);
+				LL->pushnumber(proc);
+				LL->pushstring(str);
+				do_lua_error(*LL, LL->pcall(2, 0, 0));
+			}, [LL, D]() {
+				LL->pushlightuserdata(&D->addr);
+				LL->pushnil();
+				LL->rawset(LUA_REGISTRYINDEX);
+				D->_dtor(LL->handle());
+			});
+		L.pushlightuserdata(D2);
+		L.pushvalue(lfn);
+		L.rawset(LUA_REGISTRYINDEX);
+	}
+
+	template<debug_type type, bool reg>
+	void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
+	{
+		if(!cbs.count(addr))
+			return;
+		auto& cbl = cbs[addr];
+		for(auto i = cbl.begin(); i != cbl.end(); i++) {
+			if((*i)->type != type) continue;
+			if(L.topointer(lfn) != (*i)->lua_fn) continue;
+			L.pushlightuserdata(&(*i)->type);
+			L.pushnil();
 			L.rawset(LUA_REGISTRYINDEX);
-			L.pop(1); //Pop the copy of object.
+			(*i)->_dtor(L.handle());
+			//Lua will GC the object.
+			break;
+		}
+	}
 
-			cbl.push_back(D);
+	template<debug_type type, bool reg>
+	int lua_registerX(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr;
+		int lfn;
+		if(P.is_nil() && type != DEBUG_TRACE) {
+			addr = 0xFFFFFFFFFFFFFFFFULL;
+			P.skip();
+		} else if(type != DEBUG_TRACE)
+			addr = get_read_address(P);
+		else
+			P(addr);
+		P(P.function(lfn));
 
-			D->dead = false;
-			D->addr = addr;
-			D->type = type;
-			D->lua_fn = L.topointer(lfn);
-			lua::state* LL = &L.get_master();
-			void* D2 = &D->type;
-			if(type != DEBUG_TRACE)
-				D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
-					LL->pushlightuserdata(D2);
-					LL->rawget(LUA_REGISTRYINDEX);
-					LL->pushnumber(addr);
-					LL->pushnumber(value);
-					do_lua_error(*LL, LL->pcall(2, 0, 0));
-				}, [LL, D]() {
-					LL->pushlightuserdata(&D->addr);
-					LL->pushnil();
-					LL->rawset(LUA_REGISTRYINDEX);
-					D->_dtor(LL->handle());
-				});
-			else
-				D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
-					LL->pushlightuserdata(D2);
-					LL->rawget(LUA_REGISTRYINDEX);
-					LL->pushnumber(proc);
-					LL->pushstring(str);
-					do_lua_error(*LL, LL->pcall(2, 0, 0));
-				}, [LL, D]() {
-					LL->pushlightuserdata(&D->addr);
-					LL->pushnil();
-					LL->rawset(LUA_REGISTRYINDEX);
-					D->_dtor(LL->handle());
-				});
-			L.pushlightuserdata(D2);
+		if(reg) {
+			handle_registerX<type, reg>(L, addr, lfn);
 			L.pushvalue(lfn);
-			L.rawset(LUA_REGISTRYINDEX);
+			return 1;
+		} else {
+			handle_unregisterX<type, reg>(L, addr, lfn);
+			return 0;
 		}
-		void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
-		{
-			if(!cbs.count(addr))
-				return;
-			auto& cbl = cbs[addr];
-			for(auto i = cbl.begin(); i != cbl.end(); i++) {
-				if((*i)->type != type) continue;
-				if(L.topointer(lfn) != (*i)->lua_fn) continue;
-				L.pushlightuserdata(&(*i)->type);
-				L.pushnil();
-				L.rawset(LUA_REGISTRYINDEX);
-				(*i)->_dtor(L.handle());
-				//Lua will GC the object.
-				break;
-			}
-		}
-	};
+	}
 
 	command::fnptr<> callbacks_show_lua(lsnes_cmd, "show-lua-callbacks", "", "",
 		[]() throw(std::bad_alloc, std::runtime_error) {
@@ -352,26 +351,21 @@ namespace
 					<< j->lua_fn << std::endl;
 		});
 
-	class lua_mmap_memory : public lua::function
+	template<typename T, T (memory_space::*rfun)(uint64_t addr), bool (memory_space::*wfun)(uint64_t addr,
+		T value)>
+	int lua_mmap_memory(lua::state& L, lua::parameters& P)
 	{
-	public:
-		lua_mmap_memory(const std::string& name, mmap_base& _h) : lua::function(lua_func_misc, name), h(_h) {}
-		int invoke(lua::state& L)
-		{
-			lua::parameters P(L, fname);
-			if(P.is_novalue()) {
-				aperture_make_fun(L.get_master(), 0, 0xFFFFFFFFFFFFFFFFULL, h);
-				return 1;
-			}
-			auto addr = get_read_address(P);
-			auto size = P.arg<uint64_t>();
-			if(!size)
-				throw std::runtime_error("Aperture with zero size is not valid");
-			aperture_make_fun(L.get_master(), addr, size - 1, h);
+		if(P.is_novalue()) {
+			aperture_make_fun<T, rfun, wfun>(L.get_master(), 0, 0xFFFFFFFFFFFFFFFFULL);
 			return 1;
 		}
-		mmap_base& h;
-	};
+		auto addr = get_read_address(P);
+		auto size = P.arg<uint64_t>();
+		if(!size)
+			throw std::runtime_error("Aperture with zero size is not valid");
+		aperture_make_fun<T, rfun, wfun>(L.get_master(), addr, size - 1);
+		return 1;
+	}
 
 	lua::fnptr2 vmacount(lua_func_misc, "memory.vma_count", [](lua::state& L, lua::parameters& P) -> int {
 		L.pushnumber(lsnes_memory.get_regions().size());
@@ -577,9 +571,9 @@ namespace
 	lua::fnptr2 rsb(lua_func_misc, "memory.readsbyte", lua_read_memory<int8_t, &memory_space::read<int8_t>>);
 	lua::fnptr2 ruw(lua_func_misc, "memory.readword", lua_read_memory<uint16_t, &memory_space::read<uint16_t>>);
 	lua::fnptr2 rsw(lua_func_misc, "memory.readsword", lua_read_memory<int16_t, &memory_space::read<int16_t>>);
-	lua::fnptr2 ruh(lua_func_misc, "memory.readhword", lua_read_memory<ss_uint24_t, 
+	lua::fnptr2 ruh(lua_func_misc, "memory.readhword", lua_read_memory<ss_uint24_t,
 		&memory_space::read<ss_uint24_t>>);
-	lua::fnptr2 rsh(lua_func_misc, "memory.readshword", lua_read_memory<ss_int24_t, 
+	lua::fnptr2 rsh(lua_func_misc, "memory.readshword", lua_read_memory<ss_int24_t,
 		&memory_space::read<ss_int24_t>>);
 	lua::fnptr2 rud(lua_func_misc, "memory.readdword", lua_read_memory<uint32_t, &memory_space::read<uint32_t>>);
 	lua::fnptr2 rsd(lua_func_misc, "memory.readsdword", lua_read_memory<int32_t, &memory_space::read<int32_t>>);
@@ -589,44 +583,46 @@ namespace
 	lua::fnptr2 rf8(lua_func_misc, "memory.readdouble", lua_read_memory<double, &memory_space::read<double>>);
 	lua::fnptr2 wb(lua_func_misc, "memory.writebyte", lua_write_memory<uint8_t, &memory_space::write<uint8_t>>);
 	lua::fnptr2 ww(lua_func_misc, "memory.writeword", lua_write_memory<uint16_t, &memory_space::write<uint16_t>>);
-	lua::fnptr2 wh(lua_func_misc, "memory.writehword", lua_write_memory<ss_uint24_t, 
+	lua::fnptr2 wh(lua_func_misc, "memory.writehword", lua_write_memory<ss_uint24_t,
 		&memory_space::write<ss_uint24_t>>);
-	lua::fnptr2 wd(lua_func_misc, "memory.writedword", lua_write_memory<uint32_t, &memory_space::write<uint32_t>>);
-	lua::fnptr2 wq(lua_func_misc, "memory.writeqword", lua_write_memory<uint64_t, &memory_space::write<uint64_t>>);
+	lua::fnptr2 wd(lua_func_misc, "memory.writedword", lua_write_memory<uint32_t,
+		&memory_space::write<uint32_t>>);
+	lua::fnptr2 wq(lua_func_misc, "memory.writeqword", lua_write_memory<uint64_t,
+		&memory_space::write<uint64_t>>);
 	lua::fnptr2 wf4(lua_func_misc, "memory.writefloat", lua_write_memory<float, &memory_space::write<float>>);
 	lua::fnptr2 wf8(lua_func_misc, "memory.writedouble", lua_write_memory<double, &memory_space::write<double>>);
-	lua_mmap_memory_helper<uint8_t, &memory_space::read<uint8_t>, &memory_space::write<uint8_t>> mhub;
-	lua_mmap_memory_helper<int8_t, &memory_space::read<int8_t>, &memory_space::write<int8_t>> mhsb;
-	lua_mmap_memory_helper<uint16_t, &memory_space::read<uint16_t>, &memory_space::write<uint16_t>> mhuw;
-	lua_mmap_memory_helper<int16_t, &memory_space::read<int16_t>, &memory_space::write<int16_t>> mhsw;
-	lua_mmap_memory_helper<ss_uint24_t, &memory_space::read<ss_uint24_t>, &memory_space::write<ss_uint24_t>> mhuh;
-	lua_mmap_memory_helper<ss_int24_t, &memory_space::read<ss_int24_t>, &memory_space::write<ss_int24_t>> mhsh;
-	lua_mmap_memory_helper<uint32_t, &memory_space::read<uint32_t>, &memory_space::write<uint32_t>> mhud;
-	lua_mmap_memory_helper<int32_t, &memory_space::read<int32_t>, &memory_space::write<int32_t>> mhsd;
-	lua_mmap_memory_helper<uint64_t, &memory_space::read<uint64_t>, &memory_space::write<uint64_t>> mhuq;
-	lua_mmap_memory_helper<int64_t, &memory_space::read<int64_t>, &memory_space::write<int64_t>> mhsq;
-	lua_mmap_memory_helper<float, &memory_space::read<float>, &memory_space::write<float>> mhf4;
-	lua_mmap_memory_helper<double, &memory_space::read<double>, &memory_space::write<double>> mhf8;
-	lua_mmap_memory mub("memory.mapbyte", mhub);
-	lua_mmap_memory msb("memory.mapsbyte", mhsb);
-	lua_mmap_memory muw("memory.mapword", mhuw);
-	lua_mmap_memory msw("memory.mapsword", mhsw);
-	lua_mmap_memory muh("memory.maphword", mhuh);
-	lua_mmap_memory msh("memory.mapshword", mhsh);
-	lua_mmap_memory mud("memory.mapdword", mhud);
-	lua_mmap_memory msd("memory.mapsdword", mhsd);
-	lua_mmap_memory muq("memory.mapqword", mhuq);
-	lua_mmap_memory msq("memory.mapsqword", mhsq);
-	lua_mmap_memory mf4("memory.mapfloat", mhf4);
-	lua_mmap_memory mf8("memory.mapdouble", mhf8);
-	lua_registerX<DEBUG_READ, true> mrr("memory.registerread");
-	lua_registerX<DEBUG_READ, false> murr("memory.unregisterread");
-	lua_registerX<DEBUG_WRITE, true> mrw("memory.registerwrite");
-	lua_registerX<DEBUG_WRITE, false> murw("memory.unregisterwrite");
-	lua_registerX<DEBUG_EXEC, true> mrx("memory.registerexec");
-	lua_registerX<DEBUG_EXEC, false> murx("memory.unregisterexec");
-	lua_registerX<DEBUG_TRACE, true> mrt("memory.registertrace");
-	lua_registerX<DEBUG_TRACE, false> murt("memory.unregistertrace");
+	lua::fnptr2 mub(lua_func_misc, "memory.mapbyte", lua_mmap_memory<uint8_t, &memory_space::read<uint8_t>,
+		&memory_space::write<uint8_t>>);
+	lua::fnptr2 msb(lua_func_misc, "memory.mapsbyte", lua_mmap_memory<int8_t, &memory_space::read<int8_t>,
+		&memory_space::write<int8_t>>);
+	lua::fnptr2 muw(lua_func_misc, "memory.mapword", lua_mmap_memory<uint16_t, &memory_space::read<uint16_t>,
+		&memory_space::write<uint16_t>>);
+	lua::fnptr2 msw(lua_func_misc, "memory.mapsword", lua_mmap_memory<int16_t, &memory_space::read<int16_t>,
+		&memory_space::write<int16_t>>);
+	lua::fnptr2 muh(lua_func_misc, "memory.maphword", lua_mmap_memory<ss_uint24_t,
+		&memory_space::read<ss_uint24_t>, &memory_space::write<ss_uint24_t>>);
+	lua::fnptr2 msh(lua_func_misc, "memory.mapshword", lua_mmap_memory<ss_int24_t,
+		&memory_space::read<ss_int24_t>, &memory_space::write<ss_int24_t>>);
+	lua::fnptr2 mud(lua_func_misc, "memory.mapdword", lua_mmap_memory<uint32_t, &memory_space::read<uint32_t>,
+		&memory_space::write<uint32_t>>);
+	lua::fnptr2 msd(lua_func_misc, "memory.mapsdword", lua_mmap_memory<int32_t, &memory_space::read<int32_t>,
+		&memory_space::write<int32_t>>);
+	lua::fnptr2 muq(lua_func_misc, "memory.mapqword", lua_mmap_memory<uint64_t, &memory_space::read<uint64_t>,
+		&memory_space::write<uint64_t>>);
+	lua::fnptr2 msq(lua_func_misc, "memory.mapsqword", lua_mmap_memory<int64_t, &memory_space::read<int64_t>,
+		&memory_space::write<int64_t>>);
+	lua::fnptr2 mf4(lua_func_misc, "memory.mapfloat", lua_mmap_memory<float, &memory_space::read<float>,
+		&memory_space::write<float>>);
+	lua::fnptr2 mf8(lua_func_misc, "memory.mapdouble", lua_mmap_memory<double, &memory_space::read<double>,
+		&memory_space::write<double>>);
+	lua::fnptr2 mrr(lua_func_misc, "memory.registerread", lua_registerX<DEBUG_READ, true>);
+	lua::fnptr2 murr(lua_func_misc, "memory.unregisterread", lua_registerX<DEBUG_READ, false>);
+	lua::fnptr2 mrw(lua_func_misc, "memory.registerwrite", lua_registerX<DEBUG_WRITE, true>);
+	lua::fnptr2 murw(lua_func_misc, "memory.unregisterwrite", lua_registerX<DEBUG_WRITE, false>);
+	lua::fnptr2 mrx(lua_func_misc, "memory.registerexec", lua_registerX<DEBUG_EXEC, true>);
+	lua::fnptr2 murx(lua_func_misc, "memory.unregisterexec", lua_registerX<DEBUG_EXEC, false>);
+	lua::fnptr2 mrt(lua_func_misc, "memory.registertrace", lua_registerX<DEBUG_TRACE, true>);
+	lua::fnptr2 murt(lua_func_misc, "memory.unregistertrace", lua_registerX<DEBUG_TRACE, false>);
 
 	lua::_class<lua_mmap_struct> class_mmap_struct(lua_class_memory, "MMAP_STRUCT", {
 		{"new", &lua_mmap_struct::create},
@@ -649,29 +645,41 @@ int lua_mmap_struct::map(lua::state& L, lua::parameters& P)
 	addr += vmabase;
 
 	if(type == "byte")
-		mappings[name] = std::make_pair(&mhub, addr);
+		mappings[name] = mapping(addr, do_rw<uint8_t, &memory_space::read<uint8_t>,
+			&memory_space::write<uint8_t>>);
 	else if(type == "sbyte")
-		mappings[name] = std::make_pair(&mhsb, addr);
+		mappings[name] = mapping(addr, do_rw<int8_t, &memory_space::read<int8_t>,
+			&memory_space::write<int8_t>>);
 	else if(type == "word")
-		mappings[name] = std::make_pair(&mhuw, addr);
+		mappings[name] = mapping(addr, do_rw<uint16_t, &memory_space::read<uint16_t>,
+			&memory_space::write<uint16_t>>);
 	else if(type == "sword")
-		mappings[name] = std::make_pair(&mhsw, addr);
+		mappings[name] = mapping(addr, do_rw<int16_t, &memory_space::read<int16_t>,
+			&memory_space::write<int16_t>>);
 	else if(type == "hword")
-		mappings[name] = std::make_pair(&mhuh, addr);
+		mappings[name] = mapping(addr, do_rw<ss_uint24_t, &memory_space::read<ss_uint24_t>,
+			&memory_space::write<ss_uint24_t>>);
 	else if(type == "shword")
-		mappings[name] = std::make_pair(&mhsh, addr);
+		mappings[name] = mapping(addr, do_rw<ss_int24_t, &memory_space::read<ss_int24_t>,
+			&memory_space::write<ss_int24_t>>);
 	else if(type == "dword")
-		mappings[name] = std::make_pair(&mhud, addr);
+		mappings[name] = mapping(addr, do_rw<uint32_t, &memory_space::read<uint32_t>,
+			&memory_space::write<uint32_t>>);
 	else if(type == "sdword")
-		mappings[name] = std::make_pair(&mhsd, addr);
+		mappings[name] = mapping(addr, do_rw<int32_t, &memory_space::read<int32_t>,
+			&memory_space::write<int32_t>>);
 	else if(type == "qword")
-		mappings[name] = std::make_pair(&mhuq, addr);
+		mappings[name] = mapping(addr, do_rw<uint64_t, &memory_space::read<uint64_t>,
+			&memory_space::write<uint64_t>>);
 	else if(type == "sqword")
-		mappings[name] = std::make_pair(&mhsq, addr);
+		mappings[name] = mapping(addr, do_rw<int64_t, &memory_space::read<int64_t>,
+			&memory_space::write<int64_t>>);
 	else if(type == "float")
-		mappings[name] = std::make_pair(&mhf4, addr);
+		mappings[name] = mapping(addr, do_rw<float, &memory_space::read<float>,
+			&memory_space::write<float>>);
 	else if(type == "double")
-		mappings[name] = std::make_pair(&mhf8, addr);
+		mappings[name] = mapping(addr, do_rw<double, &memory_space::read<double>,
+			&memory_space::write<double>>);
 	else
 		(stringfmt() << P.get_fname() << ": Bad type").throwex();
 	return 0;
