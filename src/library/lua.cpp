@@ -24,12 +24,15 @@ namespace
 		class_base* obj;
 		static int index(lua_State* L);
 		static int newindex(lua_State* L);
+		static int pairs(lua_State* L);
+		static int pairs_next(lua_State* L);
 		static int smethods(lua_State* L);
 		static int cmethods(lua_State* L);
 		static int trampoline(lua_State* L);
+		static void check(lua_State* L);
 	};
 
-	int class_info::index(lua_State* L)
+	void class_info::check(lua_State* L)
 	{
 		lua_pushlightuserdata(L, &classtable_meta_key);
 		lua_rawget(L, LUA_REGISTRYINDEX);
@@ -39,6 +42,12 @@ namespace
 			lua_error(L);
 		}
 		lua_pop(L, 2);
+	}
+
+	int class_info::index(lua_State* L)
+	{
+		check(L);
+
 		class_base* ptr = ((class_info*)lua_touserdata(L, 1))->obj;
 		const char* method = lua_tostring(L, 2);
 		if(!method) {
@@ -77,6 +86,51 @@ namespace
 	{
 		lua_pushstring(L, "Writing into class table not allowed");
 		lua_error(L);
+	}
+
+	int class_info::pairs(lua_State* _xL)
+	{
+		check(_xL);
+
+		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
+		state L(*_L, _xL);
+		class_base* obj = ((class_info*)L.touserdata(1))->obj;
+		
+		L.pushvalue(lua_upvalueindex(1));
+		L.pushcclosure(class_info::pairs_next, 1);	//Next
+		L.pushvalue(1);					//State.
+		L.pushnil();					//Index.
+		return 3;
+	}
+
+	int class_info::pairs_next(lua_State* _xL)
+	{
+		check(_xL);
+
+		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
+		state L(*_L, _xL);
+		class_base* obj = ((class_info*)L.touserdata(1))->obj;
+		auto m = obj->static_methods();
+		std::string key = (L.type(2) == LUA_TSTRING) ? L.tostring(2) : "";
+		std::string lowbound = "\xFF";	//Sorts greater than anything that is valid UTF-8.
+		void* best_fn = NULL;
+		for(auto i : m)
+			if(lowbound > i.name && i.name > key) {
+				lowbound = i.name;
+				best_fn = (void*)i.fn;
+			}
+		if(best_fn) {
+			L.pushlstring(lowbound);
+			std::string name = obj->get_name() + "::" + lowbound;
+			L.pushvalue(lua_upvalueindex(1));  //State.
+			L.pushlightuserdata(best_fn);
+			L.pushlstring(name);
+			L.pushcclosure(class_info::trampoline, 3);
+			return 2;
+		} else {
+			L.pushnil();
+			return 1;
+		}
 	}
 
 	int class_info::smethods(lua_State* L)
@@ -683,6 +737,10 @@ again2:
 		L.rawset(-3);
 		L.pushstring("__newindex");
 		L.pushcfunction(class_info::newindex);
+		L.rawset(-3);
+		L.pushstring("__pairs");
+		L.pushlightuserdata(&L);
+		L.pushcclosure(class_info::pairs, 1);
 		L.rawset(-3);
 		L.rawset(LUA_REGISTRYINDEX);
 		goto again2;
