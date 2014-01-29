@@ -28,7 +28,6 @@ void* synchronous_paint_ctx;
 lua::state lsnes_lua_state;
 lua::function_group lua_func_bit;
 lua::function_group lua_func_misc;
-lua::function_group lua_func_callback;
 lua::function_group lua_func_load;
 lua::function_group lua_func_zip;
 
@@ -457,7 +456,6 @@ void init_lua() throw()
 		lsnes_lua_state.reset();
 		lsnes_lua_state.add_function_group(lua_func_bit);
 		lsnes_lua_state.add_function_group(lua_func_load);
-		lsnes_lua_state.add_function_group(lua_func_callback);
 		lsnes_lua_state.add_function_group(lua_func_misc);
 		lsnes_lua_state.add_function_group(lua_func_zip);
 		lsnes_lua_state.add_class_group(lua_class_callback);

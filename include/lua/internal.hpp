@@ -14,7 +14,6 @@
 extern lua::state lsnes_lua_state;
 extern lua::function_group lua_func_bit;
 extern lua::function_group lua_func_misc;
-extern lua::function_group lua_func_callback;
 extern lua::function_group lua_func_load;
 extern lua::function_group lua_func_zip;
 
