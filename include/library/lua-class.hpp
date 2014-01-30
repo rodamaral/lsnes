@@ -162,7 +162,7 @@ public:
 /**
  * Dtor.
  */
-	virtual ~class_base();
+	virtual ~class_base() throw();
 /**
  * Lookup by name in given Lua state.
  *
@@ -329,7 +329,7 @@ public:
 /**
  * Dtor
  */
-	~_class()
+	~_class() throw()
 	{
 		auto& type = typeid(T);
 		class_types().erase(type);
