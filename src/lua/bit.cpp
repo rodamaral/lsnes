@@ -224,6 +224,62 @@ namespace
 		return 1;
 	}
 
+	int bit_compose(lua::state& L, lua::parameters& P)
+	{
+		uint64_t res = 0;
+		uint8_t shift = 0;
+		while(P.more()) {
+			uint64_t t;
+			P(t);
+			res |= (t << shift);
+			shift += 8;
+		}
+		L.pushnumber(res);
+		return 1;
+	}
+
+	template<typename T, bool littleendian>
+	int bit_ldbinarynumber(lua::state& L, lua::parameters& P)
+	{
+		T val;
+		char buffer[sizeof(T)];
+		size_t pos;
+		const char* str;
+		size_t len;
+
+		str = L.tolstring(P.skip(), len);
+		P(pos);
+
+		if(pos + sizeof(T) > len)
+			throw std::runtime_error(P.get_fname() + ": Offset out of range");
+
+		L.pushnumber(serialization::read_endian<T>(str + pos, littleendian ? -1 : 1));
+		return 1;
+	}
+
+	template<typename T, bool littleendian>
+	int bit_stbinarynumber(lua::state& L, lua::parameters& P)
+	{
+		T val;
+		char buffer[sizeof(T)];
+
+		P(val);
+
+		serialization::write_endian<T>(buffer, val, littleendian ? -1 : 1);
+		L.pushlstring(buffer, sizeof(T));
+		return 1;
+	}
+
+	int bit_quotent(lua::state& L, lua::parameters& P)
+	{
+		int64_t a, b;
+
+		P(a, b);
+
+		L.pushnumber(a / b);
+		return 1;
+	}
+
 	class lua_bit_dummy {};
 	lua::_class<lua_bit_dummy> bitops(lua_class_pure, "*bit", {
 		{"flagdecode", flagdecode_core<false>},
@@ -256,5 +312,55 @@ namespace
 		{"popcount", bit_popcount},
 		{"clshift", bit_cshift<false>},
 		{"crshift", bit_cshift<true>},
+		{"compose", bit_compose},
+		{"quotent", bit_quotent},
+		{"binary_ld_u8be", bit_ldbinarynumber<uint8_t, false>},
+		{"binary_ld_s8be", bit_ldbinarynumber<int8_t, false>},
+		{"binary_ld_u16be", bit_ldbinarynumber<uint16_t, false>},
+		{"binary_ld_s16be", bit_ldbinarynumber<int16_t, false>},
+		{"binary_ld_u24be", bit_ldbinarynumber<ss_uint24_t, false>},
+		{"binary_ld_s24be", bit_ldbinarynumber<ss_int24_t, false>},
+		{"binary_ld_u32be", bit_ldbinarynumber<uint32_t, false>},
+		{"binary_ld_s32be", bit_ldbinarynumber<int32_t, false>},
+		{"binary_ld_u64be", bit_ldbinarynumber<uint64_t, false>},
+		{"binary_ld_s64be", bit_ldbinarynumber<int64_t, false>},
+		{"binary_ld_floatbe", bit_ldbinarynumber<float, false>},
+		{"binary_ld_doublebe", bit_ldbinarynumber<double, false>},
+		{"binary_ld_u8le", bit_ldbinarynumber<uint8_t, true>},
+		{"binary_ld_s8le", bit_ldbinarynumber<int8_t, true>},
+		{"binary_ld_u16le", bit_ldbinarynumber<uint16_t, true>},
+		{"binary_ld_s16le", bit_ldbinarynumber<int16_t, true>},
+		{"binary_ld_u24le", bit_ldbinarynumber<ss_uint24_t, true>},
+		{"binary_ld_s24le", bit_ldbinarynumber<ss_int24_t, true>},
+		{"binary_ld_u32le", bit_ldbinarynumber<uint32_t, true>},
+		{"binary_ld_s32le", bit_ldbinarynumber<int32_t, true>},
+		{"binary_ld_u64le", bit_ldbinarynumber<uint64_t, true>},
+		{"binary_ld_s64le", bit_ldbinarynumber<int64_t, true>},
+		{"binary_ld_floatle", bit_ldbinarynumber<float, true>},
+		{"binary_ld_doublele", bit_ldbinarynumber<double, true>},
+		{"binary_st_u8be", bit_stbinarynumber<uint8_t, false>},
+		{"binary_st_s8be", bit_stbinarynumber<int8_t, false>},
+		{"binary_st_u16be", bit_stbinarynumber<uint16_t, false>},
+		{"binary_st_s16be", bit_stbinarynumber<int16_t, false>},
+		{"binary_st_u24be", bit_stbinarynumber<ss_uint24_t, false>},
+		{"binary_st_s24be", bit_stbinarynumber<ss_int24_t, false>},
+		{"binary_st_u32be", bit_stbinarynumber<uint32_t, false>},
+		{"binary_st_s32be", bit_stbinarynumber<int32_t, false>},
+		{"binary_st_u64be", bit_stbinarynumber<uint64_t, false>},
+		{"binary_st_s64be", bit_stbinarynumber<int64_t, false>},
+		{"binary_st_floatbe", bit_stbinarynumber<float, false>},
+		{"binary_st_doublebe", bit_stbinarynumber<double, false>},
+		{"binary_st_u8le", bit_stbinarynumber<uint8_t, true>},
+		{"binary_st_s8le", bit_stbinarynumber<int8_t, true>},
+		{"binary_st_u16le", bit_stbinarynumber<uint16_t, true>},
+		{"binary_st_s16le", bit_stbinarynumber<int16_t, true>},
+		{"binary_st_u24le", bit_stbinarynumber<ss_uint24_t, true>},
+		{"binary_st_s24le", bit_stbinarynumber<ss_int24_t, true>},
+		{"binary_st_u32le", bit_stbinarynumber<uint32_t, true>},
+		{"binary_st_s32le", bit_stbinarynumber<int32_t, true>},
+		{"binary_st_u64le", bit_stbinarynumber<uint64_t, true>},
+		{"binary_st_s64le", bit_stbinarynumber<int64_t, true>},
+		{"binary_st_floatle", bit_stbinarynumber<float, true>},
+		{"binary_st_doublele", bit_stbinarynumber<double, true>},
 	});
 }

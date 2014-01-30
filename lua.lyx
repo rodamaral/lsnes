@@ -4115,6 +4115,71 @@ Syntax: number bit.swapsqword(number n)
 Swap endianess of (un)signed integer <n>.
 \end_layout
 
+\begin_layout Subsection
+bit.compose: Compose multi-byte number
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.compose(number n...)
+\end_layout
+
+\begin_layout Standard
+Return 
+\begin_inset Formula $n_{1}+256n_{2}+256^{2}n_{3}+\ldots$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+bit.binary_ld_{{u,s}{8,16,24,32,64},float,double}{l,b}e: Load binary integer
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.binary_ld_<type>le(string str, number pos);
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.binary_ld_<type>be(string str, number pos);
+\end_layout
+
+\begin_layout Standard
+Load little (*le) or big (*be) endian binary number from position <pos>
+ of string <str>.
+ Type may be one of: u8, u16, u24, u32, u64, s8, s16, s24, s32, s64, float,
+ double.
+\end_layout
+
+\begin_layout Subsection
+bit.binary_st_{{u,s}{8,16,24,32,64},float,double}{l,b}e: Store binary integer
+\end_layout
+
+\begin_layout Itemize
+Syntax: string bit.binary_st_<type>le(number x);
+\end_layout
+
+\begin_layout Itemize
+Syntax: string bit.binary_st_<type>be(number x);
+\end_layout
+
+\begin_layout Standard
+Store specified number <x> as binary in string and return the result.
+ Type may be one of: u8, u16, u24, u32, u64, s8, s16, s24, s32, s64, float,
+ double.
+\end_layout
+
+\begin_layout Subsection
+bit.quotent: Integer quotent
+\end_layout
+
+\begin_layout Itemize
+Syntax: number bit.quotent(number a, number b)
+\end_layout
+
+\begin_layout Standard
+Calculate quotent a/b.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset
