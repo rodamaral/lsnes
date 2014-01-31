@@ -8,25 +8,25 @@
 #include "core/project.hpp"
 
 #define MAXMESSAGES 20
+#define PANELWIDTH 48
 #define COMMAND_HISTORY_SIZE 500
 
 wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
-	: wxPanel(_parent)
+	: text_framebuffer_panel(_parent, PANELWIDTH, lines, wxID_ANY, NULL)
 {
 	parent = _parent;
-	wxMemoryDC d;
-	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	line_separation = s.y;
+	auto pcell = get_cell();
+	line_separation = pcell.second;
 	line_clicked = 0;
 	mouse_held = false;
 	ilines = lines;
-	this->Connect(wxEVT_PAINT, wxPaintEventHandler(wxwin_messages::panel::on_paint), NULL, this);
 	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);
 	this->Connect(wxEVT_RIGHT_DOWN, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
-	SetMinSize(wxSize(6 * s.x, 5 * s.y));
+	
+	SetMinSize(wxSize(PANELWIDTH * pcell.first, lines * pcell.second));
 }
 
 void wxwin_messages::panel::on_mouse(wxMouseEvent& e)
@@ -119,9 +119,7 @@ void wxwin_messages::panel::on_menu(wxCommandEvent& e)
 
 wxSize wxwin_messages::panel::DoGetBestSize() const
 {
-	wxMemoryDC d;
-	wxSize s = d.GetTextExtent(wxT("MMMMMM"));
-	return wxSize(12 * s.x, ilines * s.y);
+	return wxSize(80 * 8, ilines * 16);
 }
 
 wxwin_messages::wxwin_messages()
@@ -183,10 +181,8 @@ wxwin_messages::~wxwin_messages()
 {
 }
 
-void wxwin_messages::panel::on_paint(wxPaintEvent& e)
+void wxwin_messages::panel::prepare_paint()
 {
-	wxPaintDC dc(this);
-	dc.Clear();
 	int y = 0;
 	uint64_t lines, first;
 	uint64_t xm = min(line_clicked, line_current);
@@ -200,23 +196,29 @@ void wxwin_messages::panel::on_paint(wxPaintEvent& e)
 		for(size_t i = 0; i < lines; i++)
 			msgs[i] = platform::msgbuf.get_message(first + i);
 	}
+	auto size = get_characters();
 	for(size_t i = 0; i < lines; i++) {
 		uint64_t global_line = first + i;
-		wxSize s = dc.GetTextExtent(towxstring(msgs[i]));
 		bool sel = (global_line >= xm && global_line <= xM) && mouse_held;
-		dc.SetTextForeground(*(sel ? wxBLUE : wxBLACK));
-		dc.DrawText(towxstring(msgs[i]), 0, y);
-		y += s.y;
+		std::string& msg = msgs[i];
+		uint32_t fg = sel ? 0x0000FF : 0x000000;
+		uint32_t bg = sel ? 0x000000 : 0xFFFFFF;
+		write(msg, size.first, 0, i, fg, bg);
+		y += 1;
 	}
 }
 
 void wxwin_messages::panel::on_resize(wxSizeEvent& e)
 {
 	wxSize newsize = e.GetSize();
-	size_t lines = newsize.y / line_separation;
+	auto tcell = get_cell();
+	size_t lines = newsize.y / tcell.second;
+	size_t linelen = newsize.x / tcell.first;
 	if(lines < 1) lines = 1;
+	if(linelen < 1) linelen = 1;
 	platform::msgbuf.set_max_window_size(lines);
-	Refresh();
+	set_size(linelen, lines);
+	request_paint();
 	e.Skip();
 }
 
@@ -289,7 +291,7 @@ void wxwin_messages::on_execute(wxCommandEvent& e)
 
 void wxwin_messages::notify_update() throw()
 {
-	mpanel->Refresh();
+	mpanel->request_paint();
 }
 
 bool wxwin_messages::ShouldPreventAppExit() const

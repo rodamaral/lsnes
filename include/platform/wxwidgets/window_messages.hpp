@@ -3,20 +3,21 @@
 
 #include <wx/string.h>
 #include <wx/wx.h>
-
+#include "platform/wxwidgets/textrender.hpp"
 
 class wxwin_messages : public wxFrame
 {
 public:
-	class panel : public wxPanel
+	class panel : public text_framebuffer_panel
 	{
 	public:
 		panel(wxwin_messages* _parent, unsigned lines);
-		void on_paint(wxPaintEvent& e);
 		void on_resize(wxSizeEvent& e);
 		void on_mouse(wxMouseEvent& e);
 		void on_menu(wxCommandEvent& e);
 		virtual wxSize DoGetBestSize() const;
+	protected:
+		void prepare_paint();
 	private:
 		wxwin_messages* parent;
 		size_t ilines;

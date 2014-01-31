@@ -140,31 +140,7 @@ size_t text_framebuffer::text_width(const std::string& text)
 
 size_t text_framebuffer::write(const std::string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
 {
-	size_t pused = 0;
-	if(y >= height)
-		return 0;
-	utf8::to32i(str.begin(), str.end(), lambda_output_iterator<int32_t>([this, &pused, w, x, y, fg,
-		bg](const int32_t& u) {
-		const framebuffer::font::glyph& g = main_font.get_glyph(u);
-		if(x + pused < width) {
-			element& e = buffer[y * width + x + pused];
-			e.ch = u;
-			e.fg = fg;
-			e.bg = bg;
-		}
-		pused += (g.wide ? 2 : 1);
-	}));
-	while(pused < w) {
-		//Pad with spaces.
-		if(x + pused < width) {
-			element& e = buffer[y * width + x + pused];
-			e.ch = 32;
-			e.fg = fg;
-			e.bg = bg;
-		}
-		pused++;
-	}
-	return x + pused;
+	return write(utf8::to32(str), w, x, y, fg, bg);
 }
 
 size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, size_t y, uint32_t fg, uint32_t bg)
@@ -173,6 +149,19 @@ size_t text_framebuffer::write(const std::u32string& str, size_t w, size_t x, si
 		return 0;
 	size_t pused = 0;
 	for(auto u : str) {
+		if(u == 9) {
+			//TAB.
+			do {
+				if(x + pused < width) {
+					element& e = buffer[y * width + x + pused];
+					e.ch = 32;	//Space.
+					e.fg = fg;
+					e.bg = bg;
+				}
+				pused++;
+			} while(pused % 8);
+			continue;
+		}
 		const framebuffer::font::glyph& g = main_font.get_glyph(u);
 		if(x + pused < width) {
 			element& e = buffer[y * width + x + pused];
