@@ -427,7 +427,7 @@ controller_frame::controller_frame(const port_type_set& p) throw(std::runtime_er
 	host = NULL;
 }
 
-controller_frame::controller_frame(unsigned char* mem, const port_type_set& p, controller_frame_vector* _host) 
+controller_frame::controller_frame(unsigned char* mem, const port_type_set& p, controller_frame_vector* _host)
 	throw(std::runtime_error)
 {
 	if(!mem)

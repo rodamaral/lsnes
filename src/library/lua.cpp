@@ -95,7 +95,7 @@ namespace
 		lua::state* _L = (lua::state*)lua_touserdata(_xL, lua_upvalueindex(1));
 		state L(*_L, _xL);
 		class_base* obj = ((class_info*)L.touserdata(1))->obj;
-		
+
 		L.pushvalue(lua_upvalueindex(1));
 		L.pushcclosure(class_info::pairs_next, 1);	//Next
 		L.pushvalue(1);					//State.

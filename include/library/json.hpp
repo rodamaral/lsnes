@@ -157,7 +157,7 @@ struct error : public std::runtime_error
 {
 	error(errorcode _code) : runtime_error(error_desc[_code]), code(_code), state(PARSE_NOT_PARSING),
 		position(std::string::npos) {}
-	error(errorcode _code, parsestate _state, size_t pos) : runtime_error(error_desc[_code]), code(_code), 
+	error(errorcode _code, parsestate _state, size_t pos) : runtime_error(error_desc[_code]), code(_code),
 		state(_state), position(pos) {}
 	errorcode get_code() { return code; }
 	parsestate get_state() { return state; }

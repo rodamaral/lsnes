@@ -21,7 +21,7 @@ extern const uint64_t debug_all_addr;
 
 debug_handle debug_add_callback(uint64_t addr, debug_type type,
 	std::function<void(uint64_t addr, uint64_t value)> fn, std::function<void()> dtor);
-debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str)> fn, 
+debug_handle debug_add_trace_callback(uint64_t proc, std::function<void(uint64_t proc, const char* str)> fn,
 	std::function<void()> dtor);
 void debug_remove_callback(uint64_t addr, debug_type type, debug_handle handle);
 void debug_fire_callback_read(uint64_t addr, uint64_t value);

@@ -54,7 +54,7 @@ int main(int argc, char** argv)
 				for(unsigned i = 0; i < 32; i++)
 					sprintf(out + 2 * i, "%02x", key[i]);
 				std::cout << out << std::endl;
-				return 0;	
+				return 0;
 			} else if(r = regex("--url=(.+)", arg)) {
 				upload.base_url = r[1];
 			} else if(r = regex("--filename=(.+)", arg)) {

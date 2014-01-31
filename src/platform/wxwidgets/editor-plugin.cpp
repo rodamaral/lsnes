@@ -192,7 +192,7 @@ void wxeditor_plugins::on_selection_change(wxCommandEvent& e)
 void wxeditor_plugins::on_add(wxCommandEvent& e)
 {
 	try {
-		std::string file = choose_file_load(this, "Choose plugin to add", ".", 
+		std::string file = choose_file_load(this, "Choose plugin to add", ".",
 			single_type(loadlib::library::extension(), loadlib::library::name()));
 		std::string name = strip_extension(get_name(file), extension);
 		std::string nname = pathpfx + "/" + name + "." + extension;

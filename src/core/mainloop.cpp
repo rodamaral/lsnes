@@ -525,7 +525,7 @@ public:
 
 namespace
 {
-	command::fnptr<const std::string&> test4(lsnes_cmd, "test4", "test", "test", 
+	command::fnptr<const std::string&> test4(lsnes_cmd, "test4", "test", "test",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 			std::list<std::string> _args;
 			std::string args2 = args;

@@ -171,4 +171,3 @@ void file_download::_do_async()
 	finished = true;
 	cond.notify_all();
 }
-

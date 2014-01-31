@@ -1641,7 +1641,6 @@ pointer pointer::field(const std::u32string& fld) const throw(std::bad_alloc)
 		return pointer(_pointer + U"/" + pointer_escape_field(fld));
 	else
 		return pointer(pointer_escape_field(fld));
-		
 }
 
 pointer& pointer::field_inplace(const std::u32string& fld) throw(std::bad_alloc)

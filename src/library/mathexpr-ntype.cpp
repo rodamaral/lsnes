@@ -694,7 +694,7 @@ namespace
 				type = T_NUMERIC;
 			}
 		}
-		expr_val(mathexpr_typeinfo_wrapper<expr_val>::unsigned_tag t, uint64_t v) 
+		expr_val(mathexpr_typeinfo_wrapper<expr_val>::unsigned_tag t, uint64_t v)
 			: type(T_NUMERIC), v_numeric(expr_val_numeric::unsigned_tag(), v)
 		{
 		}

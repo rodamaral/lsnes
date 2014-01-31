@@ -123,7 +123,7 @@ namespace
 		const std::string& type = read_str(root, ptr.field("type"));
 		if(type == "null")
 			return pcb_null(root, ptr);
-		else if(type == "button") 
+		else if(type == "button")
 			return pcb_button(root, ptr);
 		else if(type == "axis" || type == "raxis" || type == "taxis" || type == "lightgun")
 			return pcb_axis(root, ptr, type);
@@ -322,7 +322,6 @@ namespace
 				ret.push_back(ins);
 			}
 			for(unsigned j = 0; j < cs.controllers[i].buttons.size(); j++) {
-				
 				switch(cs.controllers[i].buttons[j].type) {
 				case port_controller_button::TYPE_BUTTON:
 					ins.type = 0;
@@ -946,7 +945,7 @@ void add_ax_cx(assembler::assembler& a, bool amd64)
 void call_label(assembler::assembler& a, assembler::label& l, uint8_t amd64_tmpreg, bool amd64)
 {
 	if(amd64) {
-		a(0x48 | ((amd64_tmpreg&8) ? 1 : 0), 0xB8 | (amd64_tmpreg&7), 
+		a(0x48 | ((amd64_tmpreg&8) ? 1 : 0), 0xB8 | (amd64_tmpreg&7),
 			assembler::relocation_tag(assembler::i386_reloc_abs64, l), assembler::pad_tag(8),
 			0x40 | ((amd64_tmpreg&8) ? 1 : 0), 0xFF, assembler::i386_modrm(2, MOD_REG, (amd64_tmpreg&7)));
 	} else
@@ -1139,7 +1138,7 @@ void port_type_generic::make_routines(assembler::assembler& a, std::list<assembl
 			break;
 		case 2: //Pipe character 1
 			break;  //Do nothing.
-		case 3: //Pipe character 2 
+		case 3: //Pipe character 2
 		case 4: { //Pipe character 3
 			assembler::label& not_last_pipe = alloc_label(labels);
 			assembler::label& goto_out = alloc_label(labels);
@@ -1176,7 +1175,7 @@ void port_type_generic::make_routines(assembler::assembler& a, std::list<assembl
 			break;
 		}
 	}
-	
+
 }
 #else
 void port_type_generic::make_routines(assembler::assembler& a, std::list<assembler::label>& labels)

@@ -165,7 +165,7 @@ void test_port(port_type* p, unsigned bits)
 			}
 		}
 	}
-	
+
 }
 
 uint64_t get_utime()
@@ -177,7 +177,7 @@ uint64_t get_utime()
 
 int main()
 {
-	
+
 	JSON::node portsdata(ports_json);
 	port_type_generic Sgamepad(portsdata, "ports/0");
 	port_type_generic Sgamepad16(portsdata, "ports/1");
@@ -203,7 +203,7 @@ int main()
 		s1.logical_map.push_back(std::make_pair(i / 4 + 1, i % 4));
 	port_type_set& _fixed = port_type_set::make(s1.ports, s1.portindex());
 	controller_frame fixed(buffer, _fixed);
-	
+
 	controller_set s2;
 	s2.ports.push_back(&Spsystem);
 	s2.ports.push_back(&Smultitap16);

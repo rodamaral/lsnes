@@ -22,7 +22,7 @@ namespace
 		lzma_check check;
 		lzma_options_lzma lzmaopts;
 	};
-	
+
 	struct stream_compressor_lzma : public stream_compressor_base
 	{
 		stream_compressor_lzma(lzma_options& opts)
@@ -128,7 +128,7 @@ namespace
 		stdin_input()
 		{
 		}
-		
+
 		void close()
 		{
 		}

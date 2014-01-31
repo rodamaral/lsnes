@@ -240,7 +240,7 @@ namespace
 				data[y] += ((data[y] != "") ? ", " : "") + tmp;
 		}
 
-		//Delete no longer present stuff. 
+		//Delete no longer present stuff.
 		for(auto i = items.rbegin(); i != items.rend(); i++) {
 			auto j = realitems.lower_bound(i->first);
 			if(j == realitems.end() || !i->first.prefix_of(j->first)) {

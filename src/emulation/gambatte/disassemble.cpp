@@ -30,7 +30,7 @@ namespace
 		"JR NC,%R",   "LD SP, %w", "LD (HL-),A", "INC SP", "INC (HL)", "DEC (HL)", "LD (HL),%b", "SCF",
 		"JR Z,%R",    "ADD HL,SP", "LD A,(HL-)", "DEC SP", "INC A",    "DEC A",    "LD A,%b",    "CCF",
 
-		"LD B,B", "LD B,C", "LD B,D", "LD B,E", "LD B,H", "LD B,L", "LD B,(HL)", "LD B,A", 
+		"LD B,B", "LD B,C", "LD B,D", "LD B,E", "LD B,H", "LD B,L", "LD B,(HL)", "LD B,A",
 		"LD C,B", "LD C,C", "LD C,D", "LD C,E", "LD C,H", "LD C,L", "LD C,(HL)", "LD C,A",
 		"LD D,B", "LD D,C", "LD D,D", "LD D,E", "LD D,H", "LD D,L", "LD D,(HL)", "LD D,A",
 		"LD E,B", "LD E,C", "LD E,D", "LD E,E", "LD E,H", "LD E,L", "LD E,(HL)", "LD E,A",
@@ -131,7 +131,6 @@ std::string disassemble_gb_opcode(uint16_t pc, std::function<uint8_t()> fetch, i
 		}
 	}
 	return o.str();
-	
 }
 
 namespace

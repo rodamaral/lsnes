@@ -86,4 +86,3 @@ typename T::returntype choose_file_save(wxWindow* parent, const std::string& tit
 
 
 #endif
-

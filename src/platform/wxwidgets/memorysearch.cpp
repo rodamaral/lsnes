@@ -349,7 +349,7 @@ namespace
 		&wxwindow_memorysearch::_do_poke_addr<uint32_t>,
 		&wxwindow_memorysearch::_do_poke_addr<int64_t>,
 		&wxwindow_memorysearch::_do_poke_addr<uint64_t>,
-		&wxwindow_memorysearch::_do_poke_addr<float>, 
+		&wxwindow_memorysearch::_do_poke_addr<float>,
 		&wxwindow_memorysearch::_do_poke_addr<double>,
 	};
 
@@ -368,7 +368,7 @@ namespace
 		&wxwindow_memorysearch::_do_format_float<float>,
 		&wxwindow_memorysearch::_do_format_float<double>,
 	};
-	
+
 	struct searchtype searchtbl[] = {
 		{
 			"value", {

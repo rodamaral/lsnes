@@ -203,7 +203,6 @@ namespace
 			return std::make_pair(p.path, (p.typechoice == 1) ? EXTFMT_SOX : EXTFMT_OGGOPUS);
 		}
 	} filetype_opus_sox;
-	
 }
 
 void wxeditor_voicesub::on_export(wxCommandEvent& e)

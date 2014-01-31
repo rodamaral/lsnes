@@ -403,7 +403,7 @@ public:
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Error from operating system.
  */
-	void write_raw_file(const std::string& member, const std::vector<char>& content) 
+	void write_raw_file(const std::string& member, const std::vector<char>& content)
 		throw(std::bad_alloc, std::runtime_error);
 /**
  * Write a file consisting of a single number. No existing member may be open.

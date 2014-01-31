@@ -262,7 +262,7 @@ wxeditor_uploadtargets::wxeditor_uploadtargets(wxWindow* parent, upload_menu* me
 	SetSizer(top_s);
 
 	top_s->Add(list = new wxListBox(this, wxID_ANY), 1, wxGROW);
-	list->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, 
+	list->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 		wxCommandEventHandler(wxeditor_uploadtargets::on_list_sel), NULL, this);
 
 	wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
@@ -409,7 +409,6 @@ private:
 				incomplete_line = "";
 			}
 			if(x != "") incomplete_line += x;
-			
 		}
 		void flush()
 		{
@@ -462,7 +461,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 	game->Append(towxstring("(default)"));
 	game->SetSelection(0);
 	top_s->Add(hidden = new wxCheckBox(this, wxID_ANY, wxT("Hidden")), 0, wxGROW);
-	
+
 	top_s->Add(current = new wxRadioButton(this, wxID_ANY, wxT("Current movie"), wxDefaultPosition, wxDefaultSize,
 		wxRB_GROUP), 0, wxGROW);
 	top_s->Add(file = new wxRadioButton(this, wxID_ANY, wxT("Specified file:")), 0, wxGROW);
@@ -539,7 +538,7 @@ void wxeditor_uploaddialog::timer_tick()
 			if(games_req->errormsg != "") {
 				msg = (stringfmt() << "Error getting list of games: " << (games_req->errormsg)).str();
 			} else if(games_req->http_code != 200) {
-				msg = (stringfmt() << "Got unexpected HTTP status " << (games_req->http_code)).str(); 
+				msg = (stringfmt() << "Got unexpected HTTP status " << (games_req->http_code)).str();
 			} else {
 				for(auto i : games_output_handler.choices)
 					game->Append(towxstring(i));
@@ -724,7 +723,7 @@ upload_menu::upload_menu(wxWindow* win, int wxid_low, int wxid_high)
 			}
 			if(num == 0)
 				PrependSeparator();
-			entry.item = Prepend(wxid_range_low + num, towxstring(entry.name + "...")); 
+			entry.item = Prepend(wxid_range_low + num, towxstring(entry.name + "..."));
 			destinations[wxid_range_low + num] = entry;
 			num++;
 		}
@@ -772,7 +771,7 @@ void upload_menu::configure_entry(unsigned num, struct upload_entry entry)
 		//New entry.
 		if(destinations.size() == 0)
 			PrependSeparator();
-		entry.item = Prepend(wxid_range_low + num, towxstring(entry.name + "...")); 
+		entry.item = Prepend(wxid_range_low + num, towxstring(entry.name + "..."));
 		destinations[wxid_range_low + num] = entry;
 	}
 	save();

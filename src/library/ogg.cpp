@@ -91,7 +91,7 @@ namespace {
 }
 
 
-packet::packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos, 
+packet::packet(uint64_t granule, bool first, bool last, bool spans, bool eos, bool bos,
 	const std::vector<uint8_t>& d)
 {
 	data = d;

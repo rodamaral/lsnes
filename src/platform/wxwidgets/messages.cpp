@@ -25,7 +25,7 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	this->Connect(wxEVT_RIGHT_UP, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_MOTION, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
 	this->Connect(wxEVT_MOUSEWHEEL, wxMouseEventHandler(wxwin_messages::panel::on_mouse), NULL, this);
-	
+
 	SetMinSize(wxSize(PANELWIDTH * pcell.first, lines * pcell.second));
 }
 

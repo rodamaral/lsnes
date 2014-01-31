@@ -28,4 +28,3 @@ const char* mathexpr_error::get_short_error()
 	default:		return "#Unknownerr";
 	};
 }
-

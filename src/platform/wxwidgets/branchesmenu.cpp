@@ -99,7 +99,6 @@ namespace
 					SelectItem(i.second);
 				}
 			}
-			
 		}
 		std::string get_name(uint64_t id)
 		{

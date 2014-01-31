@@ -123,7 +123,7 @@ namespace
 				with_loaded_library(*new loadlib::module(loadlib::library(i)));
 			} catch(std::exception& e) {
 				std::string x = "Can't load '" + i + "': " + e.what();
-				
+
 				if(on_error)
 					on_error(get_name(i), e.what(), system);
 				messages << x << std::endl;

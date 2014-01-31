@@ -206,7 +206,7 @@ namespace
 	{
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			try {
-				record_filehash(rom.romimg[i].filename, rom.romimg[i].stripped, 
+				record_filehash(rom.romimg[i].filename, rom.romimg[i].stripped,
 					rom.romimg[i].sha_256.read());
 			} catch(...) {}
 			try {

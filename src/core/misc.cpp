@@ -164,7 +164,7 @@ namespace
 		exit(1);
 	}
 
-	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "", 
+	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
 		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
 	});

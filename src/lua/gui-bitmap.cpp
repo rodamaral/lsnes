@@ -1140,7 +1140,7 @@ template<bool scaled, bool porterduff> int lua_dbitmap::blit(lua::state& L, lua:
 	int spal;
 	if(src_p)
 		spal = P.skip();	//Reserve for palette.
-	
+
 	P(sx, sy, w, h);
 
 	if(scaled)

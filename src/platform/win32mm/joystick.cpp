@@ -55,7 +55,7 @@ namespace
 				ngp.add_axis(0, caps.wXmin, caps.wXmax, false, "X");
 				ngp.add_axis(1, caps.wYmin, caps.wYmax, false, "Y");
 				if(caps.wCaps & JOYCAPS_HASZ)	ngp.add_axis(2, caps.wZmin, caps.wZmax, false, "Z");
-				if(caps.wCaps & JOYCAPS_HASR)	ngp.add_axis(3, caps.wRmin, caps.wRmax, false, 
+				if(caps.wCaps & JOYCAPS_HASR)	ngp.add_axis(3, caps.wRmin, caps.wRmax, false,
 					"Rudder");
 				if(caps.wCaps & JOYCAPS_HASU)	ngp.add_axis(4, caps.wUmin, caps.wUmax, false, "U");
 				if(caps.wCaps & JOYCAPS_HASV)	ngp.add_axis(5, caps.wVmin, caps.wVmax, false, "V");
@@ -77,7 +77,7 @@ namespace
 						continue;	//Not usable.
 					lsnes_gamepads[idx_to_jid[i]].report_hat(0, info.dwPOV);
 					for(unsigned j = 0; j < 32; j++)
-						lsnes_gamepads[idx_to_jid[i]].report_button(j, 
+						lsnes_gamepads[idx_to_jid[i]].report_button(j,
 							(info.dwButtons >> j) & 1);
 					lsnes_gamepads[idx_to_jid[i]].report_axis(0, info.dwXpos);
 					lsnes_gamepads[idx_to_jid[i]].report_axis(1, info.dwYpos);

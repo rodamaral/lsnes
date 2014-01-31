@@ -283,7 +283,7 @@ wxwin_vumeter::wxwin_vumeter(wxWindow* parent)
 	hw_s->Add(mute = new wxCheckBox(this, wxID_ANY, wxT("Mute sounds")), 1, wxGROW);
 	mute->SetValue(!platform::is_sound_enabled());
 	top_s->Add(hw_s);
-	
+
 	wxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
 	pbutton_s->AddStretchSpacer();
 	pbutton_s->Add(closebutton = new wxButton(this, wxID_OK, wxT("Close")), 0, wxGROW);

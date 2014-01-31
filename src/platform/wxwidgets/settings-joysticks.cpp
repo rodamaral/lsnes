@@ -18,7 +18,7 @@ namespace
 					U"\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518";
 	unsigned sbits_lookup[] = {0020, 0002, 0040, 0004, 0200, 0202, 0400, 0404, 0010, 0001, 0050, 0005,
 		0100, 0101, 0500, 0252};
-					
+
 	class edit_axis_properties : public wxDialog
 	{
 	public:
@@ -148,7 +148,7 @@ namespace
 			const unsigned s_perrow = 16;
 			unsigned rows = 9 + (gp.axes() + b_perrow - 1) / b_perrow * 5 + (gp.buttons() +
 				s_perrow - 1) / s_perrow * 5 + (gp.hats() + s_perrow - 1) / s_perrow * 5;
-			
+
 			std::string jname = (stringfmt() << "joystick" << _jid << " [" << gp.name() << "]").str();
 			std::string status = std::string("Status: ") + (gp.online() ? "Online" : "Offline");
 			unsigned y = 2;
@@ -161,7 +161,7 @@ namespace
 				0, 0xFFFFFF);
 			write(std::string("Status: ") + (gp.online() ? "Online" : "Offline"), 256, 0, 1, 0,
 				0xFFFFFF);
-			
+
 			if(gp.axes())
 				write("Axes:", 256, 0, y++, 0, 0xFFFFFF);
 			unsigned xp = 0;

@@ -114,7 +114,6 @@ void pad::set_online(bool status)
 				if(i.second->online) try { hats_off.push_back(i.first); } catch(...) {}
 				i.second->online = false;
 			}
-			
 		}
 	}
 	for(auto i : axes_off)

@@ -265,7 +265,7 @@ namespace
 		s << " L:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_L));
 		s << " PC:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_PC));
 		s << " SP:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_SP));
-		s << " F:" 
+		s << " F:"
 			<< (instance->get_cpureg(gambatte::GB::REG_CF) ? "C" : "-")
 			<< (instance->get_cpureg(gambatte::GB::REG_ZF) ? "-" : "Z")
 			<< (instance->get_cpureg(gambatte::GB::REG_HF1) ? "1" : "-")

@@ -108,7 +108,6 @@ namespace
 			p << str[i];
 			if(is_terminal(str[idx]))
 				break;
-			
 		}
 		return p.str();
 	}
@@ -358,4 +357,3 @@ int main(int argc, char** argv)
 }
 
 #endif
-

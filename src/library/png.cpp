@@ -110,7 +110,7 @@ namespace
 			output[4 * i + 1] = input[i] >> 8;
 			output[4 * i + 2] = input[i];
 			output[4 * i + 3] = input[i] >> 24;
-		}	
+		}
 	}
 
 	void write_row_rgb(char* output, const uint32_t* input, size_t w)
@@ -119,9 +119,9 @@ namespace
 			output[3 * i + 0] = input[i] >> 16;
 			output[3 * i + 1] = input[i] >> 8;
 			output[3 * i + 2] = input[i];
-		}	
+		}
 	}
-	
+
 	//=========================================================
 	//==================== PNG CHUNKER ========================
 	//=========================================================
@@ -162,7 +162,7 @@ namespace
 		std::ostream& os;
 		uint32_t type;
 	};
-	
+
 
 	//=========================================================
 	//=================== AUTORELEASE =========================
@@ -993,9 +993,9 @@ void encoder::encode(std::ostream& file) const
 	ihdr[10] = 0; //Deflate,
 	ihdr[11] = 0;  //Filter bank 0
 	ihdr[12] = 0;  //No interlacing.
-	boost::iostreams::stream<png_chunk_output> ihdr_h(file, 0x49484452);	
+	boost::iostreams::stream<png_chunk_output> ihdr_h(file, 0x49484452);
 	ihdr_h.write(ihdr, sizeof(ihdr));
-	ihdr_h.close();	
+	ihdr_h.close();
 	//Write the PLTE.
 	if(has_palette) {
 		std::vector<char> data;
@@ -1005,9 +1005,9 @@ void encoder::encode(std::ostream& file) const
 			data[3 * i + 1] = palette[i] >> 8;
 			data[3 * i + 2] = palette[i] >> 0;
 		}
-		boost::iostreams::stream<png_chunk_output> plte_h(file, 0x504C5445);	
+		boost::iostreams::stream<png_chunk_output> plte_h(file, 0x504C5445);
 		plte_h.write(&data[0], data.size());
-		plte_h.close();		
+		plte_h.close();
 	}
 	//Write the tRNS.
 	if(has_palette && has_alpha) {
@@ -1015,9 +1015,9 @@ void encoder::encode(std::ostream& file) const
 		data.resize(palette.size());
 		for(size_t i = 0; i < palette.size(); i++)
 			data[i] = palette[i] >> 24;
-		boost::iostreams::stream<png_chunk_output> trns_h(file, 0x74524E53);	
+		boost::iostreams::stream<png_chunk_output> trns_h(file, 0x74524E53);
 		trns_h.write(&data[0], data.size());
-		trns_h.close();		
+		trns_h.close();
 	}
 	//Write the IDAT
 	boost::iostreams::filtering_ostream idat_h;
@@ -1045,7 +1045,7 @@ void encoder::encode(std::ostream& file) const
 		idat_h.write(&buf[0], bufstride);
 	}
 	idat_h.pop();
-	idat_h.pop();	
+	idat_h.pop();
 	//Write the IEND and finish.
 	boost::iostreams::stream<png_chunk_output> iend_h(file, 0x49454E44);
 	iend_h.close();

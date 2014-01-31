@@ -231,7 +231,7 @@ namespace
 	X_TAIL -> X_EXPR CLOSE-PAREN
 	X_PAIR -> X_EXPR COMMA
 	 */
-	
+
 	//SUBEXPRESSION -> VALUE
 	//SUBEXPRESSION -> STRING
 	//SUBEXPRESSION -> FUNCTION OPEN-PAREN CLOSE-PAREN
@@ -240,7 +240,7 @@ namespace
 	//SUBEXPRESSION -> SUBEXPRESSION BINARY-OP SUBEXPRESSION
 	//SUBEXPRESSION -> UNARY-OP SUBEXPRESSION
 	//SUBEXPRESSION -> NONARY-OP
-	
+
 	bool is_alphanumeric(char ch)
 	{
 		if(ch >= '0' && ch <= '9') return true;
@@ -486,7 +486,7 @@ namespace
 		return parse_rec(_type, operands, 0, operands.size());
 	}
 
-	void tokenize(const std::string& expr, std::set<mathexpr_operinfo*>& operations, 
+	void tokenize(const std::string& expr, std::set<mathexpr_operinfo*>& operations,
 		std::vector<subexpression>& tokenization)
 	{
 		for(size_t i = 0; i < expr.length();) {

@@ -303,7 +303,7 @@ void reinitialize_movie(core_sysregion* sysreg)
 	mov.save_frame = 0;
 	mov.lagged_frames = 0;
 	for(auto& i : mov.pollcounters)
-		i = 0; 
+		i = 0;
 	mov.poll_flag = false;
 	auto ctrldata = our_rom.rtype->controllerconfig(mov.settings);
 	port_type_set& portset = port_type_set::make(ctrldata.ports, ctrldata.portindex());

@@ -18,7 +18,7 @@ namespace
 	{
 		return calloc(items, size);
 	}
-	
+
 	void zfree(void* opaque, void* ptr)
 	{
 		free(ptr);
@@ -61,7 +61,6 @@ namespace
 					outsize--;
 				}
 				return true;
-				
 			}
 			strm.next_in = in;
 			strm.avail_in = insize;
@@ -119,7 +118,7 @@ namespace
 		stdin_input()
 		{
 		}
-		
+
 		void close()
 		{
 		}

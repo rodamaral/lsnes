@@ -72,7 +72,7 @@ namespace
 				unsigned jid = lsnes_gamepads.add(joy->GetProductName());
 				gamepad::pad& ngp = lsnes_gamepads[jid];
 				objs[jid] = joy;
-				
+
 				if(joy->HasPOV())
 					ngp.add_hat(0, "POV");
 				for(unsigned j = 0; j < joy->GetNumberButtons() && j < 32; j++)

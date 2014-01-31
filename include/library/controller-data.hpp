@@ -734,7 +734,7 @@ public:
  *
  * Throws std::runtime_error: NULL memory.
  */
-	controller_frame(unsigned char* memory, const port_type_set& p, controller_frame_vector* host = NULL) 
+	controller_frame(unsigned char* memory, const port_type_set& p, controller_frame_vector* host = NULL)
 		throw(std::runtime_error);
 /**
  * Copy construct a frame. The memory will be dedicated.
@@ -1135,7 +1135,7 @@ public:
  */
 	size_t count_frames() throw() { return real_frame_count; }
 /**
- * Recount number of frames. 
+ * Recount number of frames.
  *
  * This is to be used after direct editing of pointers obtained by get_page_buffer().
  *
@@ -1237,7 +1237,7 @@ public:
 		{
 			frozen.freeze_count--;
 			if(frozen.freeze_count == 0)
-				if(frozen.on_framecount_change) 
+				if(frozen.on_framecount_change)
 					frozen.on_framecount_change(frozen, frozen.frame_count_at_freeze);
 		}
 	private:

@@ -233,7 +233,7 @@ struct test tests[] = {
 		if(s.debug_dump() == "4[{0000000000000000000000000000000000000000000000000000000000000000,"
 			"0000000000000000000000000000000000000000000000000000000000000004}]")
 			return true;
-		std::cout << s.debug_dump() << "..." << std::flush; 
+		std::cout << s.debug_dump() << "..." << std::flush;
 		return false;
 	}},{"rrdata extend range high", []() {
 		rrdata_set::instance i("0000000000000000000000000000000000000000000000000000000000000004");

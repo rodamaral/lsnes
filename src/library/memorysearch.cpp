@@ -393,7 +393,6 @@ template<typename T> T memory_search::v_readold(uint64_t addr) throw()
 		}
 		i += t.first->size - t.second;
 	}
-	
 	return 0;
 }
 
@@ -652,4 +651,3 @@ void memory_search::loadstate(const std::vector<char>& buffer)
 		}
 	}
 }
-

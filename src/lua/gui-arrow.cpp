@@ -70,7 +70,7 @@ namespace
 				if(fill) {
 					if(direction & 1) {
 						int32_t fedge = hmax - minc;
-						maxc = max(maxc, minc + fedge / 2 + 1); 
+						maxc = max(maxc, minc + fedge / 2 + 1);
 					} else
 						maxc = max(maxc, hmax);
 				} else
@@ -105,5 +105,4 @@ namespace
 			direction, fill, color);
 		return 0;
 	});
-	
 }

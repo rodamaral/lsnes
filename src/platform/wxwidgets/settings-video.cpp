@@ -1,7 +1,7 @@
 #include "platform/wxwidgets/settings-common.hpp"
 #include "platform/wxwidgets/window_mainwindow.hpp"
 
-namespace 
+namespace
 {
 	enum
 	{
@@ -10,14 +10,14 @@ namespace
 		wxID_AR_CORRECT = wxID_HIGHEST + 3,
 		wxID_ORIENT = wxID_HIGHEST + 4,
 	};
-	
+
 	const char* scalealgo_choices[] = {"Fast Bilinear", "Bilinear", "Bicubic", "Experimential", "Point", "Area",
 		"Bicubic-Linear", "Gauss", "Sinc", "Lanczos", "Spline"};
 	const char* orientations[] = {"Normal", "Rotate 90° left", "Rotate 90° right", "Rotate 180°",
 		"Flip horizontal", "Flip vertical", "Transpose", "Transpose other"};
 	unsigned orientation_flags[] = {0, 7, 1, 6, 2, 4, 5, 3};
 	unsigned inv_orientation_flags[] = {0, 2, 4, 7, 5, 6, 3, 1};
-	
+
 	std::string getalgo(int flags)
 	{
 		for(size_t i = 0; i < sizeof(scalealgo_choices) / sizeof(scalealgo_choices[0]); i++)
@@ -73,7 +73,7 @@ namespace
 		top_s->Add(new wxStaticText(this, -1, wxT("Orientation: ")), 0, wxGROW);
 		top_s->Add(orient = new wxComboBox(this, wxID_ORIENT, towxstring(orientations[get_orientation()]),
 			wxDefaultPosition, wxDefaultSize, orients.size(), &orients[0], wxCB_READONLY), 1, wxGROW);
-		
+
 		top_s->Add(arcorrect = new wxCheckBox(this, wxID_AR_CORRECT, wxT("AR correction")), 1, wxGROW);
 
 		scalefact->Connect(wxEVT_COMMAND_SPINCTRL_UPDATED,

@@ -235,7 +235,7 @@ static void montgomery(element& dblx, element& dblz, element& sumx, element& sum
 
 static void cmultiply(element& ox, element& oz, const uint8_t* key, const element& base)
 {
-	element x1a(1), z1a, x2a(base), z2a(1), x1b, z1b(1), x2b, z2b(1); 
+	element x1a(1), z1a, x2a(base), z2a(1), x1b, z1b(1), x2b, z2b(1);
 
 	for(unsigned i = 31; i < 32; i--) {
 		uint8_t x = key[i];
@@ -333,17 +333,17 @@ int main()
 					<< (int)buf[i];
 			std::cerr << std::endl;
 			std::cerr << "point:\t";
-			for(unsigned i = 31; i < 32; i--) 
+			for(unsigned i = 31; i < 32; i--)
 				std::cerr << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
 					<< (int)buf[i+32];
 			std::cerr << std::endl;
 			std::cerr << "res1:\t";
-			for(unsigned i = 31; i < 32; i--) 
+			for(unsigned i = 31; i < 32; i--)
 				std::cerr << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
 					<< (int)buf[i+64];
 			std::cerr << std::endl;
 			std::cerr << "res2:\t";
-			for(unsigned i = 31; i < 32; i--) 
+			for(unsigned i = 31; i < 32; i--)
 				std::cerr << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
 					<< (int)buf[i+96];
 			std::cerr << std::endl;

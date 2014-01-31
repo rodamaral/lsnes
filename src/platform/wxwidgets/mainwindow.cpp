@@ -228,7 +228,7 @@ namespace
 			}
 		}
 	private:
-		wxwin_mainwindow* w; 
+		wxwin_mainwindow* w;
 	};
 
 	template<typename T> void runemufn_async(T fn)
@@ -920,7 +920,7 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 		tw *= fss;
 		th *= fss;
 	}
-	
+
 	if(!screen_buffer || tw != old_width || th != old_height || scaling_flags != old_flags ||
 		hflip_enabled != old_hflip || vflip_enabled != old_vflip || rotate_enabled != old_rotate) {
 		if(screen_buffer) {

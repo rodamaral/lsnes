@@ -156,15 +156,15 @@ namespace sky
 		static const size_t sep = strlen(_numbers_g) / 10;
 		while(realgrav) {
 			uint8_t digit = realgrav % 10;
-			draw_block2(inst, _numbers_g + sep * digit, y * 320 + (x - 5), inst.dashpalette[6], 
+			draw_block2(inst, _numbers_g + sep * digit, y * 320 + (x - 5), inst.dashpalette[6],
 				inst.dashpalette[5], true);
 			x -= 5;
 			realgrav /= 10;
 		}
 	}
 
-	void draw_indicator(struct instance& inst, uint8_t& curval, uint8_t newval, gauge& g, uint8_t on1, uint8_t on2,
-		uint8_t off1, uint8_t off2)
+	void draw_indicator(struct instance& inst, uint8_t& curval, uint8_t newval, gauge& g, uint8_t on1,
+		uint8_t on2, uint8_t off1, uint8_t off2)
 	{
 		unsigned tmp = newval;
 		if(tmp > g.maxlimit()) tmp = g.maxlimit();

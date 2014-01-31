@@ -187,4 +187,3 @@ uint8_t* dynamic_code::pointer() throw()
 }
 
 }
-

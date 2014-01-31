@@ -373,9 +373,9 @@ namespace
 		bool binary;
 
 		controller_frame_vector& v = framevector(L, P);
-	
+
 		P(filename, binary);
-		
+
 		std::ofstream file(filename, binary ? std::ios_base::binary : std::ios_base::out);
 		if(!file)
 			throw std::runtime_error("Can't open file to write output to");
@@ -632,7 +632,7 @@ namespace
 	void lua_inputmovie::common_init(lua::state& L)
 	{
 	}
-	
+
 	lua_inputmovie::lua_inputmovie(lua::state& L, const controller_frame_vector& _v)
 	{
 		v = _v;

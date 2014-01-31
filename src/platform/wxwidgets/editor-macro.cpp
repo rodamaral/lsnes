@@ -446,4 +446,3 @@ void wxeditor_macro_display(wxWindow* parent)
 	}
 	editor->Destroy();
 }
-

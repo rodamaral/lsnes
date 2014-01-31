@@ -637,7 +637,7 @@ void moviefile::save(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 }
 
 /*
-Following need to be saved: 
+Following need to be saved:
 - gametype (string)
 - settings (string name, value pairs)
 - gamename (optional string)
@@ -712,7 +712,7 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 		count = rrdata.write(rrd);
 		s.blob_implicit(rrd);
 	});
-	
+
 	for(auto i : movie_sram)
 		out.extension(TAG_MOVIE_SRAM, [&i](binarystream::output& s) {
 			s.string(i.first);
@@ -1098,7 +1098,7 @@ name_again:
 		emerg_write_member(fd, TAG_AUTHOR, string_size(i.first) + i.second.size());
 		emerg_write_string(fd, i.first);
 		emerg_write_string_implicit(fd, i.second);
-		
+
 	}
 	//RAM contents.
 	for(auto& i : mv.ramcontent) {

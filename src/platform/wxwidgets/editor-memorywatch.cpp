@@ -255,7 +255,7 @@ wxeditor_memorywatch::wxeditor_memorywatch(wxWindow* parent, const std::string& 
 	top_s->Add(s7, 0, wxGROW);
 
 	wxSizer* s8 = new wxBoxSizer(wxHORIZONTAL);
-	
+
 	xpos = label_control<wxTextCtrl>(this, "X:", wxID_ANY, wxT(""), wxDefaultPosition, wxSize(300, -1));
 	xpos.add(s8, true);
 	s8->Add(alt_origin_x = new wxCheckBox(this, wxID_ANY, wxT("Alt. origin")), 0, wxGROW);

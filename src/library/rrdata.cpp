@@ -487,4 +487,3 @@ size_t rrdata_set::write_emerg(struct esave_state& state, char* buf, size_t bufs
 	uint64_t dummy;
 	return emerg_action(state, buf, bufsize, dummy);
 }
-

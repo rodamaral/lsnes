@@ -57,9 +57,9 @@ void settings_menu::on_selected(wxCommandEvent& e)
 	display_settings_dialog(parent, items[id]);
 }
 
-namespace 
+namespace
 {
-	volatile bool keygrab_active = false;	
+	volatile bool keygrab_active = false;
 	std::string pkey;
 	std::function<void(std::string key)> keygrab_callback;
 

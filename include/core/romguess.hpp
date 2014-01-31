@@ -10,4 +10,3 @@ std::string try_to_guess_rom(const std::string& hint, const std::string& hash, c
 	core_type& type, unsigned i);
 
 #endif
-
