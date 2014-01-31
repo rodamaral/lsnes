@@ -371,6 +371,38 @@ reader::reader(const std::string& zipfile) throw(std::bad_alloc, std::runtime_er
 	}
 }
 
+bool reader::read_linefile(const std::string& member, std::string& out, bool conditional)
+	throw(std::bad_alloc, std::runtime_error)
+{
+	if(conditional && !has_member(member))
+		return false;
+	std::istream& m = (*this)[member];
+	try {
+		std::getline(m, out);
+		istrip_CR(out);
+		delete &m;
+	} catch(...) {
+		delete &m;
+		throw;
+	}
+}
+
+void reader::read_raw_file(const std::string& member, std::vector<char>& out) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	std::vector<char> _out;
+	std::istream& m = (*this)[member];
+	try {
+		boost::iostreams::back_insert_device<std::vector<char>> rd(_out);
+		boost::iostreams::copy(m, rd);
+		delete &m;
+	} catch(...) {
+		delete &m;
+		throw;
+	}
+	out = _out;
+}
+
 writer::writer(const std::string& zipfile, unsigned _compression) throw(std::bad_alloc, std::runtime_error)
 {
 	compression = _compression;
@@ -517,6 +549,36 @@ void writer::close_file() throw(std::bad_alloc, std::logic_error, std::runtime_e
 	info.offset = base_offset;
 	files[open_file] = info;
 	open_file = "";
+}
+
+void writer::write_linefile(const std::string& member, const std::string& value, bool conditional)
+	throw(std::bad_alloc, std::runtime_error)
+{
+	if(conditional && value == "")
+		return;
+	std::ostream& m = create_file(member);
+	try {
+		m << value << std::endl;
+		close_file();
+	} catch(...) {
+		close_file();
+		throw;
+	}
+}
+
+void writer::write_raw_file(const std::string& member, const std::vector<char>& content) throw(std::bad_alloc,
+	std::runtime_error)
+{
+	std::ostream& m = create_file(member);
+	try {
+		m.write(&content[0], content.size());
+		if(!m)
+			throw std::runtime_error("Can't write ZIP file member");
+		close_file();
+	} catch(...) {
+		close_file();
+		throw;
+	}
 }
 
 namespace

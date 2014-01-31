@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <zlib.h>
+#include "string.hpp"
 
 namespace zip
 {
@@ -232,6 +233,48 @@ public:
  * throws std::runtime_error: The specified member does not exist
  */
 	std::istream& operator[](const std::string& name) throw(std::bad_alloc, std::runtime_error);
+/**
+ * Reads a file consisting of single line.
+ *
+ * Parameter member: Name of the member to read.
+ * Parameter out: String to write the output to.
+ * Parameter conditional: If true and the file does not exist, return false instead of throwing.
+ * Returns: True on success, false on failure.
+ * Throws std::bad_alloc: Not enough memory.
+ * Throws std::runtime_error: Error reading file.
+ */
+	bool read_linefile(const std::string& member, std::string& out, bool conditional = false)
+		throw(std::bad_alloc, std::runtime_error);
+/**
+ * Read a raw file.
+ *
+ * Parameter member: Name of the member to read.
+ * Parameter out: Buffer to write the output to.
+ * Throws std::bad_alloc: Not enough memory.
+ * Throws std::runtime_error: Error reading file.
+ */
+	void read_raw_file(const std::string& member, std::vector<char>& out) throw(std::bad_alloc,
+		std::runtime_error);
+/**
+ * Reads a file consisting of single numeric constant.
+ *
+ * Parameter member: Name of the member to read.
+ * Parameter out: The output value.
+ * Parameter conditional: If true and the file does not exist, return false instead of throwing.
+ * Returns: True on success, false on failure.
+ * Throws std::bad_alloc: Not enough memory.
+ * Throws std::runtime_error: Error reading file.
+ */
+	template<typename T>
+	bool read_numeric_file(const std::string& member, T& out, bool conditional = false)
+		throw(std::bad_alloc, std::runtime_error)
+	{
+		std::string _out;
+		if(!read_linefile(member, _out, conditional))
+			return false;
+		out = parse_value<T>(_out);
+		return true;
+	}
 private:
 	reader(reader&);
 	reader& operator=(reader&);
@@ -341,6 +384,40 @@ public:
  * throws std::runtime_error: Error from operating system.
  */
 	void close_file() throw(std::bad_alloc, std::logic_error, std::runtime_error);
+/**
+ * Write a file consisting of single line. No existing member may be open.
+ *
+ * Parameter member: The name of the member.
+ * Parameter value: The value to write.
+ * Parameter conditional: If true and the value is empty, skip the write.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error from operating system.
+ */
+	void write_linefile(const std::string& member, const std::string& value, bool conditional = false)
+		throw(std::bad_alloc, std::runtime_error);
+/**
+ * Write a raw file. No existing member may be open.
+ *
+ * Parameter member: The name of the member.
+ * Parameter content: The contents for the file.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error from operating system.
+ */
+	void write_raw_file(const std::string& member, const std::vector<char>& content) 
+		throw(std::bad_alloc, std::runtime_error);
+/**
+ * Write a file consisting of a single number. No existing member may be open.
+ *
+ * Parameter member: The name of the member.
+ * Parameter value: The value to write.
+ * throws std::bad_alloc: Not enough memory.
+ * throws std::runtime_error: Error from operating system.
+ */
+	template<typename T>
+	void write_numeric_file(const std::string& member, T value) throw(std::bad_alloc, std::runtime_error)
+	{
+		write_linefile(member, (stringfmt() << value).str());
+	}
 private:
 	struct file_info
 	{

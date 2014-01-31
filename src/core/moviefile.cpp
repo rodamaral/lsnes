@@ -50,74 +50,8 @@ enum lsnes_movie_tags
 	TAG_ROMHINT = 0x6f715830
 };
 
-void read_linefile(zip::reader& r, const std::string& member, std::string& out, bool conditional = false)
-	throw(std::bad_alloc, std::runtime_error)
-{
-	if(conditional && !r.has_member(member))
-		return;
-	std::istream& m = r[member];
-	try {
-		std::getline(m, out);
-		istrip_CR(out);
-		delete &m;
-	} catch(...) {
-		delete &m;
-		throw;
-	}
-}
-
-void write_linefile(zip::writer& w, const std::string& member, const std::string& value, bool conditional = false)
-	throw(std::bad_alloc, std::runtime_error)
-{
-	if(conditional && value == "")
-		return;
-	std::ostream& m = w.create_file(member);
-	try {
-		m << value << std::endl;
-		w.close_file();
-	} catch(...) {
-		w.close_file();
-		throw;
-	}
-}
-
 namespace
 {
-	void binary_read_movie(binarystream::input& in, controller_frame_vector& v)
-	{
-		uint64_t stride = v.get_stride();
-		uint64_t pageframes = v.get_frames_per_page();
-		uint64_t vsize = 0;
-		size_t pagenum = 0;
-		uint64_t pagesize = stride * pageframes;
-		while(in.get_left()) {
-			v.resize(vsize + pageframes);
-			unsigned char* contents = v.get_page_buffer(pagenum++);
-			uint64_t gcount = min(pagesize, in.get_left());
-			in.raw(contents, gcount);
-			vsize += (gcount / stride);
-		}
-		v.resize(vsize);
-		v.recount_frames();
-	}
-
-	void binary_write_movie(binarystream::output& out, controller_frame_vector& v)
-	{
-		uint64_t pages = v.get_page_count();
-		uint64_t stride = v.get_stride();
-		uint64_t pageframes = v.get_frames_per_page();
-		uint64_t vsize = v.size();
-		out.write_extension_tag(TAG_MOVIE, vsize * stride);
-		size_t pagenum = 0;
-		while(vsize > 0) {
-			uint64_t count = (vsize > pageframes) ? pageframes : vsize;
-			size_t bytes = count * stride;
-			unsigned char* content = v.get_page_buffer(pagenum++);
-			out.raw(content, bytes);
-			vsize -= count;
-		}
-	}
-
 	std::map<std::string, std::string> read_settings(zip::reader& r)
 	{
 		std::map<std::string, std::string> x;
@@ -125,11 +59,13 @@ namespace
 			if(!regex_match("port[0-9]+|setting\\..+", i))
 				continue;
 			std::string s;
+			std::string v;
 			if(i.substr(0, 4) == "port")
 				s = i;
 			else
 				s = i.substr(8);
-			read_linefile(r, i, x[s], true);
+			if(r.read_linefile(i, v, true))
+				x[s] = v;
 		}
 		return x;
 	}
@@ -198,77 +134,6 @@ namespace
 	}
 }
 
-
-template<typename T>
-void read_numeric_file(zip::reader& r, const std::string& member, T& out, bool conditional = false)
-	throw(std::bad_alloc, std::runtime_error)
-{
-	std::string _out;
-	read_linefile(r, member, _out, conditional);
-	if(conditional && _out == "")
-		return;
-	out = parse_value<int64_t>(_out);
-}
-
-template<typename T>
-void write_numeric_file(zip::writer& w, const std::string& member, T value) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	std::ostringstream x;
-	x << value;
-	write_linefile(w, member, x.str());
-}
-
-void write_raw_file(zip::writer& w, const std::string& member, std::vector<char>& content) throw(std::bad_alloc,
-	std::runtime_error)
-{
-	std::ostream& m = w.create_file(member);
-	try {
-		m.write(&content[0], content.size());
-		if(!m)
-			throw std::runtime_error("Can't write ZIP file member");
-		w.close_file();
-	} catch(...) {
-		w.close_file();
-		throw;
-	}
-}
-
-std::vector<char> read_raw_file(zip::reader& r, const std::string& member) throw(std::bad_alloc, std::runtime_error)
-{
-	std::vector<char> out;
-	std::istream& m = r[member];
-	try {
-		boost::iostreams::back_insert_device<std::vector<char>> rd(out);
-		boost::iostreams::copy(m, rd);
-		delete &m;
-	} catch(...) {
-		delete &m;
-		throw;
-	}
-	return out;
-}
-
-uint64_t decode_uint64(unsigned char* buf)
-{
-	return ((uint64_t)buf[0] << 56) |
-		((uint64_t)buf[1] << 48) |
-		((uint64_t)buf[2] << 40) |
-		((uint64_t)buf[3] << 32) |
-		((uint64_t)buf[4] << 24) |
-		((uint64_t)buf[5] << 16) |
-		((uint64_t)buf[6] << 8) |
-		((uint64_t)buf[7]);
-}
-
-uint32_t decode_uint32(unsigned char* buf)
-{
-	return ((uint32_t)buf[0] << 24) |
-		((uint32_t)buf[1] << 16) |
-		((uint32_t)buf[2] << 8) |
-		((uint32_t)buf[3]);
-}
-
 void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::string>>& authors)
 	throw(std::bad_alloc, std::runtime_error)
 {
@@ -289,7 +154,7 @@ void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::s
 
 std::string read_rrdata(zip::reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 {
-	out = read_raw_file(r, "rrdata");
+	r.read_raw_file("rrdata", out);
 	uint64_t count = rrdata.count(out);
 	std::ostringstream x;
 	x << count;
@@ -301,7 +166,7 @@ void write_rrdata(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 	uint64_t count;
 	std::vector<char> out;
 	count = rrdata.write(out);
-	write_raw_file(w, "rrdata", out);
+	w.write_raw_file("rrdata", out);
 	std::ostream& m2 = w.create_file("rerecords");
 	try {
 		m2 << count << std::endl;
@@ -374,7 +239,6 @@ void read_subtitles(zip::reader& r, const std::string& file, std::map<moviefile_
 		delete &m;
 		throw;
 	}
-
 }
 
 void write_subtitles(zip::writer& w, const std::string& file, std::map<moviefile_subtiming, std::string>& x)
@@ -491,29 +355,29 @@ moviefile::brief_info::brief_info(const std::string& filename)
 	}
 	zip::reader r(filename);
 	std::string tmp;
-	read_linefile(r, "systemid", tmp);
+	r.read_linefile("systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
 		throw std::runtime_error("Not lsnes movie");
-	read_linefile(r, "gametype", sysregion);
-	read_linefile(r, "coreversion", corename);
-	read_linefile(r, "projectid", projectid);
+	r.read_linefile("gametype", sysregion);
+	r.read_linefile("coreversion", corename);
+	r.read_linefile("projectid", projectid);
 	if(r.has_member("savestate"))
-		read_numeric_file(r, "saveframe", current_frame);
+		r.read_numeric_file("saveframe", current_frame);
 	else
 		current_frame = 0;
-	read_numeric_file(r, "rerecords", rerecords);
-	read_linefile(r, "rom.sha256", hash[0], true);
-	read_linefile(r, "romxml.sha256", hashxml[0], true);
-	read_linefile(r, "rom.hint", hint[0], true);
+	r.read_numeric_file("rerecords", rerecords);
+	r.read_linefile("rom.sha256", hash[0], true);
+	r.read_linefile("romxml.sha256", hashxml[0], true);
+	r.read_linefile("rom.hint", hint[0], true);
 	unsigned base = 97;
 	if(r.has_member("slot`.sha256"))
 		base = 96;
 	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), hash[i],
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), hash[i],
 			true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
 			hashxml[i], true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), hint[i],
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), hint[i],
 			true);
 	}
 }
@@ -600,13 +464,13 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		delete &s;
 	}
 	zip::reader r(movie);
-	read_linefile(r, "systemid", tmp);
+	r.read_linefile("systemid", tmp);
 	if(tmp.substr(0, 8) != "lsnes-rr")
 		throw std::runtime_error("Not lsnes movie");
-	read_linefile(r, "controlsversion", tmp);
+	r.read_linefile("controlsversion", tmp);
 	if(tmp != "0")
 		throw std::runtime_error("Can't decode movie data");
-	read_linefile(r, "gametype", tmp);
+	r.read_linefile("gametype", tmp);
 	try {
 		gametype = &romtype.lookup_sysregion(tmp);
 	} catch(std::bad_alloc& e) {
@@ -619,62 +483,62 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
 	input.clear(ports);
-	read_linefile(r, "gamename", gamename, true);
-	read_linefile(r, "projectid", projectid);
+	r.read_linefile("gamename", gamename, true);
+	r.read_linefile("projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
-	read_linefile(r, "coreversion", coreversion);
-	read_linefile(r, "rom.sha256", romimg_sha256[0], true);
-	read_linefile(r, "romxml.sha256", romxml_sha256[0], true);
-	read_linefile(r, "rom.hint", namehint[0], true);
+	r.read_linefile("coreversion", coreversion);
+	r.read_linefile("rom.sha256", romimg_sha256[0], true);
+	r.read_linefile("romxml.sha256", romxml_sha256[0], true);
+	r.read_linefile("rom.hint", namehint[0], true);
 	unsigned base = 97;
 	if(r.has_member("slot`.sha256"))
 		base = 96;
 	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), romimg_sha256[i],
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << ".sha256").str(), romimg_sha256[i],
 			true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << "xml.sha256").str(),
 			romxml_sha256[i], true);
-		read_linefile(r, (stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), namehint[i],
+		r.read_linefile((stringfmt() << "slot" << (char)(base + i - 1) << ".hint").str(), namehint[i],
 			true);
 	}
 	read_subtitles(r, "subtitles", subtitles);
 	movie_rtc_second = DEFAULT_RTC_SECOND;
 	movie_rtc_subsecond = DEFAULT_RTC_SUBSECOND;
-	read_numeric_file(r, "starttime.second", movie_rtc_second, true);
-	read_numeric_file(r, "starttime.subsecond", movie_rtc_subsecond, true);
+	r.read_numeric_file("starttime.second", movie_rtc_second, true);
+	r.read_numeric_file("starttime.subsecond", movie_rtc_subsecond, true);
 	rtc_second = movie_rtc_second;
 	rtc_subsecond = movie_rtc_subsecond;
 	if(r.has_member("savestate.anchor"))
-		anchor_savestate = read_raw_file(r, "savestate.anchor");
+		r.read_raw_file("savestate.anchor", anchor_savestate);
 	if(r.has_member("savestate")) {
 		is_savestate = true;
-		read_numeric_file(r, "saveframe", save_frame, true);
-		read_numeric_file(r, "lagcounter", lagged_frames, true);
+		r.read_numeric_file("saveframe", save_frame, true);
+		r.read_numeric_file("lagcounter", lagged_frames, true);
 		read_pollcounters(r, "pollcounters", pollcounters);
 		if(r.has_member("hostmemory"))
-			host_memory = read_raw_file(r, "hostmemory");
-		savestate = read_raw_file(r, "savestate");
+			r.read_raw_file("hostmemory", host_memory);
+		r.read_raw_file("savestate", savestate);
 		for(auto name : r)
 			if(name.length() >= 5 && name.substr(0, 5) == "sram.")
-				sram[name.substr(5)] = read_raw_file(r, name);
-		screenshot = read_raw_file(r, "screenshot");
+				r.read_raw_file(name, sram[name.substr(5)]);
+		r.read_raw_file("screenshot", screenshot);
 		//If these can't be read, just use some (wrong) values.
-		read_numeric_file(r, "savetime.second", rtc_second, true);
-		read_numeric_file(r, "savetime.subsecond", rtc_subsecond, true);
+		r.read_numeric_file("savetime.second", rtc_second, true);
+		r.read_numeric_file("savetime.subsecond", rtc_subsecond, true);
 		uint64_t _poll_flag = 2;	//Legacy behaviour is the default.
-		read_numeric_file(r, "pollflag", _poll_flag, true);
+		r.read_numeric_file("pollflag", _poll_flag, true);
 		poll_flag = _poll_flag;
 		active_macros = read_active_macros(r, "macros");
 	}
 	for(auto name : r)
 		if(name.length() >= 8 && name.substr(0, 8) == "initram.")
-			ramcontent[name.substr(8)] = read_raw_file(r, name);
+			 r.read_raw_file(name, ramcontent[name.substr(8)]);
 	if(rtc_subsecond < 0 || movie_rtc_subsecond < 0)
 		throw std::runtime_error("Invalid RTC subsecond value");
 	std::string name = r.find_first();
 	for(auto name : r)
 		if(name.length() >= 10 && name.substr(0, 10) == "moviesram.")
-			movie_sram[name.substr(10)] = read_raw_file(r, name);
+			r.read_raw_file(name, movie_sram[name.substr(10)]);
 	read_authors_file(r, authors);
 	read_input(r, input, 0);
 }
@@ -718,55 +582,55 @@ void moviefile::save(std::ostream& stream) throw(std::bad_alloc, std::runtime_er
 
 void moviefile::save(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 {
-	write_linefile(w, "gametype", gametype->get_name());
+	w.write_linefile("gametype", gametype->get_name());
 	write_settings<zip::writer>(w, settings, gametype->get_type().get_settings(), [](zip::writer& w,
 		const std::string& name, const std::string& value) -> void {
 			if(regex_match("port[0-9]+", name))
-				write_linefile(w, name, value);
+				w.write_linefile(name, value);
 			else
-				write_linefile(w, "setting." + name, value);
+				w.write_linefile("setting." + name, value);
 		});
-	write_linefile(w, "gamename", gamename, true);
-	write_linefile(w, "systemid", "lsnes-rr1");
-	write_linefile(w, "controlsversion", "0");
+	w.write_linefile("gamename", gamename, true);
+	w.write_linefile("systemid", "lsnes-rr1");
+	w.write_linefile("controlsversion", "0");
 	coreversion = gametype->get_type().get_core_identifier();
-	write_linefile(w, "coreversion", coreversion);
-	write_linefile(w, "projectid", projectid);
+	w.write_linefile("coreversion", coreversion);
+	w.write_linefile("projectid", projectid);
 	write_rrdata(w);
-	write_linefile(w, "rom.sha256", romimg_sha256[0], true);
-	write_linefile(w, "romxml.sha256", romxml_sha256[0], true);
-	write_linefile(w, "rom.hint", namehint[0], true);
+	w.write_linefile("rom.sha256", romimg_sha256[0], true);
+	w.write_linefile("romxml.sha256", romxml_sha256[0], true);
+	w.write_linefile("rom.hint", namehint[0], true);
 	for(size_t i = 1; i < ROM_SLOT_COUNT; i++) {
-		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i],
+		w.write_linefile((stringfmt() << "slot" << (char)(96 + i) << ".sha256").str(), romimg_sha256[i],
 			true);
-		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(), romxml_sha256[i],
+		w.write_linefile((stringfmt() << "slot" << (char)(96 + i) << "xml.sha256").str(), romxml_sha256[i],
 			true);
-		write_linefile(w, (stringfmt() << "slot" << (char)(96 + i) << ".hint").str(), namehint[i],
+		w.write_linefile((stringfmt() << "slot" << (char)(96 + i) << ".hint").str(), namehint[i],
 			true);
 	}
 	write_subtitles(w, "subtitles", subtitles);
 	for(auto i : movie_sram)
-		write_raw_file(w, "moviesram." + i.first, i.second);
-	write_numeric_file(w, "starttime.second", movie_rtc_second);
-	write_numeric_file(w, "starttime.subsecond", movie_rtc_subsecond);
+		w.write_raw_file("moviesram." + i.first, i.second);
+	w.write_numeric_file("starttime.second", movie_rtc_second);
+	w.write_numeric_file("starttime.subsecond", movie_rtc_subsecond);
 	if(!anchor_savestate.empty())
-			write_raw_file(w, "savestate.anchor", anchor_savestate);
+			w.write_raw_file("savestate.anchor", anchor_savestate);
 	if(is_savestate) {
-		write_numeric_file(w, "saveframe", save_frame);
-		write_numeric_file(w, "lagcounter", lagged_frames);
+		w.write_numeric_file("saveframe", save_frame);
+		w.write_numeric_file("lagcounter", lagged_frames);
 		write_pollcounters(w, "pollcounters", pollcounters);
-		write_raw_file(w, "hostmemory", host_memory);
-		write_raw_file(w, "savestate", savestate);
-		write_raw_file(w, "screenshot", screenshot);
+		w.write_raw_file("hostmemory", host_memory);
+		w.write_raw_file("savestate", savestate);
+		w.write_raw_file("screenshot", screenshot);
 		for(auto i : sram)
-			write_raw_file(w, "sram." + i.first, i.second);
-		write_numeric_file(w, "savetime.second", rtc_second);
-		write_numeric_file(w, "savetime.subsecond", rtc_subsecond);
-		write_numeric_file(w, "pollflag", poll_flag);
+			w.write_raw_file("sram." + i.first, i.second);
+		w.write_numeric_file("savetime.second", rtc_second);
+		w.write_numeric_file("savetime.subsecond", rtc_subsecond);
+		w.write_numeric_file("pollflag", poll_flag);
 		write_active_macros(w, "macros", active_macros);
 	}
 	for(auto i : ramcontent)
-		write_raw_file(w, "initram." + i.first, i.second);
+		w.write_raw_file("initram." + i.first, i.second);
 	write_authors_file(w, authors);
 	write_input(w, input);
 	w.commit();
@@ -919,7 +783,9 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 		});
 	}
 
-	binary_write_movie(out, input);
+	out.extension(TAG_MOVIE, [this](binarystream::output& s) {
+		input.save_binary(s);
+	}, true, input.binary_size());
 }
 
 void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
@@ -958,7 +824,7 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 			uint64_t n = s.number();
 			this->active_macros[s.string_implicit()] = n;
 		}},{TAG_MOVIE, [this](binarystream::input& s) {
-			binary_read_movie(s, input);
+			input.load_binary(s);
 		}},{TAG_MOVIE_SRAM, [this](binarystream::input& s) {
 			std::string a = s.string();
 			s.blob_implicit(this->movie_sram[a]);

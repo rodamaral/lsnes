@@ -17,6 +17,7 @@
 #include <list>
 #include <set>
 #include "json.hpp"
+#include "binarystream.hpp"
 
 /**
  * Memory to allocate for controller frame.
@@ -1173,6 +1174,27 @@ public:
  * Get content of given page.
  */
 	const unsigned char* get_page_buffer(size_t page) const { return pages.find(page)->second.content; }
+/**
+ * Get binary save size.
+ *
+ * Returns: The number of bytes for binary save.
+ */
+	uint64_t binary_size() const throw();
+/**
+ * Save in binary form.
+ *
+ * Parameter stream: The stream to save to.
+ * Throws std::runtime_error: Error saving.
+ */
+	void save_binary(binarystream::output& stream) const throw(std::runtime_error);
+/**
+ * Load from binary form. May partially overwrite on failure.
+ *
+ * Parameter stream: The stream to load from.
+ * Throws std::bad_alloc: Not enough memory.
+ * Throws std::runtime_error: Error saving.
+ */
+	void load_binary(binarystream::input& stream) throw(std::bad_alloc, std::runtime_error);
 /**
  * Check that the movies are compatible up to a point.
  *

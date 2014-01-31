@@ -716,6 +716,45 @@ bool controller_frame_vector::compatible(controller_frame_vector& with, uint64_t
 	return true;
 }
 
+uint64_t controller_frame_vector::binary_size() const throw()
+{
+	return size() * get_stride();
+}
+
+void controller_frame_vector::save_binary(binarystream::output& stream) const throw(std::runtime_error)
+{
+	uint64_t pages = get_page_count();
+	uint64_t stride = get_stride();
+	uint64_t pageframes = get_frames_per_page();
+	uint64_t vsize = size();
+	size_t pagenum = 0;
+	while(vsize > 0) {
+		uint64_t count = (vsize > pageframes) ? pageframes : vsize;
+		size_t bytes = count * stride;
+		const unsigned char* content = get_page_buffer(pagenum++);
+		stream.raw(content, bytes);
+		vsize -= count;
+	}
+}
+
+void controller_frame_vector::load_binary(binarystream::input& stream) throw(std::bad_alloc, std::runtime_error)
+{
+	uint64_t stride = get_stride();
+	uint64_t pageframes = get_frames_per_page();
+	uint64_t vsize = 0;
+	size_t pagenum = 0;
+	uint64_t pagesize = stride * pageframes;
+	while(stream.get_left()) {
+		resize(vsize + pageframes);
+		unsigned char* contents = get_page_buffer(pagenum++);
+		uint64_t gcount = min(pagesize, stream.get_left());
+		stream.raw(contents, gcount);
+		vsize += (gcount / stride);
+	}
+	resize(vsize);
+	recount_frames();
+}
+
 controller_frame::controller_frame() throw()
 {
 	memset(memory, 0, sizeof(memory));
