@@ -581,7 +581,6 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
 		our_movie.is_savestate = false;
-		our_movie.input = movb.get_movie().save();
 		auto prj = project_get();
 		if(prj) {
 			our_movie.gamename = prj->gamename;

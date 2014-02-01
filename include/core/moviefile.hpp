@@ -223,6 +223,6 @@ private:
 	void save(zip::writer& w) throw(std::bad_alloc, std::runtime_error);
 };
 
-void emerg_save_movie(const moviefile& mv, const controller_frame_vector& v);
+void emerg_save_movie(const moviefile& mv);
 
 #endif

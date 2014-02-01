@@ -222,7 +222,6 @@ void do_save_state(const std::string& filename, int binary) throw(std::bad_alloc
 		get_framebuffer().save(our_movie.screenshot);
 		movb.get_movie().save_state(our_movie.projectid, our_movie.save_frame, our_movie.lagged_frames,
 			our_movie.pollcounters);
-		our_movie.input = movb.get_movie().save();
 		our_movie.poll_flag = our_rom.rtype->get_pflag();
 		auto prj = project_get();
 		if(prj) {
@@ -264,7 +263,6 @@ void do_save_movie(const std::string& filename, int binary) throw(std::bad_alloc
 	try {
 		uint64_t origtime = get_utime();
 		our_movie.is_savestate = false;
-		our_movie.input = movb.get_movie().save();
 		auto prj = project_get();
 		if(prj) {
 			our_movie.gamename = prj->gamename;
@@ -312,9 +310,11 @@ void reinitialize_movie(core_sysregion* sysreg)
 	mov.lazy_project_create = true;
 	our_movie = mov;
 	movie newmovie;
+	newmovie.set_movie_data(&mov.input);
 	newmovie.load("0", mov.projectid, mov.input);
 	newmovie.readonly_mode(false);
 	movb.get_movie() = newmovie;
+	movb.get_movie().set_movie_data(&our_movie.input);
 }
 
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
@@ -459,10 +459,13 @@ void do_load_state(struct moviefile& _movie, int lmode)
 		lmode = LOAD_STATE_PRESERVE;
 
 	movie newmovie;
-	if(lmode == LOAD_STATE_PRESERVE)
+	if(lmode == LOAD_STATE_PRESERVE) {
 		newmovie = movb.get_movie();
-	else
+		newmovie.set_movie_data(&our_movie.input);
+	} else {
+		newmovie.set_movie_data(&_movie.input);
 		newmovie.load(_movie.rerecords, _movie.projectid, _movie.input);
+	}
 
 	if(will_load_state)
 		newmovie.restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
@@ -512,9 +515,10 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	}
 
 	//Okay, copy the movie data.
-	if(lmode != LOAD_STATE_PRESERVE)
+	if(lmode != LOAD_STATE_PRESERVE) {
 		our_movie = _movie;
-	else {
+		movb.get_movie().set_movie_data(&our_movie.input);
+	} else {
 		//Some fields MUST be taken from movie or one gets desyncs.
 		our_movie.is_savestate = _movie.is_savestate;
 		our_movie.rtc_second = _movie.rtc_second;
@@ -533,6 +537,7 @@ void do_load_state(struct moviefile& _movie, int lmode)
 	if(lmode != LOAD_STATE_PRESERVE)
 		lua_callback_movie_lost("load");
 	movb.get_movie() = newmovie;
+	movb.get_movie().set_movie_data(&our_movie.input);
 	//Activate RW mode if needed.
 	if(lmode == LOAD_STATE_RW)
 		movb.get_movie().readonly_mode(false);

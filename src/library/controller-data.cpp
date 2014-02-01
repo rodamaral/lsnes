@@ -514,7 +514,7 @@ size_t controller_frame_vector::recount_frames() throw()
 
 	}
 	real_frame_count = ret;
-	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
+	call_framecount_notification(old_frame_count);
 	return ret;
 }
 
@@ -528,7 +528,7 @@ void controller_frame_vector::clear(const port_type_set& p) throw(std::runtime_e
 	clear_cache();
 	pages.clear();
 	real_frame_count = 0;
-	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
+	call_framecount_notification(old_frame_count);
 }
 
 controller_frame_vector::~controller_frame_vector() throw()
@@ -601,7 +601,7 @@ controller_frame_vector& controller_frame_vector::operator=(const controller_fra
 		const page& pg2 = v.pages.find(i)->second;
 		pg = pg2;
 	}
-	if(on_framecount_change) on_framecount_change(*this, old_frame_count);
+	call_framecount_notification(old_frame_count);
 	return *this;
 }
 
@@ -625,7 +625,7 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 			memset(pages[pages_needed - 1].content + offset, 0, CONTROLLER_PAGE_SIZE - offset);
 		}
 		frames = newsize;
-		if(on_framecount_change) on_framecount_change(*this, old_frame_count);
+		call_framecount_notification(old_frame_count);
 	} else if(newsize > frames) {
 		//Enlarge movie.
 		size_t current_pages = (frames + frames_per_page - 1) / frames_per_page;
@@ -643,7 +643,7 @@ void controller_frame_vector::resize(size_t newsize) throw(std::bad_alloc)
 		}
 		frames = newsize;
 		//This can use real_frame_count, because the real frame count won't change.
-		if(on_framecount_change) on_framecount_change(*this, real_frame_count);
+		call_framecount_notification(real_frame_count);
 	}
 }
 
@@ -753,6 +753,24 @@ void controller_frame_vector::load_binary(binarystream::input& stream) throw(std
 	}
 	resize(vsize);
 	recount_frames();
+}
+
+void controller_frame_vector::swap_data(controller_frame_vector& v) throw()
+{
+	uint64_t toldsize = real_frame_count;
+	uint64_t voldsize = v.real_frame_count;
+	std::swap(pages, v.pages);
+	std::swap(frames_per_page, v.frames_per_page);
+	std::swap(frame_size, v.frame_size);
+	std::swap(frames, v.frames);
+	std::swap(types, v.types);
+	std::swap(cache_page_num, v.cache_page_num);
+	std::swap(cache_page, v.cache_page);
+	std::swap(real_frame_count, v.real_frame_count);
+	if(!freeze_count)
+		call_framecount_notification(toldsize);
+	if(!v.freeze_count)
+		v.call_framecount_notification(voldsize);
 }
 
 controller_frame::controller_frame() throw()

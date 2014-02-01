@@ -20,6 +20,11 @@ public:
 	movie() throw(std::bad_alloc);
 
 /**
+ * Dtor.
+ */
+	~movie();
+
+/**
  * Is the movie in readonly mode?
  *
  * returns: True if in read-only mode, false if in read-write mode.
@@ -71,7 +76,7 @@ public:
  *
  * returns: The number of frames.
  */
-	uint64_t get_frame_count() throw() { movie_data.count_frames(); }
+	uint64_t get_frame_count() throw() { movie_data->count_frames(); }
 
 /**
  * Get number of current frame in movie
@@ -150,14 +155,6 @@ public:
  */
 	void load(const std::string& rerecs, const std::string& project_id, controller_frame_vector& input)
 		throw(std::bad_alloc, std::runtime_error);
-
-/**
- * Saves the movie data.
- *
- * returns: The movie data.
- * throws std::bad_alloc: Not enough memory.
- */
-	controller_frame_vector save() throw(std::bad_alloc);
 
 /**
  * This method serializes the state of movie code.
@@ -242,10 +239,6 @@ public:
  */
 	void set_pflag_handler(poll_flag* handler);
 /**
- * Get the internal controller frame vector.
- */
-	controller_frame_vector& get_frame_vector() throw() { return movie_data; }
-/**
  * Flush caches.
  */
 	void clear_caches() throw();
@@ -282,8 +275,18 @@ public:
  */
 	bool compatible(controller_frame_vector& with)
 	{
-		return movie_data.compatible(with, current_frame, pollcounters.rawdata());
+		return movie_data->compatible(with, current_frame, pollcounters.rawdata());
 	}
+/**
+ * Set external movie data.
+ *
+ * Parameter data: New movie data.
+ */
+	void set_movie_data(controller_frame_vector* data);
+/**
+ * Copy ctor.
+ */
+	movie(const movie& mov);
 private:
 	//Sequence number.
 	uint64_t seqno;
@@ -298,7 +301,7 @@ private:
 	//Project ID.
 	std::string _project_id;
 	//The actual controller data.
-	controller_frame_vector movie_data;
+	controller_frame_vector* movie_data;
 	//Current frame + 1 (0 before next_frame() has been called.
 	uint64_t current_frame;
 	//First subframe in current frame (movie_data.size() if no subframes have been stored).
@@ -312,6 +315,8 @@ private:
 	//Cached subframes.
 	uint64_t cached_frame;
 	uint64_t cached_subframe;
+	//Handle for notifications.
+	uint64_t movie_data_nh;
 	//Count present subframes in frame starting from first_subframe (returns 0 if out of movie).
 	uint32_t count_changes(uint64_t first_subframe) throw();
 };

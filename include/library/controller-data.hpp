@@ -18,6 +18,7 @@
 #include <set>
 #include "json.hpp"
 #include "binarystream.hpp"
+#include "integer-pool.hpp"
 
 /**
  * Memory to allocate for controller frame.
@@ -1212,15 +1213,45 @@ public:
 	void notify_sync_change(short polarity) {
 		uint64_t old_frame_count = real_frame_count;
 		real_frame_count = real_frame_count + polarity;
-		if(on_framecount_change && !freeze_count) on_framecount_change(*this, old_frame_count);
+		if(!freeze_count) call_framecount_notification(old_frame_count);
 	}
 /**
  * Set where to deliver frame count change notifications to.
+ *
+ * Parameter cb: Callback to register.
+ * Returns: Handle for callback.
  */
-	void set_framecount_notification(std::function<void(controller_frame_vector& src, uint64_t old)> cb)
+	uint64_t set_framecount_notification(std::function<void(controller_frame_vector& src, uint64_t old)> cb)
 	{
-		on_framecount_change = cb;
+		integer_pool::holder h(cb_handles);
+		on_framecount_change[h()] = cb;
+		return h.commit();
 	}
+/**
+ * Clear framecount change notification.
+ *
+ * Parameter handle: Handle to clear.
+ */
+	void clear_framecount_notification(uint64_t handle)
+	{
+		on_framecount_change.erase(handle);
+		cb_handles(handle);
+	}
+/**
+ * Call framecount change notification.
+ */
+	void call_framecount_notification(uint64_t oldcount)
+	{
+		for(auto& i : on_framecount_change)
+			try { i.second(*this, oldcount); } catch(...) {}
+	}
+/**
+ * Swap frame data.
+ *
+ * Only the frame data is swapped, not the notifications.
+ */
+	void swap_data(controller_frame_vector& v) throw();
+
 /**
  * Freeze framecount notifications.
  */
@@ -1237,8 +1268,7 @@ public:
 		{
 			frozen.freeze_count--;
 			if(frozen.freeze_count == 0)
-				if(frozen.on_framecount_change)
-					frozen.on_framecount_change(frozen, frozen.frame_count_at_freeze);
+				frozen.call_framecount_notification(frozen.frame_count_at_freeze);
 		}
 	private:
 		notify_freeze(const notify_freeze&);
@@ -1263,7 +1293,8 @@ private:
 	uint64_t real_frame_count;
 	uint64_t frame_count_at_freeze;
 	size_t freeze_count;
-	std::function<void(controller_frame_vector& src, uint64_t old)> on_framecount_change;
+	std::map<uint64_t, std::function<void(controller_frame_vector& src, uint64_t old)>> on_framecount_change;
+	integer_pool cb_handles;
 	size_t walk_helper(size_t frame, bool sflag) throw();
 	void clear_cache()
 	{

@@ -151,7 +151,7 @@ namespace
 	void fatal_signal_handler(int sig)
 	{
 		write(2, "Caught fatal signal!\n", 21);
-		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+		emerg_save_movie(our_movie);
 		signal(sig, SIG_DFL);
 		raise(sig);
 	}
@@ -159,14 +159,14 @@ namespace
 	void terminate_handler()
 	{
 		write(2, "Terminating abnormally!\n", 24);
-		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+		emerg_save_movie(our_movie);
 		std::cerr << "Exiting on fatal error" << std::endl;
 		exit(1);
 	}
 
 	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+		emerg_save_movie(our_movie);
 	});
 
 	//% is intentionally missing.
@@ -326,7 +326,7 @@ std::string get_config_path() throw(std::bad_alloc)
 
 void OOM_panic()
 {
-	emerg_save_movie(our_movie, movb.get_movie().get_frame_vector());
+	emerg_save_movie(our_movie);
 	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }
