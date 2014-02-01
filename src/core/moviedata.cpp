@@ -317,6 +317,27 @@ void reinitialize_movie(core_sysregion* sysreg)
 	movb.get_movie().set_movie_data(&our_movie.input);
 }
 
+void populate_volatile_ram(moviefile& mf, std::list<core_vma_info>& vmas)
+{
+	for(auto i : vmas) {
+		if(!i.volatile_flag)
+			continue;
+		if(i.readonly)
+			continue;
+		//FIXME: The special flag might have to be split.
+		if(i.iospace_rw)
+			continue;
+		if(!mf.ramcontent.count(i.name))
+			continue;
+		uint64_t csize = min((uint64_t)mf.ramcontent[i.name].size(), i.size);
+		if(i.backing_ram)
+			memcpy(i.backing_ram, &mf.ramcontent[i.name][0], csize);
+		else
+			for(uint64_t o = 0; o < csize; o++)
+				i.iospace_rw(o, mf.ramcontent[i.name][o], true);
+	}
+}
+
 void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 {
 	bool force_rw = false;
@@ -364,6 +385,8 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		}
 
 		our_rom.rtype->load_sram(our_movie.movie_sram);
+		std::list<core_vma_info> vmas = our_rom.rtype->vma_list();
+		populate_volatile_ram(our_movie, vmas);
 		our_movie.rtc_second = our_movie.movie_rtc_second;
 		our_movie.rtc_subsecond = our_movie.movie_rtc_subsecond;
 		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
@@ -391,27 +414,6 @@ void do_load_beginning(bool reload) throw(std::bad_alloc, std::runtime_error)
 		messages << "ROM reloaded." << std::endl;
 	else
 		messages << "Movie rewound to beginning." << std::endl;
-}
-
-void populate_volatile_ram(moviefile& mf, std::list<core_vma_info>& vmas)
-{
-	for(auto i : vmas) {
-		if(!i.volatile_flag)
-			continue;
-		if(i.readonly)
-			continue;
-		//FIXME: The special flag might have to be split.
-		if(i.iospace_rw)
-			continue;
-		if(!mf.ramcontent.count(i.name))
-			continue;
-		uint64_t csize = min((uint64_t)mf.ramcontent[i.name].size(), i.size);
-		if(i.backing_ram)
-			memcpy(i.backing_ram, &mf.ramcontent[i.name][0], csize);
-		else
-			for(uint64_t o = 0; o < csize; o++)
-				i.iospace_rw(o, mf.ramcontent[i.name][o], true);
-	}
 }
 
 //Load state from loaded movie file (does not catch errors).
