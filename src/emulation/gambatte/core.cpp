@@ -56,6 +56,7 @@ namespace
 	time_t rtc_fixed_val;
 	gambatte::GB* instance;
 	bool reallocate_debug = false;
+	bool sigillcrash = false;
 #ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
 	gambatte::debugbuffer debugbuf;
 	size_t cur_romsize;
@@ -298,7 +299,7 @@ namespace
 	}
 
 	int load_rom_common(core_romimage* img, unsigned flags, uint64_t rtc_sec, uint64_t rtc_subsec,
-		core_type* inttype)
+		core_type* inttype, std::map<std::string, std::string>& settings)
 	{
 		basic_init();
 		const char* markup = img[0].markup;
@@ -346,6 +347,14 @@ namespace
 			cur_romsize = romsize;
 		}
 		instance->set_debug_buffer(debugbuf);
+#endif
+		sigillcrash = false;
+#ifdef GAMBATTE_SUPPORTS_EMU_FLAGS
+		unsigned emuflags = 0;
+		if(settings.count("sigillcrash") && settings["sigillcrash"] == "1")
+			emuflags |= 1;
+		sigillcrash = (emuflags & 1);
+		instance->set_emuflags(emuflags);
 #endif
 		rtc_fixed = false;
 		romdata.resize(size);
@@ -783,6 +792,13 @@ namespace
 		}
 	} gambatte_core;
 
+	std::vector<core_setting_value_param> boolean_values = {{"0", "False", 0}, {"1", "True", 1}};
+	core_setting_group gambatte_settings = {
+#ifdef GAMBATTE_SUPPORTS_EMU_FLAGS
+		{"sigillcrash", "Crash on SIGILL", "0", boolean_values},
+#endif
+	};
+
 	struct _type_dmg : public core_type, public core_sysregion
 	{
 		_type_dmg()
@@ -794,7 +810,7 @@ namespace
 				.bios = NULL,
 				.regions = {&gambatte_core},
 				.images = {{"rom", "Cartridge ROM", 1, 0, 0, "gb;dmg"}},
-				.settings = {},
+				.settings = gambatte_settings,
 				.core = &gambatte_core,
 			}}),
 			core_sysregion("gdmg", *this, gambatte_core) {}
@@ -802,7 +818,7 @@ namespace
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
-			return load_rom_common(img, gambatte::GB::FORCE_DMG, secs, subsecs, this);
+			return load_rom_common(img, gambatte::GB::FORCE_DMG, secs, subsecs, this, settings);
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
 		{
@@ -821,7 +837,7 @@ namespace
 				.bios = NULL,
 				.regions = {&gambatte_core},
 				.images = {{"rom", "Cartridge ROM", 1, 0, 0, "gbc;cgb"}},
-				.settings = {},
+				.settings = gambatte_settings,
 				.core = &gambatte_core,
 			}}),
 			core_sysregion("ggbc", *this, gambatte_core) {}
@@ -829,7 +845,7 @@ namespace
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
-			return load_rom_common(img, 0, secs, subsecs, this);
+			return load_rom_common(img, 0, secs, subsecs, this, settings);
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
 		{
@@ -848,7 +864,7 @@ namespace
 				.bios = NULL,
 				.regions = {&gambatte_core},
 				.images = {{"rom", "Cartridge ROM", 1, 0, 0, ""}},
-				.settings = {},
+				.settings = gambatte_settings,
 				.core = &gambatte_core,
 			}}),
 			core_sysregion("ggbca", *this, gambatte_core) {}
@@ -856,7 +872,7 @@ namespace
 		int t_load_rom(core_romimage* img, std::map<std::string, std::string>& settings,
 			uint64_t secs, uint64_t subsecs)
 		{
-			return load_rom_common(img, gambatte::GB::GBA_CGB, secs, subsecs, this);
+			return load_rom_common(img, gambatte::GB::GBA_CGB, secs, subsecs, this, settings);
 		}
 		controller_set t_controllerconfig(std::map<std::string, std::string>& settings)
 		{
@@ -875,6 +891,11 @@ namespace
 		unsigned y = 32;
 		for(auto i : cover_information()) {
 			cover_render_string(cover_fbmem, 0, y, i, 0xFFFFFF, 0x000000, 480, 432, 1920, 4);
+			y += 16;
+		}
+		if(sigillcrash) {
+			cover_render_string(cover_fbmem, 0, y, "Crash on SIGILL enabled", 0xFFFFFF, 0x000000, 480,
+				432, 1920, 4);
 			y += 16;
 		}
 	}

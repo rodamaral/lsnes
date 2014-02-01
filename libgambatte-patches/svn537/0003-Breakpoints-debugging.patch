@@ -1,7 +1,7 @@
 From 6725b4545adc3e94e0344e5f904267349ce167ba Mon Sep 17 00:00:00 2001
 From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
 Date: Thu, 28 Nov 2013 22:05:32 +0200
-Subject: [PATCH 3/4] Breakpoints & debugging
+Subject: [PATCH 3/5] Breakpoints & debugging
 
 ---
  libgambatte/include/gambatte.h    |  23 +++++++++
@@ -486,5 +486,5 @@ index a531930..4a252b7 100644
  	void nontrivial_write(unsigned p, unsigned data, unsigned cycleCounter);
  	void updateSerial(unsigned cc);
 -- 
-1.8.5
+1.9.rc1
 

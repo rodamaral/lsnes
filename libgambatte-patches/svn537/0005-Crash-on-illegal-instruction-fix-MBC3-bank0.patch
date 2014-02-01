@@ -1,0 +1,192 @@
+From 84fe61ebd27df485ff894d1d05b8950916c6508c Mon Sep 17 00:00:00 2001
+From: Ilari Liusvaara <ilari.liusvaara@elisanet.fi>
+Date: Sat, 1 Feb 2014 12:56:47 +0200
+Subject: [PATCH 5/5] Crash on illegal instruction, fix MBC3 bank0
+
+---
+ libgambatte/include/gambatte.h    |  2 ++
+ libgambatte/src/cpu.cpp           | 15 +++++++++++++++
+ libgambatte/src/cpu.h             |  2 ++
+ libgambatte/src/gambatte.cpp      |  5 +++++
+ libgambatte/src/mem/cartridge.cpp | 11 ++++++++---
+ 5 files changed, 32 insertions(+), 3 deletions(-)
+
+diff --git a/libgambatte/include/gambatte.h b/libgambatte/include/gambatte.h
+index ea2558c..2525dad 100644
+--- a/libgambatte/include/gambatte.h
++++ b/libgambatte/include/gambatte.h
+@@ -19,6 +19,7 @@
+ #ifndef GAMBATTE_H
+ #define GAMBATTE_H
+ #define GAMBATTE_SUPPORTS_ADV_DEBUG
++#define GAMBATTE_SUPPORTS_EMU_FLAGS
+ 
+ #include "gbint.h"
+ #include "inputgetter.h"
+@@ -282,6 +283,7 @@ public:
+ 	void set_debug_buffer(debugbuffer& dbgbuf);
+ 	uint8_t bus_read(unsigned addr);
+ 	void bus_write(unsigned addr, uint8_t val);
++	void set_emuflags(unsigned flags);
+ private:
+ 	void preload_common();
+ 	void postload_common(const unsigned flags);
+diff --git a/libgambatte/src/cpu.cpp b/libgambatte/src/cpu.cpp
+index 40a81e6..037fff2 100644
+--- a/libgambatte/src/cpu.cpp
++++ b/libgambatte/src/cpu.cpp
+@@ -43,6 +43,7 @@ CPU::CPU(time_t (**_getCurrentTime)())
+ , h(0x01)
+ , l(0x4D)
+ , skip_(false)
++, emuflags(0)
+ {
+ }
+ 
+@@ -1703,6 +1704,7 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xD3: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 
+ 				// call nc,nn (24;12 cycles):
+@@ -1770,6 +1772,7 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xDB: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 
+ 				// call z,nn (24;12 cycles):
+@@ -1785,6 +1788,10 @@ void CPU::process(unsigned const cycles) {
+ 
+ 				break;
+ 
++			case 0xDD: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
++				break;
++
+ 			case 0xDE:
+ 				{
+ 					unsigned data;
+@@ -1820,8 +1827,10 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xE3: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 			case 0xE4: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 
+ 			case 0xE5:
+@@ -1868,10 +1877,13 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xEB: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 			case 0xEC: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 			case 0xED: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 
+ 			case 0xEE:
+@@ -1921,6 +1933,7 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xF4: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 
+ 			case 0xF5:
+@@ -1985,8 +1998,10 @@ void CPU::process(unsigned const cycles) {
+ 				break;
+ 
+ 			case 0xFC: // not specified. should freeze.
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 			case 0xFD: // not specified. should freeze
++				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
+ 				break;
+ 			case 0xFE:
+ 				{
+diff --git a/libgambatte/src/cpu.h b/libgambatte/src/cpu.h
+index e7e46ff..c2a340b 100644
+--- a/libgambatte/src/cpu.h
++++ b/libgambatte/src/cpu.h
+@@ -94,6 +94,7 @@ public:
+ 	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
+         uint8_t bus_read(unsigned addr) { return mem_.read(addr, cycleCounter_, false); }
+         void bus_write(unsigned addr, uint8_t val) { mem_.write(addr, val, cycleCounter_); }
++	void set_emuflags(unsigned flags) { emuflags = flags; }
+ 
+ 	unsigned cycleCounter_;
+ 	unsigned short pc_;
+@@ -103,6 +104,7 @@ public:
+ private:
+ 	Memory mem_;
+ 	bool skip_;
++	unsigned emuflags;
+ 
+ 	void process(unsigned cycles);
+ };
+diff --git a/libgambatte/src/gambatte.cpp b/libgambatte/src/gambatte.cpp
+index 47f894e..f2310ed 100644
+--- a/libgambatte/src/gambatte.cpp
++++ b/libgambatte/src/gambatte.cpp
+@@ -362,4 +362,9 @@ void GB::bus_write(unsigned addr, uint8_t val)
+ 	p_->cpu.bus_write(addr, val);
+ }
+ 
++void GB::set_emuflags(unsigned flags)
++{
++	p_->cpu.set_emuflags(flags);
++}
++
+ }
+diff --git a/libgambatte/src/mem/cartridge.cpp b/libgambatte/src/mem/cartridge.cpp
+index 1775139..bfec71c 100644
+--- a/libgambatte/src/mem/cartridge.cpp
++++ b/libgambatte/src/mem/cartridge.cpp
+@@ -294,14 +294,16 @@ public:
+ 	}
+ 
+ 	virtual void romWrite(unsigned const p, unsigned const data) {
++		unsigned abank;
+ 		switch (p >> 13 & 3) {
+ 		case 0:
+ 			enableRam_ = (data & 0xF) == 0xA;
+ 			setRambank();
+ 			break;
+ 		case 1:
+-			rombank_ = data & 0x7F;
+-			memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
++			abank = rombank_ = data & 0x7F;
++			if(!abank) abank = 1;  //Fix pokemon Red.
++			memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
+ 			break;
+ 		case 2:
+ 			rambank_ = data;
+@@ -322,11 +324,14 @@ public:
+ 	}
+ 
+ 	virtual void loadState(SaveState::Mem const &ss) {
++		unsigned abank;
+ 		rombank_ = ss.rombank;
+ 		rambank_ = ss.rambank;
+ 		enableRam_ = ss.enableRam;
+ 		setRambank();
+-		memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
++		abank = rombank_;
++		if(!abank) abank = 1;  //Fix pokemon Red.
++		memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
+ 	}
+ 	void loadOrSave(loadsave& state) {
+ 		rtc_->loadOrSave(state);
+-- 
+1.9.rc1
+
