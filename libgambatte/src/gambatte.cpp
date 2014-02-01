@@ -362,4 +362,9 @@ void GB::bus_write(unsigned addr, uint8_t val)
 	p_->cpu.bus_write(addr, val);
 }
 
+void GB::set_emuflags(unsigned flags)
+{
+	p_->cpu.set_emuflags(flags);
+}
+
 }

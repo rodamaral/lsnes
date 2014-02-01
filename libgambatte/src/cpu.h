@@ -94,6 +94,7 @@ public:
 	std::pair<unsigned char*, size_t> getVideoRam() { return mem_.getVideoRam(); };
         uint8_t bus_read(unsigned addr) { return mem_.read(addr, cycleCounter_, false); }
         void bus_write(unsigned addr, uint8_t val) { mem_.write(addr, val, cycleCounter_); }
+	void set_emuflags(unsigned flags) { emuflags = flags; }
 
 	unsigned cycleCounter_;
 	unsigned short pc_;
@@ -103,6 +104,7 @@ public:
 private:
 	Memory mem_;
 	bool skip_;
+	unsigned emuflags;
 
 	void process(unsigned cycles);
 };

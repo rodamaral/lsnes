@@ -43,6 +43,7 @@ CPU::CPU(time_t (**_getCurrentTime)())
 , h(0x01)
 , l(0x4D)
 , skip_(false)
+, emuflags(0)
 {
 }
 
@@ -1703,6 +1704,7 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xD3: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 				// call nc,nn (24;12 cycles):
@@ -1770,6 +1772,7 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xDB: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 				// call z,nn (24;12 cycles):
@@ -1783,6 +1786,10 @@ void CPU::process(unsigned const cycles) {
 					cycleCounter += 4;
 				}
 
+				break;
+
+			case 0xDD: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 			case 0xDE:
@@ -1820,8 +1827,10 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xE3: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 			case 0xE4: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 			case 0xE5:
@@ -1868,10 +1877,13 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xEB: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 			case 0xEC: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 			case 0xED: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 			case 0xEE:
@@ -1921,6 +1933,7 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xF4: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 
 			case 0xF5:
@@ -1985,8 +1998,10 @@ void CPU::process(unsigned const cycles) {
 				break;
 
 			case 0xFC: // not specified. should freeze.
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 			case 0xFD: // not specified. should freeze
+				if(emuflags & 1) { mem_.di(); PC_MOD((pc - 1) & 0xFFFF); }
 				break;
 			case 0xFE:
 				{

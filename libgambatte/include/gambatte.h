@@ -19,6 +19,7 @@
 #ifndef GAMBATTE_H
 #define GAMBATTE_H
 #define GAMBATTE_SUPPORTS_ADV_DEBUG
+#define GAMBATTE_SUPPORTS_EMU_FLAGS
 
 #include "gbint.h"
 #include "inputgetter.h"
@@ -282,6 +283,7 @@ public:
 	void set_debug_buffer(debugbuffer& dbgbuf);
 	uint8_t bus_read(unsigned addr);
 	void bus_write(unsigned addr, uint8_t val);
+	void set_emuflags(unsigned flags);
 private:
 	void preload_common();
 	void postload_common(const unsigned flags);

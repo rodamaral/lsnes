@@ -294,14 +294,16 @@ public:
 	}
 
 	virtual void romWrite(unsigned const p, unsigned const data) {
+		unsigned abank;
 		switch (p >> 13 & 3) {
 		case 0:
 			enableRam_ = (data & 0xF) == 0xA;
 			setRambank();
 			break;
 		case 1:
-			rombank_ = data & 0x7F;
-			memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+			abank = rombank_ = data & 0x7F;
+			if(!abank) abank = 1;  //Fix pokemon Red.
+			memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
 			break;
 		case 2:
 			rambank_ = data;
@@ -322,11 +324,14 @@ public:
 	}
 
 	virtual void loadState(SaveState::Mem const &ss) {
+		unsigned abank;
 		rombank_ = ss.rombank;
 		rambank_ = ss.rambank;
 		enableRam_ = ss.enableRam;
 		setRambank();
-		memptrs_.setRombank(rombank_ & (rombanks(memptrs_) - 1));
+		abank = rombank_;
+		if(!abank) abank = 1;  //Fix pokemon Red.
+		memptrs_.setRombank(abank & (rombanks(memptrs_) - 1));
 	}
 	void loadOrSave(loadsave& state) {
 		rtc_->loadOrSave(state);
