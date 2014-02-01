@@ -188,9 +188,9 @@ void file_upload::_do_async()
 		upload_output_handler output([this](const std::string& msg) { add_msg(msg); });
 
 		input.data["filename"] = filename;
-		input.data["title"] = title;
-		input.data["description"] = description;
-		input.data["game"] = gamename;
+		if(title != "") input.data["title"] = title;
+		if(description != "") input.data["description"] = description;
+		if(gamename != "") input.data["game"] = gamename;
 		input.data["hidden"] = hidden ? "1" : "0";
 		compress(content, input.data["content"], input.data["compression"]);
 
