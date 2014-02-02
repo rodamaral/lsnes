@@ -12,7 +12,7 @@ namespace
 
 		P(address);
 
-		auto& h = get_host_memory();
+		auto& h = movb.get_mfile().host_memory;
 		if(address + sizeof(S) > h.size()) {
 			L.pushboolean(0);
 			return 1;
@@ -29,7 +29,7 @@ namespace
 
 		P(address, value);
 
-		auto& h = get_host_memory();
+		auto& h = movb.get_mfile().host_memory;
 		if(address + sizeof(S) > h.size())
 			h.resize(address + sizeof(S));
 		serialization::write_endian<S>(&h[address], value, 1);

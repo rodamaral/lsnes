@@ -247,10 +247,6 @@ public:
  */
 	uint64_t get_seqno() throw() { return seqno; }
 /**
- * Assignment.
- */
-	movie& operator=(const movie& m);
-/**
  * Get pollcounter vector.
  */
 	pollcounter_vector& get_pollcounters() { return pollcounters; }
@@ -283,11 +279,9 @@ public:
  * Parameter data: New movie data.
  */
 	void set_movie_data(controller_frame_vector* data);
-/**
- * Copy ctor.
- */
-	movie(const movie& mov);
 private:
+	movie(const movie& mov);
+	movie& operator=(const movie& m);
 	//Sequence number.
 	uint64_t seqno;
 	//The poll flag handling.

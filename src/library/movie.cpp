@@ -368,22 +368,6 @@ void movie::fast_load(uint64_t& _frame, uint64_t& _ptr, uint64_t& _lagc, std::ve
 	readonly_mode(false);
 }
 
-movie& movie::operator=(const movie& m)
-{
-	seqno++;
-	readonly = m.readonly;
-	rerecords = m.rerecords;
-	_project_id = m._project_id;
-	current_frame = m.current_frame;
-	current_frame_first_subframe = m.current_frame_first_subframe;
-	pollcounters = m.pollcounters;
-	current_controls = m.current_controls;
-	lag_frames = m.lag_frames;
-	cached_frame = m.cached_frame;
-	cached_subframe = m.cached_subframe;
-	return *this;
-}
-
 void movie::set_pflag_handler(poll_flag* handler)
 {
 	pflag_handler = handler;
@@ -442,23 +426,6 @@ void movie::write_subframe_at_index(uint32_t subframe, unsigned port, unsigned c
 
 movie::poll_flag::~poll_flag()
 {
-}
-
-movie::movie(const movie& mov)
-{
-	seqno++;
-	readonly = mov.readonly;
-	latch_end = mov.latch_end;
-	rerecords = mov.rerecords;
-	_project_id = mov._project_id;
-	movie_data = NULL;
-	current_frame = mov.current_frame;
-	current_frame_first_subframe = mov.current_frame_first_subframe;
-	pollcounters = mov.pollcounters;
-	current_controls = mov.current_controls;
-	lag_frames = mov.lag_frames;
-	cached_frame = mov.cached_frame;
-	cached_subframe = mov.cached_subframe;
 }
 
 void movie::set_movie_data(controller_frame_vector* data)

@@ -35,7 +35,7 @@ void multitrack_edit::set(unsigned port, unsigned controller, state s)
 
 void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s)
 {
-	if(!movb.get_movie().readonly_mode())
+	if(!movb || !movb.get_movie().readonly_mode())
 		return;
 	set(port, controller, s);
 	notify_multitrack_change(port, controller, (int)s);
@@ -43,7 +43,7 @@ void multitrack_edit::set_and_notify(unsigned port, unsigned controller, state s
 
 void multitrack_edit::rotate(bool forward)
 {
-	if(!movb.get_movie().readonly_mode())
+	if(!movb || !movb.get_movie().readonly_mode())
 		return;
 	std::vector<std::pair<unsigned, unsigned>> x;
 	for(unsigned i = 0;; i++) {
@@ -90,7 +90,7 @@ void multitrack_edit::config_altered()
 
 void multitrack_edit::process_frame(controller_frame& input)
 {
-	if(!movb.get_movie().readonly_mode())
+	if(!movb || !movb.get_movie().readonly_mode())
 		return;
 	umutex_class h(mutex);
 	bool any_need = false;
@@ -152,7 +152,7 @@ void multitrack_edit::process_frame(controller_frame& input)
 
 bool multitrack_edit::any_records()
 {
-	if(!movb.get_movie().readonly_mode())
+	if(!movb || !movb.get_movie().readonly_mode())
 		return true;
 	umutex_class h(mutex);
 	bool any_need = false;

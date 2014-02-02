@@ -2,6 +2,7 @@
 #include "hex.hpp"
 #include <cstring>
 #include <limits>
+#include <functional>
 #include <cassert>
 
 #define MAXRUN 16843009
@@ -179,11 +180,6 @@ void rrdata_set::add(const struct rrdata_set::instance& i) throw(std::bad_alloc)
 	}
 }
 
-void rrdata_set::add_internal() throw(std::bad_alloc)
-{
-	add(internal++);
-}
-
 namespace
 {
 	size_t _flush_symbol(char* buf1, const rrdata_set::instance& base, const rrdata_set::instance& predicted,
@@ -283,62 +279,71 @@ uint64_t rrdata_set::write(std::vector<char>& strm) throw(std::bad_alloc)
 		return 0;
 }
 
-uint64_t rrdata_set::read(std::vector<char>& strm, bool dummy) throw(std::bad_alloc)
+namespace
 {
-	uint64_t scount = 0;
-	instance decoding;
-	uint64_t ptr = 0;
-	memset(decoding.bytes, 0, RRDATA_BYTES);
-	while(ptr < strm.size()) {
-		char opcode;
-		unsigned char buf1[RRDATA_BYTES];
-		unsigned char buf2[3];
-		opcode = strm[ptr++];
-		unsigned validbytes = (opcode & 0x1F);
-		unsigned lengthbytes = (opcode & 0x60) >> 5;
-		unsigned repeat = 1;
-		memcpy(buf1, &strm[ptr], RRDATA_BYTES - validbytes);
-		ptr += (RRDATA_BYTES - validbytes);
-		memcpy(decoding.bytes + validbytes, buf1, RRDATA_BYTES - validbytes);
-		if(lengthbytes > 0) {
-			memcpy(buf2, &strm[ptr], lengthbytes);
-			ptr += lengthbytes;
+	uint64_t read_set(std::vector<char>& strm, std::function<void(rrdata_set::instance& d, unsigned rep)> fn)
+		throw(std::bad_alloc)
+	{
+		uint64_t scount = 0;
+		rrdata_set::instance decoding;
+		uint64_t ptr = 0;
+		memset(decoding.bytes, 0, RRDATA_BYTES);
+		while(ptr < strm.size()) {
+			char opcode;
+			unsigned char buf1[RRDATA_BYTES];
+			unsigned char buf2[3];
+			opcode = strm[ptr++];
+			unsigned validbytes = (opcode & 0x1F);
+			unsigned lengthbytes = (opcode & 0x60) >> 5;
+			unsigned repeat = 1;
+			memcpy(buf1, &strm[ptr], RRDATA_BYTES - validbytes);
+			ptr += (RRDATA_BYTES - validbytes);
+			memcpy(decoding.bytes + validbytes, buf1, RRDATA_BYTES - validbytes);
+			if(lengthbytes > 0) {
+				memcpy(buf2, &strm[ptr], lengthbytes);
+				ptr += lengthbytes;
+			}
+			if(lengthbytes == 1)
+				repeat = 2 + static_cast<unsigned>(buf2[0]);
+			if(lengthbytes == 2)
+				repeat = 258 + static_cast<unsigned>(buf2[0]) * 256 + buf2[1];
+			if(lengthbytes == 3)
+				repeat = 65794 + static_cast<unsigned>(buf2[0]) * 65536 +
+					static_cast<unsigned>(buf2[1]) * 256 + buf2[2];
+
+			fn(decoding, repeat);
+			decoding = decoding + repeat;
+			scount += repeat;
 		}
-		if(lengthbytes == 1)
-			repeat = 2 + static_cast<unsigned>(buf2[0]);
-		if(lengthbytes == 2)
-			repeat = 258 + static_cast<unsigned>(buf2[0]) * 256 + buf2[1];
-		if(lengthbytes == 3)
-			repeat = 65794 + static_cast<unsigned>(buf2[0]) * 65536 + static_cast<unsigned>(buf2[1]) *
-				256 + buf2[2];
-		//std::cerr << "Decoding " << repeat << " symbols starting from " << decoding << std::endl;
-		if(!dummy) {
-			bool any = false;
-			if(!_in_set(decoding, decoding + repeat))
-				for(unsigned i = 0; i < repeat; i++) {
-					//TODO: Optimize this.
-					instance n = decoding + i;
-					if(!_in_set(n) && handle_open) {
-						ohandle.write(reinterpret_cast<const char*>(n.bytes), RRDATA_BYTES);
-						any = true;
-					}
-				}
-			if(any)
-				ohandle.flush();
-			rrdata_set::_add(decoding, decoding + repeat);
-		}
-		decoding = decoding + repeat;
-		scount += repeat;
+		if(scount)
+			return scount - 1;
+		else
+			return 0;
 	}
-	if(scount)
-		return scount - 1;
-	else
-		return 0;
+}
+
+uint64_t rrdata_set::read(std::vector<char>& strm) throw(std::bad_alloc)
+{
+	return read_set(strm, [this](instance& d, unsigned rep) {
+		bool any = false;
+		if(handle_open && !_in_set(d, d + rep))
+			for(unsigned i = 0; i < rep; i++) {
+				//TODO: Optimize this.
+				instance n = d + i;
+				if(!_in_set(n)) {
+					ohandle.write(reinterpret_cast<const char*>(n.bytes), RRDATA_BYTES);
+					any = true;
+				}
+			}
+		if(any)
+			ohandle.flush();
+		_add(d, d + rep);
+	});
 }
 
 uint64_t rrdata_set::count(std::vector<char>& strm) throw(std::bad_alloc)
 {
-	return read(strm, true);
+	return read_set(strm, [](instance& d, unsigned rep) {});
 }
 
 uint64_t rrdata_set::count() throw()
@@ -350,11 +355,6 @@ uint64_t rrdata_set::count() throw()
 		return 0;
 }
 
-void rrdata_set::set_internal(const instance& b) throw()
-{
-	internal = b;
-}
-
 std::ostream& operator<<(std::ostream& os, const struct rrdata_set::instance& j)
 {
 	os << hex::b_to(j.bytes, 32, true);
@@ -363,7 +363,7 @@ std::ostream& operator<<(std::ostream& os, const struct rrdata_set::instance& j)
 bool rrdata_set::_add(const instance& b)
 {
 	uint64_t c = rcount;
-	_add(b, b + 1);
+	_add(b, b + 1, data, rcount);
 	return (c != rcount);
 }
 

@@ -109,9 +109,9 @@ namespace
 			std::string text = r[4];
 			moviefile_subtiming key(frame, length);
 			if(text == "")
-				our_movie.subtitles.erase(key);
+				movb.get_mfile().subtitles.erase(key);
 			else
-				our_movie.subtitles[key] = s_unescape(text);
+				movb.get_mfile().subtitles[key] = s_unescape(text);
 			notify_subtitle_change();
 			redraw_framebuffer();
 		});
@@ -119,7 +119,8 @@ namespace
 	command::fnptr<> list_subtitle(lsnes_cmd, "list-subtitle", "List the subtitles",
 		"Syntax: list-subtitle\nList the subtitles.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
-			for(auto i = our_movie.subtitles.rbegin(); i != our_movie.subtitles.rend(); i++) {
+			for(auto i = movb.get_mfile().subtitles.rbegin(); i != movb.get_mfile().subtitles.rend();
+				i++) {
 				messages << i->first.get_frame() << " " << i->first.get_length() << " "
 					<< s_escape(i->second) << std::endl;
 			}
@@ -128,9 +129,9 @@ namespace
 	command::fnptr<command::arg_filename> save_s(lsnes_cmd, "save-subtitle", "Save subtitles in .sub format",
 		"Syntax: save-subtitle <file>\nSaves subtitles in .sub format to <file>\n",
 		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
-			if(our_movie.subtitles.empty())
+			if(movb.get_mfile().subtitles.empty())
 				return;
-			auto i = our_movie.subtitles.begin();
+			auto i = movb.get_mfile().subtitles.begin();
 			uint64_t lastframe = i->first.get_frame() + i->first.get_length();
 			std::ofstream y(std::string(args).c_str());
 			if(!y)
@@ -139,8 +140,8 @@ namespace
 			uint64_t since = 0;
 			for(uint64_t i = 1; i < lastframe; i++) {
 				moviefile_subtiming posmarker(i);
-				auto j = our_movie.subtitles.upper_bound(posmarker);
-				if(j == our_movie.subtitles.end())
+				auto j = movb.get_mfile().subtitles.upper_bound(posmarker);
+				if(j == movb.get_mfile().subtitles.end())
 					continue;
 				if(lasttxt != j->second || !j->first.inrange(i)) {
 					if(lasttxt != "")
@@ -196,14 +197,14 @@ std::string s_unescape(std::string x)
 
 void render_subtitles(lua_render_context& ctx)
 {
-	if(our_movie.subtitles.empty())
+	if(!movb || movb.get_mfile().subtitles.empty())
 		return;
 	if(ctx.bottom_gap < 32)
 		ctx.bottom_gap = 32;
 	uint64_t curframe = movb.get_movie().get_current_frame() + 1;
 	moviefile_subtiming posmarker(curframe);
-	auto i = our_movie.subtitles.upper_bound(posmarker);
-	if(i != our_movie.subtitles.end() && i->first.inrange(curframe)) {
+	auto i = movb.get_mfile().subtitles.upper_bound(posmarker);
+	if(i != movb.get_mfile().subtitles.end() && i->first.inrange(curframe)) {
 		std::string subtxt = i->second;
 		int32_t y = ctx.height;
 		ctx.queue->create_add<render_object_subtitle>(0, y, subtxt);
@@ -213,27 +214,33 @@ void render_subtitles(lua_render_context& ctx)
 std::set<std::pair<uint64_t, uint64_t>> get_subtitles()
 {
 	std::set<std::pair<uint64_t, uint64_t>> r;
-	for(auto i = our_movie.subtitles.rbegin(); i != our_movie.subtitles.rend(); i++)
+	if(!movb)
+		return r;
+	for(auto i = movb.get_mfile().subtitles.rbegin(); i != movb.get_mfile().subtitles.rend(); i++)
 		r.insert(std::make_pair(i->first.get_frame(), i->first.get_length()));
 	return r;
 }
 
 std::string get_subtitle_for(uint64_t f, uint64_t l)
 {
+	if(!movb)
+		return "";
 	moviefile_subtiming key(f, l);
-	if(!our_movie.subtitles.count(key))
+	if(!movb.get_mfile().subtitles.count(key))
 		return "";
 	else
-		return s_escape(our_movie.subtitles[key]);
+		return s_escape(movb.get_mfile().subtitles[key]);
 }
 
 void set_subtitle_for(uint64_t f, uint64_t l, const std::string& x)
 {
+	if(!movb)
+		return;
 	moviefile_subtiming key(f, l);
 	if(x == "")
-		our_movie.subtitles.erase(key);
+		movb.get_mfile().subtitles.erase(key);
 	else
-		our_movie.subtitles[key] = s_unescape(x);
+		movb.get_mfile().subtitles[key] = s_unescape(x);
 	notify_subtitle_change();
 	redraw_framebuffer();
 }

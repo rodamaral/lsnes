@@ -1,7 +1,7 @@
 #include "core/misc.hpp"
+#include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
-#include "core/rrdata.hpp"
 #include "library/zip.hpp"
 #include "library/string.hpp"
 #include "library/minmax.hpp"
@@ -25,7 +25,7 @@
 
 namespace
 {
-	std::map<std::string, moviefile> memory_saves;
+	std::map<std::string, moviefile*> memory_saves;
 }
 
 enum lsnes_movie_tags
@@ -155,17 +155,17 @@ void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::s
 std::string read_rrdata(zip::reader& r, std::vector<char>& out) throw(std::bad_alloc, std::runtime_error)
 {
 	r.read_raw_file("rrdata", out);
-	uint64_t count = rrdata.count(out);
+	uint64_t count = rrdata_set::count(out);
 	std::ostringstream x;
 	x << count;
 	return x.str();
 }
 
-void write_rrdata(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
+void write_rrdata(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	uint64_t count;
 	std::vector<char> out;
-	count = rrdata.write(out);
+	count = rrd.write(out);
 	w.write_raw_file("rrdata", out);
 	std::ostream& m2 = w.create_file("rerecords");
 	try {
@@ -327,9 +327,9 @@ moviefile::brief_info::brief_info(const std::string& filename)
 {
 	regex_results rr;
 	if(rr = regex("\\$MEMORY:(.*)", filename)) {
-		if(!memory_saves.count(rr[1]))
+		if(!memory_saves.count(rr[1]) && memory_saves[rr[1]])
 			throw std::runtime_error("No such memory save");
-		moviefile& mv = memory_saves[rr[1]];
+		moviefile& mv = *memory_saves[rr[1]];
 		sysregion = mv.gametype->get_name();
 		corename = mv.coreversion;
 		projectid = mv.projectid;
@@ -401,7 +401,7 @@ void moviefile::brief_info::binary_io(std::istream& _stream)
 		}},{TAG_RRDATA, [this](binarystream::input& s) {
 			std::vector<char> c_rrdata;
 			s.blob_implicit(c_rrdata);
-			this->rerecords = rrdata.count(c_rrdata);
+			this->rerecords = rrdata_set::count(c_rrdata);
 		}},{TAG_ROMHASH, [this](binarystream::input& s) {
 			uint8_t n = s.byte();
 			std::string h = s.string_implicit();
@@ -441,9 +441,10 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 {
 	regex_results rr;
 	if(rr = regex("\\$MEMORY:(.*)", movie)) {
-		if(!memory_saves.count(rr[1]))
+		if(!memory_saves.count(rr[1]) || !memory_saves[rr[1]])
 			throw std::runtime_error("No such memory save");
-		*this = memory_saves[rr[1]];
+		moviefile& s = *memory_saves[rr[1]];
+		copy_fields(s);
 		return;
 	}
 	poll_flag = false;
@@ -543,12 +544,19 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	read_input(r, input, 0);
 }
 
-void moviefile::save(const std::string& movie, unsigned compression, bool binary) throw(std::bad_alloc,
-	std::runtime_error)
+void moviefile::save(const std::string& movie, unsigned compression, bool binary, rrdata_set& rrd)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	regex_results rr;
 	if(rr = regex("\\$MEMORY:(.*)", movie)) {
-		memory_saves[rr[1]] = *this;
+		auto tmp = new moviefile();
+		try {
+			tmp->copy_fields(*this);
+			memory_saves[rr[1]] = tmp;
+		} catch(...) {
+			delete tmp;
+			throw;
+		}
 		return;
 	}
 	if(binary) {
@@ -560,7 +568,7 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		strm.write(buf, 5);
 		if(!strm)
 			throw std::runtime_error("Failed to write to output file");
-		binary_io(strm);
+		binary_io(strm, rrd);
 		if(!strm)
 			throw std::runtime_error("Failed to write to output file");
 		strm.close();
@@ -571,16 +579,16 @@ void moviefile::save(const std::string& movie, unsigned compression, bool binary
 		return;
 	}
 	zip::writer w(movie, compression);
-	save(w);
+	save(w, rrd);
 }
 
-void moviefile::save(std::ostream& stream) throw(std::bad_alloc, std::runtime_error)
+void moviefile::save(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	zip::writer w(stream, 0);
-	save(w);
+	save(w, rrd);
 }
 
-void moviefile::save(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
+void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	w.write_linefile("gametype", gametype->get_name());
 	write_settings<zip::writer>(w, settings, gametype->get_type().get_settings(), [](zip::writer& w,
@@ -596,7 +604,7 @@ void moviefile::save(zip::writer& w) throw(std::bad_alloc, std::runtime_error)
 	coreversion = gametype->get_type().get_core_identifier();
 	w.write_linefile("coreversion", coreversion);
 	w.write_linefile("projectid", projectid);
-	write_rrdata(w);
+	write_rrdata(w, rrd);
 	w.write_linefile("rom.sha256", romimg_sha256[0], true);
 	w.write_linefile("romxml.sha256", romxml_sha256[0], true);
 	w.write_linefile("rom.hint", namehint[0], true);
@@ -662,7 +670,7 @@ Following need to be saved:
 - Input (blob).
 - Extensions (???)
 */
-void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runtime_error)
+void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::output out(_stream);
 	out.string(gametype->get_name());
@@ -706,11 +714,11 @@ void moviefile::binary_io(std::ostream& _stream) throw(std::bad_alloc, std::runt
 		});
 	}
 
-	out.extension(TAG_RRDATA, [this](binarystream::output& s) {
+	out.extension(TAG_RRDATA, [this, &rrd](binarystream::output& s) {
 		uint64_t count;
-		std::vector<char> rrd;
-		count = rrdata.write(rrd);
-		s.blob_implicit(rrd);
+		std::vector<char> _rrd;
+		count = rrd.write(_rrd);
+		s.blob_implicit(_rrd);
 	});
 
 	for(auto i : movie_sram)
@@ -853,7 +861,7 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 			namehint[n] = h;
 		}},{TAG_RRDATA, [this](binarystream::input& s) {
 			s.blob_implicit(this->c_rrdata);
-			this->rerecords = (stringfmt() << rrdata.count(c_rrdata)).str();
+			this->rerecords = (stringfmt() << rrdata_set::count(c_rrdata)).str();
 		}},{TAG_SAVE_SRAM, [this](binarystream::input& s) {
 			std::string a = s.string();
 			s.blob_implicit(this->sram[a]);
@@ -906,9 +914,49 @@ uint64_t moviefile::get_movie_length() throw()
 	return t;
 }
 
-moviefile& moviefile::memref(const std::string& slot)
+moviefile*& moviefile::memref(const std::string& slot)
 {
 	return memory_saves[slot];
+}
+
+void moviefile::copy_fields(const moviefile& mv)
+{
+	force_corrupt = mv.force_corrupt;
+	gametype = mv.gametype;
+	settings = mv.settings;
+	coreversion = mv.coreversion;
+	gamename = mv.gamename;
+	projectid = mv.projectid;
+	rerecords = mv.rerecords;
+	rerecords_mem = mv.rerecords_mem;
+	for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
+		romimg_sha256[i] = mv.romimg_sha256[i];
+		romxml_sha256[i] = mv.romxml_sha256[i];
+		namehint[i] = mv.namehint[i];
+	}
+	authors = mv.authors;
+	movie_sram = mv.movie_sram;
+	ramcontent = mv.ramcontent;
+	is_savestate = mv.is_savestate;
+	sram = mv.sram;
+	savestate = mv.savestate;
+	anchor_savestate = mv.anchor_savestate;
+	host_memory = mv.host_memory;
+	screenshot = mv.screenshot;
+	save_frame = mv.save_frame;
+	lagged_frames = mv.lagged_frames;
+	pollcounters = mv.pollcounters;
+	poll_flag = mv.poll_flag;
+	c_rrdata = mv.c_rrdata;
+	input = mv.input;
+	rtc_second = mv.rtc_second;
+	rtc_subsecond = mv.rtc_subsecond;
+	movie_rtc_second = mv.movie_rtc_second;
+	movie_rtc_subsecond = mv.movie_rtc_subsecond;
+	start_paused = mv.start_paused;
+	lazy_project_create = mv.lazy_project_create;
+	subtitles = mv.subtitles;
+	active_macros = mv.active_macros;
 }
 
 namespace
@@ -993,7 +1041,7 @@ namespace
 	}
 }
 
-void emerg_save_movie(const moviefile& mv)
+void emerg_save_movie(const moviefile& mv, rrdata_set& rrd)
 {
 	//Whee, assume state of the emulator is totally busted.
 	const controller_frame_vector& v = mv.input;
@@ -1054,11 +1102,11 @@ name_again:
 	emerg_write_member(fd, TAG_ANCHOR_SAVE, mv.anchor_savestate.size());
 	emerg_write_blob_implicit(fd, mv.anchor_savestate);
 	//RRDATA.
-	emerg_write_member(fd, TAG_RRDATA, rrdata.size_emerg());
+	emerg_write_member(fd, TAG_RRDATA, rrd.size_emerg());
 	rrdata_set::esave_state estate;
 	while(true) {
 		char buf[4096];
-		size_t w = rrdata.write_emerg(estate, buf, sizeof(buf));
+		size_t w = rrd.write_emerg(estate, buf, sizeof(buf));
 		if(!w) break;
 		emerg_write_bytes(fd, (const uint8_t*)buf, w);
 	}

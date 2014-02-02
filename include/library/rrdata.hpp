@@ -129,6 +129,10 @@ public:
  */
 	void read_base(const std::string& projectfile, bool lazy) throw(std::bad_alloc);
 /**
+ * Is lazy?
+ */
+	bool is_lazy() throw() { return lazy_mode; }
+/**
  * Switch to no project, closing the load IDs.
  */
 	void close() throw();
@@ -140,16 +144,6 @@ public:
  * parameter i: The load ID to add.
  */
 	void add(const struct instance& i) throw(std::bad_alloc);
-/**
- * Add internal instance, doing post-increment.
- */
-	void add_internal() throw(std::bad_alloc);
-/**
- * Set internal instance.
- *
- * Parameter b: The new instance.
- */
-	void set_internal(const instance& b) throw();
 /**
  * Write compressed representation of current load ID set to stream.
  *
@@ -184,7 +178,7 @@ public:
  * returns: Rerecord count.
  * throws std::bad_alloc: Not enough memory.
  */
-	uint64_t read(std::vector<char>& strm, bool dummy = false) throw(std::bad_alloc);
+	uint64_t read(std::vector<char>& strm) throw(std::bad_alloc);
 /**
  * Load compressed representation of load ID set from stream, but don't do anything to it.
  *
@@ -192,7 +186,7 @@ public:
  * returns: Rerecord count.
  * throws std::bad_alloc: Not enough memory.
  */
-	uint64_t count(std::vector<char>& strm) throw(std::bad_alloc);
+	static uint64_t count(std::vector<char>& strm) throw(std::bad_alloc);
 /**
  * Count number of rerecords.
  *
@@ -217,7 +211,6 @@ private:
 	bool _in_set(const instance& b, const instance& e);
 	uint64_t emerg_action(struct esave_state& state, char* buf, size_t bufsize, uint64_t& scount) const;
 
-	instance internal;
 	std::set<std::pair<instance, instance>> data;
 	std::ofstream ohandle;
 	bool handle_open;

@@ -12,9 +12,9 @@
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
+#include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
-#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/romtype.hpp"
@@ -471,6 +471,7 @@ bool lsnes_app::OnInit()
 		rom.load(c_settings, mov.movie_rtc_second, mov.movie_rtc_subsecond);
 	} catch(std::exception& e) {
 		std::cerr << "Can't load ROM: " << e.what() << std::endl;
+		quit_lua();	//Don't crash.
 		return false;
 	}
 
@@ -524,8 +525,8 @@ int lsnes_app::OnExit()
 		x->Destroy();
 	save_configuration();
 	information_dispatch::do_dump_end();
-	rrdata.close();
 	quit_lua();
+	movb.release_memory();
 	joystick_driver_signal();
 	joystick_thread_handle->join();
 	platform::quit();

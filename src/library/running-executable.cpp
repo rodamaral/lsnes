@@ -8,7 +8,7 @@ namespace
 #include <unistd.h>
 	std::string readlink_generic(std::string path)
 	{
-		char buf[8192];
+		char buf[8192] = {0};
 		if(readlink(path.c_str(), buf, sizeof(buf)) > 0)
 			return buf;
 		throw std::runtime_error("Can't determine executable path");

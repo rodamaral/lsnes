@@ -16,11 +16,12 @@ bool load_null_rom()
 	}
 	loaded_rom newrom;
 	our_rom = newrom;
-	for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-		our_movie.romimg_sha256[i] = "";
-		our_movie.romxml_sha256[i] = "";
-		our_movie.namehint[i] = "";
-	}
+	if(movb)
+		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+			movb.get_mfile().romimg_sha256[i] = "";
+			movb.get_mfile().romxml_sha256[i] = "";
+			movb.get_mfile().namehint[i] = "";
+		}
 	notify_core_change();
 	return true;
 }
@@ -94,11 +95,12 @@ bool _load_new_rom(const romload_request& req)
 	}
 	try {
 		load_new_rom_inner(req);
-		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-			our_movie.romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
-			our_movie.romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
-			our_movie.namehint[i] = our_rom.romimg[i].namehint;
-		}
+		if(movb)
+			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+				movb.get_mfile().romimg_sha256[i] = our_rom.romimg[i].sha_256.read();
+				movb.get_mfile().romxml_sha256[i] = our_rom.romxml[i].sha_256.read();
+				movb.get_mfile().namehint[i] = our_rom.romimg[i].namehint;
+			}
 	} catch(std::exception& e) {
 		platform::error_message(std::string("Can't load ROM: ") + e.what());
 		messages << "Can't reload ROM: " << e.what() << std::endl;

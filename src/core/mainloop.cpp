@@ -21,7 +21,6 @@
 #include "core/project.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
-#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "interface/callbacks.hpp"
@@ -130,7 +129,9 @@ namespace
 			std::ostringstream out;
 			try {
 				moviefile::brief_info info(filename);
-				if(our_movie.projectid == info.projectid)
+				if(!movb)
+					out << "No movie";
+				else if(movb.get_mfile().projectid == info.projectid)
 					out << info.rerecords << "R/" << info.current_frame << "F";
 				else
 					out << "Wrong movie";
@@ -151,22 +152,6 @@ namespace
 	{
 		slotinfo_cache.clear();
 	}
-
-	class _lsnes_pflag_handler : public movie::poll_flag
-	{
-	public:
-		~_lsnes_pflag_handler()
-		{
-		}
-		int get_pflag()
-		{
-			return our_rom.rtype->get_pflag();
-		}
-		void set_pflag(int flag)
-		{
-			our_rom.rtype->set_pflag(flag);
-		}
-	} lsnes_pflag_handler;
 }
 
 void mainloop_signal_need_rewind(void* ptr)
@@ -317,10 +302,13 @@ void update_movie_state()
 	{
 		uint64_t magic[4];
 		our_rom.region->fill_framerate_magic(magic);
-		voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
+		if(movb)
+			voice_frame_number(movb.get_movie().get_current_frame(), 1.0 * magic[1] / magic[0]);
+		else
+			voice_frame_number(0, 60.0);	//Default.
 	}
 	auto& _status = platform::get_emustatus();
-	if(!system_corrupt) {
+	if(movb && !system_corrupt) {
 		_status.set("!frame", (stringfmt() << movb.get_movie().get_current_frame()).str());
 		_status.set("!length", (stringfmt() << movb.get_movie().get_frame_count()).str());
 		_status.set("!lag", (stringfmt() << movb.get_movie().get_lag_frames()).str());
@@ -338,8 +326,8 @@ void update_movie_state()
 		_status.set("!lag", "N/A");
 		_status.set("!subframe", "N/A");
 	}
-	{
-		_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
+	_status.set("!dumping", (information_dispatch::get_dumper_count() ? "Y" : ""));
+	if(movb) {
 		auto& mo = movb.get_movie();
 		readonly = mo.readonly_mode();
 		if(system_corrupt)
@@ -350,6 +338,8 @@ void update_movie_state()
 			_status.set("!mode", "P");
 		else
 			_status.set("!mode", "F");
+	} else {
+		_status.erase("!subframe");
 	}
 	if(jukebox_size > 0) {
 		int tmp = -1;
@@ -367,14 +357,14 @@ void update_movie_state()
 	}
 	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
 
-	if(!system_corrupt) {
-		time_t timevalue = static_cast<time_t>(our_movie.rtc_second);
+	if(movb && !system_corrupt) {
+		time_t timevalue = static_cast<time_t>(movb.get_mfile().rtc_second);
 		struct tm* time_decompose = gmtime(&timevalue);
 		char datebuffer[512];
 		strftime(datebuffer, 511, "%Y%m%d(%a)T%H%M%S", time_decompose);
 		_status.set("RTC", datebuffer);
 	} else {
-		_status.set("RTC", "N/A");
+		_status.erase("RTC");
 	}
 
 	auto mset = controls.active_macro_set();
@@ -458,10 +448,13 @@ public:
 
 	void timer_tick(uint32_t increment, uint32_t per_second)
 	{
-		our_movie.rtc_subsecond += increment;
-		while(our_movie.rtc_subsecond >= per_second) {
-			our_movie.rtc_second++;
-			our_movie.rtc_subsecond -= per_second;
+		if(!movb)
+			return;
+		auto& m = movb.get_mfile();
+		m.rtc_subsecond += increment;
+		while(m.rtc_subsecond >= per_second) {
+			m.rtc_second++;
+			m.rtc_subsecond -= per_second;
 		}
 	}
 
@@ -477,7 +470,7 @@ public:
 
 	time_t get_time()
 	{
-		return our_movie.rtc_second;
+		return movb ? movb.get_mfile().rtc_second : 0;
 	}
 
 	time_t get_randomseed()
@@ -537,7 +530,7 @@ namespace
 		"Syntax: count-rerecords\nCounts rerecords.\n",
 		[]() throw(std::bad_alloc, std::runtime_error) {
 			std::vector<char> tmp;
-			uint64_t x = rrdata.write(tmp);
+			uint64_t x = movb.get_rrdata().write(tmp);
 			messages << x << " rerecord(s)" << std::endl;
 		});
 
@@ -1025,15 +1018,17 @@ namespace
 	//failing.
 	int handle_load()
 	{
-		std::string old_project = our_movie.projectid;
+		std::string old_project = movb ? movb.get_mfile().projectid : "";
 jumpback:
 		if(do_unsafe_rewind && unsafe_rewind_obj) {
+			if(!movb)
+				return 0;
 			uint64_t t = get_utime();
 			std::vector<char> s;
 			lua_callback_do_unsafe_rewind(s, 0, 0, movb.get_movie(), unsafe_rewind_obj);
 			notify_mode_change(false);
 			do_unsafe_rewind = false;
-			our_movie.is_savestate = true;
+			movb.get_mfile().is_savestate = true;
 			location_special = SPECIAL_SAVEPOINT;
 			update_movie_state();
 			messages << "Rewind done in " << (get_utime() - t) << " usec." << std::endl;
@@ -1066,23 +1061,26 @@ nothing_to_do:
 			return 0;
 		}
 		if(pending_load != "") {
+			bool system_was_corrupt = system_corrupt;
 			system_corrupt = false;
-			if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
-				!do_load_state(pending_load, loadmode)) {
-				movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
-				pending_load = "";
-				return -1;
-			}
 			try {
+				if(loadmode != LOAD_STATE_BEGINNING && loadmode != LOAD_STATE_ROMRELOAD &&
+					!do_load_state(pending_load, loadmode)) {
+					if(system_was_corrupt)
+						system_corrupt = system_was_corrupt;
+					pending_load = "";
+					return -1;
+				}
 				if(loadmode == LOAD_STATE_BEGINNING)
-					do_load_beginning(false);
+					do_load_rewind();
 				if(loadmode == LOAD_STATE_ROMRELOAD)
-					do_load_beginning(true);
+					do_load_rom();
 			} catch(std::exception& e) {
+				if(!system_corrupt && system_was_corrupt)
+					system_corrupt = true;
 				platform::error_message(std::string("Load failed: ") + e.what());
 				messages << "Load failed: " << e.what() << std::endl;
 			}
-			movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 			pending_load = "";
 			amode = load_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
 			platform::set_paused(load_paused);
@@ -1096,7 +1094,7 @@ nothing_to_do:
 				if(amode == ADVANCE_LOAD)
 					goto jumpback;
 			}
-			if(old_project != our_movie.projectid)
+			if(old_project != (movb ? movb.get_mfile().projectid : ""))
 				flush_slotinfo();	//Wrong movie may be stale.
 			return 1;
 		}
@@ -1106,6 +1104,8 @@ nothing_to_do:
 	//If there are pending saves, perform them.
 	void handle_saves()
 	{
+		if(!movb)
+			return;
 		if(!queued_saves.empty() || (do_unsafe_rewind && !unsafe_rewind_obj)) {
 			our_rom.rtype->runtosave();
 			for(auto i : queued_saves) {
@@ -1116,8 +1116,8 @@ nothing_to_do:
 			if(do_unsafe_rewind && !unsafe_rewind_obj) {
 				uint64_t t = get_utime();
 				std::vector<char> s = our_rom.save_core_state(true);
-				uint64_t secs = our_movie.rtc_second;
-				uint64_t ssecs = our_movie.rtc_subsecond;
+				uint64_t secs = movb.get_mfile().rtc_second;
+				uint64_t ssecs = movb.get_mfile().rtc_subsecond;
 				lua_callback_do_unsafe_rewind(s, secs, ssecs, movb.get_movie(), NULL);
 				do_unsafe_rewind = false;
 				messages << "Rewind point set in " << (get_utime() - t) << " usec." << std::endl;
@@ -1154,33 +1154,34 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	our_rom = rom;
 	lsnes_callbacks lsnes_callbacks_obj;
 	ecore_callbacks = &lsnes_callbacks_obj;
-	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 	core_core::install_all_handlers();
 
 	//Load our given movie.
 	bool first_round = false;
 	bool just_did_loadstate = false;
+	bool used = false;
 	try {
-		do_load_state(initial, LOAD_STATE_INITIAL);
+		do_load_state(initial, LOAD_STATE_INITIAL, used);
 		location_special = SPECIAL_SAVEPOINT;
 		update_movie_state();
-		first_round = our_movie.is_savestate;
+		first_round = movb.get_mfile().is_savestate;
 		just_did_loadstate = first_round;
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
+		if(!used)
+			delete &initial;
 		platform::error_message(std::string("Can't load initial state: ") + e.what());
 		messages << "ERROR: Can't load initial state: " << e.what() << std::endl;
 		if(load_has_to_succeed) {
 			messages << "FATAL: Can't load movie" << std::endl;
-			platform::fatal_error();
+			throw;
 		}
 		system_corrupt = true;
 		update_movie_state();
 		redraw_framebuffer(screen_corrupt);
 	}
 
-	movb.get_movie().set_pflag_handler(&lsnes_pflag_handler);
 	lua_callback_startup();
 
 	platform::set_paused(initial.start_paused);
@@ -1189,7 +1190,7 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
-			first_round = our_movie.is_savestate;
+			first_round = movb && movb.get_mfile().is_savestate;
 			just_did_loadstate = first_round;
 			continue;
 		}
@@ -1213,8 +1214,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 			if(queued_saves.empty())
 				r = handle_load();
 			if(r > 0 || system_corrupt) {
-				movb.get_movie().get_pollcounters().set_framepflag(our_movie.is_savestate);
-				first_round = our_movie.is_savestate;
+				movb.get_movie().get_pollcounters().set_framepflag(movb.get_mfile().is_savestate);
+				first_round = movb.get_mfile().is_savestate;
 				if(system_corrupt)
 					amode = ADVANCE_PAUSE;
 				else

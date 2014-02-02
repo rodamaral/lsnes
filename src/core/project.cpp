@@ -324,9 +324,10 @@ bool project_set(project_info* p, bool current)
 	}
 
 	loaded_rom newrom;
-	moviefile newmovie;
+	moviefile* newmovie = NULL;
 	bool switched = false;
 	std::set<core_sysregion*> sysregs;
+	bool used = false;
 	try {
 		if(current)
 			goto skip_rom_movie;
@@ -353,18 +354,20 @@ bool project_set(project_info* p, bool current)
 		}
 		if(p->last_save != "")
 			try {
-				newmovie = moviefile(p->last_save, *newrom.rtype);
+				newmovie = new moviefile(p->last_save, *newrom.rtype);
 			} catch(std::exception& e) {
 				messages << "Warning: Can't load last save: " << e.what() << std::endl;
-				fill_stub_movie(newmovie, *p, *newrom.rtype);
+				newmovie = new moviefile();
+				fill_stub_movie(*newmovie, *p, *newrom.rtype);
 			}
 		else {
-			fill_stub_movie(newmovie, *p, *newrom.rtype);
+			newmovie = new moviefile();
+			fill_stub_movie(*newmovie, *p, *newrom.rtype);
 		}
 		//Okay, loaded, load into core.
 		newrom.load(p->settings, p->movie_rtc_second, p->movie_rtc_subsecond);
 		our_rom = newrom;
-		do_load_state(newmovie, LOAD_STATE_DEFAULT);
+		do_load_state(*newmovie, LOAD_STATE_DEFAULT, used);
 skip_rom_movie:
 		active_project = p;
 		switched = true;
@@ -383,6 +386,8 @@ skip_rom_movie:
 			lsnes_cmd.invoke("run-lua " + i);
 		load_project_macros(controls, *active_project);
 	} catch(std::exception& e) {
+		if(newmovie && !used)
+			delete newmovie;
 		messages << "Can't switch projects: " << e.what() << std::endl;
 	}
 	if(switched) {

@@ -35,6 +35,7 @@ namespace
 
 library::internal::internal(const std::string& filename) throw(std::bad_alloc, std::runtime_error)
 {
+	refs = 1;
 #if !defined(NO_DLFCN) && !defined(_WIN32) && !defined(_WIN64)
 	char buffer[16384];
 	getcwd(buffer, 16383);

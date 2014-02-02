@@ -234,6 +234,10 @@ namespace
 
 	void wxwin_newproject::on_ok(wxCommandEvent& e)
 	{
+		if(!movb) {
+			show_message_ok(this, "Error", "Can't start project without movie", wxICON_EXCLAMATION);
+			return;
+		}
 		project_info pinfo;
 		pinfo.id = generate_project_id();
 		pinfo.name = tostdstring(projname->GetValue());
@@ -241,23 +245,24 @@ namespace
 		pinfo.last_save = "";
 		pinfo.directory = tostdstring(projdir->GetValue());
 		pinfo.prefix = tostdstring(projpfx->GetValue());
-		pinfo.gametype = our_movie.gametype->get_name();
-		pinfo.settings = our_movie.settings;
-		pinfo.coreversion = our_movie.coreversion;
-		pinfo.gamename = our_movie.gamename;
-		pinfo.authors = our_movie.authors;
-		pinfo.movie_sram = our_movie.movie_sram;
-		pinfo.anchor_savestate = our_movie.anchor_savestate;
-		pinfo.movie_rtc_second = our_movie.movie_rtc_second;
-		pinfo.movie_rtc_subsecond = our_movie.movie_rtc_subsecond;
-		pinfo.projectid = our_movie.projectid;
+		auto& m = movb.get_mfile();
+		pinfo.gametype = m.gametype->get_name();
+		pinfo.settings = m.settings;
+		pinfo.coreversion = m.coreversion;
+		pinfo.gamename = m.gamename;
+		pinfo.authors = m.authors;
+		pinfo.movie_sram = m.movie_sram;
+		pinfo.anchor_savestate = m.anchor_savestate;
+		pinfo.movie_rtc_second = m.movie_rtc_second;
+		pinfo.movie_rtc_subsecond = m.movie_rtc_subsecond;
+		pinfo.projectid = m.projectid;
 		project_copy_watches(pinfo);
 		project_copy_macros(pinfo, controls);
 		for(unsigned i = 0; i < ROM_SLOT_COUNT; i++) {
 			pinfo.roms[i] = our_rom.romimg[i].filename;
-			pinfo.romimg_sha256[i] = our_movie.romimg_sha256[i];
-			pinfo.romxml_sha256[i] = our_movie.romxml_sha256[i];
-			pinfo.namehint[i] = our_movie.namehint[i];
+			pinfo.romimg_sha256[i] = m.romimg_sha256[i];
+			pinfo.romxml_sha256[i] = m.romxml_sha256[i];
+			pinfo.namehint[i] = m.namehint[i];
 		}
 		for(unsigned i = 0; i < luascripts->GetCount(); i++)
 			pinfo.luascripts.push_back(tostdstring(luascripts->GetString(i)));
@@ -410,7 +415,7 @@ public:
 	void on_quit(wxCommandEvent& e);
 	void on_load(wxCommandEvent& e);
 private:
-	struct moviefile make_movie();
+	struct moviefile& make_movie();
 	std::map<std::string, wxTextCtrl*> sram_files;
 	std::map<std::string, wxButton*> sram_choosers;
 	std::map<std::string, setting_select> settings;
@@ -582,9 +587,10 @@ void wxwin_project::on_quit(wxCommandEvent& e)
 void wxwin_project::on_load(wxCommandEvent& e)
 {
 	try {
-		moviefile mov = make_movie();
+		moviefile& mov = make_movie();
 		mov.start_paused = false;
-		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true);
+		rrdata_set tmp_rdata;
+		mov.save("$MEMORY:wxwidgets-romload-tmp", 0, true, tmp_rdata);
 		platform::queue("load-state $MEMORY:wxwidgets-romload-tmp");
 		EndModal(0);
 	} catch(std::exception& e) {
@@ -593,9 +599,9 @@ void wxwin_project::on_load(wxCommandEvent& e)
 	}
 }
 
-struct moviefile wxwin_project::make_movie()
+struct moviefile& wxwin_project::make_movie()
 {
-	moviefile f;
+	moviefile& f = *new moviefile;
 	f.force_corrupt = false;
 	f.gametype = &our_rom.rtype->combine_region(*our_rom.region);
 	for(auto i : settings) {

@@ -12,10 +12,10 @@
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
+#include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
-#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
@@ -161,10 +161,10 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 
-	moviefile movie;
+	moviefile* movie = NULL;
 	try {
 		if(movfn != "")
-			movie = moviefile(movfn, *r.rtype);
+			movie = new moviefile(movfn, *r.rtype);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
@@ -173,9 +173,9 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 
-	dump_what_was_loaded(r, movie);
+	dump_what_was_loaded(r, *movie);
 
-	rrdata.close();
+	movb.release_memory();
 	cleanup_all_keys();
 	return 0;
 }

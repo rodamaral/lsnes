@@ -18,6 +18,7 @@ wxwin_messages::panel::panel(wxwin_messages* _parent, unsigned lines)
 	auto pcell = get_cell();
 	line_separation = pcell.second;
 	line_clicked = 0;
+	line_current = 0;
 	mouse_held = false;
 	ilines = lines;
 	this->Connect(wxEVT_SIZE, wxSizeEventHandler(wxwin_messages::panel::on_resize), NULL, this);

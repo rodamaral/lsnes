@@ -3,9 +3,7 @@
 
 #include "library/rrdata.hpp"
 
-extern rrdata_set rrdata;
-
-rrdata_set::instance random_rrdata();
+rrdata_set::instance next_rrdata();
 std::string rrdata_filename(const std::string& projectid);
 
 #endif

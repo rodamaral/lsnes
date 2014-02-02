@@ -5,10 +5,12 @@
 #include <cstdint>
 #include <stdexcept>
 #include "core/controllerframe.hpp"
+#include "core/moviefile.hpp"
+#include "library/rrdata.hpp"
 #include "library/movie.hpp"
 
 /**
- * Class encapsulating bridge logic between bsnes interface and movie code.
+ * Class encapsulating bridge logic between core interface and movie code.
  */
 class movie_logic
 {
@@ -17,13 +19,41 @@ public:
  * Create new bridge.
  */
 	movie_logic() throw();
-
+/**
+ * Has movie?
+ */
+	operator bool() throw() { return mov; }
+	bool operator!() throw() { return !mov; }
 /**
  * Get the movie instance associated.
  *
  * returns: The movie instance.
  */
-	movie& get_movie() throw();
+	movie& get_movie() throw(std::runtime_error);
+
+/**
+ * Set the movie instance associated.
+ */
+	void set_movie(movie& _mov, bool free_old = false) throw();
+
+/**
+ * Get the current movie file.
+ */
+	moviefile& get_mfile() throw(std::runtime_error);
+
+/**
+ * Set the current movie file.
+ */
+	void set_mfile(moviefile& _mf, bool free_old = false) throw();
+/**
+ * Get current rrdata.
+ */
+	rrdata_set& get_rrdata() throw(std::runtime_error);
+
+/**
+ * Set current rrdata.
+ */
+	void set_rrdata(rrdata_set& _rrd, bool free_old = false) throw();
 
 /**
  * Notify about new frame starting.
@@ -48,8 +78,19 @@ public:
  * parameter subframe: True if this is for subframe update, false if for frame update.
  */
 	controller_frame update_controls(bool subframe) throw(std::bad_alloc, std::runtime_error);
+
+/**
+ * Release memory for mov, mf and rrd.
+ */
+	void release_memory();
 private:
-	movie mov;
+	movie_logic(const movie_logic&);
+	movie_logic& operator=(const movie_logic&);
+	movie* mov;
+	moviefile* mf;
+	rrdata_set* rrd;
 };
+
+extern movie_logic movb;
 
 #endif

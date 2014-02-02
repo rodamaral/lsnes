@@ -156,7 +156,9 @@ void file_download::_do_async()
 				for(auto i : sysregs)
 					gametype = &i->get_type();
 		}
-		moviefile::memref(target_slot) = moviefile(tempname2, *gametype);
+		auto mv = moviefile::memref(target_slot);
+		moviefile::memref(target_slot) = new moviefile(tempname2, *gametype);
+		delete mv;
 		remove(tempname2.c_str());
 	} catch(std::exception& e) {
 		remove(tempname2.c_str());

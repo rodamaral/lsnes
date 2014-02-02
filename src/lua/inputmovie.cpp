@@ -114,14 +114,14 @@ namespace
 		movie& m = movb.get_movie();
 		if(!m.readonly_mode())
 			throw std::runtime_error("Not in read-only mode");
-		if(!allow_past_end && frame >= our_movie.input.size())
+		if(!allow_past_end && frame >= movb.get_mfile().input.size())
 			throw std::runtime_error("Index out of movie");
 		int32_t pc = get_pc_for(port, controller, button, true);
 		if(pc < 0)
 			throw std::runtime_error("Invalid control to edit");
 		uint64_t firstframe = m.get_current_frame_first_subframe();
 		uint64_t minframe = firstframe + pc;
-		uint64_t msize = our_movie.input.size();
+		uint64_t msize = movb.get_mfile().input.size();
 		if(minframe > msize || firstframe >= msize)
 			throw std::runtime_error("Can not edit finished movie");
 		if(frame < minframe)
@@ -181,12 +181,12 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		//Checks if requested frame is from movie.
-		if(&v == &our_movie.input)
+		if(&v == &movb.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 
 		v[n] = f->get_frame();
 
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
 			platform::notify_status();
@@ -256,7 +256,7 @@ namespace
 			for(uint64_t i = 0; i < count; i++)
 				v.append(v.blank_frame(true));
 		}
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -271,13 +271,13 @@ namespace
 		P(f);
 
 		v.append(v.blank_frame(true));
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			if(!v[v.size() - 1].sync()) {
 				update_movie_state();
 			}
@@ -295,10 +295,10 @@ namespace
 
 		if(n > v.size())
 			throw std::runtime_error("Requested truncate length longer than existing");
-		if(&v == &our_movie.input)
+		if(&v == &movb.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -319,11 +319,11 @@ namespace
 			P.expected("number or boolean");
 
 		movie& m = movb.get_movie();
-		if(&v == &our_movie.input)
+		if(&v == &movb.get_mfile().input)
 			check_can_edit(port, controller, button, frame);
 		v[frame].axis3(port, controller, button, value);
 
-		if(&v == &our_movie.input) {
+		if(&v == &movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -348,7 +348,7 @@ namespace
 			throw std::runtime_error("Destination index out of movie");
 
 		movie& m = movb.get_movie();
-		if(&dstv == &our_movie.input)
+		if(&dstv == &movb.get_mfile().input)
 			check_can_edit(0, 0, 0, dst, true);
 
 		{
@@ -360,7 +360,7 @@ namespace
 			for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1))
 				dstv[dst + i] = srcv[src + i];
 		}
-		if(&dstv == &our_movie.input) {
+		if(&dstv == &movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -590,11 +590,11 @@ namespace
 	{
 		if(P.is_nil()) {
 			P.skip();
-			return our_movie.input;
+			return movb.get_mfile().input;
 		} else if(P.is<lua_inputmovie>())
 			return *(P.arg<lua_inputmovie*>()->get_frame_vector());
 		else
-			return our_movie.input;
+			return movb.get_mfile().input;
 	}
 
 	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {

@@ -12,10 +12,10 @@
 #include "lua/lua.hpp"
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
+#include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/romloader.hpp"
-#include "core/rrdata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/string.hpp"
@@ -315,7 +315,8 @@ int main(int argc, char** argv)
 				lsnes_vset[r[1]].str(r[2]);
 				std::cerr << "Set " << r[1] << " to '" << r[2] << "'" << std::endl;
 			} catch(std::exception& e) {
-				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what() << std::endl;
+				std::cerr << "Can't set " << r[1] << " to '" << r[2] << "': " << e.what()
+					<< std::endl;
 			}
 		}
 	}
@@ -344,6 +345,7 @@ int main(int argc, char** argv)
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "FATAL: Can't load ROM: " << e.what() << std::endl;
+		quit_lua();
 		fatal_error();
 		exit(1);
 	}
@@ -352,29 +354,30 @@ int main(int argc, char** argv)
 
 	messages << "--- End of Startup --- " << std::endl;
 
-	moviefile movie;
+	moviefile* movie;
 	try {
-		movie = moviefile(movfn, *r.rtype);
+		movie = new moviefile(movfn, *r.rtype);
 		//Load ROM before starting the dumper.
 		our_rom = r;
 		messages << "Using core: " << our_rom.rtype->get_core_identifier() << std::endl;
-		our_rom.region = &movie.gametype->get_region();
-		our_rom.load(movie.settings, movie.movie_rtc_second, movie.movie_rtc_subsecond);
+		our_rom.region = &movie->gametype->get_region();
+		our_rom.load(movie->settings, movie->movie_rtc_second, movie->movie_rtc_subsecond);
 		startup_lua_scripts(cmdline);
 		if(overdump_mode)
-			length = overdump_length + movie.get_frame_count();
+			length = overdump_length + movie->get_frame_count();
 		dumper_startup(dumper, mode, prefix, length);
-		main_loop(r, movie, true);
+		main_loop(r, *movie, true);
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
 	} catch(std::exception& e) {
 		messages << "FATAL: " << e.what() << std::endl;
+		quit_lua();
 		fatal_error();
 		return 1;
 	}
 	information_dispatch::do_dump_end();
-	rrdata.close();
 	quit_lua();
+	movb.release_memory();
 	cleanup_all_keys();
 	return 0;
 }

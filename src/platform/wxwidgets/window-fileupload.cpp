@@ -469,7 +469,7 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
 	file->Connect(wxEVT_COMMAND_RADIOBUTTON_SELECTED,
 		wxCommandEventHandler(wxeditor_uploaddialog::on_source_sel), NULL, this);
-	if(!our_rom.rtype || our_rom.rtype->isnull()) {
+	if(!movb || !our_rom.rtype || our_rom.rtype->isnull()) {
 		current->Enable(false);
 		file->SetValue(true);
 	}
@@ -580,15 +580,15 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	} else {
 		if(fn.length() < 6 || fn.substr(fn.length() - 5) != ".lsmv")
 			filename->SetValue(towxstring(fn + ".lsmv"));
-		our_movie.is_savestate = false;
+		movb.get_mfile().is_savestate = false;
 		auto prj = project_get();
 		if(prj) {
-			our_movie.gamename = prj->gamename;
-			our_movie.authors = prj->authors;
+			movb.get_mfile().gamename = prj->gamename;
+			movb.get_mfile().authors = prj->authors;
 		}
-		our_movie.active_macros.clear();
+		movb.get_mfile().active_macros.clear();
 		std::ostringstream stream;
-		our_movie.save(stream);
+		movb.get_mfile().save(stream, movb.get_rrdata());
 		std::string _stream = stream.str();
 		content = std::vector<char>(_stream.begin(), _stream.end());
 	}
@@ -615,9 +615,9 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 			if(prj)
 				curgame = prj->gamename;
 			else
-				curgame = our_movie.gamename;
+				curgame = movb.get_mfile().gamename;
 
-			std::string plat = lookup_sysregion_mapping(our_movie.gametype->get_name()) + " ";
+			std::string plat = lookup_sysregion_mapping(movb.get_mfile().gametype->get_name()) + " ";
 			size_t platlen = plat.length();
 			std::string c = tostdstring(game->GetValue());
 			game->Clear();

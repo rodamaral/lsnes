@@ -504,7 +504,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			run_callback(on_movie_lost, "unsaferewind");
 			mainloop_restore_state(u2->state, u2->secs, u2->ssecs);
 			mov.fast_load(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
-			try { get_host_memory() = u2->hostmemory; } catch(...) {}
+			try { movb.get_mfile().host_memory = u2->hostmemory; } catch(...) {}
 			run_callback(on_post_rewind);
 			delete reinterpret_cast<lua::objpin<lua_unsaferewind>*>(u);
 		} catch(...) {
@@ -517,7 +517,7 @@ void lua_callback_do_unsafe_rewind(const std::vector<char>& save, uint64_t secs,
 			u2->state = save;
 			u2->secs = secs,
 			u2->ssecs = ssecs;
-			u2->hostmemory = get_host_memory();
+			u2->hostmemory = movb.get_mfile().host_memory;
 			mov.fast_save(u2->frame, u2->ptr, u2->lag, u2->pollcounters);
 			return 1;
 		}));

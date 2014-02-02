@@ -302,6 +302,10 @@ void wxeditor_subtitles::on_delete(wxCommandEvent& e)
 void wxeditor_subtitles_display(wxWindow* parent)
 {
 	wxFrame* editor;
+	if(!movb) {
+		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
+		return;
+	}
 	try {
 		editor = new wxeditor_subtitles(parent);
 		editor->Show();

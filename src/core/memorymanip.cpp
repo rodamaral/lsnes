@@ -1,9 +1,9 @@
 #include "core/command.hpp"
 #include "core/memorymanip.hpp"
+#include "core/movie.hpp"
 #include "core/moviedata.hpp"
 #include "core/misc.hpp"
 #include "core/rom.hpp"
-#include "core/rrdata.hpp"
 #include "interface/romtype.hpp"
 #include "library/hex.hpp"
 #include "library/string.hpp"
@@ -24,24 +24,28 @@ namespace
 {
 	uint8_t lsnes_mmio_iospace_handler(uint64_t offset, uint8_t data, bool write)
 	{
-		if(offset >= 0 && offset < 8 && !write) {
-			//Frame counter.
-			uint64_t x = get_movie().get_current_frame();
-			return x >> (8 * (offset & 7));
-		} else if(offset >= 8 && offset < 16 && !write) {
-			//Movie length.
-			uint64_t x = get_movie().get_frame_count();
-			return x >> (8 * (offset & 7));
-		} else if(offset >= 16 && offset < 24 && !write) {
-			//Lag counter.
-			uint64_t x = get_movie().get_lag_frames();
-			return x >> (8 * (offset & 7));
-		} else if(offset >= 24 && offset < 32 && !write) {
-			//Rerecord counter.
-			uint64_t x = rrdata.count();
-			return x >> (8 * (offset & 7));
-		} else
+		try {
+			if(offset >= 0 && offset < 8 && !write) {
+				//Frame counter.
+				uint64_t x = movb.get_movie().get_current_frame();
+				return x >> (8 * (offset & 7));
+			} else if(offset >= 8 && offset < 16 && !write) {
+				//Movie length.
+				uint64_t x = movb.get_movie().get_frame_count();
+				return x >> (8 * (offset & 7));
+			} else if(offset >= 16 && offset < 24 && !write) {
+				//Lag counter.
+				uint64_t x = movb.get_movie().get_lag_frames();
+				return x >> (8 * (offset & 7));
+			} else if(offset >= 24 && offset < 32 && !write) {
+				//Rerecord counter.
+				uint64_t x = movb.get_rrdata().count();
+				return x >> (8 * (offset & 7));
+			} else
+				return 0;
+		} catch(...) {
 			return 0;
+		}
 	}
 
 	class iospace_region : public memory_region

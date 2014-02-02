@@ -4,8 +4,8 @@
 #include "core/controller.hpp"
 #include "core/memorymanip.hpp"
 #include "core/misc.hpp"
+#include "core/movie.hpp"
 #include "core/rom.hpp"
-#include "core/rrdata.hpp"
 #include "core/moviedata.hpp"
 #include "core/settings.hpp"
 #include "core/window.hpp"
@@ -151,7 +151,7 @@ namespace
 	void fatal_signal_handler(int sig)
 	{
 		write(2, "Caught fatal signal!\n", 21);
-		emerg_save_movie(our_movie);
+		if(movb) emerg_save_movie(movb.get_mfile(), movb.get_rrdata());
 		signal(sig, SIG_DFL);
 		raise(sig);
 	}
@@ -159,14 +159,14 @@ namespace
 	void terminate_handler()
 	{
 		write(2, "Terminating abnormally!\n", 24);
-		emerg_save_movie(our_movie);
+		if(movb) emerg_save_movie(movb.get_mfile(), movb.get_rrdata());
 		std::cerr << "Exiting on fatal error" << std::endl;
 		exit(1);
 	}
 
 	command::fnptr<const std::string&> test4(lsnes_cmd, "panicsave-movie", "", "",
 		[](const std::string& args) throw(std::bad_alloc, std::runtime_error) {
-		emerg_save_movie(our_movie);
+		if(movb) emerg_save_movie(movb.get_mfile(), movb.get_rrdata());
 	});
 
 	//% is intentionally missing.
@@ -202,7 +202,6 @@ void set_random_seed(const std::string& seed) throw(std::bad_alloc)
 		umutex_class h(seed_mutex);
 		prng.write(&x[0], x.size());
 	}
-	rrdata.set_internal(random_rrdata());
 }
 
 void set_random_seed() throw(std::bad_alloc)
@@ -326,7 +325,7 @@ std::string get_config_path() throw(std::bad_alloc)
 
 void OOM_panic()
 {
-	emerg_save_movie(our_movie);
+	if(movb) emerg_save_movie(movb.get_mfile(), movb.get_rrdata());
 	messages << "FATAL: Out of memory!" << std::endl;
 	fatal_error();
 }

@@ -159,8 +159,8 @@ wxeditor_authors::wxeditor_authors(wxWindow* parent)
 			for(auto i : proj->authors)
 				x = x + i.first + "|" + i.second + "\n";
 		} else {
-			gamename = our_movie.gamename;
-			for(auto i : our_movie.authors)
+			gamename = movb.get_mfile().gamename;
+			for(auto i : movb.get_mfile().authors)
 				x = x + i.first + "|" + i.second + "\n";
 		}
 
@@ -233,8 +233,8 @@ void wxeditor_authors::on_ok(wxCommandEvent& e)
 			update_movie_state();
 			notify_title_change();
 		} else {
-			our_movie.gamename = gamename;
-			our_movie.authors = newauthors;
+			movb.get_mfile().gamename = gamename;
+			movb.get_mfile().authors = newauthors;
 			set_mprefix_for_project(pfx);
 		}
 		if(run_new)
@@ -325,6 +325,10 @@ void wxeditor_authors::on_luasel(wxCommandEvent& e)
 void wxeditor_authors_display(wxWindow* parent)
 {
 	modal_pause_holder hld;
+	if(!movb) {
+		show_message_ok(parent, "No movie", "Can't edit authors of nonexistent movie", wxICON_EXCLAMATION);
+		return;
+	}
 	wxDialog* editor;
 	try {
 		editor = new wxeditor_authors(parent);

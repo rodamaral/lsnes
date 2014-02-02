@@ -8,6 +8,7 @@
 #include "core/controllerframe.hpp"
 #include "core/rom.hpp"
 #include "core/subtitles.hpp"
+#include "library/rrdata.hpp"
 #include "library/zip.hpp"
 
 /**
@@ -56,15 +57,16 @@ struct moviefile
  * parameter filename: The file to save to.
  * parameter compression: The compression level 0-9. 0 is uncompressed.
  * parameter binary: Save in binary form if true.
+ * parameter rrd: The rerecords data.
  * throws std::bad_alloc: Not enough memory.
  * throws std::runtime_error: Can't save the movie file.
  */
-	void save(const std::string& filename, unsigned compression, bool binary) throw(std::bad_alloc,
-		std::runtime_error);
+	void save(const std::string& filename, unsigned compression, bool binary, rrdata_set& rrd)
+		throw(std::bad_alloc, std::runtime_error);
 /**
  * Reads this movie structure and saves it to stream (uncompressed ZIP).
  */
-	void save(std::ostream& outstream) throw(std::bad_alloc, std::runtime_error);
+	void save(std::ostream& outstream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
 /**
  * Force loading as corrupt.
  */
@@ -216,13 +218,19 @@ struct moviefile
 /**
  * Return reference to memory slot.
  */
-	static moviefile& memref(const std::string& slot);
+	static moviefile*& memref(const std::string& slot);
+/**
+ * Copy data.
+ */
+	void copy_fields(const moviefile& mv);
 private:
-	void binary_io(std::ostream& stream) throw(std::bad_alloc, std::runtime_error);
+	moviefile(const moviefile&);
+	moviefile& operator=(const moviefile&);
+	void binary_io(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
 	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
-	void save(zip::writer& w) throw(std::bad_alloc, std::runtime_error);
+	void save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
 };
 
-void emerg_save_movie(const moviefile& mv);
+void emerg_save_movie(const moviefile& mv, rrdata_set& rrd);
 
 #endif
