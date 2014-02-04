@@ -115,4 +115,9 @@ extern bool wxwidgets_exiting;
 //Some important settings.
 extern std::map<std::string, std::string> core_selections;
 
+template<typename T> void runemufn_async(T fn)
+{
+	platform::queue(functor_call_helper2<T>, new T(fn), false);
+}
+
 #endif

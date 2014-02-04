@@ -267,6 +267,7 @@ extern struct dispatch::source<bool> notify_mode_change;
 extern struct dispatch::source<> notify_core_change;
 extern struct dispatch::source<> notify_title_change;
 extern struct dispatch::source<> notify_branch_change;
+extern struct dispatch::source<> notify_mbranch_change;
 extern struct dispatch::source<bool> notify_core_changed;
 extern struct dispatch::source<> notify_new_core;
 extern struct dispatch::source<> notify_voice_stream_change;

@@ -4,15 +4,27 @@
 #include "moviefile.hpp"
 #include "movie.hpp"
 
+//Load state, always switch to Readwrite.
 #define LOAD_STATE_RW 0
+//Load state, never switch to Readwrite.
 #define LOAD_STATE_RO 1
+//Load state, don't muck with movie data.
 #define LOAD_STATE_PRESERVE 2
+//Load state, ignoring the actual state.
 #define LOAD_STATE_MOVIE 3
+//Load state, switch to readwrite if previously there and loaded state is at the end.
 #define LOAD_STATE_DEFAULT 4
+//Load state, switch to readwrite if previously there.
 #define LOAD_STATE_CURRENT 5
+//No load state, rewind movie to start.
 #define LOAD_STATE_BEGINNING 6
+//No load state, reload ROM.
 #define LOAD_STATE_ROMRELOAD 7
+//Load state, loading everything, switch to readwrite if loaded state is at the end.
 #define LOAD_STATE_INITIAL 8
+//Load state, along with all branches, switch to readwrite if loaded state is at the end.
+#define LOAD_STATE_ALLBRANCH 9
+
 #define SAVE_STATE 0
 #define SAVE_MOVIE 1
 

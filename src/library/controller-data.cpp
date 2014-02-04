@@ -575,6 +575,7 @@ void controller_frame_vector::append(controller_frame frame) throw(std::bad_allo
 controller_frame_vector::controller_frame_vector(const controller_frame_vector& vector) throw(std::bad_alloc)
 {
 	real_frame_count = 0;
+	freeze_count = 0;
 	clear(*vector.types);
 	*this = vector;
 }

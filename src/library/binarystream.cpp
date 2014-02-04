@@ -47,6 +47,12 @@ size_t output::numberbytes(uint64_t number)
 	return o;
 }
 
+size_t output::stringbytes(const std::string& string)
+{
+	size_t slen = string.length();
+	return numberbytes(slen) + slen;
+}
+
 void output::number32(uint32_t number)
 {
 	char data[4];

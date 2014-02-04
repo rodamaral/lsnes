@@ -164,7 +164,7 @@ namespace
 		m.settings = p.settings;
 		auto ctrldata = coretype.controllerconfig(m.settings);
 		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
-		m.input.clear(ports);
+		m.create_default_branch(ports);
 		try {
 			m.gametype = &coretype.lookup_sysregion(p.gametype);
 		} catch(std::bad_alloc& e) {

@@ -432,7 +432,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 	if(movb) {
 		port_type_set& portset = construct_movie_portset(movb.get_mfile(), our_rom);
 		//If portset or gametype changes, force readwrite with new movie.
-		if(movb.get_mfile().input.get_types() != portset) load_readwrite = true;
+		if(movb.get_mfile().input->get_types() != portset) load_readwrite = true;
 		if(our_rom.rtype != &movb.get_mfile().gametype->get_type()) load_readwrite = true;
 	}
 
@@ -489,12 +489,13 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		_movie.get()->start_paused = false;
 		_movie.get()->lazy_project_create = true;
 		port_type_set& portset2 = construct_movie_portset(*_movie.get(), our_rom);
-		_movie.get()->input.clear(portset2);
+		_movie.get()->input = NULL;
+		_movie.get()->create_default_branch(portset2);
 
 		//Wrap the input in movie.
 		temporary_handle<movie> newmovie;
-		newmovie.get()->set_movie_data(&_movie.get()->input);
-		newmovie.get()->load(_movie.get()->rerecords, _movie.get()->projectid, _movie.get()->input);
+		newmovie.get()->set_movie_data(_movie.get()->input);
+		newmovie.get()->load(_movie.get()->rerecords, _movie.get()->projectid, *(_movie.get()->input));
 		newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 		newmovie.get()->readonly_mode(false);
 		
@@ -524,6 +525,7 @@ void do_load_rom() throw(std::bad_alloc, std::runtime_error)
 		set_mprefix(get_mprefix_for_project(movb.get_mfile().projectid));
 	}
 	notify_mode_change(movb.get_movie().readonly_mode());
+	notify_mbranch_change();
 	messages << "ROM reloaded." << std::endl;
 }
 
@@ -571,14 +573,14 @@ void do_load_state_preserve(struct moviefile& _movie)
 
 	//Construct a new movie sharing the input data.
 	temporary_handle<movie> newmovie;
-	newmovie.get()->set_movie_data(&movb.get_mfile().input);
+	newmovie.get()->set_movie_data(movb.get_mfile().input);
 	newmovie.get()->readonly_mode(true);
 	newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 
-	newmovie.get()->load(_movie.rerecords, _movie.projectid, _movie.input);
+	newmovie.get()->load(_movie.rerecords, _movie.projectid, *_movie.input);
 	if(will_load_state)
 		newmovie.get()->restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
-			&_movie.input, _movie.projectid);
+			_movie.input, _movie.projectid);
 
 	//Count a rerecord.
 	if(movb.get_rrdata().is_lazy() && !_movie.lazy_project_create)
@@ -629,6 +631,9 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 	bool current_mode = movb ? movb.get_movie().readonly_mode() : false;
 	bool will_load_state = _movie.is_savestate && lmode != LOAD_STATE_MOVIE;
 
+	//Load state all branches and load state initial are the same.
+	if(lmode == LOAD_STATE_ALLBRANCH) lmode = LOAD_STATE_INITIAL;
+
 	//Various checks.
 	if(_movie.force_corrupt)
 		throw std::runtime_error("Movie file invalid");
@@ -652,12 +657,42 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 
 	//Create a new movie, and if needed, restore the movie state.
 	temporary_handle<movie> newmovie;
-	newmovie.get()->set_movie_data(&_movie.input);
-	newmovie.get()->load(_movie.rerecords, _movie.projectid, _movie.input);
+	newmovie.get()->set_movie_data(_movie.input);
+	newmovie.get()->load(_movie.rerecords, _movie.projectid, *_movie.input);
 	newmovie.get()->set_pflag_handler(&lsnes_pflag_handler);
 	if(will_load_state)
 		newmovie.get()->restore_state(_movie.save_frame, _movie.lagged_frames, _movie.pollcounters, true,
 			NULL, _movie.projectid);
+
+	//Copy the other branches.
+	if(lmode != LOAD_STATE_INITIAL && movb.get_mfile().projectid == _movie.projectid) {
+		newmovie.get()->set_movie_data(NULL);
+		auto& oldm = movb.get_mfile().branches;
+		auto& newm = _movie.branches;
+		auto oldd = movb.get_mfile().input;
+		auto newd = _movie.input;
+		std::string dflt_name;
+		//What was the old default name?
+		for(auto& i : oldm)
+			if(&i.second == oldd)
+				dflt_name = i.first;
+		//Rename the default to match with old movie if the names differ.
+		if(!newm.count(dflt_name) || &newm[dflt_name] != newd)
+			newm[dflt_name] = *newd;
+		//Copy all other branches.
+		for(auto& i : oldm)
+			if(i.first != dflt_name)
+				newm[i.first] = i.second;
+		//Delete branches that didn't exist.
+		for(auto i = newm.begin(); i != newm.end();) {
+			if(oldm.count(i->first))
+				i++;
+			else
+				i = newm.erase(i);
+		}
+		_movie.input = &newm[dflt_name];
+		newmovie.get()->set_movie_data(_movie.input);
+	}
 
 	port_type_set& portset = construct_movie_portset(_movie, our_rom);
 
@@ -726,6 +761,7 @@ void do_load_state(struct moviefile& _movie, int lmode, bool& used)
 
 	notify_mode_change(m.readonly_mode());
 	print_movie_info(_movie, our_rom, movb.get_rrdata());
+	notify_mbranch_change();
 }
 
 

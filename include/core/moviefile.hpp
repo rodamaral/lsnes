@@ -35,6 +35,20 @@ struct moviefile
 		void binary_io(std::istream& s);
 	};
 /**
+ * Extract branches.
+ */
+	struct branch_extractor
+	{
+		branch_extractor(const std::string& filename);
+		virtual ~branch_extractor();
+		virtual std::set<std::string> enumerate() { return real->enumerate(); }
+		virtual void read(const std::string& name, controller_frame_vector& v) { real->read(name, v); }
+	protected:
+		branch_extractor() { real = NULL; }
+	private:
+		branch_extractor* real;
+	};
+/**
  * This constructor construct movie structure with default settings.
  *
  * throws std::bad_alloc: Not enough memory.
@@ -50,6 +64,17 @@ struct moviefile
  * throws std::runtime_error: Can't load the movie file
  */
 	moviefile(const std::string& filename, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
+
+/**
+ * Fill a stub movie with specified loaded ROM.
+ *
+ * Parameter rom: The rom.
+ * Parameter settings: The settings.
+ * Parameter rtc_sec: The RTC seconds value.
+ * Parameter rtc_subsec: The RTC subseconds value.
+ */
+	moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
+		uint64_t rtc_subsec);
 
 /**
  * Reads this movie structure and saves it into file.
@@ -168,9 +193,13 @@ struct moviefile
  */
 	std::vector<char> c_rrdata;
 /**
- * Input for each (sub)frame.
+ * Input for each (sub)frame (points to active branch).
  */
-	controller_frame_vector input;		//Input for each frame.
+	controller_frame_vector* input;
+/**
+ * Branches.
+ */
+	std::map<std::string, controller_frame_vector> branches;
 /**
  * Current RTC second.
  */
@@ -219,10 +248,28 @@ struct moviefile
  * Return reference to memory slot.
  */
 	static moviefile*& memref(const std::string& slot);
+
 /**
  * Copy data.
  */
 	void copy_fields(const moviefile& mv);
+
+/**
+ * Create a default branch.
+ */
+	void create_default_branch(port_type_set& ports);
+/**
+ * Get name of current branch.
+ */
+	const std::string& current_branch();
+/**
+ * Fork a branch.
+ */
+	void fork_branch(const std::string& oldname, const std::string& newname);
+/**
+ * Fixup input pointer post-copy.
+ */
+	void fixup_current_branch(const moviefile& mv);
 private:
 	moviefile(const moviefile&);
 	moviefile& operator=(const moviefile&);

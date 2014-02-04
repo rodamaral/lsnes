@@ -231,11 +231,6 @@ namespace
 		wxwin_mainwindow* w;
 	};
 
-	template<typename T> void runemufn_async(T fn)
-	{
-		platform::queue(functor_call_helper2<T>, new T(fn), false);
-	}
-
 	void hash_callback(uint64_t left, uint64_t total)
 	{
 		wxwin_mainwindow* mwin = main_window;
@@ -1260,8 +1255,11 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 				read_variable_map(vars, "!length");
 		s << U"  Lag: " << read_variable_map(vars, "!lag");
 		s << U"  Subframe: " << read_variable_map(vars, "!subframe");
-		if(vars.count("!saveslot"))
-			s << U"  Slot: " << read_variable_map(vars, "!saveslot");
+		if(vars.count("!saveslot")) {
+			s << U"  Slot: ";
+			if(vars.count("!branch")) s << read_variable_map(vars, "!branch") << U"→";
+			s << read_variable_map(vars, "!saveslot");
+		}
 		if(vars.count("!saveslotinfo"))
 			s << U" [" << read_variable_map(vars, "!saveslotinfo") << U"]";
 		s << U"  Speed: " << read_variable_map(vars, "!speed") << U"%";
@@ -1278,11 +1276,11 @@ void wxwin_mainwindow::update_statusbar(const std::map<std::string, std::u32stri
 			s << U" Finished";
 		else
 			s << U" Unknown";
+		if(vars.count("!mbranch"))
+			s << U"  Branch: " << read_variable_map(vars, "!mbranch");
 		std::u32string macros = read_variable_map(vars, "!macros");
 		if(macros.length())
 			s << U"  Macros: " << macros;
-		if(vars.count("!branch"))
-			s << U"  Branch: " << read_variable_map(vars, "!branch");
 
 		statusbar->SetStatusText(towxstring(s.str()));
 	} catch(std::exception& e) {
@@ -1347,6 +1345,8 @@ namespace
 					";*." + ext + ".backup", ext));
 				p.types.push_back(filedialog_type_entry("Savestates [preserve]", "*." + ext +
 					";*." + ext + ".backup", ext));
+				p.types.push_back(filedialog_type_entry("Savestates [all branches]", "*." + ext +
+					";*." + ext + ".backup", ext));
 			}
 			p.default_type = save ? (state ? save_dflt_binary : movie_dflt_binary) : 0;
 			return p;
@@ -1362,6 +1362,7 @@ namespace
 				case 1: cmdmod = "-readonly"; break;
 				case 2: cmdmod = "-state"; break;
 				case 3: cmdmod = "-preserve"; break;
+				case 4: cmdmod = "-allbranches"; break;
 			}
 			return std::make_pair(cmdmod, p.path);
 		}

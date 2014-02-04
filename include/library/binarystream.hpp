@@ -47,6 +47,13 @@ public:
  */
 	size_t numberbytes(uint64_t number);
 /**
+ * Count number of bytes needed to store given string.
+ *
+ * Parameter string: The string to query.
+ * Return: The number of bytes needed.
+ */
+	size_t stringbytes(const std::string& string);
+/**
  * Output a 32-bit number to stream (4 byte).
  *
  * Parameter number: The number to output.

@@ -6,6 +6,9 @@
 
 #include "interface/controller.hpp"
 #include "core/mainloop.hpp"
+#include "core/mbranch.hpp"
+#include "core/project.hpp"
+#include "platform/wxwidgets/loadsave.hpp"
 #include "platform/wxwidgets/platform.hpp"
 #include "platform/wxwidgets/scrollbar.hpp"
 #include "platform/wxwidgets/textrender.hpp"
@@ -52,6 +55,13 @@ enum
 	wxID_PASTE_APPEND,
 	wxID_INSERT_CONTROLLER_AFTER,
 	wxID_DELETE_CONTROLLER_SUBFRAMES,
+	wxID_MBRANCH_NEW,
+	wxID_MBRANCH_IMPORT,
+	wxID_MBRANCH_EXPORT,
+	wxID_MBRANCH_RENAME,
+	wxID_MBRANCH_DELETE,
+	wxID_MBRANCH_FIRST,
+	wxID_MBRANCH_LAST = wxID_MBRANCH_FIRST + 1024
 };
 
 void update_movie_state();
@@ -62,6 +72,36 @@ namespace
 	uint64_t divs[] = {1000000, 100000, 10000, 1000, 100, 10, 1};
 	uint64_t divsl[] = {1000000, 100000, 10000, 1000, 100, 10, 0};
 	const unsigned divcnt = sizeof(divs)/sizeof(divs[0]);
+
+	class exp_imp_type
+	{
+	public:
+		typedef std::pair<std::string, int> returntype;
+		exp_imp_type()
+		{
+		}
+		filedialog_input_params input(bool save) const
+		{
+			filedialog_input_params ip;
+			ip.types.push_back(filedialog_type_entry("Input tracks (text)", "*.lstt", "lstt"));
+			ip.types.push_back(filedialog_type_entry("Input tracks (binary)", "*.lstb", "lstb"));
+			if(!save)
+				ip.types.push_back(filedialog_type_entry("Movie files", "*.lsmv", "lsmv"));
+			ip.default_type = 1;
+			return ip;
+		}
+		std::pair<std::string, int> output(const filedialog_output_params& p, bool save) const
+		{
+			int m;
+			switch(p.typechoice) {
+			case 0: 	m = MBRANCH_IMPORT_TEXT; break;
+			case 1: 	m = MBRANCH_IMPORT_BINARY; break;
+			case 2: 	m = MBRANCH_IMPORT_MOVIE; break;
+			};
+			return std::make_pair(p.path, m);
+		}
+	private:
+	};
 }
 
 struct control_info
@@ -778,6 +818,7 @@ private:
 		uint64_t cached_cffs;
 		bool position_locked;
 		wxMenu* current_popup;
+		std::map<int, std::string> branch_names;
 	};
 	_moviepanel* moviepanel;
 	wxButton* closebutton;
@@ -794,7 +835,7 @@ namespace
 	uint64_t real_first_editable(frame_controls& fc, unsigned idx)
 	{
 		uint64_t cffs = movb.get_movie().get_current_frame_first_subframe();
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		pollcounter_vector& pv = movb.get_movie().get_pollcounters();
 		uint64_t vsize = fv.size();
 		uint32_t pc = fc.read_pollcount(pv, idx);
@@ -817,7 +858,7 @@ namespace
 	uint64_t real_first_nextframe(frame_controls& fc)
 	{
 		uint64_t base = real_first_editable(fc, 0);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		for(uint32_t i = 0;; i++)
 			if(base + i >= vsize || fv[base + i].sync())
@@ -860,7 +901,7 @@ wxeditor_movie::_moviepanel::_moviepanel(wxeditor_movie* v)
 void wxeditor_movie::_moviepanel::update_cache()
 {
 	movie& m = movb.get_movie();
-	controller_frame_vector& fv = movb.get_mfile().input;
+	controller_frame_vector& fv = *movb.get_mfile().input;
 	if(&m == prev_obj && prev_seqno == m.get_seqno()) {
 		//Just process new subframes if any.
 		for(uint64_t i = max_subframe; i < fv.size(); i++) {
@@ -979,7 +1020,7 @@ void wxeditor_movie::_moviepanel::render_linen(text_framebuffer& fb, controller_
 void wxeditor_movie::_moviepanel::render(text_framebuffer& fb, unsigned long long pos)
 {
 	spos = pos;
-	controller_frame_vector& fv = movb.get_mfile().input;
+	controller_frame_vector& fv = *movb.get_mfile().input;
 	controller_frame cf = fv.blank_frame(false);
 	int _width = width(cf);
 	fb.set_size(_width, lines_to_display + 3);
@@ -1023,7 +1064,7 @@ void wxeditor_movie::_moviepanel::do_toggle_buttons(unsigned idx, uint64_t row1,
 		if(!movb.get_movie().readonly_mode())
 			return;
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = _press_line; i <= line; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1053,7 +1094,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		if(line < fedit || line >= fv.size()) {
 			valid = false;
 			return;
@@ -1077,7 +1118,7 @@ void wxeditor_movie::_moviepanel::do_alter_axis(unsigned idx, uint64_t row1, uin
 		std::swap(line, line2);
 	runemufn([idx, line, line2, value, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line; i <= line2; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1105,7 +1146,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 			return;
 		}
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		if(line2 < fedit || line2 >= fv.size()) {
 			valid = false;
 			return;
@@ -1119,7 +1160,7 @@ void wxeditor_movie::_moviepanel::do_sweep_axis(unsigned idx, uint64_t row1, uin
 		return;
 	runemufn([idx, line, line2, value, value2, _fcontrols]() {
 		uint64_t fedit = real_first_editable(*_fcontrols, idx);
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = line + 1; i <= line2 - 1; i++) {
 			if(i < fedit || i >= fv.size())
@@ -1141,7 +1182,7 @@ void wxeditor_movie::_moviepanel::do_append_frames(uint64_t count)
 	runemufn([_count]() {
 		if(!movb.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		controller_frame_vector::notify_freeze freeze(fv);
 		for(uint64_t i = 0; i < _count; i++)
 			fv.append(fv.blank_frame(true));
@@ -1174,7 +1215,7 @@ void wxeditor_movie::_moviepanel::do_insert_frame_after(uint64_t row)
 	runemufn([_row, _fcontrols]() {
 		if(!movb.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t fedit = real_first_editable(*_fcontrols, 0);
 		//Find the start of the next frame.
 		uint64_t nframe = _row + 1;
@@ -1206,7 +1247,7 @@ void wxeditor_movie::_moviepanel::do_delete_frame(uint64_t row1, uint64_t row2, 
 	frame_controls* _fcontrols = &fcontrols;
 	if(_row1 > _row2) std::swap(_row1, _row2);
 	runemufn([_row1, _row2, _wholeframe, _fcontrols]() {
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row1 >= vsize)
 			return;		//Nothing to do.
@@ -1275,7 +1316,7 @@ void wxeditor_movie::_moviepanel::do_truncate(uint64_t row)
 	uint64_t _row = row;
 	frame_controls* _fcontrols = &fcontrols;
 	runemufn([_row, _fcontrols]() {
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(_row >= vsize)
 			return;
@@ -1380,7 +1421,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 		runemufn([ciX, row, c, _fcontrols]() {
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			if(row < fedit) return;
-			controller_frame_vector& fv = movb.get_mfile().input;
+			controller_frame_vector& fv = *movb.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 		});
@@ -1416,7 +1457,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = movb.get_mfile().input;
+			controller_frame_vector& fv = *movb.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
@@ -1428,7 +1469,7 @@ void wxeditor_movie::_moviepanel::popup_axis_panel(uint64_t row, control_info ci
 			uint64_t fedit = real_first_editable(*_fcontrols, ciX.index);
 			fedit = max(fedit, real_first_editable(*_fcontrols, ciY.index));
 			if(row < fedit) return;
-			controller_frame_vector& fv = movb.get_mfile().input;
+			controller_frame_vector& fv = *movb.get_mfile().input;
 			controller_frame cf = fv[row];
 			_fcontrols->write_index(cf, ciX.index, c.first);
 			_fcontrols->write_index(cf, ciY.index, c.second);
@@ -1582,7 +1623,170 @@ void wxeditor_movie::_moviepanel::on_popup_menu(wxCommandEvent& e)
 		else
 			do_delete_controller(press_line, rpress_line, port, controller);
 		return;
+	case wxID_MBRANCH_NEW:
+		try {
+			std::string newname;
+			std::string oldname;
+			runemufn([&oldname]() { oldname = mbranch_get(); });
+			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to fork "
+				"from " + mbranch_name(oldname) + "):", "", false);
+			runemufn_async([this, oldname, newname] {
+				try {
+					mbranch_new(newname, oldname);
+				} catch(std::exception& e) {
+					std::string error = e.what();
+					runuifun([this, error]() {
+						show_message_ok(this, "Can't create branch",
+							"Can't create branch: " + error, wxICON_EXCLAMATION);
+					});
+				}
+			});
+		} catch(canceled_exception& e) {
+		}
+		return;
+	case wxID_MBRANCH_IMPORT:
+		try {
+			int mode;
+			std::string filename;
+			std::string branch;
+			std::string dbranch;
+			auto g = choose_file_load(this, "Choose file to import", project_moviepath(),
+				exp_imp_type());
+			filename = g.first;
+			mode = g.second;
+			if(mode == MBRANCH_IMPORT_MOVIE) {
+				std::set<std::string> brlist;
+				bool failed = false;
+				runemufn([this, filename, &brlist, &failed]() {
+					try {
+						brlist = mbranch_movie_branches(filename);
+					} catch(std::exception& e) {
+						std::string error = e.what();
+						failed = true;
+						runuifun([this, error]() {
+							show_message_ok(this, "Can't get branches in movie",
+								error, wxICON_EXCLAMATION);
+							
+						});
+					}
+				});
+				if(failed)
+					return;
+				if(brlist.size() == 0) {
+					show_message_ok(this, "No branches in movie file",
+						"Can't import movie file as it has no branches", wxICON_EXCLAMATION);
+					return;
+				} else if(brlist.size() == 1) {
+					branch = *brlist.begin();
+				} else {
+					std::vector<std::string> choices(brlist.begin(), brlist.end());
+					branch = pick_among(this, "Select branch to import",
+						"Select branch to import", choices, 0);
+				}
+				//Import from movie.
+			}
+			dbranch = pick_text(this, "Enter new branch name", "Enter name for an imported branch:",
+				branch, false);
+			runemufn_async([this, filename, branch, dbranch, mode]() {
+				try {
+					mbranch_import(filename, branch, dbranch, mode);
+				} catch(std::exception& e) {
+					std::string error = e.what();
+					runuifun([this, error]() {
+						show_message_ok(this, "Can't import branch",
+							error, wxICON_EXCLAMATION);
+					});
+				}
+			});
+		} catch(canceled_exception& e) {
+		}
+		return;
+	case wxID_MBRANCH_EXPORT:
+		try {
+			int mode;
+			std::string file;
+			auto g = choose_file_save(this, "Choose file to export", project_moviepath(),
+				exp_imp_type());
+			file = g.first;
+			mode = g.second;
+			runemufn_async([this, file, mode]() {
+				try {
+					std::string bname = mbranch_get();
+					mbranch_export(file, bname, mode == MBRANCH_IMPORT_BINARY);
+				} catch(std::exception& e) {
+					std::string error = e.what();
+					runuifun([this, error]() {
+						show_message_ok(this, "Can't export branch",
+							error, wxICON_EXCLAMATION);
+					});
+				}
+			});
+		} catch(canceled_exception& e) {
+		}
+		return;
+	case wxID_MBRANCH_RENAME:
+		try {
+			std::string newname;
+			std::string oldname;
+			std::set<std::string> list;
+			runemufn([&list]() { list = mbranch_enumerate(); });
+			std::vector<std::string> choices(list.begin(), list.end());
+			oldname = pick_among(this, "Select branch to rename", "Select branch to rename",
+				choices, 0);
+			newname = pick_text(this, "Enter new branch name", "Enter name for a new branch (to rename "
+				"'" + mbranch_name(oldname) + "'):", oldname, false);
+			runemufn_async([this, oldname, newname] {
+				try {
+					mbranch_rename(oldname, newname);
+				} catch(std::exception& e) {
+					std::string error = e.what();
+					runuifun([this, error]() {
+						show_message_ok(this, "Can't rename branch",
+							"Can't rename branch: " + error, wxICON_EXCLAMATION);
+					});
+				}
+			});
+		} catch(canceled_exception& e) {
+		}
+		return;
+	case wxID_MBRANCH_DELETE:
+		try {
+			std::string oldname;
+			std::set<std::string> list;
+			runemufn([&list]() { list = mbranch_enumerate(); });
+			std::vector<std::string> choices(list.begin(), list.end());
+			oldname = pick_among(this, "Select branch to delete", "Select branch to delete",
+				choices, 0);
+			runemufn_async([this, oldname] {
+				try {
+					mbranch_delete(oldname);
+				} catch(std::exception& e) {
+					std::string error = e.what();
+					runuifun([this, error]() {
+						show_message_ok(this, "Can't delete branch",
+							"Can't delete branch: " + error, wxICON_EXCLAMATION);
+					});
+				}
+			});
+		} catch(canceled_exception& e) {
+		}
+		return;
 	};
+	if(id >= wxID_MBRANCH_FIRST && id <= wxID_MBRANCH_LAST) {
+		if(!branch_names.count(id)) return;
+		std::string name = branch_names[id];
+		runemufn_async([this, name]() {
+			try {
+				mbranch_set(name);
+			} catch(std::exception& e) {
+				std::string err = e.what();
+				runuifun([this, err]() {
+					show_message_ok(this, "Error changing branch",
+						"Can't change branch: " + err, wxICON_EXCLAMATION);
+				});
+			}
+		});
+	}
 }
 
 uint64_t wxeditor_movie::_moviepanel::first_editable(unsigned index)
@@ -1758,14 +1962,44 @@ void wxeditor_movie::_moviepanel::on_mouse2(unsigned x, unsigned y, bool polarit
 	menu.Append(wxID_RUN_TO_FRAME, wxT("Run to frame..."));
 	menu.Append(wxID_CHANGE_LINECOUNT, wxT("Change number of lines visible"));
 	menu.AppendCheckItem(wxID_POSITION_LOCK, wxT("Lock scroll to playback"))->Check(position_locked);
+	menu.AppendSeparator();
+
+	wxMenu* branches_submenu = new wxMenu();
+	branches_submenu->Append(wxID_MBRANCH_NEW, wxT("New branch..."));
+	branches_submenu->Append(wxID_MBRANCH_IMPORT, wxT("Import branch..."));
+	branches_submenu->Append(wxID_MBRANCH_EXPORT, wxT("Export branch..."));
+	branches_submenu->Append(wxID_MBRANCH_RENAME, wxT("Rename branch..."));
+	branches_submenu->Append(wxID_MBRANCH_DELETE, wxT("Delete branch..."));
+	branches_submenu->AppendSeparator();
+	std::set<std::string> list;
+	std::string current;
+	bool ro;
+	runemufn([&list, &current, &ro]() {
+		list = mbranch_enumerate();
+		current = mbranch_get();
+		ro = movb.get_movie().readonly_mode();
+	});
+	int ass_id = wxID_MBRANCH_FIRST;
+	for(auto i : list) {
+		bool selected = (i == current);
+		wxMenuItem* it;
+		it = branches_submenu->AppendCheckItem(ass_id, towxstring(mbranch_name(i)));
+		branch_names[ass_id++] = i;
+		if(selected) it->Check(selected);
+		it->Enable(ro);
+	}
+	menu.AppendSubMenu(branches_submenu, wxT("Branches"));
 	menu.Connect(wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu),
 		NULL, this);
+	branches_submenu->Connect(wxEVT_COMMAND_MENU_SELECTED,
+		wxCommandEventHandler(wxeditor_movie::_moviepanel::on_popup_menu), NULL, this);
 	PopupMenu(&menu);
+	//delete branches_submenu;
 }
 
 int wxeditor_movie::_moviepanel::get_lines()
 {
-	controller_frame_vector& fv = movb.get_mfile().input;
+	controller_frame_vector& fv = *movb.get_mfile().input;
 	return fv.size();
 }
 
@@ -1873,7 +2107,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2, unsigned
 		std::swap(line, line2);
 	std::string copied;
 	runemufn([port, controller, line, line2, _fcontrols, &copied]() {
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -1892,7 +2126,7 @@ void wxeditor_movie::_moviepanel::do_copy(uint64_t row1, uint64_t row2)
 		std::swap(line, line2);
 	std::string copied;
 	runemufn([line, line2, &copied]() {
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(!vsize)
 			return;
@@ -1939,7 +2173,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, bool append)
 			while(std::getline(y, z))
 				gaplen++;
 		}
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, 0))
 			return;
@@ -1997,7 +2231,7 @@ void wxeditor_movie::_moviepanel::do_paste(uint64_t row, unsigned port, unsigned
 				newframes++;
 			}
 		}
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
@@ -2036,7 +2270,7 @@ void wxeditor_movie::_moviepanel::do_insert_controller(uint64_t row, unsigned po
 		//Insert enough lines for the pasted content.
 		if(!movb.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;
@@ -2065,7 +2299,7 @@ void wxeditor_movie::_moviepanel::do_delete_controller(uint64_t row1, uint64_t r
 		//Insert enough lines for the pasted content.
 		if(!movb.get_movie().readonly_mode())
 			return;
-		controller_frame_vector& fv = movb.get_mfile().input;
+		controller_frame_vector& fv = *movb.get_mfile().input;
 		uint64_t vsize = fv.size();
 		if(gapstart < real_first_editable(*_fcontrols, iset))
 			return;

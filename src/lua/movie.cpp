@@ -104,12 +104,12 @@ namespace
 		u2->hostmemory = mfile.host_memory;
 		//Now the remaining field ptr is somewhat nastier.
 		uint64_t f = 0;
-		uint64_t s = mfile.input.size();
+		uint64_t s = mfile.input->size();
 		u2->ptr = 0;
 		while(++f < u2->frame) {
 			if(u2->ptr < s)
 				u2->ptr++;
-			while(u2->ptr < s && !mfile.input[u2->ptr].sync())
+			while(u2->ptr < s && !(*mfile.input)[u2->ptr].sync())
 				u2->ptr++;
 		}
 		return 1;

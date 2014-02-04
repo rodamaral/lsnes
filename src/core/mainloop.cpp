@@ -355,6 +355,13 @@ void update_movie_state()
 	} else {
 		_status.erase("!branch");
 	}
+	{
+		std::string cur_branch = movb ? movb.get_mfile().current_branch() : "";
+		if(cur_branch != "")
+			_status.set("!mbranch", cur_branch);
+		else
+			_status.erase("!mbranch");
+	}
 	_status.set("!speed", (stringfmt() << (unsigned)(100 * get_realized_multiplier() + 0.5)).str());
 
 	if(movb && !system_corrupt) {
@@ -760,6 +767,12 @@ namespace
 			mark_pending_load(args, LOAD_STATE_MOVIE);
 		});
 
+	command::fnptr<command::arg_filename> load_allbr_c(lsnes_cmd, "load-allbranches", "Load savestate "
+		"(all branches)", "Syntax: load-allbranches <file>\nLoads SNES state from <file> with all "
+		"branches\n",
+		[](command::arg_filename args) throw(std::bad_alloc, std::runtime_error) {
+			mark_pending_load(args, LOAD_STATE_ALLBRANCH);
+		});
 
 	command::fnptr<command::arg_filename> save_state(lsnes_cmd, "save-state", "Save state",
 		"Syntax: save-state <file>\nSaves SNES state to <file>\n",

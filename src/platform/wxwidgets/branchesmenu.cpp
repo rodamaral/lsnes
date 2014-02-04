@@ -22,11 +22,6 @@ namespace
 		childmap[id] = s;
 	}
 
-	template<typename T> void runemufn_async(T fn)
-	{
-		platform::queue(functor_call_helper2<T>, new T(fn), false);
-	}
-
 	//Tree of branches.
 	class branches_tree : public wxTreeCtrl
 	{

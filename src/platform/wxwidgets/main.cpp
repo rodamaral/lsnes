@@ -401,6 +401,8 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 	return true;
 }
 
+#define DEFAULT_RTC_SECOND 1000000000ULL
+#define DEFAULT_RTC_SUBSECOND 0ULL
 
 bool lsnes_app::OnInit()
 {
@@ -485,23 +487,7 @@ bool lsnes_app::OnInit()
 			return false;
 		}
 	else {
-		mov = new moviefile;
-		mov->settings = c_settings;
-		auto ctrldata = rom.rtype->controllerconfig(mov->settings);
-		port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
-		mov->input.clear(ports);
-		mov->coreversion = rom.rtype->get_core_identifier();
-		mov->projectid = get_random_hexstring(40);
-		if(!rom.rtype->isnull()) {
-			//Initialize the remainder.
-			mov->rerecords = "0";
-			for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
-				mov->romimg_sha256[i] = rom.romimg[i].sha_256.read();
-				mov->romxml_sha256[i] = rom.romxml[i].sha_256.read();
-				mov->namehint[i] = rom.romimg[i].namehint;
-			}
-		}
-		mov->gametype = &rom.rtype->combine_region(*rom.region);
+		mov = new moviefile(rom, c_settings, DEFAULT_RTC_SECOND, DEFAULT_RTC_SUBSECOND);
 	}
 	our_rom = rom;
 	mov->start_paused = true;

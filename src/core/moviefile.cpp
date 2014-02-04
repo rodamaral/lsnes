@@ -47,7 +47,9 @@ enum lsnes_movie_tags
 	TAG_SCREENSHOT = 0xc6760d0e,
 	TAG_SUBTITLE = 0x6a7054d3,
 	TAG_RAMCONTENT = 0xd3ec3770,
-	TAG_ROMHINT = 0x6f715830
+	TAG_ROMHINT = 0x6f715830,
+	TAG_BRANCH = 0xf2e60707,
+	TAG_BRANCH_NAME = 0x6dcb2155
 };
 
 namespace
@@ -132,6 +134,18 @@ namespace
 			throw;
 		}
 	}
+
+	template<typename T> std::string pick_a_name(const std::map<std::string, T>& map, bool prefer_unnamed)
+	{
+		if(prefer_unnamed && !map.count(""))
+			return "";
+		size_t count = 1;
+		while(true) {
+			std::string c = (stringfmt() << "(unnamed branch #" << count++ << ")").str();
+			if(!map.count(c))
+				return c;
+		}
+	}
 }
 
 void read_authors_file(zip::reader& r, std::vector<std::pair<std::string, std::string>>& authors)
@@ -198,10 +212,10 @@ void write_authors_file(zip::writer& w, std::vector<std::pair<std::string, std::
 	}
 }
 
-void write_input(zip::writer& w, controller_frame_vector& input)
+void write_input(zip::writer& w, const std::string& mname, controller_frame_vector& input)
 	throw(std::bad_alloc, std::runtime_error)
 {
-	std::ostream& m = w.create_file("input");
+	std::ostream& m = w.create_file(mname);
 	try {
 		char buffer[MAX_SERIALIZED_SIZE];
 		for(size_t i = 0; i < input.size(); i++) {
@@ -257,11 +271,11 @@ void write_subtitles(zip::writer& w, const std::string& file, std::map<moviefile
 	}
 }
 
-void read_input(zip::reader& r, controller_frame_vector& input, unsigned version) throw(std::bad_alloc,
-	std::runtime_error)
+void read_input(zip::reader& r, const std::string& mname, controller_frame_vector& input)
+	throw(std::bad_alloc, std::runtime_error)
 {
 	controller_frame tmp = input.blank_frame(false);
-	std::istream& m = r["input"];
+	std::istream& m = r[mname];
 	try {
 		std::string x;
 		while(std::getline(m, x)) {
@@ -426,6 +440,7 @@ moviefile::moviefile() throw(std::bad_alloc)
 	static port_type_set dummy_types;
 	force_corrupt = false;
 	gametype = NULL;
+	input = NULL;
 	coreversion = "";
 	projectid = "";
 	rerecords = "0";
@@ -435,6 +450,37 @@ moviefile::moviefile() throw(std::bad_alloc)
 	start_paused = false;
 	lazy_project_create = true;
 	poll_flag = 0;
+}
+
+moviefile::moviefile(loaded_rom& rom, std::map<std::string, std::string>& c_settings, uint64_t rtc_sec,
+	uint64_t rtc_subsec)
+{
+	static port_type_set dummy_types;
+	force_corrupt = false;
+	gametype = &rom.rtype->combine_region(*rom.region);
+	coreversion = rom.rtype->get_core_identifier();
+	projectid = get_random_hexstring(40);
+	rerecords = "0";
+	is_savestate = false;
+	movie_rtc_second = rtc_second = rtc_sec;
+	movie_rtc_subsecond = rtc_subsecond = rtc_subsec;
+	start_paused = false;
+	lazy_project_create = true;
+	poll_flag = 0;
+	settings = c_settings;
+	input = NULL;
+	auto ctrldata = rom.rtype->controllerconfig(settings);
+	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
+	create_default_branch(ports);
+	if(!rom.rtype->isnull()) {
+		//Initialize the remainder.
+		rerecords = "0";
+		for(size_t i = 0; i < ROM_SLOT_COUNT; i++) {
+			romimg_sha256[i] = rom.romimg[i].sha_256.read();
+			romxml_sha256[i] = rom.romxml[i].sha_256.read();
+			namehint[i] = rom.romimg[i].namehint;
+		}
+	}
 }
 
 moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
@@ -447,6 +493,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		copy_fields(s);
 		return;
 	}
+	input = NULL;
 	poll_flag = false;
 	start_paused = false;
 	force_corrupt = false;
@@ -483,7 +530,7 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
 
-	input.clear(ports);
+	branches.clear();
 	r.read_linefile("gamename", gamename, true);
 	r.read_linefile("projectid", projectid);
 	rerecords = read_rrdata(r, c_rrdata);
@@ -541,7 +588,42 @@ moviefile::moviefile(const std::string& movie, core_type& romtype) throw(std::ba
 		if(name.length() >= 10 && name.substr(0, 10) == "moviesram.")
 			r.read_raw_file(name, movie_sram[name.substr(10)]);
 	read_authors_file(r, authors);
-	read_input(r, input, 0);
+
+	std::map<uint64_t, std::string> branch_table;
+	//Load branch names.
+	for(auto name : r) {
+		regex_results s;
+		if(s = regex("branchname\\.([0-9]+)", name)) {
+			uint64_t n = parse_value<uint64_t>(s[1]);
+			r.read_linefile(name, branch_table[n]);
+			branches[branch_table[n]].clear(ports);
+		}
+	}
+
+	for(auto name : r) {
+		regex_results s;
+		if(name == "input") {
+			std::string bname = branch_table.count(0) ? branch_table[0] : pick_a_name(branches, true);
+			if(!branches.count(bname)) branches[bname].clear(ports);
+			read_input(r, name, branches[bname]);
+			input = &branches[bname];
+		} else if(s = regex("input\\.([1-9][0-9]*)", name)) {
+			uint64_t n = parse_value<uint64_t>(s[1]);
+			std::string bname = branch_table.count(n) ? branch_table[n] : pick_a_name(branches, false);
+			if(!branches.count(bname)) branches[bname].clear(ports);
+			read_input(r, name, branches[bname]);
+		}
+	}
+
+	create_default_branch(ports);
+}
+
+void moviefile::fixup_current_branch(const moviefile& mv)
+{
+	input = NULL;
+	for(auto& i : mv.branches)
+		if(&i.second == mv.input)
+			input = &branches[i.first];
 }
 
 void moviefile::save(const std::string& movie, unsigned compression, bool binary, rrdata_set& rrd)
@@ -640,36 +722,26 @@ void moviefile::save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std:
 	for(auto i : ramcontent)
 		w.write_raw_file("initram." + i.first, i.second);
 	write_authors_file(w, authors);
-	write_input(w, input);
+
+	std::map<std::string, uint64_t> branch_table;
+	uint64_t next_branch = 1;
+	for(auto& i : branches) {
+		uint64_t id;
+		if(&i.second == input)
+			id = 0;
+		else
+			id = next_branch++;
+		branch_table[i.first] = id;
+		w.write_linefile((stringfmt() << "branchname." << id).str(), i.first);
+		if(id)
+			write_input(w, (stringfmt() << "input." << id).str(), i.second);
+		else
+			write_input(w, "input", i.second);
+	}
+
 	w.commit();
 }
 
-/*
-Following need to be saved:
-- gametype (string)
-- settings (string name, value pairs)
-- gamename (optional string)
-- core version (string)
-- project id (string
-- rrdata (blob)
-- ROM hashes (2*27 table of optional strings)
-- Subtitles (list of number,number,string)
-- SRAMs (dictionary string->blob.)
-- Starttime (number,number)
-- Anchor savestate (optional blob)
-- Save frame (savestate-only, numeric).
-- Lag counter (savestate-only, numeric).
-- pollcounters (savestate-only, vector of numbers).
-- hostmemory (savestate-only, blob).
-- screenshot (savestate-only, blob).
-- Save SRAMs (savestate-only, dictionary string->blob.)
-- Save time (savestate-only, number,number)
-- Poll flag (savestate-only, boolean)
-- Macros (savestate-only, ???)
-- Authors (list of string,string).
-- Input (blob).
-- Extensions (???)
-*/
 void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::output out(_stream);
@@ -791,15 +863,27 @@ void moviefile::binary_io(std::ostream& _stream, rrdata_set& rrd) throw(std::bad
 		});
 	}
 
-	out.extension(TAG_MOVIE, [this](binarystream::output& s) {
-		input.save_binary(s);
-	}, true, input.binary_size());
+	int64_t next_bnum = 0;
+	std::map<std::string, uint64_t> branch_table;
+	for(auto& i : branches) {
+		branch_table[i.first] = next_bnum++;
+		out.extension(TAG_BRANCH_NAME, [&i](binarystream::output& s) {
+			s.string_implicit(i.first);
+		}, false, i.first.length());
+		uint32_t tag = (&i.second == input) ? TAG_MOVIE : TAG_BRANCH;
+		out.extension(tag, [&i](binarystream::output& s) {
+			i.second.save_binary(s);
+		}, true, i.second.binary_size());
+	}
 }
 
 void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::bad_alloc, std::runtime_error)
 {
 	binarystream::input in(_stream);
 	std::string tmp = in.string();
+	std::string next_branch;
+	std::map<uint64_t, std::string> branch_table;
+	uint64_t next_bnum = 0;
 	try {
 		gametype = &romtype.lookup_sysregion(tmp);
 	} catch(std::bad_alloc& e) {
@@ -813,7 +897,7 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 	}
 	auto ctrldata = gametype->get_type().controllerconfig(settings);
 	port_type_set& ports = port_type_set::make(ctrldata.ports, ctrldata.portindex());
-	input.clear(ports);
+	input = NULL;
 
 	in.extension({
 		{TAG_ANCHOR_SAVE, [this](binarystream::input& s) {
@@ -831,8 +915,15 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 		}},{TAG_MACRO, [this](binarystream::input& s) {
 			uint64_t n = s.number();
 			this->active_macros[s.string_implicit()] = n;
-		}},{TAG_MOVIE, [this](binarystream::input& s) {
-			input.load_binary(s);
+		}},{TAG_BRANCH_NAME, [this, &branch_table, &next_bnum, &next_branch](binarystream::input& s) {
+			branch_table[next_bnum++] = next_branch = s.string_implicit();
+		}},{TAG_MOVIE, [this, &ports, &next_branch](binarystream::input& s) {
+			branches[next_branch].clear(ports);
+			branches[next_branch].load_binary(s);
+			input = &branches[next_branch];
+		}},{TAG_BRANCH, [this, &ports, &next_branch](binarystream::input& s) {
+			branches[next_branch].clear(ports);
+			branches[next_branch].load_binary(s);
 		}},{TAG_MOVIE_SRAM, [this](binarystream::input& s) {
 			std::string a = s.string();
 			s.blob_implicit(this->movie_sram[a]);
@@ -885,11 +976,27 @@ void moviefile::binary_io(std::istream& _stream, core_type& romtype) throw(std::
 			this->subtitles[moviefile_subtiming(f, l)] = x;
 		}}
 	}, binarystream::null_default);
+
+	create_default_branch(ports);
+}
+
+void moviefile::create_default_branch(port_type_set& ports)
+{
+	if(input)
+		return;
+	//If there is a branch, it becomes default.
+	if(!branches.empty()) {
+		input = &(branches.begin()->second);
+	} else {
+		//Otherwise, just create a branch.
+		branches[""].clear(ports);
+		input = &branches[""];
+	}
 }
 
 uint64_t moviefile::get_frame_count() throw()
 {
-	return input.count_frames();
+	return input->count_frames();
 }
 
 namespace
@@ -948,7 +1055,14 @@ void moviefile::copy_fields(const moviefile& mv)
 	pollcounters = mv.pollcounters;
 	poll_flag = mv.poll_flag;
 	c_rrdata = mv.c_rrdata;
-	input = mv.input;
+	branches = mv.branches;
+
+	//Copy the active branch.
+	input = &branches.begin()->second;
+	for(auto& i : branches)
+		if(mv.branches.count(i.first) && &mv.branches.find(i.first)->second == mv.input)
+			input = &i.second;
+
 	rtc_second = mv.rtc_second;
 	rtc_subsecond = mv.rtc_subsecond;
 	movie_rtc_second = mv.movie_rtc_second;
@@ -957,6 +1071,201 @@ void moviefile::copy_fields(const moviefile& mv)
 	lazy_project_create = mv.lazy_project_create;
 	subtitles = mv.subtitles;
 	active_macros = mv.active_macros;
+}
+
+void moviefile::fork_branch(const std::string& oldname, const std::string& newname)
+{
+	if(oldname == newname || branches.count(newname))
+		return;
+	branches[newname] = branches[oldname];
+}
+
+const std::string& moviefile::current_branch()
+{
+	for(auto& i : branches)
+		if(&i.second == input)
+			return i.first;
+	static std::string tmp;
+	return tmp;
+}
+
+moviefile::branch_extractor::~branch_extractor()
+{
+	delete real;
+}
+
+namespace
+{
+	struct moviefile_branch_extractor_text : public moviefile::branch_extractor
+	{
+		moviefile_branch_extractor_text(const std::string& filename);
+		~moviefile_branch_extractor_text();
+		std::set<std::string> enumerate();
+		void read(const std::string& name, controller_frame_vector& v);
+	private:
+		zip::reader z;
+	};
+
+	moviefile_branch_extractor_text::moviefile_branch_extractor_text(const std::string& filename)
+		: z(filename)
+	{
+	}
+
+	moviefile_branch_extractor_text::~moviefile_branch_extractor_text()
+	{
+	}
+
+	std::string get_namefile(const std::string& input)
+	{
+		regex_results s;
+		if(input == "input")
+			return "branchname.0";
+		else if(s = regex("input\\.([1-9][0-9]*)", input))
+			return "branchname." + s[1];
+		else
+			return "";
+	}
+
+	std::set<std::string> moviefile_branch_extractor_text::enumerate()
+	{
+		std::set<std::string> r;
+		for(auto& i : z) {
+			std::string bname;
+			std::string n = get_namefile(i);
+			if(n != "") {
+				if(z.has_member(n)) {
+					z.read_linefile(n, bname);
+					r.insert(bname);
+				} else
+					r.insert("");
+			}
+		}
+		return r;
+	}
+
+	void moviefile_branch_extractor_text::read(const std::string& name, controller_frame_vector& v)
+	{
+		std::set<std::string> r;
+		bool done = false;
+		for(auto& i : z) {
+			std::string bname;
+			std::string n = get_namefile(i);
+			if(n != "") {
+				std::string bname;
+				if(z.has_member(n))
+					z.read_linefile(n, bname);
+				if(name == bname) {
+					v.clear();
+					read_input(z, i, v);
+					done = true;
+				}
+			}
+		}
+		if(!done)
+			(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
+	}
+
+	struct moviefile_branch_extractor_binary : public moviefile::branch_extractor
+	{
+		moviefile_branch_extractor_binary(const std::string& filename);
+		~moviefile_branch_extractor_binary();
+		std::set<std::string> enumerate();
+		void read(const std::string& name, controller_frame_vector& v);
+	private:
+		std::ifstream s;
+	};
+
+	moviefile_branch_extractor_binary::moviefile_branch_extractor_binary(const std::string& filename)
+	{
+		s.open(filename);
+		if(!s)
+			(stringfmt() << "Can't open file '" << filename << "' for reading").throwex();
+	}
+
+	moviefile_branch_extractor_binary::~moviefile_branch_extractor_binary()
+	{
+	}
+
+	std::set<std::string> moviefile_branch_extractor_binary::enumerate()
+	{
+		std::set<std::string> r;
+		std::string name;
+		s.seekg(5);
+		if(!s)
+			(stringfmt() << "Can't read the file").throwex();
+		binarystream::input b(s);
+		//Skip the headers.
+		b.string();
+		while(b.byte()) {
+			b.string();
+			b.string();
+		}
+		//Okay, read the extension packets.
+		b.extension({
+			{TAG_BRANCH_NAME, [this, &name](binarystream::input& s) {
+				name = s.string_implicit();
+			}},{TAG_MOVIE, [this, &r, &name](binarystream::input& s) {
+				r.insert(name);
+			}},{TAG_BRANCH, [this, &r, &name](binarystream::input& s) {
+				r.insert(name);
+			}}
+		}, binarystream::null_default);
+
+		return r;
+	}
+
+	void moviefile_branch_extractor_binary::read(const std::string& name, controller_frame_vector& v)
+	{
+		std::string mname;
+		s.seekg(5);
+		if(!s)
+			(stringfmt() << "Can't read the file").throwex();
+		binarystream::input b(s);
+		bool done = false;
+		//Skip the headers.
+		b.string();
+		while(b.byte()) {
+			b.string();
+			b.string();
+		}
+		//Okay, read the extension packets.
+		b.extension({
+			{TAG_BRANCH_NAME, [this, &mname](binarystream::input& s) {
+				mname = s.string_implicit();
+			}},{TAG_MOVIE, [this, &v, &mname, &name, &done](binarystream::input& s) {
+				if(name != mname)
+					return;
+				v.clear();
+				v.load_binary(s);
+				done = true;
+			}},{TAG_BRANCH, [this, &v, &mname, &name, &done](binarystream::input& s) {
+				if(name != mname)
+					return;
+				v.clear();
+				v.load_binary(s);
+				done = true;
+			}}
+		}, binarystream::null_default);
+		if(!done)
+			(stringfmt() << "Can't find branch '" << name << "' in file.").throwex();
+	}
+}
+
+moviefile::branch_extractor::branch_extractor(const std::string& filename)
+{
+	bool binary = false;
+	{
+		std::istream& s = zip::openrel(filename, "");
+		char buf[6] = {0};
+		s.read(buf, 5);
+		if(!strcmp(buf, "lsmv\x1A"))
+			binary = true;
+		delete &s;
+	}
+	if(binary)
+		real = new moviefile_branch_extractor_binary(filename);
+	else
+		real = new moviefile_branch_extractor_text(filename);
 }
 
 namespace
@@ -1025,6 +1334,22 @@ namespace
 		emerg_write_number(handle, str.length());
 		emerg_write_string_implicit(handle, str);
 	}
+	void emerg_write_movie(int handle, const controller_frame_vector& v, uint32_t tag)
+	{
+		uint64_t pages = v.get_page_count();
+		uint64_t stride = v.get_stride();
+		uint64_t pageframes = v.get_frames_per_page();
+		uint64_t vsize = v.size();
+		emerg_write_member(handle, tag, vsize * stride);
+		size_t pagenum = 0;
+		while(vsize > 0) {
+			uint64_t count = (vsize > pageframes) ? pageframes : vsize;
+			size_t bytes = count * stride;
+			const unsigned char* content = v.get_page_buffer(pagenum++);
+			emerg_write_bytes(handle, content, bytes);
+			vsize -= count;
+		}
+	}
 	uint64_t append_number(char* ptr, uint64_t n)
 	{
 		unsigned digits = 0;
@@ -1039,12 +1364,22 @@ namespace
 		}
 		ptr[digits] = 0;
 	}
+	template<typename T>
+	uint64_t map_index(const std::map<std::string, T>& b, const std::string& n)
+	{
+		uint64_t idx = 0;
+		for(auto& i : b) {
+			if(i.first == n)
+				return idx;
+			idx++;
+		}
+		return 0xFFFFFFFFFFFFFFFFULL;
+	}
 }
 
 void emerg_save_movie(const moviefile& mv, rrdata_set& rrd)
 {
 	//Whee, assume state of the emulator is totally busted.
-	const controller_frame_vector& v = mv.input;
 	if(!mv.gametype)
 		return;  //No valid movie. Trying to save would segfault.
 	char header[] = {'l', 's', 'm', 'v', '\x1a'};
@@ -1071,18 +1406,10 @@ name_again:
 	}
 	emerg_write_byte(fd, 0);
 	//The actual movie.
-	uint64_t pages = v.get_page_count();
-	uint64_t stride = v.get_stride();
-	uint64_t pageframes = v.get_frames_per_page();
-	uint64_t vsize = v.size();
-	emerg_write_member(fd, TAG_MOVIE, vsize * stride);
-	size_t pagenum = 0;
-	while(vsize > 0) {
-		uint64_t count = (vsize > pageframes) ? pageframes : vsize;
-		size_t bytes = count * stride;
-		const unsigned char* content = v.get_page_buffer(pagenum++);
-		emerg_write_bytes(fd, content, bytes);
-		vsize -= count;
+	for(auto& i : mv.branches) {
+		emerg_write_member(fd, TAG_BRANCH_NAME, i.first.length());
+		emerg_write_string_implicit(fd, i.first);
+		emerg_write_movie(fd, i.second, (&i.second == mv.input) ? TAG_MOVIE : TAG_BRANCH);
 	}
 	//Movie starting time.
 	emerg_write_member(fd, TAG_MOVIE_TIME, number_size(mv.movie_rtc_second) +

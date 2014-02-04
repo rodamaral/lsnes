@@ -114,14 +114,14 @@ namespace
 		movie& m = movb.get_movie();
 		if(!m.readonly_mode())
 			throw std::runtime_error("Not in read-only mode");
-		if(!allow_past_end && frame >= movb.get_mfile().input.size())
+		if(!allow_past_end && frame >= movb.get_mfile().input->size())
 			throw std::runtime_error("Index out of movie");
 		int32_t pc = get_pc_for(port, controller, button, true);
 		if(pc < 0)
 			throw std::runtime_error("Invalid control to edit");
 		uint64_t firstframe = m.get_current_frame_first_subframe();
 		uint64_t minframe = firstframe + pc;
-		uint64_t msize = movb.get_mfile().input.size();
+		uint64_t msize = movb.get_mfile().input->size();
 		if(minframe > msize || firstframe >= msize)
 			throw std::runtime_error("Can not edit finished movie");
 		if(frame < minframe)
@@ -181,12 +181,12 @@ namespace
 		if(n >= v.size())
 			throw std::runtime_error("Requested frame outside movie");
 		//Checks if requested frame is from movie.
-		if(&v == &movb.get_mfile().input)
+		if(&v == movb.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 
 		v[n] = f->get_frame();
 
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			//This can't add frames, so no need to adjust the movie.
 			update_movie_state();
 			platform::notify_status();
@@ -256,7 +256,7 @@ namespace
 			for(uint64_t i = 0; i < count; i++)
 				v.append(v.blank_frame(true));
 		}
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -271,13 +271,13 @@ namespace
 		P(f);
 
 		v.append(v.blank_frame(true));
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 			check_can_edit(0, 0, 0, v.size() - 1);
 		}
 		v[v.size() - 1] = f->get_frame();
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			if(!v[v.size() - 1].sync()) {
 				update_movie_state();
 			}
@@ -295,10 +295,10 @@ namespace
 
 		if(n > v.size())
 			throw std::runtime_error("Requested truncate length longer than existing");
-		if(&v == &movb.get_mfile().input)
+		if(&v == movb.get_mfile().input)
 			check_can_edit(0, 0, 0, n);
 		v.resize(n);
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -319,11 +319,11 @@ namespace
 			P.expected("number or boolean");
 
 		movie& m = movb.get_movie();
-		if(&v == &movb.get_mfile().input)
+		if(&v == movb.get_mfile().input)
 			check_can_edit(port, controller, button, frame);
 		v[frame].axis3(port, controller, button, value);
 
-		if(&v == &movb.get_mfile().input) {
+		if(&v == movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -348,7 +348,7 @@ namespace
 			throw std::runtime_error("Destination index out of movie");
 
 		movie& m = movb.get_movie();
-		if(&dstv == &movb.get_mfile().input)
+		if(&dstv == movb.get_mfile().input)
 			check_can_edit(0, 0, 0, dst, true);
 
 		{
@@ -360,7 +360,7 @@ namespace
 			for(uint64_t i = backwards ? (count - 1) : 0; i < count; i = backwards ? (i - 1) : (i + 1))
 				dstv[dst + i] = srcv[src + i];
 		}
-		if(&dstv == &movb.get_mfile().input) {
+		if(&dstv == movb.get_mfile().input) {
 			update_movie_state();
 			platform::notify_status();
 		}
@@ -585,16 +585,35 @@ namespace
 		return 1;
 	});
 
+	lua::fnptr2 movie_curbranch(lua_func_misc, "movie.current_branch", [](lua::state& L, lua::parameters& P)
+		-> int {
+		L.pushlstring(movb.get_mfile().current_branch());
+		return 1;
+	});
+
+	lua::fnptr2 movie_allbranch(lua_func_misc, "movie.get_branches", [](lua::state& L, lua::parameters& P)
+		-> int {
+		for(auto& i : movb.get_mfile().branches)
+			L.pushlstring(i.first);
+		return movb.get_mfile().branches.size();
+	});
+
 
 	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
 		if(P.is_nil()) {
 			P.skip();
-			return movb.get_mfile().input;
+			return *movb.get_mfile().input;
+		} else if(P.is_string()) {
+			std::string x;
+			P(x);
+			if(!movb.get_mfile().branches.count(x))
+				throw std::runtime_error("No such branch");
+			return movb.get_mfile().branches[x];
 		} else if(P.is<lua_inputmovie>())
 			return *(P.arg<lua_inputmovie*>()->get_frame_vector());
 		else
-			return movb.get_mfile().input;
+			return *movb.get_mfile().input;
 	}
 
 	lua::_class<lua_inputmovie> class_inputmovie(lua_class_movie, "INPUTMOVIE", {}, {

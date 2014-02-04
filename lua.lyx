@@ -5747,7 +5747,7 @@ movie.copy_movie/INPUTMOVIE::copy_movie: Copy movie to movie object
 \end_layout
 
 \begin_layout Itemize
-Syntax: INPUTMOVIE movie.copy_movie([INPUTMOVIE movie])
+Syntax: INPUTMOVIE movie.copy_movie([INPUTMOVIE/string movie])
 \end_layout
 
 \begin_layout Itemize
@@ -5755,8 +5755,8 @@ Syntax: INPUTMOVIE INPUTMOVIE::copy_movie()
 \end_layout
 
 \begin_layout Standard
-Copies specified movie <movie>/current object (if none or nil, the active
- movie) as new movie object.
+Copies specified movie or branch <movie>/current object (if none or nil,
+ the active movie) as new movie object.
 \end_layout
 
 \begin_layout Subsection
@@ -5764,7 +5764,7 @@ movie.get_frame/INPUTMOVIE::get_frame: Read specified frame in movie.
 \end_layout
 
 \begin_layout Itemize
-Syntax: INPUTFRAME movie.get_frame([INPUTMOVIE movie,] number frame)
+Syntax: INPUTFRAME movie.get_frame([INPUTMOVIE/string movie,] number frame)
 \end_layout
 
 \begin_layout Itemize
@@ -5772,7 +5772,8 @@ Syntax: INPUTFRAME INPUTMOVIE::get_frame(number frame);
 \end_layout
 
 \begin_layout Standard
-Get INPUTFRAME object corresponding to specified frame in specified movie.
+Get INPUTFRAME object corresponding to specified frame in specified movie
+ or branch.
 \end_layout
 
 \begin_layout Subsection
@@ -5780,7 +5781,7 @@ movie.set_frame/INPUTMOVIE::set_frame: Write speicifed frame in movie.
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.set_frame([INPUTMOVIE movie,] number frame, INPUTFRAME
+Syntax: none movie.set_frame([INPUTMOVIE/string movie,] number frame, INPUTFRAME
  data)
 \end_layout
 
@@ -5801,7 +5802,7 @@ movie.get_size/INPUTMOVIE::get_size: Get size of movie
 \end_layout
 
 \begin_layout Itemize
-Syntax: integer movie.get_size([INPUTMOVIE movie])
+Syntax: integer movie.get_size([INPUTMOVIE/string movie])
 \end_layout
 
 \begin_layout Itemize
@@ -5809,7 +5810,7 @@ Syntax: integer INPUTMOVIE::get_size()
 \end_layout
 
 \begin_layout Standard
-Return number of subframes in specified movie.
+Return number of subframes in specified movie or branch.
 \end_layout
 
 \begin_layout Subsection
@@ -5817,7 +5818,7 @@ movie.count_frames/INPUTMOVIE::count_frames: Count frames in movie
 \end_layout
 
 \begin_layout Itemize
-Syntax: number movie.count_frames([INPUTMOVIE movie])
+Syntax: number movie.count_frames([INPUTMOVIE/string movie])
 \end_layout
 
 \begin_layout Itemize
@@ -5833,7 +5834,7 @@ movie.find_frame/INPUTMOVIE::find_frame: Find subframe corresponding to frame
 \end_layout
 
 \begin_layout Itemize
-Syntax: number movie.find_frame([INPUTMOVIE movie], number frame)
+Syntax: number movie.find_frame([INPUTMOVIE/string movie], number frame)
 \end_layout
 
 \begin_layout Itemize
@@ -5850,7 +5851,7 @@ movie.blank_frame/INPUTMOVIE::blank_frame: Return a blank frame
 \end_layout
 
 \begin_layout Itemize
-Syntax: INPUTFRAME movie.blank_frame([INPUTMOVIE movie])
+Syntax: INPUTFRAME movie.blank_frame([INPUTMOVIE/string movie])
 \end_layout
 
 \begin_layout Itemize
@@ -5866,7 +5867,7 @@ movie.append_frames/INPUTMOVIE::append_frames: Append blank frames
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.append_frames([INPUTMOVIE movie,] number frames)
+Syntax: none movie.append_frames([INPUTMOVIE/string movie,] number frames)
 \end_layout
 
 \begin_layout Itemize
@@ -5882,7 +5883,7 @@ movie.append_frame/INPUTMOVIE::append_frame: Append a frame
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.append_frame([INPUTMOVIE movie,] INPUTFRAME frame)
+Syntax: none movie.append_frame([INPUTMOVIE/string movie,] INPUTFRAME frame)
 \end_layout
 
 \begin_layout Itemize
@@ -5899,7 +5900,7 @@ movie.truncate/INPUTMOVIE::truncate: Truncate a movie.
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.truncate([INPUTMOVIE movie,] number frames)
+Syntax: none movie.truncate([INPUTMOVIE/string movie,] number frames)
 \end_layout
 
 \begin_layout Itemize
@@ -5920,6 +5921,11 @@ Syntax: none movie.edit([INPUTMOVIE movie,] number frame, number port, number
 \end_layout
 
 \begin_layout Itemize
+Syntax: none movie.edit(string branch, number frame, number port, number
+ controller, number control, number/bool value)
+\end_layout
+
+\begin_layout Itemize
 Syntax: none INPUTMOVIE::edit(number frame, number port, number controller,
  number control, number/bool value)
 \end_layout
@@ -5934,8 +5940,8 @@ movie.copy_frames2: Copy frames between movies
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.copy_frames2([INPUTMOVIE dstmov,] number dst, [INPUTMOVIE
- srcmov,] number src, number count)
+Syntax: none movie.copy_frames2([INPUTMOVIE/string dstmov,] number dst, [INPUTMOV
+IE/string srcmov,] number src, number count)
 \end_layout
 
 \begin_layout Standard
@@ -5948,8 +5954,8 @@ movie.copy_frames/INPUTMOVIE::copy_frames: Copy frames in movie
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.copy_frames([INPUTMOVIE mov,] number dst, number src,
- number count, bool backwards)
+Syntax: none movie.copy_frames([INPUTMOVIE/string mov,] number dst, number
+ src, number count, bool backwards)
 \end_layout
 
 \begin_layout Itemize
@@ -5967,7 +5973,8 @@ movie.serialize/INPUTMOVIE::serialize: Serialize movie
 \end_layout
 
 \begin_layout Itemize
-Syntax: none movie.serialize([INPUTMOVIE movie,] string filename, bool binary)
+Syntax: none movie.serialize([INPUTMOVIE movie/string,] string filename,
+ bool binary)
 \end_layout
 
 \begin_layout Itemize
@@ -6016,6 +6023,31 @@ Syntax: number movie.pollcounter(number port, number controller, number control)
 
 \begin_layout Standard
 Returns number of times the specified control has been polled this frame.
+\end_layout
+
+\begin_layout Subsection
+movie.current_branch: Return current branch
+\end_layout
+
+\begin_layout Itemize
+Syntax: string movie.current_branch()
+\end_layout
+
+\begin_layout Standard
+Returns the name of the current branch.
+\end_layout
+
+\begin_layout Subsection
+movie.get_branches: Return names of all branches
+\end_layout
+
+\begin_layout Itemize
+Syntax: string...
+ movie.get_branches()
+\end_layout
+
+\begin_layout Standard
+Returns the name of all branches.
 \end_layout
 
 \begin_layout Subsection
