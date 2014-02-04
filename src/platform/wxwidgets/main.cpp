@@ -13,6 +13,7 @@
 #include "core/mainloop.hpp"
 #include "core/misc.hpp"
 #include "core/movie.hpp"
+#include "core/moviefile-common.hpp"
 #include "core/moviedata.hpp"
 #include "core/rom.hpp"
 #include "core/settings.hpp"
@@ -400,9 +401,6 @@ bool lsnes_app::OnCmdLineParsed(wxCmdLineParser& parser)
 	}
 	return true;
 }
-
-#define DEFAULT_RTC_SECOND 1000000000ULL
-#define DEFAULT_RTC_SUBSECOND 0ULL
 
 bool lsnes_app::OnInit()
 {

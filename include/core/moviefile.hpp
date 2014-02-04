@@ -32,6 +32,7 @@ struct moviefile
 		uint64_t current_frame;
 		uint64_t rerecords;
 	private:
+		void load(zip::reader& r);
 		void binary_io(std::istream& s);
 	};
 /**
@@ -276,6 +277,7 @@ private:
 	void binary_io(std::ostream& stream, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
 	void binary_io(std::istream& stream, struct core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 	void save(zip::writer& w, rrdata_set& rrd) throw(std::bad_alloc, std::runtime_error);
+	void load(zip::reader& r, core_type& romtype) throw(std::bad_alloc, std::runtime_error);
 };
 
 void emerg_save_movie(const moviefile& mv, rrdata_set& rrd);
