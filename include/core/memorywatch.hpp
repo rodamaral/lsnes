@@ -76,6 +76,10 @@ struct lsnes_memorywatch_item
  * If bytes == 0, returns NULL.
  */
 	memorywatch_memread_oper* get_memread_oper();
+/**
+ * Translate compatiblity item.
+ */
+	void compatiblity_unserialize(const std::string& item);
 	//Fields
 	lsnes_memorywatch_printer printer;	//The printer.
 	std::string expr;			//The main expression.

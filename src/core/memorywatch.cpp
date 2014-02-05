@@ -296,6 +296,70 @@ memorywatch_memread_oper* lsnes_memorywatch_item::get_memread_oper()
 	return o;
 }
 
+void lsnes_memorywatch_item::compatiblity_unserialize(const std::string& item)
+{
+	regex_results r;
+	if(!(r = regex("C0x([0-9A-Fa-f]{1,16})z([bBwWoOdDqQfF])(H([0-9A-Ga-g]))?", item)))
+		throw std::runtime_error("Unknown compatiblity memory watch");
+	std::string _addr = r[1];
+	std::string _type = r[2];
+	std::string _hext = r[4];
+	uint64_t addr = strtoull(_addr.c_str(), NULL, 16);
+	char type = _type[0];
+	char hext = (_hext != "") ? _hext[0] : 0;
+	switch(type) {
+	case 'b': bytes = 1; signed_flag = true;  float_flag = false; break;
+	case 'B': bytes = 1; signed_flag = false; float_flag = false; break;
+	case 'w': bytes = 2; signed_flag = true;  float_flag = false; break;
+	case 'W': bytes = 2; signed_flag = false; float_flag = false; break;
+	case 'o': bytes = 3; signed_flag = true;  float_flag = false; break;
+	case 'O': bytes = 3; signed_flag = false; float_flag = false; break;
+	case 'd': bytes = 4; signed_flag = true;  float_flag = false; break;
+	case 'D': bytes = 4; signed_flag = false; float_flag = false; break;
+	case 'q': bytes = 8; signed_flag = true;  float_flag = false; break;
+	case 'Q': bytes = 8; signed_flag = false; float_flag = false; break;
+	case 'f': bytes = 4; signed_flag = true;  float_flag = true;  break;
+	case 'F': bytes = 8; signed_flag = true;  float_flag = true;  break;
+	default:  bytes = 0;                                          break;
+	}
+	auto mdata = lsnes_memory.lookup(addr);
+	if(mdata.first) {
+		addr = mdata.second;
+		addr_base = mdata.first->base;
+		addr_size = mdata.first->size;
+		endianess = mdata.first->endian;
+	} else {
+		addr_base = 0;
+		addr_size = 0;
+		endianess = -1;
+	}
+	if(hext) {
+		unsigned width;
+		if(hext >= '0' && hext <= '9')
+			width = hext - '0';
+		else
+			width = (hext & 0x1F) + 9;
+		format = (stringfmt() << "%0" << width << "x").str();
+	} else
+		format = "";
+	expr = (stringfmt() << "0x" << std::hex << addr).str();
+	scale_div = 1;
+	mspace = &lsnes_memory;	
+	printer.position = lsnes_memorywatch_printer::PC_MEMORYWATCH;
+	printer.cond_enable = false;
+	printer.enabled = "true";
+	printer.onscreen_xpos = "0";
+	printer.onscreen_ypos = "0";
+	printer.onscreen_alt_origin_x = false;
+	printer.onscreen_alt_origin_y = false;
+	printer.onscreen_cliprange_x = false;
+	printer.onscreen_cliprange_y = false;
+	printer.onscreen_font = "";
+	printer.onscreen_fg_color = 0xFFFFFF;
+	printer.onscreen_bg_color = -1;
+	printer.onscreen_halo_color = 0;
+}
+
 std::set<std::string> lsnes_memorywatch_set::enumerate()
 {
 	std::set<std::string> r;
@@ -321,7 +385,16 @@ void lsnes_memorywatch_set::clear(const std::string& name)
 void lsnes_memorywatch_set::set(const std::string& name, const std::string& item)
 {
 	lsnes_memorywatch_item _item;
-	_item.unserialize(JSON::node(item));
+	if(item != "" && item[0] != '{') {
+		//Compatiblity.
+		try {
+			_item.compatiblity_unserialize(item);
+		} catch(std::exception& e) {
+			messages << "Can't handle old memory watch '" << name << "'" << std::endl;
+			return;
+		}
+	} else
+		_item.unserialize(JSON::node(item));
 	set(name, _item);
 }
 
