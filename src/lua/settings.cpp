@@ -37,8 +37,7 @@ namespace
 		}
 	}
 
-	class lua_settings_dummy {};
-	lua::_class<lua_settings_dummy> lua_settings(lua_class_bind, "*settings", {
+	lua::functions lua_settings(lua_func_misc, "settings", {
 		{"set", ss_set},
 		{"get", ss_get},
 	});

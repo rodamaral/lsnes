@@ -37,7 +37,7 @@ namespace
 	}
 
 	class lua_keyboard_dummy {};
-	lua::_class<lua_keyboard_dummy> lua_kbd(lua_class_bind, "*keyboard", {
+	lua::functions lua_kbd(lua_func_misc, "keyboard", {
 		{"bind", kbd_bind},
 		{"unbind", kbd_unbind},
 		{"alias", kbd_alias},

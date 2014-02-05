@@ -29,7 +29,8 @@ namespace
 		framebuffer::color color;
 	};
 
-	lua::fnptr2 gui_pixel(lua_func_misc, "gui.pixel", [](lua::state& L, lua::parameters& P) -> int {
+	int pixel(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		framebuffer::color pcolor;
 
@@ -39,5 +40,9 @@ namespace
 
 		lua_render_ctx->queue->create_add<render_object_pixel>(x, y, pcolor);
 		return 0;
+	}
+
+	lua::functions pixel_fns(lua_func_misc, "gui", {
+		{"pixel", pixel},
 	});
 }

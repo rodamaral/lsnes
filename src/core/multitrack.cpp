@@ -202,7 +202,8 @@ namespace
 	keyboard::invbind _mtback(lsnes_mapper, "rotate-multitrack-backwards", "Multitrack‣Rotate backwards");
 	keyboard::invbind _mtfwd(lsnes_mapper, "rotate-multitrack", "Multitrack‣Rotate forward");
 
-	lua::fnptr2 mtlua(lua_func_misc, "input.multitrack_state", [](lua::state& L, lua::parameters& P) -> int {
+	int multitrack_state(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller;
 
 		P(port, controller);
@@ -224,6 +225,10 @@ namespace
 		default:
 			return 0;
 		}
+	}
+
+	lua::functions mtfn(lua_func_misc, "input", {
+		{"multitrack_state", multitrack_state},
 	});
 }
 

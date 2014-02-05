@@ -91,7 +91,8 @@ lua_command_bind::~lua_command_bind()
 
 namespace
 {
-	lua::fnptr2 input_bindings(lua_func_misc, "list_bindings", [](lua::state& L, lua::parameters& P) -> int {
+	int list_bindings(lua::state& L, lua::parameters& P)
+	{
 		std::string target;
 
 		P(P.optional(target, ""));
@@ -121,9 +122,10 @@ namespace
 			}
 		}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 get_alias(lua_func_misc, "get_alias", [](lua::state& L, lua::parameters& P) -> int {
+	int get_alias(lua::state& L, lua::parameters& P)
+	{
 		std::string name;
 
 		P(name);
@@ -134,9 +136,10 @@ namespace
 		else
 			L.pushnil();
 		return 1;
-	});
+	}
 
-	lua::fnptr2 set_alias(lua_func_misc, "set_alias", [](lua::state& L, lua::parameters& P) -> int {
+	int set_alias(lua::state& L, lua::parameters& P)
+	{
 		std::string name, value;
 
 		P(name, P.optional(value, ""));
@@ -144,6 +147,12 @@ namespace
 		lsnes_cmd.set_alias_for(name, value);
 		refresh_alias_binds();
 		return 0;
+	}
+
+	lua::functions alias_fns(lua_func_misc, "", {
+		{"list_bindings", list_bindings},
+		{"get_alias", get_alias},
+		{"set_alias", set_alias},
 	});
 
 	lua::_class<lua_inverse_bind> class_inverse_bind(lua_class_bind, "INVERSEBIND", {

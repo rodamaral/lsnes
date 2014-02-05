@@ -36,8 +36,7 @@ namespace
 		return 0;
 	}
 
-	class lua_hostmemory_dummy {};
-	lua::_class<lua_hostmemory_dummy> hostops(lua_class_pure, "*hostmemory", {
+	lua::functions hostops(lua_func_misc, "hostmemory", {
 		{"read", do_read<uint8_t>},
 		{"write", do_write<uint8_t>},
 		{"readbyte", do_read<uint8_t>},

@@ -89,7 +89,8 @@ namespace
 		framebuffer::color color;
 	};
 
-	lua::fnptr2 gui_box(lua_func_misc, "gui.arrow", [](lua::state& L, lua::parameters& P) -> int {
+	int arrow(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		uint32_t length, headwidth, width, headthickness;
 		int direction;
@@ -104,5 +105,9 @@ namespace
 		lua_render_ctx->queue->create_add<render_object_arrow>(x, y, length, width, headwidth, headthickness,
 			direction, fill, color);
 		return 0;
+	}
+
+	lua::functions arrow_fns(lua_func_misc, "gui", {
+		{"arrow", arrow},
 	});
 }

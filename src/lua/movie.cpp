@@ -6,36 +6,42 @@
 
 namespace
 {
-	lua::fnptr2 mcurframe(lua_func_misc, "movie.currentframe", [](lua::state& L, lua::parameters& P) -> int {
+	int currentframe(lua::state& L, lua::parameters& P)
+	{
 		auto& m = movb.get_movie();
 		L.pushnumber(m.get_current_frame());
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mfc(lua_func_misc, "movie.framecount", [](lua::state& L, lua::parameters& P) -> int {
+	int framecount(lua::state& L, lua::parameters& P)
+	{
 		auto& m = movb.get_movie();
 		L.pushnumber(m.get_frame_count());
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mrrs(lua_func_misc, "movie.rerecords", [](lua::state& L, lua::parameters& P) -> int {
+	int rerecords(lua::state& L, lua::parameters& P)
+	{
 		L.pushnumber(movb.get_rrdata().count());
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mro(lua_func_misc, "movie.readonly", [](lua::state& L, lua::parameters& P) -> int {
+	int readonly(lua::state& L, lua::parameters& P)
+	{
 		auto& m = movb.get_movie();
 		L.pushboolean(m.readonly_mode() ? 1 : 0);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mrw(lua_func_misc, "movie.readwrite", [](lua::state& L, lua::parameters& P) -> int {
+	int readwrite(lua::state& L, lua::parameters& P)
+	{
 		auto& m = movb.get_movie();
 		m.readonly_mode(false);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 mfs(lua_func_misc, "movie.frame_subframes", [](lua::state& L, lua::parameters& P) -> int {
+	int frame_subframes(lua::state& L, lua::parameters& P)
+	{
 		uint64_t frame;
 
 		P(frame);
@@ -43,9 +49,10 @@ namespace
 		auto& m = movb.get_movie();
 		L.pushnumber(m.frame_subframes(frame));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mrs(lua_func_misc, "movie.read_subframes", [](lua::state& L, lua::parameters& P) -> int {
+	int read_subframes(lua::state& L, lua::parameters& P)
+	{
 		uint64_t frame, subframe;
 
 		P(frame, subframe);
@@ -60,15 +67,17 @@ namespace
 			L.settable(-3);
 		}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 rrc(lua_func_misc, "movie.read_rtc", [](lua::state& L, lua::parameters& P) -> int {
+	int read_rtc(lua::state& L, lua::parameters& P)
+	{
 		L.pushnumber(movb.get_mfile().rtc_second);
 		L.pushnumber(movb.get_mfile().rtc_subsecond);
 		return 2;
-	});
+	}
 
-	lua::fnptr2 musv(lua_func_misc, "movie.unsafe_rewind", [](lua::state& L, lua::parameters& P) -> int {
+	int unsafe_rewind(lua::state& L, lua::parameters& P)
+	{
 		if(P.is_novalue()) {
 			//Start process to mark save.
 			mainloop_signal_need_rewind(NULL);
@@ -82,9 +91,10 @@ namespace
 		} else
 			P.expected("UNSAFEREWIND or nil");
 		return 0;
-	});
+	}
 
-	lua::fnptr2 movie_to_rewind(lua_func_misc, "movie.to_rewind", [](lua::state& L, lua::parameters& P) -> int {
+	int to_rewind(lua::state& L, lua::parameters& P)
+	{
 		std::string filename;
 
 		P(filename);
@@ -113,5 +123,18 @@ namespace
 				u2->ptr++;
 		}
 		return 1;
+	}
+
+	lua::functions movie_fns(lua_func_misc, "movie", {
+		{"currentframe", currentframe},
+		{"framecount", framecount},
+		{"rerecords", rerecords},
+		{"readonly", readonly},
+		{"readwrite", readwrite},
+		{"frame_subframes", frame_subframes},
+		{"read_subframes", read_subframes},
+		{"read_rtc", read_rtc},
+		{"unsafe_rewind", unsafe_rewind},
+		{"to_rewind", to_rewind},
 	});
 }

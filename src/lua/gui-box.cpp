@@ -52,7 +52,8 @@ namespace
 		int32_t thickness;
 	};
 
-	lua::fnptr2 gui_box(lua_func_misc, "gui.box", [](lua::state& L, lua::parameters& P) -> int {
+	int box(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		uint32_t width, height, thickness;
 		framebuffer::color poutline1, poutline2, pfill;
@@ -65,5 +66,9 @@ namespace
 		lua_render_ctx->queue->create_add<render_object_box>(x, y, width, height, poutline1, poutline2,
 			pfill, thickness);
 		return 0;
+	}
+
+	lua::functions box_fns(lua_func_misc, "gui", {
+		{"box", box},
 	});
 }

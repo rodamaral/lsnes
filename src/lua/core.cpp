@@ -67,21 +67,24 @@ namespace
 		}
 	}
 
-	lua::fnptr2 lua_ctype(lua_func_misc, "identify_class", [](lua::state& L, lua::parameters& P) -> int {
+	int identify_class(lua::state& L, lua::parameters& P)
+	{
 		if(!P.is_userdata())
 			return 0;
 		L.pushlstring(try_recognize_userdata(L, 1));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_tostringx(lua_func_misc, "tostringx", [](lua::state& L, lua::parameters& P) -> int {
+	int tostringx(lua::state& L, lua::parameters& P)
+	{
 		std::set<const void*> tmp2;
 		std::string y = luavalue_to_string(L, 1, tmp2, false);
 		L.pushlstring(y);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_print(lua_func_misc, "print2", [](lua::state& L, lua::parameters& P) -> int {
+	int print2(lua::state& L, lua::parameters& P)
+	{
 		std::string toprint;
 		bool first = true;
 		while(P.more()) {
@@ -96,26 +99,29 @@ namespace
 		}
 		platform::message(toprint);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 lua_exec(lua_func_misc, "exec", [](lua::state& L, lua::parameters& P) -> int {
+	int exec(lua::state& L, lua::parameters& P)
+	{
 		std::string text;
 
 		P(text);
 
 		lsnes_cmd.invoke(text);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 lua_lookup(lua_func_misc, "lookup_class", [](lua::state& L, lua::parameters& P) -> int {
+	int lookup_class(lua::state& L, lua::parameters& P)
+	{
 		std::string clazz;
 
 		P(clazz);
 
 		return lua::class_base::lookup_and_push(L, clazz) ? 1 : 0;
-	});
+	}
 
-	lua::fnptr2 lua_classlist(lua_func_misc, "all_classes", [](lua::state& L, lua::parameters& P) -> int {
+	int all_classes(lua::state& L, lua::parameters& P)
+	{
 		auto c = lua::class_base::all_classes(L);
 		int count = 0;
 		for(auto& i : c) {
@@ -123,39 +129,44 @@ namespace
 			count++;
 		}
 		return count;
-	});
+	}
 
-	lua::fnptr2 lua_booted(lua_func_misc, "emulator_ready", [](lua::state& L, lua::parameters& P) -> int {
+	int emulator_ready(lua::state& L, lua::parameters& P)
+	{
 		L.pushboolean(lua_booted_flag ? 1 : 0);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 lua_utime(lua_func_misc, "utime", [](lua::state& L, lua::parameters& P) -> int {
+	int utime(lua::state& L, lua::parameters& P)
+	{
 		uint64_t t = get_utime();
 		L.pushnumber(t / 1000000);
 		L.pushnumber(t % 1000000);
 		return 2;
-	});
+	}
 
-	lua::fnptr2 lua_idle_time(lua_func_misc, "set_idle_timeout", [](lua::state& L, lua::parameters& P) -> int {
+	int set_idle_timeout(lua::state& L, lua::parameters& P)
+	{
 		uint64_t dt;
 
 		P(dt);
 
 		lua_idle_hook_time = get_utime() + dt;
 		return 0;
-	});
+	}
 
-	lua::fnptr2 lua_timer_time(lua_func_misc, "set_timer_timeout", [](lua::state& L, lua::parameters& P) -> int {
+	int set_timer_timeout(lua::state& L, lua::parameters& P)
+	{
 		uint64_t dt;
 
 		P(dt);
 
 		lua_timer_hook_time = get_utime() + dt;
 		return 0;
-	});
+	}
 
-	lua::fnptr2 lua_busaddr(lua_func_misc, "bus_address", [](lua::state& L, lua::parameters& P) -> int {
+	int bus_address(lua::state& L, lua::parameters& P)
+	{
 		uint64_t addr;
 
 		P(addr);
@@ -165,14 +176,16 @@ namespace
 			throw std::runtime_error("This platform does not have bus mapping");
 		L.pushnumber(busrange.first + (addr % busrange.second));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 mgetlagflag(lua_func_misc, "memory.get_lag_flag", [](lua::state& L, lua::parameters& P) -> int {
+	int get_lag_flag(lua::state& L, lua::parameters& P)
+	{
 		L.pushboolean(!(our_rom.rtype && our_rom.rtype->get_pflag()));
 		return 1;
-	});
+	}
 
-	lua::fnptr2 msetlagflag(lua_func_misc, "memory.set_lag_flag", [](lua::state& L, lua::parameters& P) -> int {
+	int set_lag_flag(lua::state& L, lua::parameters& P)
+	{
 		bool flag;
 
 		P(flag);
@@ -180,5 +193,24 @@ namespace
 		if(our_rom.rtype)
 			our_rom.rtype->set_pflag(!flag);
 		return 0;
+	}
+
+	lua::functions misc_fns(lua_func_misc, "", {
+		{"print2", print2},
+		{"exec", exec},
+		{"emulator_ready", emulator_ready},
+		{"utime", utime},
+		{"set_idle_timeout", set_idle_timeout},
+		{"set_timer_timeout", set_timer_timeout},
+		{"bus_address", bus_address},
+		{"memory.get_lag_flag", get_lag_flag},
+		{"memory.set_lag_flag", set_lag_flag},
+	});
+
+	lua::functions pure_fns(lua_func_bit, "", {
+		{"identify_class", identify_class},
+		{"tostringx", tostringx},
+		{"lookup_class", lookup_class},
+		{"all_classes", all_classes},
 	});
 }

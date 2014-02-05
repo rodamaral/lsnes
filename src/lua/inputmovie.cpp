@@ -128,14 +128,15 @@ namespace
 			throw std::runtime_error("Can not edit past");
 	}
 
-	lua::fnptr2 movie_cfs(lua_func_misc, "movie.current_first_subframe", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int current_first_subframe(lua::state& L, lua::parameters& P)
+	{
 		movie& m = movb.get_movie();
 		L.pushnumber(m.get_current_frame_first_subframe());
 		return 1;
-	});
+	}
 
-	lua::fnptr2 movie_pc(lua_func_misc, "movie.pollcounter", [](lua::state& L, lua::parameters& P) -> int {
+	int pollcounter(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller, button;
 
 		P(port, controller, button);
@@ -144,7 +145,7 @@ namespace
 		ret = get_pc_for(port, controller, button);
 		L.pushnumber(ret);
 		return 1;
-	});
+	}
 
 	controller_frame_vector& framevector(lua::state& L, lua::parameters& P);
 
@@ -482,69 +483,78 @@ namespace
 		controller_frame_vector v;
 	};
 
-	lua::fnptr2 movie_getdata(lua_func_misc, "movie.copy_movie", [](lua::state& L, lua::parameters& P) -> int {
+	int copy_movie(lua::state& L, lua::parameters& P)
+	{
 		return _copy_movie(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_getframe(lua_func_misc, "movie.get_frame", [](lua::state& L, lua::parameters& P) -> int {
+	int get_frame(lua::state& L, lua::parameters& P)
+	{
 		return _get_frame(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_setframe(lua_func_misc, "movie.set_frame", [](lua::state& L, lua::parameters& P) -> int {
+	int set_frame(lua::state& L, lua::parameters& P)
+	{
 		return _set_frame(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_get_size(lua_func_misc, "movie.get_size", [](lua::state& L, lua::parameters& P) -> int {
+	int get_size(lua::state& L, lua::parameters& P)
+	{
 		return _get_size(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_count_frames(lua_func_misc, "movie.count_frames", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int count_frames(lua::state& L, lua::parameters& P)
+	{
 		return _count_frames(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_find_frame(lua_func_misc, "movie.find_frame", [](lua::state& L, lua::parameters& P) -> int {
+	int find_frame(lua::state& L, lua::parameters& P)
+	{
 		return _find_frame(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_blank_frame(lua_func_misc, "movie.blank_frame", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int blank_frame(lua::state& L, lua::parameters& P)
+	{
 		return _blank_frame(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_append_frames(lua_func_misc, "movie.append_frames", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int append_frames(lua::state& L, lua::parameters& P)
+	{
 		return _append_frames(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_append_frame(lua_func_misc, "movie.append_frame", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int append_frame(lua::state& L, lua::parameters& P)
+	{
 		return _append_frame(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_truncate(lua_func_misc, "movie.truncate", [](lua::state& L, lua::parameters& P) -> int {
+	int truncate(lua::state& L, lua::parameters& P)
+	{
 		return _truncate(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_edit(lua_func_misc, "movie.edit", [](lua::state& L, lua::parameters& P) -> int {
+	int edit(lua::state& L, lua::parameters& P)
+	{
 		return _edit(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_copyframe2(lua_func_misc, "movie.copy_frames2", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int copy_frames2(lua::state& L, lua::parameters& P)
+	{
 		return _copy_frames<false>(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_copyframe(lua_func_misc, "movie.copy_frames", [](lua::state& L, lua::parameters& P) -> int {
+	int copy_frames(lua::state& L, lua::parameters& P)
+	{
 		return _copy_frames<true>(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_serialize(lua_func_misc, "movie.serialize", [](lua::state& L, lua::parameters& P) -> int {
+	int serialize(lua::state& L, lua::parameters& P)
+	{
 		return _serialize(L, P);
-	});
+	}
 
-	lua::fnptr2 movie_unserialize(lua_func_misc, "movie.unserialize", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int unserialize(lua::state& L, lua::parameters& P)
+	{
 		lua_inputframe* f;
 		std::string filename;
 		bool binary;
@@ -583,21 +593,20 @@ namespace
 			}
 		}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 movie_curbranch(lua_func_misc, "movie.current_branch", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int current_branch(lua::state& L, lua::parameters& P)
+	{
 		L.pushlstring(movb.get_mfile().current_branch());
 		return 1;
-	});
+	}
 
-	lua::fnptr2 movie_allbranch(lua_func_misc, "movie.get_branches", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int get_branches(lua::state& L, lua::parameters& P)
+	{
 		for(auto& i : movb.get_mfile().branches)
 			L.pushlstring(i.first);
 		return movb.get_mfile().branches.size();
-	});
-
+	}
 
 	controller_frame_vector& framevector(lua::state& L, lua::parameters& P)
 	{
@@ -642,6 +651,28 @@ namespace
 			{"unserialize", &lua_inputframe::unserialize},
 			{"get_stride", &lua_inputframe::get_stride},
 	}, &lua_inputframe::print);
+
+	lua::functions inputmovie_fns(lua_func_misc, "movie", {
+		{"current_first_subframe", current_first_subframe},
+		{"pollcounter", pollcounter},
+		{"copy_movie", copy_movie},
+		{"get_frame", get_frame},
+		{"set_frame", set_frame},
+		{"get_size", get_size},
+		{"count_frames", count_frames},
+		{"find_frame", find_frame},
+		{"blank_frame", blank_frame},
+		{"append_frames", append_frames},
+		{"append_frame", append_frame},
+		{"truncate", truncate},
+		{"edit", edit},
+		{"copy_frames2", copy_frames2},
+		{"copy_frames", copy_frames},
+		{"serialize", serialize},
+		{"unserialize", unserialize},
+		{"current_branch", current_branch},
+		{"get_branches", get_branches},
+	});
 
 	lua_inputframe::lua_inputframe(lua::state& L, controller_frame _f)
 	{

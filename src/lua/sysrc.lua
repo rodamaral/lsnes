@@ -52,16 +52,6 @@ local register_in = function(table, class)
 	end
 end
 
---Register all classes that have special names at top level.
-local classes_list = {_all_classes()};
-local idx;
-for idx=1,#classes_list do
-	local c = classes_list[idx];
-	if string.byte(c) == 42 then
-		_G[string.sub(c, 2)] = classes[c];
-	end
-end
-
 -- Classes
 memory.mmap = classes.MMAP_STRUCT;
 zip.writer = classes.ZIPWRITER;

@@ -754,4 +754,33 @@ void class_base::delayed_register()
 {
 	regqueue4_t::do_register(group, name, *this);
 }
+
+functions::functions(function_group& grp, const std::string& basetable, std::initializer_list<entry> fnlist)
+{
+	std::string base = (basetable == "") ? "" : (basetable + ".");
+	for(auto i : fnlist)
+		funcs.insert(new fn(grp, base + i.name, i.func));
+}
+
+functions::~functions()
+{
+	for(auto i : funcs)
+		delete i;
+}
+
+functions::fn::fn(function_group& grp, const std::string& name, std::function<int(state& L, parameters& P)> _func)
+	: function(grp, name)
+{
+	func = _func;
+}
+
+functions::fn::~fn() throw()
+{
+}
+
+int functions::fn::invoke(state& L)
+{
+	lua::parameters P(L, fname);
+	return func(L, P);
+}
 }

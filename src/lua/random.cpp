@@ -109,8 +109,7 @@ namespace
 		return 1;
 	}
 
-	class lua_dummy_random {};
-	lua::_class<lua_dummy_random> lua_random(lua_class_pure, "*random", {
+	lua::functions lua_random(lua_func_bit, "random", {
 		{"boolean", rand_boolean},
 		{"integer", rand_integer},
 		{"float", rand_float},

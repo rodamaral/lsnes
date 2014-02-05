@@ -45,8 +45,10 @@ namespace
 		return 0;
 	}
 
-	lua::fnptr2 gui_text(lua_func_misc, "gui.text", internal_gui_text<false, false>);
-	lua::fnptr2 gui_textH(lua_func_misc, "gui.textH", internal_gui_text<true, false>);
-	lua::fnptr2 gui_textV(lua_func_misc, "gui.textV", internal_gui_text<false, true>);
-	lua::fnptr2 gui_textHV(lua_func_misc, "gui.textHV", internal_gui_text<true, true>);
+	lua::functions text_fns(lua_func_misc, "gui", {
+		{"text", internal_gui_text<false, false>},
+		{"textH", internal_gui_text<true, false>},
+		{"textV", internal_gui_text<false, true>},
+		{"textHV", internal_gui_text<true, true>},
+	});
 }

@@ -288,26 +288,34 @@ namespace
 	{
 	}
 
-	lua::fnptr2 loadfile2(lua_func_load, "loadfile2", [](lua::state& L, lua::parameters& P) -> int {
+	int loadfile2(lua::state& L, lua::parameters& P)
+	{
 		load_chunk(L, P);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 dofile2(lua_func_load, "dofile2", [](lua::state& L, lua::parameters& P) -> int {
+	int dofile2(lua::state& L, lua::parameters& P)
+	{
 		load_chunk(L, P);
 		int old_sp = lua_gettop(L.handle());
 		lua_call(L.handle(), 0, LUA_MULTRET);
 		int new_sp = lua_gettop(L.handle());
 		return new_sp - (old_sp - 1);
-	});
+	}
 
-	lua::fnptr2 resolvefile(lua_func_load, "resolve_filename", [](lua::state& L, lua::parameters& P)
+	int resolve_filename(lua::state& L, lua::parameters& P)
 	{
 		auto file1 = P.arg<std::string>();
 		auto file2 = P.arg_opt<std::string>("");
 		std::string absfilename = zip::resolverel(file1, file2);
 		L.pushlstring(absfilename);
 		return 1;
+	}
+
+	lua::functions load_fns(lua_func_load, "", {
+		{"loadfile2", loadfile2},
+		{"dofile2", dofile2},
+		{"resolve_filename", resolve_filename},
 	});
 
 	lua::_class<lua_file_reader> class_filreader(lua_class_fileio, "FILEREADER", {

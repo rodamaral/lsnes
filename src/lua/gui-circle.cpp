@@ -59,7 +59,8 @@ namespace
 		framebuffer::color fill;
 	};
 
-	lua::fnptr2 gui_rectangle(lua_func_misc, "gui.circle", [](lua::state& L, lua::parameters& P) -> int {
+	int circle(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		uint32_t radius, thickness;
 		framebuffer::color poutline, pfill;
@@ -70,5 +71,9 @@ namespace
 
 		lua_render_ctx->queue->create_add<render_object_circle>(x, y, radius, poutline, pfill, thickness);
 		return 0;
+	}
+
+	lua::functions circle_fns(lua_func_misc, "gui", {
+		{"circle", circle},
 	});
 }

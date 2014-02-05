@@ -4,7 +4,8 @@
 
 namespace
 {
-	lua::fnptr2 c_action(lua_func_misc, "memory.action", [](lua::state& L, lua::parameters& P) -> int {
+	int action(lua::state& L, lua::parameters& P)
+	{
 		std::string name;
 
 		P(name);
@@ -91,5 +92,9 @@ out:
 			throw std::runtime_error("Excess arguments for action");
 		our_rom.rtype->execute_action(act->id, params);
 		return 0;
+	}
+
+	lua::functions actions_fns(lua_func_misc, "memory", {
+		{"action", action},
 	});
 }

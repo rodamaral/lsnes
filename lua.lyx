@@ -7091,6 +7091,18 @@ CGRAM
  If <first_trans> is true, first color is forced transparent.
 \end_layout
 
+\begin_layout Subsection
+bsnes.enablelayer: Set layer visibility
+\end_layout
+
+\begin_layout Itemize
+Syntax: none bsnes.enablelayer(number layer, number priority, boolean enabled)
+\end_layout
+
+\begin_layout Standard
+Enable or disable specified layer at specified priority.
+\end_layout
+
 \begin_layout Section
 extensions to table string
 \end_layout

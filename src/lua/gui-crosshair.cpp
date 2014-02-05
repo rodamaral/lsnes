@@ -37,7 +37,8 @@ namespace
 		uint32_t length;
 	};
 
-	lua::fnptr2 gui_crosshair(lua_func_misc, "gui.crosshair", [](lua::state& L, lua::parameters& P) -> int {
+	int crosshair(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		uint32_t length;
 		framebuffer::color pcolor;
@@ -48,5 +49,9 @@ namespace
 
 		lua_render_ctx->queue->create_add<render_object_crosshair>(x, y, pcolor, length);
 		return 0;
+	}
+
+	lua::functions crosshair_fns(lua_func_misc, "gui", {
+		{"crosshair", crosshair},
 	});
 }

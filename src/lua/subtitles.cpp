@@ -44,8 +44,7 @@ namespace
 		return 0;
 	}
 
-	class lua_subtitles_dummy {};
-	lua::_class<lua_subtitles_dummy> lua_subtitles(lua_class_bind, "*subtitle", {
+	lua::functions lua_subtitles(lua_func_misc, "subtitle", {
 		{"byindex", sub_byindex},
 		{"get", sub_get},
 		{"set", sub_set},

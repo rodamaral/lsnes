@@ -1780,8 +1780,8 @@ again2:
 		L.getfield(-1, "callback");
 	}
 
-	lua::fnptr2 lua_memory_setdebug(lua_func_misc, "memory.setdebug", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int setdebug(lua::state& L, lua::parameters& P)
+	{
 		unsigned r;
 		int ltbl;
 
@@ -1808,9 +1808,10 @@ again2:
 			return 0;
 		} else
 			P.expected("table or nil");
-	});
+	}
 
-	lua::fnptr2 lua_memory_setstep(lua_func_misc, "memory.setstep", [](lua::state& L, lua::parameters& P) -> int {
+	int setstep(lua::state& L, lua::parameters& P)
+	{
 		uint64_t r;
 		int lfn = 2;
 
@@ -1823,16 +1824,16 @@ again2:
 		update_trace_hook_state();
 		L.pop(1);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 lua_memory_settrace(lua_func_misc, "memory.settrace", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int settrace(lua::state& L, lua::parameters& P)
+	{
 		std::string r;
 
 		P(r);
 
 		lsnes_cmd.invoke("tracelog cpu " + r);
-	});
+	}
 
 	command::fnptr<const std::string&> start_trace(lsnes_cmd, "set-trace", "No description available",
 		"No description available\n",
@@ -1841,7 +1842,8 @@ again2:
 		});
 
 #ifdef BSNES_IS_COMPAT
-	lua::fnptr2 lua_layerenabled(lua_func_misc, "snes.enablelayer", [](lua::state& L, lua::parameters& P) -> int {
+	int enablelayer(lua::state& L, lua::parameters& P)
+	{
 		unsigned layer, priority;
 		bool enabled;
 
@@ -1849,10 +1851,11 @@ again2:
 
 		SNES::ppu.layer_enable(layer, priority, enabled);
 		return 0;
-	});
+	}
 #endif
 
-	lua::fnptr2 lua_smpdiasm(lua_func_misc, "snes.smpdisasm", [](lua::state& L, lua::parameters& P) -> int {
+	int smpdisasm(lua::state& L, lua::parameters& P)
+	{
 		uint64_t addr;
 
 		P(addr);
@@ -1861,6 +1864,19 @@ again2:
 		std::string disasm(_disasm, _disasm.length());
 		L.pushlstring(disasm);
 		return 1;
+	}
+
+	lua::functions debug_fns_snes(lua_func_misc, "bsnes", {
+#ifdef BSNES_IS_COMPAT
+		{"enablelayer", enablelayer},
+#endif
+		{"smpdisasm", smpdisasm},
+	});
+
+	lua::functions debug_fns_memory(lua_func_misc, "memory", {
+		{"setdebug", setdebug},
+		{"setstep", setstep},
+		{"settrace", settrace},
 	});
 #else
 	void snesdbg_on_break() {}

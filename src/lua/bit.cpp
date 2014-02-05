@@ -280,8 +280,7 @@ namespace
 		return 1;
 	}
 
-	class lua_bit_dummy {};
-	lua::_class<lua_bit_dummy> bitops(lua_class_pure, "*bit", {
+	lua::functions bitops(lua_func_bit, "bit", {
 		{"flagdecode", flagdecode_core<false>},
 		{"rflagdecode", flagdecode_core<true>},
 		{"none", fold<combine_none, BITWISE_MASK>},

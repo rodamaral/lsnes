@@ -47,7 +47,8 @@ namespace
 		int32_t thickness;
 	};
 
-	lua::fnptr2 gui_rectangle(lua_func_misc, "gui.rectangle", [](lua::state& L, lua::parameters& P) -> int {
+	int rectangle(lua::state& L, lua::parameters& P)
+	{
 		int32_t x, y;
 		uint32_t width, height, thickness;
 		framebuffer::color poutline, pfill;
@@ -60,5 +61,9 @@ namespace
 		lua_render_ctx->queue->create_add<render_object_rectangle>(x, y, width, height, poutline, pfill,
 			thickness);
 		return 0;
+	}
+
+	lua::functions rectangle_fns(lua_func_misc, "gui", {
+		{"rectangle", rectangle},
 	});
 }

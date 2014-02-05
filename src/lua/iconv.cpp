@@ -151,7 +151,8 @@ exit:
 		return 1;
 	}
 
-	lua::fnptr2 iconv_byteU(lua_func_bit, "_lsnes_string_byteU", [](lua::state& L, lua::parameters& P) -> int {
+	int _lsnes_string_byteU(lua::state& L, lua::parameters& P)
+	{
 		std::string _str;
 		size_t i, j;
 
@@ -165,9 +166,10 @@ exit:
 			p++;
 		}
 		return p;
-	});
+	}
 
-	lua::fnptr2 iconv_charU(lua_func_bit, "_lsnes_string_charU", [](lua::state& L, lua::parameters& P) -> int {
+	int _lsnes_string_charU(lua::state& L, lua::parameters& P)
+	{
 		std::u32string str;
 		while(P.more()) {
 			uint32_t cp;
@@ -191,5 +193,10 @@ exit:
 		}
 		L.pushlstring(utf8::to8(str));
 		return 1;
+	}
+
+	lua::functions iconv_fns(lua_func_bit, "", {
+		{"_lsnes_string_byteU", _lsnes_string_byteU},
+		{"_lsnes_string_charU", _lsnes_string_charU},
 	});
 }

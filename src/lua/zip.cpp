@@ -104,7 +104,8 @@ namespace
 		file_open = NULL;
 	}
 
-	lua::fnptr2 lua_enumerate_zip(lua_func_zip, "zip.enumerate", [](lua::state& L, lua::parameters& P) -> int {
+	int zip_enumerate(lua::state& L, lua::parameters& P)
+	{
 		std::string filename;
 		bool invert;
 
@@ -124,5 +125,9 @@ namespace
 			L.rawset(-3);
 		}
 		return 1;
+	}
+
+	lua::functions zip_fns(lua_func_zip, "zip", {
+		{"enumerate", zip_enumerate},
 	});
 }

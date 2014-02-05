@@ -79,7 +79,25 @@ namespace
 		return pt.controller_info->controllers[controller].buttons.size() + 1;
 	}
 
-	lua::fnptr2 iset(lua_func_misc, "input.set", [](lua::state& L, lua::parameters& P) -> int {
+	class _keyhook_listener : public keyboard::event_listener
+	{
+		void on_key_event(keyboard::modifier_set& modifiers, keyboard::key& key, keyboard::event& event)
+		{
+			lua_callback_keyhook(key.get_name(), key);
+		}
+	} keyhook_listener;
+	std::set<std::string> hooked;
+
+	const port_controller_set* lookup_ps(unsigned port)
+	{
+		auto& m = movb.get_movie();
+		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
+		const port_type& p = f.get_port_type(port);
+		return p.controller_info;
+	}
+
+	int set(lua::state& L, lua::parameters& P)
+	{
 		unsigned controller, index, value;
 
 		if(!lua_input_controllerdata) return 0;
@@ -88,18 +106,20 @@ namespace
 
 		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_set(L, _controller.first, _controller.second, index, value);
-	});
+	}
 
-	lua::fnptr2 iset2(lua_func_misc, "input.set2", [](lua::state& L, lua::parameters& P) -> int {
+	int set2(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller, index;
 		short value;
 
 		P(port, controller, index, value);
 
 		return input_set(L, port, controller, index, value);
-	});
+	}
 
-	lua::fnptr2 iget(lua_func_misc, "input.get", [](lua::state& L, lua::parameters& P) -> int {
+	int get(lua::state& L, lua::parameters& P)
+	{
 		unsigned controller, index;
 
 		if(!lua_input_controllerdata) return 0;
@@ -108,17 +128,19 @@ namespace
 
 		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_get(L, _controller.first, _controller.second, index);
-	});
+	}
 
-	lua::fnptr2 iget2(lua_func_misc, "input.get2", [](lua::state& L, lua::parameters& P) -> int {
+	int get2(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller, index;
 
 		P(port, controller, index);
 
 		return input_get(L, port, controller, index);
-	});
+	}
 
-	lua::fnptr2 iseta(lua_func_misc, "input.seta", [](lua::state& L, lua::parameters& P) -> int {
+	int seta(lua::state& L, lua::parameters& P)
+	{
 		unsigned controller;
 		uint64_t base;
 
@@ -128,18 +150,20 @@ namespace
 
 		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_seta(L, _controller.first, _controller.second, base, P);
-	});
+	}
 
-	lua::fnptr2 iseta2(lua_func_misc, "input.seta2", [](lua::state& L, lua::parameters& P) -> int {
+	int seta2(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller;
 		uint64_t base;
 
 		P(port, controller, base);
 
 		return input_seta(L, port, controller, base, P);
-	});
+	}
 
-	lua::fnptr2 igeta(lua_func_misc, "input.geta", [](lua::state& L, lua::parameters& P) -> int {
+	int geta(lua::state& L, lua::parameters& P)
+	{
 		unsigned controller;
 
 		if(!lua_input_controllerdata) return 0;
@@ -148,17 +172,19 @@ namespace
 
 		auto _controller = lua_input_controllerdata->porttypes().legacy_pcid_to_pair(controller);
 		return input_geta(L, _controller.first, _controller.second);
-	});
+	}
 
-	lua::fnptr2 igeta2(lua_func_misc, "input.geta2", [](lua::state& L, lua::parameters& P) -> int {
+	int geta2(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller;
 
 		P(port, controller);
 
 		return input_geta(L, port, controller);
-	});
+	}
 
-	lua::fnptr2 igett(lua_func_misc, "input.controllertype", [](lua::state& L, lua::parameters& P) -> int {
+	int controllertype(lua::state& L, lua::parameters& P)
+	{
 		unsigned controller;
 
 		P(controller);
@@ -167,17 +193,19 @@ namespace
 		const port_type_set& s = m.read_subframe(m.get_current_frame(), 0).porttypes();
 		auto _controller = s.legacy_pcid_to_pair(controller);
 		return input_controllertype(L, _controller.first, _controller.second);
-	});
+	}
 
-	lua::fnptr2 igett2(lua_func_misc, "input.controllertype2", [](lua::state& L, lua::parameters& P) -> int {
+	int controllertype2(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller;
 
 		P(port, controller);
 
 		return input_controllertype(L, port, controller);
-	});
+	}
 
-	lua::fnptr2 ireset(lua_func_misc, "input.reset", [](lua::state& L, lua::parameters& P) -> int {
+	int reset(lua::state& L, lua::parameters& P)
+	{
 		long cycles;
 
 		if(!lua_input_controllerdata) return 0;
@@ -192,9 +220,10 @@ namespace
 		lua_input_controllerdata->axis3(0, 0, 2, hi);
 		lua_input_controllerdata->axis3(0, 0, 3, lo);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 iraw(lua_func_misc, "input.raw", [](lua::state& L, lua::parameters& P) -> int {
+	int raw(lua::state& L, lua::parameters& P)
+	{
 		L.newtable();
 		for(auto i : lsnes_kbd.all_keys()) {
 			L.pushlstring(i->get_name());
@@ -202,18 +231,10 @@ namespace
 			L.settable(-3);
 		}
 		return 1;
-	});
+	}
 
-	class _keyhook_listener : public keyboard::event_listener
+	int keyhook(lua::state& L, lua::parameters& P)
 	{
-		void on_key_event(keyboard::modifier_set& modifiers, keyboard::key& key, keyboard::event& event)
-		{
-			lua_callback_keyhook(key.get_name(), key);
-		}
-	} keyhook_listener;
-	std::set<std::string> hooked;
-
-	lua::fnptr2 ireq(lua_func_misc, "input.keyhook", [](lua::state& L, lua::parameters& P) -> int {
 		std::string x;
 		bool state;
 
@@ -233,9 +254,10 @@ namespace
 			key->remove_listener(keyhook_listener);
 		}
 		return 0;
-	});
+	}
 
-	lua::fnptr2 ijget(lua_func_misc, "input.joyget", [](lua::state& L, lua::parameters& P) -> int {
+	int joyget(lua::state& L, lua::parameters& P)
+	{
 		unsigned lcid;
 
 		P(lcid);
@@ -260,9 +282,10 @@ namespace
 			L.settable(-3);
 		}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 ijset(lua_func_misc, "input.joyset", [](lua::state& L, lua::parameters& P) -> int {
+	int joyset(lua::state& L, lua::parameters& P)
+	{
 		unsigned lcid;
 		int ltbl;
 
@@ -299,9 +322,10 @@ namespace
 			L.pop(1);
 		}
 		return 0;
-	});
+	}
 
-	lua::fnptr2 ijlcid_to_pcid(lua_func_misc, "input.lcid_to_pcid", [](lua::state& L, lua::parameters& P) -> int {
+	int lcid_to_pcid(lua::state& L, lua::parameters& P)
+	{
 		unsigned lcid;
 
 		P(lcid);
@@ -327,12 +351,10 @@ namespace
 		L.pushnumber(pcid.first);
 		L.pushnumber(pcid.second);
 		return 3;
-	});
+	}
 
-	//THE NEW API.
-
-	lua::fnptr2 ijlcid_to_pcid2(lua_func_misc, "input.lcid_to_pcid2", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int lcid_to_pcid2(lua::state& L, lua::parameters& P)
+	{
 		unsigned lcid;
 
 		P(lcid);
@@ -343,9 +365,10 @@ namespace
 		L.pushnumber(pcid.first);
 		L.pushnumber(pcid.second);
 		return 2;
-	});
+	}
 
-	lua::fnptr2 iporttype(lua_func_misc, "input.port_type", [](lua::state& L, lua::parameters& P) -> int {
+	int _port_type(lua::state& L, lua::parameters& P)
+	{
 		unsigned port;
 
 		P(port);
@@ -359,22 +382,16 @@ namespace
 			return 0;
 		}
 		return 1;
-	});
-
-	const port_controller_set* lookup_ps(unsigned port)
-	{
-		auto& m = movb.get_movie();
-		controller_frame f = m.read_subframe(m.get_current_frame(), 0);
-		const port_type& p = f.get_port_type(port);
-		return p.controller_info;
 	}
 
-	lua::fnptr2 iveto(lua_func_misc, "input.veto_button", [](lua::state& L, lua::parameters& P) -> int {
+	int veto_button(lua::state& L, lua::parameters& P)
+	{
 		if(lua_veto_flag) *lua_veto_flag = true;
 		return 0;
-	});
+	}
 
-	lua::fnptr2 ictrlinfo(lua_func_misc, "input.controller_info", [](lua::state& L, lua::parameters& P) -> int {
+	int controller_info(lua::state& L, lua::parameters& P)
+	{
 		unsigned port, controller;
 
 		P(port, controller);
@@ -458,5 +475,28 @@ namespace
 		}
 		L.rawset(-3);
 		return 1;
+	}
+
+	lua::functions input_fns(lua_func_misc, "input", {
+		{"set", set},
+		{"set2", set2},
+		{"get", get},
+		{"get2", get2},
+		{"seta", seta},
+		{"seta2", seta2},
+		{"geta", geta},
+		{"geta2", geta2},
+		{"controllertype", controllertype},
+		{"controllertype2", controllertype2},
+		{"reset", reset},
+		{"raw", raw},
+		{"keyhook", keyhook},
+		{"joyget", joyget},
+		{"joyset", joyset},
+		{"lcid_to_pcid", lcid_to_pcid},
+		{"lcid_to_pcid2", lcid_to_pcid2},
+		{"port_type", _port_type},
+		{"veto_button", veto_button},
+		{"controller_info", controller_info},
 	});
 }

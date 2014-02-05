@@ -12,8 +12,8 @@ namespace
 		throw std::runtime_error("No such VMA");
 	}
 
-	lua::fnptr2 dump_memory_bitmap(lua_func_misc, "bsnes.dump_sprite", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int dump_sprite(lua::state& L, lua::parameters& P)
+	{
 		std::string vma;
 		uint64_t addr;
 		uint32_t width, height;
@@ -49,10 +49,10 @@ namespace
 				}
 			}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 dump_memory_palette(lua_func_misc, "bsnes.dump_palette", [](lua::state& L, lua::parameters& P)
-		-> int {
+	int dump_palette(lua::state& L, lua::parameters& P)
+	{
 		std::string vma;
 		uint64_t addr;
 		bool full, ftrans;
@@ -82,6 +82,10 @@ namespace
 			}
 		}
 		return 1;
-	});
+	}
 
+	lua::functions bitmap_fns_snes(lua_func_misc, "bsnes", {
+		{"dump_palette", dump_palette},
+		{"dump_sprite", dump_sprite},
+	});
 }

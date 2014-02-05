@@ -258,33 +258,6 @@ private:
 	std::string fname;
 	int next;
 };
-
-/**
- * Register function pointer as lua function.
- */
-class fnptr2 : public function
-{
-public:
-/**
- * Register.
- */
-	fnptr2(function_group& group, const std::string& name, int (*_fn)(state& L, parameters& P))
-		: function(group, name)
-	{
-		fn = _fn;
-	}
-/**
- * Invoke function.
- */
-	int invoke(state& L)
-	{
-		parameters P(L, fname);
-		return fn(L, P);
-	}
-private:
-	int (*fn)(state& L, parameters& P);
-};
-
 }
 
 #endif

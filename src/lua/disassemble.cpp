@@ -7,7 +7,8 @@
 
 namespace
 {
-	lua::fnptr2 memdisass(lua_func_misc, "memory.disassemble", [](lua::state& L, lua::parameters& P) -> int {
+	int disassemble(lua::state& L, lua::parameters& P)
+	{
 		std::string kind;
 		uint64_t addr, count;
 
@@ -41,9 +42,10 @@ namespace
 			laddr += bytes;
 		}
 		return 1;
-	});
+	}
 
-	lua::fnptr2 getreg(lua_func_misc, "memory.getregister", [](lua::state& L, lua::parameters& P) -> int {
+	int getregister(lua::state& L, lua::parameters& P)
+	{
 		std::string r;
 
 		P(r);
@@ -64,9 +66,10 @@ namespace
 		}
 		L.pushnil();
 		return 1;
-	});
+	}
 
-	lua::fnptr2 setreg(lua_func_misc, "memory.setregister", [](lua::state& L, lua::parameters& P) -> int {
+	int setregister(lua::state& L, lua::parameters& P)
+	{
 		std::string r;
 
 		P(r);
@@ -87,5 +90,11 @@ namespace
 			return 0;
 		}
 		return 0;
+	}
+
+	lua::functions disasm_fns(lua_func_misc, "memory", {
+		{"disassemble", disassemble},
+		{"getregister", getregister},
+		{"setregister", setregister},
 	});
 }

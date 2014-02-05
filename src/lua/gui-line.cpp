@@ -90,7 +90,8 @@ nodraw2:
 		framebuffer::color color;
 	};
 
-	lua::fnptr2 gui_pixel(lua_func_misc, "gui.line", [](lua::state& L, lua::parameters& P) -> int {
+	int line(lua::state& L, lua::parameters& P)
+	{
 		int32_t x1, y1, x2, y2;
 		framebuffer::color pcolor;
 
@@ -100,5 +101,9 @@ nodraw2:
 
 		lua_render_ctx->queue->create_add<render_object_line>(x1, x2, y1, y2, pcolor);
 		return 0;
+	}
+
+	lua::functions line_fns(lua_func_misc, "gui", {
+		{"line", line},
 	});
 }

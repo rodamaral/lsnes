@@ -4,14 +4,6 @@
 
 namespace
 {
-	lua::fnptr2 gui_resolution(lua_func_misc, "gui.resolution", [](lua::state& L, lua::parameters& P) -> int {
-		if(!lua_render_ctx)
-			return 0;
-		L.pushnumber(lua_render_ctx->width);
-		L.pushnumber(lua_render_ctx->height);
-		return 2;
-	});
-
 	template<uint32_t lua_render_context::*gap, bool delta>
 	int lua_gui_set_gap(lua::state& L, lua::parameters& P)
 	{
@@ -32,27 +24,29 @@ namespace
 		return 1;
 	}
 
-	lua::fnptr2 lg(lua_func_misc, "gui.left_gap", lua_gui_set_gap<&lua_render_context::left_gap, false>);
-	lua::fnptr2 rg(lua_func_misc, "gui.right_gap", lua_gui_set_gap<&lua_render_context::right_gap, false>);
-	lua::fnptr2 tg(lua_func_misc, "gui.top_gap", lua_gui_set_gap<&lua_render_context::top_gap, false>);
-	lua::fnptr2 bg(lua_func_misc, "gui.bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap, false>);
-	lua::fnptr2 dlg(lua_func_misc, "gui.delta_left_gap", lua_gui_set_gap<&lua_render_context::left_gap, true>);
-	lua::fnptr2 drg(lua_func_misc, "gui.delta_right_gap", lua_gui_set_gap<&lua_render_context::right_gap, true>);
-	lua::fnptr2 dtg(lua_func_misc, "gui.delta_top_gap", lua_gui_set_gap<&lua_render_context::top_gap, true>);
-	lua::fnptr2 dbg(lua_func_misc, "gui.delta_bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap,
-		true>);
+	int resolution(lua::state& L, lua::parameters& P)
+	{
+		if(!lua_render_ctx)
+			return 0;
+		L.pushnumber(lua_render_ctx->width);
+		L.pushnumber(lua_render_ctx->height);
+		return 2;
+	}
 
-	lua::fnptr2 gui_repaint(lua_func_misc, "gui.repaint", [](lua::state& L, lua::parameters& P) -> int {
+	int repaint(lua::state& L, lua::parameters& P)
+	{
 		lua_requests_repaint = true;
 		return 0;
-	});
+	}
 
-	lua::fnptr2 gui_sfupd(lua_func_misc, "gui.subframe_update", [](lua::state& L, lua::parameters& P) -> int {
+	int subframe_update(lua::state& L, lua::parameters& P)
+	{
 		P(lua_requests_subframe_paint);
 		return 0;
-	});
+	}
 
-	lua::fnptr2 gui_color(lua_func_misc, "gui.color", [](lua::state& L, lua::parameters& P) -> int {
+	int color(lua::state& L, lua::parameters& P)
+	{
 		int64_t r, g, b, a;
 
 		if(P.is_string()) {
@@ -68,9 +62,10 @@ namespace
 		else
 			L.pushnumber(-1);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 gui_status(lua_func_misc, "gui.status", [](lua::state& L, lua::parameters& P) -> int {
+	int status(lua::state& L, lua::parameters& P)
+	{
 		std::string name, value;
 
 		P(name, value);
@@ -81,9 +76,10 @@ namespace
 		else
 			w.set("L[" + name + "]", value);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 gui_rainbow(lua_func_misc, "gui.rainbow", [](lua::state& L, lua::parameters& P) -> int {
+	int rainbow(lua::state& L, lua::parameters& P)
+	{
 		int64_t step, steps;
 		framebuffer::color c;
 
@@ -95,14 +91,16 @@ namespace
 		basecolor = framebuffer::color_rotate_hue(basecolor, step, steps);
 		L.pushnumber(basecolor);
 		return 1;
-	});
+	}
 
-	lua::fnptr2 gui_killframe(lua_func_misc, "gui.kill_frame", [](lua::state& L, lua::parameters& P) -> int {
+	int kill_frame(lua::state& L, lua::parameters& P)
+	{
 		if(lua_kill_frame)
 			*lua_kill_frame = true;
-	});
+	}
 
-	lua::fnptr2 gui_setscale(lua_func_misc, "gui.set_video_scale", [](lua::state& L, lua::parameters& P) -> int {
+	int set_video_scale(lua::state& L, lua::parameters& P)
+	{
 		if(lua_hscl && lua_vscl) {
 			uint32_t h, v;
 
@@ -111,5 +109,24 @@ namespace
 			*lua_hscl = h;
 			*lua_vscl = v;
 		}
+	}
+
+	lua::functions guicore_fns(lua_func_misc, "gui", {
+		{"left_gap", lua_gui_set_gap<&lua_render_context::left_gap, false>},
+		{"right_gap", lua_gui_set_gap<&lua_render_context::right_gap, false>},
+		{"top_gap", lua_gui_set_gap<&lua_render_context::top_gap, false>},
+		{"bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap, false>},
+		{"delta_left_gap", lua_gui_set_gap<&lua_render_context::left_gap, true>},
+		{"delta_right_gap", lua_gui_set_gap<&lua_render_context::right_gap, true>},
+		{"delta_top_gap", lua_gui_set_gap<&lua_render_context::top_gap, true>},
+		{"delta_bottom_gap", lua_gui_set_gap<&lua_render_context::bottom_gap, true>},
+		{"resolution", resolution},
+		{"repaint", repaint},
+		{"subframe_update", subframe_update},
+		{"color", color},
+		{"status", status},
+		{"rainbow", rainbow},
+		{"kill_frame", kill_frame},
+		{"set_video_scale", set_video_scale},
 	});
 }

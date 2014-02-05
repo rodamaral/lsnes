@@ -6,6 +6,8 @@
 
 namespace lua
 {
+class parameter;
+
 /**
  * Group of functions.
  */
@@ -72,6 +74,47 @@ public:
 protected:
 	std::string fname;
 	function_group& group;
+};
+
+/**
+ * Register multiple functions at once.
+ */
+class functions
+{
+public:
+/**
+ * Entry in list.
+ */
+	struct entry
+	{
+		const std::string& name;
+		std::function<int(state& L, parameters& P)> func;
+	};
+/**
+ * Create new functions.
+ *
+ * Parameter grp: The group to put the functions to.
+ * Parameter basetable: The base table to interpret function names relative to.
+ * Parameter fnlist: The list of functions to register.
+ */
+	functions(function_group& grp, const std::string& basetable, std::initializer_list<entry> fnlist);
+/**
+ * Dtor.
+ */
+	~functions();
+private:
+	class fn : public function
+	{
+	public:
+		fn(function_group& grp, const std::string& name, std::function<int(state& L, parameters& P)> _func);
+		~fn() throw();
+		int invoke(state& L);
+	private:
+		std::function<int(state& L, parameters& P)> func;
+	};
+	functions(const functions&);
+	functions& operator=(const functions&);
+	std::set<fn*> funcs;
 };
 
 }
