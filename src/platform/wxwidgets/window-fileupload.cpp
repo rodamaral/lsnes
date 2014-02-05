@@ -26,10 +26,234 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/device/back_inserter.hpp>
 
+#define NO_GAME_NAME "(default)"
+
 std::string pick_file(wxWindow* parent, const std::string& title, const std::string& startdir);
 
 namespace
 {
+const std::string& str_tolower(const std::string& x)
+{
+	static std::map<std::string, std::string> cache;
+	if(!cache.count(x)) {
+		std::ostringstream y;
+		for(auto i : x) {
+			if(i >= 'A' && i <= 'Z')
+				y << (char)(i + 32);
+			else
+				y << (char)i;
+		}
+		cache[x] = y.str();
+	}
+	return cache[x];
+}
+inline bool is_prefix(std::string a, std::string b)
+{
+	return (a.length() <= b.length() && b.substr(0, a.length()) == a);
+}
+
+bool search_match(const std::string& term, const std::string& name)
+{
+	std::set<std::string> searched;
+	std::vector<std::string> name_words;
+	for(auto i : token_iterator_foreach<char>(name, {" "})) if(i != "") name_words.push_back(str_tolower(i));
+	for(auto i : token_iterator_foreach<char>(term, {" "})) {
+		if(i == "")
+			continue;
+		std::string st = str_tolower(i);
+		if(searched.count(st))
+			continue;
+		for(size_t j = 0; j < name_words.size(); j++) {
+			if(is_prefix(st, name_words[j]))
+				goto out;
+		}
+		return false;
+out:
+		searched.insert(st);
+	}
+	return true;
+}
+
+class wxwin_gameselect : public wxDialog
+{
+public:
+	wxwin_gameselect(wxWindow* parent, const std::list<std::string>& _choices, const std::string& dflt,
+		const std::string& system, int x, int y)
+		: wxDialog(parent, wxID_ANY, wxT("lsnes: Pick a game"), wxPoint(x, y)),
+		chosen(dflt), choices(_choices)
+	{
+		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
+		SetSizer(top_s);
+
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("System:")), 0, wxGROW);
+		top_s->Add(systems = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
+			0, NULL, wxCB_READONLY), 1, wxGROW);
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Search:")), 0, wxGROW);
+		top_s->Add(search = new wxTextCtrl(this, wxID_ANY, wxT("")), 1, wxGROW);
+		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
+		top_s->Add(games = new wxListBox(this, wxID_ANY, wxDefaultPosition, wxSize(400, 300)), 1, wxGROW);
+
+		search->Connect(wxEVT_COMMAND_TEXT_UPDATED,
+			wxCommandEventHandler(wxwin_gameselect::on_search_type), NULL, this);
+		systems->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
+			wxCommandEventHandler(wxwin_gameselect::on_system_select), NULL, this);
+		games->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
+			wxCommandEventHandler(wxwin_gameselect::on_list_select), NULL, this);
+	
+		wxBoxSizer* pbutton_s = new wxBoxSizer(wxHORIZONTAL);
+		pbutton_s->AddStretchSpacer();
+		pbutton_s->Add(ok = new wxButton(this, wxID_OK, wxT("OK")), 0, wxGROW);
+		pbutton_s->Add(cancel = new wxButton(this, wxID_CANCEL, wxT("Cancel")), 0, wxGROW);
+		ok->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_gameselect::on_ok), NULL, this);
+		cancel->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+			wxCommandEventHandler(wxwin_gameselect::on_cancel), NULL, this);
+		top_s->Add(pbutton_s, 0, wxGROW);
+			wxBoxSizer* button_s = new wxBoxSizer(wxHORIZONTAL);
+
+		auto dsplit = split_name(dflt);
+		bool wrong_default = (dflt != NO_GAME_NAME && system != "" && dsplit.first != system);
+		if(system != "" && !wrong_default) {
+			//Populate just one system.
+			systems->Append(towxstring(system));
+			systems->SetSelection(0);
+			systems->Enable(false);
+			oneplat = true;
+		} else {
+			//Populate all systems.
+			std::set<std::string> systems_seen;
+			for(auto& i : choices) {
+				auto g = split_name(i);
+				if(systems_seen.count(g.first))
+					continue;
+				systems_seen.insert(g.first);
+			}
+			systems->Append(towxstring("N/A"));
+			systems->Append(towxstring("???"));
+			for(auto i : systems_seen)
+				if(i != "???" && i != "N/A")
+					systems->Append(towxstring(i));
+			systems->SetStringSelection(towxstring(dsplit.first));
+			oneplat = false;
+		}
+		wxCommandEvent e;
+		on_system_select(e);
+		games->SetStringSelection(dsplit.second);
+	}
+	std::string get()
+	{
+		return chosen;
+	}
+	void on_search_type(wxCommandEvent& e)
+	{
+		std::string current;
+		if(games->GetSelection() != wxNOT_FOUND)
+			current = games->GetStringSelection();
+		games->Clear();
+		std::string plat = tostdstring(systems->GetStringSelection());
+		size_t platlen = plat.length();
+		std::string terms = tostdstring(search->GetValue());
+		for(auto& i : choices) {
+			auto g = split_name(i);
+			if(g.second != current && !(oneplat && i == NO_GAME_NAME)) {
+				if(g.first != plat)
+					continue;	//Wrong system.
+				if(!search_match(terms, g.second))
+					continue;	//Doesn't match terms.
+			}
+			if(i != NO_GAME_NAME)
+				games->Append(towxstring(g.second));
+			else
+				games->Append(towxstring(NO_GAME_NAME));
+		}
+		if(current != "")
+			games->SetStringSelection(current);
+	}
+	void on_system_select(wxCommandEvent& e)
+	{
+		if(tostdstring(systems->GetStringSelection()) == old_system)
+			return;
+		std::string new_system = tostdstring(systems->GetStringSelection());
+		if(new_system == "N/A") {
+			games->Clear();
+			games->Append(towxstring(NO_GAME_NAME));
+			search->Enable(false);
+			//games->Enable(false);
+			ok->Enable(true);
+			chosen = NO_GAME_NAME;
+		} else {
+			search->Enable(true);
+			games->Enable(true);
+			ok->Enable(false);
+			games->Clear();
+			std::string terms = tostdstring(search->GetValue());
+			for(auto& i : choices) {
+				auto g = split_name(i);
+				if(!(oneplat && i == NO_GAME_NAME)) {
+					if(g.first != new_system)
+						continue;	//Wrong system.
+					if(!search_match(terms, g.second))
+						continue;	//Doesn't match terms.
+				}
+				if(i != NO_GAME_NAME)
+					games->Append(towxstring(g.second));
+				else
+					games->Append(towxstring(NO_GAME_NAME));
+			}
+		}
+		old_system = new_system;
+	}
+	void on_list_select(wxCommandEvent& e)
+	{
+		if(tostdstring(systems->GetValue()) == "N/A") {
+			chosen = NO_GAME_NAME;
+			ok->Enable(true);
+		} if(tostdstring(systems->GetValue()) == "???" && games->GetSelection() != wxNOT_FOUND)  {
+			chosen = " " + tostdstring(games->GetStringSelection());
+			ok->Enable(true);
+		} else if(games->GetSelection() == 0 && oneplat) {
+			chosen = NO_GAME_NAME;
+			ok->Enable(true);
+		} else if(games->GetSelection() != wxNOT_FOUND) {
+			chosen = tostdstring(systems->GetValue()) + " " + tostdstring(games->GetStringSelection());
+			ok->Enable(true);
+		} else {
+			ok->Enable(false);
+		}
+	}
+	void on_ok(wxCommandEvent& e)
+	{
+		EndModal(wxID_OK);
+	}
+	void on_cancel(wxCommandEvent& e)
+	{
+		EndModal(wxID_CANCEL);
+	}
+private:
+	std::pair<std::string, std::string> split_name(const std::string& name)
+	{
+		if(name == NO_GAME_NAME)
+			return std::make_pair("N/A", NO_GAME_NAME);
+		std::string _name = name;
+		size_t r = _name.find_first_of(" ");
+		if(r >= _name.length())
+			return std::make_pair("???", name);
+		else if(r == 0)
+			return std::make_pair("???", _name.substr(1));
+		else
+			return std::make_pair(_name.substr(0, r), _name.substr(r + 1));
+	}
+	std::string chosen;
+	const std::list<std::string>& choices;
+	wxComboBox* systems;
+	wxTextCtrl* search;
+	wxListBox* games;
+	wxButton* ok;
+	wxButton* cancel;
+	std::string old_system;
+	bool oneplat;
+};
+
 class wxeditor_uploadtarget : public wxDialog
 {
 public:
@@ -374,6 +598,7 @@ public:
 	void on_file_sel(wxCommandEvent& e);
 	void on_wclose(wxCloseEvent& e);
 	void timer_tick();
+	void on_game_sel(wxCommandEvent& e);
 private:
 	struct _timer : public wxTimer
 	{
@@ -421,7 +646,9 @@ private:
 	wxTextCtrl* filename;
 	wxTextCtrl* title;
 	wxTextCtrl* description;
-	wxComboBox* game;
+	std::list<std::string> games_list;
+	wxStaticText* game;
+	wxButton* game_sel_button;
 	wxRadioButton* current;
 	wxRadioButton* file;
 	wxTextCtrl* ufilename;
@@ -455,11 +682,15 @@ wxeditor_uploaddialog::wxeditor_uploaddialog(wxWindow* parent, upload_menu::uplo
 	top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Description:")), 0, wxGROW);
 	top_s->Add(description = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxSize(550, 300),
 		wxTE_MULTILINE), 0, wxGROW);
-	top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
-	top_s->Add(game = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize, 0, NULL,
-		wxCB_READONLY), 0, wxGROW);
-	game->Append(towxstring("(default)"));
-	game->SetSelection(0);
+	wxBoxSizer* game_s = new wxBoxSizer(wxHORIZONTAL);
+	game_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
+	game_s->Add(game = new wxStaticText(this, wxID_ANY, wxT(NO_GAME_NAME)), 1, wxGROW);
+	game_s->Add(game_sel_button = new wxButton(this, wxID_ANY, wxT("Select")), 0, wxGROW);
+	top_s->Add(game_s, 0, wxGROW);
+	games_list.push_back(NO_GAME_NAME);
+	game_sel_button->Enable(false);
+	game_sel_button->Connect(wxEVT_COMMAND_BUTTON_CLICKED,
+		wxCommandEventHandler(wxeditor_uploaddialog::on_game_sel), NULL, this);
 	top_s->Add(hidden = new wxCheckBox(this, wxID_ANY, wxT("Hidden")), 0, wxGROW);
 
 	top_s->Add(current = new wxRadioButton(this, wxID_ANY, wxT("Current movie"), wxDefaultPosition, wxDefaultSize,
@@ -541,7 +772,9 @@ void wxeditor_uploaddialog::timer_tick()
 				msg = (stringfmt() << "Got unexpected HTTP status " << (games_req->http_code)).str();
 			} else {
 				for(auto i : games_output_handler.choices)
-					game->Append(towxstring(i));
+					games_list.push_back(i);
+				if(games_list.size() > 1)
+					game_sel_button->Enable(true);
 				msg = "Got list of games.";
 			}
 			status->AppendText(towxstring(msg + "\n"));
@@ -599,7 +832,7 @@ void wxeditor_uploaddialog::on_ok(wxCommandEvent& e)
 	upload->filename = tostdstring(filename->GetValue());
 	upload->title = tostdstring(title->GetValue());
 	upload->description = tostdstring(description->GetValue());
-	upload->gamename = tostdstring(game->GetValue());
+	upload->gamename = tostdstring(game->GetLabel());
 	upload->hidden = hidden->GetValue();
 	upload->do_async();
 }
@@ -619,33 +852,26 @@ void wxeditor_uploaddialog::on_source_sel(wxCommandEvent& e)
 
 			std::string plat = lookup_sysregion_mapping(movb.get_mfile().gametype->get_name()) + " ";
 			size_t platlen = plat.length();
-			std::string c = tostdstring(game->GetValue());
-			game->Clear();
-			game->Append(towxstring("(default)"));
-			std::string c2;
-			std::string c3;
-			for(auto i : games_output_handler.choices) {
-				std::string j = i;
-				if(j.substr(0, platlen) == plat) {
-					game->Append(towxstring(i));
-					if(j == c)
-						c2 = c;
-					if(j.substr(platlen) == curgame)
-						c3 = j;
+			std::string c = tostdstring(game->GetLabel());
+			std::string fullname = plat + curgame;
+			//The rules here are:
+			//If there is fullname among games, select that.
+			//If not and the previous selection has the same system, keep it.
+			//Otherwise select (default).
+			bool done = false;
+			for(auto& i : games_list) {
+				if(i == fullname) {
+					game->SetLabel(fullname);
+					done = true;
+					break;
 				}
 			}
-			game->SetSelection(0);
-			if(c3 != "")
-				game->SetValue(towxstring(c3));
-			else if(c2 != "")
-				game->SetValue(towxstring(c2));
-		} else {
-			std::string c = tostdstring(game->GetValue());
-			game->Clear();
-			game->Append(towxstring("(default)"));
-			for(auto i : games_output_handler.choices)
-				game->Append(towxstring(i));
-			game->SetValue(towxstring(c));
+			if(!done) {
+				if(c.substr(0, platlen) == plat)
+					done = true;	//Keep.
+			}
+			if(!done)
+				game->SetLabel(NO_GAME_NAME);
 		}
 	}
 }
@@ -659,6 +885,22 @@ void wxeditor_uploaddialog::on_file_sel(wxCommandEvent& e)
 		return;
 	}
 	ufilename->SetValue(towxstring(f));
+}
+
+void wxeditor_uploaddialog::on_game_sel(wxCommandEvent& e)
+{
+	auto pos = game_sel_button->GetScreenPosition();
+	std::string system;
+	if(current->GetValue())
+		system = lookup_sysregion_mapping(movb.get_mfile().gametype->get_name());
+	wxwin_gameselect* gs = new wxwin_gameselect(this, games_list, tostdstring(game->GetLabel()), system,
+		pos.x, pos.y);
+	if(gs->ShowModal() != wxID_OK) {
+		delete gs;
+		return;
+	}
+	game->SetLabel(towxstring(gs->get()));
+	return;
 }
 
 void wxeditor_uploaddialog::on_cancel(wxCommandEvent& e)
