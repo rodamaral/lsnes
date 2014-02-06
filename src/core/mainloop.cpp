@@ -1269,7 +1269,8 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 	core_core::uninstall_all_handlers();
 	voicethread_kill();
 	platform::system_thread_available(false);
-	//Kill all memory watches (so dtor ordering doesn't cause a crash).
+	//Kill some things to avoid crashes.
+	debug_core_change();
 	project_set(NULL, true);
 	lsnes_memorywatch.clear_multi(lsnes_memorywatch.enumerate());
 }
