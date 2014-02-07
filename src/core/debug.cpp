@@ -78,9 +78,10 @@ namespace
 		if(!cb.count(addr))
 			our_rom.rtype->set_debug_flags(addr, debug_flag(type), 0);
 
-		cb[addr].push_back(fn);
+		auto& lst = cb[addr];
+		lst.push_back(fn);
 		debug_handle h;
-		h.handle = &*cb[addr].rbegin();
+		h.handle = &*lst.rbegin();
 		return h;
 	}
 
@@ -100,16 +101,16 @@ namespace
 		}
 	}
 
-	template<class T> void _kill_hooks(T& cblist)
-	{
-		while(!cblist.empty())
-			cblist.begin()->dtor();
-	}
-
 	template<class T> void kill_hooks(T& cblist)
 	{
-		while(!cblist.empty())
-			_kill_hooks(cblist.begin()->second);
+		while(!cblist.empty()) {
+			if(cblist.begin()->second.empty()) {
+				cblist.erase(cblist.begin()->first);
+				continue;
+			}
+			auto tmp = cblist.begin()->second.begin();
+			tmp->dtor();
+		}
 		cblist.clear();
 	}
 }
