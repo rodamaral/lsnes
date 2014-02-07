@@ -11,7 +11,7 @@ namespace
 	std::string signdec(uint8_t v, bool psign = false);
 	std::string signdec(uint8_t v, bool psign)
 	{
-		if(v < 128) return (stringfmt() << (psign ? "+" : "") << v).str();
+		if(v < 128) return (stringfmt() << (psign ? "+" : "") << (int)v).str();
 		return (stringfmt() << (int)v - 256).str();
 	}
 

@@ -222,14 +222,36 @@ namespace
 		0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  //F.
 	};
 
+	const char* hexch = "0123456789abcdef";
+	inline void buffer_h8(char*& ptr, uint8_t v)
+	{
+		*(ptr++) = hexch[v >> 4];
+		*(ptr++) = hexch[v & 15];
+	}
+
+	inline void buffer_h16(char*& ptr, uint16_t v)
+	{
+		*(ptr++) = hexch[v >> 12];
+		*(ptr++) = hexch[(v >> 8) & 15];
+		*(ptr++) = hexch[(v >> 4) & 15];
+		*(ptr++) = hexch[v & 15];
+	}
+
+	inline void buffer_str(char*& ptr, const char* str)
+	{
+		while(*str)
+			*(ptr++) = *(str++);
+	}
+
 	void gambatte_trace_handler(uint16_t _pc)
 	{
-		std::ostringstream s;
+		static char buffer[512];
+		char* buffer_ptr = buffer;
 		int addr = -1;
 		uint16_t opcode;
 		uint32_t pc = _pc;
 		uint16_t offset = 0;
-		std::function<uint8_t()> fetch = [pc, &offset, &s]() -> uint8_t {
+		std::function<uint8_t()> fetch = [pc, &offset, &buffer_ptr]() -> uint8_t {
 			unsigned addr = pc + offset++;
 			uint8_t v;
 #ifdef GAMBATTE_SUPPORTS_ADV_DEBUG
@@ -237,13 +259,15 @@ namespace
 			v = instance->bus_read(addr);
 			disable_breakpoints = true;
 #endif
-			s << hex::to8(v);
+			buffer_h8(buffer_ptr, v);
 			return v;
 		};
-		s << hex::to16(pc) << " ";
+		buffer_h16(buffer_ptr, pc);
+		*(buffer_ptr++) = ' ';
 		auto d = disassemble_gb_opcode(pc, fetch, addr, opcode);
-		while(s.str().length() < 12) s << " ";
-		s << d;
+		while(buffer_ptr < buffer + 12)
+			*(buffer_ptr++) = ' ';
+		buffer_str(buffer_ptr, d.c_str());
 		switch(memclass[opcode >> 8]) {
 		case 1: addr = get_bc(instance); break;
 		case 2: addr = get_de(instance); break;
@@ -251,28 +275,38 @@ namespace
 		case 4: addr = 0xFF00 + instance->get_cpureg(gambatte::GB::REG_C); break;
 		case 5: if((opcode & 7) == 6)  addr = get_hl(instance); break;
 		}
-		while(s.str().length() < 28) s << " ";
+		while(buffer_ptr < buffer + 28)
+			*(buffer_ptr++) = ' ';
 		if(addr >= 0) {
-			s << "[" << std::setw(4) << std::setfill('0') << std::hex << addr << "] ";
+			buffer_str(buffer_ptr, "[");
+			buffer_h16(buffer_ptr, addr);
+			buffer_str(buffer_ptr, "]");
 		} else
-			s << "       ";
+			buffer_str(buffer_ptr, "      ");
 
-		s << "A:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_A));
-		s << " B:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_B));
-		s << " C:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_C));
-		s << " D:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_D));
-		s << " E:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_E));
-		s << " H:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_H));
-		s << " L:" << hex::to8(instance->get_cpureg(gambatte::GB::REG_L));
-		s << " PC:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_PC));
-		s << " SP:" << hex::to16(instance->get_cpureg(gambatte::GB::REG_SP));
-		s << " F:"
-			<< (instance->get_cpureg(gambatte::GB::REG_CF) ? "C" : "-")
-			<< (instance->get_cpureg(gambatte::GB::REG_ZF) ? "-" : "Z")
-			<< (instance->get_cpureg(gambatte::GB::REG_HF1) ? "1" : "-")
-			<< (instance->get_cpureg(gambatte::GB::REG_HF2) ? "2" : "-");
-		std::string _s = s.str();
-		ecore_callbacks->memory_trace(0, _s.c_str());
+		buffer_str(buffer_ptr, "A:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_A));
+		buffer_str(buffer_ptr, " B:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_B));
+		buffer_str(buffer_ptr, " C:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_C));
+		buffer_str(buffer_ptr, " D:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_D));
+		buffer_str(buffer_ptr, " E:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_E));
+		buffer_str(buffer_ptr, " H:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_H));
+		buffer_str(buffer_ptr, " L:");
+		buffer_h8(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_L));
+		buffer_str(buffer_ptr, " SP:");
+		buffer_h16(buffer_ptr, instance->get_cpureg(gambatte::GB::REG_SP));
+		buffer_str(buffer_ptr, " F:");
+		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_CF) ? 'C' : '-';
+		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_ZF) ? '-' : 'Z';
+		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_HF1) ? '1' : '-';
+		*(buffer_ptr++) = instance->get_cpureg(gambatte::GB::REG_HF2) ? '2' : '-';
+		*(buffer_ptr++) = '\0';
+		ecore_callbacks->memory_trace(0, buffer);
 	}
 
 	void basic_init()
