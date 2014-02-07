@@ -85,9 +85,6 @@ public:
 		wxBoxSizer* top_s = new wxBoxSizer(wxVERTICAL);
 		SetSizer(top_s);
 
-		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("System:")), 0, wxGROW);
-		top_s->Add(systems = new wxComboBox(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDefaultSize,
-			0, NULL, wxCB_READONLY), 1, wxGROW);
 		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Search:")), 0, wxGROW);
 		top_s->Add(search = new wxTextCtrl(this, wxID_ANY, wxT("")), 1, wxGROW);
 		top_s->Add(new wxStaticText(this, wxID_ANY, wxT("Game:")), 0, wxGROW);
@@ -95,8 +92,6 @@ public:
 
 		search->Connect(wxEVT_COMMAND_TEXT_UPDATED,
 			wxCommandEventHandler(wxwin_gameselect::on_search_type), NULL, this);
-		systems->Connect(wxEVT_COMMAND_COMBOBOX_SELECTED,
-			wxCommandEventHandler(wxwin_gameselect::on_system_select), NULL, this);
 		games->Connect(wxEVT_COMMAND_LISTBOX_SELECTED,
 			wxCommandEventHandler(wxwin_gameselect::on_list_select), NULL, this);
 	
@@ -115,30 +110,14 @@ public:
 		bool wrong_default = (dflt != NO_GAME_NAME && system != "" && dsplit.first != system);
 		if(system != "" && !wrong_default) {
 			//Populate just one system.
-			systems->Append(towxstring(system));
-			systems->SetSelection(0);
-			systems->Enable(false);
+			rsystem = system;
 			oneplat = true;
 		} else {
-			//Populate all systems.
-			std::set<std::string> systems_seen;
-			for(auto& i : choices) {
-				auto g = split_name(i);
-				if(systems_seen.count(g.first))
-					continue;
-				systems_seen.insert(g.first);
-			}
-			systems->Append(towxstring("N/A"));
-			systems->Append(towxstring("???"));
-			for(auto i : systems_seen)
-				if(i != "???" && i != "N/A")
-					systems->Append(towxstring(i));
-			systems->SetStringSelection(towxstring(dsplit.first));
 			oneplat = false;
 		}
 		wxCommandEvent e;
-		on_system_select(e);
-		games->SetStringSelection(dsplit.second);
+		on_search_type(e);
+		games->SetStringSelection(dflt);
 	}
 	std::string get()
 	{
@@ -150,72 +129,24 @@ public:
 		if(games->GetSelection() != wxNOT_FOUND)
 			current = games->GetStringSelection();
 		games->Clear();
-		std::string plat = tostdstring(systems->GetStringSelection());
-		size_t platlen = plat.length();
 		std::string terms = tostdstring(search->GetValue());
 		for(auto& i : choices) {
 			auto g = split_name(i);
-			if(g.second != current && !(oneplat && i == NO_GAME_NAME)) {
-				if(g.first != plat)
+			if(i != current && i != NO_GAME_NAME) {
+				if(oneplat && g.first != rsystem)
 					continue;	//Wrong system.
-				if(!search_match(terms, g.second))
+				if(!search_match(terms, i))
 					continue;	//Doesn't match terms.
 			}
-			if(i != NO_GAME_NAME)
-				games->Append(towxstring(g.second));
-			else
-				games->Append(towxstring(NO_GAME_NAME));
+			games->Append(towxstring(i));
 		}
 		if(current != "")
 			games->SetStringSelection(current);
 	}
-	void on_system_select(wxCommandEvent& e)
-	{
-		if(tostdstring(systems->GetStringSelection()) == old_system)
-			return;
-		std::string new_system = tostdstring(systems->GetStringSelection());
-		if(new_system == "N/A") {
-			games->Clear();
-			games->Append(towxstring(NO_GAME_NAME));
-			search->Enable(false);
-			//games->Enable(false);
-			ok->Enable(true);
-			chosen = NO_GAME_NAME;
-		} else {
-			search->Enable(true);
-			games->Enable(true);
-			ok->Enable(false);
-			games->Clear();
-			std::string terms = tostdstring(search->GetValue());
-			for(auto& i : choices) {
-				auto g = split_name(i);
-				if(!(oneplat && i == NO_GAME_NAME)) {
-					if(g.first != new_system)
-						continue;	//Wrong system.
-					if(!search_match(terms, g.second))
-						continue;	//Doesn't match terms.
-				}
-				if(i != NO_GAME_NAME)
-					games->Append(towxstring(g.second));
-				else
-					games->Append(towxstring(NO_GAME_NAME));
-			}
-		}
-		old_system = new_system;
-	}
 	void on_list_select(wxCommandEvent& e)
 	{
-		if(tostdstring(systems->GetValue()) == "N/A") {
-			chosen = NO_GAME_NAME;
-			ok->Enable(true);
-		} if(tostdstring(systems->GetValue()) == "???" && games->GetSelection() != wxNOT_FOUND)  {
-			chosen = " " + tostdstring(games->GetStringSelection());
-			ok->Enable(true);
-		} else if(games->GetSelection() == 0 && oneplat) {
-			chosen = NO_GAME_NAME;
-			ok->Enable(true);
-		} else if(games->GetSelection() != wxNOT_FOUND) {
-			chosen = tostdstring(systems->GetValue()) + " " + tostdstring(games->GetStringSelection());
+		if(games->GetSelection() != wxNOT_FOUND) {
+			chosen = tostdstring(games->GetStringSelection());
 			ok->Enable(true);
 		} else {
 			ok->Enable(false);
@@ -245,13 +176,13 @@ private:
 	}
 	std::string chosen;
 	const std::list<std::string>& choices;
-	wxComboBox* systems;
 	wxTextCtrl* search;
 	wxListBox* games;
 	wxButton* ok;
 	wxButton* cancel;
 	std::string old_system;
 	bool oneplat;
+	std::string rsystem;
 };
 
 class wxeditor_uploadtarget : public wxDialog
