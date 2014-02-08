@@ -828,7 +828,7 @@ invalid_bookmark:
 					}
 					for(size_t i = bytes; i < 16; i++) {
 						write("  ", 2, hexcol[i], j, 0, 0xFFFFFF);
-						write(" ", 1, hexcol[i] + 1, j, 0, 0xFFFFFF);
+						write(" ", 1, charcol[i] + 1, j, 0, 0xFFFFFF);
 					}
 				}
 				memset(_value, 0, maxvaluelen);
