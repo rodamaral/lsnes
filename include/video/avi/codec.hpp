@@ -81,8 +81,9 @@ struct avi_video_codec
  * - rshift = 0, gshift = 8, bshift = 16.
  *
  * Parameter data: Video frame data, left to right, top to bottom order.
+ * Parameter stride: Stride between rows in pixels.
  */
-	virtual void frame(uint32_t* data) = 0;
+	virtual void frame(uint32_t* data, uint32_t stride) = 0;
 /**
  * Is the codec ready to receive a new frame?
  *
@@ -244,8 +245,9 @@ struct avi_output_stream
  * Write stuff to video codec.
  *
  * Parameter frame: The frame to write. See avi_video_codec::frame() for format.
+ * Parameter stride: The stride in pixels.
  */
-	void frame(uint32_t* frame);
+	void frame(uint32_t* frame, uint32_t stride);
 /**
  * Write stuff to audio codec.
  *
@@ -272,12 +274,14 @@ struct avi_output_stream
 /**
  * Flush frame and associtated samples from queue.
  *
- * Parameter frame: The frame to write. Deleted if written.
+ * Parameter frame: The frame to write.
+ * Parameter oframe: The frame to delete if written.
+ * Parameter stride: The stride between rows in pixels.
  * Parameter aqueue: The audio queue.
  * Parameter force: Read the frame even if there aren't enough sound samples.
  * Returns: True if frame was read, false otherwise.
  */
-	bool readqueue(uint32_t* frame, sample_queue& aqueue, bool force);
+	bool readqueue(uint32_t* frame, uint32_t* oframe, uint32_t stride, sample_queue& aqueue, bool force);
 /**
  * End a segment.
  */

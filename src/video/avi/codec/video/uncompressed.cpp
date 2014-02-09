@@ -13,7 +13,7 @@ namespace
 	{
 		~avi_codec_uncompressed();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
-		void frame(uint32_t* data);
+		void frame(uint32_t* data, uint32_t stride);
 		bool ready();
 		avi_packet getpacket();
 	private:
@@ -46,7 +46,7 @@ namespace
 		return fmt;
 	}
 
-	void avi_codec_uncompressed::frame(uint32_t* data)
+	void avi_codec_uncompressed::frame(uint32_t* data, uint32_t stride)
 	{
 		out.payload.resize(3 * ewidth * eheight);
 
@@ -54,7 +54,7 @@ namespace
 			if(y < eheight - iheight)
 				readrow(NULL);
 			else
-				readrow(data + (eheight - y - 1) * iwidth);
+				readrow(data + (eheight - y - 1) * stride);
 			memcpy(&out.payload[3 * ewidth * y], &row[0], 3 * ewidth);
 		}
 		out.typecode = 0x6264;

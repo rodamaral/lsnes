@@ -77,7 +77,7 @@ do_again:
 		messages << "Start AVI: " << curwidth << "x" << curheight << "@" << curfps_n << "/" << curfps_d
 			<< " to '" << aviname << "'" << std::endl;
 	}
-	if(aviout.readqueue(f.data, aqueue, force)) {
+	if(aviout.readqueue(f.data, f.odata, f.stride, aqueue, force)) {
 		vqueue.pop_front();
 		goto do_again;
 	}

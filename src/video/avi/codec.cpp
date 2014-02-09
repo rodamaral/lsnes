@@ -153,11 +153,11 @@ void avi_output_stream::start(std::ostream& out, avi_video_codec& _vcodec, avi_a
 	in_segment = true;
 }
 
-void avi_output_stream::frame(uint32_t* frame)
+void avi_output_stream::frame(uint32_t* frame, uint32_t stride)
 {
 	if(!in_segment)
 		throw std::runtime_error("Trying to write to non-open AVI");
-	vcodec->frame(frame);
+	vcodec->frame(frame, stride);
 	while(!vcodec->ready())
 		write_pkt(avifile, vcodec->getpacket(), 0);
 	avifile.hdrl.videotrack.strh.add_frames(1);
@@ -210,7 +210,8 @@ uint64_t avi_output_stream::get_size_estimate()
 	return avifile.movi.payload_size;
 }
 
-bool avi_output_stream::readqueue(uint32_t* _frame, sample_queue& aqueue, bool force)
+bool avi_output_stream::readqueue(uint32_t* _frame, uint32_t* oframe, uint32_t stride, sample_queue& aqueue,
+	bool force)
 {
 	if(!in_segment)
 		throw std::runtime_error("Trying to write to non-open AVI");
@@ -220,10 +221,10 @@ bool avi_output_stream::readqueue(uint32_t* _frame, sample_queue& aqueue, bool f
 	std::vector<int16_t> tmp;
 	tmp.resize(fsamples * achans);
 	aqueue.pull(&tmp[0], tmp.size());
-	frame(_frame);
+	frame(_frame, stride);
 	video_timer.increment();
 	samples(&tmp[0], fsamples);
-	delete[] _frame;
+	delete[] oframe;
 	return true;
 }
 

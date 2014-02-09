@@ -108,9 +108,6 @@ private:
  * Parameter source: The source screen to read.
  * Parameter hscl: The horizontal scale factor.
  * Parameter vscl: The vertical scale factor.
- * Parameter roffset: Red offset.
- * Parameter goffset: Green offset.
- * Parameter boffset: Blue offset.
  * Parameter lgap: Left gap.
  * Parameter tgap: Top gap.
  * Parameter rgap: Right gap
@@ -119,8 +116,7 @@ private:
  * Returns: True if frame should be dumped, false if not.
  */
 template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source,
-	uint32_t hscl, uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap,
-	uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)());
+	uint32_t hscl, uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)());
 
 /**
  * Calculate number of sound samples to drop due to dropped frame.

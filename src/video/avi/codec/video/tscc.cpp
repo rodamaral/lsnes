@@ -179,7 +179,7 @@ namespace
 		avi_codec_tscc(unsigned level);
 		~avi_codec_tscc();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
-		void frame(uint32_t* data);
+		void frame(uint32_t* data, uint32_t stride);
 		bool ready();
 		avi_packet getpacket();
 	private:
@@ -239,7 +239,7 @@ namespace
 	//00 03-FF <pixels>: 3-255 literal pixels (determined by the second byte).
 	//01-FF <pixel>: 1-255 repetions of pixel (determined by the first byte).
 
-	void avi_codec_tscc::frame(uint32_t* data)
+	void avi_codec_tscc::frame(uint32_t* data, uint32_t stride)
 	{
 		msrle_compressor c;
 		bool keyframe = false;
@@ -251,7 +251,7 @@ namespace
 
 		//Reduce the frame to rgb24.
 		for(uint32_t y = eheight - iheight; y < eheight; y++) {
-			const uint32_t* rptr = data + (eheight - y - 1) * iwidth;
+			const uint32_t* rptr = data + (eheight - y - 1) * stride;
 			for(uint32_t i = 0; i < iwidth; i++) {
 				_frame[3 * y * ewidth + 3 * i + 0] = rptr[i] >> 16;
 				_frame[3 * y * ewidth + 3 * i + 1] = rptr[i] >> 8;

@@ -11,7 +11,6 @@ namespace
 		~render_object_pixel() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			color.set_palette(scr);
 			int32_t _x = x + scr.get_origin_x();
 			int32_t _y = y + scr.get_origin_y();
 			if(_x < 0 || static_cast<uint32_t>(_x) >= scr.get_width())

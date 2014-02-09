@@ -11,7 +11,6 @@ namespace
 		~render_object_crosshair() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			color.set_palette(scr);
 			uint32_t originx = scr.get_origin_x();
 			uint32_t originy = scr.get_origin_y();
 			int32_t xmin = -static_cast<int32_t>(length);

@@ -53,10 +53,12 @@ private:
 struct frame_object
 {
 	uint32_t* data;
+	uint32_t* odata;
 	uint32_t width;
 	uint32_t height;
 	uint32_t fps_n;
 	uint32_t fps_d;
+	uint32_t stride;
 	bool force_break;
 };
 

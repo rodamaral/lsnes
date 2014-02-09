@@ -80,7 +80,8 @@ namespace
 	class pipedec_avsnoop : public information_dispatch
 	{
 	public:
-		pipedec_avsnoop(const std::string& file, bool _upsidedown, bool _bits32, const std::string& mode)
+		pipedec_avsnoop(const std::string& file, bool _upsidedown, bool _bits32, bool _swap,
+			const std::string& mode)
 			: information_dispatch("dump-pipedec")
 		{
 			enable_send_sound();
@@ -95,6 +96,7 @@ namespace
 			have_dumped_frame = false;
 			upsidedown = _upsidedown;
 			bits32 = _bits32;
+			swap = _swap;
 
 			last_width = 0;
 			last_height = 0;
@@ -112,22 +114,18 @@ namespace
 
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			unsigned r, g, b;
-			unsigned short magic = 258;
-			if(*reinterpret_cast<char*>(&magic) == 1) { r = 8; g = 16; b = 24; }
-			else { r = 16; g = 8; b = 0; }
-
-			if(!render_video_hud(dscr, _frame, 1, 1, r, g, b, 0, 0, 0, 0, NULL)) {
+			if(!render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
 			size_t w = dscr.get_width();
 			size_t h = dscr.get_height();
+			uint32_t stride = dscr.get_stride();
 
 			if(!video || last_width != w || last_height != h || last_fps_n != fps_n ||
 				last_fps_d != fps_d) {
 				//Segment change.
-				tmp.resize(3 * w);
+				tmp.resize(4 * stride + 16);
 				std::string rcmd = substitute_cmd(cmd, w, h, fps_n, fps_d, segid);
 				if(video)
 					pclose(video);
@@ -148,16 +146,25 @@ namespace
 			}
 			if(!video)
 				return;
+			uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16;
+			char* data2 = &tmp[alignment];
 			for(size_t i = 0; i < h; i++) {
 				size_t ri = upsidedown ? (h - i - 1) : i;
 				char* data = reinterpret_cast<char*>(dscr.rowptr(ri));
-				char* data2 = bits32 ? data : &tmp[0];
-				if(!bits32)
-					for(size_t i = 0; i < w; i++) {
-						tmp[3 * i + 0] = data[4 * i + 0];
-						tmp[3 * i + 1] = data[4 * i + 1];
-						tmp[3 * i + 2] = data[4 * i + 2];
-					}
+				if(bits32)
+					if(swap)
+						framebuffer::copy_swap4(reinterpret_cast<uint8_t*>(data2),
+							reinterpret_cast<uint32_t*>(data), stride);
+					else
+						memcpy(data2, data, 4 * stride);
+				else
+					if(swap)
+						framebuffer::copy_drop4s(reinterpret_cast<uint8_t*>(data2),
+							reinterpret_cast<uint32_t*>(data), stride);
+					else
+						framebuffer::copy_drop4(reinterpret_cast<uint8_t*>(data2),
+							reinterpret_cast<uint32_t*>(data), stride);
+
 				if(fwrite(data2, bits32 ? 4 : 3, w, video) < w)
 					messages << "Video write error" << std::endl;
 			}
@@ -194,6 +201,7 @@ namespace
 		struct framebuffer::fb<false> dscr;
 		bool upsidedown;
 		bool bits32;
+		bool swap;
 		std::string cmd;
 		std::vector<char> tmp;
 		uint32_t last_fps_d;
@@ -220,6 +228,10 @@ namespace
 			x.insert("vGB24");
 			x.insert("RGB32");
 			x.insert("vGB32");
+			x.insert("BGR24");
+			x.insert("vGR24");
+			x.insert("BGR32");
+			x.insert("vGR32");
 			return x;
 		}
 
@@ -251,7 +263,8 @@ namespace
 		void start(const std::string& mode, const std::string& prefix) throw(std::bad_alloc,
 			std::runtime_error)
 		{
-			bool upsidedown = (mode[0] == 'R');
+			bool upsidedown = (mode[0] != 'v');
+			bool swap = (mode[2] == 'R');
 			bool bits32 = (mode[3] == '3');
 
 			if(prefix == "")
@@ -259,7 +272,7 @@ namespace
 			if(vid_dumper)
 				throw std::runtime_error("PIPEDEC dumping already in progress");
 			try {
-				vid_dumper = new pipedec_avsnoop(prefix, upsidedown, bits32, mode);
+				vid_dumper = new pipedec_avsnoop(prefix, upsidedown, bits32, swap, mode);
 			} catch(std::bad_alloc& e) {
 				throw;
 			} catch(std::exception& e) {

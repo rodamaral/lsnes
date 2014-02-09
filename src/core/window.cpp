@@ -538,18 +538,6 @@ mutex_class& platform::msgbuf_lock() throw()
 	return _msgbuf_lock;
 }
 
-void platform::screen_set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw()
-{
-	if(!our_screen)
-		return;
-	if(our_screen->get_palette_r() == rshift &&
-		our_screen->get_palette_g() == gshift &&
-		our_screen->get_palette_b() == bshift)
-		return;
-	our_screen->set_palette(rshift, gshift, bshift);
-	graphics_driver_notify_screen();
-}
-
 modal_pause_holder::modal_pause_holder()
 {
 	platform::set_modal_pause(true);

@@ -21,8 +21,6 @@ namespace
 		~render_object_circle() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			outline.set_palette(scr);
-			fill.set_palette(scr);
 			uint32_t originx = scr.get_origin_x();
 			uint32_t originy = scr.get_origin_y();
 			int32_t xmin = -radius;

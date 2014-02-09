@@ -3,6 +3,7 @@
 #include "core/settings.hpp"
 #include "core/window.hpp"
 #include "library/serialization.hpp"
+#include "library/minmax.hpp"
 #include "video/tcp.hpp"
 
 #include <iomanip>
@@ -12,7 +13,7 @@
 #include <fstream>
 #include <deque>
 #include <zlib.h>
-#define INBUF_PIXELS 4096
+#define INBUF_PIXELS 3072
 #define OUTBUF_ADVANCE 4096
 
 
@@ -92,14 +93,15 @@ namespace
 
 		void on_frame(struct framebuffer::raw& _frame, uint32_t fps_n, uint32_t fps_d)
 		{
-			if(!render_video_hud(dscr, _frame, 1, 1, 0, 8, 16, 0, 0, 0, 0, NULL)) {
+			if(!render_video_hud(dscr, _frame, 1, 1, 0, 0, 0, 0, NULL)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
 			frame_buffer f;
 			f.ts = get_next_video_ts(fps_n, fps_d);
 			//We'll compress the frame here.
-			f.data = compress_frame(dscr.rowptr(0), dscr.get_width(), dscr.get_height());
+			f.data = compress_frame(dscr.rowptr(0), dscr.get_stride(), dscr.get_width(),
+				dscr.get_height());
 			frames.push_back(f);
 			flush_buffers(false);
 			have_dumped_frame = true;
@@ -208,7 +210,38 @@ namespace
 		std::deque<frame_buffer> frames;
 		std::deque<sample_buffer> samples;
 
-		std::vector<char> compress_frame(uint32_t* memory, uint32_t width, uint32_t height)
+		void compact_buffer(uint8_t* buf, size_t p, size_t s, size_t w, size_t& c)
+		{
+			size_t x = p % s;
+			size_t y = p / s;
+			size_t sptr = 0;
+			size_t dptr = 0;
+			size_t left = c;
+			while(left > 0) {
+				if(x < w) {
+					//Something to copy.
+					size_t px = min(w - x, left);
+					memmove(buf + dptr, buf + sptr, 4 * px);
+					x += px;
+					sptr += 4 * px;
+					dptr += 4 * px;
+					left -= px;
+				} else {
+					//In postgap.
+					size_t px = min(s - x, left);
+					x += px;
+					sptr += 4 * px;
+					left -= px;
+					if(x == s) {
+						x = 0;
+						y++;
+					}
+				}
+			}
+			c = dptr / 4;
+		}
+
+		std::vector<char> compress_frame(uint32_t* memory, uint32_t stride, uint32_t width, uint32_t height)
 		{
 			std::vector<char> ret;
 			z_stream stream;
@@ -220,18 +253,22 @@ namespace
 			ret.resize(4);
 			serialization::u16b(&ret[0], width);
 			serialization::u16b(&ret[2], height);
-			uint8_t input_buffer[4 * INBUF_PIXELS];
+			uint8_t input_buffer[4 * INBUF_PIXELS] __attribute__((aligned(16)));
 			size_t ptr = 0;
-			size_t pixels = static_cast<size_t>(width) * height;
+			size_t pixels = static_cast<size_t>(stride) * height;
 			bool input_clear = true;
 			bool flushed = false;
 			size_t bsize = 0;
 			while(1) {
 				if(input_clear) {
+					size_t csize;
 					size_t pixel = ptr;
-					for(unsigned i = 0; i < INBUF_PIXELS && pixel < pixels; i++, pixel++)
-						serialization::u32l(input_buffer + (4 * i), memory[pixel]);
-					bsize = pixel - ptr;
+					size_t pcount = min(static_cast<size_t>(INBUF_PIXELS), pixels - pixel);
+					framebuffer::copy_swap4(input_buffer, memory + pixel, pcount);
+					csize = pcount;
+					compact_buffer(input_buffer, pixel, stride, width, csize);
+					pixel += pcount;
+					bsize = csize;
 					ptr = pixel;
 					input_clear = false;
 					//Now the input data to compress is in input_buffer, bsize elements.

@@ -156,12 +156,14 @@ namespace
 		avi_worker(const struct avi_info& info);
 		~avi_worker();
 		void entry();
-		void queue_video(uint32_t* _frame, uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
+		void queue_video(uint32_t* _frame, uint32_t stride, uint32_t width, uint32_t height, uint32_t fps_n,
+			uint32_t fps_d);
 		void queue_audio(int16_t* data, size_t samples);
 	private:
 		avi_writer aviout;
 		uint32_t* frame;
 		uint32_t frame_width;
+		uint32_t frame_stride;
 		uint32_t frame_height;
 		uint32_t frame_fps_n;
 		uint32_t frame_fps_d;
@@ -188,12 +190,14 @@ namespace
 	{
 	}
 
-	void avi_worker::queue_video(uint32_t* _frame, uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d)
+	void avi_worker::queue_video(uint32_t* _frame, uint32_t stride, uint32_t width, uint32_t height,
+		uint32_t fps_n, uint32_t fps_d)
 	{
 		rethrow();
 		wait_busy();
 		frame = _frame;
 		frame_width = width;
+		frame_stride = stride;
 		frame_height = height;
 		frame_fps_n = fps_n;
 		frame_fps_d = fps_d;
@@ -221,7 +225,11 @@ namespace
 			//Then add frames if any.
 			if(work & WORKFLAG_QUEUE_FRAME) {
 				frame_object f;
-				f.data = new uint32_t[frame_width * frame_height];
+				f.stride = frame_stride;
+				f.odata = new uint32_t[f.stride * frame_height + 16];
+				f.data = f.odata;
+				while(reinterpret_cast<size_t>(f.data) % 16)
+					f.data++;
 				f.width = frame_width;
 				f.height = frame_height;
 				f.fps_n = frame_fps_n;
@@ -231,7 +239,8 @@ namespace
 					segframes = 0;
 				auto wc = get_wait_count();
 				ivcodec->send_performance_counters(wc.first, wc.second);
-				memcpy(&f.data[0], frame, 4 * frame_width * frame_height);
+				framebuffer::copy_swap4(reinterpret_cast<uint8_t*>(f.data), frame,
+					f.stride * frame_height);
 				frame = NULL;
 				clear_workflag(WORKFLAG_QUEUE_FRAME);
 				clear_busy();
@@ -361,11 +370,12 @@ again:
 				hscl = scl.first;
 				vscl = scl.second;
 			}
-			if(!render_video_hud(dscr, _frame, hscl, vscl, 0, 8, 16, dlb, dtb, drb, dbb, waitfn)) {
+			if(!render_video_hud(dscr, _frame, hscl, vscl, dlb, dtb, drb, dbb, waitfn)) {
 				akill += killed_audio_length(fps_n, fps_d, akillfrac);
 				return;
 			}
-			worker->queue_video(dscr.rowptr(0), dscr.get_width(), dscr.get_height(), fps_n, fps_d);
+			worker->queue_video(dscr.rowptr(0), dscr.get_stride(), dscr.get_width(), dscr.get_height(),
+				fps_n, fps_d);
 			have_dumped_frame = true;
 		}
 

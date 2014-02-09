@@ -38,7 +38,7 @@ namespace
 		avi_codec_zmbv(uint32_t _level, uint32_t maxpframes, uint32_t _bw, uint32_t _bh);
 		~avi_codec_zmbv();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
-		void frame(uint32_t* data);
+		void frame(uint32_t* data, uint32_t stride);
 		bool ready();
 		avi_packet getpacket();
 	private:
@@ -259,7 +259,7 @@ compress:
 		return fmt;
 	}
 
-	void avi_codec_zmbv::frame(uint32_t* data)
+	void avi_codec_zmbv::frame(uint32_t* data, uint32_t stride)
 	{
 		//Keyframe/not determination.
 		bool keyframe = false;
@@ -277,7 +277,7 @@ compress:
 			for(size_t y = 0; y < iheight; y++) {
 				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + frameoffset +
 					framestride * y);
-				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
+				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[stride * y]);
 				for(size_t i = 0; i < iwidth; i++) {
 					_current[4 * i + 0] = _data[4 * i + 3];
 					_current[4 * i + 1] = _data[4 * i + 2];
@@ -289,7 +289,7 @@ compress:
 			for(size_t y = 0; y < iheight; y++) {
 				uint8_t* _current = reinterpret_cast<uint8_t*>(current_frame + frameoffset +
 					framestride * y);
-				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[iwidth * y]);
+				uint8_t* _data = reinterpret_cast<uint8_t*>(&data[stride * y]);
 				for(size_t i = 0; i < iwidth; i++) {
 					_current[4 * i + 2] = _data[4 * i + 0];
 					_current[4 * i + 1] = _data[4 * i + 1];

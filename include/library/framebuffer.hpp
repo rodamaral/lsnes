@@ -14,6 +14,10 @@ template<bool X> struct elem {};
 template<> struct elem<false> { typedef uint32_t t; };
 template<> struct elem<true> { typedef uint64_t t; };
 
+extern unsigned default_shift_r;
+extern unsigned default_shift_g;
+extern unsigned default_shift_b;
+
 /**
  * Pixel format auxillary palette.
  */
@@ -253,6 +257,8 @@ struct fb
  * parameter _width: Width of framebuffer.
  * parameter _height: Height of framebuffer.
  * parameter _pitch: Distance in bytes between successive scanlines (in pixels).
+ *
+ * Note: The _pitch should be multiple of 4, and _memory aligned to 16 bytes.
  */
 	void set(element_t* _memory, size_t _width, size_t _height, size_t _pitch) throw();
 
@@ -320,29 +326,35 @@ struct fb
  */
 	void set_palette(uint32_t r, uint32_t g, uint32_t b) throw(std::bad_alloc);
 /**
+ * Get stride of image.
+ *
+ * Returns: The stride.
+ */
+	size_t get_stride() const throw() { return stride; }
+/**
  * Get width of image.
  *
  * Returns: The width.
  */
-	size_t get_width() const throw();
+	size_t get_width() const throw() { return width; }
 /**
  * Get height of image.
  *
  * Returns: The height.
  */
-	size_t get_height() const throw();
+	size_t get_height() const throw() { return height; }
 /**
  * Get last blit width
  *
  * Returns: The width.
  */
-	size_t get_last_blit_width() const throw();
+	size_t get_last_blit_width() const throw() { return last_blit_w; }
 /**
  * Get last blit height
  *
  * Returns: The height.
  */
-	size_t get_last_blit_height() const throw();
+	size_t get_last_blit_height() const throw() { return last_blit_h; }
 /**
  * Get R palette offset.
  */
@@ -452,8 +464,8 @@ struct color
 			inv = 256 - origa;
 		}
 		invHI = 256 * static_cast<uint32_t>(inv);
-		set_palette(16, 8, 0, false);
-		set_palette(32, 16, 0, true);
+		set_palette(default_shift_r, default_shift_g, default_shift_b, false);
+		set_palette(default_shift_r << 1, default_shift_g << 1, default_shift_b << 1, true);
 		//std::cerr << "Color " << color << " -> hi=" << hi << " lo=" << lo << " inv=" << inv << std::endl;
 	}
 	color(const std::string& color) throw(std::bad_alloc, std::runtime_error);
@@ -691,6 +703,61 @@ private:
  * parameter maxc: Maximum coordinate relative to base. Updated.
  */
 void clip_range(uint32_t origin, uint32_t size, int32_t base, int32_t& minc, int32_t& maxc) throw();
+
+/**
+ * Drop every fourth byte of specified buffer.
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 4 byte units to copy. Must be multiple of 4.
+ */
+void copy_drop4(uint8_t* dest, const uint32_t* src, size_t units);
+
+/**
+ * Drop every fourth byte of specified buffer and swap first and third.
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 4 byte units to copy. Must be multiple of 4.
+ */
+void copy_drop4s(uint8_t* dest, const uint32_t* src, size_t units);
+
+/**
+ * Swap every first and third byte out of four
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 4 byte units to copy. Must be multiple of 4.
+ */
+void copy_swap4(uint8_t* dest, const uint32_t* src, size_t units);
+
+/**
+ * Drop every fourth word of specified buffer.
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 8 byte units to copy. Must be multiple of 2.
+ */
+void copy_drop4(uint16_t* dest, const uint64_t* src, size_t units);
+
+/**
+ * Drop every fourth byte of specified buffer and swap first and third.
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 8 byte units to copy. Must be multiple of 2.
+ */
+void copy_drop4s(uint16_t* dest, const uint64_t* src, size_t units);
+
+/**
+ * Swap every first and third byte out of four
+ *
+ * Parameter dest: Destination buffer, should be 16-byte aligned.
+ * Parameter src: Source buffer, should be 16-byte aligned.
+ * Parameter units: Number of 8 byte units to copy. Must be multiple of 2.
+ */
+void copy_swap4(uint16_t* dest, const uint64_t* src, size_t units);
 }
+
 
 #endif

@@ -80,35 +80,45 @@ namespace
 		{
 			if(!video)
 				return;
-			unsigned magic;
-			if(bits64)
-				magic = 0x30201000U;
-			else
-				magic = 0x18100800U;
-			unsigned r = (reinterpret_cast<unsigned char*>(&magic))[swap ? 2 : 0];
-			unsigned g = (reinterpret_cast<unsigned char*>(&magic))[1];
-			unsigned b = (reinterpret_cast<unsigned char*>(&magic))[swap ? 0 : 2];
 			auto scl = our_rom.rtype->get_scale_factors(_frame.get_width(), _frame.get_height());
 			uint32_t hscl = scl.first;
 			uint32_t vscl = scl.second;
 			if(bits64) {
 				size_t w = dscr2.get_width();
 				size_t h = dscr2.get_height();
-				if(!render_video_hud(dscr2, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL)) {
+				size_t s = dscr2.get_stride();
+				std::vector<uint16_t> tmp;
+				tmp.resize(8 * s + 8);
+				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16 / 2;
+				if(!render_video_hud(dscr2, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
 					akill += killed_audio_length(fps_n, fps_d, akillfrac);
 					return;
 				}
-				for(size_t i = 0; i < h; i++)
-					video->write(reinterpret_cast<char*>(dscr2.rowptr(i)), 8 * w);
+				for(size_t i = 0; i < h; i++) {
+					if(!swap)
+						framebuffer::copy_swap4(&tmp[alignment], dscr2.rowptr(i), s);
+					else
+						memcpy(&tmp[alignment], dscr2.rowptr(i), 8 * w);
+					video->write(reinterpret_cast<char*>(&tmp[alignment]), 8 * w);
+				}
 			} else {
 				size_t w = dscr.get_width();
 				size_t h = dscr.get_height();
-				if(!render_video_hud(dscr, _frame, hscl, vscl, r, g, b, 0, 0, 0, 0, NULL)) {
+				size_t s = dscr2.get_stride();
+				std::vector<uint8_t> tmp;
+				tmp.resize(4 * s + 16);
+				uint32_t alignment = (16 - reinterpret_cast<size_t>(&tmp[0])) % 16;
+				if(!render_video_hud(dscr, _frame, hscl, vscl, 0, 0, 0, 0, NULL)) {
 					akill += killed_audio_length(fps_n, fps_d, akillfrac);
 					return;
 				}
-				for(size_t i = 0; i < h; i++)
-					video->write(reinterpret_cast<char*>(dscr.rowptr(i)), 4 * w);
+				for(size_t i = 0; i < h; i++) {
+					if(!swap)
+						framebuffer::copy_swap4(&tmp[alignment], dscr.rowptr(i), s);
+					else
+						memcpy(&tmp[alignment], dscr.rowptr(i), 4 * w);
+					video->write(reinterpret_cast<char*>(&tmp[alignment]), 4 * w);
+				}
 			}
 			if(!*video)
 				messages << "Video write error" << std::endl;

@@ -18,7 +18,6 @@ namespace
 			int32_t _x2 = x2 + scr.get_origin_x();
 			int32_t _y1 = y1 + scr.get_origin_y();
 			int32_t _y2 = y2 + scr.get_origin_y();
-			color.set_palette(scr);
 			int32_t xdiff = _x2 - _x1;
 			int32_t ydiff = _y2 - _y1;
 			if(xdiff < 0)

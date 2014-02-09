@@ -44,8 +44,7 @@ unsigned adv_dumper::target_type_prefix = 1;
 unsigned adv_dumper::target_type_special = 2;
 
 template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct framebuffer::raw& source, uint32_t hscl,
-	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
-	uint32_t rgap, uint32_t bgap, void(*fn)())
+	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)())
 {
 	bool lua_kill_video = false;
 	struct lua_render_context lrc;
@@ -60,7 +59,6 @@ template<bool X> bool render_video_hud(struct framebuffer::fb<X>& target, struct
 	lua_callback_do_video(&lrc, lua_kill_video, hscl, vscl);
 	if(fn)
 		fn();
-	target.set_palette(roffset, goffset, boffset);
 	target.reallocate(lrc.left_gap + source.get_width() * hscl + lrc.right_gap, lrc.top_gap +
 		source.get_height() * vscl + lrc.bottom_gap, false);
 	target.set_origin(lrc.left_gap, lrc.top_gap);
@@ -79,8 +77,6 @@ uint64_t killed_audio_length(uint32_t fps_n, uint32_t fps_d, double& fraction)
 }
 
 template bool render_video_hud(struct framebuffer::fb<false>& target, struct framebuffer::raw& source, uint32_t hscl,
-	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
-	uint32_t rgap, uint32_t bgap, void(*fn)());
+	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)());
 template bool render_video_hud(struct framebuffer::fb<true>& target, struct framebuffer::raw& source, uint32_t hscl,
-	uint32_t vscl, uint32_t roffset, uint32_t goffset, uint32_t boffset, uint32_t lgap, uint32_t tgap,
-	uint32_t rgap, uint32_t bgap, void(*fn)());
+	uint32_t vscl, uint32_t lgap, uint32_t tgap, uint32_t rgap, uint32_t bgap, void(*fn)());

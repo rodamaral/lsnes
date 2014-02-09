@@ -180,10 +180,6 @@ struct platform
  */
 	static mutex_class& msgbuf_lock() throw();
 /**
- * Set palette used on screen.
- */
-	static void screen_set_palette(unsigned rshift, unsigned gshift, unsigned bshift) throw();
-/**
  * Adds a messages to mesage queue to be shown.
  *
  * Implemented by the generic window code.

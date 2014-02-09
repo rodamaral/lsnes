@@ -977,7 +977,10 @@ void wxwin_mainwindow::panel::on_paint(wxPaintEvent& e)
 			}
 		}
 	}
-	srcs[0] = 4 * (rotate_enabled ? main_screen.get_height() : main_screen.get_width());
+	if(aux)
+		srcs[0] = 4 * (rotate_enabled ? main_screen.get_height() : main_screen.get_width());
+	else
+		srcs[0] = 4 * main_screen.get_stride();
 	dsts[0] = 3 * tw;
 	srcp[0] = reinterpret_cast<unsigned char*>(aux ? rotate_buffer : main_screen.rowptr(0));
 	dstp[0] = screen_buffer;

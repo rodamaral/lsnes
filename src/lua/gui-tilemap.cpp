@@ -192,8 +192,6 @@ namespace
 			int32_t yp, int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax, lua_dbitmap& d) throw()
 		{
 			if(xmin >= xmax || ymin >= ymax) return;
-			for(auto& c : d.pixels)
-				c.set_palette(scr);
 
 			for(int32_t r = ymin; r < ymax; r++) {
 				typename framebuffer::fb<T>::element_t* rptr = scr.rowptr(yp + r);
@@ -210,8 +208,6 @@ namespace
 			if(xmin >= xmax || ymin >= ymax) return;
 			p.palette_mutex.lock();
 			framebuffer::color* palette = &p.colors[0];
-			for(auto& c : p.colors)
-				c.set_palette(scr);
 			size_t pallim = p.colors.size();
 
 			for(int32_t r = ymin; r < ymax; r++) {

@@ -14,8 +14,20 @@
 
 namespace framebuffer
 {
+unsigned default_shift_r;
+unsigned default_shift_g;
+unsigned default_shift_b;
+
 namespace
 {
+	void recalculate_default_shifts()
+	{
+		uint32_t magic = 0x18000810;
+		default_shift_r = reinterpret_cast<uint8_t*>(&magic)[0];
+		default_shift_g = reinterpret_cast<uint8_t*>(&magic)[1];
+		default_shift_b = reinterpret_cast<uint8_t*>(&magic)[2];
+	}
+
 	std::list<pixfmt*>& pixfmts()
 	{
 		static std::list<pixfmt*> x;
@@ -348,11 +360,11 @@ fb<X>::fb() throw()
 	user_mem = false;
 	upside_down = false;
 	current_fmt = NULL;
-	active_rshift = (X ? 32 : 16);
-	active_gshift = (X ? 16 : 8);
-	active_bshift = 0;
+	recalculate_default_shifts();
+	active_rshift = default_shift_r << (X ? 1 : 0);
+	active_gshift = default_shift_g << (X ? 1 : 0);
+	active_bshift = default_shift_b << (X ? 1 : 0);
 }
-
 
 template<bool X>
 fb<X>::~fb() throw()
@@ -455,18 +467,19 @@ void fb<X>::set(element_t* _memory, size_t _width, size_t _height, size_t _pitch
 template<bool X>
 void fb<X>::reallocate(size_t _width, size_t _height, bool _upside_down) throw(std::bad_alloc)
 {
+	size_t ustride = (_width + 11) / 12 * 12;
 	if(width != _width || height != _height) {
 		if(user_mem) {
-			element_t* newmem = new element_t[_width * _height];
+			element_t* newmem = new element_t[ustride * _height + 4];
 			delete[] mem;
 			mem = newmem;
 		} else
-			mem = new element_t[_width * _height];
+			mem = new element_t[ustride * _height + 4];
 	}
-	memset(mem, 0, sizeof(element_t) * _width * _height);
+	memset(mem, 0, sizeof(element_t) * ustride * _height);
 	width = _width;
 	height = _height;
-	stride = _width;
+	stride = ustride;
 	upside_down = _upside_down;
 	user_mem = true;
 }
@@ -479,36 +492,12 @@ void fb<X>::set_origin(size_t _offset_x, size_t _offset_y) throw()
 }
 
 template<bool X>
-size_t fb<X>::get_width() const throw()
-{
-	return width;
-}
-
-template<bool X>
-size_t fb<X>::get_height() const throw()
-{
-	return height;
-}
-
-template<bool X>
-size_t fb<X>::get_last_blit_width() const throw()
-{
-	return last_blit_w;
-}
-
-template<bool X>
-size_t fb<X>::get_last_blit_height() const throw()
-{
-	return last_blit_h;
-}
-
-
-template<bool X>
 typename fb<X>::element_t* fb<X>::rowptr(size_t row) throw()
 {
 	if(upside_down)
 		row = height - row - 1;
-	return mem + stride * row;
+	uint32_t align = (16 - reinterpret_cast<size_t>(mem)) % 16 / 4;
+	return mem + stride * row + align;
 }
 
 template<bool X>
@@ -1059,7 +1048,6 @@ int64_t color_adjust_lightness(int64_t color, double adjust)
 	if(color < 0) return color;
 	return adjustcolor<adjust_hmM_sl<adjust_ls_lightness>>(color & 0xFFFFFF, adjust) | (color & 0xFF000000);
 }
-
 
 template class fb<false>;
 template class fb<true>;

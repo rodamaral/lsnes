@@ -52,9 +52,6 @@ namespace
 		}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			fg.set_palette(scr);
-			bg.set_palette(scr);
-			hl.set_palette(scr);
 			const framebuffer::font2& fdata = font->get_font();
 			std::u32string _text = utf8::to32(text);
 			int32_t orig_x = x;

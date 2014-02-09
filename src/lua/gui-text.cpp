@@ -13,8 +13,6 @@ namespace
 		~render_object_text() throw() {}
 		template<bool X> void op(struct framebuffer::fb<X>& scr) throw()
 		{
-			fg.set_palette(scr);
-			bg.set_palette(scr);
 			main_font.render(scr, x, y, text, fg, bg, hdbl, vdbl);
 		}
 		void operator()(struct framebuffer::fb<true>& scr) throw()  { op(scr); }

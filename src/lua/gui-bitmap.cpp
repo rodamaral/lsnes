@@ -101,14 +101,10 @@ namespace
 			framebuffer::color* palette;
 			if(b) {
 				palette = &p->colors[0];
-				for(auto& c : p->colors)
-					c.set_palette(scr);
 				pallim = p->colors.size();
 				w = b->width;
 				h = b->height;
 			} else {
-				for(auto& c : b2->pixels)
-					c.set_palette(scr);
 				w = b2->width;
 				h = b2->height;
 			}

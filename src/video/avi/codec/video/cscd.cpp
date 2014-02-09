@@ -20,7 +20,7 @@ namespace
 		avi_codec_cscd(uint32_t _level, uint32_t maxpframes);
 		~avi_codec_cscd();
 		avi_video_codec::format reset(uint32_t width, uint32_t height, uint32_t fps_n, uint32_t fps_d);
-		void frame(uint32_t* data);
+		void frame(uint32_t* data, uint32_t stride);
 		bool ready();
 		avi_packet getpacket();
 	private:
@@ -73,7 +73,7 @@ namespace
 		return fmt;
 	}
 
-	void avi_codec_cscd::frame(uint32_t* data)
+	void avi_codec_cscd::frame(uint32_t* data, uint32_t stride)
 	{
 		bool keyframe = false;
 		if(pframes >= max_pframes) {
@@ -91,7 +91,7 @@ namespace
 			if(y < eheight - iheight)
 				readrow(NULL);
 			else
-				readrow(data + (eheight - y - 1) * iwidth);
+				readrow(data + (eheight - y - 1) * stride);
 			if(keyframe) {
 				memcpy(&prevframe[3 * y * ewidth], &row[0], 3 * ewidth);
 			} else {
