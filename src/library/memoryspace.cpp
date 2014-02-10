@@ -261,6 +261,21 @@ std::list<memory_region*> memory_space::get_regions()
 	return r;
 }
 
+char* memory_space::get_physical_mapping(uint64_t base, uint64_t size)
+{
+	uint64_t last = base + size - 1;
+	if(last < base)
+		return NULL;	//Warps around.
+	auto g1 = lookup(base);
+	auto g2 = lookup(last);
+	if(g1.first != g2.first)
+		return NULL;	//Not the same VMA.
+	if(!g1.first || !g1.first->direct_map)
+		return NULL;	//Not mapped.
+	//OK.
+	return reinterpret_cast<char*>(g1.first->direct_map + g1.second);
+}
+
 void memory_space::set_regions(const std::list<memory_region*>& regions)
 {
 	umutex_class m(mutex);

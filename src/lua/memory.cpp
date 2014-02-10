@@ -8,6 +8,7 @@
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
 #include "library/string.hpp"
+#include "library/skein.hpp"
 #include "library/minmax.hpp"
 #include "library/hex.hpp"
 #include "library/int24.hpp"
@@ -499,29 +500,148 @@ namespace
 		return 1;
 	}
 
-	int hash_region(lua::state& L, lua::parameters& P)
+	template<typename H, void(*update)(H& state, const char* mem, size_t memsize),
+		std::string(*read)(H& state), bool extra>
+	int hash_core(H& state, lua::state& L, lua::parameters& P)
 	{
 		std::string hash;
 		uint64_t addr, size;
+		uint64_t stride = 0, rows = 1;
+		bool mappable = true;
+		char buffer[BLOCKSIZE];
 
 		addr = get_read_address(P);
 		P(size);
-
-		char buffer[BLOCKSIZE];
-		sha256 h;
-		while(size > BLOCKSIZE) {
-			for(size_t i = 0; i < BLOCKSIZE; i++)
-				buffer[i] = lsnes_memory.read<uint8_t>(addr + i);
-			h.write(buffer, BLOCKSIZE);
-			addr += BLOCKSIZE;
-			size -= BLOCKSIZE;
+		if(extra) {
+			P(P.optional(rows, 1));
+			if(rows > 1)
+				P(stride);
 		}
-		for(size_t i = 0; i < size; i++)
-			buffer[i] = lsnes_memory.read<uint8_t>(addr + i);
-		h.write(buffer, size);
-		hash = h.read();
-		L.pushlstring(hash.c_str(), 64);
+
+		uint64_t psize = rows ? ((rows - 1) * stride + size) : 0;
+		//Don't use mapping if range used warps around.
+		if(rows && stride && (psize - size) / stride != (rows - 1))
+			mappable = false;
+		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(addr, psize) : NULL;
+		if(!size && !rows) {
+		} else if(pbuffer) {
+			uint64_t offset = 0;
+			for(uint64_t i = 0; i < rows; i++) {
+				update(state, pbuffer + offset, size);
+				offset += stride;
+			}
+		} else {
+			uint64_t offset = 0;
+			for(uint64_t i = 0; i < rows; i++) {
+				size_t sz = size;
+				while(sz > 0) {
+					size_t ssz = min(sz, static_cast<size_t>(BLOCKSIZE));
+					for(size_t i = 0; i < ssz; i++)
+						buffer[i] = lsnes_memory.read<uint8_t>(addr + offset + i);
+					offset += ssz;
+					sz -= ssz;
+					update(state, buffer, ssz);
+				}
+				offset += (stride - size);
+			}
+		}
+		hash = read(state);
+		L.pushlstring(hash);
 		return 1;
+	}
+
+	void lua_sha256_update(sha256& s, const char* ptr, size_t size)
+	{
+		s.write(ptr, size);
+	}
+
+	std::string lua_sha256_read(sha256& s)
+	{
+		return s.read();
+	}
+
+	void lua_skein_update(skein::hash& s, const char* ptr, size_t size)
+	{
+		s.write(reinterpret_cast<const uint8_t*>(ptr), size);
+	}
+
+	std::string lua_skein_read(skein::hash& s)
+	{
+		uint8_t buf[32];
+		s.read(buf);
+		return hex::b_to(buf, 32, false);
+	}
+
+	template<bool extended>
+	int hash_region(lua::state& L, lua::parameters& P)
+	{
+		sha256 h;
+		return hash_core<sha256, lua_sha256_update, lua_sha256_read, extended>(h, L, P);
+	}
+
+	int hash_region_skein(lua::state& L, lua::parameters& P)
+	{
+		skein::hash h(skein::hash::PIPE_512, 256);
+		return hash_core<skein::hash, lua_skein_update, lua_skein_read, true>(h, L, P);
+	}
+
+	template<bool cmp>
+	int copy_to_host(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr, daddr, size;
+		uint64_t stride = 0, rows = 1;
+		bool equals = true, mappable = true;
+
+		addr = get_read_address(P);
+		P(daddr, size, P.optional(rows, 1));
+		if(rows > 1)
+			P(stride);
+
+		if(rows && size * rows / rows != size)
+			throw std::runtime_error("Size to copy too large");
+		if(daddr + rows * size < daddr)
+			throw std::runtime_error("Size to copy too large");
+
+		uint64_t psize = rows ? ((rows - 1) * stride + size) : 0;
+		//Don't use mapping if range used warps around.
+		if(rows && stride && (psize - size) / stride != (rows - 1))
+			mappable = false;
+
+		auto& h = movb.get_mfile().host_memory;
+		if(daddr + rows * size > h.size()) {
+			equals = false;
+			h.resize(daddr + rows * size);
+		}
+
+		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(addr, psize) : NULL;
+		if(!size && !rows) {
+		} else if(pbuffer) {
+			//Mapable.
+			uint64_t offset = 0;
+			for(uint64_t i = 0; i < rows; i++) {
+				bool eq = (cmp && !memcmp(&h[i * size], pbuffer + offset, size));
+				if(!eq)
+					memcpy(&h[i * size], pbuffer + offset, size);
+				equals &= eq;
+				offset += stride;
+			}
+		} else {
+			//Not mapable.
+			for(uint64_t i = 0; i < rows; i++) {
+				uint64_t addr1 = addr + i * stride;
+				uint64_t addr2 = daddr + i * size;
+				for(uint64_t j = 0; j < size; j++) {
+					uint8_t byte = lsnes_memory.read<uint8_t>(addr1 + j);
+					bool eq = (cmp && h[addr2 + j] == byte);
+					if(!eq)
+						h[addr2 + j] = byte;
+					equals &= eq;
+				}
+			}
+		}
+		if(cmp)
+			L.pushboolean(equals);
+		return cmp ? 1 : 0;
 	}
 
 	int readregion(lua::state& L, lua::parameters& P)
@@ -580,7 +700,11 @@ namespace
 		{"read_vma", read_vma},
 		{"find_vma", find_vma},
 		{"hash_state", hash_state},
-		{"hash_region", hash_region},
+		{"hash_region", hash_region<false>},
+		{"hash_region2", hash_region<true>},
+		{"hash_region_skein", hash_region_skein},
+		{"store", copy_to_host<false>},
+		{"storecmp", copy_to_host<true>},
 		{"readregion", readregion},
 		{"writeregion", readregion},
 		{"read_sg", memory_scattergather<false, false>},

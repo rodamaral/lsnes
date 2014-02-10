@@ -180,6 +180,14 @@ public:
  */
 	template<typename T> bool write(uint64_t address, T value);
 /**
+ * Get physical mapping of region of memory.
+ *
+ * Parameter base: The base address.
+ * Parameter size: The size of region.
+ * Returns: Pointer to base on success, NULL on failure (range isn't backed by memory)
+ */
+	char* get_physical_mapping(uint64_t base, uint64_t size);
+/**
  * Read a byte range (not across regions).
  *
  * Parameter address: Base address to start the read from.

@@ -6447,8 +6447,68 @@ Syntax: string memory.hash_region([string vma, ]number base, number size)
 \end_layout
 
 \begin_layout Standard
-Hash specified number of bytes starting from specified address and return
+Hash <size> bytes starting from address <base> (relative to <vma>) and return
  the SHA-256.
+\end_layout
+
+\begin_layout Subsection
+memory.hash_region2: Hash region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.hash_region2([string vma, ]number base, number size[,
+ number rows, number stride])
+\end_layout
+
+\begin_layout Standard
+Hash <rows> blocks of <size> bytes starting from address <base> (relative
+ to <vma>).
+ The blocks are offset by <stride> from one another and return the SHA-256.
+\end_layout
+
+\begin_layout Subsection
+memory.hash_region_skein: Hash region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory.hash_region_skein([string vma, ]number base, number
+ size[, number rows, number stride])
+\end_layout
+
+\begin_layout Standard
+Same as memory.hash_region2, but uses Skein-512-256 (v1.3; one of the SHA-3
+ finalists) as hash function.
+\end_layout
+
+\begin_layout Subsection
+memory.store: Store region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.store([string vma, ]number addr, number daddr[, number
+ rows, number stride]
+\end_layout
+
+\begin_layout Standard
+Copy memory starting from <addr> in memory area <vma> (each row being of
+ size <size>, there being <rows> rows, and rows being separated by <stride>
+ in memory) into savestate-saved memory area, starting from <daadr> (all
+ rows are written back to back).
+\end_layout
+
+\begin_layout Subsection
+memory.storecmp: Compare and store region of memory
+\end_layout
+
+\begin_layout Itemize
+Syntax: bool memory.storecmp([string vma, ]number addr, number daddr[, number
+ rows, number stride]
+\end_layout
+
+\begin_layout Standard
+Like memory.store, but returns true if target of copy already held the value
+ that would be copied before the copy happened.
+ Otherwise returns false (if target and source differ before copy).
 \end_layout
 
 \begin_layout Subsection
