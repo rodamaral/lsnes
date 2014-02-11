@@ -420,7 +420,7 @@ Syntax: obj(key, address, type)
 \end_layout
 
 \begin_layout Itemize
-Syntax: obj(key, vma, address, type)
+Syntax: obj(key, marea, address, type)
 \end_layout
 
 \begin_layout Standard
@@ -436,8 +436,8 @@ key: String: The name of the key in array to map.
 \end_layout
 
 \begin_layout Itemize
-vma: String: The memory area the mapped address is in (default: global memory
- space).
+marea: String: The memory area the mapped address is in (default: global
+ memory space).
 \end_layout
 
 \begin_layout Itemize
@@ -458,8 +458,48 @@ One of: byte, sbyte, word, sword, hword, shword, dword, sdword, qword, sqword,
 \end_deeper
 \begin_layout Standard
 Bind key <key> in mmap structure <obj> to address <address> (relative to
- <vma>).
+ <marea>).
  The memory address is treated as type <type>.
+\end_layout
+
+\begin_layout Itemize
+Example: foomap(
+\begin_inset Quotes eld
+\end_inset
+
+bar
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+WRAM
+\begin_inset Quotes erd
+\end_inset
+
+, 0x2A, 
+\begin_inset Quotes eld
+\end_inset
+
+sword
+\begin_inset Quotes erd
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+This binds signed word at address WRAM+0x2A into key 
+\begin_inset Quotes eld
+\end_inset
+
+bar
+\begin_inset Quotes erd
+\end_inset
+
+.
 \end_layout
 
 \begin_layout Standard
@@ -6188,7 +6228,7 @@ Contains various functions for managing memory
 \end_layout
 
 \begin_layout Subsection
-memory.vma_count: Count number of VMAs.
+memory.vma_count: Count number of memory areas.
 \end_layout
 
 \begin_layout Itemize
@@ -6196,54 +6236,54 @@ Syntax: number memory.vma_count()
 \end_layout
 
 \begin_layout Standard
-Returns the number of VMAs
+Returns the number of memory areas
 \end_layout
 
 \begin_layout Subsection
-memory.read_vma: Lookup VMA info by index
+memory.read_vma: Lookup memory area info by index
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.read_vma(number index)
+Syntax: table memory.read_vma(number index)
 \end_layout
 
 \begin_layout Standard
-Reads the specified VMA (indices start from zero).
- Trying to read invalid VMA gives nil.
- The read VMA is table with the following fields:
+Reads the specified memory area (indices start from zero).
+ Trying to read invalid memory area gives nil.
+ The return value is table with the following fields:
 \end_layout
 
 \begin_layout Itemize
-region_name (string): The readable name of the VMA
+region_name (string): The readable name of the memory area
 \end_layout
 
 \begin_layout Itemize
-baseaddr (number): Base address of the VMA
+baseaddr (number): Base address of the memory area
 \end_layout
 
 \begin_layout Itemize
-lastaddr (number): Last address in the VMA.
+lastaddr (number): Last address in the memory area.
 \end_layout
 
 \begin_layout Itemize
-size (number): The size of VMA in bytes.
+size (number): The size of memory area in bytes.
 \end_layout
 
 \begin_layout Itemize
-readonly (boolean): True of the VMA corresponds to ROM.
+readonly (boolean): True of the memory area corresponds to ROM.
 \end_layout
 
 \begin_layout Itemize
-iospace (boolean): True if the VMA is I/O space.
+iospace (boolean): True if the memory area is I/O space.
 \end_layout
 
 \begin_layout Itemize
-native_endian (boolean): True if the VMA has native endian as opposed to
- little endian.
+native_endian (boolean): True if the memory area has native endian as opposed
+ to little endian.
 \end_layout
 
 \begin_layout Subsection
-memory.find_vma: Find VMA info by address
+memory.find_vma: Find memory area info by address
 \end_layout
 
 \begin_layout Itemize
@@ -6251,7 +6291,7 @@ Syntax: table memory.find_vma(number address)
 \end_layout
 
 \begin_layout Standard
-Finds the VMA containing specified address.
+Finds the memory area containing specified address.
  Returns table in the same format as read_vma or nil if not found.
 \end_layout
 
@@ -6260,43 +6300,43 @@ memory.read{,s}{byte,{,h,d,q}word}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readbyte([string vma, ]number address)
+Syntax: none memory.readbyte([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readword([string vma, ]number address)
+Syntax: none memory.readword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readhword([string vma, ]number address)
+Syntax: none memory.readhword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdword([string vma, ]number address)
+Syntax: none memory.readdword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readqword([string vma, ]number address)
+Syntax: none memory.readqword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsbyte([string vma, ]number address)
+Syntax: none memory.readsbyte([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsword([string vma, ]number address)
+Syntax: none memory.readsword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readshword([string vma, ]number address)
+Syntax: none memory.readshword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsdword([string vma, ]number address)
+Syntax: none memory.readsdword([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readsqword([string vma, ]number address)
+Syntax: none memory.readsqword([string marea, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -6323,7 +6363,7 @@ Perform (2s complement signed if using memory.sread_sg) scatter/gather read
 \end_layout
 
 \begin_layout Itemize
-String: Set VMA addresses are relative to (e.g.
+String: Set memory area addresses are relative to (e.g.
  'WRAM').
 \end_layout
 
@@ -6352,7 +6392,7 @@ Perform scatter/gather write of value <value> on memory.
 \end_layout
 
 \begin_layout Itemize
-String: Set VMA addresses are relative to (e.g.
+String: Set memory area addresses are relative to (e.g.
  'WRAM').
 \end_layout
 
@@ -6372,11 +6412,11 @@ memory.read{float,double}: Read memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readfloat([string vma, ]number address)
+Syntax: none memory.readfloat([string marea, ]number address)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.readdouble([string vma, ]number address)
+Syntax: none memory.readdouble([string marea, ]number address)
 \end_layout
 
 \begin_layout Standard
@@ -6388,31 +6428,31 @@ memory.write{byte,{,h,d,q}word,float,double}: Write memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writebyte([string vma, ]number address, number value)
+Syntax: none memory.writebyte([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeword([string vma, ]number address, number value)
+Syntax: none memory.writeword([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writehword([string vma, ]number address, number value)
+Syntax: none memory.writehword([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedword([string vma, ]number address, number value)
+Syntax: none memory.writedword([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeqword([string vma, ]number address, number value)
+Syntax: none memory.writeqword([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writefloat([string vma, ]number address, number value)
+Syntax: none memory.writefloat([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writedouble([string vma, ]number address, number value)
+Syntax: none memory.writedouble([string marea, ]number address, number value)
 \end_layout
 
 \begin_layout Standard
@@ -6425,7 +6465,7 @@ memory.map{{,s}{byte,{,h,d,q}word},float,double}: Map an array
 \end_layout
 
 \begin_layout Itemize
-Syntax: userdata memory.map<type>([[string vma, ]number base, number size])
+Syntax: userdata memory.map<type>([[string marea, ]number base, number size])
 \end_layout
 
 \begin_layout Standard
@@ -6443,12 +6483,12 @@ memory.hash_region: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region([string vma, ]number base, number size)
+Syntax: string memory.hash_region([string marea, ]number base, number size)
 \end_layout
 
 \begin_layout Standard
-Hash <size> bytes starting from address <base> (relative to <vma>) and return
- the SHA-256.
+Hash <size> bytes starting from address <base> (relative to <marea>) and
+ return the SHA-256.
 \end_layout
 
 \begin_layout Subsection
@@ -6456,13 +6496,13 @@ memory.hash_region2: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region2([string vma, ]number base, number size[,
+Syntax: string memory.hash_region2([string marea, ]number base, number size[,
  number rows, number stride])
 \end_layout
 
 \begin_layout Standard
 Hash <rows> blocks of <size> bytes starting from address <base> (relative
- to <vma>).
+ to <marea>).
  The blocks are offset by <stride> from one another and return the SHA-256.
 \end_layout
 
@@ -6471,7 +6511,7 @@ memory.hash_region_skein: Hash region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: string memory.hash_region_skein([string vma, ]number base, number
+Syntax: string memory.hash_region_skein([string marea, ]number base, number
  size[, number rows, number stride])
 \end_layout
 
@@ -6485,13 +6525,13 @@ memory.store: Store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.store([string vma, ]number addr, number daddr[, number
+Syntax: none memory.store([string marea, ]number addr, number daddr[, number
  rows, number stride]
 \end_layout
 
 \begin_layout Standard
-Copy memory starting from <addr> in memory area <vma> (each row being of
- size <size>, there being <rows> rows, and rows being separated by <stride>
+Copy memory starting from <addr> in memory area <marea> (each row being
+ of size <size>, there being <rows> rows, and rows being separated by <stride>
  in memory) into savestate-saved memory area, starting from <daadr> (all
  rows are written back to back).
 \end_layout
@@ -6501,8 +6541,8 @@ memory.storecmp: Compare and store region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: bool memory.storecmp([string vma, ]number addr, number daddr[, number
- rows, number stride]
+Syntax: bool memory.storecmp([string marea, ]number addr, number daddr[,
+ number rows, number stride]
 \end_layout
 
 \begin_layout Standard
@@ -6529,7 +6569,7 @@ memory.readregion: Read region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: table memory.readregion([string vma, ]number base, number size)
+Syntax: table memory.readregion([string marea, ]number base, number size)
 \end_layout
 
 \begin_layout Standard
@@ -6537,7 +6577,7 @@ Read a region of memory.
 \end_layout
 
 \begin_layout Itemize
-Warning: If the region crosses VMA boundary, the results are undefined.
+Warning: If the region crosses memory area boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsection
@@ -6545,8 +6585,8 @@ memory.writeregion: Write region of memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.writeregion([string vma, ]number base, number size, table
- data)
+Syntax: none memory.writeregion([string marea, ]number base, number size,
+ table data)
 \end_layout
 
 \begin_layout Standard
@@ -6554,7 +6594,7 @@ Write a region of memory.
 \end_layout
 
 \begin_layout Itemize
-Warning: If the region crosses VMA boundary, the results are undefined.
+Warning: If the region crosses memory area boundary, the results are undefined.
 \end_layout
 
 \begin_layout Subsection
@@ -6643,44 +6683,47 @@ memory.{,un}register{read,write,exec}: (Un)Register read / write / execute
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerread([string vma, ] number addr, function
+Syntax: function memory.registerread([string marea, ] number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerwrite([string vma, ] number addr, function
+Syntax: function memory.registerwrite([string marea, ] number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: function memory.registerexec([string vma, ] number addr, function
+Syntax: function memory.registerexec([string marea, ] number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterread([string vma, ] number addr, function fn);
-\end_layout
-
-\begin_layout Itemize
-Syntax: none memory.unregisterwrite([string vma, ] number addr, function
+Syntax: none memory.unregisterread([string marea, ] number addr, function
  fn);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.unregisterexec([string vma, ] number addr, function fn);
+Syntax: none memory.unregisterwrite([string marea, ] number addr, function
+ fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory.unregisterexec([string marea, ] number addr, function
+ fn);
 \end_layout
 
 \begin_layout Standard
 Add or remove callback on memory read, write or execute (depending on the
  function).
- If <vma> is specified, <addr> is relative to it, otherwise <addr> is global.
+ If <marea> is specified, <addr> is relative to it, otherwise <addr> is
+ global.
  <fn> is the callback.
  The register* functions return <fn> (which can then be passed to unregister*
  functions.
 \end_layout
 
 \begin_layout Itemize
-Not all cores support this, and it may be unsupported for some VMAs.
+Not all cores support this, and it may be unsupported for some memory areas.
 \end_layout
 
 \begin_layout Itemize
@@ -6714,21 +6757,21 @@ memory.cheat: Set cheat
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat([string vma, ] number addr, number value);
+Syntax: none memory.cheat([string marea, ] number addr, number value);
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory.cheat([string vma, ] number addr);
+Syntax: none memory.cheat([string marea, ] number addr);
 \end_layout
 
 \begin_layout Standard
 Set or clear cheat (value <value>) on address <addr>.
- If <vma> is specified, <addr> is relative to that.
+ If <marea> is specified, <addr> is relative to that.
  If <value> is not speicified, clear a cheat.
 \end_layout
 
 \begin_layout Itemize
-Not all cores support this, and it may be unsupported for some VMAs.
+Not all cores support this, and it may be unsupported for some memory areas.
 \end_layout
 
 \begin_layout Subsection
@@ -6769,7 +6812,7 @@ Contains newer memory functions.
 \end_layout
 
 \begin_layout Subsection
-memory2(): Get all VMA names.
+memory2(): Get all memory area names.
 \end_layout
 
 \begin_layout Itemize
@@ -6777,37 +6820,37 @@ Syntax: table memory2()
 \end_layout
 
 \begin_layout Standard
-Returns array of all valid VMA names.
+Returns array of all valid memory area names.
 \end_layout
 
 \begin_layout Subsection
-memory2.<vma>:info: Get VMA info
+memory2.<marea>:info: Get memory area info
 \end_layout
 
 \begin_layout Itemize
-Syntax: table memory2.<vma>:info()
+Syntax: table memory2.<marea>:info()
 \end_layout
 
 \begin_layout Standard
-Return table describing given VMA.
+Return table describing given memory area.
  Includes fields address, size, last, readonly, special and endian.
 \end_layout
 
 \begin_layout Subsection
-memory2.<vma>:<op>: Read/Write memory
+memory2.<marea>:<op>: Read/Write memory
 \end_layout
 
 \begin_layout Itemize
-Syntax: none memory2.<vma>:<op>(number offset, number value)
+Syntax: none memory2.<marea>:<op>(number offset, number value)
 \end_layout
 
 \begin_layout Itemize
-Syntax: number memory2.<vma>:<op>(number offset)
+Syntax: number memory2.<marea>:<op>(number offset)
 \end_layout
 
 \begin_layout Standard
-Read/Write value from/to given VMA <vma> at given offset <offset> (must
- be in-range).
+Read/Write value from/to given memory area <marea> at given offset <offset>
+ (must be in-range).
  The value written is <value>.
  <Op> is of form: [i][s]<type>, where:
 \end_layout
@@ -6825,43 +6868,43 @@ Read/Write value from/to given VMA <vma> at given offset <offset> (must
 \end_layout
 
 \begin_layout Subsection
-memory2.<vma>:read: Scatter-gather value read
+memory2.<marea>:read: Scatter-gather value read
 \end_layout
 
 \begin_layout Itemize
-Syntax: number memory2.<vma>:read(number addr...)
+Syntax: number memory2.<marea>:read(number addr...)
 \end_layout
 
 \begin_layout Standard
-Read value from given VMA <vma> at byte offsets <addr>..., given in order of
- increasing significance.
+Read value from given memory area <marea> at byte offsets <addr>..., given
+ in order of increasing significance.
  Value of true and false are special.
  True increments address by 1, and false decrements address by 1.
 \end_layout
 
 \begin_layout Subsection
-memory2.<vma>:sread: Signed scatter-gather value read
+memory2.<marea>:sread: Signed scatter-gather value read
 \end_layout
 
 \begin_layout Itemize
-Syntax: number memory2.<vma>:sread(number addr...)
+Syntax: number memory2.<marea>:sread(number addr...)
 \end_layout
 
 \begin_layout Standard
-Like memory2.<vma>:read, but reads signed values.
+Like memory2.<marea>:read, but reads signed values.
 \end_layout
 
 \begin_layout Subsection
-memory2.<vma>:write: Scatter-gather value write
+memory2.<marea>:write: Scatter-gather value write
 \end_layout
 
 \begin_layout Itemize
-Syntax: number memory2.<vma>:write(number val, number addr...)
+Syntax: number memory2.<marea>:write(number val, number addr...)
 \end_layout
 
 \begin_layout Standard
-Write value <val> to given VMA <vma> at byte offsets <addr>..., given in order
- of increasing significance.
+Write value <val> to given memory area <marea> at byte offsets <addr>..., given
+ in order of increasing significance.
  Value of true and false are special.
  True increments address by 1, and false decrements address by 1.
 \end_layout
@@ -7108,13 +7151,13 @@ bsnes.dump_sprite: Dump a sprite
 \end_layout
 
 \begin_layout Itemize
-Syntax: BITMAP bsnes.dump_sprite([string vma, ] number addr, number width,
+Syntax: BITMAP bsnes.dump_sprite([string marea, ] number addr, number width,
  number height[, number stride])
 \end_layout
 
 \begin_layout Standard
 Dumps given sprite (in native format) from memory.
- VMA is usually 
+ memory area is usually 
 \begin_inset Quotes eld
 \end_inset
 
@@ -7132,13 +7175,13 @@ bsnes.dump_palette: Dump a palette
 \end_layout
 
 \begin_layout Itemize
-Syntax: PALETTE bsnes.dump_palette([string vma, ] number addr, bool full256,
+Syntax: PALETTE bsnes.dump_palette([string marea, ] number addr, bool full256,
  bool first_trans)
 \end_layout
 
 \begin_layout Standard
 Dumps a palette from memory.
- VMA is usually 
+ memory area is usually 
 \begin_inset Quotes eld
 \end_inset
 
