@@ -889,6 +889,8 @@ color::color(const std::string& clr) throw(std::bad_alloc, std::runtime_error)
 				throw std::runtime_error("Base color (" + t + ") can't be used as modifier");
 			std::string _t = t;
 			col = hex::from<uint32_t>(_t.substr(1));
+			first = false;
+			continue;
 		}
 		if(!cspecs.count(t))
 			throw std::runtime_error("Invalid color (modifier) '" + t + "'");
