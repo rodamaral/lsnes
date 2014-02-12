@@ -137,6 +137,7 @@ enum
 	wxID_PLUGIN_MANAGER,
 	wxID_BRANCH_FIRST,
 	wxID_BRANCH_LAST = wxID_BRANCH_FIRST + 10240,
+	wxID_DISASSEMBLER,
 };
 
 
@@ -1143,6 +1144,7 @@ wxwin_mainwindow::wxwin_mainwindow()
 		wxID_TRACELOG_LAST));
 	trlog->set_disabler([trlog_item](bool enabled) { trlog_item->Enable(enabled); });
 	trlog->update();
+	menu_entry(wxID_DISASSEMBLER, wxT("Disassembler..."));
 	menu_separator();
 	menu_entry(wxID_MOVIE_EDIT, wxT("Edit movie..."));
 	menu_separator();
@@ -1669,6 +1671,9 @@ void wxwin_mainwindow::handle_menu_click_cancelable(wxCommandEvent& e)
 		return;
 	case wxID_VUDISPLAY:
 		open_vumeter_window(this);
+		return;
+	case wxID_DISASSEMBLER:
+		wxeditor_disassembler_display(this);
 		return;
 	case wxID_MOVIE_EDIT:
 		wxeditor_movie_display(this);

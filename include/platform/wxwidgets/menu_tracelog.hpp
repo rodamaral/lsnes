@@ -23,6 +23,7 @@ private:
 	int wxid_range_low;
 	int wxid_range_high;
 	std::vector<wxMenuItem*> items;
+	std::map<int, std::string> cpunames;
 	std::function<void(bool enabled)> disabler_fn;
 };
 

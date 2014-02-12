@@ -33,6 +33,14 @@ disassembler& disassembler::byname(const std::string& name)
 	throw std::runtime_error("No such disassembler known");
 }
 
+std::set<std::string> disassembler::list()
+{
+	std::set<std::string> r;
+	for(auto& i : disasms())
+		r.insert(i.first);
+	return r;
+}
+
 std::map<std::string, disassembler*>& disassembler::disasms()
 {
 	static std::map<std::string, disassembler*> x;

@@ -25,16 +25,23 @@ void tracelog_menu::on_select(wxCommandEvent& e)
 {
 	int id = e.GetId() - wxid_range_low;
 	if(id < 0 || id > wxid_range_high - wxid_range_low) return;
-	bool ch = items[id]->IsChecked();
-	if(ch) {
-		try {
-			std::string filename = choose_file_save(pwin, "Save Trace", project_moviepath(),
-				filetype_trace, "");
-			debug_tracelog(id, filename);
-		} catch(canceled_exception& e) {
-		}
+	int rid = id / 2;
+	if(!cpunames.count(rid))
+		return;
+	if(id % 2) {
+		wxeditor_tracelog_display(pwin, rid, cpunames[rid]);
 	} else {
-		debug_tracelog(id, "");
+		bool ch = items[rid]->IsChecked();
+		if(ch) {
+			try {
+				std::string filename = choose_file_save(pwin, "Save " + cpunames[rid] + " Trace",
+					project_moviepath(), filetype_trace, "");
+				debug_tracelog(rid, filename);
+			} catch(canceled_exception& e) {
+			}
+		} else {
+			debug_tracelog(rid, "");
+		}
 	}
 	update();
 }
@@ -47,8 +54,15 @@ void tracelog_menu::update()
 	items.clear();
 	unsigned id = 0;
 	for(auto i : _items) {
-		items.push_back(AppendCheckItem(wxid_range_low + id, towxstring(i)));
+		items.push_back(AppendCheckItem(wxid_range_low + 2 * id, towxstring(i + " (to file)...")));
+		cpunames[id] = i;
 		items[id]->Check(debug_tracelogging(id));
+		id++;
+	}
+	items.push_back(AppendSeparator());
+	id = 0;
+	for(auto i : _items) {
+		items.push_back(Append(wxid_range_low + 2 * id + 1, towxstring(i + " (to window)...")));
 		id++;
 	}
 	if(disabler_fn) disabler_fn(!_items.empty());

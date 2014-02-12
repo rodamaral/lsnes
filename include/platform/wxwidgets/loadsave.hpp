@@ -62,6 +62,7 @@ extern single_type filetype_memorysearch;
 extern single_type filetype_textfile;
 extern single_type filetype_trace;
 extern single_type filetype_font;
+extern single_type filetype_disassembly;
 
 filedialog_output_params show_filedialog(wxWindow* parent, const std::string& title, const std::string& basepath,
 	const filedialog_input_params& p, const std::string& defaultname, bool saving);

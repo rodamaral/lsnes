@@ -103,3 +103,4 @@ single_type filetype_memorysearch("lms", "Memory search save");
 single_type filetype_textfile("txt", "Text file");
 single_type filetype_trace("trace", "Trace file");
 single_type filetype_font("font", "Font file");
+single_type filetype_disassembly("asm", "Disassembly");
