@@ -173,8 +173,6 @@ public:
 		return tostring(hashout);
 	}
 private:
-	sha256(const sha256& x) throw();
-	sha256& operator=(const sha256& x) throw();
 	uint32_t state[8];
 	uint32_t datablock[16];
 	unsigned blockbytes;

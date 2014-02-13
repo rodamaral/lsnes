@@ -244,81 +244,84 @@ namespace
 			return;
 		}
 	}
+}
 
-	template<debug_type type, bool reg>
-	void handle_registerX(lua::state& L, uint64_t addr, int lfn)
-	{
-		auto& cbl = cbs[addr];
+template<debug_type type>
+void handle_registerX(lua::state& L, uint64_t addr, int lfn)
+{
+	auto& cbl = cbs[addr];
 
-		//Put the context in userdata so it can be gc'd when Lua context is terminated.
-		lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
-		L.newtable();
-		L.pushstring("__gc");
-		L.pushcclosure(&lua_debug_callback::dtor, 0);
-		L.rawset(-3);
-		L.setmetatable(-2);
-		L.pushlightuserdata(&D->addr);
-		L.pushvalue(-2);
+	//Put the context in userdata so it can be gc'd when Lua context is terminated.
+	lua_debug_callback* D = (lua_debug_callback*)L.newuserdata(sizeof(lua_debug_callback));
+	L.newtable();
+	L.pushstring("__gc");
+	L.pushcclosure(&lua_debug_callback::dtor, 0);
+	L.rawset(-3);
+	L.setmetatable(-2);
+	L.pushlightuserdata(&D->addr);
+	L.pushvalue(-2);
+	L.rawset(LUA_REGISTRYINDEX);
+	L.pop(1); //Pop the copy of object.
+
+	cbl.push_back(D);
+
+	D->dead = false;
+	D->addr = addr;
+	D->type = type;
+	D->lua_fn = L.topointer(lfn);
+	lua::state* LL = &L.get_master();
+	void* D2 = &D->type;
+	if(type != DEBUG_TRACE)
+		D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
+			LL->pushlightuserdata(D2);
+			LL->rawget(LUA_REGISTRYINDEX);
+			LL->pushnumber(addr);
+			LL->pushnumber(value);
+			do_lua_error(*LL, LL->pcall(2, 0, 0));
+		}, [LL, D]() {
+			LL->pushlightuserdata(&D->addr);
+			LL->pushnil();
+			LL->rawset(LUA_REGISTRYINDEX);
+			D->_dtor(LL->handle());
+		});
+	else
+		D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
+			LL->pushlightuserdata(D2);
+			LL->rawget(LUA_REGISTRYINDEX);
+			LL->pushnumber(proc);
+			LL->pushstring(str);
+			do_lua_error(*LL, LL->pcall(2, 0, 0));
+		}, [LL, D]() {
+			LL->pushlightuserdata(&D->addr);
+			LL->pushnil();
+			LL->rawset(LUA_REGISTRYINDEX);
+			D->_dtor(LL->handle());
+		});
+	L.pushlightuserdata(D2);
+	L.pushvalue(lfn);
+	L.rawset(LUA_REGISTRYINDEX);
+}
+
+template<debug_type type>
+void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
+{
+	if(!cbs.count(addr))
+		return;
+	auto& cbl = cbs[addr];
+	for(auto i = cbl.begin(); i != cbl.end(); i++) {
+		if((*i)->type != type) continue;
+		if(L.topointer(lfn) != (*i)->lua_fn) continue;
+		L.pushlightuserdata(&(*i)->type);
+		L.pushnil();
 		L.rawset(LUA_REGISTRYINDEX);
-		L.pop(1); //Pop the copy of object.
-
-		cbl.push_back(D);
-
-		D->dead = false;
-		D->addr = addr;
-		D->type = type;
-		D->lua_fn = L.topointer(lfn);
-		lua::state* LL = &L.get_master();
-		void* D2 = &D->type;
-		if(type != DEBUG_TRACE)
-			D->h = debug_add_callback(addr, type, [LL, D2](uint64_t addr, uint64_t value) {
-				LL->pushlightuserdata(D2);
-				LL->rawget(LUA_REGISTRYINDEX);
-				LL->pushnumber(addr);
-				LL->pushnumber(value);
-				do_lua_error(*LL, LL->pcall(2, 0, 0));
-			}, [LL, D]() {
-				LL->pushlightuserdata(&D->addr);
-				LL->pushnil();
-				LL->rawset(LUA_REGISTRYINDEX);
-				D->_dtor(LL->handle());
-			});
-		else
-			D->h = debug_add_trace_callback(addr, [LL, D2](uint64_t proc, const char* str) {
-				LL->pushlightuserdata(D2);
-				LL->rawget(LUA_REGISTRYINDEX);
-				LL->pushnumber(proc);
-				LL->pushstring(str);
-				do_lua_error(*LL, LL->pcall(2, 0, 0));
-			}, [LL, D]() {
-				LL->pushlightuserdata(&D->addr);
-				LL->pushnil();
-				LL->rawset(LUA_REGISTRYINDEX);
-				D->_dtor(LL->handle());
-			});
-		L.pushlightuserdata(D2);
-		L.pushvalue(lfn);
-		L.rawset(LUA_REGISTRYINDEX);
+		(*i)->_dtor(L.handle());
+		//Lua will GC the object.
+		break;
 	}
+}
 
-	template<debug_type type, bool reg>
-	void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
-	{
-		if(!cbs.count(addr))
-			return;
-		auto& cbl = cbs[addr];
-		for(auto i = cbl.begin(); i != cbl.end(); i++) {
-			if((*i)->type != type) continue;
-			if(L.topointer(lfn) != (*i)->lua_fn) continue;
-			L.pushlightuserdata(&(*i)->type);
-			L.pushnil();
-			L.rawset(LUA_REGISTRYINDEX);
-			(*i)->_dtor(L.handle());
-			//Lua will GC the object.
-			break;
-		}
-	}
-
+namespace
+{
 	template<debug_type type, bool reg>
 	int lua_registerX(lua::state& L, lua::parameters& P)
 	{
@@ -334,11 +337,11 @@ namespace
 		P(P.function(lfn));
 
 		if(reg) {
-			handle_registerX<type, reg>(L, addr, lfn);
+			handle_registerX<type>(L, addr, lfn);
 			L.pushvalue(lfn);
 			return 1;
 		} else {
-			handle_unregisterX<type, reg>(L, addr, lfn);
+			handle_unregisterX<type>(L, addr, lfn);
 			return 0;
 		}
 	}

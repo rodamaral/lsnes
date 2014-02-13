@@ -6909,6 +6909,141 @@ Write value <val> to given memory area <marea> at byte offsets <addr>..., given
  True increments address by 1, and false decrements address by 1.
 \end_layout
 
+\begin_layout Subsection
+memory2.<marea>:cheat: Set/Clear cheat
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<marea>:cheat(number addr, [number value])
+\end_layout
+
+\begin_layout Standard
+Set/Clear cheat at offset <addr> of memory area <marea>.
+ If <value> is given, cheat with specified value is set.
+ Otherwise cheat on address is removed.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:sha256: SHA-256
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory2.<marea>:sha256(number addr, number size[, number rows,
+ number stride])
+\end_layout
+
+\begin_layout Standard
+Compute SHA-256 of <rows> (default 1) chunks of <size> bytes each, starting
+ from offset <addr> of area <marea>.
+ The chunks are separated by <stride>.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:skein: Skein-512-256
+\end_layout
+
+\begin_layout Itemize
+Syntax: string memory2.<marea>:skein(number addr, number size[, number rows,
+ number stride])
+\end_layout
+
+\begin_layout Standard
+Same as memory2.<marea>:sha256, except with Skein-512-256 as hash function.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:store{,cmp}: Copy region to Lua memory with compare
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<marea>:store(number addr, number daddr, number size[,
+ number rows, number stride])
+\end_layout
+
+\begin_layout Itemize
+Syntax: boolean memory2.<marea>:storecmp(number addr, number daddr, number
+ size[, number rows, number stride])
+\end_layout
+
+\begin_layout Standard
+Copy <rows> (default 1) chunks of <size> bytes each, starting from offset
+ <addr> of area <marea>.
+ The chunks are separated by <stride>.
+ The target is Lua host memory, starting from offset <daddr>.
+\end_layout
+
+\begin_layout Standard
+Additionally, the storecmp method returns false if target was modified (otherwis
+e true).
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:readregion: Read region
+\end_layout
+
+\begin_layout Itemize
+Syntax table memory2.<marea>:readregion(number addr, number size)
+\end_layout
+
+\begin_layout Standard
+Read <size> bytes starting from <addr> in <marea> and return as array.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:writeregion: Write region
+\end_layout
+
+\begin_layout Itemize
+Syntax none memory2.<marea>:writeregion(number addr, table data)
+\end_layout
+
+\begin_layout Standard
+Write array <data> to bytes starting from <addr> in <marea>.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:register{read,write,exec}: Register hook
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory2.<marea>:registerread(number addr, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory2.<marea>:registerwrite(number addr, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: function memory2.<marea>:registerexec(number addr, function fn);
+\end_layout
+
+\begin_layout Standard
+Register debug callback <fn> of specified type at offset <addr> of memory
+ area <marea>.
+ Returns <fn>.
+\end_layout
+
+\begin_layout Subsection
+memory2.<marea>:unregister{read,write,exec}: Unregister hook
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<marea>:unregisterread(number addr, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<marea>:unregisterwrite(number addr, function fn);
+\end_layout
+
+\begin_layout Itemize
+Syntax: none memory2.<marea>:unregisterexec(number addr, function fn);
+\end_layout
+
+\begin_layout Standard
+Unregister debug callback <fn> of specified type at offset <addr> of memory
+ area <marea>.
+\end_layout
+
 \begin_layout Standard
 \begin_inset Newpage pagebreak
 \end_inset

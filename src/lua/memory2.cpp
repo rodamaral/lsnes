@@ -1,10 +1,12 @@
 #include "lua/internal.hpp"
+#include "lua/debug.hpp"
 #include "core/memorymanip.hpp"
 #include "core/memorywatch.hpp"
 #include "core/moviedata.hpp"
 #include "core/moviefile.hpp"
 #include "core/rom.hpp"
 #include "library/sha256.hpp"
+#include "library/skein.hpp"
 #include "library/string.hpp"
 #include "library/serialization.hpp"
 #include "library/minmax.hpp"
@@ -53,6 +55,12 @@ namespace
 		int info(lua::state& L, lua::parameters& P);
 		template<class T, bool _bswap> int rw(lua::state& L, lua::parameters& P);
 		template<bool write, bool sign> int scattergather(lua::state& L, lua::parameters& P);
+		template<class T> int hash(lua::state& L, lua::parameters& P);
+		template<bool cmp> int storecmp(lua::state& L, lua::parameters& P);
+		int readregion(lua::state& L, lua::parameters& P);
+		int writeregion(lua::state& L, lua::parameters& P);
+		int cheat(lua::state& L, lua::parameters& P);
+		template<debug_type type, bool reg> int registerX(lua::state& L, lua::parameters& P);
 		std::string print()
 		{
 			return vma;
@@ -75,6 +83,40 @@ namespace
 		std::string print()
 		{
 			return "";
+		}
+	};
+
+	struct l_sha256_h
+	{
+		static sha256 create()
+		{
+			return sha256();
+		}
+		static void write(sha256& h, void* b, size_t s)
+		{
+			h.write(reinterpret_cast<uint8_t*>(b), s);
+		}
+		static std::string read(sha256& h)
+		{
+			return h.read();
+		}
+	};
+
+	struct l_skein_h
+	{
+		static skein::hash create()
+		{
+			return skein::hash(skein::hash::PIPE_512, 256);
+		}
+		static void write(skein::hash& h, void* b, size_t s)
+		{
+			h.write(reinterpret_cast<uint8_t*>(b), s);
+		}
+		static std::string read(skein::hash& h)
+		{
+			uint8_t buf[32];
+			h.read(buf);
+			return hex::b_to(buf, 32);
 		}
 	};
 
@@ -107,6 +149,19 @@ namespace
 			{"iqword", &lua_vma::rw<uint64_t, true>},
 			{"ifloat", &lua_vma::rw<float, true>},
 			{"idouble", &lua_vma::rw<double, true>},
+			{"cheat", &lua_vma::cheat},
+			{"sha256", &lua_vma::hash<l_sha256_h>},
+			{"skein", &lua_vma::hash<l_skein_h>},
+			{"store", &lua_vma::storecmp<false>},
+			{"storecmp", &lua_vma::storecmp<true>},
+			{"readregion", &lua_vma::readregion},
+			{"writeregion", &lua_vma::writeregion},
+			{"registerread", &lua_vma::registerX<DEBUG_READ, true>},
+			{"unregisterread", &lua_vma::registerX<DEBUG_READ, false>},
+			{"registerwrite", &lua_vma::registerX<DEBUG_WRITE, true>},
+			{"unregisterwrite", &lua_vma::registerX<DEBUG_WRITE, false>},
+			{"registerexec", &lua_vma::registerX<DEBUG_EXEC, true>},
+			{"unregisterexec", &lua_vma::registerX<DEBUG_EXEC, false>},
 	}, &lua_vma::print);
 
 	lua::_class<lua_vma_list> class_vmalist(lua_class_memory, "VMALIST", {
@@ -190,6 +245,208 @@ namespace
 			if(sign) L.pushnumber(sval); else L.pushnumber(val);
 		}
 		return write ? 0 : 1;
+	}
+
+	template<class T> int lua_vma::hash(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr, size, rows, stride = 0;
+		bool equals = true;
+
+		P(P.skipped(), addr, size, P.optional(rows, 1));
+		if(rows > 1) P(stride);
+
+		//First verify that all reads are to the region.
+		uint64_t tmp = addr;
+		if(size > vmasize && rows)
+			throw std::runtime_error("Region out of range");
+		for(uint64_t i = 0; i < rows; i++) {
+			if(tmp >= vmasize || tmp + size > vmasize)
+				throw std::runtime_error("Region out of range");
+			tmp += stride;
+		}
+
+		auto hstate = T::create();
+		//Try to map the VMA.
+		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		if(vmabuf) {
+			for(uint64_t i = 0; i < rows; i++) {
+				T::write(hstate, vmabuf + addr, size);
+				addr += stride;
+			}
+		} else {
+			uint8_t buf[512];	//Must be power of 2.
+			unsigned bf = 0;
+			for(uint64_t i = 0; i < rows; i++) {
+				for(uint64_t j = 0; j < size; j++) {
+					buf[bf] = lsnes_memory.read<uint8_t>(vmabase + addr + j);
+					bf = (bf + 1) & (sizeof(buf) - 1);
+					if(!bf)
+						T::write(hstate, buf, sizeof(buf));
+				}
+				addr += stride;
+			}
+			if(bf)
+				T::write(hstate, buf, bf);
+		}
+		L.pushlstring(T::read(hstate));
+		return 1;
+	}
+
+	int lua_vma::readregion(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr, size;
+
+		P(P.skipped(), addr, size);
+
+		if(addr >= vmasize || size > vmasize || addr + size > vmasize)
+			throw std::runtime_error("Read out of range");
+
+		L.newtable();
+		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		if(vmabuf) {
+			uint64_t ctr = 1;
+			for(size_t i = 0; i < size; i++) {
+				L.pushnumber(ctr++);
+				L.pushnumber(static_cast<unsigned char>(vmabuf[addr + i]));
+				L.settable(-3);
+			}
+		} else {
+			uint64_t ctr = 1;
+			for(size_t i = 0; i < size; i++) {
+				L.pushnumber(ctr++);
+				L.pushnumber(lsnes_memory.read<uint8_t>(addr + i));
+				L.settable(-3);
+			}
+		}
+		return 1;
+	}
+
+	int lua_vma::writeregion(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr;
+		int ltbl;
+
+		P(P.skipped(), addr, P.table(ltbl));
+
+		auto g = lsnes_memory.lookup(vmabase);
+		if(!g.first || g.first->readonly)
+			throw std::runtime_error("Memory address is read-only");
+		if(addr >= vmasize)
+			throw std::runtime_error("Write out of range");
+
+		uint64_t ctr = 1;
+		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		if(vmabuf) {
+			for(size_t i = 0;; i++) {
+				L.pushnumber(ctr++);
+				L.gettable(ltbl);
+				if(L.type(-1) == LUA_TNIL)
+					break;
+				if(addr + i >= vmasize)
+					throw std::runtime_error("Write out of range");
+				vmabuf[addr + i] = L.tointeger(-1);
+				L.pop(1);
+			}
+		} else {
+			for(size_t i = 0;; i++) {
+				L.pushnumber(ctr++);
+				L.gettable(ltbl);
+				if(L.type(-1) == LUA_TNIL)
+					break;
+				if(addr + i >= vmasize)
+					throw std::runtime_error("Write out of range");
+				lsnes_memory.write<uint8_t>(vmabase + addr + i, L.tointeger(-1));
+				L.pop(1);
+			}
+		}
+	}
+
+	template<bool cmp> int lua_vma::storecmp(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr, daddr, size, rows, stride = 0;
+		bool equals = true;
+
+		P(P.skipped(), addr, daddr, size, P.optional(rows, 1));
+		if(rows > 1) P(stride);
+
+		//First verify that all reads are to the region.
+		uint64_t tmp = addr;
+		if(size > vmasize && rows)
+			throw std::runtime_error("Source out of range");
+		for(uint64_t i = 0; i < rows; i++) {
+			if(tmp >= vmasize || tmp + size > vmasize)
+				throw std::runtime_error("Source out of range");
+			tmp += stride;
+		}
+		//Calculate new size of target.
+		auto& h = movb.get_mfile().host_memory;
+		size_t rsize = size * rows;
+		if(size && rsize / size != rows)
+			throw std::runtime_error("Copy size out of range");
+		if((size_t)daddr + rsize < rsize)
+			throw std::runtime_error("Target out of range");
+		if(daddr + rsize > h.size()) {
+			h.resize(daddr + rsize);
+			equals = false;
+		}
+
+		//Try to map the VMA.
+		char* vmabuf = lsnes_memory.get_physical_mapping(vmabase, vmasize);
+		if(vmabuf) {
+			for(uint64_t i = 0; i < rows; i++) {
+				bool eq = (cmp && !memcmp(&h[daddr], vmabuf + addr, size));
+				if(!eq)
+					memcpy(&h[daddr], vmabuf + addr, size);
+				equals &= eq;
+				addr += stride;
+				daddr += size;
+			}
+		} else {
+			for(uint64_t i = 0; i < rows; i++) {
+				for(uint64_t j = 0; j < size; j++) {
+					uint8_t byte = lsnes_memory.read<uint8_t>(vmabase + addr + j);
+					bool eq = (cmp && ((uint8_t)h[daddr + j] == byte));
+					h[daddr + j] = byte;
+					equals &= eq;
+				}
+				addr += stride;
+				daddr += size;
+			}
+		}
+		if(cmp) L.pushboolean(equals);
+		return cmp ? 1 : 0;
+	}
+
+	template<debug_type type, bool reg> int lua_vma::registerX(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr;
+		int lfn;
+		P(P.skipped(), addr, P.function(lfn));
+
+		if(reg) {
+			handle_registerX<type>(L, vmabase + addr, lfn);
+			L.pushvalue(lfn);
+			return 1;
+		} else {
+			handle_unregisterX<type>(L, vmabase + addr, lfn);
+			return 0;
+		}
+	}
+
+	int lua_vma::cheat(lua::state& L, lua::parameters& P)
+	{
+		uint64_t addr, value;
+
+		P(P.skipped(), addr);
+		if(addr >= vmasize)
+			throw std::runtime_error("Address out of range");
+		if(P.is_novalue()) {
+			debug_clear_cheat(vmabase + addr);
+		} else {
+			P(value);
+			debug_set_cheat(vmabase + addr, value);
+		}
+		return 0;
 	}
 
 	lua_vma_list::lua_vma_list(lua::state& L)
