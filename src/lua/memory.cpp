@@ -500,12 +500,33 @@ namespace
 		return 1;
 	}
 
+	void accessed_range(uint64_t base, uint64_t size, uint64_t rows, uint64_t stride, uint64_t& m, uint64_t& M)
+	{
+		m = 0xFFFFFFFFFFFFFFFFULL;
+		M = 0;
+		if(!rows || !size)
+			return;
+		for(uint64_t i = 0; i < rows; i++) {
+			if(base + size > base) {
+				m = min(m, base);
+				M = max(M, base + size - 1);
+			} else if(base + size == 0) {
+				m = min(m, base);
+				M = 0xFFFFFFFFFFFFFFFFULL;
+			} else {
+				m = 0;
+				M = 0xFFFFFFFFFFFFFFFFULL;
+			}
+			base += stride;
+		}
+	}
+
 	template<typename H, void(*update)(H& state, const char* mem, size_t memsize),
 		std::string(*read)(H& state), bool extra>
 	int hash_core(H& state, lua::state& L, lua::parameters& P)
 	{
 		std::string hash;
-		uint64_t addr, size;
+		uint64_t addr, size, low, high;
 		uint64_t stride = 0, rows = 1;
 		bool mappable = true;
 		char buffer[BLOCKSIZE];
@@ -518,26 +539,26 @@ namespace
 				P(stride);
 		}
 
-		uint64_t psize = rows ? ((rows - 1) * stride + size) : 0;
-		//Don't use mapping if range used warps around.
-		if(rows && stride && (psize - size) / stride != (rows - 1))
+		accessed_range(addr, size, rows, stride, low, high);
+		if(low > high || high - low + 1 == 0)
 			mappable = false;
-		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(addr, psize) : NULL;
-		if(!size && !rows) {
+
+		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(low, high - low + 1) : NULL;
+		if(low > high) {
 		} else if(pbuffer) {
-			uint64_t offset = 0;
+			uint64_t offset = addr - low;
 			for(uint64_t i = 0; i < rows; i++) {
 				update(state, pbuffer + offset, size);
 				offset += stride;
 			}
 		} else {
-			uint64_t offset = 0;
+			uint64_t offset = addr;
 			for(uint64_t i = 0; i < rows; i++) {
 				size_t sz = size;
 				while(sz > 0) {
 					size_t ssz = min(sz, static_cast<size_t>(BLOCKSIZE));
 					for(size_t i = 0; i < ssz; i++)
-						buffer[i] = lsnes_memory.read<uint8_t>(addr + offset + i);
+						buffer[i] = lsnes_memory.read<uint8_t>(offset + i);
 					offset += ssz;
 					sz -= ssz;
 					update(state, buffer, ssz);
@@ -588,7 +609,7 @@ namespace
 	template<bool cmp>
 	int copy_to_host(lua::state& L, lua::parameters& P)
 	{
-		uint64_t addr, daddr, size;
+		uint64_t addr, daddr, size, low, high;
 		uint64_t stride = 0, rows = 1;
 		bool equals = true, mappable = true;
 
@@ -597,15 +618,13 @@ namespace
 		if(rows > 1)
 			P(stride);
 
-		if(rows && size * rows / rows != size)
-			throw std::runtime_error("Size to copy too large");
-		if(daddr + rows * size < daddr)
-			throw std::runtime_error("Size to copy too large");
-
-		uint64_t psize = rows ? ((rows - 1) * stride + size) : 0;
-		//Don't use mapping if range used warps around.
-		if(rows && stride && (psize - size) / stride != (rows - 1))
+		accessed_range(addr, size, rows, stride, low, high);
+		if(low > high || high - low + 1 == 0)
 			mappable = false;
+		if(rows && (size_t)(size * rows) / rows != size)
+			throw std::runtime_error("Size to copy too large");
+		if((size_t)(daddr + rows * size) < daddr)
+			throw std::runtime_error("Size to copy too large");
 
 		auto& h = movb.get_mfile().host_memory;
 		if(daddr + rows * size > h.size()) {
@@ -613,15 +632,15 @@ namespace
 			h.resize(daddr + rows * size);
 		}
 
-		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(addr, psize) : NULL;
+		char* pbuffer = mappable ? lsnes_memory.get_physical_mapping(low, high - low + 1) : NULL;
 		if(!size && !rows) {
 		} else if(pbuffer) {
 			//Mapable.
-			uint64_t offset = 0;
+			uint64_t offset = addr - low;
 			for(uint64_t i = 0; i < rows; i++) {
-				bool eq = (cmp && !memcmp(&h[i * size], pbuffer + offset, size));
+				bool eq = (cmp && !memcmp(&h[daddr + i * size], pbuffer + offset, size));
 				if(!eq)
-					memcpy(&h[i * size], pbuffer + offset, size);
+					memcpy(&h[daddr + i * size], pbuffer + offset, size);
 				equals &= eq;
 				offset += stride;
 			}
@@ -632,7 +651,7 @@ namespace
 				uint64_t addr2 = daddr + i * size;
 				for(uint64_t j = 0; j < size; j++) {
 					uint8_t byte = lsnes_memory.read<uint8_t>(addr1 + j);
-					bool eq = (cmp && h[addr2 + j] == byte);
+					bool eq = (cmp && h[addr2 + j] == (char)byte);
 					if(!eq)
 						h[addr2 + j] = byte;
 					equals &= eq;
