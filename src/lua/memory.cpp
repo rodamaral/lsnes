@@ -320,6 +320,16 @@ void handle_unregisterX(lua::state& L, uint64_t addr, int lfn)
 	}
 }
 
+typedef void(*dummy1_t)(lua::state& L, uint64_t addr, int lfn);
+dummy1_t dummy_628963286932869328692386963[] = {
+	handle_registerX<DEBUG_READ>,
+	handle_registerX<DEBUG_WRITE>,
+	handle_registerX<DEBUG_EXEC>,
+	handle_unregisterX<DEBUG_READ>,
+	handle_unregisterX<DEBUG_WRITE>,
+	handle_unregisterX<DEBUG_EXEC>,
+};
+
 namespace
 {
 	template<debug_type type, bool reg>

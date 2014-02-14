@@ -1605,3 +1605,80 @@ rr2-β15 [Sunday January 5th 2014]
 * Oops, GB(C) bus was missing
 * Don't desync if loading a movie preserving input
 * Fix rerecord count to reset on new movie
+
+rr2-β16 [Friday February 14th 2014]
+===================================
+* PNG screenshots are bugged again...
+* Fix typo in macosx platform makefile
+* More advanced memory watches
+* Fix core selection among multiple candidates for downloaded movies
+* Allow -mt prefix for host boost
+* Make frame count controller_frame_vector property
+* Clean up internal name used to designate a save slot
+* Move main movie compatiblity checking to controller_frame_vector
+* Optimize controller_frame_vector::compatible()
+* Fix lockup if exiting emulator with project active
+* Lua: gui.set_video_scale()
+* Slot branches
+* Allow loading empty font and editing font after loading
+* Lua interface to iconv(3), string.byteU and string.charU
+* Rename ERROR to FAILED in evaluation status
+* Lua: Byte order swapping
+* Lua: Scaling blits, color priority blits, Porter-Duff blits
+* Lua: Autogenerate sysrc.cpp from sysrc.lua
+* Lua: identify_class
+* Lua: Refactor lots of stuff
+* Lua: Refactor classes
+* Lua: Make static constructor methods for MMAP_STRUCT and ZIPWRITER
+* Lua: Cleanup hostmemory and use static method for TILEMAP ctor
+* Lua: Cleanup gui-rqueue.cpp
+* Lua: Table of classes
+* Lua: Refactor some documentation
+* Lua: Some fixes related to sysrc.lua
+* Lua: cleanup some more files
+* Lua: More conversion to lua::parameters
+* Lua: More refactoring
+* Lua: Multi-argument parsing and unify color parsing
+* Lua: Use multi-argument parsing in some more places
+* Lua: use multi-argument parsing for more files
+* Lua: Use multiarg in some more files
+* Lua: Use multiarg for rest of gui-* stuff
+* Lua: Multiarg refactoring for a few more files
+* Lua: Refactor the two remaining files to use multiarg
+* Lua: Convert some core-specific stuff and kill lua::fnptr
+* Lua: Make class methods take lua::parameters
+* PRNG: Don't try to access element -1 of array in some cases
+* Make reference to certain library conditional
+* Lua: Give the print method as pointer instead of assuming T::print
+* Lua: all_classes()
+* Lua: Support __pairs for classes
+* Lua: Convert some functions to static-only classes
+* Lua: Get rid of unneeded subclasses of lua::function
+* lua_func_callback isn't used anymore, remove it
+* Lua: bit.compose, bit.binary_{ld,st}_*, bit.quotent
+* Fix some exception specifier mismatches
+* Refactor some generic reading/writing routines out of moviefile.cpp
+* wxwidgets: Use text render panel in messages window
+* Make git diff --check happy
+* Gambatte: New patch: Optional crash on SIGILL, fix MBC3
+* Back movie data off movie file structure
+* Fix initram handling with rewind to start type actions
+* Upload: Don't send empty fields
+* Dynamically allocate moviefile, rrdata and movie structures
+* Support multi-branch movies
+* moviefile.cpp is friggin' large, split it up
+* Load some legacy memory watches
+* Cleanup lua code by introducing lua::functions
+* File upload: More usable game name selection
+* Don't crash if exiting with trace log active
+* Upload: Drop the system select, it isn't usable
+* Fix kill_hooks()
+* Gambatte: Some Trace/Disassemble fixes
+* Hex editor: Properly erase past-the-end chars for non-mod16 regions
+* Don't use framebuffer palettes
+* Lua: memory.hash_region(), memory.store(), memory.storecmp()
+* Lua docs: Replace "vma" by "memory area" or "marea"
+* Trace logger / disassembler GUI
+* Fix parsing of #nnnnnn color notation
+* Lua: Cleanup & fix memory hash / storecmp functions
+* Lua: memory2: More functions corresponding to memory.*
