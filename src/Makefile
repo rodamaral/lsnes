@@ -86,6 +86,9 @@ precheck:
 	$(MAKE) -C util precheck
 	$(MAKE) -C video precheck
 
+platclean:
+	$(MAKE) -C emulation clean
+
 clean:
 	rm -f *.$(OBJECT_SUFFIX) *.ldflags
 	find . -name "*.dep" -exec rm -f {} \;

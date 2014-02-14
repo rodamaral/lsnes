@@ -86,6 +86,8 @@ buildaux/mkdeps.exe: buildaux/mkdeps.cpp VERSION
 src/core/version.cpp: buildaux/version.exe forcelook
 	buildaux/version.exe >$@
 
+platclean:
+	$(MAKE) -C src platclean
 
 clean:
 	$(MAKE) -C src clean
