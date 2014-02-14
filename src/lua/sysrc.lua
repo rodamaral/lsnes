@@ -69,6 +69,7 @@ filereader = classes.FILEREADER;
 memory2=classes.VMALIST.new();
 callback=classes.CALLBACKS_LIST.new();
 memory.map_structure=classes.MMAP_STRUCT.new;
+memory.compare_new=classes.COMPARE_OBJ.new;
 zip.create=classes.ZIPWRITER.new;
 gui.tilemap=classes.TILEMAP.new;
 gui.renderq_new=classes.RENDERCTX.new;

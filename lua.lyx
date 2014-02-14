@@ -6789,6 +6789,34 @@ Set the global execute hook mask to <mask>.
 \end_layout
 
 \begin_layout Subsection
+memory.compare_new: Create memory compare object.
+\end_layout
+
+\begin_layout Itemize
+Syntax: COMPARE_OBJ memory.compare_new([string marea], number size, [number
+ rows, number stride])
+\end_layout
+
+\begin_layout Standard
+Create memory compare object of <rows> blocks of <size> bytes starting from
+ address <base> (relative to <marea>).
+ The blocks are offset by <stride> from one another.
+\end_layout
+
+\begin_layout Subsection
+COMPARE_OBJ(): Region changed?
+\end_layout
+
+\begin_layout Itemize
+Syntax: bool COMPARE_OBJ()
+\end_layout
+
+\begin_layout Standard
+Returns true if region has changed, false if it is still is way it is during
+ last call (creation counts).
+\end_layout
+
+\begin_layout Subsection
 memory.mmap: Class MMAP_STRUCT
 \end_layout
 
