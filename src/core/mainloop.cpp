@@ -1195,11 +1195,12 @@ void main_loop(struct loaded_rom& rom, struct moviefile& initial, bool load_has_
 		redraw_framebuffer(screen_corrupt);
 	}
 
-	lua_run_startup_scripts();
-
 	platform::set_paused(initial.start_paused);
 	amode = initial.start_paused ? ADVANCE_PAUSE : ADVANCE_AUTO;
 	stop_at_frame_active = false;
+
+	lua_run_startup_scripts();
+
 	uint64_t time_x = get_utime();
 	while(amode != ADVANCE_QUIT || !queued_saves.empty()) {
 		if(handle_corrupt()) {
