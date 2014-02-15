@@ -762,7 +762,7 @@ namespace
 	};
 }
 
-void boot_emulator(loaded_rom& rom, moviefile& movie)
+void boot_emulator(loaded_rom& rom, moviefile& movie, bool fscreen)
 {
 	update_preferences();
 	try {
@@ -772,7 +772,7 @@ void boot_emulator(loaded_rom& rom, moviefile& movie)
 		a->load_has_to_succeed = false;
 		modal_pause_holder hld;
 		emulation_thread = new thread_class(emulator_main, a);
-		main_window = new wxwin_mainwindow();
+		main_window = new wxwin_mainwindow(fscreen);
 		main_window->Show();
 	} catch(std::bad_alloc& e) {
 		OOM_panic();
@@ -1014,7 +1014,7 @@ void wxwin_mainwindow::panel::on_mouse(wxMouseEvent& e)
 	handle_wx_mouse(e);
 }
 
-wxwin_mainwindow::wxwin_mainwindow()
+wxwin_mainwindow::wxwin_mainwindow(bool fscreen)
 	: wxFrame(NULL, wxID_ANY, getname(), wxDefaultPosition, wxSize(-1, -1),
 		wxMINIMIZE_BOX | wxSYSTEM_MENU | wxCAPTION | wxCLIP_CHILDREN | wxCLOSE_BOX)
 {
@@ -1184,6 +1184,10 @@ wxwin_mainwindow::wxwin_mainwindow()
 	reinterpret_cast<system_menu*>(sysmenu)->update(false);
 	menubar->SetMenuLabel(1, towxstring(our_rom.rtype->get_systemmenu_name()));
 	focus_timer = new _focus_timer;
+	if(fscreen) {
+		wx_escape_count = 0;
+		enter_or_leave_fullscreen(true);
+	}
 }
 
 void wxwin_mainwindow::request_paint()
